@@ -2,7 +2,7 @@
                    Doomsday Engine Definitions Reference
                         (or "Knee-Deep In The DED")
                    =====================================
-                       Revision 0.9.4 -- 09/29/2003
+        $Id$
 
         Contact <skyjake@doomsdayhq.com> if you have any questions.
 
@@ -1368,4 +1368,3 @@ Shortcuts:
 
 ---------------------------------------------------------------------------
 Doomsday Engine Definitions Reference
-$Id$
