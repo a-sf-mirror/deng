@@ -351,7 +351,7 @@ void Sem_P(semaphore_t semaphore)
 }
 
 /*
- * "Verhohen" a semaphore. Returns immediately.
+ * "Verhogen" a semaphore. Returns immediately.
  */
 void Sem_V(semaphore_t semaphore)
 {
