@@ -29,6 +29,7 @@ typedef enum {
 	MAC_LIST		// Print the server list in the console.
 } masteraction_t;
 
+extern unsigned int maxDatagramSize;
 extern boolean	allowSending;
 extern int		maxQueuePackets;
 
