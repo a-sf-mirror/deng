@@ -7,22 +7,28 @@
 Version 1.7.13 (work in progress)
 --------------
 ! Maintenance Release
+* model offset and scale are interpolated (Model -> Offset XYZ,
+  Model -> Scale XYZ)
+* overridden model defs are no longer loaded at all (bug 760099)
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
-- fixed: a shadow is not rendered if it would be above the object
+- a shadow is not rendered if it would be above the object
 
 Network:
 - fixed: player start spot selection (especially TNT/Plutonia)
 - fixed: mobj Z coordinates were sometimes incorrect on clientside
 - fixed: server didn't increase client's bandwidth rating, ever
 - fixed: WAD warning box in Client Setup screen was in the wrong place
-
-drD3D:
-+ option -triple: enable triple buffering in fullscreen mode
+- fixed: halos weren't always displayed correctly on clientside
 
 jDoom:
 * Plutonia/TNT will automatically set rend-sky-full
+- fixed: bullet puffs in face (bug 740767)
 - fixed: main menu item spacing too tight
+- fixed: STARMS was used in the status bar when in deathmatch
+
+drD3D:
++ option -triple: enable triple buffering in fullscreen mode
 
 
 Version 1.7.12
