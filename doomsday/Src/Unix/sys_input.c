@@ -44,20 +44,20 @@ int joyInverseAxis[8];			// Axis inversion (default: all false).
 
 cvar_t inputCVars[] =
 {
-	"i_JoyDevice",		CVF_HIDE|CVF_NO_ARCHIVE|CVF_NO_MAX|CVF_PROTECTED, CVT_INT,	&joydevice,		0,	0,	"ID of joystick to use (if more than one).",
-	"i_UseJoystick",	CVF_HIDE|CVF_NO_ARCHIVE,	CVT_BYTE,	&usejoystick,	0,	1,	"1=Enable joystick input.",
+	{ "i_JoyDevice",		CVF_HIDE|CVF_NO_ARCHIVE|CVF_NO_MAX|CVF_PROTECTED, CVT_INT,	&joydevice,		0,	0,	"ID of joystick to use (if more than one)." },
+	{ "i_UseJoystick",	CVF_HIDE|CVF_NO_ARCHIVE,	CVT_BYTE,	&usejoystick,	0,	1,	"1=Enable joystick input." },
 //--------------------------------------------------------------------------
-	"input-joy-device",	CVF_NO_MAX|CVF_PROTECTED,	CVT_INT,	&joydevice,		0,	0,	"ID of joystick to use (if more than one).",
-	"input-joy",		0,							CVT_BYTE,	&usejoystick,	0,	1,	"1=Enable joystick input.",
-	"input-joy-x-inverse",			0,	CVT_INT,	&joyInverseAxis[0],	0, 1,	"1=Inverse joystick X axis.",
-	"input-joy-y-inverse",			0,	CVT_INT,	&joyInverseAxis[1],	0, 1,	"1=Inverse joystick Y axis.",
-	"input-joy-z-inverse",			0,	CVT_INT,	&joyInverseAxis[2],	0, 1,	"1=Inverse joystick Z axis.",
-	"input-joy-rx-inverse",			0,	CVT_INT,	&joyInverseAxis[3],	0, 1,	"1=Inverse joystick RX axis.",
-	"input-joy-ry-inverse",			0,	CVT_INT,	&joyInverseAxis[4],	0, 1,	"1=Inverse joystick RY axis.",
-	"input-joy-rz-inverse",			0,	CVT_INT,	&joyInverseAxis[5],	0, 1,	"1=Inverse joystick RZ axis.",
-	"input-joy-slider1-inverse",	0,	CVT_INT,	&joyInverseAxis[6], 0, 1,	"1=Inverse joystick slider 1.",
-	"input-joy-slider2-inverse",	0,	CVT_INT,	&joyInverseAxis[7], 0, 1,	"1=Inverse joystick slider 2.",
-	NULL
+	{ "input-joy-device",	CVF_NO_MAX|CVF_PROTECTED,	CVT_INT,	&joydevice,		0,	0,	"ID of joystick to use (if more than one)." },
+	{ "input-joy",		0,							CVT_BYTE,	&usejoystick,	0,	1,	"1=Enable joystick input." },
+	{ "input-joy-x-inverse",			0,	CVT_INT,	&joyInverseAxis[0],	0, 1,	"1=Inverse joystick X axis." },
+	{ "input-joy-y-inverse",			0,	CVT_INT,	&joyInverseAxis[1],	0, 1,	"1=Inverse joystick Y axis." },
+	{ "input-joy-z-inverse",			0,	CVT_INT,	&joyInverseAxis[2],	0, 1,	"1=Inverse joystick Z axis." },
+	{ "input-joy-rx-inverse",			0,	CVT_INT,	&joyInverseAxis[3],	0, 1,	"1=Inverse joystick RX axis." },
+	{ "input-joy-ry-inverse",			0,	CVT_INT,	&joyInverseAxis[4],	0, 1,	"1=Inverse joystick RY axis." },
+	{ "input-joy-rz-inverse",			0,	CVT_INT,	&joyInverseAxis[5],	0, 1,	"1=Inverse joystick RZ axis." },
+	{ "input-joy-slider1-inverse",	0,	CVT_INT,	&joyInverseAxis[6], 0, 1,	"1=Inverse joystick slider 1." },
+	{ "input-joy-slider2-inverse",	0,	CVT_INT,	&joyInverseAxis[7], 0, 1,	"1=Inverse joystick slider 2." },
+	{ NULL }
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -66,8 +66,80 @@ static boolean initOk = false;
 static boolean useMouse, useJoystick;
 
 static keyevent_t keyEvents[EVBUFSIZE];
+static int evHead, evTail;
 
 // CODE --------------------------------------------------------------------
+
+/*
+ * Returns a new key event struct from the buffer.
+ */
+keyevent_t *I_NewKeyEvent(void)
+{
+	keyevent_t *ev = keyEvents + evHead;
+
+	evHead = (evHead + 1) % EVBUFSIZE;
+	memset(ev, 0, sizeof(*ev));
+	return ev;
+}
+
+/*
+ * Returns the oldest event from the buffer.
+ */
+keyevent_t *I_GetKeyEvent(void)
+{
+	keyevent_t *ev;
+	
+	if(evHead == evTail) return NULL; // No more...
+	ev = keyEvents + evTail;
+	evTail = (evTail + 1) % EVBUFSIZE;
+	return ev;
+}
+
+/*
+ * Translate the SDL symbolic key code to a DDKEY.
+ */
+int I_TranslateKeyCode(SDLKey sym)
+{
+	switch(sym)
+	{
+	case 167: // Tilde
+		return 96;
+
+	case '\b': // Backspace
+		return DDKEY_BACKSPACE;
+
+	case SDLK_PAUSE:
+		return DDKEY_PAUSE;
+
+	case SDLK_UP:
+		return DDKEY_UPARROW;
+
+	case SDLK_DOWN:
+		return DDKEY_DOWNARROW;
+
+	case SDLK_LEFT:
+		return DDKEY_LEFTARROW;
+
+	case SDLK_RIGHT:
+		return DDKEY_RIGHTARROW;
+
+	case SDLK_RSHIFT:
+	case SDLK_LSHIFT:
+		return DDKEY_RSHIFT;
+
+	case SDLK_RALT:
+	case SDLK_LALT:
+		return DDKEY_RALT;
+
+	case SDLK_RCTRL:
+	case SDLK_LCTRL:
+		return DDKEY_RCTRL;
+		
+	default:
+		break;
+	}
+	return sym;
+}
 
 /*
  * SDL's events are all returned from the same routine.  This function
@@ -77,11 +149,20 @@ static keyevent_t keyEvents[EVBUFSIZE];
 void I_PollEvents(void)
 {
 	SDL_Event event;
+	keyevent_t *e;
 	
 	while(SDL_PollEvent(&event))
 	{
 		switch(event.type)
 		{
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+			e = I_NewKeyEvent();
+			e->event = (event.type == SDL_KEYDOWN? IKE_KEY_DOWN : IKE_KEY_UP);
+			e->code = I_TranslateKeyCode(event.key.keysym.sym);
+			printf("sdl:%i code:%i\n", event.key.keysym.sym, e->code);
+			break;
+
 		case SDL_QUIT:
 			// The system wishes to close the program immediately...
 			Sys_Quit();
@@ -122,6 +203,7 @@ int I_Init(void)
 {
 	if(initOk) return true;	// Already initialized.
 	initOk = true;
+//	SDL_WM_GrabInput(SDL_GRAB_ON);
 	return true;
 }
 
@@ -132,6 +214,7 @@ void I_Shutdown(void)
 {
 	if(!initOk) return;	// Not initialized.
 	initOk = false;
+//	SDL_WM_GrabInput(SDL_GRAB_OFF);	
 }
 
 //===========================================================================
@@ -155,6 +238,7 @@ boolean I_JoystickPresent(void)
 //===========================================================================
 int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
 {
+	keyevent_t *e;
 	int i = 0;
 	
 	if(!initOk) return 0;
@@ -162,12 +246,13 @@ int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
 	// Get new events from SDL.
 	I_PollEvents();
 	
-/*	// Get the events.
-	for(i=0; i<num && i<bufsize; i++)
+	// Get the events.
+	for(i = 0; i < bufsize; i++)
 	{
-		evbuf[i].event = (keyData[i].dwData & 0x80)? IKE_KEY_DOWN : IKE_KEY_UP;
-		evbuf[i].code = (unsigned char) keyData[i].dwOfs;
-	}*/
+		e = I_GetKeyEvent();
+		if(!e) break; // No more events.
+		memcpy(&evbuf[i], e, sizeof(*e));
+	}
 	return i;
 }
 
