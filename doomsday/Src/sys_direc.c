@@ -167,12 +167,14 @@ void Dir_ValidDir(char *str)
 {
 	int i, len = strlen(str);
 
+	if(!len) return; // Nothing to do.
+
 	Dir_FixSlashes(str);
 
 	// Remove whitespace from the end.
 	for(i = len - 1; isspace(str[i]) && i >= 0; i--) str[i] = 0; 
 
-	// Make sure it's valid.
+	// Make sure it ends in a directory separator character.
 	if(str[len - 1] != DIR_SEP_CHAR) strcat(str, DIR_SEP_STR);
 }
 
