@@ -170,7 +170,7 @@ void UI_LoadTextures(void)
 	for(i = 0; i < NUM_UI_TEXTURES; i++)
 		if(!ui_textures[i])
 		{
-			ui_textures[i] = GL_LoadGraphics(picNames[i], false);
+			ui_textures[i] = GL_LoadGraphics(picNames[i], LGM_NORMAL);
 		}
 }
 
