@@ -774,11 +774,8 @@ void *RL_AllocateData(rendlist_t *list, int bytes)
 		int cursorOffset = -1;
 		int lastOffset   = -1;
 
-		if(list->cursor)
-			cursorOffset = list->cursor - oldData;
-
-		if(list->last)
-			lastOffset = (byte*) list->last - oldData;
+		if(list->cursor) cursorOffset = list->cursor - oldData;
+		if(list->last) lastOffset = (byte*) list->last - oldData;
 
 		// Allocate more memory for the data buffer.
 		if(list->size == 0) list->size = 1024;
@@ -787,10 +784,10 @@ void *RL_AllocateData(rendlist_t *list, int bytes)
 		list->data = Z_Realloc(list->data, list->size, PU_STATIC);
 
 		// Restore main pointers.
-		list->cursor = 
-			(cursorOffset >= 0? list->data + cursorOffset : list->data);
-		list->last = 
-			(lastOffset >= 0? (primhdr_t*) (list->data + lastOffset) : NULL);
+		list->cursor = (cursorOffset >= 0? list->data + cursorOffset
+						: list->data);
+		list->last = (lastOffset >= 0? (primhdr_t*) (list->data + lastOffset)
+					  : NULL);
 
 		// Restore in-list pointers.
 		if(oldData)
@@ -798,8 +795,11 @@ void *RL_AllocateData(rendlist_t *list, int bytes)
 			for(hdr = (primhdr_t*) list->data; ; 
 				hdr = (primhdr_t*) ((byte*) hdr + hdr->size))
 			{
-				hdr->indices = (uint*) (list->data 
-					+ ((byte*) hdr->indices - oldData));
+				if(hdr->indices != NULL)
+				{
+					hdr->indices = (uint*)
+						(list->data + ((byte*) hdr->indices - oldData));
+				}
 
 				// Check here in the end; primitive composition may be 
 				// in progress.
@@ -819,9 +819,14 @@ void *RL_AllocateData(rendlist_t *list, int bytes)
 //===========================================================================
 void RL_AllocateIndices(rendlist_t *list, int numIndices)
 {
+	void *indices;
+	
 	list->last->numIndices = numIndices;
-	list->last->indices = RL_AllocateData(list, 
-		sizeof(*list->last->indices) * numIndices);
+	indices = RL_AllocateData
+		(list, sizeof(*list->last->indices) * numIndices);
+
+	// list->last may change during RL_AllocateData.
+	list->last->indices = indices;
 }
 
 //===========================================================================
