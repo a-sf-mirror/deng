@@ -11,6 +11,7 @@ Version 1.7.14 (work in progress)
   this if it isn't possible to use the model's skin list)
 + generator flag 'gnf_srcdir': rotate particle vector
 * models close to the viewpoint won't disappear
+* max number of data files increased from 128 to 1024 (-file)
 - fixed: edge artifacts around translucent sprites
 - fixed: sfx sometimes pop with the default sound driver (DS8)
 - fixed: loading DEDs from virtual directories
