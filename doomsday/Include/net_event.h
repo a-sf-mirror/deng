@@ -29,8 +29,16 @@ typedef enum neteventtype_e {
 	NE_END_CONNECTION
 } neteventtype_t;
 
+typedef struct netevent_s {
+	neteventtype_t type;
+	nodeid_t id;
+} netevent_t;
+
 void	N_MAPost(masteraction_t act);
 boolean	N_MADone(void);
+void	N_MAClear(void);
+
+void 	N_NEPost(netevent_t *nev);
 boolean N_NEPending(void);
 void	N_NETicker(void);
 
