@@ -264,7 +264,19 @@ int Mus_GetExt(ded_music_t *def, char *path)
 		if(F_Access(buf))
 		{
 			// Return the real file name if not just checking.
-			if(path) strcpy(path, buf);
+			if(path) 
+			{
+				// Because the song can be in a virtual file, we must buffer
+				// it ourselves. Otherwise FMOD might not be able to load 
+				// the song.
+				DFILE *file = F_Open(buf, "rb");
+				ptr = iext->SongBuffer(len = F_Length(file));
+				F_Read(ptr, len, file);
+				F_Close(file);
+
+				// Clear the path so the caller knows it's in the buffer.
+				strcpy(path, "");
+			}
 			return true;		
 		}
 		Con_Message("Mus_GetExt: Song %s: %s not found.\n",
