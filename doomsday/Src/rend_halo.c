@@ -287,7 +287,7 @@ void H_RenderHalo(vissprite_t *sourcevis, boolean primary)
 		{
 			// Set texture explicitly.
 			if(lum->flareTex == 1)
-				tex = GL_PrepareLightTexture();
+				tex = GL_PrepareLSTexture(LST_DYNAMIC);
 			else
 				tex = GL_PrepareFlareTexture(lum->flareTex - 2);
 		}
@@ -304,7 +304,7 @@ void H_RenderHalo(vissprite_t *sourcevis, boolean primary)
 		else 
 		{
 			if(!i)
-				tex = GL_PrepareLightTexture();
+				tex = GL_PrepareLSTexture(LST_DYNAMIC);
 			else 
 				tex = GL_PrepareFlareTexture(fl->texture);
 		}

@@ -724,7 +724,7 @@ void DL_CreateGlowLights
 		}
 
 		dyn = DL_New(s, t);
-		dyn->texture = GL_PrepareGlowTexture();
+		dyn->texture = GL_PrepareLSTexture(LST_GRADIENT);
 		
 		GL_GetFlatColor(g? sect->floorpic : sect->ceilingpic, dyn->color);
 
@@ -1036,8 +1036,8 @@ void DL_AddLuminous(mobj_t *thing)
 		}
 		else
 		{
-			lum->tex = lum->ceilTex = lum->floorTex 
-				= GL_PrepareLightTexture();
+			lum->tex = lum->ceilTex = lum->floorTex =
+				GL_PrepareLSTexture(LST_DYNAMIC);
 		}
 	}
 }
