@@ -731,7 +731,13 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 					sizeof(lights[i].vector));
 			}
 			// We must transform the light vector to model space.
-			M_RotateVector(light->vector, -yawAngle, -pitchAngle);				
+			M_RotateVector(light->vector, -yawAngle, -pitchAngle);	
+			// Quick hack: Flip light normal if model inverted.
+			if(mf->scale[VY] < 0)
+			{
+				light->vector[VX] = -light->vector[VX];
+				light->vector[VY] = -light->vector[VY];
+			}
 		}
 		Mod_VertexColors(numVerts, modelColors, modelNormals, 
 			byteAlpha, ambient);
