@@ -120,8 +120,8 @@ detailinfo_t	*texdetail;
 skycol_t		*skytop_colors = NULL;
 int				num_skytop_colors = 0;
 
-DGLuint			dltexname;	// Name of the dynamic light texture.
-DGLuint			glowtexname;
+// Names of the dynamic light textures.
+DGLuint			lightingTexNames[NUM_LIGHTING_TEXTURES];
 
 int				texMagMode = 1; // Linear.
 
@@ -390,7 +390,7 @@ void GL_InitTextureManager(void)
 	dtinstances = NULL;
 
 	// System textures loaded in GL_LoadSystemTextures.
-	dltexname = glowtexname = 0;
+	memset(lightingTexNames, 0, sizeof(lightingTexNames));
 
 	// Initialization done.
 	texInited = true;
@@ -450,7 +450,7 @@ void GL_LoadLightMap(ded_lightmap_t *map)
 	if(map->tex) return; // Already loaded.
 
 	// Default texture name.
-	map->tex = dltexname;
+	map->tex = lightingTexNames[LST_DYNAMIC];
 
 	if(!strcmp(map->id, "-"))
 	{
@@ -495,7 +495,7 @@ void GL_LoadLightMap(ded_lightmap_t *map)
 //===========================================================================
 void GL_DeleteLightMap(ded_lightmap_t *map)
 {
-	if(map->tex != dltexname)
+	if(map->tex != lightingTexNames[LST_DYNAMIC])
 	{
 		gl.DeleteTextures(1, &map->tex);
 	}
@@ -515,8 +515,9 @@ void GL_LoadSystemTextures(boolean loadLightMaps)
 
 	UI_LoadTextures();
 
-	dltexname = GL_PrepareLightTexture();
-	glowtexname = GL_PrepareGlowTexture();
+	// Preload lighting system textures.
+	GL_PrepareLSTexture(LST_DYNAMIC);
+	GL_PrepareLSTexture(LST_GRADIENT);
 
 	if(loadLightMaps)
 	{
@@ -579,10 +580,8 @@ void GL_ClearSystemTextures(void)
 		}
 	}
 
-	gl.DeleteTextures(1, &dltexname);
-	gl.DeleteTextures(1, &glowtexname);
-	dltexname = 0;
-	glowtexname = 0;
+	gl.DeleteTextures(NUM_LIGHTING_TEXTURES, lightingTexNames);
+	memset(lightingTexNames, 0, sizeof(lightingTexNames));
 
 	UI_ClearTextures();
 
@@ -1834,7 +1833,7 @@ byte *GL_LoadHighResFlat(image_t *img, char *name)
 //	Set grayscale to 2 to include an alpha channel. Set to 3 to make the
 //	actual pixel colors all white.
 //===========================================================================
-DGLuint GL_LoadGraphics(const char *name, boolean grayscale)
+DGLuint GL_LoadGraphics(const char *name, gfxmode_t mode)
 {
 	image_t image;
 	filename_t fileName;
@@ -1857,12 +1856,12 @@ DGLuint GL_LoadGraphics(const char *name, boolean grayscale)
 			image.height = newHeight;
 		}
 
-		// Force it to grayscale.
-		if(grayscale == 2 || grayscale == 3)
+		// Force it to grayscale?
+		if(mode == LGM_GRAYSCALE_ALPHA || mode == LGM_WHITE_ALPHA)
 		{
-			GL_ConvertToAlpha(&image, grayscale == 3);
+			GL_ConvertToAlpha(&image, mode == LGM_WHITE_ALPHA);
 		}
-		else if(grayscale)
+		else if(mode == LGM_GRAYSCALE)
 		{
 			GL_ConvertToLuminance(&image);
 		}
@@ -3098,91 +3097,115 @@ void GL_SetNoTexture(void)
 	curtex = 0;
 }
 
-//===========================================================================
-// GL_PrepareLightTexture
-//	The dynamic light map is a 64x64 grayscale 8-bit image.
-//===========================================================================
-DGLuint GL_PrepareLightTexture(void)
+/*
+ * Prepare a texture used in the lighting system. 'which' must be one
+ * of the LST_* constants.
+ */
+DGLuint	GL_PrepareLSTexture(lightingtex_t which)
 {
 	int i;
-
-	if(!dltexname)
+	
+	switch(which)
 	{
-		// We need to generate the texture, I see.
-		byte *data = W_CacheLumpName("DLIGHT", PU_CACHE);
-		byte *image, *alpha;
-		if(!data) 
+	case LST_DYNAMIC:
+		// The dynamic light map is a 64x64 grayscale 8-bit image.		
+		if(!lightingTexNames[LST_DYNAMIC])
 		{
-			Con_Error("GL_SetLightTexture: DLIGHT not found.\n");
-		}
+			// We need to generate the texture, I see.
+			byte *data = W_CacheLumpName("DLIGHT", PU_CACHE);
+			byte *image, *alpha;
+			if(!data) 
+			{
+				Con_Error("GL_SetLightTexture: DLIGHT not found.\n");
+			}
 
-		// Prepare the data by adding an alpha channel.
-		image = Z_Malloc(64 * 64 * 2, PU_STATIC, 0);
-		memset(image, 255, 64 * 64); // The colors are just white.
-		alpha = image + 64 * 64;
-		memcpy(alpha, data, 64 * 64);
+			// Prepare the data by adding an alpha channel.
+			image = Z_Malloc(64 * 64 * 2, PU_STATIC, 0);
+			memset(image, 255, 64 * 64); // The colors are just white.
+			alpha = image + 64 * 64;
+			memcpy(alpha, data, 64 * 64);
 
-		// The edges of the light texture must be fully transparent,
-		// to prevent all unwanted repeating.
-		for(i = 0; i < 64; i++)
-		{
-			// Top and bottom row.
-			alpha[i] = 0;
-			alpha[i + 64 * 63] = 0;
+			// The edges of the light texture must be fully transparent,
+			// to prevent all unwanted repeating.
+			for(i = 0; i < 64; i++)
+			{
+				// Top and bottom row.
+				alpha[i] = 0;
+				alpha[i + 64 * 63] = 0;
 				
-			// Leftmost and rightmost column.
-			alpha[i * 64] = 0;
-			alpha[63 + i * 64] = 0;
-		}
+				// Leftmost and rightmost column.
+				alpha[i * 64] = 0;
+				alpha[63 + i * 64] = 0;
+			}
 
 /*#ifdef _DEBUG
-		for(i = 28; i < 34; i++)
-		{
-			alpha[i] = 64;
-			alpha[i + 64 * 63] = 64;
-			alpha[i * 64] = 5;
-			alpha[63 + i * 64] = 64;
+  for(i = 28; i < 34; i++)
+  {
+  alpha[i] = 64;
+  alpha[i + 64 * 63] = 64;
+  alpha[i * 64] = 5;
+  alpha[63 + i * 64] = 64;
+  }
+  #endif*/
+
+			// We don't want to compress the flares (banding would be
+			// noticeable).
+			gl.Disable(DGL_TEXTURE_COMPRESSION);
+
+			lightingTexNames[LST_DYNAMIC] = gl.NewTexture();
+		
+			// No mipmapping or resizing is needed, upload directly.
+			gl.TexImage(DGL_LUMINANCE_PLUS_A8, 64, 64, 0, image);
+			gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
+			gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+
+			// Enable texture compression as usual.
+			gl.Enable(DGL_TEXTURE_COMPRESSION);
+
+			Z_Free(image);
 		}
-#endif*/
+		// Set the info.
+		texw = texh = 64;
+		texmask = 0;
+		return lightingTexNames[LST_DYNAMIC];
 
-		// We don't want to compress the flares (banding would be noticeable).
-		gl.Disable(DGL_TEXTURE_COMPRESSION);
+	case LST_GRADIENT:
+		if(!lightingTexNames[LST_GRADIENT])
+		{
+			lightingTexNames[LST_GRADIENT] =
+				GL_LoadGraphics("WallGlow", LGM_WHITE_ALPHA);
+			
+			gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_WRAP_S, DGL_REPEAT);
+			gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+		}
+		// Global tex variables not set! (scalable texture)
+		return lightingTexNames[LST_GRADIENT];
 
-		dltexname = gl.NewTexture();
-		// No mipmapping or resizing is needed, upload directly.
-		gl.TexImage(DGL_LUMINANCE_PLUS_A8, 64, 64, 0, image);
-		gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
-		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
-		gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
-		gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+	case LST_RADIO_CO: // closed/open
+	case LST_RADIO_CC: // closed/closed
+		// FakeRadio corner shadows.
+		if(!lightingTexNames[which])
+		{
+			lightingTexNames[which] =
+				GL_LoadGraphics(which == LST_RADIO_CO? "RadioCO" : "RadioCC",
+								LGM_WHITE_ALPHA);
 
-		// Enable texture compression as usual.
-		gl.Enable(DGL_TEXTURE_COMPRESSION);
-
-		Z_Free(image);
+			gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+			gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
+			gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+		}
+		// Global tex variables not set! (scalable texture)
+		return lightingTexNames[which];
+		
+	default:
+		// Failed to prepare anything.
+		return 0;
 	}
-	// Set the info.
-	texw = texh = 64;
-	texmask = 0;
-	return dltexname;
-}
-
-//===========================================================================
-// GL_PrepareGlowTexture
-//===========================================================================
-DGLuint GL_PrepareGlowTexture(void)
-{
-	if(!glowtexname)
-	{
-		glowtexname = GL_LoadGraphics("WallGlow", 3);
-
-		gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
-		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
-		gl.TexParameter(DGL_WRAP_S, DGL_REPEAT);
-		gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
-	}
-	// Global tex variables not set!
-	return glowtexname;
 }
 
 //===========================================================================
