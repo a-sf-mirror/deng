@@ -346,8 +346,9 @@ typedef struct
 	short			frame, end_frame;
 } ded_ptcstage_t;
 
-typedef struct
+typedef struct ded_ptcgen_s
 {
+	struct ded_ptcgen_s *state_next; // List of generators for a state.
 	ded_stateid_t	state;			// Triggered by this state (if mobj-gen).
 	ded_string_t	flat;			// Triggered by this flat.
 	int				flat_num;
@@ -364,6 +365,7 @@ typedef struct
 	float			vector[3];		// Particle launch vector.
 	float			vec_variance;	// Launch vector variance (0-1). 1=totally random.
 	float			center[3];		// Offset to the mobj (relat. to source).
+	int				submodel;		// Model source: origin submodel #.
 	float			min_spawn_radius; // Spawn uncertainty box.
 	float			spawn_radius;	
 	float			maxdist;		// Max visibility for particles.

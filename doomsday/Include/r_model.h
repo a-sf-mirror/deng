@@ -64,7 +64,7 @@ typedef struct modeldef_s
 	float			interrange[2];
 	float			offset[3];
 	float			resize, scale[3];
-	float			ptcoffset[3];
+	float			ptcoffset[MAX_FRAME_MODELS][3];
 	float			visualradius;
 	ded_model_t		*def;
 

@@ -383,17 +383,24 @@ void P_NewParticle(ptcgen_t *gen)
 		pt->pos[VY] += FixedMul(finesine[ang], gen->center[VX]);
 
 		// There might be an offset from the model of the mobj.
-		if(mf)
+		if(mf && (mf->sub[0].flags & MFF_PARTICLE_SUB1 || def->submodel >= 0))
 		{
+			int subidx = 1; // Default to submodel #1.
 			float off[3];
-			memcpy(off, mf->ptcoffset, sizeof(off));
+
+			// Select the right submodel to use as the origin.
+			if(def->submodel >= 0)
+			{
+				subidx = def->submodel;
+			}
+			memcpy(off, mf->ptcoffset[subidx], sizeof(off));
 			
 			// Interpolate the offset.
 			if(inter > 0 && nextmf)
 				for(i = 0; i < 3; i++)
 				{
-					off[i] += (nextmf->ptcoffset[i] - mf->ptcoffset[i]) 
-						* inter;
+					off[i] += (nextmf->ptcoffset[subidx][i] 
+						- mf->ptcoffset[subidx][i]) * inter;
 				}
 			
 			// Apply it to the particle coords.

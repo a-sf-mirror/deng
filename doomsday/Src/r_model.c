@@ -1028,14 +1028,7 @@ void R_SetupModel(ded_model_t *def)
 			def->selector);
 		END_PROF( PROF_GET_MODEL_DEF );
 
-		if(!modef) 
-		{
-			/*
-			Con_Message("R_SetupModel: Invalid: %s +%i.\n", def->state, 
-				def->off);
-			*/
-			return; // Can't get a modef, quit!
-		}
+		if(!modef) return; // Can't get a modef, quit!
 	}
 
 	BEGIN_PROF( PROF_DATA_INIT );
@@ -1139,34 +1132,34 @@ void R_SetupModel(ded_model_t *def)
 		}
 	}
 
-	// Particle offset?
-	if(modef->flags & MFF_PARTICLE_SUB1	
-		&& modef->sub[1].model)
+	// Calculate the particle offset for each submodel.
+	for(i = 0, sub = modef->sub; i < MAX_FRAME_MODELS; i++, sub++)
 	{
-		R_GetModelBounds(modef->sub[1].model, modef->sub[1].frame, min, max);
-		// Apply the various scalings and offsets.
-		for(i = 0; i < 3; i++)
+		if(!sub->model) 
 		{
-			// The coordinate systems are mixed up badly...
-			// MD2:        +Z is up
-			// Offset/DGL: +Y is up
-			// Game:       +Z is up
-			k = i; //i==1? 2 : i==2? 1 : 0;
-			modef->ptcoffset[i] = ((max[k] + min[k])/2
-				+ modef->sub[1].offset[i]) * modef->scale[i] 
-				+ modef->offset[i];
+			memset(modef->ptcoffset[i], 0, sizeof(modef->ptcoffset[i]));
+			continue;
 		}
-	}
-	else
-	{
-		memset(modef->ptcoffset, 0, sizeof(modef->ptcoffset));
+	
+		R_GetModelBounds(sub->model, sub->frame, min, max);
+
+		// Apply the various scalings and offsets.
+		for(k = 0; k < 3; k++)
+		{
+			modef->ptcoffset[i][k] = ((max[k] + min[k])/2 + sub->offset[k]) 
+				* modef->scale[k] + modef->offset[k];
+		}
 	}
 
 	// Calculate visual radius for shadows.
 	if(def->shadowradius)
+	{
 		modef->visualradius = def->shadowradius;
+	}
 	else
+	{
 		modef->visualradius = R_GetModelVisualRadius(modef);
+	}
 
 	END_PROF( PROF_SCALING );
 }

@@ -9,7 +9,9 @@ Version 1.7.14 (work in progress)
 ! Maintenance Release
 + Model -> Sub -> Skin file: file name of the skin (can be anything; use
   this if it isn't possible to use the model's skin list)
++ Generator -> Submodel: submodel # to use as generator origin
 + generator flag 'gnf_srcdir': rotate particle vector
++ generator flag 'gnf_extra': additional generator for a mobj state
 * models close to the viewpoint won't disappear
 * max number of data files increased from 128 to 1024 (-file)
 - fixed: edge artifacts around translucent sprites
