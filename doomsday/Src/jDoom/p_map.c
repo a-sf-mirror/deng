@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.2.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.3.2.2.2.1  2003/11/19 17:07:13  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -1200,8 +1203,8 @@ hitline:
 			divisor = 2;
 
 			// We must not hit a sky plane.
-			if(z > ctop && contact->sector->ceilingpic == skyflatnum
-				|| z < cbottom && contact->sector->floorpic == skyflatnum)
+			if((z > ctop && contact->sector->ceilingpic == skyflatnum) ||
+			   (z < cbottom && contact->sector->floorpic == skyflatnum))
 				return false;
 
 			// Find the approximate hitpoint by stepping back and
@@ -1220,8 +1223,8 @@ hitline:
 				divisor <<= 1;
 				
 				// Move forward until limits breached.
-				while(dz > 0 && z <= ctop 
-					|| dz < 0 && z >= cbottom)
+				while((dz > 0 && z <= ctop) ||
+					  (dz < 0 && z >= cbottom))
 				{
 					x += dx / divisor;
 					y += dy / divisor;

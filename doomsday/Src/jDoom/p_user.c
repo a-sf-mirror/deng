@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.1.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.3.2.1.2.1  2003/11/19 17:07:14  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -416,7 +419,7 @@ void P_PlayerThink (player_t* player)
 	// Selector 8 = BFG
 	// Selector 9 = Chainsaw
 	// Selector 10 = Super shotgun
-	plrmo->selector = plrmo->selector & ~DDMOBJ_SELECTOR_MASK 
+	plrmo->selector = (plrmo->selector & ~DDMOBJ_SELECTOR_MASK)
 		| (player->readyweapon + 1);
 
 	P_CameraThink(player); // $democam

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.3.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.9.2.3.2.1  2003/11/19 17:07:12  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -62,7 +65,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef WIN32
 #pragma warning(disable:4018)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -2174,11 +2179,11 @@ boolean M_Responder (event_t* ev)
     int             ch;
     int             i;
     static  int     joywait = 0;
-    static  int     mousewait = 0;
-    static  int     mousey = 0;
-    static  int     lasty = 0;
-    static  int     mousex = 0;
-    static  int     lastx = 0;
+//    static  int     mousewait = 0;
+//    static  int     mousey = 0;
+//    static  int     lasty = 0;
+//    static  int     mousex = 0;
+//    static  int     lastx = 0;
 	int				firstVI, lastVI;	// first and last visible item
 	MenuItem_t		*item;
 	

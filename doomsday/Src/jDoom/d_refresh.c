@@ -189,7 +189,6 @@ void D_Display (void)
     static  boolean			inhelpscreensstate = false;
     static  boolean			fullscreen = false;
     static  gamestate_t		oldgamestate = -1;
-    static  int				borderdrawcount;
     int						y;
     boolean					redrawsbar;
 	player_t				*player = &players[displayplayer];
@@ -275,14 +274,13 @@ void D_Display (void)
 		WI_Drawer ();
 		break;
 
-/*	case GS_DEMOSCREEN:
-		D_PageDrawer ();
-		break;*/
-
 	case GS_WAITING:
 		gl.Clear(DGL_COLOR_BUFFER_BIT);
 		M_WriteText2(5, 188, "WAITING... PRESS ESC FOR MENU", 
 			hu_font_a, 1, 0, 0);
+
+	default:
+		break;
 	}
 
 	GL_Update(DDUF_FULLSCREEN);

@@ -797,7 +797,7 @@ void AM_doFollowPlayer(void)
 //
 void AM_updateLightLev(void)
 {
-    static nexttic = 0;
+    static int nexttic = 0;
     //static int litelevels[] = { 0, 3, 5, 6, 6, 7, 7, 7 };
     static int litelevels[] = { 0, 4, 7, 10, 12, 14, 15, 15 };
     static int litelevelscnt = 0;
@@ -1528,7 +1528,7 @@ void AM_GL_SetupState()
 {
 	int scrwidth = Get(DD_SCREEN_WIDTH);
 	int scrheight = Get(DD_SCREEN_HEIGHT);
-	float xs = scrwidth/320.0f, ys = scrheight/200.0f;
+	float /*xs = scrwidth/320.0f,*/ ys = scrheight/200.0f;
 
 	// Let's set up a scissor box to clip the map lines and stuff.
 	// Store the old scissor state.
@@ -1687,7 +1687,7 @@ void AM_drawFragsTable(void)
 		// A colon.
 		M_WriteText2(320 - w - 5, y, ":", hu_font_a, -1, -1, -1);
 		// The frags count.
-		itoa(totalFrags[choose], tmp, 10);
+		sprintf(tmp, "%i", totalFrags[choose]);
 		M_WriteText2(320 - w, y, tmp, hu_font_a, 1, 1, 1);
 		// Mark to ignore in the future.
 		totalFrags[choose] = FRAGS_DRAWN;

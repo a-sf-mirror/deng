@@ -240,9 +240,14 @@ void M_DrawControlsMenu(void)
 		while(token)
 		{
 			if(token[0] == '+')
+			{
 				spacecat(prbuff, token+1);
-			if(token[0] == '*' && !(ctrl->flags & CLF_REPEAT) || token[0] == '-')
+			}
+			if((token[0] == '*' && !(ctrl->flags & CLF_REPEAT)) ||
+			   token[0] == '-')
+			{
 				spacecat(prbuff, token);
+			}
 			token = strtok(NULL, " ");
 		}
 		strupr(prbuff);

@@ -23,7 +23,9 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
+#ifdef WIN32
 #pragma warning(disable:4244 4761)
+#endif
 
 #include <stdio.h>
 #include <string.h>

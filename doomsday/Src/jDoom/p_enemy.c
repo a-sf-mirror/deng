@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.4.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.4.4.1  2003/11/19 17:07:12  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -41,7 +44,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef WIN32
 #pragma optimize("g", off)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -785,8 +790,8 @@ int P_Massacre(void)
 			continue;
 		}
 		mo = (mobj_t *)think;
-		if(mo->type == MT_SKULL || (mo->flags&MF_COUNTKILL) && 
-			(mo->health > 0))
+		if(mo->type == MT_SKULL ||
+		   (mo->flags & MF_COUNTKILL && mo->health > 0))
 		{
 			P_DamageMobj(mo, NULL, NULL, 10000);
 			count++;

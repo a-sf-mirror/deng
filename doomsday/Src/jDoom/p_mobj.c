@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.4.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.9.4.1  2003/11/19 17:07:13  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -51,7 +54,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef WIN32
 #pragma optimize("g", off)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -549,7 +554,7 @@ void P_MobjThinker (mobj_t* mobj)
 
 	// Spectres get selector = 1.
 	if(mobj->type == MT_SHADOWS) 
-		mobj->selector = mobj->selector & ~DDMOBJ_SELECTOR_MASK | 1;
+		mobj->selector = (mobj->selector & ~DDMOBJ_SELECTOR_MASK) | 1;
 
 	P_UpdateMobjFlags(mobj);
 
@@ -658,11 +663,9 @@ void P_MobjThinker (mobj_t* mobj)
     // calling action functions at transitions
     if (mobj->tics != -1)
     {
-		int oldsprite = mobj->sprite;
-		
 		mobj->tics--;
 
-		P_SRVOAngleTicker(mobj);	// "angle-servo"; smooth actor turning		
+		P_SRVOAngleTicker(mobj);	// "angle-servo"; smooth actor turning
 		
 		// you can cycle through multiple states in a tic
 		if(!mobj->tics)

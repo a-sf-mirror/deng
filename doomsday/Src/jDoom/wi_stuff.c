@@ -1193,8 +1193,8 @@ void WI_drawDeathmatchStats(void)
 			// If more than 1 member, show the member count.
 			if(teaminfo[i].members > 1)
 			{
-				char tmp[4];
-				itoa(teaminfo[i].members, tmp, 10);
+				char tmp[20];
+				sprintf(tmp, "%i", teaminfo[i].members);
 				M_WriteText2(x - p[i].width/2 + 1, 
 					DM_MATRIXY - WI_SPACINGY + p[i].height - 8, 
 					tmp, hu_font_a, 1, 1, 1);
@@ -1442,8 +1442,8 @@ void WI_drawNetgameStats(void)
 		// If more than 1 member, show the member count.
 		if(teaminfo[i].members > 1)
 		{
-			char tmp[4];
-			itoa(teaminfo[i].members, tmp, 10);
+			char tmp[40];
+			sprintf(tmp, "%i", teaminfo[i].members);
 			M_WriteText2(x - p[i].width + 1, y + p[i].height - 8, tmp,
 				hu_font_a, 1, 1, 1);
 		}

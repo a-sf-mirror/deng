@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.4.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
 // Revision 1.4.4.1  2003/11/19 17:07:13  skyjake
 // Modified to compile with gcc and -DUNIX
 //
@@ -40,8 +43,10 @@
 //
 //-----------------------------------------------------------------------------
 
-// Sumtin 'ere screws up poor ol' MSVC's head...
+#ifdef WIN32
+// Sumtin' 'ere messes with poor ol' MSVC's head...
 #pragma optimize("g",off)
+#endif
 
 static const char
 rcsid[] = "$Id$";

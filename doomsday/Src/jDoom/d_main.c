@@ -141,16 +141,15 @@ void DetectIWADs (void)
 	};
 	fspec_t iwads[] = 
 	{
-		"TNT.wad",		"-tnt",
-		"Plutonia.wad",	"-plutonia",
-		"Doom2.wad",	"-doom2",
-		"Doom1.wad",	"-sdoom",
-		"Doom.wad",		"-doom",
-		"Doom.wad",		"-ultimate",
-		0, 0
+		{ "TNT.wad",		"-tnt" 		},
+		{ "Plutonia.wad",	"-plutonia" },
+		{ "Doom2.wad",		"-doom2" 	},
+		{ "Doom1.wad",		"-sdoom" 	},
+		{ "Doom.wad",		"-doom" 	},
+		{ "Doom.wad",		"-ultimate" },
+		{ 0, 0 }
 	};
 	int	i, k;
-	fspec_t *found = NULL;
 	boolean overridden = false;
 	char fn[256];
 
@@ -233,10 +232,10 @@ void D_IdentifyFromData(void)
 	};
 	identify_t list[] =
 	{
-		commercial_lumps, commercial,	// Doom2 is easiest to detect.
-		retail_lumps, retail,			// Ultimate Doom is obvious.
-		registered_lumps, registered,
-		shareware_lumps, shareware
+		{ commercial_lumps,	commercial },	// Doom2 is easiest to detect.
+		{ retail_lumps, 	retail },		// Ultimate Doom is obvious.
+		{ registered_lumps,	registered },
+		{ shareware_lumps, 	shareware }
 	};
 	int i, num = sizeof(list)/sizeof(identify_t);
 

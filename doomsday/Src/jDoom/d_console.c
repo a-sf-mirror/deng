@@ -351,8 +351,6 @@ ccmd_t gameCCmds[] =
 
 // Private Data -----------------------------------------------------------
 
-static char playDemoName[10];
-
 // Code -------------------------------------------------------------------
 
 void D_ConsoleRegistration()
