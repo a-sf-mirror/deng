@@ -95,11 +95,12 @@ void XG_Init(void)
 
 void XG_Ticker(void)
 {
+	XS_Ticker();	// Think for sectors.
+	
 	// Clients rely on the server, they don't do XG themselves.
 	if(IS_CLIENT) return;
 
 	XL_Ticker();	// Think for lines.
-	XS_Ticker();	// Think for sectors.
 }
 
 /*
