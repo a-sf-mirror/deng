@@ -24,6 +24,6 @@ boolean P_TryMoveXYZ(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z);
 boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz);
 boolean P_CheckPosXY(mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_CheckPosXYZ(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z);
-boolean P_ChangeSector(sector_t *sector);
+boolean P_SectorPlanesChanged(sector_t *sector);
 
 #endif
