@@ -325,7 +325,11 @@ int DED_AddPtcGen(ded_t *ded, const char *state)
 	strcpy(gen->state, state);
 	gen->submodel = -1;	// Default choice (either zero or one).
 	for(i = 0; i < DED_PTC_STAGES; i++)
+	{
 		gen->stages[i].model = -1;
+		gen->stages[i].sound.volume = 1;
+		gen->stages[i].hit_sound.volume = 1;
+	}
 
 	return gen - ded->ptcgens;
 }

@@ -662,6 +662,21 @@ void Def_Read(void)
 		pg->type_num = Def_GetMobjNum(pg->type);
 		pg->type2_num = Def_GetMobjNum(pg->type2);
 		pg->damage_num = Def_GetMobjNum(pg->damage);
+		
+		// Figure out embedded sound ID numbers.
+		for(k = 0; k < DED_PTC_STAGES; k++)
+		{
+			if(pg->stages[k].sound.name[0])
+			{
+				pg->stages[k].sound.id 
+					= Def_GetSoundNum(pg->stages[k].sound.name);
+			}
+			if(pg->stages[k].hit_sound.name[0])
+			{
+				pg->stages[k].hit_sound.id
+					= Def_GetSoundNum(pg->stages[k].hit_sound.name);
+			}
+		}
 
 		if(st <= 0) continue; // Not state triggered, then...
 

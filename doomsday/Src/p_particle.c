@@ -14,6 +14,7 @@
 #include "de_network.h"
 #include "de_play.h"
 #include "de_refresh.h"
+#include "de_audio.h"
 #include "de_misc.h"
 
 #include <math.h>
@@ -34,6 +35,7 @@
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+void P_Uncertain(fixed_t *pos, fixed_t low, fixed_t high);
 void P_PtcGenThinker(ptcgen_t *gen);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
@@ -154,6 +156,12 @@ void P_InitParticleGen(ptcgen_t *gen, ded_ptcgen_t *def)
 	{
 		gen->center[i] = FRACUNIT * def->center[i];
 		gen->vector[i] = FRACUNIT * def->vector[i];
+	}
+
+	// Apply a random component to the spawn vector.
+	if(def->init_vec_variance > 0)
+	{
+		P_Uncertain(gen->vector, 0, def->init_vec_variance * FRACUNIT);
 	}
 
 	// Mark everything unused.
@@ -287,6 +295,21 @@ void P_SetParticleAngles(particle_t *pt, int flags)
 	if(flags & PTCF_ZERO_PITCH) pt->pitch = 0;
 	if(flags & PTCF_RANDOM_YAW) pt->yaw = M_FRandom() * 65536;
 	if(flags & PTCF_RANDOM_PITCH) pt->pitch = M_FRandom() * 65536;
+}
+
+//===========================================================================
+// P_ParticleSound
+//===========================================================================
+void P_ParticleSound(fixed_t pos[3], ded_embsound_t *sound)
+{
+	int i;
+	float orig[3];
+	
+	// Is there any sound to play?
+	if(!sound->id || sound->volume <= 0) return;
+	
+	for(i = 0; i < 3; i++) orig[i] = FIX2FLT(pos[i]);
+	S_LocalSoundAtVolumeFrom(sound->id, NULL, orig, sound->volume);
 }
 
 //===========================================================================
@@ -488,6 +511,9 @@ spawn_failed:
 	// a two-sided line.
 	pt->sector = gen->sector? gen->sector 
 		: R_PointInSubsector(pt->pos[VX], pt->pos[VY])->sector;
+
+	// Play a stage sound?
+	P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
 }
 
 //===========================================================================
@@ -595,8 +621,13 @@ boolean PIT_CheckLinePtc(line_t *ld, void *data)
 // P_TouchParticle
 //	Particle touches something solid. Returns false iff the particle dies.
 //===========================================================================
-int P_TouchParticle(particle_t *pt, ptcstage_t *stage, boolean touchWall)
+int P_TouchParticle
+	(particle_t *pt, ptcstage_t *stage, ded_ptcstage_t *stageDef, 
+	 boolean touchWall)
 {
+	// Play a hit sound.
+	P_ParticleSound(pt->pos, &stageDef->hit_sound);
+
 	if(stage->flags & PTCF_DIE_TOUCH) 
 	{
 		// Particle dies from touch.
@@ -701,7 +732,7 @@ void P_MoveParticle(ptcgen_t *gen, particle_t *pt)
 {
 	int x, y, z, xl, xh, yl, yh, bx, by;
 	ptcstage_t *st = gen->stages + pt->stage;
-
+	ded_ptcstage_t *stDef = gen->def->stages + pt->stage;
 	boolean zBounce = false;
 	boolean hitFloor;
 	fixed_t hardRadius = st->radius/2;
@@ -711,6 +742,16 @@ void P_MoveParticle(ptcgen_t *gen, particle_t *pt)
 
 	// Changes to momentum.
 	pt->mov[VZ] -= FixedMul(mapgravity, st->gravity);
+
+	// Vector force.
+	if(stDef->vector_force[VX] != 0
+		|| stDef->vector_force[VY] != 0
+		|| stDef->vector_force[VZ] != 0)
+	{
+		int i;
+		for(i = 0; i < 3; i++)
+			pt->mov[i] += FRACUNIT * stDef->vector_force[i];
+	}
 
 	// Sphere force pull and turn.
 	// Only applicable to sourced or untriggered generators. For other
@@ -790,7 +831,7 @@ void P_MoveParticle(ptcgen_t *gen, particle_t *pt)
 				pt->stage = -1;
 				return;
 			}
-			if(!P_TouchParticle(pt, st, false)) return;
+			if(!P_TouchParticle(pt, st, stDef, false)) return;
 			z = pt->sector->ceilingheight - hardRadius;
 			zBounce = true;
 			hitFloor = false;
@@ -803,7 +844,7 @@ void P_MoveParticle(ptcgen_t *gen, particle_t *pt)
 				pt->stage = -1;
 				return;
 			}
-			if(!P_TouchParticle(pt, st, false)) return;
+			if(!P_TouchParticle(pt, st, stDef, false)) return;
 			z = pt->sector->floorheight + hardRadius;
 			zBounce = true;
 			hitFloor = true;
@@ -895,7 +936,7 @@ void P_MoveParticle(ptcgen_t *gen, particle_t *pt)
 				int normal[2], dotp;
 				
 				// Must survive the touch.
-				if(!P_TouchParticle(pt, st, true)) return;
+				if(!P_TouchParticle(pt, st, stDef, true)) return;
 
 				// There was a hit! Calculate bounce vector.
 				// - Project movement vector on the normal of hitline.
@@ -1011,6 +1052,9 @@ void P_PtcGenThinker(ptcgen_t *gen)
 
 			// Change in particle angles?
 			P_SetParticleAngles(pt, def->stages[pt->stage].flags);
+
+			// A sound?
+			P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
 		}
 		// Try to move.
 		P_MoveParticle(gen, pt);
