@@ -28,6 +28,8 @@
 #include "sys_file.h"
 #include "sys_input.h"
 #include "sys_network.h"
+#include "sys_netctl.h"
+#include "sys_netlink.h"
 #include "sys_sock.h"
 #include "sys_master.h"
 #include "sys_timer.h"
