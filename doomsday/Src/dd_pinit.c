@@ -213,4 +213,8 @@ void DD_ShutdownAll(void)
 	ArgShutdown();
 	free(mainzone);
 	DD_ShutdownDGL();
+
+	// Close the message output file.
+	fclose(outFile);
+	outFile = NULL;
 }

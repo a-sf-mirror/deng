@@ -12,11 +12,12 @@
 
 extern int verbose;
 extern int maxzone;	
-extern int shareware;		// true if only episode 1 present
+extern int shareware;			// true if only episode 1 present
 extern boolean cdrom;			// true if cd-rom mode active ("-cdrom")
 extern boolean debugmode;		// checkparm of -debug
 extern boolean nofullscreen;	// checkparm of -nofullscreen
 extern boolean singletics;		// debug flag to cancel adaptiveness
+extern FILE *outFile;			// Output file for console messages.
 extern FILE *debugfile;
 extern int isDedicated;
 extern char ddBasePath[];

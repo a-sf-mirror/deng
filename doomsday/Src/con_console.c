@@ -2210,8 +2210,13 @@ void Con_AddRuler(void)
 	if(consoleDump) 
 	{
 		// A 70 characters long line.
-		for(i = 0; i < 7; i++) printf("----------");
-		printf("\n");
+		for(i = 0; i < 7; i++)
+		{
+			fprintf(outFile, "----------");
+			if(isDedicated) Sys_ConPrint(0, "----------");
+		}
+		fprintf(outFile, "\n");
+		if(isDedicated) Sys_ConPrint(0, "\n");
 	}
 }
 
@@ -2234,7 +2239,7 @@ void conPrintf(int flags, char *format, va_list args)
 	// Format the message to prbuff.
 	vsprintf(prbuff, format, args);
 
-	if(consoleDump) printf("%s", prbuff);
+	if(consoleDump) fprintf(outFile, "%s", prbuff);
 	if(SW_IsActive()) SW_Printf(prbuff);
 
 	// Servers might have to send the text to a number of clients.
@@ -2994,8 +2999,11 @@ void Con_Message(char *message, ...)
 		va_end(argptr);
 
 #ifdef UNIX
-		// These messages are supposed to be visible in the real console.
-		fprintf(stderr, "%s", buffer);
+		if(!isDedicated)
+		{
+			// These messages are supposed to be visible in the real console.
+			fprintf(stderr, "%s", buffer);
+		}
 #endif
 		
 		// These messages are always dumped. If consoleDump is set,
@@ -3024,7 +3032,7 @@ void Con_Error (char *error, ...)
 	// Already in an error?
 	if(!ConsoleInited || errorInProgress)
 	{
-		printf("Con_Error: Stack overflow imminent, aborting...\n");
+		fprintf(outFile, "Con_Error: Stack overflow imminent, aborting...\n");
 
 		va_start(argptr, error);
 		vsprintf(buff, error, argptr);
@@ -3041,13 +3049,13 @@ void Con_Error (char *error, ...)
 	// Get back to the directory we started from.
 	Dir_ChDir(&ddRuntimeDir);
 
-	va_start (argptr,error);
-	vsprintf (err, error, argptr);
-	va_end (argptr);
-	printf ("%s\n", err);
+	va_start(argptr,error);
+	vsprintf(err, error, argptr);
+	va_end(argptr);
+	fprintf(outFile, "%s\n", err);
 
 	strcpy(buff, "");
-	for(i=5; i>1; i--)
+	for(i = 5; i > 1; i--)
 	{
 		cbline_t *cbl = Con_GetBufferLine(bufferLines - i);
 		if(!cbl || !cbl->text) continue;
@@ -3076,10 +3084,10 @@ void Con_Error (char *error, ...)
 	DD_Shutdown();
 
 	// Open Doomsday.out in a text editor.
-	fflush(stdout);	// Make sure all the buffered stuff goes into the file.
+	fflush(outFile); // Make sure all the buffered stuff goes into the file.
 	Sys_OpenTextEditor("Doomsday.out");
 
 	// Get outta here.
-	exit (1);
+	exit(1);
 }
 

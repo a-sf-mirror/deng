@@ -98,6 +98,7 @@ boolean singletics;			// debug flag to cancel adaptiveness
 int isDedicated = false;
 int maxzone = 0x2000000;	// Default zone heap. (32meg)
 boolean autostart;
+FILE *outFile;				// Output file for console messages.
 FILE *debugfile;
 
 char *iwadlist[MAXWADFILES];
@@ -223,10 +224,9 @@ void DD_Verbosity(void)
 //===========================================================================
 void DD_Main(void)
 {
-	int		p;
-	char	buff[10];
-	FILE	*newout;
-	char	*outfilename = "Doomsday.out";
+	int	p;
+	char buff[10];
+	char *outfilename = "Doomsday.out";
 	boolean	userdir_ok = true;
 	
 	DD_Verbosity();
@@ -240,10 +240,12 @@ void DD_Main(void)
 
 	// We'll redirect stdout to a log file.
 	DD_CheckArg("-out", &outfilename);
-	newout = freopen(outfilename, "w", stdout);
-	if(!newout) DD_ErrorBox(false, "Redirection of stdout failed. "
-		"You won't see anything that's printf()ed.");
-	setbuf(stdout, NULL);
+	outFile = fopen(outfilename, "w");
+	if(!outFile)
+	{
+		DD_ErrorBox(false, "Couldn't open message output file.");
+	}
+	setbuf(outFile, NULL); // Don't buffer much.
 	
 	// The current working directory is the runtime dir.
 	Dir_GetDir(&ddRuntimeDir);
