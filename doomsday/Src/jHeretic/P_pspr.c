@@ -1077,7 +1077,7 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t *psp)
 	if(IS_CLIENT) return;
 	pmo = player->plr->mo;
 	ball = P_SpawnMobj(pmo->x, pmo->y, pmo->z+28*FRACUNIT 
-		- FOOTCLIPSIZE*(pmo->flags2&MF2_FEETARECLIPPED != 0), MT_MACEFX2);
+		- FOOTCLIPSIZE*((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
 	ball->momz = 2*FRACUNIT+(((int)player->plr->lookdir)<<(FRACBITS-5));
 	angle = pmo->angle;
 	ball->target = pmo;

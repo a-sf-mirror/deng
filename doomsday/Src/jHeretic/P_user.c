@@ -1320,7 +1320,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
 			angle = player->plr->mo->angle>>ANGLETOFINESHIFT;
 			mo = P_SpawnMobj(player->plr->mo->x+24*finecosine[angle],
 				player->plr->mo->y+24*finesine[angle], player->plr->mo->z - 15*FRACUNIT*
-				(player->plr->mo->flags2&MF2_FEETARECLIPPED != 0), MT_FIREBOMB);
+				((player->plr->mo->flags2&MF2_FEETARECLIPPED) != 0), MT_FIREBOMB);
 			mo->target = player->plr->mo;
 			break;
 		case arti_egg:
