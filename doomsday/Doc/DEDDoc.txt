@@ -493,6 +493,9 @@ generators will be destroyed to make room for any new generators.
         # gnf_srcvel: (State/Type triggered) Particles inherit their
         #       source's velocity (in addition to spawn velocity).
         #
+        # gnf_srcdir: (State/Type triggered) Particle movement vector
+        #       is rotated using source's direction angle.
+        #
         # gnf_spawn: Generator is only spawned if the source mobj is
         #       being spawned.
         #
