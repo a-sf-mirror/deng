@@ -32,7 +32,7 @@ typedef enum {
 extern boolean	allowSending;
 extern int		maxQueuePackets;
 
-extern serviceprovider_t gCurrentProvider;
+extern serviceprovider_t netCurrentProvider;
 extern boolean	netServerMode;   
 
 extern int		nptActive;
@@ -60,6 +60,7 @@ void	N_ShutdownService(void);
 boolean	N_IsAvailable(void);
 boolean N_UsingInternet(void);
 boolean N_LookForHosts(void);
+void 	N_Listen(void);
 
 boolean N_Connect(int index);
 boolean N_Disconnect(void);
