@@ -329,6 +329,8 @@ cvar_t engineCVars[] =
 	"rend-halo-secondary-limit", CVF_NO_MAX, CVT_FLOAT, &minHaloSize, 0, 0,	"Minimum halo size.",
 	"rend-halo-fade-far",	CVF_NO_MAX,	CVT_FLOAT,	&haloFadeMax,	0, 0,	"Distance at which halos are no longer visible.",
 	"rend-halo-fade-near",	CVF_NO_MAX,	CVT_FLOAT,	&haloFadeMin,	0, 0,	"Distance to begin fading halos.",
+	// * Render-FakeRadio
+	"rend-fakeradio", 		0,			CVT_INT,	&rendFakeRadio, 0, 1,	"1=Enable simulated radiosity lighting.",
 	// * Render-Camera
 	"rend-camera-fov",		0,			CVT_FLOAT,	&fieldOfView,	1, 179, "Field of view.",
 	"rend-camera-smooth",	0,			CVT_INT,	&rend_camera_smooth, 0, 1, "1=Filter camera movement between game tics.",
