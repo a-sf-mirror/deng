@@ -42,7 +42,8 @@ enum
 	GPT_YELLOW_MESSAGE,		// jHexen: yellow message.
 	GPT_PAUSE,
 	GPT_FINALE2,
-	GPT_CHEAT_REQUEST
+	GPT_CHEAT_REQUEST,
+	GPT_JUMP_POWER,			// Jump power (0 = no jumping)
 };
 
 // This packet is sent by servers to clients when the game state
@@ -150,6 +151,8 @@ void D_NetMessageNoSound(char *msg);
 
 // Console commands.
 extern ccmd_t netCCmds[];
+
+extern float netJumpPower;
 
 #include "d_NetSv.h"
 #include "d_NetCl.h"

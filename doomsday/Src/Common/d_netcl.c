@@ -720,3 +720,14 @@ void NetCl_CheatRequest(const char *command)
 	else
 		NetSv_DoCheat(consoleplayer, msg);
 }
+
+/*
+ * Set the jump power used in client mode.
+ */
+void NetCl_UpdateJumpPower(void *data)
+{
+	netJumpPower = *(float*)data;
+#ifdef _DEBUG
+	Con_Printf("NetCl_UpdateJumpPower: %g\n", netJumpPower);
+#endif
+}

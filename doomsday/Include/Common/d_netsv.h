@@ -43,6 +43,7 @@ void NetSv_KillMessage(player_t *killer, player_t *fragged);
 void NetSv_UpdateGameConfig(void);
 void NetSv_Paused(boolean isPaused);
 void NetSv_DoCheat(int player, const char *data);
+void NetSv_SendJumpPower(int target, float power);
 
 int CCmdMapCycle(int argc, char **argv);
 

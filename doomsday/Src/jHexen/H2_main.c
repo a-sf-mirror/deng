@@ -211,17 +211,13 @@ void H2_PreInit(void)
 	cfg.joyaxis[0] = JOYAXIS_TURN;
 	cfg.joyaxis[1] = JOYAXIS_MOVE;
 	cfg.screenblocks = cfg.setblocks = 10;
-//	cfg.menuScale = .9f;
 	cfg.showFullscreenMana = 1;
-	//cfg.showFullscreenArmor = 1;
-	//cfg.showFullscreenKeys = 1;
-	//cfg.tomeCounter = 10;
-	//cfg.tomeSound = 3;
 	cfg.lookSpeed = 3;
 	cfg.xhairSize = 1;
 	for(i = 0; i < 4; i++) cfg.xhairColor[i] = 255;	
-	//cfg.netJumping = true;
-	//cfg.netEpisode = 1;
+	cfg.jumpEnabled = true;	// Always true in Hexen
+	cfg.jumpPower = 9;
+
 	cfg.netMap = 1;
 	cfg.netSkill = sk_medium;
 	cfg.netColor = 8;	// Use the default color by default.

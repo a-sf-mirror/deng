@@ -40,7 +40,8 @@ extern int netSvAllowSendMsg;
 
 // PUBLIC DATA --------------------------------------------------------------
 
-char msgBuff[256];
+char	msgBuff[256];
+float	netJumpPower = 9;
 
 // PRIVATE DATA -------------------------------------------------------------
 
@@ -56,8 +57,8 @@ int CCmdSetColor(int argc, char **argv)
 
 	if(argc != 2)
 	{
-		Con_Printf( "Usage: %s (color)\n", argv[0]);
-		Con_Printf( "Color #%i uses the player number as color.\n",
+		Con_Printf("Usage: %s (color)\n", argv[0]);
+		Con_Printf("Color #%i uses the player number as color.\n",
 			numColors);
 		return true;
 	}
@@ -445,6 +446,9 @@ int D_NetWorldEvent(int type, int parm, void *data)
 		for(i = 0; i < MAXPLAYERS; i++)
 			if(players[i].plr->ingame && i != parm)
 				NetSv_SendPlayerInfo(i, parm);
+
+		// Send info about our jump power.
+		NetSv_SendJumpPower(parm, cfg.jumpEnabled? cfg.jumpPower : 0);
 		break;
 
 	//
@@ -614,8 +618,13 @@ void D_HandlePacket(int fromplayer, int type, void *data, int length)
 		NetCl_Paused(bData[0]);
 		break;
 
+	case GPT_JUMP_POWER:
+		NetCl_UpdateJumpPower(data);
+		break;
+
 	default:
-		Con_Message( "H_HandlePacket: received unknown packet, type=%i.\n", type);
+		Con_Message("H_HandlePacket: Received unknown packet, "
+			"type=%i.\n", type);
 	}
 }
 
