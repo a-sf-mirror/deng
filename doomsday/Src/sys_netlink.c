@@ -47,6 +47,7 @@
 #define STREAM_BUFFER_LEN 	0x10000
 #define MAX_CHANNELS		4
 #define NUM_LINKS			DDMAXPLAYERS
+#define SEND_BUFFER_SIZE	0x10000	// 64 KB buffer for data to be sent.
 #define RECV_BUFFER_SIZE 	0x10000	// 64 KB receive buffer.
 
 // TYPES -------------------------------------------------------------------
@@ -75,7 +76,8 @@ typedef struct netchannel_s
 	
 	TCPsocket socket;
 
-	// A large(ish) buffer for storing received data.
+	// A large(ish) buffers for storing transmitted data.
+	byte *sendBuffer;
 	byte *recvBuffer;
 
 	// Pointer of the link that own this channel.
@@ -104,8 +106,8 @@ void NC_CloseLink(int idx);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static int NC_ChannelSendThread(void *parm);
-static int NC_ChannelRecvThread(void *parm);
+static int NC_SendThread(void *parm);
+static int NC_RecvThread(void *parm);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -155,62 +157,28 @@ void NC_StreamFree(bytestream_t *s)
 }
 
 /*
- * Gets the next packet from the byte stream, if there is one available.
- *
- * NOTE: Returns a pointer to the stream's data area.  If the buffer
- * is filling up too fast, there is a danger of data getting
- * overwritten.  The returned pointer should be considered to expire
- * shortly.
+ * Read data from the stream buffer.  Lock the stream before calling!
  */
-byte *NC_StreamGetPacket(bytestream_t *s, int *length)
+void NC_StreamBufferRead(bytestream_t *s, byte *data, ushort length)
 {
-	byte *data = NULL;
-
-	*length = 0;
-
-	// Streams are protected by mutexes because they are accessed from
-	// both the channel threads and the main thread.
-	Sys_Lock(s->mutex);
-
-	// Is there something in the buffer?
-	if(s->head != s->tail)
+	// Are the bytes to be read in a contiguous memory area?
+	if(s->tail + length <= STREAM_BUFFER_LEN)
 	{
-		// The length of the packet is restricted to 16 bits.
-		*length = s->buffer[s->tail] + (s->buffer[s->tail + 1] << 8);
-
-		// The beginning of the packet data.
-		data = s->buffer + s->tail + 2;
-
-		// Move the tail over the packet.
-		s->tail = (s->tail + *length + 2) % STREAM_BUFFER_LEN;
-	}
-
-	Sys_Unlock(s->mutex);
-
-	return data;
-}
-
-/*
- * Returns the size of the unused area of the byte stream buffer.
- * Locking the stream before calling this function is advised!
- */
-uint NC_StreamGetFree(bytestream_t *s)
-{
-	if(s->head == s->tail)
-	{
-		// The entire buffer is empty.
-		return STREAM_BUFFER_LEN - 1;
-	}
-
-	// Count bytes from head to tail.
-	if(s->head > s->tail)
-	{
-		return STREAM_BUFFER_LEN - s->head + s->tail - 1;
+		memcpy(data, s->buffer + s->tail, length);
 	}
 	else
 	{
-		return STREAM_BUFFER_LEN - s->tail + s->head - 1;
-	}		
+		uint breakPoint = STREAM_BUFFER_LEN - s->tail;
+
+		// Copy the beginning.
+		memcpy(data, s->buffer + s->tail, breakPoint);
+
+		// ...and the end.
+		memcpy(data + breakPoint, s->buffer, length - breakPoint);
+	}
+
+	// Advance the tail.
+	s->tail = (s->tail + length) % STREAM_BUFFER_LEN;
 }
 
 /* 
@@ -241,11 +209,64 @@ void NC_StreamBufferWrite(bytestream_t *s, byte *data, ushort length)
 }
 
 /*
+ * Returns the size of the unused area of the byte stream buffer.
+ * Locking the stream before calling this function is advised!
+ */
+uint NC_StreamGetFree(bytestream_t *s)
+{
+	if(s->head == s->tail)
+	{
+		// The entire buffer is empty.
+		return STREAM_BUFFER_LEN - 1;
+	}
+
+	// Count bytes from head to tail.
+	if(s->head > s->tail)
+	{
+		return STREAM_BUFFER_LEN - s->head + s->tail - 1;
+	}
+	else
+	{
+		return STREAM_BUFFER_LEN - s->tail + s->head - 1;
+	}		
+}
+
+/*
+ * Gets the next packet from the byte stream, if there is one available.
+ * 'data' should be large enough for 64 KB packets.
+ */
+ushort NC_StreamGetPacket(bytestream_t *s, byte *data)
+{
+	ushort length = 0;
+
+	// Streams are protected by mutexes because they are accessed from
+	// both the channel threads and the main thread.
+	Sys_Lock(s->mutex);
+
+	// Is there something in the buffer?
+	if(s->head != s->tail)
+	{
+		byte header[2];
+
+		// The length of the packet is restricted to 16 bits.
+		NC_StreamBufferRead(s, header, 2);
+		length = header[0] + (header[1] << 8);
+
+		// Read the data of the packet.
+		NC_StreamBufferRead(s, data, length);
+	}
+
+	Sys_Unlock(s->mutex);
+
+	return length;
+}
+
+/*
  * Write a packet to the byte stream.
  */
 void NC_StreamPutPacket(bytestream_t *s, byte *data, ushort length)
 {
-	byte i;
+	byte header[2];
 	
 	// Streams are protected by mutexes because they are accessed from
 	// both the channel threads and the main thread.
@@ -262,10 +283,9 @@ void NC_StreamPutPacket(bytestream_t *s, byte *data, ushort length)
 	}
 
 	// First write the length of the packet.
-	i = length & 0xff;
-	NC_StreamBufferWrite(s, &i, 1);
-	i = (length >> 8) & 0xff;
-	NC_StreamBufferWrite(s, &i, 1);
+	header[0] = length & 0xff;
+	header[1] = (length >> 8) & 0xff;
+	NC_StreamBufferWrite(s, header, 2);
 
 	// Then write the rest of the packet.
 	NC_StreamBufferWrite(s, data, length);
@@ -292,7 +312,7 @@ boolean NC_StreamIsEmpty(bytestream_t *s)
  * If we return false ("DENIED!"), the caller should close the socket
  * and forget about it.
  */
-boolean NC_OpenChannel(int linkIdx, TCPsocket socket)
+boolean NC_OpenChannel(int linkIdx, void *socket)
 {
 	netlink_t *link = netLinks[linkIdx];
 	netchannel_t *chan = NULL;
@@ -317,6 +337,9 @@ boolean NC_OpenChannel(int linkIdx, TCPsocket socket)
 	if(!chan) return false;
 
 	chan->socket = socket;
+
+	// Allocate a buffer for outgoing data.
+	chan->sendBuffer = malloc(SEND_BUFFER_SIZE);
 	
 	// Allocate a buffer for incoming data.
 	chan->recvBuffer = malloc(RECV_BUFFER_SIZE);
@@ -327,8 +350,8 @@ boolean NC_OpenChannel(int linkIdx, TCPsocket socket)
 
 	// Enable the channel and start the threads.
 	chan->enabled  = true;
-	chan->receiver = Sys_StartThread(NC_ChannelRecvThread, chan, 0);
-	chan->sender   = Sys_StartThread(NC_ChannelSendThread, chan, 0);
+	chan->receiver = Sys_StartThread(NC_RecvThread, chan, 0);
+	chan->sender   = Sys_StartThread(NC_SendThread, chan, 0);
 
 	VERBOSE( Con_Message("NC_OpenChannel: Link %i, channel %i.\n",
 						 linkIdx, chan - link->channels) );
@@ -358,6 +381,10 @@ void NC_CloseChannel(netchannel_t *chan)
 	SDLNet_TCP_Close(chan->socket);
 	chan->socket = NULL;
 
+	// Buffer for outgoing data.
+	free(chan->sendBuffer);
+	chan->sendBuffer = NULL;
+	
 	// Buffer for received data.
 	free(chan->recvBuffer);
 	chan->recvBuffer = NULL;
@@ -481,17 +508,16 @@ static uint NC_RecvLength(TCPsocket sock)
  * Channel send thread.  There is one instance of this thread running
  * per each active communications channel.
  */
-static int NC_ChannelSendThread(void *parm)
+static int NC_SendThread(void *parm)
 {
 	netchannel_t *chan = parm;
-	byte *data;
 	int size;
 
 	while(chan->enabled)
 	{
 		// Retrieve the next packet from the the outgoing buffer and
 		// send it over the TCP socket.
-		if((data = NC_StreamGetPacket(chan->out, &size)) > 0)
+		if((size = NC_StreamGetPacket(chan->out, chan->sendBuffer)) > 0)
 		{
 			if(!NC_SendLength(chan->socket, size))
 			{
@@ -501,7 +527,7 @@ static int NC_ChannelSendThread(void *parm)
 			}
 
 			// Send the data of the packet.
-			if(SDLNet_TCP_Send(chan->socket, data, size) < size)
+			if(SDLNet_TCP_Send(chan->socket, chan->sendBuffer, size) < size)
 			{
 				// FIXME: Close down this channel.
 			}
@@ -536,7 +562,7 @@ static int NC_ChannelSendThread(void *parm)
  * Channel receive thread.  There is one instance of this thread
  * running per each active communications channel.
  */
-static int NC_ChannelRecvThread(void *parm)
+static int NC_RecvThread(void *parm)
 {
 #define SELECT_TIMEOUT 100 // ms
 	netchannel_t *chan = parm;
@@ -574,6 +600,7 @@ static int NC_ChannelRecvThread(void *parm)
 		{
 			// The transmission was interrupted.
 			// FIXME: Close down this channel.
+			Con_Message("NC_RecvThread: Interrupted packet.\n");
 			break;
 		}
 
