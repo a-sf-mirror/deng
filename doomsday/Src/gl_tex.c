@@ -1439,7 +1439,7 @@ void GL_GetFlatColor(int fnum, unsigned char *rgb)
 //===========================================================================
 void GL_SetFlat(int idx)
 {
-	gl.Bind(curtex = GL_PrepareFlat(idx));
+	gl.Bind(curtex = GL_PrepareFlat2(idx, false));
 }
 
 //===========================================================================
