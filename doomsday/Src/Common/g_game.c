@@ -1978,114 +1978,6 @@ void G_PlayerReborn (int player)
 	p->plr->flags &= ~DDPF_DEAD;
 }
 
-//
-// G_CheckSpot  
-// Returns false if the player cannot be respawned
-// at the given mapthing_t spot  
-// because something is occupying it 
-//
-boolean G_CheckSpot(int playernum, mapthing_t* mthing) 
-{ 
-    fixed_t			x;
-    fixed_t			y; 
-    unsigned		an; 
-    mobj_t*			mo; 
-#if __JDOOM__ || __JHEXEN__
-    subsector_t*	ss; 
-#endif
-#if __JDOOM__
-    int				i;
-#endif
-#if __JHERETIC__ || __JHEXEN__
-	mapthing_t		faraway;
-	boolean			using_dummy = false;
-#endif
-	
-#if __JDOOM__
-    if(!players[playernum].plr->mo)
-    {
-		// first spawn of level, before corpses
-		for(i = 0 ; i < playernum ; i++)
-		{
-			if(players[i].plr->mo 
-				&& players[i].plr->mo->x == mthing->x << FRACBITS
-				&& players[i].plr->mo->y == mthing->y << FRACBITS)
-				return false;	
-		}
-		return true;
-    }
-#endif
-	
-    x = mthing->x << FRACBITS; 
-    y = mthing->y << FRACBITS; 
-
-#if __JHERETIC__ || __JHEXEN__
-	if(!players[playernum].plr->mo)
-	{
-		// The player doesn't have a mobj. Let's create a dummy.
-		faraway.x = faraway.y = DDMAXSHORT;
-		P_SpawnPlayer(&faraway, playernum);
-		using_dummy = true;
-	}
-	players[playernum].plr->mo->flags2 &= ~MF2_PASSMOBJ;
-#endif
-
-    if(!P_CheckPosition(players[playernum].plr->mo, x, y) ) 
-	{
-#if __JHERETIC__ || __JHEXEN__
-		players[playernum].plr->mo->flags2 |= MF2_PASSMOBJ;
-		if(using_dummy)
-		{
-			P_RemoveMobj(players[playernum].plr->mo);
-			players[playernum].plr->mo = NULL;
-		}
-#endif
-		return false; 
-	}
-
-#if __JHERETIC__
-	players[playernum].plr->mo->flags2 |= MF2_PASSMOBJ;
-#endif
-
-#if __JHERETIC__ || __JHEXEN__
-	if(using_dummy)
-	{
-		P_RemoveMobj(players[playernum].plr->mo);
-		players[playernum].plr->mo = NULL;
-	}
-#endif
-	
-#if __JDOOM__
-    // flush an old corpse if needed 
-    if (bodyqueslot >= BODYQUESIZE) 
-		P_RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
-    bodyque[bodyqueslot%BODYQUESIZE] = players[playernum].plr->mo; 
-    bodyqueslot++; 
-#endif
-	
-    // spawn a teleport fog 
-	an = ( ANG45 * (mthing->angle/45) ) >> ANGLETOFINESHIFT; 
-
-#if __JDOOM__ || __JHEXEN__
-    ss = R_PointInSubsector (x,y); 
-    mo = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an] 
-		      , ss->sector->floorheight 
-			  , MT_TFOG); 
-#else // __JHERETIC__
-	mo = P_SpawnTeleFog(x+20*finecosine[an], y+20*finesine[an]);
-#endif
-	
-	// don't start sound on first frame
-	if(players[consoleplayer].plr->viewz != 1)
-#if __JHEXEN__
-		S_StartSound(SFX_TELEPORT, mo);
-#else
-		S_StartSound(sfx_telept, mo);	
-#endif
-
-    return true; 
-} 
-
 
 //
 // G_DeathMatchSpawnPlayer 
@@ -2117,7 +2009,7 @@ void G_DeathMatchSpawnPlayer (int playernum)
     for (j=0 ; j<20 ; j++) 
     { 
 		i = P_Random() % selections; 
-		if(G_CheckSpot(playernum, &deathmatchstarts[i])) 
+		if(P_CheckSpot(playernum, &deathmatchstarts[i])) 
 		{
 #if __JHERETIC__ || __JHEXEN__
 			deathmatchstarts[i].type = playernum+1;
@@ -2152,6 +2044,20 @@ void G_DummySpawnPlayer(int playernum)
 	P_SpawnPlayer(&faraway, playernum);			
 }
 
+#ifdef __JDOOM__
+//===========================================================================
+// G_QueueBody
+//===========================================================================
+void G_QueueBody(mobj_t *body)
+{
+    // flush an old corpse if needed 
+    if(bodyqueslot >= BODYQUESIZE) 
+		P_RemoveMobj(bodyque[bodyqueslot % BODYQUESIZE]); 
+    bodyque[bodyqueslot % BODYQUESIZE] = body; 
+    bodyqueslot++;
+}
+#endif
+
 //
 // G_DoReborn 
 // 
@@ -2165,7 +2071,7 @@ void G_DoReborn (int playernum)
 	boolean foundSpot;
 	int bestWeapon;
 #else
-    mapthing_t *mt, *assigned;
+    mapthing_t *assigned;
 #endif
 
 	// Clear the currently playing script, if any.
@@ -2223,15 +2129,16 @@ void G_DoReborn (int playernum)
 #endif
 		 
 #if __JDOOM__
-		if (G_CheckSpot (playernum, assigned = &playerstarts[playernum]) ) 
+		assigned = &playerstarts[players[playernum].startspot];
+		if(P_CheckSpot(playernum, assigned)) 
 		{ 
-			P_SpawnPlayer(&playerstarts[playernum], playernum); 
+			P_SpawnPlayer(assigned, playernum); 
 			return; 
 		}
 #elif __JHERETIC__
 		// Try to spawn at the assigned spot.
 		assigned = &playerstarts[players[playernum].startspot];
-		if(G_CheckSpot(playernum, assigned))
+		if(P_CheckSpot(playernum, assigned))
 		{
 			Con_Printf( "- spawning at assigned spot %i.\n", players[playernum].startspot);
 			P_SpawnPlayer(assigned, playernum);
@@ -2239,7 +2146,7 @@ void G_DoReborn (int playernum)
 		}
 #elif __JHEXEN__
 		foundSpot = false;
-		if(G_CheckSpot(playernum,
+		if(P_CheckSpot(playernum,
 			P_GetPlayerStart(RebornPosition, playernum)))
 			/* &playerstarts[RebornPosition][playernum] ))*/
 		{ 
@@ -2253,7 +2160,7 @@ void G_DoReborn (int playernum)
 			// Try to spawn at one of the other player start spots
 			for(i = 0; i < MAXPLAYERS; i++)
 			{
-				if(G_CheckSpot(playernum, 
+				if(P_CheckSpot(playernum, 
 					P_GetPlayerStart(RebornPosition, i)))
 					// &playerstarts[RebornPosition][i]))
 				{ // Found an open start spot
@@ -2291,7 +2198,7 @@ void G_DoReborn (int playernum)
 		// try to spawn at one of the other players spots 
 		/*for (i=0 ; i<MAXPLAYERS ; i++)
 		{
-			if (G_CheckSpot (playernum, &playerstarts[i]) ) 
+			if (P_CheckSpot (playernum, &playerstarts[i]) ) 
 			{ 
 				P_SpawnPlayer(&playerstarts[i], playernum); 
 				return; 
@@ -2299,20 +2206,16 @@ void G_DoReborn (int playernum)
 			// he's going to be inside something.  Too bad.
 		}*/
 #ifndef __JHEXEN__
-		for(mt=playerstarts; mt != playerstart_p; mt++)
-			if(mt->type-1 == cfg.PlayerColor[playernum] 
-				&& G_CheckSpot(playernum, mt))
-			{
-				Con_Printf( "- spawning at spot %i.\n", mt-playerstarts);
-				P_SpawnPlayer(mt, playernum);
-				return;
-			}
-
 		Con_Printf( "- force spawning at %i.\n", 
 			players[playernum].startspot);
-		// Spawn at the assigned spot, telefrag whoever's there.
-		P_SpawnPlayer(assigned, playernum);
-		P_Telefrag(players[playernum].plr->mo);
+
+		// Fuzzy returns false if it needs telefragging.
+		if(!P_FuzzySpawn(assigned, playernum))
+		{
+			// Spawn at the assigned spot, telefrag whoever's there.
+			//P_SpawnPlayer(assigned, playernum);
+			P_Telefrag(players[playernum].plr->mo);
+		}
 #endif
     } 
 } 

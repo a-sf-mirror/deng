@@ -77,10 +77,15 @@ void G_ScreenShot (void);
 
 void G_PrepareWIData(void);
 
+void G_QueueBody(mobj_t *body);
+
 #endif
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.2.1  2003/09/06 21:09:38  skyjake
+// Improved player spawning with more intelligent spot selection
+//
 // Revision 1.2  2003/07/12 22:10:51  skyjake
 // Added map validation routine
 //
