@@ -178,7 +178,7 @@ void windowedMode(int width, int height)
 //===========================================================================
 int initOpenGL(void)
 {
-	int flags = SDL_OPENGL/* | SDL_FULLSCREEN*/;
+	int flags = SDL_OPENGL /*| SDL_FULLSCREEN*/;
 
 	// Attempt to set the video mode.
     if(!SDL_SetVideoMode(screenWidth, screenHeight, screenBits, flags))
@@ -186,7 +186,7 @@ int initOpenGL(void)
         // This could happen for a variety of reasons, including
         // DISPLAY not being set, the specified resolution not being
         // available, etc.
-		Con_Message("Setting video mode: %s\n", SDL_GetError());
+		Con_Message("SDL Error: %s\n", SDL_GetError());
 		return DGL_FALSE;
     }
 
@@ -212,46 +212,20 @@ void activeTexture(const GLenum texture)
 //===========================================================================
 int DG_Init(int width, int height, int bpp, int mode)
 {
-#if 0
 	boolean fullscreen = (mode == DGL_MODE_FULLSCREEN);
-	char	*token, *extbuf;
-	int		res, pixForm;
-	PIXELFORMATDESCRIPTOR pfd = 
-#ifndef DRMESA
+	char *token, *extbuf;
+	const SDL_VideoInfo *info = NULL;
+
+	// Try to initialize SDL's graphics subsystem.
+	if(SDL_InitSubSystem(SDL_INIT_VIDEO))
 	{
-		sizeof(PIXELFORMATDESCRIPTOR),	// The size
-		1,								// Version
-		PFD_DRAW_TO_WINDOW |			// Support flags
-			PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-		PFD_TYPE_RGBA,					// Pixel type
-		32,								// Bits per pixel
-		0,0, 0,0, 0,0, 0,0,
-		0,0,0,0,0,
-		32,								// Depth bits
-		0,0,
-		0,								// Layer type (ignored?)
-		0,0,0,0
-	};
-#else
-   /* Double Buffer, no alpha */
-    {	sizeof(PIXELFORMATDESCRIPTOR),	1,
-        PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_GENERIC_FORMAT|PFD_DOUBLEBUFFER|PFD_SWAP_COPY,
-        PFD_TYPE_RGBA,
-        24,	8,	0,	8,	8,	8,	16,	0,	0,
-        0,	0,	0,	0,	0,	16,	8,	0,	0,	0,	0,	0,	0 
-	};
-#endif
-	HWND hDesktop = GetDesktopWindow();
-	HDC desktop_hdc = GetDC(hDesktop), hdc;
-	int deskbpp = GetDeviceCaps(desktop_hdc, PLANES) 
-		* GetDeviceCaps(desktop_hdc, BITSPIXEL);
-
-	ReleaseDC(hDesktop, desktop_hdc);
-
+		Con_Error("drOpenGL.init: %s\n", SDL_GetError());
+	}
+	
 	Con_Message("DG_Init: OpenGL.\n");
 
 	// Are we in range here?
-	if(!fullscreen)
+/*	if(!fullscreen)
 	{
 		if(width > GetSystemMetrics(SM_CXSCREEN))
 			width = GetSystemMetrics(SM_CXSCREEN);
@@ -259,16 +233,25 @@ int DG_Init(int width, int height, int bpp, int mode)
 		if(height >	GetSystemMetrics(SM_CYSCREEN))
 			height = GetSystemMetrics(SM_CYSCREEN);
 	}
-	
-	screenWidth = width;
+*/
+	info = SDL_GetVideoInfo();
+	screenBits   = info->vfmt->BitsPerPixel;
+	screenWidth  = width;
 	screenHeight = height;
-	screenBits = deskbpp;
-	windowed = !fullscreen;
+	windowed     = !fullscreen;
 	
 	allowCompression = true;
 	verbose = ArgExists("-verbose");
-	//noArrays = ArgExists("-noarray");
+
+	// Set GL attributes.  We want at least 5 bits per color and a 16
+	// bit depth buffer.  Plus double buffering, of course.
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	
+	/*
 	if(fullscreen)
 	{
 		if(!fullscreenMode(screenWidth, screenHeight, bpp))		
@@ -280,36 +263,15 @@ int DG_Init(int width, int height, int bpp, int mode)
 	else
 	{
 		windowedMode(screenWidth, screenHeight);
-	}	
-
-	// Get the device context handle.
-	hdc = GetDC(windowHandle);
-
-	// Set the pixel format for the device context. This can only be done once.
-	// (Windows...).
-	pixForm = ChoosePixelFormat(hdc, &pfd);
-	if(!pixForm)
-	{
-		res = GetLastError();
-		Con_Error("drOpenGL.Init: Choosing of pixel format failed. Error %d.\n",res);
 	}
+	*/
 
-	// Make sure that the driver is hardware-accelerated.
-	DescribePixelFormat(hdc, pixForm, sizeof(pfd), &pfd);
-	if(pfd.dwFlags & PFD_GENERIC_FORMAT && !ArgCheck("-allowsoftware"))
+	
+
+	if(!initOpenGL())
 	{
-		Con_Error("drOpenGL.Init: OpenGL driver not accelerated!\nUse the -allowsoftware option to bypass this.\n");
+		Con_Error("drOpenGL.Init: OpenGL init failed.\n");
 	}
-
-	/*if(!*/
-	SetPixelFormat(hdc, pixForm, &pfd);
-	/*{
-		res = GetLastError();
-		Con_Printf("Warning: Setting of pixel format failed. Error %d.\n",res);
-	}*/
-	ReleaseDC(windowHandle, hdc);
-
-	if(!initOpenGL()) Con_Error("drOpenGL.Init: OpenGL init failed.\n");
 
 	// Clear the buffers.
 	DG_Clear(DGL_COLOR_BUFFER_BIT | DGL_DEPTH_BUFFER_BIT);
@@ -387,7 +349,6 @@ int DG_Init(int width, int height, int bpp, int mode)
 		useAnisotropic = DGL_TRUE;
 		Con_Message("  Using anisotropic texture filtering.\n");
 	}
-#endif
 	return DGL_OK;
 }
 
@@ -396,12 +357,7 @@ int DG_Init(int width, int height, int bpp, int mode)
 //===========================================================================
 void DG_Shutdown(void)
 {
-/*	// Delete the rendering context.
-	wglMakeCurrent(NULL, NULL);
-	wglDeleteContext(glContext);
-
-	// Go back to normal display settings.
-	ChangeDisplaySettings(0, 0);*/
+	// No special shutdown procedures required.
 }
 
 //===========================================================================
@@ -409,26 +365,13 @@ void DG_Shutdown(void)
 //===========================================================================
 void DG_Show(void)
 {
-#if 0
-	HDC hdc = GetDC(windowHandle);
-
-#ifdef DEBUGMODE
-/*	glBegin(GL_LINES);
-	glColor3f(1, 1, 1);
-	glVertex2f(50, 50);
-	glVertex2f(100, 60);
-	primType = DGL_LINES;
-	End();*/
-	//assert(glGetError() == GL_NO_ERROR);
-#endif
-
 	// Swap buffers.
-	SwapBuffers(hdc);
-	ReleaseDC(windowHandle, hdc);
-#endif
+	SDL_GL_SwapBuffers();
 	
 	if(wireframeMode)
 	{
+		// When rendering is wireframe mode, we must clear the screen
+		// before rendering a frame.
 		DG_Clear(DGL_COLOR_BUFFER_BIT);
 	}
 }
