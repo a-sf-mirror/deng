@@ -33,7 +33,9 @@ Model {
 
 *Model {
   State = "MUMMY_WALK1";
+  Flags = "";
   Inter = 0;
+  Interpolate { 0 1 };
   Md2 { Frame = "walk01"; };
 }
 

@@ -115,7 +115,9 @@ Model {
 *Model
 {
   State = "KNIGHT_WALK1";
+  Flags = "";
   Inter = 0;
+  Interpolate { 0 1 };
   Md2 { Frame = "walk01"; };
   Md2 { Frame = "walk01"; };
 }
