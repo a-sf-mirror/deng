@@ -10,16 +10,25 @@ Version 1.7.13 (work in progress)
 * model offset and scale are interpolated (Model -> Offset XYZ,
   Model -> Scale XYZ)
 * overridden model defs are no longer loaded at all (bug 760099)
+- fixed: semicolon in bindings (key name "smcln")
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
 - a shadow is not rendered if it would be above the object
 
 Network:
+- fixed: recording demos with multiple local players
+- fixed: clientside jumping power, jumping enabled
 - fixed: player start spot selection (especially TNT/Plutonia)
 - fixed: mobj Z coordinates were sometimes incorrect on clientside
 - fixed: server didn't increase client's bandwidth rating, ever
 - fixed: WAD warning box in Client Setup screen was in the wrong place
 - fixed: halos weren't always displayed correctly on clientside
+
+drD3D:
++ option -triple: enable triple buffering in fullscreen mode
+
+XG:
+- XG should always be disabled on clientside
 
 jDoom:
 * Plutonia/TNT will automatically set rend-sky-full
@@ -27,8 +36,11 @@ jDoom:
 - fixed: main menu item spacing too tight
 - fixed: STARMS was used in the status bar when in deathmatch
 
-drD3D:
-+ option -triple: enable triple buffering in fullscreen mode
+jHeretic:
++ cvar 'player-jump-power'
+
+jHexen:
++ cvar 'player-jump-power'
 
 
 Version 1.7.12
