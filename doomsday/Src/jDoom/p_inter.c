@@ -15,6 +15,15 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.2.2  2004/05/16 10:01:36  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.4.2.1.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
+// Revision 1.4.2.1.2.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.4.2.1  2003/09/07 22:21:37  skyjake
 // Dropped ammo offset 3 units in random direction
 //
@@ -42,7 +51,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef WIN32
 #pragma optimize("g", off)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -63,11 +74,8 @@ rcsid[] = "$Id$";
 
 #include "s_sound.h"
 
-#include "d_netjd.h"
+#include "d_netJD.h"
 
-#ifdef __GNUG__
-#pragma implementation "p_inter.h"
-#endif
 #include "p_inter.h"
 
 
@@ -1016,4 +1024,5 @@ void P_DamageMobj
 			P_SetMobjState (target, target->info->seestate);
     }
 }
+
 

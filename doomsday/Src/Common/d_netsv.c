@@ -13,19 +13,19 @@
 #endif
 
 #ifdef __JHERETIC__
-#include "../JHeretic/DoomDef.h"
-#include "../JHeretic/Soundst.h"
-#include "../JHeretic/P_local.h"
-#include "../JHeretic/settings.h"
+#include "../jHeretic/Doomdef.h"
+#include "../jHeretic/Soundst.h"
+#include "../jHeretic/P_local.h"
+#include "../jHeretic/settings.h"
 #endif
 
 #ifdef __JHEXEN__
-#include "../JHexen/H2def.h"
-#include "../JHexen/P_local.h"
-#include "../JHexen/Settings.h"
+#include "../jHexen/h2def.h"
+#include "../jHexen/p_local.h"
+#include "../jHexen/settings.h"
 #endif
 
-#include "d_Net.h"
+#include "d_net.h"
 #include "p_svtexarc.h"
 
 // MACROS -----------------------------------------------------------------
@@ -91,7 +91,10 @@ char		gameConfigString[128];
 static int	cycleIndex;
 static int	cycleCounter = -1, cycleMode = CYCLE_IDLE;
 static int	oldPals[MAXPLAYERS];
+
+#ifdef __JHEXEN__
 static int	oldClasses[MAXPLAYERS];
+#endif
 
 // CODE -------------------------------------------------------------------
 
@@ -176,7 +179,7 @@ int NetSv_ScanCycle(int index, maprule_t *rules)
 			rules->frags = strtol(ptr+1, &end, 0);
 			ptr = end - 1;
 		}
-		else if(*ptr == '*' || *ptr >= '0' && *ptr <= '9')
+		else if(*ptr == '*' || (*ptr >= '0' && *ptr <= '9'))
 		{
 			// A map identifier is here.
 			pos++;
@@ -776,8 +779,8 @@ void NetSv_SendGameState(int flags, int to)
 
 	for(i = 0; i < MAXPLAYERS; i++)
 	{
-		if(!players[i].plr->ingame
-			|| to != DDSP_ALL_PLAYERS && to != i) continue;
+		if(!players[i].plr->ingame ||
+		   (to != DDSP_ALL_PLAYERS && to != i)) continue;
 		
 		ptr = buffer;
 

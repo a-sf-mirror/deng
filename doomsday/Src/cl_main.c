@@ -35,7 +35,7 @@ extern int gotframe;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-id_t		clientID;
+ident_t		clientID;
 boolean		handshake_received = false;
 int			game_ready = false;
 int			server_time;
@@ -177,7 +177,7 @@ void Cl_HandlePlayerInfo(playerinfo_packet_t* info)
 		info->console, info->name);
 
 	// Is the console number valid?
-	if(info->console < 0 || info->console >= MAXPLAYERS) return;
+	if(info->console >= MAXPLAYERS) return;
 
 	present = players[info->console].ingame;
 	players[info->console].ingame = true;
@@ -213,7 +213,7 @@ void Cl_GetPackets(void)
 		if(Cl_GameReady())
 		{
 			boolean handled = true;
-			switch(netbuffer.msg.type)
+			switch(netBuffer.msg.type)
 			{
 			case psv_frame:
 				Cl_FrameReceived();
@@ -221,7 +221,7 @@ void Cl_GetPackets(void)
 
 			case psv_first_frame2:
 			case psv_frame2:
-				Cl_Frame2Received(netbuffer.msg.type);
+				Cl_Frame2Received(netBuffer.msg.type);
 				break;
 
 			case pkt_coords:
@@ -242,7 +242,7 @@ void Cl_GetPackets(void)
 			if(handled) continue; // Get the next packet.
 		}
 		// How about the rest?
-		switch(netbuffer.msg.type)
+		switch(netBuffer.msg.type)
 		{
 		case pkt_democam:
 		case pkt_democam_resume:
@@ -262,11 +262,11 @@ void Cl_GetPackets(void)
 			break;
 
 		case psv_handshake:
-			Cl_AnswerHandshake( (handshake_packet_t*) netbuffer.msg.data);
+			Cl_AnswerHandshake( (handshake_packet_t*) netBuffer.msg.data);
 			break;
 			
 		case pkt_player_info:
-			Cl_HandlePlayerInfo( (playerinfo_packet_t*) netbuffer.msg.data);		
+			Cl_HandlePlayerInfo( (playerinfo_packet_t*) netBuffer.msg.data);		
 			break;
 			
 		case psv_player_exit:
@@ -275,8 +275,8 @@ void Cl_GetPackets(void)
 			
 		case pkt_chat:
 			Net_ShowChatMessage();
-			gx.NetPlayerEvent(netbuffer.msg.data[0], DDPE_CHAT_MESSAGE,
-				netbuffer.msg.data + 3);
+			gx.NetPlayerEvent(netBuffer.msg.data[0], DDPE_CHAT_MESSAGE,
+				netBuffer.msg.data + 3);
 			break;
 			
 		case psv_server_close:	// We should quit?
@@ -286,7 +286,7 @@ void Cl_GetPackets(void)
 
 		case psv_console_text:
 			i = Msg_ReadLong();
-			Con_FPrintf(i, netbuffer.cursor);
+			Con_FPrintf(i, netBuffer.cursor);
 			break;
 
 		case pkt_login:
@@ -296,11 +296,11 @@ void Cl_GetPackets(void)
 			break;
 
 		default:
-			if(netbuffer.msg.type >= pkt_game_marker)
+			if(netBuffer.msg.type >= pkt_game_marker)
 			{
-				gx.HandlePacket(netbuffer.player,
-					netbuffer.msg.type, netbuffer.msg.data,
-					netbuffer.length);
+				gx.HandlePacket(netBuffer.player,
+					netBuffer.msg.type, netBuffer.msg.data,
+					netBuffer.length);
 			}
 		}
 	}

@@ -15,6 +15,15 @@
 // for more details.
 //
 // $Log$
+// Revision 1.5.2.2  2004/05/16 10:01:37  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.5.2.1.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
+// Revision 1.5.2.1.2.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.5.2.1  2003/09/07 22:21:04  skyjake
 // STARMS background is not used in deathmatch, cleanup
 //
@@ -41,7 +50,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef WIN32
 #pragma warning(disable:4761)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -1054,7 +1065,6 @@ void ST_doFullscreenStuff(void)
 	player_t *plr = &players[displayplayer];
 	char buf[20];
 	int w, h, pos=0, spr, i;
-	boolean active = true;
 	int	h_width = 320 / cfg.hudScale, h_height = 200 / cfg.hudScale;
 	int ammo_sprite[NUMAMMO] =
 	{

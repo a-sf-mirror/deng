@@ -13,7 +13,6 @@ extern "C" {
 // __stdcall, where the function clears up the stack itself.
 // This means the caller must put the right number of arguments
 // on the stack or Bad Things will happen.
-#define C_DECL __cdecl 
 
 #include <stdlib.h>
 #include "dd_types.h"
@@ -44,12 +43,25 @@ Version number rules: (major).(minor).(revision)
 // Version constant. Use this to verify in the DLL that the engine
 // is new enough. 
 #define DOOMSDAY_VERSION		10714 // frozen for compatibility
-#define DOOMSDAY_VERSION_TEXT	"1.7.14-4"
+#define DOOMSDAY_VERSION_TEXT	"1.7.15"
 
 #define DDMAXPLAYERS			16
 
-#define strcasecmp stricmp
-#define strncasecmp strnicmp
+// The case-independent strcmps have different names.
+#ifdef WIN32
+#	define strcasecmp	stricmp
+#	define strncasecmp	strnicmp
+#endif
+#ifdef UNIX
+#	define stricmp 		strcasecmp
+#	define strnicmp		strncasecmp
+	/*
+	 * There are manual implementations for these string handling
+	 * routines:
+	 */
+	char *strupr(char *string);
+	char *strlwr(char *string);
+#endif
 
 #ifdef __BIG_ENDIAN__
 short ShortSwap(short);
@@ -231,6 +243,15 @@ enum
 // Macro for preparing the parameter for DD_TEXTURE_GLOW.
 #define DD_TGLOW_PARM(TNum,IsTexture,Glow)	((TNum & 0xffff) | (IsTexture? 0x80000000 : 0) | (Glow? 0x10000 : 0))
 
+// Bounding box coordinates.
+enum
+{
+	BOXTOP    = 0,
+	BOXBOTTOM = 1,
+	BOXLEFT   = 2,
+	BOXRIGHT  = 3
+};
+	
 
 //------------------------------------------------------------------------
 //
@@ -305,14 +326,8 @@ fixed_t FixedDiv2(fixed_t a, fixed_t b);
 
 #endif
 
-__inline fixed_t FixedDiv (fixed_t a, fixed_t b)
-{
-	if((abs(a)>>14) >= abs(b))
-	{
-		return((a^b)<0 ? DDMININT : DDMAXINT);
-	}
-	return(FixedDiv2(a, b));
-}
+// This one is always in Src/Common/m_fixed.c.
+fixed_t FixedDiv(fixed_t a, fixed_t b);
 
 //------------------------------------------------------------------------
 //
@@ -543,16 +558,12 @@ typedef enum
 #define DDLINK_BLOCKMAP		0x2
 #define DDLINK_NOLINE		0x4
 
-typedef struct mobj_s mobj_t;
-typedef struct line_s line_t;
-
-typedef struct
-{
+typedef struct intercept_s {
 	fixed_t		frac;		// along trace line
 	boolean		isaline;
 	union {
-		mobj_t	*thing;		
-		line_t	*line;		
+		struct mobj_s *thing;		
+		struct line_s *line;		
 	} d;
 } intercept_t;
 
@@ -663,40 +674,43 @@ typedef struct linknode_s
 #define DDMOBJ_SELECTOR_SHIFT	24
 
 // Base mobj_t elements. Games MUST use this as the basis for mobj_t.
-typedef struct ddmobj_base_s 
-{
-	thinker_t		thinker; 			/* thinker node */ 
-	fixed_t			x,y,z;				/* position */ 
-
-	struct mobj_s	*bnext, *bprev;		/* links in blocks (if needed) */ 
-	nodeindex_t		lineroot;			/* lines to which this is linked */ 
-	struct mobj_s	*snext, **sprev;	/* links in sector (if needed) */ 
-
-	struct subsector_s *subsector;		/* subsector in which this resides */ 
-	fixed_t			momx, momy, momz;	
-	angle_t			angle;
-	spritenum_t		sprite;				/* used to find patch_t and flip value */ 
-	int				frame;				/* might be ord with FF_FULLBRIGHT */ 
-	fixed_t			radius;
-	fixed_t			height;	
-	int				ddflags;			/* Doomsday mobj flags (DDMF_*) */ 
-	fixed_t			floorclip;			/* value to use for floor clipping */ 
-	int				valid;				/* if == valid, already checked */ 
-	int				type;				/* mobj type */ 
-	struct state_s	*state;	
-	int				tics;				/* state tic counter */ 
-    fixed_t			floorz;				/* highest contacted floor */ 
-    fixed_t			ceilingz;			/* lowest contacted ceiling */ 
-	struct mobj_s*	onmobj;				/* the mobj this one is on top of. */ 
-	boolean			wallhit;			/* the mobj is hitting a wall. */ 
-	struct ddplayer_s *dplayer;			/* NULL if not a player mobj. */ 
-	short			srvo[3];			/* short-range visual offset (xyz) */ 
-	short			visangle;			/* visual angle ("angle-servo") */ 
-	int				selector;			/* multipurpose info */ 
-	int				validcount;			/* used in iterating */
-	int				light;				/* index+1 of the lumobj, or 0 */
-	byte			halofactor;			/* strength of halo */
+#define DD_BASE_MOBJ_ELEMENTS() \
+	thinker_t		thinker; 			/* thinker node */ \
+	fixed_t			x,y,z;				/* position */ \
+\
+	struct mobj_s	*bnext, *bprev;		/* links in blocks (if needed) */ \
+	nodeindex_t		lineroot;			/* lines to which this is linked */ \
+	struct mobj_s	*snext, **sprev;	/* links in sector (if needed) */ \
+\
+	struct subsector_s *subsector;		/* subsector in which this resides */ \
+	fixed_t			momx, momy, momz;	\
+	angle_t			angle;				\
+	spritenum_t		sprite;				/* used to find patch_t and \
+										 * flip value */ \
+	int				frame;				/* might be ord with FF_FULLBRIGHT */ \
+	fixed_t			radius;	\
+	fixed_t			height;	\
+	int				ddflags;			/* Doomsday mobj flags (DDMF_*) */ \
+	fixed_t			floorclip;			/* value to use for floor clipping */ \
+	int				valid;				/* if == valid, already checked */ \
+	int				type;				/* mobj type */ \
+	struct state_s	*state;	\
+	int				tics;				/* state tic counter */ \
+    fixed_t			floorz;				/* highest contacted floor */ \
+    fixed_t			ceilingz;			/* lowest contacted ceiling */ \
+	struct mobj_s*	onmobj;				/* the mobj this one is on top of. */ \
+	boolean			wallhit;			/* the mobj is hitting a wall. */ \
+	struct ddplayer_s *dplayer;			/* NULL if not a player mobj. */ \
+	short			srvo[3];			/* short-range visual offset (xyz) */ \
+	short			visangle;			/* visual angle ("angle-servo") */ \
+	int				selector;			/* multipurpose info */ \
+	int				validcount;			/* used in iterating */ \
+	int				light;				/* index+1 of the lumobj, or 0 */ \
+	byte			halofactor;			/* strength of halo */ \
 	byte			translucency;		/* default = 0 = opaque */
+
+typedef struct ddmobj_base_s {
+	DD_BASE_MOBJ_ELEMENTS()
 } ddmobj_base_t;
 
 //------------------------------------------------------------------------
@@ -903,7 +917,7 @@ typedef struct
 	int			flags;
 	float		sizeX, sizeY;			// The scale.
 	int			height;
-	void		(*TextOut)(char *text, int x, int y);
+	int 		(*TextOut)(char *text, int x, int y);
 	int			(*Width)(char *text);
 	void		(*Filter)(char *text);
 } ddfont_t;
@@ -986,7 +1000,7 @@ typedef struct serverinfo_s {
 	int		version;
 	char	name[64];
 	char	description[80];
-	int		players, maxPlayers;
+	int		numPlayers, maxPlayers;
 	char	canJoin;
 	char	address[64];
 	int		port;
@@ -1105,8 +1119,6 @@ enum // Psprite states.
 // Player sprites.
 typedef struct						
 {
-	//int sprite;							// -1 if not in use.
-	//int frame; //, nextframe;
 	state_t *stateptr;
 	int tics; //, nexttime;
 	float light, alpha;			

@@ -1,13 +1,15 @@
 
 // P_pspr.c
 
-#include "DoomDef.h"
+#include "Doomdef.h"
 #include "P_local.h"
-#include "soundst.h"
+#include "Soundst.h"
 #include "settings.h"
 #include <math.h>
 
+#ifdef WIN32
 #pragma optimize("g", off) // MSVC's buggy optimizations...
+#endif
 
 // Macros
 
@@ -536,7 +538,7 @@ void P_FireWeapon(player_t *player)
 
 	NetSv_PSpriteChange(player - players, attackState);
 	P_SetPsprite(player, ps_weapon, attackState);
-	
+
 	P_NoiseAlert(player->plr->mo, player->plr->mo);
 	if(player->readyweapon == wp_gauntlets && !player->refire)
 	{ // Play the sound for the initial gauntlet attack
@@ -802,7 +804,7 @@ void C_DECL A_Raise(player_t *player, pspdef_t *psp)
 void P_BulletSlope (mobj_t *mo)
 {
 	angle_t		an;
-	boolean		dontAim = cfg.noAutoAim 
+	boolean		dontAim = cfg.noAutoAim
 		/*&& !demorecording && !demoplayback && !netgame*/;
 
 //
@@ -1076,8 +1078,8 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t *psp)
 	player->ammo[am_mace] -= USE_MACE_AMMO_1;
 	if(IS_CLIENT) return;
 	pmo = player->plr->mo;
-	ball = P_SpawnMobj(pmo->x, pmo->y, pmo->z+28*FRACUNIT 
-		- FOOTCLIPSIZE*((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
+	ball = P_SpawnMobj(pmo->x, pmo->y, pmo->z+28*FRACUNIT
+		- FOOTCLIPSIZE*((pmo->flags2 & MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
 	ball->momz = 2*FRACUNIT+(((int)player->plr->lookdir)<<(FRACBITS-5));
 	angle = pmo->angle;
 	ball->target = pmo;
@@ -1430,7 +1432,7 @@ void C_DECL A_FireSkullRodPL1(player_t *player, pspdef_t *psp)
 	}
 	player->ammo[am_skullrod] -= USE_SKRD_AMMO_1;
 	if(IS_CLIENT) return;
-	
+
 	mo = P_SpawnPlayerMissile(player->plr->mo, MT_HORNRODFX1);
 	// Randomize the first frame
 	if(mo && P_Random() > 128)
@@ -1729,7 +1731,7 @@ void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
 	if(!player->refire || !(leveltime%38))
 	{
 		S_StartSound(sfx_phopow, player->plr->mo);
-	}	
+	}
 	P_CheckMissileSpawn(mo);
 }
 
@@ -1920,3 +1922,4 @@ void P_MovePsprites(player_t *player)
 	player->psprites[ps_flash].sx = player->psprites[ps_weapon].sx;
 	player->psprites[ps_flash].sy = player->psprites[ps_weapon].sy;
 }
+

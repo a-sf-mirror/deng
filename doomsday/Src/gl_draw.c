@@ -411,3 +411,4 @@ void GL_DrawPSprite(float x, float y, float scale, int flip, int lump)
 
 	gl.End();
 }
+

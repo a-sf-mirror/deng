@@ -122,7 +122,7 @@ void Rend_ProcessThingShadow(mobj_t *mo)
 	memset(&poly, 0, sizeof(poly));
 	poly.type = RP_FLAT;
 	poly.flags = RPF_SHADOW;
-	poly.tex.id = GL_PrepareLightTexture();
+	poly.tex.id = GL_PrepareLSTexture(LST_DYNAMIC);
 	poly.tex.width = poly.tex.height = radius * 2;
 	poly.texoffx = -pos[VX] + radius;
 	poly.texoffy = -pos[VY] - radius;
@@ -173,4 +173,5 @@ void Rend_RenderShadows(void)
 		}
 	}
 }
+
 

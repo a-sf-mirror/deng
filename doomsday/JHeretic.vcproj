@@ -176,6 +176,9 @@
 				RelativePath=".\Src\jHeretic\jheretic.def">
 			</File>
 			<File
+				RelativePath="Src\Common\m_fixed.c">
+			</File>
+			<File
 				RelativePath=".\Src\Common\r_common.c">
 			</File>
 			<File

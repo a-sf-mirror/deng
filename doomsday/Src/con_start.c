@@ -30,7 +30,6 @@
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 extern int bufferLines;
-extern HWND hWndMain;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -40,7 +39,7 @@ int			startupLogo;
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static char *titletext;
-static fonthgt = 8;	// Height of the font.
+static int fonthgt = 8;	// Height of the font.
 static DGLuint bgflat;
 char *bitmap = NULL;
 
@@ -76,7 +75,7 @@ void Con_StartupInit(void)
 	}
 
 	// Load graphics.
-	startupLogo = GL_LoadGraphics("Background", true);
+	startupLogo = GL_LoadGraphics("Background", LGM_GRAYSCALE);
 }
 
 void Con_SetBgFlat(int lump)
@@ -201,4 +200,5 @@ void Con_DrawStartupScreen(int show)
 		gl.Show();
 	}
 }
+
 

@@ -4,13 +4,13 @@
 #include "../dd_share.h"
 
 #ifdef __JHERETIC__
-#include "../JHeretic/DoomDef.h"
+#include "../jHeretic/Doomdef.h"
 #endif
 
 #ifdef __JHEXEN__
-#define PLR_COLOR(pl, x)	((x)<0 || (x)>7? (pl)%8 : (x))
+#define PLR_COLOR(pl, x)	(((unsigned)(x)) > 7? (pl) % 8 : (x))
 #else
-#define PLR_COLOR(pl, x)	((x)<0 || (x)>3? (pl)%4 : (x))
+#define PLR_COLOR(pl, x)	(((unsigned)(x)) > 3? (pl) % 4 : (x))
 #endif
 
 // This playerstate is used to signal that a player should be removed
@@ -154,7 +154,7 @@ extern ccmd_t netCCmds[];
 
 extern float netJumpPower;
 
-#include "d_NetSv.h"
-#include "d_NetCl.h"
+#include "d_netsv.h"
+#include "d_netcl.h"
 
 #endif

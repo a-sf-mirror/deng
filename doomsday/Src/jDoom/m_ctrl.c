@@ -3,13 +3,19 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "m_menu.h"
-#include "mn_def.h"
-#include "d_action.h"
+#include "Mn_def.h"
+#include "D_Action.h"
 #include "hu_stuff.h"
 #include "s_sound.h"
 #include "g_game.h"
 
-static boolean SCControlConfig(int option);
+#ifdef __JDOOM__
+#	define CTLCFG_TYPE void
+#else
+#	define CTLCFG_TYPE static boolean
+#endif
+
+CTLCFG_TYPE SCControlConfig(int option);
 
 void M_DrawControlsMenu(void);
 
@@ -180,11 +186,12 @@ Menu_t ControlsDef =
 	0, 16
 };
 
-
-static boolean SCControlConfig(int option)
+CTLCFG_TYPE SCControlConfig(int option)
 {
 	grabbing = controls + option;
+#ifndef __JDOOM__
 	return true;
+#endif
 }
 
 void spacecat(char *str, const char *catstr)
@@ -233,9 +240,14 @@ void M_DrawControlsMenu(void)
 		while(token)
 		{
 			if(token[0] == '+')
+			{
 				spacecat(prbuff, token+1);
-			if(token[0] == '*' && !(ctrl->flags & CLF_REPEAT) || token[0] == '-')
+			}
+			if((token[0] == '*' && !(ctrl->flags & CLF_REPEAT)) ||
+			   token[0] == '-')
+			{
 				spacecat(prbuff, token);
+			}
 			token = strtok(NULL, " ");
 		}
 		strupr(prbuff);
@@ -370,3 +382,4 @@ int D_PrivilegedResponder(event_t *event)
 	}
 	return false;
 }
+

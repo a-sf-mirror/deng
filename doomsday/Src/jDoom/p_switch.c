@@ -16,6 +16,12 @@
 //
 //
 // $Log$
+// Revision 1.3.2.1  2004/05/16 10:01:37  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.3.4.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3  2003/08/24 00:17:10  skyjake
 // Changed variable naming style
 //
@@ -673,4 +679,5 @@ P_UseSpecialLine
 	
     return true;
 }
+
 

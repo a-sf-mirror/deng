@@ -479,3 +479,4 @@ boolean FH_Find(const char *name, char *foundPath)
 	// Nothing suitable was found.
 	return false;
 }
+

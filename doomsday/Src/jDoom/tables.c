@@ -15,6 +15,12 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.2.1  2004/05/16 10:01:37  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.1.4.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:22:09  skyjake
 // Initial checkin
 //
@@ -2134,3 +2140,4 @@ angle_t tantoangle[2049] =
     536870912
 };
 
+fixed_t	*finecosine = &finesine[FINEANGLES/4];

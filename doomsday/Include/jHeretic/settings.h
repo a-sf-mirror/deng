@@ -1,7 +1,7 @@
 #ifndef __HERETIC_SETTINGS_H__
 #define __HERETIC_SETTINGS_H__
 
-#include "DoomDef.h"
+#include "Doomdef.h"
 
 typedef struct
 {

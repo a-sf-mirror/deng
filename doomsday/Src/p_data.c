@@ -55,7 +55,6 @@ linkmobj_t	*blockrings;			// for thing rings
 byte		*rejectmatrix;			// for fast sight rejection
 polyblock_t	**polyblockmap;			// polyobj blockmap
 nodepile_t	thingnodes, linenodes;	// all kinds of wacky links
-subsector_t	***subsectorblockmap;	// array of subsec* arrays
 
 ded_mapinfo_t *mapinfo = 0;			// Current mapinfo.
 fixed_t		mapgravity;				// Gravity for the current map.
@@ -175,4 +174,5 @@ void P_LoadReject(int lump)
 		Con_Message("P_LoadReject: No REJECT data found.\n");
 	}
 }
+
 

@@ -1,10 +1,10 @@
 
 // P_user.c
 
-#include "DoomDef.h"
+#include "Doomdef.h"
 #include "P_local.h"
 #include "p_view.h"
-#include "soundst.h"
+#include "Soundst.h"
 #include "settings.h"
 
 void P_PlayerNextArtifact(player_t *player);
@@ -46,7 +46,7 @@ boolean WeaponInShareware[] =
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
 	mobj_t	*plrmo = player->plr->mo;
-	
+
 	angle >>= ANGLETOFINESHIFT;
 	if(player->powers[pw_flight] && !(plrmo->z <= plrmo->floorz))
 	{
@@ -96,7 +96,7 @@ void P_CalcHeight (player_t *player)
 	{
 		dp->viewz = plrmo->z + dp->viewheight;
 		return;
-	}	
+	}
 
 	player->bob = FixedMul (plrmo->momx, plrmo->momx) +
 		FixedMul (plrmo->momy, plrmo->momy);
@@ -108,11 +108,11 @@ void P_CalcHeight (player_t *player)
 		player->bob = FRACUNIT/2;
 	}
 	// Clients do view bobbing by themselves.
-	/*if(IS_CLIENT) 
+	/*if(IS_CLIENT)
 	{
 		angle = (FINEANGLES/20*leveltime)&FINEMASK;
 		bob = FixedMul (player->bob/2, finesine[angle]);
-		player->plr->viewz = plrmo->z + player->plr->viewheight + 
+		player->plr->viewz = plrmo->z + player->plr->viewheight +
 			(player->chickenTics? -20*FRACUNIT : bob);
 		return;
 	}*/
@@ -161,7 +161,7 @@ void P_CalcHeight (player_t *player)
 	else
 	{
 		player->plr->viewz = plrmo->z+player->plr->viewheight;
-		if(plrmo->z <= plrmo->floorz) 
+		if(plrmo->z <= plrmo->floorz)
 			player->plr->viewz += bob;
 	}
 	if(plrmo->flags2 & MF2_FEETARECLIPPED
@@ -179,7 +179,7 @@ void P_CalcHeight (player_t *player)
 		player->plr->viewz = plrmo->floorz+4*FRACUNIT;
 	}
 }
-#endif 
+#endif
 
 /*
 =================
@@ -273,7 +273,7 @@ void P_MovePlayer(player_t *player)
 			// We can't use a custom look speed in all situations.
 			if(netgame)
 				spd = 4;
-			else if(demoplayback || demorecording) 
+			else if(demoplayback || demorecording)
 				// Must be backwards compatible.
 				spd = 5;
 			player->plr->lookdir += spd*look;
@@ -343,7 +343,7 @@ void P_MovePlayer(player_t *player)
 		if(cmd->lookdirdelta < 0) delta = -delta;
 		player->plr->lookdir += delta;
 	}
-	
+
 	// 110 corresponds 85 degrees.
 	if(player->plr->lookdir > 110) player->plr->lookdir = 110;
 	if(player->plr->lookdir < -110) player->plr->lookdir = -110;*/
@@ -605,14 +605,14 @@ boolean P_IsPlayerOnGround(player_t *player)
 
 //===========================================================================
 // P_CheckPlayerJump
-//	Will make the player jump if the latest command so instructs, 
+//	Will make the player jump if the latest command so instructs,
 //	providing that jumping is possible.
 //===========================================================================
 void P_CheckPlayerJump(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	if(cfg.jumpEnabled 
+	if(cfg.jumpEnabled
 		&& (!IS_CLIENT || netJumpPower > 0)
 		&& (P_IsPlayerOnGround(player)
 			|| player->plr->mo->flags2 & MF2_ONMOBJ)
@@ -620,7 +620,7 @@ void P_CheckPlayerJump(player_t *player)
 		&& player->jumpTics <= 0)
 	{
 		// Jump, then!
-		player->plr->mo->momz = FRACUNIT 
+		player->plr->mo->momz = FRACUNIT
 			* (IS_CLIENT? netJumpPower : cfg.jumpPower);
 		player->plr->mo->flags2 &= ~MF2_ONMOBJ;
 		player->jumpTics = 24;
@@ -629,7 +629,7 @@ void P_CheckPlayerJump(player_t *player)
 
 //===========================================================================
 // P_ClientSideThink
-//	This routine does all the thinking for the console player during 
+//	This routine does all the thinking for the console player during
 //	netgames.
 //===========================================================================
 void P_ClientSideThink()
@@ -672,14 +672,14 @@ void P_ClientSideThink()
 		case pw_invisibility:
 		case pw_flight:
 		case pw_infrared:
-			if(pl->powers[i] > 0) 
+			if(pl->powers[i] > 0)
 				pl->powers[i]--;
 			else
 				pl->powers[i] = 0;
 			break;
 		}
 	}
-	if(pl->chickenTics > 0) 
+	if(pl->chickenTics > 0)
 	{
 		pl->chickenTics--;
 		if(!pl->chickenTics) // Chic mode ends?
@@ -739,12 +739,12 @@ void P_ClientSideThink()
 	// Set consoleplayer thrust multiplier (used by client move code).
 	if(mo->z > mo->floorz) // Airborne?
 	{
-		Set(DD_CPLAYER_THRUST_MUL, 
+		Set(DD_CPLAYER_THRUST_MUL,
 			(mo->ddflags & DDMF_FLY)? FRACUNIT : 0);
 	}
 	else
 	{
-		Set(DD_CPLAYER_THRUST_MUL, 
+		Set(DD_CPLAYER_THRUST_MUL,
 			// FIXME: Client can't know for sure about sector specials.
 			(mo->subsector->sector->special == 15)? FRACUNIT >> 1 // Friction_Low
 			: XS_ThrustMul(mo->subsector->sector));
@@ -793,7 +793,7 @@ void P_PlayerThink(player_t *player)
 	// Selector 7 = Mace
 	// Selector 8 = Gauntlets
 	// Selector 9 = Beak
-	plrmo->selector = plrmo->selector & ~DDMOBJ_SELECTOR_MASK 
+	plrmo->selector = (plrmo->selector & ~DDMOBJ_SELECTOR_MASK)
 		| (player->readyweapon + 1);
 
 	P_CameraThink(player); // $democam
@@ -880,7 +880,7 @@ void P_PlayerThink(player_t *player)
 				player->pendingweapon = newweapon;
 			}
 		}
-		if(oldweapon != player->pendingweapon) 
+		if(oldweapon != player->pendingweapon)
 			player->update |= PSF_PENDING_WEAPON;
 	}
 	// Check for use
@@ -1083,7 +1083,7 @@ void P_CheckReadyArtifact()
 	extern int curpos;
 
 	if(!player->inventory[inv_ptr].count)
-	{ 
+	{
 		// Set position markers and get next readyArtifact
 		inv_ptr--;
 		if(inv_ptr < 6)
@@ -1104,7 +1104,7 @@ void P_CheckReadyArtifact()
 		}
 		player->readyArtifact =
 			player->inventory[inv_ptr].type;
-		
+
 		if(!player->inventorySlotNum)
 			player->readyArtifact = arti_none;
 	}
@@ -1207,7 +1207,7 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
 {
 	int i;
 	boolean play_sound = false;
-	
+
 	for(i = 0; i < player->inventorySlotNum; i++)
 	{
 		if(arti == NUMARTIFACTS) // Use everything in panic?
@@ -1229,14 +1229,14 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
 				if(player == &players[consoleplayer])
 					ArtifactFlash = 4;
 			}
-			else 
+			else
 			{ // Unable to use artifact, advance pointer
 				P_PlayerNextArtifact(player);
 			}
 			break;
 		}
 	}
-	if(play_sound) 
+	if(play_sound)
 	{
 		S_ConsoleSound(sfx_artiuse, NULL, player-players);
 	}
@@ -1320,7 +1320,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
 			angle = player->plr->mo->angle>>ANGLETOFINESHIFT;
 			mo = P_SpawnMobj(player->plr->mo->x+24*finecosine[angle],
 				player->plr->mo->y+24*finesine[angle], player->plr->mo->z - 15*FRACUNIT*
-				((player->plr->mo->flags2&MF2_FEETARECLIPPED) != 0), MT_FIREBOMB);
+				((player->plr->mo->flags2 & MF2_FEETARECLIPPED) != 0), MT_FIREBOMB);
 			mo->target = player->plr->mo;
 			break;
 		case arti_egg:
@@ -1345,4 +1345,5 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
 	}
 	return(true);
 }
+
 

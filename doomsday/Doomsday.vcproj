@@ -78,8 +78,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\./Bin/Debug"
-			IntermediateDirectory=".\./Obj/Debug"
+			OutputDirectory="./Bin/Debug"
+			IntermediateDirectory="./Obj/Debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -172,6 +172,9 @@
 				</File>
 				<File
 					RelativePath=".\Src\dd_main.c">
+				</File>
+				<File
+					RelativePath="Src\dd_pinit.c">
 				</File>
 				<File
 					RelativePath=".\Src\dd_plugin.c">
@@ -284,7 +287,13 @@
 				Name="Network"
 				Filter="">
 				<File
+					RelativePath="Src\net_buf.c">
+				</File>
+				<File
 					RelativePath=".\Src\net_demo.c">
+				</File>
+				<File
+					RelativePath="Src\net_event.c">
 				</File>
 				<File
 					RelativePath=".\Src\net_main.c">
@@ -341,6 +350,9 @@
 				Name="Play"
 				Filter="">
 				<File
+					RelativePath="Src\p_bmap.c">
+				</File>
+				<File
 					RelativePath=".\Src\p_data.c">
 				</File>
 				<File
@@ -387,6 +399,9 @@
 					RelativePath=".\Src\r_model.c">
 				</File>
 				<File
+					RelativePath="Src\r_shadow.c">
+				</File>
+				<File
 					RelativePath=".\Src\r_sky.c">
 				</File>
 				<File
@@ -410,6 +425,9 @@
 				</File>
 				<File
 					RelativePath=".\Src\rend_dyn.c">
+				</File>
+				<File
+					RelativePath="Src\rend_fakeradio.c">
 				</File>
 				<File
 					RelativePath=".\Src\rend_halo.c">
@@ -512,6 +530,9 @@
 				</File>
 				<File
 					RelativePath=".\Src\m_string.c">
+				</File>
+				<File
+					RelativePath="Src\m_vector.c">
 				</File>
 			</Filter>
 			<Filter

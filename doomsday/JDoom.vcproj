@@ -181,9 +181,6 @@
 				RelativePath=".\Src\Common\r_common.c">
 			</File>
 			<File
-				RelativePath=".\Src\jDoom\r_main.c">
-			</File>
-			<File
 				RelativePath=".\Src\jDoom\r_sky.c">
 			</File>
 			<File

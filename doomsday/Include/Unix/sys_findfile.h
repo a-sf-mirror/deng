@@ -1,5 +1,5 @@
 /* DE1: $Id$
- * Copyright (C) 2004 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,33 @@
  */
 
 /*
- * <file name>: <short summary>
- *
- * <description>
+ * sys_findfile.h: Win32-Style File Finding
  */
 
-#ifndef __DOOMSDAY_ _H__
-#define __DOOMSDAY_ _H__
+#ifndef __DOOMSDAY_FILE_FIND_H__
+#define __DOOMSDAY_FILE_FIND_H__
+
+// File attributes.
+#define A_SUBDIR	0x1
+#define A_RDONLY	0x2
+#define A_HIDDEN	0x4
+#define A_ARCH		0x8
+
+typedef struct finddata_s {
+	void *finddata;
+	long date;
+	long time;
+	long size;
+	char *name;
+	long attrib;
+} finddata_t;
+
+/*
+ * The functions return zero if successful.
+ */
+
+int 	myfindfirst(const char *filename, finddata_t *dta);
+int 	myfindnext(finddata_t *dta);
+void 	myfindend(finddata_t *dta);
 
 #endif 

@@ -95,7 +95,7 @@ int enablePalTexExt(int enable)
 		Con_Message("drOpenGL.enablePalTexExt: No paletted texture support.\n");
 		return DGL_FALSE;
 	}
-	if(enable && usePalTex || !enable && !usePalTex) 
+	if((enable && usePalTex) || (!enable && !usePalTex)) 
 		return DGL_TRUE;
 
 	if(!enable && usePalTex)
@@ -521,3 +521,4 @@ int	DG_Bind(DGLuint texture)
 #endif
 	return 0;
 }
+

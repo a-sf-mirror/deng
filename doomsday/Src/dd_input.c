@@ -24,13 +24,6 @@
 #define KBDQUESIZE		32
 #define MAX_DOWNKEYS	16		// Most keyboards support 6 or 7.
 
-#define SC_RSHIFT       0x36
-#define SC_LSHIFT       0x2a
-#define SC_UPARROW      0x48
-#define SC_DOWNARROW    0x50
-#define SC_LEFTARROW    0x4b
-#define SC_RIGHTARROW   0x4d
-
 #define CLAMP(x) DD_JoyAxisClamp(&x) //x = (x < -100? -100 : x > 100? 100 : x)
 
 // TYPES -------------------------------------------------------------------
@@ -388,8 +381,8 @@ void DD_ProcessEvents(void)
 //==========================================================================
 void DD_PostEvent(event_t *ev)
 {
-	events[eventhead] = *ev;
-	eventhead = (++eventhead)&(MAXEVENTS-1);
+	events[eventhead++] = *ev;
+	eventhead &= MAXEVENTS - 1;
 }
 
 //===========================================================================
@@ -485,8 +478,13 @@ void DD_ReadKeyboard(void)
 		else if(ke->event == IKE_KEY_UP) // Key released?
 			ev.type = ev_keyup;
 		
-		// Use the table to translate the scancode to a ddkey.		
+		// Use the table to translate the scancode to a ddkey.
+#ifdef WIN32
 		ev.data1 = DD_ScanToKey(ke->code);
+#endif
+#ifdef UNIX
+		ev.data1 = ke->code;
+#endif
 
 		// Should we print a message in the console?
 		if(showScanCodes && ev.type == ev_keydown)
@@ -699,3 +697,4 @@ void DD_ReadJoystick(void)
 
 	DD_PostEvent(&ev);
 }
+

@@ -11,10 +11,9 @@
 #include <math.h>
 #include <ctype.h>
 
+#ifdef __JDOOM__
 #include "doomdef.h"
 #include "p_local.h"
-
-#ifdef __JDOOM__
 #include "p_spec.h"
 #include "doomstat.h"
 #include "d_config.h"
@@ -25,9 +24,10 @@
 #endif
 
 #ifdef __JHERETIC__
+#include "Doomdef.h"
 #include "settings.h"
-#include "p_local.h"
-#include "soundst.h"
+#include "P_local.h"
+#include "Soundst.h"
 #endif
 
 #include "p_xgline.h"
@@ -73,7 +73,6 @@ static sectortype_t	sectypebuffer;
 
 sectortype_t *XS_GetType(int id)
 {
-	sectortype_t *t = &sectypebuffer;
 	sectortype_t *ptr;
 
 	// Try finding it from the DDXGDATA lump.
@@ -491,8 +490,6 @@ xgplanemover_t *XS_GetPlaneMover(sector_t *sector, boolean ceiling)
 
 void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex)
 {
-	int oldtex = ceiling? sector->ceilingpic : sector->floorpic;
-
 	XG_Dev("XS_ChangePlaneTexture: Sector %i, %s, pic %i",
 		sector - sectors, ceiling? "ceiling" : "floor", tex);
 
@@ -1602,7 +1599,7 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
 
 		// How's the time?
 		if(flevtime < info->start[ch] ||
-			info->end[ch] > 0 && flevtime > info->end[ch]) 
+			(info->end[ch] > 0 && flevtime > info->end[ch])) 
 			return; // Not operating at this time.
 
 		// Time to try the chain. Reset timer.
@@ -1730,15 +1727,15 @@ int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
 	}
 
 	// Does wind affect this sort of things?
-	if(info->flags & STF_PLAYER_WIND && mo->player
-		|| info->flags & STF_OTHER_WIND && !mo->player
-		|| info->flags & STF_MONSTER_WIND && mo->flags & MF_COUNTKILL
-		|| info->flags & STF_MISSILE_WIND && mo->flags & MF_MISSILE)
+	if((info->flags & STF_PLAYER_WIND && mo->player)
+	   || (info->flags & STF_OTHER_WIND && !mo->player)
+	   || (info->flags & STF_MONSTER_WIND && mo->flags & MF_COUNTKILL)
+	   || (info->flags & STF_MISSILE_WIND && mo->flags & MF_MISSILE))
 	{
 		if(!(info->flags & (STF_FLOOR_WIND | STF_CEILING_WIND))
-			|| info->flags & STF_FLOOR_WIND && mo->z <= mo->floorz
-			|| info->flags & STF_CEILING_WIND 
-				&& mo->z + mo->height >= mo->ceilingz)
+		   || (info->flags & STF_FLOOR_WIND && mo->z <= mo->floorz)
+		   || (info->flags & STF_CEILING_WIND &&
+			   mo->z + mo->height >= mo->ceilingz))
 		{
 			// Apply vertical wind.
 			mo->momz += FRACUNIT * info->vertical_wind;

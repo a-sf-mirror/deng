@@ -337,6 +337,12 @@ void P_ExplodeMissile (mobj_t* mo);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.2.1  2004/05/16 10:01:30  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.2.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/04/29 13:10:56  skyjake
 // Missile puff ptcgen issue fixed
 //
@@ -348,5 +354,6 @@ void P_ExplodeMissile (mobj_t* mo);
 //
 //
 //-----------------------------------------------------------------------------
+
 
 

@@ -185,14 +185,14 @@ void Cl_MoverThinker(mover_t *mover)
 		remove = true;
 	}
 
-	P_ChangeSector(mover->sector);
+	P_SectorPlanesChanged(mover->sector);
 
 	// Make sure the client didn't get stuck as a result of this move.
 	if(freeMove != Cl_IsFreeToMove(consoleplayer))
 	{
 		// Something was blocking the way!
 		*current = original;
-		P_ChangeSector(mover->sector);
+		P_SectorPlanesChanged(mover->sector);
 	}
 	else if(remove)	// Can we remove this thinker?
 	{
@@ -654,7 +654,7 @@ void Cl_ReadSectorDelta2(boolean skip)
 	// the sector.
 	if(wasChanged)
 	{
-		P_ChangeSector(sec);
+		P_SectorPlanesChanged(sec);
 	}
 
 	// Do we need to start any moving planes?

@@ -15,6 +15,15 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.3  2004/05/16 10:01:36  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.3.2.2.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
+// Revision 1.3.2.2.2.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3.2.2  2003/09/19 19:29:52  skyjake
 // Fixed hang when lineattack dz==zero
 //
@@ -171,7 +180,7 @@ boolean P_TeleportMove(mobj_t* thing, fixed_t x, fixed_t y)
     tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
     tmceilingz = newsubsec->sector->ceilingheight;
 			
-    validcount++;
+    validCount++;
     numspechit = 0;
     
     // stomp on any things contacted
@@ -490,7 +499,7 @@ P_CheckPosition2
     tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
     tmceilingz = newsubsec->sector->ceilingheight;
 	
-    validcount++;
+    validCount++;
     numspechit = 0;
 	
     if ( tmflags & MF_NOCLIP )
@@ -1197,8 +1206,8 @@ hitline:
 			divisor = 2;
 
 			// We must not hit a sky plane.
-			if(z > ctop && contact->sector->ceilingpic == skyflatnum
-				|| z < cbottom && contact->sector->floorpic == skyflatnum)
+			if((z > ctop && contact->sector->ceilingpic == skyflatnum) ||
+			   (z < cbottom && contact->sector->floorpic == skyflatnum))
 				return false;
 
 			// Find the approximate hitpoint by stepping back and
@@ -1217,8 +1226,8 @@ hitline:
 				divisor <<= 1;
 				
 				// Move forward until limits breached.
-				while(dz > 0 && z <= ctop 
-					|| dz < 0 && z >= cbottom)
+				while((dz > 0 && z <= ctop) ||
+					  (dz < 0 && z >= cbottom))
 				{
 					x += dx / divisor;
 					y += dy / divisor;
@@ -1622,9 +1631,10 @@ boolean	P_ChangeSector(sector_t *sector, boolean crunch)
 		for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
 			P_BlockThingsIterator (x, y, PIT_ChangeSector, 0);*/
 
-	validcount++;
+	validCount++;
 	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
 		
 	return nofit;
 }
+
 

@@ -193,6 +193,9 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
+				RelativePath="Src\drOpenGL\common.c">
+			</File>
+			<File
 				RelativePath=".\Src\drOpenGL\draw.c">
 			</File>
 			<File

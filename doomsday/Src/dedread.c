@@ -11,12 +11,12 @@
 //**
 //** At the moment the idea is that a lot of macros are used to read
 //** a more or less fixed structure of definitions, and if an error
-//** occurs then "goto out_of_here;". It leads to a lot more code 
+//** occurs then "goto out_of_here;". It leads to a lot more code
 //** than an elegant parser would require.
 //**
 //** The current implementation of the reader is a "structural"
-//** approach: the definition file is parsed based on the structure 
-//** implied by the read tokens. A true parser would have syntax 
+//** approach: the definition file is parsed based on the structure
+//** implied by the read tokens. A true parser would have syntax
 //** definitions for a bunch of tokens, and the same parsing rules
 //** would be applied for everything.
 //**
@@ -50,12 +50,12 @@
 					retval = false; goto ded_end_read; }
 
 #define MISSING_SC_ERROR	SetError("Missing semicolon."); \
-							retval = false; goto ded_end_read; 
+							retval = false; goto ded_end_read;
 
 #define CHECKSC		if(source->version <= 5) { ReadToken(); if(!ISTOKEN(";")) { MISSING_SC_ERROR; } }
 
-#define FINDBEGIN	while(!ISTOKEN("{") && !source->atEnd) ReadToken(); 
-#define FINDEND		while(!ISTOKEN("}") && !source->atEnd) ReadToken(); 
+#define FINDBEGIN	while(!ISTOKEN("{") && !source->atEnd) ReadToken();
+#define FINDEND		while(!ISTOKEN("}") && !source->atEnd) ReadToken();
 
 #define ISLABEL(X)	(!stricmp(label, X))
 
@@ -135,7 +135,7 @@ char *sdup(const char *str)
 //==========================================================================
 void SetError(char *str)
 {
-	sprintf(dedReadError, "Error in %s:\n  Line %i: %s", 
+	sprintf(dedReadError, "Error in %s:\n  Line %i: %s",
 		source? source->fileName : "?",
 		source? source->lineNumber : 0, str);
 }
@@ -145,7 +145,7 @@ void SetError(char *str)
 //==========================================================================
 void SetError2(char *str, char *more)
 {
-	sprintf(dedReadError, "Error in %s:\n  Line %i: %s (%s)", 
+	sprintf(dedReadError, "Error in %s:\n  Line %i: %s (%s)",
 		source? source->fileName : "?",
 		source? source->lineNumber : 0, str, more);
 }
@@ -157,9 +157,9 @@ void SetError2(char *str, char *more)
 //==========================================================================
 int FGetC()
 {
-	int ch = (unsigned char) *source->pos; 
+	int ch = (unsigned char) *source->pos;
 
-	if(ch) source->pos++; else source->atEnd = true;	
+	if(ch) source->pos++; else source->atEnd = true;
 	if(ch == '\n') source->lineNumber++;
 	if(ch == '\r') return FGetC();
 	return ch;
@@ -185,7 +185,7 @@ void SkipComment()
 {
 	int ch = FGetC();
 	boolean seq = false;
-	
+
 	if(ch == '\n') return; // Comment ends right away.
 	if(ch != '>') // Single-line comment?
 	{
@@ -196,7 +196,7 @@ void SkipComment()
 		while(!source->atEnd)
 		{
 			ch = FGetC();
-			if(seq) 
+			if(seq)
 			{
 				if(ch == '#') break;
 				seq = false;
@@ -226,7 +226,7 @@ int ReadToken()
 	if(source->atEnd) return false;
 
 	// Skip whitespace and comments in the beginning.
-	while((ch == '#' || isspace(ch))) 
+	while((ch == '#' || isspace(ch)))
 	{
 		if(ch == '#') SkipComment();
 		ch = FGetC();
@@ -290,14 +290,14 @@ int ReadStringEx(char *dest, int maxlen, boolean inside, boolean doubleq)
 				ch = FGetC();
 				continue;
 			}
-			else 
+			else
 			{
 				// End the skip.
 				newl = false;
 			}
 		}
 		// An escape character?
-		if(!esc && ch == '\\') 
+		if(!esc && ch == '\\')
 			esc = true;
 		else
 		{
@@ -308,7 +308,7 @@ int ReadStringEx(char *dest, int maxlen, boolean inside, boolean doubleq)
 		}
 		if(ch == '\n') newl = true;
 		// Store the character in the buffer.
-		if(ptr - dest < maxlen && !esc && !newl) 
+		if(ptr - dest < maxlen && !esc && !newl)
 		{
 			*ptr++ = ch;
 			if(doubleq && ch == '"') *ptr++ = '"';
@@ -366,7 +366,7 @@ int ReadNByteVector(unsigned char *dest, int max)
 		if(ISTOKEN("}")) return true;
 		dest[i] = strtoul(token, 0, 0);
 	}
-	FINDEND;	
+	FINDEND;
 	return true;
 }
 
@@ -452,7 +452,7 @@ int ReadFlags(unsigned int *dest, const char *prefix)
 			strcpy(flag, token);
 		}
 		*dest |= Def_EvalFlags(flag);
-		
+
 		if(!ReadToken()) break;
 		if(!ISTOKEN("|")) // | is required for multiple flags.
 		{
@@ -497,7 +497,7 @@ int ReadLabel(char *label)
 		strcat(label, token);
 	}
 	return true;
-}		
+}
 
 //===========================================================================
 // DED_Include
@@ -565,7 +565,7 @@ void DED_CloseReader(void)
 
 //===========================================================================
 // DED_CheckCondition
-//	Return true if the condition passes. The condition token can be a 
+//	Return true if the condition passes. The condition token can be a
 //	command line option or a game mode.
 //===========================================================================
 boolean DED_CheckCondition(const char *cond, boolean expected)
@@ -582,7 +582,7 @@ boolean DED_CheckCondition(const char *cond, boolean expected)
 		// Then it must be a game mode.
 		value = !stricmp(cond, gx.Get(DD_GAME_MODE));
 	}
-	
+
 	return value == expected;
 }
 
@@ -632,7 +632,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 
 	while(ReadToken())
 	{
-		if(ISTOKEN("Copy") || ISTOKEN("*")) 
+		if(ISTOKEN("Copy") || ISTOKEN("*"))
 		{
 			bCopyNext = true;
 			continue; // Read the next token.
@@ -654,7 +654,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			if(DED_CheckCondition(token, sub))
 			{
 				// Ah, we're done. Get out of here.
-				goto ded_end_read; 
+				goto ded_end_read;
 			}
 			CHECKSC;
 		}
@@ -671,9 +671,9 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 		{
 			sub = 1;
 			ReadToken();
-			if(ISTOKEN("Not")) 
+			if(ISTOKEN("Not"))
 			{
-				sub = 0; 
+				sub = 0;
 				ReadToken();
 			}
 			if(DED_CheckCondition(token, sub))
@@ -824,7 +824,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			// A new light.
 			idx = DED_AddLight(ded, "");
 			lig = ded->lights + idx;
-			if(prev_ligdef_idx >= 0 && bCopyNext) 
+			if(prev_ligdef_idx >= 0 && bCopyNext)
 			{
 				// Should we copy the previous definition?
 				memcpy(lig, ded->lights + prev_ligdef_idx, sizeof(*lig));
@@ -856,7 +856,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			idx = DED_AddModel(ded, "");
 			mdl = ded->models + idx;
 			sub = 0;
-			if(prev_modef_idx >= 0) 
+			if(prev_modef_idx >= 0)
 			{
 				prevmdl = ded->models + prev_modef_idx;
 				// Should we copy the previous definition?
@@ -881,7 +881,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				{
 					READFLT(mdl->scale[1]);
 					mdl->scale[0] = mdl->scale[2] = mdl->scale[1];
-				} 
+				}
 				else RV_VEC("Scale XYZ", mdl->scale, 3)
 				RV_FLT("Offset", mdl->offset[1])
 				RV_VEC("Offset XYZ", mdl->offset, 3)
@@ -936,7 +936,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					//if(!strcmp(mdl->sub[i].flags, "-"))			strcpy(mdl->sub[i].flags,			prevmdl->sub[i].flags);
 				}
 			}
-			prev_modef_idx = idx;			
+			prev_modef_idx = idx;
 		}
 		if(ISTOKEN("Sound"))
 		{
@@ -987,7 +987,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			// A new map info.
 			idx = DED_AddMapInfo(ded, "");
 			mi = ded->mapinfo + idx;
-			if(prev_mapinfo_idx >= 0 && bCopyNext) 
+			if(prev_mapinfo_idx >= 0 && bCopyNext)
 			{
 				int m;
 				// Should we copy the previous definition?
@@ -995,7 +995,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				mi->execute = sdup(mi->execute);
 				for(m = 0; m < NUM_SKY_MODELS; m++)
 				{
-					mi->sky_models[m].execute 
+					mi->sky_models[m].execute
 						= sdup(mi->sky_models[m].execute);
 				}
 			}
@@ -1022,6 +1022,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_FLT("Sky height", mi->sky_height)
 				RV_FLT("Horizon offset", mi->horizon_offset)
 				RV_ANYSTR("Execute", mi->execute)
+				RV_VEC("Sky light color", mi->sky_color, 3)
 				if(ISLABEL("Sky Layer 1") || ISLABEL("Sky Layer 2"))
 				{
 					ded_skylayer_t *sl = mi->sky_layers + atoi(label+10) - 1;
@@ -1112,7 +1113,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				if(ISLABEL("Texture"))
 				{
 					// A new texture name.
-					tn = DED_NewEntry(&ded->tenviron[idx].textures,
+					tn = DED_NewEntry((void**)&ded->tenviron[idx].textures,
 						&ded->tenviron[idx].count, sizeof(*tn));
 					FINDBEGIN;
 					for(;;)
@@ -1131,7 +1132,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 		{
 			depth = 0;
 			rootstr = calloc(1, 1);	// A null string.
-			FINDBEGIN;	
+			FINDBEGIN;
 			for(;;)
 			{
 				// Get the next label but don't stop on }.
@@ -1149,7 +1150,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					if(ReadString(temp, 0xffff))
 					{
 						// Reallocate the buffer down to actual string length.
-						temp = realloc(temp, strlen(temp) + 1);				
+						temp = realloc(temp, strlen(temp) + 1);
 						// Get a new value entry.
 						idx = DED_AddValue(ded, 0);
 						val = ded->values + idx;
@@ -1202,8 +1203,8 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				else
 				{
 					// Only the above characters are allowed.
-					SetError("Illegal token."); 
-					retval = false; 
+					SetError("Illegal token.");
+					retval = false;
 					goto ded_end_read;
 				}
 				CHECKSC;
@@ -1215,7 +1216,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 		{
 			idx = DED_AddDetail(ded, "");
 			dtl = ded->details + idx;
-			if(prev_dtldef_idx >= 0 && bCopyNext) 
+			if(prev_dtldef_idx >= 0 && bCopyNext)
 			{
 				// Should we copy the previous definition?
 				memcpy(dtl, ded->details + prev_dtldef_idx, sizeof(*dtl));
@@ -1240,7 +1241,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			idx = DED_AddPtcGen(ded, "");
 			gen = ded->ptcgens + idx;
 			sub = 0;
-			if(prev_gendef_idx >= 0 && bCopyNext) 
+			if(prev_gendef_idx >= 0 && bCopyNext)
 			{
 				// Should we copy the previous definition?
 				memcpy(gen, ded->ptcgens + prev_gendef_idx, sizeof(*gen));
@@ -1283,8 +1284,8 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					ded_ptcstage_t *st = gen->stages + sub;
 					if(sub == DED_PTC_STAGES)
 					{
-						SetError("Too many generator stages."); 
-						retval = false; 
+						SetError("Too many generator stages.");
+						retval = false;
 						goto ded_end_read;
 					}
 					FINDBEGIN;
@@ -1313,7 +1314,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						CHECKSC;
 					}
 					sub++;
-				} 
+				}
 				else RV_END
 				CHECKSC;
 			}
@@ -1365,10 +1366,10 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			idx = DED_AddDecoration(ded);
 			decor = ded->decorations + idx;
 			sub = 0;
-			if(prev_decordef_idx >= 0 && bCopyNext) 
+			if(prev_decordef_idx >= 0 && bCopyNext)
 			{
 				// Should we copy the previous definition?
-				memcpy(decor, ded->decorations + prev_decordef_idx, 
+				memcpy(decor, ded->decorations + prev_decordef_idx,
 					sizeof(*decor));
 			}
 			FINDBEGIN;
@@ -1391,8 +1392,8 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					ded_decorlight_t *dl = decor->lights + sub;
 					if(sub == DED_DECOR_NUM_LIGHTS)
 					{
-						SetError("Too many lights in decoration."); 
-						retval = false; 
+						SetError("Too many lights in decoration.");
+						retval = false;
 						goto ded_end_read;
 					}
 					FINDBEGIN;
@@ -1415,10 +1416,10 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						CHECKSC;
 					}
 					sub++;
-				} 
+				}
 				else RV_END
 				CHECKSC;
-			}						
+			}
 			prev_decordef_idx = idx;
 		}
 		if(ISTOKEN("Group"))
@@ -1436,8 +1437,8 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					grp->is_texture = ISLABEL("Texture");
 					if(sub == DED_GROUP_NUM_MEMBERS)
 					{
-						SetError("Too many group members."); 
-						retval = false; 
+						SetError("Too many group members.");
+						retval = false;
 						goto ded_end_read;
 					}
 					FINDBEGIN;
@@ -1597,7 +1598,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_FLT("Floor chain max interval", sec->interval[0][1])
 				RV_FLT("Ceiling chain max interval", sec->interval[1][1])
 				RV_FLT("Inside chain max interval", sec->interval[2][1])
-				RV_FLT("Ticker chain max interval", sec->interval[3][1])				
+				RV_FLT("Ticker chain max interval", sec->interval[3][1])
 				RV_INT("Floor chain count", sec->count[0])
 				RV_INT("Ceiling chain count", sec->count[1])
 				RV_INT("Inside chain count", sec->count[2])
@@ -1642,7 +1643,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 		}
 		bCopyNext = false;
 	}
-	
+
 ded_end_read:
 	free(rootstr);
 
@@ -1692,7 +1693,7 @@ int DED_ReadLump(ded_t *ded, int lump)
 {
 	int result;
 
-	if(lump < 0 || lump >= numlumps) 
+	if(lump < 0 || lump >= numlumps)
 	{
 		SetError("Bad lump number.");
 		return false;
@@ -1702,3 +1703,4 @@ int DED_ReadLump(ded_t *ded, int lump)
 	W_ChangeCacheTag(lump, PU_CACHE);
 	return result;
 }
+

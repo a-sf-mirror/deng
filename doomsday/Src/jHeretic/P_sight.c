@@ -2,7 +2,7 @@
 // We can't use the engine's sight checker if we want to be
 // backwards compatible (demos would go out of sync).
 
-#include "DoomDef.h"
+#include "Doomdef.h"
 #include "P_local.h"
 
 #define MAXINTERCEPTS	128
@@ -351,6 +351,7 @@ boolean P_CheckSight (mobj_t *t1, mobj_t *t2)
 	
 	return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
 }
+
 
 
 

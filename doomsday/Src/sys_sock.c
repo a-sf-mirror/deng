@@ -6,6 +6,12 @@
 //** Handling of sockets.
 //**
 //** $Log$
+//** Revision 1.1.2.1  2004/05/16 10:01:35  skyjake
+//** Merged good stuff from branch-nix for the final 1.7.15
+//**
+//** Revision 1.1.4.1  2003/11/22 18:01:04  skyjake
+//** Compiles with gcc and -DUNIX
+//**
 //** Revision 1.1  2003/03/09 16:03:51  skyjake
 //** New master server mechanism
 //**
@@ -13,7 +19,20 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <winsock.h>
+#ifdef WIN32
+#	include <winsock.h>
+#endif
+
+#ifdef UNIX
+#	include "de_platform.h"
+#	include <unistd.h>
+#	include <sys/socket.h>
+#	include <sys/types.h>
+#	include <netinet/in.h>
+#	include <arpa/inet.h>
+#	include <netdb.h>
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -43,9 +62,11 @@
  */
 void N_SockInit(void)
 {
+#ifdef WIN32
 	WSADATA wsaData;
 	WSAStartup( MAKEWORD(1,1), &wsaData );
 	// FIXME: Check the result... (who cares?)
+#endif
 }
 
 /*
@@ -54,7 +75,9 @@ void N_SockInit(void)
  */
 void N_SockShutdown(void)
 {
+#ifdef WIN32
 	WSACleanup();
+#endif
 }
 
 /*
@@ -151,5 +174,10 @@ boolean N_SockConnect(socket_t s, struct hostent *host, unsigned short port)
  */
 void N_SockClose(socket_t s)
 {
+#ifdef WIN32
 	closesocket(s);
+#elif defined UNIX
+	close(s);
+#endif
 }
+

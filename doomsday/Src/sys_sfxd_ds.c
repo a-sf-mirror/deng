@@ -1074,3 +1074,4 @@ void DS_DSoundListenerv(int property, float *values)
 		DS_DSoundListener(property, 0);
 	}
 }
+

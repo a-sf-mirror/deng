@@ -6,7 +6,7 @@
 #define	SHORTP(x)		(*(short*) (x))
 #define	USHORTP(x)		(*(unsigned short*) (x))
 
-extern id_t clientID;
+extern ident_t clientID;
 extern int server_time;
 
 // Flags for clmobjs.

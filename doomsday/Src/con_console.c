@@ -13,7 +13,13 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
-#include <process.h>
+#include <ctype.h>
+
+#include "de_platform.h"
+
+#ifdef WIN32
+#	include <process.h>
+#endif
 
 #include "de_base.h"
 #include "de_console.h"
@@ -132,7 +138,6 @@ calias_t *Con_GetAlias(const char *name);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern HWND hWndMain;
 extern boolean paletted, r_s3tc;	// Use GL_EXT_paletted_texture
 extern int freezeRLs;
 
@@ -248,7 +253,7 @@ cvar_t engineCVars[] =
 	"ModelAspectMod", OBSOLETE|CVF_NO_MAX|CVF_NO_MIN, CVT_FLOAT, &rModelAspectMod, 0, 0, "Scale for MD2 z-axis when model is loaded.",
 	"ModelMaxZ",	OBSOLETE|CVF_NO_MAX,		CVT_INT,	&r_maxmodelz,	0, 0,	"Farther than this models revert back to sprites.",
 //	"PredictTics",	OBSOLETE|CVF_NO_MAX,		CVT_INT,	&predict_tics,	0, 0,	"Max tics to predict ahead.",
-	"MaxQueuePackets",	OBSOLETE,			CVT_INT,	&maxQueuePackets, 0, 16, "Max packets in send queue.",
+//	"MaxQueuePackets",	OBSOLETE,			CVT_INT,	&maxQueuePackets, 0, 16, "Max packets in send queue.",
 	"sv_MasterAware",	OBSOLETE,			CVT_INT,	&masterAware,	0, 1,	"1=Send info to master server.",
 	"MasterAddress",	OBSOLETE,			CVT_CHARPTR, &masterAddress, 0, 0,	"Master server IP address / name.",
 	"MasterPort",		OBSOLETE,			CVT_INT,	&masterPort,	0, 65535, "Master server TCP/IP port.",
@@ -287,6 +292,7 @@ cvar_t engineCVars[] =
 	// Render
 	"rend-dev-freeze",		0,			CVT_INT,	&freezeRLs,		0, 1,	"1=Stop updating rendering lists.",
 	"rend-dev-wireframe",	0,			CVT_INT,	&renderWireframe, 0, 1,	"1=Render player view in wireframe mode.",
+	"rend-dev-framecount",	CVF_PROTECTED, CVT_INT,	&framecount, 	0, 0,	"Frame counter.",
 	// * Render-Info
 	"rend-info-tris",		0,			CVT_BYTE,	&rend_info_tris, 0, 1,	"1=Print triangle count after rendering a frame.",
 	"rend-info-lums",		0,			CVT_BYTE,	&rend_info_lums, 0, 1,	"1=Print lumobj count after rendering a frame.",
@@ -309,6 +315,7 @@ cvar_t engineCVars[] =
 	"rend-light-decor-plane-bright", 0,	CVT_FLOAT,	&decorPlaneFactor, 0, 10, "Brightness of plane light decorations.",
 	"rend-light-decor-wall-bright", 0,	CVT_FLOAT,	&decorWallFactor, 0, 10, "Brightness of wall light decorations.",
 	"rend-light-decor-angle",	0,		CVT_FLOAT,	&decorFadeAngle, 0, 1,	"Reduce brightness if surface/view angle too steep.",
+	"rend-light-sky",		0,			CVT_INT,	&rendSkyLight, 	0, 1,	"1=Use special light color in sky sectors.",
 	// * Render-Glow
 	"rend-glow",			0,			CVT_INT,	&r_texglow,		0, 1,	"1=Enable glowing textures.",
 	"rend-glow-wall",		0,			CVT_INT,	&useWallGlow,	0, 1,	"1=Render glow on walls.",
@@ -322,6 +329,8 @@ cvar_t engineCVars[] =
 	"rend-halo-secondary-limit", CVF_NO_MAX, CVT_FLOAT, &minHaloSize, 0, 0,	"Minimum halo size.",
 	"rend-halo-fade-far",	CVF_NO_MAX,	CVT_FLOAT,	&haloFadeMax,	0, 0,	"Distance at which halos are no longer visible.",
 	"rend-halo-fade-near",	CVF_NO_MAX,	CVT_FLOAT,	&haloFadeMin,	0, 0,	"Distance to begin fading halos.",
+	// * Render-FakeRadio
+	"rend-fakeradio", 		0,			CVT_INT,	&rendFakeRadio, 0, 1,	"1=Enable simulated radiosity lighting.",
 	// * Render-Camera
 	"rend-camera-fov",		0,			CVT_FLOAT,	&fieldOfView,	1, 179, "Field of view.",
 	"rend-camera-smooth",	0,			CVT_INT,	&rend_camera_smooth, 0, 1, "1=Filter camera movement between game tics.",
@@ -406,7 +415,7 @@ cvar_t engineCVars[] =
 	"net-master-address",	0,			CVT_CHARPTR, &masterAddress, 0, 0,	"Master server IP address / name.",
 	"net-master-port",		0,			CVT_INT,	&masterPort,	0, 65535, "Master server TCP/IP port.",
 	"net-master-path",		0,			CVT_CHARPTR, &masterPath,	0, 0,	"Master server path name.",
-	"net-queue-packets",	0,			CVT_INT,	&maxQueuePackets, 0, 16, "Max packets in send queue.",
+//	"net-queue-packets",	0,			CVT_INT,	&maxQueuePackets, 0, 16, "Max packets in send queue.",
 
 	// Sound
 	"sound-volume",			0,			CVT_INT,	&sfx_volume,	0, 255, "Sound effects volume (0-255).",
@@ -1279,6 +1288,7 @@ static void addLineText(cbline_t *line, char *txt)
 	line->len = newLen;
 }
 
+/*
 static void setLineFlags(int num, int fl)
 {
 	cbline_t *line = Con_GetBufferLine(num);
@@ -1286,6 +1296,7 @@ static void setLineFlags(int num, int fl)
 	if(!line) return;
 	line->flags = fl;
 }
+*/
 
 static void addOldCmd(const char *txt)
 {
@@ -1501,8 +1512,10 @@ static int executeSubCmd(char *subcmd)
 						TrimmedFloat(var->max));
 				}
 			}
-			else if(!setting || setting && !conSilentCVars)	// Show the value.
+			else if(!setting || !conSilentCVars)	// Show the value.
+			{
 				printcvar(var, "");
+			}
 			return true;
 		}
 
@@ -1533,8 +1546,8 @@ static void SplitIntoSubCommands(char *command, int markerOffset)
 {
 	int			gpos = 0, scpos = 0;
 	char		subcmd[1024];
-	int			nextsub = false;
-	int			ret = true, inquotes = false, escape = false;
+//	int			nextsub = false;
+	int			/*ret = true,*/ inquotes = false, escape = false;
 	int			inBlock = 0;
 
 	// Is there a command to execute?
@@ -1892,7 +1905,7 @@ boolean Con_Responder(event_t *event)
 
 	default:	// Check for a character.
 		ch = event->data1;
-		if(ch < 32 || ch > 127 && ch < DD_HIGHEST_KEYCODE) return true;
+		if(ch < 32 || (ch > 127 && ch < DD_HIGHEST_KEYCODE)) return true;
 		ch = DD_ModKey(ch);
 
 		if(cmdCursor < maxLineLen)
@@ -2014,6 +2027,41 @@ void Con_DrawRuler(int y, int lineHeight, float alpha)
 	Con_DrawRuler2(y, lineHeight, alpha, screenWidth);
 }
 
+/*
+ * Draw a 'side' text in the console. This is intended for extra
+ * information about the current game mode.
+ */
+void Con_DrawSideText(const char *text, int line, float alpha)
+{
+	char buf[300];
+	float gtosMulY = screenHeight/200.0f;
+	float fontScaledY = Cfont.height * Cfont.sizeY;
+	float y = ConsoleY*gtosMulY - fontScaledY*(1 + line);
+	int ssw;
+
+	if(y > -fontScaledY)
+	{
+		// The side text is a bit transparent.
+		alpha *= .6f;
+
+		// scaled screen width		
+		ssw = (int) (screenWidth/Cfont.sizeX);	 
+		
+		// Print the version.
+		strncpy(buf, text, sizeof(buf));
+		if(Cfont.Filter) Cfont.Filter(buf);
+
+		if(consoleShadowText)
+		{
+			// Draw a shadow.
+			gl.Color4f(0, 0, 0, alpha);
+			Cfont.TextOut(buf, ssw - Cfont.Width(buf) - 2, y/Cfont.sizeY + 1);
+		}
+		gl.Color4f(CcolYellow[0], CcolYellow[1], CcolYellow[2], alpha);
+		Cfont.TextOut(buf, ssw - Cfont.Width(buf) - 3, y/Cfont.sizeY);
+	}
+}
+
 //===========================================================================
 // Con_Drawer
 //	Slightly messy...
@@ -2023,8 +2071,8 @@ void Con_Drawer(void)
 	int		i, k;	// Line count and buffer cursor.
 	float	x, y;
 	float	closeFade = 1;
-	float	gtosMulX = screenWidth/320.0f, 
-			gtosMulY = screenHeight/200.0f;
+//	float	gtosMulX = screenWidth/320.0f;
+	float	gtosMulY = screenHeight/200.0f;
 	char	buff[256], temp[256];
 	float	fontScaledY;
 	int		bgX = 64, bgY = 64;
@@ -2034,13 +2082,13 @@ void Con_Drawer(void)
 	// Do we have a font?
 	if(Cfont.TextOut == NULL)
 	{
-		Cfont.flags = DDFONT_WHITE;
-		Cfont.height = FR_TextHeight("Con");
-		Cfont.sizeX = 1;
-		Cfont.sizeY = 1;
+		Cfont.flags   = DDFONT_WHITE;
+		Cfont.height  = FR_TextHeight("Con");
+		Cfont.sizeX   = 1;
+		Cfont.sizeY   = 1;
 		Cfont.TextOut = FR_TextOut;
-		Cfont.Width = FR_TextWidth;
-		Cfont.Filter = NULL;
+		Cfont.Width   = FR_TextWidth;
+		Cfont.Filter  = NULL;
 	}
 
 	fontScaledY = Cfont.height * Cfont.sizeY;
@@ -2086,24 +2134,9 @@ void Con_Drawer(void)
 	gl.LoadIdentity();
 	gl.Scalef(Cfont.sizeX, Cfont.sizeY, 1);
 
-	// The version.
-	y = ConsoleY*gtosMulY - fontScaledY*2;
-	if(y > -fontScaledY)
-	{
-		int ssw = (int) (screenWidth/Cfont.sizeX);	 // scaled screen width
-		// Print the version.
-		strcpy(buff, gx.Get(DD_VERSION_SHORT));
-		if(Cfont.Filter) 
-			Cfont.Filter(buff);
-		else if(consoleShadowText)
-		{
-			// Draw a shadow.
-			gl.Color3f(0, 0, 0);
-			Cfont.TextOut(buff, ssw - Cfont.Width(buff)-2, y/Cfont.sizeY+1);
-		}
-		gl.Color4f(CcolYellow[0], CcolYellow[1], CcolYellow[2], closeFade);
-		Cfont.TextOut(buff, ssw - Cfont.Width(buff)-3, y/Cfont.sizeY);
-	}
+	// The game & version number.
+	Con_DrawSideText(gx.Get(DD_GAME_ID), 2, closeFade);
+	Con_DrawSideText(gx.Get(DD_GAME_MODE), 1, closeFade);
 
 	gl.Color4f(1, 1, 1, closeFade);
 
@@ -2203,8 +2236,13 @@ void Con_AddRuler(void)
 	if(consoleDump) 
 	{
 		// A 70 characters long line.
-		for(i = 0; i < 7; i++) printf("----------");
-		printf("\n");
+		for(i = 0; i < 7; i++)
+		{
+			fprintf(outFile, "----------");
+			if(isDedicated) Sys_ConPrint(0, "----------");
+		}
+		fprintf(outFile, "\n");
+		if(isDedicated) Sys_ConPrint(0, "\n");
 	}
 }
 
@@ -2227,7 +2265,7 @@ void conPrintf(int flags, char *format, va_list args)
 	// Format the message to prbuff.
 	vsprintf(prbuff, format, args);
 
-	if(consoleDump) printf("%s", prbuff);
+	if(consoleDump) fprintf(outFile, "%s", prbuff);
 	if(SW_IsActive()) SW_Printf(prbuff);
 
 	// Servers might have to send the text to a number of clients.
@@ -2600,7 +2638,8 @@ int CCmdDump(int argc, char **argv)
 	file = fopen(fname, "wb");
 	if(!file) 
 	{
-		Con_Printf("Couldn't open %s for writing. %s\n", fname, strerror(errno));
+		Con_Printf("Couldn't open %s for writing. %s\n", fname,
+				   strerror(errno));
 		Z_ChangeTag(lumpPtr, PU_CACHE);
 		return false;
 	}
@@ -2626,13 +2665,13 @@ D_CMD(Font)
 	{
 		FR_DestroyFont(FR_GetCurrent());
 		FR_PrepareFont("Fixed");
-		Cfont.flags = DDFONT_WHITE;
-		Cfont.height = FR_TextHeight("Con");
-		Cfont.sizeX = 1;
-		Cfont.sizeY = 1;
+		Cfont.flags   = DDFONT_WHITE;
+		Cfont.height  = FR_TextHeight("Con");
+		Cfont.sizeX   = 1;
+		Cfont.sizeY   = 1;
 		Cfont.TextOut = FR_TextOut;
-		Cfont.Width = FR_TextWidth;
-		Cfont.Filter = NULL;
+		Cfont.Width   = FR_TextWidth;
+		Cfont.Filter  = NULL;
 	}
 	else if(!stricmp(argv[1], "name") && argc == 3)
 	{
@@ -2790,7 +2829,7 @@ D_CMD(AddSub)
 		Con_Printf( "Use force to make cvars go off limits.\n");
 		return true;
 	}
-	if(incdec && argc >= 3 || !incdec && argc >= 4)
+	if((incdec && argc >= 3) || (!incdec && argc >= 4))
 	{
 		force = !stricmp(argv[incdec? 2 : 3], "force");
 	}
@@ -2984,6 +3023,14 @@ void Con_Message(char *message, ...)
 		va_start(argptr, message);
 		vsprintf(buffer, message, argptr);
 		va_end(argptr);
+
+#ifdef UNIX
+		if(!isDedicated)
+		{
+			// These messages are supposed to be visible in the real console.
+			fprintf(stderr, "%s", buffer);
+		}
+#endif
 		
 		// These messages are always dumped. If consoleDump is set,
 		// Con_Printf() will dump the message for us.
@@ -3011,7 +3058,7 @@ void Con_Error (char *error, ...)
 	// Already in an error?
 	if(!ConsoleInited || errorInProgress)
 	{
-		printf("Con_Error: Stack overflow imminent, aborting...\n");
+		fprintf(outFile, "Con_Error: Stack overflow imminent, aborting...\n");
 
 		va_start(argptr, error);
 		vsprintf(buff, error, argptr);
@@ -3028,13 +3075,13 @@ void Con_Error (char *error, ...)
 	// Get back to the directory we started from.
 	Dir_ChDir(&ddRuntimeDir);
 
-	va_start (argptr,error);
-	vsprintf (err, error, argptr);
-	va_end (argptr);
-	printf ("%s\n", err);
+	va_start(argptr,error);
+	vsprintf(err, error, argptr);
+	va_end(argptr);
+	fprintf(outFile, "%s\n", err);
 
 	strcpy(buff, "");
-	for(i=5; i>1; i--)
+	for(i = 5; i > 1; i--)
 	{
 		cbline_t *cbl = Con_GetBufferLine(bufferLines - i);
 		if(!cbl || !cbl->text) continue;
@@ -3047,11 +3094,14 @@ void Con_Error (char *error, ...)
 	Sys_Shutdown();
 	B_Shutdown();
 	Con_Shutdown();
+
+#ifdef WIN32
 	ChangeDisplaySettings(0, 0); // Restore original mode, just in case.
+#endif
 
 	// Be a bit more graphic.
-	Sys_ShowCursor(TRUE);
-	Sys_ShowCursor(TRUE);
+	Sys_ShowCursor(true);
+	Sys_ShowCursor(true);
 	if(err[0]) // Only show if a message given.
 	{
 		Sys_MessageBox(buff, true);
@@ -3060,9 +3110,10 @@ void Con_Error (char *error, ...)
 	DD_Shutdown();
 
 	// Open Doomsday.out in a text editor.
-	fflush(stdout);	// Make sure all the buffered stuff goes into the file.
+	fflush(outFile); // Make sure all the buffered stuff goes into the file.
 	Sys_OpenTextEditor("Doomsday.out");
 
 	// Get outta here.
-	exit (1);
+	exit(1);
 }
+

@@ -53,14 +53,6 @@ extern fixed_t mapgravity;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-/*fixed_t		tmbbox[4];
-mobj_t*		tmthing;
-int			tmflags;
-fixed_t		tmx, tmy, tmz, tmheight;*/
-// If "floatok" true, move would be ok
-// if within "tmfloorz - tmceilingz".
-//boolean		floatok;
-
 // If set to true, P_CheckPosition will skip the mobj hit test.
 boolean		dontHitMobjs = false;
 
@@ -127,8 +119,9 @@ void P_SetState(mobj_t *mobj, int statenum)
 // PIT_CheckLine
 //	Adjusts tmfloorz and tmceilingz as lines are contacted.
 //===========================================================================
-boolean PIT_CheckLine (line_t* ld, checkpos_data_t *tm)
+static boolean PIT_CheckLine (line_t* ld, void *parm)
 {
+	checkpos_data_t *tm = parm;
 	fixed_t bbox[4];
 
 	// Setup the bounding box for the line.
@@ -170,8 +163,9 @@ boolean PIT_CheckLine (line_t* ld, checkpos_data_t *tm)
 //===========================================================================
 // PIT_CheckThing
 //===========================================================================
-boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
+static boolean PIT_CheckThing (mobj_t* thing, void *parm)
 {
+	checkpos_data_t *tm = parm;
     fixed_t		blockdist;
     boolean		overlap = false;
 
@@ -240,10 +234,11 @@ boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
 //
 // MOVEMENT CLIPPING
 //
-//===========================================================================
-// P_CheckPosition2
-//===========================================================================
-boolean P_CheckPosition2(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
+
+/*
+ * Returns true if it the thing can be positioned in the coordinates.
+ */
+boolean P_CheckPosXYZ(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 {
     int xl, xh;
     int	yl, yh;
@@ -321,21 +316,21 @@ checkpos_done:
 	return result;
 }
 
-//===========================================================================
-// P_CheckPosition
-//===========================================================================
-boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
+/*
+ * Returns true if the thing can be positioned in the coordinates
+ * (x,y), assuming traditional 2D Doom item placement rules.
+ */ 
+boolean P_CheckPosXY(mobj_t *thing, fixed_t x, fixed_t y)
 {
-	return P_CheckPosition2(thing, x, y, DDMAXINT);
+	return P_CheckPosXYZ(thing, x, y, DDMAXINT);
 }
 
-//===========================================================================
-// P_TryMove
-//	Attempt to move to a new (x,y,z) position.
-//	Returns true if the move was successful. Both lines and things are
-//	checked for collisions.
-//===========================================================================
-boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
+/*
+ * Attempt to move to a new (x,y,z) position.  Returns true if the
+ * move was successful. Both lines and things are checked for
+ * collisions.
+ */
+boolean P_TryMoveXYZ(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 {	
 	int links = 0;
 	boolean goodPos;
@@ -349,7 +344,7 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 		return true;
 	}
 
-	goodPos = P_CheckPosition2(thing, x, y, z);
+	goodPos = P_CheckPosXYZ(thing, x, y, z);
 
 	// Is movement clipping in effect?
 	if(!thing->dplayer || !(thing->dplayer->flags & DDPF_NOCLIP))
@@ -396,13 +391,12 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
     return true;
 }
 
-//===========================================================================
-// P_StepMove
-//	Try to do the given move. Returns true if nothing was hit.
-//===========================================================================
+/*
+ * Try to do the given move. Returns true if nothing was hit.
+ */
 boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 {
-	fixed_t x = thing->x, y = thing->y, z = thing->z;
+/*	fixed_t x = thing->x, y = thing->y, z = thing->z; */
 	fixed_t stepX, stepY, stepZ;
 	boolean notHit = true;
 
@@ -427,7 +421,7 @@ boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 		if(!(stepX | stepY | stepZ)) return notHit;
 
 		// Can we do this step?
-		while(!P_TryMove(thing, thing->x + stepX, thing->y + stepY, 
+		while(!P_TryMoveXYZ(thing, thing->x + stepX, thing->y + stepY, 
 			thing->z + stepZ))
 		{
 			// We hit something!
@@ -460,19 +454,15 @@ boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 	return notHit;
 }
 
-//===========================================================================
-// P_ThingHeightClip
-//	Takes a valid thing and adjusts the thing->floorz,
-//	thing->ceilingz, and possibly thing->z.
-//	This is called for all nearby monsters
-//	whenever a sector changes height.
-//	If the thing doesn't fit,
-//	the z will be set to the lowest value
-//	and false will be returned.
-//===========================================================================
-boolean P_ThingHeightClip (mobj_t* thing)
+/*
+ * Takes a valid thing and adjusts the thing->floorz, thing->ceilingz,
+ * and possibly thing->z.  This is called for all nearby monsters
+ * whenever a sector changes height.  If the thing doesn't fit, the z
+ * will be set to the lowest value and false will be returned.
+ */
+static boolean P_HeightClip (mobj_t* thing)
 {
-    boolean		onfloor;
+    boolean	onfloor;
 	
 	// During demo playback the player gets preferential
 	// treatment.
@@ -481,7 +471,7 @@ boolean P_ThingHeightClip (mobj_t* thing)
 
     onfloor = (thing->z <= thing->floorz);
 	
-    P_CheckPosition2(thing, thing->x, thing->y, thing->z);
+    P_CheckPosXYZ(thing, thing->x, thing->y, thing->z);
     thing->floorz = tmfloorz;
     thing->ceilingz = tmceilingz;
 	
@@ -517,11 +507,11 @@ boolean P_ThingHeightClip (mobj_t* thing)
 //
 
 //
-// P_HitSlideLine
+// P_WallMomSlide
 // Adjusts the xmove / ymove
 // so that the next move will slide along the wall.
 //
-void P_HitSlideLine (line_t* ld)
+static void P_WallMomSlide (line_t* ld)
 {
     int			side;
     angle_t		lineangle;
@@ -566,7 +556,7 @@ void P_HitSlideLine (line_t* ld)
 //
 // PTR_SlideTraverse
 //
-boolean PTR_SlideTraverse (intercept_t* in)
+static boolean PTR_SlideTraverse (intercept_t* in)
 {
     line_t*	li;
 	
@@ -616,7 +606,6 @@ isblocking:
 
 
 //
-// P_SlideMove
 // The momx / momy move is bad, so try to slide
 // along a wall.
 // Find the first line hit, move flush to it,
@@ -624,7 +613,7 @@ isblocking:
 //
 // This is a kludgy mess. (No kidding?)
 //
-void P_SlideMove (mobj_t* mo)
+static void P_ThingSlidingMove (mobj_t* mo)
 {
     fixed_t		leadx;
     fixed_t		leady;
@@ -678,8 +667,8 @@ retry:
     {
 		// The move most have hit the middle, so stairstep.
 stairstep:
-		if (!P_TryMove (mo, mo->x, mo->y + mo->momy, mo->z))
-			P_TryMove (mo, mo->x + mo->momx, mo->y, mo->z);
+		if (!P_TryMoveXYZ(mo, mo->x, mo->y + mo->momy, mo->z))
+			P_TryMoveXYZ(mo, mo->x + mo->momx, mo->y, mo->z);
 		return;
     }
 
@@ -689,7 +678,7 @@ stairstep:
     {
 		newx = FixedMul (mo->momx, bestslidefrac);
 		newy = FixedMul (mo->momy, bestslidefrac);
-		if(!P_TryMove(mo, mo->x + newx, mo->y + newy, mo->z)) 
+		if(!P_TryMoveXYZ(mo, mo->x + newx, mo->y + newy, mo->z)) 
 			goto stairstep;
     }
     
@@ -705,12 +694,12 @@ stairstep:
     tmxmove = FixedMul(mo->momx, bestslidefrac);
     tmymove = FixedMul(mo->momy, bestslidefrac);
 
-    P_HitSlideLine (bestslideline);	// clip the moves
+    P_WallMomSlide (bestslideline);	// clip the moves
 	
     mo->momx = tmxmove;
     mo->momy = tmymove;
 	
-    if(!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, mo->z))
+    if(!P_TryMoveXYZ(mo, mo->x + tmxmove, mo->y + tmymove, mo->z))
     {
 		goto retry;
     }
@@ -726,27 +715,25 @@ stairstep:
 //
 boolean		nofit;
 
-//===========================================================================
-// PIT_ChangeSector
-//===========================================================================
-boolean PIT_ChangeSector(mobj_t *thing, void *data)
+static boolean PIT_SectorPlanesChanged(mobj_t *thing, void *data)
 {
 	// Always keep checking.
-    if(P_ThingHeightClip(thing)) return true;
+    if(P_HeightClip(thing)) return true;
     nofit = true;
     return true;	
 }
 
-//===========================================================================
-// P_ChangeSector
-//===========================================================================
-boolean P_ChangeSector(sector_t *sector)
+/*
+ * Called whenever a sector's planes are moved.  This will update the
+ * things inside the sector and do crushing.
+ */
+boolean P_SectorPlanesChanged(sector_t *sector)
 {
     nofit = false;
 
 	// We'll use validcount to make sure things are only checked once.
 	validcount++;
-	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
+	P_SectorTouchingThingsIterator(sector, PIT_SectorPlanesChanged, 0);
 
 	return nofit;
 }
@@ -756,14 +743,15 @@ boolean P_ChangeSector(sector_t *sector)
 //
 #define STOPSPEED			0x1000
 
-void P_XYMovement(mobj_t* mo) 
+void P_ThingMovement(mobj_t* mo) 
 {
-	P_XYMovement2(mo, 0);
+	P_ThingMovement2(mo, NULL);
 }
 
 // Playmove can be NULL. It's only used with player mobjs.
-void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate) 
-{ 	
+void P_ThingMovement2(mobj_t* mo, void *pstate)
+{
+	playerstate_t *playstate = pstate;
     fixed_t		ptryx, ptryy;
     fixed_t		xmove, ymove;
 	ddplayer_t*	player;
@@ -802,7 +790,7 @@ void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate)
 			xmove = ymove = 0;
 		}
 		
-		if(!P_TryMove(mo, ptryx, ptryy, mo->z))
+		if(!P_TryMoveXYZ(mo, ptryx, ptryy, mo->z))
 		{
 			// Blocked move.
 			if(player)
@@ -810,11 +798,11 @@ void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate)
 				if(blockingMobj)
 				{
 					// Slide along the side of the mobj.
-					if(P_TryMove(mo, mo->x, ptryy, mo->z))
+					if(P_TryMoveXYZ(mo, mo->x, ptryy, mo->z))
 					{
 						mo->momx = 0;
 					}
-					else if(P_TryMove(mo, ptryx, mo->y, mo->z))
+					else if(P_TryMoveXYZ(mo, ptryx, mo->y, mo->z))
 					{
 						mo->momy = 0;
 					}
@@ -827,7 +815,7 @@ void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate)
 				else
 				{
 					// Try to slide along it.
-					P_SlideMove(mo);
+					P_ThingSlidingMove(mo);
 				}
 			}
 			else
@@ -866,7 +854,7 @@ void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate)
 //
 // P_ZMovement
 //
-void P_ZMovement(mobj_t* mo)
+void P_ThingZMovement(mobj_t* mo)
 {
     // check for smooth step up
     if(mo->dplayer && mo->z < mo->floorz)
@@ -936,3 +924,4 @@ void P_ZMovement(mobj_t* mo)
 		mo->z = mo->ceilingz - mo->height;
     }
 } 
+

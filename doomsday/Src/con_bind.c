@@ -17,15 +17,13 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct
-{
+typedef struct {
 	event_t	event;
 	int		flags;
 	char	*command;
 } binding_t;
 
-typedef struct
-{
+typedef struct {
 	int		key;	// DDKEY
 	char	*name;
 } keyname_t;
@@ -203,7 +201,10 @@ void B_DeleteBindingIdx(int index)
 
 	free(binds[index].command);
 	if(index < numBinds-1) // If not the last one, do some rollback.
-		memmove(binds+index, binds+index+1, sizeof(binding_t)*(numBinds-index-1));
+	{
+		memmove(binds+index, binds+index+1,
+				sizeof(binding_t) * (numBinds-index-1));
+	}
 	binds = realloc(binds, sizeof(binding_t)* --numBinds);
 }
 
@@ -226,7 +227,8 @@ void B_Bind(event_t *event, char *command)
 	bnd->command = realloc(bnd->command, strlen(command)+1);
 	strcpy(bnd->command, command);
 
-//	Con_Printf( "B_Bind: evtype:%d data:%d cmd:%s\n", bnd->event.type, bnd->event.data1, bnd->command);
+//	Con_Printf( "B_Bind: evtype:%d data:%d cmd:%s\n", bnd->event.type,
+//	bnd->event.data1, bnd->command);
 }
 
 /*
@@ -234,9 +236,9 @@ void B_Bind(event_t *event, char *command)
  */
 void B_ClearBinding(char *command)
 {
-	int		i;
+	int i;
 
-	for(i=0; i<numBinds; i++)
+	for(i = 0; i < numBinds; i++)
 		if(!stricmp(binds[i].command, command))
 			B_DeleteBindingIdx(i--);
 }
@@ -560,3 +562,4 @@ int DD_GetKeyCode(const char *key)
 	int code = getByShortName(key);
 	return code? code : key[0];
 }
+

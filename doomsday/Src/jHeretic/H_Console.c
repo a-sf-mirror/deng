@@ -10,8 +10,8 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <stdlib.h>
-#include "DoomDef.h"
-#include "soundst.h"
+#include "Doomdef.h"
+#include "Soundst.h"
 #include "settings.h"
 #include "f_infine.h"
 

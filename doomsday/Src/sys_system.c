@@ -7,8 +7,15 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <windows.h>
-#include <process.h>
+#ifdef WIN32
+#	include <windows.h>
+#	include <process.h>
+#endif
+
+#ifdef UNIX
+#	include <SDL.h>
+#	include <SDL_thread.h>
+#endif
 
 #include "de_base.h"
 #include "de_console.h"
@@ -31,8 +38,10 @@
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+#ifdef WIN32
 extern HWND			hWndMain;
-extern HINSTANCE	hInstApp; 
+extern HINSTANCE	hInstApp;
+#endif
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -49,8 +58,10 @@ boolean		novideo;		// if true, stay in text mode for debugging
 //==========================================================================
 void Sys_Init(void)
 {
+#ifdef WIN32
 	// Initialize COM.
 	CoInitialize(NULL);
+#endif
 
 	Con_Message("Sys_Init: Initializing keyboard, mouse and joystick.\n");
 	if(!isDedicated)
@@ -84,7 +95,9 @@ void Sys_Shutdown(void)
 	GL_Shutdown();
 	I_Shutdown();
 
+#ifdef WIN32
 	CoUninitialize();
+#endif
 }
 
 //===========================================================================
@@ -92,6 +105,7 @@ void Sys_Shutdown(void)
 //===========================================================================
 int Sys_CriticalMessage(char *msg)
 {
+#ifdef WIN32
 	char buf[256];
 	int ret;
 
@@ -103,6 +117,9 @@ int Sys_CriticalMessage(char *msg)
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 //===========================================================================
@@ -110,7 +127,13 @@ int Sys_CriticalMessage(char *msg)
 //===========================================================================
 void Sys_Sleep(int millisecs)
 {
+#ifdef WIN32
 	Sleep(millisecs);
+#endif
+#ifdef UNIX
+	// Not guaranteed to be very accurate...
+	SDL_Delay(millisecs);
+#endif
 }
 
 //===========================================================================
@@ -118,7 +141,12 @@ void Sys_Sleep(int millisecs)
 //===========================================================================
 void Sys_ShowCursor(boolean show)
 {
+#ifdef WIN32
 	ShowCursor(show);
+#endif
+#ifdef UNIX
+	SDL_ShowCursor(show? SDL_ENABLE : SDL_DISABLE);
+#endif
 }
 
 //===========================================================================
@@ -127,8 +155,13 @@ void Sys_ShowCursor(boolean show)
 void Sys_HideMouse(void)
 {
 	if(novideo || nofullscreen) return;
+#ifdef WIN32
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
+#endif
+#ifdef UNIX
+	Sys_ShowCursor(false);
+#endif
 }
 
 //===========================================================================
@@ -139,9 +172,11 @@ void Sys_ShowWindow(boolean show)
 	// Showing does not work in dedicated mode.
 	if(isDedicated && show) return; 
 
+#ifdef WIN32	
 	SetWindowPos(hWndMain, HWND_TOP, 0, 0, 0, 0, 
 		(show? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOSIZE | SWP_NOMOVE);
 	if(show) SetActiveWindow(hWndMain);
+#endif	
 }
 
 //==========================================================================
@@ -152,7 +187,10 @@ void Sys_Quit(void)
 {
 	// Quit netgame if one is in progress.
 	if(netgame)
-		Con_Execute(isServer? "net server close" : "net disconnect", true);
+	{
+		Con_Execute(isServer? "net server close" : "net disconnect",
+					true);
+	}
 
 	Demo_StopPlayback();
 	Con_SaveDefaults();
@@ -160,58 +198,9 @@ void Sys_Quit(void)
 	B_Shutdown();
 	Con_Shutdown();
 	DD_Shutdown();
+
+	// Stop the execution of the program.
 	exit(0);
-}
-
-//===========================================================================
-// superatol
-//===========================================================================
-long superatol(char *s)
-{
-	char *endptr;
-	long val = strtol(s, &endptr, 0);
-
-	if(*endptr == 'k' || *endptr == 'K')
-		val *= 1024;
-	else if(*endptr == 'm' || *endptr == 'M')
-		val *= 1048576;
-	return val;
-}
-
-//==========================================================================
-// Sys_ZoneBase
-//==========================================================================
-byte *Sys_ZoneBase (size_t *size)
-{
-#define RETRY_STEP	0x80000	// Half a meg.
-	size_t heap;
-	byte *ptr;
-
-	// Check for the -maxzone option.
-	if(ArgCheckWith("-maxzone", 1)) maxzone = superatol(ArgNext());
-
-	heap = maxzone;
-	if(heap < MINIMUM_HEAP_SIZE) heap = MINIMUM_HEAP_SIZE;
-	if(heap > MAXIMUM_HEAP_SIZE) heap = MAXIMUM_HEAP_SIZE;
-	heap += RETRY_STEP;
-	
-	do { // Until we get the memory (usually succeeds on the first try).
-		heap -= RETRY_STEP;		// leave some memory alone
-		ptr = malloc (heap);
-	} while(!ptr);
-
-	Con_Message("  %.1f Mb allocated for zone.\n", heap/1024.0/1024.0);
-	if(heap < (uint) maxzone)
-	{
-		Con_Message("  The requested amount was %.1f Mb.\n",
-			maxzone/1024.0/1024.0);
-	}
-
-	if (heap < 0x180000)
-		Con_Error("  Insufficient memory!");
-
-	*size = heap;
-	return ptr;
 }
 
 //===========================================================================
@@ -219,11 +208,13 @@ byte *Sys_ZoneBase (size_t *size)
 //===========================================================================
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
+#ifdef WIN32	
 	char title[300];
 
 	GetWindowText(hWndMain, title, 300);
 	MessageBox(hWndMain, msg, title, MB_OK | (iserror? MB_ICONERROR
 		: MB_ICONINFORMATION));
+#endif	
 }
 
 //===========================================================================
@@ -232,8 +223,10 @@ void Sys_MessageBox(const char *msg, boolean iserror)
 //===========================================================================
 void Sys_OpenTextEditor(const char *filename)
 {
+#ifdef WIN32
 	// Everybody is bound to have Notepad.
 	spawnlp(P_NOWAIT, "notepad.exe", "notepad.exe", filename, 0);
+#endif
 }
 
 //===========================================================================
@@ -243,6 +236,7 @@ void Sys_OpenTextEditor(const char *filename)
 //===========================================================================
 int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 {
+#ifdef WIN32
 	HANDLE handle;
 	DWORD id;
 
@@ -269,6 +263,9 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 		SetThreadPriority(handle, prios[priority + 3]);
 	}
 	return (int) handle;
+#else
+	return (int) SDL_CreateThread(startpos, parm);
+#endif
 }
 
 //===========================================================================
@@ -277,10 +274,116 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 //===========================================================================
 void Sys_SuspendThread(int handle, boolean dopause)
 {
+#ifdef WIN32	
 	if(dopause)
+	{
 		SuspendThread( (HANDLE) handle);
+	}
 	else
+	{
 		ResumeThread( (HANDLE) handle);
+	}
+#endif	
 }
 
+#ifdef WIN32
+int Sys_CreateMutex(const char *name)
+{
+	return (int)CreateMutex(NULL, FALSE, name);
+}
 
+void Sys_DestroyMutex(int handle)
+{
+	if(!handle) return;	
+	CloseHandle((HANDLE)handle);
+}
+
+void Sys_Lock(int handle)
+{
+	if(!handle) return;
+	WaitForSingleObject((HANDLE)handle, 5000);
+}
+
+void Sys_Unlock(int handle)
+{
+	if(!handle) return;
+	ReleaseMutex((HANDLE)handle);
+}
+#endif
+
+#ifdef UNIX
+/*
+ * Returns the return value of the thread.
+ */
+int Sys_WaitThread(int handle)
+{
+	int result;
+
+	SDL_WaitThread((SDL_Thread*)handle, &result);
+	return result;
+}
+
+int Sys_CreateMutex(const char *name)
+{
+	return (int) SDL_CreateMutex();
+}
+
+void Sys_DestroyMutex(int handle)
+{
+	if(!handle) return;	
+	SDL_DestroyMutex((SDL_mutex*)handle);
+}
+
+void Sys_Lock(int handle)
+{
+	if(!handle) return;	
+	SDL_mutexP((SDL_mutex*)handle);
+}
+
+void Sys_Unlock(int handle)
+{
+	if(!handle) return;
+	SDL_mutexV((SDL_mutex*)handle);
+}
+
+#endif
+
+#ifdef UNIX
+/*
+ * Create a new semaphore. Returns a handle.
+ */
+semaphore_t Sem_Create(unsigned int initialValue)
+{
+	return (semaphore_t) SDL_CreateSemaphore(initialValue);
+}
+
+void Sem_Destroy(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_DestroySemaphore((SDL_sem*)semaphore);
+	}
+}
+
+/*
+ * "Proberen" a semaphore. Blocks until the successful.
+ */
+void Sem_P(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_SemWait((SDL_sem*)semaphore);
+	}
+}
+
+/*
+ * "Verhogen" a semaphore. Returns immediately.
+ */
+void Sem_V(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_SemPost((SDL_sem*)semaphore);
+	}
+}
+#endif

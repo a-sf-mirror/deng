@@ -44,7 +44,7 @@ float			modelSpinSpeed = 1;
 int				alwaysAlign = 0;
 int				r_nospritez = false;
 int				pspOffX = 0, pspOffY = 0;
-int				r_use_srvo = 2, r_use_srvo_angle = true; 
+int				r_use_srvo = 2, r_use_srvo_angle = true;
 				// srvo1 = models only, srvo2 = sprites + models
 
 int				psp3d;
@@ -94,8 +94,8 @@ static fixed_t bobOffsets[64] =
 
 /*
 
-Sprite rotation 0 is facing the viewer, rotation 1 is one angle turn 
-CLOCKWISE around the axis. This is not the same as the angle, which 
+Sprite rotation 0 is facing the viewer, rotation 1 is one angle turn
+CLOCKWISE around the axis. This is not the same as the angle, which
 increases counter clockwise (protractor).
 
 */
@@ -125,7 +125,7 @@ void R_InitSpriteLumps(void)
 
 	for(i = 0, sl = spritelumps; i < numspritelumps; i++, sl++)
 	{
-		if(!(i%50)) Con_Progress(i, PBARF_SET | PBARF_DONTSHOW);		
+		if(!(i%50)) Con_Progress(i, PBARF_SET | PBARF_DONTSHOW);
 
 		patch = W_CacheLumpNum(sl->lump, PU_CACHE);
 		sl->width = SHORT(patch->width);
@@ -233,7 +233,7 @@ void R_InitSpriteDefs(void)
 
 	numspritelumps = 0;
 	numsprites = count_sprnames.num;
-	
+
 	// Check that some sprites are defined.
 	if(!numsprites) return;
 
@@ -243,7 +243,7 @@ void R_InitSpriteDefs(void)
 	// frame letter. Just compare 4 characters as ints.
 	for (i=0 ; i<numsprites ; i++)
 	{
-		spritename = sprnames[i].name; 
+		spritename = sprnames[i].name;
 		memset(sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
@@ -273,7 +273,7 @@ void R_InitSpriteDefs(void)
 			if( *(int*) name == intname)
 			{
 				// Check that the name is valid.
-				if(!name[4] || !name[5] || (name[6] && !name[7])) 
+				if(!name[4] || !name[5] || (name[6] && !name[7]))
 					continue; // This is not a sprite frame.
 				// Indices 5 and 7 must be numbers (0-8).
 				if(name[5] < '0' || name[5] > '8') continue;
@@ -302,7 +302,7 @@ void R_InitSpriteDefs(void)
 		maxframe++;
 		for (frame = 0 ; frame < maxframe ; frame++)
 		{
-			switch (sprtemp[frame].rotate)
+			switch((int)sprtemp[frame].rotate)
 			{
 			case -1:	// no rotations were found for that frame at all
 				Con_Error ("R_InitSprites: No patches found for %s frame %c",
@@ -313,15 +313,16 @@ void R_InitSpriteDefs(void)
 			case 1:	// must have all 8 frames
 				for (rotation=0 ; rotation<8 ; rotation++)
 					if (sprtemp[frame].lump[rotation] == -1)
-						Con_Error ("R_InitSprites: Sprite %s frame %c is missing rotations",
-							spritename, frame+'A');
+						Con_Error("R_InitSprites: Sprite %s frame %c is "
+								  "missing rotations",
+								  spritename, frame+'A');
 			}
 		}
 
-		// The model definitions might have a larger max frame for this 
+		// The model definitions might have a larger max frame for this
 		// sprite.
 		/*highframe = R_GetMaxMDefSpriteFrame(spritename) + 1;
-		if(highframe > maxframe) 
+		if(highframe > maxframe)
 		{
 			maxframe = highframe;
 			for(l=0; l<maxframe; l++)
@@ -329,12 +330,12 @@ void R_InitSpriteDefs(void)
 					if(sprtemp[l].lump[frame] == -1)
 						sprtemp[l].lump[frame] = 0;
 		}*/
-			
+
 		// Allocate space for the frames present and copy sprtemp to it.
 		sprites[i].numframes = maxframe;
 		sprites[i].spriteframes =
 			Z_Malloc (maxframe * sizeof(spriteframe_t), PU_SPRITE, NULL);
-		memcpy (sprites[i].spriteframes, sprtemp, 
+		memcpy (sprites[i].spriteframes, sprtemp,
 			maxframe * sizeof(spriteframe_t));
 		// The possible model frames are initialized elsewhere.
 		//sprites[i].modeldef = -1;
@@ -434,7 +435,7 @@ void R_InitSprites(void)
 	Z_FreeTags(PU_SPRITE, PU_SPRITE);
 	R_InitSpriteDefs();
 	R_InitSpriteLumps();
-}	
+}
 
 //===========================================================================
 // R_ClearSprites
@@ -472,12 +473,12 @@ void R_ProjectDecoration(mobj_t *source)
 	memset(vis, 0, sizeof(*vis));
 	vis->type = VSPR_MAP_OBJECT;
 	vis->distance = Rend_PointDist2D(v1);
-	vis->mo.patch = -1; // Doesn't have one!
-	vis->mo.light = DL_GetLuminous(source->light);
-//	vis->mo.flags = thing->ddflags;
-	vis->mo.gx = source->x;
-	vis->mo.gy = source->y;
-	vis->mo.gz = vis->mo.gzt = source->z; 
+	vis->data.mo.patch = -1; // Doesn't have one!
+	vis->data.mo.light = DL_GetLuminous(source->light);
+//	vis->data.mo.flags = thing->ddflags;
+	vis->data.mo.gx = source->x;
+	vis->data.mo.gy = source->y;
+	vis->data.mo.gz = vis->data.mo.gzt = source->z;
 }
 
 //===========================================================================
@@ -496,7 +497,7 @@ void R_ProjectPlayerSprites(void)
 	psp3d = false;
 
 	// Cameramen have no psprites.
-	if(viewplayer->flags & DDPF_CAMERA) return; 
+	if(viewplayer->flags & DDPF_CAMERA) return;
 
 	for(i = 0, psp = viewplayer->psprites; i < DDMAXPSPRITES; i++, psp++)
 	{
@@ -510,7 +511,7 @@ void R_ProjectPlayerSprites(void)
 		dummy.state = psp->stateptr;
 		dummy.tics = psp->tics;
 
-		vis->mo.inter = R_CheckModelFor(&dummy, &mf, &nextmf);
+		vis->data.mo.inter = R_CheckModelFor(&dummy, &mf, &nextmf);
 		if(!mf)
 		{
 			// No, draw a 2D sprite instead (in Rend_DrawPlayerSprites).
@@ -518,46 +519,47 @@ void R_ProjectPlayerSprites(void)
 		}
 		// Mark this sprite rendered.
 		psp->flags |= DDPSPF_RENDERED;
-	
+
 		// There are 3D psprites.
 		psp3d = true;
 
 		vis->type = VSPR_HUD_MODEL; // it's a psprite
 		vis->distance = 4;
-		vis->mo.subsector = viewplayer->mo->subsector;
-		vis->mo.mf = mf;
-		vis->mo.nextmf = nextmf;
-		vis->mo.flags = 0;
-		vis->mo.gx = viewx;
-		vis->mo.gy = viewy;
-		vis->mo.v1[VX] = FIX2FLT(viewx);
-		vis->mo.v1[VY] = FIX2FLT(viewy);
+		vis->data.mo.subsector = viewplayer->mo->subsector;
+		vis->data.mo.mf = mf;
+		vis->data.mo.nextmf = nextmf;
+		vis->data.mo.flags = 0;
+		vis->data.mo.gx = viewx;
+		vis->data.mo.gy = viewy;
+		vis->data.mo.v1[VX] = FIX2FLT(viewx);
+		vis->data.mo.v1[VY] = FIX2FLT(viewy);
 		// 32 is the raised weapon height.
-		vis->mo.gzt = vis->mo.gz = viewz;
-		vis->mo.viewaligned = true; 
-		vis->mo.secfloor = -1.0e6;
-		vis->mo.secceil = 1.0e6;
-		vis->mo.class = 0;
-		vis->mo.floorclip = 0;
+		vis->data.mo.gzt = vis->data.mo.gz = viewz;
+		vis->data.mo.viewaligned = true;
+		vis->data.mo.secfloor = -1.0e6;
+		vis->data.mo.secceil = 1.0e6;
+		vis->data.mo.class = 0;
+		vis->data.mo.floorclip = 0;
 		// Offsets to rotation angles.
-		vis->mo.v2[VX] = psp->x * weaponOffsetScale - 90;
-		vis->mo.v2[VY] = (32 - psp->y) * weaponOffsetScale 
+		vis->data.mo.v2[VX] = psp->x * weaponOffsetScale - 90;
+		vis->data.mo.v2[VY] = (32 - psp->y) * weaponOffsetScale
 			* weaponOffsetScaleY/1000.0f;
 		// Is the FOV shift in effect?
 		if(weaponFOVShift > 0 && fieldOfView > 90)
-			vis->mo.v2[VY] -= weaponFOVShift * (fieldOfView - 90)/90;
+			vis->data.mo.v2[VY] -= weaponFOVShift * (fieldOfView - 90)/90;
 		// Real rotation angles.
-		vis->mo.yaw = viewangle / (float) ANGLE_MAX * -360 
-			+ vis->mo.v2[VX] + 90;
-		vis->mo.pitch = viewpitch*85/110 + vis->mo.v2[VY];
-		vis->mo.flip = false;
+		vis->data.mo.yaw = viewangle / (float) ANGLE_MAX * -360
+			+ vis->data.mo.v2[VX] + 90;
+		vis->data.mo.pitch = viewpitch*85/110 + vis->data.mo.v2[VY];
+		vis->data.mo.flip = false;
 		if(psp->light < 1)
-			vis->mo.lightlevel = (psp->light-.1f) * 255;
+			vis->data.mo.lightlevel = (psp->light-.1f) * 255;
 		else
-			vis->mo.lightlevel = 255;
-		vis->mo.alpha = psp->alpha;
-		memcpy(vis->mo.rgb, viewplayer->mo->subsector->sector->rgb, 3);
-		memset(vis->mo.visoff, 0, sizeof(vis->mo.visoff));
+			vis->data.mo.lightlevel = 255;
+		vis->data.mo.alpha = psp->alpha;
+		memcpy(vis->data.mo.rgb,
+			   R_GetSectorLightColor(viewplayer->mo->subsector->sector), 3);
+		memset(vis->data.mo.visoff, 0, sizeof(vis->data.mo.visoff));
 	}
 }
 
@@ -567,7 +569,7 @@ void R_ProjectPlayerSprites(void)
 float R_MovementYaw(fixed_t momx, fixed_t momy)
 {
 	// Multiply by 100 to get some artificial accuracy in bamsAtan2.
-	return BANG2DEG( bamsAtan2(-100 * FIX2FLT(momy), 
+	return BANG2DEG( bamsAtan2(-100 * FIX2FLT(momy),
 		100 * FIX2FLT(momx)) );
 }
 
@@ -576,7 +578,7 @@ float R_MovementYaw(fixed_t momx, fixed_t momy)
 //===========================================================================
 float R_MovementPitch(fixed_t momx, fixed_t momy, fixed_t momz)
 {
-	return BANG2DEG( bamsAtan2(100 * FIX2FLT(momz), 
+	return BANG2DEG( bamsAtan2(100 * FIX2FLT(momz),
 		100 * P_AccurateDistance(momx, momy)) );
 }
 
@@ -600,9 +602,9 @@ void R_ProjectSprite (mobj_t *thing)
 	boolean		align;
 	modeldef_t	*mf = NULL, *nextmf = NULL;
 	float		interp = 0, distance;
-	
+
 	if(thing->ddflags & DDMF_DONTDRAW || thing->translucency == 0xff)
-	{ 
+	{
 		// Never make a vissprite when DDMF_DONTDRAW is set or when
 		// the thing is fully transparent.
 		return;
@@ -627,7 +629,7 @@ void R_ProjectSprite (mobj_t *thing)
 		// The frame is not defined, we can't display this object.
 		return;
 	}
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];	
+	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];
 
 	// Calculate edges of the shape.
 	v1[VX] = FIX2FLT(thing->x);
@@ -640,7 +642,7 @@ void R_ProjectSprite (mobj_t *thing)
 	{
 		interp = R_CheckModelFor(thing, &mf, &nextmf);
 		if(mf && !(mf->flags & MFF_NO_DISTANCE_CHECK)
-			&& r_maxmodelz 
+			&& r_maxmodelz
 			&& distance > r_maxmodelz)
 		{
 			// Don't use a 3D model.
@@ -650,15 +652,15 @@ void R_ProjectSprite (mobj_t *thing)
 	}
 
 	if(sprframe->rotate && !mf)
-	{	
+	{
 		// Choose a different rotation based on player view.
 		ang = R_PointToAngle (thing->x, thing->y);
 		rot = (ang - thing->angle + (unsigned)(ANG45/2)*9)>>29;
 		lump = sprframe->lump[rot];
 		flip = (boolean)sprframe->flip[rot];
 	}
-	else 
-	{	
+	else
+	{
 		// Use single rotation for all views.
 		lump = sprframe->lump[0];
 		flip = (boolean)sprframe->flip[0];
@@ -671,7 +673,7 @@ void R_ProjectSprite (mobj_t *thing)
 		align = false;
 
 	if(alwaysAlign == 1) align = true;
-	
+
 	if(!mf)
 	{
 		if(align || alwaysAlign == 3)
@@ -682,18 +684,19 @@ void R_ProjectSprite (mobj_t *thing)
 		}
 		else
 		{
-			thangle = BANG2RAD(bamsAtan2(FIX2FLT(try)*10, FIX2FLT(trx)*10)) - PI/2;
+			thangle = BANG2RAD(bamsAtan2(FIX2FLT(try)*10,
+										 FIX2FLT(trx)*10)) - PI/2;
 			sinrv = sin(thangle);
 			cosrv = cos(thangle);
-		}	
-		
+		}
+
 		//if(alwaysAlign == 2) align = true;
-		
-		v1[VX] -= cosrv * spritelumps[lump].offset; 
-		v1[VY] -= sinrv * spritelumps[lump].offset; 
+
+		v1[VX] -= cosrv * spritelumps[lump].offset;
+		v1[VY] -= sinrv * spritelumps[lump].offset;
 		v2[VX] = v1[VX] + cosrv * spritelumps[lump].width;
 		v2[VY] = v1[VY] + sinrv * spritelumps[lump].width;
-		
+
 		if(!align && alwaysAlign != 2 && alwaysAlign != 3)
 			// Check for visibility.
 			if(!C_CheckViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]))
@@ -708,15 +711,15 @@ void R_ProjectSprite (mobj_t *thing)
 		cosrv = cos(thangle);
 		off[VX] = cosrv * (thing->radius>>FRACBITS);
 		off[VY] = sinrv * (thing->radius>>FRACBITS);
-		if(!C_CheckViewRelSeg(v1[VX] - off[VX], v1[VY] - off[VY], 
-			v1[VX] + off[VX], v1[VY] + off[VY])) 
+		if(!C_CheckViewRelSeg(v1[VX] - off[VX], v1[VY] - off[VY],
+			v1[VX] + off[VX], v1[VY] + off[VY]))
 		{
 			// The visibility check indicates that the model's origin is
 			// not visible. However, if the model is close to the viewpoint
 			// we will need to draw it. Otherwise large models are likely
 			// to disappear too early.
-			if(P_ApproxDistance(distance * FRACUNIT, 
-				thing->z + thing->height/2 - viewz) 
+			if(P_ApproxDistance(distance * FRACUNIT,
+				thing->z + thing->height/2 - viewz)
 				> MAX_OBJECT_RADIUS * FRACUNIT)
 			{
 				return;	// Can't be visible.
@@ -731,67 +734,68 @@ void R_ProjectSprite (mobj_t *thing)
 	vis = R_NewVisSprite ();
 	vis->type = VSPR_MAP_OBJECT;
 	vis->distance = distance;
-	vis->mo.subsector = thing->subsector;
-	vis->mo.light = DL_GetLuminous(thing->light);
-	vis->mo.mf = mf;
-	vis->mo.nextmf = nextmf;
-	vis->mo.inter = interp;
-	vis->mo.flags = thing->ddflags;
-	vis->mo.id = thing->thinker.id;
-	vis->mo.selector = thing->selector;
-	vis->mo.gx = thing->x;
-	vis->mo.gy = thing->y;
-	vis->mo.gz = thing->z;
-	vis->mo.gzt = thing->z + ((fixed_t)spritelumps[lump].topoffset << FRACBITS); 
+	vis->data.mo.subsector = thing->subsector;
+	vis->data.mo.light = DL_GetLuminous(thing->light);
+	vis->data.mo.mf = mf;
+	vis->data.mo.nextmf = nextmf;
+	vis->data.mo.inter = interp;
+	vis->data.mo.flags = thing->ddflags;
+	vis->data.mo.id = thing->thinker.id;
+	vis->data.mo.selector = thing->selector;
+	vis->data.mo.gx = thing->x;
+	vis->data.mo.gy = thing->y;
+	vis->data.mo.gz = thing->z;
+	vis->data.mo.gzt = thing->z +
+		((fixed_t)spritelumps[lump].topoffset << FRACBITS);
 
-	memcpy(vis->mo.rgb, sect->rgb, 3);
+	memcpy(vis->data.mo.rgb, R_GetSectorLightColor(sect), 3);
 
-	vis->mo.viewaligned = align;
+	vis->data.mo.viewaligned = align;
 
-	vis->mo.secfloor = FIX2FLT(thing->subsector->sector->floorheight);
-	vis->mo.secceil = FIX2FLT(thing->subsector->sector->ceilingheight);
+	vis->data.mo.secfloor = FIX2FLT(thing->subsector->sector->floorheight);
+	vis->data.mo.secceil = FIX2FLT(thing->subsector->sector->ceilingheight);
 
 	if(thing->ddflags & DDMF_TRANSLATION)
-		vis->mo.class = (thing->ddflags>>DDMF_CLASSTRSHIFT) & 0x3;
+		vis->data.mo.class = (thing->ddflags>>DDMF_CLASSTRSHIFT) & 0x3;
 	else
-		vis->mo.class = 0;
+		vis->data.mo.class = 0;
 
 	// Foot clipping.
-	vis->mo.floorclip = thing->floorclip;
+	vis->data.mo.floorclip = thing->floorclip;
 	if(thing->ddflags & DDMF_BOB)
 	{
 		// Bobbing is applied to the floorclip.
-		vis->mo.floorclip += R_GetBobOffset(thing);
+		vis->data.mo.floorclip += R_GetBobOffset(thing);
 	}
-	
+
 	// The start and end vertices.
-	vis->mo.v1[VX] = v1[VX];
-	vis->mo.v1[VY] = v1[VY];
+	vis->data.mo.v1[VX] = v1[VX];
+	vis->data.mo.v1[VY] = v1[VY];
 	if(!mf)
 	{
-		vis->mo.v2[VX] = v2[VX];
-		vis->mo.v2[VY] = v2[VY];
+		vis->data.mo.v2[VX] = v2[VX];
+		vis->data.mo.v2[VY] = v2[VY];
 	}
 	else
 	{
 		// Determine the rotation angles (in degrees).
 		if(mf->sub[0].flags & MFF_ALIGN_YAW)
 		{
-			vis->mo.yaw = 90 - thangle / PI * 180;
+			vis->data.mo.yaw = 90 - thangle / PI * 180;
 		}
 		else if(mf->sub[0].flags & MFF_SPIN)
 		{
-			vis->mo.yaw = modelSpinSpeed * 70 * leveltic/35.0f 
+			vis->data.mo.yaw = modelSpinSpeed * 70 * leveltic/35.0f
 				+ (int)thing % 360;
 		}
 		else if(mf->sub[0].flags & MFF_MOVEMENT_YAW)
 		{
-			vis->mo.yaw = R_MovementYaw(thing->momx, thing->momy);
+			vis->data.mo.yaw = R_MovementYaw(thing->momx, thing->momy);
 		}
 		else
 		{
-			vis->mo.yaw = (r_use_srvo_angle && !netgame && !playback? 
-				(thing->visangle<<16) : thing->angle) 
+			vis->data.mo.yaw = (r_use_srvo_angle && !netgame && !playback?
+				(thing->visangle<<16) : thing->angle)
 				/ (float) ANGLE_MAX*-360;
 		}
 
@@ -799,38 +803,38 @@ void R_ProjectSprite (mobj_t *thing)
 		if(mf->sub[0].flags & MFF_IDANGLE)
 		{
 			// Multiply with an arbitrary factor.
-			vis->mo.yaw += THING_TO_ID(thing) % 360;
+			vis->data.mo.yaw += THING_TO_ID(thing) % 360;
 		}
 
 		if(mf->sub[0].flags & MFF_ALIGN_PITCH)
 		{
-			vis->mo.pitch = -BANG2DEG(bamsAtan2(FIX2FLT
-				((vis->mo.gz + vis->mo.gzt)/2 - viewz)*10,
-				distance*10));			
+			vis->data.mo.pitch = -BANG2DEG(bamsAtan2(FIX2FLT
+				((vis->data.mo.gz + vis->data.mo.gzt)/2 - viewz)*10,
+				distance*10));
 		}
 		else if(mf->sub[0].flags & MFF_MOVEMENT_PITCH)
 		{
-			vis->mo.pitch = R_MovementPitch(thing->momx, thing->momy,
+			vis->data.mo.pitch = R_MovementPitch(thing->momx, thing->momy,
 				thing->momz);
 		}
 		else
-			vis->mo.pitch = 0;
+			vis->data.mo.pitch = 0;
 	}
-	vis->mo.flip = flip;
-	vis->mo.patch = lump;
+	vis->data.mo.flip = flip;
+	vis->data.mo.patch = lump;
 
 	// Set light level.
-	if((LevelFullBright || thing->frame & FF_FULLBRIGHT) 
+	if((LevelFullBright || thing->frame & FF_FULLBRIGHT)
 		&& (!mf || !(mf->sub[0].flags & MFF_DIM)))
 	{
-		vis->mo.lightlevel = -1;
+		vis->data.mo.lightlevel = -1;
 	}
 	else
 	{
 		// Diminished light.
-		vis->mo.lightlevel = sect->lightlevel;
+		vis->data.mo.lightlevel = sect->lightlevel;
 	}
-	
+
 	// The three highest bits of the selector are used for an alpha level.
 	// 0 = opaque (alpha -1)
 	// 1 = 1/8 transparent
@@ -839,54 +843,55 @@ void R_ProjectSprite (mobj_t *thing)
 	i = thing->selector >> DDMOBJ_SELECTOR_SHIFT;
 	if(i & 0xe0)
 	{
-		vis->mo.alpha = 1 - ((i&0xe0) >> 5)/8.0f;
+		vis->data.mo.alpha = 1 - ((i&0xe0) >> 5)/8.0f;
 	}
 	else
 	{
 		if(thing->translucency)
-			vis->mo.alpha = 1 - thing->translucency/255.0f;
+			vis->data.mo.alpha = 1 - thing->translucency/255.0f;
 		else
-			vis->mo.alpha = -1;
+			vis->data.mo.alpha = -1;
 	}
 
 	// Short-range visual offsets.
-	if((vis->mo.mf && r_use_srvo > 0 || !vis->mo.mf && r_use_srvo > 1)
-		&& thing->state 
-		&& thing->tics >= 0)
+	if(( (vis->data.mo.mf && r_use_srvo > 0) ||
+		 (!vis->data.mo.mf && r_use_srvo > 1) )
+	   && thing->state
+	   && thing->tics >= 0)
 	{
-		float mul = thing->tics / (float) thing->state->tics;				
+		float mul = thing->tics / (float) thing->state->tics;
 		for(i = 0; i < 3; i++)
-			vis->mo.visoff[i] = FIX2FLT(thing->srvo[i]<<8) * mul;
+			vis->data.mo.visoff[i] = FIX2FLT(thing->srvo[i]<<8) * mul;
 	}
 	else
 	{
 		// Reset the visual offset.
-		memset(vis->mo.visoff, 0, sizeof(vis->mo.visoff));
+		memset(vis->data.mo.visoff, 0, sizeof(vis->data.mo.visoff));
 	}
 
 	// Glowing floor and ceiling.
-	vis->mo.hasglow = false;
+	vis->data.mo.hasglow = false;
 	if(useWallGlow)
 	{
 		if(R_FlatFlags(sect->ceilingpic) & TXF_GLOW)
 		{
-			GL_GetFlatColor(sect->ceilingpic, vis->mo.ceilglow);
-			for(i=0; i<3; i++) vis->mo.ceilglow[i] *= dlFactor;
-			vis->mo.hasglow = true;
+			GL_GetFlatColor(sect->ceilingpic, vis->data.mo.ceilglow);
+			for(i=0; i<3; i++) vis->data.mo.ceilglow[i] *= dlFactor;
+			vis->data.mo.hasglow = true;
 		}
 		else
 		{
-			memset(vis->mo.ceilglow, 0, sizeof(vis->mo.ceilglow));
+			memset(vis->data.mo.ceilglow, 0, sizeof(vis->data.mo.ceilglow));
 		}
 		if(R_FlatFlags(sect->floorpic) & TXF_GLOW)
 		{
-			GL_GetFlatColor(sect->floorpic, vis->mo.floorglow);
-			for(i=0; i<3; i++) vis->mo.floorglow[i] *= dlFactor;
-			vis->mo.hasglow = true;
+			GL_GetFlatColor(sect->floorpic, vis->data.mo.floorglow);
+			for(i=0; i<3; i++) vis->data.mo.floorglow[i] *= dlFactor;
+			vis->data.mo.hasglow = true;
 		}
 		else
 		{
-			memset(vis->mo.floorglow, 0, sizeof(vis->mo.floorglow));
+			memset(vis->data.mo.floorglow, 0, sizeof(vis->data.mo.floorglow));
 		}
 	}
 }
@@ -906,7 +911,7 @@ void R_AddSprites (sector_t *sec)
 	fixed_t visibleTop;
 	sectorinfo_t *info = SECT_INFO(sec);
 
-	// Don't use validcount, because other parts of the renderer may 
+	// Don't use validcount, because other parts of the renderer may
 	// change it.
 	if(info->addspritecount == framecount)
 		return;		// already added
@@ -918,16 +923,16 @@ void R_AddSprites (sector_t *sec)
 		R_ProjectSprite (thing);
 
 		// Hack: Sprites have a tendency to extend into the ceiling in
-		// sky sectors. Here we will raise the skyfix dynamically, at 
+		// sky sectors. Here we will raise the skyfix dynamically, at
 		// runtime, to make sure that no sprites get clipped by the sky.
 		R_GetSpriteInfo(thing->sprite, thing->frame, &spriteInfo);
 		visibleTop = thing->z + (spriteInfo.height << FRACBITS);
 
-		if(sec->ceilingpic == skyflatnum 
+		if(sec->ceilingpic == skyflatnum
 			&& visibleTop > sec->ceilingheight + (sec->skyfix << FRACBITS))
 		{
 			// Raise sector skyfix.
-			sec->skyfix = ((visibleTop - sec->ceilingheight) 
+			sec->skyfix = ((visibleTop - sec->ceilingheight)
 				>> FRACBITS) + 16; // Add some leeway.
 
 			// This'll adjust all adjacent sectors.

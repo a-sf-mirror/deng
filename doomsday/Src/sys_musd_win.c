@@ -901,3 +901,4 @@ int	DM_WinCDPlay(int track, int looped)
 	cdStartTime = Sys_GetSeconds();
 	return cdPlayTrack = track;
 }
+

@@ -1856,3 +1856,4 @@ void P_ClientSideThink()
 	mo->angle = dpl->clAngle;
 	dpl->lookdir = dpl->clLookDir;
 }
+

@@ -83,6 +83,12 @@ void G_QueueBody(mobj_t *body);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.2.2  2004/05/16 10:01:30  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.2.2.1.2.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2.2.1  2003/09/06 21:09:38  skyjake
 // Improved player spawning with more intelligent spot selection
 //
@@ -97,3 +103,4 @@ void G_QueueBody(mobj_t *body);
 //
 //
 //-----------------------------------------------------------------------------
+

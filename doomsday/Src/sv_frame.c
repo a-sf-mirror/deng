@@ -29,6 +29,10 @@ END_PROF_TIMERS()
 // possible connection).
 #define MINIMUM_FRAME_SIZE	75 // bytes
 
+// The frame size is calculated by multiplying the bandwidth rating
+// (max 100) with this factor (+min).
+#define FRAME_SIZE_FACTOR 	13
+
 #define FIXED8_8(x)			(((x)*256) >> 16)
 #define FIXED10_6(x)		(((x)*64) >> 16)
 #define CLAMPED_CHAR(x)		((x)>127? 127 : (x)<-128? -128 : (x))
@@ -56,10 +60,12 @@ int frameInterval = 1; // Skip every second frame by default (17.5fps)
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+#ifdef _DEBUG
 static int byteCounts[256];
 static int totalFrameCount;
+#endif
 
-static lastTransmitTic = 0;
+static int lastTransmitTic = 0;
 
 // CODE --------------------------------------------------------------------
 
@@ -156,7 +162,7 @@ void Sv_Shutdown(void)
 	PRINT_PROF( PROF_WRITE_DELTAS );
 	PRINT_PROF( PROF_PACKET_SIZE );
 
-#if _DEBUG
+#ifdef _DEBUG
 	if(totalFrameCount > 0)
 	{
 		int i;
@@ -531,6 +537,9 @@ void Sv_WriteSoundDelta(const void *deltaPtr)
 		// The sound ID.
 		Msg_WriteShort(delta->sound);
 		break;
+
+	default:
+		break;
 	}
 
 	// The common parts.
@@ -659,8 +668,15 @@ void Sv_WriteDelta(const delta_t *delta)
  */
 int Sv_GetMaxFrameSize(int playerNumber)
 {
-	return MINIMUM_FRAME_SIZE 
-		+ 10 * clients[playerNumber].bandwidthRating;
+	int size = MINIMUM_FRAME_SIZE + FRAME_SIZE_FACTOR *
+		clients[playerNumber].bandwidthRating;
+
+#ifndef WIN32
+	// What about the communications medium?
+	if(size > maxDatagramSize) size = maxDatagramSize;
+#endif
+
+	return size;
 }
 
 /*
@@ -706,8 +722,15 @@ void Sv_SendFrame(int playerNumber)
 	// Determine the maximum size of the frame packet.
 	maxFrameSize = Sv_GetMaxFrameSize(playerNumber);
 
-	// Allow a more info for the first frame.
-	if(pool->isFirst) maxFrameSize *= 10;
+	// Allow more info for the first frame.
+	if(pool->isFirst) 
+	{
+#ifdef WIN32
+		maxFrameSize *= 10;
+#else
+		maxFrameSize = maxDatagramSize;
+#endif
+	}
 
 	// If this is the first frame after a map change, use the special
 	// first frame packet type.
@@ -797,3 +820,4 @@ void Sv_SendFrame(int playerNumber)
 	// Now a frame has been sent.
 	pool->isFirst = false;
 }
+

@@ -5,7 +5,7 @@
 #ifndef __JDOOM_SETTINGS_H__
 #define __JDOOM_SETTINGS_H__
 
-enum 
+enum
 {
 	HUD_HEALTH,
 	HUD_ARMOR,

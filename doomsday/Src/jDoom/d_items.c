@@ -15,6 +15,12 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.2.1  2004/05/16 10:01:36  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.2.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/07/01 23:58:56  skyjake
 // Static weapon switching (value, weaponinfo)
 //
@@ -242,15 +248,16 @@ void P_InitPlayerValues(player_t *p)
 	char buf[20];
 
 	GetDefInt("Player|Health", &p->health);
-	GetDefInt("Player|Weapon", &p->readyweapon);
+	GetDefInt("Player|Weapon", (int*) &p->readyweapon);
 	p->pendingweapon = p->readyweapon;
 	for(i = 0; i < NUMWEAPONS; i++)
 	{
 		sprintf(buf, "Weapon Info|%i|Owned", i);
-		GetDefInt(buf, &p->weaponowned[i]);
+		GetDefInt(buf, (int*) &p->weaponowned[i]);
 	}
 	GetDefInt(PLINA"Clip", &p->ammo[am_clip]);
 	GetDefInt(PLINA"Shell", &p->ammo[am_shell]);
 	GetDefInt(PLINA"Cell", &p->ammo[am_cell]);
 	GetDefInt(PLINA"Misl", &p->ammo[am_misl]);
 }
+

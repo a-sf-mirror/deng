@@ -16,8 +16,8 @@
 #include "s_sound.h"
 
 #elif __JHERETIC__
-#include "doomdef.h"
-#include "p_local.h"
+#include "Doomdef.h"
+#include "P_local.h"
 #include "settings.h"
 
 #elif __JHEXEN__

@@ -134,3 +134,4 @@ boolean P_SightTraverseIntercepts
 	}
 	return true;            // everything was traversed
 }
+

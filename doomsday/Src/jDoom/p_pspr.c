@@ -15,6 +15,15 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.2.1  2004/05/16 10:01:36  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.4.4.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
+// Revision 1.4.4.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.4  2003/07/03 21:23:24  skyjake
 // D_Get/H_GetString/H2_GetString => G_Get
 //
@@ -37,8 +46,10 @@
 //
 //-----------------------------------------------------------------------------
 
-// Sumtin 'ere screws up poor ol' MSVC's head...
+#ifdef WIN32
+// Sumtin' 'ere messes with poor ol' MSVC's head...
 #pragma optimize("g",off)
+#endif
 
 static const char
 rcsid[] = "$Id$";
@@ -46,7 +57,7 @@ rcsid[] = "$Id$";
 #include "doomdef.h"
 #include "d_config.h"
 #include "d_event.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 
 #include "m_random.h"
 #include "p_local.h"
@@ -972,5 +983,6 @@ void P_MovePsprites (player_t* player)
     player->psprites[ps_flash].sx = player->psprites[ps_weapon].sx;
     player->psprites[ps_flash].sy = player->psprites[ps_weapon].sy;
 }
+
 
 

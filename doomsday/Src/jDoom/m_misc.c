@@ -16,6 +16,12 @@
 //
 //
 // $Log$
+// Revision 1.2.2.2  2004/05/16 10:01:36  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.2.2.1.2.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2.2.1  2003/09/21 15:35:21  skyjake
 // Fixed screenshot file name selection
 // Moved G_DoScreenShot() to Src/Common
@@ -56,3 +62,4 @@ void strcatQuoted(char *dest, char *src)
 	}
 	strcat(dest, "\"");
 }
+

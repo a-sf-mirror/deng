@@ -10,7 +10,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <io.h>
+#include "de_platform.h"
+
 #include <ctype.h>
 #include <math.h>
 
@@ -885,8 +886,8 @@ float R_GetModelHRange(int model, int frame, float *top, float *bottom)
 void R_ScaleModel(modeldef_t *mf, float destHeight, float offset)
 {
 	submodeldef_t	*smf = &mf->sub[0];
-	model_frame_t	*mFrame = R_GetModelFrame(smf->model, smf->frame);
-	int				i, num = modellist[smf->model]->info.numVertices;
+/*	model_frame_t	*mFrame = R_GetModelFrame(smf->model, smf->frame); */
+	int				i; /*, num = modellist[smf->model]->info.numVertices; */
 	float			top, bottom, height;
 	float			scale;
 
@@ -1159,8 +1160,8 @@ void R_SetupModel(ded_model_t *def)
 		else // Must check intermark; smallest wins!
 		{
 			modeldef_t *other = (modeldef_t*) modef->state->model;
-			if(modef->intermark <= other->intermark // Should never be ==
-				&& modef->select == other->select
+			if((modef->intermark <= other->intermark // Should never be ==
+				&& modef->select == other->select)
 				|| modef->select < other->select) // Smallest selector?
 				modef->state->model = modef;
 		}
@@ -1428,4 +1429,5 @@ void R_PrecacheSkinsForMobj(mobj_t *mo)
 		R_PrecacheModelSkins(modef);
 	}
 }
+
 

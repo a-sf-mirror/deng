@@ -10,8 +10,11 @@
 #include "r_model.h"
 #include "r_draw.h"
 #include "r_world.h"
+#include "r_shadow.h"
 #include "r_sky.h"
 #include "r_util.h"
 #include "r_extres.h"
+#include "r_shadow.h"
 
-#endif 
+#endif
+

@@ -15,6 +15,15 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.2  2004/05/16 10:01:37  skyjake
+// Merged good stuff from branch-nix for the final 1.7.15
+//
+// Revision 1.3.2.1.2.2  2003/11/22 18:09:10  skyjake
+// Cleanup
+//
+// Revision 1.3.2.1.2.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3.2.1  2003/09/07 22:20:26  skyjake
 // Cleanup
 //
@@ -107,7 +116,6 @@ STlib_drawNum
     int		num = *n->num;
     
     int		w = SHORT(n->p[0].width);
-    int		h = SHORT(n->p[0].height);
     int		x = n->x;
     
     int		neg;
@@ -271,4 +279,5 @@ STlib_updateBinIcon
 		bi->oldval = *bi->val;
     }
 }
+
 

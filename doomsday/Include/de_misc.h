@@ -7,10 +7,12 @@
 #include "m_misc.h"
 #include "m_args.h"
 #include "m_bams.h"
+#include "m_vector.h"
 #include "m_string.h"
 #include "m_nodepile.h"
 #include "m_filehash.h"
 #include "m_huffman.h"
+#include "m_vector.h"
 #include "m_profiler.h"
 
 #endif 

@@ -2,10 +2,10 @@
 #define __NETCL_H__
 
 #ifdef __JHERETIC__
-#include "../JHeretic/DoomDef.h"
+#include "../jHeretic/Doomdef.h"
 #endif
 
-#include "d_Net.h"
+#include "d_net.h"
 
 void *NetCl_WriteCommands(ticcmd_t *cmd, int count);
 void NetCl_UpdateGameState(byte *data);

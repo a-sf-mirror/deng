@@ -8,6 +8,18 @@
 //** Sockets were initialized by sys_network.
 //**
 //** $Log$
+//** Revision 1.2.2.1  2004/05/16 10:01:35  skyjake
+//** Merged good stuff from branch-nix for the final 1.7.15
+//**
+//** Revision 1.2.4.3  2004/01/01 16:28:34  skyjake
+//** Cleanup
+//**
+//** Revision 1.2.4.2  2003/11/28 15:45:20  skyjake
+//** Renamed some global data to avoid conflicts
+//**
+//** Revision 1.2.4.1  2003/11/22 18:01:35  skyjake
+//** Compiles with gcc and -DUNIX
+//**
 //** Revision 1.2  2003/05/23 22:16:15  skyjake
 //** DP8, various net-related improvements
 //**
@@ -18,7 +30,16 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <winsock.h>
+#include "de_platform.h"
+
+#ifdef WIN32
+#	include <winsock.h>
+#endif
+
+#ifdef UNIX
+#	include <sys/types.h>
+#	include <sys/socket.h>
+#endif
 
 #include "de_base.h"
 #include "de_network.h"
@@ -32,9 +53,6 @@
 
 // Communication with the master is done at 'below normal' priority.
 #define MST_PRIORITY	-1
-
-#define VALID_LABEL_LEN	16
-#define	TOKEN_LEN		128
 
 // TYPES -------------------------------------------------------------------
 
@@ -53,12 +71,18 @@ typedef struct serverlist_s {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+// Master server info. Hardcoded defaults.
+char	    *masterAddress = "www.doomsdayhq.com"; 
+int			masterPort     = 0; // Uses 80 by default.
+char	    *masterPath    = "/master.php";
+boolean		masterAware    = false;		
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static const char *responseOK = "HTTP/1.1 200";
 
 // This variable will be true while a communication is in progress.
-static boolean communicating;
+static volatile boolean communicating;
 
 // A linked list of servers retrieved from the master.
 static serverlist_t *servers;
@@ -106,7 +130,7 @@ int N_MasterSendAnnouncement(void *parm)
     struct hostent *host;
 	ddstring_t msg;
 	char buf[256];
-	unsigned int length, i;
+	unsigned int length;
 
 	// Get host information.
 	if((host = N_SockGetHost(masterAddress)) == NULL)
@@ -131,43 +155,7 @@ int N_MasterSendAnnouncement(void *parm)
 
 	// Convert the serverinfo into plain text.
 	Str_Init(&msg);
-	//sprintf(buf, "addr:%s\n", info->address);
-	sprintf(buf, "port:%i\n", info->port);
-	Str_Append(&msg, buf);
-	sprintf(buf, "name:%s\n", info->name);
-	Str_Append(&msg, buf);
-	sprintf(buf, "info:%s\n", info->description);
-	Str_Append(&msg, buf);
-	sprintf(buf, "ver:%i\n", info->version);
-	Str_Append(&msg, buf);
-	sprintf(buf, "game:%s\n", info->game);
-	Str_Append(&msg, buf);
-	sprintf(buf, "mode:%s\n", info->gameMode);
-	Str_Append(&msg, buf);
-	sprintf(buf, "setup:%s\n", info->gameConfig);
-	Str_Append(&msg, buf);
-	sprintf(buf, "iwad:%s\n", info->iwad);
-	Str_Append(&msg, buf);
-	sprintf(buf, "wcrc:%i\n", info->wadNumber);
-	Str_Append(&msg, buf);
-	sprintf(buf, "pwads:%s\n", info->pwads);
-	Str_Append(&msg, buf);
-	sprintf(buf, "map:%s\n", info->map);
-	Str_Append(&msg, buf);
-	sprintf(buf, "nump:%i\n", info->players);
-	Str_Append(&msg, buf);
-	sprintf(buf, "maxp:%i\n", info->maxPlayers);
-	Str_Append(&msg, buf);
-	sprintf(buf, "open:%i\n", info->canJoin);
-	Str_Append(&msg, buf);
-	sprintf(buf, "plrn:%s\n", info->clientNames);
-	Str_Append(&msg, buf);
-	for(i = 0; i < sizeof(info->data)/sizeof(info->data[0]); i++)
-	{
-		sprintf(buf, "data%i:%x\n", i, info->data[i]);
-		Str_Append(&msg, buf);
-	}
-	length = Str_Length(&msg);
+	length = Sv_InfoToString(info, &msg);
 
 	// Free the serverinfo, it's no longer needed. 
 	free(info);
@@ -202,30 +190,6 @@ int N_MasterSendAnnouncement(void *parm)
 }
 
 /*
- * N_MasterGetLine
- */
-char *N_MasterGetLine(char *pos, ddstring_t *line)
-{
-	char buf[2];
-
-	// We'll append the chars one by one.
-	memset(buf, 0, sizeof(buf));
-	
-	for(Str_Clear(line); *pos && *pos != '\n'; pos++) 
-	{
-		buf[0] = *pos;
-		Str_Append(line, buf);
-	}
-
-	// Strip whitespace around the line.
-	Str_Strip(line);
-
-	// The newline is excluded.
-	if(*pos == '\n') pos++;
-	return pos;
-}
-
-/*
  * N_MasterDecodeChunked
  *	Response is an HTTP response with the chunked transfer encoding.
  *	Output is the plain body of the response.
@@ -233,7 +197,7 @@ char *N_MasterGetLine(char *pos, ddstring_t *line)
 void N_MasterDecodeChunked(ddstring_t *response, ddstring_t *out)
 {
 	ddstring_t line;
-	char *pos = Str_Text(response);
+	const char *pos = Str_Text(response);
 	boolean foundChunked = false;
 	int length;
 
@@ -241,7 +205,7 @@ void N_MasterDecodeChunked(ddstring_t *response, ddstring_t *out)
 	Str_Init(&line);
 	while(*pos)
 	{
-		pos = N_MasterGetLine(pos, &line);
+		pos = Str_GetLine(&line, pos);
 
 		// Let's make sure the encoding is chunked.
 		// RFC 2068 says that HTTP/1.1 clients must ignore encodings
@@ -258,7 +222,7 @@ void N_MasterDecodeChunked(ddstring_t *response, ddstring_t *out)
 		while(*pos)
 		{
 			// The first line of the chunk is the length.
-			pos = N_MasterGetLine(pos, &line);
+			pos = Str_GetLine(&line, pos);
 			length = strtol(Str_Text(&line), 0, 16);
 			if(!length) break; // No more chunks.
 
@@ -267,36 +231,10 @@ void N_MasterDecodeChunked(ddstring_t *response, ddstring_t *out)
 			pos += length;
 
 			// A newline ends the chunk.
-			pos = M_SkipLine(pos);
+			pos = (const char*) M_SkipLine((char*)pos);
 		}
 	}
 	Str_Free(&line);
-}
-
-/*
- * N_MasterTokenize
- *	Extracts the label and value from a string.
- *	'max' is the maximum allowed length of a token, including terminating \0.
- */
-boolean N_MasterTokenize(ddstring_t *line, char *label, char *value, int max)
-{
-	char *src = Str_Text(line);
-	char *colon = strchr(src, ':');
-
-	// The colon must exist near the beginning.
-	if(!colon || colon - src >= VALID_LABEL_LEN) return false;
-
-	// Copy the label.
-	memset(label, 0, max);
-	strncpy(label, src, MIN_OF(colon - src, max - 1));
-
-	// Copy the value.
-	memset(value, 0, max);
-	strncpy(value, colon + 1, 
-		MIN_OF(Str_Length(line) - (colon - src + 1), max - 1));
-
-	// Everything is OK.
-	return true;
 }
 
 /*
@@ -306,7 +244,7 @@ boolean N_MasterTokenize(ddstring_t *line, char *label, char *value, int max)
 void N_MasterParseResponse(ddstring_t *response)
 {
 	ddstring_t msg, line;
-	char *pos, label[TOKEN_LEN], value[TOKEN_LEN];
+	const char *pos;
 	serverinfo_t *info = NULL;
 
 	Str_Init(&msg);
@@ -331,7 +269,7 @@ void N_MasterParseResponse(ddstring_t *response)
 	pos = Str_Text(&msg);
 	while(*pos)
 	{
-		pos = N_MasterGetLine(pos, &line);
+		pos = Str_GetLine(&line, pos);
 
 		if(Str_Length(&line) && !info)
 		{
@@ -348,91 +286,7 @@ void N_MasterParseResponse(ddstring_t *response)
 		// If there is no current server, skip everything.
 		if(!info) continue;
 
-		// Extract the label and value. The maximum length of a value is
-		// TOKEN_LEN. Labels are returned in lower case.
-		if(!N_MasterTokenize(&line, label, value, sizeof(value)))
-		{
-			// Badly formed lines are ignored.
-			continue;
-		}
-
-		if(!strcmp(label, "at"))
-		{
-			strncpy(info->address, value, sizeof(info->address) - 1);
-		}
-		else if(!strcmp(label, "port"))
-		{
-			info->port = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "ver"))
-		{
-			info->version = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "map"))
-		{
-			strncpy(info->map, value, sizeof(info->map) - 1);
-		}
-		else if(!strcmp(label, "game"))
-		{
-			strncpy(info->game, value, sizeof(info->game) - 1);
-		}
-		else if(!strcmp(label, "name"))
-		{
-			strncpy(info->name, value, sizeof(info->name) - 1);
-		}
-		else if(!strcmp(label, "info"))
-		{
-			strncpy(info->description, value, sizeof(info->description) - 1);
-		}
-		else if(!strcmp(label, "nump"))
-		{
-			info->players = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "maxp"))
-		{
-			info->maxPlayers = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "open"))
-		{
-			info->canJoin = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "mode"))
-		{
-			strncpy(info->gameMode, value, sizeof(info->gameMode) - 1);
-		}
-		else if(!strcmp(label, "setup"))
-		{
-			strncpy(info->gameConfig, value, sizeof(info->gameConfig) - 1);
-		}
-		else if(!strcmp(label, "iwad"))
-		{
-			strncpy(info->iwad, value, sizeof(info->iwad) - 1);
-		}
-		else if(!strcmp(label, "wcrc"))
-		{
-			info->wadNumber = strtol(value, 0, 0);
-		}
-		else if(!strcmp(label, "pwads"))
-		{
-			strncpy(info->pwads, value, sizeof(info->pwads) - 1);
-		}
-		else if(!strcmp(label, "plrn"))
-		{
-			strncpy(info->clientNames, value, sizeof(info->clientNames) - 1);
-		}
-		else if(!strcmp(label, "data0"))
-		{
-			info->data[0] = strtol(value, 0, 16);
-		}
-		else if(!strcmp(label, "data1"))
-		{
-			info->data[1] = strtol(value, 0, 16);
-		}
-		else if(!strcmp(label, "data2"))
-		{
-			info->data[2] = strtol(value, 0, 16);
-		}
-		// Unknown labels are ignored.
+		Sv_StringToInfo(Str_Text(&line), info);
 	}
 	
 	Str_Free(&line);

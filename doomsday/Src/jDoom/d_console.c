@@ -6,9 +6,8 @@
 #include "doomstat.h"
 #include "d_main.h"
 #include "d_config.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "g_game.h"
-#include "r_main.h"
 #include "s_sound.h"
 #include "hu_stuff.h"
 #include "m_menu.h"
@@ -352,8 +351,6 @@ ccmd_t gameCCmds[] =
 
 // Private Data -----------------------------------------------------------
 
-static char playDemoName[10];
-
 // Code -------------------------------------------------------------------
 
 void D_ConsoleRegistration()
@@ -426,13 +423,14 @@ int CCmdPause(int argc, char **argv)
 	return true;
 }
 
-void ConTextOut(char *text, int x, int y)
+int ConTextOut(char *text, int x, int y)
 {
 	extern int typein_time;
 	int old = typein_time;
 	typein_time = 0xffffff;
 	M_WriteText2(x, y, text, hu_font_a, -1, -1, -1);
 	typein_time = old;
+	return 0;
 }
 
 int ConTextWidth(char *text)
@@ -459,3 +457,4 @@ int CCmdDoomFont(int argc, char **argv)
 	Con_SetFont(&cfont);
 	return true;
 }
+

@@ -2,7 +2,7 @@
 #ifndef __COMMAND_LINE_ARGS_H__
 #define __COMMAND_LINE_ARGS_H__
 
-void		ArgInit(char *cmdline);
+void		ArgInit(const char *cmdline);
 void		ArgShutdown(void);
 void		ArgAbbreviate(char *longname, char *shortname);
 

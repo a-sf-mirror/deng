@@ -17,7 +17,7 @@
 #include <math.h>
 #include "doomdef.h" 
 #include "doomstat.h"
-#include "d_action.h"
+#include "D_Action.h"
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_misc.h"
@@ -28,7 +28,7 @@
 #include "p_saveg.h"
 #include "p_tick.h"
 #include "d_main.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "wi_stuff.h"
 #include "hu_stuff.h"
 #include "st_stuff.h"
@@ -43,12 +43,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "DoomDef.h"
+#include "Doomdef.h"
 #include "P_local.h"
 #include "H_Action.h"
-#include "soundst.h"
+#include "Soundst.h"
 #include "settings.h"
-#include "P_Saveg.h"
+#include "p_saveg.h"
 #endif
 
 #if __JHEXEN__
@@ -58,8 +58,8 @@
 #include "h2def.h"
 #include "p_local.h"
 #include "soundst.h"
-#include "Settings.h"
-#include "g_demo.h"
+#include "settings.h"
+//#include "g_demo.h"
 #include "h2_actn.h"
 #include "d_net.h"
 #endif
@@ -101,19 +101,20 @@ struct
 {	
 	int	action;
 	int	artifact;
-} ArtifactHotkeys[] =
+}
+ArtifactHotkeys[] =
 {
-	A_INVULNERABILITY,	arti_invulnerability,
-	A_INVISIBILITY,		arti_invisibility,
-	A_HEALTH,			arti_health,
-	A_SUPERHEALTH,		arti_superhealth,
-	A_TORCH,			arti_torch,
-	A_FIREBOMB,			arti_firebomb,
-	A_EGG,				arti_egg,
-	A_FLY,				arti_fly,
-	A_TELEPORT,			arti_teleport,
-	A_PANIC,			NUMARTIFACTS,
-	0,					arti_none // Terminator.
+	{ A_INVULNERABILITY,	arti_invulnerability },
+	{ A_INVISIBILITY,		arti_invisibility },
+	{ A_HEALTH,				arti_health },
+	{ A_SUPERHEALTH,		arti_superhealth },
+	{ A_TORCH,				arti_torch },
+	{ A_FIREBOMB,			arti_firebomb },
+	{ A_EGG,				arti_egg },
+	{ A_FLY,				arti_fly },
+	{ A_TELEPORT,			arti_teleport },
+	{ A_PANIC,				NUMARTIFACTS },
+	{ 0,					arti_none }// Terminator.
 };
 
 struct
@@ -146,6 +147,7 @@ struct
 void	P_InitPlayerValues(player_t *p);
 void	P_RunPlayers(void);
 boolean	P_IsPaused(void);
+void	P_DoTick(void);
 
 #if __JHEXEN__
 void	P_InitSky(int map);
@@ -1208,7 +1210,7 @@ void G_DoLoadLevel (void)
 	action_t	*act;
     int         i; 
 #if __JHEXEN__
-    static		firstFragReset = 1;
+    static int firstFragReset = 1;
 #endif
 
     levelstarttic = gametic;        // for time calculation
@@ -1293,7 +1295,7 @@ boolean G_Responder (event_t* ev)
 	int		i;
 #if __JHERETIC__ || __JHEXEN__
 	player_t *plr = &players[consoleplayer];
-	extern boolean MenuActive;
+	//extern boolean MenuActive;
 
 	if(!actions[A_USEARTIFACT].on)
 	{ // flag to denote that it's okay to use an artifact
@@ -1352,16 +1354,8 @@ boolean G_Responder (event_t* ev)
 			return true;	// automap ate it 
 		break;
 
-/*#if __JDOOM__
-	case GS_FINALE:
-		if(F_Responder(ev)) 
-			return true;	// finale ate the event 
+	default:
 		break;
-#endif*/
-
-/*	case GS_INFINE:
-		if(FI_Responder(ev)) return true; 
-		break;*/
 	}
 
     switch (ev->type) 
@@ -1631,7 +1625,7 @@ void G_Ticker (void)
 	switch (gamestate) 
 	{ 
 	case GS_LEVEL: 
-		P_Ticker (); 
+		P_DoTick(); 
 		HU_UpdatePsprites();
 
 		// Active briefings once again (they were disabled when loading
@@ -1657,31 +1651,10 @@ void G_Ticker (void)
 #else
 		IN_Ticker ();
 #endif
-		break; 
-
-/*#if __JDOOM__
-	case GS_FINALE: 
-		F_Ticker (); 
-		break; 
-#endif*/
-
-/*	case GS_INFINE:
-		FI_Ticker();
-		break;*/
-
-/*#if __JHEXEN__
-	case GS_DEMOSCREEN:
-		if(IS_DEDICATED) break;
-		H2_PageTicker ();
 		break;
-#else
-	case GS_DEMOSCREEN: 
-		if(IS_DEDICATED) break;
-#ifndef __JDOOM__
-		D_PageTicker (); 
-#endif
-		break; 
-#endif*/
+
+	default:
+		break;
 	} 
 	
 	// InFine ticks whenever it's active.

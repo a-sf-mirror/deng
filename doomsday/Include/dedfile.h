@@ -223,6 +223,7 @@ typedef struct
 	float			gravity;	// 1 = normal.
 	float			sky_height;
 	float			horizon_offset;
+	float			sky_color[3]; // Color of sky-lit sectors.
 	ded_skylayer_t	sky_layers[NUM_SKY_LAYERS];
 	ded_skymodel_t	sky_models[NUM_SKY_MODELS];
 	ded_anystring_t	execute;	// Executed during map setup (savegames, too).

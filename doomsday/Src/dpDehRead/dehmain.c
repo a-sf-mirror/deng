@@ -11,12 +11,16 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#ifdef WIN32
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <ctype.h>
 
 #include <doomsday.h>
 #include <dedfile.h>
@@ -51,6 +55,10 @@ typedef struct Key {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+#ifdef UNIX
+void InitPlugin(void) __attribute__ ((constructor));
+#endif
+
 int PatchThing (int);
 int PatchSound (int);
 int PatchFrame (int);
@@ -79,7 +87,7 @@ boolean		verbose;
 char		*PatchFile, *PatchPt;
 char		*Line1, *Line2;
 int			dversion, pversion;
-BOOL		including, includenotext;
+boolean		including, includenotext;
 
 char *SoundMap[] = {
 	"None",	// 000
@@ -193,7 +201,7 @@ char *SoundMap[] = {
 	"radio"	// 108
 };
 
-BOOL	BackedUpData = false;
+boolean	BackedUpData = false;
 
 // This is the original data before it gets replaced by a patch.
 char	OrgSprNames[NUMSPRITES][5];
@@ -312,7 +320,7 @@ void BackupData (void)
 }
 
 char		com_token[8192];
-BOOL		com_eof;
+boolean		com_eof;
 
 /*
 ==============
@@ -398,13 +406,13 @@ skipwhite:
 boolean IsNum(char *str)
 {
 	char *end;
-	int val = strtol(str, &end, 0);
+	strtol(str, &end, 0);
 	if(*end && !isspace(*end)) return false;
 	return true;
 }
 
-static BOOL HandleKey (const struct Key *keys, void *structure, 
-					   const char *key, int value)
+static boolean HandleKey (const struct Key *keys, void *structure, 
+						  const char *key, int value)
 {
 	int off;
 	void *ptr;
@@ -440,7 +448,7 @@ static BOOL HandleKey (const struct Key *keys, void *structure,
 	return true;
 }
 
-static BOOL ReadChars (char **stuff, int size, boolean skipJunk)
+static boolean ReadChars (char **stuff, int size, boolean skipJunk)
 {
 	char *str = *stuff;
 
@@ -783,7 +791,7 @@ int PatchThing (int thingy)
 	};
 	int result;
 	ded_mobj_t *info, dummy;
-	BOOL hadHeight = false;
+	boolean hadHeight = false;
 	boolean checkHeight = false;
 
 	thingNum--;
@@ -810,7 +818,7 @@ int PatchThing (int thingy)
 			if (!stricmp (Line1, "Bits"))
 			{
 				int value = 0, value2 = 0;
-				BOOL vchanged = false, v2changed = false;
+				boolean vchanged = false, v2changed = false;
 				char *strval;
 
 				for (strval = Line2; (strval = strtok (strval, ",+| \t\f\r")); strval = NULL)
@@ -1055,13 +1063,13 @@ void SetValueStr(const char *path, const char *id, char *str)
 
 void SetValueInt(const char *path, const char *id, int val)
 {
-	char buf[20];
-	
-	itoa(val, buf, 10);
+	char buf[80];
+
+	sprintf(buf, "%i", val);
 	SetValueStr(path, id, buf);
 }
 
-static int PatchAmmo (int ammoNum)
+int PatchAmmo (int ammoNum)
 {
 	int result, max, per;
 	char *ammostr[4] = { "Clip", "Shell", "Cell", "Misl" };
@@ -1458,7 +1466,7 @@ int PatchText (int oldSize)
 	char *oldStr;
 	char *newStr;
 	char *temp;
-	BOOL good;
+	boolean good;
 	int result;
 	int i;
 	char buf[30];
@@ -1874,6 +1882,7 @@ int DefsHook(int hook_type, int parm, void *data)
 	return true; 
 }
 
+#ifdef WIN32
 //===========================================================================
 // DllMain
 //===========================================================================
@@ -1888,3 +1897,16 @@ BOOL DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}
 	return TRUE;
 }
+#endif
+
+#ifdef UNIX
+/*
+ * This function is called automatically when the plugin is loaded.
+ * We let the engine know what we'd like to do.
+ */
+void InitPlugin(void)
+{
+	Plug_AddHook(HOOK_DEFS, DefsHook);
+}
+#endif
+

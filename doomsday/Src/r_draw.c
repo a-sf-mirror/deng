@@ -169,3 +169,4 @@ void R_DrawTopBorder (void)
 		GL_UsePatchOffset(true);
 	}
 }
+

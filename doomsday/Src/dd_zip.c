@@ -258,7 +258,7 @@ package_t* Zip_NewPackage(void)
  */
 boolean Zip_LocateCentralDirectory(DFILE *file)
 {
-	int length = F_Length(file);
+/*	int length = F_Length(file); */
 	int pos = CENTRAL_END_SIZE; // Offset from the end.
 	uint signature;
 	
