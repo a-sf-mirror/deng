@@ -765,8 +765,6 @@ void M_ClearBox (fixed_t *box);
 void M_AddToBox (fixed_t *box, fixed_t x, fixed_t y);
 // bounding box functions
 
-void G_DoScreenShot (void);
-
 int M_DrawText (int x, int y, boolean direct, char *string);
 
 //----------------------

@@ -920,11 +920,6 @@ extern FILE *rndDebugfile;
 // as M_Random, but used only by the play simulation
 
 void M_ClearRandom (void);
-// fix randoms for demos
-//void P_SaveRandom(void);
-//void P_RestoreRandom(void);
-
-void G_DoScreenShot (void);
 
 extern unsigned char rndtable[256];
 

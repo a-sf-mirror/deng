@@ -168,6 +168,7 @@ void	G_DoCompleted (void);
 void	G_DoVictory (void); 
 void	G_DoWorldDone (void); 
 void	G_DoSaveGame (void); 
+void	G_DoScreenShot (void);
 
 #if __JHEXEN__
 void	G_DoTeleportNewMap(void);
@@ -2209,11 +2210,31 @@ void G_DoReborn (int playernum)
     } 
 } 
 
-void G_ScreenShot (void) 
+void G_ScreenShot(void) 
 { 
     gameaction = ga_screenshot; 
 } 
  
+void G_DoScreenShot(void)
+{
+	int i;
+	filename_t name;
+	char *numPos;
+	
+	// Use game mode as the file name base.
+	sprintf(name, "%s-", G_Get(DD_GAME_MODE));
+	numPos = name + strlen(name);	
+
+	// Find an unused file name.
+	for(i = 0; i < 1e6; i++)	// Stop eventually...
+	{
+		sprintf(numPos, "%03i.tga", i);
+		if(!M_FileExists(name)) break;
+	}
+	M_ScreenShot(name, 24);
+	Con_Message("Wrote %s.\n", name);
+}
+
 #if __JDOOM__
 
 // DOOM Par Times
