@@ -80,3 +80,4 @@ void M_ClearRandom (void)
 {
 	prndindex = 0;
 }
+

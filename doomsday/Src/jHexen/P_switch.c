@@ -144,3 +144,4 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 		}
 	}
 }
+

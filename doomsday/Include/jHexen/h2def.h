@@ -25,17 +25,11 @@
 #define Set DD_SetInteger
 #define Get DD_GetInteger
 
+#ifdef WIN32
 #pragma warning (disable:4761 4244)
-
-#ifdef __WATCOMC__
-#define	strcasecmp strcmpi
-#define	strncasecmp strnicmp
-#endif
-
-//--- MSVC stuff. 
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
-//--- jk
+#endif
 
 // Uncomment, to enable all timebomb stuff
 //#define TIMEBOMB
@@ -193,8 +187,9 @@ struct player_s;
 
 typedef struct mobj_s
 {
-	struct ddmobj_base_s;
-
+	// Defined in dd_share.h; required mobj elements.
+	DD_BASE_MOBJ_ELEMENTS()
+	
 // Hexen-specific data:
 	struct player_s	*player;		// only valid if type == MT_PLAYER
 

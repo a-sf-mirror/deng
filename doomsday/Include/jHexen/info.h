@@ -308,7 +308,7 @@ typedef enum
 	SPR_KORX,	// 298
 	SPR_ABAT,	// 299
 	NUMSPRITES	// 300
-} spritenum_t;
+} spritetype_e;
 
 // States.
 typedef enum

@@ -187,7 +187,6 @@ void C_DECL A_DeQueueCorpse(mobj_t *actor);
 
 #define MAXINTERCEPTS   128
 extern  intercept_t             intercepts[MAXINTERCEPTS], *intercept_p;
-typedef boolean (*traverser_t) (intercept_t *in);
 
 #define PT_ADDLINES     1
 #define PT_ADDTHINGS    2
