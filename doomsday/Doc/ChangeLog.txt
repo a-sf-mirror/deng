@@ -4,12 +4,14 @@
                Legend: + added, - fixed, * improved/changed
 
 
-Version 1.7.13 (work in progress)
+Version 1.7.13
 --------------
 ! Maintenance Release
 * model offset and scale are interpolated (Model -> Offset XYZ,
   Model -> Scale XYZ)
 * overridden model defs are no longer loaded at all (bug 760099)
+* number of screenshots is not limited to 100
+* screenshot file names are selected according to game mode
 - fixed: semicolon in bindings (key name "smcln")
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
@@ -17,6 +19,8 @@ Version 1.7.13 (work in progress)
 - fixed: crash when loading external resources of color-mapped sprites
 
 Network:
+- fixed: player gets stuck in enemies
+- fixed: player gets stuck in a moving plane (elevator, door)
 - fixed: crash in clmobj handling
 - fixed: recording demos with multiple local players
 - fixed: clientside jumping power, jumping enabled
