@@ -62,7 +62,7 @@ cvar_t inputCVars[] =
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static boolean initOk = false;
+static boolean initOk;
 static boolean useMouse, useJoystick;
 
 static keyevent_t keyEvents[EVBUFSIZE];
@@ -259,7 +259,7 @@ void I_PollEvents(void)
 {
 	SDL_Event event;
 	keyevent_t *e;
-	
+
 	while(SDL_PollEvent(&event))
 	{
 		switch(event.type)
@@ -269,7 +269,7 @@ void I_PollEvents(void)
 			e = I_NewKeyEvent();
 			e->event = (event.type == SDL_KEYDOWN? IKE_KEY_DOWN : IKE_KEY_UP);
 			e->code = I_TranslateKeyCode(event.key.keysym.sym);
-			printf("sdl:%i code:%i\n", event.key.keysym.sym, e->code);
+			//printf("sdl:%i code:%i\n", event.key.keysym.sym, e->code);
 			break;
 
 		case SDL_QUIT:
@@ -293,6 +293,9 @@ void I_InitMouse(void)
 
 	// Init was successful.
 	useMouse = true;
+
+	// Grab all input.
+	SDL_WM_GrabInput(SDL_GRAB_ON);
 }
 
 //===========================================================================
@@ -311,8 +314,9 @@ void I_InitJoystick(void)
 int I_Init(void)
 {
 	if(initOk) return true;	// Already initialized.
+	I_InitMouse();
+	I_InitJoystick();
 	initOk = true;
-//	SDL_WM_GrabInput(SDL_GRAB_ON);
 	return true;
 }
 
@@ -323,7 +327,6 @@ void I_Shutdown(void)
 {
 	if(!initOk) return;	// Not initialized.
 	initOk = false;
-//	SDL_WM_GrabInput(SDL_GRAB_OFF);	
 }
 
 //===========================================================================
@@ -370,20 +373,25 @@ int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
 //===========================================================================
 void I_GetMouseState(mousestate_t *state)
 {
+	Uint8 buttons;
+	int i;
+	
 	memset(state, 0, sizeof(*state));
 
 	// Has the mouse been initialized?
 	if(!I_MousePresent() || !initOk) return;
 
-/*	// Fill in the state structure.
-	state->x = mstate.lX;
-	state->y = mstate.lY;
-	state->z = mstate.lZ;
-	
+	buttons = SDL_GetRelativeMouseState(&state->x, &state->y);
+
 	// The buttons bitfield is ordered according to the numbering.
-	for(i = 0; i < 8; i++)
-	    if(mstate.rgbButtons[i] & 0x80) state->buttons |= 1 << i;
-*/
+	if(buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) state->buttons |= IMB_LEFT;
+	if(buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) state->buttons |= IMB_RIGHT;
+	if(buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) state->buttons |= IMB_MIDDLE;
+	
+	for(i = 4; i < 8; i++)
+	{
+	    if(buttons & SDL_BUTTON(i + 1)) state->buttons |= 1 << i;
+	}
 }
 
 //===========================================================================
