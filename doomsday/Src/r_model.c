@@ -746,9 +746,12 @@ float R_CheckModelFor(mobj_t *mo, modeldef_t **modef, modeldef_t **nextmodef)
 	if((*modef)->flags & MFF_WORLD_TIME_ANIM)
 	{
 		float duration = (*modef)->interrange[0];
+		float offset = (*modef)->interrange[1];
+		// Validate/modify the values.
 		if(duration == 0) duration = 1;
+		if(offset == -1) offset = M_CycleIntoRange(THING_TO_ID(mo), duration);
 		interp = M_CycleIntoRange(leveltic / (duration * TICSPERSEC)
-			+ (*modef)->interrange[1], 1);
+			+ offset, 1);
 		worldTime = true;
 	}
 	else
