@@ -2,7 +2,7 @@
                    Doomsday Engine Definitions Reference
                         (or "Knee-Deep In The DED")
                    =====================================
-                       Revision 0.9.3 -- 09/23/2003
+                       Revision 0.9.4 -- 09/29/2003
 
         Contact <skyjake@doomsdayhq.com> if you have any questions.
 
@@ -662,6 +662,11 @@ generators will be destroyed to make room for any new generators.
             # Radius of the particle at this stage, in world units.
             # The visible radius is interpolated between the radii of
             # the current stage and the next one.
+            
+        Radius Rnd = 0.0;
+            # Randomness of particle radius. The radius of a particle will
+            # be randomly chosen from the range:
+            # (1 - RadiusRnd)*Radius ... Radius
 
         Flags = "";
             # ptf_stagetouch: When touching a wall or a plane, the
