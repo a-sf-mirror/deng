@@ -1,6 +1,3 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
-//
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
@@ -15,6 +12,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.6  2004/05/22 07:32:18  skyjake
+// Added menu text shadow
+//
 // Revision 1.9.2.5  2004/05/16 10:01:36  skyjake
 // Merged good stuff from branch-nix for the final 1.7.15
 //
@@ -2041,6 +2041,35 @@ void M_WriteText2
 	M_WriteText3(x, y, string, font, red, green, blue, true, 0);
 }
 
+static void M_LetterFlash(int x, int y, int w, int h, int bright,
+						  float red, float green, float blue, float alpha)
+{
+	float fsize = 4 + bright;
+	float fw = fsize*w/2.0f, fh = fsize*h/2.0f;
+	int origColor[4];
+
+	// Don't draw anything for very small letters.
+	if(h <= 4) return;
+
+	// Store original color.
+	gl.GetIntegerv(DGL_RGBA, origColor);
+	
+	gl.Bind( Get(DD_DYNLIGHT_TEXTURE) );
+
+	if(bright)
+		gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE);
+	else
+		gl.Func(DGL_BLENDING, DGL_ZERO, DGL_ONE_MINUS_SRC_ALPHA);
+
+	GL_DrawRect(x + w/2.0f - fw/2, y + h/2.0f - fh/2, fw, fh,
+				red, green, blue, alpha);
+
+	gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);
+
+	// Restore original color.
+	gl.Color4ub(origColor[0], origColor[1], origColor[2], origColor[3]);
+}
+
 /*
  * Write a string using a colored, custom font.
  * Also do a type-in effect.
@@ -2049,87 +2078,103 @@ void M_WriteText3
 	(int x, int y, const char *string, dpatch_t *font,
 	 float red, float green, float blue, boolean doTypeIn, int initialCount)
 {
+	int     pass;
     int		w, h;
     const char *ch;
     int		c;
     int		cx;
     int		cy;
-	int		count = initialCount, maxCount = typein_time*2, yoff;
+	int		count, maxCount, yoff;
 	float	flash;
 
-	// Disable type-in?
-	if(!doTypeIn || cfg.menuEffects > 0) maxCount = 0xffff;
+	for(pass = 0; pass < 2; ++pass)
+	{
+		count = initialCount;
+		maxCount = typein_time*2;
+	
+		// Disable type-in?
+		if(!doTypeIn || cfg.menuEffects > 0) maxCount = 0xffff;
 
-	if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
+		if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
 
-    ch = string;
-    cx = x;
-    cy = y;
+		ch = string;
+		cx = x;
+		cy = y;
 
-    while(1)
-    {
-		c = *ch++;
-		count++;
-		yoff = 0;
-		flash = 0;
-		if(count == maxCount)
+		while(1)
 		{
-			flash = 1;
-			if(red >= 0) gl.Color4f(1, 1, 1, 1);
-		}
-		else if(count + 1 == maxCount)
-		{
-			flash = 0.5f;
-			if(red >= 0) gl.Color4f((1+red)/2,
-				(1+green)/2, (1+blue)/2, menu_alpha);
-		}
-		else if(count + 2 == maxCount)
-		{
-			flash = 0.25f;
-			if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
-		}
-		else if(count + 3 == maxCount)
-		{
-			flash = 0.12f;
-			if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
-		}
-		else if(count > maxCount)
-		{
-			break;
-		}
-		if (!c) break;
-		if (c == '\n')
-		{
-			cx = x;
-			cy += 12;
-			continue;
-		}
+			c = *ch++;
+			count++;
+			yoff = 0;
+			flash = 0;
+			if(count == maxCount)
+			{
+				flash = 1;
+				if(red >= 0) gl.Color4f(1, 1, 1, 1);
+			}
+			else if(count + 1 == maxCount)
+			{
+				flash = 0.5f;
+				if(red >= 0)
+					gl.Color4f((1+red)/2, (1+green)/2, (1+blue)/2, menu_alpha);
+			}
+			else if(count + 2 == maxCount)
+			{
+				flash = 0.25f;
+				if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
+			}
+			else if(count + 3 == maxCount)
+			{
+				flash = 0.12f;
+				if(red >= 0) gl.Color4f(red, green, blue, menu_alpha);
+			}
+			else if(count > maxCount)
+			{
+				break;
+			}
+			if (!c) break;
+			if (c == '\n')
+			{
+				cx = x;
+				cy += 12;
+				continue;
+			}
 
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE)
-		{
-			cx += 4;
-			continue;
+			c = toupper(c) - HU_FONTSTART;
+			if (c < 0 || c >= HU_FONTSIZE)
+			{
+				cx += 4;
+				continue;
+			}
+
+			w = SHORT(font[c].width);
+			h = SHORT(font[c].height);
+
+			if(pass)
+			{
+				// The character itself.
+				GL_DrawPatch_CS(cx, cy + yoff, font[c].lump);
+
+				// Do something flashy!
+				if(flash > 0)
+				{
+					M_LetterFlash(cx, cy + yoff, w, h, true,
+								  (1 + 2*red)/3, (1 + 2*green)/3, (1 + 2*blue)/3,
+								  flash * cfg.menuGlitter * menu_alpha);
+				}
+			}
+			else if(cfg.menuShadow > 0)
+			{
+				// Shadow.
+				M_LetterFlash(cx, cy + yoff, w, h, false,
+							  1, 1, 1,
+							  (red < 0? gl.GetInteger(DGL_A)/255.0f :
+							   menu_alpha) * cfg.menuShadow);
+			}			
+
+			cx += w;
 		}
-
-		w = SHORT(font[c].width);
-		h = SHORT(font[c].height);
-		GL_DrawPatch_CS(cx, cy + yoff, font[c].lump);
-
-		if(flash > 0)
-		{
-			float fw = 5*w/2.0f, fh = 5*h/2.0f;
-			// Do something flashy!
-			gl.Bind( Get(DD_DYNLIGHT_TEXTURE) );
-			gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE);
-			GL_DrawRect(cx + w/2.0f - fw/2, cy + yoff + h/2.0f - fh/2,
-				fw, fh, (1 + 2*red)/3, (1 + 2*green)/3, (1 + 2*blue)/3,
-				flash * cfg.menuGlitter * menu_alpha);
-			gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);
-		}
-
-		cx += w;
-    }
+	}
 }
 
 // Menu text is white.
@@ -2648,7 +2693,7 @@ void M_DrawBackground(void)
 
 	if(cfg.menuEffects > 1) return;
 
-	if(cfg.menuFog == 0)
+	if(cfg.menuFog == 2)
 	{
 		gl.Disable(DGL_TEXTURING);
 		gl.Color4f(mfAlpha, mfAlpha/2, 0, mfAlpha/3);
@@ -2656,6 +2701,14 @@ void M_DrawBackground(void)
 		GL_DrawRectTiled(0, 0, 320, 200, 1, 1);
 		gl.Enable(DGL_TEXTURING);
 	}
+	/*else if(cfg.menuFog == 0)
+	{
+		gl.Disable(DGL_TEXTURING);
+		gl.Color4f(mfAlpha*0.6, mfAlpha*0.4, 0, mfAlpha/2);
+		gl.Func(DGL_BLENDING, DGL_ZERO, DGL_ONE_MINUS_SRC_COLOR);
+		GL_DrawRectTiled(0, 0, 320, 200, 1, 1);
+		gl.Enable(DGL_TEXTURING);
+		}*/
 
 	gl.Bind(menuFogTexture);
 	gl.Color3f(mfAlpha, mfAlpha, mfAlpha);
@@ -2664,20 +2717,31 @@ void M_DrawBackground(void)
 	{
 		if(i || cfg.menuFog == 1)
 		{
-			gl.Color3f(mfAlpha, mfAlpha, mfAlpha);
+			if(cfg.menuFog == 0)
+				gl.Color3f(mfAlpha/3, mfAlpha/2, mfAlpha/2);
+			else
+				gl.Color3f(mfAlpha, mfAlpha, mfAlpha);
+			
 			gl.Func(DGL_BLENDING, DGL_ZERO, DGL_ONE_MINUS_SRC_COLOR);
 		}
-		else
+		else if(cfg.menuFog == 2)
 		{
 			gl.Color3f(mfAlpha/5, mfAlpha/3, mfAlpha/2);
 			gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_SRC_ALPHA);
 		}
+		else if(cfg.menuFog == 0)
+		{
+			gl.Color3f(mfAlpha*0.15, mfAlpha*0.2, mfAlpha*0.3);
+			gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_SRC_ALPHA);
+		}
 		gl.LoadIdentity();
 		gl.Translatef(mfPos[i][VX]/320, mfPos[i][VY]/200, 0);
-		gl.Rotatef(mfAngle[i], 0, 0, 1);
+		gl.Rotatef(mfAngle[i] * (cfg.menuFog == 0? 0.5 : 1), 0, 0, 1);
 		gl.Translatef(-mfPos[i][VX]/320, -mfPos[i][VY]/200, 0);
-		if(cfg.menuFog == 0)
+		if(cfg.menuFog == 2)
 			GL_DrawRectTiled(0, 0, 320, 200, 270/8, 4*225);
+		else if(cfg.menuFog == 0)
+			GL_DrawRectTiled(0, 0, 320, 200, 270/4, 8*225);
 		else
 			GL_DrawRectTiled(0, 0, 320, 200, 270, 225);
 	}
