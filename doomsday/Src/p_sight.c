@@ -439,20 +439,23 @@ boolean P_CheckReject(sector_t *sec1, sector_t *sec2)
     int		bytenum;
     int		bitnum;
 	
-    // Determine subsector entries in REJECT table.
-    s1 = ((byte*) sec1 - sectors) / SECTSIZE;
-    s2 = ((byte*) sec2 - sectors) / SECTSIZE;
-    pnum = s1*numsectors + s2;
-    bytenum = pnum>>3;
-    bitnum = 1 << (pnum&7);
-	
-    // Check in REJECT table.
-    if(rejectmatrix[bytenum] & bitnum)
-    {
-		sightcounts[0]++;
-		// Can't possibly be connected.
-		return false;	
-    }
+	if(rejectmatrix != NULL)
+	{
+		// Determine subsector entries in REJECT table.
+		s1 = ((byte*) sec1 - sectors) / SECTSIZE;
+		s2 = ((byte*) sec2 - sectors) / SECTSIZE;
+		pnum = s1*numsectors + s2;
+		bytenum = pnum>>3;
+		bitnum = 1 << (pnum&7);
+		
+		// Check in REJECT table.
+		if(rejectmatrix[bytenum] & bitnum)
+		{
+			sightcounts[0]++;
+			// Can't possibly be connected.
+			return false;	
+		}
+	}
 	return true;
 }
 
