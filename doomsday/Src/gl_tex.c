@@ -2620,7 +2620,7 @@ unsigned int GL_PrepareTranslatedSprite(int pnum, int tmap, int tclass)
 		// Compose a resource name.
 		if(tclass || tmap)
 		{
-			sprintf(resource, "%s-table%i%i\n", 
+			sprintf(resource, "%s-table%i%i", 
 				lumpinfo[spritelumps[pnum].lump].name, tclass, tmap);
 		}
 		else 
