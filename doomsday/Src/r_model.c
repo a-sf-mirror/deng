@@ -1170,11 +1170,11 @@ void R_InitModels(void)
 	// is important. We want to allow "patch" definitions, right?
 	
 	// For each modeldef we will find the "next" def.
-	for(i = 0, me = models; i < nummodels; i++, me++)
+	for(i = nummodels - 1, me = models + i; i >= 0; --i, --me)
 	{
 		minmark = 2; // max = 1, so this is "out of bounds".
 		closest = NULL;
-		for(k = 0, other = models; k < nummodels; k++, other++)
+		for(k = nummodels - 1, other = models + k; k >= 0; --k, --other)
 		{
 			// Same state and a bigger order are the requirements.
 			if(other->state == me->state 
@@ -1190,12 +1190,12 @@ void R_InitModels(void)
 	}
 
 	// Create selectlinks.
-	for(i = 0, me = models; i < nummodels; i++, me++)
+	for(i = nummodels - 1, me = models + i; i >= 0; --i, --me)
 	{
 		minsel = DDMAXINT;
 		closest = NULL;
 		// Start scanning from the next definition.
-		for(k = 0, other = models; k < nummodels; k++, other++)
+		for(k = nummodels - 1, other = models + k; k >= 0; --k, --other)
 		{
 			// Same state and a bigger order are the requirements.
 			if(other->state == me->state 
