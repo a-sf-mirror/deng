@@ -731,29 +731,12 @@ boolean PIT_ChangeSector(mobj_t *thing, void *data)
 //===========================================================================
 boolean P_ChangeSector(sector_t *sector)
 {
-/*    int		x;
-    int		y;
-	mobj_t *iter;*/
-	
     nofit = false;
 
 	// We'll use validcount to make sure things are only checked once.
 	validcount++;
 	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
 
-	// First check what's sectorlinked.
-	/*for(iter = sector->thinglist; iter; iter = iter->snext)
-	{
-		PIT_ChangeSector(iter, 0);
-		iter->valid = validcount;
-	}
-
-    // re-check heights for all things near the moving sector
-    for(x=sector->blockbox[BOXLEFT]; x<=sector->blockbox[BOXRIGHT]; x++)
-	{
-		for(y=sector->blockbox[BOXBOTTOM]; y<=sector->blockbox[BOXTOP]; y++)
-			P_BlockThingsIterator(x, y, PIT_ChangeSector, 0);
-	}*/
 	return nofit;
 }
 
