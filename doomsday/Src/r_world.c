@@ -51,6 +51,7 @@ nodeindex_t *linelinks;			// indices to roots
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static boolean noSkyColorGiven;
 static byte skyColorRGB[4], balancedRGB[4];
 static float skyColorBalance;
 
@@ -956,6 +957,9 @@ void R_SetupSky(void)
 		Rend_SkyParams(0, DD_MASK, DD_NO);
 		Rend_SkyParams(0, DD_OFFSET, 0);
 		Rend_SkyParams(1, DD_DISABLE, 0);
+
+		// There is no sky color.
+		noSkyColorGiven = true;
 		return;
 	}
 
@@ -980,8 +984,33 @@ void R_SetupSky(void)
 		}
 	}
 
-	// Any sky models to setup? Models will override the normal sphere.
+	// Any sky models to setup? Models will override the normal
+	// sphere.
 	R_SetupSkyModels(mapinfo);
+
+	// How about the sky color?
+	noSkyColorGiven = true;
+	for(i = 0; i < 3; i++)
+	{
+		skyColorRGB[i] = (byte) (255 * mapinfo->sky_color[i]);
+		if(mapinfo->sky_color[i] > 0) noSkyColorGiven = false;
+	}
+
+	// Calculate a balancing factor, so the light in the non-skylit
+	// sectors won't appear too bright.
+	if(false &&
+	   (mapinfo->sky_color[0] > 0 ||
+		mapinfo->sky_color[1] > 0 ||
+		mapinfo->sky_color[2] > 0))
+	{
+		skyColorBalance = (0 + (mapinfo->sky_color[0]*2 +
+								mapinfo->sky_color[1]*3 +
+								mapinfo->sky_color[2]*2) / 7) / 1;
+	}
+	else
+	{
+		skyColorBalance = 1;
+	}
 }
 
 /*
@@ -1229,9 +1258,9 @@ void R_SetupLevel(char *level_id, int flags)
 	}
 	if(flags & DDSLF_FINALIZE)
 	{
-		// The level setup has been completed.
-		// Run the special level setup command, which the user may alias to 
-		// do something useful.
+		// The level setup has been completed.  Run the special level
+		// setup command, which the user may alias to do something
+		// useful.
 		if(level_id && level_id[0])
 		{
 			char cmd[80];
@@ -1324,28 +1353,6 @@ void R_SetupLevel(char *level_id, int flags)
 	{
 		mapgravity = mapinfo->gravity * FRACUNIT;
 		r_ambient = mapinfo->ambient * 255;
-
-		// Sky light color.
-		for(i = 0; i < 3; i++)
-		{
-			skyColorRGB[i] = (byte) (255 * mapinfo->sky_color[i]);
-		}
-
-		if(false &&
-		   (mapinfo->sky_color[0] > 0 ||
-			mapinfo->sky_color[1] > 0 ||
-			mapinfo->sky_color[2] > 0))
-		{
-			// Calculate a balancing factor, so the light in the
-			// non-skylit sectors won't appear too bright.
-			skyColorBalance = (0 + (mapinfo->sky_color[0]*2 +
-								mapinfo->sky_color[1]*3 +
-								mapinfo->sky_color[2]*2) / 7) / 1;
-		}
-		else
-		{
-			skyColorBalance = 1;
-		}
 	}
 	else
 	{
@@ -1503,11 +1510,10 @@ const byte *R_GetSectorLightColor(sector_t *sector)
 	sector_t *src;
 	int i;
 	
-	if(!rendSkyLight) return sector->rgb; // The sector's real color.
+	if(!rendSkyLight || noSkyColorGiven)
+		return sector->rgb; // The sector's real color.
 	
-	if((mapinfo->sky_color[0] == 0 && mapinfo->sky_color[1] == 0 &&
-		mapinfo->sky_color[2] == 0) ||
-	   (sector->ceilingpic != skyflatnum && sector->floorpic != skyflatnum))
+	if(sector->ceilingpic != skyflatnum && sector->floorpic != skyflatnum)
 	{
 		// A dominant light source affects this sector?
 		src = SECT_INFO(sector)->lightsource;
