@@ -11,7 +11,7 @@ Model {
     File = "Actors/Wight/Wight-Axe.md2";
     Frame = "idle01";
     Flags = "df_fullbright df_specular";
-    Shiny skin = "Shiny.pcx";
+    Shiny skin = "Common/Shiny.pcx";
     Shiny = .4;
   };
 }
@@ -221,7 +221,11 @@ Model {
   State = "KNIGHT_DIE3";
   Flags = "df_noptc df_ptoffsub1";        # Stop the axe flame.
   Md2 { Frame = "death06"; };
-  Md2 { Frame = "death06"; Flags = ""; }; # No more fullbright.
+  Md2 { 
+    Frame = "death06"; 
+    Flags = ""; # No more fullbright.
+    Shiny = 0;  # No more shine.
+  }; 
 }
 
 *Model {
