@@ -493,6 +493,7 @@ void Net_Update(void)
 
 listen:
 	// Listen for packets. Call the correct packet handler.
+	N_Listen();
 	if(isClient) 
 		Cl_GetPackets();
 	else // Single-player or server.
