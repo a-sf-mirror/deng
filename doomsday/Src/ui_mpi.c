@@ -184,7 +184,7 @@ ui_object_t ob_client[] =
 	{ UI_BUTTON,	0,	0,		800, 100,	200, 80,	"Network Setup",	UIButton_Drawer, UIButton_Responder, 0, MPIGotoPage, &page_protocol },
 	{ UI_BUTTON,	0,	0,		800, 200,	200, 80,	"Exit (Esc)",		UIButton_Drawer, UIButton_Responder, 0, MPIGoBack },
 	{ UI_BUTTON,	4,	0,		800, 900,	200, 80,	"Connect",			UIButton_Drawer, UIButton_Responder, 0, MPIConnect },
-	{ UI_TEXT,		5,	0,		800, 130,	200, 450,	"",					MPIServerInfoDrawer, 0, 0, 0, str_sinfo.warning },
+	{ UI_TEXT,		5,	0,		800, 330,	200, 450,	"",					MPIServerInfoDrawer, 0, 0, 0, str_sinfo.warning },
 	{ UI_NONE }
 };
 
