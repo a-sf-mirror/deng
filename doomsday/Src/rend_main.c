@@ -541,7 +541,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 	// Calculate the color at both vertices.
 	sectorlight = Rend_SectorLight(frontsec);
-	RL_VertexColors(&quad, sectorlight, frontsec->rgb);
+	RL_VertexColors(&quad, sectorlight, R_GetSectorLightColor(frontsec));
 
 	END_PROF( PROF_REND_WALLSEG_1 );
 
@@ -1059,7 +1059,8 @@ void Rend_RenderSubsector(int ssecidx)
 
 	// Prepare for FakeRadio.
 	Rend_RadioInitForSector(sect);
-	
+	Rend_RadioSubsectorEdges(ssec);
+
 	BEGIN_PROF( PROF_REND_SUB_OCCLUDE );
 
 	Rend_OccludeSubsector(ssec, false);
