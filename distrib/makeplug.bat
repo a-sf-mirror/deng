@@ -21,7 +21,7 @@ rar -r a %FILE% %SRC%Include\doomsday.h %SRC%Include\dd_share.h %SRC%Include\dd_
 rar -r -ep a %FILE% %SRC%Bin\Release\Doomsday.lib
 
 echo Uploading to The Mirror...
-ftpscrpt -f z:\scripts\mirror-plugsdk.scp
+ftpscrpt -f c:\projects\doomsday\scripts\mirror-plugsdk.scp
 
 echo Uploading to Fourwinds...
-ftpscrpt -f z:\scripts\plugsdk.scp
+ftpscrpt -f c:\projects\doomsday\scripts\plugsdk.scp
