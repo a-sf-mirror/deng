@@ -37,11 +37,12 @@ OBJ = $(patsubst %.c,%.o,$(SRC))
 DEFS = -DUNIX -DNO_FIXED_ASM -D__DOOMSDAY__ -DNORANGECHECKING
 DEBUGFLAGS = -g -Wall
 CFLAGS = $(DEBUGFLAGS) -IInclude $(DEFS) $(shell sdl-config --cflags)
+LIBS = `sdl-config --libs` -lSDL_net -ldl -lpng -lncurses
 
 .PHONY: dep clean realclean
 
 doomsday: $(OBJ) $(INC)
-	$(CC) -rdynamic -o doomsday `sdl-config --libs` -ldl -lpng -lncurses $(OBJ)
+	$(CC) -rdynamic -o doomsday $(LIBS) $(OBJ)
 
 clean:
 	rm $(OBJ) doomsday
@@ -52,6 +53,7 @@ realclean:
 	makedepend
 
 dep:
+	etags $(SRC) Include/*.h Include/Common/*.h
 	makedepend -YInclude $(DEFS) $(SRC) 2> /dev/null
 
 # The DeHackEd reader plugin is so simple that it can be built here as
