@@ -125,6 +125,7 @@ xcopy %SRC%Doc\DEDDoc.txt		%Dist%Doc\
 xcopy %SRC%Doc\DSS.txt			%Dist%Doc\
 xcopy %SRC%Doc\Network.txt		%Dist%Doc\
 xcopy %SRC%Doc\Example.bat            	%Dist%Doc\
+xcopy %SRC%Doc\CVars.txt            	%Dist%Doc\
 xcopy %SRC%Doc\jDoom\Doomlic.txt      	%Dist%Doc\jDoom\
 xcopy %SRC%Doc\jDoom\jDoom.txt		%Dist%Doc\jDoom\
 xcopy %SRC%Doc\jHeretic\jHeretic.txt	%Dist%Doc\jHeretic\
