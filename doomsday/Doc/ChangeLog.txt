@@ -7,9 +7,17 @@
 Version 1.7.13 (work in progress)
 --------------
 ! Maintenance Release
-- fixed: mobj Z coordinates were sometimes incorrect on clientside
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
+
+Network:
+- fixed: player start spot selection (especially TNT/Plutonia)
+- fixed: mobj Z coordinates were sometimes incorrect on clientside
+- fixed: server didn't increase client's bandwidth rating, ever
+- fixed: WAD warning box in Client Setup screen was in the wrong place
+
+drD3D:
++ option -triple: enable triple buffering in fullscreen mode
 
 jDoom:
 - fixed: main menu item spacing too tight
