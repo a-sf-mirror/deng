@@ -14,6 +14,7 @@
 
 #ifdef UNIX
 #	include <SDL.h>
+#	include <SDL_thread.h>
 #endif
 
 #include "de_base.h"
@@ -263,7 +264,7 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 	}
 	return (int) handle;
 #else
-	return 0;
+	return (int) SDL_CreateThread(startpos, parm);
 #endif
 }
 
@@ -285,19 +286,27 @@ void Sys_SuspendThread(int handle, boolean dopause)
 #endif	
 }
 
+#ifdef UNIX
 int Sys_CreateMutex(const char *name)
 {
-	return 0;
+	return (int) SDL_CreateMutex();
 }
 
 void Sys_DestroyMutex(int handle)
 {
+	if(!handle) return;	
+	SDL_DestroyMutex((SDL_mutex*)handle);
 }
 
-void Sys_Lock(int mutexHandle)
+void Sys_Lock(int handle)
 {
+	if(!handle) return;	
+	SDL_mutexP((SDL_mutex*)handle);
 }
 
-void Sys_Unlock(int mutexHandle)
+void Sys_Unlock(int handle)
 {
+	if(!handle) return;
+	SDL_mutexV((SDL_mutex*)handle);
 }
+#endif
