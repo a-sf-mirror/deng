@@ -53,6 +53,12 @@ void V2_Set(pvec2_t vec, vectorcomp_t x, vectorcomp_t y)
 	vec[VY] = y;
 }
 
+void V2_SetFixed(pvec2_t vec, fixed_t x, fixed_t y)
+{
+	vec[VX] = FIX2FLT(x);
+	vec[VY] = FIX2FLT(y);
+}
+
 /*
  * 2-dimensional vector length.
  */
@@ -60,6 +66,17 @@ float V2_Length(const pvec2_t vec)
 {
 	if(vec[VX] == 0 && vec[VY] == 0) return 0;
 	return sqrt(vec[VX]*vec[VX] + vec[VY]*vec[VY]);
+}
+
+/*
+ * The distance between two points.
+ */
+float V2_Distance(const pvec2_t a, const pvec2_t b)
+{
+	vec2_t vec;
+
+	V2_Subtract(vec, b, a);
+	return V2_Length(vec);
 }
 
 /*
@@ -193,10 +210,19 @@ float V2_Intersection(const pvec2_t p1, const pvec2_t delta1,
 	 *     (XB-XA)(YD-YC)-(YB-YA)(XD-XC)
 	 */
 
-	float r = ((p1[VY] - p2[VY])*delta2[VX] - (p1[VX] - p2[VX])*delta2[VY])
-		/ (delta1[VX]*delta2[VY] - delta1[VY]*delta2[VX]);
+	float r, div = delta1[VX]*delta2[VY] - delta1[VY]*delta2[VX];
 	int i;
 
+	if(div == 0)
+	{
+		// Special case: lines are parallel.
+		r = 0;
+	}
+	else
+	{
+		r = ((p1[VY] - p2[VY])*delta2[VX] - (p1[VX] - p2[VX])*delta2[VY])/div;
+	}
+	
 	/*
 	 * XI=XA+r(XB-XA)
 	 * YI=YA+r(YB-YA)
@@ -224,6 +250,24 @@ float V2_Intercept(const pvec2_t a, const pvec2_t b,
 	vec2_t cd = { d[VX] - c[VX], d[VY] - c[VY] };
 
 	return V2_Intersection(a, ab, c, cd, point);
+}
+
+/*
+ * Returns true if the two lines intercept.
+ */ 
+boolean V2_Intercept2(const pvec2_t a, const pvec2_t b,
+					  const pvec2_t c, const pvec2_t d,
+					  pvec2_t point, float *abFrac, float *cdFrac)
+{
+	float ab, cd;
+
+	ab = V2_Intercept(a, b, c, d, point);
+	cd = V2_Intercept(c, d, a, b, NULL);
+
+	if(abFrac) *abFrac = ab;
+	if(cdFrac) *cdFrac = cd;
+	
+	return (ab >= 0 && ab <= 1 && cd >= 0 && cd <= 1);
 }
 
 /*
