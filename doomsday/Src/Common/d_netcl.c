@@ -19,9 +19,9 @@
 #endif
 
 #ifdef __JHEXEN__
-#include "../JHexen/H2def.h"
-#include "../JHexen/P_local.h"
-#include "../JHexen/Settings.h"
+#include "../jHexen/h2def.h"
+#include "../jHexen/p_local.h"
+#include "../jHexen/settings.h"
 #endif
 
 #include "p_saveg.h"
@@ -447,6 +447,7 @@ void NetCl_Intermission(byte *data)
 	extern int intertime;
 #endif
 #ifdef __JHEXEN__
+	extern int interstate;
 	extern int LeaveMap, LeavePosition;
 #endif
 

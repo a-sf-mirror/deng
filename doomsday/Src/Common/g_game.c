@@ -58,8 +58,8 @@
 #include "h2def.h"
 #include "p_local.h"
 #include "soundst.h"
-#include "Settings.h"
-#include "g_demo.h"
+#include "settings.h"
+//#include "g_demo.h"
 #include "h2_actn.h"
 #include "d_net.h"
 #endif
@@ -1210,7 +1210,7 @@ void G_DoLoadLevel (void)
 	action_t	*act;
     int         i; 
 #if __JHEXEN__
-    static		firstFragReset = 1;
+    static int firstFragReset = 1;
 #endif
 
     levelstarttic = gametic;        // for time calculation

@@ -10,19 +10,20 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#if __JHEXEN__
-#include "h2def.h"
-#include "p_local.h"
-#else
-#include "Doomdef.h"
-#include "P_local.h"
-#endif
-
-#if __JDOOM__
+#ifdef __JDOOM__
 #include "p_local.h"
 #include "doomstat.h"
-#elif __JHERETIC__
+#endif
+
+#ifdef __JHERETIC__
+#include "Doomdef.h"
+#include "P_local.h"
 #include "G_game.h"
+#endif
+
+#ifdef __JHEXEN__
+#include "h2def.h"
+#include "p_local.h"
 #endif
 
 // MACROS ------------------------------------------------------------------

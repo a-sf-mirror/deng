@@ -17,8 +17,6 @@
 #include "Dstrings.h"
 #endif
 
-#include "f_infine.h"
-
 #ifdef __JDOOM__
 #include "doomdef.h"
 #include "dstrings.h"
@@ -28,6 +26,7 @@
 #include "r_state.h"
 #endif 
 
+#include "f_infine.h"
 #include "p_oldsvg.h"
 #include "d_net.h"
 #include "p_svtexarc.h"

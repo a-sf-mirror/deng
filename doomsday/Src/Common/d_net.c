@@ -19,10 +19,10 @@
 #endif
 
 #if __JHEXEN__
-#include "../JHexen/H2def.h"
-#include "../JHexen/P_local.h"
-#include "../JHexen/soundst.h"
-#include "../JHexen/settings.h"
+#include "../jHexen/h2def.h"
+#include "../jHexen/p_local.h"
+#include "../jHexen/soundst.h"
+#include "../jHexen/settings.h"
 #endif
 
 #include "g_common.h"

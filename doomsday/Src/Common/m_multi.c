@@ -14,11 +14,13 @@
 #include "s_sound.h"
 #include "dstrings.h"
 #include "p_local.h"
+#include "Mn_def.h"
 #elif defined __JHERETIC__
 #include "Doomdef.h"
 #include "settings.h"
 #include "Soundst.h"
 #include "P_local.h"
+#include "Mn_def.h"
 //#include "s_sound.h"
 //#include "Dstrings.h"
 #elif defined __JHEXEN__
@@ -26,9 +28,8 @@
 #include "settings.h"
 #include "soundst.h"
 #include "p_local.h"
+#include "mn_def.h"
 #endif
-
-#include "Mn_def.h"
 
 #include <ctype.h>
 #include <stdlib.h>
