@@ -1,5 +1,0 @@
-LIBRARY			JDOOM
-;DESCRIPTION		"JDoom Doomsday Game DLL"
-
-EXPORTS
-	GetGameAPI		@1
