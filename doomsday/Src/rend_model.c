@@ -552,6 +552,7 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 		// Sky models are animated differently.
 		// Always interpolate, if there's animation.
 		nextFrame = mdl->frames + (smf->frame + 1) % mdl->info.numFrames;
+		mfNext = mf;
 	}
 	else
 	{
