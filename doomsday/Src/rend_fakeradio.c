@@ -703,7 +703,7 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 	rendpoly_vertex_t *vtx;
 	sector_t *sector;
 	float z, pos;
-	int i, dir = (isFloor? 1 : -1), *idx;
+	int i, /*dir = (isFloor? 1 : -1),*/ *idx;
 	int floorIndices[] = { 0, 1, 2, 3 };
 	int ceilIndices[] = { 0, 3, 2, 1 };
 	vec2_t inner[2];
