@@ -1275,6 +1275,8 @@ void SV_Init(void)
 	// Check that the save paths exist.
 	M_CheckPath(save_path);
 	M_CheckPath(client_save_path);
+	M_TranslatePath(save_path, save_path);
+	M_TranslatePath(client_save_path, client_save_path);
 }
 
 void SV_SaveGameFile(int slot, char *str)
