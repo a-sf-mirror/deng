@@ -35,6 +35,16 @@
 // Each network node is identified by a number.
 typedef unsigned int nodeid_t;
 
+// Incoming messages are stored in netmessage_s structs.
+typedef struct netmessage_s {
+	struct netmessage_s *next;
+	nodeid_t sender;
+	int player;			// Set in N_GetMessage().
+	unsigned int size;
+	byte *data;
+	void *handle;
+} netmessage_t;
+
 typedef unsigned short msgid_t;
 
 #pragma pack(1)
@@ -68,9 +78,12 @@ extern boolean	 	allowSending;
  */
 void 	N_Init(void);
 void 	N_Shutdown(void);
+void 	N_ClearMessages(void);
 void 	N_SendPacket(int flags);
 boolean	N_GetPacket(void);
 int 	N_IdentifyPlayer(nodeid_t id);
+
+void 	N_PostMessage(netmessage_t *msg);
 
 void 	N_SMSReset(int player);
 void 	N_SMSDestroyConfirmed(void);
