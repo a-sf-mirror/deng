@@ -12,6 +12,10 @@
 #	include <process.h>
 #endif
 
+#ifdef UNIX
+#	include <SDL.h>
+#endif
+
 #include "de_base.h"
 #include "de_console.h"
 #include "de_system.h"
@@ -125,6 +129,10 @@ void Sys_Sleep(int millisecs)
 #ifdef WIN32
 	Sleep(millisecs);
 #endif
+#ifdef UNIX
+	// Not guaranteed to be very accurate...
+	SDL_Delay(millisecs);
+#endif
 }
 
 //===========================================================================
@@ -134,6 +142,9 @@ void Sys_ShowCursor(boolean show)
 {
 #ifdef WIN32
 	ShowCursor(show);
+#endif
+#ifdef UNIX
+	SDL_ShowCursor(show? SDL_ENABLE : SDL_DISABLE);
 #endif
 }
 
@@ -146,7 +157,10 @@ void Sys_HideMouse(void)
 #ifdef WIN32
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
-#endif	
+#endif
+#ifdef UNIX
+	Sys_ShowCursor(false);
+#endif
 }
 
 //===========================================================================
