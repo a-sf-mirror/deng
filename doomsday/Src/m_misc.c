@@ -7,6 +7,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "de_platform.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -858,11 +860,11 @@ boolean M_CheckPath(char *path)
 	char full[256];
 	char buf[256], *ptr, *endptr;
 
-	if(!access(path, 0)) return true; // Quick test.
-
 	// Convert all backslashes to normal slashes.
 	strcpy(full, path);
-	while((ptr = strchr(full, '\\')) != 0) *ptr = '/';
+	Dir_FixSlashes(full);
+	
+	if(!access(full, 0)) return true; // Quick test.
 
 	// Check and create the path in segments.
 	ptr = full;
@@ -880,7 +882,7 @@ boolean M_CheckPath(char *path)
 			mkdir(buf, 0775);
 #endif
 		}
-		strcat(buf, "\\");
+		strcat(buf, DIR_SEP_STR);
 		ptr = endptr + 1;
 		if(!endptr) break;
 	}
