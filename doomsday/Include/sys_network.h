@@ -47,9 +47,9 @@ typedef enum {
 	MAC_LIST		// Print the server list in the console.
 } masteraction_t;
 
-extern unsigned int maxDatagramSize;
+//extern unsigned int maxDatagramSize;
 extern boolean	allowSending;
-extern int		maxQueuePackets;
+//extern int		maxQueuePackets;
 
 extern serviceprovider_t netCurrentProvider;
 extern boolean	netServerMode;   
@@ -72,6 +72,9 @@ extern char		*masterAddress;
 extern int		masterPort;
 extern char		*masterPath;
 
+void	N_Init(void);
+void	N_Shutdown(void);
+	
 void	N_SystemInit(void);
 void	N_SystemShutdown(void);
 boolean	N_InitService(serviceprovider_t provider, boolean inServerMode);
