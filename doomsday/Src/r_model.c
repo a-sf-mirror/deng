@@ -1444,5 +1444,3 @@ void R_PrecacheSkinsForMobj(mobj_t *mo)
 		R_PrecacheModelSkins(modef);
 	}
 }
-
-
