@@ -566,7 +566,6 @@ listen:
  */
 void Net_AllocArrays(void)
 {
-	char lockName[40];
 	client_t *cl;
 	int	i;
 
@@ -575,8 +574,7 @@ void Net_AllocArrays(void)
 	for(i = 0, cl = clients; i < MAXPLAYERS; i++, cl++)
 	{
 		// A mutex is used to control access to the local commands buffer.
-		sprintf(lockName, "LocalCmdMutex%02i", i);
-		cl->localCmdLock = Sys_CreateMutex(lockName);
+		cl->localCmdLock = Sys_CreateMutex();
 		cl->localCmds = calloc(LOCALTICS, TICCMD_SIZE);		
 
 		// The server stores ticCmds sent by the clients to these

@@ -1115,7 +1115,7 @@ void DD_InitInput(void)
 	// A mutex is used to control access to the event queue. The input 
 	// threads writes to the queue and the refresh queue reads events 
 	// from it.
-	eventQueueLock = Sys_CreateMutex("EventQueueMutex");
+	eventQueueLock = Sys_CreateMutex();
 
 	DD_DefaultKeyMapping();
 }

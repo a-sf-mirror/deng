@@ -992,7 +992,7 @@ void Sfx_ShutdownChannels(void)
  */
 void Sfx_StartRefresh(void)
 {
-	channelMutex = Sys_CreateMutex("Sfx_ChannelRefreshThread");
+	channelMutex = Sys_CreateMutex();
 	
 	// Create a high-priority thread for the channel refresh.
 	if(!(hRefresh = Sys_StartThread(Sfx_ChannelRefreshThread, NULL, 3)))
