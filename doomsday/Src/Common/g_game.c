@@ -2373,7 +2373,7 @@ void G_Completed(int map, int position)
 {
 	if(cyclingMaps && mapCycleNoExit) return;
 
-	if(shareware)
+	if(shareware && map > 4)
 	{
 		// Not possible in the 4-level demo.
 		P_SetMessage(&players[consoleplayer], "PORTAL INACTIVE -- DEMO", 
