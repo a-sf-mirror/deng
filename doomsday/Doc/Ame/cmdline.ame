@@ -369,6 +369,9 @@ $--------------------------------------------------------------------
 	dialog is otherwise only shown if @kbd{Ctrl}, @kbd{Shift} or
 	@kbd{Alt} is held down when the game is started.
 @row
+	@opt{-triple} @tab @tab
+	Enable triple buffering.
+@row
 	@opt{-texbits N} @tab @tab
 	Set texture bit depth. Won't affect the default
     configuration in @file{drD3D.ini}.
