@@ -75,7 +75,7 @@ void Con_StartupInit(void)
 	}
 
 	// Load graphics.
-	startupLogo = GL_LoadGraphics("Background", true);
+	startupLogo = GL_LoadGraphics("Background", LGM_GRAYSCALE);
 }
 
 void Con_SetBgFlat(int lump)
