@@ -8,6 +8,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "de_base.h"
+#include "de_network.h"
 #include "de_render.h"
 #include "de_play.h"
 
@@ -80,6 +81,16 @@ void P_MobjTicker(mobj_t *mo)
 }
 
 //===========================================================================
+// PIT_ClientMobjTicker
+//===========================================================================
+boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
+{
+	P_MobjTicker(&cmo->mo);
+	// Continue iteration.
+	return true;
+}
+
+//===========================================================================
 // P_Ticker
 //	Doomsday's own play-ticker.
 //===========================================================================
@@ -97,8 +108,9 @@ void P_Ticker(void)
 	// Check all mobjs.
 	for(th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		// FIXME: Client mobjs!
 		if(!P_IsMobjThinker(th->function)) continue;
 		P_MobjTicker( (mobj_t*) th);
 	}
+
+	Cl_MobjIterator(PIT_ClientMobjTicker, NULL);
 }
