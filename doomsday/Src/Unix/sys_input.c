@@ -10,6 +10,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <stdlib.h>
+#include <SDL.h>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -18,7 +19,9 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define KEYBUFSIZE	32
+#define EVBUFSIZE		64
+
+#define KEYBUFSIZE		32
 #define INV(x, axis)	(joyInverseAxis[axis]? -x : x)
 
 // TYPES -------------------------------------------------------------------
@@ -59,9 +62,37 @@ cvar_t inputCVars[] =
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static boolean initOk = false;		
+static boolean initOk = false;
+static boolean useMouse, useJoystick;
+
+static keyevent_t keyEvents[EVBUFSIZE];
 
 // CODE --------------------------------------------------------------------
+
+/*
+ * SDL's events are all returned from the same routine.  This function
+ * is called periodically, and the events we are interested in a saved
+ * into our own buffer.
+ */
+void I_PollEvents(void)
+{
+	SDL_Event event;
+	
+	while(SDL_PollEvent(&event))
+	{
+		switch(event.type)
+		{
+		case SDL_QUIT:
+			// The system wishes to close the program immediately...
+			Sys_Quit();
+			break;
+
+		default:
+			// The rest of the events are ignored.
+			break;
+		}
+	}
+}
 
 //===========================================================================
 // I_InitMouse
@@ -71,6 +102,7 @@ void I_InitMouse(void)
 	if(ArgCheck("-nomouse") || novideo) return;
 
 	// Init was successful.
+	useMouse = true;
 }
 
 //===========================================================================
@@ -79,6 +111,7 @@ void I_InitMouse(void)
 void I_InitJoystick(void)
 {
 	if(ArgCheck("-nojoy")) return;
+//	useJoystick = true;
 }
 
 //===========================================================================
@@ -88,7 +121,6 @@ void I_InitJoystick(void)
 int I_Init(void)
 {
 	if(initOk) return true;	// Already initialized.
-
 	initOk = true;
 	return true;
 }
@@ -107,7 +139,7 @@ void I_Shutdown(void)
 //===========================================================================
 boolean I_MousePresent(void)
 {
-	return false;
+	return useMouse;
 }
 
 //===========================================================================
@@ -115,7 +147,7 @@ boolean I_MousePresent(void)
 //===========================================================================
 boolean I_JoystickPresent(void)
 {
-	return false;
+	return useJoystick;
 }
 
 //===========================================================================
@@ -126,6 +158,9 @@ int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
 	int i = 0;
 	
 	if(!initOk) return 0;
+
+	// Get new events from SDL.
+	I_PollEvents();
 	
 /*	// Get the events.
 	for(i=0; i<num && i<bufsize; i++)
