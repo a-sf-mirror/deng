@@ -3460,6 +3460,12 @@ unsigned int GL_PrepareSkin(model_t *mdl, int skin)
 			Con_Error("GL_PrepareSkin: %s not found.\n", mdl->skins[skin].name);
 		}
 
+		if(!mdl->allowTexComp)
+		{
+			// This will prevent texture compression.
+			gl.Disable(DGL_TEXTURE_COMPRESSION);
+		}
+
 		st->tex = GL_UploadTexture(image, width, height, 
 			size == 4, true, true, false);
 
@@ -3467,6 +3473,9 @@ unsigned int GL_PrepareSkin(model_t *mdl, int skin)
 		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
 		gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
 		gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+
+		// Compression can be enabled again.
+		gl.Enable(DGL_TEXTURE_COMPRESSION);
 
 		// We don't need the image data any more.
 		M_Free(image);

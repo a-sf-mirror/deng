@@ -650,6 +650,7 @@ int R_LoadModel(char *origfn)
 
 	// We're done.
 	mdl->loaded = true;
+	mdl->allowTexComp = true;
 	F_Close(file);
 	strcpy(mdl->fileName, filename);
 
@@ -1093,6 +1094,13 @@ void R_SetupModel(ded_model_t *def)
 			subdef->filename.path, NULL);
 
 		END_PROF( PROF_REGISTER_SKIN );
+
+		// Should we allow texture compression with this model?
+		if(sub->flags & MFF_NO_TEXCOMP)
+		{
+			// All skins of this model will no longer use compression.
+			modellist[sub->model]->allowTexComp = false;
+		}
 	}
 
 	BEGIN_PROF( PROF_SCALING );

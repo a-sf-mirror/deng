@@ -37,6 +37,7 @@
 #define MFF_SUBTRACT			0x02000000 // Subtract blending.
 #define MFF_REVERSE_SUBTRACT	0x04000000 // Reverse subtract blending.
 #define MFF_TWO_SIDED			0x08000000 // Disable culling.
+#define MFF_NO_TEXCOMP			0x10000000 // Never compress skins.
 
 typedef struct
 {
