@@ -46,6 +46,7 @@
 
 #define SAFEDIV(x,y)	(!(y) || !((x)/(y))? 1 : (x)/(y))
 #define ORDER(x,y,a,b)	( (x)<(y)? ((a)=(x),(b)=(y)) : ((b)=(x),(a)=(y)) )
+#define LAST_CHAR(str)	(str[strlen(str) - 1])
 
 #define MAXEVENTS		64
 #define PI				3.141592657
