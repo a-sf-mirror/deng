@@ -15,6 +15,7 @@
 
 #ifdef UNIX
 #	include <ctype.h>
+#	include <SDL.h>
 #endif
 
 #include <stdio.h>
@@ -449,9 +450,20 @@ void DD_Main(void)
 	SW_Shutdown();			// The message window can be closed.
 	if(!isDedicated)
 	{
+#ifdef UNIX
+		char buf[256];
+#endif
+		
 		Sys_ShowWindow(true);	// Show the main window (was created hidden).
 		GL_Init();
 		GL_InitRefresh(true);
+		
+#ifdef UNIX
+		// The window title can only be set after the window has been
+		// initialized.
+		DD_MainWindowTitle(buf);
+		SDL_WM_SetCaption(buf, NULL);
+#endif
 	}
 	
 	// Start printing messages in the startup.
