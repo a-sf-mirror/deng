@@ -1,7 +1,7 @@
 
                 Doomsday Directory Structure Standard
                 =====================================
-                      $Revision$ -- $Date$
+          $Revision$ -- $Date$
 
         Contact <jaakko.keranen@iki.fi> if you have any questions.
 
