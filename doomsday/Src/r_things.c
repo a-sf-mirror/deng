@@ -599,7 +599,7 @@ void R_ProjectSprite (mobj_t *thing)
 	float		sinrv, cosrv, thangle;	// rv = real value
 	boolean		align;
 	modeldef_t	*mf = NULL, *nextmf = NULL;
-	float		interp, distance;
+	float		interp = 0, distance;
 	
 	if(thing->ddflags & DDMF_DONTDRAW || thing->translucency == 0xff)
 	{ 
