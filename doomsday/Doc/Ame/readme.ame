@@ -321,7 +321,7 @@ Below is a list of all the game modes supported by jDoom, jHeretic and jHexen.
 	@tab heretic-ext @tab Heretic: Shadow of the Serpent Riders (has episodes 4, 5) @row
 
 	jHexen @tab hexen @tab Hexen @row
-	@tab hexen-dk @tab Hexen: Death Kings of Dark Citadel
+	@tab hexen-dk @tab Hexen: Death Kings of Dark Citadel @row
 	@tab hexen-demo @tab The 4-level Hexen Demo
 }
 
