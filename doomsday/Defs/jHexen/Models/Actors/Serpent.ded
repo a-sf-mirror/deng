@@ -148,10 +148,11 @@ Copy Model { State = "DEMN_XDEATH9"; Sub { Frame = "death08"; } }
 Copy Model {
   State = "DEMON_ICE";
   Sub {
+    File = "Actors/Serpent/Frozen.md2";
     Frame = "pain01";
     Skin = 2;
     Flags = litshiny | specular;
-    Shiny = 0.7;
+    Shiny = 0.6;
     Shiny skin = "Common/SoftShiny.pcx";
     Transparent = 0.45;
   }
