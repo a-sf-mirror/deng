@@ -18,34 +18,37 @@ CFLAGS = -g -Wall -IInclude/drOpenGL -IInclude $(DEFS) -fPIC $(SDLFLAGS)
 .PHONY: dep clean
 
 dropengl.so: $(OBJ) $(INC)
-	$(CC) -shared -o dropengl.so $(OBJ) `sdl-config --libs` -lGL -lGLU
+	$(CC) -shared -o dropengl.so $(OBJ) `sdl-config --libs` -lGL -lGLU 
 
 clean:
-	rm $(OBJ) dropengl.so
+	rm -f $(OBJ) dropengl.so
 
 dep:
 	makedepend -fMakefile.ogl -YInclude/drOpenGL -IInclude $(DEFS) $(SRC) 2> /dev/null
 # DO NOT DELETE
 
 Src/drOpenGL/draw.o: Include/drOpenGL/drOpenGL.h Include/drOpenGL/atiext.h
-Src/drOpenGL/draw.o: Include/doomsday.h Include/dd_share.h Include/dd_types.h
-Src/drOpenGL/draw.o: Include/p_think.h Include/dd_dfdat.h Include/dd_plugin.h
-Src/drOpenGL/draw.o: Include/dglib.h
+Src/drOpenGL/draw.o: Include/doomsday.h Include/dd_share.h
+Src/drOpenGL/draw.o: Include/dd_version.h Include/dd_types.h
+Src/drOpenGL/draw.o: Include/p_think.h Include/def_share.h
+Src/drOpenGL/draw.o: Include/dd_plugin.h Include/dglib.h
 Src/drOpenGL/ext.o: Include/drOpenGL/drOpenGL.h Include/drOpenGL/atiext.h
-Src/drOpenGL/ext.o: Include/doomsday.h Include/dd_share.h Include/dd_types.h
-Src/drOpenGL/ext.o: Include/p_think.h Include/dd_dfdat.h Include/dd_plugin.h
-Src/drOpenGL/ext.o: Include/dglib.h
+Src/drOpenGL/ext.o: Include/doomsday.h Include/dd_share.h
+Src/drOpenGL/ext.o: Include/dd_version.h Include/dd_types.h Include/p_think.h
+Src/drOpenGL/ext.o: Include/def_share.h Include/dd_plugin.h Include/dglib.h
 Src/drOpenGL/common.o: Include/drOpenGL/drOpenGL.h Include/drOpenGL/atiext.h
 Src/drOpenGL/common.o: Include/doomsday.h Include/dd_share.h
-Src/drOpenGL/common.o: Include/dd_types.h Include/p_think.h
-Src/drOpenGL/common.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dglib.h
+Src/drOpenGL/common.o: Include/dd_version.h Include/dd_types.h
+Src/drOpenGL/common.o: Include/p_think.h Include/def_share.h
+Src/drOpenGL/common.o: Include/dd_plugin.h Include/dglib.h
 Src/drOpenGL/Unix/main.o: Include/drOpenGL/drOpenGL.h
 Src/drOpenGL/Unix/main.o: Include/drOpenGL/atiext.h Include/doomsday.h
-Src/drOpenGL/Unix/main.o: Include/dd_share.h Include/dd_types.h
-Src/drOpenGL/Unix/main.o: Include/p_think.h Include/dd_dfdat.h
-Src/drOpenGL/Unix/main.o: Include/dd_plugin.h Include/dglib.h
+Src/drOpenGL/Unix/main.o: Include/dd_share.h Include/dd_version.h
+Src/drOpenGL/Unix/main.o: Include/dd_types.h Include/p_think.h
+Src/drOpenGL/Unix/main.o: Include/def_share.h Include/dd_plugin.h
+Src/drOpenGL/Unix/main.o: Include/dglib.h
 Src/drOpenGL/texture.o: Include/drOpenGL/drOpenGL.h Include/drOpenGL/atiext.h
 Src/drOpenGL/texture.o: Include/doomsday.h Include/dd_share.h
-Src/drOpenGL/texture.o: Include/dd_types.h Include/p_think.h
-Src/drOpenGL/texture.o: Include/dd_dfdat.h Include/dd_plugin.h
-Src/drOpenGL/texture.o: Include/dglib.h
+Src/drOpenGL/texture.o: Include/dd_version.h Include/dd_types.h
+Src/drOpenGL/texture.o: Include/p_think.h Include/def_share.h
+Src/drOpenGL/texture.o: Include/dd_plugin.h Include/dglib.h
