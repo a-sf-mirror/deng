@@ -190,27 +190,10 @@ static boolean SCControlConfig(int option)
 void spacecat(char *str, const char *catstr)
 {
 	if(str[0]) strcat(str, " ");
-	
-	// Also do some filtering.
-	/*switch(catstr[0])
-	{
-	case '\\':
-		strcat(str, "bkslash");
-		break;
-	
-	case '[':
-		strcat(str, "sqbtopen");
-		break;
 
-	case ']':
-		strcat(str, "sqbtclose");
-		break;*/
-
-	//default:
+	if(!stricmp(catstr, "smcln")) catstr = ";";
 
 	strcat(str, catstr);
-	
-	//}
 }
 
 void M_DrawControlsMenu(void)
@@ -228,7 +211,8 @@ void M_DrawControlsMenu(void)
 	M_WriteText2(160-M_StringWidth(buff, hu_font_a)/2, 
 		menu->y-12, buff, hu_font_a, 1, .7f, .3f);
 
-	for(i=0; i<menu->numVisItems && menu->firstItem+i < menu->itemCount; i++, item++)
+	for(i = 0; i < menu->numVisItems && menu->firstItem + i < menu->itemCount; 
+		i++, item++)
 	{
 		if(item->type == ITT_EMPTY) continue;
 		
@@ -276,7 +260,7 @@ void D_DefaultBindings()
 	event_t		event;
 	
 	// Check all Controls.
-	for(i=0; controls[i].command[0]; i++)
+	for(i = 0; controls[i].command[0]; i++)
 	{
 		ctr = controls + i;
 		// If this command is bound to something, skip it.
@@ -346,19 +330,7 @@ int D_PrivilegedResponder(event_t *event)
 		// Check for a cancel.
 		if(event->type == ev_keydown)
 		{
-			/*
-			if(event->data1 == '`') // Tilde clears everything.
-			{
-				if(grabbing->flags & CLF_ACTION)
-					sprintf(cmd, "delbind +%s -%s", grabbing->command,
-						grabbing->command);
-				else
-					sprintf(cmd, "delbind \"%s\"", grabbing->command);
-				Con_Execute(cmd, true);
-				grabbing = NULL;
-				return true;
-			}
-			else */if(event->data1 == DDKEY_ESCAPE)
+			if(event->data1 == DDKEY_ESCAPE)
 			{
 				grabbing = NULL;
 				return true;
@@ -379,8 +351,9 @@ int D_PrivilegedResponder(event_t *event)
 				strcpy(buff, "");
 			}
 		if(!del) sprintf(buff, "\"%s\"", grabbing->command);
-		sprintf(cmd, "%s %s %s", grabbing->flags & CLF_REPEAT? "bindr" : "bind",
-			evname+1, buff);
+		sprintf(cmd, "%s %s %s", 
+			grabbing->flags & CLF_REPEAT? "bindr" : "bind",
+			evname + 1, buff);
 		Con_Execute(cmd, false);
 		// We've finished the grab.
 		grabbing = NULL;
