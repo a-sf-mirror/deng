@@ -53,7 +53,6 @@ typedef struct
 
 typedef struct modeldef_s
 {
-	int				order;
 	char			id[33];
 
 	state_t			*state;		// Pointer to the states list (in dd_defns.c).
