@@ -147,13 +147,13 @@ boolean Mus_Init(void)
 	if(verbose)
 	{
 		char buf[40];
-		Con_Printf("Mus_Init: Interfaces: ");
+		Con_Printf("Mus_Init: Interfaces:");
 		for(i = 0; i < NUM_INTERFACES; i++)
 			if(*interfaces[i].ip)
 			{
 				if(!(*interfaces[i].ip)->Get(MUSIP_ID, buf)) 
 					strcpy(buf, "?");
-				Con_Printf("%s%s", i? ", " : "", buf);
+				Con_Printf(" %s", buf);
 			}
 
 		Con_Printf("\n");
