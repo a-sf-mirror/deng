@@ -314,8 +314,8 @@ void MPIServerInfoDrawer(ui_object_t *ob)
  */
 void MPIEnablePublic(void)
 {
-	UI_FlagGroup(ob_server, 1, UIF_HIDDEN, gCurrentProvider != NSP_TCPIP);
-	UI_FlagGroup(ob_server, 2, UIF_HIDDEN, gCurrentProvider != NSP_TCPIP);
+	UI_FlagGroup(ob_server, 1, UIF_HIDDEN, !N_UsingInternet());
+	UI_FlagGroup(ob_server, 2, UIF_HIDDEN, !N_UsingInternet());
 }
 
 void MPIToggleMasterItems(ui_object_t *ob)
