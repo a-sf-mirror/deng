@@ -151,7 +151,8 @@ typedef struct shadowpoly_s {
 	ushort visframe;				// Last visible frame (for rendering).
 	vertex_t *outer[2];				// Left and right.
 	float inoffset[2][2];			// Offset from 'outer.'
-	float extoffset[2][2];			// Offset from 'outer.'
+	float extoffset[2][2];			// Extended: offset from 'outer.'
+	float bextoffset[2][2];			// Back-extended: offset frmo 'outer.'
 } shadowpoly_t;
 
 typedef struct shadowlink_s {
@@ -168,7 +169,7 @@ typedef struct subsectorinfo_s {
 typedef struct lineinfo_side_s {
 	struct line_s *neighbor[2];		// Left and right neighbour.
 	struct sector_s *proxsector[2];	// Sectors behind the neighbors.
-//	struct line_s *backneighbor[2];	// Neighbour in the backsector (if any).
+	struct line_s *backneighbor[2];	// Neighbour in the backsector (if any).
 	struct line_s *alignneighbor[2];// Aligned left and right neighbours.
 } lineinfo_side_t;
 
