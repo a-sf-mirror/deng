@@ -116,14 +116,15 @@ xcopy %SRC%Doc\ChangeLog.txt           	%Dist%Doc\
 xcopy %SRC%Doc\Ame\TXT\Readme.txt	%Dist%Doc\
 xcopy %SRC%Doc\Ame\TXT\Beginner.txt	%Dist%Doc\
 xcopy %SRC%Doc\Ame\TXT\CmdLine.txt	%Dist%Doc\
+xcopy %SRC%Doc\Ame\TXT\InFine.txt	%Dist%Doc\
 ren %Dist%Doc\Readme.txt 	Readme.txt 
 ren %Dist%Doc\Beginner.txt 	Beginner.txt 
 ren %Dist%Doc\CmdLine.txt 	CmdLine.txt 
+ren %Dist%Doc\InFine.txt	InFine.txt
 xcopy %SRC%Doc\DEDDoc.txt		%Dist%Doc\
 xcopy %SRC%Doc\DSS.txt			%Dist%Doc\
 xcopy %SRC%Doc\Network.txt		%Dist%Doc\
 xcopy %SRC%Doc\Example.bat            	%Dist%Doc\
-xcopy %SRC%Doc\InFine.txt		%Dist%Doc\
 xcopy %SRC%Doc\jDoom\Doomlic.txt      	%Dist%Doc\jDoom\
 xcopy %SRC%Doc\jDoom\jDoom.txt		%Dist%Doc\jDoom\
 xcopy %SRC%Doc\jHeretic\jHeretic.txt	%Dist%Doc\jHeretic\
