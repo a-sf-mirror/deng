@@ -13,6 +13,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <string.h>
+#include <ltdl.h>
 
 #include "de_console.h"
 #include "sys_sfxd.h"
@@ -35,6 +36,7 @@ sfxdriver_t sfxd_external;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static lt_dlhandle handle;
 static void	(*driverShutdown)(void);
 
 // CODE --------------------------------------------------------------------
@@ -44,7 +46,7 @@ static void	(*driverShutdown)(void);
 //===========================================================================
 static void *Imp(const char *fn)
 {
-	return NULL;
+	return lt_dlsym(handle, fn);
 }
 
 //===========================================================================
@@ -53,7 +55,8 @@ static void *Imp(const char *fn)
 void DS_UnloadExternal(void)
 {
 	driverShutdown();
-//	FreeLibrary(hInstExt);
+	lt_dlclose(handle);
+	handle = NULL;
 }
 
 //===========================================================================
@@ -96,16 +99,14 @@ sfxdriver_t *DS_Load(const char *name)
 	filename_t fn;
 
 	// Compose the name, use the prefix "ds".
-	sprintf(fn, "ds%s.so", name);
+	sprintf(fn, "libds%s", name);
 
-/*	// Load the DLL.
-	hInstExt = LoadLibrary(fn);
-	if(!hInstExt)  // Load failed?
+	if((handle = lt_dlopenext(fn)) == NULL)
 	{
 		Con_Message("DS_Load: Loading of %s failed.\n", fn);
 		return NULL;
 	}
-*/
+	
 	return DS_ImportExternal();
 }
 
