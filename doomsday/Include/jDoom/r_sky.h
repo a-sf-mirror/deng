@@ -29,13 +29,7 @@
 #endif
 
 // SKY, store the number for name.
-#define			SKYFLATNAME  "F_SKY1"
-
-// The sky map is 256*128*4 maps.
-#define			ANGLETOSKYSHIFT		22
-
-extern  int		skytexture;
-extern int		skytexturemid;
+#define SKYFLATNAME  "F_SKY1"
 
 // Called whenever the view size changes.
 void R_InitSkyMap (void);
@@ -44,6 +38,9 @@ void R_InitSkyMap (void);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.4.2  2004/01/07 13:12:14  skyjake
+// Cleanup
+//
 // Revision 1.2.4.1  2003/11/19 17:08:47  skyjake
 // Modified to compile with gcc and -DUNIX
 //
