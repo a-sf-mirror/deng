@@ -106,6 +106,14 @@ BOOL InitInstance(HINSTANCE hInst, int cmdShow)
 }
 */
 
+void InitMainWindow(void)
+{
+	char buf[256];
+
+	DD_MainWindowTitle(buf);
+	SDL_WM_SetCaption(buf, NULL);
+}
+
 boolean InitGame(void)
 {
 	char *libName = NULL;
@@ -226,6 +234,19 @@ int main(int argc, char **argv)
 		DD_ErrorBox(true, "SDL Init Failed: %s\n", SDL_GetError());
 		return 4;
 	}
+
+	// Also initialize the SDL video subsystem, unless we're going to
+	// run in dedicated mode.
+	if(!ArgExists("-dedicated"))
+	{
+		if(SDL_InitSubSystem(SDL_INIT_VIDEO))
+		{
+			DD_ErrorBox(true, "SDL Init Failed: %s\n", SDL_GetError());
+			return 5;
+		}
+	}
+
+	InitMainWindow();
 
 	// Init memory zone.
 	Z_Init();
