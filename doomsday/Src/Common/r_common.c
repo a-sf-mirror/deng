@@ -13,7 +13,7 @@
 #endif
 
 #ifdef __JHERETIC__
-#include "doomdef.h"
+#include "Doomdef.h"
 #endif
 
 #ifdef __JHEXEN__

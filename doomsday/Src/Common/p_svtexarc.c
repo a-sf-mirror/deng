@@ -11,7 +11,7 @@
 #include "doomdef.h"
 #include "r_local.h"
 #elif __JHERETIC__
-#include "doomdef.h"
+#include "Doomdef.h"
 #else // __JHEXEN__
 #include "h2def.h"
 #include "r_local.h"

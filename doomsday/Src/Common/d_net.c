@@ -12,10 +12,10 @@
 #endif
 
 #if __JHERETIC__
-#include "../JHeretic/DoomDef.h"
-#include "../JHeretic/P_local.h"
-#include "../JHeretic/soundst.h"
-#include "../JHeretic/settings.h"
+#include "../jHeretic/Doomdef.h"
+#include "../jHeretic/P_local.h"
+#include "../jHeretic/Soundst.h"
+#include "../jHeretic/settings.h"
 #endif
 
 #if __JHEXEN__

@@ -11,10 +11,9 @@
 #include <math.h>
 #include <ctype.h>
 
+#ifdef __JDOOM__
 #include "doomdef.h"
 #include "p_local.h"
-
-#ifdef __JDOOM__
 #include "p_spec.h"
 #include "doomstat.h"
 #include "d_config.h"
@@ -25,9 +24,10 @@
 #endif
 
 #ifdef __JHERETIC__
+#include "Doomdef.h"
 #include "settings.h"
-#include "p_local.h"
-#include "soundst.h"
+#include "P_local.h"
+#include "Soundst.h"
 #endif
 
 #include "p_xgline.h"
@@ -1733,9 +1733,9 @@ int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
 	   || (info->flags & STF_MISSILE_WIND && mo->flags & MF_MISSILE))
 	{
 		if(!(info->flags & (STF_FLOOR_WIND | STF_CEILING_WIND))
-			|| info->flags & STF_FLOOR_WIND && mo->z <= mo->floorz
-			|| info->flags & STF_CEILING_WIND 
-				&& mo->z + mo->height >= mo->ceilingz)
+		   || (info->flags & STF_FLOOR_WIND && mo->z <= mo->floorz)
+		   || (info->flags & STF_CEILING_WIND &&
+			   mo->z + mo->height >= mo->ceilingz))
 		{
 			// Apply vertical wind.
 			mo->momz += FRACUNIT * info->vertical_wind;

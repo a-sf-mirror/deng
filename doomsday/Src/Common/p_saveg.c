@@ -11,11 +11,17 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <LZSS.h>
-#include "doomdef.h"
-#include "dstrings.h"
+
+#ifdef __JHERETIC__
+#include "Doomdef.h"
+#include "Dstrings.h"
+#endif
+
 #include "f_infine.h"
 
 #ifdef __JDOOM__
+#include "doomdef.h"
+#include "dstrings.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "doomstat.h"

@@ -43,12 +43,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "DoomDef.h"
+#include "Doomdef.h"
 #include "P_local.h"
 #include "H_Action.h"
-#include "soundst.h"
+#include "Soundst.h"
 #include "settings.h"
-#include "P_Saveg.h"
+#include "p_saveg.h"
 #endif
 
 #if __JHEXEN__
@@ -101,19 +101,20 @@ struct
 {	
 	int	action;
 	int	artifact;
-} ArtifactHotkeys[] =
+}
+ArtifactHotkeys[] =
 {
-	A_INVULNERABILITY,	arti_invulnerability,
-	A_INVISIBILITY,		arti_invisibility,
-	A_HEALTH,			arti_health,
-	A_SUPERHEALTH,		arti_superhealth,
-	A_TORCH,			arti_torch,
-	A_FIREBOMB,			arti_firebomb,
-	A_EGG,				arti_egg,
-	A_FLY,				arti_fly,
-	A_TELEPORT,			arti_teleport,
-	A_PANIC,			NUMARTIFACTS,
-	0,					arti_none // Terminator.
+	{ A_INVULNERABILITY,	arti_invulnerability },
+	{ A_INVISIBILITY,		arti_invisibility },
+	{ A_HEALTH,				arti_health },
+	{ A_SUPERHEALTH,		arti_superhealth },
+	{ A_TORCH,				arti_torch },
+	{ A_FIREBOMB,			arti_firebomb },
+	{ A_EGG,				arti_egg },
+	{ A_FLY,				arti_fly },
+	{ A_TELEPORT,			arti_teleport },
+	{ A_PANIC,				NUMARTIFACTS },
+	{ 0,					arti_none }// Terminator.
 };
 
 struct
@@ -1294,7 +1295,7 @@ boolean G_Responder (event_t* ev)
 	int		i;
 #if __JHERETIC__ || __JHEXEN__
 	player_t *plr = &players[consoleplayer];
-	extern boolean MenuActive;
+	//extern boolean MenuActive;
 
 	if(!actions[A_USEARTIFACT].on)
 	{ // flag to denote that it's okay to use an artifact

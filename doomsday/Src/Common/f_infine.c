@@ -21,10 +21,10 @@
 #include "hu_stuff.h"
 
 #elif __JHERETIC__
-#include "doomdef.h"
-#include "am_map.h"
-#include "s_sound.h"
-#include "soundst.h"
+#include "Doomdef.h"
+#include "Am_map.h"
+#include "S_sound.h"
+#include "Soundst.h"
 
 #elif __JHEXEN__
 #include "h2def.h"

@@ -9,13 +9,16 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#ifdef __JDOOM__
 #include "doomdef.h"
 #include "p_local.h"
-
-#ifdef __JDOOM__
 #include "r_local.h"
 #include "r_defs.h"
+#endif
 
+#ifdef __JHERETIC__
+#include "Doomdef.h"
+#include "P_local.h"
 #endif
 
 #include "p_saveg.h"

@@ -3,35 +3,31 @@
 
 // TODO: Remove unnecessary SC* declarations and other unused code.
 
-#ifdef __JHEXEN__
-#include "h2def.h"
-#else
+#if defined __JDOOM__
 #include "doomdef.h"
-#endif
-
-#ifdef __JDOOM__
 #include "doomstat.h"
 #include "m_menu.h"
 #include "d_config.h"
 #include "hu_stuff.h"
 #include "m_misc.h"
 #include "m_random.h"
-#endif
-
-#ifdef __JHERETIC__
-#include "settings.h"
-#include "soundst.h"
-#endif
-
-#ifdef __JHEXEN__
-#include "settings.h"
-#include "soundst.h"
-#else
 #include "s_sound.h"
 #include "dstrings.h"
+#include "p_local.h"
+#elif defined __JHERETIC__
+#include "Doomdef.h"
+#include "settings.h"
+#include "Soundst.h"
+#include "P_local.h"
+//#include "s_sound.h"
+//#include "Dstrings.h"
+#elif defined __JHEXEN__
+#include "h2def.h"
+#include "settings.h"
+#include "soundst.h"
+#include "p_local.h"
 #endif
 
-#include "p_local.h"
 #include "Mn_def.h"
 
 #include <ctype.h>

@@ -21,9 +21,9 @@
 #endif
 
 #if __JHERETIC__
-#include "doomdef.h"
-#include "s_sound.h"
-#include "soundst.h"
+#include "Doomdef.h"
+#include "S_sound.h"
+#include "Soundst.h"
 #endif
 
 #if __JHEXEN__

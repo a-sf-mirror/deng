@@ -12,10 +12,9 @@
 #include <time.h>
 #include <stdarg.h>
 
+#ifdef __JDOOM__
 #include "doomdef.h"
 #include "p_local.h"
-
-#ifdef __JDOOM__
 #include "doomstat.h"
 #include "d_config.h"
 #include "s_sound.h"
@@ -26,9 +25,10 @@
 #endif
 
 #ifdef __JHERETIC__
+#include "Doomdef.h"
+#include "P_local.h"
 #include "settings.h"
-#include "p_local.h"
-#include "soundst.h"
+#include "Soundst.h"
 #endif
 
 #include "d_net.h"
@@ -60,7 +60,7 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-mobj_t				dummything;
+struct mobj_s		dummything;
 int					xgDev;		// Print dev messages.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -880,7 +880,7 @@ boolean XL_CheckKeys(mobj_t *mo, int flags2)
 #elif defined __JHERETIC__
 	int num = 3;
 	char *keystr[] = { "YELLOW KEY", "GREEN KEY", "BLUE KEY" };
-	int *keys = act->keys;
+	boolean *keys = act->keys;
 	int badsound = sfx_plroof;
 #endif
 	int i;
