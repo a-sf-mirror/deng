@@ -664,8 +664,12 @@ void Sv_WriteDelta(const delta_t *delta)
  */
 int Sv_GetMaxFrameSize(int playerNumber)
 {
-	return MINIMUM_FRAME_SIZE 
-		+ 10 * clients[playerNumber].bandwidthRating;
+	int size = MINIMUM_FRAME_SIZE + 10*clients[playerNumber].bandwidthRating;
+
+	// What about the communications medium?
+	if(size > maxDatagramSize) size = maxDatagramSize;
+
+	return size;
 }
 
 /*
@@ -711,8 +715,8 @@ void Sv_SendFrame(int playerNumber)
 	// Determine the maximum size of the frame packet.
 	maxFrameSize = Sv_GetMaxFrameSize(playerNumber);
 
-	// Allow a more info for the first frame.
-	if(pool->isFirst) maxFrameSize *= 10;
+	// Allow more info for the first frame.
+	if(pool->isFirst) maxFrameSize = maxDatagramSize;
 
 	// If this is the first frame after a map change, use the special
 	// first frame packet type.
