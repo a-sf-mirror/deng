@@ -1398,13 +1398,13 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						RV_END
 						CHECKSC;
 					}
-					grp->count = ++sub;
+					++sub;
 				}
 				else RV_FLAGS("Flags", grp->flags, "tgf_")
 				RV_END
 				CHECKSC;
 			}
-			grp->count = ++sub;
+			grp->count = sub;
 		}
 		if(ISTOKEN("Line"))		// Line Type
 		{
