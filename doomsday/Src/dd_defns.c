@@ -552,6 +552,11 @@ void Def_Read(void)
 		st->action = Def_GetActionPtr(dst->action);
 		st->nextstate = Def_GetStateNum(dst->nextstate);
 		for(k = 0; k < NUM_STATE_MISC; k++) st->misc[k] = dst->misc[k];
+
+		// Replace the older execute string.
+		if(st->execute) free(st->execute);
+		st->execute = dst->execute;
+		dst->execute = NULL;
 	}
 	Def_CountMsg(count_states.num, "states");
 
