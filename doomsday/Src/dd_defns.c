@@ -543,8 +543,12 @@ void Def_Read(void)
 	for(i = 0; i < count_states.num; i++)
 	{
 		ded_state_t *dst = defs.states + i;
+
 		// Make sure duplicate IDs overwrite the earliest.
-		state_t *st = states + Def_GetStateNum(dst->id);
+		int stateNum = Def_GetStateNum(dst->id);
+		ded_state_t *dstNew = defs.states + stateNum;
+		state_t *st = states + stateNum;
+
 		st->sprite = Def_GetSpriteNum(dst->sprite.id);
 		st->flags = dst->flags;
 		st->frame = dst->frame;
@@ -554,9 +558,12 @@ void Def_Read(void)
 		for(k = 0; k < NUM_STATE_MISC; k++) st->misc[k] = dst->misc[k];
 
 		// Replace the older execute string.
-		if(st->execute) free(st->execute);
-		st->execute = dst->execute;
-		dst->execute = NULL;
+		if(dst != dstNew)
+		{
+			if(dstNew->execute) free(dstNew->execute);
+			dstNew->execute = dst->execute;
+			dst->execute = NULL;
+		}
 	}
 	Def_CountMsg(count_states.num, "states");
 
