@@ -119,6 +119,8 @@ int				num_skytop_colors = 0;
 DGLuint			dltexname;	// Name of the dynamic light texture.
 DGLuint			glowtexname;
 
+int				texMagMode = 1; // Linear.
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static boolean	texInited = false;	// Init done.
@@ -1377,7 +1379,7 @@ unsigned int GL_BindTexFlat(flat_t *fl)
 	
 	// Set the parameters.
 	gl.TexParameter(DGL_MIN_FILTER, glmode[mipmapping]);
-	gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+	gl.TexParameter(DGL_MAG_FILTER, glmode[texMagMode]);
 	
 	if(freeptr) M_Free(flatptr);
 
@@ -2013,7 +2015,7 @@ unsigned int GL_PrepareTexture2(int idx, boolean translate)
 
 		// Set texture parameters.
 		gl.TexParameter(DGL_MIN_FILTER, glmode[mipmapping]);
-		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+		gl.TexParameter(DGL_MAG_FILTER, glmode[texMagMode]);
 
 		textures[idx]->masked = (image.isMasked != 0);
 
@@ -3299,7 +3301,7 @@ void GL_SetTextureParams(int minMode, int magMode, int gameTex, int uiTex)
 void GL_UpdateTexParams(int mipmode)
 {
 	mipmapping = mipmode;
-	GL_SetTextureParams(glmode[mipmode], DGL_LINEAR, true, false);
+	GL_SetTextureParams(glmode[mipmode], glmode[texMagMode], true, false);
 }
 
 //===========================================================================
