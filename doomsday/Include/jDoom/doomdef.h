@@ -34,8 +34,8 @@
 #include "../dd_api.h"
 #include "g_dgl.h"
 
-#define Set		DD_SetInteger
-#define Get		DD_GetInteger
+#define Set			DD_SetInteger
+#define Get			DD_GetInteger
 
 extern game_import_t	gi;
 extern game_export_t	gx;
@@ -65,6 +65,7 @@ extern game_export_t	gx;
 
 #define mobjinfo	(*gi.mobjinfo)
 #define states		(*gi.states)
+#define validCount	(*gi.validcount)
 
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
@@ -289,7 +290,9 @@ void D_IdentifyVersion(void);
 void D_SetPlayerPtrs(void);
 char* G_Get(int id);
 
-#define validCount		(*gi.validcount)
+void R_SetViewSize (int blocks, int detail);
+void R_DrawPlayerSprites(ddplayer_t *viewplr);
+
 
 #endif          // __DOOMDEF__
 
