@@ -366,7 +366,7 @@ void P_NewParticle(ptcgen_t *gen)
 		// Calculate XY center with mobj angle.
 		ang = (r_use_srvo_angle? (gen->source->visangle << 16)
 			: gen->source->angle)
-			+ gen->center[VY] / 180.0f * ANG180;
+			+ FIX2FLT(gen->center[VY]) / 180.0f * ANG180;
 		ang2 = (ang + ANG90) >> ANGLETOFINESHIFT;
 		ang >>= ANGLETOFINESHIFT;
 		pt->pos[VX] += FixedMul(finecosine[ang], gen->center[VX]);
