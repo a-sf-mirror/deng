@@ -228,11 +228,19 @@ void Cl_CheckMobj(clmobj_t *cmo, boolean justCreated)
 
 	if(mo->z == DDMININT) 
 	{
+		// Make the mobj stick to the floor.
+		cmo->flags |= CLMF_STICK_FLOOR;
+
+		// Give it a real Z coordinate.
 		onFloor = true;
 		mo->z = mo->floorz;
 	}
 	if(mo->z == DDMAXINT)
 	{
+		// Make the mobj stick to the ceiling.
+		cmo->flags |= CLMF_STICK_CEILING;
+
+		// Give it a real Z coordinate.
 		inCeiling = true;
 		mo->z = mo->ceilingz - mo->height;
 	}
@@ -611,40 +619,15 @@ void Cl_MoveThing(clmobj_t *cmo)
 		// [Kaboom!]
 	}
 
-#if 0
-	mobj_t *mo = &cmo->mo;
-	boolean needlink = false;
-
-	// Is the thing moving at all?
-	if(!mobj->momx && !mobj->momy && !mobj->momz) 
+	// Stick to a plane?
+	if(cmo->flags & CLMF_STICK_FLOOR)
 	{
-		// No movement; no need to do anything.
-		return;
+		mo->z = mo->floorz;
 	}
-
-	// Does it need to be un/linked?
-	if(mobj->momx || mobj->momy) needlink = true;
-
-	// Link out of lists if necessary.
-	if(needlink) Cl_UnsetThingPosition(mobj);
-
-	// Do the predicted move.
-/*	if(pred_forward)
-	{*/
-		mobj->x += mobj->momx;
-		mobj->y += mobj->momy;
-		mobj->z += mobj->momz;
-/*	}
-	else // Backwards in time.
+	if(cmo->flags & CLMF_STICK_CEILING)
 	{
-		mobj->x -= mobj->momx;
-		mobj->y -= mobj->momy;
-		mobj->z -= mobj->momz;
-	}*/
-	
-	// Link back to lists if necessary.
-	if(needlink) Cl_SetThingPosition(mobj);
-#endif
+		mo->z = mo->ceilingz - mo->height;
+	}
 }
 
 /*
@@ -902,6 +885,9 @@ void Cl_ReadMobjDelta2(boolean allowCreate, boolean skip)
 	if(df & MDF_POS_Z)
 	{
 		d->z = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+
+		// The mobj won't stick if an explicit coordinate is supplied.
+		cmo->flags &= ~(CLMF_STICK_FLOOR | CLMF_STICK_CEILING);
 	}
 
 	// When these flags are set, the normal Z coord is not included.
