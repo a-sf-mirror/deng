@@ -17,8 +17,8 @@
 
 import os, tempfile, sys, shutil, re
 
-baseDir = 'C:/Projects/de1.7/doomsday'
-outDir  = 'C:/Projects/de1.7/distrib/out'
+baseDir = 'D:/Projects/de1.7/doomsday'
+outDir  = 'D:/Projects/de1.7/distrib/out'
 
 print "Source directory: " + baseDir
 
@@ -32,7 +32,8 @@ if '-def' in sys.argv:
 for sub in neededDirs:
 	os.mkdir( os.path.join( archDir, sub ) )
 
-files = [ ('Bin/Release/Doomsday.exe', 'Bin/Doomsday.exe') ]
+files = [ ('Bin/Release/Doomsday.exe', 'Bin/Doomsday.exe'),
+          ('DLLs/fmod.dll', 'Bin/fmod.dll') ]
 
 if not '-nogame' in sys.argv:
 	files += [ ('Bin/Release/jDoom.dll', 'Bin/jDoom.dll'),
