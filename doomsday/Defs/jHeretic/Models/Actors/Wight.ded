@@ -10,9 +10,10 @@ Model {
   Md2 {
     File = "Actors/Wight/Wight-Axe.md2";
     Frame = "idle01";
-    Flags = "df_fullbright df_specular";
+    Flags = "df_fullbright df_specular df_noz";
     Shiny skin = "Common/Shiny.pcx";
     Shiny = .4;
+    Shiny color { .7 1 .7 };
   };
 }
 
