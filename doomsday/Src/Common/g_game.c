@@ -2009,7 +2009,7 @@ void G_DeathMatchSpawnPlayer (int playernum)
     for (j=0 ; j<20 ; j++) 
     { 
 		i = P_Random() % selections; 
-		if(P_CheckSpot(playernum, &deathmatchstarts[i])) 
+		if(P_CheckSpot(playernum, &deathmatchstarts[i], true)) 
 		{
 #if __JHERETIC__ || __JHEXEN__
 			deathmatchstarts[i].type = playernum+1;
@@ -2130,7 +2130,7 @@ void G_DoReborn (int playernum)
 		 
 #if __JDOOM__
 		assigned = &playerstarts[players[playernum].startspot];
-		if(P_CheckSpot(playernum, assigned)) 
+		if(P_CheckSpot(playernum, assigned, true)) 
 		{ 
 			P_SpawnPlayer(assigned, playernum); 
 			return; 
@@ -2138,7 +2138,7 @@ void G_DoReborn (int playernum)
 #elif __JHERETIC__
 		// Try to spawn at the assigned spot.
 		assigned = &playerstarts[players[playernum].startspot];
-		if(P_CheckSpot(playernum, assigned))
+		if(P_CheckSpot(playernum, assigned, true))
 		{
 			Con_Printf( "- spawning at assigned spot %i.\n", players[playernum].startspot);
 			P_SpawnPlayer(assigned, playernum);
@@ -2147,7 +2147,7 @@ void G_DoReborn (int playernum)
 #elif __JHEXEN__
 		foundSpot = false;
 		if(P_CheckSpot(playernum,
-			P_GetPlayerStart(RebornPosition, playernum)))
+			P_GetPlayerStart(RebornPosition, playernum), true))
 			/* &playerstarts[RebornPosition][playernum] ))*/
 		{ 
 			// Appropriate player start spot is open
@@ -2161,7 +2161,7 @@ void G_DoReborn (int playernum)
 			for(i = 0; i < MAXPLAYERS; i++)
 			{
 				if(P_CheckSpot(playernum, 
-					P_GetPlayerStart(RebornPosition, i)))
+					P_GetPlayerStart(RebornPosition, i), true))
 					// &playerstarts[RebornPosition][i]))
 				{ // Found an open start spot
 
@@ -2195,25 +2195,14 @@ void G_DoReborn (int playernum)
 			players[playernum].pendingweapon = bestWeapon;
 		}
 #endif
-		// try to spawn at one of the other players spots 
-		/*for (i=0 ; i<MAXPLAYERS ; i++)
-		{
-			if (P_CheckSpot (playernum, &playerstarts[i]) ) 
-			{ 
-				P_SpawnPlayer(&playerstarts[i], playernum); 
-				return; 
-			}	    
-			// he's going to be inside something.  Too bad.
-		}*/
 #ifndef __JHEXEN__
 		Con_Printf( "- force spawning at %i.\n", 
 			players[playernum].startspot);
 
 		// Fuzzy returns false if it needs telefragging.
-		if(!P_FuzzySpawn(assigned, playernum))
+		if(!P_FuzzySpawn(assigned, playernum, true))
 		{
 			// Spawn at the assigned spot, telefrag whoever's there.
-			//P_SpawnPlayer(assigned, playernum);
 			P_Telefrag(players[playernum].plr->mo);
 		}
 #endif

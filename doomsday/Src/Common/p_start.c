@@ -117,7 +117,7 @@ void P_DealPlayerStarts(void)
 //	at the given mapthing_t spot because something is occupying it 
 //	FIXME: Quite a mess!
 //===========================================================================
-boolean P_CheckSpot(int playernum, mapthing_t* mthing)
+boolean P_CheckSpot(int playernum, mapthing_t* mthing, boolean doTeleSpark)
 {
     fixed_t			x;
     fixed_t			y; 
@@ -192,25 +192,30 @@ boolean P_CheckSpot(int playernum, mapthing_t* mthing)
 	G_QueueBody(players[playernum].plr->mo);
 #endif
 	
-    // spawn a teleport fog 
-	an = ( ANG45 * (mthing->angle/45) ) >> ANGLETOFINESHIFT; 
-
+	if(doTeleSpark)
+	{
+		// spawn a teleport fog 
+		an = ( ANG45 * (mthing->angle/45) ) >> ANGLETOFINESHIFT; 
+		
 #if __JDOOM__ || __JHEXEN__
-    ss = R_PointInSubsector (x,y); 
-    mo = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an] 
-		      , ss->sector->floorheight 
-			  , MT_TFOG); 
+		ss = R_PointInSubsector (x,y); 
+		mo = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an] 
+			, ss->sector->floorheight 
+			, MT_TFOG); 
 #else // __JHERETIC__
-	mo = P_SpawnTeleFog(x+20*finecosine[an], y+20*finesine[an]);
+		mo = P_SpawnTeleFog(x+20*finecosine[an], y+20*finesine[an]);
 #endif
-	
-	// don't start sound on first frame
-	if(players[consoleplayer].plr->viewz != 1)
+		
+		// don't start sound on first frame
+		if(players[consoleplayer].plr->viewz != 1)
+		{
 #ifdef __JHEXEN__
-		S_StartSound(SFX_TELEPORT, mo);
+			S_StartSound(SFX_TELEPORT, mo);
 #else
-		S_StartSound(sfx_telept, mo);	
+			S_StartSound(sfx_telept, mo);	
 #endif
+		}
+	}
 
     return true; 
 }
@@ -220,7 +225,7 @@ boolean P_CheckSpot(int playernum, mapthing_t* mthing)
 //	Try to spawn close to the mapspot. Returns false if no clear spot 
 //	was found.
 //===========================================================================
-boolean P_FuzzySpawn(mapthing_t *spot, int playernum)
+boolean P_FuzzySpawn(mapthing_t *spot, int playernum, boolean doTeleSpark)
 {
 	int i, k, x, y;
 	int offset = 33; // Player radius = 16
@@ -239,7 +244,7 @@ boolean P_FuzzySpawn(mapthing_t *spot, int playernum)
 			place.x += x * offset;
 			place.y += y * offset;
 		}
-		if(P_CheckSpot(playernum, &place))
+		if(P_CheckSpot(playernum, &place, doTeleSpark))
 		{
 			// This is good!
 			P_SpawnPlayer(&place, playernum);
@@ -277,7 +282,7 @@ void P_SpawnPlayers(void)
 		if(!IS_NETGAME)
 		{
 			mapthing_t *it;
-			// Spawn all unused player starts.
+			// Spawn all unused player starts. This will create 'zombies'.
 			// FIXME: Also in netgames?
 			for(it = playerstarts; it != playerstart_p; it++)
 				if(players[0].startspot != it - playerstarts
@@ -293,7 +298,8 @@ void P_SpawnPlayers(void)
 			if(players[i].plr->ingame)
 			{
 				ddplayer_t *ddpl = players[i].plr;
-				if(!P_FuzzySpawn(&playerstarts[players[i].startspot], i))
+				if(!P_FuzzySpawn(&playerstarts[players[i].startspot], 
+					i, false))
 				{
 					// Gib anything at the spot.
 					P_Telefrag(ddpl->mo);
