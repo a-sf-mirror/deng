@@ -1,6 +1,24 @@
-//===========================================================================
-// M_MISC.H
-//===========================================================================
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
+
+/*
+ * m_misc.h: Miscellanous Routines
+ */
+
 #ifndef __DOOMSDAY_MISCELLAN_H__
 #define __DOOMSDAY_MISCELLAN_H__
 
@@ -8,6 +26,11 @@
 
 #define MAX_READ	8192
 #define ISSPACE(c)	((c) == 0 || (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
+
+typedef struct trigger_s {
+	timespan_t duration;
+	timespan_t accum;
+} trigger_t;
 
 extern int	read_count;
 extern int	rndindex;
@@ -65,6 +88,9 @@ void		M_PointCrossProduct(float *v1, float *v2, float *v3, float *out);
 void		M_RotateVector(float vec[3], float degYaw, float degPitch);
 void		M_ProjectPointOnLinef(fixed_t *point, fixed_t *linepoint, fixed_t *delta, float gap, float *result);
 float		M_CycleIntoRange(float value, float length);
+
+// Time utilities.
+boolean		M_CheckTrigger(trigger_t *trigger, timespan_t advanceTime);
 
 // Other utilities.
 int			M_ScreenShot(char *filename, int bits);

@@ -1,3 +1,24 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
+
+/*
+ * sv_def.h: Server Definitions
+ */
+
 #ifndef __DOOMSDAY_SERVER_H__
 #define __DOOMSDAY_SERVER_H__
 
@@ -28,7 +49,7 @@ void Sv_Handshake(int playernum, boolean newplayer);
 void Sv_GetPackets(void);
 void Sv_SendText(int to, int con_flags, char *text);
 void Sv_FixLocalAngles();
-void Sv_Ticker(void);
+void Sv_Ticker(timespan_t time);
 int Sv_Latency(byte cmdtime);
 void Sv_Kick(int who);
 void Sv_GetInfo(serverinfo_t *info);
