@@ -451,19 +451,15 @@ boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 	return notHit;
 }
 
-//===========================================================================
-// P_ThingHeightClip
-//	Takes a valid thing and adjusts the thing->floorz,
-//	thing->ceilingz, and possibly thing->z.
-//	This is called for all nearby monsters
-//	whenever a sector changes height.
-//	If the thing doesn't fit,
-//	the z will be set to the lowest value
-//	and false will be returned.
-//===========================================================================
-boolean P_ThingHeightClip (mobj_t* thing)
+/*
+ * Takes a valid thing and adjusts the thing->floorz, thing->ceilingz,
+ * and possibly thing->z.  This is called for all nearby monsters
+ * whenever a sector changes height.  If the thing doesn't fit, the z
+ * will be set to the lowest value and false will be returned.
+ */
+static boolean P_HeightClip (mobj_t* thing)
 {
-    boolean		onfloor;
+    boolean	onfloor;
 	
 	// During demo playback the player gets preferential
 	// treatment.
@@ -508,11 +504,11 @@ boolean P_ThingHeightClip (mobj_t* thing)
 //
 
 //
-// P_HitSlideLine
+// P_WallMomSlide
 // Adjusts the xmove / ymove
 // so that the next move will slide along the wall.
 //
-void P_HitSlideLine (line_t* ld)
+static void P_WallMomSlide (line_t* ld)
 {
     int			side;
     angle_t		lineangle;
@@ -607,7 +603,6 @@ isblocking:
 
 
 //
-// P_SlideMove
 // The momx / momy move is bad, so try to slide
 // along a wall.
 // Find the first line hit, move flush to it,
@@ -615,7 +610,7 @@ isblocking:
 //
 // This is a kludgy mess. (No kidding?)
 //
-void P_SlideMove (mobj_t* mo)
+static void P_ThingSlidingMove (mobj_t* mo)
 {
     fixed_t		leadx;
     fixed_t		leady;
@@ -696,7 +691,7 @@ stairstep:
     tmxmove = FixedMul(mo->momx, bestslidefrac);
     tmymove = FixedMul(mo->momy, bestslidefrac);
 
-    P_HitSlideLine (bestslideline);	// clip the moves
+    P_WallMomSlide (bestslideline);	// clip the moves
 	
     mo->momx = tmxmove;
     mo->momy = tmymove;
@@ -717,27 +712,25 @@ stairstep:
 //
 boolean		nofit;
 
-//===========================================================================
-// PIT_ChangeSector
-//===========================================================================
-static boolean PIT_ChangeSector(mobj_t *thing, void *data)
+static boolean PIT_SectorPlanesChanged(mobj_t *thing, void *data)
 {
 	// Always keep checking.
-    if(P_ThingHeightClip(thing)) return true;
+    if(P_HeightClip(thing)) return true;
     nofit = true;
     return true;	
 }
 
-//===========================================================================
-// P_ChangeSector
-//===========================================================================
-boolean P_ChangeSector(sector_t *sector)
+/*
+ * Called whenever a sector's planes are moved.  This will update the
+ * things inside the sector and do crushing.
+ */
+boolean P_SectorPlanesChanged(sector_t *sector)
 {
     nofit = false;
 
 	// We'll use validcount to make sure things are only checked once.
 	validcount++;
-	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
+	P_SectorTouchingThingsIterator(sector, PIT_SectorPlanesChanged, 0);
 
 	return nofit;
 }
@@ -819,7 +812,7 @@ void P_ThingMovement2(mobj_t* mo, void *pstate)
 				else
 				{
 					// Try to slide along it.
-					P_SlideMove(mo);
+					P_ThingSlidingMove(mo);
 				}
 			}
 			else

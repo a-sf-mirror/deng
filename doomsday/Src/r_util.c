@@ -74,6 +74,7 @@ int	R_PointOnSide (fixed_t x, fixed_t y, node_t *node)
 	return 1;			// back side
 }
 
+/*
 //===========================================================================
 // R_PointOnSegSide
 //===========================================================================
@@ -121,6 +122,7 @@ int	R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 		return 0;		// front side
 	return 1;			// back side
 }
+*/
 
 //===========================================================================
 // R_SlopeDiv
