@@ -58,7 +58,6 @@ typedef struct
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void R_ExecuteSetViewSize(void);
 void G_CheckDemoStatus();
 void F_Drawer(void);
 boolean F_Responder(event_t *ev);

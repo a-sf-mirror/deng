@@ -377,7 +377,7 @@ void R_ResolveOverlaps(shadowpoly_t *polys, int count, sector_t *sector)
 #define EPSILON			.01f
 	boolean done = false;
 	int i, k, tries;
-	boundary_t *boundaries, *bound, *other;
+	boundary_t *boundaries, *bound; //, *other;
 	byte *overlaps;
 	float s, t;
 	vec2_t a, b;
