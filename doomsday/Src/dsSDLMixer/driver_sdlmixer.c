@@ -24,6 +24,10 @@
 #include "doomsday.h"
 #include "sys_sfxd.h"
 
+#include <string.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
+
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
@@ -55,16 +59,25 @@ void			DS_Listenerv(int property, float *values);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-boolean				initOk = false;
-int					verbose;
+static boolean initOk = false;
+static int verbose;
+static char storage[0x40000];
+static int channelCounter = 0;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-void Error(const char *where, const char *msg)
+static void Msg(const char *msg)
 {
-	//Con_Message("%s(SDLMixer): %s [Result = 0x%x]\n", where, msg, hr);
+	Con_Message("SDLMixer: %s\n", msg);
+}
+
+static void Error()
+{
+	char buf[500];
+	sprintf(buf, "ERROR: %s", Mix_GetError());
+	Msg(buf);
 }
 
 int DS_Init(void)
@@ -73,8 +86,26 @@ int DS_Init(void)
 
 	// Are we in verbose mode?	
 	if((verbose = ArgExists("-verbose")))
-		Con_Message("DS_Init(SDLMixer): Initializing...\n");
+	{
+		Msg("Initializing...\n");
+	}
 
+	if(SDL_InitSubSystem(SDL_INIT_AUDIO))
+	{
+		Msg( SDL_GetError() );
+		return false;
+	}
+
+	if(Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 1024))
+	{
+		Error();
+		return false;
+	}					 
+
+	// Prepare to play 16 simultaneous sounds.
+	Mix_AllocateChannels(MIX_CHANNELS);
+	channelCounter = 0;
+	
 	// Everything is OK.
 	initOk = true;
 	return true;
@@ -87,6 +118,9 @@ void DS_Shutdown(void)
 {
 	if(!initOk) return;
 
+	Mix_CloseAudio();
+	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	
 	initOk = false;
 }
 
@@ -96,7 +130,6 @@ void DS_Shutdown(void)
 sfxbuffer_t* DS_CreateBuffer(int flags, int bits, int rate)
 {
 /*	IA3dSource2 *src;
-	sfxbuffer_t *buf;
 	bool play3d = (flags & SFXBF_3D) != 0;
 	
 	// Create a new source.
@@ -113,17 +146,28 @@ sfxbuffer_t* DS_CreateBuffer(int flags, int bits, int rate)
 	f->nAvgBytesPerSec = f->nSamplesPerSec * f->nBlockAlign;
 	f->wBitsPerSample = bits;
 	src->SetAudioFormat((void*)f);
+*/
+	sfxbuffer_t *buf;
 
 	// Create the buffer.
 	buf = (sfxbuffer_t*) Z_Malloc(sizeof(*buf), PU_STATIC, 0);
 	memset(buf, 0, sizeof(*buf));
-	buf->ptr = src;
 	buf->bytes = bits/8;
 	buf->rate = rate;
 	buf->flags = flags;
 	buf->freq = rate;		// Modified by calls to Set(SFXBP_FREQUENCY).
-	return buf;*/
-	return NULL;
+
+	// The cursor is used to keep track of the channel on which the
+	// sample is playing.
+	buf->cursor = channelCounter++;
+	
+	// Make sure we have enough channels allocated.
+	if(channelCounter > MIX_CHANNELS)
+	{
+		Mix_AllocateChannels(channelCounter);
+	}
+	
+	return buf;
 }
 
 //===========================================================================
@@ -131,8 +175,30 @@ sfxbuffer_t* DS_CreateBuffer(int flags, int bits, int rate)
 //===========================================================================
 void DS_DestroyBuffer(sfxbuffer_t *buf)
 {
-/*	Src(buf)->Release();
-  Z_Free(buf);*/
+	// Ugly, but works because the engine creates and destroys buffers
+	// only in batches.
+	channelCounter = 0;
+	
+	Z_Free(buf);
+}
+
+// This is not thread-safe, but it doesn't matter because only one
+// thread will be calling it.
+static char* AllocLoadStorage(unsigned int size)
+{
+	if(size <= sizeof(storage))
+	{
+		return storage;
+	}
+	return malloc(size);
+}
+
+static void FreeLoadStorage(char* data)
+{
+	if(data != storage)
+	{
+		free(data);
+	}
 }
 
 //===========================================================================
@@ -140,8 +206,8 @@ void DS_DestroyBuffer(sfxbuffer_t *buf)
 //===========================================================================
 void DS_Load(sfxbuffer_t *buf, struct sfxsample_s *sample)
 {
-/*	IA3dSource2 *s = Src(buf);
-
+	char *conv = NULL;
+	
 	// Does the buffer already have a sample loaded?
 	if(buf->sample)
 	{	
@@ -149,31 +215,49 @@ void DS_Load(sfxbuffer_t *buf, struct sfxsample_s *sample)
 		if(buf->sample->id == sample->id) return; 
 		
 		// Free the existing data.
-		s->FreeAudioData();
 		buf->sample = NULL;
+		Mix_FreeChunk(buf->ptr);
 	}
 
-	// Allocate memory for the sample.
-	if(FAILED(hr = s->AllocateAudioData(sample->size)))
+	conv = AllocLoadStorage(8 + 4 + 8 + 16 + 8 + sample->size);
+	
+	// We will transfer the sample to SDL_mixer by converting it to
+	// WAVE format.
+	strcpy(conv, "RIFF");
+	*(Uint32*)(conv + 4) = 4 + 8 + 16 + 8 + sample->size;
+	strcpy(conv + 8, "WAVE");
+
+	// Format chunk.
+	strcpy(conv + 12, "fmt ");
+	*(Uint32*)(conv + 16) = 16;
+/* 	WORD	wFormatTag;			// Format category
+	WORD	wChannels;			// Number of channels
+	uint	dwSamplesPerSec;    // Sampling rate
+	uint	dwAvgBytesPerSec;   // For buffer estimation
+	WORD	wBlockAlign;		// Data block size
+	WORD	wBitsPerSample;		// Sample size
+*/	
+	*(Uint16*)(conv + 20) = 1;
+	*(Uint16*)(conv + 22) = 1;
+	*(Uint32*)(conv + 24) = sample->rate;
+	*(Uint32*)(conv + 28) = sample->rate * sample->bytesper;
+	*(Uint16*)(conv + 32) = sample->bytesper;
+	*(Uint16*)(conv + 34) = sample->bytesper * 8;
+
+	// Data chunk.
+	strcpy(conv + 36, "data");
+	*(Uint32*)(conv + 40) = sample->size;
+	memcpy(conv + 44, sample->data, sample->size);
+
+	buf->ptr = Mix_LoadWAV_RW(SDL_RWFromMem(conv, 44 + sample->size), 1);
+	if(!sample)
 	{
-		if(verbose)	Error("DS_Load", "Failed to allocate audio data.");
-		return; 
+		printf("Mix_LoadWAV_RW: %s\n", Mix_GetError());
 	}
+	
+	FreeLoadStorage(conv);
 
-	// Copy the sample data into the buffer.
-	void *ptr[2];
-	DWORD bytes[2];
-	if(FAILED(hr = s->Lock(0, 0, &ptr[0], &bytes[0], &ptr[1], &bytes[1],
-		A3D_ENTIREBUFFER))) 
-	{
-		if(verbose) Error("DS_Load", "Failed to lock source.");
-		return;
-	}
-	memcpy(ptr[0], sample->data, bytes[0]);
-
-	// Unlock and we're done.
-	s->Unlock(ptr[0], bytes[0], ptr[1], bytes[1]);
-	buf->sample = sample;	*/
+	buf->sample = sample;
 }
 
 //===========================================================================
@@ -182,10 +266,12 @@ void DS_Load(sfxbuffer_t *buf, struct sfxsample_s *sample)
 //===========================================================================
 void DS_Reset(sfxbuffer_t *buf)
 {
-/*	DS_Stop(buf);
+	DS_Stop(buf);
 	buf->sample = NULL;
+	
 	// Unallocate the resources of the source.
-	Src(buf)->FreeAudioData();*/
+	Mix_FreeChunk(buf->ptr);
+	buf->ptr = NULL;
 }
 
 //===========================================================================
@@ -193,11 +279,17 @@ void DS_Reset(sfxbuffer_t *buf)
 //===========================================================================
 void DS_Play(sfxbuffer_t *buf)
 {
-/*	// Playing is quite impossible without a sample.
+	// Playing is quite impossible without a sample.
 	if(!buf->sample) return; 
-	Src(buf)->Play(buf->flags & SFXBF_REPEAT? A3D_LOOPED : A3D_SINGLE);
+
+	// Update the volume at which the sample will be played.
+	Mix_Volume(buf->cursor, buf->written);
+	
+	Mix_PlayChannel(buf->cursor, buf->ptr,
+					(buf->flags & SFXBF_REPEAT? -1 : 0));
+
 	// The buffer is now playing.
-	buf->flags |= SFXBF_PLAYING;*/
+	buf->flags |= SFXBF_PLAYING;
 }
 
 //===========================================================================
@@ -205,10 +297,9 @@ void DS_Play(sfxbuffer_t *buf)
 //===========================================================================
 void DS_Stop(sfxbuffer_t *buf)
 {
-/*	if(!buf->sample) return;
-	Src(buf)->Stop();
-	Src(buf)->Rewind();
-	buf->flags &= ~SFXBF_PLAYING;*/
+	if(!buf->sample) return;
+	Mix_HaltChannel(buf->cursor);
+	buf->flags &= ~SFXBF_PLAYING;
 }
 
 //===========================================================================
@@ -216,16 +307,14 @@ void DS_Stop(sfxbuffer_t *buf)
 //===========================================================================
 void DS_Refresh(sfxbuffer_t *buf)
 {
-/*	IA3dSource2 *s = Src(buf);
-	DWORD status;
-	
+	if(!buf->ptr || !buf->sample) return;
+
 	// Has the buffer finished playing?
-	s->GetStatus(&status);
-	if(!status)
+	if(!Mix_Playing(buf->cursor))
 	{
 		// It has stopped playing.
 		buf->flags &= ~SFXBF_PLAYING;
-		}*/
+	}		
 }
 
 //===========================================================================
@@ -233,16 +322,6 @@ void DS_Refresh(sfxbuffer_t *buf)
 //===========================================================================
 void DS_Event(int type)
 {
-/*	switch(type)
-	{
-	case SFXEV_BEGIN:
-		a3d->Clear();
-		break;
-
-	case SFXEV_END:
-		a3d->Flush();
-		break;
-		}*/
 }
 
 #if 0
@@ -285,41 +364,31 @@ void DS_Set(sfxbuffer_t *buf, int property, float value)
 /*	DWORD dw;
 	IA3dSource2 *s = Src(buf);
 	float minDist, maxDist;
+*/
+	int right;
 
 	switch(property)
 	{
 	case SFXBP_VOLUME:
-		s->SetGain(value);
+		// 'written' is used for storing the volume of the channel.
+		buf->written = value * MIX_MAX_VOLUME;
+		Mix_Volume(buf->cursor, buf->written);
 		break;
 
-	case SFXBP_FREQUENCY:
+/*	case SFXBP_FREQUENCY:
 		dw = DWORD(buf->rate * value);
 		if(dw != buf->freq)	// Don't set redundantly.
 		{
 			buf->freq = dw;
 			s->SetPitch(value);
-		}
-		break;
+			}
+			break;*/
 
-	case SFXBP_PAN:
-		SetPan(s, value);
+	case SFXBP_PAN: // -1 ... +1
+		right = (value + 1) * 127;
+		Mix_SetPanning(buf->cursor, 254 - right, right);
 		break;
-
-	case SFXBP_MIN_DISTANCE:
-		s->GetMinMaxDistance(&minDist, &maxDist, &dw);
-		s->SetMinMaxDistance(value, maxDist, A3D_MUTE);
-		break;
-
-	case SFXBP_MAX_DISTANCE:
-		s->GetMinMaxDistance(&minDist, &maxDist, &dw);
-		s->SetMinMaxDistance(minDist, value, A3D_MUTE);
-		break;
-
-	case SFXBP_RELATIVE_MODE:
-		s->SetTransformMode(value? A3DSOURCE_TRANSFORMMODE_HEADRELATIVE
-			: A3DSOURCE_TRANSFORMMODE_NORMAL);
-		break;
-		}*/
+	}
 }
 
 //===========================================================================
@@ -327,18 +396,6 @@ void DS_Set(sfxbuffer_t *buf, int property, float value)
 //===========================================================================
 void DS_Setv(sfxbuffer_t *buf, int property, float *values)
 {
-/*	IA3dSource2 *s = Src(buf);
-
-	switch(property)
-	{
-	case SFXBP_POSITION:
-		s->SetPosition3f(values[VX], values[VZ], values[VY]);
-		break;
-
-	case SFXBP_VELOCITY:
-		s->SetVelocity3f(values[VX], values[VZ], values[VY]);
-		break;
-		}*/
 }
 
 //===========================================================================
@@ -346,16 +403,6 @@ void DS_Setv(sfxbuffer_t *buf, int property, float *values)
 //===========================================================================
 void DS_Listener(int property, float value)
 {
-/*	switch(property)
-	{
-	case SFXLP_UNITS_PER_METER:
-		a3d->SetUnitsPerMeter(value);
-		break;
-
-	case SFXLP_DOPPLER:
-		a3d->SetDopplerScale(value);
-		break;
-		}*/
 }
 
 //===========================================================================
@@ -363,40 +410,6 @@ void DS_Listener(int property, float value)
 //===========================================================================
 void SetEnvironment(float *rev)
 {
-/*	A3DREVERB_PROPERTIES rp;
-	A3DREVERB_PRESET *pre = &rp.uval.preset;
-	float val;
-
-	// Do we already have a reverb object?
-	if(a3dReverb == NULL)
-	{
-		// We need to create it.
-		if(FAILED(hr = a3d->NewReverb(&a3dReverb))) 
-			return; // Silently go away.
-		// Bind it as the current one.
-		a3d->BindReverb(a3dReverb);
-	}
-	memset(&rp, 0, sizeof(rp));
-	rp.dwSize = sizeof(rp);
-	rp.dwType = A3DREVERB_TYPE_PRESET;
-	pre->dwSize = sizeof(A3DREVERB_PRESET);
-
-	val = rev[SRD_SPACE];
-	if(rev[SRD_DECAY] > .5)
-	{
-		// This much decay needs at least the Generic environment.
-		if(val < .2) val = .2f;
-	}
-	pre->dwEnvPreset = val >= 1? A3DREVERB_PRESET_PLAIN
-		: val >= .8? A3DREVERB_PRESET_CONCERTHALL
-		: val >= .6? A3DREVERB_PRESET_AUDITORIUM
-		: val >= .4? A3DREVERB_PRESET_CAVE
-		: val >= .2? A3DREVERB_PRESET_GENERIC
-		: A3DREVERB_PRESET_ROOM;
-	pre->fVolume = rev[SRD_VOLUME];
-	pre->fDecayTime = (rev[SRD_DECAY] - .5f) + .55f;
-	pre->fDamping = rev[SRD_DAMPING];
-	a3dReverb->SetAllProperties(&rp);*/
 }
 
 //===========================================================================
@@ -404,29 +417,4 @@ void SetEnvironment(float *rev)
 //===========================================================================
 void DS_Listenerv(int property, float *values)
 {
-/*	switch(property)
-	{
-	case SFXLP_PRIMARY_FORMAT:
-		// No need to concern ourselves with this kind of things...
-		break;
-	
-	case SFXLP_POSITION:
-		a3dListener->SetPosition3f(values[VX], values[VZ], values[VY]);
-		break;
-
-	case SFXLP_VELOCITY:
-		a3dListener->SetVelocity3f(values[VX], values[VZ], values[VY]);
-		break;
-
-	case SFXLP_ORIENTATION:
-		a3dListener->SetOrientationAngles3f(-values[VX] + 90, values[VY], 0);
-		break;
-
-	case SFXLP_REVERB:
-		SetEnvironment(values);
-		break;
-
-	default:
-		DS_Listener(property, 0);
-		}*/
 }
