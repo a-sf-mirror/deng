@@ -476,7 +476,8 @@ void DS_DSoundLoad(sfxbuffer_t *buf, struct sfxsample_s *sample)
 	{
 		// Set the end marker since we already know it.
 		buf->cursor = wrote_bytes;
-		memset((char*)data + wrote_bytes, 0, locked_bytes - wrote_bytes);
+		memset((char*)data + wrote_bytes, buf->bytes == 1? 128 : 0, 
+			locked_bytes - wrote_bytes);
 	}
 	else
 	{
