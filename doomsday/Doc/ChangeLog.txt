@@ -11,12 +11,23 @@ Version 1.7.14 (work in progress)
   this if it isn't possible to use the model's skin list)
 + generator flag 'gnf_srcdir': rotate particle vector
 * models close to the viewpoint won't disappear
+- fixed: edge artifacts around translucent sprites
 - fixed: sfx sometimes pop with the default sound driver (DS8)
 - fixed: loading DEDs from virtual directories
 - fixed: particle center offset angle
 - fixed: loading order of 3D models (mixed up demon/spectre skins)
 - fixed: lighting on vertically inverted models
 - quietly allow the use of undefined sprite frames (object hidden)
+
+jDoom:
+* "Read This" screens are not affected by menu-scale, skull hidden
+
+jHeretic:
+- fixed: cycling down from Elvenwand skips Staff (bug 813773)
+
+jHexen:
++ lava and fire textures glow
+* support for the Hexen 4-level demo
 
 
 Version 1.7.13
