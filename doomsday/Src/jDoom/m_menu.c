@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.1  2003/09/05 21:45:58  skyjake
+// Increased spacing in main/episode menus
+//
 // Revision 1.9  2003/08/30 15:07:07  skyjake
 // Doom 2: "Quit Doom" in main menu show not be all-caps
 //
@@ -201,20 +204,6 @@ short		whichSkull;			// which skull to draw
 // warning: initializer-string for array of chars is too long
 char    skullName[2][9] = {"M_SKULL1","M_SKULL2"};
 
-/*static MenuRes_t resolutions[] =
-{
-	320, 240,
-	640, 480,
-	800, 600,
-	1024, 768,
-	1152, 864,
-	1280, 1024,
-	1600, 1200,
-	0, 0	// The terminator.
-};
-static int selRes = 0;	// Will be determined when needed.
-*/
-
 // current menudef
 Menu_t*	currentMenu;                          
 
@@ -359,7 +348,7 @@ Menu_t MainDef =
 	7, MainItems,
 	0, MENU_NONE,
 	hu_font_b, //1, 0, 0,
-	LINEHEIGHT_B,
+	LINEHEIGHT_B + 1,
 	0, 7
 };
 
@@ -382,7 +371,7 @@ Menu_t EpiDef =
 	4, EpisodeItems,
 	0, MENU_MAIN,
 	hu_font_b, //1, 0, 0,
-	LINEHEIGHT,
+	LINEHEIGHT + 1,
 	0, 4
 };
 
