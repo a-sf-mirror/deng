@@ -1,5 +1,5 @@
 /* DE1: $Id$
- * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright (C) 2004 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -249,9 +249,9 @@ int R_GetAlignedNeighbor(line_t **neighbor, const line_t *line, int side,
 /*
  * 
  */
-void Rend_ScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
-						line_t *line, int side, edgespan_t spans[2],
-						boolean toLeft)
+void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
+							 line_t *line, int side, edgespan_t spans[2],
+							 boolean toLeft)
 {
 	struct edge_s {
 		boolean done;
@@ -361,10 +361,10 @@ void Rend_ScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
 /*
  *
  */
-void Rend_ScanEdges(shadowcorner_t topCorners[2],
-					shadowcorner_t bottomCorners[2],
-					shadowcorner_t sideCorners[2],
-					line_t *line, int side, edgespan_t spans[2])
+void Rend_RadioScanEdges(shadowcorner_t topCorners[2],
+						 shadowcorner_t bottomCorners[2],
+						 shadowcorner_t sideCorners[2],
+						 line_t *line, int side, edgespan_t spans[2])
 {
 	lineinfo_t *info = LINE_INFO(line);
 	lineinfo_side_t *sInfo = info->side + side;
@@ -391,7 +391,8 @@ void Rend_ScanEdges(shadowcorner_t topCorners[2],
 			}	*/			
 
 		// Scan left/right (both top and bottom).
-		Rend_ScanNeighbors(topCorners, bottomCorners, line, side, spans, !i);
+		Rend_RadioScanNeighbors(topCorners, bottomCorners, line, side,
+								spans, !i);
 	}
 }
 
@@ -444,7 +445,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
 		spans[i].length = info->length;
 		spans[i].shift = segOffset;
 	}	
-	Rend_ScanEdges(topCn, botCn, sideCn, seg->linedef, sideNum, spans);
+	Rend_RadioScanEdges(topCn, botCn, sideCn, seg->linedef, sideNum, spans);
 
 
 	// 0 = left neighbour, 1 = right neighbour
@@ -668,7 +669,6 @@ float Rend_RadioEdgeOpenness(line_t *line, boolean frontside, boolean isFloor)
 	sector_t *back = (frontside? line->backsector : line->frontsector);
 	sectorinfo_t *fInfo, *bInfo;
 	float fz, bhz, bz; // Front and back Z height
-	float threshold;
 
 	if(!back) return 0; // No backsector, this is a one-sided wall.
 
@@ -683,23 +683,24 @@ float Rend_RadioEdgeOpenness(line_t *line, boolean frontside, boolean isFloor)
 		fz = fInfo->visfloor;
 		bz = bInfo->visfloor;
 		bhz = bInfo->visceil;
-		threshold = EDGE_OPEN_THRESHOLD;
 	}
 	else
 	{
 		fz = -fInfo->visceil;
 		bz = -bInfo->visceil;
 		bhz = -bInfo->visfloor;
-		threshold = -EDGE_OPEN_THRESHOLD;
 	}
 
 	if(fz <= bz - EDGE_OPEN_THRESHOLD || fz >= bhz)
 		return 0; // Fully closed.
 
+	if(fz >= bhz - EDGE_OPEN_THRESHOLD)
+		return (bhz - fz)/EDGE_OPEN_THRESHOLD;
+	
 	if(fz <= bz)
 		return 1 - (bz - fz)/EDGE_OPEN_THRESHOLD;
 
-	if(fz <= bz + threshold)
+	if(fz <= bz + EDGE_OPEN_THRESHOLD)
 		return 1 + (fz - bz)/EDGE_OPEN_THRESHOLD;
 	
 	// Fully open!
