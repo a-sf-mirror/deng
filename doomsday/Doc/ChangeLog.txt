@@ -37,6 +37,8 @@ XG:
 - XG should always be disabled on clientside
 
 jDoom:
++ cvar 'map-door-colors': show colors of locked doors in automap
++ cvar 'map-door-glow': locked doors have a glow around them (1=normal)
 * Plutonia/TNT will automatically set rend-sky-full
 - fixed: bullet puffs in face (bug 740767)
 - fixed: main menu item spacing too tight

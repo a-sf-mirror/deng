@@ -486,6 +486,8 @@ void D_PreInit(void)
 	cfg.menuColor[0] = 1;
 	cfg.automapAlpha = .6f;
 	cfg.automapLineAlpha = 1;
+	cfg.automapShowDoors = true;
+	cfg.automapDoorGlow = true;
 	cfg.msgCount = 4;
 	cfg.msgScale = .8f;
 	cfg.msgUptime = 5 * TICSPERSEC;
