@@ -2,7 +2,7 @@
                    Doomsday Engine Definitions Reference
                         (or "Knee-Deep In The DED")
                    =====================================
-                       Revision 0.9.2 -- 08/31/2003
+                       Revision 0.9.3 -- 09/23/2003
 
         Contact <skyjake@doomsdayhq.com> if you have any questions.
 
@@ -641,6 +641,10 @@ generators will be destroyed to make room for any new generators.
             #
             # pt_line: Render particle as a line. The length of the
             #       line depends on the speed of the particle.
+            #
+            # pt_texNN: Use Data\<Game>\Textures\ParticleNN.
+            #
+            # pt_modelNN: Use Model definition with ID "ParticleNN".
 
         Tics = 0;
             # Number of tics that the particle will spend in this
@@ -681,6 +685,14 @@ generators will be destroyed to make room for any new generators.
             # ptf_hflat: Only applies to planes.
             #
             # ptf_force: Particle is affected by the sphere force.
+            #
+            # ptf_zeroyaw: Set particle yaw to zero.
+            #
+            # ptf_zeropitch: Set particle pitch to zero.
+            #
+            # ptf_rndyaw: Set particle yaw to a random value.
+            #
+            # ptf_rndpitch: Set particle pitch to a random value.
 
         Bounce = 0.0;
             # Determines how 'bouncy' the particle is (0..1):
@@ -700,6 +712,21 @@ generators will be destroyed to make room for any new generators.
             # 0   = Particle moves without friction.
             # 0.5 = Particle loses half of its momentum each tic.
             # 1   = All movement of the particle will stop in one tic.
+            
+        Frame = "";
+            # First model frame in the animation sequence of a model 
+            # particle. The animation will interpolate through all the 
+            # frames between Frame and End frame.
+        
+        End frame = "";
+            # Last model frame in the animation sequence of a model 
+            # particle.
+            
+        Spin { 0.0 0.0 };
+            # Model particle spinning velocity (yaw and pitch, 
+            # respectively) in degrees per second. Each particle will
+            # randomly change the sign of the spinning velocity when the
+            # particle is first spawned.
     };
 }
 
