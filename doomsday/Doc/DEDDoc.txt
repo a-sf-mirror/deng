@@ -490,6 +490,12 @@ generators will be destroyed to make room for any new generators.
         #       out. Otherwise it might get replaced by newer
         #       generators if there are too many active generators.
         #
+        # gnf_extra: (State triggered) This generator is to be spawned
+        #       simultaneously with the previously defined generator. This
+        #       allows having multiple generators assigned to the same 
+        #       state. If this flag is not used, all the previously 
+        #       defined generators associated with the state are ignored.
+        #
         # gnf_srcvel: (State/Type triggered) Particles inherit their
         #       source's velocity (in addition to spawn velocity).
         #
@@ -547,15 +553,25 @@ generators will be destroyed to make room for any new generators.
         # of the given value are added to "Vector". For example, if
         # "Vector Rnd" is 2, a random vector with components ranging
         # from -2 to 2 is added to "Vector".
+        
+    Init Vector Rnd = 0.0;
+        # One-time random component applied to "Vector" when the generator
+        # is spawned. Works as Vector Rnd, but only applied once.
 
     Center { 0.0 0.0 0.0 };
         # (State/Type triggered) An offset to the source coordinates.
         # X = Distance on the XY plane (world units), rotated using
         #     source angle.
-        # Y = Source angle offset.
+        # Y = Source angle offset (degrees).
         # Z = Z distance (positive is upwards, world units).
         #
         # (Map triggered) Coordinates of the origin (X, Y, Z).
+
+    Submodel = -1;
+        # (State/Type triggered) If the source is represented by a 3D
+        # model, this submodel's center will be used as the origin of the
+        # generator. If less than zero, the source's actual coordinates
+        # are used and the model has no effect on the origin's position.
 
     Spawn radius = 0.0;
         # Particles will be spawned at a random distance from the center of
@@ -635,7 +651,7 @@ generators will be destroyed to make room for any new generators.
 
     Stage
     {
-        # Each generator can have up to 16 particle stages. Each
+        # Each generator can have up to 32 particle stages. Each
         # particle will go through the defined stages starting from
         # zero or the alternative start stage.
 
@@ -715,6 +731,11 @@ generators will be destroyed to make room for any new generators.
             # Determines how strong an effect gravity has on the
             # particle. Normal mobjs have a Gravity factor of 1.0.
 
+        Force { 0.0 0.0 0.0 };
+            # A linear force that affects the particle during this stage.
+            # Gravity = 1 would correspond Force { 0 0 -1 }. This force is
+            # applied independently of sphere force.
+
         Resistance = 0.0;
             # Air resistance for the particle (between 0 and 1):
             # 0   = Particle moves without friction.
@@ -735,6 +756,23 @@ generators will be destroyed to make room for any new generators.
             # respectively) in degrees per second. Each particle will
             # randomly change the sign of the spinning velocity when the
             # particle is first spawned.
+            
+        Sound = "";
+            # ID of the sound to play when a particle enters this stage.
+            # Sound will use the particle's coordinates as its origin. Use
+            # carefully: starting a lot of sounds is a heavy operation.
+            
+        Volume = 1.0;
+            # Volume of "Sound" (0...1).
+            
+        Hit sound = "";
+            # ID of the sound to play when a particle hits a surface while
+            # in this stage. Sound will use the particle's coordinates as
+            # its origin. Use carefully: starting a lot of sounds is a 
+            # heavy operation.
+      
+        Hit volume = 1.0;
+            # Volume of "Hit sound" (0...1).
     };
 }
 
@@ -936,6 +974,12 @@ MAP INFO DEFINITIONS
         ID = "";
             # Identifier of the Model definition that describes the 3D
             # model. If left empty, this sky model will be disabled.
+            
+        Layer = 0;
+            # The sky layer this model is associated with. Valid values 
+            # are 1 and 2. If zero, model does not depend on the sky 
+            # layers. If set to nonzero, the sky model is hidden when the
+            # associated layer is hidden (i.e. not enabled).
 
         Frame interval = 1.0;
             # The number of seconds between frame changes. Sky model
@@ -1197,6 +1241,16 @@ scaled to the range {-0.333 0.333} we get the zero we wanted.
         # extend the interpolation of one model frame onto multiple
         # States (by defining a sub-0..1 range). Always define full
         # ranges that begin from zero and end to one.
+        #
+        # When the "df_worldtime" flag is used, this key has a different
+        # meaning:
+        #
+        #   Interpolate { <range-length> <interpos-offset> }
+        #
+        # <range-length> is the number of seconds it takes for one 
+        # animation cycle to run from start to finish (Inter 0...1).
+        # <interpos-offset> is added to the Inter calculated from world
+        # time and <range-length> (offset should be 0...1).
 
     Flags = "";
         # Flags for the whole model, including all the submodels.
@@ -1249,6 +1303,13 @@ scaled to the range {-0.333 0.333} we get the zero we wanted.
         # df_idangle: The model gets a unique yaw angle offset calculated
         #        from the ID number of the object.
         #
+        # df_notexcomp: Disable texture compression of all the skins of 
+        #        the model associated with this definition.
+        #
+        # df_worldtime: Model's animation becomes a function of world 
+        #        time. Changes the meaning of the Interpolate key. This is
+        #        supposed to make it easier to animate objects with just
+        #        one State.
 
     Skin tics = 0;
         # Skin cycle: this many tics for each skin.
@@ -1321,7 +1382,7 @@ scaled to the range {-0.333 0.333} we get the zero we wanted.
 
         Skin file = "";
             # Optional: File name of the skin. This can be any image file
-            # on the model path. If a skin file is specified the skin 
+            # on the model path. If a skin file is specified, the skin 
             # number is ignored.
 
         Offset XYZ { 0.0 0.0 0.0 };
