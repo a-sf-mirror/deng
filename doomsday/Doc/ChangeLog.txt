@@ -4,7 +4,7 @@
                Legend: + added, - fixed, * improved/changed
 
 
-Version 1.7.14 (work in progress)
+Version 1.7.14
 --------------
 ! Maintenance Release
 + Model -> Sub -> Skin file: file name of the skin (can be anything; use
@@ -21,9 +21,12 @@ Version 1.7.14 (work in progress)
 + model flag 'df_worldtime': model's interpos depends on world time
 + generator flag 'gnf_srcdir': rotate particle vector
 + generator flag 'gnf_extra': additional generator for a mobj state
++ cvar 'rend-tex-filter': use bilinear filtering on textures
 * a particle generator can have up to 32 stages
 * models close to the viewpoint won't disappear
 * max number of data files increased from 128 to 1024 (-file)
+- fixed: crash when map doesn't have any REJECT data
+- fixed: confusion/crash when requesting a lump with no name
 - fixed: edge artifacts around translucent sprites
 - fixed: sfx sometimes pop with the default sound driver (DS8)
 - fixed: loading DEDs from virtual directories
