@@ -322,6 +322,7 @@ Below is a list of all the game modes supported by jDoom, jHeretic and jHexen.
 
 	jHexen @tab hexen @tab Hexen @row
 	@tab hexen-dk @tab Hexen: Death Kings of Dark Citadel
+	@tab hexen-demo @tab The 4-level Hexen Demo
 }
 
 For example, textures meant only for Final Doom: Plutonia Experiment would be placed in the directory @file{ Data\jDoom\Textures\doom2-plut\ }.
