@@ -394,7 +394,7 @@ int S_StartMusicNum(int id, boolean looped)
 
 	if(id < 0 || id >= defs.count.music.num) return false;
 	// Don't play music if the volume is at zero.
-	if(isDedicated || !mus_volume) return true;
+	if(isDedicated) return true;
 	if(verbose) Con_Message("S_StartMusic: %s.\n", def->id);
 	return Mus_Start(def, looped);
 }
