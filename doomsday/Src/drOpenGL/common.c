@@ -112,7 +112,7 @@ void initState(void)
 
 	// Prefer good quality in texture compression.
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
-
+	
 /*#ifdef RENDER_WIREFRAME
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #else
