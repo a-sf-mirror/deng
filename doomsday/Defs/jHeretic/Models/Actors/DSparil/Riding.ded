@@ -146,13 +146,6 @@ Copy Model {
   Sub { Frame = "walk07"; }
 }
 
-Copy Model {
-  Inter = 0.5;
-  Sub { Frame = "walk08"; }
-  Sub { Frame = "walk08"; }
-  Sub { Frame = "walk08"; }
-}
-
 # Attack Sequence
 
 Copy Model {
@@ -182,6 +175,37 @@ Copy Model {
   Sub { Frame = "attack06"; }
   Sub { Frame = "attack06"; }
   Sub { Frame = "attack06"; }
+}
+
+# Double Attack Sequence
+
+Copy Model {
+  State = "SRCR1_ATK4";
+  Inter = 0;
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+}
+
+Copy Model {
+  State = "SRCR1_ATK5";
+  Sub { Frame = "attack02"; }
+  Sub { Frame = "attack02"; }
+  Sub { Frame = "attack02"; }
+}
+
+Copy Model {
+  State = "SRCR1_ATK6";
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+}
+
+Copy Model {
+  State = "SRCR1_ATK7";
+  Sub { Frame = "attack05"; }
+  Sub { Frame = "attack05"; }
+  Sub { Frame = "attack05"; }
 }
 
 # Death Sequence
@@ -326,7 +350,7 @@ Generator {
   Spawn radius = 20;
   Spawn age = 3;
   Max age = 500;
-  Spawn rate = 60;
+  Spawn rate = 58;
   Spawn rnd = .3;
     
   Stage {
