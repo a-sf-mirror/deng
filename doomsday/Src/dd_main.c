@@ -1,9 +1,25 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Ker�en <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ *
+ * Originally based on Hexen by Raven Software.
+ */
 
-//**************************************************************************
-//**
-//** DD_MAIN.c
-//**
-//**************************************************************************
+/*
+ * dd_main.c: Engine Core
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -42,19 +58,10 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct
-{
+typedef struct ddvalue_s {
 	int *readPtr;
 	int *writePtr;
 } ddvalue_t;
-
-typedef struct
-{
-	char *name;
-	void (*func)(char **args, int tag);
-	int requiredArgs;
-	int tag;
-} execOpt_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -98,13 +105,12 @@ int isDedicated = false;
 int maxzone = 0x2000000;	// Default zone heap. (32meg)
 boolean autostart;
 FILE *outFile;				// Output file for console messages.
-FILE *debugfile;
 
 char *iwadlist[64];
 char *defaultWads = ""; // A list of wad names, whitespace in between (in .cfg).
-char configFileName[256];
-char defsFileName[256], topDefsFileName[256];
-char ddBasePath[256] = "";	// Doomsday root directory is at...?
+filename_t configFileName;
+filename_t defsFileName, topDefsFileName;
+filename_t ddBasePath = "";	// Doomsday root directory is at...?
 
 int queryResult = 0;
 
@@ -597,11 +603,6 @@ void DD_AddStartupWAD(const char *file)
 //===========================================================================
 void DD_CheckQuery(int query, int parm)
 {
-/*	int					i;
-	jtnetserver_t		*buf;
-	serverdataquery_t	*sdq;
-	modemdataquery_t	*mdq;*/
-	
 	switch(query)
 	{
 	case DD_TEXTURE_HEIGHT_QUERY:
@@ -661,7 +662,7 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] =
 	{ &queryResult,		0 },
 	{ &LevelFullBright,	&LevelFullBright },
 	{ &CmdReturnValue,	0 },
-	{ &game_ready,		&game_ready },
+	{ &gameReady,		&gameReady },
 	{ &openrange,		0 },
 	{ &opentop,			0 },
 	{ &openbottom,		0 },
