@@ -200,6 +200,7 @@ cvar_t gameCVars[] =
 	"menu-flash-b",		0,			CVT_FLOAT,	&cfg.flashcolor[2],			0, 1,	"Menu selection flash color, blue component.",
 	"menu-flash-speed",	0,			CVT_INT,	&cfg.flashspeed,			0, 50,	"Menu selection flash speed.",
 	"menu-turningskull",0,			CVT_BYTE,	&cfg.turningSkull,			0, 1,	"1=Menu skull turns at slider items.",
+	"menu-quitsound",	0,			CVT_INT,	&cfg.menuQuitSound,			0, 1,	"1=Play a sound when quitting the game.",
 	
 	"hud-health",		0,			CVT_BYTE,	&cfg.hudShown[HUD_HEALTH],	0, 1,	"1=Show health in HUD.",
 	"hud-armor",		0,			CVT_BYTE,	&cfg.hudShown[HUD_ARMOR],	0, 1,	"1=Show armor in HUD.",

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.4  2004/02/14 10:15:11  skyjake
+// Play a random sound when quitting the game
+//
 // Revision 1.9.2.3  2003/10/06 16:24:44  skyjake
 // Don't scale Read This screens, hide skull
 //
@@ -151,6 +154,7 @@ int			quickSaveSlot;
 int			messageToPrint;
 // ...and here is the message string!
 char*			messageString;		
+int			messageFinal = false;
 
 // message x & y
 int			messx;			
@@ -1486,57 +1490,56 @@ void M_FinishReadThis(int choice)
 }
 
 
-
-
 //
 // M_QuitDOOM
 //
-int     quitsounds[8] =
-{
-    sfx_pldeth,
-    sfx_dmpain,
-    sfx_popain,
-    sfx_slop,
-    sfx_telept,
-    sfx_posit1,
-    sfx_posit3,
-    sfx_sgtatk
-};
-
-int     quitsounds2[8] =
-{
-    sfx_vilact,
-    sfx_getpow,
-    sfx_boscub,
-    sfx_slop,
-    sfx_skeswg,
-    sfx_kntdth,
-    sfx_bspact,
-    sfx_sgtatk
-};
-
-
-
 void M_QuitResponse(int ch)
 {
-    if (ch != 'y')
+	int quitsounds[8] =
+	{
+		sfx_pldeth,
+		sfx_dmpain,
+		sfx_popain,
+		sfx_slop,
+		sfx_telept,
+		sfx_posit1,
+		sfx_posit3,
+		sfx_sgtatk
+	};
+	int quitsounds2[8] =
+	{
+		sfx_vilact,
+		sfx_getpow,
+		sfx_boscub,
+		sfx_slop,
+		sfx_skeswg,
+		sfx_kntdth,
+		sfx_bspact,
+		sfx_sgtatk
+	};
+	
+	if (ch != 'y')
 		return;
-	//G_CheckDemoStatus();
-	// Don't play any stupid sounds.
-#if 0
-    if (!IS_NETGAME)
+
+	// No need to close down the menu question after this.
+	messageFinal = true;
+
+	// Play an exit sound if it is enabled.
+	if(cfg.menuQuitSound && !IS_NETGAME)
     {
-		if (gamemode == commercial)
+		if(gamemode == commercial)
 			S_LocalSound(quitsounds2[(gametic>>2)&7], NULL);
 		else
 			S_LocalSound(quitsounds[(gametic>>2)&7], NULL);
-		//	I_WaitVBL(105);
+
+		// Wait for 1.5 seconds.
+		Con_Executef(true, "after 53 quit!");
     }
-#endif
-    Sys_Quit ();
+	else
+	{
+		Sys_Quit();
+	}
 }
-
-
 
 
 void M_QuitDOOM(int choice)
@@ -1550,7 +1553,7 @@ void M_QuitDOOM(int choice)
 	else
 		sprintf(endstring,"%s\n\n%s", endmsg[(gametic%(NUM_QUITMESSAGES+1))], DOSY);
 	
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring, M_QuitResponse, true);
 }
 
 
@@ -2329,9 +2332,16 @@ boolean M_Responder (event_t* ev)
 		
 		menuactive = messageLastMenuActive;
 		messageToPrint = 0;
-		if (messageRoutine)
-			messageRoutine(ch);
-		
+		if(messageRoutine) messageRoutine(ch);
+
+		// Quit messages are 'final': no apparent effect.
+		if(messageFinal)
+		{
+			menuactive = true;
+			messageToPrint = 1;
+			return false;
+		}
+
 		menuactive = false;
 		S_LocalSound(sfx_swtchx, NULL);
 		return true;

@@ -42,6 +42,7 @@ typedef struct jdoom_config_s
 	int		menuEffects;
 	int		menuFog;
 	float	menuGlitter;
+	int		menuQuitSound;
 	float	flashcolor[3];
 	int		flashspeed;
 	boolean	turningSkull;
