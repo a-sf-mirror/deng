@@ -97,15 +97,16 @@ keyevent_t *I_GetKeyEvent(void)
 
 /*
  * Translate the SDL symbolic key code to a DDKEY.
+ * FIXME: A translation array for these?
  */
 int I_TranslateKeyCode(SDLKey sym)
 {
 	switch(sym)
 	{
-	case 167: // Tilde
-		return 96;
+	case 167: 		// Tilde
+		return 96; 	// ASCII: '`'
 
-	case '\b': // Backspace
+	case '\b': 		// Backspace
 		return DDKEY_BACKSPACE;
 
 	case SDLK_PAUSE:
@@ -134,6 +135,114 @@ int I_TranslateKeyCode(SDLKey sym)
 	case SDLK_RCTRL:
 	case SDLK_LCTRL:
 		return DDKEY_RCTRL;
+
+	case SDLK_F1:
+		return DDKEY_F1;
+
+	case SDLK_F2:
+		return DDKEY_F2;
+			
+	case SDLK_F3:
+		return DDKEY_F3;
+
+	case SDLK_F4:
+		return DDKEY_F4;
+
+	case SDLK_F5:
+		return DDKEY_F5;
+		
+	case SDLK_F6:
+		return DDKEY_F6;
+
+	case SDLK_F7:
+		return DDKEY_F7;
+
+	case SDLK_F8:
+		return DDKEY_F8;
+
+	case SDLK_F9:
+		return DDKEY_F9;
+
+	case SDLK_F10:
+		return DDKEY_F10;
+
+	case SDLK_F11:
+		return DDKEY_F11;
+
+	case SDLK_F12:
+		return DDKEY_F12;
+
+	case SDLK_NUMLOCK:
+		return DDKEY_NUMLOCK;
+
+	case SDLK_SCROLLOCK:
+		return DDKEY_SCROLL;
+
+	case SDLK_KP0:
+		return DDKEY_NUMPAD0;
+
+	case SDLK_KP1:
+		return DDKEY_NUMPAD1;
+
+	case SDLK_KP2:
+		return DDKEY_NUMPAD2;
+		
+	case SDLK_KP3:
+		return DDKEY_NUMPAD3;
+
+	case SDLK_KP4:
+		return DDKEY_NUMPAD4;
+
+	case SDLK_KP5:
+		return DDKEY_NUMPAD5;
+
+	case SDLK_KP6:
+		return DDKEY_NUMPAD6;
+
+	case SDLK_KP7:
+		return DDKEY_NUMPAD7;
+
+	case SDLK_KP8:
+		return DDKEY_NUMPAD8;
+
+	case SDLK_KP9:
+		return DDKEY_NUMPAD9;
+
+	case SDLK_KP_PERIOD:
+		return DDKEY_DECIMAL;
+
+	case SDLK_KP_PLUS:
+		return DDKEY_ADD;
+
+	case SDLK_KP_MINUS:
+		return DDKEY_SUBTRACT;
+
+	case SDLK_KP_DIVIDE:
+		return '/';
+
+	case SDLK_KP_MULTIPLY:
+		return '*';
+
+	case SDLK_KP_ENTER:
+		return DDKEY_ENTER;
+
+	case SDLK_INSERT:
+		return DDKEY_INS;
+
+	case SDLK_DELETE:
+		return DDKEY_DEL;
+
+	case SDLK_HOME:
+		return DDKEY_HOME;
+
+	case SDLK_END:
+		return DDKEY_END;
+
+	case SDLK_PAGEUP:
+		return DDKEY_PGUP;
+
+	case SDLK_PAGEDOWN:
+		return DDKEY_PGDN;
 		
 	default:
 		break;
