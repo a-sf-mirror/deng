@@ -9,6 +9,7 @@ Version 1.7.13 (work in progress)
 ! Maintenance Release
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
+- fixed: a shadow is not rendered if it would be above the object
 
 Network:
 - fixed: player start spot selection (especially TNT/Plutonia)
@@ -20,6 +21,7 @@ drD3D:
 + option -triple: enable triple buffering in fullscreen mode
 
 jDoom:
+* Plutonia/TNT will automatically set rend-sky-full
 - fixed: main menu item spacing too tight
 
 
