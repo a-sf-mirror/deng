@@ -154,12 +154,15 @@ void Sys_ShowCursor(boolean show)
 //===========================================================================
 void Sys_HideMouse(void)
 {
-	if(novideo || nofullscreen) return;
+//	if(!I_MousePresent()) return;
+	
 #ifdef WIN32
+	if(novideo || nofullscreen) return;
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
 #endif
 #ifdef UNIX
+	//if(novideo) return;
 	Sys_ShowCursor(false);
 #endif
 }
