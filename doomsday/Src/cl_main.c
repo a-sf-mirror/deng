@@ -1,9 +1,23 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** CL_MAIN.C
-//**
-//**************************************************************************
+/*
+ * cl_main.c: Network Client
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -16,6 +30,7 @@
 #include "de_system.h"
 #include "de_network.h"
 #include "de_graphics.h"
+#include "de_misc.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -36,12 +51,10 @@ extern int gotframe;
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 ident_t		clientID;
-boolean		handshake_received = false;
-int			game_ready = false;
-int			server_time;
-//int		latest_frame_size;
-//netdata_t	latest_frame_packet;
-boolean		net_loggedin = false;	// Logged in to the server.
+boolean		handshakeReceived = false;
+int			gameReady = false;
+int			serverTime;
+boolean		netLoggedIn = false;	// Logged in to the server.
 boolean		clientPaused = false;	// Set by the server.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -73,7 +86,7 @@ void Cl_InitID(void)
 
 int Cl_GameReady()
 {
-	return (handshake_received && game_ready);
+	return (handshakeReceived && gameReady);
 }
 
 void Cl_CleanUp()
@@ -81,7 +94,7 @@ void Cl_CleanUp()
 	Con_Printf("Cl_CleanUp.\n");
 
 	clientPaused = false;
-	handshake_received = false;
+	handshakeReceived = false;
 
 	Cl_DestroyClientMobjs();
 	Cl_InitPlayers();
@@ -136,21 +149,21 @@ void Cl_AnswerHandshake(handshake_packet_t *pShake)
 	for(i = 0; i < MAXPLAYERS; i++)
 		players[i].ingame = (shake.playerMask & (1<<i)) != 0;	
 	consoleplayer = displayplayer = shake.yourConsole;
-	clients[consoleplayer].numtics = 0;
-	clients[consoleplayer].firsttic = 0;
+	clients[consoleplayer].numTics = 0;
+	clients[consoleplayer].firstTic = 0;
 
 	isClient = true;
 	isServer = false;
-	net_loggedin = false;
+	netLoggedIn = false;
 	clientPaused = false;
 
-	if(handshake_received) return;
+	if(handshakeReceived) return;
 
 	// This prevents redundant re-initialization.
-	handshake_received = true;
+	handshakeReceived = true;
 
 	// Soon after this packet will follow the game's handshake.
-	game_ready = false;
+	gameReady = false;
 	Cl_InitFrame();
 	
 	Con_Printf("Cl_AnswerHandshake: myConsole:%i, gameTime:%i.\n",
@@ -280,7 +293,7 @@ void Cl_GetPackets(void)
 			break;
 			
 		case psv_server_close:	// We should quit?
-			net_loggedin = false;
+			netLoggedIn = false;
 			Con_Execute("net disconnect", true);		
 			break;
 
@@ -292,7 +305,7 @@ void Cl_GetPackets(void)
 		case pkt_login:
 			// Server responds to our login request. Let's see if we 
 			// were successful.
-			net_loggedin = Msg_ReadByte();
+			netLoggedIn = Msg_ReadByte();
 			break;
 
 		default:
@@ -309,9 +322,14 @@ void Cl_GetPackets(void)
 //===========================================================================
 // Cl_Ticker
 //===========================================================================
-void Cl_Ticker(void)
+void Cl_Ticker(timespan_t time)
 {
+	static trigger_t fixed = { 1.0/35 };
+
 	if(!Cl_GameReady() || clientPaused) return;
+
+	if(!M_CheckTrigger(&fixed, time)) return;
+
 	Cl_LocalCommand();
 	Cl_PredictMovement();	
 	Cl_MovePsprites();
