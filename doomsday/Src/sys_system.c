@@ -189,57 +189,6 @@ void Sys_Quit(void)
 }
 
 //===========================================================================
-// superatol
-//===========================================================================
-long superatol(char *s)
-{
-	char *endptr;
-	long val = strtol(s, &endptr, 0);
-
-	if(*endptr == 'k' || *endptr == 'K')
-		val *= 1024;
-	else if(*endptr == 'm' || *endptr == 'M')
-		val *= 1048576;
-	return val;
-}
-
-//==========================================================================
-// Sys_ZoneBase
-//==========================================================================
-byte *Sys_ZoneBase (size_t *size)
-{
-#define RETRY_STEP	0x80000	// Half a meg.
-	size_t heap;
-	byte *ptr;
-
-	// Check for the -maxzone option.
-	if(ArgCheckWith("-maxzone", 1)) maxzone = superatol(ArgNext());
-
-	heap = maxzone;
-	if(heap < MINIMUM_HEAP_SIZE) heap = MINIMUM_HEAP_SIZE;
-	if(heap > MAXIMUM_HEAP_SIZE) heap = MAXIMUM_HEAP_SIZE;
-	heap += RETRY_STEP;
-	
-	do { // Until we get the memory (usually succeeds on the first try).
-		heap -= RETRY_STEP;		// leave some memory alone
-		ptr = malloc (heap);
-	} while(!ptr);
-
-	Con_Message("  %.1f Mb allocated for zone.\n", heap/1024.0/1024.0);
-	if(heap < (uint) maxzone)
-	{
-		Con_Message("  The requested amount was %.1f Mb.\n",
-			maxzone/1024.0/1024.0);
-	}
-
-	if (heap < 0x180000)
-		Con_Error("  Insufficient memory!");
-
-	*size = heap;
-	return ptr;
-}
-
-//===========================================================================
 // Sys_MessageBox
 //===========================================================================
 void Sys_MessageBox(const char *msg, boolean iserror)
