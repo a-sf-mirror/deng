@@ -412,8 +412,8 @@ void MPISearch(ui_object_t *ob)
  */
 void MPIFormatServerInfo(char *dest, serverinfo_t *info)
 {
-	sprintf(dest, "%s\t%i / %i players\t%s\t%s", info->name, info->players, 
-		info->maxPlayers, info->map, info->iwad);
+	sprintf(dest, "%s\t%i / %i players\t%s\t%s", info->name,
+			info->numPlayers, info->maxPlayers, info->map, info->iwad);
 }
 
 /*

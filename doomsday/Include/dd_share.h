@@ -991,7 +991,7 @@ typedef struct serverinfo_s {
 	int		version;
 	char	name[64];
 	char	description[80];
-	int		players, maxPlayers;
+	int		numPlayers, maxPlayers;
 	char	canJoin;
 	char	address[64];
 	int		port;

@@ -59,7 +59,7 @@ int			serverData[3]; // Some parameters passed to master server.
 byte		*localticcmds;
 int			numlocal;		// Number of cmds in the buffer.
 
-ddplayer_t	players[MAXPLAYERS];
+ddplayer_t	ddplayers[MAXPLAYERS];
 client_t	clients[MAXPLAYERS];// All network data for the players.
 
 int			netgame;			// true if a netgame is in progress
@@ -998,7 +998,7 @@ void Net_PrintServerInfo(int index, serverinfo_t *info)
 	{
 		Con_Printf("%-2i: %-20s %i/%-2i %c %-5i %-16s %s:%i\n", 
 			index, info->name,
-			info->players, info->maxPlayers,
+			info->numPlayers, info->maxPlayers,
 			info->canJoin? ' ':'*', info->version, info->game,
 			info->address, info->port);
 		Con_Printf("    %s (%s:%x) p:%ims %-40s\n", info->map, info->iwad, 

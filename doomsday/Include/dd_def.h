@@ -22,6 +22,7 @@
 
 // Important definitions.
 #define MAXPLAYERS			DDMAXPLAYERS
+#define players				ddplayers
 
 // if rangecheck is undefined, most parameter validation debugging code
 // will not be compiled

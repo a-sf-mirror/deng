@@ -64,7 +64,7 @@ void Sv_GetInfo(serverinfo_t *info)
 		sizeof(info->gameConfig) - 1);
 	strncpy(info->name, serverName, sizeof(info->name) - 1);
 	strncpy(info->description, serverInfo, sizeof(info->description) - 1);
-	info->players = Sv_GetNumPlayers();
+	info->numPlayers = Sv_GetNumPlayers();
 
 	// The server player is there, it's just hidden.
 	info->maxPlayers = MAXPLAYERS - (isDedicated? 1 : 0);

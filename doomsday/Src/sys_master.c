@@ -8,6 +8,9 @@
 //** Sockets were initialized by sys_network.
 //**
 //** $Log$
+//** Revision 1.2.4.2  2003/11/28 15:45:20  skyjake
+//** Renamed some global data to avoid conflicts
+//**
 //** Revision 1.2.4.1  2003/11/22 18:01:35  skyjake
 //** Compiles with gcc and -DUNIX
 //**
@@ -172,7 +175,7 @@ int N_MasterSendAnnouncement(void *parm)
 	Str_Append(&msg, buf);
 	sprintf(buf, "map:%s\n", info->map);
 	Str_Append(&msg, buf);
-	sprintf(buf, "nump:%i\n", info->players);
+	sprintf(buf, "nump:%i\n", info->numPlayers);
 	Str_Append(&msg, buf);
 	sprintf(buf, "maxp:%i\n", info->maxPlayers);
 	Str_Append(&msg, buf);
@@ -404,7 +407,7 @@ void N_MasterParseResponse(ddstring_t *response)
 		}
 		else if(!strcmp(label, "nump"))
 		{
-			info->players = strtol(value, 0, 0);
+			info->numPlayers = strtol(value, 0, 0);
 		}
 		else if(!strcmp(label, "maxp"))
 		{
