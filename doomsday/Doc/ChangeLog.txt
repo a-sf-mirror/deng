@@ -4,6 +4,12 @@
                Legend: + added, - fixed, * improved/changed
 
 
+Version 1.7.14-3
+----------------
++ cmd 'listmaps': print all loaded maps and the WAD files where they 
+  are from
+
+
 Version 1.7.14-2
 ----------------
 - fixed: 873878: Ogg/Mp3 in PK3 Virtual Folder Structure Not Playing

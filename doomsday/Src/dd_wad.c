@@ -1198,7 +1198,7 @@ void W_CheckIWAD(void)
 
 //===========================================================================
 // W_LumpSourceFile
-//	Returns the name of the WAD file where the given resides.
+//	Returns the name of the WAD file where the given lump resides.
 //	Always returns a valid filename (or an empty string).
 //===========================================================================
 const char *W_LumpSourceFile(int lump)
@@ -1207,7 +1207,7 @@ const char *W_LumpSourceFile(int lump)
 	lumpinfo_t *l;
 
 	if(lump < 0 || lump >= numlumps)
-		Con_Error("W_LumpSourceWAD: Bad lump number: %i.", lump);
+		Con_Error("W_LumpSourceFile: Bad lump number: %i.", lump);
 
 	l = lumpinfo + lump;
 	for(i = 0; i < numrecords; i++)
@@ -1307,4 +1307,146 @@ boolean W_IsFromIWAD(int lump)
 		if(records[i].handle == lumpinfo[lump].handle)
 			return records[i].iwad != 0;
 	return false;
+}
+
+static void W_MapLumpName(int episode, int map, char *mapLump)
+{
+    if(episode > 0)
+		sprintf(mapLump, "E%iM%i", episode, map);
+	else
+		sprintf(mapLump, "MAP%02i", map);
+}
+
+#if 0
+/*
+ * FIXME: What about GL data?
+ *
+ * Change the map identifiers of all the maps in a PWAD. 
+ * 'episode' and 'map' are used with the first map in the PWAD, the rest
+ * get incremented.
+ */
+boolean W_RemapPWADMaps(const char *pwadName, int episode, int map)
+{
+	int i;
+    filerecord_t *rec;
+	char baseName[256], buf[256];
+
+	// Try matching the full name first.
+	if((i = W_RecordGetIdx(pwadName)) < 0)
+	{
+		// Then the base name only.
+		M_ExtractFileBase(pwadName, baseName);
+
+		for(i = 0; i < numrecords; i++)
+		{
+			M_ExtractFileBase(records[i].filename, buf);
+			if(!stricmp(baseName, buf))
+                break;
+		}
+		if(i == numrecords) 
+		{
+			Con_Printf("%s has not been loaded.\n", pwadName);
+			return false;
+		}
+	}
+	rec = records + i;
+	if(rec->iwad)
+	{
+		Con_Printf("%s is an IWAD!\n", rec->filename);
+		return false;
+	}
+	Con_Printf("Renumbering maps in %s.\n", rec->filename);
+
+	for(i = 0; i < numlumps; i++)
+	{
+		// We'll only modify the maps 
+		if(lumpinfo[i].handle != rec->handle) continue;
+	}
+	return true;
+}
+#endif
+
+/*
+ * Print a list of maps and the WAD files where they are from.
+ */
+void W_PrintFormattedMapList(int episode, const char **files, int count)
+{
+	const char *current = NULL;
+	char lump[20];
+	int i, k;
+	int rangeStart, len;
+
+    for(i = 0; i < count; i++)
+	{
+		if(!current && files[i])
+		{
+			current = files[i];
+			rangeStart = i;
+		}
+		else if(current && (!files[i] || stricmp(current, files[i])))
+		{
+			// Print a range.
+			len = i - rangeStart;
+			Con_Printf("  "); // Indentation.
+			if(len <= 2)
+			{
+				for(k = rangeStart + 1; k <= i; k++)
+				{
+					W_MapLumpName(episode, k, lump);
+					Con_Printf("%s%s", lump, k != i? "," : "");
+				}
+			}
+			else 
+			{
+				W_MapLumpName(episode, rangeStart + 1, lump);
+				Con_Printf("%s-", lump);
+				W_MapLumpName(episode, i, lump);
+				Con_Printf("%s", lump);
+			}
+			Con_Printf(": %s\n", M_Pretty(current));
+
+			// Moving on to a different file.
+			current = files[i];
+			rangeStart = i;
+		}
+	}
+}
+
+/*
+ * Print a list of loaded maps and which WAD files are they located in.
+ * The maps are identified using the "ExMy" and "MAPnn" markers.
+ */
+void W_PrintMapList(void)
+{
+	const char *sourceList[100];
+	int lump;
+    int episode, map;
+	char mapLump[20];
+
+    for(episode = 0; episode <= 9; episode++)
+	{
+		memset((void*)sourceList, 0, sizeof(sourceList));
+
+		// Find the name of each map (not all may exist).
+		for(map = 1; map <= (episode? 9 : 99); map++)
+		{
+			W_MapLumpName(episode, map, mapLump);
+            
+			// Does the lump exist?
+			if((lump = W_CheckNumForName(mapLump)) >= 0)
+			{
+				// Get the name of the WAD.
+				sourceList[map - 1] = W_LumpSourceFile(lump);
+			}
+		}
+
+		W_PrintFormattedMapList(episode, sourceList, 99);
+	}
+}
+
+int CCmdListMaps(int argc, char **argv)
+{
+	Con_Printf("Loaded maps:\n");
+	W_PrintMapList();
+	return true;
 }

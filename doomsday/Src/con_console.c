@@ -479,6 +479,7 @@ ccmd_t engineCCmds[] =
 	"listbindings",	CCmdListBindings,	"List all event bindings.",
 	"listcmds",		CCmdListCmds,		"List all console commands.",
 	"listfiles",	CCmdListFiles,		"List all the loaded data files and show information about them.",
+	"listmaps",		CCmdListMaps,		"List all loaded maps and the WAD files where they are from.",
 	"listvars",		CCmdListVars,		"List all console variables and their values.",
 	"load",			CCmdLoadFile,		"Load a data file (a WAD or a lump).",
 	"login",		CCmdLogin,			"Log in to server console.",
