@@ -146,6 +146,7 @@ struct
 void	P_InitPlayerValues(player_t *p);
 void	P_RunPlayers(void);
 boolean	P_IsPaused(void);
+void	P_DoTick(void);
 
 #if __JHEXEN__
 void	P_InitSky(int map);
@@ -1623,7 +1624,7 @@ void G_Ticker (void)
 	switch (gamestate) 
 	{ 
 	case GS_LEVEL: 
-		P_Ticker (); 
+		P_DoTick(); 
 		HU_UpdatePsprites();
 
 		// Active briefings once again (they were disabled when loading

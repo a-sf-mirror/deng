@@ -96,11 +96,11 @@ void P_RunPlayers(void)
 }
 
 //===========================================================================
-// P_Ticker
+// P_DoTick
 //	Called 35 times per second. 
 //	The heart of play sim.
 //===========================================================================
-void P_Ticker (void)
+void P_DoTick(void)
 {
 #if __JDOOM__ || __JHEXEN__
 	// If the game is paused, nothing will happen.
