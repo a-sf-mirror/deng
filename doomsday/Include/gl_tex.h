@@ -23,6 +23,28 @@ typedef struct image_s {
 	byte *pixels;
 } image_t;
 
+/*
+ * Processing modes for GL_LoadGraphics.
+ */
+typedef enum gfxmode_e {
+	LGM_NORMAL = 0,
+	LGM_GRAYSCALE = 1,
+	LGM_GRAYSCALE_ALPHA = 2,
+	LGM_WHITE_ALPHA = 3
+} gfxmode_t;
+
+/*
+ * Textures used in the lighting system.
+ */
+typedef enum lightingtex_e {
+	LST_DYNAMIC,	// Round dynamic light
+	LST_GRADIENT,	// Top-down gradient
+	LST_RADIO_CO, 	// FakeRadio closed/open corner shadow
+	LST_RADIO_CC,	// FakeRadio closed/closed corner shadow
+	NUM_LIGHTING_TEXTURES
+} lightingtex_t;
+
+
 extern int		mipmapping, linearRaw, texQuality, filterSprites;
 extern int		texMagMode;
 extern boolean	loadExtAlways;
@@ -31,7 +53,7 @@ extern int		texmask;
 extern detailinfo_t *texdetail;
 extern unsigned int	curtex;
 extern int		pallump;
-extern DGLuint	dltexname, glowtexname;	
+extern DGLuint	lightingTexNames[NUM_LIGHTING_TEXTURES];
 
 int				CeilPow2(int num);
 
@@ -63,15 +85,14 @@ byte *			GL_LoadImage(image_t *img, const char *imagefn, boolean useModelPath);
 byte *			GL_LoadImageCK(image_t *img, const char *imagefn, boolean useModelPath);
 void			GL_DestroyImage(image_t *img);
 byte *			GL_LoadTexture(image_t *img, char *name);
-DGLuint			GL_LoadGraphics(const char *name, boolean grayscale);
+DGLuint			GL_LoadGraphics(const char *name, gfxmode_t mode);
 DGLuint			GL_GetTextureInfo(int index);
 DGLuint			GL_GetTextureInfo2(int index, boolean translate);
 DGLuint			GL_PrepareTexture(int idx); 
 DGLuint			GL_PrepareTexture2(int idx, boolean translate);
 DGLuint			GL_PrepareFlat(int idx);
 DGLuint			GL_PrepareFlat2(int idx, boolean translate);
-DGLuint			GL_PrepareLightTexture(void);	// The dynamic light map.
-DGLuint			GL_PrepareGlowTexture(void);	// Glow map.
+DGLuint			GL_PrepareLSTexture(lightingtex_t which);
 DGLuint			GL_PrepareFlareTexture(int flare);
 DGLuint			GL_PrepareSky(int idx, boolean zeroMask);
 DGLuint			GL_PrepareSky2(int idx, boolean zeroMask, boolean translate);
