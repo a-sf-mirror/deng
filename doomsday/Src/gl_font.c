@@ -370,7 +370,7 @@ int FR_PrepareFont(char *name)
 	// Load in the texture.
 	font->texture = gl.NewTexture();
 	gl.TexImage(DGL_RGBA, font->texWidth, font->texHeight, 0, image);
-	gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
+	gl.TexParameter(DGL_MIN_FILTER, DGL_NEAREST);
 	gl.TexParameter(DGL_MAG_FILTER, DGL_NEAREST);
 	free(image);
 
@@ -479,7 +479,7 @@ int FR_PrepareGDIFont(HFONT hfont)
 	// Create the DGL texture.
 	font->texture = gl.NewTexture();
 	gl.TexImage(DGL_RGBA, imgWidth, imgHeight, 0, image);
-	gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
+	gl.TexParameter(DGL_MIN_FILTER, DGL_NEAREST);
 	gl.TexParameter(DGL_MAG_FILTER, DGL_NEAREST);
 
 	// We no longer need these.
