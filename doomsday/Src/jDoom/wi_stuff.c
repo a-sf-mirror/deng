@@ -544,8 +544,8 @@ void WI_DrawParamText
 					if(isspace(*end)) continue;
 		
 					if(curCase < 0)
-						curCase = isupper(*end);
-					else if(curCase != isupper(*end))
+						curCase = (isupper(*end) != 0);
+					else if(curCase != (isupper(*end) != 0))
 						break;
 				}
 			}
