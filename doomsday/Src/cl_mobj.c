@@ -887,7 +887,7 @@ void Cl_ReadMobjDelta2(boolean allowCreate, boolean skip)
 		d->z = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
 
 		// The mobj won't stick if an explicit coordinate is supplied.
-		cmo->flags &= ~(CLMF_STICK_FLOOR | CLMF_STICK_CEILING);
+		if(cmo) cmo->flags &= ~(CLMF_STICK_FLOOR | CLMF_STICK_CEILING);
 	}
 
 	// When these flags are set, the normal Z coord is not included.
