@@ -4,6 +4,9 @@
 //** SV_POOL.C
 //**
 //** $Log$
+//** Revision 1.13.2.1  2003/09/21 17:04:59  skyjake
+//** Cleanup
+//**
 //** Revision 1.13  2003/08/30 15:24:50  skyjake
 //** Removed #define DD_PROFILE
 //**
@@ -823,9 +826,6 @@ boolean Sv_IsPlayerIgnored(int number)
  */
 void Sv_RegisterWorld(register_t *reg, boolean isInitial)
 {
-/*	thinker_t *th;
-	mobj_t *mo;
-	reg_mobj_t *regMo;*/
 	int i;
 
 	memset(reg, 0, sizeof(*reg));
@@ -833,34 +833,6 @@ void Sv_RegisterWorld(register_t *reg, boolean isInitial)
 
 	// Is this the initial state?
 	reg->isInitial = isInitial;
-
-/*	if(!isInitial)
-	{
-		// Init mobjs.
-		for(th = thinkercap.next; th != &thinkercap; th = th->next)
-		{
-			if(!P_IsMobjThinker(th->function)) continue;
-
-			mo = (mobj_t*) th;
-
-			// Some objects should not be processed.
-			if(Sv_IsMobjIgnored(mo)) continue;
-
-			// Get a new entry from the mobj hash.
-			regMo = Sv_RegisterAddMobj(reg, mo->thinker.id);
-
-			Sv_RegisterMobj(&regMo->mo, mo);
-		}	
-	}*/
-
-	// Init players.
-	/*for(i = 0; i < MAXPLAYERS; i++)
-	{
-		if(!Sv_IsPlayerIgnored(i))
-		{
-			Sv_RegisterPlayer(&reg->players[i], i);
-		}
-	}*/
 
 	// Init sectors.
 	reg->sectors = Z_Calloc(sizeof(dt_sector_t) * numsectors, PU_LEVEL, 0);
