@@ -6,7 +6,7 @@ Header { Version = 6; }
 
 Model {
   State = "DEMN_LOOK1";
-  Scale = 0.8;
+  Scale XYZ { 1 0.8 1 };
   Sub {
     File = "Actors/Serpent/Chaos.md2";
     Frame = "idle01";
@@ -151,8 +151,8 @@ Copy Model {
     Frame = "pain01";
     Skin = 2;
     Flags = litshiny | specular;
-    Shiny = 0.6;
-    Shiny skin = "Common/Shiny.pcx";
+    Shiny = 0.7;
+    Shiny skin = "Common/SoftShiny.pcx";
     Transparent = 0.45;
   }
 }
@@ -191,7 +191,7 @@ Generator {
 
 Model {
   State = "DEMN2_LOOK1";
-  Scale = 0.8;
+  Scale XYZ { 1 0.8 1 };
   Sub {
     File = "Actors/Serpent/Chaos.md2";
     Frame = "idle01";
