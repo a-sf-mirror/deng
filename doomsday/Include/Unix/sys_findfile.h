@@ -35,7 +35,6 @@ typedef struct finddata_s {
 	long size;
 	char *name;
 	long attrib;
-	long hFile;
 } finddata_t;
 
 /*
