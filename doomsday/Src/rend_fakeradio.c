@@ -750,7 +750,7 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 	q.lights = NULL;
 	q.sector = NULL;
 
-	q.top = z + 0.5f*dir;
+	q.top = z;
 	q.numvertices = 4;
 	memset(q.vertices, 0, q.numvertices * sizeof(rendpoly_vertex_t));
 	

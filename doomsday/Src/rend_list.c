@@ -1782,6 +1782,17 @@ int RL_SetupListState(listmode_t mode, rendlist_t *list)
 	case LM_SHADOW:
 		// Render all primitives.
 		RL_Bind(list->tex.id);
+		if(!list->tex.id)
+		{
+			// Apply a modelview shift.
+			gl.MatrixMode(DGL_MODELVIEW);
+			gl.PushMatrix();
+
+			// Scale towards the viewpoint to avoid Z-fighting.
+			gl.Translatef(vx, vy, vz);
+			gl.Scalef(.99f, .99f, .99f);
+			gl.Translatef(-vx, -vy, -vz);
+		}
 		return 0;
 
 	default:
@@ -1790,6 +1801,27 @@ int RL_SetupListState(listmode_t mode, rendlist_t *list)
 
 	// Unknown mode, let's not draw anything.
 	return DCF_SKIP;
+}
+
+//===========================================================================
+// RL_FinishListState
+//===========================================================================
+void RL_FinishListState(listmode_t mode, rendlist_t *list)
+{
+	switch(mode)
+	{
+	default:
+		break;
+
+	case LM_SHADOW:
+		if(!list->tex.id)
+		{
+			// Restore original modelview matrix.
+			gl.MatrixMode(DGL_MODELVIEW);
+			gl.PopMatrix();
+		}
+		break;
+	}	  
 }
 
 //===========================================================================
@@ -2036,6 +2068,9 @@ void RL_RenderLists(listmode_t mode, rendlist_t **lists, int num)
 		// Setup GL state for this list, and
 		// draw the necessary subset of primitives on the list.
 		RL_DrawPrimitives( RL_SetupListState(mode, lists[i]), lists[i] );
+
+		// Some modes require cleanup.
+		RL_FinishListState(mode, lists[i]);
 	}
 }
 
@@ -2262,7 +2297,9 @@ void RL_RenderAllLists(void)
 		int oldr = renderTextures;
 		renderTextures = true;
 		count = RL_CollectLists(shadowHash, lists);
+
 		RL_RenderLists(LM_SHADOW, lists, count);
+		
 		renderTextures = oldr;
 	}
 
@@ -2303,5 +2340,3 @@ void RL_RenderAllLists(void)
 
 	END_PROF( PROF_RL_RENDER_ALL );
 }
-
-
