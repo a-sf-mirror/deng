@@ -102,10 +102,18 @@ void R_ShadowDelta(pvec2_t delta, line_t *line, sector_t *frontSector)
 	}
 }
 
-line_t *R_GetShadowNeighbor(shadowpoly_t *poly, boolean left)
+lineinfo_side_t *R_GetShadowLineSideInfo(shadowpoly_t *poly)
 {
-	return LINE_INFO(poly->line)->side[
-		poly->flags & SHPF_FRONTSIDE? 0 : 1 ].neighbor[ left? 0 : 1 ];
+	return &LINE_INFO(poly->line)->
+		side[poly->flags & SHPF_FRONTSIDE? 0 : 1 ];
+}
+
+line_t *R_GetShadowNeighbor(shadowpoly_t *poly, boolean left, boolean back)
+{
+	lineinfo_side_t *side = R_GetShadowLineSideInfo(poly);
+	line_t **neighbors = (back? side->backneighbor : side->neighbor);
+
+	return neighbors[ left? 0 : 1 ];
 }
 
 /*
@@ -117,23 +125,37 @@ sector_t *R_GetShadowSector(shadowpoly_t *poly)
 		: poly->line->backsector;
 }
 
-void R_ShadowCornerDeltas(pvec2_t left, pvec2_t right, shadowpoly_t *poly,
-						  boolean leftCorner)
+/*
+ * Returns a pointer to the sector in the left/right proximity.
+ */
+sector_t *R_GetShadowProximity(shadowpoly_t *poly, boolean left)
 {
-	sector_t *sector;
+	lineinfo_side_t *side = R_GetShadowLineSideInfo(poly);
 
-	sector = (poly->flags & SHPF_FRONTSIDE? poly->line->frontsector
-			  : poly->line->backsector);
+	return side->proxsector[ left? 0 : 1 ];
+}
+
+/*
+ * May return false when dealing with backneighbors.
+ */
+boolean R_ShadowCornerDeltas(pvec2_t left, pvec2_t right, shadowpoly_t *poly,
+							 boolean leftCorner, boolean back)
+{
+	sector_t *sector = R_GetShadowSector(poly);
+	line_t *neighbor;
 
 	// The line itself.
 	R_ShadowDelta(leftCorner? right : left, poly->line, sector);
 
-	// The neighbour.
-	R_ShadowDelta(leftCorner? left : right,
-				  R_GetShadowNeighbor(poly, leftCorner), sector);
+	// The (back)neighbour.
+	if(NULL == (neighbor = R_GetShadowNeighbor(poly, leftCorner, back)))
+		return false;
+	R_ShadowDelta(leftCorner? left : right, neighbor,
+				  !back? sector : R_GetShadowProximity(poly, leftCorner));
 
 	// The left side is always flipped.
 	V2_Scale(left, -1);
+	return true;
 }
 
 /*
@@ -143,16 +165,38 @@ void R_ShadowCornerDeltas(pvec2_t left, pvec2_t right, shadowpoly_t *poly,
 void R_ShadowEdges(shadowpoly_t *poly)
 {
 	vec2_t left, right;
+	int side;
 
-	// Left corner.
-	R_ShadowCornerDeltas(left, right, poly, true);
-	R_CornerNormalPoint(left, 16, right, 16, poly->inoffset[0],
-						poly->extoffset[0], NULL);
+	for(side = 0; side < 2; side++) // left and right
+	{
+		// The inside corner.
+		R_ShadowCornerDeltas(left, right, poly, side == 0, false);
+		R_CornerNormalPoint(left, 16, right, 16, poly->inoffset[side],
+							side == 0? poly->extoffset[side] : NULL,
+							side == 1? poly->extoffset[side] : NULL);
 
+		// It is not always possible to calculate the back-extended
+		// offset.
+		if(R_ShadowCornerDeltas(left, right, poly, side == 0, true))
+		{
+			R_CornerNormalPoint(left, 16, right, 16, poly->bextoffset[side],
+								NULL, NULL);
+		}
+		else
+		{
+			// No back-extended, just use the plain extended offset.
+			V2_Copy(poly->bextoffset[side], poly->extoffset[side]);
+		}
+	}
+/*	
 	// Right corner.
-	R_ShadowCornerDeltas(left, right, poly, false);
+	R_ShadowCornerDeltas(left, right, poly, false, false);
 	R_CornerNormalPoint(left, 16, right, 16, poly->inoffset[1],
 						NULL, poly->extoffset[1]);
+
+	R_ShadowCornerDeltas(left, right, poly, false, true);
+	R_CornerNormalPoint(left, 16, right, 16, poly->bextoffset[1], 0, 0);
+*/
 }
 
 /*
@@ -193,7 +237,7 @@ boolean RIT_ShadowSubsectorLinker(subsector_t *subsector, void *parm)
 	int i, j;
 	float k, m;
 
-	//R_LinkShadow(poly, subsector); return true;
+	R_LinkShadow(poly, subsector); return true;
 
 	// Use the extended points, they are wider than inoffsets.
 	V2_Set(corners[0], FIX2FLT(poly->outer[0]->x), FIX2FLT(poly->outer[0]->y));

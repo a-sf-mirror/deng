@@ -718,9 +718,10 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 	sector_t *sector;
 	float z, pos;
 	int i, dir = (isFloor? 1 : -1), *idx;
-	int floorIndices[] = { 0, 1, 2, 3 };
-	int ceilIndices[] = { 0, 3, 2, 1 };
-	vec2_t inner[2], origin = { 0, 0 };
+	int floorIndices[] = { 0, 1, 2, 3, 4 };
+	int ceilIndices[] = { 0, 3, 2, 1, 0 };
+	vec2_t inner[2], origin = { 0, 0 }, mid, center;
+	boolean useMidPoint = false;
 
 	if(darkness > 1) darkness = 1;
 	
@@ -734,17 +735,35 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 	for(i = 0; i < 2; i++)
 	{
 		pos = sideOpen[i];
-		if(pos <= 1)
+		if(pos < 1) // Nearly closed.
 		{
-			V2_Lerp(inner[i], shadow->inoffset[i], origin, pos);
+			/*V2_Lerp(inner[i], shadow->inoffset[i],
+			  shadow->bextoffset[i], pos);*/
+			V2_Copy(inner[i], shadow->inoffset[i]);
 		}
-		else
+		else if(pos == 1) // Same height on both sides.
 		{
-			if(pos > 2) pos = 2;
-			V2_Lerp(inner[i], origin, shadow->extoffset[i], pos - 1);
+			V2_Copy(inner[i], shadow->bextoffset[i]);
+		}
+		else // Fully, unquestionably open.
+		{
+			/*if(pos > 2) pos = 2;
+			  V2_Lerp(inner[i], shadow->bextoffset[i],
+			  shadow->extoffset[i], pos - 1);*/
+			V2_Copy(inner[i], shadow->extoffset[i]);
 		}
 	}
-	
+
+	// If both sides are open, use an additional middle vertex.
+/*	if(sideOpen[0] == 1 && sideOpen[1] == 1)
+	{
+		useMidPoint = true;
+		V2_Set(center, FIX2FLT(shadow->outer[1]->x + shadow->outer[0]->x)/2,
+			   FIX2FLT(shadow->outer[1]->y + shadow->outer[0]->y)/2);
+		V2_Lerp(mid, shadow->inoffset[0], shadow->inoffset[1], .5f);
+		V2_Sum(mid, center, mid);
+		}*/
+
 	// Initialize the rendpoly.
 	q.type = RP_FLAT;
 	q.flags = RPF_SHADOW;
@@ -755,37 +774,49 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 	q.sector = NULL;
 
 	q.top = z + 0.5f*dir;
-	q.numvertices = 4;
+	q.numvertices = (useMidPoint? 5 : 4);
+
+	if(!isFloor)
+	{
+		// Calculate correct indices for the ceiling polygon.
+		for(i = 1; i < q.numvertices; i++)
+			ceilIndices[i] = q.numvertices - i;
+	}
 	
 	memset(q.vertices, 0, q.numvertices * sizeof(rendpoly_vertex_t));
 	
 	vtx = q.vertices;
-//	i = (isFloor? 0 : 3);
 	idx = (isFloor? floorIndices : ceilIndices);
-	
+
+	// Left outer corner.
 	vtx[idx[0]].pos[VX] = FIX2FLT(shadow->outer[0]->x);
 	vtx[idx[0]].pos[VY] = FIX2FLT(shadow->outer[0]->y);
 	vtx[idx[0]].color.rgba[CA] = (DGLubyte) (128 * darkness); // Black.
 
-	if(sideOpen[0] <= 1)
+	if(sideOpen[0] < 1)
 		vtx[idx[0]].color.rgba[CA] *= 1 - sideOpen[0];
-	
+
+	// Right outer corner.
 	vtx[idx[1]].pos[VX] = FIX2FLT(shadow->outer[1]->x);
 	vtx[idx[1]].pos[VY] = FIX2FLT(shadow->outer[1]->y);
 	vtx[idx[1]].color.rgba[CA] = (DGLubyte) (128 * darkness);
 
-	if(sideOpen[1] <= 1)
+	if(sideOpen[1] < 1)
 		vtx[idx[1]].color.rgba[CA] *= 1 - sideOpen[1];
-	
+
+	// Right inner corner.
 	vtx[idx[2]].pos[VX] = vtx[idx[1]].pos[VX] + inner[1][VX];
 	vtx[idx[2]].pos[VY] = vtx[idx[1]].pos[VY] + inner[1][VY];
-	//vtx[idx[2]].color.rgba[CR] = 255;
-	//vtx[idx[2]].color.rgba[CA] = 128;
 
-	vtx[idx[3]].pos[VX] = vtx[idx[0]].pos[VX] + inner[0][VX];
-	vtx[idx[3]].pos[VY] = vtx[idx[0]].pos[VY] + inner[0][VY];
-	//vtx[idx[3]].color.rgba[CG] = 255;
-	//vtx[idx[3]].color.rgba[CA] = 128;
+	if(useMidPoint)
+	{
+		V2_Copy(vtx[idx[3]].pos, mid);
+		vtx[idx[3]].color.rgba[CA] = 255;
+	}
+	
+	// Left inner corner.
+	vtx[idx[useMidPoint? 4 : 3]].pos[VX] = vtx[idx[0]].pos[VX] + inner[0][VX];
+	vtx[idx[useMidPoint? 4 : 3]].pos[VY] = vtx[idx[0]].pos[VY] + inner[0][VY];
 	
 	RL_AddPoly(&q);
 }
@@ -812,11 +843,11 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
 	{
 		// Already rendered during the current frame? We only want to
 		// render each shadow once per frame.
-		if(link->poly->visframe == framecount) continue;
+		if(link->poly->visframe == (ushort) framecount) continue;
 
 		// Now it will be rendered.
 		shadow = link->poly;
-		shadow->visframe = framecount;
+		shadow->visframe = (ushort) framecount;
 
 		// Determine the openness of the line and its neighbors.  If
 		// this edge is open, there won't be a shadow at all.  Open
@@ -840,7 +871,7 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
 			// What about the neighbours?
 			for(i = 0; i < 2; i++)
 			{
-				neighbor = R_GetShadowNeighbor(shadow, i == 0);
+				neighbor = R_GetShadowNeighbor(shadow, i == 0, false);
 				sideOpen[i] = Rend_RadioEdgeOpenness(
 					neighbor,
 					neighbor->frontsector == sector,

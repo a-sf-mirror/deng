@@ -1055,13 +1055,35 @@ void R_FindLineNeighbors(sector_t *sector, line_t *line,
 }
 
 /*
+ * Browse through the lines in backSector.  The backNeighbor is the
+ * line that 1) isn't realNeighbor and 2) connects to commonVertex.
+ */
+void R_FindBackNeighbor(sector_t *backSector, line_t *realNeighbor,
+						vertex_t *commonVertex, line_t **backNeighbor)
+{
+	int i;
+	line_t *line;
+
+	for(i = 0; i < backSector->linecount; i++)
+	{
+		line = backSector->lines[i];
+		if(line == realNeighbor) continue;
+		if(line->v1 == commonVertex || line->v2 == commonVertex)
+		{
+			*backNeighbor = line;
+			return;
+		}
+	}
+}
+
+/*
  * Calculate accurate lengths for all lines.  Find line neighbours,
  * which will be used in the FakeRadio calculations.
  */
 void R_InitLineInfo(void)
 {
 	line_t *line;
-	sector_t *sector;
+	sector_t *sector, *other;
 	int	i, k, j, m;
 	lineinfo_t *info;
 	lineinfo_side_t *side;
@@ -1092,12 +1114,10 @@ void R_InitLineInfo(void)
 			side = (line->frontsector == sector? &info->side[0] :
 					&info->side[1]);
 
-			memset(side->neighbor, 0, sizeof(side->neighbor));
-			memset(side->alignneighbor, 0, sizeof(side->alignneighbor));
-//			memset(side->backneighbor, 0, sizeof(side->backneighbor));
-
 			R_FindLineNeighbors(sector, line, side->neighbor, 0);
 
+			R_OrderVertices(line, sector, vertices);
+		
 			// Figure out the sectors in the proximity.
 			for(j = 0; j < 2; j++)
 			{
@@ -1110,6 +1130,12 @@ void R_InitLineInfo(void)
 						(side->neighbor[j]->frontsector == sector?
 						 side->neighbor[j]->backsector :
 						 side->neighbor[j]->frontsector);
+
+					// Find the backneighbour.  They are the
+					// neighbouring lines in the backsectors of the
+					// neighbour lines.
+					R_FindBackNeighbor(side->proxsector[j], side->neighbor[j],
+									   vertices[j], &side->backneighbor[j]);
 				}
 				else
 				{
@@ -1118,7 +1144,6 @@ void R_InitLineInfo(void)
 			}
 
 			// Look for aligned neighbours.  They are side-specific.
-			R_OrderVertices(line, sector, vertices);
 			for(j = 0; j < 2; j++)
 			{
 				owner = vertexowners + GET_VERTEX_IDX(vertices[j]);
@@ -1131,9 +1156,6 @@ void R_InitLineInfo(void)
 				}
 			}
 
-		   
-			
-			
 /*			// How about the other sector?
 			if(!line->backsector || !line->frontsector)
 				continue; // Single-sided.
