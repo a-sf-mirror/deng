@@ -17,6 +17,8 @@
 
 /*
  * net_buf.c: Network Message Handling and Buffering
+ *
+ * -=- OBSOLETE! -=-
  */
 
 /*
@@ -106,40 +108,6 @@ static uint numOutBytes;
 static uint numSentBytes;
 
 // CODE --------------------------------------------------------------------
-
-/*
- * Initialize the low-level network subsystem. This is called always 
- * during startup (via Sys_Init()).
- */
-void N_Init(void)
-{
-	// Create a mutex for the message queue.
-	msgMutex = Sys_CreateMutex(MSG_MUTEX_NAME);
-	
-	N_SockInit();
-	N_MasterInit();
-	N_SystemInit(); // Platform dependent stuff.
-}
-
-/*
- * Shut down the low-level network interface. Called during engine 
- * shutdown (not before).
- */
-void N_Shutdown(void)
-{
-	N_SystemShutdown();
-	N_MasterShutdown();
-	N_SockShutdown();
-
-	// Close the handle of the message queue mutex.
-	Sys_DestroyMutex(msgMutex);
-	msgMutex = 0;
-	
-	if(ArgExists("-huffavg"))
-	{
-		Con_Execute("huffman", false);
-	}
-}
 
 /*
  * Acquire or release ownership of the message queue mutex.
@@ -470,12 +438,12 @@ void N_SMSReset(int player)
  * Frees the message.
  */
 void N_ReleaseMessage(netmessage_t *msg)
-{
+{/*
 	if(msg->handle) 
 	{
 		N_ReturnBuffer(msg->handle);
 	}
-	free(msg);
+	free(msg);*/
 }
 
 /*
@@ -653,6 +621,7 @@ int N_IdentifyPlayer(nodeid_t id)
  */
 netmessage_t *N_GetNextMessage(void)
 {
+#if 0
 	netmessage_t *msg;
 	msgid_t id;
 
@@ -727,7 +696,7 @@ netmessage_t *N_GetNextMessage(void)
 		}
 		return msg;
 	}
-
+#endif
 	// There are no more messages.
 	return NULL;
 }
