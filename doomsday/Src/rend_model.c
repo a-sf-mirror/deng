@@ -451,7 +451,7 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 	model_t	*mdl = modellist[smf->model];
 	model_frame_t *frame = Mod_GetVisibleFrame(mf, number, spr->mo.id);
 	model_frame_t *nextFrame = NULL;
-	int mainFlags = mf->flags;
+	//int mainFlags = mf->flags;
 	int	subFlags = smf->flags;
 	int numVerts;
 	int	useSkin;
@@ -574,6 +574,15 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 
 	yawAngle = spr->mo.yaw;
 	pitchAngle = spr->mo.pitch;
+
+	// World time animation?
+	if(subFlags & MFF_WORLD_TIME_ANIM)
+	{
+		float duration = mf->interrange[0];
+		if(duration == 0) duration = 1;
+		inter = M_CycleIntoRange(leveltic / (duration * TICSPERSEC)
+			+ mf->interrange[1], 1);
+	}
 
 	// Clamp interpolation.
 	if(inter < 0) inter = 0;
