@@ -1,0 +1,410 @@
+Header { Version = 6; }
+
+########========-------- RIDING D'SPARIL --------========########
+# Model by Slyrr
+# Definitions by SkyJake
+
+Model {
+  State = "SRCR1_LOOK1";
+  Scale = 0.75;
+  Sub { 
+    File = "Actors/DSparil/Riding/Chaos.md2"; 
+    Frame = "idle01"; 
+  }
+  Sub { 
+    File = "Actors/DSparil/Riding/SRider.md2"; 
+    Frame = "idle01"; 
+  }
+  Sub { 
+    File = "Actors/DSparil/Riding/SRTrident.md2"; 
+    Frame = "idle01"; 
+    Flags = specular;
+    Shiny = .3;
+    Shiny skin = "Common/Shiny.pcx";  
+  }
+}
+
+Copy Model {
+  Inter = 0.25;
+  Sub { Frame = "idle02"; }
+  Sub { Frame = "idle02"; }
+  Sub { Frame = "idle02"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "idle03"; }
+  Sub { Frame = "idle03"; }
+  Sub { Frame = "idle03"; }
+}
+
+Copy Model {
+  Inter = 0.75;
+  Sub { Frame = "idle04"; }
+  Sub { Frame = "idle04"; }
+  Sub { Frame = "idle04"; }
+}
+
+Copy Model {
+  State = "SRCR1_LOOK2";
+  Inter = 0;
+  Sub { Frame = "idle05"; }
+  Sub { Frame = "idle05"; }
+  Sub { Frame = "idle05"; }
+}
+
+Copy Model {
+  Inter = 0.25;
+  Sub { Frame = "idle06"; }
+  Sub { Frame = "idle06"; }
+  Sub { Frame = "idle06"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "idle07"; }
+  Sub { Frame = "idle07"; }
+  Sub { Frame = "idle07"; }
+}
+
+Copy Model {
+  Inter = 0.75;
+  Sub { Frame = "idle08"; }
+  Sub { Frame = "idle08"; }
+  Sub { Frame = "idle08"; }
+}
+
+# Pain Sequence
+
+Copy Model {
+  State = "SRCR1_PAIN1";
+  Inter = 0;
+  Sub { Frame = "pain01"; }
+  Sub { Frame = "pain01"; }
+  Sub { Frame = "pain01"; }
+}
+
+Copy Model {
+  Inter = 0.999;
+  Sub { Frame = "idle01"; }
+  Sub { Frame = "idle01"; }
+  Sub { Frame = "idle01"; }
+}
+
+# Walk Sequence
+
+Copy Model {
+  State = "SRCR1_WALK1";
+  Inter = 0;
+  Sub { Frame = "walk01"; }
+  Sub { Frame = "walk01"; }
+  Sub { Frame = "walk01"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "walk02"; }
+  Sub { Frame = "walk02"; }
+  Sub { Frame = "walk02"; }
+}
+
+Copy Model {
+  State = "SRCR1_WALK2";
+  Inter = 0;
+  Sub { Frame = "walk03"; }
+  Sub { Frame = "walk03"; }
+  Sub { Frame = "walk03"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "walk04"; }
+  Sub { Frame = "walk04"; }
+  Sub { Frame = "walk04"; }
+}
+
+Copy Model {
+  State = "SRCR1_WALK3";
+  Inter = 0;
+  Sub { Frame = "walk05"; }
+  Sub { Frame = "walk05"; }
+  Sub { Frame = "walk05"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "walk06"; }
+  Sub { Frame = "walk06"; }
+  Sub { Frame = "walk06"; }
+}
+
+Copy Model {
+  State = "SRCR1_WALK4";
+  Inter = 0;
+  Sub { Frame = "walk07"; }
+  Sub { Frame = "walk07"; }
+  Sub { Frame = "walk07"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "walk08"; }
+  Sub { Frame = "walk08"; }
+  Sub { Frame = "walk08"; }
+}
+
+# Attack Sequence
+
+Copy Model {
+  State = "SRCR1_ATK1";
+  Inter = 0;
+  Sub { Frame = "attack01"; }
+  Sub { Frame = "attack01"; }
+  Sub { Frame = "attack01"; }
+}
+
+Copy Model {
+  State = "SRCR1_ATK2";
+  Sub { Frame = "attack02"; }
+  Sub { Frame = "attack02"; }
+  Sub { Frame = "attack02"; }
+}
+
+Copy Model {
+  State = "SRCR1_ATK3";
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+  Sub { Frame = "attack03"; }
+}
+
+Copy Model {
+  Inter = 0.5;
+  Sub { Frame = "attack06"; }
+  Sub { Frame = "attack06"; }
+  Sub { Frame = "attack06"; }
+}
+
+# Death Sequence
+
+Copy Model {
+  State = "SRCR1_DIE1";
+  Inter = 0;
+  Sub { Frame = "death01"; }
+  Sub { Frame = "death01"; }
+  Sub { Frame = "death01"; }
+}
+
+Copy Model {
+  State = "SRCR1_DIE2";
+  Sub { Frame = "death02"; }
+  Sub { Frame = "death02"; }
+  Sub { Frame = "death02"; }
+}
+
+Copy Model {
+  State = "SRCR1_DIE3";
+  Sub { Frame = "death03"; }
+  Sub { Frame = "death03"; }
+  Sub { Frame = "death03"; }
+}
+
+Copy Model {
+  State = "SRCR1_DIE4";
+  Sub { Frame = "death04"; }
+  Sub { 
+    Frame = "death04"; 
+    Flags = specular | noz;
+    Shiny skin = "Common/Shiny.pcx";
+    Shiny = 0.25;
+    Transparent = 0.3;    
+  }
+  Sub { 
+    Frame = "death04"; 
+    Flags = specular | noz;
+    Shiny skin = "Common/Shiny.pcx";
+    Shiny = 0.25;
+    Transparent = 0.3;
+  }
+}
+
+Copy Model {
+  State = "SRCR1_DIE5";
+  Sub { Frame = "death05"; }
+  Sub { 
+    Frame = "death05";
+    Transparent = 0.5;
+    Shiny = 0.5;
+  }
+  Sub { 
+    Frame = "death05"; 
+    Transparent = 0.5;
+    Shiny = 0.5;
+  }
+}
+
+Copy Model {
+  State = "SRCR1_DIE6";
+  Sub { Frame = "death06"; }
+  Sub { 
+    Frame = "death06";
+    Transparent = 0.7;
+    Shiny = 0.75;
+  }
+  Sub { 
+    Frame = "death06"; 
+    Transparent = 0.7;
+    Shiny = 0.75;
+  }
+}
+
+Copy Model {
+  State = "SRCR1_DIE7";
+  Sub { Frame = "death07"; }
+  Sub { 
+    Frame = "death07";
+    Transparent = 0.9;
+    Shiny = 1;
+  }
+  Sub { 
+    Frame = "death07"; 
+    Transparent = 0.9;
+    Shiny = 1;
+  }
+}
+
+Copy Model {
+  State = "SRCR1_DIE8";
+  Sub { Frame = "death08"; }
+  Sub { Frame = "death08"; }  
+  Sub { Frame = "death08"; }  
+}
+
+Copy Model {
+  State = "SRCR1_DIE9";
+  Sub { Frame = "death08"; }
+  Sub { 
+    Transparent = 0.999; 
+    Shiny = 0.5; 
+  }  
+  Sub { 
+    Transparent = 0.999;
+    Shiny = 0.5;
+  }  
+}
+
+Copy Model {
+  State = "SRCR1_DIE10";
+  Sub { }
+  Sub { 
+    Transparent = 1; 
+    Shiny = 0; 
+  }  
+  Sub { 
+    Transparent = 1;
+    Shiny = 0;
+  }  
+}
+
+Copy Model { State = "SRCR1_DIE11"; }
+Copy Model { State = "SRCR1_DIE12"; }
+Copy Model { State = "SRCR1_DIE13"; }
+Copy Model { State = "SRCR1_DIE14"; }
+Copy Model { State = "SRCR1_DIE15"; }
+Copy Model { State = "SRCR1_DIE16"; }
+Copy Model { State = "SRCR1_DIE17"; }
+
+# Serpent death gibs
+
+Generator {
+  State = "SRCR1_DIE2";
+  Particles = 200;
+  Speed = 4;
+  Speed rnd = 1;
+  Vector { 0 0 .5 };
+  Vector rnd = 1;
+  Center { 0 0 60 };
+  Spawn radius = 20;
+  Spawn age = 3;
+  Max age = 500;
+  Spawn rate = 60;
+  Spawn rnd = .3;
+    
+  Stage {
+    Type = point; 
+    Flags = flat | stagetouch;
+    Tics = 270; 
+    Radius = 5; Radius rnd = 1;
+    Color { .8 0 0 1 };
+    Gravity = .07;
+  }
+  Stage {
+    Type = point;
+    Flags = flat;
+    Tics = 200;
+    Resistance = 1;
+    Radius = 30; Radius rnd = .8;
+    Color { .8 0 0 1 };
+  }  
+  Stage {
+    Type = point;
+    Flags = flat; 
+    Radius = 1;    
+    Color { .8 0 0 0 };
+    Resistance = 1;
+  }
+}
+
+# D'Sparil Pain Sparkle
+
+Generator {
+  State = "SRCR1_DIE7";
+  Flags = blend;
+  Particles = 100;
+  Speed = 5;
+  Speed rnd = 1;
+  Vector { 0 0 0 };
+  Vector rnd = 1;
+  Center { 25 180 125 };
+  Spawn radius = 5;
+  Spawn age = 30;
+  Max age = 65;
+  Spawn rate = 1.5;
+    
+  Stage {
+    Type = point; 
+    Flags = bright;
+    Tics = 3; 
+    Radius = 3; Radius rnd = 1;
+    Color { .5 .9 1 0 };
+  }
+  Stage {
+    Type = point; 
+    Flags = bright;
+    Tics = 10; 
+    Radius = 30; Radius rnd = 1;
+    Color { .6 .9 1 .25 };
+    Resistance = .05;    
+  }
+  Stage {
+    Type = point; 
+    Flags = bright;
+    Tics = 5; 
+    Radius = 15; Radius rnd = 1;
+    Color { .9 1 1 .5 };
+    Resistance = .05;    
+  }
+  Stage {
+    Type = point; 
+    Flags = bright;
+    Tics = 17; 
+    Radius = 10; Radius rnd = 1;
+    Color { .9 .95 1 .2 };
+    Resistance = .1;
+  }
+  Stage {
+    Type = point; 
+    Flags = bright;
+    Radius = 0;
+    Color { .5 .9 1 0 };
+  }
+}
