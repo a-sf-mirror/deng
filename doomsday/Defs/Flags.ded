@@ -97,6 +97,7 @@ Flag { ID = "gnf_blendsub"; Value = 0x1000; }
 Flag { ID = "gnf_blendrsub"; Value = 0x2000; }
 Flag { ID = "gnf_blendmul"; Value = 0x4000; }
 Flag { ID = "gnf_blendimul"; Value = 0x8000; }
+Flag { ID = "gnf_extra"; Value = 0x10000; }
 
 # Particle types
 Flag { ID = "pt_point"; Value = 1; }

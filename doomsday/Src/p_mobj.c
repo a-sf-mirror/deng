@@ -92,7 +92,8 @@ fixed_t		tmymove;
 void P_SetState(mobj_t *mobj, int statenum)
 {
 	state_t *st = states + statenum;
-	boolean spawning = (mobj->state == 0), sponly;
+	boolean spawning = (mobj->state == 0);
+	ded_ptcgen_t *pg;
 
 #if _DEBUG
 	if(statenum < 0 || statenum >= defs.count.states.num)
@@ -105,13 +106,12 @@ void P_SetState(mobj_t *mobj, int statenum)
 	mobj->frame = st->frame;
 
 	// Check for a ptcgen trigger.
-	if(statenum && st->ptrigger)
+	for(pg = st->ptrigger; statenum && pg; pg = pg->state_next)
 	{
-		sponly = (((ded_ptcgen_t*)st->ptrigger)->flags & PGF_SPAWN_ONLY) != 0;
-		if(!sponly || spawning)
+		if(!(pg->flags & PGF_SPAWN_ONLY) || spawning)
 		{
 			// We are allowed to spawn the generator.
-			P_SpawnParticleGen(st->ptrigger, mobj);
+			P_SpawnParticleGen(pg, mobj);
 		}
 	}
 }

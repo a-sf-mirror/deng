@@ -23,6 +23,7 @@
 #define PGF_REVSUB_BLEND		0x2000	// Reverse subtractive blending.
 #define PGF_MUL_BLEND			0x4000	// Multiplicative blending.
 #define PGF_INVMUL_BLEND		0x8000	// Inverse multiplicative blending.
+#define PGF_STATE_CHAIN			0x10000	// Chain after existing state gen(s).
 
 // Runtime generator flags:
 #define PGF_VISIBLE				0x1000000	// Should be rendered.

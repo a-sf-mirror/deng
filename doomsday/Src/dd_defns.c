@@ -653,18 +653,38 @@ void Def_Read(void)
 	// Particle generators.
 	for(i = 0; i < defs.count.ptcgens.num; i++)
 	{
-		int st = Def_GetStateNum(defs.ptcgens[i].state);
-		if(defs.ptcgens[i].flat[0])
-			defs.ptcgens[i].flat_num = W_CheckNumForName(defs.ptcgens[i].flat);
+		ded_ptcgen_t *pg = defs.ptcgens + i;
+		int st = Def_GetStateNum(pg->state);
+		if(pg->flat[0])
+			pg->flat_num = W_CheckNumForName(pg->flat);
 		else
-			defs.ptcgens[i].flat_num = -1;
-		//defs.ptcgens[i].flags = Def_EvalFlags(defs.ptcgens[i].flags_string);
-		defs.ptcgens[i].type_num = Def_GetMobjNum(defs.ptcgens[i].type);
-		defs.ptcgens[i].type2_num = Def_GetMobjNum(defs.ptcgens[i].type2);
-		defs.ptcgens[i].damage_num = Def_GetMobjNum(defs.ptcgens[i].damage);
+			pg->flat_num = -1;
+		pg->type_num = Def_GetMobjNum(pg->type);
+		pg->type2_num = Def_GetMobjNum(pg->type2);
+		pg->damage_num = Def_GetMobjNum(pg->damage);
+
 		if(st <= 0) continue; // Not state triggered, then...
-		// A pointer to the definition.
-		states[st].ptrigger = defs.ptcgens + i;
+
+		// Link the definition to the state.
+		if(pg->flags & PGF_STATE_CHAIN)
+		{
+			// Add to the chain.
+			pg->state_next = states[st].ptrigger;
+			states[st].ptrigger = pg;
+		}
+		else
+		{
+			// Make sure the previously built list is unlinked.
+			while(states[st].ptrigger)
+			{
+				ded_ptcgen_t *temp = 
+					((ded_ptcgen_t*)states[st].ptrigger)->state_next;
+				((ded_ptcgen_t*)states[st].ptrigger)->state_next = NULL;
+				states[st].ptrigger = temp;
+			}
+			states[st].ptrigger = pg;
+			pg->state_next = NULL;
+		}
 	}
 	Def_CountMsg(defs.count.ptcgens.num, "particle generators");
 
