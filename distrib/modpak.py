@@ -119,9 +119,13 @@ if not '-nofinal' in sys.argv:
 		found = re.match( "(?i)(.*)\.pk3$", file )
 		if not found: continue
 
+		# Which game is it?
+		fileGame = "jHeretic"
+		if file[0] == 'X': fileGame = "jHexen"
+
 		# Pack into a compressed ZIP.
 		packFile = os.path.join( finalDir, found.group(1) + '.zip' )
 		print "Packing full pack to: " + packFile
 		obsolete( packFile )
 		os.system( 'wzzip ' + packFile + ' -ex ' + \
-			os.path.join( outDir, file ) + ' Include\\' + game + '\\Readme.txt' )
+			os.path.join( outDir, file ) + ' Include\\' + fileGame + '\\Readme.txt' )
