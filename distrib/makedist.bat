@@ -8,9 +8,9 @@ SET DistBin=%Dist%\Bin\
 REM -- Source directories (where files will be copied from).
 SET SRC=..\doomsday\
 SET FMODLIB=D:\sdk\fmod\api\
-SET SidgarDir=C:\Projects\SiDGaR\Release\
+SET SidgarDir=D:\Projects\SiDGaR\Release\
 SET KickDir=..\kickstart\
-SET BSPDir=c:\utils\glbsp\
+SET BSPDir=D:\Utils\glbsp\
 
 IF "%1" == "rel" GOTO releasedirs
 IF "%1" == "beta" GOTO betadirs
