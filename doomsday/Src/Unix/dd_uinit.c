@@ -254,13 +254,19 @@ int main(int argc, char **argv)
 //===========================================================================
 void DD_Shutdown(void)
 {
-//	int i;
+	int i;
 
 	// Shutdown all subsystems.
 	DD_ShutdownAll();
-	
-/*	FreeLibrary(hInstGame);
-	for(i = 0; hInstPlug[i]; i++) FreeLibrary(hInstPlug[i]);
-	hInstGame = NULL;
-	memset(hInstPlug, 0, sizeof(hInstPlug));*/
+
+	SDL_Quit();
+
+	// Close the dynamic libraries.
+	dlclose(hGame);
+	for(i = 0; hPlugin[i]; i++)
+	{
+		dlclose(hPlugin[i]);
+	}
+	hGame = NULL;
+	memset(hPlugin, 0, sizeof(hPlugin));
 }
