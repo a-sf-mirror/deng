@@ -56,7 +56,7 @@
 #define O_BINARY 0
 
 #define FILE_OPEN(filename, handle)             handle = open(filename, O_RDONLY | O_BINARY)
-#define FILE_CREATE(filename, handle)           handle = open(filename, O_WRONLY | O_BINARY | O_CREAT | O_TRUNC)
+#define FILE_CREATE(filename, handle)           handle = open(filename, O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0664)
 #define FILE_CLOSE(handle)                      close(handle)
 #define FILE_READ(handle, buf, size, sz)        sz = read(handle, buf, size)
 #define FILE_WRITE(handle, buf, size, sz)       sz = write(handle, buf, size) 
