@@ -9,6 +9,9 @@
 //** This file is way too long.
 //**
 //** $Log$
+//** Revision 1.5.4.2  2004/01/01 16:29:03  skyjake
+//** Renamed a global variable
+//**
 //** Revision 1.5.4.1  2003/11/22 17:56:17  skyjake
 //** Moved portable code into other files,
 //** only the DirectPlay stuff remains
@@ -121,7 +124,7 @@ int			nptSerialParity = 0;
 int			nptSerialFlowCtrl = 4;
 
 // Operating mode of the currently active service provider.
-serviceprovider_t gCurrentProvider = NSP_NONE;
+serviceprovider_t netCurrentProvider = NSP_NONE;
 boolean		netServerMode = false;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -707,7 +710,7 @@ boolean N_InitDPObject(boolean inServerMode)
 boolean N_InitService(serviceprovider_t provider, boolean inServerMode)
 {
 	if(!N_CheckDirectPlay()) return false;
-	if(gCurrentProvider == provider && netServerMode == inServerMode)
+	if(netCurrentProvider == provider && netServerMode == inServerMode)
 	{
 		// Nothing to change.
 		return true;
@@ -743,7 +746,7 @@ boolean N_InitService(serviceprovider_t provider, boolean inServerMode)
 
 	// A smashing success.
 	nptActive        = provider - 1; // -1 to match old values: 0=TCP/IP...
-	gCurrentProvider = provider;
+	netCurrentProvider = provider;
 	netServerMode      = inServerMode;
 
 	Con_Message("N_InitService: %s in %s mode.\n", N_GetProtocolName(),
@@ -780,7 +783,7 @@ void N_ShutdownService(void)
 	RELEASE( gHostAddress );
 
 	// Reset the current provider's info.
-	gCurrentProvider = NSP_NONE;
+	netCurrentProvider = NSP_NONE;
 	netServerMode      = false;
 }
 
@@ -790,7 +793,7 @@ void N_ShutdownService(void)
  */
 boolean	N_IsAvailable(void)
 {
-	return gCurrentProvider != NSP_NONE;
+	return netCurrentProvider != NSP_NONE;
 }
 
 /*
@@ -798,7 +801,7 @@ boolean	N_IsAvailable(void)
  */
 boolean N_UsingInternet(void)
 {
-	return gCurrentProvider == NSP_TCPIP;
+	return netCurrentProvider == NSP_TCPIP;
 }
 
 /*
@@ -918,7 +921,7 @@ uint N_GetSendQueueSize(int player)
 
 const char* N_GetProtocolName(void)
 {
-	return protocolNames[ gCurrentProvider ];
+	return protocolNames[ netCurrentProvider ];
 }
 
 /*
@@ -960,7 +963,7 @@ boolean N_ServerOpen(void)
 
 	// Let's make sure the correct service provider is initialized
 	// in server mode.
-	N_InitService(gCurrentProvider, true);
+	N_InitService(netCurrentProvider, true);
 
 	Demo_StopPlayback();
 
@@ -1051,13 +1054,13 @@ void N_SetTargetHostAddress(void)
 	// Release a previously created host address.
 	RELEASE( gHostAddress );
 
-	if((gHostAddress = N_NewAddress(gCurrentProvider)) == NULL)
+	if((gHostAddress = N_NewAddress(netCurrentProvider)) == NULL)
 	{
 		Con_Message("N_SetTargetHostAddress: Failed! [%x]\n", hr);
 		return;
 	}
 	
-	switch(gCurrentProvider)
+	switch(netCurrentProvider)
 	{
 	case NSP_TCPIP:
 		if(nptIPAddress[0])
