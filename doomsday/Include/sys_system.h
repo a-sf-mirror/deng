@@ -13,7 +13,6 @@ void	Sys_Shutdown(void);
 void	Sys_Quit(void);
 int		Sys_CriticalMessage(char *msg);
 void	Sys_Sleep(int millisecs);
-byte *	Sys_ZoneBase(size_t *size);
 void	Sys_ShowCursor(boolean show);
 void	Sys_HideMouse(void);
 void	Sys_MessageBox(const char *msg, boolean iserror);
