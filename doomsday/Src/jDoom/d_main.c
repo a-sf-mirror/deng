@@ -25,6 +25,7 @@
 #include "d_console.h"
 #include "D_Action.h"
 #include "d_config.h"
+#include "r_sky.h"
 
 #include "v_video.h"
 
@@ -41,7 +42,6 @@
 #include "am_map.h"
 #include "p_setup.h"
 #include "p_saveg.h"
-#include "r_main.h"
 #include "d_main.h"
 #include "d_items.h"
 #include "m_bams.h"

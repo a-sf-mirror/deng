@@ -24,6 +24,12 @@
 extern char MobjLightOffsets[NUMMOBJTYPES];
 extern int actual_leveltime;
 
+// Private Data -------------------------------------------------------------
+
+static boolean	setsizeneeded;
+static int		setblocks;
+static int		setdetail;
+
 // Code ---------------------------------------------------------------------
 
 //
@@ -169,14 +175,26 @@ void R_DrawLevelTitle(void)
 }
 
 //
+// R_SetViewSize
+// Do not really change anything here,
+//  because it might be in the middle of a refresh.
+// The change will take effect next refresh.
+//
+void R_SetViewSize(int blocks, int detail)
+{
+    setsizeneeded = true;
+    setblocks = blocks;
+    setdetail = detail;
+}
+
+
+//
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t		wipegamestate = GS_DEMOSCREEN;
-extern boolean	setsizeneeded;
-extern int		setblocks;
 extern boolean	inhelpscreens;
 extern float	lookOffset;
 

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.3.2.3  2004/01/07 13:17:28  skyjake
+// Refresh header cleanup
+//
 // Revision 1.9.2.3.2.2  2003/11/22 18:09:10  skyjake
 // Cleanup
 //
@@ -89,7 +92,6 @@ rcsid[] = "$Id$";
 
 #include "v_video.h"
 
-#include "r_main.h"
 #include "p_saveg.h"
 
 #include "hu_stuff.h"

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.4.3  2004/01/07 13:17:28  skyjake
+// Refresh header cleanup
+//
 // Revision 1.4.4.2  2003/11/22 18:09:10  skyjake
 // Cleanup
 //
@@ -53,7 +56,6 @@ rcsid[] = "$Id$";
 
 #include <stdlib.h>
 
-#include "r_main.h"
 #include "m_random.h"
 
 #include "doomdef.h"
@@ -132,12 +134,12 @@ P_RecursiveSound
     sector_t*	other;
 	
     // wake up all monsters in this sector
-    if (sec->Validcount == validcount && sec->soundtraversed <= soundblocks+1)
+    if (sec->Validcount == validCount && sec->soundtraversed <= soundblocks+1)
     {
 		return;		// already flooded
     }
     
-    sec->Validcount = validcount;
+    sec->Validcount = validCount;
     sec->soundtraversed = soundblocks+1;
     sec->soundtarget = soundtarget;
 	
@@ -180,7 +182,7 @@ P_NoiseAlert
   mobj_t*	emmiter )
 {
     soundtarget = target;
-    validcount++;
+    validCount++;
     P_RecursiveSound (emmiter->subsector->sector, 0);
 }
 
@@ -663,7 +665,7 @@ static fixed_t P_AvoidDropoff(mobj_t *actor)
 
 	// check lines
 
-	validcount++;
+	validCount++;
 	/*for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
 			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff, 0);  // all contacted lines*/

@@ -8,7 +8,6 @@
 #include "d_config.h"
 #include "d_netJD.h"
 #include "g_game.h"
-#include "r_main.h"
 #include "s_sound.h"
 #include "hu_stuff.h"
 #include "m_menu.h"
