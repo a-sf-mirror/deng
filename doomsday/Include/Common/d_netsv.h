@@ -2,15 +2,15 @@
 #define __NETSV_H__
 
 #ifdef __JDOOM__
-#include "../JDoom/p_local.h"
+#include "../jDoom/p_local.h"
 #endif
 
 #ifdef __JHERETIC__
-#include "../JHeretic/P_local.h"
+#include "../jHeretic/P_local.h"
 #endif
 
 #ifdef __JHEXEN__
-#include "../JHexen/P_local.h"
+#include "../jHexen/P_local.h"
 #endif
 
 extern boolean	cyclingMaps, mapCycleNoExit;

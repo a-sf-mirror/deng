@@ -17,7 +17,7 @@
 #include <math.h>
 #include "doomdef.h" 
 #include "doomstat.h"
-#include "d_action.h"
+#include "D_Action.h"
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_misc.h"
@@ -28,7 +28,7 @@
 #include "p_saveg.h"
 #include "p_tick.h"
 #include "d_main.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "wi_stuff.h"
 #include "hu_stuff.h"
 #include "st_stuff.h"

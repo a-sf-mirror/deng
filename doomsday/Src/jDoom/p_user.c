@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.1.2.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3.2.1  2003/09/14 20:24:12  skyjake
 // Clientside jumping rules come from the server
 //
@@ -50,7 +53,7 @@ rcsid[] = "$Id$";
 #include "p_local.h"
 #include "p_view.h"
 #include "doomstat.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "g_common.h"
 
 int maxhealth;		// 100
@@ -574,5 +577,6 @@ void P_SetMessage(player_t *pl, char *msg)
 	// Servers are responsible for sending these messages to the clients.
 	NetSv_SendMessage(pl - players, msg);
 }
+
 
 

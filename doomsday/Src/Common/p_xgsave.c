@@ -85,7 +85,10 @@ void SV_ReadXGLine(line_t *li)
 	xg->disabled = SV_ReadByte();
 	xg->timer = SV_ReadLong();
 	xg->ticker_timer = SV_ReadLong();
-	xg->activator = (void*) SV_ReadShort(); // Will be updated later.
+
+	// Will be updated later.
+	xg->activator = (void*)(unsigned int) SV_ReadShort(); 
+
 	xg->idata = SV_ReadLong();
 	xg->fdata = SV_ReadFloat();
 	xg->chidx = SV_ReadLong();

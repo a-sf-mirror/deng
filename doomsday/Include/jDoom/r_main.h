@@ -95,6 +95,9 @@ void R_DrawPlayerSprites(ddplayer_t *viewplr);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/02/27 23:14:31  skyjake
 // Obsolete jDoom files removed
 //
@@ -103,3 +106,4 @@ void R_DrawPlayerSprites(ddplayer_t *viewplr);
 //
 //
 //-----------------------------------------------------------------------------
+

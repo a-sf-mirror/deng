@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.4  2003/08/24 00:15:03  skyjake
 // Netgame-aware cheats
 //
@@ -253,5 +256,6 @@ void cht_PosFunc(player_t *plyr)
 		players[consoleplayer].plr->mo->y);
 	P_SetMessage(plyr, buf);
 }
+
 
 

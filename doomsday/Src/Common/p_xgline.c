@@ -875,7 +875,7 @@ boolean XL_CheckKeys(mobj_t *mo, int flags2)
 	int num = 6;
 	char *keystr[] = { "BLUE KEYCARD", "YELLOW KEYCARD", "RED KEYCARD",
 		"BLUE SKULL KEY", "YELLOW SKULL KEY", "RED SKULL KEY" };
-	int *keys = act->cards;
+	int *keys = (int*) act->cards;
 	int badsound = sfx_oof;
 #elif defined __JHERETIC__
 	int num = 3;
@@ -1357,3 +1357,4 @@ void XL_Update(void)
 			lines[i].special = 0;
 		}
 }
+

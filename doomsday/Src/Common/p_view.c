@@ -201,3 +201,4 @@ void P_CalcHeight(player_t* player)
 		}
 	}
 }
+

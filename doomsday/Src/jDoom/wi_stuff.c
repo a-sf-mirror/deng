@@ -18,7 +18,7 @@
 #include "r_local.h"
 #include "s_sound.h"
 #include "doomstat.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "wi_stuff.h"
 #include "d_config.h"
 #include "m_menu.h"
@@ -2038,3 +2038,4 @@ void WI_SetState(stateenum_t st)
 	if(st == ShowNextLoc) WI_initShowNextLoc();
 	if(st == NoState) WI_initNoState();
 }
+

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.4  2003/07/01 12:42:26  skyjake
 // Allow massacre only when GS_LEVEL
 //
@@ -2227,5 +2230,6 @@ void C_DECL A_PlayerScream (mobj_t* mo)
     
     S_StartSound(sound, mo);
 }
+
 
 

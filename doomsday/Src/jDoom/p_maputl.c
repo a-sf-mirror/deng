@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.4.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3  2003/04/16 09:50:06  skyjake
 // Cvar for sliding corpses
 //
@@ -185,7 +188,7 @@ void P_ApplyTorque(mobj_t *mo)
 	if(!cfg.slidingCorpses) return;
 
 	tmthing = mo;
-	validcount++; // prevents checking same line twice
+	validCount++; // prevents checking same line twice
 	
 	P_ThingLinesIterator(mo, PIT_ApplyTorque, 0);
 		
@@ -208,6 +211,7 @@ void P_ApplyTorque(mobj_t *mo)
 		if (mo->gear < MAXGEAR)						// Else if not at max gear,
 			mo->gear++;								// move up a gear
 }
+
 
 
 

@@ -41,6 +41,9 @@ void P_GiveBackpack(player_t *player);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.2.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/08/24 00:25:40  skyjake
 // Separate function for giving backpack
 //
@@ -52,3 +55,4 @@ void P_GiveBackpack(player_t *player);
 //
 //
 //-----------------------------------------------------------------------------
+

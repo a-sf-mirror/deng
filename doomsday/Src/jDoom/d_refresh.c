@@ -9,7 +9,7 @@
 #include "r_local.h"
 #include "d_config.h"
 #include "x_hair.h"
-#include "mn_def.h"
+#include "Mn_def.h"
 #include "m_menu.h"
 #include "g_common.h"
 #include "d_net.h"
@@ -370,5 +370,6 @@ void R_SetAllDoomsdayFlags()
 		for(iter = sec->thinglist; iter; iter = iter->snext)
 			P_SetDoomsdayFlags(iter);
 }
+
 
 

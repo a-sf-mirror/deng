@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.4.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.9  2003/06/30 00:04:16  skyjake
 // Use fixmom
 //
@@ -1295,4 +1298,5 @@ P_SpawnPlayerMissile
 	
     P_CheckMissileSpawn (th);
 }
+
 

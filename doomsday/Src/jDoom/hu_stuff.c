@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:21:39  skyjake
 // Initial checkin
 //
@@ -38,7 +41,7 @@ rcsid[] = "$Id$";
 #include "hu_stuff.h"
 #include "hu_msg.h"
 #include "hu_lib.h"
-#include "mn_def.h"
+#include "Mn_def.h"
 #include "m_misc.h"
 
 #include "s_sound.h"
@@ -874,3 +877,4 @@ boolean HU_Responder(event_t *ev)
     return eatkey;
 	
 }
+

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.2.2.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3.2.2  2003/09/19 19:29:52  skyjake
 // Fixed hang when lineattack dz==zero
 //
@@ -171,7 +174,7 @@ boolean P_TeleportMove(mobj_t* thing, fixed_t x, fixed_t y)
     tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
     tmceilingz = newsubsec->sector->ceilingheight;
 			
-    validcount++;
+    validCount++;
     numspechit = 0;
     
     // stomp on any things contacted
@@ -490,7 +493,7 @@ P_CheckPosition2
     tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
     tmceilingz = newsubsec->sector->ceilingheight;
 	
-    validcount++;
+    validCount++;
     numspechit = 0;
 	
     if ( tmflags & MF_NOCLIP )
@@ -1622,9 +1625,10 @@ boolean	P_ChangeSector(sector_t *sector, boolean crunch)
 		for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
 			P_BlockThingsIterator (x, y, PIT_ChangeSector, 0);*/
 
-	validcount++;
+	validCount++;
 	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
 		
 	return nofit;
 }
+
 

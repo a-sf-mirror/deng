@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:21:54  skyjake
 // Initial checkin
 //
@@ -590,3 +593,4 @@ EV_BuildStairs
     return rtn;
 }
   
+

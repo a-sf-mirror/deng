@@ -1,14 +1,14 @@
 #if __JDOOM__
-#include "../JDoom/doomdef.h"
-#include "../JDoom/doomstat.h"
-#include "../JDoom/d_main.h"
-#include "../JDoom/d_config.h"
-#include "../JDoom/p_local.h"
-#include "../JDoom/s_sound.h"
-#include "../JDoom/g_game.h"
-#include "../JDoom/m_menu.h"
-#include "../JDoom/hu_stuff.h"
-#include "../JDoom/st_stuff.h"
+#include "../jDoom/doomdef.h"
+#include "../jDoom/doomstat.h"
+#include "../jDoom/d_main.h"
+#include "../jDoom/d_config.h"
+#include "../jDoom/p_local.h"
+#include "../jDoom/s_sound.h"
+#include "../jDoom/g_game.h"
+#include "../jDoom/m_menu.h"
+#include "../jDoom/hu_stuff.h"
+#include "../jDoom/st_stuff.h"
 #endif
 
 #if __JHERETIC__
@@ -26,7 +26,7 @@
 #endif
 
 #include "g_common.h"
-#include "d_Net.h"
+#include "d_net.h"
 
 // TYPES --------------------------------------------------------------------
 
@@ -663,3 +663,4 @@ void D_NetConsoleRegistration(void)
 	for(i = 0; netCCmds[i].name; i++) Con_AddCommand(netCCmds + i);
 	for(i = 0; netCVars[i].name; i++) Con_AddVariable(netCVars + i);
 }
+

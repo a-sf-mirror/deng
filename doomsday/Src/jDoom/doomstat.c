@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:21:37  skyjake
 // Initial checkin
 //
@@ -48,6 +51,7 @@ Language_t		language = english;
 boolean			modifiedgame;
 
 boolean			monsterinfight;
+
 
 
 

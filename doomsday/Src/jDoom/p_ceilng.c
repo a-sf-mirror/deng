@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:21:53  skyjake
 // Initial checkin
 //
@@ -341,3 +344,4 @@ int	EV_CeilingCrushStop(line_t	*line)
 
     return rtn;
 }
+

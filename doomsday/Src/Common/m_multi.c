@@ -32,7 +32,7 @@
 #endif
 
 #include "p_local.h"
-#include "mn_def.h"
+#include "Mn_def.h"
 
 #include <ctype.h>
 #include <stdlib.h>

@@ -85,3 +85,4 @@ void R_PrecachePSprites(void)
 #endif		
 	}
 }
+

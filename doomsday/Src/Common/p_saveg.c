@@ -10,7 +10,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <lzss.h>
+#include <LZSS.h>
 #include "doomdef.h"
 #include "dstrings.h"
 #include "f_infine.h"
@@ -53,6 +53,11 @@
 #define MAX_ARCHIVED_THINGS		1024
 
 // TYPES -------------------------------------------------------------------
+
+typedef enum lineclass_e {
+	lc_normal,
+	lc_xg1
+} lineclass_t;
 
 typedef struct
 {
@@ -456,7 +461,7 @@ void SV_ReadMobj(mobj_t *mo)
 		// Version 2 has mobj archive numbers.
 		SV_SetArchiveThing(mo, SV_ReadShort());
 		// The reference will be updated after all mobjs are loaded.
-		mo->target = (mobj_t*) SV_ReadShort();
+		mo->target = (mobj_t*)(int) SV_ReadShort();
 	}
 
     // Info for drawing: position.
@@ -639,15 +644,9 @@ void SV_ReadSector(sector_t *sec)
 	if(type == sc_xg1) SV_ReadXGSector(sec);
 }
 
-enum 
-{
-	lc_normal,
-	lc_xg1
-} lineclass_e;
-
 void SV_WriteLine(line_t *li)
 {
-	enum lineclass_e type = li->xg? lc_xg1 : lc_normal;
+	lineclass_t type = li->xg? lc_xg1 : lc_normal;
 	int i;
 	side_t *si;
 

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/07/12 22:10:05  skyjake
 // Removed obsolete stuff
 //
@@ -61,3 +64,4 @@ void D_DoomMain (void);
 void D_PostEvent (event_t* ev);
 
 #endif
+

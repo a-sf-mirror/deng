@@ -216,3 +216,4 @@ void G_UpdateState(int step)
 		break;
 	}
 }
+

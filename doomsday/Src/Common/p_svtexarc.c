@@ -221,3 +221,4 @@ void SV_ReadTextureArchive(void)
 	SV_ReadTexArchive(&flat_archive);
 	SV_ReadTexArchive(&tex_archive);
 }
+

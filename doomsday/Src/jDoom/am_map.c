@@ -27,7 +27,7 @@
 #include "dstrings.h"
 
 #include "am_map.h"
-#include "mn_def.h"
+#include "Mn_def.h"
 #include "m_menu.h"
 #include "hu_stuff.h"
 #include "wi_stuff.h"
@@ -1720,4 +1720,5 @@ void AM_Drawer (void)
 	if(cfg.counterCheat) AM_drawCounters();
 	if(deathmatch) AM_drawFragsTable();
 }
+
 

@@ -38,7 +38,7 @@ typedef unsigned char byte;
 
 
 // Predefined with some OS.
-#ifdef LINUX
+#ifdef UNIX
 #include <values.h>
 #else
 #define MAXCHAR		((char)0x7f)
@@ -62,6 +62,9 @@ typedef unsigned char byte;
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:18:26  skyjake
 // Initial checkin
 //
@@ -70,3 +73,4 @@ typedef unsigned char byte;
 //
 //
 //-----------------------------------------------------------------------------
+

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.4.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/02/27 23:14:33  skyjake
 // Obsolete jDoom files removed
 //
@@ -65,4 +68,5 @@ void R_InitSkyMap (void)
   // skyflatnum = R_FlatNumForName ( SKYFLATNAME );
     skytexturemid = 100*FRACUNIT;
 }
+
 

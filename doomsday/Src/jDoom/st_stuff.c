@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.5.2.1.2.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.5.2.1  2003/09/07 22:21:04  skyjake
 // STARMS background is not used in deathmatch, cleanup
 //

@@ -287,8 +287,9 @@ void D_IdentifyVersion(void);
 void D_SetPlayerPtrs(void);
 char* G_Get(int id);
 
-enum {BOXTOP,BOXBOTTOM,BOXLEFT,BOXRIGHT};	// bbox coordinates
+enum { BOXTOP, BOXBOTTOM, BOXLEFT, BOXRIGHT };	// bbox coordinates
 
-#define validcount		(*gi.validcount)
+#define validCount		(*gi.validcount)
 
 #endif          // __DOOMDEF__
+

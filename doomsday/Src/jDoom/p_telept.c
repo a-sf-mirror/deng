@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.2.1.2.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2.2.1  2003/10/05 10:09:40  skyjake
 // Cleanup
 //
@@ -144,4 +147,5 @@ EV_Teleport
     }
     return 0;
 }
+
 

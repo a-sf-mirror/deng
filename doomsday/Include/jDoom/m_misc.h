@@ -43,6 +43,9 @@ void strcatQuoted(char *dest, char *src);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.1.2.1.2.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1.2.1  2003/09/21 15:34:54  skyjake
 // Fixed screenshot file name selection
 // Moved G_DoScreenShot() to Src/Common
@@ -55,3 +58,4 @@ void strcatQuoted(char *dest, char *src);
 //
 //
 //-----------------------------------------------------------------------------
+

@@ -70,6 +70,9 @@ void M_WriteText3(int x, int y, const char *string, dpatch_t *font,
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.3.4.1  2003/11/19 17:08:47  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.3  2003/08/24 00:26:00  skyjake
 // Modified text writing routines
 //
@@ -84,3 +87,4 @@ void M_WriteText3(int x, int y, const char *string, dpatch_t *font,
 //
 //
 //-----------------------------------------------------------------------------
+

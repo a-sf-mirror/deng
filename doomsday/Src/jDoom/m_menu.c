@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.3.2.1  2003/11/19 17:07:12  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.9.2.3  2003/10/06 16:24:44  skyjake
 // Don't scale Read This screens, hide skull
 //
@@ -64,13 +67,12 @@
 static const char
 rcsid[] = "$Id$";
 
-//#include <unistd.h>
-#include <sys/types.h>
+/*#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <fcntl.h>*/
 #include <stdlib.h>
 #include <ctype.h>
-#include <io.h>
+//#include <io.h>
 
 #include <math.h>
 
@@ -99,7 +101,7 @@ rcsid[] = "$Id$";
 #include "x_hair.h"
 
 #include "m_menu.h"
-#include "mn_def.h"
+#include "Mn_def.h"
 #include "wi_stuff.h"
 
 
@@ -336,7 +338,7 @@ enum
 MenuItem_t MainItems[] =
 {
 	{ ITT_EFUNC, "New Game", M_NewGame, 0 },// "M_NGAME" },
-	{ ITT_EFUNC, "Multiplayer", SCEnterMultiplayerMenu, 0 },
+	{ ITT_EFUNC, "Multiplayer", (void (*)(int)) SCEnterMultiplayerMenu, 0 },
 	{ ITT_EFUNC, "Options", M_Options, 0 },// "M_OPTION" },
 	{ ITT_EFUNC, "Load Game", M_LoadGame, 0 },// "M_LOADG" },
 	{ ITT_EFUNC, "Save Game", M_SaveGame, 0 },// "M_SAVEG" },

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.4.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:22:09  skyjake
 // Initial checkin
 //
@@ -2133,4 +2136,5 @@ angle_t tantoangle[2049] =
     535533216,535700704,535868128,536035456,536202720,536369888,536536992,536704000,
     536870912
 };
+
 

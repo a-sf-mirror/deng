@@ -1,14 +1,14 @@
 #ifdef __JDOOM__
-#include "../JDoom/doomdef.h"
-#include "../JDoom/doomstat.h"
-#include "../JDoom/dstrings.h"
-#include "../JDoom/p_local.h"
-#include "../JDoom/s_sound.h"
-#include "../JDoom/d_config.h"
-#include "../JDoom/g_game.h"
-#include "../JDoom/st_stuff.h"
-#include "../JDoom/wi_stuff.h"
-#include "../JDoom/am_map.h"
+#include "../jDoom/doomdef.h"
+#include "../jDoom/doomstat.h"
+#include "../jDoom/dstrings.h"
+#include "../jDoom/p_local.h"
+#include "../jDoom/s_sound.h"
+#include "../jDoom/d_config.h"
+#include "../jDoom/g_game.h"
+#include "../jDoom/st_stuff.h"
+#include "../jDoom/wi_stuff.h"
+#include "../jDoom/am_map.h"
 #endif
 
 #ifdef __JHERETIC__
@@ -731,3 +731,4 @@ void NetCl_UpdateJumpPower(void *data)
 	Con_Printf("NetCl_UpdateJumpPower: %g\n", netJumpPower);
 #endif
 }
+

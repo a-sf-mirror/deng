@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.4.1  2003/11/19 17:07:13  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.2  2003/02/27 23:14:32  skyjake
 // Obsolete jDoom files removed
 //
@@ -313,3 +316,4 @@ void P_RemoveActivePlat(plat_t* plat)
 	}
     Con_Error ("P_RemoveActivePlat: can't find plat!");
 }
+

@@ -14,7 +14,7 @@
 #if __JDOOM__
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_netjd.h"
+#include "d_netJD.h"
 #include "m_swap.h"
 #include "v_video.h"
 #include "s_sound.h"
@@ -2678,3 +2678,4 @@ void FIC_NoShowMenu(void)
 {
 	fi->showmenu = false;
 }
+
