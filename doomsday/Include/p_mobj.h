@@ -27,7 +27,7 @@
 #include "p_data.h"
 
 // This macro can be used to calculate a thing-specific 'random' number.
-#define THING_TO_ID(mo) ( (mo)->thinker.id * 26 + ((unsigned)(mo)>>8) )
+#define THING_TO_ID(mo) ( (mo)->thinker.id * 48 + ((unsigned)(mo)/1000) )
 
 // We'll use the base mobj template directly as our mobj.
 typedef struct mobj_s {
