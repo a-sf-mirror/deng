@@ -589,3 +589,15 @@ void Cl_ReadPlayerDelta2(boolean skip)
 		}
 	}
 }
+
+/*
+ * Returns true if the player is free to move according to floorz and
+ * ceilingz. This test is used by the client plane mover.
+ */
+boolean Cl_IsFreeToMove(int player)
+{
+	mobj_t *mo = players[player].mo;
+
+	if(!mo) return false;
+	return (mo->z >= mo->floorz && mo->z + mo->height <= mo->ceilingz);
+}
