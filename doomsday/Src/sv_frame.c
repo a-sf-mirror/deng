@@ -29,6 +29,10 @@ END_PROF_TIMERS()
 // possible connection).
 #define MINIMUM_FRAME_SIZE	75 // bytes
 
+// The frame size is calculated by multiplying the bandwidth rating
+// (max 100) with this factor (+min).
+#define FRAME_SIZE_FACTOR 	13
+
 #define FIXED8_8(x)			(((x)*256) >> 16)
 #define FIXED10_6(x)		(((x)*64) >> 16)
 #define CLAMPED_CHAR(x)		((x)>127? 127 : (x)<-128? -128 : (x))
@@ -664,7 +668,8 @@ void Sv_WriteDelta(const delta_t *delta)
  */
 int Sv_GetMaxFrameSize(int playerNumber)
 {
-	int size = MINIMUM_FRAME_SIZE + 10*clients[playerNumber].bandwidthRating;
+	int size = MINIMUM_FRAME_SIZE + FRAME_SIZE_FACTOR *
+		clients[playerNumber].bandwidthRating;
 
 	// What about the communications medium?
 	if(size > maxDatagramSize) size = maxDatagramSize;
