@@ -15,8 +15,8 @@
 
 import os, tempfile, sys, shutil, re
 
-baseDir = 'C:/Projects/deng/doomsday'
-outDir  = 'C:/Projects/deng/distrib/out'
+baseDir = 'C:/Projects/de1.7/doomsday'
+outDir  = 'C:/Projects/de1.7/distrib/out'
 
 # Create the temporary directory.
 archDir = tempfile.mktemp()
