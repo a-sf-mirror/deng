@@ -14,27 +14,11 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log$
-// Revision 1.1.2.1  2004/05/16 10:01:36  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.1.4.1  2003/11/19 17:07:12  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.1  2003/02/26 19:21:37  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:45  Jaakko
-// Added Doomsday sources
-//
 //
 // DESCRIPTION:
 //	Globally defined strings.
 // 
 //-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id$";
 
 
 #ifdef __GNUG__

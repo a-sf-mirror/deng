@@ -14,37 +14,11 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log$
-// Revision 1.4.2.1  2004/05/16 10:01:36  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.4.4.1  2003/11/19 17:07:12  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.4  2003/08/24 00:15:03  skyjake
-// Netgame-aware cheats
-//
-// Revision 1.3  2003/07/12 22:25:50  skyjake
-// Use map validation routine in warp cheat
-//
-// Revision 1.2  2003/03/14 15:39:21  skyjake
-// Don't assume map31,32 exist
-//
-// Revision 1.1  2003/02/26 19:21:45  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:45  Jaakko
-// Added Doomsday sources
-//
 //
 // DESCRIPTION:
 //	Cheat sequence checking.
 //
 //-----------------------------------------------------------------------------
-
-
-static const char
-rcsid[] = "$Id$";
 
 #include "m_cheat.h"
 #include "s_sound.h"

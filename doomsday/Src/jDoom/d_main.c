@@ -681,6 +681,7 @@ char *G_Get(int id)
 	return 0;
 }
 
+/*
 void G_DiscardTiccmd(ticcmd_t *discarded, ticcmd_t *current)
 {
 	// We're only interested in buttons.
@@ -694,6 +695,7 @@ void G_DiscardTiccmd(ticcmd_t *discarded, ticcmd_t *current)
 		current->buttons |= discarded->buttons & (BT_CHANGE | BT_WEAPONMASK);
 	}
 }
+*/
 
 //===========================================================================
 // GetGameAPI

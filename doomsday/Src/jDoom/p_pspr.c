@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.4.2.2  2004/05/23 14:06:51  skyjake
+// Resolved conflict
+//
 // Revision 1.4.2.1  2004/05/16 10:01:36  skyjake
 // Merged good stuff from branch-nix for the final 1.7.15
 //
@@ -357,7 +360,7 @@ A_WeaponReady
     
     // check for fire
     //  the missile launcher and bfg do not auto fire
-    if (player->cmd.buttons & BT_ATTACK)
+    if (player->cmd.actions & BT_ATTACK)
     {
 		if ( !player->attackdown
 			|| (player->readyweapon != wp_missile
@@ -390,11 +393,11 @@ void C_DECL A_ReFire( player_t*	player, pspdef_t*	psp)
 {
     // check for fire
     //  (if a weaponchange is pending, let it go through instead)
-    if ((player->cmd.buttons & BT_ATTACK) 
+    if ((player->cmd.actions & BT_ATTACK) 
 		&& player->pendingweapon == wp_nochange
 		&& player->health)
     {
-		//if(IS_CLIENT) gi.conprintf( "client refire: atk=%i\n", player->cmd.buttons & BT_ATTACK);
+		//if(IS_CLIENT) gi.conprintf( "client refire: atk=%i\n", player->cmd.actions & BT_ATTACK);
 		player->refire++;
 		P_FireWeapon (player);
     }

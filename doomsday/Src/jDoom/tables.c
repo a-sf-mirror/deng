@@ -15,17 +15,26 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.2.2  2004/05/23 14:11:09  skyjake
+// Resolved conflict
+//
 // Revision 1.1.2.1  2004/05/16 10:01:37  skyjake
 // Merged good stuff from branch-nix for the final 1.7.15
 //
 // Revision 1.1.4.1  2003/11/19 17:07:14  skyjake
 // Modified to compile with gcc and -DUNIX
 //
+// Revision 1.3  2004/01/25 21:49:47  skyjake
+// Fixed finecosine
+//
+// Revision 1.2  2004/01/08 12:25:16  skyjake
+// Merged from branch-nix
+//
+// Revision 1.1.4.1  2003/11/19 17:07:14  skyjake
+// Modified to compile with gcc and -DUNIX
+//
 // Revision 1.1  2003/02/26 19:22:09  skyjake
 // Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:48  Jaakko
-// Added Doomsday sources
 //
 //
 // DESCRIPTION:
@@ -51,11 +60,10 @@
 static const char
 rcsid[] = "$Id$";
 
-
-
 #include "tables.h"
 
-
+// finecosine and finesine use the same array of values.
+fixed_t *finecosine = &finesine[FINEANGLES/4];
 
 
 int

@@ -1,3 +1,6 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
@@ -11,62 +14,6 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log$
-// Revision 1.9.2.6  2004/05/22 07:32:18  skyjake
-// Added menu text shadow
-//
-// Revision 1.9.2.5  2004/05/16 10:01:36  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.9.2.4  2004/02/14 10:15:11  skyjake
-// Play a random sound when quitting the game
-//
-// Revision 1.9.2.3.2.3  2004/01/07 13:17:28  skyjake
-// Refresh header cleanup
-//
-// Revision 1.9.2.3.2.2  2003/11/22 18:09:10  skyjake
-// Cleanup
-//
-// Revision 1.9.2.3.2.1  2003/11/19 17:07:12  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.9.2.3  2003/10/06 16:24:44  skyjake
-// Don't scale Read This screens, hide skull
-//
-// Revision 1.9.2.2  2003/09/07 22:22:53  skyjake
-// Cleanup
-//
-// Revision 1.9.2.1  2003/09/05 21:45:58  skyjake
-// Increased spacing in main/episode menus
-//
-// Revision 1.9  2003/08/30 15:07:07  skyjake
-// Doom 2: "Quit Doom" in main menu show not be all-caps
-//
-// Revision 1.8  2003/08/24 00:18:49  skyjake
-// Correct menu item case
-//
-// Revision 1.7  2003/08/19 16:32:39  skyjake
-// Added menu glitter (using the dynlight texture)
-//
-// Revision 1.6  2003/08/17 23:32:36  skyjake
-// Implemented Patch Replacement
-// (GL_DrawPatch => WI_DrawPatch)
-//
-// Revision 1.5  2003/07/29 16:36:13  skyjake
-// Added crosshair alpha slider
-//
-// Revision 1.4  2003/07/12 22:26:15  skyjake
-// Common G_StartTitle()
-//
-// Revision 1.3  2003/05/25 23:25:51  skyjake
-// Added some spaces
-//
-// Revision 1.2  2003/02/27 23:14:32  skyjake
-// Obsolete jDoom files removed
-//
-// Revision 1.1  2003/02/26 19:21:48  skyjake
-// Initial checkin
-//
 //
 // DESCRIPTION:
 //	DOOM selection menu, options, episode etc.
@@ -78,12 +25,8 @@
 #pragma warning(disable:4018)
 #endif
 
-/*#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>*/
 #include <stdlib.h>
 #include <ctype.h>
-//#include <io.h>
 
 #include <math.h>
 
@@ -2764,9 +2707,15 @@ void M_Drawer (void)
     int				start;
 	float			scale;
 	int				w, h, off_x, off_y;
+<<<<<<< m_menu.c
 	boolean			allowScaling = (currentMenu != &ReadDef1
 						&& currentMenu != &ReadDef2);
 
+=======
+	boolean			allowScaling = (currentMenu != &ReadDef1 
+						&& currentMenu != &ReadDef2);
+	
+>>>>>>> 1.10
     inhelpscreens = false;
 
 	if(cfg.showFPS)

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.2  2004/05/23 14:09:03  skyjake
+// Resolved conflict
+//
 // Revision 1.9.2.1  2004/05/16 10:01:36  skyjake
 // Merged good stuff from branch-nix for the final 1.7.15
 //
@@ -304,8 +307,8 @@ void P_XYMovement (mobj_t* mo)
 		&& mo->momx < STANDSPEED
 		&& mo->momy > -STANDSPEED
 		&& mo->momy < STANDSPEED
-		&& !player->cmd.forwardmove
-		&& !player->cmd.sidemove)
+		&& !player->cmd.forwardMove
+		&& !player->cmd.sideMove)
 	{
 		// if in a walking frame, stop moving
 		if((unsigned)((player->plr->mo->state - states) - S_PLAY_RUN1) < 4)
@@ -316,8 +319,8 @@ void P_XYMovement (mobj_t* mo)
 		&& mo->momx < STOPSPEED
 		&& mo->momy > -STOPSPEED
 		&& mo->momy < STOPSPEED
-		&& (!player || (player->cmd.forwardmove == 0 
-			&& player->cmd.sidemove == 0)))
+		&& (!player || (player->cmd.forwardMove == 0 
+			&& player->cmd.sideMove == 0)))
     {
 		mo->momx = 0;
 		mo->momy = 0;
