@@ -1,3 +1,24 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
+
+/*
+ * net_main.h: Network Subsystem
+ */
+
 #ifndef __DOOMSDAY_NETWORK_H__
 #define __DOOMSDAY_NETWORK_H__
 
@@ -121,16 +142,16 @@ typedef struct
 	ident_t	id;
 
 	// Ticcmd buffer. The server uses this when clients send it ticcmds.
-	byte	*ticcmds;		
+	byte	*ticCmds;		
 
 	// Number of tics in the buffer.
-	int		numtics;	
+	int		numTics;	
 
 	// Index of the first tic in the buffer.
-	int		firsttic;
+	int		firstTic;
 
 	// Last command executed, reused if a new one isn't found.
-	ticcmd_t *lastcmd;	
+	ticcmd_t *lastCmd;	
 
 	int		lastTransmit;
 
@@ -140,9 +161,6 @@ typedef struct
 
 	// Gametic when the client entered the game.
 	int		enterTime;
-
-	// Client time. Updated as cmds are received from the client. 
-	/* int		time; */
 
 	// Client-reported time of the last processed ticcmd.
 	// Older or as old tics than this are discarded.
@@ -159,9 +177,6 @@ typedef struct
 	// A record of the past few acknowledgement times.
 	uint	ackTimes[NUM_ACK_TIMES];
 	int		ackIdx;
-
-/*	int		lag;
-	int		lagStress;*/
 
 	// Clients use this to determine how long ago they received the
 	// last update of this client.
@@ -198,13 +213,10 @@ typedef struct
 	// Demo recording file (being recorded if not NULL).
 	LZFILE	*demo;
 	boolean	recording;
-	boolean recordpaused;
+	boolean recordPaused;
 
 	// View console. Which player this client is viewing?
 	int		viewConsole;
-
-	/*int		errorPos;
-	vertex_t error[NUM_CERR];*/
 } 
 client_t;
 
@@ -262,12 +274,14 @@ void	Net_PingResponse(void);
 void	Net_ShowPingSummary(int player);
 void	Net_ShowChatMessage();
 int		Net_TimeDelta(byte now, byte then);
+void	Net_NewLocalCmd(ticcmd_t *cmd, int pNum);
 int		Net_GetTicCmd(void *cmd, int player);
 void	Net_Update(void);
-void	Net_Ticker(void);
+void	Net_Ticker(timespan_t time);
 void	Net_Drawer(void);
 void	Net_ResetTimer(void);
 
+boolean	Net_IsLocalPlayer(int pNum);
 void	Net_SetInitialAckTime(int clientNumber, uint period);
 void	Net_SetAckTime(int clientNumber, uint period);
 uint	Net_GetAckTime(int clientNumber);

@@ -1,6 +1,24 @@
-//===========================================================================
-// DD_TYPES.H
-//===========================================================================
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
+
+/*
+ * dd_types.h: Type Definitions
+ */
+
 #ifndef __DOOMSDAY_TYPES_H__
 #define __DOOMSDAY_TYPES_H__
 
@@ -19,11 +37,14 @@ typedef unsigned short		ushort;
 typedef unsigned int		size_t;
 #endif
 
+typedef int					fixed_t;
+typedef unsigned int		angle_t;
 typedef int					spritenum_t;
 typedef unsigned int		ident_t;
 typedef unsigned short		nodeindex_t;
 typedef unsigned short		thid_t;
 typedef unsigned char		byte;
+typedef double				timespan_t;
 typedef char				filename_t[256];
 
 typedef struct directory_s {
