@@ -70,8 +70,6 @@ float avertexnormals[NUMVERTEXNORMALS][3] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static int	mdefCount = 0;
-
 // CODE --------------------------------------------------------------------
 
 //===========================================================================
@@ -938,9 +936,9 @@ modeldef_t *R_GetModelDef(int state, float intermark, int select)
 			&& models[i].intermark == intermark
 			&& models[i].select == select) 
 		{
-			// This is an exact match; use it.
-			models[i].order = mdefCount++;
-			return models + i;
+			// Models are loaded in reverse order; this one already has 
+			// a model.
+			return NULL;
 		}
 	
 	// This is impossible, but checking won't hurt...
@@ -949,7 +947,6 @@ modeldef_t *R_GetModelDef(int state, float intermark, int select)
 	md = models + nummodels++;
 	memset(md, 0, sizeof(*md));
 	// Set initial data.
-	md->order = mdefCount++;
 	md->state = &states[state];
 	md->intermark = intermark;
 	md->select = select;
@@ -991,8 +988,10 @@ void R_SetupModel(ded_model_t *def)
 
 		if(!modef) 
 		{
+			/*
 			Con_Message("R_SetupModel: Invalid: %s +%i.\n", def->state, 
 				def->off);
+			*/
 			return; // Can't get a modef, quit!
 		}
 	}
@@ -1160,7 +1159,7 @@ void R_InitModels(void)
 
 	// Read in the model files and their data, 'n stuff.
 	// Use the latest definition available for each sprite ID.
-	for(i = 0; i < defs.count.models.num; i++) 
+	for(i = defs.count.models.num - 1; i >= 0; --i) 
 	{
 		Con_Progress(1, PBARF_DONTSHOW);
 		R_SetupModel(defs.models + i);
@@ -1179,7 +1178,7 @@ void R_InitModels(void)
 		{
 			// Same state and a bigger order are the requirements.
 			if(other->state == me->state 
-				&& other->order > me->order // Loaded after me.
+				&& other->def > me->def // Defined after me.
 				&& other->intermark > me->intermark
 				&& other->intermark < minmark)
 			{
@@ -1200,7 +1199,7 @@ void R_InitModels(void)
 		{
 			// Same state and a bigger order are the requirements.
 			if(other->state == me->state 
-				&& other->order > me->order // Loaded after me.
+				&& other->def > me->def // Defined after me.
 				&& other->select > me->select
 				&& other->select < minsel
 				&& other->intermark >= me->intermark)
