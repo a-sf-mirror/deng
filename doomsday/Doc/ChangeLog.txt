@@ -7,6 +7,8 @@
 Version 1.7.14 (work in progress)
 --------------
 ! Maintenance Release
++ Model -> Sub -> Skin file: file name of the skin (can be anything; use
+  this if it isn't possible to use the model's skin list)
 - fixed: loading order of 3D models (mixed up demon/spectre skins)
 - quietly allow the use of undefined sprite frames (object hidden)
 

@@ -123,6 +123,7 @@ typedef struct
 typedef struct
 {
 	ded_path_t		filename;
+	ded_path_t		skinfilename;	// Optional; override model's skin.
 	ded_string_t	frame;
 	int				framerange;
 	ded_flags_t		flags;			// ASCII string of the flags.

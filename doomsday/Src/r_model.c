@@ -557,6 +557,26 @@ void R_LoadModelDMD(DFILE *file, model_t *mo)
 }
 
 //===========================================================================
+// R_RegisterModelSkin
+//===========================================================================
+void R_RegisterModelSkin(model_t *mdl, int index)
+{
+	filename_t buf;
+
+	memset(buf, 0, sizeof(buf));
+	memcpy(buf, mdl->skins[index].name, 64);
+	
+	mdl->skins[index].id = R_RegisterSkin(buf, mdl->fileName, 
+		mdl->skins[index].name);
+
+	if(mdl->skins[index].id < 0)
+	{
+		// Not found!
+		VERBOSE( Con_Printf("  %s (#%i) not found.\n", buf, index) );
+	}
+}
+
+//===========================================================================
 // R_LoadModel
 //	Finds the existing model or loads in a new one.
 //===========================================================================
@@ -565,7 +585,7 @@ int R_LoadModel(char *origfn)
 	int		i, index;
 	model_t	*mdl;
 	DFILE	*file = NULL;
-	char	buf[256], filename[256];
+	char	filename[256];
 		
 	if(!origfn[0]) return 0;	// No model specified.
 
@@ -628,29 +648,19 @@ int R_LoadModel(char *origfn)
 
 	END_PROF( PROF_LM_LOADERS );
 
-	BEGIN_PROF( PROF_LM_SKINS );
-
-	// Determine the actual (full) paths.
-	for(i = 0; i < mdl->info.numSkins; i++)
-	{
-		memset(buf, 0, sizeof(buf));
-		memcpy(buf, mdl->skins[i].name, 64);
-		
-		mdl->skins[i].id = R_RegisterSkin(buf, filename, mdl->skins[i].name);
-		if(mdl->skins[i].id < 0)
-		{
-			// Not found!
-			VERBOSE( Con_Printf("  %s (%s, #%i) not found.\n", buf, 
-				origfn, i) );
-		}
-	}
-
-	END_PROF( PROF_LM_SKINS );
-
 	// We're done.
 	mdl->loaded = true;
-	strcpy(mdl->fileName, filename);
 	F_Close(file);
+	strcpy(mdl->fileName, filename);
+
+	// Determine the actual (full) paths.
+	BEGIN_PROF( PROF_LM_SKINS );
+	for(i = 0; i < mdl->info.numSkins; i++)
+	{
+		R_RegisterModelSkin(mdl, i);
+	}
+	END_PROF( PROF_LM_SKINS );
+
 	return index;
 }
 
@@ -897,6 +907,38 @@ float R_GetModelVisualRadius(modeldef_t *mf)
 }
 
 //===========================================================================
+// R_NewModelSkin
+//	Allocate room for a new skin file name. This allows using more than
+//	the maximum number of skins.
+//===========================================================================
+short R_NewModelSkin(model_t *mdl, const char *fileName)
+{
+	int added = mdl->info.numSkins, i;
+
+	mdl->skins = realloc(mdl->skins, sizeof(dmd_skin_t) 
+		* ++mdl->info.numSkins);
+	memset(mdl->skins + added, 0, sizeof(dmd_skin_t));
+	strncpy(mdl->skins[added].name, fileName, 64);
+	R_RegisterModelSkin(mdl, added);
+
+	// Did we get a dupe?
+	for(i = 0; i < mdl->info.numSkins - 1; i++)
+	{
+		if(mdl->skins[i].id == mdl->skins[added].id)
+		{
+			// This is the same skin file.
+			// We did a lot of unnecessary work...
+			mdl->info.numSkins--;
+			mdl->skins = realloc(mdl->skins, sizeof(dmd_skin_t) 
+				* mdl->info.numSkins);
+			return i;
+		}
+	}
+
+	return added;
+}
+
+//===========================================================================
 // R_GetIDModelDef
 //	Create a new modeldef or find an existing one. This is for ID'd models.
 //===========================================================================
@@ -1038,7 +1080,16 @@ void R_SetupModel(ded_model_t *def)
 		if(sub->framerange < 1) sub->framerange = 1;
 		// Submodel-specific flags cancel out model-scope flags!
 		sub->flags = model_scope_flags ^ subdef->flags;
-		sub->skin = subdef->skin;
+		if(subdef->skinfilename.path[0])
+		{
+			// A specific file name has been given for the skin.
+			sub->skin = R_NewModelSkin(modellist[sub->model], 
+				subdef->skinfilename.path);
+		}
+		else
+		{
+			sub->skin = subdef->skin;
+		}
 		sub->skinrange = subdef->skinrange;
 		// Skin range must always be greater than zero.
 		if(sub->skinrange < 1) sub->skinrange = 1;
