@@ -256,7 +256,9 @@ void DD_Main(void)
 		strcpy(ddBasePath, "..\\..\\");
 #endif
 #ifdef UNIX
-		strcpy(ddBasePath, "../../");
+		// The base path depends on the configuration.  Usually this
+		// is something like "/usr/share/deng/".
+		strcpy(ddBasePath, DENG_BASE_DIR);
 #endif
 	}
 	
