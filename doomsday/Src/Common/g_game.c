@@ -371,17 +371,17 @@ static int findWeapon(player_t *plr, boolean forward)
 {
 	int	i, c;
 
-	for(i=plr->readyweapon + (forward? 1 : -1), c=0; 
+	for(i = plr->readyweapon + (forward? 1 : -1), c = 0; 
 #if __JHERETIC__
-		c<NUMWEAPONS-1; c++, forward? i++ : i--) 
+		c < NUMWEAPONS - 1; c++, forward? i++ : i--) 
 	{
-		if(i >= NUMWEAPONS-1) i = 0;
-		if(i < 0) i = NUMWEAPONS-2;
-#else
-		c<NUMWEAPONS; c++, forward? i++ : i--)
+		if(i >= NUMWEAPONS - 1) i = 0;
+		if(i < 0) i = NUMWEAPONS - 2;
+#elif __JHEXEN__
+		c < NUMWEAPONS; c++, forward? i++ : i--)
 	{
-		if(i > NUMWEAPONS-1) i = 0;
-		if(i < 0) i = NUMWEAPONS-1;
+		if(i > NUMWEAPONS - 1) i = 0;
+		if(i < 0) i = NUMWEAPONS - 1;
 #endif
 		if(plr->weaponowned[i]) return i;
 	}
@@ -983,10 +983,19 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	else for(i = 0; i < NUMWEAPONS; i++)
 #endif
 	{
-		if(actions[A_WEAPON1+i].on)
+		if(actions[A_WEAPON1 + i].on)
 		{
+#ifdef __JHERETIC__
+			// Staff and Gautlets are on the same key.
+			if(i == wp_staff 
+				&& players[consoleplayer].readyweapon != wp_gauntlets
+				&& players[consoleplayer].weaponowned[wp_gauntlets])
+			{
+				i = wp_gauntlets;
+			}
+#endif
 			cmd->buttons |= BT_CHANGE;
-			cmd->buttons |= i<<BT_WEAPONSHIFT;
+			cmd->buttons |= i << BT_WEAPONSHIFT;
 			break;
 		}
 	}

@@ -866,12 +866,12 @@ void P_PlayerThink(player_t *player)
 		// The actual changing of the weapon is done when the weapon
 		// psprite can do it (A_WeaponReady), so it doesn't happen in
 		// the middle of an attack.
-		newweapon = (cmd->buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT;
-		if(newweapon == wp_staff && player->weaponowned[wp_gauntlets]
+		newweapon = (cmd->buttons & BT_WEAPONMASK) >> BT_WEAPONSHIFT;
+		/*if(newweapon == wp_staff && player->weaponowned[wp_gauntlets]
 			&& !(player->readyweapon == wp_gauntlets))
 		{
 			newweapon = wp_gauntlets;
-		}
+		}*/
 		if(player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
 		{
