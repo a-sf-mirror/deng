@@ -1,31 +1,36 @@
+Header { Version = 6; }
+
 Model {
   State = "KEYGIZMO3";
   Scale = 0.5;
-  Sub { File = "Decor/Pillar/Door/PillarDoor.md2"; };
+  Sub { File = "Decor/Pillar/Door/PillarDoor.md2"; }
 }
 
 Model {
   State = "KGZ_YELLOWFLOAT1";
-  Flags = "df_litshiny df_specular df_fullbright";
-  Scale XYZ { 0.5 0.42 0.5 };
+  Flags = litshiny | fullbright;
+  Scale XYZ { 0.5 0.42 0.5 }
   Offset = -50;
   Sub { 
     File = "Decor/Pillar/Door/PillarDoor-Orb.md2"; 
-    Shiny = 0.45;
-    Shiny skin = "Common/Shiny.pcx";
-  };
+    Shiny = 0.6;
+    Shiny skin = "Common/SoftShiny.pcx";
+    Shiny color { 1 .9 .5 }
+  }
 }
 
 *Model {
   State = "KGZ_GREENFLOAT1";
-  Sub { Skin = 1; };
+  Sub { 
+    Skin = 1; 
+    Shiny color { .5 1 .5 }
+  }
 }
 
 *Model {
   State = "KGZ_BLUEFLOAT1";
   Sub { 
     Skin = 2; 
-    Shiny = 0.4;
-    Shiny color { .4 .4 1 };
-  };
+    Shiny color { .5 .5 1 }
+  }
 }
