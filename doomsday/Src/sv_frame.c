@@ -686,7 +686,7 @@ void Sv_SendFrame(int playerNumber)
 	int maxFrameSize, lastStart;
 	byte oldResend;
 	delta_t *delta;
-	
+
 	// Does the send queue allow us to send this packet?
 	// Bandwidth rating is updated during the check.
 	if(!Sv_CheckBandwidth(playerNumber))
@@ -743,6 +743,12 @@ void Sv_SendFrame(int playerNumber)
 		// Did we go over the limit?
 		if(Msg_Offset() > maxFrameSize)
 		{
+			// Time to see if BWR needs to be adjusted.
+			if(clients[playerNumber].bwrAdjustTime <= 0)
+			{
+				clients[playerNumber].bwrAdjustTime = BWR_ADJUST_TICS;
+			}
+
 			// Cancel the last delta.
 			Msg_SetOffset(lastStart);
 
