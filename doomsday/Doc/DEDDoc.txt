@@ -1310,11 +1310,16 @@ scaled to the range {-0.333 0.333} we get the zero we wanted.
 
         Skin = 0;
             # The index number of the skin to use.
-
+            
         Skin range = 0;
             # Size of the skin cycling range. The first skin in the
             # range is the one specified by Skin, and the last one is
             # (Skin) + (Skin range) - 1.
+
+        Skin file = "";
+            # Optional: File name of the skin. This can be any image file
+            # on the model path. If a skin file is specified the skin 
+            # number is ignored.
 
         Offset XYZ { 0.0 0.0 0.0 };
             # Offset to submodel X, Y and Z coordinates, within the
