@@ -51,7 +51,8 @@ nodeindex_t *linelinks;			// indices to roots
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static byte skyColorRGB[4];
+static byte skyColorRGB[4], balancedRGB[4];
+static float skyColorBalance;
 
 // CODE --------------------------------------------------------------------
 
@@ -1323,6 +1324,28 @@ void R_SetupLevel(char *level_id, int flags)
 	{
 		mapgravity = mapinfo->gravity * FRACUNIT;
 		r_ambient = mapinfo->ambient * 255;
+
+		// Sky light color.
+		for(i = 0; i < 3; i++)
+		{
+			skyColorRGB[i] = (byte) (255 * mapinfo->sky_color[i]);
+		}
+
+		if(false &&
+		   (mapinfo->sky_color[0] > 0 ||
+			mapinfo->sky_color[1] > 0 ||
+			mapinfo->sky_color[2] > 0))
+		{
+			// Calculate a balancing factor, so the light in the
+			// non-skylit sectors won't appear too bright.
+			skyColorBalance = (0 + (mapinfo->sky_color[0]*2 +
+								mapinfo->sky_color[1]*3 +
+								mapinfo->sky_color[2]*2) / 7) / 1;
+		}
+		else
+		{
+			skyColorBalance = 1;
+		}
 	}
 	else
 	{
@@ -1330,9 +1353,6 @@ void R_SetupLevel(char *level_id, int flags)
 		mapgravity = FRACUNIT;
 		r_ambient = 0;
 	}
-	// Sky light color.
-	for(i = 0; i < 3; i++)
-		skyColorRGB[i] = (byte) (255 * mapinfo->sky_color[i]);
 
 	// Invalidate old cmds.
 	if(isServer)
@@ -1481,6 +1501,7 @@ const char *R_GetCurrentLevelID(void)
 const byte *R_GetSectorLightColor(sector_t *sector)
 {
 	sector_t *src;
+	int i;
 	
 	if(!rendSkyLight) return sector->rgb; // The sector's real color.
 	
@@ -1496,8 +1517,17 @@ const byte *R_GetSectorLightColor(sector_t *sector)
 			return R_GetSectorLightColor(src);
 		}
 		
-		// Return the sector's real color.
-		return sector->rgb; 
+		// Return the sector's real color (balanced against sky's).
+		if(skyColorBalance >= 1)
+		{
+			return sector->rgb;
+		}
+		else
+		{
+			for(i = 0; i < 3; i++)
+				balancedRGB[i] = (byte) (sector->rgb[i] * skyColorBalance);
+			return balancedRGB;
+		}
 	}
 	// Return the sky color.
 	return skyColorRGB;
