@@ -580,6 +580,13 @@ void D_PostInit(void)
 		: "Public DOOM\n");
 	Con_FPrintf(CBLF_RULER, "");
 
+	// Plutonia and TNT automatically turn on the full sky.
+	if(gamemode == commercial
+		&& (gamemission == pack_plut || gamemission == pack_tnt))
+	{
+		Con_SetInteger("rend-sky-full", 1);
+	}
+
 	if(gamemode == commercial) // Doom2 has a different background.
 		BorderLumps[0] = "GRNROCK";
 	R_SetBorderGfx(BorderLumps);
