@@ -85,6 +85,7 @@
 #define RV_STR_INT(lab, S, I)	if(ISLABEL(lab)) { if(!ReadString(S,sizeof(S))) \
 								I = strtol(token,0,0); } else
 #define RV_FLAGS(lab, X, P) if(ISLABEL(lab)) { READFLAGS(X, P); } else
+#define RV_ANYSTR(lab, X)	if(ISLABEL(lab)) { if(!ReadAnyString(&X)) { FAILURE } } else
 #define RV_END			{ SetError2("Unknown label.", label); retval = false; goto ded_end_read; }
 
 // TYPES -------------------------------------------------------------------
@@ -118,6 +119,16 @@ static dedsource_t sourceStack[MAX_RECUR_DEPTH];
 static dedsource_t *source;	// Points to the current source.
 
 // CODE --------------------------------------------------------------------
+
+char *sdup(const char *str)
+{
+	char *newstr;
+
+	if(!str) return NULL;
+	newstr = malloc(strlen(str) + 1);
+	strcpy(newstr, str);
+	return newstr;
+}
 
 //==========================================================================
 // SetError
@@ -316,6 +327,29 @@ int ReadStringEx(char *dest, int maxlen, boolean inside, boolean doubleq)
 int ReadString(char *dest, int maxlen)
 {
 	return ReadStringEx(dest, maxlen, false, false);
+}
+
+//===========================================================================
+// ReadAnyString
+//	Read a string of (pretty much) any length.
+//===========================================================================
+int ReadAnyString(char **dest)
+{
+	char buffer[0x20000];
+
+	if(!ReadString(buffer, sizeof(buffer)))
+		return false;
+
+	// Get rid of the old string.
+	if(*dest) free(*dest);
+
+	// Make sure it doesn't overflow.
+	buffer[sizeof(buffer) - 1] = 0;
+
+	// Make a copy.
+	*dest = malloc(strlen(buffer) + 1);
+	strcpy(*dest, buffer);
+	return true;
 }
 
 //===========================================================================
@@ -767,6 +801,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_INT("Misc1", st->misc[0])
 				RV_INT("Misc2", st->misc[1])
 				RV_INT("Misc3", st->misc[2])
+				RV_ANYSTR("Execute", st->execute)
 				RV_END
 				CHECKSC;
 			}
@@ -954,8 +989,15 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 			mi = ded->mapinfo + idx;
 			if(prev_mapinfo_idx >= 0 && bCopyNext) 
 			{
+				int m;
 				// Should we copy the previous definition?
 				memcpy(mi, ded->mapinfo + prev_mapinfo_idx, sizeof(*mi));
+				mi->execute = sdup(mi->execute);
+				for(m = 0; m < NUM_SKY_MODELS; m++)
+				{
+					mi->sky_models[m].execute 
+						= sdup(mi->sky_models[m].execute);
+				}
 			}
 			prev_mapinfo_idx = idx;
 			sub = 0;
@@ -979,6 +1021,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_FLT("Gravity", mi->gravity)
 				RV_FLT("Sky height", mi->sky_height)
 				RV_FLT("Horizon offset", mi->horizon_offset)
+				RV_ANYSTR("Execute", mi->execute)
 				if(ISLABEL("Sky Layer 1") || ISLABEL("Sky Layer 2"))
 				{
 					ded_skylayer_t *sl = mi->sky_layers + atoi(label+10) - 1;
@@ -1017,6 +1060,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						RV_VEC("Rotate", sm->rotate, 2)
 						RV_VEC("Offset factor", sm->coord_factor, 3)
 						RV_VEC("Color", sm->color, 4)
+						RV_ANYSTR("Execute", sm->execute)
 						RV_END
 						CHECKSC;
 					}

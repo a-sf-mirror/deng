@@ -66,16 +66,28 @@ void DED_Init(ded_t *ded)
 
 void DED_Destroy(ded_t *ded)
 {
-	int i;
+	int i, k;
 
 	free(ded->flags);
 	free(ded->mobjs);
+	for(i = 0; i < ded->count.states.num; i++)
+	{
+		free(ded->states[i].execute);
+	}
 	free(ded->states);
 	free(ded->sprites);
 	free(ded->lights);
 	free(ded->models);
 	free(ded->sounds);
 	free(ded->music);
+	for(i = 0; i < ded->count.mapinfo.num; i++)
+	{
+		for(k = 0; k < NUM_SKY_MODELS; k++)
+		{
+			free(ded->mapinfo[i].sky_models[k].execute);
+		}
+		free(ded->mapinfo[i].execute);
+	}
 	free(ded->mapinfo);
 	for(i = 0; i < ded->count.text.num; i++) 
 	{
@@ -162,6 +174,7 @@ int DED_AddState(ded_t *ded, char *id)
 
 void DED_RemoveState(ded_t *ded, int index)
 {
+	free(ded->states[index].execute);
 	DED_DelEntry(index, (void**) &ded->states, &ded->count.states,
 		sizeof(ded_state_t));
 }
@@ -246,6 +259,11 @@ int DED_AddMapInfo(ded_t *ded, char *str)
 
 void DED_RemoveMapInfo(ded_t *ded, int index)
 {
+	int i;
+
+	for(i = 0; i < NUM_SKY_MODELS; i++)
+		free(ded->mapinfo[index].sky_models[i].execute);
+	free(ded->mapinfo[index].execute);
 	DED_DelEntry(index, (void**) &ded->mapinfo, &ded->count.mapinfo,
 		sizeof(ded_mapinfo_t));
 }

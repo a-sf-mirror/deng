@@ -9,6 +9,7 @@
 
 #include "de_base.h"
 #include "de_refresh.h"
+#include "de_console.h"
 
 #include "cl_def.h"
 
@@ -108,6 +109,9 @@ void R_SkyTicker(void)
 		{
 			sky->timer = 0;
 			sky->frame++;
+
+			// Execute a console command?
+			if(sky->def->execute) Con_Execute(sky->def->execute, true);
 		}
 	}
 }

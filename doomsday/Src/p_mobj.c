@@ -114,6 +114,9 @@ void P_SetState(mobj_t *mobj, int statenum)
 			P_SpawnParticleGen(pg, mobj);
 		}
 	}
+
+	if(defs.states[statenum].execute)
+		Con_Execute(defs.states[statenum].execute, true);
 }
 
 //

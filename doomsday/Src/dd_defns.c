@@ -252,6 +252,12 @@ int Def_GetMusicNum(char *id)
 	return -1;
 }
 
+/*// A simple action function that will be executed.
+void A_ExecuteCommand(mobj_t *mobj)
+{
+
+}*/
+
 acfnptr_t Def_GetActionPtr(char *name)
 {
 	// Action links are provided by the Game, who owns the actual 
@@ -259,10 +265,20 @@ acfnptr_t Def_GetActionPtr(char *name)
 	actionlink_t *link = (void*) gx.Get(DD_ACTION_LINK);
 	
 	if(!link) 
-		Con_Error("GetActionPtr: Game DLL doesn't have an action function link table.\n");
+	{
+		Con_Error("GetActionPtr: Game DLL doesn't have an action "
+			"function link table.\n");
+	}
 	for(; link->name; link++)
 		if(!strcmp(name, link->name)) 
 			return link->func;
+
+	// The engine provides a couple of simple action functions.
+	/*if(!strcmp(name, "A_ExecuteCommand"))
+		return A_ExecuteCommand;
+	if(!strcmp(name, "A_ExecuteCommandPSpr"))
+		return A_ExecuteCommandPSpr;*/
+
 	return 0;
 }
 

@@ -1200,6 +1200,10 @@ void R_SetupLevel(char *level_id, int flags)
 	if(flags & DDSLF_FINALIZE)
 	{
 		// The level setup has been completed.
+		// Run any commands specified in Map Info.
+		if(mapinfo && mapinfo->execute)
+			Con_Execute(mapinfo->execute, true);
+
 		// Run the special level setup command, which the user may alias to 
 		// do something useful.
 		if(level_id && level_id[0])
