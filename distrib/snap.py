@@ -54,7 +54,8 @@ if not '-nodll' in sys.argv:
 
 # These defs will be included, if present.
 includeDefs = ['Anim.ded', 'Finales.ded', 'jDoom.ded', 'jHeretic.ded',
-               'jHexen.ded', 'TNTFinales.ded', 'PlutFinales.ded']
+               'jHexen.ded', 'TNTFinales.ded', 'PlutFinales.ded', 'Flags.ded',
+               'Maps.ded']
 
 excludeDefs = ['Objects.ded', 'Players.ded', 'HUDWeapons.ded', 'Weapons.ded',
                'Items.ded', 'Monsters.ded', 'Technology.ded', 'Nature.ded',
