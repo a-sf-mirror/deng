@@ -1,9 +1,23 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** P_TICK.C
-//**
-//**************************************************************************
+/*
+ * p_tick.c: Timed Playsim Events
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -11,6 +25,7 @@
 #include "de_network.h"
 #include "de_render.h"
 #include "de_play.h"
+#include "de_misc.h"
 
 #include "r_sky.h"
 
@@ -94,11 +109,13 @@ boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
 // P_Ticker
 //	Doomsday's own play-ticker.
 //===========================================================================
-void P_Ticker(void)
+void P_Ticker(timespan_t time)
 {
 	thinker_t *th;
+	static trigger_t fixed = { 1.0/35 };
 
 	if(!thinkercap.next) return; // Not initialized yet.
+	if(!M_CheckTrigger(&fixed, time)) return;
 
 	// New ptcgens for planes?
 	P_CheckPtcPlanes();	

@@ -1,9 +1,23 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** SV_MAIN.C
-//**
-//**************************************************************************
+/*
+ * sv_main.c: Network Server
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -542,20 +556,20 @@ void Sv_GetPackets(void)
 
 			// Add the tics into the client's ticcmd buffer, if there is room.
 			// If the buffer overflows, the rest of the cmds will be forgotten.
-			if(sender->numtics + num > BACKUPTICS) 
+			if(sender->numTics + num > BACKUPTICS) 
 			{
-				num = BACKUPTICS - sender->numtics;
+				num = BACKUPTICS - sender->numTics;
 			}
-			start = sender->firsttic + sender->numtics;
+			start = sender->firstTic + sender->numTics;
 			
 			// Increase the counter.
-			sender->numtics += num;
+			sender->numTics += num;
 
 			// Copy as many as fits (circular buffer).
 			for(i = start; num > 0; num--, i++)
 			{
 				if(i >= BACKUPTICS) i -= BACKUPTICS;
-				memcpy(sender->ticcmds+TICCMD_IDX(i), unpacked, TICCMD_SIZE);
+				memcpy(sender->ticCmds+TICCMD_IDX(i), unpacked, TICCMD_SIZE);
 				unpacked += TICCMD_SIZE;
 			}
 			break;
@@ -799,12 +813,10 @@ void Sv_StartNetGame()
 		clients[i].connected = false;
 		clients[i].ready = false;
 		clients[i].nodeID = 0;
-		clients[i].numtics = 0;
-		clients[i].firsttic = 0;
+		clients[i].numTics = 0;
+		clients[i].firstTic = 0;
 		clients[i].enterTime = 0;
 		clients[i].runTime = -1;
-		//clients[i].time = 0;
-		//clients[i].lagStress = 0;
 		clients[i].lastTransmit = -1;
 		clients[i].updateCount = UPDATECOUNT;
 		clients[i].fov = 90;
@@ -859,9 +871,12 @@ void Sv_Kick(int who)
 //===========================================================================
 // Sv_Ticker
 //===========================================================================
-void Sv_Ticker(void)
+void Sv_Ticker(timespan_t time)
 {
+	static trigger_t fixed = { 1.0/35 };
 	int i;
+
+	if(!M_CheckTrigger(&fixed, time)) return;
 
 	// Note last angles for all players.
 	for(i = 0; i < MAXPLAYERS; i++)

@@ -20,7 +20,7 @@ doomsday_LDADD = $(LIBLTDL)
 
 doomsday_SOURCES = cl_frame.c cl_main.c cl_mobj.c cl_player.c	      \
 cl_sound.c cl_world.c con_action.c con_bar.c con_bind.c con_config.c  \
-con_console.c con_start.c dd_defns.c dd_dgl.c dd_help.c dd_input.c    \
+con_main.c con_start.c dd_defns.c dd_dgl.c dd_help.c dd_input.c	      \
 dd_loop.c dd_main.c dd_plugin.c dd_wad.c dd_zip.c dd_zone.c dedfile.c \
 dedread.c gl_draw.c gl_font.c gl_main.c gl_pcx.c gl_png.c gl_tex.c    \
 gl_tga.c m_args.c m_bams.c m_filehash.c m_huffman.c m_misc.c	      \
