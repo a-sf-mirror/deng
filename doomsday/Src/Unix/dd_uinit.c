@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dlfcn.h>
+#include <ltdl.h>
 #include <SDL.h>
 
 #include "de_base.h"
@@ -49,8 +49,8 @@ HINSTANCE hInstGame;	// Instance handle to the game DLL.
 HINSTANCE hInstPlug[MAX_PLUGS];	// Instances to plugin DLLs.
 */
 
-void *hGame;
-void *hPlugin[MAX_PLUGS];
+lt_dlhandle hGame;
+lt_dlhandle hPlugin[MAX_PLUGS];
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -130,18 +130,18 @@ boolean InitGame(void)
 	}
 
 	// Now, load the library and get the API/exports.
-	if(!(hGame = dlopen(libName, RTLD_NOW)))
+	if(!(hGame = lt_dlopenext(libName)))
 	{
 		DD_ErrorBox(true, "InitGame: Loading of %s failed (%s).\n", 
-					libName, dlerror());
+					libName, lt_dlerror());
 		return false;
 	}
 
 	// Get the function.
-	if(!(GetGameAPI = (GETGAMEAPI) dlsym(hGame, "GetGameAPI")))
+	if(!(GetGameAPI = (GETGAMEAPI) lt_dlsym(hGame, "GetGameAPI")))
 	{
 		DD_ErrorBox(true, "InitGame: Failed to get address of "
-					"GetGameAPI (%s).\n", dlerror());
+					"GetGameAPI (%s).\n", lt_dlerror());
 		return false;
 	}		
 
@@ -198,7 +198,16 @@ int main(int argc, char **argv)
 	// Where are we?
 //	GetModuleFileName(hInstance, path, 255);
 //	Dir_FileDir(path, &ddBinDir);
+
+	// Initialize libtool's dynamic library routines.
+	lt_dlinit();
 	
+#ifdef DENG_LIBRARY_DIR
+	// The default directory is defined in the Makefile.  For
+	// instance, "/usr/local/lib".
+	lt_dladdsearchdir(DENG_LIBRARY_DIR);
+#endif	
+
 	// Assemble a command line string.
 	for(i = 0, length = 0; i < argc; i++)
 		length += strlen(argv[i]) + 1;
@@ -270,11 +279,13 @@ void DD_Shutdown(void)
 	SDL_Quit();
 
 	// Close the dynamic libraries.
-	dlclose(hGame);
+	lt_dlclose(hGame);
 	for(i = 0; hPlugin[i]; i++)
 	{
-		dlclose(hPlugin[i]);
+		lt_dlclose(hPlugin[i]);
 	}
 	hGame = NULL;
 	memset(hPlugin, 0, sizeof(hPlugin));
+
+	lt_dlexit();
 }
