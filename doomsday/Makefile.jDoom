@@ -1,0 +1,1103 @@
+# -*- Makefile -*-
+# $Id$
+
+SRC = 	$(wildcard Src/jDoom/*.c) \
+	Src/Common/m_fixed.c \
+	$(wildcard Src/Common/d_net*.c) \
+	Src/Common/f_infine.c \
+	Src/Common/g_dglinit.c \
+	Src/Common/g_game.c \
+	Src/Common/g_update.c \
+	Src/Common/hu_pspr.c \
+	Src/Common/m_multi.c \
+	$(wildcard Src/Common/p_*.c) \
+	Src/Common/r_common.c \
+	Src/Common/x_hair.c 
+
+INC = $(wildcard Include/*.h) $(wildcard Include/jDoom/*.h)
+OBJ = $(patsubst %.c,%.o,$(SRC))
+DEFS = -DUNIX -DNO_FIXED_ASM -D__JDOOM__
+CFLAGS = -g -Wall -IInclude/jDoom -IInclude/Common -IInclude $(DEFS) -fPIC
+
+.PHONY: dep clean
+
+jdoom.so: $(OBJ) $(INC)
+	$(CC) -shared -o jdoom.so $(OBJ)
+
+clean:
+	rm $(OBJ) jdoom.so
+
+dep:
+	makedepend -fMakefile.jDoom -YInclude/jDoom -IInclude/Common -IInclude $(DEFS) $(SRC) 2> /dev/null
+
+# DO NOT DELETE
+
+Src/jDoom/AcFnLink.o: Src/jDoom/AcFnLink.h Include/dd_share.h
+Src/jDoom/AcFnLink.o: Include/dd_types.h Include/p_think.h Include/dd_dfdat.h
+Src/jDoom/am_map.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/am_map.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/am_map.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/am_map.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/am_map.o: Include/jDoom/d_config.h Include/jDoom/st_stuff.h
+Src/jDoom/am_map.o: Include/jDoom/doomtype.h Include/jDoom/d_event.h
+Src/jDoom/am_map.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/am_map.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/am_map.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/am_map.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/am_map.o: Include/jDoom/doomdata.h Include/jDoom/info.h
+Src/jDoom/am_map.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/am_map.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/am_map.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/am_map.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/am_map.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/jDoom/am_map.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/am_map.o: Include/jDoom/m_cheat.h Include/jDoom/doomstat.h
+Src/jDoom/am_map.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/am_map.o: Include/jDoom/am_map.h Include/jDoom/Mn_def.h
+Src/jDoom/am_map.o: Include/jDoom/m_menu.h Include/jDoom/hu_stuff.h
+Src/jDoom/am_map.o: Include/jDoom/wi_stuff.h
+Src/jDoom/D_Action.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/D_Action.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/D_Action.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/D_Action.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/D_Action.o: Include/jDoom/D_Action.h Include/dd_share.h
+Src/jDoom/d_console.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/d_console.o: Include/dd_share.h Include/dd_types.h
+Src/jDoom/d_console.o: Include/p_think.h Include/dd_dfdat.h
+Src/jDoom/d_console.o: Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/d_console.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/d_console.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/d_console.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/d_console.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/d_console.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/d_console.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/d_console.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/d_console.o: Include/jDoom/d_main.h Include/jDoom/d_event.h
+Src/jDoom/d_console.o: Include/jDoom/d_config.h Include/jDoom/d_netJD.h
+Src/jDoom/d_console.o: Include/Common/d_net.h Include/dd_share.h
+Src/jDoom/d_console.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/d_console.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/jDoom/d_console.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/jDoom/d_console.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/d_console.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/d_console.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/d_console.o: Include/jDoom/p_spec.h Include/Common/d_netcl.h
+Src/jDoom/d_console.o: Include/Common/d_net.h Include/jDoom/g_game.h
+Src/jDoom/d_console.o: Include/r_main.h Include/jDoom/s_sound.h
+Src/jDoom/d_console.o: Include/jDoom/SndIdx.h Include/jDoom/hu_stuff.h
+Src/jDoom/d_console.o: Include/jDoom/m_menu.h Include/Common/f_infine.h
+Src/jDoom/d_items.o: Include/jDoom/info.h Include/jDoom/d_items.h
+Src/jDoom/d_items.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/d_items.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/d_items.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/d_items.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/d_items.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/d_items.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/d_items.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/d_items.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/d_items.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/d_items.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/d_items.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/d_items.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/d_items.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/d_items.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/d_items.o: Include/jDoom/p_spec.h
+Src/jDoom/d_main.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/d_main.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/d_main.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/d_main.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/d_main.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/d_main.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/d_main.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/d_main.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/d_main.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/d_main.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/d_main.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/d_main.o: Include/jDoom/s_sound.h Include/jDoom/r_defs.h
+Src/jDoom/d_main.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/d_main.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/d_main.o: Include/jDoom/SndIdx.h Include/jDoom/p_local.h
+Src/jDoom/d_main.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/jDoom/d_main.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/jDoom/d_main.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/d_main.o: Include/jDoom/d_console.h Include/jDoom/D_Action.h
+Src/jDoom/d_main.o: Include/dd_share.h Include/jDoom/d_config.h
+Src/jDoom/d_main.o: Include/jDoom/v_video.h Include/jDoom/m_argv.h
+Src/jDoom/d_main.o: Include/jDoom/m_menu.h Include/jDoom/d_event.h
+Src/jDoom/d_main.o: Include/jDoom/g_game.h Include/Common/g_common.h
+Src/jDoom/d_main.o: Include/Common/g_update.h Include/jDoom/hu_stuff.h
+Src/jDoom/d_main.o: Include/jDoom/wi_stuff.h Include/jDoom/st_stuff.h
+Src/jDoom/d_main.o: Include/jDoom/am_map.h Include/jDoom/p_setup.h
+Src/jDoom/d_main.o: Include/Common/p_saveg.h Include/r_main.h
+Src/jDoom/d_main.o: Include/jDoom/d_main.h Include/m_bams.h
+Src/jDoom/d_main.o: Include/jDoom/d_netJD.h Include/Common/d_net.h
+Src/jDoom/d_main.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/d_main.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/jDoom/d_main.o: Src/jDoom/AcFnLink.h Include/Common/f_infine.h
+Src/jDoom/doomdef.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/doomdef.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/doomdef.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/doomdef.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/doomstat.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/doomstat.o: Include/jDoom/doomtype.h Include/jDoom/doomdef.h
+Src/jDoom/doomstat.o: Include/doomsday.h Include/dd_share.h
+Src/jDoom/doomstat.o: Include/dd_types.h Include/p_think.h Include/dd_dfdat.h
+Src/jDoom/doomstat.o: Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/doomstat.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/doomstat.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/doomstat.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/jDoom/doomstat.o: Include/doomsday.h Include/jDoom/info.h
+Src/jDoom/doomstat.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/jDoom/doomstat.o: Include/jDoom/d_ticcmd.h
+Src/jDoom/d_refresh.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/d_refresh.o: Include/dd_share.h Include/dd_types.h
+Src/jDoom/d_refresh.o: Include/p_think.h Include/dd_dfdat.h
+Src/jDoom/d_refresh.o: Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/d_refresh.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/d_refresh.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/d_refresh.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/d_refresh.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/d_refresh.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/d_refresh.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/d_refresh.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/d_refresh.o: Include/jDoom/st_stuff.h Include/jDoom/d_event.h
+Src/jDoom/d_refresh.o: Include/jDoom/wi_stuff.h Include/jDoom/r_defs.h
+Src/jDoom/d_refresh.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/d_refresh.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/d_refresh.o: Include/jDoom/hu_stuff.h Include/Common/hu_pspr.h
+Src/jDoom/d_refresh.o: Include/jDoom/am_map.h Include/jDoom/r_local.h
+Src/jDoom/d_refresh.o: Include/jDoom/r_data.h Include/jDoom/r_state.h
+Src/jDoom/d_refresh.o: Include/jDoom/d_config.h Include/Common/x_hair.h
+Src/jDoom/d_refresh.o: Include/jDoom/Mn_def.h Include/jDoom/m_menu.h
+Src/jDoom/d_refresh.o: Include/Common/g_common.h Include/Common/d_net.h
+Src/jDoom/d_refresh.o: Include/Common/f_infine.h
+Src/jDoom/dstrings.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/hu_lib.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/hu_lib.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/hu_lib.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/hu_lib.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/hu_lib.o: Include/jDoom/d_config.h Include/jDoom/v_video.h
+Src/jDoom/hu_lib.o: Include/jDoom/doomtype.h Include/jDoom/r_data.h
+Src/jDoom/hu_lib.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/hu_lib.o: Include/jDoom/p_mobj.h Include/jDoom/tables.h
+Src/jDoom/hu_lib.o: Include/doomsday.h Include/jDoom/doomdata.h
+Src/jDoom/hu_lib.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/hu_lib.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/hu_lib.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/hu_lib.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/hu_lib.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/hu_lib.o: Include/jDoom/m_swap.h Include/jDoom/hu_lib.h
+Src/jDoom/hu_lib.o: Include/jDoom/r_local.h Include/r_draw.h
+Src/jDoom/hu_msg.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/hu_msg.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/hu_msg.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/hu_msg.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/hu_msg.o: Include/jDoom/hu_stuff.h Include/jDoom/d_event.h
+Src/jDoom/hu_msg.o: Include/jDoom/doomtype.h Include/jDoom/r_defs.h
+Src/jDoom/hu_msg.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/hu_msg.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/hu_msg.o: Include/jDoom/doomdata.h Include/jDoom/info.h
+Src/jDoom/hu_msg.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/hu_msg.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/hu_msg.o: Include/jDoom/d_config.h Include/jDoom/m_menu.h
+Src/jDoom/hu_msg.o: Include/jDoom/Mn_def.h
+Src/jDoom/hu_stuff.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/hu_stuff.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/hu_stuff.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/hu_stuff.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/hu_stuff.o: Include/jDoom/m_swap.h Include/jDoom/hu_stuff.h
+Src/jDoom/hu_stuff.o: Include/jDoom/d_event.h Include/jDoom/doomtype.h
+Src/jDoom/hu_stuff.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/hu_stuff.o: Include/jDoom/p_mobj.h Include/jDoom/tables.h
+Src/jDoom/hu_stuff.o: Include/doomsday.h Include/jDoom/doomdata.h
+Src/jDoom/hu_stuff.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/hu_stuff.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/hu_stuff.o: Include/Common/p_xgsec.h Include/jDoom/hu_msg.h
+Src/jDoom/hu_stuff.o: Include/jDoom/hu_lib.h Include/jDoom/Mn_def.h
+Src/jDoom/hu_stuff.o: Include/m_misc.h Include/sys_file.h
+Src/jDoom/hu_stuff.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/hu_stuff.o: Include/jDoom/doomstat.h Include/jDoom/d_player.h
+Src/jDoom/hu_stuff.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/hu_stuff.o: Include/jDoom/d_ticcmd.h Include/jDoom/d_config.h
+Src/jDoom/hu_stuff.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/jDoom/hu_stuff.o: Include/jDoom/r_state.h Include/jDoom/p_local.h
+Src/jDoom/hu_stuff.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/hu_stuff.o: Include/jDoom/p_spec.h Include/jDoom/dstrings.h
+Src/jDoom/hu_stuff.o: Include/jDoom/d_englsh.h
+Src/jDoom/m_cheat.o: Include/jDoom/m_cheat.h Include/jDoom/doomstat.h
+Src/jDoom/m_cheat.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/m_cheat.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/m_cheat.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/m_cheat.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/m_cheat.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/m_cheat.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/m_cheat.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/jDoom/m_cheat.o: Include/doomsday.h Include/jDoom/info.h
+Src/jDoom/m_cheat.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/jDoom/m_cheat.o: Include/jDoom/d_ticcmd.h Include/jDoom/s_sound.h
+Src/jDoom/m_cheat.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/jDoom/m_cheat.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/m_cheat.o: Include/Common/p_xgsec.h Include/jDoom/SndIdx.h
+Src/jDoom/m_cheat.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/m_cheat.o: Include/jDoom/g_game.h Include/jDoom/d_event.h
+Src/jDoom/m_cheat.o: Include/jDoom/p_inter.h Include/jDoom/p_local.h
+Src/jDoom/m_cheat.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/jDoom/m_cheat.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/jDoom/m_cheat.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/m_cheat.o: Include/jDoom/p_setup.h Include/Common/f_infine.h
+Src/jDoom/m_cheat.o: Include/Common/d_net.h
+Src/jDoom/m_ctrl.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/m_ctrl.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/m_ctrl.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/m_ctrl.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/m_ctrl.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/m_ctrl.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/m_ctrl.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/m_ctrl.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/m_ctrl.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/m_ctrl.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/m_ctrl.o: Include/jDoom/m_menu.h Include/jDoom/r_defs.h
+Src/jDoom/m_ctrl.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/m_ctrl.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/m_ctrl.o: Include/jDoom/d_event.h Include/jDoom/Mn_def.h
+Src/jDoom/m_ctrl.o: Include/jDoom/D_Action.h Include/dd_share.h
+Src/jDoom/m_ctrl.o: Include/jDoom/hu_stuff.h Include/jDoom/s_sound.h
+Src/jDoom/m_ctrl.o: Include/jDoom/SndIdx.h Include/jDoom/g_game.h
+Src/jDoom/m_menu.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/m_menu.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/m_menu.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/m_menu.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/m_menu.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/m_menu.o: Include/jDoom/d_main.h Include/jDoom/d_event.h
+Src/jDoom/m_menu.o: Include/jDoom/doomtype.h Include/jDoom/d_config.h
+Src/jDoom/m_menu.o: Include/jDoom/v_video.h Include/jDoom/r_data.h
+Src/jDoom/m_menu.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/m_menu.o: Include/jDoom/p_mobj.h Include/jDoom/tables.h
+Src/jDoom/m_menu.o: Include/doomsday.h Include/jDoom/doomdata.h
+Src/jDoom/m_menu.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/m_menu.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/m_menu.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/m_menu.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/m_menu.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/m_menu.o: Include/r_main.h Include/Common/p_saveg.h
+Src/jDoom/m_menu.o: Include/jDoom/hu_stuff.h Include/jDoom/g_game.h
+Src/jDoom/m_menu.o: Include/Common/g_common.h Include/jDoom/m_argv.h
+Src/jDoom/m_menu.o: Include/jDoom/m_swap.h Include/jDoom/s_sound.h
+Src/jDoom/m_menu.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/m_menu.o: Include/Common/x_hair.h Include/jDoom/m_menu.h
+Src/jDoom/m_menu.o: Include/jDoom/Mn_def.h Include/jDoom/wi_stuff.h
+Src/jDoom/m_misc.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/m_misc.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/m_misc.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/m_misc.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/m_swap.o: Include/jDoom/m_swap.h
+Src/jDoom/p_ceilng.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_ceilng.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_ceilng.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_ceilng.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_ceilng.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_ceilng.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_ceilng.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_ceilng.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_ceilng.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_ceilng.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_ceilng.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_ceilng.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_ceilng.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_ceilng.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_ceilng.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_ceilng.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/jDoom/p_ceilng.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/p_doors.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_doors.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_doors.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_doors.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_doors.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_doors.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_doors.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_doors.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_doors.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_doors.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_doors.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_doors.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_doors.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_doors.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_doors.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_doors.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/jDoom/p_doors.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/p_doors.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/p_enemy.o: Include/r_main.h Include/jDoom/m_random.h
+Src/jDoom/p_enemy.o: Include/jDoom/doomtype.h Include/jDoom/doomdef.h
+Src/jDoom/p_enemy.o: Include/doomsday.h Include/dd_share.h Include/dd_types.h
+Src/jDoom/p_enemy.o: Include/p_think.h Include/dd_dfdat.h Include/dd_plugin.h
+Src/jDoom/p_enemy.o: Include/dd_api.h Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_enemy.o: Include/jDoom/d_config.h Include/jDoom/p_local.h
+Src/jDoom/p_enemy.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_enemy.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_enemy.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_enemy.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_enemy.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_enemy.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_enemy.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_enemy.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_enemy.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_enemy.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_enemy.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/jDoom/p_enemy.o: Include/jDoom/SndIdx.h Include/jDoom/g_game.h
+Src/jDoom/p_enemy.o: Include/jDoom/d_event.h Include/jDoom/doomstat.h
+Src/jDoom/p_floor.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_floor.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_floor.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_floor.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_floor.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_floor.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_floor.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_floor.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_floor.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_floor.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_floor.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_floor.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_floor.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_floor.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_floor.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_floor.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/jDoom/p_floor.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/p_inter.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_inter.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_inter.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_inter.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_inter.o: Include/jDoom/d_config.h Include/jDoom/dstrings.h
+Src/jDoom/p_inter.o: Include/jDoom/d_englsh.h Include/jDoom/doomstat.h
+Src/jDoom/p_inter.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_inter.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_inter.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/jDoom/p_inter.o: Include/doomsday.h Include/jDoom/info.h
+Src/jDoom/p_inter.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/jDoom/p_inter.o: Include/jDoom/d_ticcmd.h Include/jDoom/m_random.h
+Src/jDoom/p_inter.o: Include/jDoom/am_map.h Include/jDoom/p_local.h
+Src/jDoom/p_inter.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/jDoom/p_inter.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/jDoom/p_inter.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_inter.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_inter.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_inter.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/jDoom/p_inter.o: Include/jDoom/SndIdx.h Include/jDoom/d_netJD.h
+Src/jDoom/p_inter.o: Include/Common/d_net.h Include/dd_share.h
+Src/jDoom/p_inter.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/p_inter.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/jDoom/p_inter.o: Include/jDoom/p_inter.h
+Src/jDoom/p_lights.o: Include/jDoom/m_random.h Include/jDoom/doomtype.h
+Src/jDoom/p_lights.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_lights.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_lights.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_lights.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_lights.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_lights.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_lights.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_lights.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_lights.o: Include/jDoom/doomdata.h Include/jDoom/info.h
+Src/jDoom/p_lights.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_lights.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_lights.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/p_lights.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_lights.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/jDoom/p_lights.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/p_map.o: Include/jDoom/m_random.h Include/jDoom/doomtype.h
+Src/jDoom/p_map.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_map.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_map.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_map.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_map.o: Include/jDoom/d_config.h Include/jDoom/p_local.h
+Src/jDoom/p_map.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_map.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_map.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_map.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_map.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_map.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_map.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_map.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_map.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_map.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_map.o: Include/jDoom/p_spec.h Include/Common/g_common.h
+Src/jDoom/p_map.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/p_map.o: Include/jDoom/doomstat.h
+Src/jDoom/p_maputl.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_maputl.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_maputl.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_maputl.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_maputl.o: Include/jDoom/d_config.h Include/jDoom/p_local.h
+Src/jDoom/p_maputl.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_maputl.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_maputl.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_maputl.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_maputl.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/jDoom/p_maputl.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_maputl.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_maputl.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/p_maputl.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_maputl.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/jDoom/p_maputl.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/p_mobj.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_mobj.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_mobj.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_mobj.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_mobj.o: Include/jDoom/d_config.h Include/jDoom/m_random.h
+Src/jDoom/p_mobj.o: Include/jDoom/doomtype.h Include/jDoom/p_local.h
+Src/jDoom/p_mobj.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_mobj.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_mobj.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_mobj.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_mobj.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_mobj.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_mobj.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_mobj.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_mobj.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_mobj.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_mobj.o: Include/jDoom/p_spec.h Include/jDoom/st_stuff.h
+Src/jDoom/p_mobj.o: Include/jDoom/d_event.h Include/jDoom/hu_stuff.h
+Src/jDoom/p_mobj.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/p_mobj.o: Include/jDoom/doomstat.h Include/Common/g_common.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_oldsvg.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_oldsvg.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_oldsvg.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_oldsvg.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_oldsvg.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_oldsvg.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/p_spec.h Include/jDoom/doomstat.h
+Src/jDoom/p_oldsvg.o: Include/jDoom/g_game.h Include/jDoom/d_event.h
+Src/jDoom/p_oldsvg.o: Include/m_misc.h Include/sys_file.h
+Src/jDoom/p_plats.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_plats.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_plats.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_plats.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_plats.o: Include/jDoom/m_random.h Include/jDoom/doomtype.h
+Src/jDoom/p_plats.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_plats.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_plats.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_plats.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_plats.o: Include/jDoom/doomdata.h Include/jDoom/info.h
+Src/jDoom/p_plats.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_plats.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_plats.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/p_plats.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_plats.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/jDoom/p_plats.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/p_plats.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/p_plats.o: Include/jDoom/doomstat.h
+Src/jDoom/p_pspr.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_pspr.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_pspr.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_pspr.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_pspr.o: Include/jDoom/d_config.h Include/jDoom/d_event.h
+Src/jDoom/p_pspr.o: Include/jDoom/doomtype.h Include/jDoom/d_netJD.h
+Src/jDoom/p_pspr.o: Include/Common/d_net.h Include/dd_share.h
+Src/jDoom/p_pspr.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/p_pspr.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_pspr.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_pspr.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_pspr.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_pspr.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_pspr.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_pspr.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_pspr.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_pspr.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_pspr.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_pspr.o: Include/jDoom/p_spec.h Include/Common/d_netcl.h
+Src/jDoom/p_pspr.o: Include/Common/d_net.h Include/jDoom/m_random.h
+Src/jDoom/p_pspr.o: Include/jDoom/p_local.h Include/jDoom/s_sound.h
+Src/jDoom/p_pspr.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/p_setup.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_setup.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_setup.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_setup.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_setup.o: Include/jDoom/d_config.h Include/jDoom/d_netJD.h
+Src/jDoom/p_setup.o: Include/Common/d_net.h Include/dd_share.h
+Src/jDoom/p_setup.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/p_setup.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_setup.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_setup.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_setup.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_setup.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/jDoom/p_setup.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_setup.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_setup.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/p_setup.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_setup.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/jDoom/p_setup.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/p_setup.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/jDoom/p_setup.o: Include/jDoom/m_swap.h Include/jDoom/g_game.h
+Src/jDoom/p_setup.o: Include/jDoom/d_event.h Include/jDoom/p_local.h
+Src/jDoom/p_setup.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/p_setup.o: Include/jDoom/doomstat.h Include/m_bams.h
+Src/jDoom/p_setup.o: Include/jDoom/hu_stuff.h Include/Common/r_common.h
+Src/jDoom/p_sound.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_sound.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_sound.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_sound.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_sound.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/p_sound.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/p_sound.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_sound.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_sound.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/p_sound.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_sound.o: Include/jDoom/s_sound.h Include/jDoom/r_defs.h
+Src/jDoom/p_sound.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_sound.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_sound.o: Include/jDoom/SndIdx.h
+Src/jDoom/p_spec.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_spec.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_spec.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_spec.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_spec.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/jDoom/p_spec.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/jDoom/p_spec.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/p_spec.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_spec.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/p_spec.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_spec.o: Include/jDoom/d_config.h Include/jDoom/m_argv.h
+Src/jDoom/p_spec.o: Include/jDoom/m_random.h Include/jDoom/r_local.h
+Src/jDoom/p_spec.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_spec.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/p_spec.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/p_spec.o: Include/jDoom/r_state.h Include/jDoom/p_local.h
+Src/jDoom/p_spec.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_spec.o: Include/jDoom/p_spec.h Include/jDoom/g_game.h
+Src/jDoom/p_spec.o: Include/jDoom/d_event.h Include/jDoom/s_sound.h
+Src/jDoom/p_spec.o: Include/jDoom/SndIdx.h
+Src/jDoom/p_switch.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_switch.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_switch.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_switch.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_switch.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_switch.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_switch.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/p_switch.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_switch.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_switch.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_switch.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_switch.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_switch.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_switch.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_switch.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_switch.o: Include/jDoom/p_spec.h Include/jDoom/g_game.h
+Src/jDoom/p_switch.o: Include/jDoom/d_event.h Include/jDoom/s_sound.h
+Src/jDoom/p_switch.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/p_switch.o: Include/Common/d_net.h
+Src/jDoom/p_telept.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_telept.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_telept.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_telept.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_telept.o: Include/jDoom/s_sound.h Include/jDoom/r_defs.h
+Src/jDoom/p_telept.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/p_telept.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/p_telept.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/p_telept.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_telept.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_telept.o: Include/Common/p_xgsec.h Include/jDoom/SndIdx.h
+Src/jDoom/p_telept.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/jDoom/p_telept.o: Include/jDoom/r_data.h Include/jDoom/r_state.h
+Src/jDoom/p_telept.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_telept.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_telept.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_telept.o: Include/jDoom/p_spec.h
+Src/jDoom/p_user.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/p_user.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/p_user.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/p_user.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/p_user.o: Include/jDoom/d_config.h Include/jDoom/d_event.h
+Src/jDoom/p_user.o: Include/jDoom/doomtype.h Include/jDoom/p_local.h
+Src/jDoom/p_user.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/p_user.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/p_user.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/p_user.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/p_user.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/p_user.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/p_user.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/p_user.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/p_user.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/p_user.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/jDoom/p_user.o: Include/jDoom/p_spec.h Include/Common/p_view.h
+Src/jDoom/p_user.o: Include/jDoom/doomstat.h Include/jDoom/d_netJD.h
+Src/jDoom/p_user.o: Include/Common/d_net.h Include/dd_share.h
+Src/jDoom/p_user.o: Include/Common/d_netsv.h Include/jDoom/p_local.h
+Src/jDoom/p_user.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/jDoom/p_user.o: Include/Common/g_common.h
+Src/jDoom/r_main.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/r_main.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/r_main.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/r_main.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/r_main.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/jDoom/r_main.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/jDoom/r_main.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/jDoom/r_main.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/jDoom/r_main.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/jDoom/r_main.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/r_main.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/r_main.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/r_main.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/r_main.o: Include/jDoom/d_ticcmd.h Include/r_sky.h
+Src/jDoom/r_main.o: Include/r_model.h Include/gl_model.h
+Src/jDoom/r_sky.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/r_sky.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/r_sky.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/r_sky.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/r_sky.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/r_sky.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/r_sky.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/r_sky.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/jDoom/r_sky.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/jDoom/r_sky.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/r_sky.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/jDoom/r_sky.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/r_sky.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/jDoom/r_sky.o: Include/r_sky.h Include/r_model.h Include/gl_model.h
+Src/jDoom/st_lib.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/st_lib.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/st_lib.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/st_lib.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/st_lib.o: Include/jDoom/v_video.h Include/jDoom/doomtype.h
+Src/jDoom/st_lib.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/st_lib.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/jDoom/st_lib.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/st_lib.o: Include/jDoom/doomdata.h Include/jDoom/info.h
+Src/jDoom/st_lib.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/st_lib.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/st_lib.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/jDoom/st_lib.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/st_lib.o: Include/jDoom/d_ticcmd.h Include/jDoom/m_swap.h
+Src/jDoom/st_lib.o: Include/jDoom/st_stuff.h Include/jDoom/d_event.h
+Src/jDoom/st_lib.o: Include/jDoom/st_lib.h Include/jDoom/wi_stuff.h
+Src/jDoom/st_lib.o: Include/jDoom/r_local.h
+Src/jDoom/st_stuff.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/st_stuff.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/st_stuff.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/st_stuff.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/st_stuff.o: Include/jDoom/d_config.h Include/Common/d_net.h
+Src/jDoom/st_stuff.o: Include/jDoom/m_random.h Include/jDoom/doomtype.h
+Src/jDoom/st_stuff.o: Include/jDoom/g_game.h Include/jDoom/d_event.h
+Src/jDoom/st_stuff.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/jDoom/st_stuff.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/jDoom/st_stuff.o: Include/doomsday.h Include/jDoom/info.h
+Src/jDoom/st_stuff.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/jDoom/st_stuff.o: Include/jDoom/doomdata.h Include/jDoom/d_ticcmd.h
+Src/jDoom/st_stuff.o: Include/jDoom/st_stuff.h Include/jDoom/st_lib.h
+Src/jDoom/st_stuff.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/jDoom/st_stuff.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/jDoom/st_stuff.o: Include/Common/p_xgsec.h Include/jDoom/r_local.h
+Src/jDoom/st_stuff.o: Include/jDoom/r_data.h Include/jDoom/r_state.h
+Src/jDoom/st_stuff.o: Include/jDoom/p_local.h Include/Common/p_start.h
+Src/jDoom/st_stuff.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/st_stuff.o: Include/jDoom/p_inter.h Include/jDoom/am_map.h
+Src/jDoom/st_stuff.o: Include/jDoom/m_menu.h Include/jDoom/m_cheat.h
+Src/jDoom/st_stuff.o: Include/jDoom/doomstat.h Include/jDoom/hu_stuff.h
+Src/jDoom/st_stuff.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/jDoom/st_stuff.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/jDoom/tables.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/v_video.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/v_video.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/v_video.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/v_video.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/wi_stuff.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/jDoom/wi_stuff.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/jDoom/wi_stuff.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/jDoom/wi_stuff.o: Include/Common/g_dgl.h Include/dglib.h
+Src/jDoom/wi_stuff.o: Include/jDoom/m_random.h Include/jDoom/doomtype.h
+Src/jDoom/wi_stuff.o: Include/jDoom/m_swap.h Include/jDoom/g_game.h
+Src/jDoom/wi_stuff.o: Include/jDoom/d_event.h Include/jDoom/d_player.h
+Src/jDoom/wi_stuff.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/jDoom/wi_stuff.o: Include/jDoom/tables.h Include/doomsday.h
+Src/jDoom/wi_stuff.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/jDoom/wi_stuff.o: Include/jDoom/d_think.h Include/jDoom/doomdata.h
+Src/jDoom/wi_stuff.o: Include/jDoom/d_ticcmd.h Include/jDoom/r_local.h
+Src/jDoom/wi_stuff.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/jDoom/wi_stuff.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/jDoom/wi_stuff.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/jDoom/wi_stuff.o: Include/jDoom/r_state.h Include/jDoom/s_sound.h
+Src/jDoom/wi_stuff.o: Include/jDoom/SndIdx.h Include/jDoom/doomstat.h
+Src/jDoom/wi_stuff.o: Include/jDoom/d_netJD.h Include/Common/d_net.h
+Src/jDoom/wi_stuff.o: Include/dd_share.h Include/Common/d_netsv.h
+Src/jDoom/wi_stuff.o: Include/jDoom/p_local.h Include/Common/p_start.h
+Src/jDoom/wi_stuff.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/jDoom/wi_stuff.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/jDoom/wi_stuff.o: Include/jDoom/wi_stuff.h Include/jDoom/d_config.h
+Src/jDoom/wi_stuff.o: Include/jDoom/m_menu.h Include/jDoom/hu_stuff.h
+Src/Common/m_fixed.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/m_fixed.o: Include/dd_dfdat.h
+Src/Common/d_net.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/d_net.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/d_net.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/d_net.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/d_net.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/d_net.o: Include/jDoom/doomtype.h Include/jDoom/doomdef.h
+Src/Common/d_net.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/d_net.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/Common/d_net.o: Include/doomsday.h Include/jDoom/info.h
+Src/Common/d_net.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/Common/d_net.o: Include/jDoom/d_ticcmd.h Include/jDoom/d_main.h
+Src/Common/d_net.o: Include/jDoom/d_event.h Include/jDoom/d_config.h
+Src/Common/d_net.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/d_net.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/d_net.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/d_net.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/d_net.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/d_net.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/d_net.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/Common/d_net.o: Include/jDoom/g_game.h Include/jDoom/m_menu.h
+Src/Common/d_net.o: Include/jDoom/hu_stuff.h Include/jDoom/st_stuff.h
+Src/Common/d_net.o: Include/Common/g_common.h Include/Common/d_net.h
+Src/Common/d_netcl.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/d_netcl.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/d_netcl.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/d_netcl.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/d_netcl.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/d_netcl.o: Include/jDoom/doomtype.h Include/jDoom/doomdef.h
+Src/Common/d_netcl.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/d_netcl.o: Include/jDoom/p_pspr.h Include/jDoom/tables.h
+Src/Common/d_netcl.o: Include/doomsday.h Include/jDoom/info.h
+Src/Common/d_netcl.o: Include/jDoom/p_mobj.h Include/jDoom/d_think.h
+Src/Common/d_netcl.o: Include/jDoom/d_ticcmd.h Include/jDoom/dstrings.h
+Src/Common/d_netcl.o: Include/jDoom/d_englsh.h Include/jDoom/p_local.h
+Src/Common/d_netcl.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/Common/d_netcl.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/Common/d_netcl.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/d_netcl.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/d_netcl.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/d_netcl.o: Include/jDoom/p_spec.h Include/jDoom/s_sound.h
+Src/Common/d_netcl.o: Include/jDoom/SndIdx.h Include/jDoom/d_config.h
+Src/Common/d_netcl.o: Include/jDoom/g_game.h Include/jDoom/d_event.h
+Src/Common/d_netcl.o: Include/jDoom/st_stuff.h Include/jDoom/wi_stuff.h
+Src/Common/d_netcl.o: Include/jDoom/am_map.h Include/Common/p_saveg.h
+Src/Common/d_netcl.o: Include/Common/d_net.h Include/Common/d_netsv.h
+Src/Common/d_netcl.o: Include/Common/f_infine.h
+Src/Common/d_netsv.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/d_netsv.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/d_netsv.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/d_netsv.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/d_netsv.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/d_netsv.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/d_netsv.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/d_netsv.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/d_netsv.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/d_netsv.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/d_netsv.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/d_netsv.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/d_netsv.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/d_netsv.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/d_netsv.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/d_netsv.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/d_netsv.o: Include/jDoom/d_config.h Include/jDoom/s_sound.h
+Src/Common/d_netsv.o: Include/jDoom/SndIdx.h Include/jDoom/st_stuff.h
+Src/Common/d_netsv.o: Include/jDoom/d_event.h Include/jDoom/m_random.h
+Src/Common/d_netsv.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/Common/d_netsv.o: Include/jDoom/m_cheat.h Include/Common/d_net.h
+Src/Common/d_netsv.o: Include/Common/p_svtexarc.h
+Src/Common/f_infine.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/f_infine.o: Include/dd_share.h Include/dd_types.h
+Src/Common/f_infine.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/f_infine.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/f_infine.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/f_infine.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/f_infine.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/f_infine.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/f_infine.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/f_infine.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/f_infine.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/f_infine.o: Include/jDoom/d_netJD.h Include/Common/d_net.h
+Src/Common/f_infine.o: Include/dd_share.h Include/Common/d_netsv.h
+Src/Common/f_infine.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/f_infine.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/f_infine.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/f_infine.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/f_infine.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/f_infine.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/f_infine.o: Include/Common/d_netcl.h Include/Common/d_net.h
+Src/Common/f_infine.o: Include/jDoom/m_swap.h Include/jDoom/v_video.h
+Src/Common/f_infine.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/Common/f_infine.o: Include/jDoom/hu_stuff.h Include/jDoom/d_event.h
+Src/Common/f_infine.o: Include/Common/f_infine.h
+Src/Common/g_dglinit.o: Include/doomsday.h Include/Common/g_dgl.h
+Src/Common/g_dglinit.o: Include/dglib.h
+Src/Common/g_game.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/g_game.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/g_game.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/g_game.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/g_game.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/g_game.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/g_game.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/g_game.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/g_game.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/g_game.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/g_game.o: Include/jDoom/D_Action.h Include/dd_share.h
+Src/Common/g_game.o: Include/jDoom/d_config.h Include/jDoom/m_argv.h
+Src/Common/g_game.o: Include/m_misc.h Include/sys_file.h
+Src/Common/g_game.o: Include/jDoom/m_menu.h Include/jDoom/r_defs.h
+Src/Common/g_game.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/g_game.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/g_game.o: Include/jDoom/d_event.h Include/jDoom/m_random.h
+Src/Common/g_game.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/g_game.o: Include/jDoom/r_data.h Include/jDoom/r_state.h
+Src/Common/g_game.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/g_game.o: Include/jDoom/p_spec.h Include/jDoom/p_setup.h
+Src/Common/g_game.o: Include/Common/p_saveg.h Include/p_tick.h
+Src/Common/g_game.o: Include/jDoom/d_main.h Include/jDoom/d_netJD.h
+Src/Common/g_game.o: Include/Common/d_net.h Include/Common/d_netsv.h
+Src/Common/g_game.o: Include/jDoom/p_local.h Include/Common/d_netcl.h
+Src/Common/g_game.o: Include/Common/d_net.h Include/jDoom/wi_stuff.h
+Src/Common/g_game.o: Include/jDoom/hu_stuff.h Include/jDoom/st_stuff.h
+Src/Common/g_game.o: Include/jDoom/am_map.h Include/jDoom/s_sound.h
+Src/Common/g_game.o: Include/jDoom/SndIdx.h Include/jDoom/dstrings.h
+Src/Common/g_game.o: Include/jDoom/d_englsh.h Include/jDoom/g_game.h
+Src/Common/g_game.o: Include/Common/f_infine.h
+Src/Common/g_update.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/g_update.o: Include/dd_share.h Include/dd_types.h
+Src/Common/g_update.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/g_update.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/g_update.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/g_update.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/g_update.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/g_update.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/g_update.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/g_update.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/g_update.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/g_update.o: Include/jDoom/p_setup.h Include/jDoom/p_local.h
+Src/Common/g_update.o: Include/jDoom/r_local.h Include/jDoom/r_data.h
+Src/Common/g_update.o: Include/jDoom/r_defs.h Include/Common/p_xg.h
+Src/Common/g_update.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/g_update.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/g_update.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/g_update.o: Include/jDoom/p_spec.h Include/jDoom/m_menu.h
+Src/Common/g_update.o: Include/jDoom/d_event.h Include/jDoom/dstrings.h
+Src/Common/g_update.o: Include/jDoom/d_englsh.h Include/jDoom/s_sound.h
+Src/Common/g_update.o: Include/jDoom/SndIdx.h Include/Common/hu_pspr.h
+Src/Common/hu_pspr.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/hu_pspr.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/hu_pspr.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/hu_pspr.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/hu_pspr.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/hu_pspr.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/hu_pspr.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/hu_pspr.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/hu_pspr.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/hu_pspr.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/hu_pspr.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/hu_pspr.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/hu_pspr.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/hu_pspr.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/hu_pspr.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/hu_pspr.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/hu_pspr.o: Include/jDoom/d_config.h Include/jDoom/st_stuff.h
+Src/Common/hu_pspr.o: Include/jDoom/d_event.h
+Src/Common/m_multi.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/m_multi.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/m_multi.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/m_multi.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/m_multi.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/m_multi.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/m_multi.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/m_multi.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/m_multi.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/m_multi.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/m_multi.o: Include/jDoom/m_menu.h Include/jDoom/r_defs.h
+Src/Common/m_multi.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/m_multi.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/m_multi.o: Include/jDoom/d_event.h Include/jDoom/d_config.h
+Src/Common/m_multi.o: Include/jDoom/hu_stuff.h Include/m_misc.h
+Src/Common/m_multi.o: Include/sys_file.h Include/jDoom/m_random.h
+Src/Common/m_multi.o: Include/jDoom/s_sound.h Include/jDoom/SndIdx.h
+Src/Common/m_multi.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/Common/m_multi.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/m_multi.o: Include/jDoom/r_data.h Include/jDoom/r_state.h
+Src/Common/m_multi.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/m_multi.o: Include/jDoom/p_spec.h Include/jDoom/Mn_def.h
+Src/Common/p_actor.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_actor.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/p_actor.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_actor.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_actor.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_actor.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_actor.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_actor.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/Common/p_actor.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/Common/p_actor.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/Common/p_actor.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/p_actor.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/p_actor.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/p_actor.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/Common/p_actor.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/p_actor.o: Include/jDoom/p_spec.h
+Src/Common/p_saveg.o: Include/LZSS.h Include/jDoom/doomdef.h
+Src/Common/p_saveg.o: Include/doomsday.h Include/dd_share.h
+Src/Common/p_saveg.o: Include/dd_types.h Include/p_think.h Include/dd_dfdat.h
+Src/Common/p_saveg.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_saveg.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_saveg.o: Include/jDoom/dstrings.h Include/jDoom/d_englsh.h
+Src/Common/p_saveg.o: Include/Common/f_infine.h Include/jDoom/p_local.h
+Src/Common/p_saveg.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/Common/p_saveg.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/Common/p_saveg.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/Common/p_saveg.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/Common/p_saveg.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/Common/p_saveg.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/p_saveg.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/p_saveg.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/Common/p_saveg.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/p_saveg.o: Include/jDoom/d_ticcmd.h Include/Common/p_start.h
+Src/Common/p_saveg.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/p_saveg.o: Include/jDoom/g_game.h Include/jDoom/d_event.h
+Src/Common/p_saveg.o: Include/jDoom/doomstat.h Include/jDoom/p_oldsvg.h
+Src/Common/p_saveg.o: Include/Common/d_net.h Include/Common/p_svtexarc.h
+Src/Common/p_start.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_start.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/p_start.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_start.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_start.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/p_start.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/p_start.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/p_start.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_start.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/p_start.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/p_start.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_start.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_start.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/p_start.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/p_start.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/p_start.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/p_start.o: Include/jDoom/d_config.h Include/jDoom/g_game.h
+Src/Common/p_start.o: Include/jDoom/d_event.h Include/jDoom/s_sound.h
+Src/Common/p_start.o: Include/jDoom/SndIdx.h Include/Common/d_net.h
+Src/Common/p_svtexarc.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_svtexarc.o: Include/dd_share.h Include/dd_types.h
+Src/Common/p_svtexarc.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/p_svtexarc.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_svtexarc.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_svtexarc.o: Include/jDoom/r_local.h Include/jDoom/tables.h
+Src/Common/p_svtexarc.o: Include/doomsday.h Include/jDoom/r_data.h
+Src/Common/p_svtexarc.o: Include/jDoom/r_defs.h Include/jDoom/d_think.h
+Src/Common/p_svtexarc.o: Include/jDoom/p_mobj.h Include/jDoom/doomdata.h
+Src/Common/p_svtexarc.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/Common/p_svtexarc.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/p_svtexarc.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/p_svtexarc.o: Include/jDoom/r_state.h Include/jDoom/d_player.h
+Src/Common/p_svtexarc.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/p_svtexarc.o: Include/jDoom/d_ticcmd.h Include/Common/p_svtexarc.h
+Src/Common/p_tick.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_tick.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/p_tick.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_tick.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_tick.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_tick.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_tick.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_tick.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/Common/p_tick.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/Common/p_tick.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/Common/p_tick.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/p_tick.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/p_tick.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/p_tick.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/Common/p_tick.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/p_tick.o: Include/jDoom/p_spec.h Include/jDoom/doomstat.h
+Src/Common/p_view.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_view.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/p_view.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_view.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_view.o: Include/jDoom/doomstat.h Include/jDoom/doomdata.h
+Src/Common/p_view.o: Include/jDoom/doomtype.h Include/jDoom/d_player.h
+Src/Common/p_view.o: Include/jDoom/d_items.h Include/jDoom/p_pspr.h
+Src/Common/p_view.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_view.o: Include/jDoom/info.h Include/jDoom/p_mobj.h
+Src/Common/p_view.o: Include/jDoom/d_think.h Include/jDoom/d_ticcmd.h
+Src/Common/p_view.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_view.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_view.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/p_view.o: Include/Common/xgclass.h Include/Common/p_xgsec.h
+Src/Common/p_view.o: Include/jDoom/r_state.h Include/Common/p_start.h
+Src/Common/p_view.o: Include/Common/p_actor.h Include/jDoom/p_spec.h
+Src/Common/p_view.o: Include/jDoom/d_config.h Include/Common/g_common.h
+Src/Common/p_xgfile.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_xgfile.o: Include/dd_share.h Include/dd_types.h
+Src/Common/p_xgfile.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/p_xgfile.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_xgfile.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_xgfile.o: Include/Common/p_xg.h Include/Common/p_xgline.h
+Src/Common/p_xgfile.o: Include/Common/xgclass.h Include/jDoom/p_mobj.h
+Src/Common/p_xgfile.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_xgfile.o: Include/jDoom/d_think.h Include/jDoom/doomdata.h
+Src/Common/p_xgfile.o: Include/jDoom/doomtype.h Include/jDoom/info.h
+Src/Common/p_xgfile.o: Include/Common/p_xgsec.h
+Src/Common/p_xgline.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_xgline.o: Include/dd_share.h Include/dd_types.h
+Src/Common/p_xgline.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/p_xgline.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_xgline.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_xgline.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_xgline.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_xgline.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_xgline.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/Common/p_xgline.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/Common/p_xgline.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/Common/p_xgline.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/p_xgline.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/p_xgline.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/p_xgline.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/Common/p_xgline.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/p_xgline.o: Include/jDoom/p_spec.h Include/jDoom/doomstat.h
+Src/Common/p_xgline.o: Include/jDoom/d_config.h Include/jDoom/s_sound.h
+Src/Common/p_xgline.o: Include/jDoom/SndIdx.h Include/jDoom/m_random.h
+Src/Common/p_xgline.o: Include/jDoom/p_inter.h Include/jDoom/g_game.h
+Src/Common/p_xgline.o: Include/jDoom/d_event.h Include/Common/d_net.h
+Src/Common/p_xgsave.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_xgsave.o: Include/dd_share.h Include/dd_types.h
+Src/Common/p_xgsave.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/p_xgsave.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_xgsave.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_xgsave.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_xgsave.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_xgsave.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_xgsave.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/Common/p_xgsave.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/Common/p_xgsave.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/Common/p_xgsave.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/p_xgsave.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/p_xgsave.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/p_xgsave.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/Common/p_xgsave.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/p_xgsave.o: Include/jDoom/p_spec.h Include/Common/p_saveg.h
+Src/Common/p_xgsec.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/p_xgsec.o: Include/dd_share.h Include/dd_types.h Include/p_think.h
+Src/Common/p_xgsec.o: Include/dd_dfdat.h Include/dd_plugin.h Include/dd_api.h
+Src/Common/p_xgsec.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/p_xgsec.o: Include/jDoom/p_local.h Include/jDoom/r_local.h
+Src/Common/p_xgsec.o: Include/jDoom/tables.h Include/doomsday.h
+Src/Common/p_xgsec.o: Include/jDoom/r_data.h Include/jDoom/r_defs.h
+Src/Common/p_xgsec.o: Include/jDoom/d_think.h Include/jDoom/p_mobj.h
+Src/Common/p_xgsec.o: Include/jDoom/doomdata.h Include/jDoom/doomtype.h
+Src/Common/p_xgsec.o: Include/jDoom/info.h Include/Common/p_xg.h
+Src/Common/p_xgsec.o: Include/Common/p_xgline.h Include/Common/xgclass.h
+Src/Common/p_xgsec.o: Include/Common/p_xgsec.h Include/jDoom/r_state.h
+Src/Common/p_xgsec.o: Include/jDoom/d_player.h Include/jDoom/d_items.h
+Src/Common/p_xgsec.o: Include/jDoom/p_pspr.h Include/jDoom/d_ticcmd.h
+Src/Common/p_xgsec.o: Include/Common/p_start.h Include/Common/p_actor.h
+Src/Common/p_xgsec.o: Include/jDoom/p_spec.h Include/jDoom/doomstat.h
+Src/Common/p_xgsec.o: Include/jDoom/d_config.h Include/jDoom/s_sound.h
+Src/Common/p_xgsec.o: Include/jDoom/SndIdx.h Include/jDoom/m_random.h
+Src/Common/p_xgsec.o: Include/jDoom/p_inter.h
+Src/Common/r_common.o: Include/jDoom/doomdef.h Include/doomsday.h
+Src/Common/r_common.o: Include/dd_share.h Include/dd_types.h
+Src/Common/r_common.o: Include/p_think.h Include/dd_dfdat.h
+Src/Common/r_common.o: Include/dd_plugin.h Include/dd_api.h
+Src/Common/r_common.o: Include/Common/g_dgl.h Include/dglib.h
+Src/Common/r_common.o: Include/jDoom/d_items.h
+Src/Common/x_hair.o: Include/Common/x_hair.h Include/jDoom/doomdef.h
+Src/Common/x_hair.o: Include/doomsday.h Include/dd_share.h Include/dd_types.h
+Src/Common/x_hair.o: Include/p_think.h Include/dd_dfdat.h Include/dd_plugin.h
+Src/Common/x_hair.o: Include/dd_api.h Include/Common/g_dgl.h Include/dglib.h
+Src/Common/x_hair.o: Include/jDoom/d_config.h
