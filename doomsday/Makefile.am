@@ -1,0 +1,3 @@
+DISTCLEANFILES = *~
+
+SUBDIRS = Src

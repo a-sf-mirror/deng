@@ -1,12 +1,26 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** EXT.C
-//**
-//** Target:		DGL Driver for OpenGL
-//** Description:	Extensions
-//**
-//**************************************************************************
+/*
+ * ext.c: OpenGL Extensions
+ *
+ * Get OpenGL header files from:
+ * http://oss.sgi.com/projects/ogl-sample/ 
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -43,12 +57,10 @@ PFNGLCLIENTACTIVETEXTUREPROC	glClientActiveTextureARB;
 PFNGLACTIVETEXTUREARBPROC		glActiveTextureARB;
 PFNGLMULTITEXCOORD2FARBPROC		glMultiTexCoord2fARB;
 PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB;
-#endif
-
 PFNGLBLENDEQUATIONEXTPROC		glBlendEquationEXT;
-
 PFNGLLOCKARRAYSEXTPROC			glLockArraysEXT;
 PFNGLUNLOCKARRAYSEXTPROC		glUnlockArraysEXT;
+#endif
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -113,8 +125,10 @@ void initExtensions(void)
 
 	if(query("GL_EXT_compiled_vertex_array", &extLockArray))
 	{
+#ifdef WIN32
 		GETPROC( glLockArraysEXT );
 		GETPROC( glUnlockArraysEXT );
+#endif
 	}
 
 	query("GL_EXT_paletted_texture", &palExtAvailable);
@@ -124,9 +138,9 @@ void initExtensions(void)
 	// EXT_blend_subtract
 	if(query("GL_EXT_blend_subtract", &extBlendSub))
 	{
-//#ifdef WIN32
+#ifdef WIN32
 		GETPROC( glBlendEquationEXT );
-//#endif
+#endif
 	}
 
 	// ARB_texture_env_combine
