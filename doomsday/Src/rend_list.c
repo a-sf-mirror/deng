@@ -306,7 +306,7 @@ void RL_AddMaskedPoly(rendpoly_t *poly)
 //	Color distance attenuation, extralight, fixedcolormap.
 //	"Torchlight" is white, regardless of the original RGB.
 //===========================================================================
-void RL_VertexColors(rendpoly_t *poly, int lightlevel, byte *rgb)
+void RL_VertexColors(rendpoly_t *poly, int lightlevel, const byte *rgb)
 {
 	int i;
 	float light, real, minimum;
@@ -388,7 +388,8 @@ void RL_PrepareFlat
 	}
 
 	// Calculate the color for each vertex.
-	RL_VertexColors(poly, Rend_SectorLight(poly->sector), poly->sector->rgb);
+	RL_VertexColors(poly, Rend_SectorLight(poly->sector),
+					R_GetSectorLightColor(poly->sector));
 }
 
 //===========================================================================
@@ -1266,11 +1267,15 @@ void RL_WriteFlat(rendlist_t *list, rendpoly_t *poly)
 		}
 
 		// Primary texture coordinates.
-		tc = &texCoords[TCA_MAIN][base + i];
-		tc->st[0] = (vtx->pos[VX] + poly->texoffx) /
-			(poly->flags & RPF_SHADOW? poly->tex.width : list->tex.width);
-		tc->st[1] = (-vtx->pos[VY] - poly->texoffy) /
-			(poly->flags & RPF_SHADOW? poly->tex.height : list->tex.height);
+		if(list->tex.id)
+		{
+			tc = &texCoords[TCA_MAIN][base + i];
+			tc->st[0] = (vtx->pos[VX] + poly->texoffx) /
+				(poly->flags & RPF_SHADOW? poly->tex.width : list->tex.width);
+			tc->st[1] = (-vtx->pos[VY] - poly->texoffy) /
+				(poly->flags & RPF_SHADOW? poly->tex.height :
+				 list->tex.height);
+		}
 
 		// Detail texture coordinates.
 		if(list->tex.detail)
