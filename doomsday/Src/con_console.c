@@ -292,6 +292,7 @@ cvar_t engineCVars[] =
 	// Render
 	"rend-dev-freeze",		0,			CVT_INT,	&freezeRLs,		0, 1,	"1=Stop updating rendering lists.",
 	"rend-dev-wireframe",	0,			CVT_INT,	&renderWireframe, 0, 1,	"1=Render player view in wireframe mode.",
+	"rend-dev-framecount",	CVF_PROTECTED, CVT_INT,	&framecount, 	0, 0,	"Frame counter.",
 	// * Render-Info
 	"rend-info-tris",		0,			CVT_BYTE,	&rend_info_tris, 0, 1,	"1=Print triangle count after rendering a frame.",
 	"rend-info-lums",		0,			CVT_BYTE,	&rend_info_lums, 0, 1,	"1=Print lumobj count after rendering a frame.",
