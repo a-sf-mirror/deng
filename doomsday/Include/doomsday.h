@@ -106,6 +106,7 @@ id_t		Net_GetPlayerID(int player);
 // Play.
 float		P_AccurateDistance(fixed_t dx, fixed_t dy);
 fixed_t		P_ApproxDistance(fixed_t dx, fixed_t dy);
+fixed_t		P_ApproxDistance3(fixed_t dx, fixed_t dy, fixed_t dz);
 int			P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line);
 int			P_BoxOnLineSide(fixed_t *tmbox, line_t *ld);
 void		P_MakeDivline(line_t *li, divline_t *dl);
