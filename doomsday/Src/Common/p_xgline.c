@@ -95,6 +95,9 @@ void XG_Init(void)
 
 void XG_Ticker(void)
 {
+	// Clients rely on the server, they don't do XG themselves.
+	if(IS_CLIENT) return;
+
 	XL_Ticker();	// Think for lines.
 	XS_Ticker();	// Think for sectors.
 }
@@ -104,6 +107,9 @@ void XG_Ticker(void)
  */
 void XG_Update(void)
 {
+	// Clients rely on the server, they don't do XG themselves.
+	if(IS_CLIENT) return;
+
 	XG_ReadTypes();
 	XS_Update();
 	XL_Update();
@@ -175,12 +181,10 @@ void XL_Init(void)
 {
 	int i;
 
-/*#ifdef _DEBUG
-	gi.Message("XL_Init: linetype=%i sectortype=%i\n", sizeof(linetype_t),
-		sizeof(sectortype_t));
-#endif*/
-
 	memset(&dummything, 0, sizeof(dummything));
+
+	// Clients rely on the server, they don't do XG themselves.
+	if(IS_CLIENT) return;
 
 	for(i = 0; i < numlines; i++)
 	{
@@ -907,6 +911,9 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
 	mobj_t *activator_thing = (mobj_t*) data; 
 	player_t *activator = activator_thing->player;
 	int i;
+
+	// Clients rely on the server, they don't do XG themselves.
+	if(IS_CLIENT) return false;
 
 	XG_Dev("XL_LineEvent: %s line %i, side %i (chained type %i)",
 		EVTYPESTR(evtype), line - lines, sidenum, linetype);

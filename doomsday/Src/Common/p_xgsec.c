@@ -282,7 +282,10 @@ void XS_Init(void)
 	builder = Z_Malloc(numsectors, PU_LEVEL, 0);
 	memset(builder, 0, numsectors);
 
-	for(i=0; i<numsectors; i++)
+	// Clients rely on the server, they don't do XG themselves.
+	if(IS_CLIENT) return;
+
+	for(i = 0; i < numsectors; i++)
 	{
 		sec = &sectors[i];
 		sec->origfloor = sec->floorheight;
