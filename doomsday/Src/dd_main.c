@@ -179,6 +179,7 @@ void DD_AddAutoData(boolean loadFiles)
 	for(i = 0; extensions[i]; i++)
 	{
 		sprintf(pattern, "%sAuto\\*.%s", R_GetDataPath(), extensions[i]);
+		Dir_FixSlashes(pattern);
 		F_ForAll(pattern, (void*) loadFiles, autoDataAdder);
 	}
 }
@@ -275,6 +276,9 @@ void DD_Main(void)
 	SW_Init();
 	
 	Con_Message("Executable: "DOOMSDAY_VERSIONTEXT".\n");
+
+	// Information about the memory zone.
+	Z_PrintStatus();
 	
 	// Print the used command line.
 	if(verbose)
@@ -300,8 +304,6 @@ void DD_Main(void)
 	if(!userdir_ok) Con_Message("--(!)-- User directory not found "
 		"(check -userdir).\n");
 	
-	Con_Message("Z_Init: Init zone memory allocation daemon.\n");
-	Z_Init();
 	bamsInit();		// Binary angle calculations.
 
 	// Initialize the zip file database.

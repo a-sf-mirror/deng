@@ -4,7 +4,7 @@
 //** DD_UINIT.C
 //**
 //** Unix init.
-//** Create windows, load libraries, setup APIs.
+//** Load libraries and set up APIs.
 //**
 //**************************************************************************
 
@@ -210,10 +210,7 @@ int main(int argc, char **argv)
 
 	free(cmdLine);
 	cmdLine = NULL;
-	
-	// Make the instance handle global knowledge.
-/*	hInstApp = hInstance;*/
-	
+
 	// Load the rendering DLL.
 	if(!DD_InitDGL()) return 1;
 
@@ -229,19 +226,9 @@ int main(int argc, char **argv)
 		DD_ErrorBox(true, "SDL Init Failed: %s\n", SDL_GetError());
 		return 4;
 	}
-	
-/*
-    if(!InitApplication(hInstance))
-	{
-		ErrorBox(true, "Couldn't initialize application.");
-		return FALSE;
-	}
-	if(!InitInstance(hInstance, nCmdShow)) 
-	{
-		ErrorBox(true, "Couldn't initialize instance.");
-		return FALSE;
-	}
-*/
+
+	// Init memory zone.
+	Z_Init();
 	
 	// Fire up the engine. The game loop will also act as the message pump.
 	DD_Main();
