@@ -243,6 +243,15 @@ enum
 // Macro for preparing the parameter for DD_TEXTURE_GLOW.
 #define DD_TGLOW_PARM(TNum,IsTexture,Glow)	((TNum & 0xffff) | (IsTexture? 0x80000000 : 0) | (Glow? 0x10000 : 0))
 
+// Bounding box coordinates.
+enum
+{
+	BOXTOP    = 0,
+	BOXBOTTOM = 1,
+	BOXLEFT   = 2,
+	BOXRIGHT  = 3
+};
+	
 
 //------------------------------------------------------------------------
 //
