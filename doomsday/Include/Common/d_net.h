@@ -4,7 +4,7 @@
 #include "../dd_share.h"
 
 #ifdef __JHERETIC__
-#include "../jHeretic/DoomDef.h"
+#include "../jHeretic/Doomdef.h"
 #endif
 
 #ifdef __JHEXEN__

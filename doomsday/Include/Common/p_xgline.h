@@ -3,7 +3,7 @@
 #define __XG_LINETYPE_H__
 
 #include "xgclass.h"
-#include "p_mobj.h"
+//#include "p_mobj.h"
 
 enum // Line events.
 {
@@ -253,7 +253,7 @@ typedef struct
 } xgline_t;
 		
 // Used as the activator if there is no real activator.
-extern mobj_t dummything;
+extern struct mobj_s dummything;
 
 // Initialize extended lines for the map.
 void XL_Init(void);
@@ -270,7 +270,7 @@ linetype_t *XL_GetType(int id);
 int XL_LineEvent(int evtype, int linetype, struct line_s *line, int sidenum, 
 				 void *data);
 void XL_ActivateLine(boolean activating, linetype_t *info, struct line_s *line,
-					 int sidenum, mobj_t *data);
+					 int sidenum, struct mobj_s *data);
 int XL_TraverseLines(struct line_s *line, int reftype, int ref, int data, 
 					 void *context, int (*func)(struct line_s *line, int data,
 					 void *context));
@@ -279,10 +279,10 @@ int XL_TraversePlanes(struct line_s *line, int reftype, int ref, int data,
 					  boolean ceiling, int data, void *context));
 
 // Return false if the event was processed.
-int XL_CrossLine(struct line_s *line, int sidenum, mobj_t *thing);
-int XL_UseLine(struct line_s *line, int sidenum, mobj_t *thing);
-int XL_ShootLine(struct line_s *line, int sidenum, mobj_t *thing);
-int XL_HitLine(struct line_s *line, int sidenum, mobj_t *thing);
+int XL_CrossLine(struct line_s *line, int sidenum, struct mobj_s *thing);
+int XL_UseLine(struct line_s *line, int sidenum, struct mobj_s *thing);
+int XL_ShootLine(struct line_s *line, int sidenum, struct mobj_s *thing);
+int XL_HitLine(struct line_s *line, int sidenum, struct mobj_s *thing);
 
 int XG_RandomInt(int min, int max);
 

@@ -10,7 +10,7 @@
 #endif
 
 #ifdef __JHEXEN__
-#include "../jHexen/P_local.h"
+#include "../jHexen/p_local.h"
 #endif
 
 extern boolean	cyclingMaps, mapCycleNoExit;
