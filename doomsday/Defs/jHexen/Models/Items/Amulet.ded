@@ -1,0 +1,7 @@
+########========-------- AMULET OF WARDING --------========########
+
+Model {
+  State = "ARMOR_4";
+  Flags = "df_autoscale df_spin";
+  Md2 { File = "Items/Amulet/Amulet.md2"; };
+}
