@@ -799,8 +799,7 @@ void R_ProjectSprite (mobj_t *thing)
 		if(mf->sub[0].flags & MFF_IDANGLE)
 		{
 			// Multiply with an arbitrary factor.
-			vis->mo.yaw += (thing->thinker.id * 26
-				+ ((unsigned)thing>>8)) % 360; 
+			vis->mo.yaw += THING_TO_ID(thing) % 360;
 		}
 
 		if(mf->sub[0].flags & MFF_ALIGN_PITCH)
@@ -1001,8 +1000,7 @@ fixed_t R_GetBobOffset(mobj_t *mo)
 {
 	if(mo->ddflags & DDMF_BOB)
 	{
-		return bobOffsets[(mo->thinker.id * 26 + ((unsigned)mo >> 8)
-			+ leveltic) & 63];
+		return bobOffsets[(THING_TO_ID(mo) + leveltic) & 63];
 	}
 	return 0;
 }
