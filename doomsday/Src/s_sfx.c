@@ -74,6 +74,8 @@ static byte refmonitor = 0;
 //	when it notices that the channels have been destroyed.
 //	The Sfx driver maintains a 250ms buffer for each channel, which 
 //	means the refresh must be done often enough to keep them filled.
+//
+//	FIXME: Use a real mutex, will you?
 //===========================================================================
 int Sfx_ChannelRefreshThread(void *parm)
 {
