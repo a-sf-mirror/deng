@@ -83,6 +83,7 @@ Flag { ID = "mg_misc"; Value = 0x200; }
 Flag { ID = "gnf_static"; Value = 1; }
 Flag { ID = "gnf_srcvel"; Value = 2; }
 Flag { ID = "gnf_spawn"; Value = 4; }
+Flag { ID = "gnf_srcdir"; Value = 8; }
 Flag { ID = "gnf_blend"; Value = 0x10; }
 Flag { ID = "gnf_floor"; Value = 0x20; }
 Flag { ID = "gnf_ceiling"; Value = 0x40; }
