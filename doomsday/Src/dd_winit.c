@@ -195,7 +195,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	// Prepare the command line arguments.
 	DD_InitCommandLine(GetCommandLine());
-	
+
 	// Load the rendering DLL.
 	if(!DD_InitDGL()) return FALSE;
 
@@ -216,6 +216,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		return FALSE;
 	}
 
+	// Initialize the memory zone.
+	Z_Init();
+	
 	// Fire up the engine. The game loop will also act as the message pump.
 	DD_Main();
     return 0;
