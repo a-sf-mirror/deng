@@ -164,9 +164,9 @@ void Cl_RemoveActivePoly(polymover_t *mover)
 //===========================================================================
 void Cl_MoverThinker(mover_t *mover)
 {
-	fixed_t	*current = mover->current;
+	fixed_t	*current = mover->current, original = *current;
 	boolean remove = false;
-
+	
 	if(!Cl_GameReady()) return; // Can we think yet?
 
 	// How's the gap?
@@ -184,7 +184,13 @@ void Cl_MoverThinker(mover_t *mover)
 		remove = true;
 	}
 
-	P_ChangeSector(mover->sector);
+	if(!P_ChangeSector(mover->sector))
+	{
+		// Something was blocking the way!
+		remove = false;
+		*current = original;
+		P_ChangeSector(mover->sector);
+	}
 
 	// Can we remove this thinker?
 	if(remove) Cl_RemoveActiveMover(mover);
