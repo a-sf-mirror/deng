@@ -38,3 +38,4 @@ void Rend_SkyParams(int layer, int parm, float value);
 void Rend_RenderSky(int hemis);
 
 #endif
+

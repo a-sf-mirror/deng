@@ -78,3 +78,4 @@ int TGA_GetSize(char *filename, int *w, int *h);
 #endif
 
 #endif
+

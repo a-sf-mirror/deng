@@ -38,7 +38,7 @@ int		F_Seek(DFILE *file, int offset, int whence);
 void	F_Rewind(DFILE *file);
 int		F_ForAll(const char *filespec, void *parm, f_forall_func_t func);
 
-#if !__DOOMSDAY__
+#ifndef __DOOMSDAY__
 // Redefine to match the standard file stream routines.
 #define	DFILE			FILE
 #define F_Open			fopen

@@ -4,6 +4,9 @@
 #ifndef __DOOMSDAY_SYSTEM_NETWORK_H__
 #define __DOOMSDAY_SYSTEM_NETWORK_H__
 
+#include "dd_share.h"
+#include "net_buf.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,12 +22,6 @@ typedef enum serviceprovider_e {
 	NUM_NSP
 } serviceprovider_t;
 
-// Send Packet flags:
-#define SPF_REBOUND		0x00020000	// Write only to local loopback
-#define SPF_DONT_SEND	0x00040000	// Don't really send out anything
-#define SPF_CONFIRM		0x40000000	// Make sure it's received
-#define SPF_ORDERED		0x80000000	// Send in order & confirm
-
 // If a master action fails, the action queue is emptied.
 typedef enum {
 	MAC_REQUEST,	// Retrieve the list of servers from the master.
@@ -36,6 +33,7 @@ extern boolean	allowSending;
 extern int		maxQueuePackets;
 
 extern serviceprovider_t gCurrentProvider;
+extern boolean	netServerMode;   
 
 extern int		nptActive;
 extern char		*nptIPAddress;
@@ -55,46 +53,38 @@ extern char		*masterAddress;
 extern int		masterPort;
 extern char		*masterPath;
 
-void	N_Init(void);
-void	N_Shutdown(void);
+void	N_SystemInit(void);
+void	N_SystemShutdown(void);
 boolean	N_InitService(serviceprovider_t provider, boolean inServerMode);
 void	N_ShutdownService(void);
 boolean	N_IsAvailable(void);
+boolean N_UsingInternet(void);
 boolean N_LookForHosts(void);
 
-void	N_SendPacket(int flags);
-boolean	N_GetPacket();
-//boolean	N_CheckSendQueue(int player);
+boolean N_Connect(int index);
+boolean N_Disconnect(void);
+boolean N_ServerOpen(void);
+boolean N_ServerClose(void);
+	
+void 	N_SendDataBuffer(void *data, uint size, nodeid_t destination);
+void	N_ReturnBuffer(void *handle);
 uint	N_GetSendQueueCount(int player);
 uint	N_GetSendQueueSize(int player);
-void	N_TerminateClient(int console);
+void 	N_TerminateNode(nodeid_t id);
 
-void	N_Update();
-void	N_Ticker(void);
+boolean N_GetNodeName(nodeid_t id, char *name);
 const char* N_GetProtocolName(void);
 
 int		N_GetHostCount(void);
 boolean	N_GetHostInfo(int index, struct serverinfo_s *info);
-void	N_PrintServerInfo(int index, struct serverinfo_s *info);
 unsigned int N_GetServiceProviderCount(serviceprovider_t type);
-boolean	N_GetServiceProviderName(serviceprovider_t type, unsigned int index, char *name, int maxLength);
-
-/*
-int		N_SetPlayerData(void *data, int size);
-int		N_GetPlayerData(int playerNum, void *data, int size);
-int		N_SetServerData(void *data, int size);
-int		N_GetServerData(void *data, int size);
-*/
-
-void	N_MAPost(masteraction_t act);
-boolean	N_MADone(void);
-
-// The 'net' console command.
-D_CMD( Net );
-D_CMD( HuffmanStats );
+boolean	N_GetServiceProviderName(serviceprovider_t type,
+								 unsigned int index, char *name,
+								 int maxLength);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif 
+

@@ -2,7 +2,7 @@
 #define __DOOMSDAY_NETWORK_H__
 
 #include <stdio.h>
-#include <lzss.h>
+#include "LZSS.h"
 #include "dd_share.h"
 #include "sys_network.h"
 #include "net_msg.h"
@@ -17,8 +17,6 @@
 // Flags for console text from the server.
 // Change with server version?
 #define SV_CONSOLE_FLAGS	(CBLF_WHITE|CBLF_LIGHT|CBLF_GREEN)
-
-#define NETBUFFER_MAXDATA	32768
 
 #define PING_TIMEOUT		1000	// Ping timeout (ms).
 #define MAX_PINGS			10
@@ -210,30 +208,6 @@ typedef struct
 } 
 client_t;
 
-typedef unsigned short msgid_t;
-
-#pragma pack(1)
-typedef struct
-{
-	msgid_t	id;
-	byte	type;
-	byte	data[NETBUFFER_MAXDATA];
-} netdata_t;
-#pragma pack()
-
-typedef struct
-{
-	int		player;		// Recipient or sender.
-	int		length;		// Number of bytes in the data buffer.
-	int		headerLength; // 1 byte at the moment.
-
-	byte	*cursor;	// Points into the data buffer.
-
-	// The data buffer for sending and receiving packets.
-	netdata_t msg;
-
-} netbuffer_t;
-
 // Packets.
 typedef struct
 {
@@ -254,7 +228,6 @@ typedef struct
 // Variables
 //---------------------------------------------------------------------------
 extern boolean firstNetUpdate;
-extern netbuffer_t netbuffer;
 extern int resend_start;			// set when server needs our tics
 extern int resend_count;
 extern int gametime, oldentertics;
@@ -281,9 +254,9 @@ void	Net_DestroyArrays(void);
 void	Net_SendPacket(int to_player, int type, void *data, int length);
 boolean	Net_GetPacket(void);
 void	Net_SendBuffer(int to_player, int sp_flags);
-void	Net_InitGame (void);
-void	Net_StartGame (void);
-void	Net_StopGame (void);
+void	Net_InitGame(void);
+void	Net_StartGame(void);
+void	Net_StopGame(void);
 void	Net_SendPing(int player, int count);
 void	Net_PingResponse(void);
 void	Net_ShowPingSummary(int player);
@@ -303,6 +276,8 @@ uint	Net_GetAckThreshold(int clientNumber);
 char*	Net_GetPlayerName(int player);
 id_t	Net_GetPlayerID(int player);
 
+void 	Net_PrintServerInfo(int index, serverinfo_t *info);
+
 // Console commands.
 D_CMD( Kick );
 D_CMD( SetName );
@@ -310,5 +285,6 @@ D_CMD( SetTicks );
 D_CMD( MakeCamera );
 D_CMD( SetConsole );
 D_CMD( Connect );
+D_CMD( Net );
 
 #endif

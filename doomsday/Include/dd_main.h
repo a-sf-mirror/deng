@@ -4,6 +4,8 @@
 #ifndef __DOOMSDAY_MAIN_H__
 #define __DOOMSDAY_MAIN_H__
 
+#include "dd_types.h"
+
 // Verbose messages.
 #define VERBOSE(code)	{ if(verbose >= 1) { code; } }
 #define VERBOSE2(code)	{ if(verbose >= 2) { code; } }
@@ -20,6 +22,10 @@ extern int isDedicated;
 extern char ddBasePath[];
 extern char *defaultWads; // A list of wad names, whitespace in between (in .cfg).
 extern directory_t ddRuntimeDir, ddBinDir; 
+
+#ifndef WIN32
+GETGAMEAPI GetGameAPI;
+#endif
 
 void DD_Main();
 void DD_GameUpdate(int flags);

@@ -5,7 +5,9 @@
 #define __DOOMSDAY_TEXTURES_H__
 
 #include "r_data.h"
+#include "r_model.h"
 #include "con_decl.h"
+#include "gl_model.h"
 
 /*
  * This structure is used with GL_LoadImage. When it is no longer needed
@@ -106,8 +108,8 @@ unsigned int	GL_GetTextureName(int texidx);
 void			GL_DeleteTexture(int texidx); 
 
 // Load the skin texture and prepare it for rendering.
-unsigned int	GL_PrepareSkin(struct model_s *mdl, int skin);
-unsigned int	GL_PrepareShinySkin(struct modeldef_s *md, int sub);
+unsigned int	GL_PrepareSkin(model_t *mdl, int skin);
+unsigned int	GL_PrepareShinySkin(modeldef_t *md, int sub);
 
 // Console commands.
 D_CMD( LowRes );
