@@ -32,6 +32,11 @@
 
 // TYPES -------------------------------------------------------------------
 
+typedef struct boundary_s {
+	vec2_t left, right;
+	vec2_t a, b;
+} boundary_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -159,6 +164,32 @@ boolean R_ShadowCornerDeltas(pvec2_t left, pvec2_t right, shadowpoly_t *poly,
 }
 
 /*
+ * Returns the width (world units) of the shadow edge.  It is scaled
+ * depending on the length of the edge.
+ */
+float R_ShadowEdgeWidth(const pvec2_t edge)
+{
+	float length = V2_Length(edge);
+	float normalWidth = 20; //16;
+	float maxWidth = 60;
+	float w;
+
+	// A short edge?
+	if(length < normalWidth * 2)
+		return length/2;
+
+	// A long edge?
+	if(length > 600)
+	{
+		w = length - 600;
+		if(w > 1000) w = 1000;
+		return normalWidth + w/1000*maxWidth;
+	}
+	
+	return normalWidth;
+}
+
+/*
  * Sets the shadow edge offsets.  If the associated line does not have
  * neighbors, it can't have a shadow.
  */
@@ -171,7 +202,9 @@ void R_ShadowEdges(shadowpoly_t *poly)
 	{
 		// The inside corner.
 		R_ShadowCornerDeltas(left, right, poly, side == 0, false);
-		R_CornerNormalPoint(left, 16, right, 16, poly->inoffset[side],
+		R_CornerNormalPoint(left, R_ShadowEdgeWidth(left),
+							right, R_ShadowEdgeWidth(right),
+							poly->inoffset[side],
 							side == 0? poly->extoffset[side] : NULL,
 							side == 1? poly->extoffset[side] : NULL);
 
@@ -179,7 +212,9 @@ void R_ShadowEdges(shadowpoly_t *poly)
 		// offset.
 		if(R_ShadowCornerDeltas(left, right, poly, side == 0, true))
 		{
-			R_CornerNormalPoint(left, 16, right, 16, poly->bextoffset[side],
+			R_CornerNormalPoint(left, R_ShadowEdgeWidth(left),
+								right, R_ShadowEdgeWidth(right),
+								poly->bextoffset[side],
 								NULL, NULL);
 		}
 		else
@@ -235,7 +270,6 @@ boolean RIT_ShadowSubsectorLinker(subsector_t *subsector, void *parm)
 	shadowpoly_t *poly = parm;
 	vec2_t corners[4], a, b, mid;
 	int i, j;
-	float k, m;
 
 	R_LinkShadow(poly, subsector); return true;
 
@@ -279,11 +313,14 @@ boolean RIT_ShadowSubsectorLinker(subsector_t *subsector, void *parm)
 
 		for(i = 0; i < 4; i++)
 		{
-			k = V2_Intercept(a, b, corners[i], corners[(i + 1) % 4], NULL);
+/*			k = V2_Intercept(a, b, corners[i], corners[(i + 1) % 4], NULL);
 			m = V2_Intercept(corners[i], corners[(i + 1) % 4], a, b, NULL);
 
-			// Is the intersection between points 'a' and 'b'?
-			if(k >= 0 && k <= 1 && m >= 0 && m <= 1)
+			// Is the intersection between points 'a' and 'b'.
+			if(k >= 0 && k <= 1 && m >= 0 && m <= 1)*/
+			
+			if(V2_Intercept2(a, b, corners[i], corners[(i + 1) % 4],
+							 NULL, NULL, NULL))
 			{
 				// There is contact!
 				R_LinkShadow(poly, subsector);
@@ -298,6 +335,133 @@ boolean RIT_ShadowSubsectorLinker(subsector_t *subsector, void *parm)
 }
 
 /*
+ * Moves inoffset appropriately.  Returns true if overlap resolving
+ * should continue to another round of iteration.
+ */
+boolean R_ResolveStep(const pvec2_t outer, const pvec2_t inner,
+					  pvec2_t offset)
+{
+#define RESOLVE_STEP 2
+	float span, distance;
+	boolean iterCont = true;
+	
+	span = distance = V2_Distance(outer, inner);
+	if(span == 0) return false;
+	
+//	if(distance <= RESOLVE_STEP * 2)
+	//{
+		distance /= 2;
+		iterCont = false;
+/*	}
+	else
+	{
+		distance -= RESOLVE_STEP;
+		}*/
+
+	V2_Scale(offset, distance/span);
+	return iterCont;
+}
+
+/*
+ * The array of polys given as the parameter contains the shadow
+ * polygons of one sector.  If the polygons overlap, we will
+ * iteratively resolve the overlaps by moving the inner corner points
+ * closer to the outer corner points.  Other corner points remain
+ * unmodified.
+ */
+void R_ResolveOverlaps(shadowpoly_t *polys, int count, sector_t *sector)
+{
+#define OVERLAP_LEFT	0x01
+#define OVERLAP_RIGHT	0x02
+#define OVERLAP_ALL 	(OVERLAP_LEFT | OVERLAP_RIGHT)
+#define EPSILON			.01f
+	boolean done = false;
+	int i, k, tries;
+	boundary_t *boundaries, *bound, *other;
+	byte *overlaps;
+	float s, t;
+	vec2_t a, b;
+	line_t *line;
+
+	// Were any polygons provided?
+	if(!count) return;
+	
+	boundaries = malloc(sizeof(*boundaries) * count);
+	overlaps = malloc(count);	
+	
+	// We don't want to stay here forever.
+	for(tries = 0; tries < 100 && !done; tries++)
+	{
+		// We will set this to false if we notice that overlaps still
+		// exist.
+		done = true;
+		
+		// Calculate the boundaries.
+		for(i = 0, bound = boundaries; i < count; i++, bound++)
+		{
+			V2_SetFixed(bound->left,
+						polys[i].outer[0]->x, polys[i].outer[0]->y);
+			V2_Sum(bound->a, polys[i].inoffset[0], bound->left);
+
+			V2_SetFixed(bound->right,
+						polys[i].outer[1]->x, polys[i].outer[1]->y);
+			V2_Sum(bound->b, polys[i].inoffset[1], bound->right);
+		}
+		memset(overlaps, 0, count);
+
+		// Find the overlaps.
+		for(i = 0, bound = boundaries; i < count; i++, bound++)
+		{
+			/*for(k = 0, other = boundaries; k < count; k++, other++)*/
+
+			for(k = 0; k < sector->linecount; k++)
+			{
+				//if(i == k) continue;
+				line = sector->lines[k];
+				if(polys[i].line == line) continue;
+				if(line->frontsector == sector &&
+				   line->backsector == sector) continue;
+								
+				if((overlaps[i] & OVERLAP_ALL) == OVERLAP_ALL) break;
+
+				V2_SetFixed(a, line->v1->x, line->v1->y);
+				V2_SetFixed(b, line->v2->x, line->v2->y);
+				
+				// Try the left edge of the shadow.
+				V2_Intercept2(bound->left, bound->a,
+							  a/*other->left*/, b/*other->right*/, NULL, &s, &t);
+				if(s > 0 && s < 1 && t >= EPSILON && t <= 1 - EPSILON)
+					overlaps[i] |= OVERLAP_LEFT;
+
+				// Try the right edge of the shadow.
+				V2_Intercept2(bound->right, bound->b,
+							  a/*other->left*/, b/*other->right*/, NULL, &s, &t);
+				if(s > 0 && s < 1 && t >= EPSILON && t <= 1 - EPSILON)
+					overlaps[i] |= OVERLAP_RIGHT;
+			}
+		}
+
+		// Adjust the overlapping inner points.
+		for(i = 0, bound = boundaries; i < count; i++, bound++)
+		{
+			if(overlaps[i] & OVERLAP_LEFT)
+			{
+				if(R_ResolveStep(bound->left, bound->a, polys[i].inoffset[0]))
+					done = false;
+			}
+			if(overlaps[i] & OVERLAP_RIGHT)
+			{
+				if(R_ResolveStep(bound->right, bound->b, polys[i].inoffset[1]))
+					done = false;
+			}
+		}
+	}
+
+	free(boundaries);
+	free(overlaps);
+}
+
+/*
  * New shadowpolys will be allocated from the storage.  If it is NULL,
  * the number of polys required is returned.
  */
@@ -308,11 +472,12 @@ int R_MakeShadowEdges(shadowpoly_t *storage)
 	line_t *line;
 	lineinfo_side_t *info;
 	boolean frontside;
-	shadowpoly_t *poly, *allocator = storage;
+	shadowpoly_t *poly, *sectorFirst, *allocator = storage;
 	
 	for(i = 0, counter = 0; i < numsectors; i++)
 	{
 		sector = SECTOR_PTR(i);
+		sectorFirst = allocator;
 
 		// Iterate all the lines of the sector.
 		for(j = 0; j < sector->linecount; j++)
@@ -343,6 +508,13 @@ int R_MakeShadowEdges(shadowpoly_t *storage)
 			R_OrderVertices(line, sector, poly->outer);
 			
 			R_ShadowEdges(poly);
+		}
+
+		if(allocator)
+		{
+			// If shadows were created, make sure they don't overlap
+			// each other.
+			R_ResolveOverlaps(sectorFirst, allocator - sectorFirst, sector);
 		}
 	}
 	return counter;
