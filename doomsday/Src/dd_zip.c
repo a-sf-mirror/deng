@@ -82,6 +82,7 @@ typedef struct zipentry_s {
 
 #pragma pack(1)
 typedef struct localfileheader_s {
+	uint    signature;
 	ushort	requiredVersion;
 	ushort	flags;
 	ushort	compression;
@@ -372,6 +373,7 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 	for(index = 0; index < summary.totalEntryCount; index++, 
 		pos += sizeof(centralfileheader_t))
 	{
+		localfileheader_t localHeader;
 		centralfileheader_t *header = (void*) pos;
 		char *nameStart = pos + sizeof(centralfileheader_t);
 
@@ -409,8 +411,16 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 		entry = Zip_NewFile(buf);
 		entry->package = pack;
 		entry->size = header->size;
-		entry->offset = header->relOffset + 38 /*4 + sizeof(localfileheader_t)*/
-			+ header->fileNameSize + header->extraFieldSize;
+
+		// Read the local file header, which contains the correct
+		// extra field size (Info-ZIP!).
+		F_Seek(file, header->relOffset, SEEK_SET);
+		F_Read(&localHeader, sizeof(localHeader), file);
+		
+		entry->offset = header->relOffset
+			+ sizeof(localfileheader_t)
+			+ header->fileNameSize
+			+ localHeader.extraFieldSize;
 	}
 
 	// The central directory is no longer needed.
@@ -560,5 +570,7 @@ uint Zip_Read(zipindex_t index, void *buffer)
 	F_Seek(pack->file, entry->offset, SEEK_SET);
 	F_Read(buffer, entry->size, pack->file);
 
+	// TODO: Use zlib to inflate deflated entries.
+	
 	return entry->size;
 }
