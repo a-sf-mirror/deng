@@ -562,7 +562,10 @@ boolean W_AddFile(const char *filename, boolean allowDuplicate)
 		strcpy(buff + strlen(buff)-3, "gwa");
 
 		// If GL data exists, load it.
-		if(F_Access(buff)) W_AddFile(buff, allowDuplicate);
+		if(F_Access(buff))
+		{
+			W_AddFile(buff, allowDuplicate);
+		}
 	}	
 
 	return true;
