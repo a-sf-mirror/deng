@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.2  2003/09/07 22:22:53  skyjake
+// Cleanup
+//
 // Revision 1.9.2.1  2003/09/05 21:45:58  skyjake
 // Increased spacing in main/episode menus
 //
@@ -45,9 +48,6 @@
 //
 // Revision 1.1  2003/02/26 19:21:48  skyjake
 // Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:46  Jaakko
-// Added Doomsday sources
 //
 //
 // DESCRIPTION:
