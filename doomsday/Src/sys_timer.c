@@ -13,6 +13,10 @@
 #	include <mmsystem.h>
 #endif
 
+#ifdef UNIX
+#	include <SDL.h>
+#endif
+
 #include "de_base.h"
 #include "de_console.h"
 
@@ -69,7 +73,7 @@ unsigned int Sys_GetRealTime (void)
 	DWORD now = timeGetTime();
 #endif
 #ifdef UNIX
-	DWORD now = 0;
+	Uint32 now = SDL_GetTicks();
 #endif
 
 	if(first)
