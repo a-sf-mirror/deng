@@ -23,12 +23,15 @@
 
 #include "doomsday.h"
 #include "sys_sfxd.h"
+#include "sys_musd.h"
 
 #include <string.h>
 #include <SDL.h>
 #include <SDL_mixer.h>
 
 // MACROS ------------------------------------------------------------------
+
+#define BUFFERED_MUSIC_FILE "/tmp/deng-sdlmixer-buffered-song"
 
 // TYPES -------------------------------------------------------------------
 
@@ -53,6 +56,17 @@ void			DS_Setv(sfxbuffer_t *buf, int property, float *values);
 void			DS_Listener(int property, float value);
 void			DS_Listenerv(int property, float *values);
 
+// The Ext music interface.
+int				DM_Ext_Init(void);
+void			DM_Ext_Update(void);
+void			DM_Ext_Set(int property, float value);
+int				DM_Ext_Get(int property, void *value);
+void			DM_Ext_Pause(int pause);
+void			DM_Ext_Stop(void);
+void *			DM_Ext_SongBuffer(int length);
+int				DM_Ext_PlayFile(const char *filename, int looped);
+int				DM_Ext_PlayBuffer(int looped);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -61,8 +75,13 @@ void			DS_Listenerv(int property, float *values);
 
 static boolean initOk = false;
 static int verbose;
+
 static char storage[0x40000];
 static int channelCounter = 0;
+static unsigned songSize = 0;
+static char *song;
+
+static Mix_Music *currentMusic;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -120,7 +139,12 @@ void DS_Shutdown(void)
 
 	Mix_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
-	
+
+	if(song) free(song);
+	if(currentMusic) Mix_FreeMusic(currentMusic);
+
+	song = NULL;
+	currentMusic = NULL;
 	initOk = false;
 }
 
@@ -381,8 +405,8 @@ void DS_Set(sfxbuffer_t *buf, int property, float value)
 		{
 			buf->freq = dw;
 			s->SetPitch(value);
-			}
-			break;*/
+		}
+		break;*/
 
 	case SFXBP_PAN: // -1 ... +1
 		right = (value + 1) * 127;
@@ -391,30 +415,123 @@ void DS_Set(sfxbuffer_t *buf, int property, float value)
 	}
 }
 
-//===========================================================================
-// DS_Setv
-//===========================================================================
 void DS_Setv(sfxbuffer_t *buf, int property, float *values)
 {
+	// Not supported.
 }
 
-//===========================================================================
-// DS_Listener
-//===========================================================================
 void DS_Listener(int property, float value)
 {
+	// Not supported.
 }
 
-//===========================================================================
-// SetEnvironment
-//===========================================================================
 void SetEnvironment(float *rev)
 {
+	// Not supported.
 }
 
-//===========================================================================
-// DS_Listenerv
-//===========================================================================
 void DS_Listenerv(int property, float *values)
 {
+	// Not supported.
+}
+
+int DM_Ext_Init(void)
+{
+	// The music interface is available without any extra work.
+	return initOk;
+}
+
+void DM_Ext_Update(void)
+{
+	// Nothing to update.
+}
+
+void DM_Ext_Set(int property, float value)
+{
+	if(!initOk) return;
+	
+	switch(property)
+	{
+	case MUSIP_VOLUME:
+		Mix_VolumeMusic(MIX_MAX_VOLUME * value);
+		break;
+	}
+}
+
+int DM_Ext_Get(int property, void *value)
+{
+	if(!initOk) return false;
+
+	switch(property)
+	{
+	case MUSIP_ID:
+		strcpy(value, "SDLMixer/Ext");
+		break;
+	
+	default:
+		return false;
+	}
+	return true;
+}
+
+void *DM_Ext_SongBuffer(int length)
+{
+	if(!initOk) return NULL;
+
+	if(song) free(song);
+	songSize = length;
+	return song = malloc(length);
+}
+
+int DM_Ext_PlayBuffer(int looped)
+{
+	if(!initOk) return false;
+
+	if(song)
+	{
+		// Dump the song into a temporary file where SDL_mixer can
+		// load it.
+		FILE *tmp = fopen(BUFFERED_MUSIC_FILE, "wb");
+		if(tmp)
+		{
+			fwrite(song, songSize, 1, tmp);
+			fclose(tmp);
+		}
+		
+		free(song);
+		song = 0;
+		songSize = 0;
+	}
+
+	return DM_Ext_PlayFile(BUFFERED_MUSIC_FILE, looped);			
+}
+
+void DM_Ext_Pause(int pause)
+{
+	if(!initOk) return;
+	
+	if(pause) Mix_PauseMusic(); else Mix_ResumeMusic();
+}
+
+void DM_Ext_Stop(void)
+{
+	if(!initOk) return;
+
+	Mix_HaltMusic();
+}
+
+int DM_Ext_PlayFile(const char *filename, int looped)
+{
+	if(!initOk) return false;
+
+	// Free any previously loaded music.
+	if(currentMusic) Mix_FreeMusic(currentMusic);
+
+	if(!(currentMusic = Mix_LoadMUS(filename)))
+	{
+		Error();
+		return false;
+	}
+
+	return !Mix_PlayMusic(currentMusic, looped? -1 : 1);
 }

@@ -17,6 +17,7 @@
 
 #include "de_console.h"
 #include "sys_sfxd.h"
+#include "sys_musd.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -30,6 +31,11 @@
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+extern musdriver_t         musd_loaded;
+extern musinterface_mus_t  musd_loaded_imus;
+extern musinterface_ext_t  musd_loaded_iext;
+extern musinterface_cd_t   musd_loaded_icd;
+
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 sfxdriver_t sfxd_external;
@@ -40,6 +46,10 @@ static lt_dlhandle handle;
 static void	(*driverShutdown)(void);
 
 // CODE --------------------------------------------------------------------
+
+static void dummyVoid(void)
+{
+}
 
 //===========================================================================
 // Imp
@@ -85,6 +95,27 @@ sfxdriver_t *DS_ImportExternal(void)
 	d->Listenerv = Imp("DS_Listenerv");
 	d->Getv = Imp("DS_Getv");
 
+	// The driver may also offer an Ext music interface.
+	if(Imp("DM_Ext_Init"))
+	{
+		musdriver_t *m = &musd_loaded;
+		musinterface_ext_t *i = &musd_loaded_iext;
+		
+		m->Init = Imp("DS_Init");
+		m->Shutdown = dummyVoid;
+
+		i->gen.Init = Imp("DM_Ext_Init");
+		i->gen.Update = Imp("DM_Ext_Update");
+		i->gen.Set = Imp("DM_Ext_Set");
+		i->gen.Get = Imp("DM_Ext_Get");
+		i->gen.Pause = Imp("DM_Ext_Pause");
+		i->gen.Stop = Imp("DM_Ext_Stop");
+
+		i->SongBuffer = Imp("DM_Ext_SongBuffer");
+		i->PlayFile = Imp("DM_Ext_PlayFile");
+		i->PlayBuffer = Imp("DM_Ext_PlayBuffer");
+	}
+	
 	// We should free the DLL at shutdown.
 	d->Shutdown = DS_UnloadExternal;
 	return d;

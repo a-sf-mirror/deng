@@ -18,6 +18,8 @@
 
 // MACROS ------------------------------------------------------------------
 
+#define NUM_INTERFACES (sizeof(interfaces)/sizeof(interfaces[0]))
+
 // TYPES -------------------------------------------------------------------
 
 typedef struct interface_info_s
@@ -40,6 +42,14 @@ interface_info_t;
 int mus_preference = MUSP_EXT;
 
 #ifdef UNIX
+// On Unix, all sound and music interfaces are loaded dynamically.
+musdriver_t         musd_loaded;
+musinterface_mus_t  musd_loaded_imus;
+musinterface_ext_t  musd_loaded_iext;
+musinterface_cd_t   musd_loaded_icd;
+#endif
+
+/*
 // Some interfaces are not available on Unix. These are just empty stubs.
 musdriver_t 		musd_fmod;
 musinterface_ext_t 	musd_fmod_iext;
@@ -50,7 +60,7 @@ musinterface_mus_t 	musd_win_imus;
 musinterface_cd_t 	musd_win_icd;
 
 sfxdriver_t			sfxd_dsound;
-#endif
+*/
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -69,8 +79,7 @@ static interface_info_t interfaces[] =
 {
 	{ (musinterface_generic_t**) &imus,	"Mus" },
 	{ (musinterface_generic_t**) &iext,	"Ext" },
-	{ (musinterface_generic_t**) &icd,	"CD" },
-	{ 0, 0 }
+	{ (musinterface_generic_t**) &icd,	"CD" }
 };
 
 // CODE --------------------------------------------------------------------
@@ -87,6 +96,7 @@ boolean Mus_Init(void)
 	if(isDedicated || mus_avail || ArgExists("-nomusic")) 
 		return true;
 
+#ifdef WIN32
 	// The Win driver is always initialized.
 	if(musd_win.Init())
 	{
@@ -112,13 +122,25 @@ boolean Mus_Init(void)
 		// Must rely on Windows, then, without an Ext interface.
 		icd = &musd_win_icd;
 	}
+#endif
+#ifdef UNIX
+	// The available interfaces have already been loaded.
+	if(musd_loaded.Init())
+	{
+		imus = (musd_loaded_imus.gen.Init? &musd_loaded_imus : 0);
+		iext = (musd_loaded_iext.gen.Init? &musd_loaded_iext : 0);
+		icd = (musd_loaded_icd.gen.Init? &musd_loaded_icd : 0);
+	}
+#endif
 
 	// Initialize the chosen interfaces.
-	for(i = 0; interfaces[i].ip; i++)
+	for(i = 0; i < NUM_INTERFACES; i++)
 		if(*interfaces[i].ip && !(*interfaces[i].ip)->Init())
 		{
 			Con_Message("Mus_Init: Failed to initialize %s interface.\n",
 				interfaces[i].name);
+
+			*interfaces[i].ip = NULL;
 		}
 
 	// Print a list of the chosen interfaces.
@@ -126,7 +148,7 @@ boolean Mus_Init(void)
 	{
 		char buf[40];
 		Con_Printf("Mus_Init: Interfaces: ");
-		for(i = 0; interfaces[i].ip; i++)
+		for(i = 0; i < NUM_INTERFACES; i++)
 			if(*interfaces[i].ip)
 			{
 				if(!(*interfaces[i].ip)->Get(MUSIP_ID, buf)) 
@@ -150,9 +172,11 @@ void Mus_Shutdown(void)
 	if(!mus_avail) return;
 	mus_avail = false;
 
+#ifdef WIN32
 	// Shut down the drivers. They shut down their interfaces automatically.
 	musd_fmod.Shutdown();
 	musd_win.Shutdown();
+#endif
 
 	// No more interfaces.
 	imus = 0;
@@ -171,7 +195,7 @@ void Mus_StartFrame(void)
 	if(!mus_avail) return;
 
 	// Update all interfaces.
-	for(i = 0; interfaces[i].ip; i++)
+	for(i = 0; i < NUM_INTERFACES; i++)
 		if(*interfaces[i].ip) (*interfaces[i].ip)->Update();
 }
 
@@ -187,7 +211,7 @@ void Mus_SetVolume(float vol)
 	if(!mus_avail) return;
 
 	// Set volume of all available interfaces.
-	for(i = 0; interfaces[i].ip; i++)
+	for(i = 0; i < NUM_INTERFACES; i++)
 		if(*interfaces[i].ip) (*interfaces[i].ip)->Set(MUSIP_VOLUME, vol);
 }
 
@@ -202,7 +226,7 @@ void Mus_Pause(boolean do_pause)
 	if(!mus_avail) return;
 
 	// Pause all interfaces.
-	for(i = 0; interfaces[i].ip; i++)
+	for(i = 0; i < NUM_INTERFACES; i++)
 		if(*interfaces[i].ip) (*interfaces[i].ip)->Pause(do_pause);
 }
 
@@ -218,7 +242,7 @@ void Mus_Stop(void)
 	current_song = -1;
 
 	// Stop all interfaces.
-	for(i = 0; interfaces[i].ip; i++)
+	for(i = 0; i < NUM_INTERFACES; i++)
 		if(*interfaces[i].ip) (*interfaces[i].ip)->Stop();
 }
 

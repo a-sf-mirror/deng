@@ -1,4 +1,4 @@
-SUBDIRS = drOpenGL dsSDLMixer dpDehRead jDoom jHeretic jHexen
+SUBDIRS = drOpenGL dsSDLMixer dsOpenAL dpDehRead jDoom jHeretic jHexen
 
 # Build the engine.
 #DEFS = -DUNIX -DNO_FIXED_ASM -D__DOOMSDAY__ -DNORANGECHECKING

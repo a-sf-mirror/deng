@@ -893,21 +893,27 @@ boolean Sfx_InitDriver(sfxdriver_e drvid)
 		driver = &sfxd_dummy;
 		break;
 
-	case SFXD_DSOUND:
-		driver = &sfxd_dsound;
-		break;
-
 	case SFXD_A3D:
 		if(!(driver = DS_Load("A3D"))) return false;
 		break;
 
 	case SFXD_OPENAL:
-		if(!(driver = DS_Load("OpenAL"))) return false;
+		if(!(driver = DS_Load("openal"))) return false;
 		break;
 
 	case SFXD_COMPATIBLE:
 		if(!(driver = DS_Load("Compat"))) return false;
 		break;
+
+	case SFXD_SDL_MIXER:
+		if(!(driver = DS_Load("sdlmixer"))) return false;
+		break;
+		
+#ifdef WIN32
+	case SFXD_DSOUND:
+		driver = &sfxd_dsound;
+		break;
+#endif
 
 	default:
 		Con_Error("Sfx_Driver: Unknown driver type %i.\n", drvid);
@@ -1063,10 +1069,16 @@ boolean Sfx_Init(void)
 		Con_Message("Compatible...\n");
 		ok = Sfx_InitDriver(SFXD_COMPATIBLE);
 	}
-	else
+	else // The default driver.
 	{
+#ifdef WIN32
 		Con_Message("DirectSound...\n");
 		ok = Sfx_InitDriver(SFXD_DSOUND);
+#endif
+#ifdef UNIX
+		Con_Message("SDL_mixer...\n");
+		ok = Sfx_InitDriver(SFXD_SDL_MIXER);
+#endif
 	}
 	// Did we succeed?
 	if(!ok)
@@ -1272,4 +1284,3 @@ void Sfx_DebugInfo(void)
 		FR_TextOut(buf, 5, lh*(2 + i*2));
 	}
 }
-
