@@ -24,13 +24,6 @@
 #define KBDQUESIZE		32
 #define MAX_DOWNKEYS	16		// Most keyboards support 6 or 7.
 
-#define SC_RSHIFT       0x36
-#define SC_LSHIFT       0x2a
-#define SC_UPARROW      0x48
-#define SC_DOWNARROW    0x50
-#define SC_LEFTARROW    0x4b
-#define SC_RIGHTARROW   0x4d
-
 #define CLAMP(x) DD_JoyAxisClamp(&x) //x = (x < -100? -100 : x > 100? 100 : x)
 
 // TYPES -------------------------------------------------------------------
