@@ -287,6 +287,17 @@ void Sys_SuspendThread(int handle, boolean dopause)
 }
 
 #ifdef UNIX
+/*
+ * Returns the return value of the thread.
+ */
+int Sys_WaitThread(int handle)
+{
+	int result;
+
+	SDL_WaitThread((SDL_Thread*)handle, &result);
+	return result;
+}
+
 int Sys_CreateMutex(const char *name)
 {
 	return (int) SDL_CreateMutex();
@@ -309,4 +320,43 @@ void Sys_Unlock(int handle)
 	if(!handle) return;
 	SDL_mutexV((SDL_mutex*)handle);
 }
+
 #endif
+
+/*
+ * Create a new semaphore. Returns a handle.
+ */
+semaphore_t Sem_Create(unsigned int initialValue)
+{
+	return (semaphore_t) SDL_CreateSemaphore(initialValue);
+}
+
+void Sem_Destroy(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_DestroySemaphore((SDL_sem*)semaphore);
+	}
+}
+
+/*
+ * "Proberen" a semaphore. Blocks until the successful.
+ */
+void Sem_P(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_SemWait((SDL_sem*)semaphore);
+	}
+}
+
+/*
+ * "Verhohen" a semaphore. Returns immediately.
+ */
+void Sem_V(semaphore_t semaphore)
+{
+	if(semaphore)
+	{
+		SDL_SemPost((SDL_sem*)semaphore);
+	}
+}
