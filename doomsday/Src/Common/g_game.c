@@ -2373,6 +2373,14 @@ void G_Completed(int map, int position)
 {
 	if(cyclingMaps && mapCycleNoExit) return;
 
+	if(shareware)
+	{
+		// Not possible in the 4-level demo.
+		P_SetMessage(&players[consoleplayer], "PORTAL INACTIVE -- DEMO", 
+			true);
+		return;
+	}
+
 	gameaction = ga_completed;
 	LeaveMap = map;
 	LeavePosition = position;
