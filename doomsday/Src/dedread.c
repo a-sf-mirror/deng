@@ -979,6 +979,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_FLT("Gravity", mi->gravity)
 				RV_FLT("Sky height", mi->sky_height)
 				RV_FLT("Horizon offset", mi->horizon_offset)
+				RV_VEC("Sky light color", mi->sky_color, 3)
 				if(ISLABEL("Sky Layer 1") || ISLABEL("Sky Layer 2"))
 				{
 					ded_skylayer_t *sl = mi->sky_layers + atoi(label+10) - 1;

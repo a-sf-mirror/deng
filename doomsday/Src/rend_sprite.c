@@ -149,9 +149,10 @@ void Rend_DrawPlayerSprites(void)
 			}
 			else
 			{
-				GL_SetColorAndAlpha(psp[i].light * (sec->rgb[CR]/255.0f), 
-					psp[i].light * (sec->rgb[CG]/255.0f), 
-					psp[i].light * (sec->rgb[CB]/255.0f), 
+				const byte *secRGB = R_GetSectorLightColor(sec);
+				GL_SetColorAndAlpha(psp[i].light * (secRGB[CR]/255.0f), 
+					psp[i].light * (secRGB[CG]/255.0f), 
+					psp[i].light * (secRGB[CB]/255.0f), 
 					psp[i].alpha);
 			}
 

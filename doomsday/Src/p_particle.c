@@ -330,8 +330,8 @@ void P_NewParticle(ptcgen_t *gen)
 	if(gen->source)
 	{
 		inter = R_CheckModelFor(gen->source, &mf, &nextmf);
-		if((!mf || !useModels) && def->flags & PGF_MODEL_ONLY
-			|| mf && useModels && mf->flags & MFF_NO_PARTICLES) return;
+		if(((!mf || !useModels) && def->flags & PGF_MODEL_ONLY) ||
+		   (mf && useModels && mf->flags & MFF_NO_PARTICLES)) return;
 	}
 
 	// Keep the spawn cursor in the valid range.
@@ -445,9 +445,9 @@ void P_NewParticle(ptcgen_t *gen)
 				+ FixedMul(M_Random() << 8, gen->sector->ceilingheight
 				- gen->sector->floorheight - 2*i);
 		}
-		else if(gen->flags & PGF_FLOOR_SPAWN
-			|| !(gen->flags & (PGF_FLOOR_SPAWN | PGF_CEILING_SPAWN)) 
-			&& !gen->ceiling)
+		else if(gen->flags & PGF_FLOOR_SPAWN ||
+				(!(gen->flags & (PGF_FLOOR_SPAWN | PGF_CEILING_SPAWN)) 
+				 && !gen->ceiling))
 		{
 			// Spawn on the floor.
 			pt->pos[VZ] = gen->sector->floorheight + i;
@@ -634,9 +634,9 @@ int P_TouchParticle
 		pt->stage = -1;
 		return false;
 	}
-	if(stage->flags & PTCF_STAGE_TOUCH
-		|| touchWall && stage->flags & PTCF_STAGE_WALL_TOUCH
-		|| !touchWall && stage->flags & PTCF_STAGE_FLAT_TOUCH)
+	if(stage->flags & PTCF_STAGE_TOUCH ||
+	   (touchWall && stage->flags & PTCF_STAGE_WALL_TOUCH) ||
+	   (!touchWall && stage->flags & PTCF_STAGE_FLAT_TOUCH))
 	{
 		// Particle advances to the next stage.
 		pt->tics = 0;

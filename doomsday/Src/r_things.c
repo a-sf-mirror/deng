@@ -557,7 +557,8 @@ void R_ProjectPlayerSprites(void)
 		else
 			vis->data.mo.lightlevel = 255;
 		vis->data.mo.alpha = psp->alpha;
-		memcpy(vis->data.mo.rgb, viewplayer->mo->subsector->sector->rgb, 3);
+		memcpy(vis->data.mo.rgb,
+			   R_GetSectorLightColor(viewplayer->mo->subsector->sector), 3);
 		memset(vis->data.mo.visoff, 0, sizeof(vis->data.mo.visoff));
 	}
 }
@@ -747,7 +748,7 @@ void R_ProjectSprite (mobj_t *thing)
 	vis->data.mo.gzt = thing->z +
 		((fixed_t)spritelumps[lump].topoffset << FRACBITS); 
 
-	memcpy(vis->data.mo.rgb, sect->rgb, 3);
+	memcpy(vis->data.mo.rgb, R_GetSectorLightColor(sect), 3);
 
 	vis->data.mo.viewaligned = align;
 

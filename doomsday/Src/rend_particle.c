@@ -6,6 +6,9 @@
 //** Rendering of particle generators.
 //**
 //** $Log$
+//** Revision 1.16.4.2  2004/01/01 16:25:00  skyjake
+//** Implemented sky light color
+//**
 //** Revision 1.16.4.1  2003/11/22 18:02:17  skyjake
 //** Compiles with gcc and -DUNIX
 //**
@@ -637,7 +640,7 @@ void PG_RenderParticles(int rtype, boolean with_blend)
 				vis.data.mo.lightlevel = -1; // Fullbright.
 			else 
 				vis.data.mo.lightlevel = pt->sector->lightlevel;
-			memcpy(vis.data.mo.rgb, pt->sector->rgb, 3);
+			memcpy(vis.data.mo.rgb, R_GetSectorLightColor(pt->sector), 3);
 			vis.data.mo.alpha = color[3];
 
 			Rend_RenderModel(&vis);
