@@ -494,6 +494,7 @@ ccmd_t engineCCmds[] =
 	"playdemo",		CCmdPlayDemo,		"Play a demo.",
 	"playext",		CCmdPlayExt,		"Play an external music file.",
 	"playmusic",	CCmdPlayMusic,		"Play a song, an external music file or a CD track.",
+	"playsound",	CCmdPlaySound,		"Play a sound effect.",
 	"quit!",		CCmdQuit,			"Exit the game immediately.",
 	"recorddemo",	CCmdRecordDemo,		"Start recording a demo.",
 	"repeat",		CCmdRepeat,			"Repeat a command at given intervals.",

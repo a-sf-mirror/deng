@@ -444,3 +444,57 @@ void S_Drawer(void)
 	gl.MatrixMode(DGL_PROJECTION);
 	gl.PopMatrix();
 }
+
+//===========================================================================
+// CCmdPlaySound
+//	Console command for playing a sound effect.
+//===========================================================================
+int CCmdPlaySound(int argc, char **argv)
+{
+	int id = 0;
+	float volume = 1;
+	float fixedPos[3];
+	int p;
+	boolean useFixedPos = false;
+
+	if(argc < 2)
+	{
+		Con_Printf("Usage: %s (id) (volume) at (x) (y) (z)\n", argv[0]);
+		Con_Printf("(volume) must be in 0..1, but may be omitted.\n");
+		Con_Printf("'at (x) (y) (z)' may also be omitted.\n");
+		Con_Printf("The sound is always played locally.\n");
+		return true;
+	}
+
+	// The sound ID is always first.
+	id = Def_GetSoundNum(argv[1]);
+
+	// The second argument may be a volume.
+	if(argc >= 3 && stricmp(argv[2], "at"))
+	{
+		volume = strtod(argv[2], NULL);
+		p = 3;
+	}
+	else
+	{
+		p = 2;
+	}
+	if(argc >= p + 4 && !stricmp(argv[p], "at"))
+	{
+        useFixedPos = true;
+		fixedPos[VX] = strtod(argv[p + 1], NULL);
+		fixedPos[VY] = strtod(argv[p + 2], NULL);
+		fixedPos[VZ] = strtod(argv[p + 3], NULL);
+	}
+	
+	// Check that the volume is valid.
+	if(volume <= 0) return true;
+	if(volume > 1) volume = 1;
+
+	if(useFixedPos)
+		S_LocalSoundAtVolumeFrom(id, NULL, fixedPos, volume);
+	else
+		S_LocalSoundAtVolume(id, NULL, volume);
+
+	return true;
+}
