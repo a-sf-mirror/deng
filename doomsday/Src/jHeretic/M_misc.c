@@ -1,6 +1,6 @@
 // M_misc.c
-#include "DoomDef.h"
-#include "soundst.h"
+#include "Doomdef.h"
+#include "Soundst.h"
 
 //---------------------------------------------------------------------------
 //
@@ -142,3 +142,4 @@ void M_ForceUppercase(char *text)
 		}
 	}
 }
+
