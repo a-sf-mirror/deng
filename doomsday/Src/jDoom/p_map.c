@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.1  2003/09/07 22:22:30  skyjake
+// Fixed bullet puff bugs: handling empty sectors and large deltas
+//
 // Revision 1.3  2003/03/14 21:22:54  skyjake
 // Lineattack finds approx. plane hitpoint
 //
@@ -1101,8 +1104,8 @@ boolean PTR_ShootTraverse (intercept_t* in)
 	// These were added for the plane-hitpoint algo.
 	// FIXME: This routine is getting rather bloated.
 	boolean		lineWasHit;
-	subsector_t	*contacted;
-	fixed_t		ctop, cbottom, dx, dy, dz;
+	subsector_t	*contact, *originSub;
+	fixed_t		ctop, cbottom, dx, dy, dz, step, stepx, stepy, stepz;
 	int			divisor;
 	
     if (in->isaline)
@@ -1143,10 +1146,10 @@ hitline:
 		lineWasHit = true;
 
 		// Position a bit closer.
-		frac = in->frac - FixedDiv (4*FRACUNIT,attackrange);
+		frac = in->frac - FixedDiv(4*FRACUNIT, attackrange);
 		x = trace->x + FixedMul (trace->dx, frac);
 		y = trace->y + FixedMul (trace->dy, frac);
-		z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+		z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
 
 		// Is it a sky hack wall? If the hitpoint is above the visible 
 		// line, no puff must be shown.
@@ -1157,18 +1160,39 @@ hitline:
 				|| z > li->backsector->ceilingheight))
 			return false;		
 
+		// This is subsector where the trace originates.
+		originSub = R_PointInSubsector(trace->x, trace->y);
+
+		dx = x - trace->x;
+		dy = y - trace->y;
+		dz = z - shootz;
+		contact = R_PointInSubsector(x, y);
+		step  = P_ApproxDistance3(dx, dy, dz);
+		stepx = FixedDiv(dx, step);
+		stepy = FixedDiv(dy, step);
+		stepz = FixedDiv(dz, step);
+
+		// Backtrack until we find a non-empty sector.
+		while(contact->sector->ceilingheight <= contact->sector->floorheight
+			&& contact != originSub)
+		{
+			dx -= 8 * stepx;
+			dy -= 8 * stepy;
+			dz -= 8 * stepz;
+			x = trace->x + dx;
+			y = trace->y + dy;
+			z = shootz + dz;
+			contact = R_PointInSubsector(x, y);
+		}
+
 		// Should we backtrack to hit a plane instead?
-		contacted = R_PointInSubsector(x, y);
-		ctop      = contacted->sector->ceilingheight - 4*FRACUNIT;
-		cbottom   = contacted->sector->floorheight + 4*FRACUNIT;
-		divisor   = 2;
-		dx        = x - trace->x;
-		dy        = y - trace->y;
-		dz        = z - shootz;
+		ctop    = contact->sector->ceilingheight - 4*FRACUNIT;
+		cbottom = contact->sector->floorheight   + 4*FRACUNIT;
+		divisor = 2;
 
 		// We must not hit a sky plane.
-		if(z > ctop && contacted->sector->ceilingpic == skyflatnum
-			|| z < cbottom && contacted->sector->floorpic == skyflatnum)
+		if(z > ctop && contact->sector->ceilingpic == skyflatnum
+			|| z < cbottom && contact->sector->floorpic == skyflatnum)
 			return false;
 
 		// Find the approximate hitpoint by stepping back and
@@ -1187,7 +1211,8 @@ hitline:
 			divisor <<= 1;
 			
 			// Move forward until limits breached.
-			while(z <= ctop && z >= cbottom)
+			while(dz >= 0 && z <= ctop 
+				|| dz < 0 && z >= cbottom)
 			{
 				x += dx / divisor;
 				y += dy / divisor;
