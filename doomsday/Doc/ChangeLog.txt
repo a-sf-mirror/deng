@@ -4,9 +4,13 @@
                Legend: + added, - fixed, * improved/changed
 
 
-Version 1.7.15 (work in progress)
---------------
-! Maintenance Release
+Version 1.7.14-2
+----------------
+- fixed: 873878: Ogg/Mp3 in PK3 Virtual Folder Structure Not Playing
+
+
+Version 1.7.14-1
+----------------
 - fixed: 'df_worldtime' was behaving strangely
 
 

@@ -1,7 +1,7 @@
 
                           Doomsday Engine Sources
                           -----------------------
-                             October 12, 2003
+                              February 8, 2004
                           (engine version 1.7.14)
 
                 by Jaakko Keränen <skyjake@doomsdayhq.com>
