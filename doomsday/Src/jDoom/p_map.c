@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.2  2003/09/19 19:29:52  skyjake
+// Fixed hang when lineattack dz==zero
+//
 // Revision 1.3.2.1  2003/09/07 22:22:30  skyjake
 // Fixed bullet puff bugs: handling empty sectors and large deltas
 //
@@ -1166,62 +1169,66 @@ hitline:
 		dx = x - trace->x;
 		dy = y - trace->y;
 		dz = z - shootz;
-		contact = R_PointInSubsector(x, y);
-		step  = P_ApproxDistance3(dx, dy, dz);
-		stepx = FixedDiv(dx, step);
-		stepy = FixedDiv(dy, step);
-		stepz = FixedDiv(dz, step);
 
-		// Backtrack until we find a non-empty sector.
-		while(contact->sector->ceilingheight <= contact->sector->floorheight
-			&& contact != originSub)
+		if(dz != 0)
 		{
-			dx -= 8 * stepx;
-			dy -= 8 * stepy;
-			dz -= 8 * stepz;
-			x = trace->x + dx;
-			y = trace->y + dy;
-			z = shootz + dz;
 			contact = R_PointInSubsector(x, y);
-		}
+			step  = P_ApproxDistance3(dx, dy, dz);
+			stepx = FixedDiv(dx, step);
+			stepy = FixedDiv(dy, step);
+			stepz = FixedDiv(dz, step);
 
-		// Should we backtrack to hit a plane instead?
-		ctop    = contact->sector->ceilingheight - 4*FRACUNIT;
-		cbottom = contact->sector->floorheight   + 4*FRACUNIT;
-		divisor = 2;
-
-		// We must not hit a sky plane.
-		if(z > ctop && contact->sector->ceilingpic == skyflatnum
-			|| z < cbottom && contact->sector->floorpic == skyflatnum)
-			return false;
-
-		// Find the approximate hitpoint by stepping back and
-		// forth using smaller and smaller steps. 
-		while((z > ctop || z < cbottom) && divisor <= 128)
-		{
-			// We aren't going to hit a line any more.
-			lineWasHit = false;
-			
-			// Take a step backwards.
-			x -= dx / divisor;
-			y -= dy / divisor;
-			z -= dz / divisor;
-			
-			// Divisor grows.
-			divisor <<= 1;
-			
-			// Move forward until limits breached.
-			while(dz >= 0 && z <= ctop 
-				|| dz < 0 && z >= cbottom)
+			// Backtrack until we find a non-empty sector.
+			while(contact->sector->ceilingheight <= contact->sector->floorheight
+				&& contact != originSub)
 			{
-				x += dx / divisor;
-				y += dy / divisor;
-				z += dz / divisor;
+				dx -= 8 * stepx;
+				dy -= 8 * stepy;
+				dz -= 8 * stepz;
+				x = trace->x + dx;
+				y = trace->y + dy;
+				z = shootz + dz;
+				contact = R_PointInSubsector(x, y);
+			}
+
+			// Should we backtrack to hit a plane instead?
+			ctop    = contact->sector->ceilingheight - 4*FRACUNIT;
+			cbottom = contact->sector->floorheight   + 4*FRACUNIT;
+			divisor = 2;
+
+			// We must not hit a sky plane.
+			if(z > ctop && contact->sector->ceilingpic == skyflatnum
+				|| z < cbottom && contact->sector->floorpic == skyflatnum)
+				return false;
+
+			// Find the approximate hitpoint by stepping back and
+			// forth using smaller and smaller steps. 
+			while((z > ctop || z < cbottom) && divisor <= 128)
+			{
+				// We aren't going to hit a line any more.
+				lineWasHit = false;
+				
+				// Take a step backwards.
+				x -= dx / divisor;
+				y -= dy / divisor;
+				z -= dz / divisor;
+				
+				// Divisor grows.
+				divisor <<= 1;
+				
+				// Move forward until limits breached.
+				while(dz > 0 && z <= ctop 
+					|| dz < 0 && z >= cbottom)
+				{
+					x += dx / divisor;
+					y += dy / divisor;
+					z += dz / divisor;
+				}
 			}
 		}
 		
 		// Spawn bullet puffs.
-		P_SpawnPuff (x, y, z);
+		P_SpawnPuff(x, y, z);
 		
 		if(lineWasHit && li->special)
 		{
