@@ -25,7 +25,7 @@ jdoom.so: $(OBJ) $(INC)
 	$(CC) -shared -o jdoom.so $(OBJ)
 
 clean:
-	rm $(OBJ) jdoom.so
+	rm -f $(OBJ) jdoom.so
 
 realclean:
 	makedepend -fMakefile.jDoom

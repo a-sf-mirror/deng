@@ -45,8 +45,8 @@ doomsday: $(OBJ) $(INC)
 	$(CC) -rdynamic -o doomsday $(LIBS) $(OBJ)
 
 clean:
-	rm $(OBJ) doomsday
-	rm Src/dpDehRead/dehmain.o
+	rm -f $(OBJ) doomsday
+	rm -f Src/dpDehRead/dehmain.o
 
 realclean:
 	make -k clean
