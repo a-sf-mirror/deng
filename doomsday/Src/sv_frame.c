@@ -1,9 +1,23 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** SV_FRAME.C
-//**
-//**************************************************************************
+/*
+ * sv_frame.c: Frame Generation and Transmission
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -671,10 +685,8 @@ int Sv_GetMaxFrameSize(int playerNumber)
 	int size = MINIMUM_FRAME_SIZE + FRAME_SIZE_FACTOR *
 		clients[playerNumber].bandwidthRating;
 
-#ifndef WIN32
 	// What about the communications medium?
-	if(size > maxDatagramSize) size = maxDatagramSize;
-#endif
+	if((uint)size > maxDatagramSize) size = maxDatagramSize;
 
 	return size;
 }
@@ -723,14 +735,7 @@ void Sv_SendFrame(int playerNumber)
 	maxFrameSize = Sv_GetMaxFrameSize(playerNumber);
 
 	// Allow more info for the first frame.
-	if(pool->isFirst) 
-	{
-#ifdef WIN32
-		maxFrameSize *= 10;
-#else
-		maxFrameSize = maxDatagramSize;
-#endif
-	}
+	if(pool->isFirst) maxFrameSize = maxDatagramSize;
 
 	// If this is the first frame after a map change, use the special
 	// first frame packet type.

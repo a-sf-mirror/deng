@@ -1,9 +1,25 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ *
+ * Based on Hexen by Raven Software.
+ */
 
-//**************************************************************************
-//**
-//** R_THINGS.C
-//**
-//**************************************************************************
+/*
+ * r_things.c: Object Management and Refresh
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -478,7 +494,7 @@ void R_ProjectDecoration(mobj_t *source)
 //	vis->data.mo.flags = thing->ddflags;
 	vis->data.mo.gx = source->x;
 	vis->data.mo.gy = source->y;
-	vis->data.mo.gz = vis->data.mo.gzt = source->z;
+	vis->data.mo.gz = vis->data.mo.gzt = source->z; 
 }
 
 //===========================================================================
@@ -535,20 +551,20 @@ void R_ProjectPlayerSprites(void)
 		vis->data.mo.v1[VY] = FIX2FLT(viewy);
 		// 32 is the raised weapon height.
 		vis->data.mo.gzt = vis->data.mo.gz = viewz;
-		vis->data.mo.viewaligned = true;
+		vis->data.mo.viewaligned = true; 
 		vis->data.mo.secfloor = -1.0e6;
 		vis->data.mo.secceil = 1.0e6;
 		vis->data.mo.class = 0;
 		vis->data.mo.floorclip = 0;
 		// Offsets to rotation angles.
 		vis->data.mo.v2[VX] = psp->x * weaponOffsetScale - 90;
-		vis->data.mo.v2[VY] = (32 - psp->y) * weaponOffsetScale
+		vis->data.mo.v2[VY] = (32 - psp->y) * weaponOffsetScale 
 			* weaponOffsetScaleY/1000.0f;
 		// Is the FOV shift in effect?
 		if(weaponFOVShift > 0 && fieldOfView > 90)
 			vis->data.mo.v2[VY] -= weaponFOVShift * (fieldOfView - 90)/90;
 		// Real rotation angles.
-		vis->data.mo.yaw = viewangle / (float) ANGLE_MAX * -360
+		vis->data.mo.yaw = viewangle / (float) ANGLE_MAX * -360 
 			+ vis->data.mo.v2[VX] + 90;
 		vis->data.mo.pitch = viewpitch*85/110 + vis->data.mo.v2[VY];
 		vis->data.mo.flip = false;
@@ -629,7 +645,7 @@ void R_ProjectSprite (mobj_t *thing)
 		// The frame is not defined, we can't display this object.
 		return;
 	}
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];
+	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];	
 
 	// Calculate edges of the shape.
 	v1[VX] = FIX2FLT(thing->x);
@@ -659,8 +675,8 @@ void R_ProjectSprite (mobj_t *thing)
 		lump = sprframe->lump[rot];
 		flip = (boolean)sprframe->flip[rot];
 	}
-	else
-	{
+	else 
+	{	
 		// Use single rotation for all views.
 		lump = sprframe->lump[0];
 		flip = (boolean)sprframe->flip[0];
@@ -711,15 +727,15 @@ void R_ProjectSprite (mobj_t *thing)
 		cosrv = cos(thangle);
 		off[VX] = cosrv * (thing->radius>>FRACBITS);
 		off[VY] = sinrv * (thing->radius>>FRACBITS);
-		if(!C_CheckViewRelSeg(v1[VX] - off[VX], v1[VY] - off[VY],
-			v1[VX] + off[VX], v1[VY] + off[VY]))
+		if(!C_CheckViewRelSeg(v1[VX] - off[VX], v1[VY] - off[VY], 
+			v1[VX] + off[VX], v1[VY] + off[VY])) 
 		{
 			// The visibility check indicates that the model's origin is
 			// not visible. However, if the model is close to the viewpoint
 			// we will need to draw it. Otherwise large models are likely
 			// to disappear too early.
-			if(P_ApproxDistance(distance * FRACUNIT,
-				thing->z + thing->height/2 - viewz)
+			if(P_ApproxDistance(distance * FRACUNIT, 
+				thing->z + thing->height/2 - viewz) 
 				> MAX_OBJECT_RADIUS * FRACUNIT)
 			{
 				return;	// Can't be visible.
@@ -746,7 +762,7 @@ void R_ProjectSprite (mobj_t *thing)
 	vis->data.mo.gy = thing->y;
 	vis->data.mo.gz = thing->z;
 	vis->data.mo.gzt = thing->z +
-		((fixed_t)spritelumps[lump].topoffset << FRACBITS);
+		((fixed_t)spritelumps[lump].topoffset << FRACBITS); 
 
 	memcpy(vis->data.mo.rgb, R_GetSectorLightColor(sect), 3);
 
@@ -785,7 +801,7 @@ void R_ProjectSprite (mobj_t *thing)
 		}
 		else if(mf->sub[0].flags & MFF_SPIN)
 		{
-			vis->data.mo.yaw = modelSpinSpeed * 70 * leveltic/35.0f
+			vis->data.mo.yaw = modelSpinSpeed * 70 * leveltic/35.0f 
 				+ (int)thing % 360;
 		}
 		else if(mf->sub[0].flags & MFF_MOVEMENT_YAW)
@@ -794,8 +810,8 @@ void R_ProjectSprite (mobj_t *thing)
 		}
 		else
 		{
-			vis->data.mo.yaw = (r_use_srvo_angle && !netgame && !playback?
-				(thing->visangle<<16) : thing->angle)
+			vis->data.mo.yaw = (r_use_srvo_angle && !netgame && !playback? 
+				(thing->visangle<<16) : thing->angle) 
 				/ (float) ANGLE_MAX*-360;
 		}
 
@@ -810,7 +826,7 @@ void R_ProjectSprite (mobj_t *thing)
 		{
 			vis->data.mo.pitch = -BANG2DEG(bamsAtan2(FIX2FLT
 				((vis->data.mo.gz + vis->data.mo.gzt)/2 - viewz)*10,
-				distance*10));
+				distance*10));			
 		}
 		else if(mf->sub[0].flags & MFF_MOVEMENT_PITCH)
 		{
@@ -856,7 +872,7 @@ void R_ProjectSprite (mobj_t *thing)
 	// Short-range visual offsets.
 	if(( (vis->data.mo.mf && r_use_srvo > 0) ||
 		 (!vis->data.mo.mf && r_use_srvo > 1) )
-	   && thing->state
+	   && thing->state 
 	   && thing->tics >= 0)
 	{
 		float mul = thing->tics / (float) thing->state->tics;

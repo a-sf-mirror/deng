@@ -1,9 +1,23 @@
+/* DE1: $Id$
+ * Copyright (C) 2003 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
 
-//**************************************************************************
-//**
-//** R_WORLD.C
-//**
-//**************************************************************************
+/*
+ * r_world.c: World Setup and Refresh
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -1270,6 +1284,10 @@ void R_SetupLevel(char *level_id, int flags)
 				Con_Executef(false, cmd);
 			}
 		}
+
+		// Clear any input events that might have accumulated during the
+		// setup period.
+		DD_ClearEvents();
 		
 		// Now that the setup is done, let's reset the tictimer so it'll
 		// appear that no time has passed during the setup.
@@ -1278,7 +1296,7 @@ void R_SetupLevel(char *level_id, int flags)
 		// Kill all local commands.
 		for(i = 0; i < MAXPLAYERS; i++)
 		{
-			clients[i].numtics = 0;
+			clients[i].numTics = 0;
 		}
 
 		// Reset the level tick timer.
@@ -1381,9 +1399,6 @@ void R_SetupLevel(char *level_id, int flags)
 	P_SpawnTypeParticleGens();
 	P_SpawnMapParticleGens(level_id);
 
-	// Make sure that the next frame doesn't use a filtered viewer.
-	R_ResetViewer();
-
 	// Texture animations should begin from their first step.
 	R_ResetAnimGroups();
 
@@ -1470,8 +1485,7 @@ void R_UpdatePlanes(void)
 		// Floor height.
 		if(!sin->linkedfloor) 
 		{
-			sin->visfloor = FIX2FLT(sec->floorheight)
-				+ sin->visflooroffset;
+			sin->visfloor = FIX2FLT(sec->floorheight);
 		}
 		else
 		{
@@ -1483,8 +1497,7 @@ void R_UpdatePlanes(void)
 		// Ceiling height.
 		if(!sin->linkedceil)
 		{
-			sin->visceil = FIX2FLT(sec->ceilingheight)
-				+ sin->visceiloffset;
+			sin->visceil = FIX2FLT(sec->ceilingheight);
 		}
 		else
 		{
