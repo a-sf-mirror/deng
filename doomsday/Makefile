@@ -41,7 +41,7 @@ CFLAGS = $(DEBUGFLAGS) -IInclude $(DEFS) $(shell sdl-config --cflags)
 .PHONY: dep clean realclean
 
 doomsday: $(OBJ) $(INC)
-	$(CC) -rdynamic -o doomsday `sdl-config --libs` -ldl -lpng $(OBJ)
+	$(CC) -rdynamic -o doomsday `sdl-config --libs` -ldl -lpng -lncurses $(OBJ)
 
 clean:
 	rm $(OBJ) doomsday
