@@ -7,7 +7,7 @@ Header { Version = 6; }
 
 Model {
   State = "SRCR1_LOOK1";
-  Scale XYZ { 1.0 0.75 1.0 };
+  Scale XYZ { 0.95 0.75 0.95 };
   Sub { 
     File = "Actors/DSparil/Chaos.md2"; 
     Frame = "idle01"; 
