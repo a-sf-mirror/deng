@@ -12,10 +12,13 @@
 #include "de_platform.h"
 
 #if defined(WIN32)
-#	include <direct.h>
+#  include <direct.h>
 #endif
 #if defined(UNIX)
-#	include <unistd.h>
+#  include <unistd.h>
+#  include <limits.h>
+#  include <sys/types.h>
+#  include <pwd.h>
 #endif
 
 #include <stdlib.h>
@@ -53,7 +56,7 @@ void Dir_GetDir(directory_t *dir)
 	_getcwd(dir->path, 255);
 
 #ifdef WIN32
-	if(dir->path[strlen(dir->path)-1] != '\\')
+	if(LAST_CHAR(dir->path) != '\\')
 		strcat(dir->path, "\\");
 #endif
 
@@ -157,6 +160,52 @@ void Dir_FixSlashes(char *path)
 	}
 }
 
+#ifdef UNIX
+/*
+ * If the path begins with a tilde, replace it with either the value
+ * of the HOME environment variable or a user's home directory (from
+ * passwd).
+ */
+void Dir_ExpandHome(char *str)
+{
+	char buf[PATH_MAX];
+
+	if(str[0] != '~') return;
+
+	memset(buf, 0, sizeof(buf));
+	
+	if(str[1] == '/')
+	{
+		// Replace it with the HOME environment variable.
+		strcpy(buf, getenv("HOME"));
+		if(LAST_CHAR(buf) != '/') strcat(buf, "/");
+
+		// Append the rest of the original path.
+		strcat(buf, str + 2);
+	}
+	else
+	{
+		char userName[PATH_MAX], *end = NULL;
+		struct passwd* pw;
+
+		end = strchr(str + 1, '/');
+		strncpy(userName, str, end - str - 1);
+		userName[end - str - 1] = 0;
+
+		if((pw = getpwnam(userName)) != NULL)
+		{
+			strcpy(buf, pw->pw_dir);
+			if(LAST_CHAR(buf) != '/') strcat(buf, "/");
+		}
+
+		strcat(buf, str + 1);
+	}
+	
+	// Replace the original.
+	strcpy(str, buf);
+}
+#endif
+
 //===========================================================================
 // Dir_ValidDir
 //	Appends a backslash, if necessary. Also converts forward slashes into
@@ -176,6 +225,10 @@ void Dir_ValidDir(char *str)
 
 	// Make sure it ends in a directory separator character.
 	if(str[len - 1] != DIR_SEP_CHAR) strcat(str, DIR_SEP_STR);
+
+#ifdef UNIX
+	Dir_ExpandHome(str);
+#endif
 }
 
 //===========================================================================
