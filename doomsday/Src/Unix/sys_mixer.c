@@ -3,9 +3,6 @@
 //**
 //** SYS_MIXER.C
 //**
-//** Windows Multimedia Mixer (mainly used by the Win Mus driver for 
-//** setting the CD volume)
-//**
 //**************************************************************************
 
 // HEADER FILES ------------------------------------------------------------
@@ -38,9 +35,6 @@ static int initOk = 0;
 
 //===========================================================================
 // Sys_InitMixer
-//	A ridiculous amount of code to do something this simple.
-//	But mixers are pretty abstract a subject, I guess... 
-//	(No, the API just sucks.)
 //===========================================================================
 int Sys_InitMixer(void)
 {
