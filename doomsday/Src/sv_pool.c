@@ -4,6 +4,9 @@
 //** SV_POOL.C
 //**
 //** $Log$
+//** Revision 1.13.2.1.2.2  2004/01/01 16:28:13  skyjake
+//** Cleanup
+//**
 //** Revision 1.13.2.1.2.1  2003/11/22 18:01:35  skyjake
 //** Compiles with gcc and -DUNIX
 //**
@@ -2569,8 +2572,8 @@ void Sv_AckDeltaSet(int consoleNumber, int set, byte resent)
 		{
 			next = delta->next;
 			if(delta->state == DELTA_UNACKED 
-				&& (!resent && delta->set == set
-					|| resent && delta->resend == resent))
+			   && ((!resent && delta->set == set)
+				   || (resent && delta->resend == resent)))
 			{
 				// Register the ack time only for the first acked delta.
 				if(!ackTimeRegistered)

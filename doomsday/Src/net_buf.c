@@ -54,15 +54,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct netmessage_s {
-	struct netmessage_s *next;
-	nodeid_t sender;
-	int player;			// Set in N_GetMessage().
-	unsigned int size;
-	byte *data;
-	void *handle;
-} netmessage_t;
-
 typedef struct sentmessage_s {
 	struct sentmessage_s *next, *prev;
 	struct store_s *store;
@@ -167,7 +158,7 @@ boolean N_LockQueue(boolean doAcquire)
  * Adds the given netmessage_s to the queue of received messages.
  * Before calling this, allocate the message using malloc().  We use a
  * mutex to synchronize access to the message queue.  This is called
- * in the DirectPlay thread.
+ * in the network receiver thread.
  */
 void N_PostMessage(netmessage_t *msg)
 {

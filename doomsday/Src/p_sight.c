@@ -278,8 +278,8 @@ boolean P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 
 		// At or past the target?
 		if((mapx == xt2 && mapy == yt2)
-			|| ((x2 >= x1 && mapx >= xt2 || x2 < x1 && mapx <= xt2)
-				&& (y2 >= y1 && mapy >= yt2 || y2 < y1 && mapy <= yt2)))
+			|| (((x2 >= x1 && mapx >= xt2) || (x2 < x1 && mapx <= xt2))
+				&& ((y2 >= y1 && mapy >= yt2) || (y2 < y1 && mapy <= yt2))))
 			break;
 
 		if ( (yintercept >> FRACBITS) == mapy)

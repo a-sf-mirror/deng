@@ -184,7 +184,7 @@ int DD_GetFrameRate(void)
 // DD_StartTic
 //	Called before processing each tic in a frame.
 //==========================================================================
-void DD_StartTic (void)
+void DD_StartTic(void)
 {
 }
 
@@ -192,7 +192,7 @@ void DD_StartTic (void)
 // DD_TryRunTics
 //	Run at least one tic.
 //===========================================================================
-void DD_TryRunTics (void)
+void DD_TryRunTics(void)
 {
 	int counts;
 
@@ -203,7 +203,8 @@ void DD_TryRunTics (void)
 	Net_Update();
 
 	// Wait for at least one tic. (realtics >= availabletics)
-	while(!(counts = (netgame||ui_active? realtics : availabletics)))
+	while(!(counts = (isDedicated || netgame || ui_active?
+					  realtics : availabletics)))
 	{
 		if((!isDedicated && rend_camera_smooth)
 			|| net_dontsleep 

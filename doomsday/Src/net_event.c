@@ -36,11 +36,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct netevent_s {
-	neteventtype_t type;
-	nodeid_t id;
-} netevent_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------

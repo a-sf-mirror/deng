@@ -170,9 +170,9 @@ int Sfx_StopSound(int id, mobj_t *emitter)
 	for(i = 0, ch = channels; i < num_channels; i++, ch++)
 	{
 		if(!ch->buffer 
-			|| !(ch->buffer->flags & SFXBF_PLAYING)
-			|| id && ch->buffer->sample->id != id
-			|| emitter && ch->emitter != emitter) 
+		   || !(ch->buffer->flags & SFXBF_PLAYING)
+		   || (id && ch->buffer->sample->id != id)
+		   || (emitter && ch->emitter != emitter)) 
 			continue; 
 
 		// Can it be stopped?
@@ -276,7 +276,7 @@ float Sfx_Priority(mobj_t *emitter, float *fixpos, float volume, int starttic)
 	float timeoff = 1000 * (Sys_GetTime() - starttic) / (5.0f*TICSPERSEC);
 	float orig[3];
 
-	if(!listener || !emitter && !fixpos)
+	if(!listener || (!emitter && !fixpos))
 	{
 		// The sound does not have an origin.
 		return 1000*volume - timeoff;
