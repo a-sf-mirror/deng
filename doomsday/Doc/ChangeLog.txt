@@ -10,6 +10,8 @@ Version 1.7.14 (work in progress)
 + Model -> Sub -> Skin file: file name of the skin (can be anything; use
   this if it isn't possible to use the model's skin list)
 + Generator -> Submodel: submodel # to use as generator origin
++ model flag 'df_notexcomp': disable texture compression for all skins
+  of the associated model
 + generator flag 'gnf_srcdir': rotate particle vector
 + generator flag 'gnf_extra': additional generator for a mobj state
 * models close to the viewpoint won't disappear
