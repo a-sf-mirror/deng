@@ -1083,7 +1083,7 @@ void R_FindBackNeighbor(sector_t *backSector, line_t *realNeighbor,
 void R_InitLineInfo(void)
 {
 	line_t *line;
-	sector_t *sector, *other;
+	sector_t *sector;
 	int	i, k, j, m;
 	lineinfo_t *info;
 	lineinfo_side_t *side;
