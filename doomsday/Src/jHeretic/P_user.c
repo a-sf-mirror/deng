@@ -201,15 +201,15 @@ void P_MovePlayer(player_t *player)
 	if(!(player->plr->flags & DDPF_FIXANGLES))
 	{
 		plrmo->angle = cmd->angle << 16;
-		player->plr->lookdir = cmd->lookdir/(float)DDMAXSHORT * 110;
+		player->plr->lookdir = cmd->pitch/(float)DDMAXSHORT * 110;
 	}
 
 	if(player->plr->flags & DDPF_CAMERA) // $democam
 	{
 		// Cameramen have a 3D thrusters!
 		P_Thrust3D(player, player->plr->mo->angle,
-			player->plr->lookdir, cmd->forwardmove*2048,
-			cmd->sidemove*2048);
+			player->plr->lookdir, cmd->forwardMove*2048,
+			cmd->sideMove*2048);
 		return;
 	}
 
@@ -218,20 +218,20 @@ void P_MovePlayer(player_t *player)
 
 	if(player->chickenTics)
 	{ // Chicken speed
-		if(cmd->forwardmove && (onground||plrmo->flags2&MF2_FLY))
-			P_Thrust(player, plrmo->angle, cmd->forwardmove*2500);
-		if(cmd->sidemove && (onground||plrmo->flags2&MF2_FLY))
-			P_Thrust(player, plrmo->angle-ANG90, cmd->sidemove*2500);
+		if(cmd->forwardMove && (onground||plrmo->flags2&MF2_FLY))
+			P_Thrust(player, plrmo->angle, cmd->forwardMove*2500);
+		if(cmd->sideMove && (onground||plrmo->flags2&MF2_FLY))
+			P_Thrust(player, plrmo->angle-ANG90, cmd->sideMove*2500);
 	}
 	else
 	{ // Normal speed
-		if(cmd->forwardmove && (onground||plrmo->flags2&MF2_FLY))
-			P_Thrust(player, plrmo->angle, cmd->forwardmove*2048);
-		if(cmd->sidemove && (onground||plrmo->flags2&MF2_FLY))
-			P_Thrust(player, plrmo->angle-ANG90, cmd->sidemove*2048);
+		if(cmd->forwardMove && (onground||plrmo->flags2&MF2_FLY))
+			P_Thrust(player, plrmo->angle, cmd->forwardMove*2048);
+		if(cmd->sideMove && (onground||plrmo->flags2&MF2_FLY))
+			P_Thrust(player, plrmo->angle-ANG90, cmd->sideMove*2048);
 	}
 
-	if(cmd->forwardmove || cmd->sidemove)
+	if(cmd->forwardMove || cmd->sideMove)
 	{
 		if(player->chickenTics)
 		{
@@ -439,7 +439,7 @@ void P_DeathThink(player_t *player)
 		player->damagecount--;
 	}
 
-	if(player->cmd.buttons&BT_USE)
+	if(player->cmd.actions & BT_USE)
 	{
 		if(player == &players[consoleplayer])
 		{
@@ -805,8 +805,8 @@ void P_PlayerThink(player_t *player)
 		cmd->angle = plrmo->angle >> 16;	// Don't turn.
 		// The client must know of this.
 		player->plr->flags |= DDPF_FIXANGLES;
-		cmd->forwardmove = 0xc800/512;
-		cmd->sidemove = 0;
+		cmd->forwardMove = 0xc800/512;
+		cmd->sideMove = 0;
 		plrmo->flags &= ~MF_JUSTATTACKED;
 	}
 // messageTics is above the rest of the counters so that messages will
@@ -856,17 +856,17 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 	// Check for weapon change
-	if(cmd->buttons&BT_SPECIAL)
+	if(cmd->actions & BT_SPECIAL)
 	{ // A special event has no other buttons
-		cmd->buttons = 0;
+		cmd->actions = 0;
 	}
-	if(cmd->buttons&BT_CHANGE)
+	if(cmd->actions & BT_CHANGE)
 	{
 		int oldweapon = player->pendingweapon;
 		// The actual changing of the weapon is done when the weapon
 		// psprite can do it (A_WeaponReady), so it doesn't happen in
 		// the middle of an attack.
-		newweapon = (cmd->buttons & BT_WEAPONMASK) >> BT_WEAPONSHIFT;
+		newweapon = (cmd->actions & BT_WEAPONMASK) >> BT_WEAPONSHIFT;
 		/*if(newweapon == wp_staff && player->weaponowned[wp_gauntlets]
 			&& !(player->readyweapon == wp_gauntlets))
 		{
@@ -884,7 +884,7 @@ void P_PlayerThink(player_t *player)
 			player->update |= PSF_PENDING_WEAPON;
 	}
 	// Check for use
-	if(cmd->buttons&BT_USE)
+	if(cmd->actions & BT_USE)
 	{
 		if(!player->usedown)
 		{

@@ -620,7 +620,7 @@ void C_DECL A_WeaponReady(player_t *player, pspdef_t *psp)
 	}
 
 	// Check for fire.  The phoenix rod does not auto fire.
-	if(player->cmd.buttons&BT_ATTACK)
+	if(player->cmd.actions & BT_ATTACK)
 	{
 		if(!player->attackdown || (player->readyweapon != wp_phoenixrod))
 		{
@@ -662,7 +662,7 @@ void P_UpdateBeak(player_t *player, pspdef_t *psp)
 
 void C_DECL A_BeakReady(player_t *player, pspdef_t *psp)
 {
-	if(player->cmd.buttons&BT_ATTACK)
+	if(player->cmd.actions & BT_ATTACK)
 	{ // Chicken beak attack
 		player->attackdown = true;
 		P_SetMobjState(player->plr->mo, S_CHICPLAY_ATK1);
@@ -698,7 +698,7 @@ void C_DECL A_BeakReady(player_t *player, pspdef_t *psp)
 
 void C_DECL A_ReFire(player_t *player, pspdef_t *psp)
 {
-	if((player->cmd.buttons&BT_ATTACK)
+	if((player->cmd.actions & BT_ATTACK)
 		&& player->pendingweapon == wp_nochange && player->health)
 	{
 		player->refire++;

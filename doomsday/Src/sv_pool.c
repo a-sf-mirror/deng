@@ -816,7 +816,7 @@ void Sv_RegisterWorld(cregister_t *reg, boolean isInitial)
 	int i;
 
 	memset(reg, 0, sizeof(*reg));
-	reg->gametic = gametic;
+	reg->gametic = SECONDS_TO_TICKS(gameTime);
 
 	// Is this the initial state?
 	reg->isInitial = isInitial;
@@ -2175,7 +2175,7 @@ void Sv_GenerateNewDeltas(cregister_t *reg, int clientNumber, boolean doUpdate)
 	if(doUpdate)
 	{
 		// The register has now been updated to the current time.
-		reg->gametic = gametic;
+		reg->gametic = SECONDS_TO_TICKS(gameTime);
 	}
 }
 

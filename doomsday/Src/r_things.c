@@ -36,6 +36,8 @@
 #include "de_graphics.h"
 #include "de_misc.h"
 
+#include "def_main.h"
+
 // MACROS ------------------------------------------------------------------
 
 #define MAX_FRAMES 128
@@ -801,7 +803,7 @@ void R_ProjectSprite (mobj_t *thing)
 		}
 		else if(mf->sub[0].flags & MFF_SPIN)
 		{
-			vis->data.mo.yaw = modelSpinSpeed * 70 * leveltic/35.0f 
+			vis->data.mo.yaw = modelSpinSpeed * 70 * levelTime 
 				+ (int)thing % 360;
 		}
 		else if(mf->sub[0].flags & MFF_MOVEMENT_YAW)
@@ -875,7 +877,7 @@ void R_ProjectSprite (mobj_t *thing)
 	   && thing->state 
 	   && thing->tics >= 0)
 	{
-		float mul = thing->tics / (float) thing->state->tics;
+		float mul = (thing->tics - frameTimePos) / (float) thing->state->tics;
 		for(i = 0; i < 3; i++)
 			vis->data.mo.visoff[i] = FIX2FLT(thing->srvo[i]<<8) * mul;
 	}
@@ -1021,7 +1023,7 @@ fixed_t R_GetBobOffset(mobj_t *mo)
 {
 	if(mo->ddflags & DDMF_BOB)
 	{
-		return bobOffsets[(THING_TO_ID(mo) + leveltic) & 63];
+		return FRACUNIT * (sin(THING_TO_ID(mo) + levelTime/1.8286 * 2*PI) * 8);
 	}
 	return 0;
 }

@@ -996,8 +996,8 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 				i = wp_gauntlets;
 			}
 #endif
-			cmd->buttons |= BT_CHANGE;
-			cmd->buttons |= i << BT_WEAPONSHIFT;
+			cmd->actions |= BT_CHANGE;
+			cmd->actions |= i << BT_WEAPONSHIFT;
 			break;
 		}
 	}

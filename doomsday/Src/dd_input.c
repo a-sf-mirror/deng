@@ -31,7 +31,7 @@
 typedef struct repeater_s
 {
 	int key;			// The H2 key code (0 if not in use).
-	int	timer;			// How's the time?
+	timespan_t timer;	// How's the time?
 	int count;			// How many times has been repeated?
 } repeater_t;
 
@@ -56,7 +56,8 @@ int			joySensitivity = 5;
 int			joyDeadZone = 10;
 
 // The initial and secondary repeater delays (tics).
-int			repWait1 = 15, repWait2 = 3; 
+int			repWait1 = 15, repWait2 = 3;
+int         keyRepeatDelay1 = 430, keyRepeatDelay2 = 85; // milliseconds
 int			mouseDisableX = false, mouseDisableY = false;
 boolean		shiftDown = false, altDown = false;
 boolean		showScanCodes = false;
@@ -414,6 +415,14 @@ byte DD_KeyToScan(byte key)
 	return 0;
 }
 
+/*
+ * Clear the input event queue.
+ */
+void DD_ClearEvents(void)
+{
+	eventhead = eventtail;
+}
+
 //===========================================================================
 // DD_ClearKeyRepeaters
 //===========================================================================
@@ -440,25 +449,24 @@ void DD_ReadKeyboard(void)
 
 	// Check the repeaters.
 	ev.type = ev_keyrepeat;
-	k = systics;	// The current time.
 	for(i = 0; i < MAX_DOWNKEYS; i++)
 	{
 		repeater_t *rep = keyReps + i;
 		if(!rep->key) continue;
 		ev.data1 = rep->key;
-		if(!rep->count && k - rep->timer >= repWait1)
+		if(!rep->count && sysTime - rep->timer >= keyRepeatDelay1/1000.0)
 		{
 			// The first time.
 			rep->count++;
-			rep->timer += repWait1;
+			rep->timer += keyRepeatDelay1/1000.0;
 			DD_PostEvent(&ev);
 		}
 		if(rep->count)
 		{
-			while(k - rep->timer >= repWait2)
+			while(sysTime - rep->timer >= keyRepeatDelay2/1000.0)
 			{
 				rep->count++;
-				rep->timer += repWait2;
+				rep->timer += keyRepeatDelay2/1000.0;
 				DD_PostEvent(&ev);				
 			}
 		}
@@ -498,7 +506,7 @@ void DD_ReadKeyboard(void)
 				if(!keyReps[k].key)
 				{
 					keyReps[k].key = ev.data1;
-					keyReps[k].timer = systics;
+					keyReps[k].timer = sysTime;
 					keyReps[k].count = 0;
 					break;
 				}
@@ -697,4 +705,3 @@ void DD_ReadJoystick(void)
 
 	DD_PostEvent(&ev);
 }
-

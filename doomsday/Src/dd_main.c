@@ -254,19 +254,21 @@ void DD_Main(void)
 	
 	// The current working directory is the runtime dir.
 	Dir_GetDir(&ddRuntimeDir);
-	
+
+#ifdef UNIX
+	// The base path is always the same and depends on the build
+	// configuration.  Usually this is something like
+	// "/usr/share/deng/".
+	strcpy(ddBasePath, DENG_BASE_DIR);
+#endif
+
+#ifdef WIN32
 	// The standard base directory is two levels upwards.
 	if(ArgCheck("-stdbasedir"))
 	{
-#ifdef WIN32	
 		strcpy(ddBasePath, "..\\..\\");
-#endif
-#ifdef UNIX
-		// The base path depends on the configuration.  Usually this
-		// is something like "/usr/share/deng/".
-		strcpy(ddBasePath, DENG_BASE_DIR);
-#endif
 	}
+#endif
 	
 	if(ArgCheckWith("-basedir", 1))
 	{
@@ -632,7 +634,7 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] =
 	{ &isClient,		0 },
 	{ &allowFrames,		&allowFrames },
 	{ &skyflatnum,		0 },
-	{ &gametic,			0 },
+	{ 0,				0 },
 	{ &viewwindowx,		&viewwindowx },
 	{ &viewwindowy,		&viewwindowy },
 	{ &viewwidth,		&viewwidth },

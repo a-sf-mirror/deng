@@ -34,6 +34,8 @@
 #include "de_play.h"
 #include "de_refresh.h"
 
+#include "def_main.h"
+
 // MACROS ------------------------------------------------------------------
 
 // Max. distance to move in one call to P_XYMovement.

@@ -45,7 +45,7 @@ extern HINSTANCE	hInstApp;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int			systics = 0;	// System tics (every game tic).
+//int		systics = 0;	// System tics (every game tic).
 boolean		novideo;		// if true, stay in text mode for debugging
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------

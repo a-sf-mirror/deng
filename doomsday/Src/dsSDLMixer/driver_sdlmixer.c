@@ -106,7 +106,7 @@ int DS_Init(void)
 	// Are we in verbose mode?	
 	if((verbose = ArgExists("-verbose")))
 	{
-		Msg("Initializing...\n");
+		Msg("Initializing...");
 	}
 
 	if(SDL_InitSubSystem(SDL_INIT_AUDIO))

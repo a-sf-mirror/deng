@@ -178,7 +178,9 @@ void windowedMode(int width, int height)
 //===========================================================================
 int initOpenGL(void)
 {
-	int flags = SDL_OPENGL /*| SDL_FULLSCREEN*/;
+	int flags = SDL_OPENGL;
+
+	if(!windowed) flags |= SDL_FULLSCREEN;
 
 	// Attempt to set the video mode.
     if(!SDL_SetVideoMode(screenWidth, screenHeight, screenBits, flags))

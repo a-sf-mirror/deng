@@ -54,6 +54,8 @@ float ticsPerSecond = TICSPERSEC;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static double timeOffset = 0;
+
 // CODE --------------------------------------------------------------------
 
 //==========================================================================
@@ -111,7 +113,8 @@ unsigned int Sys_GetRealTime (void)
 //===========================================================================
 double Sys_GetSeconds (void)
 {
-	return (double) Sys_GetRealTime() / 1000.0;
+	return (double) ((Sys_GetRealTime() / 1000.0) *
+					 (ticsPerSecond/35)) + timeOffset;
 }
 
 //===========================================================================
@@ -120,7 +123,8 @@ double Sys_GetSeconds (void)
 //===========================================================================
 double Sys_GetTimef(void)
 {
-	return (Sys_GetRealTime() / 1000.0 * ticsPerSecond);
+	//return ((Sys_GetRealTime() / 1000.0 + timeOffset) * ticsPerSecond);
+	return Sys_GetSeconds() * 35;
 }
 
 //==========================================================================
@@ -136,8 +140,15 @@ int Sys_GetTime (void)
 // Sys_TicksPerSecond
 //	Set the number of game tics per second.
 //==========================================================================
-void Sys_TicksPerSecond(float num)
+void Sys_TicksPerSecond(float newTics)
 {
-	if(num <= 0) num = TICSPERSEC;
-	ticsPerSecond = num;
+	double nowTime = Sys_GetRealTime()/1000.0;
+	
+	if(newTics <= 0) newTics = TICSPERSEC;
+
+	// Update the time offset so that after the change time will
+	// continue from the same value.
+	timeOffset += nowTime * (ticsPerSecond - newTics)/35;
+	
+	ticsPerSecond = newTics;
 }

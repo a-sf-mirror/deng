@@ -37,6 +37,8 @@
 #include "de_play.h"
 #include "de_misc.h"
 
+#include "def_main.h"
+
 // MACROS ------------------------------------------------------------------
 
 BEGIN_PROF_TIMERS()
@@ -765,14 +767,13 @@ float R_CheckModelFor(mobj_t *mo, modeldef_t **modef, modeldef_t **nextmodef)
 		// Validate/modify the values.
 		if(duration == 0) duration = 1;
 		if(offset == -1) offset = M_CycleIntoRange(THING_TO_ID(mo), duration);
-		interp = M_CycleIntoRange(leveltic / (duration * TICSPERSEC)
-			+ offset, 1);
+		interp = M_CycleIntoRange(levelTime/duration + offset, 1);
 		worldTime = true;
 	}
 	else
 	{
 		// Calculate the currently applicable intermark.
-		interp = 1.0f - mo->tics / (float) st->tics;
+		interp = 1.0f - (mo->tics - frameTimePos) / (float) st->tics;
 	}
 
 /*#if _DEBUG

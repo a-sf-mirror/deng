@@ -344,6 +344,7 @@ cvar_t engineCVars[] =
 	"rend-fakeradio", 		0,			CVT_INT,	&rendFakeRadio, 0, 1,	"1=Enable simulated radiosity lighting.",
 	// * Render-Camera
 	"rend-camera-fov",		0,			CVT_FLOAT,	&fieldOfView,	1, 179, "Field of view.",
+	"rend-camera-smooth",   0,          CVT_INT,    &rend_camera_smooth, 0, 1, "1=Filter camera movement between game tics.",
 	// * Render-Texture
 	"rend-tex",				CVF_NO_ARCHIVE,	CVT_INT, &renderTextures,0, 1,	"1=Render with textures.",
 	"rend-tex-gamma",		CVF_PROTECTED, CVT_INT,	&usegamma,		0, 4,	"The gamma correction level (0-4).",
@@ -441,8 +442,8 @@ cvar_t engineCVars[] =
 
 	// Input
 	// * Input-Key
-	"input-key-wait1",		CVF_NO_MAX,		CVT_INT,	&repWait1,		6, 0,	"The number of 35 Hz ticks to wait before first key repeat.",
-	"input-key-wait2",		CVF_NO_MAX,		CVT_INT,	&repWait2,		1, 0,	"The number of 35 Hz ticks to wait between key repeats.",
+	"input-key-delay1",		CVF_NO_MAX,		CVT_INT,	&keyRepeatDelay1, 50, 0,	"The number of milliseconds to wait before first key repeat.",
+	"input-key-delay2",		CVF_NO_MAX,		CVT_INT,	&keyRepeatDelay2, 20, 0,	"The number of milliseconds to wait between key repeats.",
 	"input-key-show-scancodes", 0,			CVT_BYTE,	&showScanCodes,	0, 1,	"1=Show scancodes of all pressed keys in the console.",
 	// * Input-Joy
 	"input-joy-sensi",			0,			CVT_INT,	&joySensitivity,0, 9,	"Joystick sensitivity.",

@@ -26,6 +26,7 @@
 #include "con_decl.h"
 
 extern int		repWait1, repWait2;
+extern int      keyRepeatDelay1, keyRepeatDelay2; // milliseconds
 extern int		mouseFilter;
 extern int		mouseDisableX, mouseDisableY;
 extern int		mouseInverseY;

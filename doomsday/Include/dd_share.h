@@ -686,7 +686,7 @@ typedef struct linknode_s {
 	int				valid;				/* if == valid, already checked */ \
 	int				type;				/* mobj type */ \
 	struct state_s	*state;	\
-	int				tics;				/* state tic counter */ \
+	int 			tics;				/* state tic counter */ \
     fixed_t			floorz;				/* highest contacted floor */ \
     fixed_t			ceilingz;			/* lowest contacted ceiling */ \
 	struct mobj_s*	onmobj;				/* the mobj this one is on top of. */ \
@@ -960,28 +960,6 @@ typedef struct cvar_s {
 // Networking
 //
 //------------------------------------------------------------------------
-
-/* 
- * Tick Commands. Usually only a part of this data is transferred over 
- * the network. In addition to tick commands, clients will sent 'impulses'
- * to the server when they want to change a weapon, use an artifact, or
- * maybe commit suicide.
- */
-typedef struct ticcmd_s {
-	char		forwardMove;		//*2048 for real move
-	char		sideMove;			//*2048 for real move
-	char		upMove;				//*2048 for real move
-	ushort		angle;				// <<16 for angle (view angle)
-	short		pitch;				// View pitch
-	short		actions;			// On/off action flags
-} ticcmd_t;
-
-// Tick Command Action Flags
-#define TCAF_ATTACK			0x01
-#define TCAF_USE			0x02
-#define TCAF_JUMP			0x04
-#define TCAF_ATTACK2		0x08	// Secondary attack, not implemented
-#define TCAF_CROUCH			0x10	// Not implemented
 
 // Network Player Events
 enum

@@ -718,7 +718,7 @@ game_export_t *GetGameAPI(game_import_t *imports)
 	gx.PostInit = D_PostInit;
 	gx.Shutdown = D_Shutdown;
 	gx.BuildTicCmd = G_BuildTiccmd;
-	gx.DiscardTicCmd = (void (*)(void*,void*)) G_DiscardTiccmd;
+	//gx.DiscardTicCmd = (void (*)(void*,void*)) G_DiscardTiccmd;
 	gx.Ticker = D_Ticker;
 	gx.G_Drawer = D_Display;
 	gx.MN_Drawer = M_Drawer;

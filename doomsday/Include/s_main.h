@@ -24,6 +24,7 @@
 
 #include "con_decl.h"
 #include "p_mobj.h"
+#include "def_main.h"
 
 #define SF_RANDOM_SHIFT		0x1		// Random frequency shift.
 #define SF_RANDOM_SHIFT2	0x2		// 2x bigger random frequency shift.

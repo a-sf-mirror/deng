@@ -323,7 +323,6 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 	char buf[512];
 	zipentry_t *entry;
 	int index;
-	uint i;
 	
 	if(prevOpened == NULL)
 	{
@@ -377,8 +376,8 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 		char *nameStart = pos + sizeof(centralfileheader_t);
 
 		// Advance the cursor past the variable sized fields.
-		pos += header->fileNameSize + header->extraFieldSize 
-			+ header->commentSize;
+		pos += header->fileNameSize + header->extraFieldSize +
+			header->commentSize;
 
 		Zip_CopyStr(buf, nameStart, header->fileNameSize, sizeof(buf));
 
@@ -401,7 +400,7 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 
 		// Convert all slashes to backslashes, for compatibility with 
 		// the sys_filein routines.
-		for(i = 0; buf[i]; i++) if(buf[i] == '/') buf[i] = '\\';
+		Dir_FixSlashes(buf);
 
 		// Make it absolute.
 		M_PrependBasePath(buf, buf);
@@ -410,7 +409,7 @@ boolean Zip_Open(const char *fileName, DFILE *prevOpened)
 		entry = Zip_NewFile(buf);
 		entry->package = pack;
 		entry->size = header->size;
-		entry->offset = header->relOffset + 4 + sizeof(localfileheader_t)
+		entry->offset = header->relOffset + 38 /*4 + sizeof(localfileheader_t)*/
 			+ header->fileNameSize + header->extraFieldSize;
 	}
 
@@ -486,7 +485,7 @@ zipindex_t Zip_Iterate(int (*iterator)(const char*, void*), void *parm)
 /*
  * Find a specific path in the zipentry list. Relative paths are converted
  * to absolute ones. A binary search is used (the entries have been sorted).
- * Good performance: O(log n). Returns zero if nothing is found.
+ * Good performance: O(lg n). Returns zero if nothing is found.
  */
 zipindex_t Zip_Find(const char *fileName)
 {
@@ -556,8 +555,10 @@ uint Zip_Read(zipindex_t index, void *buffer)
 
 	VERBOSE2( Con_Printf("Zip_Read: %s: '%s' (%i bytes)\n",
 		M_Pretty(pack->name), M_Pretty(entry->name), entry->size) );
-
+	//Con_Printf("Zip_Read: offset=%i\n", entry->offset);
+	
 	F_Seek(pack->file, entry->offset, SEEK_SET);
 	F_Read(buffer, entry->size, pack->file);
+
 	return entry->size;
 }

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.1.2.3  2004/05/27 20:50:14  skyjake
+// Fixed various problems after merge with trunk
+//
 // Revision 1.1.2.2  2004/05/23 14:11:09  skyjake
 // Resolved conflict
 //
@@ -2147,5 +2150,3 @@ angle_t tantoangle[2049] =
     535533216,535700704,535868128,536035456,536202720,536369888,536536992,536704000,
     536870912
 };
-
-fixed_t	*finecosine = &finesine[FINEANGLES/4];

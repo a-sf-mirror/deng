@@ -227,8 +227,8 @@ uidata_slider_t sld_con_alpha = { 0, 100, 0, 1, false, "con-alpha" };
 uidata_slider_t sld_con_light = { 0, 100, 0, 1, false, "con-light" };
 uidata_slider_t sld_joy_sensi = { 0, 9, 0, 1, false, "input-joy-sensi" };
 uidata_slider_t sld_joy_dead = { 0, 90, 0, 1, false, "input-joy-deadzone" }; 
-uidata_slider_t sld_keywait1 = { 5, 35, 0, 1, false, "input-key-wait1" };
-uidata_slider_t sld_keywait2 = { 2, 35, 0, 1, false, "input-key-wait2" };
+uidata_slider_t sld_keywait1 = { 50, 1000, 0, 1, false, "input-key-delay1" };
+uidata_slider_t sld_keywait2 = { 20, 1000, 0, 1, false, "input-key-delay2" };
 uidata_slider_t sld_client_pos_interval = { 0, 70, 0, 1, false, "client-pos-interval" };
 uidata_slider_t sld_server_frame_interval = { 0, 35, 0, 1, false, "server-frame-interval" };
 uidata_slider_t sld_sound_volume = { 0, 255, 0, 1, false, "sound-volume" };
@@ -348,9 +348,9 @@ ui_object_t ob_panel[] =
 	{ UI_SLIDER,	0,	0,				680, 310, 300, 55,	"",			UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_joy_sensi },
 	{ UI_TEXT,		0,	0,				300, 370, 0, 55,	"Joystick dead zone (%)", UIText_Drawer },
 	{ UI_SLIDER,	0,	0,				680, 370, 300, 55,	"",			UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_joy_dead },
-	{ UI_TEXT,		0,	0,				300, 430, 0, 55,	"Key repeat delay", UIText_Drawer },
+	{ UI_TEXT,		0,	0,				300, 430, 0, 55,	"Key repeat delay (ms)", UIText_Drawer },
 	{ UI_SLIDER,	0,	0,				680, 430, 300, 55,	"",			UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_keywait1 },
-	{ UI_TEXT,		0,	0,				300, 490, 0, 55,	"Key repeat rate", UIText_Drawer },
+	{ UI_TEXT,		0,	0,				300, 490, 0, 55,	"Key repeat rate (ms)", UIText_Drawer },
 	{ UI_SLIDER,	0,	0,				680, 490, 300, 55,	"",			UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_keywait2 },
 	{ UI_TEXT,		0,	0,				300, 550, 0, 55,	"Print scancodes of pressed keys", UIText_Drawer },
 	{ UI_BUTTON2,	0,	0,				680, 550, 70, 55,	"input-key-show-scancodes", UIButton_Drawer, UIButton_Responder, 0, CP_CvarButton },

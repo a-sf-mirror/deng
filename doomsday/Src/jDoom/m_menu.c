@@ -2707,15 +2707,9 @@ void M_Drawer (void)
     int				start;
 	float			scale;
 	int				w, h, off_x, off_y;
-<<<<<<< m_menu.c
 	boolean			allowScaling = (currentMenu != &ReadDef1
 						&& currentMenu != &ReadDef2);
 
-=======
-	boolean			allowScaling = (currentMenu != &ReadDef1 
-						&& currentMenu != &ReadDef2);
-	
->>>>>>> 1.10
     inhelpscreens = false;
 
 	if(cfg.showFPS)

@@ -78,10 +78,8 @@ void Dir_GetDir(directory_t *dir)
 	dir->drive = _getdrive();
 	_getcwd(dir->path, 255);
 
-#ifdef WIN32
-	if(LAST_CHAR(dir->path) != '\\')
-		strcat(dir->path, "\\");
-#endif
+	if(LAST_CHAR(dir->path) != DIR_SEP_CHAR)
+		strcat(dir->path, DIR_SEP_STR);
 
 	/* VERBOSE2( printf("Dir_GetDir: %s\n", dir->path) ); */
 }
@@ -167,6 +165,9 @@ int Dir_IsAbsolute(const char *str)
 {
 	if(!str) return 0;
 	if(str[0] == '\\' || str[0] == '/' || str[1] == ':') return true;
+#ifdef UNIX
+	if(str[0] == '~') return true;
+#endif
 	return false;
 }
 

@@ -86,10 +86,6 @@ void DD_GameLoop(void)
 	Con_StartupDone();
 	Sys_ShowWindow(true);
 
-	// Start polling for input. The input thread will be stopped when 
-	// the engine is shut down.
-	DD_StartInput();
-
 	while(true)
 	{
 #ifdef WIN32
@@ -227,13 +223,24 @@ void DD_Ticker(timespan_t time)
 	if(!ui_active || netgame)
 	{
 		if(M_CheckTrigger(&fixed, time))
+		{
+			extern int sharpWorldUpdated; // in r_main.c
+			extern double lastSharpFrameTime;
+			
 			gx.Ticker(/*time*/); // Game DLL.
+
+			// This is needed by rend_camera_smooth.  It needs to know
+			// when the world tic has occured so the next sharp
+			// position can be processed.
+			sharpWorldUpdated = true;
+			lastSharpFrameTime = Sys_GetTimef();
+		}
 
 		Con_Ticker(time);		// Console.
 
 		// We can't sent FixAngles messages to ourselves, so it's
 		// done here.
-		//Sv_FixLocalAngles();
+		Sv_FixLocalAngles();
 	}
 	if(ui_active)
 	{
@@ -276,7 +283,8 @@ void DD_AdvanceTime(timespan_t time)
 void DD_RunTics(void)
 {
 	static boolean firstTic = true;
-	double nowTime, frameTime, ticLength;
+	double frameTime, ticLength;
+	double nowTime = Sys_GetSeconds();
 
 	// Do a network update first.
 	N_Update();
@@ -287,7 +295,7 @@ void DD_RunTics(void)
 	{
 		// On the first tic, no time actually passes.
 		firstTic = false;
-		lastFrameTime = Sys_GetSeconds();
+		lastFrameTime = nowTime;
 		return;
 	}
 
@@ -301,11 +309,6 @@ void DD_RunTics(void)
 			// Wait for a short while.
 			Sys_Sleep(2);
 		}
-	}
-	else
-	{
-		// Unlimited FPS.
-		nowTime = Sys_GetSeconds();
 	}
 
 	// How much time do we have for this frame?
