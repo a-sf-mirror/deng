@@ -822,7 +822,7 @@ void Sv_ClientCoords(int playerNum)
 	// If we aren't about to forcibly change the client's position, update 
 	// with new pos if it's valid.
 	if(!(players[playerNum].flags & DDPF_FIXPOS)
-		&& P_CheckPosition2(mo, clx, cly, clz)) // But it must be a valid pos.
+		&& P_CheckPosXYZ(mo, clx, cly, clz)) // But it must be a valid pos.
 	{
 		P_UnlinkThing(mo);
 		mo->x = clx;

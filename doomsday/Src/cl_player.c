@@ -266,8 +266,8 @@ void Cl_MovePlayer(ddplayer_t *pl)
 	}
 
 	// Move.
-	P_XYMovement2(mo, st);
-	P_ZMovement(mo);
+	P_ThingMovement2(mo, st);
+	P_ThingZMovement(mo);
 
 	// Predict change in movement (thrust). 
 	// The console player is always affected by the thrust multiplier.

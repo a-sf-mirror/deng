@@ -244,7 +244,7 @@ void Cl_CheckMobj(clmobj_t *cmo, boolean justCreated)
 	}
 
 	// Find out floor and ceiling z.
-	P_CheckPosition2(mo, mo->x, mo->y, mo->z);	
+	P_CheckPosXYZ(mo, mo->x, mo->y, mo->z);	
 	mo->floorz = tmfloorz;
 	mo->ceilingz = tmceilingz;
 
