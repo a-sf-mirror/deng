@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.3  2003/10/06 16:24:44  skyjake
+// Don't scale Read This screens, hide skull
+//
 // Revision 1.9.2.2  2003/09/07 22:22:53  skyjake
 // Cleanup
 //
@@ -2678,6 +2681,8 @@ void M_Drawer (void)
     int				start;
 	float			scale;
 	int				w, h, off_x, off_y;
+	boolean			allowScaling = (currentMenu != &ReadDef1 
+						&& currentMenu != &ReadDef2);
 	
     inhelpscreens = false;
 
@@ -2697,10 +2702,13 @@ void M_Drawer (void)
 	{
 		gl.MatrixMode(DGL_MODELVIEW);
 		gl.PushMatrix();
-		// Scale by the menuScale.
-		gl.Translatef(160, 100, 0);
-		gl.Scalef(cfg.menuScale, cfg.menuScale, 1);
-		gl.Translatef(-160, -100, 0);
+		if(allowScaling)
+		{
+			// Scale by the menuScale.
+			gl.Translatef(160, 100, 0);
+			gl.Scalef(cfg.menuScale, cfg.menuScale, 1);
+			gl.Translatef(-160, -100, 0);
+		}
 	}
 
     // Horiz. & Vertically center string and print it.
@@ -2793,22 +2801,24 @@ void M_Drawer (void)
     }
 	
     // DRAW SKULL
-	scale = currentMenu->itemHeight / (float) LINEHEIGHT;
-	w = 20*scale; // skull size
-	h = 19*scale;
-	off_x = x + SKULLXOFF*scale + w/2;
-	off_y = currentMenu->y + (itemOn-currentMenu->firstItem)*currentMenu->itemHeight + 
-		currentMenu->itemHeight/2 - 1;
-	GL_SetPatch(W_GetNumForName(skullName[whichSkull]));
-	gl.MatrixMode(DGL_MODELVIEW);
-	gl.PushMatrix();
-	gl.Translatef(off_x, off_y, 0);
-	gl.Scalef(1, 1.0f/1.2f, 1);
-	if(skull_angle) gl.Rotatef(skull_angle, 0, 0, 1);
-	gl.Scalef(1, 1.2f, 1);
-	GL_DrawRect(-w/2, -h/2, w, h, 1, 1, 1, menu_alpha);
-	gl.PopMatrix();
-
+	if(allowScaling)
+	{
+		scale = currentMenu->itemHeight / (float) LINEHEIGHT;
+		w = 20*scale; // skull size
+		h = 19*scale;
+		off_x = x + SKULLXOFF*scale + w/2;
+		off_y = currentMenu->y + (itemOn-currentMenu->firstItem)
+			*currentMenu->itemHeight +	currentMenu->itemHeight/2 - 1;
+		GL_SetPatch(W_GetNumForName(skullName[whichSkull]));
+		gl.MatrixMode(DGL_MODELVIEW);
+		gl.PushMatrix();
+		gl.Translatef(off_x, off_y, 0);
+		gl.Scalef(1, 1.0f/1.2f, 1);
+		if(skull_angle) gl.Rotatef(skull_angle, 0, 0, 1);
+		gl.Scalef(1, 1.2f, 1);
+		GL_DrawRect(-w/2, -h/2, w, h, 1, 1, 1, menu_alpha);
+		gl.PopMatrix();
+	}
 end_draw_menu:
 	// Restore original matrix.	
 	gl.MatrixMode(DGL_MODELVIEW);
