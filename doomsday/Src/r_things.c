@@ -23,6 +23,7 @@
 // MACROS ------------------------------------------------------------------
 
 #define MAX_FRAMES 128
+#define MAX_OBJECT_RADIUS 128
 
 // TYPES -------------------------------------------------------------------
 
@@ -707,8 +708,20 @@ void R_ProjectSprite (mobj_t *thing)
 		cosrv = cos(thangle);
 		off[VX] = cosrv * (thing->radius>>FRACBITS);
 		off[VY] = sinrv * (thing->radius>>FRACBITS);
-		if(!C_CheckViewRelSeg(v1[VX]-off[VX], v1[VY]-off[VY], 
-			v1[VX]+off[VX], v1[VY]+off[VY])) return;	// Can't be visible.
+		if(!C_CheckViewRelSeg(v1[VX] - off[VX], v1[VY] - off[VY], 
+			v1[VX] + off[VX], v1[VY] + off[VY])) 
+		{
+			// The visibility check indicates that the model's origin is
+			// not visible. However, if the model is close to the viewpoint
+			// we will need to draw it. Otherwise large models are likely
+			// to disappear too early.
+			if(P_ApproxDistance(distance * FRACUNIT, 
+				thing->z + thing->height/2 - viewz) 
+				> MAX_OBJECT_RADIUS * FRACUNIT)
+			{
+				return;	// Can't be visible.
+			}
+		}
 		// Viewaligning means scaling down Z with models.
 		align = false;
 	}
