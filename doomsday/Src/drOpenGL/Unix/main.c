@@ -216,12 +216,6 @@ int DG_Init(int width, int height, int bpp, int mode)
 	char *token, *extbuf;
 	const SDL_VideoInfo *info = NULL;
 
-	// Try to initialize SDL's graphics subsystem.
-	if(SDL_InitSubSystem(SDL_INIT_VIDEO))
-	{
-		Con_Error("drOpenGL.init: %s\n", SDL_GetError());
-	}
-	
 	Con_Message("DG_Init: OpenGL.\n");
 
 	// Are we in range here?
