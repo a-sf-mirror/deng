@@ -383,11 +383,11 @@ void I_GetMouseState(mousestate_t *state)
 
 	buttons = SDL_GetRelativeMouseState(&state->x, &state->y);
 
-	// The buttons bitfield is ordered according to the numbering.
 	if(buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) state->buttons |= IMB_LEFT;
 	if(buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) state->buttons |= IMB_RIGHT;
 	if(buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) state->buttons |= IMB_MIDDLE;
 	
+	// The buttons bitfield is ordered according to the numbering.
 	for(i = 4; i < 8; i++)
 	{
 	    if(buttons & SDL_BUTTON(i + 1)) state->buttons |= 1 << i;
