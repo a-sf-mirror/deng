@@ -201,7 +201,7 @@ boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
 		// Didn't hit it.
 		return true;	
     }
-	if(overlap /*&& thing->ddflags & DDMF_SOLID*/)
+	if(overlap)
 	{
 		// How are we positioned?
 		if(tm->z >= thing->z + thing->height - 24*FRACUNIT)
@@ -211,18 +211,26 @@ boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
 			tm->floorz = thing->z + thing->height;
 			return true;
 		}
-/*		
-		// Under, then?
-		if(tm->z + tm->height < thing->z)
+
+		// To prevent getting stuck, don't block if moving away from
+		// the object.
+		if(tm->thing->dplayer
+			&& P_ApproxDistance(tm->thing->x - thing->x, 
+				tm->thing->y - thing->y)
+				< P_ApproxDistance(tm->x - thing->x, tm->y - thing->y)
+			&& tm->thing->momz > -12*FRACUNIT)
 		{
-			tm->ceilingz = thing->z;
+			// The current distance is smaller than the new one would be.
+			// No blocking needs to occur.
+			// The Z movement test is done to prevent a 'falling through'
+			// case when a thing is moving at a high speed.
 			return true;
-		}*/
+		}
 
 		// We're hitting this mobj.
 		blockingMobj = thing;
 	}
-    return false; //!(thing->ddflags & DDMF_SOLID);
+    return false;
 }
 
 
@@ -368,7 +376,7 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 			if(tmfloorz > z) return false; // below the floor
 		}
 	}
-    
+
     // The move is OK. First unlink.
 	if(IS_SECTOR_LINKED(thing)) links |= DDLINK_SECTOR;
 	if(IS_BLOCK_LINKED(thing)) links |= DDLINK_BLOCKMAP;
