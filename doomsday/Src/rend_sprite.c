@@ -498,7 +498,7 @@ void Rend_RenderSprite(vissprite_t *spr)
 	float		v1[2];
 	DGLubyte	alpha;
 	boolean		additiveBlending = false, flip, restoreMatrix = false;
-	boolean		usingSRVO = false;
+	boolean		usingSRVO = false, restoreZ = false;
 	rendpoly_t	tempquad;
 
 	// Do we need to translate any of the colors?
@@ -664,6 +664,13 @@ void Rend_RenderSprite(vissprite_t *spr)
 		gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE);
 	}
 
+	// Transparent sprites shouldn't be written to the Z buffer.
+	if(alpha < 250 || additiveBlending) 
+	{
+		restoreZ = true;
+		gl.Disable(DGL_DEPTH_WRITE);
+	}
+
 	// Render the sprite.
 	gl.Begin(DGL_QUADS);
 	Rend_SpriteTexCoord(patch, flip, 1);
@@ -719,5 +726,11 @@ void Rend_RenderSprite(vissprite_t *spr)
 	{
 		// Change to normal blending.
 		gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	if(restoreZ)
+	{
+		// Enable Z-writing again.
+		gl.Enable(DGL_DEPTH_WRITE);
 	}
 }
