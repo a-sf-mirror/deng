@@ -357,3 +357,4 @@ boolean PO_Busy(int polyobj);
 #define LOOKDIR2RAD(x) (LOOKDIR2DEG(x)/180*PI)
 
 #endif // __P_LOCAL__
+

@@ -62,3 +62,4 @@ jhexen_config_t;
 extern jhexen_config_t cfg;
 
 #endif //__JHEXEN_SETTINGS_H__
+

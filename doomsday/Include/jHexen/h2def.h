@@ -1118,3 +1118,4 @@ void strcatQuoted(char *dest, char *src);
 #include "g_common.h"
 
 #endif // __H2DEF__
+
