@@ -39,6 +39,7 @@ void Con_AddCommandList(ccmd_t *cmdlist);
 void Con_AddVariableList(cvar_t *varlist);
 ccmd_t *Con_GetCommand(const char *name);
 boolean Con_IsValidCommand(const char *name);
+boolean Con_IsSpecialChar(int ch);
 void Con_UpdateKnownWords(void);
 void Con_Ticker(void);
 boolean Con_Responder(event_t *event);

@@ -575,7 +575,7 @@ void PrepareCmdArgs(cmdargs_t *cargs, char *lpCmdLine)
 	// Prepare.
 	for(i=0; i<len; i++)
 	{
-#define IS_ESC_CHAR(x)	((x) == '"' || (x) == '\\' || (x) == '{' || (x) == '}')
+#define IS_ESC_CHAR(x)	((x) == '"' || (x) == '\\' || (x) == '{' || (x) == '}' || (x) == ';')
 		// Whitespaces are separators.
 		if(ISSPACE(cargs->cmdLine[i])) cargs->cmdLine[i] = 0;
 		if(cargs->cmdLine[i] == '\\'	
@@ -1052,6 +1052,15 @@ void Con_WriteAliasesToFile(FILE *file)
 	}
 }
 
+//===========================================================================
+// Con_IsSpecialChar
+//	Returns true if the char has a special meaning in console commands.
+//===========================================================================
+boolean Con_IsSpecialChar(int ch)
+{
+	return (ch == ';' || ch == '{' || ch == '}' || ch == '\"');
+}
+
 void Con_ClearBuffer()
 {
 	int		i;
@@ -1523,12 +1532,14 @@ static void SplitIntoSubCommands(char *command, int markerOffset)
 	char		subcmd[1024];
 	int			nextsub = false;
 	int			ret = true, inquotes = false, escape = false;
+	int			inBlock = 0;
 
 	// Is there a command to execute?
 	if(!command || command[0] == 0) return;
 
 	// Jump over initial semicolons.
 	while(command[gpos] == ';' && command[gpos] != 0) gpos++;
+
 	// The command may actually contain many commands, separated
 	// with semicolons. This isn't a very clear algorithm...
 	for(strcpy(subcmd, ""); command[gpos];)
@@ -1542,11 +1553,18 @@ static void SplitIntoSubCommands(char *command, int markerOffset)
 		if(command[gpos] == '"' && !escape) 
 			inquotes = !inquotes;
 
+		if(!escape && !inquotes)
+		{
+			if(command[gpos] == '{') inBlock++;
+			if(command[gpos] == '}') inBlock--;
+		}
+
 		// Collect characters.
 		subcmd[scpos++] = command[gpos++];
 		if(subcmd[0] == ' ') scpos = 0;	// No spaces in the beginning.
 
-		if((command[gpos] == ';' && !inquotes) || command[gpos] == 0)
+		if((command[gpos] == ';' && !inquotes && !inBlock) 
+			|| command[gpos] == 0)
 		{
 			while(command[gpos] == ';' && command[gpos] != 0) gpos++;
 			// The subcommand ends.
