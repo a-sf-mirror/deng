@@ -938,6 +938,7 @@ const char *M_Pretty(const char *path)
 	{
 		str = buffers[index++ % MAX_BUFS];
 		M_RemoveBasePath(path, str);
+		Dir_FixSlashes(str);
 		return str;
 	}
 
