@@ -47,7 +47,7 @@ void	Sys_SuspendThread(int handle, boolean dopause);
 int		Sys_WaitThread(int handle);
 
 // Mutexes:
-int 	Sys_CreateMutex(const char *name); // returns the mutex handle
+int 	Sys_CreateMutex(void); // returns the mutex handle
 void 	Sys_DestroyMutex(int mutexHandle);
 void 	Sys_Lock(int mutexHandle); 
 void 	Sys_Unlock(int mutexHandle);
