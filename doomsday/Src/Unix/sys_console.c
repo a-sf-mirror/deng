@@ -248,6 +248,8 @@ void Sys_ConPrint(int clflags, char *text)
 	for(; count > 0; count--, ptr++)
 	{
 		ch = *ptr;
+		// Ignore carriage returns.
+		if(ch == '\r') continue;
 		if(ch != '\n' && bPos < maxPos[VX])
 		{
 			line[bPos] = ch;
