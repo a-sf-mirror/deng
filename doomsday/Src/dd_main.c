@@ -100,7 +100,7 @@ boolean autostart;
 FILE *outFile;				// Output file for console messages.
 FILE *debugfile;
 
-char *iwadlist[MAXWADFILES];
+char *iwadlist[64];
 char *defaultWads = ""; // A list of wad names, whitespace in between (in .cfg).
 char configFileName[256];
 char defsFileName[256], topDefsFileName[256];
