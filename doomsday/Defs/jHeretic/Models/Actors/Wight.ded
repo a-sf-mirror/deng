@@ -5,7 +5,6 @@ Header { Version = 5; }
 Model {
   State = "KNIGHT_STND1";
   Scale = 0.92;
-  Flags = "df_ptoffsub1";
   Md2 { File = "Actors/Wight/Wight.md2"; Frame = "idle01"; };
   Md2 {
     File = "Actors/Wight/Wight-Axe.md2";
@@ -220,7 +219,7 @@ Model {
 
 *Model {
   State = "KNIGHT_DIE3";
-  Flags = "df_noptc df_ptoffsub1";        # Stop the axe flame.
+  Flags = "df_noptc";        # Stop the axe flame.
   Md2 { Frame = "death06"; };
   Md2 { 
     Frame = "death06"; 
@@ -314,6 +313,7 @@ Model {
 Generator {
   Mobj = "KNIGHT";
   Flags = "gnf_blend gnf_modelonly";
+  Submodel = 1; # The axe is a submodel.
   Particles = 200;
   Speed = 1;
   Speed rnd = 1;
