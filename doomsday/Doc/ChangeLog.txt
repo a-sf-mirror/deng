@@ -4,6 +4,17 @@
                Legend: + added, - fixed, * improved/changed
 
 
+Version 1.7.13 (work in progress)
+--------------
+! Maintenance Release
+- fixed: mobj Z coordinates were sometimes incorrect on clientside
+- fixed: music volume = zero prevents songs from changing
+- fixed: halos flicker sometimes through doors
+
+jDoom:
+- fixed: main menu item spacing too tight
+
+
 Version 1.7.12
 --------------
 + option -leaveramp: don't reset color settings back to previous values
