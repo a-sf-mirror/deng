@@ -3,6 +3,9 @@
 
 #define DEFAULT_FRICTION	0xe800
 
+// This macro can be used to calculate a thing-specific 'random' number.
+#define THING_TO_ID(mo) ( (mo)->thinker.id * 26 + ((unsigned)(mo)>>8) )
+
 // We'll use the base mobj template directly as our mobj.
 typedef struct mobj_s {
 	// If your compiler doesn't support this, you could convert 
