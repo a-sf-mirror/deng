@@ -24,6 +24,7 @@ jDoom:
 * "Read This" screens are not affected by menu-scale, skull hidden
 
 jHeretic:
+- game can only be saved during normal game play
 - fixed: cycling down from Elvenwand skips Staff (bug 813773)
 
 jHexen:
