@@ -82,8 +82,12 @@ void Sys_Init(void)
 		{
 			Con_Error("Sys_Init: failed to initialize DirectInput.\n");
 		}
-		I_InitInputDevices();
 	}
+
+	// The input device table is always initialized.  The devices will
+	// only be enabled 
+	I_InitInputDevices();
+	
 	Sys_InitTimer();
 	Sys_InitMixer();
 	S_Init();
@@ -313,7 +317,7 @@ int Sys_WaitThread(int handle)
 	return result;
 }
 
-int Sys_CreateMutex(const char *name)
+int Sys_CreateMutex(void)
 {
 	return (int) SDL_CreateMutex();
 }
