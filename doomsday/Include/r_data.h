@@ -58,7 +58,7 @@ typedef struct detailinfo_s {
 
 typedef struct gltexture_s {
 	DGLuint	id;
-	ushort	width, height;
+	float width, height;
 	detailinfo_t *detail;
 } gltexture_t;
 
@@ -78,6 +78,7 @@ typedef struct glcommand_vertex_s {
 #define RPF_GLOW		0x0020	// Multiply original vtx colors.
 #define RPF_DETAIL		0x0040	// Render with detail (incl. vtx distances)
 #define RPF_SHADOW		0x0100
+#define RPF_HORIZONTAL	0x0200
 #define RPF_DONE		0x8000	// This poly has already been drawn.
 
 typedef enum {
@@ -103,7 +104,6 @@ typedef struct {
 	gltexture_t intertex;
 	float interpos;				// Blending strength (0..1).
 	struct dynlight_s *lights;	// List of lights that affect this poly.
-	uint numlights;
 	DGLuint decorlightmap;		// Pregen RGB lightmap for decor lights.
 	sector_t *sector;			// The sector this poly belongs to (if any).
 
@@ -153,8 +153,16 @@ typedef struct subsectorinfo_s {
 	int			validcount;
 } subsectorinfo_t;
 
+typedef struct lineinfo_side_s {
+	struct line_s *neighbor[2];		// Left and right neighbour.
+	struct sector_s *proxsector[2];	// Sectors behind the neighbors.
+//	struct line_s *backneighbor[2];	// Neighbour in the backsector (if any).
+} lineinfo_side_t;
+
 typedef struct {
-	float	length;					// Accurate length.
+	float length;					// Accurate length.
+	binangle_t angle;				// Calculated from front side's normal.
+	lineinfo_side_t side[2];		// 0 = front, 1 = back
 } lineinfo_t;
 
 typedef struct polyblock_s {
