@@ -59,7 +59,7 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void R_Init(void);
+void R_InitTranslation(void);
 void G_BuildTiccmd (void *cmd);
 void D_Display (void);
 int D_PrivilegedResponder(event_t *event);
@@ -728,7 +728,7 @@ game_export_t *GetGameAPI(game_import_t *imports)
 	gx.UpdateState = G_UpdateState;
 #undef Get
 	gx.Get = G_Get;
-	gx.R_Init = R_Init;
+	gx.R_Init = R_InitTranslation;
 
 	gx.NetServerStart = D_NetServerStarted;
 	gx.NetServerStop = D_NetServerClose;

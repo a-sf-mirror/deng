@@ -33,7 +33,7 @@ extern int actual_leveltime;
 // Assumes a given structure of the PLAYPAL.
 // Could be read from a lump instead.
 //
-void R_Init (void)
+void R_InitTranslation(void)
 {
 	byte	*translationtables = (byte*) Get(DD_TRANSLATIONTABLES_ADDRESS);
     int		i;
