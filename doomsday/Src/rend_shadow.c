@@ -112,6 +112,12 @@ void Rend_ProcessThingShadow(mobj_t *mo)
 	floor = SECT_FLOOR(mo->subsector->sector);
 	P_ThingSectorsIterator(mo, Rend_ShadowIterator, &floor);
 
+	if(floor >= moz + mo->height) 
+	{
+		// Can't have a shadow above the object!
+		return;
+	}
+
 	// Prepare the poly.
 	memset(&poly, 0, sizeof(poly));
 	poly.type = RP_FLAT;
