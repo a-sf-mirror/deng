@@ -14,8 +14,10 @@ Version 1.7.13 (work in progress)
 - fixed: music volume = zero prevents songs from changing
 - fixed: halos flicker sometimes through doors
 - a shadow is not rendered if it would be above the object
+- fixed: crash when loading external resources of color-mapped sprites
 
 Network:
+- fixed: crash in clmobj handling
 - fixed: recording demos with multiple local players
 - fixed: clientside jumping power, jumping enabled
 - fixed: player start spot selection (especially TNT/Plutonia)
