@@ -466,7 +466,7 @@ void DD_Main(void)
 	// Try to load the autoexec file. This is done here to make sure
 	// everything is initialized: the user can do here anything that
 	// s/he'd be able to do in the game.
-	Con_ParseCommands("autoexec.cfg", false);
+	Con_ParseCommands("Autoexec.cfg", false);
 	
 	// Parse additional files.
 	if(ArgCheckWith("-parse", 1))
@@ -692,7 +692,7 @@ int DD_GetInteger(int ddvalue)
 		switch(ddvalue)
 		{
 		case DD_DYNLIGHT_TEXTURE:
-			return dltexname;
+			return lightingTexNames[LST_DYNAMIC];
 
 		case DD_TRACE_ADDRESS:
 			return (int) &trace;
