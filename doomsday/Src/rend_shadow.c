@@ -174,3 +174,4 @@ void Rend_RenderShadows(void)
 	}
 }
 
+

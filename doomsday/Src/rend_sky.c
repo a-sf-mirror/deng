@@ -107,23 +107,23 @@ void Rend_RenderSkyModels(void)
 
 		vis.type = VSPR_SKY_MODEL;
 		vis.distance = 1;
-		vis.mo.gx = FRACUNIT * pos[0];
-		vis.mo.gy = FRACUNIT * pos[2];
-		vis.mo.gz = vis.mo.gzt = FRACUNIT * pos[1];
-		vis.mo.v1[0] = pos[0];
-		vis.mo.v1[1] = pos[2];
-		vis.mo.v2[0] = sky->def->rotate[0];
-		vis.mo.v2[1] = sky->def->rotate[1];
-		vis.mo.inter = inter;
-		vis.mo.mf = sky->model;
+		vis.data.mo.gx = FRACUNIT * pos[0];
+		vis.data.mo.gy = FRACUNIT * pos[2];
+		vis.data.mo.gz = vis.data.mo.gzt = FRACUNIT * pos[1];
+		vis.data.mo.v1[0] = pos[0];
+		vis.data.mo.v1[1] = pos[2];
+		vis.data.mo.v2[0] = sky->def->rotate[0];
+		vis.data.mo.v2[1] = sky->def->rotate[1];
+		vis.data.mo.inter = inter;
+		vis.data.mo.mf = sky->model;
 		R_SetModelFrame(sky->model, sky->frame);
-		vis.mo.yaw = sky->yaw;
-		vis.mo.lightlevel = -1; // Fullbright.
+		vis.data.mo.yaw = sky->yaw;
+		vis.data.mo.lightlevel = -1; // Fullbright.
 		for(k = 0; k < 3; k++)
 		{
-			vis.mo.rgb[k] = sky->def->color[k] * 255;
+			vis.data.mo.rgb[k] = sky->def->color[k] * 255;
 		}
-		vis.mo.alpha = sky->def->color[3];
+		vis.data.mo.alpha = sky->def->color[3];
 
 		Rend_RenderModel(&vis);
 	}
@@ -571,3 +571,4 @@ int CCmdSkyDetail(int argc, char **argv)
 	}
 	return true;
 }
+

@@ -277,7 +277,7 @@ boolean P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 		}
 
 		// At or past the target?
-		if(mapx == xt2 && mapy == yt2
+		if((mapx == xt2 && mapy == yt2)
 			|| ((x2 >= x1 && mapx >= xt2 || x2 < x1 && mapx <= xt2)
 				&& (y2 >= y1 && mapy >= yt2 || y2 < y1 && mapy <= yt2)))
 			break;
@@ -485,6 +485,7 @@ boolean P_CheckSight (mobj_t *t1, mobj_t *t2)
 
 	return P_SightPathTraverse(t1->x, t1->y, t2->x, t2->y);
 }
+
 
 
 

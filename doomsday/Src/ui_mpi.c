@@ -565,13 +565,14 @@ void MPIHelpDrawer(ui_object_t *ob)
  */
 void DD_NetSetup(int server_mode)
 {
-	int i, num = 0;
+	int i;
 
 	if(server_mode)
 	{
 		// Prepare Server Setup.
 		UI_InitPage(&page_server, ob_server);
-		sprintf(page_server.title, "Doomsday %s Server Setup", DOOMSDAY_VERSION_TEXT);
+		sprintf(page_server.title, "Doomsday %s Server Setup",
+				DOOMSDAY_VERSION_TEXT);
 		strcpy(str_server, serverName);
 		strcpy(str_desc, serverInfo);
 		// Disable the Master Address and Port edit boxes.
@@ -581,7 +582,8 @@ void DD_NetSetup(int server_mode)
 	{
 		// Prepare Client Setup.
 		UI_InitPage(&page_client, ob_client);
-		sprintf(page_client.title, "Doomsday %s Client Setup", DOOMSDAY_VERSION_TEXT);
+		sprintf(page_client.title, "Doomsday %s Client Setup",
+				DOOMSDAY_VERSION_TEXT);
 		strcpy(str_ipaddr, nptIPAddress);
 		strcpy(str_phone, nptPhoneNum);
 		UI_FlagGroup(ob_client, 1, UIF_HIDDEN, nptActive != 0);
@@ -599,7 +601,7 @@ void DD_NetSetup(int server_mode)
 	UI_InitPage(&page_protocol, ob_protocol);
 	strcpy(page_protocol.title, "Network Setup");
 	page_protocol.previous = server_mode? &page_server : &page_client;
-	itoa(nptIPPort, str_ipport, 10);
+	sprintf(str_ipport, "%.10i", nptIPPort);
 	lst_protocol.selection = nptActive;
 	// Hide the 'wrong' settings.
 	for(i = 1; i <= 4; i++)

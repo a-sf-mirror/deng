@@ -146,7 +146,7 @@ void Sfx_StopSoundGroup(int group, mobj_t *emitter)
 		if(!ch->buffer
 			|| !(ch->buffer->flags & SFXBF_PLAYING)
 			|| ch->buffer->sample->group != group
-			|| emitter && ch->emitter != emitter)
+			|| (emitter && ch->emitter != emitter))
 			continue;
 		// This channel must stop.
 		driver->Stop(ch->buffer);
@@ -396,8 +396,8 @@ void Sfx_ChannelUpdate(sfxchannel_t *ch)
 	}
 	else // This is a 2D buffer.
 	{
-		if(ch->flags & SFXCF_NO_ORIGIN
-			|| ch->emitter && ch->emitter == listener)
+		if(ch->flags & SFXCF_NO_ORIGIN ||
+		   (ch->emitter && ch->emitter == listener))
 		{
 			dist = 1;
 			pan = 0;
@@ -825,7 +825,7 @@ void Sfx_StartFrame(void)
 	static int old_3dmode = false;
 	static int old_16bit = false;
 	static int old_rate = 11025;
-	static double lastpurge = 0, lastupdate = 0;
+	static double lastupdate = 0;
 	double nowtime = Sys_GetSeconds();
 
 	if(!sfx_avail) return;
@@ -1270,3 +1270,4 @@ void Sfx_DebugInfo(void)
 		FR_TextOut(buf, 5, lh*(2 + i*2));
 	}
 }
+

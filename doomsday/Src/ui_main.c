@@ -793,8 +793,8 @@ int UIEdit_Responder(ui_object_t *ob, event_t *ev)
 		}
 		return true;
 	}
-	else if(ev->type == ev_mousebdown && UI_MouseInside(ob) ||
-		ev->type == ev_keydown && IS_ACTKEY(ev->data1))
+	else if((ev->type == ev_mousebdown && UI_MouseInside(ob)) ||
+			(ev->type == ev_keydown && IS_ACTKEY(ev->data1)))
 	{
 		// Activate and capture.
 		ob->flags |= UIF_ACTIVE;
@@ -1098,7 +1098,7 @@ void UIList_Drawer(ui_object_t *ob)
 //===========================================================================
 int UI_SliderButtonWidth(ui_object_t *ob)
 {
-	uidata_slider_t *dat = ob->data;
+//	uidata_slider_t *dat = ob->data;
 	int width = ob->h - UI_BAR_BORDER*2;
 	if(width < UI_BAR_BORDER*3) width = UI_BAR_BORDER*3;
 	return width;

@@ -388,8 +388,8 @@ void DD_ProcessEvents(void)
 //==========================================================================
 void DD_PostEvent(event_t *ev)
 {
-	events[eventhead] = *ev;
-	eventhead = (++eventhead)&(MAXEVENTS-1);
+	events[eventhead++] = *ev;
+	eventhead &= MAXEVENTS - 1;
 }
 
 //===========================================================================
@@ -699,3 +699,4 @@ void DD_ReadJoystick(void)
 
 	DD_PostEvent(&ev);
 }
+

@@ -1068,7 +1068,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				if(ISLABEL("Texture"))
 				{
 					// A new texture name.
-					tn = DED_NewEntry(&ded->tenviron[idx].textures,
+					tn = DED_NewEntry((void**)&ded->tenviron[idx].textures,
 						&ded->tenviron[idx].count, sizeof(*tn));
 					FINDBEGIN;
 					for(;;)
@@ -1658,3 +1658,4 @@ int DED_ReadLump(ded_t *ded, int lump)
 	W_ChangeCacheTag(lump, PU_CACHE);
 	return result;
 }
+

@@ -403,7 +403,8 @@ int D_NetPlayerEvent(int plrNumber, int peType, void *data)
 		// If there are more than two players, include the name of
 		// the player who sent this.
 		if(num > 2)
-			sprintf(msgBuff, "%s: %s", Net_GetPlayerName(plrNumber), data);
+			sprintf(msgBuff, "%s: %s", Net_GetPlayerName(plrNumber),
+					(const char*)data);
 		else
 			strcpy(msgBuff, data);
 
@@ -632,14 +633,14 @@ void D_HandlePacket(int fromplayer, int type, void *data, int length)
 
 ccmd_t netCCmds[] =
 {
-	"setcolor",		CCmdSetColor,	"Set player color.",
-	"setmap",		CCmdSetMap,		"Set map.",
+	{ "setcolor",	CCmdSetColor,	"Set player color." },
+	{ "setmap",		CCmdSetMap,		"Set map." },
 #if __JHEXEN__
-	"setclass",		CCmdSetClass,	"Set player class.",
+	{ "setclass",	CCmdSetClass,	"Set player class." },
 #endif
-	"startcycle",	CCmdMapCycle,	"Begin map rotation.",
-	"endcycle",		CCmdMapCycle,	"End map rotation.",
-	NULL
+	{ "startcycle",	CCmdMapCycle,	"Begin map rotation." },
+	{ "endcycle",	CCmdMapCycle,	"End map rotation." },
+	{ NULL }
 };
 
 cvar_t netCVars[] =

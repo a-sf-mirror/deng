@@ -135,7 +135,9 @@ float P_MobjPointDistancef(mobj_t *start, mobj_t *end, float *fixpoint)
 //	Determines on which side of dline the point is. Returns true if the
 //	point is on the line or on the right side.
 //==========================================================================
+#ifdef WIN32
 #pragma optimize("g", off)
+#endif
 int P_FloatPointOnLineSide(fvertex_t *pnt, fdivline_t *dline)
 {
 /*
@@ -177,7 +179,9 @@ float P_FloatInterceptVertex
 	inter->y = ay + r*(by-ay);
 	return r;
 }
+#ifdef WIN32
 #pragma optimize("", on)
+#endif
 
 //===========================================================================
 // P_SectorBoundingBox
@@ -482,8 +486,9 @@ void P_UnlinkThing(mobj_t *thing)
 //	The given line might cross the thing. If necessary, link the mobj 
 //	into the line's ring.
 //===========================================================================
-boolean PIT_LinkToLines(line_t *ld, linelinker_data_t *data)
+boolean PIT_LinkToLines(line_t *ld, void *parm)
 {
+	linelinker_data_t *data = parm;
 	fixed_t bbox[4];
 	nodeindex_t nix;
 
@@ -1273,3 +1278,4 @@ void AssertBlockLinks(mobj_t *head, mobj_t *thing, int isLinked)
 #endif
 }
 #endif /*---OBSOLETE---*/
+

@@ -11,9 +11,6 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <malloc.h>
-//#include <io.h>
-//#include <fcntl.h>
-//#include <sys/stat.h>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -82,9 +79,9 @@ static boolean iwadLoaded = false;
 
 static grouping_t groups[] =
 {
-	"", "",
-	"F_START", "F_END",		// Flats
-	"S_START", "S_END"		// Sprites
+	{ "", "" },
+	{ "F_START", "F_END" },		// Flats
+	{ "S_START", "S_END" }		// Sprites
 };
 
 static lumpinfo_t *PrimaryLumpInfo;
@@ -93,7 +90,6 @@ static void **PrimaryLumpCache;
 static lumpinfo_t *AuxiliaryLumpInfo;
 static int AuxiliaryNumLumps;
 static void **AuxiliaryLumpCache;
-static int AuxiliaryHandle = 0;
 boolean AuxiliaryOpened = false;
 
 // CODE --------------------------------------------------------------------
@@ -580,8 +576,8 @@ boolean W_AddFile(const char *filename, boolean allowDuplicate)
 
 boolean W_RemoveFile(char *filename)
 {
-	int				idx = W_RecordGetIdx(filename), oldnum = numlumps;
-	filerecord_t	*rec;
+	int			 idx = W_RecordGetIdx(filename);
+	filerecord_t *rec;
 
 	if(idx == -1) return false;	// No such file loaded.
 	rec = records + idx;

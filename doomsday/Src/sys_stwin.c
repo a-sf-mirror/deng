@@ -202,3 +202,4 @@ void SW_SetBarMax(int max)
 	UpdateWindow(prog);
 	barMax = max;
 }
+

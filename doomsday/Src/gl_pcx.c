@@ -183,3 +183,4 @@ byte *PCX_AllocLoad(const char *fn, int *buf_w, int *buf_h, byte *outBuffer)
 	Z_Free(raw);
 	return outBuffer;
 }
+

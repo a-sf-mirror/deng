@@ -68,8 +68,6 @@ cmhash_t cmHash[HASH_SIZE];
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static byte previous_time = 0;
-//static int dampencount = 0;
-static boolean buffers_ok = false;
 
 // CODE --------------------------------------------------------------------
 
@@ -1029,3 +1027,4 @@ void Cl_ReadNullMobjDelta2(boolean skip)
 	cmo->time = Sys_GetRealTime();
 	cmo->flags |= CLMF_UNPREDICTABLE | CLMF_NULLED;
 }
+

@@ -56,7 +56,7 @@ void Net_SendPing(int player, int count)
 	client_t *cl = clients + player;
 	
 	// Valid destination?
-	if(player == consoleplayer || isClient && player)
+	if((player == consoleplayer) || (isClient && player))
 		return;
 	
 	if(count)
@@ -76,7 +76,7 @@ void Net_SendPing(int player, int count)
 			// We're done.
 			cl->ping.sent = 0;
 			// Print a summary (average ping, loss %).
-			Net_ShowPingSummary(netbuffer.player);
+			Net_ShowPingSummary(netBuffer.player);
 			return;
 		}
 	}
@@ -86,15 +86,15 @@ void Net_SendPing(int player, int count)
 	Msg_WriteLong(cl->ping.sent);
 
 	// Update the length of the message.
-	netbuffer.length = netbuffer.cursor - netbuffer.msg.data;
-	netbuffer.player = player;
+	netBuffer.length = netBuffer.cursor - netBuffer.msg.data;
+	netBuffer.player = player;
 	N_SendPacket(10000);
 }
 
 // Called when a ping packet comes in.
 void Net_PingResponse(void)
 {
-	client_t *cl = &clients[netbuffer.player];
+	client_t *cl = &clients[netBuffer.player];
 	int time = Msg_ReadLong();
 
 	// Is this a response to our ping?
@@ -106,12 +106,12 @@ void Net_PingResponse(void)
 		/*Con_Printf( "Ping to plr %i: %.0f ms.\n", netbuffer.player,
 			cl->ping.times[cl->ping.current] * 1000);*/
 		// Send the next ping.
-		Net_SendPing(netbuffer.player, 0);
+		Net_SendPing(netBuffer.player, 0);
 	}
 	else
 	{
 		// Not ours, just respond.
-		Net_SendBuffer(netbuffer.player, 10000);
+		Net_SendBuffer(netBuffer.player, 10000);
 	}
 }
 

@@ -442,9 +442,11 @@ void NetCl_UpdatePSpriteState(byte *data)
 void NetCl_Intermission(byte *data)
 {
 	int	flags;
+#ifdef __JHERETIC__
 	extern int interstate;
 	extern int intertime;
-#if __JHEXEN__
+#endif
+#ifdef __JHEXEN__
 	extern int LeaveMap, LeavePosition;
 #endif
 

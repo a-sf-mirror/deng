@@ -7,8 +7,10 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <windows.h>
-#include <process.h>
+#ifdef WIN32
+#	include <windows.h>
+#	include <process.h>
+#endif
 
 #include "de_base.h"
 #include "de_console.h"
@@ -31,8 +33,10 @@
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+#ifdef WIN32
 extern HWND			hWndMain;
-extern HINSTANCE	hInstApp; 
+extern HINSTANCE	hInstApp;
+#endif
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -49,8 +53,10 @@ boolean		novideo;		// if true, stay in text mode for debugging
 //==========================================================================
 void Sys_Init(void)
 {
+#ifdef WIN32
 	// Initialize COM.
 	CoInitialize(NULL);
+#endif
 
 	Con_Message("Sys_Init: Initializing keyboard, mouse and joystick.\n");
 	if(!isDedicated)
@@ -84,7 +90,9 @@ void Sys_Shutdown(void)
 	GL_Shutdown();
 	I_Shutdown();
 
+#ifdef WIN32
 	CoUninitialize();
+#endif
 }
 
 //===========================================================================
@@ -92,6 +100,7 @@ void Sys_Shutdown(void)
 //===========================================================================
 int Sys_CriticalMessage(char *msg)
 {
+#ifdef WIN32
 	char buf[256];
 	int ret;
 
@@ -103,6 +112,9 @@ int Sys_CriticalMessage(char *msg)
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 //===========================================================================
@@ -110,7 +122,9 @@ int Sys_CriticalMessage(char *msg)
 //===========================================================================
 void Sys_Sleep(int millisecs)
 {
+#ifdef WIN32
 	Sleep(millisecs);
+#endif
 }
 
 //===========================================================================
@@ -118,7 +132,9 @@ void Sys_Sleep(int millisecs)
 //===========================================================================
 void Sys_ShowCursor(boolean show)
 {
+#ifdef WIN32
 	ShowCursor(show);
+#endif
 }
 
 //===========================================================================
@@ -127,8 +143,10 @@ void Sys_ShowCursor(boolean show)
 void Sys_HideMouse(void)
 {
 	if(novideo || nofullscreen) return;
+#ifdef WIN32
 	ShowCursor(FALSE);
 	ShowCursor(FALSE);
+#endif	
 }
 
 //===========================================================================
@@ -139,9 +157,11 @@ void Sys_ShowWindow(boolean show)
 	// Showing does not work in dedicated mode.
 	if(isDedicated && show) return; 
 
+#ifdef WIN32	
 	SetWindowPos(hWndMain, HWND_TOP, 0, 0, 0, 0, 
 		(show? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOSIZE | SWP_NOMOVE);
 	if(show) SetActiveWindow(hWndMain);
+#endif	
 }
 
 //==========================================================================
@@ -152,7 +172,10 @@ void Sys_Quit(void)
 {
 	// Quit netgame if one is in progress.
 	if(netgame)
-		Con_Execute(isServer? "net server close" : "net disconnect", true);
+	{
+		Con_Execute(isServer? "net server close" : "net disconnect",
+					true);
+	}
 
 	Demo_StopPlayback();
 	Con_SaveDefaults();
@@ -160,6 +183,8 @@ void Sys_Quit(void)
 	B_Shutdown();
 	Con_Shutdown();
 	DD_Shutdown();
+
+	// Stop the execution of the program.
 	exit(0);
 }
 
@@ -219,11 +244,13 @@ byte *Sys_ZoneBase (size_t *size)
 //===========================================================================
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
+#ifdef WIN32	
 	char title[300];
 
 	GetWindowText(hWndMain, title, 300);
 	MessageBox(hWndMain, msg, title, MB_OK | (iserror? MB_ICONERROR
 		: MB_ICONINFORMATION));
+#endif	
 }
 
 //===========================================================================
@@ -232,8 +259,10 @@ void Sys_MessageBox(const char *msg, boolean iserror)
 //===========================================================================
 void Sys_OpenTextEditor(const char *filename)
 {
+#ifdef WIN32
 	// Everybody is bound to have Notepad.
 	spawnlp(P_NOWAIT, "notepad.exe", "notepad.exe", filename, 0);
+#endif
 }
 
 //===========================================================================
@@ -243,6 +272,7 @@ void Sys_OpenTextEditor(const char *filename)
 //===========================================================================
 int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 {
+#ifdef WIN32
 	HANDLE handle;
 	DWORD id;
 
@@ -269,6 +299,9 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 		SetThreadPriority(handle, prios[priority + 3]);
 	}
 	return (int) handle;
+#else
+	return 0;
+#endif
 }
 
 //===========================================================================
@@ -277,10 +310,31 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 //===========================================================================
 void Sys_SuspendThread(int handle, boolean dopause)
 {
+#ifdef WIN32	
 	if(dopause)
+	{
 		SuspendThread( (HANDLE) handle);
+	}
 	else
+	{
 		ResumeThread( (HANDLE) handle);
+	}
+#endif	
 }
 
+int Sys_CreateMutex(const char *name)
+{
+	return 0;
+}
 
+void Sys_DestroyMutex(int handle)
+{
+}
+
+void Sys_Lock(int mutexHandle)
+{
+}
+
+void Sys_Unlock(int mutexHandle)
+{
+}

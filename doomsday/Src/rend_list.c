@@ -245,21 +245,23 @@ void RL_AddMaskedPoly(rendpoly_t *poly)
 	
 	vis->type = VSPR_MASKED_WALL;
 	vis->distance = (poly->vertices[0].dist + poly->vertices[1].dist) / 2;
-	vis->wall.texture = poly->tex.id;
-	vis->wall.masked = texmask;	// Store texmask status in flip.
-	vis->wall.top = poly->top;
-	vis->wall.bottom = poly->bottom;
+	vis->data.wall.texture = poly->tex.id;
+	vis->data.wall.masked = texmask;	// Store texmask status in flip.
+	vis->data.wall.top = poly->top;
+	vis->data.wall.bottom = poly->bottom;
 	for(i = 0; i < 2; i++)
 	{
-		vis->wall.vertices[i].pos[VX] = poly->vertices[i].pos[VX];
-		vis->wall.vertices[i].pos[VY] = poly->vertices[i].pos[VY];
-		memcpy(&vis->wall.vertices[i].color, poly->vertices[i].color.rgba, 3);
-		vis->wall.vertices[i].color |= 0xff000000; // Alpha.
+		vis->data.wall.vertices[i].pos[VX] = poly->vertices[i].pos[VX];
+		vis->data.wall.vertices[i].pos[VY] = poly->vertices[i].pos[VY];
+		memcpy(&vis->data.wall.vertices[i].color,
+			   poly->vertices[i].color.rgba, 3);
+		vis->data.wall.vertices[i].color |= 0xff000000; // Alpha.
 	}
-	vis->wall.texc[0][VX] = poly->texoffx / (float) poly->tex.width;
-	vis->wall.texc[1][VX] = vis->wall.texc[0][VX] + poly->length/poly->tex.width;
-	vis->wall.texc[0][VY] = poly->texoffy / (float) poly->tex.height;
-	vis->wall.texc[1][VY] = vis->wall.texc[0][VY] 
+	vis->data.wall.texc[0][VX] = poly->texoffx / (float) poly->tex.width;
+	vis->data.wall.texc[1][VX] = vis->data.wall.texc[0][VX]
+		+ poly->length/poly->tex.width;
+	vis->data.wall.texc[0][VY] = poly->texoffy / (float) poly->tex.height;
+	vis->data.wall.texc[1][VY] = vis->data.wall.texc[0][VY] 
 		+ (poly->top - poly->bottom)/poly->tex.height;
 
 	// We can render ONE dynamic light, maybe.
@@ -267,20 +269,20 @@ void RL_AddMaskedPoly(rendpoly_t *poly)
 	{
 		// Choose the brightest light.
 		memcpy(brightest, poly->lights->color, 3);
-		vis->wall.light = poly->lights;
+		vis->data.wall.light = poly->lights;
 		for(dyn = poly->lights->next; dyn; dyn = dyn->next)
 		{
 			if((brightest[0] + brightest[1] + brightest[2])/3
 				< (dyn->color[0] + dyn->color[1] + dyn->color[2])/3)
 			{
 				memcpy(brightest, dyn->color, 3);
-				vis->wall.light = dyn;
+				vis->data.wall.light = dyn;
 			}
 		}
 	}
 	else
 	{
-		vis->wall.light = NULL;
+		vis->data.wall.light = NULL;
 	}
 }
 
@@ -1346,7 +1348,7 @@ void RL_AddPoly(rendpoly_t *poly)
 	rendlist_t	*li;
 	primhdr_t	*hdr;
 	dynlight_t	*dyn;
-	boolean		useLights = false, multitexFirstLight = true;
+	boolean		useLights = false;
 	
 	if(poly->flags & RPF_MASKED)
 	{
@@ -1366,7 +1368,7 @@ void RL_AddPoly(rendpoly_t *poly)
 		// In multiplicative mode, glowing surfaces are fullbright.
 		// Rendering lights on them would be pointless.
 		if(!IS_MUL || !( poly->flags & RPF_GLOW	
-			|| poly->sector && poly->sector->lightlevel >= 250 ))
+			|| (poly->sector && poly->sector->lightlevel >= 250) ))
 		{
 			// Surfaces lit by dynamic lights may need to be rendered 
 			// differently than non-lit surfaces.
@@ -1407,6 +1409,9 @@ void RL_AddPoly(rendpoly_t *poly)
 
 	case RP_FLAT:
 		RL_WriteFlat(li, poly);
+		break;
+
+	default:
 		break;
 	}
 	
@@ -1687,6 +1692,9 @@ int RL_SetupListState(listmode_t mode, rendlist_t *list)
 		// Render all primitives (on the shadowList).
 		RL_Bind(list->tex.id);
 		return 0;
+
+	default:
+		break;
 	}
 
 	// Unknown mode, let's not draw anything.
@@ -1909,6 +1917,9 @@ void RL_SetupPassState(listmode_t mode)
 		}
 		gl.Enable(DGL_BLENDING);
 		gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	default:
 		break;
 	}
 }
@@ -2194,4 +2205,5 @@ void RL_RenderAllLists(void)
 
 	END_PROF( PROF_RL_RENDER_ALL );
 }
+
 

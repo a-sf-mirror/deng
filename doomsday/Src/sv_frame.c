@@ -56,10 +56,12 @@ int frameInterval = 1; // Skip every second frame by default (17.5fps)
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+#ifdef _DEBUG
 static int byteCounts[256];
 static int totalFrameCount;
+#endif
 
-static lastTransmitTic = 0;
+static int lastTransmitTic = 0;
 
 // CODE --------------------------------------------------------------------
 
@@ -156,7 +158,7 @@ void Sv_Shutdown(void)
 	PRINT_PROF( PROF_WRITE_DELTAS );
 	PRINT_PROF( PROF_PACKET_SIZE );
 
-#if _DEBUG
+#ifdef _DEBUG
 	if(totalFrameCount > 0)
 	{
 		int i;
@@ -531,6 +533,9 @@ void Sv_WriteSoundDelta(const void *deltaPtr)
 		// The sound ID.
 		Msg_WriteShort(delta->sound);
 		break;
+
+	default:
+		break;
 	}
 
 	// The common parts.
@@ -797,3 +802,4 @@ void Sv_SendFrame(int playerNumber)
 	// Now a frame has been sent.
 	pool->isFirst = false;
 }
+

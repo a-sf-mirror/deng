@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef UNIX
+#	include "de_platform.h"
+#endif
+
 #include "de_base.h"
 #include "de_console.h"
 #include "de_system.h"
@@ -1293,8 +1297,8 @@ DGLuint GL_PrepareDetailTexture
 		// Is there a detail texture assigned for this?
 		if(dt->detail_lump < 0) continue;
 
-		if(is_wall_texture && index	== dt->wall_texture
-			|| !is_wall_texture && index == dt->flat_lump)
+		if((is_wall_texture && index == dt->wall_texture) ||
+		   (!is_wall_texture && index == dt->flat_lump))
 		{
 			if(dtdef) *dtdef = defs.details + i;
 
@@ -2149,8 +2153,8 @@ static void ColorOutlines(byte *buffer, int width, int height)
 					for(a = -1; a <= 1; a++)
 					{
 						// First check that the pixel is OK.
-						if(!a && !b || i+a < 0 || k+b < 0 
-							|| i+a >= width || k+b >= height) continue;
+						if((!a && !b) || i+a < 0 || k+b < 0 
+						   || i+a >= width || k+b >= height) continue;
 
 						ptr = buffer + i+a + (k+b)*width;
 						if(!ptr[numpels]) // An alpha pixel?
@@ -3490,7 +3494,7 @@ unsigned int GL_PrepareSkin(model_t *mdl, int skin)
 //===========================================================================
 unsigned int GL_PrepareShinySkin(modeldef_t *md, int sub)
 {
-	model_t *mdl = modellist[md->sub[sub].model];
+//	model_t *mdl = modellist[md->sub[sub].model];
 	skintex_t *stp = GL_GetSkinTexByIndex(md->sub[sub].shinyskin);
 	image_t image;
 
@@ -3650,3 +3654,4 @@ int CCmdSmoothRaw(int argc, char **argv)
 	GL_UpdateRawScreenParams(strtol(argv[1], NULL, 0));	
 	return true;
 }
+

@@ -106,7 +106,11 @@ static char shiftTable[59] =	// Contains characters 32 to 90.
 };
 
 static EditField_t plrNameEd;
-static int plrColor, plrClass;
+static int plrColor;
+
+#ifdef __JHEXEN__
+static int plrClass;
+#endif
 
 // Menus ------------------------------------------------------------------
 
@@ -326,9 +330,9 @@ void Notify(char *msg)
 
 void DrANumber(int number, int x, int y)
 {
-	char buff[16];
+	char buff[40];
 
-	itoa(number, buff, 10);
+	sprintf(buff, "%i", number);
 #ifdef __JDOOM__
 	M_WriteText2(x, y, buff, hu_font_a, 1, 1, 1);
 #else
@@ -398,7 +402,7 @@ void DrawGameSetupMenu(void)
 	char	*dmText[3] = { "NO", "YES", "YES" };
 #endif
 	Menu_t	*menu = &GameSetupMenu;
-	int		x = menu->x + 112, y = menu->y, h = menu->itemHeight, idx;
+	int		idx;
 #if __JHEXEN__
 	char	*mapName = P_GetMapName(P_TranslateMap(cfg.netMap));
 #endif
@@ -852,7 +856,7 @@ boolean SCGameSetupHealthMod(int option)
 
 void MN_TickerEx(void)	// The extended ticker.
 {
-	static int UpdateCount = 0, FrameTimer = 0;
+	static int FrameTimer = 0;
 
 	if(currentMenu == &PlayerSetupMenu)
 	{

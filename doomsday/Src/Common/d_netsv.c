@@ -91,7 +91,10 @@ char		gameConfigString[128];
 static int	cycleIndex;
 static int	cycleCounter = -1, cycleMode = CYCLE_IDLE;
 static int	oldPals[MAXPLAYERS];
+
+#ifdef __JHEXEN__
 static int	oldClasses[MAXPLAYERS];
+#endif
 
 // CODE -------------------------------------------------------------------
 
@@ -176,7 +179,7 @@ int NetSv_ScanCycle(int index, maprule_t *rules)
 			rules->frags = strtol(ptr+1, &end, 0);
 			ptr = end - 1;
 		}
-		else if(*ptr == '*' || *ptr >= '0' && *ptr <= '9')
+		else if(*ptr == '*' || (*ptr >= '0' && *ptr <= '9'))
 		{
 			// A map identifier is here.
 			pos++;
@@ -776,8 +779,8 @@ void NetSv_SendGameState(int flags, int to)
 
 	for(i = 0; i < MAXPLAYERS; i++)
 	{
-		if(!players[i].plr->ingame
-			|| to != DDSP_ALL_PLAYERS && to != i) continue;
+		if(!players[i].plr->ingame ||
+		   (to != DDSP_ALL_PLAYERS && to != i)) continue;
 		
 		ptr = buffer;
 

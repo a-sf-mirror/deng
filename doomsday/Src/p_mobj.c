@@ -124,8 +124,9 @@ void P_SetState(mobj_t *mobj, int statenum)
 // PIT_CheckLine
 //	Adjusts tmfloorz and tmceilingz as lines are contacted.
 //===========================================================================
-boolean PIT_CheckLine (line_t* ld, checkpos_data_t *tm)
+boolean PIT_CheckLine (line_t* ld, void *parm)
 {
+	checkpos_data_t *tm = parm;
 	fixed_t bbox[4];
 
 	// Setup the bounding box for the line.
@@ -167,8 +168,9 @@ boolean PIT_CheckLine (line_t* ld, checkpos_data_t *tm)
 //===========================================================================
 // PIT_CheckThing
 //===========================================================================
-boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
+boolean PIT_CheckThing (mobj_t* thing, void *parm)
 {
+	checkpos_data_t *tm = parm;
     fixed_t		blockdist;
     boolean		overlap = false;
 
@@ -399,7 +401,7 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 //===========================================================================
 boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 {
-	fixed_t x = thing->x, y = thing->y, z = thing->z;
+/*	fixed_t x = thing->x, y = thing->y, z = thing->z; */
 	fixed_t stepX, stepY, stepZ;
 	boolean notHit = true;
 
@@ -759,8 +761,9 @@ void P_XYMovement(mobj_t* mo)
 }
 
 // Playmove can be NULL. It's only used with player mobjs.
-void P_XYMovement2(mobj_t* mo, struct playerstate_s *playstate) 
-{ 	
+void P_XYMovement2(mobj_t* mo, void *pstate)
+{
+	playerstate_t *playstate = pstate;
     fixed_t		ptryx, ptryy;
     fixed_t		xmove, ymove;
 	ddplayer_t*	player;
@@ -933,3 +936,4 @@ void P_ZMovement(mobj_t* mo)
 		mo->z = mo->ceilingz - mo->height;
     }
 } 
+

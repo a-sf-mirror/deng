@@ -184,3 +184,4 @@ void P_RemoveThinker(thinker_t *thinker)
 	}
 	thinker->function = (think_t) -1;
 }
+

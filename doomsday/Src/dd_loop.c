@@ -7,9 +7,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
+#include "de_platform.h"
 #include "de_base.h"
 #include "de_console.h"
 #include "de_system.h"
@@ -46,12 +44,13 @@ static int lastfpstic = 0, fpsnum = 0, lastfc = 0;
 //==========================================================================
 void DD_GameLoop(void)
 {
+#ifdef WIN32
 	MSG msg;
+#endif
 	
 	// Now we've surely finished startup.
 	Con_StartupDone();
 	Sys_ShowWindow(true);
-	//GL_RuntimeMode();
 
 	if(ArgCheck("-debugfile"))
 	{
@@ -62,6 +61,7 @@ void DD_GameLoop(void)
 	
 	while(1)
 	{
+#ifdef WIN32
 		// Start by checking Windows messages. 
 		// This is the message pump.
 		// Could be in a separate thread?
@@ -70,6 +70,7 @@ void DD_GameLoop(void)
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+#endif
 		// Frame syncronous I/O operations.
 		DD_StartFrame();
 		// Will run at least one tic.
@@ -262,4 +263,5 @@ void DD_TryRunTics (void)
 		}
 	}
 }
+
 

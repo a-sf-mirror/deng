@@ -773,7 +773,7 @@ void XL_ActivateLine(boolean activating, linetype_t *info, line_t *line,
 {
 	xgline_t *xg = line->xg;
 	mobj_t *activator_thing = (mobj_t*) data;
-	player_t *activator = activator_thing->player;
+//	player_t *activator = activator_thing->player;
 	degenmobj_t *soundorg;
 
 	XG_Dev("XL_ActivateLine: %s line %i, side %i", activating?
@@ -785,7 +785,7 @@ void XL_ActivateLine(boolean activating, linetype_t *info, line_t *line,
 		return; // The line is disabled.
 	}
 
-	if(activating && xg->active || !activating && !xg->active) 
+	if((activating && xg->active) || (!activating && !xg->active)) 
 	{
 		XG_Dev("  Line is ALREADY %s, ABORTING", activating? "ACTIVE"
 			: "INACTIVE");
@@ -836,8 +836,8 @@ void XL_ActivateLine(boolean activating, linetype_t *info, line_t *line,
 	xg->timer = 0;				// Reset timer.
 
 	// Activate lines with a matching tag with Group Activation.
-	if(activating && info->flags2 & LTF2_GROUP_ACT
-		|| !activating && info->flags2 & LTF2_GROUP_DEACT)
+	if((activating && info->flags2 & LTF2_GROUP_ACT)
+		|| (!activating && info->flags2 & LTF2_GROUP_DEACT))
 	{
 		XL_TraverseLines(line, LREF_LINE_TAGGED, true, activating, 0,
 			XLTrav_SmartActivate);
@@ -853,9 +853,9 @@ void XL_ActivateLine(boolean activating, linetype_t *info, line_t *line,
 
 	// Should we apply the function of the line? Functions are defined by
 	// the class of the line type.
-	if((activating && info->flags2 & LTF2_WHEN_ACTIVATED
-		|| !activating && info->flags2 & LTF2_WHEN_DEACTIVATED)
-		&& (!(info->flags2 & LTF2_WHEN_LAST) || info->act_count == 1))
+	if(((activating && info->flags2 & LTF2_WHEN_ACTIVATED)
+		|| (!activating && info->flags2 & LTF2_WHEN_DEACTIVATED))
+	   && (!(info->flags2 & LTF2_WHEN_LAST) || info->act_count == 1))
 	{
 		XL_DoFunction(info, line, sidenum, activator_thing);
 	}
@@ -945,8 +945,8 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
 
 	// Check restrictions and conditions that will prevent processing
 	// the event.
-	if(active && info->act_type == LTACT_COUNTED_OFF
-		|| !active && info->act_type == LTACT_COUNTED_ON)
+	if((active && info->act_type == LTACT_COUNTED_OFF)
+		|| (!active && info->act_type == LTACT_COUNTED_ON))
 	{
 		// Can't be processed at this time.
 		XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", 
@@ -997,9 +997,9 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
 				&& activator_thing->flags & MF_MISSILE && active)
 			|| (info->flags & LTF_ANY_HIT_D && active)))
 		goto type_passes;
-	if(evtype == XLE_TICKER	
-		&& (info->flags & LTF_TICKER_A && !active)
-			|| (info->flags & LTF_TICKER_D && active))
+	if(evtype == XLE_TICKER
+	   && ((info->flags & LTF_TICKER_A && !active) ||
+		   (info->flags & LTF_TICKER_D && active)))
 		goto type_passes;
 		
 	// Type doesn't pass, sorry.
@@ -1294,10 +1294,10 @@ void XL_Think(line_t *line)
 	XL_ChainSequenceThink(line);
 
 	// Check for automatical (de)activation.
-	if((info->act_type == LTACT_COUNTED_OFF 
-		|| info->act_type == LTACT_FLIP_COUNTED_OFF) && xg->active
-		|| (info->act_type == LTACT_COUNTED_ON 
-		|| info->act_type == LTACT_FLIP_COUNTED_ON) && !xg->active)
+	if(((info->act_type == LTACT_COUNTED_OFF ||
+		 info->act_type == LTACT_FLIP_COUNTED_OFF) && xg->active)
+	   || ((info->act_type == LTACT_COUNTED_ON ||
+			info->act_type == LTACT_FLIP_COUNTED_ON) && !xg->active))
 	{
 		if(info->act_time >= 0 && xg->timer > FLT2TIC(info->act_time))
 		{

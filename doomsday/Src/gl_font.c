@@ -11,8 +11,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#ifdef WIN32
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,6 +27,11 @@
 
 // MACROS ------------------------------------------------------------------
 
+#ifndef WIN32
+#define SYSTEM_FONT			1
+#define SYSTEM_FIXED_FONT 	2
+#endif
+
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -34,7 +42,9 @@
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+#ifdef WIN32
 extern HWND hWndMain;
+#endif
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -183,15 +193,18 @@ static int FR_GetMaxId()
 	return grid;
 }
 
+#ifdef WIN32
 //===========================================================================
 // findPow2
 //===========================================================================
 static int findPow2(int num)
 {
-	int cumul;
-	for(cumul = 1; num > cumul; cumul *= 2);
+	int cumul = 1;
+	
+	for(; num > cumul; cumul *= 2);
 	return cumul;
 }
+#endif
 
 //===========================================================================
 // FR_SaveFont
@@ -254,6 +267,7 @@ int FR_NewFont(void)
 //===========================================================================
 int FR_PrepareFont(char *name)
 {
+#ifdef WIN32
 	struct 
 	{ 
 		char *name;
@@ -273,6 +287,7 @@ int FR_PrepareFont(char *name)
 		{ "Small10",	0, "Small Fonts", 10 },
 		{ NULL, 0 }
 	};
+#endif		
 	char buf[64];
 	DFILE *file;
 	int i, c, bit, mask, version, format, numPels;
@@ -286,6 +301,7 @@ int FR_PrepareFont(char *name)
 	strcat(buf, ".dfn");
 	if(ArgCheck("-gdifonts") || (file = F_Open(buf, "rb")) == NULL)
 	{
+#ifdef WIN32		
 		// No luck...
 		for(i = 0; fontmapper[i].name; i++)
 			if(!stricmp(fontmapper[i].name, name))
@@ -299,9 +315,8 @@ int FR_PrepareFont(char *name)
 				{
 					HDC hDC = GetDC(hWndMain);
 					HFONT uifont = CreateFont(
-						/*-*/
-						-MulDiv(fontmapper[i].pointsize, GetDeviceCaps(hDC, LOGPIXELSY), 72)
-						, 
+						-MulDiv(fontmapper[i].pointsize,
+								GetDeviceCaps(hDC, LOGPIXELSY), 72), 
 						0, 0, 0, 0, FALSE,
 						FALSE, FALSE, DEFAULT_CHARSET,
 						OUT_DEFAULT_PRECIS,
@@ -315,11 +330,12 @@ int FR_PrepareFont(char *name)
 				}
 				else
 				{
-					FR_PrepareGDIFont(GetStockObject(fontmapper[i].gdires));				
+					FR_PrepareGDIFont(GetStockObject(fontmapper[i].gdires));
 				}
 				strcpy(fonts[current].name, name);
 				return true;
 			}
+#endif		
 		// The font was not found.
 		return false;
 	}
@@ -383,6 +399,7 @@ unknown_format:
 // FR_PrepareGDIFont
 //	Prepare a GDI font. Select it as the current font.
 //===========================================================================
+#ifdef WIN32
 int FR_PrepareGDIFont(HFONT hfont)
 {
 	RECT		rect;
@@ -488,6 +505,7 @@ int FR_PrepareGDIFont(HFONT hfont)
 	DeleteDC(hdc);
 	return 0;
 }
+#endif // WIN32
 
 //===========================================================================
 // FR_SetFont
@@ -538,7 +556,7 @@ int FR_TextHeight(char *text)
 
 	// Find the greatest height.
 	for(len = strlen(text), cf = fonts + current, i = 0; i < len; i++)
-		height = max(height, cf->chars[(byte)text[i]].h);
+		height = MAX_OF(height, cf->chars[(byte)text[i]].h);
 
 	return height;
 }

@@ -7,11 +7,18 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "de_platform.h"
+
+#ifdef WIN32
+#	include <direct.h>
+#endif
+
+#ifdef UNIX
+#	include <ctype.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <direct.h>
 #include <time.h>
 #include <string.h>
 
@@ -25,6 +32,8 @@
 #include "de_graphics.h"
 #include "de_audio.h"
 #include "de_misc.h"
+
+#include "dd_pinit.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -54,31 +63,22 @@ void F_Drawer(void);
 boolean F_Responder(event_t *ev);
 void S_InitScript(void);
 void Net_Drawer(void);
-void ErrorBox(boolean error, char *format, ...);
-int CheckArg(char *tag, char **value);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void PageDrawer(void);
 static void HandleArgs(int state);
-static void CheckRecordFrom(void);
-static void ExecOptionFILE(char **args, int tag);
-static void ExecOptionMAXZONE(char **args, int tag);
-static void CreateSavePath(void);
-static void WarpCheck(void);
-
-#ifdef TIMEBOMB
-static void DoTimeBomb(void);
-#endif
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern boolean		renderTextures;
-extern char			skyflatname[9];
+#ifdef WIN32
 extern HWND			hWndMain;
 extern HINSTANCE	hInstDGL;
+#endif
+
+extern int			renderTextures;
+extern char			skyflatname[9];
 extern fixed_t		mapgravity;
 extern int			gotframe;
 
@@ -109,10 +109,6 @@ int queryResult = 0;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static int WarpMap;
-static int demosequence;
-static int pagetic;
-static char *pagename;
 static char *wadfiles[MAXWADFILES];
 
 // CODE --------------------------------------------------------------------
@@ -138,7 +134,6 @@ void DD_AddIWAD(const char *path)
 #define ATWSEPS ",; \t"
 static void AddToWadList(char *list)
 {
-	int	i=0;
 	int len = strlen(list);
 	char *buffer = malloc(len+1), *token;
 	
@@ -242,9 +237,9 @@ void DD_Main(void)
 	}
 
 	// We'll redirect stdout to a log file.
-	CheckArg("-out", &outfilename);
+	DD_CheckArg("-out", &outfilename);
 	newout = freopen(outfilename, "w", stdout);
-	if(!newout) ErrorBox(false, "Redirection of stdout failed. "
+	if(!newout) DD_ErrorBox(false, "Redirection of stdout failed. "
 		"You won't see anything that's printf()ed.");
 	setbuf(stdout, NULL);
 	
@@ -253,7 +248,14 @@ void DD_Main(void)
 	
 	// The standard base directory is two levels upwards.
 	if(ArgCheck("-stdbasedir"))
+	{
+#ifdef WIN32	
 		strcpy(ddBasePath, "..\\..\\");
+#endif
+#ifdef UNIX
+		strcpy(ddBasePath, "../../");
+#endif
+	}
 	
 	if(ArgCheckWith("-basedir", 1))
 	{
@@ -384,7 +386,8 @@ void DD_Main(void)
 	
 	// Now that we've read the WADs we can initialize definitions.
 	Def_Read();
-	
+
+#ifdef WIN32
 	if(ArgCheck("-nowsk")) // No Windows system keys?
 	{
 		// Disable Alt-Tab, Alt-Esc, Ctrl-Alt-Del.
@@ -392,6 +395,7 @@ void DD_Main(void)
 		SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, TRUE, 0, 0);
 		Con_Message("Windows system keys disabled.\n");
 	}
+#endif
 	
 	if(ArgCheckWith("-dumplump", 1))
 	{
@@ -419,8 +423,9 @@ void DD_Main(void)
 		{
 			strncpy(buff, lumpinfo[p].name, 8);
 			buff[8] = 0;
-			printf("%04d - %-8s (hndl: %d, pos: %d, size: %d)\n",
-				p, buff, lumpinfo[p].handle, lumpinfo[p].position, lumpinfo[p].size);
+			printf("%04i - %-8s (hndl: %p, pos: %i, size: %i)\n",
+				   p, buff, lumpinfo[p].handle, lumpinfo[p].position,
+				   lumpinfo[p].size);
 		}
 		Con_Error("---End of lumps---\n");
 	}
@@ -654,7 +659,7 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] =
 	{ &openbottom,		0 },
 	{ &lowfloor,		0 },
 	{ &isDedicated,		0 },
-	{ &novideo,			0 },
+	{ (int*)&novideo,	0 },
 	{ &defs.count.mobjs.num, 0 },
 	{ &mapgravity,		&mapgravity },
 	{ &gotframe,		0 },
@@ -667,7 +672,7 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] =
 	{ &pspOffY,			&pspOffY },
 	{ &psp_move_speed,	&psp_move_speed },
 	{ &cplr_thrust_mul,	&cplr_thrust_mul },
-	{ &clientPaused,	&clientPaused },
+	{ (int*)&clientPaused, (int*)&clientPaused },
 	{ &weaponOffsetScaleY, &weaponOffsetScaleY }
 };
 
@@ -701,9 +706,11 @@ int DD_GetInteger(int ddvalue)
 		case DD_MAP_MUSIC:
 			if(mapinfo) return Def_GetMusicNum(mapinfo->music);
 			return -1;
-			
+
+#ifdef WIN32
 		case DD_WINDOW_HANDLE:
 			return (int) hWndMain;
+#endif
 		}
 		return 0;
 	}
@@ -768,3 +775,24 @@ ddplayer_t *DD_GetPlayer(int number)
 {
 	return (ddplayer_t*) &players[number];
 }
+
+#ifdef UNIX
+/*
+ * Some routines are not available on the *nix platform.
+ */
+char *strupr(char *string)
+{
+	char *ch = string;
+	
+	for(; *ch; ch++) *ch = toupper(*ch);
+	return string;
+}
+
+char *strlwr(char *string)
+{
+	char *ch = string;
+
+	for(; *ch; ch++) *ch = tolower(*ch);
+	return string;
+}
+#endif

@@ -444,3 +444,4 @@ void S_Drawer(void)
 	gl.MatrixMode(DGL_PROJECTION);
 	gl.PopMatrix();
 }
+

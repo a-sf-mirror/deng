@@ -1,5 +1,6 @@
 // BAMS trigonometric functions.
 
+#include "de_platform.h"
 #include <math.h>
 #include "m_bams.h"
 
@@ -12,14 +13,16 @@ void bamsInit()	// Fill in the tables.
 {
 	int	i;	
 	
-	for(i=0; i<BAMS_TABLE_ACCURACY; i++)
+	for(i = 0; i < BAMS_TABLE_ACCURACY; i++)
+	{
 		atantable[i] = RAD2BANG(atan(i/(float)BAMS_TABLE_ACCURACY));
+	}
 }
 
 binangle_t bamsAtan2(int y, int x)
 {
 	binangle_t	bang;
-	__int64		absy = y, absx = x;	// << TABLE_ACCURACY needs space.
+	INTEGER64	absy = y, absx = x;	// << TABLE_ACCURACY needs space.
 
 	if(!x && !y) return BANG_0;	// Indeterminate.
 
@@ -40,7 +43,8 @@ binangle_t bamsAtan2(int y, int x)
 		// The special cases didn't help. Use the tables.
 		// absx and absy can't be zero here.
 		if(absy > absx)
-			bang = BANG_90-atantable[ (absx << BAMS_TABLE_ACCURACY_SHIFT) / absy ];
+			bang = BANG_90-atantable[ (absx << BAMS_TABLE_ACCURACY_SHIFT)
+									  / absy ];
 		else
 			bang = atantable[ (absy << BAMS_TABLE_ACCURACY_SHIFT) / absx ];
 	}
@@ -48,7 +52,9 @@ binangle_t bamsAtan2(int y, int x)
 	// Now we know the angle in the first quadrant. Let's look at the signs
 	// and choose the right quadrant.
 	if(x < 0) // Flip horizontally?
-		bang = BANG_180 - bang;	
+	{
+		bang = BANG_180 - bang;
+	}
 	if(y < 0) // Flip vertically?
 	{
 		// At the moment bang must be smaller than 180.

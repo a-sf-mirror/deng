@@ -1352,16 +1352,8 @@ boolean G_Responder (event_t* ev)
 			return true;	// automap ate it 
 		break;
 
-/*#if __JDOOM__
-	case GS_FINALE:
-		if(F_Responder(ev)) 
-			return true;	// finale ate the event 
+	default:
 		break;
-#endif*/
-
-/*	case GS_INFINE:
-		if(FI_Responder(ev)) return true; 
-		break;*/
 	}
 
     switch (ev->type) 
@@ -1657,31 +1649,10 @@ void G_Ticker (void)
 #else
 		IN_Ticker ();
 #endif
-		break; 
-
-/*#if __JDOOM__
-	case GS_FINALE: 
-		F_Ticker (); 
-		break; 
-#endif*/
-
-/*	case GS_INFINE:
-		FI_Ticker();
-		break;*/
-
-/*#if __JHEXEN__
-	case GS_DEMOSCREEN:
-		if(IS_DEDICATED) break;
-		H2_PageTicker ();
 		break;
-#else
-	case GS_DEMOSCREEN: 
-		if(IS_DEDICATED) break;
-#ifndef __JDOOM__
-		D_PageTicker (); 
-#endif
-		break; 
-#endif*/
+
+	default:
+		break;
 	} 
 	
 	// InFine ticks whenever it's active.

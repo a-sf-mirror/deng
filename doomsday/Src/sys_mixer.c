@@ -239,3 +239,4 @@ int Sys_Mixer3i(int device, int action, int control)
 {
 	return Sys_Mixer4i(device, action, control, 0);	
 }
+

@@ -904,9 +904,9 @@ void FI_Execute(char *cmd)
 					break;
 				}
 			// Should we skip this command?
-			if(fi->skipnext && !fi_commands[i].when_cond_skipping 
-				|| (fi->skipping || fi->gotoskip) 
-					&& !fi_commands[i].when_skipping) 
+			if((fi->skipnext && !fi_commands[i].when_cond_skipping)	||
+			   ((fi->skipping || fi->gotoskip)
+				&& !fi_commands[i].when_skipping)) 
 			{
 				// While not DO-skipping, the condskip has now been done.
 				if(!fi->dolevel) 

@@ -1441,3 +1441,4 @@ const char *R_GetCurrentLevelID(void)
 {
 	return currentLevelId;
 }
+

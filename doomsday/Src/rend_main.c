@@ -250,7 +250,7 @@ int Rend_SegFacingPoint(float v1[2], float v2[2], float pnt[2])
 	return 0;	// Facing away.
 }
 
-static int __cdecl DivSortAscend(const void *e1, const void *e2)
+static int C_DECL DivSortAscend(const void *e1, const void *e2)
 {
 	float f1 = *(float*) e1, f2 = *(float*) e2;
 
@@ -259,7 +259,7 @@ static int __cdecl DivSortAscend(const void *e1, const void *e2)
 	return 0;
 }
 
-static int __cdecl DivSortDescend(const void *e1, const void *e2)
+static int C_DECL DivSortDescend(const void *e1, const void *e2)
 {
 	float f1 = *(float*) e1, f2 = *(float*) e2;
 
@@ -450,7 +450,6 @@ int Rend_MidTexturePos(float *top, float *bottom, float *texoffy,
 					   float tcyoff, boolean lower_unpeg)
 {
 	float openingTop = *top, openingBottom = *bottom;
-	float offset = 0;	
 
 	if(openingTop <= openingBottom) return false;
 
@@ -873,8 +872,8 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
 		if(back->floorpic != skyflatnum || front->floorpic != skyflatnum)
 		{
 			// Do the floors create an occlusion?			
-			if(backh[0] > fronth[0] && vy <= backh[0]
-				|| backh[0] < fronth[0] && vy >= fronth[0])
+			if((backh[0] > fronth[0] && vy <= backh[0])	||
+			   (backh[0] < fronth[0] && vy >= fronth[0]))
 			{
 				C_AddViewRelOcclusion(startv, endv, 
 					MAX_OF(fronth[0], backh[0]), false); // Occlude down.
@@ -884,8 +883,8 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
 		if(back->ceilingpic != skyflatnum || front->ceilingpic != skyflatnum)
 		{
 			// Do the ceilings create an occlusion?
-			if(backh[1] < fronth[1] && vy >= backh[1]
-				|| backh[1] > fronth[1] && vy <= fronth[1])
+			if((backh[1] < fronth[1] && vy >= backh[1]) ||
+			   (backh[1] > fronth[1] && vy <= fronth[1]))
 			{
 				C_AddViewRelOcclusion(startv, endv, 
 					MIN_OF(fronth[1], backh[1]), true); // Occlude up.
@@ -969,8 +968,8 @@ void Rend_RenderPlane
 	END_PROF( PROF_REND_SUB_PLANE_1 );
 
 	// Is the plane visible?
-	if(plane->isfloor && vy > height
-		|| !plane->isfloor && vy < height) 
+	if((plane->isfloor && vy > height) ||
+	   (!plane->isfloor && vy < height))
 	{
 		// Check for sky.
 		if(plane->pic == skyflatnum) 
@@ -1284,3 +1283,4 @@ int CCmdFog(int argc, char **argv)
 	// Exit with a success.
 	return true;
 }
+

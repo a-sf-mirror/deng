@@ -137,7 +137,7 @@ void Sv_FixLocalAngles()
 void Sv_HandlePacket(void)
 {
 	id_t id;
-	int i, mask, from = netbuffer.player;
+	int i, mask, from = netBuffer.player;
 	ddplayer_t *pl = &players[from];
 	client_t *sender = &clients[from];
 	playerinfo_packet_t info;
@@ -145,7 +145,7 @@ void Sv_HandlePacket(void)
 	char *msg;
 	char buf[17];
 
-	switch(netbuffer.msg.type)
+	switch(netBuffer.msg.type)
 	{
 	case pcl_hello:
 	case pcl_hello2:
@@ -175,7 +175,7 @@ void Sv_HandlePacket(void)
 		// This is OK.
 		sender->id = id;
 		
-		if(netbuffer.msg.type == pcl_hello2)
+		if(netBuffer.msg.type == pcl_hello2)
 		{
 			// Check the game mode (max 16 chars).
 			Msg_Read(buf, 16);
@@ -244,8 +244,8 @@ void Sv_HandlePacket(void)
 		// Is the message for us?
 		mask = Msg_ReadShort();	
 		// Copy the message into a buffer.
-		msg = Z_Malloc(netbuffer.length - 3, PU_STATIC, 0);
-		strcpy(msg, netbuffer.cursor);
+		msg = Z_Malloc(netBuffer.length - 3, PU_STATIC, 0);
+		strcpy(msg, netBuffer.cursor);
 		// Message for us? Show it locally.
 		if(mask & 1) 
 		{
@@ -289,19 +289,19 @@ void Sv_Login(void)
 {
 	if(net_remoteuser) 
 	{
-		Sv_SendText(netbuffer.player, SV_CONSOLE_FLAGS,
+		Sv_SendText(netBuffer.player, SV_CONSOLE_FLAGS,
 			"Sv_Login: A client is already logged in.\n");
 		return;
 	}
 	// Check the password.
-	if(strcmp(netbuffer.cursor, net_password))
+	if(strcmp(netBuffer.cursor, net_password))
 	{
-		Sv_SendText(netbuffer.player, SV_CONSOLE_FLAGS,
+		Sv_SendText(netBuffer.player, SV_CONSOLE_FLAGS,
 			"Sv_Login: Invalid password.\n");
 		return;
 	}
 	// OK!
-	net_remoteuser = netbuffer.player;
+	net_remoteuser = netBuffer.player;
 	Con_Printf("Sv_Login: %s (client %i) logged in.\n",
 		clients[net_remoteuser].name, net_remoteuser);
 	// Send a confirmation packet to the client.
@@ -334,12 +334,12 @@ void Sv_ExecuteCommand(void)
 	silent = (len & 0x8000) != 0;
 	len &= 0x7fff;
 	// Verify using string length.
-	if(strlen(netbuffer.cursor) != (unsigned) len-1)
+	if(strlen(netBuffer.cursor) != (unsigned) len-1)
 	{
 		Con_Printf("Sv_ExecuteCommand: Damaged packet?\n");
 		return;
 	}
-	Con_Execute(netbuffer.cursor, silent);		
+	Con_Execute(netBuffer.cursor, silent);		
 }
 
 /*
@@ -354,11 +354,11 @@ void Sv_GetPackets(void)
 
 	while(Net_GetPacket())
 	{
-		switch(netbuffer.msg.type)
+		switch(netBuffer.msg.type)
 		{
 		case pcl_commands:
 			// Determine who sent this packet.
-			netconsole = netbuffer.player;
+			netconsole = netBuffer.player;
 			if(netconsole < 0 || netconsole >= MAXPLAYERS) continue; 
 			
 			sender = &clients[netconsole];
@@ -373,8 +373,8 @@ void Sv_GetPackets(void)
 			
 			// Unpack the commands in the packet. Since the game defines the
 			// ticcmd_t structure, it is the only one who can do this.
-			unpacked = (byte*) gx.NetPlayerEvent(netbuffer.length, 
-				DDPE_READ_COMMANDS, netbuffer.msg.data);
+			unpacked = (byte*) gx.NetPlayerEvent(netBuffer.length, 
+				DDPE_READ_COMMANDS, netBuffer.msg.data);
 
 			// The first two bytes contain the number of commands.
 			num = *(ushort*) unpacked;
@@ -405,30 +405,30 @@ void Sv_GetPackets(void)
 			// delta sets.
 			while(!Msg_End())
 			{
-				Sv_AckDeltaSet(netbuffer.player, Msg_ReadByte(), 0);
+				Sv_AckDeltaSet(netBuffer.player, Msg_ReadByte(), 0);
 			}
 			break;
 
 		case pcl_acks:
 			// The client is acknowledging both entire sets and resent deltas.
 			// The first byte contains the acked set.
-			Sv_AckDeltaSet(netbuffer.player, Msg_ReadByte(), 0);
+			Sv_AckDeltaSet(netBuffer.player, Msg_ReadByte(), 0);
 
 			// The rest of the packet contains resend IDs.
 			while(!Msg_End())
 			{
-				Sv_AckDeltaSet(netbuffer.player, 0, Msg_ReadByte());
+				Sv_AckDeltaSet(netBuffer.player, 0, Msg_ReadByte());
 			}
 			break;
 
 		case pkt_coords:
-			Sv_ClientCoords(netbuffer.player);
+			Sv_ClientCoords(netBuffer.player);
 			break;
 
 		case pcl_ack_shake:
 			// The client has acknowledged our handshake.
 			// Note the time (this isn't perfectly accurate, though).
-			netconsole = netbuffer.player;
+			netconsole = netBuffer.player;
 			if(netconsole < 0 || netconsole >= MAXPLAYERS) continue; 
 
 			sender = &clients[netconsole];
@@ -462,12 +462,12 @@ void Sv_GetPackets(void)
 			break;
 
 		default:
-			if(netbuffer.msg.type >= pkt_game_marker)
+			if(netBuffer.msg.type >= pkt_game_marker)
 			{
 				// A client has sent a game specific packet.
-				gx.HandlePacket(netbuffer.player,
-					netbuffer.msg.type, netbuffer.msg.data,
-					netbuffer.length);
+				gx.HandlePacket(netBuffer.player,
+					netBuffer.msg.type, netBuffer.msg.data,
+					netBuffer.length);
 			}
 		}
 	}
@@ -800,7 +800,7 @@ boolean Sv_CheckBandwidth(int playerNumber)
  */
 void Sv_ClientCoords(int playerNum)
 {
-	client_t *cl = clients + playerNum;
+/*	client_t *cl = clients + playerNum; */
 	mobj_t *mo = players[playerNum].mo;
 	int clx, cly, clz;
 	boolean onFloor = false;
@@ -855,4 +855,5 @@ int CCmdLogout(int argc, char **argv)
 	net_remoteuser = 0;
 	return true;
 }
+
 

@@ -253,7 +253,7 @@ void Cl_MovePlayer(ddplayer_t *pl)
 {
 	int num = pl - players;
 	playerstate_t *st = playerstate + num;
-	mobj_t *clmo = &st->cmo->mo, *mo = pl->mo;
+	mobj_t /* *clmo = &st->cmo->mo,*/ *mo = pl->mo;
 
 	if(!mo) return;
 
@@ -601,3 +601,4 @@ boolean Cl_IsFreeToMove(int player)
 	if(!mo) return false;
 	return (mo->z >= mo->floorz && mo->z + mo->height <= mo->ceilingz);
 }
+

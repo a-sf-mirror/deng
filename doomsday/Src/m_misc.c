@@ -9,14 +9,23 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <direct.h>
 #include <fcntl.h>
-#include <stdlib.h>
+
+#if defined(WIN32)
+#include <direct.h>
 #include <io.h>
 #include <conio.h>
+#endif
+
+#if defined(UNIX)
+#include <unistd.h>
+#include <string.h>
+#endif
+
+#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-#include <lzss.h>
+#include <LZSS.h>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -677,7 +686,6 @@ void M_ForceUppercase(char *text)
 void M_WriteCommented(FILE *file, char *text)
 {
 	char *buff = malloc(strlen(text)+1), *line;
-	int	i = 0;
 
 	strcpy(buff, text);
 	line = strtok(buff, "\n");
@@ -823,6 +831,7 @@ void M_TranslatePath(const char *path, char *translated)
 	{
 		strcpy(translated, path);
 	}
+	Dir_FixSlashes(translated);
 }
 
 //===========================================================================
@@ -865,7 +874,11 @@ boolean M_CheckPath(char *path)
 		if(access(buf, 0))
 		{
 			// Path doesn't exist, create it.
-			mkdir(buf);		
+#if defined(WIN32)
+			mkdir(buf);
+#elif defined(UNIX)
+			mkdir(buf, 0775);
+#endif
 		}
 		strcat(buf, "\\");
 		ptr = endptr + 1;
@@ -929,3 +942,4 @@ const char *M_Pretty(const char *path)
 	// We don't know how to make this prettier.
 	return path;
 }
+

@@ -284,8 +284,8 @@ boolean R_IsInAnimGroup(int groupNum, int type, int number)
 
 	if(!group) return false;
 
-	if(type == DD_TEXTURE && !(group->flags & AGF_TEXTURE)
-		|| type == DD_FLAT && !(group->flags & AGF_FLAT))
+	if((type == DD_TEXTURE && !(group->flags & AGF_TEXTURE)) ||
+	   (type == DD_FLAT && !(group->flags & AGF_FLAT)))
 	{
 		// Not the right type.
 		return false;
@@ -1050,3 +1050,4 @@ void R_GenerateDecorMap(ded_decor_t *def)
 	}
 #endif
 }
+

@@ -248,7 +248,6 @@ void R_CheckViewerLimits(viewer_t *src, viewer_t *dst)
 //===========================================================================
 void R_SetupFrame(ddplayer_t *player)
 {
-	extern int BorderRefreshCount;
 	int tableAngle;
 	float yawRad, pitchRad;
 	viewer_t sharpView, smoothView;
@@ -595,3 +594,4 @@ void R_InitLightTables (void)
 //===========================================================================
 // <<< OBSOLETE <<<
 //===========================================================================
+

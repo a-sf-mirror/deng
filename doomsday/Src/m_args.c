@@ -59,9 +59,9 @@ static int last_match;
 // ArgParse
 //	Parses the given command line. 
 //==========================================================================
-int ArgParse(int mode, char *cmdline)
+int ArgParse(int mode, const char *cmdline)
 {
-	char word[512], *ptr, *cmd = cmdline, *response;	
+	char word[512], *ptr, *response, *cmd = (char*) cmdline;
 	int i;
 	int count = 0;
 	FILE *file;
@@ -166,7 +166,7 @@ int ArgParse(int mode, char *cmdline)
 // ArgInit
 //	Initializes the command line arguments list.
 //==========================================================================
-void ArgInit(char *cmdline)
+void ArgInit(const char *cmdline)
 {
 	// Clear the names register.
 	num_names = 0;
@@ -325,3 +325,4 @@ int ArgExists(char *check)
 {
 	return ArgCheck(check) != 0;
 }
+

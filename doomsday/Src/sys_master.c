@@ -8,6 +8,9 @@
 //** Sockets were initialized by sys_network.
 //**
 //** $Log$
+//** Revision 1.2.4.1  2003/11/22 18:01:35  skyjake
+//** Compiles with gcc and -DUNIX
+//**
 //** Revision 1.2  2003/05/23 22:16:15  skyjake
 //** DP8, various net-related improvements
 //**
@@ -18,7 +21,16 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <winsock.h>
+#include "de_platform.h"
+
+#ifdef WIN32
+#	include <winsock.h>
+#endif
+
+#ifdef UNIX
+#	include <sys/types.h>
+#	include <sys/socket.h>
+#endif
 
 #include "de_base.h"
 #include "de_network.h"
@@ -52,6 +64,12 @@ typedef struct serverlist_s {
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+// Master server info. Hardcoded defaults.
+char	    *masterAddress = "www.doomsdayhq.com"; 
+int			masterPort     = 0; // Uses 80 by default.
+char	    *masterPath    = "/master.php";
+boolean		masterAware    = false;		
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 

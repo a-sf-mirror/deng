@@ -109,7 +109,7 @@ static binangle_t anglist[MAX_POLY_SIDES];
 	if(i > maxnumnodes) maxnumnodes = i;
 }*/
 
-static int C_CountUsedOranges(void)
+/*static int C_CountUsedOranges(void)
 {
 	int cnt;
 	occnode_t *orange;
@@ -119,9 +119,9 @@ static int C_CountUsedOranges(void)
 
 static void C_CountOranges(void)
 {
-/*	int i = C_CountUsedOranges();
-	if(i > highOccNodes) highOccNodes = i;*/
-}
+	int i = C_CountUsedOranges();
+	if(i > highOccNodes) highOccNodes = i;
+}*/
 
 //===========================================================================
 // C_RoverInit
@@ -1163,8 +1163,7 @@ clipnode_t *C_AngleClippedBy(binangle_t bang)
 // Returns 1 if the subsector might be visible.
 int C_CheckSubsector(subsector_t *ssec)
 {
-	int			i;
-	clipnode_t	*cnode=0;
+	int i;
 
 	for(i = 0; i < ssec->numverts; i++)	// Angles to all corners.
 	{
