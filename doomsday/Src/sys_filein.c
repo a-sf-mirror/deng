@@ -635,7 +635,6 @@ int F_ForAllDescend
 {
 	char fn[256], spec[256];
 	char localPattern[256];
-	long hFile;
 	finddata_t fd;
 
 	sprintf(localPattern, "%s%s", path, pattern);
@@ -643,7 +642,7 @@ int F_ForAllDescend
 	// We'll look through all files.
 	sprintf(spec, "%s*.*", path);
 
-	if(!(hFile = myfindfirst(spec, &fd)))
+	if(!myfindfirst(spec, &fd))
 	{
 		// The first file found!
 		do 
