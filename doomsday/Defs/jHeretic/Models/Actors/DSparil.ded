@@ -1,22 +1,23 @@
 Header { Version = 6; }
 
-########========-------- RIDING D'SPARIL --------========########
-# Model by Slyrr
+# Models by Slyrr
 # Definitions by SkyJake
+
+########========-------- RIDING D'SPARIL --------========########
 
 Model {
   State = "SRCR1_LOOK1";
   Scale XYZ { 1.0 0.75 1.0 };
   Sub { 
-    File = "Actors/DSparil/Riding/Chaos.md2"; 
+    File = "Actors/DSparil/Chaos.md2"; 
     Frame = "idle01"; 
   }
   Sub { 
-    File = "Actors/DSparil/Riding/SRider.md2"; 
+    File = "Actors/DSparil/SRider.md2"; 
     Frame = "idle01"; 
   }
   Sub { 
-    File = "Actors/DSparil/Riding/SRTrident.md2"; 
+    File = "Actors/DSparil/SRTrident.md2"; 
     Frame = "idle01"; 
     Flags = specular;
     Shiny = .3;
@@ -495,7 +496,7 @@ Model {
   Scale = .8;
   Offset = -50;
   Sub { 
-    File = "Actors/DSparil/Walking/dsparil.md2"; 
+    File = "Actors/DSparil/dsparil.md2"; 
     Frame = "death02"; 
     Flags = specular;
     Shiny = .5;
@@ -538,9 +539,9 @@ Model {
 Model {
   State = "SOR2_LOOK1";
   Scale = .8;
-  Md2 { File = "Actors/DSparil/Walking/dsparil.md2"; Frame = "idle01"; };
+  Md2 { File = "Actors/DSparil/dsparil.md2"; Frame = "idle01"; };
   Md2 { 
-    File = "Actors/DSparil/Walking/trident.md2"; 
+    File = "Actors/DSparil/trident.md2"; 
     Frame = "idle01"; 
     Flags = specular;
     Shiny = .3;
@@ -637,7 +638,7 @@ Model {
 }
 *Model {
   State = "SOR2_DIE7";
-  Md2 { File = "Actors/DSparil/Walking/dskel2.md2"; Frame = "death01"; };
+  Md2 { File = "Actors/DSparil/dskel2.md2"; Frame = "death01"; };
   Md2 { };
   Md2 { File = ""; };
   Md2 { File = ""; };
