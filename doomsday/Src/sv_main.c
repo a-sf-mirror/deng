@@ -765,8 +765,8 @@ boolean Sv_CheckBandwidth(int playerNumber)
 	// is overrated.
 	if(qSize > limit)
 	{
-		// Drop faster to allow the send queue to clear out sooner.
-		client->bandwidthRating -= 5;
+		// Drop quickly to allow the send queue to clear out sooner.
+		client->bandwidthRating -= 10;
 	}
 
 	// If the send queue is practically empty, we can use more bandwidth.

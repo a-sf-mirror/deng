@@ -38,10 +38,8 @@ typedef struct
 	byte	xhairColor[4];
 	boolean	messageson;
 	
-	//int		snd_3D;
-	//float	snd_ReverbFactor;
-	//boolean	reverbDebug;
 	int		jumpEnabled;
+	float	jumpPower;
 	boolean	fastMonsters;
 	boolean	counterCheat;
 	boolean customMusic;

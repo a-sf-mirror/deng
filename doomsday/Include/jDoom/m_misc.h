@@ -29,31 +29,6 @@
 // MISC
 //
 
-
-
-/*boolean
-M_WriteFile
-( char const*	name,
-  void*		source,
-  int		length );
-
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer );*/
-
-/*#define M_WriteFile			gi.WriteFile
-#define M_ReadFile			gi.ReadFile*/
-
-//void M_ScreenShot (void);
-
-void G_DoScreenShot (void);
-
-/*void M_LoadDefaults (void);
-
-void M_SaveDefaults (void);*/
-
-
 int
 M_DrawText
 ( int		x,
@@ -68,6 +43,10 @@ void strcatQuoted(char *dest, char *src);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.1.2.1  2003/09/21 15:34:54  skyjake
+// Fixed screenshot file name selection
+// Moved G_DoScreenShot() to Src/Common
+//
 // Revision 1.1  2003/02/26 19:18:31  skyjake
 // Initial checkin
 //

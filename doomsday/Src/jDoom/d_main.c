@@ -486,6 +486,8 @@ void D_PreInit(void)
 	cfg.menuColor[0] = 1;
 	cfg.automapAlpha = .6f;
 	cfg.automapLineAlpha = 1;
+	cfg.automapShowDoors = true;
+	cfg.automapDoorGlow = true;
 	cfg.msgCount = 4;
 	cfg.msgScale = .8f;
 	cfg.msgUptime = 5 * TICSPERSEC;
@@ -579,6 +581,13 @@ void D_PostInit(void)
 			: "DOOM 2: Hell on Earth\n")
 		: "Public DOOM\n");
 	Con_FPrintf(CBLF_RULER, "");
+
+	// Plutonia and TNT automatically turn on the full sky.
+	if(gamemode == commercial
+		&& (gamemission == pack_plut || gamemission == pack_tnt))
+	{
+		Con_SetInteger("rend-sky-full", 1);
+	}
 
 	if(gamemode == commercial) // Doom2 has a different background.
 		BorderLumps[0] = "GRNROCK";

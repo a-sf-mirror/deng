@@ -22,7 +22,7 @@
 #endif
 
 #define VERSION 210
-#define VERSION_TEXT "1.3.8"
+#define VERSION_TEXT "1.3.10"
 #define VERSIONTEXT "Version "VERSION_TEXT" "__DATE__" ("JHERETIC_VER_ID")"
 
 #include "../doomsday.h"
@@ -764,8 +764,6 @@ void M_FindResponseFile(void);
 void M_ClearBox (fixed_t *box);
 void M_AddToBox (fixed_t *box, fixed_t x, fixed_t y);
 // bounding box functions
-
-void G_DoScreenShot (void);
 
 int M_DrawText (int x, int y, boolean direct, char *string);
 

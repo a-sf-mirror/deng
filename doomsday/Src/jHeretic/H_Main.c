@@ -757,6 +757,7 @@ void H_PreInit(void)
 	cfg.counterCheatScale = .7f;
 	cfg.cameraNoClip = true;
 	cfg.bobView = cfg.bobWeapon = 1;
+	cfg.jumpPower = 9;
 
 //	M_FindResponseFile();
 //	setbuf(stdout, NULL);

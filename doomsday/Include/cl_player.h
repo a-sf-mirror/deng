@@ -17,5 +17,6 @@ void Cl_MovePsprites(void);
 void Cl_CoordsReceived(void);
 int Cl_ReadPlayerDelta(void);
 void Cl_ReadPlayerDelta2(boolean skip);
+boolean Cl_IsFreeToMove(int player);
 
 #endif 

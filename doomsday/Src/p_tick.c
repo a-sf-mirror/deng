@@ -8,6 +8,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "de_base.h"
+#include "de_network.h"
 #include "de_render.h"
 #include "de_play.h"
 
@@ -36,9 +37,33 @@
 //===========================================================================
 void P_MobjTicker(mobj_t *mo)
 {
-	int i = mo->halofactor & 0x7f;
+	lumobj_t *lum = DL_GetLuminous(mo->light);
+	int i; 
+
+	// Set the high bit of halofactor if the light is clipped. This will 
+	// make P_Ticker diminish the factor to zero. Take the first step here
+	// and now, though.
+	if(!lum || lum->flags & LUMF_CLIPPED)
+	{
+		if(mo->halofactor & 0x80)
+		{
+			i = (mo->halofactor & 0x7f);// - haloOccludeSpeed;
+			if(i < 0) i = 0;
+			mo->halofactor = i;
+		}
+	}
+	else
+	{
+		if(!(mo->halofactor & 0x80))
+		{
+			i = (mo->halofactor & 0x7f);// + haloOccludeSpeed;
+			if(i > 127) i = 127;
+			mo->halofactor = 0x80 | i;
+		}
+	}
 
 	// Handle halofactor.
+	i = mo->halofactor & 0x7f;
 	if(mo->halofactor & 0x80)
 	{
 		// Going up.
@@ -53,6 +78,16 @@ void P_MobjTicker(mobj_t *mo)
 	}
 	mo->halofactor &= ~0x7f;
 	mo->halofactor |= i;
+}
+
+//===========================================================================
+// PIT_ClientMobjTicker
+//===========================================================================
+boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
+{
+	P_MobjTicker(&cmo->mo);
+	// Continue iteration.
+	return true;
 }
 
 //===========================================================================
@@ -73,8 +108,9 @@ void P_Ticker(void)
 	// Check all mobjs.
 	for(th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		// FIXME: Client mobjs!
 		if(!P_IsMobjThinker(th->function)) continue;
 		P_MobjTicker( (mobj_t*) th);
 	}
+
+	Cl_MobjIterator(PIT_ClientMobjTicker, NULL);
 }

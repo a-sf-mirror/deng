@@ -865,6 +865,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						RV_STR("Frame", mdl->sub[sub].frame)
 						RV_INT("Frame range", mdl->sub[sub].framerange)
 						RV_INT("Skin", mdl->sub[sub].skin)
+						RV_STR("Skin file", mdl->sub[sub].skinfilename.path)
 						RV_INT("Skin range", mdl->sub[sub].skinrange)
 						RV_VEC("Offset XYZ", mdl->sub[sub].offset, 3)
 						RV_FLAGS("Flags", mdl->sub[sub].flags, "df_")
@@ -1009,6 +1010,7 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 					{
 						READLABEL;
 						RV_STR("ID", sm->id)
+						RV_INT("Layer", sm->layer)
 						RV_FLT("Frame interval", sm->frame_interval)
 						RV_FLT("Yaw", sm->yaw)
 						RV_FLT("Yaw speed", sm->yaw_speed)
@@ -1214,7 +1216,9 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 				RV_FLT("Speed Rnd", gen->spd_variance)
 				RV_VEC("Vector", gen->vector, 3)
 				RV_FLT("Vector Rnd", gen->vec_variance)
+				RV_FLT("Init vector Rnd", gen->init_vec_variance)
 				RV_VEC("Center", gen->center, 3)
+				RV_INT("Submodel", gen->submodel)
 				RV_FLT("Spawn radius", gen->spawn_radius)
 				RV_FLT("Min spawn radius", gen->min_spawn_radius)
 				RV_FLT("Distance", gen->maxdist)
@@ -1256,6 +1260,11 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						RV_STR("Frame", st->frame_name)
 						RV_STR("End frame", st->end_frame_name)
 						RV_VEC("Spin", st->spin, 2)
+						RV_STR("Sound", st->sound.name)
+						RV_FLT("Volume", st->sound.volume)
+						RV_STR("Hit sound", st->hit_sound.name)
+						RV_FLT("Hit volume", st->hit_sound.volume)
+						RV_VEC("Force", st->vector_force, 3)
 						RV_END
 						CHECKSC;
 					}
@@ -1397,13 +1406,13 @@ int DED_ReadData(ded_t *ded, char *buffer, const char *sourceFile)
 						RV_END
 						CHECKSC;
 					}
-					grp->count = ++sub;
+					++sub;
 				}
 				else RV_FLAGS("Flags", grp->flags, "tgf_")
 				RV_END
 				CHECKSC;
 			}
-			grp->count = ++sub;
+			grp->count = sub;
 		}
 		if(ISTOKEN("Line"))		// Line Type
 		{

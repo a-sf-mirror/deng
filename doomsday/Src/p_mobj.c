@@ -92,7 +92,8 @@ fixed_t		tmymove;
 void P_SetState(mobj_t *mobj, int statenum)
 {
 	state_t *st = states + statenum;
-	boolean spawning = (mobj->state == 0), sponly;
+	boolean spawning = (mobj->state == 0);
+	ded_ptcgen_t *pg;
 
 #if _DEBUG
 	if(statenum < 0 || statenum >= defs.count.states.num)
@@ -105,13 +106,12 @@ void P_SetState(mobj_t *mobj, int statenum)
 	mobj->frame = st->frame;
 
 	// Check for a ptcgen trigger.
-	if(statenum && st->ptrigger)
+	for(pg = st->ptrigger; statenum && pg; pg = pg->state_next)
 	{
-		sponly = (((ded_ptcgen_t*)st->ptrigger)->flags & PGF_SPAWN_ONLY) != 0;
-		if(!sponly || spawning)
+		if(!(pg->flags & PGF_SPAWN_ONLY) || spawning)
 		{
 			// We are allowed to spawn the generator.
-			P_SpawnParticleGen(st->ptrigger, mobj);
+			P_SpawnParticleGen(pg, mobj);
 		}
 	}
 }
@@ -201,7 +201,7 @@ boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
 		// Didn't hit it.
 		return true;	
     }
-	if(overlap /*&& thing->ddflags & DDMF_SOLID*/)
+	if(overlap)
 	{
 		// How are we positioned?
 		if(tm->z >= thing->z + thing->height - 24*FRACUNIT)
@@ -211,18 +211,26 @@ boolean PIT_CheckThing (mobj_t* thing, checkpos_data_t *tm)
 			tm->floorz = thing->z + thing->height;
 			return true;
 		}
-/*		
-		// Under, then?
-		if(tm->z + tm->height < thing->z)
+
+		// To prevent getting stuck, don't block if moving away from
+		// the object.
+		if(tm->thing->dplayer
+			&& P_ApproxDistance(tm->thing->x - thing->x, 
+				tm->thing->y - thing->y)
+				< P_ApproxDistance(tm->x - thing->x, tm->y - thing->y)
+			&& tm->thing->momz > -12*FRACUNIT)
 		{
-			tm->ceilingz = thing->z;
+			// The current distance is smaller than the new one would be.
+			// No blocking needs to occur.
+			// The Z movement test is done to prevent a 'falling through'
+			// case when a thing is moving at a high speed.
 			return true;
-		}*/
+		}
 
 		// We're hitting this mobj.
 		blockingMobj = thing;
 	}
-    return false; //!(thing->ddflags & DDMF_SOLID);
+    return false;
 }
 
 
@@ -368,7 +376,7 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z)
 			if(tmfloorz > z) return false; // below the floor
 		}
 	}
-    
+
     // The move is OK. First unlink.
 	if(IS_SECTOR_LINKED(thing)) links |= DDLINK_SECTOR;
 	if(IS_BLOCK_LINKED(thing)) links |= DDLINK_BLOCKMAP;
@@ -731,29 +739,12 @@ boolean PIT_ChangeSector(mobj_t *thing, void *data)
 //===========================================================================
 boolean P_ChangeSector(sector_t *sector)
 {
-/*    int		x;
-    int		y;
-	mobj_t *iter;*/
-	
     nofit = false;
 
 	// We'll use validcount to make sure things are only checked once.
 	validcount++;
 	P_SectorTouchingThingsIterator(sector, PIT_ChangeSector, 0);
 
-	// First check what's sectorlinked.
-	/*for(iter = sector->thinglist; iter; iter = iter->snext)
-	{
-		PIT_ChangeSector(iter, 0);
-		iter->valid = validcount;
-	}
-
-    // re-check heights for all things near the moving sector
-    for(x=sector->blockbox[BOXLEFT]; x<=sector->blockbox[BOXRIGHT]; x++)
-	{
-		for(y=sector->blockbox[BOXBOTTOM]; y<=sector->blockbox[BOXTOP]; y++)
-			P_BlockThingsIterator(x, y, PIT_ChangeSector, 0);
-	}*/
 	return nofit;
 }
 

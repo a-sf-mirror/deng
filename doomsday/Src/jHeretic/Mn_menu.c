@@ -2189,7 +2189,11 @@ static boolean SCSaveGame(int option)
 {
 	char *ptr;
 
-	if(!usergame)
+	// Can't save if not in a level.
+	if(!usergame
+		|| IS_CLIENT
+		|| Get(DD_PLAYBACK) 
+		|| gamestate != GS_LEVEL) 
 	{
 		// Can't save if not playing.
 		FileMenuKeySteal = false;

@@ -168,5 +168,11 @@ void P_LoadBlockMap(int lump)
 void P_LoadReject(int lump)
 {
 	rejectmatrix = W_CacheLumpNum(lump, PU_LEVEL);
+	
+	// If no reject matrix is found, issue a warning.
+	if(rejectmatrix == NULL)
+	{
+		Con_Message("P_LoadReject: No REJECT data found.\n");
+	}
 }
 

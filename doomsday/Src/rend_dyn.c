@@ -899,7 +899,7 @@ int DL_NewLuminous(void)
 //===========================================================================
 lumobj_t *DL_GetLuminous(int index)
 {
-	if(!index) return NULL;
+	if(index <= 0 || index > numLuminous) return NULL;
 	return luminousList + index - 1;
 }
 

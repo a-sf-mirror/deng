@@ -68,6 +68,8 @@ static keyname_t keyNames[] =
 	{ DDKEY_END,		"end" },
 	{ DDKEY_BACKSPACE,	"bkspc" },
 	{ ' ',				"space" },
+	{ ';',				"smcln" },
+	{ '\"',				"quote" },
 	{ DDKEY_F10,		"f10" },
 	{ DDKEY_F11,		"f11" },
 	{ DDKEY_F12,		"f12" },
@@ -410,12 +412,6 @@ int CCmdBind(int argc, char **argv)
 	int repeat = !stricmp(argv[0], "bindr") || !stricmp(argv[0], "safebindr");
 	int safe = !strnicmp(argv[0], "safe", 4);
 
-/*	{
-		int i;
-		for(i=0; i<argc; i++)
-			Con_Printf( "%s ", argv[i]);
-		Con_Printf( "\n");
-	}*/
 	if(argc < 2 || argc > 3)
 	{
 		Con_Printf( "Usage: %s (event) (cmd)\n", argv[0]);
@@ -516,13 +512,15 @@ int CCmdListBindings(int argc, char **argv)
 
 void B_WriteToFile(FILE *file)
 {
-	int		i;
-	char	buffer[20];
+	int i;
+	char buffer[20];
 
-	for(i=0; i<numBinds; i++)
+	for(i = 0; i < numBinds; i++)
 	{
 		B_EventBuilder(buffer, &binds[i].event, false);
-		fprintf(file, "bind %s \"", buffer);
+		fprintf(file, "bind ");
+		fprintf(file, "%s", buffer);
+		fprintf(file, " \"");
 		M_WriteTextEsc(file, binds[i].command);
 		fprintf(file, "\"\n");
 	}

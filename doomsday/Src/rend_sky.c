@@ -86,6 +86,15 @@ void Rend_RenderSkyModels(void)
 	{
 		if(!sky->def) continue;
 
+		if(sky->def->layer > 0
+			&& sky->def->layer <= MAXSKYLAYERS
+			&& !(skyLayers[sky->def->layer - 1].flags & SLF_ENABLED))
+		{
+			// The model has been assigned to a layer, but the layer is
+			// not visible.
+			continue;
+		}
+
 		// Calculate the coordinates for the model.
 		pos[0] = vx * -sky->def->coord_factor[0];
 		pos[1] = vy * -sky->def->coord_factor[1];

@@ -440,7 +440,7 @@ void H_RenderHalo(vissprite_t *sourcevis, boolean primary)
 			/ (haloFadeMax - haloFadeMin);
 	}
 
-	// Set the high bit of halofactor if the light is clipped. This will 
+/*	// Set the high bit of halofactor if the light is clipped. This will 
 	// make P_Ticker diminish the factor to zero. Take the first step here
 	// and now, though.
 	if(lum->flags & LUMF_CLIPPED)
@@ -460,7 +460,7 @@ void H_RenderHalo(vissprite_t *sourcevis, boolean primary)
 			if(i > 127) i = 127;
 			lum->thing->halofactor = 0x80 | i;
 		}
-	}
+	}*/
 
 	occlusionfactor = (lum->thing->halofactor & 0x7f) / 127.0f;
 	if(occlusionfactor == 0) return;

@@ -1035,6 +1035,19 @@ void NetSv_Paused(boolean isPaused)
 		&setPause, 1);
 }
 
+/*
+ * The default jump power is 9.
+ */
+void NetSv_SendJumpPower(int target, float power)
+{
+	char msg[50];
+
+	if(!IS_SERVER) return;
+	
+	memcpy((void*)msg, &power, 4);
+	Net_SendPacket(target | DDSP_CONFIRM, GPT_JUMP_POWER, msg, 4);
+}
+
 //===========================================================================
 // NetSv_Ticker
 //===========================================================================
@@ -1042,6 +1055,7 @@ void NetSv_Ticker(void)
 {
 	player_t *plr;
 	int	i, red, palette;
+	float power;
 #if __JDOOM__
 	int bz;
 #endif
@@ -1139,6 +1153,16 @@ void NetSv_Ticker(void)
 		}
 	}
 #endif
+
+	// Inform clients about jumping?
+	power = (cfg.jumpEnabled? cfg.jumpPower : 0);
+	if(power != netJumpPower)
+	{
+		netJumpPower = power;
+		for(i = 0; i < MAXPLAYERS; i++)
+			if(players[i].plr->ingame)
+				NetSv_SendJumpPower(i, power);
+	}
 
 	// Send the player state updates.
 	for(i = 0, plr = players; i < MAXPLAYERS; i++, plr++)

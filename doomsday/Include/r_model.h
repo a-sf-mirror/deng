@@ -37,6 +37,8 @@
 #define MFF_SUBTRACT			0x02000000 // Subtract blending.
 #define MFF_REVERSE_SUBTRACT	0x04000000 // Reverse subtract blending.
 #define MFF_TWO_SIDED			0x08000000 // Disable culling.
+#define MFF_NO_TEXCOMP			0x10000000 // Never compress skins.
+#define MFF_WORLD_TIME_ANIM		0x20000000
 
 typedef struct
 {
@@ -53,7 +55,6 @@ typedef struct
 
 typedef struct modeldef_s
 {
-	int				order;
 	char			id[33];
 
 	state_t			*state;		// Pointer to the states list (in dd_defns.c).
@@ -65,7 +66,7 @@ typedef struct modeldef_s
 	float			interrange[2];
 	float			offset[3];
 	float			resize, scale[3];
-	float			ptcoffset[3];
+	float			ptcoffset[MAX_FRAME_MODELS][3];
 	float			visualradius;
 	ded_model_t		*def;
 

@@ -1904,6 +1904,7 @@ void UI_DrawHelpBox(int x, int y, int w, int h, float alpha, char *text)
 
 	if(text)
 	{
+		bor = 2 * UI_BORDER / 3;
 		UI_TextOutWrapEx(text, x + 2*bor, y + 2*bor, w - 4*bor, h - 4*bor, 
 			UI_COL(UIC_TEXT), alpha);
 	}

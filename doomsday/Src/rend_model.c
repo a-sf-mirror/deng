@@ -131,9 +131,17 @@ static void scaleFloatRgb(float *out, byte *in, float mul)
 	scaleAmbientRgb(out, in, mul);
 }
 
-//===========================================================================
-// Mod_LightIterator
-//===========================================================================
+/*
+ * Linear interpolation between two values.
+ */
+float Mod_Lerp(float start, float end, float pos)
+{
+	return end * pos + start * (1 - pos);
+}
+
+/*
+ * Iterator for processing light sources around a model.
+ */
 boolean Mod_LightIterator(lumobj_t *lum, fixed_t xyDist)
 {
 	fixed_t		zDist = ((mlSpr->mo.gz + mlSpr->mo.gzt) >> 1) 
@@ -443,7 +451,7 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 	model_t	*mdl = modellist[smf->model];
 	model_frame_t *frame = Mod_GetVisibleFrame(mf, number, spr->mo.id);
 	model_frame_t *nextFrame = NULL;
-	int mainFlags = mf->flags;
+	//int mainFlags = mf->flags;
 	int	subFlags = smf->flags;
 	int numVerts;
 	int	useSkin;
@@ -544,6 +552,7 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 		// Sky models are animated differently.
 		// Always interpolate, if there's animation.
 		nextFrame = mdl->frames + (smf->frame + 1) % mdl->info.numFrames;
+		mfNext = mf;
 	}
 	else
 	{
@@ -565,16 +574,42 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 
 	yawAngle = spr->mo.yaw;
 	pitchAngle = spr->mo.pitch;
-	
+
+	// World time animation?
+	if(subFlags & MFF_WORLD_TIME_ANIM)
+	{
+		float duration = mf->interrange[0];
+		if(duration == 0) duration = 1;
+		inter = M_CycleIntoRange(leveltic / (duration * TICSPERSEC)
+			+ mf->interrange[1], 1);
+	}
+
+	// Clamp interpolation.
+	if(inter < 0) inter = 0;
+	if(inter > 1) inter = 1;
+
+	if(!nextFrame) 
+	{
+		// If not interpolating, use the same frame as interpolation target.
+		// The lerp routines will recognize this special case.
+		nextFrame = frame;
+		mfNext = mf;
+	}
+
 	// Setup transformation.
 	gl.MatrixMode(DGL_MODELVIEW);
 	gl.PushMatrix();
 
 	// Model space => World space
-	gl.Translatef(spr->mo.v1[VX] + mf->offset[VX] + spr->mo.visoff[VX], 
-		FIX2FLT(spr->mo.gz) + mf->offset[VY] + spr->mo.visoff[VZ] 
-		- FIX2FLT(spr->mo.floorclip), spr->mo.v1[VY] + zSign * mf->offset[VZ]
-		+ spr->mo.visoff[VY]);
+	gl.Translatef(spr->mo.v1[VX] + spr->mo.visoff[VX] 
+		+ Mod_Lerp(mf->offset[VX], mfNext->offset[VX], inter) 		
+		, 
+		FIX2FLT(spr->mo.gz) + spr->mo.visoff[VZ] 
+		+ Mod_Lerp(mf->offset[VY], mfNext->offset[VY], inter) 
+		- FIX2FLT(spr->mo.floorclip)
+		,
+		spr->mo.v1[VY] + spr->mo.visoff[VY]
+		+ zSign * Mod_Lerp(mf->offset[VZ], mfNext->offset[VZ], inter));
 
 	if(spr->type == VSPR_SKY_MODEL)
 	{
@@ -590,7 +625,9 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 	gl.Rotatef(spr->mo.viewaligned? spr->mo.v2[VY] : pitchAngle, 0, 0, 1); 
 
 	// Scaling and model space offset.
-	gl.Scalef(mf->scale[VX], mf->scale[VY], mf->scale[VZ]);
+	gl.Scalef(Mod_Lerp(mf->scale[VX], mfNext->scale[VX], inter), 
+		Mod_Lerp(mf->scale[VY], mfNext->scale[VY], inter), 
+		Mod_Lerp(mf->scale[VZ], mfNext->scale[VZ], inter));
 	if(spr->type == VSPR_PARTICLE_MODEL)
 	{
 		// Particle models have an extra scale.
@@ -599,15 +636,7 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 	gl.Translatef(smf->offset[VX], smf->offset[VY], smf->offset[VZ]);
 	
 	// Now we can draw.
-	if(!nextFrame) 
-	{
-		// If not interpolating, use the same frame as interpolation target.
-		// The lerp routines will recognize this special case.
-		nextFrame = frame;
-	}
 	numVerts = mdl->info.numVertices;
-	if(inter < 0) inter = 0;
-	if(inter > 1) inter = 1;
 
 	// Determine the suitable LOD.
 	if(mdl->info.numLODs > 1 && rend_model_lod != 0)
@@ -711,7 +740,13 @@ void Mod_RenderSubModel(vissprite_t *spr, int number)
 					sizeof(lights[i].vector));
 			}
 			// We must transform the light vector to model space.
-			M_RotateVector(light->vector, -yawAngle, -pitchAngle);				
+			M_RotateVector(light->vector, -yawAngle, -pitchAngle);	
+			// Quick hack: Flip light normal if model inverted.
+			if(mf->scale[VY] < 0)
+			{
+				light->vector[VX] = -light->vector[VX];
+				light->vector[VY] = -light->vector[VY];
+			}
 		}
 		Mod_VertexColors(numVerts, modelColors, modelNormals, 
 			byteAlpha, ambient);

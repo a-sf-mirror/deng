@@ -63,7 +63,7 @@
 
 // Version numbering changes: 200 means JHexen v1.0.
 #define VERSION 200
-#define VERSION_TEXT "1.2.8"
+#define VERSION_TEXT "1.2.10"
 
 #ifdef RANGECHECK
 #define VERSIONTEXT "Version "VERSION_TEXT" +R "__DATE__" ("VER_ID")"
@@ -920,11 +920,6 @@ extern FILE *rndDebugfile;
 // as M_Random, but used only by the play simulation
 
 void M_ClearRandom (void);
-// fix randoms for demos
-//void P_SaveRandom(void);
-//void P_RestoreRandom(void);
-
-void G_DoScreenShot (void);
 
 extern unsigned char rndtable[256];
 

@@ -930,6 +930,9 @@ int W_CheckNumForName(char *name)
 	int v1, v2;
 	lumpinfo_t *lump_p;
 
+	// If the name string is empty, don't bother to search.
+	if(!name[0]) return -1;
+
 	// Make the name into two integers for easy compares
 	strncpy(name8, name, 8);
 	name8[8] = 0; // in case the name was a full 8 chars

@@ -1767,11 +1767,13 @@ void FI_Drawer(void)
 		}
 		else
 		{
+			// FIXME: The raw screen drawer should not ignore rotation.
+			// It should allow the caller to set up a transformation matrix.
 			GL_DrawRawScreen_CS(pic->lump[sq], 
-				0, //pic->object.x.value - fi->imgoffset[0].value, 
-				0, //pic->object.y.value - fi->imgoffset[1].value,
-				1, //(pic->flip[sq]? -1 : 1) * pic->object.scale[0].value,
-				1); //pic->object.scale[1].value);
+				pic->object.x.value - fi->imgoffset[0].value, 
+				pic->object.y.value - fi->imgoffset[1].value,
+				(pic->flip[sq]? -1 : 1) * pic->object.scale[0].value,
+				pic->object.scale[1].value);
 		}
 
 		// Restore original transformation.

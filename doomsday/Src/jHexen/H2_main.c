@@ -211,17 +211,13 @@ void H2_PreInit(void)
 	cfg.joyaxis[0] = JOYAXIS_TURN;
 	cfg.joyaxis[1] = JOYAXIS_MOVE;
 	cfg.screenblocks = cfg.setblocks = 10;
-//	cfg.menuScale = .9f;
 	cfg.showFullscreenMana = 1;
-	//cfg.showFullscreenArmor = 1;
-	//cfg.showFullscreenKeys = 1;
-	//cfg.tomeCounter = 10;
-	//cfg.tomeSound = 3;
 	cfg.lookSpeed = 3;
 	cfg.xhairSize = 1;
 	for(i = 0; i < 4; i++) cfg.xhairColor[i] = 255;	
-	//cfg.netJumping = true;
-	//cfg.netEpisode = 1;
+	cfg.jumpEnabled = true;	// Always true in Hexen
+	cfg.jumpPower = 9;
+
 	cfg.netMap = 1;
 	cfg.netSkill = sk_medium;
 	cfg.netColor = 8;	// Use the default color by default.
@@ -238,8 +234,14 @@ void H2_PreInit(void)
  */
 void H2_IdentifyVersion(void)
 {
-	// Determine the game mode.
-	strcpy(gameModeString, "hexen");
+	// Determine the game mode. Assume demo mode.
+	strcpy(gameModeString, "hexen-demo");
+
+	if(W_CheckNumForName("MAP05") >= 0)
+	{
+		// Normal Hexen.
+		strcpy(gameModeString, "hexen");
+	}
 	
 	// This is not a very accurate test...
 	if(W_CheckNumForName("MAP59") >= 0 && W_CheckNumForName("MAP60") >= 0)
@@ -256,6 +258,14 @@ void H2_PostInit(void)
 	Con_FPrintf(CBLF_RULER | CBLF_WHITE | CBLF_CENTER, "jHexen "
 		VERSIONTEXT"\n");
 	Con_FPrintf(CBLF_RULER, "");
+
+	// Did we end up in demo mode?
+	if(!stricmp(gameModeString, "hexen-demo"))
+	{
+		//Set(DD_SHAREWARE, true);
+		shareware = true;
+		Con_Message( "*** Hexen 4-level Beta Demo ***\n");
+	}
 
 	// Init savegame directory.
 	SV_HxInit();
@@ -379,13 +389,6 @@ static void HandleArgs()
 	netcheat = ArgExists("-netcheat");
 	dontrender = ArgExists("-noview");
 	
-/*	if(ArgExists("-betademo")) 
-	{
-		Set(DD_SHAREWARE, true);
-		shareware = true;
-		Con_Message( "*** Hexen 4-level Beta Demo ***\n");
-	}*/
-
 	// Process command line options
 	for(opt = ExecOptions; opt->name != NULL; opt++)
 	{

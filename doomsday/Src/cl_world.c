@@ -41,9 +41,6 @@ typedef struct
 	fixed_t		*current;
 	fixed_t		destination;
 	fixed_t		speed;
-	//int			floorpic;
-	//int			sound_id;
-	//int			sound_pace;
 } mover_t;
 
 typedef struct
@@ -164,10 +161,14 @@ void Cl_RemoveActivePoly(polymover_t *mover)
 //===========================================================================
 void Cl_MoverThinker(mover_t *mover)
 {
-	fixed_t	*current = mover->current;
+	fixed_t	*current = mover->current, original = *current;
 	boolean remove = false;
-
+	boolean freeMove;
+	
 	if(!Cl_GameReady()) return; // Can we think yet?
+
+	// The move is cancelled if the consoleplayer becomes obstructed.
+	freeMove = Cl_IsFreeToMove(consoleplayer);
 
 	// How's the gap?
 	if(abs(mover->destination - *current) > abs(mover->speed))
@@ -186,8 +187,17 @@ void Cl_MoverThinker(mover_t *mover)
 
 	P_ChangeSector(mover->sector);
 
-	// Can we remove this thinker?
-	if(remove) Cl_RemoveActiveMover(mover);
+	// Make sure the client didn't get stuck as a result of this move.
+	if(freeMove != Cl_IsFreeToMove(consoleplayer))
+	{
+		// Something was blocking the way!
+		*current = original;
+		P_ChangeSector(mover->sector);
+	}
+	else if(remove)	// Can we remove this thinker?
+	{
+		Cl_RemoveActiveMover(mover);
+	}
 }
 
 void Cl_AddMover(int sectornum, movertype_t type, fixed_t dest, fixed_t speed)

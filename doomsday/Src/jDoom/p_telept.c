@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.2.2.1  2003/10/05 10:09:40  skyjake
+// Cleanup
+//
 // Revision 1.2  2003/06/30 00:05:04  skyjake
 // Use fixmom
 //
@@ -83,9 +86,8 @@ EV_Teleport
 		if (sectors[ i ].tag == tag )
 		{
 			thinker = thinkercap.next;
-			for (thinker = thinkercap.next;
-			thinker != &thinkercap;
-			thinker = thinker->next)
+			for (thinker = thinkercap.next;	thinker != &thinkercap;
+				thinker = thinker->next)
 			{
 				// not a mobj
 				if (thinker->function != P_MobjThinker)

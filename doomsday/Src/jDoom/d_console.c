@@ -192,6 +192,8 @@ cvar_t gameCVars[] =
 	"map-alpha",		0,			CVT_FLOAT,	&cfg.automapAlpha, 0, 1,	"Alpha level of the automap background.",
 	"map-alpha-lines",	0,			CVT_FLOAT,	&cfg.automapLineAlpha, 0, 1, "Alpha level of automap lines.",
 	"map-rotate",		0,			CVT_INT,	&cfg.automapRotate, 0, 1,	"1=Automap turns with player, up=forward.",
+	"map-door-colors",	0,			CVT_BYTE,	&cfg.automapShowDoors, 0, 1, "1=Show door colors in automap.",
+	"map-door-glow",	0,			CVT_FLOAT,	&cfg.automapDoorGlow, 0, 200, "Door glow thickness in the automap (with map-door-colors).",
 
 	"menu-flash-r",		0,			CVT_FLOAT,	&cfg.flashcolor[0],			0, 1,	"Menu selection flash color, red component.",
 	"menu-flash-g",		0,			CVT_FLOAT,	&cfg.flashcolor[1],			0, 1,	"Menu selection flash color, green component.",

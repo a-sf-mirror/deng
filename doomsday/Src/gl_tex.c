@@ -119,6 +119,8 @@ int				num_skytop_colors = 0;
 DGLuint			dltexname;	// Name of the dynamic light texture.
 DGLuint			glowtexname;
 
+int				texMagMode = 1; // Linear.
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static boolean	texInited = false;	// Init done.
@@ -1377,7 +1379,7 @@ unsigned int GL_BindTexFlat(flat_t *fl)
 	
 	// Set the parameters.
 	gl.TexParameter(DGL_MIN_FILTER, glmode[mipmapping]);
-	gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+	gl.TexParameter(DGL_MAG_FILTER, glmode[texMagMode]);
 	
 	if(freeptr) M_Free(flatptr);
 
@@ -1437,7 +1439,7 @@ void GL_GetFlatColor(int fnum, unsigned char *rgb)
 //===========================================================================
 void GL_SetFlat(int idx)
 {
-	gl.Bind(curtex = GL_PrepareFlat(idx));
+	gl.Bind(curtex = GL_PrepareFlat2(idx, false));
 }
 
 //===========================================================================
@@ -2013,7 +2015,7 @@ unsigned int GL_PrepareTexture2(int idx, boolean translate)
 
 		// Set texture parameters.
 		gl.TexParameter(DGL_MIN_FILTER, glmode[mipmapping]);
-		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
+		gl.TexParameter(DGL_MAG_FILTER, glmode[texMagMode]);
 
 		textures[idx]->masked = (image.isMasked != 0);
 
@@ -2620,7 +2622,7 @@ unsigned int GL_PrepareTranslatedSprite(int pnum, int tmap, int tclass)
 		// Compose a resource name.
 		if(tclass || tmap)
 		{
-			sprintf(resource, "%s-table%i%i\n", 
+			sprintf(resource, "%s-table%i%i", 
 				lumpinfo[spritelumps[pnum].lump].name, tclass, tmap);
 		}
 		else 
@@ -3299,7 +3301,7 @@ void GL_SetTextureParams(int minMode, int magMode, int gameTex, int uiTex)
 void GL_UpdateTexParams(int mipmode)
 {
 	mipmapping = mipmode;
-	GL_SetTextureParams(glmode[mipmode], DGL_LINEAR, true, false);
+	GL_SetTextureParams(glmode[mipmode], glmode[texMagMode], true, false);
 }
 
 //===========================================================================
@@ -3460,6 +3462,12 @@ unsigned int GL_PrepareSkin(model_t *mdl, int skin)
 			Con_Error("GL_PrepareSkin: %s not found.\n", mdl->skins[skin].name);
 		}
 
+		if(!mdl->allowTexComp)
+		{
+			// This will prevent texture compression.
+			gl.Disable(DGL_TEXTURE_COMPRESSION);
+		}
+
 		st->tex = GL_UploadTexture(image, width, height, 
 			size == 4, true, true, false);
 
@@ -3467,6 +3475,9 @@ unsigned int GL_PrepareSkin(model_t *mdl, int skin)
 		gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
 		gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
 		gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
+
+		// Compression can be enabled again.
+		gl.Enable(DGL_TEXTURE_COMPRESSION);
 
 		// We don't need the image data any more.
 		M_Free(image);

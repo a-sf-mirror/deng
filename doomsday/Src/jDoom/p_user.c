@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.3.2.1  2003/09/14 20:24:12  skyjake
+// Clientside jumping rules come from the server
+//
 // Revision 1.3  2003/06/30 00:05:23  skyjake
 // Use fixmom
 //
@@ -115,6 +118,7 @@ void P_CheckPlayerJump(player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 
 	if(cfg.jumpEnabled 
+		&& (!IS_CLIENT || netJumpPower > 0)
 		&& P_IsPlayerOnGround(player)
 		&& !(cmd->buttons & BT_SPECIAL)
 		&& !(cmd->buttons & BT_CHANGE)
@@ -122,7 +126,8 @@ void P_CheckPlayerJump(player_t *player)
 		&& player->jumptics <= 0)
 	{
 		// Jump, then!
-		player->plr->mo->momz = FRACUNIT * cfg.jumpPower;
+		player->plr->mo->momz = FRACUNIT 
+			* (IS_CLIENT? netJumpPower : cfg.jumpPower);
 		player->jumptics = 24;
 	}
 }
