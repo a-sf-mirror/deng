@@ -356,10 +356,12 @@ void R_GetSpriteInfo(int sprite, int frame, spriteinfo_t *sprinfo)
 
 	sprdef = &sprites[sprite];
 
-#ifdef RANGECHECK
 	if((frame & FF_FRAMEMASK) >= sprdef->numframes)
-		Con_Error( "R_ProjectSprite: invalid sprite frame %i : %i.\n", sprite, frame);
-#endif
+	{
+		// We have no information to return.
+		memset(sprinfo, 0, sizeof(*sprinfo));
+		return;
+	}
 
 	sprframe = &sprdef->spriteframes[ frame & FF_FRAMEMASK ];
 	sprlump = spritelumps + sprframe->lump[0];
@@ -586,7 +588,7 @@ void R_ProjectSprite (mobj_t *thing)
 	sector_t	*sect = thing->subsector->sector;
 	fixed_t		trx,try;
 	spritedef_t	*sprdef;
-	spriteframe_t *sprframe;
+	spriteframe_t *sprframe = NULL;
 	int			i, lump;
 	unsigned	rot;
 	boolean		flip;
@@ -609,19 +611,22 @@ void R_ProjectSprite (mobj_t *thing)
 	trx = thing->x - viewx;
 	try = thing->y - viewy;
 
-	// Decide which patch to use for sprite reletive to player.
+	// Decide which patch to use for sprite relative to player.
 
 #ifdef RANGECHECK
-	if ((unsigned)thing->sprite >= (unsigned)numsprites)
-		Con_Error ("R_ProjectSprite: invalid sprite number %i ",thing->sprite);
+	if((unsigned)thing->sprite >= (unsigned)numsprites)
+	{
+		Con_Error("R_ProjectSprite: invalid sprite number %i\n",
+			thing->sprite);
+	}
 #endif
 	sprdef = &sprites[thing->sprite];
-#ifdef RANGECHECK
-	if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes )
-		Con_Error ("R_ProjectSprite: invalid sprite frame %i : %i "
-		,thing->sprite, thing->frame);
-#endif
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];
+	if( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
+	{
+		// The frame is not defined, we can't display this object.
+		return;
+	}
+	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK ];	
 
 	// Calculate edges of the shape.
 	v1[VX] = FIX2FLT(thing->x);
@@ -651,7 +656,7 @@ void R_ProjectSprite (mobj_t *thing)
 		lump = sprframe->lump[rot];
 		flip = (boolean)sprframe->flip[rot];
 	}
-	else
+	else 
 	{	
 		// Use single rotation for all views.
 		lump = sprframe->lump[0];
