@@ -225,6 +225,9 @@ void Demo_WritePacket(int playernum)
 			|| netbuffer.msg.type == DDPT_MESSAGE) return;
 	}
 
+	// This counts as an update. (We know the client is alive.)
+	clients[playernum].updateCount = UPDATECOUNT;
+
 	file = clients[playernum].demo;
 
 #ifdef _DEBUG
