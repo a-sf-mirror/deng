@@ -1265,15 +1265,17 @@ void RL_WriteDynLight
 	uint i, base;
 	gl_texcoord_t *tc;
 	gl_color_t *col;
+	void *ptr;
 
-	list->last = RL_AllocateData(list, sizeof(primhdr_t));
+	ptr = RL_AllocateData(list, sizeof(primhdr_t));
+	list->last = ptr;
 
 	list->last->size = 0;
 	list->last->type = prim->type;
 	list->last->flags = 0;
 	list->last->numIndices = prim->numIndices;
-	list->last->indices = RL_AllocateData(list, sizeof(uint) 
-		* list->last->numIndices);
+	ptr = RL_AllocateData(list, sizeof(uint) * list->last->numIndices);
+	list->last->indices = ptr; 
 	list->last->beginOther = prim->beginOther;
 
 	// Make copies of the original vertices.
