@@ -483,7 +483,8 @@ int Rend_MidTexturePos(float *top, float *bottom, float *texoffy,
 //===========================================================================
 // Rend_RenderWallSeg
 //	The sector height should've been checked by now.
-//	This seriously needs to be rewritten!
+//	This seriously needs to be rewritten! Witness the accumulation of hacks
+//	on kludges...
 //===========================================================================
 void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 {
@@ -573,6 +574,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 		Rend_PolyTextureBlend(sid->midtexture, &quad);
 		RL_AddPoly(&quad);
+		Rend_RadioWallSection(seg, &quad);
 
 		BEGIN_PROF( PROF_REND_WALLSEG_CADD );
 		// This is guaranteed to be a solid segment.
@@ -606,6 +608,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 			RL_AddPoly(&quad);
 		}
 	}
+	
 	// If there is a back sector we may need upper and lower walls.
 	if(backsec)	// A twosided seg?
 	{
@@ -697,10 +700,12 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 				Rend_PolyTextureBlend(sid->midtexture, &quad);
 				RL_AddPoly(&quad);
+				if(!texmask) Rend_RadioWallSection(seg, &quad);
 			}
 			END_PROF( PROF_REND_WALLSEG_4 );
 		}
 		BEGIN_PROF( PROF_REND_WALLSEG_5 );
+		
 		// Upper wall.
 		if(topvis && !(frontsec->ceilingpic == skyflatnum 
 			&& backsec->ceilingpic == skyflatnum)
@@ -751,10 +756,12 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 			Rend_PolyTextureBlend(sid->toptexture, &quad);
 			RL_AddPoly(&quad);
+			Rend_RadioWallSection(seg, &quad);
 
 			// Restore original type, height division may change this.
 			quad.type = RP_QUAD;
 		}
+		
 		// Lower wall.
 		// If no textures have been assigned to the segment, we won't
 		// draw anything.
@@ -806,6 +813,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 			
 			Rend_PolyTextureBlend(sid->bottomtexture, &quad);
 			RL_AddPoly(&quad);
+			Rend_RadioWallSection(seg, &quad);
 		}
 		END_PROF( PROF_REND_WALLSEG_5 );
 	}
@@ -1049,6 +1057,9 @@ void Rend_RenderSubsector(int ssecidx)
 
 	END_PROF( PROF_REND_SUB_LIGHTS );
 
+	// Prepare for FakeRadio.
+	Rend_RadioInitForSector(sect);
+	
 	BEGIN_PROF( PROF_REND_SUB_OCCLUDE );
 
 	Rend_OccludeSubsector(ssec, false);
