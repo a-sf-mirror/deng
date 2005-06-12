@@ -25,6 +25,8 @@
 #include "de_console.h"
 #include "de_misc.h"
 
+#include <assert.h>
+
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
@@ -968,6 +970,8 @@ int B_BindingsForCommand(char *command, char *buffer, int bindClass)
                 }
         } else {
             // only check bindClass
+            assert(bindClass - 1 < sizeof(binds[i].command)/
+                sizeof(binds[i].command[0]));
             if(binds[i].command[bindClass-1])
             {
                 if(!stricmp(command, binds[i].command[bindClass-1]))
