@@ -196,7 +196,7 @@ void D_DefaultBindings()
 			event.type = ev_keydown;
 			event.data1 = ctr->defKey;
 			B_EventBuilder(evname, &event, false);
-			sprintf(cmd, "%s %d %s %s",
+			sprintf(cmd, "%s bdc%d %s %s",
 					ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
 					controls[i].bindClass, evname + 1, buff);
 			Con_Execute(cmd, true);
@@ -206,7 +206,7 @@ void D_DefaultBindings()
 			event.type = ev_mousebdown;
 			event.data1 = 1 << (ctr->defMouse - 1);
 			B_EventBuilder(evname, &event, false);
-			sprintf(cmd, "%s %d %s %s",
+			sprintf(cmd, "%s bdc%d %s %s",
 					ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
 					controls[i].bindClass, evname + 1, buff);
 			Con_Execute(cmd, true);
@@ -216,7 +216,7 @@ void D_DefaultBindings()
 			event.type = ev_joybdown;
 			event.data1 = 1 << (ctr->defJoy - 1);
 			B_EventBuilder(evname, &event, false);
-			sprintf(cmd, "%s %d %s %s",
+			sprintf(cmd, "%s bdc%d %s %s",
 					ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
 					controls[i].bindClass, evname + 1, buff);
 			Con_Execute(cmd, true);
@@ -279,7 +279,7 @@ int D_PrivilegedResponder(event_t *event)
 			}
 		if(!del)
 			sprintf(buff, "\"%s\"", grabbing->command);
-		sprintf(cmd, "%s %d %s %s",
+		sprintf(cmd, "%s bdc%d %s %s",
 				grabbing->flags & CLF_REPEAT ? "bindr" : "bind", grabbing->bindClass, evname + 1,
 				buff);
 		Con_Execute(cmd, false);

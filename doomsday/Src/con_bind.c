@@ -572,7 +572,8 @@ D_CMD(Bind)
     for(i = BDC_NORMAL; i < NUMBINDCLASSES; i++)
     {
         if(!(stricmp(argv[1],bindClasses[i-1].name)) ||
-            (atoi(argv[1]) == bindClasses[i-1].id))
+            ((!strnicmp(argv[1], "bdc", 3) &&
+			(atoi(argv[1]+3) == bindClasses[i-1].id) )))
         {
             bc = bindClasses[i-1].id;
             bindClassGiven = true;
@@ -647,7 +648,7 @@ D_CMD(Bind)
     }
     sprintf(validEventName, "%c%s", prefix, begin);
 
-    //Con_Printf( "Binding %s : %s.\n", validEventName, args==3? "(nothing)" : cmdptr);
+    //Con_Printf( "Binding %s : %s.\n", validEventName, argc==2? "(nothing)" : cmdptr);
 
     // Convert the name to an event.
     B_EventBuilder(validEventName, &event, true);
