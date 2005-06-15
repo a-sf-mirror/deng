@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.14.2.1  2005/06/15 18:22:43  skyjake
+// Numerous fixes after compiling with gcc-4.0 on Mac
+//
 // Revision 1.14  2005/05/30 17:27:05  skyjake
 // Fixes (now compiles and runs in Linux)
 //
@@ -381,7 +384,7 @@ static st_number_t w_frags;
 static st_percent_t w_health;
 
 // arms background
-static st_binicon_t w_armsbg;
+//static st_binicon_t w_armsbg;
 
 // weapon ownership widgets
 static st_multicon_t w_arms[6];

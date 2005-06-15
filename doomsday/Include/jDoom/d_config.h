@@ -5,6 +5,10 @@
 #ifndef __JDOOM_SETTINGS_H__
 #define __JDOOM_SETTINGS_H__
 
+#ifndef __JDOOM__
+#  error "Using jDoom headers without __JDOOM__"
+#endif
+
 enum {
 	HUD_HEALTH,
 	HUD_ARMOR,

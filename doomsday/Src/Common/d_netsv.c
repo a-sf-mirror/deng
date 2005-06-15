@@ -1351,9 +1351,15 @@ void *NetSv_ReadCommands(byte *msg, uint size)
 		if(flags & CMDF_SIDEMOVE)
 			cmd->sideMove = *msg++;
 		if(flags & CMDF_ANGLE)
-			cmd->angle = SHORT( *((short *) msg)++ );
+        {
+			cmd->angle = SHORT( *(short *) msg );
+            msg += 2;
+        }
 		if(flags & CMDF_LOOKDIR)
-			cmd->pitch = SHORT( *((short *) msg)++ );
+        {
+			cmd->pitch = SHORT( *(short *) msg );
+            msg += 2;
+        }
 		if(flags & CMDF_BUTTONS)
 		{
 			byte buttons = *msg++;
@@ -1373,7 +1379,10 @@ void *NetSv_ReadCommands(byte *msg, uint size)
 		if(flags & CMDF_ARTI)
 			cmd->arti = *msg++;
 		if(flags & CMDF_CHANGE_WEAPON)
-			cmd->changeWeapon = SHORT( *((short *) msg)++ );
+        {
+			cmd->changeWeapon = SHORT( *(short *) msg );
+            msg += 2;
+        }
 
 		// Copy to next command (only differences have been written).
 		memcpy(cmd + 1, cmd, sizeof(ticcmd_t));

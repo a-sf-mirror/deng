@@ -24,6 +24,10 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
+#ifndef __JDOOM__
+#  error "Using jDoom headers without __JDOOM__"
+#endif
+
 #include "doomtype.h"
 #include "d_event.h"
 
@@ -73,6 +77,9 @@ int             D_GetFilterColor(int filter);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.6.2.1  2005/06/15 18:22:42  skyjake
+// Numerous fixes after compiling with gcc-4.0 on Mac
+//
 // Revision 1.6  2005/05/29 05:48:44  danij
 // Minor changes.
 //

@@ -150,7 +150,7 @@ void LG_Init(void)
     unsigned short *indices;
     unsigned short *contributorIndices;
     gridblock_t *block;
-    gridblock_t *other;
+    //gridblock_t *other;
 
     if(!lgEnabled)
     {

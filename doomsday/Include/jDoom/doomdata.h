@@ -24,6 +24,10 @@
 #ifndef __DOOMDATA__
 #define __DOOMDATA__
 
+#ifndef __JDOOM__
+#  error "Using jDoom headers without __JDOOM__"
+#endif
+
 // The most basic types we use, portability.
 #include "doomtype.h"
 
@@ -188,6 +192,9 @@ typedef struct {
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.4.2.1  2005/06/15 18:22:41  skyjake
+// Numerous fixes after compiling with gcc-4.0 on Mac
+//
 // Revision 1.4  2004/05/29 09:53:11  skyjake
 // Consistent style (using GNU Indent)
 //

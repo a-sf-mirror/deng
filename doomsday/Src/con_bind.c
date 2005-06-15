@@ -274,7 +274,6 @@ void B_DeleteBindingIdx(int index)
         if(binds[index].command[i-1])
             free(binds[index].command[i-1]);
 
-    free(binds[index].command);
     if(index < numBinds - 1)    // If not the last one, do some rollback.
     {
         memmove(binds + index, binds + index + 1,
@@ -319,7 +318,8 @@ void B_Bind(event_t *event, char *command, int bindClass)
         return;
     }
     // Set the command.
-    bnd->command[bindClass-1] = realloc(bnd->command[bindClass-1], strlen(command) + 1);
+    bnd->command[bindClass-1] = realloc(bnd->command[bindClass-1], 
+        strlen(command) + 1);
     strcpy(bnd->command[bindClass-1], command);
 
     //  Con_Printf( "B_Bind: evtype:%d data:%d cmd:%s\n", bnd->event.type,
@@ -375,10 +375,13 @@ void B_Shutdown()
     int     i, k;
 
     for(i = 0; i < numBinds; i++)
+    {
         for(k = BDC_NORMAL; k < NUMBINDCLASSES; k++)
+        {
             if(binds[i].command[k-1])
                 free(binds[i].command[k-1]);
-        free(binds[i].command);
+        }
+    }
     free(binds);
     binds = NULL;
     numBinds = 0;
@@ -401,7 +404,7 @@ static char *shortNameForKey(int ddkey)
 /*
  * getByShortName
  */
-static const int getByShortName(const char *key)
+static int getByShortName(const char *key)
 {
     int     i;
 
@@ -564,7 +567,7 @@ D_CMD(Bind)
         Con_Printf("Usage: %s (class) (event) (cmd)\n", argv[0]);
         Con_Printf("Binding Classes:\n");
             for(i = BDC_NORMAL; i < NUMBINDCLASSES; i++)
-                Con_Printf("  %s\n",bindClasses[i-1].name);
+                Con_Printf("  %s\n", bindClasses[i-1].name);
         return true;
     }
 
@@ -687,8 +690,8 @@ D_CMD(ClearBindings)
 D_CMD(DeleteBind)
 {
     int     i, bc = -1;
-    int        start = 1;
-    char    *cmdptr = argv[1];
+    int     start = 1;
+    char   *cmdptr = argv[1];
 
     if(argc < 2)
     {
@@ -709,7 +712,9 @@ D_CMD(DeleteBind)
                     Con_Printf("Usage: %s (binding class) (cmd) ...\n", argv[0]);
                     Con_Printf(": Omit Binding class to clear cmds in all binding classes\n");
                     return true;
-                } else {
+                } 
+                else 
+                {
                     bc = i;
                     cmdptr = argv[2];
                     start = 2;
@@ -720,9 +725,11 @@ D_CMD(DeleteBind)
 
     if(bc == -1 || bc < NUMBINDCLASSES)
     {
-        for(i = start; i < argc, cmdptr; cmdptr = argv[i++])
-            B_ClearBinding(cmdptr,bc);
-    } else {
+        for(i = start; i < argc && cmdptr; cmdptr = argv[i++])
+            B_ClearBinding(cmdptr, bc);
+    } 
+    else 
+    {
         Con_Printf("Not a valid binding class. Enter listbindclasses.\n");
         return false;
     }
@@ -794,9 +801,15 @@ D_CMD(ListBindings)
         }
     }
     if(onlythis != -1)
-        Con_Printf("Showing %d (%s class) commands from %d bindings.\n", comcount, bindClasses[onlythis-1].name, numBinds);
+    {
+        Con_Printf("Showing %d (%s class) commands from %d bindings.\n", 
+            comcount, bindClasses[onlythis-1].name, numBinds);
+    }
     else
-        Con_Printf("Showing %d commands from %d bindings.\n", comcount,numBinds);
+    {
+        Con_Printf("Showing %d commands from %d bindings.\n", 
+            comcount, numBinds);
+    }
     return true;
 }
 
@@ -969,7 +982,9 @@ int B_BindingsForCommand(char *command, char *buffer, int bindClass)
                         count++;
                     }
                 }
-        } else {
+        } 
+        else 
+        {
             // only check bindClass
             assert(bindClass - 1 < sizeof(binds[i].command)/
                 sizeof(binds[i].command[0]));
