@@ -8,7 +8,7 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-#include "jDoom/mn_def.h"
+#include "jDoom/Mn_def.h"
 #include "jDoom/D_Action.h"
 
 void    G_DefaultBindings(void);
