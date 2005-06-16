@@ -66,7 +66,7 @@ extern Menu_t  ControlsDef;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-const Control_t *grabbing;
+const Control_t *grabbing = NULL;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
