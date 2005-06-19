@@ -209,15 +209,17 @@ boolean B_Responder(event_t *ev)
             if(ev->useclass) // use a specific class? (regardless if it is active or not)
             {
                 // FYI: These kind of events aren't sent via direct user input
-                // Only by "us" when we need to switch binding classes and a current
-                // input is active eg; a key is held down during the switch that has
-                // commands in multiple binding classes.
+                // Only by "us" when we need to switch binding classes and a 
+                // current input is active eg; a key is held down during the 
+                // switch that has commands in multiple binding classes.
                 if(bnd->command[ev->useclass -1])
                 {
                     // Con_Message("forced %s\n",bnd->command[ev->useclass-1]);
                     Con_Execute(bnd->command[ev->useclass-1], true);
                 }
-            } else {
+            } 
+            else 
+            {
                 // loop backwards through the active binding classes,
                 // the command in the highest binding class slot that
                 // is currently active is executed
