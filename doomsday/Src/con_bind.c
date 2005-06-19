@@ -214,7 +214,7 @@ boolean B_Responder(event_t *ev)
                 // switch that has commands in multiple binding classes.
                 if(bnd->command[ev->useclass])
                 {
-                     Con_Message("forced %s\n",bnd->command[ev->useclass]);
+                     //Con_Message("forced %s\n",bnd->command[ev->useclass]);
                     Con_Execute(bnd->command[ev->useclass], true);
                 }
             } 
@@ -226,7 +226,7 @@ boolean B_Responder(event_t *ev)
                 for(k = NUMBINDCLASSES; k >= BDC_NORMAL; k--)
                     if(bindClasses[k].active && bnd->command[k])
                     {
-                         Con_Message("%s\n",bnd->command[k]);
+                         //Con_Message("%s\n",bnd->command[k]);
                         Con_Execute(bnd->command[k], true);
                         break;
                     }
