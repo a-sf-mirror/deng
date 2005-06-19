@@ -1627,16 +1627,14 @@ void M_SetMenuMatrix(float time)
 }
 
 /*
- *  M_Drawer:
+ * This is the main menu drawing routine (called every tic by the drawing loop)
+ * Draws the current menu 'page' by calling the funcs attached to each 
+ * menu item.
  *
- *		This is the main menu drawing routine (called every tic by the drawing loop)
- *		Draws the current menu 'page' by calling the funcs attached to each menu item.
- *
- *		Also draws any current menu message 'Are you sure you want to quit?'
+ * Also draws any current menu message 'Are you sure you want to quit?'
  */
 void M_Drawer(void)
 {
-
 	static short x;
 	static short y;
 	short   i;
@@ -1651,12 +1649,14 @@ void M_Drawer(void)
 
 	boolean allowScaling = (currentMenu != &ReadDef1 && currentMenu != &ReadDef2
 #ifndef __JDOOM__
-								&& currentMenu != &ReadDef3
+                            && currentMenu != &ReadDef3
 #endif
-											);
+                            );
 
 	inhelpscreens = false;
 
+    // FIXME: This FSP indicator is obsolete since the engine can display a 
+    // much more accurate frame rate counter.
 	if(cfg.showFPS)
 	{
 		char    fpsbuff[80];
@@ -1669,15 +1669,19 @@ void M_Drawer(void)
 	if(!menuactive && menu_alpha > 0 )  // fading out
 	{
 		temp = outFade + 1;
-	} else {
+	} 
+    else 
+    {
 		effTime = (MenuTime > slamInTicks) ? slamInTicks : MenuTime;
 		temp = (effTime / (float) slamInTicks);
 	}
 
 	// Setup matrix.
 	if(messageToPrint || ( menuactive || (menu_alpha > 0 || mfAlpha > 0)) )
-		M_SetMenuMatrix(messageToPrint? 1:temp);	// don't slam messages
+		M_SetMenuMatrix(messageToPrint? 1 : temp);	// don't slam messages
 
+// Legacy code.
+#if 0 
 #ifdef __JHEXEN__
 #ifdef TIMEBOMB
 	// Beta blinker ***
@@ -1687,6 +1691,7 @@ void M_Drawer(void)
 				   160 - (MN_TextAWidth(BETA_FLASH_TEXT) >> 1), 12);
 	}
 #endif							// TIMEBOMB
+#endif
 #endif
 
 	// Horiz. & Vertically center string and print it.
@@ -1719,7 +1724,7 @@ void M_Drawer(void)
 
 		goto end_draw_menu;
 	}
-	if(!menuactive && menu_alpha == 0 && mfAlpha == 0 )
+	if(!menuactive && menu_alpha == 0 && mfAlpha == 0)
 		return;
 
 	if(currentMenu->drawFunc)
@@ -1739,7 +1744,8 @@ void M_Drawer(void)
 			{
 				if(currentMenu->items[i].lumpname[0])
 				{
-					WI_DrawPatch(x, y, 1, 1, 1, menu_alpha, W_GetNumForName(currentMenu->items[i].lumpname));
+					WI_DrawPatch(x, y, 1, 1, 1, menu_alpha, 
+                        W_GetNumForName(currentMenu->items[i].lumpname));
 				}
 			}
 			else if(currentMenu->items[i].text)
@@ -1760,7 +1766,6 @@ void M_Drawer(void)
 					g = .7f;
 					b = .3f;
 	#endif
-
 				}
 				else if(itemOn == i && !WidgetEdit)
 				{
@@ -1778,22 +1783,26 @@ void M_Drawer(void)
 					r = currentMenu->color[0];
 					g = currentMenu->color[1];
 					b = currentMenu->color[2];
+                }
 
-				}
-
-				// changed from font[0].height to font[17].height (in jHeretic/jHexen font[0] is 1 pixel high)
+				// changed from font[0].height to font[17].height 
+                // (in jHeretic/jHexen font[0] is 1 pixel high)
 				WI_DrawParamText(x, y + currentMenu->itemHeight - 
 								SHORT(currentMenu->font[17].height) - 1, 
 								currentMenu->items[i].text, currentMenu->font, 
-								r, g, b, menu_alpha, currentMenu->font == hu_font_b, true, ALIGN_LEFT);
+								r, g, b, menu_alpha, 
+                                currentMenu->font == hu_font_b, true, 
+                                ALIGN_LEFT);
 
 			}
 			y += currentMenu->itemHeight;
 		}
 
 		// Draw an alpha'd rect over the whole screen (eg when in a widget)
-		if(WidgetEdit && menu_calpha > 0){
-
+		if(WidgetEdit && menu_calpha > 0)
+        {
+#if 0
+// FIXME: This will not do; there is no need to change the projection.
 			gl.PopMatrix();
 			gl.PushMatrix();
 
@@ -1805,15 +1814,18 @@ void M_Drawer(void)
 			GL_SetNoTexture();
 			GL_DrawRect(0, 0, 320, 200, 0.1f, 0.1f, 0.1f, menu_calpha);
 
+            gl.MatrixMode(DGL_PROJECTION);
 			gl.PopMatrix();
 
 			// Note: do not re-setup the matrix for menu rendering as widgets
 			// are drawn with their own scale, independant of cfg.menuscale.
+#endif            
 		}
 
 		// DRAW Colour Widget?
-		if(WidgetEdit){
-		Draw_BeginZoom(0.5f, 160, 100);
+		if(WidgetEdit)
+        {
+            Draw_BeginZoom(0.5f, 160, 100);
 			DrawColorWidget();
 		}
 
@@ -1821,14 +1833,16 @@ void M_Drawer(void)
 		if(allowScaling)
 		{
 			scale = currentMenu->itemHeight / (float) LINEHEIGHT;
-			w = cursorst[whichSkull].width * scale;			// skull size
-			h = cursorst[whichSkull].height * scale;
-			off_x = (WidgetEdit? ColorWidgetMnu.x : currentMenu->x) + SKULLXOFF * scale + w / 2;
+			w = SHORT(cursorst[whichSkull].width) * scale; // skull size
+			h = SHORT(cursorst[whichSkull].height) * scale;
+			off_x = (WidgetEdit? ColorWidgetMnu.x : currentMenu->x) + 
+                SKULLXOFF * scale + w / 2;
 
 			off_y =
-				(WidgetEdit? ColorWidgetMnu.y : currentMenu->y) + (itemOn -
-								(WidgetEdit? ColorWidgetMnu.firstItem : currentMenu->firstItem)) *
-				currentMenu->itemHeight + currentMenu->itemHeight / 2 -1;
+				(WidgetEdit? ColorWidgetMnu.y : currentMenu->y) + (itemOn - 
+                    (WidgetEdit? ColorWidgetMnu.firstItem : 
+                        currentMenu->firstItem)) *
+				currentMenu->itemHeight + currentMenu->itemHeight / 2 - 1;
 
 			//if(currentMenu->font == hu_font_b)
 			//	off_y += SKULLYOFF;
@@ -1842,11 +1856,14 @@ void M_Drawer(void)
                 gl.Rotatef(skull_angle, 0, 0, 1);
             gl.Scalef(1, 1.2f, 1);
             GL_DrawRect(-(w/2) , -(h / 2), w, h, 1, 1, 1, menu_alpha);
+            gl.MatrixMode(DGL_MODELVIEW);
             gl.PopMatrix();
         }
 
         if(WidgetEdit)
+        {
             Draw_EndZoom();
+        }
 	}
 
   end_draw_menu:
