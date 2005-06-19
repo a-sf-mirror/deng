@@ -176,7 +176,7 @@ void UI_End(void)
     {
         rel.type = ev_keyup;
         rel.data1 = DDKEY_RSHIFT;
-        rel.useclass = 0;
+        rel.useclass = -1;
         DD_PostEvent(&rel);
     }
 }

@@ -564,7 +564,7 @@ void Con_UpdateKnownWords()
 			known_vars++;
 
 	// Fill the known words table.
-	numKnownWords = numCCmds + known_vars + numCAliases + (NUMBINDCLASSES -1);
+	numKnownWords = numCCmds + known_vars + numCAliases + (NUMBINDCLASSES);
 	knownWords = realloc(knownWords, len =
 						 sizeof(knownword_t) * numKnownWords);
 	memset(knownWords, 0, len);
@@ -583,7 +583,7 @@ void Con_UpdateKnownWords()
 	{
 		strncpy(knownWords[c].word, caliases[i].name, 63);
 	}
-	for(i = 0; i < NUMBINDCLASSES -1; i++, c++)
+	for(i = 0; i < NUMBINDCLASSES; i++, c++)
 	{
 		strncpy(knownWords[c].word, bindClasses[i].name, 63);
 	}
@@ -1315,15 +1315,16 @@ void Con_SplitIntoSubCommands(const char *command, timespan_t markerOffset)
 int Con_Execute(const char *command, int silent)
 {
 	int     ret;
-
+/*
 	if(silent)
 		ConsoleSilent = true;
-
+*/
 	Con_SplitIntoSubCommands(command, 0);
 	ret = Con_CheckExecBuffer();
-
+/*
 	if(silent)
 		ConsoleSilent = false;
+		*/
 	return ret;
 }
 
