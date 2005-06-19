@@ -471,7 +471,7 @@ void FI_NewState(const char *script)
 
 void FI_DeleteXImage(fipic_t *pic)
 {
-	gl.DeleteTextures(1, &pic->lump[0]);
+	gl.DeleteTextures(1, (DGLuint*)&pic->lump[0]);
 	pic->lump[0] = 0;
 	pic->flags.is_ximage = false;
 }

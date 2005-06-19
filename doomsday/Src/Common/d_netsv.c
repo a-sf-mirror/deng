@@ -996,7 +996,7 @@ void NetSv_Finale(int flags, char *script, boolean *conds, int numConds)
 			*ptr++ = conds[i];
 
 		// Then the script itself.
-		strcpy(ptr, script);
+		strcpy((char*)ptr, script);
 	}
 
 	Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_ORDERED, GPT_FINALE2, buffer, len);

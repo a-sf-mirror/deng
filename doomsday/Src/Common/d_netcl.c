@@ -578,14 +578,14 @@ void NetCl_Finale(int packetType, byte *data)
 
 		// Read the script into level-scope memory. It will be freed 
 		// when the next level is loaded.
-		len = strlen(readbuffer);
+		len = strlen((char*)readbuffer);
 		script = Z_Malloc(len + 1, PU_LEVEL, 0);
-		strcpy(script, readbuffer);
+		strcpy((char*)script, (char*)readbuffer);
 	}
 	if(flags & FINF_BEGIN && script)
 	{
 		// Start the script.
-		FI_Start(script,
+		FI_Start((char*)script,
 				 flags & FINF_AFTER ? FIMODE_AFTER : flags & FINF_OVERLAY ?
 				 FIMODE_OVERLAY : FIMODE_BEFORE);
 	}
