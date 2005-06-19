@@ -1315,16 +1315,16 @@ void Con_SplitIntoSubCommands(const char *command, timespan_t markerOffset)
 int Con_Execute(const char *command, int silent)
 {
 	int     ret;
-/*
+
 	if(silent)
 		ConsoleSilent = true;
-*/
+
 	Con_SplitIntoSubCommands(command, 0);
 	ret = Con_CheckExecBuffer();
-/*
+
 	if(silent)
 		ConsoleSilent = false;
-		*/
+
 	return ret;
 }
 

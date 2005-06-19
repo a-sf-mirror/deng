@@ -922,12 +922,45 @@ D_CMD(EnableBindClass)
                         }
                         // request a command in this class
                         ev.useclass = bindClasses[k].id;
-						Con_Printf("event added of class %d %s %s\n", bindClasses[k].id, bindClasses[k].name, binds[j].command[k]);
                         // Finally, post the event
                         DD_PostEvent(&ev);
                     }
                 }
             }
+
+            // Also send an up event for this binding if the currently
+            // currently active command is in the class being disabled
+            // and it has the highest id of the active bindClass commands
+            // for this binding
+            for(k = NUMBINDCLASSES - 1; k > BDC_NORMAL; k--)
+            {
+                if((k > i && bindClasses[k].active && binds[j].command[k])
+                   || k < i)
+                    break;
+
+                if(!bindClasses[k].active && binds[j].command[k])
+                {
+                    event_t ev;
+                    // que an up event for this down event.
+                    ev = binds[j].event;
+                    switch(ev.type)
+                    {
+                        case ev_keydown:
+                            ev.type = ev_keyup;
+                            break;
+                        case ev_mousebdown:
+                            ev.type = ev_mousebup;
+                            break;
+                        case ev_joybdown:
+                            ev.type = ev_joybup;
+                            break;
+                     }
+                     // request a command in this class
+                     ev.useclass = bindClasses[k].id;
+                     // Finally, post the event
+                     DD_PostEvent(&ev);
+                }
+			}
         }
     }
 
