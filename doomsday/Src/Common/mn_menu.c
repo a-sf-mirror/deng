@@ -3841,7 +3841,7 @@ void M_Episode(int option, void *data)
 	// Yet another hack...
 	if((gamemode == registered) && (option > 2))
 	{
-		Con_Message("M_Episode: 4th episode requires UltimateDOOM\n");
+		Con_Message("M_Episode: 4th episode requires Ultimate DOOM\n");
 		option = 0;
 	}
 

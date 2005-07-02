@@ -2735,7 +2735,7 @@ void G_StartNewInit(void)
 
 void G_StartNewGame(skill_t skill)
 {
-	int     realMap;
+	int     realMap = 1;
 
 	G_StartNewInit();
 #if __JHEXEN__

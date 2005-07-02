@@ -27,14 +27,14 @@
 			};
 			comments = "This target is an aggregate of all the other targets in the project. Building it will ensure that all components will be built.";
 			dependencies = (
-				B011A60008655A90005075A7 /* PBXTargetDependency */,
 				B011A60208655A90005075A7 /* PBXTargetDependency */,
 				B011A60408655A90005075A7 /* PBXTargetDependency */,
-				B011A60608655A90005075A7 /* PBXTargetDependency */,
 				B011A60808655A90005075A7 /* PBXTargetDependency */,
+				B011A60608655A90005075A7 /* PBXTargetDependency */,
 				B011A60A08655A90005075A7 /* PBXTargetDependency */,
 				B011A60C08655A90005075A7 /* PBXTargetDependency */,
 				B011A60E08655A90005075A7 /* PBXTargetDependency */,
+				B011A60008655A90005075A7 /* PBXTargetDependency */,
 			);
 			name = Everything;
 			productName = Everything;
@@ -91,6 +91,13 @@
 				WRAPPER_EXTENSION = app;
 			};
 			dependencies = (
+				B044B5DA0876860D00B592A3 /* PBXTargetDependency */,
+				B044B5DC0876860D00B592A3 /* PBXTargetDependency */,
+				B044B5DE0876860D00B592A3 /* PBXTargetDependency */,
+				B044B5E00876860D00B592A3 /* PBXTargetDependency */,
+				B044B5E20876860D00B592A3 /* PBXTargetDependency */,
+				B044B5E40876860D00B592A3 /* PBXTargetDependency */,
+				B044B5E60876860D00B592A3 /* PBXTargetDependency */,
 			);
 			name = Doomsday;
 			productInstallPath = ./;
@@ -113,7 +120,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.8.2</string>
+	<string>1.9.0</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
@@ -693,110 +700,110 @@
 /* End PBXBuildStyle section */
 
 /* Begin PBXContainerItemProxy section */
-		B011A5EC08655786005075A7 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
-		};
-		B011A5F30865579F005075A7 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
-		};
 		B011A5FF08655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
+			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA;
 			remoteInfo = Doomsday;
 		};
 		B011A60108655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0DDF02E06EDF8C800C418E3 /* drOpenGL */;
+			remoteGlobalIDString = B0DDF02E06EDF8C800C418E3;
 			remoteInfo = drOpenGL;
 		};
 		B011A60308655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0D5B5B906EE323600B98CC8 /* dsSDLMixer */;
+			remoteGlobalIDString = B0D5B5B906EE323600B98CC8;
 			remoteInfo = dsSDLMixer;
 		};
 		B011A60508655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0D5B78406EE567C00B98CC8 /* dpMapLoad */;
+			remoteGlobalIDString = B0D5B78406EE567C00B98CC8;
 			remoteInfo = dpMapLoad;
 		};
 		B011A60708655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0D5B7DE06EF6D1000B98CC8 /* dpDehRead */;
+			remoteGlobalIDString = B0D5B7DE06EF6D1000B98CC8;
 			remoteInfo = dpDehRead;
 		};
 		B011A60908655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0D5B60F06EE3EE600B98CC8 /* jDoom */;
+			remoteGlobalIDString = B0D5B60F06EE3EE600B98CC8;
 			remoteInfo = jDoom;
 		};
 		B011A60B08655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0237AAB06F3721E0059676A /* jHeretic */;
+			remoteGlobalIDString = B0237AAB06F3721E0059676A;
 			remoteInfo = jHeretic;
 		};
 		B011A60D08655A90005075A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B083A65B085CCCEE000D4BAB /* jHexen */;
+			remoteGlobalIDString = B083A65B085CCCEE000D4BAB;
 			remoteInfo = jHexen;
 		};
-		B011A61608655AAE005075A7 /* PBXContainerItemProxy */ = {
+		B044B5D90876860D00B592A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
+			remoteGlobalIDString = B0DDF02E06EDF8C800C418E3;
+			remoteInfo = drOpenGL;
 		};
-		B011A61C08655ABC005075A7 /* PBXContainerItemProxy */ = {
+		B044B5DB0876860D00B592A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
+			remoteGlobalIDString = B0D5B5B906EE323600B98CC8;
+			remoteInfo = dsSDLMixer;
 		};
-		B011A62208655AC8005075A7 /* PBXContainerItemProxy */ = {
+		B044B5DD0876860D00B592A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
+			remoteGlobalIDString = B0D5B78406EE567C00B98CC8;
+			remoteInfo = dpMapLoad;
 		};
-		B011A62808655AD2005075A7 /* PBXContainerItemProxy */ = {
+		B044B5DF0876860D00B592A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
+			remoteGlobalIDString = B0D5B7DE06EF6D1000B98CC8;
+			remoteInfo = dpDehRead;
 		};
-		B011A62C08655AD8005075A7 /* PBXContainerItemProxy */ = {
+		B044B5E10876860D00B592A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			remoteInfo = Doomsday;
+			remoteGlobalIDString = B0D5B60F06EE3EE600B98CC8;
+			remoteInfo = jDoom;
+		};
+		B044B5E30876860D00B592A3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0237AAB06F3721E0059676A;
+			remoteInfo = jHeretic;
+		};
+		B044B5E50876860D00B592A3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B083A65B085CCCEE000D4BAB;
+			remoteInfo = jHexen;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -2408,7 +2415,6 @@
 				);
 			};
 			dependencies = (
-				B011A62308655AC8005075A7 /* PBXTargetDependency */,
 			);
 			name = jHeretic;
 			productName = jDoom.bundle;
@@ -2481,7 +2487,6 @@
 				);
 			};
 			dependencies = (
-				B011A61D08655ABC005075A7 /* PBXTargetDependency */,
 			);
 			name = jHexen;
 			productName = jDoom.bundle;
@@ -2551,7 +2556,6 @@
 				);
 			};
 			dependencies = (
-				B011A5ED08655786005075A7 /* PBXTargetDependency */,
 			);
 			name = dsSDLMixer;
 			productName = dsSDLMixer;
@@ -2624,7 +2628,6 @@
 				);
 			};
 			dependencies = (
-				B011A5F40865579F005075A7 /* PBXTargetDependency */,
 			);
 			name = jDoom;
 			productName = jDoom.bundle;
@@ -2693,7 +2696,6 @@
 				);
 			};
 			dependencies = (
-				B011A62D08655AD8005075A7 /* PBXTargetDependency */,
 			);
 			name = dpMapLoad;
 			productName = dpMapLoad;
@@ -2761,7 +2763,6 @@
 				);
 			};
 			dependencies = (
-				B011A62908655AD2005075A7 /* PBXTargetDependency */,
 			);
 			name = dpDehRead;
 			productName = dpDehRead;
@@ -2831,7 +2832,6 @@
 				);
 			};
 			dependencies = (
-				B011A61708655AAE005075A7 /* PBXTargetDependency */,
 			);
 			name = drOpenGL;
 			productName = drOpenGL;
@@ -3402,16 +3402,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		B011A5ED08655786005075A7 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A5EC08655786005075A7 /* PBXContainerItemProxy */;
-		};
-		B011A5F40865579F005075A7 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A5F30865579F005075A7 /* PBXContainerItemProxy */;
-		};
 		B011A60008655A90005075A7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
@@ -3452,30 +3442,40 @@
 			target = B083A65B085CCCEE000D4BAB /* jHexen */;
 			targetProxy = B011A60D08655A90005075A7 /* PBXContainerItemProxy */;
 		};
-		B011A61708655AAE005075A7 /* PBXTargetDependency */ = {
+		B044B5DA0876860D00B592A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A61608655AAE005075A7 /* PBXContainerItemProxy */;
+			target = B0DDF02E06EDF8C800C418E3 /* drOpenGL */;
+			targetProxy = B044B5D90876860D00B592A3 /* PBXContainerItemProxy */;
 		};
-		B011A61D08655ABC005075A7 /* PBXTargetDependency */ = {
+		B044B5DC0876860D00B592A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A61C08655ABC005075A7 /* PBXContainerItemProxy */;
+			target = B0D5B5B906EE323600B98CC8 /* dsSDLMixer */;
+			targetProxy = B044B5DB0876860D00B592A3 /* PBXContainerItemProxy */;
 		};
-		B011A62308655AC8005075A7 /* PBXTargetDependency */ = {
+		B044B5DE0876860D00B592A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A62208655AC8005075A7 /* PBXContainerItemProxy */;
+			target = B0D5B78406EE567C00B98CC8 /* dpMapLoad */;
+			targetProxy = B044B5DD0876860D00B592A3 /* PBXContainerItemProxy */;
 		};
-		B011A62908655AD2005075A7 /* PBXTargetDependency */ = {
+		B044B5E00876860D00B592A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A62808655AD2005075A7 /* PBXContainerItemProxy */;
+			target = B0D5B7DE06EF6D1000B98CC8 /* dpDehRead */;
+			targetProxy = B044B5DF0876860D00B592A3 /* PBXContainerItemProxy */;
 		};
-		B011A62D08655AD8005075A7 /* PBXTargetDependency */ = {
+		B044B5E20876860D00B592A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29B97326FDCFA39411CA2CEA /* Doomsday */;
-			targetProxy = B011A62C08655AD8005075A7 /* PBXContainerItemProxy */;
+			target = B0D5B60F06EE3EE600B98CC8 /* jDoom */;
+			targetProxy = B044B5E10876860D00B592A3 /* PBXContainerItemProxy */;
+		};
+		B044B5E40876860D00B592A3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0237AAB06F3721E0059676A /* jHeretic */;
+			targetProxy = B044B5E30876860D00B592A3 /* PBXContainerItemProxy */;
+		};
+		B044B5E60876860D00B592A3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B083A65B085CCCEE000D4BAB /* jHexen */;
+			targetProxy = B044B5E50876860D00B592A3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -3537,7 +3537,7 @@
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = /Users/jaakko/Library/Frameworks;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3763,7 +3763,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					UNIX,
@@ -3879,7 +3879,7 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					GLBSP_PLUGIN,
@@ -4183,8 +4183,8 @@
 					NO_FIXED_ASM,
 					__DOOMSDAY__,
 					NORANGECHECKING,
-					"DENG_BASE_DIR=\"./\"",
-					"DENG_LIB_DIR=\"./\"",
+					"DENG_BASE_DIR=./",
+					"DENG_LIB_DIR=./",
 				);
 				HEADER_SEARCH_PATHS = (
 					./Include/Unix,
@@ -4201,8 +4201,6 @@
 					"-DNO_FIXED_ASM",
 					"-D__DOOMSDAY__",
 					"-DNORANGECHECKING",
-					"-DDENG_BASE_DIR=\\\"./\\\"",
-					"-DDENG_LIB_DIR=\\\"./\\\"",
 				);
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -4228,6 +4226,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
+				DEBUGGING_SYMBOLS = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(HOME)/Library/Frameworks",
 					/Users/jaakko/Library/Frameworks,
@@ -4238,14 +4237,13 @@
 				INSTALL_PATH = ./;
 				LIBRARY_SEARCH_PATHS = "";
 				LIBRARY_STYLE = STATIC;
+				OPTIMIZATION_CFLAGS = "-O3";
 				OTHER_CFLAGS = (
 					"-DUNIX",
 					"-DMACOSX",
 					"-DNO_FIXED_ASM",
 					"-D__DOOMSDAY__",
 					"-DNORANGECHECKING",
-					"-DDENG_BASE_DIR=./",
-					"-DDENG_LIB_DIR=./",
 					"-I./Include/Unix",
 					"-I./Include",
 					"-I/sw/include/libpng12",
@@ -4334,7 +4332,7 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				OPTIMIZATION_CFLAGS = "";
+				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4353,7 +4351,7 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				OPTIMIZATION_CFLAGS = "";
+				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4370,7 +4368,7 @@
 		B011A64208655AF6005075A7 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				OPTIMIZATION_CFLAGS = "";
+				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
