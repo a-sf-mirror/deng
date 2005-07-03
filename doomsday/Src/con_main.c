@@ -1476,8 +1476,7 @@ static void completeWord(void)
 }
 
 /*
- * Con_Responder
- *  Returns true if the event is eaten.
+ * Returns true if the event is eaten.
  */
 boolean Con_Responder(event_t *event)
 {
