@@ -2114,7 +2114,7 @@ void Con_Printf(const char *format, ...)
 {
 	va_list args;
 
-	if(ConsoleSilent)
+	if(!ConsoleInited || ConsoleSilent)
 		return;
 
 	va_start(args, format);
@@ -2126,7 +2126,7 @@ void Con_FPrintf(int flags, const char *format, ...)	// Flagged printf
 {
 	va_list args;
 
-	if(ConsoleSilent)
+	if(!ConsoleInited || ConsoleSilent)
 		return;
 
 	va_start(args, format);
