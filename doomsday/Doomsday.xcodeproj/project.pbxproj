@@ -4386,6 +4386,7 @@
 					__DOOMSDAY__,
 					NORANGECHECKING,
 				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
 					./Include/Unix,
 					./Include,

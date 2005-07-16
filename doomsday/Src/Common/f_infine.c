@@ -1772,10 +1772,10 @@ void FI_Drawer(void)
 		return;
 
 	// Go into screen projection mode.
-	gl.MatrixMode(DGL_PROJECTION);
-	gl.PushMatrix();
-	gl.LoadIdentity();
-	gl.Ortho(0, 0, 320,200, -1, 1);
+	//gl.MatrixMode(DGL_PROJECTION);
+	//gl.PushMatrix();
+	//gl.LoadIdentity();
+	//gl.Ortho(0, 0, 320, 200, -1, 1);
 
 	// Draw the background.
 	if(fi->bgflat >= 0)

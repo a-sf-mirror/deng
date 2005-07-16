@@ -1581,15 +1581,12 @@ void M_SetMenuMatrix(float time)
 {
 	boolean allowScaling = (currentMenu != &ReadDef1 && currentMenu != &ReadDef2
 #ifndef __JDOOM__
-								&& currentMenu != &ReadDef3
+                            && currentMenu != &ReadDef3
 #endif
-											);
+                            );
 
-    gl.MatrixMode(DGL_MODELVIEW);
-    gl.PushMatrix();
-
+    // Use a plain 320x200 projection.
     gl.MatrixMode(DGL_PROJECTION);
-    gl.PushMatrix();
     gl.LoadIdentity();
     gl.Ortho(0, 0, 320, 200, -1, 1);
 
@@ -1597,16 +1594,17 @@ void M_SetMenuMatrix(float time)
 	if(mfAlpha)
 		M_DrawBackground();
 
-	gl.PopMatrix();
+	//gl.PopMatrix();
 
-	gl.MatrixMode(DGL_PROJECTION);
-    gl.PushMatrix();
-    gl.LoadIdentity();
-    gl.Ortho(0, 0, 320, 200, -1, 1);
+	//gl.MatrixMode(DGL_PROJECTION);
+    //gl.PushMatrix();
+    //gl.LoadIdentity();
+    //gl.Ortho(0, 0, 320, 200, -1, 1);
 
 	if(allowScaling)
 	{
 		// Scale by the menuScale.
+        gl.MatrixMode(DGL_MODELVIEW);
 		gl.Translatef(160, 100, 0);
 
 		if(cfg.menuSlam){
@@ -1676,23 +1674,15 @@ void M_Drawer(void)
 		temp = (effTime / (float) slamInTicks);
 	}
 
+    // These are popped in the end of the function.
+    gl.MatrixMode(DGL_PROJECTION);
+    gl.PushMatrix();
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PushMatrix();
+
 	// Setup matrix.
 	if(messageToPrint || ( menuactive || (menu_alpha > 0 || mfAlpha > 0)) )
 		M_SetMenuMatrix(messageToPrint? 1 : temp);	// don't slam messages
-
-// Legacy code.
-#if 0 
-#ifdef __JHEXEN__
-#ifdef TIMEBOMB
-	// Beta blinker ***
-	if(leveltime & 16)
-	{
-		MN_DrTextA(BETA_FLASH_TEXT,
-				   160 - (MN_TextAWidth(BETA_FLASH_TEXT) >> 1), 12);
-	}
-#endif							// TIMEBOMB
-#endif
-#endif
 
 	// Horiz. & Vertically center string and print it.
 	if(messageToPrint)
@@ -1724,8 +1714,9 @@ void M_Drawer(void)
 
 		goto end_draw_menu;
 	}
+
 	if(!menuactive && menu_alpha == 0 && mfAlpha == 0)
-		return;
+		goto end_draw_menu;
 
 	if(currentMenu->drawFunc)
 		currentMenu->drawFunc();	// call Draw routine
@@ -1868,11 +1859,11 @@ void M_Drawer(void)
 
   end_draw_menu:
 
-    // Restore original matrix.
-	gl.MatrixMode(DGL_PROJECTION);
+    // Restore original matrices.
+	gl.MatrixMode(DGL_MODELVIEW);
     gl.PopMatrix();
 
-	gl.MatrixMode(DGL_MODELVIEW);
+	gl.MatrixMode(DGL_PROJECTION);
     gl.PopMatrix();
 }
 
@@ -2659,7 +2650,9 @@ void M_DrawBackground(void)
 
    	}
 
+    gl.MatrixMode(DGL_TEXTURE);
 	gl.LoadIdentity();
+    
 	gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);
 }
 

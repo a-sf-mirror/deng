@@ -2217,36 +2217,42 @@ void AM_GL_SetupState()
     gl.Ortho(0, 0, scrwidth, scrheight, -1, 1);
 
     // Do we want a background texture?
-    if (maplumpnum){
+    if (maplumpnum)
+    {
         gl.Enable(DGL_TEXTURING);
 
         GL_SetColorAndAlpha(cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], (am_alpha - (1- cfg.automapBack[3])));
         GL_SetRawImage(maplumpnum, 0);        // We only want the left portion.
         GL_DrawRectTiled(winx, winy, winw, winh, 128, 100);
-    } else {
+    } 
+    else 
+    {
         // nope just a solid color
         GL_SetNoTexture();
         GL_DrawRect(winx, winy, winw, winh, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], (am_alpha - (1- cfg.automapBack[3])));
     }
 
     // How about an outside border?
-    if (cfg.automapHeight != 1 || cfg.automapWidth != 1 ){
+    if (cfg.automapHeight != 1 || cfg.automapWidth != 1 )
+    {
         gl.Begin(DGL_LINES);
         gl.Color4f(0.5f, 1, 0.5f, am_alpha - (1 - (cfg.automapLineAlpha /2)) );
 
-        if (cfg.automapHeight != 1){
-            gl.Vertex2f(winx-1,     winy-1);
-            gl.Vertex2f(winx+winw+1,     winy-1);
+        if (cfg.automapHeight != 1)
+        {
+            gl.Vertex2f(winx-1, winy-1);
+            gl.Vertex2f(winx+winw+1, winy-1);
 
-            gl.Vertex2f(winx+winw+1,     winy+winh+1);
-            gl.Vertex2f(winx-1,     winy+winh+1);
+            gl.Vertex2f(winx+winw+1, winy+winh+1);
+            gl.Vertex2f(winx-1, winy+winh+1);
         }
-        if (cfg.automapWidth != 1){
-            gl.Vertex2f(winx+winw+1,     winy-1);
-            gl.Vertex2f(winx+winw+1,     winy+winh+1);
+        if (cfg.automapWidth != 1)
+        {
+            gl.Vertex2f(winx+winw+1, winy-1);
+            gl.Vertex2f(winx+winw+1, winy+winh+1);
 
-            gl.Vertex2f(winx-1,     winy+winh+1);
-            gl.Vertex2f(winx-1,     winy-1);
+            gl.Vertex2f(winx-1, winy+winh+1);
+            gl.Vertex2f(winx-1, winy-1);
         }
         gl.End();
     }
@@ -2272,6 +2278,7 @@ void AM_GL_SetupState()
  */
 void AM_GL_RestoreState()
 {
+    gl.MatrixMode(DGL_PROJECTION);
     gl.PopMatrix();
 
     gl.MatrixMode(DGL_MODELVIEW);

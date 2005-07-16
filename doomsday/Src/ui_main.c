@@ -470,8 +470,8 @@ void UI_Drawer(void)
     UI_DrawMouse(ui_cx, ui_cy);
 
     // Restore the original matrices.
-    gl.MatrixMode(DGL_MODELVIEW);
-    gl.PopMatrix();
+    //gl.MatrixMode(DGL_MODELVIEW);
+    //gl.PopMatrix();
     gl.MatrixMode(DGL_PROJECTION);
     gl.PopMatrix();
 }
