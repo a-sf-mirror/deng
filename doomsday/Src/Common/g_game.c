@@ -3408,6 +3408,12 @@ void G_InitNew(skill_t skill, int episode, int map)
 #endif
 
 #if __JDOOM__
+    // Is respawning enabled at all in nightmare skill?
+    if(skill == sk_nightmare)
+    {
+        respawnmonsters = cfg.respawnMonstersNightmare;
+    }
+
 	if(fastparm || (skill == sk_nightmare && gameskill != sk_nightmare))
 	{
 		for(i = S_SARG_RUN1; i <= S_SARG_RUN8; i++)

@@ -395,7 +395,7 @@ cvar_t  mapCVars[] = {
         "Alpha level of the automap background."},
     {"map-alpha-lines", 0, CVT_FLOAT, &cfg.automapLineAlpha, 0, 1,
         "Alpha level of automap lines."},
-    {"map-rotate", 0, CVT_INT, &cfg.automapRotate, 0, 1,
+    {"map-rotate", 0, CVT_BYTE, &cfg.automapRotate, 0, 1,
         "1=Automap turns with player, up=forward."},
     {"map-huddisplay", 0, CVT_INT, &cfg.automapHudDisplay, 0, 2,
         "0=No HUD when in the automap\n1=Current HUD display shown when in the automap\n2=Always show Status Bar when in the automap"},

@@ -385,7 +385,7 @@ void D_PreInit(void)
 	cfg.netEpisode = 1;
 	cfg.netMap = 1;
 	cfg.netSkill = sk_medium;
-	cfg.netColor = 4;
+	cfg.netColor = 4; 
 	cfg.plrViewHeight = 41;
 	cfg.levelTitle = true;
 	cfg.hideAuthorIdSoft = true;
@@ -447,6 +447,7 @@ void D_PreInit(void)
 	cfg.bobView = 1;
 	cfg.bobWeaponLower = true;
 	cfg.cameraNoClip = true;
+    cfg.respawnMonstersNightmare = true;
 
 	D_SetPlayerPtrs();
 	DD_SetConfigFile("jDoom.cfg");
