@@ -4231,75 +4231,88 @@ void M_DrawColorBox(const Menu_t * menu, int index, float r, float g, float b, f
  */
 void M_DrawBackgroundBox(int x, int y, int w, int h, float red, float green, float blue, float alpha, boolean background, int border)
 {
-
 	dpatch_t	*t,*b,*l,*r,*tl,*tr,*br,*bl;
 
 	int	up;
 
-	switch(border){
-		case BORDERUP:
-			t = &borderpatches[2];
-			b = &borderpatches[0];
-			l = &borderpatches[1];
-			r = &borderpatches[3];
-			tl = &borderpatches[6];
-			tr = &borderpatches[7];
-			br = &borderpatches[4];
-			bl = &borderpatches[5];
+	switch(border)
+    {
+    case BORDERUP:
+        t = &borderpatches[2];
+        b = &borderpatches[0];
+        l = &borderpatches[1];
+        r = &borderpatches[3];
+        tl = &borderpatches[6];
+        tr = &borderpatches[7];
+        br = &borderpatches[4];
+        bl = &borderpatches[5];
 
-			up = -1;
+        up = -1;
+        break;
+        
+    case BORDERDOWN:
+        t = &borderpatches[0];
+        b = &borderpatches[2];
+        l = &borderpatches[3];
+        r = &borderpatches[1];
+        tl = &borderpatches[4];
+        tr = &borderpatches[5];
+        br = &borderpatches[6];
+        bl = &borderpatches[7];
 
-			break;
-		case BORDERDOWN:
-			t = &borderpatches[0];
-			b = &borderpatches[2];
-			l = &borderpatches[3];
-			r = &borderpatches[1];
-			tl = &borderpatches[4];
-			tr = &borderpatches[5];
-			br = &borderpatches[6];
-			bl = &borderpatches[7];
-
-			up = 1;
-
-			break;
-		default:
-			break;
+        up = 1;
+        break;
+        
+    default:
+        break;
 	}
 
 	GL_SetColorAndAlpha(red, green, blue, menu_alpha);
 
-	if(background){
+	if(background)
+    {
 		GL_SetFlat(R_FlatNumForName(borderLumps[0]));
 		GL_DrawRectTiled(x, y, w, h, 64, 64);
 	}
 
-	if(border){
+	if(border)
+    {
 		// Top
 		GL_SetPatch(t->lump);
-		GL_DrawRectTiled(x, y - t->height, w, t->height, up * t->width, up * t->height);
+		GL_DrawRectTiled(x, y - SHORT(t->height), w, SHORT(t->height), 
+                         up * SHORT(t->width), up * SHORT(t->height));
 		// Bottom
 		GL_SetPatch(b->lump);
-		GL_DrawRectTiled(x, y + h, w, b->height, up * b->width, up * b->height);
+		GL_DrawRectTiled(x, y + h, w, SHORT(b->height), up * SHORT(b->width), 
+                         up * SHORT(b->height));
 		// Left
 		GL_SetPatch(l->lump);
-		GL_DrawRectTiled(x - l->width, y, l->width, h, up * l->width, up * l->height);
+		GL_DrawRectTiled(x - SHORT(l->width), y, SHORT(l->width), h, 
+                         up * SHORT(l->width), up * SHORT(l->height));
 		// Right
 		GL_SetPatch(r->lump);
-		GL_DrawRectTiled(x + w, y, r->width, h, up * r->width, up * r->height);
+		GL_DrawRectTiled(x + w, y, SHORT(r->width), h, up * SHORT(r->width), 
+                         up * SHORT(r->height));
 
 		// Top Left
 		GL_SetPatch(tl->lump);
-		GL_DrawRectTiled(x - tl->width, y - tl->height, tl->width, tl->height, up * tl->width, up * tl->height);
+		GL_DrawRectTiled(x - SHORT(tl->width), y - SHORT(tl->height), 
+                         SHORT(tl->width), SHORT(tl->height), 
+                         up * SHORT(tl->width), up * SHORT(tl->height));
 		// Top Right
 		GL_SetPatch(tr->lump);
-		GL_DrawRectTiled(x + w, y - tr->height, tr->width, tr->height, up * tr->width, up * tr->height);
+		GL_DrawRectTiled(x + w, y - SHORT(tr->height), SHORT(tr->width), 
+                         SHORT(tr->height), up * SHORT(tr->width), 
+                         up * SHORT(tr->height));
 		// Bottom Right
 		GL_SetPatch(br->lump);
-		GL_DrawRectTiled(x + w, y + h, br->width, br->height, up * br->width, up * br->height);
+		GL_DrawRectTiled(x + w, y + h, SHORT(br->width), SHORT(br->height), 
+                         up * SHORT(br->width), up * SHORT(br->height));
 		// Bottom Left
 		GL_SetPatch(bl->lump);
-		GL_DrawRectTiled(x - bl->width, y + h, bl->width, bl->height, up * bl->width, up * bl->height);
+		GL_DrawRectTiled(x - SHORT(bl->width), y + h, SHORT(bl->width), 
+                         SHORT(bl->height), up * SHORT(bl->width), 
+                         up * SHORT(bl->height));
 	}
 }
 

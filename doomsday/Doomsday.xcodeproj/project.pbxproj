@@ -143,6 +143,10 @@
 		B0237B4706F3744E0059676A /* p_xgsec.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F406EE44EB00B98CC8 /* p_xgsec.c */; };
 		B0237B4806F3744E0059676A /* r_common.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F506EE44EB00B98CC8 /* r_common.c */; };
 		B0237B4906F3744E0059676A /* x_hair.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F606EE44EB00B98CC8 /* x_hair.c */; };
+		B0727F04088A8E88008C84C4 /* DoomsdayRunner.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */; };
+		B0727F05088A8E88008C84C4 /* DoomsdayRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */; };
+		B0727F06088A8E88008C84C4 /* StartupWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F02088A8E88008C84C4 /* StartupWindowController.h */; };
+		B0727F07088A8E88008C84C4 /* StartupWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = B0727F03088A8E88008C84C4 /* StartupWindowController.m */; };
 		B083A65D085CCCEE000D4BAB /* d_net.h in Resources */ = {isa = PBXBuildFile; fileRef = B018334407E6082000217C5A /* d_net.h */; };
 		B083A65E085CCCEE000D4BAB /* d_netcl.h in Resources */ = {isa = PBXBuildFile; fileRef = B018334507E6082000217C5A /* d_netcl.h */; };
 		B083A65F085CCCEE000D4BAB /* d_netsv.h in Resources */ = {isa = PBXBuildFile; fileRef = B018334607E6082000217C5A /* d_netsv.h */; };
@@ -449,8 +453,6 @@
 		B0F1789B087C5A230051F24A /* zconf.h in Headers */ = {isa = PBXBuildFile; fileRef = B02AC49D06B3FA91005824AD /* zconf.h */; };
 		B0F1789C087C5A230051F24A /* sys_dylib.h in Headers */ = {isa = PBXBuildFile; fileRef = B013500E06EDD51E007861F2 /* sys_dylib.h */; };
 		B0F1789D087C5A230051F24A /* rend_bias.h in Headers */ = {isa = PBXBuildFile; fileRef = B0E3D3E107903967007811F6 /* rend_bias.h */; };
-		B0F1789E087C5A230051F24A /* StartupWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = B0D736E8087AEF40000EEA69 /* StartupWindowController.h */; };
-		B0F1789F087C5A230051F24A /* DoomsdayRunner.h in Headers */ = {isa = PBXBuildFile; fileRef = B0D73766087AFF26000EEA69 /* DoomsdayRunner.h */; };
 		B0F178A1087C5A230051F24A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		B0F178A2087C5A230051F24A /* Readme.rtf in Resources */ = {isa = PBXBuildFile; fileRef = B0A8094D06F1F45D007AEB2E /* Readme.rtf */; };
 		B0F178A3087C5A230051F24A /* deng.icns in Resources */ = {isa = PBXBuildFile; fileRef = B0BBED3007DB998600663713 /* deng.icns */; };
@@ -575,8 +577,6 @@
 		B0F1791B087C5A230051F24A /* sys_dylib.c in Sources */ = {isa = PBXBuildFile; fileRef = B013500C06EDD499007861F2 /* sys_dylib.c */; };
 		B0F1791C087C5A230051F24A /* rend_bias.c in Sources */ = {isa = PBXBuildFile; fileRef = B0E3D3DF07903950007811F6 /* rend_bias.c */; };
 		B0F1791D087C5A230051F24A /* r_lgrid.c in Sources */ = {isa = PBXBuildFile; fileRef = B0724918085CDC4D000C8E3B /* r_lgrid.c */; };
-		B0F1791E087C5A230051F24A /* StartupWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = B0D736E9087AEF40000EEA69 /* StartupWindowController.m */; };
-		B0F1791F087C5A230051F24A /* DoomsdayRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = B0D73767087AFF26000EEA69 /* DoomsdayRunner.m */; };
 		B0F17921087C5A230051F24A /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B0F17922087C5A230051F24A /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B0134EC106ECD8B8007861F2 /* SDL_mixer.framework */; };
 		B0F17923087C5A230051F24A /* SDL_net.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B0134EC206ECD8B8007861F2 /* SDL_net.framework */; };
@@ -1134,6 +1134,10 @@
 		B02AC8C206B41788005824AD /* sys_sfxd_loader.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = sys_sfxd_loader.c; sourceTree = "<group>"; };
 		B02AC8C306B41788005824AD /* sys_stwin.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = sys_stwin.c; sourceTree = "<group>"; };
 		B0724918085CDC4D000C8E3B /* r_lgrid.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = r_lgrid.c; path = Src/r_lgrid.c; sourceTree = "<group>"; };
+		B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = DoomsdayRunner.h; path = Src/Mac/DoomsdayRunner.h; sourceTree = "<group>"; };
+		B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = DoomsdayRunner.m; path = Src/Mac/DoomsdayRunner.m; sourceTree = "<group>"; };
+		B0727F02088A8E88008C84C4 /* StartupWindowController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = StartupWindowController.h; path = Src/Mac/StartupWindowController.h; sourceTree = "<group>"; };
+		B0727F03088A8E88008C84C4 /* StartupWindowController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = StartupWindowController.m; path = Src/Mac/StartupWindowController.m; sourceTree = "<group>"; };
 		B083A52C085CC153000D4BAB /* AcFnLink.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = AcFnLink.h; path = Include/jHexen/AcFnLink.h; sourceTree = "<group>"; };
 		B083A52E085CC153000D4BAB /* h2_actn.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = h2_actn.h; path = Include/jHexen/h2_actn.h; sourceTree = "<group>"; };
 		B083A52F085CC153000D4BAB /* h2def.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = h2def.h; path = Include/jHexen/h2def.h; sourceTree = "<group>"; };
@@ -1277,10 +1281,6 @@
 		B0D5B7E006EF6D1000B98CC8 /* dpDehRead-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "dpDehRead-Info.plist"; path = "/Users/jaakko/Projects/deng/doomsday/dpDehRead-Info.plist"; sourceTree = "<absolute>"; };
 		B0D5B7E506EF6E1A00B98CC8 /* dehmain.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = dehmain.c; path = Src/dpDehRead/dehmain.c; sourceTree = "<group>"; };
 		B0D73660087ACFE8000EEA69 /* Startup.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Startup.nib; path = Res/Startup.nib; sourceTree = "<group>"; };
-		B0D736E8087AEF40000EEA69 /* StartupWindowController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = StartupWindowController.h; path = Res/StartupWindowController.h; sourceTree = "<group>"; };
-		B0D736E9087AEF40000EEA69 /* StartupWindowController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = StartupWindowController.m; path = Res/StartupWindowController.m; sourceTree = "<group>"; };
-		B0D73766087AFF26000EEA69 /* DoomsdayRunner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DoomsdayRunner.h; path = Res/DoomsdayRunner.h; sourceTree = "<group>"; };
-		B0D73767087AFF26000EEA69 /* DoomsdayRunner.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DoomsdayRunner.m; path = Res/DoomsdayRunner.m; sourceTree = "<group>"; };
 		B0DDF02F06EDF8C800C418E3 /* drOpenGL.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = drOpenGL.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0DDF03006EDF8C800C418E3 /* drOpenGL-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "drOpenGL-Info.plist"; path = "/Users/jaakko/Projects/deng/doomsday/drOpenGL-Info.plist"; sourceTree = "<absolute>"; };
 		B0E3D3DF07903950007811F6 /* rend_bias.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rend_bias.c; path = Src/rend_bias.c; sourceTree = "<group>"; };
@@ -1364,12 +1364,12 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				B0D73766087AFF26000EEA69 /* DoomsdayRunner.h */,
-				B0D73767087AFF26000EEA69 /* DoomsdayRunner.m */,
+				B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */,
+				B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */,
+				B0727F02088A8E88008C84C4 /* StartupWindowController.h */,
+				B0727F03088A8E88008C84C4 /* StartupWindowController.m */,
 				F5A47A9D01A0482F01D3D55B /* SDLMain.h */,
 				F5A47A9E01A0483001D3D55B /* SDLMain.m */,
-				B0D736E8087AEF40000EEA69 /* StartupWindowController.h */,
-				B0D736E9087AEF40000EEA69 /* StartupWindowController.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -2293,8 +2293,8 @@
 				B0F1789B087C5A230051F24A /* zconf.h in Headers */,
 				B0F1789C087C5A230051F24A /* sys_dylib.h in Headers */,
 				B0F1789D087C5A230051F24A /* rend_bias.h in Headers */,
-				B0F1789E087C5A230051F24A /* StartupWindowController.h in Headers */,
-				B0F1789F087C5A230051F24A /* DoomsdayRunner.h in Headers */,
+				B0727F04088A8E88008C84C4 /* DoomsdayRunner.h in Headers */,
+				B0727F06088A8E88008C84C4 /* StartupWindowController.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3391,8 +3391,8 @@
 				B0F1791B087C5A230051F24A /* sys_dylib.c in Sources */,
 				B0F1791C087C5A230051F24A /* rend_bias.c in Sources */,
 				B0F1791D087C5A230051F24A /* r_lgrid.c in Sources */,
-				B0F1791E087C5A230051F24A /* StartupWindowController.m in Sources */,
-				B0F1791F087C5A230051F24A /* DoomsdayRunner.m in Sources */,
+				B0727F05088A8E88008C84C4 /* DoomsdayRunner.m in Sources */,
+				B0727F07088A8E88008C84C4 /* StartupWindowController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
