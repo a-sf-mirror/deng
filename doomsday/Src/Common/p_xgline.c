@@ -89,7 +89,7 @@ extern boolean xgdatalumps;
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 struct mobj_s dummything;
-int     xgDev;    // Print dev messages.
+int     xgDev = 0;    // Print dev messages.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
