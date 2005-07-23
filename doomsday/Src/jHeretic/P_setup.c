@@ -924,8 +924,8 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 	P_MoveThingsOutOfWalls();
 	P_TurnGizmosAwayFromDoors();
 
-	lname = (char *) Get(DD_MAP_NAME);
-	lauthor = (char *) Get(DD_MAP_AUTHOR);
+	lname = (char *) DD_GetVariable(DD_MAP_NAME);
+	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 	if(lname || lauthor)
 	{
 		Con_Printf("\n");

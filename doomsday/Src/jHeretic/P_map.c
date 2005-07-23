@@ -1276,7 +1276,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
 	fixed_t dist;
 	fixed_t thingtopslope, thingbottomslope;
 	mobj_t *mo;
-	divline_t *trace = (divline_t *) Get(DD_TRACE_ADDRESS);
+	divline_t *trace = (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
 
 	// These were added for the plane-hitpoint algo.
 	// FIXME: This routine is getting rather bloated.

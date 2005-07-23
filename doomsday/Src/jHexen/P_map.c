@@ -1719,7 +1719,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
 	fixed_t slope;
 	fixed_t dist;
 	fixed_t thingtopslope, thingbottomslope;
-	divline_t *trace = (divline_t *) Get(DD_TRACE_ADDRESS);
+	divline_t *trace = (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
 
 	extern mobj_t LavaInflictor;
 

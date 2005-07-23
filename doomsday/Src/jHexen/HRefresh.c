@@ -171,8 +171,8 @@ void R_DrawMapTitle(void)
 	if(actual_leveltime > 5 * 35)
 		alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
 
-	lname = (char *) Get(DD_MAP_NAME);
-	lauthor = (char *) Get(DD_MAP_AUTHOR);
+	lname = (char *) DD_GetVariable(DD_MAP_NAME);
+	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 
 	// Use stardard map name if DED didn't define it.
 	if(!lname)

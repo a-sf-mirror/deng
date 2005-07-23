@@ -21,7 +21,8 @@ void R_SetViewSize(int blocks, int detail)
 
 void R_InitTranslationTables(void)
 {
-	byte   *translationtables = (byte *) Get(DD_TRANSLATIONTABLES_ADDRESS);
+	byte   *translationtables = (byte *)
+        DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
 	int     i;
 
 	// Fill out the translation tables

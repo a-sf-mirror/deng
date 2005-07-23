@@ -1,29 +1,29 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 248 <--
-
-; Other available ordinals: 158, 175
+; --> 250 <--
 
 
 EXPORTS
 	Plug_AddHook			@1 NONAME
 	Plug_RemoveHook			@2 NONAME
-	Plug_DoHook				@3 NONAME
+	Plug_DoHook			@3 NONAME
 
 ; Base.
-	DD_GetDGLProcAddress	@106 NONAME
-	DD_AddIWAD				@4 NONAME
+	DD_GetDGLProcAddress		@106 NONAME
+	DD_AddIWAD			@4 NONAME
 	DD_AddStartupWAD		@5 NONAME
 	DD_SetConfigFile		@6 NONAME
 	DD_SetDefsFile			@7 NONAME
 	DD_GetInteger			@8 NONAME
 	DD_SetInteger			@9 NONAME
+	DD_SetVariable			@249 NONAME
+	DD_GetVariable			@250 NONAME
 	DD_GetPlayer			@10 NONAME
 
 ; Base: Definitions.
-	Def_Get					@11 NONAME
-	Def_Set					@111 NONAME
+	Def_Get				@11 NONAME
+	Def_Set				@111 NONAME
 	Def_EvalFlags			@12 NONAME
 
 ; Base: Input.

@@ -767,9 +767,9 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] = {
 };
 /* *INDENT-ON* */
 
-//===========================================================================
-// DD_GetInteger
-//===========================================================================
+/*
+ * Get a 32-bit integer value.
+ */
 int DD_GetInteger(int ddvalue)
 {
 	if(ddvalue >= DD_LAST_VALUE || ddvalue <= DD_FIRST_VALUE)
@@ -778,23 +778,28 @@ int DD_GetInteger(int ddvalue)
 		switch (ddvalue)
 		{
 		case DD_GAME_EXPORTS:
+            ASSERT_NOT_64BIT();
 			return (int) &gx;
 			
 		case DD_DYNLIGHT_TEXTURE:
 			return lightingTexNames[LST_DYNAMIC];
 
 		case DD_TRACE_ADDRESS:
+            ASSERT_NOT_64BIT();
 			return (int) &trace;
 
 		case DD_TRANSLATIONTABLES_ADDRESS:
+            ASSERT_NOT_64BIT();
 			return (int) translationtables;
 
 		case DD_MAP_NAME:
+            ASSERT_NOT_64BIT();
 			if(mapinfo && mapinfo->name[0])
 				return (int) mapinfo->name;
 			break;
 
 		case DD_MAP_AUTHOR:
+            ASSERT_NOT_64BIT();
 			if(mapinfo && mapinfo->author[0])
 				return (int) mapinfo->author;
 			break;
@@ -806,6 +811,7 @@ int DD_GetInteger(int ddvalue)
 
 #ifdef WIN32
 		case DD_WINDOW_HANDLE:
+            ASSERT_NOT_64BIT();
 			return (int) hWndMain;
 #endif
 		}
@@ -822,9 +828,9 @@ int DD_GetInteger(int ddvalue)
 	return *ddValues[ddvalue].readPtr;
 }
 
-//===========================================================================
-// DD_SetInteger
-//===========================================================================
+/*
+ * Set a 32-bit integer value.
+ */
 void DD_SetInteger(int ddvalue, int parm)
 {
 	if(ddvalue <= DD_FIRST_VALUE || ddvalue >= DD_LAST_VALUE)
@@ -833,6 +839,8 @@ void DD_SetInteger(int ddvalue, int parm)
 		// How about some special values?
 		if(ddvalue == DD_SKYFLAT_NAME)
 		{
+            // Dude!  This is not 64-bit safe.
+            ASSERT_NOT_64BIT();
 			memset(skyflatname, 0, 9);
 			strncpy(skyflatname, (char *) parm, 9);
 		}
@@ -878,9 +886,68 @@ void DD_SetInteger(int ddvalue, int parm)
 		*ddValues[ddvalue].writePtr = parm;
 }
 
-//===========================================================================
-// DD_GetPlayer
-//===========================================================================
+/*
+ * Get a pointer to the value of a variable. Not all variables support
+ * this. Added for 64-bit support.
+ */
+void* DD_GetVariable(int ddvalue)
+{
+	if(ddvalue >= DD_LAST_VALUE || ddvalue <= DD_FIRST_VALUE)
+	{
+		// How about some specials?
+		switch (ddvalue)
+		{
+		case DD_GAME_EXPORTS:
+			return &gx;
+			
+		case DD_TRACE_ADDRESS:
+			return &trace;
+
+		case DD_TRANSLATIONTABLES_ADDRESS:
+			return translationtables;
+
+		case DD_MAP_NAME:
+			if(mapinfo && mapinfo->name[0])
+				return mapinfo->name;
+			break;
+
+		case DD_MAP_AUTHOR:
+			if(mapinfo && mapinfo->author[0])
+				return mapinfo->author;
+			break;
+
+#ifdef WIN32
+		case DD_WINDOW_HANDLE:
+			return hWndMain;
+#endif
+		}
+		return 0;
+	}
+
+    // Other values not supported.
+    return ddValues[ddvalue].writePtr;
+}
+
+/*
+ * Set the value of a variable. The pointer can point to any data, its
+ * interpretation depends on the variable. Added for 64-bit support.
+ */
+void DD_SetVariable(int ddvalue, void *parm)
+{
+	if(ddvalue <= DD_FIRST_VALUE || ddvalue >= DD_LAST_VALUE)
+    {
+		if(ddvalue == DD_SKYFLAT_NAME)
+		{
+			memset(skyflatname, 0, 9);
+			strncpy(skyflatname, parm, 9);
+		}
+        return;
+    }
+}
+
+/*
+ * Gets the data of a player.
+ */
 ddplayer_t *DD_GetPlayer(int number)
 {
 	return (ddplayer_t *) &players[number];
@@ -890,7 +957,7 @@ ddplayer_t *DD_GetPlayer(int number)
 /*
  * Some routines are not available on the *nix platform.
  */
-char   *strupr(char *string)
+char *strupr(char *string)
 {
 	char   *ch = string;
 
@@ -899,7 +966,7 @@ char   *strupr(char *string)
 	return string;
 }
 
-char   *strlwr(char *string)
+char *strlwr(char *string)
 {
 	char   *ch = string;
 

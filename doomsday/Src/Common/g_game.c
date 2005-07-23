@@ -1613,7 +1613,7 @@ void G_DoLoadLevel(void)
         act->on = false;
 
     // set the game status cvar for map name
-    lname = (char *) Get(DD_MAP_NAME);
+    lname = (char *) DD_GetVariable(DD_MAP_NAME);
 #if __JDOOM__
     // Plutonia and TNT are special cases.
     if(gamemission == pack_plut)

@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.14.2.1  2005/07/23 10:08:19  skyjake
+// Fixed pointer size assumptions (32-bit/64-bit)
+//
 // Revision 1.14  2005/05/29 12:47:07  danij
 // Added various Doom.exe bug fixes (with compatibility options) for Lost Souls spawning inside walls, Archviles raising invincible ghosts etc using fixes by Lee K from PrBoom.
 //
@@ -1196,7 +1199,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
 	fixed_t thingtopslope;
 	fixed_t thingbottomslope;
 
-	divline_t *trace = (divline_t *) Get(DD_TRACE_ADDRESS);
+	divline_t *trace = (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
 
 	// These were added for the plane-hitpoint algo.
 	// FIXME: This routine is getting rather bloated.

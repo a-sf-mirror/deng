@@ -709,8 +709,8 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 	}
 
 	// Print some info. These also appear on the screen.
-	lname = (char *) Get(DD_MAP_NAME);
-	lauthor = (char *) Get(DD_MAP_AUTHOR);
+	lname = (char *) DD_GetVariable(DD_MAP_NAME);
+	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 	// Plutonia and TNT are special cases.
 	if(gamemission == pack_plut)
 	{

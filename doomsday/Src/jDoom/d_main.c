@@ -454,7 +454,7 @@ void D_PreInit(void)
 	DD_SetDefsFile("jDoom\\jDoom.ded");
 	R_SetDataPath("}Data\\jDoom\\");
 	Con_DefineActions(actions);
-	Set(DD_SKYFLAT_NAME, (int) SKYFLATNAME);
+	DD_SetVariable(DD_SKYFLAT_NAME, SKYFLATNAME);
 
 	// Add the cvars and ccmds to the console databases
 

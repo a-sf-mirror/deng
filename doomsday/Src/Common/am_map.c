@@ -2418,18 +2418,18 @@ void AM_drawLevelName(void)
     char   *lname;
 
 #ifdef __JHEXEN__
-    lname =  (char *) Get(DD_MAP_NAME);
+    lname =  (char *) DD_GetVariable(DD_MAP_NAME);
 #elif __JSTRIFE__
-    lname =  (char *) Get(DD_MAP_NAME);
+    lname =  (char *) DD_GetVariable(DD_MAP_NAME);
 
 #elif __JHERETIC__
     if((gameepisode < (ExtendedWAD ? 6 : 4)) && gamemap < 10)
     {
-        lname =  (char *) Get(DD_MAP_NAME);
+        lname =  (char *) DD_GetVariable(DD_MAP_NAME);
     }
 #elif __JDOOM__
 
-    lname = (char *) Get(DD_MAP_NAME);
+    lname = (char *) DD_GetVariable(DD_MAP_NAME);
 
     // Plutonia and TNT are special cases.
     if(gamemission == pack_plut)

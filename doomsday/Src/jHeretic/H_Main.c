@@ -82,8 +82,8 @@ void R_DrawLevelTitle(void)
 	if(actual_leveltime > 5 * 35)
 		alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
 
-	lname = (char *) Get(DD_MAP_NAME);
-	lauthor = (char *) Get(DD_MAP_AUTHOR);
+	lname = (char *) DD_GetVariable(DD_MAP_NAME);
+	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
     Draw_BeginZoom((1 + cfg.hudScale)/2, 160, y);
 
 	if(lname)
@@ -805,7 +805,7 @@ void H_PreInit(void)
 		players[i].plr->extradata = (void *) &players[i];
 	}
 	//  gi.SetSpriteNameList(sprnames);
-	Set(DD_SKYFLAT_NAME, (int) "F_SKY1");
+	DD_SetVariable(DD_SKYFLAT_NAME, "F_SKY1");
 	DD_SetDefsFile("jHeretic\\jHeretic.ded");
 	DD_SetConfigFile("jHeretic.cfg");
 	R_SetDataPath("}Data\\jHeretic\\");

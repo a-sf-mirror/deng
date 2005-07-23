@@ -48,6 +48,8 @@ extern          "C" {
 	void            DD_SetDefsFile(char *filename);
 	int _DECALL     DD_GetInteger(int ddvalue);
 	void            DD_SetInteger(int ddvalue, int parm);
+    void            DD_SetVariable(int ddvalue, void *ptr);
+    void           *DD_GetVariable(int ddvalue);
 	ddplayer_t     *DD_GetPlayer(int number);
 
 	// Base: Definitions.

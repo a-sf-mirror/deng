@@ -43,7 +43,8 @@ static int setdetail;
 //
 void R_InitTranslation(void)
 {
-	byte   *translationtables = (byte *) Get(DD_TRANSLATIONTABLES_ADDRESS);
+	byte   *translationtables = (byte *)
+        DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
 	int     i;
 
 	// translate just the 16 green colors
@@ -132,8 +133,8 @@ void R_DrawLevelTitle(void)
 	if(actual_leveltime > 5 * 35)
 		alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
 
-	lname = (char *) Get(DD_MAP_NAME);
-	lauthor = (char *) Get(DD_MAP_AUTHOR);
+	lname = (char *) DD_GetVariable(DD_MAP_NAME);
+	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 	// Plutonia and TNT are special cases.
 	if(gamemission == pack_plut)
 	{

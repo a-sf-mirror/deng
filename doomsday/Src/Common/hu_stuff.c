@@ -483,8 +483,8 @@ void HU_Start(void)
 	if(headsupactive)
 		HU_Stop();
 #ifdef __JDOOM__
-	if(Get(DD_MAP_NAME))
-		s = (char *) Get(DD_MAP_NAME);
+	if(DD_GetVariable(DD_MAP_NAME))
+		s = (char *) DD_GetVariable(DD_MAP_NAME);
 	else
 	{
 		switch (gamemode)
