@@ -13,6 +13,7 @@
 #include "h2def.h"
 #include "jHexen/p_local.h"
 #include "jHexen/soundst.h"
+#include "jHexen/x_config.h"
 
 #include <math.h>
 
@@ -1950,13 +1951,14 @@ fixed_t P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance)
 	P_PathTraverse(t1->x, t1->y, x2, y2, PT_ADDLINES | PT_ADDTHINGS,
 				   PTR_AimTraverse);
 
-	if(linetarget)
-		if(!t1->player)
-			return aimslope;
+    if(linetarget)
+        // While autoaiming, we accept this slope.
+        if(!t1->player || !cfg.noAutoAim)
+            return aimslope;
 
-	if(t1->player)
+	if(t1->player && cfg.noAutoAim)
 	{
-		// The slope is determined by lookdir.
+		// We are aiming manually, so the slope is determined by lookdir.
 		return FRACUNIT * (tan(LOOKDIR2RAD(t1->dplayer->lookdir)) / 1.2);
 	}
 
