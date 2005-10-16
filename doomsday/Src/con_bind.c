@@ -910,15 +910,17 @@ D_CMD(EnableBindClass)
                         ev = binds[j].event;
                         switch(ev.type)
                         {
-                            case ev_keydown:
-                                ev.type = ev_keyup;
-                                break;
-                            case ev_mousebdown:
-                                ev.type = ev_mousebup;
-                                break;
-                            case ev_joybdown:
-                                ev.type = ev_joybup;
-                                break;
+                        case ev_keydown:
+                            ev.type = ev_keyup;
+                            break;
+                        case ev_mousebdown:
+                            ev.type = ev_mousebup;
+                            break;
+                        case ev_joybdown:
+                            ev.type = ev_joybup;
+                            break;
+                        default:
+                            break;
                         }
                         // request a command in this class
                         ev.useclass = bindClasses[k].id;
@@ -945,20 +947,22 @@ D_CMD(EnableBindClass)
                     ev = binds[j].event;
                     switch(ev.type)
                     {
-                        case ev_keydown:
-                            ev.type = ev_keyup;
-                            break;
-                        case ev_mousebdown:
-                            ev.type = ev_mousebup;
-                            break;
-                        case ev_joybdown:
-                            ev.type = ev_joybup;
-                            break;
-                     }
-                     // request a command in this class
-                     ev.useclass = bindClasses[k].id;
-                     // Finally, post the event
-                     DD_PostEvent(&ev);
+                    case ev_keydown:
+                        ev.type = ev_keyup;
+                        break;
+                    case ev_mousebdown:
+                        ev.type = ev_mousebup;
+                        break;
+                    case ev_joybdown:
+                        ev.type = ev_joybup;
+                        break;
+                    default:
+                        break;
+                    }
+                    // request a command in this class
+                    ev.useclass = bindClasses[k].id;
+                    // Finally, post the event
+                    DD_PostEvent(&ev);
                 }
 			}
         }
