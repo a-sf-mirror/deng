@@ -126,20 +126,20 @@ int             XS_Friction(struct sector_s *sector);
 int             XS_ThrustMul(struct sector_s *sector);
 
 int             XSTrav_MovePlane(struct sector_s *sector, boolean ceiling,
-								 int data, void *context);
+								 long int data, void *context);
 int             XSTrav_SectorType(struct sector_s *sec, boolean ceiling,
-								  int data, void *context);
+								  long int data, void *context);
 int             XSTrav_SectorLight(struct sector_s *sector, boolean ceiling,
-								   int data, void *context);
+								   long int data, void *context);
 int             XSTrav_PlaneTexture(struct sector_s *sec, boolean ceiling,
-									int data, void *context);
+									long int data, void *context);
 void            XS_InitStairBuilder(void);
 int             XSTrav_BuildStairs(struct sector_s *sector, boolean ceiling,
-								   int data, void *context);
+								   long int data, void *context);
 int             XSTrav_SectorSound(struct sector_s *sec, boolean ceiling,
-								   int data, void *context);
+								   long int data, void *context);
 int             XSTrav_MimicSector(struct sector_s *sector, boolean ceiling,
-								   int data, void *context);
+								   long int data, void *context);
 void            XS_SetSectorType(struct sector_s *sec, int special);
 void            XS_ChangePlaneTexture(struct sector_s *sector, boolean ceiling,
 									  int tex);

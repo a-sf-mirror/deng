@@ -76,7 +76,8 @@ typedef struct {
     boolean         masked;
     short           width;
     short           height;
-    void          **columndirectory;	// OBSOLETE
+    //void          **columndirectory;	// OBSOLETE
+    int             columndirectorypadding;
     short           patchcount;
     mappatch_t      patches[1];
 } maptexture_t;

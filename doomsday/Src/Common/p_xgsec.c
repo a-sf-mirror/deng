@@ -189,7 +189,7 @@ void XF_Init(sector_t *sec, function_t * fn, char *func, int min, int max,
 	fn->oldvalue = -scale + offset;
 }
 
-int XLTrav_LineAngle(line_t *line, int data, void *context)
+int XLTrav_LineAngle(line_t *line, long int data, void *context)
 {
 	sector_t *sec = (sector_t *) data;
 
@@ -946,7 +946,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 	return true;
 }
 
-int XSTrav_HighestSectorType(sector_t *sec, boolean ceiling, int data,
+int XSTrav_HighestSectorType(sector_t *sec, boolean ceiling, long int data,
 							 void *context)
 {
 	int    *type = context;
@@ -956,7 +956,7 @@ int XSTrav_HighestSectorType(sector_t *sec, boolean ceiling, int data,
 	return true;				// Keep looking...
 }
 
-int XSTrav_MovePlane(sector_t *sector, boolean ceiling, int data,
+int XSTrav_MovePlane(sector_t *sector, boolean ceiling, long int data,
 					 void *context)
 {
 	line_t *line = (line_t *) data;
@@ -1135,7 +1135,7 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 	return true;
 }
 
-int XSTrav_BuildStairs(sector_t *sector, boolean ceiling, int data,
+int XSTrav_BuildStairs(sector_t *sector, boolean ceiling, long int data,
 					   void *context)
 {
 	boolean found = true;
@@ -1223,14 +1223,14 @@ int XSTrav_BuildStairs(sector_t *sector, boolean ceiling, int data,
 	return true;				// Continue searching for planes.  
 }
 
-int XSTrav_SectorSound(struct sector_s *sec, boolean ceiling, int data,
+int XSTrav_SectorSound(struct sector_s *sec, boolean ceiling, long int data,
 					   void *context)
 {
 	XS_SectorSound(sec, data);
 	return true;
 }
 
-int XSTrav_PlaneTexture(struct sector_s *sec, boolean ceiling, int data,
+int XSTrav_PlaneTexture(struct sector_s *sec, boolean ceiling, long int data,
 						void *context)
 {
 	line_t *line = (line_t *) data;
@@ -1252,14 +1252,14 @@ int XSTrav_PlaneTexture(struct sector_s *sec, boolean ceiling, int data,
 	return true;
 }
 
-int XSTrav_SectorType(struct sector_s *sec, boolean ceiling, int data,
+int XSTrav_SectorType(struct sector_s *sec, boolean ceiling, long int data,
 					  void *context)
 {
 	XS_SetSectorType(sec, data);
 	return true;
 }
 
-int XSTrav_SectorLight(sector_t *sector, boolean ceiling, int data,
+int XSTrav_SectorLight(sector_t *sector, boolean ceiling, long int data,
 					   void *context)
 {
 	line_t *line = (line_t *) data;
@@ -1376,7 +1376,7 @@ int XSTrav_SectorLight(sector_t *sector, boolean ceiling, int data,
 	return true;
 }
 
-int XSTrav_MimicSector(sector_t *sector, boolean ceiling, int data,
+int XSTrav_MimicSector(sector_t *sector, boolean ceiling, long int data,
 					   void *context)
 {
 	line_t *line = (line_t *) data;
@@ -1854,7 +1854,7 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
 	return true;
 }
 
-int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
+int XSTrav_Wind(sector_t *sec, mobj_t *mo, long int data)
 {
 	sectortype_t *info = &sec->xg->info;
 	float   ang = PI * info->wind_angle / 180;
@@ -1891,8 +1891,8 @@ int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
 }
 
 // Returns true if true was returned for each mobj.
-int XS_TraverseMobjs(sector_t *sec, int data,
-					 int (*func) (sector_t *sec, mobj_t *mo, int data))
+int XS_TraverseMobjs(sector_t *sec, long int data,
+					 int (*func) (sector_t *sec, mobj_t *mo, long int data))
 {
 	mobj_t *mo;
 

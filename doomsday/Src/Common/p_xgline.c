@@ -267,9 +267,10 @@ void XL_Init(void)
  * Executes the specified function on all planes that match
  * the reference (reftype). If a function fails it returns false.
  */
-int XL_TraversePlanes(line_t *line, int reftype, int ref, int data,
+int XL_TraversePlanes(line_t *line, int reftype, int ref, long int data,
                       void *context, int (*func) (sector_t *sector,
-                                                  boolean ceiling, int data,
+                                                  boolean ceiling,
+                                                  long int data,
                                                   void *context))
 {
     int     i;
@@ -341,8 +342,8 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, int data,
  * Returns false if func returns false, otherwise true.
  * Stops checking when false is returned.
  */
-int XL_TraverseLines(line_t *line, int rtype, int ref, int data,
-                     void *context, int (*func) (line_t *line, int data,
+int XL_TraverseLines(line_t *line, int rtype, int ref, long int data,
+                     void *context, int (*func) (line_t *line, long int data,
                                                  void *context))
 {
     int    i;
@@ -450,13 +451,13 @@ int XL_ValidateLineRef(line_t *line, int reftype, void *context, char *parmname)
     return answer;
 }
 
-int XLTrav_ChangeLineType(line_t *line, int data, void *context)
+int XLTrav_ChangeLineType(line_t *line, long int data, void *context)
 {
     XL_SetLineType(line, data);
     return true;    // Keep looking.
 }
 
-int XLTrav_ChangeWallTexture(line_t *line, int data, void *context)
+int XLTrav_ChangeWallTexture(line_t *line, long int data, void *context)
 {
     linetype_t *info = context;
     side_t *side;
@@ -485,7 +486,7 @@ int XLTrav_ChangeWallTexture(line_t *line, int data, void *context)
     return true;
 }
 
-int XLTrav_Activate(line_t *line, int data, void *context)
+int XLTrav_Activate(line_t *line, long int data, void *context)
 {
     XL_LineEvent(XLE_CHAIN, 0, line, 0, context);
     return true;    // Keep looking.
@@ -495,14 +496,14 @@ int XLTrav_Activate(line_t *line, int data, void *context)
  * &param data  If true, the line will receive a chain event if not activate.
  *      If data=false, then ... if active.
  */
-int XLTrav_SmartActivate(line_t *line, int data, void *context)
+int XLTrav_SmartActivate(line_t *line, long int data, void *context)
 {
     if(data != line->xg->active)
         XL_LineEvent(XLE_CHAIN, 0, line, 0, context);
     return true;
 }
 
-int XLTrav_LineCount(line_t *line, int data, void *context)
+int XLTrav_LineCount(line_t *line, long int data, void *context)
 {
     if(!line->xg)
         return true;            // Must have extended type.
@@ -513,7 +514,7 @@ int XLTrav_LineCount(line_t *line, int data, void *context)
     return true;
 }
 
-int XLTrav_Music(line_t *line, int data, void *context)
+int XLTrav_Music(line_t *line, long int data, void *context)
 {
     int song = 0;
     int temp = 0;
@@ -571,7 +572,7 @@ int XL_ValidateMap(int map, int type)
     return level;
 }
 
-int XLTrav_EndLevel(line_t *line, int data, void *context)
+int XLTrav_EndLevel(line_t *line, long int data, void *context)
 {
     int map = 0;
     int temp = 0;
@@ -601,7 +602,7 @@ int XLTrav_EndLevel(line_t *line, int data, void *context)
     return false;    // only do this once!
 }
 
-int XLTrav_DisableLine(line_t *line, int data, void *context)
+int XLTrav_DisableLine(line_t *line, long int data, void *context)
 {
     if(!line->xg)
         return true;
@@ -609,7 +610,7 @@ int XLTrav_DisableLine(line_t *line, int data, void *context)
     return true;    // Keep looking.
 }
 
-int XLTrav_QuickActivate(line_t *line, int data, void *context)
+int XLTrav_QuickActivate(line_t *line, long int data, void *context)
 {
     if(!line->xg)
         return true;
@@ -621,7 +622,7 @@ int XLTrav_QuickActivate(line_t *line, int data, void *context)
 /*
  * Returns true if the line is active.
  */
-int XLTrav_CheckLine(line_t *line, int data, void *context)
+int XLTrav_CheckLine(line_t *line, long int data, void *context)
 {
     if(!line->xg)
         return false;    // Stop checking!

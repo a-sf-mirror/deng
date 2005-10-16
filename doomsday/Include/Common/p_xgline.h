@@ -292,13 +292,13 @@ void            XL_ActivateLine(boolean activating, linetype_t * info,
 								struct line_s *line, int sidenum,
 								struct mobj_s *data);
 int             XL_TraverseLines(struct line_s *line, int reftype, int ref,
-								 int data, void *context,
-								 int (*func) (struct line_s * line, int data,
-											  void *context));
+								 long int data, void *context,
+								 int (*func) (struct line_s * line,
+                                              long int data, void *context));
 int             XL_TraversePlanes(struct line_s *line, int reftype, int ref,
-								  int data, void *context,
+								  long int data, void *context,
 								  int (*func) (struct sector_s * sector,
-											   boolean ceiling, int data,
+											   boolean ceiling, long int data,
 											   void *context));
 
 // Return false if the event was processed.

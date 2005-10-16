@@ -162,7 +162,7 @@ int             D_NetServerClose(int before);
 int             D_NetServerStarted(int before);
 int             D_NetConnect(int before);
 int             D_NetDisconnect(int before);
-int             D_NetPlayerEvent(int plrNumber, int peType, void *data);
+long int        D_NetPlayerEvent(int plrNumber, int peType, void *data);
 int             D_NetWorldEvent(int type, int tic, void *data);
 void            D_HandlePacket(int fromplayer, int type, void *data,
 							   int length);

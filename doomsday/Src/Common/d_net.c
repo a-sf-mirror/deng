@@ -345,7 +345,7 @@ int D_NetDisconnect(int before)
 	return true;
 }
 
-int D_NetPlayerEvent(int plrNumber, int peType, void *data)
+long int D_NetPlayerEvent(int plrNumber, int peType, void *data)
 {
 	// Kludge: To preserve the ABI, these are done through player events.
 	// (They are, sort of.)
@@ -353,13 +353,13 @@ int D_NetPlayerEvent(int plrNumber, int peType, void *data)
 	{
 		// It's time to send ticcmds to the server.
 		// 'plrNumber' contains the number of commands.
-		return (int) NetCl_WriteCommands(data, plrNumber);
+		return (long int) NetCl_WriteCommands(data, plrNumber);
 	}
 	else if(peType == DDPE_READ_COMMANDS)
 	{
 		// Read ticcmds sent by a client.
 		// 'plrNumber' is the length of the packet.
-		return (int) NetSv_ReadCommands(data, plrNumber);
+		return (long int) NetSv_ReadCommands(data, plrNumber);
 	}
 
 	// If this isn't a netgame, we won't react.
