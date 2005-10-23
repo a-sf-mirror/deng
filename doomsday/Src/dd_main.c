@@ -610,7 +610,7 @@ void DD_Main(void)
 //==========================================================================
 static void HandleArgs(int state)
 {
-	int     p;
+	int     order, p;
 
 	if(state == 0)
 	{
@@ -619,17 +619,23 @@ static void HandleArgs(int state)
 		renderTextures = !ArgExists("-notex");
 	}
 
-	// Process all -file options.
+	// Process all -iwad and -file options. -iwad options are processed 
+	// first so that the loading order remains correct.
 	if(state)
 	{
-		for(p = 0; p < Argc(); p++)
+		for(order = 0; order < 2; order++)
 		{
-			if(stricmp(Argv(p), "-file") && stricmp(Argv(p), "-iwad") &&
-			   stricmp(Argv(p), "-f"))
-				continue;
-			while(++p != Argc() && !ArgIsOption(p))
-				DD_AddStartupWAD(Argv(p));
-            p--;/* For ArgIsOption(p) necessary, for p==Argc() harmless */
+			for(p = 0; p < Argc(); p++)
+			{
+				if((order == 1 && 
+					(stricmp(Argv(p), "-f") && stricmp(Argv(p), "-file"))) ||
+				   (order == 0 &&
+					stricmp(Argv(p), "-iwad")))
+					continue;
+				while(++p != Argc() && !ArgIsOption(p))
+					DD_AddStartupWAD(Argv(p));
+				p--;/* For ArgIsOption(p) necessary, for p==Argc() harmless */
+			}
 		}
 	}
 }
