@@ -15,6 +15,40 @@
 // for more details.
 //
 // $Log$
+// Revision 1.9.2.1  2005/11/27 17:42:08  skyjake
+// Breaking everything with the new Map Update API (=DMU) (only declared, not
+// implemented yet)
+//
+// - jDoom and jHeretic do not compile
+// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
+// portions of code that would not compile
+// - none of the games work, because DMU has not been implemented or used in any
+// of the games
+//
+// Map data is now hidden from the games. The line_t, seg_t and structs are
+// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
+// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
+// parameters. There are multiple versions of each function so that using them is
+// more convenient in terms of data types.
+//
+// P_Callback can be used for having the engine call a callback function for each
+// of the selected map data objects.
+//
+// The API is not finalized yet.
+//
+// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
+// parameters.
+//
+// The games require map data in numerous places of the code. All of these should
+// be converted to work with DMU in the most sensible fashion (a direct
+// conversion may not always make the most sense). E.g., jHexen has
+// some private map data for sound playing, etc. The placement of this data is
+// not certain at the moment, but it can remain private to the games if
+// necessary.
+//
+// Games can build their own map changing routines on DMU as they see fit. The
+// engine will only provide a generic API, as defined in doomsday.h currently.
+//
 // Revision 1.9  2005/05/29 12:45:09  danij
 // Removed fixed limits on number of active plats/ceilings using modified code from PrBoom.
 //
@@ -172,10 +206,12 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
 	while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
 
 		if(sec->specialdata)
 			continue;
+#endif
 
 		// Find lowest & highest floors around sector
 		rtn = 1;
@@ -193,7 +229,9 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 		{
 		case raiseToNearestAndChange:
 			plat->speed = PLATSPEED / 2;
+#ifdef TODO_MAP_UPDATE
 			sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
+#endif
 			//gi.Sv_SectorReport(sec, false, sec->floorheight, 0, sec->floorpic, -1);
 			plat->high = P_FindNextHighestFloor(sec, sec->floorheight);
 			plat->wait = 0;
@@ -206,9 +244,11 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
 		case raiseAndChange:
 			plat->speed = PLATSPEED / 2;
+#ifdef TODO_MAP_UPDATE
 			sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
 			//gi.Sv_SectorReport(sec, false, sec->floorheight, 0, sec->floorpic, -1);
 			plat->high = sec->floorheight + amount * FRACUNIT;
+#endif
 			plat->wait = 0;
 			plat->status = up;
 

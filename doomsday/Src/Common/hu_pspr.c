@@ -114,6 +114,7 @@ int HU_PSpriteYOffset(player_t *pl)
 //==========================================================================
 void HU_UpdatePlayerSprite(int pnum)
 {
+#ifdef TODO_MAP_UPDATE
 	extern float lookOffset;
 	int     i;
 	pspdef_t *psp;
@@ -252,6 +253,7 @@ void HU_UpdatePlayerSprite(int pnum)
 			fov = 90;
 		ddpsp->y = FIX2FLT(psp->sy) + (90 - fov) / 90 * 80;
 	}
+#endif
 }
 
 //==========================================================================

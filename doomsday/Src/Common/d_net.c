@@ -516,11 +516,13 @@ int D_NetWorldEvent(int type, int parm, void *data)
 
 	case DDWE_SECTOR_SOUND:
 		// High word: sector number, low word: sound id.
+#ifdef TODO_MAP_UPDATE
 		if(parm & 0xffff)
 			S_StartSound(parm & 0xffff,
 						 (mobj_t *) &sectors[parm >> 16].soundorg);
 		else
 			S_StopSound(0, (mobj_t *) &sectors[parm >> 16].soundorg);
+#endif
 		break;
 
 	case DDWE_DEMO_END:

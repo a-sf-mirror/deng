@@ -52,9 +52,11 @@ static fixed_t PolyStartY;
 void PO_SetDestination(polyobj_t * poly, fixed_t dist, angle_t angle,
 					   fixed_t speed)
 {
+#ifdef TODO_MAP_UPDATE
 	poly->dest.x = poly->startSpot.x + FixedMul(dist, finecosine[angle]);
 	poly->dest.y = poly->startSpot.y + FixedMul(dist, finesine[angle]);
 	poly->speed = speed;
+#endif
 }
 
 // ===== Polyobj Event Code =====
@@ -67,6 +69,7 @@ void PO_SetDestination(polyobj_t * poly, fixed_t dist, angle_t angle,
 
 void T_RotatePoly(polyevent_t * pe)
 {
+#ifdef TODO_MAP_UPDATE
 	unsigned int absSpeed;
 	polyobj_t *poly;
 
@@ -96,6 +99,7 @@ void T_RotatePoly(polyevent_t * pe)
 			pe->speed = pe->dist * (pe->speed < 0 ? -1 : 1);
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -107,6 +111,7 @@ void T_RotatePoly(polyevent_t * pe)
 boolean EV_RotatePoly(line_t *line, byte *args, int direction,
 					  boolean overRide)
 {
+#ifdef TODO_MAP_UPDATE
 	int     mirror;
 	int     polyNum;
 	polyevent_t *pe;
@@ -199,6 +204,7 @@ boolean EV_RotatePoly(line_t *line, byte *args, int direction,
 						 SEQ_DOOR_STONE + poly->seqType);
 	}
 	return true;
+#endif
 }
 
 //==========================================================================
@@ -209,6 +215,7 @@ boolean EV_RotatePoly(line_t *line, byte *args, int direction,
 
 void T_MovePoly(polyevent_t * pe)
 {
+#ifdef TODO_MAP_UPDATE
 	unsigned int absSpeed;
 	polyobj_t *poly;
 
@@ -235,6 +242,7 @@ void T_MovePoly(polyevent_t * pe)
 			pe->ySpeed = FixedMul(pe->speed, finesine[pe->angle]);
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -246,6 +254,7 @@ void T_MovePoly(polyevent_t * pe)
 boolean EV_MovePoly(line_t *line, byte *args, boolean timesEight,
 					boolean overRide)
 {
+#ifdef TODO_MAP_UPDATE
 	int     mirror;
 	int     polyNum;
 	polyevent_t *pe;
@@ -328,6 +337,7 @@ boolean EV_MovePoly(line_t *line, byte *args, boolean timesEight,
 		PO_SetDestination(poly, pe->dist, pe->angle, pe->speed);
 	}
 	return true;
+#endif
 }
 
 //==========================================================================
@@ -338,6 +348,7 @@ boolean EV_MovePoly(line_t *line, byte *args, boolean timesEight,
 
 void T_PolyDoor(polydoor_t * pd)
 {
+#ifdef TODO_MAP_UPDATE
 	int     absSpeed;
 	polyobj_t *poly;
 
@@ -461,6 +472,7 @@ void T_PolyDoor(polydoor_t * pd)
 	default:
 		break;
 	}
+#endif
 }
 
 //==========================================================================
@@ -471,6 +483,7 @@ void T_PolyDoor(polydoor_t * pd)
 
 boolean EV_OpenPolyDoor(line_t *line, byte *args, podoortype_t type)
 {
+#ifdef TODO_MAP_UPDATE
 	int     mirror;
 	int     polyNum;
 	polydoor_t *pd;
@@ -563,6 +576,7 @@ boolean EV_OpenPolyDoor(line_t *line, byte *args, podoortype_t type)
 		PO_SetDestination(poly, pd->dist, pd->direction, pd->speed);
 	}
 	return true;
+#endif
 }
 
 // ===== Higher Level Poly Interface code =====
@@ -577,6 +591,7 @@ static polyobj_t *GetPolyobj(int polyNum)
 {
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < po_NumPolyobjs; i++)
 	{
 		if(polyobjs[i].tag == polyNum)
@@ -584,6 +599,7 @@ static polyobj_t *GetPolyobj(int polyNum)
 			return &polyobjs[i];
 		}
 	}
+#endif
 	return NULL;
 }
 
@@ -597,6 +613,7 @@ static int GetPolyobjMirror(int poly)
 {
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < po_NumPolyobjs; i++)
 	{
 		if(polyobjs[i].tag == poly)
@@ -604,6 +621,7 @@ static int GetPolyobjMirror(int poly)
 			return ((*polyobjs[i].Segs)->linedef->arg2);
 		}
 	}
+#endif
 	return 0;
 }
 
@@ -630,6 +648,7 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
 	{
 		return;
 	}
+#ifdef TODO_MAP_UPDATE
 	thrustAngle = (seg->angle - ANGLE_90) >> ANGLETOFINESHIFT;
 
 	pe = po->specialdata;
@@ -656,11 +675,13 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
 	{
 		force = FRACUNIT;
 	}
+#endif
 
 	thrustX = FixedMul(force, finecosine[thrustAngle]);
 	thrustY = FixedMul(force, finesine[thrustAngle]);
 	mobj->momx += thrustX;
 	mobj->momy += thrustY;
+#ifdef TODO_MAP_UPDATE
 	if(po->crush)
 	{
 		if(!P_CheckPosition(mobj, mobj->x + thrustX, mobj->y + thrustY))
@@ -668,6 +689,7 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
 			P_DamageMobj(mobj, NULL, NULL, 3);
 		}
 	}
+#endif
 }
 
 /*
@@ -1133,6 +1155,7 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
 
 static void InitBlockMap(void)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 
 	int     j;
@@ -1183,6 +1206,7 @@ static void InitBlockMap(void)
 		//          leftX>>FRACBITS,
 		//      rightX>>FRACBITS, bottomY>>FRACBITS);
 	}
+#endif
 }
 
 //==========================================================================
@@ -1195,6 +1219,7 @@ static void InitBlockMap(void)
 
 static void IterFindPolySegs(int x, int y, seg_t **segList)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 
 	if(x == PolyStartX && y == PolyStartY)
@@ -1219,6 +1244,7 @@ static void IterFindPolySegs(int x, int y, seg_t **segList)
 			return;
 		}
 	}
+#endif
 	Con_Error("IterFindPolySegs:  Non-closed Polyobj located.\n");
 }
 
@@ -1230,6 +1256,7 @@ static void IterFindPolySegs(int x, int y, seg_t **segList)
 
 static void SpawnPolyobj(int index, int tag, boolean crush)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     j;
 	int     psIndex;
@@ -1354,6 +1381,7 @@ static void SpawnPolyobj(int index, int tag, boolean crush)
 		(*polyobjs[index].Segs)->linedef->arg2 =
 			(*polyobjs[index].Segs)->linedef->arg3;
 	}
+#endif
 }
 
 //==========================================================================
@@ -1371,9 +1399,10 @@ static void TranslateToStartSpot(int tag, int originX, int originY)
 	polyobj_t *po;
 	int     deltaX;
 	int     deltaY;
-	vertex_t avg;				// used to find a polyobj's center, and hence subsector
+	ddvertex_t avg;				// used to find a polyobj's center, and hence subsector
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	po = NULL;
 	for(i = 0; i < po_NumPolyobjs; i++)
 	{
@@ -1443,6 +1472,7 @@ static void TranslateToStartSpot(int tag, int originX, int originY)
 			("PO_TranslateToStartSpot:  Multiple polyobjs in a single subsector.\n");
 	}
 	sub->poly = po;
+#endif
 }
 
 //==========================================================================
@@ -1453,6 +1483,7 @@ static void TranslateToStartSpot(int tag, int originX, int originY)
 
 void PO_Init(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	mapthing_t *mt;
@@ -1521,6 +1552,7 @@ void PO_Init(int lump)
 	//Con_Message("Startspots checked, initializing blockmap.\n");
 	InitBlockMap();
 	//Con_Message( "Done.\n");
+#endif
 }
 
 //==========================================================================
@@ -1534,6 +1566,7 @@ boolean PO_Busy(int polyobj)
 	polyobj_t *poly;
 
 	poly = GetPolyobj(polyobj);
+#ifdef TODO_MAP_UPDATE
 	if(!poly->specialdata)
 	{
 		return false;
@@ -1542,4 +1575,5 @@ boolean PO_Busy(int polyobj)
 	{
 		return true;
 	}
+#endif
 }

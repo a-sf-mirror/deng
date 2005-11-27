@@ -92,7 +92,9 @@ void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
 			buttonlist[i].where = w;
 			buttonlist[i].btexture = texture;
 			buttonlist[i].btimer = time;
+#ifdef TODO_MAP_UPDATE
 			buttonlist[i].soundorg = (mobj_t *) &line->frontsector->soundorg;
+#endif
 			return;
 		}
 	}
@@ -112,6 +114,7 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 	int     texBot;
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	texTop = sides[line->sidenum[0]].toptexture;
 	texMid = sides[line->sidenum[0]].midtexture;
 	texBot = sides[line->sidenum[0]].bottomtexture;
@@ -152,4 +155,5 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 			return;
 		}
 	}
+#endif
 }

@@ -1127,6 +1127,7 @@ static void UnarchivePlayers(void)
 
 void ArchiveWorld(void)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     j;
 	sector_t *sec;
@@ -1177,6 +1178,7 @@ void ArchiveWorld(void)
 			StreamOutWord(SV_TextureArchiveNum(si->midtexture));
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -1187,6 +1189,7 @@ void ArchiveWorld(void)
 
 void UnarchiveWorld(void)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     j;
 	sector_t *sec;
@@ -1246,6 +1249,7 @@ void UnarchiveWorld(void)
 			si->midtexture = SV_GetArchiveTexture(GET_WORD);
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -1259,6 +1263,7 @@ void UnarchiveWorld(void)
 
 static void SetMobjArchiveNums(void)
 {
+#ifdef TODO_MAP_UPDATE
 	mobj_t *mobj;
 	thinker_t *thinker;
 	int     i;
@@ -1289,6 +1294,7 @@ static void SetMobjArchiveNums(void)
 			mobj->archiveNum = MobjCount++;
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -1296,6 +1302,7 @@ static void SetMobjArchiveNums(void)
 //==========================================================================
 void ArchiveMobj(mobj_t *original)
 {
+#ifdef TODO_MAP_UPDATE
 	mobj_t  temp, *mo;
 
 	memcpy(mo = &temp, original, sizeof(*mo));
@@ -1341,6 +1348,7 @@ void ArchiveMobj(mobj_t *original)
 	StreamOutLong(mo->special);
 	StreamOutBuffer(mo->args, sizeof(mo->args));
 	StreamOutByte(mo->translucency);
+#endif
 }
 
 //==========================================================================
@@ -1348,6 +1356,7 @@ void ArchiveMobj(mobj_t *original)
 //==========================================================================
 void UnarchiveMobj(mobj_t *mo)
 {
+#ifdef TODO_MAP_UPDATE
 	int     version = GET_BYTE;
 
 	memset(mo, 0, sizeof(*mo));
@@ -1394,6 +1403,7 @@ void UnarchiveMobj(mobj_t *mo)
 	}
 
 	RestoreMobj(mo);
+#endif
 }
 
 //==========================================================================
@@ -1404,6 +1414,7 @@ void UnarchiveMobj(mobj_t *mo)
 
 static void ArchiveMobjs(void)
 {
+#ifdef TODO_MAP_UPDATE
 	int     count;
 	thinker_t *thinker;
 
@@ -1434,6 +1445,7 @@ static void ArchiveMobjs(void)
 	{
 		Con_Error("ArchiveMobjs: bad mobj count");
 	}
+#endif
 }
 
 //==========================================================================
@@ -1644,8 +1656,10 @@ static void RestoreMobj(mobj_t *mobj)
 	}
 	P_SetThingPosition(mobj);
 	mobj->info = &mobjinfo[mobj->type];
+#ifdef TODO_MAP_UPDATE
 	mobj->floorz = mobj->subsector->sector->floorheight;
 	mobj->ceilingz = mobj->subsector->sector->ceilingheight;
+#endif
 	SetMobjPtr((int *) &mobj->target);
 	switch (mobj->type)
 	{
@@ -1792,7 +1806,9 @@ static void UnarchiveThinkers(void)
 
 static void MangleSSThinker(ssthinker_t * sst)
 {
+#ifdef TODO_MAP_UPDATE
 	sst->sector = (sector_t *) (sst->sector - sectors);
+#endif
 }
 
 //==========================================================================
@@ -1803,8 +1819,10 @@ static void MangleSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinker(ssthinker_t * sst)
 {
+#ifdef TODO_MAP_UPDATE
 	sst->sector = &sectors[(int) sst->sector];
 	sst->sector->specialdata = sst->thinker.function;
+#endif
 }
 
 //==========================================================================
@@ -1815,7 +1833,9 @@ static void RestoreSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 {
+#ifdef TODO_MAP_UPDATE
 	sst->sector = &sectors[(int) sst->sector];
+#endif
 }
 
 //==========================================================================
@@ -1826,10 +1846,12 @@ static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 
 static void MangleScript(acs_t * script)
 {
+#ifdef TODO_MAP_UPDATE
 	script->ip = (int *) ((int) (script->ip) - (int) ActionCodeBase);
 	script->line =
 		script->line ? (line_t *) (script->line - lines) : (line_t *) -1;
 	script->activator = (mobj_t *) GetMobjNum(script->activator);
+#endif
 }
 
 //==========================================================================
@@ -1840,6 +1862,7 @@ static void MangleScript(acs_t * script)
 
 static void RestoreScript(acs_t * script)
 {
+#ifdef TODO_MAP_UPDATE
 	script->ip = (int *) (ActionCodeBase + (int) script->ip);
 	if((int) script->line == -1)
 	{
@@ -1850,6 +1873,7 @@ static void RestoreScript(acs_t * script)
 		script->line = &lines[(int) script->line];
 	}
 	SetMobjPtr((int *) &script->activator);
+#endif
 }
 
 //==========================================================================
@@ -1860,9 +1884,11 @@ static void RestoreScript(acs_t * script)
 
 static void RestorePlatRaise(plat_t * plat)
 {
+#ifdef TODO_MAP_UPDATE
 	plat->sector = &sectors[(int) plat->sector];
 	plat->sector->specialdata = T_PlatRaise;
 	P_AddActivePlat(plat);
+#endif
 }
 
 //==========================================================================
@@ -1873,9 +1899,11 @@ static void RestorePlatRaise(plat_t * plat)
 
 static void RestoreMoveCeiling(ceiling_t * ceiling)
 {
+#ifdef TODO_MAP_UPDATE
 	ceiling->sector = &sectors[(int) ceiling->sector];
 	ceiling->sector->specialdata = T_MoveCeiling;
 	P_AddActiveCeiling(ceiling);
+#endif
 }
 
 //==========================================================================
@@ -2003,6 +2031,7 @@ static void ArchiveSounds(void)
 		StreamOutLong(node->volume);
 		StreamOutLong(SN_GetSequenceOffset(node->sequence, node->sequencePtr));
 		StreamOutLong(node->currentSoundID);
+#ifdef TODO_MAP_UPDATE
 		for(i = 0; i < po_NumPolyobjs; i++)
 		{
 			if(node->mobj == (mobj_t *) &polyobjs[i].startSpot)
@@ -2022,6 +2051,7 @@ static void ArchiveSounds(void)
 			StreamOutLong(1);	// 1 -- polyobj sound origin
 			difference = i;
 		}
+#endif
 		StreamOutLong(difference);
 	}
 }
@@ -2060,6 +2090,7 @@ static void UnarchiveSounds(void)
 		soundID = GET_LONG;
 		polySnd = GET_LONG;
 		secNum = GET_LONG;
+#ifdef TODO_MAP_UPDATE
 		if(!polySnd)
 		{
 			sndMobj = (mobj_t *) &sectors[secNum].soundorg;
@@ -2068,6 +2099,7 @@ static void UnarchiveSounds(void)
 		{
 			sndMobj = (mobj_t *) &polyobjs[secNum].startSpot;
 		}
+#endif
 		SN_StartSequence(sndMobj, sequence);
 		SN_ChangeNodeData(i, seqOffset, delayTics, volume, soundID);
 		i++;
@@ -2085,6 +2117,7 @@ static void ArchivePolyobjs(void)
 	int     i;
 
 	StreamOutLong(ASEG_POLYOBJS);
+#ifdef TODO_MAP_UPDATE
 	StreamOutLong(po_NumPolyobjs);
 	for(i = 0; i < po_NumPolyobjs; i++)
 	{
@@ -2093,6 +2126,7 @@ static void ArchivePolyobjs(void)
 		StreamOutLong(polyobjs[i].startSpot.x);
 		StreamOutLong(polyobjs[i].startSpot.y);
 	}
+#endif
 }
 
 //==========================================================================
@@ -2109,6 +2143,7 @@ static void UnarchivePolyobjs(void)
 	angle_t angle;
 
 	AssertSegment(ASEG_POLYOBJS);
+#ifdef TODO_MAP_UPDATE
 	if(GET_LONG != po_NumPolyobjs)
 	{
 		Con_Error("UnarchivePolyobjs: Bad polyobj count");
@@ -2127,6 +2162,7 @@ static void UnarchivePolyobjs(void)
 		PO_MovePolyobj(polyobjs[i].tag, deltaX, deltaY);
 		// FIXME: What about speed? It isn't saved at all?
 	}
+#endif
 }
 
 //==========================================================================

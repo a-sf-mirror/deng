@@ -425,6 +425,7 @@ void P_SetDoomsdayFlags(mobj_t *mo)
 //===========================================================================
 void R_SetAllDoomsdayFlags()
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	sector_t *sec = sectors;
 	mobj_t *iter;
@@ -433,4 +434,5 @@ void R_SetAllDoomsdayFlags()
 	for(i = 0; i < numsectors; i++, sec++)
 		for(iter = sec->thinglist; iter; iter = iter->snext)
 			P_SetDoomsdayFlags(iter);
+#endif
 }

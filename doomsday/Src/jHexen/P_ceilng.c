@@ -31,6 +31,7 @@ ceiling_t *activeceilings[MAXCEILINGS];
 //==================================================================
 void T_MoveCeiling(ceiling_t * ceiling)
 {
+#ifdef TODO_MAP_UPDATE
 	result_e res;
 
 	switch (ceiling->direction)
@@ -43,6 +44,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 						false, 1, ceiling->direction);
 		if(res == RES_PASTDEST)
 		{
+#ifdef TODO_MAP_UPDATE
 			SN_StopSequence((mobj_t *) &ceiling->sector->soundorg);
 			switch (ceiling->type)
 			{
@@ -54,6 +56,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 				P_RemoveActiveCeiling(ceiling);
 				break;
 			}
+#endif
 		}
 		break;
 	case -1:					// DOWN
@@ -90,6 +93,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 		}
 		break;
 	}
+#endif
 }
 
 //==================================================================
@@ -100,6 +104,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 //==================================================================
 int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 {
+#ifdef TODO_MAP_UPDATE
 	int     secnum, rtn;
 	sector_t *sec;
 	ceiling_t *ceiling;
@@ -121,9 +126,11 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 	 */
 	while((secnum = P_FindSectorFromTag(arg[0], secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
 		if(sec->specialdata)
 			continue;
+#endif
 
 		//
 		// new door thinker
@@ -206,6 +213,7 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 		}
 	}
 	return rtn;
+#endif
 }
 
 //==================================================================
@@ -237,11 +245,13 @@ void P_RemoveActiveCeiling(ceiling_t * c)
 	for(i = 0; i < MAXCEILINGS; i++)
 		if(activeceilings[i] == c)
 		{
+#ifdef TODO_MAP_UPDATE
 			activeceilings[i]->sector->specialdata = NULL;
 			P_RemoveThinker(&activeceilings[i]->thinker);
 			P_TagFinished(activeceilings[i]->sector->tag);
 			activeceilings[i] = NULL;
 			break;
+#endif
 		}
 }
 
@@ -285,6 +295,7 @@ int EV_CeilingCrushStop(line_t *line, byte *args)
 	{
 		if(activeceilings[i] && activeceilings[i]->tag == args[0])
 		{
+#ifdef TODO_MAP_UPDATE
 			rtn = 1;
 			SN_StopSequence((mobj_t *) &activeceilings[i]->sector->soundorg);
 			activeceilings[i]->sector->specialdata = NULL;
@@ -292,6 +303,7 @@ int EV_CeilingCrushStop(line_t *line, byte *args)
 			P_TagFinished(activeceilings[i]->sector->tag);
 			activeceilings[i] = NULL;
 			break;
+#endif
 		}
 	}
 	return rtn;

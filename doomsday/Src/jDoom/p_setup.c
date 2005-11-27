@@ -67,6 +67,7 @@ void P_LoadVertexes(int lump, int gllump)
 	glvert2_t *glv;
 	vertex_t *li;
 
+#ifdef TODO_MAP_UPDATE
 	orignum = numvertexes = W_LumpLength(lump) / sizeof(mapvertex_t);
 	// glBSP lump given?
 	if(gllump >= 0)
@@ -116,6 +117,7 @@ void P_LoadVertexes(int lump, int gllump)
 		}
 		Z_Free(glverts);
 	}
+#endif
 }
 
 //
@@ -123,6 +125,7 @@ void P_LoadVertexes(int lump, int gllump)
 //
 void P_LoadSegs(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	mapseg_t *ml;
@@ -162,10 +165,12 @@ void P_LoadSegs(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 void P_LoadSegsGL(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	glseg_t *gls;
@@ -226,6 +231,7 @@ void P_LoadSegsGL(int lump)
 			AccurateDistance(li->v2->x - li->v1->x, li->v2->y - li->v1->y);
 	}
 	Z_Free(data);
+#endif
 }
 
 //
@@ -233,6 +239,8 @@ void P_LoadSegsGL(int lump)
 //
 void P_LoadSubsectors(int lump)
 {
+#ifdef TODO_MAP_UPDATE
+
 	byte   *data;
 	int     i;
 	mapsubsector_t *ms;
@@ -253,6 +261,7 @@ void P_LoadSubsectors(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -260,6 +269,7 @@ void P_LoadSubsectors(int lump)
 //
 void P_LoadSectors(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	mapsector_t *ms;
@@ -286,6 +296,7 @@ void P_LoadSectors(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -293,6 +304,7 @@ void P_LoadSectors(int lump)
 //
 void P_LoadNodes(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	int     j;
@@ -322,6 +334,7 @@ void P_LoadNodes(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -329,6 +342,7 @@ void P_LoadNodes(int lump)
 //
 void P_LoadThings(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	mapthing_t *mt;
@@ -376,6 +390,7 @@ void P_LoadThings(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -384,6 +399,7 @@ void P_LoadThings(int lump)
 //
 void P_LoadLineDefs(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i;
 	maplinedef_t *mld;
@@ -457,6 +473,7 @@ void P_LoadLineDefs(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -464,6 +481,7 @@ void P_LoadLineDefs(int lump)
 //
 void P_LoadSideDefs(int lump)
 {
+#ifdef TODO_MAP_UPDATE
 	byte   *data;
 	int     i, index;
 	mapsidedef_t *msd;
@@ -490,6 +508,7 @@ void P_LoadSideDefs(int lump)
 	}
 
 	Z_Free(data);
+#endif
 }
 
 //
@@ -499,6 +518,7 @@ void P_LoadSideDefs(int lump)
 //
 void P_GroupLines(void)
 {
+#ifdef TODO_MAP_UPDATE
 	line_t **linebuffer;
 	int     i;
 	int     j;
@@ -585,7 +605,7 @@ void P_GroupLines(void)
 		block = block < 0 ? 0 : block;
 		sector->blockbox[BOXLEFT] = block;
 	}
-
+#endif
 }
 
 //===========================================================================
@@ -738,6 +758,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 	// Adjust slime lower wall textures (a hack!).
 	// This will hide the ugly green bright line that would otherwise be
 	// visible due to texture repeating and interpolation.
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < numlines; i++)
 	{
 		int     k;
@@ -752,7 +773,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 					sdef->rowoffset += FRACUNIT;
 			}
 	}
-
+#endif
 	// Someone may want to do something special now that the level has been
 	// fully set up.
 	R_SetupLevel(levelId, DDSLF_FINALIZE);

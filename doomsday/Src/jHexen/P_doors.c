@@ -29,6 +29,7 @@
 //==================================================================
 void T_VerticalDoor(vldoor_t * door)
 {
+#ifdef TODO_MAP_UPDATE
 	result_e res;
 
 	switch (door->direction)
@@ -123,6 +124,7 @@ void T_VerticalDoor(vldoor_t * door)
 		}
 		break;
 	}
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -146,16 +148,20 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 	retcode = 0;
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATe
 		sec = &sectors[secnum];
 		if(sec->specialdata)
 		{
 			continue;
 		}
+#endif
 		// Add new door thinker
 		retcode = 1;
 		door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 		P_AddThinker(&door->thinker);
+#ifdef TODO_MAP_UPDATE
 		sec->specialdata = door;
+#endif
 		door->thinker.function = T_VerticalDoor;
 		door->sector = sec;
 		switch (type)
@@ -166,7 +172,9 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 			door->direction = -1;
 			break;
 		case DREV_CLOSE30THENOPEN:
+#ifdef TODO_MAP_UPDATE
 			door->topheight = sec->ceilingheight;
+#endif
 			door->direction = -1;
 			break;
 		case DREV_NORMAL:
@@ -181,8 +189,10 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 		door->type = type;
 		door->speed = speed;
 		door->topwait = args[2];	// line->arg3
+#ifdef TODO_MAP_UPDATE
 		SN_StartSequence((mobj_t *) &door->sector->soundorg,
 						 SEQ_DOOR_STONE + door->sector->seqType);
+#endif
 	}
 	return (retcode);
 }
@@ -202,6 +212,7 @@ boolean EV_VerticalDoor(line_t *line, mobj_t *thing)
 	side = 0;					// only front sides can be used
 
 	// if the sector has an active thinker, use it
+#ifdef TODO_MAP_UPDATE
 	sec = sides[line->sidenum[side ^ 1]].sector;
 	secnum = sec - sectors;
 	if(sec->specialdata)
@@ -228,15 +239,19 @@ boolean EV_VerticalDoor(line_t *line, mobj_t *thing)
 		   }
 		 */
 	}
+#endif
 	//
 	// new door thinker
 	//
 	door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 	P_AddThinker(&door->thinker);
+#ifdef TODO_MAP_UPDATE
 	sec->specialdata = door;
+#endif
 	door->thinker.function = T_VerticalDoor;
 	door->sector = sec;
 	door->direction = 1;
+#ifdef TODO_MAP_UPDATE
 	switch (line->special)
 	{
 	case 11:
@@ -253,14 +268,17 @@ boolean EV_VerticalDoor(line_t *line, mobj_t *thing)
 	}
 	door->speed = line->arg2 * (FRACUNIT / 8);
 	door->topwait = line->arg3;
+#endif
 
 	//
 	// find the top and bottom of the movement range
 	//
 	door->topheight = P_FindLowestCeilingSurrounding(sec);
 	door->topheight -= 4 * FRACUNIT;
+#ifdef TODO_MAP_UPDATE
 	SN_StartSequence((mobj_t *) &door->sector->soundorg,
 					 SEQ_DOOR_STONE + door->sector->seqType);
+#endif
 	return true;
 }
 

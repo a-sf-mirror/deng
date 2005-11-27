@@ -21,6 +21,7 @@
 
 void T_Light(light_t * light)
 {
+#ifdef TODO_MAP_UPDATE
 	if(light->count)
 	{
 		light->count--;
@@ -93,6 +94,7 @@ void T_Light(light_t * light)
 	default:
 		break;
 	}
+#endif
 }
 
 //============================================================================
@@ -126,13 +128,16 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 	while((secNum = P_FindSectorFromTag(arg[0], secNum)) >= 0)
 	{
 		think = false;
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secNum];
+#endif
 
 		light = (light_t *) Z_Malloc(sizeof(light_t), PU_LEVSPEC, 0);
 		light->type = type;
 		light->sector = sec;
 		light->count = 0;
 		rtn = true;
+#ifdef TODO_MAP_UPDATE
 		switch (type)
 		{
 		case LITE_RAISEBYVALUE:
@@ -207,6 +212,7 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 			rtn = false;
 			break;
 		}
+#endif
 		if(think)
 		{
 			P_AddThinker(&light->thinker);
@@ -239,8 +245,10 @@ int     PhaseTable[64] = {
 
 void T_Phase(phase_t * phase)
 {
+#ifdef TODO_MAP_UPDATE
 	phase->index = (phase->index + 1) & 63;
 	phase->sector->lightlevel = phase->base + PhaseTable[phase->index];
+#endif
 }
 
 //==========================================================================
@@ -251,6 +259,7 @@ void T_Phase(phase_t * phase)
 
 void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 {
+#ifdef TODO_MAP_UPDATE
 	phase_t *phase;
 
 	phase = Z_Malloc(sizeof(*phase), PU_LEVSPEC, 0);
@@ -269,6 +278,7 @@ void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 	phase->thinker.function = T_Phase;
 
 	sector->special = 0;
+#endif
 }
 
 //==========================================================================
@@ -279,6 +289,7 @@ void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 
 void P_SpawnLightSequence(sector_t *sector, int indexStep)
 {
+#ifdef TODO_MAP_UPDATE
 	sector_t *sec;
 	sector_t *nextSec;
 	sector_t *tempSec;
@@ -348,4 +359,5 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
 		}
 		sec = nextSec;
 	} while(sec);
+#endif
 }

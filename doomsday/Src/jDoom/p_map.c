@@ -15,6 +15,40 @@
 // for more details.
 //
 // $Log$
+// Revision 1.14.2.2  2005/11/27 17:42:08  skyjake
+// Breaking everything with the new Map Update API (=DMU) (only declared, not
+// implemented yet)
+//
+// - jDoom and jHeretic do not compile
+// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
+// portions of code that would not compile
+// - none of the games work, because DMU has not been implemented or used in any
+// of the games
+//
+// Map data is now hidden from the games. The line_t, seg_t and structs are
+// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
+// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
+// parameters. There are multiple versions of each function so that using them is
+// more convenient in terms of data types.
+//
+// P_Callback can be used for having the engine call a callback function for each
+// of the selected map data objects.
+//
+// The API is not finalized yet.
+//
+// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
+// parameters.
+//
+// The games require map data in numerous places of the code. All of these should
+// be converted to work with DMU in the most sensible fashion (a direct
+// conversion may not always make the most sense). E.g., jHexen has
+// some private map data for sound playing, etc. The placement of this data is
+// not certain at the moment, but it can remain private to the games if
+// necessary.
+//
+// Games can build their own map changing routines on DMU as they see fit. The
+// engine will only provide a generic API, as defined in doomsday.h currently.
+//
 // Revision 1.14.2.1  2005/07/23 10:08:19  skyjake
 // Fixed pointer size assumptions (32-bit/64-bit)
 //
@@ -218,10 +252,12 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y)
 	numspechit = 0;
 
 	// stomp on any things contacted
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+#endif
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -525,10 +561,12 @@ boolean P_CheckSides(mobj_t* actor, int x, int y)
 
   // Determine which blocks to look in for blocking lines
 
+#ifdef TODO_MAP_UPDATE
   xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
   xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
   yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
   yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+#endif
 
   // xl->xh, yl->yh determine the mapblock set to search
 
@@ -619,10 +657,12 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	// because mobj_ts are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+#endif
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -630,10 +670,12 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 				return false;
 
 	// check lines
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+#endif
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -788,8 +830,10 @@ ret_stuck_test:
 			oldside = P_PointOnLineSide(oldx, oldy, ld);
 			if(side != oldside)
 			{
+#ifdef TODO_MAP_UPDATE
 				if(ld->special)
 					P_CrossSpecialLine(ld - lines, oldside, thing);
+#endif
 			}
 		}
 	}
@@ -1581,10 +1625,12 @@ void P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage)
 	fixed_t dist;
 
 	dist = (damage + MAXRADIUS) << FRACBITS;
+#ifdef TODO_MAP_UPDATE
 	yh = (spot->y + dist - bmaporgy) >> MAPBLOCKSHIFT;
 	yl = (spot->y - dist - bmaporgy) >> MAPBLOCKSHIFT;
 	xh = (spot->x + dist - bmaporgx) >> MAPBLOCKSHIFT;
 	xl = (spot->x - dist - bmaporgx) >> MAPBLOCKSHIFT;
+#endif
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;

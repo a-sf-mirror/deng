@@ -119,6 +119,7 @@ void SetGameImports(game_import_t * imp)
 	imp->bottomslope = &bottomslope;
 	imp->thinkercap = &thinkercap;
 
+/*
 	imp->numvertexes = &numvertexes;
 	imp->numsegs = &numsegs;
 	imp->numsectors = &numsectors;
@@ -145,6 +146,7 @@ void SetGameImports(game_import_t * imp)
 	imp->polyblockmap = (void ***) &polyblockmap;
 	imp->polyobjs = (void **) &polyobjs;
 	imp->numpolyobjs = &po_NumPolyobjs;
+*/
 }
 
 void DD_InitAPI(void)

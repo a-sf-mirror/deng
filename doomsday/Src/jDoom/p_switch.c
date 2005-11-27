@@ -16,6 +16,40 @@
 //
 //
 // $Log$
+// Revision 1.9.2.1  2005/11/27 17:42:08  skyjake
+// Breaking everything with the new Map Update API (=DMU) (only declared, not
+// implemented yet)
+//
+// - jDoom and jHeretic do not compile
+// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
+// portions of code that would not compile
+// - none of the games work, because DMU has not been implemented or used in any
+// of the games
+//
+// Map data is now hidden from the games. The line_t, seg_t and structs are
+// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
+// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
+// parameters. There are multiple versions of each function so that using them is
+// more convenient in terms of data types.
+//
+// P_Callback can be used for having the engine call a callback function for each
+// of the selected map data objects.
+//
+// The API is not finalized yet.
+//
+// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
+// parameters.
+//
+// The games require map data in numerous places of the code. All of these should
+// be converted to work with DMU in the most sensible fashion (a direct
+// conversion may not always make the most sense). E.g., jHexen has
+// some private map data for sound playing, etc. The placement of this data is
+// not certain at the moment, but it can remain private to the games if
+// necessary.
+//
+// Games can build their own map changing routines on DMU as they see fit. The
+// engine will only provide a generic API, as defined in doomsday.h currently.
+//
 // Revision 1.9  2005/01/01 22:58:52  skyjake
 // Resolved a bunch of compiler warnings
 //
@@ -218,9 +252,11 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 	if(!useAgain)
 		line->special = 0;
 
+#ifdef TODO_MAP_UPDATE
 	texTop = sides[line->sidenum[0]].toptexture;
 	texMid = sides[line->sidenum[0]].midtexture;
 	texBot = sides[line->sidenum[0]].bottomtexture;
+#endif
 
 	sound = sfx_swtchn;
 
@@ -236,7 +272,9 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 		if(switchlist[i] == texTop)
 		{
 			S_StartSound(sound, buttonlist->soundorg);
+#ifdef TODO_MAP_UPDATE
 			sides[line->sidenum[0]].toptexture = switchlist[i ^ 1];
+#endif
 			//gi.Sv_TextureChanges(line->sidenum[0], DDWU_TOP);
 
 			if(useAgain)
@@ -249,7 +287,9 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 			if(switchlist[i] == texMid)
 			{
 				S_StartSound(sound, buttonlist->soundorg);
+#ifdef TODO_MAP_UPDATE
 				sides[line->sidenum[0]].midtexture = switchlist[i ^ 1];
+#endif
 				//gi.Sv_TextureChanges(line->sidenum[0], DDWU_MID);
 
 				if(useAgain)
@@ -262,7 +302,9 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
 				if(switchlist[i] == texBot)
 				{
 					S_StartSound(sound, buttonlist->soundorg);
+#ifdef TODO_MAP_UPDATE
 					sides[line->sidenum[0]].bottomtexture = switchlist[i ^ 1];
+#endif
 					//gi.Sv_TextureChanges(line->sidenum[0], DDWU_BOTTOM);
 
 					if(useAgain)

@@ -161,6 +161,7 @@ void P_InitTerrainTypes(void)
 //==================================================================
 sector_t *getNextSector(line_t *line, sector_t *sec)
 {
+#ifdef TODO_MAP_UPDATE
 	if(!(line->flags & ML_TWOSIDED))
 		return NULL;
 
@@ -168,6 +169,7 @@ sector_t *getNextSector(line_t *line, sector_t *sec)
 		return line->backsector;
 
 	return line->frontsector;
+#endif
 }
 
 //==================================================================
@@ -180,6 +182,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 	int     i;
 	line_t *check;
 	sector_t *other;
+#ifdef TODO_MAP_UPDATE
 	fixed_t floor = sec->floorheight;
 
 	for(i = 0; i < sec->linecount; i++)
@@ -192,6 +195,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 			floor = other->floorheight;
 	}
 	return floor;
+#endif
 }
 
 //==================================================================
@@ -201,6 +205,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
@@ -216,6 +221,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 			floor = other->floorheight;
 	}
 	return floor;
+#endif
 }
 
 //==================================================================
@@ -225,6 +231,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     h;
 	int     min;
@@ -252,6 +259,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 			min = heightlist[i];
 
 	return min;
+#endif
 }
 
 //==================================================================
@@ -261,6 +269,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 //==================================================================
 fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
@@ -276,6 +285,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 			height = other->ceilingheight;
 	}
 	return height;
+#endif
 }
 
 //==================================================================
@@ -285,6 +295,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
@@ -300,6 +311,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 			height = other->ceilingheight;
 	}
 	return height;
+#endif
 }
 
 //==================================================================
@@ -330,6 +342,7 @@ int P_FindSectorFromTag(int tag, int start)
 {
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = start + 1; i < numsectors; i++)
 	{
 		if(sectors[i].tag == tag)
@@ -337,6 +350,7 @@ int P_FindSectorFromTag(int tag, int start)
 			return i;
 		}
 	}
+#endif
 	return -1;
 }
 
@@ -387,7 +401,9 @@ boolean EV_SectorSoundChange(byte *args)
 	rtn = false;
 	while((secNum = P_FindSectorFromTag(args[0], secNum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sectors[secNum].seqType = args[1];
+#endif
 		rtn = true;
 	}
 	return rtn;
@@ -450,6 +466,7 @@ boolean EV_LineSearchForPuzzleItem(line_t *line, byte *args, mobj_t *mo)
 		type = arti - arti_firstpuzzitem;
 		if(type < 0)
 			continue;
+#ifdef TODO_MAP_UPDATE
 		if(type == line->arg1)
 		{
 			// A puzzle item was found for the line
@@ -472,6 +489,7 @@ boolean EV_LineSearchForPuzzleItem(line_t *line, byte *args, mobj_t *mo)
 				return true;
 			}
 		}
+#endif
 	}
 	return false;
 }
@@ -828,6 +846,7 @@ boolean P_ExecuteLineSpecial(int special, byte *args, line_t *line, int side,
 
 boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 {
+#ifdef TODO_MAP_UPDATE
 	int     lineActivation;
 	boolean repeat;
 	boolean buttonSuccess;
@@ -837,6 +856,7 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 	{
 		return false;
 	}
+
 	if(!mo->player && !(mo->flags & MF_MISSILE))
 	{
 		if(lineActivation != SPAC_MCROSS)
@@ -860,6 +880,7 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 	{
 		P_ChangeSwitchTexture(line, repeat);
 	}
+#endif
 	return true;
 }
 
@@ -873,6 +894,7 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 
 void P_PlayerInSpecialSector(player_t *player)
 {
+#ifdef TODO_MAP_UPDATE
 	sector_t *sector;
 	static int pushTab[3] = {
 		2048 * 5,
@@ -964,6 +986,7 @@ void P_PlayerInSpecialSector(player_t *player)
 		Con_Error("P_PlayerInSpecialSector: " "unknown special %i",
 				  sector->special);
 	}
+#endif
 }
 
 //============================================================================
@@ -974,11 +997,13 @@ void P_PlayerInSpecialSector(player_t *player)
 
 void P_PlayerOnSpecialFlat(player_t *player, int floorType)
 {
+#ifdef TODO_MAP_UPDATE
 	if(player->plr->mo->z		/*!= player->plr->mo->floorz */
 	   > player->plr->mo->subsector->sector->floorheight)
 	{							// Player is not touching the floor
 		return;
 	}
+#endif
 	switch (floorType)
 	{
 	case FLOOR_LAVA:
@@ -1013,6 +1038,7 @@ void P_UpdateSpecials(void)
 			{
 				switch (buttonlist[i].where)
 				{
+#ifdef TODO_MAP_UPDATE
 				case SWTCH_TOP:
 					sides[buttonlist[i].line->sidenum[0]].toptexture =
 						buttonlist[i].btexture;
@@ -1025,6 +1051,7 @@ void P_UpdateSpecials(void)
 					sides[buttonlist[i].line->sidenum[0]].bottomtexture =
 						buttonlist[i].btexture;
 					break;
+#endif
 				}
 				//S_StartSound(sfx_switch, (mobj_t *)&buttonlist[i].soundorg);
 				memset(&buttonlist[i], 0, sizeof(button_t));
@@ -1061,6 +1088,7 @@ void P_SpawnSpecials(void)
 	//
 	//      Init special SECTORs
 	//
+#ifdef TODO_MAP_UPDATE
 	sector = sectors;
 	for(i = 0; i < numsectors; i++, sector++)
 	{
@@ -1163,6 +1191,7 @@ void P_SpawnSpecials(void)
 	   // Initialize flat and texture animations
 	   P_InitFTAnims();
 	 */
+#endif
 }
 
 //==========================================================================

@@ -89,6 +89,7 @@ void R_SetViewSize(int blocks, int detail)
 
 void R_HandleSectorSpecials()
 {
+#ifdef TODO_MAP_UPDATE
 	sector_t *sect = sectors;
 	int     i, scrollOffset = leveltime >> 1 & 63;
 
@@ -145,6 +146,7 @@ void R_HandleSectorSpecials()
 			break;
 		}
 	}
+#endif
 }
 
 //==========================================================================
@@ -290,12 +292,14 @@ void G_Drawer(void)
 			GL_SetFilter(vplayer->plr->filter);	// $democam
 			// Check for the sector special 200: use sky2.
 			// I wonder where this is used?
+#ifdef TODO_MAP_UPDATE
 			if(vplayer->plr->mo->subsector->sector->special == 200)
 			{
 				special200 = true;
 				Rend_SkyParams(0, DD_DISABLE, 0);
 				Rend_SkyParams(1, DD_ENABLE, 0);
 			}
+#endif
 			// How about a bit of quake?
 			if(localQuakeHappening[displayplayer] && !paused)
 			{

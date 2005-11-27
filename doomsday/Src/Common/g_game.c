@@ -3813,9 +3813,10 @@ int CCmdSpawnMobj(int argc, char **argv)
 		z = ONCEILINGZ;
 	else
 	{
-		z = strtod(argv[4], 0) * FRACUNIT + R_PointInSubsector(x,
-															   y)->sector->
-			floorheight;
+#ifdef TODO_MAP_UPDATE
+		z = strtod(argv[4], 0) * FRACUNIT + 
+            R_PointInSubsector(x, y)->sector->floorheight;
+#endif
 	}
 
 	if((mo = P_SpawnMobj(x, y, z, type)) && argc == 6)

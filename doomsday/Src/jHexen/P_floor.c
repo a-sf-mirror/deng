@@ -34,6 +34,7 @@ extern fixed_t FloatBobOffsets[64];
 result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, int crush,
 					 int floorOrCeiling, int direction)
 {
+#ifdef TODO_MAP_UPDATE
 	boolean flag;
 	fixed_t lastpos;
 	fixed_t *ptarget = &sector->planes[floorOrCeiling].target;
@@ -186,6 +187,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, int crush,
 
 	}
 	return RES_OK;
+#endif
 }
 
 //==================================================================
@@ -195,6 +197,8 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, int crush,
 //==================================================================
 void T_MoveFloor(floormove_t * floor)
 {
+#ifdef TODO_MAP_UPDATE
+
 	result_e res;
 
 	if(floor->resetDelayCount)
@@ -276,6 +280,7 @@ void T_MoveFloor(floormove_t * floor)
 		P_TagFinished(floor->sector->tag);
 		P_RemoveThinker(&floor->thinker);
 	}
+#endif
 }
 
 //==================================================================
@@ -287,6 +292,7 @@ int EV_DoFloor(line_t *line, byte *args, floor_e floortype)
 {
 	int     secnum;
 	int     rtn;
+#ifdef TODO_MAP_UPDATE
 	sector_t *sec;
 	floormove_t *floor = NULL;
 
@@ -294,7 +300,9 @@ int EV_DoFloor(line_t *line, byte *args, floor_e floortype)
 	rtn = 0;
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
+#endif
 
 		//      ALREADY MOVING?  IF SO, KEEP GOING...
 		if(sec->specialdata)
@@ -404,6 +412,7 @@ int EV_DoFloor(line_t *line, byte *args, floor_e floortype)
 		SN_StartSequence((mobj_t *) &floor->sector->soundorg,
 						 SEQ_PLATFORM + floor->sector->seqType);
 	}
+#endif
 	return rtn;
 }
 
@@ -425,8 +434,10 @@ int EV_DoFloorAndCeiling(line_t *line, byte *args, boolean raise)
 		secnum = -1;
 		while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 		{
+#ifdef TODO_MAP_UPDATE
 			sec = &sectors[secnum];
 			sec->specialdata = NULL;
+#endif
 		}
 		ceiling = EV_DoCeiling(line, args, CLEV_RAISEBYVALUE);
 	}
@@ -436,8 +447,10 @@ int EV_DoFloorAndCeiling(line_t *line, byte *args, boolean raise)
 		secnum = -1;
 		while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 		{
+#ifdef TODO_MAP_UPDATE
 			sec = &sectors[secnum];
 			sec->specialdata = NULL;
+#endif
 		}
 		ceiling = EV_DoCeiling(line, args, CLEV_LOWERBYVALUE);
 	}
@@ -517,6 +530,7 @@ static sector_t *DequeueStairSector(int *type, int *height)
 static void ProcessStairSector(sector_t *sec, int type, int height,
 							   stairs_e stairsType, int delay, int resetDelay)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	sector_t *tsec;
 	floormove_t *floor;
@@ -596,6 +610,7 @@ static void ProcessStairSector(sector_t *sec, int type, int height,
 			//tsec->special = 0;
 		}
 	}
+#endif
 }
 
 //==================================================================
@@ -616,6 +631,7 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 	sector_t *sec;
 	sector_t *qSec;
 	int     type;
+#ifdef TODO_MAP_UPDATE
 
 	// Set global stairs variables
 	TextureChange = 0;
@@ -638,6 +654,7 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 	Validcount++;
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
 
 		Texture = sec->floorpic;
@@ -646,6 +663,7 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 		// ALREADY MOVING?  IF SO, KEEP GOING...
 		if(sec->specialdata)
 			continue;
+#endif
 
 		QueueStairSector(sec, 0, sec->floorheight);
 		sec->special = 0;
@@ -654,6 +672,7 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 	{
 		ProcessStairSector(qSec, type, height, stairsType, delay, resetDelay);
 	}
+#endif
 	return (1);
 }
 
@@ -665,6 +684,7 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 
 void T_BuildPillar(pillar_t * pillar)
 {
+#ifdef TODO_MAP_UPDATE
 	result_e res1;
 	result_e res2;
 
@@ -681,6 +701,7 @@ void T_BuildPillar(pillar_t * pillar)
 		P_TagFinished(pillar->sector->tag);
 		P_RemoveThinker(&pillar->thinker);
 	}
+#endif
 }
 
 //=========================================================================
@@ -691,6 +712,7 @@ void T_BuildPillar(pillar_t * pillar)
 
 int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 {
+#ifdef TODO_MAP_UPDATE
 	int     secnum;
 	sector_t *sec;
 	pillar_t *pillar;
@@ -701,6 +723,7 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 	secnum = -1;
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
 		if(sec->specialdata)
 			continue;			// already moving
@@ -708,6 +731,7 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 		{						// pillar is already closed
 			continue;
 		}
+#endif
 		rtn = 1;
 		if(!args[2])
 		{
@@ -754,6 +778,7 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 						 SEQ_PLATFORM + pillar->sector->seqType);
 	}
 	return rtn;
+#endif
 }
 
 //=========================================================================
@@ -764,6 +789,7 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 
 int EV_OpenPillar(line_t *line, byte *args)
 {
+#ifdef TODO_MAP_UPDATE
 	int     secnum;
 	sector_t *sec;
 	pillar_t *pillar;
@@ -824,6 +850,7 @@ int EV_OpenPillar(line_t *line, byte *args)
 						 SEQ_PLATFORM + pillar->sector->seqType);
 	}
 	return rtn;
+#endif
 }
 
 //=========================================================================
@@ -834,6 +861,7 @@ int EV_OpenPillar(line_t *line, byte *args)
 
 int EV_FloorCrushStop(line_t *line, byte *args)
 {
+#ifdef TODO_MAP_UPDATE
 	thinker_t *think;
 	floormove_t *floor;
 	boolean rtn;
@@ -859,6 +887,7 @@ int EV_FloorCrushStop(line_t *line, byte *args)
 		rtn = 1;
 	}
 	return rtn;
+#endif
 }
 
 //==========================================================================
@@ -873,6 +902,7 @@ int EV_FloorCrushStop(line_t *line, byte *args)
 
 void T_FloorWaggle(floorWaggle_t * waggle)
 {
+#ifdef TODO_MAP_UPDATE
 	switch (waggle->state)
 	{
 	case WGLSTATE_EXPAND:
@@ -910,6 +940,7 @@ void T_FloorWaggle(floorWaggle_t * waggle)
 				 waggle->scale);
 	waggle->sector->planes[PLN_FLOOR].speed = 0;
 	P_ChangeSector(waggle->sector, true);
+#endif
 }
 
 //==========================================================================
@@ -925,16 +956,20 @@ boolean EV_StartFloorWaggle(int tag, int height, int speed, int offset,
 	sector_t *sector;
 	floorWaggle_t *waggle;
 	boolean retCode;
+#ifdef TODO_MAP_UPDATE
 
 	retCode = false;
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-		sector = &sectors[sectorIndex];
+#ifdef TODO_MAP_UPDATE
+        sector = &sectors[sectorIndex];
 		if(sector->specialdata)
 		{						// Already busy with another thinker
 			continue;
 		}
+#endif
+
 		retCode = true;
 		waggle = Z_Malloc(sizeof(*waggle), PU_LEVSPEC, 0);
 		sector->specialdata = waggle;
@@ -951,5 +986,6 @@ boolean EV_StartFloorWaggle(int tag, int height, int speed, int offset,
 		waggle->state = WGLSTATE_EXPAND;
 		P_AddThinker(&waggle->thinker);
 	}
+#endif
 	return retCode;
 }

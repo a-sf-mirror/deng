@@ -15,6 +15,40 @@
 // for more details.
 //
 // $Log$
+// Revision 1.7.2.1  2005/11/27 17:42:08  skyjake
+// Breaking everything with the new Map Update API (=DMU) (only declared, not
+// implemented yet)
+//
+// - jDoom and jHeretic do not compile
+// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
+// portions of code that would not compile
+// - none of the games work, because DMU has not been implemented or used in any
+// of the games
+//
+// Map data is now hidden from the games. The line_t, seg_t and structs are
+// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
+// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
+// parameters. There are multiple versions of each function so that using them is
+// more convenient in terms of data types.
+//
+// P_Callback can be used for having the engine call a callback function for each
+// of the selected map data objects.
+//
+// The API is not finalized yet.
+//
+// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
+// parameters.
+//
+// The games require map data in numerous places of the code. All of these should
+// be converted to work with DMU in the most sensible fashion (a direct
+// conversion may not always make the most sense). E.g., jHexen has
+// some private map data for sound playing, etc. The placement of this data is
+// not certain at the moment, but it can remain private to the games if
+// necessary.
+//
+// Games can build their own map changing routines on DMU as they see fit. The
+// engine will only provide a generic API, as defined in doomsday.h currently.
+//
 // Revision 1.7  2005/01/01 22:58:52  skyjake
 // Resolved a bunch of compiler warnings
 //
@@ -221,7 +255,9 @@ void EV_StartLightStrobing(line_t *line)
 	secnum = -1;
 	while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		sec = &sectors[secnum];
+#endif
 		if(sec->specialdata)
 			continue;
 
@@ -241,6 +277,7 @@ void EV_TurnTagLightsOff(line_t *line)
 	sector_t *tsec;
 	line_t *templine;
 
+#ifdef TODO_MAP_UPDATE
 	sector = sectors;
 
 	for(j = 0; j < numsectors; j++, sector++)
@@ -261,6 +298,7 @@ void EV_TurnTagLightsOff(line_t *line)
 			//gi.Sv_LightReport(sector);
 		}
 	}
+#endif
 }
 
 //
@@ -274,6 +312,7 @@ void EV_LightTurnOn(line_t *line, int bright)
 	sector_t *temp;
 	line_t *templine;
 
+#ifdef TODO_MAP_UPDATE
 	sector = sectors;
 
 	for(i = 0; i < numsectors; i++, sector++)
@@ -301,6 +340,7 @@ void EV_LightTurnOn(line_t *line, int bright)
 			//gi.Sv_LightReport(sector);
 		}
 	}
+#endif
 }
 
 //

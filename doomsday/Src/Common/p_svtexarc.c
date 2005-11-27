@@ -103,6 +103,7 @@ void SV_InitTextureArchives(void)
 
 	// Init flats.
 	flat_archive.count = 0;
+#ifdef TODO_MAP_UPDATE
 	for(sect = sectors, i = 0; i < numsectors; i++, sect++)
 	{
 		SV_PrepareTexture(sect->floorpic, true, &flat_archive);
@@ -116,6 +117,7 @@ void SV_InitTextureArchives(void)
 		SV_PrepareTexture(sid->toptexture, false, &tex_archive);
 		SV_PrepareTexture(sid->bottomtexture, false, &tex_archive);
 	}
+#endif
 }
 
 //==========================================================================

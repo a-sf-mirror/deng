@@ -789,6 +789,7 @@ game_export_t *GetGameAPI(game_import_t * imports)
 
 	// Data structure sizes.
 	gx.ticcmd_size = sizeof(ticcmd_t);
+    /*
 	gx.vertex_size = sizeof(vertex_t);
 	gx.seg_size = sizeof(seg_t);
 	gx.sector_size = sizeof(sector_t);
@@ -796,6 +797,7 @@ game_export_t *GetGameAPI(game_import_t * imports)
 	gx.node_size = sizeof(node_t);
 	gx.line_size = sizeof(line_t);
 	gx.side_size = sizeof(side_t);
+    */
 
 	return &gx;
 }

@@ -425,7 +425,9 @@ void P_XYMovement(mobj_t *mo)
 		}
 		return;
 	}
+#ifdef TODO_MAP_UPDATE
 	special = mo->subsector->sector->special;
+#endif
 	if(mo->flags2 & MF2_WINDTHRUST)
 	{
 		switch (special)
@@ -621,8 +623,10 @@ void P_XYMovement(mobj_t *mo)
 				}
 			  explode:
 				// Explode a missile
+#ifdef TODO_MAP_UPDATE
 				if(ceilingline && ceilingline->backsector &&
 				   ceilingline->backsector->ceilingpic == skyflatnum)
+#endif
 				{				// Hack to prevent missiles exploding against the sky
 					if(mo->type == MT_BLOODYSKULL)
 					{
@@ -676,10 +680,12 @@ void P_XYMovement(mobj_t *mo)
 		if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
 		   mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
 		{
+#ifdef TODO_MAP_UPDATE
 			if(mo->floorz != mo->subsector->sector->floorheight)
 			{
 				return;
 			}
+#endif
 		}
 	}
 	if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED
@@ -947,7 +953,9 @@ void P_ZMovement(mobj_t *mo)
 			{
 				return;
 			}
+#ifdef TODO_MAP_UPDATE
 			if(mo->subsector->sector->ceilingpic == skyflatnum)
+#endif
 			{
 				if(mo->type == MT_BLOODYSKULL)
 				{
@@ -1362,6 +1370,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	// Set subsector and/or block links.
 	P_SetThingPosition(mobj);
+#ifdef TODO_MAP_UPDATE
 	mobj->floorz = mobj->subsector->sector->floorheight;
 	mobj->ceilingz = mobj->subsector->sector->ceilingheight;
 	if(z == ONFLOORZ)
@@ -1404,6 +1413,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	{
 		mobj->floorclip = 0;
 	}
+#endif
 	return (mobj);
 }
 
@@ -1563,6 +1573,8 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum)
 
 void P_SpawnMapThing(mapthing_t * mthing)
 {
+#ifdef TODO_MAP_UPDATE
+
 	int     i;
 	unsigned int spawnMask;
 	mobj_t *mobj;
@@ -1814,6 +1826,7 @@ void P_SpawnMapThing(mapthing_t * mthing)
 		}
 		mobj->tics = -1;
 	}
+#endif
 }
 
 //==========================================================================
@@ -2067,7 +2080,9 @@ int P_GetThingFloorType(mobj_t *thing)
 	}
 	else
 	{
+#ifdef TODO_MAP_UPDATE
 		return (TerrainTypes[thing->subsector->sector->floorpic]);
+#endif
 	}
 	/*
 	   if(thing->subsector->sector->floorpic
@@ -2094,7 +2109,9 @@ int P_HitFloor(mobj_t *thing)
 	mobj_t *mo;
 	int     smallsplash = false;
 
+#ifdef TODO_MAP_UPDATE
 	if(thing->floorz != thing->subsector->sector->floorheight)
+#endif
 	{							// don't splash if landing on the edge above water/lava/etc....
 		return (FLOOR_SOLID);
 	}
@@ -2724,6 +2741,7 @@ mobj_t *P_SpawnKoraxMissile(fixed_t x, fixed_t y, fixed_t z, mobj_t *source,
 //==========================================================================
 void R_SetAllDoomsdayFlags(void)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i, Class;
 	sector_t *sec = sectors;
 	mobj_t *mo;
@@ -2812,4 +2830,5 @@ void R_SetAllDoomsdayFlags(void)
 			if(mo->type == MT_SHARDFX1)
 				mo->ddflags |= 2 << DDMF_LIGHTSCALESHIFT;
 		}
+#endif
 }

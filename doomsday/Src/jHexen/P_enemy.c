@@ -34,6 +34,7 @@ mobj_t *soundtarget;
 
 void P_RecursiveSound(sector_t *sec, int soundblocks)
 {
+#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
@@ -58,6 +59,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 		{						// Closed door
 			continue;
 		}
+#ifdef TODO_MAP_UPDATE
 		if(sides[check->sidenum[0]].sector == sec)
 		{
 			other = sides[check->sidenum[1]].sector;
@@ -66,6 +68,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 		{
 			other = sides[check->sidenum[0]].sector;
 		}
+#endif
 		if(check->flags & ML_SOUNDBLOCK)
 		{
 			if(!soundblocks)
@@ -78,6 +81,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 			P_RecursiveSound(other, soundblocks);
 		}
 	}
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -93,7 +97,9 @@ void P_NoiseAlert(mobj_t *target, mobj_t *emmiter)
 {
 	soundtarget = target;
 	Validcount++;
+#ifdef TODO_MAP_UPDATE
 	P_RecursiveSound(emmiter->subsector->sector, 0);
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -529,7 +535,9 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
 	{							// Single player game and player is dead, look for monsters
 		return (P_LookForMonsters(actor));
 	}
+#ifdef TODO_MAP_UPDATE
 	sector = actor->subsector->sector;
+#endif
 	c = 0;
 	stop = (actor->lastlook - 1) & 3;
 	for(;; actor->lastlook = (actor->lastlook + 1) & 3)
@@ -615,7 +623,9 @@ void C_DECL A_Look(mobj_t *actor)
 	mobj_t *targ;
 
 	actor->threshold = 0;		// any shot will wake up
+#ifdef TODO_MAP_UPDATE
 	targ = actor->subsector->sector->soundtarget;
+#endif
 	if(targ && (targ->flags & MF_SHOOTABLE))
 	{
 		actor->target = targ;
@@ -2058,16 +2068,20 @@ void C_DECL A_SerpentChase(mobj_t *actor)
 	//
 	oldX = actor->x;
 	oldY = actor->y;
+#ifdef TODO_MAP_UPDATE
 	oldFloor = actor->subsector->sector->floorpic;
+#endif
 	if(--actor->movecount < 0 || !P_Move(actor))
 	{
 		P_NewChaseDir(actor);
 	}
+#ifdef TODO_MAP_UPDATE
 	if(actor->subsector->sector->floorpic != oldFloor)
 	{
 		P_TryMove(actor, oldX, oldY);
 		P_NewChaseDir(actor);
 	}
+#endif
 
 	//
 	// make active sound

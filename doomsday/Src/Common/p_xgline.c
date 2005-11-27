@@ -222,7 +222,9 @@ void XL_SetLineType(line_t *line, int id)
 {
     if(XL_GetType(id))
     {
+#ifdef TODO_MAP_UPDATE
         XG_Dev("XL_SetLineType: Line %i, type %i.", line - lines, id);
+#endif
 
         line->special = id;
         // Allocate memory for the line type data.
@@ -239,7 +241,9 @@ void XL_SetLineType(line_t *line, int id)
     }
     else if(id)
     {
+#ifdef TODO_MAP_UPDATE
         XG_Dev("XL_SetLineType: Line %i, type %i NOT DEFINED.", line - lines, id);
+#endif
     }
 }
 
@@ -256,11 +260,13 @@ void XL_Init(void)
     if(IS_CLIENT)
         return;
 
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numlines; i++)
     {
         lines[i].xg = 0;
         XL_SetLineType(lines + i, lines[i].special);
     }
+#endif
 }
 
 /*
@@ -274,8 +280,11 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, long int data,
                                                   void *context))
 {
     int     i;
+#ifdef TODO_MAP_UPDATE
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XL_TraversePlanes: Line %i, ref (%i, %i)", line - lines, reftype, ref);
+#endif
 
     if(reftype == LPREF_NONE)
         return false;        // This is not a reference!
@@ -286,15 +295,19 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, long int data,
     if(reftype == LPREF_BACK_FLOOR)
         if(line->backsector)
             return func(line->backsector, false, data, context);
+#ifdef TODO_MAP_UPDATE
         else
             XG_Dev("XL_TraversePlanes: Line %i has no back sector!)", line - lines);
+#endif
     if(reftype == LPREF_MY_CEILING)
         return func(line->frontsector, true, data, context);
     if(reftype == LPREF_BACK_CEILING)
         if(line->backsector)
             return func(line->backsector, true, data, context);
+#ifdef TODO_MAP_UPDATE
         else
             XG_Dev("XL_TraversePlanes: Line %i has no back sector!)", line - lines);
+#endif
     if(reftype == LPREF_INDEX_FLOOR)
         return func(sectors + ref, false, data, context);
     if(reftype == LPREF_INDEX_CEILING)
@@ -335,6 +348,7 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, long int data,
                return false;
         }
     }
+#endif
     return true;
 }
 
@@ -346,6 +360,7 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, long int data,
                      void *context, int (*func) (line_t *line, long int data,
                                                  void *context))
 {
+#ifdef TODO_MAP_UPDATE
     int    i;
     int    reftype = rtype;
 
@@ -393,6 +408,7 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, long int data,
                     return false;
     }
     return true;
+#endif
 }
 
 /*
@@ -472,9 +488,11 @@ int XLTrav_ChangeWallTexture(line_t *line, long int data, void *context)
     if(line->sidenum[info->iparm[2]] < 0)
         return true;
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XLTrav_ChangeWallTexture: Line %i", line - lines);
 
     side = sides + line->sidenum[info->iparm[2]];
+#endif
 
     if(info->iparm[3])
         XL_ChangeTexture(line, info->iparm[2], LWS_UPPER, info->iparm[3]);
@@ -724,12 +742,14 @@ void XL_SwapSwitchTextures(line_t *line, int snum)
     if(sidenum < 0)
         return;
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XL_SwapSwitchTextures: Line %i, side %i", line - lines, sidenum);
 
     side = sides + sidenum;
     XL_SwitchSwap(&side->midtexture);
     XL_SwitchSwap(&side->toptexture);
     XL_SwitchSwap(&side->bottomtexture);
+#endif
 }
 
 /*
@@ -737,6 +757,7 @@ void XL_SwapSwitchTextures(line_t *line, int snum)
  */
 void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture)
 {
+#ifdef TODO_MAP_UPDATE
     side_t *side = sides + line->sidenum[sidenum];
 
     if(line->sidenum[sidenum] < 0)
@@ -751,6 +772,7 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture)
         side->toptexture = texture;
     if(section == LWS_LOWER)
         side->bottomtexture = texture;
+#endif
 }
 
 /*
@@ -759,6 +781,7 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture)
 void XL_DoFunction(linetype_t * info, line_t *line, int sidenum,
                    mobj_t *act_thing)
 {
+#ifdef TODO_MAP_UPDATE
     xgline_t *xg = line->xg;
     player_t *activator = act_thing->player;
     int    i;
@@ -998,6 +1021,7 @@ void XL_DoFunction(linetype_t * info, line_t *line, int sidenum,
                           info, XSTrav_MimicSector);
         break;
     }
+#endif
 }
 
 void XL_Message(mobj_t *act, char *msg, boolean global)
@@ -1049,8 +1073,10 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
     //      player_t *activator = activator_thing->player;
     degenmobj_t *soundorg;
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XL_ActivateLine: %s line %i, side %i",
            activating ? "Activating" : "Deactivating", line - lines, sidenum);
+#endif
 
     if(xg->disabled)
     {
@@ -1129,6 +1155,7 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
 
     // Should we apply the function of the line? Functions are defined by
     // the class of the line type.
+#ifdef TODO_MAP_UPDATE
     if(((activating && info->flags2 & LTF2_WHEN_ACTIVATED) ||
         (!activating && info->flags2 & LTF2_WHEN_DEACTIVATED)))
     {
@@ -1144,6 +1171,7 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
         else
             XG_Dev("  Line %i does nothing when deactivated", line - lines);
     }
+#endif
 }
 
 /*
@@ -1209,8 +1237,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     if(IS_CLIENT)
         return false;
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XL_LineEvent: %s line %i, side %i (chained type %i)",
            EVTYPESTR(evtype), line - lines, sidenum, linetype);
+#endif
 
     if(xg->disabled)
     {
@@ -1231,8 +1261,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(XL_LineEvent(evtype, info->ev_chain, line, sidenum, data))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Event %s, line %i, side %i OVERRIDDEN BY EVENT CHAIN %i",
                    EVTYPESTR(evtype), line - lines, sidenum, info->ev_chain);
+#endif
             return true;
         }
     }
@@ -1243,8 +1275,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
        (!active && info->act_type == LTACT_COUNTED_ON))
     {
         // Can't be processed at this time.
+#ifdef TODO_MAP_UPDATE
         XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", line - lines,
                active, info->act_type);
+#endif
         return false;
     }
     // Check the type of the event vs. the requirements of the line.
@@ -1296,8 +1330,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         goto type_passes;
 
     // Type doesn't pass, sorry.
+#ifdef TODO_MAP_UPDATE
     XG_Dev("  Line %i: ACT REQUIREMENTS NOT FULFILLED, ABORTING EVENT",
            line - lines);
+#endif
     return false;
 
   type_passes:
@@ -1307,8 +1343,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Non-players can't use this line if line is flagged secret.
         if(evtype == XLE_USE && !activator && line->flags & ML_SECRET)
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to no_other_use_secret",
                    line - lines);
+#endif
             return false;
         }
     }
@@ -1322,8 +1360,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Check the activator's type.
         if(!activator_thing || activator_thing->type != info->aparm[9])
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to activator type",
                line - lines);
+#endif
             return false;
         }
     }
@@ -1333,8 +1373,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Only allow (de)activation from the front side.
         if(sidenum != 0)
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to line side test",
                    line - lines);
+#endif
             return false;
         }
     }
@@ -1342,7 +1384,9 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     // Check counting.
     if(!info->act_count)
     {
+#ifdef TODO_MAP_UPDATE
         XG_Dev("  Line %i: ABORTING EVENT due to Count = 0", line - lines);
+#endif        
         return false;
     }
 
@@ -1362,15 +1406,19 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     if(info->flags2 & LTF2_LINE_ACTIVE)
         if(!XL_CheckLineStatus(line, info->aparm[4], info->aparm[5], true))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to line_active test",
                    line - lines);
+#endif
             return false;
         }
     if(info->flags2 & LTF2_LINE_INACTIVE)
         if(!XL_CheckLineStatus(line, info->aparm[6], info->aparm[7], false))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to line_inactive test",
                    line - lines);
+#endif
             return false;
         }
     // Check game mode.
@@ -1378,8 +1426,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(!(info->flags2 & (LTF2_COOPERATIVE | LTF2_DEATHMATCH)))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to netgame mode",
                    line - lines);
+#endif
             return false;
         }
     }
@@ -1387,8 +1437,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(!(info->flags2 & LTF2_SINGLEPLAYER))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to game mode (1p)",
                    line - lines);
+#endif
             return false;
         }
     }
@@ -1402,8 +1454,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     i <<= LTF2_SKILL_SHIFT;
     if(!(info->flags2 & i))
     {
+#ifdef TODO_MAP_UPDATE
         XG_Dev("  Line %i: ABORTING EVENT due to skill level (%i)",
                line - lines, gameskill);
+#endif
         return false;
     }
     // Check activator color.
@@ -1413,8 +1467,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
             return false;
         if(cfg.PlayerColor[activator - players] != info->aparm[8])
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to activator color (%i)",
                    line - lines, cfg.PlayerColor[activator - players]);
+#endif
             return false;
         }
     }
@@ -1426,15 +1482,19 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Check keys.
         if(!activator)
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to missing key "
                    "(no activator)", line - lines);
+#endif
             return false;
         }
         // Check that all the flagged keys are present.
         if(!XL_CheckKeys(activator_thing, info->flags2))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("  Line %i: ABORTING EVENT due to missing key",
                    line - lines);
+#endif
             return false;		// Keys missing!
         }
     }
@@ -1445,8 +1505,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Decrement counter.
         info->act_count--;
 
+#ifdef TODO_MAP_UPDATE
         XG_Dev("  Line %i: Decrementing counter, now %i", line - lines,
                info->act_count);
+#endif
     }
     XL_ActivateLine(!active, info, line, sidenum, activator_thing);
     return true;
@@ -1494,8 +1556,10 @@ void XL_DoChain(line_t *line, int chain, boolean activating, mobj_t *act_thing)
     line_t  dummy;
     xgline_t dummyxg;
 
+#ifdef TODO_MAP_UPDATE
     XG_Dev("XL_DoChain: Line %i, chained type %i", line - lines, chain);
     XG_Dev("  (dummy line will show up as %i)", &dummy - lines);
+#endif
 
     // We'll use a dummy line for the chain.
     memcpy(&dummy, line, sizeof(*line));
@@ -1529,7 +1593,9 @@ void XL_ChainSequenceThink(line_t *line)
     // If the counter goes to zero, it's time to execute the chain.
     if(xg->chtimer < 0)
     {
+#ifdef TODO_MAP_UPDATE
         XG_Dev("XL_ChainSequenceThink: Line %i, executing...", line - lines);
+#endif
 
         // Are there any more chains?
         if(xg->chidx < DDLT_MAX_PARAMS && info->iparm[xg->chidx])
@@ -1615,8 +1681,10 @@ void XL_Think(line_t *line)
     {
         if(info->act_time >= 0 && xg->timer > FLT2TIC(info->act_time))
         {
+#ifdef TODO_MAP_UPDATE
             XG_Dev("XL_Think: Line %i, timed to go %s", line - lines,
                     xg->active ? "INACTIVE" : "ACTIVE");
+#endif
 
             // Swap line state without any checks.
             XL_ActivateLine(!xg->active, info, line, 0, &dummything);
@@ -1637,9 +1705,11 @@ void XL_Think(line_t *line)
         {
             if(line->sidenum[i] < 0)
                 continue;
+#ifdef TODO_MAP_UPDATE
             sid = sides + line->sidenum[i];
             sid->textureoffset += xoff;
             sid->rowoffset += yoff;
+#endif
         }
     }
 }
@@ -1651,12 +1721,14 @@ void XL_Think(line_t *line)
 {
     int     i;
 
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numlines; i++)
     {
         if(!lines[i].xg)
             continue;        // Not an extended line.
         XL_Think(lines + i);
     }
+#endif
 }
 
 /*
@@ -1669,10 +1741,12 @@ void XL_Update(void)
     int     i;
 
     // It's all PU_LEVEL memory, so we can just lose it.
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numlines; i++)
         if(lines[i].xg)
         {
             lines[i].xg = NULL;
             lines[i].special = 0;
         }
+#endif
 }

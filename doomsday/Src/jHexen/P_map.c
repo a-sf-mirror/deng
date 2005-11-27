@@ -181,9 +181,11 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y)
 	// the base floor / ceiling is from the subsector that contains the
 	// point.  Any contacted lines the step closer together will adjust them
 	//
+#ifdef TODO_MAP_UPDATE
 	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
 	tmceilingz = newsubsec->sector->ceilingheight;
 	tmfloorpic = newsubsec->sector->floorpic;
+#endif
 
 	Validcount++;
 	numspechit = 0;
@@ -191,10 +193,12 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y)
 	//
 	// stomp on any things contacted
 	//
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+#endif
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -250,11 +254,12 @@ void PIT_ThrustSpike(mobj_t *actor)
 	y0 = actor->y - actor->info->radius;
 	y2 = actor->y + actor->info->radius;
 
+#ifdef TODO_MAP_UPDATE
 	xl = (x0 - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (x2 - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (y0 - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (y2 - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
-
+#endif
 	// stomp on any things contacted
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -280,6 +285,7 @@ void PIT_ThrustSpike(mobj_t *actor)
 
 boolean PIT_CheckLine(line_t *ld, void *data)
 {
+#ifdef TODO_MAP_UPDATE
 	if(tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
 	   tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
 	   tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
@@ -352,6 +358,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
 		spechit[numspechit] = ld;
 		numspechit++;
 	}
+#endif
 	return (true);
 }
 
@@ -826,9 +833,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	// the base floor / ceiling is from the subsector that contains the
 	// point.  Any contacted lines the step closer together will adjust them
 	//
+#ifdef TODO_MAP_UPDATE
 	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
 	tmceilingz = newsubsec->sector->ceilingheight;
 	tmfloorpic = newsubsec->sector->floorpic;
+#endif
 
 	Validcount++;
 	numspechit = 0;
@@ -844,11 +853,12 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	// into mapblocks based on their origin point, and can overlap into adjacent
 	// blocks by up to MAXRADIUS units
 	//
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
-
+#endif
 	// The camera goes through all objects -- jk
 	if(thing->type != MT_CAMERA)
 	{
@@ -867,11 +877,12 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	}
 
 	BlockingMobj = NULL;
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
-
+#endif
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
 			if(!P_BlockLinesIterator(bx, by, PIT_CheckLine, 0))
@@ -916,9 +927,11 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
 	// the base floor / ceiling is from the subsector that contains the
 	// point.  Any contacted lines the step closer together will adjust them
 	//
+#ifdef TODO_MAP_UPDATE
 	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
 	tmceilingz = newsubsec->sector->ceilingheight;
 	tmfloorpic = newsubsec->sector->floorpic;
+#endif
 
 	Validcount++;
 	numspechit = 0;
@@ -932,11 +945,12 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
 	// into mapblocks based on their origin point, and can overlap into adjacent
 	// blocks by up to MAXRADIUS units
 	//
+#ifdef TODO_MAP_UPDATE
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
-
+#endif
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
 			if(!P_BlockThingsIterator(bx, by, PIT_CheckOnmobjZ, 0))
@@ -1040,6 +1054,7 @@ void P_FakeZMovement(mobj_t *mo)
 
 static void CheckForPushSpecial(line_t *line, int side, mobj_t *mobj)
 {
+#ifdef TODO_MAP_UPDATE
 	if(line->special)
 	{
 		if(mobj->flags2 & MF2_PUSHWALL)
@@ -1051,6 +1066,7 @@ static void CheckForPushSpecial(line_t *line, int side, mobj_t *mobj)
 			P_ActivateLine(line, mobj, side, SPAC_IMPACT);
 		}
 	}
+#endif
 }
 
 /*
@@ -1077,6 +1093,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 		{
 			goto pushline;
 		}
+#ifdef TODO_MAP_UPDATE
 		else if(BlockingMobj->z + BlockingMobj->height - thing->z >
 				24 * FRACUNIT ||
 				(BlockingMobj->subsector->sector->ceilingheight -
@@ -1086,6 +1103,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 		{
 			goto pushline;
 		}
+#endif
 	}
 	if(!(thing->flags & MF_NOCLIP))
 	{
@@ -1127,12 +1145,14 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 		{						// Can't move over a dropoff unless it's been blasted
 			return (false);
 		}
+#ifdef TODO_MAP_UPDATE
 		if(thing->flags2 & MF2_CANTLEAVEFLOORPIC &&
 		   (tmfloorpic != thing->subsector->sector->floorpic ||
 			tmfloorz - thing->z != 0))
 		{						// must stay within a sector of a certain floor type
 			return false;
 		}
+#endif
 	}
 
 	//
@@ -1152,6 +1172,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 
 	if(thing->flags2 & MF2_FLOORCLIP)
 	{
+#ifdef TODO_MAP_UPDATE
 		if(thing->z == thing->subsector->sector->floorheight &&
 		   P_GetThingFloorType(thing) >= FLOOR_LIQUID)
 		{
@@ -1161,6 +1182,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 		{
 			thing->floorclip = 0;
 		}
+#endif
 	}
 
 	//
@@ -1177,6 +1199,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 			oldside = P_PointOnLineSide(oldx, oldy, ld);
 			if(side != oldside)
 			{
+#ifdef TODO_MAP_UPDATE
 				if(ld->special)
 				{
 					if(thing->player)
@@ -1192,6 +1215,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 						P_ActivateLine(ld, thing, oldside, SPAC_PCROSS);
 					}
 				}
+#endif
 			}
 		}
 	}
@@ -1294,6 +1318,7 @@ fixed_t tmxmove, tmymove;
 
 void P_HitSlideLine(line_t *ld)
 {
+#ifdef TODO_MAP_UPDATE
 	int     side;
 	angle_t lineangle, moveangle, deltaangle;
 	fixed_t movelen, newlen;
@@ -1327,6 +1352,7 @@ void P_HitSlideLine(line_t *ld)
 	newlen = FixedMul(movelen, finecosine[deltaangle]);
 	tmxmove = FixedMul(newlen, finecosine[lineangle]);
 	tmymove = FixedMul(newlen, finesine[lineangle]);
+#endif
 }
 
 /*
@@ -1339,6 +1365,7 @@ void P_HitSlideLine(line_t *ld)
 
 boolean PTR_SlideTraverse(intercept_t * in)
 {
+#ifdef TODO_MAP_UPDATE
 	line_t *li;
 
 	if(!in->isaline)
@@ -1375,6 +1402,7 @@ boolean PTR_SlideTraverse(intercept_t * in)
 	}
 
 	return false;				// stop
+#endif
 }
 
 /*
@@ -1490,6 +1518,7 @@ void P_SlideMove(mobj_t *mo)
 
 boolean PTR_BounceTraverse(intercept_t * in)
 {
+#ifdef TODO_MAP_UPDATE
 	line_t *li;
 
 	if(!in->isaline)
@@ -1521,6 +1550,7 @@ boolean PTR_BounceTraverse(intercept_t * in)
 		bestslideline = li;
 	}
 	return false;				// stop
+#endif
 }
 
 //============================================================================
@@ -1531,6 +1561,7 @@ boolean PTR_BounceTraverse(intercept_t * in)
 
 void P_BounceWall(mobj_t *mo)
 {
+#ifdef TODO_MAP_UPDATE
 	fixed_t leadx, leady;
 	int     side;
 	angle_t lineangle, moveangle, deltaangle;
@@ -1583,6 +1614,7 @@ void P_BounceWall(mobj_t *mo)
 		movelen = 2 * FRACUNIT;
 	mo->momx = FixedMul(movelen, finecosine[deltaangle]);
 	mo->momy = FixedMul(movelen, finesine[deltaangle]);
+#endif
 }
 
 /*
@@ -1615,6 +1647,7 @@ fixed_t aimslope;
 
 boolean PTR_AimTraverse(intercept_t * in)
 {
+#ifdef TODO_MAP_UPDATE
 	line_t *li;
 	mobj_t *th;
 	fixed_t slope, thingtopslope, thingbottomslope;
@@ -1701,6 +1734,7 @@ boolean PTR_AimTraverse(intercept_t * in)
 	linetarget = th;
 
 	return false;				// don't go any farther
+#endif
 }
 
 /*
@@ -1713,6 +1747,7 @@ boolean PTR_AimTraverse(intercept_t * in)
 
 boolean PTR_ShootTraverse(intercept_t * in)
 {
+#ifdef TODO_MAP_UPDATE
 	fixed_t x, y, z;
 	fixed_t frac;
 	line_t *li;
@@ -1911,6 +1946,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
 			P_DamageMobj(th, shootthing, shootthing, la_damage);
 		}
 	}
+#endif
 	return (false);				// don't go any farther
 }
 
@@ -2027,6 +2063,7 @@ boolean PTR_UseTraverse(intercept_t * in)
 	int     sound;
 	fixed_t pheight;
 
+#ifdef TODO_MAP_UPDATE
 	if(!in->d.line->special)
 	{
 		P_LineOpening(in->d.line);
@@ -2092,6 +2129,7 @@ boolean PTR_UseTraverse(intercept_t * in)
 	P_ActivateLine(in->d.line, usething, 0, SPAC_USE);
 
 	return false;				// can't use for than one special line in a row
+#endif
 }
 
 /*
@@ -2133,6 +2171,7 @@ static boolean PuzzleActivated;
 
 boolean PTR_PuzzleItemTraverse(intercept_t * in)
 {
+#ifdef TODO_MAP_UPDATE
 	mobj_t *mobj;
 	int     sound;
 
@@ -2172,6 +2211,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t * in)
 		{						// Don't use back sides
 			return false;
 		}
+#ifdef TODO_MAP_UPDATE
 		if(PuzzleItemType != in->d.line->arg1)
 		{						// Item type doesn't match
 			return false;
@@ -2180,6 +2220,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t * in)
 				   in->d.line, 0);
 		in->d.line->special = 0;
 		PuzzleActivated = true;
+#endif
 		return false;			// Stop searching
 	}
 	// Check thing
@@ -2196,6 +2237,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t * in)
 	mobj->special = 0;
 	PuzzleActivated = true;
 	return false;				// Stop searching
+#endif
 }
 
 //==========================================================================
@@ -2308,10 +2350,12 @@ void P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage, int distance,
 	fixed_t dist;
 
 	dist = (distance + MAXRADIUS) << FRACBITS;
+#ifdef TODO_MAP_UPDATE
 	yh = (spot->y + dist - bmaporgy) >> MAPBLOCKSHIFT;
 	yl = (spot->y - dist - bmaporgy) >> MAPBLOCKSHIFT;
 	xh = (spot->x + dist - bmaporgx) >> MAPBLOCKSHIFT;
 	xl = (spot->x - dist - bmaporgx) >> MAPBLOCKSHIFT;
+#endif
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;

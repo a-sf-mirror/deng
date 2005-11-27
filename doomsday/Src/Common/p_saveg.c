@@ -645,6 +645,7 @@ void SV_WriteLine(line_t *li)
 {
 	lineclass_t type = li->xg ? lc_xg1 : lc_normal;
 	int     i;
+#ifdef TODO_MAP_UPDATE
 	side_t *si;
 
 	SV_WriteByte(type);
@@ -652,11 +653,13 @@ void SV_WriteLine(line_t *li)
 	SV_WriteShort(li->flags);
 	SV_WriteShort(li->special);
 	SV_WriteShort(li->tag);
+#endif
 	for(i = 0; i < 2; i++)
 	{
 		if(li->sidenum[i] < 0)
 			continue;
 
+#ifdef TODO_MAP_UPDATE
 		si = &sides[li->sidenum[i]];
 
 		SV_WriteShort(si->textureoffset >> FRACBITS);
@@ -664,6 +667,7 @@ void SV_WriteLine(line_t *li)
 		SV_WriteShort(SV_TextureArchiveNum(si->toptexture));
 		SV_WriteShort(SV_TextureArchiveNum(si->bottomtexture));
 		SV_WriteShort(SV_TextureArchiveNum(si->midtexture));
+#endif
 	}
 
 	// Extended General?
@@ -690,6 +694,7 @@ void SV_ReadLine(line_t *li)
 		if(li->sidenum[i] < 0)
 			continue;
 
+#ifdef TODO_MAP_UPDATE
 		si = &sides[li->sidenum[i]];
 
 		si->textureoffset = SV_ReadShort() << FRACBITS;
@@ -705,6 +710,7 @@ void SV_ReadLine(line_t *li)
 			si->bottomtexture = SV_GetArchiveTexture(si->bottomtexture);
 			si->midtexture = SV_GetArchiveTexture(si->midtexture);
 		}
+#endif
 	}
 
 	// Extended General?
@@ -797,11 +803,13 @@ void P_ArchiveWorld(void)
 	// Write the texture archives.
 	SV_WriteTextureArchive();
 
+#ifdef TODO_MAP_UPDATE
 	for(i = 0, sec = sectors; i < numsectors; i++, sec++)
 		SV_WriteSector(sec);
 
 	for(i = 0, li = lines; i < numlines; i++, li++)
 		SV_WriteLine(li);
+#endif
 }
 
 //
@@ -823,6 +831,7 @@ void P_UnArchiveWorld(void)
 			SV_ReadTextureArchive();
 		}
 
+#ifdef TODO_MAP_UPDATE
 		// Load sectors.
 		for(i = 0, sec = sectors; i < numsectors; i++, sec++)
 			SV_ReadSector(sec);
@@ -830,11 +839,13 @@ void P_UnArchiveWorld(void)
 		// Load lines.
 		for(i = 0, li = lines; i < numlines; i++, li++)
 			SV_ReadLine(li);
+#endif
 	}
 	else						// Old version 1 world.
 	{
 		int     firstflat = W_CheckNumForName("F_START") + 1;
 
+#ifdef TODO_MAP_UPDATE
 		// do sectors
 		for(i = 0, sec = sectors; i < numsectors; i++, sec++)
 		{
@@ -867,6 +878,7 @@ void P_UnArchiveWorld(void)
 				si->midtexture = SV_ReadShort();
 			}
 		}
+#endif
 	}
 }
 
@@ -1051,8 +1063,10 @@ void P_ArchiveSpecials(void)
 		ceiling:                               // killough 2/14/98
 			SV_WriteByte(tc_ceiling);
 			memcpy(&ceiling, th, SIZE_OF_CEILING);
+#ifdef TODO_MAP_UPDATE
 			ceiling.sector = (sector_t *) (ceiling.sector - sectors);
 			SV_Write(&ceiling, SIZE_OF_CEILING);
+#endif
 			continue;
 		}
 
@@ -1060,8 +1074,10 @@ void P_ArchiveSpecials(void)
 		{
 			SV_WriteByte(tc_door);
 			memcpy(&door, th, sizeof(door));
+#ifdef TODO_MAP_UPDATE
 			door.sector = (sector_t *) (door.sector - sectors);
 			SV_Write(&door, sizeof(door));
+#endif
 			continue;
 		}
 
@@ -1069,8 +1085,10 @@ void P_ArchiveSpecials(void)
 		{
 			SV_WriteByte(tc_floor);
 			memcpy(&floor, th, sizeof(floor));
+#ifdef TODO_MAP_UPDATE
 			floor.sector = (sector_t *) (floor.sector - sectors);
 			SV_Write(&floor, sizeof(floor));
+#endif
 			continue;
 		}
 
@@ -1079,8 +1097,10 @@ void P_ArchiveSpecials(void)
 		plat:   // killough 2/14/98: added fix for original plat height above
 			SV_WriteByte(tc_plat);
 			memcpy(&plat, th, SIZE_OF_PLAT);
+#ifdef TODO_MAP_UPDATE
 			plat.sector = (sector_t *) (plat.sector - sectors);
 			SV_Write(&plat, SIZE_OF_PLAT);
+#endif
 			continue;
 		}
 
@@ -1088,8 +1108,10 @@ void P_ArchiveSpecials(void)
 		{
 			SV_WriteByte(tc_flash);
 			memcpy(&flash, th, sizeof(flash));
+#ifdef TODO_MAP_UPDATE
 			flash.sector = (sector_t *) (flash.sector - sectors);
 			SV_Write(&flash, sizeof(flash));
+#endif
 			continue;
 		}
 
@@ -1097,8 +1119,10 @@ void P_ArchiveSpecials(void)
 		{
 			SV_WriteByte(tc_strobe);
 			memcpy(&strobe, th, sizeof(strobe));
+#ifdef TODO_MAP_UPDATE
 			strobe.sector = (sector_t *) (strobe.sector - sectors);
 			SV_Write(&strobe, sizeof(strobe));
+#endif
 			continue;
 		}
 
@@ -1106,8 +1130,10 @@ void P_ArchiveSpecials(void)
 		{
 			SV_WriteByte(tc_glow);
 			memcpy(&glow, th, sizeof(glow));
+#ifdef TODO_MAP_UPDATE
 			glow.sector = (sector_t *) (glow.sector - sectors);
 			SV_Write(&glow, sizeof(glow));
+#endif
 			continue;
 		}
 	}
@@ -1147,7 +1173,9 @@ void P_UnArchiveSpecials(void)
 			   (int) ceiling->sector < 0)
 				Con_Error("tc_ceiling: bad sector number\n");
 #endif
+#ifdef TODO_MAP_UPDATE
 			ceiling->sector = &sectors[(int) ceiling->sector];
+#endif
 			ceiling->sector->specialdata = ceiling;
 
 			if(ceiling->thinker.function)
@@ -1157,6 +1185,7 @@ void P_UnArchiveSpecials(void)
 			P_AddActiveCeiling(ceiling);
 			break;
 
+#ifdef TODO_MAP_UPDATE
 		case tc_door:
 			door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
 			SV_Read(door, sizeof(*door));
@@ -1211,7 +1240,7 @@ void P_UnArchiveSpecials(void)
 			glow->thinker.function = T_Glow;
 			P_AddThinker(&glow->thinker);
 			break;
-
+#endif
 		default:
 			Con_Error("P_UnArchiveSpecials: Unknown tclass %i " "in savegame.",
 					  tclass);

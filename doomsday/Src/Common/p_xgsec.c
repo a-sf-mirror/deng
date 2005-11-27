@@ -207,7 +207,9 @@ void XS_SetSectorType(struct sector_s *sec, int special)
 
 	if(XS_GetType(special))
 	{
+#ifdef TODO_MAP_UPDATE
 		XG_Dev("XS_SetSectorType: Sector %i, type %i", sec - sectors, special);
+#endif
 
 		sec->special = special;
 
@@ -270,8 +272,10 @@ void XS_SetSectorType(struct sector_s *sec, int special)
 	}
 	else
 	{
+#ifdef TODO_MAP_UPDATE
 		XG_Dev("XS_SetSectorType: Sector %i, NORMAL TYPE %i", sec - sectors,
 			   special);
+#endif
 
 		// Free previously allocated XG data.
 		if(sec->xg)
@@ -291,6 +295,7 @@ void XS_Init(void)
 	sector_t *sec;
 
 	// Allocate stair builder data.
+#ifdef TODO_MAP_UPDATE
 	builder = Z_Malloc(numsectors, PU_LEVEL, 0);
 	memset(builder, 0, numsectors);
 
@@ -308,6 +313,7 @@ void XS_Init(void)
 		// Initialize the XG data for this sector.
 		XS_SetSectorType(sec, sec->special);
 	}
+#endif
 }
 
 void XS_SectorSound(sector_t *sec, int snd)
@@ -319,9 +325,11 @@ void XS_SectorSound(sector_t *sec, int snd)
 
 void XS_MoverStopped(xgplanemover_t * mover, boolean done)
 {
+#ifdef TODO_MAP_UPDATE
 	XG_Dev("XS_MoverStopped: Sector %i (done=%i, origin line=%i)",
 		   mover->sector - sectors, done,
 		   mover->origin ? mover->origin - lines : -1);
+#endif
 
 	if(done)
 	{
@@ -503,8 +511,10 @@ xgplanemover_t *XS_GetPlaneMover(sector_t *sector, boolean ceiling)
 
 void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex)
 {
+#ifdef TODO_MAP_UPDATE
 	XG_Dev("XS_ChangePlaneTexture: Sector %i, %s, pic %i", sector - sectors,
 		   ceiling ? "ceiling" : "floor", tex);
+#endif
 
 	if(ceiling)
 		sector->ceilingpic = tex;
@@ -654,7 +664,9 @@ int XS_TextureHeight(line_t *line, int part)
 			snum = 1;
 	}
 
+#ifdef TODO_MAP_UPDATE
 	side = sides + line->sidenum[snum];
+#endif
 
 	if(part == 0)
 	{
@@ -684,11 +696,13 @@ sector_t *XS_FindTagged(int tag)
 {
 	int     k;
 
+#ifdef TODO_MAP_UPDATE
 	for(k = 0; k < numsectors; k++)
 	{
 		if(sectors[k].tag == tag)
 			return sectors + k;
 	}
+#endif
 	return NULL;
 }
 
@@ -701,8 +715,10 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 	boolean ceiling;
 	sector_t *iter;
 
+#ifdef TODO_MAP_UPDATE
 	XG_Dev("XS_GetPlane: Line %i, sector %i, ref (%i, %i)",
 		   actline ? actline - lines : -1, sector - sectors, ref, refdata);
+#endif
 
 	if(ref == SPREF_NONE)
 	{
@@ -745,9 +761,11 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
 	case SPREF_INDEX_FLOOR:
 	case SPREF_INDEX_CEILING:
+#ifdef TODO_MAP_UPDATE
 		if(refdata < 0 || refdata >= numsectors)
 			return false;
 		iter = sectors + refdata;
+#endif
 		break;
 
 	default:
@@ -965,8 +983,10 @@ int XSTrav_MovePlane(sector_t *sector, boolean ceiling, long int data,
 	int     flat, st;
 	boolean playsound = line->xg->idata;
 
+#ifdef TODO_MAP_UPDATE
 	XG_Dev("XSTrav_MovePlane: Sector %i (by line %i of type %i)",
 		   sector - sectors, line - lines, info->id);
+#endif
 
 	// i2: destination type (zero, relative to current, surrounding 
 	//     highest/lowest floor/ceiling)
@@ -1070,12 +1090,15 @@ int XSTrav_MovePlane(sector_t *sector, boolean ceiling, long int data,
 
 void XS_InitStairBuilder(void)
 {
+#ifdef TODO_MAP_UPDATE
 	memset(builder, 0, numsectors);
+#endif
 }
 
 boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 				   linetype_t * info, int stepcount)
 {
+#ifdef TODO_MAP_UPDATE
 	static int firstheight;
 	int     secnum = sector - sectors;
 	xgplanemover_t *mover;
@@ -1130,7 +1153,7 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 	}
 
 	P_AddThinker(&mover->thinker);
-
+#endif
 	// Building has begun!
 	return true;
 }
@@ -1138,6 +1161,8 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 int XSTrav_BuildStairs(sector_t *sector, boolean ceiling, long int data,
 					   void *context)
 {
+#ifdef TODO_MAP_UPDATE
+
 	boolean found = true;
 	int     i, k, lowest, stepcount = 0;
 	line_t *line;
@@ -1220,6 +1245,7 @@ int XSTrav_BuildStairs(sector_t *sector, boolean ceiling, long int data,
 					   stepcount);
 		}
 	}
+#endif
 	return true;				// Continue searching for planes.  
 }
 
@@ -1240,11 +1266,13 @@ int XSTrav_PlaneTexture(struct sector_s *sec, boolean ceiling, long int data,
 	// i2: (spref) texture origin
 	// i3: texture number (flat), used with SPREF_NONE
 
+#ifdef TODO_MAP_UPDATE
 	if(!XS_GetPlane(line, sec, info->iparm[2], 0, 0, &pic, 0))
 		pic = info->iparm[3];
 	else
 		XG_Dev("XSTrav_PlaneTexture: Sector %i, couldn't find suitable",
 			   sec - sectors);
+#endif
 
 	// Set the texture.
 	XS_ChangePlaneTexture(sec, ceiling, pic);
@@ -1407,8 +1435,10 @@ int XSTrav_MimicSector(sector_t *sector, boolean ceiling, long int data,
 	// If can't apply to a sector, just skip it.
 	if(!XS_GetPlane(line, sector, info->iparm[2], refdata, 0, 0, &from))
 	{
+#ifdef TODO_MAP_UPDATE
 		XG_Dev("XSTrav_MimicSector: No suitable neighbor " "for %i.\n",
 			   sector - sectors);
+#endif
 		return true;
 	}
 
@@ -1416,8 +1446,10 @@ int XSTrav_MimicSector(sector_t *sector, boolean ceiling, long int data,
 	if(from == sector)
 		return true;
 
+#ifdef TODO_MAP_UPDATE
 	XG_Dev("XSTrav_MimicSector: Sector %i mimicking sector %i",
 		   sector - sectors, from - sectors);
+#endif
 
 	// Copy the properties of the target sector.
 	sector->lightlevel = from->lightlevel;
@@ -1777,6 +1809,8 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
 			{
 				info->count[ch]--;
 
+#ifdef TODO_MAP_UPDATE
+
 				XG_Dev
 					("XS_DoChain: %s, sector %i (activating=%i): Counter now at %i",
 					 ch == XSCE_FLOOR ? "FLOOR" : ch ==
@@ -1785,6 +1819,7 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
 					 XSCE_TICKER ? "TICKER" : ch ==
 					 XSCE_FUNCTION ? "FUNCTION" : "???", sec - sectors,
 					 activating, info->count[ch]);
+#endif
 			}
 		}
 	}
@@ -2017,12 +2052,14 @@ void XS_Ticker(void)
 {
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < numsectors; i++)
 	{
 		if(!sectors[i].xg)
 			continue;			// Normal sector.
 		XS_Think(sectors + i);
 	}
+#endif
 }
 
 int XS_Gravity(struct sector_s *sector)
@@ -2066,12 +2103,14 @@ void XS_Update(void)
 	int     i;
 
 	// It's all PU_LEVEL memory, so we can just lose it.
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < numsectors; i++)
 		if(sectors[i].xg)
 		{
 			sectors[i].xg = NULL;
 			sectors[i].special = 0;
 		}
+#endif
 }
 
 #if 0 // no longer supported in 1.8.7
@@ -2149,12 +2188,14 @@ int CCmdMovePlane(int argc, char **argv)
 	{
 		p = 3;
 		// Find the first sector with the tag.
+#ifdef TODO_MAP_UPDATE
 		for(i = 0; i < numsectors; i++)
 			if(sectors[i].tag == (short) strtol(argv[2], 0, 0))
 			{
 				sector = &sectors[i];
 				break;
 			}
+#endif
 	}
 
 	// No more arguments?

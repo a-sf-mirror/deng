@@ -15,6 +15,40 @@
 // for more details.
 //
 // $Log$
+// Revision 1.11.2.1  2005/11/27 17:42:08  skyjake
+// Breaking everything with the new Map Update API (=DMU) (only declared, not
+// implemented yet)
+//
+// - jDoom and jHeretic do not compile
+// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
+// portions of code that would not compile
+// - none of the games work, because DMU has not been implemented or used in any
+// of the games
+//
+// Map data is now hidden from the games. The line_t, seg_t and structs are
+// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
+// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
+// parameters. There are multiple versions of each function so that using them is
+// more convenient in terms of data types.
+//
+// P_Callback can be used for having the engine call a callback function for each
+// of the selected map data objects.
+//
+// The API is not finalized yet.
+//
+// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
+// parameters.
+//
+// The games require map data in numerous places of the code. All of these should
+// be converted to work with DMU in the most sensible fashion (a direct
+// conversion may not always make the most sense). E.g., jHexen has
+// some private map data for sound playing, etc. The placement of this data is
+// not certain at the moment, but it can remain private to the games if
+// necessary.
+//
+// Games can build their own map changing routines on DMU as they see fit. The
+// engine will only provide a generic API, as defined in doomsday.h currently.
+//
 // Revision 1.11  2005/05/29 12:45:09  danij
 // Removed fixed limits on number of active plats/ceilings using modified code from PrBoom.
 //
@@ -233,7 +267,9 @@ void P_InitPicAnims(void)
 //
 side_t *getSide(int currentSector, int line, int side)
 {
+#ifdef TODO_MAP_UPDATE
 	return &sides[(sectors[currentSector].Lines[line])->sidenum[side]];
+#endif
 }
 
 //
@@ -244,7 +280,9 @@ side_t *getSide(int currentSector, int line, int side)
 //
 sector_t *getSector(int currentSector, int line, int side)
 {
+#ifdef TODO_MAP_UPDATE
 	return sides[(sectors[currentSector].Lines[line])->sidenum[side]].sector;
+#endif
 }
 
 //
@@ -254,7 +292,9 @@ sector_t *getSector(int currentSector, int line, int side)
 //
 int twoSided(int sector, int line)
 {
+#ifdef TODO_MAP_UPDATE
 	return (sectors[sector].Lines[line])->flags & ML_TWOSIDED;
+#endif
 }
 
 //
@@ -430,9 +470,11 @@ int P_FindSectorFromLineTag(line_t *line, int start)
 {
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = start + 1; i < numsectors; i++)
 		if(sectors[i].tag == line->tag)
 			return i;
+#endif
 
 	return -1;
 }
@@ -444,6 +486,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
 {
 	int     i;
 	int     min;
+#ifdef TODO_MAP_UPDATE
 	line_t *line;
 	sector_t *check;
 
@@ -459,6 +502,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
 		if(check->lightlevel < min)
 			min = check->lightlevel;
 	}
+#endif
 	return min;
 }
 
@@ -478,7 +522,9 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 	line_t *line;
 	int     ok;
 
+#ifdef TODO_MAP_UPDATE
 	line = &lines[linenum];
+#endif
 
 	// Extended functionality overrides old.
 	if(XL_CrossLine(line, side, thing))
@@ -1102,7 +1148,9 @@ void P_UpdateSpecials(void)
 		{
 		case 48:
 			// EFFECT FIRSTCOL SCROLL +
+#ifdef TODO_MAP_UPDATE
 			sides[line->sidenum[0]].textureoffset += FRACUNIT;
+#endif
 			break;
 		}
 	}
@@ -1114,6 +1162,7 @@ void P_UpdateSpecials(void)
 			buttonlist[i].btimer--;
 			if(!buttonlist[i].btimer)
 			{
+#ifdef TODO_MAP_UPDATE
 				switch (buttonlist[i].where)
 				{
 				case top:
@@ -1133,6 +1182,7 @@ void P_UpdateSpecials(void)
 				}
 				S_StartSound(sfx_swtchn, buttonlist[i].soundorg);
 				memset(&buttonlist[i], 0, sizeof(button_t));
+#endif
 			}
 		}
 
@@ -1155,7 +1205,9 @@ int EV_DoDonut(line_t *line)
 	rtn = 0;
 	while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
+#ifdef TODO_MAP_UPDATE
 		s1 = &sectors[secnum];
+#endif
 
 		// ALREADY MOVING?  IF SO, KEEP GOING...
 		if(s1->specialdata)
@@ -1245,6 +1297,7 @@ void P_SpawnSpecials(void)
 	}
 
 	//  Init special SECTORs.
+#ifdef TODO_MAP_UPDATE
 	sector = sectors;
 	for(i = 0; i < numsectors; i++, sector++)
 	{
@@ -1321,8 +1374,10 @@ void P_SpawnSpecials(void)
 			break;
 		}
 	}
+#endif
 
 	//  Init line EFFECTs
+#ifdef TODO_MAP_UPDATE
 	numlinespecials = 0;
 	for(i = 0; i < numlines; i++)
 	{
@@ -1335,6 +1390,7 @@ void P_SpawnSpecials(void)
 			break;
 		}
 	}
+#endif
 
 	P_RemoveAllActiveCeilings();  // jff 2/22/98 use killough's scheme
 

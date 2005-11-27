@@ -787,10 +787,12 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 	P_CalcHeight(player);
+#ifdef TODO_MAP_UPDATE
 	if(player->plr->mo->subsector->sector->special)
 	{
 		P_PlayerInSpecialSector(player);
 	}
+#endif
 	if((floorType = P_GetThingFloorType(player->plr->mo)) != FLOOR_SOLID)
 	{
 		P_PlayerOnSpecialFlat(player, floorType);
@@ -1831,8 +1833,10 @@ void P_ClientSideThink()
 		mo->flags2 &= ~MF2_FLY;
 	}
 
+#ifdef TODO_MAP_UPDATE
 	if(mo->subsector->sector->special)
 		P_PlayerInSpecialSector(pl);
+#endif
 
 	// Set consoleplayer thrust multiplier.
 	if(mo->z > mo->floorz)		// Airborne?

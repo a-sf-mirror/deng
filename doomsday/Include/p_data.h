@@ -19,10 +19,17 @@
 
 /*
  * p_data.h: Playsim Data Structures, Macros and Constants
+ *
+ * These are internal to Doomsday. The games have no direct access to
+ * this data.
  */
 
 #ifndef __DOOMSDAY_PLAY_DATA_H__
 #define __DOOMSDAY_PLAY_DATA_H__
+
+#if defined(__JDOOM__) || defined(__JHERETIC__) || defined(__JHEXEN__)
+#  error "Attempted to include internal Doomsday p_data.h from a game"
+#endif
 
 #include "dd_share.h"
 
@@ -37,15 +44,22 @@ typedef struct {
 	char            sideMove;	   //*2048 for real move
 } ticcmd_t;
 
-// Map data
-#define VTXSIZE		gx.vertex_size
-#define SEGSIZE		gx.seg_size
-#define SECTSIZE	gx.sector_size
-#define SUBSIZE		gx.subsector_size
-#define NODESIZE	gx.node_size
-#define LINESIZE	gx.line_size
-#define SIDESIZE	gx.side_size
-#define POSIZE		gx.polyobj_size
+// Sizes of the engine's internal map data structures. 
+#define VTXSIZE		sizeof(vertex_t)
+#define SEGSIZE		sizeof(seg_t)
+#define SECTSIZE    sizeof(sector_t)
+#define SUBSIZE		sizeof(subsector_t)
+#define NODESIZE	sizeof(node_t)
+#define LINESIZE	sizeof(line_t)
+#define SIDESIZE	sizeof(side_t)
+#define POSIZE		sizeof(polyobj_t)
+
+#define GET_VERTEX_IDX(vtx)		( ((byte*)(vtx) - vertexes) / VTXSIZE )
+#define GET_LINE_IDX(li)		( ((byte*)(li) - lines) / LINESIZE )
+#define GET_SECTOR_IDX(sec)		( ((byte*)(sec) - sectors) / SECTSIZE )
+#define GET_SUBSECTOR_IDX(sub)	( ((byte*)(sub) - subsectors) / SUBSIZE )
+#define GET_POLYOBJ_IDX(po)		( ((byte*)(po) - polyobjs) / POSIZE )
+#define GET_SEG_IDX(seg)		( ((byte*)(seg) - segs) / SEGSIZE )
 
 #define VTXIDX(i)	((i)*VTXSIZE)
 #define SEGIDX(i)	((i)*SEGSIZE)
@@ -55,13 +69,6 @@ typedef struct {
 #define LINEIDX(i)	((i)*LINESIZE)
 #define SIDEIDX(i)	((i)*SIDESIZE)
 #define POIDX(i)	((i)*POSIZE)
-
-#define GET_VERTEX_IDX(vtx)		( ((byte*)(vtx) - vertexes) / VTXSIZE )
-#define GET_LINE_IDX(li)		( ((byte*)(li) - lines) / LINESIZE )
-#define GET_SECTOR_IDX(sec)		( ((byte*)(sec) - sectors) / SECTSIZE )
-#define GET_SUBSECTOR_IDX(sub)	( ((byte*)(sub) - subsectors) / SUBSIZE )
-#define GET_POLYOBJ_IDX(po)		( ((byte*)(po) - polyobjs) / POSIZE )
-#define GET_SEG_IDX(seg)		( ((byte*)(seg) - segs) / SEGSIZE )
 
 #define VERTEX_PTR(i)		( (vertex_t*) (vertexes+VTXIDX(i)) )
 #define SEG_PTR(i)			( (seg_t*) (segs+SEGIDX(i)) )
@@ -85,6 +92,52 @@ typedef struct {
 #define	NF_SUBSECTOR	0x8000
 
 struct line_s;
+
+typedef struct vertex_s {
+    fixed_t         x, y;
+} vertex_t;
+
+typedef struct fvertex_s {
+    float           x, y;
+} fvertex_t;
+
+typedef struct seg_s {
+    vertex_t       *v1, *v2;
+    float           length;	   // Accurate length of the segment (v1 -> v2).
+    fixed_t         offset;
+    struct side_s  *sidedef;
+    struct line_s  *linedef;
+    struct sector_s *frontsector;
+    struct sector_s *backsector;	// NULL for one sided lines
+    byte            flags;
+    angle_t         angle;
+} seg_t;
+
+typedef struct subsector_s {
+    struct sector_s *sector;
+    unsigned short  linecount;
+    unsigned short  firstline;
+    struct polyobj_s *poly;	   // NULL if there is no polyobj
+    // Sorted edge vertices for rendering floors and ceilings.
+    char            numverts;
+    fvertex_t      *verts;	   // A list of edge vertices.
+    fvertex_t       bbox[2];   // Min and max points.
+    fvertex_t       midpoint;  // Center of vertices.
+    byte            flags;
+} subsector_t;
+
+// Each sector has two of these. A plane_t contains information about
+// a plane's movement.
+typedef struct {
+    int             target;	   // Target height.
+    int             speed;	   // Move speed.
+    int             texmove[2];	// Texture movement X and Y.
+} plane_t;
+
+enum {
+    PLN_FLOOR,
+    PLN_CEILING
+};
 
 typedef struct sector_s {
 	fixed_t         floorheight, ceilingheight;

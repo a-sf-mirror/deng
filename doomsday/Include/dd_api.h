@@ -52,12 +52,13 @@ typedef struct {
 	// Thinker data (DO NOT CHANGE).
 	thinker_t      *thinkercap;	   // The head and tail of the thinker list
 
+    /*
 	// Map data, pointers to the arrays. 
 	int            *numvertexes;
 	int            *numsegs;
 	int            *numsectors;
 	int            *numsubsectors;
-	int            *numnodes;
+    int            *numnodes;
 	int            *numlines;
 	int            *numsides;
 	void          **vertexes;
@@ -77,6 +78,7 @@ typedef struct {
 	void         ***polyblockmap;
 	void          **polyobjs;
 	int            *numpolyobjs;
+    */
 } game_import_t;				   // game import == engine export
 
 /*
@@ -125,9 +127,10 @@ typedef struct {
 	// Miscellaneous.
 	void            (*MobjThinker) ();
 	fixed_t         (*MobjFriction) (void *mobj);	// Returns a friction factor.
-
+  
 	// Main structure sizes.
 	int             ticcmd_size;   // sizeof(ticcmd_t)
+/*
 	int             vertex_size;   // etc.
 	int             seg_size;
 	int             sector_size;
@@ -136,6 +139,7 @@ typedef struct {
 	int             line_size;
 	int             side_size;
 	int             polyobj_size;
+*/
 } game_export_t;
 
 typedef game_export_t *(*GETGAMEAPI) (game_import_t *);

@@ -272,7 +272,7 @@ mline_t         player_arrow[] = {
 #endif
 
 // Used for Baby mode
-vertex_t KeyPoints[NUMBEROFKEYS];
+ddvertex_t KeyPoints[NUMBEROFKEYS];
 
 // scale on entry
 #define INITSCALEMTOF (.2*FRACUNIT)
@@ -800,6 +800,7 @@ void AM_findMinMaxBoundaries(void)
     min_x = min_y = DDMAXINT;
     max_x = max_y = -DDMAXINT;
 
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numvertexes; i++)
     {
         if(vertexes[i].x < min_x)
@@ -812,6 +813,7 @@ void AM_findMinMaxBoundaries(void)
         else if(vertexes[i].y > max_y)
             max_y = vertexes[i].y;
     }
+#endif
 
     max_w = max_x - min_x;
     max_h = max_y - min_y;
@@ -918,7 +920,7 @@ void AM_initVariables(void)
 
     AM_setWinPos();
 
-    memset(KeyPoints, 0, sizeof(vertex_t) * NUMBEROFKEYS );
+    memset(KeyPoints, 0, sizeof(ddvertex_t) * NUMBEROFKEYS);
 
     // load in the location of keys, if in baby mode
     if(gameskill == sk_baby)
@@ -1787,6 +1789,7 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode, bo
  */
 void AM_drawGrid(int color)
 {
+#ifdef TODO_MAP_UPDATE
     fixed_t x, y;
     fixed_t start, end;
     mline_t ml;
@@ -1829,6 +1832,7 @@ void AM_drawGrid(int color)
         AM_drawMline(&ml, color);
     }
     gl.End();
+#endif
 }
 
 /*
@@ -1836,6 +1840,7 @@ void AM_drawGrid(int color)
  */
 void AM_drawWalls(boolean glowmode)
 {
+#ifdef TODO_MAP_UPDATE
     int     i;
     static mline_t l;
     mapline_t templine;
@@ -1919,6 +1924,7 @@ void AM_drawWalls(boolean glowmode)
         }
 
     }
+#endif
 }
 
 /*
@@ -2061,6 +2067,7 @@ void AM_drawThings(int colors, int colorrange)
     int     i;
     mobj_t *t;
 
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numsectors; i++)
     {
         t = sectors[i].thinglist;
@@ -2073,6 +2080,7 @@ void AM_drawThings(int colors, int colorrange)
             t = t->snext;
         }
     }
+#endif
 }
 
 /*

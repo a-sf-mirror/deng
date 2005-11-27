@@ -98,6 +98,7 @@ void P_AnimateSurfaces(void)
 	for(i = 0; i < numlinespecials; i++)
 	{
 		line = linespeciallist[i];
+#ifdef TODO_MAP_UPDATE
 		switch (line->special)
 		{
 		case 100:				// Scroll_Texture_Left
@@ -113,6 +114,7 @@ void P_AnimateSurfaces(void)
 			sides[line->sidenum[0]].rowoffset -= line->arg1 << 10;
 			break;
 		}
+#endif
 	}
 
 	// Update sky column offsets
@@ -154,6 +156,7 @@ static void P_LightningFlash(void)
 		if(LightningFlash)
 		{
 			tempLight = LightningLightLevels;
+#ifdef TODO_MAP_UPDATE
 			tempSec = sectors;
 			for(i = 0; i < numsectors; i++, tempSec++)
 			{
@@ -168,10 +171,12 @@ static void P_LightningFlash(void)
 					tempLight++;
 				}
 			}
+#endif
 		}
 		else
 		{						// remove the alternate lightning flash special
 			tempLight = LightningLightLevels;
+#ifdef TODO_MAP_UPDATE
 			tempSec = sectors;
 			for(i = 0; i < numsectors; i++, tempSec++)
 			{
@@ -183,6 +188,7 @@ static void P_LightningFlash(void)
 					tempLight++;
 				}
 			}
+#endif
 			Rend_SkyParams(1, DD_DISABLE, 0);
 			Rend_SkyParams(0, DD_ENABLE, 0);
 			//Sky1Texture = P_GetMapSky1Texture(gamemap);       
@@ -191,6 +197,7 @@ static void P_LightningFlash(void)
 	}
 	LightningFlash = (P_Random() & 7) + 8;
 	flashLight = 200 + (P_Random() & 31);
+#ifdef TODO_MAP_UPDATE
 	tempSec = sectors;
 	tempLight = LightningLightLevels;
 	foundSec = false;
@@ -229,6 +236,7 @@ static void P_LightningFlash(void)
 			foundSec = true;
 		}
 	}
+#endif
 	if(foundSec)
 	{
 		mobj_t *plrmo = players[displayplayer].plr->mo;
@@ -305,6 +313,7 @@ void P_InitLightning(void)
 	}
 	LightningFlash = 0;
 	secCount = 0;
+#ifdef TODO_MAP_UPDATE
 	for(i = 0; i < numsectors; i++)
 	{
 		if(sectors[i].ceilingpic == skyflatnum ||
@@ -314,6 +323,7 @@ void P_InitLightning(void)
 			secCount++;
 		}
 	}
+#endif
 	if(secCount)
 	{
 		LevelHasLightning = true;

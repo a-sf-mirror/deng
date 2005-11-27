@@ -212,12 +212,16 @@ boolean P_CheckSpot(int playernum, mapthing_t * mthing, boolean doTeleSpark)
 		// spawn a teleport fog 
 		an = (ANG45 * (mthing->angle / 45)) >> ANGLETOFINESHIFT;
 
+#ifdef TODO_MAP_UPDATE
+
 #if __JDOOM__ || __JHEXEN__ || __JSTRIFE__
 		ss = R_PointInSubsector(x, y);
 		mo = P_SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
 						 ss->sector->floorheight, MT_TFOG);
 #else							// __JHERETIC__
 		mo = P_SpawnTeleFog(x + 20 * finecosine[an], y + 20 * finesine[an]);
+#endif
+
 #endif
 
 		// don't start sound on first frame

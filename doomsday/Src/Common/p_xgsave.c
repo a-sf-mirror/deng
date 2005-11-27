@@ -184,15 +184,20 @@ void SV_WriteXGPlaneMover(thinker_t *th)
 
 	SV_WriteByte(1);			// Version.
 
+#ifdef TODO_MAP_UPDATE
 	SV_WriteLong(mov->sector - sectors);
+#endif
 	SV_WriteByte(mov->ceiling);
 	SV_WriteLong(mov->flags);
 
+#ifdef TODO_MAP_UPDATE
 	i = mov->origin - lines;
 	if(i < 0 || i >= numlines)	// Is it a real line?
 		i = 0;					// No...
 	else
 		i++;
+#endif
+
 	SV_WriteLong(i);			// Zero means there is no origin.
 
 	SV_WriteLong(mov->destination);
@@ -218,13 +223,17 @@ void SV_ReadXGPlaneMover(void)
 
 	SV_ReadByte();				// Version.
 
+#ifdef TODO_MAP_UPDATE
 	mov->sector = sectors + SV_ReadLong();
+#endif
 	mov->ceiling = SV_ReadByte();
 	mov->flags = SV_ReadLong();
 
+#ifdef TODO_MAP_UPDATE
 	i = SV_ReadLong();
 	if(i)
 		mov->origin = lines + i - 1;
+#endif
 
 	mov->destination = SV_ReadLong();
 	mov->speed = SV_ReadLong();
@@ -253,10 +262,12 @@ void XL_UnArchiveLines(void)
 	mobj_t *activator;
 	int     i;
 
+#ifdef TODO_MAP_UPDATE
 	for(i = 0, line = lines; i < numlines; i++, line++)
 		if(line->xg)
 		{
 			activator = SV_GetArchiveThing((int) line->xg->activator);
 			line->xg->activator = (activator ? activator : &dummything);
 		}
+#endif
 }

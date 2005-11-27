@@ -489,18 +489,88 @@ extern          "C" {
 	//
 	//------------------------------------------------------------------------
 
-	// Each sector has two of these. A plane_t contains information about
-	// a plane's movement.
-	typedef struct {
-		int             target;	   // Target height.
-		int             speed;	   // Move speed.
-		int             texmove[2];	// Texture movement X and Y.
-	} plane_t;
+    // Map Update constants.
+    enum /* do not change the order */
+    {
+        DMU_VERTEX = 1,
+        DMU_SEG,
+        DMU_LINE,
+        DMU_SIDE,
+        DMU_NODE,
+        DMU_SUBSECTOR,
+        DMU_SECTOR,
+        DMU_BLOCKMAP,
+        DMU_REJECT,
+        DMU_POLYBLOCKMAP,
+        DMU_POLYOBJ,
 
-	enum {
-		PLN_FLOOR,
-		PLN_CEILING
-	};
+        DMU_LINE_BY_TAG,
+        DMU_SECTOR_BY_TAG,
+
+        DMU_LINE_BY_ACT_TAG,
+        DMU_SECTOR_BY_ACT_TAG,
+        
+        DMU_X,
+        DMU_Y,
+        DMU_XY,
+
+        DMU_VERTEX1,
+        DMU_VERTEX2,
+
+        DMU_FRONT_SECTOR,
+        DMU_BACK_SECTOR,
+        DMU_FLAGS,
+        DMU_DX,
+        DMU_DY,
+        DMU_LENGTH,
+        DMU_ANGLE,
+        DMU_OFFSET,
+        DMU_TOP_TEXTURE,
+        DMU_MIDDLE_TEXTURE,
+        DMU_BOTTOM_TEXTURE,
+        DMU_TEXTURE_OFFSET_X,
+        DMU_TEXTURE_OFFSET_Y,
+        DMU_TEXTURE_OFFSET_XY,
+
+        DMU_LINE_COUNT,
+        DMU_COLOR,                  // RGB
+        DMU_LIGHT_LEVEL,
+        DMU_THINGS,                 // pointer to start of thinglist
+
+        DMU_FLOOR_HEIGHT,
+        DMU_FLOOR_TEXTURE,
+        DMU_FLOOR_OFFSET_X,
+        DMU_FLOOR_OFFSET_Y,
+        DMU_FLOOR_OFFSET_XY,
+        DMU_FLOOR_TARGET,
+        DMU_FLOOR_SPEED,
+        DMU_FLOOR_TEXTURE_MOVE_X,
+        DMU_FLOOR_TEXTURE_MOVE_Y,
+        DMU_FLOOR_TEXTURE_MOVE_XY,
+
+        DMU_CEILING_HEIGHT,
+        DMU_CEILING_TEXTURE,
+        DMU_CEILING_OFFSET_X,
+        DMU_CEILING_OFFSET_Y,
+        DMU_CEILING_OFFSET_XY,
+        DMU_CEILING_TARGET,
+        DMU_CEILING_SPEED,
+        DMU_CEILING_TEXTURE_MOVE_X,
+        DMU_CEILING_TEXTURE_MOVE_Y,
+        DMU_CEILING_TEXTURE_MOVE_XY,
+    };
+
+    // Fixed-point vertex position. Utility struct for the game, not
+    // used by the engine.
+    typedef struct ddvertex_s {
+        fixed_t         x, y;
+    } ddvertex_t;
+
+    // Floating-point vertex position. Utility struct for the game,
+    // not used by the engine.
+    typedef struct ddvertexf_s {
+        float           x, y;
+    } ddvertexf_t;
 
 	// SetupLevel flags.
 #define DDSLF_POLYGONIZE	0x1	   // Create sector floor/ceiling triangles.
@@ -574,39 +644,6 @@ extern          "C" {
 
 	// Polyobjs.
 #define PO_MAXPOLYSEGS 64
-
-	typedef struct vertex_s {
-		fixed_t         x, y;
-	} vertex_t;
-
-	typedef struct fvertex_s {
-		float           x, y;
-	} fvertex_t;
-
-	typedef struct seg_s {
-		vertex_t       *v1, *v2;
-		float           length;	   // Accurate length of the segment (v1 -> v2).
-		fixed_t         offset;
-		struct side_s  *sidedef;
-		struct line_s  *linedef;
-		struct sector_s *frontsector;
-		struct sector_s *backsector;	// NULL for one sided lines
-		byte            flags;
-		angle_t         angle;
-	} seg_t;
-
-	typedef struct subsector_s {
-		struct sector_s *sector;
-		unsigned short  linecount;
-		unsigned short  firstline;
-        struct polyobj_s *poly;	   // NULL if there is no polyobj
-		// Sorted edge vertices for rendering floors and ceilings.
-		char            numverts;
-		fvertex_t      *verts;	   // A list of edge vertices.
-		fvertex_t       bbox[2];   // Min and max points.
-		fvertex_t       midpoint;  // Center of vertices.
-		byte            flags;
-	} subsector_t;
 
 	//------------------------------------------------------------------------
 	//

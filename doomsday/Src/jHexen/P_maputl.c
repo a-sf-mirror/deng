@@ -747,6 +747,7 @@ mobj_t *P_RoughMonsterSearch(mobj_t *mo, int distance)
 	int     count;
 	mobj_t *target;
 
+#ifdef TODO_MAP_UPDATE
 	startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
 	startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
 
@@ -835,6 +836,7 @@ mobj_t *P_RoughMonsterSearch(mobj_t *mo, int distance)
 			}
 		}
 	}
+#endif
 	return NULL;
 }
 

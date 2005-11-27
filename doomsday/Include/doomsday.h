@@ -37,6 +37,32 @@
 extern          "C" {
 #endif
 
+/*
+ * Public definitions of the internal map data pointers.  These can be
+ * accessed externally, but only as identifiers to data instances.
+ * For example, a game could use sector_t to identify to sector to
+ * change with the Map Update API.
+ */
+    typedef void node_s;
+    typedef void vertex_s;
+    typedef void line_s;
+    typedef void side_s;
+    typedef void seg_s;
+    typedef void subsector_s;
+    typedef void sector_s;
+    typedef void polyblock_s;
+    typedef void polyobj_s;
+
+    typedef struct node_s node_t;
+    typedef struct vertex_s vertex_t;
+    typedef struct line_s line_t;
+    typedef struct side_s side_t;
+    typedef struct seg_s seg_t;
+    typedef struct subsector_s subsector_t;
+    typedef struct sector_s sector_t;
+    typedef struct polyblock_s polyblock_t;
+    typedef struct polyobj_s polyobj_t;
+
 #include "dd_share.h"
 #include "dd_plugin.h"
 
@@ -185,6 +211,84 @@ extern          "C" {
 	// Play: Setup.
 	void            P_LoadBlockMap(int lump);
 	void            P_LoadReject(int lump);
+
+    // Play: Map Data Updates and Information Access.
+    int             P_ToIndex(int type, void* ptr);
+    void*           P_ToPtr(int type, int index);
+
+    int             P_Callback(int type, int index, void* context, 
+                               int (*callback)(void* p, void* ctx));
+
+    int             P_Callbackp(int type, void* ptr, void* context, 
+                                int (*callback)(void* p, void* ctx));
+
+    /* index-based write functions */
+    void            P_SetBool(int type, int index, int prop, boolean param);
+    void            P_SetByte(int type, int index, int prop, byte param);
+    void            P_SetInt(int type, int index, int prop, int param);
+    void            P_SetFixed(int type, int index, int prop, fixed_t param);
+    void            P_SetAngle(int type, int index, int prop, angle_t param);
+    void            P_SetFloat(int type, int index, int prop, float param);
+    void            P_SetPtr(int type, int index, int prop, void* param);
+
+    void            P_SetBoolv(int type, int index, int prop, boolean* params);
+    void            P_SetBytev(int type, int index, int prop, byte* params);
+    void            P_SetIntv(int type, int index, int prop, int* params);
+    void            P_SetFixedv(int type, int index, int prop, fixed_t* params);
+    void            P_SetAnglev(int type, int index, int prop, angle_t* params);
+    void            P_SetFloatv(int type, int index, int prop, float* params);
+    void            P_SetPtrv(int type, int index, int prop, void* params);
+
+    /* pointer-based write functions */
+    void            P_SetBoolp(int type, void* ptr, int prop, boolean param);
+    void            P_SetBytep(int type, void* ptr, int prop, byte param);
+    void            P_SetIntp(int type, void* ptr, int prop, int param);
+    void            P_SetFixedp(int type, void* ptr, int prop, fixed_t param);
+    void            P_SetAnglep(int type, void* ptr, int prop, angle_t param);
+    void            P_SetFloatp(int type, void* ptr, int prop, float param);
+    void            P_SetPtrp(int type, void* ptr, int prop, void* param);
+
+    void            P_SetBoolpv(int type, void* ptr, int prop, boolean* params);
+    void            P_SetBytepv(int type, void* ptr, int prop, byte* params);
+    void            P_SetIntpv(int type, void* ptr, int prop, int* params);
+    void            P_SetFixedpv(int type, void* ptr, int prop, fixed_t* params);
+    void            P_SetAnglepv(int type, void* ptr, int prop, angle_t* params);
+    void            P_SetFloatpv(int type, void* ptr, int prop, float* params);
+    void            P_SetPtrpv(int type, void* ptr, int prop, void* params);    
+
+    /* index-based read functions */
+    boolean         P_GetBool(int type, int index, int prop);
+    byte            P_GetByte(int type, int index, int prop);
+    int             P_GetInt(int type, int index, int prop);
+    fixed_t         P_GetFixed(int type, int index, int prop);
+    angle_t         P_GetAngle(int type, int index, int prop);
+    float           P_GetFloat(int type, int index, int prop);
+    void*           P_GetPtr(int type, int index, int prop);
+
+    void            P_GetBoolv(int type, int index, int prop, boolean* params);
+    void            P_GetBytev(int type, int index, int prop, byte* params);
+    void            P_GetIntv(int type, int index, int prop, int* params);
+    void            P_GetFixedv(int type, int index, int prop, fixed_t* params);
+    void            P_GetAnglev(int type, int index, int prop, angle_t* params);
+    void            P_GetFloatv(int type, int index, int prop, float* params);
+    void            P_GetPtrv(int type, int index, int prop, void* params);
+    
+    /* pointer-based read functions */
+    boolean         P_GetBoolp(int type, void* ptr, int prop);
+    byte            P_GetBytep(int type, void* ptr, int prop);
+    int             P_GetIntp(int type, void* ptr, int prop);
+    fixed_t         P_GetFixedp(int type, void* ptr, int prop);
+    angle_t         P_GetAnglep(int type, void* ptr, int prop);
+    float           P_GetFloatp(int type, void* ptr, int prop);
+    void*           P_GetPtrp(int type, void* ptr, int prop);
+
+    void            P_GetBoolpv(int type, void* ptr, int prop, boolean* params);
+    void            P_GetBytepv(int type, void* ptr, int prop, byte* params);
+    void            P_GetIntpv(int type, void* ptr, int prop, int* params);
+    void            P_GetFixedpv(int type, void* ptr, int prop, fixed_t* params);
+    void            P_GetAnglepv(int type, void* ptr, int prop, angle_t* params);
+    void            P_GetFloatpv(int type, void* ptr, int prop, float* params);
+    void            P_GetPtrpv(int type, void* ptr, int prop, void* params);
 
 	// Play: Polyobjs.
 	boolean         PO_MovePolyobj(int num, int x, int y);
