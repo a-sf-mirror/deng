@@ -309,6 +309,22 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
  */
 int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, void* ctx))
 {
+    switch(type)
+    {
+    case DMU_VERTEX:
+    case DMU_SEG:
+    case DMU_LINE:
+    case DMU_SIDE:
+    case DMU_NODE:
+    case DMU_SUBSECTOR:
+    case DMU_SECTOR:
+        return callback(ptr, context);
+
+    // TODO: If necessary, add special types for accessing multiple objects.
+        
+    default:
+        Con_Error("P_Callbackp: Type %i unknown.\n", type);
+    }
     return true;
 }
 
