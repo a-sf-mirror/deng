@@ -37,6 +37,9 @@
 extern          "C" {
 #endif
 
+#include "dd_share.h"
+#include "dd_plugin.h"
+
 /*
  * Public definitions of the internal map data pointers.  These can be
  * accessed externally, but only as identifiers to data instances.
@@ -62,9 +65,6 @@ extern          "C" {
     typedef struct sector_s sector_t;
     typedef struct polyblock_s polyblock_t;
     typedef struct polyobj_s polyobj_t;
-
-#include "dd_share.h"
-#include "dd_plugin.h"
 
 	// Base.
 	void           *DD_GetDGLProcAddress(const char *name);

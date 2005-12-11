@@ -56,10 +56,12 @@ typedef struct {
 
 #define GET_VERTEX_IDX(vtx)		( ((byte*)(vtx) - vertexes) / VTXSIZE )
 #define GET_LINE_IDX(li)		( ((byte*)(li) - lines) / LINESIZE )
+#define GET_SIDE_IDX(si)        ( ((byte*)(si) - sides) / SIDESIZE )
 #define GET_SECTOR_IDX(sec)		( ((byte*)(sec) - sectors) / SECTSIZE )
 #define GET_SUBSECTOR_IDX(sub)	( ((byte*)(sub) - subsectors) / SUBSIZE )
 #define GET_POLYOBJ_IDX(po)		( ((byte*)(po) - polyobjs) / POSIZE )
 #define GET_SEG_IDX(seg)		( ((byte*)(seg) - segs) / SEGSIZE )
+#define GET_NODE_IDX(nd)        ( ((byte*)(nd) - nodes) / NODESIZE )
 
 #define VTXIDX(i)	((i)*VTXSIZE)
 #define SEGIDX(i)	((i)*SEGSIZE)

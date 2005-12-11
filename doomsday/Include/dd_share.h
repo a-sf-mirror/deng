@@ -492,6 +492,8 @@ extern          "C" {
     // Map Update constants.
     enum /* do not change the order */
     {
+        DMU_ALL = -1,
+    
         DMU_VERTEX = 1,
         DMU_SEG,
         DMU_LINE,
