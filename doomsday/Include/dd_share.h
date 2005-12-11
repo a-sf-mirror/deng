@@ -248,7 +248,9 @@ extern          "C" {
 		DD_HIGHRES_TEXTURE_PATH,   // TGA texture directory (obsolete).
 		DD_WINDOW_HANDLE,
 		DD_DYNLIGHT_TEXTURE,
-		DD_GAME_EXPORTS
+		DD_GAME_EXPORTS,
+        DD_SECTOR_COUNT,
+        DD_LINE_COUNT
 	};
 
 	// Macro for preparing the parameter for DD_TRANSLATED_SPRITE_TEXTURE.

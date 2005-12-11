@@ -425,14 +425,14 @@ void P_SetDoomsdayFlags(mobj_t *mo)
 //===========================================================================
 void R_SetAllDoomsdayFlags()
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
-	sector_t *sec = sectors;
+    int     count = DD_GetInteger(DD_SECTOR_COUNT);
 	mobj_t *iter;
 
 	// Only visible things are in the sector thinglists, so this is good.
-	for(i = 0; i < numsectors; i++, sec++)
-		for(iter = sec->thinglist; iter; iter = iter->snext)
+	for(i = 0; i < count; i++)
+    {
+		for(iter = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); iter; iter = iter->snext)
 			P_SetDoomsdayFlags(iter);
-#endif
+    }
 }

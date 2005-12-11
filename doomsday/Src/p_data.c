@@ -1120,6 +1120,9 @@ static int GetProperty(void* ptr, void* context)
         case DMU_CEILING_HEIGHT:
             GetValue(VT_FIXED, &p->ceilingheight, args, 0);
             break;
+        case DMU_THINGS:
+            GetValue(VT_PTR, &p->thinglist, args, 0);
+            break;
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n", DMU_Str(args->prop));
         }

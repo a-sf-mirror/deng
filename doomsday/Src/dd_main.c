@@ -783,6 +783,12 @@ int DD_GetInteger(int ddvalue)
 		// How about some specials?
 		switch (ddvalue)
 		{
+        case DD_SECTOR_COUNT:
+            return numsectors;
+
+        case DD_LINE_COUNT:
+            return numlines;
+            
 		case DD_GAME_EXPORTS:
             ASSERT_NOT_64BIT();
 			return (int) &gx;
