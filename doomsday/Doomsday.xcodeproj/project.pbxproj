@@ -4597,6 +4597,7 @@
 				B011A64208655AF6005075A7 /* Default */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
 		};
 		B083A6AA085CCCEE000D4BAB /* Build configuration list for PBXNativeTarget "jHexen" */ = {
 			isa = XCConfigurationList;

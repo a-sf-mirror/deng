@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log$
+// Revision 1.14.2.3  2005/12/11 15:05:24  skyjake
+// Added coord to mapblock conversion
+//
 // Revision 1.14.2.2  2005/11/27 17:42:08  skyjake
 // Breaking everything with the new Map Update API (=DMU) (only declared, not
 // implemented yet)
@@ -657,12 +660,10 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	// because mobj_ts are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-#ifdef TODO_MAP_UPDATE
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
-#endif
+    P_PointToBlock(tmpbox[BOXLEFT] - MAXRADIUS, tmpbox[BOXBOTTOM] - MAXRADIUS, 
+                   &xl, &yl);
+    P_PointToBlock(tmbbox[BOXRIGHT] + MAXRADIUS, tmbbox[BOXTOP] + MAXRADIUS, 
+                   &xh, &yh);
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -670,12 +671,8 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 				return false;
 
 	// check lines
-#ifdef TODO_MAP_UPDATE
-	xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
-#endif
+    P_PointToBlock(tmpbox[BOXLEFT], tmpbox[BOXBOTTOM], &xl, &yl);
+    P_PointToBlock(tmbbox[BOXRIGHT], tmbbox[BOXTOP], &xh, &yh);
 
 	for(bx = xl; bx <= xh; bx++)
 		for(by = yl; by <= yh; by++)
@@ -1625,12 +1622,8 @@ void P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage)
 	fixed_t dist;
 
 	dist = (damage + MAXRADIUS) << FRACBITS;
-#ifdef TODO_MAP_UPDATE
-	yh = (spot->y + dist - bmaporgy) >> MAPBLOCKSHIFT;
-	yl = (spot->y - dist - bmaporgy) >> MAPBLOCKSHIFT;
-	xh = (spot->x + dist - bmaporgx) >> MAPBLOCKSHIFT;
-	xl = (spot->x - dist - bmaporgx) >> MAPBLOCKSHIFT;
-#endif
+    P_PointToBlock(spot->x - dist, spot->y - dist, &xl, &yl);
+    P_PointToBlock(spot->x + dist, spot->y + dist, &xh, &yh);
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;

@@ -1056,3 +1056,12 @@ boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
 	//
 	return P_TraverseIntercepts(trav, FRACUNIT);
 }
+
+//===========================================================================
+// P_PointToBlock
+//===========================================================================
+void P_PointToBlock(fixed_t x, fixed_t y, int *bx, int *by)
+{
+   	*bx = (x - bmaporgx) >> MAPBLOCKSHIFT;
+	*by = (y - bmaporgy) >> MAPBLOCKSHIFT;
+}

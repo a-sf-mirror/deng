@@ -175,6 +175,7 @@ extern          "C" {
 	struct mobj_s  *P_GetBlockRootIdx(int index);
 	void            P_LinkThing(struct mobj_s *thing, byte flags);
 	void            P_UnlinkThing(struct mobj_s *thing);
+    void            P_PointToBlock(fixed_t x, fixed_t y, int *bx, int *by);
 	boolean         P_BlockLinesIterator(int x, int y,
 										 boolean (*func) (struct line_s *,
 														  void *), void *);
