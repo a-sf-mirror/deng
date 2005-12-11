@@ -604,25 +604,6 @@ static int SetProperty(void* ptr, void* context)
     case DMU_VERTEX:
         {
         // Vertices are not writable through DMU.
-        /*        
-        vertex_t* p = ptr;
-        switch(args->prop)
-        {
-        case DMU_X:
-            SetValue(VT_FIXED, &p->x, args, 0);
-            break;
-        case DMU_Y:
-            SetValue(VT_FIXED, &p->y, args, 0);
-            break;
-        case DMU_XY:
-            SetValue(VT_FIXED, &p->x, args, 0);
-            SetValue(VT_FIXED, &p->y, args, 1);
-            break;
-        default:
-            Con_Error("SetProperty: Property %i is not writable in DMU_VERTEX.\n", 
-                      args->prop);
-        }
-        */
         Con_Error("SetProperty: DMU_VERTEX is not writable.\n");
         break;
         }
