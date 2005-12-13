@@ -66,30 +66,30 @@ game_export_t __gx;
 
 int DD_CheckArg(char *tag, char **value)
 {
-	int     i = ArgCheck(tag);
-	char   *next = ArgNext();
+    int     i = ArgCheck(tag);
+    char   *next = ArgNext();
 
-	if(!i)
-		return 0;
-	if(value && next)
-		*value = next;
-	return 1;
+    if(!i)
+        return 0;
+    if(value && next)
+        *value = next;
+    return 1;
 }
 
 void DD_ErrorBox(boolean error, char *format, ...)
 {
-	char    buff[200];
-	va_list args;
+    char    buff[200];
+    va_list args;
 
-	va_start(args, format);
-	vsprintf(buff, format, args);
-	va_end(args);
+    va_start(args, format);
+    vsprintf(buff, format, args);
+    va_end(args);
 #ifdef WIN32
-	MessageBox(NULL, buff, "Doomsday " DOOMSDAY_VERSION_TEXT,
-			   MB_OK | (error ? MB_ICONERROR : MB_ICONWARNING));
+    MessageBox(NULL, buff, "Doomsday " DOOMSDAY_VERSION_TEXT,
+               MB_OK | (error ? MB_ICONERROR : MB_ICONWARNING));
 #endif
 #ifdef UNIX
-	fputs(buff, stderr);
+    fputs(buff, stderr);
 #endif
 }
 
@@ -98,8 +98,8 @@ void DD_ErrorBox(boolean error, char *format, ...)
  */
 void DD_MainWindowTitle(char *title)
 {
-	sprintf(title, "Doomsday " DOOMSDAY_VERSION_TEXT " : %s",
-			__gx.Get(DD_GAME_ID));
+    sprintf(title, "Doomsday " DOOMSDAY_VERSION_TEXT " : %s",
+            __gx.Get(DD_GAME_ID));
 }
 
 void SetGameImports(game_import_t * imp)
@@ -127,6 +127,7 @@ void SetGameImports(game_import_t * imp)
 	imp->numnodes = &numnodes;
 	imp->numlines = &numlines;
 	imp->numsides = &numsides;
+	imp->numthings = &numthings;
 
 	imp->vertexes = (void **) &vertexes;
 	imp->segs = (void **) &segs;
@@ -135,6 +136,7 @@ void SetGameImports(game_import_t * imp)
 	imp->nodes = (void **) &nodes;
 	imp->lines = (void **) &lines;
 	imp->sides = (void **) &sides;
+	imp->things = (void **) &things;
 
 	imp->blockmaplump = &blockmaplump;
 	imp->blockmap = &blockmap;
@@ -152,50 +154,50 @@ void SetGameImports(game_import_t * imp)
 void DD_InitAPI(void)
 {
 #ifdef WIN32
-	extern GETGAMEAPI GetGameAPI;
+    extern GETGAMEAPI GetGameAPI;
 #endif
 
-	game_export_t *gameExPtr;
+    game_export_t *gameExPtr;
 
-	// Put the imported stuff into the imports.
-	SetGameImports(&__gi);
+    // Put the imported stuff into the imports.
+    SetGameImports(&__gi);
 
-	memset(&__gx, 0, sizeof(__gx));
-	gameExPtr = GetGameAPI(&__gi);
-	memcpy(&__gx, gameExPtr,
-		   MIN_OF(sizeof(__gx), (unsigned) gameExPtr->apiSize));
+    memset(&__gx, 0, sizeof(__gx));
+    gameExPtr = GetGameAPI(&__gi);
+    memcpy(&__gx, gameExPtr,
+           MIN_OF(sizeof(__gx), (unsigned) gameExPtr->apiSize));
 }
 
 void DD_InitCommandLine(const char *cmdLine)
 {
-	ArgInit(cmdLine);
+    ArgInit(cmdLine);
 
-	// Register some abbreviations for command line options.
-	ArgAbbreviate("-game", "-g");
-	ArgAbbreviate("-gl", "-r");	// As in (R)enderer...
-	ArgAbbreviate("-defs", "-d");
-	ArgAbbreviate("-width", "-w");
-	ArgAbbreviate("-height", "-h");
-	ArgAbbreviate("-winsize", "-wh");
-	ArgAbbreviate("-bpp", "-b");
-	ArgAbbreviate("-window", "-wnd");
-	ArgAbbreviate("-nocenter", "-noc");
-	ArgAbbreviate("-paltex", "-ptx");
-	ArgAbbreviate("-file", "-f");
-	ArgAbbreviate("-maxzone", "-mem");
-	ArgAbbreviate("-config", "-cfg");
-	ArgAbbreviate("-parse", "-p");
-	ArgAbbreviate("-cparse", "-cp");
-	ArgAbbreviate("-command", "-cmd");
-	ArgAbbreviate("-fontdir", "-fd");
-	ArgAbbreviate("-modeldir", "-md");
-	ArgAbbreviate("-basedir", "-bd");
-	ArgAbbreviate("-stdbasedir", "-sbd");
-	ArgAbbreviate("-userdir", "-ud");
-	ArgAbbreviate("-texdir", "-td");
-	ArgAbbreviate("-texdir2", "-td2");
-	ArgAbbreviate("-anifilter", "-ani");
-	ArgAbbreviate("-verbose", "-v");
+    // Register some abbreviations for command line options.
+    ArgAbbreviate("-game", "-g");
+    ArgAbbreviate("-gl", "-r"); // As in (R)enderer...
+    ArgAbbreviate("-defs", "-d");
+    ArgAbbreviate("-width", "-w");
+    ArgAbbreviate("-height", "-h");
+    ArgAbbreviate("-winsize", "-wh");
+    ArgAbbreviate("-bpp", "-b");
+    ArgAbbreviate("-window", "-wnd");
+    ArgAbbreviate("-nocenter", "-noc");
+    ArgAbbreviate("-paltex", "-ptx");
+    ArgAbbreviate("-file", "-f");
+    ArgAbbreviate("-maxzone", "-mem");
+    ArgAbbreviate("-config", "-cfg");
+    ArgAbbreviate("-parse", "-p");
+    ArgAbbreviate("-cparse", "-cp");
+    ArgAbbreviate("-command", "-cmd");
+    ArgAbbreviate("-fontdir", "-fd");
+    ArgAbbreviate("-modeldir", "-md");
+    ArgAbbreviate("-basedir", "-bd");
+    ArgAbbreviate("-stdbasedir", "-sbd");
+    ArgAbbreviate("-userdir", "-ud");
+    ArgAbbreviate("-texdir", "-td");
+    ArgAbbreviate("-texdir2", "-td2");
+    ArgAbbreviate("-anifilter", "-ani");
+    ArgAbbreviate("-verbose", "-v");
 }
 
 /*
@@ -203,34 +205,34 @@ void DD_InitCommandLine(const char *cmdLine)
  */
 void DD_ShutdownAll(void)
 {
-	int     i;
+    int     i;
 
-	DD_ShutdownHelp();
-	Zip_Shutdown();
+    DD_ShutdownHelp();
+    Zip_Shutdown();
 
-	// Kill the message window if it happens to be open.
-	SW_Shutdown();
+    // Kill the message window if it happens to be open.
+    SW_Shutdown();
 
 #ifdef WIN32
-	// Enables Alt-Tab, Alt-Esc, Ctrl-Alt-Del.
-	SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, FALSE, 0, 0);
+    // Enables Alt-Tab, Alt-Esc, Ctrl-Alt-Del.
+    SystemParametersInfo(SPI_SETSCREENSAVERRUNNING, FALSE, 0, 0);
 #endif
 
-	// Stop all demo recording.
-	for(i = 0; i < MAXPLAYERS; i++)
-		Demo_StopRecording(i);
+    // Stop all demo recording.
+    for(i = 0; i < MAXPLAYERS; i++)
+        Demo_StopRecording(i);
 
-	Sv_Shutdown();
-	R_Shutdown();
-	Sys_ConShutdown();
-	Def_Destroy();
-	F_ShutdownDirec();
-	FH_Clear();
-	ArgShutdown();
+    Sv_Shutdown();
+    R_Shutdown();
+    Sys_ConShutdown();
+    Def_Destroy();
+    F_ShutdownDirec();
+    FH_Clear();
+    ArgShutdown();
     Z_Shutdown();
-	DD_ShutdownDGL();
+    DD_ShutdownDGL();
 
-	// Close the message output file.
-	fclose(outFile);
-	outFile = NULL;
+    // Close the message output file.
+    fclose(outFile);
+    outFile = NULL;
 }
