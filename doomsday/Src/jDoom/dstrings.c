@@ -1,35 +1,46 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-//
-// DESCRIPTION:
-//  Globally defined strings.
-// 
-//-----------------------------------------------------------------------------
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
 
-#ifdef __GNUG__
-#  pragma implementation "dstrings.h"
-#endif
+/*
+ * Globally defined strings.
+ * TODO: Move contents to another file.
+ *       REMOVE FROM SRC TREE
+ */
+
+// HEADER FILES ------------------------------------------------------------
+
 #include "dstrings.h"
+
+// MACROS ------------------------------------------------------------------
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 char   *endmsg[NUM_QUITMESSAGES + 1];
 
-									/*=
+                                    /*=
 
-{ 
+{
   // DOOM1
   //QUITMSG,
   "please don't leave, there's more\ndemons to toast!",
@@ -62,3 +73,7 @@ char   *endmsg[NUM_QUITMESSAGES + 1];
   "THIS IS NO MESSAGE!\nPage intentionally left blank."
 };
 */
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+// CODE --------------------------------------------------------------------

@@ -1,408 +1,354 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log$
-// Revision 1.9.2.1  2005/11/27 17:42:08  skyjake
-// Breaking everything with the new Map Update API (=DMU) (only declared, not
-// implemented yet)
-//
-// - jDoom and jHeretic do not compile
-// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
-// portions of code that would not compile
-// - none of the games work, because DMU has not been implemented or used in any
-// of the games
-//
-// Map data is now hidden from the games. The line_t, seg_t and structs are
-// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
-// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
-// parameters. There are multiple versions of each function so that using them is
-// more convenient in terms of data types.
-//
-// P_Callback can be used for having the engine call a callback function for each
-// of the selected map data objects.
-//
-// The API is not finalized yet.
-//
-// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
-// parameters.
-//
-// The games require map data in numerous places of the code. All of these should
-// be converted to work with DMU in the most sensible fashion (a direct
-// conversion may not always make the most sense). E.g., jHexen has
-// some private map data for sound playing, etc. The placement of this data is
-// not certain at the moment, but it can remain private to the games if
-// necessary.
-//
-// Games can build their own map changing routines on DMU as they see fit. The
-// engine will only provide a generic API, as defined in doomsday.h currently.
-//
-// Revision 1.9  2005/05/29 12:45:09  danij
-// Removed fixed limits on number of active plats/ceilings using modified code from PrBoom.
-//
-// Revision 1.8  2005/01/01 22:58:52  skyjake
-// Resolved a bunch of compiler warnings
-//
-// Revision 1.7  2004/05/30 08:42:41  skyjake
-// Tweaked indentation style
-//
-// Revision 1.6  2004/05/29 09:53:29  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.5  2004/05/28 19:52:58  skyjake
-// Finished switch from branch-1-7 to trunk, hopefully everything is fine
-//
-// Revision 1.2.2.1  2004/05/16 10:01:36  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.2.4.1  2003/11/19 17:07:13  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.2  2003/02/27 23:14:32  skyjake
-// Obsolete jDoom files removed
-//
-// Revision 1.1  2003/02/26 19:21:57  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:47  Jaakko
-// Added Doomsday sources
-//
-//
-// DESCRIPTION:
-//  Plats (i.e. elevator platforms) code, raising/lowering.
-//
-//-----------------------------------------------------------------------------
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+/*
+ * Plats (i.e. elevator platforms) code, raising/lowering.
+ */
+
+// HEADER FILES ------------------------------------------------------------
 
 #include "doomdef.h"
-
 #include "m_random.h"
-
 #include "p_local.h"
-
 #include "s_sound.h"
-
-// State.
 #include "doomstat.h"
 #include "r_state.h"
 
+// MACROS ------------------------------------------------------------------
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
+
 platlist_t *activeplats;
 
-//
-// Move a plat up and down
-//
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+// CODE --------------------------------------------------------------------
+
+/*
+ * Move a plat up and down
+ *
+ * @parm plat: ptr to the plat to move
+ */
 void T_PlatRaise(plat_t * plat)
 {
-	result_e res;
+    result_e res;
 
-	switch (plat->status)
-	{
-	case up:
-		res =
-			T_MovePlane(plat->sector, plat->speed, plat->high, plat->crush, 0,
-						1);
+    switch (plat->status)
+    {
+    case up:
+        res = T_MovePlane(plat->sector, plat->speed, plat->high,
+                          plat->crush, 0, 1);
 
-		if(plat->type == raiseAndChange ||
-		   plat->type == raiseToNearestAndChange)
-		{
-			if(!(leveltime & 7))
-				S_SectorSound(plat->sector, sfx_stnmov);
-			//gi.Sv_PlaneSound(plat->sector, false, sfx_stnmov, 7);
-		}
+        if(plat->type == raiseAndChange ||
+           plat->type == raiseToNearestAndChange)
+        {
+            if(!(leveltime & 7))
+                S_SectorSound(plat->sector, sfx_stnmov);
+        }
 
-		if(res == crushed && (!plat->crush))
-		{
-			plat->count = plat->wait;
-			plat->status = down;
-			S_SectorSound(plat->sector, sfx_pstart);
-		}
-		else
-		{
-			if(res == pastdest)
-			{
-				plat->count = plat->wait;
-				plat->status = waiting;
-				S_SectorSound(plat->sector, sfx_pstop);
+        if(res == crushed && (!plat->crush))
+        {
+            plat->count = plat->wait;
+            plat->status = down;
+            S_SectorSound(plat->sector, sfx_pstart);
+        }
+        else
+        {
+            if(res == pastdest)
+            {
+                plat->count = plat->wait;
+                plat->status = waiting;
+                S_SectorSound(plat->sector, sfx_pstop);
 
-				switch (plat->type)
-				{
-				case blazeDWUS:
-				case downWaitUpStay:
-					P_RemoveActivePlat(plat);
-					break;
+                switch (plat->type)
+                {
+                case blazeDWUS:
+                case downWaitUpStay:
+                    P_RemoveActivePlat(plat);
+                    break;
 
-				case raiseAndChange:
-				case raiseToNearestAndChange:
-					P_RemoveActivePlat(plat);
-					break;
+                case raiseAndChange:
+                case raiseToNearestAndChange:
+                    P_RemoveActivePlat(plat);
+                    break;
 
-				default:
-					break;
-				}
-			}
-		}
-		break;
+                default:
+                    break;
+                }
+            }
+        }
+        break;
 
-	case down:
-		res = T_MovePlane(plat->sector, plat->speed, plat->low, false, 0, -1);
+    case down:
+        res = T_MovePlane(plat->sector, plat->speed,
+                          plat->low, false, 0, -1);
 
-		if(res == pastdest)
-		{
-			plat->count = plat->wait;
-			plat->status = waiting;
-			S_SectorSound(plat->sector, sfx_pstop);
-		}
-		break;
+        if(res == pastdest)
+        {
+            plat->count = plat->wait;
+            plat->status = waiting;
+            S_SectorSound(plat->sector, sfx_pstop);
+        }
+        break;
 
-	case waiting:
-		if(!--plat->count)
-		{
-			if(plat->sector->floorheight == plat->low)
-				plat->status = up;
-			else
-				plat->status = down;
-			S_SectorSound(plat->sector, sfx_pstart);
-		}
-	case in_stasis:
-		break;
-	}
+    case waiting:
+        if(!--plat->count)
+        {
+            if(plat->sector->floorheight == plat->low)
+                plat->status = up;
+            else
+                plat->status = down;
+            S_SectorSound(plat->sector, sfx_pstart);
+        }
+    case in_stasis:
+        break;
+    }
 }
 
-//
-// Do Platforms
-//  "amount" is only used for SOME platforms.
-//
+/*
+ * Do Platforms.
+ *
+ * @param amount: is only used for SOME platforms.
+ */
 int EV_DoPlat(line_t *line, plattype_e type, int amount)
 {
-	plat_t *plat;
-	int     secnum;
-	int     rtn;
-	sector_t *sec;
+    plat_t *plat;
+    int     secnum;
+    int     rtn;
+    sector_t *sec;
 
-	secnum = -1;
-	rtn = 0;
+    secnum = -1;
+    rtn = 0;
 
-	//  Activate all <type> plats that are in_stasis
-	switch (type)
-	{
-	case perpetualRaise:
-		P_ActivateInStasis(line->tag);
-		break;
+    //  Activate all <type> plats that are in_stasis
+    switch (type)
+    {
+    case perpetualRaise:
+        P_ActivateInStasis(line->tag);
+        break;
 
-	default:
-		break;
-	}
+    default:
+        break;
+    }
 
-	while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-	{
+    while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+    {
 #ifdef TODO_MAP_UPDATE
-		sec = &sectors[secnum];
+        sec = &sectors[secnum];
 
-		if(sec->specialdata)
-			continue;
+        if(sec->specialdata)
+            continue;
 #endif
 
-		// Find lowest & highest floors around sector
-		rtn = 1;
-		plat = Z_Malloc(sizeof(*plat), PU_LEVSPEC, 0);
-		P_AddThinker(&plat->thinker);
+        // Find lowest & highest floors around sector
+        rtn = 1;
+        plat = Z_Malloc(sizeof(*plat), PU_LEVSPEC, 0);
+        P_AddThinker(&plat->thinker);
 
-		plat->type = type;
-		plat->sector = sec;
-		plat->sector->specialdata = plat;
-		plat->thinker.function = (actionf_p1) T_PlatRaise;
-		plat->crush = false;
-		plat->tag = line->tag;
+        plat->type = type;
+        plat->sector = sec;
+        plat->sector->specialdata = plat;
+        plat->thinker.function = (actionf_p1) T_PlatRaise;
+        plat->crush = false;
+        plat->tag = line->tag;
 
-		switch (type)
-		{
-		case raiseToNearestAndChange:
-			plat->speed = PLATSPEED / 2;
+        switch (type)
+        {
+        case raiseToNearestAndChange:
+            plat->speed = PLATSPEED / 2;
 #ifdef TODO_MAP_UPDATE
-			sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
+            sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
 #endif
-			//gi.Sv_SectorReport(sec, false, sec->floorheight, 0, sec->floorpic, -1);
-			plat->high = P_FindNextHighestFloor(sec, sec->floorheight);
-			plat->wait = 0;
-			plat->status = up;
-			// NO MORE DAMAGE, IF APPLICABLE
-			sec->special = 0;
+            plat->high = P_FindNextHighestFloor(sec, sec->floorheight);
+            plat->wait = 0;
+            plat->status = up;
+            // NO MORE DAMAGE, IF APPLICABLE
+            sec->special = 0;
 
-			S_SectorSound(sec, sfx_stnmov);
-			break;
+            S_SectorSound(sec, sfx_stnmov);
+            break;
 
-		case raiseAndChange:
-			plat->speed = PLATSPEED / 2;
+        case raiseAndChange:
+            plat->speed = PLATSPEED / 2;
 #ifdef TODO_MAP_UPDATE
-			sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
-			//gi.Sv_SectorReport(sec, false, sec->floorheight, 0, sec->floorpic, -1);
-			plat->high = sec->floorheight + amount * FRACUNIT;
+            sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
+            plat->high = sec->floorheight + amount * FRACUNIT;
 #endif
-			plat->wait = 0;
-			plat->status = up;
+            plat->wait = 0;
+            plat->status = up;
 
-			S_SectorSound(sec, sfx_stnmov);
-			break;
+            S_SectorSound(sec, sfx_stnmov);
+            break;
 
-		case downWaitUpStay:
-			plat->speed = PLATSPEED * 4;
-			plat->low = P_FindLowestFloorSurrounding(sec);
+        case downWaitUpStay:
+            plat->speed = PLATSPEED * 4;
+            plat->low = P_FindLowestFloorSurrounding(sec);
 
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
+            if(plat->low > sec->floorheight)
+                plat->low = sec->floorheight;
 
-			plat->high = sec->floorheight;
-			plat->wait = 35 * PLATWAIT;
-			plat->status = down;
-			S_SectorSound(sec, sfx_pstart);
-			break;
+            plat->high = sec->floorheight;
+            plat->wait = 35 * PLATWAIT;
+            plat->status = down;
+            S_SectorSound(sec, sfx_pstart);
+            break;
 
-		case blazeDWUS:
-			plat->speed = PLATSPEED * 8;
-			plat->low = P_FindLowestFloorSurrounding(sec);
+        case blazeDWUS:
+            plat->speed = PLATSPEED * 8;
+            plat->low = P_FindLowestFloorSurrounding(sec);
 
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
+            if(plat->low > sec->floorheight)
+                plat->low = sec->floorheight;
 
-			plat->high = sec->floorheight;
-			plat->wait = 35 * PLATWAIT;
-			plat->status = down;
-			S_SectorSound(sec, sfx_pstart);
-			break;
+            plat->high = sec->floorheight;
+            plat->wait = 35 * PLATWAIT;
+            plat->status = down;
+            S_SectorSound(sec, sfx_pstart);
+            break;
 
-		case perpetualRaise:
-			plat->speed = PLATSPEED;
-			plat->low = P_FindLowestFloorSurrounding(sec);
+        case perpetualRaise:
+            plat->speed = PLATSPEED;
+            plat->low = P_FindLowestFloorSurrounding(sec);
 
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
+            if(plat->low > sec->floorheight)
+                plat->low = sec->floorheight;
 
-			plat->high = P_FindHighestFloorSurrounding(sec);
+            plat->high = P_FindHighestFloorSurrounding(sec);
 
-			if(plat->high < sec->floorheight)
-				plat->high = sec->floorheight;
+            if(plat->high < sec->floorheight)
+                plat->high = sec->floorheight;
 
-			plat->wait = 35 * PLATWAIT;
-			plat->status = P_Random() & 1;
+            plat->wait = 35 * PLATWAIT;
+            plat->status = P_Random() & 1;
 
-			S_SectorSound(sec, sfx_pstart);
-			break;
-		}
-		P_AddActivePlat(plat);
-	}
-	return rtn;
+            S_SectorSound(sec, sfx_pstart);
+            break;
+        }
+        P_AddActivePlat(plat);
+    }
+    return rtn;
 }
 
-//
-// P_ActivateInStasis()
-//
-// Activate a plat that has been put in stasis
-// (stopped perpetual floor, instant floor/ceil toggle)
-//
-// Passed the tag of the plat that should be reactivated
-// Returns nothing
-//
+/*
+ * Activate a plat that has been put in stasis
+ * (stopped perpetual floor, instant floor/ceil toggle)
+ *
+ * @parm tag: the tag of the plat that should be reactivated
+ */
 void P_ActivateInStasis(int tag)
 {
-  platlist_t *pl;
-  for (pl=activeplats; pl; pl=pl->next)   // search the active plats
-  {
-    plat_t *plat = pl->plat;              // for one in stasis with right tag
-    if (plat->tag == tag && plat->status == in_stasis)
+    platlist_t *pl;
+
+    // search the active plats
+    for(pl = activeplats; pl; pl = pl->next)
     {
-		plat->status = plat->oldstatus;
-		plat->thinker.function = (actionf_p1) T_PlatRaise;
-	}
-  }
+        plat_t *plat = pl->plat;
+
+        // for one in stasis with right tag
+        if(plat->tag == tag && plat->status == in_stasis)
+        {
+            plat->status = plat->oldstatus;
+            plat->thinker.function = (actionf_p1) T_PlatRaise;
+        }
+    }
 }
 
-//
-// EV_StopPlat()
-//
-// Handler for "stop perpetual floor" linedef type
-//
-// Passed the linedef that stopped the plat
-// Returns true if a plat was put in stasis
-//
-// jff 2/12/98 added int return value, fixed return
-//
-int EV_StopPlat(line_t* line)
+/*
+ * Handler for "stop perpetual floor" linedef type
+ * Returns true if a plat was put in stasis
+ *
+ * @parm line: ptr to the line that stopped the plat
+ */
+int EV_StopPlat(line_t *line)
 {
-  platlist_t *pl;
-  for (pl=activeplats; pl; pl=pl->next)  // search the active plats
-  {
-    plat_t *plat = pl->plat;             // for one with the tag not in stasis
-    if (plat->status != in_stasis && plat->tag == line->tag)
+    platlist_t *pl;
+
+    // search the active plats
+    for(pl = activeplats; pl; pl = pl->next)
     {
-      plat->oldstatus = plat->status;    // put it in stasis
-      plat->status = in_stasis;
-      plat->thinker.function = (actionf_v) NULL;
-	}
-  }
-  return 1;
+        plat_t *plat = pl->plat;
+
+        // for one with the tag not in stasis
+        if(plat->status != in_stasis && plat->tag == line->tag)
+        {
+            // put it in stasis
+            plat->oldstatus = plat->status;
+            plat->status = in_stasis;
+            plat->thinker.function = (actionf_v) NULL;
+        }
+    }
+    return 1;
 }
 
-//
-// P_AddActivePlat()
-//
-// Add a plat to the head of the active plat list
-//
-// Passed a pointer to the plat to add
-// Returns nothing
-//
-void P_AddActivePlat(plat_t* plat)
+/*
+ * Add a plat to the head of the active plat list
+ *
+ * @parm plat: ptr to the plat to add
+ */
+void P_AddActivePlat(plat_t *plat)
 {
-  platlist_t *list = malloc(sizeof *list);
-  list->plat = plat;
-  plat->list = list;
-  if ((list->next = activeplats))
-    list->next->prev = &list->next;
-  list->prev = &activeplats;
-  activeplats = list;
+    platlist_t *list = malloc(sizeof *list);
+
+    list->plat = plat;
+    plat->list = list;
+
+    if((list->next = activeplats))
+        list->next->prev = &list->next;
+
+    list->prev = &activeplats;
+    activeplats = list;
 }
 
-//
-// P_RemoveActivePlat()
-//
-// Remove a plat from the active plat list
-//
-// Passed a pointer to the plat to remove
-// Returns nothing
-//
-void P_RemoveActivePlat(plat_t* plat)
+/*
+ * Remove a plat from the active plat list
+ *
+ * @parm plat: ptr to the plat to remove
+ */
+void P_RemoveActivePlat(plat_t *plat)
 {
-  platlist_t *list = plat->list;
-  plat->sector->specialdata = NULL;
-  P_RemoveThinker(&plat->thinker);
-  if ((*list->prev = list->next))
-    list->next->prev = list->prev;
-  free(list);
+    platlist_t *list = plat->list;
+
+    plat->sector->specialdata = NULL;
+
+    P_RemoveThinker(&plat->thinker);
+
+    if((*list->prev = list->next))
+        list->next->prev = list->prev;
+
+    free(list);
 }
 
-//
-// P_RemoveAllActivePlats()
-//
-// Remove all plats from the active plat list
-//
-// Passed nothing, returns nothing
-//
+/*
+ *Remove all plats from the active plat list
+ */
 void P_RemoveAllActivePlats(void)
 {
-  while (activeplats)
-  {
-    platlist_t *next = activeplats->next;
-    free(activeplats);
-    activeplats = next;
-  }
+    while(activeplats)
+    {
+        platlist_t *next = activeplats->next;
+
+        free(activeplats);
+        activeplats = next;
+    }
 }
