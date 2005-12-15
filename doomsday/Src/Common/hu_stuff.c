@@ -1,23 +1,20 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
-//
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-//
-// DESCRIPTION:  Heads-up displays, font handling, text drawing routines
-//
-//-----------------------------------------------------------------------------
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+/*
+ * Heads-up displays, font handling, text drawing routines
+ */
 
 #ifdef WIN32
 #  pragma warning(disable:4018)
@@ -57,9 +54,7 @@
 
 #ifdef __JDOOM__
 
-//
 // Locally used constants, shortcuts.
-//
 #define HU_TITLE    (mapnames[(gameepisode-1)*9+gamemap-1])
 #define HU_TITLE2   (mapnames2[gamemap-1])
 #define HU_TITLEP   (mapnamesp[gamemap-1])
@@ -316,9 +311,6 @@ static int NUMCMAPS;
 
 // Code -------------------------------------------------------------------
 
-/*
- *  R_CachePatch
- */
 void R_CachePatch(dpatch_t * dp, char *name)
 {
     patch_t *patch;
@@ -340,9 +332,8 @@ void R_CachePatch(dpatch_t * dp, char *name)
 }
 
 /*
- *  HU_Init
- *      Loads the font patches and inits various strings
- *      jHEXEN Note: Don't bother with the yellow font, we'll colour the white version
+ * Loads the font patches and inits various strings
+ * jHEXEN Note: Don't bother with the yellow font, we'll colour the white version
  */
 void HU_Init(void)
 {
@@ -506,17 +497,11 @@ void HU_UnloadData(void)
 #endif
 }
 
-/*
- *  HU_Stop
- */
 void HU_Stop(void)
 {
     headsupactive = false;
 }
 
-/*
- *  HU_Start
- */
 void HU_Start(void)
 {
 #ifdef __JDOOM__
@@ -555,9 +540,6 @@ void HU_Start(void)
 
 }
 
-/*
- *  HU_Drawer
- */
 void HU_Drawer(void)
 {
 #ifdef __JDOOM__
@@ -585,17 +567,11 @@ void HU_Drawer(void)
 #endif
 }
 
-/*
- *  HU_Ticker
- */
 void HU_Ticker(void)
 {
     HUMsg_Ticker();
 }
 
-/*
- *  MN_FilterChar
- */
 int MN_FilterChar(int ch)
 {
     ch = toupper(ch);
@@ -608,9 +584,6 @@ int MN_FilterChar(int ch)
     return ch;
 }
 
-/*
- *  MN_TextFilter
- */
 void MN_TextFilter(char *text)
 {
     int     k;
@@ -618,18 +591,11 @@ void MN_TextFilter(char *text)
     for(k = 0; text[k]; k++)
     {
         text[k] = MN_FilterChar(text[k]);
-        /*      char ch = toupper(text[k]);
-           if(ch == '_') ch = '[';  // Mysterious... (from save slots).
-           else if(ch == '\\') ch = '/';
-           // Check that the character is printable.
-           else if(ch < 32 || ch > 'Z') ch = 32; // Character out of range.
-           text[k] = ch;            */
     }
 }
 
 /*
- *  WI_ParseFloat
- *      Expected: <whitespace> = <whitespace> <float>
+ * Expected: <whitespace> = <whitespace> <float>
  */
 float WI_ParseFloat(char **str)
 {
@@ -646,8 +612,7 @@ float WI_ParseFloat(char **str)
 }
 
 /*
- *  WI_DrawParamText
- *      Draw a string of text controlled by parameter blocks.
+ * Draw a string of text controlled by parameter blocks.
  */
 void WI_DrawParamText(int x, int y, char *string, dpatch_t *defFont,
                       float defRed, float defGreen, float defBlue, float defAlpha,
@@ -906,8 +871,7 @@ int M_StringWidth(char *string, dpatch_t * font)
 }
 
 /*
- *  M_StringHeight
- *      Find string height from hu_font chars
+ * Find string height from hu_font chars
  */
 int M_StringHeight(char *string, dpatch_t * font)
 {
@@ -922,9 +886,6 @@ int M_StringHeight(char *string, dpatch_t * font)
     return h;
 }
 
-/*
- *  M_LetterFlash
- */
 void M_LetterFlash(int x, int y, int w, int h, int bright, float red,
                           float green, float blue, float alpha)
 {
@@ -956,17 +917,13 @@ void M_LetterFlash(int x, int y, int w, int h, int bright, float red,
 }
 
 /*
- *  M_WriteText
- *      Write a string using the hu_font
+ * Write a string using the hu_font
  */
 void M_WriteText(int x, int y, char *string)
 {
     M_WriteText2(x, y, string, 0, 1, 1, 1, 1);
 }
 
-/*
- *  M_WriteText2
- */
 void M_WriteText2(int x, int y, char *string, dpatch_t *font, float red,
                   float green, float blue, float alpha)
 {
@@ -974,9 +931,8 @@ void M_WriteText2(int x, int y, char *string, dpatch_t *font, float red,
 }
 
 /*
- *  M_WriteText3
- *      Write a string using a colored, custom font.
- *      Also do a type-in effect.
+ * Write a string using a colored, custom font.
+ * Also do a type-in effect.
  */
 void M_WriteText3(int x, int y, const char *string, dpatch_t *font, float red,
                   float green, float blue, float alpha, boolean doTypeIn, int initialCount)
@@ -1096,11 +1052,10 @@ void M_WriteText3(int x, int y, const char *string, dpatch_t *font, float red,
 }
 
 /*
- *  WI_DrawPatch
- *      This routine tests for a string-replacement for the patch.
- *      If one is found, it's used instead of the original graphic.
+ * This routine tests for a string-replacement for the patch.
+ * If one is found, it's used instead of the original graphic.
  *
- *      If the patch is not in an IWAD, it won't be replaced!
+ * If the patch is not in an IWAD, it won't be replaced!
  */
 void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
                   int lump, char *altstring, int halign)
@@ -1142,10 +1097,6 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
     WI_DrawParamText(x, y, patchString? string : altstring, hu_font_b,
                      r, g, b, a, false, true, halign);
 }
-
-/*
- *  Draw_BeginZoom
- */
 void Draw_BeginZoom(float s, float originX, float originY)
 {
     gl.MatrixMode(DGL_MODELVIEW);
@@ -1156,9 +1107,6 @@ void Draw_BeginZoom(float s, float originX, float originY)
     gl.Translatef(-originX, -originY, 0);
 }
 
-/*
- *  Draw_EndZoom
- */
 void Draw_EndZoom(void)
 {
     gl.MatrixMode(DGL_MODELVIEW);
