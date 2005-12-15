@@ -1,189 +1,133 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log$
-// Revision 1.8.2.1  2005/11/27 17:42:08  skyjake
-// Breaking everything with the new Map Update API (=DMU) (only declared, not
-// implemented yet)
-//
-// - jDoom and jHeretic do not compile
-// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
-// portions of code that would not compile
-// - none of the games work, because DMU has not been implemented or used in any
-// of the games
-//
-// Map data is now hidden from the games. The line_t, seg_t and structs are
-// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
-// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
-// parameters. There are multiple versions of each function so that using them is
-// more convenient in terms of data types.
-//
-// P_Callback can be used for having the engine call a callback function for each
-// of the selected map data objects.
-//
-// The API is not finalized yet.
-//
-// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
-// parameters.
-//
-// The games require map data in numerous places of the code. All of these should
-// be converted to work with DMU in the most sensible fashion (a direct
-// conversion may not always make the most sense). E.g., jHexen has
-// some private map data for sound playing, etc. The placement of this data is
-// not certain at the moment, but it can remain private to the games if
-// necessary.
-//
-// Games can build their own map changing routines on DMU as they see fit. The
-// engine will only provide a generic API, as defined in doomsday.h currently.
-//
-// Revision 1.8  2005/01/01 22:58:52  skyjake
-// Resolved a bunch of compiler warnings
-//
-// Revision 1.7  2004/05/30 08:42:42  skyjake
-// Tweaked indentation style
-//
-// Revision 1.6  2004/05/29 09:53:29  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.5  2004/05/28 19:52:58  skyjake
-// Finished switch from branch-1-7 to trunk, hopefully everything is fine
-//
-// Revision 1.2.2.2  2004/05/16 10:01:37  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.2.2.1.2.1  2003/11/19 17:07:14  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.2.2.1  2003/10/05 10:09:40  skyjake
-// Cleanup
-//
-// Revision 1.2  2003/06/30 00:05:04  skyjake
-// Use fixmom
-//
-// Revision 1.1  2003/02/26 19:22:04  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:11:47  Jaakko
-// Added Doomsday sources
-//
-//
-// DESCRIPTION:
-//  Teleportation.
-//
-//-----------------------------------------------------------------------------
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+// HEADER FILES ------------------------------------------------------------
 
 #include "doomdef.h"
-
+#include "doomstat.h"
 #include "s_sound.h"
-
 #include "p_local.h"
-
-// State.
 #include "r_state.h"
 
-//
-// TELEPORTATION
-//
+// MACROS ------------------------------------------------------------------
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+// CODE --------------------------------------------------------------------
+
 int EV_Teleport(line_t *line, int side, mobj_t *thing)
 {
-	int     i;
-	int     tag;
-	mobj_t *m;
-	mobj_t *fog;
-	unsigned an;
-	thinker_t *thinker;
-	sector_t *sector;
-	fixed_t oldx;
-	fixed_t oldy;
-	fixed_t oldz;
+    int     i;
+    int     idx = P_ToIndex(DMU_LINE, line);
+    int     tag;
+    mobj_t *m;
+    mobj_t *fog;
+    unsigned an;
+    thinker_t *thinker;
+    sector_t *sector;
+    fixed_t oldx;
+    fixed_t oldy;
+    fixed_t oldz;
 
-	// don't teleport missiles
-	if(thing->flags & MF_MISSILE)
-		return 0;
+    // don't teleport missiles
+    if(thing->flags & MF_MISSILE)
+        return 0;
 
-	// Don't teleport if hit back of line,
-	//  so you can get out of teleporter.
-	if(side == 1)
-		return 0;
+    // Don't teleport if hit back of line,
+    //  so you can get out of teleporter.
+    if(side == 1)
+        return 0;
 
-	tag = line->tag;
-#ifdef TODO_MAP_UPDATE
-	for(i = 0; i < numsectors; i++)
-	{
-		if(sectors[i].tag == tag)
-		{
-			thinker = thinkercap.next;
-			for(thinker = thinkercap.next; thinker != &thinkercap;
-				thinker = thinker->next)
-			{
-				// not a mobj
-				if(thinker->function != P_MobjThinker)
-					continue;
+    tag = xlines[idx].tag;
 
-				m = (mobj_t *) thinker;
+    for(i = 0; i < numsectors; i++)
+    {
+        if(xsectors[i].tag == tag)
+        {
+            thinker = thinkercap.next;
+            for(thinker = thinkercap.next; thinker != &thinkercap;
+                thinker = thinker->next)
+            {
+                // not a mobj
+                if(thinker->function != P_MobjThinker)
+                    continue;
 
-				// not a teleportman
-				if(m->type != MT_TELEPORTMAN)
-					continue;
+                m = (mobj_t *) thinker;
 
-				sector = m->subsector->sector;
-				// wrong sector
-				if(sector - sectors != i)
-					continue;
+                // not a teleportman
+                if(m->type != MT_TELEPORTMAN)
+                    continue;
 
-				oldx = thing->x;
-				oldy = thing->y;
-				oldz = thing->z;
+                sector = m->subsector->sector;
+                // wrong sector
+                if(P_ToIndex(DMU_SECTOR, sector) != i)
+                    continue;
 
-				if(!P_TeleportMove(thing, m->x, m->y))
-					return 0;
+                oldx = thing->x;
+                oldy = thing->y;
+                oldz = thing->z;
 
-				thing->z = thing->floorz;	//fixme: not needed?
-				if(thing->player)
-					thing->dplayer->viewz =
-						thing->z + thing->dplayer->viewheight;
+                if(!P_TeleportMove(thing, m->x, m->y, false))
+                    return 0;
+                // In Final Doom things teleported to their destination
+                // but the height wasn't set to the floor.
+                if(gamemission != pack_tnt && gamemission != pack_plut)
+                    thing->z = thing->floorz;
 
-				// spawn teleport fog at source and destination
-				fog = P_SpawnMobj(oldx, oldy, oldz, MT_TFOG);
-				S_StartSound(sfx_telept, fog);
-				an = m->angle >> ANGLETOFINESHIFT;
-				fog =
-					P_SpawnMobj(m->x + 20 * finecosine[an],
-								m->y + 20 * finesine[an], thing->z, MT_TFOG);
+                if(thing->player)
+                    thing->dplayer->viewz =
+                        thing->z + thing->dplayer->viewheight;
 
-				// emit sound, where?
-				S_StartSound(sfx_telept, fog);
+                // spawn teleport fog at source and destination
+                fog = P_SpawnMobj(oldx, oldy, oldz, MT_TFOG);
+                S_StartSound(sfx_telept, fog);
+                an = m->angle >> ANGLETOFINESHIFT;
+                fog =
+                    P_SpawnMobj(m->x + 20 * finecosine[an],
+                                m->y + 20 * finesine[an], thing->z, MT_TFOG);
 
-				thing->angle = m->angle;
-				thing->momx = thing->momy = thing->momz = 0;
+                // emit sound, where?
+                S_StartSound(sfx_telept, fog);
 
-				// don't move for a bit
-				if(thing->player)
-				{
-					thing->reactiontime = 18;
-					thing->dplayer->clAngle = thing->angle;
-					thing->dplayer->clLookDir = 0;
-					thing->dplayer->lookdir = 0;
-					thing->dplayer->flags |=
-						DDPF_FIXANGLES | DDPF_FIXPOS | DDPF_FIXMOM;
-				}
-				return 1;
-			}
-		}
-	}
-#endif
-	return 0;
+                thing->angle = m->angle;
+                thing->momx = thing->momy = thing->momz = 0;
+
+                // don't move for a bit
+                if(thing->player)
+                {
+                    thing->reactiontime = 18;
+                    thing->dplayer->clAngle = thing->angle;
+                    thing->dplayer->clLookDir = 0;
+                    thing->dplayer->lookdir = 0;
+                    thing->dplayer->flags |=
+                        DDPF_FIXANGLES | DDPF_FIXPOS | DDPF_FIXMOM;
+                }
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
