@@ -117,21 +117,19 @@ void SV_PrepareTexture(int tex, boolean isflat, texarchive_t * arc)
 void SV_InitTextureArchives(void)
 {
     int     i;
-    int     count;
 
     // Init flats.
     flat_archive.count = 0;
 
-    count = DD_GetInteger(DD_SECTOR_COUNT);
-    for(i = 0; i < count; i++)
+    for(i = 0; i < numsectors; i++)
     {
         SV_PrepareTexture(P_GetInt(DMU_SECTOR, i, DMU_FLOOR_TEXTURE), true, &flat_archive);
         SV_PrepareTexture(P_GetInt(DMU_SECTOR, i, DMU_CEILING_TEXTURE), true, &flat_archive);
     }
     // Init textures.
     tex_archive.count = 0;
-    count = DD_GetInteger(DD_SIDE_COUNT);
-    for(i = 0; i < count; i++)
+
+    for(i = 0; i < numsides; i++)
     {
         SV_PrepareTexture(P_GetInt(DMU_SIDE, i, DMU_MIDDLE_TEXTURE), false, &tex_archive);
         SV_PrepareTexture(P_GetInt(DMU_SIDE, i, DMU_TOP_TEXTURE), false, &tex_archive);
