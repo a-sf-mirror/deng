@@ -93,7 +93,6 @@ void T_LightFlash(lightflash_t * flash)
 
     if(lightlevel == flash->maxlight)
     {
-        flash->sector->lightlevel = flash->minlight;
         P_SetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL, flash->minlight);
         flash->count = (P_Random() & flash->mintime) + 1;
     }
@@ -111,10 +110,11 @@ void T_LightFlash(lightflash_t * flash)
  */
 void P_SpawnLightFlash(sector_t *sector)
 {
+    int     lightlevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
     lightflash_t *flash;
 
     // nothing special about it during gameplay
-    sector->special = 0;
+    xsectors[P_ToIndex(DMU_SECTOR, sector)].special = 0;
 
     flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
 
@@ -124,7 +124,7 @@ void P_SpawnLightFlash(sector_t *sector)
     flash->sector = sector;
     flash->maxlight = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
 
-    flash->minlight = P_FindMinSurroundingLight(sector, sector->lightlevel);
+    flash->minlight = P_FindMinSurroundingLight(sector, lightlevel);
     flash->maxtime = 64;
     flash->mintime = 7;
     flash->count = (P_Random() & flash->maxtime) + 1;
@@ -210,19 +210,18 @@ void EV_TurnTagLightsOff(line_t *line)
     int     i;
     int     j;
     int     min;
-    int     count = DD_GetInteger(DD_SECTOR_COUNT);
     int     linetag;
     sector_t *sector;
     sector_t *tsec;
     line_t *templine;
 
     linetag = xlines[P_ToIndex(DMU_LINE, line)].tag;
-    for(j = 0; j < count; j++)
+    for(j = 0; j < numsectors; j++)
     {
         if(xsectors[j].tag == linetag)
         {
             min = P_GetInt(DMU_SECTOR, j, DMU_LIGHT_LEVEL);
-            for(i = 0; i < P_GetInt(DMU_SECTOR, j, DMU_LINECOUNT); i++)
+            for(i = 0; i < P_GetInt(DMU_SECTOR, j, DMU_LINE_COUNT); i++)
             {
 #ifdef TODO_MAP_UPDATE
                 templine = sector->Lines[i];
@@ -243,14 +242,13 @@ void EV_LightTurnOn(line_t *line, int bright)
 {
     int     i;
     int     j;
-    int     count = DD_GetInteger(DD_SECTOR_COUNT);
     int     linetag;
     sector_t *sector;
     sector_t *temp;
     line_t *templine;
 
     linetag = xlines[P_ToIndex(DMU_LINE, line)].tag;
-    for(i = 0; i < count; i++)
+    for(i = 0; i < numsectors; i++)
     {
         if(xsectors[i].tag == linetag)
         {
@@ -259,7 +257,7 @@ void EV_LightTurnOn(line_t *line, int bright)
             // surrounding sector
             if(!bright)
             {
-                for(j = 0; j < P_GetInt(DMU_SECTOR, i, DMU_LINECOUNT); j++)
+                for(j = 0; j < P_GetInt(DMU_SECTOR, i, DMU_LINE_COUNT); j++)
                 {
 #ifdef TODO_MAP_UPDATE
                     templine = sector->Lines[j];

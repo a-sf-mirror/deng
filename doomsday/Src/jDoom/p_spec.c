@@ -212,7 +212,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 
     fixed_t floor = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINECOUNT); i++)
+    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         check = sec->Lines[i];
@@ -238,7 +238,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t floor = -500 * FRACUNIT;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINECOUNT); i++)
+    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         check = sec->Lines[i];
@@ -249,8 +249,8 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 
         if(other->floorheight > floor)
             floor = other->floorheight;
-    }
 #endif
+    }
     return floor;
 }
 
@@ -269,7 +269,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 
     fixed_t heightlist[MAX_ADJOINING_SECTORS];
 
-    for(i = 0, h = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINECOUNT); i++)
+    for(i = 0, h = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         check = sec->Lines[i];
@@ -313,7 +313,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t height = MAXINT;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINECOUNT); i++)
+    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         check = sec->Lines[i];
@@ -339,7 +339,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t height = 0;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINECOUNT); i++)
+    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         check = sec->Lines[i];
@@ -361,10 +361,9 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 int P_FindSectorFromLineTag(line_t *line, int start)
 {
     int     i;
-    int count = DD_GetInteger(DD_SECTOR_COUNT);
 
 #ifdef TODO_MAP_UPDATE
-    for(i = start + 1; i < count; i++)
+    for(i = start + 1; i < numsectors; i++)
         if(sectors[i].tag == line->tag)
             return i;
 #endif
@@ -384,7 +383,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
     sector_t *check;
 
     min = max;
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINECOUNT); i++)
+    for(i = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
     {
 #ifdef TODO_MAP_UPDATE
         line = sector->Lines[i];
@@ -435,7 +434,7 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         }
 
         ok = 0;
-        switch (line->special)
+        switch (xlines[linenum].special)
         {
         case 39:                // TELEPORT TRIGGER
         case 97:                // TELEPORT RETRIGGER
@@ -449,7 +448,7 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         }
 
         // Anything can trigger this line!
-            if(line->flags & ML_ALLTRIGGER)
+            if(P_GetInt(DMU_LINE, linenum, DMU_FLAGS) & ML_ALLTRIGGER)
                 ok = 1;
 
         if(!ok)
@@ -457,142 +456,142 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
     }
 
     // Note: could use some const's here.
-    switch (line->special)
+    switch (xlines[linenum].special)
     {
         // TRIGGERS.
         // All from here to RETRIGGERS.
     case 2:
         // Open Door
         EV_DoDoor(line, open);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 3:
         // Close Door
         EV_DoDoor(line, close);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 4:
         // Raise Door
         EV_DoDoor(line, normal);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 5:
         // Raise Floor
         EV_DoFloor(line, raiseFloor);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 6:
         // Fast Ceiling Crush & Raise
         EV_DoCeiling(line, fastCrushAndRaise);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 8:
         // Build Stairs
         EV_BuildStairs(line, build8);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 10:
         // PlatDownWaitUp
         EV_DoPlat(line, downWaitUpStay, 0);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 12:
         // Light Turn On - brightest near
         EV_LightTurnOn(line, 0);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 13:
         // Light Turn On 255
         EV_LightTurnOn(line, 255);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 16:
         // Close Door 30
         EV_DoDoor(line, close30ThenOpen);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 17:
         // Start Light Strobing
         EV_StartLightStrobing(line);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 19:
         // Lower Floor
         EV_DoFloor(line, lowerFloor);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 22:
         // Raise floor to nearest height and change texture
         EV_DoPlat(line, raiseToNearestAndChange, 0);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 25:
         // Ceiling Crush and Raise
         EV_DoCeiling(line, crushAndRaise);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 30:
         // Raise floor to shortest texture height
         //  on either side of lines.
         EV_DoFloor(line, raiseToTexture);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 35:
         // Lights Very Dark
         EV_LightTurnOn(line, 35);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 36:
         // Lower Floor (TURBO)
         EV_DoFloor(line, turboLower);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 37:
         // LowerAndChange
         EV_DoFloor(line, lowerAndChange);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 38:
         // Lower Floor To Lowest
         EV_DoFloor(line, lowerFloorToLowest);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 39:
         // TELEPORT!
         EV_Teleport(line, side, thing);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 40:
         // RaiseCeilingLowerFloor
         EV_DoCeiling(line, raiseToHighest);
         EV_DoFloor(line, lowerFloorToLowest);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 44:
         // Ceiling Crush
         EV_DoCeiling(line, lowerAndCrush);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 52:
@@ -603,79 +602,79 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
     case 53:
         // Perpetual Platform Raise
         EV_DoPlat(line, perpetualRaise, 0);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 54:
         // Platform Stop
         EV_StopPlat(line);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 56:
         // Raise Floor Crush
         EV_DoFloor(line, raiseFloorCrush);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 57:
         // Ceiling Crush Stop
         EV_CeilingCrushStop(line);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 58:
         // Raise Floor 24
         EV_DoFloor(line, raiseFloor24);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 59:
         // Raise Floor 24 And Change
         EV_DoFloor(line, raiseFloor24AndChange);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 104:
         // Turn lights off in sector(tag)
         EV_TurnTagLightsOff(line);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 108:
         // Blazing Door Raise (faster than TURBO!)
         EV_DoDoor(line, blazeRaise);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 109:
         // Blazing Door Open (faster than TURBO!)
         EV_DoDoor(line, blazeOpen);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 100:
         // Build Stairs Turbo 16
         EV_BuildStairs(line, turbo16);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 110:
         // Blazing Door Close (faster than TURBO!)
         EV_DoDoor(line, blazeClose);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 119:
         // Raise floor to nearest surr. floor
         EV_DoFloor(line, raiseFloorToNearest);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 121:
         // Blazing PlatDownWaitUpStay
         EV_DoPlat(line, blazeDWUS, 0);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 124:
@@ -688,20 +687,20 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         if(!thing->player)
         {
             EV_Teleport(line, side, thing);
-            line->special = 0;
+            xlines[linenum].special = 0;
         }
         break;
 
     case 130:
         // Raise Floor Turbo
         EV_DoFloor(line, raiseFloorTurbo);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
     case 141:
         // Silent Ceiling Crush & Raise
         EV_DoCeiling(line, silentCrushAndRaise);
-        line->special = 0;
+        xlines[linenum].special = 0;
         break;
 
         // RETRIGGERS.  All from here till end.
@@ -876,12 +875,13 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 void P_ShootSpecialLine(mobj_t *thing, line_t *line)
 {
     int     ok;
+    int     lineid = P_ToIndex(DMU_LINE, line);
 
     //  Impacts that other things can activate.
     if(!thing->player)
     {
         ok = 0;
-        switch (line->special)
+        switch (xlines[lineid].special)
         {
         case 46:
             // OPEN DOOR IMPACT
@@ -892,7 +892,7 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
             return;
     }
 
-    switch (line->special)
+    switch(xlines[lineid].special)
     {
     case 24:
         // RAISE FLOOR
@@ -919,16 +919,14 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
  */
 void P_PlayerInSpecialSector(player_t *player)
 {
-    sector_t *sector;
-
-    sector = player->plr->mo->subsector->sector;
+    int sec = P_ToIndex(DMU_SECTOR, player->plr->mo->subsector->sector);
 
     // Falling, not all the way down yet?
-    if(player->plr->mo->z != sector->floorheight)
+    if(player->plr->mo->z != P_GetInt(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT))
         return;
 
     // Has hitten ground.
-    switch (sector->special)
+    switch(xsectors[sec].special)
     {
     case 5:
         // HELLSLIME DAMAGE
@@ -958,7 +956,7 @@ void P_PlayerInSpecialSector(player_t *player)
     case 9:
         // SECRET SECTOR
         player->secretcount++;
-        sector->special = 0;
+        xsectors[sec].special = 0;
         if(cfg.secretMsg)
         {
             P_SetMessage(player, "You've found a secret area!");
@@ -1026,8 +1024,10 @@ void P_UpdateSpecials(void)
     //  ANIMATE LINE SPECIALS
     for(i = 0; i < numlinespecials; i++)
     {
+#ifdef TODO_MAP_UPDATE
         line = linespeciallist[i];
-        switch (line->special)
+#endif
+        switch(xlines[P_ToIndex(DMU_LINE, line)].special)
         {
         case 48:
             // EFFECT FIRSTCOL SCROLL +
@@ -1086,15 +1086,14 @@ int EV_DoDonut(line_t *line)
     rtn = 0;
     while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
-#ifdef TODO_MAP_UPDATE
-        s1 = &sectors[secnum];
-#endif
+        s1 = P_ToPtr(DMU_SECTOR, secnum);
 
         // ALREADY MOVING?  IF SO, KEEP GOING...
-        if(s1->specialdata)
+        if(xsectors[secnum].specialdata)
             continue;
 
         rtn = 1;
+#ifdef TODO_MAP_UPDATE
         s2 = getNextSector(s1->Lines[0], s1);
         for(i = 0; i < s2->linecount; i++)
         {
@@ -1130,6 +1129,7 @@ int EV_DoDonut(line_t *line)
             floor->floordestheight = s3->floorheight;
             break;
         }
+#endif
     }
     return rtn;
 }
@@ -1142,8 +1142,6 @@ void P_SpawnSpecials(void)
 {
     sector_t *sector;
     int     i;
-    int     nsecs = DD_GetInteger(DD_SECTOR_COUNT);
-    int     nlines = DD_GetInteger(DD_LINE_COUNT);
 
     // See if -TIMER needs to be used.
     levelTimer = false;
@@ -1166,16 +1164,16 @@ void P_SpawnSpecials(void)
     }
 
     //  Init special SECTORs.
-#ifdef TODO_MAP_UPDATE
-    sector = sectors;
-    for(i = 0; i < nsecs; i++)
+    for(i = 0; i < numsectors; i++)
     {
-        if(!sector->special)
+        sector = P_ToPtr(DMU_SECTOR, i);
+
+        if(!xsectors[i].special)
             continue;
 
         if(IS_CLIENT)
         {
-            switch (sector->special)
+            switch (xsectors[i].special)
             {
             case 9:
                 // SECRET SECTOR
@@ -1185,7 +1183,7 @@ void P_SpawnSpecials(void)
             continue;
         }
 
-        switch (sector->special)
+        switch (xsectors[i].special)
         {
         case 1:
             // FLICKERING LIGHTS
@@ -1205,7 +1203,7 @@ void P_SpawnSpecials(void)
         case 4:
             // STROBE FAST/DEATH SLIME
             P_SpawnStrobeFlash(sector, FASTDARK, 0);
-            sector->special = 4;
+            xsectors[i].special = 4;
             break;
 
         case 8:
@@ -1243,23 +1241,20 @@ void P_SpawnSpecials(void)
             break;
         }
     }
-#endif
 
     //  Init line EFFECTs
-#ifdef TODO_MAP_UPDATE
     numlinespecials = 0;
-    for(i = 0; i < nlines; i++)
+    for(i = 0; i < numlines; i++)
     {
-        switch (lines[i].special)
+        switch (xlines[i].special)
         {
         case 48:
             // EFFECT FIRSTCOL SCROLL+
-            linespeciallist[numlinespecials] = &lines[i];
+            linespeciallist[numlinespecials] = P_ToPtr(DMU_LINE, i);
             numlinespecials++;
             break;
         }
     }
-#endif
 
     P_RemoveAllActiveCeilings();  // jff 2/22/98 use killough's scheme
 
