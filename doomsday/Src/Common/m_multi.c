@@ -109,6 +109,7 @@ extern float menu_alpha;
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 EditField_t *ActiveEdit = NULL; // No active edit field by default.
+EditField_t plrNameEd;
 int     CurrentPlrFrame = 0;
 
 MenuItem_t MultiplayerItems[] = {
@@ -270,7 +271,6 @@ Menu_t  PlayerSetupMenu = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static EditField_t plrNameEd;
 static int plrColor;
 
 #if __JHEXEN__
