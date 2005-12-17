@@ -93,7 +93,7 @@ GOTO Done
 REM *** dpMapLoad.dll
 :dpMapLoad
 md %OBJ_DIR%\dpMapLoad
-cl /O2 /Ob1 %INCS% %DLLDEFINES% /D "GLBSP_PLUGIN" /D "DPMAPLOAD_EXPORTS" /GF /FD /EHsc /MT /Gy /Fo"./%OBJ_DIR%/dpMapLoad/" /Fd"./%OBJ_DIR%/dpMapLoad/" /W3 /Gz Src\dpMapLoad\glBSP\wad.c Src\dpMapLoad\glBSP\util.c Src\dpMapLoad\glBSP\system.c Src\dpMapLoad\glBSP\seg.c Src\dpMapLoad\glBSP\reject.c Src\dpMapLoad\glBSP\node.c Src\dpMapLoad\glBSP\level.c Src\dpMapLoad\glBSP\glbsp.c Src\dpMapLoad\glBSP\blockmap.c Src\dpMapLoad\maploader.c   /link /OUT:"./%BIN_DIR%/dpMapLoad.dll" %LFLAGS% /DLL /IMPLIB:"./%BIN_DIR%/dpMapLoad.lib" %LIBS% ./%BIN_DIR%/Doomsday.lib 
+cl /O2 /Ob1 %INCS% %DLLDEFINES% /D "GLBSP_PLUGIN" /D "DPMAPLOAD_EXPORTS" /GF /FD /EHsc /MT /Gy /Fo"./%OBJ_DIR%/dpMapLoad/" /Fd"./%OBJ_DIR%/dpMapLoad/" /W3 /Gz Src\dpMapLoad\glBSP\analyze.c Src\dpMapLoad\glBSP\wad.c Src\dpMapLoad\glBSP\util.c Src\dpMapLoad\glBSP\system.c Src\dpMapLoad\glBSP\seg.c Src\dpMapLoad\glBSP\reject.c Src\dpMapLoad\glBSP\node.c Src\dpMapLoad\glBSP\level.c Src\dpMapLoad\glBSP\glbsp.c Src\dpMapLoad\glBSP\blockmap.c Src\dpMapLoad\maploader.c   /link /OUT:"./%BIN_DIR%/dpMapLoad.dll" %LFLAGS% /DLL /IMPLIB:"./%BIN_DIR%/dpMapLoad.lib" %LIBS% ./%BIN_DIR%/Doomsday.lib 
 GOTO Done
 
 
