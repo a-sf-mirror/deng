@@ -66,6 +66,7 @@ typedef struct affection_s {
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 extern void Con_ClearActions(void);
+extern boolean B_SetBindClass(int classID, int type);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -92,11 +93,11 @@ const char *saveFile = NULL;
 
 static ui_page_t page_bias;
 
-static ui_object_t ob_bias[] = {	// bias editor page
-	{UI_BUTTON, 0, UIF_DEFAULT, 400, 450, 180, 70, "Save", UIButton_Drawer,
-	 UIButton_Responder, 0, SBE_MenuSave},
+static ui_object_t ob_bias[] = {    // bias editor page
+    {UI_BUTTON, 0, UIF_DEFAULT, 400, 450, 180, 70, "Save", UIButton_Drawer,
+     UIButton_Responder, 0, SBE_MenuSave},
 
-	{UI_NONE}
+    {UI_NONE}
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -182,22 +183,22 @@ void SB_Register(void)
 
     C_VAR_INT("edit-bias-show-indices", &editShowIndices, 0, 0, 1,
               "1=Show source indices in 3D view.");
-    
+
     // Commands for light editing.
-	C_CMD("bledit", BLEditor, "Enter bias light edit mode.");
-    C_CMD("blquit", BLEditor, "Exit bias light edit mode.");
-    C_CMD("blclear", BLEditor, "Delete all lights.");
-    C_CMD("blsave", BLEditor, "Write the current lights to a DED file.");
-    C_CMD("blnew", BLEditor, "Allocate new light and grab it.");
-    C_CMD("bldel", BLEditor, "Delete current/specified light.");
-    C_CMD("bllock", BLEditor, "Lock current/specified light.");
-    C_CMD("blunlock", BLEditor, "Unlock current/specified light.");
-    C_CMD("blgrab", BLEditor, "Grab current/specified light, or ubgrab.");
-    C_CMD("bldup", BLEditor, "Duplicate current/specified light, grab it.");
-    C_CMD("blc", BLEditor, "Set color of light at cursor.");
-    C_CMD("bli", BLEditor, "Set intensity of light at cursor.");
-    C_CMD("blhue", BLEditor, "Show/hide the hue circle for color selection.");
-    C_CMD("blmenu", BLEditor, "Show/hide the bias menu.");
+    C_CMD("bledit", BLEditor, "Enter bias light edit mode.", 0);
+    C_CMD("blquit", BLEditor, "Exit bias light edit mode.", 0);
+    C_CMD("blclear", BLEditor, "Delete all lights.", 0);
+    C_CMD("blsave", BLEditor, "Write the current lights to a DED file.", 0);
+    C_CMD("blnew", BLEditor, "Allocate new light and grab it.", 0);
+    C_CMD("bldel", BLEditor, "Delete current/specified light.", 0);
+    C_CMD("bllock", BLEditor, "Lock current/specified light.", 0);
+    C_CMD("blunlock", BLEditor, "Unlock current/specified light.", 0);
+    C_CMD("blgrab", BLEditor, "Grab current/specified light, or ubgrab.", 0);
+    C_CMD("bldup", BLEditor, "Duplicate current/specified light, grab it.", 0);
+    C_CMD("blc", BLEditor, "Set color of light at cursor.", 0);
+    C_CMD("bli", BLEditor, "Set intensity of light at cursor.", 0);
+    C_CMD("blhue", BLEditor, "Show/hide the hue circle for color selection.", 0);
+    C_CMD("blmenu", BLEditor, "Show/hide the bias menu.", 0);
 
     // Normal variables.
     C_VAR_INT("rend-bias", &useBias, 0, 0, 1,
@@ -208,7 +209,7 @@ void SB_Register(void)
 
     C_VAR_INT("rend-bias-max", &biasMax, 0, 0, 255,
               "Sector lightlevel that retains its normal color.");
-    
+
     C_VAR_INT("rend-bias-lightspeed", &lightSpeed, 0, 0, 5000,
               "Milliseconds it takes for light changes to "
               "become effective.");
@@ -248,7 +249,7 @@ void SB_InitForLevel(const char *uniqueId)
         src = &sources[numSources++];
 
         // All lights loaded from a DED are automatically locked.
-        src->flags = BLF_CHANGED | BLF_LOCKED; 
+        src->flags = BLF_CHANGED | BLF_LOCKED;
 
         // The color is amplified automatically.
         SBE_SetColor(src->color, def->color);
@@ -265,7 +266,7 @@ void SB_InitForLevel(const char *uniqueId)
         // This'll enforce an update (although the vertices are also
         // STILL_UNSEEN).
         src->lastUpdateTime = 0;
-        
+
         if(numSources == MAX_BIAS_LIGHTS)
             break;
     }
@@ -278,7 +279,7 @@ static void HSVtoRGB(float *rgb, float h, float s, float v)
 {
     int i;
     float f, p, q, t;
-    
+
     if(s == 0)
     {
         // achromatic (grey)
@@ -288,14 +289,14 @@ static void HSVtoRGB(float *rgb, float h, float s, float v)
 
     if(h >= 1)
         h -= 1;
-    
+
     h *= 6;                        // sector 0 to 5
     i = floor(h);
     f = h - i;                     // factorial part of h
     p = v * (1 - s);
     q = v * (1 - s * f);
     t = v * (1 - s * (1 - f));
-    
+
     switch(i)
     {
     case 0:
@@ -315,7 +316,7 @@ static void HSVtoRGB(float *rgb, float h, float s, float v)
         rgb[1] = v;
         rgb[2] = t;
         break;
-        
+
     case 3:
         rgb[0] = p;
         rgb[1] = q;
@@ -328,7 +329,7 @@ static void HSVtoRGB(float *rgb, float h, float s, float v)
         rgb[2] = v;
         break;
 
-    default:                
+    default:
         rgb[0] = v;
         rgb[1] = p;
         rgb[2] = q;
@@ -348,7 +349,7 @@ static void SB_WallNormal(rendpoly_t *poly, float normal[3])
 static void SB_AddAffected(affection_t *aff, int k, float intensity)
 {
     int i, worst;
-    
+
     if(aff->numFound < MAX_BIAS_AFFECTED)
     {
         aff->affected[aff->numFound].source = k;
@@ -364,7 +365,7 @@ static void SB_AddAffected(affection_t *aff, int k, float intensity)
             if(aff->intensities[i] < aff->intensities[worst])
                 worst = i;
         }
-        
+
         aff->affected[worst].source = k;
         aff->intensities[worst] = intensity;
     }
@@ -378,7 +379,7 @@ void SB_SegHasMoved(seg_t *seg)
 {
     int i;
     seginfo_t *info = SEG_INFO(seg);
-    
+
     // Mark the affected lights changed.
     for(i = 0; i < MAX_BIAS_AFFECTED && info->affected[i].source >= 0; ++i)
     {
@@ -395,7 +396,7 @@ void SB_PlaneHasMoved(subsector_t *subsector, boolean theCeiling)
     int i;
     subsectorinfo_t *subInfo = SUBSECT_INFO(subsector);
     planeinfo_t *info = (theCeiling ? &subInfo->ceil : &subInfo->floor);
-    
+
     // Mark the affected lights changed.
     for(i = 0; i < MAX_BIAS_AFFECTED && info->affected[i].source >= 0; ++i)
     {
@@ -451,7 +452,7 @@ void SB_UpdateSegAffected(int seg, rendpoly_t *poly)
             distance = 1;
 
         intensity = src->intensity/distance;
-        
+
         // Is the source is too weak, ignore it entirely.
         if(intensity < biasIgnoreLimit)
             continue;
@@ -528,13 +529,13 @@ void SB_UpdateSubsectorAffected(int sub, rendpoly_t *poly)
                    poly->vertices[i].pos[VX] - src->pos[VX],
                    poly->vertices[i].pos[VY] - src->pos[VY]);
             len = V2_Length(delta);
-            
+
             if(i == 0 || len < distance)
                 distance = len;
         }
         if(distance < 1)
             distance = 1;
-        
+
         for(theCeiling = 0; theCeiling < 2; ++theCeiling)
         {
             // Estimate the effect on this plane.
@@ -548,7 +549,7 @@ void SB_UpdateSubsectorAffected(int sub, rendpoly_t *poly)
                 continue;
 
             intensity = /*dot * */ src->intensity / distance;
-        
+
             // Is the source is too weak, ignore it entirely.
             if(intensity < biasIgnoreLimit)
                 continue;
@@ -622,7 +623,7 @@ static boolean SB_ChangeInAffected(biasaffection_t *affected,
             return true;
     }
     return false;
-}                                      
+}
 
 /*
  * This is done in the beginning of the frame when a light source has
@@ -632,7 +633,7 @@ static boolean SB_ChangeInAffected(biasaffection_t *affected,
 void SB_MarkPlaneChanges(planeinfo_t *plane, biastracker_t *allChanges)
 {
     int i;
-    
+
     SB_TrackerApply(&plane->tracker, allChanges);
 
     if(SB_ChangeInAffected(plane->affected, allChanges))
@@ -657,7 +658,7 @@ void SB_BeginFrame(void)
 
     // The time that applies on this frame.
     currentTime = Sys_GetRealTime();
-    
+
     // Check which sources have changed.
     memset(&allChanges, 0, sizeof(allChanges));
     for(i = 0, s = sources; i < numSources; ++i, ++s)
@@ -669,7 +670,7 @@ void SB_BeginFrame(void)
             sector_t *sector = R_PointInSubsector
                 (FRACUNIT * s->pos[VX], FRACUNIT * s->pos[VY])->sector;
             float oldIntensity = s->intensity;
-            
+
             // The lower intensities are useless for light emission.
             if(sector->lightlevel >= maxLevel)
             {
@@ -688,7 +689,7 @@ void SB_BeginFrame(void)
             if(s->intensity != oldIntensity)
                 sources[i].flags |= BLF_CHANGED;
         }
-        
+
         if(sources[i].flags & BLF_CHANGED)
         {
             SB_TrackerMark(&allChanges, i);
@@ -696,12 +697,12 @@ void SB_BeginFrame(void)
 
             // This is used for interpolation.
             sources[i].lastUpdateTime = currentTime;
-            
+
             // Recalculate which sources affect which surfaces.
             lastChangeOnFrame = framecount;
         }
     }
-    
+
     // Apply to all segs.
     for(i = 0; i < numsegs; ++i)
     {
@@ -759,10 +760,10 @@ void SB_AddLight(gl_rgba_t *dest, const byte *color, float howMuch)
     {
         new = dest->rgba[i] + (byte)
             ((color ? color : amplified)[i] * howMuch);
-        
+
         if(new > 255)
             new = 255;
-        
+
         dest->rgba[i] = new;
     }
 }
@@ -774,14 +775,14 @@ void SB_AddLight(gl_rgba_t *dest, const byte *color, float howMuch)
 static boolean SB_CheckColorOverride(biasaffection_t *affected)
 {
 /*    int i;
-    
+
     for(i = 0; affected[i].source >= 0 && i < MAX_BIAS_AFFECTED; ++i)
     {
         // If the color is completely black, it means no light was
         // reached from this affected source.
         if(!(affected[i].rgb[0] | affected[i].rgb[1] | affected[i].rgb[2]))
             continue;
-           
+
         if(sources[affected[i].source].flags & BLF_COLOR_OVERRIDE)
             return true;
             }*/
@@ -818,7 +819,7 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
     if(sector->lightlevel > biasMin && biasMax > biasMin)
     {
         const byte *sectorColor;
-        
+
         biasAmount = (sector->lightlevel - biasMin) /
             (float) (biasMax - biasMin);
 
@@ -848,10 +849,10 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
     }
 #endif
 
-    
+
     memcpy(&trackChanged, tracker, sizeof(trackChanged));
     memset(&trackApplied, 0, sizeof(trackApplied));
-    
+
     if(poly->numvertices == 2)
     {
         // Has any of the old affected lights changed?
@@ -859,9 +860,9 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
           /*forced = SB_ChangeInAffected(affected);*/
 
         forced = false; //seginfo[mapElementIndex].forced;
-        
+
         SB_UpdateSegAffected(mapElementIndex, poly);
-        
+
         // It's a wall.
         SB_WallNormal(poly, normal);
 
@@ -870,7 +871,7 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
             pos[VX] = poly->vertices[i % 2].pos[VX];
             pos[VY] = poly->vertices[i % 2].pos[VY];
             pos[VZ] = (i >= 2 ? poly->bottom : poly->top);
-            
+
             SB_EvalPoint((i >= 2 ? &poly->bottomcolor[i - 2] :
                           &poly->vertices[i].color),
                          &illumination[i], affected,
@@ -889,7 +890,7 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
 */
         forced = false; /*(isFloor ? subsecinfo[mapElementIndex].floor.forced :
                           subsecinfo[mapElementIndex].ceil.forced);*/
-        
+
         SB_UpdateSubsectorAffected(mapElementIndex, poly);
 
         // It's a plane.
@@ -901,7 +902,7 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
             pos[VX] = poly->vertices[i].pos[VX];
             pos[VY] = poly->vertices[i].pos[VY];
             pos[VZ] = poly->top;
-            
+
             SB_EvalPoint(&poly->vertices[i].color,
                          &illumination[i], affected,
                          pos, normal);
@@ -919,7 +920,7 @@ void SB_RendPoly(struct rendpoly_s *poly, boolean isFloor, sector_t *sector,
 void SB_LerpIllumination(vertexillum_t *illum, gl_rgba_t *result)
 {
     int i;
-    
+
     if(!(illum->flags & VIF_LERP))
     {
         // We're done with the interpolation, just use the
@@ -940,11 +941,11 @@ void SB_LerpIllumination(vertexillum_t *illum, gl_rgba_t *result)
         {
             for(i = 0; i < 3; ++i)
             {
-                result->rgba[i] = (DGLuint) 
+                result->rgba[i] = (DGLuint)
                     (illum->color.rgba[i] +
                      (illum->dest.rgba[i] - illum->color.rgba[i]) * inter);
             }
-        }                
+        }
     }
 }
 
@@ -969,7 +970,7 @@ byte *SB_GetCasted(vertexillum_t *illum, int sourceIndex,
         {
             if(affectedSources[k].source < 0)
                 break;
-            
+
             if(affectedSources[k].source == illum->casted[i].source)
             {
                 inUse = true;
@@ -984,7 +985,7 @@ byte *SB_GetCasted(vertexillum_t *illum, int sourceIndex,
             return illum->casted[i].rgb;
         }
     }
-    
+
     Con_Error("SB_GetCasted: No light casted by source %i.\n", sourceIndex);
     return NULL;
 }
@@ -996,11 +997,11 @@ void SB_AmbientLight(float *point, gl_rgba_t *light)
 {
     // Add grid light (represents ambient lighting).
     byte color[3];
-    
+
     LG_Evaluate(point, color);
     SB_AddLight(light, color, 1.0f);
 }
- 
+
 /*
  * Applies shadow bias to the given point.  If 'forced' is true, new
  * lighting is calculated regardless of whether the lights affecting
@@ -1025,6 +1026,8 @@ void SB_EvalPoint(gl_rgba_t *light,
     source_t *s;
     byte *casted;
 
+  //  gl_rgba_t Srgba;
+
     struct {
         int              index;
         //int              affNum; // Index in affectedSources.
@@ -1033,6 +1036,8 @@ void SB_EvalPoint(gl_rgba_t *light,
         boolean          changed;
         boolean          overrider;
     } affecting[MAX_BIAS_AFFECTED + 1], *aff;
+
+  //  memcpy(Srgba.rgba, light->rgba, 4);
 
     // Vertices that are rendered for the first time need to be fully
     // evaluated.
@@ -1061,7 +1066,7 @@ void SB_EvalPoint(gl_rgba_t *light,
 
         if(SB_TrackerCheck(&trackChanged, idx))
         {
-            aff->changed = true;            
+            aff->changed = true;
             illuminationChanged = true;
             SB_TrackerMark(&trackApplied, idx);
 
@@ -1076,7 +1081,7 @@ void SB_EvalPoint(gl_rgba_t *light,
         {
             aff->changed = false;
         }
-        
+
         // Move to the next.
         aff++;
     }
@@ -1087,9 +1092,15 @@ void SB_EvalPoint(gl_rgba_t *light,
         // Reuse the previous value.
         SB_LerpIllumination(illum, light);
         SB_AmbientLight(point, light);
+/*
+    for(i=0; i < 3; i++)
+    light->rgba[i] = (byte)(((Srgba.rgba[i]/ 255.0f)) * light->rgba[i]);
+
+    light->rgba[3] = Srgba.rgba[3];
+*/
         return;
     }
-    
+
     // Init to black.
     new.rgba[0] = new.rgba[1] = new.rgba[2] = 0;
 
@@ -1109,13 +1120,13 @@ void SB_EvalPoint(gl_rgba_t *light,
             casted = SB_GetCasted(illum, aff->index, affectedSources);
         else
             casted = NULL;
-        
+
         for(i = 0; i < 3; ++i)
         {
             delta[i] = s->pos[i] - point[i];
             surfacePoint[i] = point[i] + delta[i] / 100;
         }
-    
+
         if(useSightCheck && !P_CheckLineSight(s->pos, surfacePoint))
         {
             // LOS fail.
@@ -1131,7 +1142,7 @@ void SB_EvalPoint(gl_rgba_t *light,
         {
             distance = M_Normalize(delta);
             dot = M_DotProduct(delta, normal);
-        
+
             // The surface faces away from the light.
             if(dot <= 0)
             {
@@ -1142,7 +1153,7 @@ void SB_EvalPoint(gl_rgba_t *light,
                 }
                 continue;
             }
-        
+
             level = dot * s->intensity / distance;
         }
 
@@ -1153,12 +1164,12 @@ void SB_EvalPoint(gl_rgba_t *light,
         {
             //int v;
 
-            // The light casted from this source.      
+            // The light casted from this source.
             casted[i] = (byte) (255 * s->color[i] * level);
 
             //v = new.rgba[i] + 255 * s->color[i] * level;
 
-            
+
             //if(v > 255) v = 255;
             //new.rgba[i] = (DGLubyte) v;
         }
@@ -1169,7 +1180,7 @@ void SB_EvalPoint(gl_rgba_t *light,
            new.rgba[1] == 255 &&
            new.rgba[2] == 255) break;*/
 
-        
+
     }
 
     if(illum)
@@ -1177,7 +1188,7 @@ void SB_EvalPoint(gl_rgba_t *light,
         //Con_Message("\n");
 
         boolean willOverride = false;
-            
+
         // Combine the casted light from each source.
         for(aff = affecting; aff->source; aff++)
         {
@@ -1222,7 +1233,7 @@ void SB_EvalPoint(gl_rgba_t *light,
             }
         }
 
-        /*if(biasAmount > 0) 
+        /*if(biasAmount > 0)
         {
             SB_AddLight(&new, willOverride ? NULL : biasColor, biasAmount);
             }*/
@@ -1239,22 +1250,28 @@ void SB_EvalPoint(gl_rgba_t *light,
                 // This is current color at this very moment.
                 memcpy(&illum->color.rgba, &mid, 4);
             }
-            
+
             // This is what we will be interpolating to.
             memcpy(illum->dest.rgba, new.rgba, 4);
 
             illum->flags |= VIF_LERP;
             illum->updatetime = latestSourceUpdate;
         }
-        
+
         SB_LerpIllumination(illum, light);
     }
     else
     {
         memcpy(light->rgba, new.rgba, 4);
     }
-    
+
     SB_AmbientLight(point, light);
+/*
+    for(i=0; i < 3; i++)
+    light->rgba[i] = (byte)(((Srgba.rgba[i]/ 255.0f)) * light->rgba[i]);
+
+    light->rgba[3] = Srgba.rgba[3];
+*/
 }
 
 
@@ -1273,7 +1290,7 @@ static source_t *SBE_GrabSource(int index)
 {
     source_t *s;
     int i;
-    
+
     editGrabbed = index;
     s = &sources[index];
 
@@ -1288,7 +1305,7 @@ static source_t *SBE_GrabSource(int index)
 static source_t *SBE_GetGrabbed(void)
 {
     if(editGrabbed >= 0 && editGrabbed < numSources)
-    {    
+    {
         return &sources[editGrabbed];
     }
     return NULL;
@@ -1302,7 +1319,7 @@ static source_t *SBE_GetNearest(void)
     int i;
 
     SBE_GetHand(hand);
-        
+
     for(i = 0; i < numSources; ++i)
     {
         len = M_Distance(hand, sources[i].pos);
@@ -1349,25 +1366,25 @@ static void SBE_GetHueColor(float *color, float *angle, float *sat)
 
     dot = M_DotProduct(viewfrontvec, hueOrigin);
     saturation = (acos(dot) - minAngle) / range;
-    
+
     if(saturation < 0)
         saturation = 0;
     if(saturation > 1)
         saturation = 1;
     if(sat)
         *sat = saturation;
-    
+
     if(saturation == 0 || dot > .999f)
     {
         if(angle)
             *angle = 0;
         if(sat)
             *sat = 0;
-        
+
         HSVtoRGB(color, 0, 0, 1);
         return;
     }
-    
+
     // Calculate hue angle by projecting the current viewfront to the
     // hue circle plane.  Project onto the normal and subtract.
     scale = M_DotProduct(viewfrontvec, hueOrigin) /
@@ -1388,12 +1405,12 @@ static void SBE_GetHueColor(float *color, float *angle, float *sat)
 
     hue /= 2*PI;
     hue += 0.25;
-    
+
     if(angle)
         *angle = hue;
 
     //Con_Printf("sat=%f, hue=%f\n", saturation, hue);
-   
+
     HSVtoRGB(color, hue, saturation, 1);
 }
 
@@ -1419,7 +1436,7 @@ void SB_EndFrame(void)
             // Get the new color from the circle.
             SBE_GetHueColor(editColor, NULL, NULL);
         }
-        
+
         SBE_SetColor(src->color, editColor);
         src->primaryIntensity = src->intensity = editIntensity;
         if(!(src->flags & BLF_LOCKED))
@@ -1443,7 +1460,7 @@ static void SBE_Begin(void)
     editActive = true;
     editGrabbed = -1;
     // Enable the biaseditor binding class
-    Con_Execute("enablebindclass biaseditor 1", true);
+    B_SetBindClass(DDBC_BIASEDITOR, true);
     Con_Printf("Bias light editor: ON\n");
 }
 
@@ -1453,17 +1470,17 @@ static void SBE_End(void)
     gamedrawhud = true;
     editActive = false;
     // Disable the biaseditor binding class
-    Con_Execute("enablebindclass biaseditor 0", true);
+    B_SetBindClass(DDBC_BIASEDITOR, false);
     Con_Printf("Bias light editor: OFF\n");
 }
 
 static boolean SBE_New(void)
 {
     source_t *s;
-    
+
     if(numSources == MAX_BIAS_LIGHTS)
         return false;
-    
+
     s = SBE_GrabSource(numSources);
     s->flags &= ~BLF_LOCKED;
     s->flags |= BLF_COLOR_OVERRIDE;
@@ -1471,7 +1488,7 @@ static boolean SBE_New(void)
     editColor[0] = editColor[1] = editColor[2] = 1;
 
     numSources++;
-    
+
     return true;
 }
 
@@ -1489,7 +1506,7 @@ static void SBE_Clear(void)
 static void SBE_Delete(int which)
 {
     int i;
-    
+
     if(editGrabbed == which)
         editGrabbed = -1;
     else if(editGrabbed > which)
@@ -1503,7 +1520,7 @@ static void SBE_Delete(int which)
             sizeof(source_t) * (numSources - which - 1));
 
     sources[numSources - 1].intensity = 0;
-    
+
     // Will be one fewer very soon.
     numSourceDelta = -1;
 }
@@ -1540,7 +1557,7 @@ static void SBE_Dupe(int which)
         editIntensity = orig->primaryIntensity;
         for(i = 0; i < 3; ++i)
             editColor[i] = orig->color[i];
-    }    
+    }
 }
 
 static boolean SBE_Save(const char *name)
@@ -1571,7 +1588,7 @@ static boolean SBE_Save(const char *name)
         return false;
 
     fprintf(file, "# %i Bias Lights for %s\n\n", numSources, uid);
-    
+
     // Since there can be quite a lot of these, make sure we'll skip
     // the ones that are definitely not suitable.
     fprintf(file, "SkipIf Not %s\n", gx.Get(DD_GAME_MODE));
@@ -1589,7 +1606,7 @@ static boolean SBE_Save(const char *name)
                 s->sectorLevel[1]);
         fprintf(file, "}\n");
     }
-    
+
     fclose(file);
     return true;
 }
@@ -1602,17 +1619,17 @@ void SBE_MenuSave(ui_object_t *ob)
 void SBE_SetHueCircle(boolean activate)
 {
     int i;
-    
+
     if(activate == editHueCircle)
         return; // No change in state.
 
     if(activate && SBE_GetGrabbed() == NULL)
         return;
-    
+
     editHueCircle = activate;
 
     if(activate)
-    {        
+    {
         // Determine the orientation of the hue circle.
         for(i = 0; i < 3; ++i)
         {
@@ -1626,7 +1643,7 @@ void SBE_SetHueCircle(boolean activate)
 /*
  * Editor commands.
  */
-int CCmdBLEditor(int argc, char **argv)
+D_CMD(BLEditor)
 {
     char *cmd = argv[0] + 2;
     int which;
@@ -1729,12 +1746,12 @@ int CCmdBLEditor(int argc, char **argv)
         {
             editIntensity = strtod(argv[1], NULL);
         }
-        
+
         src->primaryIntensity = src->intensity = editIntensity;
         src->flags |= BLF_CHANGED;
         return true;
     }
-    
+
     if(argc > 1)
     {
         which = atoi(argv[1]);
@@ -1745,7 +1762,7 @@ int CCmdBLEditor(int argc, char **argv)
         Con_Printf("Invalid light index %i.\n", which);
         return false;
     }
-    
+
     if(!stricmp(cmd, "del"))
     {
         SBE_Delete(which);
@@ -1757,7 +1774,7 @@ int CCmdBLEditor(int argc, char **argv)
         SBE_Dupe(which);
         return true;
     }
-    
+
     if(!stricmp(cmd, "lock"))
     {
         SBE_Lock(which);
@@ -1805,7 +1822,7 @@ static void SBE_InfoBox(source_t *s, int rightX, char *title, float alpha)
     SBE_DrawBox(x, y, w, h, &color);
     x += 8;
     y += 8 + th/2;
-    
+
     // - index #
     // - locked status
     // - coordinates
@@ -1824,7 +1841,7 @@ static void SBE_InfoBox(source_t *s, int rightX, char *title, float alpha)
     sprintf(buf, "(%+06.0f,%+06.0f,%+06.0f)", s->pos[0], s->pos[1], s->pos[2]);
     UI_TextOutEx(buf, x, y, false, true, UI_COL(UIC_TEXT), alpha);
     y += th;
-    
+
     sprintf(buf, "Distance:%-.0f", M_Distance(eye, s->pos));
     UI_TextOutEx(buf, x, y, false, true, UI_COL(UIC_TEXT), alpha);
     y += th;
@@ -1839,7 +1856,7 @@ static void SBE_InfoBox(source_t *s, int rightX, char *title, float alpha)
             s->color[0], s->color[1], s->color[2]);
     UI_TextOutEx(buf, x, y, false, true, UI_COL(UIC_TEXT), alpha);
     y += th;
-    
+
 }
 
 
@@ -1863,7 +1880,7 @@ static void SBE_DrawLevelGauge(void)
         src = SBE_GetGrabbed();
     else
         src = SBE_GetNearest();
-    
+
     sector = R_PointInSubsector(FRACUNIT * src->pos[VX],
                                 FRACUNIT * src->pos[VY])->sector;
 
@@ -1934,15 +1951,15 @@ void SBE_DrawHUD(void)
     char buf[80];
     float alpha = .8f;
     source_t *s;
-    
+
     if(!editActive || editHidden)
         return;
 
-	// Go into screen projection mode.
-	gl.MatrixMode(DGL_PROJECTION);
-	gl.PushMatrix();
-	gl.LoadIdentity();
-	gl.Ortho(0, 0, screenWidth, screenHeight, -1, 1);
+    // Go into screen projection mode.
+    gl.MatrixMode(DGL_PROJECTION);
+    gl.PushMatrix();
+    gl.LoadIdentity();
+    gl.Ortho(0, 0, screenWidth, screenHeight, -1, 1);
 
     // Overall stats: numSources / MAX (left)
     sprintf(buf, "%i / %i (%i free)", numSources, MAX_BIAS_LIGHTS,
@@ -1974,9 +1991,9 @@ void SBE_DrawHUD(void)
     {
         SBE_DrawLevelGauge();
     }
-    
-	gl.MatrixMode(DGL_PROJECTION);
-	gl.PopMatrix();
+
+    gl.MatrixMode(DGL_PROJECTION);
+    gl.PopMatrix();
 }
 
 void SBE_DrawStar(float pos[3], float size, float color[4])
@@ -1999,7 +2016,7 @@ void SBE_DrawStar(float pos[3], float size, float color[4])
         gl.Vertex3f(pos[VX], pos[VZ], pos[VY]);
         gl.Color4fv(black);
         gl.Vertex3f(pos[VX], pos[VZ] + size, pos[VY]);
-        
+
         gl.Vertex3f(pos[VX], pos[VZ], pos[VY] - size);
         gl.Color4fv(color);
         gl.Vertex3f(pos[VX], pos[VZ], pos[VY]);
@@ -2018,17 +2035,17 @@ static void SBE_DrawIndex(source_t *src)
 
     if(!editShowIndices)
         return;
-    
+
     gl.Disable(DGL_DEPTH_TEST);
     gl.Enable(DGL_TEXTURING);
-    
+
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PushMatrix();
     gl.Translatef(src->pos[VX], src->pos[VZ], src->pos[VY]);
     gl.Rotatef(-vang + 180, 0, 1, 0);
     gl.Rotatef(vpitch, 1, 0, 0);
     gl.Scalef(-scale, -scale, 1);
-    
+
     // Show the index number of the source.
     sprintf(buf, "%i", src - sources);
     UI_TextOutEx(buf, 2, 2, false, false, UI_COL(UIC_TITLE),
@@ -2045,7 +2062,7 @@ static void SBE_DrawSource(source_t *src)
 {
     float col[4], d;
     float eye[3] = { vx, vz, vy };
-    
+
     col[0] = src->color[0];
     col[1] = src->color[1];
     col[2] = src->color[2];
@@ -2072,7 +2089,7 @@ static void SBE_DrawHue(void)
     double angle;
     float color[4], sel[4], hue, saturation;
     int i;
-    
+
     gl.Disable(DGL_DEPTH_TEST);
     gl.Disable(DGL_TEXTURING);
     gl.Disable(DGL_CULL_FACE);
@@ -2099,7 +2116,7 @@ static void SBE_DrawHue(void)
         color[3] = .5f;
 
         SBE_HueOffset(angle, off);
-            
+
         gl.Color4fv(color);
         gl.Vertex3f(center[0] + outer * off[0], center[1] + outer * off[1],
                     center[2] + outer * off[2]);
@@ -2139,7 +2156,7 @@ static void SBE_DrawHue(void)
         // Calculate the hue color for this angle.
         HSVtoRGB(color, i/steps, 1, 1);
         color[3] = 1;
-            
+
         gl.Color4fv(color);
         gl.Vertex3f(center[0] + outer * off[0], center[1] + outer * off[1],
                     center[2] + outer * off[2]);
@@ -2167,7 +2184,7 @@ static void SBE_DrawHue(void)
 
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PopMatrix();
-    
+
     gl.Enable(DGL_DEPTH_TEST);
     gl.Enable(DGL_TEXTURING);
     gl.Enable(DGL_CULL_FACE);
@@ -2183,19 +2200,19 @@ void SBE_DrawCursor(void)
     float size = 10000, distance;
     float col[4];
     float eye[3] = { vx, vz, vy };
-   
+
     if(!editActive || !numSources || editHidden)
         return;
 
     if(editHueCircle && SBE_GetGrabbed())
         SBE_DrawHue();
-    
+
     // The grabbed cursor blinks yellow.
     if(!editBlink || currentTime & 0x80)
         SET_COL(col, 1.0f, 1.0f, .8f, .5f)
     else
         SET_COL(col, .7f, .7f, .5f, .4f)
-    
+
     s = SBE_GetGrabbed();
     if(!s)
     {
@@ -2205,7 +2222,7 @@ void SBE_DrawCursor(void)
 
         s = SBE_GetNearest();
     }
-        
+
     gl.Disable(DGL_TEXTURING);
 
     SBE_GetHand(hand);
@@ -2224,7 +2241,7 @@ void SBE_DrawCursor(void)
         float lock = 2 + M_Distance(eye, s->pos)/100;
 
         gl.Color4f(1, 1, 1, 1);
-        
+
         gl.MatrixMode(DGL_MODELVIEW);
         gl.PushMatrix();
 
@@ -2237,17 +2254,17 @@ void SBE_DrawCursor(void)
         gl.Begin(DGL_LINES);
         gl.Vertex3f(-lock, 0, -lock);
         gl.Vertex3f(+lock, 0, -lock);
-        
+
         gl.Vertex3f(+lock, 0, -lock);
         gl.Vertex3f(+lock, 0, +lock);
-        
+
         gl.Vertex3f(+lock, 0, +lock);
         gl.Vertex3f(-lock, 0, +lock);
-        
+
         gl.Vertex3f(-lock, 0, +lock);
         gl.Vertex3f(-lock, 0, -lock);
         gl.End();
-        
+
         gl.PopMatrix();
     }
 
@@ -2256,7 +2273,7 @@ void SBE_DrawCursor(void)
         gl.Disable(DGL_DEPTH_TEST);
         SBE_DrawSource(SBE_GetNearest());
     }
-    
+
     // Show all sources?
     if(editShowAll)
     {
