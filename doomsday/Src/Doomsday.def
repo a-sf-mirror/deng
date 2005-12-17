@@ -1,7 +1,7 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 250 <--
+; --> 254 <--
 
 
 EXPORTS
@@ -36,6 +36,7 @@ EXPORTS
 	W_LumpLength		@16 NONAME
 	W_LumpName			@17 NONAME
 	W_ReadLump			@18 NONAME
+	W_ReadLumpSection	@253 NONAME
 	W_CacheLumpNum		@19 NONAME
 	W_CacheLumpName		@20 NONAME
 	W_ChangeCacheTag	@21 NONAME
@@ -71,8 +72,8 @@ EXPORTS
 	Con_SetString		@36 NONAME
 	Con_Printf			@37 NONAME
 	Con_FPrintf			@38 NONAME
-	Con_Execute			@39 NONAME
-	Con_Executef		@40 NONAME
+	DD_Execute			@39 NONAME
+	DD_Executef		@40 NONAME
 	Con_Message			@41 NONAME
 	Con_Error			@42 NONAME
 
@@ -82,6 +83,8 @@ EXPORTS
 ; Console: Bindings.
 	B_EventBuilder			@44 NONAME
 	B_BindingsForCommand	@45 NONAME
+	DD_AddBindClass		@251 NONAME
+	DD_SetBindClass		@252 NONAME
 
 ; System.
 ;	Sys_TicksPerSecond	@46 NONAME
@@ -128,6 +131,7 @@ EXPORTS
 	P_SpawnDamageParticleGen		@233 NONAME
 
 ; Play: Setup.
+	P_LoadMap		@254 NONAME
 	P_LoadBlockMap		@77 NONAME
 	P_LoadReject		@78 NONAME
 
