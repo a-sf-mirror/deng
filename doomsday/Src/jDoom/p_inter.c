@@ -192,7 +192,8 @@ boolean P_GiveWeapon(player_t *player, weapontype_t weapon, boolean dropped)
 
             // Iterate the weapon order array and see if
             // a weapon change should be made
-            for(candidate = cfg.weaponOrder[i=0]; ;candidate = cfg.weaponOrder[i++])
+            for(candidate = cfg.weaponOrder[i=0]; i < NUMWEAPONS;
+                candidate = cfg.weaponOrder[i++])
             {
                 if(weapon == candidate)
                 {
@@ -907,8 +908,8 @@ void P_DamageMobj2(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         }
 
         // end of game hell hack
-        if(target->subsector->sector->special == 11 &&
-           damage >= target->health)
+        if(xsectors[P_ToIndex(DMU_SECTOR, target->subsector->sector)].special == 11
+           && damage >= target->health)
         {
             damage = target->health - 1;
         }
