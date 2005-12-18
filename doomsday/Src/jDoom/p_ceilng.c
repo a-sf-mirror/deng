@@ -160,6 +160,7 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
 {
     int     secnum;
     int     rtn;
+    xsector_t *xsec;
     sector_t *sec;
     ceiling_t *ceiling;
 
@@ -179,17 +180,17 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
 
     while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
-#ifdef TODO_MAP_UPDATE
-        sec = &sectors[secnum];
-#endif
-        if(sec->specialdata)
+        sec = P_ToPtr(DMU_SECTOR, secnum);
+
+        xsec = &xsectors[secnum];
+        if(xsec->specialdata)
             continue;
 
         // new door thinker
         rtn = 1;
         ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC, 0);
         P_AddThinker(&ceiling->thinker);
-        sec->specialdata = ceiling;
+        xsec->specialdata = ceiling;
         ceiling->thinker.function = T_MoveCeiling;
         ceiling->sector = sec;
         ceiling->crush = false;
@@ -198,8 +199,10 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
         {
         case fastCrushAndRaise:
             ceiling->crush = true;
-            ceiling->topheight = sec->ceilingheight;
-            ceiling->bottomheight = sec->floorheight + (8 * FRACUNIT);
+            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+            ceiling->bottomheight =
+                P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + (8 * FRACUNIT);
+
             ceiling->direction = -1;
             ceiling->speed = CEILSPEED * 2;
             break;
@@ -207,10 +210,10 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
         case silentCrushAndRaise:
         case crushAndRaise:
             ceiling->crush = true;
-            ceiling->topheight = sec->ceilingheight;
+            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
         case lowerAndCrush:
         case lowerToFloor:
-            ceiling->bottomheight = sec->floorheight;
+            ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
             if(type != lowerToFloor)
                 ceiling->bottomheight += 8 * FRACUNIT;
             ceiling->direction = -1;
@@ -224,7 +227,7 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
             break;
         }
 
-        ceiling->tag = sec->tag;
+        ceiling->tag = xsec->tag;
         ceiling->type = type;
         P_AddActiveCeiling(ceiling);
     }
@@ -259,7 +262,7 @@ void P_RemoveActiveCeiling(ceiling_t *ceiling)
 {
     ceilinglist_t *list = ceiling->list;
 
-    ceiling->sector->specialdata = NULL;
+    xsectors[P_ToIndex(DMU_SECTOR, ceiling->sector)].specialdata = NULL;
     P_RemoveThinker(&ceiling->thinker);
 
     if((*list->prev = list->next))
@@ -291,13 +294,14 @@ void P_RemoveAllActiveCeilings(void)
 int P_ActivateInStasisCeiling(line_t *line)
 {
     int rtn = 0;
+    int lineid = P_ToIndex(DMU_LINE, line);
     ceilinglist_t *cl;
 
     for(cl = activeceilings; cl; cl = cl->next)
     {
         ceiling_t *ceiling = cl->ceiling;
 
-        if(ceiling->tag == line->tag && ceiling->direction == 0)
+        if(ceiling->tag == xlines[lineid].tag && ceiling->direction == 0)
         {
             ceiling->direction = ceiling->olddirection;
             ceiling->thinker.function = (actionf_p1) T_MoveCeiling;
@@ -318,13 +322,14 @@ int P_ActivateInStasisCeiling(line_t *line)
 int EV_CeilingCrushStop(line_t *line)
 {
     int rtn = 0;
+    int lineid = P_ToIndex(DMU_LINE, line);
     ceilinglist_t *cl;
 
     for(cl = activeceilings; cl; cl = cl->next)
     {
         ceiling_t *ceiling = cl->ceiling;
 
-        if ceiling->direction != 0 && ceiling->tag == line->tag)
+        if(ceiling->direction != 0 && ceiling->tag == xlines[lineid].tag)
         {
             ceiling->olddirection = ceiling->direction;
             ceiling->direction = 0;
