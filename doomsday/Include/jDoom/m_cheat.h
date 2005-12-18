@@ -48,7 +48,7 @@ void            cht_GetParam(cheatseq_t * cht, char *buffer);
 
 void            cht_GodFunc(player_t *plyr);
 void            cht_GiveFunc(player_t *plyr, boolean weapons, boolean ammo,
-							 boolean armor, boolean cards);
+                             boolean armor, boolean cards, cheatseq_t *cheat);
 void            cht_MusicFunc(player_t *plyr, char *buf);
 void            cht_NoClipFunc(player_t *plyr);
 boolean         cht_WarpFunc(player_t *plyr, char *buf);
@@ -62,6 +62,10 @@ boolean 	cht_Responder(event_t *ev);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.6.2.2  2005/12/18 15:05:02  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.6.2.1  2005/06/15 18:22:41  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

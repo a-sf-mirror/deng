@@ -5,7 +5,7 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-void            D_ConsoleRegistration();
+void            G_ConsoleRegistration();
 void            D_ConsoleBg(int *width, int *height);
 
 #endif

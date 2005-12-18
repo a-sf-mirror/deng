@@ -42,9 +42,6 @@
 //
 
 // Called by main loop.
-boolean         ST_Responder(event_t *ev);
-
-// Called by main loop.
 void            ST_Ticker(void);
 
 // Called by main loop.
@@ -77,6 +74,10 @@ int             D_GetFilterColor(int filter);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.6.2.2  2005/12/18 15:05:03  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.6.2.1  2005/06/15 18:22:42  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

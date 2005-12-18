@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -36,52 +36,52 @@
 
 // Palette indices.
 // For damage/bonus red-/gold-shifts
-#define STARTREDPALS		1
-#define STARTBONUSPALS		9
-#define NUMREDPALS			8
-#define NUMBONUSPALS		4
+#define STARTREDPALS        1
+#define STARTBONUSPALS      9
+#define NUMREDPALS          8
+#define NUMBONUSPALS        4
 
-#define FLOATSPEED		(FRACUNIT*4)
+#define FLOATSPEED      (FRACUNIT*4)
 
-#define DELTAMUL		6.324555320	// Used when calculating ticcmd_t.lookdirdelta
+#define DELTAMUL        6.324555320 // Used when calculating ticcmd_t.lookdirdelta
 
-#define bmapwidth		(*gi.bmapwidth)
-#define bmapheight		(*gi.bmapheight)
-#define bmaporgx		(*gi.bmaporgx)
-#define bmaporgy		(*gi.bmaporgy)
+#define bmapwidth       (*gi.bmapwidth)
+#define bmapheight      (*gi.bmapheight)
+#define bmaporgx        (*gi.bmaporgx)
+#define bmaporgy        (*gi.bmaporgy)
 
-#define MAXHEALTH		maxhealth  //100
-#define VIEWHEIGHT		(41*FRACUNIT)
+#define MAXHEALTH       maxhealth  //100
+#define VIEWHEIGHT      (41*FRACUNIT)
 
 // mapblocks are used to check movement
 // against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
+#define MAPBLOCKUNITS   128
+#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+#define MAPBLOCKSHIFT   (FRACBITS+7)
+#define MAPBMASK        (MAPBLOCKSIZE-1)
+#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
 
-#define TOCENTER		-8
+#define TOCENTER        -8
 
 // player radius for movement checking
-#define PLAYERRADIUS	16*FRACUNIT
+#define PLAYERRADIUS    16*FRACUNIT
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
-#define MAXRADIUS		32*FRACUNIT
+#define MAXRADIUS       32*FRACUNIT
 
-#define GRAVITY		Get(DD_GRAVITY)	//FRACUNIT
-#define MAXMOVE		(30*FRACUNIT)
+#define GRAVITY     Get(DD_GRAVITY) //FRACUNIT
+#define MAXMOVE     (30*FRACUNIT)
 
-#define USERANGE		(64*FRACUNIT)
-#define MELEERANGE		(64*FRACUNIT)
-#define MISSILERANGE	(32*64*FRACUNIT)
+#define USERANGE        (64*FRACUNIT)
+#define MELEERANGE      (64*FRACUNIT)
+#define MISSILERANGE    (32*64*FRACUNIT)
 
 // follow a player exlusively for 3 seconds
-#define	BASETHRESHOLD	 	100
+#define BASETHRESHOLD       100
 
-#define MAXSPECIALCROSS		64
+#define MAXSPECIALCROSS     64
 
 // GMJ 02/02/02
 #define sentient(mobj) ((mobj)->health > 0 && (mobj)->info->seestate)
@@ -91,13 +91,13 @@
 //
 
 // both the head and tail of the thinker list
-//extern    thinker_t   thinkercap; 
+//extern    thinker_t   thinkercap;
 
 /*void P_InitThinkers (void);
    void P_AddThinker (thinker_t* thinker);
    void P_RemoveThinker (thinker_t* thinker); */
 
-#define thinkercap		(*gi.thinkercap)
+#define thinkercap      (*gi.thinkercap)
 
 /*#define   P_InitThinkers  gi.InitThinkers
    #define P_AddThinker gi.AddThinker
@@ -118,19 +118,21 @@ void            P_SetPsprite(player_t *player, int position, statenum_t stnum);
 void            P_PlayerThink(player_t *player);
 void            P_SetMessage(player_t *pl, char *msg);
 
-extern int      maxhealth, healthlimit;
-extern int      armorpoints[2];	   // Green and blue points.
+extern int      maxhealth, healthlimit, godmodehealth;
+extern int      soulspherehealth, soulspherelimit, megaspherehealth;
+extern int      armorpoints[4];    // Green, blue, IDFA and IDKFA points.
+extern int      armorclass[4];     // Green and blue classes.
 
 //
 // P_MOBJ
 //
-#define ONFLOORZ		MININT
-#define ONCEILINGZ		MAXINT
+#define ONFLOORZ        MININT
+#define ONCEILINGZ      MAXINT
 
 // Time interval for item respawning.
-#define ITEMQUESIZE		128
+#define ITEMQUESIZE     128
 
-extern mapthing_t itemrespawnque[ITEMQUESIZE];
+extern thing_t  itemrespawnque[ITEMQUESIZE];
 extern int      itemrespawntime[ITEMQUESIZE];
 extern int      iquehead;
 extern int      iquetail;
@@ -145,11 +147,11 @@ void            P_MobjThinker(mobj_t *mobj);
 
 void            P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 mobj_t         *P_SpawnCustomPuff(fixed_t x, fixed_t y, fixed_t z,
-								  mobjtype_t type);
+                                  mobjtype_t type);
 void            P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage);
 mobj_t         *P_SpawnMissile(mobj_t *source, mobj_t *dest, mobjtype_t type);
 void            P_SpawnPlayerMissile(mobj_t *source, mobjtype_t type);
-void            P_SpawnPlayer(mapthing_t * mthing, int pnum);
+void            P_SpawnPlayer(thing_t * mthing, int pnum);
 mobj_t         *P_SpawnTeleFog(int x, int y);
 
 void            P_SetDoomsdayFlags(mobj_t *mo);
@@ -229,10 +231,10 @@ extern int      braintargeton;
    #define P_PointOnLineSide    gi.PointOnLineSide
    #define P_BoxOnLineSide      gi.BoxOnLineSide */
 
-#define openrange			Get(DD_OPENRANGE)
-#define opentop				Get(DD_OPENTOP)
-#define openbottom			Get(DD_OPENBOTTOM)
-#define lowfloor			Get(DD_LOWFLOOR)
+#define openrange           Get(DD_OPENRANGE)
+#define opentop             Get(DD_OPENTOP)
+#define openbottom          Get(DD_OPENBOTTOM)
+#define lowfloor            Get(DD_LOWFLOOR)
 //#define P_LineOpening     gi.LineOpening
 
 /*#define P_BlockLinesIterator  gi.BlockLinesIterator
@@ -257,14 +259,14 @@ extern fixed_t  tmceilingz;
 
 extern line_t  *ceilingline;
 
-boolean        P_CheckSides(mobj_t* actor, int x, int y);	// DJS - from prBoom
+boolean        P_CheckSides(mobj_t* actor, int x, int y);   // DJS - from prBoom
 
 boolean         P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y);
 boolean         P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y,
-								 fixed_t z);
+                                 fixed_t z);
 boolean         P_TryMove(mobj_t *thing, fixed_t x, fixed_t y,
-						  boolean dropoff);
-boolean         P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y);
+                          boolean dropoff);
+boolean         P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, boolean alwaysstomp);
 void            P_SlideMove(mobj_t *mo);
 
 //boolean P_CheckSight (mobj_t* t1, mobj_t* t2);
@@ -274,12 +276,12 @@ void            P_UseLines(player_t *player);
 
 boolean         P_ChangeSector(sector_t *sector, boolean crunch);
 
-extern mobj_t  *linetarget;		   // who got hit (or NULL)
+extern mobj_t  *linetarget;        // who got hit (or NULL)
 
 fixed_t         P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance);
 
 void            P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance,
-							 fixed_t slope, int damage);
+                             fixed_t slope, int damage);
 
 void            P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage);
 
@@ -304,9 +306,9 @@ extern int      clipammo[NUMAMMO];
 void            P_TouchSpecialThing(mobj_t *special, mobj_t *toucher);
 
 void            P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
-							 int damage);
+                             int damage);
 void            P_DamageMobj2(mobj_t *target, mobj_t *inflictor,
-							  mobj_t *source, int damage, boolean stomping);
+                              mobj_t *source, int damage, boolean stomping);
 
 void            P_ExplodeMissile(mobj_t *mo);
 
@@ -315,10 +317,14 @@ void            P_ExplodeMissile(mobj_t *mo);
 //
 #include "p_spec.h"
 
-#endif							// __P_LOCAL__
+#endif                          // __P_LOCAL__
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.9.2.2  2005/12/18 15:05:02  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.9.2.1  2005/06/15 18:22:42  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

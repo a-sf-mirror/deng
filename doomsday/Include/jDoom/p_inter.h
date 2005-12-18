@@ -34,11 +34,16 @@ boolean         P_GivePower(player_t *, int);
 void            P_GiveKey(player_t *player, card_t card);
 boolean         P_GiveBody(player_t *player, int num);
 void            P_GiveBackpack(player_t *player);
+boolean         P_GiveWeapon(player_t *player, weapontype_t weapon, boolean dropped);
 
 #endif
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.7.2.2  2005/12/18 15:05:02  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.7.2.1  2005/06/15 18:22:41  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

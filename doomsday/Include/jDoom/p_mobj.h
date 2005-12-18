@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -90,7 +90,7 @@
 // things, but nothing can run into a missile).
 // Each block in the grid is 128*128 units, and knows about
 // every line_t that it contains a piece of, and every
-// interactable mobj_t that has its origin contained.  
+// interactable mobj_t that has its origin contained.
 //
 // A valid mobj_t is a mobj_t that has the proper subsector_t
 // filled in for its xy coordinates and is linked into the
@@ -109,101 +109,104 @@
 // Misc. mobj flags
 //
 typedef enum {
-	// Call P_SpecialThing when touched.
-	MF_SPECIAL = 1,
-	// Blocks.
-	MF_SOLID = 2,
-	// Can be hit.
-	MF_SHOOTABLE = 4,
-	// Don't use the sector links (invisible but touchable).
-	MF_NOSECTOR = 8,
-	// Don't use the blocklinks (inert but displayable)
-	MF_NOBLOCKMAP = 16,
+    // Call P_SpecialThing when touched.
+    MF_SPECIAL = 1,
+    // Blocks.
+    MF_SOLID = 2,
+    // Can be hit.
+    MF_SHOOTABLE = 4,
+    // Don't use the sector links (invisible but touchable).
+    MF_NOSECTOR = 8,
+    // Don't use the blocklinks (inert but displayable)
+    MF_NOBLOCKMAP = 16,
 
-	// Not to be activated by sound, deaf monster.
-	MF_AMBUSH = 32,
-	// Will try to attack right back.
-	MF_JUSTHIT = 64,
-	// Will take at least one step before attacking.
-	MF_JUSTATTACKED = 128,
-	// On level spawning (initial position),
-	//  hang from ceiling instead of stand on floor.
-	MF_SPAWNCEILING = 256,
-	// Don't apply gravity (every tic),
-	//  that is, object will float, keeping current height
-	//  or changing it actively.
-	MF_NOGRAVITY = 512,
+    // Not to be activated by sound, deaf monster.
+    MF_AMBUSH = 32,
+    // Will try to attack right back.
+    MF_JUSTHIT = 64,
+    // Will take at least one step before attacking.
+    MF_JUSTATTACKED = 128,
+    // On level spawning (initial position),
+    //  hang from ceiling instead of stand on floor.
+    MF_SPAWNCEILING = 256,
+    // Don't apply gravity (every tic),
+    //  that is, object will float, keeping current height
+    //  or changing it actively.
+    MF_NOGRAVITY = 512,
 
-	// Movement flags.
-	// This allows jumps from high places.
-	MF_DROPOFF = 0x400,
-	// For players, will pick up items.
-	MF_PICKUP = 0x800,
-	// Player cheat. ???
-	MF_NOCLIP = 0x1000,
-	// Player: keep info about sliding along walls.
-	MF_SLIDE = 0x2000,
-	// Allow moves to any height, no gravity.
-	// For active floaters, e.g. cacodemons, pain elementals.
-	MF_FLOAT = 0x4000,
-	// Don't cross lines
-	//   ??? or look at heights on teleport.
-	MF_TELEPORT = 0x8000,
-	// Don't hit same species, explode on block.
-	// Player missiles as well as fireballs of various kinds.
-	MF_MISSILE = 0x10000,
-	// Dropped by a demon, not level spawned.
-	// E.g. ammo clips dropped by dying former humans.
-	MF_DROPPED = 0x20000,
-	// Use fuzzy draw (shadow demons or spectres),
-	//  temporary player invisibility powerup.
-	MF_SHADOW = 0x40000,
-	// Flag: don't bleed when shot (use puff),
-	//  barrels and shootable furniture shall not bleed.
-	MF_NOBLOOD = 0x80000,
-	// Don't stop moving halfway off a step,
-	//  that is, have dead bodies slide down all the way.
-	MF_CORPSE = 0x100000,
-	// Floating to a height for a move, ???
-	//  don't auto float to target's height.
-	MF_INFLOAT = 0x200000,
+    // Movement flags.
+    // This allows jumps from high places.
+    MF_DROPOFF = 0x400,
+    // For players, will pick up items.
+    MF_PICKUP = 0x800,
+    // Player cheat. ???
+    MF_NOCLIP = 0x1000,
+    // Player: keep info about sliding along walls.
+    MF_SLIDE = 0x2000,
+    // Allow moves to any height, no gravity.
+    // For active floaters, e.g. cacodemons, pain elementals.
+    MF_FLOAT = 0x4000,
+    // Don't cross lines
+    //   ??? or look at heights on teleport.
+    MF_TELEPORT = 0x8000,
+    // Don't hit same species, explode on block.
+    // Player missiles as well as fireballs of various kinds.
+    MF_MISSILE = 0x10000,
+    // Dropped by a demon, not level spawned.
+    // E.g. ammo clips dropped by dying former humans.
+    MF_DROPPED = 0x20000,
+    // Use fuzzy draw (shadow demons or spectres),
+    //  temporary player invisibility powerup.
+    MF_SHADOW = 0x40000,
+    // Flag: don't bleed when shot (use puff),
+    //  barrels and shootable furniture shall not bleed.
+    MF_NOBLOOD = 0x80000,
+    // Don't stop moving halfway off a step,
+    //  that is, have dead bodies slide down all the way.
+    MF_CORPSE = 0x100000,
+    // Floating to a height for a move, ???
+    //  don't auto float to target's height.
+    MF_INFLOAT = 0x200000,
 
-	// On kill, count this enemy object
-	//  towards intermission kill total.
-	// Happy gathering.
-	MF_COUNTKILL = 0x00400000,
+    // On kill, count this enemy object
+    //  towards intermission kill total.
+    // Happy gathering.
+    MF_COUNTKILL = 0x00400000,
 
-	// On picking up, count this item object
-	//  towards intermission item total.
-	MF_COUNTITEM = 0x00800000,
+    // On picking up, count this item object
+    //  towards intermission item total.
+    MF_COUNTITEM = 0x00800000,
 
-	// Special handling: skull in flight.
-	// Neither a cacodemon nor a missile.
-	MF_SKULLFLY = 0x01000000,
+    // Special handling: skull in flight.
+    // Neither a cacodemon nor a missile.
+    MF_SKULLFLY = 0x01000000,
 
-	// Don't spawn this object
-	//  in death match mode (e.g. key cards).
-	MF_NOTDMATCH = 0x02000000,
+    // Don't spawn this object
+    //  in death match mode (e.g. key cards).
+    MF_NOTDMATCH = 0x02000000,
 
-	// Player sprites in multiplayer modes are modified
-	//  using an internal color lookup table for re-indexing.
-	// If 0x4 0x8 or 0xc,
-	//  use a translation table for player colormaps
-	MF_TRANSLATION = 0x0c000000,
-	// Hmm ???.
-	MF_TRANSSHIFT = 26,
+    // Monster turns (in)visible at certain times.
+    MF_STEALTH = 0x4000000,
 
-	MF_LOCAL = 0x10000000,
-	MF_BRIGHTEXPLODE = 0x20000000,
-	MF_BRIGHTSHADOW = 0x40000000,
-	MF_VIEWALIGN = 0x80000000
+    // Player sprites in multiplayer modes are modified
+    //  using an internal color lookup table for re-indexing.
+    // If 0x4 0x8 or 0xc,
+    //  use a translation table for player colormaps
+    MF_TRANSLATION = 0x0c000000,
+    // Hmm ???.
+    MF_TRANSSHIFT = 26,
+
+    MF_LOCAL = 0x10000000,
+    MF_BRIGHTEXPLODE = 0x20000000,
+    MF_BRIGHTSHADOW = 0x40000000,
+    MF_VIEWALIGN = 0x80000000
 } mobjflag_t;
 
-#define MF2_ALWAYSLIT	0x1
+#define MF2_ALWAYSLIT   0x1
 
 // killough $dropoff_fix
 enum {
-	MIF_FALLING = 1,
+    MIF_FALLING = 1,
 };
 
 // killough $dropoff_fix
@@ -214,46 +217,46 @@ enum {
 
 // Map Object definition.
 typedef struct mobj_s {
-	// Defined in dd_share.h; required mobj elements.
-	DD_BASE_MOBJ_ELEMENTS() mobjinfo_t *info;	// &mobjinfo[mobj->type]
-	int             flags;
-	int             health;
+    // Defined in dd_share.h; required mobj elements.
+    DD_BASE_MOBJ_ELEMENTS() mobjinfo_t *info;   // &mobjinfo[mobj->type]
+    int             flags;
+    int             health;
 
-	// Movement direction, movement generation (zig-zagging).
-	int             movedir;	   // 0-7
-	int             movecount;	   // when 0, select a new dir
+    // Movement direction, movement generation (zig-zagging).
+    int             movedir;       // 0-7
+    int             movecount;     // when 0, select a new dir
 
-	// Thing being chased/attacked (or NULL),
-	// also the originator for missiles.
-	struct mobj_s  *target;
+    // Thing being chased/attacked (or NULL),
+    // also the originator for missiles.
+    struct mobj_s  *target;
 
-	// Reaction time: if non 0, don't attack yet.
-	// Used by player to freeze a bit after teleporting.
-	int             reactiontime;
+    // Reaction time: if non 0, don't attack yet.
+    // Used by player to freeze a bit after teleporting.
+    int             reactiontime;
 
-	// If >0, the target will be chased
-	// no matter what (even if shot)
-	int             threshold;
+    // If >0, the target will be chased
+    // no matter what (even if shot)
+    int             threshold;
 
-	int             intflags;	   // killough $dropoff_fix: internal flags
-	fixed_t         dropoffz;	   // killough $dropoff_fix
-	short           gear;		   // killough 11/98: used in torque simulation
+    int             intflags;      // killough $dropoff_fix: internal flags
+    fixed_t         dropoffz;      // killough $dropoff_fix
+    short           gear;          // killough 11/98: used in torque simulation
 
-	// Additional info record for player avatars only.
-	// Only valid if type == MT_PLAYER
-	struct player_s *player;
+    // Additional info record for player avatars only.
+    // Only valid if type == MT_PLAYER
+    struct player_s *player;
 
-	// Player number last looked for.
-	int             lastlook;
+    // Player number last looked for.
+    int             lastlook;
 
-	// For nightmare respawn.
-	mapthing_t      spawnpoint;
+    // For nightmare respawn.
+    thing_t         spawnpoint;
 
-	// Thing being chased/attacked for tracers.
-	struct mobj_s  *tracer;
+    // Thing being chased/attacked for tracers.
+    struct mobj_s  *tracer;
 
-	int             turntime;	   // $visangle-facetarget
-	int             corpsetics;	   // $vanish: how long has this been dead?
+    int             turntime;      // $visangle-facetarget
+    int             corpsetics;    // $vanish: how long has this been dead?
 
 } mobj_t;
 
@@ -261,6 +264,10 @@ typedef struct mobj_s {
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.7.2.1  2005/12/18 15:05:03  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.7  2004/05/29 09:53:11  skyjake
 // Consistent style (using GNU Indent)
 //

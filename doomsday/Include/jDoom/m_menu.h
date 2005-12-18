@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,7 +16,7 @@
 //
 // DESCRIPTION:
 //   Menu widget stuff, episode selection and such.
-//    
+//
 //-----------------------------------------------------------------------------
 
 #ifndef __M_MENU__
@@ -41,7 +41,7 @@ boolean         M_Responder(event_t *ev);
 
 // Called by Init
 // registers all the CCmds and CVars for the menu
-void 		MN_Register(void);
+void        MN_Register(void);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
@@ -64,17 +64,24 @@ void            M_StartControlPanel(void);
 void            M_ClearMenus(void);
 
 void            M_StartMessage(char *string, void *routine, boolean input);
+void M_StopMessage(void);
 
 void            M_WriteText2(int x, int y, char *string, dpatch_t *font,
-							 float red, float green, float blue, float alpha);
+                             float red, float green, float blue, float alpha);
 void            M_WriteText3(int x, int y, const char *string, dpatch_t *font,
-							 float red, float green, float blue, float alpha,
-							 boolean doTypeIn, int initialCount);
+                             float red, float green, float blue, float alpha,
+                             boolean doTypeIn, int initialCount);
+DEFCC(CCmdMenuAction);
+DEFCC(CCmdMsgResponse);
 
 #endif
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.9.2.2  2005/12/18 15:05:02  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.9.2.1  2005/06/15 18:22:41  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

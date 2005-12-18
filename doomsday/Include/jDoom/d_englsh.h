@@ -327,6 +327,18 @@
 #define AMSTR_MARKEDSPOT GET_TXT(TXT_AMSTR_MARKEDSPOT)
 #define AMSTR_MARKSCLEARED GET_TXT(TXT_AMSTR_MARKSCLEARED)
 
+// Weapon names
+
+#define WEAPON0 GET_TXT(TXT_WEAPON0)
+#define WEAPON1 GET_TXT(TXT_WEAPON1)
+#define WEAPON2 GET_TXT(TXT_WEAPON2)
+#define WEAPON3 GET_TXT(TXT_WEAPON3)
+#define WEAPON4 GET_TXT(TXT_WEAPON4)
+#define WEAPON5 GET_TXT(TXT_WEAPON5)
+#define WEAPON6 GET_TXT(TXT_WEAPON6)
+#define WEAPON7 GET_TXT(TXT_WEAPON7)
+#define WEAPON8 GET_TXT(TXT_WEAPON8)
+
 //
 //  ST_stuff.C
 //
@@ -435,6 +447,10 @@
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.5.2.1  2005/12/18 15:05:02  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.5  2005/05/29 05:37:55  danij
 // Added textdefs for automap messages and XG class names. Updated style (uses spaces rather than tabs).
 //

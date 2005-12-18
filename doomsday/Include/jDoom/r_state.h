@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -48,21 +48,14 @@ extern fixed_t *spritewidth;
 extern fixed_t *spriteoffset;
 extern fixed_t *spritetopoffset;
 
-#define numvertexes		(*gi.numvertexes)
-#define numsegs			(*gi.numsegs)
-#define	numsectors		(*gi.numsectors)
-#define numsubsectors	(*gi.numsubsectors)
-#define numnodes		(*gi.numnodes)
-#define numlines		(*gi.numlines)
-#define numsides		(*gi.numsides)
-
-#define vertexes		(*(vertex_t**)gi.vertexes)
-#define segs			(*(seg_t**)gi.segs)
-#define	sectors			(*(sector_t**)gi.sectors)
-#define subsectors		(*(subsector_t**)gi.subsectors)
-#define nodes			(*(node_t**)gi.nodes)
-#define lines			(*(line_t**)gi.lines)
-#define sides			(*(side_t**)gi.sides)
+extern int numvertexes;
+extern int numsegs;
+extern int numsectors;
+extern int numsubsectors;
+extern int numnodes;
+extern int numlines;
+extern int numsides;
+extern int numthings;
 
 /*
 
@@ -76,11 +69,11 @@ extern fixed_t *spritetopoffset;
    extern angle_t       viewangle; */
 extern player_t *viewplayer;
 
-#define viewx		gi.Get(DD_VIEWX)
-#define viewy		gi.Get(DD_VIEWY)
+#define viewx       gi.Get(DD_VIEWX)
+#define viewy       gi.Get(DD_VIEWY)
 //#define viewz     gi.Get(DD_VIEWZ)
 
-#define viewangle	gi.Get(DD_VIEWANGLE)
+#define viewangle   gi.Get(DD_VIEWANGLE)
 
 // ?
 extern angle_t  clipangle;
@@ -107,6 +100,10 @@ extern int      sscount;
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.4.2.2  2005/12/18 15:05:03  danij
+// Updated to use DMU.
+// See comments in src files for notes on changes.
+//
 // Revision 1.4.2.1  2005/06/15 18:22:42  skyjake
 // Numerous fixes after compiling with gcc-4.0 on Mac
 //

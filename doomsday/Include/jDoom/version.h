@@ -6,7 +6,6 @@
 #endif
 
 // DOOM version
-//enum { VERSION = 110 }; // obsolete
 
 #ifndef JDOOM_VER_ID
 #  ifdef _DEBUG
@@ -15,6 +14,8 @@
 #    define JDOOM_VER_ID "Doomsday"
 #  endif
 #endif
+
+#define GAMENAMETEXT "jDoom"
 
 // My my, the names of these #defines are really well chosen...
 #define VERSION_TEXT "1.15."DOOMSDAY_RELEASE_NAME

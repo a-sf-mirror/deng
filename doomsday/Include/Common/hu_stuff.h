@@ -75,7 +75,7 @@ void    R_CachePatch(dpatch_t * dp, char *name);
 
 // Implements patch replacement.
 void    WI_DrawPatch(int x, int y, float r, float g, float b, float a,
-                     int lump);
+                     int lump, char *altstring, int halign);
 
 void    WI_DrawParamText(int x, int y, char *string, dpatch_t * defFont,
                          float defRed, float defGreen, float defBlue,
@@ -107,6 +107,7 @@ extern char    *mapnamesp[32], *mapnamest[32];
 #endif
 
 void        HU_Start(void);
+void        HU_UnloadData(void);
 boolean     HU_Responder(event_t *ev);
 void        HU_Drawer(void);
 char        HU_dequeueChatChar(void);

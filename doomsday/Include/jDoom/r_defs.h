@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,10 +44,10 @@
 
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
-#define SIL_NONE		0
-#define SIL_BOTTOM		1
-#define SIL_TOP			2
-#define SIL_BOTH		3
+#define SIL_NONE        0
+#define SIL_BOTTOM      1
+#define SIL_TOP         2
+#define SIL_BOTH        3
 
 //
 // INTERNAL MAP TYPES
@@ -61,140 +61,146 @@ struct line_s;
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
 //
-typedef struct sector_s {
-	fixed_t         floorheight;
-	fixed_t         ceilingheight;
-	short           floorpic;
-	short           ceilingpic;
-	short           lightlevel;
-	byte            rgb[3];
+typedef struct xsector_s {
+#if 0
+    fixed_t         floorheight;
+    fixed_t         ceilingheight;
+    short           floorpic;
+    short           ceilingpic;
+    short           lightlevel;
+    byte            rgb[3];
+    byte    floorrgb[3];
+    byte    ceilingrgb[3];
 
-	// if == validcount, already checked
-	int             Validcount;
+    // if == validcount, already checked
+    int             Validcount;
 
-	// list of mobjs in sector
-	mobj_t         *thinglist;
+    // list of mobjs in sector
+    mobj_t         *thinglist;
 
-	int             linecount;
-	struct line_s **Lines;		   // [linecount] size
+    int             linecount;
+    struct line_s **Lines;         // [linecount] size
 
-	float           flooroffx, flooroffy;	// floor texture offset
-	float           ceiloffx, ceiloffy;	// ceiling texture offset
+    float           flooroffx, flooroffy;   // floor texture offset
+    float           ceiloffx, ceiloffy; // ceiling texture offset
 
-	int             skyfix;		   // Offset to ceiling height
-	// rendering w/sky.
-	float           reverb[NUM_REVERB_DATA];
+    int             skyfix;        // Offset to ceiling height
+    // rendering w/sky.
+    float           reverb[NUM_REVERB_DATA];
 
-	// mapblock bounding box for height changes
-	int             blockbox[4];
+    // mapblock bounding box for height changes
+    int             blockbox[4];
 
-	plane_t         planes[2];	   // PLN_*
+    plane_t         planes[2];     // PLN_*
 
-	degenmobj_t     soundorg;	   // for any sounds played by the sector
+    degenmobj_t     soundorg;      // for any sounds played by the sector
+#endif
+    // --- Don't change anything above ---
 
-	// --- Don't change anything above ---
+    short           special;
+    short           tag;
 
-	short           special;
-	short           tag;
+    // 0 = untraversed, 1,2 = sndlines -1
+    int             soundtraversed;
 
-	// 0 = untraversed, 1,2 = sndlines -1
-	int             soundtraversed;
+    // thing that made a sound (or null)
+    mobj_t         *soundtarget;
 
-	// thing that made a sound (or null)
-	mobj_t         *soundtarget;
+    // thinker_t for reversable actions
+    void           *specialdata;
 
-	// thinker_t for reversable actions
-	void           *specialdata;
+    // stone, metal, heavy, etc...
+    /*seqtype_t*/ byte       seqType;       // NOT USED ATM
 
-	int             origfloor, origceiling, origlight;
-	byte            origrgb[3];
-	xgsector_t     *xg;
+    int             origfloor, origceiling, origlight;
+    byte            origrgb[3];
+    xgsector_t     *xg;
 
-} sector_t;
+} xsector_t;
 
 //
 // The SideDef.
 //
-
+#if 0
 typedef struct side_s {
-	// add this to the calculated texture column
-	fixed_t         textureoffset;
+    // add this to the calculated texture column
+    fixed_t         textureoffset;
 
-	// add this to the calculated texture top
-	fixed_t         rowoffset;
+    // add this to the calculated texture top
+    fixed_t         rowoffset;
 
-	// Texture indices.
-	// We do not maintain names here. 
-	short           toptexture;
-	short           bottomtexture;
-	short           midtexture;
+    // Texture indices.
+    // We do not maintain names here.
+    short           toptexture;
+    short           bottomtexture;
+    short           midtexture;
 
-	// Sector the SideDef is facing.
-	sector_t       *sector;
+    byte    toprgb[3], bottomrgb[3], midrgba[4];
+    blendmode_t    blendmode; // blending mode
+    int          flags;
 
-	// --- Don't change anything above ---
+    // Sector the SideDef is facing.
+    sector_t       *sector;
+
+    // --- Don't change anything above ---
 
 } side_t;
+#endif
 
-typedef struct line_s {
-	// Vertices, from v1 to v2.
-	vertex_t       *v1;
-	vertex_t       *v2;
+typedef struct xline_s {
+#if 0
+    // Vertices, from v1 to v2.
+    vertex_t       *v1;
+    vertex_t       *v2;
 
-	short           flags;
+    short           flags;
 
-	// Front and back sector.
-	// Note: redundant? Can be retrieved from SideDefs.
-	sector_t       *frontsector;
-	sector_t       *backsector;
+    // Front and back sector.
+    // Note: redundant? Can be retrieved from SideDefs.
+    sector_t       *frontsector;
+    sector_t       *backsector;
 
-	// Precalculated v2 - v1 for side checking.
-	fixed_t         dx;
-	fixed_t         dy;
+    // Precalculated v2 - v1 for side checking.
+    fixed_t         dx;
+    fixed_t         dy;
 
-	// To aid move clipping.
-	slopetype_t     slopetype;
+    // To aid move clipping.
+    slopetype_t     slopetype;
 
-	// if == validcount, already checked
-	int             Validcount;
+    // if == validcount, already checked
+    int             Validcount;
 
-	// Visual appearance: SideDefs.
-	//  sidenum[1] will be -1 if one sided
-	short           sidenum[2];
+    // Visual appearance: SideDefs.
+    //  sidenum[1] will be 0xffff if one sided
+    int             sidenum[2];
 
-	fixed_t         bbox[4];
+    fixed_t         bbox[4];
 
-	// --- Don't change anything above ---
+    // --- Don't change anything above ---
+#endif
+    // Animation related.
+    short           special;
+    short           tag;
+    byte            arg1;
+    byte            arg2;
+    byte            arg3;
+    byte            arg4;
+    byte            arg5;
+    // thinker_t for reversable actions
+    void           *specialdata;
 
-	// Animation related.
-	short           special;
-	short           tag;
+    // Extended generalized lines.
+    xgline_t       *xg;
+} xline_t;
 
-	// thinker_t for reversable actions
-	void           *specialdata;
+extern xsector_t *xsectors;
+extern xline_t *xlines;
 
-	// Extended generalized lines.
-	xgline_t       *xg;
-} line_t;
+void P_SetupForThings(int num);
+void P_SetupForLines(int num);
+void P_SetupForSides(int num);
+void P_SetupForSectors(int num);
 
-//
-// BSP node.
-//
-typedef struct {
-	// Partition line.
-	fixed_t         x;
-	fixed_t         y;
-	fixed_t         dx;
-	fixed_t         dy;
-
-	// Bounding box for each child.
-	fixed_t         bbox[2][4];
-
-	// If NF_SUBSECTOR its a subsector.
-	unsigned short  children[2];
-
-	// --- Don't change anything above ---
-
-} node_t;
+int P_HandleMapDataElement(int id, int dtype, int prop, int type, void *data);
 
 #endif
