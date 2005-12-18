@@ -1,13 +1,21 @@
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
 /*
- *
- * AM_MAP.C
- *
- * Basen on the DOOM Automap. Modified GL version of the original.
- *
- * "commonised" by DaniJ - Based on code by ID and Raven, heavily modified by Skyjake
+ * Compiles for jDoom/jHeretic/jHexen
  *
  *  TODO: Clean up!
- *
  *    Baby mode Keys in jHexen!
  */
 
@@ -18,6 +26,7 @@
 #include <ctype.h>
 
 #ifdef __JDOOM__
+# include "jDoom/m_ctrl.h"
 # include "jDoom/doomdef.h"
 # include "jDoom/d_config.h"
 # include "jDoom/st_stuff.h"
@@ -31,6 +40,7 @@
 # include "jDoom/m_menu.h"
 # include "jDoom/wi_stuff.h"
 #elif __JHERETIC__
+# include "jHeretic/m_ctrl.h"
 # include "jHeretic/H_Action.h"
 # include "jHeretic/Doomdef.h"
 # include "jHeretic/Mn_def.h"
@@ -38,6 +48,7 @@
 # include "h_config.h"
 # include "jHeretic/Dstrings.h"
 #elif __JHEXEN__
+# include "jHexen/m_ctrl.h"
 # include "jHexen/h2_actn.h"
 # include "jHexen/mn_def.h"
 # include "jHexen/h2def.h"
@@ -51,6 +62,7 @@
 
 #include "Common/hu_stuff.h"
 #include "Common/am_map.h"
+#include "Common/g_common.h"
 
 // TYPES -------------------------------------------------------------------
 
@@ -92,8 +104,6 @@ enum {
 };
 
 // MACROS ------------------------------------------------------------------
-
-#define DEFCC(name)        int name(int argc, char **argv)
 
 #define thinkercap    (*gi.thinkercap)
 
@@ -355,12 +365,12 @@ boolean automapactive = false;
 boolean amap_fullyopen = false;
 
 cvar_t  mapCVars[] = {
-    {"map-position", 0, CVT_INT, &cfg.automapPos, 0, 8,
+/*    {"map-position", 0, CVT_INT, &cfg.automapPos, 0, 8,
         "Relative position of the automap.\n0-8 Left to right, top to bottom"},
     {"map-width", 0, CVT_FLOAT, &cfg.automapWidth, 0, 1,
         "Automap width scale factor."},
     {"map-height", 0, CVT_FLOAT, &cfg.automapHeight, 0, 1,
-        "Automap height scale factor."},
+        "Automap height scale factor."},*/
     {"map-color-unseen-r", 0, CVT_FLOAT, &cfg.automapL0[0], 0, 1,
         "Automap unseen areas, red component."},
     {"map-color-unseen-g", 0, CVT_FLOAT, &cfg.automapL0[1], 0, 1,
@@ -433,9 +443,6 @@ ccmd_t  mapCCmds[] = {
 
 static int keycolors[] = { KEY1, KEY2, KEY3, KEY4, KEY5, KEY6 };
 
-static unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-static cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
-
 static int maplumpnum = 0;    // pointer to the raw data for the automap background.
                 // if 0 no background image will be drawn
 
@@ -443,20 +450,14 @@ static int maplumpnum = 0;    // pointer to the raw data for the automap backgro
 
 static int keycolors[] = { KEY1, KEY2, KEY3 };
 
-static char cheat_amap[] = { 'r', 'a', 'v', 'm', 'a', 'p' };
-
-static byte cheatcount = 0;
-
 static int maplumpnum = 1;    // pointer to the raw data for the automap background.
                 // if 0 no background image will be drawn
-
 #else
 
 static int keycolors[] = { KEY1, KEY2, KEY3 };
 
-static char cheat_kills[] = { 'k', 'i', 'l', 'l', 's' };
-static boolean ShowKills = 0;
-static unsigned ShowKillsCount = 0;
+boolean ShowKills = 0;
+unsigned ShowKillsCount = 0;
 
 static int their_colors[] = {
     AM_PLR1_COLOR,
@@ -484,7 +485,6 @@ static float am_alpha = 0;
 
 static int bigstate = 0;
 static int grid = 0;
-static int cheatstate = 0;
 static int followplayer = 1;        // specifies whether to follow the player around
 
 static int leveljuststarted = 1;    // kluge until AM_LevelInit() is called
@@ -584,7 +584,7 @@ void AM_Register(void)
 /*
  * Handle the console commands for the automap
  */
-int CCmdMapAction(int argc, char **argv)
+DEFCC(CCmdMapAction)
 {
     static char buffer[20];
 
@@ -603,29 +603,29 @@ int CCmdMapAction(int argc, char **argv)
             viewactive = true;
 
             // Disable the automap binding classes
-            Con_Execute("enablebindclass map 0", true);
+            DD_SetBindClass(GBC_CLASS1, false);
 
             if(!followplayer)
-                Con_Execute("enablebindclass mapfollowoff 0", true);
+                DD_SetBindClass(GBC_CLASS2, false);
 
             AM_Stop();
-            return true; 
+            return true;
         }
 
         if(!stricmp(argv[0], "follow"))  // follow mode toggle
         {
             followplayer = !followplayer;
             f_oldloc.x = DDMAXINT;
-            
+
             // Enable/disable the follow mode binding class
             if(!followplayer)
-                Con_Execute("enablebindclass mapfollowoff 1", true);
+                DD_SetBindClass(GBC_CLASS2, true);
             else
-                Con_Execute("enablebindclass mapfollowoff 0", true);
+                DD_SetBindClass(GBC_CLASS2, false);
 
             P_SetMessage(plr, followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF  );
             Con_Printf("Follow mode toggle.\n");
-            return true; 
+            return true;
         }
 
         if(!stricmp(argv[0], "rotate"))  // rotate mode toggle
@@ -682,12 +682,12 @@ int CCmdMapAction(int argc, char **argv)
         {
             AM_Start();
             // Enable/disable the automap binding classes
-            Con_Execute("enablebindclass map 1", true);
+            DD_SetBindClass(GBC_CLASS1, true);
             if(!followplayer)
-                Con_Execute("enablebindclass mapfollowoff 1", true);
+                DD_SetBindClass(GBC_CLASS2, true);
 
             viewactive = false;
-            return true; 
+            return true;
         }
     }
 
@@ -794,26 +794,28 @@ void AM_addMark(void)
 void AM_findMinMaxBoundaries(void)
 {
     int     i;
+    int     x, y;
     fixed_t a;
     fixed_t b;
 
     min_x = min_y = DDMAXINT;
     max_x = max_y = -DDMAXINT;
 
-#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numvertexes; i++)
     {
-        if(vertexes[i].x < min_x)
-            min_x = vertexes[i].x;
-        else if(vertexes[i].x > max_x)
-            max_x = vertexes[i].x;
+        x = P_GetInt(DMU_VERTEX, i, DMU_X);
+        y = P_GetInt(DMU_VERTEX, i, DMU_Y);
 
-        if(vertexes[i].y < min_y)
-            min_y = vertexes[i].y;
-        else if(vertexes[i].y > max_y)
-            max_y = vertexes[i].y;
+        if(x < min_x)
+            min_x = x;
+        else if(x > max_x)
+            max_x = x;
+
+        if(y < min_y)
+            min_y = y;
+        else if(y > max_y)
+            max_y = y;
     }
-#endif
 
     max_w = max_x - min_x;
     max_h = max_y - min_y;
@@ -864,9 +866,6 @@ void AM_changeWindowLoc(void)
 void AM_initVariables(void)
 {
     int     pnum;
-#ifdef __JDOOM__    
-    static event_t st_notify = { ev_keyup, AM_MSGENTERED };
-#endif
 
     thinker_t *think;
     mobj_t *mo;
@@ -880,21 +879,21 @@ void AM_initVariables(void)
 
     m_paninc.x = m_paninc.y = 0;
 
-    if(cfg.automapWidth == 1 && cfg.automapHeight == 1)
+//    if(cfg.automapWidth == 1 && cfg.automapHeight == 1)
     {
         winx = 0;
         winy = 0;
         winw = scrwidth;
         winh = scrheight;
-    } 
-    else 
-    { 
+    }
+/*    else
+    {
         // smooth scale/move from center
         winx = 160;
         winy = 100;
         winw = 0;
         winh = 0;
-    }
+    }*/
 
     m_w = FTOM(f_w);
     m_h = FTOM(f_h);
@@ -984,11 +983,6 @@ void AM_initVariables(void)
 #endif                                // FIXME: Keys in jHexen!
         }
     }
-
-#ifdef __JDOOM__
-    // inform the status bar of the change
-    ST_Responder(&st_notify);
-#endif
 }
 
 /*
@@ -1002,7 +996,7 @@ void AM_loadPics(void)
     for(i = 0; i < 10; i++)
     {
         MARKERPATCHES;        // Check the macros eg: "sprintf(namebuf, "AMMNUM%d", i)" for jDoom
- 
+
         markpnums[i] = W_GetNumForName(namebuf);
     }
 
@@ -1059,18 +1053,11 @@ void AM_LevelInit(void)
  */
 void AM_Stop(void)
 {
-#ifdef __JDOOM__
-    static event_t st_notify = { 0, ev_keyup, AM_MSGEXITED };
-#endif    
-
     AM_unloadPics();
     automapactive = false;
     amap_fullyopen = false;
     am_alpha = 0;
 
-#ifdef __JDOOM__
-    ST_Responder(&st_notify);
-#endif
     stopped = true;
 
     GL_Update(DDUF_BORDER);
@@ -1119,72 +1106,6 @@ void AM_maxOutWindowScale(void)
     scale_mtof = max_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
     AM_activateNewScale();
-}
-
-/*
- * Handle input events in the automap.
- * Shouldn't really be here anyway...
- */
-boolean AM_Responder(event_t *ev)
-{
-    int     rc;
-    //static int cheatstate = 0;
-    //static int bigstate = 0;
-    //static char buffer[20];
-
-    rc = false;
-
-    if(automapactive)
-    {
-        if(ev->type == ev_keydown )
-        {
-            cheatstate = 0;
-            rc = false;
-
-#ifdef __JDOOM__
-            if(!deathmatch && cht_CheckCheat(&cheat_amap, (char) ev->data1))
-            {
-                rc = false;
-                cheating = (cheating + 1) % 3;
-            }
-#elif __JHERETIC__
-            if(cheat_amap[cheatcount] == ev->data1 && !IS_NETGAME)
-                cheatcount++;
-            else
-                cheatcount = 0;
-            if(cheatcount == 6)
-            {
-                cheatcount = 0;
-                rc = false;
-                cheating = (cheating + 1) % 3;
-            }
-#else
-            if(cheat_kills[ShowKillsCount] == ev->data1 && IS_NETGAME && deathmatch)
-            {
-                ShowKillsCount++;
-                if(ShowKillsCount == 5)
-                {
-                    ShowKillsCount = 0;
-                    rc = false;
-                    ShowKills ^= 1;
-                }
-            }
-            else
-            {
-                ShowKillsCount = 0;
-            }
-#endif
-        }
-        else if(ev->type == ev_keyup)
-        {
-            rc = false;
-        }
-        else if(ev->type == ev_keyrepeat)
-            return true;
-    }
-
-    return rc;
-
 }
 
 /*
@@ -1272,7 +1193,7 @@ void AM_Ticker(void)
     if( winx == sx0 && winy == sy0 && winw == sx1 && winh == sy1)
         amap_fullyopen = true;
     else
-        amap_fullyopen = false;        
+        amap_fullyopen = false;
 
     // Zooming
     if(actions[A_MAPZOOMOUT].on)  // zoom out
@@ -1295,7 +1216,7 @@ void AM_Ticker(void)
     if(!followplayer)
     {
         // X axis pan
-        if(actions[A_MAPPANRIGHT].on) // pan right?     
+        if(actions[A_MAPPANRIGHT].on) // pan right?
             m_paninc.x = FTOM(F_PANINC);
         else if(actions[A_MAPPANLEFT].on) // pan left?
             m_paninc.x = -FTOM(F_PANINC);
@@ -1317,7 +1238,7 @@ void AM_Ticker(void)
     AM_changeWindowScale();
 
     // Change window location
-    if(m_paninc.x || m_paninc.y || oldwin_w != cfg.automapWidth || oldwin_h != cfg.automapHeight)
+    if(m_paninc.x || m_paninc.y /*|| oldwin_w != cfg.automapWidth || oldwin_h != cfg.automapHeight*/)
         AM_changeWindowLoc();
 }
 
@@ -1631,7 +1552,7 @@ void AM_drawMline(mline_t * ml, int color)
 }
 
 /*
- * Draws the given line including any optional extras 
+ * Draws the given line including any optional extras
  */
 void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode, boolean blend)
 {
@@ -2065,22 +1986,17 @@ void AM_drawPlayers(void)
 void AM_drawThings(int colors, int colorrange)
 {
     int     i;
-    mobj_t *t;
+    mobj_t *iter;
 
-#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numsectors; i++)
     {
-        t = sectors[i].thinglist;
-        while(t)
+        for(iter = P_GetPtr(DMU_SECTOR,i,DMU_THINGS); iter; iter = iter->snext)
         {
             AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-                                 16 << FRACBITS, t->angle, colors + lightlev,
-                                 t->x, t->y);
-
-            t = t->snext;
+                                 16 << FRACBITS, iter->angle, colors + lightlev,
+                                 iter->x, iter->y);
         }
     }
-#endif
 }
 
 /*
@@ -2133,8 +2049,8 @@ void AM_setWinPos(void)
     scrwidth = Get(DD_SCREEN_WIDTH);
     scrheight = Get(DD_SCREEN_HEIGHT);
 
-    winw = f_w = (scrwidth/ 1.0f) * (cfg.automapWidth);
-    winh = f_h = (scrheight/ 1.0f) * (cfg.automapHeight);
+    winw = f_w = (scrwidth/ 1.0f) * 1; //(cfg.automapWidth);
+    winh = f_h = (scrheight/ 1.0f) * 1; //(cfg.automapHeight);
 
     // work out the position & dimensions of the automap when fully open
     /*
@@ -2150,7 +2066,7 @@ void AM_setWinPos(void)
      */
 
     // X Position
-    switch (cfg.automapPos)
+    switch (4)//cfg.automapPos)
     {
        case 1:
        case 4:
@@ -2170,7 +2086,7 @@ void AM_setWinPos(void)
     }
 
     // Y Position
-    switch (cfg.automapPos)
+    switch (4)//cfg.automapPos)
     {
        case 0:
        case 1:
@@ -2194,8 +2110,8 @@ void AM_setWinPos(void)
     sx1 = winw;
     sy1 = winh;
 
-    oldwin_w = cfg.automapWidth;
-    oldwin_h = cfg.automapHeight;
+    oldwin_w = 1; //cfg.automapWidth;
+    oldwin_h = 1; //cfg.automapHeight;
 }
 
 /*
@@ -2208,7 +2124,7 @@ void AM_GL_SetupState()
     float extrascale = 0;
 
     // Update the window scale vars
-    if(oldwin_w != cfg.automapWidth || oldwin_h != cfg.automapHeight)
+    if(oldwin_w != 1 /*cfg.automapWidth*/ || oldwin_h != 1 /*cfg.automapHeight*/)
         AM_setWinPos();
 
     // check for scissor box (to clip the map lines and stuff).
@@ -2232,8 +2148,8 @@ void AM_GL_SetupState()
         GL_SetColorAndAlpha(cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], (am_alpha - (1- cfg.automapBack[3])));
         GL_SetRawImage(maplumpnum, 0);        // We only want the left portion.
         GL_DrawRectTiled(winx, winy, winw, winh, 128, 100);
-    } 
-    else 
+    }
+    else
     {
         // nope just a solid color
         GL_SetNoTexture();
@@ -2241,7 +2157,7 @@ void AM_GL_SetupState()
     }
 
     // How about an outside border?
-    if (cfg.automapHeight != 1 || cfg.automapWidth != 1 )
+/*    if (cfg.automapHeight != 1 || cfg.automapWidth != 1 )
     {
         gl.Begin(DGL_LINES);
         gl.Color4f(0.5f, 1, 0.5f, am_alpha - (1 - (cfg.automapLineAlpha /2)) );
@@ -2263,7 +2179,7 @@ void AM_GL_SetupState()
             gl.Vertex2f(winx-1, winy-1);
         }
         gl.End();
-    }
+    }*/
 
     // setup the scissor clipper
     gl.Scissor( winx, winy, winw, winh);
@@ -2272,8 +2188,8 @@ void AM_GL_SetupState()
     gl.Translatef(winx+(winw / 2.0f), winy+(winh /2.0f), 0);
 
     // apply some extra zoom to counteract the size of the window
-    extrascale = ((cfg.automapWidth + cfg.automapHeight)/2);
-    gl.Scalef( extrascale, extrascale , 0);
+    //extrascale = ((cfg.automapWidth + cfg.automapHeight)/2);
+    //gl.Scalef( extrascale, extrascale , 0);
 
     if(cfg.automapRotate && followplayer)    // Rotate map?
         gl.Rotatef(plr->plr->clAngle / (float) ANGLE_MAX * 360 - 90, 0, 0, 1);
@@ -2562,7 +2478,7 @@ void AM_drawFragsTable(void)
         name = Net_GetPlayerName(choose);
         switch (cfg.PlayerColor[choose])
         {
-        case 0:                // green 
+        case 0:                // green
             gl.Color3f(0, .8f, 0);
             break;
 
@@ -2745,183 +2661,146 @@ static void AM_drawWorldTimer(void)
 #ifdef __JDOOM__
 
 MenuItem_t MAPItems[] = {
-    {ITT_LRFUNC, "window position : ",    M_MapPosition, 0 },
-    {ITT_LRFUNC, "window width :       ",    M_MapWidth, 0 },
-    {ITT_LRFUNC, "window height :     ",    M_MapHeight, 0 },
-    {ITT_LRFUNC, "hud display :        ",    M_MapStatusbar, 0 },
-    {ITT_LRFUNC, "kills count :         ", M_MapKills, 0 },
-    {ITT_LRFUNC, "items count :         ", M_MapItems, 0 },
-    {ITT_LRFUNC, "secrets count :    ",    M_MapSecrets, 0 },
-    {ITT_EMPTY,  "automap colours",        NULL, 0 },
-    {ITT_EFUNC,  "   walls",        SCColorWidget, 1 },
-    {ITT_EFUNC,  "   floor height changes", SCColorWidget, 2 },
-    {ITT_EFUNC,  "   ceiling height changes",SCColorWidget, 3 },
-    {ITT_EFUNC,  "   unseen areas",        SCColorWidget, 0 },
-    {ITT_EFUNC,  "   background",        SCColorWidget, 4 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EFUNC,  "door colors :        ",    M_MapDoorColors, 0 },
-    {ITT_LRFUNC, "door glow : ",        M_MapDoorGlow, 0 },
-    {ITT_LRFUNC, "line alpha :          ",    M_MapLineAlpha, 0 },
+/*    {ITT_LRFUNC, 0, "window position : ",    M_MapPosition, 0 },
+    {ITT_LRFUNC, 0, "window width :       ",    M_MapWidth, 0 },
+    {ITT_LRFUNC, 0, "window height :     ",    M_MapHeight, 0 },*/
+    {ITT_LRFUNC, 0, "hud display :        ",    M_MapStatusbar, 0 },
+    {ITT_LRFUNC, 0, "kills count :         ", M_MapKills, 0 },
+    {ITT_LRFUNC, 0, "items count :         ", M_MapItems, 0 },
+    {ITT_LRFUNC, 0, "secrets count :    ",    M_MapSecrets, 0 },
+    {ITT_EMPTY, 0, "automap colours",        NULL, 0 },
+    {ITT_EFUNC, 0, "   walls",        SCColorWidget, 1 },
+    {ITT_EFUNC, 0, "   floor height changes", SCColorWidget, 2 },
+    {ITT_EFUNC, 0, "   ceiling height changes",SCColorWidget, 3 },
+    {ITT_EFUNC, 0, "   unseen areas",        SCColorWidget, 0 },
+    {ITT_EFUNC, 0, "   background",        SCColorWidget, 4 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_EFUNC, 0, "door colors :        ",    M_MapDoorColors, 0 },
+    {ITT_LRFUNC, 0, "door glow : ",        M_MapDoorGlow, 0 },
+    {ITT_LRFUNC, 0, "line alpha :          ",    M_MapLineAlpha, 0 },
 };
 
 Menu_t MapDef = {
     70, 40,
     M_DrawMapMenu,
-    17, MAPItems,
-    0, MENU_OPTIONS,
+    14, MAPItems,
+    0, MENU_OPTIONS, 0,
     hu_font_a,
     cfg.menuColor2,
     LINEHEIGHT_A,
-    0, 17
+    0, 14
 };
 
 #else
 
 MenuItem_t MAPItems[] = {
-    {ITT_LRFUNC, "window position : ", M_MapPosition, 0 },
-    {ITT_LRFUNC, "window width :       ", M_MapWidth, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_LRFUNC, "window height :     ", M_MapHeight, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_LRFUNC,  "hud display :      ", M_MapStatusbar, 0 },
+/*    {ITT_LRFUNC, 0, "window position : ", M_MapPosition, 0 },
+    {ITT_LRFUNC, 0, "window width :       ", M_MapWidth, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_LRFUNC, 0, "window height :     ", M_MapHeight, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },*/
+    {ITT_LRFUNC, 0, "hud display :      ", M_MapStatusbar, 0 },
 #ifdef __JHERETIC__
-    {ITT_LRFUNC, "kills count :           ", M_MapKills, 0 },
-    {ITT_LRFUNC, "items count :          ", M_MapItems, 0 },
-    {ITT_LRFUNC, "secrets count :     ", M_MapSecrets, 0 },
+    {ITT_LRFUNC, 0, "kills count :           ", M_MapKills, 0 },
+    {ITT_LRFUNC, 0, "items count :          ", M_MapItems, 0 },
+    {ITT_LRFUNC, 0, "secrets count :     ", M_MapSecrets, 0 },
 #endif
-    {ITT_INERT, "automap colours", NULL, 0 },
-#ifndef __JHERETIC__
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-#endif
-    {ITT_INERT, "automap colours", NULL, 0 },
-    {ITT_EFUNC, "   walls", SCColorWidget, 1 },
-    {ITT_EFUNC, "   floor height changes", SCColorWidget, 2 },
-    {ITT_EFUNC, "   ceiling height changes", SCColorWidget, 3 },
-    {ITT_EFUNC, "   unseen areas", SCColorWidget, 0 },
-    {ITT_EFUNC, "   background", SCColorWidget, 4 },
-    {ITT_EFUNC,  "door colors :        ", M_MapDoorColors, 0 },
-    {ITT_LRFUNC, "door glow :", M_MapDoorGlow, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_EMPTY, NULL, NULL, 0 },
-    {ITT_LRFUNC, "line alpha :         ", M_MapLineAlpha, 0 }
+    {ITT_NAVLEFT, 0, "automap colours", NULL, 0 },
+    {ITT_EFUNC, 0, "   walls", SCColorWidget, 1 },
+    {ITT_EFUNC, 0, "   floor height changes", SCColorWidget, 2 },
+    {ITT_EFUNC, 0, "   ceiling height changes", SCColorWidget, 3 },
+    {ITT_EFUNC, 0, "   unseen areas", SCColorWidget, 0 },
+    {ITT_EFUNC, 0, "   background", SCColorWidget, 4 },
+    {ITT_EFUNC, 0, "door colors :        ", M_MapDoorColors, 0 },
+    {ITT_LRFUNC, 0, "door glow :", M_MapDoorGlow, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_LRFUNC, 0, "line alpha :         ", M_MapLineAlpha, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 },
+    {ITT_EMPTY, 0, NULL, NULL, 0 }
 };
 
 Menu_t MapDef = {
-    64, 30,
+    64, 28,
     M_DrawMapMenu,
-    23, MAPItems,
-    0, MENU_OPTIONS,
+#if __JHERETIC__
+    17, MAPItems,
+#else
+    14, MAPItems,
+#endif
+    0, MENU_OPTIONS, 0,
     hu_font_a,
     cfg.menuColor2,
     LINEHEIGHT_A,
-    0, 12
+#if __JHERETIC__
+    0, 17
+#else
+    0, 14
+#endif
 };
 #endif
 
-extern short    itemOn;
-
 /*
  * Draws the automap options menu
- * Uses a bit of a kludge for multi pages with jHeretic/jHexen. 
  */
 void M_DrawMapMenu(void)
 {
     const Menu_t *menu = &MapDef;
-#if !defined( __JDOOM__ ) && !defined( __JHERETIC__ )
-    const MenuItem_t *item = menu->items + menu->firstItem;
-#endif
-
-    char   *posnames[9] = { "TOP LEFT", "TOP CENTER", "TOP RIGHT", "CENTER LEFT", "CENTER", \
-                            "CENTER RIGHT", "BOTTOM LEFT", "BOTTOM CENTER", "BOTTOM RIGHT" };
     char   *hudviewnames[3] = { "NONE", "CURRENT", "STATUSBAR" };
     char *yesno[2] = { "NO", "YES" };
 #if !defined(__JHEXEN__) && !defined(__JSTRIFE__)
     char   *countnames[4] = { "NO", "YES", "PERCENT", "COUNT+PCNT" };
 #endif
 
-#ifndef __JDOOM__
-    char  *token;
-#endif
-
-    M_DrawTitle("Automap OPTIONS", menu->y - 28);
+    M_DrawTitle("Automap OPTIONS", menu->y - 26);
 
 #ifdef __JDOOM__
-
-    M_WriteMenuText(menu, 0, posnames[cfg.automapPos]);
-    M_DrawSlider(menu, 1, 11, cfg.automapWidth * 10 + .25f);
-    M_DrawSlider(menu, 2, 11, cfg.automapHeight * 10 + .25f);
-    M_WriteMenuText(menu, 3, hudviewnames[cfg.automapHudDisplay]);
-    M_WriteMenuText(menu, 4, countnames[(cfg.counterCheat & 0x1) | ((cfg.counterCheat & 0x8) >> 2)]);
-    M_WriteMenuText(menu, 5, countnames[((cfg.counterCheat & 0x2) >> 1) | ((cfg.counterCheat & 0x10) >> 3)]);
-    M_WriteMenuText(menu, 6, countnames[((cfg.counterCheat & 0x4) >> 2) | ((cfg.counterCheat & 0x20) >> 4)]);
-    M_DrawColorBox(menu, 8, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
-    M_DrawColorBox(menu, 9, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
-    M_DrawColorBox(menu, 10, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
-    M_DrawColorBox(menu, 11, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
-    M_DrawColorBox(menu, 12, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
-    M_WriteMenuText(menu, 14, yesno[cfg.automapShowDoors]);
-    M_DrawSlider(menu, 15, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
-    M_DrawSlider(menu, 16, 11, cfg.automapLineAlpha * 10 + .5f);
+    M_WriteMenuText(menu, 0, hudviewnames[cfg.automapHudDisplay]);
+    M_WriteMenuText(menu, 1, countnames[(cfg.counterCheat & 0x1) | ((cfg.counterCheat & 0x8) >> 2)]);
+    M_WriteMenuText(menu, 2, countnames[((cfg.counterCheat & 0x2) >> 1) | ((cfg.counterCheat & 0x10) >> 3)]);
+    M_WriteMenuText(menu, 3, countnames[((cfg.counterCheat & 0x4) >> 2) | ((cfg.counterCheat & 0x20) >> 4)]);
+    M_DrawColorBox(menu, 5, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
+    M_DrawColorBox(menu, 6, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
+    M_DrawColorBox(menu, 7, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
+    M_DrawColorBox(menu, 8, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
+    M_DrawColorBox(menu, 9, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
+    M_WriteMenuText(menu, 11, yesno[cfg.automapShowDoors]);
+    M_DrawSlider(menu, 12, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
+    M_DrawSlider(menu, 13, 11, cfg.automapLineAlpha * 10 + .5f);
 
 #else
 
-    // Draw the page arrows.
-    gl.Color4f( 1, 1, 1, menu_alpha);
-    token = (!menu->firstItem || MenuTime & 8) ? "invgeml2" : "invgeml1";
-    GL_DrawPatch_CS(menu->x -20, menu->y - 16, W_GetNumForName(token));
-    token = (menu->firstItem + menu->numVisItems >= menu->itemCount ||
-             MenuTime & 8) ? "invgemr2" : "invgemr1";
-    GL_DrawPatch_CS(312 - (menu->x -20), menu->y - 16, W_GetNumForName(token));
-
+    M_WriteMenuText(menu, 0, hudviewnames[cfg.automapHudDisplay]);
 #ifdef __JHERETIC__
-    if(menu->firstItem < menu->numVisItems){
-        M_WriteMenuText(menu, 0, posnames[cfg.automapPos]);
-        M_DrawSlider(menu, 2, 11, cfg.automapWidth * 10 + .25f);
-        M_DrawSlider(menu, 5, 11, cfg.automapHeight * 10 + .25f);
-        M_WriteMenuText(menu, 7, hudviewnames[cfg.automapHudDisplay]);
-        M_WriteMenuText(menu, 8, countnames[(cfg.counterCheat & 0x1) | ((cfg.counterCheat & 0x8) >> 2)]);
-        M_WriteMenuText(menu, 9, countnames[((cfg.counterCheat & 0x2) >> 1) | ((cfg.counterCheat & 0x10) >> 3)]);
-        M_WriteMenuText(menu, 10, countnames[((cfg.counterCheat & 0x4) >> 2) | ((cfg.counterCheat & 0x20) >> 4)]);
-    } 
-    else 
-    {
-        M_DrawColorBox(menu, 13, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
-        M_DrawColorBox(menu, 14, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
-        M_DrawColorBox(menu, 15, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
-        M_DrawColorBox(menu, 16, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
-        M_DrawColorBox(menu, 17, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
-        M_WriteMenuText(menu, 18, yesno[cfg.automapShowDoors]);
-        M_DrawSlider(menu, 20, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
-        M_DrawSlider(menu, 23, 11, cfg.automapLineAlpha * 10 + .5f);
-    }
+    M_WriteMenuText(menu, 1, countnames[(cfg.counterCheat & 0x1) | ((cfg.counterCheat & 0x8) >> 2)]);
+    M_WriteMenuText(menu, 2, countnames[((cfg.counterCheat & 0x2) >> 1) | ((cfg.counterCheat & 0x10) >> 3)]);
+    M_WriteMenuText(menu, 3, countnames[((cfg.counterCheat & 0x4) >> 2) | ((cfg.counterCheat & 0x20) >> 4)]);
+    M_DrawColorBox(menu, 5, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
+    M_DrawColorBox(menu, 6, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
+    M_DrawColorBox(menu, 7, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
+    M_DrawColorBox(menu, 8, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
+    M_DrawColorBox(menu, 9, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
+    M_WriteMenuText(menu, 10, yesno[cfg.automapShowDoors]);
+    M_DrawSlider(menu, 12, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
+    M_DrawSlider(menu, 15, 11, cfg.automapLineAlpha * 10 + .5f);
 #else
-    if(menu->firstItem < menu->numVisItems){
-        M_WriteMenuText(menu, 0, posnames[cfg.automapPos]);
-        M_DrawSlider(menu, 2, 11, cfg.automapWidth * 10 + .25f);
-        M_DrawSlider(menu, 5, 11, cfg.automapHeight * 10 + .25f);
-        M_WriteMenuText(menu, 7, hudviewnames[cfg.automapHudDisplay]);
-    } 
-    else 
-    {
-        M_DrawColorBox(menu, 13, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
-        M_DrawColorBox(menu, 14, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
-        M_DrawColorBox(menu, 15, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
-        M_DrawColorBox(menu, 16, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
-        M_DrawColorBox(menu, 17, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
-        M_WriteMenuText(menu, 18, yesno[cfg.automapShowDoors]);
-        M_DrawSlider(menu, 20, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
-        M_DrawSlider(menu, 23, 11, cfg.automapLineAlpha * 10 + .5f);
-    }
+    M_DrawColorBox(menu, 2, cfg.automapL1[0], cfg.automapL1[1], cfg.automapL1[2], menu_alpha);
+    M_DrawColorBox(menu, 3, cfg.automapL2[0], cfg.automapL2[1], cfg.automapL2[2], menu_alpha);
+    M_DrawColorBox(menu, 4, cfg.automapL3[0], cfg.automapL3[1], cfg.automapL3[2], menu_alpha);
+    M_DrawColorBox(menu, 5, cfg.automapL0[0], cfg.automapL0[1], cfg.automapL0[2], menu_alpha);
+    M_DrawColorBox(menu, 6, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], menu_alpha);
+    M_WriteMenuText(menu, 7, yesno[cfg.automapShowDoors]);
+    M_DrawSlider(menu, 9, 21, (cfg.automapDoorGlow - 1) / 10 + .5f );
+    M_DrawSlider(menu, 12, 11, cfg.automapLineAlpha * 10 + .5f);
 #endif
 
 #endif
 
 }
 
+#if 0
 /*
  * Set automap window width
  */
@@ -2937,6 +2816,7 @@ void M_MapHeight(int option, void *data)
 {
     M_FloatMod10(&cfg.automapHeight, option);
 }
+#endif
 
 /*
  * Set automap line alpha
@@ -2990,6 +2870,7 @@ void M_MapStatusbar(int option, void *data)
         cfg.automapHudDisplay--;
 }
 
+#if 0
 /*
  * Set map window position
  */
@@ -3003,6 +2884,7 @@ void M_MapPosition(int option, void *data)
     else if(cfg.automapPos > 0)
         cfg.automapPos--;
 }
+#endif
 
 /*
  * Set the show kills counter
