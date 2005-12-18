@@ -458,6 +458,17 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // It begins
     levelSetup = true;
 
+    // Reset our local global element counters.
+    // Any local data should have been free'd by now (PU_LEVEL)
+    numvertexes = 0;
+    numsegs = 0;
+    numsectors = 0;
+    numsubsectors = 0;
+    numnodes = 0;
+    numlines = 0;
+    numsides = 0;
+    numthings = 0;
+
 #if __JHEXEN__
     po_NumPolyobjs = 0;
 #endif
