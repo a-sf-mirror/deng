@@ -206,19 +206,20 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
     // that contains the point.
     // Any contacted lines the step closer together
     // will adjust them.
-    tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
-    tmceilingz = newsubsec->sector->ceilingheight;
+    tmfloorz = tmdropoffz =
+        P_GetFixedp(DMU_SECTOR, newsubsec->sector, DMU_FLOOR_HEIGHT);
+
+    tmceilingz =
+        P_GetFixedp(DMU_SECTOR, newsubsec->sector, DMU_CEILING_HEIGHT);
 
     validCount++;
     numspechit = 0;
 
     // stomp on any things contacted
-#ifdef TODO_MAP_UPDATE
-    xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
-    xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
-    yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
-    yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
-#endif
+    P_PointToBlock(tmbbox[BOXLEFT] - MAXRADIUS, tmbbox[BOXBOTTOM] - MAXRADIUS,
+                   &xl, &yl);
+    P_PointToBlock(tmbbox[BOXRIGHT] + MAXRADIUS, tmbbox[BOXTOP] + MAXRADIUS,
+                   &xh, &yh);
 
     for(bx = xl; bx <= xh; bx++)
         for(by = yl; by <= yh; by++)
@@ -260,9 +261,10 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
  */
 static boolean PIT_CrossLine (line_t* ld, void *data)
 {
-    if(!(ld->flags & ML_TWOSIDED) ||
-      (ld->flags & (ML_BLOCKING | ML_BLOCKMONSTERS)))
+    if(!(P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_TWOSIDED) ||
+      (P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & (ML_BLOCKING | ML_BLOCKMONSTERS)))
     {
+#ifdef TODO_MAP_UPDATE
         if(!(tmbbox[BOXLEFT] > ld->bbox[BOXRIGHT] ||
              tmbbox[BOXRIGHT] < ld->bbox[BOXLEFT] ||
              tmbbox[BOXTOP] < ld->bbox[BOXBOTTOM] ||
@@ -272,6 +274,7 @@ static boolean PIT_CrossLine (line_t* ld, void *data)
                 // line blocks trajectory
                 return(false);
         }
+#endif
     }
 
     // line doesn't block trajectory
@@ -293,7 +296,7 @@ static int untouched(line_t *ld)
          (y = tmthing->y) + tmthing->radius) <= ld->bbox[BOXBOTTOM] ||
         (box[BOXBOTTOM] = y - tmthing->radius) >= ld->bbox[BOXTOP] ||
         P_BoxOnLineSide(box, ld) != -1; */
-
+#ifdef TODO_MAP_UPDATE
     if(((box[BOXRIGHT] = (x = tmthing->x) + tmthing->radius) <= ld->bbox[BOXLEFT]) ||
        ((box[BOXLEFT] = x - tmthing->radius) >= ld->bbox[BOXRIGHT]) ||
        ((box[BOXTOP] = (y = tmthing->y) + tmthing->radius) <= ld->bbox[BOXBOTTOM]) ||
@@ -301,6 +304,7 @@ static int untouched(line_t *ld)
        P_BoxOnLineSide(box, ld) != -1)
         return true;
     else
+#endif
         return false;
 }
 
@@ -309,11 +313,17 @@ static int untouched(line_t *ld)
  */
 boolean PIT_CheckLine(line_t *ld, void *data)
 {
+    fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
+    fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
+    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, ld)];
+
+#ifdef TODO_MAP_UPDATE
     if(tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
        tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
        tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
        tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
         return true;
+#endif
 
     if(P_BoxOnLineSide(tmbbox, ld) != -1)
         return true;
@@ -322,7 +332,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     tmthing->wallhit = true;
 
     // A Hit event will be sent to special lines.
-    if(ld->special)
+    if(xline->special)
         tmhitline = ld;
 
     // The moving thing's destination position will cross
@@ -335,23 +345,23 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     // could be crossed in either order.
 
     // $unstuck: allow player to move out of 1s wall, to prevent sticking
-    if(!ld->backsector) // one sided line
+    if(!P_GetPtrp(DMU_LINE, ld, DMU_BACK_SECTOR)) // one sided line
     {
         blockline = ld;
         return tmunstuck && !untouched(ld) &&
-            FixedMul(tmx - tmthing->x, ld->dy) > FixedMul(tmy - tmthing->y,
-                                                          ld->dx);
+            FixedMul(tmx - tmthing->x, dy) > FixedMul(tmy - tmthing->y, dx);
     }
 
     if(!(tmthing->flags & MF_MISSILE))
     {
         // explicitly blocking everything?
-        if(ld->flags & ML_BLOCKING)
+        if(P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_BLOCKING)
             // killough $unstuck: allow escape
             return tmunstuck && !untouched(ld);
 
         // block monsters only?
-        if(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)
+        if(!tmthing->player &&
+           P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_BLOCKMONSTERS)
             return false;
     }
 
@@ -381,7 +391,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
         tmdropoffz = lowfloor;
 
     // if contacted a special line, add it to the list
-    if(ld->special)
+    if(xline->special)
     {
         spechit[numspechit] = ld;
         numspechit++;
@@ -533,13 +543,8 @@ boolean P_CheckSides(mobj_t* actor, int x, int y)
     tmbbox[BOXBOTTOM] = pe_y < y ? pe_y : y;
 
     // Determine which blocks to look in for blocking lines
-
-    #ifdef TODO_MAP_UPDATE
-    xl = (tmbbox[BOXLEFT]   - bmaporgx) >> MAPBLOCKSHIFT;
-    xh = (tmbbox[BOXRIGHT]  - bmaporgx) >> MAPBLOCKSHIFT;
-    yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
-    yh = (tmbbox[BOXTOP]    - bmaporgy) >> MAPBLOCKSHIFT;
-    #endif
+    P_PointToBlock(tmbbox[BOXLEFT], tmbbox[BOXBOTTOM], &xl, &yl);
+    P_PointToBlock(tmbbox[BOXRIGHT], tmbbox[BOXTOP], &xh, &yh);
 
     // xl->xh, yl->yh determine the mapblock set to search
 
@@ -582,7 +587,7 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     int     yh;
     int     bx;
     int     by;
-    subsector_t *newsubsec;
+    sector_t *newsec;
 
     tmthing = thing;
     tmflags = thing->flags;
@@ -602,7 +607,7 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     tmbbox[BOXRIGHT] = x + tmthing->radius;
     tmbbox[BOXLEFT] = x - tmthing->radius;
 
-    newsubsec = R_PointInSubsector(x, y);
+    newsec = R_PointInSubsector(x, y)->sector;
 
     // $unstuck: floorline used with tmunstuck
     blockline = floorline = ceilingline = NULL;
@@ -613,8 +618,8 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     // The base floor / ceiling is from the subsector
     // that contains the point. Any contacted lines the
     // step closer together will adjust them.
-    tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
-    tmceilingz = newsubsec->sector->ceilingheight;
+    tmfloorz = tmdropoffz = P_GetFixedp(DMU_SECTOR, newsec, DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(DMU_SECTOR, newsec, DMU_CEILING_HEIGHT);
 
     validCount++;
     numspechit = 0;
@@ -627,7 +632,7 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     // because mobj_ts are grouped into mapblocks
     // based on their origin point, and can overlap
     // into adjacent blocks by up to MAXRADIUS units.
-    P_PointToBlock(tmpbox[BOXLEFT] - MAXRADIUS, tmpbox[BOXBOTTOM] - MAXRADIUS,
+    P_PointToBlock(tmbbox[BOXLEFT] - MAXRADIUS, tmbbox[BOXBOTTOM] - MAXRADIUS,
                    &xl, &yl);
     P_PointToBlock(tmbbox[BOXRIGHT] + MAXRADIUS, tmbbox[BOXTOP] + MAXRADIUS,
                    &xh, &yh);
@@ -638,7 +643,7 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
                 return false;
 
     // check lines
-    P_PointToBlock(tmpbox[BOXLEFT], tmpbox[BOXBOTTOM], &xl, &yl);
+    P_PointToBlock(tmbbox[BOXLEFT], tmbbox[BOXBOTTOM], &xl, &yl);
     P_PointToBlock(tmbbox[BOXRIGHT], tmbbox[BOXTOP], &xh, &yh);
 
     for(bx = xl; bx <= xh; bx++)
@@ -752,10 +757,10 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y, boolean dropoff)
             oldside = P_PointOnLineSide(oldx, oldy, ld);
             if(side != oldside)
             {
-#ifdef TODO_MAP_UPDATE
-                if(ld->special)
-                    P_CrossSpecialLine(ld - lines, oldside, thing);
-#endif
+
+                if(xlines[P_ToIndex(DMU_LINE, ld)].special)
+                    P_CrossSpecialLine(P_ToIndex(DMU_LINE, ld), oldside, thing);
+
             }
         }
     }
@@ -840,6 +845,7 @@ void P_HitSlideLine(line_t *ld)
     fixed_t movelen;
     fixed_t newlen;
 
+#ifdef TODO_MAP_UPDATE
     if(ld->slopetype == ST_HORIZONTAL)
     {
         tmymove = 0;
@@ -851,10 +857,12 @@ void P_HitSlideLine(line_t *ld)
         tmxmove = 0;
         return;
     }
-
+#endif
     side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
-    lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+    lineangle = R_PointToAngle2(0, 0,
+                                P_GetFixedp(DMU_LINE, ld, DMU_DX),
+                                P_GetFixedp(DMU_LINE, ld, DMU_DY));
 
     if(side == 1)
         lineangle += ANG180;
@@ -884,7 +892,7 @@ boolean PTR_SlideTraverse(intercept_t * in)
 
     li = in->d.line;
 
-    if(!(li->flags & ML_TWOSIDED))
+    if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
     {
         if(P_PointOnLineSide(slidemo->x, slidemo->y, li))
         {
@@ -1035,6 +1043,7 @@ boolean PTR_AimTraverse(intercept_t * in)
 {
     line_t *li;
     mobj_t *th;
+    sector_t *backsector, *frontsector;
     fixed_t slope;
     fixed_t thingtopslope;
     fixed_t thingbottomslope;
@@ -1044,7 +1053,7 @@ boolean PTR_AimTraverse(intercept_t * in)
     {
         li = in->d.line;
 
-        if(!(li->flags & ML_TWOSIDED))
+        if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
             return false;       // stop
 
         // Crosses a two sided line.
@@ -1057,14 +1066,19 @@ boolean PTR_AimTraverse(intercept_t * in)
 
         dist = FixedMul(attackrange, in->frac);
 
-        if(li->frontsector->floorheight != li->backsector->floorheight)
+        frontsector = P_GetPtrp(DMU_LINE, li, DMU_FRONT_SECTOR);
+        backsector = P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR);
+
+        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT) !=
+           P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT))
         {
             slope = FixedDiv(openbottom - shootz, dist);
             if(slope > bottomslope)
                 bottomslope = slope;
         }
 
-        if(li->frontsector->ceilingheight != li->backsector->ceilingheight)
+        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) !=
+           P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT))
         {
             slope = FixedDiv(opentop - shootz, dist);
             if(slope < topslope)
@@ -1116,8 +1130,9 @@ boolean PTR_ShootTraverse(intercept_t * in)
     fixed_t y;
     fixed_t z;
     fixed_t frac;
-
+    sector_t *backsector, *frontsector;
     line_t *li;
+    xline_t *xline;
 
     mobj_t *th;
 
@@ -1133,31 +1148,37 @@ boolean PTR_ShootTraverse(intercept_t * in)
     boolean lineWasHit;
     subsector_t *contact, *originSub;
     fixed_t ctop, cbottom, dx, dy, dz, step, stepx, stepy, stepz;
+    fixed_t cfloor, cceil;
     int     divisor;
 
     if(in->isaline)
     {
         li = in->d.line;
+        xline = &xlines[P_ToIndex(DMU_LINE, li)];
 
-        if(li->special)
+        if(xline->special)
             P_ShootSpecialLine(shootthing, li);
 
-        if(!(li->flags & ML_TWOSIDED))
+        if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
             goto hitline;
 
         // crosses a two sided line
         P_LineOpening(li);
 
         dist = FixedMul(attackrange, in->frac);
+        frontsector = P_GetPtrp(DMU_LINE, li, DMU_FRONT_SECTOR);
+        backsector = P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR);
 
-        if(li->frontsector->floorheight != li->backsector->floorheight)
+        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT) !=
+           P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT))
         {
             slope = FixedDiv(openbottom - shootz, dist);
             if(slope > aimslope)
                 goto hitline;
         }
 
-        if(li->frontsector->ceilingheight != li->backsector->ceilingheight)
+        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) !=
+           P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT))
         {
             slope = FixedDiv(opentop - shootz, dist);
             if(slope < aimslope)
@@ -1179,10 +1200,11 @@ boolean PTR_ShootTraverse(intercept_t * in)
 
         // Is it a sky hack wall? If the hitpoint is above the visible
         // line, no puff must be shown.
-        if(li->backsector && li->frontsector->ceilingpic == skyflatnum &&
-           li->backsector->ceilingpic == skyflatnum &&
-           (z > li->frontsector->ceilingheight ||
-            z > li->backsector->ceilingheight))
+        if(backsector &&
+           P_GetIntp(DMU_SECTOR, frontsector, DMU_CEILING_TEXTURE) == skyflatnum &&
+           P_GetIntp(DMU_SECTOR, backsector, DMU_CEILING_TEXTURE) == skyflatnum &&
+           (z > P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) ||
+            z > P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT) ))
             return false;
 
         // This is subsector where the trace originates.
@@ -1200,9 +1222,10 @@ boolean PTR_ShootTraverse(intercept_t * in)
             stepy = FixedDiv(dy, step);
             stepz = FixedDiv(dz, step);
 
+            cfloor = P_GetFixedp(DMU_SECTOR, contact->sector, DMU_FLOOR_HEIGHT);
+            cceil = P_GetFixedp(DMU_SECTOR, contact->sector, DMU_CEILING_HEIGHT);
             // Backtrack until we find a non-empty sector.
-            while(contact->sector->ceilingheight <=
-                  contact->sector->floorheight && contact != originSub)
+            while(cceil <= cfloor && contact != originSub)
             {
                 dx -= 8 * stepx;
                 dy -= 8 * stepy;
@@ -1214,13 +1237,15 @@ boolean PTR_ShootTraverse(intercept_t * in)
             }
 
             // Should we backtrack to hit a plane instead?
-            ctop = contact->sector->ceilingheight - 4 * FRACUNIT;
-            cbottom = contact->sector->floorheight + 4 * FRACUNIT;
+            ctop = cceil - 4 * FRACUNIT;
+            cbottom = cfloor + 4 * FRACUNIT;
             divisor = 2;
 
             // We must not hit a sky plane.
-            if((z > ctop && contact->sector->ceilingpic == skyflatnum) ||
-               (z < cbottom && contact->sector->floorpic == skyflatnum))
+            if((z > ctop &&
+                P_GetIntp(DMU_SECTOR, contact->sector, DMU_CEILING_TEXTURE) == skyflatnum) ||
+               (z < cbottom &&
+                P_GetIntp(DMU_SECTOR, contact->sector, DMU_FLOOR_TEXTURE) == skyflatnum))
                 return false;
 
             // Find the approximate hitpoint by stepping back and
@@ -1251,7 +1276,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
         // Spawn bullet puffs.
         P_SpawnPuff(x, y, z);
 
-        if(lineWasHit && li->special)
+        if(lineWasHit && xline->special)
         {
             // Extended shoot events only happen when the bullet actually
             // hits the line.
@@ -1372,7 +1397,7 @@ boolean PTR_UseTraverse(intercept_t * in)
 {
     int     side;
 
-    if(!in->d.line->special)
+    if(!xlines[P_ToIndex(DMU_LINE, in->d.line)].special)
     {
         P_LineOpening(in->d.line);
         if(openrange <= 0)
@@ -1395,7 +1420,7 @@ boolean PTR_UseTraverse(intercept_t * in)
     P_UseSpecialLine(usething, in->d.line, side);
 
     // can use multiple line specials in a row with the PassThru flag
-    if(in->d.line->flags&ML_PASSUSE)
+    if(P_GetIntp(DMU_LINE, in->d.line, DMU_FLAGS) & ML_PASSUSE)
         return true;
 
     // can't use for than one special line in a row
