@@ -36,6 +36,9 @@ static void TranslateToStartSpot(int tag, int originX, int originY);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+extern int  numthings;
+extern thing_t *things;
+
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -50,7 +53,7 @@ static fixed_t PolyStartY;
 // PO_SetDestination
 //===========================================================================
 void PO_SetDestination(polyobj_t * poly, fixed_t dist, angle_t angle,
-					   fixed_t speed)
+                       fixed_t speed)
 {
 #ifdef TODO_MAP_UPDATE
 	poly->dest.x = poly->startSpot.x + FixedMul(dist, finecosine[angle]);
@@ -109,7 +112,7 @@ void T_RotatePoly(polyevent_t * pe)
 //==========================================================================
 
 boolean EV_RotatePoly(line_t *line, byte *args, int direction,
-					  boolean overRide)
+                      boolean overRide)
 {
 #ifdef TODO_MAP_UPDATE
 	int     mirror;
@@ -252,7 +255,7 @@ void T_MovePoly(polyevent_t * pe)
 //==========================================================================
 
 boolean EV_MovePoly(line_t *line, byte *args, boolean timesEight,
-					boolean overRide)
+                    boolean overRide)
 {
 #ifdef TODO_MAP_UPDATE
 	int     mirror;
@@ -589,7 +592,7 @@ boolean EV_OpenPolyDoor(line_t *line, byte *args, podoortype_t type)
 
 static polyobj_t *GetPolyobj(int polyNum)
 {
-	int     i;
+    int     i;
 
 #ifdef TODO_MAP_UPDATE
 	for(i = 0; i < po_NumPolyobjs; i++)
@@ -611,7 +614,7 @@ static polyobj_t *GetPolyobj(int polyNum)
 
 static int GetPolyobjMirror(int poly)
 {
-	int     i;
+    int     i;
 
 #ifdef TODO_MAP_UPDATE
 	for(i = 0; i < po_NumPolyobjs; i++)
@@ -1069,7 +1072,7 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
    }
    else
    {
-   tempLink->next = Z_Malloc(sizeof(polyblock_t), 
+   tempLink->next = Z_Malloc(sizeof(polyblock_t),
    PU_LEVEL, 0);
    tempLink->next->next = NULL;
    tempLink->next->prev = tempLink;
@@ -1478,18 +1481,18 @@ static void TranslateToStartSpot(int tag, int originX, int originY)
 //==========================================================================
 //
 // PO_Init
-//
+// FIXME: DJS - We shouldn't need to go twice round the thing list here too
 //==========================================================================
 
 void PO_Init(int lump)
 {
 #ifdef TODO_MAP_UPDATE
-	byte   *data;
 	int     i;
-	mapthing_t *mt;
+	thing_t *mt;
 	int     numthings;
 	int     polyIndex;
-	short   x, y, angle, type;
+	fixed_t  x, y;
+               short angle, type;
 
 	// ThrustMobj will handle polyobj <-> mobj interaction.
 	PO_SetCallback(ThrustMobj);
@@ -1497,9 +1500,7 @@ void PO_Init(int lump)
 	polyobjs = Z_Malloc(po_NumPolyobjs * sizeof(polyobj_t), PU_LEVEL, 0);
 	memset(polyobjs, 0, po_NumPolyobjs * sizeof(polyobj_t));
 
-	data = W_CacheLumpNum(lump, PU_STATIC);
-	numthings = W_LumpLength(lump) / sizeof(mapthing_t);
-	mt = (mapthing_t *) data;
+    mt = things;
 	polyIndex = 0;				// index polyobj number
 
 	//Con_Message( "Find startSpot points.\n");
@@ -1507,8 +1508,8 @@ void PO_Init(int lump)
 	// Find the startSpot points, and spawn each polyobj
 	for(i = 0; i < numthings; i++, mt++)
 	{
-		x = SHORT(mt->x);
-		y = SHORT(mt->y);
+        x = mt->x;
+        y = mt->y;
 		angle = SHORT(mt->angle);
 		type = SHORT(mt->type);
 
@@ -1524,11 +1525,11 @@ void PO_Init(int lump)
 		}
 	}
 
-	mt = (mapthing_t *) data;
+    mt = things;
 	for(i = 0; i < numthings; i++, mt++)
 	{
-		x = SHORT(mt->x);
-		y = SHORT(mt->y);
+        x = mt->x;
+        y = mt->y;
 		angle = SHORT(mt->angle);
 		type = SHORT(mt->type);
 
@@ -1537,7 +1538,6 @@ void PO_Init(int lump)
 			TranslateToStartSpot(angle, x << FRACBITS, y << FRACBITS);
 		}
 	}
-	Z_Free(data);
 
 	// check for a startspot without an anchor point
 	for(i = 0; i < po_NumPolyobjs; i++)
@@ -1563,7 +1563,7 @@ void PO_Init(int lump)
 
 boolean PO_Busy(int polyobj)
 {
-	polyobj_t *poly;
+    polyobj_t *poly;
 
 	poly = GetPolyobj(polyobj);
 #ifdef TODO_MAP_UPDATE
