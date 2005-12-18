@@ -236,35 +236,34 @@ void P_v19_UnArchiveWorld(void)
 {
     int     i;
     int     j;
-    sector_t *sec;
-    line_t *li;
     side_t *si;
     short  *get;
     int     firstflat = W_CheckNumForName("F_START") + 1;
 
     get = (short *) save_p;
 
-#ifdef TODO_MAP_UPDATE
+
     // do sectors
-    for(i = 0, sec = sectors; i < numsectors; i++, sec++)
+    for(i = 0; i < numsectors; i++)
     {
-        sec->floorheight = *get++ << FRACBITS;
-        sec->ceilingheight = *get++ << FRACBITS;
-        sec->floorpic = *get++ + firstflat;
-        sec->ceilingpic = *get++ + firstflat;
-        sec->lightlevel = *get++;
-        sec->special = *get++;  // needed?
-        sec->tag = *get++;      // needed?
-        sec->specialdata = 0;
-        sec->soundtarget = 0;
+        P_SetFixed(DMU_SECTOR, i, DMU_FLOOR_HEIGHT, *get++ << FRACBITS);
+        P_SetFixed(DMU_SECTOR, i, DMU_CEILING_HEIGHT, *get++ << FRACBITS);
+        P_SetInt(DMU_SECTOR, i, DMU_FLOOR_TEXTURE, *get++ + firstflat);
+        P_SetInt(DMU_SECTOR, i, DMU_CEILING_TEXTURE, *get++ + firstflat);
+        P_SetInt(DMU_SECTOR, i, DMU_LIGHT_LEVEL, *get++);
+        xsectors[i].special = *get++;  // needed?
+        xsectors[i].tag = *get++;      // needed?
+        xsectors[i].specialdata = 0;
+        xsectors[i].soundtarget = 0;
     }
 
     // do lines
-    for(i = 0, li = lines; i < numlines; i++, li++)
+    for(i = 0; i < numlines; i++)
     {
-        li->flags = *get++;
-        li->special = *get++;
-        li->tag = *get++;
+        P_SetInt(DMU_LINE, i, DMU_FLAGS, *get++);
+        xlines[i].special = *get++;
+        xlines[i].tag = *get++;
+#ifdef TODO_MAP_UPDATE
         for(j = 0; j < 2; j++)
         {
             if(li->sidenum[j] == NO_INDEX)
@@ -276,8 +275,8 @@ void P_v19_UnArchiveWorld(void)
             si->bottomtexture = *get++;
             si->midtexture = *get++;
         }
-    }
 #endif
+    }
     save_p = (byte *) get;
 }
 
@@ -335,8 +334,8 @@ void P_v19_UnArchiveThinkers(void)
             }
             P_SetThingPosition(mobj);
             mobj->info = &mobjinfo[mobj->type];
-            mobj->floorz = mobj->subsector->sector->floorheight;
-            mobj->ceilingz = mobj->subsector->sector->ceilingheight;
+            mobj->floorz = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector, DMU_FLOOR_HEIGHT);
+            mobj->ceilingz = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector, DMU_CEILING_HEIGHT);
             mobj->thinker.function = P_MobjThinker;
             P_AddThinker(&mobj->thinker);
             break;
@@ -394,10 +393,10 @@ void P_v19_UnArchiveSpecials(void)
             ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
             memcpy(ceiling, save_p, sizeof(*ceiling));
             save_p += sizeof(*ceiling);
-#ifdef TODO_MAP_UPDATE
-            ceiling->sector = &sectors[(int) ceiling->sector];
-#endif
-            ceiling->sector->specialdata = ceiling;
+
+            ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
+
+            xsectors[P_ToIndex(DMU_SECTOR, ceiling->sector)].specialdata = ceiling;
 
             if(ceiling->thinker.function)
                 ceiling->thinker.function = T_MoveCeiling;
@@ -411,10 +410,10 @@ void P_v19_UnArchiveSpecials(void)
             door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
             memcpy(door, save_p, sizeof(*door));
             save_p += sizeof(*door);
-#ifdef TODO_MAP_UPDATE
-            door->sector = &sectors[(int) door->sector];
-#endif
-            door->sector->specialdata = door;
+
+            door->sector = P_ToPtr(DMU_SECTOR, (int) door->sector);
+
+            xsectors[P_ToIndex(DMU_SECTOR, door->sector)].specialdata = door;
             door->thinker.function = T_VerticalDoor;
             P_AddThinker(&door->thinker);
             break;
@@ -424,11 +423,11 @@ void P_v19_UnArchiveSpecials(void)
             floor = Z_Malloc(sizeof(*floor), PU_LEVEL, NULL);
             memcpy(floor, save_p, sizeof(*floor));
             save_p += sizeof(*floor);
-#ifdef TODO_MAP_UPDATE
-            floor->sector = &sectors[(int) floor->sector];
-            floor->sector->specialdata = floor;
+
+            floor->sector = P_ToPtr(DMU_SECTOR, (int) floor->sector);
+            xsectors[P_ToIndex(DMU_SECTOR, floor->sector)].specialdata = floor;
             floor->thinker.function = T_MoveFloor;
-#endif
+
             P_AddThinker(&floor->thinker);
             break;
 
@@ -437,16 +436,16 @@ void P_v19_UnArchiveSpecials(void)
             plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
             memcpy(plat, save_p, sizeof(*plat));
             save_p += sizeof(*plat);
-#ifdef TODO_MAP_UPDATE
-            plat->sector = &sectors[(int) plat->sector];
-            plat->sector->specialdata = plat;
+
+            plat->sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
+            xsectors[P_ToIndex(DMU_SECTOR, plat->sector)].specialdata = plat;
 
             if(plat->thinker.function)
                 plat->thinker.function = T_PlatRaise;
 
             P_AddThinker(&plat->thinker);
             P_AddActivePlat(plat);
-#endif
+
             break;
 
         case tc_flash:
@@ -454,10 +453,10 @@ void P_v19_UnArchiveSpecials(void)
             flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
             memcpy(flash, save_p, sizeof(*flash));
             save_p += sizeof(*flash);
-#ifdef TODO_MAP_UPDATE
-            flash->sector = &sectors[(int) flash->sector];
+
+            flash->sector = P_ToPtr(DMU_SECTOR, (int) flash->sector);
             flash->thinker.function = T_LightFlash;
-#endif
+
             P_AddThinker(&flash->thinker);
             break;
 
@@ -466,10 +465,10 @@ void P_v19_UnArchiveSpecials(void)
             strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
             memcpy(strobe, save_p, sizeof(*strobe));
             save_p += sizeof(*strobe);
-#ifdef TODO_MAP_UPDATE
-            strobe->sector = &sectors[(int) strobe->sector];
+
+            strobe->sector = P_ToPtr(DMU_SECTOR, (int) strobe->sector);
             strobe->thinker.function = T_StrobeFlash;
-#endif
+
             P_AddThinker(&strobe->thinker);
             break;
 
@@ -478,10 +477,10 @@ void P_v19_UnArchiveSpecials(void)
             glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
             memcpy(glow, save_p, sizeof(*glow));
             save_p += sizeof(*glow);
-#ifdef TODO_MAP_UPDATE
-            glow->sector = &sectors[(int) glow->sector];
+
+            glow->sector = P_ToPtr(DMU_SECTOR, (int) glow->sector);
             glow->thinker.function = T_Glow;
-#endif
+
             P_AddThinker(&glow->thinker);
             break;
 
