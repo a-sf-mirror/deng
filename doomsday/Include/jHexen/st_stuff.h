@@ -7,9 +7,6 @@
 #endif
 
 // Called by main loop.
-boolean         ST_Responder(event_t *ev);
-
-// Called by main loop.
 void            ST_Ticker(void);
 
 // Called by main loop.
@@ -26,19 +23,19 @@ void            ST_Init(void);
 void            ST_updateGraphics(void);
 
 // Called in P_inter & P_enemy
-void    	ST_doPaletteStuff(boolean forceChange);
+void        ST_doPaletteStuff(boolean forceChange);
 
 // States for status bar code.
 typedef enum {
-	AutomapState,
-	FirstPersonState
+    AutomapState,
+    FirstPersonState
 } st_stateenum_t;
 
 // States for the chat code.
 typedef enum {
-	StartChatState,
-	WaitDestState,
-	GetChatState
+    StartChatState,
+    WaitDestState,
+    GetChatState
 } st_chatstateenum_t;
 
 #endif
