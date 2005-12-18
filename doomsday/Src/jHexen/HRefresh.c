@@ -24,14 +24,14 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define viewheight	Get(DD_VIEWWINDOW_HEIGHT)
+#define viewheight  Get(DD_VIEWWINDOW_HEIGHT)
 
 // TYPES -------------------------------------------------------------------
 
 // This could hold much more detailed information...
 typedef struct {
-	char    name[9];			// Name of the texture.
-	int     type;				// Which type?
+    char    name[9];            // Name of the texture.
+    int     type;               // Which type?
 } textype_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -82,9 +82,9 @@ boolean setsizeneeded;
 
 void R_SetViewSize(int blocks, int detail)
 {
-	setsizeneeded = true;
-	cfg.setblocks = blocks;
-	GL_Update(DDUF_BORDER);
+    setsizeneeded = true;
+    cfg.setblocks = blocks;
+    GL_Update(DDUF_BORDER);
 }
 
 void R_HandleSectorSpecials()
@@ -154,51 +154,51 @@ void R_HandleSectorSpecials()
 //==========================================================================
 void R_DrawMapTitle(void)
 {
-	float   alpha = 1;
-	int     y = 12;
-	char   *lname, *lauthor;
+    float   alpha = 1;
+    int     y = 12;
+    char   *lname, *lauthor;
 
-	if(!cfg.mapTitle || actual_leveltime > 6 * 35)
-		return;
+    if(!cfg.levelTitle || actual_leveltime > 6 * 35)
+        return;
 
-	// Make the text a bit smaller.
-	gl.MatrixMode(DGL_MODELVIEW);
-	gl.PushMatrix();
-	gl.Translatef(160, y, 0);
-	gl.Scalef(.75f, .75f, 1);	// Scale to 3/4
-	gl.Translatef(-160, -y, 0);
+    // Make the text a bit smaller.
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PushMatrix();
+    gl.Translatef(160, y, 0);
+    gl.Scalef(.75f, .75f, 1);   // Scale to 3/4
+    gl.Translatef(-160, -y, 0);
 
-	if(actual_leveltime < 35)
-		alpha = actual_leveltime / 35.0f;
-	if(actual_leveltime > 5 * 35)
-		alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
+    if(actual_leveltime < 35)
+        alpha = actual_leveltime / 35.0f;
+    if(actual_leveltime > 5 * 35)
+        alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
 
-	lname = (char *) DD_GetVariable(DD_MAP_NAME);
-	lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
+    lname = (char *) DD_GetVariable(DD_MAP_NAME);
+    lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 
-	// Use stardard map name if DED didn't define it.
-	if(!lname)
-		lname = P_GetMapName(gamemap);
+    // Use stardard map name if DED didn't define it.
+    if(!lname)
+        lname = P_GetMapName(gamemap);
 
     Draw_BeginZoom((1 + cfg.hudScale)/2, 160, y);
-    
-	if(lname)
-	{
-		M_WriteText3(160 - M_StringWidth(lname, hu_font_b) / 2, y, lname,
-					hu_font_b, deffontRGB[0], deffontRGB[1], deffontRGB[2], alpha, false, 0);
-		y += 20;
-	}
 
-	if(lauthor)
-	{
-		M_WriteText3(160 - M_StringWidth(lauthor, hu_font_a) / 2, y, lauthor,
-					hu_font_a, .5f, .5f, .5f, alpha, false, 0);
-	}
+    if(lname)
+    {
+        M_WriteText3(160 - M_StringWidth(lname, hu_font_b) / 2, y, lname,
+                    hu_font_b, deffontRGB[0], deffontRGB[1], deffontRGB[2], alpha, false, 0);
+        y += 20;
+    }
+
+    if(lauthor)
+    {
+        M_WriteText3(160 - M_StringWidth(lauthor, hu_font_a) / 2, y, lauthor,
+                    hu_font_a, .5f, .5f, .5f, alpha, false, 0);
+    }
 
     Draw_EndZoom();
 
-	gl.MatrixMode(DGL_MODELVIEW);
-	gl.PopMatrix();
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PopMatrix();
 }
 
 //==========================================================================
@@ -332,7 +332,7 @@ void G_Drawer(void)
 			if(!iscam)
 				X_Drawer();		// Draw the crosshair.
 
-		}
+        }
 
         // Draw the automap?
         if(automapactive)
@@ -340,11 +340,11 @@ void G_Drawer(void)
 
         // These various HUD's will be drawn unless Doomsday advises not to
         if(DD_GetInteger(DD_GAME_DRAW_HUD_HINT))
-		{
+        {
 
-            // Level information is shown for a few seconds in the 
+            // Level information is shown for a few seconds in the
             // beginning of a level.
-			R_DrawMapTitle();
+            R_DrawMapTitle();
 
             GL_Update(DDUF_FULLSCREEN);
 
@@ -355,9 +355,9 @@ void G_Drawer(void)
                     if(true == (viewheight == 200) )
                     {
                         // Fullscreen. Which mode?
-                        ST_Drawer(cfg.setblocks - 10, true);	// $democam
+                        ST_Drawer(cfg.setblocks - 10, true);    // $democam
                     } else {
-                        ST_Drawer(0 , true);	// $democam
+                        ST_Drawer(0 , true);    // $democam
                     }
 
                 fullscreenmode = viewheight == 200;
@@ -365,54 +365,54 @@ void G_Drawer(void)
             }
 
             HU_Drawer();
-		}
+        }
 
-		// Need to update the borders?
-		if(oldgamestate != GS_LEVEL ||
-			(Get(DD_VIEWWINDOW_WIDTH) != 320 || menuactive ||
-			 	cfg.sbarscale < 20 || (automapactive && cfg.automapHudDisplay == 0 )))
-		{
-			// Update the borders.
-			GL_Update(DDUF_BORDER);
-		}
-		break;
+        // Need to update the borders?
+        if(oldgamestate != GS_LEVEL ||
+            (Get(DD_VIEWWINDOW_WIDTH) != 320 || menuactive ||
+                cfg.sbarscale < 20 || (automapactive && cfg.automapHudDisplay == 0 )))
+        {
+            // Update the borders.
+            GL_Update(DDUF_BORDER);
+        }
+        break;
 
-	case GS_INTERMISSION:
-		IN_Drawer();
-		break;
+    case GS_INTERMISSION:
+        IN_Drawer();
+        break;
 
-	case GS_INFINE:
-		GL_Update(DDUF_FULLSCREEN);
-		break;
+    case GS_INFINE:
+        GL_Update(DDUF_FULLSCREEN);
+        break;
 
-	case GS_WAITING:
-		GL_DrawRawScreen(W_GetNumForName("TITLE"), 0, 0);
-		gl.Color3f(1, 1, 1);
-		MN_DrCenterTextA_CS("WAITING... PRESS ESC FOR MENU", 160, 188);
-		GL_Update(DDUF_FULLSCREEN);
-		break;
+    case GS_WAITING:
+        GL_DrawRawScreen(W_GetNumForName("TITLE"), 0, 0);
+        gl.Color3f(1, 1, 1);
+        MN_DrCenterTextA_CS("WAITING... PRESS ESC FOR MENU", 160, 188);
+        GL_Update(DDUF_FULLSCREEN);
+        break;
 
-	default:
-		break;
-	}
+    default:
+        break;
+    }
 
-	menuactivestate = menuactive;
-	viewactivestate = viewactive;
-	inhelpscreensstate = inhelpscreens;
-	oldgamestate = wipegamestate = gamestate;
+    menuactivestate = menuactive;
+    viewactivestate = viewactive;
+    inhelpscreensstate = inhelpscreens;
+    oldgamestate = wipegamestate = gamestate;
 
-	if(paused && !fi_active)
-	{
-		if(automapactive)
-			py = 4;
-		else
-			py = 4;	// in jDOOM this is viewwindowy + 4
+    if(paused && !fi_active)
+    {
+        if(automapactive)
+            py = 4;
+        else
+            py = 4; // in jDOOM this is viewwindowy + 4
 
-		GL_DrawPatch(160, py, W_GetNumForName("PAUSED"));
-	}
+        GL_DrawPatch(160, py, W_GetNumForName("PAUSED"));
+    }
 
-	// InFine is drawn whenever active.
-	FI_Drawer();
+    // InFine is drawn whenever active.
+    FI_Drawer();
 }
 
 //==========================================================================
@@ -436,52 +436,52 @@ void G_Drawer(void)
 
 int H2_GetFilterColor(int filter)
 {
-	//int rgba = 0;
+    //int rgba = 0;
 
-	// We have to choose the right color and alpha.
-	if(filter >= STARTREDPALS && filter < STARTREDPALS + NUMREDPALS)
-		// Red?
-		return FMAKERGBA(1, 0, 0, filter / 8.0);	// Full red with filter 8.
-	else if(filter >= STARTBONUSPALS && filter < STARTBONUSPALS + NUMBONUSPALS)
-		// Light Yellow?
-		return FMAKERGBA(1, 1, .5, (filter - STARTBONUSPALS + 1) / 16.0);
-	else if(filter >= STARTPOISONPALS &&
-			filter < STARTPOISONPALS + NUMPOISONPALS)
-		// Green?
-		return FMAKERGBA(0, 1, 0, (filter - STARTPOISONPALS + 1) / 16.0);
-	else if(filter >= STARTSCOURGEPAL)
-		// Orange?
-		return FMAKERGBA(1, .5, 0, (STARTSCOURGEPAL + 3 - filter) / 6.0);
-	else if(filter >= STARTHOLYPAL)
-		// White?
-		return FMAKERGBA(1, 1, 1, (STARTHOLYPAL + 3 - filter) / 6.0);
-	else if(filter == STARTICEPAL)
-		// Light blue?
-		return FMAKERGBA(.5f, .5f, 1, .4f);
-	else if(filter)
-		Con_Error("H2_GetFilterColor: Strange filter number: %d.\n", filter);
-	return 0;
+    // We have to choose the right color and alpha.
+    if(filter >= STARTREDPALS && filter < STARTREDPALS + NUMREDPALS)
+        // Red?
+        return FMAKERGBA(1, 0, 0, filter / 8.0);    // Full red with filter 8.
+    else if(filter >= STARTBONUSPALS && filter < STARTBONUSPALS + NUMBONUSPALS)
+        // Light Yellow?
+        return FMAKERGBA(1, 1, .5, (filter - STARTBONUSPALS + 1) / 16.0);
+    else if(filter >= STARTPOISONPALS &&
+            filter < STARTPOISONPALS + NUMPOISONPALS)
+        // Green?
+        return FMAKERGBA(0, 1, 0, (filter - STARTPOISONPALS + 1) / 16.0);
+    else if(filter >= STARTSCOURGEPAL)
+        // Orange?
+        return FMAKERGBA(1, .5, 0, (STARTSCOURGEPAL + 3 - filter) / 6.0);
+    else if(filter >= STARTHOLYPAL)
+        // White?
+        return FMAKERGBA(1, 1, 1, (STARTHOLYPAL + 3 - filter) / 6.0);
+    else if(filter == STARTICEPAL)
+        // Light blue?
+        return FMAKERGBA(.5f, .5f, 1, .4f);
+    else if(filter)
+        Con_Error("H2_GetFilterColor: Strange filter number: %d.\n", filter);
+    return 0;
 }
 
 void H2_SetFilter(int filter)
 {
-	GL_SetFilter(H2_GetFilterColor(filter));
+    GL_SetFilter(H2_GetFilterColor(filter));
 }
 
 void H2_EndFrame(void)
 {
-	SN_UpdateActiveSequences();
-	/*  S_UpdateSounds(players[displayplayer].plr->mo); */
+    SN_UpdateActiveSequences();
+    /*  S_UpdateSounds(players[displayplayer].plr->mo); */
 }
 
 void H2_ConsoleBg(int *width, int *height)
 {
-	extern int consoleFlat;
-	extern float consoleZoom;
+    extern int consoleFlat;
+    extern float consoleZoom;
 
-	GL_SetFlat(consoleFlat + W_CheckNumForName("F_START") + 1);
-	*width = 64 * consoleZoom;
-	*height = 64 * consoleZoom;
+    GL_SetFlat(consoleFlat + W_CheckNumForName("F_START") + 1);
+    *width = 64 * consoleZoom;
+    *height = 64 * consoleZoom;
 }
 
 /*
@@ -545,7 +545,7 @@ void H2_ConsoleBg(int *width, int *height)
    pagename = "CREDIT";
    break;
    case 6:
-   GL_Update(DDUF_BORDER | DDUF_FULLSCREEN);            
+   GL_Update(DDUF_BORDER | DDUF_FULLSCREEN);
    G_DeferedPlayDemo("demo3");
    break;
    }

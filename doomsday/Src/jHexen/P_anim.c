@@ -29,24 +29,24 @@
 #define SCI_TICS "tics"
 #define SCI_RAND "rand"
 
-#define LIGHTNING_SPECIAL 	198
-#define LIGHTNING_SPECIAL2 	199
-#define SKYCHANGE_SPECIAL 	200
+#define LIGHTNING_SPECIAL   198
+#define LIGHTNING_SPECIAL2  199
+#define SKYCHANGE_SPECIAL   200
 
 // TYPES -------------------------------------------------------------------
 
 typedef struct {
-	int     index;
-	int     tics;
+    int     index;
+    int     tics;
 } frameDef_t;
 
 typedef struct {
-	int     type;
-	int     index;
-	int     tics;
-	int     currentFrameDef;
-	int     startFrameDef;
-	int     endFrameDef;
+    int     type;
+    int     index;
+    int     tics;
+    int     currentFrameDef;
+    int     startFrameDef;
+    int     endFrameDef;
 } animDef_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -91,8 +91,8 @@ static int *LightningLightLevels;
 
 void P_AnimateSurfaces(void)
 {
-	int     i;
-	line_t *line;
+    int     i;
+    line_t *line;
 
 	// Update scrolling textures
 	for(i = 0; i < numlinespecials; i++)
@@ -291,7 +291,7 @@ static void P_LightningFlash(void)
 
 void P_ForceLightning(void)
 {
-	NextLightningFlash = 0;
+    NextLightningFlash = 0;
 }
 
 //==========================================================================
@@ -302,8 +302,8 @@ void P_ForceLightning(void)
 
 void P_InitLightning(void)
 {
-	int     i;
-	int     secCount;
+    int     i;
+    int     secCount;
 
 	if(!P_GetMapLightning(gamemap))
 	{
@@ -346,113 +346,113 @@ void P_InitLightning(void)
 //
 //==========================================================================
 
-void P_InitFTAnims(void)
+void P_InitPicAnims(void)
 {
-	int     base;
-	boolean ignore;
-	boolean done;
-	int     AnimDefCount = 0;
-	int     groupNumber, picBase;
-	int     type, index;
+    int     base;
+    boolean ignore;
+    boolean done;
+    int     AnimDefCount = 0;
+    int     groupNumber, picBase;
+    int     type, index;
 
-	SC_Open(ANIM_SCRIPT_NAME);
-	while(SC_GetString())
-	{
-		if(AnimDefCount == MAX_ANIM_DEFS)
-		{
-			Con_Error("P_InitFTAnims: too many AnimDefs.");
-		}
-		if(SC_Compare(SCI_FLAT))
-		{
-			type = ANIM_FLAT;
-		}
-		else if(SC_Compare(SCI_TEXTURE))
-		{
-			type = ANIM_TEXTURE;
-		}
-		else
-		{
-			SC_ScriptError(NULL);
-		}
-		SC_MustGetString();		// Name
-		ignore = false;
-		if(type == ANIM_FLAT)
-		{
-			if(W_CheckNumForName(sc_String) == -1)
-			{
-				ignore = true;
-			}
-			else
-			{
-				picBase = R_FlatNumForName(sc_String);
-				groupNumber =
-					R_CreateAnimGroup(DD_FLAT, AGF_SMOOTH | AGF_FIRST_ONLY);
-			}
-		}
-		else
-		{						// Texture
-			if(R_CheckTextureNumForName(sc_String) == -1)
-			{
-				ignore = true;
-			}
-			else
-			{
-				picBase = R_TextureNumForName(sc_String);
-				groupNumber =
-					R_CreateAnimGroup(DD_TEXTURE, AGF_SMOOTH | AGF_FIRST_ONLY);
-			}
-		}
+    SC_Open(ANIM_SCRIPT_NAME);
+    while(SC_GetString())
+    {
+        if(AnimDefCount == MAX_ANIM_DEFS)
+        {
+            Con_Error("P_InitPicAnims: too many AnimDefs.");
+        }
+        if(SC_Compare(SCI_FLAT))
+        {
+            type = ANIM_FLAT;
+        }
+        else if(SC_Compare(SCI_TEXTURE))
+        {
+            type = ANIM_TEXTURE;
+        }
+        else
+        {
+            SC_ScriptError(NULL);
+        }
+        SC_MustGetString();     // Name
+        ignore = false;
+        if(type == ANIM_FLAT)
+        {
+            if(W_CheckNumForName(sc_String) == -1)
+            {
+                ignore = true;
+            }
+            else
+            {
+                picBase = R_FlatNumForName(sc_String);
+                groupNumber =
+                    R_CreateAnimGroup(DD_FLAT, AGF_SMOOTH | AGF_FIRST_ONLY);
+            }
+        }
+        else
+        {                       // Texture
+            if(R_CheckTextureNumForName(sc_String) == -1)
+            {
+                ignore = true;
+            }
+            else
+            {
+                picBase = R_TextureNumForName(sc_String);
+                groupNumber =
+                    R_CreateAnimGroup(DD_TEXTURE, AGF_SMOOTH | AGF_FIRST_ONLY);
+            }
+        }
 
-		done = false;
-		while(done == false)
-		{
-			if(SC_GetString())
-			{
-				if(SC_Compare(SCI_PIC))
-				{
-					SC_MustGetNumber();
-					if(ignore == false)
-					{
-						index = picBase + sc_Number - 1;
-					}
-					SC_MustGetString();
-					if(SC_Compare(SCI_TICS))
-					{
-						SC_MustGetNumber();
-						if(ignore == false)
-						{
-							R_AddToAnimGroup(groupNumber, index, sc_Number, 0);
-						}
-					}
-					else if(SC_Compare(SCI_RAND))
-					{
-						SC_MustGetNumber();
-						base = sc_Number;
-						SC_MustGetNumber();
-						if(ignore == false)
-						{
-							R_AddToAnimGroup(groupNumber, index, base,
-											 sc_Number - base);
-						}
-					}
-					else
-					{
-						SC_ScriptError(NULL);
-					}
-				}
-				else
-				{
-					SC_UnGet();
-					done = true;
-				}
-			}
-			else
-			{
-				done = true;
-			}
-		}
-	}
-	SC_Close();
+        done = false;
+        while(done == false)
+        {
+            if(SC_GetString())
+            {
+                if(SC_Compare(SCI_PIC))
+                {
+                    SC_MustGetNumber();
+                    if(ignore == false)
+                    {
+                        index = picBase + sc_Number - 1;
+                    }
+                    SC_MustGetString();
+                    if(SC_Compare(SCI_TICS))
+                    {
+                        SC_MustGetNumber();
+                        if(ignore == false)
+                        {
+                            R_AddToAnimGroup(groupNumber, index, sc_Number, 0);
+                        }
+                    }
+                    else if(SC_Compare(SCI_RAND))
+                    {
+                        SC_MustGetNumber();
+                        base = sc_Number;
+                        SC_MustGetNumber();
+                        if(ignore == false)
+                        {
+                            R_AddToAnimGroup(groupNumber, index, base,
+                                             sc_Number - base);
+                        }
+                    }
+                    else
+                    {
+                        SC_ScriptError(NULL);
+                    }
+                }
+                else
+                {
+                    SC_UnGet();
+                    done = true;
+                }
+            }
+            else
+            {
+                done = true;
+            }
+        }
+    }
+    SC_Close();
 }
 
 //
@@ -460,38 +460,38 @@ void P_InitFTAnims(void)
 //
 void P_InitSky(int map)
 {
-	Sky1Texture = P_GetMapSky1Texture(map);
-	Sky2Texture = P_GetMapSky2Texture(map);
-	Sky1ScrollDelta = P_GetMapSky1ScrollDelta(map);
-	Sky2ScrollDelta = P_GetMapSky2ScrollDelta(map);
-	Sky1ColumnOffset = 0;
-	Sky2ColumnOffset = 0;
-	DoubleSky = P_GetMapDoubleSky(map);
+    Sky1Texture = P_GetMapSky1Texture(map);
+    Sky2Texture = P_GetMapSky2Texture(map);
+    Sky1ScrollDelta = P_GetMapSky1ScrollDelta(map);
+    Sky2ScrollDelta = P_GetMapSky2ScrollDelta(map);
+    Sky1ColumnOffset = 0;
+    Sky2ColumnOffset = 0;
+    DoubleSky = P_GetMapDoubleSky(map);
 
-	// First disable all sky layers.
-	Rend_SkyParams(DD_SKY, DD_DISABLE, 0);
+    // First disable all sky layers.
+    Rend_SkyParams(DD_SKY, DD_DISABLE, 0);
 
-	// Sky2 is layer zero and Sky1 is layer one.
-	Rend_SkyParams(0, DD_OFFSET, 0);
-	Rend_SkyParams(1, DD_OFFSET, 0);
-	if(DoubleSky)
-	{
-		Rend_SkyParams(0, DD_ENABLE, 0);
-		Rend_SkyParams(0, DD_MASK, DD_NO);
-		Rend_SkyParams(0, DD_TEXTURE, Sky2Texture);
+    // Sky2 is layer zero and Sky1 is layer one.
+    Rend_SkyParams(0, DD_OFFSET, 0);
+    Rend_SkyParams(1, DD_OFFSET, 0);
+    if(DoubleSky)
+    {
+        Rend_SkyParams(0, DD_ENABLE, 0);
+        Rend_SkyParams(0, DD_MASK, DD_NO);
+        Rend_SkyParams(0, DD_TEXTURE, Sky2Texture);
 
-		Rend_SkyParams(1, DD_ENABLE, 0);
-		Rend_SkyParams(1, DD_MASK, DD_YES);
-		Rend_SkyParams(1, DD_TEXTURE, Sky1Texture);
-	}
-	else
-	{
-		Rend_SkyParams(0, DD_ENABLE, 0);
-		Rend_SkyParams(0, DD_MASK, DD_NO);
-		Rend_SkyParams(0, DD_TEXTURE, Sky1Texture);
+        Rend_SkyParams(1, DD_ENABLE, 0);
+        Rend_SkyParams(1, DD_MASK, DD_YES);
+        Rend_SkyParams(1, DD_TEXTURE, Sky1Texture);
+    }
+    else
+    {
+        Rend_SkyParams(0, DD_ENABLE, 0);
+        Rend_SkyParams(0, DD_MASK, DD_NO);
+        Rend_SkyParams(0, DD_TEXTURE, Sky1Texture);
 
-		Rend_SkyParams(1, DD_DISABLE, 0);
-		Rend_SkyParams(1, DD_MASK, DD_NO);
-		Rend_SkyParams(1, DD_TEXTURE, Sky2Texture);
-	}
+        Rend_SkyParams(1, DD_DISABLE, 0);
+        Rend_SkyParams(1, DD_MASK, DD_NO);
+        Rend_SkyParams(1, DD_TEXTURE, Sky2Texture);
+    }
 }

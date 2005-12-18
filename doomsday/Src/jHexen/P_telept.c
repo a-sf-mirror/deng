@@ -42,7 +42,7 @@
 
 mobj_t *P_SpawnTeleFog(int x, int y)
 {
-	subsector_t *ss = R_PointInSubsector(x, y);
+    subsector_t *ss = R_PointInSubsector(x, y);
 
 #ifdef TODO_MAP_UPDATE
 	return P_SpawnMobj(x, y, ss->sector->floorheight + TELEFOGHEIGHT, MT_TFOG);
@@ -56,7 +56,7 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 //==========================================================================
 
 boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
-				   boolean useFog)
+                   boolean useFog)
 {
 	fixed_t oldx;
 	fixed_t oldy;
@@ -71,7 +71,7 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
 	oldy = thing->y;
 	oldz = thing->z;
 	aboveFloor = thing->z - thing->floorz;
-	if(!P_TeleportMove(thing, x, y))
+	if(!P_TeleportMove(thing, x, y, false))
 	{
 		return false;
 	}
@@ -152,6 +152,9 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
 		thing->momx = thing->momy = thing->momz = 0;
 	}
 	P_ClearThingSRVO(thing);
+
+    // Update the floor pic
+    thing->floorpic = tmfloorpic;
 	return true;
 }
 
@@ -163,36 +166,36 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
 
 boolean EV_Teleport(int tid, mobj_t *thing, boolean fog)
 {
-	int     i;
-	int     count;
-	mobj_t *mo;
-	int     searcher;
+    int     i;
+    int     count;
+    mobj_t *mo;
+    int     searcher;
 
-	if(!thing)
-	{							// Teleport function called with an invalid mobj
-		return false;
-	}
-	if(thing->flags2 & MF2_NOTELEPORT)
-	{
-		return false;
-	}
-	count = 0;
-	searcher = -1;
-	while(P_FindMobjFromTID(tid, &searcher) != NULL)
-	{
-		count++;
-	}
-	if(count == 0)
-	{
-		return false;
-	}
-	count = 1 + (P_Random() % count);
-	searcher = -1;
-	for(i = 0; i < count; i++)
-	{
-		mo = P_FindMobjFromTID(tid, &searcher);
-	}
-	if(!mo)
-		Con_Error("Can't find teleport mapspot\n");
-	return P_Teleport(thing, mo->x, mo->y, mo->angle, fog);
+    if(!thing)
+    {                           // Teleport function called with an invalid mobj
+        return false;
+    }
+    if(thing->flags2 & MF2_NOTELEPORT)
+    {
+        return false;
+    }
+    count = 0;
+    searcher = -1;
+    while(P_FindMobjFromTID(tid, &searcher) != NULL)
+    {
+        count++;
+    }
+    if(count == 0)
+    {
+        return false;
+    }
+    count = 1 + (P_Random() % count);
+    searcher = -1;
+    for(i = 0; i < count; i++)
+    {
+        mo = P_FindMobjFromTID(tid, &searcher);
+    }
+    if(!mo)
+        Con_Error("Can't find teleport mapspot\n");
+    return P_Teleport(thing, mo->x, mo->y, mo->angle, fog);
 }
