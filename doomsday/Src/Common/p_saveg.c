@@ -735,16 +735,17 @@ void SV_WriteLine(line_t *li)
 #endif
     SV_WriteByte(type);
 
-    SV_WriteShort(li->flags);
+    SV_WriteShort(P_GetIntp(DMU_LINE, li, DMU_FLAGS));
     SV_WriteShort(xli->special);
     SV_WriteShort(xli->tag);
 
     for(i = 0; i < 2; i++)
     {
+#ifdef TODO_MAP_UPDATE
         if(li->sidenum[i] == NO_INDEX)
             continue;
 
-#ifdef TODO_MAP_UPDATE
+
         si = &sides[li->sidenum[i]];
 
         SV_WriteShort(si->textureoffset >> FRACBITS);
@@ -777,16 +778,16 @@ void SV_ReadLine(line_t *li)
 
     type = SV_ReadByte();
 
-    li->flags = SV_ReadShort();
+    P_SetIntp(DMU_LINE, li, DMU_FLAGS, SV_ReadShort());
     xli->special = SV_ReadShort();
     xli->tag = SV_ReadShort();
 
     for(i = 0; i < 2; i++)
     {
+#ifdef TODO_MAP_UPDATE
         if(li->sidenum[i] == NO_INDEX)
             continue;
 
-#ifdef TODO_MAP_UPDATE
         si = &sides[li->sidenum[i]];
 
         si->textureoffset = SV_ReadShort() << FRACBITS;
