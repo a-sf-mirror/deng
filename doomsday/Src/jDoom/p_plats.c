@@ -115,7 +115,7 @@ void T_PlatRaise(plat_t * plat)
     case waiting:
         if(!--plat->count)
         {
-            if(plat->sector->floorheight == plat->low)
+            if(P_GetFixedp(DMU_SECTOR, plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
                 plat->status = up;
             else
                 plat->status = down;
@@ -136,6 +136,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
     plat_t *plat;
     int     secnum;
     int     rtn;
+    int     lineid = P_ToIndex(DMU_LINE, line);
+    fixed_t floorheight;
     sector_t *sec;
 
     secnum = -1;
@@ -145,7 +147,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
     switch (type)
     {
     case perpetualRaise:
-        P_ActivateInStasis(line->tag);
+        P_ActivateInStasis(xlines[lineid].tag);
         break;
 
     default:
@@ -154,12 +156,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
     while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
-#ifdef TODO_MAP_UPDATE
-        sec = &sectors[secnum];
-
-        if(sec->specialdata)
+        if(xsectors[secnum].specialdata)
             continue;
-#endif
 
         // Find lowest & highest floors around sector
         rtn = 1;
@@ -167,24 +165,25 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
         P_AddThinker(&plat->thinker);
 
         plat->type = type;
-        plat->sector = sec;
-        plat->sector->specialdata = plat;
+        plat->sector = P_ToPtr(DMU_SECTOR, secnum);
+        xsectors[secnum].specialdata = plat;
         plat->thinker.function = (actionf_p1) T_PlatRaise;
         plat->crush = false;
-        plat->tag = line->tag;
+        plat->tag = xlines[lineid].tag;
 
-        switch (type)
+        floorheight = P_GetFixed(DMU_SECTOR, secnum, DMU_FLOOR_HEIGHT);
+        switch(type)
         {
         case raiseToNearestAndChange:
             plat->speed = PLATSPEED / 2;
 #ifdef TODO_MAP_UPDATE
             sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
 #endif
-            plat->high = P_FindNextHighestFloor(sec, sec->floorheight);
+            plat->high = P_FindNextHighestFloor(sec, floorheight);
             plat->wait = 0;
             plat->status = up;
             // NO MORE DAMAGE, IF APPLICABLE
-            sec->special = 0;
+            xsectors[secnum].special = 0;
 
             S_SectorSound(sec, sfx_stnmov);
             break;
@@ -193,8 +192,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->speed = PLATSPEED / 2;
 #ifdef TODO_MAP_UPDATE
             sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
-            plat->high = sec->floorheight + amount * FRACUNIT;
 #endif
+            plat->high = floorheight + amount * FRACUNIT;
             plat->wait = 0;
             plat->status = up;
 
@@ -205,10 +204,10 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->speed = PLATSPEED * 4;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
-            if(plat->low > sec->floorheight)
-                plat->low = sec->floorheight;
+            if(plat->low > floorheight)
+                plat->low = floorheight;
 
-            plat->high = sec->floorheight;
+            plat->high = floorheight;
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
             S_SectorSound(sec, sfx_pstart);
@@ -218,10 +217,10 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->speed = PLATSPEED * 8;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
-            if(plat->low > sec->floorheight)
-                plat->low = sec->floorheight;
+            if(plat->low > floorheight)
+                plat->low = floorheight;
 
-            plat->high = sec->floorheight;
+            plat->high = floorheight;
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
             S_SectorSound(sec, sfx_pstart);
@@ -231,13 +230,13 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->speed = PLATSPEED;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
-            if(plat->low > sec->floorheight)
-                plat->low = sec->floorheight;
+            if(plat->low > floorheight)
+                plat->low = floorheight;
 
             plat->high = P_FindHighestFloorSurrounding(sec);
 
-            if(plat->high < sec->floorheight)
-                plat->high = sec->floorheight;
+            if(plat->high < floorheight)
+                plat->high = floorheight;
 
             plat->wait = 35 * PLATWAIT;
             plat->status = P_Random() & 1;
@@ -282,6 +281,7 @@ void P_ActivateInStasis(int tag)
  */
 int EV_StopPlat(line_t *line)
 {
+    int lineid = P_ToIndex(DMU_LINE, line);
     platlist_t *pl;
 
     // search the active plats
@@ -290,7 +290,7 @@ int EV_StopPlat(line_t *line)
         plat_t *plat = pl->plat;
 
         // for one with the tag not in stasis
-        if(plat->status != in_stasis && plat->tag == line->tag)
+        if(plat->status != in_stasis && plat->tag == xlines[lineid].tag)
         {
             // put it in stasis
             plat->oldstatus = plat->status;
@@ -329,7 +329,7 @@ void P_RemoveActivePlat(plat_t *plat)
 {
     platlist_t *list = plat->list;
 
-    plat->sector->specialdata = NULL;
+    xsectors[P_ToIndex(DMU_SECTOR, plat->sector)].specialdata = NULL;
 
     P_RemoveThinker(&plat->thinker);
 
