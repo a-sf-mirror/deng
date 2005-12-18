@@ -678,19 +678,21 @@ void SV_ReadSector(sector_t *sec)
     // Read the type.
     type = SV_ReadByte();
 
-    sec->floorheight = SV_ReadShort() << FRACBITS;
-    sec->ceilingheight = SV_ReadShort() << FRACBITS;
-    sec->floorpic = SV_ReadShort();
-    sec->ceilingpic = SV_ReadShort();
+    P_SetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT, SV_ReadShort() << FRACBITS);
+    P_SetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT, SV_ReadShort() << FRACBITS);
+    P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE, SV_ReadShort());
+    P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE, SV_ReadShort());
 
     if(hdr.version >= 4)
     {
         // The flat numbers are actually archive numbers.
-        sec->floorpic = SV_GetArchiveFlat(sec->floorpic);
-        sec->ceilingpic = SV_GetArchiveFlat(sec->ceilingpic);
+        P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
+                  SV_GetArchiveFlat(P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE)));
+        P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE,
+                  SV_GetArchiveFlat(P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE)));
     }
 
-    sec->lightlevel = SV_ReadByte();
+    P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadByte());
 #ifdef TODO_MAP_UPDATE
     SV_Read(sec->rgb, 3);
 
@@ -706,10 +708,10 @@ void SV_ReadSector(sector_t *sec)
 
     if(type == sc_xg1 || type == sc_ploff)
     {
-        sec->flooroffx = SV_ReadFloat();
-        sec->flooroffy = SV_ReadFloat();
-        sec->ceiloffx = SV_ReadFloat();
-        sec->ceiloffy = SV_ReadFloat();
+        P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X, SV_ReadFloat());
+        P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y, SV_ReadFloat());
+        P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X, SV_ReadFloat());
+        P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y, SV_ReadFloat());
     }
 
     if(type == sc_xg1)
