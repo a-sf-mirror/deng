@@ -45,7 +45,10 @@
 
 void T_VerticalDoor(vldoor_t * door)
 {
+    xsector_t *xsec;
     result_e res;
+
+    xsec = &xsectors[P_ToIndex(DMU_SECTOR, door->sector)];
 
     switch (door->direction)
     {
@@ -97,7 +100,8 @@ void T_VerticalDoor(vldoor_t * door)
     case -1:
         // DOWN
         res =
-            T_MovePlane(door->sector, door->speed, door->sector->floorheight,
+            T_MovePlane(door->sector, door->speed,
+                        P_GetFixedp(DMU_SECTOR, door->sector, DMU_FLOOR_HEIGHT),
                         false, 1, door->direction);
         if(res == pastdest)
         {
@@ -105,14 +109,14 @@ void T_VerticalDoor(vldoor_t * door)
             {
             case blazeRaise:
             case blazeClose:
-                door->sector->specialdata = NULL;
+                xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
                 S_SectorSound(door->sector, sfx_bdcls);
                 break;
 
             case normal:
             case close:
-                door->sector->specialdata = NULL;
+                xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
                 break;
 
@@ -160,7 +164,7 @@ void T_VerticalDoor(vldoor_t * door)
             case close30ThenOpen:
             case blazeOpen:
             case open:
-                door->sector->specialdata = NULL;
+                xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
                 break;
 
@@ -177,6 +181,7 @@ void T_VerticalDoor(vldoor_t * door)
  */
 int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
 {
+    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
     player_t *p;
 
     p = thing->player;
@@ -184,7 +189,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
     if(!p)
         return 0;
 
-    switch (line->special)
+    switch(xline->special)
     {
     case 99:                    // Blue Lock
     case 133:
@@ -229,6 +234,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
 int EV_DoDoor(line_t *line, vldoor_e type)
 {
     int     secnum, rtn;
+    xsector_t *xsec;
     sector_t *sec;
     vldoor_t *door;
 
@@ -237,17 +243,17 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 
     while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
-#ifdef TODO_MAP_UPDATE
-        sec = &sectors[secnum];
-#endif
-        if(sec->specialdata)
+        sec = P_ToPtr(DMU_SECTOR, secnum);
+        xsec = &xsectors[secnum];
+
+        if(xsec->specialdata)
             continue;
 
         // new door thinker
         rtn = 1;
         door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
         P_AddThinker(&door->thinker);
-        sec->specialdata = door;
+        xsec->specialdata = door;
 
         door->thinker.function = T_VerticalDoor;
         door->sector = sec;
@@ -273,7 +279,8 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             break;
 
         case close30ThenOpen:
-            door->topheight = sec->ceilingheight;
+            door->topheight =
+                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
             door->direction = -1;
             S_SectorSound(door->sector, sfx_dorcls);
             break;
@@ -284,7 +291,8 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight = P_FindLowestCeilingSurrounding(sec);
             door->topheight -= 4 * FRACUNIT;
             door->speed = VDOORSPEED * 4;
-            if(door->topheight != sec->ceilingheight)
+            if(door->topheight !=
+                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_bdopn);
             break;
 
@@ -293,7 +301,8 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->direction = 1;
             door->topheight = P_FindLowestCeilingSurrounding(sec);
             door->topheight -= 4 * FRACUNIT;
-            if(door->topheight != sec->ceilingheight)
+            if(door->topheight !=
+                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_doropn);
             break;
 
@@ -312,7 +321,9 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
 {
     player_t *player;
     int     secnum;
+    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
     sector_t *sec;
+    xsector_t *xsec;
     vldoor_t *door;
     int     side;
 
@@ -321,7 +332,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     //  Check for locks
     player = thing->player;
 
-    switch (line->special)
+    switch (xline->special)
     {
     case 26:                    // Blue Lock
     case 32:
@@ -364,15 +375,14 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // if the sector has an active thinker, use it
-#ifdef TODO_MAP_UPDATE
-    sec = sides[line->sidenum[side ^ 1]].sector;
-    secnum = sec - sectors;
-#endif
+    sec = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    secnum = P_ToIndex(DMU_SECTOR, sec);
+    xsec = &xsectors[secnum];
 
-    if(sec->specialdata)
+    if(xsec->specialdata)
     {
-        door = sec->specialdata;
-        switch (line->special)
+        door = xsec->specialdata;
+        switch (xline->special)
         {
         case 1:             // ONLY FOR "RAISE" DOORS, NOT "OPEN"s
         case 26:
@@ -393,7 +403,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // for proper sound
-    switch (line->special)
+    switch(xline->special)
     {
     case 117:                   // BLAZING DOOR RAISE
     case 118:                   // BLAZING DOOR OPEN
@@ -413,14 +423,14 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     // new door thinker
     door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
     P_AddThinker(&door->thinker);
-    sec->specialdata = door;
+    xsec->specialdata = door;
     door->thinker.function = T_VerticalDoor;
     door->sector = sec;
     door->direction = 1;
     door->speed = VDOORSPEED;
     door->topwait = VDOORWAIT;
 
-    switch (line->special)
+    switch(xline->special)
     {
     case 1:
     case 26:
@@ -434,7 +444,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     case 33:
     case 34:
         door->type = open;
-        line->special = 0;
+        xline->special = 0;
         break;
 
     case 117:                   // blazing door raise
@@ -443,7 +453,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
         break;
     case 118:                   // blazing door open
         door->type = blazeOpen;
-        line->special = 0;
+        xline->special = 0;
         door->speed = VDOORSPEED * 4;
         break;
     }
@@ -455,14 +465,15 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
 
 void P_SpawnDoorCloseIn30(sector_t *sec)
 {
+    xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, sec)];
     vldoor_t *door;
 
     door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 
     P_AddThinker(&door->thinker);
 
-    sec->specialdata = door;
-    sec->special = 0;
+    xsec->specialdata = door;
+    xsec->special = 0;
 
     door->thinker.function = T_VerticalDoor;
     door->sector = sec;
@@ -474,14 +485,15 @@ void P_SpawnDoorCloseIn30(sector_t *sec)
 
 void P_SpawnDoorRaiseIn5Mins(sector_t *sec, int secnum)
 {
+    xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, sec)];
     vldoor_t *door;
 
     door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 
     P_AddThinker(&door->thinker);
 
-    sec->specialdata = door;
-    sec->special = 0;
+    xsec->specialdata = door;
+    xsec->special = 0;
 
     door->thinker.function = T_VerticalDoor;
     door->sector = sec;
