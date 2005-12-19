@@ -24,11 +24,11 @@
 
 #include "r_data.h"
 
-extern int      rendSkyLight;	   // cvar
+extern int      rendSkyLight;      // cvar
 
 // Map Info flags.
-#define MIF_FOG				0x1	   // Fog is used in the level.
-#define MIF_DRAW_SPHERE		0x2	   // Always draw the sky sphere.
+#define MIF_FOG             0x1    // Fog is used in the level.
+#define MIF_DRAW_SPHERE     0x2    // Always draw the sky sphere.
 
 const char     *R_GetCurrentLevelID(void);
 const char     *R_GetUniqueLevelID(void);
@@ -41,8 +41,8 @@ sector_t       *R_GetLinkedSector(sector_t *startsec, boolean getfloor);
 void            R_UpdatePlanes(void);
 void            R_ClearSectorFlags(void);
 void            R_SkyFix(void);
-void            R_OrderVertices(line_t *line, sector_t *sector,
-								vertex_t * verts[2]);
+void            R_OrderVertices(line_t *line, const sector_t *sector,
+                                vertex_t * verts[2]);
 void            R_GetMapSize(vertex_t *min, vertex_t *max);
 
 #endif

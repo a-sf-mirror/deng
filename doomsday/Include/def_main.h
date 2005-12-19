@@ -76,6 +76,8 @@ void            Def_Read(void);
 
 void            Def_ReadProcessDED(const char *fileName);
 
+int             Def_GetMobjNum(char *id);
+int             Def_GetMobjNumForName(char *name);
 int             Def_GetStateNum(char *id);
 int             Def_GetSpriteNum(char *name);
 int             Def_GetModelNum(const char *id);
@@ -91,4 +93,5 @@ int             Def_Get(int type, char *id, void *out);
 boolean         Def_SameStateSequence(state_t * snew, state_t * sold);
 void            Def_LightMapLoaded(const char *id, unsigned int texture);
 
+D_CMD(ListMobjs);
 #endif

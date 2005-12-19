@@ -28,14 +28,14 @@
 extern          "C" {
 #endif
 
-	/*
-	 * Caller cleans the stack in the __cdecl calling convention.
-	 * This means the caller doesn't have to know the right number 
-	 * of arguments for the function. Most Doomsday functions use
-	 * __stdcall, where the function clears up the stack itself.
-	 * This means the caller must put the right number of arguments
-	 * on the stack or Bad Things will happen.
-	 */
+    /*
+     * Caller cleans the stack in the __cdecl calling convention.
+     * This means the caller doesn't have to know the right number
+     * of arguments for the function. Most Doomsday functions use
+     * __stdcall, where the function clears up the stack itself.
+     * This means the caller must put the right number of arguments
+     * on the stack or Bad Things will happen.
+     */
 
 #include <stdlib.h>
 #include "dd_version.h"
@@ -43,40 +43,40 @@ extern          "C" {
 #include "p_think.h"
 #include "def_share.h"
 
-	//------------------------------------------------------------------------
-	//
-	// General Definitions and Macros
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // General Definitions and Macros
+    //
+    //------------------------------------------------------------------------
 
-#define DDMAXPLAYERS			16
+#define DDMAXPLAYERS            16
 
-	// The case-independent strcmps have different names.
+    // The case-independent strcmps have different names.
 #ifdef WIN32
-#	define strcasecmp	stricmp
-#	define strncasecmp	strnicmp
+#   define strcasecmp   stricmp
+#   define strncasecmp  strnicmp
 #endif
 #ifdef UNIX
-#	define stricmp 		strcasecmp
-#	define strnicmp		strncasecmp
-	/*
-	 * There are manual implementations for these string handling
-	 * routines:
-	 */
-	char           *strupr(char *string);
-	char           *strlwr(char *string);
+#   define stricmp      strcasecmp
+#   define strnicmp     strncasecmp
+    /*
+     * There are manual implementations for these string handling
+     * routines:
+     */
+    char           *strupr(char *string);
+    char           *strlwr(char *string);
 #endif
 
 #ifdef __BIG_ENDIAN__
-	short           ShortSwap(short);
-	long            LongSwap(long);
+    short           ShortSwap(short);
+    long            LongSwap(long);
     float           FloatSwap(float);
-#define SHORT(x)	ShortSwap(x)
-#define LONG(x)		LongSwap(x)
+#define SHORT(x)    ShortSwap(x)
+#define LONG(x)     LongSwap(x)
 #define FLOAT(x)    FloatSwap(x)
 #else
-#define SHORT(x)	(x)
-#define LONG(x)		(x)
+#define SHORT(x)    (x)
+#define LONG(x)     (x)
 #define FLOAT(x)    (x)
 #endif
 
@@ -87,88 +87,88 @@ extern          "C" {
 #define MIN_OF(x, y)            ((x) < (y)? (x) : (y))
 #define MINMAX_OF(a, x, b)      ((x) < (a)? (a) : (x) > (b)? (b) : (x))
 
-	enum {
-		// TexFilterMode targets
-		DD_TEXTURES = 0,
-		DD_RAWSCREENS,
+    enum {
+        // TexFilterMode targets
+        DD_TEXTURES = 0,
+        DD_RAWSCREENS,
 
-		// Filter/mipmap modes
-		DD_NEAREST = 0,
-		DD_LINEAR,
-		DD_NEAREST_MIPMAP_NEAREST,
-		DD_LINEAR_MIPMAP_NEAREST,
-		DD_NEAREST_MIPMAP_LINEAR,
-		DD_LINEAR_MIPMAP_LINEAR,
+        // Filter/mipmap modes
+        DD_NEAREST = 0,
+        DD_LINEAR,
+        DD_NEAREST_MIPMAP_NEAREST,
+        DD_LINEAR_MIPMAP_NEAREST,
+        DD_NEAREST_MIPMAP_LINEAR,
+        DD_LINEAR_MIPMAP_LINEAR,
 
-		// Music devices
-		DD_MUSIC_NONE = 0,
-		DD_MUSIC_MIDI,
-		DD_MUSIC_CDROM,
+        // Music devices
+        DD_MUSIC_NONE = 0,
+        DD_MUSIC_MIDI,
+        DD_MUSIC_CDROM,
 
-		// Integer values for Set/Get
-		DD_FIRST_VALUE = -1,
-		DD_SCREEN_WIDTH,
-		DD_SCREEN_HEIGHT,
-		DD_NETGAME,
-		DD_SERVER,
-		DD_CLIENT,
-		DD_ALLOW_FRAMES,
-		DD_SKYFLATNUM,
-		DD_GAMETIC,
-		DD_VIEWWINDOW_X,
-		DD_VIEWWINDOW_Y,
-		DD_VIEWWINDOW_WIDTH,
-		DD_VIEWWINDOW_HEIGHT,
-		DD_VIEWWINDOW_SCREEN_WIDTH,
-		DD_VIEWWINDOW_SCREEN_HEIGHT,
-		DD_VIEWX,
-		DD_VIEWY,
-		DD_VIEWZ,
-		DD_VIEWX_OFFSET,
-		DD_VIEWY_OFFSET,
-		DD_VIEWZ_OFFSET,
-		DD_VIEWANGLE,
-		DD_VIEWANGLE_OFFSET,
-		DD_CONSOLEPLAYER,
-		DD_DISPLAYPLAYER,
-		DD_MUSIC_DEVICE,
-		DD_MIPMAPPING,
-		DD_SMOOTH_IMAGES,
-		DD_DEFAULT_RES_X,
-		DD_DEFAULT_RES_Y,
-		DD_SKY_DETAIL,
-		DD_SFX_VOLUME,
-		DD_MUSIC_VOLUME,
-		DD_MOUSE_INVERSE_Y,
-		DD_GAMMA,
-		DD_QUERY_RESULT,
-		DD_FULLBRIGHT,			   // Render everything fullbright?
-		DD_CCMD_RETURN,
-		DD_GAME_READY,
-		DD_OPENRANGE,
-		DD_OPENTOP,
-		DD_OPENBOTTOM,
-		DD_LOWFLOOR,
-		DD_DEDICATED,
-		DD_NOVIDEO,
-		DD_NUMMOBJTYPES,
-		DD_GRAVITY,
-		DD_GOTFRAME,
-		DD_PLAYBACK,
-		DD_NUMSOUNDS,
-		DD_NUMMUSIC,
-		DD_NUMLUMPS,
-		DD_SEND_ALL_PLAYERS,
-		DD_PSPRITE_OFFSET_X,	   // 10x
-		DD_PSPRITE_OFFSET_Y,	   // 10x
-		DD_PSPRITE_SPEED,
-		DD_CPLAYER_THRUST_MUL,
-		DD_CLIENT_PAUSED,
-		DD_WEAPON_OFFSET_SCALE_Y,  // 1000x
-        DD_MONOCHROME_PATCHES,		// DJS - convert patch image data to monochrome. 1= linear 2= weighted
+        // Integer values for Set/Get
+        DD_FIRST_VALUE = -1,
+        DD_SCREEN_WIDTH,
+        DD_SCREEN_HEIGHT,
+        DD_NETGAME,
+        DD_SERVER,
+        DD_CLIENT,
+        DD_ALLOW_FRAMES,
+        DD_SKYFLATNUM,
+        DD_GAMETIC,
+        DD_VIEWWINDOW_X,
+        DD_VIEWWINDOW_Y,
+        DD_VIEWWINDOW_WIDTH,
+        DD_VIEWWINDOW_HEIGHT,
+        DD_VIEWWINDOW_SCREEN_WIDTH,
+        DD_VIEWWINDOW_SCREEN_HEIGHT,
+        DD_VIEWX,
+        DD_VIEWY,
+        DD_VIEWZ,
+        DD_VIEWX_OFFSET,
+        DD_VIEWY_OFFSET,
+        DD_VIEWZ_OFFSET,
+        DD_VIEWANGLE,
+        DD_VIEWANGLE_OFFSET,
+        DD_CONSOLEPLAYER,
+        DD_DISPLAYPLAYER,
+        DD_MUSIC_DEVICE,
+        DD_MIPMAPPING,
+        DD_SMOOTH_IMAGES,
+        DD_DEFAULT_RES_X,
+        DD_DEFAULT_RES_Y,
+        DD_SKY_DETAIL,
+        DD_SFX_VOLUME,
+        DD_MUSIC_VOLUME,
+        DD_MOUSE_INVERSE_Y,
+        DD_GAMMA,
+        DD_QUERY_RESULT,
+        DD_FULLBRIGHT,             // Render everything fullbright?
+        DD_CCMD_RETURN,
+        DD_GAME_READY,
+        DD_OPENRANGE,
+        DD_OPENTOP,
+        DD_OPENBOTTOM,
+        DD_LOWFLOOR,
+        DD_DEDICATED,
+        DD_NOVIDEO,
+        DD_NUMMOBJTYPES,
+        DD_GRAVITY,
+        DD_GOTFRAME,
+        DD_PLAYBACK,
+        DD_NUMSOUNDS,
+        DD_NUMMUSIC,
+        DD_NUMLUMPS,
+        DD_SEND_ALL_PLAYERS,
+        DD_PSPRITE_OFFSET_X,       // 10x
+        DD_PSPRITE_OFFSET_Y,       // 10x
+        DD_PSPRITE_SPEED,
+        DD_CPLAYER_THRUST_MUL,
+        DD_CLIENT_PAUSED,
+        DD_WEAPON_OFFSET_SCALE_Y,  // 1000x
+        DD_MONOCHROME_PATCHES,      // DJS - convert patch image data to monochrome. 1= linear 2= weighted
         DD_GAME_DATA_FORMAT,
         DD_GAME_DRAW_HUD_HINT,        // Doomsday advises not to draw the HUD
-		DD_LAST_VALUE,
+        DD_LAST_VALUE,
 
 		// General constants (not to be used with Get/Set).
 		DD_NEW = -2,
@@ -202,6 +202,7 @@ extern          "C" {
 		DD_HORIZON,
 		DD_GAME_ID,
 		DD_DEF_MOBJ,
+            DD_DEF_MOBJ_BY_NAME,
 		DD_DEF_STATE,
 		DD_DEF_SPRITE,
 		DD_DEF_SOUND,
@@ -227,6 +228,7 @@ extern          "C" {
 		DD_GAME_MODE,			   // 16 chars max (swdoom, doom1, udoom, tnt, heretic...) 
 		DD_GAME_CONFIG,			   // String: dm/co-op, jumping, etc.
 		DD_DEF_FINALE,
+        DD_GAME_NAME,              // (eg jDoom, jHeretic...)
 
 		// Queries
 		DD_TEXTURE_HEIGHT_QUERY = 0x2000,
@@ -250,7 +252,8 @@ extern          "C" {
 		DD_DYNLIGHT_TEXTURE,
 		DD_GAME_EXPORTS,
         DD_SECTOR_COUNT,
-        DD_LINE_COUNT
+        DD_LINE_COUNT,
+        DD_XGFUNC_LINK             // XG line classes
 	};
 
 	// Macro for preparing the parameter for DD_TRANSLATED_SPRITE_TEXTURE.
@@ -298,46 +301,54 @@ extern          "C" {
 
 #if !defined( NO_FIXED_ASM ) && !defined( GNU_X86_FIXED_ASM )
 
-	/* *INDENT-OFF* */
-	__inline fixed_t FixedMul(fixed_t a, fixed_t b) {
-		__asm {
-			// The parameters in eax and ebx.
-			mov	eax, a 
-			mov ebx, b
-			// The multiplying.
-			imul ebx 
-			shrd eax, edx, 16
-			// eax should hold the return value.
-		}
-		// A value is returned regardless of the compiler warning. 
-	} 
-	__inline fixed_t FixedDiv2(fixed_t a, fixed_t b) {
-		__asm {
-			// The parameters.
-			mov eax, a 
-			mov ebx, b
-			// The operation.
-			cdq 
-			shld edx, eax, 16 
-			sal eax, 16 
-			idiv ebx
-			// And the value returns in eax.
-		}
-		// A value is returned regardless of the compiler warning. 
-	}
-	/* *INDENT-ON* */
+    /* *INDENT-OFF* */
+    __inline fixed_t FixedMul(fixed_t a, fixed_t b) {
+        __asm {
+            // The parameters in eax and ebx.
+            mov eax, a
+            mov ebx, b
+            // The multiplying.
+            imul ebx
+            shrd eax, edx, 16
+            // eax should hold the return value.
+        }
+        // A value is returned regardless of the compiler warning.
+    }
+    __inline fixed_t FixedDiv2(fixed_t a, fixed_t b) {
+        __asm {
+            // The parameters.
+            mov eax, a
+            mov ebx, b
+            // The operation.
+            cdq
+            shld edx, eax, 16
+            sal eax, 16
+            idiv ebx
+            // And the value returns in eax.
+        }
+        // A value is returned regardless of the compiler warning.
+    }
+    __inline static int D_abs(int x) {
+        __asm {
+            mov eax,x
+            cdq
+            xor eax,edx
+            sub eax,edx
+        }
+    }
+    /* *INDENT-ON* */
 
 #else
 
-	// Don't use inline assembler in fixed-point calculations.
-	// (link with Src/Common/m_fixed.c)
-	fixed_t         FixedMul(fixed_t a, fixed_t b);
-	fixed_t         FixedDiv2(fixed_t a, fixed_t b);
-
+    // Don't use inline assembler in fixed-point calculations.
+    // (link with Src/Common/m_fixed.c)
+    fixed_t         FixedMul(fixed_t a, fixed_t b);
+    fixed_t         FixedDiv2(fixed_t a, fixed_t b);
+    fixed_t     D_abs(int x);
 #endif
 
-	// This one is always in Src/Common/m_fixed.c.
-	fixed_t         FixedDiv(fixed_t a, fixed_t b);
+    // This one is always in Src/Common/m_fixed.c.
+    fixed_t         FixedDiv(fixed_t a, fixed_t b);
 
 	//------------------------------------------------------------------------
 	//
@@ -443,17 +454,6 @@ extern          "C" {
 	// The mouse wheel is considered two extra mouse buttons.
 #define DDMB_MWHEELUP		0x1000
 #define DDMB_MWHEELDOWN		0x2000
-
-	enum {
-		BDC_NORMAL,
-		BDC_BIASEDITOR,
-		BDC_CLASS1,
-		BDC_CLASS2,
-		BDC_CLASS3,
-		BDC_CLASS4,
-		BDC_CLASS5,
-		NUMBINDCLASSES
-	};
 
 	//------------------------------------------------------------------------
 	//
@@ -589,65 +589,100 @@ extern          "C" {
 #define DDSLF_FINALIZE		0x100  // After everything else is done.
 #define DDSLF_INITIALIZE    0x200  // Before anything else if done.
 
-	enum						   // Sector reverb data indices.
-	{
-		SRD_VOLUME,
-		SRD_SPACE,
-		SRD_DECAY,
-		SRD_DAMPING,
-		NUM_REVERB_DATA
-	};
+    enum                           // Sector reverb data indices.
+    {
+        SRD_VOLUME,
+        SRD_SPACE,
+        SRD_DECAY,
+        SRD_DAMPING,
+        NUM_REVERB_DATA
+    };
 
-	// each sector has a degenmobj_t in it's center for sound origin purposes
-	typedef struct {
-		thinker_t       thinker;   // not used for anything
-		fixed_t         x, y, z;
-	} degenmobj_t;
+    // each sector has a degenmobj_t in it's center for sound origin purposes
+    typedef struct {
+        thinker_t       thinker;   // not used for anything
+        fixed_t         x, y, z;
+    } degenmobj_t;
 
-#define DDSUBF_MIDPOINT			0x80	// Midpoint is tri-fan centre.
+#define DDSUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
 
-	typedef struct {
-		fixed_t         x, y, dx, dy;
-	} divline_t;
+    typedef struct {
+        fixed_t         x, y, dx, dy;
+    } divline_t;
 
-	typedef struct {
-		float           x, y, dx, dy;
-	} fdivline_t;
+    typedef struct {
+        float           x, y, dx, dy;
+    } fdivline_t;
 
-	// For PathTraverse.
-#define PT_ADDLINES		1
-#define	PT_ADDTHINGS	2
-#define	PT_EARLYOUT		4
+    // For PathTraverse.
+#define PT_ADDLINES     1
+#define PT_ADDTHINGS    2
+#define PT_EARLYOUT     4
 
-	// Mapblocks are used to check movement against lines and things.
-#define MAPBLOCKUNITS	128
-#define	MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define	MAPBLOCKSHIFT	(FRACBITS+7)
-#define	MAPBMASK		(MAPBLOCKSIZE-1)
-#define	MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
+    // Mapblocks are used to check movement against lines and things.
+#define MAPBLOCKUNITS   128
+#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+#define MAPBLOCKSHIFT   (FRACBITS+7)
+#define MAPBMASK        (MAPBLOCKSIZE-1)
+#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
 
-	typedef enum {
-		ST_HORIZONTAL, ST_VERTICAL, ST_POSITIVE, ST_NEGATIVE
-	} slopetype_t;
+    typedef enum {
+        ST_HORIZONTAL, ST_VERTICAL, ST_POSITIVE, ST_NEGATIVE
+    } slopetype_t;
 
-	// For (un)linking.
-#define DDLINK_SECTOR		0x1
-#define DDLINK_BLOCKMAP		0x2
-#define DDLINK_NOLINE		0x4
+    // For (un)linking.
+#define DDLINK_SECTOR       0x1
+#define DDLINK_BLOCKMAP     0x2
+#define DDLINK_NOLINE       0x4
 
-	typedef struct intercept_s {
-		fixed_t         frac;	   // along trace line
-		boolean         isaline;
-		union {
-			struct mobj_s  *thing;
-			struct line_s  *line;
-		} d;
-	} intercept_t;
+    typedef struct intercept_s {
+        fixed_t         frac;      // along trace line
+        boolean         isaline;
+        union {
+            struct mobj_s  *thing;
+            struct line_s  *line;
+        } d;
+    } intercept_t;
 
-	typedef boolean (*traverser_t) (intercept_t * in);
+    typedef boolean (*traverser_t) (intercept_t * in);
 
-	// Polyobjs.
+    // Polyobjs.
 #define PO_MAXPOLYSEGS 64
+
+#define NO_INDEX 0xffff
+
+    typedef struct vertex_s {
+        fixed_t         x, y;
+    } vertex_t;
+
+    typedef struct fvertex_s {
+        float           x, y;
+    } fvertex_t;
+
+    typedef struct seg_s {
+        vertex_t       *v1, *v2;
+        float           length;    // Accurate length of the segment (v1 -> v2).
+        fixed_t         offset;
+        struct side_s  *sidedef;
+        struct line_s  *linedef;
+        struct sector_s *frontsector;
+        struct sector_s *backsector;    // NULL for one sided lines
+        byte            flags;
+        angle_t         angle;
+    } seg_t;
+
+    typedef struct subsector_s {
+        struct sector_s *sector;
+        unsigned long  linecount;
+        unsigned long  firstline;
+        struct polyobj_s *poly;    // NULL if there is no polyobj
+        // Sorted edge vertices for rendering floors and ceilings.
+        char            numverts;
+        fvertex_t      *verts;     // A list of edge vertices.
+        fvertex_t       bbox[2];   // Min and max points.
+        fvertex_t       midpoint;  // Center of vertices.
+        byte            flags;
+    } subsector_t;
 
 	//------------------------------------------------------------------------
 	//
@@ -710,438 +745,501 @@ extern          "C" {
 #define DDMOBJ_SELECTOR_MASK	0x00ffffff
 #define DDMOBJ_SELECTOR_SHIFT	24
 
-	// Base mobj_t elements. Games MUST use this as the basis for mobj_t.
+#define VISIBLE 1
+#define INVISIBLE -1
+
+    // Base mobj_t elements. Games MUST use this as the basis for mobj_t.
 #define DD_BASE_MOBJ_ELEMENTS() \
-	thinker_t		thinker; 			/* thinker node */ \
-	fixed_t			x,y,z;				/* position */ \
+    thinker_t       thinker;            /* thinker node */ \
+    fixed_t         x,y,z;              /* position */ \
 \
-	struct mobj_s	*bnext, *bprev;		/* links in blocks (if needed) */ \
-	nodeindex_t		lineroot;			/* lines to which this is linked */ \
-	struct mobj_s	*snext, **sprev;	/* links in sector (if needed) */ \
+    struct mobj_s   *bnext, *bprev;     /* links in blocks (if needed) */ \
+    nodeindex_t     lineroot;           /* lines to which this is linked */ \
+    struct mobj_s   *snext, **sprev;    /* links in sector (if needed) */ \
 \
-	struct subsector_s *subsector;		/* subsector in which this resides */ \
-	fixed_t			momx, momy, momz;	\
-	angle_t			angle;				\
-	spritenum_t		sprite;				/* used to find patch_t and \
-										 * flip value */ \
-	int				frame;				/* might be ord with FF_FULLBRIGHT */ \
-	fixed_t			radius;	\
-	fixed_t			height;	\
-	int				ddflags;			/* Doomsday mobj flags (DDMF_*) */ \
-	fixed_t			floorclip;			/* value to use for floor clipping */ \
-	int				valid;				/* if == valid, already checked */ \
-	int				type;				/* mobj type */ \
-	struct state_s	*state;	\
-	int 			tics;				/* state tic counter */ \
-    fixed_t			floorz;				/* highest contacted floor */ \
-    fixed_t			ceilingz;			/* lowest contacted ceiling */ \
-	struct mobj_s*	onmobj;				/* the mobj this one is on top of. */ \
-	boolean			wallhit;			/* the mobj is hitting a wall. */ \
-	struct ddplayer_s *dplayer;			/* NULL if not a player mobj. */ \
-	short			srvo[3];			/* short-range visual offset (xyz) */ \
-	short			visangle;			/* visual angle ("angle-servo") */ \
-	int				selector;			/* multipurpose info */ \
-	int				validcount;			/* used in iterating */ \
-	int				light;				/* index+1 of the lumobj, or 0 */ \
-	byte			halofactor;			/* strength of halo */ \
-	byte			translucency;  /* default = 0 = opaque */
+    struct subsector_s *subsector;      /* subsector in which this resides */ \
+    fixed_t         momx, momy, momz;   \
+    angle_t         angle;              \
+    spritenum_t     sprite;             /* used to find patch_t and \
+                                         * flip value */ \
+    int             frame;              /* might be ord with FF_FULLBRIGHT */ \
+    fixed_t         radius; \
+    fixed_t         height; \
+    int             ddflags;            /* Doomsday mobj flags (DDMF_*) */ \
+    fixed_t         floorclip;          /* value to use for floor clipping */ \
+    int             valid;              /* if == valid, already checked */ \
+    int             type;               /* mobj type */ \
+    struct state_s  *state; \
+    int             tics;               /* state tic counter */ \
+    fixed_t         floorz;             /* highest contacted floor */ \
+    fixed_t         ceilingz;           /* lowest contacted ceiling */ \
+    struct mobj_s*  onmobj;             /* the mobj this one is on top of. */ \
+    boolean         wallhit;            /* the mobj is hitting a wall. */ \
+    struct ddplayer_s *dplayer;         /* NULL if not a player mobj. */ \
+    short           srvo[3];            /* short-range visual offset (xyz) */ \
+    short           visangle;           /* visual angle ("angle-servo") */ \
+    int             selector;           /* multipurpose info */ \
+    int             validcount;         /* used in iterating */ \
+    int             light;              /* index+1 of the lumobj, or 0 */ \
+    byte            halofactor;         /* strength of halo */ \
+    byte            translucency;  /* default = 0 = opaque */ \
+    short    vistarget; /* -1 = mobj is becoming less visible, 0 = no change, 2= mobj is becoming more visible */
 
-	typedef struct ddmobj_base_s {
-	DD_BASE_MOBJ_ELEMENTS()} ddmobj_base_t;
 
-	//------------------------------------------------------------------------
-	//
-	// Refresh
-	//
-	//------------------------------------------------------------------------
+    typedef struct ddmobj_base_s {
+    DD_BASE_MOBJ_ELEMENTS()} ddmobj_base_t;
 
-#define TICRATE			35		   // number of tics / second
-#define TICSPERSEC		35
+    //------------------------------------------------------------------------
+    //
+    // Refresh
+    //
+    //------------------------------------------------------------------------
 
-#define SCREENWIDTH		320
-#define SCREENHEIGHT	200
+#define TICRATE         35         // number of tics / second
+#define TICSPERSEC      35
 
-#define I_NOUPDATE	0
-#define I_FULLVIEW	1
-#define I_STATBAR	2
-#define I_MESSAGES	4
-#define I_FULLSCRN	8
+#define SCREENWIDTH     320
+#define SCREENHEIGHT    200
 
-	// Update flags.
-#define DDUF_BORDER		0x1		   // BorderNeedRefresh = true
-#define DDUF_TOP		0x2		   // BorderTopRefresh = true
-#define DDUF_FULLVIEW	0x10	   // Request update for the view.
-#define DDUF_STATBAR	0x20	   // Request update for the status bar.
-#define DDUF_MESSAGES	0x40	   // Request update for the messages.
-#define DDUF_FULLSCREEN	0x80	   // Request update for the whole screen.
-#define DDUF_UPDATE		0x10000	   // Really calls I_Update.
+#define I_NOUPDATE  0
+#define I_FULLVIEW  1
+#define I_STATBAR   2
+#define I_MESSAGES  4
+#define I_FULLSCRN  8
 
-	//------------------------------------------------------------------------
-	//
-	// Sound
-	//
-	//------------------------------------------------------------------------
+    // Update flags.
+#define DDUF_BORDER     0x1        // BorderNeedRefresh = true
+#define DDUF_TOP        0x2        // BorderTopRefresh = true
+#define DDUF_FULLVIEW   0x10       // Request update for the view.
+#define DDUF_STATBAR    0x20       // Request update for the status bar.
+#define DDUF_MESSAGES   0x40       // Request update for the messages.
+#define DDUF_FULLSCREEN 0x80       // Request update for the whole screen.
+#define DDUF_UPDATE     0x10000    // Really calls I_Update.
 
-#define DDSF_FLAG_MASK			0xff000000
-#define DDSF_NO_ATTENUATION		0x80000000
-#define DDSF_REPEAT				0x40000000
+    //------------------------------------------------------------------------
+    //
+    // Sound
+    //
+    //------------------------------------------------------------------------
 
-	// Which fields are valid?
-#define DDSOUNDF_VOLUME			0x1
-#define DDSOUNDF_PITCH			0x2
-#define DDSOUNDF_POS			0x4
-#define DDSOUNDF_MOV			0x8
+#define DDSF_FLAG_MASK          0xff000000
+#define DDSF_NO_ATTENUATION     0x80000000
+#define DDSF_REPEAT             0x40000000
 
-#define DDSOUNDF_LOCAL			0x10000	// The sound is inside the listener's head.
-#define DDSOUNDF_VERY_LOUD		0x20000	// The sound has virtually no rolloff.
+    // Which fields are valid?
+#define DDSOUNDF_VOLUME         0x1
+#define DDSOUNDF_PITCH          0x2
+#define DDSOUNDF_POS            0x4
+#define DDSOUNDF_MOV            0x8
 
-	typedef struct {
-		int             flags;
-		int             volume;	   // 0..1000
-		int             pitch;	   // 1000 is normal.
-		fixed_t         pos[3];
-		fixed_t         mov[3];
-	} sound3d_t;
+#define DDSOUNDF_LOCAL          0x10000 // The sound is inside the listener's head.
+#define DDSOUNDF_VERY_LOUD      0x20000 // The sound has virtually no rolloff.
 
-	typedef struct {
-		float           volume;	   // 0..1
-		float           decay;	   // Decay factor: 0 (acoustically dead) ... 1 (live)
-		float           damping;   // High frequency damping factor: 0..1
-		float           space;	   // 0 (small space) ... 1 (large space)
-	} reverb_t;
+    typedef struct {
+        int             flags;
+        int             volume;    // 0..1000
+        int             pitch;     // 1000 is normal.
+        fixed_t         pos[3];
+        fixed_t         mov[3];
+    } sound3d_t;
 
-	// Which fields are valid?
-#define DDLISTENERF_POS				0x1
-#define DDLISTENERF_MOV				0x2
-#define DDLISTENERF_YAW				0x4
-#define DDLISTENERF_PITCH			0x8
-	// Reverb control:
-#define DDLISTENERF_SET_REVERB		0x10
-#define DDLISTENERF_DISABLE_REVERB	0x20
+    typedef struct {
+        float           volume;    // 0..1
+        float           decay;     // Decay factor: 0 (acoustically dead) ... 1 (live)
+        float           damping;   // High frequency damping factor: 0..1
+        float           space;     // 0 (small space) ... 1 (large space)
+    } reverb_t;
 
-	typedef struct {
-		int             flags;
-		fixed_t         pos[3];
-		fixed_t         mov[3];
-		float           yaw, pitch;	// In degrees: (0,0) is to the east.
-		reverb_t        reverb;
-	} listener3d_t;
+    // Which fields are valid?
+#define DDLISTENERF_POS             0x1
+#define DDLISTENERF_MOV             0x2
+#define DDLISTENERF_YAW             0x4
+#define DDLISTENERF_PITCH           0x8
+    // Reverb control:
+#define DDLISTENERF_SET_REVERB      0x10
+#define DDLISTENERF_DISABLE_REVERB  0x20
 
-	// Use with PlaySong().
-#define DDMUSICF_EXTERNAL	0x80000000
+    typedef struct {
+        int             flags;
+        fixed_t         pos[3];
+        fixed_t         mov[3];
+        float           yaw, pitch; // In degrees: (0,0) is to the east.
+        reverb_t        reverb;
+    } listener3d_t;
 
-	//------------------------------------------------------------------------
-	//
-	// Graphics
-	//
-	//------------------------------------------------------------------------
+    // Use with PlaySong().
+#define DDMUSICF_EXTERNAL   0x80000000
 
-	// posts are runs of non masked source pixels
-	typedef struct {
-		byte            topdelta;  // -1 is the last post in a column
-		byte            length;
-		// length data bytes follows
-	} post_t;
+    //------------------------------------------------------------------------
+    //
+    // Graphics
+    //
+    //------------------------------------------------------------------------
 
-	// column_t is a list of 0 or more post_t, (byte)-1 terminated
-	typedef post_t  column_t;
+typedef enum blendmode_e {
+    BM_NORMAL,
+    BM_ADD,
+    BM_DARK,
+    BM_SUBTRACT,
+    BM_REVERSE_SUBTRACT,
+    BM_MUL,
+    BM_INVERSE_MUL,
+    BM_ALPHA_SUBTRACT
+} blendmode_t;
 
-	// a patch holds one or more columns
-	// patches are used for sprites and all masked pictures
-	typedef struct patch_s {
-		short           width;	   // bounding box size
-		short           height;
-		short           leftoffset;	// pixels to the left of origin
-		short           topoffset; // pixels below the origin
-		int             columnofs[8];	// only [width] used
-		// the [0] is &columnofs[width]
-	} patch_t;
+    // posts are runs of non masked source pixels
+    typedef struct {
+        byte            topdelta;  // -1 is the last post in a column
+        byte            length;
+        // length data bytes follows
+    } post_t;
 
-	// a pic is an unmasked block of pixels
-	typedef struct {
-		byte            width, height;
-		byte            data;
-	} pic_t;
+    // column_t is a list of 0 or more post_t, (byte)-1 terminated
+    typedef post_t  column_t;
 
-	typedef struct {
-		int             lump;	   // Sprite lump number.
-		int             realLump;  // Real lump number.
-		int             flip;
-		int             offset;
-		int             topOffset;
-		int             width;
-		int             height;
-		int             numFrames; // Number of frames the sprite has.
-	} spriteinfo_t;
+    // a patch holds one or more columns
+    // patches are used for sprites and all masked pictures
+    typedef struct patch_s {
+        short           width;     // bounding box size
+        short           height;
+        short           leftoffset; // pixels to the left of origin
+        short           topoffset; // pixels below the origin
+        int             columnofs[8];   // only [width] used
+        // the [0] is &columnofs[width]
+    } patch_t;
 
-	typedef struct {
-		int             spritenum;
-		char           *modelname;
-	} spritereplacement_t;
+    // a pic is an unmasked block of pixels
+    typedef struct {
+        byte            width, height;
+        byte            data;
+    } pic_t;
 
-	// Anim group flags.
-#define AGF_SMOOTH		0x1
-#define AGF_FIRST_ONLY	0x2
+    typedef struct {
+        int             lump;      // Sprite lump number.
+        int             realLump;  // Real lump number.
+        int             flip;
+        int             offset;
+        int             topOffset;
+        int             width;
+        int             height;
+        int             numFrames; // Number of frames the sprite has.
+    } spriteinfo_t;
 
-	//------------------------------------------------------------------------
-	//
-	// Console
-	//
-	//------------------------------------------------------------------------
+    typedef struct {
+        int             spritenum;
+        char           *modelname;
+    } spritereplacement_t;
 
-	// These correspond the good old text mode VGA colors.
-#define CBLF_BLACK		0x00000001
-#define CBLF_BLUE		0x00000002
-#define CBLF_GREEN		0x00000004
-#define CBLF_CYAN		0x00000008
-#define CBLF_RED		0x00000010
-#define CBLF_MAGENTA	0x00000020
-#define CBLF_YELLOW		0x00000040
-#define CBLF_WHITE		0x00000080
-#define CBLF_LIGHT		0x00000100
-#define CBLF_RULER		0x00000200
-#define CBLF_CENTER		0x00000400
-#define CBLF_TRANSMIT	0x80000000 // If server, sent to all clients.
+    // Anim group flags.
+#define AGF_SMOOTH      0x1
+#define AGF_FIRST_ONLY  0x2
 
-	// Font flags.
-#define DDFONT_WHITE		0x1	   // The font data is white, can be colored.
+    //------------------------------------------------------------------------
+    //
+    // Console
+    //
+    //------------------------------------------------------------------------
 
-	// Windows sure is fun... <sound of teeth being ground>
+    // These correspond the good old text mode VGA colors.
+#define CBLF_BLACK      0x00000001
+#define CBLF_BLUE       0x00000002
+#define CBLF_GREEN      0x00000004
+#define CBLF_CYAN       0x00000008
+#define CBLF_RED        0x00000010
+#define CBLF_MAGENTA    0x00000020
+#define CBLF_YELLOW     0x00000040
+#define CBLF_WHITE      0x00000080
+#define CBLF_LIGHT      0x00000100
+#define CBLF_RULER      0x00000200
+#define CBLF_CENTER     0x00000400
+#define CBLF_TRANSMIT   0x80000000 // If server, sent to all clients.
+
+    // Font flags.
+#define DDFONT_WHITE        0x1    // The font data is white, can be colored.
+
+    // Windows sure is fun... <sound of teeth being ground>
 #ifdef TextOut
 #undef TextOut
 #define _RedefineTextOut_
 #endif
 
-	typedef struct {
-		int             flags;
-		float           sizeX, sizeY;	// The scale.
-		int             height;
-		int             (*TextOut) (char *text, int x, int y);
-		int             (*Width) (char *text);
-		void            (*Filter) (char *text);
-	} ddfont_t;
+    typedef struct {
+        int             flags;
+        float           sizeX, sizeY;   // The scale.
+        int             height;
+        int             (*TextOut) (char *text, int x, int y);
+        int             (*Width) (char *text);
+        void            (*Filter) (char *text);
+    } ddfont_t;
 
 #ifdef _RedefineTextOut_
 #undef _RedefineTextOut_
 #define TextOut TextOutA
 #endif
 
-	// Console command.
-	typedef struct ccmd_s {
-		char           *name;
-		int             (*func) (int argc, char **argv);
-		char           *help;	   // A short help text.
-	} ccmd_t;
+    // DDay's Built-in bindClasses
+    enum {
+        DDBC_NORMAL,
+        DDBC_UCLASS1,
+        DDBC_UCLASS2,
+        DDBC_UCLASS3,
+        DDBC_BIASEDITOR,
+        NUM_DDBINDCLASSES
+    };
 
-	// Console variable flags.
-#define CVF_NO_ARCHIVE		0x1	   // Not written in/read from the defaults file.
-#define CVF_PROTECTED		0x2	   // Can't be changed unless forced.
-#define CVF_NO_MIN			0x4	   // Don't use the minimum.
-#define CVF_NO_MAX			0x8	   // Don't use the maximum.
-#define CVF_CAN_FREE		0x10   // The string can be freed.
-#define CVF_HIDE			0x20
-#define CVF_READ_ONLY		0x40   // Can't be changed manually at all
+    // Bind Class
+    typedef struct bindclass_s {
+        char *name;
+        int id;
+        int active;
+        int absolute;
+    } bindclass_t;
 
-	// Console variable types.
-	typedef enum {
-		CVT_NULL,
-		CVT_BYTE,
-		CVT_INT,
-		CVT_FLOAT,
-		CVT_CHARPTR				   // ptr points to a char*, which points to the string.
-	} cvartype_t;
+    // Console command.
+    typedef struct ccmd_s {
+        char           *name;
+        int             (*func) (int src, int argc, char **argv);
+        char           *help;      // A short help text.
+        int             flags;
+    } ccmd_t;
 
-	// Console variable.
-	typedef struct cvar_s {
-		char           *name;
-		int             flags;
-		cvartype_t      type;
-		void           *ptr;	   // Pointer to the data.
-		float           min, max;  /* Minimum and maximum values
-								      (for ints and floats). */
-		const char     *help;	   // A short help text.
-	} cvar_t;
+    // Command sources (where the console command originated from)
+    // These are sent with every (sub)ccmd so we can decide whether or not to execute.
+    enum {
+        CMDS_DDAY,    // Sent by the engine
+        CMDS_GAME,    // Sent by the game dll
+        CMDS_CONSOLE, // Sent via direct console input
+        CMDS_BIND ,   // Sent from a binding/alias
+        CMDS_CONFIG,  // Sent via config file
+        CMDS_PROFILE, // Sent via player profile
+        CMDS_CMDLINE, // Sent via the command line
+        CMDS_DED,     // Sent based on a def in a DED file eg (state->execute)
+        CMDS_PKT,     // Sent from a client (in a packet)
+        CMDS_SPKT     // Sent from the server (in a packet)
+    };
 
-	//------------------------------------------------------------------------
-	//
-	// Networking
-	//
-	//------------------------------------------------------------------------
+// Console command usage flags.
+// (what method(s) CAN NOT be used to invoke a ccmd (used with the CMDS codes above)).
+#define CMDF_DDAY               0x1
+#define CMDF_GAME               0x2
+#define CMDF_CONSOLE            0x4
+#define CMDF_BIND               0x8
+#define CMDF_CONFIG             0x10
+#define CMDF_PROFILE            0x20
+#define CMDF_CMDLINE            0x40
+#define CMDF_DED                0x80
+#define CMDF_PKT                0x100  // Not implemented yet
+#define CMDF_SPKT               0x200  // Not implemented yet
 
-	// Network Player Events
-	enum {
-		DDPE_ARRIVAL,			   // A player has arrived.
-		DDPE_EXIT,				   // A player has exited the game.
-		DDPE_CHAT_MESSAGE,		   // A player has sent a chat message.
-		DDPE_DATA_CHANGE,		   // The data for this player has been changed.
-		DDPE_WRITE_COMMANDS,
-		DDPE_READ_COMMANDS
-	};
+// Console variable flags.
+#define CVF_NO_ARCHIVE      0x1    // Not written in/read from the defaults file.
+#define CVF_PROTECTED       0x2    // Can't be changed unless forced.
+#define CVF_NO_MIN          0x4    // Don't use the minimum.
+#define CVF_NO_MAX          0x8    // Don't use the maximum.
+#define CVF_CAN_FREE        0x10   // The string can be freed.
+#define CVF_HIDE            0x20
+#define CVF_READ_ONLY       0x40   // Can't be changed manually at all
 
-	// World events (handled by clients)
-	enum {
-		DDWE_HANDSHAKE,			   // Shake hands with a new player.
-		DDWE_PROJECTILE,		   // Spawn a projectile.
-		DDWE_SECTOR_SOUND,		   // Play a sector sound.
-		DDWE_DEMO_END			   // Demo playback ends.
-	};
+    // Console variable types.
+    typedef enum {
+        CVT_NULL,
+        CVT_BYTE,
+        CVT_INT,
+        CVT_FLOAT,
+        CVT_CHARPTR                // ptr points to a char*, which points to the string.
+    } cvartype_t;
 
-	/*
-	 * Do not modify this structure: Servers send it as-is to clients.
-	 * Only add elements to the end.
-	 */
-	typedef struct serverinfo_s {
-		int             version;
-		char            name[64];
-		char            description[80];
-		int             numPlayers, maxPlayers;
-		char            canJoin;
-		char            address[64];
-		int             port;
-		unsigned short  ping;	   // milliseconds
-		char            game[32];  // DLL and version
-		char            gameMode[17];
-		char            gameConfig[40];
-		char            map[20];
-		char            clientNames[128];
-		unsigned int    wadNumber;
-		char            iwad[32];
-		char            pwads[128];
-		int             data[3];
-	} serverinfo_t;
+    // Console variable.
+    typedef struct cvar_s {
+        char           *name;
+        int             flags;
+        cvartype_t      type;
+        void           *ptr;       // Pointer to the data.
+        float           min, max;  /* Minimum and maximum values
+                                      (for ints and floats). */
+        const char     *help;      // A short help text.
+    } cvar_t;
 
-	typedef struct {
-		int             num;	   // How many serverinfo_t's in data?
-		int             found;	   // How many servers were found?
-		serverinfo_t   *data;
-	} serverdataquery_t;
+    //------------------------------------------------------------------------
+    //
+    // Networking
+    //
+    //------------------------------------------------------------------------
 
-	// For querying the list of available modems.
-	typedef struct {
-		int             num;
-		char          **list;
-	} modemdataquery_t;
+    // Network Player Events
+    enum {
+        DDPE_ARRIVAL,              // A player has arrived.
+        DDPE_EXIT,                 // A player has exited the game.
+        DDPE_CHAT_MESSAGE,         // A player has sent a chat message.
+        DDPE_DATA_CHANGE,          // The data for this player has been changed.
+        DDPE_WRITE_COMMANDS,
+        DDPE_READ_COMMANDS
+    };
 
-	// All packet types handled by the game should be >= 64.
-#define DDPT_HELLO				0
-#define DDPT_OK					1
-#define DDPT_CANCEL				2
-#define DDPT_COMMANDS			32
-#define DDPT_FIRST_GAME_EVENT	64
-#define DDPT_MESSAGE			67
+    // World events (handled by clients)
+    enum {
+        DDWE_HANDSHAKE,            // Shake hands with a new player.
+        DDWE_PROJECTILE,           // Spawn a projectile.
+        DDWE_SECTOR_SOUND,         // Play a sector sound.
+        DDWE_DEMO_END              // Demo playback ends.
+    };
 
-	// SendPacket flags (OR with to_player).
-#define DDSP_ORDERED		0x20000000	// Confirm delivery in correct order.
-#define DDSP_CONFIRM		0x40000000	// Confirm delivery.
-#define DDSP_ALL_PLAYERS	0x80000000	// Broadcast (for server).
+    /*
+     * Do not modify this structure: Servers send it as-is to clients.
+     * Only add elements to the end.
+     */
+    typedef struct serverinfo_s {
+        int             version;
+        char            name[64];
+        char            description[80];
+        int             numPlayers, maxPlayers;
+        char            canJoin;
+        char            address[64];
+        int             port;
+        unsigned short  ping;      // milliseconds
+        char            game[32];  // DLL and version
+        char            gameMode[17];
+        char            gameConfig[40];
+        char            map[20];
+        char            clientNames[128];
+        unsigned int    wadNumber;
+        char            iwad[32];
+        char            pwads[128];
+        int             data[3];
+    } serverinfo_t;
 
-	// World handshake: update headers. A varying number of
-	// data follows, depending on the flags. Notice: must be not
-	// be padded, needs to be byte-aligned.
+    typedef struct {
+        int             num;       // How many serverinfo_t's in data?
+        int             found;     // How many servers were found?
+        serverinfo_t   *data;
+    } serverdataquery_t;
+
+    // For querying the list of available modems.
+    typedef struct {
+        int             num;
+        char          **list;
+    } modemdataquery_t;
+
+    // All packet types handled by the game should be >= 64.
+#define DDPT_HELLO              0
+#define DDPT_OK                 1
+#define DDPT_CANCEL             2
+#define DDPT_COMMANDS           32
+#define DDPT_FIRST_GAME_EVENT   64
+#define DDPT_MESSAGE            67
+
+    // SendPacket flags (OR with to_player).
+#define DDSP_ORDERED        0x20000000  // Confirm delivery in correct order.
+#define DDSP_CONFIRM        0x40000000  // Confirm delivery.
+#define DDSP_ALL_PLAYERS    0x80000000  // Broadcast (for server).
+
+    // World handshake: update headers. A varying number of
+    // data follows, depending on the flags. Notice: must be not
+    // be padded, needs to be byte-aligned.
 #pragma pack(1)
-	typedef struct {
-		byte            flags;
-		unsigned short  sector;
-	} packet_sectorupdate_t;
+    typedef struct {
+        byte            flags;
+        unsigned int    sector;
+    } packet_sectorupdate_t;
 
-	typedef struct {
-		byte            flags;
-		unsigned short  side;
-	} packet_wallupdate_t;
+    typedef struct {
+        byte            flags;
+        unsigned int    side;
+    } packet_wallupdate_t;
 #pragma pack()
 
-	// World handshake flags. Sent by the game server:
-	// Sector update flags.
-#define DDSU_FLOOR_HEIGHT	0x01
-#define DDSU_FLOOR_MOVING	0x02   // Destination and speed sent.
-#define DDSU_CEILING_HEIGHT	0x04
-#define DDSU_CEILING_MOVING	0x08   // Destination and speed.
-#define DDSU_FLOORPIC		0x10   // Floorpic changed.
-#define DDSU_CEILINGPIC		0x20   // Ceilingpic changed.
-#define DDSU_LIGHT_LEVEL	0x40
+    // World handshake flags. Sent by the game server:
+    // Sector update flags.
+#define DDSU_FLOOR_HEIGHT   0x01
+#define DDSU_FLOOR_MOVING   0x02   // Destination and speed sent.
+#define DDSU_CEILING_HEIGHT 0x04
+#define DDSU_CEILING_MOVING 0x08   // Destination and speed.
+#define DDSU_FLOORPIC       0x10   // Floorpic changed.
+#define DDSU_CEILINGPIC     0x20   // Ceilingpic changed.
+#define DDSU_LIGHT_LEVEL    0x40
 
-	// Wall update flags.
-#define DDWU_TOP			0x01   // Top texture.
-#define DDWU_MID			0x02   // Mid texture.
-#define DDWU_BOTTOM			0x04   // Bottom texture.
+    // Wall update flags.
+#define DDWU_TOP            0x01   // Top texture.
+#define DDWU_MID            0x02   // Mid texture.
+#define DDWU_BOTTOM         0x04   // Bottom texture.
 
-	// Missile spawn request flags.
-#define DDMS_FLAG_MASK		0xc000
-#define DDMS_MOVEMENT_XY	0x4000 // XY movement included.
-#define DDMS_MOVEMENT_Z		0x8000 // Z movement included.
+    // Missile spawn request flags.
+#define DDMS_FLAG_MASK      0xc000
+#define DDMS_MOVEMENT_XY    0x4000 // XY movement included.
+#define DDMS_MOVEMENT_Z     0x8000 // Z movement included.
 
-	//------------------------------------------------------------------------
-	//
-	// Player Data
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Player Data
+    //
+    //------------------------------------------------------------------------
 
-	// Player flags.
-#define DDPF_FIXANGLES		0x1	   // Server: send angle/pitch to client.
-#define DDPF_FILTER			0x2	   // Server: send filter to client.
-#define DDPF_FIXPOS			0x4	   // Server: send coords to client.
-#define DDPF_DEAD			0x8	   // Cl & Sv: player is dead.
-#define DDPF_CAMERA			0x10   // Player is a cameraman.
-#define DDPF_LOCAL			0x20   // Player is local (e.g. player zero).
-#define DDPF_FIXMOM			0x40   // Server: send momentum to client.
-#define DDPF_NOCLIP			0x80   // Client: don't clip movement.
+    // Player flags.
+#define DDPF_FIXANGLES      0x1    // Server: send angle/pitch to client.
+#define DDPF_FILTER         0x2    // Server: send filter to client.
+#define DDPF_FIXPOS         0x4    // Server: send coords to client.
+#define DDPF_DEAD           0x8    // Cl & Sv: player is dead.
+#define DDPF_CAMERA         0x10   // Player is a cameraman.
+#define DDPF_LOCAL          0x20   // Player is local (e.g. player zero).
+#define DDPF_FIXMOM         0x40   // Server: send momentum to client.
+#define DDPF_NOCLIP         0x80   // Client: don't clip movement.
 
-#define PLAYERNAMELEN		81
+#define PLAYERNAMELEN       81
 
-	// Normally one for the weapon and one for the muzzle flash.
+    // Normally one for the weapon and one for the muzzle flash.
 #define DDMAXPSPRITES 2
 
-	// Player sprite flags.
-#define DDPSPF_RENDERED		0x1	   // Was rendered.
+    // Player sprite flags.
+#define DDPSPF_RENDERED     0x1    // Was rendered.
 
-	enum						   // Psprite states.
-	{
-		DDPSP_BOBBING,
-		DDPSP_FIRE,
-		DDPSP_DOWN,
-		DDPSP_UP
-	};
+    enum                           // Psprite states.
+    {
+        DDPSP_BOBBING,
+        DDPSP_FIRE,
+        DDPSP_DOWN,
+        DDPSP_UP
+    };
 
-	// Player sprites.
-	typedef struct {
-		state_t        *stateptr;
-		int             tics;
-		float           light, alpha;
-		float           x, y;
-		int             flags;
-		int             state;
-		int             offx, offy;
-	} ddpsprite_t;
+    // Player sprites.
+    typedef struct {
+        state_t        *stateptr;
+        int             tics;
+        float           light, alpha;
+        float           x, y;
+        int             flags;
+        int             state;
+        int             offx, offy;
+    } ddpsprite_t;
 
-	// Lookdir conversions.
-#define LOOKDIR2DEG(x)	((x) * 85.0/110.0)
-#define LOOKDIR2RAD(x)	(LOOKDIR2DEG(x)/180*PI)
+    // Lookdir conversions.
+#define LOOKDIR2DEG(x)  ((x) * 85.0/110.0)
+#define LOOKDIR2RAD(x)  (LOOKDIR2DEG(x)/180*PI)
 
-	struct mobj_s;
+    struct mobj_s;
 
-	typedef struct ddplayer_s {
-		struct mobj_s  *mo;		   // pointer to a (game specific) mobj
-		fixed_t         viewz;	   // focal origin above r.z
-		fixed_t         viewheight;	// base height above floor for viewz
-		fixed_t         deltaviewheight;
-		float           lookdir;   // It's now a float, for mlook.
-		int             fixedcolormap;	// can be set to REDCOLORMAP, etc
-		int             extralight;	// so gun flashes light up areas
-		int             ingame;	   // is this player in game?
-		int             flags;
-		int             filter;	   // RGBA filter for the camera
-		int             clAngle;   // client side
-		float           clLookDir; // client side
-		angle_t         lastangle; // For calculating turndeltas.
-		ddpsprite_t     psprites[DDMAXPSPRITES];	// Player sprites.
-		void           *extradata; // Pointer to any game-specific data.
-	} ddplayer_t;
+    typedef struct ddplayer_s {
+        struct mobj_s  *mo;        // pointer to a (game specific) mobj
+        fixed_t         viewz;     // focal origin above r.z
+        fixed_t         viewheight; // base height above floor for viewz
+        fixed_t         deltaviewheight;
+        float           lookdir;   // It's now a float, for mlook.
+        int             fixedcolormap;  // can be set to REDCOLORMAP, etc
+        int             extralight; // so gun flashes light up areas
+        int             ingame;    // is this player in game?
+        int             flags;
+        int             filter;    // RGBA filter for the camera
+        int             clAngle;   // client side
+        float           clLookDir; // client side
+        angle_t         lastangle; // For calculating turndeltas.
+        ddpsprite_t     psprites[DDMAXPSPRITES];    // Player sprites.
+        void           *extradata; // Pointer to any game-specific data.
+    } ddplayer_t;
 
-	// Actions.
-	typedef struct {
-		char            name[9];   // The name of the action.
-		boolean         on;		   // True if action is active.
-	} action_t;
+    // Actions.
+    typedef struct {
+        char            name[9];   // The name of the action.
+        boolean         on;        // True if action is active.
+    } action_t;
 
 #ifdef __cplusplus
 }

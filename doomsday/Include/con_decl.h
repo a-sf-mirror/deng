@@ -27,11 +27,11 @@
 /*
  * Macros for creating new console commands.
  */
-#define C_CMD(name, fn, help) \
-	{ ccmd_t _c = { name, CCmd##fn, help }; Con_AddCommand(&_c); }
+#define C_CMD(name, fn, help, flags) \
+	{ ccmd_t _c = { name, CCmd##fn, help, flags }; Con_AddCommand(&_c); }
 
 // A handy helper for declaring console commands.
-#define D_CMD(x) int CCmd##x(int argc, char **argv)
+#define D_CMD(x) int CCmd##x(int src, int argc, char **argv)
 
 /*
  * Macros for creating new console variables.

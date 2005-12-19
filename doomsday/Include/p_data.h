@@ -34,106 +34,82 @@
 #include "dd_share.h"
 
 // Ticcmd
-#define TICCMD_SIZE		gx.ticcmd_size
-#define TICCMD_IDX(i)	((i)*TICCMD_SIZE)
+#define TICCMD_SIZE     gx.ticcmd_size
+#define TICCMD_IDX(i)   ((i)*TICCMD_SIZE)
 
 // Tick Command template. Of course it contains much more info,
 // but these first bytes are always the same.
 typedef struct {
-	char            forwardMove;   //*2048 for real move
-	char            sideMove;	   //*2048 for real move
+    char            forwardMove;   //*2048 for real move
+    char            sideMove;      //*2048 for real move
 } ticcmd_t;
 
-// Sizes of the engine's internal map data structures. 
-#define VTXSIZE		sizeof(vertex_t)
-#define SEGSIZE		sizeof(seg_t)
+// Sizes of the engine's internal map data structures.
+#define VTXSIZE     sizeof(vertex_t)
+#define SEGSIZE     sizeof(seg_t)
 #define SECTSIZE    sizeof(sector_t)
-#define SUBSIZE		sizeof(subsector_t)
-#define NODESIZE	sizeof(node_t)
-#define LINESIZE	sizeof(line_t)
-#define SIDESIZE	sizeof(side_t)
-#define POSIZE		sizeof(polyobj_t)
+#define SUBSIZE     sizeof(subsector_t)
+#define NODESIZE    sizeof(node_t)
+#define LINESIZE    sizeof(line_t)
+#define SIDESIZE    sizeof(side_t)
+#define POSIZE      sizeof(polyobj_t)
+#define THINGSIZE               sizeof(thing_t)
 
-#define GET_VERTEX_IDX(vtx)		( ((byte*)(vtx) - vertexes) / VTXSIZE )
-#define GET_LINE_IDX(li)		( ((byte*)(li) - lines) / LINESIZE )
+#define GET_VERTEX_IDX(vtx)     ( ((byte*)(vtx) - vertexes) / VTXSIZE )
+#define GET_LINE_IDX(li)        ( ((byte*)(li) - lines) / LINESIZE )
 #define GET_SIDE_IDX(si)        ( ((byte*)(si) - sides) / SIDESIZE )
-#define GET_SECTOR_IDX(sec)		( ((byte*)(sec) - sectors) / SECTSIZE )
-#define GET_SUBSECTOR_IDX(sub)	( ((byte*)(sub) - subsectors) / SUBSIZE )
-#define GET_POLYOBJ_IDX(po)		( ((byte*)(po) - polyobjs) / POSIZE )
-#define GET_SEG_IDX(seg)		( ((byte*)(seg) - segs) / SEGSIZE )
+#define GET_SECTOR_IDX(sec)     ( ((byte*)(sec) - sectors) / SECTSIZE )
+#define GET_SUBSECTOR_IDX(sub)  ( ((byte*)(sub) - subsectors) / SUBSIZE )
+#define GET_POLYOBJ_IDX(po)     ( ((byte*)(po) - polyobjs) / POSIZE )
+#define GET_SEG_IDX(seg)        ( ((byte*)(seg) - segs) / SEGSIZE )
 #define GET_NODE_IDX(nd)        ( ((byte*)(nd) - nodes) / NODESIZE )
 
-#define VTXIDX(i)	((i)*VTXSIZE)
-#define SEGIDX(i)	((i)*SEGSIZE)
-#define SECTIDX(i)	((i)*SECTSIZE)
-#define SUBIDX(i)	((i)*SUBSIZE)
-#define NODEIDX(i)	((i)*NODESIZE)
-#define LINEIDX(i)	((i)*LINESIZE)
-#define SIDEIDX(i)	((i)*SIDESIZE)
-#define POIDX(i)	((i)*POSIZE)
+#define VTXIDX(i)   ((i)*VTXSIZE)
+#define SEGIDX(i)   ((i)*SEGSIZE)
+#define SECTIDX(i)  ((i)*SECTSIZE)
+#define SUBIDX(i)   ((i)*SUBSIZE)
+#define NODEIDX(i)  ((i)*NODESIZE)
+#define LINEIDX(i)  ((i)*LINESIZE)
+#define SIDEIDX(i)  ((i)*SIDESIZE)
+#define POIDX(i)    ((i)*POSIZE)
+#define THINGIDX(i) ((i)*THINGSIZE)
 
-#define VERTEX_PTR(i)		( (vertex_t*) (vertexes+VTXIDX(i)) )
-#define SEG_PTR(i)			( (seg_t*) (segs+SEGIDX(i)) )
-#define SECTOR_PTR(i)		( (sector_t*) (sectors+SECTIDX(i)) )
-#define SUBSECTOR_PTR(i)	( (subsector_t*) (subsectors+SUBIDX(i)) )
-#define NODE_PTR(i)			( (node_t*) (nodes+NODEIDX(i)) )
-#define LINE_PTR(i)			( (line_t*) (lines+LINEIDX(i)) )
-#define SIDE_PTR(i)			( (side_t*) (sides+SIDEIDX(i)) )
-#define PO_PTR(i)			( (polyobj_t*) ((byte*)polyobjs+POIDX(i)) )
+#define VERTEX_PTR(i)       ( (vertex_t*) (vertexes+VTXIDX(i)) )
+#define SEG_PTR(i)          ( (seg_t*) (segs+SEGIDX(i)) )
+#define SECTOR_PTR(i)       ( (sector_t*) (sectors+SECTIDX(i)) )
+#define SUBSECTOR_PTR(i)    ( (subsector_t*) (subsectors+SUBIDX(i)) )
+#define NODE_PTR(i)         ( (node_t*) (nodes+NODEIDX(i)) )
+#define LINE_PTR(i)         ( (line_t*) (lines+LINEIDX(i)) )
+#define SIDE_PTR(i)         ( (side_t*) (sides+SIDEIDX(i)) )
+#define PO_PTR(i)           ( (polyobj_t*) ((byte*)polyobjs+POIDX(i)) )
+#define THING_PTR(i)        ( (thing_t*) ((byte*)things+THINGIDX(i)) )
 
 // Map line flags.
-#define ML_BLOCKING			0x0001
-#define ML_TWOSIDED			0x0004
-#define	ML_DONTPEGTOP		0x0008
-#define	ML_DONTPEGBOTTOM	0x0010
-#define	ML_MAPPED			0x0100 // set if already drawn in automap
+#define ML_BLOCKING         0x0001
+#define ML_TWOSIDED         0x0004
+#define ML_DONTPEGTOP       0x0008
+#define ML_DONTPEGBOTTOM    0x0010
+#define ML_MAPPED           0x0100 // set if already drawn in automap
 
-#define MAX_POLY_SIDES		64	   // A subsector has at most this many edges.
+#define MAX_POLY_SIDES      64     // A subsector has at most this many edges.
 
 // Node flags.
-#define	NF_SUBSECTOR	0x8000
+#define NF_SUBSECTOR    0x8000
+
+// Sidedef flags
+#define SDF_BLENDTOPTOMID       0x1
+#define SDF_BLENDMIDTOTOP       0x2
+#define SDF_BLENDMIDTOBOTTOM    0x4
+#define SDF_BLENDBOTTOMTOMID    0x8
 
 struct line_s;
-
-typedef struct vertex_s {
-    fixed_t         x, y;
-} vertex_t;
-
-typedef struct fvertex_s {
-    float           x, y;
-} fvertex_t;
-
-typedef struct seg_s {
-    vertex_t       *v1, *v2;
-    float           length;	   // Accurate length of the segment (v1 -> v2).
-    fixed_t         offset;
-    struct side_s  *sidedef;
-    struct line_s  *linedef;
-    struct sector_s *frontsector;
-    struct sector_s *backsector;	// NULL for one sided lines
-    byte            flags;
-    angle_t         angle;
-} seg_t;
-
-typedef struct subsector_s {
-    struct sector_s *sector;
-    unsigned short  linecount;
-    unsigned short  firstline;
-    struct polyobj_s *poly;	   // NULL if there is no polyobj
-    // Sorted edge vertices for rendering floors and ceilings.
-    char            numverts;
-    fvertex_t      *verts;	   // A list of edge vertices.
-    fvertex_t       bbox[2];   // Min and max points.
-    fvertex_t       midpoint;  // Center of vertices.
-    byte            flags;
-} subsector_t;
 
 // Each sector has two of these. A plane_t contains information about
 // a plane's movement.
 typedef struct {
-    int             target;	   // Target height.
-    int             speed;	   // Move speed.
-    int             texmove[2];	// Texture movement X and Y.
+    int             target;    // Target height.
+    int             speed;     // Move speed.
+    int             texmove[2]; // Texture movement X and Y.
 } plane_t;
 
 enum {
@@ -142,60 +118,80 @@ enum {
 };
 
 typedef struct sector_s {
-	fixed_t         floorheight, ceilingheight;
-	short           floorpic, ceilingpic;
-	short           lightlevel;
-	byte            rgb[3];
-	int             validcount;	   // if == validcount, already checked
-	struct mobj_s  *thinglist;	   // list of mobjs in sector
-	int             linecount;
-	struct line_s **lines;		   // [linecount] size
-	float           flooroffx, flooroffy;	// floor texture offset
-	float           ceiloffx, ceiloffy;	// ceiling texture offset
-	int             skyfix;		   // Offset to ceiling height
-	// rendering w/sky.
-	float           reverb[NUM_REVERB_DATA];
-	int             blockbox[4];   // mapblock bounding box for
-	// height changes
-	plane_t         planes[2];	   // PLN_*
-	degenmobj_t     soundorg;	   // origin for any sounds
-	// played by the sector
+    fixed_t         floorheight, ceilingheight;
+    short           floorpic, ceilingpic;
+    short           lightlevel;
+    byte            rgb[3];
+    byte    floorrgb[3];
+    byte    ceilingrgb[3];
+    int             validcount;    // if == validcount, already checked
+    struct mobj_s  *thinglist;     // list of mobjs in sector
+    int             linecount;
+    struct line_s **Lines;         // [linecount] size
+    float           flooroffx, flooroffy;   // floor texture offset
+    float           ceiloffx, ceiloffy; // ceiling texture offset
+    int             skyfix;        // Offset to ceiling height
+    // rendering w/sky.
+    float           reverb[NUM_REVERB_DATA];
+    int             blockbox[4];   // mapblock bounding box for
+    // height changes
+    plane_t         planes[2];     // PLN_*
+    degenmobj_t     soundorg;      // origin for any sounds
+    // played by the sector
+
+    // temporay stuff
+    short           special;
+    short           tag;
+    // stone, metal, heavy, etc...
+    byte       seqType;       // NOT USED ATM
 } sector_t;
 
 typedef struct side_s {
-	fixed_t         textureoffset; // add this to the calculated texture col
-	fixed_t         rowoffset;	   // add this to the calculated texture top
-	short           toptexture, bottomtexture, midtexture;
-	sector_t       *sector;
+    fixed_t         textureoffset; // add this to the calculated texture col
+    fixed_t         rowoffset;     // add this to the calculated texture top
+    short           toptexture, bottomtexture, midtexture;
+    byte           toprgb[3], bottomrgb[3], midrgba[4];
+    blendmode_t    blendmode;
+    int          flags;
+    sector_t       *sector;
 } side_t;
 
 typedef struct line_s {
-	vertex_t       *v1;
-	vertex_t       *v2;
-	short           flags;
-	sector_t       *frontsector;
-	sector_t       *backsector;
-	fixed_t         dx;
-	fixed_t         dy;
-	slopetype_t     slopetype;
-	int             validcount;
-	short           sidenum[2];
-	fixed_t         bbox[4];
+    vertex_t       *v1;
+    vertex_t       *v2;
+    short           flags;
+    sector_t       *frontsector;
+    sector_t       *backsector;
+    fixed_t         dx;
+    fixed_t         dy;
+    slopetype_t     slopetype;
+    int             validcount;
+    int             sidenum[2];
+    fixed_t         bbox[4];
+
+    // temporary stuff
+    short           special;
+    short           tag;
+    byte            arg1;
+    byte            arg2;
+    byte            arg3;
+    byte            arg4;
+    byte            arg5;
 } line_t;
 
 typedef struct polyobj_s {
-	int             numsegs;
-	seg_t         **segs;
-	int             validcount;
-	degenmobj_t     startSpot;
-	angle_t         angle;
-	vertex_t       *originalPts;   // used as the base for the rotations
-	vertex_t       *prevPts;	   // use to restore the old point values
-	int             tag;		   // reference tag assigned in HereticEd
-	int             bbox[4];
-	vertex_t        dest;
-	int             speed;		   // Destination XY and speed.
-	angle_t         destAngle, angleSpeed;	// Destination angle and rotation speed.
+    int             numsegs;
+    seg_t         **segs;
+    int             validcount;
+    degenmobj_t     startSpot;
+    angle_t         angle;
+    vertex_t       *originalPts;   // used as the base for the rotations
+    vertex_t       *prevPts;       // use to restore the old point values
+    int             tag;           // reference tag assigned in HereticEd
+    int             bbox[4];
+    vertex_t        dest;
+    int             speed;         // Destination XY and speed.
+    angle_t         destAngle, angleSpeed;  // Destination angle and rotation speed.
 } polyobj_t;
 
 /*typedef struct subsector_s {
@@ -203,10 +199,26 @@ typedef struct polyobj_s {
    } subsector_t; */
 
 typedef struct {
-	fixed_t         x, y, dx, dy;  // partition line
-	fixed_t         bbox[2][4];	   // bounding box for each child
-	unsigned short  children[2];   // if NF_SUBSECTOR its a subsector
+    fixed_t         x, y, dx, dy;  // partition line
+    fixed_t         bbox[2][4];    // bounding box for each child
+    int             children[2];   // if NF_SUBSECTOR its a subsector
 } node_t;
+
+typedef struct {
+    short           tid;
+    short         x;
+    short         y;
+    short           height;
+    short           angle;
+    short           type;
+    short           options;
+    byte            special;
+    byte            arg1;
+    byte            arg2;
+    byte            arg3;
+    byte            arg4;
+    byte            arg5;
+} thing_t;
 
 extern int      numvertexes;
 extern byte    *vertexes;
@@ -229,7 +241,10 @@ extern byte    *lines;
 extern int      numsides;
 extern byte    *sides;
 
-extern fixed_t  mapgravity;		   // Gravity for the current map.
+extern int      numthings;
+extern byte    *things;
+
+extern fixed_t  mapgravity;        // Gravity for the current map.
 
 void            P_ValidateLevel(void);
 void            P_LoadBlockMap(int lump);
@@ -237,5 +252,5 @@ void            P_LoadReject(int lump);
 void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);
 void            P_CeilingChanged(sector_t *sector);
-
+void            P_Init(void);
 #endif

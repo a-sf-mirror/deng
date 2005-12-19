@@ -60,8 +60,19 @@ typedef enum lightingtex_e {
 	LST_GRADIENT,				   // Top-down gradient
 	LST_RADIO_CO,				   // FakeRadio closed/open corner shadow
 	LST_RADIO_CC,				   // FakeRadio closed/closed corner shadow
+    LST_RADIO_OO,                  // FakeRadio open/open shadow
+    LST_RADIO_OE,                  // FakeRadio open/edge shadow
 	NUM_LIGHTING_TEXTURES
 } lightingtex_t;
+
+/*
+ * Textures used in world rendering.
+ * eg a surface with a missing tex/flat is drawn using the "missing" graphic
+ */
+enum {
+    DDTEX_MISSING,          // Drawn if a texture/flat is missing
+    NUM_DD_TEXTURES
+};
 
 extern int      mipmapping, linearRaw, texQuality, filterSprites;
 extern int      texMagMode;
@@ -111,7 +122,7 @@ void            GL_DestroyImage(image_t * img);
 byte           *GL_LoadTexture(image_t * img, char *name);
 DGLuint         GL_LoadGraphics(const char *name, gfxmode_t mode);
 DGLuint         GL_LoadGraphics2(resourceclass_t resClass, const char *name,
-                                 gfxmode_t mode, int useMipmap);
+                                 gfxmode_t mode, int useMipmap, boolean clamped);
 DGLuint         GL_GetTextureInfo(int index);
 DGLuint         GL_GetTextureInfo2(int index, boolean translate);
 DGLuint         GL_PrepareTexture(int idx);

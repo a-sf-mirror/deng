@@ -18,8 +18,8 @@
 /*
  * doomsday.h: Doomsday Engine API
  *
- * Doomsday Engine API. Routines exported from Doomsday.exe (all of 
- * this uses __stdcall). Games and plugins need to include this to 
+ * Doomsday Engine API. Routines exported from Doomsday.exe (all of
+ * this uses __stdcall). Games and plugins need to include this to
  * gain access to the engine's features.
  */
 
@@ -28,9 +28,9 @@
 
 // The calling convention.
 #if defined(WIN32)
-#	define _DECALL	__stdcall
+#   define _DECALL  __stdcall
 #elif defined(UNIX)
-#	define _DECALL
+#   define _DECALL
 #endif
 
 #ifdef __cplusplus
@@ -76,7 +76,7 @@ extern          "C" {
 	void            DD_SetInteger(int ddvalue, int parm);
     void            DD_SetVariable(int ddvalue, void *ptr);
     void           *DD_GetVariable(int ddvalue);
-	ddplayer_t     *DD_GetPlayer(int number);
+    ddplayer_t     *DD_GetPlayer(int number);
 
 	// Base: Definitions.
 	int             Def_Get(int type, char *id, void *out);
@@ -93,6 +93,7 @@ extern          "C" {
 	int             W_LumpLength(int lump);
 	const char     *W_LumpName(int lump);
 	void            W_ReadLump(int lump, void *dest);
+    void        W_ReadLumpSection(int lump, void *dest, int startoffset, int length);
 	void           *W_CacheLumpNum(int lump, int tag);
 	void           *W_CacheLumpName(char *name, int tag);
 	void            W_ChangeCacheTag(int lump, int tag);
@@ -123,13 +124,13 @@ extern          "C" {
 	int             Con_GetInteger(char *name);
 	float           Con_GetFloat(char *name);
 	char           *Con_GetString(char *name);
-	void            Con_SetInteger(char *name, int value);
-	void            Con_SetFloat(char *name, float value);
-	void            Con_SetString(char *name, char *text);
+    void            Con_SetInteger(char *name, int value, byte override);
+    void            Con_SetFloat(char *name, float value, byte override);
+    void            Con_SetString(char *name, char *text, byte override);
 	void            Con_Printf(char *format, ...);
 	void            Con_FPrintf(int flags, char *format, ...);
-	int             Con_Execute(char *command, int silent);
-	int             Con_Executef(int silent, char *command, ...);
+    int             DD_Execute(char *command, int silent);
+    int             DD_Executef(int silent, char *command, ...);
 	void            Con_Message(char *message, ...);
 	void            Con_Error(char *error, ...);
 
@@ -139,6 +140,8 @@ extern          "C" {
 	// Console: Bindings.
 	void            B_EventBuilder(char *buff, event_t *ev, boolean to_event);
 	int             B_BindingsForCommand(char *command, char *buffer, int bindClass);
+    void            DD_AddBindClass(struct bindclass_s *);
+    boolean         DD_SetBindClass(int classID, int type);
 
 	// System.
 	void            Sys_TicksPerSecond(float num);
@@ -431,26 +434,28 @@ extern          "C" {
 	char           *M_SkipWhite(char *str);
 	char           *M_FindWhite(char *str);
     char           *M_StrCatQuoted(char *dest, char *src);
-	byte            M_Random(void);
-	float           M_FRandom(void);
-	void            M_ClearBox(fixed_t *box);
-	void            M_AddToBox(fixed_t *box, fixed_t x, fixed_t y);
-	int             M_ScreenShot(char *filename, int bits);
+    byte            M_Random(void);
+    float           M_FRandom(void);
+    void            M_ClearBox(fixed_t *box);
+    void            M_AddToBox(fixed_t *box, fixed_t x, fixed_t y);
+    int             M_ScreenShot(char *filename, int bits);
 
-	// Miscellaneous: Math.
-	binangle_t      bamsAtan2(int y, int x);
+    // Miscellaneous: Math.
+    binangle_t      bamsAtan2(int y, int x);
 
-	// Miscellaneous: Command line.
-	void            ArgAbbreviate(char *longname, char *shortname);
-	int             Argc(void);
-	char           *Argv(int i);
-	char          **ArgvPtr(int i);
-	char           *ArgNext(void);
-	int             ArgCheck(char *check);
-	int             ArgCheckWith(char *check, int num);
-	int _DECALL     ArgExists(char *check);
-	int             ArgIsOption(int i);
+    // Miscellaneous: Command line.
+    void            ArgAbbreviate(char *longname, char *shortname);
+    int             Argc(void);
+    char           *Argv(int i);
+    char          **ArgvPtr(int i);
+    char           *ArgNext(void);
+    int             ArgCheck(char *check);
+    int             ArgCheckWith(char *check, int num);
+    int _DECALL     ArgExists(char *check);
+    int             ArgIsOption(int i);
 
+    // DMU
+    void            P_LoadMap(int mapLumpStartNumber, int glLumpStartNum, char *levelID);
 #ifdef __cplusplus
 }
 #endif

@@ -69,7 +69,48 @@ extern          "C" {
     } ded_str_t;
 
     typedef struct {
+        ded_flags_t   id;        // ID of this property
+        ded_flags_t     flags;
+        ded_string_t    name;
+        ded_string_t    flagprefix;
+        int             map;
+    } ded_xgclass_property_t;
+
+    typedef struct {
         ded_stringid_t  id;
+        ded_string_t    name;
+        ded_count_t     properties_count;
+        ded_xgclass_property_t *properties;
+        // The rest of the properties are retrieved at runtime
+        // by querying the game for the callbacks for the
+        // classes by "name";
+        int (C_DECL *doFunc)();
+        void (*initFunc)(struct line_s *line);
+        enum xgtravtype traverse;
+        int travref;
+        int travdata;
+        int evtypeflags;
+    } ded_xgclass_t;
+
+    typedef struct {
+        int             gameprop;
+        ded_flags_t     valueid;
+        ded_flags_t     flags;
+        int             size;
+        int             offset;
+    } ded_lumpformat_member_t;
+
+    typedef struct {
+        ded_stringid_t  id;
+        ded_flags_t     type;
+        int             size;
+        ded_count_t     members_count;
+        ded_lumpformat_member_t *members;
+    } ded_lumpformat_t;
+
+    typedef struct {
+        ded_stringid_t  id;
+        ded_string_t    text;
         int             value;
     } ded_flag_t;
 
@@ -125,7 +166,7 @@ extern          "C" {
 
     typedef struct {
         ded_stateid_t   state;
-        char            level[64]; 
+        char            level[64];
         float           offset[3]; /* Origin offset in world coords
                                       Zero means automatic */
         float           size;      // Zero: automatic
@@ -283,6 +324,8 @@ extern          "C" {
         int             ev_chain;
         int             act_chain;
         int             deact_chain;
+        int        act_linetype;
+        int        deact_linetype;
         ded_flags_t     wallsection;
         ded_stringid_t  act_tex;
         ded_stringid_t  deact_tex;
@@ -505,6 +548,8 @@ extern          "C" {
             ded_count_t     groups;
             ded_count_t     lines;
             ded_count_t     sectors;
+            ded_count_t     xgclasses;
+            ded_count_t     lumpformats;
         } count;
 
         // Flag values (for all types of data).
@@ -566,6 +611,12 @@ extern          "C" {
 
         // XG sector types.
         ded_sectortype_t *sectors;
+
+        // XG Classes
+        ded_xgclass_t   *xgclasses;
+
+        // Map data lump formats
+        ded_lumpformat_t *lumpformats;
     } ded_t;
 
     // Routines for managing DED files.
@@ -574,7 +625,7 @@ extern          "C" {
     int             DED_Read(ded_t * ded, const char *sPathName);
     int             DED_ReadLump(ded_t * ded, int lump);
 
-    int             DED_AddFlag(ded_t * ded, char *name, int value);
+    int             DED_AddFlag(ded_t * ded, char *name, char *text, int value);
     int             DED_AddMobj(ded_t * ded, char *idstr);
     int             DED_AddState(ded_t * ded, char *id);
     int             DED_AddSprite(ded_t * ded, const char *name);
@@ -595,6 +646,10 @@ extern          "C" {
     int             DED_AddGroup(ded_t * ded);
     int             DED_AddSector(ded_t * ded, int id);
     int             DED_AddLine(ded_t * ded, int id);
+    int             DED_AddLumpFormat(ded_t * ded);
+    int             DED_AddLumpFormatMember(ded_lumpformat_t *lmpf);
+    int             DED_AddXGClass(ded_t * ded);
+    int             DED_AddXGClassProperty(ded_xgclass_t *xgc);
 
     void            DED_RemoveFlag(ded_t * ded, int index);
     void            DED_RemoveMobj(ded_t * ded, int index);
@@ -616,6 +671,8 @@ extern          "C" {
     void            DED_RemoveGroup(ded_t * ded, int index);
     void            DED_RemoveSector(ded_t * ded, int index);
     void            DED_RemoveLine(ded_t * ded, int index);
+    void            DED_RemoveXGClass(ded_t * ded, int index);
+    void            DED_RemoveLumpFormat(ded_t * ded, int index);
 
     void           *DED_NewEntries(void **ptr, ded_count_t * cnt,
                                    int elem_size, int count);
