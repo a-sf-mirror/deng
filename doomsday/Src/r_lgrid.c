@@ -26,6 +26,7 @@
 
 #include "de_base.h"
 #include "de_refresh.h"
+#include "de_render.h"
 #include "de_graphics.h"
 #include "de_misc.h"
 
@@ -58,9 +59,9 @@ typedef struct gridblock_s {
 
     // Color of the light.
     byte rgb[3];
-       
+
 } gridblock_t;
-   
+
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -95,7 +96,7 @@ void LG_Register(void)
 {
     C_VAR_INT("rend-bias-grid", &lgEnabled, 0, 0, 1,
               "1=Smooth sector lighting is enabled.");
-    
+
     C_VAR_INT("rend-bias-grid-debug", &lgShowDebug, 0, 0, 1,
               "1=Show the light grid (for debugging).");
 
@@ -142,7 +143,7 @@ static void AddIndex(int x, int y, unsigned short *indices, int *count)
 static boolean HasIndexBit(int x, int y, uint *bitfield)
 {
     uint index = x + y*lgBlockWidth;
-    
+
     // Assume 32-bit uint.
     return (bitfield[index >> 5] & (1 << (index & 0x1f))) != 0;
 }
@@ -190,7 +191,7 @@ void LG_Init(void)
     }
 
     lgInited = true;
-    
+
     // Allocate the grid.
     R_GetMapSize(&lgOrigin, &max);
 
@@ -208,14 +209,14 @@ void LG_Init(void)
     bitfieldSize = 4 * (31 + lgBlockWidth * lgBlockHeight) / 32;
     indexBitfield = M_Calloc(bitfieldSize);
     contributorBitfield = M_Calloc(bitfieldSize);
-    
+
     // TODO: It would be possible to only allocate memory for the grid
     // blocks that are going to be in use.
-    
+
     // Allocate memory for the entire grid.
     grid = Z_Calloc(sizeof(gridblock_t) * lgBlockWidth * lgBlockHeight,
                     PU_LEVEL, NULL);
-    
+
     Con_Message("LG_Init: %i x %i grid (%i bytes).\n",
                 lgBlockWidth, lgBlockHeight,
                 sizeof(gridblock_t) * lgBlockWidth * lgBlockHeight);
@@ -250,7 +251,7 @@ void LG_Init(void)
         memset(indexBitfield, 0, bitfieldSize);
         memset(contributorBitfield, 0, bitfieldSize);
         count = changedCount = 0;
-        
+
         for(block = grid, y = 0; y < lgBlockHeight; ++y)
         {
             for(x = 0; x < lgBlockWidth; ++x, ++block)
@@ -262,14 +263,14 @@ void LG_Init(void)
                     {
                         if(y + b < 0 || y + b >= lgBlockHeight)
                             continue;
-                        
+
                         for(a = -2; a <= 2; ++a)
                         {
                             if(x + a < 0 || x + a >= lgBlockWidth)
                                 continue;
 
                             //AddIndex(x + a, y + b, indices, &count);
-                            AddIndexBit(x + a, y + b, indexBitfield, 
+                            AddIndexBit(x + a, y + b, indexBitfield,
                                         &changedCount);
                         }
                     }
@@ -288,14 +289,14 @@ void LG_Init(void)
             {
                 //if(!HasIndex(x, y, indices, &changedCount))
                 if(!HasIndexBit(x, y, indexBitfield))
-                    continue;                    
-                
+                    continue;
+
                 // Add the contributor blocks.
                 for(b = -2; b <= 2; ++b)
                 {
                     if(y + b < 0 || y + b >= lgBlockHeight)
                         continue;
-                    
+
                     for(a = -2; a <= 2; ++a)
                     {
                         if(x + a < 0 || x + a >= lgBlockWidth)
@@ -304,7 +305,7 @@ void LG_Init(void)
                         //if(!HasIndex(x + a, y + b, indices, &changedCount))
                         if(!HasIndexBit(x + a, y + b, indexBitfield))
                         {
-                            //AddIndex(x + a, y + b, contributorIndices, &count);                       
+                            //AddIndex(x + a, y + b, contributorIndices, &count);
                             AddIndexBit(x + a, y + b, contributorBitfield,
                                         &count);
                         }
@@ -324,13 +325,13 @@ void LG_Init(void)
         }*/
 
         VERBOSE2(Con_Message("  Sector %i: %i / %i\n", i, changedCount, count));
-                    
+
         info->changedblockcount = changedCount;
         info->blockcount = changedCount + count;
 
         info->blocks = Z_Malloc(sizeof(unsigned short) * info->blockcount,
                                 PU_LEVEL, 0);
-        for(x = 0, a = 0, b = changedCount; x < lgBlockWidth * lgBlockHeight; 
+        for(x = 0, a = 0, b = changedCount; x < lgBlockWidth * lgBlockHeight;
             ++x)
         {
             if(HasIndexBit(x, 0, indexBitfield))
@@ -338,10 +339,10 @@ void LG_Init(void)
             else if(HasIndexBit(x, 0, contributorBitfield))
                 info->blocks[b++] = x;
         }
-        
+
         assert(a == changedCount);
         assert(b == info->blockcount);
-        
+
         /*memcpy(info->blocks, indices,
                sizeof(unsigned short) * changedCount);
         memcpy(info->blocks + changedCount, contributorIndices,
@@ -356,7 +357,7 @@ void LG_Init(void)
 
 /*
  * Apply the sector's lighting to the block.
- */ 
+ */
 static void LG_ApplySector(gridblock_t *block, const byte *color, int level,
                            float factor, int bias)
 {
@@ -371,7 +372,7 @@ static void LG_ApplySector(gridblock_t *block, const byte *color, int level,
 
     if(level <= 0)
         return;
-   
+
     for(i = 0; i < 3; ++i)
     {
         int c = color[i] * level / 255;
@@ -402,7 +403,7 @@ void LG_SectorChanged(sector_t *sector, sectorinfo_t *info)
 
     if(!lgInited)
         return;
-    
+
     // Mark changed blocks and contributors.
     for(i = 0; i < info->changedblockcount; ++i)
     {
@@ -437,8 +438,8 @@ static boolean LG_BlockNeedsUpdate(int x, int y)
     {
         // The sector needs to be determined.
         return true;
-    }    
-    
+    }
+
     if(SECT_INFO(blockSector)->flags & SIF_LIGHT_CHANGED)
     {
         return true;
@@ -486,11 +487,11 @@ static boolean LG_BlockNeedsUpdate(int x, int y)
     {
         a = limitA[0];
         block = GRID_BLOCK(a, b);
-        
+
         for(; a <= limitA[1]; ++a, ++block)
         {
             if(!a && !b) continue;
-            
+
             if(block->sector == blockSector)
                 continue;
 
@@ -530,7 +531,7 @@ void LG_Update(void)
 
     if(!lgInited)
         return;
-    
+
 #if 0
     for(block = grid, y = 0; y < lgBlockHeight; ++y)
     {
@@ -543,12 +544,12 @@ void LG_Update(void)
                 // Clear to zero (will be recalculated).
                 memset(block->rgb, 0, 3);
 
-                // Mark contributors. 
+                // Mark contributors.
                 for(b = -2; b <= 2; ++b)
                 {
                     if(y + b < 0 || y + b >= lgBlockHeight)
                         continue;
-                    
+
                     for(a = -2; a <= 2; ++a)
                     {
                         if(x + a < 0 || x + a >= lgBlockWidth)
@@ -565,7 +566,7 @@ void LG_Update(void)
         }
     }
 #endif
-    
+
     for(block = grid, y = 0; y < lgBlockHeight; ++y)
     {
         for(x = 0; x < lgBlockWidth; ++x, ++block)
@@ -614,7 +615,7 @@ void LG_Update(void)
             for(a = -2; a <= 2; ++a)
             {
                 for(b = -2; b <= 2; ++b)
-                {                   
+                {
                     if(x < 2 || y < 2 || x > lgBlockWidth - 3 ||
                        y > lgBlockHeight - 3) continue;
 
@@ -628,14 +629,14 @@ void LG_Update(void)
                 }
             }
         }
-    }      
+    }
 
     // Clear all changed and contribution flags.
     lastBlock = &grid[lgBlockWidth * lgBlockHeight];
     for(block = grid; block != lastBlock; ++block)
     {
         block->flags = 0;
-    }    
+    }
 }
 
 /**
@@ -657,7 +658,7 @@ void LG_Evaluate(const float *point, byte *color)
         return;
     }
 
-    x = ((FLT2FIX(point[VX]) - lgOrigin.x) / blockSize) >> FRACBITS;    
+    x = ((FLT2FIX(point[VX]) - lgOrigin.x) / blockSize) >> FRACBITS;
     y = ((FLT2FIX(point[VY]) - lgOrigin.y) / blockSize) >> FRACBITS;
     x = MINMAX_OF(1, x, lgBlockWidth - 2);
     y = MINMAX_OF(1, y, lgBlockHeight - 2);
@@ -678,7 +679,7 @@ void LG_Evaluate(const float *point, byte *color)
             dz = (FLT2FIX(point[VZ])
                   - block->sector->floorheight) >> FRACBITS;
         }
-        
+
         dz -= 50;
         if(dz < 0)
             dz = 0;
@@ -696,11 +697,21 @@ void LG_Evaluate(const float *point, byte *color)
 
         if(dimming < .5f)
             dimming = .5f;
-            
+
         for(i = 0; i < 3; ++i)
         {
+            // Add the light range compression factor
+            color[i] = Rend_ApplyLightAdaptation(color[i]);
+
+            // Apply the dimming
             color[i] *= dimming;
         }
+    }
+    else
+    {
+        // Just add the light range compression factor
+        for(i = 0; i < 3; ++i)
+            color[i] = Rend_ApplyLightAdaptation(color[i]);
     }
 }
 
@@ -714,12 +725,12 @@ void LG_Debug(void)
 
     if(!lgInited || !lgShowDebug)
         return;
-    
-	// Go into screen projection mode.
-	gl.MatrixMode(DGL_PROJECTION);
-	gl.PushMatrix();
-	gl.LoadIdentity();
-	gl.Ortho(0, 0, screenWidth, screenHeight, -1, 1);
+
+    // Go into screen projection mode.
+    gl.MatrixMode(DGL_PROJECTION);
+    gl.PushMatrix();
+    gl.LoadIdentity();
+    gl.Ortho(0, 0, screenWidth, screenHeight, -1, 1);
 
     gl.Disable(DGL_TEXTURING);
 
@@ -729,7 +740,7 @@ void LG_Debug(void)
         for(x = 0; x < lgBlockWidth; ++x, ++block)
         {
             gl.Color3ubv(block->rgb);
-            
+
             gl.Vertex2f(x * lgDebugSize, y * lgDebugSize);
             gl.Vertex2f(x * lgDebugSize + lgDebugSize, y * lgDebugSize);
             gl.Vertex2f(x * lgDebugSize + lgDebugSize,
@@ -740,6 +751,6 @@ void LG_Debug(void)
     gl.End();
 
     gl.Enable(DGL_TEXTURING);
-	gl.MatrixMode(DGL_PROJECTION);
-	gl.PopMatrix();
+    gl.MatrixMode(DGL_PROJECTION);
+    gl.PopMatrix();
 }
