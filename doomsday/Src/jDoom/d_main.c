@@ -32,6 +32,7 @@
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_menu.h"
+#include "r_defs.h"
 #include "jDoom/m_ctrl.h"
 
 #include "g_game.h"
@@ -810,6 +811,6 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.SetupForSides = P_SetupForSides;
     gx.SetupForSectors = P_SetupForSectors;
 
-    gx.HandleMapDataElement = P_HandleMapDataElement;
+    gx.HandleMapDataElement = P_HandleMapDataProperty;
     return &gx;
 }

@@ -136,10 +136,10 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
             break;
 
         default:
-            Con_Error("P_HandleMapDataElement: Unknown value type id %i.\n",type);
+            Con_Error("P_HandleMapDataProperty: Unknown value type id %i.\n",type);
     }
-    return 1;
 #endif
+    return 1;
 }
 
 /*
