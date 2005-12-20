@@ -2208,10 +2208,10 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(!activator)
             return false;
-        if(PlayerColors[activator - players] != info->aparm[8])
+        if(cfg.PlayerColor[activator - players] != info->aparm[8])
         {
             XG_Dev("  Line %i: ABORTING EVENT due to activator color (%i)",
-                   lineid, PlayerColors[activator-players]);
+                   lineid, cfg.PlayerColor[activator-players]);
             return false;
         }
     }
