@@ -474,7 +474,7 @@ void DD_ProcessEvents(void)
             continue;
 
         // The "fallback" responder.
-        gx.FallBackResponder(ev);
+        gx.FallbackResponder(ev);
 
     }
 }
