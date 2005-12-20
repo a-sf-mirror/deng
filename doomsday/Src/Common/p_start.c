@@ -552,7 +552,6 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 #endif
     Con_Message("Spawn things\n");
     P_SpawnThings();
-    Con_Message("Spawned things\n");
 #if __JHERETIC__
     P_CloseWeapons();
 #endif
@@ -733,16 +732,15 @@ static void P_SpawnThings(void)
     int     deathSpotsCount;
 #endif
 
-#ifdef TODO_MAP_UPDATE
-    th = things;
-    for(i = 0; i < numthings; i++, th++)
+    for(i = 0; i < numthings; i++)
     {
+        th = P_ToPtr(DMU_THING, i);
 #if __JDOOM__
         // Do not spawn cool, new stuff if !commercial
         spawn = true;
         if(gamemode != commercial)
         {
-            switch (SHORT(th->type))
+            switch (P_GetIntp(DMU_THING, th, DMU_TYPE))
             {
             case 68:            // Arachnotron
             case 64:            // Archvile
@@ -762,10 +760,8 @@ static void P_SpawnThings(void)
         if(spawn == false)
             break;
 #endif
-Con_Message("spawn %i of %i\n",i, numthings);
         P_SpawnMapThing(th);
     }
-#endif
 
 #if __JHEXEN__
     // FIXME: This stuff should be moved!
