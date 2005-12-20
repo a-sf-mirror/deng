@@ -1966,7 +1966,7 @@ static void DrawRangeBox(int x, int y, int w, int h, ui_color_t *c)
 /*
  * Draws the lightRangeModMatrix (for debug)
  */
-void DrawRange(void)
+void R_DrawLightRange(void)
 {
     int i, r;
     int x, y;
