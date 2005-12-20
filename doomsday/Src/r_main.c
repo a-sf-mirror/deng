@@ -331,12 +331,12 @@ void R_NewSharpWorld(void)
 
     if(resetNextViewer)
         resetNextViewer = 2;
-
+/*
     if(useVSync)
         gl.Enable(DGL_VSYNC);
     else
         gl.Disable(DGL_VSYNC);
-
+*/
     R_GetSharpView(&sharpView, viewplayer);
 
     // Update the camera angles that will be used when the camera is
