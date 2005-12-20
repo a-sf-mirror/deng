@@ -1,7 +1,7 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 254 <--
+; --> 316 <--
 
 
 EXPORTS
@@ -118,6 +118,7 @@ EXPORTS
 	P_GetBlockRootIdx		@65 NONAME
 	P_LinkThing				@66 NONAME
 	P_UnlinkThing			@67 NONAME
+	P_PointToBlock		@255 NONAME
 	P_BlockLinesIterator	@68 NONAME
 	P_BlockThingsIterator	@69 NONAME
 	P_BlockPolyobjsIterator	@70 NONAME
@@ -134,6 +135,80 @@ EXPORTS
 	P_LoadMap		@254 NONAME
 	P_LoadBlockMap		@77 NONAME
 	P_LoadReject		@78 NONAME
+
+; Play: Map Data Updates and Information Access.
+	P_ToIndex		@256 NONAME
+	P_ToPtr			@257 NONAME
+	P_Callback		@258 NONAME
+	P_Callbackp		@259 NONAME
+
+    	; index-based write functions
+	P_SetBool		@260 NONAME
+	P_SetByte		@261 NONAME
+	P_SetInt		@262 NONAME
+	P_SetFixed		@263 NONAME
+	P_SetAngle		@264 NONAME
+	P_SetFloat		@265 NONAME
+	P_SetPtr		@267 NONAME
+
+	P_SetBoolv		@268 NONAME
+	P_SetBytev		@269 NONAME
+	P_SetIntv		@270 NONAME
+	P_SetFixedv		@271 NONAME
+	P_SetAnglev		@272 NONAME
+	P_SetFloatv		@273 NONAME
+	P_SetPtrv		@274 NONAME
+
+	; pointer-based write functions
+	P_SetBoolp		@275 NONAME
+	P_SetBytep		@276 NONAME
+	P_SetIntp		@277 NONAME
+	P_SetFixedp		@278 NONAME
+	P_SetAnglep		@279 NONAME
+	P_SetFloatp		@280 NONAME
+	P_SetPtrp		@281 NONAME
+
+	P_SetBoolpv		@282 NONAME
+	P_SetBytepv		@283 NONAME
+	P_SetIntpv		@284 NONAME
+	P_SetFixedpv		@285 NONAME
+	P_SetAnglepv		@286 NONAME
+	P_SetFloatpv		@287 NONAME
+	P_SetPtrpv		@288 NONAME    
+
+	; index-based read functions
+	P_GetBool		@289 NONAME
+	P_GetByte		@290 NONAME
+	P_GetInt		@291 NONAME
+	P_GetFixed		@292 NONAME
+	P_GetAngle		@293 NONAME
+	P_GetFloat		@294 NONAME
+	P_GetPtr		@295 NONAME
+
+	P_GetBoolv		@296 NONAME
+	P_GetBytev		@297 NONAME
+	P_GetIntv		@298 NONAME
+	P_GetFixedv		@299 NONAME
+	P_GetAnglev		@300 NONAME
+	P_GetFloatv		@301 NONAME
+	P_GetPtrv		@302 NONAME
+    
+	; pointer-based read functions
+	P_GetBoolp		@303 NONAME
+	P_GetBytep		@304 NONAME
+	P_GetIntp		@305 NONAME
+	P_GetFixedp		@306 NONAME
+	P_GetAnglep		@307 NONAME
+	P_GetFloatp		@308 NONAME
+	P_GetPtrp		@309 NONAME
+
+	P_GetBoolpv		@310 NONAME
+	P_GetBytepv		@311 NONAME
+	P_GetIntpv		@312 NONAME
+	P_GetFixedpv		@313 NONAME
+	P_GetAnglepv		@314 NONAME
+	P_GetFloatpv		@315 NONAME
+	P_GetPtrpv		@316 NONAME
 
 ; Play: Polyobjs.
 	PO_MovePolyobj		@79 NONAME
