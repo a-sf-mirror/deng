@@ -564,6 +564,7 @@ static const char* DMU_Str(int prop)
         { DMU_REJECT, "DMU_REJECT" },
         { DMU_POLYBLOCKMAP, "DMU_POLYBLOCKMAP" },
         { DMU_POLYOBJ, "DMU_POLYOBJ" },
+        { DMU_THING, "DMU_THING" },
         { DMU_LINE_BY_TAG, "DMU_LINE_BY_TAG" },
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINE_BY_ACT_TAG, "DMU_LINE_BY_ACT_TAG" },
@@ -611,6 +612,7 @@ static const char* DMU_Str(int prop)
         { DMU_CEILING_TEXTURE_MOVE_X, "DMU_CEILING_TEXTURE_MOVE_X" },
         { DMU_CEILING_TEXTURE_MOVE_Y, "DMU_CEILING_TEXTURE_MOVE_Y" },
         { DMU_CEILING_TEXTURE_MOVE_XY, "DMU_CEILING_TEXTURE_MOVE_XY" },
+        { DMU_TYPE, "DMU_TYPE" },
         { 0, NULL }
     };
     int i;
@@ -661,6 +663,9 @@ int P_ToIndex(int type, void* ptr)
     case DMU_NODE:
         return GET_NODE_IDX(ptr);
 
+    case DMU_THING:
+        return GET_THING_IDX(ptr);
+
     default:
         Con_Error("P_ToIndex: unknown type %s.\n", DMU_Str(type));
     }
@@ -697,6 +702,9 @@ void* P_ToPtr(int type, int index)
 
     case DMU_NODE:
         return NODE_PTR(index);
+
+    case DMU_THING:
+        return THING_PTR(index);
 
     default:
         Con_Error("P_ToPtr: unknown type %s.\n", DMU_Str(type));
@@ -802,6 +810,18 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
         }
         break;
 
+    case DMU_THING:
+        if(index >= 0 && index < numthings)
+        {
+            return callback(THING_PTR(index), context);
+        }
+        else if(index == DMU_ALL)
+        {
+            for(i = 0; i < numthings; ++i)
+                if(!callback(THING_PTR(i), context)) return false;
+        }
+        break;
+
     case DMU_LINE_BY_TAG:
     case DMU_SECTOR_BY_TAG:
     case DMU_LINE_BY_ACT_TAG:
@@ -836,6 +856,7 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
     case DMU_NODE:
     case DMU_SUBSECTOR:
     case DMU_SECTOR:
+    case DMU_THING:
         return callback(ptr, context);
 
     // TODO: If necessary, add special types for accessing multiple objects.
@@ -1213,6 +1234,11 @@ static int SetProperty(void* ptr, void* context)
                   DMU_Str(args->prop));
         break;
 
+    case DMU_THING:
+        Con_Error("SetProperty: Property %s is not writable in DMU_THING.\n",
+                  DMU_Str(args->prop));
+        break;
+
     default:
         Con_Error("SetProperty: Type %s not writable.\n", DMU_Str(args->type));
     }
@@ -1475,6 +1501,12 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VERTEX2:
             GetValue(VT_PTR, &p->v2, args, 0);
             break;
+        case DMU_DX:
+            GetValue(VT_FIXED, &p->dx, args, 0);
+            break;
+        case DMU_DY:
+            GetValue(VT_FIXED, &p->dy, args, 0);
+            break;
         case DMU_FRONT_SECTOR:
             GetValue(VT_PTR, &p->frontsector, args, 0);
             break;
@@ -1534,8 +1566,14 @@ static int GetProperty(void* ptr, void* context)
         case DMU_FLOOR_HEIGHT:
             GetValue(VT_FIXED, &p->sector->floorheight, args, 0);
             break;
+        case DMU_FLOOR_TEXTURE:
+            GetValue(VT_SHORT, &p->sector->floorpic, args, 0);
+            break;
         case DMU_CEILING_HEIGHT:
             GetValue(VT_FIXED, &p->sector->ceilingheight, args, 0);
+            break;
+        case DMU_CEILING_TEXTURE:
+            GetValue(VT_SHORT, &p->sector->ceilingpic, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n", DMU_Str(args->prop));
@@ -1548,17 +1586,37 @@ static int GetProperty(void* ptr, void* context)
         sector_t* p = ptr;
         switch(args->prop)
         {
+        case DMU_LIGHT_LEVEL:
+            GetValue(VT_SHORT, &p->lightlevel, args, 0);
+            break;
         case DMU_FLOOR_HEIGHT:
             GetValue(VT_FIXED, &p->floorheight, args, 0);
             break;
         case DMU_CEILING_HEIGHT:
             GetValue(VT_FIXED, &p->ceilingheight, args, 0);
             break;
+        case DMU_LINE_COUNT:
+            GetValue(VT_INT, &p->linecount, args, 0);
+            break;
         case DMU_THINGS:
             GetValue(VT_PTR, &p->thinglist, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n", DMU_Str(args->prop));
+        }
+        break;
+        }
+
+    case DMU_THING:
+        {
+        thing_t* p = ptr;
+        switch(args->prop)
+        {
+        case DMU_TYPE:
+            GetValue(VT_INT, &p->type, args, 0);
+            break;
+        default:
+            Con_Error("GetProperty: DMU_THING has no property %s.\n", DMU_Str(args->prop));
         }
         break;
         }
@@ -2971,10 +3029,22 @@ static void P_GroupLines(void)
     line_t **linebptr;
     line_t  *li;
 
+    side_t  *sid;
     sector_t *sec;
     subsector_t *ss;
     seg_t  *seg;
     fixed_t bbox[4];
+
+    // This doesn't belong here, belongs in a P_InitSides func
+    sid = SIDE_PTR(0);
+    for(i = numsides -1; i >= 0; --i, sid++)
+    {
+        sid = SIDE_PTR(i);
+        memset(sid->toprgb, 0xff, 3);
+        memset(sid->midrgba, 0xff, 4);
+        memset(sid->bottomrgb, 0xff, 3);
+        sid->blendmode = BM_NORMAL;
+    }
 
     Con_Message(" Sector look up\n");
     // look up sector number for each subsector
@@ -3009,6 +3079,8 @@ static void P_GroupLines(void)
         // Should go in a P_InitSectors() func
         sec->thinglist = NULL;
         memset(sec->rgb, 0xff, 3);
+        memset(sec->floorrgb, 0xff, 3);
+        memset(sec->ceilingrgb, 0xff, 3);
         sec->seqType = SEQTYPE_STONE;
     }
 
