@@ -795,6 +795,24 @@ int DD_GetInteger(int ddvalue)
         case DD_LINE_COUNT:
             return numlines;
 
+        case DD_SIDE_COUNT:
+            return numsides;
+
+        case DD_VERTEX_COUNT:
+            return numvertexes;
+
+        case DD_SEG_COUNT:
+            return numsegs;
+
+        case DD_SUBSECTOR_COUNT:
+            return numsubsectors;
+
+        case DD_NODE_COUNT:
+            return numnodes;
+
+        case DD_THING_COUNT:
+            return numthings;
+
         case DD_GAME_EXPORTS:
             ASSERT_NOT_64BIT();
             return (int) &gx;
