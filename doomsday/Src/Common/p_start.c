@@ -18,6 +18,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <math.h>
+
 #if __JDOOM__
 #  include "doomdef.h"
 #  include "doomstat.h"
@@ -535,7 +537,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     numnodes = DD_GetInteger(DD_NODE_COUNT);
     numlines = DD_GetInteger(DD_LINE_COUNT);
     numsides = DD_GetInteger(DD_SIDE_COUNT);
-    numthings = DD_GetInteger(DD_THING_COUNT);
+//    numthings = DD_GetInteger(DD_THING_COUNT); // mapthings?
 
     if(lumpNumbers[1] > lumpNumbers[0])
         // We have GL nodes!
@@ -734,13 +736,13 @@ static void P_SpawnThings(void)
 
     for(i = 0; i < numthings; i++)
     {
-        th = P_ToPtr(DMU_THING, i);
+        th = P_ToPtr(DMU_THING, i); // mapthing?
 #if __JDOOM__
         // Do not spawn cool, new stuff if !commercial
         spawn = true;
         if(gamemode != commercial)
         {
-            switch (P_GetIntp(DMU_THING, th, DMU_TYPE))
+            switch(P_GetIntp(DMU_THING, th, DMU_TYPE))
             {
             case 68:            // Arachnotron
             case 64:            // Archvile
@@ -797,11 +799,8 @@ fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
 {
     float   a[2], b[2], c[2], d[2], len;
 
-    a[VX] = FIX2FLT(line->v1->x);
-    a[VY] = FIX2FLT(line->v1->y);
-
-    b[VX] = FIX2FLT(line->v2->x);
-    b[VY] = FIX2FLT(line->v2->y);
+    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX1_XY, a);
+    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX2_XY, b);
 
     c[VX] = FIX2FLT(x);
     c[VY] = FIX2FLT(y);
@@ -1005,13 +1004,14 @@ void P_TurnTorchesToFaceWalls()
     fixed_t closestdist, dist, off, linelen, minrad;
     mobj_t *tlist[MAXLIST];
 
-    for(sec = sectors, i = 0; i < numsectors; i++, sec++)
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
     {
+        sec = P_ToPtr(DMU_SECTOR, i);
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = sec->thinglist; k < MAXLIST - 1 && iter;
-            iter = iter->snext)
+        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS); 
+            k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             if(iter->type == MT_ZWALLTORCH ||
                iter->type == MT_ZWALLTORCH_UNLIT)
@@ -1023,14 +1023,15 @@ void P_TurnTorchesToFaceWalls()
         {
             minrad = iter->radius;
             closestline = NULL;
-            for(k = 0; k < sec->linecount; k++)
+            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+            for(k = 0; k < sectorLineCount; k++)
             {
-                li = sec->Lines[k];
-                if(li->backsector)
+                li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
+                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
                     continue;
                 linelen =
-                    P_ApproxDistance(li->v2->x - li->v1->x,
-                                     li->v2->y - li->v1->y);
+                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
+                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
                 dist = P_PointLineDistance(li, iter->x, iter->y, &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
@@ -1042,9 +1043,10 @@ void P_TurnTorchesToFaceWalls()
             if(closestline && closestdist < minrad)
             {
                 iter->angle =
-                    R_PointToAngle2(closestline->v1->x, closestline->v1->y,
-                                    closestline->v2->x,
-                                    closestline->v2->y) - ANG90;
+                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X), 
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_Y),
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_X),
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_Y)) - ANG90;
             }
         }
     }
