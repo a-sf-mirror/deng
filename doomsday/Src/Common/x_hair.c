@@ -42,8 +42,6 @@
 
 #define MAX_XLINES  16
 
-#define DEFCC(name)     int name(int src, int argc, char **argv)
-
 // TYPES -------------------------------------------------------------------
 
 typedef struct {
