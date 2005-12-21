@@ -651,39 +651,6 @@ extern          "C" {
 
 #define NO_INDEX 0xffff
 
-    typedef struct vertex_s {
-        fixed_t         x, y;
-    } vertex_t;
-
-    typedef struct fvertex_s {
-        float           x, y;
-    } fvertex_t;
-
-    typedef struct seg_s {
-        vertex_t       *v1, *v2;
-        float           length;    // Accurate length of the segment (v1 -> v2).
-        fixed_t         offset;
-        struct side_s  *sidedef;
-        struct line_s  *linedef;
-        struct sector_s *frontsector;
-        struct sector_s *backsector;    // NULL for one sided lines
-        byte            flags;
-        angle_t         angle;
-    } seg_t;
-
-    typedef struct subsector_s {
-        struct sector_s *sector;
-        unsigned long  linecount;
-        unsigned long  firstline;
-        struct polyobj_s *poly;    // NULL if there is no polyobj
-        // Sorted edge vertices for rendering floors and ceilings.
-        char            numverts;
-        fvertex_t      *verts;     // A list of edge vertices.
-        fvertex_t       bbox[2];   // Min and max points.
-        fvertex_t       midpoint;  // Center of vertices.
-        byte            flags;
-    } subsector_t;
-
 	//------------------------------------------------------------------------
 	//
 	// Mobjs
@@ -1002,7 +969,7 @@ typedef enum blendmode_e {
         char           *help;      // A short help text.
         int             flags;
     } ccmd_t;
-
+    
     // Command sources (where the console command originated from)
     // These are sent with every (sub)ccmd so we can decide whether or not to execute.
     enum {
@@ -1017,6 +984,9 @@ typedef enum blendmode_e {
         CMDS_PKT,     // Sent from a client (in a packet)
         CMDS_SPKT     // Sent from the server (in a packet)
     };
+
+// Helper macro for defining console command functions.
+#define DEFCC(name)     int name(int src, int argc, char **argv)   
 
 // Console command usage flags.
 // (what method(s) CAN NOT be used to invoke a ccmd (used with the CMDS codes above)).
