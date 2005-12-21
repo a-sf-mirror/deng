@@ -574,6 +574,12 @@ static const char* DMU_Str(int prop)
         { DMU_XY, "DMU_XY" },
         { DMU_VERTEX1, "DMU_VERTEX1" },
         { DMU_VERTEX2, "DMU_VERTEX2" },
+        { DMU_VERTEX1_X, "DMU_VERTEX1_X" },
+        { DMU_VERTEX1_Y, "DMU_VERTEX1_Y" },
+        { DMU_VERTEX1_XY, "DMU_VERTEX1_XY" },
+        { DMU_VERTEX2_X, "DMU_VERTEX2_X" },
+        { DMU_VERTEX2_Y, "DMU_VERTEX2_Y" },
+        { DMU_VERTEX2_XY, "DMU_VERTEX2_XY" },
         { DMU_FRONT_SECTOR, "DMU_FRONT_SECTOR" },
         { DMU_BACK_SECTOR, "DMU_BACK_SECTOR" },
         { DMU_FLAGS, "DMU_FLAGS" },
@@ -1604,6 +1610,17 @@ static int GetProperty(void* ptr, void* context)
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n", DMU_Str(args->prop));
         }
+        break;
+        }
+        
+    case DMU_LINE_OF_SECTOR:
+        {
+        sector_t* p = ptr;
+        if(prop < 0 || prop >= p->linecount)
+        {
+            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n", prop);
+        }
+        GetValue(VT_PTR, &p->Lines[prop], args, 0);
         break;
         }
 

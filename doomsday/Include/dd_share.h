@@ -253,6 +253,11 @@ extern          "C" {
 		DD_GAME_EXPORTS,
         DD_SECTOR_COUNT,
         DD_LINE_COUNT,
+        DD_SIDE_COUNT,
+        DD_VERTEX_COUNT,
+        DD_SEG_COUNT,
+        DD_SUBSECTOR_COUNT,
+        DD_NODE_COUNT,
         DD_XGFUNC_LINK             // XG line classes
 	};
 
@@ -513,13 +518,21 @@ extern          "C" {
 
         DMU_LINE_BY_ACT_TAG,
         DMU_SECTOR_BY_ACT_TAG,
+
+        DMU_LINE_OF_SECTOR, // used with pointer functions; prop = line index
         
         DMU_X,
         DMU_Y,
         DMU_XY,
 
         DMU_VERTEX1,
-        DMU_VERTEX2,
+        DMU_VERTEX2,        
+        DMU_VERTEX1_X,
+        DMU_VERTEX1_Y,
+        DMU_VERTEX1_XY,
+        DMU_VERTEX2_X,
+        DMU_VERTEX2_Y,
+        DMU_VERTEX2_XY,
 
         DMU_FRONT_SECTOR,
         DMU_BACK_SECTOR,
@@ -539,7 +552,7 @@ extern          "C" {
         DMU_LINE_COUNT,
         DMU_COLOR,                  // RGB
         DMU_LIGHT_LEVEL,
-        DMU_THINGS,                 // pointer to start of thinglist
+        DMU_THINGS,                 // pointer to start of sector thinglist
 
         DMU_FLOOR_HEIGHT,
         DMU_FLOOR_TEXTURE,
