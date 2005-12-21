@@ -167,11 +167,11 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
  * If a monster yells at a player,
  * it will alert other monsters to the player.
  */
-void P_NoiseAlert(mobj_t *target, mobj_t *emmiter)
+void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
     soundtarget = target;
     validCount++;
-    P_RecursiveSound(emmiter->subsector->sector, 0);
+    P_RecursiveSound(P_GetPtrp(DMU_SUBSECTOR, emitter->subsector, DMU_SECTOR), 0);
 }
 
 boolean P_CheckMeleeRange(mobj_t *actor)
@@ -523,7 +523,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = actor->subsector->sector;
+    sector = P_GetPtrp(DMU_SUBSECTOR, actor->subsector, DMU_SECTOR);
 
     c = 0;
     stop = (actor->lastlook - 1) & 3;
@@ -634,7 +634,8 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    int secid = P_ToIndex(DMU_SECTOR, actor->subsector->sector);
+    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, actor->subsector, 
+                                                DMU_SECTOR));
     mobj_t *targ;
 
     actor->threshold = 0;       // any shot will wake up
@@ -1485,7 +1486,7 @@ void A_PainShootSkull(mobj_t *actor, angle_t angle)
             return;
 
         newmobj = P_SpawnMobj(x, y, z, MT_SKULL);
-        sec = newmobj->subsector->sector;
+        sec = P_GetPtrp(DMU_SUBSECTOR, newmobj->subsector, DMU_SECTOR);
 
         // Check to see if the new Lost Soul's z value is above the
         // ceiling of its new sector, or below the floor. If so, kill it.

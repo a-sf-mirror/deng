@@ -38,6 +38,8 @@
 
 // MACROS ------------------------------------------------------------------
 
+#define OBSOLETE        CVF_NO_ARCHIVE|CVF_HIDE
+
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -59,6 +61,7 @@ DEFCC(CCmdPlayDemo);
 DEFCC(CCmdRecordDemo);
 DEFCC(CCmdStopDemo);
 DEFCC(CCmdPrintPlayerCoords);
+DEFCC(CCmdExitLevel);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 

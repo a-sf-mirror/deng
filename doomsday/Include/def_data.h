@@ -86,7 +86,7 @@ extern          "C" {
         // classes by "name";
         int (C_DECL *doFunc)();
         void (*initFunc)(struct line_s *line);
-        enum xgtravtype traverse;
+        int traverse;
         int travref;
         int travdata;
         int evtypeflags;

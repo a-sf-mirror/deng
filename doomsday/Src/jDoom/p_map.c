@@ -168,7 +168,7 @@ boolean PIT_StompThing(mobj_t *thing, void *data)
     return true;
 }
 
-boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
+boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, boolean alwaysstomp)
 {
     int     xl;
     int     xh;
@@ -207,10 +207,10 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
     // Any contacted lines the step closer together
     // will adjust them.
     tmfloorz = tmdropoffz =
-        P_GetFixedp(DMU_SECTOR, newsubsec->sector, DMU_FLOOR_HEIGHT);
+        P_GetFixedp(DMU_SUBSECTOR, newsubsec, DMU_FLOOR_HEIGHT);
 
     tmceilingz =
-        P_GetFixedp(DMU_SECTOR, newsubsec->sector, DMU_CEILING_HEIGHT);
+        P_GetFixedp(DMU_SUBSECTOR, newsubsec, DMU_CEILING_HEIGHT);
 
     validCount++;
     numspechit = 0;
@@ -607,7 +607,7 @@ boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     tmbbox[BOXRIGHT] = x + tmthing->radius;
     tmbbox[BOXLEFT] = x - tmthing->radius;
 
-    newsec = R_PointInSubsector(x, y)->sector;
+    newsec = P_GetPtrp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_SECTOR);
 
     // $unstuck: floorline used with tmunstuck
     blockline = floorline = ceilingline = NULL;
@@ -1222,8 +1222,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
             stepy = FixedDiv(dy, step);
             stepz = FixedDiv(dz, step);
 
-            cfloor = P_GetFixedp(DMU_SECTOR, contact->sector, DMU_FLOOR_HEIGHT);
-            cceil = P_GetFixedp(DMU_SECTOR, contact->sector, DMU_CEILING_HEIGHT);
+            cfloor = P_GetFixedp(DMU_SUBSECTOR, contact, DMU_FLOOR_HEIGHT);
+            cceil = P_GetFixedp(DMU_SUBSECTOR, contact, DMU_CEILING_HEIGHT);
             // Backtrack until we find a non-empty sector.
             while(cceil <= cfloor && contact != originSub)
             {
@@ -1243,9 +1243,9 @@ boolean PTR_ShootTraverse(intercept_t * in)
 
             // We must not hit a sky plane.
             if((z > ctop &&
-                P_GetIntp(DMU_SECTOR, contact->sector, DMU_CEILING_TEXTURE) == skyflatnum) ||
+                P_GetIntp(DMU_SUBSECTOR, contact, DMU_CEILING_TEXTURE) == skyflatnum) ||
                (z < cbottom &&
-                P_GetIntp(DMU_SECTOR, contact->sector, DMU_FLOOR_TEXTURE) == skyflatnum))
+                P_GetIntp(DMU_SUBSECTOR, contact, DMU_FLOOR_TEXTURE) == skyflatnum))
                 return false;
 
             // Find the approximate hitpoint by stepping back and

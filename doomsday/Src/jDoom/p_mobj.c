@@ -140,7 +140,7 @@ void P_ExplodeMissile(mobj_t *mo)
 // Returns the ground friction factor for the mobj.
 fixed_t P_GetMobjFriction(mobj_t *mo)
 {
-    return XS_Friction(mo->subsector->sector);
+    return XS_Friction(P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR));
 }
 
 void P_XYMovement(mobj_t *mo)
@@ -498,7 +498,7 @@ void P_ZMovement(mobj_t *mo)
 
         if((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
-            if(P_GetIntp(DMU_SECTOR, mo->subsector->sector,
+            if(P_GetIntp(DMU_SUBSECTOR, mo->subsector,
                          DMU_CEILING_TEXTURE) == skyflatnum)
             {
                 // Don't explode against sky.

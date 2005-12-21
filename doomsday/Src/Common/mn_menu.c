@@ -84,7 +84,6 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define DEFCC(name)     int name(int src, int argc, char **argv)
 #define OBSOLETE        CVF_HIDE|CVF_NO_ARCHIVE
 
 #define SAVESTRINGSIZE     24

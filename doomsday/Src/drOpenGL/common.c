@@ -94,8 +94,10 @@ void initState(void)
 
     // Default state for vsync is off
     useVSync = 0;
+#ifdef WIN32
     if(wglSwapIntervalEXT != NULL)
         wglSwapIntervalEXT(0);
+#endif
 
     /*  if(!noArrays)
        {
@@ -652,7 +654,9 @@ int DG_Enable(int cap)
     case DGL_VSYNC:
         if(extVSync)
         {
+#ifdef WIN32
             wglSwapIntervalEXT(1);
+#endif            
             useVSync = DGL_TRUE;
         }
         break;
@@ -741,7 +745,9 @@ void DG_Disable(int cap)
     case DGL_VSYNC:
         if(extVSync)
         {
+#ifdef WIN32        
             wglSwapIntervalEXT(0);
+#endif            
             useVSync = DGL_FALSE;
         }
         break;

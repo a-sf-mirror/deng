@@ -908,7 +908,8 @@ void P_DamageMobj2(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         }
 
         // end of game hell hack
-        if(xsectors[P_ToIndex(DMU_SECTOR, target->subsector->sector)].special == 11
+        if(xsectors[P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, 
+                              target->subsector, DMU_SECTOR))].special == 11
            && damage >= target->health)
         {
             damage = target->health - 1;

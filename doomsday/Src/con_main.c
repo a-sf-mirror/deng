@@ -1171,7 +1171,7 @@ static int executeSubCmd(const char *subCmd, int src)
                (src == CMDS_CMDLINE && !(ccmds[i].flags & CMDF_CMDLINE)) ||
                (src == CMDS_DED && !(ccmds[i].flags & CMDF_DED)))
             {
-                int     cret = ccmds[i].func(src,args.argc, args.argv);
+                int     cret = ccmds[i].func(src, args.argc, args.argv);
 
                 if(cret == false)
                     Con_Printf("Error: '%s' failed.\n", ccmds[i].name);
