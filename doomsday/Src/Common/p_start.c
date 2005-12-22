@@ -37,6 +37,7 @@
 #  include "jHexen/h2def.h"
 #  include "jHexen/p_local.h"
 #  include "x_config.h"
+#  include "r_common.h"
 #elif __JSTRIFE__
 #  include "jStrife/h2def.h"
 #  include "jStrife/p_local.h"
@@ -716,6 +717,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     levelSetup = false;
 }
 
+#if 0
 
 /*
  * Spawns all THINGS that belong in the map.
@@ -792,6 +794,7 @@ static void P_SpawnThings(void)
     // We're finished with the temporary thing list
     //Z_Free(things);
 }
+#endif
 
 #if __JHERETIC__ || __JHEXEN__
 fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,

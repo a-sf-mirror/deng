@@ -29,6 +29,7 @@
 #include "d_net.h"
 #include "g_update.h"
 #include "jHexen/m_ctrl.h"
+#include "Common/g_common.h"
 
 #include "AcFnLink.h"
 
@@ -670,7 +671,7 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.G_Drawer = G_Drawer;
     gx.MN_Drawer = M_Drawer;
     gx.PrivilegedResponder = (boolean (*)(event_t *)) D_PrivilegedResponder;
-    gx.FallBackResponder = M_Responder;
+    //gx.FallBackResponder = M_Responder;
     gx.G_Responder = G_Responder;
     gx.MobjThinker = P_MobjThinker;
     gx.MobjFriction = (fixed_t (*)(void *)) P_GetMobjFriction;

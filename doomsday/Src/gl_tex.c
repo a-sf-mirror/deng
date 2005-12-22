@@ -3554,24 +3554,28 @@ DGLuint GL_PrepareLSTexture(lightingtex_t which)
 
             switch(which)
             {
-                case LST_RADIO_CO:
-                    lightingTexNames[which] =
-                        GL_LoadGraphics("RadioCO", LGM_WHITE_ALPHA);
-                    break;
+            case LST_RADIO_CO:
+                lightingTexNames[which] =
+                    GL_LoadGraphics("RadioCO", LGM_WHITE_ALPHA);
+                break;
 
-                case LST_RADIO_CC:
-                    lightingTexNames[which] =
-                        GL_LoadGraphics("RadioCC", LGM_WHITE_ALPHA);
-                    break;
+            case LST_RADIO_CC:
+                lightingTexNames[which] =
+                    GL_LoadGraphics("RadioCC", LGM_WHITE_ALPHA);
+                break;
 
-                case LST_RADIO_OO:
-                    lightingTexNames[which] =
-                        GL_LoadGraphics("RadioOO", LGM_WHITE_ALPHA);
-                    break;
-                case LST_RADIO_OE:
-                    lightingTexNames[which] =
-                        GL_LoadGraphics("RadioOE", LGM_WHITE_ALPHA);
-                    break;
+            case LST_RADIO_OO:
+                lightingTexNames[which] =
+                    GL_LoadGraphics("RadioOO", LGM_WHITE_ALPHA);
+                break;
+                
+            case LST_RADIO_OE:
+                lightingTexNames[which] =
+                    GL_LoadGraphics("RadioOE", LGM_WHITE_ALPHA);
+                break;
+                    
+            default:
+                break;
             }
             // Enable texture compression as usual.
             gl.Enable(DGL_TEXTURE_COMPRESSION);

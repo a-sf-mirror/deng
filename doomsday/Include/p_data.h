@@ -45,14 +45,14 @@ typedef struct {
 } ticcmd_t;
 
 // Sizes of the engine's internal map data structures.
-#define VTXSIZE     sizeof(vertex_t)
-#define SEGSIZE     sizeof(seg_t)
-#define SECTSIZE    sizeof(sector_t)
-#define SUBSIZE     sizeof(subsector_t)
-#define NODESIZE    sizeof(node_t)
-#define LINESIZE    sizeof(line_t)
-#define SIDESIZE    sizeof(side_t)
-#define POSIZE      sizeof(polyobj_t)
+#define VTXSIZE                 sizeof(vertex_t)
+#define SEGSIZE                 sizeof(seg_t)
+#define SECTSIZE                sizeof(sector_t)
+#define SUBSIZE                 sizeof(subsector_t)
+#define NODESIZE                sizeof(node_t)
+#define LINESIZE                sizeof(line_t)
+#define SIDESIZE                sizeof(side_t)
+#define POSIZE                  sizeof(polyobj_t)
 #define THINGSIZE               sizeof(thing_t)
 
 #define GET_VERTEX_IDX(vtx)     ( ((byte*)(vtx) - vertexes) / VTXSIZE )
@@ -104,6 +104,41 @@ typedef struct {
 
 struct line_s;
 
+typedef struct vertex_s {
+    fixed_t         x;
+    fixed_t         y;
+} vertex_t;
+
+typedef struct fvertex_s {
+    float           x;
+    float           y;
+} fvertex_t;
+
+typedef struct seg_s {
+    vertex_t       *v1, *v2;
+    float           length;	   // Accurate length of the segment (v1 -> v2).
+    fixed_t         offset;
+    struct side_s  *sidedef;
+    struct line_s  *linedef;
+    struct sector_s *frontsector;
+    struct sector_s *backsector;	// NULL for one sided lines
+    byte            flags;
+    angle_t         angle;
+} seg_t;
+
+typedef struct subsector_s {
+    struct sector_s *sector;
+    unsigned short  linecount;
+    unsigned short  firstline;
+    struct polyobj_s *poly;	   // NULL if there is no polyobj
+    // Sorted edge vertices for rendering floors and ceilings.
+    char            numverts;
+    fvertex_t      *verts;	   // A list of edge vertices.
+    fvertex_t       bbox[2];   // Min and max points.
+    fvertex_t       midpoint;  // Center of vertices.
+    byte            flags;
+} subsector_t;
+
 // Each sector has two of these. A plane_t contains information about
 // a plane's movement.
 typedef struct {
@@ -122,8 +157,8 @@ typedef struct sector_s {
     short           floorpic, ceilingpic;
     short           lightlevel;
     byte            rgb[3];
-    byte    floorrgb[3];
-    byte    ceilingrgb[3];
+    byte            floorrgb[3];
+    byte            ceilingrgb[3];
     int             validcount;    // if == validcount, already checked
     struct mobj_s  *thinglist;     // list of mobjs in sector
     int             linecount;
@@ -143,17 +178,17 @@ typedef struct sector_s {
     short           special;
     short           tag;
     // stone, metal, heavy, etc...
-    byte       seqType;       // NOT USED ATM
+    byte            seqType;       // NOT USED ATM
 } sector_t;
 
 typedef struct side_s {
     fixed_t         textureoffset; // add this to the calculated texture col
     fixed_t         rowoffset;     // add this to the calculated texture top
     short           toptexture, bottomtexture, midtexture;
-    byte           toprgb[3], bottomrgb[3], midrgba[4];
-    blendmode_t    blendmode;
-    int          flags;
-    sector_t       *sector;
+    byte            toprgb[3], bottomrgb[3], midrgba[4];
+    blendmode_t     blendmode;
+    int             flags;
+    sector_t        *sector;
 } side_t;
 
 typedef struct line_s {

@@ -1122,8 +1122,7 @@ void P_PtcGenThinker(ptcgen_t * gen)
                 continue;
             }
             pt->tics =
-                def->stages[pt->stage].tics * (1 -
-                                               def->stages[pt->stage].
+                def->stages[pt->stage].tics * (1 - def->stages[(int)pt->stage].
                                                variance * M_FRandom());
 
             // Change in particle angles?

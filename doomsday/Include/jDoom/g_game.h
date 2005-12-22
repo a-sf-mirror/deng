@@ -33,7 +33,7 @@
 //
 // GAME
 //
-void		G_Register(void);
+void            G_Register(void);
 
 void            G_DeathMatchSpawnPlayer(int playernum);
 
@@ -84,44 +84,3 @@ void            G_PrepareWIData(void);
 void            G_QueueBody(mobj_t *body);
 
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log$
-// Revision 1.8.2.1  2005/06/15 18:22:41  skyjake
-// Numerous fixes after compiling with gcc-4.0 on Mac
-//
-// Revision 1.8  2005/05/29 05:56:55  danij
-// Commonised key arrays. Game Status Cvars.
-//
-// Revision 1.7  2004/05/30 08:42:35  skyjake
-// Tweaked indentation style
-//
-// Revision 1.6  2004/05/29 18:19:58  skyjake
-// Refined indentation style
-//
-// Revision 1.5  2004/05/29 09:53:11  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.4  2004/05/28 17:16:35  skyjake
-// Resolved conflicts (branch-1-7 overrides)
-//
-// Revision 1.2.2.2  2004/05/16 10:01:30  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.2.2.1.2.1  2003/11/19 17:08:47  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.2.2.1  2003/09/06 21:09:38  skyjake
-// Improved player spawning with more intelligent spot selection
-//
-// Revision 1.2  2003/07/12 22:10:51  skyjake
-// Added map validation routine
-//
-// Revision 1.1  2003/02/26 19:18:27  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:04:12  Jaakko
-// Added all headers
-//
-//
-//-----------------------------------------------------------------------------

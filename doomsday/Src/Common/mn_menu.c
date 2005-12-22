@@ -2430,12 +2430,12 @@ void M_DrawEpisode(void)
 
 void M_DrawSkillMenu(void)
 {
-    Menu_t *menu = &SkillDef;
 #if __JHEXEN__ || __JSTRIFE__
     M_DrawTitle("CHOOSE SKILL LEVEL:", 16);
 #elif __JHERETIC__
     M_DrawTitle("SKILL LEVEL?", 4);
 #elif __JDOOM__
+    Menu_t *menu = &SkillDef;
     WI_DrawPatch(96, 14, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
                  W_GetNumForName("M_NEWG"), "{case}NEW GAME", ALIGN_LEFT);
     WI_DrawPatch(54, 38, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
@@ -2812,7 +2812,7 @@ void M_DrawReadThis3(void)
 
 void M_DrawOptions(void)
 {
-    Menu_t *menu = &OptionsDef;
+    //Menu_t *menu = &OptionsDef;
 #ifndef __JDOOM__
     WI_DrawPatch(88, 0, 1, 1, 1, menu_alpha, W_GetNumForName("M_HTIC"), NULL, ALIGN_LEFT);
 
@@ -2911,7 +2911,7 @@ void M_DrawWeaponMenu(void)
 
 void M_WeaponOrder(int option, void *data)
 {
-    Menu_t *menu = &WeaponDef;
+    //Menu_t *menu = &WeaponDef;
     int choice = option >> NUMWEAPONS;
     int temp;
 

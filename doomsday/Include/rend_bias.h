@@ -22,6 +22,8 @@
 #ifndef __DOOMSDAY_RENDER_SHADOW_BIAS_H__
 #define __DOOMSDAY_RENDER_SHADOW_BIAS_H__
 
+#include "p_data.h"
+
 #define MAX_BIAS_LIGHTS   (8 * 32) // Hard limit due to change tracking.
 #define MAX_BIAS_AFFECTED 6
 
