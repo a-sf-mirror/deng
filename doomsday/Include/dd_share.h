@@ -520,6 +520,7 @@ extern          "C" {
         DMU_SECTOR_BY_ACT_TAG,
 
         DMU_LINE_OF_SECTOR, // used with pointer functions; prop = line index
+        DMU_SECTOR_OF_SUBSECTOR,
         
         DMU_X,
         DMU_Y,

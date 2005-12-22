@@ -92,8 +92,8 @@ enum {
     ML_NODES,                      // BSP nodes
     ML_SECTORS,                    // Sectors, from editing
     ML_REJECT,                     // LUT, sector-sector visibility
-    ML_BLOCKMAP,                       // LUT, motion clipping, walls/grid element
-    ML_BEHAVIOR        // ACS Scripts (not supported currently)
+    ML_BLOCKMAP,                   // LUT, motion clipping, walls/grid element
+    ML_BEHAVIOR                    // ACS Scripts (not supported currently)
 };
 
 // map data type flags
@@ -569,6 +569,7 @@ static const char* DMU_Str(int prop)
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINE_BY_ACT_TAG, "DMU_LINE_BY_ACT_TAG" },
         { DMU_SECTOR_BY_ACT_TAG, "DMU_SECTOR_BY_ACT_TAG" },
+        { DMU_SECTOR_OF_SUBSECTOR, "DMU_SECTOR_OF_SUBSECTOR" },
         { DMU_X, "DMU_X" },
         { DMU_Y, "DMU_Y" },
         { DMU_XY, "DMU_XY" },
@@ -640,6 +641,9 @@ static void InitArgs(setargs_t* args, int type, int prop)
 
 /*
  * Convert pointer to index.
+ *
+ * TODO: Think of a way to enforce type checks. At the moment it's a bit too
+ *       easy to convert to the wrong kind of object.
  */
 int P_ToIndex(int type, void* ptr)
 {
@@ -663,6 +667,9 @@ int P_ToIndex(int type, void* ptr)
     case DMU_SECTOR:
         return GET_SECTOR_IDX(ptr);
 
+    case DMU_SECTOR_OF_SUBSECTOR:
+        return GET_SECTOR_IDX(((subsector_t*)ptr)->sector)
+
     case DMU_POLYOBJ:
         return GET_POLYOBJ_IDX(ptr);
 
@@ -671,7 +678,7 @@ int P_ToIndex(int type, void* ptr)
 
     case DMU_THING:
         return GET_THING_IDX(ptr);
-
+        
     default:
         Con_Error("P_ToIndex: unknown type %s.\n", DMU_Str(type));
     }
@@ -1616,11 +1623,12 @@ static int GetProperty(void* ptr, void* context)
     case DMU_LINE_OF_SECTOR:
         {
         sector_t* p = ptr;
-        if(prop < 0 || prop >= p->linecount)
+        if(args->prop < 0 || args->prop >= p->linecount)
         {
-            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n", prop);
+            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",   
+                      args->prop);
         }
-        GetValue(VT_PTR, &p->Lines[prop], args, 0);
+        GetValue(VT_PTR, &p->Lines[args->prop], args, 0);
         break;
         }
 
