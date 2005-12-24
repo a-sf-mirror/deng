@@ -170,87 +170,87 @@ extern          "C" {
         DD_GAME_DRAW_HUD_HINT,        // Doomsday advises not to draw the HUD
         DD_LAST_VALUE,
 
-		// General constants (not to be used with Get/Set).
-		DD_NEW = -2,
-		DD_SKY = -1,
-		DD_DISABLE,
-		DD_ENABLE,
-		DD_MASK,
-		DD_YES,
-		DD_NO,
-		DD_TEXTURE,
-		DD_OFFSET,
-		DD_HEIGHT,
-		DD_COLUMNS,
-		DD_ROWS,
-		DD_COLOR_LIMIT,
-		DD_PRE,
-		DD_POST,
-		DD_VERSION_SHORT,
-		DD_VERSION_LONG,
-		DD_PROTOCOL,
-		DD_NUM_SERVERS,
-		DD_TCPIP_ADDRESS,
-		DD_TCPIP_PORT,
-		DD_COM_PORT,
-		DD_BAUD_RATE,
-		DD_STOP_BITS,
-		DD_PARITY,
-		DD_FLOW_CONTROL,
-		DD_MODEM,
-		DD_PHONE_NUMBER,
-		DD_HORIZON,
-		DD_GAME_ID,
-		DD_DEF_MOBJ,
+        // General constants (not to be used with Get/Set).
+        DD_NEW = -2,
+        DD_SKY = -1,
+        DD_DISABLE,
+        DD_ENABLE,
+        DD_MASK,
+        DD_YES,
+        DD_NO,
+        DD_TEXTURE,
+        DD_OFFSET,
+        DD_HEIGHT,
+        DD_COLUMNS,
+        DD_ROWS,
+        DD_COLOR_LIMIT,
+        DD_PRE,
+        DD_POST,
+        DD_VERSION_SHORT,
+        DD_VERSION_LONG,
+        DD_PROTOCOL,
+        DD_NUM_SERVERS,
+        DD_TCPIP_ADDRESS,
+        DD_TCPIP_PORT,
+        DD_COM_PORT,
+        DD_BAUD_RATE,
+        DD_STOP_BITS,
+        DD_PARITY,
+        DD_FLOW_CONTROL,
+        DD_MODEM,
+        DD_PHONE_NUMBER,
+        DD_HORIZON,
+        DD_GAME_ID,
+        DD_DEF_MOBJ,
             DD_DEF_MOBJ_BY_NAME,
-		DD_DEF_STATE,
-		DD_DEF_SPRITE,
-		DD_DEF_SOUND,
-		DD_DEF_MUSIC,
-		DD_DEF_MAP_INFO,
-		DD_DEF_TEXT,
-		DD_DEF_VALUE,
-		DD_DEF_LINE_TYPE,
-		DD_DEF_SECTOR_TYPE,
-		DD_PSPRITE_BOB_X,
-		DD_PSPRITE_BOB_Y,
-		DD_ALT_MOBJ_THINKER,
-		DD_DEF_FINALE_AFTER,
-		DD_DEF_FINALE_BEFORE,
-		DD_RENDER_RESTART_PRE,
-		DD_RENDER_RESTART_POST,
-		DD_DEF_SOUND_BY_NAME,
-		DD_DEF_SOUND_LUMPNAME,
-		DD_ID,
-		DD_LUMP,
-		DD_CD_TRACK,
-		DD_FLAT,
-		DD_GAME_MODE,			   // 16 chars max (swdoom, doom1, udoom, tnt, heretic...) 
-		DD_GAME_CONFIG,			   // String: dm/co-op, jumping, etc.
-		DD_DEF_FINALE,
+        DD_DEF_STATE,
+        DD_DEF_SPRITE,
+        DD_DEF_SOUND,
+        DD_DEF_MUSIC,
+        DD_DEF_MAP_INFO,
+        DD_DEF_TEXT,
+        DD_DEF_VALUE,
+        DD_DEF_LINE_TYPE,
+        DD_DEF_SECTOR_TYPE,
+        DD_PSPRITE_BOB_X,
+        DD_PSPRITE_BOB_Y,
+        DD_ALT_MOBJ_THINKER,
+        DD_DEF_FINALE_AFTER,
+        DD_DEF_FINALE_BEFORE,
+        DD_RENDER_RESTART_PRE,
+        DD_RENDER_RESTART_POST,
+        DD_DEF_SOUND_BY_NAME,
+        DD_DEF_SOUND_LUMPNAME,
+        DD_ID,
+        DD_LUMP,
+        DD_CD_TRACK,
+        DD_FLAT,
+        DD_GAME_MODE,              // 16 chars max (swdoom, doom1, udoom, tnt, heretic...)
+        DD_GAME_CONFIG,            // String: dm/co-op, jumping, etc.
+        DD_DEF_FINALE,
         DD_GAME_NAME,              // (eg jDoom, jHeretic...)
 
-		// Queries
-		DD_TEXTURE_HEIGHT_QUERY = 0x2000,
-		DD_NET_QUERY,
-		DD_SERVER_DATA_QUERY,
-		DD_MODEM_DATA_QUERY,
+        // Queries
+        DD_TEXTURE_HEIGHT_QUERY = 0x2000,
+        DD_NET_QUERY,
+        DD_SERVER_DATA_QUERY,
+        DD_MODEM_DATA_QUERY,
 
-		// Non-integer/special values for Set/Get
-		DD_SKYFLAT_NAME = 0x4000,
-		DD_TRANSLATIONTABLES_ADDRESS,
-		DD_TRANSLATED_SPRITE_TEXTURE,	// Make parameter with DD_TSPR_PARM.
-		DD_TRACE_ADDRESS,		   // divline 'trace' used by PathTraverse.
-		DD_TEXTURE_GLOW,
-		DD_SPRITE_REPLACEMENT,	   // Sprite <-> model replacement.
-		DD_ACTION_LINK,			   // State action routine addresses.
-		DD_MAP_NAME,
-		DD_MAP_AUTHOR,
-		DD_MAP_MUSIC,
-		DD_HIGHRES_TEXTURE_PATH,   // TGA texture directory (obsolete).
-		DD_WINDOW_HANDLE,
-		DD_DYNLIGHT_TEXTURE,
-		DD_GAME_EXPORTS,
+        // Non-integer/special values for Set/Get
+        DD_SKYFLAT_NAME = 0x4000,
+        DD_TRANSLATIONTABLES_ADDRESS,
+        DD_TRANSLATED_SPRITE_TEXTURE,   // Make parameter with DD_TSPR_PARM.
+        DD_TRACE_ADDRESS,          // divline 'trace' used by PathTraverse.
+        DD_TEXTURE_GLOW,
+        DD_SPRITE_REPLACEMENT,     // Sprite <-> model replacement.
+        DD_ACTION_LINK,            // State action routine addresses.
+        DD_MAP_NAME,
+        DD_MAP_AUTHOR,
+        DD_MAP_MUSIC,
+        DD_HIGHRES_TEXTURE_PATH,   // TGA texture directory (obsolete).
+        DD_WINDOW_HANDLE,
+        DD_DYNLIGHT_TEXTURE,
+        DD_GAME_EXPORTS,
         DD_SECTOR_COUNT,
         DD_LINE_COUNT,
         DD_SIDE_COUNT,
@@ -258,51 +258,52 @@ extern          "C" {
         DD_SEG_COUNT,
         DD_SUBSECTOR_COUNT,
         DD_NODE_COUNT,
+        DD_THING_COUNT,
         DD_XGFUNC_LINK             // XG line classes
-	};
+    };
 
-	// Macro for preparing the parameter for DD_TRANSLATED_SPRITE_TEXTURE.
-#define DD_TSPR_PARM(Lump,Class,TableNum)	(((Lump)&0xffffff) + ((Class)<<24) + ((TableNum)<<28))
+    // Macro for preparing the parameter for DD_TRANSLATED_SPRITE_TEXTURE.
+#define DD_TSPR_PARM(Lump,Class,TableNum)   (((Lump)&0xffffff) + ((Class)<<24) + ((TableNum)<<28))
 
-	// Macro for preparing the parameter for DD_TEXTURE_GLOW.
-#define DD_TGLOW_PARM(TNum,IsTexture,Glow)	((TNum & 0xffff) | (IsTexture? 0x80000000 : 0) | (Glow? 0x10000 : 0))
+    // Macro for preparing the parameter for DD_TEXTURE_GLOW.
+#define DD_TGLOW_PARM(TNum,IsTexture,Glow)  ((TNum & 0xffff) | (IsTexture? 0x80000000 : 0) | (Glow? 0x10000 : 0))
 
-	// Bounding box coordinates.
-	enum {
-		BOXTOP = 0,
-		BOXBOTTOM = 1,
-		BOXLEFT = 2,
-		BOXRIGHT = 3
-	};
+    // Bounding box coordinates.
+    enum {
+        BOXTOP = 0,
+        BOXBOTTOM = 1,
+        BOXLEFT = 2,
+        BOXRIGHT = 3
+    };
 
-	//------------------------------------------------------------------------
-	//
-	// Fixed-Point Math
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Fixed-Point Math
+    //
+    //------------------------------------------------------------------------
 
-#define	FRACBITS			16
-#define	FRACUNIT			(1<<FRACBITS)
+#define FRACBITS            16
+#define FRACUNIT            (1<<FRACBITS)
 
-#define	FINEANGLES			8192
-#define	FINEMASK			(FINEANGLES-1)
-#define	ANGLETOFINESHIFT	19	   // 0x100000000 to 0x2000
+#define FINEANGLES          8192
+#define FINEMASK            (FINEANGLES-1)
+#define ANGLETOFINESHIFT    19     // 0x100000000 to 0x2000
 
-#define ANGLE_45			0x20000000
-#define ANGLE_90			0x40000000
-#define ANGLE_180			0x80000000
-#define ANGLE_MAX			0xffffffff
-#define ANGLE_1				(ANGLE_45/45)
-#define ANGLE_60			(ANGLE_180/3)
+#define ANGLE_45            0x20000000
+#define ANGLE_90            0x40000000
+#define ANGLE_180           0x80000000
+#define ANGLE_MAX           0xffffffff
+#define ANGLE_1             (ANGLE_45/45)
+#define ANGLE_60            (ANGLE_180/3)
 
-#define	ANG45				0x20000000
-#define	ANG90				0x40000000
-#define	ANG180				0x80000000
-#define	ANG270				0xc0000000
+#define ANG45               0x20000000
+#define ANG90               0x40000000
+#define ANG180              0x80000000
+#define ANG270              0xc0000000
 
-#define FIX2FLT(x)		( (x) / (float) FRACUNIT )
-#define Q_FIX2FLT(x)	( (float)((x)>>FRACBITS) )
-#define FLT2FIX(x)		( (fixed_t) ((x)*FRACUNIT) )
+#define FIX2FLT(x)      ( (x) / (float) FRACUNIT )
+#define Q_FIX2FLT(x)    ( (float)((x)>>FRACBITS) )
+#define FLT2FIX(x)      ( (fixed_t) ((x)*FRACUNIT) )
 
 #if !defined( NO_FIXED_ASM ) && !defined( GNU_X86_FIXED_ASM )
 
@@ -355,152 +356,152 @@ extern          "C" {
     // This one is always in Src/Common/m_fixed.c.
     fixed_t         FixedDiv(fixed_t a, fixed_t b);
 
-	//------------------------------------------------------------------------
-	//
-	// Key Codes
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Key Codes
+    //
+    //------------------------------------------------------------------------
 
-	// Most key data is simple ASCII.
-#define	DDKEY_ESCAPE			27
-#define	DDKEY_ENTER				13
-#define DDKEY_TAB				9
-#define	DDKEY_BACKSPACE			127
-#define DDKEY_EQUALS			0x3d
-#define DDKEY_MINUS				0x2d
-#define DDKEY_FIVE				0x35
-#define DDKEY_SIX				0x36
-#define DDKEY_SEVEN				0x37
-#define DDKEY_EIGHT				0x38
-#define DDKEY_NINE				0x39
-#define DDKEY_ZERO				0x30
-#define DDKEY_BACKSLASH			0x5C
+    // Most key data is simple ASCII.
+#define DDKEY_ESCAPE            27
+#define DDKEY_ENTER             13
+#define DDKEY_TAB               9
+#define DDKEY_BACKSPACE         127
+#define DDKEY_EQUALS            0x3d
+#define DDKEY_MINUS             0x2d
+#define DDKEY_FIVE              0x35
+#define DDKEY_SIX               0x36
+#define DDKEY_SEVEN             0x37
+#define DDKEY_EIGHT             0x38
+#define DDKEY_NINE              0x39
+#define DDKEY_ZERO              0x30
+#define DDKEY_BACKSLASH         0x5C
 
-	// Extended keys (above 127).
-	enum {
-		DDKEY_RIGHTARROW = 0x80,
-		DDKEY_LEFTARROW,
-		DDKEY_UPARROW,
-		DDKEY_DOWNARROW,
-		DDKEY_F1,
-		DDKEY_F2,
-		DDKEY_F3,
-		DDKEY_F4,
-		DDKEY_F5,
-		DDKEY_F6,
-		DDKEY_F7,
-		DDKEY_F8,
-		DDKEY_F9,
-		DDKEY_F10,
-		DDKEY_F11,
-		DDKEY_F12,
-		DDKEY_NUMLOCK,
-		DDKEY_SCROLL,
-		DDKEY_NUMPAD7,
-		DDKEY_NUMPAD8,
-		DDKEY_NUMPAD9,
-		DDKEY_NUMPAD4,
-		DDKEY_NUMPAD5,
-		DDKEY_NUMPAD6,
-		DDKEY_NUMPAD1,
-		DDKEY_NUMPAD2,
-		DDKEY_NUMPAD3,
-		DDKEY_NUMPAD0,
-		DDKEY_DECIMAL,
-		DDKEY_PAUSE,
-		DDKEY_RSHIFT,
-		DDKEY_LSHIFT = DDKEY_RSHIFT,
-		DDKEY_RCTRL,
-		DDKEY_RALT,
-		DDKEY_LALT = DDKEY_RALT,
-		DDKEY_INS,
-		DDKEY_DEL,
-		DDKEY_PGUP,
-		DDKEY_PGDN,
-		DDKEY_HOME,
-		DDKEY_END,
-		DDKEY_SUBTRACT,			   /* - on numeric keypad */
-		DDKEY_ADD,				   /* + on numeric keypad */
-		DD_HIGHEST_KEYCODE
-	};
+    // Extended keys (above 127).
+    enum {
+        DDKEY_RIGHTARROW = 0x80,
+        DDKEY_LEFTARROW,
+        DDKEY_UPARROW,
+        DDKEY_DOWNARROW,
+        DDKEY_F1,
+        DDKEY_F2,
+        DDKEY_F3,
+        DDKEY_F4,
+        DDKEY_F5,
+        DDKEY_F6,
+        DDKEY_F7,
+        DDKEY_F8,
+        DDKEY_F9,
+        DDKEY_F10,
+        DDKEY_F11,
+        DDKEY_F12,
+        DDKEY_NUMLOCK,
+        DDKEY_SCROLL,
+        DDKEY_NUMPAD7,
+        DDKEY_NUMPAD8,
+        DDKEY_NUMPAD9,
+        DDKEY_NUMPAD4,
+        DDKEY_NUMPAD5,
+        DDKEY_NUMPAD6,
+        DDKEY_NUMPAD1,
+        DDKEY_NUMPAD2,
+        DDKEY_NUMPAD3,
+        DDKEY_NUMPAD0,
+        DDKEY_DECIMAL,
+        DDKEY_PAUSE,
+        DDKEY_RSHIFT,
+        DDKEY_LSHIFT = DDKEY_RSHIFT,
+        DDKEY_RCTRL,
+        DDKEY_RALT,
+        DDKEY_LALT = DDKEY_RALT,
+        DDKEY_INS,
+        DDKEY_DEL,
+        DDKEY_PGUP,
+        DDKEY_PGDN,
+        DDKEY_HOME,
+        DDKEY_END,
+        DDKEY_SUBTRACT,            /* - on numeric keypad */
+        DDKEY_ADD,                 /* + on numeric keypad */
+        DD_HIGHEST_KEYCODE
+    };
 
-	//------------------------------------------------------------------------
-	//
-	// Events
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Events
+    //
+    //------------------------------------------------------------------------
 
-	typedef enum {
-		ev_keydown,
-		ev_keyup,
-		ev_keyrepeat,
-		ev_mouse,
-		ev_mousebdown,
-		ev_mousebup,
-		ev_joystick,			   // Joystick main axes (xyz + Rxyz)
-		ev_joyslider,			   // Joystick sliders
-		ev_joybdown,
-		ev_joybup,
-		ev_povdown,
-		ev_povup
-	} evtype_t;
+    typedef enum {
+        ev_keydown,
+        ev_keyup,
+        ev_keyrepeat,
+        ev_mouse,
+        ev_mousebdown,
+        ev_mousebup,
+        ev_joystick,               // Joystick main axes (xyz + Rxyz)
+        ev_joyslider,              // Joystick sliders
+        ev_joybdown,
+        ev_joybup,
+        ev_povdown,
+        ev_povup
+    } evtype_t;
 
-	typedef struct {
-		evtype_t        type;
-		int             data1;	   // keys/mouse/joystick buttons
-		int             data2;	   // mouse/joystick x move
-		int             data3;	   // mouse/joystick y move
-		int             data4;
-		int             data5;
-		int             data6;
-		int             useclass;	// use a specific bindclass command
-	} event_t;
+    typedef struct {
+        evtype_t        type;
+        int             data1;     // keys/mouse/joystick buttons
+        int             data2;     // mouse/joystick x move
+        int             data3;     // mouse/joystick y move
+        int             data4;
+        int             data5;
+        int             data6;
+        int             useclass;   // use a specific bindclass command
+    } event_t;
 
-	// The mouse wheel is considered two extra mouse buttons.
-#define DDMB_MWHEELUP		0x1000
-#define DDMB_MWHEELDOWN		0x2000
+    // The mouse wheel is considered two extra mouse buttons.
+#define DDMB_MWHEELUP       0x1000
+#define DDMB_MWHEELDOWN     0x2000
 
-	//------------------------------------------------------------------------
-	//
-	// Purge Levels
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Purge Levels
+    //
+    //------------------------------------------------------------------------
 
-#define	PU_STATIC		1		   // static entire execution time
-#define	PU_SOUND		2		   // static while playing
-#define	PU_MUSIC		3		   // static while playing
+#define PU_STATIC       1          // static entire execution time
+#define PU_SOUND        2          // static while playing
+#define PU_MUSIC        3          // static while playing
 
-#define PU_USER1		40
-#define PU_USER2		41
-#define PU_USER3		42
-#define PU_USER4		43
-#define PU_USER5		44
-#define PU_USER6		45
-#define PU_USER7		46
-#define PU_USER8		47
-#define PU_USER9		48
-#define PU_USER10		49
+#define PU_USER1        40
+#define PU_USER2        41
+#define PU_USER3        42
+#define PU_USER4        43
+#define PU_USER5        44
+#define PU_USER6        45
+#define PU_USER7        46
+#define PU_USER8        47
+#define PU_USER9        48
+#define PU_USER10       49
 
-#define	PU_LEVEL		50		   // static until level exited
-#define	PU_LEVSPEC		51		   /* a special thinker in a level
-								      tags >= 100 are purgable whenever needed */
-#define	PU_PURGELEVEL	100
-#define	PU_CACHE		101
+#define PU_LEVEL        50         // static until level exited
+#define PU_LEVSPEC      51         /* a special thinker in a level
+                                      tags >= 100 are purgable whenever needed */
+#define PU_PURGELEVEL   100
+#define PU_CACHE        101
 
-	// Special purgelevel.
-#define PU_GETNAME		100000L
+    // Special purgelevel.
+#define PU_GETNAME      100000L
 
-	//------------------------------------------------------------------------
-	//
-	// Map Data
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Map Data
+    //
+    //------------------------------------------------------------------------
 
     // Map Update constants.
     enum /* do not change the order */
     {
         DMU_ALL = -1,
-    
+
         DMU_VERTEX = 1,
         DMU_SEG,
         DMU_LINE,
@@ -521,13 +522,13 @@ extern          "C" {
 
         DMU_LINE_OF_SECTOR, // used with pointer functions; prop = line index
         DMU_SECTOR_OF_SUBSECTOR,
-        
+
         DMU_X,
         DMU_Y,
         DMU_XY,
 
         DMU_VERTEX1,
-        DMU_VERTEX2,        
+        DMU_VERTEX2,
         DMU_VERTEX1_X,
         DMU_VERTEX1_Y,
         DMU_VERTEX1_XY,
@@ -590,17 +591,17 @@ extern          "C" {
         float           x, y;
     } ddvertexf_t;
 
-	// SetupLevel flags.
-#define DDSLF_POLYGONIZE	0x1	   // Create sector floor/ceiling triangles.
-#define DDSLF_DONT_CLIP		0x2	   /* Don't clip sector polys: use subsectors
-								      as they are (use with DDSLF_POLYGONIZE). */
-#define DDSLF_FIX_SKY		0x4	   // Fix walls between sky-ceiling sectors.
-#define DDSLF_REVERB		0x8	   // Calculate sector reverbs.
-#define DDSLF_NO_SERVER		0x10   // Do not initialize server.
-#define DDSLF_SERVER_ONLY	0x20   // Server init only, nothing else.
-#define DDSLF_AFTER_LOADING	0x40   // After loading a savegame...
-#define DDSLF_INIT_LINKS	0x80   // Init linelinks.
-#define DDSLF_FINALIZE		0x100  // After everything else is done.
+    // SetupLevel flags.
+#define DDSLF_POLYGONIZE    0x1    // Create sector floor/ceiling triangles.
+#define DDSLF_DONT_CLIP     0x2    /* Don't clip sector polys: use subsectors
+                                      as they are (use with DDSLF_POLYGONIZE). */
+#define DDSLF_FIX_SKY       0x4    // Fix walls between sky-ceiling sectors.
+#define DDSLF_REVERB        0x8    // Calculate sector reverbs.
+#define DDSLF_NO_SERVER     0x10   // Do not initialize server.
+#define DDSLF_SERVER_ONLY   0x20   // Server init only, nothing else.
+#define DDSLF_AFTER_LOADING 0x40   // After loading a savegame...
+#define DDSLF_INIT_LINKS    0x80   // Init linelinks.
+#define DDSLF_FINALIZE      0x100  // After everything else is done.
 #define DDSLF_INITIALIZE    0x200  // Before anything else if done.
 
     enum                           // Sector reverb data indices.
@@ -665,66 +666,66 @@ extern          "C" {
 
 #define NO_INDEX 0xffff
 
-	//------------------------------------------------------------------------
-	//
-	// Mobjs
-	//
-	//------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    //
+    // Mobjs
+    //
+    //------------------------------------------------------------------------
 
-	/* 
-	 * Linknodes are used when linking mobjs to lines. Each mobj has a ring
-	 * of linknodes, each node pointing to a line the mobj has been linked to.
-	 * Correspondingly each line has a ring of nodes, with pointers to the 
-	 * mobjs that are linked to that particular line. This way it is possible
-	 * that a single mobj is linked simultaneously to multiple lines (which 
-	 * is common).
-	 * 
-	 * All these rings are maintained by P_(Un)LinkThing(). 
-	 */
-	typedef struct linknode_s {
-		nodeindex_t     prev, next;
-		void           *ptr;
-		int             data;
-	} linknode_t;
+    /*
+     * Linknodes are used when linking mobjs to lines. Each mobj has a ring
+     * of linknodes, each node pointing to a line the mobj has been linked to.
+     * Correspondingly each line has a ring of nodes, with pointers to the
+     * mobjs that are linked to that particular line. This way it is possible
+     * that a single mobj is linked simultaneously to multiple lines (which
+     * is common).
+     *
+     * All these rings are maintained by P_(Un)LinkThing().
+     */
+    typedef struct linknode_s {
+        nodeindex_t     prev, next;
+        void           *ptr;
+        int             data;
+    } linknode_t;
 
-	// Frame flags.
-#define	FF_FULLBRIGHT		0x8000 // flag in thing->frame
-#define FF_FRAMEMASK		0x7fff
+    // Frame flags.
+#define FF_FULLBRIGHT       0x8000 // flag in thing->frame
+#define FF_FRAMEMASK        0x7fff
 
-	// Doomsday mobj flags.
-#define DDMF_DONTDRAW		0x00000001
-#define DDMF_SHADOW			0x00000002
-#define DDMF_ALTSHADOW		0x00000004
-#define DDMF_BRIGHTSHADOW	0x00000008
-#define DDMF_VIEWALIGN		0x00000010
-#define DDMF_FITTOP			0x00000020	// Don't let the sprite go into the ceiling.
-#define DDMF_NOFITBOTTOM	0x00000040
-#define DDMF_LIGHTSCALE		0x00000180	// Light scale (0: full, 3: 1/4).
-#define DDMF_LIGHTOFFSET	0x0000f000	// How to offset light (along Z axis)
-#define DDMF_RESERVED		0x00030000	// don't touch these!! (translation class)
-#define DDMF_BOB			0x00040000	// Bob the Z coord up and down.
-#define DDMF_LOWGRAVITY		0x00080000	// 1/8th gravity (predict)
-#define DDMF_MISSILE		0x00100000	// client removes mobj upon impact
-#define DDMF_FLY			0x00200000	// flying object (doesn't matter if airborne)
-#define DDMF_NOGRAVITY		0x00400000	// isn't affected by gravity (predict)
-#define DDMF_ALWAYSLIT		0x00800000	// Always process DL even if hidden
-#define	DDMF_TRANSLATION	0x1c000000	// use a translation table (>>MF_TRANSHIFT)
-#define DDMF_SOLID			0x20000000	// Solid on client side.
-#define DDMF_LOCAL			0x40000000
-#define DDMF_REMOTE			0x80000000	// This mobj is really on the server.
+    // Doomsday mobj flags.
+#define DDMF_DONTDRAW       0x00000001
+#define DDMF_SHADOW         0x00000002
+#define DDMF_ALTSHADOW      0x00000004
+#define DDMF_BRIGHTSHADOW   0x00000008
+#define DDMF_VIEWALIGN      0x00000010
+#define DDMF_FITTOP         0x00000020  // Don't let the sprite go into the ceiling.
+#define DDMF_NOFITBOTTOM    0x00000040
+#define DDMF_LIGHTSCALE     0x00000180  // Light scale (0: full, 3: 1/4).
+#define DDMF_LIGHTOFFSET    0x0000f000  // How to offset light (along Z axis)
+#define DDMF_RESERVED       0x00030000  // don't touch these!! (translation class)
+#define DDMF_BOB            0x00040000  // Bob the Z coord up and down.
+#define DDMF_LOWGRAVITY     0x00080000  // 1/8th gravity (predict)
+#define DDMF_MISSILE        0x00100000  // client removes mobj upon impact
+#define DDMF_FLY            0x00200000  // flying object (doesn't matter if airborne)
+#define DDMF_NOGRAVITY      0x00400000  // isn't affected by gravity (predict)
+#define DDMF_ALWAYSLIT      0x00800000  // Always process DL even if hidden
+#define DDMF_TRANSLATION    0x1c000000  // use a translation table (>>MF_TRANSHIFT)
+#define DDMF_SOLID          0x20000000  // Solid on client side.
+#define DDMF_LOCAL          0x40000000
+#define DDMF_REMOTE         0x80000000  // This mobj is really on the server.
 
-	// Clear masks (flags the Game DLL is not allowed to touch).
-#define DDMF_CLEAR_MASK		0xc0000000
+    // Clear masks (flags the Game DLL is not allowed to touch).
+#define DDMF_CLEAR_MASK     0xc0000000
 
-#define	DDMF_TRANSSHIFT			26 // table for player colormaps
-#define DDMF_CLASSTRSHIFT		16
-#define DDMF_LIGHTSCALESHIFT	7
-#define DDMF_LIGHTOFFSETSHIFT	12
+#define DDMF_TRANSSHIFT         26 // table for player colormaps
+#define DDMF_CLASSTRSHIFT       16
+#define DDMF_LIGHTSCALESHIFT    7
+#define DDMF_LIGHTOFFSETSHIFT   12
 
-	// The high byte of the selector is not used for modeldef selecting.
-	// 1110 0000 = alpha level (0: opaque => 7: transparent 7/8)
-#define DDMOBJ_SELECTOR_MASK	0x00ffffff
-#define DDMOBJ_SELECTOR_SHIFT	24
+    // The high byte of the selector is not used for modeldef selecting.
+    // 1110 0000 = alpha level (0: opaque => 7: transparent 7/8)
+#define DDMOBJ_SELECTOR_MASK    0x00ffffff
+#define DDMOBJ_SELECTOR_SHIFT   24
 
 #define VISIBLE 1
 #define INVISIBLE -1
@@ -983,7 +984,7 @@ typedef enum blendmode_e {
         char           *help;      // A short help text.
         int             flags;
     } ccmd_t;
-    
+
     // Command sources (where the console command originated from)
     // These are sent with every (sub)ccmd so we can decide whether or not to execute.
     enum {
@@ -1000,7 +1001,7 @@ typedef enum blendmode_e {
     };
 
 // Helper macro for defining console command functions.
-#define DEFCC(name)     int name(int src, int argc, char **argv)   
+#define DEFCC(name)     int name(int src, int argc, char **argv)
 
 // Console command usage flags.
 // (what method(s) CAN NOT be used to invoke a ccmd (used with the CMDS codes above)).
