@@ -82,7 +82,7 @@ enum {
 // Lump order in a map WAD: each map needs a couple of lumps
 // to provide a complete scene geometry description.
 enum {
-    ML_LABEL,                      // A separator, name, ExMx or MAPxx
+    ML_LABEL,                 // A separator, name, ExMx or MAPxx
     ML_THINGS,                     // Monsters, items..
     ML_LINEDEFS,                   // LineDefs, from editing
     ML_SIDEDEFS,                   // SideDefs, from editing
@@ -92,8 +92,8 @@ enum {
     ML_NODES,                      // BSP nodes
     ML_SECTORS,                    // Sectors, from editing
     ML_REJECT,                     // LUT, sector-sector visibility
-    ML_BLOCKMAP,                   // LUT, motion clipping, walls/grid element
-    ML_BEHAVIOR                    // ACS Scripts (not supported currently)
+    ML_BLOCKMAP,                       // LUT, motion clipping, walls/grid element
+    ML_BEHAVIOR        // ACS Scripts (not supported currently)
 };
 
 // map data type flags
@@ -102,6 +102,33 @@ enum {
 #define DT_FLAT     0x04
 #define DT_TEXTURE  0x08
 #define DT_NOINDEX  0x10
+
+// Game specific map format properties
+enum {
+    DAM_LINE_TAG,
+    DAM_LINE_SPECIAL,
+    DAM_LINE_ARG1,
+    DAM_LINE_ARG2,
+    DAM_LINE_ARG3,
+    DAM_LINE_ARG4,
+    DAM_LINE_ARG5,
+    DAM_SECTOR_SPECIAL,
+    DAM_SECTOR_TAG,
+    DAM_THING_TID,
+    DAM_THING_X,
+    DAM_THING_Y,
+    DAM_THING_HEIGHT,
+    DAM_THING_ANGLE,
+    DAM_THING_TYPE,
+    DAM_THING_OPTIONS,
+    DAM_THING_SPECIAL,
+    DAM_THING_ARG1,
+    DAM_THING_ARG2,
+    DAM_THING_ARG3,
+    DAM_THING_ARG4,
+    DAM_THING_ARG5,
+    DAM_PROPERTY_COUNT
+};
 
 // TYPES -------------------------------------------------------------------
 
@@ -277,7 +304,6 @@ typedef struct {
 typedef struct {
     int         flags;
     int         dataType;
-    size_t      size;
     ptrdiff_t   offset;
 } structmember_t;
 
@@ -372,6 +398,7 @@ enum // Value types.
     VT_FIXED,
     VT_ANGLE,
     VT_FLOAT,
+    VT_ULONG,
     VT_PTR,
     VT_FLAT_INDEX
 };
@@ -447,8 +474,8 @@ byte   *lines;
 int     numsides;
 byte   *sides;
 
+// mapthings are actually stored & handled game-side
 int     numthings;
-byte   *things;
 
 short  *blockmaplump;           // offsets in blockmap are from here
 short  *blockmap;
@@ -564,7 +591,6 @@ static const char* DMU_Str(int prop)
         { DMU_REJECT, "DMU_REJECT" },
         { DMU_POLYBLOCKMAP, "DMU_POLYBLOCKMAP" },
         { DMU_POLYOBJ, "DMU_POLYOBJ" },
-        { DMU_THING, "DMU_THING" },
         { DMU_LINE_BY_TAG, "DMU_LINE_BY_TAG" },
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINE_BY_ACT_TAG, "DMU_LINE_BY_ACT_TAG" },
@@ -619,7 +645,6 @@ static const char* DMU_Str(int prop)
         { DMU_CEILING_TEXTURE_MOVE_X, "DMU_CEILING_TEXTURE_MOVE_X" },
         { DMU_CEILING_TEXTURE_MOVE_Y, "DMU_CEILING_TEXTURE_MOVE_Y" },
         { DMU_CEILING_TEXTURE_MOVE_XY, "DMU_CEILING_TEXTURE_MOVE_XY" },
-        { DMU_TYPE, "DMU_TYPE" },
         { 0, NULL }
     };
     int i;
@@ -676,9 +701,6 @@ int P_ToIndex(int type, void* ptr)
     case DMU_NODE:
         return GET_NODE_IDX(ptr);
 
-    case DMU_THING:
-        return GET_THING_IDX(ptr);
-        
     default:
         Con_Error("P_ToIndex: unknown type %s.\n", DMU_Str(type));
     }
@@ -715,9 +737,6 @@ void* P_ToPtr(int type, int index)
 
     case DMU_NODE:
         return NODE_PTR(index);
-
-    case DMU_THING:
-        return THING_PTR(index);
 
     default:
         Con_Error("P_ToPtr: unknown type %s.\n", DMU_Str(type));
@@ -823,18 +842,6 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
         }
         break;
 
-    case DMU_THING:
-        if(index >= 0 && index < numthings)
-        {
-            return callback(THING_PTR(index), context);
-        }
-        else if(index == DMU_ALL)
-        {
-            for(i = 0; i < numthings; ++i)
-                if(!callback(THING_PTR(i), context)) return false;
-        }
-        break;
-
     case DMU_LINE_BY_TAG:
     case DMU_SECTOR_BY_TAG:
     case DMU_LINE_BY_ACT_TAG:
@@ -869,7 +876,6 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
     case DMU_NODE:
     case DMU_SUBSECTOR:
     case DMU_SECTOR:
-    case DMU_THING:
         return callback(ptr, context);
 
     // TODO: If necessary, add special types for accessing multiple objects.
@@ -1247,11 +1253,6 @@ static int SetProperty(void* ptr, void* context)
                   DMU_Str(args->prop));
         break;
 
-    case DMU_THING:
-        Con_Error("SetProperty: Property %s is not writable in DMU_THING.\n",
-                  DMU_Str(args->prop));
-        break;
-
     default:
         Con_Error("SetProperty: Type %s not writable.\n", DMU_Str(args->type));
     }
@@ -1589,7 +1590,8 @@ static int GetProperty(void* ptr, void* context)
             GetValue(VT_SHORT, &p->sector->ceilingpic, args, 0);
             break;
         default:
-            Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n", DMU_Str(args->prop));
+            Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
+                      DMU_Str(args->prop));
         }
         break;
         }
@@ -1615,34 +1617,21 @@ static int GetProperty(void* ptr, void* context)
             GetValue(VT_PTR, &p->thinglist, args, 0);
             break;
         default:
-            Con_Error("GetProperty: DMU_SECTOR has no property %s.\n", DMU_Str(args->prop));
+            Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
+                       DMU_Str(args->prop));
         }
         break;
         }
-        
+
     case DMU_LINE_OF_SECTOR:
         {
         sector_t* p = ptr;
         if(args->prop < 0 || args->prop >= p->linecount)
         {
-            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",   
+            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",
                       args->prop);
         }
         GetValue(VT_PTR, &p->Lines[args->prop], args, 0);
-        break;
-        }
-
-    case DMU_THING:
-        {
-        thing_t* p = ptr;
-        switch(args->prop)
-        {
-        case DMU_TYPE:
-            GetValue(VT_INT, &p->type, args, 0);
-            break;
-        default:
-            Con_Error("GetProperty: DMU_THING has no property %s.\n", DMU_Str(args->prop));
-        }
         break;
         }
 
@@ -2462,9 +2451,9 @@ void P_PrintDebugMapData(void)
         Con_Printf("floor=%i ceiling=%i floorpic(%i)=\"%s\" ",
                      sec->floorheight >> FRACBITS, sec->ceilingheight >> FRACBITS,
                      sec->floorpic, W_CacheLumpNum(sec->floorpic, PU_GETNAME));
-        Con_Printf("ceilingpic(%i)=\"%s\" light=%i type=%i tag=%i\n",
+        Con_Printf("ceilingpic(%i)=\"%s\" light=%i\n",
                      sec->ceilingpic, W_CacheLumpNum(sec->ceilingpic, PU_GETNAME),
-                     sec->lightlevel, sec->special, sec->tag);
+                     sec->lightlevel);
     }
 
     Con_Printf("SSECTORS:\n");
@@ -2492,9 +2481,9 @@ void P_PrintDebugMapData(void)
     for(i = 0; i < numlines; i++)
     {
         li = LINE_PTR(i);
-        Con_Printf("v1=%i v2=%i flags=%i type=%i tag=%i frontside=%i backside=%i\n",
+        Con_Printf("v1=%i v2=%i flags=%i frontside=%i backside=%i\n",
                      GET_VERTEX_IDX(li->v1), GET_VERTEX_IDX(li->v2),
-                     li->flags, li->special, li->tag, li->sidenum[0],
+                     li->flags, li->sidenum[0],
                      (SHORT(li->sidenum[1]) == NO_INDEX)? -1 : li->sidenum[1]);
     }
 
@@ -2509,14 +2498,6 @@ void P_PrintDebugMapData(void)
                     si->midtexture? R_TextureNameForNum(si->midtexture) : "-",
                     GET_SECTOR_IDX(si->sector));
     }
-
-    Con_Printf("THINGS:\n");
-    for(i = 0; i < numthings; i++)
-    {
-        th = THING_PTR(i);
-        Con_Printf("x=%i y=%i height=%i angle=%i type=%i options=%i\n",
-                    th->x, th->y, th->height, th->angle, th->type, th->options);
-    }
 }
 #endif
 
@@ -2524,12 +2505,12 @@ void P_LoadMap(int mapLumpStartNum, int glLumpStartNum, char *levelId)
 {
     numvertexes = 0;
     numsubsectors = 0;
-    numthings = 0;
     numsectors = 0;
     numnodes = 0;
     numsides = 0;
     numlines = 0;
     numsegs = 0;
+    numthings = 0;
 
     // note: most of this ordering is important
     // DJS 01/10/05 - revised load order to allow for cross-referencing
@@ -2786,6 +2767,8 @@ static void P_LoadMapData(int lumpclass, int lumps, int gllumps)
                     dataTypes = NULL;
             }
 
+            Con_Message("Loading map data \"%s\"...\n",LumpInfo[i].lumpname);
+
             // Does the lump have a header?
             if(headerBytes != NULL)
                 dataOffset = strlen(headerBytes);
@@ -2822,17 +2805,11 @@ static void P_LoadMapData(int lumpclass, int lumps, int gllumps)
                     break;
 
                 case idtThings:
+                    // mapthings are game-side
                     oldNum = numthings;
                     newNum = numthings+= elements;
 
-                    if(oldNum > 0)
-                        things = Z_Realloc(things, numthings * sizeof(thing_t), PU_LEVEL);
-                    else
-                        things = Z_Malloc(numthings * sizeof(thing_t), PU_LEVEL, 0);
-
-                    memset(things + oldNum, 0, elements * sizeof(thing_t));
-
-                    structure = (byte *)(things + oldNum);
+                    structure = NULL;
 
                     // Call the game's setup routine
                     if(gx.SetupForThings)
@@ -3106,7 +3083,10 @@ static void P_GroupLines(void)
         memset(sec->rgb, 0xff, 3);
         memset(sec->floorrgb, 0xff, 3);
         memset(sec->ceilingrgb, 0xff, 3);
+        /*
+        // FIXME: JHEXEN specific
         sec->seqType = SEQTYPE_STONE;
+        */
     }
 
     for(k = numlines -1, li = LINE_PTR(0); k >= 0; --k, li++)
@@ -3139,9 +3119,11 @@ static void P_GroupLines(void)
                 M_AddToBox(bbox, li->v2->x, li->v2->y);
             }
         }
+/*
+        //FIXME: jDoom would like to know this.
         else // stops any wayward line specials from misbehaving
             sec->tag = 0;
-
+*/
         // set the degenmobj_t to the middle of the bounding box
         sec->soundorg.x = (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
         sec->soundorg.y = (bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2;
@@ -3167,161 +3149,252 @@ static void P_GroupLines(void)
     Con_Message("Done group lines\n");
 }
 
-
-void P_ReadValue(const void *structure, const structmember_t *member,
-                        byte *src, int size, int flags)
+/*
+ * Reads a value from the (little endian) source buffer. Does some basic
+ * type checking so that incompatible types are not assigned.
+ * Simple conversions are also done, e.g., float to fixed.
+ */
+static void ReadValue(void* dest, int valueType,
+                        byte *src, int size, int flags, int index)
 {
-    void    *dest = (void *) (((byte *)structure) + member->offset);
-
-    switch(member->dataType)
+    if(valueType == VT_BYTE)
     {
-        case MDT_BYTE:
-            *(byte *) dest = *src;
+        byte* d = dest;
+        switch(size)
+        {
+        case 1:
+            *d = *src;
             break;
-
-        case MDT_SHORT:
-            switch(size)
-            {
-                case 2:
-                    if(flags & DT_UNSIGNED)
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(short *) dest = USHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(short *) dest = USHORT(*((short*)(src)));
-                    }
-                    else
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(short *) dest = SHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(short *) dest = SHORT(*((short*)(src)));
-                    }
-                    break;
-
-                case 8:
-                    if(flags & DT_TEXTURE)
-                    {
-                        *(short *) dest = P_CheckTexture((char*)((long long*)(src)), false);
-                    }
-                    else if(flags & DT_FLAT)
-                    {
-                        *(short *) dest = P_CheckTexture((char*)((long long*)(src)), true);
-                    }
-                    break;
-             }
-             break;
-
-        case MDT_FIXEDT:
-            switch(size) // Number of src bytes
-            {
-                case 2:
-                    if(flags & DT_UNSIGNED)
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(fixed_t *) dest = USHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(fixed_t *) dest = USHORT(*((short*)(src)));
-                    }
-                    else
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(fixed_t *) dest = SHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(fixed_t *) dest = SHORT(*((short*)(src)));
-                    }
-                    break;
-
-                case 4:
-                    if(flags & DT_UNSIGNED)
-                        *(fixed_t *) dest = ULONG(*((long*)(src)));
-                    else
-                        *(fixed_t *) dest = LONG(*((long*)(src)));
-                    break;
-
-                default:
-                    break;
-            }
+        case 2:
+            *d = *src;
             break;
-
-        case MDT_ULONG:
-            switch(size) // Number of src bytes
-            {
-                case 2:
-                    if(flags & DT_UNSIGNED)
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(unsigned long *) dest = USHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(unsigned long *) dest = USHORT(*((short*)(src)));
-                    }
-                    else
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(unsigned long *) dest = SHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(unsigned long *) dest = SHORT(*((short*)(src)));
-                    }
-                    break;
-
-                case 4:
-                    if(flags & DT_UNSIGNED)
-                        *(unsigned long *) dest = ULONG(*((long*)(src)));
-                    else
-                        *(unsigned long *) dest = LONG(*((long*)(src)));
-                    break;
-
-                default:
-                    break;
-            }
-            break;
-
-        case MDT_INT:
-            switch(size) // Number of src bytes
-            {
-                case 2:
-                    if(flags & DT_UNSIGNED)
-                    {
-                        if(flags & DT_FRACBITS)
-                            *(int *) dest = USHORT(*((short*)(src))) << FRACBITS;
-                        else
-                            *(int *) dest = USHORT(*((short*)(src)));
-                    }
-                    else
-                    {
-                        if(flags & DT_NOINDEX)
-                        {
-                            unsigned short num = SHORT(*((short*)(src)));
-
-                            *(int *) dest = NO_INDEX;
-
-                            if(num != NO_INDEX)
-                                *(int *) dest = num;
-                        }
-                        else
-                        {
-                            if(flags & DT_FRACBITS)
-                                *(int *) dest = SHORT(*((short*)(src))) << FRACBITS;
-                            else
-                                *(int *) dest = SHORT(*((short*)(src)));
-                        }
-                    }
-                    break;
-
-                case 4:
-                    if(flags & DT_UNSIGNED)
-                        *(int *) dest = ULONG(*((long*)(src)));
-                    else
-                        *(int *) dest = LONG(*((long*)(src)));
-                    break;
-
-                default:
-                    break;
-            }
+        case 4:
+            *d = *src;
             break;
         default:
-            Con_Error("Look stupid - define the data type first!");
+            Con_Error("GetValue: VT_BYTE incompatible with value type %s.\n",
+                      DMU_Str(size));
+        }
+    }
+    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    {
+        short* d = dest;
+        switch(size)
+        {
+        case 2:
+            if(flags & DT_UNSIGNED)
+            {
+                if(flags & DT_FRACBITS)
+                    *d = USHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = USHORT(*((short*)(src)));
+            }
+            else
+            {
+                if(flags & DT_FRACBITS)
+                    *d = SHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = SHORT(*((short*)(src)));
+            }
             break;
+
+        case 8:
+            if(flags & DT_TEXTURE)
+            {
+                *d = P_CheckTexture((char*)((long long*)(src)), false);
+            }
+            else if(flags & DT_FLAT)
+            {
+                *d = P_CheckTexture((char*)((long long*)(src)), true);
+            }
+            break;
+         default:
+            Con_Error("GetValue: VT_SHORT incompatible with value type %s.\n",
+                      DMU_Str(size));
+         }
+    }
+    else if(valueType = VT_FIXED)
+    {
+        fixed_t* d = dest;
+
+        switch(size) // Number of src bytes
+        {
+        case 2:
+            if(flags & DT_UNSIGNED)
+            {
+                if(flags & DT_FRACBITS)
+                    *d = USHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = USHORT(*((short*)(src)));
+            }
+            else
+            {
+                if(flags & DT_FRACBITS)
+                    *d = SHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = SHORT(*((short*)(src)));
+            }
+            break;
+
+        case 4:
+            if(flags & DT_UNSIGNED)
+                *d = ULONG(*((long*)(src)));
+            else
+                *d = LONG(*((long*)(src)));
+            break;
+
+        default:
+            Con_Error("GetValue: VT_FIXED incompatible with value type %s.\n",
+                      DMU_Str(size));
+        }
+    }
+    else if(valueType = VT_ULONG)
+    {
+        unsigned long* d = dest;
+
+        switch(size) // Number of src bytes
+        {
+        case 2:
+            if(flags & DT_UNSIGNED)
+            {
+                if(flags & DT_FRACBITS)
+                    *d = USHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = USHORT(*((short*)(src)));
+            }
+            else
+            {
+                if(flags & DT_FRACBITS)
+                    *d = SHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = SHORT(*((short*)(src)));
+            }
+            break;
+
+        case 4:
+            if(flags & DT_UNSIGNED)
+                *d = ULONG(*((long*)(src)));
+            else
+                *d = LONG(*((long*)(src)));
+            break;
+
+        default:
+            Con_Error("GetValue: VT_ULONG incompatible with value type %s.\n",
+                      DMU_Str(size));
+        }
+    }
+    else if(valueType == VT_INT)
+    {
+        int* d = dest;
+
+        switch(size) // Number of src bytes
+        {
+        case 2:
+            if(flags & DT_UNSIGNED)
+            {
+                if(flags & DT_FRACBITS)
+                    *d = USHORT(*((short*)(src))) << FRACBITS;
+                else
+                    *d = USHORT(*((short*)(src)));
+            }
+            else
+            {
+                if(flags & DT_NOINDEX)
+                {
+                    unsigned short num = SHORT(*((short*)(src)));
+
+                    *d = NO_INDEX;
+
+                    if(num != NO_INDEX)
+                        *d = num;
+                }
+                else
+                {
+                    if(flags & DT_FRACBITS)
+                        *d = SHORT(*((short*)(src))) << FRACBITS;
+                    else
+                        *d = SHORT(*((short*)(src)));
+                }
+            }
+            break;
+
+        case 4:
+            if(flags & DT_UNSIGNED)
+                *d = ULONG(*((long*)(src)));
+            else
+                *d = LONG(*((long*)(src)));
+            break;
+
+        default:
+            Con_Error("GetValue: VT_INT incompatible with value type %s.\n",
+                      DMU_Str(size));;
+        }
+    }
+    else
+    {
+        Con_Error("GetValue: unknown value type %s.\n", DMU_Str(valueType));
+    }
+}
+
+static void HandleProperty(byte *structure, const structinfo_t *idf,
+                           int element, const datatype_t* type, byte *buffer)
+{
+    structmember_t* member;
+    void*   dest;
+
+    byte    tmpbyte = 0;
+    short   tmpshort = 0;
+    unsigned short tmpushort = 0;
+    fixed_t tmpfixed = 0;
+    int     tmpint = 0;
+    unsigned int tmpuint = 0;
+    long    tmplong = 0;
+    long long tmpulong = 0;
+
+    if(type->gameprop)
+    {
+        switch(type->size)
+        {
+        case MDT_BYTE:
+            dest = &tmpbyte;
+            break;
+        case MDT_SHORT:
+            dest = &tmpshort;
+            break;
+        case MDT_USHORT:
+            dest = &tmpushort;
+            break;
+        case MDT_FIXEDT:
+            dest = &tmpfixed;
+            break;
+        case MDT_INT:
+            dest = &tmpint;
+            break;
+        case MDT_UINT:
+            dest = &tmpuint;
+            break;
+        case MDT_LONG:
+            dest = &tmplong;
+            break;
+        case MDT_ULONG:
+            dest = &tmpulong;
+            break;
+        default:
+            Con_Error("P_ReadBinaryMapData: Unsupported data type id %i.\n",type->size);
+        };
+
+        ReadValue(dest, type->size, buffer + type->offset,
+                  type->size, type->flags, 0);
+
+        gx.HandleMapDataProperty(element, idf->type, type->valueid, type->size, dest);
+    }
+    else
+    {
+        member = &((idf)->members[type->valueid]);
+        dest = (void *) (((byte *)structure) + member->offset);
+
+        ReadValue(dest, member->dataType, buffer + type->offset,
+                  type->size, type->flags, 0);
     }
 }
 
@@ -3336,7 +3409,7 @@ static void P_ReadBinaryMapData(byte *structure, const structinfo_t *idf, byte *
     int     blocklimit;
     size_t  structSize = idf->size;
 
-    Con_Message("Loading %d (%i elements) ver %i vals %i...\n", sizeof(fixed_t), elements, version, values);
+    Con_Message("Loading (%i elements) ver %i vals %i...\n", elements, version, values);
 
     // Not very pretty to look at but it IS pretty quick :-)
     blocklimit = (elements / 8) * 8;
@@ -3344,59 +3417,67 @@ static void P_ReadBinaryMapData(byte *structure, const structinfo_t *idf, byte *
     {
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+1, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+2, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+3, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+4, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+5, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+6, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         {
             for(k = values-1; k>= 0; k--)
-                P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                            buffer + types[k].offset, types[k].size, types[k].flags);
+                HandleProperty(structure, idf, i+7, &types[k], buffer);
+
             buffer += elmSize;
-            structure += structSize;
+            if(structure)
+                structure += structSize;
         }
         i += 8;
     }
@@ -3407,69 +3488,76 @@ static void P_ReadBinaryMapData(byte *structure, const structinfo_t *idf, byte *
         // Yes, jump into the switch at the number of elements remaining
         switch(elements - i)
         {
-            case 7:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 6:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 5:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 4:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 3:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 2:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
-            case 1:
-                {
-                    for(k = values-1; k>= 0; k--)
-                        P_ReadValue(structure, &((idf)->members[types[k].valueid]),
-                                    buffer + types[k].offset, types[k].size, types[k].flags);
-                    buffer += elmSize;
-                    structure += structSize;
-                }
-                ++i;
+        case 7:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 6:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 5:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 4:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 3:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 2:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
+        case 1:
+            {
+            for(k = values-1; k>= 0; k--)
+                HandleProperty(structure, idf, i, &types[k], buffer);
+
+            buffer += elmSize;
+            if(structure)
+                structure += structSize;
+            }
+            ++i;
         }
     }
 }
@@ -3596,6 +3684,8 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
     maplinedef_t *mld;
     maplinedefhex_t *mldhex;
     line_t *ld;
+    short   tmp;
+    byte    tmpb;
 
     Con_Message("Loading Linedefs (%i) ver %i...\n", elements, version);
 
@@ -3608,8 +3698,11 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
             for(i = 0; i < numlines; i++, mld++, mldhex++, ld++)
             {
                 ld->flags = SHORT(mld->flags);
-                ld->special = SHORT(mld->special);
-                ld->tag = SHORT(mld->tag);
+
+                tmp = SHORT(mld->special);
+                gx.HandleMapDataProperty(i, VT_INT, DAM_LINE_SPECIAL, 0, &tmp);
+                tmp = SHORT(mld->tag);
+                gx.HandleMapDataProperty(i, VT_INT, DAM_LINE_TAG, 0, &tmp);
 
                 ld->v1 = VERTEX_PTR(SHORT(mld->v1));
                 ld->v2 = VERTEX_PTR(SHORT(mld->v2));
@@ -3624,12 +3717,18 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
             {
                 ld->flags = SHORT(mldhex->flags);
 
-                ld->special = mldhex->special;
-                ld->arg1 = mldhex->arg1;
-                ld->arg2 = mldhex->arg2;
-                ld->arg3 = mldhex->arg3;
-                ld->arg4 = mldhex->arg4;
-                ld->arg5 = mldhex->arg5;
+                tmpb = mldhex->special;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
+                tmpb = mldhex->arg1;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
+                tmpb = mldhex->arg2;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
+                tmpb = mldhex->arg3;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
+                tmpb = mldhex->arg4;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
+                tmpb = mldhex->arg5;
+                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
 
                 ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
                 ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
@@ -3643,6 +3742,7 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
 
 // In BOOM sidedef textures can be overloaded depending on
 // the special of the line that uses the sidedef.
+// Hmm. How should we handle this?
 static void P_CompileSideSpecialsList(void)
 {
     int i;
@@ -3651,8 +3751,10 @@ static void P_CompileSideSpecialsList(void)
     ld = LINE_PTR(0);
     for(i = numlines; i ; i--, ld++)
     {
+/*
         if(ld->sidenum[0] != NO_INDEX && ld->special)
             sidespecials[ld->sidenum[0]] = ld->special;
+*/
     }
 }
 
@@ -3975,30 +4077,35 @@ static void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].numValues = 5;
                     stiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 5, PU_STATIC, 0);
                     // x
-                    stiptr->verInfo[index].values[0].valueid = 1;
+                    stiptr->verInfo[index].values[0].valueid = DAM_THING_X;
                     stiptr->verInfo[index].values[0].flags = 0;
                     stiptr->verInfo[index].values[0].size =  2;
                     stiptr->verInfo[index].values[0].offset = 0;
+                    stiptr->verInfo[index].values[0].gameprop = 1;
                     // y
-                    stiptr->verInfo[index].values[1].valueid = 2;
+                    stiptr->verInfo[index].values[1].valueid = DAM_THING_Y;
                     stiptr->verInfo[index].values[1].flags = 0;
                     stiptr->verInfo[index].values[1].size =  2;
                     stiptr->verInfo[index].values[1].offset = 2;
+                    stiptr->verInfo[index].values[1].gameprop = 1;
                     // angle
-                    stiptr->verInfo[index].values[2].valueid = 4;
+                    stiptr->verInfo[index].values[2].valueid = DAM_THING_ANGLE;
                     stiptr->verInfo[index].values[2].flags = 0;
                     stiptr->verInfo[index].values[2].size =  2;
                     stiptr->verInfo[index].values[2].offset = 4;
+                    stiptr->verInfo[index].values[2].gameprop = 1;
                     // type
-                    stiptr->verInfo[index].values[3].valueid = 5;
+                    stiptr->verInfo[index].values[3].valueid = DAM_THING_TYPE;
                     stiptr->verInfo[index].values[3].flags = 0;
                     stiptr->verInfo[index].values[3].size =  2;
                     stiptr->verInfo[index].values[3].offset = 6;
+                    stiptr->verInfo[index].values[3].gameprop = 1;
                     // options
-                    stiptr->verInfo[index].values[4].valueid = 6;
+                    stiptr->verInfo[index].values[4].valueid = DAM_THING_OPTIONS;
                     stiptr->verInfo[index].values[4].flags = 0;
                     stiptr->verInfo[index].values[4].size =  2;
                     stiptr->verInfo[index].values[4].offset = 8;
+                    stiptr->verInfo[index].values[4].gameprop = 1;
                 }
                 else            // HEXEN format
                 {
@@ -4006,70 +4113,83 @@ static void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].numValues = 13;
                     stiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 13, PU_STATIC, 0);
                     // tid
-                    stiptr->verInfo[index].values[0].valueid = 0;
+                    stiptr->verInfo[index].values[0].valueid = DAM_THING_TID;
                     stiptr->verInfo[index].values[0].flags = 0;
                     stiptr->verInfo[index].values[0].size =  2;
                     stiptr->verInfo[index].values[0].offset = 0;
+                    stiptr->verInfo[index].values[0].gameprop = 1;
                     // x
-                    stiptr->verInfo[index].values[1].valueid = 1;
+                    stiptr->verInfo[index].values[1].valueid = DAM_THING_X;
                     stiptr->verInfo[index].values[1].flags = 0;
                     stiptr->verInfo[index].values[1].size =  2;
                     stiptr->verInfo[index].values[1].offset = 2;
+                    stiptr->verInfo[index].values[1].gameprop = 1;
                     // y
-                    stiptr->verInfo[index].values[2].valueid = 2;
+                    stiptr->verInfo[index].values[2].valueid = DAM_THING_Y;
                     stiptr->verInfo[index].values[2].flags = 0;
                     stiptr->verInfo[index].values[2].size =  2;
                     stiptr->verInfo[index].values[2].offset = 4;
+                    stiptr->verInfo[index].values[2].gameprop = 1;
                     // height
-                    stiptr->verInfo[index].values[3].valueid = 3;
+                    stiptr->verInfo[index].values[3].valueid = DAM_THING_HEIGHT;
                     stiptr->verInfo[index].values[3].flags = 0;
                     stiptr->verInfo[index].values[3].size =  2;
                     stiptr->verInfo[index].values[3].offset = 6;
+                    stiptr->verInfo[index].values[3].gameprop = 1;
                     // angle
-                    stiptr->verInfo[index].values[4].valueid = 4;
+                    stiptr->verInfo[index].values[4].valueid = DAM_THING_ANGLE;
                     stiptr->verInfo[index].values[4].flags = 0;
                     stiptr->verInfo[index].values[4].size =  2;
                     stiptr->verInfo[index].values[4].offset = 8;
+                    stiptr->verInfo[index].values[4].gameprop = 1;
                     // type
-                    stiptr->verInfo[index].values[5].valueid = 5;
+                    stiptr->verInfo[index].values[5].valueid = DAM_THING_TYPE;
                     stiptr->verInfo[index].values[5].flags = 0;
                     stiptr->verInfo[index].values[5].size =  2;
                     stiptr->verInfo[index].values[5].offset = 10;
+                    stiptr->verInfo[index].values[5].gameprop = 1;
                     // options
-                    stiptr->verInfo[index].values[6].valueid = 6;
+                    stiptr->verInfo[index].values[6].valueid = DAM_THING_OPTIONS;
                     stiptr->verInfo[index].values[6].flags = 0;
                     stiptr->verInfo[index].values[6].size =  2;
                     stiptr->verInfo[index].values[6].offset = 12;
+                    stiptr->verInfo[index].values[6].gameprop = 1;
                     // special
-                    stiptr->verInfo[index].values[7].valueid = 7;
+                    stiptr->verInfo[index].values[7].valueid = DAM_THING_SPECIAL;
                     stiptr->verInfo[index].values[7].flags = 0;
                     stiptr->verInfo[index].values[7].size =  1;
                     stiptr->verInfo[index].values[7].offset = 14;
+                    stiptr->verInfo[index].values[7].gameprop = 1;
                     // arg1
-                    stiptr->verInfo[index].values[8].valueid = 8;
+                    stiptr->verInfo[index].values[8].valueid = DAM_THING_ARG1;
                     stiptr->verInfo[index].values[8].flags = 0;
                     stiptr->verInfo[index].values[8].size =  1;
                     stiptr->verInfo[index].values[8].offset = 15;
+                    stiptr->verInfo[index].values[8].gameprop = 1;
                     // arg2
-                    stiptr->verInfo[index].values[9].valueid = 9;
+                    stiptr->verInfo[index].values[9].valueid = DAM_THING_ARG2;
                     stiptr->verInfo[index].values[9].flags = 0;
                     stiptr->verInfo[index].values[9].size =  1;
                     stiptr->verInfo[index].values[9].offset = 16;
+                    stiptr->verInfo[index].values[9].gameprop = 1;
                     // arg3
-                    stiptr->verInfo[index].values[10].valueid = 10;
+                    stiptr->verInfo[index].values[10].valueid = DAM_THING_ARG3;
                     stiptr->verInfo[index].values[10].flags = 0;
                     stiptr->verInfo[index].values[10].size =  1;
                     stiptr->verInfo[index].values[10].offset = 17;
+                    stiptr->verInfo[index].values[10].gameprop = 1;
                     // arg4
-                    stiptr->verInfo[index].values[11].valueid = 11;
+                    stiptr->verInfo[index].values[11].valueid = DAM_THING_ARG4;
                     stiptr->verInfo[index].values[11].flags = 0;
                     stiptr->verInfo[index].values[11].size =  1;
                     stiptr->verInfo[index].values[11].offset = 18;
+                    stiptr->verInfo[index].values[11].gameprop = 1;
                     // arg5
-                    stiptr->verInfo[index].values[12].valueid = 12;
+                    stiptr->verInfo[index].values[12].valueid = DAM_THING_ARG5;
                     stiptr->verInfo[index].values[12].flags = 0;
                     stiptr->verInfo[index].values[12].size =  1;
                     stiptr->verInfo[index].values[12].offset = 19;
+                    stiptr->verInfo[index].values[12].gameprop = 1;
                 }
             }
             else if(lumpClass == mlLineDefs)
@@ -4093,11 +4213,13 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[0].size =  2;
                 stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
                 // y
                 stiptr->verInfo[index].values[1].valueid = 1;
                 stiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[1].size =  2;
                 stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
             }
             else if(lumpClass == mlSegs)
             {
@@ -4109,31 +4231,37 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[0].size =  2;
                 stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
                 // v2
                 stiptr->verInfo[index].values[1].valueid = 1;
                 stiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[1].size =  2;
                 stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
                 // angle
                 stiptr->verInfo[index].values[2].valueid = 2;
                 stiptr->verInfo[index].values[2].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[2].size =  2;
                 stiptr->verInfo[index].values[2].offset = 4;
+                stiptr->verInfo[index].values[2].gameprop = 0;
                 // linedef
                 stiptr->verInfo[index].values[3].valueid = 3;
                 stiptr->verInfo[index].values[3].flags = 0;
                 stiptr->verInfo[index].values[3].size =  2;
                 stiptr->verInfo[index].values[3].offset = 6;
+                stiptr->verInfo[index].values[3].gameprop = 0;
                 // side
                 stiptr->verInfo[index].values[4].valueid = 4;
                 stiptr->verInfo[index].values[4].flags = 0;
                 stiptr->verInfo[index].values[4].size =  2;
                 stiptr->verInfo[index].values[4].offset = 8;
+                stiptr->verInfo[index].values[4].gameprop = 0;
                 // offset
                 stiptr->verInfo[index].values[5].valueid = 5;
                 stiptr->verInfo[index].values[5].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[5].size =  2;
                 stiptr->verInfo[index].values[5].offset = 10;
+                stiptr->verInfo[index].values[5].gameprop = 0;
             }
             else if(lumpClass == mlSSectors)
             {
@@ -4145,11 +4273,13 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[0].size =  2;
                 stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
 
                 stiptr->verInfo[index].values[1].valueid = 1;
                 stiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[1].size =  2;
                 stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
             }
             else if(lumpClass == mlNodes)
             {
@@ -4161,71 +4291,85 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[0].size =  2;
                 stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
                 // y
                 stiptr->verInfo[index].values[1].valueid = 1;
                 stiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[1].size =  2;
                 stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
                 // dx
                 stiptr->verInfo[index].values[2].valueid = 2;
                 stiptr->verInfo[index].values[2].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[2].size =  2;
                 stiptr->verInfo[index].values[2].offset = 4;
+                stiptr->verInfo[index].values[2].gameprop = 0;
                 // dy
                 stiptr->verInfo[index].values[3].valueid = 3;
                 stiptr->verInfo[index].values[3].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[3].size =  2;
                 stiptr->verInfo[index].values[3].offset = 6;
+                stiptr->verInfo[index].values[3].gameprop = 0;
                 // bbox[0][0]
                 stiptr->verInfo[index].values[4].valueid = 4;
                 stiptr->verInfo[index].values[4].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[4].size =  2;
                 stiptr->verInfo[index].values[4].offset = 8;
+                stiptr->verInfo[index].values[4].gameprop = 0;
                 // bbox[0][1]
                 stiptr->verInfo[index].values[5].valueid = 5;
                 stiptr->verInfo[index].values[5].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[5].size =  2;
                 stiptr->verInfo[index].values[5].offset = 10;
+                stiptr->verInfo[index].values[5].gameprop = 0;
                 // bbox[0][2]
                 stiptr->verInfo[index].values[6].valueid = 6;
                 stiptr->verInfo[index].values[6].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[6].size =  2;
                 stiptr->verInfo[index].values[6].offset = 12;
+                stiptr->verInfo[index].values[6].gameprop = 0;
                 // bbox[0][3]
                 stiptr->verInfo[index].values[7].valueid = 7;
                 stiptr->verInfo[index].values[7].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[7].size =  2;
                 stiptr->verInfo[index].values[7].offset = 14;
+                stiptr->verInfo[index].values[7].gameprop = 0;
                 // bbox[1][0]
                 stiptr->verInfo[index].values[8].valueid = 8;
                 stiptr->verInfo[index].values[8].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[8].size =  2;
                 stiptr->verInfo[index].values[8].offset = 16;
+                stiptr->verInfo[index].values[8].gameprop = 0;
                 // bbox[1][1]
                 stiptr->verInfo[index].values[9].valueid = 9;
                 stiptr->verInfo[index].values[9].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[9].size =  2;
                 stiptr->verInfo[index].values[9].offset = 18;
+                stiptr->verInfo[index].values[9].gameprop = 0;
                 // bbox[1][2]
                 stiptr->verInfo[index].values[10].valueid = 10;
                 stiptr->verInfo[index].values[10].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[10].size =  2;
                 stiptr->verInfo[index].values[10].offset = 20;
+                stiptr->verInfo[index].values[10].gameprop = 0;
                 // bbox[1][3]
                 stiptr->verInfo[index].values[11].valueid = 11;
                 stiptr->verInfo[index].values[11].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[11].size =  2;
                 stiptr->verInfo[index].values[11].offset = 22;
+                stiptr->verInfo[index].values[11].gameprop = 0;
                 // children[0]
                 stiptr->verInfo[index].values[12].valueid = 12;
                 stiptr->verInfo[index].values[12].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[12].size =  2;
                 stiptr->verInfo[index].values[12].offset = 24;
+                stiptr->verInfo[index].values[12].gameprop = 0;
                 // children[1]
                 stiptr->verInfo[index].values[13].valueid = 13;
                 stiptr->verInfo[index].values[13].flags = DT_UNSIGNED;
                 stiptr->verInfo[index].values[13].size =  2;
                 stiptr->verInfo[index].values[13].offset = 26;
+                stiptr->verInfo[index].values[13].gameprop = 0;
             }
             else if(lumpClass == mlSectors)
             {
@@ -4237,36 +4381,43 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[0].size =  2;
                 stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
                 // ceiling height
                 stiptr->verInfo[index].values[1].valueid = 1;
                 stiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                 stiptr->verInfo[index].values[1].size =  2;
                 stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
                 // floor pic
                 stiptr->verInfo[index].values[2].valueid = 2;
                 stiptr->verInfo[index].values[2].flags = DT_FLAT;
                 stiptr->verInfo[index].values[2].size =  8;
                 stiptr->verInfo[index].values[2].offset = 4;
+                stiptr->verInfo[index].values[2].gameprop = 0;
                 // ceiling pic
                 stiptr->verInfo[index].values[3].valueid = 3;
                 stiptr->verInfo[index].values[3].flags = DT_FLAT;
                 stiptr->verInfo[index].values[3].size =  8;
                 stiptr->verInfo[index].values[3].offset = 12;
+                stiptr->verInfo[index].values[3].gameprop = 0;
                 // light level
                 stiptr->verInfo[index].values[4].valueid = 4;
                 stiptr->verInfo[index].values[4].flags = 0;
                 stiptr->verInfo[index].values[4].size =  2;
                 stiptr->verInfo[index].values[4].offset = 20;
+                stiptr->verInfo[index].values[4].gameprop = 0;
                 // special
-                stiptr->verInfo[index].values[5].valueid = 5;
+                stiptr->verInfo[index].values[5].valueid = DAM_SECTOR_SPECIAL;
                 stiptr->verInfo[index].values[5].flags = 0;
                 stiptr->verInfo[index].values[5].size =  2;
                 stiptr->verInfo[index].values[5].offset = 22;
+                stiptr->verInfo[index].values[5].gameprop = 1;
                 // tag
-                stiptr->verInfo[index].values[6].valueid = 6;
+                stiptr->verInfo[index].values[6].valueid = DAM_SECTOR_TAG;
                 stiptr->verInfo[index].values[6].flags = 0;
                 stiptr->verInfo[index].values[6].size =  2;
                 stiptr->verInfo[index].values[6].offset = 24;
+                stiptr->verInfo[index].values[6].gameprop = 1;
             }
             else if(lumpClass == mlReject)
             {
@@ -4303,11 +4454,13 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[0].size =  2;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // y
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[1].size =  2;
                     glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
                 else
                 {
@@ -4319,11 +4472,13 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = 0;
                     glstiptr->verInfo[index].values[0].size =  4;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // y
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = 0;
                     glstiptr->verInfo[index].values[1].size =  4;
                     glstiptr->verInfo[index].values[1].offset = 4;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
             }
             else if(lumpClass == glSegs)
@@ -4338,21 +4493,25 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[0].size =  2;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // v2
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[1].size =  2;
                     glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                     // linedef
                     glstiptr->verInfo[index].values[2].valueid = 3;
                     glstiptr->verInfo[index].values[2].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[2].size =  2;
                     glstiptr->verInfo[index].values[2].offset = 4;
+                    glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
                     glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 6;
+                    glstiptr->verInfo[index].values[3].gameprop = 0;
                 }
                 else if(glver == 4)
                 {
@@ -4368,21 +4527,25 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[0].size =  4;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // v2
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[1].size =  4;
                     glstiptr->verInfo[index].values[1].offset = 4;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                     // linedef
                     glstiptr->verInfo[index].values[2].valueid = 3;
                     glstiptr->verInfo[index].values[2].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[2].size =  2;
                     glstiptr->verInfo[index].values[2].offset = 8;
+                    glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
                     glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 10;
+                    glstiptr->verInfo[index].values[3].gameprop = 0;
                 }
             }
             else if(lumpClass == glSSects)
@@ -4397,11 +4560,13 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[0].size =  2;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
 
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[1].size =  2;
                     glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
                 else
                 {
@@ -4413,11 +4578,13 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = 0;
                     glstiptr->verInfo[index].values[0].size =  4;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
 
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = 0;
                     glstiptr->verInfo[index].values[1].size =  4;
                     glstiptr->verInfo[index].values[1].offset = 4;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
             }
             else if(lumpClass == glNodes)
@@ -4432,71 +4599,85 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[0].size =  2;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // y
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[1].size =  2;
                     glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                     // dx
                     glstiptr->verInfo[index].values[2].valueid = 2;
                     glstiptr->verInfo[index].values[2].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[2].size =  2;
                     glstiptr->verInfo[index].values[2].offset = 4;
+                    glstiptr->verInfo[index].values[2].gameprop = 0;
                     // dy
                     glstiptr->verInfo[index].values[3].valueid = 3;
                     glstiptr->verInfo[index].values[3].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 6;
+                    glstiptr->verInfo[index].values[3].gameprop = 0;
                     // bbox[0][0]
                     glstiptr->verInfo[index].values[4].valueid = 4;
                     glstiptr->verInfo[index].values[4].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[4].size =  2;
                     glstiptr->verInfo[index].values[4].offset = 8;
+                    glstiptr->verInfo[index].values[4].gameprop = 0;
                     // bbox[0][1]
                     glstiptr->verInfo[index].values[5].valueid = 5;
                     glstiptr->verInfo[index].values[5].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[5].size =  2;
                     glstiptr->verInfo[index].values[5].offset = 10;
+                    glstiptr->verInfo[index].values[5].gameprop = 0;
                     // bbox[0][2]
                     glstiptr->verInfo[index].values[6].valueid = 6;
                     glstiptr->verInfo[index].values[6].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[6].size =  2;
                     glstiptr->verInfo[index].values[6].offset = 12;
+                    glstiptr->verInfo[index].values[6].gameprop = 0;
                     // bbox[0][3]
                     glstiptr->verInfo[index].values[7].valueid = 7;
                     glstiptr->verInfo[index].values[7].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[7].size =  2;
                     glstiptr->verInfo[index].values[7].offset = 14;
+                    glstiptr->verInfo[index].values[7].gameprop = 0;
                     // bbox[1][0]
                     glstiptr->verInfo[index].values[8].valueid = 8;
                     glstiptr->verInfo[index].values[8].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[8].size =  2;
                     glstiptr->verInfo[index].values[8].offset = 16;
+                    glstiptr->verInfo[index].values[8].gameprop = 0;
                     // bbox[1][1]
                     glstiptr->verInfo[index].values[9].valueid = 9;
                     glstiptr->verInfo[index].values[9].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[9].size =  2;
                     glstiptr->verInfo[index].values[9].offset = 18;
+                    glstiptr->verInfo[index].values[9].gameprop = 0;
                     // bbox[1][2]
                     glstiptr->verInfo[index].values[10].valueid = 10;
                     glstiptr->verInfo[index].values[10].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[10].size =  2;
                     glstiptr->verInfo[index].values[10].offset = 20;
+                    glstiptr->verInfo[index].values[10].gameprop = 0;
                     // bbox[1][3]
                     glstiptr->verInfo[index].values[11].valueid = 11;
                     glstiptr->verInfo[index].values[11].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[11].size =  2;
                     glstiptr->verInfo[index].values[11].offset = 22;
+                    glstiptr->verInfo[index].values[11].gameprop = 0;
                     // children[0]
                     glstiptr->verInfo[index].values[12].valueid = 12;
                     glstiptr->verInfo[index].values[12].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[12].size =  2;
                     glstiptr->verInfo[index].values[12].offset = 24;
+                    glstiptr->verInfo[index].values[12].gameprop = 0;
                     // children[1]
                     glstiptr->verInfo[index].values[13].valueid = 13;
                     glstiptr->verInfo[index].values[13].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[13].size =  2;
                     glstiptr->verInfo[index].values[13].offset = 26;
+                    glstiptr->verInfo[index].values[13].gameprop = 0;
                 }
                 else
                 {
@@ -4508,71 +4689,85 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[0].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[0].size =  2;
                     glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
                     // y
                     glstiptr->verInfo[index].values[1].valueid = 1;
                     glstiptr->verInfo[index].values[1].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[1].size =  2;
                     glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
                     // dx
                     glstiptr->verInfo[index].values[2].valueid = 2;
                     glstiptr->verInfo[index].values[2].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[2].size =  2;
                     glstiptr->verInfo[index].values[2].offset = 4;
+                    glstiptr->verInfo[index].values[2].gameprop = 0;
                     // dy
                     glstiptr->verInfo[index].values[3].valueid = 3;
                     glstiptr->verInfo[index].values[3].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 6;
+                    glstiptr->verInfo[index].values[3].gameprop = 0;
                     // bbox[0][0]
                     glstiptr->verInfo[index].values[4].valueid = 4;
                     glstiptr->verInfo[index].values[4].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[4].size =  2;
                     glstiptr->verInfo[index].values[4].offset = 8;
+                    glstiptr->verInfo[index].values[4].gameprop = 0;
                     // bbox[0][1]
                     glstiptr->verInfo[index].values[5].valueid = 5;
                     glstiptr->verInfo[index].values[5].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[5].size =  2;
                     glstiptr->verInfo[index].values[5].offset = 10;
+                    glstiptr->verInfo[index].values[5].gameprop = 0;
                     // bbox[0][2]
                     glstiptr->verInfo[index].values[6].valueid = 6;
                     glstiptr->verInfo[index].values[6].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[6].size =  2;
                     glstiptr->verInfo[index].values[6].offset = 12;
+                    glstiptr->verInfo[index].values[6].gameprop = 0;
                     // bbox[0][3]
                     glstiptr->verInfo[index].values[7].valueid = 7;
                     glstiptr->verInfo[index].values[7].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[7].size =  2;
                     glstiptr->verInfo[index].values[7].offset = 14;
+                    glstiptr->verInfo[index].values[7].gameprop = 0;
                     // bbox[1][0]
                     glstiptr->verInfo[index].values[8].valueid = 8;
                     glstiptr->verInfo[index].values[8].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[8].size =  2;
                     glstiptr->verInfo[index].values[8].offset = 16;
+                    glstiptr->verInfo[index].values[8].gameprop = 0;
                     // bbox[1][1]
                     glstiptr->verInfo[index].values[9].valueid = 9;
                     glstiptr->verInfo[index].values[9].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[9].size =  2;
                     glstiptr->verInfo[index].values[9].offset = 18;
+                    glstiptr->verInfo[index].values[9].gameprop = 0;
                     // bbox[1][2]
                     glstiptr->verInfo[index].values[10].valueid = 10;
                     glstiptr->verInfo[index].values[10].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[10].size =  2;
                     glstiptr->verInfo[index].values[10].offset = 20;
+                    glstiptr->verInfo[index].values[10].gameprop = 0;
                     // bbox[1][3]
                     glstiptr->verInfo[index].values[11].valueid = 11;
                     glstiptr->verInfo[index].values[11].flags = DT_FRACBITS;
                     glstiptr->verInfo[index].values[11].size =  2;
                     glstiptr->verInfo[index].values[11].offset = 22;
+                    glstiptr->verInfo[index].values[11].gameprop = 0;
                     // children[0]
                     glstiptr->verInfo[index].values[12].valueid = 12;
                     glstiptr->verInfo[index].values[12].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[12].size =  4;
                     glstiptr->verInfo[index].values[12].offset = 24;
+                    glstiptr->verInfo[index].values[12].gameprop = 0;
                     // children[1]
                     glstiptr->verInfo[index].values[13].valueid = 13;
                     glstiptr->verInfo[index].values[13].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[13].size =  4;
                     glstiptr->verInfo[index].values[13].offset = 28;
+                    glstiptr->verInfo[index].values[13].gameprop = 0;
                 }
             }
         }
@@ -4585,13 +4780,11 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtVertexes]).members = Z_Malloc(sizeof(structmember_t) * 2, PU_STATIC, 0);
     // X
     (internalMapDataStructInfo[idtVertexes]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtVertexes]).members[0].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtVertexes]).members[0].size = sizeof(((vertex_t*)0)->x);
+    (internalMapDataStructInfo[idtVertexes]).members[0].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtVertexes]).members[0].offset = myoffsetof(vertex_t, x,0);
     // Y
     (internalMapDataStructInfo[idtVertexes]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtVertexes]).members[1].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtVertexes]).members[1].size = sizeof(((vertex_t*)0)->y);
+    (internalMapDataStructInfo[idtVertexes]).members[1].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtVertexes]).members[1].offset = myoffsetof(vertex_t, y,0);
 
 // subsector_t
@@ -4601,85 +4794,21 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtSSectors]).members = Z_Malloc(sizeof(structmember_t) * 2, PU_STATIC, 0);
     // linecount
     (internalMapDataStructInfo[idtSSectors]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtSSectors]).members[0].dataType = MDT_ULONG;
-    (internalMapDataStructInfo[idtSSectors]).members[0].size = sizeof(((subsector_t*)0)->linecount);
+    (internalMapDataStructInfo[idtSSectors]).members[0].dataType = VT_ULONG;
     (internalMapDataStructInfo[idtSSectors]).members[0].offset = myoffsetof(subsector_t, linecount,0);
     // firstline
     (internalMapDataStructInfo[idtSSectors]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtSSectors]).members[1].dataType = MDT_ULONG;
-    (internalMapDataStructInfo[idtSSectors]).members[1].size = sizeof(((subsector_t*)0)->firstline);
+    (internalMapDataStructInfo[idtSSectors]).members[1].dataType = VT_ULONG;
     (internalMapDataStructInfo[idtSSectors]).members[1].offset = myoffsetof(subsector_t, firstline,0);
 
 // thing_t
+    /*
+     * Map things aren't stored in the engine but we need to
+     * know a few things about the data.
+     */
     internalMapDataStructInfo[idtThings].type = idtThings;
-    internalMapDataStructInfo[idtThings].size = sizeof(thing_t);
-    internalMapDataStructInfo[idtThings].nummembers = 13;
-    (internalMapDataStructInfo[idtThings]).members = Z_Malloc(sizeof(structmember_t) * 13, PU_STATIC, 0);
-    // tid
-    (internalMapDataStructInfo[idtThings]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[0].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[0].size = sizeof(((thing_t*)0)->tid);
-    (internalMapDataStructInfo[idtThings]).members[0].offset = myoffsetof(thing_t, tid,0);
-    // x
-    (internalMapDataStructInfo[idtThings]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[1].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[1].size = sizeof(((thing_t*)0)->x);
-    (internalMapDataStructInfo[idtThings]).members[1].offset = myoffsetof(thing_t, x,0);
-    // y
-    (internalMapDataStructInfo[idtThings]).members[2].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[2].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[2].size = sizeof(((thing_t*)0)->y);
-    (internalMapDataStructInfo[idtThings]).members[2].offset = myoffsetof(thing_t, y,0);
-    // height
-    (internalMapDataStructInfo[idtThings]).members[3].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[3].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[3].size = sizeof(((thing_t*)0)->height);
-    (internalMapDataStructInfo[idtThings]).members[3].offset = myoffsetof(thing_t, height,0);
-    // angle
-    (internalMapDataStructInfo[idtThings]).members[4].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[4].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[4].size = sizeof(((thing_t*)0)->angle);
-    (internalMapDataStructInfo[idtThings]).members[4].offset = myoffsetof(thing_t, angle,0);
-    // type
-    (internalMapDataStructInfo[idtThings]).members[5].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[5].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[5].size = sizeof(((thing_t*)0)->type);
-    (internalMapDataStructInfo[idtThings]).members[5].offset = myoffsetof(thing_t, type,0);
-    // options
-    (internalMapDataStructInfo[idtThings]).members[6].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[6].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtThings]).members[6].size = sizeof(((thing_t*)0)->options);
-    (internalMapDataStructInfo[idtThings]).members[6].offset = myoffsetof(thing_t, options,0);
-    // special
-    (internalMapDataStructInfo[idtThings]).members[7].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[7].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[7].size = sizeof(((thing_t*)0)->special);
-    (internalMapDataStructInfo[idtThings]).members[7].offset = myoffsetof(thing_t, special,0);
-    // arg1
-    (internalMapDataStructInfo[idtThings]).members[8].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[8].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[8].size = sizeof(((thing_t*)0)->arg1);
-    (internalMapDataStructInfo[idtThings]).members[8].offset = myoffsetof(thing_t, arg1,0);
-    // arg2
-    (internalMapDataStructInfo[idtThings]).members[9].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[9].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[9].size = sizeof(((thing_t*)0)->arg2);
-    (internalMapDataStructInfo[idtThings]).members[9].offset = myoffsetof(thing_t, arg2,0);
-    // arg3
-    (internalMapDataStructInfo[idtThings]).members[10].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[10].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[10].size = sizeof(((thing_t*)0)->arg3);
-    (internalMapDataStructInfo[idtThings]).members[10].offset = myoffsetof(thing_t, arg3,0);
-    // arg4
-    (internalMapDataStructInfo[idtThings]).members[11].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[11].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[11].size = sizeof(((thing_t*)0)->arg4);
-    (internalMapDataStructInfo[idtThings]).members[11].offset = myoffsetof(thing_t, arg4,0);
-    // arg5
-    (internalMapDataStructInfo[idtThings]).members[12].flags = 0;
-    (internalMapDataStructInfo[idtThings]).members[12].dataType = MDT_BYTE;
-    (internalMapDataStructInfo[idtThings]).members[12].size = sizeof(((thing_t*)0)->arg5);
-    (internalMapDataStructInfo[idtThings]).members[12].offset = myoffsetof(thing_t, arg5,0);
+    internalMapDataStructInfo[idtThings].size = 10;
+    internalMapDataStructInfo[idtThings].nummembers = DAM_PROPERTY_COUNT;
 
 // sector_t
     internalMapDataStructInfo[idtSectors].type = idtSectors;
@@ -4688,39 +4817,24 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtSectors]).members = Z_Malloc(sizeof(structmember_t) * 7, PU_STATIC, 0);
     // floor height
     (internalMapDataStructInfo[idtSectors]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[0].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtSectors]).members[0].size = sizeof(((sector_t*)0)->floorheight);
+    (internalMapDataStructInfo[idtSectors]).members[0].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtSectors]).members[0].offset = myoffsetof(sector_t, floorheight,0);
     // ceiling height
     (internalMapDataStructInfo[idtSectors]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[1].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtSectors]).members[1].size = sizeof(((sector_t*)0)->ceilingheight);
+    (internalMapDataStructInfo[idtSectors]).members[1].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtSectors]).members[1].offset = myoffsetof(sector_t, ceilingheight,0);
     // floor pic
     (internalMapDataStructInfo[idtSectors]).members[2].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[2].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtSectors]).members[2].size = sizeof(((sector_t*)0)->floorpic);
+    (internalMapDataStructInfo[idtSectors]).members[2].dataType = VT_SHORT;
     (internalMapDataStructInfo[idtSectors]).members[2].offset = myoffsetof(sector_t, floorpic,0);
     // ceiling pic
     (internalMapDataStructInfo[idtSectors]).members[3].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[3].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtSectors]).members[3].size = sizeof(((sector_t*)0)->ceilingpic);
+    (internalMapDataStructInfo[idtSectors]).members[3].dataType = VT_SHORT;
     (internalMapDataStructInfo[idtSectors]).members[3].offset = myoffsetof(sector_t, ceilingpic,0);
     // light level
     (internalMapDataStructInfo[idtSectors]).members[4].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[4].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtSectors]).members[4].size = sizeof(((sector_t*)0)->lightlevel);
+    (internalMapDataStructInfo[idtSectors]).members[4].dataType = VT_SHORT;
     (internalMapDataStructInfo[idtSectors]).members[4].offset = myoffsetof(sector_t, lightlevel,0);
-    // special
-    (internalMapDataStructInfo[idtSectors]).members[5].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[5].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtSectors]).members[5].size = sizeof(((sector_t*)0)->special);
-    (internalMapDataStructInfo[idtSectors]).members[5].offset = myoffsetof(sector_t, special,0);
-    // tag
-    (internalMapDataStructInfo[idtSectors]).members[6].flags = 0;
-    (internalMapDataStructInfo[idtSectors]).members[6].dataType = MDT_SHORT;
-    (internalMapDataStructInfo[idtSectors]).members[6].size = sizeof(((sector_t*)0)->tag);
-    (internalMapDataStructInfo[idtSectors]).members[6].offset = myoffsetof(sector_t, tag,0);
 
 // node_t
     internalMapDataStructInfo[idtNodes].type = idtNodes;
@@ -4729,73 +4843,59 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtNodes]).members = Z_Malloc(sizeof(structmember_t) * 14, PU_STATIC, 0);
     // x
     (internalMapDataStructInfo[idtNodes]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[0].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[0].size = sizeof(((node_t*)0)->x);
+    (internalMapDataStructInfo[idtNodes]).members[0].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[0].offset = myoffsetof(node_t, x,0);
     // y
     (internalMapDataStructInfo[idtNodes]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[1].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[1].size = sizeof(((node_t*)0)->y);
+    (internalMapDataStructInfo[idtNodes]).members[1].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[1].offset = myoffsetof(node_t, y,0);
     // dx
     (internalMapDataStructInfo[idtNodes]).members[2].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[2].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[2].size = sizeof(((node_t*)0)->dx);
+    (internalMapDataStructInfo[idtNodes]).members[2].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[2].offset = myoffsetof(node_t, dx,0);
     // dy
     (internalMapDataStructInfo[idtNodes]).members[3].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[3].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[3].size = sizeof(((node_t*)0)->dy);
+    (internalMapDataStructInfo[idtNodes]).members[3].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[3].offset = myoffsetof(node_t, dy,0);
     // bbox[0][0]
     (internalMapDataStructInfo[idtNodes]).members[4].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[4].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[4].size = sizeof(((node_t*)0)->bbox[0][0]);
+    (internalMapDataStructInfo[idtNodes]).members[4].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[4].offset = myoffsetof(node_t, bbox[0][0],0);
     // bbox[0][1]
     (internalMapDataStructInfo[idtNodes]).members[5].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[5].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[5].size = sizeof(((node_t*)0)->bbox[0][1]);
+    (internalMapDataStructInfo[idtNodes]).members[5].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[5].offset = myoffsetof(node_t, bbox[0][1],0);
     // bbox[0][2]
     (internalMapDataStructInfo[idtNodes]).members[6].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[6].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[6].size = sizeof(((node_t*)0)->bbox[0][2]);
+    (internalMapDataStructInfo[idtNodes]).members[6].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[6].offset = myoffsetof(node_t, bbox[0][2],0);
     // bbox[0][3]
     (internalMapDataStructInfo[idtNodes]).members[7].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[7].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[7].size = sizeof(((node_t*)0)->bbox[0][3]);
+    (internalMapDataStructInfo[idtNodes]).members[7].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[7].offset = myoffsetof(node_t, bbox[0][3],0);
     // bbox[1][0]
     (internalMapDataStructInfo[idtNodes]).members[8].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[8].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[8].size = sizeof(((node_t*)0)->bbox[1][0]);
+    (internalMapDataStructInfo[idtNodes]).members[8].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[8].offset = myoffsetof(node_t, bbox[1][0],0);
     // bbox[1][1]
     (internalMapDataStructInfo[idtNodes]).members[9].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[9].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[9].size = sizeof(((node_t*)0)->bbox[1][1]);
+    (internalMapDataStructInfo[idtNodes]).members[9].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[9].offset = myoffsetof(node_t, bbox[1][1],0);
     // bbox[1][2]
     (internalMapDataStructInfo[idtNodes]).members[10].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[10].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[10].size = sizeof(((node_t*)0)->bbox[1][2]);
+    (internalMapDataStructInfo[idtNodes]).members[10].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[10].offset = myoffsetof(node_t, bbox[1][2],0);
     // bbox[1][3]
     (internalMapDataStructInfo[idtNodes]).members[11].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[11].dataType = MDT_FIXEDT;
-    (internalMapDataStructInfo[idtNodes]).members[11].size = sizeof(((node_t*)0)->bbox[1][3]);
+    (internalMapDataStructInfo[idtNodes]).members[11].dataType = VT_FIXED;
     (internalMapDataStructInfo[idtNodes]).members[11].offset = myoffsetof(node_t, bbox[1][3],0);
     // children[0]
     (internalMapDataStructInfo[idtNodes]).members[12].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[12].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtNodes]).members[12].size = sizeof(((node_t*)0)->children[0]);
+    (internalMapDataStructInfo[idtNodes]).members[12].dataType = VT_INT;
     (internalMapDataStructInfo[idtNodes]).members[12].offset = myoffsetof(node_t, children[0],0);
     // children[1]
     (internalMapDataStructInfo[idtNodes]).members[13].flags = 0;
-    (internalMapDataStructInfo[idtNodes]).members[13].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtNodes]).members[13].size = sizeof(((node_t*)0)->children[1]);
+    (internalMapDataStructInfo[idtNodes]).members[13].dataType = VT_INT;
     (internalMapDataStructInfo[idtNodes]).members[13].offset = myoffsetof(node_t, children[1],0);
 
 // segtmp_t
@@ -4805,33 +4905,27 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtSegs]).members = Z_Malloc(sizeof(structmember_t) * 6, PU_STATIC, 0);
     // v1
     (internalMapDataStructInfo[idtSegs]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[0].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[0].size = sizeof(((segtmp_t*)0)->v1);
+    (internalMapDataStructInfo[idtSegs]).members[0].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[0].offset = myoffsetof(segtmp_t, v1,0);
     // v2
     (internalMapDataStructInfo[idtSegs]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[1].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[1].size = sizeof(((segtmp_t*)0)->v2);
+    (internalMapDataStructInfo[idtSegs]).members[1].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[1].offset = myoffsetof(segtmp_t, v2,0);
     // angle
     (internalMapDataStructInfo[idtSegs]).members[2].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[2].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[2].size = sizeof(((segtmp_t*)0)->angle);
+    (internalMapDataStructInfo[idtSegs]).members[2].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[2].offset = myoffsetof(segtmp_t, angle,0);
     // linedef
     (internalMapDataStructInfo[idtSegs]).members[3].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[3].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[3].size = sizeof(((segtmp_t*)0)->linedef);
+    (internalMapDataStructInfo[idtSegs]).members[3].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[3].offset = myoffsetof(segtmp_t, linedef,0);
     // side
     (internalMapDataStructInfo[idtSegs]).members[4].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[4].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[4].size = sizeof(((segtmp_t*)0)->side);
+    (internalMapDataStructInfo[idtSegs]).members[4].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[4].offset = myoffsetof(segtmp_t, side,0);
     // offset
     (internalMapDataStructInfo[idtSegs]).members[5].flags = 0;
-    (internalMapDataStructInfo[idtSegs]).members[5].dataType = MDT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[5].size = sizeof(((segtmp_t*)0)->offset);
+    (internalMapDataStructInfo[idtSegs]).members[5].dataType = VT_INT;
     (internalMapDataStructInfo[idtSegs]).members[5].offset = myoffsetof(segtmp_t, offset,0);
 }
 
