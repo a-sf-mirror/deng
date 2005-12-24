@@ -158,7 +158,7 @@ typedef struct {
     // not match any internal (engine side) map data property.
     // It is assumed that it is game specifc data and that
     // the game will handle what is done with it.
-    int             (*HandleMapDataElement) (int id, int dtype, int prop,
+    int             (*HandleMapDataProperty) (int id, int dtype, int prop,
                                              int type, void *data);
 } game_export_t;
 
