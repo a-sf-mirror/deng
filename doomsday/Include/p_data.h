@@ -53,7 +53,6 @@ typedef struct {
 #define LINESIZE                sizeof(line_t)
 #define SIDESIZE                sizeof(side_t)
 #define POSIZE                  sizeof(polyobj_t)
-#define THINGSIZE               sizeof(thing_t)
 
 #define GET_VERTEX_IDX(vtx)     ( ((byte*)(vtx) - vertexes) / VTXSIZE )
 #define GET_LINE_IDX(li)        ( ((byte*)(li) - lines) / LINESIZE )
@@ -72,7 +71,6 @@ typedef struct {
 #define LINEIDX(i)  ((i)*LINESIZE)
 #define SIDEIDX(i)  ((i)*SIDESIZE)
 #define POIDX(i)    ((i)*POSIZE)
-#define THINGIDX(i) ((i)*THINGSIZE)
 
 #define VERTEX_PTR(i)       ( (vertex_t*) (vertexes+VTXIDX(i)) )
 #define SEG_PTR(i)          ( (seg_t*) (segs+SEGIDX(i)) )
@@ -82,7 +80,6 @@ typedef struct {
 #define LINE_PTR(i)         ( (line_t*) (lines+LINEIDX(i)) )
 #define SIDE_PTR(i)         ( (side_t*) (sides+SIDEIDX(i)) )
 #define PO_PTR(i)           ( (polyobj_t*) ((byte*)polyobjs+POIDX(i)) )
-#define THING_PTR(i)        ( (thing_t*) ((byte*)things+THINGIDX(i)) )
 
 // Map line flags.
 #define ML_BLOCKING         0x0001
@@ -116,12 +113,12 @@ typedef struct fvertex_s {
 
 typedef struct seg_s {
     vertex_t       *v1, *v2;
-    float           length;	   // Accurate length of the segment (v1 -> v2).
+    float           length;    // Accurate length of the segment (v1 -> v2).
     fixed_t         offset;
     struct side_s  *sidedef;
     struct line_s  *linedef;
     struct sector_s *frontsector;
-    struct sector_s *backsector;	// NULL for one sided lines
+    struct sector_s *backsector;    // NULL for one sided lines
     byte            flags;
     angle_t         angle;
 } seg_t;
@@ -130,10 +127,10 @@ typedef struct subsector_s {
     struct sector_s *sector;
     unsigned short  linecount;
     unsigned short  firstline;
-    struct polyobj_s *poly;	   // NULL if there is no polyobj
+    struct polyobj_s *poly;    // NULL if there is no polyobj
     // Sorted edge vertices for rendering floors and ceilings.
     char            numverts;
-    fvertex_t      *verts;	   // A list of edge vertices.
+    fvertex_t      *verts;     // A list of edge vertices.
     fvertex_t       bbox[2];   // Min and max points.
     fvertex_t       midpoint;  // Center of vertices.
     byte            flags;
@@ -173,12 +170,6 @@ typedef struct sector_s {
     plane_t         planes[2];     // PLN_*
     degenmobj_t     soundorg;      // origin for any sounds
     // played by the sector
-
-    // temporay stuff
-    short           special;
-    short           tag;
-    // stone, metal, heavy, etc...
-    byte            seqType;       // NOT USED ATM
 } sector_t;
 
 typedef struct side_s {
@@ -203,15 +194,6 @@ typedef struct line_s {
     int             validcount;
     int             sidenum[2];
     fixed_t         bbox[4];
-
-    // temporary stuff
-    short           special;
-    short           tag;
-    byte            arg1;
-    byte            arg2;
-    byte            arg3;
-    byte            arg4;
-    byte            arg5;
 } line_t;
 
 typedef struct polyobj_s {
@@ -239,22 +221,6 @@ typedef struct {
     int             children[2];   // if NF_SUBSECTOR its a subsector
 } node_t;
 
-typedef struct {
-    short           tid;
-    short         x;
-    short         y;
-    short           height;
-    short           angle;
-    short           type;
-    short           options;
-    byte            special;
-    byte            arg1;
-    byte            arg2;
-    byte            arg3;
-    byte            arg4;
-    byte            arg5;
-} thing_t;
-
 extern int      numvertexes;
 extern byte    *vertexes;
 
@@ -277,7 +243,6 @@ extern int      numsides;
 extern byte    *sides;
 
 extern int      numthings;
-extern byte    *things;
 
 extern fixed_t  mapgravity;        // Gravity for the current map.
 
