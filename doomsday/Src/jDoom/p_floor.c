@@ -469,7 +469,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
 
             for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
             {
-                // Choose the correct texture and special on twosided lines.
+                // Choose the correct texture and special on two sided lines.
 #ifdef TODO_MAP_UPDATE
                 ln = &sec->Lines[i];
 #endif

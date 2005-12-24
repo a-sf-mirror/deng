@@ -77,7 +77,9 @@ boolean onground;
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
     mobj_t *mo = player->plr->mo;
-    int     mul = XS_ThrustMul(mo->subsector->sector);
+    int     mul;
+
+    mul = XS_ThrustMul(P_GetPtrp(DMU_SUBSECTOR,mo->subsector, DMU_SECTOR));
 
     angle >>= ANGLETOFINESHIFT;
 
@@ -370,7 +372,8 @@ void P_ClientSideThink()
     // (The thrust multiplier is used by Cl_MovePlayer, the movement
     // "predictor"; almost all clientside movement is handled by that
     // routine, though.)
-    Set(DD_CPLAYER_THRUST_MUL, XS_ThrustMul(mo->subsector->sector));
+    Set(DD_CPLAYER_THRUST_MUL,
+        XS_ThrustMul(P_GetPtrp(DMU_SUBSECTOR,mo->subsector, DMU_SECTOR)));
 
     // Update view angles. The server fixes them if necessary.
     mo->angle = dpl->clAngle;
@@ -379,7 +382,9 @@ void P_ClientSideThink()
 
 void P_PlayerThink(player_t *player)
 {
-    int idx = P_ToIndex(DMU_SECTOR, player->plr->mo->subsector->sector);
+    int idx = P_ToIndex(DMU_SECTOR,
+                        P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector,
+                                  DMU_SECTOR));
     mobj_t *plrmo = player->plr->mo;
     ticcmd_t *cmd;
     weapontype_t newweapon, oldweapon;

@@ -214,16 +214,14 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
 
         if(!other)
             continue;
 
-        if(other->floorheight < floor)
-            floor = other->floorheight;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) < floor)
+            floor = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
     }
     return floor;
 }
@@ -240,16 +238,14 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
 
         if(!other)
             continue;
 
-        if(other->floorheight > floor)
-            floor = other->floorheight;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) > floor)
+            floor = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
     }
     return floor;
 }
@@ -271,16 +267,16 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 
     for(i = 0, h = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
 
         if(!other)
             continue;
 
-        if(other->floorheight > height)
-            heightlist[h++] = other->floorheight;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) > height)
+            heightlist[h++] =
+                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+
         // Check for overflow. Exit.
         if(h >= MAX_ADJOINING_SECTORS)
         {
@@ -315,16 +311,16 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
 
         if(!other)
             continue;
 
-        if(other->ceilingheight < height)
-            height = other->ceilingheight;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT) < height)
+            height =
+                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
+
     }
     return height;
 }
@@ -341,16 +337,15 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
 
         if(!other)
             continue;
 
-        if(other->ceilingheight > height)
-            height = other->ceilingheight;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT) > height)
+            height =
+                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
     }
     return height;
 }
@@ -361,12 +356,14 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 int P_FindSectorFromLineTag(line_t *line, int start)
 {
     int     i;
+    xline_t *xline;
 
-#ifdef TODO_MAP_UPDATE
+    xline = &xlines[P_ToIndex(DMU_LINE, line)];
+
+
     for(i = start + 1; i < numsectors; i++)
-        if(sectors[i].tag == line->tag)
+        if(xsectors[i].tag == xline->tag)
             return i;
-#endif
 
     return -1;
 }
@@ -385,16 +382,14 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
     min = max;
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        line = sector->Lines[i];
+        line = P_GetPtrp(DMU_LINE_OF_SECTOR, sector, i);
         check = getNextSector(line, sector);
 
         if(!check)
             continue;
 
-        if(check->lightlevel < min)
-            min = check->lightlevel;
-#endif
+        if(P_GetFixedp(DMU_SECTOR, check, DMU_LIGHT_LEVEL) < min)
+            min = P_GetIntp(DMU_SECTOR, check, DMU_LIGHT_LEVEL);
     }
     return min;
 }
@@ -919,7 +914,11 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
  */
 void P_PlayerInSpecialSector(player_t *player)
 {
-    int sec = P_ToIndex(DMU_SECTOR, player->plr->mo->subsector->sector);
+    int sec;
+    sector_t *sector;
+
+    sector = P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
+    sec = P_ToIndex(DMU_SECTOR, sector);
 
     // Falling, not all the way down yet?
     if(player->plr->mo->z != P_GetInt(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT))
@@ -991,7 +990,9 @@ void P_PlayerInSpecialSector(player_t *player)
 void P_UpdateSpecials(void)
 {
     int     i;
+    int     x;
     line_t *line;
+    side_t *side;
 
     // Extended lines and sectors.
     XG_Ticker();
@@ -1024,16 +1025,15 @@ void P_UpdateSpecials(void)
     //  ANIMATE LINE SPECIALS
     for(i = 0; i < numlinespecials; i++)
     {
-#ifdef TODO_MAP_UPDATE
         line = linespeciallist[i];
-#endif
+
         switch(xlines[P_ToIndex(DMU_LINE, line)].special)
         {
         case 48:
+            side = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
             // EFFECT FIRSTCOL SCROLL +
-#ifdef TODO_MAP_UPDATE
-            sides[line->sidenum[0]].textureoffset += FRACUNIT;
-#endif
+            x = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X);
+            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, x += FRACUNIT);
             break;
         }
     }
@@ -1080,6 +1080,7 @@ int EV_DoDonut(line_t *line)
     int     secnum;
     int     rtn;
     int     i;
+    line_t *check;
     floormove_t *floor;
 
     secnum = -1;
@@ -1093,43 +1094,45 @@ int EV_DoDonut(line_t *line)
             continue;
 
         rtn = 1;
-#ifdef TODO_MAP_UPDATE
-        s2 = getNextSector(s1->Lines[0], s1);
-        for(i = 0; i < s2->linecount; i++)
+
+        s2 = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, s1, 0), s1);
+        for(i = 0; i < P_GetIntp(DMU_SECTOR, s2, DMU_LINE_COUNT); i++)
         {
-            if((!s2->Lines[i]->flags & ML_TWOSIDED) ||
-               (s2->Lines[i]->backsector == s1))
+            check = P_GetPtrp(DMU_LINE_OF_SECTOR, s2, i);
+
+            if((!P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_TWOSIDED) ||
+               (P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR) == s1))
                 continue;
-            s3 = s2->Lines[i]->backsector;
+
+            s3 = P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR);
 
             //  Spawn rising slime
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
             P_AddThinker(&floor->thinker);
-            s2->specialdata = floor;
+            xsectors[P_ToIndex(DMU_SECTOR, s2)].specialdata = floor;
             floor->thinker.function = T_MoveFloor;
             floor->type = donutRaise;
             floor->crush = false;
             floor->direction = 1;
             floor->sector = s2;
             floor->speed = FLOORSPEED / 2;
-            floor->texture = s3->floorpic;
+            floor->texture = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_TEXTURE);
             floor->newspecial = 0;
-            floor->floordestheight = s3->floorheight;
+            floor->floordestheight = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_HEIGHT);
 
             //  Spawn lowering donut-hole
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
             P_AddThinker(&floor->thinker);
-            s1->specialdata = floor;
+            xsectors[P_ToIndex(DMU_SECTOR, s1)].specialdata = floor;
             floor->thinker.function = T_MoveFloor;
             floor->type = lowerFloor;
             floor->crush = false;
             floor->direction = -1;
             floor->sector = s1;
             floor->speed = FLOORSPEED / 2;
-            floor->floordestheight = s3->floorheight;
+            floor->floordestheight = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_HEIGHT);
             break;
         }
-#endif
     }
     return rtn;
 }

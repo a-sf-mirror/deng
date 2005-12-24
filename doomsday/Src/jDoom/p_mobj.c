@@ -266,8 +266,8 @@ void P_XYMovement(mobj_t *mo)
             if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
                mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
             {
-                if(mo->floorz != P_GetFixedp(DMU_SECTOR, mo->subsector->sector,
-                                             DMU_FLOOR_HEIGHT))
+                if(mo->floorz !=
+                   P_GetFixedp(DMU_SUBSECTOR, mo->subsector, DMU_FLOOR_HEIGHT))
                     return;
             }
         }
@@ -325,9 +325,11 @@ void P_FloorSplash(mobj_t *mo)
 
 void P_ZMovement(mobj_t *mo)
 {
-    fixed_t gravity = XS_Gravity(mo->subsector->sector);
+    fixed_t gravity;
     fixed_t dist;
     fixed_t delta;
+
+    gravity = XS_Gravity(P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR));
 
     // $democam: cameramen get special z movement
     if(P_CameraZMovement(mo))
@@ -522,8 +524,8 @@ void P_NightmareRespawn(mobj_t *mobj)
     mobj_t *mo;
     thing_t *mthing;
 
-    x = mobj->spawnpoint.x << FRACBITS;
-    y = mobj->spawnpoint.y << FRACBITS;
+    x = mobj->spawnpoint->x << FRACBITS;
+    y = mobj->spawnpoint->y << FRACBITS;
 
     // somthing is occupying it's position?
     if(!P_CheckPosition(mobj, x, y))
@@ -532,7 +534,7 @@ void P_NightmareRespawn(mobj_t *mobj)
     // spawn a teleport fog at old spot
     // because of removal of the body?
     mo = P_SpawnMobj(mobj->x, mobj->y,
-                     P_GetFixedp(DMU_SECTOR, mobj->subsector->sector,
+                     P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
                                  DMU_FLOOR_HEIGHT),
                      MT_TFOG);
     // initiate teleport sound
@@ -541,13 +543,14 @@ void P_NightmareRespawn(mobj_t *mobj)
     // spawn a teleport fog at the new spot
     ss = R_PointInSubsector(x, y);
 
-    mo = P_SpawnMobj(x, y, P_GetFixedp(DMU_SECTOR, ss->sector,
-                                 DMU_FLOOR_HEIGHT), MT_TFOG);
+    mo = P_SpawnMobj(x, y,
+                     P_GetFixedp(DMU_SUBSECTOR, ss, DMU_FLOOR_HEIGHT),
+                     MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
 
     // spawn the new monster
-    mthing = &mobj->spawnpoint;
+    mthing = mobj->spawnpoint;
 
     // spawn it
     if(mobj->info->flags & MF_SPAWNCEILING)
@@ -588,10 +591,10 @@ void P_MobjThinker(mobj_t *mobj)
     if(mobj->type == MT_LIGHTSOURCE)
     {
         if(mobj->movedir > 0)
-            mobj->z = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector,
+            mobj->z = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
                                   DMU_FLOOR_HEIGHT) + mobj->movedir;
         else
-            mobj->z = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector,
+            mobj->z = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
                                   DMU_CEILING_HEIGHT) + mobj->movedir;
         return;
     }
@@ -771,10 +774,11 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     P_SetThingPosition(mobj);
 
     mobj->dropoffz =            //killough $dropoff_fix
-        mobj->floorz = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector,
-                                 DMU_FLOOR_HEIGHT);
-    mobj->ceilingz = P_GetFixedp(DMU_SECTOR, mobj->subsector->sector,
-                                 DMU_CEILING_HEIGHT);
+        mobj->floorz =
+            P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
+
+    mobj->ceilingz =
+        P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
 
     if(z == ONFLOORZ)
         mobj->z = mobj->floorz;
@@ -791,7 +795,7 @@ void P_RemoveMobj(mobj_t *mobj)
     if((mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED) &&
        (mobj->type != MT_INV) && (mobj->type != MT_INS))
     {
-        itemrespawnque[iquehead] = mobj->spawnpoint;
+        itemrespawnque[iquehead] = *mobj->spawnpoint;
         itemrespawntime[iquehead] = leveltime;
         iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
 
@@ -841,8 +845,11 @@ void P_RespawnSpecials(void)
 
     // spawn a teleport fog at the new spot
     ss = R_PointInSubsector(x, y);
-    mo = P_SpawnMobj(x, y, P_GetFixedp(DMU_SECTOR, ss->sector,
-                                       DMU_FLOOR_HEIGHT), MT_IFOG);
+
+    mo = P_SpawnMobj(x, y,
+                     P_GetFixedp(DMU_SUBSECTOR, ss, DMU_FLOOR_HEIGHT),
+                     MT_IFOG);
+
     S_StartSound(sfx_itmbk, mo);
 
     // find which type to spawn
@@ -859,7 +866,7 @@ void P_RespawnSpecials(void)
         z = ONFLOORZ;
 
     mo = P_SpawnMobj(x, y, z, i);
-    mo->spawnpoint = *mthing;
+    mo->spawnpoint = mthing;
     mo->angle = ANG45 * (mthing->angle / 45);
 
     // pull it from the que
@@ -868,10 +875,10 @@ void P_RespawnSpecials(void)
 
 mobj_t *P_SpawnTeleFog(int x, int y)
 {
-    subsector_t *ss = R_PointInSubsector(x, y);
-
-    return P_SpawnMobj(x, y, P_GetFixedp(DMU_SECTOR, ss->sector,
-                                 DMU_FLOOR_HEIGHT), MT_TFOG);
+    return P_SpawnMobj(x, y,
+                       P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y),
+                                   DMU_FLOOR_HEIGHT),
+                       MT_TFOG);
 }
 
 /*
@@ -971,10 +978,10 @@ void P_SpawnMapThing(thing_t *th)
     fixed_t x;
     fixed_t y;
     fixed_t z;
-/*
+
     Con_Message("x = %i, y = %i, height = %i, angle = %i, type = %i, options = %i\n",
                 th->x, th->y, th->height, th->angle, th->type, th->options);
-*/
+
 
     // count deathmatch start positions
     if(th->type == 11)
@@ -1076,7 +1083,7 @@ void P_SpawnMapThing(thing_t *th)
         z = ONFLOORZ;
 
     mobj = P_SpawnMobj(x, y, z, i);
-    mobj->spawnpoint = *th;
+    mobj->spawnpoint = th;
 
     if(mobj->tics > 0)
         mobj->tics = 1 + (P_Random() % mobj->tics);

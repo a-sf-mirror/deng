@@ -29,6 +29,47 @@
 
 // TYPES -------------------------------------------------------------------
 
+// Game specific map format properties for ALL games.
+// TODO: we don't needc to know about all of them once they
+// are registered via DED.
+enum {
+    DAM_LINE_TAG,
+    DAM_LINE_SPECIAL,
+    DAM_LINE_ARG1,
+    DAM_LINE_ARG2,
+    DAM_LINE_ARG3,
+    DAM_LINE_ARG4,
+    DAM_LINE_ARG5,
+    DAM_SECTOR_SPECIAL,
+    DAM_SECTOR_TAG,
+    DAM_THING_TID,
+    DAM_THING_X,
+    DAM_THING_Y,
+    DAM_THING_HEIGHT,
+    DAM_THING_ANGLE,
+    DAM_THING_TYPE,
+    DAM_THING_OPTIONS,
+    DAM_THING_SPECIAL,
+    DAM_THING_ARG1,
+    DAM_THING_ARG2,
+    DAM_THING_ARG3,
+    DAM_THING_ARG4,
+    DAM_THING_ARG5
+};
+
+enum // Value types.
+{
+    VT_BOOL,
+    VT_BYTE,
+    VT_SHORT,
+    VT_INT,    // 32 or 64
+    VT_FIXED,
+    VT_ANGLE,
+    VT_FLOAT,
+    VT_PTR,
+    VT_FLAT_INDEX
+};
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 void InitMapInfo(void);
@@ -53,7 +94,16 @@ int        numxlines;
 
 void P_SetupForThings(int num)
 {
-    // Nothing to do
+    int oldNum = numthings;
+
+    numthings += num;
+
+    if(oldNum > 0)
+        things = Z_Realloc(things, numthings * sizeof(thing_t), PU_LEVEL);
+    else
+        things = Z_Malloc(numthings * sizeof(thing_t), PU_LEVEL, 0);
+
+    memset(things + oldNum, 0, num * sizeof(thing_t));
 }
 
 /*
@@ -61,14 +111,14 @@ void P_SetupForThings(int num)
  */
 void P_SetupForLines(int num)
 {
-    int oldNum = numxlines;
+    int oldNum = numlines;
 
-    numxlines += num;
+    numlines += num;
 
     if(oldNum > 0)
-        xlines = Z_Realloc(xlines, numxlines * sizeof(xline_t), PU_LEVEL);
+        xlines = Z_Realloc(xlines, numlines * sizeof(xline_t), PU_LEVEL);
     else
-        xlines = Z_Malloc(numxlines * sizeof(xline_t), PU_LEVEL, 0);
+        xlines = Z_Malloc(numlines * sizeof(xline_t), PU_LEVEL, 0);
 
     memset(xlines + oldNum, 0, num * sizeof(xline_t));
 }
@@ -83,14 +133,14 @@ void P_SetupForSides(int num)
  */
 void P_SetupForSectors(int num)
 {
-    int oldNum = numxsectors;
+    int oldNum = numsectors;
 
-    numxsectors += num;
+    numsectors += num;
 
     if(oldNum > 0)
-        xsectors = Z_Realloc(xsectors, numxsectors * sizeof(xsector_t), PU_LEVEL);
+        xsectors = Z_Realloc(xsectors, numsectors * sizeof(xsector_t), PU_LEVEL);
     else
-        xsectors = Z_Malloc(numxsectors * sizeof(xsector_t), PU_LEVEL, 0);
+        xsectors = Z_Malloc(numsectors * sizeof(xsector_t), PU_LEVEL, 0);
 
     memset(xsectors + oldNum, 0, num * sizeof(xsector_t));
 }
@@ -112,33 +162,42 @@ void P_SetupForSectors(int num)
  */
 int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
 {
-#ifdef TODO_MAP_UPDATE
-    switch(type)
+    switch(prop)
     {
-        case VT_BOOL:
-            boolean* d = data;
-            break;
-
-        case VT_BYTE:
-            byte* d = data;
-            break;
-
-        case VT_INT:
-            int* d = data;
-            break;
-
-        case VT_FIXED:
-            fixed_t* d = data;
-            break;
-
-        case VT_FLOAT:
-            float* d = data;
-            break;
-
-        default:
-            Con_Error("P_HandleMapDataProperty: Unknown value type id %i.\n",type);
+    case DAM_SECTOR_SPECIAL:
+        xsectors[id].special = *(short *)data;
+        break;
+    case DAM_SECTOR_TAG:
+        xsectors[id].tag = *(short *)data;
+        break;
+    case DAM_LINE_SPECIAL:
+        xlines[id].special = *(short *)data;
+        break;
+    case DAM_LINE_TAG:
+        xlines[id].tag = *(short *)data;
+        break;
+    case DAM_THING_X:
+        things[id].x = *(short *)data;
+        break;
+    case DAM_THING_Y:
+        things[id].y = *(short *)data;
+        break;
+    case DAM_THING_HEIGHT:
+        things[id].height = *(short *)data;
+        break;
+    case DAM_THING_ANGLE:
+        things[id].angle = *(short *)data;
+        break;
+    case DAM_THING_TYPE:
+        things[id].type = *(short *)data;
+        break;
+    case DAM_THING_OPTIONS:
+        things[id].options = *(short *)data;
+        break;
+    default:
+        Con_Error("P_HandleMapDataProperty: Unknown property id %i.\n",prop);
     }
-#endif
+
     return 1;
 }
 
