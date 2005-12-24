@@ -619,32 +619,49 @@ int XS_AdjoiningPlanes(sector_t *sector, boolean ceiling, int *heightlist,
                        int *piclist, int *lightlist, sector_t **sectorlist)
 {
     int     i, count = 0;
+    int     sectorLineCount = P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT);
     line_t *lin;
     sector_t *other;
-#ifdef TODO_MAP_UPDATE
-    for(i = 0; i < sector->linecount; i++)
+
+    for(i = 0; i < sectorLineCount; i++)
     {
-        lin = sector->Lines[i];
+        lin = P_GetPtrp(DMU_LINE_OF_SECTOR, sector, i);
         // Only accept two-sided lines.
-        if(!lin->frontsector || !lin->backsector)
+        if(P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR))
             continue;
-        if(lin->frontsector == sector)
-            other = lin->backsector;
+
+        if(P_GetPtrp(DMU_LINE, lin, DMU_FRONT_SECTOR) ==
+           P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR))
+            other = P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR);
         else
-            other = lin->frontsector;
+            other = P_GetPtrp(DMU_LINE, lin, DMU_FRONT_SECTOR);
+
         if(heightlist)
-            heightlist[count] =
-                ceiling ? other->ceilingheight : other->floorheight;
+        {
+            if(heightlist[count] == ceiling)
+                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
+            else
+                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+        }
+
         if(piclist)
-            piclist[count] = ceiling ? other->ceilingpic : other->floorpic;
+        {
+            if(piclist[count] == ceiling)
+                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_TEXTURE);
+            else
+                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_TEXTURE);
+        }
+
         if(lightlist)
-            lightlist[count] = other->lightlevel;
+            lightlist[count] = P_GetFixedp(DMU_SECTOR, other, DMU_LIGHT_LEVEL);
+
         if(sectorlist)
             sectorlist[count] = other;
+
         // Increment counter.
         count++;
     }
-#endif
+
     return count;
 }
 
@@ -1145,11 +1162,10 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         // The heights are in real world coordinates.
         for(i = 0, k = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
         {
-#ifdef TODO_MAP_UPDATE
-            k = XS_TextureHeight(sector->Lines[i], part);
+
+            k = XS_TextureHeight(P_GetPtrp(DMU_LINE_OF_SECTOR, sector, k), part);
             if(k != DDMAXINT)
                 heights[num++] = k;
-#endif
         }
         if(!num)
             return true;
@@ -1454,6 +1470,7 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
     line_t *line;
     line_t *origin = (line_t *) context;
     linetype_t *info = context2;
+    sector_t *sec;
     boolean picstop = info->iparm[2] != 0;
     boolean spread = info->iparm[3] != 0;
     int     mypic;
@@ -1494,39 +1511,57 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
             builder[i] |= BL_SPREADED;
 
             // Any 2-sided lines facing the right way?
-#ifdef TODO_MAP_UPDATE
-            for(k = 0; k < sectors[i].linecount; k++)
+            sec = P_ToPtr(DMU_SECTOR, i);
+
+            for(k = 0; k < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); k++)
             {
-                line = sectors[i].Lines[k];
-                if(!line->frontsector || !line->backsector)
+                line = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
+
+                if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) ||
+                   P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR))
                     continue;
-                if(line->frontsector != sectors + i)
+
+                if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) !=
+                   P_ToPtr(DMU_SECTOR, i))
                     continue;
+
                 if(picstop)
                 {
                     // Planepic must match.
-                    if((ceiling ? sectors[i].ceilingpic : sectors[i].
-                        floorpic) != mypic)
-                        continue;
+                    if(ceiling)
+                    {
+                        if(P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE) !=
+                           mypic)
+                            continue;
+                    }
+                    else
+                    {
+                        if(P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE) !=
+                           mypic)
+                            continue;
+                    }
                 }
+
                 // Don't spread to sectors which have already spreaded.
-                if(builder[line->backsector - sectors] & BL_SPREADED)
+                if(builder[P_ToIndex(DMU_SECTOR,
+                                     P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR))]
+                   & BL_SPREADED)
                     continue;
+
                 // Build backsector.
                 found = true;
                 if(spread)
                 {
-                    XS_DoBuild(line->backsector, ceiling, origin, info,
-                               stepcount);
+                    XS_DoBuild(P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR), ceiling,
+                               origin, info, stepcount);
                 }
                 else
                 {
                     // We need the lowest line number.
-                    if(line - lines < lowest)
-                        lowest = line - lines;
+                    if(P_ToIndex(DMU_LINE, line) < lowest)
+                        lowest = P_ToIndex(DMU_LINE, line);
                 }
             }
-#endif
         }
         if(!spread && found)
         {
@@ -1811,7 +1846,6 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
     mobj_t *mo;
     boolean    ok = false;
     linetype_t *info = context2;
-    sector_t *sec;
     mobj_t *flash;
     thinker_t *thinker;
     unsigned an;
@@ -1840,10 +1874,8 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
             continue;
 
         mo = (mobj_t *) thinker;
-
-        sec = mo->subsector->sector;
         // wrong sector
-        if(sec != sector)
+        if(sector != P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR))
             continue;
 
         // not a teleportman
@@ -2463,7 +2495,7 @@ int XS_TraverseMobjs(sector_t *sec, int data,
         mo = (mobj_t *) thinker;
 
         // wrong sector
-        if(mo->subsector->sector != sec)
+        if(sec != P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR))
             continue;
 
         if(!func(sec, mo, data))
@@ -2732,14 +2764,18 @@ DEFCC(CCmdMovePlane)
         p = 2;
         if(!players[consoleplayer].plr->mo)
             return false;
-        sector = players[consoleplayer].plr->mo->subsector->sector;
+        sector =
+            P_GetPtrp(DMU_SUBSECTOR,players[consoleplayer].plr->mo->subsector,
+                      DMU_SECTOR);
     }
     else if(!stricmp(argv[1], "at") && argc >= 4)
     {
         p = 4;
         sector =
-            R_PointInSubsector(strtol(argv[2], 0, 0) << FRACBITS,
-                               strtol(argv[3], 0, 0) << FRACBITS)->sector;
+            P_GetPtrp(DMU_SUBSECTOR,
+                      R_PointInSubsector(strtol(argv[2], 0, 0) << FRACBITS,
+                                         strtol(argv[3], 0, 0) << FRACBITS),
+                      DMU_SECTOR);
     }
     else if(!stricmp(argv[1], "tag") && argc >= 3)
     {

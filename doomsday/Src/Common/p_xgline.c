@@ -1217,14 +1217,23 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
     // i18: bottom texture blue
 
     // Is there a sidedef?
-#ifdef TODO_MAP_UPDATE
-    if(line->sidenum[info->iparm[2]] < 0)
-        return true;
-#endif
+    if(info->iparm[2])
+    {
+        if(P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) < 0)
+            return true;
+
+        side = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    }
+    else
+    {
+        if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) < 0)
+            return true;
+
+        side = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    }
+
     XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(DMU_LINE, line));
-#ifdef TODO_MAP_UPDATE
-    side = sides + line->sidenum[info->iparm[2]];
-#endif
+
     rgba[0] = info->iparm[9];
     rgba[1] = info->iparm[10];
     rgba[2] = info->iparm[11];
@@ -1235,15 +1244,16 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
     rgba[1] = info->iparm[13];
     rgba[2] = info->iparm[14];
     rgba[3] = info->iparm[15];
-#ifdef TODO_MAP_UPDATE
-    if(info->iparm[4] && (side->midtexture || info->iparm[6]))
+
+    if(info->iparm[4] && (P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) ||
+                          info->iparm[6]))
     {
-        if(!line->backsector && info->iparm[4] == -1)
+        if(!P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) && info->iparm[4] == -1)
             texture = 0;
         else
             texture = info->iparm[4];
     }
-#endif
+
     XL_ChangeTexture(line, info->iparm[2], LWS_MID, texture,
                      info->iparm[8], rgba, info->iparm[7]);
 

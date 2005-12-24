@@ -1037,8 +1037,13 @@ void P_UnArchiveThinkers(void)
             }
             P_SetThingPosition(mobj);
             mobj->info = &mobjinfo[mobj->type];
-            mobj->floorz = P_GetIntp(DMU_SECTOR, mobj->subsector->sector, DMU_FLOOR_HEIGHT);
-            mobj->ceilingz = P_GetIntp(DMU_SECTOR, mobj->subsector->sector, DMU_CEILING_HEIGHT);
+
+            mobj->floorz =
+                P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
+
+            mobj->ceilingz =
+                P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
+
             mobj->thinker.function = P_MobjThinker;
             P_AddThinker(&mobj->thinker);
             break;
