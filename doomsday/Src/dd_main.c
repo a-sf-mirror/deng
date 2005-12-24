@@ -810,8 +810,8 @@ int DD_GetInteger(int ddvalue)
         case DD_NODE_COUNT:
             return numnodes;
 
-        //case DD_THING_COUNT:
-        //    return numthings;
+        case DD_THING_COUNT:
+            return numthings;
 
         case DD_GAME_EXPORTS:
             ASSERT_NOT_64BIT();
