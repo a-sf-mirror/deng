@@ -18,7 +18,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <math.h>
+//#include <math.h>
 
 #if __JDOOM__
 #  include "doomdef.h"
@@ -100,6 +100,7 @@ thing_t deathmatchstarts[MAX_DM_STARTS];
 thing_t *deathmatch_p;
 
 thing_t playerstarts[MAXSTARTS], *playerstart_p;
+thing_t *things;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -470,6 +471,9 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     numnodes = 0;
     numlines = 0;
     numsides = 0;
+
+    // Map thing data for the level IS stored game-side.
+    // However, Doomsday tells us how many things there are.
     numthings = 0;
 
 #if __JHEXEN__
@@ -538,7 +542,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     numnodes = DD_GetInteger(DD_NODE_COUNT);
     numlines = DD_GetInteger(DD_LINE_COUNT);
     numsides = DD_GetInteger(DD_SIDE_COUNT);
-//    numthings = DD_GetInteger(DD_THING_COUNT); // mapthings?
+    numthings = DD_GetInteger(DD_THING_COUNT);
 
     if(lumpNumbers[1] > lumpNumbers[0])
         // We have GL nodes!
@@ -662,22 +666,29 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
- #ifdef TODO_MAP_UPDATE
+/*
+#ifdef TODO_MAP_UPDATE
     for(i = 0; i < numlines; i++)
     {
-        int     k;
+        int side;
         int     lumpnum = R_TextureNumForName("NUKE24");
+        fixed_t yoff;
 
-        for(k = 0; k < 2; k++)
-            if(lines[i].sidenum[k] != NO_INDEX)
-            {
-                side_t *sdef = &sides[lines[i].sidenum[k]];
+        side = P_GetInt(DMU_LINE, i, DMU_FRONT_SIDE);
+        yoff = P_GetFixed(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
 
-                if(sdef->bottomtexture == lumpnum && sdef->midtexture == 0)
-                    sdef->rowoffset += FRACUNIT;
-            }
+        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
+           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
+            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
+
+        side = P_GetPtr(DMU_LINE, i, DMU_BACK_SIDE);
+        yoff = P_GetFixed(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
+           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
+            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
     }
 #endif
+*/
 
 #elif __JHERETIC__
     // Do some fine tuning with mobj placement and orientation.
@@ -717,8 +728,6 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     levelSetup = false;
 }
 
-#if 0
-
 /*
  * Spawns all THINGS that belong in the map.
  * Should really be moved to Common/p_start.c
@@ -738,13 +747,13 @@ static void P_SpawnThings(void)
 
     for(i = 0; i < numthings; i++)
     {
-        th = P_ToPtr(DMU_THING, i); // mapthing?
+        th = &things[i];
 #if __JDOOM__
         // Do not spawn cool, new stuff if !commercial
         spawn = true;
         if(gamemode != commercial)
         {
-            switch(P_GetIntp(DMU_THING, th, DMU_TYPE))
+            switch(th->type)
             {
             case 68:            // Arachnotron
             case 64:            // Archvile
@@ -794,7 +803,6 @@ static void P_SpawnThings(void)
     // We're finished with the temporary thing list
     //Z_Free(things);
 }
-#endif
 
 #if __JHERETIC__ || __JHEXEN__
 fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
@@ -1013,7 +1021,7 @@ void P_TurnTorchesToFaceWalls()
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS); 
+        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
             k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             if(iter->type == MT_ZWALLTORCH ||
@@ -1046,7 +1054,7 @@ void P_TurnTorchesToFaceWalls()
             if(closestline && closestdist < minrad)
             {
                 iter->angle =
-                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X), 
+                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X),
                                     P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_Y),
                                     P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_X),
                                     P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_Y)) - ANG90;

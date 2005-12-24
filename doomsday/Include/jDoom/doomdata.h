@@ -138,50 +138,15 @@ enum {
 #define NF_SUBSECTOR    0x8000
 
 // This is the common thing_t
-typedef struct {
-    short           tid;
-    short         x;
-    short         y;
+typedef struct thing_s {
+    short           x;
+    short           y;
     short           height;
     short           angle;
     short           type;
     short           options;
-    byte            special;
-    byte            arg1;
-    byte            arg2;
-    byte            arg3;
-    byte            arg4;
-    byte            arg5;
 } thing_t;
 
-#endif                          // __DOOMDATA__
-//-----------------------------------------------------------------------------
-//
-// $Log$
-// Revision 1.4.2.2  2005/12/18 15:05:02  danij
-// Updated to use DMU.
-// See comments in src files for notes on changes.
-//
-// Revision 1.4.2.1  2005/06/15 18:22:41  skyjake
-// Numerous fixes after compiling with gcc-4.0 on Mac
-//
-// Revision 1.4  2004/05/29 09:53:11  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.3  2004/05/28 17:16:35  skyjake
-// Resolved conflicts (branch-1-7 overrides)
-//
-// Revision 1.1.2.1  2004/05/16 10:01:30  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.1.4.1  2003/11/19 17:08:47  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.1  2003/02/26 19:18:26  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:04:12  Jaakko
-// Added all headers
-//
-//
-//-----------------------------------------------------------------------------
+extern thing_t* things;
+
+#endif

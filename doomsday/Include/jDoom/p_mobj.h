@@ -250,7 +250,7 @@ typedef struct mobj_s {
     int             lastlook;
 
     // For nightmare respawn.
-    thing_t         spawnpoint;
+    thing_t        *spawnpoint;
 
     // Thing being chased/attacked for tracers.
     struct mobj_s  *tracer;
@@ -261,35 +261,3 @@ typedef struct mobj_s {
 } mobj_t;
 
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log$
-// Revision 1.7.2.1  2005/12/18 15:05:03  danij
-// Updated to use DMU.
-// See comments in src files for notes on changes.
-//
-// Revision 1.7  2004/05/29 09:53:11  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.6  2004/05/28 17:16:35  skyjake
-// Resolved conflicts (branch-1-7 overrides)
-//
-// Revision 1.4.2.1  2004/05/16 10:01:30  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.4.4.1  2003/11/19 17:08:47  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.4  2003/06/23 08:16:28  skyjake
-// Removed alpha
-//
-// Revision 1.3  2003/04/29 13:10:56  skyjake
-// Missile puff ptcgen issue fixed
-//
-// Revision 1.2  2003/02/27 23:14:31  skyjake
-// Obsolete jDoom files removed
-//
-// Revision 1.1  2003/02/26 19:18:32  skyjake
-// Initial checkin
-//
-//-----------------------------------------------------------------------------
