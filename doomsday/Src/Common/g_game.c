@@ -914,7 +914,7 @@ void G_AdjustAngle(player_t *player, int turn, float elapsed)
     delta = (fixed_t) (turn << FRACBITS);
 
     if(elapsed > 0)
-        delta *= elapsed * 35;
+        delta *= cfg.turnSpeed * turn * elapsed * 35;
 
     player->plr->clAngle += delta;
 }
@@ -3833,24 +3833,24 @@ DEFCC(CCmdSetViewLock)
  */
 DEFCC(CCmdSpawnMobj)
 {
-	int     type;
-	int     x, y, z;
-	mobj_t *mo;
+    int     type;
+    int     x, y, z;
+    mobj_t *mo;
 
-	if(argc != 5 && argc != 6)
-	{
-		Con_Printf("Usage: %s (type) (x) (y) (z) (angle)\n", argv[0]);
-		Con_Printf("Type must be a defined Thing ID or Name.\n");
-		Con_Printf("Z is an offset from the floor, 'floor' or 'ceil'.\n");
-		Con_Printf("Angle (0..360) is optional.\n");
-		return true;
-	}
+    if(argc != 5 && argc != 6)
+    {
+        Con_Printf("Usage: %s (type) (x) (y) (z) (angle)\n", argv[0]);
+        Con_Printf("Type must be a defined Thing ID or Name.\n");
+        Con_Printf("Z is an offset from the floor, 'floor' or 'ceil'.\n");
+        Con_Printf("Angle (0..360) is optional.\n");
+        return true;
+    }
 
-	if(IS_CLIENT)
-	{
-		Con_Printf("%s can't be used by clients.\n", argv[0]);
-		return false;
-	}
+    if(IS_CLIENT)
+    {
+        Con_Printf("%s can't be used by clients.\n", argv[0]);
+        return false;
+    }
 
     // First try to find the thing by ID.
     if((type = Def_Get(DD_DEF_MOBJ, argv[1], 0)) < 0)
@@ -3863,24 +3863,24 @@ DEFCC(CCmdSpawnMobj)
         }
     }
 
-	// The coordinates.
-	x = strtod(argv[2], 0) * FRACUNIT;
-	y = strtod(argv[3], 0) * FRACUNIT;
-	if(!stricmp(argv[4], "floor"))
-		z = ONFLOORZ;
-	else if(!stricmp(argv[4], "ceil"))
-		z = ONCEILINGZ;
-	else
-	{
-		z = strtod(argv[4], 0) * FRACUNIT + 
+    // The coordinates.
+    x = strtod(argv[2], 0) * FRACUNIT;
+    y = strtod(argv[3], 0) * FRACUNIT;
+    if(!stricmp(argv[4], "floor"))
+        z = ONFLOORZ;
+    else if(!stricmp(argv[4], "ceil"))
+        z = ONCEILINGZ;
+    else
+    {
+        z = strtod(argv[4], 0) * FRACUNIT +
             P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_FLOOR_HEIGHT);
-	}
+    }
 
-	if((mo = P_SpawnMobj(x, y, z, type)) && argc == 6)
-	{
-		mo->angle = ((int) (strtod(argv[5], 0) / 360 * FRACUNIT)) << 16;
-	}
-	return true;
+    if((mo = P_SpawnMobj(x, y, z, type)) && argc == 6)
+    {
+        mo->angle = ((int) (strtod(argv[5], 0) / 360 * FRACUNIT)) << 16;
+    }
+    return true;
 }
 
 /*
