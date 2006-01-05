@@ -529,8 +529,6 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     strcpy(levelId, W_LumpName(lumpNumbers[0]));
 #endif
 
-    P_LoadBlockMap(lumpNumbers[0] + ML_BLOCKMAP);
-
     P_LoadMap(lumpNumbers[0], lumpNumbers[1], levelId);
 
     // Now the map data has been loaded we can update the

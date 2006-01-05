@@ -2626,7 +2626,16 @@ void P_LoadBlockMap(int lump)
     // Are we generating new blockmap data?
     if(generateBMap)
     {
+        uint startTime;
+
+        Con_Message("P_LoadBlockMap: Generating blockmap...\n");
+
+        startTime = Sys_GetRealTime();
+
         P_CreateBlockMap();
+
+        Con_Message("P_LoadBlockMap: Done in %.4f seconds.\n",
+                    (Sys_GetRealTime() - startTime) / 1000.0f);
     }
     else
     {
@@ -2884,6 +2893,7 @@ void P_LoadMap(int mapLumpStartNum, int glLumpStartNum, char *levelId)
     P_FreeBadTexList();
 
     // Must be called before any mobjs are spawned.
+    P_LoadBlockMap(mapLumpStartNum + ML_BLOCKMAP);
     Con_Message("Init links\n");
     R_SetupLevel(levelId, DDSLF_INIT_LINKS);
 
