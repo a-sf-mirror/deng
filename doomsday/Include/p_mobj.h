@@ -33,13 +33,13 @@
 typedef struct mobj_s {
 DD_BASE_MOBJ_ELEMENTS()} mobj_t;
 
-#define DEFAULT_FRICTION	0xe800
+#define DEFAULT_FRICTION    0xe800
 
 extern int      tmfloorz, tmceilingz;
 extern mobj_t  *blockingMobj;
 extern boolean  dontHitMobjs;
 
-#include "cl_def.h"				   // for playerstate_s
+#include "cl_def.h"                // for playerstate_s
 
 void            P_SetState(mobj_t *mo, int statenum);
 void            P_ThingMovement(mobj_t *mo);

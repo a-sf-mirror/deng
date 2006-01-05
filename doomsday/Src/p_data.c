@@ -130,6 +130,11 @@ enum {
     DAM_PROPERTY_COUNT
 };
 
+// internal blockmap stuff
+#define BLKSHIFT 7                // places to shift rel position for cell num
+#define BLKMASK ((1<<BLKSHIFT)-1) // mask for rel position within cell
+#define BLKMARGIN 0               // size guardband around map used
+
 // TYPES -------------------------------------------------------------------
 
 // THING formats
@@ -416,6 +421,12 @@ typedef struct setargs_s {
     void** ptrValues;
 } setargs_t;
 
+// used to list lines in each block
+typedef struct linelist_t {
+    long num;
+    struct linelist_t *next;
+} linelist_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -474,16 +485,26 @@ byte   *lines;
 int     numsides;
 byte   *sides;
 
+// Should we generate new blockmap data if its invalid?
+// 0: error out
+// 1: generate new
+// 2: Always generate new
+int     createBMap = 1;
+
 // mapthings are actually stored & handled game-side
 int     numthings;
 
-short  *blockmaplump;           // offsets in blockmap are from here
-short  *blockmap;
+long  *blockmaplump;           // offsets in blockmap are from here
+long  *blockmap;
+
 int     bmapwidth, bmapheight;  // in mapblocks
 fixed_t bmaporgx, bmaporgy;     // origin of block map
 linkmobj_t *blockrings;         // for thing rings
+
 byte   *rejectmatrix;           // for fast sight rejection
+
 polyblock_t **polyblockmap;     // polyobj blockmap
+
 nodepile_t thingnodes, linenodes;   // all kinds of wacky links
 
 ded_mapinfo_t *mapinfo = 0;     // Current mapinfo.
@@ -595,6 +616,7 @@ static const char* DMU_Str(int prop)
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINE_BY_ACT_TAG, "DMU_LINE_BY_ACT_TAG" },
         { DMU_SECTOR_BY_ACT_TAG, "DMU_SECTOR_BY_ACT_TAG" },
+        { DMU_LINE_OF_SECTOR, "DMU_LINE_OF_SECTOR" },
         { DMU_SECTOR_OF_SUBSECTOR, "DMU_SECTOR_OF_SUBSECTOR" },
         { DMU_X, "DMU_X" },
         { DMU_Y, "DMU_Y" },
@@ -693,7 +715,7 @@ int P_ToIndex(int type, void* ptr)
         return GET_SECTOR_IDX(ptr);
 
     case DMU_SECTOR_OF_SUBSECTOR:
-        return GET_SECTOR_IDX(((subsector_t*)ptr)->sector)
+        return GET_SECTOR_IDX(((subsector_t*)ptr)->sector);
 
     case DMU_POLYOBJ:
         return GET_POLYOBJ_IDX(ptr);
@@ -1589,6 +1611,9 @@ static int GetProperty(void* ptr, void* context)
         case DMU_CEILING_TEXTURE:
             GetValue(VT_SHORT, &p->sector->ceilingpic, args, 0);
             break;
+        case DMU_THINGS:
+            GetValue(VT_PTR, &p->sector->thinglist, args, 0);
+            break;
         default:
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
                       DMU_Str(args->prop));
@@ -2262,86 +2287,391 @@ void P_ValidateLevel(void)
     }
 }
 
-//==========================================================================
-// P_LoadBlockMap
-//==========================================================================
+/*
+ * Generate valid blockmap data from the already loaded level data.
+ * Adapted from algorithm used in prBoom 2.2.6 -DJS
+ *
+ * Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
+ */
+
+/*
+ * Subroutine to add a line number to a block list
+ * It simply returns if the line is already in the block
+ */
+static void AddBlockLine
+(
+  linelist_t **lists,
+  int *count,
+  int *done,
+  int blockno,
+  long lineno
+)
+{
+  linelist_t *l;
+
+  if (done[blockno])
+    return;
+
+  l = malloc(sizeof(linelist_t));
+  l->num = lineno;
+  l->next = lists[blockno];
+  lists[blockno] = l;
+  count[blockno]++;
+  done[blockno] = 1;
+}
+
+/*
+ * Actually construct the blockmap lump from the level data
+ *
+ * This finds the intersection of each linedef with the column and
+ * row lines at the left and bottom of each blockmap cell. It then
+ * adds the line to all block lists touching the intersection.
+ */
+void P_CreateBlockMap(void)
+{
+    int i, j;
+    int xorg, yorg;                 // blockmap origin (lower left)
+    int nrows, ncols;               // blockmap dimensions
+    int *blockcount = NULL;          // array of counters of line lists
+    int *blockdone = NULL;           // array keeping track of blocks/line
+    int NBlocks;                   // number of cells = nrows*ncols
+    int map_minx = DDMAXINT;          // init for map limits search
+    int map_miny = DDMAXINT;
+    int map_maxx = DDMININT;
+    int map_maxy = DDMININT;
+
+    linelist_t **blocklists = NULL;  // array of pointers to lists of lines
+    long linetotal = 0;              // total length of all blocklists
+
+    // scan for map limits, which the blockmap must enclose
+    for(i = 0; i < numvertexes; i++)
+    {
+        fixed_t t;
+
+        if((t = VERTEX_PTR(i)->x) < map_minx)
+          map_minx = t;
+        else if(t > map_maxx)
+          map_maxx = t;
+
+        if((t = VERTEX_PTR(i)->y) < map_miny)
+          map_miny = t;
+        else if(t > map_maxy)
+          map_maxy = t;
+    }
+
+    // we're working in map coords, not fixed_t...
+    map_minx >>= FRACBITS;
+    map_maxx >>= FRACBITS;
+    map_miny >>= FRACBITS;
+    map_maxy >>= FRACBITS;
+
+    // Setup the blockmap area to enclose the whole map,
+    // plus a margin (margin is needed for a map that fits
+    // entirely inside one blockmap cell).
+    xorg = map_minx - BLKMARGIN;
+    yorg = map_miny - BLKMARGIN;
+    ncols = (map_maxx + BLKMARGIN - xorg + 1 + BLKMASK) >> BLKSHIFT;
+    nrows = (map_maxy + BLKMARGIN - yorg + 1 + BLKMASK) >> BLKSHIFT;
+    NBlocks = ncols * nrows;
+
+    // Create the array of pointers on NBlocks to blocklists,
+    // create an array of linelist counts on NBlocks, then finally,
+    // make an array in which we can mark blocks done per line
+    blocklists = calloc(NBlocks, sizeof(linelist_t *));
+    blockcount = calloc(NBlocks, sizeof(int));
+    blockdone = malloc(NBlocks * sizeof(int));
+
+    // Initialize each blocklist, and enter the trailing -1 in all blocklists.
+    // NOTE: the linked list of lines grows backwards.
+    for(i = 0; i < NBlocks; i++)
+    {
+        blocklists[i] = malloc(sizeof(linelist_t));
+        blocklists[i]->num = -1;
+        blocklists[i]->next = NULL;
+        blockcount[i]++;
+    }
+
+    // For each linedef in the wad, determine all blockmap blocks it touches
+    // and add the linedef number to the blocklists for those blocks.
+    for(i = 0; i < numlines; i++)
+    {
+        int x1 = LINE_PTR(i)->v1->x >> FRACBITS;
+        int y1 = LINE_PTR(i)->v1->y >> FRACBITS;
+        int x2 = LINE_PTR(i)->v2->x >> FRACBITS;
+        int y2 = LINE_PTR(i)->v2->y >> FRACBITS;
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int vert = !dx;
+        int horiz = !dy;
+        int spos = (dx ^ dy) > 0;
+        int sneg = (dx ^ dy) < 0;
+        int bx, by;
+        // extremal lines[i] coords
+        int minx = x1 > x2? x2 : x1;
+        int maxx = x1 > x2? x1 : x2;
+        int miny = y1 > y2? y2 : y1;
+        int maxy = y1 > y2? y1 : y2;
+
+        // no blocks done for this linedef yet
+        memset(blockdone, 0, NBlocks * sizeof(int));
+
+        // The line always belongs to the blocks containing its endpoints
+        bx = (x1 - xorg) >> BLKSHIFT;
+        by = (y1 - yorg) >> BLKSHIFT;
+        AddBlockLine(blocklists, blockcount, blockdone, by * ncols + bx, i);
+
+        bx = (x2 - xorg) >> BLKSHIFT;
+        by = (y2 - yorg) >> BLKSHIFT;
+        AddBlockLine(blocklists, blockcount, blockdone, by * ncols + bx, i);
+
+        // For each column, see where the line along its left edge, which
+        // it contains, intersects the Linedef i. Add i to each corresponding
+        // blocklist.
+        // We don't want to interesect vertical lines with columns.
+        if(!vert)
+        {
+            for(j = 0; j < ncols; j++)
+            {
+                // intersection of Linedef with x=xorg+(j<<BLKSHIFT)
+                // (y-y1)*dx = dy*(x-x1)
+                // y = dy*(x-x1)+y1*dx;
+                int x = xorg + (j << BLKSHIFT);       // (x,y) is intersection
+                int y = (dy * (x - x1)) / dx + y1;
+                int yb = (y - yorg) >> BLKSHIFT;      // block row number
+                int yp = (y - yorg) & BLKMASK;        // y position within block
+
+                // Already outside the blockmap?
+                if(yb < 0 || yb > (nrows - 1))
+                    continue;
+
+                // Does the line touch this column at all?
+                if(x < minx || x > maxx)
+                    continue;
+
+                // The cell that contains the intersection point is always added
+                AddBlockLine(blocklists, blockcount, blockdone, ncols * yb + j, i);
+
+                // If the intersection is at a corner it depends on the slope
+                // (and whether the line extends past the intersection) which
+                // blocks are hit.
+
+                // Where does the intersection occur?
+                if(yp == 0)
+                {
+                    // Intersection occured at a corner
+                    if(sneg) //   \ - blocks x,y-, x-,y
+                    {
+                        if(yb > 0 && miny < y)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, ncols * (yb - 1) + j, i);
+
+                        if(j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, ncols * yb + j - 1, i);
+                    }
+                    else if(spos) //   / - block x-,y-
+                    {
+                        if(yb > 0 && j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, ncols * (yb - 1) + j - 1, i);
+                    }
+                    else if(horiz) //   - - block x-,y
+                    {
+                        if(j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, ncols * yb + j - 1, i);
+                    }
+                }
+                else if(j > 0 && minx < x)
+                {
+                    // Else not at corner: x-,y
+                    AddBlockLine(blocklists, blockcount,
+                                 blockdone, ncols * yb + j - 1, i);
+                }
+            }
+        }
+
+        // For each row, see where the line along its bottom edge, which
+        // it contains, intersects the Linedef i. Add i to all the corresponding
+        // blocklists.
+        if(!horiz)
+        {
+            for(j=0; j<nrows; j++)
+            {
+                // intersection of Linedef with y=yorg+(j<<BLKSHIFT)
+                // (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
+                // x = dx*(y-y1)/dy+x1;
+                int y = yorg+(j<<BLKSHIFT);       // (x,y) is intersection
+                int x = (dx*(y-y1))/dy+x1;
+                int xb = (x-xorg)>>BLKSHIFT;      // block column number
+                int xp = (x-xorg)&BLKMASK;        // x position within block
+
+                if(xb<0 || xb>ncols-1)   // outside blockmap, continue
+                continue;
+
+                if(y<miny || y>maxy)     // line doesn't touch row
+                continue;
+
+                // The cell that contains the intersection point is always added
+                AddBlockLine(blocklists, blockcount, blockdone ,ncols*j+xb, i);
+
+                // If the intersection is at a corner it depends on the slope
+                // (and whether the line extends past the intersection) which
+                // blocks are hit
+                if(xp==0) // intersection at a corner
+                {
+                    if(sneg) //   \ - blocks x,y-, x-,y
+                    {
+                        if(j>0 && miny<y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         ncols*(j-1)+xb, i);
+                        if(xb>0 && minx<x)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         ncols*j+xb-1, i);
+                    }
+                    else if(vert) //   | - block x,y-
+                    {
+                        if(j>0 && miny<y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         ncols*(j-1)+xb, i);
+                    }
+                    else if(spos) //   / - block x-,y-
+                    {
+                        if(xb>0 && j>0 && miny<y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         ncols*(j-1)+xb-1, i);
+                    }
+                }
+                else if(j>0 && miny<y) // else not on a corner: x,y-
+                    AddBlockLine(blocklists, blockcount, blockdone,
+                                 ncols*(j-1)+xb, i);
+            }
+        }
+    }
+
+    // Add initial 0 to all blocklists
+    // count the total number of lines (and 0's and -1's)
+    memset(blockdone,0,NBlocks*sizeof(int));
+    for(i=0, linetotal=0; i<NBlocks; i++)
+    {
+        AddBlockLine(blocklists, blockcount, blockdone, i, 0);
+        linetotal += blockcount[i];
+    }
+
+    // Create the blockmap lump
+    blockmaplump = Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal),
+                            PU_LEVEL, 0);
+    // blockmap header
+    blockmaplump[0] = bmaporgx = xorg << FRACBITS;
+    blockmaplump[1] = bmaporgy = yorg << FRACBITS;
+    blockmaplump[2] = bmapwidth  = ncols;
+    blockmaplump[3] = bmapheight = nrows;
+
+    // offsets to lists and block lists
+    for(i=0; i<NBlocks; i++)
+    {
+        linelist_t *bl = blocklists[i];
+        long offs = blockmaplump[4+i] =   // set offset to block's list
+        (i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
+
+        // add the lines in each block's list to the blockmaplump
+        // delete each list node as we go
+        while (bl)
+        {
+            linelist_t *tmp = bl->next;
+
+            blockmaplump[offs++] = bl->num;
+            free(bl);
+            bl = tmp;
+        }
+    }
+
+    // free all temporary storage
+    free(blocklists);
+    free(blockcount);
+    free(blockdone);
+}
+
+/*
+ * Attempts to load the BLOCKMAP data resource.
+ *
+ * If the level is too large (would overflow the size limit of
+ * the BLOCKMAP lump in a WAD therefore it will have been truncated),
+ * it's zero length or we are forcing a rebuild - we'll have to
+ * generate the blockmap data ourselves.
+ */
 void P_LoadBlockMap(int lump)
 {
-    int     i, count;
+    long i, count;
+    boolean generateBMap = (createBMap == 2)? true : false;
 
-    /*
-       // Disabled for now: Plutonia MAP28.
-       if(W_LumpLength(lump) > 0x7fff)  // From GMJ.
-       Con_Error("Invalid map - Try using this with Boomsday.\n");
-     */
-
-    blockmaplump = W_CacheLumpNum(lump, PU_LEVEL);
-    blockmap = blockmaplump + 4;
     count = W_LumpLength(lump) / 2;
-    for(i = 0; i < count; i++)
-        blockmaplump[i] = SHORT(blockmaplump[i]);
 
-    bmaporgx = blockmaplump[0] << FRACBITS;
-    bmaporgy = blockmaplump[1] << FRACBITS;
-    bmapwidth = blockmaplump[2];
-    bmapheight = blockmaplump[3];
+    // Is there valid BLOCKMAP data?
+    if(count >= 0x10000)
+    {
+        // No
+        Con_Message("P_LoadBlockMap: Map exceeds limits of +/- 32767 map units.\n");
+
+        // Are we allowed to generate new blockmap data?
+        if(createBMap == 0)
+            Con_Error("P_LoadBlockMap: Map has invalid BLOCKMAP resource.\n"
+                      "You can circumvent this error by allowing Doomsday to\n"
+                      "generate this resource when needed by setting the CVAR:"
+                      "blockmap-build 1");
+        else
+            generateBMap = true;
+    }
+
+    // Are we generating new blockmap data?
+    if(generateBMap)
+    {
+        P_CreateBlockMap();
+    }
+    else
+    {
+        // No, the existing data is valid - so load it in.
+        // Data in PWAD is little endian.
+        short *wadBlockMapLump;
+
+        Con_Message("P_LoadBlockMap: Loading BLOCKMAP...\n");
+
+        wadBlockMapLump = W_CacheLumpNum(lump, PU_STATIC);
+        blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+
+        // Expand WAD blockmap into larger internal one, by treating all
+        // offsets except -1 as unsigned and zero-extending them. This
+        // potentially doubles the size of blockmaps allowed because DOOM
+        // originally considered the offsets as always signed.
+        blockmaplump[0] = SHORT(wadBlockMapLump[0]);
+        blockmaplump[1] = SHORT(wadBlockMapLump[1]);
+        blockmaplump[2] = (long)(SHORT(wadBlockMapLump[2])) & 0xffff;
+        blockmaplump[3] = (long)(SHORT(wadBlockMapLump[3])) & 0xffff;
+
+        for(i = 4; i < count; i++)
+        {
+            short t = SHORT(blockmaplump[i]);
+            blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
+        }
+
+        Z_Free(wadBlockMapLump);
+
+        bmaporgx = blockmaplump[0] << FRACBITS;
+        bmaporgy = blockmaplump[1] << FRACBITS;
+        bmapwidth = blockmaplump[2];
+        bmapheight = blockmaplump[3];
+    }
 
     // Clear out mobj rings.
     count = sizeof(*blockrings) * bmapwidth * bmapheight;
     blockrings = Z_Malloc(count, PU_LEVEL, 0);
     memset(blockrings, 0, count);
+
+    blockmap = blockmaplump + 4;
+
     for(i = 0; i < bmapwidth * bmapheight; i++)
         blockrings[i].next = blockrings[i].prev = (mobj_t *) &blockrings[i];
 }
-
-/*
-   //==========================================================================
-   // P_LoadBlockMap
-   //   Modified for long blockmap/blockmaplump defs - GMJ Sep 2001
-   //   I want to think about this a bit more... -jk
-   //==========================================================================
-   void P_LoadBlockMap(int lump)
-   {
-   long i, count = W_LumpLength(lump)/2;
-   short *wadblockmaplump;
-
-   if (count >= 0x10000)
-   Con_Error("Map exceeds limits of +/- 32767 map units");
-
-   wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL);
-   blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
-
-   // killough 3/1/98: Expand wad blockmap into larger internal one,
-   // by treating all offsets except -1 as unsigned and zero-extending
-   // them. This potentially doubles the size of blockmaps allowed,
-   // because Doom originally considered the offsets as always signed.
-
-   blockmaplump[0] = SHORT(wadblockmaplump[0]);
-   blockmaplump[1] = SHORT(wadblockmaplump[1]);
-   blockmaplump[2] = (long)(SHORT(wadblockmaplump[2])) & 0xffff;
-   blockmaplump[3] = (long)(SHORT(wadblockmaplump[3])) & 0xffff;
-
-   for (i=4 ; i<count ; i++)
-   {
-   short t = SHORT(wadblockmaplump[i]);          // killough 3/1/98
-   blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
-   }
-
-   Z_Free(wadblockmaplump);
-
-   bmaporgx = blockmaplump[0]<<FRACBITS;
-   bmaporgy = blockmaplump[1]<<FRACBITS;
-   bmapwidth = blockmaplump[2];
-   bmapheight = blockmaplump[3];
-
-   // Clear out mobj rings.
-   count = sizeof(*blockrings) * bmapwidth * bmapheight;
-   blockrings = Z_Malloc(count, PU_LEVEL, 0);
-   memset(blockrings, 0, count);
-   blockmap = blockmaplump + 4;
-   for(i = 0; i < bmapwidth * bmapheight; i++)
-   blockrings[i].next = blockrings[i].prev = (mobj_t*) &blockrings[i];
-   } */
 
 /*
  * Load the REJECT data lump.

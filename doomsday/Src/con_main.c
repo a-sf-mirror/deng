@@ -3434,4 +3434,9 @@ static void registerVariables(void)
     // File
     C_VAR_CHARPTR("file-startup", &defaultWads, 0, 0, 0,
                   "The list of WADs to be loaded at startup.");
+
+    // Misc
+    C_VAR_INT("blockmap-build", &createBMap, 0, 0, 2,
+              "Automatically generate blockmap data when necessary, "
+              "0=Never, 1=When needed, 2=Always.");
 }

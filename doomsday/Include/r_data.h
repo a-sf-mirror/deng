@@ -376,8 +376,8 @@ extern seginfo_t *seginfo;
 extern subsectorinfo_t *subsecinfo;
 extern lineinfo_t *lineinfo;
 extern nodeindex_t *linelinks;
-extern short   *blockmaplump;      // offsets in blockmap are from here
-extern short   *blockmap;
+extern long    *blockmaplump;      // offsets in blockmap are from here
+extern long    *blockmap;
 extern int      bmapwidth, bmapheight;  // in mapblocks
 extern fixed_t  bmaporgx, bmaporgy; // origin of block map
 extern linkmobj_t *blockrings;
@@ -394,6 +394,7 @@ extern translation_t *texturetranslation;   // for global animation
 extern int      numgroups;
 extern animgroup_t *groups;
 extern int      LevelFullBright;
+extern int      createBMap;
 extern int      r_texglow;
 extern int      r_precache_sprites, r_precache_skins;
 
