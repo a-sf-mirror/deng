@@ -89,64 +89,76 @@ void R_SetViewSize(int blocks, int detail)
 
 void R_HandleSectorSpecials()
 {
-#ifdef TODO_MAP_UPDATE
-	sector_t *sect = sectors;
 	int     i, scrollOffset = leveltime >> 1 & 63;
+    int     sectorCount = DD_GetInteger(DD_SECTOR_COUNT);
 
-	for(i = 0; i < numsectors; i++, sect++)
-	{
+	for(i = 0; i < sectorCount; i++)
+    {
+        xsector_t* sect = P_XSector(P_ToPtr(DMU_SECTOR, i));
 		switch (sect->special)
 		{						// Handle scrolling flats
 		case 201:
 		case 202:
 		case 203:				// Scroll_North_xxx
-			sect->flatoffy = (63 - scrollOffset) << (sect->special - 201);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       (63 - scrollOffset) << (sect->special - 201));
 			break;
 		case 204:
 		case 205:
 		case 206:				// Scroll_East_xxx
-			sect->flatoffx = (63 - scrollOffset) << (sect->special - 204);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       (63 - scrollOffset) << (sect->special - 204));
 			break;
 		case 207:
 		case 208:
 		case 209:				// Scroll_South_xxx
-			sect->flatoffy = scrollOffset << (sect->special - 207);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       scrollOffset << (sect->special - 207));
 			break;
 		case 210:
 		case 211:
 		case 212:				// Scroll_West_xxx
-			sect->flatoffx = scrollOffset << (sect->special - 210);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       scrollOffset << (sect->special - 210));
 			break;
 		case 213:
 		case 214:
 		case 215:				// Scroll_NorthWest_xxx
-			sect->flatoffx = scrollOffset << (sect->special - 213);
-			sect->flatoffy = (63 - scrollOffset) << (sect->special - 213);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       scrollOffset << (sect->special - 213));
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       (63 - scrollOffset) << (sect->special - 213));
 			break;
 		case 216:
 		case 217:
 		case 218:				// Scroll_NorthEast_xxx
-			sect->flatoffx = (63 - scrollOffset) << (sect->special - 216);
-			sect->flatoffy = (63 - scrollOffset) << (sect->special - 216);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       (63 - scrollOffset) << (sect->special - 216));
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       (63 - scrollOffset) << (sect->special - 216));
 			break;
 		case 219:
 		case 220:
 		case 221:				// Scroll_SouthEast_xxx
-			sect->flatoffx = (63 - scrollOffset) << (sect->special - 219);
-			sect->flatoffy = scrollOffset << (sect->special - 219);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       (63 - scrollOffset) << (sect->special - 219));
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       scrollOffset << (sect->special - 219));
 			break;
 		case 222:
 		case 223:
 		case 224:				// Scroll_SouthWest_xxx
-			sect->flatoffx = scrollOffset << (sect->special - 222);
-			sect->flatoffy = scrollOffset << (sect->special - 222);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+                       scrollOffset << (sect->special - 222));
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+                       scrollOffset << (sect->special - 222));
 			break;
 		default:
-			sect->flatoffx = sect->flatoffy = 0;
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 0);
+			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 0);
 			break;
 		}
 	}
-#endif
 }
 
 //==========================================================================
@@ -292,14 +304,12 @@ void G_Drawer(void)
 			GL_SetFilter(vplayer->plr->filter);	// $democam
 			// Check for the sector special 200: use sky2.
 			// I wonder where this is used?
-#ifdef TODO_MAP_UPDATE
-			if(vplayer->plr->mo->subsector->sector->special == 200)
+			if(P_XSectorOfSubsector(vplayer->plr->mo->subsector)->special == 200)
 			{
 				special200 = true;
 				Rend_SkyParams(0, DD_DISABLE, 0);
 				Rend_SkyParams(1, DD_ENABLE, 0);
 			}
-#endif
 			// How about a bit of quake?
 			if(localQuakeHappening[displayplayer] && !paused)
 			{

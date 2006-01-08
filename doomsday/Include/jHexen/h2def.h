@@ -825,6 +825,15 @@ int             SV_HxGetRebornSlot(void);
 //PLAY
 //-----
 
+extern struct xsector_s *xsectors;
+extern int      numxsectors;
+extern struct xline_s *xlines;
+extern int      numxlines;
+
+struct xline_s *P_XLine(line_t* line);
+struct xsector_s *P_XSector(sector_t* sector);
+struct xsector_s* P_XSectorOfSubsector(subsector_t* sub);
+
 void            P_Ticker(void);
 
 // called by C_Ticker
@@ -833,6 +842,7 @@ void            P_Ticker(void);
 
 void            P_SetupLevel(int episode, int map, int playermask,
                              skill_t skill);
+                             
 // called by W_Ticker
 
 void            P_Init(void);

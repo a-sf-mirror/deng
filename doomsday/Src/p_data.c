@@ -1621,9 +1621,15 @@ static int GetProperty(void* ptr, void* context)
         break;
         }
 
+    case DMU_SECTOR_OF_SUBSECTOR:
     case DMU_SECTOR:
         {
-        sector_t* p = ptr;
+        sector_t* p;
+        if(args->type == DMU_SECTOR)
+            p = ptr;
+        else
+            p = ((subsector_t*)ptr)->sector;
+        
         switch(args->prop)
         {
         case DMU_LIGHT_LEVEL:

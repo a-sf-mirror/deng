@@ -53,6 +53,27 @@ int        numxlines;
 
 // CODE --------------------------------------------------------------------
 
+/*
+ * Converts a line to an xline.
+ */
+xline_t* P_XLine(line_t* line)
+{
+    return &xlines[P_ToIndex(DMU_LINE, line)];
+}
+
+/*
+ * Converts a line to an xline.
+ */
+xsector_t* P_XSector(sector_t* sector)
+{
+    return &xsectors[P_ToIndex(DMU_SECTOR, sector)];
+}
+
+xsector_t* P_XSectorOfSubsector(subsector_t* sub)
+{
+    return &xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, sub)];
+}
+
 void P_SetupForThings(int num)
 {
     // Nothing to do
@@ -105,11 +126,11 @@ void P_SetupForSectors(int num)
  *
  * Returns true unless there is a critical problem with the data supplied.
  *
- * @parm id: int, index of the current element being read.
- * @parm dtype: int, lump type class id this value is for.
- * @parm prop: int, propertyid of the game-specific variable (as declared via DED).
- * @parm type: int, data type id of the value pointed to by *data.
- * @parm *data: void ptr, to the data value (has already been expanded, size
+ * @param id: int, index of the current element being read.
+ * @param dtype: int, lump type class id this value is for.
+ * @param prop: int, propertyid of the game-specific variable (as declared via DED).
+ * @param type: int, data type id of the value pointed to by *data.
+ * @param *data: void ptr, to the data value (has already been expanded, size
  *              converted and endian converted where necessary).
  */
 int P_HandleMapDataElement(int id, int dtype, int prop, int type, void *data)

@@ -98,21 +98,6 @@ typedef struct side_s {
 #endif
 
 typedef struct xline_s {
-#if 0
-    vertex_t       *v1;
-    vertex_t       *v2;
-    short           flags;
-    sector_t       *frontsector;
-    sector_t       *backsector;
-    fixed_t         dx;
-    fixed_t         dy;
-    slopetype_t     slopetype;
-    int             validcount;
-    short           sidenum[2];
-    fixed_t         bbox[4];
-
-    // --- You can freely make changes after this.
-#endif
     byte            special;
     byte            arg1;
     byte            arg2;
@@ -122,7 +107,7 @@ typedef struct xline_s {
     void           *specialdata;
 } xline_t;
 
-
+/*
 // ===== Polyobj data =====
 typedef struct xpolyobj_s {
 #if 0
@@ -147,7 +132,8 @@ typedef struct xpolyobj_s {
     fixed_t         size;          // polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
     void           *specialdata;   // pointer a thinker, if the poly is moving
 } xpolyobj_t;
-
+*/
+/*
 #if 0
 typedef struct polyblock_s {
     polyobj_t      *polyobj;
@@ -156,7 +142,7 @@ typedef struct polyblock_s {
     // Don't change this; engine uses a similar struct.
 } polyblock_t;
 #endif
-
+*/
 
 /*
    ==============================================================================

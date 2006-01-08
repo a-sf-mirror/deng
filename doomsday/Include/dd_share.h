@@ -259,6 +259,9 @@ extern          "C" {
         DD_SUBSECTOR_COUNT,
         DD_NODE_COUNT,
         DD_THING_COUNT,
+        DD_POLYOBJ_COUNT,
+        DD_BLOCKMAP_WIDTH,
+        DD_BLOCKMAP_HEIGHT,
         DD_XGFUNC_LINK             // XG line classes
     };
 
@@ -522,6 +525,7 @@ extern          "C" {
 
         DMU_LINE_OF_SECTOR, // used with pointer functions; prop = line index
         DMU_SECTOR_OF_SUBSECTOR,
+        DMU_SEG_OF_POLYOBJ, // used with pointer functions; prop = seg index
 
         DMU_X,
         DMU_Y,
@@ -538,6 +542,8 @@ extern          "C" {
 
         DMU_FRONT_SECTOR,
         DMU_BACK_SECTOR,
+        DMU_SIDE0,
+        DMU_SIDE1,
         DMU_FLAGS,
         DMU_DX,
         DMU_DY,
@@ -550,11 +556,14 @@ extern          "C" {
         DMU_TEXTURE_OFFSET_X,
         DMU_TEXTURE_OFFSET_Y,
         DMU_TEXTURE_OFFSET_XY,
+        DMU_VALID_COUNT,
 
         DMU_LINE_COUNT,
         DMU_COLOR,                  // RGB
         DMU_LIGHT_LEVEL,
         DMU_THINGS,                 // pointer to start of sector thinglist
+        DMU_BOUNDING_BOX,           // fixed_t[4]
+        DMU_SOUND_ORIGIN,
 
         DMU_FLOOR_HEIGHT,
         DMU_FLOOR_TEXTURE,
@@ -577,6 +586,25 @@ extern          "C" {
         DMU_CEILING_TEXTURE_MOVE_X,
         DMU_CEILING_TEXTURE_MOVE_Y,
         DMU_CEILING_TEXTURE_MOVE_XY,
+        
+        DMU_SEG_LIST,               // array of seg_t*'s
+        DMU_SEG_COUNT,
+        DMU_TAG,
+        DMU_ORIGINAL_POINTS,        // ddvertex array
+        DMU_PREVIOUS_POINTS,        // ddvertex array
+        DMU_START_SPOT,             // degenmobj_t
+        DMU_START_SPOT_X,
+        DMU_START_SPOT_Y,
+        DMU_START_SPOT_XY,
+        DMU_DESTINATION_X,
+        DMU_DESTINATION_Y,
+        DMU_DESTINATION_XY,
+        DMU_DESTINATION_ANGLE,
+        DMU_SPEED,
+        DMU_ANGLE_SPEED,
+        DMU_SEQUENCE_TYPE,
+        DMU_CRUSH,                  // boolean
+        DMU_SPECIAL_DATA
     };
 
     // Fixed-point vertex position. Utility struct for the game, not

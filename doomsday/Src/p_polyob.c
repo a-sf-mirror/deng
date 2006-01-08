@@ -61,10 +61,18 @@ int     po_NumPolyobjs;
 
 // CODE --------------------------------------------------------------------
 
-//==========================================================================
-// PO_SetCallback
-//  The po_callback is called when a polyobj hits a mobj.
-//==========================================================================
+/*
+ * Allocate memory for polyobjs.
+ */
+void PO_Allocate(void)
+{
+	polyobjs = Z_Malloc(po_NumPolyobjs * sizeof(polyobj_t), PU_LEVEL, 0);
+	memset(polyobjs, 0, po_NumPolyobjs * sizeof(polyobj_t));
+}
+
+/*
+ * The po_callback is called when a polyobj hits a mobj.
+ */
 void PO_SetCallback(void (*func) (mobj_t *, void *, void *))
 {
 	po_callback = func;

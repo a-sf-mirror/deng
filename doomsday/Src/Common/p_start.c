@@ -18,7 +18,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-//#include <math.h>
+#include <math.h>
 
 #if __JDOOM__
 #  include "doomdef.h"
@@ -476,9 +476,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // However, Doomsday tells us how many things there are.
     numthings = 0;
 
-#if __JHEXEN__
-    po_NumPolyobjs = 0;
-#endif
+    DD_SetInteger(DD_POLYOBJ_COUNT, 0);
 
     // Let the engine know that we are about to start setting up a
     // level.

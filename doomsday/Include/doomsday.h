@@ -295,6 +295,7 @@ extern          "C" {
     void            P_GetPtrpv(int type, void* ptr, int prop, void* params);
 
 	// Play: Polyobjs.
+    void            PO_Allocate(void);
 	boolean         PO_MovePolyobj(int num, int x, int y);
 	boolean         PO_RotatePolyobj(int num, angle_t angle);
 	void            PO_UnLinkPolyobj(void *po);

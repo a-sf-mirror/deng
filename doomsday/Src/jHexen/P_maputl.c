@@ -850,12 +850,13 @@ mobj_t *P_RoughMonsterSearch(mobj_t *mo, int distance)
 	int     finalStop;
 	int     count;
 	mobj_t *target;
+    int     bmapwidth = DD_GetInteger(DD_BLOCKMAP_WIDTH);
+    int     bmapheight = DD_GetInteger(DD_BLOCKMAP_HEIGHT);
 
-#ifdef TODO_MAP_UPDATE
-	startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
-	startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
+    P_PointToBlock(mo->x, mo->y, &startX, &startY);
 
-	if(startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
+	if(startX >= 0 && startX < bmapwidth && 
+       startY >= 0 && startY < bmapheight)
 	{
 		if((target = RoughBlockCheck(mo, startY * bmapwidth + startX)) != NULL)
 		{						// found a target right away
@@ -940,7 +941,6 @@ mobj_t *P_RoughMonsterSearch(mobj_t *mo, int distance)
 			}
 		}
 	}
-#endif
 	return NULL;
 }
 

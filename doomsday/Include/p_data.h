@@ -202,13 +202,18 @@ typedef struct polyobj_s {
     int             validcount;
     degenmobj_t     startSpot;
     angle_t         angle;
-    vertex_t       *originalPts;   // used as the base for the rotations
-    vertex_t       *prevPts;       // use to restore the old point values
+    ddvertex_t     *originalPts;   // used as the base for the rotations
+    ddvertex_t     *prevPts;       // use to restore the old point values
     int             tag;           // reference tag assigned in HereticEd
-    int             bbox[4];
+    fixed_t         bbox[4];
     vertex_t        dest;
     int             speed;         // Destination XY and speed.
-    angle_t         destAngle, angleSpeed;  // Destination angle and rotation speed.
+    angle_t         destAngle;     // Destination angle.
+    angle_t         angleSpeed;    // Rotation speed.
+    boolean         crush;         // should the polyobj attempt to crush mobjs?
+    int             seqType;
+    fixed_t         size;          // polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
+    void           *specialdata;   // pointer a thinker, if the poly is moving
 } polyobj_t;
 
 /*typedef struct subsector_s {

@@ -153,6 +153,31 @@ void P_InitTerrainTypes(void)
    return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
    }
  */
+ 
+static int SecLineCount(sector_t* sector)
+{
+    return P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT);
+}
+
+static sector_t* LineFront(line_t* line)
+{
+    return P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+}
+
+static sector_t* LineBack(line_t* line)
+{
+    return P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+}
+
+static fixed_t SecFloorHeight(sector_t* sector)
+{
+    return P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+}
+
+static fixed_t SecCeilingHeight(sector_t* sector)
+{
+    return P_GetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
+}
 
 //==================================================================
 //
@@ -161,15 +186,13 @@ void P_InitTerrainTypes(void)
 //==================================================================
 sector_t *getNextSector(line_t *line, sector_t *sec)
 {
-#ifdef TODO_MAP_UPDATE
-	if(!(line->flags & ML_TWOSIDED))
+	if(!(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_TWOSIDED))
 		return NULL;
 
-	if(line->frontsector == sec)
-		return line->backsector;
+	if(LineFront(line) == sec)
+		return LineBack(line);
 
-	return line->frontsector;
-#endif
+	return LineFront(line);;
 }
 
 //==================================================================
@@ -182,20 +205,18 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 	int     i;
 	line_t *check;
 	sector_t *other;
-#ifdef TODO_MAP_UPDATE
-	fixed_t floor = sec->floorheight;
+	fixed_t floor = SecFloorHeight(sec);
 
-	for(i = 0; i < sec->linecount; i++)
+	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = sec->Lines[i];
+		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
-		if(other->floorheight < floor)
-			floor = other->floorheight;
+		if(SecFloorHeight(other) < floor)
+			floor = SecFloorHeight(other);
 	}
 	return floor;
-#endif
 }
 
 //==================================================================
@@ -205,23 +226,21 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
 	fixed_t floor = -500 * FRACUNIT;
 
-	for(i = 0; i < sec->linecount; i++)
+	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = sec->Lines[i];
+		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
-		if(other->floorheight > floor)
-			floor = other->floorheight;
+		if(SecFloorHeight(other) > floor)
+			floor = SecFloorHeight(other);
 	}
 	return floor;
-#endif
 }
 
 //==================================================================
@@ -231,7 +250,6 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     h;
 	int     min;
@@ -240,14 +258,14 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 	fixed_t height = currentheight;
 	fixed_t heightlist[20];		// 20 adjoining sectors max!
 
-	for(i = 0, h = 0; i < sec->linecount; i++)
+	for(i = 0, h = 0; i < SecLineCount(sec); i++)
 	{
-		check = sec->Lines[i];
+		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
-		if(other->floorheight > height)
-			heightlist[h++] = other->floorheight;
+		if(SecFloorHeight(other) > height)
+			heightlist[h++] = SecFloorHeight(other);
 	}
 
 	//
@@ -259,7 +277,6 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 			min = heightlist[i];
 
 	return min;
-#endif
 }
 
 //==================================================================
@@ -269,23 +286,21 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 //==================================================================
 fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
 	fixed_t height = DDMAXINT;
 
-	for(i = 0; i < sec->linecount; i++)
+	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = sec->Lines[i];
+		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
-		if(other->ceilingheight < height)
-			height = other->ceilingheight;
+		if(SecCeilingHeight(other) < height)
+			height = SecCeilingHeight(other);
 	}
 	return height;
-#endif
 }
 
 //==================================================================
@@ -295,23 +310,21 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 //==================================================================
 fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
 	fixed_t height = 0;
 
-	for(i = 0; i < sec->linecount; i++)
+	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = sec->Lines[i];
-		other = getNextSector(check, sec);
+		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        other = getNextSector(check, sec);
 		if(!other)
 			continue;
-		if(other->ceilingheight > height)
-			height = other->ceilingheight;
+		if(SecCeilingHeight(other) > height)
+			height = SecCeilingHeight(other);
 	}
 	return height;
-#endif
 }
 
 //==================================================================
@@ -342,15 +355,13 @@ int P_FindSectorFromTag(int tag, int start)
 {
 	int     i;
 
-#ifdef TODO_MAP_UPDATE
-	for(i = start + 1; i < numsectors; i++)
+	for(i = start + 1; i < numxsectors; i++)
 	{
-		if(sectors[i].tag == tag)
+		if(xsectors[i].tag == tag)
 		{
 			return i;
 		}
 	}
-#endif
 	return -1;
 }
 
@@ -401,9 +412,7 @@ boolean EV_SectorSoundChange(byte *args)
 	rtn = false;
 	while((secNum = P_FindSectorFromTag(args[0], secNum)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sectors[secNum].seqType = args[1];
-#endif
+		xsectors[secNum].seqType = args[1];
 		rtn = true;
 	}
 	return rtn;
@@ -466,8 +475,7 @@ boolean EV_LineSearchForPuzzleItem(line_t *line, byte *args, mobj_t *mo)
 		type = arti - arti_firstpuzzitem;
 		if(type < 0)
 			continue;
-#ifdef TODO_MAP_UPDATE
-		if(type == line->arg1)
+		if(type == P_XLine(line)->arg1)
 		{
 			// A puzzle item was found for the line
 			if(P_UseArtifact(player, arti))
@@ -489,7 +497,6 @@ boolean EV_LineSearchForPuzzleItem(line_t *line, byte *args, mobj_t *mo)
 				return true;
 			}
 		}
-#endif
 	}
 	return false;
 }
@@ -846,12 +853,11 @@ boolean P_ExecuteLineSpecial(int special, byte *args, line_t *line, int side,
 
 boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 {
-#ifdef TODO_MAP_UPDATE
 	int     lineActivation;
 	boolean repeat;
 	boolean buttonSuccess;
 
-	lineActivation = GET_SPAC(line->flags);
+	lineActivation = GET_SPAC(P_GetIntp(DMU_LINE, line, DMU_FLAGS));
 	if(lineActivation != activationType)
 	{
 		return false;
@@ -863,24 +869,25 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 		{						// currently, monsters can only activate the MCROSS activation type
 			return false;
 		}
-		if(line->flags & ML_SECRET)
+		if(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_SECRET)
 			return false;		// never open secret doors
 	}
-	repeat = line->flags & ML_REPEAT_SPECIAL;
+	repeat = P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_REPEAT_SPECIAL;
 	buttonSuccess = false;
-
+    
 	buttonSuccess =
-		P_ExecuteLineSpecial(line->special, &line->arg1, line, side, mo);
+		P_ExecuteLineSpecial(P_XLine(line)->special, 
+                             &P_XLine(line)->arg1, 
+                             line, side, mo);
 	if(!repeat && buttonSuccess)
 	{							// clear the special on non-retriggerable lines
-		line->special = 0;
+		P_XLine(line)->special = 0;
 	}
 	if((lineActivation == SPAC_USE || lineActivation == SPAC_IMPACT) &&
 	   buttonSuccess)
 	{
 		P_ChangeSwitchTexture(line, repeat);
 	}
-#endif
 	return true;
 }
 
@@ -894,65 +901,66 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 
 void P_PlayerInSpecialSector(player_t *player)
 {
-#ifdef TODO_MAP_UPDATE
 	sector_t *sector;
+    xsector_t *xsector;
 	static int pushTab[3] = {
 		2048 * 5,
 		2048 * 10,
 		2048 * 25
 	};
 
-	sector = player->plr->mo->subsector->sector;
-	if(player->plr->mo->z != sector->floorheight)
+	sector = P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
+    xsector = P_XSector(sector);
+	if(player->plr->mo->z != P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT))
 	{							// Player is not touching the floor
 		return;
 	}
-	switch (sector->special)
+	switch (xsector->special)
 	{
 	case 9:					// SecretArea
 		player->secretcount++;
-		sector->special = 0;
+		xsector->special = 0;
 		break;
 
 	case 201:
 	case 202:
 	case 203:					// Scroll_North_xxx
-		P_Thrust(player, ANG90, pushTab[sector->special - 201]);
+		P_Thrust(player, ANG90, pushTab[xsector->special - 201]);
 		break;
 	case 204:
 	case 205:
-	case 206:					// Scroll_East_xxx
-		P_Thrust(player, 0, pushTab[sector->special - 204]);
+	case 206:					// Sxcroll_East_xxx
+		P_Thrust(player, 0, pushTab[xsector->special - 204]);
 		break;
 	case 207:
 	case 208:
 	case 209:					// Scroll_South_xxx
-		P_Thrust(player, ANG270, pushTab[sector->special - 207]);
+		P_Thrust(player, ANG270, pushTab[xsector->special - 207]);
 		break;
 	case 210:
 	case 211:
 	case 212:					// Scroll_West_xxx
-		P_Thrust(player, ANG180, pushTab[sector->special - 210]);
+		P_Thrust(player, ANG180, pushTab[xsector->special - 210]);
 		break;
 	case 213:
 	case 214:
 	case 215:					// Scroll_NorthWest_xxx
-		P_Thrust(player, ANG90 + ANG45, pushTab[sector->special - 213]);
+		P_Thrust(player, ANG90 + ANG45, pushTab[xsector->special - 213]);
 		break;
 	case 216:
 	case 217:
 	case 218:					// Scroll_NorthEast_xxx
-		P_Thrust(player, ANG45, pushTab[sector->special - 216]);
+		P_Thrust(player, ANG45, pushTab[xsector->special - 216]);
 		break;
 	case 219:
 	case 220:
 	case 221:					// Scroll_SouthEast_xxx
-		P_Thrust(player, ANG270 + ANG45, pushTab[sector->special - 219]);
+		P_Thrust(player, ANG270 + ANG45, pushTab[xsector->special - 219]);
 		break;
 	case 222:
 	case 223:
 	case 224:					// Scroll_SouthWest_xxx
-		P_Thrust(player, ANG180 + ANG45, pushTab[sector->special - 222]);
+		P_Thrust(player, ANG180 + ANG45, pushTab[xsector->special - 222]);
 		break;
 
 	case 40:
@@ -984,9 +992,8 @@ void P_PlayerInSpecialSector(player_t *player)
 		if(IS_CLIENT)
 			break;
 		Con_Error("P_PlayerInSpecialSector: " "unknown special %i",
-				  sector->special);
+				  xsector->special);
 	}
-#endif
 }
 
 //============================================================================
@@ -997,13 +1004,12 @@ void P_PlayerInSpecialSector(player_t *player)
 
 void P_PlayerOnSpecialFlat(player_t *player, int floorType)
 {
-#ifdef TODO_MAP_UPDATE
 	if(player->plr->mo->z		/*!= player->plr->mo->floorz */
-	   > player->plr->mo->subsector->sector->floorheight)
+	   > P_GetFixedp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_FLOOR_HEIGHT))
 	{							// Player is not touching the floor
 		return;
 	}
-#endif
+
 	switch (floorType)
 	{
 	case FLOOR_LAVA:
@@ -1036,22 +1042,22 @@ void P_UpdateSpecials(void)
 			buttonlist[i].btimer--;
 			if(!buttonlist[i].btimer)
 			{
+                side_t* sdef = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                                         DMU_SIDE0);
 				switch (buttonlist[i].where)
 				{
-#ifdef TODO_MAP_UPDATE
 				case SWTCH_TOP:
-					sides[buttonlist[i].line->sidenum[0]].toptexture =
-						buttonlist[i].btexture;
+					P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, 
+                              buttonlist[i].btexture);
 					break;
 				case SWTCH_MIDDLE:
-					sides[buttonlist[i].line->sidenum[0]].midtexture =
-						buttonlist[i].btexture;
+					P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE,
+                              buttonlist[i].btexture);
 					break;
 				case SWTCH_BOTTOM:
-					sides[buttonlist[i].line->sidenum[0]].bottomtexture =
-						buttonlist[i].btexture;
+					P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE,
+                              buttonlist[i].btexture);
 					break;
-#endif
 				}
 				//S_StartSound(sfx_switch, (mobj_t *)&buttonlist[i].soundorg);
 				memset(&buttonlist[i], 0, sizeof(button_t));
@@ -1083,22 +1089,24 @@ line_t *linespeciallist[MAXLINEANIMS];
 void P_SpawnSpecials(void)
 {
 	sector_t *sector;
+    xsector_t *xsector;
 	int     i;
 
 	//
 	//      Init special SECTORs
 	//
-#ifdef TODO_MAP_UPDATE
-	sector = sectors;
-	for(i = 0; i < numsectors; i++, sector++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
+        sector = P_ToPtr(DMU_SECTOR, i);
+        xsector = P_XSector(sector);
+    
 		// Clients do not spawn sector specials.
 		if(IS_CLIENT)
 			break;
 
-		if(!sector->special)
+		if(!xsector->special)
 			continue;
-		switch (sector->special)
+		switch (xsector->special)
 		{
 		case 1:				// Phased light
 			// Hardcoded base, use sector->lightlevel as the index
@@ -1150,29 +1158,29 @@ void P_SpawnSpecials(void)
 	//
 	numlinespecials = 0;
 	TaggedLineCount = 0;
-	for(i = 0; i < numlines; i++)
+	for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
 	{
-		switch (lines[i].special)
+		switch (xlines[i].special)
 		{
 		case 100:				// Scroll_Texture_Left
 		case 101:				// Scroll_Texture_Right
 		case 102:				// Scroll_Texture_Up
 		case 103:				// Scroll_Texture_Down
-			linespeciallist[numlinespecials] = &lines[i];
+			linespeciallist[numlinespecials] = P_ToPtr(DMU_LINE, i);
 			numlinespecials++;
 			break;
 		case 121:				// Line_SetIdentification
-			if(lines[i].arg1)
+			if(xlines[i].arg1)
 			{
 				if(TaggedLineCount == MAX_TAGGED_LINES)
 				{
 					Con_Error("P_SpawnSpecials: MAX_TAGGED_LINES "
 							  "(%d) exceeded.", MAX_TAGGED_LINES);
 				}
-				TaggedLines[TaggedLineCount].line = &lines[i];
-				TaggedLines[TaggedLineCount++].lineTag = lines[i].arg1;
+				TaggedLines[TaggedLineCount].line = P_ToPtr(DMU_LINE, i);
+				TaggedLines[TaggedLineCount++].lineTag = xlines[i].arg1;
 			}
-			lines[i].special = 0;
+			xlines[i].special = 0;
 			break;
 		}
 	}
@@ -1191,7 +1199,6 @@ void P_SpawnSpecials(void)
 	   // Initialize flat and texture animations
 	   P_InitFTAnims();
 	 */
-#endif
 }
 
 //==========================================================================

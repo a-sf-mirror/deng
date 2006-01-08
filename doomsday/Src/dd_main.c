@@ -801,6 +801,9 @@ int DD_GetInteger(int ddvalue)
         case DD_VERTEX_COUNT:
             return numvertexes;
 
+        case DD_POLYOBJ_COUNT:
+            return po_NumPolyobjs;
+
         case DD_SEG_COUNT:
             return numsegs;
 
@@ -812,6 +815,12 @@ int DD_GetInteger(int ddvalue)
 
         case DD_THING_COUNT:
             return numthings;
+            
+        case DD_BLOCKMAP_WIDTH:
+            return bmapwidth;
+            
+        case DD_BLOCKMAP_HEIGHT:
+            return bmapheight;
 
         case DD_GAME_EXPORTS:
             ASSERT_NOT_64BIT();
@@ -873,7 +882,11 @@ void DD_SetInteger(int ddvalue, int parm)
     {
         DD_CheckQuery(ddvalue, parm);
         // How about some special values?
-        if(ddvalue == DD_SKYFLAT_NAME)
+        if(ddvalue == DD_POLYOBJ_COUNT)
+        {
+            po_NumPolyobjs = parm;
+        } 
+        else if(ddvalue == DD_SKYFLAT_NAME)
         {
             // Dude!  This is not 64-bit safe.
             ASSERT_NOT_64BIT();

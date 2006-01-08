@@ -242,14 +242,8 @@ void            P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage,
 
 void            P_Validate();
 
-#define bmapwidth       (*gi.bmapwidth)
-#define bmapheight      (*gi.bmapheight)
-#define bmaporgx        (*gi.bmaporgx)
-#define bmaporgy        (*gi.bmaporgy)
-#define blockmap        (*gi.blockmap)
-#define blockmaplump    (*gi.blockmaplump)
-#define rejectmatrix    (*gi.rejectmatrix)
-#define blocklinks      (*gi.blocklinks)
+//#define rejectmatrix    (*gi.rejectmatrix)
+//#define blocklinks      (*gi.blocklinks)
 
 #define openrange       Get(DD_OPENRANGE)
 #define opentop         Get(DD_OPENTOP)

@@ -16,6 +16,17 @@
 
 plat_t *activeplats[MAXPLATS];
 
+static void StartSequence(sector_t* sector, int seqBase)
+{
+    SN_StartSequence(P_GetPtrp(DMU_SECTOR, sector, DMU_SOUND_ORIGIN),
+                     seqBase + P_XSector(sector)->seqType);
+}
+
+static void StopSequence(sector_t* sector)
+{
+    SN_StopSequence(P_GetPtrp(DMU_SECTOR, sector, DMU_SOUND_ORIGIN));
+}
+
 //==================================================================
 //
 //      Move a plat up and down
@@ -23,7 +34,6 @@ plat_t *activeplats[MAXPLATS];
 //==================================================================
 void T_PlatRaise(plat_t * plat)
 {
-#ifdef TODO_MAP_UPDATE
 	result_e res;
 
 	switch (plat->status)
@@ -36,14 +46,13 @@ void T_PlatRaise(plat_t * plat)
 		{
 			plat->count = plat->wait;
 			plat->status = PLAT_DOWN;
-            SN_StartSequence((mobj_t *) &plat->sector->soundorg,
-							 SEQ_PLATFORM + plat->sector->seqType);
+            StartSequence(plat->sector, SEQ_PLATFORM);
 		}
 		else if(res == RES_PASTDEST)
 		{
 			plat->count = plat->wait;
 			plat->status = PLAT_WAITING;
-			SN_StopSequence((mobj_t *) &plat->sector->soundorg);
+			StopSequence(plat->sector);
 			switch (plat->type)
 			{
 			case PLAT_DOWNWAITUPSTAY:
@@ -70,23 +79,21 @@ void T_PlatRaise(plat_t * plat)
 			default:
 				break;
 			}
-			SN_StopSequence((mobj_t *) &plat->sector->soundorg);
+			StopSequence(plat->sector);
 		}
 		break;
 	case PLAT_WAITING:
 		if(!--plat->count)
 		{
-			if(plat->sector->floorheight == plat->low)
+			if(P_GetFixedp(DMU_SECTOR, plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
 				plat->status = PLAT_UP;
 			else
 				plat->status = PLAT_DOWN;
-			SN_StartSequence((mobj_t *) &plat->sector->soundorg,
-							 SEQ_PLATFORM + plat->sector->seqType);
+            StartSequence(plat->sector, SEQ_PLATFORM);
 		}
 		//      case PLAT_IN_STASIS:
 		//          break;
 	}
-#endif
 }
 
 //==================================================================
@@ -97,11 +104,11 @@ void T_PlatRaise(plat_t * plat)
 //==================================================================
 int EV_DoPlat(line_t *line, byte *args, plattype_e type, int amount)
 {
-#ifdef TODO_MAP_UPDATE
 	plat_t *plat;
 	int     secnum;
 	int     rtn;
 	sector_t *sec;
+    fixed_t floorheight;
 
 	secnum = -1;
 	rtn = 0;
@@ -122,11 +129,9 @@ int EV_DoPlat(line_t *line, byte *args, plattype_e type, int amount)
 
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sec = &sectors[secnum];
-		if(sec->specialdata)
+		sec = P_ToPtr(DMU_SECTOR, secnum);
+		if(P_XSector(sec)->specialdata)
 			continue;
-#endif
 
 		//
 		// Find lowest & highest floors around sector
@@ -137,62 +142,61 @@ int EV_DoPlat(line_t *line, byte *args, plattype_e type, int amount)
 
 		plat->type = type;
 		plat->sector = sec;
-		plat->sector->specialdata = plat;
+		P_XSector(plat->sector)->specialdata = plat;
 		plat->thinker.function = T_PlatRaise;
 		plat->crush = false;
 		plat->tag = args[0];
 		plat->speed = args[1] * (FRACUNIT / 8);
+        floorheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
 		switch (type)
 		{
 		case PLAT_DOWNWAITUPSTAY:
 			plat->low = P_FindLowestFloorSurrounding(sec) + 8 * FRACUNIT;
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
-			plat->high = sec->floorheight;
+			if(plat->low > floorheight)
+				plat->low = floorheight;
+			plat->high = floorheight;
 			plat->wait = args[2];
 			plat->status = PLAT_DOWN;
 			break;
 		case PLAT_DOWNBYVALUEWAITUPSTAY:
-			plat->low = sec->floorheight - args[3] * 8 * FRACUNIT;
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
-			plat->high = sec->floorheight;
+			plat->low = floorheight - args[3] * 8 * FRACUNIT;
+			if(plat->low > floorheight)
+				plat->low = floorheight;
+			plat->high = floorheight;
 			plat->wait = args[2];
 			plat->status = PLAT_DOWN;
 			break;
 		case PLAT_UPWAITDOWNSTAY:
 			plat->high = P_FindHighestFloorSurrounding(sec);
-			if(plat->high < sec->floorheight)
-				plat->high = sec->floorheight;
-			plat->low = sec->floorheight;
+			if(plat->high < floorheight)
+				plat->high = floorheight;
+			plat->low = floorheight;
 			plat->wait = args[2];
 			plat->status = PLAT_UP;
 			break;
 		case PLAT_UPBYVALUEWAITDOWNSTAY:
-			plat->high = sec->floorheight + args[3] * 8 * FRACUNIT;
-			if(plat->high < sec->floorheight)
-				plat->high = sec->floorheight;
-			plat->low = sec->floorheight;
+			plat->high = floorheight + args[3] * 8 * FRACUNIT;
+			if(plat->high < floorheight)
+				plat->high = floorheight;
+			plat->low = floorheight;
 			plat->wait = args[2];
 			plat->status = PLAT_UP;
 			break;
 		case PLAT_PERPETUALRAISE:
 			plat->low = P_FindLowestFloorSurrounding(sec) + 8 * FRACUNIT;
-			if(plat->low > sec->floorheight)
-				plat->low = sec->floorheight;
+			if(plat->low > floorheight)
+				plat->low = floorheight;
 			plat->high = P_FindHighestFloorSurrounding(sec);
-			if(plat->high < sec->floorheight)
-				plat->high = sec->floorheight;
+			if(plat->high < floorheight)
+				plat->high = floorheight;
 			plat->wait = args[2];
 			plat->status = P_Random() & 1;
 			break;
 		}
 		P_AddActivePlat(plat);
-		SN_StartSequence((mobj_t *) &sec->soundorg,
-						 SEQ_PLATFORM + sec->seqType);
-	}
+        StartSequence(plat->sector, SEQ_PLATFORM);
+    }
 	return rtn;
-#endif
 }
 
 void EV_StopPlat(line_t *line, byte *args)
@@ -203,31 +207,13 @@ void EV_StopPlat(line_t *line, byte *args)
 	{
 		if((activeplats[i])->tag = args[0])
 		{
-#ifdef TODO_MAP_UPDATE
-			(activeplats[i])->sector->specialdata = NULL;
-			P_TagFinished((activeplats[i])->sector->tag);
+			P_XSector((activeplats[i])->sector)->specialdata = NULL;
+			P_TagFinished(P_XSector((activeplats[i])->sector)->tag);
 			P_RemoveThinker(&(activeplats[i])->thinker);
 			activeplats[i] = NULL;
-#endif
 			return;
 		}
 	}
-
-	/*
-	   int             j;
-
-	   for (j = 0;j < MAXPLATS;j++)
-	   {
-	   if (activeplats[j] && ((activeplats[j])->status != PLAT_IN_STASIS) &&
-	   ((activeplats[j])->tag == args[0]))
-	   {
-	   (activeplats[j])->oldstatus = (activeplats[j])->status;
-	   (activeplats[j])->status = PLAT_IN_STASIS;
-	   (activeplats[j])->thinker.function = NULL;
-	   SN_StopSequence((mobj_t *)&(activeplats[j])->sector->soundorg);
-	   }
-	   }
-	 */
 }
 
 void P_AddActivePlat(plat_t * plat)
@@ -250,12 +236,10 @@ void P_RemoveActivePlat(plat_t * plat)
 	for(i = 0; i < MAXPLATS; i++)
 		if(plat == activeplats[i])
 		{
-#ifdef TODO_MAP_UPDATE
-			(activeplats[i])->sector->specialdata = NULL;
-			P_TagFinished(plat->sector->tag);
+			P_XSector((activeplats[i])->sector)->specialdata = NULL;
+			P_TagFinished(P_XSector(plat->sector)->tag);
 			P_RemoveThinker(&(activeplats[i])->thinker);
 			activeplats[i] = NULL;
-#endif
 			return;
 		}
 	Con_Error("P_RemoveActivePlat: can't find plat!");

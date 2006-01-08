@@ -635,12 +635,10 @@ static boolean TagBusy(int tag)
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		if(sectors[sectorIndex].specialdata)
+		if(xsectors[sectorIndex].specialdata)
 		{
 			return true;
 		}
-#endif
 	}
 	return false;
 }
@@ -1292,9 +1290,7 @@ static int CmdChangeFloor(void)
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sectors[sectorIndex].floorpic = flat;
-#endif
+		P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1310,9 +1306,7 @@ static int CmdChangeFloorDirect(void)
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sectors[sectorIndex].floorpic = flat;
-#endif
+		P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1328,9 +1322,7 @@ static int CmdChangeCeiling(void)
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sectors[sectorIndex].ceilingpic = flat;
-#endif
+		P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1346,9 +1338,7 @@ static int CmdChangeCeilingDirect(void)
 	sectorIndex = -1;
 	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sectors[sectorIndex].ceilingpic = flat;
-#endif
+		P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1456,9 +1446,7 @@ static int CmdClearLineSpecial(void)
 {
 	if(ACScript->line)
 	{
-#ifdef TODO_MAP_UPDATE
-		ACScript->line->special = 0;
-#endif
+		P_XLine(ACScript->line)->special = 0;
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1595,9 +1583,8 @@ static int CmdSectorSound(void)
 	mobj = NULL;
 	if(ACScript->line)
 	{
-#ifdef TODO_MAP_UPDATE
-		mobj = (mobj_t *) &ACScript->line->frontsector->soundorg;
-#endif
+        sector_t* front = P_GetPtrp(DMU_LINE, ACScript->line, DMU_FRONT_SECTOR);
+		mobj = P_GetPtrp(DMU_SECTOR, front, DMU_SOUND_ORIGIN);
 	}
 	volume = Pop();
 #if _DEBUG
@@ -1655,9 +1642,8 @@ static int CmdSoundSequence(void)
 	mobj = NULL;
 	if(ACScript->line)
 	{
-#ifdef TODO_MAP_UPDATE
-		mobj = (mobj_t *) &ACScript->line->frontsector->soundorg;
-#endif
+        sector_t* front = P_GetPtrp(DMU_LINE, ACScript->line, DMU_FRONT_SECTOR);
+		mobj = P_GetPtrp(DMU_SECTOR, front, DMU_SOUND_ORIGIN);
 	}
 	SN_StartSequenceName(mobj, ACStrings[Pop()]);
 	return SCRIPT_CONTINUE;
@@ -1679,20 +1665,20 @@ static int CmdSetLineTexture(void)
 	searcher = -1;
 	while((line = P_FindLine(lineTag, &searcher)) != NULL)
 	{
-#ifdef TODO_MAP_UPDATE
+        side_t* sdef = P_GetPtrp(DMU_LINE, line, 
+                                 (side == 0? DMU_SIDE0 : DMU_SIDE1));
 		if(position == TEXTURE_MIDDLE)
 		{
-			sides[line->sidenum[side]].midtexture = texture;
+			P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, texture);
 		}
 		else if(position == TEXTURE_BOTTOM)
 		{
-			sides[line->sidenum[side]].bottomtexture = texture;
+			P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, texture);
 		}
 		else
 		{						// TEXTURE_TOP
-			sides[line->sidenum[side]].toptexture = texture;
+			P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, texture);
 		}
-#endif
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1709,9 +1695,8 @@ static int CmdSetLineBlocking(void)
 	searcher = -1;
 	while((line = P_FindLine(lineTag, &searcher)) != NULL)
 	{
-#ifdef TODO_MAP_UPDATE
-		line->flags = (line->flags & ~ML_BLOCKING) | blocking;
-#endif
+		P_SetIntp(DMU_LINE, line, DMU_FLAGS, 
+            (P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ~ML_BLOCKING) | blocking);
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1733,14 +1718,13 @@ static int CmdSetLineSpecial(void)
 	searcher = -1;
 	while((line = P_FindLine(lineTag, &searcher)) != NULL)
 	{
-#ifdef TODO_MAP_UPDATE
-		line->special = special;
-		line->arg1 = arg1;
-		line->arg2 = arg2;
-		line->arg3 = arg3;
-		line->arg4 = arg4;
-		line->arg5 = arg5;
-#endif
+        xline_t* xline = P_XLine(line);
+		xline->special = special;
+		xline->arg1 = arg1;
+		xline->arg2 = arg2;
+		xline->arg3 = arg3;
+		xline->arg4 = arg4;
+		xline->arg5 = arg5;
 	}
 	return SCRIPT_CONTINUE;
 }
@@ -1749,8 +1733,8 @@ static int CmdSetLineSpecial(void)
 DEFCC(CCmdScriptInfo)
 {
     int     i, whichOne = -1;
-    char   *scriptStates[] =
-        { "Inactive", "Running", "Suspended", "Waiting for tag",
+    char   *scriptStates[] = { 
+        "Inactive", "Running", "Suspended", "Waiting for tag",
         "Waiting for poly", "Waiting for script", "Terminating"
     };
 
