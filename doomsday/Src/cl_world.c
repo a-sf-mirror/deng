@@ -834,6 +834,8 @@ void Cl_ReadSideDelta2(boolean skip)
     if(df & SIDF_BOTTOMTEX)
         sid->bottomtexture = bottomtexture;
 
+#warning "The statements below have no effect!"
+
     if(df & SIDF_TOP_COLOR_RED)
         sid->toprgb[0];
     if(df & SIDF_TOP_COLOR_GREEN)
