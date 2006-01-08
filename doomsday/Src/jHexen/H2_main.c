@@ -212,6 +212,7 @@ void H2_PreInit(void)
     cfg.hudShown[HUD_HEALTH] = true;
     cfg.hudShown[HUD_ARTI] = true;
     cfg.lookSpeed = 3;
+    cfg.turnSpeed = 2;
     cfg.xhairSize = 1;
     for(i = 0; i < 4; i++)
         cfg.xhairColor[i] = 255;

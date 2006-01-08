@@ -251,6 +251,8 @@ cvar_t  gameCVars[] = {
     "1=Look around using the POV hat.",
     "ctl-look-speed", 0, CVT_INT, &cfg.lookSpeed, 1, 5,
     "The speed of looking up/down.",
+    "ctl-turn-speed", 0, CVT_INT, &cfg.turnSpeed, 1, 5,
+    "The speed of turning left/right.",
     "ctl-look-spring", 0, CVT_INT, &cfg.lookSpring, 0, 1,
     "1=Lookspring active.",
     "ctl-run", 0, CVT_INT, &cfg.alwaysRun, 0, 1, "1=Always run.",
