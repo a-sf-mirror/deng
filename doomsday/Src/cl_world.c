@@ -834,33 +834,31 @@ void Cl_ReadSideDelta2(boolean skip)
     if(df & SIDF_BOTTOMTEX)
         sid->bottomtexture = bottomtexture;
 
-#warning "The statements below have no effect!"
-
     if(df & SIDF_TOP_COLOR_RED)
-        sid->toprgb[0];
+        sid->toprgb[0] = toprgb[0];
     if(df & SIDF_TOP_COLOR_GREEN)
-        sid->toprgb[1];
+        sid->toprgb[1] = toprgb[1];
     if(df & SIDF_TOP_COLOR_BLUE)
-        sid->toprgb[2];
+        sid->toprgb[2] = toprgb[2];
 
     if(df & SIDF_MID_COLOR_RED)
-        sid->midrgba[0];
+        sid->midrgba[0] = midrgba[0];
     if(df & SIDF_MID_COLOR_GREEN)
-        sid->midrgba[1];
+        sid->midrgba[1] = midrgba[1];
     if(df & SIDF_MID_COLOR_BLUE)
-        sid->midrgba[2];
+        sid->midrgba[2] = midrgba[2];
     if(df & SIDF_MID_COLOR_ALPHA)
-        sid->midrgba[3];
+        sid->midrgba[3] = midrgba[3];
 
     if(df & SIDF_BOTTOM_COLOR_RED)
-        sid->bottomrgb[0];
+        sid->bottomrgb[0] = bottomrgb[0];
     if(df & SIDF_BOTTOM_COLOR_GREEN)
-        sid->bottomrgb[1];
+        sid->bottomrgb[1] = bottomrgb[1];
     if(df & SIDF_BOTTOM_COLOR_BLUE)
-        sid->bottomrgb[2];
+        sid->bottomrgb[2] = bottomrgb[2];
 
     if(df & SIDF_MID_BLENDMODE)
-        sid->blendmode;
+        sid->blendmode = blendmode;
 
     if(df & SIDF_LINE_FLAGS)
     {
