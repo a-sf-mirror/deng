@@ -36,19 +36,20 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     int             jlookInverseY; // Inverse jlook Y axis.
     int             joyaxis[8];
     int             jlookDeltaMode;
-    byte            setsizeneeded;
-    int             setblocks;
-    int             screenblocks;
     int             lookSpring;
+    int             lookSpeed;
+    int             turnSpeed;
     byte            povLookAround /* = false */ ;
     int             jumpEnabled /* = false */ ;
     float           jumpPower;
-    byte            deathLookUp; // look up when killed
     int             airborneMovement;
+    byte            setsizeneeded;
+    int             setblocks;
+    int             screenblocks;
+    byte            deathLookUp; // look up when killed
     int             slidingCorpses;
     int             sbarscale;
     byte            echoMsg;
-    int             lookSpeed;
     float           menuScale;
     int             menuEffects;
     int             menuFog;

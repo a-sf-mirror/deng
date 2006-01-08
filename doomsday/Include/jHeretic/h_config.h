@@ -8,11 +8,11 @@
 #include "Doomdef.h"
 
 enum {
-	HUD_AMMO,
-	HUD_ARMOR,
-	HUD_KEYS,
-	HUD_HEALTH,
-	HUD_ARTI
+    HUD_AMMO,
+    HUD_ARMOR,
+    HUD_KEYS,
+    HUD_HEALTH,
+    HUD_ARTI
 };
 
 // This struct should be cleaned up. Currently some of the data isn't
@@ -22,96 +22,102 @@ enum {
 //          depending on build settings.
 
 typedef struct {
-	float			playerMoveSpeed;
-	byte            setsizeneeded;
-	int             setblocks;
-	int             screenblocks;
-	int             sbarscale;
-	int             chooseAndUse;
-	int             usemlook;		// Mouse look (mouse Y => viewpitch)
-	int             usejlook;		// Joy look (joy Y => viewpitch)
-	int             alwaysRun;		// Always run.
-	int             noAutoAim;		// No auto-aiming?
-	int             mlookInverseY;		// Inverse mlook Y axis.
-	int             joyaxis[8];
-	int             jlookDeltaMode;
-	int             jlookInverseY;		// Inverse jlook Y axis.
-	int             tomeCounter, tomeSound;
-	byte            hudShown[6];   		// HUD data visibility.
+    float           playerMoveSpeed;
+    byte            setsizeneeded;
+    int             setblocks;
+    int             screenblocks;
+    int             sbarscale;
+    int             chooseAndUse;
+    int             usemlook;       // Mouse look (mouse Y => viewpitch)
+    int             usejlook;       // Joy look (joy Y => viewpitch)
+    int             alwaysRun;      // Always run.
+    int             noAutoAim;      // No auto-aiming?
+    int             mlookInverseY;      // Inverse mlook Y axis.
+    int             joyaxis[8];
+    int             jlookDeltaMode;
+    int             jlookInverseY;      // Inverse jlook Y axis.
+    int             tomeCounter, tomeSound;
+    byte            hudShown[6];        // HUD data visibility.
     float           hudScale;
-	float           hudColor[4];
-	float			hudIconAlpha;
-	byte            usePatchReplacement;
-	int             showFPS, lookSpring;
-	int             mouseSensiX, mouseSensiY;
-	byte            povLookAround;
-	int             echoMsg;
-	int             dclickuse, lookSpeed;
-	int             ringFilter;
-	int             eyeHeight;
-	float           menuScale;
-	int             menuEffects;
-	int             menuFog;
-	float           menuGlitter;
-	float           menuShadow;
-	byte            menuSlam;
-	float           flashcolor[3];
-	int             flashspeed;
-	byte            turningSkull;
-	float           menuColor[3];
-	float           menuColor2[3];
-	int             levelTitle;
-	int             corpseTime;
-	int             cameraNoClip;
-	float           bobWeapon, bobView;
+    float           hudColor[4];
+    float           hudIconAlpha;
+    byte            usePatchReplacement;
+    int             showFPS, lookSpring;
+    int             mouseSensiX, mouseSensiY;
+    byte            povLookAround;
+    int             echoMsg;
+    int             dclickuse;
+    int             lookSpeed;
+    int             turnSpeed;
+    int             ringFilter;
+    int             eyeHeight;
+    float           menuScale;
+    int             menuEffects;
+    int             menuFog;
+    float           menuGlitter;
+    float           menuShadow;
+    byte            menuSlam;
+    byte            askQuickSaveLoad;
+    float           flashcolor[3];
+    int             flashspeed;
+    byte            turningSkull;
+    float           menuColor[3];
+    float           menuColor2[3];
+    int             levelTitle;
+    int             corpseTime;
+    int             cameraNoClip;
+    float           bobWeapon, bobView;
+    byte            weaponAutoSwitch;
+    byte            weaponOrder[NUMWEAPONS];
 
-	int             xhair, xhairSize;
-	byte            xhairColor[4];
+    int             xhair, xhairSize;
+    byte            xhairColor[4];
 
-	int             msgCount;
-	float           msgScale;
-	int             msgUptime;
-	int             msgBlink;
-	int             msgAlign;
-	byte            msgShow;
-	float           msgColor[3];
+    int             msgCount;
+    float           msgScale;
+    int             msgUptime;
+    int             msgBlink;
+    int             msgAlign;
+    byte            msgShow;
+    float           msgColor[3];
 
-	int             jumpEnabled;
-	float           jumpPower;
-	byte            fastMonsters;
-	byte            customMusic;
+    int             jumpEnabled;
+    float           jumpPower;
+    byte            fastMonsters;
+    byte            customMusic;
 
-	float           statusbarAlpha;
-	float           statusbarCounterAlpha;
+    float           statusbarAlpha;
+    float           statusbarCounterAlpha;
 
-	char           *chat_macros[10];
+    char           *chat_macros[10];
 
-	// Automap stuff.
-	byte            counterCheat;
-	float           counterCheatScale;
-	int             automapPos;
-	float           automapWidth;
-	float           automapHeight;
-	float           automapL0[3];
-	float           automapL1[3];
-	float           automapL2[3];
-	float           automapL3[3];
-	float           automapBack[4];
-	float           automapLineAlpha;
-	byte            automapRotate;
-	byte            automapHudDisplay;
-	byte            automapShowDoors;
-	float           automapDoorGlow;
+    // Automap stuff.
+    byte            counterCheat;
+    float           counterCheatScale;
+    int             automapPos;
+    float           automapWidth;
+    float           automapHeight;
+    float           automapL0[3];
+    float           automapL1[3];
+    float           automapL2[3];
+    float           automapL3[3];
+    float           automapBack[4];
+    float           automapLineAlpha;
+    byte            automapRotate;
+    byte            automapHudDisplay;
+    byte            automapShowDoors;
+    float           automapDoorGlow;
     byte            automapBabyKeys;
 
-	// Networking.
-	byte            netDeathmatch, netNomonsters, netRespawn, netJumping;
-	byte            netEpisode, netMap, netSkill, netSlot;
-	byte            netColor;
-
-	int             PlayerColor[MAXPLAYERS];
+    // Networking.
+    byte            netDeathmatch, netNomonsters, netRespawn, netJumping;
+    byte            netEpisode, netMap, netSkill, netSlot;
+    byte            netColor;
+    byte            netMobDamageModifier;    // multiplier for non-player mobj damage
+    byte            netMobHealthModifier;    // health modifier for non-player mobjs
+    int             PlayerColor[MAXPLAYERS];
 } jheretic_config_t;
 
-extern jheretic_config_t cfg;	   // in g_game.c
+extern jheretic_config_t cfg;      // in g_game.c
 
 #endif
