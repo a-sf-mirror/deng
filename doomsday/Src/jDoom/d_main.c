@@ -349,6 +349,7 @@ void D_PreInit(void)
     cfg.screenblocks = cfg.setblocks = 10;
     cfg.echoMsg = true;
     cfg.lookSpeed = 3;
+    cfg.turnSpeed = 2;
     cfg.usePatchReplacement = true;
     cfg.menuScale = .9f;
     cfg.menuGlitter = .5f;
@@ -557,13 +558,6 @@ void D_PostInit(void)
         Con_Message(".\n");
     }
 
-    /*
-       p = ArgCheck ("-avg");
-       if(p && p < myargc-1 && deathmatch)
-       Con_Message("Austin Virtual Gaming: Levels will end after "
-       "20 minutes\n");
-     */
-
     p = ArgCheck("-warp");
     if(p && p < myargc - 1)
     {
@@ -600,32 +594,6 @@ void D_PostInit(void)
         sidemove[0] = sidemove[0] * scale / 100;
         sidemove[1] = sidemove[1] * scale / 100;
     }
-
-    /*
-       // Check for -file in shareware
-       if(modifiedgame)
-       {
-       // These are the lumps that will be checked in IWAD,
-       // if any one is not present, execution will be aborted.
-       char name[23][8]=
-       {
-       "e2m1","e2m2","e2m3","e2m4","e2m5","e2m6","e2m7","e2m8","e2m9",
-       "e3m1","e3m3","e3m3","e3m4","e3m5","e3m6","e3m7","e3m8","e3m9",
-       "dphoof","bfgga0","heada1","cybra1","spida1d1"
-       };
-       int i;
-
-       if(gamemode == shareware)
-       I_Error("\nYou cannot -file with the shareware version. Register!");
-
-       // Check for fake IWAD with right name,
-       // but w/o all the lumps of the registered version.
-       if (gamemode == registered)
-       for (i = 0;i < 23; i++)
-       if (W_CheckNumForName(name[i])<0)
-       I_Error("\nThis is not the registered version.");
-       }
-     */
 
     // Are we autostarting?
     if(autostart)
@@ -795,16 +763,6 @@ game_export_t *GetGameAPI(game_import_t * imports)
 
     // Data structure sizes.
     gx.ticcmd_size = sizeof(ticcmd_t);
-    /*
-    gx.vertex_size = sizeof(vertex_t);
-    gx.seg_size = sizeof(seg_t);
-    gx.sector_size = sizeof(sector_t);
-    gx.subsector_size = sizeof(subsector_t);
-    gx.node_size = sizeof(node_t);
-    gx.line_size = sizeof(line_t);
-    gx.side_size = sizeof(side_t);
-    gx.thing_size = sizeof(thing_t);
-    */
 
     gx.SetupForThings = P_SetupForThings;
     gx.SetupForLines = P_SetupForLines;
