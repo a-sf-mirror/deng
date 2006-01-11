@@ -202,7 +202,7 @@ extern          "C" {
         DD_HORIZON,
         DD_GAME_ID,
         DD_DEF_MOBJ,
-            DD_DEF_MOBJ_BY_NAME,
+        DD_DEF_MOBJ_BY_NAME,
         DD_DEF_STATE,
         DD_DEF_SPRITE,
         DD_DEF_SOUND,
@@ -262,6 +262,8 @@ extern          "C" {
         DD_POLYOBJ_COUNT,
         DD_BLOCKMAP_WIDTH,
         DD_BLOCKMAP_HEIGHT,
+        DD_BLOCKMAP_ORIGIN_X,
+        DD_BLOCKMAP_ORIGIN_Y,
         DD_XGFUNC_LINK             // XG line classes
     };
 
@@ -586,7 +588,7 @@ extern          "C" {
         DMU_CEILING_TEXTURE_MOVE_X,
         DMU_CEILING_TEXTURE_MOVE_Y,
         DMU_CEILING_TEXTURE_MOVE_XY,
-        
+
         DMU_SEG_LIST,               // array of seg_t*'s
         DMU_SEG_COUNT,
         DMU_TAG,

@@ -815,10 +815,10 @@ int DD_GetInteger(int ddvalue)
 
         case DD_THING_COUNT:
             return numthings;
-            
+
         case DD_BLOCKMAP_WIDTH:
             return bmapwidth;
-            
+
         case DD_BLOCKMAP_HEIGHT:
             return bmapheight;
 
@@ -885,7 +885,7 @@ void DD_SetInteger(int ddvalue, int parm)
         if(ddvalue == DD_POLYOBJ_COUNT)
         {
             po_NumPolyobjs = parm;
-        } 
+        }
         else if(ddvalue == DD_SKYFLAT_NAME)
         {
             // Dude!  This is not 64-bit safe.
@@ -964,6 +964,12 @@ void* DD_GetVariable(int ddvalue)
             if(mapinfo && mapinfo->author[0])
                 return mapinfo->author;
             break;
+
+        case DD_BLOCKMAP_ORIGIN_X:
+            return &bmaporgx;
+
+        case DD_BLOCKMAP_ORIGIN_Y:
+            return &bmaporgy;
 
 #ifdef WIN32
         case DD_WINDOW_HANDLE:
