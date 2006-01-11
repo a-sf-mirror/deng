@@ -914,8 +914,7 @@ void G_AdjustAngle(player_t *player, int turn, float elapsed)
     delta = (fixed_t) (turn << FRACBITS);
 
     if(elapsed > 0)
-        delta *= /*cfg.turnSpeed * turn * */ elapsed * 35;
-#warning "cfg.turnSpeed not declared"
+        delta *= cfg.turnSpeed * turn * elapsed * 35;
 
     player->plr->clAngle += delta;
 }
