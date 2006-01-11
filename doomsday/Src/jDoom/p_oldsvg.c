@@ -236,7 +236,6 @@ void P_v19_UnArchiveWorld(void)
 {
     int     i;
     int     j;
-    side_t *si;
     short  *get;
     int     firstflat = W_CheckNumForName("F_START") + 1;
 
@@ -263,19 +262,25 @@ void P_v19_UnArchiveWorld(void)
         P_SetInt(DMU_LINE, i, DMU_FLAGS, *get++);
         xlines[i].special = *get++;
         xlines[i].tag = *get++;
-#ifdef TODO_MAP_UPDATE
+
         for(j = 0; j < 2; j++)
         {
-            if(li->sidenum[j] == NO_INDEX)
+            side_t* sdef;
+
+            if(j == 0)
+                sdef = P_GetPtr(DMU_LINE, i, DMU_SIDE0);
+            else
+                sdef = P_GetPtr(DMU_LINE, i, DMU_SIDE1);
+
+            if(!sdef)
                 continue;
-            si = &sides[li->sidenum[j]];
-            si->textureoffset = *get++ << FRACBITS;
-            si->rowoffset = *get++ << FRACBITS;
-            si->toptexture = *get++;
-            si->bottomtexture = *get++;
-            si->midtexture = *get++;
+
+            P_SetFixedp(DMU_SIDE, sdef, DMU_TEXTURE_OFFSET_X, *get++ << FRACBITS);
+            P_SetFixedp(DMU_SIDE, sdef, DMU_TEXTURE_OFFSET_Y, *get++ << FRACBITS);
+            P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, *get++);
+            P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, *get++);
+            P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, *get++);
         }
-#endif
     }
     save_p = (byte *) get;
 }

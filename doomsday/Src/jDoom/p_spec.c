@@ -1027,13 +1027,17 @@ void P_UpdateSpecials(void)
     {
         line = linespeciallist[i];
 
-        switch(xlines[P_ToIndex(DMU_LINE, line)].special)
+        switch(P_XLine(line)->special)
         {
         case 48:
-            side = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+            side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+
             // EFFECT FIRSTCOL SCROLL +
             x = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X);
             P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, x += FRACUNIT);
+            break;
+
+        default:
             break;
         }
     }
@@ -1046,27 +1050,37 @@ void P_UpdateSpecials(void)
             buttonlist[i].btimer--;
             if(!buttonlist[i].btimer)
             {
-#ifdef TODO_MAP_UPDATE
+                side_t* sdef = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                                         DMU_SIDE0);
+                sector_t* frontsector = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                                                  DMU_FRONT_SECTOR);
+
                 switch (buttonlist[i].where)
                 {
                 case top:
-                    sides[buttonlist[i].line->sidenum[0]].toptexture =
-                        buttonlist[i].btexture;
+                    P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE,
+                              buttonlist[i].btexture);
                     break;
 
                 case middle:
-                    sides[buttonlist[i].line->sidenum[0]].midtexture =
-                        buttonlist[i].btexture;
+                    P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE,
+                              buttonlist[i].btexture);
                     break;
 
                 case bottom:
-                    sides[buttonlist[i].line->sidenum[0]].bottomtexture =
-                        buttonlist[i].btexture;
+                    P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE,
+                              buttonlist[i].btexture);
                     break;
+
+                default:
+                    Con_Error("P_UpdateSpecials: Unknown sidedef section \"%d\".",
+                              buttonlist[i].where);
                 }
-                S_StartSound(sfx_swtchn, buttonlist[i].soundorg);
+
+                S_StartSound(sfx_swtchn,
+                             P_GetPtrp(DMU_SECTOR, frontsector, DMU_SOUND_ORIGIN));
+
                 memset(&buttonlist[i], 0, sizeof(button_t));
-#endif
             }
         }
 
@@ -1109,7 +1123,9 @@ int EV_DoDonut(line_t *line)
             //  Spawn rising slime
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
             P_AddThinker(&floor->thinker);
-            xsectors[P_ToIndex(DMU_SECTOR, s2)].specialdata = floor;
+
+            P_XSector(s2)->specialdata = floor;
+
             floor->thinker.function = T_MoveFloor;
             floor->type = donutRaise;
             floor->crush = false;
@@ -1123,7 +1139,9 @@ int EV_DoDonut(line_t *line)
             //  Spawn lowering donut-hole
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
             P_AddThinker(&floor->thinker);
-            xsectors[P_ToIndex(DMU_SECTOR, s1)].specialdata = floor;
+
+            P_XSector(s1)->specialdata = floor;
+
             floor->thinker.function = T_MoveFloor;
             floor->type = lowerFloor;
             floor->crush = false;

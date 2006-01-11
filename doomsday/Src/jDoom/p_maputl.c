@@ -89,26 +89,33 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
 {
     mobj_t *mo = tmthing;
     fixed_t dist;
+    fixed_t ffloor = P_GetFixedp(DMU_SECTOR, P_GetPtrp(DMU_LINE, ld, DMU_FRONT_SECTOR),
+                                 DMU_FLOOR_HEIGHT);
+
+    fixed_t bfloor = P_GetFixedp(DMU_SECTOR, P_GetPtrp(DMU_LINE, ld, DMU_BACK_SECTOR),
+                                 DMU_FLOOR_HEIGHT);
+
+    fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
+    fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
 
     if(tmthing->player)
         return true;            // skip players!
 
-#ifdef TODO_MAP_UPDATE
     dist =                      // lever arm
-        +(ld->dx >> FRACBITS) * (mo->y >> FRACBITS) -
-        (ld->dy >> FRACBITS) * (mo->x >> FRACBITS) -
-        (ld->dx >> FRACBITS) * (ld->v1->y >> FRACBITS) +
-        (ld->dy >> FRACBITS) * (ld->v1->x >> FRACBITS);
+        +(dx >> FRACBITS) * (mo->y >> FRACBITS) -
+        (dy >> FRACBITS) * (mo->x >> FRACBITS) -
+        (dx >> FRACBITS) * (P_GetFixedp(DMU_VERTEX, P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
+                                        DMU_Y) >> FRACBITS) +
+        (dy >> FRACBITS) * (P_GetFixedp(DMU_VERTEX, P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
+                                        DMU_X) >> FRACBITS);
 
-    if(dist < 0 ?               // drop off direction
-       ld->frontsector->floorheight < mo->z &&
-       ld->backsector->floorheight >= mo->z : ld->backsector->floorheight <
-       mo->z && ld->frontsector->floorheight >= mo->z)
+    if((dist < 0 && ffloor < mo->z && bfloor >= mo->z) ||
+       (dist >= 0 && bfloor < mo->z && ffloor >= mo->z))
     {
         // At this point, we know that the object straddles a two-sided
         // linedef, and that the object's center of mass is above-ground.
 
-        fixed_t x = abs(ld->dx), y = abs(ld->dy);
+        fixed_t x = abs(dx), y = abs(dy);
 
         if(y > x)
         {
@@ -136,20 +143,25 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
 
         // Apply momentum away from the pivot linedef.
 
-        x = FixedMul(ld->dy, dist);
-        y = FixedMul(ld->dx, dist);
+        x = FixedMul(dy, dist);
+        y = FixedMul(dx, dist);
 
         // Avoid moving too fast all of a sudden (step into "overdrive")
 
         dist = FixedMul(x, x) + FixedMul(y, y);
 
         while(dist > FRACUNIT * 4 && mo->gear < MAXGEAR)
-            ++mo->gear, x >>= 1, y >>= 1, dist >>= 1;
+        {
+            ++mo->gear;
+            x >>= 1;
+            y >>= 1;
+            dist >>= 1;
+        }
 
         mo->momx -= x;
         mo->momy += y;
     }
-#endif
+
     return true;
 }
 

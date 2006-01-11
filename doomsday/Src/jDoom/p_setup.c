@@ -30,8 +30,9 @@
 // TYPES -------------------------------------------------------------------
 
 // Game specific map format properties for ALL games.
-// TODO: we don't needc to know about all of them once they
+// TODO: we don't need  to know about all of them once they
 // are registered via DED.
+// (notice jHeretic/jHexen properties are here too temporarily).
 enum {
     DAM_LINE_TAG,
     DAM_LINE_SPECIAL,
@@ -92,6 +93,33 @@ int        numxlines;
 
 // CODE --------------------------------------------------------------------
 
+/*
+ * Converts a line to an xline.
+ */
+xline_t* P_XLine(line_t* line)
+{
+    return &xlines[P_ToIndex(DMU_LINE, line)];
+}
+
+/*
+ * Converts a sector to an xsector.
+ */
+xsector_t* P_XSector(sector_t* sector)
+{
+    return &xsectors[P_ToIndex(DMU_SECTOR, sector)];
+}
+
+/*
+ * Given a subsector - find its parent xsector.
+ */
+xsector_t* P_XSectorOfSubsector(subsector_t* sub)
+{
+    return &xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, sub)];
+}
+
+/*
+ * Create and initialize our private thing data array
+ */
 void P_SetupForThings(int num)
 {
     int oldNum = numthings;

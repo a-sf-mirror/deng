@@ -858,6 +858,7 @@ void P_HitSlideLine(line_t *ld)
         return;
     }
 #endif
+
     side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
     lineangle = R_PointToAngle2(0, 0,

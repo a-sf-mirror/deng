@@ -134,9 +134,8 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 
     for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
     {
-#ifdef TODO_MAP_UPDATE
-        check = sec->Lines[i];
-#endif
+        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+
         frontsector = P_GetPtrp(DMU_LINE, check, DMU_FRONT_SECTOR);
         backsector = P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR);
 
@@ -634,7 +633,7 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, actor->subsector, 
+    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, actor->subsector,
                                                 DMU_SECTOR));
     mobj_t *targ;
 

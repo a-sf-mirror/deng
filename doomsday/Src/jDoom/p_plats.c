@@ -136,9 +136,9 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
     plat_t *plat;
     int     secnum;
     int     rtn;
-    int     lineid = P_ToIndex(DMU_LINE, line);
     fixed_t floorheight;
     sector_t *sec;
+    sector_t*   frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
 
     secnum = -1;
     rtn = 0;
@@ -147,7 +147,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
     switch (type)
     {
     case perpetualRaise:
-        P_ActivateInStasis(xlines[lineid].tag);
+        P_ActivateInStasis(P_XLine(line)->tag);
         break;
 
     default:
@@ -156,6 +156,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
     while((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
+        sec = P_ToPtr(DMU_SECTOR, secnum);
+
         if(xsectors[secnum].specialdata)
             continue;
 
@@ -166,20 +168,25 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
         plat->type = type;
         plat->sector = P_ToPtr(DMU_SECTOR, secnum);
+
         xsectors[secnum].specialdata = plat;
+
         plat->thinker.function = (actionf_p1) T_PlatRaise;
         plat->crush = false;
-        plat->tag = xlines[lineid].tag;
+
+        plat->tag = P_XLine(line)->tag;
 
         floorheight = P_GetFixed(DMU_SECTOR, secnum, DMU_FLOOR_HEIGHT);
         switch(type)
         {
         case raiseToNearestAndChange:
             plat->speed = PLATSPEED / 2;
-#ifdef TODO_MAP_UPDATE
-            sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
-#endif
+
+            P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
+
             plat->high = P_FindNextHighestFloor(sec, floorheight);
+
             plat->wait = 0;
             plat->status = up;
             // NO MORE DAMAGE, IF APPLICABLE
@@ -190,9 +197,10 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 
         case raiseAndChange:
             plat->speed = PLATSPEED / 2;
-#ifdef TODO_MAP_UPDATE
-            sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
-#endif
+
+            P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
+
             plat->high = floorheight + amount * FRACUNIT;
             plat->wait = 0;
             plat->status = up;
@@ -210,6 +218,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->high = floorheight;
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
+
             S_SectorSound(sec, sfx_pstart);
             break;
 
@@ -223,6 +232,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->high = floorheight;
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
+
             S_SectorSound(sec, sfx_pstart);
             break;
 

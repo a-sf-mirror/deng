@@ -171,9 +171,8 @@ void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
-#ifdef TODO_MAP_UPDATE
-            buttonlist[i].soundorg = (mobj_t *) &line->frontsector->soundorg;
-#endif
+            buttonlist[i].soundorg = P_GetPtrp(DMU_SECTOR,
+                P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
             return;
         }
     }
@@ -193,15 +192,15 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     int     i;
     int     sound;
     int     idx = P_ToIndex(DMU_LINE, line);
+    side_t*     sdef = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+    sector_t*   frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
 
     if(!useAgain)
-        xlines[idx].special = 0;
+        P_XLine(line)->special = 0;
 
-#ifdef TODO_MAP_UPDATE
-    texTop = sides[line->sidenum[0]].toptexture;
-    texMid = sides[line->sidenum[0]].midtexture;
-    texBot = sides[line->sidenum[0]].bottomtexture;
-#endif
+    texTop = P_GetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE);
+    texMid = P_GetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE);
+    texBot = P_GetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE);
 
     sound = sfx_swtchn;
 
@@ -213,11 +212,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     {
         if(switchlist[i] == texTop)
         {
-            S_StartSound(sound, buttonlist->soundorg);
-#ifdef TODO_MAP_UPDATE
-            sides[line->sidenum[0]].toptexture = switchlist[i ^ 1];
-#endif
-            //gi.Sv_TextureChanges(line->sidenum[0], DDWU_TOP);
+            S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+                                          DMU_SOUND_ORIGIN));
+
+            P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, switchlist[i ^ 1]);
 
             if(useAgain)
                 P_StartButton(line, top, switchlist[i], BUTTONTIME);
@@ -228,11 +226,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
         {
             if(switchlist[i] == texMid)
             {
-                S_StartSound(sound, buttonlist->soundorg);
-#ifdef TODO_MAP_UPDATE
-                sides[line->sidenum[0]].midtexture = switchlist[i ^ 1];
-#endif
-                //gi.Sv_TextureChanges(line->sidenum[0], DDWU_MID);
+                S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+                                              DMU_SOUND_ORIGIN));
+
+                P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, switchlist[i ^ 1]);
 
                 if(useAgain)
                     P_StartButton(line, middle, switchlist[i], BUTTONTIME);
@@ -243,11 +240,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
             {
                 if(switchlist[i] == texBot)
                 {
-                    S_StartSound(sound, buttonlist->soundorg);
-#ifdef TODO_MAP_UPDATE
-                    sides[line->sidenum[0]].bottomtexture = switchlist[i ^ 1];
-#endif
-                    //gi.Sv_TextureChanges(line->sidenum[0], DDWU_BOTTOM);
+                    S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+                                                  DMU_SOUND_ORIGIN));
+
+                    P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, switchlist[i ^ 1]);
 
                     if(useAgain)
                         P_StartButton(line, bottom, switchlist[i], BUTTONTIME);
@@ -265,7 +261,7 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
  */
 boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
 {
-    int idx = P_ToIndex(DMU_LINE, line);
+    xline_t *xline = P_XLine(line);
 
     // Extended functionality overrides old.
     if(XL_UseLine(line, side, thing))
@@ -275,7 +271,7 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
     // Use the back sides of VERY SPECIAL lines...
     if(side)
     {
-        switch (xlines[idx].special)
+        switch (xline->special)
         {
         case 124:
             // Sliding door open&close
@@ -295,7 +291,7 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
         if(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_SECRET)
             return false;
 
-        switch (xlines[idx].special)
+        switch (xline->special)
         {
         case 1:             // MANUAL DOOR RAISE
         case 32:                // MANUAL BLUE
@@ -310,7 +306,7 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
     }
 
     // do something
-    switch (xlines[idx].special)
+    switch (xline->special)
     {
         // MANUALS
     case 1:                 // Vertical Door

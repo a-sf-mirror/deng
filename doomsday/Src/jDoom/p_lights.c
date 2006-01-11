@@ -67,7 +67,7 @@ void P_SpawnFireFlicker(sector_t *sector)
 
     // Note that we are resetting sector attributes.
     // Nothing special about it during gameplay.
-    xsectors[P_ToIndex(DMU_SECTOR, sector)].special = 0;
+    P_XSector(sector)->special = 0;
 
     flick = Z_Malloc(sizeof(*flick), PU_LEVSPEC, 0);
 
@@ -114,7 +114,7 @@ void P_SpawnLightFlash(sector_t *sector)
     lightflash_t *flash;
 
     // nothing special about it during gameplay
-    xsectors[P_ToIndex(DMU_SECTOR, sector)].special = 0;
+    P_XSector(sector)->special = 0;
 
     flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
 
@@ -177,7 +177,7 @@ void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
         flash->minlight = 0;
 
     // nothing special about it during gameplay
-    xsectors[P_ToIndex(DMU_SECTOR, sector)].special = 0;
+    P_XSector(sector)->special = 0;
 
     if(!inSync)
         flash->count = (P_Random() & 7) + 1;
@@ -211,11 +211,12 @@ void EV_TurnTagLightsOff(line_t *line)
     int     j;
     int     min;
     int     linetag;
-    sector_t *sector;
+    int     lightlevel;
     sector_t *tsec;
     line_t *templine;
 
-    linetag = xlines[P_ToIndex(DMU_LINE, line)].tag;
+    linetag = P_XLine(line)->tag;
+
     for(j = 0; j < numsectors; j++)
     {
         if(xsectors[j].tag == linetag)
@@ -223,14 +224,16 @@ void EV_TurnTagLightsOff(line_t *line)
             min = P_GetInt(DMU_SECTOR, j, DMU_LIGHT_LEVEL);
             for(i = 0; i < P_GetInt(DMU_SECTOR, j, DMU_LINE_COUNT); i++)
             {
-#ifdef TODO_MAP_UPDATE
-                templine = sector->Lines[i];
-                tsec = getNextSector(templine, sector);
+                templine = P_GetPtr(DMU_LINE_OF_SECTOR, j, i);
+                tsec = getNextSector(templine, P_ToPtr(DMU_SECTOR, j));
+
                 if(!tsec)
                     continue;
-                if(tsec->lightlevel < min)
-                    min = tsec->lightlevel;
-#endif
+
+                lightlevel = P_GetIntp(DMU_SECTOR, tsec, DMU_LIGHT_LEVEL);
+
+                if(lightlevel < min)
+                    min = lightlevel;
             }
 
             P_SetInt(DMU_SECTOR, j, DMU_LIGHT_LEVEL, min);
@@ -243,11 +246,12 @@ void EV_LightTurnOn(line_t *line, int bright)
     int     i;
     int     j;
     int     linetag;
-    sector_t *sector;
+    int     lightlevel;
     sector_t *temp;
     line_t *templine;
 
-    linetag = xlines[P_ToIndex(DMU_LINE, line)].tag;
+    linetag = P_XLine(line)->tag;
+
     for(i = 0; i < numsectors; i++)
     {
         if(xsectors[i].tag == linetag)
@@ -259,16 +263,16 @@ void EV_LightTurnOn(line_t *line, int bright)
             {
                 for(j = 0; j < P_GetInt(DMU_SECTOR, i, DMU_LINE_COUNT); j++)
                 {
-#ifdef TODO_MAP_UPDATE
-                    templine = sector->Lines[j];
-                    temp = getNextSector(templine, sector);
+                    templine = P_GetPtr(DMU_LINE_OF_SECTOR, i, j);
+                    temp = getNextSector(templine, P_ToPtr(DMU_SECTOR, i));
 
                     if(!temp)
                         continue;
 
-                    if(temp->lightlevel > bright)
-                        bright = temp->lightlevel;
-#endif
+                    lightlevel = P_GetIntp(DMU_SECTOR, temp, DMU_LIGHT_LEVEL);
+
+                    if(lightlevel > bright)
+                        bright = lightlevel;
                 }
             }
             P_SetInt(DMU_SECTOR, i, DMU_LIGHT_LEVEL, bright);
@@ -321,5 +325,5 @@ void P_SpawnGlowingLight(sector_t *sector)
     g->thinker.function = T_Glow;
     g->direction = -1;
 
-    xsectors[P_ToIndex(DMU_SECTOR, sector)].special = 0;
+    P_XSector(sector)->special = 0;
 }

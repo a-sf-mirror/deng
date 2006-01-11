@@ -50,18 +50,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
 {
     boolean flag;
     fixed_t lastpos;
-    fixed_t *ptarget;
-    fixed_t *pspeed;
     fixed_t floorheight, ceilingheight;
-
-#ifdef TODO_MAP_UPDATE
-    ptarget = &sector->planes[floorOrCeiling].target;
-    pspeed = &sector->planes[floorOrCeiling].speed;
-#endif
-
-    // Tell the engine what's going on.
-    *ptarget = dest;
-    *pspeed = speed;
 
     floorheight = P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
     ceilingheight = P_GetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
@@ -81,9 +70,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
                 return pastdest;
@@ -95,9 +84,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                     return crushed;
                 }
@@ -113,9 +102,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
                 return pastdest;
@@ -132,9 +121,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     {
                         return crushed;
                     }
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -157,9 +146,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -178,9 +167,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     {
                         return crushed;
                     }
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -197,9 +186,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    *ptarget = lastpos;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    *pspeed = 0;
+                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                 }
@@ -248,9 +237,8 @@ void T_MoveFloor(floormove_t * floor)
     xsec = &xsectors[P_ToIndex(DMU_SECTOR, floor->sector)];
     if(res == pastdest)
     {
-#ifdef TODO_MAP_UPDATE
-        floor->sector->planes[PLN_FLOOR].speed = 0;
-#endif
+        P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_SPEED, 0);
+
         xsec->specialdata = NULL;
 
         if(floor->direction == 1)
@@ -427,9 +415,8 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                 floor->speed = FLOORSPEED;
                 for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
                 {
-#ifdef TODO_MAP_UPDATE
-                    ln = &sec->Lines[i];
-#endif
+                    ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+
                     if(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED)
                     {
                         side = P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR);
@@ -470,9 +457,8 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
             {
                 // Choose the correct texture and special on two sided lines.
-#ifdef TODO_MAP_UPDATE
-                ln = &sec->Lines[i];
-#endif
+                ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+
                 if(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED)
                 {
                     if(P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR) == sec)
@@ -573,9 +559,8 @@ int EV_BuildStairs(line_t *line, stair_e type)
             ok = 0;
             for(i = 0; i < P_GetFixedp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
             {
-#ifdef TODO_MAP_UPDATE
-                ln = &sec->Lines[i];
-#endif
+                ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+
                 if(!(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED))
                     continue;
 
