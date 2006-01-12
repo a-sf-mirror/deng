@@ -404,7 +404,8 @@ enum // Value types.
     VT_FLOAT,
     VT_ULONG,
     VT_PTR,
-    VT_FLAT_INDEX
+    VT_FLAT_INDEX,
+    VT_BLENDMODE
 };
 
 typedef struct setargs_s {
@@ -637,8 +638,12 @@ static const char* DMU_Str(int prop)
         { DMU_ANGLE, "DMU_ANGLE" },
         { DMU_OFFSET, "DMU_OFFSET" },
         { DMU_TOP_TEXTURE, "DMU_TOP_TEXTURE" },
+        { DMU_TOP_COLOR, "DMU_TOP_COLOR" },
         { DMU_MIDDLE_TEXTURE, "DMU_MIDDLE_TEXTURE" },
+        { DMU_MIDDLE_COLOR, "DMU_MIDDLE_COLOR" },
+        { DMU_MIDDLE_BLENDMODE, "DMU_MIDDLE_BLENDMODE" },
         { DMU_BOTTOM_TEXTURE, "DMU_BOTTOM_TEXTURE" },
+        { DMU_BOTTOM_COLOR, "DMU_BOTTOM_COLOR" },
         { DMU_TEXTURE_OFFSET_X, "DMU_TEXTURE_OFFSET_X" },
         { DMU_TEXTURE_OFFSET_Y, "DMU_TEXTURE_OFFSET_Y" },
         { DMU_TEXTURE_OFFSET_XY, "DMU_TEXTURE_OFFSET_XY" },
@@ -653,6 +658,7 @@ static const char* DMU_Str(int prop)
         { DMU_FLOOR_OFFSET_XY, "DMU_FLOOR_OFFSET_XY" },
         { DMU_FLOOR_TARGET, "DMU_FLOOR_TARGET" },
         { DMU_FLOOR_SPEED, "DMU_FLOOR_SPEED" },
+        { DMU_FLOOR_COLOR, "DMU_FLOOR_COLOR" },
         { DMU_FLOOR_TEXTURE_MOVE_X, "DMU_FLOOR_TEXTURE_MOVE_X" },
         { DMU_FLOOR_TEXTURE_MOVE_Y, "DMU_FLOOR_TEXTURE_MOVE_Y" },
         { DMU_FLOOR_TEXTURE_MOVE_XY, "DMU_FLOOR_TEXTURE_MOVE_XY" },
@@ -663,6 +669,7 @@ static const char* DMU_Str(int prop)
         { DMU_CEILING_OFFSET_XY, "DMU_CEILING_OFFSET_XY" },
         { DMU_CEILING_TARGET, "DMU_CEILING_TARGET" },
         { DMU_CEILING_SPEED, "DMU_CEILING_SPEED" },
+        { DMU_CEILING_COLOR, "DMU_CEILING_COLOR" },
         { DMU_CEILING_TEXTURE_MOVE_X, "DMU_CEILING_TEXTURE_MOVE_X" },
         { DMU_CEILING_TEXTURE_MOVE_Y, "DMU_CEILING_TEXTURE_MOVE_Y" },
         { DMU_CEILING_TEXTURE_MOVE_XY, "DMU_CEILING_TEXTURE_MOVE_XY" },
@@ -1062,6 +1069,24 @@ static void SetValue(int valueType, void* dst, setargs_t* args, int index)
                       DMU_Str(args->valueType));
         }
     }
+    else if(valueType == VT_BLENDMODE)
+    {
+        blendmode_t* d = dst;
+
+        switch(args->valueType)
+        {
+        case VT_INT:
+            if(args->intValues[index] > DDNUM_BLENDMODES || args->intValues[index] < 0)
+                Con_Error("SetValue: %d is not a valid value for VT_BLENDMODE.\n",
+                          args->intValues[index]);
+
+            *d = args->intValues[index];
+            break;
+        default:
+            Con_Error("SetValue: VT_BLENDMODE incompatible with value type %s.\n",
+                      DMU_Str(args->valueType));
+        }
+    }
     else if(valueType == VT_PTR)
     {
         void** d = dst;
@@ -1138,6 +1163,9 @@ static int SetProperty(void* ptr, void* context)
         side_t* p = ptr;
         switch(args->prop)
         {
+        case DMU_FLAGS:
+            SetValue(VT_BYTE, &p->flags, args, 0);
+            break;
         case DMU_TEXTURE_OFFSET_X:
             SetValue(VT_FIXED, &p->textureoffset, args, 0);
             break;
@@ -1148,11 +1176,30 @@ static int SetProperty(void* ptr, void* context)
             SetValue(VT_FIXED, &p->textureoffset, args, 0);
             SetValue(VT_FIXED, &p->rowoffset, args, 1);
             break;
+        case DMU_TOP_COLOR:
+            SetValue(VT_BYTE, &p->toprgb[0], args, 0);
+            SetValue(VT_BYTE, &p->toprgb[1], args, 1);
+            SetValue(VT_BYTE, &p->toprgb[2], args, 2);
+            break;
         case DMU_TOP_TEXTURE:
             SetValue(VT_FLAT_INDEX, &p->toptexture, args, 0);
             break;
+        case DMU_MIDDLE_COLOR:
+            SetValue(VT_BYTE, &p->midrgba[0], args, 0);
+            SetValue(VT_BYTE, &p->midrgba[1], args, 1);
+            SetValue(VT_BYTE, &p->midrgba[2], args, 2);
+            SetValue(VT_BYTE, &p->midrgba[3], args, 3);
+            break;
+        case DMU_MIDDLE_BLENDMODE:
+            SetValue(VT_BLENDMODE, &p->blendmode, args, 0);
+            break;
         case DMU_MIDDLE_TEXTURE:
             SetValue(VT_FLAT_INDEX, &p->midtexture, args, 0);
+            break;
+        case DMU_BOTTOM_COLOR:
+            SetValue(VT_BYTE, &p->bottomrgb[0], args, 0);
+            SetValue(VT_BYTE, &p->bottomrgb[1], args, 1);
+            SetValue(VT_BYTE, &p->bottomrgb[2], args, 2);
             break;
         case DMU_BOTTOM_TEXTURE:
             SetValue(VT_FLAT_INDEX, &p->bottomtexture, args, 0);
@@ -1192,6 +1239,11 @@ static int SetProperty(void* ptr, void* context)
         case DMU_LIGHT_LEVEL:
             SetValue(VT_SHORT, &p->lightlevel, args, 0);
             break;
+        case DMU_FLOOR_COLOR:
+            SetValue(VT_BYTE, &p->floorrgb[0], args, 0);
+            SetValue(VT_BYTE, &p->floorrgb[1], args, 1);
+            SetValue(VT_BYTE, &p->floorrgb[2], args, 2);
+            break;
         case DMU_FLOOR_HEIGHT:
             SetValue(VT_FIXED, &p->floorheight, args, 0);
             break;
@@ -1223,6 +1275,11 @@ static int SetProperty(void* ptr, void* context)
             break;
         case DMU_FLOOR_SPEED:
             SetValue(VT_INT, &p->planes[PLN_FLOOR].speed, args, 0);
+            break;
+        case DMU_CEILING_COLOR:
+            SetValue(VT_BYTE, &p->ceilingrgb[0], args, 0);
+            SetValue(VT_BYTE, &p->ceilingrgb[1], args, 1);
+            SetValue(VT_BYTE, &p->ceilingrgb[2], args, 2);
             break;
         case DMU_CEILING_HEIGHT:
             SetValue(VT_FIXED, &p->ceilingheight, args, 0);
@@ -1436,6 +1493,20 @@ static void GetValue(int valueType, void* dst, setargs_t* args, int index)
                       DMU_Str(args->valueType));
         }
     }
+    else if(valueType == VT_BLENDMODE)
+    {
+        blendmode_t* d = dst;
+
+        switch(args->valueType)
+        {
+        case VT_INT:
+            args->intValues[index] = *d;
+            break;
+        default:
+            Con_Error("GetValue: VT_BLENDMODE incompatible with value type %s.\n",
+                      DMU_Str(args->valueType));
+        }
+    }
     else if(valueType == VT_PTR)
     {
         void** d = dst;
@@ -1578,11 +1649,33 @@ static int GetProperty(void* ptr, void* context)
         case DMU_TOP_TEXTURE:
             GetValue(VT_FLAT_INDEX, &p->toptexture, args, 0);
             break;
+        case DMU_TOP_COLOR:
+            GetValue(VT_BYTE, &p->toprgb[0], args, 0);
+            GetValue(VT_BYTE, &p->toprgb[1], args, 1);
+            GetValue(VT_BYTE, &p->toprgb[2], args, 2);
+            break;
         case DMU_MIDDLE_TEXTURE:
             GetValue(VT_FLAT_INDEX, &p->midtexture, args, 0);
             break;
+        case DMU_MIDDLE_COLOR:
+            GetValue(VT_BYTE, &p->midrgba[0], args, 0);
+            GetValue(VT_BYTE, &p->midrgba[1], args, 1);
+            GetValue(VT_BYTE, &p->midrgba[2], args, 2);
+            GetValue(VT_BYTE, &p->midrgba[3], args, 3);
+            break;
+        case DMU_MIDDLE_BLENDMODE:
+            GetValue(VT_BLENDMODE, &p->blendmode, args, 0);
+            break;
         case DMU_BOTTOM_TEXTURE:
             GetValue(VT_FLAT_INDEX, &p->bottomtexture, args, 0);
+            break;
+        case DMU_BOTTOM_COLOR:
+            GetValue(VT_BYTE, &p->bottomrgb[0], args, 0);
+            GetValue(VT_BYTE, &p->bottomrgb[1], args, 1);
+            GetValue(VT_BYTE, &p->bottomrgb[2], args, 2);
+            break;
+        case DMU_FLAGS:
+            GetValue(VT_BYTE, &p->flags, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SIDE has no property %s.\n", DMU_Str(args->prop));
@@ -1634,11 +1727,26 @@ static int GetProperty(void* ptr, void* context)
         case DMU_LIGHT_LEVEL:
             GetValue(VT_SHORT, &p->lightlevel, args, 0);
             break;
+        case DMU_COLOR:
+            GetValue(VT_BYTE, &p->rgb[0], args, 0);
+            GetValue(VT_BYTE, &p->rgb[1], args, 1);
+            GetValue(VT_BYTE, &p->rgb[2], args, 2);
+            break;
+        case DMU_FLOOR_COLOR:
+            GetValue(VT_BYTE, &p->floorrgb[0], args, 0);
+            GetValue(VT_BYTE, &p->floorrgb[1], args, 1);
+            GetValue(VT_BYTE, &p->floorrgb[2], args, 2);
+            break;
         case DMU_FLOOR_HEIGHT:
             GetValue(VT_FIXED, &p->floorheight, args, 0);
             break;
         case DMU_FLOOR_TEXTURE:
             GetValue(VT_SHORT, &p->floorpic, args, 0);
+            break;
+        case DMU_CEILING_COLOR:
+            GetValue(VT_BYTE, &p->ceilingrgb[0], args, 0);
+            GetValue(VT_BYTE, &p->ceilingrgb[1], args, 1);
+            GetValue(VT_BYTE, &p->ceilingrgb[2], args, 2);
             break;
         case DMU_CEILING_HEIGHT:
             GetValue(VT_FIXED, &p->ceilingheight, args, 0);

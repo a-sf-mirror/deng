@@ -553,8 +553,12 @@ extern          "C" {
         DMU_ANGLE,
         DMU_OFFSET,
         DMU_TOP_TEXTURE,
+        DMU_TOP_COLOR,
         DMU_MIDDLE_TEXTURE,
+        DMU_MIDDLE_COLOR,
+        DMU_MIDDLE_BLENDMODE,
         DMU_BOTTOM_TEXTURE,
+        DMU_BOTTOM_COLOR,
         DMU_TEXTURE_OFFSET_X,
         DMU_TEXTURE_OFFSET_Y,
         DMU_TEXTURE_OFFSET_XY,
@@ -574,6 +578,7 @@ extern          "C" {
         DMU_FLOOR_OFFSET_XY,
         DMU_FLOOR_TARGET,
         DMU_FLOOR_SPEED,
+        DMU_FLOOR_COLOR,
         DMU_FLOOR_TEXTURE_MOVE_X,
         DMU_FLOOR_TEXTURE_MOVE_Y,
         DMU_FLOOR_TEXTURE_MOVE_XY,
@@ -585,6 +590,7 @@ extern          "C" {
         DMU_CEILING_OFFSET_XY,
         DMU_CEILING_TARGET,
         DMU_CEILING_SPEED,
+        DMU_CEILING_COLOR,
         DMU_CEILING_TEXTURE_MOVE_X,
         DMU_CEILING_TEXTURE_MOVE_Y,
         DMU_CEILING_TEXTURE_MOVE_XY,
@@ -887,6 +893,8 @@ extern          "C" {
     // Graphics
     //
     //------------------------------------------------------------------------
+
+#define DDNUM_BLENDMODES 8
 
 typedef enum blendmode_e {
     BM_NORMAL,
