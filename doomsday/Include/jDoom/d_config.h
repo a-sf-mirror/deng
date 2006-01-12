@@ -94,6 +94,7 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     byte            raiseghosts;
     byte            maxskulls;
     byte            allowskullsinwalls;
+    byte            anybossdeath;
 
     // Automap stuff.
     byte            counterCheat;

@@ -461,6 +461,9 @@ cvar_t  gameCVars[] = {
     "1= Pain Elementals can't spawn Lost Souls if more than twenty already exist.",
     "game-skullsinwalls", 0, CVT_BYTE, &cfg.allowskullsinwalls, 0, 1,
     "1= Pain Elementals can spawn Lost Souls inside walls.",
+    {"game-anybossdeath666", 0, CVT_BYTE,
+        &cfg.anybossdeath, 0, 1,
+        "1= The death of ANY boss monster triggers a 666 special (on applicable maps)."},
 
     "game-fastmonsters", 0, CVT_BYTE, &fastparm, 0, 1,
     "1=Fast monsters in non-demo single player.",
