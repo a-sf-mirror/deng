@@ -111,6 +111,11 @@ void T_VerticalDoor(vldoor_t * door)
             case blazeClose:
                 xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
+
+                // DOOMII BUG:
+                // This is what causes blazing doors to produce two closing
+                // sounds as one has already been played when the door starts
+                // to close (above)
                 S_SectorSound(door->sector, sfx_bdcls);
                 break;
 
@@ -131,6 +136,9 @@ void T_VerticalDoor(vldoor_t * door)
         }
         else if(res == crushed)
         {
+            // DOOMII BUG:
+            // The switch bellow SHOULD(?) play the blazing open sound if
+            // the door type is blazing and not sfx_doropn.
             switch (door->type)
             {
             case blazeClose:
