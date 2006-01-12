@@ -558,7 +558,13 @@ void ST_updateFaceWidget(void)
             // being attacked
             priority = 7;
 
-            if(plyr->health - st_oldhealth > ST_MUCHPAIN)
+            // DOOM BUG
+            // This test was inversed, thereby the OUCH face was NEVER used
+            // in normal gameplay as it requires the player recieving damage
+            // to end up with MORE health than he started with.
+
+            // if(plyr->health - st_oldhealth > ST_MUCHPAIN)
+            if(st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
