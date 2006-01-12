@@ -1554,7 +1554,8 @@ void AM_drawMline(mline_t * ml, int color)
 /*
  * Draws the given line including any optional extras
  */
-void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode, boolean blend)
+void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
+                   boolean blend)
 {
 
     float   a[2], b[2], normal[2], unit[2], thickness;
@@ -1566,8 +1567,12 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode, bo
     else
         thickness = c.w;
 
-    // get colour from the passed line. if the line glows and this is glow mode - use alpha 2 else alpha 1
-    GL_SetColorAndAlpha(c.r, c.g, c.b, (glowmode && c.glow) ? (am_alpha - ( 1 - c.a2)) : (am_alpha - ( 1 - c.a)) );
+    // get colour from the passed line.
+    // if the line glows and this is glow mode - use alpha 2 else alpha 1
+    if(glowmode && c.glow)
+        GL_SetColorAndAlpha(c.r, c.g, c.b, am_alpha - (1 - c.a2));
+    else
+        GL_SetColorAndAlpha(c.r, c.g, c.b, am_alpha - (1 - c.a));
 
     // If we are in glow mode and the line has glow - draw it
     if(glowmode && c.glow > NO_GLOW){
@@ -1710,17 +1715,20 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode, bo
  */
 void AM_drawGrid(int color)
 {
-#ifdef TODO_MAP_UPDATE
     fixed_t x, y;
     fixed_t start, end;
+
+    fixed_t originx = *((fixed_t*) DD_GetVariable(DD_BLOCKMAP_ORIGIN_X));
+    fixed_t originy = *((fixed_t*) DD_GetVariable(DD_BLOCKMAP_ORIGIN_Y));
+
     mline_t ml;
 
     // Figure out start of vertical gridlines
     start = m_x;
-    if((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS))
+    if((start - originx) % (MAPBLOCKUNITS << FRACBITS))
         start +=
             (MAPBLOCKUNITS << FRACBITS) -
-            ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
+            ((start - originx) % (MAPBLOCKUNITS << FRACBITS));
     end = m_x + m_w;
 
     // draw vertical gridlines
@@ -1737,10 +1745,10 @@ void AM_drawGrid(int color)
 
     // Figure out start of horizontal gridlines
     start = m_y;
-    if((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS))
+    if((start - originy) % (MAPBLOCKUNITS << FRACBITS))
         start +=
             (MAPBLOCKUNITS << FRACBITS) -
-            ((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
+            ((start - originy) % (MAPBLOCKUNITS << FRACBITS));
     end = m_y + m_h;
 
     // draw horizontal gridlines
@@ -1753,7 +1761,6 @@ void AM_drawGrid(int color)
         AM_drawMline(&ml, color);
     }
     gl.End();
-#endif
 }
 
 /*
@@ -1761,25 +1768,32 @@ void AM_drawGrid(int color)
  */
 void AM_drawWalls(boolean glowmode)
 {
-#ifdef TODO_MAP_UPDATE
     int     i;
     static mline_t l;
+    ddvertex_t *v1, *v2;
+    sector_t *frontsector, *backsector;
     mapline_t templine;
     boolean withglow = false;
 
     for(i = 0; i < numlines; i++)
     {
-        l.a.x = lines[i].v1->x;
-        l.a.y = lines[i].v1->y;
-        l.b.x = lines[i].v2->x;
-        l.b.y = lines[i].v2->y;
+        v1 = P_GetPtr(DMU_LINE, i, DMU_VERTEX1);
+        v2 = P_GetPtr(DMU_LINE, i, DMU_VERTEX2);
+
+        l.a.x = P_GetFixedp(DMU_VERTEX, v1, DMU_X);
+        l.a.y = P_GetFixedp(DMU_VERTEX, v1, DMU_Y);
+        l.b.x = P_GetFixedp(DMU_VERTEX, v2, DMU_X);
+        l.b.y = P_GetFixedp(DMU_VERTEX, v2, DMU_Y);
+
+        frontsector = P_GetPtr(DMU_LINE, i, DMU_FRONT_SECTOR);
+        backsector = P_GetPtr(DMU_LINE, i, DMU_BACK_SECTOR);
 
 #if !__JHEXEN__
 #if !__JSTRIFE__
         if(cheating == 2)        // Debug cheat.
         {
             // Show active XG lines.
-            if(lines[i].xg && lines[i].xg->active && (leveltime & 4))
+            if(xlines[i].xg && xlines[i].xg->active && (leveltime & 4))
             {
                 templine = AM_getLine( 1, 0);
                 AM_drawMline2(&l, templine, false, glowmode, true);
@@ -1787,42 +1801,50 @@ void AM_drawWalls(boolean glowmode)
         }
 #endif
 #endif
-        if(cheating || (lines[i].flags & ML_MAPPED))
+        if(cheating || (P_GetInt(DMU_LINE, i, DMU_FLAGS) & ML_MAPPED))
         {
-            if((lines[i].flags & LINE_NEVERSEE) && !cheating)
+            if((P_GetInt(DMU_LINE, i, DMU_FLAGS) & LINE_NEVERSEE) && !cheating)
                 continue;
-            if(!lines[i].backsector)        // solid wall (well probably anyway...)
+
+            if(!P_GetPtr(DMU_LINE, i, DMU_BACK_SECTOR))
             {
+                // solid wall (well probably anyway...)
                 templine = AM_getLine( 1, 0);
 
                 AM_drawMline2(&l, templine, false, glowmode, false);
             }
             else
             {
-                if(lines[i].flags & ML_SECRET)    // secret door
+                if(P_GetInt(DMU_LINE, i, DMU_FLAGS) & ML_SECRET)
                 {
+                    // secret door
                     templine = AM_getLine( 1, 0);
 
                     AM_drawMline2(&l, templine, false, glowmode, false);
                 }
-                else if(cfg.automapShowDoors && AM_checkSpecial(lines[i].special) > 0 )    // some sort of special
+                else if(cfg.automapShowDoors && AM_checkSpecial(xlines[i].special) > 0 )
                 {
-                    if(cfg.automapDoorGlow > 0 && glowmode) withglow = true;
+                    // some sort of special
 
-                    templine = AM_getLine( 2, lines[i].special);
+                    if(cfg.automapDoorGlow > 0 && glowmode)
+                        withglow = true;
+
+                    templine = AM_getLine( 2, xlines[i].special);
 
                     AM_drawMline2(&l, templine, withglow, glowmode, withglow);
                 }
-                else if(lines[i].backsector->floorheight !=
-                        lines[i].frontsector->floorheight)        // floor level change
+                else if(P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT) !=
+                        P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT))
                 {
+                    // floor level change
                     templine = AM_getLine( 3, 0);
 
                     AM_drawMline2(&l, templine, false, glowmode, false);
                 }
-                else if(lines[i].backsector->ceilingheight !=
-                        lines[i].frontsector->ceilingheight )        // ceiling level change
+                else if(P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT) !=
+                        P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT))
                 {
+                    // ceiling level change
                     templine = AM_getLine( 4, 0);
 
                     AM_drawMline2(&l, templine, false, glowmode, false);
@@ -1837,15 +1859,15 @@ void AM_drawWalls(boolean glowmode)
         }
         else if(plr->powers[pw_allmap])
         {
-            if(!(lines[i].flags & LINE_NEVERSEE))            // as yet unseen line
+            if(!(P_GetInt(DMU_LINE, i, DMU_FLAGS) & LINE_NEVERSEE))
             {
+                // as yet unseen line
                 templine = AM_getLine( 0, 0);
                 AM_drawMline2(&l, templine, false, glowmode, false);
             }
         }
 
     }
-#endif
 }
 
 /*
@@ -1855,9 +1877,11 @@ void AM_rotate(fixed_t *x, fixed_t *y, angle_t a)
 {
     fixed_t tmpx;
 
-    tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) - FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
+    tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) -
+                        FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
 
-    *y = FixedMul(*x, finesine[a >> ANGLETOFINESHIFT]) + FixedMul(*y, finecosine[a >> ANGLETOFINESHIFT]);
+    *y = FixedMul(*x, finesine[a >> ANGLETOFINESHIFT]) +
+                      FixedMul(*y, finecosine[a >> ANGLETOFINESHIFT]);
 
     *x = tmpx;
 }

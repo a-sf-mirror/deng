@@ -121,7 +121,6 @@ int HU_PSpriteYOffset(player_t *pl)
  */
 void HU_UpdatePlayerSprite(int pnum)
 {
-#ifdef TODO_MAP_UPDATE
     extern float lookOffset;
     int     i;
     pspdef_t *psp;
@@ -176,7 +175,9 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {
             // local light
-            ddpsp->light = pl->plr->mo->subsector->sector->lightlevel / 255.0;
+            ddpsp->light =
+                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
+                          DMU_LIGHT_LEVEL) / 255.0;
         }
         // Needs fullbright?
         if((pl->powers[pw_infrared] > 4 * 32) || (pl->powers[pw_infrared] & 8)
@@ -200,7 +201,9 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {
             // local light
-            ddpsp->light = pl->plr->mo->subsector->sector->lightlevel / 255.0;
+            ddpsp->light =
+                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
+                          DMU_LIGHT_LEVEL) / 255.0;
         }
         // Needs fullbright?
         if(pl->powers[pw_infrared] > 4 * 32 || pl->powers[pw_infrared] & 8)
@@ -236,7 +239,9 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {
             // local light
-            ddpsp->light = pl->plr->mo->subsector->sector->lightlevel / 255.0;
+            ddpsp->light =
+                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
+                          DMU_LIGHT_LEVEL) / 255.0;
         }
 #elif __JSTRIFE__
         if(psp->state->frame & FF_FULLBRIGHT)
@@ -247,7 +252,9 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {
             // local light
-            ddpsp->light = pl->plr->mo->subsector->sector->lightlevel / 255.0;
+            ddpsp->light =
+                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
+                          DMU_LIGHT_LEVEL) / 255.0;
         }
 #endif
         // Add some extra light.
@@ -260,7 +267,6 @@ void HU_UpdatePlayerSprite(int pnum)
             fov = 90;
         ddpsp->y = FIX2FLT(psp->sy) + (90 - fov) / 90 * 80;
     }
-#endif
 }
 
 /*
