@@ -76,7 +76,7 @@ void C_DECL A_SpawnFly(mobj_t *mo);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern line_t *spechit[MAXSPECIALCROSS];
+extern line_t **spechit;
 extern int numspechit;
 extern boolean felldown;        //$dropoff_fix: used to flag pushed off ledge
 extern line_t *blockline;       // $unstuck: blocking linedef
@@ -1624,9 +1624,9 @@ void C_DECL A_BossDeath(mobj_t *mo)
             if(gamemap != 8)
                 return;
 
-            // Ultimate DOOM BUG
-            // This test was added so that the (variable) effects of
-            // the 666 tag would only take effect when the last Baron
+            // Ultimate DOOM behavioral change
+            // This test was added so that the (variable) effects of the
+            // 666 special would only take effect when the last Baron
             // died and not ANY monster.
             // Many classic PWADS such as "Doomsday of UAC" (UAC_DEAD.wad)
             // relied on the old behaviour and cannot be completed.

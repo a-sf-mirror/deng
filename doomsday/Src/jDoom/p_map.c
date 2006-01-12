@@ -76,8 +76,8 @@ line_t *blockline; // $unstuck: blocking linedef
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
 
-// FIXME: This limit is easily reached in modern maps!
-line_t *spechit[MAXSPECIALCROSS];
+line_t **spechit;
+static int spechit_max;
 int     numspechit;
 
 fixed_t bestslidefrac;
@@ -393,9 +393,14 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     // if contacted a special line, add it to the list
     if(xline->special)
     {
-        spechit[numspechit] = ld;
-        numspechit++;
+        if(numspechit >= spechit_max)
+        {
+             spechit_max = spechit_max ? spechit_max * 2 : 8;
+             spechit = realloc(spechit, sizeof *spechit*spechit_max);
+        }
+        spechit[numspechit++] = ld;
     }
+
     tmthing->wallhit = false;
     return true;
 }
@@ -748,19 +753,17 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y, boolean dropoff)
     // if any special lines were hit, do the effect
     if(!(thing->flags & (MF_TELEPORT | MF_NOCLIP)))
     {
-        while(numspechit-- > 0)
+        while(numspechit--)
         {
             // see if the line was crossed
             ld = spechit[numspechit];
 
-            side = P_PointOnLineSide(thing->x, thing->y, ld);
-            oldside = P_PointOnLineSide(oldx, oldy, ld);
-            if(side != oldside)
+            if(P_XLine(ld)->special)
             {
-
-                if(xlines[P_ToIndex(DMU_LINE, ld)].special)
+                side = P_PointOnLineSide(thing->x, thing->y, ld);
+                oldside = P_PointOnLineSide(oldx, oldy, ld);
+                if(side != oldside)
                     P_CrossSpecialLine(P_ToIndex(DMU_LINE, ld), oldside, thing);
-
             }
         }
     }
