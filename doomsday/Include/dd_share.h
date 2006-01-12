@@ -550,6 +550,7 @@ extern          "C" {
         DMU_DX,
         DMU_DY,
         DMU_LENGTH,
+        DMU_SLOPE_TYPE,
         DMU_ANGLE,
         DMU_OFFSET,
         DMU_TOP_TEXTURE,
