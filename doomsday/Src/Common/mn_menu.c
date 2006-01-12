@@ -1012,6 +1012,7 @@ static MenuItem_t GameplayItems[] = {
 #if __JDOOM__
     {ITT_EMPTY, 0, NULL, NULL, 0},
     {ITT_EMPTY, 0, "COMPATIBILITY", NULL, 0 },
+    {ITT_EMPTY, 0, "ANY BOSS TRIGGER 666 :", M_ToggleVar, 0, NULL, &cfg.anybossdeath},
     {ITT_EFUNC, 0, "AV RESURRECTS GHOSTS :", M_ToggleVar, 0, NULL, &cfg.raiseghosts},
     {ITT_EFUNC, 0, "PE LIMITED TO 20 LOST SOULS :", M_ToggleVar, 0, NULL, &cfg.maxskulls},
     {ITT_EFUNC, 0, "LS GET STUCK INSIDE WALLS :", M_ToggleVar, 0, NULL, &cfg.allowskullsinwalls},
@@ -1039,7 +1040,7 @@ static Menu_t GameplayDef = {
 #endif
     M_DrawGameplay,
 #if __JDOOM__
-    10, GameplayItems,
+    11, GameplayItems,
 #else
     4, GameplayItems,
 #endif
@@ -1048,7 +1049,7 @@ static Menu_t GameplayDef = {
     cfg.menuColor2,
     LINEHEIGHT_A,
 #if __JDOOM__
-    0, 10
+    0, 11
 #else
     0, 4
 #endif
