@@ -399,6 +399,7 @@ void D_PreInit(void)
 
     cfg.maxskulls = true;
     cfg.allowskullsinwalls = false;
+    cfg.anybossdeath = false;
 
     cfg.statusbarAlpha = 1;
     cfg.statusbarCounterAlpha = 1;

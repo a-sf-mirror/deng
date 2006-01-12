@@ -1624,8 +1624,17 @@ void C_DECL A_BossDeath(mobj_t *mo)
             if(gamemap != 8)
                 return;
 
-            if(mo->type != MT_BRUISER)
-                return;
+            // Ultimate DOOM BUG
+            // This test was added so that the (variable) effects of
+            // the 666 tag would only take effect when the last Baron
+            // died and not ANY monster.
+            // Many classic PWADS such as "Doomsday of UAC" (UAC_DEAD.wad)
+            // relied on the old behaviour and cannot be completed.
+
+            // Added compatibility option.
+            if(!cfg.anybossdeath)
+                if(mo->type != MT_BRUISER)
+                    return;
             break;
 
         case 2:
