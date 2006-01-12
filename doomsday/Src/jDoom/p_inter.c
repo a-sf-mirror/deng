@@ -514,13 +514,19 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
         break;
 
     case SPR_MEDI:
-        if(!P_GiveBody(player, 25))
-            return;
-
+        // DOOM bug
+        // The following test was originaly placed AFTER the call to
+        // P_GiveBody thereby making the first outcome impossible as
+        // the medikit gives 25 points of health. This resulted that
+        // the GOTMEDINEED "Picked up a medikit that you REALLY need"
+        // was never used.
         if(player->health < 25)
             P_SetMessage(player, GOTMEDINEED);
         else
             P_SetMessage(player, GOTMEDIKIT);
+
+        if(!P_GiveBody(player, 25))
+            return;
         break;
 
         // power ups
@@ -908,8 +914,7 @@ void P_DamageMobj2(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         }
 
         // end of game hell hack
-        if(xsectors[P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, 
-                              target->subsector, DMU_SECTOR))].special == 11
+        if(P_XSectorOfSubsector(target->subsector)->special == 11
            && damage >= target->health)
         {
             damage = target->health - 1;
