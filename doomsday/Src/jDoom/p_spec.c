@@ -51,22 +51,24 @@
 // TYPES -------------------------------------------------------------------
 
 // Animating textures and planes
-// There is another anim_t used in wi_stuff, unrelated.
-typedef struct {
-    boolean istexture;
-    int     picnum;
-    int     basepic;
-    int     numpics;
-    int     speed;
-} anim_t;
 
-// source animation definition
-typedef struct {
-    boolean istexture;  // if false, it is a flat
-    char    endname[9];
-    char    startname[9];
-    int     speed;
+// In Doomsday these are handled via DED definitions.
+// In BOOM they invented the ANIMATED lump for the same purpose.
+
+// This struct is directly read from the lump.
+// So its important we keep it aligned.
+#pragma pack(1)
+typedef struct
+{
+    /* Do NOT change these members in any way */
+    signed char istexture;  //  if false, it is a flat (instead of bool)
+    char        endname[9];
+    char        startname[9];
+    int         speed;
+    /* You can safely add new members after here */
+
 } animdef_t;
+#pragma pack()
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -76,56 +78,7 @@ typedef struct {
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern anim_t anims[MAXANIMS];
-extern anim_t *lastanim;
-
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-#if 0
-// Floor/ceiling animation sequences,
-//  defined by first and last frame,
-//  i.e. the flat (64x64 tile) name to
-//  be used.
-// The full animation sequence is given
-//  using all the flats between the start
-//  and end entry, in the order found in
-//  the WAD file.
-//
-animdef_t animdefs[] = {
-    {false, "NUKAGE3", "NUKAGE1", 8},
-    {false, "FWATER4", "FWATER1", 8},
-    {false, "SWATER4", "SWATER1", 8},
-    {false, "LAVA4", "LAVA1", 8},
-    {false, "BLOOD3", "BLOOD1", 8},
-
-    // DOOM II flat animations.
-    {false, "RROCK08", "RROCK05", 8},
-    {false, "SLIME04", "SLIME01", 8},
-    {false, "SLIME08", "SLIME05", 8},
-    {false, "SLIME12", "SLIME09", 8},
-
-    {true, "BLODGR4", "BLODGR1", 8},
-    {true, "SLADRIP3", "SLADRIP1", 8},
-
-    {true, "BLODRIP4", "BLODRIP1", 8},
-    {true, "FIREWALL", "FIREWALA", 8},
-    {true, "GSTFONT3", "GSTFONT1", 8},
-    {true, "FIRELAVA", "FIRELAV3", 8},
-    {true, "FIREMAG3", "FIREMAG1", 8},
-    {true, "FIREBLU2", "FIREBLU1", 8},
-    {true, "ROCKRED3", "ROCKRED1", 8},
-
-    {true, "BFALL4", "BFALL1", 8},
-    {true, "SFALL4", "SFALL1", 8},
-    {true, "WFALL4", "WFALL1", 8},
-    {true, "DBRAIN4", "DBRAIN1", 8},
-
-    {-1}
-};
-
-anim_t  anims[MAXANIMS];
-anim_t *lastanim;
-#endif
 
 boolean levelTimer;
 int     levelTimeCount;
@@ -137,53 +90,101 @@ line_t *linespeciallist[MAXLINEANIMS];
 
 // CODE --------------------------------------------------------------------
 
+/* From PrBoom:
+ * Load the table of animation definitions, checking for existence of
+ * the start and end of each frame. If the start doesn't exist the sequence
+ * is skipped, if the last doesn't exist, BOOM exits.
+ *
+ * Wall/Flat animation sequences, defined by name of first and last frame,
+ * The full animation sequence is given using all lumps between the start
+ * and end entry, in the order found in the WAD file.
+ *
+ * This routine modified to read its data from a predefined lump or
+ * PWAD lump called ANIMATED rather than a static table in this module to
+ * allow wad designers to insert or modify animation sequences.
+ *
+ * Lump format is an array of byte packed animdef_t structures, terminated
+ * by a structure with istexture == -1. The lump can be generated from a
+ * text source file using SWANTBLS.EXE, distributed with the BOOM utils.
+ * The standard list of switches and animations is contained in the example
+ * source text file DEFSWANI.DAT also in the BOOM util distribution.
+ */
+
+/*
+ * DJS - We'll support this BOOM extension by reading the data and then
+ *       registering the new animations into Doomsday using the animation
+ *       groups feature.
+ *
+ *       Support for this extension should be considered depreciated.
+ *       All new features should be added, accessed via DED.
+ */
 void P_InitPicAnims(void)
 {
-#if 0
-    int     i, k;
+    int i, j;
+    int groupNum;
+    int isTexture, startFrame, endFrame, ticsPerFrame;
+    int numFrames;
+    int lump = W_CheckNumForName("ANIMATED");
+    animdef_t *animdefs;
 
-    //  Init animation
-    lastanim = anims;
-    for(i = 0; animdefs[i].istexture != -1; i++)
+    // Has a custom ANIMATED lump been loaded?
+    if(lump)
     {
-        if(animdefs[i].istexture)
+        animdefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
+
+        // Read structures until -1 is found
+        for(i = 0; animdefs[i].istexture != -1 ; i++)
         {
-            // different episode ?
-            if(R_CheckTextureNumForName(animdefs[i].startname) == -1)
-                continue;
+            // Is it a texture?
+            if(animdefs[i].istexture)
+            {
+                // different episode ?
+                if(R_CheckTextureNumForName(animdefs[i].startname) == -1)
+                    continue;
 
-            lastanim->picnum = R_TextureNumForName(animdefs[i].endname);
-            lastanim->basepic = R_TextureNumForName(animdefs[i].startname);
+                endFrame = R_TextureNumForName(animdefs[i].endname);
+                startFrame = R_TextureNumForName(animdefs[i].startname);
+            }
+            else // Its a flat.
+            {
+                if((W_CheckNumForName(animdefs[i].startname)) == -1)
+                    continue;
+
+                endFrame = R_FlatNumForName(animdefs[i].endname);
+                startFrame = R_FlatNumForName(animdefs[i].startname);
+            }
+
+            isTexture = animdefs[i].istexture;
+            numFrames = endFrame - startFrame + 1;
+
+            ticsPerFrame = LONG(animdefs[i].speed);
+
+            if(numFrames < 2)
+                Con_Error("P_InitPicAnims: bad cycle from %s to %s",
+                         animdefs[i].startname, animdefs[i].endname);
+
+            // We have a valid animation.
+            // Create a new animation group for it.
+            groupNum =
+                R_CreateAnimGroup(isTexture ? DD_TEXTURE : DD_FLAT, AGF_SMOOTH);
+
+            // Doomsday's group animation needs to know the lump IDs of
+            // ALL frames in the animation group so we'll have to step
+            // through the lump directory adding frames as we go.
+            // (DOOM only required the start/end lumps and would animate
+            // all textures/flats inbetween.
+
+            // Get the start & end lump numbers.
+            startFrame = W_CheckNumForName(animdefs[i].startname);
+            endFrame = W_CheckNumForName(animdefs[i].startname);
+
+            // Add all frames from start to end to the group.
+            for(j = startFrame; j <= endFrame; j++)
+                R_AddToAnimGroup(groupNum, j, ticsPerFrame, 0);
         }
-        else
-        {
-            if(W_CheckNumForName(animdefs[i].startname) == -1)
-                continue;
 
-            lastanim->picnum = R_FlatNumForName(animdefs[i].endname);
-            lastanim->basepic = R_FlatNumForName(animdefs[i].startname);
-        }
-
-        lastanim->istexture = animdefs[i].istexture;
-        lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
-
-        if(lastanim->numpics < 2)
-        {
-            Con_Error("P_InitPicAnims: bad cycle from %s to %s",
-                      animdefs[i].startname, animdefs[i].endname);
-        }
-
-        // Tell Doomsday about the animation sequence.
-        for(k = lastanim->basepic; k <= lastanim->picnum; k++)
-        {
-            R_SetAnimGroup(lastanim->istexture ? DD_TEXTURE : DD_FLAT, k,
-                           i + 1);
-        }
-
-        lastanim->speed = animdefs[i].speed;
-        lastanim++;
+        Z_Free(animdefs);
     }
-#endif
 }
 
 /*
