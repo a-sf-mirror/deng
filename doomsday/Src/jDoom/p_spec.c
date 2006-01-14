@@ -65,8 +65,6 @@ typedef struct
     char        endname[9];
     char        startname[9];
     int         speed;
-    /* You can safely add new members after here */
-
 } animdef_t;
 #pragma pack()
 
@@ -172,11 +170,11 @@ void P_InitPicAnims(void)
             // ALL frames in the animation group so we'll have to step
             // through the lump directory adding frames as we go.
             // (DOOM only required the start/end lumps and would animate
-            // all textures/flats inbetween.
+            // all textures/flats inbetween).
 
             // Get the start & end lump numbers.
             startFrame = W_CheckNumForName(animdefs[i].startname);
-            endFrame = W_CheckNumForName(animdefs[i].startname);
+            endFrame = W_CheckNumForName(animdefs[i].endname);
 
             // Add all frames from start to end to the group.
             for(j = startFrame; j <= endFrame; j++)
