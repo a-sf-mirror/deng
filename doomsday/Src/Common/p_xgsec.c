@@ -247,13 +247,14 @@ void XF_Init(sector_t *sec, function_t * fn, char *func, int min, int max,
 int C_DECL XLTrav_LineAngle(line_t *line, boolean dummy, void *context,
                             void *context2, mobj_t *activator)
 {
-    sector_t *sec = (sector_t *) context;
+    sector_t* sec = (sector_t *) context;
 
-#ifdef TODO_MAP_UPDATE
-    if(line->frontsector != sec && line->backsector != sec)
+    if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) != sec &&
+       P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) != sec)
         return true;            // Wrong sector, keep looking.
-    *(angle_t *) context2 = R_PointToAngle2(0, 0, line->dx, line->dy);
-#endif
+
+    *(angle_t *) context2 = P_GetAnglep(DMU_LINE, line, DMU_ANGLE);
+
     return false;               // Stop looking after first hit.
 }
 
@@ -350,7 +351,6 @@ void XS_Init(void)
 {
     int     i;
     int count = DD_GetInteger(DD_SECTOR_COUNT);
-    sector_t *sec;
 
     // Allocate stair builder data.
 
@@ -363,15 +363,18 @@ void XS_Init(void)
     for(i = 0; i < count; i++)
     {
         xsector_t *xsec = &xsectors[i];
+        byte tmprgb[3];
+
+        P_GetBytev(DMU_SECTOR, i, DMU_COLOR, tmprgb);
 
         xsec->origfloor = P_GetInt(DMU_SECTOR, i, DMU_FLOOR_HEIGHT);
         xsec->origceiling = P_GetInt(DMU_SECTOR, i, DMU_CEILING_HEIGHT);
         xsec->origlight = P_GetInt(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
-#ifdef TODO_MAP_UPDATE
-        memcpy(xsec->origrgb, sec->rgb, 3);
-#endif
+
+        memcpy(xsec->origrgb, tmprgb, 3);
+
         // Initialize the XG data for this sector.
-        XS_SetSectorType(sec, xsec->special);
+        XS_SetSectorType(P_ToPtr(DMU_SECTOR, i), xsec->special);
     }
 }
 
@@ -588,7 +591,8 @@ void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex, byte rgb[
     }
 
     XG_Dev("XS_ChangePlaneTexture: Sector %i, %s, texture %i, red %i, green %i, blue %i",
-    P_ToIndex(DMU_SECTOR, sector), ceiling ? "ceiling" : "floor", tex, rgb[0], rgb[1], rgb[2]);
+           P_ToIndex(DMU_SECTOR, sector), ceiling ? "ceiling" : "floor", tex,
+           rgb[0], rgb[1], rgb[2]);
 
     if(ceiling)
     {
@@ -596,10 +600,9 @@ void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex, byte rgb[
         for(i = 0; i < 3; i++)
             if(rgb[i])
                 sector->ceilingrgb[i] = rgb[i];
-
-        if(tex)
-            sector->ceilingpic = tex;
 #endif
+        if(tex)
+            P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE, tex);
     }
     else
     {
@@ -607,10 +610,9 @@ void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex, byte rgb[
         for(i = 0; i < 3; i++)
             if(rgb[i])
                 sector->floorrgb[i] = rgb[i];
-
-        if(tex)
-            sector->floorpic = tex;
 #endif
+        if(tex)
+            P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE, tex);
     }
 }
 
@@ -732,7 +734,7 @@ int XS_GetTexH(int tex)
 }
 
 // Really an XL_* function!
-// 0=top, 1=mid, 2=bottom. Returns MAXINT if not height n/a.
+// 1=mid, 2=top, 3=bottom. Returns MAXINT if not height n/a.
 int XS_TextureHeight(line_t *line, int part)
 {
     side_t *side;
@@ -742,8 +744,9 @@ int XS_TextureHeight(line_t *line, int part)
     sector_t *back = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
     boolean twosided = front && back;
 
-    if(part != 1 && !twosided)
+    if(part != LWS_MID && !twosided)
         return DDMAXINT;
+
     if(twosided)
     {
         int ffloor = P_GetIntp(DMU_SECTOR, front, DMU_FLOOR_HEIGHT);
@@ -753,57 +756,68 @@ int XS_TextureHeight(line_t *line, int part)
 
         minfloor = ffloor;
         maxfloor = bfloor;
-        if(part == 2)
+        if(part == LWS_LOWER)
             snum = 0;
         if(bfloor < minfloor)
         {
             minfloor = bfloor;
             maxfloor = ffloor;
-            if(part == 2)
+            if(part == LWS_LOWER)
                 snum = 1;
         }
         maxceil = fceil;
-        if(part == 0)
+        if(part == LWS_UPPER)
             snum = 0;
         if(bceil > maxceil)
         {
             maxceil = bceil;
-            if(part == 0)
+            if(part == LWS_UPPER)
                 snum = 1;
         }
     }
     else
     {
-#ifdef TODO_MAP_UPDATE
-        if(line->sidenum[0] >= 0)
+        if(P_GetPtrp(DMU_LINE, line, DMU_SIDE0))
             snum = 0;
         else
             snum = 1;
-#endif
     }
 
-#ifdef TODO_MAP_UPDATE
-    side = sides + line->sidenum[snum];
+    // Which side are we working with?
+    if(snum == 0)
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+    else
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
 
-    if(part == 0)
+    // Which section of the wall?
+    if(part == LWS_UPPER)
     {
-        if(!side->toptexture)
+        int texid = P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE);
+
+        if(!texid)
             return DDMAXINT;
-        return maxceil - XS_GetTexH(side->toptexture);
+
+        return maxceil - XS_GetTexH(texid);
     }
-    if(part == 1)
+    else if(part == LWS_MID)
     {
-        if(!side->midtexture)
+        int texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+
+        if(!texid)
             return DDMAXINT;
-        return maxfloor + XS_GetTexH(side->midtexture);
+
+        return maxfloor + XS_GetTexH(texid);
     }
-    if(part == 2)
+    else if(part == LWS_LOWER)
     {
-        if(!side->bottomtexture)
+        int texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+
+        if(!texid)
             return DDMAXINT;
-        return minfloor + XS_GetTexH(side->bottomtexture);
+
+        return minfloor + XS_GetTexH(texid);
     }
-#endif
+
     return DDMAXINT;
 }
 
@@ -1153,16 +1167,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         num = 0;
         // Which part of the wall are we looking at?
         if(ref == SPREF_MIN_MID_TEXTURE || ref == SPREF_MAX_MID_TEXTURE)
-            part = 1;
+            part = LWS_MID;
         else if(ref == SPREF_MIN_TOP_TEXTURE || ref == SPREF_MAX_TOP_TEXTURE)
-            part = 0;
+            part = LWS_UPPER;
         else                    // Then it's the bottom.
-            part = 2;
+            part = LWS_LOWER;
+
         // Get the heights of the sector's textures.
         // The heights are in real world coordinates.
         for(i = 0, k = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
         {
-
             k = XS_TextureHeight(P_GetPtrp(DMU_LINE_OF_SECTOR, sector, k), part);
             if(k != DDMAXINT)
                 heights[num++] = k;
@@ -1715,28 +1729,36 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
         // Set the value.
         P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, uselevel);
     }
-#ifdef TODO_MAP_UPDATE
+
     if(info->iparm[3])
     {
         switch (info->iparm[6])
         {
         case LIGHTREF_MY:
-            memcpy(usergb, line->frontsector->rgb, 3);
-            break;
+            {
+            sector_t* sector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
 
+            P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, usergb);
+            break;
+            }
         case LIGHTREF_BACK:
-            if(line->backsector)
-                memcpy(usergb, line->backsector->rgb, 3);
-            break;
+            {
+            sector_t* sector = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
 
+            if(sector)
+                P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, usergb);
+            break;
+            }
         case LIGHTREF_ORIGINAL:
-            memcpy(usergb, sector->origrgb, 3);
+            memcpy(usergb, P_XSector(sector)->origrgb, 3);
             break;
 
         default:
             memset(usergb, 0, 3);
             break;
         }
+
+#ifdef TODO_MAP_UPDATE
         for(num = 0; num < 3; num++)
         {
             i = usergb[num] + info->iparm[7 + num];
@@ -1746,8 +1768,9 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
                 i = 255;
             sector->rgb[num] = i;
         }
-    }
 #endif
+    }
+
     return true;
 }
 
@@ -1758,8 +1781,7 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     linetype_t *info = context2;
     sector_t *from = NULL;
     int     refdata;
-    int     secid = P_ToIndex(DMU_SECTOR, sector);
-    int     fromid;
+    byte tmprgb[3];
 
     // Set the spref data parameter (tag or index).
     switch (info->iparm[2])
@@ -1786,7 +1808,8 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     // If can't apply to a sector, just skip it.
     if(!XS_GetPlane(line, sector, info->iparm[2], refdata, 0, 0, &from))
     {
-        XG_Dev("XSTrav_MimicSector: No suitable neighbor " "for %i.\n", secid);
+        XG_Dev("XSTrav_MimicSector: No suitable neighbor " "for %i.\n",
+               P_ToIndex(DMU_SECTOR, sector));
         return true;
     }
 
@@ -1794,20 +1817,27 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     if(from == sector)
         return true;
 
-    fromid = P_ToIndex(DMU_SECTOR, from);
-
-    XG_Dev("XSTrav_MimicSector: Sector %i mimicking sector %i", secid, fromid);
+    XG_Dev("XSTrav_MimicSector: Sector %i mimicking sector %i",
+           P_ToIndex(DMU_SECTOR, sector), P_ToIndex(DMU_SECTOR, from));
 
     // Copy the properties of the target sector.
     P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
               P_GetIntp(DMU_SECTOR, from, DMU_LIGHT_LEVEL));
+
+    P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, tmprgb);
+    P_SetBytepv(DMU_SECTOR, sector, DMU_COLOR, tmprgb);
+
+    P_GetBytepv(DMU_SECTOR, sector, DMU_FLOOR_COLOR, tmprgb);
+    P_SetBytepv(DMU_SECTOR, sector, DMU_FLOOR_COLOR, tmprgb);
+
+    P_GetBytepv(DMU_SECTOR, sector, DMU_CEILING_COLOR, tmprgb);
+    P_SetBytepv(DMU_SECTOR, sector, DMU_CEILING_COLOR, tmprgb);
+
 #ifdef TODO_MAP_UPDATE
-    memcpy(sector->rgb, from->rgb, sizeof(from->rgb));
-    memcpy(sector->floorrgb, from->floorrgb, sizeof(from->floorrgb));
-    memcpy(sector->ceilingrgb, from->ceilingrgb, sizeof(from->ceilingrgb));
     memcpy(sector->reverb, from->reverb, sizeof(from->reverb));
     memcpy(sector->planes, from->planes, sizeof(from->planes));
 #endif
+
     P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE,
               P_GetIntp(DMU_SECTOR, from, DMU_CEILING_TEXTURE));
     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE,
@@ -1831,11 +1861,10 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     P_ChangeSector(sector, false);
 
     // Copy type as well.
-    XS_SetSectorType(sector, xsectors[fromid].special);
-    if(xsectors[fromid].xg)
-    {
-        memcpy(xsectors[secid].xg, xsectors[fromid].xg, sizeof(xgsector_t));
-    }
+    XS_SetSectorType(sector, P_XSector(from)->special);
+
+    if(P_XSector(from)->xg)
+        memcpy(P_XSector(sector)->xg, P_XSector(from)->xg, sizeof(xgsector_t));
 
     return true;
 }
@@ -2255,7 +2284,7 @@ void XS_UpdateLight(sector_t *sec)
     int     i, c;
     int     lightlevel;
 
-    xg = xsectors[P_ToIndex(DMU_SECTOR, sec)].xg;
+    xg = P_XSector(sec)->xg;
 
     // Light intensity.
     fn = &xg->light;
@@ -2298,7 +2327,7 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
     xgline_t xgline;
     linetype_t *ltype;
 
-    xg = xsectors[P_ToIndex(DMU_SECTOR, sec)].xg;
+    xg = P_XSector(sec)->xg;
     info = &xg->info;
 
     if(ch < XSCE_NUM_CHAINS)
@@ -2374,11 +2403,12 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
     xgsector_t *xg;
     sectortype_t *info;
     player_t *player = mo->player;
-    int     flags = info->chain_flags[ch];
+    int     flags;
     boolean activating;
 
-    xg = xsectors[P_ToIndex(DMU_SECTOR, sec)].xg;
+    xg = P_XSector(sec)->xg;
     info = &xg->info;
+    flags = info->chain_flags[ch];
 
     // Check mobj type.
     if(flags & (SCEF_ANY_A | SCEF_ANY_D | SCEF_TICKER_A | SCEF_TICKER_D))
@@ -2439,9 +2469,10 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
 int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
 {
     sectortype_t *info;
-    float   ang = PI * info->wind_angle / 180;
+    float   ang;
 
-    info = &xsectors[P_ToIndex(DMU_SECTOR, sec)].xg->info;
+    info = &P_XSector(sec)->xg->info;
+    ang = PI * info->wind_angle / 180;
 
     if(IS_CLIENT)
     {
@@ -2527,7 +2558,7 @@ void XS_Think(sector_t *sector)
     float   ang;
     float   flooroffx, flooroffy, ceiloffx, ceiloffy;
 
-    xg = xsectors[P_ToIndex(DMU_SECTOR, sector)].xg;
+    xg = P_XSector(sector)->xg;
     info = &xg->info;
 
     if(xg->disabled)
@@ -2647,22 +2678,18 @@ void XS_Ticker(void)
 
 int XS_Gravity(struct sector_s *sector)
 {
-    int secid = P_ToIndex(DMU_SECTOR, sector);
-
-    if(!xsectors[secid].xg || !(xsectors[secid].xg->info.flags & STF_GRAVITY))
+    if(!P_XSector(sector)->xg || !(P_XSector(sector)->xg->info.flags & STF_GRAVITY))
         return GRAVITY;         // Normal gravity.
 
-    return FRACUNIT * xsectors[secid].xg->info.gravity;
+    return FRACUNIT * P_XSector(sector)->xg->info.gravity;
 }
 
 int XS_Friction(struct sector_s *sector)
 {
-    int secid = P_ToIndex(DMU_SECTOR, sector);
-
-    if(!xsectors[secid].xg || !(xsectors[secid].xg->info.flags & STF_FRICTION))
+    if(!P_XSector(sector)->xg || !(P_XSector(sector)->xg->info.flags & STF_FRICTION))
         return 0xe800;          // Normal friction.
 
-    return FRACUNIT * xsectors[secid].xg->info.friction;
+    return FRACUNIT * P_XSector(sector)->xg->info.friction;
 }
 
 // Returns the thrust multiplier caused by friction.

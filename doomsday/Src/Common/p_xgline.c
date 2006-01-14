@@ -839,52 +839,50 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, void *data,
 int XL_ValidateLineRef(line_t *line, int reftype, void *context, char *parmname)
 {
     int answer = 0;
-    int lineid = P_ToIndex(DMU_LINE, line);
-    fixed_t lx, ly;
     side_t *side;
 
     switch(reftype)
     {
     case LDREF_ID:    // Line ID
-        answer = lineid;
+        answer = P_ToIndex(DMU_LINE, line);
         XG_Dev("XL_ValidateLineRef: Using Line ID (%i) as %s", answer, parmname);
         break;
 
     case LDREF_SPECIAL:    // Line Special
-        answer = xlines[lineid].special;
+        answer = P_XLine(line)->special;
         XG_Dev("XL_ValidateLineRef: Using Line Special (%i) as %s", answer, parmname);
         break;
 
     case LDREF_TAG:    // line Tag
-        answer = xlines[lineid].tag;
+        answer = P_XLine(line)->tag;
         XG_Dev("XL_ValidateLineRef: Using Line Tag (%i) as %s", answer, parmname);
         break;
 
     case LDREF_ACTTAG:    // line ActTag
-        if(!xlines[lineid].xg)
+        if(!P_XLine(line)->xg)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE NOT AN XG LINE");
             break;
         }
 
-        if(!xlines[lineid].xg->info.act_tag)
+        if(!P_XLine(line)->xg->info.act_tag)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE DOESNT HAVE AN ACT TAG");
             break;
         }
 
-        answer = xlines[lineid].xg->info.act_tag;
+        answer = P_XLine(line)->xg->info.act_tag;
         XG_Dev("XL_ValidateLineRef: Using Line ActTag (%i) as %s", answer, parmname);
         break;
 
     case LDREF_COUNT:    // line count
-        if(!xlines[lineid].xg)
+        if(!P_XLine(line)->xg)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE NOT AN XG LINE");
             break;
         }
 
-        answer = xlines[lineid].xg->info.act_count;
+        answer = P_XLine(line)->xg->info.act_count;
         XG_Dev("XL_ValidateLineRef: Using Line Count (%i) as %s", answer, parmname);
         break;
 
@@ -896,41 +894,37 @@ int XL_ValidateLineRef(line_t *line, int reftype, void *context, char *parmname)
         break;
 
     case LDREF_LENGTH:    // line length
-#ifdef TODO_MAP_UPDATE
-        // Is line length available via DMU or do we need to calculate it?
         // Answer should be in map units.
-        answer = -1;
-#endif
+        answer = P_GetFixedp(DMU_LINE, line, DMU_LENGTH) >> FRACBITS;
+
         XG_Dev("XL_ValidateLineRef: Using Line Length (%i) as %s", answer, parmname);
         break;
 
     case LDREF_OFFSETX:    // x offset
         // Can this ever fail?
-#ifdef TODO_MAP_UPDATE
-        if(line->sidenum[0] < 0)
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        side = sides + line->sidenum[0];
-        answer = side->textureoffset >> FRACBITS;
-#endif
+        answer = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X);
+
         XG_Dev("XL_ValidateLineRef: Using Line X Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_OFFSETY:    // y offset
         // Can this ever fail?
-#ifdef TODO_MAP_UPDATE
-        if(line->sidenum[0] < 0)
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        side = sides + line->sidenum[0];
-        answer = side->rowoffset >> FRACBITS;
-#endif
+        answer = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+
         XG_Dev("XL_ValidateLineRef: Using Line Y Offset (%i) as %s", answer, parmname);
         break;
 
@@ -1637,71 +1631,107 @@ boolean XL_CheckMobjGone(int thingtype)
     return true;
 }
 
-boolean XL_SwitchSwap(short *tex)
+boolean XL_SwitchSwap(side_t* side, int section)
 {
-    char   *name = R_TextureNameForNum(*tex);
+    char   *name;
     char    buf[10];
+    int     texid;
+    boolean makeChange = false;
+
+    if(!side)
+        return false;
+
+    // Which section of the wall are we checking?
+    if(section == LWS_UPPER)
+        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE));
+    else if(section == LWS_MID)
+        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE));
+    else if(section == LWS_LOWER)
+        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE));
+    else
+        return false;
 
     strncpy(buf, name, 8);
     buf[8] = 0;
 
+    // Does this texture have another switch texture?
 #ifdef __JHERETIC__
     // A kludge for Heretic.  Since it has some switch texture names
     // that don't follow the SW1/SW2 pattern, we'll do some special
     // checking.
     if(!stricmp(buf, "SW1ON"))
     {
-        *tex = R_TextureNumForName("SW1OFF");
-        return true;
+        texid = R_TextureNumForName("SW1OFF");
+        makeChange = true;
     }
     if(!stricmp(buf, "SW1OFF"))
     {
-        *tex = R_TextureNumForName("SW1ON");
-        return true;
+        texid = R_TextureNumForName("SW1ON");
+        makeChange = true;
     }
     if(!stricmp(buf, "SW2ON"))
     {
-        *tex = R_TextureNumForName("SW2OFF");
-        return true;
+        texid = R_TextureNumForName("SW2OFF");
+        makeChange = true;
     }
     if(!stricmp(buf, "SW2OFF"))
     {
-        *tex = R_TextureNumForName("SW2ON");
-        return true;
+        texid = R_TextureNumForName("SW2ON");
+        makeChange = true;
     }
 #endif
 
     if(!strnicmp(buf, "SW1", 3))
     {
         buf[2] = '2';
-        *tex = R_TextureNumForName(buf);
-        return true;
+        texid = R_TextureNumForName(buf);
+        makeChange = true;
     }
     if(!strnicmp(buf, "SW2", 3))
     {
         buf[2] = '1';
-        *tex = R_TextureNumForName(buf);
+        texid = R_TextureNumForName(buf);
+        makeChange = true;
+    }
+
+    // Are we doing a switch swap?
+    if(makeChange)
+    {
+        // Which section of the wall are we working on?
+        // Make the change.
+        if(section == LWS_UPPER)
+            P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, texid);
+        else if(section == LWS_MID)
+            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, texid);
+        else if(section == LWS_LOWER)
+            P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, texid);
+        else
+            return false;
+
+        // The change was successfull.
         return true;
     }
-    return false;
+    else
+        return false;
 }
 
 void XL_SwapSwitchTextures(line_t *line, int snum)
 {
-#ifdef TODO_MAP_UPDATE
-    int    sidenum = line->sidenum[snum];
     side_t *side;
 
-    if(sidenum < 0)
+    if(snum)
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
+    else
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+
+    if(!side)
         return;
 
-    side = sides + sidenum;
-
-    if(XL_SwitchSwap(&side->midtexture) ||
-       XL_SwitchSwap(&side->toptexture) ||
-       XL_SwitchSwap(&side->bottomtexture) )
-        XG_Dev("XL_SwapSwitchTextures: Line %i, side %i", line - lines, sidenum);
-#endif
+    if(XL_SwitchSwap(side, LWS_UPPER) ||
+       XL_SwitchSwap(side, LWS_MID) ||
+       XL_SwitchSwap(side, LWS_LOWER) )
+        XG_Dev("XL_SwapSwitchTextures: Line %i, side %i", P_ToIndex(DMU_LINE, line),
+                P_ToIndex(DMU_SIDE, side));
 }
 
 /*
@@ -1710,11 +1740,11 @@ void XL_SwapSwitchTextures(line_t *line, int snum)
 void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
                       blendmode_t blendmode, byte rgba[4], int flags)
 {
-#ifdef TODO_MAP_UPDATE
     int i;
-    side_t *side = sides + line->sidenum[sidenum];
+    int currentFlags;
+    side_t *side = P_ToPtr(DMU_SIDE, sidenum);
 
-    if(line->sidenum[sidenum] < 0)
+    if(!side)
         return;
 
     // Clamp the values
@@ -1727,44 +1757,59 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
             rgba[i] = 0;
     }
 
-    XG_Dev("XL_ChangeTexture: Line %i, side %i, section %i, texture %i", line - lines, sidenum, section, texture);
-    XG_Dev("  red %i, green %i, blue %i, alpha %i, blendmode %i", rgba[0], rgba[1], rgba[2], rgba[3], blendmode);
+    XG_Dev("XL_ChangeTexture: Line %i, side %i, section %i, texture %i",
+           P_ToIndex(DMU_LINE, line), sidenum, section, texture);
+    XG_Dev("  red %i, green %i, blue %i, alpha %i, blendmode %i",
+           rgba[0], rgba[1], rgba[2], rgba[3], blendmode);
 
+    // Which wall section are we working on?
     if(section == LWS_MID)
     {
+        // Are we removing the middle texture?
         if(texture == -1)
-            side->midtexture = 0;
+            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, 0);
         else if(texture)
-            side->midtexture = texture;
+            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, texture);
 
+        // Are we changing the blendmode?
         if(blendmode)
-            side->blendmode = blendmode;
+            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE, blendmode);
 
+        // Are we changing the surface color?
+#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 4; i++)
             if(rgba[i])
                 side->midrgba[i] = rgba[i];
+#endif
     }
     else if(section == LWS_UPPER)
     {
         if(texture)
-            side->toptexture = texture;
+            P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, texture);
 
+#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgba[i])
-                side->toprgb[i] = rgba[i];
+                side->ceilingrgb[i] = rgba[i];
+#endif
     }
     else if(section == LWS_LOWER)
     {
         if(texture)
-            side->bottomtexture = texture;
+            P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, texture);
 
+#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgba[i])
                 side->bottomrgb[i] = rgba[i];
+#endif
     }
 
-    side->flags |= flags;
-#endif
+    // Adjust the side's flags
+    currentFlags = P_GetIntp(DMU_SIDE, side, DMU_FLAGS);
+    currentFlags |= flags;
+
+    P_SetIntp(DMU_SIDE, side, DMU_FLAGS, currentFlags);
 }
 
 void XL_Message(mobj_t *act, char *msg, boolean global)
@@ -1817,12 +1862,12 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
     mobj_t *activator_thing = (mobj_t *) data;
     degenmobj_t *soundorg;
 
-    xg = xlines[lineid].xg;
+    xg = P_XLine(line)->xg;
     frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
 
     XG_Dev("XL_ActivateLine: %s line %i, side %i, type %i",
            activating ? "Activating" : "Deactivating", lineid,
-           sidenum, xlines[lineid].special);
+           sidenum, P_XLine(line)->special);
 
     if(xg->disabled)
     {
@@ -1838,11 +1883,9 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
     }
 
     // Activation should happen on the front side.
-#ifdef TODO_MAP_UPDATE
-    // Is soundorg not a part of the internal data?
     if(frontsector)
-        soundorg = &xsectors[P_ToIndex(DMU_SECTOR, frontsector)].soundorg;
-#endif
+        soundorg = P_GetPtrp(DMU_SECTOR, frontsector, DMU_SOUND_ORIGIN);
+
     // Let the line know who's activating it.
     xg->activator = data;
 
@@ -2002,7 +2045,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     int     flags;
     boolean anyTrigger = false;
 
-    xg = xlines[lineid].xg;
+    xg = P_XLine(line)->xg;
     info = &xg->info;
     active = xg->active;
     flags = P_GetIntp(DMU_LINE, line, DMU_FLAGS);
@@ -2263,9 +2306,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
  */
 int XL_CrossLine(line_t *line, int sidenum, mobj_t *thing)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    if(!xline->xg)
+    if(!P_XLine(line)->xg)
         return false;
     return XL_LineEvent(XLE_CROSS, 0, line, sidenum, thing);
 }
@@ -2275,9 +2316,7 @@ int XL_CrossLine(line_t *line, int sidenum, mobj_t *thing)
  */
 int XL_UseLine(line_t *line, int sidenum, mobj_t *thing)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    if(!xline->xg)
+    if(!P_XLine(line)->xg)
         return false;
     return XL_LineEvent(XLE_USE, 0, line, sidenum, thing);
 }
@@ -2287,18 +2326,14 @@ int XL_UseLine(line_t *line, int sidenum, mobj_t *thing)
  */
 int XL_ShootLine(line_t *line, int sidenum, mobj_t *thing)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    if(!xline->xg)
+    if(!P_XLine(line)->xg)
         return false;
     return XL_LineEvent(XLE_SHOOT, 0, line, sidenum, thing);
 }
 
 int XL_HitLine(line_t *line, int sidenum, mobj_t *thing)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    if(!xline->xg)
+    if(!P_XLine(line)->xg)
         return false;
     return XL_LineEvent(XLE_HIT, 0, line, sidenum, thing);
 }
@@ -2330,7 +2365,7 @@ void XL_ChainSequenceThink(line_t *line)
     xgline_t *xg;
     linetype_t *info;
 
-    xg = xlines[lineid].xg;
+    xg = P_XLine(line)->xg;
     info = &xg->info;
 
     // Only process active chain sequences.
@@ -2389,16 +2424,9 @@ void XL_ChainSequenceThink(line_t *line)
  */
 void XL_Think(line_t *line)
 {
-    int lineid = P_ToIndex(DMU_LINE, line);
-    xgline_t *xg;
-    linetype_t *info;
     float   levtime = TIC2FLT(leveltime);
-    fixed_t xoff, yoff, spd;
-    side_t *sid;
-    int     i;
-
-    xg = xlines[lineid].xg;
-    info = &xg->info;
+    xgline_t *xg = P_XLine(line)->xg;
+    linetype_t *info = &xg->info;
 
     if(xg->disabled)
         return;        // Disabled, do nothing.
@@ -2439,7 +2467,7 @@ void XL_Think(line_t *line)
     {
         if(info->act_time >= 0 && xg->timer > FLT2TIC(info->act_time))
         {
-            XG_Dev("XL_Think: Line %i, timed to go %s", lineid,
+            XG_Dev("XL_Think: Line %i, timed to go %s", P_ToIndex(DMU_LINE, line),
                     xg->active ? "INACTIVE" : "ACTIVE");
 
             // Swap line state without any checks.
@@ -2450,22 +2478,37 @@ void XL_Think(line_t *line)
     if(info->texmove_speed)
     {
         // The texture should be moved. Calculate the offsets.
+        int offset; // The current offset.
+        side_t* side;
+
         angle_t ang =
             ((angle_t) (ANGLE_MAX * (info->texmove_angle / 360))) >>
             ANGLETOFINESHIFT;
-        spd = FRACUNIT * info->texmove_speed;
-        xoff = -FixedMul(finecosine[ang], spd);
-        yoff = FixedMul(finesine[ang], spd);
+
+        fixed_t spd = FRACUNIT * info->texmove_speed;
+        fixed_t xoff = -FixedMul(finecosine[ang], spd);
+        fixed_t yoff = FixedMul(finesine[ang], spd);
+
         // Apply to both sides of the line.
-        for(i = 0; i < 2; i++)
+        // Front side
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        if(side)
         {
-#ifdef TODO_MAP_UPDATE
-            if(line->sidenum[i] < 0)
-                continue;
-            sid = sides + line->sidenum[i];
-            sid->textureoffset += xoff;
-            sid->rowoffset += yoff;
-#endif
+            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) + xoff;
+            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, offset);
+
+            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) + yoff;
+            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, offset);
+        }
+        // back side
+        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
+        if(side)
+        {
+            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) + xoff;
+            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, offset);
+
+            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) + yoff;
+            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, offset);
         }
     }
 }

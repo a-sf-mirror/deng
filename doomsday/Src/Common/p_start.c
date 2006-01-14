@@ -662,29 +662,27 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
-/*
-#ifdef TODO_MAP_UPDATE
+
     for(i = 0; i < numlines; i++)
     {
-        int side;
+        side_t* side;
         int     lumpnum = R_TextureNumForName("NUKE24");
         fixed_t yoff;
 
-        side = P_GetInt(DMU_LINE, i, DMU_FRONT_SIDE);
-        yoff = P_GetFixed(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        side = P_GetPtr(DMU_LINE, i, DMU_SIDE0);
+        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
 
         if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
            P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
             P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
 
-        side = P_GetPtr(DMU_LINE, i, DMU_BACK_SIDE);
-        yoff = P_GetFixed(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        side = P_GetPtr(DMU_LINE, i, DMU_SIDE1);
+        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+
         if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
            P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
             P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
     }
-#endif
-*/
 
 #elif __JHERETIC__
     // Do some fine tuning with mobj placement and orientation.

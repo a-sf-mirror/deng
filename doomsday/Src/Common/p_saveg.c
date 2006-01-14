@@ -613,22 +613,18 @@ void SV_ReadMobj(mobj_t *mo)
 void SV_WriteSector(sector_t *sec)
 {
     int     type;
-    int     idx = P_ToIndex(DMU_SECTOR, sec);
-    xsector_t *xsec = &xsectors[idx];
+    xsector_t *xsec = P_XSector(sec);
+
     int     floorheight = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
     int     ceilingheight = P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
     int     floorpic = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE);
     int     ceilingpic = P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE);
     byte    lightlevel = P_GetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL);
-#ifdef TODO_MAP_UPDATE
-    byte    rgb[3];
-    byte    floorrgb[3];
-    byte    ceilrgb[3];
-#endif
     float   flooroffx = P_GetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X);
     float   flooroffy = P_GetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y);
     float   ceiloffx = P_GetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X);
     float   ceiloffy = P_GetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y);
+    byte    rgb[3];
 
     // Determine type.
     if(xsec->xg)
@@ -646,12 +642,16 @@ void SV_WriteSector(sector_t *sec)
     SV_WriteShort(SV_FlatArchiveNum(floorpic));
     SV_WriteShort(SV_FlatArchiveNum(ceilingpic));
     SV_WriteByte(lightlevel);
-#ifdef TODO_MAP_UPDATE
+
+    P_GetBytepv(DMU_SECTOR, sec, DMU_COLOR, rgb);
     SV_Write(rgb, 3);
 
-    SV_Write(floorrgb, 3);
-    SV_Write(ceilingrgb, 3);
-#endif
+    P_GetBytepv(DMU_SECTOR, sec, DMU_FLOOR_COLOR, rgb);
+    SV_Write(rgb, 3);
+
+    P_GetBytepv(DMU_SECTOR, sec, DMU_CEILING_COLOR, rgb);
+    SV_Write(rgb, 3);
+
     SV_WriteShort(xsec->special);
     SV_WriteShort(xsec->tag);
 
@@ -669,96 +669,151 @@ void SV_WriteSector(sector_t *sec)
     }
 }
 
+/*
+ * Reads all versions of archived sectors.
+ * Including the old Ver1.
+ */
 void SV_ReadSector(sector_t *sec)
 {
     int     type;
-    int     idx = P_ToIndex(DMU_SECTOR, sec);
-    xsector_t *xsec = &xsectors[idx];
+    int     floorTexID;
+    int     ceilingTexID;
+    byte    rgb[3];
+    xsector_t *xsec = P_XSector(sec);
 
-    // Read the type.
-    type = SV_ReadByte();
+    // Save versions > 1 include a type byte
+    if(hdr.version > 1)
+        type = SV_ReadByte();
 
     P_SetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT, SV_ReadShort() << FRACBITS);
     P_SetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT, SV_ReadShort() << FRACBITS);
-    P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE, SV_ReadShort());
-    P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE, SV_ReadShort());
 
-    if(hdr.version >= 4)
+    floorTexID = SV_ReadShort();
+    ceilingTexID = SV_ReadShort();
+
+    if(hdr.version == 1)
     {
-        // The flat numbers are actually archive numbers.
-        P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
-                  SV_GetArchiveFlat(P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE)));
-        P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE,
-                  SV_GetArchiveFlat(P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE)));
+        // In Ver1 the flat numbers are the actual lump numbers.
+        int     firstflat = W_CheckNumForName("F_START") + 1;
+
+        floorTexID += firstflat;
+        ceilingTexID += firstflat;
+    }
+    else if(hdr.version >= 4)
+    {
+        // In Versions >= 4: The flat numbers are actually archive numbers.
+        floorTexID = SV_GetArchiveFlat(floorTexID);
+        ceilingTexID = SV_GetArchiveFlat(ceilingTexID);
     }
 
-    P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadByte());
-#ifdef TODO_MAP_UPDATE
-    SV_Read(sec->rgb, 3);
+    P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE, floorTexID);
+    P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE, ceilingTexID);
+
+    // In Ver1 the light level is a short
+    if(hdr.version == 1)
+        P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadShort());
+    else
+    {
+        P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadByte());
+
+        // Versions > 1 include sector colours
+        SV_Read(rgb, 3);
+        P_SetBytepv(DMU_SECTOR, sec, DMU_COLOR, rgb);
+    }
 
     // Ver 5 includes surface colours
     if(hdr.version >= 5)
     {
-            SV_Read(sec->floorrgb, 3);
-            SV_Read(sec->ceilingrgb, 3);
+        SV_Read(rgb, 3);
+        P_SetBytepv(DMU_SECTOR, sec, DMU_FLOOR_COLOR, rgb);
+
+        SV_Read(rgb, 3);
+        P_SetBytepv(DMU_SECTOR, sec, DMU_CEILING_COLOR, rgb);
     }
-#endif
+
     xsec->special = SV_ReadShort();
     xsec->tag = SV_ReadShort();
 
-    if(type == sc_xg1 || type == sc_ploff)
+    // Save versions > 1 include a type byte
+    if(hdr.version > 1)
     {
-        P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X, SV_ReadFloat());
-        P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y, SV_ReadFloat());
-        P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X, SV_ReadFloat());
-        P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y, SV_ReadFloat());
-    }
+        if(type == sc_xg1 || type == sc_ploff)
+        {
+            P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X, SV_ReadFloat());
+            P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y, SV_ReadFloat());
+            P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X, SV_ReadFloat());
+            P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y, SV_ReadFloat());
+        }
 
-    if(type == sc_xg1)
-        SV_ReadXGSector(sec);
+        if(type == sc_xg1)
+            SV_ReadXGSector(sec);
+    }
+    else
+    {
+        // FIXME?
+        // Why are these initialized here and only for Ver1 save games?
+        xsec->specialdata = 0;
+        xsec->soundtarget = 0;
+    }
 }
 
 void SV_WriteLine(line_t *li)
 {
-    lineclass_t type;
-    int idx = P_ToIndex(DMU_LINE, li);
-    xline_t *xli = &xlines[idx];
     int     i;
+    int     texid;
+    byte    rgb[3];
+    byte    rgba[4];
+
+    lineclass_t type;
+    xline_t *xli = P_XLine(li);
+    side_t *side;
 
     if(xli->xg)
         type =  lc_xg1;
     else
         type = lc_normal;
 
-#ifdef TODO_MAP_UPDATE
-    side_t *si;
-#endif
     SV_WriteByte(type);
 
     SV_WriteShort(P_GetIntp(DMU_LINE, li, DMU_FLAGS));
     SV_WriteShort(xli->special);
     SV_WriteShort(xli->tag);
 
+    // For each side
     for(i = 0; i < 2; i++)
     {
-#ifdef TODO_MAP_UPDATE
-        if(li->sidenum[i] == NO_INDEX)
+        if(i == 0)
+            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE0);
+        else
+            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE1);
+
+        if(!side)
             continue;
 
+        SV_WriteShort(P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) >> FRACBITS);
+        SV_WriteShort(P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) >> FRACBITS);
 
-        si = &sides[li->sidenum[i]];
+        texid = P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE);
+        SV_WriteShort(SV_TextureArchiveNum(texid));
 
-        SV_WriteShort(si->textureoffset >> FRACBITS);
-        SV_WriteShort(si->rowoffset >> FRACBITS);
-        SV_WriteShort(SV_TextureArchiveNum(si->toptexture));
-        SV_WriteShort(SV_TextureArchiveNum(si->bottomtexture));
-        SV_WriteShort(SV_TextureArchiveNum(si->midtexture));
-        SV_Write(si->toprgb, 3);
-        SV_Write(si->midrgba, 4);
-        SV_Write(si->bottomrgb, 3);
-        SV_WriteShort(si->blendmode);
-        SV_WriteShort(si->flags);
-#endif
+        texid = P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE);
+        SV_WriteShort(SV_TextureArchiveNum(texid));
+
+        texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+        SV_WriteShort(SV_TextureArchiveNum(texid));
+
+        P_GetBytepv(DMU_SIDE, side, DMU_TOP_COLOR, rgb);
+        SV_Write(rgb, 3);
+
+        P_GetBytepv(DMU_SIDE, side, DMU_BOTTOM_COLOR, rgb);
+        SV_Write(rgb, 3);
+
+        P_GetBytepv(DMU_SIDE, side, DMU_MIDDLE_COLOR, rgba);
+        SV_Write(rgba, 4);
+
+        SV_WriteLong(P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE));
+
+        SV_WriteLong(P_GetIntp(DMU_SIDE, side, DMU_FLAGS));
     }
 
     // Extended General?
@@ -768,57 +823,83 @@ void SV_WriteLine(line_t *li)
     }
 }
 
+/*
+ * Reads all versions of archived lines.
+ * Including the old Ver1.
+ */
 void SV_ReadLine(line_t *li)
 {
     enum lineclass_e type;
-    int idx = P_ToIndex(DMU_LINE, li);
-    xline_t *xli = &xlines[idx];
-    int     i;
-    side_t *si;
 
-    type = SV_ReadByte();
+    int     i;
+    int     topTexID;
+    int     bottomTexID;
+    int     middleTexID;
+    byte    rgb[3];
+    byte    rgba[4];
+    side_t *side;
+    xline_t *xli = P_XLine(li);
+
+    // Save versions > 1 include a type byte
+    if(hdr.version > 1)
+        type = SV_ReadByte();
 
     P_SetIntp(DMU_LINE, li, DMU_FLAGS, SV_ReadShort());
     xli->special = SV_ReadShort();
     xli->tag = SV_ReadShort();
 
+    // For each side
     for(i = 0; i < 2; i++)
     {
-#ifdef TODO_MAP_UPDATE
-        if(li->sidenum[i] == NO_INDEX)
+        if(i == 0)
+            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE0);
+        else
+            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE1);
+
+        if(!side)
             continue;
 
-        si = &sides[li->sidenum[i]];
+        P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, SV_ReadShort() << FRACBITS);
+        P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, SV_ReadShort() << FRACBITS);
 
-        si->textureoffset = SV_ReadShort() << FRACBITS;
-        si->rowoffset = SV_ReadShort() << FRACBITS;
-        si->toptexture = SV_ReadShort();
-        si->bottomtexture = SV_ReadShort();
-        si->midtexture = SV_ReadShort();
+        topTexID = SV_ReadShort();
+        bottomTexID = SV_ReadShort();
+        middleTexID = SV_ReadShort();
 
         if(hdr.version >= 4)
         {
             // The texture numbers are only archive numbers.
-            si->toptexture = SV_GetArchiveTexture(si->toptexture);
-            si->bottomtexture = SV_GetArchiveTexture(si->bottomtexture);
-            si->midtexture = SV_GetArchiveTexture(si->midtexture);
+            topTexID = SV_GetArchiveTexture(topTexID);
+            bottomTexID = SV_GetArchiveTexture(bottomTexID);
+            middleTexID = SV_GetArchiveTexture(middleTexID);
         }
+
+        P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, topTexID);
+        P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, bottomTexID);
+        P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, middleTexID);
 
         // Ver5 includes surface colours
         if(hdr.version >= 5)
         {
-            SV_Read(si->toprgb, 3);
-            SV_Read(si->midrgba, 4);
-            SV_Read(si->bottomrgb, 3);
-            si->blendmode = SV_ReadShort();
-            si->flags = SV_ReadShort();
+            SV_Read(rgb, 3);
+            P_SetBytepv(DMU_SIDE, side, DMU_TOP_COLOR, rgb);
+
+            SV_Read(rgb, 3);
+            P_SetBytepv(DMU_SIDE, side, DMU_BOTTOM_COLOR, rgb);
+
+            SV_Read(rgba, 4);
+            P_SetBytepv(DMU_SIDE, side, DMU_MIDDLE_COLOR, rgba);
+
+            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
+
+            P_SetIntp(DMU_SIDE, side, DMU_FLAGS, SV_ReadLong());
         }
-#endif
     }
 
-    // Extended General?
-    if(type == lc_xg1)
-        SV_ReadXGLine(li);
+    // Versions > 1 might include XG data
+    if(hdr.version > 1)
+        if(type == lc_xg1)
+            SV_ReadXGLine(li);
 }
 
 void P_ArchivePlayers(void)
@@ -884,13 +965,12 @@ void P_UnArchivePlayers(boolean *infile, boolean *loaded)
     }
 }
 
+/*
+ * Only write world in the latest format
+ */
 void P_ArchiveWorld(void)
 {
     int     i;
-
-    //
-    // Only write world in the new format
-    //
 
     // Write the texture archives.
     SV_WriteTextureArchive();
@@ -905,68 +985,18 @@ void P_ArchiveWorld(void)
 void P_UnArchiveWorld(void)
 {
     int     i;
-    int     j;
-    sector_t *sec;
-    line_t *li;
-    side_t *si;
 
-    if(hdr.version > 1)
-    {
-        if(hdr.version >= 4)
-        {
-            // Read the texture archives.
-            SV_ReadTextureArchive();
-        }
+    // Save versions >= 4 include texture archives.
+    if(hdr.version >= 4)
+        SV_ReadTextureArchive();
 
-        // Load sectors.
-        for(i = 0; i < numsectors; i++)
-            SV_ReadSector(P_ToPtr(DMU_SECTOR, i));
+    // Load sectors.
+    for(i = 0; i < numsectors; i++)
+        SV_ReadSector(P_ToPtr(DMU_SECTOR, i));
 
-        // Load lines.
-        for(i = 0; i < numlines; i++)
-            SV_ReadLine(P_ToPtr(DMU_LINE, i));
-    }
-    else                        // Old version 1 world.
-    {
-        int     firstflat = W_CheckNumForName("F_START") + 1;
-
-#ifdef TODO_MAP_UPDATE
-        // do sectors
-        for(i = 0, sec = sectors; i < numsectors; i++, sec++)
-        {
-            sec->floorheight = SV_ReadShort() << FRACBITS;
-            sec->ceilingheight = SV_ReadShort() << FRACBITS;
-            sec->floorpic = SV_ReadShort() + firstflat;
-            sec->ceilingpic = SV_ReadShort() + firstflat;
-            sec->lightlevel = SV_ReadShort();
-
-            xsec->special = SV_ReadShort();  // needed?
-            xsec->tag = SV_ReadShort();  // needed?
-            xsec->specialdata = 0;
-            xsec->soundtarget = 0;
-        }
-
-        // do lines
-        for(i = 0, li = lines; i < numlines; i++, li++)
-        {
-            li->flags = SV_ReadShort();
-
-            xli->special = SV_ReadShort();
-            xli->tag = SV_ReadShort();
-            for(j = 0; j < 2; j++)
-            {
-                if(li->sidenum[j] == NO_INDEX)
-                    continue;
-                si = &sides[li->sidenum[j]];
-                si->textureoffset = SV_ReadShort() << FRACBITS;
-                si->rowoffset = SV_ReadShort() << FRACBITS;
-                si->toptexture = SV_ReadShort();
-                si->bottomtexture = SV_ReadShort();
-                si->midtexture = SV_ReadShort();
-            }
-        }
-#endif
-    }
+    // Load lines.
+    for(i = 0; i < numlines; i++)
+        SV_ReadLine(P_ToPtr(DMU_LINE, i));
 }
 
 void P_ArchiveThinkers(void)
@@ -1075,6 +1105,437 @@ void P_UnArchiveThinkers(void)
     XL_UnArchiveLines();
 }
 
+void SV_WriteCeiling(ceiling_t* ceiling)
+{
+    SV_WriteByte(tc_ceiling);
+
+    if(ceiling->thinker.function)
+        SV_WriteByte(1);
+    else
+        SV_WriteByte(0);
+
+    SV_WriteByte((byte) ceiling->type);
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, ceiling->sector));
+
+    SV_WriteShort(ceiling->bottomheight >> FRACBITS);
+    SV_WriteShort(ceiling->topheight >> FRACBITS);
+    SV_WriteShort(ceiling->speed >> FRACBITS);
+
+    SV_WriteByte(ceiling->crush);
+
+    SV_WriteLong(ceiling->direction);
+    SV_WriteLong(ceiling->tag);
+    SV_WriteLong(ceiling->olddirection);
+}
+
+void SV_ReadCeiling(ceiling_t* ceiling)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+
+        // Should we set the function?
+        if(SV_ReadByte())
+            ceiling->thinker.function = T_MoveCeiling;
+
+        ceiling->type = (ceiling_e) SV_ReadByte();
+
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_ceiling: bad sector number\n");
+
+        ceiling->sector = sector;
+
+        ceiling->bottomheight = SV_ReadShort() << FRACBITS;
+        ceiling->topheight = SV_ReadShort() << FRACBITS;
+        ceiling->speed = SV_ReadShort() << FRACBITS;
+
+        ceiling->crush = SV_ReadByte();
+
+        ceiling->direction = SV_ReadLong();
+        ceiling->tag = SV_ReadLong();
+        ceiling->olddirection = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(ceiling, SIZE_OF_CEILING);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
+
+        if(!sector)
+            Con_Error("tc_ceiling: bad sector number\n");
+
+        ceiling->sector = sector;
+
+        if(ceiling->thinker.function)
+            ceiling->thinker.function = T_MoveCeiling;
+    }
+
+    P_XSector(ceiling->sector)->specialdata = ceiling;
+}
+
+void SV_WriteDoor(vldoor_t* door)
+{
+    SV_WriteByte(tc_door);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteByte((byte) door->type);
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, door->sector));
+
+    SV_WriteShort(door->topheight >> FRACBITS);
+    SV_WriteShort(door->speed >> FRACBITS);
+
+    SV_WriteLong(door->direction);
+    SV_WriteLong(door->topwait);
+    SV_WriteLong(door->topcountdown);
+}
+
+void SV_ReadDoor(vldoor_t* door)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+
+        door->type = (vldoor_e) SV_ReadByte();
+
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_door: bad sector number\n");
+
+        door->sector = sector;
+
+        door->topheight = SV_ReadShort() << FRACBITS;
+        door->speed = SV_ReadShort() << FRACBITS;
+
+        door->direction = SV_ReadLong();
+        door->topwait = SV_ReadLong();
+        door->topcountdown = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(door, SIZE_OF_DOOR);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) door->sector);
+
+        if(!sector)
+            Con_Error("tc_door: bad sector number\n");
+
+        door->sector = sector;
+    }
+
+    P_XSector(door->sector)->specialdata = door;
+
+    door->thinker.function = T_VerticalDoor;
+}
+
+void SV_WriteFloor(floormove_t* floor)
+{
+    SV_WriteByte(tc_floor);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteByte((byte) floor->type);
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, floor->sector));
+
+    SV_WriteByte((byte) floor->crush);
+
+    SV_WriteLong(floor->direction);
+    SV_WriteLong(floor->newspecial);
+
+    SV_WriteShort(floor->texture);
+
+    SV_WriteShort(floor->floordestheight >> FRACBITS);
+    SV_WriteShort(floor->speed >> FRACBITS);
+}
+
+void SV_ReadFloor(floormove_t* floor)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+        floor->type = (floor_e) SV_ReadByte();
+
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_floor: bad sector number\n");
+
+        floor->sector = sector;
+
+        floor->crush = (boolean) SV_ReadByte();
+
+        floor->direction = SV_ReadLong();
+        floor->newspecial = SV_ReadLong();
+
+        floor->texture = SV_ReadShort();
+
+        floor->floordestheight = SV_ReadShort() << FRACBITS;
+        floor->speed = SV_ReadShort() << FRACBITS;
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(floor, SIZE_OF_FLOOR);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) floor->sector);
+
+        if(!sector)
+            Con_Error("tc_floor: bad sector number\n");
+
+        floor->sector = sector;
+    }
+
+    P_XSector(floor->sector)->specialdata = floor;
+    floor->thinker.function = T_MoveFloor;
+}
+
+void SV_WritePlat(plat_t* plat)
+{
+    SV_WriteByte(tc_plat);
+
+    if(plat->thinker.function)
+        SV_WriteByte(1);
+    else
+        SV_WriteByte(0);
+
+    SV_WriteByte((byte) plat->type);
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, plat->sector));
+
+    SV_WriteShort(plat->speed >> FRACBITS);
+    SV_WriteShort(plat->low >> FRACBITS);
+    SV_WriteShort(plat->high >> FRACBITS);
+
+    SV_WriteLong(plat->wait);
+    SV_WriteLong(plat->count);
+
+    SV_WriteByte((byte) plat->status);
+    SV_WriteByte((byte) plat->oldstatus);
+    SV_WriteByte((byte) plat->crush);
+
+    SV_WriteLong(plat->tag);
+}
+
+void SV_ReadPlat(plat_t* plat)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+
+        // Should we set the function?
+        if(SV_ReadByte())
+            plat->thinker.function = T_PlatRaise;
+
+        plat->type = (plattype_e) SV_ReadByte();
+
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_plat: bad sector number\n");
+
+        plat->sector = sector;
+
+        plat->speed = SV_ReadShort() << FRACBITS;
+        plat->low = SV_ReadShort() << FRACBITS;
+        plat->high = SV_ReadShort() << FRACBITS;
+
+        plat->wait = SV_ReadLong();
+        plat->count = SV_ReadLong();
+
+        plat->status = (plat_e) SV_ReadByte();
+        plat->oldstatus = (plat_e) SV_ReadByte();
+        plat->crush = (boolean) SV_ReadByte();
+
+        plat->tag = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(plat, SIZE_OF_PLAT);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
+
+        if(!sector)
+            Con_Error("tc_plat: bad sector number\n");
+
+        plat->sector = sector;
+
+        if(plat->thinker.function)
+            plat->thinker.function = T_PlatRaise;
+    }
+
+    P_XSector(plat->sector)->specialdata = plat;
+}
+
+void SV_WriteFlash(lightflash_t* flash)
+{
+    SV_WriteByte(tc_flash);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, flash->sector));
+
+    SV_WriteLong(flash->count);
+    SV_WriteLong(flash->maxlight);
+    SV_WriteLong(flash->minlight);
+    SV_WriteLong(flash->maxtime);
+    SV_WriteLong(flash->mintime);
+}
+
+void SV_ReadFlash(lightflash_t* flash)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_flash: bad sector number\n");
+
+        flash->sector = sector;
+
+        flash->count = SV_ReadLong();
+        flash->maxlight = SV_ReadLong();
+        flash->minlight = SV_ReadLong();
+        flash->maxtime = SV_ReadLong();
+        flash->mintime = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(flash, SIZE_OF_FLASH);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) flash->sector);
+
+        if(!sector)
+            Con_Error("tc_flash: bad sector number\n");
+
+        flash->sector = sector;
+    }
+
+    flash->thinker.function = T_LightFlash;
+}
+
+void SV_WriteStrobe(strobe_t* strobe)
+{
+    SV_WriteByte(tc_strobe);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, strobe->sector));
+
+    SV_WriteLong(strobe->count);
+    SV_WriteLong(strobe->maxlight);
+    SV_WriteLong(strobe->minlight);
+    SV_WriteLong(strobe->darktime);
+    SV_WriteLong(strobe->brighttime);
+}
+
+void SV_ReadStrobe(strobe_t* strobe)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_strobe: bad sector number\n");
+
+        strobe->sector = sector;
+
+        strobe->count = SV_ReadLong();
+        strobe->maxlight = SV_ReadLong();
+        strobe->minlight = SV_ReadLong();
+        strobe->darktime = SV_ReadLong();
+        strobe->brighttime = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(strobe, SIZE_OF_STROBE);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) strobe->sector);
+
+        if(!sector)
+            Con_Error("tc_strobe: bad sector number\n");
+
+        strobe->sector = sector;
+    }
+
+    strobe->thinker.function = T_StrobeFlash;
+}
+
+void SV_WriteGlow(glow_t* glow)
+{
+    SV_WriteByte(tc_glow);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, glow->sector));
+
+    SV_WriteLong(glow->maxlight);
+    SV_WriteLong(glow->minlight);
+    SV_WriteLong(glow->direction);
+}
+
+void SV_ReadGlow(glow_t* glow)
+{
+    sector_t* sector;
+
+    if(hdr.version >= 5)
+    {
+        // Note: the thinker class byte has already been read.
+        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+        if(!sector)
+            Con_Error("tc_glow: bad sector number\n");
+
+        glow->sector = sector;
+
+        glow->maxlight = SV_ReadLong();
+        glow->minlight = SV_ReadLong();
+        glow->direction = SV_ReadLong();
+    }
+    else
+    {
+        // Its in the old format
+        SV_Read(glow, SIZE_OF_GLOW);
+
+        sector = P_ToPtr(DMU_SECTOR, (int) glow->sector);
+
+        if(!sector)
+            Con_Error("tc_glow: bad sector number\n");
+
+        glow->sector = sector;
+    }
+
+    glow->thinker.function = T_Glow;
+}
+
 /*
  * Things to handle:
  *
@@ -1124,79 +1585,51 @@ void P_ArchiveSpecials(void)
         if(th->function == T_MoveCeiling)
         {
         ceiling:                               // killough 2/14/98
-            SV_WriteByte(tc_ceiling);
             memcpy(&ceiling, th, SIZE_OF_CEILING);
-#ifdef TODO_MAP_UPDATE
-            ceiling.sector = (sector_t *) (ceiling.sector - sectors);
-            SV_Write(&ceiling, SIZE_OF_CEILING);
-#endif
+            SV_WriteCeiling(&ceiling);
             continue;
         }
 
         if(th->function == T_VerticalDoor)
         {
-            SV_WriteByte(tc_door);
-            memcpy(&door, th, sizeof(door));
-#ifdef TODO_MAP_UPDATE
-            door.sector = (sector_t *) (door.sector - sectors);
-            SV_Write(&door, sizeof(door));
-#endif
+            memcpy(&door, th, SIZE_OF_DOOR);
+            SV_WriteDoor(&door);
             continue;
         }
 
         if(th->function == T_MoveFloor)
         {
-            SV_WriteByte(tc_floor);
-            memcpy(&floor, th, sizeof(floor));
-#ifdef TODO_MAP_UPDATE
-            floor.sector = (sector_t *) (floor.sector - sectors);
-            SV_Write(&floor, sizeof(floor));
-#endif
+            memcpy(&floor, th, SIZE_OF_FLOOR);
+            SV_WriteFloor(&floor);
             continue;
         }
 
         if(th->function == T_PlatRaise)
         {
         plat:   // killough 2/14/98: added fix for original plat height above
-            SV_WriteByte(tc_plat);
             memcpy(&plat, th, SIZE_OF_PLAT);
-#ifdef TODO_MAP_UPDATE
-            plat.sector = (sector_t *) (plat.sector - sectors);
-            SV_Write(&plat, SIZE_OF_PLAT);
-#endif
+            SV_WritePlat(&plat);
             continue;
         }
 
         if(th->function == T_LightFlash)
         {
-            SV_WriteByte(tc_flash);
-            memcpy(&flash, th, sizeof(flash));
-#ifdef TODO_MAP_UPDATE
-            flash.sector = (sector_t *) (flash.sector - sectors);
-            SV_Write(&flash, sizeof(flash));
-#endif
+            memcpy(&flash, th, SIZE_OF_FLASH);
+            SV_WriteFlash(&flash);
             continue;
         }
 
         if(th->function == T_StrobeFlash)
         {
-            SV_WriteByte(tc_strobe);
-            memcpy(&strobe, th, sizeof(strobe));
-#ifdef TODO_MAP_UPDATE
-            strobe.sector = (sector_t *) (strobe.sector - sectors);
-            SV_Write(&strobe, sizeof(strobe));
-#endif
+            memcpy(&strobe, th, SIZE_OF_STROBE);
+            SV_WriteStrobe(&strobe);
             continue;
         }
 
         if(th->function == T_Glow)
         {
-            SV_WriteByte(tc_glow);
-            memcpy(&glow, th, sizeof(glow));
-#ifdef TODO_MAP_UPDATE
-            glow.sector = (sector_t *) (glow.sector - sectors);
-            SV_Write(&glow, sizeof(glow));
-#endif
+            memcpy(&glow, th, SIZE_OF_GLOW);
+            SV_WriteGlow(&glow);
             continue;
         }
     }
@@ -1227,50 +1660,34 @@ void P_UnArchiveSpecials(void)
 
         case tc_ceiling:
             ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
-            SV_Read(ceiling, SIZE_OF_CEILING);
-#ifdef _DEBUG
-            if((int) ceiling->sector >= numsectors ||
-               (int) ceiling->sector < 0)
-                Con_Error("tc_ceiling: bad sector number\n");
-#endif
-            xsectors[(int) ceiling->sector].specialdata = ceiling;
 
-            ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
-
-            if(ceiling->thinker.function)
-                ceiling->thinker.function = T_MoveCeiling;
+            SV_ReadCeiling(ceiling);
 
             P_AddThinker(&ceiling->thinker);
             P_AddActiveCeiling(ceiling);
             break;
 
-#ifdef TODO_MAP_UPDATE
+
         case tc_door:
             door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
-            SV_Read(door, sizeof(*door));
-            door->sector = &sectors[(int) door->sector];
-            door->sector->specialdata = door;
-            door->thinker.function = T_VerticalDoor;
+
+            SV_ReadDoor(door);
+
             P_AddThinker(&door->thinker);
             break;
 
         case tc_floor:
             floor = Z_Malloc(sizeof(*floor), PU_LEVEL, NULL);
-            SV_Read(floor, sizeof(*floor));
-            floor->sector = &sectors[(int) floor->sector];
-            floor->sector->specialdata = floor;
-            floor->thinker.function = T_MoveFloor;
+
+            SV_ReadFloor(floor);
+
             P_AddThinker(&floor->thinker);
             break;
 
         case tc_plat:
             plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
-            SV_Read(plat, SIZE_OF_PLAT);
-            plat->sector = &sectors[(int) plat->sector];
-            plat->sector->specialdata = plat;
 
-            if(plat->thinker.function)
-                plat->thinker.function = T_PlatRaise;
+            SV_ReadPlat(plat);
 
             P_AddThinker(&plat->thinker);
             P_AddActivePlat(plat);
@@ -1278,28 +1695,28 @@ void P_UnArchiveSpecials(void)
 
         case tc_flash:
             flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
-            SV_Read(flash, sizeof(*flash));
-            flash->sector = &sectors[(int) flash->sector];
-            flash->thinker.function = T_LightFlash;
+
+            SV_ReadFlash(flash);
+
             P_AddThinker(&flash->thinker);
             break;
 
         case tc_strobe:
             strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
-            SV_Read(strobe, sizeof(*strobe));
-            strobe->sector = &sectors[(int) strobe->sector];
-            strobe->thinker.function = T_StrobeFlash;
+
+            SV_ReadStrobe(strobe);
+
             P_AddThinker(&strobe->thinker);
             break;
 
         case tc_glow:
             glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
-            SV_Read(glow, sizeof(*glow));
-            glow->sector = &sectors[(int) glow->sector];
-            glow->thinker.function = T_Glow;
+
+            SV_ReadGlow(glow);
+
             P_AddThinker(&glow->thinker);
             break;
-#endif
+
         default:
             Con_Error("P_UnArchiveSpecials: Unknown tclass %i " "in savegame.",
                       tclass);
