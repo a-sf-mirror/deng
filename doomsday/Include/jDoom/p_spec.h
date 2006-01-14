@@ -29,7 +29,7 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-// Many of the structs here will be directly written to savegames,
+// Many of the structs here will be directly read from old savegames,
 // this'll keep things compatible.
 #pragma pack(1)
 
@@ -60,24 +60,6 @@ void            P_CrossSpecialLine(int linenum, int side, mobj_t *thing);
 
 void            P_PlayerInSpecialSector(player_t *player);
 
-
-//  given the number of the current sector,
-//  the line number, and the side (0/1) that you want.
-//
-#ifdef TODO_MAP_UPDATE
-#define getSide(currentSector, line, side) (&sides[(sectors[currentSector].Lines[line])->sidenum[side]])
-
-//  given the number of the current sector,
-//  the line number and the side (0/1) that you want.
-//
-#define getSector(currentSector, line, side) (sides[(sectors[currentSector].Lines[line])->sidenum[side]].sector)
-
-// Given the sector number and the line number,
-//  it will tell you whether the line is two-sided or not.
-//
-#define twoSided(sector, line) ((sectors[sector].Lines[line])->flags & ML_TWOSIDED)
-#endif
-
 fixed_t         P_FindLowestFloorSurrounding(sector_t *sec);
 fixed_t         P_FindHighestFloorSurrounding(sector_t *sec);
 
@@ -101,15 +83,22 @@ int             EV_DoDonut(line_t *line);
 // P_LIGHTS
 //
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     sector_t       *sector;
     int             count;
     int             maxlight;
     int             minlight;
+    /* You can safely add new members after here */
 
 } fireflicker_t;
 
+// size of a fireflicker_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_FIREFLICKER (sizeof(thinker_t) + sizeof(sector_t*)     \
+                             + (sizeof(int)*3))
+
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     sector_t       *sector;
     int             count;
@@ -117,10 +106,16 @@ typedef struct {
     int             minlight;
     int             maxtime;
     int             mintime;
+    /* You can safely add new members after here */
 
 } lightflash_t;
 
+// size of a lightflash_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_FLASH (sizeof(thinker_t) + sizeof(sector_t*)     \
+                       + (sizeof(int)*5))
+
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     sector_t       *sector;
     int             count;
@@ -128,17 +123,28 @@ typedef struct {
     int             maxlight;
     int             darktime;
     int             brighttime;
+    /* You can safely add new members after here */
 
 } strobe_t;
 
+// size of a strobe_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_STROBE (sizeof(thinker_t) + sizeof(sector_t*)     \
+                        + (sizeof(int)*5))
+
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     sector_t       *sector;
     int             minlight;
     int             maxlight;
     int             direction;
+    /* You can safely add new members after here */
 
 } glow_t;
+
+// size of a glow_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_GLOW (sizeof(thinker_t) + sizeof(sector_t*)     \
+                      + (sizeof(int)*3))
 
 #define GLOWSPEED           8
 #define STROBEBRIGHT        5
@@ -219,6 +225,7 @@ typedef enum {
 } plattype_e;
 
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     sector_t       *sector;
     fixed_t         speed;
@@ -231,6 +238,7 @@ typedef struct {
     boolean         crush;
     int             tag;
     plattype_e      type;
+    /* You can safely add new members after here */
 
     struct platlist *list;   // killough
 } plat_t;
@@ -278,6 +286,7 @@ typedef enum {
 } vldoor_e;
 
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     vldoor_e        type;
     sector_t       *sector;
@@ -292,8 +301,14 @@ typedef struct {
     // (keep in case a door going down is reset)
     // when it reaches 0, start going down
     int             topcountdown;
+    /* You can safely add new members after here */
 
 } vldoor_t;
+
+// size of a vldoor_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_DOOR (sizeof(thinker_t) + sizeof(sector_t*)     \
+                      + sizeof(vldoor_e) + (sizeof(fixed_t)*2)  \
+                      + (sizeof(int)*3))
 
 #define VDOORSPEED      FRACUNIT*2
 #define VDOORWAIT       150
@@ -309,67 +324,6 @@ void            P_SpawnDoorCloseIn30(sector_t *sec);
 
 void            P_SpawnDoorRaiseIn5Mins(sector_t *sec, int secnum);
 
-#if 0                              // UNUSED
-//
-//      Sliding doors...
-//
-typedef enum {
-    sd_opening,
-    sd_waiting,
-    sd_closing
-} sd_e;
-
-typedef enum {
-    sdt_openOnly,
-    sdt_closeOnly,
-    sdt_openAndClose
-} sdt_e;
-
-typedef struct {
-    thinker_t       thinker;
-    sdt_e           type;
-    line_t         *line;
-    int             frame;
-    int             whichDoorIndex;
-    int             timer;
-    sector_t       *frontsector;
-    sector_t       *backsector;
-    sd_e            status;
-
-} slidedoor_t;
-
-typedef struct {
-    char            frontFrame1[9];
-    char            frontFrame2[9];
-    char            frontFrame3[9];
-    char            frontFrame4[9];
-    char            backFrame1[9];
-    char            backFrame2[9];
-    char            backFrame3[9];
-    char            backFrame4[9];
-
-} slidename_t;
-
-typedef struct {
-    int             frontFrames[4];
-    int             backFrames[4];
-
-} slideframe_t;
-
-// how many frames of animation
-#define SNUMFRAMES      4
-
-#define SDOORWAIT       35*3
-#define SWAITTICS       4
-
-// how many diff. types of anims
-#define MAXSLIDEDOORS   5
-
-void            P_InitSlidingDoorFrames(void);
-
-void            EV_SlidingDoor(line_t *line, mobj_t *thing);
-#endif
-
 //
 // P_CEILNG
 //
@@ -383,6 +337,7 @@ typedef enum {
 } ceiling_e;
 
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     ceiling_e       type;
     sector_t       *sector;
@@ -397,6 +352,8 @@ typedef struct {
     // ID
     int             tag;
     int             olddirection;
+    /* You can safely add new members after here */
+
     struct ceilinglist *list;   // jff 2/22/98 copied from killough's plats
 } ceiling_t;
 
@@ -466,6 +423,7 @@ typedef enum {
 } stair_e;
 
 typedef struct {
+    /* Do NOT change these members in any way */
     thinker_t       thinker;
     floor_e         type;
     boolean         crush;
@@ -475,8 +433,15 @@ typedef struct {
     short           texture;
     fixed_t         floordestheight;
     fixed_t         speed;
+    /* You can safely add new members after here */
 
 } floormove_t;
+
+// size of a floor_t (num of bytes) for backward save game compatibility - DJS
+#define SIZE_OF_FLOOR (sizeof(thinker_t) + sizeof(sector_t*)     \
+                       + sizeof(floor_e) + sizeof(boolean)       \
+                       + (sizeof(int)*2) + sizeof(short)         \
+                       + (sizeof(fixed_t)*2))
 
 #define FLOORSPEED      FRACUNIT
 
