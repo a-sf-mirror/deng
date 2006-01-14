@@ -40,8 +40,10 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int     switchlist[MAXSWITCHES * 2];
-int     numswitches;
+static int *switchlist;
+static int max_numswitches;
+static int numswitches;
+
 button_t buttonlist[MAXBUTTONS];
 
 switchlist_t alphSwitchList[] = {
@@ -117,8 +119,14 @@ void P_InitSwitchList(void)
             episode = 3;
     }
 
-    for(index = 0, i = 0; i < MAXSWITCHES; i++)
+    for(index = 0, i = 0;; i++)
     {
+        if(index+1 >= max_numswitches)
+        {
+            switchlist = realloc(switchlist, sizeof *switchlist *
+            (max_numswitches = max_numswitches ? max_numswitches*2 : 8));
+        }
+
         if(!alphSwitchList[i].episode)
         {
             numswitches = index / 2;
@@ -128,18 +136,6 @@ void P_InitSwitchList(void)
 
         if(alphSwitchList[i].episode <= episode)
         {
-#if 0                           // UNUSED - debug?
-            int     value;
-
-            if(R_CheckTextureNumForName(alphSwitchList[i].name1) < 0)
-            {
-                Con_Error("Can't find switch texture '%s'!",
-                          alphSwitchList[i].name1);
-                continue;
-            }
-
-            value = R_TextureNumForName(alphSwitchList[i].name1);
-#endif
             switchlist[index++] = R_TextureNumForName(alphSwitchList[i].name1);
             switchlist[index++] = R_TextureNumForName(alphSwitchList[i].name2);
         }
