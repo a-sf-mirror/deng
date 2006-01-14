@@ -97,6 +97,7 @@ enum {
     tc_flash,
     tc_strobe,
     tc_glow,
+    tc_flicker,
     tc_endspecials
 } specials_e;
 
@@ -1536,6 +1537,39 @@ void SV_ReadGlow(glow_t* glow)
     glow->thinker.function = T_Glow;
 }
 
+void SV_WriteFlicker(fireflicker_t* flicker)
+{
+    SV_WriteByte(tc_flicker);
+
+    // Note we don't bother to save a byte to tell if the function
+    // is present as we ALWAYS add one when loading.
+
+    SV_WriteLong(P_ToIndex(DMU_SECTOR, flicker->sector));
+
+    SV_WriteLong(flicker->maxlight);
+    SV_WriteLong(flicker->minlight);
+}
+
+/*
+ * T_FireFlicker was added to save games in ver5,
+ * therefore we don't have an old format to support
+ */
+void SV_ReadFlicker(fireflicker_t* flicker)
+{
+    sector_t* sector;
+
+    // Note: the thinker class byte has already been read.
+    sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+
+    if(!sector)
+        Con_Error("tc_flicker: bad sector number\n");
+
+    flicker->sector = sector;
+
+    flicker->maxlight = SV_ReadLong();
+    flicker->minlight = SV_ReadLong();
+}
+
 /*
  * Things to handle:
  *
@@ -1546,6 +1580,7 @@ void SV_ReadGlow(glow_t* glow)
  * T_StrobeFlash, (strobe_t: sector_t *),
  * T_Glow, (glow_t: sector_t *),
  * T_PlatRaise, (plat_t: sector_t *), - active list
+ * T_FireFlicker (flicker_t: sector_t *) - Added in Ver5 DJS
  */
 void P_ArchiveSpecials(void)
 {
@@ -1557,6 +1592,7 @@ void P_ArchiveSpecials(void)
     lightflash_t flash;
     strobe_t strobe;
     glow_t  glow;
+    fireflicker_t flicker;
 
     // save off the current thinkers
     for(th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -1632,6 +1668,14 @@ void P_ArchiveSpecials(void)
             SV_WriteGlow(&glow);
             continue;
         }
+
+        // Added in Ver5 - DJS
+        if(th->function == T_FireFlicker)
+        {
+            memcpy(&flicker, th, SIZE_OF_FIREFLICKER);
+            SV_WriteFlicker(&flicker);
+            continue;
+        }
     }
 
     // add a terminating marker
@@ -1648,6 +1692,7 @@ void P_UnArchiveSpecials(void)
     lightflash_t *flash;
     strobe_t *strobe;
     glow_t *glow;
+    fireflicker_t *flicker;
 
     // read in saved thinkers
     while(1)
@@ -1715,6 +1760,15 @@ void P_UnArchiveSpecials(void)
             SV_ReadGlow(glow);
 
             P_AddThinker(&glow->thinker);
+            break;
+
+        // Added in Ver5 - DJS
+        case tc_flicker:
+            flicker = Z_Malloc(sizeof(*flicker), PU_LEVEL, NULL);
+
+            SV_ReadFlicker(flicker);
+
+            P_AddThinker(&flicker->thinker);
             break;
 
         default:
