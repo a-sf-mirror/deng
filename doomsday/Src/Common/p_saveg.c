@@ -137,6 +137,8 @@ static saveheader_t hdr;
 static mobj_t *thing_archive[MAX_ARCHIVED_THINGS];
 static int SaveToRealPlayer[MAXPLAYERS];
 
+static int numSoundTargets = 0;
+
 // CODE --------------------------------------------------------------------
 
 /*
@@ -668,6 +670,10 @@ void SV_WriteSector(sector_t *sec)
     {
         SV_WriteXGSector(sec);
     }
+
+    // Count the number of sound targets
+    if(xsec->soundtarget)
+        numSoundTargets++;
 }
 
 /*
@@ -751,11 +757,11 @@ void SV_ReadSector(sector_t *sec)
     }
     else
     {
-        // FIXME?
-        // Why are these initialized here and only for Ver1 save games?
         xsec->specialdata = 0;
-        xsec->soundtarget = 0;
     }
+
+    // We'll restore the sound targets latter on
+    xsec->soundtarget = 0;
 }
 
 void SV_WriteLine(line_t *li)
@@ -1804,6 +1810,49 @@ void P_UnArchiveBrain(void)
 }
 #endif
 
+void P_ArchiveSoundTargets(void)
+{
+    int     i;
+
+    // Write the total number
+    SV_WriteLong(numSoundTargets);
+
+    // Write the mobj references using the mobj archive.
+    for(i = 0; i < numsectors; i++)
+    {
+        if(xsectors[i].soundtarget)
+        {
+            SV_WriteLong(i);
+            SV_WriteShort(SV_ThingArchiveNum(xsectors[i].soundtarget));
+        }
+    }
+}
+
+void P_UnArchiveSoundTargets(void)
+{
+    int     i;
+    int     secid;
+    int     numsoundtargets;
+
+    // Sound Target data was introduced in ver 5
+    if(hdr.version < 5)
+        return;
+
+    // Read the number of targets
+    numsoundtargets = SV_ReadLong();
+
+    // Read in the sound targets.
+    for(i = 0; i < numsoundtargets; i++)
+    {
+        secid = SV_ReadLong();
+
+        if(secid > numsectors)
+            Con_Error("P_UnArchiveSoundTargets: bad sector number\n");
+
+        xsectors[secid].soundtarget = SV_GetArchiveThing(SV_ReadShort());
+    }
+}
+
 /*
  * Initialize the savegame directories. If the directories do not
  * exist, they are created.
@@ -1892,6 +1941,10 @@ int SV_SaveGame(char *filename, char *description)
     NetSv_SaveGame(hdr.gameid);
 
     P_ArchivePlayers();
+
+    // Clear the sound target count (determined while saving sectors).
+    numSoundTargets = 0;
+
     P_ArchiveWorld();
     P_ArchiveThinkers();
     P_ArchiveSpecials();
@@ -1900,6 +1953,10 @@ int SV_SaveGame(char *filename, char *description)
     // Doom saves the brain data, too. (It's a part of the world.)
     P_ArchiveBrain();
 #endif
+
+    // Save the sound target data (prevents bug where monsters who have
+    // been alerted go back to sleep when loading a save game).
+    P_ArchiveSoundTargets();
 
     // To be absolutely sure...
     SV_WriteByte(CONSISTENCY);
@@ -2007,6 +2064,10 @@ int SV_LoadGame(char *filename)
     // Doom saves the brain data, too. (It's a part of the world.)
     P_UnArchiveBrain();
 #endif
+
+    // Read the sound target data (prevents bug where monsters who have
+    // been alerted go back to sleep when loading a save game).
+    P_UnArchiveSoundTargets();
 
     // Check consistency.
     if(SV_ReadByte() != CONSISTENCY)
