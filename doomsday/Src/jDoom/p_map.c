@@ -264,17 +264,17 @@ static boolean PIT_CrossLine (line_t* ld, void *data)
     if(!(P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_TWOSIDED) ||
       (P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & (ML_BLOCKING | ML_BLOCKMONSTERS)))
     {
-#ifdef TODO_MAP_UPDATE
-        if(!(tmbbox[BOXLEFT] > ld->bbox[BOXRIGHT] ||
-             tmbbox[BOXRIGHT] < ld->bbox[BOXLEFT] ||
-             tmbbox[BOXTOP] < ld->bbox[BOXBOTTOM] ||
-             tmbbox[BOXBOTTOM] > ld->bbox[BOXTOP]))
+        fixed_t* bbox = P_GetPtrp(DMU_LINE, ld, DMU_BOUNDING_BOX);
+
+        if(!(tmbbox[BOXLEFT] > bbox[BOXRIGHT] ||
+             tmbbox[BOXRIGHT] < bbox[BOXLEFT] ||
+             tmbbox[BOXTOP] < bbox[BOXBOTTOM] ||
+             tmbbox[BOXBOTTOM] > bbox[BOXTOP]))
         {
-            if(P_PointOnLineSide(pe_x,pe_y,ld) != P_PointOnLineSide(ls_x,ls_y,ld))
+            if(P_PointOnLineSide(pe_x, pe_y, ld) != P_PointOnLineSide(ls_x, ls_y, ld))
                 // line blocks trajectory
                 return(false);
         }
-#endif
     }
 
     // line doesn't block trajectory
@@ -288,6 +288,7 @@ static boolean PIT_CrossLine (line_t* ld, void *data)
 static int untouched(line_t *ld)
 {
     fixed_t x, y, box[4];
+    fixed_t* bbox = P_GetPtrp(DMU_LINE, ld, DMU_BOUNDING_BOX);
 
     /*return (box[BOXRIGHT] =
         (x = tmthing->x) + tmthing->radius) <= ld->bbox[BOXLEFT] ||
@@ -296,15 +297,14 @@ static int untouched(line_t *ld)
          (y = tmthing->y) + tmthing->radius) <= ld->bbox[BOXBOTTOM] ||
         (box[BOXBOTTOM] = y - tmthing->radius) >= ld->bbox[BOXTOP] ||
         P_BoxOnLineSide(box, ld) != -1; */
-#ifdef TODO_MAP_UPDATE
-    if(((box[BOXRIGHT] = (x = tmthing->x) + tmthing->radius) <= ld->bbox[BOXLEFT]) ||
-       ((box[BOXLEFT] = x - tmthing->radius) >= ld->bbox[BOXRIGHT]) ||
-       ((box[BOXTOP] = (y = tmthing->y) + tmthing->radius) <= ld->bbox[BOXBOTTOM]) ||
-       ((box[BOXBOTTOM] = y - tmthing->radius) >= ld->bbox[BOXTOP]) ||
+
+    if(((box[BOXRIGHT] = (x = tmthing->x) + tmthing->radius) <= bbox[BOXLEFT]) ||
+       ((box[BOXLEFT] = x - tmthing->radius) >= bbox[BOXRIGHT]) ||
+       ((box[BOXTOP] = (y = tmthing->y) + tmthing->radius) <= bbox[BOXBOTTOM]) ||
+       ((box[BOXBOTTOM] = y - tmthing->radius) >= bbox[BOXTOP]) ||
        P_BoxOnLineSide(box, ld) != -1)
         return true;
     else
-#endif
         return false;
 }
 
@@ -315,15 +315,14 @@ boolean PIT_CheckLine(line_t *ld, void *data)
 {
     fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
     fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
+    fixed_t* bbox = P_GetPtrp(DMU_LINE, ld, DMU_BOUNDING_BOX);
     xline_t *xline = &xlines[P_ToIndex(DMU_LINE, ld)];
 
-#ifdef TODO_MAP_UPDATE
-    if(tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-       tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-       tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
-       tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+    if(tmbbox[BOXRIGHT] <= bbox[BOXLEFT] ||
+       tmbbox[BOXLEFT] >= bbox[BOXRIGHT] ||
+       tmbbox[BOXTOP] <= bbox[BOXBOTTOM] ||
+       tmbbox[BOXBOTTOM] >= bbox[BOXTOP])
         return true;
-#endif
 
     if(P_BoxOnLineSide(tmbbox, ld) != -1)
         return true;
@@ -848,19 +847,17 @@ void P_HitSlideLine(line_t *ld)
     fixed_t movelen;
     fixed_t newlen;
 
-#ifdef TODO_MAP_UPDATE
-    if(ld->slopetype == ST_HORIZONTAL)
+    if(P_GetIntp(DMU_LINE, ld, DMU_SLOPE_TYPE) == ST_HORIZONTAL)
     {
         tmymove = 0;
         return;
     }
 
-    if(ld->slopetype == ST_VERTICAL)
+    if(P_GetIntp(DMU_LINE, ld, DMU_SLOPE_TYPE) == ST_VERTICAL)
     {
         tmxmove = 0;
         return;
     }
-#endif
 
     side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
