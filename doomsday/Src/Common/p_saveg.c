@@ -416,11 +416,17 @@ void SV_WriteMobj(mobj_t *mobj)
     // Version.
     // 4: Added byte 'translucency'
     // 5: Added byte 'vistarget'
+    // 5: Added tracer in jDoom
     SV_WriteByte(5);
 
     // A version 2 features: archive number and target.
     SV_WriteShort(SV_ThingArchiveNum(mobj));
     SV_WriteShort(SV_ThingArchiveNum(mo.target));
+
+#if __JDOOM__
+    // Ver 5: Save tracer (fixes Archvile, Revenant bug)
+    SV_WriteShort(SV_ThingArchiveNum(mo.tracer));
+#endif
 
     // Info for drawing: position.
     SV_WriteLong(mo.x);
@@ -508,6 +514,10 @@ void SV_ReadMobj(mobj_t *mo)
         SV_SetArchiveThing(mo, SV_ReadShort());
         // The reference will be updated after all mobjs are loaded.
         mo->target = (mobj_t *) (int) SV_ReadShort();
+
+        // Ver 5 saves the tracer too. Updated after all mobjs are loaded.
+        if(ver >= 5)
+            mo->tracer = (mobj_t *) (int) SV_ReadShort();
     }
 
     // Info for drawing: position.
@@ -1106,6 +1116,10 @@ void P_UnArchiveThinkers(void)
         // Update target.
         mobj = (mobj_t *) currentthinker;
         mobj->target = SV_GetArchiveThing((int) mobj->target);
+#if __JDOOM__
+        // Update tracer.
+        mobj->tracer = SV_GetArchiveThing((int) mobj->tracer);
+#endif
     }
 
     // The activator mobjs must be set.
