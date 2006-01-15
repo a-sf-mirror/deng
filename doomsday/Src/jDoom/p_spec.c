@@ -42,11 +42,7 @@
 
 // FIXME: Remove fixed limits
 
-#define MAXANIMS        32
 #define MAXLINEANIMS    64 // Animating line specials
-
-// Limit number of sectors tested for adjoining height differences
-#define MAX_ADJOINING_SECTORS   20
 
 // TYPES -------------------------------------------------------------------
 
@@ -250,21 +246,25 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 }
 
 /*
- * FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS
- * Note: this should be doable w/o a fixed array.
+ * Passed a sector and a floor height, returns the fixed point value
+ * of the smallest floor height in a surrounding sector larger than
+ * the floor height passed. If no such height exists the floorheight
+ * passed is returned.
+ *
+ * DJS - Rewritten using Lee Killough's algorithm for avoiding the
+ *       the fixed array.
  */
 fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 {
     int     i;
-    int     h;
-    int     min;
+    int     lineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
     line_t *check;
     sector_t *other;
     fixed_t height = currentheight;
+    fixed_t otherHeight;
+    fixed_t anotherHeight;
 
-    fixed_t heightlist[MAX_ADJOINING_SECTORS];
-
-    for(i = 0, h = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < lineCount; i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
@@ -272,30 +272,29 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
         if(!other)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) > height)
-            heightlist[h++] =
-                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+        otherHeight = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
 
-        // Check for overflow. Exit.
-        if(h >= MAX_ADJOINING_SECTORS)
+        if(otherHeight > currentheight)
         {
-            fprintf(stderr, "Sector with more than 20 adjoining sectors\n");
-            break;
+            while(++i < lineCount)
+            {
+                check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+                other = getNextSector(check, sec);
+
+                if(other)
+                {
+                    anotherHeight = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+
+                    if(anotherHeight < otherHeight && anotherHeight > currentheight)
+                        otherHeight = anotherHeight;
+                }
+            }
+
+            return otherHeight;
         }
     }
 
-    // Find lowest height in list
-    if(!h)
-        return currentheight;
-
-    min = heightlist[0];
-
-    // Range checking?
-    for(i = 1; i < h; i++)
-        if(heightlist[i] < min)
-            min = heightlist[i];
-
-    return min;
+    return currentheight;
 }
 
 /*
