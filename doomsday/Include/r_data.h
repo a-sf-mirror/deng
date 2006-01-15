@@ -196,8 +196,8 @@ typedef struct {
     fixed_t         oldfloor[2], oldceil[2];
     int             oldlightlevel;
     byte            oldrgb[3];
-    byte            oldfloorrgb[3];
-    byte            oldceilingrgb[3];
+    byte            oldfloorrgb[3], oldceilingrgb[3];
+    short           oldfloorpic, oldceilingpic;
     float           visflooroffset, visceiloffset;
     int             addspritecount;     // frame number of last R_AddSprites
     sector_t       *lightsource;        // Main sky light source

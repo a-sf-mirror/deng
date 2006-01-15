@@ -274,6 +274,7 @@ uidata_slider_t sld_light_ambient =
 uidata_slider_t sld_light_compression =
     { -100, 100, 0, 1, false, "rend-light-compression", "Disabled" };
 uidata_slider_t sld_glow_height = { 0, 1024, 0, 1, false, "rend-glow-height" };
+uidata_slider_t sld_glow_scale = { .1f, 10, 0, 0.1f, true, "rend-glow-scale" };
 uidata_slider_t sld_fov = { 1, 179, 0, .01f, true, "rend-camera-fov" };
 uidata_slider_t sld_sky_distance =
     { 1, 10000, 0, 10, true, "rend-sky-distance" };
@@ -448,12 +449,14 @@ ui_object_t ob_panel[] =
     { UI_BUTTON2,   0,  0,              680, 730, 70, 55,   "rend-glow", UIButton_Drawer, UIButton_Responder, 0, CP_CvarButton },
     { UI_TEXT,      0,  0,              300, 790, 0, 55,    "Floor/ceiling glow on walls", UIText_Drawer },
     { UI_BUTTON2,   0,  0,              680, 790, 70, 55,   "rend-glow-wall", UIButton_Drawer, UIButton_Responder, 0, CP_CvarButton },
-    { UI_TEXT,      0,  0,              300, 850, 0, 55,    "Floor/ceiling glow height", UIText_Drawer },
+    { UI_TEXT,      0,  0,              300, 850, 0, 55,    "Maximum floor/ceiling glow height", UIText_Drawer },
     { UI_SLIDER,    0,  0,              680, 850, 300, 55,  "",         UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_glow_height },
-    { UI_TEXT,      0,  0,              300, 910, 0, 55,    "Glow brightness in fog", UIText_Drawer },
-    { UI_SLIDER,    0,  0,              680, 910, 300, 55,  "",         UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_light_fog_bright },
-    { UI_TEXT,      0,  0,              300, 970, 0, 55,    "Enable decorations", UIText_Drawer },
-    { UI_BUTTON2,   0,  0,              680, 970, 70, 55,   "rend-light-decor", UIButton_Drawer, UIButton_Responder, 0, CP_CvarButton },
+    { UI_TEXT,      0,  0,              300, 910, 0, 55,    "Floor/ceiling glow height factor", UIText_Drawer },
+    { UI_SLIDER,    0,  0,              680, 910, 300, 55,  "",         UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_glow_scale },
+    { UI_TEXT,      0,  0,              300, 970, 0, 55,    "Glow brightness in fog", UIText_Drawer },
+    { UI_SLIDER,    0,  0,              680, 970, 300, 55,  "",         UISlider_Drawer, UISlider_Responder, UISlider_Ticker, CP_CvarSlider, &sld_light_fog_bright },
+    { UI_TEXT,      0,  0,              300, 1030, 0, 55,    "Enable decorations", UIText_Drawer },
+    { UI_BUTTON2,   0,  0,              680, 1030, 70, 55,   "rend-light-decor", UIButton_Drawer, UIButton_Responder, 0, CP_CvarButton },
 
     { UI_META,      7 },
     { UI_TEXT,      0,  0,              280, 0, 0, 50,      "Graphics Options: Halos", UIText_Drawer },

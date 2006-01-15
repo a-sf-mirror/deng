@@ -64,6 +64,8 @@ typedef struct vissprite_s {
             boolean         hasglow;
             byte            floorglow[3];   // Floor glow color.
             byte            ceilglow[3];    // Ceiling glow color.
+            float           floorglowamount;
+            float           ceilglowamount;
             byte            rgb[3]; // Sector light color.
             int             lightlevel;
             float           alpha;

@@ -3265,8 +3265,10 @@ static void registerVariables(void)
     C_VAR_INT("rend-glow", &r_texglow, 0, 0, 1, "1=Enable glowing textures.");
     C_VAR_INT("rend-glow-wall", &useWallGlow, 0, 0, 1,
               "1=Render glow on walls.");
-    C_VAR_INT("rend-glow-height", &glowHeight, 0, 0, 1024,
-              "Height of wall glow.");
+    C_VAR_INT("rend-glow-height", &glowHeightMax, 0, 0, 1024,
+              "Max height of wall glow (default: 100).");
+    C_VAR_FLOAT("rend-glow-scale", &glowHeightFactor, 0, 0.1f, 10,
+                "A multiplier for glow height (default: 1).");
     C_VAR_FLOAT("rend-glow-fog-bright", &glowFogBright, 0, 0, 1,
                 "Brightness of wall glow when fog is enabled.");
     // * Render-Halo

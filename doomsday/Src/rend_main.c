@@ -1688,12 +1688,6 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
             plane->flags |= RPF_SKY_MASK;
         else
             plane->flags &= ~RPF_SKY_MASK;
-
-        // A glowing texture?
-        if(R_FlatFlags(planepic) & TXF_GLOW)
-            plane->flags |= RPF_GLOW;
-        else
-            plane->flags &= ~RPF_GLOW;
     }
     poly.flags = plane->flags;
 

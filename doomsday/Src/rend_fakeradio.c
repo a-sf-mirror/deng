@@ -136,9 +136,12 @@ void Rend_RadioInitForSector(sector_t *sector)
  * Returns true if the specified flat is non-glowing, i.e. not glowing
  * or a sky.
  */
-boolean Rend_RadioNonGlowingFlat(int flatPic)
+boolean Rend_RadioNonGlowingFlat(sector_t* sector, int plane)
 {
-    return !(flatPic == skyflatnum || R_FlatFlags(flatPic) & TXF_GLOW);
+    if(plane == PLN_FLOOR)
+        return !(sector->floorpic == skyflatnum || sector->floorglow);
+    else
+        return !(sector->ceilingpic == skyflatnum || sector->ceilingglow);
 }
 
 /*
@@ -643,7 +646,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
     size = shadowSize + Rend_RadioLongWallBonus(ceilSpan->length);
     limit = fCeil - size;
     if((q->top > limit && q->bottom < fCeil) &&
-       Rend_RadioNonGlowingFlat(frontSector->ceilingpic))
+       Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
     {
         Rend_RadioTexCoordY(q, size);
         // Corners without a neighbour backsector
@@ -809,7 +812,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
     size = shadowSize + Rend_RadioLongWallBonus(floorSpan->length) / 2;
     limit = fFloor + size;
     if((q->bottom < limit && q->top > fFloor) &&
-       Rend_RadioNonGlowingFlat(frontSector->floorpic))
+       Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR))
     {
         Rend_RadioTexCoordY(q, -size);
         // Corners without a neighbour backsector
@@ -968,8 +971,8 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
 
     // Walls with glowing floor & ceiling get no side shadows.
     // Is there anything better we can do?
-    if(!(Rend_RadioNonGlowingFlat(frontSector->floorpic)) &&
-       !(Rend_RadioNonGlowingFlat(frontSector->ceilingpic)))
+    if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR)) &&
+       !(Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING)))
         return;
 
 #if 1
@@ -1028,12 +1031,12 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
         {
             if(bFloor > fFloor && bCeil < fCeil)
             {
-                if(Rend_RadioNonGlowingFlat(frontSector->floorpic) &&
-                   Rend_RadioNonGlowingFlat(frontSector->ceilingpic))
+                if(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR) &&
+                   Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
                 {
                     texture = LST_RADIO_CC;
                 }
-                else if(!(Rend_RadioNonGlowingFlat(frontSector->floorpic)))
+                else if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR)))
                 {
                     q->texoffy = q->bottom - fCeil;
                     q->tex.height = -(fCeil - fFloor);
@@ -1044,12 +1047,12 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
             }
             else if(bFloor > fFloor)
             {
-                if(Rend_RadioNonGlowingFlat(frontSector->floorpic) &&
-                   Rend_RadioNonGlowingFlat(frontSector->ceilingpic))
+                if(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR) &&
+                   Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
                 {
                     texture = LST_RADIO_CC;
                 }
-                else if(!(Rend_RadioNonGlowingFlat(frontSector->floorpic)))
+                else if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR)))
                 {
                     q->texoffy = q->bottom - fCeil;
                     q->tex.height = -(fCeil - fFloor);
@@ -1060,12 +1063,12 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
             }
             else if(bCeil < fCeil)
             {
-                if(Rend_RadioNonGlowingFlat(frontSector->floorpic) &&
-                   Rend_RadioNonGlowingFlat(frontSector->ceilingpic))
+                if(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR) &&
+                   Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
                 {
                     texture = LST_RADIO_CC;
                 }
-                else if(!(Rend_RadioNonGlowingFlat(frontSector->floorpic)))
+                else if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR)))
                 {
                     q->texoffy = q->bottom - fCeil;
                     q->tex.height = -(fCeil - fFloor);
@@ -1077,12 +1080,12 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
         }
         else
         {
-            if(!(Rend_RadioNonGlowingFlat(frontSector->floorpic)))
+            if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR)))
             {
                 Rend_RadioTexCoordY(q, -(fCeil - fFloor));
                 texture = LST_RADIO_CO;
             }
-            else if(!(Rend_RadioNonGlowingFlat(frontSector->ceilingpic)))
+            else if(!(Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING)))
                 texture = LST_RADIO_CO;
             else
                 texture = LST_RADIO_CC;
@@ -1295,7 +1298,7 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
         {
             // Glowing surfaces shouldn't have shadows on them.
             if(!Rend_RadioNonGlowingFlat
-               (surface ? sector->floorpic : sector->ceilingpic))
+               (sector, surface ? PLN_FLOOR : PLN_CEILING))
                 continue;
 
             open =

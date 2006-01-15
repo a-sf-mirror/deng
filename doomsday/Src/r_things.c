@@ -958,23 +958,25 @@ void R_ProjectSprite(mobj_t *thing)
     vis->data.mo.hasglow = false;
     if(useWallGlow)
     {
-        if(R_FlatFlags(sect->ceilingpic) & TXF_GLOW)
+        if(sect->ceilingglow)
         {
-            GL_GetFlatColor(sect->ceilingpic, vis->data.mo.ceilglow);
+            memcpy(vis->data.mo.ceilglow, sect->ceilingglowrgb, 3);
             for(i = 0; i < 3; i++)
                 vis->data.mo.ceilglow[i] *= dlFactor;
             vis->data.mo.hasglow = true;
+            vis->data.mo.ceilglowamount = sect->ceilingglow;
         }
         else
         {
             memset(vis->data.mo.ceilglow, 0, sizeof(vis->data.mo.ceilglow));
         }
-        if(R_FlatFlags(sect->floorpic) & TXF_GLOW)
+        if(sect->floorglow)
         {
-            GL_GetFlatColor(sect->floorpic, vis->data.mo.floorglow);
+            memcpy(vis->data.mo.floorglow, sect->floorglowrgb, 3);
             for(i = 0; i < 3; i++)
                 vis->data.mo.floorglow[i] *= dlFactor;
             vis->data.mo.hasglow = true;
+            vis->data.mo.floorglowamount = sect->floorglow;
         }
         else
         {

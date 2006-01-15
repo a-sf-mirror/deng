@@ -1049,33 +1049,56 @@ void Rend_RenderModel(vissprite_t * spr)
         // Plane glow?
         if(spr->data.mo.hasglow)
         {
-            if(spr->data.mo.ceilglow[0] || spr->data.mo.ceilglow[1] ||
-               spr->data.mo.ceilglow[2])
+            float glowHeight;
+
+            // Floor glow
+            glowHeight = (MAX_GLOWHEIGHT * spr->data.mo.floorglowamount)
+                          * glowHeightFactor;
+            // Don't make too small or too large glows.
+            if(glowHeight > 2)
             {
-                light = lights + numLights++;
-                light->used = true;
-                Mod_GlowLightSetup(light);
-                memcpy(light->worldVector, &ceilingLight,
-                       sizeof(ceilingLight));
-                dist =
-                    1 - (spr->data.mo.secceil -
-                         FIX2FLT(spr->data.mo.gzt)) / glowHeight;
-                scaleFloatRgb(light->color, spr->data.mo.ceilglow, dist);
-                scaleAmbientRgb(ambientColor, spr->data.mo.ceilglow, dist / 3);
+                if(glowHeight > glowHeightMax)
+                    glowHeight = glowHeightMax;
+
+                if(spr->data.mo.ceilglow[0] || spr->data.mo.ceilglow[1] ||
+                   spr->data.mo.ceilglow[2])
+                {
+                    light = lights + numLights++;
+                    light->used = true;
+                    Mod_GlowLightSetup(light);
+                    memcpy(light->worldVector, &ceilingLight,
+                           sizeof(ceilingLight));
+                    dist =
+                        1 - (spr->data.mo.secceil -
+                             FIX2FLT(spr->data.mo.gzt)) / glowHeight;
+                    scaleFloatRgb(light->color, spr->data.mo.ceilglow, dist);
+                    scaleAmbientRgb(ambientColor, spr->data.mo.ceilglow, dist / 3);
+                }
             }
-            if(spr->data.mo.floorglow[0] || spr->data.mo.floorglow[1] ||
-               spr->data.mo.floorglow[2])
+
+            // Ceiling glow
+            glowHeight = (MAX_GLOWHEIGHT * spr->data.mo.ceilglowamount)
+                          * glowHeightFactor;
+            // Don't make too small or too large glows.
+            if(glowHeight > 2)
             {
-                light = lights + numLights++;
-                light->used = true;
-                Mod_GlowLightSetup(light);
-                memcpy(light->worldVector, &floorLight, sizeof(floorLight));
-                dist =
-                    1 - (FIX2FLT(spr->data.mo.gz) -
-                         spr->data.mo.secfloor) / glowHeight;
-                scaleFloatRgb(light->color, spr->data.mo.floorglow, dist);
-                scaleAmbientRgb(ambientColor, spr->data.mo.floorglow,
-                                dist / 3);
+                if(glowHeight > glowHeightMax)
+                    glowHeight = glowHeightMax;
+
+                if(spr->data.mo.floorglow[0] || spr->data.mo.floorglow[1] ||
+                   spr->data.mo.floorglow[2])
+                {
+                    light = lights + numLights++;
+                    light->used = true;
+                    Mod_GlowLightSetup(light);
+                    memcpy(light->worldVector, &floorLight, sizeof(floorLight));
+                    dist =
+                        1 - (FIX2FLT(spr->data.mo.gz) -
+                             spr->data.mo.secfloor) / glowHeight;
+                    scaleFloatRgb(light->color, spr->data.mo.floorglow, dist);
+                    scaleAmbientRgb(ambientColor, spr->data.mo.floorglow,
+                                    dist / 3);
+                }
             }
         }
     }

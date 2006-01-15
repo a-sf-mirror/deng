@@ -1648,7 +1648,8 @@ sector_t *R_GetLinkedSector(sector_t *startsec, boolean getfloor)
  */
 void R_UpdatePlanes(void)
 {
-    int     i;
+    int     i, j;
+    int setFloorGlow, setCeilingGlow;
     sector_t *sec;
     sectorinfo_t *sin;
 
@@ -1678,6 +1679,9 @@ void R_UpdatePlanes(void)
         }
 
         // Any changes to surface colours?
+        // TODO: when surface colours are intergrated with the
+        // bias lighting model we will need to recalculate the
+        // vertex colours when they are changed.
         if(sec->floorrgb[0] != sin->oldfloorrgb[0] ||
            sec->floorrgb[1] != sin->oldfloorrgb[1] ||
            sec->floorrgb[2] != sin->oldfloorrgb[2] ||
@@ -1692,6 +1696,137 @@ void R_UpdatePlanes(void)
         else
         {
             sin->flags &= ~SIF_PLANE_COLOR_CHANGED;
+        }
+
+        // Any change to the floor texture or glow properties?
+        // TODO: Implement Decoration{ Glow{}} definitions.
+        setFloorGlow = 0;
+        // The order of these tests is important.
+        if(sec->floorpic != sin->oldfloorpic)
+        {
+            // Check if the new texture is declared as glowing.
+            // NOTE: Currently, we always discard the glow settings of the
+            //       previous flat after a texture change.
+
+            // Now that glows are properties of the sector this does not
+            // need to be the case. If we expose these properties via DMU
+            // they could be changed at any time. However in order to support
+            // flats that are declared as glowing we would need some method
+            // of telling Doomsday IF we want to inherit these properties when
+            // the plane flat changes...
+            if(R_FlatFlags(sec->floorpic) & TXF_GLOW)
+            {
+                // The new texture is glowing.
+
+                // Always use a height factor of 1 (0 - 1.0f)
+                sec->floorglow = 1;
+
+                // Always use the average colour.
+                GL_GetFlatColor(sec->floorpic, sec->floorglowrgb);
+
+                // Do we need to update the plane glow flags?
+                if(!(R_FlatFlags(sin->oldfloorpic) & TXF_GLOW))
+                    setFloorGlow = 1; // Turn the subsector plane glow flags on
+            }
+            else if(R_FlatFlags(sin->oldfloorpic) & TXF_GLOW)
+            {
+                // The old texture was glowing but the new one is not.
+                // Clear the glow properties for this plane.
+                sec->floorglow = 0;
+                memset(sec->floorglowrgb, 0, 3);
+
+                setFloorGlow = -1; // Turn the subsector plane glow flags off
+            }
+
+            sin->oldfloorpic = sec->floorpic;
+        }
+        else if((R_FlatFlags(sec->floorpic) & TXF_GLOW) != (sec->floorglow > 0))
+        {
+            // The glow property of the current flat been changed
+            // since last update.
+
+            // NOTE:
+            // This approach is hardly optimal but since flats will
+            // rarely/if ever have this property changed during normal
+            // gameplay (the RENDER_GLOWFLATS text string is depreciated and
+            // the only time this property might change is after a console
+            // RESET) so it doesn't matter.
+            if(sec->floorglow)
+            {
+                // The current flat is no longer glowing
+                sec->floorglow = 0;
+                memset(sec->floorglowrgb, 0, 3);
+                setFloorGlow = -1; // Turn the subsector plane glow flags off
+            }
+            else
+            {
+                // The current flat is now glowing
+                sec->floorglow = 1;
+                GL_GetFlatColor(sec->floorpic, sec->floorglowrgb);
+                setFloorGlow = 1; // Turn the subsector plane glow flags on
+            }
+        }
+
+        // Same as above but for ceilings
+        setCeilingGlow = 0;
+        if(sec->ceilingpic != sin->oldceilingpic)
+        {
+            if(R_FlatFlags(sec->ceilingpic) & TXF_GLOW)
+            {
+                sec->ceilingglow = 1;
+                GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
+                if(!(R_FlatFlags(sin->oldceilingpic) & TXF_GLOW))
+                    setCeilingGlow = 1;
+            }
+            else
+            {
+                sec->ceilingglow = 0;
+                memset(sec->ceilingglowrgb, 0, 3);
+                setCeilingGlow = -1;
+            }
+            sin->oldceilingpic = sec->ceilingpic;
+        }
+        else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) != (sec->ceilingglow > 0))
+        {
+            if(sec->ceilingglow)
+            {
+                sec->ceilingglow = 0;
+                memset(sec->ceilingglowrgb, 0, 3);
+                setCeilingGlow = -1;
+            }
+            else
+            {
+                sec->ceilingglow = 1;
+                GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
+                setCeilingGlow = 1;
+            }
+        }
+
+        // Do we need to update the subsector plane glow flags?
+        if(setFloorGlow != 0 || setCeilingGlow != 0)
+        {
+            // FIXME: Find a better way to find the subsectors of a sector.
+            for(j = 0; j < numsubsectors; ++j)
+            {
+                subsector_t *sub = SUBSECTOR_PTR(j);
+                subsectorinfo_t *subInfo = SUBSECT_INFO(sub);
+
+                // Only the subsectors of the changed sector.
+                if(sub->sector != sec)
+                    continue;
+
+                // Update the floor glow flag?
+                if(setFloorGlow == 1)
+                    subInfo->floor.flags |= RPF_GLOW;
+                else if(setFloorGlow == -1)
+                    subInfo->floor.flags &= ~RPF_GLOW;
+
+                // Update the ceiling glow flag?
+                if(setCeilingGlow == 1)
+                    subInfo->ceil.flags |= RPF_GLOW;
+                else if(setCeilingGlow == -1)
+                    subInfo->ceil.flags &= ~RPF_GLOW;
+            }
         }
     }
 

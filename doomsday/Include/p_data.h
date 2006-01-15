@@ -154,14 +154,16 @@ typedef struct sector_s {
     short           floorpic, ceilingpic;
     short           lightlevel;
     byte            rgb[3];
-    byte            floorrgb[3];
-    byte            ceilingrgb[3];
+    byte            floorrgb[3], ceilingrgb[3];
     int             validcount;    // if == validcount, already checked
     struct mobj_s  *thinglist;     // list of mobjs in sector
     int             linecount;
     struct line_s **Lines;         // [linecount] size
     float           flooroffx, flooroffy;   // floor texture offset
     float           ceiloffx, ceiloffy; // ceiling texture offset
+    // Plane glows
+    byte            floorglowrgb[3], ceilingglowrgb[3];
+    float           floorglow, ceilingglow;
     int             skyfix;        // Offset to ceiling height
     // rendering w/sky.
     float           reverb[NUM_REVERB_DATA];

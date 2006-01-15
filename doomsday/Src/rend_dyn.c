@@ -97,7 +97,8 @@ boolean dlInited = false;
 int     useDynLights = true, dlBlend = 0;
 float   dlFactor = 0.7f;        // was 0.6f
 int     useWallGlow = true;
-int     glowHeight = 100;
+float   glowHeightFactor = 1.0f; // glow height as a multiplier
+int     glowHeightMax = 100;     // 100 is the default (0-1024)
 float   glowFogBright = .15f;
 lumobj_t *luminousList = 0;
 int     numLuminous = 0, maxLuminous = 0;
@@ -579,11 +580,19 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
     dynlight_t *dyn;
     int     i, g, segindex = GET_SEG_IDX(seg);
     float   ceil, floor, top, bottom, s[2], t[2];
+    float   glowHeight = (MAX_GLOWHEIGHT * 1.0f) * glowHeightFactor;
     sector_t *sect = seg->sidedef->sector;
 
     // Check the heights.
     if(segtop <= segbottom)
         return;                 // No height.
+
+    // Don't make too small or too large glows.
+    if(glowHeight <= 2)
+        return;
+
+    if(glowHeight > glowHeightMax)
+        glowHeight = glowHeightMax;
 
     ceil = SECT_CEIL(sect);
     floor = SECT_FLOOR(sect);
@@ -652,8 +661,8 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
  */
 void DL_ProcessWallGlow(seg_t *seg, sector_t *sect)
 {
-    boolean do_floor = (R_FlatFlags(sect->floorpic) & TXF_GLOW) != 0;
-    boolean do_ceil = (R_FlatFlags(sect->ceilingpic) & TXF_GLOW) != 0;
+    boolean do_floor = (sect->floorglow > 0)? true : false;
+    boolean do_ceil = (sect->ceilingglow > 0)? true : false;
     sector_t *back = seg->backsector;
     side_t *sdef = seg->sidedef;
     float   fceil, ffloor, bceil, bfloor;
@@ -1407,8 +1416,7 @@ void DL_ProcessSubsector(subsector_t *ssec)
 
     // Check glowing planes.
     if(useWallGlow &&
-       (R_FlatFlags(sect->floorpic) & TXF_GLOW ||
-        R_FlatFlags(sect->ceilingpic) & TXF_GLOW))
+       (sect->floorglow || sect->ceilingglow))
     {
         // The wall segments.
         for(j = 0, seg = segs + SEGIDX(ssec->firstline); j < ssec->linecount;

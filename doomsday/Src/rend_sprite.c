@@ -637,19 +637,41 @@ void Rend_RenderSprite(vissprite_t * spr)
             // Check floor and ceiling for glow. They count as ambient light.
             if(spr->data.mo.hasglow)
             {
-                len =
-                    1 - (FIX2FLT(spr->data.mo.gz) -
-                         spr->data.mo.secfloor) / glowHeight;
-                for(i = 0; i < 2; i++)
-                    Rend_ScaledAmbientLight(tempquad.vertices[i].color.rgba,
-                                            spr->data.mo.floorglow, len);
+                float glowHeight;
 
-                len =
-                    1 - (spr->data.mo.secceil -
-                         FIX2FLT(spr->data.mo.gzt)) / glowHeight;
-                for(i = 0; i < 2; i++)
-                    Rend_ScaledAmbientLight(tempquad.vertices[i].color.rgba,
-                                            spr->data.mo.ceilglow, len);
+                // Floor glow
+                glowHeight = (MAX_GLOWHEIGHT * spr->data.mo.floorglowamount)
+                              * glowHeightFactor;
+                // Don't make too small or too large glows.
+                if(glowHeight > 2)
+                {
+                    if(glowHeight > glowHeightMax)
+                        glowHeight = glowHeightMax;
+
+                    len =
+                        1 - (FIX2FLT(spr->data.mo.gz) -
+                             spr->data.mo.secfloor) / glowHeight;
+                    for(i = 0; i < 2; i++)
+                        Rend_ScaledAmbientLight(tempquad.vertices[i].color.rgba,
+                                                spr->data.mo.floorglow, len);
+                }
+
+                // Ceiling glow
+                glowHeight = (MAX_GLOWHEIGHT * spr->data.mo.ceilglowamount)
+                              * glowHeightFactor;
+                // Don't make too small or too large glows.
+                if(glowHeight > 2)
+                {
+                    if(glowHeight > glowHeightMax)
+                        glowHeight = glowHeightMax;
+
+                    len =
+                        1 - (spr->data.mo.secceil -
+                             FIX2FLT(spr->data.mo.gzt)) / glowHeight;
+                    for(i = 0; i < 2; i++)
+                        Rend_ScaledAmbientLight(tempquad.vertices[i].color.rgba,
+                                                spr->data.mo.ceilglow, len);
+                }
             }
         }
         gl.Color4ub(tempquad.vertices[0].color.rgba[CR],
