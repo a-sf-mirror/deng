@@ -505,10 +505,6 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     wminfo.maxfrags = 0;
     wminfo.partime = 180;
 
-    // killough 3/26/98: Spawn icon landings:
-    if(gamemode == commercial)
-        P_SpawnBrainTargets();
-
     // Only used with 666/7 specials
     bossKilled = false;
 #endif
@@ -554,6 +550,13 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 #endif
     Con_Message("Spawn things\n");
     P_SpawnThings();
+
+    // killough 3/26/98: Spawn icon landings:
+#if __JDOOM__
+    if(gamemode == commercial)
+        P_SpawnBrainTargets();
+#endif
+
 #if __JHERETIC__
     P_CloseWeapons();
 #endif

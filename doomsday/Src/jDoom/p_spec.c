@@ -122,7 +122,7 @@ void P_InitPicAnims(void)
     animdef_t *animdefs;
 
     // Has a custom ANIMATED lump been loaded?
-    if(lump)
+    if(lump > 0)
     {
         animdefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
 
