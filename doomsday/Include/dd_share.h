@@ -567,6 +567,9 @@ extern          "C" {
 
         DMU_LINE_COUNT,
         DMU_COLOR,                  // RGB
+        DMU_COLOR_RED,              // red component
+        DMU_COLOR_GREEN,            // green component
+        DMU_COLOR_BLUE,             // blue component
         DMU_LIGHT_LEVEL,
         DMU_THINGS,                 // pointer to start of sector thinglist
         DMU_BOUNDING_BOX,           // fixed_t[4]
