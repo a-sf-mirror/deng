@@ -161,9 +161,19 @@ void            P_SetDoomsdayFlags(mobj_t *mo);
 //
 void            P_NoiseAlert(mobj_t *target, mobj_t *emmiter);
 
-extern mobj_t  *braintargets[64];
+/* killough 3/26/98: spawn icon landings */
+void P_SpawnBrainTargets(void);
+
+/* killough 3/26/98: global state of boss brain */
+extern struct brain_s {
+    int easy;
+    int targeton;
+} brain;
+
+/* Removed fixed limit on number of brain targets */
+extern mobj_t  **braintargets;
 extern int      numbraintargets;
-extern int      braintargeton;
+extern int      numbraintargets_alloc;
 
 //
 // P_MAPUTL
@@ -321,6 +331,10 @@ void            P_ExplodeMissile(mobj_t *mo);
 //-----------------------------------------------------------------------------
 //
 // $Log$
+// Revision 1.9.2.3  2006/01/15 00:13:31  danij
+// Removed fixed limit on number of boss brain spawnspots. Uses array doubling method by killough. Fixes problems with some PWADS that use several boss spitters.
+// Boss brain spawnspots are initialized at level startup rather than when the brain wakes up.
+//
 // Revision 1.9.2.2  2005/12/18 15:05:02  danij
 // Updated to use DMU.
 // See comments in src files for notes on changes.

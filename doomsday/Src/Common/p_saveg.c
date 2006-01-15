@@ -1804,7 +1804,7 @@ void P_ArchiveBrain(void)
     int     i;
 
     SV_WriteByte(numbraintargets);
-    SV_WriteByte(braintargeton);
+    SV_WriteByte(brain.targeton);
     // Write the mobj references using the mobj archive.
     for(i = 0; i < numbraintargets; i++)
         SV_WriteShort(SV_ThingArchiveNum(braintargets[i]));
@@ -1815,12 +1815,15 @@ void P_UnArchiveBrain(void)
     int     i;
 
     if(hdr.version < 3)
-        return;                 // No brain data before version 3.
+        return;    // No brain data before version 3.
 
-    numbraintargets = SV_ReadByte();
-    braintargeton = SV_ReadByte();
+    numbraintargets = numbraintargets_alloc = SV_ReadByte();
+    brain.targeton = SV_ReadByte();
     for(i = 0; i < numbraintargets; i++)
         braintargets[i] = SV_GetArchiveThing(SV_ReadShort());
+
+    if(gamemode == commercial)
+        P_SpawnBrainTargets();
 }
 #endif
 

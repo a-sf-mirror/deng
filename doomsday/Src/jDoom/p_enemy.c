@@ -91,9 +91,11 @@ mobj_t *vileobj;
 fixed_t viletryx;
 fixed_t viletryy;
 
-mobj_t *braintargets[64];
+mobj_t **braintargets;
 int     numbraintargets;
-int     braintargeton;
+int     numbraintargets_alloc;
+
+struct brain_s brain;   // killough 3/26/98: global state of boss brain
 
 int     TRACEANGLE = 0xc000000;
 
@@ -1800,30 +1802,49 @@ void C_DECL A_CloseShotgun2(player_t *player, pspdef_t * psp)
     A_ReFire(player, psp);
 }
 
-void C_DECL A_BrainAwake(mobj_t *mo)
+/*
+ * killough 3/26/98: initialize icon landings at level startup,
+ * rather than at boss wakeup, to prevent savegame-related crashes
+ */
+void P_SpawnBrainTargets(void)
 {
     thinker_t *thinker;
     mobj_t *m;
 
     // find all the target spots
     numbraintargets = 0;
-    braintargeton = 0;
+    brain.targeton = 0;
+    brain.easy = 0;           // killough 3/26/98: always init easy to 0
 
     for(thinker = thinkercap.next; thinker != &thinkercap;
         thinker = thinker->next)
     {
         if(thinker->function != P_MobjThinker)
-            continue;           // not a mobj
+            continue;  // not a mobj
 
         m = (mobj_t *) thinker;
 
         if(m->type == MT_BOSSTARGET)
-        {
-            braintargets[numbraintargets] = m;
-            numbraintargets++;
+        {   // killough 2/7/98: remove limit on icon landings:
+            if(numbraintargets >= numbraintargets_alloc)
+            {
+                // Do we need to alloc more targets?
+                if(numbraintargets_alloc == numbraintargets_alloc)
+                    braintargets =
+                        realloc(braintargets,
+                                numbraintargets_alloc*2 * sizeof *braintargets);
+                else
+                    braintargets =
+                        realloc(braintargets, 32 * sizeof *braintargets);
+            }
+
+            braintargets[numbraintargets++] = m;
         }
     }
+}
 
+void C_DECL A_BrainAwake(mobj_t *mo)
+{
     S_StartSound(sfx_bossit, NULL);
 }
 
@@ -1886,15 +1907,17 @@ void C_DECL A_BrainSpit(mobj_t *mo)
 {
     mobj_t *targ;
     mobj_t *newmobj;
-    static int easy = 0;
 
-    easy ^= 1;
-    if(gameskill <= sk_easy && (!easy))
+    if(!numbraintargets)     // killough 4/1/98: ignore if no targets
+        return;
+
+    brain.easy ^= 1;
+    if(gameskill <= sk_easy && (!brain.easy))
         return;
 
     // shoot a cube at current target
-    targ = braintargets[braintargeton];
-    braintargeton = (braintargeton + 1) % numbraintargets;
+    targ = braintargets[brain.targeton++];
+    brain.targeton %= numbraintargets;
 
     // spawn brain missile
     newmobj = P_SpawnMissile(mo, targ, MT_SPAWNSHOT);

@@ -505,10 +505,9 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     wminfo.maxfrags = 0;
     wminfo.partime = 180;
 
-    // Clear brain data. This is only used in Doom II map30, though.
-    memset(braintargets, 0, sizeof(braintargets));
-    numbraintargets = 0;
-    braintargeton = 0;
+    // killough 3/26/98: Spawn icon landings:
+    if(gamemode == commercial)
+        P_SpawnBrainTargets();
 
     // Only used with 666/7 specials
     bossKilled = false;
