@@ -1253,7 +1253,7 @@ boolean DL_IsTexUsed(dynlight_t *node, DGLuint texture)
 boolean DL_LightIteratorFunc(lumobj_t * lum, flatitervars_t * fi)
 {
     int     i;
-    unsigned long j;
+    int     j;
     byte   *seg;
     float   x = FIX2FLT(lum->thing->x);
     float   y = FIX2FLT(lum->thing->y);
@@ -1386,7 +1386,7 @@ DGLuint DL_GetFlatDecorLightMap(int pic)
 void DL_ProcessSubsector(subsector_t *ssec)
 {
     int     i;
-    unsigned long j;
+    int     j;
     byte   *seg;
     flatitervars_t fi;
     lumcontact_t *con;

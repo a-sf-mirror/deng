@@ -1567,7 +1567,7 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
 {
     sector_t *front = sub->sector, *back;
     int     segfacing;
-    unsigned long i;
+    int     i;
     float   v1[2], v2[2], fronth[2], backh[2];
     float  *startv, *endv;
     seg_t  *seg;

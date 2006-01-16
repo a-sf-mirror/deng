@@ -419,7 +419,7 @@ void R_PrepareSubsector(subsector_t *sub)
 void R_PolygonizeWithoutCarving()
 {
     int     i;
-    unsigned long j;
+    int     j;
     subsector_t *sub;
 
     for(i = numsubsectors -1; i >= 0; --i)

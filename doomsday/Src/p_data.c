@@ -55,28 +55,12 @@
 // well, there is GL_PVIS too but we arn't interested in that
 #define NUM_GLLUMPS 4
 
-#if !__JHEXEN__
-#define SEQTYPE_STONE 0
-#endif
-
 #define myoffsetof(type,identifier,fl) (((size_t)&((type*)0)->identifier)|fl)
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
 #define MAXRADIUS       32*FRACUNIT
-
-// internal data types
-enum {
-    MDT_BYTE,
-    MDT_SHORT,
-    MDT_USHORT,
-    MDT_FIXEDT,
-    MDT_INT,
-    MDT_UINT,
-    MDT_LONG,
-    MDT_ULONG
-};
 
 // Lump order in a map WAD: each map needs a couple of lumps
 // to provide a complete scene geometry description.
@@ -291,7 +275,7 @@ typedef struct {
     int           linedef;
     int           side;
     int           offset;
-} segtmp_t;
+} mapseg_t;
 
 //
 // Types used in map data handling
@@ -564,7 +548,7 @@ glnodever_t glNodeVer[] = {
 // ptrs to the mapLumps lumps
 static byte   *mapLumps[NUM_LUMPCLASSES];
 
-static segtmp_t *segstemp;
+static mapseg_t *segstemp;
 
 // for sector->linecount
 static int numUniqueLines;
@@ -618,6 +602,7 @@ static const char* DMU_Str(int prop)
         { DMU_SECTOR_BY_ACT_TAG, "DMU_SECTOR_BY_ACT_TAG" },
         { DMU_LINE_OF_SECTOR, "DMU_LINE_OF_SECTOR" },
         { DMU_SECTOR_OF_SUBSECTOR, "DMU_SECTOR_OF_SUBSECTOR" },
+        { DMU_SEG_OF_POLYOBJ, "DMU_SEG_OF_POLYOBJ" },
         { DMU_X, "DMU_X" },
         { DMU_Y, "DMU_Y" },
         { DMU_XY, "DMU_XY" },
@@ -631,10 +616,13 @@ static const char* DMU_Str(int prop)
         { DMU_VERTEX2_XY, "DMU_VERTEX2_XY" },
         { DMU_FRONT_SECTOR, "DMU_FRONT_SECTOR" },
         { DMU_BACK_SECTOR, "DMU_BACK_SECTOR" },
+        { DMU_SIDE0, "DMU_SIDE0" },
+        { DMU_SIDE1, "DMU_SIDE1" },
         { DMU_FLAGS, "DMU_FLAGS" },
         { DMU_DX, "DMU_DX" },
         { DMU_DY, "DMU_DY" },
         { DMU_LENGTH, "DMU_LENGTH" },
+        { DMU_SLOPE_TYPE, "DMU_SLOPE_TYPE" },
         { DMU_ANGLE, "DMU_ANGLE" },
         { DMU_OFFSET, "DMU_OFFSET" },
         { DMU_TOP_TEXTURE, "DMU_TOP_TEXTURE" },
@@ -647,10 +635,13 @@ static const char* DMU_Str(int prop)
         { DMU_TEXTURE_OFFSET_X, "DMU_TEXTURE_OFFSET_X" },
         { DMU_TEXTURE_OFFSET_Y, "DMU_TEXTURE_OFFSET_Y" },
         { DMU_TEXTURE_OFFSET_XY, "DMU_TEXTURE_OFFSET_XY" },
+        { DMU_VALID_COUNT, "DMU_VALID_COUNT" },
         { DMU_LINE_COUNT, "DMU_LINE_COUNT" },
         { DMU_COLOR, "DMU_COLOR" },
         { DMU_LIGHT_LEVEL, "DMU_LIGHT_LEVEL" },
         { DMU_THINGS, "DMU_THINGS" },
+        { DMU_BOUNDING_BOX, "DMU_BOUNDING_BOX" },
+        { DMU_SOUND_ORIGIN, "DMU_SOUND_ORIGIN" },
         { DMU_FLOOR_HEIGHT, "DMU_FLOOR_HEIGHT" },
         { DMU_FLOOR_TEXTURE, "DMU_FLOOR_TEXTURE" },
         { DMU_FLOOR_OFFSET_X, "DMU_FLOOR_OFFSET_X" },
@@ -740,7 +731,7 @@ int P_ToIndex(int type, void* ptr)
  */
 void* P_ToPtr(int type, int index)
 {
- switch(type)
+    switch(type)
     {
     case DMU_VERTEX:
         return VERTEX_PTR(index);
@@ -1622,6 +1613,12 @@ static int GetProperty(void* ptr, void* context)
         case DMU_FLAGS:
             GetValue(VT_SHORT, &p->flags, args, 0);
             break;
+        case DMU_SIDE0:
+            GetValue(VT_PTR, SIDE_PTR(p->sidenum[0]), args, 0);
+            break;
+        case DMU_SIDE1:
+            GetValue(VT_PTR, SIDE_PTR(p->sidenum[1]), args, 0);
+            break;
         default:
             Con_Error("GetProperty: DMU_LINE has no property %s.\n", DMU_Str(args->prop));
         }
@@ -2417,26 +2414,23 @@ void P_ValidateLevel(void)
  * Subroutine to add a line number to a block list
  * It simply returns if the line is already in the block
  */
-static void AddBlockLine
-(
-  linelist_t **lists,
-  int *count,
-  int *done,
-  int blockno,
-  long lineno
-)
+static void AddBlockLine(linelist_t **lists, int *count, int *done,
+                         int blockno, long lineno)
 {
-  linelist_t *l;
+    linelist_t *l;
 
-  if (done[blockno])
-    return;
+    if(done[blockno])
+        return;
 
-  l = malloc(sizeof(linelist_t));
-  l->num = lineno;
-  l->next = lists[blockno];
-  lists[blockno] = l;
-  count[blockno]++;
-  done[blockno] = 1;
+    l = malloc(sizeof(linelist_t));
+    l->num = lineno;
+    l->next = lists[blockno];
+
+    lists[blockno] = l;
+
+    count[blockno]++;
+
+    done[blockno] = 1;
 }
 
 /*
@@ -2829,7 +2823,7 @@ void P_LoadReject(int lump)
 void P_PlaneChanged(sector_t *sector, boolean theCeiling)
 {
     int i;
-    unsigned long k;
+    int k;
     subsector_t *sub;
     seg_t *seg;
 
@@ -2892,7 +2886,6 @@ void P_PrintDebugMapData(void)
     line_t  *li;
     seg_t   *seg;
     side_t  *si;
-    thing_t  *th;
     node_t  *no;
 
     Con_Printf("VERTEXES:\n");
@@ -2929,7 +2922,7 @@ void P_PrintDebugMapData(void)
     for(i = 0; i < numsubsectors; i++)
     {
         ss = SUBSECTOR_PTR(i);
-        Con_Printf("numlines=%i firstline%i\n", ss->linecount, ss->firstline);
+        Con_Printf("numlines=%i firstline=%i\n", ss->linecount, ss->firstline);
     }
 
     Con_Printf("NODES:\n");
@@ -3340,16 +3333,16 @@ static void P_LoadMapData(int lumpclass, int lumps, int gllumps)
                     if(oldNum > 0)
                     {
                         segs = Z_Realloc(segs, numsegs * sizeof(seg_t), PU_LEVEL);
-                        segstemp = Z_Realloc(segstemp, numsegs * sizeof(segtmp_t), PU_STATIC);
+                        segstemp = Z_Realloc(segstemp, numsegs * sizeof(mapseg_t), PU_STATIC);
                     }
                     else
                     {
                         segs = Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
-                        segstemp = Z_Malloc(numsegs * sizeof(seg_t), PU_STATIC, 0);
+                        segstemp = Z_Malloc(numsegs * sizeof(mapseg_t), PU_STATIC, 0);
                     }
 
                     memset(segs + oldNum, 0, elements * sizeof(seg_t));
-                    memset(segstemp + oldNum, 0, elements * sizeof(segtmp_t));
+                    memset(segstemp + oldNum, 0, elements * sizeof(mapseg_t));
 
                     structure = (byte *)(segstemp + oldNum);
                     break;
@@ -3813,40 +3806,28 @@ static void HandleProperty(byte *structure, const structinfo_t *idf,
 
     byte    tmpbyte = 0;
     short   tmpshort = 0;
-    unsigned short tmpushort = 0;
     fixed_t tmpfixed = 0;
     int     tmpint = 0;
-    unsigned int tmpuint = 0;
-    long    tmplong = 0;
-    long long tmpulong = 0;
+    float   tmpfloat = 0;
 
     if(type->gameprop)
     {
         switch(type->size)
         {
-        case MDT_BYTE:
+        case VT_BYTE:
             dest = &tmpbyte;
             break;
-        case MDT_SHORT:
+        case VT_SHORT:
             dest = &tmpshort;
             break;
-        case MDT_USHORT:
-            dest = &tmpushort;
-            break;
-        case MDT_FIXEDT:
+        case VT_FIXED:
             dest = &tmpfixed;
             break;
-        case MDT_INT:
+        case VT_INT:
             dest = &tmpint;
             break;
-        case MDT_UINT:
-            dest = &tmpuint;
-            break;
-        case MDT_LONG:
-            dest = &tmplong;
-            break;
-        case MDT_ULONG:
-            dest = &tmpulong;
+        case VT_FLOAT:
+            dest = &tmpfloat;
             break;
         default:
             Con_Error("P_ReadBinaryMapData: Unsupported data type id %i.\n",type->size);
@@ -4042,13 +4023,14 @@ static void P_ProcessSegs(int version)
     seg_t  *li;
     line_t *ldef;
 
-    segtmp_t *ml;
+    mapseg_t *ml;
 
-    li = SEG_PTR(0);
     ml = segstemp;
 
-    for(i = 0; i < numsegs; i++, li++, ml++)
+    for(i = 0; i < numsegs; i++, ml++)
     {
+        li = SEG_PTR(i);
+
         // Which version?
         switch(version)
         {
@@ -4157,14 +4139,15 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
 
     Con_Message("Loading Linedefs (%i) ver %i...\n", elements, version);
 
-    ld = LINE_PTR(0);
     mld = (maplinedef_t *) buffer;
     mldhex = (maplinedefhex_t *) buffer;
     switch(version)
     {
         case 1: // DOOM format
-            for(i = 0; i < numlines; i++, mld++, mldhex++, ld++)
+            for(i = 0; i < numlines; i++, mld++, mldhex++)
             {
+                ld = LINE_PTR(i);
+
                 ld->flags = SHORT(mld->flags);
 
                 tmp = SHORT(mld->special);
@@ -4183,6 +4166,8 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
         case 2: // HEXEN format
             for(i = 0; i < numlines; i++, mld++, mldhex++, ld++)
             {
+                ld = LINE_PTR(i);
+
                 ld->flags = SHORT(mldhex->flags);
 
                 tmpb = mldhex->special;
@@ -4259,10 +4244,11 @@ static void P_FinishLineDefs(void)
 
     Con_Message("Finalizing Linedefs...\n");
 
-    ld = LINE_PTR(0);
     numUniqueLines = 0;
-    for(i = numlines -1; i >= 0; --i, ld++)
+    for(i = 0; i < numlines; i++)
     {
+        ld = LINE_PTR(i);
+
         v1 = ld->v1;
         v2 = ld->v2;
         ld->dx = v2->x - v1->x;
@@ -4720,7 +4706,7 @@ static void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[3].gameprop = 0;
                 // side
                 stiptr->verInfo[index].values[4].valueid = 4;
-                stiptr->verInfo[index].values[4].flags = 0;
+                stiptr->verInfo[index].values[4].flags = DT_NOINDEX;
                 stiptr->verInfo[index].values[4].size =  2;
                 stiptr->verInfo[index].values[4].offset = 8;
                 stiptr->verInfo[index].values[4].gameprop = 0;
@@ -4976,7 +4962,7 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
-                    glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
+                    glstiptr->verInfo[index].values[3].flags = DT_NOINDEX;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 6;
                     glstiptr->verInfo[index].values[3].gameprop = 0;
@@ -5010,7 +4996,7 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
-                    glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
+                    glstiptr->verInfo[index].values[3].flags = DT_NOINDEX;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 10;
                     glstiptr->verInfo[index].values[3].gameprop = 0;
@@ -5262,11 +5248,11 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtSSectors]).members = Z_Malloc(sizeof(structmember_t) * 2, PU_STATIC, 0);
     // linecount
     (internalMapDataStructInfo[idtSSectors]).members[0].flags = 0;
-    (internalMapDataStructInfo[idtSSectors]).members[0].dataType = VT_ULONG;
+    (internalMapDataStructInfo[idtSSectors]).members[0].dataType = VT_INT;
     (internalMapDataStructInfo[idtSSectors]).members[0].offset = myoffsetof(subsector_t, linecount,0);
     // firstline
     (internalMapDataStructInfo[idtSSectors]).members[1].flags = 0;
-    (internalMapDataStructInfo[idtSSectors]).members[1].dataType = VT_ULONG;
+    (internalMapDataStructInfo[idtSSectors]).members[1].dataType = VT_INT;
     (internalMapDataStructInfo[idtSSectors]).members[1].offset = myoffsetof(subsector_t, firstline,0);
 
 // thing_t
@@ -5366,35 +5352,35 @@ static void P_InitMapDataFormats(void)
     (internalMapDataStructInfo[idtNodes]).members[13].dataType = VT_INT;
     (internalMapDataStructInfo[idtNodes]).members[13].offset = myoffsetof(node_t, children[1],0);
 
-// segtmp_t
+// mapseg_t
     internalMapDataStructInfo[idtSegs].type = idtSegs;
-    internalMapDataStructInfo[idtSegs].size = sizeof(segtmp_t);
+    internalMapDataStructInfo[idtSegs].size = sizeof(mapseg_t);
     internalMapDataStructInfo[idtSegs].nummembers = 6;
     (internalMapDataStructInfo[idtSegs]).members = Z_Malloc(sizeof(structmember_t) * 6, PU_STATIC, 0);
     // v1
     (internalMapDataStructInfo[idtSegs]).members[0].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[0].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[0].offset = myoffsetof(segtmp_t, v1,0);
+    (internalMapDataStructInfo[idtSegs]).members[0].offset = myoffsetof(mapseg_t, v1,0);
     // v2
     (internalMapDataStructInfo[idtSegs]).members[1].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[1].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[1].offset = myoffsetof(segtmp_t, v2,0);
+    (internalMapDataStructInfo[idtSegs]).members[1].offset = myoffsetof(mapseg_t, v2,0);
     // angle
     (internalMapDataStructInfo[idtSegs]).members[2].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[2].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[2].offset = myoffsetof(segtmp_t, angle,0);
+    (internalMapDataStructInfo[idtSegs]).members[2].offset = myoffsetof(mapseg_t, angle,0);
     // linedef
     (internalMapDataStructInfo[idtSegs]).members[3].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[3].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[3].offset = myoffsetof(segtmp_t, linedef,0);
+    (internalMapDataStructInfo[idtSegs]).members[3].offset = myoffsetof(mapseg_t, linedef,0);
     // side
     (internalMapDataStructInfo[idtSegs]).members[4].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[4].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[4].offset = myoffsetof(segtmp_t, side,0);
+    (internalMapDataStructInfo[idtSegs]).members[4].offset = myoffsetof(mapseg_t, side,0);
     // offset
     (internalMapDataStructInfo[idtSegs]).members[5].flags = 0;
     (internalMapDataStructInfo[idtSegs]).members[5].dataType = VT_INT;
-    (internalMapDataStructInfo[idtSegs]).members[5].offset = myoffsetof(segtmp_t, offset,0);
+    (internalMapDataStructInfo[idtSegs]).members[5].offset = myoffsetof(mapseg_t, offset,0);
 }
 
 float AccurateDistance(fixed_t dx, fixed_t dy)

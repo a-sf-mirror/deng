@@ -125,8 +125,8 @@ typedef struct seg_s {
 
 typedef struct subsector_s {
     struct sector_s *sector;
-    unsigned short  linecount;
-    unsigned short  firstline;
+    int             linecount;
+    int             firstline;
     struct polyobj_s *poly;    // NULL if there is no polyobj
     // Sorted edge vertices for rendering floors and ceilings.
     char            numverts;

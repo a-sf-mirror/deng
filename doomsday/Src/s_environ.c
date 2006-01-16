@@ -102,7 +102,7 @@ int S_TextureTypeForName(char *name)
 void S_CalcSectorReverbs(void)
 {
     int     i, c, type, k;
-    unsigned long j;
+    int     j;
     subsector_t *sub;
     sector_t *sec;
     seg_t  *seg;
