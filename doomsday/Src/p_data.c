@@ -2772,7 +2772,6 @@ void P_LoadBlockMap(int lump)
 
         wadBlockMapLump = W_CacheLumpNum(lump, PU_STATIC);
         blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
-        blockmap = blockmaplump + 4;
 
         // Expand WAD blockmap into larger internal one, by treating all
         // offsets except -1 as unsigned and zero-extending them. This
@@ -2783,18 +2782,19 @@ void P_LoadBlockMap(int lump)
         blockmaplump[2] = (long)(SHORT(wadBlockMapLump[2])) & 0xffff;
         blockmaplump[3] = (long)(SHORT(wadBlockMapLump[3])) & 0xffff;
 
+        for(i = 4; i < count; i++)
+        {
+            short t = SHORT(wadBlockMapLump[i]);
+            blockmaplump[i] = t == -1? -1 : (long) t & 0xffff;
+        }
+
         bmaporgx = blockmaplump[0] << FRACBITS;
         bmaporgy = blockmaplump[1] << FRACBITS;
         bmapwidth = blockmaplump[2];
         bmapheight = blockmaplump[3];
 
-        for(i = 0; i < count; i++)
-        {
-            short t = SHORT(blockmaplump[i]);
-            blockmaplump[i] = t == -1? -1 : (long) t & 0xffff;
-        }
-
         Z_Free(wadBlockMapLump);
+        blockmap = blockmaplump + 4;
     }
 
     // Clear out mobj rings.
@@ -4939,7 +4939,7 @@ static void P_InitMapDataFormats(void)
             {
                 if(glver == 1)
                 {
-                    *glptr = 8;
+                    *glptr = 10;
                     glstiptr->verInfo[index].numValues = 4;
                     glstiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 4, PU_STATIC, 0);
                     // v1
@@ -4962,7 +4962,7 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
-                    glstiptr->verInfo[index].values[3].flags = DT_NOINDEX;
+                    glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 6;
                     glstiptr->verInfo[index].values[3].gameprop = 0;
@@ -4971,9 +4971,9 @@ static void P_InitMapDataFormats(void)
                 {
                     *glptr = 0;        // Unsupported atm
                 }
-                else
+                else // Ver 3/5
                 {
-                    *glptr = 12;
+                    *glptr = 14;
                     glstiptr->verInfo[index].numValues = 4;
                     glstiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 4, PU_STATIC, 0);
                     // v1
@@ -4996,7 +4996,7 @@ static void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[2].gameprop = 0;
                     // side
                     glstiptr->verInfo[index].values[3].valueid = 4;
-                    glstiptr->verInfo[index].values[3].flags = DT_NOINDEX;
+                    glstiptr->verInfo[index].values[3].flags = DT_UNSIGNED;
                     glstiptr->verInfo[index].values[3].size =  2;
                     glstiptr->verInfo[index].values[3].offset = 10;
                     glstiptr->verInfo[index].values[3].gameprop = 0;
