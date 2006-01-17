@@ -16,21 +16,21 @@
 #include "p_actor.h"
 #include "p_saveg.h"
 
-#define DELTAMUL 6.324555320	   // Used when calculating ticcmd_t.lookdirdelta
+#define DELTAMUL 6.324555320       // Used when calculating ticcmd_t.lookdirdelta
 
-#define STARTREDPALS	1
-#define STARTBONUSPALS	9
-#define NUMREDPALS		8
-#define NUMBONUSPALS	4
+#define STARTREDPALS    1
+#define STARTBONUSPALS  9
+#define NUMREDPALS      8
+#define NUMBONUSPALS    4
 
-#define FOOTCLIPSIZE	10*FRACUNIT
+#define FOOTCLIPSIZE    10*FRACUNIT
 
 #define TOCENTER TICCMD_FALL_DOWN
-#define	FLOATSPEED (FRACUNIT*4)
+#define FLOATSPEED (FRACUNIT*4)
 
-#define	MAXHEALTH 100
+#define MAXHEALTH 100
 #define MAXCHICKENHEALTH 30
-#define	VIEWHEIGHT (cfg.eyeHeight*FRACUNIT)	// 41*FRACUNIT
+#define VIEWHEIGHT (cfg.eyeHeight*FRACUNIT) // 41*FRACUNIT
 
 // player radius for movement checking
 #define PLAYERRADIUS 16*FRACUNIT
@@ -40,35 +40,35 @@
 // nearby
 #define MAXRADIUS 32*FRACUNIT
 
-#define	GRAVITY Get(DD_GRAVITY)	   //FRACUNIT
-#define	MAXMOVE (30*FRACUNIT)
+#define GRAVITY Get(DD_GRAVITY)    //FRACUNIT
+#define MAXMOVE (30*FRACUNIT)
 
-#define	USERANGE (64*FRACUNIT)
-#define	MELEERANGE (64*FRACUNIT)
-#define	MISSILERANGE (32*64*FRACUNIT)
+#define USERANGE (64*FRACUNIT)
+#define MELEERANGE (64*FRACUNIT)
+#define MISSILERANGE (32*64*FRACUNIT)
 
 typedef enum {
-	DI_EAST,
-	DI_NORTHEAST,
-	DI_NORTH,
-	DI_NORTHWEST,
-	DI_WEST,
-	DI_SOUTHWEST,
-	DI_SOUTH,
-	DI_SOUTHEAST,
-	DI_NODIR,
-	NUMDIRS
+    DI_EAST,
+    DI_NORTHEAST,
+    DI_NORTH,
+    DI_NORTHWEST,
+    DI_WEST,
+    DI_SOUTHWEST,
+    DI_SOUTH,
+    DI_SOUTHEAST,
+    DI_NODIR,
+    NUMDIRS
 } dirtype_t;
 
-#define BASETHRESHOLD 100		   // follow a player exlusively for 3 seconds
+#define BASETHRESHOLD 100          // follow a player exlusively for 3 seconds
 
 // ***** P_TICK *****
 
 //extern thinker_t thinkercap; // both the head and tail of the thinker list
 
-#define	thinkercap		(*gi.thinkercap)
+#define thinkercap      (*gi.thinkercap)
 
-extern int      TimerGame;		   // tic countdown for deathmatch
+extern int      TimerGame;         // tic countdown for deathmatch
 
 //void P_InitThinkers(void);
 //void P_AddThinker(thinker_t *thinker);
@@ -103,7 +103,7 @@ extern int      TimerGame;		   // tic countdown for deathmatch
 
 void            P_OpenWeapons(void);
 void            P_CloseWeapons(void);
-void            P_AddMaceSpot(mapthing_t * mthing);
+void            P_AddMaceSpot(thing_t * mthing);
 void            P_RepositionMace(mobj_t *mo);
 void            P_SetPsprite(player_t *player, int position, statenum_t stnum);
 void            P_SetupPsprites(player_t *curplayer);
@@ -147,23 +147,23 @@ void            P_ThrustMobj(mobj_t *mo, angle_t angle, fixed_t move);
 void            P_WindThrust(mobj_t *mo);
 int             P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta);
 boolean         P_SeekerMissile(mobj_t *actor, angle_t thresh,
-								angle_t turnMax);
+                                angle_t turnMax);
 void            P_MobjThinker(mobj_t *mobj);
 void            P_BlasterMobjThinker(mobj_t *mobj);
 void            P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void            P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage);
 void            P_BloodSplatter(fixed_t x, fixed_t y, fixed_t z,
-								mobj_t *originator);
+                                mobj_t *originator);
 void            P_RipperBlood(mobj_t *mo);
 int             P_GetThingFloorType(mobj_t *thing);
 int             P_HitFloor(mobj_t *thing);
 boolean         P_CheckMissileSpawn(mobj_t *missile);
 mobj_t         *P_SpawnMissile(mobj_t *source, mobj_t *dest, mobjtype_t type);
 mobj_t         *P_SpawnMissileAngle(mobj_t *source, mobjtype_t type,
-									angle_t angle, fixed_t momz);
+                                    angle_t angle, fixed_t momz);
 mobj_t         *P_SpawnPlayerMissile(mobj_t *source, mobjtype_t type);
 mobj_t         *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle);
-void            P_SpawnPlayer(mapthing_t * mthing, int plrnum);
+void            P_SpawnPlayer(thing_t * mthing, int plrnum);
 void            P_ZMovement(mobj_t *mo);
 mobj_t         *P_SpawnTeleFog(int x, int y);
 fixed_t         P_GetMobjFriction(mobj_t *mo);
@@ -183,10 +183,10 @@ void            P_DSparilTeleport(mobj_t *actor);
    extern   intercept_t     intercepts[MAXINTERCEPTS], *intercept_p; */
 //typedef boolean (*traverser_t) (intercept_t *in);
 
-#define openrange			Get(DD_OPENRANGE)
-#define opentop				Get(DD_OPENTOP)
-#define openbottom			Get(DD_OPENBOTTOM)
-#define lowfloor			Get(DD_LOWFLOOR)
+#define openrange           Get(DD_OPENRANGE)
+#define opentop             Get(DD_OPENTOP)
+#define openbottom          Get(DD_OPENBOTTOM)
+#define lowfloor            Get(DD_LOWFLOOR)
 //#define P_LineOpening     gi.LineOpening
 
 /*#define P_BlockLinesIterator  gi.BlockLinesIterator
@@ -217,8 +217,8 @@ void            P_SetThingPosition(mobj_t *thing);
 
 // ***** P_MAP *****
 
-extern boolean  floatok;		   // if true, move would be ok if
-extern fixed_t  tmfloorz, tmceilingz;	// within tmfloorz - tmceilingz
+extern boolean  floatok;           // if true, move would be ok if
+extern fixed_t  tmfloorz, tmceilingz;   // within tmfloorz - tmceilingz
 
 extern line_t  *ceilingline;
 boolean         P_TestMobjLocation(mobj_t *mobj);
@@ -226,18 +226,18 @@ boolean         P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y);
 mobj_t         *P_CheckOnmobj(mobj_t *thing);
 void            P_FakeZMovement(mobj_t *mo);
 boolean         P_TryMove(mobj_t *thing, fixed_t x, fixed_t y);
-boolean         P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y);
+boolean         P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, boolean alwaysstomp);
 void            P_SlideMove(mobj_t *mo);
 boolean         P_CheckSight(mobj_t *t1, mobj_t *t2);
 void            P_UseLines(player_t *player);
 
 boolean         P_ChangeSector(sector_t *sector, boolean crunch);
 
-extern mobj_t  *linetarget;		   // who got hit (or NULL)
+extern mobj_t  *linetarget;        // who got hit (or NULL)
 fixed_t         P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance);
 
 void            P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance,
-							 fixed_t slope, int damage);
+                             fixed_t slope, int damage);
 
 void            P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage);
 
@@ -250,10 +250,10 @@ void            P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage);
    extern fixed_t bmaporgx, bmaporgy;       // origin of block map
    extern mobj_t **blocklinks;              // for thing chains */
 
-#define bmapwidth	(*gi.bmapwidth)
-#define bmapheight	(*gi.bmapheight)
-#define bmaporgx	(*gi.bmaporgx)
-#define bmaporgy	(*gi.bmaporgy)
+#define bmapwidth   (*gi.bmapwidth)
+#define bmapheight  (*gi.bmapheight)
+#define bmaporgx    (*gi.bmaporgx)
+#define bmaporgy    (*gi.bmaporgy)
 
 char           *P_GetLevelName(int episode, int map);
 char           *P_GetShortLevelName(int episode, int map);
@@ -267,7 +267,7 @@ void            P_GiveKey(player_t *player, keytype_t key);
 void            P_SetMessage(player_t *pl, char *message);
 void            P_TouchSpecialThing(mobj_t *special, mobj_t *toucher);
 void            P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
-							 int damage);
+                             int damage);
 boolean         P_GiveAmmo(player_t *player, ammotype_t ammo, int count);
 boolean         P_GiveArtifact(player_t *player, artitype_t arti, mobj_t *mo);
 boolean         P_GiveBody(player_t *player, int num);
@@ -276,7 +276,6 @@ boolean         P_ChickenMorphPlayer(player_t *player);
 
 // ***** AM_MAP *****
 
-boolean         AM_Responder(event_t *ev);
 void            AM_Ticker(void);
 void            AM_Drawer(void);
 
@@ -297,4 +296,4 @@ void            ST_doPaletteStuff(void);
 void            H_SetFilter(int filter);
 int             H_GetFilterColor(int filter);
 
-#endif							// __P_LOCAL__
+#endif                          // __P_LOCAL__

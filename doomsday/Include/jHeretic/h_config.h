@@ -67,6 +67,7 @@ typedef struct {
     int             corpseTime;
     int             cameraNoClip;
     float           bobWeapon, bobView;
+    byte            secretMsg;
     byte            weaponAutoSwitch;
     byte            weaponOrder[NUMWEAPONS];
 
