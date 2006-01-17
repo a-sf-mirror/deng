@@ -365,6 +365,10 @@ cvar_t  gameCVars[] = {
     "game-corpsetime", CVF_NO_MAX, CVT_INT, &cfg.corpseTime, 0, 0,
     "Number of seconds after which dead monsters disappear.",
 
+    {"msg-secret", 0, CVT_BYTE,
+        &cfg.secretMsg, 0, 1,
+        "1=Announce the discovery of secret areas."},
+
     "msg-align", 0, CVT_INT, &cfg.msgAlign, 0, 2,
     "Alignment of HUD messages. 0 = left, 1 = center, 2 = right.",
     "msg-echo", 0, CVT_INT, &cfg.echoMsg, 0, 1,

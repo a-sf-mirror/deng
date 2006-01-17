@@ -84,11 +84,6 @@ void R_DrawLevelTitle(void)
     int     y = 13;
     char   *lname, *lauthor, *ptr;
 
-    /*char buf[80];
-       sprintf(buf, "fcm: %i", players[consoleplayer].plr->fixedcolormap);
-       gl.Color3f(1, 1, 1);
-       MN_DrTextA_CS(buf, 50, 50); */
-
     if(!cfg.levelTitle || actual_leveltime > 6 * 35)
         return;
 
@@ -301,129 +296,6 @@ void D_Display(void)
     // InFine is drawn whenever active.
     FI_Drawer();
 }
-
-/*
-   ===============================================================================
-
-   DEMO LOOP
-
-   ===============================================================================
- */
-
-/*
-   int             demosequence;
-   int             pagetic;
-   char            *pagename = "TITLE";
- */
-
-/*
-   ================
-   =
-   = D_PageTicker
-   =
-   = Handles timing for warped projection
-   =
-   ================
- */
-/*
-   void D_PageTicker (void)
-   {
-   // Dedicated servers do not go through the demos.
-   if(Get(DD_DEDICATED)) return;
-
-   if (--pagetic < 0)
-   D_AdvanceDemo ();
-   }
- */
-
-/*
-   ================
-   =
-   = D_PageDrawer
-   =
-   ================
- */
-
-/*extern boolean MenuActive;
-
-   void D_PageDrawer(void)
-   {
-   if(!pagename) return;
-   GL_DrawRawScreen(W_GetNumForName(pagename), 0, 0);
-   if(demosequence == 1)
-   {
-   GL_DrawPatch(4, 160, W_GetNumForName("ADVISOR"));
-   }
-   GL_Update(DDUF_FULLSCREEN);
-   } */
-
-/*
-   =================
-   =
-   = D_AdvanceDemo
-   =
-   = Called after each demo or intro demosequence finishes
-   =================
- */
-/*
-   void D_AdvanceDemo (void)
-   {
-   advancedemo = true;
-   }
-
-   void D_DoAdvanceDemo (void)
-   {
-   players[consoleplayer].playerstate = PST_LIVE;  // don't reborn
-   advancedemo = false;
-   usergame = false;               // can't save / end game here
-   paused = false;
-   gameaction = ga_nothing;
-   demosequence = (demosequence+1)%7;
-   switch (demosequence)
-   {
-   case 0:
-   pagetic = 210;
-   gamestate = GS_DEMOSCREEN;
-   pagename = "TITLE";
-   S_StartMusic("titl", false);
-   break;
-   case 1:
-   pagetic = 140;
-   gamestate = GS_DEMOSCREEN;
-   pagename = "TITLE";
-   break;
-   case 2:
-   GL_Update(DDUF_BORDER | DDUF_FULLSCREEN);
-   G_DeferedPlayDemo ("demo1");
-   break;
-   case 3:
-   pagetic = 200;
-   gamestate = GS_DEMOSCREEN;
-   pagename = "CREDIT";
-   break;
-   case 4:
-   GL_Update(DDUF_BORDER | DDUF_FULLSCREEN);
-   G_DeferedPlayDemo ("demo2");
-   break;
-   case 5:
-   pagetic = 200;
-   gamestate = GS_DEMOSCREEN;
-   if(shareware)
-   {
-   pagename = "ORDER";
-   }
-   else
-   {
-   pagename = "CREDIT";
-   }
-   break;
-   case 6:
-   GL_Update(DDUF_BORDER | DDUF_FULLSCREEN);
-   G_DeferedPlayDemo ("demo3");
-   break;
-   }
-   }
- */
 
 /*
    ===============
@@ -674,6 +546,7 @@ void H_PreInit(void)
     cfg.msgColor[1] = deffontRGB2[1];
     cfg.msgColor[2] = deffontRGB2[2];
 
+    cfg.secretMsg = true;
     cfg.weaponAutoSwitch = true;
 
     cfg.weaponOrder[0] = wp_mace;
@@ -877,6 +750,9 @@ char *G_Get(int id)
                                             leveltime) & FINEMASK & (FINEANGLES
                                                                      / 2 -
                                                                      1)]));
+    case DD_XGFUNC_LINK:
+        return (char *) xgClasses;
+
     }
     // ID not recognized, return NULL.
     return 0;
@@ -943,7 +819,7 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.Ticker = H_Ticker;
     gx.MN_Drawer = M_Drawer;
     gx.PrivilegedResponder = (boolean (*)(event_t *)) D_PrivilegedResponder;
-    gx.FallBackResponder = M_Responder;
+    gx.FallbackResponder = M_Responder;
     gx.G_Responder = G_Responder;
     gx.MobjThinker = P_MobjThinker;
     gx.MobjFriction = (fixed_t (*)(void *)) P_GetMobjFriction;
@@ -965,14 +841,13 @@ game_export_t *GetGameAPI(game_import_t * imports)
 
     // The structure sizes.
     gx.ticcmd_size = sizeof(ticcmd_t);
-    gx.vertex_size = sizeof(vertex_t);
-    gx.seg_size = sizeof(seg_t);
-    gx.sector_size = sizeof(sector_t);
-    gx.subsector_size = sizeof(subsector_t);
-    gx.node_size = sizeof(node_t);
-    gx.line_size = sizeof(line_t);
-    gx.side_size = sizeof(side_t);
-    gx.thing_size = sizeof(thing_t);
+
+    gx.SetupForThings = P_SetupForThings;
+    gx.SetupForLines = P_SetupForLines;
+    gx.SetupForSides = P_SetupForSides;
+    gx.SetupForSectors = P_SetupForSectors;
+
+    gx.HandleMapDataProperty = P_HandleMapDataProperty;
 
     return &gx;
 }

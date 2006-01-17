@@ -18,7 +18,7 @@
 //===========================================================================
 void P_UnsetThingPosition(mobj_t *thing)
 {
-	P_UnlinkThing(thing);
+    P_UnlinkThing(thing);
 }
 
 //===========================================================================
@@ -28,12 +28,7 @@ void P_UnsetThingPosition(mobj_t *thing)
 //===========================================================================
 void P_SetThingPosition(mobj_t *thing)
 {
-	P_LinkThing(thing,
-				(!(thing->
-				   flags & MF_NOSECTOR) ? DDLINK_SECTOR : 0) | (!(thing->
-																  flags &
-																  MF_NOBLOCKMAP)
-																?
-																DDLINK_BLOCKMAP
-																: 0));
+    P_LinkThing(thing,
+                (!(thing->flags & MF_NOSECTOR) ? DDLINK_SECTOR : 0) |
+                (!(thing->flags & MF_NOBLOCKMAP) ? DDLINK_BLOCKMAP : 0));
 }

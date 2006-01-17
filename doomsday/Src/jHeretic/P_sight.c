@@ -5,11 +5,11 @@
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/P_local.h"
 
-#define MAXINTERCEPTS	128
+#define MAXINTERCEPTS   128
 
-#define blockmap				(*gi.blockmap)
-#define blockmaplump			(*gi.blockmaplump)
-#define rejectmatrix			(*gi.rejectmatrix)
+#define blockmap                (*gi.blockmap)
+#define blockmaplump            (*gi.blockmaplump)
+#define rejectmatrix            (*gi.rejectmatrix)
 
 /*
    ==============================================================================
@@ -23,8 +23,8 @@
 
 intercept_t intercepts[MAXINTERCEPTS], *intercept_p;
 
-fixed_t sightzstart;			// eye z of looker
-fixed_t topslope, bottomslope;	// slopes to top and bottom of target
+fixed_t sightzstart;            // eye z of looker
+fixed_t topslope, bottomslope;  // slopes to top and bottom of target
 
 int     sightcounts[3];
 
@@ -40,37 +40,37 @@ divline_t trace;
 
 boolean PTR_SightTraverse(intercept_t * in)
 {
-	line_t *li;
-	fixed_t slope;
+    line_t *li;
+    fixed_t slope;
 
-	li = in->d.line;
+    li = in->d.line;
 
-	//
-	// crosses a two sided line
-	//
-	P_LineOpening(li);
+    //
+    // crosses a two sided line
+    //
+    P_LineOpening(li);
 
-	if(openbottom >= opentop)	// quick test for totally closed doors
-		return false;			// stop
+    if(openbottom >= opentop)   // quick test for totally closed doors
+        return false;           // stop
+#ifdef TODO_MAP_UPDATE
+    if(li->frontsector->floorheight != li->backsector->floorheight)
+    {
+        slope = FixedDiv(openbottom - sightzstart, in->frac);
+        if(slope > bottomslope)
+            bottomslope = slope;
+    }
 
-	if(li->frontsector->floorheight != li->backsector->floorheight)
-	{
-		slope = FixedDiv(openbottom - sightzstart, in->frac);
-		if(slope > bottomslope)
-			bottomslope = slope;
-	}
+    if(li->frontsector->ceilingheight != li->backsector->ceilingheight)
+    {
+        slope = FixedDiv(opentop - sightzstart, in->frac);
+        if(slope < topslope)
+            topslope = slope;
+    }
+#endif
+    if(topslope <= bottomslope)
+        return false;           // stop
 
-	if(li->frontsector->ceilingheight != li->backsector->ceilingheight)
-	{
-		slope = FixedDiv(opentop - sightzstart, in->frac);
-		if(slope < topslope)
-			topslope = slope;
-	}
-
-	if(topslope <= bottomslope)
-		return false;			// stop
-
-	return true;				// keep going
+    return true;                // keep going
 }
 
 /*
@@ -83,44 +83,44 @@ boolean PTR_SightTraverse(intercept_t * in)
 
 boolean P_SightBlockLinesIterator(int x, int y)
 {
-	int     offset;
-	short  *list;
-	line_t *ld;
-	int     s1, s2;
-	divline_t dl;
+    int     offset;
+    short  *list;
+    line_t *ld;
+    int     s1, s2;
+    divline_t dl;
+#ifdef TODO_MAP_UPDATE
+    offset = y * bmapwidth + x;
 
-	offset = y * bmapwidth + x;
+    offset = *(blockmap + offset);
 
-	offset = *(blockmap + offset);
+    for(list = blockmaplump + offset; *list != -1; list++)
+    {
+        ld = &lines[*list];
+        if(ld->validcount == Validcount)
+            continue;           // line has already been checked
+        ld->validcount = Validcount;
 
-	for(list = blockmaplump + offset; *list != -1; list++)
-	{
-		ld = &lines[*list];
-		if(ld->validcount == Validcount)
-			continue;			// line has already been checked
-		ld->validcount = Validcount;
+        s1 = P_PointOnDivlineSide(ld->v1->x, ld->v1->y, &trace);
+        s2 = P_PointOnDivlineSide(ld->v2->x, ld->v2->y, &trace);
+        if(s1 == s2)
+            continue;           // line isn't crossed
+        P_MakeDivline(ld, &dl);
+        s1 = P_PointOnDivlineSide(trace.x, trace.y, &dl);
+        s2 = P_PointOnDivlineSide(trace.x + trace.dx, trace.y + trace.dy, &dl);
+        if(s1 == s2)
+            continue;           // line isn't crossed
 
-		s1 = P_PointOnDivlineSide(ld->v1->x, ld->v1->y, &trace);
-		s2 = P_PointOnDivlineSide(ld->v2->x, ld->v2->y, &trace);
-		if(s1 == s2)
-			continue;			// line isn't crossed
-		P_MakeDivline(ld, &dl);
-		s1 = P_PointOnDivlineSide(trace.x, trace.y, &dl);
-		s2 = P_PointOnDivlineSide(trace.x + trace.dx, trace.y + trace.dy, &dl);
-		if(s1 == s2)
-			continue;			// line isn't crossed
+        // try to early out the check
+        if(!ld->backsector)
+            return false;       // stop checking
 
-		// try to early out the check
-		if(!ld->backsector)
-			return false;		// stop checking
+        // store the line for later intersection testing
+        intercept_p->d.line = ld;
+        intercept_p++;
 
-		// store the line for later intersection testing
-		intercept_p->d.line = ld;
-		intercept_p++;
-
-	}
-
-	return true;				// everything was checked
+    }
+#endif
+    return true;                // everything was checked
 }
 
 /*
@@ -134,42 +134,42 @@ boolean P_SightBlockLinesIterator(int x, int y)
 
 boolean P_SightTraverseIntercepts(void)
 {
-	int     count;
-	fixed_t dist;
-	intercept_t *scan, *in;
-	divline_t dl;
+    int     count;
+    fixed_t dist;
+    intercept_t *scan, *in;
+    divline_t dl;
 
-	count = intercept_p - intercepts;
-	//
-	// calculate intercept distance
-	//
-	for(scan = intercepts; scan < intercept_p; scan++)
-	{
-		P_MakeDivline(scan->d.line, &dl);
-		scan->frac = P_InterceptVector(&trace, &dl);
-	}
+    count = intercept_p - intercepts;
+    //
+    // calculate intercept distance
+    //
+    for(scan = intercepts; scan < intercept_p; scan++)
+    {
+        P_MakeDivline(scan->d.line, &dl);
+        scan->frac = P_InterceptVector(&trace, &dl);
+    }
 
-	//
-	// go through in order
-	//  
-	in = 0;						// shut up compiler warning
+    //
+    // go through in order
+    //
+    in = 0;                     // shut up compiler warning
 
-	while(count--)
-	{
-		dist = MAXINT;
-		for(scan = intercepts; scan < intercept_p; scan++)
-			if(scan->frac < dist)
-			{
-				dist = scan->frac;
-				in = scan;
-			}
+    while(count--)
+    {
+        dist = MAXINT;
+        for(scan = intercepts; scan < intercept_p; scan++)
+            if(scan->frac < dist)
+            {
+                dist = scan->frac;
+                in = scan;
+            }
 
-		if(!PTR_SightTraverse(in))
-			return false;		// don't bother going farther
-		in->frac = MAXINT;
-	}
+        if(!PTR_SightTraverse(in))
+            return false;       // don't bother going farther
+        in->frac = MAXINT;
+    }
 
-	return true;				// everything was traversed
+    return true;                // everything was traversed
 }
 
 /*
@@ -184,117 +184,117 @@ boolean P_SightTraverseIntercepts(void)
 
 boolean P_SightPathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 {
-	fixed_t xt1, yt1, xt2, yt2;
-	fixed_t xstep, ystep;
-	fixed_t partial;
-	fixed_t xintercept, yintercept;
-	int     mapx, mapy, mapxstep, mapystep;
-	int     count;
+    fixed_t xt1, yt1, xt2, yt2;
+    fixed_t xstep, ystep;
+    fixed_t partial;
+    fixed_t xintercept, yintercept;
+    int     mapx, mapy, mapxstep, mapystep;
+    int     count;
 
-	Validcount++;
-	intercept_p = intercepts;
+    Validcount++;
+    intercept_p = intercepts;
+#ifdef TODO_MAP_UPDATE
+    if(((x1 - bmaporgx) & (MAPBLOCKSIZE - 1)) == 0)
+        x1 += FRACUNIT;         // don't side exactly on a line
+    if(((y1 - bmaporgy) & (MAPBLOCKSIZE - 1)) == 0)
+        y1 += FRACUNIT;         // don't side exactly on a line
+    trace.x = x1;
+    trace.y = y1;
+    trace.dx = x2 - x1;
+    trace.dy = y2 - y1;
 
-	if(((x1 - bmaporgx) & (MAPBLOCKSIZE - 1)) == 0)
-		x1 += FRACUNIT;			// don't side exactly on a line
-	if(((y1 - bmaporgy) & (MAPBLOCKSIZE - 1)) == 0)
-		y1 += FRACUNIT;			// don't side exactly on a line
-	trace.x = x1;
-	trace.y = y1;
-	trace.dx = x2 - x1;
-	trace.dy = y2 - y1;
+    x1 -= bmaporgx;
+    y1 -= bmaporgy;
+    xt1 = x1 >> MAPBLOCKSHIFT;
+    yt1 = y1 >> MAPBLOCKSHIFT;
 
-	x1 -= bmaporgx;
-	y1 -= bmaporgy;
-	xt1 = x1 >> MAPBLOCKSHIFT;
-	yt1 = y1 >> MAPBLOCKSHIFT;
+    x2 -= bmaporgx;
+    y2 -= bmaporgy;
+    xt2 = x2 >> MAPBLOCKSHIFT;
+    yt2 = y2 >> MAPBLOCKSHIFT;
 
-	x2 -= bmaporgx;
-	y2 -= bmaporgy;
-	xt2 = x2 >> MAPBLOCKSHIFT;
-	yt2 = y2 >> MAPBLOCKSHIFT;
+    // points should never be out of bounds, but check once instead of
+    // each block
+    if(xt1 < 0 || yt1 < 0 || xt1 >= bmapwidth || yt1 >= bmapheight || xt2 < 0
+       || yt2 < 0 || xt2 >= bmapwidth || yt2 >= bmapheight)
+        return false;
 
-	// points should never be out of bounds, but check once instead of
-	// each block
-	if(xt1 < 0 || yt1 < 0 || xt1 >= bmapwidth || yt1 >= bmapheight || xt2 < 0
-	   || yt2 < 0 || xt2 >= bmapwidth || yt2 >= bmapheight)
-		return false;
+    if(xt2 > xt1)
+    {
+        mapxstep = 1;
+        partial = FRACUNIT - ((x1 >> MAPBTOFRAC) & (FRACUNIT - 1));
+        ystep = FixedDiv(y2 - y1, abs(x2 - x1));
+    }
+    else if(xt2 < xt1)
+    {
+        mapxstep = -1;
+        partial = (x1 >> MAPBTOFRAC) & (FRACUNIT - 1);
+        ystep = FixedDiv(y2 - y1, abs(x2 - x1));
+    }
+    else
+    {
+        mapxstep = 0;
+        partial = FRACUNIT;
+        ystep = 256 * FRACUNIT;
+    }
+    yintercept = (y1 >> MAPBTOFRAC) + FixedMul(partial, ystep);
 
-	if(xt2 > xt1)
-	{
-		mapxstep = 1;
-		partial = FRACUNIT - ((x1 >> MAPBTOFRAC) & (FRACUNIT - 1));
-		ystep = FixedDiv(y2 - y1, abs(x2 - x1));
-	}
-	else if(xt2 < xt1)
-	{
-		mapxstep = -1;
-		partial = (x1 >> MAPBTOFRAC) & (FRACUNIT - 1);
-		ystep = FixedDiv(y2 - y1, abs(x2 - x1));
-	}
-	else
-	{
-		mapxstep = 0;
-		partial = FRACUNIT;
-		ystep = 256 * FRACUNIT;
-	}
-	yintercept = (y1 >> MAPBTOFRAC) + FixedMul(partial, ystep);
+    if(yt2 > yt1)
+    {
+        mapystep = 1;
+        partial = FRACUNIT - ((y1 >> MAPBTOFRAC) & (FRACUNIT - 1));
+        xstep = FixedDiv(x2 - x1, abs(y2 - y1));
+    }
+    else if(yt2 < yt1)
+    {
+        mapystep = -1;
+        partial = (y1 >> MAPBTOFRAC) & (FRACUNIT - 1);
+        xstep = FixedDiv(x2 - x1, abs(y2 - y1));
+    }
+    else
+    {
+        mapystep = 0;
+        partial = FRACUNIT;
+        xstep = 256 * FRACUNIT;
+    }
+    xintercept = (x1 >> MAPBTOFRAC) + FixedMul(partial, xstep);
 
-	if(yt2 > yt1)
-	{
-		mapystep = 1;
-		partial = FRACUNIT - ((y1 >> MAPBTOFRAC) & (FRACUNIT - 1));
-		xstep = FixedDiv(x2 - x1, abs(y2 - y1));
-	}
-	else if(yt2 < yt1)
-	{
-		mapystep = -1;
-		partial = (y1 >> MAPBTOFRAC) & (FRACUNIT - 1);
-		xstep = FixedDiv(x2 - x1, abs(y2 - y1));
-	}
-	else
-	{
-		mapystep = 0;
-		partial = FRACUNIT;
-		xstep = 256 * FRACUNIT;
-	}
-	xintercept = (x1 >> MAPBTOFRAC) + FixedMul(partial, xstep);
+    //
+    // step through map blocks
+    // Count is present to prevent a round off error from skipping the break
+    mapx = xt1;
+    mapy = yt1;
 
-	//
-	// step through map blocks
-	// Count is present to prevent a round off error from skipping the break
-	mapx = xt1;
-	mapy = yt1;
+    for(count = 0; count < 64; count++)
+    {
+        if(!P_SightBlockLinesIterator(mapx, mapy))
+        {
+            sightcounts[1]++;
+            return false;       // early out
+        }
 
-	for(count = 0; count < 64; count++)
-	{
-		if(!P_SightBlockLinesIterator(mapx, mapy))
-		{
-			sightcounts[1]++;
-			return false;		// early out
-		}
+        if(mapx == xt2 && mapy == yt2)
+            break;
 
-		if(mapx == xt2 && mapy == yt2)
-			break;
+        if((yintercept >> FRACBITS) == mapy)
+        {
+            yintercept += ystep;
+            mapx += mapxstep;
+        }
+        else if((xintercept >> FRACBITS) == mapx)
+        {
+            xintercept += xstep;
+            mapy += mapystep;
+        }
 
-		if((yintercept >> FRACBITS) == mapy)
-		{
-			yintercept += ystep;
-			mapx += mapxstep;
-		}
-		else if((xintercept >> FRACBITS) == mapx)
-		{
-			xintercept += xstep;
-			mapy += mapystep;
-		}
+    }
 
-	}
-
-	//
-	// couldn't early out, so go through the sorted list
-	//
-	sightcounts[2]++;
-
-	return P_SightTraverseIntercepts();
+    //
+    // couldn't early out, so go through the sorted list
+    //
+    sightcounts[2]++;
+#endif
+    return P_SightTraverseIntercepts();
 }
 
 /*
@@ -310,34 +310,35 @@ boolean P_SightPathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 
 boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 {
-	int     s1, s2;
-	int     pnum, bytenum, bitnum;
+    int     s1, s2;
+    int     pnum, bytenum, bitnum;
 
-	if(P_IsCamera(t1) || P_IsCamera(t2))
-		return false;			// Cameramen don't exist!
+    if(P_IsCamera(t1) || P_IsCamera(t2))
+        return false;           // Cameramen don't exist!
 
-	if(rejectmatrix)
-	{
-		// Check for trivial rejection.
-		s1 = (t1->subsector->sector - sectors);
-		s2 = (t2->subsector->sector - sectors);
-		pnum = s1 * numsectors + s2;
-		bytenum = pnum >> 3;
-		bitnum = 1 << (pnum & 7);
+#ifdef TODO_MAP_UPDATE
+    if(rejectmatrix)
+    {
+        // Check for trivial rejection.
+        s1 = (t1->subsector->sector - sectors);
+        s2 = (t2->subsector->sector - sectors);
+        pnum = s1 * numsectors + s2;
+        bytenum = pnum >> 3;
+        bitnum = 1 << (pnum & 7);
 
-		if(rejectmatrix[bytenum] & bitnum)
-		{
-			sightcounts[0]++;
-			return false;		// can't possibly be connected
-		}
-	}
+        if(rejectmatrix[bytenum] & bitnum)
+        {
+            sightcounts[0]++;
+            return false;       // can't possibly be connected
+        }
+    }
+#endif
+    //
+    // check precisely
+    //
+    sightzstart = t1->z + t1->height - (t1->height >> 2);
+    topslope = (t2->z + t2->height) - sightzstart;
+    bottomslope = (t2->z) - sightzstart;
 
-	//
-	// check precisely
-	//      
-	sightzstart = t1->z + t1->height - (t1->height >> 2);
-	topslope = (t2->z + t2->height) - sightzstart;
-	bottomslope = (t2->z) - sightzstart;
-
-	return P_SightPathTraverse(t1->x, t1->y, t2->x, t2->y);
+    return P_SightPathTraverse(t1->x, t1->y, t2->x, t2->y);
 }
