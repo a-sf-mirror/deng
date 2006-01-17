@@ -516,8 +516,10 @@ void SV_ReadMobj(mobj_t *mo)
         mo->target = (mobj_t *) (int) SV_ReadShort();
 
         // Ver 5 saves the tracer too. Updated after all mobjs are loaded.
+#if __JDOOM__
         if(ver >= 5)
             mo->tracer = (mobj_t *) (int) SV_ReadShort();
+#endif
     }
 
     // Info for drawing: position.
@@ -1557,6 +1559,7 @@ void SV_ReadGlow(glow_t* glow)
     glow->thinker.function = T_Glow;
 }
 
+#if __JDOOM__
 void SV_WriteFlicker(fireflicker_t* flicker)
 {
     SV_WriteByte(tc_flicker);
@@ -1589,6 +1592,7 @@ void SV_ReadFlicker(fireflicker_t* flicker)
     flicker->maxlight = SV_ReadLong();
     flicker->minlight = SV_ReadLong();
 }
+#endif
 
 /*
  * Things to handle:
@@ -1600,7 +1604,7 @@ void SV_ReadFlicker(fireflicker_t* flicker)
  * T_StrobeFlash, (strobe_t: sector_t *),
  * T_Glow, (glow_t: sector_t *),
  * T_PlatRaise, (plat_t: sector_t *), - active list
- * T_FireFlicker (flicker_t: sector_t *) - Added in Ver5 DJS
+ * if __JDOOM__ T_FireFlicker (flicker_t: sector_t *) - Added in Ver5 DJS
  */
 void P_ArchiveSpecials(void)
 {
@@ -1612,7 +1616,9 @@ void P_ArchiveSpecials(void)
     lightflash_t flash;
     strobe_t strobe;
     glow_t  glow;
+#if __JDOOM__
     fireflicker_t flicker;
+#endif
 
     // save off the current thinkers
     for(th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -1688,7 +1694,7 @@ void P_ArchiveSpecials(void)
             SV_WriteGlow(&glow);
             continue;
         }
-
+#if __JDOOM__
         // Added in Ver5 - DJS
         if(th->function == T_FireFlicker)
         {
@@ -1696,6 +1702,7 @@ void P_ArchiveSpecials(void)
             SV_WriteFlicker(&flicker);
             continue;
         }
+#endif
     }
 
     // add a terminating marker
@@ -1712,7 +1719,9 @@ void P_UnArchiveSpecials(void)
     lightflash_t *flash;
     strobe_t *strobe;
     glow_t *glow;
+#if __JDOOM__
     fireflicker_t *flicker;
+#endif
 
     // read in saved thinkers
     while(1)
@@ -1781,7 +1790,7 @@ void P_UnArchiveSpecials(void)
 
             P_AddThinker(&glow->thinker);
             break;
-
+#if __JDOOM__
         // Added in Ver5 - DJS
         case tc_flicker:
             flicker = Z_Malloc(sizeof(*flicker), PU_LEVEL, NULL);
@@ -1790,7 +1799,7 @@ void P_UnArchiveSpecials(void)
 
             P_AddThinker(&flicker->thinker);
             break;
-
+#endif
         default:
             Con_Error("P_UnArchiveSpecials: Unknown tclass %i " "in savegame.",
                       tclass);

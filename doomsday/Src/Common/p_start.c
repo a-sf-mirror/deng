@@ -28,11 +28,14 @@
 #  include "g_game.h"
 #  include "s_sound.h"
 #  include "r_common.h"
-# include "hu_stuff.h"
+#  include "hu_stuff.h"
 #elif __JHERETIC__
+#  include <ctype.h>              // has isspace
 #  include "jHeretic/Doomdef.h"
 #  include "jHeretic/P_local.h"
+#  include "jHeretic/S_sound.h"
 #  include "h_config.h"
+#  include "r_common.h"
 #elif __JHEXEN__
 #  include "jHexen/h2def.h"
 #  include "jHexen/p_local.h"
@@ -886,27 +889,36 @@ void P_MoveThingsOutOfWalls()
     fixed_t closestdist, dist, off, linelen, minrad;
     mobj_t *tlist[MAXLIST];
 
-    for(sec = sectors, i = 0; i < numsectors; i++, sec++)
+    for(i = 0; i < numsectors; i++)
     {
+        sec = P_ToPtr(DMU_SECTOR, i);
         memset(tlist, 0, sizeof(tlist));
-        // First all the things to move.
-        for(k = 0, iter = sec->thinglist; iter; iter = iter->snext)
+
+        // First all the things to process.
+        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
+            k < MAXLIST - 1 && iter; iter = iter->snext)
+        {
             // Wall torches are most often seen inside walls.
             if(iter->type == MT_MISC10)
                 tlist[k++] = iter;
+        }
+
         // Move the things out of walls.
         for(t = 0; (iter = tlist[t]) != NULL; t++)
         {
+            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+
             minrad = iter->radius / 2;
             closestline = NULL;
-            for(k = 0; k < sec->linecount; k++)
+
+            for(k = 0; k < sectorLineCount; k++)
             {
-                li = sec->Lines[k];
-                if(li->backsector)
+                li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
+                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
                     continue;
                 linelen =
-                    P_ApproxDistance(li->v2->x - li->v1->x,
-                                     li->v2->y - li->v1->y);
+                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
+                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
                 dist = P_PointLineDistance(li, iter->x, iter->y, &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
@@ -921,8 +933,8 @@ void P_MoveThingsOutOfWalls()
                 float   len;
 
                 li = closestline;
-                dy = -FIX2FLT(li->v2->x - li->v1->x);
-                dx = FIX2FLT(li->v2->y - li->v1->y);
+                dy = -P_GetFloatp(DMU_LINE, li, DMU_DX);
+                dx = P_GetFloatp(DMU_LINE, li, DMU_DY);
                 len = sqrt(dx * dx + dy * dy);
                 dx *= offlen / len;
                 dy *= offlen / len;
@@ -945,16 +957,18 @@ void P_TurnGizmosAwayFromDoors()
     mobj_t *iter;
     int     i, k, t;
     line_t *closestline = NULL, *li;
+    xline_t *xli;
     fixed_t closestdist, dist, off, linelen;    //, minrad;
     mobj_t *tlist[MAXLIST];
 
-    for(sec = sectors, i = 0; i < numsectors; i++, sec++)
+    for(i = 0; i < numsectors; i++)
     {
+        sec = P_ToPtr(DMU_SECTOR, i);
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = sec->thinglist; k < MAXLIST - 1 && iter;
-            iter = iter->snext)
+        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
+            k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             if(iter->type == MT_KEYGIZMOBLUE || iter->type == MT_KEYGIZMOGREEN
                || iter->type == MT_KEYGIZMOYELLOW)
@@ -967,16 +981,23 @@ void P_TurnGizmosAwayFromDoors()
             closestline = NULL;
             for(k = 0; k < numlines; k++)
             {
-                li = lines + k;
-                // It must be a special line with a back sector.
-                if(!li->backsector ||
-                   (li->special != 32 && li->special != 33 && li->special != 34
-                    && li->special != 26 && li->special != 27 &&
-                    li->special != 28))
+                li = P_ToPtr(DMU_LINE, k);
+
+                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
                     continue;
+
+                xli = P_XLine(li);
+
+                // It must be a special line with a back sector.
+                if((xli->special != 32 && xli->special != 33 && xli->special != 34
+                    && xli->special != 26 && xli->special != 27 &&
+                    xli->special != 28))
+                    continue;
+
                 linelen =
-                    P_ApproxDistance(li->v2->x - li->v1->x,
-                                     li->v2->y - li->v1->y);
+                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
+                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
+
                 dist = abs(P_PointLineDistance(li, iter->x, iter->y, &off));
                 if(!closestline || dist < closestdist)
                 {
@@ -987,9 +1008,10 @@ void P_TurnGizmosAwayFromDoors()
             if(closestline)
             {
                 iter->angle =
-                    R_PointToAngle2(closestline->v1->x, closestline->v1->y,
-                                    closestline->v2->x,
-                                    closestline->v2->y) - ANG90;
+                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X),
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_Y),
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_X),
+                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_Y)) - ANG90;
             }
         }
     }
