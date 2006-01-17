@@ -25,8 +25,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdlib.h>
-
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_config.h"
@@ -398,10 +396,8 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
  */
 void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 {
-    line_t *line;
+    line_t *line = P_ToPtr(DMU_LINE, linenum);
     int     ok;
-
-    line = P_ToPtr(DMU_LINE, linenum);
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -427,7 +423,7 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         }
 
         ok = 0;
-        switch (xlines[linenum].special)
+        switch (P_XLine(line)->special)
         {
         case 39:                // TELEPORT TRIGGER
         case 97:                // TELEPORT RETRIGGER
@@ -441,150 +437,150 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         }
 
         // Anything can trigger this line!
-            if(P_GetInt(DMU_LINE, linenum, DMU_FLAGS) & ML_ALLTRIGGER)
-                ok = 1;
+        if(P_GetInt(DMU_LINE, linenum, DMU_FLAGS) & ML_ALLTRIGGER)
+            ok = 1;
 
         if(!ok)
             return;
     }
 
     // Note: could use some const's here.
-    switch (xlines[linenum].special)
+    switch (P_XLine(line)->special)
     {
         // TRIGGERS.
         // All from here to RETRIGGERS.
     case 2:
         // Open Door
         EV_DoDoor(line, open);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 3:
         // Close Door
         EV_DoDoor(line, close);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 4:
         // Raise Door
         EV_DoDoor(line, normal);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 5:
         // Raise Floor
         EV_DoFloor(line, raiseFloor);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 6:
         // Fast Ceiling Crush & Raise
         EV_DoCeiling(line, fastCrushAndRaise);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 8:
         // Build Stairs
         EV_BuildStairs(line, build8);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 10:
         // PlatDownWaitUp
         EV_DoPlat(line, downWaitUpStay, 0);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 12:
         // Light Turn On - brightest near
         EV_LightTurnOn(line, 0);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 13:
         // Light Turn On 255
         EV_LightTurnOn(line, 255);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 16:
         // Close Door 30
         EV_DoDoor(line, close30ThenOpen);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 17:
         // Start Light Strobing
         EV_StartLightStrobing(line);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 19:
         // Lower Floor
         EV_DoFloor(line, lowerFloor);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 22:
         // Raise floor to nearest height and change texture
         EV_DoPlat(line, raiseToNearestAndChange, 0);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 25:
         // Ceiling Crush and Raise
         EV_DoCeiling(line, crushAndRaise);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 30:
         // Raise floor to shortest texture height
         //  on either side of lines.
         EV_DoFloor(line, raiseToTexture);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 35:
         // Lights Very Dark
         EV_LightTurnOn(line, 35);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 36:
         // Lower Floor (TURBO)
         EV_DoFloor(line, turboLower);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 37:
         // LowerAndChange
         EV_DoFloor(line, lowerAndChange);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 38:
         // Lower Floor To Lowest
         EV_DoFloor(line, lowerFloorToLowest);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 39:
         // TELEPORT!
         EV_Teleport(line, side, thing);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 40:
         // RaiseCeilingLowerFloor
         EV_DoCeiling(line, raiseToHighest);
         EV_DoFloor(line, lowerFloorToLowest);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 44:
         // Ceiling Crush
         EV_DoCeiling(line, lowerAndCrush);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 52:
@@ -595,79 +591,79 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
     case 53:
         // Perpetual Platform Raise
         EV_DoPlat(line, perpetualRaise, 0);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 54:
         // Platform Stop
         EV_StopPlat(line);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 56:
         // Raise Floor Crush
         EV_DoFloor(line, raiseFloorCrush);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 57:
         // Ceiling Crush Stop
         EV_CeilingCrushStop(line);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 58:
         // Raise Floor 24
         EV_DoFloor(line, raiseFloor24);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 59:
         // Raise Floor 24 And Change
         EV_DoFloor(line, raiseFloor24AndChange);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 104:
         // Turn lights off in sector(tag)
         EV_TurnTagLightsOff(line);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 108:
         // Blazing Door Raise (faster than TURBO!)
         EV_DoDoor(line, blazeRaise);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 109:
         // Blazing Door Open (faster than TURBO!)
         EV_DoDoor(line, blazeOpen);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 100:
         // Build Stairs Turbo 16
         EV_BuildStairs(line, turbo16);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 110:
         // Blazing Door Close (faster than TURBO!)
         EV_DoDoor(line, blazeClose);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 119:
         // Raise floor to nearest surr. floor
         EV_DoFloor(line, raiseFloorToNearest);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 121:
         // Blazing PlatDownWaitUpStay
         EV_DoPlat(line, blazeDWUS, 0);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 124:
@@ -680,20 +676,20 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
         if(!thing->player)
         {
             EV_Teleport(line, side, thing);
-            xlines[linenum].special = 0;
+            P_XLine(line)->special = 0;
         }
         break;
 
     case 130:
         // Raise Floor Turbo
         EV_DoFloor(line, raiseFloorTurbo);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
     case 141:
         // Silent Ceiling Crush & Raise
         EV_DoCeiling(line, silentCrushAndRaise);
-        xlines[linenum].special = 0;
+        P_XLine(line)->special = 0;
         break;
 
         // RETRIGGERS.  All from here till end.
@@ -868,13 +864,12 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 void P_ShootSpecialLine(mobj_t *thing, line_t *line)
 {
     int     ok;
-    int     lineid = P_ToIndex(DMU_LINE, line);
 
     //  Impacts that other things can activate.
     if(!thing->player)
     {
         ok = 0;
-        switch (xlines[lineid].special)
+        switch (P_XLine(line)->special)
         {
         case 46:
             // OPEN DOOR IMPACT
@@ -885,7 +880,7 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
             return;
     }
 
-    switch(xlines[lineid].special)
+    switch(P_XLine(line)->special)
     {
     case 24:
         // RAISE FLOOR
@@ -912,18 +907,15 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
  */
 void P_PlayerInSpecialSector(player_t *player)
 {
-    int sec;
-    sector_t *sector;
-
-    sector = P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
-    sec = P_ToIndex(DMU_SECTOR, sector);
+    sector_t *sector =
+        P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
-    if(player->plr->mo->z != P_GetInt(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT))
+    if(player->plr->mo->z != P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT))
         return;
 
     // Has hitten ground.
-    switch(xsectors[sec].special)
+    switch(P_XSector(sector)->special)
     {
     case 5:
         // HELLSLIME DAMAGE
@@ -953,13 +945,11 @@ void P_PlayerInSpecialSector(player_t *player)
     case 9:
         // SECRET SECTOR
         player->secretcount++;
-        xsectors[sec].special = 0;
+        P_XSector(sector)->special = 0;
         if(cfg.secretMsg)
         {
             P_SetMessage(player, "You've found a secret area!");
             S_ConsoleSound(sfx_getpow, 0, player - players);
-            //S_NetStartPlrSound(player, sfx_itmbk);
-            //gamemode==commercial? sfx_radio : sfx_tink);
         }
         break;
 
@@ -975,11 +965,8 @@ void P_PlayerInSpecialSector(player_t *player)
         break;
 
     default:
-        /*Con_Error ("P_PlayerInSpecialSector: "
-           "unknown special %i",
-           sector->special); */
         break;
-    };
+    }
 }
 
 /*
@@ -1002,23 +989,6 @@ void P_UpdateSpecials(void)
         if(!levelTimeCount)
             G_ExitLevel();
     }
-
-#if 0
-    //  ANIMATE FLATS AND TEXTURES GLOBALLY
-    for(anim = anims; anim < lastanim; anim++)
-    {
-        for(i = anim->basepic; i < anim->basepic + anim->numpics; i++)
-        {
-            pic =
-                anim->basepic +
-                ((leveltime / anim->speed + i) % anim->numpics);
-            if(anim->istexture)
-                R_SetTextureTranslation(i, pic);
-            else
-                R_SetFlatTranslation(i, pic);
-        }
-    }
-#endif
 
     //  ANIMATE LINE SPECIALS
     for(i = 0; i < numlinespecials; i++)
@@ -1043,6 +1013,7 @@ void P_UpdateSpecials(void)
     //  DO BUTTONS
     // FIXME! remove fixed limt.
     for(i = 0; i < MAXBUTTONS; i++)
+    {
         if(buttonlist[i].btimer)
         {
             buttonlist[i].btimer--;
@@ -1081,6 +1052,7 @@ void P_UpdateSpecials(void)
                 memset(&buttonlist[i], 0, sizeof(button_t));
             }
         }
+    }
 
 }
 
@@ -1187,12 +1159,12 @@ void P_SpawnSpecials(void)
     {
         sector = P_ToPtr(DMU_SECTOR, i);
 
-        if(!xsectors[i].special)
+        if(!P_XSector(sector)->special)
             continue;
 
         if(IS_CLIENT)
         {
-            switch (xsectors[i].special)
+            switch (P_XSector(sector)->special)
             {
             case 9:
                 // SECRET SECTOR
@@ -1202,7 +1174,7 @@ void P_SpawnSpecials(void)
             continue;
         }
 
-        switch (xsectors[i].special)
+        switch (P_XSector(sector)->special)
         {
         case 1:
             // FLICKERING LIGHTS
@@ -1222,7 +1194,7 @@ void P_SpawnSpecials(void)
         case 4:
             // STROBE FAST/DEATH SLIME
             P_SpawnStrobeFlash(sector, FASTDARK, 0);
-            xsectors[i].special = 4;
+            P_XSector(sector)->special = 4;
             break;
 
         case 8:

@@ -48,7 +48,7 @@ void T_VerticalDoor(vldoor_t * door)
     xsector_t *xsec;
     result_e res;
 
-    xsec = &xsectors[P_ToIndex(DMU_SECTOR, door->sector)];
+    xsec = P_XSector(door->sector);
 
     switch (door->direction)
     {
@@ -189,7 +189,7 @@ void T_VerticalDoor(vldoor_t * door)
  */
 int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
     player_t *p;
 
     p = thing->player;
@@ -328,8 +328,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 void EV_VerticalDoor(line_t *line, mobj_t *thing)
 {
     player_t *player;
-    int     secnum;
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
     sector_t *sec;
     xsector_t *xsec;
     vldoor_t *door;
@@ -342,8 +341,9 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
 
     switch (xline->special)
     {
-    case 26:                    // Blue Lock
+    case 26:
     case 32:
+        // Blue Lock
         if(!player)
             return;
 
@@ -355,8 +355,9 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
         }
         break;
 
-    case 27:                    // Yellow Lock
+    case 27:
     case 34:
+        // Yellow Lock
         if(!player)
             return;
 
@@ -368,8 +369,9 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
         }
         break;
 
-    case 28:                    // Red Lock
+    case 28:
     case 33:
+        // Red Lock
         if(!player)
             return;
 
@@ -384,19 +386,19 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
 
     // if the sector has an active thinker, use it
     sec = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
-    secnum = P_ToIndex(DMU_SECTOR, sec);
-    xsec = &xsectors[secnum];
+    xsec = P_XSector(sec);
 
     if(xsec->specialdata)
     {
         door = xsec->specialdata;
         switch (xline->special)
         {
-        case 1:             // ONLY FOR "RAISE" DOORS, NOT "OPEN"s
+        case 1:
         case 26:
         case 27:
         case 28:
         case 117:
+            // ONLY FOR "RAISE" DOORS, NOT "OPEN"s
             if(door->direction == -1)
                 door->direction = 1;    // go back up
             else
@@ -413,17 +415,20 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     // for proper sound
     switch(xline->special)
     {
-    case 117:                   // BLAZING DOOR RAISE
-    case 118:                   // BLAZING DOOR OPEN
+    case 117:
+    case 118:
+        // BLAZING DOOR RAISE/OPEN
         S_SectorSound(sec, sfx_bdopn);
         break;
 
-    case 1:                 // NORMAL DOOR SOUND
+    case 1:
     case 31:
+        // NORMAL DOOR SOUND
         S_SectorSound(sec, sfx_doropn);
         break;
 
-    default:                    // LOCKED DOOR SOUND
+    default:
+        // LOCKED DOOR SOUND
         S_SectorSound(sec, sfx_doropn);
         break;
     }
@@ -473,15 +478,14 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
 
 void P_SpawnDoorCloseIn30(sector_t *sec)
 {
-    xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, sec)];
     vldoor_t *door;
 
     door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 
     P_AddThinker(&door->thinker);
 
-    xsec->specialdata = door;
-    xsec->special = 0;
+    P_XSector(sec)->specialdata = door;
+    P_XSector(sec)->special = 0;
 
     door->thinker.function = T_VerticalDoor;
     door->sector = sec;
@@ -493,15 +497,14 @@ void P_SpawnDoorCloseIn30(sector_t *sec)
 
 void P_SpawnDoorRaiseIn5Mins(sector_t *sec, int secnum)
 {
-    xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, sec)];
     vldoor_t *door;
 
     door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 
     P_AddThinker(&door->thinker);
 
-    xsec->specialdata = door;
-    xsec->special = 0;
+    P_XSector(sec)->specialdata = door;
+    P_XSector(sec)->special = 0;
 
     door->thinker.function = T_VerticalDoor;
     door->sector = sec;

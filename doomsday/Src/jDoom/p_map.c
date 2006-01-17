@@ -316,7 +316,6 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
     fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
     fixed_t* bbox = P_GetPtrp(DMU_LINE, ld, DMU_BOUNDING_BOX);
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, ld)];
 
     if(tmbbox[BOXRIGHT] <= bbox[BOXLEFT] ||
        tmbbox[BOXLEFT] >= bbox[BOXRIGHT] ||
@@ -331,7 +330,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     tmthing->wallhit = true;
 
     // A Hit event will be sent to special lines.
-    if(xline->special)
+    if(P_XLine(ld)->special)
         tmhitline = ld;
 
     // The moving thing's destination position will cross
@@ -390,7 +389,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
         tmdropoffz = lowfloor;
 
     // if contacted a special line, add it to the list
-    if(xline->special)
+    if(P_XLine(ld)->special)
     {
         if(numspechit >= spechit_max)
         {
@@ -585,12 +584,7 @@ boolean P_CheckSides(mobj_t* actor, int x, int y)
  */
 boolean P_CheckPosition2(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
-    int     xl;
-    int     xh;
-    int     yl;
-    int     yh;
-    int     bx;
-    int     by;
+    int     xl, xh, yl, yh, bx, by;
     sector_t *newsec;
 
     tmthing = thing;
@@ -839,13 +833,8 @@ boolean P_ThingHeightClip(mobj_t *thing)
 void P_HitSlideLine(line_t *ld)
 {
     int     side;
-
-    angle_t lineangle;
-    angle_t moveangle;
-    angle_t deltaangle;
-
-    fixed_t movelen;
-    fixed_t newlen;
+    angle_t lineangle, moveangle, deltaangle;
+    fixed_t movelen, newlen;
 
     if(P_GetIntp(DMU_LINE, ld, DMU_SLOPE_TYPE) == ST_HORIZONTAL)
     {
@@ -942,12 +931,9 @@ boolean PTR_SlideTraverse(intercept_t * in)
  */
 void P_SlideMove(mobj_t *mo)
 {
-    fixed_t leadx;
-    fixed_t leady;
-    fixed_t trailx;
-    fixed_t traily;
-    fixed_t newx;
-    fixed_t newy;
+    fixed_t leadx, leady;
+    fixed_t trailx, traily;
+    fixed_t newx, newy;
     int     hitcount;
 
     slidemo = mo;
@@ -1044,11 +1030,9 @@ boolean PTR_AimTraverse(intercept_t * in)
 {
     line_t *li;
     mobj_t *th;
-    sector_t *backsector, *frontsector;
-    fixed_t slope;
-    fixed_t thingtopslope;
-    fixed_t thingbottomslope;
+    fixed_t slope, thingtopslope, thingbottomslope;
     fixed_t dist;
+    sector_t *backsector, *frontsector;
 
     if(in->isaline)
     {
@@ -1127,9 +1111,7 @@ boolean PTR_AimTraverse(intercept_t * in)
 
 boolean PTR_ShootTraverse(intercept_t * in)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t x, y, z;
     fixed_t frac;
     sector_t *backsector, *frontsector;
     line_t *li;
@@ -1398,7 +1380,7 @@ boolean PTR_UseTraverse(intercept_t * in)
 {
     int     side;
 
-    if(!xlines[P_ToIndex(DMU_LINE, in->d.line)].special)
+    if(!P_XLine(in->d.line)->special)
     {
         P_LineOpening(in->d.line);
         if(openrange <= 0)
@@ -1497,19 +1479,13 @@ boolean PIT_RadiusAttack(mobj_t *thing, void *data)
  */
 void P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage)
 {
-    int     x;
-    int     y;
-
-    int     xl;
-    int     xh;
-    int     yl;
-    int     yh;
-
+    int     x, y, xl, xh, yl, yh;
     fixed_t dist;
 
     dist = (damage + MAXRADIUS) << FRACBITS;
     P_PointToBlock(spot->x - dist, spot->y - dist, &xl, &yl);
     P_PointToBlock(spot->x + dist, spot->y + dist, &xh, &yh);
+
     bombspot = spot;
     bombsource = source;
     bombdamage = damage;

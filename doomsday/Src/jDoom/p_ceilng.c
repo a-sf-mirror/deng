@@ -262,7 +262,7 @@ void P_RemoveActiveCeiling(ceiling_t *ceiling)
 {
     ceilinglist_t *list = ceiling->list;
 
-    xsectors[P_ToIndex(DMU_SECTOR, ceiling->sector)].specialdata = NULL;
+    P_XSector(ceiling->sector)->specialdata = NULL;
     P_RemoveThinker(&ceiling->thinker);
 
     if((*list->prev = list->next))
@@ -294,14 +294,13 @@ void P_RemoveAllActiveCeilings(void)
 int P_ActivateInStasisCeiling(line_t *line)
 {
     int rtn = 0;
-    int lineid = P_ToIndex(DMU_LINE, line);
     ceilinglist_t *cl;
 
     for(cl = activeceilings; cl; cl = cl->next)
     {
         ceiling_t *ceiling = cl->ceiling;
 
-        if(ceiling->tag == xlines[lineid].tag && ceiling->direction == 0)
+        if(ceiling->direction == 0 && ceiling->tag == P_XLine(line)->tag)
         {
             ceiling->direction = ceiling->olddirection;
             ceiling->thinker.function = (actionf_p1) T_MoveCeiling;
@@ -322,14 +321,13 @@ int P_ActivateInStasisCeiling(line_t *line)
 int EV_CeilingCrushStop(line_t *line)
 {
     int rtn = 0;
-    int lineid = P_ToIndex(DMU_LINE, line);
     ceilinglist_t *cl;
 
     for(cl = activeceilings; cl; cl = cl->next)
     {
         ceiling_t *ceiling = cl->ceiling;
 
-        if(ceiling->direction != 0 && ceiling->tag == xlines[lineid].tag)
+        if(ceiling->direction != 0 && ceiling->tag == P_XLine(line)->tag)
         {
             ceiling->olddirection = ceiling->direction;
             ceiling->direction = 0;

@@ -41,7 +41,6 @@
 int EV_Teleport(line_t *line, int side, mobj_t *thing)
 {
     int     i;
-    int     idx = P_ToIndex(DMU_LINE, line);
     int     tag;
     mobj_t *m;
     mobj_t *fog;
@@ -61,7 +60,7 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing)
     if(side == 1)
         return 0;
 
-    tag = xlines[idx].tag;
+    tag = P_XLine(line)->tag;
 
     for(i = 0; i < numsectors; i++)
     {

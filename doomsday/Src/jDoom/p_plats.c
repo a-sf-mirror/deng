@@ -121,6 +121,8 @@ void T_PlatRaise(plat_t * plat)
                 plat->status = down;
             S_SectorSound(plat->sector, sfx_pstart);
         }
+        break;
+
     case in_stasis:
         break;
     }
@@ -291,7 +293,6 @@ void P_ActivateInStasis(int tag)
  */
 int EV_StopPlat(line_t *line)
 {
-    int lineid = P_ToIndex(DMU_LINE, line);
     platlist_t *pl;
 
     // search the active plats
@@ -300,7 +301,7 @@ int EV_StopPlat(line_t *line)
         plat_t *plat = pl->plat;
 
         // for one with the tag not in stasis
-        if(plat->status != in_stasis && plat->tag == xlines[lineid].tag)
+        if(plat->status != in_stasis && plat->tag == P_XLine(line)->tag)
         {
             // put it in stasis
             plat->oldstatus = plat->status;
@@ -339,7 +340,7 @@ void P_RemoveActivePlat(plat_t *plat)
 {
     platlist_t *list = plat->list;
 
-    xsectors[P_ToIndex(DMU_SECTOR, plat->sector)].specialdata = NULL;
+    P_XSector(plat->sector)->specialdata = NULL;
 
     P_RemoveThinker(&plat->thinker);
 

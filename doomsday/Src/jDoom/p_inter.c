@@ -278,6 +278,7 @@ boolean P_GiveBody(player_t *player, int num)
     player->health += num;
     if(player->health > maxhealth)
         player->health = maxhealth;
+
     player->plr->mo->health = player->health;
     player->update |= PSF_HEALTH;
 

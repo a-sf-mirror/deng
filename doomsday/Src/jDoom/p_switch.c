@@ -40,10 +40,6 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-static int *switchlist;
-static int max_numswitches;
-static int numswitches;
-
 button_t buttonlist[MAXBUTTONS];
 
 switchlist_t alphSwitchList[] = {
@@ -97,6 +93,10 @@ switchlist_t alphSwitchList[] = {
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+static int *switchlist;
+static int max_numswitches;
+static int numswitches;
 
 // CODE --------------------------------------------------------------------
 
@@ -187,7 +187,6 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     int     texBot;
     int     i;
     int     sound;
-    int     idx = P_ToIndex(DMU_LINE, line);
     side_t*     sdef = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
     sector_t*   frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
 
@@ -201,7 +200,7 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     sound = sfx_swtchn;
 
     // EXIT SWITCH?
-    if(xlines[idx].special == 11)
+    if(P_XLine(line)->special == 11)
         sound = sfx_swtchx;
 
     for(i = 0; i < numswitches * 2; i++)

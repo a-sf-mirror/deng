@@ -75,6 +75,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
+
                 return pastdest;
             }
             else
@@ -88,6 +89,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
                     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
+
                     return crushed;
                 }
             }
@@ -107,6 +109,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
+
                 return pastdest;
             }
             else
@@ -118,9 +121,8 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 if(flag == true)
                 {
                     if(crush == true)
-                    {
                         return crushed;
-                    }
+
                     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
                     P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
@@ -160,13 +162,11 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 lastpos = ceilingheight;
                 P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos - speed);
                 flag = P_ChangeSector(sector, crush);
-
                 if(flag == true)
                 {
                     if(crush == true)
-                    {
                         return crushed;
-                    }
+
                     P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
                     P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
@@ -190,7 +190,6 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
                     P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
-
                 }
 
                 return pastdest;
@@ -200,16 +199,6 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 lastpos = ceilingheight;
                 P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos + speed);
                 flag = P_ChangeSector(sector, crush);
-
-                // UNUSED
-#if 0
-                if(flag == true)
-                {
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_ChangeSector(sector, crush);
-                    return crushed;
-                }
-#endif
             }
             break;
         }
@@ -224,17 +213,14 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
  */
 void T_MoveFloor(floormove_t * floor)
 {
-    xsector_t *xsec;
-    result_e res;
-
-    res =
+    xsector_t *xsec = P_XSector(floor->sector);
+    result_e res =
         T_MovePlane(floor->sector, floor->speed, floor->floordestheight,
                     floor->crush, 0, floor->direction);
 
     if(!(leveltime & 7))
         S_SectorSound(floor->sector, sfx_stnmov);
 
-    xsec = &xsectors[P_ToIndex(DMU_SECTOR, floor->sector)];
     if(res == pastdest)
     {
         P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_SPEED, 0);
@@ -273,7 +259,6 @@ void T_MoveFloor(floormove_t * floor)
 
         S_SectorSound(floor->sector, sfx_pstop);
     }
-
 }
 
 /*
@@ -379,6 +364,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                 P_GetFixedp(DMU_SECTOR, floor->sector,
                             DMU_FLOOR_HEIGHT) + 24 * FRACUNIT;
             break;
+
         case raiseFloor512:
             floor->direction = 1;
             floor->sector = sec;
@@ -401,8 +387,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
                       P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
 
-            xsec->special =
-                xsectors[P_ToIndex(DMU_SECTOR, frontsector)].special;
+            xsec->special = P_XSector(frontsector)->special;
             break;
 
         case raiseToTexture:
@@ -533,7 +518,7 @@ int EV_BuildStairs(line_t *line, stair_e type)
         xsec->specialdata = floor;
         floor->thinker.function = T_MoveFloor;
         floor->direction = 1;
-        floor->sector = P_ToPtr(DMU_SECTOR, secnum);
+        floor->sector = sec;
         switch (type)
         {
         case build8:
@@ -573,7 +558,6 @@ int EV_BuildStairs(line_t *line, stair_e type)
                 tsec = P_GetPtrp(DMU_LINE, ln, DMU_BACK_SECTOR);
 
                 newsecnum = P_ToIndex(DMU_SECTOR, tsec);
-
                 if(P_GetIntp(DMU_SECTOR, tsec, DMU_FLOOR_TEXTURE) != texture)
                     continue;
 

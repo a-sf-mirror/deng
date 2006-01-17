@@ -234,13 +234,11 @@ void P_v19_UnArchivePlayers(void)
 
 void P_v19_UnArchiveWorld(void)
 {
-    int     i;
-    int     j;
+    int     i, j;
     short  *get;
     int     firstflat = W_CheckNumForName("F_START") + 1;
 
     get = (short *) save_p;
-
 
     // do sectors
     for(i = 0; i < numsectors; i++)
@@ -320,11 +318,9 @@ void P_v19_UnArchiveThinkers(void)
             PADSAVEP();
             mobj = Z_Malloc(sizeof(*mobj), PU_LEVEL, NULL);
             memset(mobj, 0, sizeof(*mobj));
-            //memcpy (mobj, save_p, sizeof(*mobj));
-            //P_MobjConverter(mobj, (savemobj_t*) save_p, false);
-            //memcpy(mobj, save_p, sizeof(*mobj));
+
             SV_ReadMobj(mobj);
-            //save_p += sizeof(savemobj_t);
+
             mobj->state = &states[(int) mobj->state];
             mobj->target = NULL;
             if(mobj->player)
