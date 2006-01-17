@@ -1,26 +1,27 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
-//
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:  none
-//  Implements special effects:
-//  Texture animation, height or lighting changes
-//   according to adjacent sectors, respective
-//   utility functions, etc.
-//
-//-----------------------------------------------------------------------------
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+/*
+ * Implements special effects:
+ * Texture animation, height or lighting changes according to adjacent
+ * sectors, respective utility functions, etc.
+ *
+ * Line Tag handling. Line and Sector triggers.
+ *
+ * Events are operations triggered by using, crossing,
+ * or shooting special lines, or by timed thinkers.
+ */
 
 #ifndef __P_SPEC__
 #define __P_SPEC__
@@ -29,8 +30,8 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-// Many of the structs here will be directly read from old savegames,
-// this'll keep things compatible.
+// Many of the structures here will be directly written to
+// savegame files. They need to be packed as tightly as possible.
 #pragma pack(1)
 
 //
