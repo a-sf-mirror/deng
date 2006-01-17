@@ -13,15 +13,46 @@
 #include "h2def.h"
 #include "jHexen/p_local.h"
 
-//============================================================================
-//
-//  T_Light
-//
-//============================================================================
+// helper; could be moved to common game sources
+static int P_SectorLight(sector_t* sector)
+{
+    return P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+}
+
+// helper; could be moved to common game sources
+static void P_SectorSetLight(sector_t* sector, int level)
+{
+    P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, level);
+}
+
+// helper; could be moved to common game sources
+static void P_SectorModifyLight(sector_t* sector, int value)
+{
+    int level = P_SectorLight(sector);
+    
+    level += value;
+    
+    if(level < 0) level = 0;
+    if(level > 255) level = 255;
+
+    P_SectorSetLight(sector, level);
+}
+
+// helper; could be moved to common game sources
+static fixed_t P_SectorLightx(sector_t* sector)
+{
+    return P_GetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+}
+
+// helper; could be moved to common game sources
+static void P_SectorModifyLightx(sector_t* sector, fixed_t value)
+{
+    P_SetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
+                P_SectorLightx(sector) + value);    
+}
 
 void T_Light(light_t * light)
 {
-#ifdef TODO_MAP_UPDATE
 	if(light->count)
 	{
 		light->count--;
@@ -30,71 +61,67 @@ void T_Light(light_t * light)
 	switch (light->type)
 	{
 	case LITE_FADE:
-		light->sector->lightlevel =
-			((light->sector->lightlevel << FRACBITS) +
-			 light->value2) >> FRACBITS;
+        P_SectorModifyLightx(light->sector, light->value2);
+        
 		if(light->tics2 == 1)
 		{
-			if(light->sector->lightlevel >= light->value1)
+			if(P_SectorLight(light->sector) >= light->value1)
 			{
-				light->sector->lightlevel = light->value1;
+				P_SectorSetLight(light->sector, light->value1);
 				P_RemoveThinker(&light->thinker);
 			}
 		}
-		else if(light->sector->lightlevel <= light->value1)
+		else if(P_SectorLight(light->sector) <= light->value1)
 		{
-			light->sector->lightlevel = light->value1;
+			P_SectorSetLight(light->sector, light->value1);
 			P_RemoveThinker(&light->thinker);
 		}
 		break;
 	case LITE_GLOW:
-		light->sector->lightlevel =
-			((light->sector->lightlevel << FRACBITS) +
-			 light->tics1) >> FRACBITS;
+        P_SectorModifyLightx(light->sector, light->tics1);
 		if(light->tics2 == 1)
 		{
-			if(light->sector->lightlevel >= light->value1)
+			if(P_SectorLight(light->sector) >= light->value1)
 			{
-				light->sector->lightlevel = light->value1;
+				P_SectorSetLight(light->sector, light->value1);
 				light->tics1 = -light->tics1;
 				light->tics2 = -1;	// reverse direction
 			}
 		}
-		else if(light->sector->lightlevel <= light->value2)
+		else if(P_SectorLight(light->sector) <= light->value2)
 		{
-			light->sector->lightlevel = light->value2;
+			P_SectorSetLight(light->sector, light->value2);
 			light->tics1 = -light->tics1;
 			light->tics2 = 1;	// reverse direction
 		}
 		break;
 	case LITE_FLICKER:
-		if(light->sector->lightlevel == light->value1)
+		if(P_SectorLight(light->sector) == light->value1)
 		{
-			light->sector->lightlevel = light->value2;
+			P_SectorSetLight(light->sector, light->value2);
 			light->count = (P_Random() & 7) + 1;
 		}
 		else
 		{
-			light->sector->lightlevel = light->value1;
+			P_SectorSetLight(light->sector, light->value1);
 			light->count = (P_Random() & 31) + 1;
 		}
 		break;
 	case LITE_STROBE:
-		if(light->sector->lightlevel == light->value1)
+		if(P_SectorLight(light->sector) == light->value1)
 		{
-			light->sector->lightlevel = light->value2;
+			P_SectorSetLight(light->sector, light->value2);
 			light->count = light->tics2;
 		}
 		else
 		{
-			light->sector->lightlevel = light->value1;
+			P_SectorSetLight(light->sector, light->value1);
 			light->count = light->tics1;
 		}
 		break;
 	default:
 		break;
 	}
-#endif
 }
 
 //============================================================================
@@ -106,21 +133,15 @@ void T_Light(light_t * light)
 boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 {
 	light_t *light;
-	sector_t *sec;
 	int     secNum;
 	int     arg1, arg2, arg3, arg4;
 	boolean think;
 	boolean rtn;
 
-    // FIXME: arg is unsigned char so these comparisons are always false.
-	arg1 = arg[1] > 255 ? 255 : arg[1];
-	arg1 = arg1 < 0 ? 0 : arg1;
-	arg2 = arg[2] > 255 ? 255 : arg[2];
-	arg2 = arg2 < 0 ? 0 : arg2;
-	arg3 = arg[3] > 255 ? 255 : arg[3];
-	arg3 = arg3 < 0 ? 0 : arg3;
-	arg4 = arg[4] > 255 ? 255 : arg[4];
-	arg4 = arg4 < 0 ? 0 : arg4;
+	arg1 = arg[1];
+	arg2 = arg[2];
+	arg3 = arg[3];
+	arg4 = arg[4];
 
 	secNum = -1;
 	rtn = false;
@@ -128,48 +149,27 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 	while((secNum = P_FindSectorFromTag(arg[0], secNum)) >= 0)
 	{
 		think = false;
-#ifdef TODO_MAP_UPDATE
-		sec = &sectors[secNum];
-#endif
-
 		light = (light_t *) Z_Malloc(sizeof(light_t), PU_LEVSPEC, 0);
 		light->type = type;
-		light->sector = sec;
+		light->sector = P_ToPtr(DMU_SECTOR, secNum);
 		light->count = 0;
 		rtn = true;
-#ifdef TODO_MAP_UPDATE
 		switch (type)
 		{
 		case LITE_RAISEBYVALUE:
-			sec->lightlevel += arg1;
-			if(sec->lightlevel > 255)
-			{
-				sec->lightlevel = 255;
-			}
+			P_SectorModifyLight(light->sector, arg1);
 			break;
 		case LITE_LOWERBYVALUE:
-			sec->lightlevel -= arg1;
-			if(sec->lightlevel < 0)
-			{
-				sec->lightlevel = 0;
-			}
+            P_SectorModifyLight(light->sector, -arg1);
 			break;
 		case LITE_CHANGETOVALUE:
-			sec->lightlevel = arg1;
-			if(sec->lightlevel < 0)
-			{
-				sec->lightlevel = 0;
-			}
-			else if(sec->lightlevel > 255)
-			{
-				sec->lightlevel = 255;
-			}
+            P_SectorSetLight(light->sector, arg1);
 			break;
 		case LITE_FADE:
 			think = true;
 			light->value1 = arg1;	// destination lightlevel
-			light->value2 = FixedDiv((arg1 - sec->lightlevel) << FRACBITS, arg2 << FRACBITS);	// delta lightlevel
-			if(sec->lightlevel <= arg1)
+			light->value2 = FixedDiv((arg1 - P_SectorLight(light->sector)) << FRACBITS, arg2 << FRACBITS);	// delta lightlevel
+			if(P_SectorLight(light->sector) <= arg1)
 			{
 				light->tics2 = 1;	// get brighter
 			}
@@ -182,8 +182,8 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 			think = true;
 			light->value1 = arg1;	// upper lightlevel
 			light->value2 = arg2;	// lower lightlevel
-			light->tics1 = FixedDiv((arg1 - sec->lightlevel) << FRACBITS, arg3 << FRACBITS);	// lightlevel delta
-			if(sec->lightlevel <= arg1)
+			light->tics1 = FixedDiv((arg1 - P_SectorLight(light->sector)) << FRACBITS, arg3 << FRACBITS);	// lightlevel delta
+			if(P_SectorLight(light->sector) <= arg1)
 			{
 				light->tics2 = 1;	// get brighter
 			}
@@ -196,7 +196,7 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 			think = true;
 			light->value1 = arg1;	// upper lightlevel
 			light->value2 = arg2;	// lower lightlevel
-			sec->lightlevel = light->value1;
+			P_SectorSetLight(light->sector, light->value1);
 			light->count = (P_Random() & 64) + 1;
 			break;
 		case LITE_STROBE:
@@ -206,13 +206,12 @@ boolean EV_SpawnLight(line_t *line, byte *arg, lighttype_t type)
 			light->tics1 = arg3;	// upper tics
 			light->tics2 = arg4;	// lower tics
 			light->count = arg3;
-			sec->lightlevel = light->value1;
+			P_SectorSetLight(light->sector, light->value1);
 			break;
 		default:
 			rtn = false;
 			break;
 		}
-#endif
 		if(think)
 		{
 			P_AddThinker(&light->thinker);
@@ -245,10 +244,8 @@ int     PhaseTable[64] = {
 
 void T_Phase(phase_t * phase)
 {
-#ifdef TODO_MAP_UPDATE
 	phase->index = (phase->index + 1) & 63;
-	phase->sector->lightlevel = phase->base + PhaseTable[phase->index];
-#endif
+	P_SectorSetLight(phase->sector, phase->base + PhaseTable[phase->index]);
 }
 
 //==========================================================================
@@ -259,7 +256,6 @@ void T_Phase(phase_t * phase)
 
 void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 {
-#ifdef TODO_MAP_UPDATE
 	phase_t *phase;
 
 	phase = Z_Malloc(sizeof(*phase), PU_LEVSPEC, 0);
@@ -267,18 +263,17 @@ void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 	phase->sector = sector;
 	if(index == -1)
 	{							// sector->lightlevel as the index
-		phase->index = sector->lightlevel & 63;
+		phase->index = P_SectorLight(sector) & 63;
 	}
 	else
 	{
 		phase->index = index & 63;
 	}
 	phase->base = base & 255;
-	sector->lightlevel = phase->base + PhaseTable[phase->index];
+	P_SectorSetLight(phase->sector, phase->base + PhaseTable[phase->index]);
 	phase->thinker.function = T_Phase;
 
-	sector->special = 0;
-#endif
+	P_XSector(sector)->special = 0;
 }
 
 //==========================================================================
@@ -289,7 +284,6 @@ void P_SpawnPhasedLight(sector_t *sector, int base, int index)
 
 void P_SpawnLightSequence(sector_t *sector, int indexStep)
 {
-#ifdef TODO_MAP_UPDATE
 	sector_t *sec;
 	sector_t *nextSec;
 	sector_t *tempSec;
@@ -306,15 +300,15 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
 	do
 	{
 		nextSec = NULL;
-		sec->special = LIGHT_SEQUENCE_START;	// make sure that the search doesn't back up.
-		for(i = 0; i < sec->linecount; i++)
+		P_XSector(sec)->special = LIGHT_SEQUENCE_START;	// make sure that the search doesn't back up.
+		for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
 		{
-			tempSec = getNextSector(sec->Lines[i], sec);
+			tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
 			if(!tempSec)
 			{
 				continue;
 			}
-			if(tempSec->special == seqSpecial)
+			if(P_XSector(tempSec)->special == seqSpecial)
 			{
 				if(seqSpecial == LIGHT_SEQUENCE)
 				{
@@ -335,29 +329,28 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
 	count *= indexStep;
 	index = 0;
 	indexDelta = FixedDiv(64 * FRACUNIT, count * FRACUNIT);
-	base = sector->lightlevel;
+    base = P_SectorLight(sector);
 	do
 	{
 		nextSec = NULL;
-		if(sec->lightlevel)
+		if(P_SectorLight(sec))
 		{
-			base = sec->lightlevel;
+			base = P_SectorLight(sec);
 		}
 		P_SpawnPhasedLight(sec, base, index >> FRACBITS);
 		index += indexDelta;
-		for(i = 0; i < sec->linecount; i++)
+		for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
 		{
-			tempSec = getNextSector(sec->Lines[i], sec);
+			tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
 			if(!tempSec)
 			{
 				continue;
 			}
-			if(tempSec->special == LIGHT_SEQUENCE_START)
+			if(P_XSector(tempSec)->special == LIGHT_SEQUENCE_START)
 			{
 				nextSec = tempSec;
 			}
 		}
 		sec = nextSec;
 	} while(sec);
-#endif
 }
