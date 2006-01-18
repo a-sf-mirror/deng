@@ -24,6 +24,11 @@
 
 ceiling_t *activeceilings[MAXCEILINGS];
 
+static void *P_SectorSoundOrigin(sector_t *sec)
+{
+    return P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN);
+}                                               
+
 //==================================================================
 //
 //      T_MoveCeiling
@@ -31,7 +36,6 @@ ceiling_t *activeceilings[MAXCEILINGS];
 //==================================================================
 void T_MoveCeiling(ceiling_t * ceiling)
 {
-#ifdef TODO_MAP_UPDATE
 	result_e res;
 
 	switch (ceiling->direction)
@@ -44,8 +48,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 						false, 1, ceiling->direction);
 		if(res == RES_PASTDEST)
 		{
-#ifdef TODO_MAP_UPDATE
-			SN_StopSequence((mobj_t *) &ceiling->sector->soundorg);
+			SN_StopSequence(P_SectorSoundOrigin(ceiling->sector));
 			switch (ceiling->type)
 			{
 			case CLEV_CRUSHANDRAISE:
@@ -56,7 +59,6 @@ void T_MoveCeiling(ceiling_t * ceiling)
 				P_RemoveActiveCeiling(ceiling);
 				break;
 			}
-#endif
 		}
 		break;
 	case -1:					// DOWN
@@ -65,7 +67,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
 						ceiling->crush, 1, ceiling->direction);
 		if(res == RES_PASTDEST)
 		{
-			SN_StopSequence((mobj_t *) &ceiling->sector->soundorg);
+			SN_StopSequence(P_SectorSoundOrigin(ceiling->sector));
 			switch (ceiling->type)
 			{
 			case CLEV_CRUSHANDRAISE:
@@ -93,7 +95,6 @@ void T_MoveCeiling(ceiling_t * ceiling)
 		}
 		break;
 	}
-#endif
 }
 
 //==================================================================
@@ -104,7 +105,6 @@ void T_MoveCeiling(ceiling_t * ceiling)
 //==================================================================
 int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 {
-#ifdef TODO_MAP_UPDATE
 	int     secnum, rtn;
 	sector_t *sec;
 	ceiling_t *ceiling;
@@ -126,11 +126,9 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 	 */
 	while((secnum = P_FindSectorFromTag(arg[0], secnum)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATE
-		sec = &sectors[secnum];
-		if(sec->specialdata)
+		sec = P_ToPtr(DMU_SECTOR, secnum);
+		if(P_XSector(sec)->specialdata)
 			continue;
-#endif
 
 		//
 		// new door thinker
@@ -138,7 +136,7 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 		rtn = 1;
 		ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC, 0);
 		P_AddThinker(&ceiling->thinker);
-		sec->specialdata = ceiling;
+		P_XSector(sec)->specialdata = ceiling;
 		ceiling->thinker.function = T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = 0;
@@ -147,16 +145,17 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 		{
 		case CLEV_CRUSHRAISEANDSTAY:
 			ceiling->crush = arg[2];	// arg[2] = crushing value
-			ceiling->topheight = sec->ceilingheight;
-			ceiling->bottomheight = sec->floorheight + (8 * FRACUNIT);
+			ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+			ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + 
+                (8 * FRACUNIT);
 			ceiling->direction = -1;
 			break;
 		case CLEV_CRUSHANDRAISE:
-			ceiling->topheight = sec->ceilingheight;
+			ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
 		case CLEV_LOWERANDCRUSH:
 			ceiling->crush = arg[2];	// arg[2] = crushing value
 		case CLEV_LOWERTOFLOOR:
-			ceiling->bottomheight = sec->floorheight;
+			ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
 			if(type != CLEV_LOWERTOFLOOR)
 			{
 				ceiling->bottomheight += 8 * FRACUNIT;
@@ -168,11 +167,13 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 			ceiling->direction = 1;
 			break;
 		case CLEV_LOWERBYVALUE:
-			ceiling->bottomheight = sec->ceilingheight - arg[2] * FRACUNIT;
+			ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - 
+                arg[2] * FRACUNIT;
 			ceiling->direction = -1;
 			break;
 		case CLEV_RAISEBYVALUE:
-			ceiling->topheight = sec->ceilingheight + arg[2] * FRACUNIT;
+			ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) + 
+                arg[2] * FRACUNIT;
 			ceiling->direction = 1;
 			break;
 		case CLEV_MOVETOVALUETIMES8:
@@ -183,16 +184,16 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 				{
 					destHeight = -destHeight;
 				}
-				if(sec->ceilingheight <= destHeight)
+				if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) <= destHeight)
 				{
 					ceiling->direction = 1;
 					ceiling->topheight = destHeight;
-					if(sec->ceilingheight == destHeight)
+					if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) == destHeight)
 					{
 						rtn = 0;
 					}
 				}
-				else if(sec->ceilingheight > destHeight)
+				else if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) > destHeight)
 				{
 					ceiling->direction = -1;
 					ceiling->bottomheight = destHeight;
@@ -203,17 +204,16 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
 			rtn = 0;
 			break;
 		}
-		ceiling->tag = sec->tag;
+		ceiling->tag = P_XSector(sec)->tag;
 		ceiling->type = type;
 		P_AddActiveCeiling(ceiling);
 		if(rtn)
 		{
-			SN_StartSequence((mobj_t *) &ceiling->sector->soundorg,
-							 SEQ_PLATFORM + ceiling->sector->seqType);
+			SN_StartSequence(P_SectorSoundOrigin(ceiling->sector),
+							 SEQ_PLATFORM + P_XSector(ceiling->sector)->seqType);
 		}
 	}
 	return rtn;
-#endif
 }
 
 //==================================================================
@@ -245,38 +245,13 @@ void P_RemoveActiveCeiling(ceiling_t * c)
 	for(i = 0; i < MAXCEILINGS; i++)
 		if(activeceilings[i] == c)
 		{
-#ifdef TODO_MAP_UPDATE
-			activeceilings[i]->sector->specialdata = NULL;
+			P_XSector(activeceilings[i]->sector)->specialdata = NULL;
 			P_RemoveThinker(&activeceilings[i]->thinker);
-			P_TagFinished(activeceilings[i]->sector->tag);
+			P_TagFinished(P_XSector(activeceilings[i]->sector)->tag);
 			activeceilings[i] = NULL;
 			break;
-#endif
 		}
 }
-
-#if 0
-//==================================================================
-//
-//              Restart a ceiling that's in-stasis
-//
-//==================================================================
-void P_ActivateInStasisCeiling(line_t *line)
-{
-	int     i;
-
-	for(i = 0; i < MAXCEILINGS; i++)
-		if(activeceilings[i] && (activeceilings[i]->tag == line->arg1) &&
-		   (activeceilings[i]->direction == 0))
-		{
-			activeceilings[i]->direction = activeceilings[i]->olddirection;
-			activeceilings[i]->thinker.function = T_MoveCeiling;
-			SN_StartSequence((mobj_t *) &activeceilings[i]->sector->soundorg,
-							 SEQ_PLATFORM +
-							 activeceilings[i]->sector->seqType);
-		}
-}
-#endif
 
 //==================================================================
 //
@@ -295,15 +270,13 @@ int EV_CeilingCrushStop(line_t *line, byte *args)
 	{
 		if(activeceilings[i] && activeceilings[i]->tag == args[0])
 		{
-#ifdef TODO_MAP_UPDATE
 			rtn = 1;
-			SN_StopSequence((mobj_t *) &activeceilings[i]->sector->soundorg);
-			activeceilings[i]->sector->specialdata = NULL;
+			SN_StopSequence(P_SectorSoundOrigin(activeceilings[i]->sector));
+			P_XSector(activeceilings[i]->sector)->specialdata = NULL;
 			P_RemoveThinker(&activeceilings[i]->thinker);
-			P_TagFinished(activeceilings[i]->sector->tag);
+			P_TagFinished(P_XSector(activeceilings[i]->sector)->tag);
 			activeceilings[i] = NULL;
 			break;
-#endif
 		}
 	}
 	return rtn;
