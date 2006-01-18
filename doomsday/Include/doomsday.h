@@ -219,12 +219,14 @@ extern          "C" {
     // Play: Map Data Updates and Information Access.
     int             P_ToIndex(int type, void* ptr);
     void*           P_ToPtr(int type, int index);
-
     int             P_Callback(int type, int index, void* context, 
                                int (*callback)(void* p, void* ctx));
-
     int             P_Callbackp(int type, void* ptr, void* context, 
                                 int (*callback)(void* p, void* ctx));
+    void            P_Copy(int type, int prop, int fromIndex, int toIndex);
+    void            P_Swap(int type, int prop, int fromIndex, int toIndex);
+    void            P_Copyp(int type, int prop, void* from, void* to);
+    void            P_Swapp(int type, int prop, void* from, void* to);
 
     /* index-based write functions */
     void            P_SetBool(int type, int index, int prop, boolean param);
