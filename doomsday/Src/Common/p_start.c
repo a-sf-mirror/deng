@@ -1050,9 +1050,10 @@ void P_TurnTorchesToFaceWalls()
         // Turn to face away from the nearest wall.
         for(t = 0; (iter = tlist[t]) != NULL; t++)
         {
+            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+
             minrad = iter->radius;
             closestline = NULL;
-            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
             for(k = 0; k < sectorLineCount; k++)
             {
                 li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
@@ -1081,3 +1082,48 @@ void P_TurnTorchesToFaceWalls()
     }
 }
 #endif
+
+// -------------------------------------------------------------
+// Here follows common helper routines for the map data stuctures
+// -------------------------------------------------------------
+
+/*
+ * Helpers for manipulating Sector properties
+ */
+int P_SectorLight(sector_t* sector)
+{
+    return P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+}
+
+void P_SectorSetLight(sector_t* sector, int level)
+{
+    P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, level);
+}
+
+void P_SectorModifyLight(sector_t* sector, int value)
+{
+    int level = P_SectorLight(sector);
+
+    level += value;
+
+    if(level < 0) level = 0;
+    if(level > 255) level = 255;
+
+    P_SectorSetLight(sector, level);
+}
+
+fixed_t P_SectorLightx(sector_t* sector)
+{
+    return P_GetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+}
+
+void P_SectorModifyLightx(sector_t* sector, fixed_t value)
+{
+    P_SetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
+                P_SectorLightx(sector) + value);
+}
+
+void *P_SectorSoundOrigin(sector_t *sec)
+{
+    return P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN);
+}
