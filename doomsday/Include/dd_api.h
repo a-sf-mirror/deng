@@ -160,6 +160,17 @@ typedef struct {
     // the game will handle what is done with it.
     int             (*HandleMapDataProperty) (int id, int dtype, int prop,
                                              int type, void *data);
+
+    // This routine is called when trying to assign a value read
+    // from the map data (to a property known to us) that we don't
+    // know what to do with.
+
+    // (eg the side->toptexture field contains a text string that
+    // we don't understand but the game might).
+
+    // The action code returned by the game depends on the context.
+    int             (*HandleMapDataPropertyValue) (int id, int dtype, int prop,
+                                                   int type, void *data);
 } game_export_t;
 
 typedef game_export_t *(*GETGAMEAPI) (game_import_t *);
