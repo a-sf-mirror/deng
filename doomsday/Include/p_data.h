@@ -99,6 +99,24 @@ typedef struct {
 #define SDF_BLENDMIDTOBOTTOM    0x4
 #define SDF_BLENDBOTTOMTOMID    0x8
 
+typedef enum // Value types.
+{
+    VT_NONE = -1, // Not a read/writeable value type.
+    VT_BOOL,
+    VT_BYTE,
+    VT_SHORT,
+    VT_INT,    // 32 or 64
+    VT_FIXED,
+    VT_ANGLE,
+    VT_FLOAT,
+    VT_ULONG,
+    VT_PTR,
+    VT_FLAT_INDEX,
+    VT_BLENDMODE
+} valuetype_t;
+
+extern const valuetype_t propertyTypes[];
+
 struct line_s;
 
 typedef struct vertex_s {

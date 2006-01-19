@@ -555,11 +555,21 @@ extern          "C" {
         DMU_OFFSET,
         DMU_TOP_TEXTURE,
         DMU_TOP_COLOR,
+        DMU_TOP_COLOR_RED,
+        DMU_TOP_COLOR_GREEN,
+        DMU_TOP_COLOR_BLUE,
         DMU_MIDDLE_TEXTURE,
         DMU_MIDDLE_COLOR,
+        DMU_MIDDLE_COLOR_RED,
+        DMU_MIDDLE_COLOR_GREEN,
+        DMU_MIDDLE_COLOR_BLUE,
+        DMU_MIDDLE_COLOR_ALPHA,
         DMU_MIDDLE_BLENDMODE,
         DMU_BOTTOM_TEXTURE,
         DMU_BOTTOM_COLOR,
+        DMU_BOTTOM_COLOR_RED,
+        DMU_BOTTOM_COLOR_GREEN,
+        DMU_BOTTOM_COLOR_BLUE,
         DMU_TEXTURE_OFFSET_X,
         DMU_TEXTURE_OFFSET_Y,
         DMU_TEXTURE_OFFSET_XY,
@@ -583,6 +593,9 @@ extern          "C" {
         DMU_FLOOR_TARGET,
         DMU_FLOOR_SPEED,
         DMU_FLOOR_COLOR,
+        DMU_FLOOR_COLOR_RED,
+        DMU_FLOOR_COLOR_GREEN,
+        DMU_FLOOR_COLOR_BLUE,
         DMU_FLOOR_TEXTURE_MOVE_X,
         DMU_FLOOR_TEXTURE_MOVE_Y,
         DMU_FLOOR_TEXTURE_MOVE_XY,
@@ -595,6 +608,9 @@ extern          "C" {
         DMU_CEILING_TARGET,
         DMU_CEILING_SPEED,
         DMU_CEILING_COLOR,
+        DMU_CEILING_COLOR_RED,
+        DMU_CEILING_COLOR_GREEN,
+        DMU_CEILING_COLOR_BLUE,
         DMU_CEILING_TEXTURE_MOVE_X,
         DMU_CEILING_TEXTURE_MOVE_Y,
         DMU_CEILING_TEXTURE_MOVE_XY,
@@ -898,9 +914,10 @@ extern          "C" {
     //
     //------------------------------------------------------------------------
 
-#define DDNUM_BLENDMODES 8
+#define DDNUM_BLENDMODES 9
 
 typedef enum blendmode_e {
+    BM_ZEROALPHA = -1,
     BM_NORMAL,
     BM_ADD,
     BM_DARK,
