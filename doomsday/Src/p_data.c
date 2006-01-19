@@ -291,14 +291,13 @@ typedef struct {
 // Internal data format info structs
 typedef struct {
     int         flags;
-    int         dataType;
+    valuetype_t dataType;
     ptrdiff_t   offset;
 } structmember_t;
 
 typedef struct {
     int         type;  // uneeded?
     size_t      size;
-    int         nummembers;
     structmember_t *members;
 } structinfo_t;
 
@@ -377,25 +376,10 @@ typedef struct {
     boolean planeTex;
 } badtex_t;
 
-enum // Value types.
-{
-    VT_BOOL,
-    VT_BYTE,
-    VT_SHORT,
-    VT_INT,    // 32 or 64
-    VT_FIXED,
-    VT_ANGLE,
-    VT_FLOAT,
-    VT_ULONG,
-    VT_PTR,
-    VT_FLAT_INDEX,
-    VT_BLENDMODE
-};
-
 typedef struct setargs_s {
     int type;
     int prop;
-    int valueType;
+    valuetype_t valueType;
     boolean* booleanValues;
     byte* byteValues;
     int* intValues;
@@ -475,6 +459,8 @@ byte   *sides;
 // 2: Always generate new
 int     createBMap = 1;
 
+int     createReject = 0;
+
 // mapthings are actually stored & handled game-side
 int     numthings;
 
@@ -493,6 +479,148 @@ nodepile_t thingnodes, linenodes;   // all kinds of wacky links
 
 ded_mapinfo_t *mapinfo = 0;     // Current mapinfo.
 fixed_t mapgravity;             // Gravity for the current map.
+
+/*
+ * Value types for the DMU constants.
+ *
+ * Each DMU constant (declared in dd_share.h) requires an
+ * entry in this table.
+ * The existing indices MUST NOT change and MUST match their
+ * DMU constant indices. Add new DMU constants to the end.
+ *
+ * Not all DMU constants have a value type, in which caase
+ * they should be entered using the special case: "VT_NONE"
+ */
+const valuetype_t propertyTypes[] = {
+        { VT_NONE },        // DMU_ALL = -1
+
+        { VT_PTR },         // DMU_VERTEX = 1
+        { VT_PTR },         // DMU_SEG
+        { VT_PTR },         // DMU_LINE
+        { VT_PTR },         // DMU_SIDE
+        { VT_PTR },         // DMU_NODE
+        { VT_PTR },         // DMU_SUBSECTOR
+        { VT_PTR },         // DMU_SECTOR
+        { VT_NONE },        // DMU_BLOCKMAP
+        { VT_NONE },        // DMU_REJEC
+        { VT_NONE },        // DMU_POLYBLOCKMAP
+        { VT_PTR },         // DMU_POLYOBJ
+
+        { VT_NONE },        // DMU_LINE_BY_TAG
+        { VT_NONE },        // DMU_SECTOR_BY_TAG
+
+        { VT_NONE },        // DMU_LINE_BY_ACT_TAG
+        { VT_NONE },        // DMU_SECTOR_BY_ACT_TAG
+
+        { VT_NONE },        // DMU_LINE_OF_SECTOR
+        { VT_NONE },        // DMU_SECTOR_OF_SUBSECTOR
+        { VT_NONE },        // DMU_SEG_OF_POLYOBJ
+
+        { VT_FIXED },       // DMU_X
+        { VT_FIXED },       // DMU_Y
+        { VT_FIXED },       // DMU_XY
+
+        { VT_PTR },         // DMU_VERTEX1
+        { VT_PTR },         // DMU_VERTEX2
+        { VT_FIXED },       // DMU_VERTEX1_X
+        { VT_FIXED },       // DMU_VERTEX1_Y
+        { VT_FIXED },       // DMU_VERTEX1_XY
+        { VT_FIXED },       // DMU_VERTEX2_X
+        { VT_FIXED },       // DMU_VERTEX2_Y
+        { VT_FIXED },       // DMU_VERTEX2_XY
+
+        { VT_PTR },         // DMU_FRONT_SECTOR
+        { VT_PTR },         // DMU_BACK_SECTOR
+        { VT_PTR },         // DMU_SIDE0
+        { VT_PTR },         // DMU_SIDE1
+        { VT_INT },         // DMU_FLAGS
+        { VT_FIXED },       // DMU_DX
+        { VT_FIXED },       // DMU_DY
+        { VT_FIXED },       // DMU_LENGTH
+        { VT_INT },         // DMU_SLOPE_TYPE
+        { VT_ANGLE },       // DMU_ANGLE
+        { VT_FIXED },       // DMU_OFFSET
+        { VT_FLAT_INDEX },  // DMU_TOP_TEXTURE
+        { VT_BYTE },        // DMU_TOP_COLOR
+        { VT_BYTE },        // DMU_TOP_COLOR_RED
+        { VT_BYTE },        // DMU_TOP_COLOR_GREEN
+        { VT_BYTE },        // DMU_TOP_COLOR_BLUE
+        { VT_FLAT_INDEX },  // DMU_MIDDLE_TEXTURE
+        { VT_BYTE },        // DMU_MIDDLE_COLOR
+        { VT_BYTE },        // DMU_MIDDLE_COLOR_RED
+        { VT_BYTE },        // DMU_MIDDLE_COLOR_GREEN
+        { VT_BYTE },        // DMU_MIDDLE_COLOR_BLUE
+        { VT_BYTE },        // DMU_MIDDLE_COLOR_ALPHA
+        { VT_BLENDMODE },   // DMU_MIDDLE_BLENDMODE
+        { VT_FLAT_INDEX },  // DMU_BOTTOM_TEXTURE
+        { VT_BYTE },        // DMU_BOTTOM_COLOR
+        { VT_BYTE },        // DMU_BOTTOM_COLOR_RED
+        { VT_BYTE },        // DMU_BOTTOM_COLOR_GREEN
+        { VT_BYTE },        // DMU_BOTTOM_COLOR_BLUE
+        { VT_FIXED },       // DMU_TEXTURE_OFFSET_X
+        { VT_FIXED },       // DMU_TEXTURE_OFFSET_Y
+        { VT_FIXED },       // DMU_TEXTURE_OFFSET_XY
+        { VT_INT },         // DMU_VALID_COUNT
+
+        { VT_INT },         // DMU_LINE_COUNT
+        { VT_BYTE },        // DMU_COLOR
+        { VT_BYTE },        // DMU_COLOR_RED
+        { VT_BYTE },        // DMU_COLOR_GREEN
+        { VT_BYTE },        // DMU_COLOR_BLUE
+        { VT_SHORT },       // DMU_LIGHT_LEVEL
+        { VT_NONE },        // DMU_THINGS
+        { VT_FIXED },       // DMU_BOUNDING_BOX
+        { VT_PTR },         // DMU_SOUND_ORIGIN
+
+        { VT_FIXED },       // DMU_FLOOR_HEIGHT
+        { VT_FLAT_INDEX },  // DMU_FLOOR_TEXTURE
+        { VT_FLOAT },       // DMU_FLOOR_OFFSET_X
+        { VT_FLOAT },       // DMU_FLOOR_OFFSET_Y
+        { VT_FLOAT },       // DMU_FLOOR_OFFSET_XY
+        { VT_INT },         // DMU_FLOOR_TARGET
+        { VT_INT },         // DMU_FLOOR_SPEED
+        { VT_BYTE },        // DMU_FLOOR_COLOR
+        { VT_BYTE },        // DMU_FLOOR_COLOR_RED
+        { VT_BYTE },        // DMU_FLOOR_COLOR_GREEN
+        { VT_BYTE },        // DMU_FLOOR_COLOR_BLUE
+        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_X
+        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_Y
+        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_XY
+
+        { VT_FIXED },       // DMU_CEILING_HEIGHT
+        { VT_FLAT_INDEX },  // DMU_CEILING_TEXTURE
+        { VT_FLOAT },       // DMU_CEILING_OFFSET_X
+        { VT_FLOAT },       // DMU_CEILING_OFFSET_Y
+        { VT_FLOAT },       // DMU_CEILING_OFFSET_XY
+        { VT_INT },         // DMU_CEILING_TARGET
+        { VT_INT },         // DMU_CEILING_SPEED
+        { VT_BYTE },        // DMU_CEILING_COLOR
+        { VT_BYTE },        // DMU_CEILING_COLOR_RED
+        { VT_BYTE },        // DMU_CEILING_COLOR_GREEN
+        { VT_BYTE },        // DMU_CEILING_COLOR_BLUE
+        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_X
+        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_Y
+        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_XY
+
+        { VT_NONE },        // DMU_SEG_LIST
+        { VT_INT },         // DMU_SEG_COUNT
+        { VT_INT },         // DMU_TAG
+        { VT_PTR },         // DMU_ORIGINAL_POINTS
+        { VT_PTR },         // DMU_PREVIOUS_POINTS
+        { VT_PTR },         // DMU_START_SPOT
+        { VT_FIXED },       // DMU_START_SPOT_X
+        { VT_FIXED },       // DMU_START_SPOT_Y
+        { VT_FIXED },       // DMU_START_SPOT_XY
+        { VT_FIXED },       // DMU_DESTINATION_X
+        { VT_FIXED },       // DMU_DESTINATION_Y
+        { VT_FIXED },       // DMU_DESTINATION_XY
+        { VT_ANGLE },       // DMU_DESTINATION_ANGLE
+        { VT_INT },         // DMU_SPEED
+        { VT_ANGLE },       // DMU_ANGLE_SPEED
+        { VT_INT },         // DMU_SEQUENCE_TYPE
+        { VT_BOOL },        // DMU_CRUSH
+        { VT_PTR }          // DMU_SPECIAL_DATA
+};
 
 // --------------------------------------
 int     mapFormat;
@@ -676,7 +804,7 @@ static const char* DMU_Str(int prop)
     return propStr;
 }
 
-static void InitArgs(setargs_t* args, int type, int prop)
+static void InitArgs(setargs_t* args, valuetype_t type, int prop)
 {
     memset(args, 0, sizeof(*args));
     args->type = type;
@@ -909,7 +1037,7 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
  * Sets a value. Does some basic type checking so that incompatible types are
  * not assigned. Simple conversions are also done, e.g., float to fixed.
  */
-static void SetValue(int valueType, void* dst, setargs_t* args, int index)
+static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int index)
 {
     if(valueType == VT_FIXED)
     {
@@ -1122,10 +1250,11 @@ static int SetProperty(void* ptr, void* context)
     case DMU_SEG:
         {
         seg_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_FLAGS:
-            SetValue(VT_BYTE, &p->flags, args, 0);
+            SetValue(type, &p->flags, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SEG.\n",
@@ -1137,10 +1266,11 @@ static int SetProperty(void* ptr, void* context)
     case DMU_LINE:
         {
         line_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_FLAGS:
-            SetValue(VT_SHORT, &p->flags, args, 0);
+            SetValue(type, &p->flags, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_LINE.\n",
@@ -1152,48 +1282,49 @@ static int SetProperty(void* ptr, void* context)
     case DMU_SIDE:
         {
         side_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_FLAGS:
-            SetValue(VT_BYTE, &p->flags, args, 0);
+            SetValue(type, &p->flags, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_X:
-            SetValue(VT_FIXED, &p->textureoffset, args, 0);
+            SetValue(type, &p->textureoffset, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_Y:
-            SetValue(VT_FIXED, &p->rowoffset, args, 0);
+            SetValue(type, &p->rowoffset, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_XY:
-            SetValue(VT_FIXED, &p->textureoffset, args, 0);
-            SetValue(VT_FIXED, &p->rowoffset, args, 1);
+            SetValue(type, &p->textureoffset, args, 0);
+            SetValue(type, &p->rowoffset, args, 1);
             break;
         case DMU_TOP_COLOR:
-            SetValue(VT_BYTE, &p->toprgb[0], args, 0);
-            SetValue(VT_BYTE, &p->toprgb[1], args, 1);
-            SetValue(VT_BYTE, &p->toprgb[2], args, 2);
+            SetValue(type, &p->toprgb[0], args, 0);
+            SetValue(type, &p->toprgb[1], args, 1);
+            SetValue(type, &p->toprgb[2], args, 2);
             break;
         case DMU_TOP_TEXTURE:
-            SetValue(VT_FLAT_INDEX, &p->toptexture, args, 0);
+            SetValue(type, &p->toptexture, args, 0);
             break;
         case DMU_MIDDLE_COLOR:
-            SetValue(VT_BYTE, &p->midrgba[0], args, 0);
-            SetValue(VT_BYTE, &p->midrgba[1], args, 1);
-            SetValue(VT_BYTE, &p->midrgba[2], args, 2);
-            SetValue(VT_BYTE, &p->midrgba[3], args, 3);
+            SetValue(type, &p->midrgba[0], args, 0);
+            SetValue(type, &p->midrgba[1], args, 1);
+            SetValue(type, &p->midrgba[2], args, 2);
+            SetValue(type, &p->midrgba[3], args, 3);
             break;
         case DMU_MIDDLE_BLENDMODE:
-            SetValue(VT_BLENDMODE, &p->blendmode, args, 0);
+            SetValue(type, &p->blendmode, args, 0);
             break;
         case DMU_MIDDLE_TEXTURE:
-            SetValue(VT_FLAT_INDEX, &p->midtexture, args, 0);
+            SetValue(type, &p->midtexture, args, 0);
             break;
         case DMU_BOTTOM_COLOR:
-            SetValue(VT_BYTE, &p->bottomrgb[0], args, 0);
-            SetValue(VT_BYTE, &p->bottomrgb[1], args, 1);
-            SetValue(VT_BYTE, &p->bottomrgb[2], args, 2);
+            SetValue(type, &p->bottomrgb[0], args, 0);
+            SetValue(type, &p->bottomrgb[1], args, 1);
+            SetValue(type, &p->bottomrgb[2], args, 2);
             break;
         case DMU_BOTTOM_TEXTURE:
-            SetValue(VT_FLAT_INDEX, &p->bottomtexture, args, 0);
+            SetValue(type, &p->bottomtexture, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SUBSECTOR.\n",
@@ -1205,10 +1336,11 @@ static int SetProperty(void* ptr, void* context)
     case DMU_SUBSECTOR:
         {
         seg_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_FLAGS:
-            SetValue(VT_BYTE, &p->flags, args, 0);
+            SetValue(type, &p->flags, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SUBSECTOR.\n",
@@ -1220,89 +1352,90 @@ static int SetProperty(void* ptr, void* context)
     case DMU_SECTOR:
         {
         sector_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_COLOR:
-            SetValue(VT_BYTE, &p->rgb[0], args, 0);
-            SetValue(VT_BYTE, &p->rgb[1], args, 1);
-            SetValue(VT_BYTE, &p->rgb[2], args, 2);
+            SetValue(type, &p->rgb[0], args, 0);
+            SetValue(type, &p->rgb[1], args, 1);
+            SetValue(type, &p->rgb[2], args, 2);
             break;
         case DMU_LIGHT_LEVEL:
-            SetValue(VT_SHORT, &p->lightlevel, args, 0);
+            SetValue(type, &p->lightlevel, args, 0);
             break;
         case DMU_FLOOR_COLOR:
-            SetValue(VT_BYTE, &p->floorrgb[0], args, 0);
-            SetValue(VT_BYTE, &p->floorrgb[1], args, 1);
-            SetValue(VT_BYTE, &p->floorrgb[2], args, 2);
+            SetValue(type, &p->floorrgb[0], args, 0);
+            SetValue(type, &p->floorrgb[1], args, 1);
+            SetValue(type, &p->floorrgb[2], args, 2);
             break;
         case DMU_FLOOR_HEIGHT:
-            SetValue(VT_FIXED, &p->floorheight, args, 0);
+            SetValue(type, &p->floorheight, args, 0);
             break;
         case DMU_FLOOR_TEXTURE:
-            SetValue(VT_FLAT_INDEX, &p->floorpic, args, 0);
+            SetValue(type, &p->floorpic, args, 0);
             break;
         case DMU_FLOOR_OFFSET_X:
-            SetValue(VT_FLOAT, &p->flooroffx, args, 0);
+            SetValue(type, &p->flooroffx, args, 0);
             break;
         case DMU_FLOOR_OFFSET_Y:
-            SetValue(VT_FLOAT, &p->flooroffy, args, 0);
+            SetValue(type, &p->flooroffy, args, 0);
             break;
         case DMU_FLOOR_OFFSET_XY:
-            SetValue(VT_FLOAT, &p->flooroffx, args, 0);
-            SetValue(VT_FLOAT, &p->flooroffy, args, 1);
+            SetValue(type, &p->flooroffx, args, 0);
+            SetValue(type, &p->flooroffy, args, 1);
             break;
         case DMU_FLOOR_TEXTURE_MOVE_X:
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].texmove[0], args, 0);
+            SetValue(type, &p->planes[PLN_FLOOR].texmove[0], args, 0);
             break;
         case DMU_FLOOR_TEXTURE_MOVE_Y:
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].texmove[1], args, 0);
+            SetValue(type, &p->planes[PLN_FLOOR].texmove[1], args, 0);
             break;
         case DMU_FLOOR_TEXTURE_MOVE_XY:
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].texmove[0], args, 0);
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].texmove[1], args, 1);
+            SetValue(type, &p->planes[PLN_FLOOR].texmove[0], args, 0);
+            SetValue(type, &p->planes[PLN_FLOOR].texmove[1], args, 1);
             break;
         case DMU_FLOOR_TARGET:
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].target, args, 0);
+            SetValue(type, &p->planes[PLN_FLOOR].target, args, 0);
             break;
         case DMU_FLOOR_SPEED:
-            SetValue(VT_INT, &p->planes[PLN_FLOOR].speed, args, 0);
+            SetValue(type, &p->planes[PLN_FLOOR].speed, args, 0);
             break;
         case DMU_CEILING_COLOR:
-            SetValue(VT_BYTE, &p->ceilingrgb[0], args, 0);
-            SetValue(VT_BYTE, &p->ceilingrgb[1], args, 1);
-            SetValue(VT_BYTE, &p->ceilingrgb[2], args, 2);
+            SetValue(type, &p->ceilingrgb[0], args, 0);
+            SetValue(type, &p->ceilingrgb[1], args, 1);
+            SetValue(type, &p->ceilingrgb[2], args, 2);
             break;
         case DMU_CEILING_HEIGHT:
-            SetValue(VT_FIXED, &p->ceilingheight, args, 0);
+            SetValue(type, &p->ceilingheight, args, 0);
             break;
         case DMU_CEILING_TEXTURE:
-            SetValue(VT_FLAT_INDEX, &p->ceilingpic, args, 0);
+            SetValue(type, &p->ceilingpic, args, 0);
             break;
         case DMU_CEILING_OFFSET_X:
-            SetValue(VT_FLOAT, &p->ceiloffx, args, 0);
+            SetValue(type, &p->ceiloffx, args, 0);
             break;
         case DMU_CEILING_OFFSET_Y:
-            SetValue(VT_FLOAT, &p->ceiloffy, args, 0);
+            SetValue(type, &p->ceiloffy, args, 0);
             break;
         case DMU_CEILING_OFFSET_XY:
-            SetValue(VT_FLOAT, &p->ceiloffx, args, 0);
-            SetValue(VT_FLOAT, &p->ceiloffy, args, 1);
+            SetValue(type, &p->ceiloffx, args, 0);
+            SetValue(type, &p->ceiloffy, args, 1);
             break;
         case DMU_CEILING_TEXTURE_MOVE_X:
-            SetValue(VT_INT, &p->planes[PLN_CEILING].texmove[0], args, 0);
+            SetValue(type, &p->planes[PLN_CEILING].texmove[0], args, 0);
             break;
         case DMU_CEILING_TEXTURE_MOVE_Y:
-            SetValue(VT_INT, &p->planes[PLN_CEILING].texmove[1], args, 0);
+            SetValue(type, &p->planes[PLN_CEILING].texmove[1], args, 0);
             break;
         case DMU_CEILING_TEXTURE_MOVE_XY:
-            SetValue(VT_INT, &p->planes[PLN_CEILING].texmove[0], args, 0);
-            SetValue(VT_INT, &p->planes[PLN_CEILING].texmove[1], args, 1);
+            SetValue(type, &p->planes[PLN_CEILING].texmove[0], args, 0);
+            SetValue(type, &p->planes[PLN_CEILING].texmove[1], args, 1);
             break;
         case DMU_CEILING_TARGET:
-            SetValue(VT_INT, &p->planes[PLN_CEILING].target, args, 0);
+            SetValue(type, &p->planes[PLN_CEILING].target, args, 0);
             break;
         case DMU_CEILING_SPEED:
-            SetValue(VT_INT, &p->planes[PLN_CEILING].speed, args, 0);
+            SetValue(type, &p->planes[PLN_CEILING].speed, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SEG.\n",
@@ -1333,7 +1466,7 @@ static int SetProperty(void* ptr, void* context)
  * Gets a value. Does some basic type checking so that incompatible types are
  * not assigned. Simple conversions are also done, e.g., float to fixed.
  */
-static void GetValue(int valueType, void* dst, setargs_t* args, int index)
+static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int index)
 {
     if(valueType == VT_FIXED)
     {
@@ -1527,17 +1660,18 @@ static int GetProperty(void* ptr, void* context)
     case DMU_VERTEX:
         {
         vertex_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_X:
-            GetValue(VT_FIXED, &p->x, args, 0);
+            GetValue(type, &p->x, args, 0);
             break;
         case DMU_Y:
-            GetValue(VT_FIXED, &p->y, args, 0);
+            GetValue(type, &p->y, args, 0);
             break;
         case DMU_XY:
-            GetValue(VT_FIXED, &p->x, args, 0);
-            GetValue(VT_FIXED, &p->y, args, 1);
+            GetValue(type, &p->x, args, 0);
+            GetValue(type, &p->y, args, 1);
             break;
         default:
             Con_Error("GetProperty: DMU_VERTEX has no property %s.\n",
@@ -1549,37 +1683,38 @@ static int GetProperty(void* ptr, void* context)
     case DMU_SEG:
         {
         seg_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_VERTEX1:
-            GetValue(VT_PTR, &p->v1, args, 0);
+            GetValue(type, &p->v1, args, 0);
             break;
         case DMU_VERTEX2:
-            GetValue(VT_PTR, &p->v2, args, 0);
+            GetValue(type, &p->v2, args, 0);
             break;
         case DMU_LENGTH:
-            GetValue(VT_FLOAT, &p->length, args, 0);
+            GetValue(type, &p->length, args, 0);
             break;
         case DMU_OFFSET:
-            GetValue(VT_FIXED, &p->offset, args, 0);
+            GetValue(type, &p->offset, args, 0);
             break;
         case DMU_SIDE:
-            GetValue(VT_PTR, &p->sidedef, args, 0);
+            GetValue(type, &p->sidedef, args, 0);
             break;
         case DMU_LINE:
-            GetValue(VT_PTR, &p->linedef, args, 0);
+            GetValue(type, &p->linedef, args, 0);
             break;
         case DMU_FRONT_SECTOR:
-            GetValue(VT_PTR, &p->frontsector, args, 0);
+            GetValue(type, &p->frontsector, args, 0);
             break;
         case DMU_BACK_SECTOR:
-            GetValue(VT_PTR, &p->backsector, args, 0);
+            GetValue(type, &p->backsector, args, 0);
             break;
         case DMU_FLAGS:
-            GetValue(VT_BYTE, &p->flags, args, 0);
+            GetValue(type, &p->flags, args, 0);
             break;
         case DMU_ANGLE:
-            GetValue(VT_ANGLE, &p->angle, args, 0);
+            GetValue(type, &p->angle, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SEG has no property %s.\n", DMU_Str(args->prop));
@@ -1590,34 +1725,35 @@ static int GetProperty(void* ptr, void* context)
     case DMU_LINE:
         {
         line_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_VERTEX1:
-            GetValue(VT_PTR, &p->v1, args, 0);
+            GetValue(type, &p->v1, args, 0);
             break;
         case DMU_VERTEX2:
-            GetValue(VT_PTR, &p->v2, args, 0);
+            GetValue(type, &p->v2, args, 0);
             break;
         case DMU_DX:
-            GetValue(VT_FIXED, &p->dx, args, 0);
+            GetValue(type, &p->dx, args, 0);
             break;
         case DMU_DY:
-            GetValue(VT_FIXED, &p->dy, args, 0);
+            GetValue(type, &p->dy, args, 0);
             break;
         case DMU_FRONT_SECTOR:
-            GetValue(VT_PTR, &p->frontsector, args, 0);
+            GetValue(type, &p->frontsector, args, 0);
             break;
         case DMU_BACK_SECTOR:
-            GetValue(VT_PTR, &p->backsector, args, 0);
+            GetValue(type, &p->backsector, args, 0);
             break;
         case DMU_FLAGS:
-            GetValue(VT_SHORT, &p->flags, args, 0);
+            GetValue(type, &p->flags, args, 0);
             break;
         case DMU_SIDE0:
-            GetValue(VT_PTR, SIDE_PTR(p->sidenum[0]), args, 0);
+            GetValue(type, SIDE_PTR(p->sidenum[0]), args, 0);
             break;
         case DMU_SIDE1:
-            GetValue(VT_PTR, SIDE_PTR(p->sidenum[1]), args, 0);
+            GetValue(type, SIDE_PTR(p->sidenum[1]), args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_LINE has no property %s.\n", DMU_Str(args->prop));
@@ -1628,51 +1764,52 @@ static int GetProperty(void* ptr, void* context)
     case DMU_SIDE:
         {
         side_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_SECTOR:
-            GetValue(VT_PTR, &p->sector, args, 0);
+            GetValue(type, &p->sector, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_X:
-            GetValue(VT_FIXED, &p->textureoffset, args, 0);
+            GetValue(type, &p->textureoffset, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_Y:
-            GetValue(VT_FIXED, &p->rowoffset, args, 0);
+            GetValue(type, &p->rowoffset, args, 0);
             break;
         case DMU_TEXTURE_OFFSET_XY:
-            GetValue(VT_FIXED, &p->textureoffset, args, 0);
-            GetValue(VT_FIXED, &p->rowoffset, args, 1);
+            GetValue(type, &p->textureoffset, args, 0);
+            GetValue(type, &p->rowoffset, args, 1);
             break;
         case DMU_TOP_TEXTURE:
-            GetValue(VT_FLAT_INDEX, &p->toptexture, args, 0);
+            GetValue(type, &p->toptexture, args, 0);
             break;
         case DMU_TOP_COLOR:
-            GetValue(VT_BYTE, &p->toprgb[0], args, 0);
-            GetValue(VT_BYTE, &p->toprgb[1], args, 1);
-            GetValue(VT_BYTE, &p->toprgb[2], args, 2);
+            GetValue(type, &p->toprgb[0], args, 0);
+            GetValue(type, &p->toprgb[1], args, 1);
+            GetValue(type, &p->toprgb[2], args, 2);
             break;
         case DMU_MIDDLE_TEXTURE:
-            GetValue(VT_FLAT_INDEX, &p->midtexture, args, 0);
+            GetValue(type, &p->midtexture, args, 0);
             break;
         case DMU_MIDDLE_COLOR:
-            GetValue(VT_BYTE, &p->midrgba[0], args, 0);
-            GetValue(VT_BYTE, &p->midrgba[1], args, 1);
-            GetValue(VT_BYTE, &p->midrgba[2], args, 2);
-            GetValue(VT_BYTE, &p->midrgba[3], args, 3);
+            GetValue(type, &p->midrgba[0], args, 0);
+            GetValue(type, &p->midrgba[1], args, 1);
+            GetValue(type, &p->midrgba[2], args, 2);
+            GetValue(type, &p->midrgba[3], args, 3);
             break;
         case DMU_MIDDLE_BLENDMODE:
-            GetValue(VT_BLENDMODE, &p->blendmode, args, 0);
+            GetValue(type, &p->blendmode, args, 0);
             break;
         case DMU_BOTTOM_TEXTURE:
-            GetValue(VT_FLAT_INDEX, &p->bottomtexture, args, 0);
+            GetValue(type, &p->bottomtexture, args, 0);
             break;
         case DMU_BOTTOM_COLOR:
-            GetValue(VT_BYTE, &p->bottomrgb[0], args, 0);
-            GetValue(VT_BYTE, &p->bottomrgb[1], args, 1);
-            GetValue(VT_BYTE, &p->bottomrgb[2], args, 2);
+            GetValue(type, &p->bottomrgb[0], args, 0);
+            GetValue(type, &p->bottomrgb[1], args, 1);
+            GetValue(type, &p->bottomrgb[2], args, 2);
             break;
         case DMU_FLAGS:
-            GetValue(VT_BYTE, &p->flags, args, 0);
+            GetValue(type, &p->flags, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SIDE has no property %s.\n", DMU_Str(args->prop));
@@ -1683,25 +1820,26 @@ static int GetProperty(void* ptr, void* context)
     case DMU_SUBSECTOR:
         {
         subsector_t* p = ptr;
+        valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_SECTOR:
-            GetValue(VT_PTR, &p->sector, args, 0);
+            GetValue(type, &p->sector, args, 0);
             break;
         case DMU_FLOOR_HEIGHT:
-            GetValue(VT_FIXED, &p->sector->floorheight, args, 0);
+            GetValue(type, &p->sector->floorheight, args, 0);
             break;
         case DMU_FLOOR_TEXTURE:
-            GetValue(VT_SHORT, &p->sector->floorpic, args, 0);
+            GetValue(type, &p->sector->floorpic, args, 0);
             break;
         case DMU_CEILING_HEIGHT:
-            GetValue(VT_FIXED, &p->sector->ceilingheight, args, 0);
+            GetValue(type, &p->sector->ceilingheight, args, 0);
             break;
         case DMU_CEILING_TEXTURE:
-            GetValue(VT_SHORT, &p->sector->ceilingpic, args, 0);
+            GetValue(type, &p->sector->ceilingpic, args, 0);
             break;
         case DMU_THINGS:
-            GetValue(VT_PTR, &p->sector->thinglist, args, 0);
+            GetValue(type, &p->sector->thinglist, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
@@ -1714,6 +1852,7 @@ static int GetProperty(void* ptr, void* context)
     case DMU_SECTOR:
         {
         sector_t* p;
+        valuetype_t type = propertyTypes[args->prop];
         if(args->type == DMU_SECTOR)
             p = ptr;
         else
@@ -1722,40 +1861,40 @@ static int GetProperty(void* ptr, void* context)
         switch(args->prop)
         {
         case DMU_LIGHT_LEVEL:
-            GetValue(VT_SHORT, &p->lightlevel, args, 0);
+            GetValue(type, &p->lightlevel, args, 0);
             break;
         case DMU_COLOR:
-            GetValue(VT_BYTE, &p->rgb[0], args, 0);
-            GetValue(VT_BYTE, &p->rgb[1], args, 1);
-            GetValue(VT_BYTE, &p->rgb[2], args, 2);
+            GetValue(type, &p->rgb[0], args, 0);
+            GetValue(type, &p->rgb[1], args, 1);
+            GetValue(type, &p->rgb[2], args, 2);
             break;
         case DMU_FLOOR_COLOR:
-            GetValue(VT_BYTE, &p->floorrgb[0], args, 0);
-            GetValue(VT_BYTE, &p->floorrgb[1], args, 1);
-            GetValue(VT_BYTE, &p->floorrgb[2], args, 2);
+            GetValue(type, &p->floorrgb[0], args, 0);
+            GetValue(type, &p->floorrgb[1], args, 1);
+            GetValue(type, &p->floorrgb[2], args, 2);
             break;
         case DMU_FLOOR_HEIGHT:
-            GetValue(VT_FIXED, &p->floorheight, args, 0);
+            GetValue(type, &p->floorheight, args, 0);
             break;
         case DMU_FLOOR_TEXTURE:
-            GetValue(VT_SHORT, &p->floorpic, args, 0);
+            GetValue(type, &p->floorpic, args, 0);
             break;
         case DMU_CEILING_COLOR:
-            GetValue(VT_BYTE, &p->ceilingrgb[0], args, 0);
-            GetValue(VT_BYTE, &p->ceilingrgb[1], args, 1);
-            GetValue(VT_BYTE, &p->ceilingrgb[2], args, 2);
+            GetValue(type, &p->ceilingrgb[0], args, 0);
+            GetValue(type, &p->ceilingrgb[1], args, 1);
+            GetValue(type, &p->ceilingrgb[2], args, 2);
             break;
         case DMU_CEILING_HEIGHT:
-            GetValue(VT_FIXED, &p->ceilingheight, args, 0);
+            GetValue(type, &p->ceilingheight, args, 0);
             break;
         case DMU_CEILING_TEXTURE:
-            GetValue(VT_SHORT, &p->ceilingpic, args, 0);
+            GetValue(type, &p->ceilingpic, args, 0);
             break;
         case DMU_LINE_COUNT:
-            GetValue(VT_INT, &p->linecount, args, 0);
+            GetValue(type, &p->linecount, args, 0);
             break;
         case DMU_THINGS:
-            GetValue(VT_PTR, &p->thinglist, args, 0);
+            GetValue(type, &p->thinglist, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
@@ -1782,6 +1921,83 @@ static int GetProperty(void* ptr, void* context)
 
     // Currently no aggregate values are collected.
     return false;
+}
+
+/*
+ * Swaps two values. Does NOT do any type checking. Both values are
+ * assumed to be of the correct (and same) type.
+ *
+ * TODO: How to do type checks?
+ */
+static void SwapValue(valuetype_t valueType, void* src, void* dst)
+{
+    if(valueType == VT_FIXED)
+    {
+        fixed_t tmp = *(fixed_t*) dst;
+
+        *(fixed_t*) dst = *(fixed_t*) src;
+        *(fixed_t*) src = tmp;
+    }
+    else if(valueType == VT_FLOAT)
+    {
+        float tmp = *(float*) dst;
+
+        *(float*) dst = *(float*) src;
+        *(float*) src = tmp;
+    }
+    else if(valueType == VT_BOOL)
+    {
+        boolean tmp = *(boolean*) dst;
+
+        *(boolean*) dst = *(boolean*) src;
+        *(boolean*) src = tmp;
+    }
+    else if(valueType == VT_BYTE)
+    {
+        byte tmp = *(byte*) dst;
+
+        *(byte*) dst = *(byte*) src;
+        *(byte*) src = tmp;
+    }
+    else if(valueType == VT_INT)
+    {
+        int tmp = *(int*) dst;
+
+        *(int*) dst = *(int*) src;
+        *(int*) src = tmp;
+    }
+    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    {
+        short tmp = *(short*) dst;
+
+        *(short*) dst = *(short*) src;
+        *(short*) src = tmp;
+    }
+    else if(valueType == VT_ANGLE)
+    {
+        angle_t tmp = *(angle_t*) dst;
+
+        *(angle_t*) dst = *(angle_t*) src;
+        *(angle_t*) src = tmp;
+    }
+    else if(valueType == VT_BLENDMODE)
+    {
+        blendmode_t tmp = *(blendmode_t*) dst;
+
+        *(blendmode_t*) dst = *(blendmode_t*) src;
+        *(blendmode_t*) src = tmp;
+    }
+    else if(valueType == VT_PTR)
+    {
+        void* tmp = &dst;
+
+        dst = &src;
+        src = &tmp;
+    }
+    else
+    {
+        Con_Error("SwapValue: unknown value type %s.\n", DMU_Str(valueType));
+    }
 }
 
 void P_SetBool(int type, int index, int prop, boolean param)
@@ -2382,6 +2598,70 @@ void P_GetPtrpv(int type, void* ptr, int prop, void* params)
     P_Callbackp(type, ptr, &args, GetProperty);
 }
 
+void P_Copy(int type, int prop, int fromIndex, int toIndex)
+{
+    setargs_t args;
+    void *ptr = NULL;
+
+    InitArgs(&args, type, prop);
+    args.valueType = VT_PTR;
+    args.ptrValues = &ptr;
+    P_Callback(type, fromIndex, &args, GetProperty);
+    P_Callback(type, toIndex, &args, SetProperty);
+}
+
+void P_Swap(int type, int prop, int fromIndex, int toIndex)
+{
+    setargs_t argsA, argsB;
+    void *ptrA = NULL;
+    void *ptrB = NULL;
+
+    InitArgs(&argsA, type, prop);
+    argsA.valueType = VT_PTR;
+    argsA.ptrValues = &ptrA;
+
+    InitArgs(&argsB, type, prop);
+    argsB.valueType = VT_PTR;
+    argsB.ptrValues = &ptrB;
+
+    P_Callback(type, fromIndex, &argsA, GetProperty);
+    P_Callback(type, toIndex, &argsB, GetProperty);
+
+    SwapValue(type, &ptrA, &ptrB);
+}
+
+void P_Copyp(int type, int prop, void* from, void* to)
+{
+    setargs_t args;
+    void *ptr = NULL;
+
+    InitArgs(&args, type, prop);
+    args.valueType = VT_PTR;
+    args.ptrValues = &ptr;
+    P_Callbackp(type, from, &args, GetProperty);
+    P_Callbackp(type, to, &args, SetProperty);
+}
+
+void P_Swapp(int type, int prop, void* from, void* to)
+{
+    setargs_t argsA, argsB;
+    void *ptrA = NULL;
+    void *ptrB = NULL;
+
+    InitArgs(&argsA, type, prop);
+    argsA.valueType = VT_PTR;
+    argsA.ptrValues = &ptrA;
+
+    InitArgs(&argsB, type, prop);
+    argsB.valueType = VT_PTR;
+    argsB.ptrValues = &ptrB;
+
+    P_Callbackp(type, from, &argsA, GetProperty);
+    P_Callbackp(type, to, &argsB, GetProperty);
+
+    SwapValue(type, &ptrA, &ptrB);
+}
+
 //===========================================================================
 // P_ValidateLevel
 //  Make sure all texture references in the level data are good.
@@ -2807,19 +3087,80 @@ void P_LoadBlockMap(int lump)
 }
 
 /*
- * Load the REJECT data lump.
+ * Attempt to load the REJECT.
+ *
+ * If a lump is not found, we'll generate an empty REJECT LUT.
+ * TODO: We could generate a proper table if a suitable one is
+ *       not made available to us once we've loaded the map.
+ *
+ * The REJECT resource is a LUT that provides the results of
+ * trivial line-of-sight tests between sectors. This is done
+ * with a matrix of sector pairs ie if a monster in sector 4
+ * can see the player in sector 2 - the inverse should be true.
+ *
+ * NOTE: Some PWADS have carefully constructed REJECT data to
+ *       create special effects. For example it is possible to
+ *       make a player completely invissible in certain sectors.
+ *
+ * The format of the table is a simple matrix of boolean values,
+ * a (true) value indicates that it is impossible for mobjs in
+ * sector A to see mobjs in sector B (and vice-versa). A (false)
+ * value indicates that a line-of-sight MIGHT be possible an a
+ * more accurate (thus more expensive) calculation will have to
+ * be made.
+ *
+ * The table itself is constructed as follows:
+ *
+ *  X = sector num player is in
+ *  Y = sector num monster is in
+ *
+ *         X
+ *
+ *       0 1 2 3 4 ->
+ *     0 1 - 1 - -
+ *  Y  1 - - 1 - -
+ *     2 1 1 - - 1
+ *     3 - - - 1 -
+ *    \|/
+ *
+ * These results are read left-to-right, top-to-bottom and are
+ * packed into bytes (each byte represents eight results).
+ * As are all lumps in WAD the data is in little-endian order.
+ *
+ * Thus the size of a valid REJECT lump can be calculated as:
+ *
+ *   ceiling(numsectors^2)
  */
 void P_LoadReject(int lump)
 {
-    rejectmatrix = W_CacheLumpNum(lump, PU_LEVEL);
+    int rejectLength = W_LumpLength(lump);
+    int requiredLength = (((numsectors*numsectors) + 7) & ~7) /8;
 
     // If no reject matrix is found, issue a warning.
-    if(rejectmatrix == NULL)
+    if(rejectLength < requiredLength)
     {
-        Con_Message("P_LoadReject: No REJECT data found.\n");
+        Con_Message("P_LoadReject: Valid REJECT data could not be found.\n");
+
+        if(createReject)
+        {
+            // Simply generate an empty REJECT LUT for now.
+            rejectmatrix = Z_Malloc(requiredLength, PU_LEVEL, 0);
+            memset(rejectmatrix, 0, requiredLength);
+            // TODO: Generate valid REJECT for the map.
+        }
+        else
+            rejectmatrix = NULL;
+    }
+    else
+    {
+        // Load the REJECT
+        rejectmatrix = W_CacheLumpNum(lump, PU_LEVEL);
     }
 }
 
+/*
+ * TODO: Consolidate with R_UpdatePlanes?
+ */
 void P_PlaneChanged(sector_t *sector, boolean theCeiling)
 {
     int i;
@@ -4164,7 +4505,7 @@ static void P_ReadLineDefs(byte *structure, const structinfo_t *idf, byte *buffe
             break;
 
         case 2: // HEXEN format
-            for(i = 0; i < numlines; i++, mld++, mldhex++, ld++)
+            for(i = 0; i < numlines; i++, mld++, mldhex++)
             {
                 ld = LINE_PTR(i);
 
@@ -5230,7 +5571,6 @@ static void P_InitMapDataFormats(void)
 // vertex_t
     internalMapDataStructInfo[idtVertexes].type = idtVertexes;
     internalMapDataStructInfo[idtVertexes].size = sizeof(vertex_t);
-    internalMapDataStructInfo[idtVertexes].nummembers = 2;
     (internalMapDataStructInfo[idtVertexes]).members = Z_Malloc(sizeof(structmember_t) * 2, PU_STATIC, 0);
     // X
     (internalMapDataStructInfo[idtVertexes]).members[0].flags = 0;
@@ -5244,7 +5584,6 @@ static void P_InitMapDataFormats(void)
 // subsector_t
     internalMapDataStructInfo[idtSSectors].type = idtSSectors;
     internalMapDataStructInfo[idtSSectors].size = sizeof(subsector_t);
-    internalMapDataStructInfo[idtSSectors].nummembers = 2;
     (internalMapDataStructInfo[idtSSectors]).members = Z_Malloc(sizeof(structmember_t) * 2, PU_STATIC, 0);
     // linecount
     (internalMapDataStructInfo[idtSSectors]).members[0].flags = 0;
@@ -5262,12 +5601,10 @@ static void P_InitMapDataFormats(void)
      */
     internalMapDataStructInfo[idtThings].type = idtThings;
     internalMapDataStructInfo[idtThings].size = 10;
-    internalMapDataStructInfo[idtThings].nummembers = DAM_PROPERTY_COUNT;
 
 // sector_t
     internalMapDataStructInfo[idtSectors].type = idtSectors;
     internalMapDataStructInfo[idtSectors].size = sizeof(sector_t);
-    internalMapDataStructInfo[idtSectors].nummembers = 7;
     (internalMapDataStructInfo[idtSectors]).members = Z_Malloc(sizeof(structmember_t) * 7, PU_STATIC, 0);
     // floor height
     (internalMapDataStructInfo[idtSectors]).members[0].flags = 0;
@@ -5293,7 +5630,6 @@ static void P_InitMapDataFormats(void)
 // node_t
     internalMapDataStructInfo[idtNodes].type = idtNodes;
     internalMapDataStructInfo[idtNodes].size = sizeof(node_t);
-    internalMapDataStructInfo[idtNodes].nummembers = 14;
     (internalMapDataStructInfo[idtNodes]).members = Z_Malloc(sizeof(structmember_t) * 14, PU_STATIC, 0);
     // x
     (internalMapDataStructInfo[idtNodes]).members[0].flags = 0;
@@ -5355,7 +5691,6 @@ static void P_InitMapDataFormats(void)
 // mapseg_t
     internalMapDataStructInfo[idtSegs].type = idtSegs;
     internalMapDataStructInfo[idtSegs].size = sizeof(mapseg_t);
-    internalMapDataStructInfo[idtSegs].nummembers = 6;
     (internalMapDataStructInfo[idtSegs]).members = Z_Malloc(sizeof(structmember_t) * 6, PU_STATIC, 0);
     // v1
     (internalMapDataStructInfo[idtSegs]).members[0].flags = 0;
