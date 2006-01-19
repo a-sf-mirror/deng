@@ -3840,8 +3840,9 @@ static void P_CheckLevel(char *levelID, boolean silent)
         Con_Message("  [110] %d bad texture name(s):\n", numBadTexNames);
 
         for(i = numBadTexNames -1; i >= 0; --i)
-            Con_Message("   Found %d unknown %s \"%s\"\n", (badTexNames[i].planeTex)?
-                        "Flat" : "Texture", badTexNames[i].name, badTexNames[i].count);
+            Con_Message("   Found %d unknown %s \"%s\"\n", badTexNames[i].count,
+                        (badTexNames[i].planeTex)? "Flat" : "Texture",
+                        badTexNames[i].name);
     }
 
     if(!canContinue)
@@ -5130,8 +5131,9 @@ int P_CheckTexture(char *name, boolean planeTex, int dataType,
 
     // At this point we don't know WHAT it is.
     // Perhaps the game knows what to do?
-    id = gx.HandleMapDataPropertyValue(element, dataType, property,
-                                       VT_FLAT_INDEX, name);
+    if(gx.HandleMapDataPropertyValue)
+        id = gx.HandleMapDataPropertyValue(element, dataType, property,
+                                           VT_FLAT_INDEX, name);
 
     // Hmm, must be a bad texture name then...?
     // During level setup we collect this info so we can
