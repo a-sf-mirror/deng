@@ -14,5 +14,5 @@ void            P_Init(void);
 boolean         P_MapExists(int episode, int map);
 void            P_SetupLevel(int episode, int map, int playermask, skill_t skill);
 int             P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data);
-
+int             P_HandleMapDataPropertyValue(int id, int dtype, int prop int type, void *data);
 #endif

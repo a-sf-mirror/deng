@@ -402,6 +402,7 @@ typedef struct {
 typedef struct {
     char *name;
     boolean planeTex;
+    int count;
 } badtex_t;
 
 typedef struct setargs_s {
@@ -428,7 +429,8 @@ typedef struct linelist_t {
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 float AccurateDistance(fixed_t dx, fixed_t dy);
-int P_CheckTexture(char *name, boolean planeTex);
+int P_CheckTexture(char *name, boolean planeTex, int dataType,
+                   int element, int property);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -3838,8 +3840,8 @@ static void P_CheckLevel(char *levelID, boolean silent)
         Con_Message("  [110] %d bad texture name(s):\n", numBadTexNames);
 
         for(i = numBadTexNames -1; i >= 0; --i)
-            Con_Message("   Unknown %s \"%s\"\n", (badTexNames[i].planeTex)?
-                        "Flat" : "Texture", badTexNames[i].name);
+            Con_Message("   Found %d unknown %s \"%s\"\n", (badTexNames[i].planeTex)?
+                        "Flat" : "Texture", badTexNames[i].name, badTexNames[i].count);
     }
 
     if(!canContinue)
@@ -4026,8 +4028,8 @@ static void ReadValue(void* dest, valuetype_t valueType,
                     *d = SHORT(*((short*)(src)));
             }
             break;
-
-        case 8:
+// FIXME
+/*        case 8:
             if(flags & DT_TEXTURE)
             {
                 *d = P_CheckTexture((char*)((long long*)(src)), false);
@@ -4037,7 +4039,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
                 *d = P_CheckTexture((char*)((long long*)(src)), true);
             }
             break;
-         default:
+*/         default:
             Con_Error("GetValue: VT_SHORT incompatible with value type %s.\n",
                       DMU_Str(size));
          }
@@ -5044,11 +5046,23 @@ static void P_ReadSideDefs(byte *structure, int dataType, byte *buffer, size_t e
 
 /*
  * MUST be called after Linedefs are loaded.
- * This allows the texture names to be overloaded depending
- * on the special of the linedef (BOOM support)
  *
- * TODO: Remove game specifc stuff. The games must be allowed
- *       to handle what happens with overloaded texture names.
+ * Sidedef texture fields might be overloaded with all kinds of
+ * different strings.
+ *
+ * In BOOM for example, these fields might contain strings that
+ * influence what special is assigned to the line.
+ *
+ * In order to allow the game to make the best decision on what
+ * to do - we must provide the game with everything we know about
+ * this property and the unaltered erogenous value.
+ *
+ * In the above example, jDoom will request various properties
+ * of this side's linedef (hence why this has to wait until the
+ * linedefs have been loaded).
+ *
+ * If the game doesn't know what the erogenous value means:
+ * We'll ignore it and assign the "MISSING" texture instead.
  */
 static void P_ReadSideDefTextures(int lump)
 {
@@ -5062,39 +5076,24 @@ static void P_ReadSideDefTextures(int lump)
     data = W_CacheLumpNum(lump, PU_STATIC);
 
     msd = (mapsidedef_t *) data;
-    sd = SIDE_PTR(0);
-    for(i = numsides -1; i >= 0; --i, msd++, sd++)
+
+    for(i = 0; i < numsides; i++, msd++)
     {
+        sd = SIDE_PTR(i);
         index = SHORT(msd->sector);
         if(index >= 0 && index < numsectors)
             sd->sector = SECTOR_PTR(index);
         sd->textureoffset = SHORT(msd->textureoffset) << FRACBITS;
         sd->rowoffset = SHORT(msd->rowoffset) << FRACBITS;
-#if __JDOOM__
-        switch(sidespecials[i])
-        {
-            case 242:
-            case 260:
-                // A BOOM, sidedef texture overload which we don't support yet.
-                // Will be resolved in P_CheckTexture() when implemented
-                // and we WONT use a special dependant block to determine them.
-                // Once this stuff is all in and working I'll restructure the
-                // map loading code once and for all.
-                sd->toptexture = -1;
-                sd->bottomtexture = -1;
-                sd->midtexture = -1;
-                Con_Message("%d BOOM overloaded sidedef (unsupported)\n",i);
-                break;
 
-            default:
-#endif
-                sd->toptexture = P_CheckTexture(msd->toptexture, false);
-                sd->bottomtexture = P_CheckTexture(msd->bottomtexture, false);
-                sd->midtexture = P_CheckTexture(msd->midtexture, false);
-#if __JDOOM__
-                break;
-        }
-#endif
+        sd->toptexture = P_CheckTexture(msd->toptexture, false, DAM_SIDE,
+                                        i, DAM_TOP_TEXTURE);
+
+        sd->bottomtexture = P_CheckTexture(msd->bottomtexture, false, DAM_SIDE,
+                                           i, DAM_BOTTOM_TEXTURE);
+
+        sd->midtexture = P_CheckTexture(msd->midtexture, false, DAM_SIDE,
+                                        i, DAM_MIDDLE_TEXTURE);
     }
 
     Z_Free(data);
@@ -5116,7 +5115,8 @@ static void P_ReadSideDefTextures(int lump)
  * @parm planeTex: true = *name comes from a map data field
  *                         intended for plane textures (Flats)
  */
-int P_CheckTexture(char *name, boolean planeTex)
+int P_CheckTexture(char *name, boolean planeTex, int dataType,
+                   int element, int property)
 {
     int i;
     int id;
@@ -5128,7 +5128,12 @@ int P_CheckTexture(char *name, boolean planeTex)
     else
         id = R_TextureNumForName(name);
 
-    // A bad texture name?
+    // At this point we don't know WHAT it is.
+    // Perhaps the game knows what to do?
+    id = gx.HandleMapDataPropertyValue(element, dataType, property,
+                                       VT_FLAT_INDEX, name);
+
+    // Hmm, must be a bad texture name then...?
     // During level setup we collect this info so we can
     // present it to the user latter on.
     if(levelSetup && id == -1)
@@ -5143,7 +5148,11 @@ int P_CheckTexture(char *name, boolean planeTex)
             {
                 if(!strcmp(badTexNames[i].name, namet) &&
                     badTexNames[i].planeTex == planeTex)
+                {
+                    // Yep we already know about it.
                     known = true;
+                    badTexNames[i].count++;
+                }
             }
         }
 
@@ -5164,6 +5173,7 @@ int P_CheckTexture(char *name, boolean planeTex)
             strcpy(badTexNames[numBadTexNames -1].name, namet);
 
             badTexNames[numBadTexNames -1].planeTex = planeTex;
+            badTexNames[numBadTexNames -1].count = 1;
         }
     }
 

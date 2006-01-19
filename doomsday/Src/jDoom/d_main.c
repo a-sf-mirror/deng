@@ -770,6 +770,8 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.SetupForSides = P_SetupForSides;
     gx.SetupForSectors = P_SetupForSectors;
 
+    // These two really need better names. Ideas?
     gx.HandleMapDataProperty = P_HandleMapDataProperty;
+    gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
     return &gx;
 }

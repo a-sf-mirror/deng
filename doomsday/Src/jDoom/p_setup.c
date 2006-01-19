@@ -230,6 +230,50 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
 }
 
 /*
+ * Doomsday will call this when loading the map data if it encounters a
+ * value that it doesn't understand for a property IT handles.
+ *
+ * Doomsday thinks we might know what to do with it...
+ * If we don't know what to do we'll return -1.
+ *
+ * @parm id: int, index of the current element being read.
+ * @parm dtype: int, lump type class id this value is for.
+ * @parm prop: int, propertyid of the map structure.
+ * @parm type: int, data type id of the value pointed to by *data.
+ * @parm *data: void ptr, to the data value (has already been expanded, size
+ *              converted and endian converted where necessary).
+ */
+int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
+                                 int type, void *data)
+{
+    switch(dtype)
+    {
+    case DAM_SIDE:
+        switch(prop)
+        {
+        case DAM_TOP_TEXTURE:
+        case DAM_MIDDLE_TEXTURE:
+        case DAM_BOTTOM_TEXTURE:
+            // It could be a BOOM overloaded texture name?
+            // In this context Doomsday expects either -1 (a bad texture name)
+            // Or the id of a wall texture to set it should set to this section.
+
+            // TODO: Add code to determine what to do.
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return -1;
+}
+
+/*
  * Initializes various playsim related data
  */
 void P_Init(void)
