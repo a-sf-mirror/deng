@@ -519,137 +519,137 @@ fixed_t mapgravity;             // Gravity for the current map.
  * DMU constant indices. Add new DMU constants to the end.
  *
  * Not all DMU constants have a value type, in which caase
- * they should be entered using the special case: "VT_NONE"
+ * they should be entered using the special case: "DDVT_NONE"
  */
 const valuetype_t propertyTypes[] = {
-        { VT_NONE },        // DMU_ALL = -1
+        { DDVT_NONE },        // DMU_ALL = -1
 
-        { VT_PTR },         // DMU_VERTEX = 1
-        { VT_PTR },         // DMU_SEG
-        { VT_PTR },         // DMU_LINE
-        { VT_PTR },         // DMU_SIDE
-        { VT_PTR },         // DMU_NODE
-        { VT_PTR },         // DMU_SUBSECTOR
-        { VT_PTR },         // DMU_SECTOR
-        { VT_NONE },        // DMU_BLOCKMAP
-        { VT_NONE },        // DMU_REJEC
-        { VT_NONE },        // DMU_POLYBLOCKMAP
-        { VT_PTR },         // DMU_POLYOBJ
+        { DDVT_PTR },         // DMU_VERTEX = 1
+        { DDVT_PTR },         // DMU_SEG
+        { DDVT_PTR },         // DMU_LINE
+        { DDVT_PTR },         // DMU_SIDE
+        { DDVT_PTR },         // DMU_NODE
+        { DDVT_PTR },         // DMU_SUBSECTOR
+        { DDVT_PTR },         // DMU_SECTOR
+        { DDVT_NONE },        // DMU_BLOCKMAP
+        { DDVT_NONE },        // DMU_REJEC
+        { DDVT_NONE },        // DMU_POLYBLOCKMAP
+        { DDVT_PTR },         // DMU_POLYOBJ
 
-        { VT_NONE },        // DMU_LINE_BY_TAG
-        { VT_NONE },        // DMU_SECTOR_BY_TAG
+        { DDVT_NONE },        // DMU_LINE_BY_TAG
+        { DDVT_NONE },        // DMU_SECTOR_BY_TAG
 
-        { VT_NONE },        // DMU_LINE_BY_ACT_TAG
-        { VT_NONE },        // DMU_SECTOR_BY_ACT_TAG
+        { DDVT_NONE },        // DMU_LINE_BY_ACT_TAG
+        { DDVT_NONE },        // DMU_SECTOR_BY_ACT_TAG
 
-        { VT_NONE },        // DMU_LINE_OF_SECTOR
-        { VT_NONE },        // DMU_SECTOR_OF_SUBSECTOR
-        { VT_NONE },        // DMU_SEG_OF_POLYOBJ
+        { DDVT_NONE },        // DMU_LINE_OF_SECTOR
+        { DDVT_NONE },        // DMU_SECTOR_OF_SUBSECTOR
+        { DDVT_NONE },        // DMU_SEG_OF_POLYOBJ
 
-        { VT_FIXED },       // DMU_X
-        { VT_FIXED },       // DMU_Y
-        { VT_FIXED },       // DMU_XY
+        { DDVT_FIXED },       // DMU_X
+        { DDVT_FIXED },       // DMU_Y
+        { DDVT_FIXED },       // DMU_XY
 
-        { VT_PTR },         // DMU_VERTEX1
-        { VT_PTR },         // DMU_VERTEX2
-        { VT_FIXED },       // DMU_VERTEX1_X
-        { VT_FIXED },       // DMU_VERTEX1_Y
-        { VT_FIXED },       // DMU_VERTEX1_XY
-        { VT_FIXED },       // DMU_VERTEX2_X
-        { VT_FIXED },       // DMU_VERTEX2_Y
-        { VT_FIXED },       // DMU_VERTEX2_XY
+        { DDVT_PTR },         // DMU_VERTEX1
+        { DDVT_PTR },         // DMU_VERTEX2
+        { DDVT_FIXED },       // DMU_VERTEX1_X
+        { DDVT_FIXED },       // DMU_VERTEX1_Y
+        { DDVT_FIXED },       // DMU_VERTEX1_XY
+        { DDVT_FIXED },       // DMU_VERTEX2_X
+        { DDVT_FIXED },       // DMU_VERTEX2_Y
+        { DDVT_FIXED },       // DMU_VERTEX2_XY
 
-        { VT_PTR },         // DMU_FRONT_SECTOR
-        { VT_PTR },         // DMU_BACK_SECTOR
-        { VT_PTR },         // DMU_SIDE0
-        { VT_PTR },         // DMU_SIDE1
-        { VT_INT },         // DMU_FLAGS
-        { VT_FIXED },       // DMU_DX
-        { VT_FIXED },       // DMU_DY
-        { VT_FIXED },       // DMU_LENGTH
-        { VT_INT },         // DMU_SLOPE_TYPE
-        { VT_ANGLE },       // DMU_ANGLE
-        { VT_FIXED },       // DMU_OFFSET
-        { VT_FLAT_INDEX },  // DMU_TOP_TEXTURE
-        { VT_BYTE },        // DMU_TOP_COLOR
-        { VT_BYTE },        // DMU_TOP_COLOR_RED
-        { VT_BYTE },        // DMU_TOP_COLOR_GREEN
-        { VT_BYTE },        // DMU_TOP_COLOR_BLUE
-        { VT_FLAT_INDEX },  // DMU_MIDDLE_TEXTURE
-        { VT_BYTE },        // DMU_MIDDLE_COLOR
-        { VT_BYTE },        // DMU_MIDDLE_COLOR_RED
-        { VT_BYTE },        // DMU_MIDDLE_COLOR_GREEN
-        { VT_BYTE },        // DMU_MIDDLE_COLOR_BLUE
-        { VT_BYTE },        // DMU_MIDDLE_COLOR_ALPHA
-        { VT_BLENDMODE },   // DMU_MIDDLE_BLENDMODE
-        { VT_FLAT_INDEX },  // DMU_BOTTOM_TEXTURE
-        { VT_BYTE },        // DMU_BOTTOM_COLOR
-        { VT_BYTE },        // DMU_BOTTOM_COLOR_RED
-        { VT_BYTE },        // DMU_BOTTOM_COLOR_GREEN
-        { VT_BYTE },        // DMU_BOTTOM_COLOR_BLUE
-        { VT_FIXED },       // DMU_TEXTURE_OFFSET_X
-        { VT_FIXED },       // DMU_TEXTURE_OFFSET_Y
-        { VT_FIXED },       // DMU_TEXTURE_OFFSET_XY
-        { VT_INT },         // DMU_VALID_COUNT
+        { DDVT_PTR },         // DMU_FRONT_SECTOR
+        { DDVT_PTR },         // DMU_BACK_SECTOR
+        { DDVT_PTR },         // DMU_SIDE0
+        { DDVT_PTR },         // DMU_SIDE1
+        { DDVT_INT },         // DMU_FLAGS
+        { DDVT_FIXED },       // DMU_DX
+        { DDVT_FIXED },       // DMU_DY
+        { DDVT_FIXED },       // DMU_LENGTH
+        { DDVT_INT },         // DMU_SLOPE_TYPE
+        { DDVT_ANGLE },       // DMU_ANGLE
+        { DDVT_FIXED },       // DMU_OFFSET
+        { DDVT_FLAT_INDEX },  // DMU_TOP_TEXTURE
+        { DDVT_BYTE },        // DMU_TOP_COLOR
+        { DDVT_BYTE },        // DMU_TOP_COLOR_RED
+        { DDVT_BYTE },        // DMU_TOP_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_TOP_COLOR_BLUE
+        { DDVT_FLAT_INDEX },  // DMU_MIDDLE_TEXTURE
+        { DDVT_BYTE },        // DMU_MIDDLE_COLOR
+        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_RED
+        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_BLUE
+        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_ALPHA
+        { DDVT_BLENDMODE },   // DMU_MIDDLE_BLENDMODE
+        { DDVT_FLAT_INDEX },  // DMU_BOTTOM_TEXTURE
+        { DDVT_BYTE },        // DMU_BOTTOM_COLOR
+        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_RED
+        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_BLUE
+        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_X
+        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_Y
+        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_XY
+        { DDVT_INT },         // DMU_VALID_COUNT
 
-        { VT_INT },         // DMU_LINE_COUNT
-        { VT_BYTE },        // DMU_COLOR
-        { VT_BYTE },        // DMU_COLOR_RED
-        { VT_BYTE },        // DMU_COLOR_GREEN
-        { VT_BYTE },        // DMU_COLOR_BLUE
-        { VT_SHORT },       // DMU_LIGHT_LEVEL
-        { VT_NONE },        // DMU_THINGS
-        { VT_FIXED },       // DMU_BOUNDING_BOX
-        { VT_PTR },         // DMU_SOUND_ORIGIN
+        { DDVT_INT },         // DMU_LINE_COUNT
+        { DDVT_BYTE },        // DMU_COLOR
+        { DDVT_BYTE },        // DMU_COLOR_RED
+        { DDVT_BYTE },        // DMU_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_COLOR_BLUE
+        { DDVT_SHORT },       // DMU_LIGHT_LEVEL
+        { DDVT_NONE },        // DMU_THINGS
+        { DDVT_FIXED },       // DMU_BOUNDING_BOX
+        { DDVT_PTR },         // DMU_SOUND_ORIGIN
 
-        { VT_FIXED },       // DMU_FLOOR_HEIGHT
-        { VT_FLAT_INDEX },  // DMU_FLOOR_TEXTURE
-        { VT_FLOAT },       // DMU_FLOOR_OFFSET_X
-        { VT_FLOAT },       // DMU_FLOOR_OFFSET_Y
-        { VT_FLOAT },       // DMU_FLOOR_OFFSET_XY
-        { VT_INT },         // DMU_FLOOR_TARGET
-        { VT_INT },         // DMU_FLOOR_SPEED
-        { VT_BYTE },        // DMU_FLOOR_COLOR
-        { VT_BYTE },        // DMU_FLOOR_COLOR_RED
-        { VT_BYTE },        // DMU_FLOOR_COLOR_GREEN
-        { VT_BYTE },        // DMU_FLOOR_COLOR_BLUE
-        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_X
-        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_Y
-        { VT_INT },         // DMU_FLOOR_TEXTURE_MOVE_XY
+        { DDVT_FIXED },       // DMU_FLOOR_HEIGHT
+        { DDVT_FLAT_INDEX },  // DMU_FLOOR_TEXTURE
+        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_X
+        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_Y
+        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_XY
+        { DDVT_INT },         // DMU_FLOOR_TARGET
+        { DDVT_INT },         // DMU_FLOOR_SPEED
+        { DDVT_BYTE },        // DMU_FLOOR_COLOR
+        { DDVT_BYTE },        // DMU_FLOOR_COLOR_RED
+        { DDVT_BYTE },        // DMU_FLOOR_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_FLOOR_COLOR_BLUE
+        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_X
+        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_Y
+        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_XY
 
-        { VT_FIXED },       // DMU_CEILING_HEIGHT
-        { VT_FLAT_INDEX },  // DMU_CEILING_TEXTURE
-        { VT_FLOAT },       // DMU_CEILING_OFFSET_X
-        { VT_FLOAT },       // DMU_CEILING_OFFSET_Y
-        { VT_FLOAT },       // DMU_CEILING_OFFSET_XY
-        { VT_INT },         // DMU_CEILING_TARGET
-        { VT_INT },         // DMU_CEILING_SPEED
-        { VT_BYTE },        // DMU_CEILING_COLOR
-        { VT_BYTE },        // DMU_CEILING_COLOR_RED
-        { VT_BYTE },        // DMU_CEILING_COLOR_GREEN
-        { VT_BYTE },        // DMU_CEILING_COLOR_BLUE
-        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_X
-        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_Y
-        { VT_INT },         // DMU_CEILING_TEXTURE_MOVE_XY
+        { DDVT_FIXED },       // DMU_CEILING_HEIGHT
+        { DDVT_FLAT_INDEX },  // DMU_CEILING_TEXTURE
+        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_X
+        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_Y
+        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_XY
+        { DDVT_INT },         // DMU_CEILING_TARGET
+        { DDVT_INT },         // DMU_CEILING_SPEED
+        { DDVT_BYTE },        // DMU_CEILING_COLOR
+        { DDVT_BYTE },        // DMU_CEILING_COLOR_RED
+        { DDVT_BYTE },        // DMU_CEILING_COLOR_GREEN
+        { DDVT_BYTE },        // DMU_CEILING_COLOR_BLUE
+        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_X
+        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_Y
+        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_XY
 
-        { VT_NONE },        // DMU_SEG_LIST
-        { VT_INT },         // DMU_SEG_COUNT
-        { VT_INT },         // DMU_TAG
-        { VT_PTR },         // DMU_ORIGINAL_POINTS
-        { VT_PTR },         // DMU_PREVIOUS_POINTS
-        { VT_PTR },         // DMU_START_SPOT
-        { VT_FIXED },       // DMU_START_SPOT_X
-        { VT_FIXED },       // DMU_START_SPOT_Y
-        { VT_FIXED },       // DMU_START_SPOT_XY
-        { VT_FIXED },       // DMU_DESTINATION_X
-        { VT_FIXED },       // DMU_DESTINATION_Y
-        { VT_FIXED },       // DMU_DESTINATION_XY
-        { VT_ANGLE },       // DMU_DESTINATION_ANGLE
-        { VT_INT },         // DMU_SPEED
-        { VT_ANGLE },       // DMU_ANGLE_SPEED
-        { VT_INT },         // DMU_SEQUENCE_TYPE
-        { VT_BOOL },        // DMU_CRUSH
-        { VT_PTR }          // DMU_SPECIAL_DATA
+        { DDVT_NONE },        // DMU_SEG_LIST
+        { DDVT_INT },         // DMU_SEG_COUNT
+        { DDVT_INT },         // DMU_TAG
+        { DDVT_PTR },         // DMU_ORIGINAL_POINTS
+        { DDVT_PTR },         // DMU_PREVIOUS_POINTS
+        { DDVT_PTR },         // DMU_START_SPOT
+        { DDVT_FIXED },       // DMU_START_SPOT_X
+        { DDVT_FIXED },       // DMU_START_SPOT_Y
+        { DDVT_FIXED },       // DMU_START_SPOT_XY
+        { DDVT_FIXED },       // DMU_DESTINATION_X
+        { DDVT_FIXED },       // DMU_DESTINATION_Y
+        { DDVT_FIXED },       // DMU_DESTINATION_XY
+        { DDVT_ANGLE },       // DMU_DESTINATION_ANGLE
+        { DDVT_INT },         // DMU_SPEED
+        { DDVT_ANGLE },       // DMU_ANGLE_SPEED
+        { DDVT_INT },         // DMU_SEQUENCE_TYPE
+        { DDVT_BOOL },        // DMU_CRUSH
+        { DDVT_PTR }          // DMU_SPECIAL_DATA
 };
 
 // --------------------------------------
@@ -1067,184 +1067,184 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
  */
 static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int index)
 {
-    if(valueType == VT_FIXED)
+    if(valueType == DDVT_FIXED)
     {
         fixed_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BYTE:
+        case DDVT_BYTE:
             *d = (args->byteValues[index] << FRACBITS);
             break;
-        case VT_INT:
+        case DDVT_INT:
             *d = (args->intValues[index] << FRACBITS);
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             *d = args->fixedValues[index];
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             *d = FLT2FIX(args->floatValues[index]);
             break;
         default:
-            Con_Error("SetValue: VT_FIXED incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_FIXED incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_FLOAT)
+    else if(valueType == DDVT_FLOAT)
     {
         float* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BYTE:
+        case DDVT_BYTE:
             *d = args->byteValues[index];
             break;
-        case VT_INT:
+        case DDVT_INT:
             *d = args->intValues[index];
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             *d = FIX2FLT(args->fixedValues[index]);
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             *d = args->floatValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_FLOAT incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_FLOAT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BOOL)
+    else if(valueType == DDVT_BOOL)
     {
         boolean* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             *d = args->booleanValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_BOOL incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_BOOL incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BYTE)
+    else if(valueType == DDVT_BYTE)
     {
         byte* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             *d = args->booleanValues[index];
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             *d = args->byteValues[index];
             break;
-        case VT_INT:
+        case DDVT_INT:
             *d = args->intValues[index];
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             *d = (byte) args->floatValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_BYTE incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_BYTE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_INT)
+    else if(valueType == DDVT_INT)
     {
         int* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             *d = args->booleanValues[index];
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             *d = args->byteValues[index];
             break;
-        case VT_INT:
+        case DDVT_INT:
             *d = args->intValues[index];
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             *d = args->floatValues[index];
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             *d = (args->fixedValues[index] >> FRACBITS);
             break;
         default:
-            Con_Error("SetValue: VT_INT incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_INT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
         short* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             *d = args->booleanValues[index];
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             *d = args->byteValues[index];
             break;
-        case VT_INT:
+        case DDVT_INT:
             *d = args->intValues[index];
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             *d = args->floatValues[index];
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             *d = (args->fixedValues[index] >> FRACBITS);
             break;
         default:
-            Con_Error("SetValue: VT_SHORT incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_SHORT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_ANGLE)
+    else if(valueType == DDVT_ANGLE)
     {
         angle_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_ANGLE:
+        case DDVT_ANGLE:
             *d = args->angleValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_ANGLE incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_ANGLE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BLENDMODE)
+    else if(valueType == DDVT_BLENDMODE)
     {
         blendmode_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_INT:
+        case DDVT_INT:
             if(args->intValues[index] > DDNUM_BLENDMODES || args->intValues[index] < 0)
-                Con_Error("SetValue: %d is not a valid value for VT_BLENDMODE.\n",
+                Con_Error("SetValue: %d is not a valid value for DDVT_BLENDMODE.\n",
                           args->intValues[index]);
 
             *d = args->intValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_BLENDMODE incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_BLENDMODE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_PTR)
+    else if(valueType == DDVT_PTR)
     {
         void** d = dst;
 
         switch(args->valueType)
         {
-        case VT_PTR:
+        case DDVT_PTR:
             *d = args->ptrValues[index];
             break;
         default:
-            Con_Error("SetValue: VT_PTR incompatible with value type %s.\n",
+            Con_Error("SetValue: DDVT_PTR incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
@@ -1496,180 +1496,180 @@ static int SetProperty(void* ptr, void* context)
  */
 static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int index)
 {
-    if(valueType == VT_FIXED)
+    if(valueType == DDVT_FIXED)
     {
         fixed_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BYTE:
+        case DDVT_BYTE:
             args->byteValues[index] = (*d >> FRACBITS);
             break;
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = (*d >> FRACBITS);
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             args->fixedValues[index] = *d;
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             args->floatValues[index] = FIX2FLT(*d);
             break;
         default:
-            Con_Error("GetValue: VT_FIXED incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_FIXED incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_FLOAT)
+    else if(valueType == DDVT_FLOAT)
     {
         float* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BYTE:
+        case DDVT_BYTE:
             args->byteValues[index] = *d;
             break;
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = (int) *d;
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             args->fixedValues[index] = FLT2FIX(*d);
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             args->floatValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_FLOAT incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_FLOAT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BOOL)
+    else if(valueType == DDVT_BOOL)
     {
         boolean* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             args->booleanValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_BOOL incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_BOOL incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BYTE)
+    else if(valueType == DDVT_BYTE)
     {
         byte* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             args->booleanValues[index] = *d;
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             args->byteValues[index] = *d;
             break;
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = *d;
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             args->floatValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_BYTE incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_BYTE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_INT)
+    else if(valueType == DDVT_INT)
     {
         int* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             args->booleanValues[index] = *d;
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             args->byteValues[index] = *d;
             break;
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = *d;
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             args->floatValues[index] = *d;
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             args->fixedValues[index] = (*d << FRACBITS);
             break;
         default:
-            Con_Error("GetValue: VT_INT incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_INT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
         short* d = dst;
 
         switch(args->valueType)
         {
-        case VT_BOOL:
+        case DDVT_BOOL:
             args->booleanValues[index] = *d;
             break;
-        case VT_BYTE:
+        case DDVT_BYTE:
             args->byteValues[index] = *d;
             break;
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = *d;
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             args->floatValues[index] = *d;
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             args->fixedValues[index] = (*d << FRACBITS);
             break;
         default:
-            Con_Error("GetValue: VT_SHORT incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_SHORT incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_ANGLE)
+    else if(valueType == DDVT_ANGLE)
     {
         angle_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_ANGLE:
+        case DDVT_ANGLE:
             args->angleValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_ANGLE incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_ANGLE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_BLENDMODE)
+    else if(valueType == DDVT_BLENDMODE)
     {
         blendmode_t* d = dst;
 
         switch(args->valueType)
         {
-        case VT_INT:
+        case DDVT_INT:
             args->intValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_BLENDMODE incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_BLENDMODE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == VT_PTR)
+    else if(valueType == DDVT_PTR)
     {
         void** d = dst;
 
         switch(args->valueType)
         {
-        case VT_PTR:
+        case DDVT_PTR:
             args->ptrValues[index] = *d;
             break;
         default:
-            Con_Error("GetValue: VT_PTR incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_PTR incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
@@ -1939,7 +1939,7 @@ static int GetProperty(void* ptr, void* context)
             Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",
                       args->prop);
         }
-        GetValue(VT_PTR, &p->Lines[args->prop], args, 0);
+        GetValue(DDVT_PTR, &p->Lines[args->prop], args, 0);
         break;
         }
 
@@ -1959,63 +1959,63 @@ static int GetProperty(void* ptr, void* context)
  */
 static void SwapValue(valuetype_t valueType, void* src, void* dst)
 {
-    if(valueType == VT_FIXED)
+    if(valueType == DDVT_FIXED)
     {
         fixed_t tmp = *(fixed_t*) dst;
 
         *(fixed_t*) dst = *(fixed_t*) src;
         *(fixed_t*) src = tmp;
     }
-    else if(valueType == VT_FLOAT)
+    else if(valueType == DDVT_FLOAT)
     {
         float tmp = *(float*) dst;
 
         *(float*) dst = *(float*) src;
         *(float*) src = tmp;
     }
-    else if(valueType == VT_BOOL)
+    else if(valueType == DDVT_BOOL)
     {
         boolean tmp = *(boolean*) dst;
 
         *(boolean*) dst = *(boolean*) src;
         *(boolean*) src = tmp;
     }
-    else if(valueType == VT_BYTE)
+    else if(valueType == DDVT_BYTE)
     {
         byte tmp = *(byte*) dst;
 
         *(byte*) dst = *(byte*) src;
         *(byte*) src = tmp;
     }
-    else if(valueType == VT_INT)
+    else if(valueType == DDVT_INT)
     {
         int tmp = *(int*) dst;
 
         *(int*) dst = *(int*) src;
         *(int*) src = tmp;
     }
-    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
         short tmp = *(short*) dst;
 
         *(short*) dst = *(short*) src;
         *(short*) src = tmp;
     }
-    else if(valueType == VT_ANGLE)
+    else if(valueType == DDVT_ANGLE)
     {
         angle_t tmp = *(angle_t*) dst;
 
         *(angle_t*) dst = *(angle_t*) src;
         *(angle_t*) src = tmp;
     }
-    else if(valueType == VT_BLENDMODE)
+    else if(valueType == DDVT_BLENDMODE)
     {
         blendmode_t tmp = *(blendmode_t*) dst;
 
         *(blendmode_t*) dst = *(blendmode_t*) src;
         *(blendmode_t*) src = tmp;
     }
-    else if(valueType == VT_PTR)
+    else if(valueType == DDVT_PTR)
     {
         void* tmp = &dst;
 
@@ -2033,7 +2033,7 @@ void P_SetBool(int type, int index, int prop, boolean param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     // Make sure invalid values are not allowed.
     param = (param? true : false);
     args.booleanValues = &param;
@@ -2045,7 +2045,7 @@ void P_SetByte(int type, int index, int prop, byte param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2055,7 +2055,7 @@ void P_SetInt(int type, int index, int prop, int param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2065,7 +2065,7 @@ void P_SetFixed(int type, int index, int prop, fixed_t param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2075,7 +2075,7 @@ void P_SetAngle(int type, int index, int prop, angle_t param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2085,7 +2085,7 @@ void P_SetFloat(int type, int index, int prop, float param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2095,7 +2095,7 @@ void P_SetPtr(int type, int index, int prop, void* param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &param;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2105,7 +2105,7 @@ void P_SetBoolv(int type, int index, int prop, boolean* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2115,7 +2115,7 @@ void P_SetBytev(int type, int index, int prop, byte* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2125,7 +2125,7 @@ void P_SetIntv(int type, int index, int prop, int* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2135,7 +2135,7 @@ void P_SetFixedv(int type, int index, int prop, fixed_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2145,7 +2145,7 @@ void P_SetAnglev(int type, int index, int prop, angle_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2155,7 +2155,7 @@ void P_SetFloatv(int type, int index, int prop, float* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2165,7 +2165,7 @@ void P_SetPtrv(int type, int index, int prop, void* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = params;
     P_Callback(type, index, &args, SetProperty);
 }
@@ -2177,7 +2177,7 @@ void P_SetBoolp(int type, void* ptr, int prop, boolean param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     // Make sure invalid values are not allowed.
     param = (param? true : false);
     args.booleanValues = &param;
@@ -2189,7 +2189,7 @@ void P_SetBytep(int type, void* ptr, int prop, byte param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2199,7 +2199,7 @@ void P_SetIntp(int type, void* ptr, int prop, int param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2209,7 +2209,7 @@ void P_SetFixedp(int type, void* ptr, int prop, fixed_t param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2219,7 +2219,7 @@ void P_SetAnglep(int type, void* ptr, int prop, angle_t param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2229,7 +2229,7 @@ void P_SetFloatp(int type, void* ptr, int prop, float param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2239,7 +2239,7 @@ void P_SetPtrp(int type, void* ptr, int prop, void* param)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &param;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2249,7 +2249,7 @@ void P_SetBoolpv(int type, void* ptr, int prop, boolean* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2259,7 +2259,7 @@ void P_SetBytepv(int type, void* ptr, int prop, byte* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2269,7 +2269,7 @@ void P_SetIntpv(int type, void* ptr, int prop, int* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2279,7 +2279,7 @@ void P_SetFixedpv(int type, void* ptr, int prop, fixed_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2289,7 +2289,7 @@ void P_SetAnglepv(int type, void* ptr, int prop, angle_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2299,7 +2299,7 @@ void P_SetFloatpv(int type, void* ptr, int prop, float* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2309,7 +2309,7 @@ void P_SetPtrpv(int type, void* ptr, int prop, void* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = params;
     P_Callbackp(type, ptr, &args, SetProperty);
 }
@@ -2322,7 +2322,7 @@ boolean P_GetBool(int type, int index, int prop)
     boolean returnValue = false;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2334,7 +2334,7 @@ byte P_GetByte(int type, int index, int prop)
     byte returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2346,7 +2346,7 @@ int P_GetInt(int type, int index, int prop)
     int returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2358,7 +2358,7 @@ fixed_t P_GetFixed(int type, int index, int prop)
     fixed_t returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2370,7 +2370,7 @@ angle_t P_GetAngle(int type, int index, int prop)
     angle_t returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2382,7 +2382,7 @@ float P_GetFloat(int type, int index, int prop)
     float returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2394,7 +2394,7 @@ void* P_GetPtr(int type, int index, int prop)
     void* returnValue = NULL;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &returnValue;
     P_Callback(type, index, &args, GetProperty);
     return returnValue;
@@ -2405,7 +2405,7 @@ void P_GetBoolv(int type, int index, int prop, boolean* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2415,7 +2415,7 @@ void P_GetBytev(int type, int index, int prop, byte* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2425,7 +2425,7 @@ void P_GetIntv(int type, int index, int prop, int* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2435,7 +2435,7 @@ void P_GetFixedv(int type, int index, int prop, fixed_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2445,7 +2445,7 @@ void P_GetAnglev(int type, int index, int prop, angle_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2455,7 +2455,7 @@ void P_GetFloatv(int type, int index, int prop, float* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2465,7 +2465,7 @@ void P_GetPtrv(int type, int index, int prop, void* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = params;
     P_Callback(type, index, &args, GetProperty);
 }
@@ -2478,7 +2478,7 @@ boolean P_GetBoolp(int type, void* ptr, int prop)
     boolean returnValue = false;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2490,7 +2490,7 @@ byte P_GetBytep(int type, void* ptr, int prop)
     byte returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2502,7 +2502,7 @@ int P_GetIntp(int type, void* ptr, int prop)
     int returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2514,7 +2514,7 @@ fixed_t P_GetFixedp(int type, void* ptr, int prop)
     fixed_t returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2526,7 +2526,7 @@ angle_t P_GetAnglep(int type, void* ptr, int prop)
     angle_t returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2538,7 +2538,7 @@ float P_GetFloatp(int type, void* ptr, int prop)
     float returnValue = 0;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2550,7 +2550,7 @@ void* P_GetPtrp(int type, void* ptr, int prop)
     void* returnValue = NULL;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &returnValue;
     P_Callbackp(type, ptr, &args, GetProperty);
     return returnValue;
@@ -2561,7 +2561,7 @@ void P_GetBoolpv(int type, void* ptr, int prop, boolean* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BOOL;
+    args.valueType = DDVT_BOOL;
     args.booleanValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2571,7 +2571,7 @@ void P_GetBytepv(int type, void* ptr, int prop, byte* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_BYTE;
+    args.valueType = DDVT_BYTE;
     args.byteValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2581,7 +2581,7 @@ void P_GetIntpv(int type, void* ptr, int prop, int* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_INT;
+    args.valueType = DDVT_INT;
     args.intValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2591,7 +2591,7 @@ void P_GetFixedpv(int type, void* ptr, int prop, fixed_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FIXED;
+    args.valueType = DDVT_FIXED;
     args.fixedValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2601,7 +2601,7 @@ void P_GetAnglepv(int type, void* ptr, int prop, angle_t* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_ANGLE;
+    args.valueType = DDVT_ANGLE;
     args.angleValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2611,7 +2611,7 @@ void P_GetFloatpv(int type, void* ptr, int prop, float* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_FLOAT;
+    args.valueType = DDVT_FLOAT;
     args.floatValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2621,7 +2621,7 @@ void P_GetPtrpv(int type, void* ptr, int prop, void* params)
     setargs_t args;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = params;
     P_Callbackp(type, ptr, &args, GetProperty);
 }
@@ -2632,7 +2632,7 @@ void P_Copy(int type, int prop, int fromIndex, int toIndex)
     void *ptr = NULL;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &ptr;
     P_Callback(type, fromIndex, &args, GetProperty);
     P_Callback(type, toIndex, &args, SetProperty);
@@ -2645,11 +2645,11 @@ void P_Swap(int type, int prop, int fromIndex, int toIndex)
     void *ptrB = NULL;
 
     InitArgs(&argsA, type, prop);
-    argsA.valueType = VT_PTR;
+    argsA.valueType = DDVT_PTR;
     argsA.ptrValues = &ptrA;
 
     InitArgs(&argsB, type, prop);
-    argsB.valueType = VT_PTR;
+    argsB.valueType = DDVT_PTR;
     argsB.ptrValues = &ptrB;
 
     P_Callback(type, fromIndex, &argsA, GetProperty);
@@ -2664,7 +2664,7 @@ void P_Copyp(int type, int prop, void* from, void* to)
     void *ptr = NULL;
 
     InitArgs(&args, type, prop);
-    args.valueType = VT_PTR;
+    args.valueType = DDVT_PTR;
     args.ptrValues = &ptr;
     P_Callbackp(type, from, &args, GetProperty);
     P_Callbackp(type, to, &args, SetProperty);
@@ -2677,11 +2677,11 @@ void P_Swapp(int type, int prop, void* from, void* to)
     void *ptrB = NULL;
 
     InitArgs(&argsA, type, prop);
-    argsA.valueType = VT_PTR;
+    argsA.valueType = DDVT_PTR;
     argsA.ptrValues = &ptrA;
 
     InitArgs(&argsB, type, prop);
-    argsB.valueType = VT_PTR;
+    argsB.valueType = DDVT_PTR;
     argsB.ptrValues = &ptrB;
 
     P_Callbackp(type, from, &argsA, GetProperty);
@@ -3989,7 +3989,7 @@ static void P_GroupLines(void)
 static void ReadValue(void* dest, valuetype_t valueType,
                         byte *src, int size, int flags, int index)
 {
-    if(valueType == VT_BYTE)
+    if(valueType == DDVT_BYTE)
     {
         byte* d = dest;
         switch(size)
@@ -4004,11 +4004,11 @@ static void ReadValue(void* dest, valuetype_t valueType,
             *d = *src;
             break;
         default:
-            Con_Error("GetValue: VT_BYTE incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_BYTE incompatible with value type %s.\n",
                       DMU_Str(size));
         }
     }
-    else if(valueType == VT_SHORT || valueType == VT_FLAT_INDEX)
+    else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
         short* d = dest;
         switch(size)
@@ -4041,11 +4041,11 @@ static void ReadValue(void* dest, valuetype_t valueType,
             }
             break;
 */         default:
-            Con_Error("GetValue: VT_SHORT incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_SHORT incompatible with value type %s.\n",
                       DMU_Str(size));
          }
     }
-    else if(valueType = VT_FIXED)
+    else if(valueType = DDVT_FIXED)
     {
         fixed_t* d = dest;
 
@@ -4076,11 +4076,11 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: VT_FIXED incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_FIXED incompatible with value type %s.\n",
                       DMU_Str(size));
         }
     }
-    else if(valueType = VT_ULONG)
+    else if(valueType = DDVT_ULONG)
     {
         unsigned long* d = dest;
 
@@ -4111,11 +4111,11 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: VT_ULONG incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_ULONG incompatible with value type %s.\n",
                       DMU_Str(size));
         }
     }
-    else if(valueType == VT_INT)
+    else if(valueType == DDVT_INT)
     {
         int* d = dest;
 
@@ -4158,7 +4158,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: VT_INT incompatible with value type %s.\n",
+            Con_Error("GetValue: DDVT_INT incompatible with value type %s.\n",
                       DMU_Str(size));;
         }
     }
@@ -4185,19 +4185,19 @@ static void ReadMapProperty(byte *structure, int dataType,
 
         switch(prop->size)
         {
-        case VT_BYTE:
+        case DDVT_BYTE:
             dest = &tmpbyte;
             break;
-        case VT_SHORT:
+        case DDVT_SHORT:
             dest = &tmpshort;
             break;
-        case VT_FIXED:
+        case DDVT_FIXED:
             dest = &tmpfixed;
             break;
-        case VT_INT:
+        case DDVT_INT:
             dest = &tmpint;
             break;
-        case VT_FLOAT:
+        case DDVT_FLOAT:
             dest = &tmpfloat;
             break;
         default:
@@ -4221,12 +4221,12 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_X:
                 dest = &p->x;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_Y:
                 dest = &p->y;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             default:
@@ -4245,27 +4245,27 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_VERTEX1:
                 dest = &p->v1;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_VERTEX2:
                 dest = &p->v2;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_FLAGS:
                 dest = &p->flags;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_SIDE0:
                 dest = &p->sidenum[0];
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_SIDE1:
                 dest = &p->sidenum[1];
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             default:
@@ -4284,32 +4284,32 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_TEXTURE_OFFSET_X:
                 dest = &p->textureoffset;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_TEXTURE_OFFSET_Y:
                 dest = &p->rowoffset;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_TOP_TEXTURE:
                 dest = &p->toptexture;
-                destType = VT_FLAT_INDEX;
+                destType = DDVT_FLAT_INDEX;
                 break;
 
             case DAM_MIDDLE_TEXTURE:
                 dest = &p->midtexture;
-                destType = VT_FLAT_INDEX;
+                destType = DDVT_FLAT_INDEX;
                 break;
 
             case DAM_BOTTOM_TEXTURE:
                 dest = &p->bottomtexture;
-                destType = VT_FLAT_INDEX;
+                destType = DDVT_FLAT_INDEX;
                 break;
 
             case DAM_FRONT_SECTOR:
                 dest = &p->sector;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             default:
@@ -4328,27 +4328,27 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_FLOOR_HEIGHT:
                 dest = &p->floorheight;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_CEILING_HEIGHT:
                 dest = &p->ceilingheight;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_FLOOR_TEXTURE:
                 dest = &p->floorpic;
-                destType = VT_FLAT_INDEX;
+                destType = DDVT_FLAT_INDEX;
                 break;
 
             case DAM_CEILING_TEXTURE:
                 dest = &p->ceilingpic;
-                destType = VT_FLAT_INDEX;
+                destType = DDVT_FLAT_INDEX;
                 break;
 
             case DAM_LIGHT_LEVEL:
                 dest = &p->lightlevel;
-                destType = VT_SHORT;
+                destType = DDVT_SHORT;
                 break;
 
             default:
@@ -4367,32 +4367,32 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_VERTEX1:
                 dest = &p->v1;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_VERTEX2:
                 dest = &p->v2;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_ANGLE:
                 dest = &p->angle;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_LINE:
                 dest = &p->linedef;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_SIDE:
                 dest = &p->side;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_OFFSET:
                 dest = &p->offset;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             default:
@@ -4411,12 +4411,12 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_LINE_COUNT:
                 dest = &p->linecount;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_LINE_FIRST:
                 dest = &p->firstline;
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             default:
@@ -4435,72 +4435,72 @@ static void ReadMapProperty(byte *structure, int dataType,
             {
             case DAM_X:
                 dest = &p->x;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_Y:
                 dest = &p->y;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_DX:
                 dest = &p->dx;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_DY:
                 dest = &p->dy;
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_RIGHT_TOP_Y:
                 dest = &p->bbox[0][0];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_RIGHT_LOW_Y:
                 dest = &p->bbox[0][1];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_RIGHT_LOW_X:
                 dest = &p->bbox[0][2];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_RIGHT_TOP_X:
                 dest = &p->bbox[0][3];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_LEFT_TOP_Y:
                 dest = &p->bbox[1][0];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_LEFT_LOW_Y:
                 dest = &p->bbox[1][1];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_LEFT_LOW_X:
                 dest = &p->bbox[1][2];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_BBOX_LEFT_TOP_X:
                 dest = &p->bbox[1][3];
-                destType = VT_FIXED;
+                destType = DDVT_FIXED;
                 break;
 
             case DAM_CHILD_RIGHT:
                 dest = &p->children[0];
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             case DAM_CHILD_LEFT:
                 dest = &p->children[1];
-                destType = VT_INT;
+                destType = DDVT_INT;
                 break;
 
             default:
@@ -4855,9 +4855,9 @@ static void P_ReadLineDefs(byte *structure, int dataType, byte *buffer, size_t e
                 ld->flags = SHORT(mld->flags);
 
                 tmp = SHORT(mld->special);
-                gx.HandleMapDataProperty(i, VT_INT, DAM_LINE_SPECIAL, 0, &tmp);
+                gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_SPECIAL, 0, &tmp);
                 tmp = SHORT(mld->tag);
-                gx.HandleMapDataProperty(i, VT_INT, DAM_LINE_TAG, 0, &tmp);
+                gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_TAG, 0, &tmp);
 
                 ld->v1 = VERTEX_PTR(SHORT(mld->v1));
                 ld->v2 = VERTEX_PTR(SHORT(mld->v2));
@@ -4875,17 +4875,17 @@ static void P_ReadLineDefs(byte *structure, int dataType, byte *buffer, size_t e
                 ld->flags = SHORT(mldhex->flags);
 
                 tmpb = mldhex->special;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
                 tmpb = mldhex->arg1;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
                 tmpb = mldhex->arg2;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
                 tmpb = mldhex->arg3;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
                 tmpb = mldhex->arg4;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
                 tmpb = mldhex->arg5;
-                gx.HandleMapDataProperty(i, VT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
+                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
 
                 ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
                 ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
@@ -5133,7 +5133,7 @@ int P_CheckTexture(char *name, boolean planeTex, int dataType,
     // Perhaps the game knows what to do?
     if(gx.HandleMapDataPropertyValue)
         id = gx.HandleMapDataPropertyValue(element, dataType, property,
-                                           VT_FLAT_INDEX, name);
+                                           DDVT_FLAT_INDEX, name);
 
     // Hmm, must be a bad texture name then...?
     // During level setup we collect this info so we can

@@ -63,19 +63,6 @@ enum {
     DAM_THING_ARG5
 };
 
-enum // Value types.
-{
-    VT_BOOL,
-    VT_BYTE,
-    VT_SHORT,
-    VT_INT,    // 32 or 64
-    VT_FIXED,
-    VT_ANGLE,
-    VT_FLOAT,
-    VT_PTR,
-    VT_FLAT_INDEX
-};
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 void InitMapInfo(void);

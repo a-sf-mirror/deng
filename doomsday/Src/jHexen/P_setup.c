@@ -138,26 +138,6 @@ int P_HandleMapDataElement(int id, int dtype, int prop, int type, void *data)
 #ifdef TODO_MAP_UPDATE
     switch(type)
     {
-        case VT_BOOL:
-            boolean* d = data;
-            break;
-
-        case VT_BYTE:
-            byte* d = data;
-            break;
-
-        case VT_INT:
-            int* d = data;
-            break;
-
-        case VT_FIXED:
-            fixed_t* d = data;
-            break;
-
-        case VT_FLOAT:
-            float* d = data;
-            break;
-
         default:
             Con_Error("P_HandleMapDataElement: Unknown value type id %i.\n",type);
     }

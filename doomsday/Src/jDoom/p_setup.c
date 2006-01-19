@@ -58,19 +58,6 @@ enum {
     DAM_THING_ARG5
 };
 
-enum // Value types.
-{
-    VT_BOOL,
-    VT_BYTE,
-    VT_SHORT,
-    VT_INT,    // 32 or 64
-    VT_FIXED,
-    VT_ANGLE,
-    VT_FLOAT,
-    VT_PTR,
-    VT_FLAT_INDEX
-};
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 void InitMapInfo(void);
@@ -88,6 +75,9 @@ xsector_t *xsectors;
 int        numxsectors;
 xline_t   *xlines;
 int        numxlines;
+
+xline_t   *dummyxlines;
+int        numdummyxlines;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -115,6 +105,84 @@ xsector_t* P_XSector(sector_t* sector)
 xsector_t* P_XSectorOfSubsector(subsector_t* sub)
 {
     return &xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, sub)];
+}
+
+/*
+ * Allocates a new xtended dummy of the requested type.
+ */
+static void* P_AllocXDummy(int type)
+{
+    dummy_t* newdummy;
+    size_t dsize;
+
+    switch(type)
+    {
+    case DMU_LINE:
+        dsize = sizeof(xline_t);
+        break
+
+    default:
+        return NULL; // We don't store xtended dummy objects for this type.
+    }
+
+    dummies = realloc(dummyxlines, sizeof(dummy_t) * (numdummies + 1));
+    newdummy = dummies + numdummies++;
+
+    newdummy->object = malloc(dsize);
+    newdummy->type = type;
+}
+
+static void P_FreeXDummy(void* dummy)
+{
+    int id;
+
+    // Is this a dummy object?
+    if(P_IsDummy(dummy)
+    {
+        id = P_ToIndex(dummy);
+
+        // Do we have a local xtended dummy for this object?
+        // We SHOULD have...
+        if(id >= 0 && id < numdummies)
+        {
+            // Yes we do, so free it.
+            if(xdummies[id].object)
+                free(xdummies[id].object);
+
+            // If not the last one, do some rollback.
+            if(id < numxdummies - 1)
+            {
+                memove(dummies + id, dummies + id + 1,
+                       sizeof(dummy_t) * (numdummies - id - 1));
+            }
+
+            dummies = realloc(dummies, sizeof(dummy_t) * --numdummies);
+        }
+    }
+    else
+        Con_Error("P_FreeXDummy: Object is not a dummy!\n");
+}
+
+/*
+ * Creates a dummy object of the requested type.
+ */
+void* P_CreateDummy(int type)
+{
+    // We may need to alloc a new local xtended dummy too.
+    P_AllocXDummy(type);
+
+    return P_AllocDummy(type);
+}
+
+/*
+ * Frees a dummy object.
+ */
+void P_DestroyDummy(void* dummy)
+{
+    // We may need to free a local xtended dummy too.
+    P_FreeXDummy(type);
+
+    P_FreeDummy(type);
 }
 
 /*
@@ -181,12 +249,12 @@ void P_SetupForSectors(int num)
  *
  * Returns true unless there is a critical problem with the data supplied.
  *
- * @parm id: int, index of the current element being read.
- * @parm dtype: int, lump type class id this value is for.
- * @parm prop: int, propertyid of the game-specific variable (as declared via DED).
- * @parm type: int, data type id of the value pointed to by *data.
- * @parm *data: void ptr, to the data value (has already been expanded, size
- *              converted and endian converted where necessary).
+ * @param id:       index of the current element being read.
+ * @param dtype:    lump type class id this value is for.
+ * @param prop:     propertyid of the game-specific variable (as declared via DED).
+ * @param type:     data type id of the value pointed to by *data.
+ * @param *data:    ptr to the data value (has already been expanded, size
+ *                  converted and endian converted where necessary).
  */
 int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
 {
@@ -236,12 +304,12 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
  * Doomsday thinks we might know what to do with it...
  * If we don't know what to do we'll return -1.
  *
- * @parm id: int, index of the current element being read.
- * @parm dtype: int, lump type class id this value is for.
- * @parm prop: int, propertyid of the map structure.
- * @parm type: int, data type id of the value pointed to by *data.
- * @parm *data: void ptr, to the data value (has already been expanded, size
- *              converted and endian converted where necessary).
+ * @param id:       index of the current element being read.
+ * @param dtype:    lump type class id this value is for.
+ * @param prop:     propertyid of the map structure.
+ * @param type:     data type id of the value pointed to by *data.
+ * @param *data:    ptr to the data value (has already been expanded, size
+ *                  converted and endian converted where necessary).
  */
 int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
                                  int type, void *data)
@@ -256,7 +324,7 @@ int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
         case DAM_BOTTOM_TEXTURE:
             // It could be a BOOM overloaded texture name?
             // In this context Doomsday expects either -1 (a bad texture name)
-            // Or the id of a wall texture to set it should set to this section.
+            // Or the id of a wall texture it should set to this section.
 
             // TODO: Add code to determine what to do.
             break;
@@ -270,7 +338,7 @@ int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
         break;
     }
 
-    return -1;
+    return -1; // We ain't got a clue what to do with it...
 }
 
 /*

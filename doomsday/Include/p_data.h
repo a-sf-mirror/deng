@@ -101,18 +101,18 @@ typedef struct {
 
 typedef enum // Value types.
 {
-    VT_NONE = -1, // Not a read/writeable value type.
-    VT_BOOL,
-    VT_BYTE,
-    VT_SHORT,
-    VT_INT,    // 32 or 64
-    VT_FIXED,
-    VT_ANGLE,
-    VT_FLOAT,
-    VT_ULONG,
-    VT_PTR,
-    VT_FLAT_INDEX,
-    VT_BLENDMODE
+    DDVT_NONE = -1, // Not a read/writeable value type.
+    DDVT_BOOL,
+    DDVT_BYTE,
+    DDVT_SHORT,
+    DDVT_INT,    // 32 or 64
+    DDVT_FIXED,
+    DDVT_ANGLE,
+    DDVT_FLOAT,
+    DDVT_ULONG,
+    DDVT_PTR,
+    DDVT_FLAT_INDEX,
+    DDVT_BLENDMODE
 } valuetype_t;
 
 extern const valuetype_t propertyTypes[];
