@@ -223,6 +223,11 @@ extern          "C" {
                                int (*callback)(void* p, void* ctx));
     int             P_Callbackp(int type, void* ptr, void* context, 
                                 int (*callback)(void* p, void* ctx));
+    
+    /* dummy functions */
+    
+                                
+    /* property manipulation functions */                            
     void            P_Copy(int type, int prop, int fromIndex, int toIndex);
     void            P_Swap(int type, int prop, int fromIndex, int toIndex);
     void            P_Copyp(int type, int prop, void* from, void* to);
