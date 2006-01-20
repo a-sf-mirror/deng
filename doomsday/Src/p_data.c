@@ -2629,65 +2629,417 @@ void P_GetPtrpv(int type, void* ptr, int prop, void* params)
 void P_Copy(int type, int prop, int fromIndex, int toIndex)
 {
     setargs_t args;
-    void *ptr = NULL;
+    int ptype = propertyTypes[prop];
 
     InitArgs(&args, type, prop);
-    args.valueType = DDVT_PTR;
-    args.ptrValues = &ptr;
-    P_Callback(type, fromIndex, &args, GetProperty);
-    P_Callback(type, toIndex, &args, SetProperty);
-}
 
-void P_Swap(int type, int prop, int fromIndex, int toIndex)
-{
-    setargs_t argsA, argsB;
-    void *ptrA = NULL;
-    void *ptrB = NULL;
+    switch(ptype)
+    {
+    case DDVT_BOOL:
+        {
+        boolean b = false;
 
-    InitArgs(&argsA, type, prop);
-    argsA.valueType = DDVT_PTR;
-    argsA.ptrValues = &ptrA;
+        args.booleanValues = &b;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
 
-    InitArgs(&argsB, type, prop);
-    argsB.valueType = DDVT_PTR;
-    argsB.ptrValues = &ptrB;
+    case DDVT_BYTE:
+        {
+        byte b = 0;
 
-    P_Callback(type, fromIndex, &argsA, GetProperty);
-    P_Callback(type, toIndex, &argsB, GetProperty);
+        args.byteValues = &b;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
 
-    SwapValue(type, &ptrA, &ptrB);
+    case DDVT_INT:
+        {
+        int i = 0;
+
+        args.intValues = &i;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_FIXED:
+        {
+        fixed_t f = 0;
+
+        args.fixedValues = &f;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_ANGLE:
+        {
+        angle_t a = 0;
+
+        args.angleValues = &a;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_FLOAT:
+        {
+        float f = 0;
+
+        args.floatValues = &f;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_PTR:
+        {
+        void *ptr = NULL;
+
+        args.ptrValues = &ptr;
+        P_Callback(type, fromIndex, &args, GetProperty);
+        P_Callback(type, toIndex, &args, SetProperty);
+        break;
+        }
+
+    default:
+        Con_Error("P_Copy: properties of type %s cannot be copied\n",
+                  DMU_Str(prop));
+    }
 }
 
 void P_Copyp(int type, int prop, void* from, void* to)
 {
     setargs_t args;
-    void *ptr = NULL;
+    int ptype = propertyTypes[prop];
 
     InitArgs(&args, type, prop);
-    args.valueType = DDVT_PTR;
-    args.ptrValues = &ptr;
-    P_Callbackp(type, from, &args, GetProperty);
-    P_Callbackp(type, to, &args, SetProperty);
+
+    switch(ptype)
+    {
+    case DDVT_BOOL:
+        {
+        boolean b = false;
+
+        args.booleanValues = &b;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_BYTE:
+        {
+        byte b = 0;
+
+        args.byteValues = &b;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_INT:
+        {
+        int i = 0;
+
+        args.intValues = &i;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_FIXED:
+        {
+        fixed_t f = 0;
+
+        args.fixedValues = &f;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_ANGLE:
+        {
+        angle_t a = 0;
+
+        args.angleValues = &a;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_FLOAT:
+        {
+        float f = 0;
+
+        args.floatValues = &f;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    case DDVT_PTR:
+        {
+        void *ptr = NULL;
+
+        args.ptrValues = &ptr;
+        P_Callbackp(type, from, &args, GetProperty);
+        P_Callbackp(type, to, &args, SetProperty);
+        break;
+        }
+
+    default:
+        Con_Error("P_Copyp: properties of type %s cannot be copied\n",
+                  DMU_Str(prop));
+    }
+}
+
+void P_Swap(int type, int prop, int fromIndex, int toIndex)
+{
+    setargs_t argsA, argsB;
+    int ptype = propertyTypes[prop];
+
+    InitArgs(&argsA, type, prop);
+    InitArgs(&argsB, type, prop);
+
+    argsA.valueType = argsB.valueType = ptype;
+
+    switch(ptype)
+    {
+    case DDVT_BOOL:
+        {
+        boolean a = false;
+        boolean b = false;
+
+        argsA.booleanValues = &a;
+        argsB.booleanValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_BYTE:
+        {
+        byte a = 0;
+        byte b = 0;
+
+        argsA.byteValues = &a;
+        argsB.byteValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_INT:
+        {
+        int a = 0;
+        int b = 0;
+
+        argsA.intValues = &a;
+        argsB.intValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_FIXED:
+        {
+        fixed_t a = 0;
+        fixed_t b = 0;
+
+        argsA.fixedValues = &a;
+        argsB.fixedValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_ANGLE:
+        {
+        angle_t a = 0;
+        angle_t b = 0
+
+        argsA.angleValues = &a;
+        argsB.angleValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_FLOAT:
+        {
+        float a = 0;
+        float b = 0;
+
+        argsA.floatValues = &a;
+        argsB.floatValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_PTR:
+        {
+        void *a = NULL;
+        void *b = NULL;
+
+        argsA.ptrValues = &a;
+        argsB.ptrValues = &b;
+
+        P_Callback(type, fromIndex, &argsA, GetProperty);
+        P_Callback(type, toIndex, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    default:
+        Con_Error("P_Swap: properties of type %s cannot be swapped\n",
+                  DMU_Str(prop));
+    }
 }
 
 void P_Swapp(int type, int prop, void* from, void* to)
 {
     setargs_t argsA, argsB;
-    void *ptrA = NULL;
-    void *ptrB = NULL;
+    int ptype = propertyTypes[prop];
 
     InitArgs(&argsA, type, prop);
-    argsA.valueType = DDVT_PTR;
-    argsA.ptrValues = &ptrA;
-
     InitArgs(&argsB, type, prop);
-    argsB.valueType = DDVT_PTR;
-    argsB.ptrValues = &ptrB;
 
-    P_Callbackp(type, from, &argsA, GetProperty);
-    P_Callbackp(type, to, &argsB, GetProperty);
+    argsA.valueType = argsB.valueType = ptype;
 
-    SwapValue(type, &ptrA, &ptrB);
+    switch(ptype)
+    {
+    case DDVT_BOOL:
+        {
+        boolean a = false;
+        boolean b = false;
+
+        argsA.booleanValues = &a;
+        argsB.booleanValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_BYTE:
+        {
+        byte a = 0;
+        byte b = 0;
+
+        argsA.byteValues = &a;
+        argsB.byteValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_INT:
+        {
+        int a = 0;
+        int b = 0;
+
+        argsA.intValues = &a;
+        argsB.intValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_FIXED:
+        {
+        fixed_t a = 0;
+        fixed_t b = 0;
+
+        argsA.fixedValues = &a;
+        argsB.fixedValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_ANGLE:
+        {
+        angle_t a = 0;
+        angle_t b = 0
+
+        argsA.angleValues = &a;
+        argsB.angleValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_FLOAT:
+        {
+        float a = 0;
+        float b = 0;
+
+        argsA.floatValues = &a;
+        argsB.floatValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    case DDVT_PTR:
+        {
+        void *a = NULL;
+        void *b = NULL;
+
+        argsA.ptrValues = &a;
+        argsB.ptrValues = &b;
+
+        P_Callbackp(type, from, &argsA, GetProperty);
+        P_Callbackp(type, to, &argsB, GetProperty);
+
+        SwapValue(type, &a, &b);
+        break;
+        }
+
+    default:
+        Con_Error("P_Swapp: properties of type %s cannot be swapped\n",
+                  DMU_Str(prop));
+    }
 }
 
 //===========================================================================
