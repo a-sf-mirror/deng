@@ -87,6 +87,22 @@ extern          "C" {
 #define MIN_OF(x, y)            ((x) < (y)? (x) : (y))
 #define MINMAX_OF(a, x, b)      ((x) < (a)? (a) : (x) > (b)? (b) : (x))
 
+    typedef enum // Value types.
+    {
+        DDVT_NONE = -1, // Not a read/writeable value type.
+        DDVT_BOOL,
+        DDVT_BYTE,
+        DDVT_SHORT,
+        DDVT_INT,    // 32 or 64
+        DDVT_FIXED,
+        DDVT_ANGLE,
+        DDVT_FLOAT,
+        DDVT_ULONG,
+        DDVT_PTR,
+        DDVT_FLAT_INDEX,
+        DDVT_BLENDMODE
+    } valuetype_t;
+
     enum {
         // TexFilterMode targets
         DD_TEXTURES = 0,
