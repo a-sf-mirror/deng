@@ -580,19 +580,12 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
     dynlight_t *dyn;
     int     i, g, segindex = GET_SEG_IDX(seg);
     float   ceil, floor, top, bottom, s[2], t[2];
-    float   glowHeight = (MAX_GLOWHEIGHT * 1.0f) * glowHeightFactor;
+    float   glowHeight;
     sector_t *sect = seg->sidedef->sector;
 
     // Check the heights.
     if(segtop <= segbottom)
         return;                 // No height.
-
-    // Don't make too small or too large glows.
-    if(glowHeight <= 2)
-        return;
-
-    if(glowHeight > glowHeightMax)
-        glowHeight = glowHeightMax;
 
     ceil = SECT_CEIL(sect);
     floor = SECT_FLOOR(sect);
@@ -616,6 +609,15 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
         if(g == 0)
         {
             // Ceiling glow.
+            glowHeight = (MAX_GLOWHEIGHT * sect->ceilingglow) * glowHeightFactor;
+
+            // Don't make too small or too large glows.
+            if(glowHeight <= 2)
+                continue;
+
+            if(glowHeight > glowHeightMax)
+                glowHeight = glowHeightMax;
+
             top = ceil;
             bottom = ceil - glowHeight;
 
@@ -624,10 +626,22 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
 
             if(t[0] > 1 || t[1] < 0)
                 continue;
+
+            dyn = DL_New(s, t);
+            memcpy(dyn->color, sect->ceilingglowrgb, 3);
         }
         else
         {
             // Floor glow.
+            glowHeight = (MAX_GLOWHEIGHT * sect->floorglow) * glowHeightFactor;
+
+            // Don't make too small or too large glows.
+            if(glowHeight <= 2)
+                continue;
+
+            if(glowHeight > glowHeightMax)
+                glowHeight = glowHeightMax;
+
             bottom = floor;
             top = floor + glowHeight;
 
@@ -636,12 +650,12 @@ void DL_CreateGlowLights(seg_t *seg, int part, float segtop, float segbottom,
 
             if(t[1] > 1 || t[0] < 0)
                 continue;
+
+            dyn = DL_New(s, t);
+            memcpy(dyn->color, sect->floorglowrgb, 3);
         }
 
-        dyn = DL_New(s, t);
         dyn->texture = GL_PrepareLSTexture(LST_GRADIENT);
-
-        GL_GetFlatColor(g ? sect->floorpic : sect->ceilingpic, dyn->color);
 
         for(i = 0; i < 3; i++)
         {
