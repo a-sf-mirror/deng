@@ -1409,17 +1409,12 @@
 			isa = PBXGroup;
 			children = (
 				B0A8094D06F1F45D007AEB2E /* Readme.rtf */,
-				B0D5B7E306EF6DE400B98CC8 /* Plugin Sources */,
-				080E96DDFE201D6D7F000001 /* Classes */,
-				B02AC73506B3FBD4005824AD /* Engine Headers */,
-				29B97315FDCFA39411CA2CEA /* Engine Sources */,
-				B018334307E6078E00217C5A /* Common Headers */,
-				B0D5B6E106EE44B600B98CC8 /* Common Sources */,
+				B0DAE7600982B154000A8265 /* Engine */,
+				B0DAE75E0982B10F000A8265 /* Common to All Games */,
 				B0D5B61C06EE404200B98CC8 /* jDoom */,
 				B0237AF206F373090059676A /* jHeretic */,
 				B0237C2006F442B10059676A /* jHexen */,
-				B0D5B5C106EE333600B98CC8 /* dsSDLMixer Sources */,
-				B013509306EDE20D007861F2 /* drOpenGL Sources */,
+				B0D5B7E306EF6DE400B98CC8 /* Plugin Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
@@ -1436,7 +1431,7 @@
 			name = Doomsday;
 			sourceTree = "<group>";
 		};
-		29B97315FDCFA39411CA2CEA /* Engine Sources */ = {
+		29B97315FDCFA39411CA2CEA /* Sources */ = {
 			isa = PBXGroup;
 			children = (
 				B0DAE5BD09823D6C000A8265 /* template.c */,
@@ -1548,10 +1543,10 @@
 				B02AC8B406B41788005824AD /* ui_main.c */,
 				B02AC8B506B41788005824AD /* ui_mpi.c */,
 				B02AC8B606B41788005824AD /* ui_panel.c */,
-				B02AC8B706B41788005824AD /* Unix */,
 				B0DAE5E8098261F8000A8265 /* p_arch.c */,
+				B02AC8B706B41788005824AD /* Unix */,
 			);
-			name = "Engine Sources";
+			name = Sources;
 			sourceTree = "<group>";
 		};
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
@@ -1586,7 +1581,7 @@
 			name = "drOpenGL Sources";
 			sourceTree = "<group>";
 		};
-		B018334307E6078E00217C5A /* Common Headers */ = {
+		B018334307E6078E00217C5A /* Headers */ = {
 			isa = PBXGroup;
 			children = (
 				B018334407E6082000217C5A /* d_net.h */,
@@ -1614,7 +1609,7 @@
 				B0107855085633C6000BF0D8 /* st_lib.h */,
 				B018335607E6082000217C5A /* x_hair.h */,
 			);
-			name = "Common Headers";
+			name = Headers;
 			sourceTree = "<group>";
 		};
 		B0237AF206F373090059676A /* jHeretic */ = {
@@ -1757,7 +1752,7 @@
 			path = Include/Unix;
 			sourceTree = "<group>";
 		};
-		B02AC73506B3FBD4005824AD /* Engine Headers */ = {
+		B02AC73506B3FBD4005824AD /* Headers */ = {
 			isa = PBXGroup;
 			children = (
 				B0E3D3E107903967007811F6 /* rend_bias.h */,
@@ -1897,7 +1892,6 @@
 				B02AC49706B3FA91005824AD /* ui_main.h */,
 				B02AC49806B3FA91005824AD /* ui_mpi.h */,
 				B02AC49906B3FA91005824AD /* ui_panel.h */,
-				B02AC49A06B3FA91005824AD /* Unix */,
 				B02AC49D06B3FA91005824AD /* zconf.h */,
 				B02AC38D06B3FA91005824AD /* cl_def.h */,
 				B02AC38E06B3FA91005824AD /* cl_frame.h */,
@@ -1905,10 +1899,11 @@
 				B02AC39006B3FA91005824AD /* cl_player.h */,
 				B02AC39106B3FA91005824AD /* cl_sound.h */,
 				B02AC39206B3FA91005824AD /* cl_world.h */,
-				B02AC39306B3FA91005824AD /* Common */,
 				B0DAE5CD09823E47000A8265 /* p_dmu.h */,
+				B02AC49A06B3FA91005824AD /* Unix */,
+				B02AC39306B3FA91005824AD /* Common */,
 			);
-			name = "Engine Headers";
+			name = Headers;
 			sourceTree = "<group>";
 		};
 		B02AC8B706B41788005824AD /* Unix */ = {
@@ -2066,7 +2061,7 @@
 			name = Headers;
 			sourceTree = "<group>";
 		};
-		B0D5B6E106EE44B600B98CC8 /* Common Sources */ = {
+		B0D5B6E106EE44B600B98CC8 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
 				B010785808563447000BF0D8 /* am_map.c */,
@@ -2098,7 +2093,7 @@
 				B010785E08563447000BF0D8 /* st_lib.c */,
 				B0D5B6F606EE44EB00B98CC8 /* x_hair.c */,
 			);
-			name = "Common Sources";
+			name = Sources;
 			sourceTree = "<group>";
 		};
 		B0D5B79E06EE586B00B98CC8 /* Map Loader Sources */ = {
@@ -2121,6 +2116,8 @@
 		B0D5B7E306EF6DE400B98CC8 /* Plugin Sources */ = {
 			isa = PBXGroup;
 			children = (
+				B0D5B5C106EE333600B98CC8 /* dsSDLMixer Sources */,
+				B013509306EDE20D007861F2 /* drOpenGL Sources */,
 				B0D5B7E406EF6DF000B98CC8 /* Deh Reader Sources */,
 				B0D5B79E06EE586B00B98CC8 /* Map Loader Sources */,
 			);
@@ -2133,6 +2130,25 @@
 				B0D5B7E506EF6E1A00B98CC8 /* dehmain.c */,
 			);
 			name = "Deh Reader Sources";
+			sourceTree = "<group>";
+		};
+		B0DAE75E0982B10F000A8265 /* Common to All Games */ = {
+			isa = PBXGroup;
+			children = (
+				B0D5B6E106EE44B600B98CC8 /* Sources */,
+				B018334307E6078E00217C5A /* Headers */,
+			);
+			name = "Common to All Games";
+			sourceTree = "<group>";
+		};
+		B0DAE7600982B154000A8265 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Sources */,
+				B02AC73506B3FBD4005824AD /* Headers */,
+			);
+			name = Engine;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
