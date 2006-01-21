@@ -719,6 +719,7 @@ static badtex_t *badTexNames = NULL;
 void P_Init(void)
 {
     P_InitMapDataFormats();
+    P_InitMapUpdate();
 }
 
 //===========================================================================

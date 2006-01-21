@@ -185,7 +185,7 @@ static void InitArgs(setargs_t* args, valuetype_t type, int prop)
 /*
  * Initializes the dummy arrays with a fixed number of dummies.
  */
-void P_InitDummies(void)
+void P_InitMapUpdate(void)
 {
     // A fixed number of dummies is allocated because:
     // - The number of dummies is mostly dependent on recursive depth of

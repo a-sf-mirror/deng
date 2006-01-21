@@ -25,7 +25,7 @@
 #ifndef __DOOMSDAY_MAP_UPDATE_H__
 #define __DOOMSDAY_MAP_UPDATE_H__
 
-void        P_InitDummies(void);
+void        P_InitMapUpdate(void);
 void*       P_AllocDummy(int type, void* extraData);
 void        P_FreeDummy(void* dummy);
 int         P_DummyType(void* dummy);
