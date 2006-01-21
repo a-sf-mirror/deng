@@ -1583,8 +1583,8 @@ static int CmdSectorSound(void)
 	mobj = NULL;
 	if(ACScript->line)
 	{
-        sector_t* front = P_GetPtrp(DMU_LINE, ACScript->line, DMU_FRONT_SECTOR);
-		mobj = P_GetPtrp(DMU_SECTOR, front, DMU_SOUND_ORIGIN);
+        sector_t* front = P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
+		mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
 	}
 	volume = Pop();
 #if _DEBUG
@@ -1642,8 +1642,8 @@ static int CmdSoundSequence(void)
 	mobj = NULL;
 	if(ACScript->line)
 	{
-        sector_t* front = P_GetPtrp(DMU_LINE, ACScript->line, DMU_FRONT_SECTOR);
-		mobj = P_GetPtrp(DMU_SECTOR, front, DMU_SOUND_ORIGIN);
+        sector_t* front = P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
+		mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
 	}
 	SN_StartSequenceName(mobj, ACStrings[Pop()]);
 	return SCRIPT_CONTINUE;
@@ -1665,19 +1665,19 @@ static int CmdSetLineTexture(void)
 	searcher = -1;
 	while((line = P_FindLine(lineTag, &searcher)) != NULL)
 	{
-        side_t* sdef = P_GetPtrp(DMU_LINE, line, 
+        side_t* sdef = P_GetPtrp(line, 
                                  (side == 0? DMU_SIDE0 : DMU_SIDE1));
 		if(position == TEXTURE_MIDDLE)
 		{
-			P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, texture);
+			P_SetIntp(sdef, DMU_MIDDLE_TEXTURE, texture);
 		}
 		else if(position == TEXTURE_BOTTOM)
 		{
-			P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, texture);
+			P_SetIntp(sdef, DMU_BOTTOM_TEXTURE, texture);
 		}
 		else
 		{						// TEXTURE_TOP
-			P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, texture);
+			P_SetIntp(sdef, DMU_TOP_TEXTURE, texture);
 		}
 	}
 	return SCRIPT_CONTINUE;
@@ -1695,8 +1695,8 @@ static int CmdSetLineBlocking(void)
 	searcher = -1;
 	while((line = P_FindLine(lineTag, &searcher)) != NULL)
 	{
-		P_SetIntp(DMU_LINE, line, DMU_FLAGS, 
-            (P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ~ML_BLOCKING) | blocking);
+		P_SetIntp(line, DMU_FLAGS, 
+            (P_GetIntp(line, DMU_FLAGS) & ~ML_BLOCKING) | blocking);
 	}
 	return SCRIPT_CONTINUE;
 }

@@ -264,7 +264,7 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
     {
         nextSec = NULL;
         P_XSector(sec)->special = LIGHT_SEQUENCE_START; // make sure that the search doesn't back up.
-        for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+        for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
         {
             tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
             if(!tempSec)
@@ -302,7 +302,7 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
         }
         P_SpawnPhasedLight(sec, base, index >> FRACBITS);
         index += indexDelta;
-        for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+        for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
         {
             tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
             if(!tempSec)

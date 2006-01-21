@@ -193,8 +193,8 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
 
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
-    tmfloorz = tmdropoffz = P_GetFixedp(DMU_SUBSECTOR, newsubsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(DMU_SUBSECTOR, newsubsec, DMU_CEILING_HEIGHT);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsubsec, DMU_CEILING_HEIGHT);
 
     Validcount++;
     numspechit = 0;
@@ -228,9 +228,9 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
  */
 boolean PIT_CheckLine(line_t *ld, void *data)
 {
-    fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
-    fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
-    fixed_t* bbox = P_GetPtrp(DMU_LINE, ld, DMU_BOUNDING_BOX);
+    fixed_t dx = P_GetFixedp(ld, DMU_DX);
+    fixed_t dy = P_GetFixedp(ld, DMU_DY);
+    fixed_t* bbox = P_GetPtrp(ld, DMU_BOUNDING_BOX);
 
     if(tmbbox[BOXRIGHT] <= bbox[BOXLEFT] ||
        tmbbox[BOXLEFT] >= bbox[BOXRIGHT] ||
@@ -254,7 +254,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     if(P_XLine(ld)->special)
         tmhitline = ld;
 
-    if(!P_GetPtrp(DMU_LINE, ld, DMU_BACK_SECTOR)) // one sided line
+    if(!P_GetPtrp(ld, DMU_BACK_SECTOR)) // one sided line
     {                           // One sided line
         if(tmthing->flags & MF_MISSILE)
         {                       // Missiles can trigger impact specials
@@ -270,12 +270,12 @@ boolean PIT_CheckLine(line_t *ld, void *data)
     if(!(tmthing->flags & MF_MISSILE))
     {
         // explicitly blocking everything?
-        if(P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_BLOCKING)
+        if(P_GetIntp(ld, DMU_FLAGS) & ML_BLOCKING)
             return false;
 
         // block monsters only?
         if(!tmthing->player &&
-           P_GetIntp(DMU_LINE, ld, DMU_FLAGS) & ML_BLOCKMONSTERS &&
+           P_GetIntp(ld, DMU_FLAGS) & ML_BLOCKMONSTERS &&
            tmthing->type != MT_POD)
             return false;
     }
@@ -567,13 +567,13 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
     tmbbox[BOXRIGHT] = x + tmthing->radius;
     tmbbox[BOXLEFT] = x - tmthing->radius;
 
-    newsec = P_GetPtrp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_SECTOR);
+    newsec = P_GetPtrp(R_PointInSubsector(x, y), DMU_SECTOR);
     ceilingline = NULL;
 
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
-    tmfloorz = tmdropoffz = P_GetFixedp(DMU_SECTOR, newsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(DMU_SECTOR, newsec, DMU_CEILING_HEIGHT);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsec, DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsec, DMU_CEILING_HEIGHT);
 
     Validcount++;
     numspechit = 0;
@@ -633,13 +633,13 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
     tmbbox[BOXRIGHT] = x + tmthing->radius;
     tmbbox[BOXLEFT] = x - tmthing->radius;
 
-    newsec = P_GetPtrp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_SECTOR);
+    newsec = P_GetPtrp(R_PointInSubsector(x, y), DMU_SECTOR);
     ceilingline = NULL;
 
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
-    tmfloorz = tmdropoffz = P_GetFixedp(DMU_SECTOR, newsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(DMU_SECTOR, newsec, DMU_CEILING_HEIGHT);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsec, DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsec, DMU_CEILING_HEIGHT);
 
     Validcount++;
     numspechit = 0;
@@ -936,13 +936,13 @@ void P_HitSlideLine(line_t *ld)
     angle_t lineangle, moveangle, deltaangle;
     fixed_t movelen, newlen;
 
-    if(P_GetIntp(DMU_LINE, ld, DMU_SLOPE_TYPE) == ST_HORIZONTAL)
+    if(P_GetIntp(ld, DMU_SLOPE_TYPE) == ST_HORIZONTAL)
     {
         tmymove = 0;
         return;
     }
 
-    if(P_GetIntp(DMU_LINE, ld, DMU_SLOPE_TYPE) == ST_VERTICAL)
+    if(P_GetIntp(ld, DMU_SLOPE_TYPE) == ST_VERTICAL)
     {
         tmxmove = 0;
         return;
@@ -951,8 +951,8 @@ void P_HitSlideLine(line_t *ld)
     side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
     lineangle = R_PointToAngle2(0, 0,
-                                P_GetFixedp(DMU_LINE, ld, DMU_DX),
-                                P_GetFixedp(DMU_LINE, ld, DMU_DY));
+                                P_GetFixedp(ld, DMU_DX),
+                                P_GetFixedp(ld, DMU_DY));
 
     if(side == 1)
         lineangle += ANG180;
@@ -981,7 +981,7 @@ boolean PTR_SlideTraverse(intercept_t * in)
 
     li = in->d.line;
 
-    if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
+    if(!(P_GetIntp(li, DMU_FLAGS) & ML_TWOSIDED))
     {
         if(P_PointOnLineSide(slidemo->x, slidemo->y, li))
             return true;        // don't hit the back side
@@ -1123,7 +1123,7 @@ boolean PTR_AimTraverse(intercept_t * in)
     {
         li = in->d.line;
 
-        if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
+        if(!(P_GetIntp(li, DMU_FLAGS) & ML_TWOSIDED))
             return false;       // stop
 
         // crosses a two sided line
@@ -1135,19 +1135,19 @@ boolean PTR_AimTraverse(intercept_t * in)
 
         dist = FixedMul(attackrange, in->frac);
 
-        frontsector = P_GetPtrp(DMU_LINE, li, DMU_FRONT_SECTOR);
-        backsector = P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR);
+        frontsector = P_GetPtrp(li, DMU_FRONT_SECTOR);
+        backsector = P_GetPtrp(li, DMU_BACK_SECTOR);
 
-        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT) !=
-           P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT))
+        if(P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT) !=
+           P_GetFixedp(backsector, DMU_FLOOR_HEIGHT))
         {
             slope = FixedDiv(openbottom - shootz, dist);
             if(slope > bottomslope)
                 bottomslope = slope;
         }
 
-        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) !=
-           P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT))
+        if(P_GetFixedp(frontsector, DMU_CEILING_HEIGHT) !=
+           P_GetFixedp(backsector, DMU_CEILING_HEIGHT))
         {
             slope = FixedDiv(opentop - shootz, dist);
             if(slope < topslope)
@@ -1230,7 +1230,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
         if(xline->special)
             P_ShootSpecialLine(shootthing, li);
 
-        if(!(P_GetIntp(DMU_LINE, li, DMU_FLAGS) & ML_TWOSIDED))
+        if(!(P_GetIntp(li, DMU_FLAGS) & ML_TWOSIDED))
             goto hitline;
 
         // crosses a two sided line
@@ -1238,16 +1238,16 @@ boolean PTR_ShootTraverse(intercept_t * in)
 
         dist = FixedMul(attackrange, in->frac);
 
-        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT) !=
-           P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT))
+        if(P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT) !=
+           P_GetFixedp(backsector, DMU_FLOOR_HEIGHT))
         {
             slope = FixedDiv(openbottom - shootz, dist);
             if(slope > aimslope)
                 goto hitline;
         }
 
-        if(P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) !=
-           P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT))
+        if(P_GetFixedp(frontsector, DMU_CEILING_HEIGHT) !=
+           P_GetFixedp(backsector, DMU_CEILING_HEIGHT))
         {
             slope = FixedDiv(opentop - shootz, dist);
             if(slope < aimslope)
@@ -1270,10 +1270,10 @@ boolean PTR_ShootTraverse(intercept_t * in)
         // Is it a sky hack wall? If the hitpoint is above the visible
         // line, no puff must be shown.
         if(backsector &&
-           P_GetIntp(DMU_SECTOR, frontsector, DMU_CEILING_TEXTURE) == skyflatnum &&
-           P_GetIntp(DMU_SECTOR, backsector, DMU_CEILING_TEXTURE) == skyflatnum &&
-           (z > P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT) ||
-            z > P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT) ))
+           P_GetIntp(frontsector, DMU_CEILING_TEXTURE) == skyflatnum &&
+           P_GetIntp(backsector, DMU_CEILING_TEXTURE) == skyflatnum &&
+           (z > P_GetFixedp(frontsector, DMU_CEILING_HEIGHT) ||
+            z > P_GetFixedp(backsector, DMU_CEILING_HEIGHT) ))
             return false;
 
         // This is subsector where the trace originates.
@@ -1291,8 +1291,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
             stepy = FixedDiv(dy, step);
             stepz = FixedDiv(dz, step);
 
-            cfloor = P_GetFixedp(DMU_SUBSECTOR, contact, DMU_FLOOR_HEIGHT);
-            cceil = P_GetFixedp(DMU_SUBSECTOR, contact, DMU_CEILING_HEIGHT);
+            cfloor = P_GetFixedp(contact, DMU_FLOOR_HEIGHT);
+            cceil = P_GetFixedp(contact, DMU_CEILING_HEIGHT);
             // Backtrack until we find a non-empty sector.
             while(cceil <= cfloor && contact != originSub)
             {
@@ -1312,9 +1312,9 @@ boolean PTR_ShootTraverse(intercept_t * in)
 
             // We must not hit a sky plane.
             if((z > ctop &&
-                P_GetIntp(DMU_SUBSECTOR, contact, DMU_CEILING_TEXTURE) == skyflatnum) ||
+                P_GetIntp(contact, DMU_CEILING_TEXTURE) == skyflatnum) ||
                (z < cbottom &&
-                P_GetIntp(DMU_SUBSECTOR, contact, DMU_FLOOR_TEXTURE) == skyflatnum))
+                P_GetIntp(contact, DMU_FLOOR_TEXTURE) == skyflatnum))
                 return false;
 
             // Find the approximate hitpoint by stepping back and

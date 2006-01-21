@@ -1781,10 +1781,10 @@ void AM_drawWalls(boolean glowmode)
         v1 = P_GetPtr(DMU_LINE, i, DMU_VERTEX1);
         v2 = P_GetPtr(DMU_LINE, i, DMU_VERTEX2);
 
-        l.a.x = P_GetFixedp(DMU_VERTEX, v1, DMU_X);
-        l.a.y = P_GetFixedp(DMU_VERTEX, v1, DMU_Y);
-        l.b.x = P_GetFixedp(DMU_VERTEX, v2, DMU_X);
-        l.b.y = P_GetFixedp(DMU_VERTEX, v2, DMU_Y);
+        l.a.x = P_GetFixedp(v1, DMU_X);
+        l.a.y = P_GetFixedp(v1, DMU_Y);
+        l.b.x = P_GetFixedp(v2, DMU_X);
+        l.b.y = P_GetFixedp(v2, DMU_Y);
 
         frontsector = P_GetPtr(DMU_LINE, i, DMU_FRONT_SECTOR);
         backsector = P_GetPtr(DMU_LINE, i, DMU_BACK_SECTOR);
@@ -1834,16 +1834,16 @@ void AM_drawWalls(boolean glowmode)
 
                     AM_drawMline2(&l, templine, withglow, glowmode, withglow);
                 }
-                else if(P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT) !=
-                        P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT))
+                else if(P_GetFixedp(backsector, DMU_FLOOR_HEIGHT) !=
+                        P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT))
                 {
                     // floor level change
                     templine = AM_getLine( 3, 0);
 
                     AM_drawMline2(&l, templine, false, glowmode, false);
                 }
-                else if(P_GetFixedp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT) !=
-                        P_GetFixedp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT))
+                else if(P_GetFixedp(backsector, DMU_CEILING_HEIGHT) !=
+                        P_GetFixedp(frontsector, DMU_CEILING_HEIGHT))
                 {
                     // ceiling level change
                     templine = AM_getLine( 4, 0);

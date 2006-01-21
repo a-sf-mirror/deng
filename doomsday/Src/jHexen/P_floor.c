@@ -35,8 +35,8 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, int crush,
 {
     // Local macros. These assume that 'sector' refers to the sector being 
     // accessed.
-#define SETX(prop, value) P_SetFixedp(DMU_SECTOR, sector, prop, value)
-#define GETX(prop) P_GetFixedp(DMU_SECTOR, sector, prop)
+#define SETX(prop, value) P_SetFixedp(sector, prop, value)
+#define GETX(prop) P_GetFixedp(sector, prop)
 
 	boolean flag;
 	fixed_t lastpos;   
@@ -223,8 +223,8 @@ void T_MoveFloor(floormove_t * floor)
 		floor->delayCount--;
 		if(!floor->delayCount && floor->textureChange)
 		{
-            P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE,
-                      P_GetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE) +
+            P_SetIntp(floor->sector, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(floor->sector, DMU_FLOOR_TEXTURE) +
                       floor->textureChange);
 		}
 		return;
@@ -237,10 +237,10 @@ void T_MoveFloor(floormove_t * floor)
 	if(floor->type == FLEV_RAISEBUILDSTEP)
 	{
 		if((floor->direction == 1 &&
-			P_GetFixedp(DMU_SECTOR, floor->sector, DMU_FLOOR_HEIGHT) >= 
+			P_GetFixedp(floor->sector, DMU_FLOOR_HEIGHT) >= 
                 floor->stairsDelayHeight) ||
 		   (floor->direction == -1 &&
-			P_GetFixedp(DMU_SECTOR, floor->sector, DMU_FLOOR_HEIGHT) <= 
+			P_GetFixedp(floor->sector, DMU_FLOOR_HEIGHT) <= 
                 floor->stairsDelayHeight))
 		{
 			floor->delayCount = floor->delayTotal;
@@ -249,8 +249,8 @@ void T_MoveFloor(floormove_t * floor)
 	}
 	if(res == RES_PASTDEST)
 	{
-		P_SetFixedp(DMU_SECTOR, floor->sector, DMU_FLOOR_SPEED, 0);
-		SN_StopSequence(P_GetPtrp(DMU_SECTOR, floor->sector, DMU_SOUND_ORIGIN));
+		P_SetFixedp(floor->sector, DMU_FLOOR_SPEED, 0);
+		SN_StopSequence(P_GetPtrp(floor->sector, DMU_SOUND_ORIGIN));
 		if(floor->delayTotal)
 		{
 			floor->delayTotal = 0;
@@ -264,8 +264,8 @@ void T_MoveFloor(floormove_t * floor)
 		P_XSector(floor->sector)->specialdata = NULL;
 		if(floor->textureChange)
 		{
-            P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE,
-                      P_GetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE) -
+            P_SetIntp(floor->sector, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(floor->sector, DMU_FLOOR_TEXTURE) -
                       floor->textureChange);
         }
 		P_TagFinished(P_XSector(floor->sector)->tag);
@@ -399,7 +399,7 @@ int EV_DoFloor(line_t *line, byte *args, floor_e floortype)
 	}
 	if(rtn)
 	{
-		SN_StartSequence(P_GetPtrp(DMU_SECTOR, floor->sector, DMU_SOUND_ORIGIN),
+		SN_StartSequence(P_GetPtrp(floor->sector, DMU_SOUND_ORIGIN),
 						 SEQ_PLATFORM + P_XSector(floor->sector)->seqType);
 	}
 	return rtn;
@@ -537,23 +537,23 @@ static void ProcessStairSector(sector_t *sec, int type, int height,
 		if(delay)
 		{
 			floor->delayTotal = delay;
-			floor->stairsDelayHeight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + StepDelta;
+			floor->stairsDelayHeight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT) + StepDelta;
 			floor->stairsDelayHeightDelta = StepDelta;
 		}
 		floor->resetDelay = resetDelay;
 		floor->resetDelayCount = resetDelay;
-		floor->resetHeight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+		floor->resetHeight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
 		break;
 	case STAIRS_SYNC:
 		floor->speed =
 			FixedMul(Speed, FixedDiv(height - StartHeight, StepDelta));
 		floor->resetDelay = delay;	//arg4
 		floor->resetDelayCount = delay;
-		floor->resetHeight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+		floor->resetHeight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
 		break;
 		/*
 		   case STAIRS_PHASED:
-		   floor->floordestheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT)+StepDelta;
+		   floor->floordestheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT)+StepDelta;
 		   floor->speed = Speed;
 		   floor->delayCount = StartDelay;
 		   StartDelay += StartDelayDelta;
@@ -564,36 +564,36 @@ static void ProcessStairSector(sector_t *sec, int type, int height,
 	default:
 		break;
 	}
-	SN_StartSequence(P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN), 
+	SN_StartSequence(P_GetPtrp(sec, DMU_SOUND_ORIGIN), 
                      SEQ_PLATFORM + P_XSector(sec)->seqType);
 	//
 	// Find next sector to raise
 	// Find nearby sector with sector special equal to type
 	//
-	for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+	for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
 	{
         line_t *line = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
-		if(!(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_TWOSIDED))
+		if(!(P_GetIntp(line, DMU_FLAGS) & ML_TWOSIDED))
 		{
 			continue;
 		}
-		tsec = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+		tsec = P_GetPtrp(line, DMU_FRONT_SECTOR);
         xtsec = P_XSector(tsec);
 		if(xtsec->special == type + STAIR_SECTOR_TYPE && !xtsec->specialdata &&
-		   P_GetIntp(DMU_SECTOR, tsec, DMU_FLOOR_TEXTURE) == Texture && 
-           P_GetIntp(DMU_SECTOR, tsec, DMU_VALID_COUNT) != Validcount)
+		   P_GetIntp(tsec, DMU_FLOOR_TEXTURE) == Texture && 
+           P_GetIntp(tsec, DMU_VALID_COUNT) != Validcount)
 		{
 			QueueStairSector(tsec, type ^ 1, height);
-			P_SetIntp(DMU_SECTOR, tsec, DMU_VALID_COUNT, Validcount);
+			P_SetIntp(tsec, DMU_VALID_COUNT, Validcount);
 		}
-		tsec = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+		tsec = P_GetPtrp(line, DMU_BACK_SECTOR);
         xtsec = P_XSector(tsec);
 		if(xtsec->special == type + STAIR_SECTOR_TYPE && !xtsec->specialdata &&
-		   P_GetIntp(DMU_SECTOR, tsec, DMU_FLOOR_TEXTURE) == Texture && 
-           P_GetIntp(DMU_SECTOR, tsec, DMU_VALID_COUNT) != Validcount)
+		   P_GetIntp(tsec, DMU_FLOOR_TEXTURE) == Texture && 
+           P_GetIntp(tsec, DMU_VALID_COUNT) != Validcount)
 		{
 			QueueStairSector(tsec, type ^ 1, height);
-			P_SetIntp(DMU_SECTOR, tsec, DMU_VALID_COUNT, Validcount);
+			P_SetIntp(tsec, DMU_VALID_COUNT, Validcount);
 		}
 	}
 }
@@ -640,13 +640,13 @@ int EV_BuildStairs(line_t *line, byte *args, int direction,
 	{
 		sec = P_ToPtr(DMU_SECTOR, secnum);
 		Texture = P_GetInt(DMU_SECTOR, secnum, DMU_FLOOR_TEXTURE);
-		StartHeight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+		StartHeight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
 
 		// ALREADY MOVING?  IF SO, KEEP GOING...
 		if(xsectors[secnum].specialdata)
 			continue;
 
-		QueueStairSector(sec, 0, P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT));
+		QueueStairSector(sec, 0, P_GetFixedp(sec, DMU_FLOOR_HEIGHT));
 		xsectors[secnum].special = 0;
 	}
 	while((qSec = DequeueStairSector(&type, &height)) != NULL)
@@ -676,7 +676,7 @@ void T_BuildPillar(pillar_t * pillar)
 	if(res1 == RES_PASTDEST && res2 == RES_PASTDEST)
 	{
 		P_XSector(pillar->sector)->specialdata = NULL;
-		SN_StopSequence(P_GetPtrp(DMU_SECTOR, pillar->sector, DMU_SOUND_ORIGIN));
+		SN_StopSequence(P_GetPtrp(pillar->sector, DMU_SOUND_ORIGIN));
 		P_TagFinished(P_XSector(pillar->sector)->tag);
 		P_RemoveThinker(&pillar->thinker);
 	}
@@ -703,8 +703,8 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 		sec = P_ToPtr(DMU_SECTOR, secnum);
 		if(P_XSector(sec)->specialdata)
 			continue;			// already moving
-		if(P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) == 
-           P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+		if(P_GetFixedp(sec, DMU_FLOOR_HEIGHT) == 
+           P_GetFixedp(sec, DMU_CEILING_HEIGHT))
 		{						// pillar is already closed
 			continue;
 		}
@@ -712,13 +712,13 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 		if(!args[2])
 		{
 			newHeight =
-				P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) +
-				((P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - 
-                  P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT)) / 2);
+				P_GetFixedp(sec, DMU_FLOOR_HEIGHT) +
+				((P_GetFixedp(sec, DMU_CEILING_HEIGHT) - 
+                  P_GetFixedp(sec, DMU_FLOOR_HEIGHT)) / 2);
 		}
 		else
 		{
-			newHeight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + 
+			newHeight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT) + 
                 (args[2] << FRACBITS);
 		}
 
@@ -732,28 +732,28 @@ int EV_BuildPillar(line_t *line, byte *args, boolean crush)
 			pillar->ceilingSpeed = pillar->floorSpeed =
 				args[1] * (FRACUNIT / 8);
 		}
-		else if(newHeight - P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) > 
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - newHeight)
+		else if(newHeight - P_GetFixedp(sec, DMU_FLOOR_HEIGHT) > 
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT) - newHeight)
 		{
 			pillar->floorSpeed = args[1] * (FRACUNIT / 8);
 			pillar->ceilingSpeed =
-				FixedMul(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - newHeight,
+				FixedMul(P_GetFixedp(sec, DMU_CEILING_HEIGHT) - newHeight,
 						 FixedDiv(pillar->floorSpeed,
-								  newHeight - P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT)));
+								  newHeight - P_GetFixedp(sec, DMU_FLOOR_HEIGHT)));
 		}
 		else
 		{
 			pillar->ceilingSpeed = args[1] * (FRACUNIT / 8);
 			pillar->floorSpeed =
-				FixedMul(newHeight - P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT),
+				FixedMul(newHeight - P_GetFixedp(sec, DMU_FLOOR_HEIGHT),
 						 FixedDiv(pillar->ceilingSpeed,
-								  P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - newHeight));
+								  P_GetFixedp(sec, DMU_CEILING_HEIGHT) - newHeight));
 		}
 		pillar->floordest = newHeight;
 		pillar->ceilingdest = newHeight;
 		pillar->direction = 1;
 		pillar->crush = crush * args[3];
-		SN_StartSequence(P_GetPtrp(DMU_SECTOR, pillar->sector, DMU_SOUND_ORIGIN),
+		SN_StartSequence(P_GetPtrp(pillar->sector, DMU_SOUND_ORIGIN),
 						 SEQ_PLATFORM + P_XSector(pillar->sector)->seqType);
 	}
 	return rtn;
@@ -779,8 +779,8 @@ int EV_OpenPillar(line_t *line, byte *args)
 		sec = P_ToPtr(DMU_SECTOR, secnum);
 		if(P_XSector(sec)->specialdata)
 			continue;			// already moving
-		if(P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) != 
-           P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+		if(P_GetFixedp(sec, DMU_FLOOR_HEIGHT) != 
+           P_GetFixedp(sec, DMU_CEILING_HEIGHT))
 		{						// pillar isn't closed
 			continue;
 		}
@@ -796,7 +796,7 @@ int EV_OpenPillar(line_t *line, byte *args)
 		}
 		else
 		{
-			pillar->floordest = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) - 
+			pillar->floordest = P_GetFixedp(sec, DMU_FLOOR_HEIGHT) - 
                 (args[2] << FRACBITS);
 		}
 		if(!args[3])
@@ -805,28 +805,28 @@ int EV_OpenPillar(line_t *line, byte *args)
 		}
 		else
 		{
-			pillar->ceilingdest = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) + 
+			pillar->ceilingdest = P_GetFixedp(sec, DMU_CEILING_HEIGHT) + 
                 (args[3] << FRACBITS);
 		}
-		if(P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) - pillar->floordest >=
-		   pillar->ceilingdest - P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+		if(P_GetFixedp(sec, DMU_FLOOR_HEIGHT) - pillar->floordest >=
+		   pillar->ceilingdest - P_GetFixedp(sec, DMU_CEILING_HEIGHT))
 		{
 			pillar->floorSpeed = args[1] * (FRACUNIT / 8);
 			pillar->ceilingSpeed =
-				FixedMul(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - pillar->ceilingdest,
+				FixedMul(P_GetFixedp(sec, DMU_CEILING_HEIGHT) - pillar->ceilingdest,
 						 FixedDiv(pillar->floorSpeed,
-								  pillar->floordest - P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT)));
+								  pillar->floordest - P_GetFixedp(sec, DMU_FLOOR_HEIGHT)));
 		}
 		else
 		{
 			pillar->ceilingSpeed = args[1] * (FRACUNIT / 8);
 			pillar->floorSpeed =
-				FixedMul(pillar->floordest - P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT),
+				FixedMul(pillar->floordest - P_GetFixedp(sec, DMU_FLOOR_HEIGHT),
 						 FixedDiv(pillar->ceilingSpeed,
-								  P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) - pillar->ceilingdest));
+								  P_GetFixedp(sec, DMU_CEILING_HEIGHT) - pillar->ceilingdest));
 		}
 		pillar->direction = -1;	// open the pillar
-		SN_StartSequence(P_GetPtrp(DMU_SECTOR, pillar->sector, DMU_SOUND_ORIGIN),
+		SN_StartSequence(P_GetPtrp(pillar->sector, DMU_SOUND_ORIGIN),
 						 SEQ_PLATFORM + P_XSector(pillar->sector)->seqType);
 	}
 	return rtn;
@@ -858,7 +858,7 @@ int EV_FloorCrushStop(line_t *line, byte *args)
 			continue;
 		}
 		// Completely remove the crushing floor
-		SN_StopSequence(P_GetPtrp(DMU_SECTOR, floor->sector, DMU_SOUND_ORIGIN));
+		SN_StopSequence(P_GetPtrp(floor->sector, DMU_SOUND_ORIGIN));
 		P_XSector(floor->sector)->specialdata = NULL;
 		P_TagFinished(P_XSector(floor->sector)->tag);
 		P_RemoveThinker(&floor->thinker);
@@ -893,7 +893,7 @@ void T_FloorWaggle(floorWaggle_t * waggle)
 	case WGLSTATE_REDUCE:
 		if((waggle->scale -= waggle->scaleDelta) <= 0)
 		{						// Remove
-			P_SetFixedp(DMU_SECTOR, waggle->sector, DMU_FLOOR_HEIGHT,
+			P_SetFixedp(waggle->sector, DMU_FLOOR_HEIGHT,
                         waggle->originalHeight);
 			P_ChangeSector(waggle->sector, true);
 			P_XSector(waggle->sector)->specialdata = NULL;
@@ -916,9 +916,9 @@ void T_FloorWaggle(floorWaggle_t * waggle)
     fh = waggle->originalHeight +
 		FixedMul(FloatBobOffsets[(waggle->accumulator >> FRACBITS) & 63],
 				 waggle->scale);
-    P_SetFixedp(DMU_SECTOR, waggle->sector, DMU_FLOOR_HEIGHT, fh);
-	P_SetFixedp(DMU_SECTOR, waggle->sector, DMU_FLOOR_TARGET, fh);
-	P_SetFixedp(DMU_SECTOR, waggle->sector, DMU_FLOOR_SPEED, 0);
+    P_SetFixedp(waggle->sector, DMU_FLOOR_HEIGHT, fh);
+	P_SetFixedp(waggle->sector, DMU_FLOOR_TARGET, fh);
+	P_SetFixedp(waggle->sector, DMU_FLOOR_SPEED, 0);
 	P_ChangeSector(waggle->sector, true);
 }
 

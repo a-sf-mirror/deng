@@ -89,14 +89,14 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
 {
     mobj_t *mo = tmthing;
     fixed_t dist;
-    fixed_t ffloor = P_GetFixedp(DMU_SECTOR, P_GetPtrp(DMU_LINE, ld, DMU_FRONT_SECTOR),
+    fixed_t ffloor = P_GetFixedp(P_GetPtrp(DMU_LINE, ld, DMU_FRONT_SECTOR),
                                  DMU_FLOOR_HEIGHT);
 
-    fixed_t bfloor = P_GetFixedp(DMU_SECTOR, P_GetPtrp(DMU_LINE, ld, DMU_BACK_SECTOR),
+    fixed_t bfloor = P_GetFixedp(P_GetPtrp(DMU_LINE, ld, DMU_BACK_SECTOR),
                                  DMU_FLOOR_HEIGHT);
 
-    fixed_t dx = P_GetFixedp(DMU_LINE, ld, DMU_DX);
-    fixed_t dy = P_GetFixedp(DMU_LINE, ld, DMU_DY);
+    fixed_t dx = P_GetFixedp(ld, DMU_DX);
+    fixed_t dy = P_GetFixedp(ld, DMU_DY);
 
     if(tmthing->player)
         return true;            // skip players!
@@ -104,9 +104,9 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
     dist =                      // lever arm
         +(dx >> FRACBITS) * (mo->y >> FRACBITS) -
         (dy >> FRACBITS) * (mo->x >> FRACBITS) -
-        (dx >> FRACBITS) * (P_GetFixedp(DMU_VERTEX, P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
+        (dx >> FRACBITS) * (P_GetFixedp(P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
                                         DMU_Y) >> FRACBITS) +
-        (dy >> FRACBITS) * (P_GetFixedp(DMU_VERTEX, P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
+        (dy >> FRACBITS) * (P_GetFixedp(P_GetPtrp(DMU_LINE, ld, DMU_VERTEX1),
                                         DMU_X) >> FRACBITS);
 
     if((dist < 0 && ffloor < mo->z && bfloor >= mo->z) ||

@@ -674,8 +674,8 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
     if(reftype == LPREF_NONE)
         return false;        // This is not a reference!
 
-    frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
-    backsector = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
 
     // References to a single plane
     if(reftype == LPREF_MY_FLOOR)
@@ -903,43 +903,43 @@ int XL_ValidateLineRef(line_t *line, int reftype, void *context, char *parmname)
         break;
 
     case LDREF_ANGLE:    // line angle
-        answer = (R_PointToAngle2(0, 0, P_GetFixedp(DMU_LINE, line, DMU_DX),
-                                  P_GetFixedp(DMU_LINE, line, DMU_DY))
+        answer = (R_PointToAngle2(0, 0, P_GetFixedp(line, DMU_DX),
+                                  P_GetFixedp(line, DMU_DY))
                  / (float) ANGLE_MAX *360);
         XG_Dev("XL_ValidateLineRef: Using Line Angle (%i) as %s", answer, parmname);
         break;
 
     case LDREF_LENGTH:    // line length
         // Answer should be in map units.
-        answer = P_GetFixedp(DMU_LINE, line, DMU_LENGTH) >> FRACBITS;
+        answer = P_GetFixedp(line, DMU_LENGTH) >> FRACBITS;
 
         XG_Dev("XL_ValidateLineRef: Using Line Length (%i) as %s", answer, parmname);
         break;
 
     case LDREF_OFFSETX:    // x offset
         // Can this ever fail?
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        side = P_GetPtrp(line, DMU_SIDE0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X);
+        answer = P_GetIntp(side, DMU_TEXTURE_OFFSET_X);
 
         XG_Dev("XL_ValidateLineRef: Using Line X Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_OFFSETY:    // y offset
         // Can this ever fail?
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        side = P_GetPtrp(line, DMU_SIDE0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        answer = P_GetIntp(side, DMU_TEXTURE_OFFSET_Y);
 
         XG_Dev("XL_ValidateLineRef: Using Line Y Offset (%i) as %s", answer, parmname);
         break;
@@ -1229,17 +1229,17 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
     // Is there a sidedef?
     if(info->iparm[2])
     {
-        if(P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) < 0)
+        if(P_GetPtrp(line, DMU_BACK_SECTOR) < 0)
             return true;
 
-        side = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+        side = P_GetPtrp(line, DMU_BACK_SECTOR);
     }
     else
     {
-        if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) < 0)
+        if(P_GetPtrp(line, DMU_FRONT_SECTOR) < 0)
             return true;
 
-        side = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+        side = P_GetPtrp(line, DMU_FRONT_SECTOR);
     }
 
     XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(DMU_LINE, line));
@@ -1255,10 +1255,10 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
     rgba[2] = info->iparm[14];
     rgba[3] = info->iparm[15];
 
-    if(info->iparm[4] && (P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) ||
+    if(info->iparm[4] && (P_GetIntp(side, DMU_MIDDLE_TEXTURE) ||
                           info->iparm[6]))
     {
-        if(!P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) && info->iparm[4] == -1)
+        if(!P_GetPtrp(line, DMU_BACK_SECTOR) && info->iparm[4] == -1)
             texture = 0;
         else
             texture = info->iparm[4];
@@ -1356,17 +1356,17 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     angle_t angle;
 
     // retrieve a few properties to make this look neater.
-    oldv1 = P_GetPtrp(DMU_LINE, line, DMU_VERTEX1);
-    oldv2 = P_GetPtrp(DMU_LINE, line, DMU_VERTEX2);
-    oldldx = P_GetFixedp(DMU_LINE, line, DMU_DX);
-    oldldy = P_GetFixedp(DMU_LINE, line, DMU_DY);
+    oldv1 = P_GetPtrp(line, DMU_VERTEX1);
+    oldv2 = P_GetPtrp(line, DMU_VERTEX2);
+    oldldx = P_GetFixedp(line, DMU_DX);
+    oldldy = P_GetFixedp(line, DMU_DY);
 
-    newv1 = P_GetPtrp(DMU_LINE, newline, DMU_VERTEX1);
-    newv2 = P_GetPtrp(DMU_LINE, newline, DMU_VERTEX2);
-    newldx = P_GetFixedp(DMU_LINE, newline, DMU_DX);
-    newldy = P_GetFixedp(DMU_LINE, newline, DMU_DY);
-    newfrontsector = P_GetPtrp(DMU_LINE, newline, DMU_FRONT_SECTOR);
-    newbacksector = P_GetPtrp(DMU_LINE, newline, DMU_BACK_SECTOR);
+    newv1 = P_GetPtrp(newline, DMU_VERTEX1);
+    newv2 = P_GetPtrp(newline, DMU_VERTEX2);
+    newldx = P_GetFixedp(newline, DMU_DX);
+    newldy = P_GetFixedp(newline, DMU_DY);
+    newfrontsector = P_GetPtrp(newline, DMU_FRONT_SECTOR);
+    newbacksector = P_GetPtrp(newline, DMU_BACK_SECTOR);
 
     // don't teleport things marked noteleport!
 #ifdef __JHERETIC__
@@ -1405,9 +1405,9 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
 
     // Get the thing's position along the source linedef
     if(abs(oldldx) > abs(oldldy))
-        pos = FixedDiv(mobj->x - P_GetFixedp(DMU_VERTEX, oldv1, DMU_X), oldldx);
+        pos = FixedDiv(mobj->x - P_GetFixedp(oldv1, DMU_X), oldldx);
     else
-        pos = FixedDiv(mobj->y - P_GetFixedp(DMU_VERTEX, oldv1, DMU_Y), oldldy);
+        pos = FixedDiv(mobj->y - P_GetFixedp(oldv1, DMU_Y), oldldy);
 
     // Get the angle between the two linedefs, for rotating
     // orientation and momentum. Rotate 180 degrees, and flip
@@ -1417,16 +1417,16 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
              R_PointToAngle2(0, 0, oldldx, oldldy);
 
     // Interpolate position across the exit linedef
-    newx = P_GetFixedp(DMU_VERTEX, newv2, DMU_X) - FixedMul(pos, newldx);
-    newy = P_GetFixedp(DMU_VERTEX, newv2, DMU_Y) - FixedMul(pos, newldy);
+    newx = P_GetFixedp(newv2, DMU_X) - FixedMul(pos, newldx);
+    newy = P_GetFixedp(newv2, DMU_Y) - FixedMul(pos, newldy);
 
     // Sine, cosine of angle adjustment
     s = finesine[angle>>ANGLETOFINESHIFT];
     c = finecosine[angle>>ANGLETOFINESHIFT];
 
     // Whether walking towards first side of exit linedef steps down
-    if(P_GetFixedp(DMU_SECTOR, newfrontsector, DMU_FLOOR_HEIGHT) <
-       P_GetFixedp(DMU_SECTOR, newbacksector, DMU_FLOOR_HEIGHT))
+    if(P_GetFixedp(newfrontsector, DMU_FLOOR_HEIGHT) <
+       P_GetFixedp(newbacksector, DMU_FLOOR_HEIGHT))
         stepdown = true;
     else
         stepdown = false;
@@ -1479,9 +1479,9 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     // Ground level at the exit is measured as the higher of the
     // two floor heights at the exit linedef.
     if(stepdown)
-        mobj->z = newz + P_GetFixedp(DMU_SECTOR, newfrontsector, DMU_FLOOR_HEIGHT);
+        mobj->z = newz + P_GetFixedp(newfrontsector, DMU_FLOOR_HEIGHT);
     else
-        mobj->z = newz + P_GetFixedp(DMU_SECTOR, newbacksector, DMU_FLOOR_HEIGHT);
+        mobj->z = newz + P_GetFixedp(newbacksector, DMU_FLOOR_HEIGHT);
 
     // Rotate mobj's orientation according to difference in linedef angles
     mobj->angle += angle;
@@ -1659,11 +1659,11 @@ boolean XL_SwitchSwap(side_t* side, int section)
 
     // Which section of the wall are we checking?
     if(section == LWS_UPPER)
-        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE));
+        name = R_TextureNameForNum(P_GetIntp(side, DMU_TOP_TEXTURE));
     else if(section == LWS_MID)
-        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE));
+        name = R_TextureNameForNum(P_GetIntp(side, DMU_MIDDLE_TEXTURE));
     else if(section == LWS_LOWER)
-        name = R_TextureNameForNum(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE));
+        name = R_TextureNameForNum(P_GetIntp(side, DMU_BOTTOM_TEXTURE));
     else
         return false;
 
@@ -1716,11 +1716,11 @@ boolean XL_SwitchSwap(side_t* side, int section)
         // Which section of the wall are we working on?
         // Make the change.
         if(section == LWS_UPPER)
-            P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, texid);
+            P_SetIntp(side, DMU_TOP_TEXTURE, texid);
         else if(section == LWS_MID)
-            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, texid);
+            P_SetIntp(side, DMU_MIDDLE_TEXTURE, texid);
         else if(section == LWS_LOWER)
-            P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, texid);
+            P_SetIntp(side, DMU_BOTTOM_TEXTURE, texid);
         else
             return false;
 
@@ -1736,9 +1736,9 @@ void XL_SwapSwitchTextures(line_t *line, int snum)
     side_t *side;
 
     if(snum)
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
+        side = P_GetPtrp(line, DMU_SIDE1);
     else
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        side = P_GetPtrp(line, DMU_SIDE0);
 
     if(!side)
         return;
@@ -1783,43 +1783,43 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
     {
         // Are we removing the middle texture?
         if(texture == -1)
-            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, 0);
+            P_SetIntp(side, DMU_MIDDLE_TEXTURE, 0);
         else if(texture)
-            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, texture);
+            P_SetIntp(side, DMU_MIDDLE_TEXTURE, texture);
 
         // Are we changing the blendmode?
         if(blendmode)
-            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE, blendmode);
+            P_SetIntp(side, DMU_MIDDLE_BLENDMODE, blendmode);
 
         // Are we changing the surface color?
         for(i = 0; i < 4; i++)
             if(rgba[i])
-                P_SetBytep(DMU_SIDE, side, TO_DMU_MIDDLE_COLOR(i), rgba[i]);
+                P_SetBytep(side, TO_DMU_MIDDLE_COLOR(i), rgba[i]);
     }
     else if(section == LWS_UPPER)
     {
         if(texture)
-            P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, texture);
+            P_SetIntp(side, DMU_TOP_TEXTURE, texture);
 
         for(i = 0; i < 3; i++)
             if(rgba[i])
-                P_SetBytep(DMU_SIDE, side, TO_DMU_TOP_COLOR(i), rgba[i]);
+                P_SetBytep(side, TO_DMU_TOP_COLOR(i), rgba[i]);
     }
     else if(section == LWS_LOWER)
     {
         if(texture)
-            P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, texture);
+            P_SetIntp(side, DMU_BOTTOM_TEXTURE, texture);
 
         for(i = 0; i < 3; i++)
             if(rgba[i])
-                P_SetBytep(DMU_SIDE, side, TO_DMU_BOTTOM_COLOR(i), rgba[i]);
+                P_SetBytep(side, TO_DMU_BOTTOM_COLOR(i), rgba[i]);
     }
 
     // Adjust the side's flags
-    currentFlags = P_GetIntp(DMU_SIDE, side, DMU_FLAGS);
+    currentFlags = P_GetIntp(side, DMU_FLAGS);
     currentFlags |= flags;
 
-    P_SetIntp(DMU_SIDE, side, DMU_FLAGS, currentFlags);
+    P_SetIntp(side, DMU_FLAGS, currentFlags);
 }
 
 void XL_Message(mobj_t *act, char *msg, boolean global)
@@ -1873,7 +1873,7 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
     degenmobj_t *soundorg;
 
     xg = P_XLine(line)->xg;
-    frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
     XG_Dev("XL_ActivateLine: %s line %i, side %i, type %i",
            activating ? "Activating" : "Deactivating", lineid,
@@ -1894,7 +1894,7 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
 
     // Activation should happen on the front side.
     if(frontsector)
-        soundorg = P_GetPtrp(DMU_SECTOR, frontsector, DMU_SOUND_ORIGIN);
+        soundorg = P_GetPtrp(frontsector, DMU_SOUND_ORIGIN);
 
     // Let the line know who's activating it.
     xg->activator = data;
@@ -2058,7 +2058,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     xg = P_XLine(line)->xg;
     info = &xg->info;
     active = xg->active;
-    flags = P_GetIntp(DMU_LINE, line, DMU_FLAGS);
+    flags = P_GetIntp(line, DMU_FLAGS);
 
     // Clients rely on the server, they don't do XG themselves.
     if(IS_CLIENT)
@@ -2501,24 +2501,24 @@ void XL_Think(line_t *line)
 
         // Apply to both sides of the line.
         // Front side
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        side = P_GetPtrp(line, DMU_SIDE0);
         if(side)
         {
-            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) + xoff;
-            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, offset);
+            offset = P_GetIntp(side, DMU_TEXTURE_OFFSET_X) + xoff;
+            P_SetIntp(side, DMU_TEXTURE_OFFSET_X, offset);
 
-            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) + yoff;
-            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, offset);
+            offset = P_GetIntp(side, DMU_TEXTURE_OFFSET_Y) + yoff;
+            P_SetIntp(side, DMU_TEXTURE_OFFSET_Y, offset);
         }
         // back side
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
+        side = P_GetPtrp(line, DMU_SIDE1);
         if(side)
         {
-            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) + xoff;
-            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, offset);
+            offset = P_GetIntp(side, DMU_TEXTURE_OFFSET_X) + xoff;
+            P_SetIntp(side, DMU_TEXTURE_OFFSET_X, offset);
 
-            offset = P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) + yoff;
-            P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, offset);
+            offset = P_GetIntp(side, DMU_TEXTURE_OFFSET_Y) + yoff;
+            P_SetIntp(side, DMU_TEXTURE_OFFSET_Y, offset);
         }
     }
 }

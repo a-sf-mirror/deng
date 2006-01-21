@@ -219,11 +219,11 @@ void P_v13_UnArchiveWorld(void)
             if(!sdef)
                 continue;
 
-            P_SetFixedp(DMU_SIDE, sdef, DMU_TEXTURE_OFFSET_X, *get++ << FRACBITS);
-            P_SetFixedp(DMU_SIDE, sdef, DMU_TEXTURE_OFFSET_Y, *get++ << FRACBITS);
-            P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, *get++);
-            P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, *get++);
-            P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, *get++);
+            P_SetFixedp(sdef, DMU_TEXTURE_OFFSET_X, *get++ << FRACBITS);
+            P_SetFixedp(sdef, DMU_TEXTURE_OFFSET_Y, *get++ << FRACBITS);
+            P_SetIntp(sdef, DMU_TOP_TEXTURE, *get++);
+            P_SetIntp(sdef, DMU_BOTTOM_TEXTURE, *get++);
+            P_SetIntp(sdef, DMU_MIDDLE_TEXTURE, *get++);
         }
     }
     save_p = (byte *) get;
@@ -273,8 +273,8 @@ void P_v13_UnArchiveThinkers(void)
             }
             P_SetThingPosition(mobj);
             mobj->info = &mobjinfo[mobj->type];
-            mobj->floorz = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
-            mobj->ceilingz = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
+            mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
+            mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
             mobj->thinker.function = P_MobjThinker;
             P_AddThinker(&mobj->thinker);
             break;

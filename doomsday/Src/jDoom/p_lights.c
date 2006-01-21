@@ -47,7 +47,7 @@
 
 void T_FireFlicker(fireflicker_t * flick)
 {
-    int     lightlevel = P_GetIntp(DMU_SECTOR, flick->sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(flick->sector, DMU_LIGHT_LEVEL);
     int     amount;
 
     if(--flick->count)
@@ -56,16 +56,16 @@ void T_FireFlicker(fireflicker_t * flick)
     amount = (P_Random() & 3) * 16;
 
     if(lightlevel - amount < flick->minlight)
-        P_SetIntp(DMU_SECTOR, flick->sector, DMU_LIGHT_LEVEL, flick->minlight);
+        P_SetIntp(flick->sector, DMU_LIGHT_LEVEL, flick->minlight);
     else
-        P_SetIntp(DMU_SECTOR, flick->sector, DMU_LIGHT_LEVEL, flick->maxlight - amount);
+        P_SetIntp(flick->sector, DMU_LIGHT_LEVEL, flick->maxlight - amount);
 
     flick->count = 4;
 }
 
 void P_SpawnFireFlicker(sector_t *sector)
 {
-    int     lightlevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(sector, DMU_LIGHT_LEVEL);
     fireflicker_t *flick;
 
     // Note that we are resetting sector attributes.
@@ -89,19 +89,19 @@ void P_SpawnFireFlicker(sector_t *sector)
  */
 void T_LightFlash(lightflash_t * flash)
 {
-    int     lightlevel = P_GetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(flash->sector, DMU_LIGHT_LEVEL);
 
     if(--flash->count)
         return;
 
     if(lightlevel == flash->maxlight)
     {
-        P_SetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL, flash->minlight);
+        P_SetIntp(flash->sector, DMU_LIGHT_LEVEL, flash->minlight);
         flash->count = (P_Random() & flash->mintime) + 1;
     }
     else
     {
-        P_SetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL, flash->maxlight);
+        P_SetIntp(flash->sector, DMU_LIGHT_LEVEL, flash->maxlight);
         flash->count = (P_Random() & flash->maxtime) + 1;
     }
 
@@ -113,7 +113,7 @@ void T_LightFlash(lightflash_t * flash)
  */
 void P_SpawnLightFlash(sector_t *sector)
 {
-    int     lightlevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(sector, DMU_LIGHT_LEVEL);
     lightflash_t *flash;
 
     // nothing special about it during gameplay
@@ -125,7 +125,7 @@ void P_SpawnLightFlash(sector_t *sector)
 
     flash->thinker.function = T_LightFlash;
     flash->sector = sector;
-    flash->maxlight = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    flash->maxlight = P_GetIntp(sector, DMU_LIGHT_LEVEL);
 
     flash->minlight = P_FindMinSurroundingLight(sector, lightlevel);
     flash->maxtime = 64;
@@ -138,19 +138,19 @@ void P_SpawnLightFlash(sector_t *sector)
  */
 void T_StrobeFlash(strobe_t * flash)
 {
-    int     lightlevel = P_GetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(flash->sector, DMU_LIGHT_LEVEL);
 
     if(--flash->count)
         return;
 
     if(lightlevel == flash->minlight)
     {
-        P_SetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL, flash->maxlight);
+        P_SetIntp(flash->sector, DMU_LIGHT_LEVEL, flash->maxlight);
         flash->count = flash->brighttime;
     }
     else
     {
-        P_SetIntp(DMU_SECTOR, flash->sector, DMU_LIGHT_LEVEL, flash->minlight);
+        P_SetIntp(flash->sector, DMU_LIGHT_LEVEL, flash->minlight);
         flash->count = flash->darktime;
     }
 
@@ -163,7 +163,7 @@ void T_StrobeFlash(strobe_t * flash)
 void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
 {
     strobe_t *flash;
-    int     lightlevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    int     lightlevel = P_GetIntp(sector, DMU_LIGHT_LEVEL);
 
     flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
 
@@ -233,7 +233,7 @@ void EV_TurnTagLightsOff(line_t *line)
                 if(!tsec)
                     continue;
 
-                lightlevel = P_GetIntp(DMU_SECTOR, tsec, DMU_LIGHT_LEVEL);
+                lightlevel = P_GetIntp(tsec, DMU_LIGHT_LEVEL);
 
                 if(lightlevel < min)
                     min = lightlevel;
@@ -272,7 +272,7 @@ void EV_LightTurnOn(line_t *line, int bright)
                     if(!temp)
                         continue;
 
-                    lightlevel = P_GetIntp(DMU_SECTOR, temp, DMU_LIGHT_LEVEL);
+                    lightlevel = P_GetIntp(temp, DMU_LIGHT_LEVEL);
 
                     if(lightlevel > bright)
                         bright = lightlevel;
@@ -285,7 +285,7 @@ void EV_LightTurnOn(line_t *line, int bright)
 
 void T_Glow(glow_t * g)
 {
-    int lightlevel = P_GetIntp(DMU_SECTOR, g->sector, DMU_LIGHT_LEVEL);
+    int lightlevel = P_GetIntp(g->sector, DMU_LIGHT_LEVEL);
 
     switch (g->direction)
     {
@@ -310,12 +310,12 @@ void T_Glow(glow_t * g)
         break;
     }
 
-    P_SetIntp(DMU_SECTOR, g->sector, DMU_LIGHT_LEVEL, lightlevel);
+    P_SetIntp(g->sector, DMU_LIGHT_LEVEL, lightlevel);
 }
 
 void P_SpawnGlowingLight(sector_t *sector)
 {
-    int lightlevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    int lightlevel = P_GetIntp(sector, DMU_LIGHT_LEVEL);
     glow_t *g;
 
     g = Z_Malloc(sizeof(*g), PU_LEVSPEC, 0);

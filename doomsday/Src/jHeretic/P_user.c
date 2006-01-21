@@ -45,7 +45,7 @@ boolean WeaponInShareware[] = {
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
     mobj_t *plrmo = player->plr->mo;
-    sector_t* sector = P_GetPtrp(DMU_SUBSECTOR, plrmo->subsector, DMU_SECTOR);
+    sector_t* sector = P_GetPtrp(plrmo->subsector, DMU_SECTOR);
 
     angle >>= ANGLETOFINESHIFT;
     if(player->powers[pw_flight] && !(plrmo->z <= plrmo->floorz))
@@ -639,7 +639,7 @@ void P_ClientSideThink()
     P_CheckPlayerJump(pl);
 
     // Sector wind thrusts the player around.
-    sector = P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR);
+    sector = P_GetPtrp(mo->subsector, DMU_SECTOR);
     if(P_XSector(sector)->special)
         P_PlayerInWindSector(pl);
 
@@ -768,7 +768,7 @@ void P_PlayerThink(player_t *player)
         P_MovePlayer(player);
     }
     P_CalcHeight(player);
-    if(P_XSector(P_GetPtrp(DMU_SUBSECTOR, plrmo->subsector,
+    if(P_XSector(P_GetPtrp(plrmo->subsector,
                            DMU_SECTOR))->special)
     {
         P_PlayerInSpecialSector(player);

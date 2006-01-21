@@ -383,7 +383,7 @@ void P_ClientSideThink()
 void P_PlayerThink(player_t *player)
 {
     int idx = P_ToIndex(DMU_SECTOR,
-                        P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector,
+                        P_GetPtrp(player->plr->mo->subsector,
                                   DMU_SECTOR));
     mobj_t *plrmo = player->plr->mo;
     ticcmd_t *cmd;

@@ -170,7 +170,7 @@ void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
             buttonlist[i].soundorg = P_GetPtrp(DMU_SECTOR,
-                P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
+                P_GetPtrp(line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
             return;
         }
     }
@@ -189,15 +189,15 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     int     texBot;
     int     i;
     int     sound;
-    side_t*     sdef = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
-    sector_t*   frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    side_t*     sdef = P_GetPtrp(line, DMU_SIDE0);
+    sector_t*   frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
     if(!useAgain)
         P_XLine(line)->special = 0;
 
-    texTop = P_GetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE);
-    texMid = P_GetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE);
-    texBot = P_GetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE);
+    texTop = P_GetIntp(sdef, DMU_TOP_TEXTURE);
+    texMid = P_GetIntp(sdef, DMU_MIDDLE_TEXTURE);
+    texBot = P_GetIntp(sdef, DMU_BOTTOM_TEXTURE);
 
     sound = sfx_swtchn;
 
@@ -209,10 +209,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
     {
         if(switchlist[i] == texTop)
         {
-            S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+            S_StartSound(sound, P_GetPtrp(frontsector,
                                           DMU_SOUND_ORIGIN));
 
-            P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, switchlist[i ^ 1]);
+            P_SetIntp(sdef, DMU_TOP_TEXTURE, switchlist[i ^ 1]);
 
             if(useAgain)
                 P_StartButton(line, top, switchlist[i], BUTTONTIME);
@@ -223,10 +223,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
         {
             if(switchlist[i] == texMid)
             {
-                S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+                S_StartSound(sound, P_GetPtrp(frontsector,
                                               DMU_SOUND_ORIGIN));
 
-                P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE, switchlist[i ^ 1]);
+                P_SetIntp(sdef, DMU_MIDDLE_TEXTURE, switchlist[i ^ 1]);
 
                 if(useAgain)
                     P_StartButton(line, middle, switchlist[i], BUTTONTIME);
@@ -237,10 +237,10 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain)
             {
                 if(switchlist[i] == texBot)
                 {
-                    S_StartSound(sound, P_GetPtrp(DMU_SECTOR, frontsector,
+                    S_StartSound(sound, P_GetPtrp(frontsector,
                                                   DMU_SOUND_ORIGIN));
 
-                    P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE, switchlist[i ^ 1]);
+                    P_SetIntp(sdef, DMU_BOTTOM_TEXTURE, switchlist[i ^ 1]);
 
                     if(useAgain)
                         P_StartButton(line, bottom, switchlist[i], BUTTONTIME);
@@ -285,7 +285,7 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
     if(!thing->player)
     {
         // never open secret doors
-        if(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_SECRET)
+        if(P_GetIntp(line, DMU_FLAGS) & ML_SECRET)
             return false;
 
         switch (xline->special)

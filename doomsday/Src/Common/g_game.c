@@ -3882,7 +3882,7 @@ DEFCC(CCmdSpawnMobj)
     else
     {
         z = strtod(argv[4], 0) * FRACUNIT +
-            P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_FLOOR_HEIGHT);
+            P_GetFixedp(R_PointInSubsector(x, y), DMU_FLOOR_HEIGHT);
     }
 
     if((mo = P_SpawnMobj(x, y, z, type)) && argc == 6)

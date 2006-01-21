@@ -633,15 +633,15 @@ void SV_WriteSector(sector_t *sec)
     int     type;
     xsector_t *xsec = P_XSector(sec);
 
-    int     floorheight = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
-    int     ceilingheight = P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
-    int     floorpic = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE);
-    int     ceilingpic = P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE);
-    byte    lightlevel = P_GetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL);
-    float   flooroffx = P_GetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X);
-    float   flooroffy = P_GetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y);
-    float   ceiloffx = P_GetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X);
-    float   ceiloffy = P_GetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y);
+    int     floorheight = P_GetIntp(sec, DMU_FLOOR_HEIGHT);
+    int     ceilingheight = P_GetIntp(sec, DMU_CEILING_HEIGHT);
+    int     floorpic = P_GetIntp(sec, DMU_FLOOR_TEXTURE);
+    int     ceilingpic = P_GetIntp(sec, DMU_CEILING_TEXTURE);
+    byte    lightlevel = P_GetIntp(sec, DMU_LIGHT_LEVEL);
+    float   flooroffx = P_GetFloatp(sec, DMU_FLOOR_OFFSET_X);
+    float   flooroffy = P_GetFloatp(sec, DMU_FLOOR_OFFSET_Y);
+    float   ceiloffx = P_GetFloatp(sec, DMU_CEILING_OFFSET_X);
+    float   ceiloffy = P_GetFloatp(sec, DMU_CEILING_OFFSET_Y);
     byte    rgb[3];
 
     // Determine type.
@@ -661,13 +661,13 @@ void SV_WriteSector(sector_t *sec)
     SV_WriteShort(SV_FlatArchiveNum(ceilingpic));
     SV_WriteByte(lightlevel);
 
-    P_GetBytepv(DMU_SECTOR, sec, DMU_COLOR, rgb);
+    P_GetBytepv(sec, DMU_COLOR, rgb);
     SV_Write(rgb, 3);
 
-    P_GetBytepv(DMU_SECTOR, sec, DMU_FLOOR_COLOR, rgb);
+    P_GetBytepv(sec, DMU_FLOOR_COLOR, rgb);
     SV_Write(rgb, 3);
 
-    P_GetBytepv(DMU_SECTOR, sec, DMU_CEILING_COLOR, rgb);
+    P_GetBytepv(sec, DMU_CEILING_COLOR, rgb);
     SV_Write(rgb, 3);
 
     SV_WriteShort(xsec->special);
@@ -707,8 +707,8 @@ void SV_ReadSector(sector_t *sec)
     if(hdr.version > 1)
         type = SV_ReadByte();
 
-    P_SetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT, SV_ReadShort() << FRACBITS);
-    P_SetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT, SV_ReadShort() << FRACBITS);
+    P_SetFixedp(sec, DMU_FLOOR_HEIGHT, SV_ReadShort() << FRACBITS);
+    P_SetFixedp(sec, DMU_CEILING_HEIGHT, SV_ReadShort() << FRACBITS);
 
     floorTexID = SV_ReadShort();
     ceilingTexID = SV_ReadShort();
@@ -728,29 +728,29 @@ void SV_ReadSector(sector_t *sec)
         ceilingTexID = SV_GetArchiveFlat(ceilingTexID);
     }
 
-    P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE, floorTexID);
-    P_SetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE, ceilingTexID);
+    P_SetIntp(sec, DMU_FLOOR_TEXTURE, floorTexID);
+    P_SetIntp(sec, DMU_CEILING_TEXTURE, ceilingTexID);
 
     // In Ver1 the light level is a short
     if(hdr.version == 1)
-        P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadShort());
+        P_SetIntp(sec, DMU_LIGHT_LEVEL, SV_ReadShort());
     else
     {
-        P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, SV_ReadByte());
+        P_SetIntp(sec, DMU_LIGHT_LEVEL, SV_ReadByte());
 
         // Versions > 1 include sector colours
         SV_Read(rgb, 3);
-        P_SetBytepv(DMU_SECTOR, sec, DMU_COLOR, rgb);
+        P_SetBytepv(sec, DMU_COLOR, rgb);
     }
 
     // Ver 5 includes surface colours
     if(hdr.version >= 5)
     {
         SV_Read(rgb, 3);
-        P_SetBytepv(DMU_SECTOR, sec, DMU_FLOOR_COLOR, rgb);
+        P_SetBytepv(sec, DMU_FLOOR_COLOR, rgb);
 
         SV_Read(rgb, 3);
-        P_SetBytepv(DMU_SECTOR, sec, DMU_CEILING_COLOR, rgb);
+        P_SetBytepv(sec, DMU_CEILING_COLOR, rgb);
     }
 
     xsec->special = SV_ReadShort();
@@ -761,10 +761,10 @@ void SV_ReadSector(sector_t *sec)
     {
         if(type == sc_xg1 || type == sc_ploff)
         {
-            P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_X, SV_ReadFloat());
-            P_SetFloatp(DMU_SECTOR, sec, DMU_FLOOR_OFFSET_Y, SV_ReadFloat());
-            P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_X, SV_ReadFloat());
-            P_SetFloatp(DMU_SECTOR, sec, DMU_CEILING_OFFSET_Y, SV_ReadFloat());
+            P_SetFloatp(sec, DMU_FLOOR_OFFSET_X, SV_ReadFloat());
+            P_SetFloatp(sec, DMU_FLOOR_OFFSET_Y, SV_ReadFloat());
+            P_SetFloatp(sec, DMU_CEILING_OFFSET_X, SV_ReadFloat());
+            P_SetFloatp(sec, DMU_CEILING_OFFSET_Y, SV_ReadFloat());
         }
 
         if(type == sc_xg1)
@@ -797,7 +797,7 @@ void SV_WriteLine(line_t *li)
 
     SV_WriteByte(type);
 
-    SV_WriteShort(P_GetIntp(DMU_LINE, li, DMU_FLAGS));
+    SV_WriteShort(P_GetIntp(li, DMU_FLAGS));
     SV_WriteShort(xli->special);
     SV_WriteShort(xli->tag);
 
@@ -805,37 +805,37 @@ void SV_WriteLine(line_t *li)
     for(i = 0; i < 2; i++)
     {
         if(i == 0)
-            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE0);
+            side = P_GetPtrp(li, DMU_SIDE0);
         else
-            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE1);
+            side = P_GetPtrp(li, DMU_SIDE1);
 
         if(!side)
             continue;
 
-        SV_WriteShort(P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X) >> FRACBITS);
-        SV_WriteShort(P_GetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y) >> FRACBITS);
+        SV_WriteShort(P_GetIntp(side, DMU_TEXTURE_OFFSET_X) >> FRACBITS);
+        SV_WriteShort(P_GetIntp(side, DMU_TEXTURE_OFFSET_Y) >> FRACBITS);
 
-        texid = P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE);
+        texid = P_GetIntp(side, DMU_TOP_TEXTURE);
         SV_WriteShort(SV_TextureArchiveNum(texid));
 
-        texid = P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE);
+        texid = P_GetIntp(side, DMU_BOTTOM_TEXTURE);
         SV_WriteShort(SV_TextureArchiveNum(texid));
 
-        texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+        texid = P_GetIntp(side, DMU_MIDDLE_TEXTURE);
         SV_WriteShort(SV_TextureArchiveNum(texid));
 
-        P_GetBytepv(DMU_SIDE, side, DMU_TOP_COLOR, rgb);
+        P_GetBytepv(side, DMU_TOP_COLOR, rgb);
         SV_Write(rgb, 3);
 
-        P_GetBytepv(DMU_SIDE, side, DMU_BOTTOM_COLOR, rgb);
+        P_GetBytepv(side, DMU_BOTTOM_COLOR, rgb);
         SV_Write(rgb, 3);
 
-        P_GetBytepv(DMU_SIDE, side, DMU_MIDDLE_COLOR, rgba);
+        P_GetBytepv(side, DMU_MIDDLE_COLOR, rgba);
         SV_Write(rgba, 4);
 
-        SV_WriteLong(P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE));
+        SV_WriteLong(P_GetIntp(side, DMU_MIDDLE_BLENDMODE));
 
-        SV_WriteLong(P_GetIntp(DMU_SIDE, side, DMU_FLAGS));
+        SV_WriteLong(P_GetIntp(side, DMU_FLAGS));
     }
 
     // Extended General?
@@ -866,7 +866,7 @@ void SV_ReadLine(line_t *li)
     if(hdr.version > 1)
         type = SV_ReadByte();
 
-    P_SetIntp(DMU_LINE, li, DMU_FLAGS, SV_ReadShort());
+    P_SetIntp(li, DMU_FLAGS, SV_ReadShort());
     xli->special = SV_ReadShort();
     xli->tag = SV_ReadShort();
 
@@ -874,15 +874,15 @@ void SV_ReadLine(line_t *li)
     for(i = 0; i < 2; i++)
     {
         if(i == 0)
-            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE0);
+            side = P_GetPtrp(li, DMU_SIDE0);
         else
-            side = P_GetPtrp(DMU_LINE, li, DMU_SIDE1);
+            side = P_GetPtrp(li, DMU_SIDE1);
 
         if(!side)
             continue;
 
-        P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, SV_ReadShort() << FRACBITS);
-        P_SetIntp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, SV_ReadShort() << FRACBITS);
+        P_SetIntp(side, DMU_TEXTURE_OFFSET_X, SV_ReadShort() << FRACBITS);
+        P_SetIntp(side, DMU_TEXTURE_OFFSET_Y, SV_ReadShort() << FRACBITS);
 
         topTexID = SV_ReadShort();
         bottomTexID = SV_ReadShort();
@@ -896,25 +896,25 @@ void SV_ReadLine(line_t *li)
             middleTexID = SV_GetArchiveTexture(middleTexID);
         }
 
-        P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, topTexID);
-        P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, bottomTexID);
-        P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE, middleTexID);
+        P_SetIntp(side, DMU_TOP_TEXTURE, topTexID);
+        P_SetIntp(side, DMU_BOTTOM_TEXTURE, bottomTexID);
+        P_SetIntp(side, DMU_MIDDLE_TEXTURE, middleTexID);
 
         // Ver5 includes surface colours
         if(hdr.version >= 5)
         {
             SV_Read(rgb, 3);
-            P_SetBytepv(DMU_SIDE, side, DMU_TOP_COLOR, rgb);
+            P_SetBytepv(side, DMU_TOP_COLOR, rgb);
 
             SV_Read(rgb, 3);
-            P_SetBytepv(DMU_SIDE, side, DMU_BOTTOM_COLOR, rgb);
+            P_SetBytepv(side, DMU_BOTTOM_COLOR, rgb);
 
             SV_Read(rgba, 4);
-            P_SetBytepv(DMU_SIDE, side, DMU_MIDDLE_COLOR, rgba);
+            P_SetBytepv(side, DMU_MIDDLE_COLOR, rgba);
 
-            P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
+            P_SetIntp(side, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
 
-            P_SetIntp(DMU_SIDE, side, DMU_FLAGS, SV_ReadLong());
+            P_SetIntp(side, DMU_FLAGS, SV_ReadLong());
         }
     }
 
@@ -1091,10 +1091,10 @@ void P_UnArchiveThinkers(void)
             mobj->info = &mobjinfo[mobj->type];
 
             mobj->floorz =
-                P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
+                P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
 
             mobj->ceilingz =
-                P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
+                P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 
             mobj->thinker.function = P_MobjThinker;
             P_AddThinker(&mobj->thinker);

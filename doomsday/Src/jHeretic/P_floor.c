@@ -51,8 +51,8 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
     fixed_t lastpos;
     fixed_t floorheight, ceilingheight;
 
-    floorheight = P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
-    ceilingheight = P_GetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
+    floorheight = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
+    ceilingheight = P_GetFixedp(sector, DMU_CEILING_HEIGHT);
 
     switch (floorOrCeiling)
     {
@@ -65,13 +65,13 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             if(floorheight - speed < dest)
             {
                 lastpos = floorheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, dest);
+                P_SetFixedp(sector, DMU_FLOOR_HEIGHT, dest);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
+                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -80,13 +80,13 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             else
             {
                 lastpos = floorheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos - speed);
+                P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos - speed);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
+                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -99,13 +99,13 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             if(floorheight + speed > dest)
             {
                 lastpos = floorheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, dest);
+                P_SetFixedp(sector, DMU_FLOOR_HEIGHT, dest);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
+                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -115,16 +115,16 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             {
                 // COULD GET CRUSHED
                 lastpos = floorheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos + speed);
+                P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos + speed);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
                     if(crush == true)
                         return crushed;
 
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_SPEED, 0);
+                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -143,13 +143,13 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             if(ceilingheight - speed < dest)
             {
                 lastpos = ceilingheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, dest);
+                P_SetFixedp(sector, DMU_CEILING_HEIGHT, dest);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
+                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -159,16 +159,16 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             {
                 // COULD GET CRUSHED
                 lastpos = ceilingheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos - speed);
+                P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos - speed);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
                     if(crush == true)
                         return crushed;
 
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
+                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -181,13 +181,13 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             if(ceilingheight + speed > dest)
             {
                 lastpos = ceilingheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, dest);
+                P_SetFixedp(sector, DMU_CEILING_HEIGHT, dest);
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TARGET, lastpos);
-                    P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_SPEED, 0);
+                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
+                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -196,7 +196,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
             else
             {
                 lastpos = ceilingheight;
-                P_SetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT, lastpos + speed);
+                P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos + speed);
                 flag = P_ChangeSector(sector, crush);
             }
             break;
@@ -222,7 +222,7 @@ void T_MoveFloor(floormove_t * floor)
 
     if(res == pastdest)
     {
-        P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_SPEED, 0);
+        P_SetIntp(floor->sector, DMU_FLOOR_SPEED, 0);
 
         xsec->specialdata = NULL;
 
@@ -233,7 +233,7 @@ void T_MoveFloor(floormove_t * floor)
             case donutRaise:
                 xsec->special = floor->newspecial;
 
-                P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE,
+                P_SetIntp(floor->sector, DMU_FLOOR_TEXTURE,
                           floor->texture);
 
             default:
@@ -247,7 +247,7 @@ void T_MoveFloor(floormove_t * floor)
             case lowerAndChange:
                 xsec->special = floor->newspecial;
 
-                P_SetIntp(DMU_SECTOR, floor->sector, DMU_FLOOR_TEXTURE,
+                P_SetIntp(floor->sector, DMU_FLOOR_TEXTURE,
                           floor->texture);
 
             default:
@@ -328,9 +328,9 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             floor->floordestheight = P_FindLowestCeilingSurrounding(sec);
 
             if(floor->floordestheight >
-               P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+               P_GetFixedp(sec, DMU_CEILING_HEIGHT))
                 floor->floordestheight =
-                    P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+                    P_GetFixedp(sec, DMU_CEILING_HEIGHT);
 
             floor->floordestheight -=
                 (8 * FRACUNIT) * (floortype == raiseFloorCrush);
@@ -341,7 +341,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             floor->sector = sec;
             floor->speed = FLOORSPEED;
             floor->floordestheight =
-                P_FindNextHighestFloor(sec, P_GetFixedp(DMU_SECTOR, sec,
+                P_FindNextHighestFloor(sec, P_GetFixedp(sec,
                                                         DMU_FLOOR_HEIGHT));
             break;
 
@@ -350,7 +350,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             floor->sector = sec;
             floor->speed = FLOORSPEED;
             floor->floordestheight =
-                P_GetFixedp(DMU_SECTOR, floor->sector,
+                P_GetFixedp(floor->sector,
                             DMU_FLOOR_HEIGHT) + 24 * FRACUNIT;
             break;
 
@@ -359,13 +359,13 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             floor->sector = sec;
             floor->speed = FLOORSPEED;
             floor->floordestheight =
-                P_GetFixedp(DMU_SECTOR, floor->sector,
+                P_GetFixedp(floor->sector,
                             DMU_FLOOR_HEIGHT) + 24 * FRACUNIT;
 
-            frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+            frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
-            P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
-                      P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
+            P_SetIntp(sec, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(frontsector, DMU_FLOOR_TEXTURE));
 
             xsec->special = P_XSector(frontsector)->special;
             break;
@@ -378,14 +378,14 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                 floor->direction = 1;
                 floor->sector = sec;
                 floor->speed = FLOORSPEED;
-                for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+                for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
                 {
                     ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 
-                    if(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED)
+                    if(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED)
                     {
-                        side = P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR);
-                        bottomtexture = P_GetIntp(DMU_SIDE, side,
+                        side = P_GetPtrp(ln, DMU_FRONT_SECTOR);
+                        bottomtexture = P_GetIntp(side,
                                                   DMU_BOTTOM_TEXTURE);
                         if(bottomtexture >= 0)
                         {
@@ -394,8 +394,8 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                                 minsize = Get(DD_QUERY_RESULT);
                         }
 
-                        side = P_GetPtrp(DMU_LINE, ln, DMU_BACK_SECTOR);
-                        bottomtexture = P_GetIntp(DMU_SIDE, side,
+                        side = P_GetPtrp(ln, DMU_BACK_SECTOR);
+                        bottomtexture = P_GetIntp(side,
                                                   DMU_BOTTOM_TEXTURE);
                         if(bottomtexture >= 0)
                         {
@@ -407,7 +407,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                     }
                 }
                 floor->floordestheight =
-                    P_GetFixedp(DMU_SECTOR, floor->sector, DMU_FLOOR_HEIGHT)
+                    P_GetFixedp(floor->sector, DMU_FLOOR_HEIGHT)
                     + minsize;
                 break;
             }
@@ -417,23 +417,23 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             floor->sector = sec;
             floor->speed = FLOORSPEED;
             floor->floordestheight = P_FindLowestFloorSurrounding(sec);
-            floor->texture = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE);
+            floor->texture = P_GetIntp(sec, DMU_FLOOR_TEXTURE);
 
-            for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+            for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
             {
                 // Choose the correct texture and special on two sided lines.
                 ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 
-                if(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED)
+                if(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED)
                 {
-                    if(P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR) == sec)
+                    if(P_GetPtrp(ln, DMU_FRONT_SECTOR) == sec)
                     {
-                        sec = P_GetPtrp(DMU_LINE, ln, DMU_BACK_SECTOR);
-                        if(P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) ==
+                        sec = P_GetPtrp(ln, DMU_BACK_SECTOR);
+                        if(P_GetFixedp(sec, DMU_FLOOR_HEIGHT) ==
                                                       floor->floordestheight)
                         {
                             floor->texture =
-                                P_GetIntp(DMU_SECTOR, sec,DMU_FLOOR_TEXTURE);
+                                P_GetIntp(sec,DMU_FLOOR_TEXTURE);
                             floor->newspecial =
                                 xsectors[P_ToIndex(DMU_SECTOR, sec)].special;
                             break;
@@ -441,12 +441,12 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                     }
                     else
                     {
-                        sec = P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR);
-                        if(P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) ==
+                        sec = P_GetPtrp(ln, DMU_FRONT_SECTOR);
+                        if(P_GetFixedp(sec, DMU_FLOOR_HEIGHT) ==
                                                       floor->floordestheight)
                         {
                             floor->texture =
-                                P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE);
+                                P_GetIntp(sec, DMU_FLOOR_TEXTURE);
                             floor->newspecial =
                                 xsectors[P_ToIndex(DMU_SECTOR, sec)].special;
                             break;
@@ -510,10 +510,10 @@ int EV_BuildStairs(line_t *line, stair_e type)
         floor->type = raiseBuildStep;
 
         floor->speed = FLOORSPEED;
-        height = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + stairsize;
+        height = P_GetFixedp(sec, DMU_FLOOR_HEIGHT) + stairsize;
         floor->floordestheight = height;
 
-        texture = P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE);
+        texture = P_GetIntp(sec, DMU_FLOOR_TEXTURE);
 
         // Find next sector to raise
         // 1.   Find 2-sided line with same sector side[0]
@@ -521,23 +521,23 @@ int EV_BuildStairs(line_t *line, stair_e type)
         do
         {
             ok = 0;
-            for(i = 0; i < P_GetFixedp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+            for(i = 0; i < P_GetFixedp(sec, DMU_LINE_COUNT); i++)
             {
                 ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 
-                if(!(P_GetIntp(DMU_LINE, ln, DMU_FLAGS) & ML_TWOSIDED))
+                if(!(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED))
                     continue;
 
-                tsec = P_GetPtrp(DMU_LINE, ln, DMU_FRONT_SECTOR);
+                tsec = P_GetPtrp(ln, DMU_FRONT_SECTOR);
 
                 newsecnum = P_ToIndex(DMU_SECTOR, tsec);
                 if(secnum != newsecnum)
                     continue;
 
-                tsec = P_GetPtrp(DMU_LINE, ln, DMU_BACK_SECTOR);
+                tsec = P_GetPtrp(ln, DMU_BACK_SECTOR);
 
                 newsecnum = P_ToIndex(DMU_SECTOR, tsec);
-                if(P_GetIntp(DMU_SECTOR, tsec, DMU_FLOOR_TEXTURE) != texture)
+                if(P_GetIntp(tsec, DMU_FLOOR_TEXTURE) != texture)
                     continue;
 
                 height += stairsize;

@@ -103,7 +103,7 @@ void T_VerticalDoor(vldoor_t * door)
         // DOWN
         res =
             T_MovePlane(door->sector, door->speed,
-                        P_GetFixedp(DMU_SECTOR, door->sector, DMU_FLOOR_HEIGHT),
+                        P_GetFixedp(door->sector, DMU_FLOOR_HEIGHT),
                         false, 1, door->direction);
         if(res == pastdest)
         {
@@ -290,7 +290,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 
         case close30ThenOpen:
             door->topheight =
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT);
             door->direction = -1;
             S_SectorSound(door->sector, sfx_dorcls);
             break;
@@ -302,7 +302,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             door->speed = VDOORSPEED * 4;
             if(door->topheight !=
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_bdopn);
             break;
 
@@ -312,7 +312,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight = P_FindLowestCeilingSurrounding(sec);
             door->topheight -= 4 * FRACUNIT;
             if(door->topheight !=
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_doropn);
             break;
 
@@ -387,7 +387,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // if the sector has an active thinker, use it
-    sec = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    sec = P_GetPtrp(line, DMU_FRONT_SECTOR);
     xsec = P_XSector(sec);
 
     if(xsec->specialdata)

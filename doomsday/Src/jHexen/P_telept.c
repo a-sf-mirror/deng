@@ -44,7 +44,7 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 {
     subsector_t *ss = R_PointInSubsector(x, y);
 
-	return P_SpawnMobj(x, y, P_GetFixedp(DMU_SUBSECTOR, ss, DMU_FLOOR_HEIGHT) + 
+	return P_SpawnMobj(x, y, P_GetFixedp(ss, DMU_FLOOR_HEIGHT) + 
                        TELEFOGHEIGHT, MT_TFOG);
 }
 
@@ -128,7 +128,7 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
 	}
 	if(thing->flags2 & MF2_FLOORCLIP)
 	{
-		if(thing->z == P_GetFixedp(DMU_SUBSECTOR, thing->subsector, DMU_FLOOR_HEIGHT) &&
+		if(thing->z == P_GetFixedp(thing->subsector, DMU_FLOOR_HEIGHT) &&
 		   P_GetThingFloorType(thing) > FLOOR_SOLID)
 		{
 			thing->floorclip = 10 * FRACUNIT;

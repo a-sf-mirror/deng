@@ -134,14 +134,14 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     xsec->soundtraversed = soundblocks + 1;
     xsec->soundtarget = soundtarget;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 
-        frontsector = P_GetPtrp(DMU_LINE, check, DMU_FRONT_SECTOR);
-        backsector = P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR);
+        frontsector = P_GetPtrp(check, DMU_FRONT_SECTOR);
+        backsector = P_GetPtrp(check, DMU_BACK_SECTOR);
 
-        if(!(P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_TWOSIDED))
+        if(!(P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED))
             continue;
 
         P_LineOpening(check);
@@ -154,7 +154,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
         else
             other = frontsector;
 
-        if(P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_SOUNDBLOCK)
+        if(P_GetIntp(check, DMU_FLAGS) & ML_SOUNDBLOCK)
         {
             if(!soundblocks)
                 P_RecursiveSound(other, 1);
@@ -172,7 +172,7 @@ void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
     soundtarget = target;
     validCount++;
-    P_RecursiveSound(P_GetPtrp(DMU_SUBSECTOR, emitter->subsector, DMU_SECTOR), 0);
+    P_RecursiveSound(P_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
 boolean P_CheckMeleeRange(mobj_t *actor)
@@ -432,16 +432,16 @@ static void P_DoNewChaseDir(mobj_t *actor, fixed_t deltax, fixed_t deltay)
  */
 static boolean PIT_AvoidDropoff(line_t *line, void *data)
 {
-    sector_t *frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
-    sector_t *backsector = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
-    fixed_t dx = P_GetFixedp(DMU_LINE, line, DMU_DX);
-    fixed_t dy = P_GetFixedp(DMU_LINE, line, DMU_DY);
+    sector_t *frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    sector_t *backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
+    fixed_t dx = P_GetFixedp(line, DMU_DX);
+    fixed_t dy = P_GetFixedp(line, DMU_DY);
     fixed_t front;
     fixed_t back;
     angle_t angle;
 
-    front = P_GetFixedp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT);
-    back = P_GetFixedp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT);
+    front = P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT);
+    back = P_GetFixedp(backsector, DMU_FLOOR_HEIGHT);
 
     // The monster must contact one of the two floors,
     // and the other must be a tall drop off (more than 24).
@@ -524,7 +524,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = P_GetPtrp(DMU_SUBSECTOR, actor->subsector, DMU_SECTOR);
+    sector = P_GetPtrp(actor->subsector, DMU_SECTOR);
 
     c = 0;
     stop = (actor->lastlook - 1) & 3;
@@ -635,7 +635,7 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(DMU_SUBSECTOR, actor->subsector,
+    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(actor->subsector,
                                                 DMU_SECTOR));
     mobj_t *targ;
 
@@ -1487,13 +1487,13 @@ void A_PainShootSkull(mobj_t *actor, angle_t angle)
             return;
 
         newmobj = P_SpawnMobj(x, y, z, MT_SKULL);
-        sec = P_GetPtrp(DMU_SUBSECTOR, newmobj->subsector, DMU_SECTOR);
+        sec = P_GetPtrp(newmobj->subsector, DMU_SECTOR);
 
         // Check to see if the new Lost Soul's z value is above the
         // ceiling of its new sector, or below the floor. If so, kill it.
-        if((newmobj->z > (P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT)
+        if((newmobj->z > (P_GetFixedp(sec, DMU_CEILING_HEIGHT)
                           - newmobj->height)) ||
-            (newmobj->z < P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT)))
+            (newmobj->z < P_GetFixedp(sec, DMU_FLOOR_HEIGHT)))
         {
             // kill it immediately
             P_DamageMobj(newmobj,actor,actor,10000);

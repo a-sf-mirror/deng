@@ -156,27 +156,27 @@ void P_InitTerrainTypes(void)
  
 static int SecLineCount(sector_t* sector)
 {
-    return P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT);
+    return P_GetIntp(sector, DMU_LINE_COUNT);
 }
 
 static sector_t* LineFront(line_t* line)
 {
-    return P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    return P_GetPtrp(line, DMU_FRONT_SECTOR);
 }
 
 static sector_t* LineBack(line_t* line)
 {
-    return P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    return P_GetPtrp(line, DMU_BACK_SECTOR);
 }
 
 static fixed_t SecFloorHeight(sector_t* sector)
 {
-    return P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+    return P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
 }
 
 static fixed_t SecCeilingHeight(sector_t* sector)
 {
-    return P_GetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
+    return P_GetFixedp(sector, DMU_CEILING_HEIGHT);
 }
 
 //==================================================================
@@ -186,7 +186,7 @@ static fixed_t SecCeilingHeight(sector_t* sector)
 //==================================================================
 sector_t *getNextSector(line_t *line, sector_t *sec)
 {
-	if(!(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_TWOSIDED))
+	if(!(P_GetIntp(line, DMU_FLAGS) & ML_TWOSIDED))
 		return NULL;
 
 	if(LineFront(line) == sec)
@@ -857,7 +857,7 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 	boolean repeat;
 	boolean buttonSuccess;
 
-	lineActivation = GET_SPAC(P_GetIntp(DMU_LINE, line, DMU_FLAGS));
+	lineActivation = GET_SPAC(P_GetIntp(line, DMU_FLAGS));
 	if(lineActivation != activationType)
 	{
 		return false;
@@ -869,10 +869,10 @@ boolean P_ActivateLine(line_t *line, mobj_t *mo, int side, int activationType)
 		{						// currently, monsters can only activate the MCROSS activation type
 			return false;
 		}
-		if(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_SECRET)
+		if(P_GetIntp(line, DMU_FLAGS) & ML_SECRET)
 			return false;		// never open secret doors
 	}
-	repeat = P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_REPEAT_SPECIAL;
+	repeat = P_GetIntp(line, DMU_FLAGS) & ML_REPEAT_SPECIAL;
 	buttonSuccess = false;
     
 	buttonSuccess =
@@ -909,9 +909,9 @@ void P_PlayerInSpecialSector(player_t *player)
 		2048 * 25
 	};
 
-	sector = P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
+	sector = P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
     xsector = P_XSector(sector);
-	if(player->plr->mo->z != P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT))
+	if(player->plr->mo->z != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
 	{							// Player is not touching the floor
 		return;
 	}
@@ -1005,7 +1005,7 @@ void P_PlayerInSpecialSector(player_t *player)
 void P_PlayerOnSpecialFlat(player_t *player, int floorType)
 {
 	if(player->plr->mo->z		/*!= player->plr->mo->floorz */
-	   > P_GetFixedp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_FLOOR_HEIGHT))
+	   > P_GetFixedp(player->plr->mo->subsector, DMU_FLOOR_HEIGHT))
 	{							// Player is not touching the floor
 		return;
 	}
@@ -1042,20 +1042,20 @@ void P_UpdateSpecials(void)
 			buttonlist[i].btimer--;
 			if(!buttonlist[i].btimer)
 			{
-                side_t* sdef = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                side_t* sdef = P_GetPtrp(buttonlist[i].line,
                                          DMU_SIDE0);
 				switch (buttonlist[i].where)
 				{
 				case SWTCH_TOP:
-					P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE, 
+					P_SetIntp(sdef, DMU_TOP_TEXTURE, 
                               buttonlist[i].btexture);
 					break;
 				case SWTCH_MIDDLE:
-					P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE,
+					P_SetIntp(sdef, DMU_MIDDLE_TEXTURE,
                               buttonlist[i].btexture);
 					break;
 				case SWTCH_BOTTOM:
-					P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE,
+					P_SetIntp(sdef, DMU_BOTTOM_TEXTURE,
                               buttonlist[i].btexture);
 					break;
 				}

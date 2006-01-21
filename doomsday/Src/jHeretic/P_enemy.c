@@ -103,19 +103,19 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     sector_t *other;
 
     // Have we already flooded this sector?
-    if(P_GetIntp(DMU_SECTOR, sec, DMU_VALID_COUNT) == Validcount &&
+    if(P_GetIntp(sec, DMU_VALID_COUNT) == Validcount &&
        xsec->soundtraversed <= soundblocks + 1)
         return;
 
-    P_SetIntp(DMU_SECTOR, sec, DMU_VALID_COUNT, Validcount);
+    P_SetIntp(sec, DMU_VALID_COUNT, Validcount);
 
     xsec->soundtraversed = soundblocks + 1;
     xsec->soundtarget = soundtarget;
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
 
-        if(!(P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_TWOSIDED))
+        if(!(P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED))
             continue;
 
         P_LineOpening(check);
@@ -124,16 +124,16 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
         if(openrange <= 0)
             continue;
 
-        if(P_GetPtrp(DMU_LINE, check, DMU_FRONT_SECTOR) == sec)
+        if(P_GetPtrp(check, DMU_FRONT_SECTOR) == sec)
         {
-            other = P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR);
+            other = P_GetPtrp(check, DMU_BACK_SECTOR);
         }
         else
         {
-            other = P_GetPtrp(DMU_LINE, check, DMU_FRONT_SECTOR);
+            other = P_GetPtrp(check, DMU_FRONT_SECTOR);
         }
 
-        if(P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_SOUNDBLOCK)
+        if(P_GetIntp(check, DMU_FLAGS) & ML_SOUNDBLOCK)
         {
             if(!soundblocks)
                 P_RecursiveSound(other, 1);
@@ -154,7 +154,7 @@ void P_NoiseAlert(mobj_t *target, mobj_t *emmiter)
     soundtarget = target;
     Validcount++;
 
-    P_RecursiveSound(P_GetPtrp(DMU_SUBSECTOR, emmiter->subsector,
+    P_RecursiveSound(P_GetPtrp(emmiter->subsector,
                      DMU_SECTOR), 0);
 }
 
@@ -489,7 +489,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = P_GetPtrp(DMU_SUBSECTOR, actor->subsector, DMU_SECTOR);
+    sector = P_GetPtrp(actor->subsector, DMU_SECTOR);
     c = 0;
     stop = (actor->lastlook - 1) & 3;
     for(;; actor->lastlook = (actor->lastlook + 1) & 3)
@@ -558,7 +558,7 @@ void C_DECL A_Look(mobj_t *actor)
 
     // Any shot will wake up
     actor->threshold = 0;
-    targ = P_XSector(P_GetPtrp(DMU_SUBSECTOR, actor->subsector,
+    targ = P_XSector(P_GetPtrp(actor->subsector,
                      DMU_SECTOR))->soundtarget;
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
@@ -2062,7 +2062,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t *actor)
 
     mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
                      actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
-                     P_GetFixedp(DMU_SUBSECTOR, actor->subsector, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(actor->subsector, DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER);
 
     mo->momz = FRACUNIT / 4;
@@ -2074,7 +2074,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t *actor)
 
     mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
                      actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
-                     P_GetFixedp(DMU_SUBSECTOR, actor->subsector, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(actor->subsector, DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER2);
 
     mo->momz = FRACUNIT / 4;

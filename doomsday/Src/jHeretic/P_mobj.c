@@ -247,7 +247,7 @@ void P_WindThrust(mobj_t *mo)
 {
     static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
-    int special = P_XSector(P_GetPtrp(DMU_SUBSECTOR, mo->subsector,
+    int special = P_XSector(P_GetPtrp(mo->subsector,
                                       DMU_SECTOR))->special;
     switch (special)
     {
@@ -276,7 +276,7 @@ void P_WindThrust(mobj_t *mo)
 
 fixed_t P_GetMobjFriction(mobj_t *mo)
 {
-    sector_t* sector = P_GetPtrp(DMU_SUBSECTOR, mo->subsector,
+    sector_t* sector = P_GetPtrp(mo->subsector,
                                 DMU_SECTOR);
 
     if(mo->flags2 & MF2_FLY && !(mo->z <= mo->floorz) &&
@@ -355,9 +355,9 @@ void P_XYMovement(mobj_t *mo)
                 if(ceilingline)
                 {
                     sector_t* backsector =
-                        P_GetPtrp(DMU_LINE, ceilingline, DMU_BACK_SECTOR);
+                        P_GetPtrp(ceilingline, DMU_BACK_SECTOR);
 
-                    if(backsector && P_GetIntp(DMU_SECTOR, backsector,
+                    if(backsector && P_GetIntp(backsector,
                                                DMU_CEILING_TEXTURE) == skyflatnum)
                     {
                         // Hack to prevent missiles exploding against the sky
@@ -404,7 +404,7 @@ void P_XYMovement(mobj_t *mo)
         if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
            mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
         {
-            if(mo->floorz != P_GetFixedp(DMU_SUBSECTOR, mo->subsector,
+            if(mo->floorz != P_GetFixedp(mo->subsector,
                                          DMU_FLOOR_HEIGHT))
             {
                 return;
@@ -446,7 +446,7 @@ void P_XYMovement(mobj_t *mo)
             mo->momx = FixedMul(mo->momx, FRICTION_FLY);
             mo->momy = FixedMul(mo->momy, FRICTION_FLY);
         }
-        else if(P_XSector(P_GetPtrp(DMU_SUBSECTOR, mo->subsector,
+        else if(P_XSector(P_GetPtrp(mo->subsector,
                                     DMU_SECTOR))->special == 15)
         {
             // Friction_Low
@@ -465,7 +465,7 @@ void P_XYMovement(mobj_t *mo)
 
 void P_ZMovement(mobj_t *mo)
 {
-    int     gravity = XS_Gravity(P_GetPtrp(DMU_SUBSECTOR, mo->subsector,
+    int     gravity = XS_Gravity(P_GetPtrp(mo->subsector,
                                            DMU_SECTOR));
     int     dist;
     int     delta;
@@ -599,7 +599,7 @@ void P_ZMovement(mobj_t *mo)
         }
         if(mo->flags & MF_MISSILE)
         {
-            if(P_GetIntp(DMU_SUBSECTOR, mo->subsector,
+            if(P_GetIntp(mo->subsector,
                          DMU_CEILING_TEXTURE) == skyflatnum)
             {
                 if(mo->type == MT_BLOODYSKULL)
@@ -634,14 +634,14 @@ void P_NightmareRespawn(mobj_t *mobj)
     // spawn a teleport fog at old spot
 
     mo = P_SpawnMobj(mobj->x, mobj->y,
-                     P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
+                     P_GetFixedp(mobj->subsector,
                                  DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
 
     // spawn a teleport fog at the new spot
-    mo = P_SpawnMobj(x, y, P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y),
+    mo = P_SpawnMobj(x, y, P_GetFixedp(R_PointInSubsector(x, y),
                                        DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
                      MT_TFOG);
 
@@ -964,8 +964,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     // Set subsector and/or block links.
     P_SetThingPosition(mobj);
 
-    mobj->floorz = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
-    mobj->ceilingz = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
+    mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
+    mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 
     if(z == ONFLOORZ)
     {
@@ -994,7 +994,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->z = z;
     }
     if(mobj->flags2 & MF2_FOOTCLIP && P_GetThingFloorType(mobj) != FLOOR_SOLID
-       && mobj->floorz == P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT))
+       && mobj->floorz == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
     {
         mobj->flags2 |= MF2_FEETARECLIPPED;
     }
@@ -1313,7 +1313,7 @@ void P_RipperBlood(mobj_t *mo)
 
 int P_GetThingFloorType(mobj_t *thing)
 {
-    return (TerrainTypes[P_GetIntp(DMU_SUBSECTOR, thing->subsector,
+    return (TerrainTypes[P_GetIntp(thing->subsector,
                                    DMU_FLOOR_TEXTURE)]);
 }
 
@@ -1321,7 +1321,7 @@ int P_HitFloor(mobj_t *thing)
 {
     mobj_t *mo;
 
-    if(thing->floorz != P_GetFixedp(DMU_SUBSECTOR, thing->subsector,
+    if(thing->floorz != P_GetFixedp(thing->subsector,
                                     DMU_FLOOR_HEIGHT))
     {
         // don't splash if landing on the edge above water/lava/etc....

@@ -47,7 +47,7 @@
 #  include "jStrife/d_config.h"
 #endif
 
-#include "Common/p_mapsetup.h"
+#include "Common/p_setup.h"
 #include "d_net.h"
 
 // MACROS ------------------------------------------------------------------
@@ -292,7 +292,7 @@ boolean P_CheckSpot(int playernum, thing_t * mthing, boolean doTeleSpark)
 
 #if __JDOOM__ || __JHEXEN__ || __JSTRIFE__
         mo = P_SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
-                         P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y),
+                         P_GetFixedp(R_PointInSubsector(x, y),
                                      DMU_FLOOR_HEIGHT),
                          MT_TFOG);
 #else                           // __JHERETIC__
@@ -586,8 +586,8 @@ fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
 {
     float   a[2], b[2], c[2], d[2], len;
 
-    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX1_XY, a);
-    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX2_XY, b);
+    P_GetFloatpv(line, DMU_VERTEX1_XY, a);
+    P_GetFloatpv(line, DMU_VERTEX2_XY, b);
 
     c[VX] = FIX2FLT(x);
     c[VY] = FIX2FLT(y);
@@ -627,7 +627,7 @@ void P_MoveThingsOutOfWalls()
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
+        for(k = 0, iter = P_GetPtrp(sec, DMU_THINGS);
             k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             // Wall torches are most often seen inside walls.
@@ -638,7 +638,7 @@ void P_MoveThingsOutOfWalls()
         // Move the things out of walls.
         for(t = 0; (iter = tlist[t]) != NULL; t++)
         {
-            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+            int sectorLineCount = P_GetIntp(sec, DMU_LINE_COUNT);
 
             minrad = iter->radius / 2;
             closestline = NULL;
@@ -646,11 +646,11 @@ void P_MoveThingsOutOfWalls()
             for(k = 0; k < sectorLineCount; k++)
             {
                 li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
-                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
+                if(P_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
                 linelen =
-                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
-                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
+                    P_ApproxDistance(P_GetFixedp(li, DMU_DX),
+                                     P_GetFixedp(li, DMU_DY));
                 dist = P_PointLineDistance(li, iter->x, iter->y, &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
@@ -665,8 +665,8 @@ void P_MoveThingsOutOfWalls()
                 float   len;
 
                 li = closestline;
-                dy = -P_GetFloatp(DMU_LINE, li, DMU_DX);
-                dx = P_GetFloatp(DMU_LINE, li, DMU_DY);
+                dy = -P_GetFloatp(li, DMU_DX);
+                dx = P_GetFloatp(li, DMU_DY);
                 len = sqrt(dx * dx + dy * dy);
                 dx *= offlen / len;
                 dy *= offlen / len;
@@ -699,7 +699,7 @@ void P_TurnGizmosAwayFromDoors()
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
+        for(k = 0, iter = P_GetPtrp(sec, DMU_THINGS);
             k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             if(iter->type == MT_KEYGIZMOBLUE || iter->type == MT_KEYGIZMOGREEN
@@ -715,7 +715,7 @@ void P_TurnGizmosAwayFromDoors()
             {
                 li = P_ToPtr(DMU_LINE, k);
 
-                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
+                if(P_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
 
                 xli = P_XLine(li);
@@ -727,8 +727,8 @@ void P_TurnGizmosAwayFromDoors()
                     continue;
 
                 linelen =
-                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
-                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
+                    P_ApproxDistance(P_GetFixedp(li, DMU_DX),
+                                     P_GetFixedp(li, DMU_DY));
 
                 dist = abs(P_PointLineDistance(li, iter->x, iter->y, &off));
                 if(!closestline || dist < closestdist)
@@ -740,10 +740,10 @@ void P_TurnGizmosAwayFromDoors()
             if(closestline)
             {
                 iter->angle =
-                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_Y),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_X),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_Y)) - ANG90;
+                    R_PointToAngle2(P_GetFixedp(closestline, DMU_VERTEX1_X),
+                                    P_GetFixedp(closestline, DMU_VERTEX1_Y),
+                                    P_GetFixedp(closestline, DMU_VERTEX2_X),
+                                    P_GetFixedp(closestline, DMU_VERTEX2_Y)) - ANG90;
             }
         }
     }
@@ -771,7 +771,7 @@ void P_TurnTorchesToFaceWalls()
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = P_GetPtrp(DMU_SECTOR, sec, DMU_THINGS);
+        for(k = 0, iter = P_GetPtrp(sec, DMU_THINGS);
             k < MAXLIST - 1 && iter; iter = iter->snext)
         {
             if(iter->type == MT_ZWALLTORCH ||
@@ -782,18 +782,18 @@ void P_TurnTorchesToFaceWalls()
         // Turn to face away from the nearest wall.
         for(t = 0; (iter = tlist[t]) != NULL; t++)
         {
-            int sectorLineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+            int sectorLineCount = P_GetIntp(sec, DMU_LINE_COUNT);
 
             minrad = iter->radius;
             closestline = NULL;
             for(k = 0; k < sectorLineCount; k++)
             {
                 li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
-                if(P_GetPtrp(DMU_LINE, li, DMU_BACK_SECTOR))
+                if(P_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
                 linelen =
-                    P_ApproxDistance(P_GetFixedp(DMU_LINE, li, DMU_DX),
-                                     P_GetFixedp(DMU_LINE, li, DMU_DY));
+                    P_ApproxDistance(P_GetFixedp(li, DMU_DX),
+                                     P_GetFixedp(li, DMU_DY));
                 dist = P_PointLineDistance(li, iter->x, iter->y, &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
@@ -805,10 +805,10 @@ void P_TurnTorchesToFaceWalls()
             if(closestline && closestdist < minrad)
             {
                 iter->angle =
-                    R_PointToAngle2(P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_X),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX1_Y),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_X),
-                                    P_GetFixedp(DMU_LINE, closestline, DMU_VERTEX2_Y)) - ANG90;
+                    R_PointToAngle2(P_GetFixedp(closestline, DMU_VERTEX1_X),
+                                    P_GetFixedp(closestline, DMU_VERTEX1_Y),
+                                    P_GetFixedp(closestline, DMU_VERTEX2_X),
+                                    P_GetFixedp(closestline, DMU_VERTEX2_Y)) - ANG90;
             }
         }
     }

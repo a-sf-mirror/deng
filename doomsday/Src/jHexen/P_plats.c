@@ -18,13 +18,13 @@ plat_t *activeplats[MAXPLATS];
 
 static void StartSequence(sector_t* sector, int seqBase)
 {
-    SN_StartSequence(P_GetPtrp(DMU_SECTOR, sector, DMU_SOUND_ORIGIN),
+    SN_StartSequence(P_GetPtrp(sector, DMU_SOUND_ORIGIN),
                      seqBase + P_XSector(sector)->seqType);
 }
 
 static void StopSequence(sector_t* sector)
 {
-    SN_StopSequence(P_GetPtrp(DMU_SECTOR, sector, DMU_SOUND_ORIGIN));
+    SN_StopSequence(P_GetPtrp(sector, DMU_SOUND_ORIGIN));
 }
 
 //==================================================================
@@ -85,7 +85,7 @@ void T_PlatRaise(plat_t * plat)
 	case PLAT_WAITING:
 		if(!--plat->count)
 		{
-			if(P_GetFixedp(DMU_SECTOR, plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
+			if(P_GetFixedp(plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
 				plat->status = PLAT_UP;
 			else
 				plat->status = PLAT_DOWN;
@@ -147,7 +147,7 @@ int EV_DoPlat(line_t *line, byte *args, plattype_e type, int amount)
 		plat->crush = false;
 		plat->tag = args[0];
 		plat->speed = args[1] * (FRACUNIT / 8);
-        floorheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+        floorheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
 		switch (type)
 		{
 		case PLAT_DOWNWAITUPSTAY:

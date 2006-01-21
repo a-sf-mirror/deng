@@ -187,13 +187,13 @@ void P_InitPicAnims(void)
  */
 sector_t *getNextSector(line_t *line, sector_t *sec)
 {
-    if(!(P_GetIntp(DMU_LINE, line, DMU_FLAGS) & ML_TWOSIDED))
+    if(!(P_GetIntp(line, DMU_FLAGS) & ML_TWOSIDED))
         return NULL;
 
-    if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) == sec)
-        return P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    if(P_GetPtrp(line, DMU_FRONT_SECTOR) == sec)
+        return P_GetPtrp(line, DMU_BACK_SECTOR);
 
-    return P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    return P_GetPtrp(line, DMU_FRONT_SECTOR);
 }
 
 /*
@@ -205,9 +205,9 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
     line_t *check;
     sector_t *other;
 
-    fixed_t floor = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+    fixed_t floor = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
@@ -215,8 +215,8 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
         if(!other)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) < floor)
-            floor = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+        if(P_GetFixedp(other, DMU_FLOOR_HEIGHT) < floor)
+            floor = P_GetFixedp(other, DMU_FLOOR_HEIGHT);
     }
     return floor;
 }
@@ -231,7 +231,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t floor = -500 * FRACUNIT;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
@@ -239,8 +239,8 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
         if(!other)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT) > floor)
-            floor = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+        if(P_GetFixedp(other, DMU_FLOOR_HEIGHT) > floor)
+            floor = P_GetFixedp(other, DMU_FLOOR_HEIGHT);
     }
     return floor;
 }
@@ -257,7 +257,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 {
     int     i;
-    int     lineCount = P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT);
+    int     lineCount = P_GetIntp(sec, DMU_LINE_COUNT);
     line_t *check;
     sector_t *other;
     fixed_t height = currentheight;
@@ -272,7 +272,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
         if(!other)
             continue;
 
-        otherHeight = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+        otherHeight = P_GetFixedp(other, DMU_FLOOR_HEIGHT);
 
         if(otherHeight > currentheight)
         {
@@ -283,7 +283,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 
                 if(other)
                 {
-                    anotherHeight = P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+                    anotherHeight = P_GetFixedp(other, DMU_FLOOR_HEIGHT);
 
                     if(anotherHeight < otherHeight && anotherHeight > currentheight)
                         otherHeight = anotherHeight;
@@ -307,7 +307,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t height = MAXINT;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
@@ -315,9 +315,9 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
         if(!other)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT) < height)
+        if(P_GetFixedp(other, DMU_CEILING_HEIGHT) < height)
             height =
-                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
+                P_GetFixedp(other, DMU_CEILING_HEIGHT);
 
     }
     return height;
@@ -333,7 +333,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
     sector_t *other;
     fixed_t height = 0;
 
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
         check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
         other = getNextSector(check, sec);
@@ -341,9 +341,9 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
         if(!other)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT) > height)
+        if(P_GetFixedp(other, DMU_CEILING_HEIGHT) > height)
             height =
-                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
+                P_GetFixedp(other, DMU_CEILING_HEIGHT);
     }
     return height;
 }
@@ -378,7 +378,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
     sector_t *check;
 
     min = max;
-    for(i = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
+    for(i = 0; i < P_GetIntp(sector, DMU_LINE_COUNT); i++)
     {
         line = P_GetPtrp(DMU_LINE_OF_SECTOR, sector, i);
         check = getNextSector(line, sector);
@@ -386,8 +386,8 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
         if(!check)
             continue;
 
-        if(P_GetFixedp(DMU_SECTOR, check, DMU_LIGHT_LEVEL) < min)
-            min = P_GetIntp(DMU_SECTOR, check, DMU_LIGHT_LEVEL);
+        if(P_GetFixedp(check, DMU_LIGHT_LEVEL) < min)
+            min = P_GetIntp(check, DMU_LIGHT_LEVEL);
     }
     return min;
 }
@@ -910,10 +910,10 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
 void P_PlayerInSpecialSector(player_t *player)
 {
     sector_t *sector =
-        P_GetPtrp(DMU_SUBSECTOR, player->plr->mo->subsector, DMU_SECTOR);
+        P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
-    if(player->plr->mo->z != P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT))
+    if(player->plr->mo->z != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
         return;
 
     // Has hitten ground.
@@ -1000,11 +1000,11 @@ void P_UpdateSpecials(void)
         switch(P_XLine(line)->special)
         {
         case 48:
-            side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+            side = P_GetPtrp(line, DMU_SIDE0);
 
             // EFFECT FIRSTCOL SCROLL +
-            x = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X);
-            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_X, x += FRACUNIT);
+            x = P_GetFixedp(side, DMU_TEXTURE_OFFSET_X);
+            P_SetFixedp(side, DMU_TEXTURE_OFFSET_X, x += FRACUNIT);
             break;
 
         default:
@@ -1021,25 +1021,25 @@ void P_UpdateSpecials(void)
             buttonlist[i].btimer--;
             if(!buttonlist[i].btimer)
             {
-                side_t* sdef = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                side_t* sdef = P_GetPtrp(buttonlist[i].line,
                                          DMU_SIDE0);
-                sector_t* frontsector = P_GetPtrp(DMU_LINE, buttonlist[i].line,
+                sector_t* frontsector = P_GetPtrp(buttonlist[i].line,
                                                   DMU_FRONT_SECTOR);
 
                 switch (buttonlist[i].where)
                 {
                 case top:
-                    P_SetIntp(DMU_SIDE, sdef, DMU_TOP_TEXTURE,
+                    P_SetIntp(sdef, DMU_TOP_TEXTURE,
                               buttonlist[i].btexture);
                     break;
 
                 case middle:
-                    P_SetIntp(DMU_SIDE, sdef, DMU_MIDDLE_TEXTURE,
+                    P_SetIntp(sdef, DMU_MIDDLE_TEXTURE,
                               buttonlist[i].btexture);
                     break;
 
                 case bottom:
-                    P_SetIntp(DMU_SIDE, sdef, DMU_BOTTOM_TEXTURE,
+                    P_SetIntp(sdef, DMU_BOTTOM_TEXTURE,
                               buttonlist[i].btexture);
                     break;
 
@@ -1049,7 +1049,7 @@ void P_UpdateSpecials(void)
                 }
 
                 S_StartSound(sfx_swtchn,
-                             P_GetPtrp(DMU_SECTOR, frontsector, DMU_SOUND_ORIGIN));
+                             P_GetPtrp(frontsector, DMU_SOUND_ORIGIN));
 
                 memset(&buttonlist[i], 0, sizeof(button_t));
             }
@@ -1082,15 +1082,15 @@ int EV_DoDonut(line_t *line)
         rtn = 1;
 
         s2 = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, s1, 0), s1);
-        for(i = 0; i < P_GetIntp(DMU_SECTOR, s2, DMU_LINE_COUNT); i++)
+        for(i = 0; i < P_GetIntp(s2, DMU_LINE_COUNT); i++)
         {
             check = P_GetPtrp(DMU_LINE_OF_SECTOR, s2, i);
 
-            if((!P_GetIntp(DMU_LINE, check, DMU_FLAGS) & ML_TWOSIDED) ||
-               (P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR) == s1))
+            if((!P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED) ||
+               (P_GetPtrp(check, DMU_BACK_SECTOR) == s1))
                 continue;
 
-            s3 = P_GetPtrp(DMU_LINE, check, DMU_BACK_SECTOR);
+            s3 = P_GetPtrp(check, DMU_BACK_SECTOR);
 
             //  Spawn rising slime
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
@@ -1104,9 +1104,9 @@ int EV_DoDonut(line_t *line)
             floor->direction = 1;
             floor->sector = s2;
             floor->speed = FLOORSPEED / 2;
-            floor->texture = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_TEXTURE);
+            floor->texture = P_GetIntp(s3, DMU_FLOOR_TEXTURE);
             floor->newspecial = 0;
-            floor->floordestheight = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_HEIGHT);
+            floor->floordestheight = P_GetIntp(s3, DMU_FLOOR_HEIGHT);
 
             //  Spawn lowering donut-hole
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
@@ -1120,7 +1120,7 @@ int EV_DoDonut(line_t *line)
             floor->direction = -1;
             floor->sector = s1;
             floor->speed = FLOORSPEED / 2;
-            floor->floordestheight = P_GetIntp(DMU_SECTOR, s3, DMU_FLOOR_HEIGHT);
+            floor->floordestheight = P_GetIntp(s3, DMU_FLOOR_HEIGHT);
             break;
         }
     }

@@ -621,9 +621,9 @@ void P_XYMovement(mobj_t *mo)
 				}
 			  explode:
 				// Explode a missile
-				if(ceilingline && P_GetPtrp(DMU_LINE, ceilingline, DMU_BACK_SECTOR) &&
-				   P_GetIntp(DMU_SECTOR, 
-                             P_GetPtrp(DMU_LINE, ceilingline, DMU_BACK_SECTOR),
+				if(ceilingline && P_GetPtrp(ceilingline, DMU_BACK_SECTOR) &&
+				   P_GetIntp(
+                             P_GetPtrp(ceilingline, DMU_BACK_SECTOR),
                              DMU_CEILING_TEXTURE) == skyflatnum)
 				{				// Hack to prevent missiles exploding against the sky
 					if(mo->type == MT_BLOODYSKULL)
@@ -678,7 +678,7 @@ void P_XYMovement(mobj_t *mo)
 		if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
 		   mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
 		{
-			if(mo->floorz != P_GetFixedp(DMU_SUBSECTOR, mo->subsector, 
+			if(mo->floorz != P_GetFixedp(mo->subsector, 
                                          DMU_FLOOR_HEIGHT))
 			{
 				return;
@@ -950,7 +950,7 @@ void P_ZMovement(mobj_t *mo)
 			{
 				return;
 			}
-			if(P_GetIntp(DMU_SUBSECTOR, mo->subsector, DMU_CEILING_TEXTURE) == 
+			if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) == 
                skyflatnum)
 			{
 				if(mo->type == MT_BLOODYSKULL)
@@ -1366,8 +1366,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	// Set subsector and/or block links.
 	P_SetThingPosition(mobj);
-	mobj->floorz = P_GetIntp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
-	mobj->ceilingz = P_GetIntp(DMU_SUBSECTOR, mobj->subsector, 
+	mobj->floorz = P_GetIntp(mobj->subsector, DMU_FLOOR_HEIGHT);
+	mobj->ceilingz = P_GetIntp(mobj->subsector, 
                                DMU_CEILING_HEIGHT);
 	if(z == ONFLOORZ)
 	{
@@ -1401,7 +1401,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 	if(mobj->flags2 & MF2_FLOORCLIP &&
 	   P_GetThingFloorType(mobj) >= FLOOR_LIQUID &&
-	   mobj->z == P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT))
+	   mobj->z == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
 	{
 		mobj->floorclip = 10 * FRACUNIT;
 	}
@@ -1632,7 +1632,7 @@ void P_SpawnMapThing(thing_t * mthing)
 
 	if(mthing->type >= 1400 && mthing->type < 1410)
 	{
-		sector_t* sector = P_GetPtrp(DMU_SUBSECTOR, 
+		sector_t* sector = P_GetPtrp(
             R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS),
             DMU_SECTOR);
         P_XSector(sector)->seqType = mthing->type - 1400;
@@ -2074,7 +2074,7 @@ int P_GetThingFloorType(mobj_t *thing)
 	}
 	else
 	{
-		return (TerrainTypes[P_GetIntp(DMU_SUBSECTOR, thing->subsector, 
+		return (TerrainTypes[P_GetIntp(thing->subsector, 
                                        DMU_FLOOR_TEXTURE)]);
 	}
 }
@@ -2091,7 +2091,7 @@ int P_HitFloor(mobj_t *thing)
     mobj_t *mo;
     int     smallsplash = false;
 
-	if(thing->floorz != P_GetFixedp(DMU_SUBSECTOR, thing->subsector, 
+	if(thing->floorz != P_GetFixedp(thing->subsector, 
                                     DMU_FLOOR_HEIGHT))
 	{							// don't splash if landing on the edge above water/lava/etc....
 		return (FLOOR_SOLID);

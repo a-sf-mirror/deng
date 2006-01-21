@@ -94,7 +94,7 @@ void T_VerticalDoor(vldoor_t * door)
         // DOWN
         res =
             T_MovePlane(door->sector, door->speed,
-                        P_GetFixedp(DMU_SECTOR, door->sector, DMU_FLOOR_HEIGHT),
+                        P_GetFixedp(door->sector, DMU_FLOOR_HEIGHT),
                         false, 1, door->direction);
         if(res == pastdest)
         {
@@ -150,7 +150,7 @@ void T_VerticalDoor(vldoor_t * door)
             case open:
                 xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
-                S_StopSound(0, (mobj_t *) P_GetPtrp(DMU_SECTOR, door->sector,
+                S_StopSound(0, (mobj_t *) P_GetPtrp(door->sector,
                                                     DMU_SOUND_ORIGIN));
                 break;
 
@@ -203,7 +203,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 
         case close30ThenOpen:
             door->topheight =
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT);
             door->direction = -1;
             door->speed = VDOORSPEED;
             S_SectorSound(door->sector, sfx_doropn);
@@ -215,7 +215,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             door->speed = VDOORSPEED * 3;
             if(door->topheight !=
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_doropn);
             break;
 
@@ -226,7 +226,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             door->speed = VDOORSPEED;
             if(door->topheight !=
-                P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+                P_GetFixedp(sec, DMU_CEILING_HEIGHT))
                 S_SectorSound(door->sector, sfx_doropn);
             break;
 
@@ -301,7 +301,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // if the sector has an active thinker, use it
-    sec = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    sec = P_GetPtrp(line, DMU_FRONT_SECTOR);
     xsec = P_XSector(sec);
 
     if(xsec->specialdata)

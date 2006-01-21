@@ -263,11 +263,11 @@ int C_DECL XLTrav_LineAngle(line_t *line, boolean dummy, void *context,
 {
     sector_t* sec = (sector_t *) context;
 
-    if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) != sec &&
-       P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR) != sec)
+    if(P_GetPtrp(line, DMU_FRONT_SECTOR) != sec &&
+       P_GetPtrp(line, DMU_BACK_SECTOR) != sec)
         return true;            // Wrong sector, keep looking.
 
-    *(angle_t *) context2 = P_GetAnglep(DMU_LINE, line, DMU_ANGLE);
+    *(angle_t *) context2 = P_GetAnglep(line, DMU_ANGLE);
 
     return false;               // Stop looking after first hit.
 }
@@ -454,8 +454,8 @@ void XS_PlaneMover(xgplanemover_t * mover)
     byte rgb[3];
     int     res, res2;
     int     dir;
-    int     ceil = P_GetIntp(DMU_SECTOR, mover->sector, DMU_CEILING_HEIGHT);
-    int     floor = P_GetIntp(DMU_SECTOR, mover->sector, DMU_FLOOR_HEIGHT);
+    int     ceil = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
+    int     floor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);
     xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, mover->sector)];
     boolean docrush = (mover->flags & PMF_CRUSH) != 0;
     boolean follows = (mover->flags & PMF_OTHER_FOLLOWS) != 0;
@@ -494,9 +494,9 @@ void XS_PlaneMover(xgplanemover_t * mover)
     if(setorig)
     {
         if(mover->ceiling)
-            xsec->origceiling = P_GetIntp(DMU_SECTOR, mover->sector, DMU_CEILING_HEIGHT);
+            xsec->origceiling = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
         else
-            xsec->origfloor = P_GetIntp(DMU_SECTOR, mover->sector, DMU_FLOOR_HEIGHT);;
+            xsec->origfloor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);;
     }
 
     if(follows)
@@ -510,9 +510,9 @@ void XS_PlaneMover(xgplanemover_t * mover)
         if(setorig)
         {
             if(!mover->ceiling)
-                xsec->origceiling = P_GetIntp(DMU_SECTOR, mover->sector, DMU_CEILING_HEIGHT);
+                xsec->origceiling = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
             else
-                xsec->origfloor = P_GetIntp(DMU_SECTOR, mover->sector, DMU_FLOOR_HEIGHT);
+                xsec->origfloor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);
         }
         if(res2 == crushed)
             res = crushed;
@@ -547,13 +547,13 @@ void XS_PlaneMover(xgplanemover_t * mover)
         {
             // Make sure both the planes are where we started from.
             if((!mover->ceiling || follows) &&
-               P_GetIntp(DMU_SECTOR, mover->sector, DMU_FLOOR_HEIGHT) != floor)
+               P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT) != floor)
             {
                 T_MovePlane(mover->sector, mover->speed, floor, docrush, false,
                             -dir);
             }
             if((mover->ceiling || follows) &&
-               P_GetIntp(DMU_SECTOR, mover->sector, DMU_CEILING_HEIGHT) != ceil)
+               P_GetIntp(mover->sector, DMU_CEILING_HEIGHT) != ceil)
             {
                 T_MovePlane(mover->sector, mover->speed, ceil, docrush, true,
                             -dir);
@@ -612,19 +612,19 @@ void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex, byte rgb[
     {
         for(i = 0; i < 3; i++)
             if(rgb[i])
-                P_SetBytep(DMU_SECTOR, sector, TO_DMU_CEILING_COLOR(i), rgb[i]);
+                P_SetBytep(sector, TO_DMU_CEILING_COLOR(i), rgb[i]);
 
         if(tex)
-            P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE, tex);
+            P_SetIntp(sector, DMU_CEILING_TEXTURE, tex);
     }
     else
     {
         for(i = 0; i < 3; i++)
             if(rgb[i])
-                P_SetBytep(DMU_SECTOR, sector, TO_DMU_FLOOR_COLOR(i), rgb[i]);
+                P_SetBytep(sector, TO_DMU_FLOOR_COLOR(i), rgb[i]);
 
         if(tex)
-            P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE, tex);
+            P_SetIntp(sector, DMU_FLOOR_TEXTURE, tex);
     }
 }
 
@@ -633,7 +633,7 @@ int XS_AdjoiningPlanes(sector_t *sector, boolean ceiling, int *heightlist,
                        int *piclist, int *lightlist, sector_t **sectorlist)
 {
     int     i, count = 0;
-    int     sectorLineCount = P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT);
+    int     sectorLineCount = P_GetIntp(sector, DMU_LINE_COUNT);
     line_t *lin;
     sector_t *other;
 
@@ -641,33 +641,33 @@ int XS_AdjoiningPlanes(sector_t *sector, boolean ceiling, int *heightlist,
     {
         lin = P_GetPtrp(DMU_LINE_OF_SECTOR, sector, i);
         // Only accept two-sided lines.
-        if(P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR))
+        if(P_GetPtrp(lin, DMU_BACK_SECTOR))
             continue;
 
-        if(P_GetPtrp(DMU_LINE, lin, DMU_FRONT_SECTOR) ==
-           P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR))
-            other = P_GetPtrp(DMU_LINE, lin, DMU_BACK_SECTOR);
+        if(P_GetPtrp(lin, DMU_FRONT_SECTOR) ==
+           P_GetPtrp(lin, DMU_BACK_SECTOR))
+            other = P_GetPtrp(lin, DMU_BACK_SECTOR);
         else
-            other = P_GetPtrp(DMU_LINE, lin, DMU_FRONT_SECTOR);
+            other = P_GetPtrp(lin, DMU_FRONT_SECTOR);
 
         if(heightlist)
         {
             if(heightlist[count] == ceiling)
-                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_HEIGHT);
+                P_GetFixedp(other, DMU_CEILING_HEIGHT);
             else
-                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_HEIGHT);
+                P_GetFixedp(other, DMU_FLOOR_HEIGHT);
         }
 
         if(piclist)
         {
             if(piclist[count] == ceiling)
-                P_GetFixedp(DMU_SECTOR, other, DMU_CEILING_TEXTURE);
+                P_GetFixedp(other, DMU_CEILING_TEXTURE);
             else
-                P_GetFixedp(DMU_SECTOR, other, DMU_FLOOR_TEXTURE);
+                P_GetFixedp(other, DMU_FLOOR_TEXTURE);
         }
 
         if(lightlist)
-            lightlist[count] = P_GetFixedp(DMU_SECTOR, other, DMU_LIGHT_LEVEL);
+            lightlist[count] = P_GetFixedp(other, DMU_LIGHT_LEVEL);
 
         if(sectorlist)
             sectorlist[count] = other;
@@ -752,8 +752,8 @@ int XS_TextureHeight(line_t *line, int part)
     side_t *side;
     int     snum = 0;
     int     minfloor, maxfloor, maxceil;
-    sector_t *front = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
-    sector_t *back = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    sector_t *front = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    sector_t *back = P_GetPtrp(line, DMU_BACK_SECTOR);
     boolean twosided = front && back;
 
     if(part != LWS_MID && !twosided)
@@ -761,10 +761,10 @@ int XS_TextureHeight(line_t *line, int part)
 
     if(twosided)
     {
-        int ffloor = P_GetIntp(DMU_SECTOR, front, DMU_FLOOR_HEIGHT);
-        int fceil = P_GetIntp(DMU_SECTOR, front, DMU_CEILING_HEIGHT);
-        int bfloor = P_GetIntp(DMU_SECTOR, back, DMU_FLOOR_HEIGHT);
-        int bceil = P_GetIntp(DMU_SECTOR, back, DMU_CEILING_HEIGHT);
+        int ffloor = P_GetIntp(front, DMU_FLOOR_HEIGHT);
+        int fceil = P_GetIntp(front, DMU_CEILING_HEIGHT);
+        int bfloor = P_GetIntp(back, DMU_FLOOR_HEIGHT);
+        int bceil = P_GetIntp(back, DMU_CEILING_HEIGHT);
 
         minfloor = ffloor;
         maxfloor = bfloor;
@@ -789,7 +789,7 @@ int XS_TextureHeight(line_t *line, int part)
     }
     else
     {
-        if(P_GetPtrp(DMU_LINE, line, DMU_SIDE0))
+        if(P_GetPtrp(line, DMU_SIDE0))
             snum = 0;
         else
             snum = 1;
@@ -797,14 +797,14 @@ int XS_TextureHeight(line_t *line, int part)
 
     // Which side are we working with?
     if(snum == 0)
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE0);
+        side = P_GetPtrp(line, DMU_SIDE0);
     else
-        side = P_GetPtrp(DMU_LINE, line, DMU_SIDE1);
+        side = P_GetPtrp(line, DMU_SIDE1);
 
     // Which section of the wall?
     if(part == LWS_UPPER)
     {
-        int texid = P_GetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE);
+        int texid = P_GetIntp(side, DMU_TOP_TEXTURE);
 
         if(!texid)
             return DDMAXINT;
@@ -813,7 +813,7 @@ int XS_TextureHeight(line_t *line, int part)
     }
     else if(part == LWS_MID)
     {
-        int texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+        int texid = P_GetIntp(side, DMU_MIDDLE_TEXTURE);
 
         if(!texid)
             return DDMAXINT;
@@ -822,7 +822,7 @@ int XS_TextureHeight(line_t *line, int part)
     }
     else if(part == LWS_LOWER)
     {
-        int texid = P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE);
+        int texid = P_GetIntp(side, DMU_MIDDLE_TEXTURE);
 
         if(!texid)
             return DDMAXINT;
@@ -951,9 +951,9 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     }
     // Init the values to the current sector's floor.
     if(height)
-        *height = P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+        *height = P_GetIntp(sector, DMU_FLOOR_HEIGHT);
     if(pic)
-        *pic = P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE);
+        *pic = P_GetIntp(sector, DMU_FLOOR_TEXTURE);
     if(planesector)
         *planesector = sector;
 
@@ -1041,16 +1041,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
             ref == SPREF_LINE_ACT_TAGGED_FLOOR)
         {
             if(height)
-                *height = P_GetIntp(DMU_SECTOR, iter, DMU_FLOOR_HEIGHT);
+                *height = P_GetIntp(iter, DMU_FLOOR_HEIGHT);
             if(pic)
-                *pic = P_GetIntp(DMU_SECTOR, iter, DMU_FLOOR_TEXTURE);
+                *pic = P_GetIntp(iter, DMU_FLOOR_TEXTURE);
         }
         else
         {
             if(height)
-                *height = P_GetIntp(DMU_SECTOR, iter, DMU_CEILING_HEIGHT);
+                *height = P_GetIntp(iter, DMU_CEILING_HEIGHT);
             if(pic)
-                *pic = P_GetIntp(DMU_SECTOR, iter, DMU_CEILING_TEXTURE);
+                *pic = P_GetIntp(iter, DMU_CEILING_TEXTURE);
         }
         return true;
     }
@@ -1062,16 +1062,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(!actline)
             return false;
 
-        frontsector = P_GetPtrp(DMU_LINE, actline, DMU_FRONT_SECTOR);
+        frontsector = P_GetPtrp(actline, DMU_FRONT_SECTOR);
 
         if(!frontsector)
             return false;
 
         // Actline's front floor.
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_HEIGHT);
+            *height = P_GetIntp(frontsector, DMU_FLOOR_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE);
+            *pic = P_GetIntp(frontsector, DMU_FLOOR_TEXTURE);
         if(planesector)
             *planesector = frontsector;
         return true;
@@ -1083,16 +1083,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(!actline)
             return false;
 
-        backsector = P_GetPtrp(DMU_LINE, actline, DMU_BACK_SECTOR);
+        backsector = P_GetPtrp(actline, DMU_BACK_SECTOR);
 
         if(!backsector)
             return false;
 
         // Actline's back floor.
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, backsector, DMU_FLOOR_HEIGHT);
+            *height = P_GetIntp(backsector, DMU_FLOOR_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, backsector, DMU_FLOOR_TEXTURE);
+            *pic = P_GetIntp(backsector, DMU_FLOOR_TEXTURE);
         if(planesector)
             *planesector = backsector;
         return true;
@@ -1104,16 +1104,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(!actline)
             return false;
 
-        frontsector = P_GetPtrp(DMU_LINE, actline, DMU_FRONT_SECTOR);
+        frontsector = P_GetPtrp(actline, DMU_FRONT_SECTOR);
 
         if(!frontsector)
             return false;
 
         // Actline's front ceiling.
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, frontsector, DMU_CEILING_HEIGHT);
+            *height = P_GetIntp(frontsector, DMU_CEILING_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, frontsector, DMU_CEILING_TEXTURE);
+            *pic = P_GetIntp(frontsector, DMU_CEILING_TEXTURE);
         if(planesector)
             *planesector = frontsector;
         return true;
@@ -1125,16 +1125,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(!actline)
             return false;
 
-        backsector = P_GetPtrp(DMU_LINE, actline, DMU_BACK_SECTOR);
+        backsector = P_GetPtrp(actline, DMU_BACK_SECTOR);
 
         if(!backsector)
             return false;
 
         // Actline's back ceiling.
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, backsector, DMU_CEILING_HEIGHT);
+            *height = P_GetIntp(backsector, DMU_CEILING_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, backsector, DMU_CEILING_TEXTURE);
+            *pic = P_GetIntp(backsector, DMU_CEILING_TEXTURE);
         if(planesector)
             *planesector = backsector;
         return true;
@@ -1144,7 +1144,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(height)
             *height = xsectors[P_ToIndex(DMU_SECTOR, sector)].origfloor;
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE);
+            *pic = P_GetIntp(sector, DMU_FLOOR_TEXTURE);
         return true;
     }
     if(ref == SPREF_ORIGINAL_CEILING)
@@ -1152,23 +1152,23 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         if(height)
             *height = xsectors[P_ToIndex(DMU_SECTOR, sector)].origceiling;
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE);
+            *pic = P_GetIntp(sector, DMU_CEILING_TEXTURE);
         return true;
     }
     if(ref == SPREF_CURRENT_FLOOR)
     {
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+            *height = P_GetIntp(sector, DMU_FLOOR_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE);
+            *pic = P_GetIntp(sector, DMU_FLOOR_TEXTURE);
         return true;
     }
     if(ref == SPREF_CURRENT_CEILING)
     {
         if(height)
-            *height = P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
+            *height = P_GetIntp(sector, DMU_CEILING_HEIGHT);
         if(pic)
-            *pic = P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE);
+            *pic = P_GetIntp(sector, DMU_CEILING_TEXTURE);
         return true;
     }
     // Texture targets?
@@ -1187,7 +1187,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
         // Get the heights of the sector's textures.
         // The heights are in real world coordinates.
-        for(i = 0, k = 0; i < P_GetIntp(DMU_SECTOR, sector, DMU_LINE_COUNT); i++)
+        for(i = 0, k = 0; i < P_GetIntp(sector, DMU_LINE_COUNT); i++)
         {
             k = XS_TextureHeight(P_GetPtrp(DMU_LINE_OF_SECTOR, sector, k), part);
             if(k != DDMAXINT)
@@ -1218,11 +1218,11 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     if(!num)
     {
         // Add self.
-        heights[0] = ceiling ? P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT) :
-                               P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+        heights[0] = ceiling ? P_GetIntp(sector, DMU_CEILING_HEIGHT) :
+                               P_GetIntp(sector, DMU_FLOOR_HEIGHT);
 
-        pics[0] = ceiling ? P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE) :
-                            P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE);
+        pics[0] = ceiling ? P_GetIntp(sector, DMU_CEILING_TEXTURE) :
+                            P_GetIntp(sector, DMU_FLOOR_TEXTURE);
         sectorlist[0] = sector;
         num = 1;
     }
@@ -1235,16 +1235,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         i = FindMinOf(heights, num);
 
     if(ref == SPREF_NEXT_HIGHEST_CEILING)
-        i = FindNextOf(heights, num, P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT));
+        i = FindNextOf(heights, num, P_GetIntp(sector, DMU_CEILING_HEIGHT));
 
     if(ref == SPREF_NEXT_HIGHEST_FLOOR)
-        i = FindNextOf(heights, num, P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT));
+        i = FindNextOf(heights, num, P_GetIntp(sector, DMU_FLOOR_HEIGHT));
 
     if(ref == SPREF_NEXT_LOWEST_CEILING)
-        i = FindPrevOf(heights, num, P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT));
+        i = FindPrevOf(heights, num, P_GetIntp(sector, DMU_CEILING_HEIGHT));
 
     if(ref == SPREF_NEXT_LOWEST_FLOOR)
-        i = FindPrevOf(heights, num, P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT));
+        i = FindPrevOf(heights, num, P_GetIntp(sector, DMU_FLOOR_HEIGHT));
 
     // The requested plane was not found.
     if(i == -1)
@@ -1444,8 +1444,8 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 
     // Setup the mover.
     if(!stepcount)
-        firstheight = ceiling ? P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT) :
-                                P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+        firstheight = ceiling ? P_GetIntp(sector, DMU_CEILING_HEIGHT) :
+                                P_GetIntp(sector, DMU_FLOOR_HEIGHT);
 
     mover->destination =
         firstheight + (stepcount + 1) * info->fparm[1] * FRACUNIT;
@@ -1507,8 +1507,8 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
     // i2: (true/false) stop when texture changes
     // i3: (true/false) spread build?
 
-    mypic = ceiling ? P_GetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE) :
-                      P_GetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE);
+    mypic = ceiling ? P_GetIntp(sector, DMU_CEILING_TEXTURE) :
+                      P_GetIntp(sector, DMU_FLOOR_TEXTURE);
 
     // Apply to first step.
     XS_DoBuild(sector, ceiling, origin, info, stepcount);
@@ -1539,15 +1539,15 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
             // Any 2-sided lines facing the right way?
             sec = P_ToPtr(DMU_SECTOR, i);
 
-            for(k = 0; k < P_GetIntp(DMU_SECTOR, sec, DMU_LINE_COUNT); k++)
+            for(k = 0; k < P_GetIntp(sec, DMU_LINE_COUNT); k++)
             {
                 line = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
 
-                if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) ||
-                   P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR))
+                if(P_GetPtrp(line, DMU_FRONT_SECTOR) ||
+                   P_GetPtrp(line, DMU_BACK_SECTOR))
                     continue;
 
-                if(P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR) !=
+                if(P_GetPtrp(line, DMU_FRONT_SECTOR) !=
                    P_ToPtr(DMU_SECTOR, i))
                     continue;
 
@@ -1556,13 +1556,13 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
                     // Planepic must match.
                     if(ceiling)
                     {
-                        if(P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_TEXTURE) !=
+                        if(P_GetIntp(sec, DMU_CEILING_TEXTURE) !=
                            mypic)
                             continue;
                     }
                     else
                     {
-                        if(P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE) !=
+                        if(P_GetIntp(sec, DMU_FLOOR_TEXTURE) !=
                            mypic)
                             continue;
                     }
@@ -1570,7 +1570,7 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
 
                 // Don't spread to sectors which have already spreaded.
                 if(builder[P_ToIndex(DMU_SECTOR,
-                                     P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR))]
+                                     P_GetPtrp(line, DMU_BACK_SECTOR))]
                    & BL_SPREADED)
                     continue;
 
@@ -1578,7 +1578,7 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
                 found = true;
                 if(spread)
                 {
-                    XS_DoBuild(P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR), ceiling,
+                    XS_DoBuild(P_GetPtrp(line, DMU_BACK_SECTOR), ceiling,
                                origin, info, stepcount);
                 }
                 else
@@ -1655,12 +1655,12 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
     line_t *line = (line_t *) context;
     linetype_t *info = context2;
     int     num, levels[MAX_VALS], i = 0;
-    int     uselevel = P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    int     uselevel = P_GetIntp(sector, DMU_LIGHT_LEVEL);
     sector_t *frontsector, *backsector;
     byte    usergb[3];
 
-    frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
-    backsector = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+    frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
 
     // i2: (true/false) set level
     // i3: (true/false) set RGB
@@ -1680,12 +1680,12 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
             break;
 
         case LIGHTREF_MY:
-            uselevel = P_GetIntp(DMU_SECTOR, frontsector, DMU_LIGHT_LEVEL);
+            uselevel = P_GetIntp(frontsector, DMU_LIGHT_LEVEL);
             break;
 
         case LIGHTREF_BACK:
             if(backsector)
-                uselevel = P_GetIntp(DMU_SECTOR, backsector, DMU_LIGHT_LEVEL);
+                uselevel = P_GetIntp(backsector, DMU_LIGHT_LEVEL);
             break;
 
         case LIGHTREF_ORIGINAL:
@@ -1739,7 +1739,7 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
             uselevel = 255;
 
         // Set the value.
-        P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, uselevel);
+        P_SetIntp(sector, DMU_LIGHT_LEVEL, uselevel);
     }
 
     if(info->iparm[3])
@@ -1748,17 +1748,17 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
         {
         case LIGHTREF_MY:
             {
-            sector_t* sector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+            sector_t* sector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
-            P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, usergb);
+            P_GetBytepv(sector, DMU_COLOR, usergb);
             break;
             }
         case LIGHTREF_BACK:
             {
-            sector_t* sector = P_GetPtrp(DMU_LINE, line, DMU_BACK_SECTOR);
+            sector_t* sector = P_GetPtrp(line, DMU_BACK_SECTOR);
 
             if(sector)
-                P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, usergb);
+                P_GetBytepv(sector, DMU_COLOR, usergb);
             break;
             }
         case LIGHTREF_ORIGINAL:
@@ -1777,7 +1777,7 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
                 i = 0;
             if(i > 255)
                 i = 255;
-            P_SetBytep(DMU_SECTOR, sector, TO_DMU_COLOR(num), i);
+            P_SetBytep(sector, TO_DMU_COLOR(num), i);
         }
     }
 
@@ -1831,42 +1831,42 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
            P_ToIndex(DMU_SECTOR, sector), P_ToIndex(DMU_SECTOR, from));
 
     // Copy the properties of the target sector.
-    P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
-              P_GetIntp(DMU_SECTOR, from, DMU_LIGHT_LEVEL));
+    P_SetIntp(sector, DMU_LIGHT_LEVEL,
+              P_GetIntp(from, DMU_LIGHT_LEVEL));
 
-    P_GetBytepv(DMU_SECTOR, from, DMU_COLOR, tmprgb);
-    P_SetBytepv(DMU_SECTOR, sector, DMU_COLOR, tmprgb);
+    P_GetBytepv(from, DMU_COLOR, tmprgb);
+    P_SetBytepv(sector, DMU_COLOR, tmprgb);
 
-    P_GetBytepv(DMU_SECTOR, from, DMU_FLOOR_COLOR, tmprgb);
-    P_SetBytepv(DMU_SECTOR, sector, DMU_FLOOR_COLOR, tmprgb);
+    P_GetBytepv(from, DMU_FLOOR_COLOR, tmprgb);
+    P_SetBytepv(sector, DMU_FLOOR_COLOR, tmprgb);
 
-    P_GetBytepv(DMU_SECTOR, from, DMU_CEILING_COLOR, tmprgb);
-    P_SetBytepv(DMU_SECTOR, sector, DMU_CEILING_COLOR, tmprgb);
+    P_GetBytepv(from, DMU_CEILING_COLOR, tmprgb);
+    P_SetBytepv(sector, DMU_CEILING_COLOR, tmprgb);
 
 #ifdef TODO_MAP_UPDATE
     memcpy(sector->reverb, from->reverb, sizeof(from->reverb));
     memcpy(sector->planes, from->planes, sizeof(from->planes));
 #endif
 
-    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE,
-              P_GetIntp(DMU_SECTOR, from, DMU_CEILING_TEXTURE));
-    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE,
-              P_GetIntp(DMU_SECTOR, from, DMU_FLOOR_TEXTURE));
+    P_SetIntp(sector, DMU_CEILING_TEXTURE,
+              P_GetIntp(from, DMU_CEILING_TEXTURE));
+    P_SetIntp(sector, DMU_FLOOR_TEXTURE,
+              P_GetIntp(from, DMU_FLOOR_TEXTURE));
 
-    P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT,
-              P_GetIntp(DMU_SECTOR, from, DMU_CEILING_HEIGHT));
-    P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT,
-              P_GetIntp(DMU_SECTOR, from, DMU_FLOOR_HEIGHT));
+    P_SetIntp(sector, DMU_CEILING_HEIGHT,
+              P_GetIntp(from, DMU_CEILING_HEIGHT));
+    P_SetIntp(sector, DMU_FLOOR_HEIGHT,
+              P_GetIntp(from, DMU_FLOOR_HEIGHT));
 
-    P_SetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_X,
-              P_GetFloatp(DMU_SECTOR, from, DMU_FLOOR_OFFSET_X));
-    P_SetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_Y,
-              P_GetFloatp(DMU_SECTOR, from, DMU_FLOOR_OFFSET_Y));
+    P_SetFloatp(sector, DMU_FLOOR_OFFSET_X,
+              P_GetFloatp(from, DMU_FLOOR_OFFSET_X));
+    P_SetFloatp(sector, DMU_FLOOR_OFFSET_Y,
+              P_GetFloatp(from, DMU_FLOOR_OFFSET_Y));
 
-    P_SetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_X,
-              P_GetFloatp(DMU_SECTOR, from, DMU_CEILING_OFFSET_X));
-    P_SetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_Y,
-              P_GetFloatp(DMU_SECTOR, from, DMU_CEILING_OFFSET_Y));
+    P_SetFloatp(sector, DMU_CEILING_OFFSET_X,
+              P_GetFloatp(from, DMU_CEILING_OFFSET_X));
+    P_SetFloatp(sector, DMU_CEILING_OFFSET_Y,
+              P_GetFloatp(from, DMU_CEILING_OFFSET_Y));
 
     P_ChangeSector(sector, false);
 
@@ -1914,7 +1914,7 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
 
         mo = (mobj_t *) thinker;
         // wrong sector
-        if(sector != P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR))
+        if(sector != P_GetPtrp(mo->subsector, DMU_SECTOR))
             continue;
 
         // not a teleportman
@@ -2267,7 +2267,7 @@ void XS_UpdatePlanes(sector_t *sec)
     if(UPDFUNC(fn))             // Changed?
     {
         // How much change?
-        i = FRACUNIT * fn->value - P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+        i = FRACUNIT * fn->value - P_GetIntp(sec, DMU_FLOOR_HEIGHT);
         if(i)
             // Move the floor plane accordingly.
             T_MovePlane(sec, abs(i), FRACUNIT * fn->value, docrush, 0,
@@ -2279,7 +2279,7 @@ void XS_UpdatePlanes(sector_t *sec)
     if(UPDFUNC(fn))             // Changed?
     {
         // How different?
-        i = FRACUNIT * fn->value - P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+        i = FRACUNIT * fn->value - P_GetIntp(sec, DMU_CEILING_HEIGHT);
         if(i)
             // Move the ceiling accordingly.
             T_MovePlane(sec, abs(i), FRACUNIT * fn->value, docrush, 1,
@@ -2307,7 +2307,7 @@ void XS_UpdateLight(sector_t *sec)
         if(lightlevel > 255)
             lightlevel = 255;
 
-        P_SetIntp(DMU_SECTOR, sec, DMU_LIGHT_LEVEL, lightlevel);
+        P_SetIntp(sec, DMU_LIGHT_LEVEL, lightlevel);
     }
 
     // Red, green and blue.
@@ -2321,7 +2321,7 @@ void XS_UpdateLight(sector_t *sec)
             c = 0;
         if(c > 255)
             c = 255;
-        P_SetBytep(DMU_SECTOR, sec, TO_DMU_COLOR(i), c);
+        P_SetBytep(sec, TO_DMU_COLOR(i), c);
     }
 }
 
@@ -2454,13 +2454,13 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
     {
     case XSCE_FLOOR:
         // Is it touching the floor?
-        if(mo->z > P_GetIntp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT))
+        if(mo->z > P_GetIntp(sec, DMU_FLOOR_HEIGHT))
             return true;
         break;
 
     case XSCE_CEILING:
         // Is it touching the ceiling?
-        if(mo->z + mo->height < P_GetIntp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT))
+        if(mo->z + mo->height < P_GetIntp(sec, DMU_CEILING_HEIGHT))
             return true;
         break;
 
@@ -2534,7 +2534,7 @@ int XS_TraverseMobjs(sector_t *sec, int data,
         mo = (mobj_t *) thinker;
 
         // wrong sector
-        if(sec != P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR))
+        if(sec != P_GetPtrp(mo->subsector, DMU_SECTOR))
             continue;
 
         if(!func(sec, mo, data))
@@ -2644,26 +2644,26 @@ void XS_Think(sector_t *sector)
     // Floor Texture movement
     ang = PI * xg->info.texmove_angle[0] / 180;
     // Get current values
-    flooroffx = P_GetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_X);
-    flooroffy = P_GetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_Y);
+    flooroffx = P_GetFloatp(sector, DMU_FLOOR_OFFSET_X);
+    flooroffy = P_GetFloatp(sector, DMU_FLOOR_OFFSET_Y);
     // Apply the offsets
     flooroffx -= cos(ang) * xg->info.texmove_speed[0];
     flooroffy -= sin(ang) * xg->info.texmove_speed[0];
     // Set the results
-    P_SetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_X, flooroffx);
-    P_SetFloatp(DMU_SECTOR, sector, DMU_FLOOR_OFFSET_Y, flooroffy);
+    P_SetFloatp(sector, DMU_FLOOR_OFFSET_X, flooroffx);
+    P_SetFloatp(sector, DMU_FLOOR_OFFSET_Y, flooroffy);
 
     // Ceiling Texture movement
     ang = PI * xg->info.texmove_angle[1] / 180;
     // Get current values
-    ceiloffx = P_GetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_X);
-    ceiloffy = P_GetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_Y);
+    ceiloffx = P_GetFloatp(sector, DMU_CEILING_OFFSET_X);
+    ceiloffy = P_GetFloatp(sector, DMU_CEILING_OFFSET_Y);
     // Apply the offsets
     ceiloffx -= cos(ang) * xg->info.texmove_speed[1];
     ceiloffy -= sin(ang) * xg->info.texmove_speed[1];
     // Set the results
-    P_SetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_X, ceiloffx);
-    P_SetFloatp(DMU_SECTOR, sector, DMU_CEILING_OFFSET_Y, ceiloffy);
+    P_SetFloatp(sector, DMU_CEILING_OFFSET_X, ceiloffx);
+    P_SetFloatp(sector, DMU_CEILING_OFFSET_Y, ceiloffy);
 
     // Wind for all sectorlinked mobjs.
     if(xg->info.wind_speed || xg->info.vertical_wind)
@@ -2774,8 +2774,8 @@ DEFCC(CCmdMovePlane)
     fixed_t floorheight, ceilingheight;
     xgplanemover_t *mover;
 
-    floorheight = P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
-    ceilingheight = P_GetFixedp(DMU_SECTOR, sector, DMU_CEILING_HEIGHT);
+    floorheight = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
+    ceilingheight = P_GetFixedp(sector, DMU_CEILING_HEIGHT);
 
     if(argc < 2)
     {

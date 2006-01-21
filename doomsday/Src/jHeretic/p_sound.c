@@ -63,7 +63,7 @@ void S_LevelMusic(void)
  */
 void S_SectorSound(sector_t *sec, int id)
 {
-    mobj_t *origin = (mobj_t *) P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN);
+    mobj_t *origin = (mobj_t *) P_GetPtrp(sec, DMU_SOUND_ORIGIN);
 
     S_StopSound(0, origin);
     S_StartSound(id, origin);

@@ -201,9 +201,9 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
         {
         case fastCrushAndRaise:
             ceiling->crush = true;
-            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+            ceiling->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
             ceiling->bottomheight =
-                P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) + (8 * FRACUNIT);
+                P_GetFixedp(sec, DMU_FLOOR_HEIGHT) + (8 * FRACUNIT);
 
             ceiling->direction = -1;
             ceiling->speed = CEILSPEED * 2;
@@ -212,10 +212,10 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
         case silentCrushAndRaise:
         case crushAndRaise:
             ceiling->crush = true;
-            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+            ceiling->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
         case lowerAndCrush:
         case lowerToFloor:
-            ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+            ceiling->bottomheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
             if(type != lowerToFloor)
                 ceiling->bottomheight += 8 * FRACUNIT;
             ceiling->direction = -1;

@@ -83,7 +83,7 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing)
                 if(m->type != MT_TELEPORTMAN)
                     continue;
 
-                sector = P_GetPtrp(DMU_SUBSECTOR, m->subsector, DMU_SECTOR);
+                sector = P_GetPtrp(m->subsector, DMU_SECTOR);
                 // wrong sector
                 if(P_ToIndex(DMU_SECTOR, sector) != i)
                     continue;

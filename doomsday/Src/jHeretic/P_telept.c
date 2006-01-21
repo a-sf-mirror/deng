@@ -9,7 +9,7 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 {
     subsector_t *ss = R_PointInSubsector(x, y);
 
-    return P_SpawnMobj(x, y, P_GetFixedp(DMU_SUBSECTOR, ss,DMU_FLOOR_HEIGHT) +
+    return P_SpawnMobj(x, y, P_GetFixedp(ss,DMU_FLOOR_HEIGHT) +
                              TELEFOGHEIGHT, MT_TFOG);
 }
 
@@ -151,7 +151,7 @@ boolean EV_Teleport(line_t *line, int side, mobj_t *thing)
                 if(m->type != MT_TELEPORTMAN)
                     continue;
 
-                sector = P_GetPtrp(DMU_SUBSECTOR, m->subsector, DMU_SECTOR);
+                sector = P_GetPtrp(m->subsector, DMU_SECTOR);
                 // wrong sector
                 if(P_ToIndex(DMU_SECTOR, sector) != i)
                     continue;

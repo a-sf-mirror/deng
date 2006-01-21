@@ -141,17 +141,17 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
         {
         case CLEV_CRUSHRAISEANDSTAY:
             ceiling->crush = arg[2];    // arg[2] = crushing value
-            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
-            ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT) +
+            ceiling->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
+            ceiling->bottomheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT) +
                 (8 * FRACUNIT);
             ceiling->direction = -1;
             break;
         case CLEV_CRUSHANDRAISE:
-            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT);
+            ceiling->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
         case CLEV_LOWERANDCRUSH:
             ceiling->crush = arg[2];    // arg[2] = crushing value
         case CLEV_LOWERTOFLOOR:
-            ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_FLOOR_HEIGHT);
+            ceiling->bottomheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
             if(type != CLEV_LOWERTOFLOOR)
             {
                 ceiling->bottomheight += 8 * FRACUNIT;
@@ -163,12 +163,12 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
             ceiling->direction = 1;
             break;
         case CLEV_LOWERBYVALUE:
-            ceiling->bottomheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) -
+            ceiling->bottomheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT) -
                 arg[2] * FRACUNIT;
             ceiling->direction = -1;
             break;
         case CLEV_RAISEBYVALUE:
-            ceiling->topheight = P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) +
+            ceiling->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT) +
                 arg[2] * FRACUNIT;
             ceiling->direction = 1;
             break;
@@ -180,16 +180,16 @@ int EV_DoCeiling(line_t *line, byte *arg, ceiling_e type)
                 {
                     destHeight = -destHeight;
                 }
-                if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) <= destHeight)
+                if(P_GetFixedp(sec, DMU_CEILING_HEIGHT) <= destHeight)
                 {
                     ceiling->direction = 1;
                     ceiling->topheight = destHeight;
-                    if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) == destHeight)
+                    if(P_GetFixedp(sec, DMU_CEILING_HEIGHT) == destHeight)
                     {
                         rtn = 0;
                     }
                 }
-                else if(P_GetFixedp(DMU_SECTOR, sec, DMU_CEILING_HEIGHT) > destHeight)
+                else if(P_GetFixedp(sec, DMU_CEILING_HEIGHT) > destHeight)
                 {
                     ceiling->direction = -1;
                     ceiling->bottomheight = destHeight;

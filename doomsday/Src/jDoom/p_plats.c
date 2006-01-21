@@ -117,7 +117,7 @@ void T_PlatRaise(plat_t * plat)
     case waiting:
         if(!--plat->count)
         {
-            if(P_GetFixedp(DMU_SECTOR, plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
+            if(P_GetFixedp(plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
                 plat->status = up;
             else
                 plat->status = down;
@@ -142,7 +142,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
     int     rtn;
     fixed_t floorheight;
     sector_t *sec;
-    sector_t*   frontsector = P_GetPtrp(DMU_LINE, line, DMU_FRONT_SECTOR);
+    sector_t*   frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
     secnum = -1;
     rtn = 0;
@@ -186,8 +186,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
         case raiseToNearestAndChange:
             plat->speed = PLATSPEED / 2;
 
-            P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
-                      P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
+            P_SetIntp(sec, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(frontsector, DMU_FLOOR_TEXTURE));
 
             plat->high = P_FindNextHighestFloor(sec, floorheight);
 
@@ -202,8 +202,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
         case raiseAndChange:
             plat->speed = PLATSPEED / 2;
 
-            P_SetIntp(DMU_SECTOR, sec, DMU_FLOOR_TEXTURE,
-                      P_GetIntp(DMU_SECTOR, frontsector, DMU_FLOOR_TEXTURE));
+            P_SetIntp(sec, DMU_FLOOR_TEXTURE,
+                      P_GetIntp(frontsector, DMU_FLOOR_TEXTURE));
 
             plat->high = floorheight + amount * FRACUNIT;
             plat->wait = 0;

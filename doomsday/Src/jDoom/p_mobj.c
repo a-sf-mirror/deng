@@ -140,7 +140,7 @@ void P_ExplodeMissile(mobj_t *mo)
 // Returns the ground friction factor for the mobj.
 fixed_t P_GetMobjFriction(mobj_t *mo)
 {
-    return XS_Friction(P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR));
+    return XS_Friction(P_GetPtrp(mo->subsector, DMU_SECTOR));
 }
 
 void P_XYMovement(mobj_t *mo)
@@ -218,12 +218,12 @@ void P_XYMovement(mobj_t *mo)
             }
             else if(mo->flags & MF_MISSILE)
             {
-                backsector = P_GetPtrp(DMU_LINE, ceilingline, DMU_BACK_SECTOR);
+                backsector = P_GetPtrp(ceilingline, DMU_BACK_SECTOR);
                 if(backsector)
                 {
                     // explode a missile?
                     if(ceilingline &&
-                       P_GetIntp(DMU_SECTOR, backsector,
+                       P_GetIntp(backsector,
                                  DMU_CEILING_TEXTURE) == skyflatnum)
                     {
                         // Hack to prevent missiles exploding
@@ -267,7 +267,7 @@ void P_XYMovement(mobj_t *mo)
                mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
             {
                 if(mo->floorz !=
-                   P_GetFixedp(DMU_SUBSECTOR, mo->subsector, DMU_FLOOR_HEIGHT))
+                   P_GetFixedp(mo->subsector, DMU_FLOOR_HEIGHT))
                     return;
             }
         }
@@ -305,7 +305,7 @@ static boolean PIT_Splash(sector_t *sector, void *data)
     mobj_t *mo = data;
     fixed_t floorheight;
 
-    floorheight = P_GetFixedp(DMU_SECTOR, sector, DMU_FLOOR_HEIGHT);
+    floorheight = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
 
     // Is the mobj touching the floor of this sector?
     if(mo->z < floorheight &&
@@ -329,7 +329,7 @@ void P_ZMovement(mobj_t *mo)
     fixed_t dist;
     fixed_t delta;
 
-    gravity = XS_Gravity(P_GetPtrp(DMU_SUBSECTOR, mo->subsector, DMU_SECTOR));
+    gravity = XS_Gravity(P_GetPtrp(mo->subsector, DMU_SECTOR));
 
     // $democam: cameramen get special z movement
     if(P_CameraZMovement(mo))
@@ -500,7 +500,7 @@ void P_ZMovement(mobj_t *mo)
 
         if((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
-            if(P_GetIntp(DMU_SUBSECTOR, mo->subsector,
+            if(P_GetIntp(mo->subsector,
                          DMU_CEILING_TEXTURE) == skyflatnum)
             {
                 // Don't explode against sky.
@@ -534,7 +534,7 @@ void P_NightmareRespawn(mobj_t *mobj)
     // spawn a teleport fog at old spot
     // because of removal of the body?
     mo = P_SpawnMobj(mobj->x, mobj->y,
-                     P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
+                     P_GetFixedp(mobj->subsector,
                                  DMU_FLOOR_HEIGHT),
                      MT_TFOG);
     // initiate teleport sound
@@ -544,7 +544,7 @@ void P_NightmareRespawn(mobj_t *mobj)
     ss = R_PointInSubsector(x, y);
 
     mo = P_SpawnMobj(x, y,
-                     P_GetFixedp(DMU_SUBSECTOR, ss, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(ss, DMU_FLOOR_HEIGHT),
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
@@ -589,10 +589,10 @@ void P_MobjThinker(mobj_t *mobj)
     if(mobj->type == MT_LIGHTSOURCE)
     {
         if(mobj->movedir > 0)
-            mobj->z = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
+            mobj->z = P_GetFixedp(mobj->subsector,
                                   DMU_FLOOR_HEIGHT) + mobj->movedir;
         else
-            mobj->z = P_GetFixedp(DMU_SUBSECTOR, mobj->subsector,
+            mobj->z = P_GetFixedp(mobj->subsector,
                                   DMU_CEILING_HEIGHT) + mobj->movedir;
         return;
     }
@@ -773,10 +773,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     mobj->dropoffz =            //killough $dropoff_fix
         mobj->floorz =
-            P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_FLOOR_HEIGHT);
+            P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
 
     mobj->ceilingz =
-        P_GetFixedp(DMU_SUBSECTOR, mobj->subsector, DMU_CEILING_HEIGHT);
+        P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 
     if(z == ONFLOORZ)
         mobj->z = mobj->floorz;
@@ -845,7 +845,7 @@ void P_RespawnSpecials(void)
     ss = R_PointInSubsector(x, y);
 
     mo = P_SpawnMobj(x, y,
-                     P_GetFixedp(DMU_SUBSECTOR, ss, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(ss, DMU_FLOOR_HEIGHT),
                      MT_IFOG);
 
     S_StartSound(sfx_itmbk, mo);
@@ -874,7 +874,7 @@ void P_RespawnSpecials(void)
 mobj_t *P_SpawnTeleFog(int x, int y)
 {
     return P_SpawnMobj(x, y,
-                       P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y),
+                       P_GetFixedp(R_PointInSubsector(x, y),
                                    DMU_FLOOR_HEIGHT),
                        MT_TFOG);
 }
