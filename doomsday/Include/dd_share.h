@@ -522,7 +522,8 @@ extern          "C" {
     enum /* do not change the order */
     {
         DMU_ALL = -1,
-
+        DMU_NONE = 0,
+        
         DMU_VERTEX = 1,
         DMU_SEG,
         DMU_LINE,
