@@ -117,9 +117,18 @@ typedef enum // Value types.
 
 extern const valuetype_t propertyTypes[];
 
+// Runtime map data objects, such as vertices, sectors, and subsectors all
+// have this header as their first member. This makes it possible to treat
+// an unknown map data pointer as a runtime_mapdata_header_t* and determine
+// its type. Note that this information is internal to the engine.
+typedef struct runtime_mapdata_header_s {
+    int             type;       // One of the DMU type constants.
+} runtime_mapdata_header_t;
+
 struct line_s;
 
 typedef struct vertex_s {
+    runtime_mapdata_header_t header;
     fixed_t         x;
     fixed_t         y;
 } vertex_t;
@@ -130,6 +139,7 @@ typedef struct fvertex_s {
 } fvertex_t;
 
 typedef struct seg_s {
+    runtime_mapdata_header_t header;
     vertex_t       *v1, *v2;
     float           length;    // Accurate length of the segment (v1 -> v2).
     fixed_t         offset;
@@ -142,6 +152,7 @@ typedef struct seg_s {
 } seg_t;
 
 typedef struct subsector_s {
+    runtime_mapdata_header_t header;
     struct sector_s *sector;
     int             linecount;
     int             firstline;
@@ -168,6 +179,7 @@ enum {
 };
 
 typedef struct sector_s {
+    runtime_mapdata_header_t header;
     fixed_t         floorheight, ceilingheight;
     short           floorpic, ceilingpic;
     short           lightlevel;
@@ -193,6 +205,7 @@ typedef struct sector_s {
 } sector_t;
 
 typedef struct side_s {
+    runtime_mapdata_header_t header;
     fixed_t         textureoffset; // add this to the calculated texture col
     fixed_t         rowoffset;     // add this to the calculated texture top
     short           toptexture, bottomtexture, midtexture;
@@ -203,6 +216,7 @@ typedef struct side_s {
 } side_t;
 
 typedef struct line_s {
+    runtime_mapdata_header_t header;
     vertex_t       *v1;
     vertex_t       *v2;
     short           flags;
@@ -217,6 +231,7 @@ typedef struct line_s {
 } line_t;
 
 typedef struct polyobj_s {
+    runtime_mapdata_header_t header;
     int             numsegs;
     seg_t         **segs;
     int             validcount;
@@ -241,6 +256,7 @@ typedef struct polyobj_s {
    } subsector_t; */
 
 typedef struct {
+    runtime_mapdata_header_t header;
     fixed_t         x, y, dx, dy;  // partition line
     fixed_t         bbox[2][4];    // bounding box for each child
     int             children[2];   // if NF_SUBSECTOR its a subsector

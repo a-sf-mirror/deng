@@ -519,8 +519,15 @@ extern          "C" {
     //------------------------------------------------------------------------
 
     // Map Update constants.
-    enum /* do not change the order */
+    enum /* do not change the numerical values of the constants */
     {
+        // Flags. OR'ed with a DMU property constant. The most significant byte
+        // is used for the flags.
+        DMU_FLAG_MASK           = 0xff000000,
+        DMU_LINE_OF_SECTOR      = 0x80000000,
+        DMU_SECTOR_OF_SUBSECTOR = 0x40000000,
+        DMU_SEG_OF_POLYOBJ      = 0x20000000,
+        
         DMU_ALL = -1,
         DMU_NONE = 0,
         
@@ -542,9 +549,9 @@ extern          "C" {
         DMU_LINE_BY_ACT_TAG,
         DMU_SECTOR_BY_ACT_TAG,
 
-        DMU_LINE_OF_SECTOR, // used with pointer functions; prop = line index
-        DMU_SECTOR_OF_SUBSECTOR,
-        DMU_SEG_OF_POLYOBJ, // used with pointer functions; prop = seg index
+        DMU_UNUSED1,
+        DMU_UNUSED2,
+        DMU_UNUSED3,
 
         DMU_X,
         DMU_Y,

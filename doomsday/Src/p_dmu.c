@@ -43,6 +43,7 @@ typedef struct dummyline_s {
 typedef struct setargs_s {
     int type;
     int prop;
+    int modifiers;              // Property modifiers (e.g., line of sector)
     valuetype_t valueType;
     boolean* booleanValues;
     byte* byteValues;
@@ -175,11 +176,47 @@ static const char* DMU_Str(int prop)
     return propStr;
 }
 
-static void InitArgs(setargs_t* args, valuetype_t type, int prop)
+/*
+ * Determines the type of the map data object.
+ *
+ * @param ptr  Pointer to a map data object.
+ */
+static int DMU_GetType(void* ptr)
+{
+    int type = ((runtime_mapdata_header_t*)ptr)->type;
+    
+    // Make sure it's valid.
+    switch(type)
+    {
+        case DMU_VERTEX:
+        case DMU_SEG:
+        case DMU_LINE:
+        case DMU_SIDE:
+        case DMU_SUBSECTOR:
+        case DMU_SECTOR:
+        case DMU_POLYOBJ:
+        case DMU_NODE:
+            return type;
+            
+        default:
+            // Unknown.
+            break;
+    }
+    return DMU_NONE;
+}
+
+/*
+ * Initializes a setargs struct. 
+ *
+ * @param type  Type of the map data object (e.g., DMU_LINE).
+ * @param prop  Property of the map data object.
+ */
+static void InitArgs(setargs_t* args, int type, int prop)
 {
     memset(args, 0, sizeof(*args));
     args->type = type;
-    args->prop = prop;
+    args->prop = prop & ~DMU_FLAG_MASK;
+    args->modifiers = prop & DMU_FLAG_MASK;
 }
 
 /*
@@ -250,7 +287,9 @@ void P_FreeDummy(void* dummy)
 }
 
 /*
- * Determines the type of a dummy object.
+ * Determines the type of a dummy object. For extra safety (in a debug build)
+ * it would be possible to look through the dummy arrays as make sure the
+ * pointer refers to a real dummy.
  */
 int P_DummyType(void* dummy)
 {
@@ -292,13 +331,10 @@ void* P_DummyExtraData(void* dummy)
 
 /*
  * Convert pointer to index.
- *
- * TODO: Think of a way to enforce type checks. At the moment it's a bit too
- *       easy to convert to the wrong kind of object.
  */
-int P_ToIndex(int type, void* ptr)
+int P_ToIndex(void* ptr)
 {
-    switch(type)
+    switch(DMU_GetType(ptr))
     {
     case DMU_VERTEX:
         return GET_VERTEX_IDX(ptr);
@@ -318,9 +354,6 @@ int P_ToIndex(int type, void* ptr)
     case DMU_SECTOR:
         return GET_SECTOR_IDX(ptr);
 
-    case DMU_SECTOR_OF_SUBSECTOR:
-        return GET_SECTOR_IDX(((subsector_t*)ptr)->sector);
-
     case DMU_POLYOBJ:
         return GET_POLYOBJ_IDX(ptr);
 
@@ -328,7 +361,7 @@ int P_ToIndex(int type, void* ptr)
         return GET_NODE_IDX(ptr);
 
     default:
-        Con_Error("P_ToIndex: unknown type %s.\n", DMU_Str(type));
+        Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(DMU_GetType(ptr)));
     }
     return -1;
 }
@@ -502,7 +535,12 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
     case DMU_NODE:
     case DMU_SUBSECTOR:
     case DMU_SECTOR:
-        return callback(ptr, context);
+        // Only do the callback if the type is the same as the object's.
+        if(type == DMU_GetType(ptr))
+        {
+            return callback(ptr, context);
+        }
+        break;
 
     // TODO: If necessary, add special types for accessing multiple objects.
 
@@ -1116,6 +1154,11 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
 
         switch(args->valueType)
         {
+        case DDVT_INT:
+            // Attempt automatic conversion using P_ToIndex(). Naturally only
+            // works with map data objects. Failure leads into a fatal error.
+            args->intValues[index] = P_ToIndex(*d);
+            break;
         case DDVT_PTR:
             args->ptrValues[index] = *d;
             break;
@@ -1133,7 +1176,79 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
 static int GetProperty(void* ptr, void* context)
 {
     setargs_t* args = (setargs_t*) context;
-
+    
+    // Check modified cases first.
+    if(args->type == DMU_SECTOR && 
+       (args->modifiers & DMU_LINE_OF_SECTOR))
+    {
+        sector_t* p = ptr;
+        if(args->prop < 0 || args->prop >= p->linecount)
+        {
+            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",
+                      args->prop);
+        }
+        GetValue(DDVT_PTR, &p->Lines[args->prop], args, 0);
+        return false; // stop iteration
+    }       
+    
+    if(args->type == DMU_SECTOR || 
+       (args->type == DMU_SUBSECTOR && 
+        (args->modifiers & DMU_SECTOR_OF_SUBSECTOR)))
+    {
+        sector_t* p = NULL;
+        valuetype_t type = propertyTypes[args->prop];
+        if(args->type == DMU_SECTOR)
+            p = ptr;
+        else if(args->type == DMU_SUBSECTOR)
+            p = ((subsector_t*)ptr)->sector;
+        else
+            Con_Error("GetProperty: Invalid args.\n");
+        
+        switch(args->prop)
+        {
+        case DMU_LIGHT_LEVEL:
+            GetValue(type, &p->lightlevel, args, 0);
+            break;
+        case DMU_COLOR:
+            GetValue(type, &p->rgb[0], args, 0);
+            GetValue(type, &p->rgb[1], args, 1);
+            GetValue(type, &p->rgb[2], args, 2);
+            break;
+        case DMU_FLOOR_COLOR:
+            GetValue(type, &p->floorrgb[0], args, 0);
+            GetValue(type, &p->floorrgb[1], args, 1);
+            GetValue(type, &p->floorrgb[2], args, 2);
+            break;
+        case DMU_FLOOR_HEIGHT:
+            GetValue(type, &p->floorheight, args, 0);
+            break;
+        case DMU_FLOOR_TEXTURE:
+            GetValue(type, &p->floorpic, args, 0);
+            break;
+        case DMU_CEILING_COLOR:
+            GetValue(type, &p->ceilingrgb[0], args, 0);
+            GetValue(type, &p->ceilingrgb[1], args, 1);
+            GetValue(type, &p->ceilingrgb[2], args, 2);
+            break;
+        case DMU_CEILING_HEIGHT:
+            GetValue(type, &p->ceilingheight, args, 0);
+            break;
+        case DMU_CEILING_TEXTURE:
+            GetValue(type, &p->ceilingpic, args, 0);
+            break;
+        case DMU_LINE_COUNT:
+            GetValue(type, &p->linecount, args, 0);
+            break;
+        case DMU_THINGS:
+            GetValue(type, &p->thinglist, args, 0);
+            break;
+        default:
+            Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
+                      DMU_Str(args->prop));
+        }
+        return false; // stop iteration
+    }
+    
     switch(args->type)
     {
     case DMU_VERTEX:
@@ -1324,73 +1439,6 @@ static int GetProperty(void* ptr, void* context)
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
                       DMU_Str(args->prop));
         }
-        break;
-        }
-
-    case DMU_SECTOR_OF_SUBSECTOR:
-    case DMU_SECTOR:
-        {
-        sector_t* p;
-        valuetype_t type = propertyTypes[args->prop];
-        if(args->type == DMU_SECTOR)
-            p = ptr;
-        else
-            p = ((subsector_t*)ptr)->sector;
-
-        switch(args->prop)
-        {
-        case DMU_LIGHT_LEVEL:
-            GetValue(type, &p->lightlevel, args, 0);
-            break;
-        case DMU_COLOR:
-            GetValue(type, &p->rgb[0], args, 0);
-            GetValue(type, &p->rgb[1], args, 1);
-            GetValue(type, &p->rgb[2], args, 2);
-            break;
-        case DMU_FLOOR_COLOR:
-            GetValue(type, &p->floorrgb[0], args, 0);
-            GetValue(type, &p->floorrgb[1], args, 1);
-            GetValue(type, &p->floorrgb[2], args, 2);
-            break;
-        case DMU_FLOOR_HEIGHT:
-            GetValue(type, &p->floorheight, args, 0);
-            break;
-        case DMU_FLOOR_TEXTURE:
-            GetValue(type, &p->floorpic, args, 0);
-            break;
-        case DMU_CEILING_COLOR:
-            GetValue(type, &p->ceilingrgb[0], args, 0);
-            GetValue(type, &p->ceilingrgb[1], args, 1);
-            GetValue(type, &p->ceilingrgb[2], args, 2);
-            break;
-        case DMU_CEILING_HEIGHT:
-            GetValue(type, &p->ceilingheight, args, 0);
-            break;
-        case DMU_CEILING_TEXTURE:
-            GetValue(type, &p->ceilingpic, args, 0);
-            break;
-        case DMU_LINE_COUNT:
-            GetValue(type, &p->linecount, args, 0);
-            break;
-        case DMU_THINGS:
-            GetValue(type, &p->thinglist, args, 0);
-            break;
-        default:
-            Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
-                       DMU_Str(args->prop));
-        }
-        break;
-        }
-
-    case DMU_LINE_OF_SECTOR:
-        {
-        sector_t* p = ptr;
-        if(args->prop < 0 || args->prop >= p->linecount)
-        {
-            Con_Error("GetProperty: DMU_LINE_OF_SECTOR %i does not exist.\n",
-                      args->prop);
-        }
-        GetValue(DDVT_PTR, &p->Lines[args->prop], args, 0);
         break;
         }
 
@@ -1624,146 +1672,146 @@ void P_SetPtrv(int type, int index, int prop, void* params)
 
 /* pointer-based write functions */
 
-void P_SetBoolp(int type, void* ptr, int prop, boolean param)
+void P_SetBoolp(void* ptr, int prop, boolean param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
     // Make sure invalid values are not allowed.
     param = (param? true : false);
     args.booleanValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetBytep(int type, void* ptr, int prop, byte param)
+void P_SetBytep(void* ptr, int prop, byte param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
     args.byteValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetIntp(int type, void* ptr, int prop, int param)
+void P_SetIntp(void* ptr, int prop, int param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
     args.intValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetFixedp(int type, void* ptr, int prop, fixed_t param)
+void P_SetFixedp(void* ptr, int prop, fixed_t param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
     args.fixedValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetAnglep(int type, void* ptr, int prop, angle_t param)
+void P_SetAnglep(void* ptr, int prop, angle_t param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
     args.angleValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetFloatp(int type, void* ptr, int prop, float param)
+void P_SetFloatp(void* ptr, int prop, float param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
     args.floatValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetPtrp(int type, void* ptr, int prop, void* param)
+void P_SetPtrp(void* ptr, int prop, void* param)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
     args.ptrValues = &param;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetBoolpv(int type, void* ptr, int prop, boolean* params)
+void P_SetBoolpv(void* ptr, int prop, boolean* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
     args.booleanValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetBytepv(int type, void* ptr, int prop, byte* params)
+void P_SetBytepv(void* ptr, int prop, byte* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
     args.byteValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetIntpv(int type, void* ptr, int prop, int* params)
+void P_SetIntpv(void* ptr, int prop, int* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
     args.intValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetFixedpv(int type, void* ptr, int prop, fixed_t* params)
+void P_SetFixedpv(void* ptr, int prop, fixed_t* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
     args.fixedValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetAnglepv(int type, void* ptr, int prop, angle_t* params)
+void P_SetAnglepv(void* ptr, int prop, angle_t* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
     args.angleValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetFloatpv(int type, void* ptr, int prop, float* params)
+void P_SetFloatpv(void* ptr, int prop, float* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
     args.floatValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
-void P_SetPtrpv(int type, void* ptr, int prop, void* params)
+void P_SetPtrpv(void* ptr, int prop, void* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
     args.ptrValues = params;
-    P_Callbackp(type, ptr, &args, SetProperty);
+    P_Callbackp(args.type, ptr, &args, SetProperty);
 }
 
 /* index-based read functions */
@@ -1924,158 +1972,158 @@ void P_GetPtrv(int type, int index, int prop, void* params)
 
 /* pointer-based read functions */
 
-boolean P_GetBoolp(int type, void* ptr, int prop)
+boolean P_GetBoolp(void* ptr, int prop)
 {
     setargs_t args;
     boolean returnValue = false;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
     args.booleanValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-byte P_GetBytep(int type, void* ptr, int prop)
+byte P_GetBytep(void* ptr, int prop)
 {
     setargs_t args;
     byte returnValue = 0;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
     args.byteValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-int P_GetIntp(int type, void* ptr, int prop)
+int P_GetIntp(void* ptr, int prop)
 {
     setargs_t args;
     int returnValue = 0;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
     args.intValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-fixed_t P_GetFixedp(int type, void* ptr, int prop)
+fixed_t P_GetFixedp(void* ptr, int prop)
 {
     setargs_t args;
     fixed_t returnValue = 0;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
     args.fixedValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-angle_t P_GetAnglep(int type, void* ptr, int prop)
+angle_t P_GetAnglep(void* ptr, int prop)
 {
     setargs_t args;
     angle_t returnValue = 0;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
     args.angleValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-float P_GetFloatp(int type, void* ptr, int prop)
+float P_GetFloatp(void* ptr, int prop)
 {
     setargs_t args;
     float returnValue = 0;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
     args.floatValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-void* P_GetPtrp(int type, void* ptr, int prop)
+void* P_GetPtrp(void* ptr, int prop)
 {
     setargs_t args;
     void* returnValue = NULL;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
     args.ptrValues = &returnValue;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
     return returnValue;
 }
 
-void P_GetBoolpv(int type, void* ptr, int prop, boolean* params)
+void P_GetBoolpv(void* ptr, int prop, boolean* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
     args.booleanValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetBytepv(int type, void* ptr, int prop, byte* params)
+void P_GetBytepv(void* ptr, int prop, byte* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
     args.byteValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetIntpv(int type, void* ptr, int prop, int* params)
+void P_GetIntpv(void* ptr, int prop, int* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
     args.intValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetFixedpv(int type, void* ptr, int prop, fixed_t* params)
+void P_GetFixedpv(void* ptr, int prop, fixed_t* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
     args.fixedValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetAnglepv(int type, void* ptr, int prop, angle_t* params)
+void P_GetAnglepv(void* ptr, int prop, angle_t* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
     args.angleValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetFloatpv(int type, void* ptr, int prop, float* params)
+void P_GetFloatpv(void* ptr, int prop, float* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
     args.floatValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
-void P_GetPtrpv(int type, void* ptr, int prop, void* params)
+void P_GetPtrpv(void* ptr, int prop, void* params)
 {
     setargs_t args;
 
-    InitArgs(&args, type, prop);
+    InitArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
     args.ptrValues = params;
-    P_Callbackp(type, ptr, &args, GetProperty);
+    P_Callbackp(args.type, ptr, &args, GetProperty);
 }
 
 void P_Copy(int type, int prop, int fromIndex, int toIndex)
@@ -2163,11 +2211,17 @@ void P_Copy(int type, int prop, int fromIndex, int toIndex)
     }
 }
 
-void P_Copyp(int type, int prop, void* from, void* to)
+void P_Copyp(int prop, void* from, void* to)
 {
+    int type = DMU_GetType(from);
     setargs_t args;
     int ptype = propertyTypes[prop];
 
+    if(DMU_GetType(to) != type)
+    {
+        Con_Error("P_Copyp: Type mismatch.\n");
+    }
+    
     InitArgs(&args, type, prop);
 
     switch(ptype)
@@ -2177,8 +2231,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         boolean b = false;
 
         args.booleanValues = &b;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2187,8 +2241,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         byte b = 0;
 
         args.byteValues = &b;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2197,8 +2251,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         int i = 0;
 
         args.intValues = &i;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2207,8 +2261,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         fixed_t f = 0;
 
         args.fixedValues = &f;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2217,8 +2271,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         angle_t a = 0;
 
         args.angleValues = &a;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2227,8 +2281,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         float f = 0;
 
         args.floatValues = &f;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2237,8 +2291,8 @@ void P_Copyp(int type, int prop, void* from, void* to)
         void *ptr = NULL;
 
         args.ptrValues = &ptr;
-        P_Callbackp(type, from, &args, GetProperty);
-        P_Callbackp(type, to, &args, SetProperty);
+        P_Callbackp(args.type, from, &args, GetProperty);
+        P_Callbackp(args.type, to, &args, SetProperty);
         break;
         }
 
@@ -2323,7 +2377,7 @@ void P_Swap(int type, int prop, int fromIndex, int toIndex)
     case DDVT_ANGLE:
         {
         angle_t a = 0;
-        angle_t b = 0
+        angle_t b = 0;
 
         argsA.angleValues = &a;
         argsB.angleValues = &b;
@@ -2371,11 +2425,17 @@ void P_Swap(int type, int prop, int fromIndex, int toIndex)
     }
 }
 
-void P_Swapp(int type, int prop, void* from, void* to)
+void P_Swapp(int prop, void* from, void* to)
 {
+    int type = DMU_GetType(from);
     setargs_t argsA, argsB;
     int ptype = propertyTypes[prop];
 
+    if(DMU_GetType(to) != type)
+    {
+        Con_Error("P_Swapp: Type mismatch.\n");        
+    }
+    
     InitArgs(&argsA, type, prop);
     InitArgs(&argsB, type, prop);
 
@@ -2391,8 +2451,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.booleanValues = &a;
         argsB.booleanValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2406,8 +2466,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.byteValues = &a;
         argsB.byteValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2421,8 +2481,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.intValues = &a;
         argsB.intValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2436,8 +2496,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.fixedValues = &a;
         argsB.fixedValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2446,13 +2506,13 @@ void P_Swapp(int type, int prop, void* from, void* to)
     case DDVT_ANGLE:
         {
         angle_t a = 0;
-        angle_t b = 0
+        angle_t b = 0;
 
         argsA.angleValues = &a;
         argsB.angleValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2466,8 +2526,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.floatValues = &a;
         argsB.floatValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2481,8 +2541,8 @@ void P_Swapp(int type, int prop, void* from, void* to)
         argsA.ptrValues = &a;
         argsB.ptrValues = &b;
 
-        P_Callbackp(type, from, &argsA, GetProperty);
-        P_Callbackp(type, to, &argsB, GetProperty);
+        P_Callbackp(args.type, from, &argsA, GetProperty);
+        P_Callbackp(args.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
