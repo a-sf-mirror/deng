@@ -143,6 +143,12 @@
 		B0237B4706F3744E0059676A /* p_xgsec.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F406EE44EB00B98CC8 /* p_xgsec.c */; };
 		B0237B4806F3744E0059676A /* r_common.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F506EE44EB00B98CC8 /* r_common.c */; };
 		B0237B4906F3744E0059676A /* x_hair.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F606EE44EB00B98CC8 /* x_hair.c */; };
+		B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
+		B04027EF0982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
+		B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
+		B04027F10982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
+		B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
+		B04027F30982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B0727F04088A8E88008C84C4 /* DoomsdayRunner.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */; };
 		B0727F05088A8E88008C84C4 /* DoomsdayRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */; };
 		B0727F06088A8E88008C84C4 /* StartupWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F02088A8E88008C84C4 /* StartupWindowController.h */; };
@@ -1122,6 +1128,11 @@
 		B02AC8C106B41788005824AD /* sys_sfxd_dummy.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = sys_sfxd_dummy.c; sourceTree = "<group>"; };
 		B02AC8C206B41788005824AD /* sys_sfxd_loader.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = sys_sfxd_loader.c; sourceTree = "<group>"; };
 		B02AC8C306B41788005824AD /* sys_stwin.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = sys_stwin.c; sourceTree = "<group>"; };
+		B04027EC0982F53A00C5F03E /* dmu_lib.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = dmu_lib.c; path = Src/Common/dmu_lib.c; sourceTree = "<group>"; };
+		B04027ED0982F53A00C5F03E /* p_mapsetup.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = p_mapsetup.c; path = Src/Common/p_mapsetup.c; sourceTree = "<group>"; };
+		B04027F60982F59100C5F03E /* am_map.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = am_map.h; path = Include/Common/am_map.h; sourceTree = "<group>"; };
+		B04027F70982F59100C5F03E /* dmu_lib.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = dmu_lib.h; path = Include/Common/dmu_lib.h; sourceTree = "<group>"; };
+		B04027F80982F59100C5F03E /* p_mapsetup.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = p_mapsetup.h; path = Include/Common/p_mapsetup.h; sourceTree = "<group>"; };
 		B0724918085CDC4D000C8E3B /* r_lgrid.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = r_lgrid.c; path = Src/r_lgrid.c; sourceTree = "<group>"; };
 		B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = DoomsdayRunner.h; path = Src/Mac/DoomsdayRunner.h; sourceTree = "<group>"; };
 		B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = DoomsdayRunner.m; path = Src/Mac/DoomsdayRunner.m; sourceTree = "<group>"; };
@@ -1584,15 +1595,18 @@
 		B018334307E6078E00217C5A /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				B04027F60982F59100C5F03E /* am_map.h */,
 				B018334407E6082000217C5A /* d_net.h */,
 				B018334507E6082000217C5A /* d_netcl.h */,
 				B018334607E6082000217C5A /* d_netsv.h */,
+				B04027F70982F59100C5F03E /* dmu_lib.h */,
 				B018334707E6082000217C5A /* f_infine.h */,
 				B018334807E6082000217C5A /* g_common.h */,
 				B018334907E6082000217C5A /* g_dgl.h */,
 				B018334A07E6082000217C5A /* g_update.h */,
 				B018334B07E6082000217C5A /* hu_pspr.h */,
 				B018334C07E6082000217C5A /* p_actor.h */,
+				B04027F80982F59100C5F03E /* p_mapsetup.h */,
 				B018334D07E6082000217C5A /* p_saveg.h */,
 				B018334E07E6082000217C5A /* p_start.h */,
 				B018334F07E6082000217C5A /* p_svtexarc.h */,
@@ -2068,6 +2082,7 @@
 				B0D5B6E206EE44EA00B98CC8 /* d_net.c */,
 				B0D5B6E306EE44EA00B98CC8 /* d_netcl.c */,
 				B0D5B6E406EE44EA00B98CC8 /* d_netsv.c */,
+				B04027EC0982F53A00C5F03E /* dmu_lib.c */,
 				B0D5B6E506EE44EA00B98CC8 /* f_infine.c */,
 				B0D5B6E606EE44EA00B98CC8 /* g_dglinit.c */,
 				B0D5B6E706EE44EA00B98CC8 /* g_game.c */,
@@ -2080,6 +2095,7 @@
 				B0D5B6EA06EE44EA00B98CC8 /* m_multi.c */,
 				B010785D08563447000BF0D8 /* mn_menu.c */,
 				B0D5B6EB06EE44EA00B98CC8 /* p_actor.c */,
+				B04027ED0982F53A00C5F03E /* p_mapsetup.c */,
 				B0D5B6EC06EE44EB00B98CC8 /* p_saveg.c */,
 				B0D5B6ED06EE44EB00B98CC8 /* p_start.c */,
 				B0D5B6EE06EE44EB00B98CC8 /* p_svtexarc.c */,
@@ -3095,6 +3111,8 @@
 				B01078830856356E000BF0D8 /* mn_menu.c in Sources */,
 				B010788608563581000BF0D8 /* st_lib.c in Sources */,
 				B01078D4085636E8000BF0D8 /* st_stuff.c in Sources */,
+				B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */,
+				B04027F10982F53A00C5F03E /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3160,6 +3178,8 @@
 				B083A6D4085CCD2C000D4BAB /* st_stuff.c in Sources */,
 				B083A6D5085CCD2C000D4BAB /* sv_save.c in Sources */,
 				B083A6D6085CCD2C000D4BAB /* Tables.c in Sources */,
+				B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */,
+				B04027F30982F53A00C5F03E /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3239,6 +3259,8 @@
 				B010786308563447000BF0D8 /* m_ctrl.c in Sources */,
 				B010786408563447000BF0D8 /* mn_menu.c in Sources */,
 				B010786508563447000BF0D8 /* st_lib.c in Sources */,
+				B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */,
+				B04027EF0982F53A00C5F03E /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
