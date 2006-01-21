@@ -581,8 +581,6 @@ void P_MobjThinker(mobj_t *mobj)
     if(mobj->type == MT_SHADOWS)
         mobj->selector = (mobj->selector & ~DDMOBJ_SELECTOR_MASK) | 1;
 
-    P_UpdateMobjFlags(mobj);
-
     // The first three bits of the selector special byte contain a
     // relative health level.
     P_UpdateHealthBits(mobj);

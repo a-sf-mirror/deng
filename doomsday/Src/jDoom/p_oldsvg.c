@@ -21,6 +21,8 @@
 #include "g_game.h"
 #include "m_misc.h"
 
+#include "Common/p_setup.h"
+
 // MACROS ------------------------------------------------------------------
 
 #define PADSAVEP()      save_p += (4 - ((save_p - savebuffer) & 3)) & 3

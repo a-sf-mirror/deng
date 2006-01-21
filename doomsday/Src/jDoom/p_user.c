@@ -28,8 +28,8 @@
 #include "p_local.h"
 #include "p_view.h"
 #include "doomstat.h"
-#include "d_netJD.h"
 #include "g_common.h"
+#include "Common/d_net.h"
 
 // MACROS ------------------------------------------------------------------
 

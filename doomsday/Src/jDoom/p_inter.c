@@ -28,10 +28,12 @@
 #include "doomstat.h"
 #include "m_random.h"
 #include "Common/am_map.h"
+#include "Common/d_net.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "d_netJD.h"
 #include "p_inter.h"
+
+#include "Common/dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 

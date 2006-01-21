@@ -22,45 +22,14 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "doomdef.h"
-#include "d_config.h"
-#include "p_local.h"
+#include "r_defs.h"
+#include "d_setup.h"
 
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
 
-// Game specific map format properties for ALL games.
-// TODO: we don't need  to know about all of them once they
-// are registered via DED.
-// (notice jHeretic/jHexen properties are here too temporarily).
-enum {
-    DAM_LINE_TAG,
-    DAM_LINE_SPECIAL,
-    DAM_LINE_ARG1,
-    DAM_LINE_ARG2,
-    DAM_LINE_ARG3,
-    DAM_LINE_ARG4,
-    DAM_LINE_ARG5,
-    DAM_SECTOR_SPECIAL,
-    DAM_SECTOR_TAG,
-    DAM_THING_TID,
-    DAM_THING_X,
-    DAM_THING_Y,
-    DAM_THING_HEIGHT,
-    DAM_THING_ANGLE,
-    DAM_THING_TYPE,
-    DAM_THING_OPTIONS,
-    DAM_THING_SPECIAL,
-    DAM_THING_ARG1,
-    DAM_THING_ARG2,
-    DAM_THING_ARG3,
-    DAM_THING_ARG4,
-    DAM_THING_ARG5
-};
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-void InitMapInfo(void);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -70,176 +39,9 @@ void InitMapInfo(void);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-// Our private map data structures
-xsector_t *xsectors;
-int        numxsectors;
-xline_t   *xlines;
-int        numxlines;
-
-xline_t   *dummyxlines;
-int        numdummyxlines;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
-
-/*
- * Converts a line to an xline.
- */
-xline_t* P_XLine(line_t* line)
-{
-    return &xlines[P_ToIndex(DMU_LINE, line)];
-}
-
-/*
- * Converts a sector to an xsector.
- */
-xsector_t* P_XSector(sector_t* sector)
-{
-    return &xsectors[P_ToIndex(DMU_SECTOR, sector)];
-}
-
-/*
- * Given a subsector - find its parent xsector.
- */
-xsector_t* P_XSectorOfSubsector(subsector_t* sub)
-{
-    return &xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, sub)];
-}
-
-/*
- * Allocates a new xtended dummy of the requested type.
- */
-static void* P_AllocXDummy(int type)
-{
-    dummy_t* newdummy;
-    size_t dsize;
-
-    switch(type)
-    {
-    case DMU_LINE:
-        dsize = sizeof(xline_t);
-        break
-
-    default:
-        return NULL; // We don't store xtended dummy objects for this type.
-    }
-
-    dummies = realloc(dummyxlines, sizeof(dummy_t) * (numdummies + 1));
-    newdummy = dummies + numdummies++;
-
-    newdummy->object = malloc(dsize);
-    newdummy->type = type;
-}
-
-static void P_FreeXDummy(void* dummy)
-{
-    int id;
-
-    // Is this a dummy object?
-    if(P_IsDummy(dummy)
-    {
-        id = P_ToIndex(dummy);
-
-        // Do we have a local xtended dummy for this object?
-        // We SHOULD have...
-        if(id >= 0 && id < numdummies)
-        {
-            // Yes we do, so free it.
-            if(xdummies[id].object)
-                free(xdummies[id].object);
-
-            // If not the last one, do some rollback.
-            if(id < numxdummies - 1)
-            {
-                memove(dummies + id, dummies + id + 1,
-                       sizeof(dummy_t) * (numdummies - id - 1));
-            }
-
-            dummies = realloc(dummies, sizeof(dummy_t) * --numdummies);
-        }
-    }
-    else
-        Con_Error("P_FreeXDummy: Object is not a dummy!\n");
-}
-
-/*
- * Creates a dummy object of the requested type.
- */
-void* P_CreateDummy(int type)
-{
-    // We may need to alloc a new local xtended dummy too.
-    P_AllocXDummy(type);
-
-    return P_AllocDummy(type);
-}
-
-/*
- * Frees a dummy object.
- */
-void P_DestroyDummy(void* dummy)
-{
-    // We may need to free a local xtended dummy too.
-    P_FreeXDummy(type);
-
-    P_FreeDummy(type);
-}
-
-/*
- * Create and initialize our private thing data array
- */
-void P_SetupForThings(int num)
-{
-    int oldNum = numthings;
-
-    numthings += num;
-
-    if(oldNum > 0)
-        things = Z_Realloc(things, numthings * sizeof(thing_t), PU_LEVEL);
-    else
-        things = Z_Malloc(numthings * sizeof(thing_t), PU_LEVEL, 0);
-
-    memset(things + oldNum, 0, num * sizeof(thing_t));
-}
-
-/*
- * Create and initialize our private line data array
- */
-void P_SetupForLines(int num)
-{
-    int oldNum = numlines;
-
-    numlines += num;
-
-    if(oldNum > 0)
-        xlines = Z_Realloc(xlines, numlines * sizeof(xline_t), PU_LEVEL);
-    else
-        xlines = Z_Malloc(numlines * sizeof(xline_t), PU_LEVEL, 0);
-
-    memset(xlines + oldNum, 0, num * sizeof(xline_t));
-}
-
-void P_SetupForSides(int num)
-{
-    // Nothing to do
-}
-
-/*
- * Create and initialize our private sector data array
- */
-void P_SetupForSectors(int num)
-{
-    int oldNum = numsectors;
-
-    numsectors += num;
-
-    if(oldNum > 0)
-        xsectors = Z_Realloc(xsectors, numsectors * sizeof(xsector_t), PU_LEVEL);
-    else
-        xsectors = Z_Malloc(numsectors * sizeof(xsector_t), PU_LEVEL, 0);
-
-    memset(xsectors + oldNum, 0, num * sizeof(xsector_t));
-}
 
 /*
  * Doomsday will call this while loading in map data when a value is read
@@ -339,47 +141,4 @@ int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
     }
 
     return -1; // We ain't got a clue what to do with it...
-}
-
-/*
- * Initializes various playsim related data
- */
-void P_Init(void)
-{
-    P_InitSwitchList();
-    P_InitPicAnims();
-
-    // Maximum health and armor points.
-    maxhealth = 100;
-    healthlimit = 200;
-    godmodehealth = 100;
-
-    megaspherehealth = 200;
-
-    soulspherehealth = 100;
-    soulspherelimit = 200;
-
-    armorpoints[0] = 100;
-    armorpoints[1] = armorpoints[2] = armorpoints[3] = 200;
-    armorclass[0] = 1;
-    armorclass[1] = armorclass[2] = armorclass[3] = 2;
-
-    GetDefInt("Player|Max Health", &maxhealth);
-    GetDefInt("Player|Health Limit", &healthlimit);
-    GetDefInt("Player|God Health", &godmodehealth);
-
-    GetDefInt("Player|Green Armor", &armorpoints[0]);
-    GetDefInt("Player|Blue Armor", &armorpoints[1]);
-    GetDefInt("Player|IDFA Armor", &armorpoints[2]);
-    GetDefInt("Player|IDKFA Armor", &armorpoints[3]);
-
-    GetDefInt("Player|Green Armor Class", &armorclass[0]);
-    GetDefInt("Player|Blue Armor Class", &armorclass[1]);
-    GetDefInt("Player|IDFA Armor Class", &armorclass[2]);
-    GetDefInt("Player|IDKFA Armor Class", &armorclass[3]);
-
-    GetDefInt("MegaSphere|Give|Health", &megaspherehealth);
-
-    GetDefInt("SoulSphere|Give|Health", &soulspherehealth);
-    GetDefInt("SoulSphere|Give|Health Limit", &soulspherelimit);
 }

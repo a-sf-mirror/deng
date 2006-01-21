@@ -15,6 +15,10 @@
  * along with this program; if not: http://www.opensource.org/
  */
 
+/*
+ * d_refresh.c
+ */
+
 // HEADER FILES ------------------------------------------------------------
 
 #include <ctype.h>
@@ -25,7 +29,6 @@
 #include "hu_stuff.h"
 #include "hu_pspr.h"
 #include "am_map.h"
-#include "r_local.h"
 #include "d_config.h"
 #include "x_hair.h"
 #include "Mn_def.h"
@@ -33,6 +36,8 @@
 #include "g_common.h"
 #include "d_net.h"
 #include "f_infine.h"
+
+#include "Common/x_hair.h"
 
 // MACROS ------------------------------------------------------------------
 

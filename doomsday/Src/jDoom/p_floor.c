@@ -19,10 +19,13 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "doomdef.h"
+#include "doomtype.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "r_state.h"
+
+#include "Common/dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 

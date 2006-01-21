@@ -27,12 +27,12 @@
 #include "doomdef.h"
 #include "d_config.h"
 #include "d_event.h"
-#include "d_netJD.h"
 #include "m_random.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "p_pspr.h"
+#include "Common/d_net.h"
 
 // MACROS ------------------------------------------------------------------
 

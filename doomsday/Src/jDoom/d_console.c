@@ -21,18 +21,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdlib.h>
-
-#include "doomdef.h"
 #include "doomstat.h"
-#include "d_main.h"
 #include "d_config.h"
-#include "d_netJD.h"
 #include "g_game.h"
-#include "g_common.h"
 #include "s_sound.h"
 #include "hu_stuff.h"
-#include "m_menu.h"
 #include "Mn_def.h"
 #include "f_infine.h"
 
@@ -560,7 +553,6 @@ void G_ConsoleRegistration()
         Con_AddVariable(gameCVars + i);
     for(i = 0; gameCCmds[i].name; i++)
         Con_AddCommand(gameCCmds + i);
-    D_NetConsoleRegistration();
 }
 
 void D_ConsoleBg(int *width, int *height)
@@ -569,8 +561,8 @@ void D_ConsoleBg(int *width, int *height)
     extern float consoleZoom;
 
     GL_SetFlat(consoleFlat + W_CheckNumForName("F_START") + 1);
-    *width = 64 * consoleZoom;
-    *height = 64 * consoleZoom;
+    *width = (int) (64 * consoleZoom);
+    *height = (int) (64 * consoleZoom);
 }
 
 DEFCC(CCmdScreenShot)

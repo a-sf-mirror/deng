@@ -13,48 +13,21 @@
  */
 
 /*
- * d_main.c: DOOM specifc Initialization and Doomsday API setup
+ * d_main.c: DOOM specifc Initialization.
  */
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
 #include "doomdef.h"
 #include "doomstat.h"
 
-#include "dstrings.h"
-#include "s_sound.h"
-#include "p_local.h"
-#include "d_console.h"
-#include "D_Action.h"
+#include "Common/p_setup.h"
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_menu.h"
-#include "r_defs.h"
-#include "jDoom/m_ctrl.h"
-
 #include "g_game.h"
-#include "g_common.h"
-#include "g_update.h"
 #include "hu_stuff.h"
-#include "wi_stuff.h"
-#include "st_stuff.h"
-
-#include "Common/am_map.h"
-#include "Common/hu_stuff.h"
-#include "p_setup.h"
 #include "p_saveg.h"
-#include "d_main.h"
-#include "d_items.h"
-#include "m_bams.h"
-#include "d_netJD.h"
-#include "AcFnLink.h"
-#include "g_update.h"
-#include "f_infine.h"
-
-#include "xgclass.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -65,11 +38,6 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void    R_InitTranslation(void);
-void    D_Display(void);
-int     D_PrivilegedResponder(event_t *event);
-fixed_t P_GetMobjFriction(mobj_t *mo);
-
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
@@ -77,10 +45,6 @@ fixed_t P_GetMobjFriction(mobj_t *mo);
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// The interface to the Doomsday engine.
-game_import_t gi;
-game_export_t gx;
 
 boolean devparm;                // started game with -devparm
 boolean nomonsters;             // checkparm of -nomonsters
@@ -93,6 +57,11 @@ int     startepisode;
 int     startmap;
 boolean autostart;
 FILE   *debugfile;
+
+GameMode_t gamemode = indetermined;
+GameMission_t gamemission = doom;
+
+boolean monsterinfight;
 
 // print title for every printed line
 char    title[128];
@@ -115,10 +84,10 @@ char *borderLumps[] = {
     "brdr_bl"
 };
 
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
 // This is returned in D_Get(DD_GAME_MODE), max 16 chars.
-static char gameModeString[17];
+char gameModeString[17];
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
@@ -665,113 +634,4 @@ void D_Ticker(void)
 
 void D_EndFrame(void)
 {
-}
-
-char *G_Get(int id)
-{
-    switch (id)
-    {
-    case DD_GAME_NAME:
-        return GAMENAMETEXT;
-
-    case DD_GAME_ID:
-        return GAMENAMETEXT " " VERSION_TEXT;
-
-    case DD_GAME_MODE:
-        return gameModeString;
-
-    case DD_GAME_CONFIG:
-        return gameConfigString;
-
-    case DD_VERSION_SHORT:
-        return VERSION_TEXT;
-
-    case DD_VERSION_LONG:
-        return VERSIONTEXT "\n"GAMENAMETEXT" is based on linuxdoom-1.10.";
-
-    case DD_ACTION_LINK:
-        return (char *) actionlinks;
-
-    case DD_PSPRITE_BOB_X:
-        return (char *) (FRACUNIT +
-                         FixedMul(FixedMul
-                                  (FRACUNIT * cfg.bobWeapon,
-                                   players[consoleplayer].bob),
-                                  finecosine[(128 * leveltime) & FINEMASK]));
-
-    case DD_PSPRITE_BOB_Y:
-        return (char *) (32 * FRACUNIT +
-                         FixedMul(FixedMul
-                                  (FRACUNIT * cfg.bobWeapon,
-                                   players[consoleplayer].bob),
-                                  finesine[(128 *
-                                            leveltime) & FINEMASK & (FINEANGLES
-                                                                     / 2 -
-                                                                     1)]));
-    case DD_XGFUNC_LINK:
-        return (char *) xgClasses;
-
-    default:
-        break;
-    }
-    // ID not recognized, return NULL.
-    return 0;
-}
-
-/*
- * Takes a copy of the engine's entry points and exported data. Returns
- * a pointer to the structure that contains our entry points and exports.
- */
-game_export_t *GetGameAPI(game_import_t * imports)
-{
-    // Take a copy of the imports, but only copy as much data as is
-    // allowed and legal.
-    memset(&gi, 0, sizeof(gi));
-    memcpy(&gi, imports, MIN_OF(sizeof(game_import_t), imports->apiSize));
-
-    // Clear all of our exports.
-    memset(&gx, 0, sizeof(gx));
-
-    // Fill in the data for the exports.
-    gx.apiSize = sizeof(gx);
-    gx.PreInit = D_PreInit;
-    gx.PostInit = D_PostInit;
-    gx.Shutdown = D_Shutdown;
-    gx.BuildTicCmd = (void (*)(void*, float)) G_BuildTiccmd;
-    gx.MergeTicCmd = (void (*)(void*, void*)) G_MergeTiccmd;
-    gx.Ticker = D_Ticker;
-    gx.G_Drawer = D_Display;
-    gx.MN_Drawer = M_Drawer;
-    gx.PrivilegedResponder = (boolean (*)(event_t *)) D_PrivilegedResponder;
-    gx.FallbackResponder = M_Responder;
-    gx.G_Responder = G_Responder;
-    gx.MobjThinker = P_MobjThinker;
-    gx.MobjFriction = (fixed_t (*)(void *)) P_GetMobjFriction;
-    gx.EndFrame = D_EndFrame;
-    gx.ConsoleBackground = D_ConsoleBg;
-    gx.UpdateState = G_UpdateState;
-#undef Get
-    gx.Get = G_Get;
-    gx.R_Init = R_InitTranslation;
-
-    gx.NetServerStart = D_NetServerStarted;
-    gx.NetServerStop = D_NetServerClose;
-    gx.NetConnect = D_NetConnect;
-    gx.NetDisconnect = D_NetDisconnect;
-    gx.NetPlayerEvent = D_NetPlayerEvent;
-    gx.HandlePacket = D_HandlePacket;
-    gx.NetWorldEvent = D_NetWorldEvent;
-
-    // Data structure sizes.
-    gx.ticcmd_size = sizeof(ticcmd_t);
-
-    gx.SetupForThings = P_SetupForThings;
-    gx.SetupForLines = P_SetupForLines;
-    gx.SetupForSides = P_SetupForSides;
-    gx.SetupForSectors = P_SetupForSectors;
-
-    // These two really need better names. Ideas?
-    gx.HandleMapDataProperty = P_HandleMapDataProperty;
-    gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
-    return &gx;
 }

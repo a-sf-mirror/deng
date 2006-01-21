@@ -30,11 +30,9 @@
 #include "doomdef.h"
 #include "d_config.h"
 #include "d_net.h"
-#include "m_random.h"
 #include "g_game.h"
 #include "st_stuff.h"
 #include "Common/st_lib.h"
-#include "r_local.h"
 #include "p_local.h"
 #include "p_inter.h"
 #include "am_map.h"
@@ -57,19 +55,12 @@
 //  that the normal face state will change
 #define ST_FACEPROBABILITY      96
 
-// For Responder
-#define ST_TOGGLECHAT       KEY_ENTER
-
 // Location of status bar
 #define ST_X                0
 #define ST_X2               104
 
 #define ST_FX           144
 #define ST_FY           169
-
-// Should be set to patch width
-//  for tall numbers later on
-#define ST_TALLNUMWIDTH     (tallnum[0]->width)
 
 // Number of status faces.
 #define ST_NUMPAINFACES     5
@@ -205,15 +196,6 @@
  // DETH title
 #define ST_DETHX            109
 #define ST_DETHY            191
-
-#define ST_MAPWIDTH \
-    (strlen(mapnames[(gameepisode-1)*9+(gamemap-1)]))
-
-#define ST_MAPTITLEX \
-    (SCREENWIDTH - ST_MAPWIDTH * ST_CHATFONTWIDTH)
-
-#define ST_MAPTITLEY        0
-#define ST_MAPHEIGHT        1
 
 // TYPES -------------------------------------------------------------------
 

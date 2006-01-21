@@ -30,11 +30,13 @@
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "r_local.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "s_sound.h"
 #include "r_state.h"
+
+#include "Common/dmu_lib.h"
+#include "Common/p_setup.h"
 
 // MACROS ------------------------------------------------------------------
 
