@@ -53,7 +53,7 @@
 #endif
 
 #include "dmu_lib.h"
-#include "Common/p_setup.h"
+#include "Common/p_mapsetup.h"
 #include "p_xgline.h"
 #include "p_xgsec.h"
 #include "Common/g_common.h"

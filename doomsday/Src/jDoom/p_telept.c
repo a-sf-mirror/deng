@@ -21,7 +21,7 @@
 #include "r_state.h"
 
 #include "Common/dmu_lib.h"
-#include "Common/p_setup.h"
+#include "Common/p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 

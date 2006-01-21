@@ -21,7 +21,7 @@
 #include "g_game.h"
 #include "m_misc.h"
 
-#include "Common/p_setup.h"
+#include "Common/p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 

@@ -47,7 +47,7 @@
 #  include "jStrife/d_config.h"
 #endif
 
-#include "Common/p_setup.h"
+#include "Common/p_mapsetup.h"
 #include "d_net.h"
 
 // MACROS ------------------------------------------------------------------

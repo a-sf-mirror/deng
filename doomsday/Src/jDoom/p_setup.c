@@ -23,7 +23,7 @@
 
 #include "doomdef.h"
 #include "r_defs.h"
-#include "d_setup.h"
+#include "p_setup.h"
 
 // MACROS ------------------------------------------------------------------
 

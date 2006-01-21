@@ -40,7 +40,7 @@
 #  include "jStrife/p_local.h"
 #endif
 
-#include "Common/p_setup.h"
+#include "Common/p_mapsetup.h"
 #include "p_saveg.h"
 #include "p_xg.h"
 

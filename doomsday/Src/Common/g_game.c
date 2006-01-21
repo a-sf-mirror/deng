@@ -26,7 +26,6 @@
 #  include "m_menu.h"
 #  include "m_random.h"
 #  include "p_local.h"
-#  include "Common/p_setup.h"
 #  include "p_tick.h"
 #  include "wi_stuff.h"
 #  include "st_stuff.h"
@@ -76,6 +75,7 @@
 #  include "jStrife/st_stuff.h"
 #endif
 
+#include "Common/p_mapsetup.h"
 #include "Common/am_map.h"
 #include "Common/hu_stuff.h"
 #include "Common/hu_msg.h"
