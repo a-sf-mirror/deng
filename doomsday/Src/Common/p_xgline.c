@@ -599,10 +599,7 @@ float XG_RandomPercentFloat(float value, int percent)
  */
 void XL_SetLineType(line_t *line, int id)
 {
-    int lineid = P_ToIndex(DMU_LINE, line);
-    xline_t *xline;
-
-    xline = &xlines[lineid];
+    xline_t *xline = P_XLine(line);
 
     if(XL_GetType(id))
     {
@@ -619,13 +616,13 @@ void XL_SetLineType(line_t *line, int id)
         xline->xg->active = (typebuffer.flags & LTF_ACTIVE) != 0;
         xline->xg->activator = &dummything;
 
-        XG_Dev("XL_SetLineType: Line %i (%s), ID %i.", lineid,
+        XG_Dev("XL_SetLineType: Line %i (%s), ID %i.", P_ToIndex(line),
                GET_TXT(xgClasses[xline->xg->info.line_class].className), id);
 
     }
     else if(id)
     {
-        XG_Dev("XL_SetLineType: Line %i, type %i NOT DEFINED.", lineid, id);
+        XG_Dev("XL_SetLineType: Line %i, type %i NOT DEFINED.", P_ToIndex(line), id);
     }
 }
 
@@ -658,7 +655,6 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
                       int (C_DECL *func)())
 {
     int     i;
-    int     lineid = P_ToIndex(DMU_LINE, line);
     mobj_t *mo;
     boolean    ok;
     sector_t *frontsector, *backsector;
@@ -668,7 +664,7 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
         sprintf(buff,": %i",ref);
 
     XG_Dev("XL_Traverse%s: Line %i, ref (%s%s)",
-           travsectors? "Sectors":"Planes", lineid,
+           travsectors? "Sectors":"Planes", P_ToIndex(line),
            travsectors? LSREFTYPESTR(reftype) : LPREFTYPESTR(reftype), ref? buff: "");
 
     if(reftype == LPREF_NONE)
@@ -684,14 +680,14 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
         if(backsector)
             return func(backsector, false, data, context, activator);
         else
-            XG_Dev("  Line %i has no back sector!", lineid);
+            XG_Dev("  Line %i has no back sector!", P_ToIndex(line));
     if(reftype == LPREF_MY_CEILING)
         return func(frontsector, true, data, context, activator);
     if(reftype == LPREF_BACK_CEILING)
         if(backsector)
             return func(backsector, true, data, context, activator);
         else
-            XG_Dev("  Line %i has no back sector!", lineid);
+            XG_Dev("  Line %i has no back sector!", P_ToIndex(line));
     if(reftype == LPREF_INDEX_FLOOR)
         return func(P_ToPtr(DMU_SECTOR, ref), false, data, context, activator);
     if(reftype == LPREF_INDEX_CEILING)
@@ -717,7 +713,7 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
         }
         if((reftype == LPREF_LINE_TAGGED_FLOORS ||
             reftype == LPREF_LINE_TAGGED_CEILINGS) &&
-            xsectors[i].tag == xlines[lineid].tag)
+            xsectors[i].tag == P_XLine(line)->tag)
         {
             if(!func
                (P_ToPtr(DMU_SECTOR, i), reftype == LPREF_LINE_TAGGED_CEILINGS, data,
@@ -741,10 +737,10 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
 
             for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); ok, mo; mo = mo->snext)
             {
-                if(mo->type == xlines[lineid].xg->info.aparm[9])
+                if(mo->type == P_XLine(line)->xg->info.aparm[9])
                 {
                     XG_Dev("  Thing of type %i found in sector id %i.",
-                           xlines[lineid].xg->info.aparm[9], i);
+                           P_XLine(line)->xg->info.aparm[9], i);
 
                     if(!func
                        (P_ToPtr(DMU_SECTOR, i), reftype == LPREF_THING_EXIST_CEILINGS,
@@ -763,7 +759,7 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
 
             for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); ok, mo; mo = mo->snext)
             {
-                if(mo->type != xlines[lineid].xg->info.aparm[9])
+                if(mo->type != P_XLine(line)->xg->info.aparm[9])
                     continue;
                 else
                     ok = false;
@@ -772,7 +768,7 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
             if(ok)
             {
                 XG_Dev("  No things of type %i found in sector id %i.",
-                           xlines[lineid].xg->info.aparm[9], i);
+                           P_XLine(line)->xg->info.aparm[9], i);
 
                 if(!func
                    (P_ToPtr(DMU_SECTOR, i), reftype == LPREF_THING_NOEXIST_CEILINGS,
@@ -794,7 +790,6 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, void *data,
 {
     int    i;
     int    reftype = rtype;
-    int    lineid = P_ToIndex(DMU_LINE, line);
     char   buff[50];
 
     // Binary XG data from DD_XGDATA uses the old flag values.
@@ -806,7 +801,7 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, void *data,
         sprintf(buff," : %i",ref);
 
     XG_Dev("XL_TraverseLines: Line %i, ref (%s%s)",
-           lineid, LREFTYPESTR(reftype), ref? buff : "");
+           P_ToIndex(line), LREFTYPESTR(reftype), ref? buff : "");
 
     if(reftype == LREF_NONE)
         return func(NULL, true, data, context, activator);  // Not a real reference
@@ -834,7 +829,7 @@ int XL_TraverseLines(line_t *line, int rtype, int ref, void *data,
         if(reftype == LREF_LINE_TAGGED)
         {
             // Ref is true if line itself should be excluded.
-            if(xlines[i].tag == xlines[lineid].tag && (!ref || P_ToPtr(DMU_LINE, i) != line))
+            if(xlines[i].tag == P_XLine(line)->tag && (!ref || P_ToPtr(DMU_LINE, i) != line))
                 if(!func(P_ToPtr(DMU_LINE, i), true, data, context, activator))
                     return false;
         }
@@ -860,7 +855,7 @@ int XL_ValidateLineRef(line_t *line, int reftype, void *context, char *parmname)
     switch(reftype)
     {
     case LDREF_ID:    // Line ID
-        answer = P_ToIndex(DMU_LINE, line);
+        answer = P_ToIndex(line);
         XG_Dev("XL_ValidateLineRef: Using Line ID (%i) as %s", answer, parmname);
         break;
 
@@ -961,7 +956,7 @@ void XL_DoFunction(linetype_t * info, line_t *line, int sidenum,
     xgclass_t *xgClass = xgClasses + info->line_class;
 
     XG_Dev("XL_DoFunction: Line %i, side %i, activator id %i, event %s",
-            P_ToIndex(DMU_LINE, line),sidenum, act_thing ? act_thing->thinker.id : 0,
+            P_ToIndex(line), sidenum, act_thing ? act_thing->thinker.id : 0,
             EVTYPESTR(evtype));
     XG_Dev("  Executing class: %s (0x%X)...",GET_TXT(xgClass->className), info->line_class);
 
@@ -1007,7 +1002,7 @@ void XL_DoFunction(linetype_t * info, line_t *line, int sidenum,
 int C_DECL XLTrav_QuickActivate(line_t *line, boolean dummy, void *context,
                                 void *context2, mobj_t *activator)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
 
     if(!xline->xg)
         return true;
@@ -1022,7 +1017,7 @@ int C_DECL XLTrav_QuickActivate(line_t *line, boolean dummy, void *context,
 int C_DECL XLTrav_CheckLine(line_t *line, boolean dummy, void *context,
                             void *context2, mobj_t *activator)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
 
     if(!xline->xg)
         return false;    // Stop checking!
@@ -1036,7 +1031,7 @@ int C_DECL XLTrav_CheckLine(line_t *line, boolean dummy, void *context,
 int C_DECL XLTrav_SmartActivate(line_t *line, boolean dummy, void *context, void *context2,
                          mobj_t *activator)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
 
     if(!xline->xg)
         return false;
@@ -1054,7 +1049,7 @@ int C_DECL XLTrav_SmartActivate(line_t *line, boolean dummy, void *context, void
 int C_DECL XL_DoChainSequence(line_t *line, boolean dummy, void *context,
                               void *context2, mobj_t *activator)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
     linetype_t *info = context2;
 
     if(!xline->xg)
@@ -1242,7 +1237,7 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
         side = P_GetPtrp(line, DMU_FRONT_SECTOR);
     }
 
-    XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(DMU_LINE, line));
+    XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(line));
 
     rgba[0] = info->iparm[9];
     rgba[1] = info->iparm[10];
@@ -1286,7 +1281,7 @@ int C_DECL XLTrav_Activate(line_t *line, boolean dummy, void *context,
 int C_DECL XLTrav_LineCount(line_t *line, boolean dummy, void *context, void *context2,
                      mobj_t *activator)
 {
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
+    xline_t *xline = P_XLine(line);
     linetype_t *info = context2;
 
     if(!xline->xg)
@@ -1586,10 +1581,8 @@ int C_DECL XLTrav_EndLevel(line_t *line, boolean dummy, void *context,
 int C_DECL XLTrav_DisableLine(line_t *line, boolean dummy, void *context,
                               void *context2, mobj_t *activator)
 {
-    xline_t *origline;
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    origline = &xlines[P_ToIndex(DMU_LINE, (line_t*) context)];
+    xline_t *origline = P_XLine((line_t*) context);
+    xline_t *xline = P_XLine(line);
 
     if(!xline->xg)
         return true;
@@ -1600,10 +1593,8 @@ int C_DECL XLTrav_DisableLine(line_t *line, boolean dummy, void *context,
 int C_DECL XLTrav_EnableLine(line_t *line, boolean dummy, void *context,
                              void *context2, mobj_t *activator)
 {
-    xline_t *origline;
-    xline_t *xline = &xlines[P_ToIndex(DMU_LINE, line)];
-
-    origline = &xlines[P_ToIndex(DMU_LINE, (line_t*) context)];
+    xline_t *origline = P_XLine((line_t*) context);
+    xline_t *xline = P_XLine(line);
 
     if(!xline->xg)
         return true;
@@ -1746,8 +1737,8 @@ void XL_SwapSwitchTextures(line_t *line, int snum)
     if(XL_SwitchSwap(side, LWS_UPPER) ||
        XL_SwitchSwap(side, LWS_MID) ||
        XL_SwitchSwap(side, LWS_LOWER) )
-        XG_Dev("XL_SwapSwitchTextures: Line %i, side %i", P_ToIndex(DMU_LINE, line),
-                P_ToIndex(DMU_SIDE, side));
+        XG_Dev("XL_SwapSwitchTextures: Line %i, side %i", P_ToIndex(line),
+                P_ToIndex(side));
 }
 
 /*
@@ -1774,7 +1765,7 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
     }
 
     XG_Dev("XL_ChangeTexture: Line %i, side %i, section %i, texture %i",
-           P_ToIndex(DMU_LINE, line), sidenum, section, texture);
+           P_ToIndex(line), sidenum, section, texture);
     XG_Dev("  red %i, green %i, blue %i, alpha %i, blendmode %i",
            rgba[0], rgba[1], rgba[2], rgba[3], blendmode);
 
@@ -1866,7 +1857,6 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
                      int sidenum, mobj_t *data, int evtype)
 {
     byte rgba[4] = { 0, 0, 0, 0 };
-    int  lineid = P_ToIndex(DMU_LINE, line);
     xgline_t *xg;
     sector_t *frontsector;
     mobj_t *activator_thing = (mobj_t *) data;
@@ -1876,7 +1866,7 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
     frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
 
     XG_Dev("XL_ActivateLine: %s line %i, side %i, type %i",
-           activating ? "Activating" : "Deactivating", lineid,
+           activating ? "Activating" : "Deactivating", P_ToIndex(line),
            sidenum, P_XLine(line)->special);
 
     if(xg->disabled)
@@ -1944,15 +1934,15 @@ void XL_ActivateLine(boolean activating, linetype_t * info, line_t *line,
         if(!(info->flags2 & LTF2_WHEN_LAST) || info->act_count == 1)
             XL_DoFunction(info, line, sidenum, activator_thing, evtype);
         else
-            XG_Dev("  Line %i FUNCTION TEST FAILED", lineid);
+            XG_Dev("  Line %i FUNCTION TEST FAILED", P_ToIndex(line));
     }
     else
     {
         if(activating)
-            XG_Dev("  Line %i has no activation function", lineid);
+            XG_Dev("  Line %i has no activation function", P_ToIndex(line));
         else
         {
-            XG_Dev("  Line %i has no deactivation function", lineid);
+            XG_Dev("  Line %i has no deactivation function", P_ToIndex(line));
         }
     }
 
@@ -2045,7 +2035,6 @@ boolean XL_CheckKeys(mobj_t *mo, int flags2)
 int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
                  void *data)
 {
-    int lineid = P_ToIndex(DMU_LINE, line);
     xgline_t *xg;
     linetype_t *info;
     boolean active;
@@ -2074,7 +2063,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
 #endif
 
     XG_Dev("XL_LineEvent: %s line %i, side %i (chained type %i)%s",
-           EVTYPESTR(evtype), lineid, sidenum, linetype,
+           EVTYPESTR(evtype), P_ToIndex(line), sidenum, linetype,
            anyTrigger? " ANY Trigger":"");
 
     if(xg->disabled)
@@ -2097,7 +2086,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         if(XL_LineEvent(evtype, info->ev_chain, line, sidenum, data))
         {
             XG_Dev("  Event %s, line %i, side %i OVERRIDDEN BY EVENT CHAIN %i",
-                   EVTYPESTR(evtype), lineid, sidenum, info->ev_chain);
+                   EVTYPESTR(evtype), P_ToIndex(line), sidenum, info->ev_chain);
             return true;
         }
     }
@@ -2108,7 +2097,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
        (!active && info->act_type == LTACT_COUNTED_ON))
     {
         // Can't be processed at this time.
-        XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", lineid,
+        XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", P_ToIndex(line),
                active, info->act_type);
         return false;
     }
@@ -2162,7 +2151,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         goto type_passes;
 
     // Type doesn't pass, sorry.
-    XG_Dev("  Line %i: ACT REQUIREMENTS NOT FULFILLED, ABORTING EVENT", lineid);
+    XG_Dev("  Line %i: ACT REQUIREMENTS NOT FULFILLED, ABORTING EVENT", P_ToIndex(line));
     return false;
 
   type_passes:
@@ -2172,7 +2161,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Non-players can't use this line if line is flagged secret.
         if(evtype == XLE_USE && !activator && flags & ML_SECRET)
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to no_other_use_secret", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to no_other_use_secret", P_ToIndex(line));
             return false;
         }
     }
@@ -2186,7 +2175,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Check the activator's type.
         if(!activator_thing || activator_thing->type != info->aparm[9])
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to activator type", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to activator type", P_ToIndex(line));
             return false;
         }
     }
@@ -2196,7 +2185,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Only allow (de)activation from the front side.
         if(sidenum != 0)
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line side test", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to line side test", P_ToIndex(line));
             return false;
         }
     }
@@ -2204,7 +2193,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     // Check counting.
     if(!info->act_count)
     {
-        XG_Dev("  Line %i: ABORTING EVENT due to Count = 0", lineid);
+        XG_Dev("  Line %i: ABORTING EVENT due to Count = 0", P_ToIndex(line));
         return false;
     }
 
@@ -2225,14 +2214,14 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         if(!XL_CheckLineStatus(line, info->aparm[4], info->aparm[5], true,
                                activator_thing))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line_active test", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to line_active test", P_ToIndex(line));
             return false;
         }
     if(info->flags2 & LTF2_LINE_INACTIVE)
         if(!XL_CheckLineStatus(line, info->aparm[6], info->aparm[7], false,
                                activator_thing))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line_inactive test", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to line_inactive test", P_ToIndex(line));
             return false;
         }
     // Check game mode.
@@ -2240,7 +2229,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(!(info->flags2 & (LTF2_COOPERATIVE | LTF2_DEATHMATCH)))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to netgame mode", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to netgame mode", P_ToIndex(line));
             return false;
         }
     }
@@ -2248,7 +2237,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     {
         if(!(info->flags2 & LTF2_SINGLEPLAYER))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to game mode (1p)", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to game mode (1p)", P_ToIndex(line));
             return false;
         }
     }
@@ -2263,7 +2252,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
     if(!(info->flags2 & i))
     {
         XG_Dev("  Line %i: ABORTING EVENT due to skill level (%i)",
-               lineid, gameskill);
+               P_ToIndex(line), gameskill);
         return false;
     }
     // Check activator color.
@@ -2274,7 +2263,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         if(cfg.PlayerColor[activator - players] != info->aparm[8])
         {
             XG_Dev("  Line %i: ABORTING EVENT due to activator color (%i)",
-                   lineid, cfg.PlayerColor[activator-players]);
+                   P_ToIndex(line), cfg.PlayerColor[activator-players]);
             return false;
         }
     }
@@ -2287,13 +2276,13 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         if(!activator)
         {
             XG_Dev("  Line %i: ABORTING EVENT due to missing key "
-                   "(no activator)", lineid);
+                   "(no activator)", P_ToIndex(line));
             return false;
         }
         // Check that all the flagged keys are present.
         if(!XL_CheckKeys(activator_thing, info->flags2))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to missing key", lineid);
+            XG_Dev("  Line %i: ABORTING EVENT due to missing key", P_ToIndex(line));
             return false;        // Keys missing!
         }
     }
@@ -2304,7 +2293,7 @@ int XL_LineEvent(int evtype, int linetype, line_t *line, int sidenum,
         // Decrement counter.
         info->act_count--;
 
-        XG_Dev("  Line %i: Decrementing counter, now %i", lineid,
+        XG_Dev("  Line %i: Decrementing counter, now %i", P_ToIndex(line),
                info->act_count);
     }
     XL_ActivateLine(!active, info, line, sidenum, activator_thing, evtype);
@@ -2354,8 +2343,8 @@ void XL_DoChain(line_t *line, int chain, boolean activating, mobj_t *act_thing)
     line_t  dummy;
     xgline_t dummyxg;
 
-    XG_Dev("XL_DoChain: Line %i, chained type %i", line - lines, chain);
-    XG_Dev("  (dummy line will show up as %i)", &dummy - lines);
+    XG_Dev("XL_DoChain: Line %i, chained type %i", P_ToIndex(line), chain);
+    XG_Dev("  (dummy line will show up as %i)", P_ToIndex(dummy));
 
     // We'll use a dummy line for the chain.
     memcpy(&dummy, line, sizeof(*line));
@@ -2371,7 +2360,6 @@ void XL_DoChain(line_t *line, int chain, boolean activating, mobj_t *act_thing)
 
 void XL_ChainSequenceThink(line_t *line)
 {
-    int lineid = P_ToIndex(DMU_LINE, line);
     xgline_t *xg;
     linetype_t *info;
 
@@ -2394,7 +2382,7 @@ void XL_ChainSequenceThink(line_t *line)
     // If the counter goes to zero, it's time to execute the chain.
     if(xg->chtimer < 0)
     {
-        XG_Dev("XL_ChainSequenceThink: Line %i, executing...", lineid);
+        XG_Dev("XL_ChainSequenceThink: Line %i, executing...", P_ToIndex(line));
 
         // Are there any more chains?
         if(xg->chidx < DDLT_MAX_PARAMS && info->iparm[xg->chidx])
@@ -2477,7 +2465,7 @@ void XL_Think(line_t *line)
     {
         if(info->act_time >= 0 && xg->timer > FLT2TIC(info->act_time))
         {
-            XG_Dev("XL_Think: Line %i, timed to go %s", P_ToIndex(DMU_LINE, line),
+            XG_Dev("XL_Think: Line %i, timed to go %s", P_ToIndex(line),
                     xg->active ? "INACTIVE" : "ACTIVE");
 
             // Swap line state without any checks.

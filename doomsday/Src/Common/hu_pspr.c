@@ -176,8 +176,7 @@ void HU_UpdatePlayerSprite(int pnum)
         {
             // local light
             ddpsp->light =
-                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
-                          DMU_LIGHT_LEVEL) / 255.0;
+                P_GetIntp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL) / 255.0;
         }
         // Needs fullbright?
         if((pl->powers[pw_infrared] > 4 * 32) || (pl->powers[pw_infrared] & 8)
@@ -202,8 +201,7 @@ void HU_UpdatePlayerSprite(int pnum)
         {
             // local light
             ddpsp->light =
-                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
-                          DMU_LIGHT_LEVEL) / 255.0;
+                P_GetIntp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL) / 255.0;
         }
         // Needs fullbright?
         if(pl->powers[pw_infrared] > 4 * 32 || pl->powers[pw_infrared] & 8)
@@ -240,8 +238,7 @@ void HU_UpdatePlayerSprite(int pnum)
         {
             // local light
             ddpsp->light =
-                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
-                          DMU_LIGHT_LEVEL) / 255.0;
+                P_GetIntp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL) / 255.0;
         }
 #elif __JSTRIFE__
         if(psp->state->frame & FF_FULLBRIGHT)
@@ -253,8 +250,7 @@ void HU_UpdatePlayerSprite(int pnum)
         {
             // local light
             ddpsp->light =
-                P_GetIntp(DMU_SECTOR_OF_SUBSECTOR, pl->plr->mo->subsector,
-                          DMU_LIGHT_LEVEL) / 255.0;
+                P_GetIntp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL) / 255.0;
         }
 #endif
         // Add some extra light.

@@ -65,10 +65,9 @@
 void SV_WriteXGLine(line_t *li)
 {
     xgline_t *xg;
-    int idx = P_ToIndex(DMU_LINE, li);
     linetype_t *info;
 
-    xg = xlines[idx].xg;
+    xg = P_XLine(li)->xg;
     info = &xg->info;
 
     // Version byte.
@@ -96,7 +95,7 @@ void SV_WriteXGLine(line_t *li)
 void SV_ReadXGLine(line_t *li)
 {
     xgline_t *xg;
-    int idx = P_ToIndex(DMU_LINE, li);
+    xline_t *xline = P_XLine(li);
 
     // Read version.
     SV_ReadByte();
@@ -104,10 +103,10 @@ void SV_ReadXGLine(line_t *li)
     // This'll set all the correct string pointers and other data.
     XL_SetLineType(li, SV_ReadLong());
 
-    if(!idx || !xlines[idx].xg)
+    if(!xline || !xline->xg)
         Con_Error("SV_ReadXGLine: Bad XG line!\n");
 
-    xg = xlines[idx].xg;
+    xg = xline->xg;
 
     xg->info.act_count = SV_ReadLong();
     xg->active = SV_ReadByte();
@@ -158,9 +157,9 @@ void SV_WriteXGSector(struct sector_s *sec)
     xgsector_t *xg;
     sectortype_t *info;
     int     i;
-    int idx = P_ToIndex(DMU_SECTOR, sec);
+    xsector_t *xsec = P_XSector(sec);
 
-    xg = xsectors[idx].xg;
+    xg = xsec->xg;
     info = &xg->info;
 
     // Version byte.
@@ -182,14 +181,14 @@ void SV_ReadXGSector(struct sector_s *sec)
 {
     xgsector_t *xg;
     int     i;
-    int idx = P_ToIndex(DMU_SECTOR, sec);
+    xsector_t *xsec = P_XSector(sec);
 
     // Version byte.
     SV_ReadByte();
 
     // This'll init all the data.
     XS_SetSectorType(sec, SV_ReadLong());
-    xg = xsectors[idx].xg;
+    xg = xsec->xg;
     SV_Read(xg->info.count, sizeof(xg->info.count));
     SV_Read(xg->chain_timer, sizeof(xg->chain_timer));
     xg->timer = SV_ReadLong();
@@ -209,12 +208,12 @@ void SV_WriteXGPlaneMover(thinker_t *th)
 
     SV_WriteByte(1);            // Version.
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, mov->sector));
+    SV_WriteLong(P_ToIndex(mov->sector));
     SV_WriteByte(mov->ceiling);
     SV_WriteLong(mov->flags);
 
 
-    i = P_ToIndex(DMU_LINE, mov->origin);
+    i = P_ToIndex(mov->origin);
     if(i < 0 || i >= numlines)  // Is it a real line?
         i = 0;                  // No...
     else

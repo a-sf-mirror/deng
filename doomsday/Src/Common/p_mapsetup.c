@@ -110,9 +110,9 @@ xline_t* P_XLine(line_t* line)
 {
     // Is it a dummy?
     if(P_IsDummy(line))
-        return P_DummyData(line);
+        return P_DummyExtraData(line);
     else
-        return &xlines[P_ToIndex(DMU_LINE, line)];
+        return &xlines[P_ToIndex(line)];
 }
 
 /*
@@ -122,9 +122,9 @@ xsector_t* P_XSector(sector_t* sector)
 {
     // Is it a dummy?
     if(P_IsDummy(sector))
-        return P_DummyData(sector);
+        return P_DummyExtraData(sector);
     else
-        return &xsectors[P_ToIndex(DMU_SECTOR, sector)];
+        return &xsectors[P_ToIndex(sector)];
 }
 
 /*
@@ -132,13 +132,13 @@ xsector_t* P_XSector(sector_t* sector)
  */
 xsector_t* P_XSectorOfSubsector(subsector_t* sub)
 {
-    sector_t* sec = P_GetPtrp(DMU_SUBSECTOR, sub, DMU_SECTOR);
+    sector_t* sec = P_GetPtrp(sub, DMU_SECTOR);
 
     // Is it a dummy?
     if(P_IsDummy(sec))
-        return P_DummyData(sec);
+        return P_DummyExtraData(sec);
     else
-        return &xsectors[P_ToIndex(DMU_SECTOR, sec)];
+        return &xsectors[P_ToIndex(sec)];
 }
 
 /*
@@ -409,18 +409,18 @@ static void P_FinalizeLevel(void)
         fixed_t yoff;
 
         side = P_GetPtr(DMU_LINE, i, DMU_SIDE0);
-        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
 
-        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
+        if(P_GetIntp(side, DMU_BOTTOM_TEXTURE) == lumpnum &&
+           P_GetIntp(side, DMU_MIDDLE_TEXTURE) == 0)
+            P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
 
         side = P_GetPtr(DMU_LINE, i, DMU_SIDE1);
-        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
+        yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
 
-        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
+        if(P_GetIntp(side, DMU_BOTTOM_TEXTURE) == lumpnum &&
+           P_GetIntp(side, DMU_MIDDLE_TEXTURE) == 0)
+            P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
     }
 
 #elif __JHERETIC__

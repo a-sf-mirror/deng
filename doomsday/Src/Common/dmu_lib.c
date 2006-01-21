@@ -43,12 +43,12 @@
 
 int P_SectorLight(sector_t* sector)
 {
-    return P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    return P_GetIntp(sector, DMU_LIGHT_LEVEL);
 }
 
 void P_SectorSetLight(sector_t* sector, int level)
 {
-    P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, level);
+    P_SetIntp(sector, DMU_LIGHT_LEVEL, level);
 }
 
 void P_SectorModifyLight(sector_t* sector, int value)
@@ -65,16 +65,16 @@ void P_SectorModifyLight(sector_t* sector, int value)
 
 fixed_t P_SectorLightx(sector_t* sector)
 {
-    return P_GetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
+    return P_GetFixedp(sector, DMU_LIGHT_LEVEL);
 }
 
 void P_SectorModifyLightx(sector_t* sector, fixed_t value)
 {
-    P_SetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
+    P_SetFixedp(sector, DMU_LIGHT_LEVEL,
                 P_SectorLightx(sector) + value);
 }
 
 void *P_SectorSoundOrigin(sector_t *sec)
 {
-    return P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN);
+    return P_GetPtrp(sec, DMU_SOUND_ORIGIN);
 }

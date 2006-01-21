@@ -1141,7 +1141,7 @@ void SV_WriteCeiling(ceiling_t* ceiling)
         SV_WriteByte(0);
 
     SV_WriteByte((byte) ceiling->type);
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, ceiling->sector));
+    SV_WriteLong(P_ToIndex(ceiling->sector));
 
     SV_WriteShort(ceiling->bottomheight >> FRACBITS);
     SV_WriteShort(ceiling->topheight >> FRACBITS);
@@ -1213,7 +1213,7 @@ void SV_WriteDoor(vldoor_t* door)
 
     SV_WriteByte((byte) door->type);
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, door->sector));
+    SV_WriteLong(P_ToIndex(door->sector));
 
     SV_WriteShort(door->topheight >> FRACBITS);
     SV_WriteShort(door->speed >> FRACBITS);
@@ -1274,7 +1274,7 @@ void SV_WriteFloor(floormove_t* floor)
 
     SV_WriteByte((byte) floor->type);
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, floor->sector));
+    SV_WriteLong(P_ToIndex(floor->sector));
 
     SV_WriteByte((byte) floor->crush);
 
@@ -1341,7 +1341,7 @@ void SV_WritePlat(plat_t* plat)
 
     SV_WriteByte((byte) plat->type);
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, plat->sector));
+    SV_WriteLong(P_ToIndex(plat->sector));
 
     SV_WriteShort(plat->speed >> FRACBITS);
     SV_WriteShort(plat->low >> FRACBITS);
@@ -1417,7 +1417,7 @@ void SV_WriteFlash(lightflash_t* flash)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, flash->sector));
+    SV_WriteLong(P_ToIndex(flash->sector));
 
     SV_WriteLong(flash->count);
     SV_WriteLong(flash->maxlight);
@@ -1469,7 +1469,7 @@ void SV_WriteStrobe(strobe_t* strobe)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, strobe->sector));
+    SV_WriteLong(P_ToIndex(strobe->sector));
 
     SV_WriteLong(strobe->count);
     SV_WriteLong(strobe->maxlight);
@@ -1521,7 +1521,7 @@ void SV_WriteGlow(glow_t* glow)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, glow->sector));
+    SV_WriteLong(P_ToIndex(glow->sector));
 
     SV_WriteLong(glow->maxlight);
     SV_WriteLong(glow->minlight);
@@ -1570,7 +1570,7 @@ void SV_WriteFlicker(fireflicker_t* flicker)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(DMU_SECTOR, flicker->sector));
+    SV_WriteLong(P_ToIndex(flicker->sector));
 
     SV_WriteLong(flicker->maxlight);
     SV_WriteLong(flicker->minlight);
