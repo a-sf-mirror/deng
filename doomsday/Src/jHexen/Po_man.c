@@ -614,7 +614,7 @@ static int GetPolyobjMirror(int poly)
 		if(P_GetInt(DMU_POLYOBJ, i, DMU_TAG) == poly)
 		{
 			//return ((*polyobjs[i].Segs)->linedef->arg2);
-            seg_t* seg = P_GetPtrp(DMU_SEG_OF_POLYOBJ, P_ToPtr(DMU_POLYOBJ, i), 0);
+            seg_t* seg = P_GetPtrp(P_ToPtr(DMU_POLYOBJ, i), DMU_SEG_OF_POLYOBJ | 0);
             line_t* linedef = P_GetPtrp(seg, DMU_LINE);
             return P_XLine(linedef)->arg2;
 		}
@@ -817,11 +817,12 @@ static void SpawnPolyobj(int index, int tag, boolean crush)
 			P_SetInt(DMU_POLYOBJ, index, DMU_SEG_COUNT, PolySegCount);
 			P_SetPtr(DMU_POLYOBJ, index, DMU_SEG_LIST, 
 				Z_Malloc(PolySegCount * sizeof(seg_t*), PU_LEVEL, 0));
-			P_SetPtrp(DMU_SEG_OF_POLYOBJ, P_ToPtr(DMU_POLYOBJ, index), 0, 
+			P_SetPtrp(P_ToPtr(DMU_POLYOBJ, index), DMU_SEG_OF_POLYOBJ | 0, 
                       P_ToPtr(DMU_SEG, i)); // insert the first seg
 			IterFindPolySegs(P_GetFixed(DMU_SEG, i, DMU_VERTEX2_X),
                              P_GetFixed(DMU_SEG, i, DMU_VERTEX2_Y),
-							 P_GetPtrp(DMU_SEG_OF_POLYOBJ, P_ToPtr(DMU_POLYOBJ, index), 1));
+							 P_GetPtrp(P_ToPtr(DMU_POLYOBJ, index), 
+                                       DMU_SEG_OF_POLYOBJ | 1));
 			P_SetBool(DMU_POLYOBJ, index, DMU_CRUSH, crush);
 			P_SetInt(DMU_POLYOBJ, index, DMU_TAG, tag);
            
@@ -914,17 +915,17 @@ static void SpawnPolyobj(int index, int tag, boolean crush)
 				Z_Malloc(PolySegCount * sizeof(seg_t *), PU_LEVEL, 0));
 			for(i = 0; i < PolySegCount; i++)
 			{
-				P_SetPtrp(DMU_SEG_OF_POLYOBJ, po, i, polySegList[i]);
+				P_SetPtrp(po, DMU_SEG_OF_POLYOBJ | i, polySegList[i]);
 			}
 			P_SetInt(DMU_POLYOBJ, index, DMU_SEQUENCE_TYPE, 
-                P_XLine(P_GetPtrp(P_GetPtrp(DMU_SEG_OF_POLYOBJ, po, 0), 
+                P_XLine(P_GetPtrp(P_GetPtrp(po, DMU_SEG_OF_POLYOBJ | 0), 
                                   DMU_LINE))->arg4);
 		}
 		// Next, change the polyobjs first line to point to a mirror
 		//      if it exists
-        ldef = P_GetPtrp( 
-                         P_GetPtrp(DMU_SEG_OF_POLYOBJ, P_ToPtr(DMU_POLYOBJ, index), 0), 
-                         DMU_LINE);
+        ldef = P_GetPtrp( P_GetPtrp(P_ToPtr(DMU_POLYOBJ, index), 
+                                    DMU_SEG_OF_POLYOBJ | 0), 
+                         DMU_LINE );
         P_XLine(ldef)->arg2 = P_XLine(ldef)->arg3;
 		//(*polyobjs[index].Segs)->linedef->arg2 =
 		//	(*polyobjs[index].Segs)->linedef->arg3;
