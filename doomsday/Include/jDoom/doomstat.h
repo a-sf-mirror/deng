@@ -1,10 +1,25 @@
-// DESCRIPTION:
-//   All the global variables that store the internal state.
-//   Theoretically speaking, the internal state of the engine
-//    should be found by looking at the variables collected
-//    here, and every relevant module will have to include
-//    this header file.
-//   In practice, things are a bit messy.
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+/*
+ * All the global variables that store the internal state.
+ * Theoretically speaking, the internal state of the engine
+ * should be found by looking at the variables collected
+ * here, and every relevant module will have to include
+ * this header file.
+ * In practice, things are a bit messy.
+ */
 
 #ifndef __D_STATE__
 #define __D_STATE__
@@ -39,12 +54,6 @@ extern boolean  devparm;           // DEBUG: launched with -devparm
 extern GameMode_t gamemode;
 extern GameMission_t gamemission;
 
-// Set if homebrew PWAD stuff has been added.
-extern boolean  modifiedgame;
-
-// -------------------------------------------
-// Language.
-extern Language_t language;
 
 // -------------------------------------------
 // Selected skill type, map etc.
@@ -180,6 +189,7 @@ extern int      bodyqueslot;
 // Needed to store the number of the dummy sky flat.
 // Used for rendering, as well as tracking projectiles etc.
 #define skyflatnum  Get(DD_SKYFLATNUM)
+#define SKYFLATNAME  "F_SKY1"
 
 extern int      rndindex;
 extern int      prndindex;

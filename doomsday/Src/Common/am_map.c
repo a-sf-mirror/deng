@@ -60,6 +60,7 @@
 # include "jStrife/d_config.h"
 #endif
 
+#include "Common/p_setup.h"
 #include "Common/hu_stuff.h"
 #include "Common/am_map.h"
 #include "Common/g_common.h"

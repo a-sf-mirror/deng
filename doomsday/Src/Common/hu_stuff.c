@@ -26,28 +26,28 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "../Common/hu_stuff.h"
-#include "../Common/hu_msg.h"
+#include "Common/hu_stuff.h"
+#include "Common/hu_msg.h"
 
 #ifdef __JDOOM__
-# include "../jDoom/Mn_def.h"
-# include "../jDoom/m_menu.h"
-# include "../jDoom/doomstat.h"
-# include "../jDoom/p_local.h"
-# include "../jDoom/d_config.h"
-# include "../jDoom/dstrings.h"
+# include "jDoom/Mn_def.h"
+# include "jDoom/m_menu.h"
+# include "jDoom/doomstat.h"
+# include "jDoom/p_local.h"
+# include "jDoom/d_config.h"
+# include "jDoom/dstrings.h"
 #elif __JHERETIC__
-# include "../jHeretic/Doomdef.h"
-# include "../jHeretic/Mn_def.h"
-# include "../jHeretic/h_config.h"
+# include "jHeretic/Doomdef.h"
+# include "jHeretic/Mn_def.h"
+# include "jHeretic/h_config.h"
 #elif __JHEXEN__
-# include "../jHexen/h2def.h"
-# include "../jHexen/mn_def.h"
-# include "../jHexen/x_config.h"
+# include "jHexen/h2def.h"
+# include "jHexen/mn_def.h"
+# include "jHexen/x_config.h"
 #elif __JSTRIFE__
-# include "../jStrife/h2def.h"
-# include "../jStrife/mn_def.h"
-# include "../jStrife/d_config.h"
+# include "jStrife/h2def.h"
+# include "jStrife/mn_def.h"
+# include "jStrife/d_config.h"
 #endif
 
 // MACROS ------------------------------------------------------------------
@@ -420,7 +420,8 @@ void HU_Init(void)
 #elif __JSTRIFE__
     // load the heads-up fonts
 
-    // Tell Doomsday to load the following patches in monochrome mode (2 = weighted average)
+    // Tell Doomsday to load the following patches in monochrome mode
+    // (2 = weighted average)
     DD_SetInteger(DD_MONOCHROME_PATCHES, 2);
 
     j = HU_FONTSTART;
@@ -448,7 +449,8 @@ void HU_Init(void)
     // deactivate monochrome mode
     DD_SetInteger(DD_MONOCHROME_PATCHES, 0);
 #else
-    // Tell Doomsday to load the following patches in monochrome mode (2 = weighted average)
+    // Tell Doomsday to load the following patches in monochrome mode
+    // (2 = weighted average)
     DD_SetInteger(DD_MONOCHROME_PATCHES, 2);
 
     // Heretic/Hexen don't use ASCII numbered font patches
@@ -934,8 +936,9 @@ void M_WriteText2(int x, int y, char *string, dpatch_t *font, float red,
  * Write a string using a colored, custom font.
  * Also do a type-in effect.
  */
-void M_WriteText3(int x, int y, const char *string, dpatch_t *font, float red,
-                  float green, float blue, float alpha, boolean doTypeIn, int initialCount)
+void M_WriteText3(int x, int y, const char *string, dpatch_t *font,
+                  float red, float green, float blue, float alpha,
+                  boolean doTypeIn, int initialCount)
 {
     int     pass;
     int     w, h;
@@ -1034,7 +1037,8 @@ void M_WriteText3(int x, int y, const char *string, dpatch_t *font, float red,
                 // Do something flashy!
                 if(flash > 0)
                 {
-                    M_LetterFlash(cx, cy + yoff, w, h, true, fr, fg, fb, flash * fa);
+                    M_LetterFlash(cx, cy + yoff, w, h, true,
+                                  fr, fg, fb, flash * fa);
                 }
             }
             else if(cfg.menuShadow > 0)

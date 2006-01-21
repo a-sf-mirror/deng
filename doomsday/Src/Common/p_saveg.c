@@ -44,6 +44,9 @@
 #include "d_net.h"
 #include "p_svtexarc.h"
 
+#include "dmu_lib.h"
+#include "Common/p_setup.h"
+
 // MACROS ------------------------------------------------------------------
 
 #ifdef __JDOOM__

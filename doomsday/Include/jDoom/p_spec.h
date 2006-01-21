@@ -30,7 +30,10 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-// Many of the structures here will be directly written to
+#include "d_player.h"
+#include "r_data.h"
+
+// Many of the structures here will be directly read from old
 // savegame files. They need to be packed as tightly as possible.
 #pragma pack(1)
 

@@ -52,6 +52,8 @@
 #  include "jStrife/Soundst.h"
 #endif
 
+#include "dmu_lib.h"
+#include "Common/p_setup.h"
 #include "p_xgline.h"
 #include "p_xgsec.h"
 #include "Common/g_common.h"
@@ -107,6 +109,18 @@
         : reftype == SPREF_SPECIAL? "SPECIAL" \
         : reftype == SPREF_LINE_ACT_TAGGED_FLOOR? "LINE ACT TAGGED FLOOR" \
         : reftype == SPREF_LINE_ACT_TAGGED_CEILING? "LINE ACT TAGGED CEILING" : "???")
+
+#define TO_DMU_COLOR(x) (x == 0? DMU_COLOR_RED \
+        : x == 1? DMU_COLOR_GREEN \
+        : DMU_COLOR_BLUE)
+
+#define TO_DMU_CEILING_COLOR(x) (x == 0? DMU_CEILING_COLOR_RED \
+        : x == 1? DMU_CEILING_COLOR_GREEN \
+        : DMU_CEILING_COLOR_BLUE)
+
+#define TO_DMU_FLOOR_COLOR(x) (x == 0? DMU_FLOOR_COLOR_RED \
+        : x == 1? DMU_FLOOR_COLOR_GREEN \
+        : DMU_FLOOR_COLOR_BLUE)
 
 // TYPES -------------------------------------------------------------------
 
@@ -596,21 +610,19 @@ void XS_ChangePlaneTexture(sector_t *sector, boolean ceiling, int tex, byte rgb[
 
     if(ceiling)
     {
-#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgb[i])
-                sector->ceilingrgb[i] = rgb[i];
-#endif
+                P_SetBytep(DMU_SECTOR, sector, TO_DMU_CEILING_COLOR(i), rgb[i]);
+
         if(tex)
             P_SetIntp(DMU_SECTOR, sector, DMU_CEILING_TEXTURE, tex);
     }
     else
     {
-#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgb[i])
-                sector->floorrgb[i] = rgb[i];
-#endif
+                P_SetBytep(DMU_SECTOR, sector, TO_DMU_FLOOR_COLOR(i), rgb[i]);
+
         if(tex)
             P_SetIntp(DMU_SECTOR, sector, DMU_FLOOR_TEXTURE, tex);
     }
@@ -1758,7 +1770,6 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
             break;
         }
 
-#ifdef TODO_MAP_UPDATE
         for(num = 0; num < 3; num++)
         {
             i = usergb[num] + info->iparm[7 + num];
@@ -1766,9 +1777,8 @@ int C_DECL XSTrav_SectorLight(sector_t *sector, boolean ceiling, void *context,
                 i = 0;
             if(i > 255)
                 i = 255;
-            sector->rgb[num] = i;
+            P_SetBytep(DMU_SECTOR, sector, TO_DMU_COLOR(num), i);
         }
-#endif
     }
 
     return true;
@@ -1824,13 +1834,13 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
               P_GetIntp(DMU_SECTOR, from, DMU_LIGHT_LEVEL));
 
-    P_GetBytepv(DMU_SECTOR, sector, DMU_COLOR, tmprgb);
+    P_GetBytepv(DMU_SECTOR, from, DMU_COLOR, tmprgb);
     P_SetBytepv(DMU_SECTOR, sector, DMU_COLOR, tmprgb);
 
-    P_GetBytepv(DMU_SECTOR, sector, DMU_FLOOR_COLOR, tmprgb);
+    P_GetBytepv(DMU_SECTOR, from, DMU_FLOOR_COLOR, tmprgb);
     P_SetBytepv(DMU_SECTOR, sector, DMU_FLOOR_COLOR, tmprgb);
 
-    P_GetBytepv(DMU_SECTOR, sector, DMU_CEILING_COLOR, tmprgb);
+    P_GetBytepv(DMU_SECTOR, from, DMU_CEILING_COLOR, tmprgb);
     P_SetBytepv(DMU_SECTOR, sector, DMU_CEILING_COLOR, tmprgb);
 
 #ifdef TODO_MAP_UPDATE
@@ -2311,9 +2321,7 @@ void XS_UpdateLight(sector_t *sec)
             c = 0;
         if(c > 255)
             c = 255;
-#ifdef TODO_MAP_UPDATE
-        sec->rgb[i] = c;
-#endif
+        P_SetBytep(DMU_SECTOR, sec, TO_DMU_COLOR(i), c);
     }
 }
 

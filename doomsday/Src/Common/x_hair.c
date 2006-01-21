@@ -22,7 +22,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <stdlib.h>
-#include "x_hair.h"
+#include "Common/x_hair.h"
 
 #if __JDOOM__
 #  include "doomdef.h"

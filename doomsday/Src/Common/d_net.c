@@ -15,262 +15,134 @@
  * along with this program; if not: http://www.opensource.org/
  */
 
+/*
+ * Common code related to net games. Connecting to/from a netgame server.
+ * Netgame events (player and world) and netgame commands.
+ */
+
+// HEADER FILES ------------------------------------------------------------
+
 #if __JDOOM__
-#  include "../jDoom/doomdef.h"
-#  include "../jDoom/doomstat.h"
-#  include "../jDoom/d_main.h"
-#  include "../jDoom/d_config.h"
-#  include "../jDoom/p_local.h"
-#  include "../jDoom/s_sound.h"
-#  include "../jDoom/g_game.h"
-#  include "../jDoom/m_menu.h"
-#  include "../Common/hu_stuff.h"
-#  include "../jDoom/st_stuff.h"
+#  include "jDoom/doomdef.h"
+#  include "jDoom/doomstat.h"
+#  include "jDoom/d_config.h"
+#  include "jDoom/p_local.h"
+#  include "jDoom/s_sound.h"
+#  include "jDoom/g_game.h"
+#  include "jDoom/m_menu.h"
+#  include "Common/hu_stuff.h"
+#  include "jDoom/st_stuff.h"
 #endif
 
 #if __JHERETIC__
-#  include "../jHeretic/Doomdef.h"
-#  include "../jHeretic/P_local.h"
-#  include "../jHeretic/Soundst.h"
-#  include "../jHeretic/Mn_def.h"
-#  include "../jHeretic/h_config.h"
+#  include "jHeretic/Doomdef.h"
+#  include "jHeretic/P_local.h"
+#  include "jHeretic/Soundst.h"
+#  include "jHeretic/Mn_def.h"
+#  include "jHeretic/h_config.h"
 #endif
 
 #if __JHEXEN__
-#  include "../jHexen/h2def.h"
-#  include "../jHexen/p_local.h"
-#  include "../jHexen/soundst.h"
-#  include "../jHexen/mn_def.h"
-#  include "../jHexen/x_config.h"
+#  include "jHexen/h2def.h"
+#  include "jHexen/p_local.h"
+#  include "jHexen/soundst.h"
+#  include "jHexen/mn_def.h"
+#  include "jHexen/x_config.h"
 #endif
 
 #if __JSTRIFE__
-#  include "../jStrife/h2def.h"
-#  include "../jStrife/p_local.h"
-#  include "../jStrife/soundst.h"
-#  include "../jStrife/d_config.h"
+#  include "jStrife/h2def.h"
+#  include "jStrife/p_local.h"
+#  include "jStrife/soundst.h"
+#  include "jStrife/d_config.h"
 #endif
 
 #include "g_common.h"
 #include "d_net.h"
 
+// MACROS ------------------------------------------------------------------
+
 // TYPES --------------------------------------------------------------------
 
-// EXTERNAL FUNCTIONS -------------------------------------------------------
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 #if __JHEXEN__
 void    SB_ChangePlayerClass(player_t *player, int newclass);
 #endif
 
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+DEFCC(CCmdSetColor);
+DEFCC(CCmdSetMap);
+
+#if __JHEXEN__
+DEFCC(CCmdSetClass);
+#endif
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
 extern int netSvAllowSendMsg;
 
-// PUBLIC DATA --------------------------------------------------------------
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 char    msgBuff[256];
 float   netJumpPower = 9;
+
+// Net code related console commands
+ccmd_t netCCmds[] = {
+    {"setcolor", CCmdSetColor, "Set player color."},
+    {"setmap", CCmdSetMap, "Set map."},
+#ifdef __JHEXEN__
+    {"setclass", CCmdSetClass, "Set player class."},
+#endif
+    {"startcycle", CCmdMapCycle, "Begin map rotation."},
+    {"endcycle", CCmdMapCycle, "End map rotation."},
+    {NULL}
+};
+
+// Net code related console variables
+cvar_t netCVars[] = {
+    {"MapCycle", CVF_HIDE | CVF_NO_ARCHIVE, CVT_CHARPTR, &mapCycle, 0, 0,
+    "Map rotation sequence."},
+
+    {"server-game-mapcycle", 0, CVT_CHARPTR, &mapCycle, 0, 0,
+    "Map rotation sequence."},
+
+    {"server-game-mapcycle-noexit", 0, CVT_BYTE, &mapCycleNoExit, 0, 1,
+    "1=Disable exit buttons during map rotation."},
+
+    {"server-game-cheat", 0, CVT_INT, &netSvAllowCheats, 0, 1,
+    "1=Allow cheating in multiplayer games (god, noclip, give)."},
+
+    {NULL}
+};
 
 // PRIVATE DATA -------------------------------------------------------------
 
 // CODE ---------------------------------------------------------------------
 
-DEFCC(CCmdSetColor)
+/*
+ * Register the console commands and variables of the common netcode.
+ */
+void D_NetConsoleRegistration(void)
 {
-#if __JHEXEN__
-    int     numColors = 8;
-#elif __JSTRIFE__
-    int     numColors = 8;
-#else
-    int     numColors = 4;
-#endif
+    int     i;
 
-    if(argc != 2)
-    {
-        Con_Printf("Usage: %s (color)\n", argv[0]);
-        Con_Printf("Color #%i uses the player number as color.\n", numColors);
-        return true;
-    }
-    cfg.netColor = atoi(argv[1]);
-    if(IS_SERVER)               // Player zero?
-    {
-        if(IS_DEDICATED)
-            return false;
-
-        // The server player, plr#0, must be treated as a special case
-        // because this is a local mobj we're dealing with. We'll change
-        // the color translation bits directly.
-
-        cfg.PlayerColor[0] = PLR_COLOR(0, cfg.netColor);
-#ifdef __JDOOM__
-        ST_updateGraphics();
-#endif
-        // Change the color of the mobj (translation flags).
-        players[0].plr->mo->flags &= ~MF_TRANSLATION;
-
-#if __JHEXEN__
-        // Additional difficulty is caused by the fact that the Fighter's
-        // colors 0 (blue) and 2 (yellow) must be swapped.
-        players[0].plr->mo->flags |=
-            (cfg.PlayerClass[0] ==
-             PCLASS_FIGHTER ? (cfg.PlayerColor[0] ==
-                               0 ? 2 : cfg.PlayerColor[0] ==
-                               2 ? 0 : cfg.PlayerColor[0]) : cfg.
-             PlayerColor[0]) << MF_TRANSSHIFT;
-        players[0].colormap = cfg.PlayerColor[0];
-#else
-        players[0].plr->mo->flags |= cfg.PlayerColor[0] << MF_TRANSSHIFT;
-#endif
-
-        // Tell the clients about the change.
-        NetSv_SendPlayerInfo(0, DDSP_ALL_PLAYERS);
-    }
-    else
-    {
-        // Tell the server about the change.
-        NetCl_SendPlayerInfo();
-    }
-    return true;
-}
-
-#if __JHEXEN__
-DEFCC(CCmdSetClass)
-{
-    if(argc != 2)
-    {
-        Con_Printf("Usage: %s (0-2)\n", argv[0]);
-        return true;
-    }
-    cfg.netClass = atoi(argv[1]);
-    if(cfg.netClass > 2)
-        cfg.netClass = 2;
-    if(IS_CLIENT)
-    {
-        // Tell the server that we've changed our class.
-        NetCl_SendPlayerInfo();
-    }
-    else if(IS_DEDICATED)
-    {
-        return false;
-    }
-    else
-    {
-        SB_ChangePlayerClass(players + consoleplayer, cfg.netClass);
-    }
-    return true;
-}
-#endif
-
-DEFCC(CCmdSetMap)
-{
-    int     ep, map;
-
-    // Only the server can change the map.
-    if(!IS_SERVER)
-        return false;
-#ifdef __JDOOM__
-    if(argc != 3)
-    {
-        Con_Printf("Usage: %s (episode) (map)\n", argv[0]);
-        return true;
-    }
-#elif __JHERETIC__
-    if(argc != 3)
-    {
-        Con_Printf("Usage: %s (episode) (map)\n", argv[0]);
-        return true;
-    }
-#else
-    if(argc != 2)
-    {
-        Con_Printf("Usage: %s (map)\n", argv[0]);
-        return true;
-    }
-#endif
-
-    // Update game mode.
-    deathmatch = cfg.netDeathmatch;
-    nomonsters = cfg.netNomonsters;
-
-#ifdef __JDOOM__
-    respawnparm = cfg.netRespawn;
-    cfg.jumpEnabled = cfg.netJumping;
-    ep = atoi(argv[1]);
-    map = atoi(argv[2]);
-#elif __JHERETIC__
-    respawnparm = cfg.netRespawn;
-    cfg.jumpEnabled = cfg.netJumping;
-    ep = atoi(argv[1]);
-    map = atoi(argv[2]);
-#elif __JSTRIFE__
-    ep = 1;
-    map = atoi(argv[1]);
-#elif __JHEXEN__
-    randomclass = cfg.netRandomclass;
-    ep = 1;
-    map = P_TranslateMap(atoi(argv[1]));
-#endif
-
-    // Use the configured network skill level for the new map.
-    G_DeferedInitNew(cfg.netSkill, ep, map);
-    return true;
-}
-
-void D_ChatSound(void)
-{
-#ifdef __JHEXEN__
-    S_LocalSound(SFX_CHAT, NULL);
-#elif __JSTRIFE__
-    S_LocalSound(SFX_CHAT, NULL);
-#else
-    S_LocalSound(sfx_chat, NULL);
-#endif
+    for(i = 0; netCCmds[i].name; i++)
+        Con_AddCommand(netCCmds + i);
+    for(i = 0; netCVars[i].name; i++)
+        Con_AddVariable(netCVars + i);
 }
 
 /*
- * Show a message on screen, accompanied with a Chat sound effect.
+ * Called when the network server starts.
+ *
+ * Duties include:
+ *      updating global state variables
+ *      initializing all players' settings
  */
-void D_NetMessageEx(char *msg, boolean play_sound)
-{
-    strcpy(msgBuff, msg);
-    // This is intended to be a local message. Let's make sure P_SetMessage
-    // doesn't forward it anywhere.
-    netSvAllowSendMsg = false;
-    P_SetMessage(players + consoleplayer, msgBuff);
-    if(play_sound)
-        D_ChatSound();
-    netSvAllowSendMsg = true;
-}
-
-/*
- * Show message on screen, play chat sound.
- */
-void D_NetMessage(char *msg)
-{
-    D_NetMessageEx(msg, true);
-}
-
-/*
- * Show message on screen, play chat sound.
- */
-void D_NetMessageNoSound(char *msg)
-{
-    D_NetMessageEx(msg, false);
-}
-
-int D_NetServerClose(int before)
-{
-    if(!before)
-    {
-        // Restore normal game state.
-        deathmatch = false;
-        nomonsters = false;
-#if __JHEXEN__
-        randomclass = false;
-#endif
-        D_NetMessage("NETGAME ENDS");
-    }
-    return true;
-}
-
 int D_NetServerStarted(int before)
 {
     int     netMap;
@@ -315,6 +187,26 @@ int D_NetServerStarted(int before)
 
     // Close the menu, the game begins!!
     M_ClearMenus();
+    return true;
+}
+
+/*
+ * Called when a network server closes.
+ *
+ * Duties include: Restoring global state variables
+ */
+int D_NetServerClose(int before)
+{
+    if(!before)
+    {
+        // Restore normal game state.
+        deathmatch = false;
+        nomonsters = false;
+#if __JHEXEN__
+        randomclass = false;
+#endif
+        D_NetMessage("NETGAME ENDS");
+    }
     return true;
 }
 
@@ -670,42 +562,205 @@ void D_HandlePacket(int fromplayer, int type, void *data, int length)
     }
 }
 
-ccmd_t netCCmds[] = {
-    {"setcolor", CCmdSetColor, "Set player color."},
-    {"setmap", CCmdSetMap, "Set map."},
+/*
+ * Plays a (local) chat sound.
+ */
+void D_ChatSound(void)
+{
 #ifdef __JHEXEN__
-    {"setclass", CCmdSetClass, "Set player class."},
+    S_LocalSound(SFX_CHAT, NULL);
+#elif __JSTRIFE__
+    S_LocalSound(SFX_CHAT, NULL);
+#elif __JHERETIC__
+    S_LocalSound(sfx_chat, NULL);
+#else
+    if(gamemode == commercial)
+        S_LocalSound(sfx_radio, NULL);
+    else
+        S_LocalSound(sfx_tink, NULL);
 #endif
-    {"startcycle", CCmdMapCycle, "Begin map rotation."},
-    {"endcycle", CCmdMapCycle, "End map rotation."},
-    {NULL}
-};
-
-cvar_t netCVars[] = {
-    {"MapCycle", CVF_HIDE | CVF_NO_ARCHIVE, CVT_CHARPTR, &mapCycle, 0, 0,
-    "Map rotation sequence."},
-
-    {"server-game-mapcycle", 0, CVT_CHARPTR, &mapCycle, 0, 0,
-    "Map rotation sequence."},
-
-    {"server-game-mapcycle-noexit", 0, CVT_BYTE, &mapCycleNoExit, 0, 1,
-    "1=Disable exit buttons during map rotation."},
-
-    {"server-game-cheat", 0, CVT_INT, &netSvAllowCheats, 0, 1,
-    "1=Allow cheating in multiplayer games (god, noclip, give)."},
-
-    {NULL}
-};
+}
 
 /*
- * Register the console commands and variables of the common netcode.
+ * Show a message on screen, optionally accompanied
+ * by Chat sound effect.
  */
-void D_NetConsoleRegistration(void)
+void D_NetMessageEx(char *msg, boolean play_sound)
 {
-    int     i;
+    strcpy(msgBuff, msg);
+    // This is intended to be a local message.
+    // Let's make sure P_SetMessage doesn't forward it anywhere.
+    netSvAllowSendMsg = false;
+    P_SetMessage(players + consoleplayer, msgBuff);
 
-    for(i = 0; netCCmds[i].name; i++)
-        Con_AddCommand(netCCmds + i);
-    for(i = 0; netCVars[i].name; i++)
-        Con_AddVariable(netCVars + i);
+    if(play_sound)
+        D_ChatSound();
+
+    netSvAllowSendMsg = true;
+}
+
+/*
+ * Show message on screen, play chat sound.
+ */
+void D_NetMessage(char *msg)
+{
+    D_NetMessageEx(msg, true);
+}
+
+/*
+ * Show message on screen.
+ */
+void D_NetMessageNoSound(char *msg)
+{
+    D_NetMessageEx(msg, false);
+}
+
+/*
+ * Console command to change the players' colors.
+ */
+DEFCC(CCmdSetColor)
+{
+#if __JHEXEN__
+    int     numColors = 8;
+#elif __JSTRIFE__
+    int     numColors = 8;
+#else
+    int     numColors = 4;
+#endif
+
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (color)\n", argv[0]);
+        Con_Printf("Color #%i uses the player number as color.\n", numColors);
+        return true;
+    }
+    cfg.netColor = atoi(argv[1]);
+    if(IS_SERVER)               // Player zero?
+    {
+        if(IS_DEDICATED)
+            return false;
+
+        // The server player, plr#0, must be treated as a special case
+        // because this is a local mobj we're dealing with. We'll change
+        // the color translation bits directly.
+
+        cfg.PlayerColor[0] = PLR_COLOR(0, cfg.netColor);
+#ifdef __JDOOM__
+        ST_updateGraphics();
+#endif
+        // Change the color of the mobj (translation flags).
+        players[0].plr->mo->flags &= ~MF_TRANSLATION;
+
+#if __JHEXEN__
+        // Additional difficulty is caused by the fact that the Fighter's
+        // colors 0 (blue) and 2 (yellow) must be swapped.
+        players[0].plr->mo->flags |=
+            (cfg.PlayerClass[0] ==
+             PCLASS_FIGHTER ? (cfg.PlayerColor[0] ==
+                               0 ? 2 : cfg.PlayerColor[0] ==
+                               2 ? 0 : cfg.PlayerColor[0]) : cfg.
+             PlayerColor[0]) << MF_TRANSSHIFT;
+        players[0].colormap = cfg.PlayerColor[0];
+#else
+        players[0].plr->mo->flags |= cfg.PlayerColor[0] << MF_TRANSSHIFT;
+#endif
+
+        // Tell the clients about the change.
+        NetSv_SendPlayerInfo(0, DDSP_ALL_PLAYERS);
+    }
+    else
+    {
+        // Tell the server about the change.
+        NetCl_SendPlayerInfo();
+    }
+    return true;
+}
+
+/*
+ * Console command to change the players' class.
+ */
+#if __JHEXEN__
+DEFCC(CCmdSetClass)
+{
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (0-2)\n", argv[0]);
+        return true;
+    }
+    cfg.netClass = atoi(argv[1]);
+    if(cfg.netClass > 2)
+        cfg.netClass = 2;
+    if(IS_CLIENT)
+    {
+        // Tell the server that we've changed our class.
+        NetCl_SendPlayerInfo();
+    }
+    else if(IS_DEDICATED)
+    {
+        return false;
+    }
+    else
+    {
+        SB_ChangePlayerClass(players + consoleplayer, cfg.netClass);
+    }
+    return true;
+}
+#endif
+
+/*
+ * Console command to change the current map.
+ */
+DEFCC(CCmdSetMap)
+{
+    int     ep, map;
+
+    // Only the server can change the map.
+    if(!IS_SERVER)
+        return false;
+#ifdef __JDOOM__
+    if(argc != 3)
+    {
+        Con_Printf("Usage: %s (episode) (map)\n", argv[0]);
+        return true;
+    }
+#elif __JHERETIC__
+    if(argc != 3)
+    {
+        Con_Printf("Usage: %s (episode) (map)\n", argv[0]);
+        return true;
+    }
+#else
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (map)\n", argv[0]);
+        return true;
+    }
+#endif
+
+    // Update game mode.
+    deathmatch = cfg.netDeathmatch;
+    nomonsters = cfg.netNomonsters;
+
+#ifdef __JDOOM__
+    respawnparm = cfg.netRespawn;
+    cfg.jumpEnabled = cfg.netJumping;
+    ep = atoi(argv[1]);
+    map = atoi(argv[2]);
+#elif __JHERETIC__
+    respawnparm = cfg.netRespawn;
+    cfg.jumpEnabled = cfg.netJumping;
+    ep = atoi(argv[1]);
+    map = atoi(argv[2]);
+#elif __JSTRIFE__
+    ep = 1;
+    map = atoi(argv[1]);
+#elif __JHEXEN__
+    randomclass = cfg.netRandomclass;
+    ep = 1;
+    map = P_TranslateMap(atoi(argv[1]));
+#endif
+
+    // Use the configured network skill level for the new map.
+    G_DeferedInitNew(cfg.netSkill, ep, map);
+    return true;
 }

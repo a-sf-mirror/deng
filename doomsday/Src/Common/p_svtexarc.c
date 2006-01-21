@@ -30,6 +30,7 @@
 #  include "jStrife/r_local.h"
 #endif
 
+#include "Common/p_setup.h"
 #include "p_svtexarc.h"
 
 // MACROS ------------------------------------------------------------------

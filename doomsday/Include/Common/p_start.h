@@ -3,9 +3,9 @@
 
 #define MAXSTARTS   100
 
-
 extern thing_t playerstarts[MAXSTARTS], *playerstart_p;
 
+void            P_Init(void);
 void            P_RegisterPlayerStart(thing_t * mthing);
 boolean         P_CheckSpot(int playernum, thing_t * mthing,
                             boolean doTeleSpark);
@@ -20,18 +20,4 @@ void            P_SpawnPlayers(void);
 void            P_GetMapLumpName(int episode, int map, char *lumpName);
 void            P_LocateMapLumps(int episode, int map, int *lumpIndices);
 
-// -------------------------------------------------------------
-// Here follows common helper routines for the map data stuctures
-// -------------------------------------------------------------
-
-/*
- * Helpers for manipulating Sector properties
- */
-int     P_SectorLight(sector_t* sector);
-void    P_SectorSetLight(sector_t* sector, int level);
-void    P_SectorModifyLight(sector_t* sector, int value);
-fixed_t P_SectorLightx(sector_t* sector);
-void    P_SectorModifyLightx(sector_t* sector, fixed_t value);
-
-void   *P_SectorSoundOrigin(sector_t *sec);
 #endif

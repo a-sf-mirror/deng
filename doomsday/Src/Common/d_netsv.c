@@ -31,18 +31,18 @@
 #  include "m_cheat.h"
 #  include "g_common.h"
 #elif __JHERETIC__
-#  include "../jHeretic/Doomdef.h"
-#  include "../jHeretic/Soundst.h"
-#  include "../jHeretic/P_local.h"
-#  include "../jHeretic/h_config.h"
+#  include "jHeretic/Doomdef.h"
+#  include "jHeretic/Soundst.h"
+#  include "jHeretic/P_local.h"
+#  include "jHeretic/h_config.h"
 #elif __JHEXEN__
-#  include "../jHexen/h2def.h"
-#  include "../jHexen/p_local.h"
-#  include "../jHexen/x_config.h"
+#  include "jHexen/h2def.h"
+#  include "jHexen/p_local.h"
+#  include "jHexen/x_config.h"
 #elif __JSTRIFE__
-#  include "../jStrife/h2def.h"
-#  include "../jStrife/p_local.h"
-#  include "../jStrife/d_config.h"
+#  include "jStrife/h2def.h"
+#  include "jStrife/p_local.h"
+#  include "jStrife/d_config.h"
 #endif
 
 #include "d_net.h"
@@ -92,6 +92,9 @@ void    SB_ChangePlayerClass(player_t *player, int newclass);
 #endif
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+int     NetSv_GetFrags(int pl);
+void    NetSv_CheckCycling(void);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -150,6 +153,256 @@ void NetSv_UpdateGameConfig(void)
     if(cfg.jumpEnabled)
         strcat(gameConfigString, " jump");
 #endif
+}
+
+/*
+ * Unravel a DDPT_COMMANDS (32) packet. Returns a pointer to a static
+ * buffer that contains the ticcmds (kludge to work around the parameter
+ * passing from the engine).
+ */
+void *NetSv_ReadCommands(byte *msg, uint size)
+{
+#define MAX_COMMANDS 30
+    static byte data[2 + sizeof(ticcmd_t) * MAX_COMMANDS];
+    ticcmd_t *cmd;
+    byte   *end = msg + size, flags;
+    ushort *count = (ushort *) data;
+
+    memset(data, 0, sizeof(data));
+
+    // The first two bytes of the data contain the number of commands.
+    *count = 0;
+
+    // The first command.
+    cmd = (void *) (data + 2);
+
+    while(msg < end)
+    {
+        // One more command.
+        *count += 1;
+
+        // First the flags.
+        flags = *msg++;
+
+        if(flags & CMDF_FORWARDMOVE)
+            cmd->forwardMove = *msg++;
+        if(flags & CMDF_SIDEMOVE)
+            cmd->sideMove = *msg++;
+        if(flags & CMDF_ANGLE)
+        {
+            cmd->angle = SHORT( *(short *) msg );
+            msg += 2;
+        }
+        if(flags & CMDF_LOOKDIR)
+        {
+            cmd->pitch = SHORT( *(short *) msg );
+            msg += 2;
+        }
+        if(flags & CMDF_BUTTONS)
+        {
+            byte buttons = *msg++;
+            cmd->attack = ((buttons & CMDF_BTN_ATTACK) != 0);
+            cmd->use = ((buttons & CMDF_BTN_USE) != 0);
+            cmd->jump = ((buttons & CMDF_BTN_JUMP) != 0);
+            cmd->pause = ((buttons & CMDF_BTN_PAUSE) != 0);
+            cmd->suicide = ((buttons & CMDF_BTN_SUICIDE) != 0);
+        }
+        else
+        {
+            cmd->attack = cmd->use = cmd->jump = cmd->pause =
+                cmd->suicide = false;
+        }
+        if(flags & CMDF_LOOKFLY)
+            cmd->fly = *msg++;
+        if(flags & CMDF_ARTI)
+            cmd->arti = *msg++;
+        if(flags & CMDF_CHANGE_WEAPON)
+        {
+            cmd->changeWeapon = SHORT( *(short *) msg );
+            msg += 2;
+        }
+
+        // Copy to next command (only differences have been written).
+        memcpy(cmd + 1, cmd, sizeof(ticcmd_t));
+
+        // Move to next command.
+        cmd++;
+    }
+
+    return data;
+}
+
+void NetSv_Ticker(void)
+{
+    player_t *plr;
+    int     i, red, palette;
+    float   power;
+
+#if __JDOOM__
+    int     bz;
+#endif
+
+    // Map rotation checker.
+    NetSv_CheckCycling();
+
+    // This is done here for servers.
+    R_SetAllDoomsdayFlags();
+
+    // Set the camera filters for players.
+    for(i = 0; i < MAXPLAYERS; i++)
+    {
+        if(!players[i].plr->ingame)
+            continue;
+
+        plr = &players[i];
+
+        red = plr->damagecount;
+#ifdef __JDOOM__
+        if(plr->powers[pw_strength])
+        {
+            // Slowly fade the berzerk out.
+            bz = 12 - (plr->powers[pw_strength] >> 6);
+            if(bz > red)
+                red = bz;
+        }
+#endif
+        if(red)
+        {
+            palette = (red + 7) >> 3;
+            if(palette >= NUMREDPALS)
+            {
+                palette = NUMREDPALS - 1;
+            }
+            palette += STARTREDPALS;
+        }
+        else if(plr->bonuscount)
+        {
+            palette = (plr->bonuscount + 7) >> 3;
+            if(palette >= NUMBONUSPALS)
+            {
+                palette = NUMBONUSPALS - 1;
+            }
+            palette += STARTBONUSPALS;
+        }
+#ifdef __JDOOM__
+        else if(plr->powers[pw_ironfeet] > 4 * 32 ||
+                plr->powers[pw_ironfeet] & 8)
+            palette = 13;       //RADIATIONPAL;
+#elif __JHEXEN__
+        else if(plr->poisoncount)
+        {
+            palette = (plr->poisoncount + 7) >> 3;
+            if(palette >= NUMPOISONPALS)
+            {
+                palette = NUMPOISONPALS - 1;
+            }
+            palette += STARTPOISONPALS;
+        }
+        else if(plr->plr->mo && plr->plr->mo->flags2 & MF2_ICEDAMAGE)
+        {
+            palette = STARTICEPAL;
+        }
+#endif
+        else
+        {
+            palette = 0;
+        }
+        if(oldPals[i] != palette)
+        {
+            // The filter changes, send it to the client.
+            plr->plr->flags |= DDPF_FILTER;
+            oldPals[i] = palette;
+        }
+#if __JDOOM__
+        plr->plr->filter = D_GetFilterColor(palette);
+#elif __JHERETIC__
+        plr->plr->filter = H_GetFilterColor(palette);
+
+#else /*__JHEXEN__*/
+        plr->plr->filter = H2_GetFilterColor(palette);
+#endif
+    }
+
+#if __JHEXEN__ || __JSTRIFE__
+    // Keep track of player class changes (fighter, cleric, mage, pig).
+    // Notify clients accordingly. This is mostly just FYI (it'll update
+    // pl->class on the clientside).
+    for(i = 0; i < MAXPLAYERS; i++)
+    {
+        if(!players[i].plr->ingame)
+            continue;
+        if(oldClasses[i] != players[i].class)
+        {
+            oldClasses[i] = players[i].class;
+            NetSv_SendPlayerClass(i, players[i].class);
+        }
+    }
+#endif
+
+    // Inform clients about jumping?
+    power = (cfg.jumpEnabled ? cfg.jumpPower : 0);
+    if(power != netJumpPower)
+    {
+        netJumpPower = power;
+        for(i = 0; i < MAXPLAYERS; i++)
+            if(players[i].plr->ingame)
+                NetSv_SendJumpPower(i, power);
+    }
+
+    // Send the player state updates.
+    for(i = 0, plr = players; i < MAXPLAYERS; i++, plr++)
+    {
+        // Don't send on every tic. Also, don't send to all
+        // players at the same time.
+        if((gametic + i) % 10)
+            continue;
+        if(!plr->plr->ingame || !plr->update)
+            continue;
+
+        // Owned weapons and player state will be sent in a new kind of
+        // packet.
+        if(plr->update & (PSF_OWNED_WEAPONS | PSF_STATE))
+        {
+            NetSv_SendPlayerState2(i, i,
+                                   (plr->
+                                    update & PSF_OWNED_WEAPONS ?
+                                    PSF2_OWNED_WEAPONS : 0) | (plr->
+                                                               update &
+                                                               PSF_STATE ?
+                                                               PSF2_STATE : 0),
+                                   true);
+            plr->update &= ~(PSF_OWNED_WEAPONS | PSF_STATE);
+            // That was all?
+            if(!plr->update)
+                continue;
+        }
+
+        // The delivery of the state packet will be confirmed.
+        NetSv_SendPlayerState(i, i, plr->update, true);
+        plr->update = 0;
+    }
+}
+
+void NetSv_CycleToMapNum(int map)
+{
+    char    tmp[3], cmd[80];
+
+    sprintf(tmp, "%02i", map);
+#if __JDOOM__
+    if(gamemode == commercial)
+        sprintf(cmd, "setmap 1 %i", map);
+    else
+        sprintf(cmd, "setmap %c %c", tmp[0], tmp[1]);
+#elif __JHERETIC__
+    sprintf(cmd, "setmap %c %c", tmp[0], tmp[1]);
+#elif __JHEXEN__ || __JSTRIFE__
+    sprintf(cmd, "setmap %i", map);
+#endif
+    DD_Execute(cmd, false);
+
+    // In a couple of seconds, send everyone the rules of this map.
+    cycleMode = CYCLE_TELL_RULES;
+    cycleCounter = 3 * TICSPERSEC;
 }
 
 /*
@@ -294,46 +547,6 @@ int NetSv_ScanCycle(int index, maprule_t * rules)
     return -1;
 }
 
-void NetSv_CycleToMapNum(int map)
-{
-    char    tmp[3], cmd[80];
-
-    sprintf(tmp, "%02i", map);
-#if __JDOOM__
-    if(gamemode == commercial)
-        sprintf(cmd, "setmap 1 %i", map);
-    else
-        sprintf(cmd, "setmap %c %c", tmp[0], tmp[1]);
-#elif __JHERETIC__
-    sprintf(cmd, "setmap %c %c", tmp[0], tmp[1]);
-#elif __JHEXEN__ || __JSTRIFE__
-    sprintf(cmd, "setmap %i", map);
-#endif
-    DD_Execute(cmd, false);
-
-    // In a couple of seconds, send everyone the rules of this map.
-    cycleMode = CYCLE_TELL_RULES;
-    cycleCounter = 3 * TICSPERSEC;
-}
-
-/*
- * Calculates the frags of player 'pl'.
- */
-int NetSv_GetFrags(int pl)
-{
-    int     i, frags = 0;
-
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-#if __JDOOM__
-        frags += players[pl].frags[i] * (i == pl ? -1 : 1);
-#else
-        frags += players[pl].frags[i];
-#endif
-    }
-    return frags;
-}
-
 void NetSv_CheckCycling(void)
 {
     int     map, i, f;
@@ -458,47 +671,6 @@ void NetSv_CheckCycling(void)
 }
 
 /*
- * Handles the console commands "startcycle" and "endcycle".
- */
-DEFCC(CCmdMapCycle)
-{
-    int     map;
-
-    if(!IS_SERVER)
-    {
-        Con_Printf("Only allowed for a server.\n");
-        return false;
-    }
-    if(!stricmp(argv[0], "startcycle")) // (Re)start rotation?
-    {
-        // Find the first map in the sequence.
-        map = NetSv_ScanCycle(cycleIndex = 0, 0);
-        if(map < 0)
-        {
-            Con_Printf("MapCycle \"%s\" is invalid.\n", mapCycle);
-            return false;
-        }
-        // Warp there.
-        NetSv_CycleToMapNum(map);
-        cyclingMaps = true;
-    }
-    else                        // OK, then we need to end it.
-    {
-        if(cyclingMaps)
-        {
-            cyclingMaps = false;
-            NetSv_SendMessage(DDSP_ALL_PLAYERS, "MAP ROTATION ENDS");
-        }
-    }
-    return true;
-}
-
-void P_Telefrag(mobj_t *thing)
-{
-    P_TeleportMove(thing, thing->x, thing->y, false);
-}
-
-/*
  * Server calls this when new players enter the game.
  */
 void NetSv_NewPlayerEnters(int plrnumber)
@@ -527,31 +699,199 @@ void NetSv_NewPlayerEnters(int plrnumber)
     P_Telefrag(plr->plr->mo);
 }
 
-void NetSv_SendMessageEx(int plrNum, char *msg, boolean yellow)
+void NetSv_Intermission(int flags, int state, int time)
 {
-    if(IS_CLIENT || !netSvAllowSendMsg)
+    byte    buffer[32], *ptr = buffer;
+
+    if(IS_CLIENT)
         return;
-    if(plrNum >= 0 && plrNum < MAXPLAYERS)
-        if(!players[plrNum].plr->ingame)
-            return;
-    if(plrNum == DDSP_ALL_PLAYERS)
+
+    *ptr++ = flags;
+
+#ifdef __JDOOM__
+    if(flags & IMF_BEGIN)
     {
-        // Also show locally. No sound is played!
-        D_NetMessageNoSound(msg);
+        // Only include the necessary information.
+        WRITE_SHORT(ptr, wminfo.maxkills);
+        WRITE_SHORT(ptr, wminfo.maxitems);
+        WRITE_SHORT(ptr, wminfo.maxsecret);
+        *ptr++ = wminfo.next;
+        *ptr++ = wminfo.last;
+        *ptr++ = wminfo.didsecret;
     }
-    Net_SendPacket(plrNum | DDSP_ORDERED,
-                   yellow ? GPT_YELLOW_MESSAGE : GPT_MESSAGE, msg,
-                   strlen(msg) + 1);
+#endif
+
+#if __JHEXEN__ || __JSTRIFE__
+    if(flags & IMF_BEGIN)
+    {
+        *ptr++ = state;         // LeaveMap
+        *ptr++ = time;          // LeavePosition
+    }
+#endif
+
+    if(flags & IMF_STATE)
+        *ptr++ = state;
+    if(flags & IMF_TIME)
+        WRITE_SHORT(ptr, time);
+    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_ORDERED, GPT_INTERMISSION, buffer,
+                   ptr - buffer);
 }
 
-void NetSv_SendMessage(int plrNum, char *msg)
+/*
+ * The actual script is sent to the clients. 'script' can be NULL.
+ */
+void NetSv_Finale(int flags, char *script, boolean *conds, int numConds)
 {
-    NetSv_SendMessageEx(plrNum, msg, false);
+    byte   *buffer, *ptr;
+    int     i, len;
+
+    if(IS_CLIENT)
+        return;
+
+    // How much memory do we need?
+    if(script)
+    {
+        flags |= FINF_SCRIPT;
+        len = strlen(script) + 2;   // The end null and flags byte.
+
+        // The number of conditions and their values.
+        len += 1 + numConds;
+    }
+    else
+    {
+        // Just enough memory for the flags byte.
+        len = 1;
+    }
+
+    ptr = buffer = Z_Malloc(len, PU_STATIC, 0);
+
+    // First the flags.
+    *ptr++ = flags;
+
+    if(script)
+    {
+        // The conditions.
+        *ptr++ = numConds;
+        for(i = 0; i < numConds; i++)
+            *ptr++ = conds[i];
+
+        // Then the script itself.
+        strcpy((char*)ptr, script);
+    }
+
+    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_ORDERED, GPT_FINALE2, buffer, len);
+    Z_Free(buffer);
 }
 
-void NetSv_SendYellowMessage(int plrNum, char *msg)
+void NetSv_SendGameState(int flags, int to)
 {
-    NetSv_SendMessageEx(plrNum, msg, true);
+    byte    buffer[256], *ptr;
+    //packet_gamestate_t *gs = (packet_gamestate_t *) buffer;
+    int     i;
+
+    if(IS_CLIENT)
+        return;
+    if(gamestate != GS_LEVEL)
+        return;
+
+    // Print a short message that describes the game state.
+    if(ArgExists("-verbose") || IS_DEDICATED)
+    {
+        Con_Printf("Game setup: ep%i map%i %s\n", gameepisode, gamemap,
+                   gameConfigString);
+    }
+
+    // Send an update to all the players in the game.
+    for(i = 0; i < MAXPLAYERS; i++)
+    {
+#if __JHEXEN__ || __JSTRIFE__
+        int gameStateSize = 16;
+#else
+        int gameStateSize = 8;
+#endif
+        //int k;
+
+        if(!players[i].plr->ingame || (to != DDSP_ALL_PLAYERS && to != i))
+            continue;
+
+        ptr = buffer;
+
+        // The contents of the game state package are a bit messy
+        // due to compatibility with older versions.
+
+        /*byte setup[16];
+        Con_Message("Sizeof(gs)=%i\n", sizeof(packet_gamestate_t));
+        Con_Message("Sent game state packet (len=%i):\n", ptr - buffer);
+        for(k = 0; k < ptr - buffer; ++k)
+            Con_Message("%02x ", buffer[k]);
+        Con_Message("\n");*/
+
+#ifdef __JDOOM__
+        ptr[0] = gamemode;
+#else
+        ptr[0] = 0;
+#endif
+        ptr[1] = flags;
+        ptr[2] = gameepisode;
+        ptr[3] = gamemap;
+        ptr[4] = (deathmatch & 0x3)
+            | (!nomonsters? 0x4 : 0)
+            | (respawnparm? 0x8 : 0)
+#if __JDOOM__ || __JHERETIC__
+            | (cfg.jumpEnabled? 0x10 : 0)
+            | (gameskill << 5);
+#else
+        ;
+#endif
+#if __JDOOM__ || __JHERETIC__
+        ptr[5] = 0;
+
+#else
+        ptr[5] = gameskill & 0x7;
+#endif
+        ptr[6] = (Get(DD_GRAVITY) >> 8) & 0xff; // low byte
+        ptr[7] = (Get(DD_GRAVITY) >> 16) & 0xff; // high byte
+        memset(ptr + 8, 0, 8);
+        /*
+        Con_Message("Alternative state packet:\n");
+        for(k = 0; k < gameStateSize; ++k)
+            Con_Message("%02x ", setup[k]);
+        Con_Message("\n");
+        */
+
+        ptr += gameStateSize;
+
+#if 0
+#ifdef __JDOOM__
+        gs->gamemode = gamemode;
+#endif
+        gs->flags = flags;
+        gs->episode = gameepisode;
+        gs->map = gamemap;
+        gs->skill = gameskill;
+        gs->deathmatch = deathmatch;
+        gs->monsters = !nomonsters;
+        gs->respawn = respawnparm;
+#if __JDOOM__ || __JHERETIC__
+        gs->jumping = cfg.jumpEnabled;
+#endif
+        gs->gravity = SHORT((Get(DD_GRAVITY) >> 8) & 0xffff);
+        ptr += sizeof(packet_gamestate_t);
+#endif // #if 0
+
+        if(flags & GSF_CAMERA_INIT)
+        {
+            mobj_t *mo = players[i].plr->mo;
+
+            WRITE_SHORT(ptr, mo->x >> 16);
+            WRITE_SHORT(ptr, mo->y >> 16);
+            WRITE_SHORT(ptr, mo->z >> 16);
+            WRITE_SHORT(ptr, mo->angle >> 16);
+        }
+
+        // Send the packet.
+        Net_SendPacket(i | DDSP_ORDERED, GPT_GAME_STATE, buffer, ptr - buffer);
+    }
 }
 
 /*
@@ -810,201 +1150,6 @@ void NetSv_PSpriteChange(int plrNum, int state)
        Net_SendPacket(plrNum, GPT_PSPRITE_STATE, buffer, ptr-buffer); */
 }
 
-void NetSv_SendGameState(int flags, int to)
-{
-    byte    buffer[256], *ptr;
-    //packet_gamestate_t *gs = (packet_gamestate_t *) buffer;
-    int     i;
-
-    if(IS_CLIENT)
-        return;
-    if(gamestate != GS_LEVEL)
-        return;
-
-    // Print a short message that describes the game state.
-    if(ArgExists("-verbose") || IS_DEDICATED)
-    {
-        Con_Printf("Game setup: ep%i map%i %s\n", gameepisode, gamemap,
-                   gameConfigString);
-    }
-
-    // Send an update to all the players in the game.
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-#if __JHEXEN__ || __JSTRIFE__
-        int gameStateSize = 16;
-#else
-        int gameStateSize = 8;
-#endif
-        //int k;
-
-        if(!players[i].plr->ingame || (to != DDSP_ALL_PLAYERS && to != i))
-            continue;
-
-        ptr = buffer;
-
-        // The contents of the game state package are a bit messy
-        // due to compatibility with older versions.
-
-        /*byte setup[16];
-        Con_Message("Sizeof(gs)=%i\n", sizeof(packet_gamestate_t));
-        Con_Message("Sent game state packet (len=%i):\n", ptr - buffer);
-        for(k = 0; k < ptr - buffer; ++k)
-            Con_Message("%02x ", buffer[k]);
-        Con_Message("\n");*/
-
-#ifdef __JDOOM__
-        ptr[0] = gamemode;
-#else
-        ptr[0] = 0;
-#endif
-        ptr[1] = flags;
-        ptr[2] = gameepisode;
-        ptr[3] = gamemap;
-        ptr[4] = (deathmatch & 0x3)
-            | (!nomonsters? 0x4 : 0)
-            | (respawnparm? 0x8 : 0)
-#if __JDOOM__ || __JHERETIC__
-            | (cfg.jumpEnabled? 0x10 : 0)
-            | (gameskill << 5);
-#else
-        ;
-#endif
-#if __JDOOM__ || __JHERETIC__
-        ptr[5] = 0;
-
-#else
-        ptr[5] = gameskill & 0x7;
-#endif
-        ptr[6] = (Get(DD_GRAVITY) >> 8) & 0xff; // low byte
-        ptr[7] = (Get(DD_GRAVITY) >> 16) & 0xff; // high byte
-        memset(ptr + 8, 0, 8);
-        /*
-        Con_Message("Alternative state packet:\n");
-        for(k = 0; k < gameStateSize; ++k)
-            Con_Message("%02x ", setup[k]);
-        Con_Message("\n");
-        */
-
-        ptr += gameStateSize;
-
-#if 0
-#ifdef __JDOOM__
-        gs->gamemode = gamemode;
-#endif
-        gs->flags = flags;
-        gs->episode = gameepisode;
-        gs->map = gamemap;
-        gs->skill = gameskill;
-        gs->deathmatch = deathmatch;
-        gs->monsters = !nomonsters;
-        gs->respawn = respawnparm;
-#if __JDOOM__ || __JHERETIC__
-        gs->jumping = cfg.jumpEnabled;
-#endif
-        gs->gravity = SHORT((Get(DD_GRAVITY) >> 8) & 0xffff);
-        ptr += sizeof(packet_gamestate_t);
-#endif // #if 0
-
-        if(flags & GSF_CAMERA_INIT)
-        {
-            mobj_t *mo = players[i].plr->mo;
-
-            WRITE_SHORT(ptr, mo->x >> 16);
-            WRITE_SHORT(ptr, mo->y >> 16);
-            WRITE_SHORT(ptr, mo->z >> 16);
-            WRITE_SHORT(ptr, mo->angle >> 16);
-        }
-
-        // Send the packet.
-        Net_SendPacket(i | DDSP_ORDERED, GPT_GAME_STATE, buffer, ptr - buffer);
-    }
-}
-
-void NetSv_Intermission(int flags, int state, int time)
-{
-    byte    buffer[32], *ptr = buffer;
-
-    if(IS_CLIENT)
-        return;
-
-    *ptr++ = flags;
-
-#ifdef __JDOOM__
-    if(flags & IMF_BEGIN)
-    {
-        // Only include the necessary information.
-        WRITE_SHORT(ptr, wminfo.maxkills);
-        WRITE_SHORT(ptr, wminfo.maxitems);
-        WRITE_SHORT(ptr, wminfo.maxsecret);
-        *ptr++ = wminfo.next;
-        *ptr++ = wminfo.last;
-        *ptr++ = wminfo.didsecret;
-    }
-#endif
-
-#if __JHEXEN__ || __JSTRIFE__
-    if(flags & IMF_BEGIN)
-    {
-        *ptr++ = state;         // LeaveMap
-        *ptr++ = time;          // LeavePosition
-    }
-#endif
-
-    if(flags & IMF_STATE)
-        *ptr++ = state;
-    if(flags & IMF_TIME)
-        WRITE_SHORT(ptr, time);
-    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_ORDERED, GPT_INTERMISSION, buffer,
-                   ptr - buffer);
-}
-
-/*
- * The actual script is sent to the clients. 'script' can be NULL.
- */
-void NetSv_Finale(int flags, char *script, boolean *conds, int numConds)
-{
-    byte   *buffer, *ptr;
-    int     i, len;
-
-    if(IS_CLIENT)
-        return;
-
-    // How much memory do we need?
-    if(script)
-    {
-        flags |= FINF_SCRIPT;
-        len = strlen(script) + 2;   // The end null and flags byte.
-
-        // The number of conditions and their values.
-        len += 1 + numConds;
-    }
-    else
-    {
-        // Just enough memory for the flags byte.
-        len = 1;
-    }
-
-    ptr = buffer = Z_Malloc(len, PU_STATIC, 0);
-
-    // First the flags.
-    *ptr++ = flags;
-
-    if(script)
-    {
-        // The conditions.
-        *ptr++ = numConds;
-        for(i = 0; i < numConds; i++)
-            *ptr++ = conds[i];
-
-        // Then the script itself.
-        strcpy((char*)ptr, script);
-    }
-
-    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_ORDERED, GPT_FINALE2, buffer, len);
-    Z_Free(buffer);
-}
-
 void NetSv_SendPlayerInfo(int whose, int to_whom)
 {
     byte    buffer[10], *ptr = buffer;
@@ -1056,22 +1201,6 @@ void NetSv_ChangePlayerInfo(int from, byte *data)
     NetSv_SendPlayerInfo(from, DDSP_ALL_PLAYERS);
 }
 
-void NetSv_SaveGame(unsigned int game_id)
-{
-    if(!IS_SERVER || !IS_NETGAME)
-        return;
-    // This will make the clients save their games.
-    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_SAVE, &game_id, 4);
-}
-
-void NetSv_LoadGame(unsigned int game_id)
-{
-    if(!IS_SERVER || !IS_NETGAME)
-        return;
-    // The clients must tell their old console numbers.
-    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_LOAD, &game_id, 4);
-}
-
 /*
  * Sends the frags of player 'whose' to all other players.
  */
@@ -1080,9 +1209,22 @@ void NetSv_FragsForAll(player_t *player)
     NetSv_SendPlayerState(player - players, DDSP_ALL_PLAYERS, PSF_FRAGS, true);
 }
 
-void NetSv_SendPlayerClass(int pnum, char cls)
+/*
+ * Calculates the frags of player 'pl'.
+ */
+int NetSv_GetFrags(int pl)
 {
-    Net_SendPacket(pnum | DDSP_CONFIRM, GPT_CLASS, &cls, 1);
+    int     i, frags = 0;
+
+    for(i = 0; i < MAXPLAYERS; i++)
+    {
+#if __JDOOM__
+        frags += players[pl].frags[i] * (i == pl ? -1 : 1);
+#else
+        frags += players[pl].frags[i];
+#endif
+    }
+    return frags;
 }
 
 /*
@@ -1131,18 +1273,9 @@ void NetSv_KillMessage(player_t *killer, player_t *fragged, boolean stomping)
 #endif
 }
 
-/*
- * Inform all clients about a change in the 'pausedness' of a game.
- */
-void NetSv_Paused(boolean isPaused)
+void NetSv_SendPlayerClass(int pnum, char cls)
 {
-    char    setPause = (isPaused != false);
-
-    if(!IS_SERVER || !IS_NETGAME)
-        return;
-
-    // This will make the clients save their games.
-    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_PAUSE, &setPause, 1);
+    Net_SendPacket(pnum | DDSP_CONFIRM, GPT_CLASS, &cls, 1);
 }
 
 /*
@@ -1158,234 +1291,6 @@ void NetSv_SendJumpPower(int target, float power)
     power = FLOAT(power);
     memcpy((void *) msg, &power, 4);
     Net_SendPacket(target | DDSP_CONFIRM, GPT_JUMP_POWER, msg, 4);
-}
-
-void NetSv_Ticker(void)
-{
-    player_t *plr;
-    int     i, red, palette;
-    float   power;
-
-#if __JDOOM__
-    int     bz;
-#endif
-
-    // Map rotation checker.
-    NetSv_CheckCycling();
-
-    // This is done here for servers.
-    R_SetAllDoomsdayFlags();
-
-    // Set the camera filters for players.
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-        if(!players[i].plr->ingame)
-            continue;
-
-        plr = &players[i];
-
-        red = plr->damagecount;
-#ifdef __JDOOM__
-        if(plr->powers[pw_strength])
-        {
-            // Slowly fade the berzerk out.
-            bz = 12 - (plr->powers[pw_strength] >> 6);
-            if(bz > red)
-                red = bz;
-        }
-#endif
-        if(red)
-        {
-            palette = (red + 7) >> 3;
-            if(palette >= NUMREDPALS)
-            {
-                palette = NUMREDPALS - 1;
-            }
-            palette += STARTREDPALS;
-        }
-        else if(plr->bonuscount)
-        {
-            palette = (plr->bonuscount + 7) >> 3;
-            if(palette >= NUMBONUSPALS)
-            {
-                palette = NUMBONUSPALS - 1;
-            }
-            palette += STARTBONUSPALS;
-        }
-#ifdef __JDOOM__
-        else if(plr->powers[pw_ironfeet] > 4 * 32 ||
-                plr->powers[pw_ironfeet] & 8)
-            palette = 13;       //RADIATIONPAL;
-#elif __JHEXEN__
-        else if(plr->poisoncount)
-        {
-            palette = (plr->poisoncount + 7) >> 3;
-            if(palette >= NUMPOISONPALS)
-            {
-                palette = NUMPOISONPALS - 1;
-            }
-            palette += STARTPOISONPALS;
-        }
-        else if(plr->plr->mo && plr->plr->mo->flags2 & MF2_ICEDAMAGE)
-        {
-            palette = STARTICEPAL;
-        }
-#endif
-        else
-        {
-            palette = 0;
-        }
-        if(oldPals[i] != palette)
-        {
-            // The filter changes, send it to the client.
-            plr->plr->flags |= DDPF_FILTER;
-            oldPals[i] = palette;
-        }
-#if __JDOOM__
-        plr->plr->filter = D_GetFilterColor(palette);
-#elif __JHERETIC__
-        plr->plr->filter = H_GetFilterColor(palette);
-
-#else /*__JHEXEN__*/
-        plr->plr->filter = H2_GetFilterColor(palette);
-#endif
-    }
-
-#if __JHEXEN__ || __JSTRIFE__
-    // Keep track of player class changes (fighter, cleric, mage, pig).
-    // Notify clients accordingly. This is mostly just FYI (it'll update
-    // pl->class on the clientside).
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-        if(!players[i].plr->ingame)
-            continue;
-        if(oldClasses[i] != players[i].class)
-        {
-            oldClasses[i] = players[i].class;
-            NetSv_SendPlayerClass(i, players[i].class);
-        }
-    }
-#endif
-
-    // Inform clients about jumping?
-    power = (cfg.jumpEnabled ? cfg.jumpPower : 0);
-    if(power != netJumpPower)
-    {
-        netJumpPower = power;
-        for(i = 0; i < MAXPLAYERS; i++)
-            if(players[i].plr->ingame)
-                NetSv_SendJumpPower(i, power);
-    }
-
-    // Send the player state updates.
-    for(i = 0, plr = players; i < MAXPLAYERS; i++, plr++)
-    {
-        // Don't send on every tic. Also, don't send to all
-        // players at the same time.
-        if((gametic + i) % 10)
-            continue;
-        if(!plr->plr->ingame || !plr->update)
-            continue;
-
-        // Owned weapons and player state will be sent in a new kind of
-        // packet.
-        if(plr->update & (PSF_OWNED_WEAPONS | PSF_STATE))
-        {
-            NetSv_SendPlayerState2(i, i,
-                                   (plr->
-                                    update & PSF_OWNED_WEAPONS ?
-                                    PSF2_OWNED_WEAPONS : 0) | (plr->
-                                                               update &
-                                                               PSF_STATE ?
-                                                               PSF2_STATE : 0),
-                                   true);
-            plr->update &= ~(PSF_OWNED_WEAPONS | PSF_STATE);
-            // That was all?
-            if(!plr->update)
-                continue;
-        }
-
-        // The delivery of the state packet will be confirmed.
-        NetSv_SendPlayerState(i, i, plr->update, true);
-        plr->update = 0;
-    }
-}
-
-/*
- * Unravel a DDPT_COMMANDS (32) packet. Returns a pointer to a static
- * buffer that contains the ticcmds (kludge to work around the parameter
- * passing from the engine).
- */
-void *NetSv_ReadCommands(byte *msg, uint size)
-{
-#define MAX_COMMANDS 30
-    static byte data[2 + sizeof(ticcmd_t) * MAX_COMMANDS];
-    ticcmd_t *cmd;
-    byte   *end = msg + size, flags;
-    ushort *count = (ushort *) data;
-
-    memset(data, 0, sizeof(data));
-
-    // The first two bytes of the data contain the number of commands.
-    *count = 0;
-
-    // The first command.
-    cmd = (void *) (data + 2);
-
-    while(msg < end)
-    {
-        // One more command.
-        *count += 1;
-
-        // First the flags.
-        flags = *msg++;
-
-        if(flags & CMDF_FORWARDMOVE)
-            cmd->forwardMove = *msg++;
-        if(flags & CMDF_SIDEMOVE)
-            cmd->sideMove = *msg++;
-        if(flags & CMDF_ANGLE)
-        {
-            cmd->angle = SHORT( *(short *) msg );
-            msg += 2;
-        }
-        if(flags & CMDF_LOOKDIR)
-        {
-            cmd->pitch = SHORT( *(short *) msg );
-            msg += 2;
-        }
-        if(flags & CMDF_BUTTONS)
-        {
-            byte buttons = *msg++;
-            cmd->attack = ((buttons & CMDF_BTN_ATTACK) != 0);
-            cmd->use = ((buttons & CMDF_BTN_USE) != 0);
-            cmd->jump = ((buttons & CMDF_BTN_JUMP) != 0);
-            cmd->pause = ((buttons & CMDF_BTN_PAUSE) != 0);
-            cmd->suicide = ((buttons & CMDF_BTN_SUICIDE) != 0);
-        }
-        else
-        {
-            cmd->attack = cmd->use = cmd->jump = cmd->pause =
-                cmd->suicide = false;
-        }
-        if(flags & CMDF_LOOKFLY)
-            cmd->fly = *msg++;
-        if(flags & CMDF_ARTI)
-            cmd->arti = *msg++;
-        if(flags & CMDF_CHANGE_WEAPON)
-        {
-            cmd->changeWeapon = SHORT( *(short *) msg );
-            msg += 2;
-        }
-
-        // Copy to next command (only differences have been written).
-        memcpy(cmd + 1, cmd, sizeof(ticcmd_t));
-
-        // Move to next command.
-        cmd++;
-    }
-
-    return data;
 }
 
 /*
@@ -1414,4 +1319,102 @@ void NetSv_DoCheat(int player, const char *data)
     {
         DD_Executef(false, "%s %i", command, player);
     }
+}
+
+void NetSv_SaveGame(unsigned int game_id)
+{
+    if(!IS_SERVER || !IS_NETGAME)
+        return;
+    // This will make the clients save their games.
+    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_SAVE, &game_id, 4);
+}
+
+void NetSv_LoadGame(unsigned int game_id)
+{
+    if(!IS_SERVER || !IS_NETGAME)
+        return;
+    // The clients must tell their old console numbers.
+    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_LOAD, &game_id, 4);
+}
+
+/*
+ * Inform all clients about a change in the 'pausedness' of a game.
+ */
+void NetSv_Paused(boolean isPaused)
+{
+    char    setPause = (isPaused != false);
+
+    if(!IS_SERVER || !IS_NETGAME)
+        return;
+
+    // This will make the clients save their games.
+    Net_SendPacket(DDSP_ALL_PLAYERS | DDSP_CONFIRM, GPT_PAUSE, &setPause, 1);
+}
+
+void NetSv_SendMessageEx(int plrNum, char *msg, boolean yellow)
+{
+    if(IS_CLIENT || !netSvAllowSendMsg)
+        return;
+    if(plrNum >= 0 && plrNum < MAXPLAYERS)
+        if(!players[plrNum].plr->ingame)
+            return;
+    if(plrNum == DDSP_ALL_PLAYERS)
+    {
+        // Also show locally. No sound is played!
+        D_NetMessageNoSound(msg);
+    }
+    Net_SendPacket(plrNum | DDSP_ORDERED,
+                   yellow ? GPT_YELLOW_MESSAGE : GPT_MESSAGE, msg,
+                   strlen(msg) + 1);
+}
+
+void NetSv_SendMessage(int plrNum, char *msg)
+{
+    NetSv_SendMessageEx(plrNum, msg, false);
+}
+
+void NetSv_SendYellowMessage(int plrNum, char *msg)
+{
+    NetSv_SendMessageEx(plrNum, msg, true);
+}
+
+void P_Telefrag(mobj_t *thing)
+{
+    P_TeleportMove(thing, thing->x, thing->y, false);
+}
+
+/*
+ * Handles the console commands "startcycle" and "endcycle".
+ */
+DEFCC(CCmdMapCycle)
+{
+    int     map;
+
+    if(!IS_SERVER)
+    {
+        Con_Printf("Only allowed for a server.\n");
+        return false;
+    }
+    if(!stricmp(argv[0], "startcycle")) // (Re)start rotation?
+    {
+        // Find the first map in the sequence.
+        map = NetSv_ScanCycle(cycleIndex = 0, 0);
+        if(map < 0)
+        {
+            Con_Printf("MapCycle \"%s\" is invalid.\n", mapCycle);
+            return false;
+        }
+        // Warp there.
+        NetSv_CycleToMapNum(map);
+        cyclingMaps = true;
+    }
+    else                        // OK, then we need to end it.
+    {
+        if(cyclingMaps)
+        {
+            cyclingMaps = false;
+            NetSv_SendMessage(DDSP_ALL_PLAYERS, "MAP ROTATION ENDS");
+        }
+    }
+    return true;
 }

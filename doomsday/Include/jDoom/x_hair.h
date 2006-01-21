@@ -1,8 +1,3 @@
-#ifndef __CROSSHAIR_H__
-#define __CROSSHAIR_H__
-
-#define NUM_XHAIRS	6
-
-void            X_Drawer(void);
-
+#ifdef TODO_SRC_CLEANUP
+#warning “Obsolete file, to be removed”
 #endif

@@ -26,10 +26,8 @@
 #  include "m_menu.h"
 #  include "m_random.h"
 #  include "p_local.h"
-#  include "p_setup.h"
+#  include "Common/p_setup.h"
 #  include "p_tick.h"
-#  include "d_main.h"
-#  include "d_netJD.h"
 #  include "wi_stuff.h"
 #  include "st_stuff.h"
 #  include "p_local.h"
@@ -63,7 +61,6 @@
 #  include "x_config.h"
 #  include "jHexen/h2_actn.h"
 #  include "jHexen/st_stuff.h"
-#  include "d_net.h"
 #  include "jHexen/mn_def.h"
 #endif
 
@@ -77,7 +74,6 @@
 #  include "jStrife/d_config.h"
 #  include "jStrife/h2_actn.h"
 #  include "jStrife/st_stuff.h"
-#  include "d_net.h"
 #endif
 
 #include "Common/am_map.h"
@@ -85,6 +81,7 @@
 #include "Common/hu_msg.h"
 #include "Common/g_common.h"
 #include "Common/g_update.h"
+#include "Common/d_net.h"
 
 #include "f_infine.h"
 
@@ -738,6 +735,7 @@ void G_PreInit(void)
 
     // Add the cvars and ccmds to the console databases
     G_ConsoleRegistration();    // main command list
+    D_NetConsoleRegistration(); // for network
     G_Register();               // read-only game status cvars (for playsim)
     AM_Register();              // for the automap
     MN_Register();              // for the menu
@@ -745,8 +743,6 @@ void G_PreInit(void)
 
     DD_AddStartupWAD( STARTUPWAD );
     DetectIWADs();
-
-    modifiedgame = false;
 }
 
 /*
@@ -3344,6 +3340,19 @@ void G_DoNewGame(void)
 #endif
     gameaction = ga_nothing;
 }
+
+#if __JDOOM__
+/*
+ * Returns true if the specified ep/map exists in a WAD.
+ */
+boolean P_MapExists(int episode, int map)
+{
+    char    buf[20];
+
+    P_GetMapLumpName(episode, map, buf);
+    return W_CheckNumForName(buf) >= 0;
+}
+#endif
 
 /*
  * Returns true if the specified (episode, map) pair can be used.

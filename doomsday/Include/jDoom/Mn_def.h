@@ -1,4 +1,20 @@
-// Menu defines and types.
+/* $Id$
+ *
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ *
+ * This source is available for distribution and/or modification
+ * only under the terms of the DOOM Source Code License as
+ * published by id Software. All rights reserved.
+ *
+ * The source is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
+ * for more details.
+ */
+
+/*
+ * Menu defines and types.
+ */
 
 #ifndef __MENU_DEFS_H_
 #define __MENU_DEFS_H_
@@ -145,6 +161,6 @@ void    M_FloatMod10(float *variable, int option);
 
 void    SCEnterMultiplayerMenu(int option, void *data);
 
-void            MN_TickerEx(void); // The extended ticker.
+void    MN_TickerEx(void); // The extended ticker.
 
-#endif                          // __MENU_DEFS_H_
+#endif

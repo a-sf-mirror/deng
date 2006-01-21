@@ -38,7 +38,6 @@
 #if __JDOOM__
 # include "doomdef.h"
 # include "jDoom/dstrings.h"
-# include "d_main.h"
 # include "d_config.h"
 # include "g_game.h"
 # include "g_common.h"
@@ -3315,16 +3314,10 @@ void M_QuitDOOM(int option, void *data)
     Con_Open(false);
 
 #ifdef __JDOOM__
-    // We pick index 0 which is language sensitive,
-    //  or one at random, between 1 and maximum number.
-    if(language != english)
-        sprintf(endstring, "%s\n\n%s", endmsg[0], DOSY);
-    else
-
-        sprintf(endstring, "%s\n\n%s",
-                endmsg[(gametic % (NUM_QUITMESSAGES + 1))], DOSY);
+    sprintf(endstring, "%s\n\n%s",
+            endmsg[(gametic % (NUM_QUITMESSAGES + 1))], DOSY);
 #else
-        sprintf(endstring, "%s\n\n%s", endmsg[0], DOSY);
+    sprintf(endstring, "%s\n\n%s", endmsg[0], DOSY);
 #endif
 
     quitAsk = 1;

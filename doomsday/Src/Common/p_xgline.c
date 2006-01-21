@@ -53,6 +53,9 @@
 #  include "jStrife/sounds.h"
 #endif
 
+#include "dmu_lib.h"
+
+#include "Common/p_setup.h"
 #include "d_net.h"
 #include "p_xgline.h"
 #include "p_xgsec.h"
@@ -112,6 +115,19 @@
         : reftype == LSREF_THING_NOEXIST? "SECTORS WITHOUT THING" : "???")
 
 #define GET_TXT(x)    ((*gi.text)[x].text)
+
+#define TO_DMU_TOP_COLOR(x) (x == 0? DMU_TOP_COLOR_RED \
+        : x == 1? DMU_TOP_COLOR_GREEN \
+        : DMU_TOP_COLOR_BLUE)
+
+#define TO_DMU_MIDDLE_COLOR(x) (x == 0? DMU_MIDDLE_COLOR_RED \
+        : x == 1? DMU_MIDDLE_COLOR_GREEN \
+        : x == 2? DMU_MIDDLE_COLOR_BLUE \
+        : DMU_MIDDLE_COLOR_ALPHA)
+
+#define TO_DMU_BOTTOM_COLOR(x) (x == 0? DMU_BOTTOM_COLOR_RED \
+        : x == 1? DMU_BOTTOM_COLOR_GREEN \
+        : DMU_BOTTOM_COLOR_BLUE)
 
 // TYPES -------------------------------------------------------------------
 
@@ -1776,33 +1792,27 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
             P_SetIntp(DMU_SIDE, side, DMU_MIDDLE_BLENDMODE, blendmode);
 
         // Are we changing the surface color?
-#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 4; i++)
             if(rgba[i])
-                side->midrgba[i] = rgba[i];
-#endif
+                P_SetBytep(DMU_SIDE, side, TO_DMU_MIDDLE_COLOR(i), rgba[i]);
     }
     else if(section == LWS_UPPER)
     {
         if(texture)
             P_SetIntp(DMU_SIDE, side, DMU_TOP_TEXTURE, texture);
 
-#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgba[i])
-                side->ceilingrgb[i] = rgba[i];
-#endif
+                P_SetBytep(DMU_SIDE, side, TO_DMU_TOP_COLOR(i), rgba[i]);
     }
     else if(section == LWS_LOWER)
     {
         if(texture)
             P_SetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE, texture);
 
-#ifdef TODO_MAP_UPDATE
         for(i = 0; i < 3; i++)
             if(rgba[i])
-                side->bottomrgb[i] = rgba[i];
-#endif
+                P_SetBytep(DMU_SIDE, side, TO_DMU_BOTTOM_COLOR(i), rgba[i]);
     }
 
     // Adjust the side's flags

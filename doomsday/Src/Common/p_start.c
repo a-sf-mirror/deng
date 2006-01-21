@@ -47,6 +47,7 @@
 #  include "jStrife/d_config.h"
 #endif
 
+#include "Common/p_setup.h"
 #include "d_net.h"
 
 // MACROS ------------------------------------------------------------------
@@ -67,36 +68,15 @@
 void P_SpawnMapThing(thing_t * mthing);
 
 #if __JHERETIC__
-void P_TurnGizmosAwayFromDoors();
-void P_MoveThingsOutOfWalls();
 char *P_GetLevelName(int episode, int map);
 char *P_GetShortLevelName(int episode, int map);
-#elif __JHEXEN__
-void P_TurnTorchesToFaceWalls();
 #endif
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void P_SpawnThings(void);
-
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern int actual_leveltime;
-extern boolean bossKilled;
-
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-int numvertexes;
-int numsegs;
-int numsectors;
-int numsubsectors;
-int numnodes;
-int numlines;
-int numsides;
-int numthings;
-
-// If true we are in the process of setting up a level
-boolean levelSetup;
 
 // Maintain single and multi player starting spots.
 thing_t deathmatchstarts[MAX_DM_STARTS];
@@ -108,6 +88,60 @@ thing_t *things;
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
+
+/*
+ * Initializes various playsim related data
+ */
+void P_Init(void)
+{
+#if __JHEXEN__
+    InitMapInfo();
+#endif
+
+    P_InitSwitchList();
+    P_InitPicAnims();
+
+#if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
+    P_InitTerrainTypes();
+    P_InitLava();
+#endif
+
+#if __JDOOM__
+    // Maximum health and armor points.
+    maxhealth = 100;
+    healthlimit = 200;
+    godmodehealth = 100;
+
+    megaspherehealth = 200;
+
+    soulspherehealth = 100;
+    soulspherelimit = 200;
+
+    armorpoints[0] = 100;
+    armorpoints[1] = armorpoints[2] = armorpoints[3] = 200;
+    armorclass[0] = 1;
+    armorclass[1] = armorclass[2] = armorclass[3] = 2;
+
+    GetDefInt("Player|Max Health", &maxhealth);
+    GetDefInt("Player|Health Limit", &healthlimit);
+    GetDefInt("Player|God Health", &godmodehealth);
+
+    GetDefInt("Player|Green Armor", &armorpoints[0]);
+    GetDefInt("Player|Blue Armor", &armorpoints[1]);
+    GetDefInt("Player|IDFA Armor", &armorpoints[2]);
+    GetDefInt("Player|IDKFA Armor", &armorpoints[3]);
+
+    GetDefInt("Player|Green Armor Class", &armorclass[0]);
+    GetDefInt("Player|Blue Armor Class", &armorclass[1]);
+    GetDefInt("Player|IDFA Armor Class", &armorclass[2]);
+    GetDefInt("Player|IDKFA Armor Class", &armorclass[3]);
+
+    GetDefInt("MegaSphere|Give|Health", &megaspherehealth);
+
+    GetDefInt("SoulSphere|Give|Health", &soulspherehealth);
+    GetDefInt("SoulSphere|Give|Health Limit", &soulspherelimit);
+#endif
+}
 
 void P_RegisterPlayerStart(thing_t * mthing)
 {
@@ -258,7 +292,8 @@ boolean P_CheckSpot(int playernum, thing_t * mthing, boolean doTeleSpark)
 
 #if __JDOOM__ || __JHEXEN__ || __JSTRIFE__
         mo = P_SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
-                         P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y), DMU_FLOOR_HEIGHT),
+                         P_GetFixedp(DMU_SUBSECTOR, R_PointInSubsector(x, y),
+                                     DMU_FLOOR_HEIGHT),
                          MT_TFOG);
 #else                           // __JHERETIC__
         mo = P_SpawnTeleFog(x + 20 * finecosine[an], y + 20 * finesine[an]);
@@ -313,6 +348,81 @@ boolean P_FuzzySpawn(thing_t * spot, int playernum, boolean doTeleSpark)
     // No success. Just spawn at the specified spot.
     P_SpawnPlayer(spot, playernum);
     return false;
+}
+
+/*
+ * Spawns all THINGS that belong in the map.
+ *
+ * Polyobject anchors etc are still handled in PO_Init()
+ */
+void P_SpawnThings(void)
+{
+    int i;
+    thing_t *th;
+#if __JDOOM__
+    boolean spawn;
+#elif __JHEXEN__
+    int     playerCount;
+    int     deathSpotsCount;
+#endif
+
+    for(i = 0; i < numthings; i++)
+    {
+        th = &things[i];
+#if __JDOOM__
+        // Do not spawn cool, new stuff if !commercial
+        spawn = true;
+        if(gamemode != commercial)
+        {
+            switch(th->type)
+            {
+            case 68:            // Arachnotron
+            case 64:            // Archvile
+            case 88:            // Boss Brain
+            case 89:            // Boss Shooter
+            case 69:            // Hell Knight
+            case 67:            // Mancubus
+            case 71:            // Pain Elemental
+            case 74:            // MegaSphere
+            case 65:            // Former Human Commando
+            case 66:            // Revenant
+            case 84:            // Wolf SS
+                spawn = false;
+                break;
+            }
+        }
+        if(spawn == false)
+            break;
+#endif
+        P_SpawnMapThing(th);
+    }
+
+#if __JHEXEN__
+    // FIXME: This stuff should be moved!
+    P_CreateTIDList();
+    P_InitCreatureCorpseQueue(false);   // false = do NOT scan for corpses
+
+    if(!deathmatch)
+    {                           // Don't need to check deathmatch spots
+        return;
+    }
+
+    playerCount = 0;
+    for(i = 0; i < MAXPLAYERS; i++)
+    {
+        playerCount += players[i].plr->ingame;
+    }
+
+    deathSpotsCount = deathmatch_p - deathmatchstarts;
+    if(deathSpotsCount < playerCount)
+    {
+        Con_Error("P_LoadThings: Player count (%d) exceeds deathmatch "
+                  "spots (%d)", playerCount, deathSpotsCount);
+    }
+#endif
+
+    // We're finished with the temporary thing list
+    Z_Free(things);
 }
 
 /*
@@ -412,435 +522,6 @@ void P_GetMapLumpName(int episode, int map, char *lumpName)
 #endif
 }
 
-/*
- * Locate the lump indices where the data of the specified map
- * resides.
- */
-void P_LocateMapLumps(int episode, int map, int *lumpIndices)
-{
-    char lumpName[40];
-    char glLumpName[40];
-
-    // Find map name.
-    P_GetMapLumpName(episode, map, lumpName);
-    sprintf(glLumpName, "GL_%s", lumpName);
-    Con_Message("SetupLevel: %s\n", lumpName);
-
-    // Let's see if a plugin is available for loading the data.
-    if(!Plug_DoHook(HOOK_LOAD_MAP_LUMPS, W_GetNumForName(lumpName),
-                    (void*) lumpIndices))
-    {
-        // The plugin failed.
-        lumpIndices[0] = W_GetNumForName(lumpName);
-        lumpIndices[1] = W_CheckNumForName(glLumpName);
-    }
-}
-
-// -------------------------------------------------------------
-// Here follows common code used while loading a new map
-// -------------------------------------------------------------
-
-/*
- * Loads map and glnode data for the requested episode and map
- */
-void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
-{
-    int     i;
-    int     lumpNumbers[2];
-#if __JDOOM__
-    char    levelId[9];
-#elif __JHERETIC__
-    int     parm;
-    char    levelId[16];
-#elif __JHEXEN__
-    int     parm;
-    char    levelId[9];
-#endif
-
-#if !__JHEXEN__
-    char    *lname, *lauthor;
-#endif
-    int     setupflags = DDSLF_POLYGONIZE | DDSLF_FIX_SKY | DDSLF_REVERB;
-
-    // It begins
-    levelSetup = true;
-
-    // Reset our local global element counters.
-    // Any local data should have been free'd by now (PU_LEVEL)
-    numvertexes = 0;
-    numsegs = 0;
-    numsectors = 0;
-    numsubsectors = 0;
-    numnodes = 0;
-    numlines = 0;
-    numsides = 0;
-
-    // Map thing data for the level IS stored game-side.
-    // However, Doomsday tells us how many things there are.
-    numthings = 0;
-
-    DD_SetInteger(DD_POLYOBJ_COUNT, 0);
-
-    // Let the engine know that we are about to start setting up a
-    // level.
-    R_SetupLevel(NULL, DDSLF_INITIALIZE);
-
-#if !__JHEXEN__
-    totalkills = totalitems = totalsecret = 0;
-#endif
-
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-        players[i].killcount = players[i].secretcount = players[i].itemcount = 0;
-    }
-    // Initial height of PointOfView; will be set by player think.
-    players[consoleplayer].plr->viewz = 1;
-
-    S_LevelChange();
-
-#if __JHEXEN__
-    S_StartMusic("chess", true);    // Waiting-for-level-load song
-#endif
-
-    Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-#if __JDOOM__
-    wminfo.maxfrags = 0;
-    wminfo.partime = 180;
-
-    // Only used with 666/7 specials
-    bossKilled = false;
-#endif
-
-    P_InitThinkers();
-
-    leveltime = actual_leveltime = 0;
-
-    // Locate the lumps where the map data resides in.
-    P_LocateMapLumps(episode, map, lumpNumbers);
-
-#if __JDOOM__ || __JHEXEN__
-    P_GetMapLumpName(episode, map, levelId);
-#elif __JHERETIC__
-    strcpy(levelId, W_LumpName(lumpNumbers[0]));
-#endif
-
-    P_LoadMap(lumpNumbers[0], lumpNumbers[1], levelId);
-
-    // Now the map data has been loaded we can update the
-    // global data struct counters
-    numvertexes = DD_GetInteger(DD_VERTEX_COUNT);
-    numsegs = DD_GetInteger(DD_SEG_COUNT);
-    numsectors = DD_GetInteger(DD_SECTOR_COUNT);
-    numsubsectors = DD_GetInteger(DD_SUBSECTOR_COUNT);
-    numnodes = DD_GetInteger(DD_NODE_COUNT);
-    numlines = DD_GetInteger(DD_LINE_COUNT);
-    numsides = DD_GetInteger(DD_SIDE_COUNT);
-    numthings = DD_GetInteger(DD_THING_COUNT);
-
-    if(lumpNumbers[1] > lumpNumbers[0])
-        // We have GL nodes!
-        setupflags |= DDSLF_DONT_CLIP;
-
-    bodyqueslot = 0;
-    deathmatch_p = deathmatchstarts;
-    playerstart_p = playerstarts;
-
-#if __JHERETIC__
-    P_InitAmbientSound();
-    P_InitMonsters();
-    P_OpenWeapons();
-#endif
-    Con_Message("Spawn things\n");
-    P_SpawnThings();
-
-    // killough 3/26/98: Spawn icon landings:
-#if __JDOOM__
-    if(gamemode == commercial)
-        P_SpawnBrainTargets();
-#endif
-
-#if __JHERETIC__
-    P_CloseWeapons();
-#endif
-
-    // It's imperative that this is called!
-    // - dlBlockLinks initialized
-    // - necessary GL data generated
-    // - sky fix
-    // - map info setup
-#if __JHEXEN__
-    // Server can't be initialized before PO_Init is done, but PO_Init
-    // can't be done until SetupLevel is called...
-    R_SetupLevel(levelId, setupflags | DDSLF_NO_SERVER);
-
-    // Initialize polyobjs.
-    Con_Message("PO init\n");
-    PO_Init(lumpNumbers[0] + ML_THINGS);   // Initialize the polyobjs
-
-    // Now we can init the server.
-    Con_Message("Init server\n");
-    R_SetupLevel(levelId, DDSLF_SERVER_ONLY);
-
-    Con_Message("Load ACS scripts\n");
-    P_LoadACScripts(lumpNumbers[0] + ML_BEHAVIOR); // ACS object code
-#else
-
-    R_SetupLevel(levelId, setupflags);
-
-#endif
-
-    P_DealPlayerStarts();
-    P_SpawnPlayers();
-
-#if __JHERETIC__ || __JHEXEN__
-    //
-    // if deathmatch, randomly spawn the active players
-    //
-    TimerGame = 0;
-    if(deathmatch)
-    {
-        parm = ArgCheck("-timer");
-        if(parm && parm < Argc() - 1)
-        {
-            TimerGame = atoi(Argv(parm + 1)) * 35 * 60;
-        }
-    }
-#endif
-#if __JDOOM__
-    // clear special respawning que
-    iquehead = iquetail = 0;
-#endif
-
-    // set up world state
-    P_SpawnSpecials();
-
-    // preload graphics
-    if(precache)
-    {
-        R_PrecacheLevel();
-        R_PrecachePSprites();
-    }
-
-#if __JHEXEN__
-    // Check if the level is a lightning level.
-    P_InitLightning();
-
-    SN_StopAllSequences();
-#endif
-
-    // How about some music?
-    S_LevelMusic();
-
-#if !__JHEXEN__
-    // Print some info. These also appear on the screen.
-    lname = (char *) DD_GetVariable(DD_MAP_NAME);
-    lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
-
-#if __JDOOM__
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-    {
-        lname = mapnamesp[map - 1];
-        lauthor = PLUT_AUTHOR;
-    }
-    else if(gamemission == pack_tnt)
-    {
-        lname = mapnamest[map - 1];
-        lauthor = TNT_AUTHOR;
-    }
-#endif
-
-    if(lname || lauthor)
-    {
-        Con_Printf("\n");
-        if(lname)
-            Con_FPrintf(CBLF_LIGHT | CBLF_BLUE, "%s\n", lname);
-        if(lauthor)
-            Con_FPrintf(CBLF_LIGHT | CBLF_BLUE, "Author: %s\n", lauthor);
-        Con_Printf("\n");
-    }
-#endif // end if !__JHEXEN__
-
-// Games specific level finalization
-#if __JDOOM__
-    // Adjust slime lower wall textures (a hack!).
-    // This will hide the ugly green bright line that would otherwise be
-    // visible due to texture repeating and interpolation.
-
-    for(i = 0; i < numlines; i++)
-    {
-        side_t* side;
-        int     lumpnum = R_TextureNumForName("NUKE24");
-        fixed_t yoff;
-
-        side = P_GetPtr(DMU_LINE, i, DMU_SIDE0);
-        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
-
-        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
-
-        side = P_GetPtr(DMU_LINE, i, DMU_SIDE1);
-        yoff = P_GetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y);
-
-        if(P_GetIntp(DMU_SIDE, side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(DMU_SIDE, side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(DMU_SIDE, side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
-    }
-
-#elif __JHERETIC__
-    // Do some fine tuning with mobj placement and orientation.
-    P_MoveThingsOutOfWalls();
-    P_TurnGizmosAwayFromDoors();
-
-#elif __JHEXEN__
-    // Load colormap and set the fullbright flag
-    i = P_GetMapFadeTable(gamemap);
-    if(i == W_GetNumForName("COLORMAP"))
-    {
-        // We don't want fog in this case.
-        GL_UseFog(false);
-    }
-    else
-    {
-        // Probably fog ... don't use fullbright sprites
-        if(i == W_GetNumForName("FOGMAP"))
-        {
-            // Tell the renderer to turn on the fog.
-            GL_UseFog(true);
-        }
-    }
-
-    P_TurnTorchesToFaceWalls();
-
-    // Print a message in the console about this level.
-    Con_Message("Map %d (%d): %s\n", P_GetMapWarpTrans(map), map,
-                P_GetMapName(map));
-#endif
-
-    // Someone may want to do something special now that the level has been
-    // fully set up.
-    R_SetupLevel(levelId, DDSLF_FINALIZE);
-
-    // It ends
-    levelSetup = false;
-}
-
-/*
- * Spawns all THINGS that belong in the map.
- * Should really be moved to Common/p_start.c
- *
- * Polyobject anchors etc are still handled in PO_Init()
- */
-static void P_SpawnThings(void)
-{
-    int i;
-    thing_t *th;
-#if __JDOOM__
-    boolean spawn;
-#elif __JHEXEN__
-    int     playerCount;
-    int     deathSpotsCount;
-#endif
-
-    for(i = 0; i < numthings; i++)
-    {
-        th = &things[i];
-#if __JDOOM__
-        // Do not spawn cool, new stuff if !commercial
-        spawn = true;
-        if(gamemode != commercial)
-        {
-            switch(th->type)
-            {
-            case 68:            // Arachnotron
-            case 64:            // Archvile
-            case 88:            // Boss Brain
-            case 89:            // Boss Shooter
-            case 69:            // Hell Knight
-            case 67:            // Mancubus
-            case 71:            // Pain Elemental
-            case 74:            // MegaSphere
-            case 65:            // Former Human Commando
-            case 66:            // Revenant
-            case 84:            // Wolf SS
-                spawn = false;
-                break;
-            }
-        }
-        if(spawn == false)
-            break;
-#endif
-        P_SpawnMapThing(th);
-    }
-
-#if __JHEXEN__
-    // FIXME: This stuff should be moved!
-    P_CreateTIDList();
-    P_InitCreatureCorpseQueue(false);   // false = do NOT scan for corpses
-
-    if(!deathmatch)
-    {                           // Don't need to check deathmatch spots
-        return;
-    }
-
-    playerCount = 0;
-    for(i = 0; i < MAXPLAYERS; i++)
-    {
-        playerCount += players[i].plr->ingame;
-    }
-
-    deathSpotsCount = deathmatch_p - deathmatchstarts;
-    if(deathSpotsCount < playerCount)
-    {
-        Con_Error("P_LoadThings: Player count (%d) exceeds deathmatch "
-                  "spots (%d)", playerCount, deathSpotsCount);
-    }
-#endif
-
-    // We're finished with the temporary thing list
-    //Z_Free(things);
-}
-
-#if __JHERETIC__ || __JHEXEN__
-fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
-                            fixed_t *offset)
-{
-    float   a[2], b[2], c[2], d[2], len;
-
-    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX1_XY, a);
-    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX2_XY, b);
-
-    c[VX] = FIX2FLT(x);
-    c[VY] = FIX2FLT(y);
-
-    d[VX] = b[VX] - a[VX];
-    d[VY] = b[VY] - a[VY];
-    len = sqrt(d[VX] * d[VX] + d[VY] * d[VY]);  // Accurate.
-
-    if(offset)
-        *offset =
-            FRACUNIT * ((a[VY] - c[VY]) * (a[VY] - b[VY]) -
-                        (a[VX] - c[VX]) * (b[VX] - a[VX])) / len;
-    return FRACUNIT * ((a[VY] - c[VY]) * (b[VX] - a[VX]) -
-                       (a[VX] - c[VX]) * (b[VY] - a[VY])) / len;
-}
-#endif
-
-#if __JDOOM__
-/*
- * Returns true if the specified ep/map exists in a WAD.
- */
-boolean P_MapExists(int episode, int map)
-{
-    char    buf[20];
-
-    P_GetMapLumpName(episode, map, buf);
-    return W_CheckNumForName(buf) >= 0;
-}
-#endif
-
 #if __JHERETIC__
 char *P_GetShortLevelName(int episode, int map)
 {
@@ -873,7 +554,58 @@ char   *P_GetLevelName(int episode, int map)
     }
     return info.name;
 }
+#endif
 
+/*
+ * Locate the lump indices where the data of the specified map
+ * resides.
+ */
+void P_LocateMapLumps(int episode, int map, int *lumpIndices)
+{
+    char lumpName[40];
+    char glLumpName[40];
+
+    // Find map name.
+    P_GetMapLumpName(episode, map, lumpName);
+    sprintf(glLumpName, "GL_%s", lumpName);
+    Con_Message("SetupLevel: %s\n", lumpName);
+
+    // Let's see if a plugin is available for loading the data.
+    if(!Plug_DoHook(HOOK_LOAD_MAP_LUMPS, W_GetNumForName(lumpName),
+                    (void*) lumpIndices))
+    {
+        // The plugin failed.
+        lumpIndices[0] = W_GetNumForName(lumpName);
+        lumpIndices[1] = W_CheckNumForName(glLumpName);
+    }
+}
+
+#if __JHERETIC__ || __JHEXEN__
+fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
+                            fixed_t *offset)
+{
+    float   a[2], b[2], c[2], d[2], len;
+
+    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX1_XY, a);
+    P_GetFloatpv(DMU_LINE, line, DMU_VERTEX2_XY, b);
+
+    c[VX] = FIX2FLT(x);
+    c[VY] = FIX2FLT(y);
+
+    d[VX] = b[VX] - a[VX];
+    d[VY] = b[VY] - a[VY];
+    len = sqrt(d[VX] * d[VX] + d[VY] * d[VY]);  // Accurate.
+
+    if(offset)
+        *offset =
+            FRACUNIT * ((a[VY] - c[VY]) * (a[VY] - b[VY]) -
+                        (a[VX] - c[VX]) * (b[VX] - a[VX])) / len;
+    return FRACUNIT * ((a[VY] - c[VY]) * (b[VX] - a[VX]) -
+                       (a[VX] - c[VX]) * (b[VY] - a[VY])) / len;
+}
+#endif
+
+#if __JHERETIC__
 /*
  * Only affects torches, which are often placed inside walls in the
  * original maps. The DOOM engine allowed these kinds of things but
@@ -1082,48 +814,3 @@ void P_TurnTorchesToFaceWalls()
     }
 }
 #endif
-
-// -------------------------------------------------------------
-// Here follows common helper routines for the map data stuctures
-// -------------------------------------------------------------
-
-/*
- * Helpers for manipulating Sector properties
- */
-int P_SectorLight(sector_t* sector)
-{
-    return P_GetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
-}
-
-void P_SectorSetLight(sector_t* sector, int level)
-{
-    P_SetIntp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL, level);
-}
-
-void P_SectorModifyLight(sector_t* sector, int value)
-{
-    int level = P_SectorLight(sector);
-
-    level += value;
-
-    if(level < 0) level = 0;
-    if(level > 255) level = 255;
-
-    P_SectorSetLight(sector, level);
-}
-
-fixed_t P_SectorLightx(sector_t* sector)
-{
-    return P_GetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL);
-}
-
-void P_SectorModifyLightx(sector_t* sector, fixed_t value)
-{
-    P_SetFixedp(DMU_SECTOR, sector, DMU_LIGHT_LEVEL,
-                P_SectorLightx(sector) + value);
-}
-
-void *P_SectorSoundOrigin(sector_t *sec)
-{
-    return P_GetPtrp(DMU_SECTOR, sec, DMU_SOUND_ORIGIN);
-}

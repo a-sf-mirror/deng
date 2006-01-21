@@ -373,8 +373,9 @@ void DrawGameSetupMenu(void)
 
     sprintf(buf, "%i", cfg.netMap);
     M_WriteMenuText(menu, 0, buf);
-    M_WriteText2(160 - M_StringWidth(mapName, hu_font_a) / 2, menu->y + menu->itemHeight, mapName,
-                    hu_font_a, 1, 0.7f, 0.3f, menu_alpha);
+    M_WriteText2(160 - M_StringWidth(mapName, hu_font_a) / 2,
+                 menu->y + menu->itemHeight, mapName,
+                 hu_font_a, 1, 0.7f, 0.3f, menu_alpha);
 
     M_WriteMenuText(menu, 2, skillText[cfg.netSkill]);
     M_WriteMenuText(menu, 3, dmText[cfg.netDeathmatch]);

@@ -26,7 +26,6 @@
 #if defined(__JDOOM__)
 # include "doomdef.h"
 # include "doomstat.h"
-# include "d_netJD.h"
 # include "m_swap.h"
 # include "s_sound.h"
 #elif __JHERETIC__
@@ -48,6 +47,7 @@
 
 #include "f_infine.h"
 #include "Common/g_common.h"
+#include "Common/d_net.h"
 
 // MACROS ------------------------------------------------------------------
 
