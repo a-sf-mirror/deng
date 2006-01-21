@@ -1740,9 +1740,9 @@ void R_UpdatePlanes(void)
 
             sin->oldfloorpic = sec->floorpic;
         }
-        else if((R_FlatFlags(sec->floorpic) & TXF_GLOW) != (sec->floorglow > 0))
+        else if((R_FlatFlags(sec->floorpic) & TXF_GLOW) != (sec->floorglow != 0))
         {
-            // The glow property of the current flat been changed
+            // The glow property of the current flat has been changed
             // since last update.
 
             // NOTE:
@@ -1786,7 +1786,7 @@ void R_UpdatePlanes(void)
             }
             sin->oldceilingpic = sec->ceilingpic;
         }
-        else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) != (sec->ceilingglow > 0))
+        else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) != (sec->ceilingglow != 0))
         {
             if(sec->ceilingglow)
             {
