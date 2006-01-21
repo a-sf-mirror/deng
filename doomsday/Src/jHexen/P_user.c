@@ -787,7 +787,7 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 	P_CalcHeight(player);
-	if(xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, player->plr->mo->subsector)].special)
+	if(xsectors[P_GetIntp(player->plr->mo->subsector, DMU_SECTOR)].special)
 	{
 		P_PlayerInSpecialSector(player);
 	}
@@ -1831,7 +1831,7 @@ void P_ClientSideThink()
 		mo->flags2 &= ~MF2_FLY;
 	}
 
-	if(xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, mo->subsector)].special)
+	if(xsectors[P_GetIntp(mo->subsector, DMU_SECTOR)].special)
 		P_PlayerInSpecialSector(pl);
 
 	// Set consoleplayer thrust multiplier.

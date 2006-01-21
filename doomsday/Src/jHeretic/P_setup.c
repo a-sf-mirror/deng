@@ -90,7 +90,7 @@ int        numxlines;
  */
 xline_t* P_XLine(line_t* line)
 {
-    return &xlines[P_ToIndex(DMU_LINE, line)];
+    return &xlines[P_ToIndex(line)];
 }
 
 /*
@@ -98,7 +98,7 @@ xline_t* P_XLine(line_t* line)
  */
 xsector_t* P_XSector(sector_t* sector)
 {
-    return &xsectors[P_ToIndex(DMU_SECTOR, sector)];
+    return &xsectors[P_ToIndex(sector)];
 }
 
 /*
@@ -106,7 +106,7 @@ xsector_t* P_XSector(sector_t* sector)
  */
 xsector_t* P_XSectorOfSubsector(subsector_t* sub)
 {
-    return &xsectors[P_ToIndex(DMU_SECTOR_OF_SUBSECTOR, sub)];
+    return &xsectors[P_GetIntp(sub, DMU_SECTOR)];
 }
 
 /*

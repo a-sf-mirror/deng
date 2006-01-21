@@ -121,7 +121,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     line_t *check;
     sector_t *other;
     sector_t *frontsector, *backsector;
-    xsector_t *xsec = &xsectors[P_ToIndex(DMU_SECTOR, sec)];
+    xsector_t *xsec = &xsectors[P_ToIndex(sec)];
 
     // wake up all monsters in this sector
 #ifdef TODO_MAP_UPDATE
@@ -635,7 +635,7 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    int secid = P_ToIndex(DMU_SECTOR, P_GetPtrp(actor->subsector,
+    int secid = P_ToIndex(P_GetPtrp(actor->subsector,
                                                 DMU_SECTOR));
     mobj_t *targ;
 

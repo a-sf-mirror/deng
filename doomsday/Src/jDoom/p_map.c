@@ -758,7 +758,7 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y, boolean dropoff)
                 side = P_PointOnLineSide(thing->x, thing->y, ld);
                 oldside = P_PointOnLineSide(oldx, oldy, ld);
                 if(side != oldside)
-                    P_CrossSpecialLine(P_ToIndex(DMU_LINE, ld), oldside, thing);
+                    P_CrossSpecialLine(P_ToIndex(ld), oldside, thing);
             }
         }
     }
@@ -1139,7 +1139,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
     if(in->isaline)
     {
         li = in->d.line;
-        xline = &xlines[P_ToIndex(DMU_LINE, li)];
+        xline = &xlines[P_ToIndex(li)];
 
         if(xline->special)
             P_ShootSpecialLine(shootthing, li);

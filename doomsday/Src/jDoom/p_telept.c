@@ -85,7 +85,7 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing)
 
                 sector = P_GetPtrp(m->subsector, DMU_SECTOR);
                 // wrong sector
-                if(P_ToIndex(DMU_SECTOR, sector) != i)
+                if(P_ToIndex(sector) != i)
                     continue;
 
                 oldx = thing->x;

@@ -458,7 +458,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                             floor->texture =
                                 P_GetIntp(sec,DMU_FLOOR_TEXTURE);
                             floor->newspecial =
-                                xsectors[P_ToIndex(DMU_SECTOR, sec)].special;
+                                xsectors[P_ToIndex(sec)].special;
                             break;
                         }
                     }
@@ -471,7 +471,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                             floor->texture =
                                 P_GetIntp(sec, DMU_FLOOR_TEXTURE);
                             floor->newspecial =
-                                xsectors[P_ToIndex(DMU_SECTOR, sec)].special;
+                                xsectors[P_ToIndex(sec)].special;
                             break;
                         }
                     }
@@ -554,13 +554,13 @@ int EV_BuildStairs(line_t *line, stair_e type)
 
                 tsec = P_GetPtrp(ln, DMU_FRONT_SECTOR);
 
-                newsecnum = P_ToIndex(DMU_SECTOR, tsec);
+                newsecnum = P_ToIndex(tsec);
                 if(secnum != newsecnum)
                     continue;
 
                 tsec = P_GetPtrp(ln, DMU_BACK_SECTOR);
 
-                newsecnum = P_ToIndex(DMU_SECTOR, tsec);
+                newsecnum = P_ToIndex(tsec);
                 if(P_GetIntp(tsec, DMU_FLOOR_TEXTURE) != texture)
                     continue;
 
