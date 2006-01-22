@@ -399,7 +399,7 @@ void P_v19_UnArchiveSpecials(void)
 
             ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
 
-            xsectors[P_ToIndex(ceiling->sector)].specialdata = ceiling;
+            P_XSector(ceiling->sector)->specialdata = ceiling;
 
             if(ceiling->thinker.function)
                 ceiling->thinker.function = T_MoveCeiling;
@@ -416,7 +416,7 @@ void P_v19_UnArchiveSpecials(void)
 
             door->sector = P_ToPtr(DMU_SECTOR, (int) door->sector);
 
-            xsectors[P_ToIndex(door->sector)].specialdata = door;
+            P_XSector(door->sector)->specialdata = door;
             door->thinker.function = T_VerticalDoor;
             P_AddThinker(&door->thinker);
             break;
@@ -428,7 +428,7 @@ void P_v19_UnArchiveSpecials(void)
             save_p += sizeof(*floor);
 
             floor->sector = P_ToPtr(DMU_SECTOR, (int) floor->sector);
-            xsectors[P_ToIndex(floor->sector)].specialdata = floor;
+            P_XSector(floor->sector)->specialdata = floor;
             floor->thinker.function = T_MoveFloor;
 
             P_AddThinker(&floor->thinker);
@@ -441,7 +441,7 @@ void P_v19_UnArchiveSpecials(void)
             save_p += sizeof(*plat);
 
             plat->sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
-            xsectors[P_ToIndex(plat->sector)].specialdata = plat;
+            P_XSector(plat->sector)->specialdata = plat;
 
             if(plat->thinker.function)
                 plat->thinker.function = T_PlatRaise;

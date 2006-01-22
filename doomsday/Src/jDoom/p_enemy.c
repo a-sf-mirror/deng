@@ -121,7 +121,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     line_t *check;
     sector_t *other;
     sector_t *frontsector, *backsector;
-    xsector_t *xsec = &xsectors[P_ToIndex(sec)];
+    xsector_t *xsec = P_XSector(sec);
 
     // wake up all monsters in this sector
 #ifdef TODO_MAP_UPDATE
@@ -136,7 +136,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
         frontsector = P_GetPtrp(check, DMU_FRONT_SECTOR);
         backsector = P_GetPtrp(check, DMU_BACK_SECTOR);
@@ -635,12 +635,11 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    int secid = P_ToIndex(P_GetPtrp(actor->subsector,
-                                                DMU_SECTOR));
+    sector_t* xsec = P_GetPtrp(actor->subsector, DMU_SECTOR);
     mobj_t *targ;
 
     actor->threshold = 0;       // any shot will wake up
-    targ = xsectors[secid].soundtarget;
+    targ = P_XSector(xsec)->soundtarget;
 
     if(targ && (targ->flags & MF_SHOOTABLE))
     {

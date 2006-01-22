@@ -403,7 +403,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                 floor->speed = FLOORSPEED;
                 for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
                 {
-                    ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+                    ln = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
                     if(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED)
                     {
@@ -445,7 +445,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
             for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
             {
                 // Choose the correct texture and special on two sided lines.
-                ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+                ln = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
                 if(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED)
                 {
@@ -458,7 +458,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                             floor->texture =
                                 P_GetIntp(sec,DMU_FLOOR_TEXTURE);
                             floor->newspecial =
-                                xsectors[P_ToIndex(sec)].special;
+                                P_XSector(sec)->special;
                             break;
                         }
                     }
@@ -471,7 +471,7 @@ int EV_DoFloor(line_t *line, floor_e floortype)
                             floor->texture =
                                 P_GetIntp(sec, DMU_FLOOR_TEXTURE);
                             floor->newspecial =
-                                xsectors[P_ToIndex(sec)].special;
+                                P_XSector(sec)->special;
                             break;
                         }
                     }
@@ -547,7 +547,7 @@ int EV_BuildStairs(line_t *line, stair_e type)
             ok = 0;
             for(i = 0; i < P_GetFixedp(sec, DMU_LINE_COUNT); i++)
             {
-                ln = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+                ln = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
                 if(!(P_GetIntp(ln, DMU_FLAGS) & ML_TWOSIDED))
                     continue;

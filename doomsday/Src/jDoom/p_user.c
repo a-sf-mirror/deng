@@ -79,7 +79,7 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
     mobj_t *mo = player->plr->mo;
     int     mul;
 
-    mul = XS_ThrustMul(P_GetPtrp(DMU_SUBSECTOR,mo->subsector, DMU_SECTOR));
+    mul = XS_ThrustMul(P_GetPtrp(mo->subsector, DMU_SECTOR));
 
     angle >>= ANGLETOFINESHIFT;
 
@@ -373,7 +373,7 @@ void P_ClientSideThink()
     // "predictor"; almost all clientside movement is handled by that
     // routine, though.)
     Set(DD_CPLAYER_THRUST_MUL,
-        XS_ThrustMul(P_GetPtrp(DMU_SUBSECTOR,mo->subsector, DMU_SECTOR)));
+        XS_ThrustMul(P_GetPtrp(mo->subsector, DMU_SECTOR)));
 
     // Update view angles. The server fixes them if necessary.
     mo->angle = dpl->clAngle;
@@ -382,9 +382,6 @@ void P_ClientSideThink()
 
 void P_PlayerThink(player_t *player)
 {
-    int idx = P_ToIndex(DMU_SECTOR,
-                        P_GetPtrp(player->plr->mo->subsector,
-                                  DMU_SECTOR));
     mobj_t *plrmo = player->plr->mo;
     ticcmd_t *cmd;
     weapontype_t newweapon, oldweapon;
@@ -439,7 +436,7 @@ void P_PlayerThink(player_t *player)
 
     P_CalcHeight(player);
 
-    if(xsectors[idx].special)
+    if(P_XSector(P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR))->special)
         P_PlayerInSpecialSector(player);
 
     if(player->jumptics)

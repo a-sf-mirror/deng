@@ -1139,7 +1139,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
     if(in->isaline)
     {
         li = in->d.line;
-        xline = &xlines[P_ToIndex(li)];
+        xline = P_XLine(li);
 
         if(xline->special)
             P_ShootSpecialLine(shootthing, li);

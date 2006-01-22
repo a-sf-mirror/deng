@@ -169,8 +169,8 @@ void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
-            buttonlist[i].soundorg = P_GetPtrp(DMU_SECTOR,
-                P_GetPtrp(line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
+            buttonlist[i].soundorg =
+                P_GetPtrp(P_GetPtrp(line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
             return;
         }
     }
