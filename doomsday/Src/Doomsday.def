@@ -1,8 +1,10 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 316 <--
-
+; --> 321 <--
+; Other free ordinals:
+; 77 formaly P_LoadBlockMap
+; 78 formaly P_LoadReject
 
 EXPORTS
 	Plug_AddHook			@1 NONAME
@@ -133,14 +135,19 @@ EXPORTS
 
 ; Play: Setup.
 	P_LoadMap		@254 NONAME
-	P_LoadBlockMap		@77 NONAME
-	P_LoadReject		@78 NONAME
 
 ; Play: Map Data Updates and Information Access.
 	P_ToIndex		@256 NONAME
 	P_ToPtr			@257 NONAME
 	P_Callback		@258 NONAME
 	P_Callbackp		@259 NONAME
+
+    	; dummy functions
+	P_AllocDummy		@317 NONAME
+	P_FreeDummy		@318 NONAME
+	P_DummyType		@319 NONAME
+	P_IsDummy		@320 NONAME
+	P_DummyExtraData	@321 NONAME
 
     	; index-based write functions
 	P_SetBool		@260 NONAME
