@@ -30,5 +30,7 @@ void        P_SectorModifyLight(sector_t* sector, int value);
 fixed_t     P_SectorLightx(sector_t* sector);
 void        P_SectorModifyLightx(sector_t* sector, fixed_t value);
 void       *P_SectorSoundOrigin(sector_t *sec);
+line_t     *P_AllocDummyLine(void);
+void        P_FreeDummyLine(line_t* line);
 
 #endif

@@ -110,9 +110,13 @@ xline_t* P_XLine(line_t* line)
 {
     // Is it a dummy?
     if(P_IsDummy(line))
+    {
         return P_DummyExtraData(line);
+    }
     else
+    {
         return &xlines[P_ToIndex(line)];
+    }
 }
 
 /*
@@ -122,9 +126,13 @@ xsector_t* P_XSector(sector_t* sector)
 {
     // Is it a dummy?
     if(P_IsDummy(sector))
-        return P_DummyExtraData(sector);
+    {
+        return P_DummyExtraData(sector);   
+    }
     else
+    {    
         return &xsectors[P_ToIndex(sector)];
+    }
 }
 
 /*
@@ -136,9 +144,13 @@ xsector_t* P_XSectorOfSubsector(subsector_t* sub)
 
     // Is it a dummy?
     if(P_IsDummy(sec))
+    {
         return P_DummyExtraData(sec);
+    }
     else
+    {
         return &xsectors[P_ToIndex(sec)];
+    }        
 }
 
 /*

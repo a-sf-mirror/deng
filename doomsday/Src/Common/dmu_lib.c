@@ -21,6 +21,10 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#ifdef __JHEXEN__
+#include "jHexen/r_local.h"
+#endif
+
 #include "dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
@@ -77,4 +81,16 @@ void P_SectorModifyLightx(sector_t* sector, fixed_t value)
 void *P_SectorSoundOrigin(sector_t *sec)
 {
     return P_GetPtrp(sec, DMU_SOUND_ORIGIN);
+}
+
+line_t *P_AllocDummyLine(void)
+{
+    xline_t* extra = Z_Calloc(sizeof(xline_t), PU_STATIC, 0);
+    return P_AllocDummy(DMU_LINE, extra);
+}
+
+void P_FreeDummyLine(line_t* line)
+{
+    Z_Free(P_DummyExtraData(line));
+    P_FreeDummy(line);
 }
