@@ -1,7 +1,7 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 321 <--
+; --> 325 <--
 ; Other free ordinals:
 ; 77 formaly P_LoadBlockMap
 ; 78 formaly P_LoadReject
@@ -143,11 +143,11 @@ EXPORTS
 	P_Callbackp		@259 NONAME
 
     	; dummy functions
-	P_AllocDummy		@317 NONAME
-	P_FreeDummy		@318 NONAME
-	P_DummyType		@319 NONAME
-	P_IsDummy		@320 NONAME
-	P_DummyExtraData	@321 NONAME
+	P_AllocDummy		@321 NONAME
+	P_FreeDummy		@322 NONAME
+	P_DummyType		@323 NONAME
+	P_IsDummy		@324 NONAME
+	P_DummyExtraData	@325 NONAME
 
     	; index-based write functions
 	P_SetBool		@260 NONAME
@@ -216,6 +216,12 @@ EXPORTS
 	P_GetAnglepv		@314 NONAME
 	P_GetFloatpv		@315 NONAME
 	P_GetPtrpv		@316 NONAME
+
+	; manipulation functions
+	P_Copy			@317 NONAME
+	P_Copyp			@318 NONAME
+	P_Swap			@319 NONAME
+	P_Swapp			@320 NONAME
 
 ; Play: Polyobjs.
 	PO_MovePolyobj		@79 NONAME
