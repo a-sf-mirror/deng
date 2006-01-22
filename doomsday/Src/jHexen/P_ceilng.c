@@ -39,9 +39,8 @@ void T_MoveCeiling(ceiling_t * ceiling)
         //      case 0:         // IN STASIS
         //          break;
     case 1:                 // UP
-        res =
-            T_MovePlane(ceiling->sector, ceiling->speed, ceiling->topheight,
-                        false, 1, ceiling->direction);
+        res = T_MovePlane(ceiling->sector, ceiling->speed, ceiling->topheight,
+                          false, 1, ceiling->direction);
         if(res == RES_PASTDEST)
         {
             SN_StopSequence(P_SectorSoundOrigin(ceiling->sector));
