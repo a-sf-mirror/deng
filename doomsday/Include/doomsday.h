@@ -217,7 +217,7 @@ extern          "C" {
 	void            P_LoadReject(int lump);
 
     // Play: Map Data Updates and Information Access.
-    int             P_ToIndex(void* ptr);
+    int             P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, int index);
     int             P_Callback(int type, int index, void* context, 
                                int (*callback)(void* p, void* ctx));

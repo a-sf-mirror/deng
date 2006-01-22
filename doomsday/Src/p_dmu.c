@@ -181,9 +181,9 @@ const char* DMU_Str(int prop)
  *
  * @param ptr  Pointer to a map data object.
  */
-static int DMU_GetType(void* ptr)
+static int DMU_GetType(const void* ptr)
 {
-    int type = ((runtime_mapdata_header_t*)ptr)->type;
+    int type = ((const runtime_mapdata_header_t*)ptr)->type;
     
     // Make sure it's valid.
     switch(type)
@@ -332,7 +332,7 @@ void* P_DummyExtraData(void* dummy)
 /*
  * Convert pointer to index.
  */
-int P_ToIndex(void* ptr)
+int P_ToIndex(const void* ptr)
 {
     switch(DMU_GetType(ptr))
     {
@@ -983,25 +983,25 @@ static int SetProperty(void* ptr, void* context)
  * Gets a value. Does some basic type checking so that incompatible types are
  * not assigned. Simple conversions are also done, e.g., float to fixed.
  */
-static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int index)
+static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, int index)
 {
     if(valueType == DDVT_FIXED)
     {
-        fixed_t* d = dst;
+        const fixed_t* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BYTE:
-            args->byteValues[index] = (*d >> FRACBITS);
+            args->byteValues[index] = (*s >> FRACBITS);
             break;
         case DDVT_INT:
-            args->intValues[index] = (*d >> FRACBITS);
+            args->intValues[index] = (*s >> FRACBITS);
             break;
         case DDVT_FIXED:
-            args->fixedValues[index] = *d;
+            args->fixedValues[index] = *s;
             break;
         case DDVT_FLOAT:
-            args->floatValues[index] = FIX2FLT(*d);
+            args->floatValues[index] = FIX2FLT(*s);
             break;
         default:
             Con_Error("GetValue: DDVT_FIXED incompatible with value type %s.\n",
@@ -1010,21 +1010,21 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_FLOAT)
     {
-        float* d = dst;
+        const float* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BYTE:
-            args->byteValues[index] = *d;
+            args->byteValues[index] = *s;
             break;
         case DDVT_INT:
-            args->intValues[index] = (int) *d;
+            args->intValues[index] = (int) *s;
             break;
         case DDVT_FIXED:
-            args->fixedValues[index] = FLT2FIX(*d);
+            args->fixedValues[index] = FLT2FIX(*s);
             break;
         case DDVT_FLOAT:
-            args->floatValues[index] = *d;
+            args->floatValues[index] = *s;
             break;
         default:
             Con_Error("GetValue: DDVT_FLOAT incompatible with value type %s.\n",
@@ -1033,12 +1033,12 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_BOOL)
     {
-        boolean* d = dst;
+        const boolean* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BOOL:
-            args->booleanValues[index] = *d;
+            args->booleanValues[index] = *s;
             break;
         default:
             Con_Error("GetValue: DDVT_BOOL incompatible with value type %s.\n",
@@ -1047,21 +1047,21 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_BYTE)
     {
-        byte* d = dst;
+        const byte* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BOOL:
-            args->booleanValues[index] = *d;
+            args->booleanValues[index] = *s;
             break;
         case DDVT_BYTE:
-            args->byteValues[index] = *d;
+            args->byteValues[index] = *s;
             break;
         case DDVT_INT:
-            args->intValues[index] = *d;
+            args->intValues[index] = *s;
             break;
         case DDVT_FLOAT:
-            args->floatValues[index] = *d;
+            args->floatValues[index] = *s;
             break;
         default:
             Con_Error("GetValue: DDVT_BYTE incompatible with value type %s.\n",
@@ -1070,24 +1070,24 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_INT)
     {
-        int* d = dst;
+        const int* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BOOL:
-            args->booleanValues[index] = *d;
+            args->booleanValues[index] = *s;
             break;
         case DDVT_BYTE:
-            args->byteValues[index] = *d;
+            args->byteValues[index] = *s;
             break;
         case DDVT_INT:
-            args->intValues[index] = *d;
+            args->intValues[index] = *s;
             break;
         case DDVT_FLOAT:
-            args->floatValues[index] = *d;
+            args->floatValues[index] = *s;
             break;
         case DDVT_FIXED:
-            args->fixedValues[index] = (*d << FRACBITS);
+            args->fixedValues[index] = (*s << FRACBITS);
             break;
         default:
             Con_Error("GetValue: DDVT_INT incompatible with value type %s.\n",
@@ -1096,24 +1096,25 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
-        short* d = dst;
+        const short* s = src;
 
         switch(args->valueType)
         {
         case DDVT_BOOL:
-            args->booleanValues[index] = *d;
+            args->booleanValues[index] = *s;
             break;
         case DDVT_BYTE:
-            args->byteValues[index] = *d;
+            args->byteValues[index] = *s;
             break;
         case DDVT_INT:
-            args->intValues[index] = *d;
+            args->intValues[index] = *s;
             break;
         case DDVT_FLOAT:
-            args->floatValues[index] = *d;
+            // TODO: Don't allow conversion from DDVT_FLATINDEX.
+            args->floatValues[index] = *s;
             break;
         case DDVT_FIXED:
-            args->fixedValues[index] = (*d << FRACBITS);
+            args->fixedValues[index] = (*s << FRACBITS);
             break;
         default:
             Con_Error("GetValue: DDVT_SHORT incompatible with value type %s.\n",
@@ -1122,26 +1123,26 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_ANGLE)
     {
-        angle_t* d = dst;
+        const angle_t* s = src;
 
         switch(args->valueType)
         {
         case DDVT_ANGLE:
-            args->angleValues[index] = *d;
+            args->angleValues[index] = *s;
             break;
         default:
             Con_Error("GetValue: DDVT_ANGLE incompatible with value type %s.\n",
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == DDVT_BLENDMODE)
+    else if(valueType == DDVT_BLENDMODE) 
     {
-        blendmode_t* d = dst;
+        const blendmode_t* s = src;
 
         switch(args->valueType)
         {
         case DDVT_INT:
-            args->intValues[index] = *d;
+            args->intValues[index] = *s;
             break;
         default:
             Con_Error("GetValue: DDVT_BLENDMODE incompatible with value type %s.\n",
@@ -1150,17 +1151,17 @@ static void GetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
     }
     else if(valueType == DDVT_PTR)
     {
-        void** d = dst;
+        const void* const* s = src;
 
         switch(args->valueType)
         {
         case DDVT_INT:
             // Attempt automatic conversion using P_ToIndex(). Naturally only
             // works with map data objects. Failure leads into a fatal error.
-            args->intValues[index] = P_ToIndex(*d);
+            args->intValues[index] = P_ToIndex(*s);
             break;
         case DDVT_PTR:
-            args->ptrValues[index] = *d;
+            args->ptrValues[index] = (void*) *s;
             break;
         default:
             Con_Error("GetValue: DDVT_PTR incompatible with value type %s.\n",
@@ -1344,11 +1345,17 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->flags, args, 0);
             break;
         case DMU_SIDE0:
-            GetValue(type, SIDE_PTR(p->sidenum[0]), args, 0);
+        {
+            side_t* sidePtr = SIDE_PTR(p->sidenum[0]);
+            GetValue(type, &sidePtr, args, 0);
             break;
+        }
         case DMU_SIDE1:
-            GetValue(type, SIDE_PTR(p->sidenum[1]), args, 0);
+        {
+            side_t* sidePtr = SIDE_PTR(p->sidenum[1]);
+            GetValue(type, &sidePtr, args, 0);
             break;
+        }
         default:
             Con_Error("GetProperty: DMU_LINE has no property %s.\n", DMU_Str(args->prop));
         }
@@ -1454,8 +1461,6 @@ static int GetProperty(void* ptr, void* context)
 /*
  * Swaps two values. Does NOT do any type checking. Both values are
  * assumed to be of the correct (and same) type.
- *
- * TODO: How to do type checks?
  */
 static void SwapValue(valuetype_t valueType, void* src, void* dst)
 {
