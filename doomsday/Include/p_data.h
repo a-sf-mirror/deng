@@ -271,11 +271,18 @@ extern int      numthings;
 
 extern fixed_t  mapgravity;        // Gravity for the current map.
 
+extern int numUniqueLines;
+extern int numMissingFronts;
+
 void            P_ValidateLevel(void);
 void            P_LoadBlockMap(int lump);
+void            P_ReadBlockMap(int lump);
 void            P_LoadReject(int lump);
 void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);
 void            P_CeilingChanged(sector_t *sector);
 void            P_Init(void);
+
+int             P_CheckTexture(char *name, boolean planeTex, int dataType,
+                               int element, int property);
 #endif
