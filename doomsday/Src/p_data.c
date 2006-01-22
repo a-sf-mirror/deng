@@ -508,6 +508,11 @@ fixed_t mapgravity;             // Gravity for the current map.
  * Not all DMU constants have a value type, in which case
  * they should be entered using the special case: "DDVT_NONE"
  */
+
+// FIXME: This way of initializing the array is unsafe considering changes
+// to the DMU constants. Maybe use a similar type of array as in p_dmu.c for
+// DMU_Str, but used for initializing propertyTypes[] in P_Init.
+
 const valuetype_t propertyTypes[] = {
     DDVT_NONE,        // DMU_NONE = 0
 
