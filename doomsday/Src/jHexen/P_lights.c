@@ -13,6 +13,7 @@
 #include "h2def.h"
 #include "jHexen/p_local.h"
 #include "Common/p_start.h"
+#include "Common/dmu_lib.h"
 
 void T_Light(light_t * light)
 {
@@ -266,7 +267,7 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
         P_XSector(sec)->special = LIGHT_SEQUENCE_START; // make sure that the search doesn't back up.
         for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
         {
-            tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
+            tempSec = getNextSector(P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i), sec);
             if(!tempSec)
             {
                 continue;
@@ -304,7 +305,7 @@ void P_SpawnLightSequence(sector_t *sector, int indexStep)
         index += indexDelta;
         for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
         {
-            tempSec = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i), sec);
+            tempSec = getNextSector(P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i), sec);
             if(!tempSec)
             {
                 continue;

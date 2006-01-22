@@ -75,7 +75,7 @@ static dummyline_t* dummyLines;
 /*
  * Convert enum constant into a string for error/debug messages.
  */
-static const char* DMU_Str(int prop)
+const char* DMU_Str(int prop)
 {
     static char propStr[40];
     struct prop_s {
@@ -2451,8 +2451,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.booleanValues = &a;
         argsB.booleanValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2466,8 +2466,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.byteValues = &a;
         argsB.byteValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2481,8 +2481,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.intValues = &a;
         argsB.intValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2496,8 +2496,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.fixedValues = &a;
         argsB.fixedValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsA.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2511,8 +2511,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.angleValues = &a;
         argsB.angleValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2526,8 +2526,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.floatValues = &a;
         argsB.floatValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;
@@ -2541,8 +2541,8 @@ void P_Swapp(int prop, void* from, void* to)
         argsA.ptrValues = &a;
         argsB.ptrValues = &b;
 
-        P_Callbackp(args.type, from, &argsA, GetProperty);
-        P_Callbackp(args.type, to, &argsB, GetProperty);
+        P_Callbackp(argsA.type, from, &argsA, GetProperty);
+        P_Callbackp(argsB.type, to, &argsB, GetProperty);
 
         SwapValue(type, &a, &b);
         break;

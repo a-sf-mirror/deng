@@ -395,9 +395,9 @@ static void P_ResetWorldState(void)
  */
 static void P_FinalizeLevel(void)
 {
-#if __JDOOM__
     int i;
 
+#if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.

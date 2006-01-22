@@ -148,7 +148,8 @@ int P_HandleMapDataElement(int id, int dtype, int prop, int type, void *data)
 /*
  * Initializes various playsim related data
  */
-void P_Init(void)
+// Commonised to Src/Common.
+/*void P_Init(void)
 {
     InitMapInfo();
 
@@ -157,4 +158,4 @@ void P_Init(void)
 
     P_InitTerrainTypes();
     P_InitLava();
-}
+}*/

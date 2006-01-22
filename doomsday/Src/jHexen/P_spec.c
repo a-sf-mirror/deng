@@ -209,7 +209,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 
 	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
@@ -233,7 +233,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 
 	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
@@ -260,7 +260,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 
 	for(i = 0, h = 0; i < SecLineCount(sec); i++)
 	{
-		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
@@ -293,7 +293,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 
 	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 		other = getNextSector(check, sec);
 		if(!other)
 			continue;
@@ -317,7 +317,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 
 	for(i = 0; i < SecLineCount(sec); i++)
 	{
-		check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 		if(!other)
 			continue;

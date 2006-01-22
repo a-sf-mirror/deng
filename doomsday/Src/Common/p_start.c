@@ -788,7 +788,7 @@ void P_TurnTorchesToFaceWalls()
             closestline = NULL;
             for(k = 0; k < sectorLineCount; k++)
             {
-                li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
+                li = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | k);
                 if(P_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
                 linelen =

@@ -355,7 +355,7 @@ typedef struct {
 #define idtThings 0
 #define NUM_INTERNAL_DATA_STRUCTS 8
 
-typedef enum {
+enum {
     glVerts,
     glSegs,
     glSSects,
@@ -374,7 +374,7 @@ typedef enum {
     NUM_LUMPCLASSES
 };
 
-typedef struct {
+typedef struct mldataver_s {
     char *vername;
     struct {
         int   version;
@@ -505,141 +505,138 @@ fixed_t mapgravity;             // Gravity for the current map.
  * The existing indices MUST NOT change and MUST match their
  * DMU constant indices. Add new DMU constants to the end.
  *
- * Not all DMU constants have a value type, in which caase
+ * Not all DMU constants have a value type, in which case
  * they should be entered using the special case: "DDVT_NONE"
  */
-
-// FIXME: No braces around initializers for the array below.
-
 const valuetype_t propertyTypes[] = {
-    DDVT_NONE,                // DMU_NONE = 0
+    DDVT_NONE,        // DMU_NONE = 0
 
-        { DDVT_PTR },         // DMU_VERTEX = 1
-        { DDVT_PTR },         // DMU_SEG
-        { DDVT_PTR },         // DMU_LINE
-        { DDVT_PTR },         // DMU_SIDE
-        { DDVT_PTR },         // DMU_NODE
-        { DDVT_PTR },         // DMU_SUBSECTOR
-        { DDVT_PTR },         // DMU_SECTOR
-        { DDVT_NONE },        // DMU_BLOCKMAP
-        { DDVT_NONE },        // DMU_REJEC
-        { DDVT_NONE },        // DMU_POLYBLOCKMAP
-        { DDVT_PTR },         // DMU_POLYOBJ
+    DDVT_PTR,         // DMU_VERTEX = 1
+    DDVT_PTR,         // DMU_SEG
+    DDVT_PTR,         // DMU_LINE
+    DDVT_PTR,         // DMU_SIDE
+    DDVT_PTR,         // DMU_NODE
+    DDVT_PTR,         // DMU_SUBSECTOR
+    DDVT_PTR,         // DMU_SECTOR
+    DDVT_NONE,        // DMU_BLOCKMAP
+    DDVT_NONE,        // DMU_REJEC
+    DDVT_NONE,        // DMU_POLYBLOCKMAP
+    DDVT_PTR,         // DMU_POLYOBJ
 
-        { DDVT_NONE },        // DMU_LINE_BY_TAG
-        { DDVT_NONE },        // DMU_SECTOR_BY_TAG
+    DDVT_NONE,        // DMU_LINE_BY_TAG
+    DDVT_NONE,        // DMU_SECTOR_BY_TAG
 
-        { DDVT_NONE },        // DMU_LINE_BY_ACT_TAG
-        { DDVT_NONE },        // DMU_SECTOR_BY_ACT_TAG
+    DDVT_NONE,        // DMU_LINE_BY_ACT_TAG
+    DDVT_NONE,        // DMU_SECTOR_BY_ACT_TAG
 
-        { DDVT_NONE },        // DMU_LINE_OF_SECTOR
-        { DDVT_NONE },        // DMU_SECTOR_OF_SUBSECTOR
-        { DDVT_NONE },        // DMU_SEG_OF_POLYOBJ
+    DDVT_NONE,        // unused1
+    DDVT_NONE,        // unused2
+    DDVT_NONE,        // unused2
 
-        { DDVT_FIXED },       // DMU_X
-        { DDVT_FIXED },       // DMU_Y
-        { DDVT_FIXED },       // DMU_XY
+    DDVT_FIXED,       // DMU_X
+    DDVT_FIXED,       // DMU_Y
+    DDVT_FIXED,       // DMU_XY
 
-        { DDVT_PTR },         // DMU_VERTEX1
-        { DDVT_PTR },         // DMU_VERTEX2
-        { DDVT_FIXED },       // DMU_VERTEX1_X
-        { DDVT_FIXED },       // DMU_VERTEX1_Y
-        { DDVT_FIXED },       // DMU_VERTEX1_XY
-        { DDVT_FIXED },       // DMU_VERTEX2_X
-        { DDVT_FIXED },       // DMU_VERTEX2_Y
-        { DDVT_FIXED },       // DMU_VERTEX2_XY
+    DDVT_PTR,         // DMU_VERTEX1
+    DDVT_PTR,         // DMU_VERTEX2
+    DDVT_FIXED,       // DMU_VERTEX1_X
+    DDVT_FIXED,       // DMU_VERTEX1_Y
+    DDVT_FIXED,       // DMU_VERTEX1_XY
+    DDVT_FIXED,       // DMU_VERTEX2_X
+    DDVT_FIXED,       // DMU_VERTEX2_Y
+    DDVT_FIXED,       // DMU_VERTEX2_XY
 
-        { DDVT_PTR },         // DMU_FRONT_SECTOR
-        { DDVT_PTR },         // DMU_BACK_SECTOR
-        { DDVT_PTR },         // DMU_SIDE0
-        { DDVT_PTR },         // DMU_SIDE1
-        { DDVT_INT },         // DMU_FLAGS
-        { DDVT_FIXED },       // DMU_DX
-        { DDVT_FIXED },       // DMU_DY
-        { DDVT_FIXED },       // DMU_LENGTH
-        { DDVT_INT },         // DMU_SLOPE_TYPE
-        { DDVT_ANGLE },       // DMU_ANGLE
-        { DDVT_FIXED },       // DMU_OFFSET
-        { DDVT_FLAT_INDEX },  // DMU_TOP_TEXTURE
-        { DDVT_BYTE },        // DMU_TOP_COLOR
-        { DDVT_BYTE },        // DMU_TOP_COLOR_RED
-        { DDVT_BYTE },        // DMU_TOP_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_TOP_COLOR_BLUE
-        { DDVT_FLAT_INDEX },  // DMU_MIDDLE_TEXTURE
-        { DDVT_BYTE },        // DMU_MIDDLE_COLOR
-        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_RED
-        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_BLUE
-        { DDVT_BYTE },        // DMU_MIDDLE_COLOR_ALPHA
-        { DDVT_BLENDMODE },   // DMU_MIDDLE_BLENDMODE
-        { DDVT_FLAT_INDEX },  // DMU_BOTTOM_TEXTURE
-        { DDVT_BYTE },        // DMU_BOTTOM_COLOR
-        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_RED
-        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_BOTTOM_COLOR_BLUE
-        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_X
-        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_Y
-        { DDVT_FIXED },       // DMU_TEXTURE_OFFSET_XY
-        { DDVT_INT },         // DMU_VALID_COUNT
+    DDVT_PTR,         // DMU_FRONT_SECTOR
+    DDVT_PTR,         // DMU_BACK_SECTOR
+    DDVT_PTR,         // DMU_SIDE0
+    DDVT_PTR,         // DMU_SIDE1
+    DDVT_INT,         // DMU_FLAGS
+    DDVT_FIXED,       // DMU_DX
+    DDVT_FIXED,       // DMU_DY
+    DDVT_FIXED,       // DMU_LENGTH
+    DDVT_INT,         // DMU_SLOPE_TYPE
+    DDVT_ANGLE,       // DMU_ANGLE
+    DDVT_FIXED,       // DMU_OFFSET
+    DDVT_FLAT_INDEX,  // DMU_TOP_TEXTURE
+    DDVT_BYTE,        // DMU_TOP_COLOR
+    DDVT_BYTE,        // DMU_TOP_COLOR_RED
+    DDVT_BYTE,        // DMU_TOP_COLOR_GREEN
+    DDVT_BYTE,        // DMU_TOP_COLOR_BLUE
+    DDVT_FLAT_INDEX,  // DMU_MIDDLE_TEXTURE
+    DDVT_BYTE,        // DMU_MIDDLE_COLOR
+    DDVT_BYTE,        // DMU_MIDDLE_COLOR_RED
+    DDVT_BYTE,        // DMU_MIDDLE_COLOR_GREEN
+    DDVT_BYTE,        // DMU_MIDDLE_COLOR_BLUE
+    DDVT_BYTE,        // DMU_MIDDLE_COLOR_ALPHA
+    DDVT_BLENDMODE,   // DMU_MIDDLE_BLENDMODE
+    DDVT_FLAT_INDEX,  // DMU_BOTTOM_TEXTURE
+    DDVT_BYTE,        // DMU_BOTTOM_COLOR
+    DDVT_BYTE,        // DMU_BOTTOM_COLOR_RED
+    DDVT_BYTE,        // DMU_BOTTOM_COLOR_GREEN
+    DDVT_BYTE,        // DMU_BOTTOM_COLOR_BLUE
+    DDVT_FIXED,       // DMU_TEXTURE_OFFSET_X
+    DDVT_FIXED,       // DMU_TEXTURE_OFFSET_Y
+    DDVT_FIXED,       // DMU_TEXTURE_OFFSET_XY
+    DDVT_INT,         // DMU_VALID_COUNT
 
-        { DDVT_INT },         // DMU_LINE_COUNT
-        { DDVT_BYTE },        // DMU_COLOR
-        { DDVT_BYTE },        // DMU_COLOR_RED
-        { DDVT_BYTE },        // DMU_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_COLOR_BLUE
-        { DDVT_SHORT },       // DMU_LIGHT_LEVEL
-        { DDVT_NONE },        // DMU_THINGS
-        { DDVT_FIXED },       // DMU_BOUNDING_BOX
-        { DDVT_PTR },         // DMU_SOUND_ORIGIN
+    DDVT_INT,         // DMU_LINE_COUNT
+    DDVT_BYTE,        // DMU_COLOR
+    DDVT_BYTE,        // DMU_COLOR_RED
+    DDVT_BYTE,        // DMU_COLOR_GREEN
+    DDVT_BYTE,        // DMU_COLOR_BLUE
+    DDVT_SHORT,       // DMU_LIGHT_LEVEL
+    DDVT_NONE,        // DMU_THINGS
+    DDVT_FIXED,       // DMU_BOUNDING_BOX
+    DDVT_PTR,         // DMU_SOUND_ORIGIN
 
-        { DDVT_FIXED },       // DMU_FLOOR_HEIGHT
-        { DDVT_FLAT_INDEX },  // DMU_FLOOR_TEXTURE
-        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_X
-        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_Y
-        { DDVT_FLOAT },       // DMU_FLOOR_OFFSET_XY
-        { DDVT_INT },         // DMU_FLOOR_TARGET
-        { DDVT_INT },         // DMU_FLOOR_SPEED
-        { DDVT_BYTE },        // DMU_FLOOR_COLOR
-        { DDVT_BYTE },        // DMU_FLOOR_COLOR_RED
-        { DDVT_BYTE },        // DMU_FLOOR_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_FLOOR_COLOR_BLUE
-        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_X
-        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_Y
-        { DDVT_INT },         // DMU_FLOOR_TEXTURE_MOVE_XY
+    DDVT_FIXED,       // DMU_FLOOR_HEIGHT
+    DDVT_FLAT_INDEX,  // DMU_FLOOR_TEXTURE
+    DDVT_FLOAT,       // DMU_FLOOR_OFFSET_X
+    DDVT_FLOAT,       // DMU_FLOOR_OFFSET_Y
+    DDVT_FLOAT,       // DMU_FLOOR_OFFSET_XY
+    DDVT_INT,         // DMU_FLOOR_TARGET
+    DDVT_INT,         // DMU_FLOOR_SPEED
+    DDVT_BYTE,        // DMU_FLOOR_COLOR
+    DDVT_BYTE,        // DMU_FLOOR_COLOR_RED
+    DDVT_BYTE,        // DMU_FLOOR_COLOR_GREEN
+    DDVT_BYTE,        // DMU_FLOOR_COLOR_BLUE
+    DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_X
+    DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_Y
+    DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_XY
 
-        { DDVT_FIXED },       // DMU_CEILING_HEIGHT
-        { DDVT_FLAT_INDEX },  // DMU_CEILING_TEXTURE
-        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_X
-        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_Y
-        { DDVT_FLOAT },       // DMU_CEILING_OFFSET_XY
-        { DDVT_INT },         // DMU_CEILING_TARGET
-        { DDVT_INT },         // DMU_CEILING_SPEED
-        { DDVT_BYTE },        // DMU_CEILING_COLOR
-        { DDVT_BYTE },        // DMU_CEILING_COLOR_RED
-        { DDVT_BYTE },        // DMU_CEILING_COLOR_GREEN
-        { DDVT_BYTE },        // DMU_CEILING_COLOR_BLUE
-        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_X
-        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_Y
-        { DDVT_INT },         // DMU_CEILING_TEXTURE_MOVE_XY
+    DDVT_FIXED,       // DMU_CEILING_HEIGHT
+    DDVT_FLAT_INDEX,  // DMU_CEILING_TEXTURE
+    DDVT_FLOAT,       // DMU_CEILING_OFFSET_X
+    DDVT_FLOAT,       // DMU_CEILING_OFFSET_Y
+    DDVT_FLOAT,       // DMU_CEILING_OFFSET_XY
+    DDVT_INT,         // DMU_CEILING_TARGET
+    DDVT_INT,         // DMU_CEILING_SPEED
+    DDVT_BYTE,        // DMU_CEILING_COLOR
+    DDVT_BYTE,        // DMU_CEILING_COLOR_RED
+    DDVT_BYTE,        // DMU_CEILING_COLOR_GREEN
+    DDVT_BYTE,        // DMU_CEILING_COLOR_BLUE
+    DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_X
+    DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_Y
+    DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_XY
 
-        { DDVT_NONE },        // DMU_SEG_LIST
-        { DDVT_INT },         // DMU_SEG_COUNT
-        { DDVT_INT },         // DMU_TAG
-        { DDVT_PTR },         // DMU_ORIGINAL_POINTS
-        { DDVT_PTR },         // DMU_PREVIOUS_POINTS
-        { DDVT_PTR },         // DMU_START_SPOT
-        { DDVT_FIXED },       // DMU_START_SPOT_X
-        { DDVT_FIXED },       // DMU_START_SPOT_Y
-        { DDVT_FIXED },       // DMU_START_SPOT_XY
-        { DDVT_FIXED },       // DMU_DESTINATION_X
-        { DDVT_FIXED },       // DMU_DESTINATION_Y
-        { DDVT_FIXED },       // DMU_DESTINATION_XY
-        { DDVT_ANGLE },       // DMU_DESTINATION_ANGLE
-        { DDVT_INT },         // DMU_SPEED
-        { DDVT_ANGLE },       // DMU_ANGLE_SPEED
-        { DDVT_INT },         // DMU_SEQUENCE_TYPE
-        { DDVT_BOOL },        // DMU_CRUSH
-        { DDVT_PTR }          // DMU_SPECIAL_DATA
+    DDVT_NONE,        // DMU_SEG_LIST
+    DDVT_INT,         // DMU_SEG_COUNT
+    DDVT_INT,         // DMU_TAG
+    DDVT_PTR,         // DMU_ORIGINAL_POINTS
+    DDVT_PTR,         // DMU_PREVIOUS_POINTS
+    DDVT_PTR,         // DMU_START_SPOT
+    DDVT_FIXED,       // DMU_START_SPOT_X
+    DDVT_FIXED,       // DMU_START_SPOT_Y
+    DDVT_FIXED,       // DMU_START_SPOT_XY
+    DDVT_FIXED,       // DMU_DESTINATION_X
+    DDVT_FIXED,       // DMU_DESTINATION_Y
+    DDVT_FIXED,       // DMU_DESTINATION_XY
+    DDVT_ANGLE,       // DMU_DESTINATION_ANGLE
+    DDVT_INT,         // DMU_SPEED
+    DDVT_ANGLE,       // DMU_ANGLE_SPEED
+    DDVT_INT,         // DMU_SEQUENCE_TYPE
+    DDVT_BOOL,        // DMU_CRUSH
+    DDVT_PTR          // DMU_SPECIAL_DATA
 };
 
 // --------------------------------------

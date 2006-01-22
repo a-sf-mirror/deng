@@ -26,10 +26,12 @@
 #define __DOOMSDAY_MAP_UPDATE_H__
 
 void        P_InitMapUpdate(void);
-void*       P_AllocDummy(int type, void* extraData);
+void       *P_AllocDummy(int type, void* extraData);
 void        P_FreeDummy(void* dummy);
 int         P_DummyType(void* dummy);
 boolean     P_IsDummy(void* dummy);
-void*       P_DummyExtraData(void* dummy);
+void       *P_DummyExtraData(void* dummy);
+
+const char *DMU_Str(int prop);
 
 #endif

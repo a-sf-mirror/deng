@@ -24,11 +24,11 @@
 
 #include "../doomsday.h"
 
-int     P_SectorLight(sector_t* sector);
-void    P_SectorSetLight(sector_t* sector, int level);
-void    P_SectorModifyLight(sector_t* sector, int value);
-fixed_t P_SectorLightx(sector_t* sector);
-void    P_SectorModifyLightx(sector_t* sector, fixed_t value);
-void   *P_SectorSoundOrigin(sector_t *sec);
+int         P_SectorLight(sector_t* sector);
+void        P_SectorSetLight(sector_t* sector, int level);
+void        P_SectorModifyLight(sector_t* sector, int value);
+fixed_t     P_SectorLightx(sector_t* sector);
+void        P_SectorModifyLightx(sector_t* sector, fixed_t value);
+void       *P_SectorSoundOrigin(sector_t *sec);
 
 #endif

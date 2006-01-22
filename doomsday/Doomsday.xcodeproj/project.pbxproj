@@ -144,11 +144,8 @@
 		B0237B4806F3744E0059676A /* r_common.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F506EE44EB00B98CC8 /* r_common.c */; };
 		B0237B4906F3744E0059676A /* x_hair.c in Sources */ = {isa = PBXBuildFile; fileRef = B0D5B6F606EE44EB00B98CC8 /* x_hair.c */; };
 		B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
-		B04027EF0982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
-		B04027F10982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
-		B04027F30982F53A00C5F03E /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B0727F04088A8E88008C84C4 /* DoomsdayRunner.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */; };
 		B0727F05088A8E88008C84C4 /* DoomsdayRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */; };
 		B0727F06088A8E88008C84C4 /* StartupWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F02088A8E88008C84C4 /* StartupWindowController.h */; };
@@ -230,6 +227,8 @@
 		B083A6D4085CCD2C000D4BAB /* st_stuff.c in Sources */ = {isa = PBXBuildFile; fileRef = B01078D508563728000BF0D8 /* st_stuff.c */; };
 		B083A6D5085CCD2C000D4BAB /* sv_save.c in Sources */ = {isa = PBXBuildFile; fileRef = B0237C4606F443120059676A /* sv_save.c */; };
 		B083A6D6085CCD2C000D4BAB /* Tables.c in Sources */ = {isa = PBXBuildFile; fileRef = B0237C4706F443120059676A /* Tables.c */; };
+		B0AE9D0709839BE1008EFFD0 /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
+		B0AE9D0809839BE2008EFFD0 /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B0CB90BB078B393C007EE194 /* driver.h in Resources */ = {isa = PBXBuildFile; fileRef = B0CB90BA078B393C007EE194 /* driver.h */; };
 		B0CB90EE078B3DCD007EE194 /* qt.c in Sources */ = {isa = PBXBuildFile; fileRef = B0CB90ED078B3DCD007EE194 /* qt.c */; };
 		B0CB9107078B4FFB007EE194 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B0CB9105078B4FFB007EE194 /* Carbon.framework */; };
@@ -3112,7 +3111,7 @@
 				B010788608563581000BF0D8 /* st_lib.c in Sources */,
 				B01078D4085636E8000BF0D8 /* st_stuff.c in Sources */,
 				B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */,
-				B04027F10982F53A00C5F03E /* p_mapsetup.c in Sources */,
+				B0AE9D0709839BE1008EFFD0 /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3179,7 +3178,6 @@
 				B083A6D5085CCD2C000D4BAB /* sv_save.c in Sources */,
 				B083A6D6085CCD2C000D4BAB /* Tables.c in Sources */,
 				B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */,
-				B04027F30982F53A00C5F03E /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3260,7 +3258,7 @@
 				B010786408563447000BF0D8 /* mn_menu.c in Sources */,
 				B010786508563447000BF0D8 /* st_lib.c in Sources */,
 				B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */,
-				B04027EF0982F53A00C5F03E /* p_mapsetup.c in Sources */,
+				B0AE9D0809839BE2008EFFD0 /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

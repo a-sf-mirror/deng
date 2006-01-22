@@ -31,7 +31,7 @@
  * handlers in the engine. Also, some select global variables are exported
  * using this structure (most importantly the map data).
  */
-typedef struct {
+typedef struct game_import_s {
     int             apiSize;       // sizeof(game_import_t)
     int             version;       // Doomsday Engine version.
 

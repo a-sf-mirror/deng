@@ -99,22 +99,6 @@ typedef struct {
 #define SDF_BLENDMIDTOBOTTOM    0x4
 #define SDF_BLENDBOTTOMTOMID    0x8
 
-typedef enum // Value types.
-{
-    DDVT_NONE = -1, // Not a read/writeable value type.
-    DDVT_BOOL,
-    DDVT_BYTE,
-    DDVT_SHORT,
-    DDVT_INT,    // 32 or 64
-    DDVT_FIXED,
-    DDVT_ANGLE,
-    DDVT_FLOAT,
-    DDVT_ULONG,
-    DDVT_PTR,
-    DDVT_FLAT_INDEX,
-    DDVT_BLENDMODE
-} valuetype_t;
-
 extern const valuetype_t propertyTypes[];
 
 // Runtime map data objects, such as vertices, sectors, and subsectors all

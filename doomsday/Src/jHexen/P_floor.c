@@ -572,7 +572,7 @@ static void ProcessStairSector(sector_t *sec, int type, int height,
 	//
 	for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
 	{
-        line_t *line = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        line_t *line = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 		if(!(P_GetIntp(line, DMU_FLAGS) & ML_TWOSIDED))
 		{
 			continue;
