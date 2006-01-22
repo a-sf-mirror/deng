@@ -226,7 +226,7 @@ extern          "C" {
     
     /* dummy functions */
     void           *P_AllocDummy(int type, void* extraData);
-    void            P_FreeDummy(void* dummy)
+    void            P_FreeDummy(void* dummy);
     int             P_DummyType(void* dummy);
     boolean         P_IsDummy(void* dummy);
     void           *P_DummyExtraData(void* dummy);
