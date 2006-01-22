@@ -744,7 +744,7 @@ extern          "C" {
     // Polyobjs.
 #define PO_MAXPOLYSEGS 64
 
-#define NO_INDEX 0xffff
+#define NO_INDEX 0xffffffff
 
     //------------------------------------------------------------------------
     //
