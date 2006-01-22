@@ -113,7 +113,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     xsec->soundtarget = soundtarget;
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
         if(!(P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED))
             continue;
@@ -1993,8 +1993,7 @@ void C_DECL A_BossDeath(mobj_t *actor)
 {
     mobj_t *mo;
     thinker_t *think;
-#ifdef TODO_MAP_UPDATE
-    line_t  dummyLine;
+    line_t*  dummyLine;
     static mobjtype_t bossType[6] = {
         MT_HEAD,
         MT_MINOTAUR,
@@ -2030,9 +2029,10 @@ void C_DECL A_BossDeath(mobj_t *actor)
     if(gameepisode > 1)
         P_Massacre();
 
-    dummyLine.tag = 666;
-    EV_DoFloor(&dummyLine, lowerFloor);
-#endif
+    dummyLine = P_AllocDummyLine();
+    P_XLine(dummyLine)->tag = 666;
+    EV_DoFloor(dummyLine, lowerFloor);
+    P_FreeDummyLine(dummyLine);
 }
 
 void C_DECL A_ESound(mobj_t *mo)

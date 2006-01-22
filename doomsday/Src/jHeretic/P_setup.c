@@ -76,10 +76,10 @@ void InitMapInfo(void);
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 // Our private map data structures
-xsector_t *xsectors;
-int        numxsectors;
-xline_t   *xlines;
-int        numxlines;
+xsector_t  *xsectors;
+int         numxsectors;
+xline_t    *xlines;
+int         numxlines;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
