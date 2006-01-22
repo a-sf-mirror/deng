@@ -1127,66 +1127,74 @@ static void UnarchivePlayers(void)
 
 void ArchiveWorld(void)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     j;
 	sector_t *sec;
+    xsector_t* xsec;
 	line_t *li;
+    xline_t *xli;
 	side_t *si;
+    byte    rgb[4];
 
 	// First the texture archive.
 	StreamOutLong(ASEG_TEX_ARCHIVE);
 	SV_WriteTextureArchive();
 
 	StreamOutLong(ASEG_WORLD);
-	for(i = 0, sec = sectors; i < numsectors; i++, sec++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
-		StreamOutWord(sec->floorheight >> FRACBITS);
-		StreamOutWord(sec->ceilingheight >> FRACBITS);
-		StreamOutWord(SV_FlatArchiveNum(sec->floorpic));
-		StreamOutWord(SV_FlatArchiveNum(sec->ceilingpic));
-		StreamOutWord(sec->lightlevel);
-		StreamOutBuffer(sec->rgb, 3);
-        StreamOutBuffer(sec->floorrgb, 3);
-        StreamOutBuffer(sec->ceilingrgb, 3);
-		StreamOutWord(sec->special);
-		StreamOutWord(sec->tag);
-		StreamOutWord(sec->seqType);
-		StreamOutFloat(sec->flatoffx);
-		StreamOutFloat(sec->flatoffy);
-		StreamOutFloat(sec->ceiloffx);
-		StreamOutFloat(sec->ceiloffy);
+        sec = P_ToPtr(DMU_SECTOR, i);
+        xsec = &xsectors[i];
+		StreamOutWord(P_GetIntp(sec, DMU_FLOOR_HEIGHT));
+		StreamOutWord(P_GetIntp(sec, DMU_CEILING_HEIGHT));
+		StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_FLOOR_TEXTURE)));
+		StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_CEILING_TEXTURE)));
+		StreamOutWord(P_GetIntp(sec, DMU_LIGHT_LEVEL));
+        P_GetBytepv(sec, DMU_COLOR, rgb); StreamOutBuffer(rgb, 3);
+        P_GetBytepv(sec, DMU_FLOOR_COLOR, rgb); StreamOutBuffer(rgb, 3);
+        P_GetBytepv(sec, DMU_CEILING_COLOR, rgb); StreamOutBuffer(rgb, 3);
+		StreamOutWord(xsec->special);
+		StreamOutWord(xsec->tag);
+		StreamOutWord(xsec->seqType);
+		StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_X));
+		StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_Y));
+		StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_X));
+		StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_Y));
 	}
-	for(i = 0, li = lines; i < numlines; i++, li++)
+	for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
 	{
-		StreamOutWord(li->flags);
-		StreamOutByte(li->special);
-		StreamOutByte(li->arg1);
-		StreamOutByte(li->arg2);
-		StreamOutByte(li->arg3);
-		StreamOutByte(li->arg4);
-		StreamOutByte(li->arg5);
+        li = P_ToPtr(DMU_LINE, i);
+        xli = &xlines[i];
+		StreamOutWord(P_GetIntp(li, DMU_FLAGS));
+		StreamOutByte(xli->special);
+		StreamOutByte(xli->arg1);
+		StreamOutByte(xli->arg2);
+		StreamOutByte(xli->arg3);
+		StreamOutByte(xli->arg4);
+		StreamOutByte(xli->arg5);
 		for(j = 0; j < 2; j++)
 		{
-			if(li->sidenum[j] == NO_INDEX)
+            // TODO: Make sure that NO_INDEX is always interpreted as 
+            // -1 (because this is a short int originally).
+            int sd = P_GetIntp(li, DMU_SIDE0 + j);
+			if(sd == NO_INDEX)
 			{
 				continue;
 			}
-			si = &sides[li->sidenum[j]];
-			StreamOutWord(si->textureoffset >> FRACBITS);
-			StreamOutWord(si->rowoffset >> FRACBITS);
-			StreamOutWord(SV_TextureArchiveNum(si->toptexture));
-			StreamOutWord(SV_TextureArchiveNum(si->bottomtexture));
-			StreamOutWord(SV_TextureArchiveNum(si->midtexture));
+			si = P_ToPtr(DMU_SIDE, sd);
+			StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_X));
+			StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_Y));
+			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_TOP_TEXTURE)));
+			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_BOTTOM_TEXTURE)));
+			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_MIDDLE_TEXTURE)));
 
-            StreamOutBuffer(si->toprgb, 3);
-            StreamOutBuffer(si->midrgba, 4);
-            StreamOutBuffer(si->bottomrgb, 3);
-            StreamOutWord(si->blendmode);
-            StreamOutWord(si->flags);
+            P_GetBytepv(si, DMU_TOP_COLOR, rgb); StreamOutBuffer(rgb, 3);
+            P_GetBytepv(si, DMU_MIDDLE_COLOR, rgb); StreamOutBuffer(rgb, 4);
+            P_GetBytepv(si, DMU_BOTTOM_COLOR, rgb); StreamOutBuffer(rgb, 3);
+            StreamOutWord(P_GetIntp(si, DMU_MIDDLE_BLENDMODE));
+            StreamOutWord(P_GetIntp(si, DMU_FLAGS));
 		}
 	}
-#endif
 }
 
 //==========================================================================
@@ -1197,75 +1205,83 @@ void ArchiveWorld(void)
 
 void UnarchiveWorld(void)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	int     j;
 	sector_t *sec;
+    xsector_t *xsec;
 	line_t *li;
+    xline_t *xli;
 	side_t *si;
+    byte rgb[4];
 
 	AssertSegment(ASEG_TEX_ARCHIVE);
 	SV_ReadTextureArchive();
 
 	AssertSegment(ASEG_WORLD);
-	for(i = 0, sec = sectors; i < numsectors; i++, sec++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
-		sec->floorheight = GET_WORD << FRACBITS;
-		sec->ceilingheight = GET_WORD << FRACBITS;
+        sec = P_ToPtr(DMU_SECTOR, i);
+        xsec = &xsectors[i];
+        
+        int fh = GET_WORD;
+        int ch = GET_WORD;
+		P_SetIntp(sec, DMU_FLOOR_HEIGHT, fh);
+		P_SetIntp(sec, DMU_CEILING_HEIGHT, ch);
 
 		// Update the "target heights" of the planes.
-		sec->planes[PLN_FLOOR].target = sec->floorheight;
-		sec->planes[PLN_CEILING].target = sec->ceilingheight;
+		P_SetIntp(sec, DMU_FLOOR_TARGET, fh);
+		P_SetIntp(sec, DMU_CEILING_TARGET, ch);
 
 		// The move speed is not saved; can cause minor problems.
-		sec->planes[PLN_FLOOR].speed = sec->planes[PLN_CEILING].speed = 0;
+		P_SetIntp(sec, DMU_FLOOR_SPEED, 0);
+        P_SetIntp(sec, DMU_CEILING_SPEED, 0);
 
-		sec->floorpic = SV_GetArchiveFlat(GET_WORD);
-		sec->ceilingpic = SV_GetArchiveFlat(GET_WORD);
-		sec->lightlevel = GET_WORD;
-		GET_DATA(sec->rgb, 3);
-        GET_DATA(sec->floorrgb, 3);
-        GET_DATA(sec->ceilingrgb, 3);
-		sec->special = GET_WORD;
-		sec->tag = GET_WORD;
-		sec->seqType = GET_WORD;
-		sec->flatoffx = GET_FLOAT;
-		sec->flatoffy = GET_FLOAT;
-		sec->ceiloffx = GET_FLOAT;
-		sec->ceiloffy = GET_FLOAT;
-		sec->specialdata = 0;
-		sec->soundtarget = 0;
+		P_SetIntp(sec, DMU_FLOOR_TEXTURE, SV_GetArchiveFlat(GET_WORD));
+		P_SetIntp(sec, DMU_CEILING_TEXTURE, SV_GetArchiveFlat(GET_WORD));
+		P_SetIntp(sec, DMU_LIGHT_LEVEL, GET_WORD);
+		GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_COLOR, rgb);
+        GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_FLOOR_COLOR, rgb);
+        GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_CEILING_COLOR, rgb);
+		xsec->special = GET_WORD;
+		xsec->tag = GET_WORD;
+		xsec->seqType = GET_WORD;
+		P_SetFloatp(sec, DMU_FLOOR_OFFSET_X, GET_FLOAT);
+		P_SetFloatp(sec, DMU_FLOOR_OFFSET_Y, GET_FLOAT);
+		P_SetFloatp(sec, DMU_CEILING_OFFSET_X, GET_FLOAT);
+		P_SetFloatp(sec, DMU_CEILING_OFFSET_Y, GET_FLOAT);
+		xsec->specialdata = 0;
+		xsec->soundtarget = 0;
 	}
-	for(i = 0, li = lines; i < numlines; i++, li++)
+	for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
 	{
-		li->flags = GET_WORD;
-		li->special = GET_BYTE;
-		li->arg1 = GET_BYTE;
-		li->arg2 = GET_BYTE;
-		li->arg3 = GET_BYTE;
-		li->arg4 = GET_BYTE;
-		li->arg5 = GET_BYTE;
+		P_SetIntp(li, DMU_FLAGS, GET_WORD);
+		xli->special = GET_BYTE;
+		xli->arg1 = GET_BYTE;
+		xli->arg2 = GET_BYTE;
+		xli->arg3 = GET_BYTE;
+		xli->arg4 = GET_BYTE;
+		xli->arg5 = GET_BYTE;
 		for(j = 0; j < 2; j++)
 		{
-			if(li->sidenum[j] == NO_INDEX)
+            int sdnum = P_GetIntp(li, DMU_SIDE0 + j);
+			if(sdnum == NO_INDEX)
 			{
 				continue;
 			}
-			si = &sides[li->sidenum[j]];
-			si->textureoffset = GET_WORD << FRACBITS;
-			si->rowoffset = GET_WORD << FRACBITS;
-			si->toptexture = SV_GetArchiveTexture(GET_WORD);
-			si->bottomtexture = SV_GetArchiveTexture(GET_WORD);
-			si->midtexture = SV_GetArchiveTexture(GET_WORD);
+			si = P_ToPtr(DMU_SIDE, sdnum);
+			P_SetIntp(si, DMU_TEXTURE_OFFSET_X, GET_WORD);
+			P_SetIntp(si, DMU_TEXTURE_OFFSET_Y, GET_WORD);
+			P_SetIntp(si, DMU_TOP_TEXTURE, SV_GetArchiveTexture(GET_WORD));
+			P_SetIntp(si, DMU_BOTTOM_TEXTURE, SV_GetArchiveTexture(GET_WORD));
+			P_SetIntp(si, DMU_MIDDLE_TEXTURE, SV_GetArchiveTexture(GET_WORD));
 
-            GET_DATA(si->toprgb, 3);
-            GET_DATA(si->midrgba, 4);
-            GET_DATA(si->bottomrgb, 3);
-            si->blendmode = GET_WORD;
-            si->flags = GET_WORD;
+            GET_DATA(rgb, 3); P_SetBytepv(si, DMU_TOP_COLOR, rgb);
+            GET_DATA(rgb, 4); P_SetBytepv(si, DMU_MIDDLE_COLOR, rgb);
+            GET_DATA(rgb, 3); P_SetBytepv(si, DMU_BOTTOM_COLOR, rgb);
+            P_SetIntp(si, DMU_MIDDLE_BLENDMODE, GET_WORD);
+            P_SetIntp(si, DMU_FLAGS, GET_WORD);
 		}
 	}
-#endif
 }
 
 //==========================================================================
@@ -1279,7 +1295,6 @@ void UnarchiveWorld(void)
 
 static void SetMobjArchiveNums(void)
 {
-#ifdef TODO_MAP_UPDATE
 	mobj_t *mobj;
 	thinker_t *thinker;
 	int     i;
@@ -1289,11 +1304,9 @@ static void SetMobjArchiveNums(void)
 	// jk: I don't know if it is ever happens, but what if a mobj
 	// has a target that isn't archived? (doesn't have a thinker).
 	// Let's initialize the archiveNums of all known mobjs to -1.
-	for(i = 0; i < numsectors; i++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
-		sector_t *sec = sectors + i;
-
-		for(mobj = sec->thinglist; mobj; mobj = mobj->snext)
+		for(mobj = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); mobj; mobj = mobj->snext)
 			mobj->archiveNum = MOBJ_NULL;
 	}
 
@@ -1310,7 +1323,6 @@ static void SetMobjArchiveNums(void)
 			mobj->archiveNum = MobjCount++;
 		}
 	}
-#endif
 }
 
 //==========================================================================
@@ -1318,7 +1330,6 @@ static void SetMobjArchiveNums(void)
 //==========================================================================
 void ArchiveMobj(mobj_t *original)
 {
-#ifdef TODO_MAP_UPDATE
 	mobj_t  temp, *mo;
 
     memcpy(mo = &temp, original, sizeof(*mo));
@@ -1366,7 +1377,6 @@ void ArchiveMobj(mobj_t *original)
 	StreamOutBuffer(mo->args, sizeof(mo->args));
 	StreamOutByte(mo->translucency);
     StreamOutByte((byte)(mo->vistarget +1));
-#endif
 }
 
 //==========================================================================
@@ -1374,7 +1384,6 @@ void ArchiveMobj(mobj_t *original)
 //==========================================================================
 void UnarchiveMobj(mobj_t *mo)
 {
-#ifdef TODO_MAP_UPDATE
 	int     version = GET_BYTE;
 
     memset(mo, 0, sizeof(*mo));
@@ -1427,7 +1436,6 @@ void UnarchiveMobj(mobj_t *mo)
     }
 
 	RestoreMobj(mo);
-#endif
 }
 
 //==========================================================================
@@ -1438,7 +1446,6 @@ void UnarchiveMobj(mobj_t *mo)
 
 static void ArchiveMobjs(void)
 {
-#ifdef TODO_MAP_UPDATE
 	int     count;
 	thinker_t *thinker;
 
@@ -1469,7 +1476,6 @@ static void ArchiveMobjs(void)
 	{
 		Con_Error("ArchiveMobjs: bad mobj count");
 	}
-#endif
 }
 
 //==========================================================================
@@ -1680,10 +1686,8 @@ static void RestoreMobj(mobj_t *mobj)
 	}
 	P_SetThingPosition(mobj);
 	mobj->info = &mobjinfo[mobj->type];
-#ifdef TODO_MAP_UPDATE
-	mobj->floorz = mobj->subsector->sector->floorheight;
-	mobj->ceilingz = mobj->subsector->sector->ceilingheight;
-#endif
+	mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
+	mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 	SetMobjPtr((int *) &mobj->target);
 	switch (mobj->type)
 	{
@@ -1830,9 +1834,7 @@ static void UnarchiveThinkers(void)
 
 static void MangleSSThinker(ssthinker_t * sst)
 {
-#ifdef TODO_MAP_UPDATE
-	sst->sector = (sector_t *) (sst->sector - sectors);
-#endif
+	sst->sector = (sector_t*) P_ToIndex(sst->sector);
 }
 
 //==========================================================================
@@ -1843,10 +1845,8 @@ static void MangleSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinker(ssthinker_t * sst)
 {
-#ifdef TODO_MAP_UPDATE
-	sst->sector = &sectors[(int) sst->sector];
-	sst->sector->specialdata = sst->thinker.function;
-#endif
+	sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
+	P_XSector(sst->sector)->specialdata = sst->thinker.function;
 }
 
 //==========================================================================
@@ -1857,9 +1857,7 @@ static void RestoreSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 {
-#ifdef TODO_MAP_UPDATE
-	sst->sector = &sectors[(int) sst->sector];
-#endif
+	sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
 }
 
 //==========================================================================
@@ -1870,12 +1868,10 @@ static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 
 static void MangleScript(acs_t * script)
 {
-#ifdef TODO_MAP_UPDATE
 	script->ip = (int *) ((int) (script->ip) - (int) ActionCodeBase);
 	script->line =
-		script->line ? (line_t *) (script->line - lines) : (line_t *) -1;
+		script->line ? (line_t *) P_ToIndex(script->line) : (line_t *) -1;
 	script->activator = (mobj_t *) GetMobjNum(script->activator);
-#endif
 }
 
 //==========================================================================
@@ -1886,7 +1882,6 @@ static void MangleScript(acs_t * script)
 
 static void RestoreScript(acs_t * script)
 {
-#ifdef TODO_MAP_UPDATE
 	script->ip = (int *) (ActionCodeBase + (int) script->ip);
 	if((int) script->line == -1)
 	{
@@ -1894,10 +1889,9 @@ static void RestoreScript(acs_t * script)
 	}
 	else
 	{
-		script->line = &lines[(int) script->line];
+		script->line = P_ToPtr(DMU_LINE, (int) script->line);
 	}
 	SetMobjPtr((int *) &script->activator);
-#endif
 }
 
 //==========================================================================
@@ -1908,11 +1902,9 @@ static void RestoreScript(acs_t * script)
 
 static void RestorePlatRaise(plat_t * plat)
 {
-#ifdef TODO_MAP_UPDATE
-	plat->sector = &sectors[(int) plat->sector];
-	plat->sector->specialdata = T_PlatRaise;
+	plat->sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
+	P_XSector(plat->sector)->specialdata = T_PlatRaise;
 	P_AddActivePlat(plat);
-#endif
 }
 
 //==========================================================================
@@ -1923,11 +1915,9 @@ static void RestorePlatRaise(plat_t * plat)
 
 static void RestoreMoveCeiling(ceiling_t * ceiling)
 {
-#ifdef TODO_MAP_UPDATE
-	ceiling->sector = &sectors[(int) ceiling->sector];
-	ceiling->sector->specialdata = T_MoveCeiling;
+	ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
+	P_XSector(ceiling->sector)->specialdata = T_MoveCeiling;
 	P_AddActiveCeiling(ceiling);
-#endif
 }
 
 //==========================================================================
@@ -2055,19 +2045,18 @@ static void ArchiveSounds(void)
 		StreamOutLong(node->volume);
 		StreamOutLong(SN_GetSequenceOffset(node->sequence, node->sequencePtr));
 		StreamOutLong(node->currentSoundID);
-#ifdef TODO_MAP_UPDATE
 		for(i = 0; i < po_NumPolyobjs; i++)
 		{
-			if(node->mobj == (mobj_t *) &polyobjs[i].startSpot)
+			if(node->mobj == P_GetPtr(DMU_POLYOBJ, i, DMU_START_SPOT))
 			{
 				break;
 			}
 		}
-		if(i == po_NumPolyobjs)
+		if(i == DD_GetInteger(DD_POLYOBJ_COUNT))
 		{						// Sound is attached to a sector, not a polyobj
-			sec = (R_PointInSubsector(node->mobj->x, node->mobj->y))->sector;
-			difference =
-				(int) ((byte *) sec - (byte *) &sectors[0]) / sizeof(sector_t);
+			sec = P_GetPtrp(R_PointInSubsector(node->mobj->x, node->mobj->y), 
+                            DMU_SECTOR);
+			difference = P_ToIndex(sec);
 			StreamOutLong(0);	// 0 -- sector sound origin
 		}
 		else
@@ -2075,7 +2064,6 @@ static void ArchiveSounds(void)
 			StreamOutLong(1);	// 1 -- polyobj sound origin
 			difference = i;
 		}
-#endif
 		StreamOutLong(difference);
 	}
 }
@@ -2114,16 +2102,14 @@ static void UnarchiveSounds(void)
 		soundID = GET_LONG;
 		polySnd = GET_LONG;
 		secNum = GET_LONG;
-#ifdef TODO_MAP_UPDATE
 		if(!polySnd)
 		{
-			sndMobj = (mobj_t *) &sectors[secNum].soundorg;
+			sndMobj = P_GetPtr(DMU_SECTOR, secNum, DMU_SOUND_ORIGIN);
 		}
 		else
 		{
-			sndMobj = (mobj_t *) &polyobjs[secNum].startSpot;
+			sndMobj = P_GetPtr(DMU_POLYOBJ, secNum, DMU_START_SPOT);
 		}
-#endif
 		SN_StartSequence(sndMobj, sequence);
 		SN_ChangeNodeData(i, seqOffset, delayTics, volume, soundID);
 		i++;
@@ -2139,18 +2125,18 @@ static void UnarchiveSounds(void)
 static void ArchivePolyobjs(void)
 {
     int     i;
+    int     count = DD_GetInteger(DD_POLYOBJ_COUNT);
 
 	StreamOutLong(ASEG_POLYOBJS);
-#ifdef TODO_MAP_UPDATE
-	StreamOutLong(po_NumPolyobjs);
-	for(i = 0; i < po_NumPolyobjs; i++)
+	StreamOutLong(count);
+	for(i = 0; i < count; i++)
 	{
-		StreamOutLong(polyobjs[i].tag);
-		StreamOutLong(polyobjs[i].angle);
-		StreamOutLong(polyobjs[i].startSpot.x);
-		StreamOutLong(polyobjs[i].startSpot.y);
+        polyobj_t* po = P_ToPtr(DMU_POLYOBJ, i);
+		StreamOutLong(P_GetIntp(po, DMU_TAG));
+		StreamOutLong(P_GetAnglep(po, DMU_ANGLE));
+		StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_X));
+		StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_Y));
 	}
-#endif
 }
 
 //==========================================================================
@@ -2165,28 +2151,28 @@ static void UnarchivePolyobjs(void)
 	fixed_t deltaX;
 	fixed_t deltaY;
 	angle_t angle;
+    int     count = DD_GetInteger(DD_POLYOBJ_COUNT);
 
 	AssertSegment(ASEG_POLYOBJS);
-#ifdef TODO_MAP_UPDATE
-	if(GET_LONG != po_NumPolyobjs)
+	if(GET_LONG != count)
 	{
 		Con_Error("UnarchivePolyobjs: Bad polyobj count");
 	}
-	for(i = 0; i < po_NumPolyobjs; i++)
+	for(i = 0; i < count; i++)
 	{
-		if(GET_LONG != polyobjs[i].tag)
+        polyobj_t* po = P_ToPtr(DMU_POLYOBJ, i);
+		if(GET_LONG != P_GetIntp(po, DMU_TAG))
 		{
 			Con_Error("UnarchivePolyobjs: Invalid polyobj tag");
 		}
 		angle = (angle_t) GET_LONG;
-		PO_RotatePolyobj(polyobjs[i].tag, angle);
-		polyobjs[i].destAngle = angle;
-		deltaX = GET_LONG - polyobjs[i].startSpot.x;
-		deltaY = GET_LONG - polyobjs[i].startSpot.y;
-		PO_MovePolyobj(polyobjs[i].tag, deltaX, deltaY);
+		PO_RotatePolyobj(P_GetIntp(po, DMU_TAG), angle);
+		P_SetAnglep(po, DMU_DESTINATION_ANGLE, angle);
+		deltaX = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_X);
+		deltaY = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_Y);
+		PO_MovePolyobj(P_GetIntp(po, DMU_TAG), deltaX, deltaY);
 		// FIXME: What about speed? It isn't saved at all?
 	}
-#endif
 }
 
 //==========================================================================

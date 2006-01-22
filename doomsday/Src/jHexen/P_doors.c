@@ -13,6 +13,7 @@
 #include "h2def.h"
 #include "jHexen/p_local.h"
 #include "jHexen/soundst.h"
+#include "Common/dmu_lib.h"
 
 //==================================================================
 //==================================================================
@@ -29,7 +30,6 @@
 //==================================================================
 void T_VerticalDoor(vldoor_t * door)
 {
-#ifdef TODO_MAP_UPDATE
 	result_e res;
 
 	switch (door->direction)
@@ -40,8 +40,8 @@ void T_VerticalDoor(vldoor_t * door)
 			{
 			case DREV_NORMAL:
 				door->direction = -1;	// time to go back down
-				SN_StartSequence((mobj_t *) &door->sector->soundorg,
-								 SEQ_DOOR_STONE + door->sector->seqType);
+				SN_StartSequence(P_SectorSoundOrigin(door->sector),
+								 SEQ_DOOR_STONE + P_XSector(door->sector)->seqType);
 				break;
 			case DREV_CLOSE30THENOPEN:
 				door->direction = 1;
@@ -66,17 +66,18 @@ void T_VerticalDoor(vldoor_t * door)
 		break;
 	case -1:					// DOWN
 		res =
-			T_MovePlane(door->sector, door->speed, door->sector->floorheight,
+			T_MovePlane(door->sector, door->speed, 
+                        P_GetFixedp(door->sector, DMU_FLOOR_HEIGHT),
 						false, 1, door->direction);
 		if(res == RES_PASTDEST)
 		{
-			SN_StopSequence((mobj_t *) &door->sector->soundorg);
+			SN_StopSequence(P_SectorSoundOrigin(door->sector));
 			switch (door->type)
 			{
 			case DREV_NORMAL:
 			case DREV_CLOSE:
-				door->sector->specialdata = NULL;
-				P_TagFinished(door->sector->tag);
+				P_XSector(door->sector)->specialdata = NULL;
+				P_TagFinished(P_XSector(door->sector)->tag);
 				P_RemoveThinker(&door->thinker);	// unlink and free
 				break;
 			case DREV_CLOSE30THENOPEN:
@@ -105,7 +106,7 @@ void T_VerticalDoor(vldoor_t * door)
 						door->direction);
 		if(res == RES_PASTDEST)
 		{
-			SN_StopSequence((mobj_t *) &door->sector->soundorg);
+			SN_StopSequence(P_SectorSoundOrigin(door->sector));
 			switch (door->type)
 			{
 			case DREV_NORMAL:
@@ -114,8 +115,8 @@ void T_VerticalDoor(vldoor_t * door)
 				break;
 			case DREV_CLOSE30THENOPEN:
 			case DREV_OPEN:
-				door->sector->specialdata = NULL;
-				P_TagFinished(door->sector->tag);
+				P_XSector(door->sector)->specialdata = NULL;
+				P_TagFinished(P_XSector(door->sector)->tag);
 				P_RemoveThinker(&door->thinker);	// unlink and free
 				break;
 			default:
@@ -124,7 +125,6 @@ void T_VerticalDoor(vldoor_t * door)
 		}
 		break;
 	}
-#endif
 }
 
 //----------------------------------------------------------------------------
@@ -148,20 +148,17 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 	retcode = 0;
 	while((secnum = P_FindSectorFromTag(args[0], secnum)) >= 0)
 	{
-#ifdef TODO_MAP_UPDATe
-		sec = &sectors[secnum];
-		if(sec->specialdata)
+		sec = P_ToPtr(DMU_SECTOR, secnum);
+		if(P_XSector(sec)->specialdata)
 		{
 			continue;
 		}
-#endif
+
 		// Add new door thinker
 		retcode = 1;
 		door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 		P_AddThinker(&door->thinker);
-#ifdef TODO_MAP_UPDATE
-		sec->specialdata = door;
-#endif
+		P_XSector(sec)->specialdata = door;
 		door->thinker.function = T_VerticalDoor;
 		door->sector = sec;
 		switch (type)
@@ -172,9 +169,7 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 			door->direction = -1;
 			break;
 		case DREV_CLOSE30THENOPEN:
-#ifdef TODO_MAP_UPDATE
-			door->topheight = sec->ceilingheight;
-#endif
+			door->topheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
 			door->direction = -1;
 			break;
 		case DREV_NORMAL:
@@ -189,10 +184,8 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 		door->type = type;
 		door->speed = speed;
 		door->topwait = args[2];	// line->arg3
-#ifdef TODO_MAP_UPDATE
-		SN_StartSequence((mobj_t *) &door->sector->soundorg,
-						 SEQ_DOOR_STONE + door->sector->seqType);
-#endif
+		SN_StartSequence(P_SectorSoundOrigin(door->sector),
+						 SEQ_DOOR_STONE + P_XSector(door->sector)->seqType);
 	}
 	return (retcode);
 }
@@ -204,59 +197,34 @@ int EV_DoDoor(line_t *line, byte *args, vldoor_e type)
 //==================================================================
 boolean EV_VerticalDoor(line_t *line, mobj_t *thing)
 {
-	int     secnum;
 	sector_t *sec;
 	vldoor_t *door;
-	int     side;
+	//int     side;
 
-	side = 0;					// only front sides can be used
-
+	//side = 0;					// only front sides can be used
 	// if the sector has an active thinker, use it
-#ifdef TODO_MAP_UPDATE
-	sec = sides[line->sidenum[side ^ 1]].sector;
-	secnum = sec - sectors;
-	if(sec->specialdata)
+	//sec = sides[line->sidenum[side ^ 1]].sector;
+
+    sec = P_GetPtrp( P_GetPtrp(line, DMU_SIDE1), DMU_SECTOR );
+	if(P_XSector(sec)->specialdata)
 	{
 		return false;
-		/*
-		   door = sec->specialdata;
-		   switch(line->special)
-		   {    // only for raise doors
-		   case 12:
-		   if(door->direction == -1)
-		   {
-		   door->direction = 1; // go back up
-		   }
-		   else
-		   {
-		   if(!thing->player)
-		   { // Monsters don't close doors
-		   return;
-		   }
-		   door->direction = -1; // start going down immediately
-		   }
-		   return;
-		   }
-		 */
 	}
-#endif
+
 	//
 	// new door thinker
 	//
 	door = Z_Malloc(sizeof(*door), PU_LEVSPEC, 0);
 	P_AddThinker(&door->thinker);
-#ifdef TODO_MAP_UPDATE
-	sec->specialdata = door;
-#endif
+	P_XSector(sec)->specialdata = door;
 	door->thinker.function = T_VerticalDoor;
 	door->sector = sec;
 	door->direction = 1;
-#ifdef TODO_MAP_UPDATE
-	switch (line->special)
+	switch (P_XLine(line)->special)
 	{
 	case 11:
 		door->type = DREV_OPEN;
-		line->special = 0;
+		P_XLine(line)->special = 0;
 		break;
 	case 12:
 	case 13:
@@ -266,19 +234,16 @@ boolean EV_VerticalDoor(line_t *line, mobj_t *thing)
 		door->type = DREV_NORMAL;
 		break;
 	}
-	door->speed = line->arg2 * (FRACUNIT / 8);
-	door->topwait = line->arg3;
-#endif
+	door->speed = P_XLine(line)->arg2 * (FRACUNIT / 8);
+	door->topwait = P_XLine(line)->arg3;
 
 	//
 	// find the top and bottom of the movement range
 	//
 	door->topheight = P_FindLowestCeilingSurrounding(sec);
 	door->topheight -= 4 * FRACUNIT;
-#ifdef TODO_MAP_UPDATE
-	SN_StartSequence((mobj_t *) &door->sector->soundorg,
-					 SEQ_DOOR_STONE + door->sector->seqType);
-#endif
+	SN_StartSequence(P_SectorSoundOrigin(door->sector),
+					 SEQ_DOOR_STONE + P_XSector(door->sector)->seqType);
 	return true;
 }
 

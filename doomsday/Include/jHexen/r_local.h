@@ -85,18 +85,6 @@ typedef struct xsector_s {
     void           *specialdata;   // thinker_t for reversable actions
 } xsector_t;
 
-#if 0
-typedef struct side_s {
-    fixed_t         textureoffset; // add this to the calculated texture col
-    fixed_t         rowoffset;     // add this to the calculated texture top
-    short           toptexture, bottomtexture, midtexture;
-    sector_t       *sector;
-
-    // --- You can freely make changes after this.
-
-} side_t;
-#endif
-
 typedef struct xline_s {
     byte            special;
     byte            arg1;

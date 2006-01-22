@@ -34,23 +34,23 @@ mobj_t *soundtarget;
 
 void P_RecursiveSound(sector_t *sec, int soundblocks)
 {
-#ifdef TODO_MAP_UPDATE
 	int     i;
 	line_t *check;
 	sector_t *other;
 
 	// Wake up all monsters in this sector
-	if(sec->validcount == Validcount && sec->soundtraversed <= soundblocks + 1)
+	if(P_GetIntp(sec, DMU_VALID_COUNT) == Validcount && 
+       P_XSector(sec)->soundtraversed <= soundblocks + 1)
 	{							// Already flooded
 		return;
 	}
-	sec->validcount = Validcount;
-	sec->soundtraversed = soundblocks + 1;
-	sec->soundtarget = soundtarget;
-	for(i = 0; i < sec->linecount; i++)
+	P_SetIntp(sec, DMU_VALID_COUNT, Validcount);
+	P_XSector(sec)->soundtraversed = soundblocks + 1;
+	P_XSector(sec)->soundtarget = soundtarget;
+	for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
 	{
-		check = sec->Lines[i];
-		if(!(check->flags & ML_TWOSIDED))
+		check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
+		if(!(P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED))
 		{
 			continue;
 		}
@@ -59,17 +59,15 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 		{						// Closed door
 			continue;
 		}
-#ifdef TODO_MAP_UPDATE
-		if(sides[check->sidenum[0]].sector == sec)
+		if(P_GetPtrp( P_GetPtrp(check, DMU_SIDE0), DMU_SECTOR ) == sec)
 		{
-			other = sides[check->sidenum[1]].sector;
+			other = P_GetPtrp( P_GetPtrp(check, DMU_SIDE1), DMU_SECTOR );
 		}
 		else
 		{
-			other = sides[check->sidenum[0]].sector;
+			other = P_GetPtrp( P_GetPtrp(check, DMU_SIDE0), DMU_SECTOR );
 		}
-#endif
-		if(check->flags & ML_SOUNDBLOCK)
+		if(P_GetIntp(check, DMU_FLAGS) & ML_SOUNDBLOCK)
 		{
 			if(!soundblocks)
 			{
@@ -81,7 +79,6 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 			P_RecursiveSound(other, soundblocks);
 		}
 	}
-#endif
 }
 
 //----------------------------------------------------------------------------
@@ -93,13 +90,11 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 //
 //----------------------------------------------------------------------------
 
-void P_NoiseAlert(mobj_t *target, mobj_t *emmiter)
+void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
 	soundtarget = target;
 	Validcount++;
-#ifdef TODO_MAP_UPDATE
-	P_RecursiveSound(emmiter->subsector->sector, 0);
-#endif
+	P_RecursiveSound(P_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
 //----------------------------------------------------------------------------
@@ -535,9 +530,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
 	{							// Single player game and player is dead, look for monsters
 		return (P_LookForMonsters(actor));
 	}
-#ifdef TODO_MAP_UPDATE
-	sector = actor->subsector->sector;
-#endif
+	sector = P_GetPtrp(actor->subsector, DMU_SECTOR);
 	c = 0;
 	stop = (actor->lastlook - 1) & 3;
 	for(;; actor->lastlook = (actor->lastlook + 1) & 3)
@@ -623,9 +616,7 @@ void C_DECL A_Look(mobj_t *actor)
 	mobj_t *targ;
 
 	actor->threshold = 0;		// any shot will wake up
-#ifdef TODO_MAP_UPDATE
-	targ = actor->subsector->sector->soundtarget;
-#endif
+	targ = P_XSectorOfSubsector(actor->subsector)->soundtarget;
 	if(targ && (targ->flags & MF_SHOOTABLE))
 	{
 		actor->target = targ;
@@ -2068,20 +2059,16 @@ void C_DECL A_SerpentChase(mobj_t *actor)
 	//
 	oldX = actor->x;
 	oldY = actor->y;
-#ifdef TODO_MAP_UPDATE
-	oldFloor = actor->subsector->sector->floorpic;
-#endif
+	oldFloor = P_GetIntp(actor->subsector, DMU_FLOOR_TEXTURE);
 	if(--actor->movecount < 0 || !P_Move(actor))
 	{
 		P_NewChaseDir(actor);
 	}
-#ifdef TODO_MAP_UPDATE
-	if(actor->subsector->sector->floorpic != oldFloor)
+	if(P_GetIntp(actor->subsector, DMU_FLOOR_TEXTURE) != oldFloor)
 	{
 		P_TryMove(actor, oldX, oldY);
 		P_NewChaseDir(actor);
 	}
-#endif
 
 	//
 	// make active sound
