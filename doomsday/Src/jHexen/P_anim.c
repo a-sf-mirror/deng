@@ -97,24 +97,30 @@ void P_AnimateSurfaces(void)
 	// Update scrolling textures
 	for(i = 0; i < numlinespecials; i++)
 	{
-		line = linespeciallist[i];
-#ifdef TODO_MAP_UPDATE
-		switch (line->special)
+        side_t* side = 0;
+        fixed_t texOff[2];
+		
+        line = linespeciallist[i];
+        side = P_GetPtrp(line, DMU_SIDE0);
+        P_GetFixedpv(side, DMU_TEXTURE_OFFSET_XY, texOff);
+        
+		switch (P_XLine(line)->special)
 		{
 		case 100:				// Scroll_Texture_Left
-			sides[line->sidenum[0]].textureoffset += line->arg1 << 10;
+			texOff[0] += P_XLine(line)->arg1 << 10;
 			break;
 		case 101:				// Scroll_Texture_Right
-			sides[line->sidenum[0]].textureoffset -= line->arg1 << 10;
+			texOff[0] -= P_XLine(line)->arg1 << 10;
 			break;
 		case 102:				// Scroll_Texture_Up
-			sides[line->sidenum[0]].rowoffset += line->arg1 << 10;
+			texOff[1] += P_XLine(line)->arg1 << 10;
 			break;
 		case 103:				// Scroll_Texture_Down
-			sides[line->sidenum[0]].rowoffset -= line->arg1 << 10;
+			texOff[1] -= P_XLine(line)->arg1 << 10;
 			break;
 		}
-#endif
+        
+        P_SetFixedpv(side, DMU_TEXTURE_OFFSET_XY, texOff);
 	}
 
 	// Update sky column offsets
@@ -156,87 +162,83 @@ static void P_LightningFlash(void)
 		if(LightningFlash)
 		{
 			tempLight = LightningLightLevels;
-#ifdef TODO_MAP_UPDATE
-			tempSec = sectors;
-			for(i = 0; i < numsectors; i++, tempSec++)
+			for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 			{
-				if(tempSec->ceilingpic == skyflatnum ||
-				   tempSec->special == LIGHTNING_SPECIAL ||
-				   tempSec->special == LIGHTNING_SPECIAL2)
+                tempSec = P_ToPtr(DMU_SECTOR, i);
+				if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
 				{
-					if(*tempLight < tempSec->lightlevel - 4)
+					if(*tempLight < P_GetIntp(tempSec, DMU_LIGHT_LEVEL) - 4)
 					{
-						tempSec->lightlevel -= 4;
+						P_SetIntp(tempSec, DMU_LIGHT_LEVEL, 
+                                  P_GetIntp(tempSec, DMU_LIGHT_LEVEL) - 4);
 					}
 					tempLight++;
 				}
 			}
-#endif
 		}
 		else
 		{						// remove the alternate lightning flash special
 			tempLight = LightningLightLevels;
-#ifdef TODO_MAP_UPDATE
-			tempSec = sectors;
-			for(i = 0; i < numsectors; i++, tempSec++)
+			for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 			{
-				if(tempSec->ceilingpic == skyflatnum ||
-				   tempSec->special == LIGHTNING_SPECIAL ||
-				   tempSec->special == LIGHTNING_SPECIAL2)
+                tempSec = P_ToPtr(DMU_SECTOR, i);
+				if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
 				{
-					tempSec->lightlevel = *tempLight;
+					P_SetIntp(tempSec, DMU_LIGHT_LEVEL, *tempLight);
 					tempLight++;
 				}
 			}
-#endif
 			Rend_SkyParams(1, DD_DISABLE, 0);
 			Rend_SkyParams(0, DD_ENABLE, 0);
-			//Sky1Texture = P_GetMapSky1Texture(gamemap);       
 		}
 		return;
 	}
 	LightningFlash = (P_Random() & 7) + 8;
 	flashLight = 200 + (P_Random() & 31);
-#ifdef TODO_MAP_UPDATE
-	tempSec = sectors;
 	tempLight = LightningLightLevels;
 	foundSec = false;
-	for(i = 0; i < numsectors; i++, tempSec++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
-		if(tempSec->ceilingpic == skyflatnum ||
-		   tempSec->special == LIGHTNING_SPECIAL ||
-		   tempSec->special == LIGHTNING_SPECIAL2)
+        tempSec = P_ToPtr(DMU_SECTOR, i);
+		if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+		   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+		   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
 		{
-			*tempLight = tempSec->lightlevel;
-			if(tempSec->special == LIGHTNING_SPECIAL)
+            int newLevel = *tempLight = P_GetIntp(tempSec, DMU_LIGHT_LEVEL);
+			if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL)
 			{
-				tempSec->lightlevel += 64;
-				if(tempSec->lightlevel > flashLight)
+				newLevel += 64;
+				if(newLevel > flashLight)
 				{
-					tempSec->lightlevel = flashLight;
+					newLevel = flashLight;
 				}
 			}
-			else if(tempSec->special == LIGHTNING_SPECIAL2)
+			else if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
 			{
-				tempSec->lightlevel += 32;
-				if(tempSec->lightlevel > flashLight)
+				newLevel += 32;
+				if(newLevel > flashLight)
 				{
-					tempSec->lightlevel = flashLight;
+					newLevel = flashLight;
 				}
 			}
 			else
 			{
-				tempSec->lightlevel = flashLight;
+				newLevel = flashLight;
 			}
-			if(tempSec->lightlevel < *tempLight)
+			if(newLevel < *tempLight)
 			{
-				tempSec->lightlevel = *tempLight;
+				newLevel = *tempLight;
 			}
+            P_SetFixedp(tempSec, DMU_LIGHT_LEVEL, newLevel);
 			tempLight++;
 			foundSec = true;
 		}
 	}
-#endif
+
 	if(foundSec)
 	{
 		mobj_t *plrmo = players[displayplayer].plr->mo;
@@ -313,17 +315,15 @@ void P_InitLightning(void)
 	}
 	LightningFlash = 0;
 	secCount = 0;
-#ifdef TODO_MAP_UPDATE
-	for(i = 0; i < numsectors; i++)
+	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
 	{
-		if(sectors[i].ceilingpic == skyflatnum ||
-		   sectors[i].special == LIGHTNING_SPECIAL ||
-		   sectors[i].special == LIGHTNING_SPECIAL2)
+		if(P_GetInt(DMU_SECTOR, i, DMU_CEILING_TEXTURE) == skyflatnum ||
+		   xsectors[i].special == LIGHTNING_SPECIAL ||
+		   xsectors[i].special == LIGHTNING_SPECIAL2)
 		{
 			secCount++;
 		}
 	}
-#endif
 	if(secCount)
 	{
 		LevelHasLightning = true;
