@@ -18,6 +18,5 @@ void            P_DealPlayerStarts(void);
 void            P_SpawnPlayers(void);
 
 void            P_GetMapLumpName(int episode, int map, char *lumpName);
-void            P_LocateMapLumps(int episode, int map, int *lumpIndices);
 
 #endif

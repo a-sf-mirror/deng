@@ -272,6 +272,8 @@ extern int      numthings;
 extern fixed_t  mapgravity;        // Gravity for the current map.
 
 extern int numUniqueLines;
+
+extern int *missingFronts;
 extern int numMissingFronts;
 
 void            P_ValidateLevel(void);

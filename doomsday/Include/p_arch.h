@@ -100,6 +100,7 @@ typedef struct {
 
 extern maplump_t LumpInfo[];
 
+void        P_LocateMapLumps(char *levelID, int *lumpIndices);
 void        P_InitMapDataFormats(void);
 void        P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId);
 
