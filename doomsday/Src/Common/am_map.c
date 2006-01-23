@@ -41,12 +41,15 @@
 # include "jDoom/wi_stuff.h"
 #elif __JHERETIC__
 # include "jHeretic/m_ctrl.h"
-# include "jHeretic/H_Action.h"
 # include "jHeretic/Doomdef.h"
-# include "jHeretic/Mn_def.h"
+# include "jHeretic/h_config.h"
 # include "jHeretic/P_local.h"
-# include "h_config.h"
+# include "jHeretic/m_cheat.h"
+# include "jHeretic/H_Action.h"
+# include "jHeretic/h_stat.h"
 # include "jHeretic/Dstrings.h"
+# include "jHeretic/Mn_def.h"
+# include "jHeretic/m_menu.h"
 #elif __JHEXEN__
 # include "jHexen/m_ctrl.h"
 # include "jHexen/h2_actn.h"

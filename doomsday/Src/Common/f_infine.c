@@ -23,14 +23,14 @@
 
 #include <ctype.h>
 
-#if defined(__JDOOM__)
+#ifdef __JDOOM__
 # include "doomdef.h"
 # include "doomstat.h"
 # include "m_swap.h"
 # include "s_sound.h"
 #elif __JHERETIC__
 # include "jHeretic/Doomdef.h"
-# include "jHeretic/S_sound.h"
+# include "jHeretic/h_stat.h"
 # include "jHeretic/Soundst.h"
 # include "Common/am_map.h"
 #elif __JHEXEN__

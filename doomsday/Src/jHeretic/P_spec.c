@@ -28,9 +28,14 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_stat.h"
 #include "jHeretic/P_local.h"
-#include "jHeretic/Soundst.h"
-#include "h_config.h"
+#include "jHeretic/G_game.h"
+#include "jHeretic/Sounds.h"
+#include "jHeretic/h_config.h"
+
+#include "Common/dmu_lib.h"
+#include "Common/p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -207,7 +212,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 
         if(!other)
@@ -231,7 +236,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 
         if(!other)
@@ -264,7 +269,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
 
     for(i = 0; i < lineCount; i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 
         if(!other)
@@ -276,7 +281,7 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
         {
             while(++i < lineCount)
             {
-                check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+                check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
                 other = getNextSector(check, sec);
 
                 if(other)
@@ -307,7 +312,7 @@ fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 
         if(!other)
@@ -333,7 +338,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 
     for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
     {
-        check = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, i);
+        check = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
         other = getNextSector(check, sec);
 
         if(!other)
@@ -378,7 +383,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
     min = max;
     for(i = 0; i < P_GetIntp(sector, DMU_LINE_COUNT); i++)
     {
-        line = P_GetPtrp(DMU_LINE_OF_SECTOR, sector, i);
+        line = P_GetPtrp(sector, DMU_LINE_OF_SECTOR | i);
         check = getNextSector(line, sector);
 
         if(!check)
@@ -1142,10 +1147,10 @@ int EV_DoDonut(line_t *line)
 
         rtn = 1;
 
-        s2 = getNextSector(P_GetPtrp(DMU_LINE_OF_SECTOR, s1, 0), s1);
+        s2 = getNextSector(P_GetPtrp(s1, DMU_LINE_OF_SECTOR | 0), s1);
         for(i = 0; i < P_GetIntp(s2, DMU_LINE_COUNT); i++)
         {
-            check = P_GetPtrp(DMU_LINE_OF_SECTOR, s2, i);
+            check = P_GetPtrp(s2, DMU_LINE_OF_SECTOR | i);
 
             if((!P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED) ||
                (P_GetPtrp(check, DMU_BACK_SECTOR) == s1))

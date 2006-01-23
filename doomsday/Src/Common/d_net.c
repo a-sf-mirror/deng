@@ -32,25 +32,21 @@
 #  include "jDoom/m_menu.h"
 #  include "Common/hu_stuff.h"
 #  include "jDoom/st_stuff.h"
-#endif
-
-#if __JHERETIC__
+#elif __JHERETIC__
 #  include "jHeretic/Doomdef.h"
+#  include "jHeretic/h_stat.h"
 #  include "jHeretic/P_local.h"
-#  include "jHeretic/Soundst.h"
-#  include "jHeretic/Mn_def.h"
+#  include "jHeretic/Sounds.h"
+#  include "jHeretic/G_game.h"
+#  include "jHeretic/m_menu.h"
 #  include "jHeretic/h_config.h"
-#endif
-
-#if __JHEXEN__
+#elif __JHEXEN__
 #  include "jHexen/h2def.h"
 #  include "jHexen/p_local.h"
 #  include "jHexen/soundst.h"
 #  include "jHexen/mn_def.h"
 #  include "jHexen/x_config.h"
-#endif
-
-#if __JSTRIFE__
+#elif __JSTRIFE__
 #  include "jStrife/h2def.h"
 #  include "jStrife/p_local.h"
 #  include "jStrife/soundst.h"

@@ -29,28 +29,26 @@
 #  include "p_tick.h"
 #  include "wi_stuff.h"
 #  include "st_stuff.h"
-#  include "p_local.h"
 #  include "s_sound.h"
 #  include "dstrings.h"
 #  include "g_game.h"
 #  include "r_sky.h"
 #  include "Common/p_saveg.h"
-#endif
-
-#if __JHERETIC__
+#elif __JHERETIC__
 #  include <stdio.h>
 #  include <string.h>
 #  include <math.h>
 #  include "jHeretic/Doomdef.h"
-#  include "jHeretic/P_local.h"
+#  include "jHeretic/h_stat.h"
 #  include "jHeretic/H_Action.h"
+#  include "jHeretic/h_config.h"
+#  include "jHeretic/m_menu.h"
+#  include "jHeretic/P_local.h"
 #  include "jHeretic/Soundst.h"
-#  include "jHeretic/Mn_def.h"
-#  include "h_config.h"
+#  include "jHeretic/Dstrings.h"
+#  include "jHeretic/G_game.h"
 #  include "Common/p_saveg.h"
-#endif
-
-#if __JHEXEN__
+#elif __JHEXEN__
 #  include <string.h>
 #  include <math.h>
 #  include <assert.h>
@@ -61,9 +59,7 @@
 #  include "jHexen/h2_actn.h"
 #  include "jHexen/st_stuff.h"
 #  include "jHexen/mn_def.h"
-#endif
-
-#if __JSTRIFE__
+#elif __JSTRIFE__
 #  include <string.h>
 #  include <math.h>
 #  include <assert.h>

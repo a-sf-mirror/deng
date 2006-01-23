@@ -26,7 +26,9 @@
 # include "st_stuff.h"
 #elif __JHERETIC__
 # include "jHeretic/Doomdef.h"
-# include "h_config.h"
+# include "jHeretic/h_stat.h"
+# include "jHeretic/P_local.h"
+# include "jHeretic/h_config.h"
 #elif __JHEXEN__
 # include "jHexen/h2def.h"
 # include "x_config.h"

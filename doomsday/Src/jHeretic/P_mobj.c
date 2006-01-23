@@ -7,12 +7,14 @@
 #include <math.h>
 
 #include "jHeretic/Doomdef.h"
-#include "jHeretic/P_local.h"
-#include "jHeretic/Sounds.h"
-#include "jHeretic/Soundst.h"
 #include "jHeretic/h_config.h"
+#include "jHeretic/h_type.h"
+#include "jHeretic/P_local.h"
 #include "jHeretic/st_stuff.h"
-#include "hu_stuff.h"
+#include "Common/hu_stuff.h"
+#include "jHeretic/Soundst.h"
+#include "jHeretic/h_stat.h"
+#include "Common/g_common.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -548,7 +550,7 @@ void P_ZMovement(mobj_t *mo)
                 if(mo->player && mo->momz < -gravity * 8 && !(mo->flags2 & MF2_FLY))    // squat down
                 {
                     mo->player->plr->deltaviewheight = mo->momz >> 3;
-                    mo->player->jumpTics = 12;  // can't jump in a while.
+                    mo->player->jumptics = 12;  // can't jump in a while.
                     S_StartSound(sfx_plroof, mo);
                     // Don't lookspring with mouselook.
                     if(!cfg.usemlook)
@@ -746,8 +748,6 @@ void P_MobjThinker(mobj_t *mobj)
         // Remote mobjs are handled separately.
         return;
     }
-
-    P_UpdateMobjFlags(mobj);
 
     // The first three bits of the selector special byte contain a
     // relative health level.

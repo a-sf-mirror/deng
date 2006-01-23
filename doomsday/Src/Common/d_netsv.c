@@ -32,9 +32,11 @@
 #  include "g_common.h"
 #elif __JHERETIC__
 #  include "jHeretic/Doomdef.h"
-#  include "jHeretic/Soundst.h"
+#  include "jHeretic/h_stat.h"
+#  include "jHeretic/Sounds.h"
 #  include "jHeretic/P_local.h"
 #  include "jHeretic/h_config.h"
+#  include "jHeretic/m_cheat.h"
 #elif __JHEXEN__
 #  include "jHexen/h2def.h"
 #  include "jHexen/p_local.h"

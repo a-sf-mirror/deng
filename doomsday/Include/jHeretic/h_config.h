@@ -84,6 +84,7 @@ typedef struct {
 
     int             jumpEnabled;
     float           jumpPower;
+    int             airborneMovement;
     byte            fastMonsters;
     byte            customMusic;
 

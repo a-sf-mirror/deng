@@ -6,7 +6,7 @@
 #if __JDOOM__
 # include "jDoom/p_mobj.h"
 #elif __JHERETIC__
-# include "jHeretic/Doomdef.h"
+# include "jHeretic/p_mobj.h"
 #elif __JHEXEN__
 # include "jHexen/h2def.h"
 #elif __JSTRIFE__
@@ -23,11 +23,11 @@ enum {
     JOYAXIS_LOOK
 };
 
-void			G_Register(void);
+void            G_Register(void);
 void            G_PreInit(void);
 void            G_PostInit(void);
-void			G_BuildTiccmd(ticcmd_t *cmd, float elapsedTime);
-void			G_MergeTiccmd(ticcmd_t *dest, ticcmd_t *src);
+void            G_BuildTiccmd(ticcmd_t *cmd, float elapsedTime);
+void            G_MergeTiccmd(ticcmd_t *dest, ticcmd_t *src);
 void            G_StartTitle(void);
 void            G_PostInit(void);
 void            G_PreInit(void);

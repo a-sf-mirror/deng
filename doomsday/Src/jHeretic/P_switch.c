@@ -6,7 +6,8 @@
 
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/P_local.h"
-#include "jHeretic/Soundst.h"
+#include "jHeretic/G_game.h"
+#include "jHeretic/Sounds.h"
 #include "d_net.h"
 
 // MACROS ------------------------------------------------------------------
@@ -102,8 +103,9 @@ void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
-            buttonlist[i].soundorg = P_GetPtrp(DMU_SECTOR,
-                P_GetPtrp(line, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
+            buttonlist[i].soundorg =
+                P_GetPtrp(P_GetPtrp(line, DMU_FRONT_SECTOR),
+                          DMU_SOUND_ORIGIN);
             return;
         }
     }

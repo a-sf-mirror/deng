@@ -2,11 +2,17 @@
 
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/P_local.h"
+#include "jHeretic/h_stat.h"
+#include "jHeretic/G_game.h"
+
+#include "Common/p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 
 #define VERSIONSIZE 16
 #define SAVE_GAME_TERMINATOR 0x1d
+
+#define SAVESTRINGSIZE 24
 
 // TYPES -------------------------------------------------------------------
 

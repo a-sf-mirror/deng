@@ -24,7 +24,7 @@
 #ifdef __JDOOM__
 # include "jDoom/r_defs.h"
 #elif __JHERETIC__
-# include "jHeretic/R_local.h"
+# include "jHeretic/r_defs.h"
 #elif __JHEXEN__
 # include "jHexen/r_local.h"
 #endif
@@ -85,7 +85,7 @@ void P_CopyLine(line_t* from, line_t* to)
     P_Copyp(DMU_BOTTOM_COLOR, from, to);
 
     // Copy the extended properties too
-#if __JDOOM__ || __JHERETIC
+#if __JDOOM__ || __JHERETIC__
     xfrom->special = xto->special;
     xfrom->tag = xto->tag;
     xfrom->specialdata = xto->specialdata;
@@ -131,14 +131,14 @@ void P_CopySector(sector_t* from, sector_t* to)
     P_Copyp(DMU_CEILING_TARGET, from, to);
 
     // Copy the extended properties too
-#if __JDOOM__ || __JHERETIC
+#if __JDOOM__ || __JHERETIC__
     xfrom->special = xto->special;
     xfrom->tag = xto->tag;
     xfrom->soundtraversed = xto->soundtraversed;
     xfrom->soundtarget = xto->soundtarget;
     xfrom->specialdata = xto->specialdata;
 #if __JHERETIC__
-    xfrom->seqtype = xto->seqType;
+    xfrom->seqType = xto->seqType;
 #endif
     xfrom->origfloor = xto->origfloor;
     xfrom->origceiling = xto->origceiling;

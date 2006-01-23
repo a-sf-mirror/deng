@@ -5,8 +5,8 @@
 #  include "d_event.h"
 #  include "jDoom/r_defs.h"
 #elif __JHERETIC__
-#  include "jHeretic/Doomdef.h"
-#  include "jHeretic/R_local.h"
+#  include "jHeretic/h_event.h"
+#  include "jHeretic/r_defs.h"
 #elif __JHEXEN__
 #  include "jHexen/h2def.h"
 #  include "jHexen/r_local.h"

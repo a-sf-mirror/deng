@@ -1,15 +1,27 @@
+/*
+ * Status bar code.
+ *  Does palette indicators as well
+ */
 
-// SB_bar.c
+ // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
-#include "jHeretic/P_local.h"
-#include "jHeretic/Soundst.h"
-#include "jHeretic/st_stuff.h"
 #include "jHeretic/h_config.h"
-#include "Common/hu_stuff.h"
+#include "Common/d_net.h"
+#include "jHeretic/g_game.h"
+#include "jHeretic/st_stuff.h"
 #include "Common/st_lib.h"
+#include "jHeretic/P_local.h"
+#include "jHeretic/m_cheat.h"
+#include "Common/hu_stuff.h"
+#include "jHeretic/Soundst.h"
+#include "jHeretic/h_stat.h"
+#include "jHeretic/Dstrings.h"
 
-// Macros
+// MACROS ------------------------------------------------------------------
+
+#define FMAKERGBA(r,g,b,a) ( (byte)(0xff*r) + ((byte)(0xff*g)<<8)           \
+                            + ((byte)(0xff*b)<<16) + ((byte)(0xff*a)<<24) )
 
 // Location and size of statistics,
 //  justified according to widget type.
@@ -87,7 +99,7 @@
     (((a)&64)>>2)+ \
     (((a)&128)>>4))
 
-// Types
+// TYPES -------------------------------------------------------------------
 
 typedef struct Cheat_s {
     void    (*func) (player_t *player, struct Cheat_s * cheat);
@@ -97,18 +109,25 @@ typedef struct Cheat_s {
     int     currentArg;
 } Cheat_t;
 
-// Private Functions
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-//static void DrawSoundInfo(void);
-//static void ShadeLine(int x, int y, int height, int shade);
+void M_ClearMenus(void);
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+boolean cht_Responder(event_t *ev);
+
+void ST_drawWidgets(boolean refresh);
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
 static void ShadeChain(void);
 static void DrINumber(signed int val, int x, int y, float r, float g, float b, float a);
 static void DrBNumber(signed int val, int x, int y, float Red, float Green, float Blue, float Alpha);
 static void DrawChain(void);
-void ST_drawWidgets(boolean refresh);
-//static void DrawInventoryItems(void);
+
 static void ST_doFullscreenStuff(void);
-boolean cht_Responder(event_t *ev);
+
 static boolean CheatAddKey(Cheat_t * cheat, byte key, boolean *eat);
 static void CheatGodFunc(player_t *player, Cheat_t * cheat);
 static void CheatNoClipFunc(player_t *player, Cheat_t * cheat);
@@ -127,18 +146,66 @@ static void CheatMassacreFunc(player_t *player, Cheat_t * cheat);
 static void CheatIDKFAFunc(player_t *player, Cheat_t * cheat);
 static void CheatIDDQDFunc(player_t *player, Cheat_t * cheat);
 
-// External Functions
-void M_ClearMenus(void);
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-// Public Data
+extern boolean automapactive;
+extern int  cheating;
+extern byte *screen;
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+boolean inventory = false;
+int     curpos;
+int     inv_ptr;
+int     ArtifactFlash;
+
+int     lu_palette;
+
+byte cheatcount;
+
+int     FontBNumBase;
+
+int     playerkeys = 0;
+
+// ammo patch names
+char    ammopic[][10] = {
+    {"INAMGLD"},
+    {"INAMBOW"},
+    {"INAMBST"},
+    {"INAMRAM"},
+    {"INAMPNX"},
+    {"INAMLOB"}
+};
+
+// Artifact patch names
+char    artifactlist[][10] = {
+    {"USEARTIA"},               // use artifact flash
+    {"USEARTIB"},
+    {"USEARTIC"},
+    {"USEARTID"},
+    {"USEARTIE"},
+    {"ARTIBOX"},                // none
+    {"ARTIINVU"},               // invulnerability
+    {"ARTIINVS"},               // invisibility
+    {"ARTIPTN2"},               // health
+    {"ARTISPHL"},               // superhealth
+    {"ARTIPWBK"},               // tomeofpower
+    {"ARTITRCH"},               // torch
+    {"ARTIFBMB"},               // firebomb
+    {"ARTIEGGC"},               // egg
+    {"ARTISOAR"},               // fly
+    {"ARTIATLP"}                // teleport
+};
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+static boolean st_stopped = true;
 
 // slide statusbar amount 1.0 is fully open
 static float showbar = 0.0f;
 
 // fullscreen hud alpha value
 static float hudalpha = 0.0f;
-
-//boolean DebugSound; // debug flag for displaying sound info
 
 // ST_Start() has just been called
 static boolean st_firsttime;
@@ -218,63 +285,21 @@ static int st_fragscount;
 // !deathmatch
 static boolean st_fragson;
 
-boolean inventory = false;
-int     curpos;
-int     inv_ptr;
-int     ArtifactFlash;
-
-// Private Data
-
 // whether to use alpha blending
 static boolean st_blended = false;
 
 static int HealthMarker;
 static int ChainWiggle;
 static player_t *CPlayer;
-int     lu_palette;
 
 static int oldarti = 0;
 static int oldartiCount = 0;
-//static int oldfrags = -9999;
+
 static int oldammo = -1;
-//static int oldarmor = -1;
+
 static int oldweapon = -1;
 static int oldhealth = -1;
-//static int oldlife = -1;
-//static int oldkeys = -1;
 
-// ammo patch names
-char    ammopic[][10] = {
-    {"INAMGLD"},
-    {"INAMBOW"},
-    {"INAMBST"},
-    {"INAMRAM"},
-    {"INAMPNX"},
-    {"INAMLOB"}
-};
-
-// Artifact patch names
-char    artifactlist[][10] = {
-    {"USEARTIA"},               // use artifact flash
-    {"USEARTIB"},
-    {"USEARTIC"},
-    {"USEARTID"},
-    {"USEARTIE"},
-    {"ARTIBOX"},                // none
-    {"ARTIINVU"},               // invulnerability
-    {"ARTIINVS"},               // invisibility
-    {"ARTIPTN2"},               // health
-    {"ARTISPHL"},               // superhealth
-    {"ARTIPWBK"},               // tomeofpower
-    {"ARTITRCH"},               // torch
-    {"ARTIFBMB"},               // firebomb
-    {"ARTIEGGC"},               // egg
-    {"ARTISOAR"},               // fly
-    {"ARTIATLP"}                // teleport
-};
-
-//static dpatch_t     PatchLTFACE;
-//static dpatch_t     PatchRTFACE;
 static dpatch_t     PatchBARBACK;
 static dpatch_t     PatchCHAIN;
 static dpatch_t     PatchSTATBAR;
@@ -289,10 +314,9 @@ static dpatch_t     PatchINVRTGEM2;
 static dpatch_t     PatchINumbers[10];
 static dpatch_t     PatchNEGATIVE;
 static dpatch_t     PatchSmNumbers[10];
-//static dpatch_t     PatchBLACKSQ;
+
 static dpatch_t     PatchINVBAR;
-//static dpatch_t     PatchARMCLEAR;
-//static dpatch_t     PatchCHAINBACK;
+
 static dpatch_t     PatchAMMOICONS[11];
 static dpatch_t     PatchARTIFACTS[16];
 static dpatch_t     spinbooklump;
@@ -300,13 +324,6 @@ static dpatch_t     spinflylump;
 
 // 3 keys
 static dpatch_t keys[NUMKEYS];
-
-//byte *ShadeTables;
-extern byte *screen;
-byte cheatcount;
-extern int  cheating;
-
-int     FontBNumBase;
 
 static byte CheatLookup[256];
 
@@ -505,6 +522,8 @@ static Cheat_t Cheats[] = {
     {CheatIDDQDFunc, CheatIDDQDSeq, NULL, {0, 0}, 0},
     {NULL, NULL, NULL, {0, 0}, 0}   // Terminator
 };
+
+// CODE --------------------------------------------------------------------
 
 void ST_loadGraphics()
 {
@@ -766,8 +785,6 @@ void ST_createWidgets(void)
     }
 }
 
-static boolean st_stopped = true;
-
 void ST_Start(void)
 {
 
@@ -790,12 +807,6 @@ void ST_Init(void)
 {
     ST_loadData();
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC SB_Ticker
-//
-//---------------------------------------------------------------------------
 
 void ST_Ticker(void)
 {
@@ -854,14 +865,6 @@ void ST_Ticker(void)
     }
 }
 
-//---------------------------------------------------------------------------
-//
-// PROC DrINumber
-//
-// Draws a three digit (!) number. Limited to 999.
-//
-//---------------------------------------------------------------------------
-
 static void DrINumber(signed int val, int x, int y, float r, float g, float b, float a)
 {
     int     oldval;
@@ -899,14 +902,6 @@ static void DrINumber(signed int val, int x, int y, float r, float g, float b, f
     val = val % 10;
     GL_DrawPatch_CS(x + 18, y, PatchINumbers[val].lump);
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC DrBNumber
-//
-// Draws a three digit number
-//
-//---------------------------------------------------------------------------
 
 static void DrBNumber(signed int val, int x, int y, float red, float green, float blue, float alpha)
 {
@@ -956,14 +951,6 @@ static void DrBNumber(signed int val, int x, int y, float red, float green, floa
     GL_SetColorAndAlpha(1, 1, 1, 1);
 }
 
-//---------------------------------------------------------------------------
-//
-// PROC DrSmallNumber
-//
-// Draws a small two digit number.
-//
-//---------------------------------------------------------------------------
-
 static void _DrSmallNumber(int val, int x, int y, boolean skipone, float r, float g, float b, float a)
 {
     gl.Color4f(r,g,b,a);
@@ -984,32 +971,6 @@ static void DrSmallNumber(int val, int x, int y, float r, float g, float b, floa
 {
     _DrSmallNumber(val, x, y, true, r,g,b,a);
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC ShadeLine
-//
-//---------------------------------------------------------------------------
-
-/*static void ShadeLine(int x, int y, int height, int shade)
-   {
-   byte *dest;
-   byte *shades;
-
-   shades = colormaps+9*256+shade*2*256;
-   dest = screen+y*SCREENWIDTH+x;
-   while(height--)
-   {
-   *(dest) = *(shades+*dest);
-   dest += SCREENWIDTH;
-   }
-   } */
-
-//---------------------------------------------------------------------------
-//
-// PROC ShadeChain
-//
-//---------------------------------------------------------------------------
 
 static void ShadeChain(void)
 {
@@ -1036,79 +997,6 @@ static void ShadeChain(void)
     gl.End();
     gl.Enable(DGL_TEXTURING);
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC DrawSoundInfo
-//
-// Displays sound debugging information.
-//
-//---------------------------------------------------------------------------
-
-/*static void DrawSoundInfo(void)
-   {
-   int i;
-   SoundInfo_t s;
-   ChanInfo_t *c;
-   char text[32];
-   int x;
-   int y;
-   int xPos[7] = {1, 75, 112, 156, 200, 230, 260};
-
-   if(leveltime&16)
-   {
-   MN_DrTextA("*** SOUND DEBUG INFO ***", xPos[0], 20);
-   }
-   S_GetChannelInfo(&s);
-   if(s.channelCount == 0)
-   {
-   return;
-   }
-   x = 0;
-   MN_DrTextA("NAME", xPos[x++], 30);
-   MN_DrTextA("MO.T", xPos[x++], 30);
-   MN_DrTextA("MO.X", xPos[x++], 30);
-   MN_DrTextA("MO.Y", xPos[x++], 30);
-   MN_DrTextA("ID", xPos[x++], 30);
-   MN_DrTextA("PRI", xPos[x++], 30);
-   MN_DrTextA("DIST", xPos[x++], 30);
-   for(i = 0; i < s.channelCount; i++)
-   {
-   c = &s.chan[i];
-   x = 0;
-   y = 40+i*10;
-   sprintf(text, "%s", c->name);
-   M_ForceUppercase(text);
-   MN_DrTextA(text, xPos[x++], y);
-   if(c->mo)
-   {
-   sprintf(text, "%d", c->mo->type);
-   MN_DrTextA(text, xPos[x++], y);
-   sprintf(text, "%d", c->mo->x>>FRACBITS);
-   MN_DrTextA(text, xPos[x++], y);
-   sprintf(text, "%d", c->mo->y>>FRACBITS);
-   MN_DrTextA(text, xPos[x++], y);
-   }
-   sprintf(text, "%d", c->id);
-   MN_DrTextA(text, xPos[x++], y);
-   sprintf(text, "%d", c->priority);
-   MN_DrTextA(text, xPos[x++], y);
-   sprintf(text, "%d", c->distance);
-   MN_DrTextA(text, xPos[x++], y);
-   }
-   GL_Update(DDUF_FULLSCREEN | DDUF_BORDER);
-   }
- */
-//---------------------------------------------------------------------------
-//
-// PROC SB_Drawer
-//
-//---------------------------------------------------------------------------
-
-
-int     playerkeys = 0;
-
-extern boolean automapactive;
 
 /*
  *   ST_refreshBackground
@@ -1347,8 +1235,29 @@ void ST_Drawer(int fullscreenmode, boolean refresh )
     ST_drawIcons();
 }
 
-// sets the new palette based upon current values of player->damagecount
-// and player->bonuscount
+int H_GetFilterColor(int filter)
+{
+    int     rgba = 0;
+
+    // We have to choose the right color and alpha.
+    if(filter >= STARTREDPALS && filter < STARTREDPALS + NUMREDPALS)
+        // Red?
+        rgba = FMAKERGBA(1, 0, 0, filter / 8.0);    // Full red with filter 8.
+    else if(filter >= STARTBONUSPALS && filter < STARTBONUSPALS + NUMBONUSPALS)
+        // Light Yellow?
+        rgba = FMAKERGBA(1, 1, .5, (filter - STARTBONUSPALS + 1) / 16.0);
+    return rgba;
+}
+
+void H_SetFilter(int filter)
+{
+    GL_SetFilter(H_GetFilterColor(filter));
+}
+
+/*
+ * sets the new palette based upon current values of player->damagecount
+ * and player->bonuscount
+ */
 void ST_doPaletteStuff(void)
 {
     static int sb_palette = 0;
@@ -1383,18 +1292,10 @@ void ST_doPaletteStuff(void)
     if(palette != sb_palette)
     {
         sb_palette = palette;
-        //pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE)+palette*768;
-        //H_SetFilter(palette);
+
         CPlayer->plr->filter = H_GetFilterColor(palette);   // $democam
-        //      I_SetPalette(pal);
     }
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC DrawChain
-//
-//---------------------------------------------------------------------------
 
 void DrawChain(void)
 {
@@ -1472,12 +1373,6 @@ void DrawChain(void)
         GL_Update(DDUF_STATBAR);
     }
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC DrawWidgets
-//
-//---------------------------------------------------------------------------
 
 void ST_drawWidgets(boolean refresh)
 {
@@ -1676,14 +1571,6 @@ void ST_doFullscreenStuff(void)
     }
 }
 
-//--------------------------------------------------------------------------
-//
-// FUNC cht_Responder
-//
-// Returns true if the caller should eat the key.
-//
-//--------------------------------------------------------------------------
-
 boolean cht_Responder(event_t *ev)
 {
     int     i;
@@ -1736,14 +1623,6 @@ boolean cht_Responder(event_t *ev)
     return (eat);
 }
 
-//--------------------------------------------------------------------------
-//
-// FUNC CheatAddkey
-//
-// Returns true if the added key completed the cheat, false otherwise.
-//
-//--------------------------------------------------------------------------
-
 static boolean CheatAddKey(Cheat_t * cheat, byte key, boolean *eat)
 {
     if(!cheat->pos)
@@ -1774,12 +1653,6 @@ static boolean CheatAddKey(Cheat_t * cheat, byte key, boolean *eat)
     }
     return (false);
 }
-
-//--------------------------------------------------------------------------
-//
-// CHEAT FUNCTIONS
-//
-//--------------------------------------------------------------------------
 
 void cht_GodFunc(player_t *player)
 {
@@ -1909,18 +1782,19 @@ static void CheatSoundFunc(player_t *player, Cheat_t * cheat)
 }
 
 static void CheatTickerFunc(player_t *player, Cheat_t * cheat)
-{                               /*
-                                   extern int DisplayTicker;
+{
+     /*
+       extern int DisplayTicker;
 
-                                   DisplayTicker = !DisplayTicker;
-                                   if(DisplayTicker)
-                                   {
-                                   P_SetMessage(player, TXT_CHEATTICKERON);
-                                   }
-                                   else
-                                   {
-                                   P_SetMessage(player, TXT_CHEATTICKEROFF);
-                                   } */
+       DisplayTicker = !DisplayTicker;
+       if(DisplayTicker)
+       {
+       P_SetMessage(player, TXT_CHEATTICKERON);
+       }
+       else
+       {
+       P_SetMessage(player, TXT_CHEATTICKEROFF);
+       } */
 }
 
 static void CheatArtifact1Func(player_t *player, Cheat_t * cheat)
@@ -2035,12 +1909,6 @@ static void CheatIDDQDFunc(player_t *player, Cheat_t * cheat)
     P_DamageMobj(player->plr->mo, NULL, player->plr->mo, 10000);
     P_SetMessage(player, TXT_CHEATIDDQD);
 }
-
-//===========================================================================
-//
-// Console Commands
-//
-//===========================================================================
 
 // This is the multipurpose cheat ccmd.
 DEFCC(CCmdCheat)

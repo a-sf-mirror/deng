@@ -22,20 +22,24 @@
 // HEADER FILES ------------------------------------------------------------
 
 #if __JDOOM__
-# include "doomdef.h"
-# include "doomstat.h"
-# include "m_menu.h"
-# include "Mn_def.h"
-# include "D_Action.h"
-# include "hu_stuff.h"
-# include "s_sound.h"
-# include "g_game.h"
-# include "d_config.h"
+# include "jDoom/doomdef.h"
+# include "jDoom/doomstat.h"
+# include "jDoom/m_menu.h"
+# include "jDoom/Mn_def.h"
+# include "jDoom/D_Action.h"
+# include "Common/hu_stuff.h"
+# include "jDoom/s_sound.h"
+# include "jDoom/g_game.h"
+# include "jDoom/d_config.h"
 # include "jDoom/m_ctrl.h"
 #elif __JHERETIC__
 # include "jHeretic/Doomdef.h"
+# include "jHeretic/h_stat.h"
+# include "jHeretic/m_menu.h"
 # include "jHeretic/Mn_def.h"
 # include "jHeretic/H_Action.h"
+# include "jHeretic/h_config.h"
+# include "jHeretic/G_game.h"
 # include "jHeretic/h_config.h"
 # include "jHeretic/m_ctrl.h"
 #elif __JHEXEN__

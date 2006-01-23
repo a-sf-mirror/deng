@@ -10,9 +10,15 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_config.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
-#include "jHeretic/h_config.h"
+#include "jHeretic/G_game.h"
+
+// State.
+#include "jHeretic/h_stat.h"
+
+#include "dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -103,11 +109,11 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     sector_t *other;
 
     // Have we already flooded this sector?
-    if(P_GetIntp(sec, DMU_VALID_COUNT) == Validcount &&
+    if(P_GetIntp(sec, DMU_VALID_COUNT) == validCount &&
        xsec->soundtraversed <= soundblocks + 1)
         return;
 
-    P_SetIntp(sec, DMU_VALID_COUNT, Validcount);
+    P_SetIntp(sec, DMU_VALID_COUNT, validCount);
 
     xsec->soundtraversed = soundblocks + 1;
     xsec->soundtarget = soundtarget;
@@ -152,7 +158,7 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
 void P_NoiseAlert(mobj_t *target, mobj_t *emmiter)
 {
     soundtarget = target;
-    Validcount++;
+    validCount++;
 
     P_RecursiveSound(P_GetPtrp(emmiter->subsector,
                      DMU_SECTOR), 0);

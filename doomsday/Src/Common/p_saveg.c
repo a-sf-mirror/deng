@@ -24,12 +24,6 @@
 
 #include <LZSS.h>
 
-#ifdef __JHERETIC__
-#  include "jHeretic/Doomdef.h"
-#  include "jHeretic/Dstrings.h"
-#  include "jHeretic/p_oldsvg.h"
-#endif
-
 #ifdef __JDOOM__
 #  include "jDoom/doomdef.h"
 #  include "jDoom/dstrings.h"
@@ -38,6 +32,12 @@
 #  include "jDoom/doomstat.h"
 #  include "jDoom/r_state.h"
 #  include "p_oldsvg.h"
+#elif __JHERETIC__
+#  include "jHeretic/Doomdef.h"
+#  include "jHeretic/Dstrings.h"
+#  include "jHeretic/G_game.h"
+#  include "jHeretic/h_stat.h"
+#  include "jHeretic/p_oldsvg.h"
 #endif
 
 #include "f_infine.h"

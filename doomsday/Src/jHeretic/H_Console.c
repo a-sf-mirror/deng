@@ -21,13 +21,13 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdlib.h>
-#include "jHeretic/Doomdef.h"
-#include "jHeretic/Soundst.h"
+#include "jHeretic/h_stat.h"
 #include "jHeretic/h_config.h"
+#include "jHeretic/G_game.h"
+#include "jHeretic/Sounds.h"
+#include "Common/hu_stuff.h"
 #include "jHeretic/Mn_def.h"
-#include "g_common.h"
-#include "f_infine.h"
+#include "Common/f_infine.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -39,31 +39,35 @@
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
-DEFCC(CCmdPause);
-DEFCC(CCmdCheat);
-DEFCC(CCmdViewSize);
-DEFCC(CCmdInventory);
-DEFCC(CCmdScreenShot);
-DEFCC(CCmdHereticFont);
-
 DEFCC(CCmdCycleSpy);
 DEFCC(CCmdCrosshair);
-DEFCC(CCmdSpawnMobj);
-DEFCC(CCmdPrintPlayerCoords);
-DEFCC(CCmdMovePlane);
-
-// The cheats.
+DEFCC(CCmdCheat);
 DEFCC(CCmdCheatGod);
 DEFCC(CCmdCheatClip);
-DEFCC(CCmdCheatGive);
 DEFCC(CCmdCheatWarp);
-DEFCC(CCmdCheatPig);
-DEFCC(CCmdSuicide);
+DEFCC(CCmdCheatReveal);
+DEFCC(CCmdCheatGive);
 DEFCC(CCmdCheatMassacre);
 DEFCC(CCmdCheatWhere);
-DEFCC(CCmdCheatReveal);
+DEFCC(CCmdCheatPig);
+DEFCC(CCmdMakeLocal);
+DEFCC(CCmdSetCamera);
+DEFCC(CCmdSetViewLock);
+DEFCC(CCmdSpawnMobj);
+DEFCC(CCmdPlayDemo);
+DEFCC(CCmdRecordDemo);
+DEFCC(CCmdStopDemo);
+DEFCC(CCmdPrintPlayerCoords);
+DEFCC(CCmdExitLevel);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+DEFCC(CCmdScreenShot);
+DEFCC(CCmdSuicide);
+DEFCC(CCmdViewSize);
+DEFCC(CCmdPause);
+DEFCC(CCmdHereticFont);
+DEFCC(CCmdInventory);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -337,7 +341,9 @@ cvar_t  gameCVars[] = {
     // Player data.
     "player-color", 0, CVT_BYTE, &cfg.netColor, 0, 4,
     "Player color: 0=green, 1=yellow, 2=red, 3=blue, 4=default.",
-
+    {"player-air-movement", 0, CVT_BYTE,
+        &cfg.airborneMovement, 0, 32,
+        "Player movement speed while airborne."},
     "view-ringfilter", 0, CVT_INT, &cfg.ringFilter, 1, 2,
     "Ring effect filter. 1=Brownish, 2=Blue.",
     "player-jump", 0, CVT_INT, &cfg.jumpEnabled, 0, 1, "1=Allow jumping.",
@@ -454,9 +460,17 @@ void G_ConsoleRegistration()
         Con_AddVariable(gameCVars + i);
     for(i = 0; gameCCmds[i].name; i++)
         Con_AddCommand(gameCCmds + i);
-    D_NetConsoleRegistration();
 }
 
+void H_ConsoleBg(int *width, int *height)
+{
+    extern int consoleFlat;
+    extern float consoleZoom;
+
+    GL_SetFlat(consoleFlat + W_CheckNumForName("F_START") + 1);
+    *width = (int) (64 * consoleZoom);
+    *height = (int) (64 * consoleZoom);
+}
 
 DEFCC(CCmdPause)
 {

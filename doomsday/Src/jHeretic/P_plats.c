@@ -20,6 +20,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_stat.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
 

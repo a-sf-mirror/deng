@@ -22,6 +22,10 @@
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
+#include "jHeretic/h_stat.h"
+#include "jHeretic/Dstrings.h"
+
+#include "Common/dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 

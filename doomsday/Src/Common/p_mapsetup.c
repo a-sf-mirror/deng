@@ -33,9 +33,9 @@
 #  include <math.h>
 #  include <ctype.h>              // has isspace
 #  include "jHeretic/Doomdef.h"
+#  include "jHeretic/h_stat.h"
 #  include "jHeretic/P_local.h"
 #  include "jHeretic/Soundst.h"
-#  include "jHeretic/S_sound.h"
 #elif __JHEXEN__
 #  include <math.h>
 #  include "h2def.h"
@@ -127,10 +127,10 @@ xsector_t* P_XSector(sector_t* sector)
     // Is it a dummy?
     if(P_IsDummy(sector))
     {
-        return P_DummyExtraData(sector);   
+        return P_DummyExtraData(sector);
     }
     else
-    {    
+    {
         return &xsectors[P_ToIndex(sector)];
     }
 }
@@ -150,7 +150,7 @@ xsector_t* P_XSectorOfSubsector(subsector_t* sub)
     else
     {
         return &xsectors[P_ToIndex(sec)];
-    }        
+    }
 }
 
 /*
@@ -407,13 +407,12 @@ static void P_ResetWorldState(void)
  */
 static void P_FinalizeLevel(void)
 {
+#if __JDOOM__
     int i;
 
-#if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
-
     for(i = 0; i < numlines; i++)
     {
         side_t* side;

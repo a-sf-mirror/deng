@@ -4,16 +4,20 @@
  */
 
 #ifdef WIN32
-#  pragma optimize("g", off)    // MSVC's buggy optimizations...
+// Sumtin' 'ere messes with poor ol' MSVC's head...
+#  pragma optimize("g", off)
 #endif
 
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_config.h"
+#include "jHeretic/h_event.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
-#include "jHeretic/h_config.h"
-#include <math.h>
+#include "jHeretic/h_stat.h"
+#include "jHeretic/p_pspr.h"
+#include "Common/d_net.h"
 
 // MACROS ------------------------------------------------------------------
 

@@ -1,21 +1,42 @@
+/*
+ * Player related stuff.
+ * Bobbing POV/weapon, movement.
+ * Pending weapon.
+ */
 
-// P_user.c
+// HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_config.h"
+#include "jHeretic/h_event.h"
 #include "jHeretic/P_local.h"
 #include "p_view.h"
-#include "jHeretic/Soundst.h"
-#include "jHeretic/h_config.h"
+#include "jHeretic/h_stat.h"
+#include "Common/r_common.h"
+#include "Common/d_net.h"
+#include "jHeretic/Sounds.h"
+
+// MACROS ------------------------------------------------------------------
+
+// 16 pixels of bob
+#define MAXBOB  0x100000
+
+#define ANG5    (ANG90/18)
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 void    P_PlayerNextArtifact(player_t *player);
 
-// Macros
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-#define MAXBOB 0x100000         // 16 pixels of bob
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-// Data
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-//int lookdirSpeed = 3;
 boolean onground;
 int     newtorch;               // used in the torch flicker effect.
 int     newtorchdelta;
@@ -32,16 +53,13 @@ boolean WeaponInShareware[] = {
     true                        // Beak
 };
 
-/*
-   ==================
-   =
-   = P_Thrust
-   =
-   = moves the given origin along a given angle
-   =
-   ==================
- */
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+// CODE --------------------------------------------------------------------
+
+/*
+ * Moves the given origin along a given angle.
+ */
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
     mobj_t *plrmo = player->plr->mo;
@@ -70,126 +88,41 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 }
 
 /*
-   ==================
-   =
-   = P_CalcHeight
-   =
-   =Calculate the walking / running height adjustment
-   =
-   ==================
+ * Returns true if the player is currently standing on ground
+ * or on top of another mobj.
  */
-
-#if 0
-void P_CalcHeight(player_t *player)
+boolean P_IsPlayerOnGround(player_t *player)
 {
-    int     angle;
-    fixed_t bob;
-    ddplayer_t *dp = player->plr;
-    mobj_t *plrmo = dp->mo;
+    boolean onground = (player->plr->mo->z <= player->plr->mo->floorz);
 
-    //
-    // regular movement bobbing (needs to be calculated for gun swing even
-    // if not on ground)
-    // OPTIMIZE: tablify angle
+    if(player->plr->mo->onmobj && !onground)
+    {
+        mobj_t *on = player->plr->mo->onmobj;
 
-    // $democam: simplified height calculation for cameramen
-    if(P_IsCamera(plrmo))
-    {
-        dp->viewz = plrmo->z + dp->viewheight;
-        return;
+        onground = (player->plr->mo->z <= on->z + on->height);
     }
-
-    player->bob =
-        FixedMul(plrmo->momx, plrmo->momx) + FixedMul(plrmo->momy,
-                                                      plrmo->momy);
-    player->bob >>= 2;
-    if(player->bob > MAXBOB)
-        player->bob = MAXBOB;
-    if(plrmo->flags2 & MF2_FLY && plrmo->z > plrmo->floorz)
-    {
-        player->bob = FRACUNIT / 2;
-    }
-    // Clients do view bobbing by themselves.
-    /*if(IS_CLIENT)
-       {
-       angle = (FINEANGLES/20*leveltime)&FINEMASK;
-       bob = FixedMul (player->bob/2, finesine[angle]);
-       player->plr->viewz = plrmo->z + player->plr->viewheight +
-       (player->chickenTics? -20*FRACUNIT : bob);
-       return;
-       } */
-
-    if((player->cheats & CF_NOMOMENTUM))
-    {
-        player->plr->viewz = plrmo->z + VIEWHEIGHT;
-        if(player->plr->viewz > plrmo->ceilingz - 4 * FRACUNIT)
-            player->plr->viewz = plrmo->ceilingz - 4 * FRACUNIT;
-        player->plr->viewz = plrmo->z + player->plr->viewheight;
-        return;
-    }
-
-    angle = (FINEANGLES / 20 * leveltime) & FINEMASK;
-    bob = FixedMul(player->bob / 2, finesine[angle]);
-
-    //
-    // move viewheight
-    //
-    if(player->playerstate == PST_LIVE)
-    {
-        player->plr->viewheight += player->deltaviewheight;
-        if(player->plr->viewheight > VIEWHEIGHT)
-        {
-            player->plr->viewheight = VIEWHEIGHT;
-            player->deltaviewheight = 0;
-        }
-        if(player->plr->viewheight < VIEWHEIGHT / 2)
-        {
-            player->plr->viewheight = VIEWHEIGHT / 2;
-            if(player->deltaviewheight <= 0)
-                player->deltaviewheight = 1;
-        }
-        if(player->deltaviewheight)
-        {
-            player->deltaviewheight += FRACUNIT / 4;
-            if(!player->deltaviewheight)
-                player->deltaviewheight = 1;
-        }
-    }
-
-    if(player->chickenTics)
-    {
-        player->plr->viewz =
-            plrmo->z + player->plr->viewheight - (20 * FRACUNIT);
-    }
-    else
-    {
-        player->plr->viewz = plrmo->z + player->plr->viewheight;
-        if(plrmo->z <= plrmo->floorz)
-            player->plr->viewz += bob;
-    }
-    if(plrmo->flags2 & MF2_FEETARECLIPPED && player->playerstate != PST_DEAD &&
-       plrmo->z <= plrmo->floorz)
-    {
-        player->plr->viewz -= FOOTCLIPSIZE;
-    }
-    if(player->plr->viewz > plrmo->ceilingz - 4 * FRACUNIT)
-    {
-        player->plr->viewz = plrmo->ceilingz - 4 * FRACUNIT;
-    }
-    if(player->plr->viewz < plrmo->floorz + 4 * FRACUNIT)
-    {
-        player->plr->viewz = plrmo->floorz + 4 * FRACUNIT;
-    }
+    return onground;
 }
-#endif
 
 /*
-   =================
-   =
-   = P_MovePlayer
-   =
-   =================
+ * Will make the player jump if the latest command so instructs,
+ * providing that jumping is possible.
  */
+void P_CheckPlayerJump(player_t *player)
+{
+    ticcmd_t *cmd = &player->cmd;
+
+    if(cfg.jumpEnabled && (!IS_CLIENT || netJumpPower > 0) &&
+       (P_IsPlayerOnGround(player) || player->plr->mo->flags2 & MF2_ONMOBJ) &&
+       cmd->jump && player->jumptics <= 0)
+    {
+        // Jump, then!
+        player->plr->mo->momz =
+            FRACUNIT * (IS_CLIENT ? netJumpPower : cfg.jumpPower);
+        player->plr->mo->flags2 &= ~MF2_ONMOBJ;
+        player->jumptics = 24;
+    }
+}
 
 void P_MovePlayer(player_t *player)
 {
@@ -224,11 +157,17 @@ void P_MovePlayer(player_t *player)
             P_Thrust(player, plrmo->angle - ANG90, cmd->sideMove * 2500);
     }
     else
-    {                           // Normal speed
-        if(cmd->forwardMove && (onground || plrmo->flags2 & MF2_FLY))
-            P_Thrust(player, plrmo->angle, cmd->forwardMove * 2048);
-        if(cmd->sideMove && (onground || plrmo->flags2 & MF2_FLY))
-            P_Thrust(player, plrmo->angle - ANG90, cmd->sideMove * 2048);
+    {
+        // 'Move while in air' hack (server doesn't know about this!!).
+        // Movement while in air traditionally disabled.
+        int     movemul = (onground || plrmo->flags2 & MF2_FLY) ? 2048 :
+                    cfg.airborneMovement ? cfg.airborneMovement * 64 : 0;
+
+        if(cmd->forwardMove && movemul)
+            P_Thrust(player, plrmo->angle, cmd->forwardMove * movemul);
+
+        if(cmd->sideMove && movemul)
+            P_Thrust(player, plrmo->angle - ANG90, cmd->sideMove * movemul);
     }
 
     if(cmd->forwardMove || cmd->sideMove)
@@ -284,15 +223,6 @@ void P_MovePlayer(player_t *player)
     }
 }
 
-/*
-   =================
-   =
-   = P_DeathThink
-   =
-   =================
- */
-
-#define         ANG5    (ANG90/18)
 
 void P_DeathThink(player_t *player)
 {
@@ -393,12 +323,6 @@ void P_DeathThink(player_t *player)
     }
 }
 
-//----------------------------------------------------------------------------
-//
-// PROC P_ChickenPlayerThink
-//
-//----------------------------------------------------------------------------
-
 void P_ChickenPlayerThink(player_t *player)
 {
     mobj_t *pmo;
@@ -428,12 +352,6 @@ void P_ChickenPlayerThink(player_t *player)
     }
 }
 
-//----------------------------------------------------------------------------
-//
-// FUNC P_GetPlayerNum
-//
-//----------------------------------------------------------------------------
-
 int P_GetPlayerNum(player_t *player)
 {
     int     i;
@@ -447,12 +365,6 @@ int P_GetPlayerNum(player_t *player)
     }
     return (0);
 }
-
-//----------------------------------------------------------------------------
-//
-// FUNC P_UndoPlayerChicken
-//
-//----------------------------------------------------------------------------
 
 boolean P_UndoPlayerChicken(player_t *player)
 {
@@ -524,50 +436,11 @@ boolean P_UndoPlayerChicken(player_t *player)
     return (true);
 }
 
-//===========================================================================
-// P_IsPlayerOnGround
-//  Returns true if the player is currently standing on ground or on top
-//  of another mobj.
-//===========================================================================
-boolean P_IsPlayerOnGround(player_t *player)
-{
-    boolean onground = (player->plr->mo->z <= player->plr->mo->floorz);
-
-    if(player->plr->mo->onmobj && !onground)
-    {
-        mobj_t *on = player->plr->mo->onmobj;
-
-        onground = (player->plr->mo->z <= on->z + on->height);
-    }
-    return onground;
-}
-
-//===========================================================================
-// P_CheckPlayerJump
-//  Will make the player jump if the latest command so instructs,
-//  providing that jumping is possible.
-//===========================================================================
-void P_CheckPlayerJump(player_t *player)
-{
-    ticcmd_t *cmd = &player->cmd;
-
-    if(cfg.jumpEnabled && (!IS_CLIENT || netJumpPower > 0) &&
-       (P_IsPlayerOnGround(player) || player->plr->mo->flags2 & MF2_ONMOBJ) &&
-       cmd->jump && player->jumpTics <= 0)
-    {
-        // Jump, then!
-        player->plr->mo->momz =
-            FRACUNIT * (IS_CLIENT ? netJumpPower : cfg.jumpPower);
-        player->plr->mo->flags2 &= ~MF2_ONMOBJ;
-        player->jumpTics = 24;
-    }
-}
-
-//===========================================================================
-// P_ClientSideThink
-//  This routine does all the thinking for the console player during
-//  netgames.
-//===========================================================================
+/*
+ * Called once per tick by P_Ticker.
+ * This routine does all the thinking for the console player during
+ * netgames.
+ */
 void P_ClientSideThink()
 {
     int     i, fly;
@@ -635,7 +508,7 @@ void P_ClientSideThink()
     }
 
     // Jump?
-    pl->jumpTics--;
+    pl->jumptics--;
     P_CheckPlayerJump(pl);
 
     // Sector wind thrusts the player around.
@@ -692,12 +565,6 @@ void P_ClientSideThink()
        if(players[i].plr->ingame)
        P_MovePsprites(&players[i]); */
 }
-
-//----------------------------------------------------------------------------
-//
-// PROC P_PlayerThink
-//
-//----------------------------------------------------------------------------
 
 void P_PlayerThink(player_t *player)
 {
@@ -773,8 +640,8 @@ void P_PlayerThink(player_t *player)
     {
         P_PlayerInSpecialSector(player);
     }
-    if(player->jumpTics)
-        player->jumpTics--;
+    if(player->jumptics)
+        player->jumptics--;
     P_CheckPlayerJump(player);
     if(cmd->arti)
     {                           // Use an artifact
@@ -964,12 +831,6 @@ void P_PlayerThink(player_t *player)
     }
 }
 
-//----------------------------------------------------------------------------
-//
-// PROC P_ArtiTele
-//
-//----------------------------------------------------------------------------
-
 void P_ArtiTele(player_t *player)
 {
     int     i;
@@ -997,12 +858,6 @@ void P_ArtiTele(player_t *player)
        NetSv_Sound(NULL, sfx_wpnup, player-players); */
     S_StartSound(sfx_wpnup, NULL);
 }
-
-//----------------------------------------------------------------------------
-//
-// PROC P_CheckReadyArtifact
-//
-//----------------------------------------------------------------------------
 
 void P_CheckReadyArtifact()
 {
@@ -1037,12 +892,6 @@ void P_CheckReadyArtifact()
     }
 }
 
-//----------------------------------------------------------------------------
-//
-// PROC P_PlayerNextArtifact
-//
-//----------------------------------------------------------------------------
-
 void P_PlayerNextArtifact(player_t *player)
 {
     extern int inv_ptr;
@@ -1074,12 +923,6 @@ void P_PlayerNextArtifact(player_t *player)
         player->readyArtifact = player->inventory[inv_ptr].type;
     }
 }
-
-//----------------------------------------------------------------------------
-//
-// PROC P_PlayerRemoveArtifact
-//
-//----------------------------------------------------------------------------
 
 void P_PlayerRemoveArtifact(player_t *player, int slot)
 {
@@ -1122,12 +965,6 @@ void P_PlayerRemoveArtifact(player_t *player, int slot)
     }
 }
 
-//----------------------------------------------------------------------------
-//
-// PROC P_PlayerUseArtifact
-//
-//----------------------------------------------------------------------------
-
 void P_PlayerUseArtifact(player_t *player, artitype_t arti)
 {
     int     i;
@@ -1166,14 +1003,6 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
         S_ConsoleSound(sfx_artiuse, NULL, player - players);
     }
 }
-
-//----------------------------------------------------------------------------
-//
-// FUNC P_UseArtifact
-//
-// Returns true if artifact was used.
-//
-//----------------------------------------------------------------------------
 
 boolean P_UseArtifact(player_t *player, artitype_t arti)
 {

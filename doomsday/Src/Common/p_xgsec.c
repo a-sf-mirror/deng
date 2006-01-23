@@ -36,16 +36,13 @@
 #  include "m_random.h"
 #  include "p_inter.h"
 #  include "r_defs.h"
-#endif
-
-#ifdef __JHERETIC__
+#elif __JHERETIC__
 #  include "jHeretic/Doomdef.h"
-#  include "jHeretic/h_config.h"
 #  include "jHeretic/P_local.h"
+#  include "jHeretic/h_stat.h"
+#  include "jHeretic/h_config.h"
 #  include "jHeretic/Soundst.h"
-#endif
-
-#ifdef __JSTRIFE__
+#elif __JSTRIFE__
 #  include "jStrife/h2def.h"
 #  include "jStrife/d_config.h"
 #  include "jStrife/p_local.h"

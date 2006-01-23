@@ -4,48 +4,59 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
-#ifndef __R_LOCAL__
-#include "R_local.h"
-#endif
-
 #ifndef __JHERETIC__
 #  error "Using jHeretic headers without __JHERETIC__"
 #endif
 
+#ifndef __R_LOCAL__
+#include "R_local.h"
+#endif
+
+#include "p_spec.h"
 #include "p_start.h"
 #include "p_actor.h"
-#include "p_saveg.h"
+#include "p_xg.h"
 
-#define DELTAMUL 6.324555320       // Used when calculating ticcmd_t.lookdirdelta
-
+// Palette indices.
+// For damage/bonus red-/gold-shifts
 #define STARTREDPALS    1
 #define STARTBONUSPALS  9
 #define NUMREDPALS      8
 #define NUMBONUSPALS    4
 
-#define FOOTCLIPSIZE    10*FRACUNIT
+#define FLOATSPEED      (FRACUNIT*4)
+
+#define DELTAMUL        6.324555320 // Used when calculating ticcmd_t.lookdirdelta
+
+#define MAXHEALTH       100
+#define MAXCHICKENHEALTH 30
+#define VIEWHEIGHT      (cfg.eyeHeight*FRACUNIT) // 41*FRACUNIT
 
 #define TOCENTER TICCMD_FALL_DOWN
-#define FLOATSPEED (FRACUNIT*4)
-
-#define MAXHEALTH 100
-#define MAXCHICKENHEALTH 30
-#define VIEWHEIGHT (cfg.eyeHeight*FRACUNIT) // 41*FRACUNIT
 
 // player radius for movement checking
-#define PLAYERRADIUS 16*FRACUNIT
+#define PLAYERRADIUS    16*FRACUNIT
 
 // MAXRADIUS is for precalculated sector block boxes
-// the spider demon is larger, but we don't have any moving sectors
-// nearby
-#define MAXRADIUS 32*FRACUNIT
+// the spider demon is larger,
+// but we do not have any moving sectors nearby
+#define MAXRADIUS       32*FRACUNIT
 
-#define GRAVITY Get(DD_GRAVITY)    //FRACUNIT
-#define MAXMOVE (30*FRACUNIT)
+#define GRAVITY     Get(DD_GRAVITY)    //FRACUNIT
+#define MAXMOVE     (30*FRACUNIT)
 
-#define USERANGE (64*FRACUNIT)
-#define MELEERANGE (64*FRACUNIT)
-#define MISSILERANGE (32*64*FRACUNIT)
+#define USERANGE        (64*FRACUNIT)
+#define MELEERANGE      (64*FRACUNIT)
+#define MISSILERANGE    (32*64*FRACUNIT)
+
+// follow a player exlusively for 3 seconds
+#define BASETHRESHOLD   100
+
+
+// GMJ 02/02/02
+//#define sentient(mobj) ((mobj)->health > 0 && (mobj)->info->seestate)
+
+#define FOOTCLIPSIZE    10*FRACUNIT
 
 typedef enum {
     DI_EAST,
@@ -60,7 +71,7 @@ typedef enum {
     NUMDIRS
 } dirtype_t;
 
-#define BASETHRESHOLD 100          // follow a player exlusively for 3 seconds
+
 
 // ***** P_TICK *****
 
@@ -166,7 +177,6 @@ mobj_t         *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle);
 void            P_SpawnPlayer(thing_t * mthing, int plrnum);
 void            P_ZMovement(mobj_t *mo);
 mobj_t         *P_SpawnTeleFog(int x, int y);
-fixed_t         P_GetMobjFriction(mobj_t *mo);
 void            P_ExplodeMissile(mobj_t *mo);
 
 // ***** P_ENEMY *****
@@ -179,38 +189,10 @@ void            P_DSparilTeleport(mobj_t *actor);
 
 // ***** P_MAPUTL *****
 
-/*#define   MAXINTERCEPTS   128
-   extern   intercept_t     intercepts[MAXINTERCEPTS], *intercept_p; */
-//typedef boolean (*traverser_t) (intercept_t *in);
-
 #define openrange           Get(DD_OPENRANGE)
 #define opentop             Get(DD_OPENTOP)
 #define openbottom          Get(DD_OPENBOTTOM)
 #define lowfloor            Get(DD_LOWFLOOR)
-//#define P_LineOpening     gi.LineOpening
-
-/*#define P_BlockLinesIterator  gi.BlockLinesIterator
-   #define P_BlockThingsIterator    gi.BlockThingsIterator
-
-   #define P_PathTraverse       gi.PathTraverse */
-
-/*fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
-   int  P_PointOnLineSide (fixed_t x, fixed_t y, line_t *line);
-   int  P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line);
-   void     P_MakeDivline (line_t *li, divline_t *dl);
-   fixed_t P_InterceptVector (divline_t *v2, divline_t *v1);
-   int  P_BoxOnLineSide (fixed_t *tmbox, line_t *ld); */
-
-/*extern    fixed_t opentop, openbottom, openrange;
-   extern   fixed_t lowfloor; */
-//void  P_LineOpening (line_t *linedef);
-
-//boolean P_BlockLinesIterator (int x, int y, boolean(*func)(line_t*) );
-//boolean P_BlockThingsIterator (int x, int y, boolean(*func)(mobj_t*) );
-
-//extern    divline_t   trace;
-/*boolean P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
-   int flags, boolean (*trav) (intercept_t *)); */
 
 void            P_UnsetThingPosition(mobj_t *thing);
 void            P_SetThingPosition(mobj_t *thing);
@@ -287,8 +269,6 @@ void            Draw_EndZoom(void);
 
 extern int      ArtifactFlash;
 void            ST_doPaletteStuff(void);
-
-#include "P_spec.h"
 
 #define LOOKDIR2DEG(x) ((x) * 85.0/110.0)
 #define LOOKDIR2RAD(x) (LOOKDIR2DEG(x)/180*PI)

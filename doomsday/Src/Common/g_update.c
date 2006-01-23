@@ -32,7 +32,10 @@
 # include "s_sound.h"
 #elif __JHERETIC__
 # include "jHeretic/Doomdef.h"
-# include "jHeretic/S_sound.h"
+# include "jHeretic/h_stat.h"
+# include "jHeretic/P_local.h"
+# include "jHeretic/m_menu.h"
+# include "jHeretic/Dstrings.h"
 # include "jHeretic/Soundst.h"
 #elif __JHEXEN__
 # include "jHexen/h2def.h"

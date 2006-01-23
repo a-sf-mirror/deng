@@ -37,8 +37,10 @@
 # include "jDoom/d_config.h"
 # include "jDoom/dstrings.h"
 #elif __JHERETIC__
-# include "jHeretic/Doomdef.h"
 # include "jHeretic/Mn_def.h"
+# include "jHeretic/m_menu.h"
+# include "jHeretic/h_stat.h"
+# include "jHeretic/P_local.h"
 # include "jHeretic/h_config.h"
 #elif __JHEXEN__
 # include "jHexen/h2def.h"

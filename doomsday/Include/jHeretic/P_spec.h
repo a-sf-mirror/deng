@@ -32,7 +32,8 @@
 #  error "Using jHeretic headers without __JHERETIC__"
 #endif
 
-#include "p_xg.h"
+#include "h_player.h"
+#include "r_data.h"
 
 // Many of the structures here will be directly written to
 // savegame files. They need to be packed as tightly as possible.

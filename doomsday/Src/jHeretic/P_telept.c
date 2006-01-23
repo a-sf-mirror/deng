@@ -1,9 +1,31 @@
 
-// P_telept.c
+
+// HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/P_local.h"
-#include "jHeretic/Soundst.h"
+#include "jHeretic/Sounds.h"
+
+#include "Common/dmu_lib.h"
+#include "Common/p_mapsetup.h"
+
+// MACROS ------------------------------------------------------------------
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+// CODE --------------------------------------------------------------------
 
 mobj_t *P_SpawnTeleFog(int x, int y)
 {
@@ -12,12 +34,6 @@ mobj_t *P_SpawnTeleFog(int x, int y)
     return P_SpawnMobj(x, y, P_GetFixedp(ss,DMU_FLOOR_HEIGHT) +
                              TELEFOGHEIGHT, MT_TFOG);
 }
-
-//----------------------------------------------------------------------------
-//
-// FUNC P_Teleport
-//
-//----------------------------------------------------------------------------
 
 boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
 {
@@ -108,12 +124,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     P_ClearThingSRVO(thing);
     return (true);
 }
-
-//----------------------------------------------------------------------------
-//
-// FUNC EV_Teleport
-//
-//----------------------------------------------------------------------------
 
 boolean EV_Teleport(line_t *line, int side, mobj_t *thing)
 {

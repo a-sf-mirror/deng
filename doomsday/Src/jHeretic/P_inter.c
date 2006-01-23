@@ -5,11 +5,15 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_config.h"
+#include "jHeretic/Dstrings.h"
+#include "jHeretic/h_stat.h"
+#include "Common/am_map.h"
+#include "Common/d_net.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
-#include "jHeretic/h_config.h"
 
-#include "Common/am_map.h"
+#include "Common/dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 

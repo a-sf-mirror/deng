@@ -32,8 +32,9 @@
 #elif __JHERETIC__
 #  include <ctype.h>              // has isspace
 #  include "jHeretic/Doomdef.h"
+#  include "jHeretic/h_stat.h"
 #  include "jHeretic/P_local.h"
-#  include "jHeretic/S_sound.h"
+#  include "jHeretic/Soundst.h"
 #  include "h_config.h"
 #  include "r_common.h"
 #elif __JHEXEN__
@@ -554,6 +555,50 @@ char   *P_GetLevelName(int episode, int map)
     }
     return info.name;
 }
+
+boolean M_ValidEpisodeMap(int episode, int map)
+{
+    if(episode < 1 || map < 1 || map > 9)
+    {
+        return false;
+    }
+    if(shareware)
+    {                           // Shareware version checks
+        if(episode != 1)
+        {
+            return false;
+        }
+    }
+    else if(ExtendedWAD)
+    {                           // Extended version checks
+        if(episode == 6)
+        {
+            if(map > 3)
+            {
+                return false;
+            }
+        }
+        else if(episode > 5)
+        {
+            return false;
+        }
+    }
+    else
+    {                           // Registered version checks
+        if(episode == 4)
+        {
+            if(map != 1)
+            {
+                return false;
+            }
+        }
+        else if(episode > 3)
+        {
+            return false;
+        }
+    }
+    return true;
+}
 #endif
 
 /*
@@ -645,7 +690,7 @@ void P_MoveThingsOutOfWalls()
 
             for(k = 0; k < sectorLineCount; k++)
             {
-                li = P_GetPtrp(DMU_LINE_OF_SECTOR, sec, k);
+                li = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | k);
                 if(P_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
                 linelen =
