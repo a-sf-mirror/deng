@@ -24,13 +24,17 @@
 
 #include "../doomsday.h"
 
+line_t     *P_AllocDummyLine(void);
+void        P_FreeDummyLine(line_t* line);
+
+void        P_CopyLine(line_t* from, line_t* to);
+void        P_CopySector(sector_t* from, sector_t* to);
+
 int         P_SectorLight(sector_t* sector);
 void        P_SectorSetLight(sector_t* sector, int level);
 void        P_SectorModifyLight(sector_t* sector, int value);
 fixed_t     P_SectorLightx(sector_t* sector);
 void        P_SectorModifyLightx(sector_t* sector, fixed_t value);
 void       *P_SectorSoundOrigin(sector_t *sec);
-line_t     *P_AllocDummyLine(void);
-void        P_FreeDummyLine(line_t* line);
 
 #endif
