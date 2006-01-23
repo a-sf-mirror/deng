@@ -1788,7 +1788,6 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     linetype_t *info = context2;
     sector_t *from = NULL;
     int     refdata;
-    byte tmprgb[3];
 
     // Set the spref data parameter (tag or index).
     switch (info->iparm[2])
@@ -1828,24 +1827,10 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
            P_ToIndex(sector), P_ToIndex(from));
 
     // Copy the properties of the target sector.
-    P_Copyp(DMU_LIGHT_LEVEL, from, sector);
-    P_Copyp(DMU_CEILING_TEXTURE, from, sector);
-    P_Copyp(DMU_CEILING_HEIGHT, from, sector);
-    P_Copyp(DMU_FLOOR_OFFSET_X, from, sector);
-    P_Copyp(DMU_CEILING_OFFSET_X, from, sector);
-
-    P_GetBytepv(from, DMU_COLOR, tmprgb);
-    P_SetBytepv(sector, DMU_COLOR, tmprgb);
-
-    P_GetBytepv(from, DMU_FLOOR_COLOR, tmprgb);
-    P_SetBytepv(sector, DMU_FLOOR_COLOR, tmprgb);
-
-    P_GetBytepv(from, DMU_CEILING_COLOR, tmprgb);
-    P_SetBytepv(sector, DMU_CEILING_COLOR, tmprgb);
+    P_CopySector(from, sector);
 
 #ifdef TODO_MAP_UPDATE
     memcpy(sector->reverb, from->reverb, sizeof(from->reverb));
-    memcpy(sector->planes, from->planes, sizeof(from->planes));
 #endif
 
     P_ChangeSector(sector, false);
@@ -2310,9 +2295,8 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
     xgsector_t *xg;
     sectortype_t *info;
     float   flevtime = TIC2FLT(leveltime);
-#ifdef TODO_MAP_UPDATE
-    line_t  line;
-    xgline_t xgline;
+    line_t*  dummyLine;
+    xline_t* xdummyLine;
     linetype_t *ltype;
 
     xg = P_XSector(sec)->xg;
@@ -2336,33 +2320,40 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
     }
 
     // Prepare the dummy line to use for the event.
-    memset(&line, 0, sizeof(line));
-    memset(&xgline, 0, sizeof(xgline));
+    dummyLine = P_AllocDummyLine();
+    xdummyLine = P_XLine(dummyLine);
 
+#ifdef TODO_MAP_UPDATE
     line.frontsector = sec;
     line.sidenum[0] = -1;
     line.sidenum[1] = -1;
-    line.special = (ch == XSCE_FUNCTION ? activating : info->chain[ch]);
-    line.tag = sec->tag;
-    line.xg = &xgline;
-    ltype = XL_GetType(line.special);
+#endif
+    xdummyLine->special =
+        (ch == XSCE_FUNCTION ? activating : info->chain[ch]);
+
+    xdummyLine->tag = P_XSector(sec)->tag;
+
+    ltype = XL_GetType(xdummyLine->special);
     if(!ltype)
     {
         // What is this? There is no such XG line type.
-        XG_Dev("XS_DoChain: Unknown XG line type %i", line.special);
+        XG_Dev("XS_DoChain: Unknown XG line type %i", xdummyLine->special);
         return;
     }
-    memcpy(&line.xg->info, ltype, sizeof(*ltype));
-    if(act_thing)
-        xgline.activator = act_thing;
-    else
-        xgline.activator = NULL;
-    xgline.active = (ch == XSCE_FUNCTION ? false : !activating);
 
-    XG_Dev("XS_DoChain: Dummy line will show up as %i",&line - lines);
+    memcpy(&xdummyLine->xg->info, ltype, sizeof(*ltype));
+
+    if(act_thing)
+        xdummyLine->xg->activator = act_thing;
+    else
+        xdummyLine->xg->activator = NULL;
+
+    xdummyLine->xg->active = (ch == XSCE_FUNCTION ? false : !activating);
+
+    XG_Dev("XS_DoChain: Dummy line will show up as %i", P_ToIndex(dummyLine));
 
     // Send the event.
-    if(XL_LineEvent((ch == XSCE_FUNCTION ? XLE_FUNC : XLE_CHAIN), 0, &line, 0, act_thing))
+    if(XL_LineEvent((ch == XSCE_FUNCTION ? XLE_FUNC : XLE_CHAIN), 0, dummyLine, 0, act_thing))
     {
         // A success!
         if(ch < XSCE_NUM_CHAINS)
@@ -2383,7 +2374,6 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
             }
         }
     }
-#endif
 }
 
 int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)

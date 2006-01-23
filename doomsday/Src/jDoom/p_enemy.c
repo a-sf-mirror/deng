@@ -30,18 +30,17 @@
 #include <stdlib.h>
 
 #include "m_random.h"
-
 #include "doomdef.h"
 #include "d_config.h"
 #include "p_local.h"
-
 #include "s_sound.h"
-
 #include "g_game.h"
 
 // State.
 #include "doomstat.h"
 #include "r_state.h"
+
+#include "dmu_lib.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -124,12 +123,11 @@ void P_RecursiveSound(sector_t *sec, int soundblocks)
     xsector_t *xsec = P_XSector(sec);
 
     // wake up all monsters in this sector
-#ifdef TODO_MAP_UPDATE
-    if(sec->Validcount == validCount && xsec->soundtraversed <= soundblocks + 1)
+    if(P_GetIntp(sec, DMU_VALID_COUNT) == validCount &&
+       xsec->soundtraversed <= soundblocks + 1)
         return;                 // already flooded
 
-    sec->Validcount = validCount;
-#endif
+    P_SetIntp(sec, DMU_VALID_COUNT, validCount);
 
     xsec->soundtraversed = soundblocks + 1;
     xsec->soundtarget = soundtarget;
@@ -605,8 +603,7 @@ void C_DECL A_KeenDie(mobj_t *mo)
 {
     thinker_t *th;
     mobj_t *mo2;
-#ifdef TODO_MAP_UPDATE
-    line_t  junk;
+    line_t* dummyLine;
 
     A_Fall(mo);
 
@@ -625,9 +622,10 @@ void C_DECL A_KeenDie(mobj_t *mo)
         }
     }
 
-    junk.tag = 666;
-    EV_DoDoor(&junk, open);
-#endif
+    dummyLine = P_AllocDummyLine();
+    P_XLine(dummyLine)->tag = 666;
+    EV_DoDoor(dummyLine, open);
+    P_FreeDummyLine(dummyLine);
 }
 
 /*
@@ -1600,10 +1598,9 @@ void C_DECL A_Explode(mobj_t *thingy)
  */
 void C_DECL A_BossDeath(mobj_t *mo)
 {
-#ifdef TODO_MAP_UPDATE
     thinker_t *th;
     mobj_t *mo2;
-    line_t  junk;
+    line_t*  dummyLine;
     int     i;
 
     // Has the boss already been killed?
@@ -1715,15 +1712,19 @@ void C_DECL A_BossDeath(mobj_t *mo)
         {
             if(mo->type == MT_FATSO)
             {
-                junk.tag = 666;
-                EV_DoFloor(&junk, lowerFloorToLowest);
+                dummyLine = P_AllocDummyLine();
+                P_XLine(dummyLine)->tag = 666;
+                EV_DoFloor(dummyLine, lowerFloorToLowest);
+                P_FreeDummyLine(dummyLine);
                 return;
             }
 
             if(mo->type == MT_BABY)
             {
-                junk.tag = 667;
-                EV_DoFloor(&junk, raiseToTexture);
+                dummyLine = P_AllocDummyLine();
+                P_XLine(dummyLine)->tag = 667;
+                EV_DoFloor(dummyLine, raiseToTexture);
+                P_FreeDummyLine(dummyLine);
                 return;
             }
         }
@@ -1733,8 +1734,10 @@ void C_DECL A_BossDeath(mobj_t *mo)
         switch (gameepisode)
         {
         case 1:
-            junk.tag = 666;
-            EV_DoFloor(&junk, lowerFloorToLowest);
+            dummyLine = P_AllocDummyLine();
+            P_XLine(dummyLine)->tag = 666;
+            EV_DoFloor(dummyLine, lowerFloorToLowest);
+            P_FreeDummyLine(dummyLine);
             return;
             break;
 
@@ -1742,14 +1745,18 @@ void C_DECL A_BossDeath(mobj_t *mo)
             switch (gamemap)
             {
             case 6:
-                junk.tag = 666;
-                EV_DoDoor(&junk, blazeOpen);
+                dummyLine = P_AllocDummyLine();
+                P_XLine(dummyLine)->tag = 666;
+                EV_DoFloor(dummyLine, blazeOpen);
+                P_FreeDummyLine(dummyLine);
                 return;
                 break;
 
             case 8:
-                junk.tag = 666;
-                EV_DoFloor(&junk, lowerFloorToLowest);
+                dummyLine = P_AllocDummyLine();
+                P_XLine(dummyLine)->tag = 666;
+                EV_DoFloor(dummyLine, lowerFloorToLowest);
+                P_FreeDummyLine(dummyLine);
                 return;
                 break;
             }
@@ -1757,7 +1764,6 @@ void C_DECL A_BossDeath(mobj_t *mo)
     }
 
     G_ExitLevel();
-#endif
 }
 
 void C_DECL A_Hoof(mobj_t *mo)

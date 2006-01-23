@@ -2339,23 +2339,29 @@ int XL_HitLine(line_t *line, int sidenum, mobj_t *thing)
 
 void XL_DoChain(line_t *line, int chain, boolean activating, mobj_t *act_thing)
 {
-#ifdef TODO_MAP_UPDATE
-    line_t  dummy;
-    xgline_t dummyxg;
-
-    XG_Dev("XL_DoChain: Line %i, chained type %i", P_ToIndex(line), chain);
-    XG_Dev("  (dummy line will show up as %i)", P_ToIndex(dummy));
+    line_t*  dummyLine;
 
     // We'll use a dummy line for the chain.
-    memcpy(&dummy, line, sizeof(*line));
-    memcpy(&dummyxg, line->xg, sizeof(*line->xg));
+    dummyLine = P_AllocDummyLine();
+
+    XG_Dev("XL_DoChain: Line %i, chained type %i", P_ToIndex(line), chain);
+    XG_Dev("  (dummy line will show up as %i)", P_ToIndex(dummyLine));
+
+    // Copy all properties to the dummy
+    P_CopyLine(line, dummyLine);
+
+#ifdef TODO_MAP_UPDATE
     dummy.sidenum[0] = -1;
     dummy.sidenum[1] = -1;
-    dummy.xg = &dummyxg;
-    dummyxg.active = !activating;
-
-    XL_LineEvent(XLE_CHAIN, chain, &dummy, 0, act_thing);
 #endif
+
+    P_XLine(dummyLine)->xg->active = !activating;
+
+    // Make the chain event
+    XL_LineEvent(XLE_CHAIN, chain, dummyLine, 0, act_thing);
+
+    // Free the dummy
+    P_FreeDummyLine(dummyLine);
 }
 
 void XL_ChainSequenceThink(line_t *line)
