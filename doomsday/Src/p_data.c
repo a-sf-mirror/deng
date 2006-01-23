@@ -299,13 +299,10 @@ const valuetype_t propertyTypes[] = {
 // for sector->linecount
 int numUniqueLines;
 
-// For BOOM style texture name overloading (TEMP)
-static int *sidespecials;
-
 // The following is used in error fixing/detection/reporting:
 // missing sidedefs
 int numMissingFronts = 0;
-static int *missingFronts = NULL;
+int *missingFronts = NULL;
 
 // bad texture list
 static int numBadTexNames = 0;
@@ -878,9 +875,13 @@ void P_PolyobjChanged(polyobj_t *po)
  * Begin the process of loading a new map.
  * Can be accessed by the games via the public API.
  */
-void P_LoadMap(int mapLumpStartNum, int glLumpStartNum, char *levelId)
+void P_LoadMap(char *levelId)
 {
-    P_LoadMapData(mapLumpStartNum, glLumpStartNum, levelId);
+    int lumpNumbers[2];
+
+    P_LocateMapLumps(levelId, lumpNumbers);
+
+    P_LoadMapData(lumpNumbers[0], lumpNumbers[1], levelId);
 
     // Must be called before we go any further
     P_CheckLevel(levelId, false);
@@ -894,7 +895,7 @@ void P_LoadMap(int mapLumpStartNum, int glLumpStartNum, char *levelId)
     R_SetupLevel(levelId, DDSLF_INIT_LINKS);
 
     // Load the Reject LUT
-    P_LoadReject(mapLumpStartNum + ML_REJECT);
+    P_LoadReject(lumpNumbers[0] + ML_REJECT);
 
     Con_Message("Group lines\n");
     P_GroupLines();

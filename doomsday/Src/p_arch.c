@@ -25,6 +25,10 @@
 
 #include "de_base.h"
 #include "de_play.h"
+#include "de_system.h"
+
+#include "p_arch.h"
+#include "m_bams.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -49,6 +53,23 @@
 #define GLNODE_OFFSET   4
 
 // TYPES -------------------------------------------------------------------
+
+// This is the standard map data lump order. Problem is some PWADS use
+// a non-standard lump order so we'll have to find them.
+enum {
+    ML_LABEL,                      // A separator, name, ExMx or MAPxx
+    ML_THINGS,                     // Monsters, items..
+    ML_LINEDEFS,                   // LineDefs, from editing
+    ML_SIDEDEFS,                   // SideDefs, from editing
+    ML_VERTEXES,                   // Vertices, edited and BSP splits generated
+    ML_SEGS,                       // LineSegs, from LineDefs split by BSP
+    ML_SSECTORS,                   // SubSectors, list of LineSegs
+    ML_NODES,                      // BSP nodes
+    ML_SECTORS,                    // Sectors, from editing
+    ML_REJECT,                     // LUT, sector-sector visibility
+    ML_BLOCKMAP,                   // LUT, motion clipping, walls/grid element
+    ML_BEHAVIOR                    // ACS Scripts (not supported currently)
+};
 
 // Common map format properties
 enum {
@@ -327,6 +348,9 @@ int     mapFormat;
 int     glNodeFormat;
 int     firstGLvertex = 0;
 
+// Set to true if glNodeData exists for the level.
+boolean glNodeData = false;
+
 // types of MAP data structure
 // These arrays are temporary. Data will be provided via DED definitions.
 maplump_t LumpInfo[] = {
@@ -376,12 +400,49 @@ static byte   *mapLumps[NUM_LUMPCLASSES];
 
 static mapseg_t *segstemp;
 
+// For BOOM style texture name overloading (TEMP)
+static int *sidespecials;
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Locate the lump indices where the data of the specified map
+ * resides.
+ */
+void P_LocateMapLumps(char *levelID, int *lumpIndices)
+{
+    char glLumpName[40];
+
+    // Find map name.
+    sprintf(glLumpName, "GL_%s", levelID);
+    Con_Message("SetupLevel: %s\n", levelID);
+
+    // Let's see if a plugin is available for loading the data.
+    if(!Plug_DoHook(HOOK_LOAD_MAP_LUMPS, W_GetNumForName(levelID),
+                    (void*) lumpIndices))
+    {
+        // The plugin failed.
+        lumpIndices[0] = W_GetNumForName(levelID);
+        lumpIndices[1] = W_CheckNumForName(glLumpName);
+    }
+
+    // Do we have any GL Nodes?
+    if(lumpIndices[1] > lumpIndices[0])
+        glNodeData = true;
+    else
+    {
+        glNodeData = false;
+        glNodeFormat = -1;
+    }
+}
 
 static boolean P_FindMapLumps(int lumps, int gllumps, char *levelID)
 {
     int i, k;
     boolean missingLump;
+
+    // TODO: find offsets for map data lumps automatically.
+    //       Some PWADs have these lumps in a non-standard order...
 
     // Check the existance of the map data lumps
     for(i = 0; i < NUM_LUMPCLASSES; ++i)
@@ -451,7 +512,7 @@ static boolean P_DetermineMapFormat(int lumps, int gllumps, char *levelID)
 #endif
 
     // Do we have GL nodes?
-    if(gllumps > lumps)
+    if(glNodeData)
     {
         // Find out which gl node version the data uses
         // loop backwards (check for latest version first)
@@ -532,11 +593,7 @@ void P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId)
 
     P_GetMapLumpFormats(mapLumpStartNum, glLumpStartNum, levelId);
 
-    if(glLumpStartNum > mapLumpStartNum)
-        // no GL nodes :-(
-        Con_Message("Begin loading map lumps\n");
-    else
-        glNodeFormat = -1;
+    Con_Message("Begin loading map lumps\n");
 
     P_ReadMapData(mlVertexes, mapLumpStartNum, glLumpStartNum);
     P_ReadMapData(glVerts, mapLumpStartNum, glLumpStartNum);
@@ -557,6 +614,9 @@ void P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId)
     P_ReadMapData(mlNodes, mapLumpStartNum, glLumpStartNum);
 
     //P_PrintDebugMapData();
+
+/*    if(glNodeData)
+        setupflags |= DDSLF_DONT_CLIP; */
 }
 
 /*
@@ -582,7 +642,7 @@ void P_ReadMapData(int lumpclass, int lumps, int gllumps)
     datatype_t *dataTypes;
 
     // Are gl Nodes available?
-    if(gllumps > lumps)
+    if(glNodeData)
     {
         // Use the gl versions of the following lumps:
         if(lumpclass == mlSSectors)
@@ -622,7 +682,7 @@ void P_ReadMapData(int lumpclass, int lumps, int gllumps)
             else // its a gl node lumpclass
             {
                 // cant load ANY gl node lumps if we dont have them...
-                if(!(gllumps > lumps))
+                if(!(glNodeData))
                     return;
 
                 glLump = true;
