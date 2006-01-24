@@ -278,7 +278,6 @@ extern int numMissingFronts;
 
 void            P_ValidateLevel(void);
 void            P_LoadBlockMap(int lump);
-void            P_ReadBlockMap(int lump);
 void            P_LoadReject(int lump);
 void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);

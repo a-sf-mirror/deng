@@ -32,10 +32,6 @@
 #define NUM_GLLUMPS 4
 
 enum {
-    glVerts,
-    glSegs,
-    glSSects,
-    glNodes,
     mlThings,
     mlLineDefs,
     mlSideDefs,
@@ -47,6 +43,10 @@ enum {
     mlReject,
     mlBlockMap,
     mlBehavior,
+    glVerts,
+    glSegs,
+    glSSects,
+    glNodes,
     NUM_LUMPCLASSES
 };
 
@@ -54,7 +54,7 @@ enum {
 // Types used in map data handling
 //
 typedef struct {
-    int property; // id number of the internal struct property to map the data to
+    int property; // DAM property to map the data to
     int gameprop; // if > 0 is a specific data item (passed to the game)
     int flags;
     int size;   // num of bytes
@@ -95,13 +95,11 @@ typedef struct {
     int  lumpclass;
     boolean required;
     boolean precache;
-    int  length;
 } maplump_t;
 
 extern maplump_t LumpInfo[];
 
-void        P_LocateMapLumps(char *levelID, int *lumpIndices);
-void        P_InitMapDataFormats(void);
-void        P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId);
 
+void        P_InitMapDataFormats(void);
+boolean     P_LoadMapData(char *levelId);
 #endif

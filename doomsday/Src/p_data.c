@@ -874,31 +874,37 @@ void P_PolyobjChanged(polyobj_t *po)
 /*
  * Begin the process of loading a new map.
  * Can be accessed by the games via the public API.
+ *
+ * @param levelId   Identifier of the map to be loaded (eg "E1M1").
+ *
+ * @return boolean  (True) If we loaded the map successfully.
  */
-void P_LoadMap(char *levelId)
+boolean P_LoadMap(char *levelId)
 {
-    int lumpNumbers[2];
+    // Attempt to load the map
+    if(P_LoadMapData(levelId))
+    {
+        // ALL the map data was loaded/generated successfully.
+        // Do any initialization/error checking work we need to do.
 
-    P_LocateMapLumps(levelId, lumpNumbers);
+        // Must be called before we go any further
+        P_CheckLevel(levelId, false);
 
-    P_LoadMapData(lumpNumbers[0], lumpNumbers[1], levelId);
+        // Must be called before any mobjs are spawned.
+        Con_Message("Init links\n");
+        R_SetupLevel(levelId, DDSLF_INIT_LINKS);
 
-    // Must be called before we go any further
-    P_CheckLevel(levelId, false);
+        Con_Message("Group lines\n");
+        P_GroupLines();
 
-    // Dont need this stuff anymore
-    free(missingFronts);
-    P_FreeBadTexList();
-
-    // Must be called before any mobjs are spawned.
-    Con_Message("Init links\n");
-    R_SetupLevel(levelId, DDSLF_INIT_LINKS);
-
-    // Load the Reject LUT
-    P_LoadReject(lumpNumbers[0] + ML_REJECT);
-
-    Con_Message("Group lines\n");
-    P_GroupLines();
+        // Inform the game of our success.
+        return true;
+    }
+    else
+    {
+        // Unsuccessful... inform the game.
+        return false;
+    }
 }
 
 /*
@@ -954,6 +960,12 @@ static void P_CheckLevel(char *levelID, boolean silent)
                         (badTexNames[i].planeTex)? "Flat" : "Texture",
                         badTexNames[i].name);
     }
+
+    // Dont need this stuff anymore
+    if(missingFronts != NULL)
+        free(missingFronts);
+
+    P_FreeBadTexList();
 
     if(!canContinue)
         Con_Error("\nP_CheckLevel: Critical errors encountered (marked with '!').\n" \

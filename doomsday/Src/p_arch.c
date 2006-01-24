@@ -40,17 +40,10 @@
 #define DT_NOINDEX  0x10
 
 // Internal data types
-#define NUM_INTERNAL_DATA_STRUCTS 8
-
 #define MAPDATA_FORMATS 2
 
+// GL Node versions
 #define GLNODE_FORMATS  5
-
-// glNode lump offsets
-#define GLVERT_OFFSET   1
-#define GLSEG_OFFSET    2
-#define GLSSECT_OFFSET  3
-#define GLNODE_OFFSET   4
 
 // TYPES -------------------------------------------------------------------
 
@@ -68,7 +61,8 @@ enum {
     ML_SECTORS,                    // Sectors, from editing
     ML_REJECT,                     // LUT, sector-sector visibility
     ML_BLOCKMAP,                   // LUT, motion clipping, walls/grid element
-    ML_BEHAVIOR                    // ACS Scripts (not supported currently)
+    ML_BEHAVIOR,                   // ACS Scripts (not supported currently)
+    NUM_MAPDATALUMPS
 };
 
 // Common map format properties
@@ -310,6 +304,15 @@ typedef struct {
     int           offset;
 } mapseg_t;
 
+typedef struct {
+    unsigned int lumpNum;
+    byte *lumpp; // ptr to the lump data
+    int lumpClass;
+    int version;
+    int startOffset;
+    int length;
+} mapLumpInfo_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -318,17 +321,16 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-void P_ReadMapData(int lumpclass, int lumps, int gllumps);
-
-static void P_ProcessSegs(int version);
-
-static boolean P_DetermineMapFormat(int lumps, int gllumps, char *levelID);
+static boolean  P_DetermineMapFormat(void)
+static void     P_ReadMapData(int lumpclass);
 
 static void P_ReadBinaryMapData(byte *structure, int dataType, byte *buffer, size_t elmsize, int elements, int version, int values, const datatype_t *types);
 static void P_ReadSideDefs(byte *structure, int dataType, byte *buffer, size_t elmsize, int elements, int version, int values, const datatype_t *types);
 static void P_ReadLineDefs(byte *structure, int dataType, byte *buffer, size_t elmsize, int elements, int version, int values, const datatype_t *types);
-static void P_ReadSideDefTextures(int lump);
-static void P_FinishLineDefs(void);
+
+static void     P_ReadSideDefTextures(int lump);
+static void     P_FinishLineDefs(void);
+static void     P_ProcessSegs(int version);
 
 static void P_CompileSideSpecialsList(void);
 
@@ -352,9 +354,9 @@ int     firstGLvertex = 0;
 boolean glNodeData = false;
 
 // types of MAP data structure
-// These arrays are temporary. Data will be provided via DED definitions.
+// These arrays are temporary. Some of the data will be provided via DED definitions.
 maplump_t LumpInfo[] = {
-//   lumpname    readfunc        MD  GL  internaltype   lumpclass     required?  precache?
+//   lumpname    readfunc             MD  GL  internaltype   lumpclass     required?  precache?
     {"THINGS",   P_ReadBinaryMapData, 0, -1,  DAM_THING,     mlThings,     true,     false},
     {"LINEDEFS", P_ReadLineDefs,      1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
     {"SIDEDEFS", P_ReadSideDefs,      2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
@@ -395,8 +397,8 @@ glnodever_t glNodeVer[] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-// ptrs to the mapLumps lumps
-static byte   *mapLumps[NUM_LUMPCLASSES];
+static mapLumpInfo_t* mapDataLumps;
+static int numMapDataLumps;
 
 static mapseg_t *segstemp;
 
@@ -405,11 +407,48 @@ static int *sidespecials;
 
 // CODE --------------------------------------------------------------------
 
+static void AddMapDataLump(unsigned int lumpNum, int lumpClass)
+{
+    int num = numMapDataLumps;
+
+    mapDataLumps =
+        realloc(mapDataLumps, sizeof(mapLumpInfo_t) * numMapDataLumps++);
+
+    mapDataLumps[num].lumpNum = lumpNum;
+    mapDataLumps[num].lumpClass = lumpClass;
+    mapDataLumps[num].lumpp = NULL;
+    mapDataLumps[num].length = 0;
+    mapDataLumps[num].version = 0;
+}
+
+static void FreeMapDataLumps(void)
+{
+    int k;
+
+    // Free any lumps we might have cached.
+    for(k = 0; k < numMapDataLumps; ++k)
+        if(mapDataLumps[k].lumpp != NULL)
+        {
+            Z_Free(mapDataLumps[k].lumpp);
+            mapDataLumps[k].lumpp = NULL;
+        }
+
+    // Free the map data lump array
+    Z_Free(mapDataLumps);
+    mapDataLumps = NULL;
+    numMapDataLumps = 0;
+}
+
 /*
  * Locate the lump indices where the data of the specified map
- * resides.
+ * resides (both regular and GL Node data).
+ *
+ * @param levelID       Identifier of the map to be loaded (eg "E1M1").
+ * @param lumpIndices   Ptr to the array to write the identifiers back to.
+ *
+ * @return boolean      (FALSE) If we cannot find the map data.
  */
-void P_LocateMapLumps(char *levelID, int *lumpIndices)
+static boolean P_LocateMapData(char *levelID, unsigned int *lumpIndices)
 {
     char glLumpName[40];
 
@@ -422,7 +461,7 @@ void P_LocateMapLumps(char *levelID, int *lumpIndices)
                     (void*) lumpIndices))
     {
         // The plugin failed.
-        lumpIndices[0] = W_GetNumForName(levelID);
+        lumpIndices[0] = W_CheckNumForName(levelID);
         lumpIndices[1] = W_CheckNumForName(glLumpName);
     }
 
@@ -434,104 +473,235 @@ void P_LocateMapLumps(char *levelID, int *lumpIndices)
         glNodeData = false;
         glNodeFormat = -1;
     }
-}
 
-static boolean P_FindMapLumps(int lumps, int gllumps, char *levelID)
-{
-    int i, k;
-    boolean missingLump;
-
-    // TODO: find offsets for map data lumps automatically.
-    //       Some PWADs have these lumps in a non-standard order...
-
-    // Check the existance of the map data lumps
-    for(i = 0; i < NUM_LUMPCLASSES; ++i)
-    {
-        mapLumps[i] = NULL;
-
-        // Are we precaching this lump?
-        if(LumpInfo[i].precache)
-        {
-           missingLump = (mapLumps[i] = (byte *) W_CacheLumpNum(((LumpInfo[i].glLump >= 0)?
-                                                     gllumps : lumps) + LumpInfo[i].offset,
-                                                     PU_STATIC)) == NULL;
-        }
-        else
-        {   // Just check its actually there instead
-            missingLump = (W_LumpName(((LumpInfo[i].glLump >= 0)?
-                                       gllumps : lumps) + LumpInfo[i].offset) == NULL);
-        }
-
-        if(missingLump)
-        {
-            // missing map data lump. Is it required?
-            if(LumpInfo[i].required)
-            {
-                // darn, free the lumps loaded already before we exit
-                for(k = i; k >= 0; --k)
-                {
-                    if(mapLumps[k] != NULL)
-                        Z_Free(mapLumps[k]);
-                }
-                Con_Error("P_GetMapLumpFormats: \"%s\" for %s could not be found.\n" \
-                          " This lump is required in order to play this map.",
-                          LumpInfo[i].lumpname, levelID);
-            }
-            else
-                Con_Message("P_GetMapLumpFormats: \"%s\" for %s could not be found.\n",
-                        LumpInfo[i].lumpname, levelID);
-        }
-        else
-        {
-            // Store the lump length
-            LumpInfo[i].length = W_LumpLength(((LumpInfo[i].glLump >= 0)?
-                                                  gllumps : lumps) + LumpInfo[i].offset);
-            Con_Message("%s is %d bytes\n", LumpInfo[i].lumpname,
-                                             LumpInfo[i].length);
-        }
-    }
+    if(lumpIndices[0] == -1)
+        return false; // The map data cannot be found.
 
     return true;
 }
 
 /*
- * Caches the gl Node data lumps, then attempts to determine
- * the version by checking the magic byte of each lump.
+ * Find the lump offsets for this map dataset automatically.
+ * Some PWADs have these lumps in a non-standard order... tsk, tsk.
+ *
+ * @param startLump     The lump number to begin our search with.
  */
-static boolean P_DetermineMapFormat(int lumps, int gllumps, char *levelID)
+static void P_FindMapLumps(unsigned int startLump)
 {
-    int i, k;
-    byte glLumpHeader[4];
-    boolean failed;
+    int k;
+    unsigned int i;
 
-    // FIXME: Add code to determine map format automatically
-#if __JHEXEN__
-    mapFormat = 1;
-#else
-    mapFormat = 0;
-#endif
+    boolean scan;
 
-    // Do we have GL nodes?
-    if(glNodeData)
+    // We don't want to check the marker lump.
+    ++startLump;
+
+    // Keep checking lumps to see if its a map data lump.
+    for(i = startLump; i < (unsigned) numlumps; ++i)
     {
+        scan = true;
+        // Compare the name of this lump with our known map data lump names
+        for(k = mlThings; k < NUM_LUMPCLASSES && scan; ++k)
+        {
+            if(!strncmp(LumpInfo[k].lumpname, W_CacheLumpNum(i, PU_GETNAME), 8))
+            {
+                // Lump name matches a known lump name.
+                // Add it to the lumps we'll process for map data.
+                AddMapDataLump(i, LumpInfo[k].lumpclass);
+                scan = false;
+            }
+        }
+        // We didn't find a match for this name?
+        if(scan)
+            break; // Stop looking, we've found them all.
+    }
+}
+
+/*
+ * Attempt to determine the format of this map data lump.
+ *
+ * This is done by checking the start bytes of this lump (the lump "header")
+ * to see if its of a known special format. Special formats include Doomsday
+ * custom map data formats and GL Node formats.
+ *
+ * @param mapLump   Ptr to the map lump struct to work with.
+ */
+static void DetermineMapDataLumpFormat(mapLumpInfo_t* mapLump)
+{
+    byte lumpHeader[4];
+
+    W_ReadLumpSection(mapLump->lumpNum, lumpHeader, 0, 4);
+
+    // Check to see if this a Doomsday, custom map data - lump format.
+    if(memcmp(lumpHeader, "DDAY", 4))
+    {
+        // It IS a custom Doomsday format.
+
+        // TODO:
+        // Determine the "named" format to use when processing this lump.
+
+        // Imediatetly after "DDAY" is a block of text with various info
+        // about this lump. This text block begins with "[" and ends at "]".
+        // TODO: Decide on specifics for this text block.
+        // (a simple name=value pair delimited by " " should suffice?)
+
+        // Search this string for known keywords (eg the name of the format).
+
+        // Store the TOTAL number of bytes (including the magic bytes "DDAY")
+        // that the header uses, into the startOffset (the offset into the
+        // byte stream where the data starts) for this lump.
+
+        // Once we know the name of the format, the lump length and the Offset
+        // we can check to make sure to the lump format definition is correct
+        // for this lump thus:
+
+        // sum = (lumplength - startOffset) / (number of bytes per element)
+        // If sum is not a whole integer then something is wrong with either
+        // the lump data or the lump format definition.
+        return;
+    }
+    else if(glNodeData &&
+            mapLump->lumpClass >= glVerts &&
+            mapLump->lumpClass <= glNodes)
+    {
+        int i;
+        // Perhaps its a "named" GL Node format?
+
         // Find out which gl node version the data uses
         // loop backwards (check for latest version first)
         for(i = GLNODE_FORMATS -1; i >= 0; --i)
         {
-            // Check the header of each map data lump
-            for(k = 0, failed = false; k < NUM_LUMPCLASSES && !failed; ++k)
+            // Check the header against each known name for this lump class.
+            if(glNodeVer[i].verInfo[mapLump->lumpClass].magicid != NULL)
             {
-                if(LumpInfo[k].glLump >= 0)
+                if(memcmp(lumpHeader,
+                          glNodeVer[i].verInfo[mapLump->lumpClass].magicid, 4))
                 {
-                    // Check the magic byte of the gl node lump to discern the version
-                    if(glNodeVer[i].verInfo[LumpInfo[k].glLump].magicid != NULL)
-                    {
-                        W_ReadLumpSection(gllumps + LumpInfo[k].offset, glLumpHeader, 0, 4);
+                    // Aha! It IS a "named" format.
 
-                        if(memcmp(glLumpHeader,
-                                   glNodeVer[i].verInfo[LumpInfo[k].glLump].magicid, 4))
-                            failed = true;
-                    }
+                    // Record the version number.
+                    mapLump->version =
+                        glNodeVer[i].verInfo[mapLump->lumpClass].version;
+
+                    // Set the start offset into byte stream.
+                    mapLump->startOffset = 4; // num of bytes
+
+                    return;
+                }
+            }
+        }
+    }
+
+    // It isn't a (known) named special format.
+    // Use the default data format for this lump (map format specific).
+    mapLump->version = 0;
+    mapLump->startOffset = 0;
+}
+
+/*
+ * Make sure we have (at least) one lump of each lump class that we require.
+ *
+ * During the process we will attempt to determine the format of an individual
+ * map data lump and record various info about the lumps that will be of use
+ * further down the line.
+ *
+ * @param   levelID     The map identifer string, used only in error messages.
+ *
+ * @return  boolean     (True) If the map data provides us with enough data
+ *                             to proceed with loading the map.
+ */
+static boolean VerifyMapData(char *levelID)
+{
+    int i, k;
+    boolean found;
+
+    // Itterate our known lump classes array.
+    for(i = 0; i < NUM_LUMPCLASSES; ++i)
+    {
+        // Check all the registered map data lumps to make sure we have at least
+        // one lump of each required lump class.
+        found = false;
+        for(k = 0; k < numMapDataLumps; ++k)
+        {
+            // Is this a lump of the class we are looking for?
+            if(mapDataLumps[k].lumpClass == LumpInfo[i].lumpclass)
+            {
+                // Are we precaching lumps of this class?
+                if(LumpInfo[i].precache)
+                   mapDataLumps[k].lumpp =
+                        (byte *) W_CacheLumpNum(mapDataLumps[k].lumpNum, PU_STATIC);
+
+                // Store the lump length.
+                mapDataLumps[k].length = W_LumpLength(mapDataLumps[k].lumpNum);
+
+                // If this is a BEHAVIOR lump, then this MUST be a HEXEN format map.
+                if(mapDataLumps[k].lumpClass == mlBehavior)
+                    mapFormat = 1;
+
+                // Attempt to determine the format of this map data lump.
+                DetermineMapDataLumpFormat(&mapDataLumps[k]);
+
+                // Announce it.
+                VERBOSE(Con_Message("Map data lump %d, of class \"%s\" is %d bytes.\n",
+                                    k, LumpInfo[i].lumpname, mapDataLumps[k].length));
+
+                // We've found (at least) one lump of this class.
+                found = true;
+            }
+        }
+
+        // We didn't find any lumps of this required lump class?
+        if(!found && LumpInfo[i].required)
+        {
+            // Darn, the map data is incomplete. We arn't able to to load this map :`(
+            // Inform the user.
+            Con_Message("VerifyMapData: %s for \"%s\" could not be found.\n" \
+                        " This lump is required in order to play this map.",
+                        LumpInfo[i].lumpname, levelID);
+            return false;
+        }
+    }
+
+    // All is well, we can attempt to load the map.
+    return true;
+}
+
+/*
+ * Determines the format of the map by comparing the (already determined)
+ * lump formats against the known map formats.
+ *
+ * Map data lumps can be in any mixed format but GL Node data cannot so
+ * we only check those atm.
+ *
+ * @return boolean     (True) If its a format we support.
+ */
+static boolean P_DetermineMapFormat(void)
+{
+    mapLumpInfo_t* mapLump;
+
+    // Do we have GL nodes?
+    if(glNodeData)
+    {
+        int i, k;
+        boolean failed;
+
+        // Find out which GL Node version the data is in.
+        // Loop backwards (check for latest version first).
+        for(i = GLNODE_FORMATS -1; i >= 0; --i)
+        {
+            // Check the version number of each map data lump
+            for(k = 0, failed = false; k < numMapDataLumps && !failed; ++k)
+            {
+                mapLump = &mapDataLumps[k];
+
+                // Is it a GL Node data lump class?
+                if(mapLump->lumpClass >= glVerts &&
+                   mapLump->lumpClass <= glNodes)
+                {
+                    // Check the version.
+                    if(mapLump->version !=
+                       glNodeVer[i].verInfo[mapLump->lumpClass].version)
+                       failed = true;
                 }
             }
 
@@ -541,39 +711,50 @@ static boolean P_DetermineMapFormat(int lumps, int gllumps, char *levelID)
                 Con_Message("(%s gl Node data found)\n",glNodeVer[i].vername);
                 glNodeFormat = i;
 
-                // but do we support this gl node version?
+                // Do we support this gl node version?
                 if(glNodeVer[i].supported)
-                    break;
+                    return true;
                 else
                 {
-                    // Unsupported... Free the data before we exit
-                    for(k = NUM_LUMPCLASSES -1; k >= 0; --k)
-                    {
-                        if(mapLumps[k] != NULL)
-                            Z_Free(mapLumps[k]);
-                    }
+                    // Unsupported GL Node format.
+                    Con_Message("P_DetermineMapFormat: Sorry, %s GL Nodes arn't supported",
+                                glNodeVer[glNodeFormat].vername);
+
                     return false;
                 }
             }
         }
     }
 
+    // We support this map data format.
     return true;
 }
 
-boolean P_GetMapLumpFormats(int lumps, int gllumps, char *levelID)
+boolean P_GetMapFormat(void)
 {
-    if(!P_DetermineMapFormat(lumps, gllumps, levelID))
-        Con_Error("P_SetupLevel: Sorry, %s gl Nodes arn't supported",
-           glNodeVer[glNodeFormat].vername);
-    else
+    if(P_DetermineMapFormat())
         return true;
-
-    return false;
+    else
+    {
+        // Darn, we can't load this map.
+        // Free any lumps we may have already precached in the process.
+        FreeMapDataLumps();
+        return false;
+    }
 }
 
-void P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId)
+/*
+ * Loads the map data structures for a level.
+ *
+ * @param levelId   Identifier of the map to be loaded (eg "E1M1").
+ *
+ * @return boolean  (True) If we loaded/generated all map data successfully.
+ */
+boolean P_LoadMapData(char *levelId)
 {
+    unsigned int lumpNumbers[2];
+
+    // Reset the global map data struct counters.
     numvertexes = 0;
     numsubsectors = 0;
     numsectors = 0;
@@ -583,48 +764,93 @@ void P_LoadMapData(int mapLumpStartNum, int glLumpStartNum, char *levelId)
     numsegs = 0;
     numthings = 0;
 
-    // note: most of this ordering is important
-    // DJS 01/10/05 - revised load order to allow for cross-referencing
-    // data during loading (detect + fix trivial errors), in preperation
-    // for commonization and to support various format enhancements.
-    // Make sure we have all the lumps we need to load this map
+    // We'll assume we're loading a DOOM format map to begin with.
+    mapFormat = 0;
 
-    P_FindMapLumps(mapLumpStartNum, glLumpStartNum, levelId);
+    // Attempt to find the map data for this level
+    if(!P_LocateMapData(levelId, lumpNumbers))
+    {
+        // We that was a non-starter...
+        return false;
+    }
 
-    P_GetMapLumpFormats(mapLumpStartNum, glLumpStartNum, levelId);
+    // Find the actual map data lumps and their offsets.
+    // Add them to the list of lumps to be processed.
+    P_FindMapLumps(lumpNumbers[0]);
 
-    Con_Message("Begin loading map lumps\n");
+    // If we have GL Node data, find those lumps too.
+    if(glNodeData)
+        P_FindMapLumps(lumpNumbers[1]);
 
-    P_ReadMapData(mlVertexes, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(glVerts, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(mlSectors, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(mlSideDefs, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(mlLineDefs, mapLumpStartNum, glLumpStartNum);
+    // Make sure we have all the data we need to load this level.
+    if(!VerifyMapData(levelId))
+    {
+        // Darn, the level data is incomplete.
+        // Free any lumps we may have already precached in the process.
+        FreeMapDataLumps();
 
-    P_ReadSideDefTextures(mapLumpStartNum + ML_SIDEDEFS);
-    P_FinishLineDefs();
+        // Sorry, but we can't continue.
+        return false;
+    }
 
-    // Load/Generate the blockmap
-    P_ReadBlockMap(mapLumpStartNum + ML_BLOCKMAP);
+    // Looking good so far.
+    // Try to determine the format of this map.
+    if(P_GetMapFormat())
+    {
+        // Excellent, its a map we can read. Load it in!
+        Con_Message("Begin loading map lumps\n");
 
-    P_ReadMapData(mlThings, mapLumpStartNum, glLumpStartNum);
+        // Load all lumps of each class in this order.
+        //
+        // NOTE:
+        // DJS 01/10/05 - revised load order to allow for cross-referencing
+        // data during loading (detect + fix trivial errors), in preperation
+        // for commonization and to support various format enhancements.
+        // Make sure we have all the lumps we need to load this map
+        P_ReadMapData(mlVertexes);
+        P_ReadMapData(glVerts);
+        P_ReadMapData(mlSectors);
+        P_ReadMapData(mlSideDefs);
+        P_ReadMapData(mlLineDefs);
 
-    P_ReadMapData(mlSegs, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(mlSSectors, mapLumpStartNum, glLumpStartNum);
-    P_ReadMapData(mlNodes, mapLumpStartNum, glLumpStartNum);
+        P_ReadSideDefTextures(lumpNumbers[0] + ML_SIDEDEFS);
+        P_FinishLineDefs();
 
-    //P_PrintDebugMapData();
+        // Load/Generate the blockmap
+        P_LoadBlockMap(lumpNumbers[0] + ML_BLOCKMAP);
 
-/*    if(glNodeData)
-        setupflags |= DDSLF_DONT_CLIP; */
+        P_ReadMapData(mlThings);
+
+        P_ReadMapData(mlSegs);
+        P_ReadMapData(mlSSectors);
+        P_ReadMapData(mlNodes);
+
+        //P_PrintDebugMapData();
+
+    /*    if(glNodeData)
+            setupflags |= DDSLF_DONT_CLIP; */
+
+        // We have complete level data but we're not out of the woods yet...
+        FreeMapDataLumps();
+
+        // Load the Reject LUT
+        P_LoadReject(lumpNumbers[0] + ML_REJECT);
+        return true;
+    }
+    else
+    {
+        // Sorry, but we can't continue.
+        return false;
+    }
 }
 
 /*
- * Scans the map data lump array and processes them
+ * Works through the map data lump array, processing all the lumps
+ * of the requested class.
  *
- * @param: class of lumps to process
+ * @param: lumpclass    The class of map data lump to process.
  */
-void P_ReadMapData(int lumpclass, int lumps, int gllumps)
+static void P_ReadMapData(int lumpclass)
 {
     int i;
     int dataOffset, dataVersion, numValues;
@@ -706,16 +932,17 @@ void P_ReadMapData(int lumpclass, int lumps, int gllumps)
                 dataOffset = strlen(headerBytes);
 
             // How many elements are in the lump?
-            elements = (LumpInfo[i].length - dataOffset) / elmSize;
+            elements = (mapDataLumps[i].length - dataOffset) / elmSize;
 
             // Have we cached the lump yet?
-            if(mapLumps[i] == NULL)
+            if(mapDataLumps[i].lumpp == NULL)
             {
-                mapLumps[i] = W_CacheLumpNum(((glLump)? gllumps : lumps)
-                                            + LumpInfo[i].offset, PU_STATIC);
+                mapDataLumps[i].lumpp =
+                    (byte *) W_CacheLumpNum(mapDataLumps[i].lumpNum, PU_STATIC);
             }
 
-            // Allocate and init depending on the type of data
+            // Allocate and init depending on the type of data and if this is the
+            // first lump of this class being processed.
             switch(LumpInfo[i].dataType)
             {
                 case DAM_VERTEX:
@@ -864,8 +1091,8 @@ void P_ReadMapData(int lumpclass, int lumps, int gllumps)
             // Read in the lump data
             startTime = Sys_GetRealTime();
             LumpInfo[i].func(structure, LumpInfo[i].dataType,
-                               (mapLumps[i])+dataOffset, elmSize, elements,
-                               dataVersion, numValues, dataTypes);
+                             (mapDataLumps[i].lumpp) + mapDataLumps[i].startOffset,
+                             elmSize, elements, dataVersion, numValues, dataTypes);
             // Perform any additional processing required
             switch(LumpInfo[i].dataType)
             {
@@ -884,7 +1111,8 @@ void P_ReadMapData(int lumpclass, int lumps, int gllumps)
             Con_Message("P_ReadMapData: Done \"%s\" in %.4f seconds.\n",
                         LumpInfo[i].lumpname, (Sys_GetRealTime() - startTime) / 1000.0f);
 
-            Z_Free(mapLumps[i]);
+            // We're finished with this lump.
+            Z_Free(mapDataLumps[i].lumpp);
         }
     }
 }
@@ -2021,7 +2249,7 @@ static void P_ReadSideDefTextures(int lump)
  * TEMP the initialization of internal data struct info
  * is currently done here. (FIXME!!!: It isn't free'd on exit!)
  */
-static void P_InitMapDataFormats(void)
+void P_InitMapDataFormats(void)
 {
     int i, j, index, lumpClass;
     int mlver, glver;

@@ -213,7 +213,7 @@ extern          "C" {
                                              int amount);
 
     // Play: Setup.
-    void            P_LoadMap(char *levelID);
+    boolean         P_LoadMap(char *levelID);
 
     // Play: Map Data Updates and Information Access.
     int             P_ToIndex(const void* ptr);
