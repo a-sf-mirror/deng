@@ -305,12 +305,12 @@ typedef struct {
 } mapseg_t;
 
 typedef struct {
-    unsigned int lumpNum;
-    byte *lumpp; // ptr to the lump data
-    int lumpClass;
-    int version;
-    int startOffset;
-    int length;
+    int     lumpNum;
+    byte   *lumpp;      // ptr to the lump data
+    int     version;
+    int     lumpClass;
+    int     startOffset;
+    int     length;
 } mapLumpInfo_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -321,7 +321,7 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean  P_DetermineMapFormat(void)
+static boolean  P_DetermineMapFormat(void);
 static void     P_ReadMapData(int lumpclass);
 
 static void P_ReadBinaryMapData(byte *structure, int dataType, byte *buffer, size_t elmsize, int elements, int version, int values, const datatype_t *types);
@@ -356,13 +356,13 @@ boolean glNodeData = false;
 // types of MAP data structure
 // These arrays are temporary. Some of the data will be provided via DED definitions.
 maplump_t LumpInfo[] = {
-//   lumpname    readfunc             MD  GL  internaltype   lumpclass     required?  precache?
+//   lumpname    readfunc             MD  GL  datatype      lumpclass     required?  precache?
     {"THINGS",   P_ReadBinaryMapData, 0, -1,  DAM_THING,     mlThings,     true,     false},
     {"LINEDEFS", P_ReadLineDefs,      1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
     {"SIDEDEFS", P_ReadSideDefs,      2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
     {"VERTEXES", P_ReadBinaryMapData, 3, -1,  DAM_VERTEX,    mlVertexes,   true,     false},
-    {"SSECTORS", P_ReadBinaryMapData, 5, -1,  DAM_SUBSECTOR, mlSSectors,   true,     false},
     {"SEGS",     P_ReadBinaryMapData, 4, -1,  DAM_SEG,       mlSegs,       true,     false},
+    {"SSECTORS", P_ReadBinaryMapData, 5, -1,  DAM_SUBSECTOR, mlSSectors,   true,     false},
     {"NODES",    P_ReadBinaryMapData, 6, -1,  DAM_NODE,      mlNodes,      true,     false},
     {"SECTORS",  P_ReadBinaryMapData, 7, -1,  DAM_SECTOR,    mlSectors,    true,     false},
     {"REJECT",   NULL,                8, -1,  -1,            mlReject,     false,    false},
@@ -390,8 +390,8 @@ glnodever_t glNodeVer[] = {
     {"V1", {{1, NULL},   {1, NULL},   {1, NULL},   {1, NULL}}, true},
     {"V2", {{2, "gNd2"}, {1, NULL},   {1, NULL},   {1, NULL}}, true},
     {"V3", {{2, "gNd2"}, {3, "gNd3"}, {3, "gNd3"}, {1, NULL}}, false},
-    {"V4", {{2, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
-    {"V5", {{2, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
+    {"V4", {{4, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
+    {"V5", {{5, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
     {NULL}
 };
 
@@ -407,12 +407,80 @@ static int *sidespecials;
 
 // CODE --------------------------------------------------------------------
 
-static void AddMapDataLump(unsigned int lumpNum, int lumpClass)
+/*
+ * Convert enum constant into a string for error/debug messages.
+ */
+const char* DAM_Str(int prop)
+{
+    static char propStr[40];
+    struct prop_s {
+        int prop;
+        const char* str;
+    } props[] =
+    {
+        { 0, "(invalid)" },
+        { DAM_THING, "DAM_THING" },
+        { DAM_VERTEX, "DAM_VERTEX" },
+        { DAM_LINE, "DAM_LINE" },
+        { DAM_SIDE, "DAM_SIDE" },
+        { DAM_SECTOR, "DAM_SECTOR" },
+        { DAM_SEG, "DAM_SEG" },
+        { DAM_SUBSECTOR, "DAM_SUBSECTOR" },
+        { DAM_NODE, "DAM_NODE" },
+        { DAM_X, "DAM_X" },
+        { DAM_Y, "DAM_Y" },
+        { DAM_DX, "DAM_DX" },
+        { DAM_DY, "DAM_DY" },
+        { DAM_VERTEX1, "DAM_VERTEX1" },
+        { DAM_VERTEX2, "DAM_VERTEX2" },
+        { DAM_FLAGS, "DAM_FLAGS" },
+        { DAM_SIDE0, "DAM_SIDE0" },
+        { DAM_SIDE1, "DAM_SIDE1" },
+        { DAM_TEXTURE_OFFSET_X, "DAM_TEXTURE_OFFSET_X" },
+        { DAM_TEXTURE_OFFSET_Y, "DAM_TEXTURE_OFFSET_Y" },
+        { DAM_TOP_TEXTURE, "DAM_TOP_TEXTURE" },
+        { DAM_MIDDLE_TEXTURE, "DAM_MIDDLE_TEXTURE" },
+        { DAM_BOTTOM_TEXTURE, "DAM_BOTTOM_TEXTURE" },
+        { DAM_FRONT_SECTOR, "DAM_FRONT_SECTOR" },
+        { DAM_FLOOR_HEIGHT, "DAM_FLOOR_HEIGHT" },
+        { DAM_CEILING_HEIGHT, "DAM_CEILING_HEIGHT" },
+        { DAM_FLOOR_TEXTURE, "DAM_FLOOR_TEXTURE" },
+        { DAM_CEILING_TEXTURE, "DAM_CEILING_TEXTURE" },
+        { DAM_LIGHT_LEVEL, "DAM_LIGHT_LEVEL" },
+        { DAM_ANGLE, "DAM_ANGLE" },
+        { DAM_OFFSET, "DAM_OFFSET" },
+        { DAM_LINE_COUNT, "DAM_LINE_COUNT" },
+        { DAM_LINE_FIRST, "DAM_LINE_FIRST" },
+        { DAM_BBOX_RIGHT_TOP_Y, "DAM_BBOX_RIGHT_TOP_Y" },
+        { DAM_BBOX_RIGHT_LOW_Y, "DAM_BBOX_RIGHT_LOW_Y" },
+        { DAM_BBOX_RIGHT_LOW_X, "DAM_BBOX_RIGHT_LOW_X" },
+        { DAM_BBOX_RIGHT_TOP_X, "DAM_BBOX_RIGHT_TOP_X" },
+        { DAM_BBOX_LEFT_TOP_Y, "DAM_BBOX_LEFT_TOP_Y" },
+        { DAM_BBOX_LEFT_LOW_Y, "DAM_BBOX_LEFT_LOW_Y" },
+        { DAM_BBOX_LEFT_LOW_X, "DAM_BBOX_LEFT_LOW_X" },
+        { DAM_BBOX_LEFT_TOP_X, "DAM_BBOX_LEFT_TOP_X" },
+        { DAM_CHILD_RIGHT, "DAM_CHILD_RIGHT" },
+        { DAM_CHILD_LEFT, "DAM_CHILD_LEFT" },
+        { 0, NULL }
+    };
+    int i;
+
+    for(i = 0; props[i].str; ++i)
+        if(props[i].prop == prop)
+            return props[i].str;
+
+    sprintf(propStr, "(unnamed %i)", prop);
+    return propStr;
+}
+
+static void AddMapDataLump(int lumpNum, int lumpClass)
 {
     int num = numMapDataLumps;
 
+    numMapDataLumps++;
+
     mapDataLumps =
-        realloc(mapDataLumps, sizeof(mapLumpInfo_t) * numMapDataLumps++);
+        realloc(mapDataLumps, sizeof(mapLumpInfo_t) * numMapDataLumps);
 
     mapDataLumps[num].lumpNum = lumpNum;
     mapDataLumps[num].lumpClass = lumpClass;
@@ -425,18 +493,22 @@ static void FreeMapDataLumps(void)
 {
     int k;
 
-    // Free any lumps we might have cached.
-    for(k = 0; k < numMapDataLumps; ++k)
-        if(mapDataLumps[k].lumpp != NULL)
-        {
-            Z_Free(mapDataLumps[k].lumpp);
-            mapDataLumps[k].lumpp = NULL;
-        }
-
     // Free the map data lump array
-    Z_Free(mapDataLumps);
-    mapDataLumps = NULL;
-    numMapDataLumps = 0;
+    if(mapDataLumps != NULL)
+    {
+        // Free any lumps we might have pre-cached.
+        for(k = 0; k < numMapDataLumps; ++k)
+            if(mapDataLumps[k].lumpp != NULL)
+            {
+                Z_Free(mapDataLumps[k].lumpp);
+                mapDataLumps[k].lumpp = NULL;
+            }
+
+        free(mapDataLumps);
+        mapDataLumps = NULL;
+
+        numMapDataLumps = 0;
+    }
 }
 
 /*
@@ -448,7 +520,7 @@ static void FreeMapDataLumps(void)
  *
  * @return boolean      (FALSE) If we cannot find the map data.
  */
-static boolean P_LocateMapData(char *levelID, unsigned int *lumpIndices)
+static boolean P_LocateMapData(char *levelID, int *lumpIndices)
 {
     char glLumpName[40];
 
@@ -465,6 +537,9 @@ static boolean P_LocateMapData(char *levelID, unsigned int *lumpIndices)
         lumpIndices[1] = W_CheckNumForName(glLumpName);
     }
 
+    if(lumpIndices[0] == -1)
+        return false; // The map data cannot be found.
+
     // Do we have any GL Nodes?
     if(lumpIndices[1] > lumpIndices[0])
         glNodeData = true;
@@ -473,9 +548,6 @@ static boolean P_LocateMapData(char *levelID, unsigned int *lumpIndices)
         glNodeData = false;
         glNodeFormat = -1;
     }
-
-    if(lumpIndices[0] == -1)
-        return false; // The map data cannot be found.
 
     return true;
 }
@@ -486,7 +558,7 @@ static boolean P_LocateMapData(char *levelID, unsigned int *lumpIndices)
  *
  * @param startLump     The lump number to begin our search with.
  */
-static void P_FindMapLumps(unsigned int startLump)
+static void P_FindMapLumps(int startLump)
 {
     int k;
     unsigned int i;
@@ -497,11 +569,11 @@ static void P_FindMapLumps(unsigned int startLump)
     ++startLump;
 
     // Keep checking lumps to see if its a map data lump.
-    for(i = startLump; i < (unsigned) numlumps; ++i)
+    for(i = (unsigned) startLump; ; ++i)
     {
         scan = true;
         // Compare the name of this lump with our known map data lump names
-        for(k = mlThings; k < NUM_LUMPCLASSES && scan; ++k)
+        for(k = 0; k < NUM_LUMPCLASSES && scan; ++k)
         {
             if(!strncmp(LumpInfo[k].lumpname, W_CacheLumpNum(i, PU_GETNAME), 8))
             {
@@ -533,7 +605,7 @@ static void DetermineMapDataLumpFormat(mapLumpInfo_t* mapLump)
     W_ReadLumpSection(mapLump->lumpNum, lumpHeader, 0, 4);
 
     // Check to see if this a Doomsday, custom map data - lump format.
-    if(memcmp(lumpHeader, "DDAY", 4))
+    if(memcmp(lumpHeader, "DDAY", 4) == 0)
     {
         // It IS a custom Doomsday format.
 
@@ -565,6 +637,7 @@ static void DetermineMapDataLumpFormat(mapLumpInfo_t* mapLump)
             mapLump->lumpClass <= glNodes)
     {
         int i;
+        int lumpClass = LumpInfo[mapLump->lumpClass].glLump;
         // Perhaps its a "named" GL Node format?
 
         // Find out which gl node version the data uses
@@ -572,16 +645,16 @@ static void DetermineMapDataLumpFormat(mapLumpInfo_t* mapLump)
         for(i = GLNODE_FORMATS -1; i >= 0; --i)
         {
             // Check the header against each known name for this lump class.
-            if(glNodeVer[i].verInfo[mapLump->lumpClass].magicid != NULL)
+            if(glNodeVer[i].verInfo[lumpClass].magicid != NULL)
             {
                 if(memcmp(lumpHeader,
-                          glNodeVer[i].verInfo[mapLump->lumpClass].magicid, 4))
+                          glNodeVer[i].verInfo[lumpClass].magicid, 4) == 0)
                 {
                     // Aha! It IS a "named" format.
 
                     // Record the version number.
                     mapLump->version =
-                        glNodeVer[i].verInfo[mapLump->lumpClass].version;
+                        glNodeVer[i].verInfo[lumpClass].version;
 
                     // Set the start offset into byte stream.
                     mapLump->startOffset = 4; // num of bytes
@@ -590,6 +663,15 @@ static void DetermineMapDataLumpFormat(mapLumpInfo_t* mapLump)
                 }
             }
         }
+
+        // It's not a named format.
+        // Most GL Node formats don't include magic bytes in each lump.
+        // Because we don't KNOW the format of this lump we should
+        // ignore it when determining the GL Node format.
+        mapLump->version = -1;
+        mapLump->startOffset = 0;
+
+        return;
     }
 
     // It isn't a (known) named special format.
@@ -683,6 +765,7 @@ static boolean P_DetermineMapFormat(void)
     if(glNodeData)
     {
         int i, k;
+        int lumpClass;
         boolean failed;
 
         // Find out which GL Node version the data is in.
@@ -698,17 +781,35 @@ static boolean P_DetermineMapFormat(void)
                 if(mapLump->lumpClass >= glVerts &&
                    mapLump->lumpClass <= glNodes)
                 {
-                    // Check the version.
-                    if(mapLump->version !=
-                       glNodeVer[i].verInfo[mapLump->lumpClass].version)
-                       failed = true;
+                    lumpClass = LumpInfo[mapLump->lumpClass].glLump;
+
+                    /*Con_Message("Check lump %s | %s n%d ver %d lump ver %d format\n",
+                                LumpInfo[mapLump->lumpClass].lumpname,
+                                W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
+                                LumpInfo[mapLump->lumpClass].glLump,
+                                glNodeVer[i].verInfo[lumpClass].version,
+                                mapLump->version);*/
+
+                    // SHOULD this lump format declare a version (magic bytes)?
+                    if(mapLump->version == -1)
+                    {
+                        if(glNodeVer[i].verInfo[lumpClass].magicid != NULL &&
+                           mapLump->version == -1)
+                            failed = true;
+                    }
+                    else
+                    {
+                        // Compare the versions.
+                        if(mapLump->version != glNodeVer[i].verInfo[lumpClass].version)
+                            failed = true;
+                    }
                 }
             }
 
             // Did all lumps match the required format for this version?
             if(!failed)
             {
-                Con_Message("(%s gl Node data found)\n",glNodeVer[i].vername);
+                Con_Message("P_DetermineMapFormat: (%s gl Node data found)\n",glNodeVer[i].vername);
                 glNodeFormat = i;
 
                 // Do we support this gl node version?
@@ -717,13 +818,15 @@ static boolean P_DetermineMapFormat(void)
                 else
                 {
                     // Unsupported GL Node format.
-                    Con_Message("P_DetermineMapFormat: Sorry, %s GL Nodes arn't supported",
+                    Con_Message("P_DetermineMapFormat: Sorry, %s GL Nodes arn't supported\n",
                                 glNodeVer[glNodeFormat].vername);
 
                     return false;
                 }
             }
         }
+        Con_Message("P_DetermineMapFormat: Could not determine GL Node format\n");
+        return false;
     }
 
     // We support this map data format.
@@ -752,7 +855,9 @@ boolean P_GetMapFormat(void)
  */
 boolean P_LoadMapData(char *levelId)
 {
-    unsigned int lumpNumbers[2];
+    int lumpNumbers[2];
+
+    numMapDataLumps = 0;
 
     // Reset the global map data struct counters.
     numvertexes = 0;
@@ -857,7 +962,6 @@ static void P_ReadMapData(int lumpclass)
     int internalType, lumpType;
     int elements;
     int oldNum, newNum;
-    char *headerBytes;
 
     byte *structure;
 
@@ -891,14 +995,14 @@ static void P_ReadMapData(int lumpclass)
             dataVersion = 1;
             dataOffset = 0;
             glLump = false;
-            headerBytes = NULL;
 
             if(lumpType >= 0)
             {
-                dataVersion = mlDataVer[mapFormat].verInfo[lumpType].version;
-                headerBytes = (mlDataVer[mapFormat].verInfo[lumpType].magicid);
+                dataVersion = mapDataLumps[i].version;
                 elmSize = mlDataVer[mapFormat].verInfo[lumpType].elmSize;
                 numValues = mlDataVer[mapFormat].verInfo[lumpType].numValues;
+
+                dataOffset = mapDataLumps[i].startOffset;
 
                 if(mlDataVer[mapFormat].verInfo[lumpType].values != NULL)
                     dataTypes = mlDataVer[mapFormat].verInfo[lumpType].values;
@@ -914,10 +1018,11 @@ static void P_ReadMapData(int lumpclass)
                 glLump = true;
                 lumpType = LumpInfo[i].glLump;
 
-                dataVersion = glNodeVer[glNodeFormat].verInfo[lumpType].version;
-                headerBytes = (glNodeVer[glNodeFormat].verInfo[lumpType].magicid);
+                dataVersion = mapDataLumps[i].version;
                 elmSize = glNodeVer[glNodeFormat].verInfo[lumpType].elmSize;
                 numValues = glNodeVer[glNodeFormat].verInfo[lumpType].numValues;
+
+                dataOffset = mapDataLumps[i].startOffset;
 
                 if(glNodeVer[glNodeFormat].verInfo[lumpType].values != NULL)
                     dataTypes = glNodeVer[glNodeFormat].verInfo[lumpType].values;
@@ -925,11 +1030,9 @@ static void P_ReadMapData(int lumpclass)
                     dataTypes = NULL;
             }
 
-            Con_Message("Loading map data \"%s\"...\n",LumpInfo[i].lumpname);
-
-            // Does the lump have a header?
-            if(headerBytes != NULL)
-                dataOffset = strlen(headerBytes);
+            VERBOSE(Con_Message("P_ReadMapData: Processing data lump \"%s\" type %s...\n",
+                                W_CacheLumpNum(mapDataLumps[i].lumpNum, PU_GETNAME),
+                                DAM_Str(internalType)));
 
             // How many elements are in the lump?
             elements = (mapDataLumps[i].length - dataOffset) / elmSize;
@@ -943,7 +1046,7 @@ static void P_ReadMapData(int lumpclass)
 
             // Allocate and init depending on the type of data and if this is the
             // first lump of this class being processed.
-            switch(LumpInfo[i].dataType)
+            switch(internalType)
             {
                 case DAM_VERTEX:
                     oldNum = numvertexes;
@@ -1090,11 +1193,12 @@ static void P_ReadMapData(int lumpclass)
 
             // Read in the lump data
             startTime = Sys_GetRealTime();
-            LumpInfo[i].func(structure, LumpInfo[i].dataType,
-                             (mapDataLumps[i].lumpp) + mapDataLumps[i].startOffset,
+            LumpInfo[i].func(structure, internalType,
+                             (mapDataLumps[i].lumpp) + dataOffset,
                              elmSize, elements, dataVersion, numValues, dataTypes);
+
             // Perform any additional processing required
-            switch(LumpInfo[i].dataType)
+            switch(internalType)
             {
                 case DAM_SEG:
                     P_ProcessSegs(dataVersion);
@@ -1108,8 +1212,8 @@ static void P_ReadMapData(int lumpclass)
             }
 
             // How much time did we spend?
-            Con_Message("P_ReadMapData: Done \"%s\" in %.4f seconds.\n",
-                        LumpInfo[i].lumpname, (Sys_GetRealTime() - startTime) / 1000.0f);
+            Con_Message("P_ReadMapData: Done in %.4f seconds.\n",
+                        (Sys_GetRealTime() - startTime) / 1000.0f);
 
             // We're finished with this lump.
             Z_Free(mapDataLumps[i].lumpp);
@@ -1123,7 +1227,7 @@ static void P_ReadMapData(int lumpclass)
  * Simple conversions are also done, e.g., float to fixed.
  */
 static void ReadValue(void* dest, valuetype_t valueType,
-                        byte *src, int size, int flags, int index)
+                        byte *src, int size, int flags, int property, int index)
 {
     if(valueType == DDVT_BYTE)
     {
@@ -1140,8 +1244,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
             *d = *src;
             break;
         default:
-            Con_Error("GetValue: DDVT_BYTE incompatible with value type %s.\n",
-                      DMU_Str(size));
+            Con_Error("ReadValue: DDVT_BYTE incompatible with value type\n");
         }
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
@@ -1165,20 +1268,19 @@ static void ReadValue(void* dest, valuetype_t valueType,
                     *d = SHORT(*((short*)(src)));
             }
             break;
-// FIXME
-/*        case 8:
+
+        case 8:
             if(flags & DT_TEXTURE)
             {
-                *d = P_CheckTexture((char*)((long long*)(src)), false);
+                *d = P_CheckTexture((char*)((long long*)(src)), false, valueType, index, property);
             }
             else if(flags & DT_FLAT)
             {
-                *d = P_CheckTexture((char*)((long long*)(src)), true);
+                *d = P_CheckTexture((char*)((long long*)(src)), true, valueType, index, property);
             }
             break;
-*/         default:
-            Con_Error("GetValue: DDVT_SHORT incompatible with value type %s.\n",
-                      DMU_Str(size));
+         default:
+            Con_Error("ReadValue: DDVT_SHORT incompatible with value type %s.\n");
          }
     }
     else if(valueType = DDVT_FIXED)
@@ -1212,8 +1314,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: DDVT_FIXED incompatible with value type %s.\n",
-                      DMU_Str(size));
+            Con_Error("ReadValue: DDVT_FIXED incompatible with value type %s.\n");
         }
     }
     else if(valueType = DDVT_ULONG)
@@ -1247,8 +1348,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: DDVT_ULONG incompatible with value type %s.\n",
-                      DMU_Str(size));
+            Con_Error("ReadValue: DDVT_ULONG incompatible with value type %s.\n");
         }
     }
     else if(valueType == DDVT_INT)
@@ -1273,7 +1373,7 @@ static void ReadValue(void* dest, valuetype_t valueType,
 
                     *d = NO_INDEX;
 
-                    if(LONG(num) != NO_INDEX)
+                    if(num != ((unsigned short)-1))
                         *d = num;
                 }
                 else
@@ -1294,13 +1394,12 @@ static void ReadValue(void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("GetValue: DDVT_INT incompatible with value type %s.\n",
-                      DMU_Str(size));;
+            Con_Error("ReadValue: DDVT_INT incompatible with value type %s.\n");
         }
     }
     else
     {
-        Con_Error("GetValue: unknown value type %s.\n", DMU_Str(valueType));
+        Con_Error("ReadValue: unknown value type %s.\n", DMU_Str(valueType));
     }
 }
 
@@ -1340,7 +1439,7 @@ static void ReadMapProperty(byte *structure, int dataType,
             Con_Error("ReadMapProperty: Unsupported data type id %i.\n", prop->size);
         };
 
-        ReadValue(dest, prop->size, buffer + prop->offset, prop->size, prop->flags, 0);
+        ReadValue(dest, prop->size, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
 
         gx.HandleMapDataProperty(element, dataType, prop->property, prop->size, dest);
     }
@@ -1367,10 +1466,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_VERTEX has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1406,10 +1505,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_LINE has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1450,10 +1549,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_SIDE has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1489,10 +1588,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_SECTOR has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1533,10 +1632,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_SEG has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1557,10 +1656,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_SUBSECTOR has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
 
@@ -1641,10 +1740,10 @@ static void ReadMapProperty(byte *structure, int dataType,
 
             default:
                 Con_Error("ReadMapProperty: DAM_NODE has no property %s.\n",
-                          "blah");
+                          DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, 0);
+            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags, prop->property, element);
             break;
             }
         default:
@@ -2056,8 +2155,8 @@ static void P_SetLineSideNum(int *side, unsigned short num)
 {
     num = SHORT(num);
 
-    *side = NO_INDEX;
-    if(num == NO_INDEX)
+    *side = -1;
+    if(num == ((unsigned short)-1))
     {
         // do nothing
     }
