@@ -61,44 +61,38 @@ typedef struct {
     int offset;
 } datatype_t;
 
-typedef struct mldataver_s {
-    char *vername;
-    struct {
-        int   version;
-        char *magicid;
-        size_t elmSize;
-        int   numValues;
-        datatype_t *values;
-    } verInfo[NUM_MAPLUMPS];
-    boolean supported;
-} mldataver_t;
+typedef struct mapdatalumpformat_s {
+    int   version;
+    char *magicid;
+    size_t elmSize;
+    int   numValues;
+    datatype_t *values;
+} mapdatalumpformat_t;
 
-typedef struct {
+typedef struct mapdataformat_s {
     char *vername;
-    struct {
-        int   version;
-        char *magicid;
-        size_t elmSize;
-        int   numValues;
-        datatype_t *values;
-    } verInfo[NUM_GLLUMPS];
+    mapdatalumpformat_t verInfo[NUM_MAPLUMPS];
     boolean supported;
-} glnodever_t;
+} mapdataformat_t;
+
+typedef struct glnodeformat_s {
+    char *vername;
+    mapdatalumpformat_t verInfo[NUM_GLLUMPS];
+    boolean supported;
+} glnodeformat_t;
 
 typedef struct {
     char *lumpname;
-    void (*func) (byte *structure, int dataType, byte *buffer, size_t elmSize,
-                  int elements, int version, int values, const datatype_t *types);
+    void (*func) (int startIndex, int dataType, const byte *buffer,
+                  size_t elmSize, int elements, int version, int values,
+                  const datatype_t *types);
     int  mdLump;
     int  glLump;
     int  dataType;
     int  lumpclass;
     boolean required;
     boolean precache;
-} maplump_t;
-
-extern maplump_t LumpInfo[];
-
+} maplumpinfo_t;
 
 void        P_InitMapDataFormats(void);
 boolean     P_LoadMapData(char *levelId);
