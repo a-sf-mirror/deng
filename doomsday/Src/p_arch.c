@@ -387,8 +387,8 @@ mldataver_t mlDataVer[] = {
 // Versions of GL node data structures
 glnodever_t glNodeVer[] = {
 // Ver String   Verts       Segs        SSects       Nodes     Supported?
-    {"V1", {{1, NULL},   {1, NULL},   {1, NULL},   {1, NULL}}, true},
-    {"V2", {{2, "gNd2"}, {1, NULL},   {1, NULL},   {1, NULL}}, true},
+    {"V1", {{1, NULL},   {2, NULL},   {1, NULL},   {1, NULL}}, true},
+    {"V2", {{2, "gNd2"}, {2, NULL},   {1, NULL},   {1, NULL}}, true},
     {"V3", {{2, "gNd2"}, {3, "gNd3"}, {3, "gNd3"}, {1, NULL}}, false},
     {"V4", {{4, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
     {"V5", {{5, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
@@ -783,7 +783,7 @@ static boolean P_DetermineMapFormat(void)
                 {
                     lumpClass = LumpInfo[mapLump->lumpClass].glLump;
 
-                    /*Con_Message("Check lump %s | %s n%d ver %d lump ver %d format\n",
+                    /*Con_Message("Check lump %s | %s n%d ver %d lump ver %d\n",
                                 LumpInfo[mapLump->lumpClass].lumpname,
                                 W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
                                 LumpInfo[mapLump->lumpClass].glLump,
@@ -809,12 +809,35 @@ static boolean P_DetermineMapFormat(void)
             // Did all lumps match the required format for this version?
             if(!failed)
             {
-                Con_Message("P_DetermineMapFormat: (%s gl Node data found)\n",glNodeVer[i].vername);
+                // We know the GL Node format
                 glNodeFormat = i;
 
-                // Do we support this gl node version?
-                if(glNodeVer[i].supported)
+                Con_Message("P_DetermineMapFormat: (%s gl Node data found)\n",
+                            glNodeVer[glNodeFormat].vername);
+
+                // Do we support this GL Node format?
+                if(glNodeVer[glNodeFormat].supported)
+                {
+                    // Now that we know the GL Node format we need update the internal
+                    // version number for any lumps that don't declare a version (-1).
+                    // Taken from the version stipulated in the Node format.
+                    for(k = 0; k < numMapDataLumps; ++k)
+                    {
+                        mapLump = &mapDataLumps[k];
+                        lumpClass = LumpInfo[mapLump->lumpClass].glLump;
+
+                        // Is it a GL Node data lump class?
+                        if(mapLump->lumpClass >= glVerts &&
+                           mapLump->lumpClass <= glNodes)
+                        {
+                            // Set the lump version number for this format.
+                            if(mapLump->version == -1)
+                                mapLump->version =
+                                    glNodeVer[glNodeFormat].verInfo[lumpClass].version;
+                        }
+                    }
                     return true;
+                }
                 else
                 {
                     // Unsupported GL Node format.
@@ -970,6 +993,7 @@ static void P_ReadMapData(int lumpclass)
     size_t elmSize;
     boolean glLump;
     datatype_t *dataTypes;
+    mapLumpInfo_t* mapLump;
 
     // Are gl Nodes available?
     if(glNodeData)
@@ -983,26 +1007,28 @@ static void P_ReadMapData(int lumpclass)
             lumpclass = glNodes;
     }
 
-    for(i = NUM_LUMPCLASSES -1; i>= 0; --i)
+    for(i = numMapDataLumps -1; i>= 0; --i)
     {
+        mapLump = &mapDataLumps[i];
+
         // Only process lumps that match the class requested
-        if(lumpclass == LumpInfo[i].lumpclass && LumpInfo[i].func != NULL)
+        if(lumpclass == mapLump->lumpClass && LumpInfo[mapLump->lumpClass].func != NULL)
         {
-            internalType = LumpInfo[i].dataType;
+            internalType = LumpInfo[mapLump->lumpClass].dataType;
 
             // use the original map data structures by default
-            lumpType = LumpInfo[i].mdLump;
+            lumpType = LumpInfo[mapLump->lumpClass].mdLump;
             dataVersion = 1;
             dataOffset = 0;
             glLump = false;
 
             if(lumpType >= 0)
             {
-                dataVersion = mapDataLumps[i].version;
+                dataVersion = mapLump->version;
                 elmSize = mlDataVer[mapFormat].verInfo[lumpType].elmSize;
                 numValues = mlDataVer[mapFormat].verInfo[lumpType].numValues;
 
-                dataOffset = mapDataLumps[i].startOffset;
+                dataOffset = mapLump->startOffset;
 
                 if(mlDataVer[mapFormat].verInfo[lumpType].values != NULL)
                     dataTypes = mlDataVer[mapFormat].verInfo[lumpType].values;
@@ -1016,13 +1042,13 @@ static void P_ReadMapData(int lumpclass)
                     return;
 
                 glLump = true;
-                lumpType = LumpInfo[i].glLump;
+                lumpType = LumpInfo[mapLump->lumpClass].glLump;
 
-                dataVersion = mapDataLumps[i].version;
+                dataVersion = mapLump->version;
                 elmSize = glNodeVer[glNodeFormat].verInfo[lumpType].elmSize;
                 numValues = glNodeVer[glNodeFormat].verInfo[lumpType].numValues;
 
-                dataOffset = mapDataLumps[i].startOffset;
+                dataOffset = mapLump->startOffset;
 
                 if(glNodeVer[glNodeFormat].verInfo[lumpType].values != NULL)
                     dataTypes = glNodeVer[glNodeFormat].verInfo[lumpType].values;
@@ -1031,17 +1057,17 @@ static void P_ReadMapData(int lumpclass)
             }
 
             VERBOSE(Con_Message("P_ReadMapData: Processing data lump \"%s\" type %s...\n",
-                                W_CacheLumpNum(mapDataLumps[i].lumpNum, PU_GETNAME),
+                                W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
                                 DAM_Str(internalType)));
 
             // How many elements are in the lump?
-            elements = (mapDataLumps[i].length - dataOffset) / elmSize;
+            elements = (mapLump->length - dataOffset) / (int) elmSize;
 
             // Have we cached the lump yet?
-            if(mapDataLumps[i].lumpp == NULL)
+            if(mapLump->lumpp == NULL)
             {
-                mapDataLumps[i].lumpp =
-                    (byte *) W_CacheLumpNum(mapDataLumps[i].lumpNum, PU_STATIC);
+                mapLump->lumpp =
+                    (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
             }
 
             // Allocate and init depending on the type of data and if this is the
@@ -1061,8 +1087,7 @@ static void P_ReadMapData(int lumpclass)
 
                     structure = (byte *)(vertexes + oldNum);
 
-                    // Kludge: we should do this properly...
-                    if(dataVersion == 1)
+                    if(mapLump->lumpClass == mlVertexes && oldNum == 0)
                         firstGLvertex = numvertexes;
                     break;
 
@@ -1194,7 +1219,7 @@ static void P_ReadMapData(int lumpclass)
             // Read in the lump data
             startTime = Sys_GetRealTime();
             LumpInfo[i].func(structure, internalType,
-                             (mapDataLumps[i].lumpp) + dataOffset,
+                             (mapLump->lumpp) + dataOffset,
                              elmSize, elements, dataVersion, numValues, dataTypes);
 
             // Perform any additional processing required
@@ -2787,6 +2812,51 @@ void P_InitMapDataFormats(void)
             else if(lumpClass == glSegs)
             {
                 if(glver == 1)
+                {
+                    // NOTE: this is the same as the original seg format.
+                    // GL_SEGS never come in this format, it is here due to us not
+                    // having a generic system to handle map data lump formats (yet).
+                    *glptr = 12;
+                    glstiptr->verInfo[index].numValues = 6;
+                    glstiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 6, PU_STATIC, 0);
+                    // v1
+                    glstiptr->verInfo[index].values[0].property = DAM_VERTEX1;
+                    glstiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
+                    glstiptr->verInfo[index].values[0].size =  2;
+                    glstiptr->verInfo[index].values[0].offset = 0;
+                    glstiptr->verInfo[index].values[0].gameprop = 0;
+                    // v2
+                    glstiptr->verInfo[index].values[1].property = DAM_VERTEX2;
+                    glstiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
+                    glstiptr->verInfo[index].values[1].size =  2;
+                    glstiptr->verInfo[index].values[1].offset = 2;
+                    glstiptr->verInfo[index].values[1].gameprop = 0;
+                    // angle
+                    glstiptr->verInfo[index].values[2].property = DAM_ANGLE;
+                    glstiptr->verInfo[index].values[2].flags = DT_FRACBITS;
+                    glstiptr->verInfo[index].values[2].size =  2;
+                    glstiptr->verInfo[index].values[2].offset = 4;
+                    glstiptr->verInfo[index].values[2].gameprop = 0;
+                    // linedef
+                    glstiptr->verInfo[index].values[3].property = DAM_LINE;
+                    glstiptr->verInfo[index].values[3].flags = 0;
+                    glstiptr->verInfo[index].values[3].size =  2;
+                    glstiptr->verInfo[index].values[3].offset = 6;
+                    glstiptr->verInfo[index].values[3].gameprop = 0;
+                    // side
+                    glstiptr->verInfo[index].values[4].property = DAM_SIDE;
+                    glstiptr->verInfo[index].values[4].flags = DT_NOINDEX;
+                    glstiptr->verInfo[index].values[4].size =  2;
+                    glstiptr->verInfo[index].values[4].offset = 8;
+                    glstiptr->verInfo[index].values[4].gameprop = 0;
+                    // offset
+                    glstiptr->verInfo[index].values[5].property = DAM_OFFSET;
+                    glstiptr->verInfo[index].values[5].flags = DT_FRACBITS;
+                    glstiptr->verInfo[index].values[5].size =  2;
+                    glstiptr->verInfo[index].values[5].offset = 10;
+                    glstiptr->verInfo[index].values[5].gameprop = 0;
+                }
+                else if(glver == 2)
                 {
                     *glptr = 10;
                     glstiptr->verInfo[index].numValues = 4;
