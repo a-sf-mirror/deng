@@ -55,7 +55,7 @@ enum {
 //
 typedef struct {
     int property; // DAM property to map the data to
-    int gameprop; // if > 0 is a specific data item (passed to the game)
+    boolean gameprop; // if true is a game-specific property (passed to the game)
     int flags;
     int size;   // num of bytes
     int offset;
@@ -83,9 +83,9 @@ typedef struct glnodeformat_s {
 
 typedef struct {
     char *lumpname;
-    void (*func) (int startIndex, int dataType, const byte *buffer,
-                  size_t elmSize, int elements, int version, int values,
-                  const datatype_t *types);
+    void (*func) (unsigned int startIndex, int dataType, const byte *buffer,
+                  size_t elmSize, unsigned int elements, unsigned int version,
+                  unsigned int values, const datatype_t *types);
     int  mdLump;
     int  glLump;
     int  dataType;
