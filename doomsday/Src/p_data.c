@@ -881,6 +881,16 @@ void P_PolyobjChanged(polyobj_t *po)
  */
 boolean P_LoadMap(char *levelId)
 {
+    // It would be very cool if map loading happened in another
+    // thread. That way we could be keeping ourselves busy while
+    // the intermission is played...
+
+    // We could even try to divide a HUB up into zones, so that
+    // when a player enters a zone we could begin loading the map(s)
+    // reachable through exits in that zone (providing they have
+    // enough free memory of course) so that transitions are
+    // (potentially) seamless :-)
+
     // Attempt to load the map
     if(P_LoadMapData(levelId))
     {
@@ -1117,7 +1127,7 @@ static void P_GroupLines(void)
  *                         intended for plane textures (Flats)
  */
 int P_CheckTexture(char *name, boolean planeTex, int dataType,
-                   int element, int property)
+                   unsigned int element, int property)
 {
     int i;
     int id;
@@ -1131,7 +1141,7 @@ int P_CheckTexture(char *name, boolean planeTex, int dataType,
 
     // At this point we don't know WHAT it is.
     // Perhaps the game knows what to do?
-    if(gx.HandleMapDataPropertyValue)
+    if(id == -1 && gx.HandleMapDataPropertyValue)
         id = gx.HandleMapDataPropertyValue(element, dataType, property,
                                            DDVT_FLAT_INDEX, name);
 
