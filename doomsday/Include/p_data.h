@@ -285,5 +285,5 @@ void            P_CeilingChanged(sector_t *sector);
 void            P_Init(void);
 
 int             P_CheckTexture(char *name, boolean planeTex, int dataType,
-                               int element, int property);
+                               unsigned int element, int property);
 #endif
