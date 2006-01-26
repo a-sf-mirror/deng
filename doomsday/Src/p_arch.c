@@ -327,15 +327,15 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 static boolean  P_DetermineMapFormat(void);
 static void     P_ReadMapData(int lumpclass);
 
-static void P_ReadBinaryMapData(int startIndex, int dataType, const byte *buffer,
-                                size_t elmsize, int elements, int version, int values,
-                                const datatype_t *types);
-static void P_ReadSideDefs(int startIndex, int dataType, const byte *buffer,
-                          size_t elmsize, int elements, int version, int values,
-                          const datatype_t *types);
-static void P_ReadLineDefs(int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, int elements, int version, int values,
-                           const datatype_t *types);
+static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
+                                size_t elmsize, unsigned int elements, unsigned int version,
+                                unsigned int values, const datatype_t *types);
+static void P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
+                          size_t elmsize, unsigned int elements, unsigned int version,
+                          unsigned int values, const datatype_t *types);
+static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *buffer,
+                           size_t elmsize, unsigned int elements, unsigned int version,
+                           unsigned int values, const datatype_t *types);
 
 static void     P_ReadSideDefTextures(int lump);
 static void     P_FinishLineDefs(void);
@@ -353,10 +353,10 @@ static void P_PrintDebugMapData(void);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int     mapFormat;
+unsigned int     mapFormat;
 
 // gl nodes
-int     glNodeFormat;
+unsigned int     glNodeFormat;
 int     firstGLvertex = 0;
 
 // Set to true if glNodeData exists for the level.
@@ -495,7 +495,8 @@ static void AddMapDataLump(int lumpNum, int lumpClass)
     mapDataLumps[num].lumpClass = lumpClass;
     mapDataLumps[num].lumpp = NULL;
     mapDataLumps[num].length = 0;
-    mapDataLumps[num].version = 0;
+    mapDataLumps[num].version = -1;
+    mapDataLumps[num].startOffset = 0;
 }
 
 static void FreeMapDataLumps(void)
@@ -506,16 +507,15 @@ static void FreeMapDataLumps(void)
     if(mapDataLumps != NULL)
     {
         // Free any lumps we might have pre-cached.
-        for(k = numMapDataLumps; k--;)
-            if(mapDataLumps[k].lumpp != NULL)
+        for(k = 0; k < numMapDataLumps; k++)
+            if(mapDataLumps[k].lumpp)
             {
                 Z_Free(mapDataLumps[k].lumpp);
-                mapDataLumps[k].lumpp = NULL;
+                mapDataLumps[k].lumpp = 0;
             }
 
         free(mapDataLumps);
         mapDataLumps = NULL;
-
         numMapDataLumps = 0;
     }
 }
@@ -569,9 +569,10 @@ static boolean P_LocateMapData(char *levelID, int *lumpIndices)
  */
 static void P_FindMapLumps(int startLump)
 {
-    int k;
+    unsigned int k;
     unsigned int i;
     boolean scan;
+    maplumpinfo_t* mapLmpInf;
 
     // We don't want to check the marker lump.
     ++startLump;
@@ -581,13 +582,14 @@ static void P_FindMapLumps(int startLump)
     {
         scan = true;
         // Compare the name of this lump with our known map data lump names
-        for(k = 0; k < NUM_LUMPCLASSES && scan; ++k)
+        mapLmpInf = mapLumpInfo;
+        for(k = NUM_LUMPCLASSES; k-- && scan; ++mapLmpInf)
         {
-            if(!strncmp(mapLumpInfo[k].lumpname, W_CacheLumpNum(i, PU_GETNAME), 8))
+            if(!strncmp(mapLmpInf->lumpname, W_CacheLumpNum(i, PU_GETNAME), 8))
             {
                 // Lump name matches a known lump name.
                 // Add it to the lumps we'll process for map data.
-                AddMapDataLump(i, mapLumpInfo[k].lumpclass);
+                AddMapDataLump(i, mapLmpInf->lumpclass);
                 scan = false;
             }
         }
@@ -644,17 +646,18 @@ static void DetermineMapDataLumpFormat(mapdatalumpInfo_t* mapLump)
             mapLump->lumpClass >= glVerts &&
             mapLump->lumpClass <= glNodes)
     {
-        int i;
+        unsigned int i;
         int lumpClass = mapLumpInfo[mapLump->lumpClass].glLump;
         mapdatalumpformat_t* mapDataLumpFormat;
+        glnodeformat_t* nodeFormat = glNodeFormats;
 
         // Perhaps its a "named" GL Node format?
 
         // Find out which gl node version the data uses
         // loop backwards (check for latest version first)
-        for(i = GLNODE_FORMATS; i--;)
+        for(i = GLNODE_FORMATS; i--; ++nodeFormat)
         {
-            mapDataLumpFormat = &glNodeFormats[i].verInfo[lumpClass];
+            mapDataLumpFormat = &(nodeFormat->verInfo[lumpClass]);
 
             // Check the header against each known name for this lump class.
             if(mapDataLumpFormat->magicid != NULL)
@@ -677,16 +680,11 @@ static void DetermineMapDataLumpFormat(mapdatalumpInfo_t* mapLump)
         // Most GL Node formats don't include magic bytes in each lump.
         // Because we don't KNOW the format of this lump we should
         // ignore it when determining the GL Node format.
-        mapLump->version = -1;
-        mapLump->startOffset = 0;
-
         return;
     }
 
     // It isn't a (known) named special format.
     // Use the default data format for this lump (map format specific).
-    mapLump->version = 0;
-    mapLump->startOffset = 0;
 }
 
 /*
@@ -703,23 +701,20 @@ static void DetermineMapDataLumpFormat(mapdatalumpInfo_t* mapLump)
  */
 static boolean VerifyMapData(char *levelID)
 {
-    int i, k;
+    unsigned int i, k;
     boolean found;
     mapdatalumpInfo_t* mapDataLump;
-    maplumpinfo_t* mapLmpInf;
+    maplumpinfo_t* mapLmpInf = mapLumpInfo;
 
     // Itterate our known lump classes array.
-    for(i = NUM_LUMPCLASSES; i--;)
+    for(i = NUM_LUMPCLASSES; i--; ++mapLmpInf)
     {
-        mapLmpInf = &mapLumpInfo[i];
-
         // Check all the registered map data lumps to make sure we have at least
         // one lump of each required lump class.
         found = false;
-        for(k = 0; k < numMapDataLumps; ++k)
+        mapDataLump = mapDataLumps;
+        for(k = numMapDataLumps; k--; ++mapDataLump)
         {
-            mapDataLump = &mapDataLumps[k];
-
             // Is this a lump of the class we are looking for?
             if(mapDataLump->lumpClass == mapLmpInf->lumpclass)
             {
@@ -738,7 +733,7 @@ static boolean VerifyMapData(char *levelID)
                 // Attempt to determine the format of this map data lump.
                 DetermineMapDataLumpFormat(mapDataLump);
 
-                // Announce (in reverse order...)
+                // Announce
                 VERBOSE2(Con_Message("%s - (%s) is %d bytes.\n",
                                      W_CacheLumpNum(mapDataLump->lumpNum, PU_GETNAME),
                                      DAM_Str(mapLmpInf->dataType), mapDataLump->length));
@@ -775,27 +770,43 @@ static boolean VerifyMapData(char *levelID)
  */
 static boolean P_DetermineMapFormat(void)
 {
+    unsigned int i;
+    int lumpClass;
     mapdatalumpInfo_t* mapLump;
+
+    // Now that we know the map data format we need to update the internal
+    // version number for any lumps that don't declare a version (-1).
+    // Taken from the version stipulated in the map format.
+    mapLump = mapDataLumps;
+    for(i = numMapDataLumps; i--; ++mapLump)
+    {
+        lumpClass = mapLumpInfo[mapLump->lumpClass].mdLump;
+
+        // Is it a map data lump class?
+        if(!(mapLump->lumpClass >= glVerts &&
+           mapLump->lumpClass <= glNodes))
+        {
+            // Set the lump version number for this format.
+            if(mapLump->version == -1)
+                mapLump->version = mapDataFormats[mapFormat].verInfo[lumpClass].version;
+        }
+    }
 
     // Do we have GL nodes?
     if(glNodeData)
     {
-        int i, k;
-        int lumpClass;
+        unsigned int k;
         boolean failed;
-        glnodeformat_t* nodeFormat;
+        glnodeformat_t* nodeFormat = &glNodeFormats[GLNODE_FORMATS];
 
         // Find out which GL Node version the data is in.
         // Loop backwards (check for latest version first).
-        for(i = GLNODE_FORMATS; i--;)
+        for(i = GLNODE_FORMATS; i--; --nodeFormat)
         {
-            nodeFormat = &glNodeFormats[i];
-
             // Check the version number of each map data lump
-            for(k = 0, failed = false; k < numMapDataLumps && !failed; ++k)
+            mapLump = mapDataLumps;
+            for(k = numMapDataLumps, failed = false; k-- && !failed; ++mapLump)
             {
-                mapLump = &mapDataLumps[k];
-
                 // Is it a GL Node data lump class?
                 if(mapLump->lumpClass >= glVerts &&
                    mapLump->lumpClass <= glNodes)
@@ -837,12 +848,12 @@ static boolean P_DetermineMapFormat(void)
                 // Do we support this GL Node format?
                 if(nodeFormat->supported)
                 {
-                    // Now that we know the GL Node format we need update the internal
+                    // Now that we know the GL Node format we need to update the internal
                     // version number for any lumps that don't declare a version (-1).
                     // Taken from the version stipulated in the Node format.
-                    for(k = 0; k < numMapDataLumps; ++k)
+                    mapLump = mapDataLumps;
+                    for(k = numMapDataLumps; k--; ++mapLump)
                     {
-                        mapLump = &mapDataLumps[k];
                         lumpClass = mapLumpInfo[mapLump->lumpClass].glLump;
 
                         // Is it a GL Node data lump class?
@@ -998,14 +1009,14 @@ boolean P_LoadMapData(char *levelId)
  */
 static void P_ReadMapData(int doClass)
 {
-    int i;
+    unsigned int i;
     int internalType;
-    int elements;
-    int oldNum, newNum;
+    unsigned int elements;
+    unsigned int oldNum, newNum;
 
     uint startTime;
     datatype_t *dataTypes;
-    mapdatalumpInfo_t* mapLump;
+    mapdatalumpInfo_t* mapLump = mapDataLumps;
     mapdatalumpformat_t* lumpFormat;
     maplumpinfo_t*  lumpInfo;
 
@@ -1028,9 +1039,8 @@ static void P_ReadMapData(int doClass)
             return;
     }
 
-    for(i = numMapDataLumps; i--;)
+    for(i = numMapDataLumps; i--; ++mapLump)
     {
-        mapLump = &mapDataLumps[i];
         lumpInfo = &mapLumpInfo[mapLump->lumpClass];
 
         // Only process lumps that match the class requested
@@ -1063,8 +1073,7 @@ static void P_ReadMapData(int doClass)
             // Have we cached the lump yet?
             if(mapLump->lumpp == NULL)
             {
-                mapLump->lumpp =
-                    (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
+                mapLump->lumpp = W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
             }
 
             // Allocate and init depending on the type of data and if this is the
@@ -1229,6 +1238,7 @@ static void P_ReadMapData(int doClass)
 
             // We're finished with this lump.
             Z_Free(mapLump->lumpp);
+            mapLump->lumpp = 0;
         }
     }
 }
@@ -1238,13 +1248,15 @@ static void P_ReadMapData(int doClass)
  * type checking so that incompatible types are not assigned.
  * Simple conversions are also done, e.g., float to fixed.
  */
-static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int size,
-                      int flags, int property, int index)
+static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
+                      const datatype_t* prop, unsigned int index)
 {
+    int flags = prop->flags;
+
     if(valueType == DDVT_BYTE)
     {
         byte* d = dest;
-        switch(size)
+        switch(prop->size)
         {
         case 1:
             *d = *src;
@@ -1262,7 +1274,7 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
         short* d = dest;
-        switch(size)
+        switch(prop->size)
         {
         case 2:
             if(flags & DT_UNSIGNED)
@@ -1284,22 +1296,24 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
         case 8:
             if(flags & DT_TEXTURE)
             {
-                *d = P_CheckTexture((char*)((long long*)(src)), false, valueType, index, property);
+                *d = P_CheckTexture((char*)((long long*)(src)), false, valueType,
+                                    index, prop->property);
             }
             else if(flags & DT_FLAT)
             {
-                *d = P_CheckTexture((char*)((long long*)(src)), true, valueType, index, property);
+                *d = P_CheckTexture((char*)((long long*)(src)), true, valueType,
+                                    index, prop->property);
             }
             break;
          default:
-            Con_Error("ReadValue: DDVT_SHORT incompatible with value type %s.\n");
+            Con_Error("ReadValue: DDVT_SHORT incompatible with value type.\n");
          }
     }
     else if(valueType = DDVT_FIXED)
     {
         fixed_t* d = dest;
 
-        switch(size) // Number of src bytes
+        switch(prop->size) // Number of src bytes
         {
         case 2:
             if(flags & DT_UNSIGNED)
@@ -1326,14 +1340,14 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_FIXED incompatible with value type %s.\n");
+            Con_Error("ReadValue: DDVT_FIXED incompatible with value type.\n");
         }
     }
     else if(valueType = DDVT_ULONG)
     {
         unsigned long* d = dest;
 
-        switch(size) // Number of src bytes
+        switch(prop->size) // Number of src bytes
         {
         case 2:
             if(flags & DT_UNSIGNED)
@@ -1360,14 +1374,14 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_ULONG incompatible with value type %s.\n");
+            Con_Error("ReadValue: DDVT_ULONG incompatible with value type.\n");
         }
     }
     else if(valueType == DDVT_INT)
     {
         int* d = dest;
 
-        switch(size) // Number of src bytes
+        switch(prop->size) // Number of src bytes
         {
         case 2:
             if(flags & DT_UNSIGNED)
@@ -1406,7 +1420,7 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_INT incompatible with value type %s.\n");
+            Con_Error("ReadValue: DDVT_INT incompatible with value type.\n");
         }
     }
     else
@@ -1415,7 +1429,7 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src, int si
     }
 }
 
-static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
+static void ReadMapProperty(int dataType, unsigned int element, const datatype_t* prop,
                             const byte *buffer)
 {
     valuetype_t destType;
@@ -1451,8 +1465,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
             Con_Error("ReadMapProperty: Unsupported data type id %i.\n", prop->size);
         };
 
-        ReadValue(dest, prop->size, buffer + prop->offset, prop->size, prop->flags,
-                  prop->property, element);
+        ReadValue(dest, prop->size, buffer + prop->offset, prop, element);
 
         gx.HandleMapDataProperty(element, dataType, prop->property, prop->size, dest);
     }
@@ -1482,8 +1495,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1522,8 +1534,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1567,8 +1578,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1607,8 +1617,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1652,8 +1661,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1677,8 +1685,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1762,8 +1769,7 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop->size, prop->flags,
-                      prop->property, element);
+            ReadValue(dest, destType, buffer + prop->offset, prop, element);
             break;
             }
         default:
@@ -1775,28 +1781,29 @@ static void ReadMapProperty(int dataType, int element, const datatype_t* prop,
 /*
  * Not very pretty to look at but it IS pretty quick :-)
  */
-static void P_ReadBinaryMapData(int startIndex, int dataType, const byte *buffer,
-                                size_t elmSize, int elements, int version,
-                                int numValues, const datatype_t *types)
+static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
+                                size_t elmSize, unsigned int elements, unsigned int version,
+                                unsigned int numValues, const datatype_t *types)
 {
 #define NUMBLOCKS 8
-#define BLOCK for(k = numValues; k--;) \
+#define BLOCK for(k = numValues, mytypes = types; k--; ++mytypes) \
               { \
-                  ReadMapProperty(dataType, index, &types[k], buffer); \
+                  ReadMapProperty(dataType, index, mytypes, buffer); \
               } \
               buffer += elmSize; \
               ++index;
 
-    int     i = 0, k;
-    int     blocklimit = blocklimit = (elements / NUMBLOCKS) * NUMBLOCKS;
-    int     index;
+    unsigned int     i = 0, k;
+    unsigned int     blocklimit = (elements / NUMBLOCKS) * NUMBLOCKS;
+    unsigned int     index;
+    const datatype_t* mytypes;
 
     // Have we got enough to do some in blocks?
     if(elements >= blocklimit)
     {
         while(i < blocklimit)
         {
-            index = startIndex+i;
+            index = startIndex + i;
 
             BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK
 
@@ -1818,8 +1825,8 @@ static void P_ReadBinaryMapData(int startIndex, int dataType, const byte *buffer
         case 3: BLOCK
         case 2: BLOCK
         case 1:
-            for(k = numValues; k--;)
-                ReadMapProperty(dataType, index, &types[k], buffer);
+            for(k = numValues, mytypes = types; k--; ++mytypes)
+                ReadMapProperty(dataType, index, mytypes, buffer);
         }
     }
 }
@@ -1939,9 +1946,9 @@ static void P_ProcessSegs(int version)
 /*
  * TODO: Remove this and use the generic P_ReadBinaryMapData
  */
-static void P_ReadLineDefs(int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, int elements, int version, int values,
-                           const datatype_t *types)
+static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *buffer,
+                           size_t elmsize, unsigned int elements, unsigned int version,
+                           unsigned int values, const datatype_t *types)
 {
     int     i;
     maplinedef_t *mld;
@@ -1956,53 +1963,56 @@ static void P_ReadLineDefs(int startIndex, int dataType, const byte *buffer,
     mldhex = (maplinedefhex_t *) buffer;
     switch(version)
     {
-        case 1: // DOOM format
-            for(i = 0; i < numlines; i++, mld++, mldhex++)
-            {
-                ld = LINE_PTR(i);
+    case 1: // DOOM format
+        for(i = 0; i < numlines; i++, mld++, mldhex++)
+        {
+            ld = LINE_PTR(i);
 
-                ld->flags = SHORT(mld->flags);
+            ld->flags = SHORT(mld->flags);
 
-                tmp = SHORT(mld->special);
-                gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_SPECIAL, 0, &tmp);
-                tmp = SHORT(mld->tag);
-                gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_TAG, 0, &tmp);
+            tmp = SHORT(mld->special);
+            gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_SPECIAL, 0, &tmp);
+            tmp = SHORT(mld->tag);
+            gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_TAG, 0, &tmp);
 
-                ld->v1 = VERTEX_PTR(SHORT(mld->v1));
-                ld->v2 = VERTEX_PTR(SHORT(mld->v2));
+            ld->v1 = VERTEX_PTR(SHORT(mld->v1));
+            ld->v2 = VERTEX_PTR(SHORT(mld->v2));
 
-                P_SetLineSideNum(&ld->sidenum[0], SHORT(mld->sidenum[0]));
-                P_SetLineSideNum(&ld->sidenum[1], SHORT(mld->sidenum[1]));
-            }
-            break;
+            P_SetLineSideNum(&(ld->sidenum[0]), SHORT(mld->sidenum[0]));
+            P_SetLineSideNum(&(ld->sidenum[1]), SHORT(mld->sidenum[1]));
+        }
+        break;
 
-        case 2: // HEXEN format
-            for(i = 0; i < numlines; i++, mld++, mldhex++)
-            {
-                ld = LINE_PTR(i);
+    case 2: // HEXEN format
+        for(i = 0; i < numlines; i++, mld++, mldhex++)
+        {
+            ld = LINE_PTR(i);
 
-                ld->flags = SHORT(mldhex->flags);
+            ld->flags = SHORT(mldhex->flags);
 
-                tmpb = mldhex->special;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
-                tmpb = mldhex->arg1;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
-                tmpb = mldhex->arg2;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
-                tmpb = mldhex->arg3;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
-                tmpb = mldhex->arg4;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
-                tmpb = mldhex->arg5;
-                gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
+            tmpb = mldhex->special;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
+            tmpb = mldhex->arg1;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
+            tmpb = mldhex->arg2;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
+            tmpb = mldhex->arg3;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
+            tmpb = mldhex->arg4;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
+            tmpb = mldhex->arg5;
+            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
 
-                ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
-                ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
+            ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
+            ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
 
-                P_SetLineSideNum(&ld->sidenum[0], SHORT(mldhex->sidenum[0]));
-                P_SetLineSideNum(&ld->sidenum[1], SHORT(mldhex->sidenum[1]));
-            }
-            break;
+            P_SetLineSideNum(&(ld->sidenum[0]), SHORT(mldhex->sidenum[0]));
+            P_SetLineSideNum(&(ld->sidenum[1]), SHORT(mldhex->sidenum[1]));
+        }
+        break;
+    default:
+        Con_Error("Error. unsupported linedef format\n");
+        break;
     }
 }
 
@@ -2134,9 +2144,9 @@ static void P_FinishLineDefs(void)
 /*
  * TODO: Remove this and use the generic P_ReadBinaryMapData
  */
-static void P_ReadSideDefs(int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, int elements, int version, int values,
-                           const datatype_t *types)
+static void P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
+                           size_t elmsize, unsigned int elements, unsigned int version,
+                           unsigned int values, const datatype_t *types)
 {
     int     i, index;
     mapsidedef_t *msd;
