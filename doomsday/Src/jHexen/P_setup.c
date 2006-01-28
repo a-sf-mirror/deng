@@ -33,8 +33,6 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void InitMapInfo(void);
-
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
@@ -53,27 +51,7 @@ int        numxlines;
 
 // CODE --------------------------------------------------------------------
 
-/*
- * Converts a line to an xline.
- */
-xline_t* P_XLine(line_t* line)
-{
-    return &xlines[P_ToIndex(line)];
-}
-
-/*
- * Converts a line to an xline.
- */
-xsector_t* P_XSector(sector_t* sector)
-{
-    return &xsectors[P_ToIndex(sector)];
-}
-
-xsector_t* P_XSectorOfSubsector(subsector_t* sub)
-{
-    return &xsectors[P_GetIntp(sub, DMU_SECTOR)];
-}
-
+#if 0
 void P_SetupForThings(int num)
 {
     // Nothing to do
@@ -117,6 +95,7 @@ void P_SetupForSectors(int num)
 
     memset(xsectors + oldNum, 0, num * sizeof(xsector_t));
 }
+#endif
 
 /*
  * Doomsday will call this while loading in map data when a value is read

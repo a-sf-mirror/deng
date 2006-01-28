@@ -88,6 +88,7 @@ static boolean defsInited = false;
 static char *dedFiles[MAX_READ];
 static mobjinfo_t *gettingFor;
 
+xgclass_t nullXgClassLinks; // Used when none defined.
 xgclass_t *xgClassLinks;
 
 // CODE --------------------------------------------------------------------
@@ -97,25 +98,20 @@ xgclass_t *xgClassLinks;
  * XGFunc links are provided by the Game, who owns the actual
  * XG classes and their functions.
  */
-int GetXGClasses(void)
+static int GetXGClasses(void)
 {
-    xgclass_t *class = (void *) gx.Get(DD_XGFUNC_LINK);
-
-    if(!class)
+    xgClassLinks = (void *) gx.Get(DD_XGFUNC_LINK);
+    if(!xgClassLinks)
     {
-        Con_Error("GetXGFuncPtr: Game DLL doesn't have an XG "
-                  "class function table.\n");
+        memset(&nullXgClassLinks, 0, sizeof(nullXgClassLinks));
+        xgClassLinks = &nullXgClassLinks;
     }
-
-    xgClassLinks = class;
-
     return 1;
 }
 
-//===========================================================================
-// Def_Init
-//  Initializes the databases.
-//===========================================================================
+/*
+ * Initializes the definition databases.
+ */
 void Def_Init(void)
 {
     int     c;

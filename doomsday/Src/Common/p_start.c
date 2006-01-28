@@ -73,6 +73,10 @@ char *P_GetLevelName(int episode, int map);
 char *P_GetShortLevelName(int episode, int map);
 #endif
 
+#ifdef __JHEXEN__
+void InitMapInfo(void);
+#endif
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------

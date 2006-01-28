@@ -152,7 +152,7 @@ static char *povDirNames[] = {
 // current will be ignored and no binding will be found for the event.
 // The event is NOT eaten and may continue on down the event responder chain.
 
-bindclass_t DD_BindClasses[] = {
+bindclass_t ddBindClasses[] = {
     {"game", DDBC_NORMAL, 1, 0},
     {"class1", DDBC_UCLASS1, 0, 0}, // additonal classes that can be purposed by users
     {"class2", DDBC_UCLASS2, 0, 0},
@@ -167,8 +167,8 @@ void B_RegisterBindClasses(void)
 {
     int    i;
 
-    for(i = 0; DD_BindClasses[i].name; i++)
-        DD_AddBindClass(DD_BindClasses + i);
+    for(i = 0; ddBindClasses[i].name; i++)
+        DD_AddBindClass(ddBindClasses + i);
 }
 
 /*
@@ -864,7 +864,7 @@ void DD_AddBindClass(bindclass_t *newbc)
 {
     int i;
 
-    VERBOSE2(Con_Printf("B_AddBindClass: %s.\n",newbc->name));
+    VERBOSE2(Con_Printf("B_AddBindClass: %s.\n", newbc->name));
 
     if(++numBindClasses > maxBindClasses)
     {
@@ -877,7 +877,8 @@ void DD_AddBindClass(bindclass_t *newbc)
 
         for(i = 0; i < numBinds; ++i)
         {
-            binds[i].commands = realloc(binds[i].commands, sizeof(command_t) * maxBindClasses);
+            binds[i].commands = realloc(binds[i].commands, 
+                                        sizeof(command_t) * maxBindClasses);
         }
     }
 

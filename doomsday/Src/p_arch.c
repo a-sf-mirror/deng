@@ -30,6 +30,7 @@
 
 #include "p_arch.h"
 #include "m_bams.h"
+#include <math.h>
 
 // MACROS ------------------------------------------------------------------
 
@@ -3096,7 +3097,8 @@ static void P_PrintDebugMapData(void)
 
 float AccurateDistance(fixed_t dx, fixed_t dy)
 {
-    float   fx = FIX2FLT(dx), fy = FIX2FLT(dy);
+    float   fx = FIX2FLT(dx);
+    float   fy = FIX2FLT(dy);
 
     return (float) sqrt(fx * fx + fy * fy);
 }

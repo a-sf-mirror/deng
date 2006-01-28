@@ -146,6 +146,7 @@
 		B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
 		B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
 		B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027EC0982F53A00C5F03E /* dmu_lib.c */; };
+		B04591AF098BE9AA00016085 /* p_mapsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = B04027ED0982F53A00C5F03E /* p_mapsetup.c */; };
 		B0727F04088A8E88008C84C4 /* DoomsdayRunner.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F00088A8E88008C84C4 /* DoomsdayRunner.h */; };
 		B0727F05088A8E88008C84C4 /* DoomsdayRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = B0727F01088A8E88008C84C4 /* DoomsdayRunner.m */; };
 		B0727F06088A8E88008C84C4 /* StartupWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = B0727F02088A8E88008C84C4 /* StartupWindowController.h */; };
@@ -3178,6 +3179,7 @@
 				B083A6D5085CCD2C000D4BAB /* sv_save.c in Sources */,
 				B083A6D6085CCD2C000D4BAB /* Tables.c in Sources */,
 				B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */,
+				B04591AF098BE9AA00016085 /* p_mapsetup.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -91,7 +91,7 @@ void P_CopyLine(line_t* from, line_t* to)
     xfrom->specialdata = xto->specialdata;
     xfrom->xg = xto->xg;
 #else
-    xfrom->special = to->special;
+    xfrom->special = xto->special;
     xfrom->arg1 = xto->arg1;
     xfrom->arg2 = xto->arg2;
     xfrom->arg3 = xto->arg3;
@@ -150,7 +150,7 @@ void P_CopySector(sector_t* from, sector_t* to)
     xfrom->tag = xto->tag;
     xfrom->soundtraversed = xto->soundtraversed;
     xfrom->soundtarget = xto->soundtarget;
-    xfrom->seqtype = xto->seqType;
+    xfrom->seqType = xto->seqType;
     xfrom->specialdata = xto->specialdata;
 #endif
 }

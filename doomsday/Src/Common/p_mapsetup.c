@@ -79,6 +79,8 @@ extern int actual_leveltime;
 extern boolean bossKilled;
 #endif
 
+extern int actual_leveltime;
+
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int numvertexes;
@@ -153,6 +155,7 @@ xsector_t* P_XSectorOfSubsector(subsector_t* sub)
     }
 }
 
+#ifndef __JHEXEN__
 /*
  * Create and initialize our private thing data array
  */
@@ -169,6 +172,7 @@ void P_SetupForThings(int num)
 
     memset(things + oldNum, 0, num * sizeof(thing_t));
 }
+#endif
 
 /*
  * Create and initialize our private line data array
@@ -260,7 +264,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 
     P_GetMapLumpName(episode, map, levelId);
 
-    P_LoadMap(lumpNumbers[0], lumpNumbers[1], levelId);
+    P_LoadMap(levelId);
 
     // Now the map data has been loaded we can update the
     // global data struct counters
@@ -353,7 +357,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 static void P_ResetWorldState(void)
 {
     int i;
-#if __JHERETIC__ || _JHEXEN__
+#if __JHERETIC__ || __JHEXEN__
     int     parm;
 #endif
 
@@ -407,9 +411,9 @@ static void P_ResetWorldState(void)
  */
 static void P_FinalizeLevel(void)
 {
-#if __JDOOM__
     int i;
-
+    
+#if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.

@@ -1155,7 +1155,8 @@ void P_MobjThinker(mobj_t *mobj)
         return;
     }
 
-    P_UpdateMobjFlags(mobj);
+#warning "Should P_UpdateMobjFlags be defined somewhere?"
+    //P_UpdateMobjFlags(mobj);
 
     /*#ifdef _DEBUG
        mobj->translucency = M_Random();
