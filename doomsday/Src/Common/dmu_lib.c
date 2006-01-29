@@ -86,18 +86,18 @@ void P_CopyLine(line_t* from, line_t* to)
 
     // Copy the extended properties too
 #if __JDOOM__ || __JHERETIC__
-    xfrom->special = xto->special;
-    xfrom->tag = xto->tag;
-    xfrom->specialdata = xto->specialdata;
-    xfrom->xg = xto->xg;
+    xto->special = xfrom->special;
+    xto->tag = xfrom->tag;
+    xto->specialdata = xfrom->specialdata;
+    xto->xg = xfrom->xg;
 #else
-    xfrom->special = xto->special;
-    xfrom->arg1 = xto->arg1;
-    xfrom->arg2 = xto->arg2;
-    xfrom->arg3 = xto->arg3;
-    xfrom->arg4 = xto->arg4;
-    xfrom->arg5 = xto->arg5;
-    xfrom->specialdata = xto->specialdata;
+    xto->special = xfrom->special;
+    xto->arg1 = xfrom->arg1;
+    xto->arg2 = xfrom->arg2;
+    xto->arg3 = xfrom->arg3;
+    xto->arg4 = xfrom->arg4;
+    xto->arg5 = xfrom->arg5;
+    xto->specialdata = xfrom->specialdata;
 #endif
 }
 
@@ -132,26 +132,26 @@ void P_CopySector(sector_t* from, sector_t* to)
 
     // Copy the extended properties too
 #if __JDOOM__ || __JHERETIC__
-    xfrom->special = xto->special;
-    xfrom->tag = xto->tag;
-    xfrom->soundtraversed = xto->soundtraversed;
-    xfrom->soundtarget = xto->soundtarget;
-    xfrom->specialdata = xto->specialdata;
+    xto->special = xfrom->special;
+    xto->tag = xfrom->tag;
+    xto->soundtraversed = xfrom->soundtraversed;
+    xto->soundtarget = xfrom->soundtarget;
+    xto->specialdata = xfrom->specialdata;
 #if __JHERETIC__
-    xfrom->seqType = xto->seqType;
+    xto->seqType = xfrom->seqType;
 #endif
-    xfrom->origfloor = xto->origfloor;
-    xfrom->origceiling = xto->origceiling;
-    xfrom->origlight = xto->origlight;
-    memcpy(xfrom->origrgb, xto->origrgb, 3);
-    xfrom->xg = xto->xg;
+    xto->origfloor = xfrom->origfloor;
+    xto->origceiling = xfrom->origceiling;
+    xto->origlight = xfrom->origlight;
+    memcpy(xto->origrgb, xfrom->origrgb, 3);
+    xto->xg = xfrom->xg;
 #else
-    xfrom->special = xto->special;
-    xfrom->tag = xto->tag;
-    xfrom->soundtraversed = xto->soundtraversed;
-    xfrom->soundtarget = xto->soundtarget;
-    xfrom->seqType = xto->seqType;
-    xfrom->specialdata = xto->specialdata;
+    xto->special = xfrom->special;
+    xto->tag = xfrom->tag;
+    xto->soundtraversed = xfrom->soundtraversed;
+    xto->soundtarget = xfrom->soundtarget;
+    xto->seqType = xfrom->seqType;
+    xto->specialdata = xfrom->specialdata;
 #endif
 }
 

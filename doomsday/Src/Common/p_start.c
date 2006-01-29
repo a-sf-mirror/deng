@@ -605,30 +605,6 @@ boolean M_ValidEpisodeMap(int episode, int map)
 }
 #endif
 
-/*
- * Locate the lump indices where the data of the specified map
- * resides.
- */
-void P_LocateMapLumps(int episode, int map, int *lumpIndices)
-{
-    char lumpName[40];
-    char glLumpName[40];
-
-    // Find map name.
-    P_GetMapLumpName(episode, map, lumpName);
-    sprintf(glLumpName, "GL_%s", lumpName);
-    Con_Message("SetupLevel: %s\n", lumpName);
-
-    // Let's see if a plugin is available for loading the data.
-    if(!Plug_DoHook(HOOK_LOAD_MAP_LUMPS, W_GetNumForName(lumpName),
-                    (void*) lumpIndices))
-    {
-        // The plugin failed.
-        lumpIndices[0] = W_GetNumForName(lumpName);
-        lumpIndices[1] = W_CheckNumForName(glLumpName);
-    }
-}
-
 #if __JHERETIC__ || __JHEXEN__
 fixed_t P_PointLineDistance(line_t *line, fixed_t x, fixed_t y,
                             fixed_t *offset)

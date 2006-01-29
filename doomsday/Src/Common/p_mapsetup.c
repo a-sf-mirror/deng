@@ -40,6 +40,7 @@
 #  include <math.h>
 #  include "h2def.h"
 #  include "jHexen/p_local.h"
+#  include "jHexen/r_local.h"
 #  include "Common/p_start.h"
 #elif __JSTRIFE__
 #  include "h2def.h"
@@ -92,6 +93,10 @@ int numnodes;
 int numlines;
 int numsides;
 int numthings;
+
+#if __JHEXEN__
+int numpolyobjs;
+#endif
 
 // Our private map data structures
 xsector_t *xsectors;
@@ -156,7 +161,6 @@ xsector_t* P_XSectorOfSubsector(subsector_t* sub)
     }
 }
 
-#ifndef __JHEXEN__
 /*
  * Create and initialize our private thing data array
  */
@@ -173,7 +177,6 @@ void P_SetupForThings(int num)
 
     memset(things + oldNum, 0, num * sizeof(thing_t));
 }
-#endif
 
 /*
  * Create and initialize our private line data array
@@ -220,7 +223,6 @@ void P_SetupForSectors(int num)
 void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 {
     int     setupflags = DDSLF_POLYGONIZE | DDSLF_FIX_SKY | DDSLF_REVERB;
-    int     lumpNumbers[2];
     char    levelId[9];
 
     // It begins
@@ -260,12 +262,12 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 
     P_InitThinkers();
 
-    // Locate the lumps where the map data resides in.
-    P_LocateMapLumps(episode, map, lumpNumbers);
-
     P_GetMapLumpName(episode, map, levelId);
 
-    P_LoadMap(levelId);
+    if(!P_LoadMap(levelId))
+    {
+        Con_Error("P_SetupLevel: Failed loading map \"%s\".\n",levelId);
+    }
 
     // Now the map data has been loaded we can update the
     // global data struct counters
@@ -277,6 +279,10 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     numlines = DD_GetInteger(DD_LINE_COUNT);
     numsides = DD_GetInteger(DD_SIDE_COUNT);
     numthings = DD_GetInteger(DD_THING_COUNT);
+
+#if __JHEXEN__
+    numpolyobjs = DD_GetInteger(DD_POLYOBJ_COUNT);
+#endif
 
 #if __JHERETIC__
     P_InitAmbientSound();
@@ -296,8 +302,10 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     P_CloseWeapons();
 #endif
 
-    if(lumpNumbers[1] > lumpNumbers[0])
-        setupflags |= DDSLF_DONT_CLIP; // We have GL nodes!
+    // DJS - TODO:
+    // This needs to be sorted out. R_SetupLevel should be called from the
+    // engine but in order to move it there we need to decide how polyobject
+    // init/setup is going to be handled.
 
     // It's imperative that this is called!
     // - dlBlockLinks initialized
@@ -311,14 +319,14 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 
     // Initialize polyobjs.
     Con_Message("PO init\n");
-    PO_Init(lumpNumbers[0] + ML_THINGS);   // Initialize the polyobjs
+    PO_Init(W_GetNumForName(levelId) + ML_THINGS);   // Initialize the polyobjs
 
     // Now we can init the server.
     Con_Message("Init server\n");
     R_SetupLevel(levelId, DDSLF_SERVER_ONLY);
 
     Con_Message("Load ACS scripts\n");
-    P_LoadACScripts(lumpNumbers[0] + ML_BEHAVIOR); // ACS object code
+    P_LoadACScripts(W_GetNumForName(levelId) + ML_BEHAVIOR); // ACS object code
 #else
 
     R_SetupLevel(levelId, setupflags);
@@ -413,7 +421,7 @@ static void P_ResetWorldState(void)
 static void P_FinalizeLevel(void)
 {
     int i;
-    
+
 #if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be

@@ -1631,20 +1631,20 @@ void P_ArchiveSpecials(void)
             platlist_t *pl;
             ceilinglist_t *cl;     //jff 2/22/98 need this for ceilings too now
 
-          // killough 2/8/98: fix plat original height bug.
-          // Since acv==NULL, this could be a plat in stasis.
-          // so check the active plats list, and save this
-          // plat (jff: or ceiling) even if it is in stasis.
+            // killough 2/8/98: fix plat original height bug.
+            // Since acv==NULL, this could be a plat in stasis.
+            // so check the active plats list, and save this
+            // plat (jff: or ceiling) even if it is in stasis.
 
-          for (pl=activeplats; pl; pl=pl->next)
-            if (pl->plat == (plat_t *) th)      // killough 2/14/98
-              goto plat;
+            for(pl = activeplats; pl; pl = pl->next)
+                if(pl->plat == (plat_t *) th)      // killough 2/14/98
+                    goto plat;
 
-          for (cl=activeceilings; cl; cl=cl->next)
-            if (cl->ceiling == (ceiling_t *) th)      //jff 2/22/98
-              goto ceiling;
+            for(cl = activeceilings; cl; cl = cl->next)
+                if(cl->ceiling == (ceiling_t *) th)      //jff 2/22/98
+                    goto ceiling;
 
-          continue;
+            continue;
         }
 
         if(th->function == T_MoveCeiling)
