@@ -86,6 +86,9 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
     case DAM_LINE_ARG5:
         xlines[id].arg5 = *(byte *)data;
         break;
+    case DAM_THING_TID:
+        things[id].tid = *(short *)data;
+        break;
     case DAM_THING_X:
         things[id].x = *(short *)data;
         break;
@@ -103,6 +106,24 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
         break;
     case DAM_THING_OPTIONS:
         things[id].options = *(short *)data;
+        break;
+    case DAM_THING_SPECIAL:
+        things[id].special = *(byte *)data;
+        break;
+    case DAM_THING_ARG1:
+        things[id].arg1 = *(byte *)data;
+        break;
+    case DAM_THING_ARG2:
+        things[id].arg2 = *(byte *)data;
+        break;
+    case DAM_THING_ARG3:
+        things[id].arg3 = *(byte *)data;
+        break;
+    case DAM_THING_ARG4:
+        things[id].arg4 = *(byte *)data;
+        break;
+    case DAM_THING_ARG5:
+        things[id].arg5 = *(byte *)data;
         break;
     default:
         Con_Error("P_HandleMapDataProperty: Unknown property id %i.\n",prop);
