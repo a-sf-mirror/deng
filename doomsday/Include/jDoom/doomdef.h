@@ -119,7 +119,8 @@ typedef enum {
 #define MTF_AMBUSH      8
 
 typedef enum {
-    sk_baby,
+    sk_noitems = -1, // skill mode 0
+    sk_baby = 0,
     sk_easy,
     sk_medium,
     sk_hard,
