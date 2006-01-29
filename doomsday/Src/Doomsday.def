@@ -1,7 +1,7 @@
 NAME			"DOOMSDAY"
 
 ; Highest ordinal is currently 
-; --> 325 <--
+; --> 326 <--
 ; Other free ordinals:
 ; 77 formaly P_LoadBlockMap
 ; 78 formaly P_LoadReject
@@ -135,6 +135,7 @@ EXPORTS
 
 ; Play: Setup.
 	P_LoadMap		@254 NONAME
+	PO_Allocate		@326 NONAME
 
 ; Play: Map Data Updates and Information Access.
 	P_ToIndex		@256 NONAME
