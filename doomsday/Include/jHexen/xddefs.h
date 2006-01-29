@@ -86,6 +86,8 @@ typedef struct {
     byte            arg5;
 } thing_t;
 
+extern thing_t* things;
+
 #define MTF_EASY        1
 #define MTF_NORMAL      2
 #define MTF_HARD        4

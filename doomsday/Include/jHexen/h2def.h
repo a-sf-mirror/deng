@@ -67,7 +67,6 @@
 #define ANGLETOFINESHIFT    19     // 0x100000000 to 0x2000
 
 #define MAXPLAYERS      8
-#define NUM_XHAIRS      6
 #define BACKUPTICS      12
 
 enum { VX, VY, VZ };
@@ -842,7 +841,7 @@ void            P_Ticker(void);
 
 void            P_SetupLevel(int episode, int map, int playermask,
                              skill_t skill);
-                             
+
 // called by W_Ticker
 
 void            P_Init(void);

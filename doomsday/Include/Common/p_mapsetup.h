@@ -31,6 +31,10 @@ extern int numlines;
 extern int numsides;
 extern int numthings;
 
+#if __JHEXEN__
+extern int numpolyobjs;
+#endif
+
 void        P_SetupLevel(int episode, int map, int playermask, skill_t skill);
 void        P_LocateMapLumps(int episode, int map, int *lumpIndices);
 
