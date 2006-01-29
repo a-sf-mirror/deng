@@ -21,13 +21,12 @@
 #include "doomdef.h"
 #include "doomstat.h"
 
-#include "Common/p_setup.h"
 #include "d_config.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "g_game.h"
-#include "hu_stuff.h"
-#include "p_saveg.h"
+#include "Common/hu_stuff.h"
+#include "Common/p_saveg.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -477,7 +476,7 @@ void D_PostInit(void)
     monsterinfight = GetDefInt("AI|Infight", 0);
 
     // get skill / episode / map from parms
-    gameskill = startskill = sk_medium;
+    gameskill = startskill = sk_noitems;
     startepisode = 1;
     startmap = 1;
     autostart = false;
