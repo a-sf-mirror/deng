@@ -440,7 +440,6 @@ void G_ConsoleRegistration()
         Con_AddVariable(gameCVars + i);
     for(i = 0; gameCCmds[i].name; i++)
         Con_AddCommand(gameCCmds + i);
-    D_NetConsoleRegistration();
 }
 
 

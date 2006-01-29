@@ -19,6 +19,8 @@
 #include "p_svtexarc.h"
 #include "f_infine.h"
 
+#include "Common/p_mapsetup.h"
+
 // MACROS ------------------------------------------------------------------
 
 #define DEFAULT_SAVEPATH        "hexndata\\"
@@ -1127,74 +1129,74 @@ static void UnarchivePlayers(void)
 
 void ArchiveWorld(void)
 {
-	int     i;
-	int     j;
-	sector_t *sec;
+    int     i;
+    int     j;
+    sector_t *sec;
     xsector_t* xsec;
-	line_t *li;
+    line_t *li;
     xline_t *xli;
-	side_t *si;
+    side_t *si;
     byte    rgb[4];
 
-	// First the texture archive.
-	StreamOutLong(ASEG_TEX_ARCHIVE);
-	SV_WriteTextureArchive();
+    // First the texture archive.
+    StreamOutLong(ASEG_TEX_ARCHIVE);
+    SV_WriteTextureArchive();
 
-	StreamOutLong(ASEG_WORLD);
-	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-	{
+    StreamOutLong(ASEG_WORLD);
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+    {
         sec = P_ToPtr(DMU_SECTOR, i);
         xsec = &xsectors[i];
-		StreamOutWord(P_GetIntp(sec, DMU_FLOOR_HEIGHT));
-		StreamOutWord(P_GetIntp(sec, DMU_CEILING_HEIGHT));
-		StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_FLOOR_TEXTURE)));
-		StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_CEILING_TEXTURE)));
-		StreamOutWord(P_GetIntp(sec, DMU_LIGHT_LEVEL));
+        StreamOutWord(P_GetIntp(sec, DMU_FLOOR_HEIGHT));
+        StreamOutWord(P_GetIntp(sec, DMU_CEILING_HEIGHT));
+        StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_FLOOR_TEXTURE)));
+        StreamOutWord(SV_FlatArchiveNum(P_GetIntp(sec, DMU_CEILING_TEXTURE)));
+        StreamOutWord(P_GetIntp(sec, DMU_LIGHT_LEVEL));
         P_GetBytepv(sec, DMU_COLOR, rgb); StreamOutBuffer(rgb, 3);
         P_GetBytepv(sec, DMU_FLOOR_COLOR, rgb); StreamOutBuffer(rgb, 3);
         P_GetBytepv(sec, DMU_CEILING_COLOR, rgb); StreamOutBuffer(rgb, 3);
-		StreamOutWord(xsec->special);
-		StreamOutWord(xsec->tag);
-		StreamOutWord(xsec->seqType);
-		StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_X));
-		StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_Y));
-		StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_X));
-		StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_Y));
-	}
-	for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
-	{
+        StreamOutWord(xsec->special);
+        StreamOutWord(xsec->tag);
+        StreamOutWord(xsec->seqType);
+        StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_X));
+        StreamOutFloat(P_GetFloatp(sec, DMU_FLOOR_OFFSET_Y));
+        StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_X));
+        StreamOutFloat(P_GetFloatp(sec, DMU_CEILING_OFFSET_Y));
+    }
+    for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
+    {
         li = P_ToPtr(DMU_LINE, i);
         xli = &xlines[i];
-		StreamOutWord(P_GetIntp(li, DMU_FLAGS));
-		StreamOutByte(xli->special);
-		StreamOutByte(xli->arg1);
-		StreamOutByte(xli->arg2);
-		StreamOutByte(xli->arg3);
-		StreamOutByte(xli->arg4);
-		StreamOutByte(xli->arg5);
-		for(j = 0; j < 2; j++)
-		{
-            // TODO: Make sure that NO_INDEX is always interpreted as 
+        StreamOutWord(P_GetIntp(li, DMU_FLAGS));
+        StreamOutByte(xli->special);
+        StreamOutByte(xli->arg1);
+        StreamOutByte(xli->arg2);
+        StreamOutByte(xli->arg3);
+        StreamOutByte(xli->arg4);
+        StreamOutByte(xli->arg5);
+        for(j = 0; j < 2; j++)
+        {
+            // TODO: Make sure that NO_INDEX is always interpreted as
             // -1 (because this is a short int originally).
             int sd = P_GetIntp(li, DMU_SIDE0 + j);
-			if(sd == NO_INDEX)
-			{
-				continue;
-			}
-			si = P_ToPtr(DMU_SIDE, sd);
-			StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_X));
-			StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_Y));
-			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_TOP_TEXTURE)));
-			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_BOTTOM_TEXTURE)));
-			StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_MIDDLE_TEXTURE)));
+            if(sd == NO_INDEX)
+            {
+                continue;
+            }
+            si = P_ToPtr(DMU_SIDE, sd);
+            StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_X));
+            StreamOutWord(P_GetIntp(si, DMU_TEXTURE_OFFSET_Y));
+            StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_TOP_TEXTURE)));
+            StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_BOTTOM_TEXTURE)));
+            StreamOutWord(SV_TextureArchiveNum(P_GetIntp(si, DMU_MIDDLE_TEXTURE)));
 
             P_GetBytepv(si, DMU_TOP_COLOR, rgb); StreamOutBuffer(rgb, 3);
             P_GetBytepv(si, DMU_MIDDLE_COLOR, rgb); StreamOutBuffer(rgb, 4);
             P_GetBytepv(si, DMU_BOTTOM_COLOR, rgb); StreamOutBuffer(rgb, 3);
             StreamOutWord(P_GetIntp(si, DMU_MIDDLE_BLENDMODE));
             StreamOutWord(P_GetIntp(si, DMU_FLAGS));
-		}
-	}
+        }
+    }
 }
 
 //==========================================================================
@@ -1205,83 +1207,87 @@ void ArchiveWorld(void)
 
 void UnarchiveWorld(void)
 {
-	int     i;
-	int     j;
-	sector_t *sec;
+    int     i;
+    int     j;
+    sector_t *sec;
     xsector_t *xsec;
-	line_t *li;
+    line_t *li;
     xline_t *xli;
-	side_t *si;
+    side_t *si;
     byte rgb[4];
 
-	AssertSegment(ASEG_TEX_ARCHIVE);
-	SV_ReadTextureArchive();
+    AssertSegment(ASEG_TEX_ARCHIVE);
+    SV_ReadTextureArchive();
 
-	AssertSegment(ASEG_WORLD);
-	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-	{
-        sec = P_ToPtr(DMU_SECTOR, i);
-        xsec = &xsectors[i];
-        
+    AssertSegment(ASEG_WORLD);
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+    {
         int fh = GET_WORD;
         int ch = GET_WORD;
-		P_SetIntp(sec, DMU_FLOOR_HEIGHT, fh);
-		P_SetIntp(sec, DMU_CEILING_HEIGHT, ch);
 
-		// Update the "target heights" of the planes.
-		P_SetIntp(sec, DMU_FLOOR_TARGET, fh);
-		P_SetIntp(sec, DMU_CEILING_TARGET, ch);
+        sec = P_ToPtr(DMU_SECTOR, i);
+        xsec = &xsectors[i];
 
-		// The move speed is not saved; can cause minor problems.
-		P_SetIntp(sec, DMU_FLOOR_SPEED, 0);
+        P_SetIntp(sec, DMU_FLOOR_HEIGHT, fh);
+        P_SetIntp(sec, DMU_CEILING_HEIGHT, ch);
+
+        // Update the "target heights" of the planes.
+        P_SetIntp(sec, DMU_FLOOR_TARGET, fh);
+        P_SetIntp(sec, DMU_CEILING_TARGET, ch);
+
+        // The move speed is not saved; can cause minor problems.
+        P_SetIntp(sec, DMU_FLOOR_SPEED, 0);
         P_SetIntp(sec, DMU_CEILING_SPEED, 0);
 
-		P_SetIntp(sec, DMU_FLOOR_TEXTURE, SV_GetArchiveFlat(GET_WORD));
-		P_SetIntp(sec, DMU_CEILING_TEXTURE, SV_GetArchiveFlat(GET_WORD));
-		P_SetIntp(sec, DMU_LIGHT_LEVEL, GET_WORD);
-		GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_COLOR, rgb);
+        P_SetIntp(sec, DMU_FLOOR_TEXTURE, SV_GetArchiveFlat(GET_WORD));
+        P_SetIntp(sec, DMU_CEILING_TEXTURE, SV_GetArchiveFlat(GET_WORD));
+        P_SetIntp(sec, DMU_LIGHT_LEVEL, GET_WORD);
+        GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_COLOR, rgb);
         GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_FLOOR_COLOR, rgb);
         GET_DATA(rgb, 3); P_SetBytepv(sec, DMU_CEILING_COLOR, rgb);
-		xsec->special = GET_WORD;
-		xsec->tag = GET_WORD;
-		xsec->seqType = GET_WORD;
-		P_SetFloatp(sec, DMU_FLOOR_OFFSET_X, GET_FLOAT);
-		P_SetFloatp(sec, DMU_FLOOR_OFFSET_Y, GET_FLOAT);
-		P_SetFloatp(sec, DMU_CEILING_OFFSET_X, GET_FLOAT);
-		P_SetFloatp(sec, DMU_CEILING_OFFSET_Y, GET_FLOAT);
-		xsec->specialdata = 0;
-		xsec->soundtarget = 0;
-	}
-	for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
-	{
-		P_SetIntp(li, DMU_FLAGS, GET_WORD);
-		xli->special = GET_BYTE;
-		xli->arg1 = GET_BYTE;
-		xli->arg2 = GET_BYTE;
-		xli->arg3 = GET_BYTE;
-		xli->arg4 = GET_BYTE;
-		xli->arg5 = GET_BYTE;
-		for(j = 0; j < 2; j++)
-		{
+        xsec->special = GET_WORD;
+        xsec->tag = GET_WORD;
+        xsec->seqType = GET_WORD;
+        P_SetFloatp(sec, DMU_FLOOR_OFFSET_X, GET_FLOAT);
+        P_SetFloatp(sec, DMU_FLOOR_OFFSET_Y, GET_FLOAT);
+        P_SetFloatp(sec, DMU_CEILING_OFFSET_X, GET_FLOAT);
+        P_SetFloatp(sec, DMU_CEILING_OFFSET_Y, GET_FLOAT);
+        xsec->specialdata = 0;
+        xsec->soundtarget = 0;
+    }
+    for(i = 0; i < DD_GetInteger(DD_LINE_COUNT); i++)
+    {
+        li = P_ToPtr(i, DMU_LINE);
+        xli = &xlines[i];
+
+        P_SetIntp(li, DMU_FLAGS, GET_WORD);
+        xli->special = GET_BYTE;
+        xli->arg1 = GET_BYTE;
+        xli->arg2 = GET_BYTE;
+        xli->arg3 = GET_BYTE;
+        xli->arg4 = GET_BYTE;
+        xli->arg5 = GET_BYTE;
+        for(j = 0; j < 2; j++)
+        {
             int sdnum = P_GetIntp(li, DMU_SIDE0 + j);
-			if(sdnum == NO_INDEX)
-			{
-				continue;
-			}
-			si = P_ToPtr(DMU_SIDE, sdnum);
-			P_SetIntp(si, DMU_TEXTURE_OFFSET_X, GET_WORD);
-			P_SetIntp(si, DMU_TEXTURE_OFFSET_Y, GET_WORD);
-			P_SetIntp(si, DMU_TOP_TEXTURE, SV_GetArchiveTexture(GET_WORD));
-			P_SetIntp(si, DMU_BOTTOM_TEXTURE, SV_GetArchiveTexture(GET_WORD));
-			P_SetIntp(si, DMU_MIDDLE_TEXTURE, SV_GetArchiveTexture(GET_WORD));
+            if(sdnum == NO_INDEX)
+            {
+                continue;
+            }
+            si = P_ToPtr(DMU_SIDE, sdnum);
+            P_SetIntp(si, DMU_TEXTURE_OFFSET_X, GET_WORD);
+            P_SetIntp(si, DMU_TEXTURE_OFFSET_Y, GET_WORD);
+            P_SetIntp(si, DMU_TOP_TEXTURE, SV_GetArchiveTexture(GET_WORD));
+            P_SetIntp(si, DMU_BOTTOM_TEXTURE, SV_GetArchiveTexture(GET_WORD));
+            P_SetIntp(si, DMU_MIDDLE_TEXTURE, SV_GetArchiveTexture(GET_WORD));
 
             GET_DATA(rgb, 3); P_SetBytepv(si, DMU_TOP_COLOR, rgb);
             GET_DATA(rgb, 4); P_SetBytepv(si, DMU_MIDDLE_COLOR, rgb);
             GET_DATA(rgb, 3); P_SetBytepv(si, DMU_BOTTOM_COLOR, rgb);
             P_SetIntp(si, DMU_MIDDLE_BLENDMODE, GET_WORD);
             P_SetIntp(si, DMU_FLAGS, GET_WORD);
-		}
-	}
+        }
+    }
 }
 
 //==========================================================================
@@ -1295,34 +1301,34 @@ void UnarchiveWorld(void)
 
 static void SetMobjArchiveNums(void)
 {
-	mobj_t *mobj;
-	thinker_t *thinker;
-	int     i;
+    mobj_t *mobj;
+    thinker_t *thinker;
+    int     i;
 
-	MobjCount = 0;
+    MobjCount = 0;
 
-	// jk: I don't know if it is ever happens, but what if a mobj
-	// has a target that isn't archived? (doesn't have a thinker).
-	// Let's initialize the archiveNums of all known mobjs to -1.
-	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-	{
-		for(mobj = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); mobj; mobj = mobj->snext)
-			mobj->archiveNum = MOBJ_NULL;
-	}
+    // jk: I don't know if it is ever happens, but what if a mobj
+    // has a target that isn't archived? (doesn't have a thinker).
+    // Let's initialize the archiveNums of all known mobjs to -1.
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+    {
+        for(mobj = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); mobj; mobj = mobj->snext)
+            mobj->archiveNum = MOBJ_NULL;
+    }
 
-	for(thinker = gi.thinkercap->next; thinker != gi.thinkercap;
-		thinker = thinker->next)
-	{
-		if(thinker->function == P_MobjThinker)
-		{
-			mobj = (mobj_t *) thinker;
-			if(mobj->player && !SavingPlayers)
-			{					// Skipping player mobjs
-				continue;
-			}
-			mobj->archiveNum = MobjCount++;
-		}
-	}
+    for(thinker = gi.thinkercap->next; thinker != gi.thinkercap;
+        thinker = thinker->next)
+    {
+        if(thinker->function == P_MobjThinker)
+        {
+            mobj = (mobj_t *) thinker;
+            if(mobj->player && !SavingPlayers)
+            {                   // Skipping player mobjs
+                continue;
+            }
+            mobj->archiveNum = MobjCount++;
+        }
+    }
 }
 
 //==========================================================================
@@ -1330,52 +1336,52 @@ static void SetMobjArchiveNums(void)
 //==========================================================================
 void ArchiveMobj(mobj_t *original)
 {
-	mobj_t  temp, *mo;
+    mobj_t  temp, *mo;
 
     memcpy(mo = &temp, original, sizeof(*mo));
     MangleMobj(mo);
 
-	// Version number.
-	// 2: Added the 'translucency' byte.
+    // Version number.
+    // 2: Added the 'translucency' byte.
     // 3: Added byte 'vistarget'
     StreamOutByte(3);
 
-	StreamOutLong(mo->x);
-	StreamOutLong(mo->y);
-	StreamOutLong(mo->z);
-	StreamOutLong(mo->angle);
-	StreamOutLong(mo->sprite);
-	StreamOutLong(mo->frame);
-	StreamOutLong(mo->floorpic);
-	StreamOutLong(mo->radius);
-	StreamOutLong(mo->height);
-	StreamOutLong(mo->momx);
-	StreamOutLong(mo->momy);
-	StreamOutLong(mo->momz);
-	StreamOutLong(mo->valid);
-	StreamOutLong(mo->type);
-	StreamOutLong((int) mo->info);
-	StreamOutLong(mo->tics);
-	StreamOutLong((int) mo->state);
-	StreamOutLong(mo->damage);
-	StreamOutLong(mo->flags);
-	StreamOutLong(mo->flags2);
-	StreamOutLong(mo->special1);
-	StreamOutLong(mo->special2);
-	StreamOutLong(mo->health);
-	StreamOutLong(mo->movedir);
-	StreamOutLong(mo->movecount);
-	StreamOutLong((int) mo->target);
-	StreamOutLong(mo->reactiontime);
-	StreamOutLong(mo->threshold);
-	StreamOutLong((int) mo->player);
-	StreamOutLong(mo->lastlook);
-	StreamOutLong(mo->floorclip);
-	StreamOutLong(mo->archiveNum);
-	StreamOutLong(mo->tid);
-	StreamOutLong(mo->special);
-	StreamOutBuffer(mo->args, sizeof(mo->args));
-	StreamOutByte(mo->translucency);
+    StreamOutLong(mo->x);
+    StreamOutLong(mo->y);
+    StreamOutLong(mo->z);
+    StreamOutLong(mo->angle);
+    StreamOutLong(mo->sprite);
+    StreamOutLong(mo->frame);
+    StreamOutLong(mo->floorpic);
+    StreamOutLong(mo->radius);
+    StreamOutLong(mo->height);
+    StreamOutLong(mo->momx);
+    StreamOutLong(mo->momy);
+    StreamOutLong(mo->momz);
+    StreamOutLong(mo->valid);
+    StreamOutLong(mo->type);
+    StreamOutLong((int) mo->info);
+    StreamOutLong(mo->tics);
+    StreamOutLong((int) mo->state);
+    StreamOutLong(mo->damage);
+    StreamOutLong(mo->flags);
+    StreamOutLong(mo->flags2);
+    StreamOutLong(mo->special1);
+    StreamOutLong(mo->special2);
+    StreamOutLong(mo->health);
+    StreamOutLong(mo->movedir);
+    StreamOutLong(mo->movecount);
+    StreamOutLong((int) mo->target);
+    StreamOutLong(mo->reactiontime);
+    StreamOutLong(mo->threshold);
+    StreamOutLong((int) mo->player);
+    StreamOutLong(mo->lastlook);
+    StreamOutLong(mo->floorclip);
+    StreamOutLong(mo->archiveNum);
+    StreamOutLong(mo->tid);
+    StreamOutLong(mo->special);
+    StreamOutBuffer(mo->args, sizeof(mo->args));
+    StreamOutByte(mo->translucency);
     StreamOutByte((byte)(mo->vistarget +1));
 }
 
@@ -1384,7 +1390,7 @@ void ArchiveMobj(mobj_t *original)
 //==========================================================================
 void UnarchiveMobj(mobj_t *mo)
 {
-	int     version = GET_BYTE;
+    int     version = GET_BYTE;
 
     memset(mo, 0, sizeof(*mo));
     mo->x = GET_LONG;
@@ -1435,7 +1441,7 @@ void UnarchiveMobj(mobj_t *mo)
         mo->vistarget = (GET_BYTE) -1;
     }
 
-	RestoreMobj(mo);
+    RestoreMobj(mo);
 }
 
 //==========================================================================
@@ -1446,36 +1452,36 @@ void UnarchiveMobj(mobj_t *mo)
 
 static void ArchiveMobjs(void)
 {
-	int     count;
-	thinker_t *thinker;
+    int     count;
+    thinker_t *thinker;
 
     //  savemobj_t tempMobj;
 
-	StreamOutLong(ASEG_MOBJS);
-	StreamOutLong(MobjCount);
-	count = 0;
-	for(thinker = gi.thinkercap->next; thinker != gi.thinkercap;
-		thinker = thinker->next)
-	{
-		if(thinker->function != P_MobjThinker)
-		{						// Not a mobj thinker
-			continue;
-		}
-		if(((mobj_t *) thinker)->player && !SavingPlayers)
-		{						// Skipping player mobjs
-			continue;
-		}
-		count++;
-		//  memcpy(&tempMobj, thinker, sizeof(mobj_t));
-		/*MobjConverter( (mobj_t*) thinker, &tempMobj, true);
-		   MangleMobj(&tempMobj);
-		   StreamOutBuffer(&tempMobj, sizeof(tempMobj)); */
-		ArchiveMobj((mobj_t *) thinker);
-	}
-	if(count != MobjCount)
-	{
-		Con_Error("ArchiveMobjs: bad mobj count");
-	}
+    StreamOutLong(ASEG_MOBJS);
+    StreamOutLong(MobjCount);
+    count = 0;
+    for(thinker = gi.thinkercap->next; thinker != gi.thinkercap;
+        thinker = thinker->next)
+    {
+        if(thinker->function != P_MobjThinker)
+        {                       // Not a mobj thinker
+            continue;
+        }
+        if(((mobj_t *) thinker)->player && !SavingPlayers)
+        {                       // Skipping player mobjs
+            continue;
+        }
+        count++;
+        //  memcpy(&tempMobj, thinker, sizeof(mobj_t));
+        /*MobjConverter( (mobj_t*) thinker, &tempMobj, true);
+           MangleMobj(&tempMobj);
+           StreamOutBuffer(&tempMobj, sizeof(tempMobj)); */
+        ArchiveMobj((mobj_t *) thinker);
+    }
+    if(count != MobjCount)
+    {
+        Con_Error("ArchiveMobjs: bad mobj count");
+    }
 }
 
 //==========================================================================
@@ -1654,70 +1660,70 @@ static int GetMobjNum(mobj_t *mobj)
 
 static void RestoreMobj(mobj_t *mobj)
 {
-	// Restore DDMF flags set only in P_SpawnMobj. R_SetAllDoomsdayFlags
-	// might not set these because it only iterates seclinked mobjs.
-	if(mobj->flags & MF_SOLID)
-	{
-		mobj->ddflags |= DDMF_SOLID;
-	}
-	if(mobj->flags2 & MF2_DONTDRAW)
-	{
-		mobj->ddflags |= DDMF_DONTDRAW;
-	}
+    // Restore DDMF flags set only in P_SpawnMobj. R_SetAllDoomsdayFlags
+    // might not set these because it only iterates seclinked mobjs.
+    if(mobj->flags & MF_SOLID)
+    {
+        mobj->ddflags |= DDMF_SOLID;
+    }
+    if(mobj->flags2 & MF2_DONTDRAW)
+    {
+        mobj->ddflags |= DDMF_DONTDRAW;
+    }
 
-	mobj->visangle = mobj->angle >> 16;
-	mobj->state = &states[(int) mobj->state];
-	if(mobj->player)
-	{
-		// The player number translation table is used to find out the
-		// *current* (actual) player number of the referenced player.
-		int     pNum = SaveToRealPlayerNum[(int) mobj->player - 1];
+    mobj->visangle = mobj->angle >> 16;
+    mobj->state = &states[(int) mobj->state];
+    if(mobj->player)
+    {
+        // The player number translation table is used to find out the
+        // *current* (actual) player number of the referenced player.
+        int     pNum = SaveToRealPlayerNum[(int) mobj->player - 1];
 
-		if(pNum < 0)
-		{
-			// This saved player does not exist in the current game!
-			// This'll make the mobj unarchiver destroy this mobj.
-			mobj->player = INVALID_PLAYER;
-			return;
-		}
-		mobj->player = &players[pNum];
-		mobj->dplayer = mobj->player->plr;
-		mobj->dplayer->mo = mobj;
-	}
-	P_SetThingPosition(mobj);
-	mobj->info = &mobjinfo[mobj->type];
-	mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
-	mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
-	SetMobjPtr((int *) &mobj->target);
-	switch (mobj->type)
-	{
-		// Just special1
-	case MT_BISH_FX:
-	case MT_HOLY_FX:
-	case MT_DRAGON:
-	case MT_THRUSTFLOOR_UP:
-	case MT_THRUSTFLOOR_DOWN:
-	case MT_MINOTAUR:
-	case MT_SORCFX1:
-		SetMobjPtr(&mobj->special1);
-		break;
+        if(pNum < 0)
+        {
+            // This saved player does not exist in the current game!
+            // This'll make the mobj unarchiver destroy this mobj.
+            mobj->player = INVALID_PLAYER;
+            return;
+        }
+        mobj->player = &players[pNum];
+        mobj->dplayer = mobj->player->plr;
+        mobj->dplayer->mo = mobj;
+    }
+    P_SetThingPosition(mobj);
+    mobj->info = &mobjinfo[mobj->type];
+    mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
+    mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
+    SetMobjPtr((int *) &mobj->target);
+    switch (mobj->type)
+    {
+        // Just special1
+    case MT_BISH_FX:
+    case MT_HOLY_FX:
+    case MT_DRAGON:
+    case MT_THRUSTFLOOR_UP:
+    case MT_THRUSTFLOOR_DOWN:
+    case MT_MINOTAUR:
+    case MT_SORCFX1:
+        SetMobjPtr(&mobj->special1);
+        break;
 
-		// Just special2
-	case MT_LIGHTNING_FLOOR:
-	case MT_LIGHTNING_ZAP:
-		SetMobjPtr(&mobj->special2);
-		break;
+        // Just special2
+    case MT_LIGHTNING_FLOOR:
+    case MT_LIGHTNING_ZAP:
+        SetMobjPtr(&mobj->special2);
+        break;
 
-		// Both special1 and special2
-	case MT_HOLY_TAIL:
-	case MT_LIGHTNING_CEILING:
-		SetMobjPtr(&mobj->special1);
-		SetMobjPtr(&mobj->special2);
-		break;
+        // Both special1 and special2
+    case MT_HOLY_TAIL:
+    case MT_LIGHTNING_CEILING:
+        SetMobjPtr(&mobj->special1);
+        SetMobjPtr(&mobj->special2);
+        break;
 
-	default:
-		break;
-	}
+    default:
+        break;
+    }
 }
 
 //==========================================================================
@@ -1834,7 +1840,7 @@ static void UnarchiveThinkers(void)
 
 static void MangleSSThinker(ssthinker_t * sst)
 {
-	sst->sector = (sector_t*) P_ToIndex(sst->sector);
+    sst->sector = (sector_t*) P_ToIndex(sst->sector);
 }
 
 //==========================================================================
@@ -1845,8 +1851,8 @@ static void MangleSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinker(ssthinker_t * sst)
 {
-	sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
-	P_XSector(sst->sector)->specialdata = sst->thinker.function;
+    sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
+    P_XSector(sst->sector)->specialdata = sst->thinker.function;
 }
 
 //==========================================================================
@@ -1857,7 +1863,7 @@ static void RestoreSSThinker(ssthinker_t * sst)
 
 static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 {
-	sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
+    sst->sector = P_ToPtr(DMU_SECTOR, (int) sst->sector);
 }
 
 //==========================================================================
@@ -1868,10 +1874,10 @@ static void RestoreSSThinkerNoSD(ssthinker_t * sst)
 
 static void MangleScript(acs_t * script)
 {
-	script->ip = (int *) ((int) (script->ip) - (int) ActionCodeBase);
-	script->line =
-		script->line ? (line_t *) P_ToIndex(script->line) : (line_t *) -1;
-	script->activator = (mobj_t *) GetMobjNum(script->activator);
+    script->ip = (int *) ((int) (script->ip) - (int) ActionCodeBase);
+    script->line =
+        script->line ? (line_t *) P_ToIndex(script->line) : (line_t *) -1;
+    script->activator = (mobj_t *) GetMobjNum(script->activator);
 }
 
 //==========================================================================
@@ -1882,16 +1888,16 @@ static void MangleScript(acs_t * script)
 
 static void RestoreScript(acs_t * script)
 {
-	script->ip = (int *) (ActionCodeBase + (int) script->ip);
-	if((int) script->line == -1)
-	{
-		script->line = NULL;
-	}
-	else
-	{
-		script->line = P_ToPtr(DMU_LINE, (int) script->line);
-	}
-	SetMobjPtr((int *) &script->activator);
+    script->ip = (int *) (ActionCodeBase + (int) script->ip);
+    if((int) script->line == -1)
+    {
+        script->line = NULL;
+    }
+    else
+    {
+        script->line = P_ToPtr(DMU_LINE, (int) script->line);
+    }
+    SetMobjPtr((int *) &script->activator);
 }
 
 //==========================================================================
@@ -1902,9 +1908,9 @@ static void RestoreScript(acs_t * script)
 
 static void RestorePlatRaise(plat_t * plat)
 {
-	plat->sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
-	P_XSector(plat->sector)->specialdata = T_PlatRaise;
-	P_AddActivePlat(plat);
+    plat->sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
+    P_XSector(plat->sector)->specialdata = T_PlatRaise;
+    P_AddActivePlat(plat);
 }
 
 //==========================================================================
@@ -1915,9 +1921,9 @@ static void RestorePlatRaise(plat_t * plat)
 
 static void RestoreMoveCeiling(ceiling_t * ceiling)
 {
-	ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
-	P_XSector(ceiling->sector)->specialdata = T_MoveCeiling;
-	P_AddActiveCeiling(ceiling);
+    ceiling->sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
+    P_XSector(ceiling->sector)->specialdata = T_MoveCeiling;
+    P_AddActiveCeiling(ceiling);
 }
 
 //==========================================================================
@@ -2029,43 +2035,43 @@ static void RemoveAllThinkers(void)
 
 static void ArchiveSounds(void)
 {
-	seqnode_t *node;
-	sector_t *sec;
-	int     difference;
-	int     i;
+    seqnode_t *node;
+    sector_t *sec;
+    int     difference;
+    int     i;
 
-	StreamOutLong(ASEG_SOUNDS);
+    StreamOutLong(ASEG_SOUNDS);
 
-	// Save the sound sequences
-	StreamOutLong(ActiveSequences);
-	for(node = SequenceListHead; node; node = node->next)
-	{
-		StreamOutLong(node->sequence);
-		StreamOutLong(node->delayTics);
-		StreamOutLong(node->volume);
-		StreamOutLong(SN_GetSequenceOffset(node->sequence, node->sequencePtr));
-		StreamOutLong(node->currentSoundID);
-		for(i = 0; i < po_NumPolyobjs; i++)
-		{
-			if(node->mobj == P_GetPtr(DMU_POLYOBJ, i, DMU_START_SPOT))
-			{
-				break;
-			}
-		}
-		if(i == DD_GetInteger(DD_POLYOBJ_COUNT))
-		{						// Sound is attached to a sector, not a polyobj
-			sec = P_GetPtrp(R_PointInSubsector(node->mobj->x, node->mobj->y), 
+    // Save the sound sequences
+    StreamOutLong(ActiveSequences);
+    for(node = SequenceListHead; node; node = node->next)
+    {
+        StreamOutLong(node->sequence);
+        StreamOutLong(node->delayTics);
+        StreamOutLong(node->volume);
+        StreamOutLong(SN_GetSequenceOffset(node->sequence, node->sequencePtr));
+        StreamOutLong(node->currentSoundID);
+        for(i = 0; i < numpolyobjs; i++)
+        {
+            if(node->mobj == P_GetPtr(DMU_POLYOBJ, i, DMU_START_SPOT))
+            {
+                break;
+            }
+        }
+        if(i == DD_GetInteger(DD_POLYOBJ_COUNT))
+        {                       // Sound is attached to a sector, not a polyobj
+            sec = P_GetPtrp(R_PointInSubsector(node->mobj->x, node->mobj->y),
                             DMU_SECTOR);
-			difference = P_ToIndex(sec);
-			StreamOutLong(0);	// 0 -- sector sound origin
-		}
-		else
-		{
-			StreamOutLong(1);	// 1 -- polyobj sound origin
-			difference = i;
-		}
-		StreamOutLong(difference);
-	}
+            difference = P_ToIndex(sec);
+            StreamOutLong(0);   // 0 -- sector sound origin
+        }
+        else
+        {
+            StreamOutLong(1);   // 1 -- polyobj sound origin
+            difference = i;
+        }
+        StreamOutLong(difference);
+    }
 }
 
 //==========================================================================
@@ -2076,44 +2082,44 @@ static void ArchiveSounds(void)
 
 static void UnarchiveSounds(void)
 {
-	int     i;
-	int     numSequences;
-	int     sequence;
-	int     delayTics;
-	int     volume;
-	int     seqOffset;
-	int     soundID;
-	int     polySnd;
-	int     secNum;
-	mobj_t *sndMobj;
+    int     i;
+    int     numSequences;
+    int     sequence;
+    int     delayTics;
+    int     volume;
+    int     seqOffset;
+    int     soundID;
+    int     polySnd;
+    int     secNum;
+    mobj_t *sndMobj;
 
-	AssertSegment(ASEG_SOUNDS);
+    AssertSegment(ASEG_SOUNDS);
 
-	// Reload and restart all sound sequences
-	numSequences = GET_LONG;
-	i = 0;
-	while(i < numSequences)
-	{
-		sequence = GET_LONG;
-		delayTics = GET_LONG;
-		volume = GET_LONG;
-		seqOffset = GET_LONG;
+    // Reload and restart all sound sequences
+    numSequences = GET_LONG;
+    i = 0;
+    while(i < numSequences)
+    {
+        sequence = GET_LONG;
+        delayTics = GET_LONG;
+        volume = GET_LONG;
+        seqOffset = GET_LONG;
 
-		soundID = GET_LONG;
-		polySnd = GET_LONG;
-		secNum = GET_LONG;
-		if(!polySnd)
-		{
-			sndMobj = P_GetPtr(DMU_SECTOR, secNum, DMU_SOUND_ORIGIN);
-		}
-		else
-		{
-			sndMobj = P_GetPtr(DMU_POLYOBJ, secNum, DMU_START_SPOT);
-		}
-		SN_StartSequence(sndMobj, sequence);
-		SN_ChangeNodeData(i, seqOffset, delayTics, volume, soundID);
-		i++;
-	}
+        soundID = GET_LONG;
+        polySnd = GET_LONG;
+        secNum = GET_LONG;
+        if(!polySnd)
+        {
+            sndMobj = P_GetPtr(DMU_SECTOR, secNum, DMU_SOUND_ORIGIN);
+        }
+        else
+        {
+            sndMobj = P_GetPtr(DMU_POLYOBJ, secNum, DMU_START_SPOT);
+        }
+        SN_StartSequence(sndMobj, sequence);
+        SN_ChangeNodeData(i, seqOffset, delayTics, volume, soundID);
+        i++;
+    }
 }
 
 //==========================================================================
@@ -2127,16 +2133,16 @@ static void ArchivePolyobjs(void)
     int     i;
     int     count = DD_GetInteger(DD_POLYOBJ_COUNT);
 
-	StreamOutLong(ASEG_POLYOBJS);
-	StreamOutLong(count);
-	for(i = 0; i < count; i++)
-	{
+    StreamOutLong(ASEG_POLYOBJS);
+    StreamOutLong(count);
+    for(i = 0; i < count; i++)
+    {
         polyobj_t* po = P_ToPtr(DMU_POLYOBJ, i);
-		StreamOutLong(P_GetIntp(po, DMU_TAG));
-		StreamOutLong(P_GetAnglep(po, DMU_ANGLE));
-		StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_X));
-		StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_Y));
-	}
+        StreamOutLong(P_GetIntp(po, DMU_TAG));
+        StreamOutLong(P_GetAnglep(po, DMU_ANGLE));
+        StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_X));
+        StreamOutLong(P_GetFixedp(po, DMU_START_SPOT_Y));
+    }
 }
 
 //==========================================================================
@@ -2147,32 +2153,32 @@ static void ArchivePolyobjs(void)
 
 static void UnarchivePolyobjs(void)
 {
-	int     i;
-	fixed_t deltaX;
-	fixed_t deltaY;
-	angle_t angle;
+    int     i;
+    fixed_t deltaX;
+    fixed_t deltaY;
+    angle_t angle;
     int     count = DD_GetInteger(DD_POLYOBJ_COUNT);
 
-	AssertSegment(ASEG_POLYOBJS);
-	if(GET_LONG != count)
-	{
-		Con_Error("UnarchivePolyobjs: Bad polyobj count");
-	}
-	for(i = 0; i < count; i++)
-	{
+    AssertSegment(ASEG_POLYOBJS);
+    if(GET_LONG != count)
+    {
+        Con_Error("UnarchivePolyobjs: Bad polyobj count");
+    }
+    for(i = 0; i < count; i++)
+    {
         polyobj_t* po = P_ToPtr(DMU_POLYOBJ, i);
-		if(GET_LONG != P_GetIntp(po, DMU_TAG))
-		{
-			Con_Error("UnarchivePolyobjs: Invalid polyobj tag");
-		}
-		angle = (angle_t) GET_LONG;
-		PO_RotatePolyobj(P_GetIntp(po, DMU_TAG), angle);
-		P_SetAnglep(po, DMU_DESTINATION_ANGLE, angle);
-		deltaX = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_X);
-		deltaY = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_Y);
-		PO_MovePolyobj(P_GetIntp(po, DMU_TAG), deltaX, deltaY);
-		// FIXME: What about speed? It isn't saved at all?
-	}
+        if(GET_LONG != P_GetIntp(po, DMU_TAG))
+        {
+            Con_Error("UnarchivePolyobjs: Invalid polyobj tag");
+        }
+        angle = (angle_t) GET_LONG;
+        PO_RotatePolyobj(P_GetIntp(po, DMU_TAG), angle);
+        P_SetAnglep(po, DMU_DESTINATION_ANGLE, angle);
+        deltaX = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_X);
+        deltaY = GET_LONG - P_GetFixedp(po, DMU_START_SPOT_Y);
+        PO_MovePolyobj(P_GetIntp(po, DMU_TAG), deltaX, deltaY);
+        // FIXME: What about speed? It isn't saved at all?
+    }
 }
 
 //==========================================================================

@@ -10,6 +10,12 @@
 //**
 //**************************************************************************
 
+/*
+ * H2_main.c: Hexen specifc Initialization.
+ *
+ * TODO: Move api related stuff to x_api.c
+ */
+
 // HEADER FILES ------------------------------------------------------------
 
 #include <stdio.h>
@@ -26,6 +32,7 @@
 #include "jHexen/st_stuff.h"
 #include "../Common/am_map.h"
 #include "jHexen/h2_actn.h"
+#include "jHexen/p_setup.h"
 #include "d_net.h"
 #include "g_update.h"
 #include "jHexen/m_ctrl.h"
@@ -59,6 +66,12 @@ void    G_ConsoleRegistration();
 void    SB_HandleCheatNotification(int fromplayer, void *data, int length);
 int     HU_PSpriteYOffset(player_t *pl);
 void    InitMapMusicInfo(void);
+
+// Map Data
+void    P_SetupForThings(int num);
+void    P_SetupForLines(int num);
+void    P_SetupForSides(int num);
+void    P_SetupForSectors(int num);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -104,9 +117,6 @@ boolean dontrender;             // don't render the player view (debug)
 skill_t startskill;
 int     startepisode;
 int     startmap;
-
-// Set if homebrew PWAD stuff has been added.
-boolean  modifiedgame;
 
 // default font colours
 const float deffontRGB[] = { 1.0f, 0.0f, 0.0f};
@@ -672,7 +682,7 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.G_Drawer = G_Drawer;
     gx.MN_Drawer = M_Drawer;
     gx.PrivilegedResponder = (boolean (*)(event_t *)) D_PrivilegedResponder;
-    //gx.FallBackResponder = M_Responder;
+    gx.FallbackResponder = M_Responder;
     gx.G_Responder = G_Responder;
     gx.MobjThinker = P_MobjThinker;
     gx.MobjFriction = (fixed_t (*)(void *)) P_GetMobjFriction;
@@ -692,14 +702,14 @@ game_export_t *GetGameAPI(game_import_t * imports)
 
     // The structure sizes.
     gx.ticcmd_size = sizeof(ticcmd_t);
-/*  gx.vertex_size = sizeof(vertex_t);
-    gx.seg_size = sizeof(seg_t);
-    gx.sector_size = sizeof(sector_t);
-    gx.subsector_size = sizeof(subsector_t);
-    gx.node_size = sizeof(node_t);
-    gx.line_size = sizeof(line_t);
-    gx.side_size = sizeof(side_t);
-    gx.polyobj_size = sizeof(polyobj_t);
-*/
+
+    gx.SetupForThings = P_SetupForThings;
+    gx.SetupForLines = P_SetupForLines;
+    gx.SetupForSides = P_SetupForSides;
+    gx.SetupForSectors = P_SetupForSectors;
+
+    // These two really need better names. Ideas?
+    gx.HandleMapDataProperty = P_HandleMapDataProperty;
+    gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
     return &gx;
 }

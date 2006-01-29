@@ -404,80 +404,80 @@ int P_GetMobjFriction(mobj_t *mo)
 
 void P_XYMovement(mobj_t *mo)
 {
-	fixed_t ptryx, ptryy;
-	player_t *player;
-	fixed_t xmove, ymove;
-	int     special;
-	angle_t angle;
-	static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
+    fixed_t ptryx, ptryy;
+    player_t *player;
+    fixed_t xmove, ymove;
+    int     special;
+    angle_t angle;
+    static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
-	// $democam: cameramen have their own movement code
-	if(P_CameraXYMovement(mo))
-		return;
+    // $democam: cameramen have their own movement code
+    if(P_CameraXYMovement(mo))
+        return;
 
-	if(!mo->momx && !mo->momy)
-	{
-		if(mo->flags & MF_SKULLFLY)
-		{						// A flying mobj slammed into something
-			mo->flags &= ~MF_SKULLFLY;
-			mo->momx = mo->momy = mo->momz = 0;
-			P_SetMobjState(mo, mo->info->seestate);
-		}
-		return;
-	}
-	special = P_XSectorOfSubsector(mo->subsector)->special;
-	if(mo->flags2 & MF2_WINDTHRUST)
-	{
-		switch (special)
-		{
-		case 40:
-		case 41:
-		case 42:				// Wind_East
-			P_ThrustMobj(mo, 0, windTab[special - 40]);
-			break;
-		case 43:
-		case 44:
-		case 45:				// Wind_North
-			P_ThrustMobj(mo, ANG90, windTab[special - 43]);
-			break;
-		case 46:
-		case 47:
-		case 48:				// Wind_South
-			P_ThrustMobj(mo, ANG270, windTab[special - 46]);
-			break;
-		case 49:
-		case 50:
-		case 51:				// Wind_West
-			P_ThrustMobj(mo, ANG180, windTab[special - 49]);
-			break;
-		}
-	}
-	player = mo->player;
+    if(!mo->momx && !mo->momy)
+    {
+        if(mo->flags & MF_SKULLFLY)
+        {                       // A flying mobj slammed into something
+            mo->flags &= ~MF_SKULLFLY;
+            mo->momx = mo->momy = mo->momz = 0;
+            P_SetMobjState(mo, mo->info->seestate);
+        }
+        return;
+    }
+    special = P_XSectorOfSubsector(mo->subsector)->special;
+    if(mo->flags2 & MF2_WINDTHRUST)
+    {
+        switch (special)
+        {
+        case 40:
+        case 41:
+        case 42:                // Wind_East
+            P_ThrustMobj(mo, 0, windTab[special - 40]);
+            break;
+        case 43:
+        case 44:
+        case 45:                // Wind_North
+            P_ThrustMobj(mo, ANG90, windTab[special - 43]);
+            break;
+        case 46:
+        case 47:
+        case 48:                // Wind_South
+            P_ThrustMobj(mo, ANG270, windTab[special - 46]);
+            break;
+        case 49:
+        case 50:
+        case 51:                // Wind_West
+            P_ThrustMobj(mo, ANG180, windTab[special - 49]);
+            break;
+        }
+    }
+    player = mo->player;
 
-	if(mo->momx > MAXMOVE)
-	{
-		mo->momx = MAXMOVE;
-	}
-	else if(mo->momx < -MAXMOVE)
-	{
-		mo->momx = -MAXMOVE;
-	}
+    if(mo->momx > MAXMOVE)
+    {
+        mo->momx = MAXMOVE;
+    }
+    else if(mo->momx < -MAXMOVE)
+    {
+        mo->momx = -MAXMOVE;
+    }
 
-	if(mo->momy > MAXMOVE)
-	{
-		mo->momy = MAXMOVE;
-	}
-	else if(mo->momy < -MAXMOVE)
-	{
-		mo->momy = -MAXMOVE;
-	}
+    if(mo->momy > MAXMOVE)
+    {
+        mo->momy = MAXMOVE;
+    }
+    else if(mo->momy < -MAXMOVE)
+    {
+        mo->momy = -MAXMOVE;
+    }
 
-	xmove = mo->momx;
-	ymove = mo->momy;
-	do
-	{
-		if(xmove > MAXMOVE / 2 || ymove > MAXMOVE / 2)
-		{
+    xmove = mo->momx;
+    ymove = mo->momy;
+    do
+    {
+        if(xmove > MAXMOVE / 2 || ymove > MAXMOVE / 2)
+        {
 #if 1
             ptryx = mo->x + xmove / 2;
             ptryy = mo->y + ymove / 2;
@@ -489,226 +489,226 @@ void P_XYMovement(mobj_t *mo)
             ptryx = mo->x + xmove;
             ptryy = mo->y + ymove;
 #endif
-		}
-		else
-		{
-			ptryx = mo->x + xmove;
-			ptryy = mo->y + ymove;
-			xmove = ymove = 0;
-		}
-		if(!P_TryMove(mo, ptryx, ptryy))
-		{						// Blocked move
-			if(mo->flags2 & MF2_SLIDE)
-			{					// Try to slide along it
-				if(BlockingMobj == NULL)
-				{				// Slide against wall
-					P_SlideMove(mo);
-				}
-				else
-				{				// Slide against mobj
-					//if(P_TryMove(mo, mo->x, mo->y+mo->momy))
-					if(P_TryMove(mo, mo->x, ptryy))
-					{
-						mo->momx = 0;
-					}
-					//else if(P_TryMove(mo, mo->x+mo->momx, mo->y))
-					else if(P_TryMove(mo, ptryx, mo->y))
-					{
-						mo->momy = 0;
-					}
-					else
-					{
-						mo->momx = mo->momy = 0;
-					}
-				}
-			}
-			else if(mo->flags & MF_MISSILE)
-			{
-				if(mo->flags2 & MF2_FLOORBOUNCE)
-				{
-					if(BlockingMobj)
-					{
-						if((BlockingMobj->flags2 & MF2_REFLECTIVE) ||
-						   ((!BlockingMobj->player) &&
-							(!(BlockingMobj->flags & MF_COUNTKILL))))
-						{
-							fixed_t speed;
+        }
+        else
+        {
+            ptryx = mo->x + xmove;
+            ptryy = mo->y + ymove;
+            xmove = ymove = 0;
+        }
+        if(!P_TryMove(mo, ptryx, ptryy))
+        {                       // Blocked move
+            if(mo->flags2 & MF2_SLIDE)
+            {                   // Try to slide along it
+                if(BlockingMobj == NULL)
+                {               // Slide against wall
+                    P_SlideMove(mo);
+                }
+                else
+                {               // Slide against mobj
+                    //if(P_TryMove(mo, mo->x, mo->y+mo->momy))
+                    if(P_TryMove(mo, mo->x, ptryy))
+                    {
+                        mo->momx = 0;
+                    }
+                    //else if(P_TryMove(mo, mo->x+mo->momx, mo->y))
+                    else if(P_TryMove(mo, ptryx, mo->y))
+                    {
+                        mo->momy = 0;
+                    }
+                    else
+                    {
+                        mo->momx = mo->momy = 0;
+                    }
+                }
+            }
+            else if(mo->flags & MF_MISSILE)
+            {
+                if(mo->flags2 & MF2_FLOORBOUNCE)
+                {
+                    if(BlockingMobj)
+                    {
+                        if((BlockingMobj->flags2 & MF2_REFLECTIVE) ||
+                           ((!BlockingMobj->player) &&
+                            (!(BlockingMobj->flags & MF_COUNTKILL))))
+                        {
+                            fixed_t speed;
 
-							angle =
-								R_PointToAngle2(BlockingMobj->x,
-												BlockingMobj->y, mo->x,
-												mo->y) +
-								ANGLE_1 * ((P_Random() % 16) - 8);
-							speed = P_ApproxDistance(mo->momx, mo->momy);
-							speed = FixedMul(speed, 0.75 * FRACUNIT);
-							mo->angle = angle;
-							angle >>= ANGLETOFINESHIFT;
-							mo->momx = FixedMul(speed, finecosine[angle]);
-							mo->momy = FixedMul(speed, finesine[angle]);
-							if(mo->info->seesound)
-							{
-								S_StartSound(mo->info->seesound, mo);
-							}
-							return;
-						}
-						else
-						{		// Struck a player/creature
-							P_ExplodeMissile(mo);
-						}
-					}
-					else
-					{			// Struck a wall
-						P_BounceWall(mo);
-						switch (mo->type)
-						{
-						case MT_SORCBALL1:
-						case MT_SORCBALL2:
-						case MT_SORCBALL3:
-						case MT_SORCFX1:
-							break;
-						default:
-							if(mo->info->seesound)
-							{
-								S_StartSound(mo->info->seesound, mo);
-							}
-							break;
-						}
-						return;
-					}
-				}
-				if(BlockingMobj && (BlockingMobj->flags2 & MF2_REFLECTIVE))
-				{
-					angle =
-						R_PointToAngle2(BlockingMobj->x, BlockingMobj->y,
-										mo->x, mo->y);
+                            angle =
+                                R_PointToAngle2(BlockingMobj->x,
+                                                BlockingMobj->y, mo->x,
+                                                mo->y) +
+                                ANGLE_1 * ((P_Random() % 16) - 8);
+                            speed = P_ApproxDistance(mo->momx, mo->momy);
+                            speed = FixedMul(speed, 0.75 * FRACUNIT);
+                            mo->angle = angle;
+                            angle >>= ANGLETOFINESHIFT;
+                            mo->momx = FixedMul(speed, finecosine[angle]);
+                            mo->momy = FixedMul(speed, finesine[angle]);
+                            if(mo->info->seesound)
+                            {
+                                S_StartSound(mo->info->seesound, mo);
+                            }
+                            return;
+                        }
+                        else
+                        {       // Struck a player/creature
+                            P_ExplodeMissile(mo);
+                        }
+                    }
+                    else
+                    {           // Struck a wall
+                        P_BounceWall(mo);
+                        switch (mo->type)
+                        {
+                        case MT_SORCBALL1:
+                        case MT_SORCBALL2:
+                        case MT_SORCBALL3:
+                        case MT_SORCFX1:
+                            break;
+                        default:
+                            if(mo->info->seesound)
+                            {
+                                S_StartSound(mo->info->seesound, mo);
+                            }
+                            break;
+                        }
+                        return;
+                    }
+                }
+                if(BlockingMobj && (BlockingMobj->flags2 & MF2_REFLECTIVE))
+                {
+                    angle =
+                        R_PointToAngle2(BlockingMobj->x, BlockingMobj->y,
+                                        mo->x, mo->y);
 
-					// Change angle for delflection/reflection
-					switch (BlockingMobj->type)
-					{
-					case MT_CENTAUR:
-					case MT_CENTAURLEADER:
-						if(abs(angle - BlockingMobj->angle) >> 24 > 45)
-							goto explode;
-						if(mo->type == MT_HOLY_FX)
-							goto explode;
-						// Drop through to sorcerer full reflection
-					case MT_SORCBOSS:
-						// Deflection
-						if(P_Random() < 128)
-							angle += ANGLE_45;
-						else
-							angle -= ANGLE_45;
-						break;
-					default:
-						// Reflection
-						angle += ANGLE_1 * ((P_Random() % 16) - 8);
-						break;
-					}
+                    // Change angle for delflection/reflection
+                    switch (BlockingMobj->type)
+                    {
+                    case MT_CENTAUR:
+                    case MT_CENTAURLEADER:
+                        if(abs(angle - BlockingMobj->angle) >> 24 > 45)
+                            goto explode;
+                        if(mo->type == MT_HOLY_FX)
+                            goto explode;
+                        // Drop through to sorcerer full reflection
+                    case MT_SORCBOSS:
+                        // Deflection
+                        if(P_Random() < 128)
+                            angle += ANGLE_45;
+                        else
+                            angle -= ANGLE_45;
+                        break;
+                    default:
+                        // Reflection
+                        angle += ANGLE_1 * ((P_Random() % 16) - 8);
+                        break;
+                    }
 
-					// Reflect the missile along angle
-					mo->angle = angle;
-					angle >>= ANGLETOFINESHIFT;
-					mo->momx =
-						FixedMul(mo->info->speed >> 1, finecosine[angle]);
-					mo->momy = FixedMul(mo->info->speed >> 1, finesine[angle]);
-					//                  mo->momz = -mo->momz;
-					if(mo->flags2 & MF2_SEEKERMISSILE)
-					{
-						mo->special1 = (int) (mo->target);
-					}
-					mo->target = BlockingMobj;
-					return;
-				}
-			  explode:
-				// Explode a missile
-				if(ceilingline && P_GetPtrp(ceilingline, DMU_BACK_SECTOR) &&
-				   P_GetIntp(
+                    // Reflect the missile along angle
+                    mo->angle = angle;
+                    angle >>= ANGLETOFINESHIFT;
+                    mo->momx =
+                        FixedMul(mo->info->speed >> 1, finecosine[angle]);
+                    mo->momy = FixedMul(mo->info->speed >> 1, finesine[angle]);
+                    //                  mo->momz = -mo->momz;
+                    if(mo->flags2 & MF2_SEEKERMISSILE)
+                    {
+                        mo->special1 = (int) (mo->target);
+                    }
+                    mo->target = BlockingMobj;
+                    return;
+                }
+              explode:
+                // Explode a missile
+                if(ceilingline && P_GetPtrp(ceilingline, DMU_BACK_SECTOR) &&
+                   P_GetIntp(
                              P_GetPtrp(ceilingline, DMU_BACK_SECTOR),
                              DMU_CEILING_TEXTURE) == skyflatnum)
-				{				// Hack to prevent missiles exploding against the sky
-					if(mo->type == MT_BLOODYSKULL)
-					{
-						mo->momx = mo->momy = 0;
-						mo->momz = -FRACUNIT;
-					}
-					else if(mo->type == MT_HOLY_FX)
-					{
-						P_ExplodeMissile(mo);
-					}
-					else
-					{
-						P_RemoveMobj(mo);
-					}
-					return;
-				}
-				P_ExplodeMissile(mo);
-			}
-			//else if(mo->info->crashstate)
-			//{
-			//  mo->momx = mo->momy = 0;
-			//  P_SetMobjState(mo, mo->info->crashstate);
-			//  return;
-			//}
-			else
-			{
-				mo->momx = mo->momy = 0;
-			}
-		}
-	} while(xmove || ymove);
+                {               // Hack to prevent missiles exploding against the sky
+                    if(mo->type == MT_BLOODYSKULL)
+                    {
+                        mo->momx = mo->momy = 0;
+                        mo->momz = -FRACUNIT;
+                    }
+                    else if(mo->type == MT_HOLY_FX)
+                    {
+                        P_ExplodeMissile(mo);
+                    }
+                    else
+                    {
+                        P_RemoveMobj(mo);
+                    }
+                    return;
+                }
+                P_ExplodeMissile(mo);
+            }
+            //else if(mo->info->crashstate)
+            //{
+            //  mo->momx = mo->momy = 0;
+            //  P_SetMobjState(mo, mo->info->crashstate);
+            //  return;
+            //}
+            else
+            {
+                mo->momx = mo->momy = 0;
+            }
+        }
+    } while(xmove || ymove);
 
-	// Friction
+    // Friction
 
-	if(player && player->cheats & CF_NOMOMENTUM)
-	{							// Debug option for no sliding at all
-		mo->momx = mo->momy = 0;
-		return;
-	}
-	if(mo->flags & (MF_MISSILE | MF_SKULLFLY))
-	{							// No friction for missiles
-		return;
-	}
-	if(mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) &&
-	   !(mo->flags2 & MF2_ONMOBJ))
-	{							// No friction when falling
-		if(mo->type != MT_BLASTEFFECT)
-			return;
-	}
-	if(mo->flags & MF_CORPSE)
-	{							// Don't stop sliding if halfway off a step with some momentum
-		if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
-		   mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
-		{
-			if(mo->floorz != P_GetFixedp(mo->subsector, 
+    if(player && player->cheats & CF_NOMOMENTUM)
+    {                           // Debug option for no sliding at all
+        mo->momx = mo->momy = 0;
+        return;
+    }
+    if(mo->flags & (MF_MISSILE | MF_SKULLFLY))
+    {                           // No friction for missiles
+        return;
+    }
+    if(mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) &&
+       !(mo->flags2 & MF2_ONMOBJ))
+    {                           // No friction when falling
+        if(mo->type != MT_BLASTEFFECT)
+            return;
+    }
+    if(mo->flags & MF_CORPSE)
+    {                           // Don't stop sliding if halfway off a step with some momentum
+        if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
+           mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
+        {
+            if(mo->floorz != P_GetFixedp(mo->subsector,
                                          DMU_FLOOR_HEIGHT))
-			{
-				return;
-			}
-		}
-	}
-	if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED
-	   && mo->momy < STOPSPEED && (!player ||
-								   (player->cmd.forwardMove == 0 &&
-									player->cmd.sideMove == 0)))
-	{							// If in a walking frame, stop moving
-		if(player)
-		{
-			if((unsigned)
-			   ((player->plr->mo->state - states) - PStateRun[player->class]) <
-			   4)
-			{
-				P_SetMobjState(player->plr->mo, PStateNormal[player->class]);
-			}
-		}
-		mo->momx = 0;
-		mo->momy = 0;
-	}
-	else
-	{
-		int     friction = P_GetMobjFriction(mo);
+            {
+                return;
+            }
+        }
+    }
+    if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED
+       && mo->momy < STOPSPEED && (!player ||
+                                   (player->cmd.forwardMove == 0 &&
+                                    player->cmd.sideMove == 0)))
+    {                           // If in a walking frame, stop moving
+        if(player)
+        {
+            if((unsigned)
+               ((player->plr->mo->state - states) - PStateRun[player->class]) <
+               4)
+            {
+                P_SetMobjState(player->plr->mo, PStateNormal[player->class]);
+            }
+        }
+        mo->momx = 0;
+        mo->momy = 0;
+    }
+    else
+    {
+        int     friction = P_GetMobjFriction(mo);
 
-		mo->momx = FixedMul(mo->momx, friction);
-		mo->momy = FixedMul(mo->momy, friction);
-	}
+        mo->momx = FixedMul(mo->momx, friction);
+        mo->momy = FixedMul(mo->momy, friction);
+    }
 }
 
 // Move this to p_inter ***
@@ -745,233 +745,233 @@ void P_ZMovement(mobj_t *mo)
 
     //  extern boolean demorecording;
 
-	// $democam: cameramen get special z movement
-	if(P_CameraZMovement(mo))
-		return;
+    // $democam: cameramen get special z movement
+    if(P_CameraZMovement(mo))
+        return;
 
-	//
-	// check for smooth step up
-	//
-	if(mo->player && mo->z < mo->floorz)
-	{
-		mo->player->plr->viewheight -= mo->floorz - mo->z;
-		mo->player->plr->deltaviewheight =
-			(VIEWHEIGHT - mo->player->plr->viewheight) >> 3;
-	}
-	//
-	// adjust height
-	//
-	mo->z += mo->momz;
-	if(mo->flags & MF_FLOAT && mo->target)
-	{							// float down towards target if too close
-		if(!(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT))
-		{
-			dist =
-				P_ApproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
-			delta = (mo->target->z + (mo->height >> 1)) - mo->z;
-			if(delta < 0 && dist < -(delta * 3))
-			{
-				mo->z -= FLOATSPEED;
-				P_SetThingSRVOZ(mo, -FLOATSPEED);
-			}
-			else if(delta > 0 && dist < (delta * 3))
-			{
-				mo->z += FLOATSPEED;
-				P_SetThingSRVOZ(mo, FLOATSPEED);
-			}
-		}
-	}
-	if(mo->player && mo->flags2 & MF2_FLY && !(mo->z <= mo->floorz) &&
-	   leveltime & 2)
-	{
-		mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
-	}
+    //
+    // check for smooth step up
+    //
+    if(mo->player && mo->z < mo->floorz)
+    {
+        mo->player->plr->viewheight -= mo->floorz - mo->z;
+        mo->player->plr->deltaviewheight =
+            (VIEWHEIGHT - mo->player->plr->viewheight) >> 3;
+    }
+    //
+    // adjust height
+    //
+    mo->z += mo->momz;
+    if(mo->flags & MF_FLOAT && mo->target)
+    {                           // float down towards target if too close
+        if(!(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT))
+        {
+            dist =
+                P_ApproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
+            delta = (mo->target->z + (mo->height >> 1)) - mo->z;
+            if(delta < 0 && dist < -(delta * 3))
+            {
+                mo->z -= FLOATSPEED;
+                P_SetThingSRVOZ(mo, -FLOATSPEED);
+            }
+            else if(delta > 0 && dist < (delta * 3))
+            {
+                mo->z += FLOATSPEED;
+                P_SetThingSRVOZ(mo, FLOATSPEED);
+            }
+        }
+    }
+    if(mo->player && mo->flags2 & MF2_FLY && !(mo->z <= mo->floorz) &&
+       leveltime & 2)
+    {
+        mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
+    }
 
-	//
-	// clip movement
-	//
-	if(mo->z <= mo->floorz)
-	{							// Hit the floor
-		if(mo->flags & MF_MISSILE)
-		{
-			mo->z = mo->floorz;
-			if(mo->flags2 & MF2_FLOORBOUNCE)
-			{
-				P_FloorBounceMissile(mo);
-				return;
-			}
-			else if(mo->type == MT_HOLY_FX)
-			{					// The spirit struck the ground
-				mo->momz = 0;
-				P_HitFloor(mo);
-				return;
-			}
-			else if(mo->type == MT_MNTRFX2 || mo->type == MT_LIGHTNING_FLOOR)
-			{					// Minotaur floor fire can go up steps
-				return;
-			}
-			else
-			{
-				P_HitFloor(mo);
-				P_ExplodeMissile(mo);
-				return;
-			}
-		}
-		if(mo->flags & MF_COUNTKILL)	// Blasted mobj falling
-		{
-			if(mo->momz < -(23 * FRACUNIT))
-			{
-				P_MonsterFallingDamage(mo);
-			}
-		}
-		if(mo->z - mo->momz > mo->floorz)
-		{						// Spawn splashes, etc.
-			P_HitFloor(mo);
-		}
-		mo->z = mo->floorz;
-		if(mo->momz < 0)
-		{
-			if(mo->flags2 & MF2_ICEDAMAGE && mo->momz < -GRAVITY * 8)
-			{
-				mo->tics = 1;
-				mo->momx = 0;
-				mo->momy = 0;
-				mo->momz = 0;
-				return;
-			}
-			if(mo->player)
-			{
-				mo->player->jumpTics = 7;	// delay any jumping for a short time
-				if(mo->momz < -GRAVITY * 8 && !(mo->flags2 & MF2_FLY))
-				{				// squat down
-					mo->player->plr->deltaviewheight = mo->momz >> 3;
-					if(mo->momz < -23 * FRACUNIT)
-					{
-						P_FallingDamage(mo->player);
-						P_NoiseAlert(mo, mo);
-					}
-					else if(mo->momz < -GRAVITY * 12 && !mo->player->morphTics)
-					{
-						S_StartSound(SFX_PLAYER_LAND, mo);
-						switch (mo->player->class)
-						{
-						case PCLASS_FIGHTER:
-							S_StartSound(SFX_PLAYER_FIGHTER_GRUNT, mo);
-							break;
-						case PCLASS_CLERIC:
-							S_StartSound(SFX_PLAYER_CLERIC_GRUNT, mo);
-							break;
-						case PCLASS_MAGE:
-							S_StartSound(SFX_PLAYER_MAGE_GRUNT, mo);
-							break;
-						default:
-							break;
-						}
-					}
-					else if((P_GetThingFloorType(mo) < FLOOR_LIQUID) &&
-							(!mo->player->morphTics))
-					{
-						S_StartSound(SFX_PLAYER_LAND, mo);
-					}
-					/*#ifdef __WATCOMC__
-					   if(!useexterndriver)
-					   {
-					   mo->player->centering = true;
-					   }
-					   #else */
-					// If mouselook is active, we don't want lookspring.
-					if(!cfg.usemlook)	// || demorecording || demoplayback)
-						mo->player->centering = true;
-					//#endif
-				}
-			}
-			else if(mo->type >= MT_POTTERY1 && mo->type <= MT_POTTERY3)
-			{
-				P_DamageMobj(mo, NULL, NULL, 25);
-			}
-			else if(mo->flags & MF_COUNTKILL)
-			{
-				if(mo->momz < -23 * FRACUNIT)
-				{
-					// Doesn't get here
-				}
-			}
-			mo->momz = 0;
-		}
-		if(mo->flags & MF_SKULLFLY)
-		{						// The skull slammed into something
-			mo->momz = -mo->momz;
-		}
-		if(mo->info->crashstate && (mo->flags & MF_CORPSE) &&
-		   !(mo->flags2 & MF2_ICEDAMAGE))
-		{
-			P_SetMobjState(mo, mo->info->crashstate);
-			return;
-		}
-	}
-	else if(mo->flags2 & MF2_LOGRAV)
-	{
-		if(mo->momz == 0)
-			mo->momz = -(GRAVITY >> 3) * 2;
-		else
-			mo->momz -= GRAVITY >> 3;
-	}
-	else if(!(mo->flags & MF_NOGRAVITY))
-	{
-		if(mo->momz == 0)
-			mo->momz = -GRAVITY * 2;
-		else
-			mo->momz -= GRAVITY;
-	}
+    //
+    // clip movement
+    //
+    if(mo->z <= mo->floorz)
+    {                           // Hit the floor
+        if(mo->flags & MF_MISSILE)
+        {
+            mo->z = mo->floorz;
+            if(mo->flags2 & MF2_FLOORBOUNCE)
+            {
+                P_FloorBounceMissile(mo);
+                return;
+            }
+            else if(mo->type == MT_HOLY_FX)
+            {                   // The spirit struck the ground
+                mo->momz = 0;
+                P_HitFloor(mo);
+                return;
+            }
+            else if(mo->type == MT_MNTRFX2 || mo->type == MT_LIGHTNING_FLOOR)
+            {                   // Minotaur floor fire can go up steps
+                return;
+            }
+            else
+            {
+                P_HitFloor(mo);
+                P_ExplodeMissile(mo);
+                return;
+            }
+        }
+        if(mo->flags & MF_COUNTKILL)    // Blasted mobj falling
+        {
+            if(mo->momz < -(23 * FRACUNIT))
+            {
+                P_MonsterFallingDamage(mo);
+            }
+        }
+        if(mo->z - mo->momz > mo->floorz)
+        {                       // Spawn splashes, etc.
+            P_HitFloor(mo);
+        }
+        mo->z = mo->floorz;
+        if(mo->momz < 0)
+        {
+            if(mo->flags2 & MF2_ICEDAMAGE && mo->momz < -GRAVITY * 8)
+            {
+                mo->tics = 1;
+                mo->momx = 0;
+                mo->momy = 0;
+                mo->momz = 0;
+                return;
+            }
+            if(mo->player)
+            {
+                mo->player->jumpTics = 7;   // delay any jumping for a short time
+                if(mo->momz < -GRAVITY * 8 && !(mo->flags2 & MF2_FLY))
+                {               // squat down
+                    mo->player->plr->deltaviewheight = mo->momz >> 3;
+                    if(mo->momz < -23 * FRACUNIT)
+                    {
+                        P_FallingDamage(mo->player);
+                        P_NoiseAlert(mo, mo);
+                    }
+                    else if(mo->momz < -GRAVITY * 12 && !mo->player->morphTics)
+                    {
+                        S_StartSound(SFX_PLAYER_LAND, mo);
+                        switch (mo->player->class)
+                        {
+                        case PCLASS_FIGHTER:
+                            S_StartSound(SFX_PLAYER_FIGHTER_GRUNT, mo);
+                            break;
+                        case PCLASS_CLERIC:
+                            S_StartSound(SFX_PLAYER_CLERIC_GRUNT, mo);
+                            break;
+                        case PCLASS_MAGE:
+                            S_StartSound(SFX_PLAYER_MAGE_GRUNT, mo);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                    else if((P_GetThingFloorType(mo) < FLOOR_LIQUID) &&
+                            (!mo->player->morphTics))
+                    {
+                        S_StartSound(SFX_PLAYER_LAND, mo);
+                    }
+                    /*#ifdef __WATCOMC__
+                       if(!useexterndriver)
+                       {
+                       mo->player->centering = true;
+                       }
+                       #else */
+                    // If mouselook is active, we don't want lookspring.
+                    if(!cfg.usemlook)   // || demorecording || demoplayback)
+                        mo->player->centering = true;
+                    //#endif
+                }
+            }
+            else if(mo->type >= MT_POTTERY1 && mo->type <= MT_POTTERY3)
+            {
+                P_DamageMobj(mo, NULL, NULL, 25);
+            }
+            else if(mo->flags & MF_COUNTKILL)
+            {
+                if(mo->momz < -23 * FRACUNIT)
+                {
+                    // Doesn't get here
+                }
+            }
+            mo->momz = 0;
+        }
+        if(mo->flags & MF_SKULLFLY)
+        {                       // The skull slammed into something
+            mo->momz = -mo->momz;
+        }
+        if(mo->info->crashstate && (mo->flags & MF_CORPSE) &&
+           !(mo->flags2 & MF2_ICEDAMAGE))
+        {
+            P_SetMobjState(mo, mo->info->crashstate);
+            return;
+        }
+    }
+    else if(mo->flags2 & MF2_LOGRAV)
+    {
+        if(mo->momz == 0)
+            mo->momz = -(GRAVITY >> 3) * 2;
+        else
+            mo->momz -= GRAVITY >> 3;
+    }
+    else if(!(mo->flags & MF_NOGRAVITY))
+    {
+        if(mo->momz == 0)
+            mo->momz = -GRAVITY * 2;
+        else
+            mo->momz -= GRAVITY;
+    }
 
-	if(mo->z + mo->height > mo->ceilingz)
-	{							// hit the ceiling
-		if(mo->momz > 0)
-			mo->momz = 0;
-		mo->z = mo->ceilingz - mo->height;
-		if(mo->flags2 & MF2_FLOORBOUNCE)
-		{
-			// Maybe reverse momentum here for ceiling bounce
-			// Currently won't happen
+    if(mo->z + mo->height > mo->ceilingz)
+    {                           // hit the ceiling
+        if(mo->momz > 0)
+            mo->momz = 0;
+        mo->z = mo->ceilingz - mo->height;
+        if(mo->flags2 & MF2_FLOORBOUNCE)
+        {
+            // Maybe reverse momentum here for ceiling bounce
+            // Currently won't happen
 
-			if(mo->info->seesound)
-			{
-				S_StartSound(mo->info->seesound, mo);
-			}
-			return;
-		}
-		if(mo->flags & MF_SKULLFLY)
-		{						// the skull slammed into something
-			mo->momz = -mo->momz;
-		}
-		if(mo->flags & MF_MISSILE)
-		{
-			if(mo->type == MT_LIGHTNING_CEILING)
-			{
-				return;
-			}
-			if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) == 
+            if(mo->info->seesound)
+            {
+                S_StartSound(mo->info->seesound, mo);
+            }
+            return;
+        }
+        if(mo->flags & MF_SKULLFLY)
+        {                       // the skull slammed into something
+            mo->momz = -mo->momz;
+        }
+        if(mo->flags & MF_MISSILE)
+        {
+            if(mo->type == MT_LIGHTNING_CEILING)
+            {
+                return;
+            }
+            if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) ==
                skyflatnum)
-			{
-				if(mo->type == MT_BLOODYSKULL)
-				{
-					mo->momx = mo->momy = 0;
-					mo->momz = -FRACUNIT;
-				}
-				else if(mo->type == MT_HOLY_FX)
-				{
-					P_ExplodeMissile(mo);
-				}
-				else
-				{
-					P_RemoveMobj(mo);
-				}
-				return;
-			}
-			P_ExplodeMissile(mo);
-			return;
-		}
-	}
+            {
+                if(mo->type == MT_BLOODYSKULL)
+                {
+                    mo->momx = mo->momy = 0;
+                    mo->momz = -FRACUNIT;
+                }
+                else if(mo->type == MT_HOLY_FX)
+                {
+                    P_ExplodeMissile(mo);
+                }
+                else
+                {
+                    P_RemoveMobj(mo);
+                }
+                return;
+            }
+            P_ExplodeMissile(mo);
+            return;
+        }
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -1155,9 +1155,6 @@ void P_MobjThinker(mobj_t *mobj)
         return;
     }
 
-#warning "Should P_UpdateMobjFlags be defined somewhere?"
-    //P_UpdateMobjFlags(mobj);
-
     /*#ifdef _DEBUG
        mobj->translucency = M_Random();
        #endif */
@@ -1327,90 +1324,90 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 {
     mobj_t *mobj;
 
-	//state_t *st;
-	mobjinfo_t *info;
-	fixed_t space;
+    //state_t *st;
+    mobjinfo_t *info;
+    fixed_t space;
 
-	mobj = Z_Malloc(sizeof(*mobj), PU_LEVEL, NULL);
-	memset(mobj, 0, sizeof(*mobj));
-	info = &mobjinfo[type];
-	mobj->type = type;
-	mobj->info = info;
-	mobj->x = x;
-	mobj->y = y;
-	mobj->radius = info->radius;
-	mobj->height = info->height;
-	mobj->flags = info->flags;
-	mobj->flags2 = info->flags2;
-	mobj->damage = info->damage;	// this doesn't appear to actually be used
-	// see P_DamageMobj in P_inter.c
+    mobj = Z_Malloc(sizeof(*mobj), PU_LEVEL, NULL);
+    memset(mobj, 0, sizeof(*mobj));
+    info = &mobjinfo[type];
+    mobj->type = type;
+    mobj->info = info;
+    mobj->x = x;
+    mobj->y = y;
+    mobj->radius = info->radius;
+    mobj->height = info->height;
+    mobj->flags = info->flags;
+    mobj->flags2 = info->flags2;
+    mobj->damage = info->damage;    // this doesn't appear to actually be used
+    // see P_DamageMobj in P_inter.c
 
-	// Let the engine know about solid objects.
-	if(mobj->flags & MF_SOLID)
-		mobj->ddflags |= DDMF_SOLID;
-	if(mobj->flags2 & MF2_DONTDRAW)
-		mobj->ddflags |= DDMF_DONTDRAW;
+    // Let the engine know about solid objects.
+    if(mobj->flags & MF_SOLID)
+        mobj->ddflags |= DDMF_SOLID;
+    if(mobj->flags2 & MF2_DONTDRAW)
+        mobj->ddflags |= DDMF_DONTDRAW;
 
-	mobj->health =
-		info->spawnhealth * (IS_NETGAME ? cfg.netMobHealthModifier : 1);
-	if(gameskill != sk_nightmare)
-	{
-		mobj->reactiontime = info->reactiontime;
-	}
-	mobj->lastlook = P_Random() % MAXPLAYERS;
+    mobj->health =
+        info->spawnhealth * (IS_NETGAME ? cfg.netMobHealthModifier : 1);
+    if(gameskill != sk_nightmare)
+    {
+        mobj->reactiontime = info->reactiontime;
+    }
+    mobj->lastlook = P_Random() % MAXPLAYERS;
 
-	// Must link before setting state.
-	mobj->thinker.function = P_MobjThinker;
-	P_AddThinker(&mobj->thinker);
+    // Must link before setting state.
+    mobj->thinker.function = P_MobjThinker;
+    P_AddThinker(&mobj->thinker);
 
-	P_SetState(mobj, info->spawnstate);
+    P_SetState(mobj, info->spawnstate);
 
-	// Set subsector and/or block links.
-	P_SetThingPosition(mobj);
-	mobj->floorz = P_GetIntp(mobj->subsector, DMU_FLOOR_HEIGHT);
-	mobj->ceilingz = P_GetIntp(mobj->subsector, 
+    // Set subsector and/or block links.
+    P_SetThingPosition(mobj);
+    mobj->floorz = P_GetIntp(mobj->subsector, DMU_FLOOR_HEIGHT);
+    mobj->ceilingz = P_GetIntp(mobj->subsector,
                                DMU_CEILING_HEIGHT);
-	if(z == ONFLOORZ)
-	{
-		mobj->z = mobj->floorz;
-	}
-	else if(z == ONCEILINGZ)
-	{
-		mobj->z = mobj->ceilingz - mobj->info->height;
-	}
-	else if(z == FLOATRANDZ)
-	{
-		space = ((mobj->ceilingz) - (mobj->info->height)) - mobj->floorz;
-		if(space > 48 * FRACUNIT)
-		{
-			space -= 40 * FRACUNIT;
-			mobj->z =
-				((space * P_Random()) >> 8) + mobj->floorz + 40 * FRACUNIT;
-		}
-		else
-		{
-			mobj->z = mobj->floorz;
-		}
-	}
-	else if(mobj->flags2 & MF2_FLOATBOB)
-	{
-		mobj->z = mobj->floorz + z;	// artifact z passed in as height
-	}
-	else
-	{
-		mobj->z = z;
-	}
-	if(mobj->flags2 & MF2_FLOORCLIP &&
-	   P_GetThingFloorType(mobj) >= FLOOR_LIQUID &&
-	   mobj->z == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
-	{
-		mobj->floorclip = 10 * FRACUNIT;
-	}
-	else
-	{
-		mobj->floorclip = 0;
-	}
-	return (mobj);
+    if(z == ONFLOORZ)
+    {
+        mobj->z = mobj->floorz;
+    }
+    else if(z == ONCEILINGZ)
+    {
+        mobj->z = mobj->ceilingz - mobj->info->height;
+    }
+    else if(z == FLOATRANDZ)
+    {
+        space = ((mobj->ceilingz) - (mobj->info->height)) - mobj->floorz;
+        if(space > 48 * FRACUNIT)
+        {
+            space -= 40 * FRACUNIT;
+            mobj->z =
+                ((space * P_Random()) >> 8) + mobj->floorz + 40 * FRACUNIT;
+        }
+        else
+        {
+            mobj->z = mobj->floorz;
+        }
+    }
+    else if(mobj->flags2 & MF2_FLOATBOB)
+    {
+        mobj->z = mobj->floorz + z; // artifact z passed in as height
+    }
+    else
+    {
+        mobj->z = z;
+    }
+    if(mobj->flags2 & MF2_FLOORCLIP &&
+       P_GetThingFloorType(mobj) >= FLOOR_LIQUID &&
+       mobj->z == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
+    {
+        mobj->floorclip = 10 * FRACUNIT;
+    }
+    else
+    {
+        mobj->floorclip = 0;
+    }
+    return (mobj);
 }
 
 //==========================================================================
@@ -1569,259 +1566,259 @@ void P_SpawnPlayer(thing_t * mthing, int playernum)
 
 void P_SpawnMapThing(thing_t * mthing)
 {
-	int     i;
-	unsigned int spawnMask;
-	mobj_t *mobj;
-	fixed_t x, y, z;
-	static unsigned int classFlags[] = {
-		MTF_FIGHTER,
-		MTF_CLERIC,
-		MTF_MAGE
-	};
+    int     i;
+    unsigned int spawnMask;
+    mobj_t *mobj;
+    fixed_t x, y, z;
+    static unsigned int classFlags[] = {
+        MTF_FIGHTER,
+        MTF_CLERIC,
+        MTF_MAGE
+    };
 
-	// Count deathmatch start positions
-	if(mthing->type == 11)
-	{
-		if(deathmatch_p < &deathmatchstarts[MAX_DM_STARTS])
-		{
-			memcpy(deathmatch_p, mthing, sizeof(*mthing));
-			deathmatch_p++;
-		}
-		return;
-	}
-	if(mthing->type == PO_ANCHOR_TYPE)
-	{							// Polyobj Anchor Pt.
-		return;
-	}
-	else if(mthing->type == PO_SPAWN_TYPE ||
-			mthing->type == PO_SPAWNCRUSH_TYPE)
-	{							// Polyobj Anchor Pt.
+    // Count deathmatch start positions
+    if(mthing->type == 11)
+    {
+        if(deathmatch_p < &deathmatchstarts[MAX_DM_STARTS])
+        {
+            memcpy(deathmatch_p, mthing, sizeof(*mthing));
+            deathmatch_p++;
+        }
+        return;
+    }
+    if(mthing->type == PO_ANCHOR_TYPE)
+    {                           // Polyobj Anchor Pt.
+        return;
+    }
+    else if(mthing->type == PO_SPAWN_TYPE ||
+            mthing->type == PO_SPAWNCRUSH_TYPE)
+    {                           // Polyobj Anchor Pt.
         DD_SetInteger(DD_POLYOBJ_COUNT, DD_GetInteger(DD_POLYOBJ_COUNT) + 1);
-		return;
-	}
+        return;
+    }
 
-	// Check for player starts 1 to 4
-	if(mthing->type <= 4)
-	{
-		/*
-		   if(mthing->arg1 < 0 || mthing->arg1 > MAX_PLAYER_STARTS)
-		   {
-		   Con_Message("P_SpawnMapThing: mthing->arg1 is really weird!"
-		   " (%d)\n", mthing->arg1);
-		   }
-		 */
-		P_RegisterPlayerStart(mthing);
-		/*playerstarts[mthing->arg1][mthing->type-1] = *mthing;
-		   if(!deathmatch && !mthing->arg1)
-		   {
-		   P_SpawnPlayer(mthing, mthing->type-1);
-		   } */
-		return;
-	}
-	// Check for player starts 5 to 8
-	if(mthing->type >= 9100 && mthing->type <= 9103)
-	{
-		mthing->type = 5 + mthing->type - 9100;	// Translate to 5 - 8
-		P_RegisterPlayerStart(mthing);
-		/*playerstarts[mthing->arg1][mthing->type-1] = *mthing;
-		   if(!deathmatch && !mthing->arg1)
-		   {
-		   P_SpawnPlayer(mthing, mthing->type-1);
-		   } */
-		return;
-	}
+    // Check for player starts 1 to 4
+    if(mthing->type <= 4)
+    {
+        /*
+           if(mthing->arg1 < 0 || mthing->arg1 > MAX_PLAYER_STARTS)
+           {
+           Con_Message("P_SpawnMapThing: mthing->arg1 is really weird!"
+           " (%d)\n", mthing->arg1);
+           }
+         */
+        P_RegisterPlayerStart(mthing);
+        /*playerstarts[mthing->arg1][mthing->type-1] = *mthing;
+           if(!deathmatch && !mthing->arg1)
+           {
+           P_SpawnPlayer(mthing, mthing->type-1);
+           } */
+        return;
+    }
+    // Check for player starts 5 to 8
+    if(mthing->type >= 9100 && mthing->type <= 9103)
+    {
+        mthing->type = 5 + mthing->type - 9100; // Translate to 5 - 8
+        P_RegisterPlayerStart(mthing);
+        /*playerstarts[mthing->arg1][mthing->type-1] = *mthing;
+           if(!deathmatch && !mthing->arg1)
+           {
+           P_SpawnPlayer(mthing, mthing->type-1);
+           } */
+        return;
+    }
 
-	if(mthing->type >= 1400 && mthing->type < 1410)
-	{
-		sector_t* sector = P_GetPtrp(
+    if(mthing->type >= 1400 && mthing->type < 1410)
+    {
+        sector_t* sector = P_GetPtrp(
             R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS),
             DMU_SECTOR);
         P_XSector(sector)->seqType = mthing->type - 1400;
-		return;
-	}
+        return;
+    }
 
-	// Check current game type with spawn flags
-	if(IS_NETGAME == false)
-	{
-		spawnMask = MTF_GSINGLE;
-	}
-	else if(deathmatch)
-	{
-		spawnMask = MTF_GDEATHMATCH;
-	}
-	else
-	{
-		spawnMask = MTF_GCOOP;
-	}
-	if(!(mthing->options & spawnMask))
-	{
-		return;
-	}
+    // Check current game type with spawn flags
+    if(IS_NETGAME == false)
+    {
+        spawnMask = MTF_GSINGLE;
+    }
+    else if(deathmatch)
+    {
+        spawnMask = MTF_GDEATHMATCH;
+    }
+    else
+    {
+        spawnMask = MTF_GCOOP;
+    }
+    if(!(mthing->options & spawnMask))
+    {
+        return;
+    }
 
-	// Check current skill with spawn flags
-	if(gameskill == sk_baby || gameskill == sk_easy)
-	{
-		spawnMask = MTF_EASY;
-	}
-	else if(gameskill == sk_hard || gameskill == sk_nightmare)
-	{
-		spawnMask = MTF_HARD;
-	}
-	else
-	{
-		spawnMask = MTF_NORMAL;
-	}
-	if(!(mthing->options & spawnMask))
-	{
-		return;
-	}
+    // Check current skill with spawn flags
+    if(gameskill == sk_baby || gameskill == sk_easy)
+    {
+        spawnMask = MTF_EASY;
+    }
+    else if(gameskill == sk_hard || gameskill == sk_nightmare)
+    {
+        spawnMask = MTF_HARD;
+    }
+    else
+    {
+        spawnMask = MTF_NORMAL;
+    }
+    if(!(mthing->options & spawnMask))
+    {
+        return;
+    }
 
-	// Check current character classes with spawn flags
-	if(IS_NETGAME == false)
-	{							// Single player
-		if((mthing->options & classFlags[cfg.PlayerClass[0]]) == 0)
-		{						// Not for current class
-			return;
-		}
-	}
-	else if(deathmatch == false)
-	{							// Cooperative
-		spawnMask = 0;
-		for(i = 0; i < MAXPLAYERS; i++)
-		{
-			if(players[i].plr->ingame)
-			{
-				spawnMask |= classFlags[cfg.PlayerClass[i]];
-			}
-		}
+    // Check current character classes with spawn flags
+    if(IS_NETGAME == false)
+    {                           // Single player
+        if((mthing->options & classFlags[cfg.PlayerClass[0]]) == 0)
+        {                       // Not for current class
+            return;
+        }
+    }
+    else if(deathmatch == false)
+    {                           // Cooperative
+        spawnMask = 0;
+        for(i = 0; i < MAXPLAYERS; i++)
+        {
+            if(players[i].plr->ingame)
+            {
+                spawnMask |= classFlags[cfg.PlayerClass[i]];
+            }
+        }
 
-		// No players are in the game when a dedicated server is
-		// started. In this case, we'll be generous and spawn stuff
-		// for all the classes.
-		if(!spawnMask)
-		{
-			spawnMask |= MTF_FIGHTER | MTF_CLERIC | MTF_MAGE;
-		}
+        // No players are in the game when a dedicated server is
+        // started. In this case, we'll be generous and spawn stuff
+        // for all the classes.
+        if(!spawnMask)
+        {
+            spawnMask |= MTF_FIGHTER | MTF_CLERIC | MTF_MAGE;
+        }
 
-		if((mthing->options & spawnMask) == 0)
-		{
-			return;
-		}
-	}
+        if((mthing->options & spawnMask) == 0)
+        {
+            return;
+        }
+    }
 
-	// Find which type to spawn
-	for(i = 0; i < Get(DD_NUMMOBJTYPES); i++)
-	{
-		if(mthing->type == mobjinfo[i].doomednum)
-		{
-			break;
-		}
-	}
+    // Find which type to spawn
+    for(i = 0; i < Get(DD_NUMMOBJTYPES); i++)
+    {
+        if(mthing->type == mobjinfo[i].doomednum)
+        {
+            break;
+        }
+    }
 
-	if(i == Get(DD_NUMMOBJTYPES))
-	{							// Can't find thing type
-		Con_Error("P_SpawnMapThing: Unknown type %i at (%i, %i)", mthing->type,
-				  mthing->x, mthing->y);
-	}
+    if(i == Get(DD_NUMMOBJTYPES))
+    {                           // Can't find thing type
+        Con_Error("P_SpawnMapThing: Unknown type %i at (%i, %i)", mthing->type,
+                  mthing->x, mthing->y);
+    }
 
-	// Clients only spawn local objects.
-	if(IS_CLIENT)
-	{
-		if(!(mobjinfo[i].flags & MF_LOCAL))
-			return;
-	}
+    // Clients only spawn local objects.
+    if(IS_CLIENT)
+    {
+        if(!(mobjinfo[i].flags & MF_LOCAL))
+            return;
+    }
 
-	// Don't spawn keys and players in deathmatch
-	if(deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
-	{
-		return;
-	}
+    // Don't spawn keys and players in deathmatch
+    if(deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+    {
+        return;
+    }
 
-	// Don't spawn monsters if -nomonsters
-	if(nomonsters && (mobjinfo[i].flags & MF_COUNTKILL))
-	{
-		return;
-	}
+    // Don't spawn monsters if -nomonsters
+    if(nomonsters && (mobjinfo[i].flags & MF_COUNTKILL))
+    {
+        return;
+    }
 
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
-	if(mobjinfo[i].flags & MF_SPAWNCEILING)
-	{
-		z = ONCEILINGZ;
-	}
-	else if(mobjinfo[i].flags2 & MF2_SPAWNFLOAT)
-	{
-		z = FLOATRANDZ;
-	}
-	else if(mobjinfo[i].flags2 & MF2_FLOATBOB)
-	{
-		z = mthing->height << FRACBITS;
-	}
-	else
-	{
-		z = ONFLOORZ;
-	}
-	switch (i)
-	{							// Special stuff
-	case MT_ZLYNCHED_NOHEART:
-		P_SpawnMobj(x, y, ONFLOORZ, MT_BLOODPOOL);
-		break;
-	default:
-		break;
-	}
-	mobj = P_SpawnMobj(x, y, z, i);
-	if(z == ONFLOORZ)
-	{
-		mobj->z += mthing->height << FRACBITS;
-	}
-	else if(z == ONCEILINGZ)
-	{
-		mobj->z -= mthing->height << FRACBITS;
-	}
-	mobj->tid = mthing->tid;
-	mobj->special = mthing->special;
-	mobj->args[0] = mthing->arg1;
-	mobj->args[1] = mthing->arg2;
-	mobj->args[2] = mthing->arg3;
-	mobj->args[3] = mthing->arg4;
-	mobj->args[4] = mthing->arg5;
-	if(mobj->flags2 & MF2_FLOATBOB)
-	{							// Seed random starting index for bobbing motion
-		mobj->health = P_Random();
-		mobj->special1 = mthing->height << FRACBITS;
-	}
-	if(mobj->tics > 0)
-	{
-		mobj->tics = 1 + (P_Random() % mobj->tics);
-	}
-	//  if(mobj->flags&MF_COUNTITEM)
-	//  {
-	//      totalitems++;
-	//  }
-	if(mobj->flags & MF_COUNTKILL)
-	{
-		// Quantize angle to 45 degree increments
-		mobj->angle = ANG45 * (mthing->angle / 45);
-	}
-	else
-	{
-		// Scale angle correctly (source is 0..359)
-		mobj->angle = ((mthing->angle << 8) / 360) << 24;
-	}
-	mobj->visangle = mobj->angle >> 16;	// "angle-servo"; smooth actor turning
-	if(mthing->options & MTF_AMBUSH)
-	{
-		mobj->flags |= MF_AMBUSH;
-	}
-	if(mthing->options & MTF_DORMANT)
-	{
-		mobj->flags2 |= MF2_DORMANT;
-		if(mobj->type == MT_ICEGUY)
-		{
-			P_SetMobjState(mobj, S_ICEGUY_DORMANT);
-		}
-		mobj->tics = -1;
-	}
+    x = mthing->x << FRACBITS;
+    y = mthing->y << FRACBITS;
+    if(mobjinfo[i].flags & MF_SPAWNCEILING)
+    {
+        z = ONCEILINGZ;
+    }
+    else if(mobjinfo[i].flags2 & MF2_SPAWNFLOAT)
+    {
+        z = FLOATRANDZ;
+    }
+    else if(mobjinfo[i].flags2 & MF2_FLOATBOB)
+    {
+        z = mthing->height << FRACBITS;
+    }
+    else
+    {
+        z = ONFLOORZ;
+    }
+    switch (i)
+    {                           // Special stuff
+    case MT_ZLYNCHED_NOHEART:
+        P_SpawnMobj(x, y, ONFLOORZ, MT_BLOODPOOL);
+        break;
+    default:
+        break;
+    }
+    mobj = P_SpawnMobj(x, y, z, i);
+    if(z == ONFLOORZ)
+    {
+        mobj->z += mthing->height << FRACBITS;
+    }
+    else if(z == ONCEILINGZ)
+    {
+        mobj->z -= mthing->height << FRACBITS;
+    }
+    mobj->tid = mthing->tid;
+    mobj->special = mthing->special;
+    mobj->args[0] = mthing->arg1;
+    mobj->args[1] = mthing->arg2;
+    mobj->args[2] = mthing->arg3;
+    mobj->args[3] = mthing->arg4;
+    mobj->args[4] = mthing->arg5;
+    if(mobj->flags2 & MF2_FLOATBOB)
+    {                           // Seed random starting index for bobbing motion
+        mobj->health = P_Random();
+        mobj->special1 = mthing->height << FRACBITS;
+    }
+    if(mobj->tics > 0)
+    {
+        mobj->tics = 1 + (P_Random() % mobj->tics);
+    }
+    //  if(mobj->flags&MF_COUNTITEM)
+    //  {
+    //      totalitems++;
+    //  }
+    if(mobj->flags & MF_COUNTKILL)
+    {
+        // Quantize angle to 45 degree increments
+        mobj->angle = ANG45 * (mthing->angle / 45);
+    }
+    else
+    {
+        // Scale angle correctly (source is 0..359)
+        mobj->angle = ((mthing->angle << 8) / 360) << 24;
+    }
+    mobj->visangle = mobj->angle >> 16; // "angle-servo"; smooth actor turning
+    if(mthing->options & MTF_AMBUSH)
+    {
+        mobj->flags |= MF_AMBUSH;
+    }
+    if(mthing->options & MTF_DORMANT)
+    {
+        mobj->flags2 |= MF2_DORMANT;
+        if(mobj->type == MT_ICEGUY)
+        {
+            P_SetMobjState(mobj, S_ICEGUY_DORMANT);
+        }
+        mobj->tics = -1;
+    }
 }
 
 //==========================================================================
@@ -2069,15 +2066,15 @@ void P_RipperBlood(mobj_t *mo)
 
 int P_GetThingFloorType(mobj_t *thing)
 {
-	if(thing->floorpic && !IS_CLIENT)
-	{
-		return (TerrainTypes[thing->floorpic]);
-	}
-	else
-	{
-		return (TerrainTypes[P_GetIntp(thing->subsector, 
+    if(thing->floorpic && !IS_CLIENT)
+    {
+        return (TerrainTypes[thing->floorpic]);
+    }
+    else
+    {
+        return (TerrainTypes[P_GetIntp(thing->subsector,
                                        DMU_FLOOR_TEXTURE)]);
-	}
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2092,96 +2089,96 @@ int P_HitFloor(mobj_t *thing)
     mobj_t *mo;
     int     smallsplash = false;
 
-	if(thing->floorz != P_GetFixedp(thing->subsector, 
+    if(thing->floorz != P_GetFixedp(thing->subsector,
                                     DMU_FLOOR_HEIGHT))
-	{							// don't splash if landing on the edge above water/lava/etc....
-		return (FLOOR_SOLID);
-	}
+    {                           // don't splash if landing on the edge above water/lava/etc....
+        return (FLOOR_SOLID);
+    }
 
-	// Things that don't splash go here
-	switch (thing->type)
-	{
-	case MT_LEAF1:
-	case MT_LEAF2:
-		//      case MT_BLOOD:          // I set these to low mass -- pm
-		//      case MT_BLOODSPLATTER:
-	case MT_SPLASH:
-	case MT_SLUDGECHUNK:
-		return (FLOOR_SOLID);
-	default:
-		break;
-	}
+    // Things that don't splash go here
+    switch (thing->type)
+    {
+    case MT_LEAF1:
+    case MT_LEAF2:
+        //      case MT_BLOOD:          // I set these to low mass -- pm
+        //      case MT_BLOODSPLATTER:
+    case MT_SPLASH:
+    case MT_SLUDGECHUNK:
+        return (FLOOR_SOLID);
+    default:
+        break;
+    }
 
-	// Small splash for small masses
-	if(thing->info->mass < 10)
-		smallsplash = true;
+    // Small splash for small masses
+    if(thing->info->mass < 10)
+        smallsplash = true;
 
-	switch (P_GetThingFloorType(thing))
-	{
-	case FLOOR_WATER:
-		if(smallsplash)
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASHBASE);
-			if(mo)
-				mo->floorclip += SMALLSPLASHCLIP;
-			S_StartSound(SFX_AMBIENT10, mo);	// small drip
-		}
-		else
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASH);
-			mo->target = thing;
-			mo->momx = (P_Random() - P_Random()) << 8;
-			mo->momy = (P_Random() - P_Random()) << 8;
-			mo->momz = 2 * FRACUNIT + (P_Random() << 8);
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASHBASE);
-			if(thing->player)
-				P_NoiseAlert(thing, thing);
-			S_StartSound(SFX_WATER_SPLASH, mo);
-		}
-		return (FLOOR_WATER);
-	case FLOOR_LAVA:
-		if(smallsplash)
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASPLASH);
-			if(mo)
-				mo->floorclip += SMALLSPLASHCLIP;
-		}
-		else
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASMOKE);
-			mo->momz = FRACUNIT + (P_Random() << 7);
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASPLASH);
-			if(thing->player)
-				P_NoiseAlert(thing, thing);
-		}
-		S_StartSound(SFX_LAVA_SIZZLE, mo);
-		if(thing->player && leveltime & 31)
-		{
-			P_DamageMobj(thing, &LavaInflictor, NULL, 5);
-		}
-		return (FLOOR_LAVA);
-	case FLOOR_SLUDGE:
-		if(smallsplash)
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGESPLASH);
-			if(mo)
-				mo->floorclip += SMALLSPLASHCLIP;
-		}
-		else
-		{
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGECHUNK);
-			mo->target = thing;
-			mo->momx = (P_Random() - P_Random()) << 8;
-			mo->momy = (P_Random() - P_Random()) << 8;
-			mo->momz = FRACUNIT + (P_Random() << 8);
-			mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGESPLASH);
-			if(thing->player)
-				P_NoiseAlert(thing, thing);
-		}
-		S_StartSound(SFX_SLUDGE_GLOOP, mo);
-		return (FLOOR_SLUDGE);
-	}
-	return (FLOOR_SOLID);
+    switch (P_GetThingFloorType(thing))
+    {
+    case FLOOR_WATER:
+        if(smallsplash)
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASHBASE);
+            if(mo)
+                mo->floorclip += SMALLSPLASHCLIP;
+            S_StartSound(SFX_AMBIENT10, mo);    // small drip
+        }
+        else
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASH);
+            mo->target = thing;
+            mo->momx = (P_Random() - P_Random()) << 8;
+            mo->momy = (P_Random() - P_Random()) << 8;
+            mo->momz = 2 * FRACUNIT + (P_Random() << 8);
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASHBASE);
+            if(thing->player)
+                P_NoiseAlert(thing, thing);
+            S_StartSound(SFX_WATER_SPLASH, mo);
+        }
+        return (FLOOR_WATER);
+    case FLOOR_LAVA:
+        if(smallsplash)
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASPLASH);
+            if(mo)
+                mo->floorclip += SMALLSPLASHCLIP;
+        }
+        else
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASMOKE);
+            mo->momz = FRACUNIT + (P_Random() << 7);
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASPLASH);
+            if(thing->player)
+                P_NoiseAlert(thing, thing);
+        }
+        S_StartSound(SFX_LAVA_SIZZLE, mo);
+        if(thing->player && leveltime & 31)
+        {
+            P_DamageMobj(thing, &LavaInflictor, NULL, 5);
+        }
+        return (FLOOR_LAVA);
+    case FLOOR_SLUDGE:
+        if(smallsplash)
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGESPLASH);
+            if(mo)
+                mo->floorclip += SMALLSPLASHCLIP;
+        }
+        else
+        {
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGECHUNK);
+            mo->target = thing;
+            mo->momx = (P_Random() - P_Random()) << 8;
+            mo->momy = (P_Random() - P_Random()) << 8;
+            mo->momz = FRACUNIT + (P_Random() << 8);
+            mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGESPLASH);
+            if(thing->player)
+                P_NoiseAlert(thing, thing);
+        }
+        S_StartSound(SFX_SLUDGE_GLOOP, mo);
+        return (FLOOR_SLUDGE);
+    }
+    return (FLOOR_SOLID);
 }
 
 //---------------------------------------------------------------------------
@@ -2723,92 +2720,92 @@ mobj_t *P_SpawnKoraxMissile(fixed_t x, fixed_t y, fixed_t z, mobj_t *source,
 //==========================================================================
 void R_SetAllDoomsdayFlags(void)
 {
-	int     i, Class;
+    int     i, Class;
     int     sectorCount = DD_GetInteger(DD_SECTOR_COUNT);
-	mobj_t *mo;
+    mobj_t *mo;
 
-	// Only visible things are in the sector thinglists, so this is good.
-	for(i = 0; i < sectorCount; i++)
-		for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); mo; mo = mo->snext)
-		{
-			if(IS_CLIENT && mo->ddflags & DDMF_REMOTE)
-				continue;
+    // Only visible things are in the sector thinglists, so this is good.
+    for(i = 0; i < sectorCount; i++)
+        for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); mo; mo = mo->snext)
+        {
+            if(IS_CLIENT && mo->ddflags & DDMF_REMOTE)
+                continue;
 
-			// Reset the flags for a new frame.
-			mo->ddflags &= DDMF_CLEAR_MASK;
+            // Reset the flags for a new frame.
+            mo->ddflags &= DDMF_CLEAR_MASK;
 
-			if(mo->flags & MF_LOCAL)
-				mo->ddflags |= DDMF_LOCAL;
-			if(mo->flags & MF_SOLID)
-				mo->ddflags |= DDMF_SOLID;
-			if(mo->flags & MF_MISSILE)
-				mo->ddflags |= DDMF_MISSILE;
-			if(mo->flags2 & MF2_FLY)
-				mo->ddflags |= DDMF_FLY | DDMF_NOGRAVITY;
-			if(mo->flags2 & MF2_FLOATBOB)
-				mo->ddflags |= DDMF_BOB | DDMF_NOGRAVITY;
-			if(mo->flags2 & MF2_LOGRAV)
-				mo->ddflags |= DDMF_LOWGRAVITY;
-			if(mo->flags & MF_NOGRAVITY /* || mo->flags2 & MF2_FLY */ )
-				mo->ddflags |= DDMF_NOGRAVITY;
+            if(mo->flags & MF_LOCAL)
+                mo->ddflags |= DDMF_LOCAL;
+            if(mo->flags & MF_SOLID)
+                mo->ddflags |= DDMF_SOLID;
+            if(mo->flags & MF_MISSILE)
+                mo->ddflags |= DDMF_MISSILE;
+            if(mo->flags2 & MF2_FLY)
+                mo->ddflags |= DDMF_FLY | DDMF_NOGRAVITY;
+            if(mo->flags2 & MF2_FLOATBOB)
+                mo->ddflags |= DDMF_BOB | DDMF_NOGRAVITY;
+            if(mo->flags2 & MF2_LOGRAV)
+                mo->ddflags |= DDMF_LOWGRAVITY;
+            if(mo->flags & MF_NOGRAVITY /* || mo->flags2 & MF2_FLY */ )
+                mo->ddflags |= DDMF_NOGRAVITY;
 
-			// $democam: cameramen are invisible
-			if(P_IsCamera(mo))
-				mo->ddflags |= DDMF_DONTDRAW;
+            // $democam: cameramen are invisible
+            if(P_IsCamera(mo))
+                mo->ddflags |= DDMF_DONTDRAW;
 
-			// Choose which ddflags to set.
-			if(mo->flags2 & MF2_DONTDRAW)
-			{
-				mo->ddflags |= DDMF_DONTDRAW;
-				continue;		// No point in checking the other flags.
-			}
+            // Choose which ddflags to set.
+            if(mo->flags2 & MF2_DONTDRAW)
+            {
+                mo->ddflags |= DDMF_DONTDRAW;
+                continue;       // No point in checking the other flags.
+            }
 
-			if((mo->flags & MF_BRIGHTSHADOW) == MF_BRIGHTSHADOW)
-				mo->ddflags |= DDMF_BRIGHTSHADOW;
-			else
-			{
-				if(mo->flags & MF_SHADOW)
-					mo->ddflags |= DDMF_SHADOW;
-				if(mo->flags & MF_ALTSHADOW ||
-				   (cfg.translucentIceCorpse && mo->flags & MF_ICECORPSE))
-					mo->ddflags |= DDMF_ALTSHADOW;
-			}
+            if((mo->flags & MF_BRIGHTSHADOW) == MF_BRIGHTSHADOW)
+                mo->ddflags |= DDMF_BRIGHTSHADOW;
+            else
+            {
+                if(mo->flags & MF_SHADOW)
+                    mo->ddflags |= DDMF_SHADOW;
+                if(mo->flags & MF_ALTSHADOW ||
+                   (cfg.translucentIceCorpse && mo->flags & MF_ICECORPSE))
+                    mo->ddflags |= DDMF_ALTSHADOW;
+            }
 
-			if((mo->flags & MF_VIEWALIGN && !(mo->flags & MF_MISSILE)) ||
-			   mo->flags & MF_FLOAT || (mo->flags & MF_MISSILE &&
-										!(mo->flags & MF_VIEWALIGN)))
-				mo->ddflags |= DDMF_VIEWALIGN;
+            if((mo->flags & MF_VIEWALIGN && !(mo->flags & MF_MISSILE)) ||
+               mo->flags & MF_FLOAT || (mo->flags & MF_MISSILE &&
+                                        !(mo->flags & MF_VIEWALIGN)))
+                mo->ddflags |= DDMF_VIEWALIGN;
 
-			mo->ddflags |= mo->flags & MF_TRANSLATION;
+            mo->ddflags |= mo->flags & MF_TRANSLATION;
 
-			// Which translation table to use?
-			if(mo->flags & MF_TRANSLATION)
-			{
-				if(mo->player)
-				{
-					Class = mo->player->class;
-				}
-				else
-				{
-					Class = mo->special1;
-				}
-				if(Class > 2)
-				{
-					Class = 0;
-				}
-				// The last two bits.
-				mo->ddflags |= Class << DDMF_CLASSTRSHIFT;
-			}
+            // Which translation table to use?
+            if(mo->flags & MF_TRANSLATION)
+            {
+                if(mo->player)
+                {
+                    Class = mo->player->class;
+                }
+                else
+                {
+                    Class = mo->special1;
+                }
+                if(Class > 2)
+                {
+                    Class = 0;
+                }
+                // The last two bits.
+                mo->ddflags |= Class << DDMF_CLASSTRSHIFT;
+            }
 
-			// An offset for the light emitted by this object.
-			/*          Class = MobjLightOffsets[mo->type];
-			   if(Class < 0) Class = 8-Class;
-			   // Class must now be in range 0-15.
-			   mo->ddflags |= Class << DDMF_LIGHTOFFSETSHIFT; */
+            // An offset for the light emitted by this object.
+            /*          Class = MobjLightOffsets[mo->type];
+               if(Class < 0) Class = 8-Class;
+               // Class must now be in range 0-15.
+               mo->ddflags |= Class << DDMF_LIGHTOFFSETSHIFT; */
 
-			// The Mage's ice shards need to be a bit smaller.
-			// This'll make them half the normal size.
-			if(mo->type == MT_SHARDFX1)
-				mo->ddflags |= 2 << DDMF_LIGHTSCALESHIFT;
-		}
+            // The Mage's ice shards need to be a bit smaller.
+            // This'll make them half the normal size.
+            if(mo->type == MT_SHARDFX1)
+                mo->ddflags |= 2 << DDMF_LIGHTSCALESHIFT;
+        }
 }
