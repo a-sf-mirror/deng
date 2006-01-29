@@ -24,6 +24,5 @@
 #endif
 
 #include "r_defs.h"
-#include "r_state.h"
 
 #endif

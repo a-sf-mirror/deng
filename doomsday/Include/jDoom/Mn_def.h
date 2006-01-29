@@ -133,7 +133,6 @@ extern Menu_t   GameSetupMenu;
 extern Menu_t   PlayerSetupMenu;
 
 void    SetMenu(MenuType_t menu);
-void    M_DrawSaveLoadBorder(int x, int y);
 void    M_DrawTitle(char *text, int y);
 void    M_WriteText(int x, int y, char *string);
 void    M_WriteText2(int x, int y, char *string, dpatch_t *font,

@@ -15,6 +15,10 @@
 #ifndef __D_EVENT__
 #define __D_EVENT__
 
+#ifndef __JDOOM__
+#  error "Using jDoom headers without __JDOOM__"
+#endif
+
 #include "doomtype.h"
 
 typedef enum {
