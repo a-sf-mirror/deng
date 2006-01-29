@@ -28,7 +28,7 @@
 #include "wi_stuff.h"
 #include "hu_stuff.h"
 #include "hu_pspr.h"
-#include "am_map.h"
+#include "Common/am_map.h"
 #include "d_config.h"
 #include "x_hair.h"
 #include "Mn_def.h"

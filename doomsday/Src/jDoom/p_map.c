@@ -19,7 +19,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdlib.h>
 #include <math.h>
 
 #include "m_random.h"

@@ -21,8 +21,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include "doomdef.h"
-#include "doomstat.h"
+#include "jDoom/doomdef.h"
+#include "jDoom/doomstat.h"
 #include "jDoom/d_config.h"
 #include "AcFnLink.h"
 

@@ -27,8 +27,6 @@
 #  pragma optimize("g", off)
 #endif
 
-#include <stdlib.h>
-
 #include "m_random.h"
 #include "doomdef.h"
 #include "d_config.h"

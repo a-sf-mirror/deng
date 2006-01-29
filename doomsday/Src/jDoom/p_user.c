@@ -20,8 +20,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <math.h>
-
 #include "doomdef.h"
 #include "d_config.h"
 #include "d_event.h"
@@ -319,6 +317,8 @@ weapontype_t P_PlayerFindWeapon(player_t *player, boolean next)
 
 /*
  * Called once per tick by P_Ticker.
+ * This routine does all the thinking for the console player during
+ * netgames.
  */
 void P_ClientSideThink()
 {
