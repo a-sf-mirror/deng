@@ -362,8 +362,8 @@ void R_ConvexClipper(subsector_t *ssec, int num, divline_t * list)
 
     if(!numedgepoints)
     {
-        printf("All clipped away: subsector %d\n",
-               ((byte *) ssec - subsectors) / SUBSIZE);
+        printf("All clipped away: subsector %u\n",
+               ((byte*) ssec - subsectors) / SUBSIZE);
         ssec->numverts = 0;
         ssec->verts = 0;
         //ssec->origverts = 0;

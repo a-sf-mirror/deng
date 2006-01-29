@@ -45,7 +45,11 @@ extern          "C" {
  * accessed externally, but only as identifiers to data instances.
  * For example, a game could use sector_t to identify to sector to
  * change with the Map Update API.
+ *
+ * Define __INTERNAL_MAP_DATA_ACCESS__ if access to the internal map data
+ * structures is needed.
  */
+#ifndef __INTERNAL_MAP_DATA_ACCESS__
     typedef void node_s;
     typedef void vertex_s;
     typedef void line_s;
@@ -65,7 +69,8 @@ extern          "C" {
     typedef struct sector_s sector_t;
     typedef struct polyblock_s polyblock_t;
     typedef struct polyobj_s polyobj_t;
-
+#endif    
+    
     // Base.
     void           *DD_GetDGLProcAddress(const char *name);
     void            DD_AddIWAD(const char *path);
@@ -93,7 +98,8 @@ extern          "C" {
     int             W_LumpLength(int lump);
     const char     *W_LumpName(int lump);
     void            W_ReadLump(int lump, void *dest);
-    void        W_ReadLumpSection(int lump, void *dest, int startoffset, int length);
+    void            W_ReadLumpSection(int lump, void *dest, int startoffset, 
+                                      int length);
     void           *W_CacheLumpNum(int lump, int tag);
     void           *W_CacheLumpName(char *name, int tag);
     void            W_ChangeCacheTag(int lump, int tag);
@@ -183,8 +189,8 @@ extern          "C" {
                                          boolean (*func) (struct line_s *,
                                                           void *), void *);
     boolean         P_BlockThingsIterator(int x, int y,
-                                          boolean (*func) (struct mobj_s *,
-                                                           void *), void *);
+                                          boolean (*func) 
+                                          (struct mobj_s*, void*), void*);
     boolean         P_BlockPolyobjsIterator(int x, int y,
                                             boolean (*func) (void *, void *),
                                             void *);
@@ -192,17 +198,14 @@ extern          "C" {
                                          boolean (*func) (struct line_s *,
                                                           void *), void *);
     boolean         P_ThingSectorsIterator(struct mobj_s *thing,
-                                           boolean (*func) (struct sector_s *,
-                                                            void *),
+                                           boolean (*func) (sector_t*, void*),
                                            void *data);
     boolean         P_LineThingsIterator(struct line_s *line,
                                          boolean (*func) (struct mobj_s *,
                                                           void *), void *data);
-    boolean         P_SectorTouchingThingsIterator(struct sector_s *sector,
-                                                   boolean (*func) (struct
-                                                                    mobj_s *,
-                                                                    void *),
-                                                   void *data);
+    boolean         P_SectorTouchingThingsIterator
+                        (sector_t *sector, boolean (*func) (struct mobj_s*, void*), 
+                         void *data);
     boolean         P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2,
                                    fixed_t y2, int flags,
                                    boolean (*trav) (intercept_t *));
@@ -310,8 +313,7 @@ extern          "C" {
     boolean         PO_RotatePolyobj(int num, angle_t angle);
     void            PO_UnLinkPolyobj(void *po);
     void            PO_LinkPolyobj(void *po);
-    void            PO_SetCallback(void (*func)
-                                   (struct mobj_s *, void *, void *));
+    void            PO_SetCallback(void (*func)(struct mobj_s*, void*, void*));
 
     // Play: Thinkers.
     void            P_RunThinkers(void);
@@ -385,8 +387,8 @@ extern          "C" {
     void            GL_DrawRectTiled(int x, int y, int w, int h, int tw,
                                      int th);
     void            GL_DrawCutRectTiled(int x, int y, int w, int h, int tw,
-                                    int th, int txoff, int tyoff, int cx,
-                                    int cy, int cw, int ch);
+                                        int th, int txoff, int tyoff, int cx,
+                                        int cy, int cw, int ch);
     void            GL_DrawPSprite(float x, float y, float scale, int flip,
                                    int lump);
     void            GL_SetFilter(int filter_rgba);

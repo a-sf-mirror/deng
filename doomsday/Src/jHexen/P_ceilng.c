@@ -14,6 +14,7 @@
 #include "jHexen/p_local.h"
 #include "jHexen/soundst.h"
 #include "Common/p_start.h"
+#include "Common/dmu_lib.h"
 
 //==================================================================
 //==================================================================

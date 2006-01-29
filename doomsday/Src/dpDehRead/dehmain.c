@@ -40,8 +40,13 @@
 #include <stddef.h>
 #include <ctype.h>
 
-#include <doomsday.h>
+// This plugin accesses the internal definition arrays. This dependency should
+// be removed entirely, either by making the plugin modify the definitions
+// via an API or by integrating the plugin into the engine.
 #include <def_data.h>
+
+#define __INTERNAL_MAP_DATA_ACCESS__
+#include <doomsday.h>
 
 // MACROS ------------------------------------------------------------------
 
@@ -56,7 +61,7 @@
 
 #define LPrintf     Con_Message
 
-#define LINESIZE    2048
+//#define LINESIZE    2048
 #define NUMSPRITES  138
 #define NUMSTATES   968
 

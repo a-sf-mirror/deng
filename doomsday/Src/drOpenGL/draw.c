@@ -64,7 +64,7 @@ array_t arrays[MAX_ARRAYS];
 //===========================================================================
 void InitArrays(void)
 {
-	double  version = strtod(glGetString(GL_VERSION), NULL);
+	double  version = strtod((const char*) glGetString(GL_VERSION), NULL);
 
 	// If the driver's OpenGL version is older than 1.3, disable arrays
 	// by default.

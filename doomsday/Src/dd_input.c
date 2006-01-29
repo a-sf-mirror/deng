@@ -473,9 +473,10 @@ void DD_ProcessEvents(void)
         if(B_Responder(ev))
             continue;
 
-        // The "fallback" responder.
-        gx.FallbackResponder(ev);
-
+        // The "fallback" responder. Gets the event if no one else is 
+        // interested.
+        if(gx.FallbackResponder)
+            gx.FallbackResponder(ev);
     }
 }
 

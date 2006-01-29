@@ -29,6 +29,7 @@ extern          "C" {
 #endif
 
 #include "def_share.h"
+#include "p_data.h"
 
     // Version 6 does not require semicolons.
 #define DED_VERSION         6
@@ -85,7 +86,7 @@ extern          "C" {
         // by querying the game for the callbacks for the
         // classes by "name";
         int (C_DECL *doFunc)();
-        void (*initFunc)(struct line_s *line);
+        void (*initFunc)(line_t *line);
         int traverse;
         int travref;
         int travdata;

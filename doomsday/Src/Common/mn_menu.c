@@ -410,7 +410,9 @@ static float outFade = 0;
 static boolean fadingOut = false;
 static int menuDarkTicks = 15;
 static int quitAsk = 0; // set ON so menu fog is rendered with the quit message
+#ifndef __JHEXEN__
 static int quitYet = 0; // prevents multiple quit responses
+#endif
 static int slamInTicks = 9;
 
 // used to fade out the background a little when a widget is active

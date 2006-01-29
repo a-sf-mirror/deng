@@ -308,9 +308,6 @@ int     mapnames_idx[] = {
 
 static boolean headsupactive = false;
 
-// # of commercial levels
-static int NUMCMAPS;
-
 // Code -------------------------------------------------------------------
 
 void R_CachePatch(dpatch_t * dp, char *name)
@@ -395,7 +392,7 @@ void HU_Init(void)
     // load the map name patches
     if(gamemode == commercial)
     {
-        NUMCMAPS = 32;
+        int NUMCMAPS = 32;
         lnames =
             (dpatch_t *) Z_Malloc(sizeof(dpatch_t) * NUMCMAPS, PU_STATIC, 0);
         for(i = 0; i < NUMCMAPS; i++)

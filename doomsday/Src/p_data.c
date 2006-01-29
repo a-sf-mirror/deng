@@ -86,11 +86,8 @@ typedef struct {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean P_FindMapLumps(int lumps, int gllumps, char *levelID);
-
 static void P_CheckLevel(char *levelID, boolean silent);
 static void P_GroupLines(void);
-
 static void P_FreeBadTexList(void);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -925,13 +922,13 @@ boolean P_LoadMap(char *levelId)
  * TODO: latter on this will be expanded to check for various
  *       doom.exe renderer hacks and other stuff.
  *
- * @param silent - dont announce non-critcal errors
+ * @param silent - don't announce non-critical errors
  */
 static void P_CheckLevel(char *levelID, boolean silent)
 {
     int i, printCount;
     boolean canContinue = !numMissingFronts;
-    boolean hasErrors = (numBadTexNames || numMissingFronts);
+    //boolean hasErrors = (numBadTexNames || numMissingFronts);
 
     Con_Message("P_CheckLevel: Checking %s for errors...\n", levelID);
 
@@ -978,8 +975,11 @@ static void P_CheckLevel(char *levelID, boolean silent)
     P_FreeBadTexList();
 
     if(!canContinue)
-        Con_Error("\nP_CheckLevel: Critical errors encountered (marked with '!').\n" \
-                  "You will need to fix these errors in order to play this map.\n");
+    {
+        Con_Error("\nP_CheckLevel: Critical errors encountered "
+                  "(marked with '!').\n  You will need to fix these errors in "
+                  "order to play this map.\n");
+    }
 }
 
 /*

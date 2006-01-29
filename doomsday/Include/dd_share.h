@@ -1054,7 +1054,7 @@ typedef enum blendmode_e {
 
     // Bind Class
     typedef struct bindclass_s {
-        char *name;
+        const char *name;
         int id;
         int active;
         int absolute;

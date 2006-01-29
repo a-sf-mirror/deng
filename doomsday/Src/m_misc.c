@@ -1092,7 +1092,7 @@ boolean M_CheckTrigger(trigger_t * trigger, timespan_t advanceTime)
  */
 uint M_CRC32(byte *data, uint length)
 {
-/* ============================================================= */
+/* ====================================================================== */
 /*  COPYRIGHT (C) 1986 Gary S. Brown.  You may use this program, or       */
 /*  code or tables extracted from it, as desired without restriction.     */
 /*                                                                        */

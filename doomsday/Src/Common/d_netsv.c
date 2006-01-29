@@ -97,6 +97,7 @@ void    SB_ChangePlayerClass(player_t *player, int newclass);
 
 int     NetSv_GetFrags(int pl);
 void    NetSv_CheckCycling(void);
+void    NetSv_SendPlayerClass(int pnum, char cls);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 

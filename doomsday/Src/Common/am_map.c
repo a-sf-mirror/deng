@@ -2149,7 +2149,7 @@ int     scissorState[5];
 
 void AM_GL_SetupState()
 {
-    float extrascale = 0;
+    //float extrascale = 0;
 
     // Update the window scale vars
     if(oldwin_w != 1 /*cfg.automapWidth*/ || oldwin_h != 1 /*cfg.automapHeight*/)
@@ -2173,7 +2173,10 @@ void AM_GL_SetupState()
     {
         gl.Enable(DGL_TEXTURING);
 
-        GL_SetColorAndAlpha(cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], (am_alpha - (1- cfg.automapBack[3])));
+        GL_SetColorAndAlpha(cfg.automapBack[0], 
+                            cfg.automapBack[1], 
+                            cfg.automapBack[2], 
+                            (am_alpha - (1- cfg.automapBack[3])));
         GL_SetRawImage(maplumpnum, 0);        // We only want the left portion.
         GL_DrawRectTiled(winx, winy, winw, winh, 128, 100);
     }
@@ -2181,7 +2184,9 @@ void AM_GL_SetupState()
     {
         // nope just a solid color
         GL_SetNoTexture();
-        GL_DrawRect(winx, winy, winw, winh, cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], (am_alpha - (1- cfg.automapBack[3])));
+        GL_DrawRect(winx, winy, winw, winh, 
+                    cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], 
+                    (am_alpha - (1- cfg.automapBack[3])));
     }
 
     // How about an outside border?

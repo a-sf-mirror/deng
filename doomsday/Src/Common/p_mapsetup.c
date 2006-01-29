@@ -40,6 +40,7 @@
 #  include <math.h>
 #  include "h2def.h"
 #  include "jHexen/p_local.h"
+#  include "Common/p_start.h"
 #elif __JSTRIFE__
 #  include "h2def.h"
 #  include "jStrife/p_local.h"

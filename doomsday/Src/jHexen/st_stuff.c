@@ -2875,8 +2875,11 @@ static void CheatVersionFunc(player_t *player, Cheat_t * cheat)
 
 static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
 {
-    char    textBuffer[50];
+    char    textBuffer[256];
 
+    if(!player->plr->mo)
+        return;        
+    
     sprintf(textBuffer, "MAP %d (%d)  X:%5d  Y:%5d  Z:%5d",
             P_GetMapWarpTrans(gamemap), gamemap,
             player->plr->mo->x >> FRACBITS, player->plr->mo->y >> FRACBITS,
