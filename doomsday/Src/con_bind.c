@@ -422,7 +422,7 @@ void B_Shutdown()
     numBinds = 0;
 
     // Now we can clear the bindClasses
-    for( i= 0; i < numBindClasses; ++i)
+    for(i = 0; i < numBindClasses; ++i)
         free(bindClasses[i].name);
 
     free(bindClasses);
@@ -617,7 +617,7 @@ D_CMD(Bind)
     // Check for a specified binding class
     for(i = 0; i < numBindClasses; ++i)
     {
-        if(!(stricmp(argv[1],bindClasses[i].name)) ||
+        if(!(stricmp(argv[1], bindClasses[i].name)) ||
             ((!strnicmp(argv[1], "bdc", 3) &&
             (atoi(argv[1]+3) == bindClasses[i].id) )))
         {
@@ -747,7 +747,7 @@ D_CMD(DeleteBind)
     if(argc > 2)
         for(i = 0 ; i < numBindClasses; ++i)
         {
-            if((!stricmp(argv[1],bindClasses[i].name)) ||
+            if((!stricmp(argv[1], bindClasses[i].name)) ||
                 (atoi(argv[1]) == bindClasses[i].id))
             {
                 if(argc < 3)
@@ -803,7 +803,7 @@ D_CMD(ListBindings)
     if(argc >= 2)
     {
         for(k = 0; k < numBindClasses; ++k)
-            if(!stricmp(argv[1],bindClasses[k].name))
+            if(!stricmp(argv[1], bindClasses[k].name))
             {
                 // only show bindings in this class
                 onlythis = bindClasses[k].id;
@@ -840,7 +840,8 @@ D_CMD(ListBindings)
                 if(onlythis != -1)
                     Con_Printf("%-8s : %s\n", buffer, binds[i].commands[k].command);
                 else
-                    Con_Printf("%-8s : %s : %s\n", buffer, bindClasses[k].name, binds[i].commands[k].command);
+                    Con_Printf("%-8s : %s : %s\n", buffer, bindClasses[k].name, 
+                               binds[i].commands[k].command);
             }
         }
     }
@@ -863,8 +864,9 @@ D_CMD(ListBindings)
 void DD_AddBindClass(bindclass_t *newbc)
 {
     int i;
+    bindclass_t *added;
 
-    VERBOSE2(Con_Printf("B_AddBindClass: %s.\n", newbc->name));
+    VERBOSE2(Con_Printf("DD_AddBindClass: %s.\n", newbc->name));
 
     if(++numBindClasses > maxBindClasses)
     {
@@ -882,9 +884,12 @@ void DD_AddBindClass(bindclass_t *newbc)
         }
     }
 
-    memcpy(bindClasses + numBindClasses - 1, newbc, sizeof(bindclass_t));
+    added = &bindClasses[numBindClasses - 1];
+    memcpy(added, newbc, sizeof(bindclass_t));
+    added->id = numBindClasses - 1;
 
-    bindClasses[numBindClasses-1].id = numBindClasses -1;
+    // Allocate a copy of the class name.
+    added->name = strdup(newbc->name);
 }
 
 /*
@@ -898,9 +903,10 @@ D_CMD(EnableBindClass)
     if(argc < 2 || argc > 3)
     {
         for(i = 0; i < numBindClasses; ++i)
-            Con_Printf("%d: %s is %s\n",i,bindClasses[i].name,(bindClasses[i].active)? "On" : "Off");
+            Con_Printf("%d: %s is %s\n", i, bindClasses[i].name,
+                       (bindClasses[i].active)? "On" : "Off");
 
-        Con_Printf("Usage: %s (binding class) (1= On 0= Off (leave blank to toggle))\n", argv[0]);
+        Con_Printf("Usage: %s (binding class) (1=On, 0=Off (leave blank to toggle))\n", argv[0]);
         return true;
     }
 
@@ -908,7 +914,7 @@ D_CMD(EnableBindClass)
     // that matches the argument
     for(i = 0; i < numBindClasses; ++i)
     {
-        if(!(stricmp(argv[1],bindClasses[i].name)))
+        if(!(stricmp(argv[1], bindClasses[i].name)))
         {
             i = bindClasses[i].id;
             break;
@@ -917,7 +923,7 @@ D_CMD(EnableBindClass)
 
     if(i >= 0 && i < numBindClasses)
     {
-        if(B_SetBindClass(i, (argc == 3)? atoi(argv[2]): 2))
+        if(B_SetBindClass(i, (argc == 3)? atoi(argv[2]) : 2))
             return true;
     }
     else
@@ -956,12 +962,14 @@ boolean B_SetBindClass(int classID, int type)
             bindClasses[classID].active = type? 1 : 0;
             break;
         case 2:  // toggle
-            bindClasses[classID].active = bindClasses[classID].active? 0: 1;
+            bindClasses[classID].active = bindClasses[classID].active? 0 : 1;
             break;
     }
 
-    VERBOSE2(Con_Printf("B_SetBindClass: %s %s %s.\n",bindClasses[classID].name,\
-                        (type==2)? "TOGGLE":"SET",bindClasses[classID].active? "ON":"OFF"));
+    VERBOSE2(Con_Printf("B_SetBindClass: %s %s %s.\n", 
+                        bindClasses[classID].name,
+                        (type==2)? "TOGGLE" : "SET",
+                        bindClasses[classID].active? "ON" : "OFF"));
 
     // Now we need to do a check in case there are keys currently
     // being pressed that should be released if the event binding they are
