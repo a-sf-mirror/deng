@@ -342,8 +342,6 @@ static void     P_ReadSideDefTextures(int lump);
 static void     P_FinishLineDefs(void);
 static void     P_ProcessSegs(int version);
 
-static void P_CompileSideSpecialsList(void);
-
 static void P_SetLineSideNum(int *side, unsigned short num);
 
 #if _DEBUG
@@ -411,9 +409,6 @@ static mapdatalumpInfo_t* mapDataLumps;
 static int numMapDataLumps;
 
 static mapseg_t *segstemp;
-
-// For BOOM style texture name overloading (TEMP)
-static int *sidespecials;
 
 // CODE --------------------------------------------------------------------
 
@@ -486,18 +481,20 @@ const char* DAM_Str(int prop)
 static void AddMapDataLump(int lumpNum, int lumpClass)
 {
     int num = numMapDataLumps;
+    mapdatalumpInfo_t* mapDataLump;
 
     numMapDataLumps++;
 
     mapDataLumps =
         realloc(mapDataLumps, sizeof(mapdatalumpInfo_t) * numMapDataLumps);
 
-    mapDataLumps[num].lumpNum = lumpNum;
-    mapDataLumps[num].lumpClass = lumpClass;
-    mapDataLumps[num].lumpp = NULL;
-    mapDataLumps[num].length = 0;
-    mapDataLumps[num].version = -1;
-    mapDataLumps[num].startOffset = 0;
+    mapDataLump = &mapDataLumps[num];
+    mapDataLump->lumpNum = lumpNum;
+    mapDataLump->lumpClass = lumpClass;
+    mapDataLump->lumpp = NULL;
+    mapDataLump->length = 0;
+    mapDataLump->version = -1;
+    mapDataLump->startOffset = 0;
 }
 
 static void FreeMapDataLumps(void)
@@ -928,7 +925,7 @@ boolean P_LoadMapData(char *levelId)
     // Attempt to find the map data for this level
     if(!P_LocateMapData(levelId, lumpNumbers))
     {
-        // We that was a non-starter...
+        // Well that was a non-starter...
         return false;
     }
 
@@ -962,9 +959,7 @@ boolean P_LoadMapData(char *levelId)
         //
         // NOTE:
         // DJS 01/10/05 - revised load order to allow for cross-referencing
-        // data during loading (detect + fix trivial errors), in preperation
-        // for commonization and to support various format enhancements.
-        // Make sure we have all the lumps we need to load this map
+        //                data during loading (detect + fix trivial errors).
         P_ReadMapData(mlVertexes);
         P_ReadMapData(glVerts);
         P_ReadMapData(mlSectors);
@@ -1067,9 +1062,9 @@ static void P_ReadMapData(int doClass)
             // How many elements are in the lump?
             elements = (mapLump->length - mapLump->startOffset) / (int) lumpFormat->elmSize;
 
-            VERBOSE(Con_Message("P_ReadMapData: Processing \"%s\" (#%d)...\n",
+            VERBOSE(Con_Message("P_ReadMapData: Processing \"%s\" (#%d) ver %d...\n",
                                 W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
-                                elements));
+                                elements, mapLump->version));
 
             // Have we cached the lump yet?
             if(mapLump->lumpp == NULL)
@@ -1136,10 +1131,6 @@ static void P_ReadMapData(int doClass)
                     sides = Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, 0);
 
                 memset(SIDE_PTR(oldNum), 0, elements * sizeof(side_t));
-
-                // For BOOM style texture name overloading (TEMP)
-                sidespecials = Z_Malloc(numsides * sizeof(int), PU_STATIC, 0);
-                memset(sidespecials + oldNum, 0, elements * sizeof(int));
 
                 // Call the game's setup routine
                 if(gx.SetupForSides)
@@ -1221,12 +1212,6 @@ static void P_ReadMapData(int doClass)
             {
             case DAM_SEG:
                 P_ProcessSegs(mapLump->version);
-                break;
-
-            case DAM_LINE:
-                // BOOM uses a system of overloaded sidedef texture names as parameters
-                // instead of textures. These depend on the special of the linedef.
-                P_CompileSideSpecialsList();
                 break;
 
             default:
@@ -2017,24 +2002,6 @@ static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *bu
     }
 }
 
-// In BOOM sidedef textures can be overloaded depending on
-// the special of the line that uses the sidedef.
-// Hmm. How should we handle this?
-static void P_CompileSideSpecialsList(void)
-{
-    int i;
-    line_t *ld;
-
-    ld = LINE_PTR(0);
-    for(i = numlines; i ; i--, ld++)
-    {
-/*
-        if(ld->sidenum[0] != NO_INDEX && ld->special)
-            sidespecials[ld->sidenum[0]] = ld->special;
-*/
-    }
-}
-
 // FIXME: Could be a macro?
 static void P_SetLineSideNum(int *side, unsigned short num)
 {
@@ -2219,9 +2186,6 @@ static void P_ReadSideDefTextures(int lump)
     }
 
     Z_Free(data);
-
-    // We've finished with the sidespecials list
-    Z_Free(sidespecials);
 }
 
 /*
