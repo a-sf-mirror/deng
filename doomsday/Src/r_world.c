@@ -313,11 +313,10 @@ fvertex_t *edgeClipper(int *numpoints, fvertex_t * points, int numclippers,
 void R_ConvexClipper(subsector_t *ssec, int num, divline_t * list)
 {
     int     numclippers = num + ssec->linecount;
-    fdivline_t *clippers =
-        (fdivline_t *) Z_Malloc(numclippers * sizeof(fdivline_t), PU_STATIC,
-                                0);
     int     i, numedgepoints;
     fvertex_t *edgepoints;
+    fdivline_t *clippers = (fdivline_t *) 
+        Z_Malloc(numclippers * sizeof(fdivline_t), PU_STATIC, 0);
 
     // Convert the divlines to float, in reverse order.
     for(i = 0; i < numclippers; i++)
@@ -357,12 +356,11 @@ void R_ConvexClipper(subsector_t *ssec, int num, divline_t * list)
     edgepoints[3].y = -32768;
 
     // Do some clipping, <snip> <snip>
-    edgepoints =
-        edgeClipper(&numedgepoints, edgepoints, numclippers, clippers);
+    edgepoints = edgeClipper(&numedgepoints, edgepoints, numclippers, clippers);
 
     if(!numedgepoints)
     {
-        printf("All clipped away: subsector %u\n",
+        printf("All clipped away: subsector %lu\n",
                ((byte*) ssec - subsectors) / SUBSIZE);
         ssec->numverts = 0;
         ssec->verts = 0;
