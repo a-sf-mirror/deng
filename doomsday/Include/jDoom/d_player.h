@@ -35,6 +35,14 @@
 #endif
 
 //
+// Player Classes
+//
+typedef enum {
+    PCLASS_PLAYER,
+    NUMCLASSES
+} pclass_t;
+
+//
 // Player states.
 //
 typedef enum {
