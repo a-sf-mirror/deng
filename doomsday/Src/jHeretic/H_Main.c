@@ -24,7 +24,6 @@
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/h_stat.h"
 
-#include "Common/p_setup.h"
 #include "Common/d_net.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/Soundst.h"
@@ -61,7 +60,7 @@ boolean respawnparm;            // checkparm of -respawn
 
 boolean cdrom;                  // true if cd-rom mode active
 boolean singletics;             // debug flag to cancel adaptiveness
-boolean noartiskip;             // whether shift-enter skips an artifact
+boolean artiskip;             // whether shift-enter skips an artifact
 
 skill_t startskill;
 int     startepisode;
@@ -389,7 +388,7 @@ void H_PostInit(void)
     nomonsters = ArgCheck("-nomonsters");
     respawnparm = ArgCheck("-respawn");
     devparm = ArgCheck("-devparm");
-    noartiskip = ArgCheck("-noartiskip");
+    artiskip = !(ArgCheck("-noartiskip"));
     debugmode = ArgCheck("-debug");
 
     if(ArgCheck("-deathmatch"))
