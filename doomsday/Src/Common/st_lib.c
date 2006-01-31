@@ -75,11 +75,7 @@ int     sttminus_i;
 
 void STlib_init(void)
 {
-#ifdef __JDOOM__
-    sttminus_i = W_GetNumForName("STTMINUS");
-#else
-    sttminus_i = W_GetNumForName("FONTB13");
-#endif
+    sttminus_i = W_GetNumForName(MINUSPATCH);
 }
 
 void STlib_initNum(st_number_t * n, int x, int y, dpatch_t * pl, int *num,
