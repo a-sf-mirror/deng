@@ -71,17 +71,6 @@ extern Menu_t  ControlsDef;
 
 const Control_t *grabbing = NULL;
 
-// Binding classes (for the dynamic event responder chain)
-bindclass_t BindClasses[] = {
-    {"map", GBC_CLASS1, 0, 0},
-    {"mapfollowoff", GBC_CLASS2, 0, 0},
-    {"menu", GBC_CLASS3, 0, 1},
-    {"menuhotkey", GBC_MENUHOTKEY, 1, 0},
-    {"chat", GBC_CHAT, 0, 0},
-    {"message", GBC_MESSAGE, 0, 1},
-    {NULL}
-};
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
@@ -188,61 +177,6 @@ void M_DrawControlsMenu(void)
 }
 
 /*
- * Set default bindings for unbound Controls.
- */
-void G_DefaultBindings(void)
-{
-    int     i;
-    const Control_t *ctr;
-    char    evname[80], cmd[256], buff[256];
-    event_t event;
-
-    // Check all Controls.
-    for(i = 0; controls[i].command[0]; i++)
-    {
-        ctr = controls + i;
-        // If this command is bound to something, skip it.
-        sprintf(cmd, "%s%s", ctr->flags & CLF_ACTION ? "+" : "", ctr->command);
-        memset(buff, 0, sizeof(buff));
-        if(B_BindingsForCommand(cmd, buff, -1))
-            continue;
-
-        // This Control has no bindings, set it to the default.
-        sprintf(buff, "\"%s\"", ctr->command);
-        if(ctr->defKey)
-        {
-            event.type = ev_keydown;
-            event.data1 = ctr->defKey;
-            B_EventBuilder(evname, &event, false);
-            sprintf(cmd, "%s bdc%d %s %s",
-                    ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
-                    controls[i].bindClass, evname + 1, buff);
-            DD_Execute(cmd, true);
-        }
-        if(ctr->defMouse)
-        {
-            event.type = ev_mousebdown;
-            event.data1 = 1 << (ctr->defMouse - 1);
-            B_EventBuilder(evname, &event, false);
-            sprintf(cmd, "%s bdc%d %s %s",
-                    ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
-                    controls[i].bindClass, evname + 1, buff);
-            DD_Execute(cmd, true);
-        }
-        if(ctr->defJoy)
-        {
-            event.type = ev_joybdown;
-            event.data1 = 1 << (ctr->defJoy - 1);
-            B_EventBuilder(evname, &event, false);
-            sprintf(cmd, "%s bdc%d %s %s",
-                    ctr->flags & CLF_REPEAT ? "safebindr" : "safebind",
-                    controls[i].bindClass, evname + 1, buff);
-            DD_Execute(cmd, true);
-        }
-    }
-}
-
-/*
  *  findtoken
  */
 int findtoken(char *string, char *token, char *delim)
@@ -326,20 +260,4 @@ int D_PrivilegedResponder(event_t *event)
         return true;
     }
     return false;
-}
-
-/*
- * Registers the additional bind classes the game requires
- *
- * (Doomsday manages the bind class stack which forms the
- * dynamic event responder chain).
- */
-void G_BindClassRegistration(void)
-{
-    int i;
-
-    Con_Message("G_PreInit: Registering Bind Classes...\n");
-
-    for(i = 0; BindClasses[i].name; i++)
-        DD_AddBindClass(BindClasses + i);
 }

@@ -86,58 +86,13 @@
 #define LOCKF_FULL      0x10000
 #define LOCKF_MASK      0xff
 
-#if __JDOOM__
-#  define MAXPLMOVE     (forwardmove[1])
-#  define TURBOTHRESHOLD    0x32
-#endif
-
-#if __JHERETIC__
-#  define MAXPLMOVE       0x32
-#endif
-
-#if __JSTRIFE__
-#  define MAXPLMOVE       0x32
-#endif
-
-#define SLOWTURNTICS        6
-#define NUMGKEYS            256
 #define BODYQUESIZE         32
-#define JOY(x)              (x /*-cfg.joydead*/) / (100 /*-cfg.joydead*/)
-#define NUM_MOUSE_BUTTONS   6
 
 #define READONLYCVAR        CVF_READ_ONLY|CVF_NO_MAX|CVF_NO_MIN|CVF_NO_ARCHIVE
 
 // TYPES -------------------------------------------------------------------
 
-// Joystick axes.
-enum
-{
-    JA_X, JA_Y, JA_Z, JA_RX, JA_RY, JA_RZ, JA_SLIDER0, JA_SLIDER1,
-    NUM_JOYSTICK_AXES
-};
-
 #if __JHERETIC__
-
-struct
-{
-    int     action;
-    int     artifact;
-}
-ArtifactHotkeys[] =
-{
-    {A_INVULNERABILITY, arti_invulnerability},
-    {A_INVISIBILITY, arti_invisibility},
-    {A_HEALTH, arti_health},
-    {A_SUPERHEALTH, arti_superhealth},
-    {A_TORCH, arti_torch},
-    {A_FIREBOMB, arti_firebomb},
-    {A_EGG, arti_egg},
-    {A_FLY, arti_fly},
-    {A_TELEPORT, arti_teleport},
-    {A_PANIC, NUMARTIFACTS},
-    {0, arti_none}              // Terminator.
-};
-
 struct
 {
     mobjtype_t type;
@@ -166,12 +121,15 @@ MonsterMissileInfo[] =
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-extern void G_DefaultBindings(void);
-extern void G_BindClassRegistration(void);
+void    G_DefaultBindings(void);
+void    G_BindClassRegistration(void);
+void    G_ResetMousePos(void);
+boolean G_AdjustControlState(event_t* ev);
+void    G_LookAround(void);
 
-extern boolean cht_Responder(event_t *ev);
+boolean cht_Responder(event_t *ev);
 
-extern boolean M_EditResponder(event_t *ev);
+boolean M_EditResponder(event_t *ev);
 
 void    P_InitPlayerValues(player_t *p);
 void    P_RunPlayers(void);
@@ -180,7 +138,6 @@ void    P_DoTick(void);
 
 #if __JHEXEN__
 void    P_InitSky(int map);
-void    P_PlayerNextArtifact(player_t *player);
 #endif
 
 void    HU_UpdatePsprites(void);
@@ -225,26 +182,43 @@ extern GameMission_t gamemission;
 #if __JHERETIC__
 extern boolean inventory;
 extern int curpos;
+extern boolean usearti;
 extern int inv_ptr;
-extern boolean noartiskip;
+extern boolean artiskip;
 extern int curpos;
 extern int inv_ptr;
 extern int playerkeys;
 #endif
 
-extern boolean mn_SuicideConsole;
+extern int povangle;
+extern float targetLookOffset;
+extern float lookOffset;
 
 extern char *borderLumps[];
 
 #if __JHEXEN__ || __JSTRIFE__
 extern boolean inventory;
 extern int curpos;
+extern boolean usearti;
 extern int inv_ptr;
 extern boolean artiskip;
 extern int     AutoArmorSave[NUMCLASSES];
 #endif
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+#ifdef TIC_DEBUG
+FILE   *rndDebugfile;
+#endif
+
+// The global cfg.
+#if __JDOOM__
+jdoom_config_t cfg;
+#elif __JHERETIC__
+jheretic_config_t cfg;
+#elif __JHEXEN__
+jhexen_config_t cfg;
+#endif
 
 gameaction_t gameaction;
 gamestate_t gamestate = GS_DEMOSCREEN;
@@ -259,6 +233,12 @@ boolean respawnmonsters;
 
 #ifndef __JDOOM__
 int     prevmap;
+#endif
+
+#if __JDOOM__ || __JHERETIC__
+skill_t d_skill;
+int     d_episode;
+int     d_map;
 #endif
 
 boolean paused;
@@ -285,62 +265,7 @@ boolean precache = true;        // if true, load all graphics at start
 
 #if __JDOOM__
 wbstartstruct_t wminfo;         // parms for world map / intermission
-jdoom_config_t cfg;
-
-#elif __JHERETIC__
-jheretic_config_t cfg;
-
-#elif __JHEXEN__
-jhexen_config_t cfg;
-
-#elif  __JSTRIFE__
-jstrife_config_t cfg;
-
-//#error "sbarscale and others need to be initialized."
 #endif
-
-// Looking around.
-int     povangle = -1;          // -1 means centered (really 0 - 7).
-float   targetLookOffset = 0;
-float   lookOffset = 0;
-
-fixed_t angleturn[3] = { 640, 1280, 320 };  // + slow turn
-
-#if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-fixed_t forwardmove[2] = { 0x19, 0x32 };
-fixed_t sidemove[2] = { 0x18, 0x28 };
-
-#elif __JHEXEN__
-fixed_t MaxPlayerMove[NUMCLASSES] = { 0x3C, 0x32, 0x2D, 0x31 };
-fixed_t forwardmove[NUMCLASSES][2] = {
-    {0x1D, 0x3C},
-    {0x19, 0x32},
-    {0x16, 0x2E},
-    {0x18, 0x31}
-};
-fixed_t sidemove[NUMCLASSES][2] = {
-    {0x1B, 0x3B},
-    {0x18, 0x28},
-    {0x15, 0x25},
-    {0x17, 0x27}
-};
-#endif
-
-float   turnheld;               // for accelerative turning
-float   lookheld;
-
-//int           do_chimes;
-
-// mouse values are used once
-int     mousex;
-int     mousey;
-
-int     dclicktime;
-int     dclickstate;
-int     dclicks;
-int     dclicktime2;
-int     dclickstate2;
-int     dclicks2;
 
 int     savegameslot;
 char    savedescription[32];
@@ -668,8 +593,6 @@ cvar_t gamestatusCVars[] =
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-boolean usearti = true;
-
 #if __JHEXEN__ || __JSTRIFE__
 static skill_t TempSkill;
 static int TempEpisode;
@@ -686,10 +609,6 @@ void G_Register(void)
     for(i = 0; gamestatusCVars[i].name; i++)
         Con_AddVariable(gamestatusCVars + i);
 }
-
-#ifdef TIC_DEBUG
-FILE   *rndDebugfile;
-#endif
 
 /*
  *  Common Pre Engine Initialization routine.
@@ -795,7 +714,7 @@ void G_StartTitle(void)
 }
 
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
-static int findWeapon(player_t *plr, boolean forward)
+int findWeapon(player_t *plr, boolean forward)
 {
     int     i, c;
 
@@ -821,7 +740,7 @@ static int findWeapon(player_t *plr, boolean forward)
     return plr->readyweapon;
 }
 
-static boolean inventoryMove(player_t *plr, int dir)
+boolean inventoryMove(player_t *plr, int dir)
 {
     inventoryTics = 5 * 35;
     if(!inventory)
@@ -866,772 +785,7 @@ static boolean inventoryMove(player_t *plr, int dir)
     }
     return (true);
 }
-
-DEFCC(CCmdInventory)
-{
-    inventoryMove(players + consoleplayer, !stricmp(argv[0], "invright"));
-    return true;
-}
 #endif
-
-// Offset is in 'angles', where 110 corresponds 85 degrees.
-// The delta has higher precision with small offsets.
-char G_MakeLookDelta(float offset)
-{
-    boolean minus = offset < 0;
-
-    offset = sqrt(fabs(offset)) * DELTAMUL;
-    if(minus)
-        offset = -offset;
-    // It's only a char...
-    if(offset > 127)
-        offset = 127;
-    if(offset < -128)
-        offset = -128;
-    return (signed char) offset;
-}
-
-/*
- * Turn client angle.  If 'elapsed' is negative, the turn delta is
- * considered an immediate change.
- */
-void G_AdjustAngle(player_t *player, int turn, float elapsed)
-{
-    fixed_t delta = 0;
-
-    if(!player->plr->mo ||
-        player->playerstate == PST_DEAD)
-        return; // Sorry, can't help you, pal.
-
-    delta = (fixed_t) (turn << FRACBITS);
-
-    if(elapsed > 0)
-        delta *= cfg.turnSpeed * turn * elapsed * 35;
-
-    player->plr->clAngle += delta;
-}
-
-void G_AdjustLookDir(player_t *player, int look, float elapsed)
-{
-    ddplayer_t *ddplr = player->plr;
-
-    if(look)
-    {
-        if(look == TOCENTER)
-        {
-            player->centering = true;
-        }
-        else
-        {
-            ddplr->clLookDir += cfg.lookSpeed * look * elapsed * 35;
-        }
-    }
-
-    if(player->centering)
-    {
-        float step = 8 * elapsed * 35;
-
-        if(ddplr->clLookDir > step)
-        {
-            ddplr->clLookDir -= step;
-        }
-        else if(ddplr->clLookDir < -step)
-        {
-            ddplr->clLookDir += step;
-        }
-        else
-        {
-            ddplr->clLookDir = 0;
-            player->centering = false;
-        }
-    }
-}
-
-void G_SetCmdViewAngles(ticcmd_t *cmd, player_t *pl)
-{
-    // These will be sent to the server (or P_MovePlayer).
-    cmd->angle = pl->plr->clAngle >> 16;
-
-    // 110 corresponds 85 degrees.
-    if(pl->plr->clLookDir > 110)
-        pl->plr->clLookDir = 110;
-    if(pl->plr->clLookDir < -110)
-        pl->plr->clLookDir = -110;
-    cmd->pitch = pl->plr->clLookDir / 110 * DDMAXSHORT;
-}
-
-/*
- * Builds a ticcmd from all of the available inputs.
- */
-void G_BuildTiccmd(ticcmd_t *cmd, float elapsedTime)
-{
-    static boolean mlook_pressed = false;
-    float elapsedTics = elapsedTime * 35;
-
-    boolean pausestate = P_IsPaused();
-    int     i;
-    boolean strafe = 0;
-    boolean bstrafe = 0;
-    int     speed = 0;
-    int     tspeed = 0;
-    int     forward = 0;
-    int     side = 0;
-    int     turn = 0;
-    player_t *cplr = &players[consoleplayer];
-    int     joyturn = 0, joystrafe = 0, joyfwd = 0, joylook = 0;
-    int     look = 0, lspeed = 0;
-#if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
-    int     flyheight = 0;
-#endif
-#if __JHEXEN__ || __JSTRIFE__
-    int     pClass = players[consoleplayer].class;
-#endif
-
-    memset(cmd, 0, sizeof(*cmd));
-
-    // During demo playback, all cmds will be blank.
-    if(Get(DD_PLAYBACK))
-        return;
-
-    strafe = actions[A_STRAFE].on;
-    speed = actions[A_SPEED].on;
-
-    // Walk -> run, run -> walk.
-    if(cfg.alwaysRun)
-        speed = !speed;
-
-    // Use two stage accelerative turning on the keyboard and joystick.
-    if(joyturn < -0             /*cfg.joydead */
-       || joyturn > 0           /*cfg.joydead */
-       || actions[A_TURNRIGHT].on || actions[A_TURNLEFT].on)
-        turnheld += elapsedTics;
-    else
-        turnheld = 0;
-
-    if(turnheld < SLOWTURNTICS)
-        tspeed = 2;             // slow turn
-    else
-        tspeed = speed;
-
-    // Determine the appropriate look speed based on how long the key
-    // has been held down.
-    if(actions[A_LOOKDOWN].on || actions[A_LOOKUP].on)
-        lookheld += elapsedTics;
-    else
-        lookheld = 0;
-
-    if(lookheld < SLOWTURNTICS)
-        lspeed = 1;
-    else
-        lspeed = 2;
-
-    // let movement keys cancel each other out
-    if(strafe)
-    {
-#if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-        if(actions[A_TURNRIGHT].on)
-            side += sidemove[speed];
-        if(actions[A_TURNLEFT].on)
-            side -= sidemove[speed];
-#else
-        if(actions[A_TURNRIGHT].on)
-            side += sidemove[pClass][speed];
-        if(actions[A_TURNLEFT].on)
-            side -= sidemove[pClass][speed];
-#endif
-        // Swap strafing and turning.
-        i = joystrafe;
-        joystrafe = joyturn;
-        joyturn = i;
-    }
-    else
-    {
-        if(actions[A_TURNRIGHT].on)
-            turn -= angleturn[tspeed];
-        if(actions[A_TURNLEFT].on)
-            turn += angleturn[tspeed];
-    }
-
-    // Joystick turn.
-    if(joyturn > 0 /*cfg.joydead */ )
-        turn -= angleturn[tspeed] * JOY(joyturn);
-    if(joyturn < -0 /*cfg.joydead */ )
-        turn += angleturn[tspeed] * JOY(-joyturn);
-
-    // Joystick strafe.
-#if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-    if(joystrafe < -0 /*cfg.joydead */ )
-        side -= sidemove[speed] * JOY(-joystrafe);
-    if(joystrafe > 0 /*cfg.joydead */ )
-        side += sidemove[speed] * JOY(joystrafe);
-#else
-    if(joystrafe < -0 /*cfg.joydead */ )
-        side -= sidemove[pClass][speed] * JOY(-joystrafe);
-    if(joystrafe > 0 /*cfg.joydead */ )
-        side += sidemove[pClass][speed] * JOY(joystrafe);
-#endif
-
-    if(actions[A_FORWARD].on)
-    {
-#if __JHEXEN__
-        forward += forwardmove[pClass][speed];
-#else
-        forward += forwardmove[speed];
-#endif
-    }
-    if(actions[A_BACKWARD].on)
-    {
-#if __JHEXEN__
-        forward -= forwardmove[pClass][speed];
-#else
-        forward -= forwardmove[speed];
-#endif
-    }
-
-#if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-    if(joyfwd < -0 /*cfg.joydead */ )
-        forward += forwardmove[speed] * JOY(-joyfwd);
-    if(joyfwd > 0 /*cfg.joydead */ )
-        forward -= forwardmove[speed] * JOY(joyfwd);
-#else
-    if(joyfwd < -0 /*cfg.joydead */ )
-        forward += forwardmove[pClass][speed] * JOY(-joyfwd);
-    if(joyfwd > 0 /*cfg.joydead */ )
-        forward -= forwardmove[pClass][speed] * JOY(joyfwd);
-#endif
-
-#if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-    if(actions[A_STRAFERIGHT].on)
-        side += sidemove[speed];
-    if(actions[A_STRAFELEFT].on)
-        side -= sidemove[speed];
-
-    if(joystrafe < -0 /*cfg.joydead */ )
-        side -= sidemove[speed] * JOY(-joystrafe);
-    if(joystrafe > 0 /*cfg.joydead */ )
-        side += sidemove[speed] * JOY(joystrafe);
-#else
-    if(actions[A_STRAFERIGHT].on)
-        side += sidemove[pClass][speed];
-    if(actions[A_STRAFELEFT].on)
-        side -= sidemove[pClass][speed];
-
-    if(joystrafe < -0 /*cfg.joydead */ )
-        side -= sidemove[pClass][speed] * JOY(-joystrafe);
-    if(joystrafe > 0 /*cfg.joydead */ )
-        side += sidemove[pClass][speed] * JOY(joystrafe);
-#endif
-
-    // Look up/down/center keys
-    if(!cfg.lookSpring || (cfg.lookSpring && !forward))
-    {
-        if(actions[A_LOOKUP].on)
-        {
-            look = lspeed;
-        }
-        if(actions[A_LOOKDOWN].on)
-        {
-            look = -lspeed;
-        }
-        if(actions[A_LOOKCENTER].on)
-        {
-            look = TOCENTER;
-        }
-    }
-
-#if __JHERETIC__
-    // Fly up/down/drop keys
-    if(actions[A_FLYUP].on)
-    {
-        flyheight = 5;          // note that the actual flyheight will be twice this
-    }
-    if(actions[A_FLYDOWN].on)
-    {
-        flyheight = -5;
-    }
-    if(actions[A_FLYCENTER].on)
-    {
-        flyheight = TOCENTER;
-        if(!cfg.usemlook)
-            look = TOCENTER;
-    }
-    // Use artifact key
-    if(actions[A_USEARTIFACT].on)
-    {
-        if(actions[A_SPEED].on && !noartiskip)
-        {
-            if(players[consoleplayer].inventory[inv_ptr].type != arti_none)
-            {
-                actions[A_USEARTIFACT].on = false;
-                cmd->arti = 0xff;   // skip artifact code
-            }
-        }
-        else
-        {
-            if(inventory)
-            {
-                players[consoleplayer].readyArtifact =
-                    players[consoleplayer].inventory[inv_ptr].type;
-                inventory = false;
-                cmd->arti =
-                    cfg.chooseAndUse ? players[consoleplayer].
-                    inventory[inv_ptr].type : 0;
-                usearti = false;
-            }
-            else if(usearti)
-            {
-                cmd->arti = players[consoleplayer].inventory[inv_ptr].type;
-                usearti = false;
-            }
-        }
-    }
-    // Check Tome of Power and other artifact hotkeys.
-    if(actions[A_TOMEOFPOWER].on && !cmd->arti &&
-       !players[consoleplayer].powers[pw_weaponlevel2])
-    {
-        actions[A_TOMEOFPOWER].on = false;
-        cmd->arti = arti_tomeofpower;
-    }
-    for(i = 0; ArtifactHotkeys[i].artifact != arti_none && !cmd->arti; i++)
-    {
-        if(actions[ArtifactHotkeys[i].action].on)
-        {
-            actions[ArtifactHotkeys[i].action].on = false;
-            cmd->arti = ArtifactHotkeys[i].artifact;
-            break;
-        }
-    }
-#endif
-
-    if(mn_SuicideConsole)
-    {
-        cmd->suicide = true;
-        mn_SuicideConsole = false;
-    }
-
-#if __JHEXEN__ || __JSTRIFE__
-    // Fly up/down/drop keys
-    if(actions[A_FLYUP].on)
-    {
-        flyheight = 5;          // note that the actual flyheight will be twice this
-    }
-    if(actions[A_FLYDOWN].on)
-    {
-        flyheight = -5;
-    }
-    if(actions[A_FLYCENTER].on)
-    {
-        flyheight = TOCENTER;
-        look = TOCENTER;
-    }
-    // Use artifact key
-    if(actions[A_USEARTIFACT].on)
-    {
-        if(speed && artiskip)
-        {
-            if(players[consoleplayer].inventory[inv_ptr].type != arti_none)
-            {                   // Skip an artifact
-                actions[A_USEARTIFACT].on = false;
-                P_PlayerNextArtifact(&players[consoleplayer]);
-            }
-        }
-        else
-        {
-            if(inventory)
-            {
-                players[consoleplayer].readyArtifact =
-                    players[consoleplayer].inventory[inv_ptr].type;
-                inventory = false;
-                if(cfg.chooseAndUse)
-                    cmd->arti =
-                        players[consoleplayer].inventory[inv_ptr].type;
-                else
-                    cmd->arti = 0;
-            }
-            else if(usearti)
-            {
-                cmd->arti =
-                    players[consoleplayer].inventory[inv_ptr].type;
-            }
-        }
-        actions[A_USEARTIFACT].on = false;
-    }
-
-    // Artifact hot keys
-    if(actions[A_PANIC].on && !cmd->arti)
-    {
-        actions[A_PANIC].on = false;    // Use one of each artifact
-        cmd->arti = NUMARTIFACTS;
-    }
-    else if(players[consoleplayer].plr->mo && actions[A_HEALTH].on &&
-            !cmd->arti && (players[consoleplayer].plr->mo->health < MAXHEALTH))
-    {
-        actions[A_HEALTH].on = false;
-        cmd->arti = arti_health;
-    }
-    else if(actions[A_POISONBAG].on && !cmd->arti)
-    {
-        actions[A_POISONBAG].on = false;
-        cmd->arti = arti_poisonbag;
-    }
-    else if(actions[A_BLASTRADIUS].on && !cmd->arti)
-    {
-        actions[A_BLASTRADIUS].on = false;
-        cmd->arti = arti_blastradius;
-    }
-    else if(actions[A_TELEPORT].on && !cmd->arti)
-    {
-        actions[A_TELEPORT].on = false;
-        cmd->arti = arti_teleport;
-    }
-    else if(actions[A_TELEPORTOTHER].on && !cmd->arti)
-    {
-        actions[A_TELEPORTOTHER].on = false;
-        cmd->arti = arti_teleportother;
-    }
-    else if(actions[A_EGG].on && !cmd->arti)
-    {
-        actions[A_EGG].on = false;
-        cmd->arti = arti_egg;
-    }
-    else if(actions[A_INVULNERABILITY].on && !cmd->arti &&
-            !players[consoleplayer].powers[pw_invulnerability])
-    {
-        actions[A_INVULNERABILITY].on = false;
-        cmd->arti = arti_invulnerability;
-    }
-    else if(actions[A_MYSTICURN].on && !cmd->arti)
-    {
-        actions[A_MYSTICURN].on = false;
-        cmd->arti = arti_superhealth;
-    }
-    else if(actions[A_TORCH].on && !cmd->arti)
-    {
-        actions[A_TORCH].on = false;
-        cmd->arti = arti_torch;
-    }
-    else if(actions[A_KRATER].on && !cmd->arti)
-    {
-        actions[A_KRATER].on = false;
-        cmd->arti = arti_boostmana;
-    }
-    else if(actions[A_SPEEDBOOTS].on & !cmd->arti)
-    {
-        actions[A_SPEEDBOOTS].on = false;
-        cmd->arti = arti_speed;
-    }
-    else if(actions[A_DARKSERVANT].on && !cmd->arti)
-    {
-        actions[A_DARKSERVANT].on = false;
-        cmd->arti = arti_summon;
-    }
-#endif
-
-    // Buttons
-
-    if(actions[A_FIRE].on)
-        cmd->attack = true;
-
-    if(actions[A_USE].on)
-    {
-        cmd->use = true;
-        // clear double clicks if hit use button
-        dclicks = 0;
-    }
-
-    if(actions[A_JUMP].on)
-        cmd->jump = true;
-
-#if __JDOOM__
-
-#  define GOTWPN(x) (cplr->weaponowned[x])
-#  define ISWPN(x)  (cplr->readyweapon == x)
-
-    // Determine whether a weapon change should be done.
-    if(actions[A_WEAPONCYCLE1].on)  // Fist/chainsaw.
-    {
-        if(ISWPN(wp_fist) && GOTWPN(wp_chainsaw))
-            i = wp_chainsaw;
-        else if(ISWPN(wp_chainsaw))
-            i = wp_fist;
-        else if(GOTWPN(wp_chainsaw))
-            i = wp_chainsaw;
-        else
-            i = wp_fist;
-
-        cmd->changeWeapon = i + 1;
-    }
-    else if(actions[A_WEAPONCYCLE2].on) // Shotgun/super sg.
-    {
-        if(ISWPN(wp_shotgun) && GOTWPN(wp_supershotgun) &&
-           gamemode == commercial)
-            i = wp_supershotgun;
-        else if(ISWPN(wp_supershotgun))
-            i = wp_shotgun;
-        else if(GOTWPN(wp_supershotgun) && gamemode == commercial)
-            i = wp_supershotgun;
-        else
-            i = wp_shotgun;
-
-        cmd->changeWeapon = i + 1;
-    }
-    else
-    {
-        // Take the first weapon action.
-        for(i = 0; i < NUMWEAPONS; i++)
-            if(actions[A_WEAPON1 + i].on)
-            {
-                cmd->changeWeapon = i + 1;
-                break;
-            }
-    }
-    if(actions[A_NEXTWEAPON].on || actions[A_PREVIOUSWEAPON].on)
-    {
-        cmd->changeWeapon =
-            (actions[A_NEXTWEAPON].on ? TICCMD_NEXT_WEAPON :
-             TICCMD_PREV_WEAPON);
-    }
-#else
-    if(actions[A_PREVIOUSWEAPON].on)
-    {
-        cmd->changeWeapon =
-            findWeapon(players + consoleplayer, false) + 1;
-    }
-    else if(actions[A_NEXTWEAPON].on)
-    {
-        cmd->changeWeapon =
-            findWeapon(players + consoleplayer, true) + 1;
-    }
-#  if __JHERETIC__
-    else
-        for(i = 0; i < NUMWEAPONS - 2; i++)
-#  else
-    else
-        for(i = 0; i < NUMWEAPONS; i++)
-#  endif
-        {
-            if(actions[A_WEAPON1 + i].on)
-            {
-#  ifdef __JHERETIC__
-                // Staff and Gautlets are on the same key.
-                if(i == wp_staff &&
-                   players[consoleplayer].readyweapon != wp_gauntlets &&
-                   players[consoleplayer].weaponowned[wp_gauntlets])
-                {
-                    i = wp_gauntlets;
-                }
-#  endif
-                cmd->changeWeapon = i + 1;
-                break;
-            }
-        }
-#endif
-
-    // forward double click
-    if(actions[A_FORWARD].on != dclickstate && dclicktime > 1 && cfg.dclickuse)
-    {
-        dclickstate = actions[A_FORWARD].on;
-
-        if(dclickstate)
-            dclicks++;
-        if(dclicks == 2)
-        {
-            cmd->use = true;
-            dclicks = 0;
-        }
-        else
-            dclicktime = 0;
-    }
-    else
-    {
-        dclicktime++;
-        if(dclicktime > 20)
-        {
-            dclicks = 0;
-            dclickstate = 0;
-        }
-    }
-
-    // strafe double click
-    bstrafe = strafe;
-    if(bstrafe != dclickstate2 && dclicktime2 > 1 && cfg.dclickuse)
-    {
-        dclickstate2 = bstrafe;
-        if(dclickstate2)
-            dclicks2++;
-        if(dclicks2 == 2)
-        {
-            cmd->use = true;
-            dclicks2 = 0;
-        }
-        else
-            dclicktime2 = 0;
-    }
-    else
-    {
-        dclicktime2++;
-        if(dclicktime2 > 20)
-        {
-            dclicks2 = 0;
-            dclickstate2 = 0;
-        }
-    }
-
-    // Mouse strafe and turn (X axis).
-    if(strafe)
-        side += mousex * 2;
-    else
-    {
-        //turn -= mousex * 8;
-
-        // Mouse angle changes are immediate.
-        if(!pausestate)
-            G_AdjustAngle(cplr, mousex * -8, -1);
-    }
-
-    if(!pausestate)
-    {
-        // Speed based turning.
-        G_AdjustAngle(cplr, turn, elapsedTime);
-
-        if(strafe || (!cfg.usemlook && !actions[A_MLOOK].on) ||
-           players[consoleplayer].playerstate == PST_DEAD)
-        {
-            forward += 8 * mousey * elapsedTics;
-        }
-        else
-        {
-            float adj =
-                (((mousey * 8) << 16) / (float) ANGLE_180) * 180 *
-                110.0 / 85.0;
-
-            if(cfg.mlookInverseY)
-                adj = -adj;
-            cplr->plr->clLookDir += adj;
-        }
-        if(cfg.usejlook)
-        {
-            if(cfg.jlookDeltaMode)
-                cplr->plr->clLookDir +=
-                    joylook / 20.0f * cfg.lookSpeed *
-                    (cfg.jlookInverseY ? -1 : 1) * elapsedTics;
-            else
-                cplr->plr->clLookDir =
-                    joylook * 1.1f * (cfg.jlookInverseY ? -1 : 1);
-        }
-    }
-
-    mousex = mousey = 0;
-
-#if __JHEXEN__
-#  define MAXPLMOVE MaxPlayerMove[pClass]
-#endif
-
-    if(forward > MAXPLMOVE)
-        forward = MAXPLMOVE;
-    else if(forward < -MAXPLMOVE)
-        forward = -MAXPLMOVE;
-    if(side > MAXPLMOVE)
-        side = MAXPLMOVE;
-    else if(side < -MAXPLMOVE)
-        side = -MAXPLMOVE;
-
-#if __JHEXEN__
-    if(cplr->powers[pw_speed] && !cplr->morphTics)
-    {
-        // Adjust for a player with a speed artifact
-        forward = (3 * forward) >> 1;
-        side = (3 * side) >> 1;
-    }
-#endif
-
-    if(cfg.playerMoveSpeed > 1)
-        cfg.playerMoveSpeed = 1;
-
-    forward *= cfg.playerMoveSpeed;
-    side *= cfg.playerMoveSpeed;
-
-    cmd->forwardMove += forward;
-    cmd->sideMove += side;
-
-    if(cfg.lookSpring && !actions[A_MLOOK].on &&
-       (cmd->forwardMove > MAXPLMOVE / 3 || cmd->forwardMove < -MAXPLMOVE / 3
-        || cmd->sideMove > MAXPLMOVE / 3 || cmd->sideMove < -MAXPLMOVE / 3 ||
-        mlook_pressed))
-    {
-        // Center view when mlook released w/lookspring, or when moving.
-        look = TOCENTER;
-    }
-
-    if(players[consoleplayer].playerstate == PST_LIVE && !pausestate)
-    {
-        G_AdjustLookDir(cplr, look, elapsedTime);
-
-#ifndef __JDOOM__
-/*      if(look < 0)
-        {
-            look += 16 * elapsedTics;
-        }
-        cmd->fly = look;*/
-#endif
-    }
-
-#ifndef __JDOOM__
-    cmd->fly = flyheight;
-#endif
-
-    // Store the current mlook key state.
-    mlook_pressed = actions[A_MLOOK].on;
-
-    G_SetCmdViewAngles(cmd, cplr);
-
-    // special buttons
-    if(sendpause)
-    {
-        sendpause = false;
-        // Clients can't pause anything.
-        if(!IS_CLIENT)
-            cmd->pause = true;
-    }
-
-    if(IS_CLIENT)
-    {
-        // Clients mirror their local commands.
-        memcpy(&players[consoleplayer].cmd, cmd, sizeof(*cmd));
-    }
-}
-
-/*
- * Combine the source ticcmd with the destination ticcmd.  This is
- * done when there are multiple ticcmds to execute on a single game
- * tick.
- */
-void G_MergeTiccmd(ticcmd_t *dest, ticcmd_t *src)
-{
-    dest->forwardMove = src->forwardMove;
-    dest->sideMove = src->sideMove;
-
-    dest->angle = src->angle;
-    dest->pitch = src->pitch;
-
-    dest->fly = src->fly;
-
-    if(src->arti)
-        dest->arti = src->arti;
-
-    if(src->changeWeapon)
-        dest->changeWeapon = src->changeWeapon;
-
-    dest->attack |= src->attack;
-    dest->use |= src->use;
-    dest->jump |= src->jump;
-    dest->pause |= src->pause;
-    dest->suicide |= src->suicide;
-}
-
-//
-// G_DoLoadLevel
-//
 
 void G_DoLoadLevel(void)
 {
@@ -1680,7 +834,7 @@ void G_DoLoadLevel(void)
     Z_CheckHeap();
 
     // clear cmd building stuff
-    mousex = mousey = 0;
+    G_ResetMousePos();
     sendpause = paused = false;
 
     // Deactivate all action keys.
@@ -1722,32 +876,10 @@ void G_DoLoadLevel(void)
     FI_Briefing(gameepisode, gamemap);
 }
 
-DEFCC(CCmdCycleSpy)
-{
-    // FIXME: The engine should do this.
-    Con_Printf("Spying not allowed.\n");
-#if 0
-    if(gamestate == GS_LEVEL && !deathmatch)
-    {                           // Cycle the display player
-        do
-        {
-            Set(DD_DISPLAYPLAYER, displayplayer + 1);
-            if(displayplayer == MAXPLAYERS)
-            {
-                Set(DD_DISPLAYPLAYER, 0);
-            }
-        } while(!players[displayplayer].plr->ingame &&
-                displayplayer != consoleplayer);
-    }
-#endif
-    return true;
-}
-
-//
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
-// Return false if the event should be checked for bindings.
-//
+/*
+ * Get info needed to make ticcmd_ts for the players.
+ * Return false if the event should be checked for bindings.
+ */
 boolean G_Responder(event_t *ev)
 {
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
@@ -1793,58 +925,9 @@ boolean G_Responder(event_t *ev)
     if(M_EditResponder(ev))
         return true;
 
-    // TODO: all controls should be handled by the engine.
-    // Merge in engine-side axis controls from 1.8 alpha.
-    switch (ev->type)
-    {
-    case ev_keydown:
-        return false;
-
-    case ev_keyup:
-        return false;           // always let key up events filter down
-
-    case ev_keyrepeat:
-        return false;
-
-    case ev_mouse:
-        mousex += ev->data1 * (1 + cfg.mouseSensiX/5.0f);
-        mousey += ev->data2 * (1 + cfg.mouseSensiY/5.0f);
-        return true;            // eat events
-
-    case ev_mousebdown:
-        return false;
-
-    case ev_mousebup:
-        return false;
-
-    case ev_joystick:           // Joystick movement
-        return true;            // eat events
-
-    case ev_joyslider:          // Joystick slider movement
+    // We may wish to eat the event depending on type...
+    if(G_AdjustControlState(ev))
         return true;
-
-    case ev_joybdown:
-        return false;           // eat events
-
-    case ev_joybup:
-        return false;           // eat events
-
-    case ev_povup:
-        povangle = -1;
-        // If looking around with PoV, don't allow bindings.
-        if(cfg.povLookAround)
-            return true;
-        break;
-
-    case ev_povdown:
-        povangle = ev->data1;
-        if(cfg.povLookAround)
-            return true;
-        break;
-
-    default:
-        break;
-    }
 
     // The event wasn't used.
     return false;
@@ -1891,21 +974,19 @@ void G_SpecialButton(player_t *pl)
     }
 }
 
-//===========================================================================
-// G_Ticker
-//===========================================================================
+/*
+ * The core of the game timing loop.
+ * Game state, game actions etc occur here.
+ */
 void G_Ticker(void)
 {
     int     i;
     player_t *plyr = &players[consoleplayer];
     static gamestate_t oldgamestate = -1;
 
-#if __JHERETIC__ | __JHEXEN__
-    int     k;
-#endif
-
     if(IS_CLIENT && !Get(DD_GAME_READY))
         return;
+
 #if _DEBUG
     Z_CheckHeap();
 #endif
@@ -1956,42 +1037,19 @@ void G_Ticker(void)
             G_DoNewGame();
             break;
         case ga_loadgame:
-#if __JHEXEN__ || __JSTRIFE__
-            Draw_LoadIcon();
-#endif
             G_DoLoadGame();
             break;
         case ga_savegame:
-#if __JHEXEN__ || __JSTRIFE__
-            Draw_SaveIcon();
-#endif
             G_DoSaveGame();
             break;
-#if __JHEXEN__ || __JSTRIFE__
-        case ga_playdemo:
-            if(demoDisabled)
-            {
-                gameaction = ga_nothing;
-            }
-            else
-            {
-                G_DoPlayDemo();
-            }
-            break;
-#else
         case ga_playdemo:
             G_DoPlayDemo();
             break;
-#endif
         case ga_completed:
             G_DoCompleted();
             break;
         case ga_victory:
-            //f __JHERETIC__ || __JHEXEN__
             gameaction = ga_nothing;
-            /*lse
-               F_StartFinale ();
-               #endif */
             break;
         case ga_worlddone:
             G_DoWorldDone();
@@ -2005,31 +1063,8 @@ void G_Ticker(void)
         }
     }
 
-    // Look around.
-    if(povangle != -1)
-    {
-        targetLookOffset = povangle / 8.0f;
-        if(targetLookOffset == .5f)
-        {
-            if(lookOffset < 0)
-                targetLookOffset = -.5f;
-        }
-        else if(targetLookOffset > .5)
-            targetLookOffset -= 1;
-    }
-    else
-        targetLookOffset = 0;
-
-    if(targetLookOffset != lookOffset && cfg.povLookAround)
-    {
-        float   diff = (targetLookOffset - lookOffset) / 2;
-
-        if(diff > .075f)
-            diff = .075f;
-        if(diff < -.075f)
-            diff = -.075f;
-        lookOffset += diff;
-    }
+    // Update the viewer's look angle
+    G_LookAround();
 
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
     G_InventoryTicker();
@@ -2126,6 +1161,7 @@ void G_Ticker(void)
         // owned weapons
         for( i= 0; i < NUMWEAPONS; i++)
             gsvWeapons[i] = plyr->weaponowned[i];
+
 #if __JHEXEN__
         // mana amounts
         for( i= 0; i < NUMMANA; i++)
@@ -2145,10 +1181,7 @@ void G_Ticker(void)
 #if __JHERETIC__ || __JHEXEN__
         // artifacts
         for( i= 0; i < NUMINVENTORYSLOTS; i++)
-        {
-                k = plyr->inventory[i].type;
-                gsvArtifacts[k] = plyr->inventory[i].count;
-        }
+            gsvArtifacts[plyr->inventory[i].type] = plyr->inventory[i].count;
 #endif
     }
 
@@ -2160,16 +1193,10 @@ void G_Ticker(void)
         NetSv_Ticker();
 }
 
-//
-// PLAYER STRUCTURE FUNCTIONS
-// also see P_SpawnPlayer in P_Things
-//
-
-//
-// G_InitPlayer
-// Called at the start.
-// Called by the game initialization functions.
-//
+/*
+ * Called at the start.
+ * Called by the game initialization functions.
+ */
 void G_InitPlayer(int player)
 {
     player_t *p;
@@ -2180,26 +1207,13 @@ void G_InitPlayer(int player)
     // clear everything else to defaults
     G_PlayerReborn(player);
 }
-#if __JSTRIFE__
 
-//
-int P_GetMapCluster(Map)
-{
-    return 1;
-}
-
-#endif
 
 #if __JHEXEN__ || __JSTRIFE__
 
-//==========================================================================
-//
-// G_PlayerExitMap
-//
-// Called when the player leaves a map.
-//
-//==========================================================================
-
+/*
+ * Called when the player leaves a map.
+ */
 void G_PlayerExitMap(int playerNumber)
 {
     int     i;
@@ -2241,29 +1255,26 @@ void G_PlayerExitMap(int playerNumber)
         player->readyweapon = player->plr->mo->special1;    // Restore weapon
         player->morphTics = 0;
     }
+
     player->messageTics = 0;
     player->plr->lookdir = 0;
     player->plr->mo->flags &= ~MF_SHADOW;   // Remove invisibility
     player->plr->extralight = 0;    // Remove weapon flashes
     player->plr->fixedcolormap = 0; // Remove torch
+
     // Clear filter.
     player->plr->filter = 0;
     player->plr->flags |= DDPF_FILTER;
     player->damagecount = 0;    // No palette changes
     player->bonuscount = 0;
     player->poisoncount = 0;
-    if(player == &players[consoleplayer])
-    {
-        SB_state = -1;          // refresh the status bar
-    }
 }
 
 #else
 
-//
-// G_PlayerFinishLevel
-// Called when a player completes a level.
-//
+/*
+ * Called when a player completes a level.
+ */
 void G_PlayerFinishLevel(int player)
 {
     player_t *p = &players[player];
@@ -2285,47 +1296,38 @@ void G_PlayerFinishLevel(int player)
 
     p->update |= PSF_POWERS | PSF_KEYS;
     memset(p->powers, 0, sizeof(p->powers));
-#  if __JDOOM__
     memset(p->keys, 0, sizeof(p->keys));
-#  elif __JHERETIC__
-    p->update |= PSF_CHICKEN_TIME;
-    memset(p->keys, 0, sizeof(p->keys));
+
+#  if __JHERETIC__
     playerkeys = 0;
+    p->update |= PSF_CHICKEN_TIME;
     if(p->chickenTics)
     {
         p->readyweapon = p->plr->mo->special1;  // Restore weapon
         p->chickenTics = 0;
     }
+
     p->messageTics = 0;
     p->rain1 = NULL;
     p->rain2 = NULL;
-    /*  if(p == &players[consoleplayer])
-       {
-       SB_state = -1; // refresh the status bar
-       } */
 #  endif
 
+    p->plr->lookdir = 0;
     p->plr->mo->flags &= ~MF_SHADOW;    // cancel invisibility
     p->plr->extralight = 0;     // cancel gun flashes
     p->plr->fixedcolormap = 0;  // cancel ir gogles
-    p->damagecount = 0;         // no palette changes
-    p->bonuscount = 0;
-    p->plr->lookdir = 0;
+
     // Clear filter.
     p->plr->filter = 0;
     p->plr->flags |= DDPF_FILTER;
+    p->damagecount = 0;         // no palette changes
+    p->bonuscount = 0;
 }
-
 #endif
 
-//==========================================================================
-//
-// ClearPlayer
-//
-// Safely clears the player data structures.
-//
-//==========================================================================
-
+/*
+ * Safely clears the player data structures.
+ */
 void ClearPlayer(player_t *p)
 {
     ddplayer_t *ddplayer = p->plr;
@@ -2347,11 +1349,10 @@ void ClearPlayer(player_t *p)
     p->startspot = start;
 }
 
-//
-// G_PlayerReborn
-// Called after a player dies
-// almost everything is cleared and initialized
-//
+/*
+ * Called after a player dies
+ * almost everything is cleared and initialized
+ */
 void G_PlayerReborn(int player)
 {
     player_t *p;
@@ -2469,11 +1470,10 @@ void G_PlayerReborn(int player)
     p->plr->flags &= ~DDPF_DEAD;
 }
 
-//
-// G_DeathMatchSpawnPlayer
-// Spawns a player at one of the random death match spots
-// called at level load and each death
-//
+/*
+ * Spawns a player at one of the random death match spots
+ * called at level load and each death
+ */
 void G_DeathMatchSpawnPlayer(int playernum)
 {
     int     i, j;
@@ -2521,10 +1521,9 @@ void G_DeathMatchSpawnPlayer(int playernum)
 #endif
 }
 
-//===========================================================================
-// G_DummySpawnPlayer
-//  Spawns the given player at a dummy place.
-//===========================================================================
+/*
+ *  Spawns the given player at a dummy place.
+ */
 void G_DummySpawnPlayer(int playernum)
 {
     thing_t faraway;
@@ -2535,9 +1534,6 @@ void G_DummySpawnPlayer(int playernum)
 }
 
 #ifdef __JDOOM__
-//===========================================================================
-// G_QueueBody
-//===========================================================================
 void G_QueueBody(mobj_t *body)
 {
     // flush an old corpse if needed
@@ -2548,9 +1544,6 @@ void G_QueueBody(mobj_t *body)
 }
 #endif
 
-//
-// G_DoReborn
-//
 void G_DoReborn(int playernum)
 {
 #if __JHEXEN__ || __JSTRIFE__
@@ -2639,11 +1632,9 @@ void G_DoReborn(int playernum)
         foundSpot = false;
         if(P_CheckSpot
            (playernum, P_GetPlayerStart(RebornPosition, playernum), true))
-            /* &playerstarts[RebornPosition][playernum] )) */
         {
             // Appropriate player start spot is open
-            P_SpawnPlayer(P_GetPlayerStart(RebornPosition, playernum)
-                          /* &playerstarts[RebornPosition][playernum] */ ,
+            P_SpawnPlayer(P_GetPlayerStart(RebornPosition, playernum),
                           playernum);
             foundSpot = true;
         }
@@ -2654,23 +1645,22 @@ void G_DoReborn(int playernum)
             {
                 if(P_CheckSpot
                    (playernum, P_GetPlayerStart(RebornPosition, i), true))
-                    // &playerstarts[RebornPosition][i]))
-                {               // Found an open start spot
-
-                    P_SpawnPlayer(  /*&playerstarts[RebornPosition][i] */
-                                     P_GetPlayerStart(RebornPosition, i),
-                                     playernum);
+                {
+                    // Found an open start spot
+                    P_SpawnPlayer(P_GetPlayerStart(RebornPosition, i),
+                                  playernum);
                     foundSpot = true;
                     break;
                 }
             }
         }
         if(foundSpot == false)
-        {                       // Player's going to be inside something
-            P_SpawnPlayer(P_GetPlayerStart(RebornPosition, playernum)
-                          /*&playerstarts[RebornPosition][playernum] */ ,
+        {
+            // Player's going to be inside something
+            P_SpawnPlayer(P_GetPlayerStart(RebornPosition, playernum),
                           playernum);
         }
+
         // Restore keys and weapons
         players[playernum].keys = oldKeys;
         players[playernum].pieces = oldPieces;
@@ -2682,6 +1672,7 @@ void G_DoReborn(int playernum)
                 players[playernum].weaponowned[i] = true;
             }
         }
+
         players[playernum].mana[MANA_1] = 25;
         players[playernum].mana[MANA_2] = 25;
         if(bestWeapon)
@@ -2689,6 +1680,7 @@ void G_DoReborn(int playernum)
             players[playernum].pendingweapon = bestWeapon;
         }
 #endif
+
 #if __JDOOM__ || __JHERETIC__
         Con_Printf("- force spawning at %i.\n", players[playernum].startspot);
 
@@ -2729,7 +1721,6 @@ void G_DoScreenShot(void)
 }
 
 #if __JDOOM__
-
 // DOOM Par Times
 int     pars[4][10] = {
     {0},
@@ -2745,45 +1736,32 @@ int     cpars[32] = {
     240, 150, 180, 150, 150, 300, 330, 420, 300, 180,   // 21-30
     120, 30                     // 31-32
 };
-
 #endif
 
 #if __JHEXEN__ || __JSTRIFE__
-//==========================================================================
-//
-// G_StartNewInit
-//
-//==========================================================================
-
 void G_StartNewInit(void)
 {
     SV_HxInitBaseSlot();
     SV_HxClearRebornSlot();
 
-#if __JHEXEN__
+#   if __JHEXEN__
     P_ACSInitNewGame();
-#endif
+#   endif
 
     // Default the player start spot group to 0
     RebornPosition = 0;
 }
-
-//==========================================================================
-//
-// G_StartNewGame
-//
-//==========================================================================
 
 void G_StartNewGame(skill_t skill)
 {
     int     realMap = 1;
 
     G_StartNewInit();
-#if __JHEXEN__
+#   if __JHEXEN__
     realMap = P_TranslateMap(1);
-#elif __JSTRIFE__
+#   elif __JSTRIFE__
     realMap = 1;
-#endif
+#   endif
     if(realMap == -1)
     {
         realMap = 1;
@@ -2791,27 +1769,16 @@ void G_StartNewGame(skill_t skill)
     G_InitNew(TempSkill, 1, realMap);
 }
 
-//==========================================================================
-//
-// G_TeleportNewMap
-//
-// Only called by the warp cheat code.  Works just like normal map to map
-// teleporting, but doesn't do any interlude stuff.
-//
-//==========================================================================
-
+/*
+ * Only called by the warp cheat code.  Works just like normal map to map
+ * teleporting, but doesn't do any interlude stuff.
+ */
 void G_TeleportNewMap(int map, int position)
 {
     gameaction = ga_leavemap;
     LeaveMap = map;
     LeavePosition = position;
 }
-
-//==========================================================================
-//
-// G_DoTeleportNewMap
-//
-//==========================================================================
 
 void G_DoTeleportNewMap(void)
 {
@@ -2829,18 +1796,6 @@ void G_DoTeleportNewMap(void)
 
     // Is there a briefing before this map?
     FI_Briefing(gameepisode, gamemap);
-}
-#endif
-
-#if !__JHEXEN__
-DEFCC(CCmdExitLevel)
-{
-    if(gamestate == GS_LEVEL)
-        G_ExitLevel();
-    else
-        Con_Message("You can only exit a level when in-game!\n");
-
-    return true;
 }
 #endif
 
@@ -2869,14 +1824,10 @@ void G_SecretExitLevel(void)
 }
 
 #if __JHEXEN__ || __JSTRIFE__
-//==========================================================================
-//
-// G_Completed
-//
-// Starts intermission routine, which is used only during hub exits,
-// and DeathMatch games.
-//==========================================================================
-
+/*
+ * Starts intermission routine, which is used only during hub exits,
+ * and DeathMatch games.
+ */
 void G_Completed(int map, int position)
 {
     if(cyclingMaps && mapCycleNoExit)
@@ -2894,6 +1845,36 @@ void G_Completed(int map, int position)
     LeavePosition = position;
 }
 #endif
+
+/*
+ * @return boolean  (True) If the game has been completed
+ */
+boolean G_IfVictory(void)
+{
+#if __JDOOM__
+    if((gamemap == 8) && (gamemode != commercial))
+    {
+        gameaction = ga_victory;
+        return true;
+    }
+
+#elif __JHERETIC__
+    if(gamemap == 8)
+    {
+        gameaction = ga_victory;
+        return true;
+    }
+
+#elif __JHEXEN__ || __JSTRIFE__
+    if(LeaveMap == -1 && LeavePosition == -1)
+    {
+        gameaction = ga_victory;
+        return true;
+    }
+#endif
+
+    return false;
+}
 
 void G_DoCompleted(void)
 {
@@ -2930,6 +1911,10 @@ void G_DoCompleted(void)
     if(automapactive)
         AM_Stop();
 
+    // Has the player completed the game?
+    if(G_IfVictory())
+        return; // Victorious!
+
 #if __JHERETIC__
     prevmap = gamemap;
     if(secretexit == true)
@@ -2940,11 +1925,6 @@ void G_DoCompleted(void)
     {                           // Finished secret level
         gamemap = afterSecret[gameepisode - 1];
     }
-    else if(gamemap == 8)
-    {
-        gameaction = ga_victory;
-        return;
-    }
     else
     {
         gamemap++;
@@ -2952,33 +1932,11 @@ void G_DoCompleted(void)
 #endif
 
 #if __JDOOM__
-    if(gamemode != commercial)
-        switch (gamemap)
-        {
-        case 8:
-            gameaction = ga_victory;
-            return;
-        case 9:
-            for(i = 0; i < MAXPLAYERS; i++)
-                players[i].didsecret = true;
-            break;
-        }
-
-    //#if 0  Hmmm - why?
-    if((gamemap == 8) && (gamemode != commercial))
+    if(gamemode != commercial && gamemap == 9)
     {
-        // victory
-        gameaction = ga_victory;
-        return;
-    }
-
-    if((gamemap == 9) && (gamemode != commercial))
-    {
-        // exit secret level
         for(i = 0; i < MAXPLAYERS; i++)
             players[i].didsecret = true;
     }
-    //#endif
 
     wminfo.didsecret = players[consoleplayer].didsecret;
     wminfo.last = gamemap - 1;
@@ -3062,17 +2020,9 @@ void G_DoCompleted(void)
 #endif
 
 #if __JHEXEN__ || __JSTRIFE__
-    if(LeaveMap == -1 && LeavePosition == -1)
-    {
-        gameaction = ga_victory;
-        return;
-    }
-    else
-    {
-        NetSv_Intermission(IMF_BEGIN, LeaveMap, LeavePosition);
-        gamestate = GS_INTERMISSION;
-        IN_Start();
-    }
+    NetSv_Intermission(IMF_BEGIN, LeaveMap, LeavePosition);
+    gamestate = GS_INTERMISSION;
+    IN_Start();
 #endif
 }
 
@@ -3114,9 +2064,6 @@ void G_PrepareWIData(void)
 }
 #endif
 
-//
-// G_WorldDone
-//
 void G_WorldDone(void)
 {
     gameaction = ga_worlddone;
@@ -3124,31 +2071,8 @@ void G_WorldDone(void)
 #if __JDOOM__
     if(secretexit)
         players[consoleplayer].didsecret = true;
-
-    /*    if ( gamemode == commercial )
-       {
-       switch (gamemap)
-       {
-       case 15:
-       case 31:
-       if (!secretexit)
-       break;
-       case 6:
-       case 11:
-       case 20:
-       case 30:
-       F_StartFinale ();
-       break;
-       }
-       } */
 #endif
 }
-
-//============================================================================
-//
-// G_DoWorldDone
-//
-//============================================================================
 
 void G_DoWorldDone(void)
 {
@@ -3162,15 +2086,10 @@ void G_DoWorldDone(void)
 }
 
 #if __JHEXEN__ || __JSTRIFE__
-//==========================================================================
-//
-// G_DoSingleReborn
-//
-// Called by G_Ticker based on gameaction.  Loads a game from the reborn
-// save slot.
-//
-//==========================================================================
-
+/*
+ * Called by G_Ticker based on gameaction.  Loads a game from the reborn
+ * save slot.
+ */
 void G_DoSingleReborn(void)
 {
     gameaction = ga_nothing;
@@ -3179,17 +2098,9 @@ void G_DoSingleReborn(void)
 }
 #endif
 
-//extern boolean setsizeneeded;
-//void R_ExecuteSetViewSize (void);
-
-//==========================================================================
-//
-// G_LoadGame
-//
-// Can be called by the startup code or the menu task.
-//
-//==========================================================================
-
+/*
+ * Can be called by the startup code or the menu task.
+ */
 #if __JHEXEN__ || __JSTRIFE__
 void G_LoadGame(int slot)
 {
@@ -3202,14 +2113,9 @@ void G_LoadGame(char *name)
     gameaction = ga_loadgame;
 }
 
-//==========================================================================
-//
-// G_DoLoadGame
-//
-// Called by G_Ticker based on gameaction.
-//
-//==========================================================================
-
+/*
+ * Called by G_Ticker based on gameaction.
+ */
 void G_DoLoadGame(void)
 {
     G_StopDemo();
@@ -3217,6 +2123,9 @@ void G_DoLoadGame(void)
     gameaction = ga_nothing;
 
 #if __JHEXEN__ || __JSTRIFE__
+
+    Draw_LoadIcon();
+
     SV_HxLoadGame(GameLoadSlot);
     if(!IS_NETGAME)
     {                           // Copy the base slot to the reborn slot
@@ -3228,11 +2137,10 @@ void G_DoLoadGame(void)
 #endif
 }
 
-//
-// G_SaveGame
-// Called by the menu task.
-// Description is a 24 byte text string
-//
+/*
+ * Called by the menu task.
+ * Description is a 24 byte text string
+ */
 void G_SaveGame(int slot, char *description)
 {
     savegameslot = slot;
@@ -3240,17 +2148,14 @@ void G_SaveGame(int slot, char *description)
     gameaction = ga_savegame;
 }
 
-//==========================================================================
-//
-// G_DoSaveGame
-//
-// Called by G_Ticker based on gameaction.
-//
-//==========================================================================
-
+/*
+ * Called by G_Ticker based on gameaction.
+ */
 void G_DoSaveGame(void)
 {
 #if __JHEXEN__ || __JSTRIFE__
+    Draw_SaveIcon();
+
     SV_HxSaveGame(savegameslot, savedescription);
     gameaction = ga_nothing;
     savedescription[0] = 0;
@@ -3274,12 +2179,6 @@ void G_DoSaveGame(void)
 }
 
 #if __JHEXEN__ || __JSTRIFE__
-//==========================================================================
-//
-// G_DeferredNewGame
-//
-//==========================================================================
-
 void G_DeferredNewGame(skill_t skill)
 {
     TempSkill = skill;
@@ -3294,17 +2193,10 @@ void G_DoInitNew(void)
 }
 #endif
 
-//
-// G_InitNew
-// Can be called by the startup code or the menu task,
-// consoleplayer, displayplayer, playeringame[] should be set.
-//
-#if __JDOOM__ || __JHERETIC__
-skill_t d_skill;
-int     d_episode;
-int     d_map;
-#endif
-
+/*
+ * Can be called by the startup code or the menu task,
+ * consoleplayer, displayplayer, playeringame[] should be set.
+ */
 void G_DeferedInitNew(skill_t skill, int episode, int map)
 {
 #if __JHEXEN__ || __JSTRIFE__
@@ -3544,9 +2436,6 @@ void G_InitNew(skill_t skill, int episode, int map)
 #endif
 }
 
-//
-// G_PlayDemo
-//
 void G_DeferedPlayDemo(char *name)
 {
     strcpy(defdemoname, name);
@@ -3560,17 +2449,19 @@ void G_DoPlayDemo(void)
     char    buf[128];
 
     gameaction = ga_nothing;
+
+#if __JHEXEN__ || __JSTRIFE__
+    if(demoDisabled)
+        return;
+#endif
+
     // The lump should contain the path of the demo file.
     if(lnum < 0 || W_LumpLength(lnum) != 64)
     {
         Con_Message("G_DoPlayDemo: invalid demo lump \"%s\".\n", defdemoname);
-        /*#if __JHEXEN__
-           H2_AdvanceDemo();
-           #elif defined(__JHERETIC__)
-           D_AdvanceDemo();
-           #endif */
         return;
     }
+
     lump = W_CacheLumpNum(lnum, PU_CACHE);
     memset(buf, 0, sizeof(buf));
     strcpy(buf, "playdemo ");
@@ -3578,18 +2469,7 @@ void G_DoPlayDemo(void)
 
     // Start playing the demo.
     if(DD_Execute(buf, false))
-    {
-        // The demo will begin momentarily.
-        gamestate = GS_WAITING;
-    }
-    else
-    {
-        /*#if __JHEXEN__
-           H2_AdvanceDemo();
-           #elif defined(__JHERETIC__)
-           D_AdvanceDemo();
-           #endif */
-    }
+        gamestate = GS_WAITING; // The demo will begin momentarily.
 }
 
 /*
@@ -3615,9 +2495,6 @@ void G_DemoAborted(void)
     FI_DemoEnds();
 }
 
-//===========================================================================
-// P_Thrust3D
-//===========================================================================
 void P_Thrust3D(player_t *player, angle_t angle, float lookdir,
                 int forwardmove, int sidemove)
 {
@@ -3644,9 +2521,6 @@ void P_Thrust3D(player_t *player, angle_t angle, float lookdir,
     mo->momz += z;
 }
 
-//===========================================================================
-// P_IsCamera
-//===========================================================================
 boolean P_IsCamera(mobj_t *mo)
 {
     // Client mobjs do not have thinkers and thus cannot be cameras.
@@ -3654,9 +2528,6 @@ boolean P_IsCamera(mobj_t *mo)
             mo->player->plr->flags & DDPF_CAMERA);
 }
 
-//===========================================================================
-// P_CameraXYMovement
-//===========================================================================
 int P_CameraXYMovement(mobj_t *mo)
 {
     if(!P_IsCamera(mo))
@@ -3686,9 +2557,6 @@ int P_CameraXYMovement(mobj_t *mo)
     return true;
 }
 
-//===========================================================================
-// P_CameraZMovement
-//===========================================================================
 int P_CameraZMovement(mobj_t *mo)
 {
     if(!P_IsCamera(mo))
@@ -3702,10 +2570,9 @@ int P_CameraZMovement(mobj_t *mo)
     return true;
 }
 
-//===========================================================================
-// P_CameraThink
-//  Set appropriate parameters for a camera.
-//===========================================================================
+/*
+ * Set appropriate parameters for a camera.
+ */
 void P_CameraThink(player_t *player)
 {
     angle_t angle;
@@ -3718,8 +2585,10 @@ void P_CameraThink(player_t *player)
 
     mo = player->plr->mo;
     player->cheats |= CF_GODMODE;
+
     if(cfg.cameraNoClip)
         player->cheats |= CF_NOCLIP;
+
     player->plr->viewheight = 0;
     mo->flags &= ~(MF_SOLID | MF_SHOOTABLE | MF_PICKUP);
 
@@ -3754,9 +2623,6 @@ void P_CameraThink(player_t *player)
     }
 }
 
-//===========================================================================
-// CCmdMakeLocal
-//===========================================================================
 DEFCC(CCmdMakeLocal)
 {
     int     p;
@@ -3783,9 +2649,6 @@ DEFCC(CCmdMakeLocal)
     return true;
 }
 
-//===========================================================================
-// CCmdSetCamera
-//===========================================================================
 DEFCC(CCmdSetCamera)
 {
     int     p;
@@ -3802,9 +2665,6 @@ DEFCC(CCmdSetCamera)
     return true;
 }
 
-//===========================================================================
-// CCmdSetViewLock
-//===========================================================================
 DEFCC(CCmdSetViewLock)
 {
     int     pl = consoleplayer, lock;
@@ -3915,3 +2775,50 @@ DEFCC(CCmdLocalMessage)
     D_NetMessageNoSound(argv[1]);
     return true;
 }
+
+DEFCC(CCmdCycleSpy)
+{
+    // FIXME: The engine should do this.
+    Con_Printf("Spying not allowed.\n");
+#if 0
+    if(gamestate == GS_LEVEL && !deathmatch)
+    {                           // Cycle the display player
+        do
+        {
+            Set(DD_DISPLAYPLAYER, displayplayer + 1);
+            if(displayplayer == MAXPLAYERS)
+            {
+                Set(DD_DISPLAYPLAYER, 0);
+            }
+        } while(!players[displayplayer].plr->ingame &&
+                displayplayer != consoleplayer);
+    }
+#endif
+    return true;
+}
+
+#if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
+/*
+ * Move the inventory selector
+ */
+DEFCC(CCmdInventory)
+{
+    inventoryMove(players + consoleplayer, !stricmp(argv[0], "invright"));
+    return true;
+}
+#endif
+
+#if !__JHEXEN__
+/*
+ * Exit the current level and goto the intermission.
+ */
+DEFCC(CCmdExitLevel)
+{
+    if(gamestate == GS_LEVEL)
+        G_ExitLevel();
+    else
+        Con_Message("You can only exit a level when in-game!\n");
+
+    return true;
+}
+#endif
