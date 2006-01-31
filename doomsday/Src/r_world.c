@@ -360,8 +360,7 @@ void R_ConvexClipper(subsector_t *ssec, int num, divline_t * list)
 
     if(!numedgepoints)
     {
-        printf("All clipped away: subsector %lu\n",
-               ((byte*) ssec - subsectors) / SUBSIZE);
+        printf("All clipped away: subsector %i\n", GET_SUBSECTOR_IDX(ssec));
         ssec->numverts = 0;
         ssec->verts = 0;
         //ssec->origverts = 0;
@@ -709,7 +708,6 @@ void R_SetVertexOwner(int idx, sector_t *secptr)
 void R_InitVertexOwners(void)
 {
     int     i, k, p, v[2];
-    byte   *ptr;
     sector_t *sec;
 
     // Allocate enough memory.
@@ -718,14 +716,13 @@ void R_InitVertexOwners(void)
                                    PU_LEVEL, 0);
     memset(vertexowners, 0, sizeof(vertexowner_t) * numvertexes);
 
-    for(i = numsectors -1, ptr = sectors; i >= 0; --i, ptr += SECTSIZE)
+    for(i = 0, sec = sectors; i < numsectors; i++, sec++)
     {
-        sec = (sector_t *) ptr;
         // Traversing the line list will do fine.
-        for(k = sec->linecount -1; k >= 0; --k)
+        for(k = sec->linecount - 1; k >= 0; --k)
         {
-            v[0] = ((byte *) sec->Lines[k]->v1 - vertexes) / VTXSIZE;
-            v[1] = ((byte *) sec->Lines[k]->v2 - vertexes) / VTXSIZE;
+            v[0] = GET_VERTEX_IDX(sec->Lines[k]->v1);
+            v[1] = GET_VERTEX_IDX(sec->Lines[k]->v2);
             for(p = 1; p >= 0 ; --p)
             {
                 R_SetVertexOwner(v[p], sec->Lines[k]->frontsector);

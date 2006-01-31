@@ -96,53 +96,57 @@ extern boolean levelSetup;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int     numvertexes;
-byte   *vertexes;
+/*
+ * These map data arrays are internal to the engine.
+ */
 
-int     numsegs;
-byte   *segs;
+int         numvertexes;
+vertex_t   *vertexes;
 
-int     numsectors;
-byte   *sectors;
+int         numsegs;
+seg_t      *segs;
 
-int     numsubsectors;
-byte   *subsectors;
+int         numsectors;
+sector_t   *sectors;
 
-int     numnodes;
-byte   *nodes;
+int         numsubsectors;
+subsector_t *subsectors;
 
-int     numlines;
-byte   *lines;
+int         numnodes;
+node_t     *nodes;
 
-int     numsides;
-byte   *sides;
+int         numlines;
+line_t     *lines;
+
+int         numsides;
+side_t     *sides;
 
 // Should we generate new blockmap data if its invalid?
 // 0: error out
 // 1: generate new
 // 2: Always generate new
-int     createBMap = 1;
+int         createBMap = 1;
 
-int     createReject = 0;
+int         createReject = 0;
 
 // mapthings are actually stored & handled game-side
-int     numthings;
+int         numthings;
 
-long  *blockmaplump;           // offsets in blockmap are from here
-long  *blockmap;
+long       *blockmaplump;           // offsets in blockmap are from here
+long       *blockmap;
 
-int     bmapwidth, bmapheight;  // in mapblocks
-fixed_t bmaporgx, bmaporgy;     // origin of block map
-linkmobj_t *blockrings;         // for thing rings
+int         bmapwidth, bmapheight;  // in mapblocks
+fixed_t     bmaporgx, bmaporgy;     // origin of block map
+linkmobj_t *blockrings;             // for thing rings
 
-byte   *rejectmatrix;           // for fast sight rejection
+byte       *rejectmatrix;           // for fast sight rejection
 
-polyblock_t **polyblockmap;     // polyobj blockmap
+polyblock_t **polyblockmap;         // polyobj blockmap
 
-nodepile_t thingnodes, linenodes;   // all kinds of wacky links
+nodepile_t  thingnodes, linenodes;  // all kinds of wacky links
 
-ded_mapinfo_t *mapinfo = 0;     // Current mapinfo.
-fixed_t mapgravity;             // Gravity for the current map.
+ded_mapinfo_t *mapinfo = 0;         // Current mapinfo.
+fixed_t     mapgravity;             // Gravity for the current map.
 
 /*
  * Value types for the DMU constants.

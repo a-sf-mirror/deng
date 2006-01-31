@@ -458,8 +458,8 @@ boolean P_CheckReject(sector_t *sec1, sector_t *sec2)
     if(rejectmatrix != NULL)
     {
         // Determine subsector entries in REJECT table.
-        s1 = ((byte *) sec1 - sectors) / SECTSIZE;
-        s2 = ((byte *) sec2 - sectors) / SECTSIZE;
+        s1 = GET_SECTOR_IDX(sec1);
+        s2 = GET_SECTOR_IDX(sec2);
         pnum = s1 * numsectors + s2;
         bytenum = pnum >> 3;
         bitnum = 1 << (pnum & 7);

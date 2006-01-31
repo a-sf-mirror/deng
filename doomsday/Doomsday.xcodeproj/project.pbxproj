@@ -95,6 +95,9 @@
 		B018337A07E6082000217C5A /* p_xgsec.h in Resources */ = {isa = PBXBuildFile; fileRef = B018335407E6082000217C5A /* p_xgsec.h */; };
 		B018337B07E6082000217C5A /* r_common.h in Resources */ = {isa = PBXBuildFile; fileRef = B018335507E6082000217C5A /* r_common.h */; };
 		B018337C07E6082000217C5A /* x_hair.h in Resources */ = {isa = PBXBuildFile; fileRef = B018335607E6082000217C5A /* x_hair.h */; };
+		B01C646D098FDA8300444493 /* g_controls.c in Sources */ = {isa = PBXBuildFile; fileRef = B01C646C098FDA8300444493 /* g_controls.c */; };
+		B01C646E098FDA8300444493 /* g_controls.c in Sources */ = {isa = PBXBuildFile; fileRef = B01C646C098FDA8300444493 /* g_controls.c */; };
+		B01C646F098FDA8300444493 /* g_controls.c in Sources */ = {isa = PBXBuildFile; fileRef = B01C646C098FDA8300444493 /* g_controls.c */; };
 		B0237B1506F3743B0059676A /* AcFnLink.c in Sources */ = {isa = PBXBuildFile; fileRef = B0237AF506F3743B0059676A /* AcFnLink.c */; };
 		B0237B1806F3743B0059676A /* H_Action.c in Sources */ = {isa = PBXBuildFile; fileRef = B0237AF806F3743B0059676A /* H_Action.c */; };
 		B0237B1906F3743B0059676A /* H_Console.c in Sources */ = {isa = PBXBuildFile; fileRef = B0237AF906F3743B0059676A /* H_Console.c */; };
@@ -807,6 +810,7 @@
 		B018335407E6082000217C5A /* p_xgsec.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = p_xgsec.h; path = Include/Common/p_xgsec.h; sourceTree = "<group>"; };
 		B018335507E6082000217C5A /* r_common.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = r_common.h; path = Include/Common/r_common.h; sourceTree = "<group>"; };
 		B018335607E6082000217C5A /* x_hair.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = x_hair.h; path = Include/Common/x_hair.h; sourceTree = "<group>"; };
+		B01C646C098FDA8300444493 /* g_controls.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = g_controls.c; path = Src/Common/g_controls.c; sourceTree = "<group>"; };
 		B0237AEF06F3721E0059676A /* jHeretic.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = jHeretic.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0237AF006F3721E0059676A /* jHeretic-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "jHeretic-Info.plist"; path = "/Users/jaakko/Projects/deng/doomsday/jHeretic-Info.plist"; sourceTree = "<absolute>"; };
 		B0237AF506F3743B0059676A /* AcFnLink.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = AcFnLink.c; path = Src/jHeretic/AcFnLink.c; sourceTree = "<group>"; };
@@ -2078,6 +2082,7 @@
 		B0D5B6E106EE44B600B98CC8 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				B01C646C098FDA8300444493 /* g_controls.c */,
 				B010785808563447000BF0D8 /* am_map.c */,
 				B0D5B6E206EE44EA00B98CC8 /* d_net.c */,
 				B0D5B6E306EE44EA00B98CC8 /* d_netcl.c */,
@@ -3113,6 +3118,7 @@
 				B01078D4085636E8000BF0D8 /* st_stuff.c in Sources */,
 				B04027F00982F53A00C5F03E /* dmu_lib.c in Sources */,
 				B0AE9D0709839BE1008EFFD0 /* p_mapsetup.c in Sources */,
+				B01C646E098FDA8300444493 /* g_controls.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3180,6 +3186,7 @@
 				B083A6D6085CCD2C000D4BAB /* Tables.c in Sources */,
 				B04027F20982F53A00C5F03E /* dmu_lib.c in Sources */,
 				B04591AF098BE9AA00016085 /* p_mapsetup.c in Sources */,
+				B01C646F098FDA8300444493 /* g_controls.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3261,6 +3268,7 @@
 				B010786508563447000BF0D8 /* st_lib.c in Sources */,
 				B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */,
 				B0AE9D0809839BE2008EFFD0 /* p_mapsetup.c in Sources */,
+				B01C646D098FDA8300444493 /* g_controls.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

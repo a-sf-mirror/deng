@@ -54,7 +54,7 @@ static boolean CheckMobjBlocking(seg_t *seg, polyobj_t * po);
 // Called when the polyobj hits a mobj.
 void    (*po_callback) (mobj_t *mobj, void *seg, void *po);
 
-byte   *polyobjs;               // list of all poly-objects on the level
+polyobj_t *polyobjs;               // list of all poly-objects on the level
 int     po_NumPolyobjs;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------

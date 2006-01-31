@@ -1268,7 +1268,7 @@ boolean DL_LightIteratorFunc(lumobj_t * lum, flatitervars_t * fi)
 {
     int     i;
     int     j;
-    byte   *seg;
+    seg_t  *seg;
     float   x = FIX2FLT(lum->thing->x);
     float   y = FIX2FLT(lum->thing->y);
     float   z = FIX2FLT(lum->thing->z);
@@ -1362,11 +1362,11 @@ boolean DL_LightIteratorFunc(lumobj_t * lum, flatitervars_t * fi)
         return true;
 
     // The wall segments.
-    for(j = 0, seg = segs + SEGIDX(fi->subsector->firstline);
-        j < fi->subsector->linecount; j++, seg += SEGSIZE)
+    for(j = 0, seg = &segs[fi->subsector->firstline];
+        j < fi->subsector->linecount; j++, seg++)
     {
-        if(((seg_t *) seg)->linedef)    // "minisegs" have no linedefs.
-            DL_ProcessWallSeg(lum, (seg_t *) seg, fi->subsector->sector);
+        if(seg->linedef)    // "minisegs" have no linedefs.
+            DL_ProcessWallSeg(lum, seg, fi->subsector->sector);
     }
 
     // Is there a polyobj on board? Light it, too.
@@ -1401,7 +1401,7 @@ void DL_ProcessSubsector(subsector_t *ssec)
 {
     int     i;
     int     j;
-    byte   *seg;
+    seg_t  *seg;
     flatitervars_t fi;
     lumcontact_t *con;
     sector_t *sect = ssec->sector;
@@ -1433,11 +1433,11 @@ void DL_ProcessSubsector(subsector_t *ssec)
        (sect->floorglow || sect->ceilingglow))
     {
         // The wall segments.
-        for(j = 0, seg = segs + SEGIDX(ssec->firstline); j < ssec->linecount;
-            j++, seg += SEGSIZE)
+        for(j = 0, seg = &segs[ssec->firstline]; j < ssec->linecount;
+            j++, seg++)
         {
-            if(((seg_t *) seg)->linedef)    // "minisegs" have no linedefs.
-                DL_ProcessWallGlow((seg_t *) seg, sect);
+            if(seg->linedef)    // "minisegs" have no linedefs.
+                DL_ProcessWallGlow(seg, sect);
         }
 
         // Is there a polyobj on board? Light it, too.

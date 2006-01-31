@@ -1752,7 +1752,7 @@ void Rend_RenderSubsector(int ssecidx)
     subsector_t *ssec = SUBSECTOR_PTR(ssecidx);
     int     i;
     unsigned long j;
-    byte   *seg;
+    seg_t  *seg;
     sector_t *sect = ssec->sector;
     int     sectoridx = GET_SECTOR_IDX(sect);
     sectorinfo_t *sin = secinfo + sectoridx;
@@ -1818,11 +1818,11 @@ void Rend_RenderSubsector(int ssecidx)
     R_AddSprites(sect);
 
     // Draw the walls.
-    for(j = ssec->linecount, seg = segs + SEGIDX(ssec->firstline); j > 0;
-        --j, seg += SEGSIZE)
+    for(j = ssec->linecount, seg = &segs[ssec->firstline]; j > 0;
+        --j, seg++)
     {
-        if(((seg_t *) seg)->linedef)    // "minisegs" have no linedefs.
-            Rend_RenderWallSeg((seg_t *) seg, sect, flags);
+        if(seg->linedef)    // "minisegs" have no linedefs.
+            Rend_RenderWallSeg(seg, sect, flags);
     }
 
     // Is there a polyobj on board?

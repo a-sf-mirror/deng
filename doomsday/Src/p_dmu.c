@@ -337,28 +337,28 @@ int P_ToIndex(const void* ptr)
     switch(DMU_GetType(ptr))
     {
     case DMU_VERTEX:
-        return GET_VERTEX_IDX(ptr);
+        return GET_VERTEX_IDX((vertex_t*) ptr);
 
     case DMU_SEG:
-        return GET_SEG_IDX(ptr);
+        return GET_SEG_IDX((seg_t*) ptr);
 
     case DMU_LINE:
-        return GET_LINE_IDX(ptr);
+        return GET_LINE_IDX((line_t*) ptr);
 
     case DMU_SIDE:
-        return GET_SIDE_IDX(ptr);
+        return GET_SIDE_IDX((side_t*) ptr);
 
     case DMU_SUBSECTOR:
-        return GET_SUBSECTOR_IDX(ptr);
+        return GET_SUBSECTOR_IDX((subsector_t*) ptr);
 
     case DMU_SECTOR:
-        return GET_SECTOR_IDX(ptr);
+        return GET_SECTOR_IDX((sector_t*) ptr);
 
     case DMU_POLYOBJ:
-        return GET_POLYOBJ_IDX(ptr);
+        return GET_POLYOBJ_IDX((polyobj_t*) ptr);
 
     case DMU_NODE:
-        return GET_NODE_IDX(ptr);
+        return GET_NODE_IDX((node_t*) ptr);
 
     default:
         Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(DMU_GetType(ptr)));

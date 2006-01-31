@@ -44,42 +44,23 @@ typedef struct {
     char            sideMove;      //*2048 for real move
 } ticcmd_t;
 
-// Sizes of the engine's internal map data structures.
-#define VTXSIZE                 sizeof(vertex_t)
-#define SEGSIZE                 sizeof(seg_t)
-#define SECTSIZE                sizeof(sector_t)
-#define SUBSIZE                 sizeof(subsector_t)
-#define NODESIZE                sizeof(node_t)
-#define LINESIZE                sizeof(line_t)
-#define SIDESIZE                sizeof(side_t)
-#define POSIZE                  sizeof(polyobj_t)
+#define GET_VERTEX_IDX(vtx)     ((vtx) - vertexes)
+#define GET_LINE_IDX(li)        ((li) - lines)
+#define GET_SIDE_IDX(si)        ((si) - sides) 
+#define GET_SECTOR_IDX(sec)     ((sec) - sectors) 
+#define GET_SUBSECTOR_IDX(sub)  ((sub) - subsectors)
+#define GET_POLYOBJ_IDX(po)     ((po) - polyobjs)
+#define GET_SEG_IDX(seg)        ((seg) - segs)
+#define GET_NODE_IDX(nd)        ((nd) - nodes)
 
-#define GET_VERTEX_IDX(vtx)     ( ((byte*)(vtx) - vertexes) / VTXSIZE )
-#define GET_LINE_IDX(li)        ( ((byte*)(li) - lines) / LINESIZE )
-#define GET_SIDE_IDX(si)        ( ((byte*)(si) - sides) / SIDESIZE )
-#define GET_SECTOR_IDX(sec)     ( ((byte*)(sec) - sectors) / SECTSIZE )
-#define GET_SUBSECTOR_IDX(sub)  ( ((byte*)(sub) - subsectors) / SUBSIZE )
-#define GET_POLYOBJ_IDX(po)     ( ((byte*)(po) - polyobjs) / POSIZE )
-#define GET_SEG_IDX(seg)        ( ((byte*)(seg) - segs) / SEGSIZE )
-#define GET_NODE_IDX(nd)        ( ((byte*)(nd) - nodes) / NODESIZE )
-
-#define VTXIDX(i)   ((i)*VTXSIZE)
-#define SEGIDX(i)   ((i)*SEGSIZE)
-#define SECTIDX(i)  ((i)*SECTSIZE)
-#define SUBIDX(i)   ((i)*SUBSIZE)
-#define NODEIDX(i)  ((i)*NODESIZE)
-#define LINEIDX(i)  ((i)*LINESIZE)
-#define SIDEIDX(i)  ((i)*SIDESIZE)
-#define POIDX(i)    ((i)*POSIZE)
-
-#define VERTEX_PTR(i)       ( (vertex_t*) (vertexes+VTXIDX(i)) )
-#define SEG_PTR(i)          ( (seg_t*) (segs+SEGIDX(i)) )
-#define SECTOR_PTR(i)       ( (sector_t*) (sectors+SECTIDX(i)) )
-#define SUBSECTOR_PTR(i)    ( (subsector_t*) (subsectors+SUBIDX(i)) )
-#define NODE_PTR(i)         ( (node_t*) (nodes+NODEIDX(i)) )
-#define LINE_PTR(i)         ( (line_t*) (lines+LINEIDX(i)) )
-#define SIDE_PTR(i)         ( (side_t*) (sides+SIDEIDX(i)) )
-#define PO_PTR(i)           ( (polyobj_t*) ((byte*)polyobjs+POIDX(i)) )
+#define VERTEX_PTR(i)           (&vertexes[i])
+#define SEG_PTR(i)              (&segs[i])
+#define SECTOR_PTR(i)           (&sectors[i])
+#define SUBSECTOR_PTR(i)        (&subsectors[i])
+#define NODE_PTR(i)             (&nodes[i])
+#define LINE_PTR(i)             (&lines[i])
+#define SIDE_PTR(i)             (&sides[i])
+#define PO_PTR(i)               (&polyobjs[i])
 
 // Map line flags.
 #define ML_BLOCKING         0x0001
@@ -235,10 +216,6 @@ typedef struct polyobj_s {
     void           *specialdata;   // pointer a thinker, if the poly is moving
 } polyobj_t;
 
-/*typedef struct subsector_s {
-   struct subsector_base_s;
-   } subsector_t; */
-
 typedef struct {
     runtime_mapdata_header_t header;
     fixed_t         x, y, dx, dy;  // partition line
@@ -246,35 +223,38 @@ typedef struct {
     int             children[2];   // if NF_SUBSECTOR its a subsector
 } node_t;
 
+/*
+ * The map data arrays are accessible globally inside the engine.
+ */
 extern int      numvertexes;
-extern byte    *vertexes;
+extern vertex_t *vertexes;
 
 extern int      numsegs;
-extern byte    *segs;
+extern seg_t   *segs;
 
 extern int      numsectors;
-extern byte    *sectors;
+extern sector_t *sectors;
 
 extern int      numsubsectors;
-extern byte    *subsectors;
+extern subsector_t *subsectors;
 
 extern int      numnodes;
-extern byte    *nodes;
+extern node_t  *nodes;
 
 extern int      numlines;
-extern byte    *lines;
+extern line_t  *lines;
 
 extern int      numsides;
-extern byte    *sides;
+extern side_t  *sides;
 
 extern int      numthings;
 
 extern fixed_t  mapgravity;        // Gravity for the current map.
 
-extern int numUniqueLines;
+extern int      numUniqueLines;
 
-extern int *missingFronts;
-extern int numMissingFronts;
+extern int     *missingFronts;
+extern int      numMissingFronts;
 
 void            P_ValidateLevel(void);
 void            P_LoadBlockMap(int lump);

@@ -18,6 +18,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <math.h> // required for sqrt, fabs
+
 #if __JDOOM__
 #  include "jDoom/doomdef.h"
 #  include "jDoom/doomstat.h"
