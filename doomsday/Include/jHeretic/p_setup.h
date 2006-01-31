@@ -31,9 +31,63 @@
 
 // TODO: we don't need  to know about all of them once they
 //       are registered via DED.
-// TODO: these values ARE NOT correct.
+
+// Common map format properties
 enum {
+    DAM_NONE = 0,
+    DAM_THING,
+    DAM_VERTEX,
+    DAM_LINE,
     DAM_SIDE,
+    DAM_SECTOR,
+    DAM_SEG,
+    DAM_SUBSECTOR,
+    DAM_NODE,
+
+    DAM_X,
+    DAM_Y,
+    DAM_DX,
+    DAM_DY,
+
+    DAM_VERTEX1,
+    DAM_VERTEX2,
+    DAM_FLAGS,
+    DAM_SIDE0,
+    DAM_SIDE1,
+
+    DAM_TEXTURE_OFFSET_X,
+    DAM_TEXTURE_OFFSET_Y,
+    DAM_TOP_TEXTURE,
+    DAM_MIDDLE_TEXTURE,
+    DAM_BOTTOM_TEXTURE,
+    DAM_FRONT_SECTOR,
+
+    DAM_FLOOR_HEIGHT,
+    DAM_CEILING_HEIGHT,
+    DAM_FLOOR_TEXTURE,
+    DAM_CEILING_TEXTURE,
+    DAM_LIGHT_LEVEL,
+
+    DAM_ANGLE,
+    DAM_OFFSET,
+
+    DAM_LINE_COUNT,
+    DAM_LINE_FIRST,
+
+    DAM_BBOX_RIGHT_TOP_Y,
+    DAM_BBOX_RIGHT_LOW_Y,
+    DAM_BBOX_RIGHT_LOW_X,
+    DAM_BBOX_RIGHT_TOP_X,
+    DAM_BBOX_LEFT_TOP_Y,
+    DAM_BBOX_LEFT_LOW_Y,
+    DAM_BBOX_LEFT_LOW_X,
+    DAM_BBOX_LEFT_TOP_X,
+    DAM_CHILD_RIGHT,
+    DAM_CHILD_LEFT
+};
+
+// Game specific map format properties
+enum {
     DAM_LINE_TAG,
     DAM_LINE_SPECIAL,
     DAM_LINE_ARG1,
@@ -41,9 +95,6 @@ enum {
     DAM_LINE_ARG3,
     DAM_LINE_ARG4,
     DAM_LINE_ARG5,
-    DAM_TOP_TEXTURE,
-    DAM_MIDDLE_TEXTURE,
-    DAM_BOTTOM_TEXTURE,
     DAM_SECTOR_SPECIAL,
     DAM_SECTOR_TAG,
     DAM_THING_TID,
@@ -58,7 +109,8 @@ enum {
     DAM_THING_ARG2,
     DAM_THING_ARG3,
     DAM_THING_ARG4,
-    DAM_THING_ARG5
+    DAM_THING_ARG5,
+    DAM_PROPERTY_COUNT
 };
 
 int             P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data);
@@ -67,5 +119,4 @@ int             P_HandleMapDataPropertyValue(int id, int dtype, int prop, int ty
 void            P_Init(void);
 
 boolean         P_MapExists(int episode, int map);
-void            P_SetupLevel(int episode, int map, int playermask, skill_t skill);
 #endif
