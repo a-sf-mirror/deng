@@ -134,34 +134,25 @@ void P_DoTick(void)
 
     actual_leveltime++;
 
-#if __JDOOM__
-    // pause if in menu and at least one tic has been run
-    if(!IS_NETGAME && menuactive && !Get(DD_PLAYBACK) &&
-       players[consoleplayer].plr->viewz != 1)
-        return;
-
-#elif __JHERETIC__
+#if __JHERETIC__
     if(!IS_CLIENT && TimerGame && !paused)
     {
         if(!--TimerGame)
             G_ExitLevel();
     }
-    // pause if in menu and at least one tic has been run
-    if(!IS_NETGAME && menuactive && !Get(DD_PLAYBACK) &&
-       players[consoleplayer].plr->viewz != 1)
-        return;
-
 #elif __JHEXEN__
     if(!IS_CLIENT && TimerGame)
     {
         if(!--TimerGame)
             G_Completed(P_TranslateMap(P_GetMapNextMap(gamemap)), 0);
     }
+#endif
+
     // pause if in menu and at least one tic has been run
     if(!IS_NETGAME && menuactive && !Get(DD_PLAYBACK) &&
        players[consoleplayer].plr->viewz != 1)
         return;
-#endif
+
 
     P_RunThinkers();
     P_UpdateSpecials();
