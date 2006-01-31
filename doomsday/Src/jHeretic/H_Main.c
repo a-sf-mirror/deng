@@ -69,6 +69,9 @@ boolean autostart;
 FILE   *debugfile;
 boolean debugmode;              // checkparm of -debug
 
+boolean shareware = false;      // true if only episode 1 present
+boolean ExtendedWAD = false;    // true if episodes 4 and 5 present
+
 // default font colours
 const float deffontRGB[] = { .425f, 0.986f, 0.378f};
 const float deffontRGB2[] = { 1.0f, 1.0f, 1.0f};
