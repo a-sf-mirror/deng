@@ -481,7 +481,7 @@ void P_ZMovement(mobj_t *mo)
     {
         mo->player->plr->viewheight -= mo->floorz - mo->z;
         mo->player->plr->deltaviewheight =
-            (VIEWHEIGHT - mo->player->plr->viewheight) >> 3;
+            ((cfg.plrViewHeight << FRACBITS) - mo->player->plr->viewheight) >> 3;
     }
 
     // adjust height
@@ -804,7 +804,7 @@ void P_MobjThinker(mobj_t *mobj)
                             onmo->player->plr->viewheight -=
                                 onmo->floorz - onmo->z;
                             onmo->player->plr->deltaviewheight =
-                                (VIEWHEIGHT -
+                                ((cfg.plrViewHeight << FRACBITS) -
                                  onmo->player->plr->viewheight) >> 3;
                         }
                         onmo->z = onmo->floorz;
@@ -1074,7 +1074,7 @@ void P_SpawnPlayer(thing_t * mthing, int plrnum)
     p->rain2 = NULL;
     p->plr->extralight = 0;
     p->plr->fixedcolormap = 0;
-    p->plr->viewheight = VIEWHEIGHT;
+    p->plr->viewheight = (cfg.plrViewHeight << FRACBITS);
     p->plr->viewz = mobj->z + p->plr->viewheight;
     P_SetupPsprites(p);         // setup gun psprite
     if(deathmatch)
@@ -1519,7 +1519,7 @@ mobj_t *P_SpawnPlayerMissile(mobj_t *source, mobjtype_t type)
     }
     x = source->x;
     y = source->y;
-    z = source->z + (cfg.eyeHeight - 9) * FRACUNIT +
+    z = source->z + (cfg.plrViewHeight - 9) * FRACUNIT +
         (((int) source->player->plr->lookdir) << FRACBITS) / 173;
     if(source->flags2 & MF2_FEETARECLIPPED)
     {
@@ -1590,7 +1590,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle)
 
     x = source->x;
     y = source->y;
-    z = source->z + (cfg.eyeHeight - 9) * FRACUNIT +
+    z = source->z + (cfg.plrViewHeight - 9) * FRACUNIT +
         (((int) source->player->plr->lookdir) << FRACBITS) / 173;
 
     if(source->flags2 & MF2_FEETARECLIPPED)

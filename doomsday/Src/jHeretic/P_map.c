@@ -1418,7 +1418,7 @@ void P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance, fixed_t slope,
     shootz = t1->z + (t1->height >> 1) + 8 * FRACUNIT;
     if(t1->player && t1->type == MT_PLAYER)
     {
-        shootz = t1->z + (cfg.eyeHeight - 5) * FRACUNIT;
+        shootz = t1->z + (cfg.plrViewHeight - 5) * FRACUNIT;
     }
     if(t1->flags2 & MF2_FEETARECLIPPED)
     {
