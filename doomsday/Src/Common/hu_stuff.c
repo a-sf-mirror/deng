@@ -55,16 +55,8 @@
 // MACROS ------------------------------------------------------------------
 
 #ifdef __JDOOM__
-
 // Locally used constants, shortcuts.
-#define HU_TITLE    (mapnames[(gameepisode-1)*9+gamemap-1])
-#define HU_TITLE2   (mapnames2[gamemap-1])
-#define HU_TITLEP   (mapnamesp[gamemap-1])
-#define HU_TITLET   (mapnamest[gamemap-1])
-#define HU_TITLEHEIGHT  1
-
 #define NUMMAPS         8
-
 #endif
 
 // TYPES -------------------------------------------------------------------
@@ -91,217 +83,6 @@ int     typein_time = 0;
 dpatch_t *lnames;
 
 boolean hu_showallfrags = false;
-
-//
-// Builtin map names.
-// The actual names can be found in DStrings.h.
-//
-
-char   *mapnames[9 * 5];        // DOOM shareware/registered/retail (Ultimate) names.
-int     mapnames_idx[] = {
-    TXT_HUSTR_E1M1,
-    TXT_HUSTR_E1M2,
-    TXT_HUSTR_E1M3,
-    TXT_HUSTR_E1M4,
-    TXT_HUSTR_E1M5,
-    TXT_HUSTR_E1M6,
-    TXT_HUSTR_E1M7,
-    TXT_HUSTR_E1M8,
-    TXT_HUSTR_E1M9,
-
-    TXT_HUSTR_E2M1,
-    TXT_HUSTR_E2M2,
-    TXT_HUSTR_E2M3,
-    TXT_HUSTR_E2M4,
-    TXT_HUSTR_E2M5,
-    TXT_HUSTR_E2M6,
-    TXT_HUSTR_E2M7,
-    TXT_HUSTR_E2M8,
-    TXT_HUSTR_E2M9,
-
-    TXT_HUSTR_E3M1,
-    TXT_HUSTR_E3M2,
-    TXT_HUSTR_E3M3,
-    TXT_HUSTR_E3M4,
-    TXT_HUSTR_E3M5,
-    TXT_HUSTR_E3M6,
-    TXT_HUSTR_E3M7,
-    TXT_HUSTR_E3M8,
-    TXT_HUSTR_E3M9,
-
-    TXT_HUSTR_E4M1,
-    TXT_HUSTR_E4M2,
-    TXT_HUSTR_E4M3,
-    TXT_HUSTR_E4M4,
-    TXT_HUSTR_E4M5,
-    TXT_HUSTR_E4M6,
-    TXT_HUSTR_E4M7,
-    TXT_HUSTR_E4M8,
-    TXT_HUSTR_E4M9,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
-};
-
-char   *mapnames2[32];          // DOOM 2 map names.
-int     mapnames2_idx[] = {
-    TXT_HUSTR_1,
-    TXT_HUSTR_2,
-    TXT_HUSTR_3,
-    TXT_HUSTR_4,
-    TXT_HUSTR_5,
-    TXT_HUSTR_6,
-    TXT_HUSTR_7,
-    TXT_HUSTR_8,
-    TXT_HUSTR_9,
-    TXT_HUSTR_10,
-    TXT_HUSTR_11,
-
-    TXT_HUSTR_12,
-    TXT_HUSTR_13,
-    TXT_HUSTR_14,
-    TXT_HUSTR_15,
-    TXT_HUSTR_16,
-    TXT_HUSTR_17,
-    TXT_HUSTR_18,
-    TXT_HUSTR_19,
-    TXT_HUSTR_20,
-
-    TXT_HUSTR_21,
-    TXT_HUSTR_22,
-    TXT_HUSTR_23,
-    TXT_HUSTR_24,
-    TXT_HUSTR_25,
-    TXT_HUSTR_26,
-    TXT_HUSTR_27,
-    TXT_HUSTR_28,
-    TXT_HUSTR_29,
-    TXT_HUSTR_30,
-    TXT_HUSTR_31,
-    TXT_HUSTR_32
-};
-
-char   *mapnamesp[32];          // Plutonia WAD map names.
-int     mapnamesp_idx[] = {
-    TXT_PHUSTR_1,
-    TXT_PHUSTR_2,
-    TXT_PHUSTR_3,
-    TXT_PHUSTR_4,
-    TXT_PHUSTR_5,
-    TXT_PHUSTR_6,
-    TXT_PHUSTR_7,
-    TXT_PHUSTR_8,
-    TXT_PHUSTR_9,
-    TXT_PHUSTR_10,
-    TXT_PHUSTR_11,
-
-    TXT_PHUSTR_12,
-    TXT_PHUSTR_13,
-    TXT_PHUSTR_14,
-    TXT_PHUSTR_15,
-    TXT_PHUSTR_16,
-    TXT_PHUSTR_17,
-    TXT_PHUSTR_18,
-    TXT_PHUSTR_19,
-    TXT_PHUSTR_20,
-
-    TXT_PHUSTR_21,
-    TXT_PHUSTR_22,
-    TXT_PHUSTR_23,
-    TXT_PHUSTR_24,
-    TXT_PHUSTR_25,
-    TXT_PHUSTR_26,
-    TXT_PHUSTR_27,
-    TXT_PHUSTR_28,
-    TXT_PHUSTR_29,
-    TXT_PHUSTR_30,
-    TXT_PHUSTR_31,
-    TXT_PHUSTR_32
-};
-
-char   *mapnamest[32];          // TNT WAD map names.
-int     mapnamest_idx[] = {
-    TXT_THUSTR_1,
-    TXT_THUSTR_2,
-    TXT_THUSTR_3,
-    TXT_THUSTR_4,
-    TXT_THUSTR_5,
-    TXT_THUSTR_6,
-    TXT_THUSTR_7,
-    TXT_THUSTR_8,
-    TXT_THUSTR_9,
-    TXT_THUSTR_10,
-    TXT_THUSTR_11,
-
-    TXT_THUSTR_12,
-    TXT_THUSTR_13,
-    TXT_THUSTR_14,
-    TXT_THUSTR_15,
-    TXT_THUSTR_16,
-    TXT_THUSTR_17,
-    TXT_THUSTR_18,
-    TXT_THUSTR_19,
-    TXT_THUSTR_20,
-
-    TXT_THUSTR_21,
-    TXT_THUSTR_22,
-    TXT_THUSTR_23,
-    TXT_THUSTR_24,
-    TXT_THUSTR_25,
-    TXT_THUSTR_26,
-    TXT_THUSTR_27,
-    TXT_THUSTR_28,
-    TXT_THUSTR_29,
-    TXT_THUSTR_30,
-    TXT_THUSTR_31,
-    TXT_THUSTR_32
-};
-
-#elif __JSTRIFE__
-
-char   *mapnames[32];           // STRIFE map names.
-int     mapnames_idx[] = {
-    TXT_HUSTR_1,
-    TXT_HUSTR_2,
-    TXT_HUSTR_3,
-    TXT_HUSTR_4,
-    TXT_HUSTR_5,
-    TXT_HUSTR_6,
-    TXT_HUSTR_7,
-    TXT_HUSTR_8,
-    TXT_HUSTR_9,
-    TXT_HUSTR_10,
-    TXT_HUSTR_11,
-
-    TXT_HUSTR_12,
-    TXT_HUSTR_13,
-    TXT_HUSTR_14,
-    TXT_HUSTR_15,
-    TXT_HUSTR_16,
-    TXT_HUSTR_17,
-    TXT_HUSTR_18,
-    TXT_HUSTR_19,
-    TXT_HUSTR_20,
-
-    TXT_HUSTR_21,
-    TXT_HUSTR_22,
-    TXT_HUSTR_23,
-    TXT_HUSTR_24,
-    TXT_HUSTR_25,
-    TXT_HUSTR_26,
-    TXT_HUSTR_27,
-    TXT_HUSTR_28,
-    TXT_HUSTR_29,
-    TXT_HUSTR_30,
-    TXT_HUSTR_31,
-    TXT_HUSTR_32
-};
 #endif
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -351,18 +132,6 @@ void HU_Init(void)
     for(i=0; i<sizeof(x_idx)/sizeof(int); i++) \
         x[i] = x_idx[i]==-1? "NEWLEVEL" : GET_TXT(x_idx[i]);
 
-    INIT_STRINGS(mapnames, mapnames_idx);
-    INIT_STRINGS(mapnames2, mapnames2_idx);
-    INIT_STRINGS(mapnamesp, mapnamesp_idx);
-    INIT_STRINGS(mapnamest, mapnamest_idx);
-
-#elif __JSTRIFE__
-    // Setup strings.
-#define INIT_STRINGS(x, x_idx) \
-    for(i=0; i<sizeof(x_idx)/sizeof(int); i++) \
-        x[i] = x_idx[i]==-1? "NEWLEVEL" : GET_TXT(x_idx[i]);
-
-    INIT_STRINGS(mapnames, mapnames_idx);
 #endif
 
 #ifdef __JDOOM__
@@ -505,40 +274,12 @@ void HU_Stop(void)
 
 void HU_Start(void)
 {
-#ifdef __JDOOM__
-    char   *s;
-#endif
-
     if(headsupactive)
         HU_Stop();
-#ifdef __JDOOM__
-    if(DD_GetVariable(DD_MAP_NAME))
-        s = (char *) DD_GetVariable(DD_MAP_NAME);
-    else
-    {
-        switch (gamemode)
-        {
-        case shareware:
-        case registered:
-        case retail:
-            s = HU_TITLE;
-            break;
-        case commercial:
-        default:
-            s = HU_TITLE2;
-            break;
-        }
-    }
-    // Plutonia and TNT are a special case.
-    if(gamemission == pack_plut)
-        s = HU_TITLEP;
-    if(gamemission == pack_tnt)
-        s = HU_TITLET;
-#endif
+
     HUMsg_Start();
 
     headsupactive = true;
-
 }
 
 void HU_Drawer(void)

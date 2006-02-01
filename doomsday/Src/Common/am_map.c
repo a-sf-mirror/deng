@@ -2173,9 +2173,9 @@ void AM_GL_SetupState()
     {
         gl.Enable(DGL_TEXTURING);
 
-        GL_SetColorAndAlpha(cfg.automapBack[0], 
-                            cfg.automapBack[1], 
-                            cfg.automapBack[2], 
+        GL_SetColorAndAlpha(cfg.automapBack[0],
+                            cfg.automapBack[1],
+                            cfg.automapBack[2],
                             (am_alpha - (1- cfg.automapBack[3])));
         GL_SetRawImage(maplumpnum, 0);        // We only want the left portion.
         GL_DrawRectTiled(winx, winy, winw, winh, 128, 100);
@@ -2184,8 +2184,8 @@ void AM_GL_SetupState()
     {
         // nope just a solid color
         GL_SetNoTexture();
-        GL_DrawRect(winx, winy, winw, winh, 
-                    cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2], 
+        GL_DrawRect(winx, winy, winw, winh,
+                    cfg.automapBack[0], cfg.automapBack[1], cfg.automapBack[2],
                     (am_alpha - (1- cfg.automapBack[3])));
     }
 
@@ -2385,19 +2385,7 @@ void AM_drawLevelName(void)
         lname =  (char *) DD_GetVariable(DD_MAP_NAME);
     }
 #elif __JDOOM__
-
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
-
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-    {
-        lname = mapnamesp[gamemap - 1];
-    }
-    else if(gamemission == pack_tnt)
-    {
-        lname = mapnamest[gamemap - 1];
-    }
-
 #endif
 
     if(lname)

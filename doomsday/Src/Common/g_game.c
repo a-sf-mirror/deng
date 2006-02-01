@@ -32,7 +32,6 @@
 #  include "s_sound.h"
 #  include "dstrings.h"
 #  include "g_game.h"
-#  include "r_sky.h"
 #  include "Common/p_saveg.h"
 #elif __JHERETIC__
 #  include <stdio.h>
@@ -47,6 +46,7 @@
 #  include "jHeretic/Soundst.h"
 #  include "jHeretic/Dstrings.h"
 #  include "jHeretic/G_game.h"
+#  include "jHeretic/st_stuff.h"
 #  include "Common/p_saveg.h"
 #elif __JHEXEN__
 #  include <string.h>
@@ -78,6 +78,7 @@
 #include "Common/g_common.h"
 #include "Common/g_update.h"
 #include "Common/d_net.h"
+#include "Common/x_hair.h"
 
 #include "f_infine.h"
 
@@ -92,7 +93,7 @@
 
 // TYPES -------------------------------------------------------------------
 
-#if __JHERETIC__
+#if __JDOOM__ || __JHERETIC__
 struct
 {
     mobjtype_t type;
@@ -100,6 +101,11 @@ struct
 }
 MonsterMissileInfo[] =
 {
+#if __JDOOM__
+    {MT_BRUISERSHOT, {15, 20}},
+    {MT_HEADSHOT, {10, 20}},
+    {MT_TROOPSHOT, {10, 20}},
+#elif __JHERETIC__
     {MT_IMPBALL, {10, 20}},
     {MT_MUMMYFX1, {9, 18}},
     {MT_KNIGHTAXE, {9, 18}},
@@ -114,9 +120,9 @@ MonsterMissileInfo[] =
     {MT_MNTRFX2, {14, 20}},
     {MT_SRCRFX1, {20, 28}},
     {MT_SOR2FX1, {20, 28}},
+#endif
     {-1, {-1, -1}}                  // Terminator
 };
-
 #endif
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -655,6 +661,8 @@ void G_PreInit(void)
     AM_Register();              // for the automap
     MN_Register();              // for the menu
     HUMsg_Register();           // for the message buffer/chat widget
+    ST_Register();              // for the hud/statusbar
+    X_Register();               // for the crosshair
 
     DD_AddStartupWAD( STARTUPWAD );
     DetectIWADs();
@@ -843,13 +851,6 @@ void G_DoLoadLevel(void)
 
     // set the game status cvar for map name
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
-#if __JDOOM__
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-        lname = mapnamesp[gamemap - 1];
-    else if(gamemission == pack_tnt)
-        lname = mapnamest[gamemap - 1];
-#endif
     if(lname)
     {
         ptr = strchr(lname, ':');   // Skip the E#M# or Level #.
@@ -1407,6 +1408,7 @@ void G_PlayerReborn(int player)
     p->usedown = p->attackdown = true;  // don't do anything immediately
     p->playerstate = PST_LIVE;
     p->health = MAXHEALTH;
+
 #if __JDOOM__
     p->readyweapon = p->pendingweapon = wp_pistol;
     p->weaponowned[wp_fist] = true;
@@ -1720,24 +1722,6 @@ void G_DoScreenShot(void)
     Con_Message("Wrote %s.\n", name);
 }
 
-#if __JDOOM__
-// DOOM Par Times
-int     pars[4][10] = {
-    {0},
-    {0, 30, 75, 120, 90, 165, 180, 180, 30, 165},
-    {0, 90, 90, 90, 120, 90, 360, 240, 30, 170},
-    {0, 90, 45, 90, 150, 90, 90, 165, 30, 135}
-};
-
-// DOOM II Par Times
-int     cpars[32] = {
-    30, 90, 120, 120, 90, 150, 120, 120, 270, 90,   //  1-10
-    210, 150, 150, 150, 210, 150, 420, 150, 210, 150,   // 11-20
-    240, 150, 180, 150, 150, 300, 330, 420, 300, 180,   // 21-30
-    120, 30                     // 31-32
-};
-#endif
-
 #if __JHEXEN__ || __JSTRIFE__
 void G_StartNewInit(void)
 {
@@ -1927,6 +1911,10 @@ void G_DoCompleted(void)
     }
     else
     {
+        // Is there an overide for nextmap? (eg from an XG line)
+        if(nextmap > 0)
+            gamemap = nextmap;
+
         gamemap++;
     }
 #endif
@@ -2035,16 +2023,6 @@ void G_PrepareWIData(void)
 
     wminfo.epsd = gameepisode - 1;
     wminfo.maxfrags = 0;
-    if(gamemode == commercial)
-    {
-        sprintf(levid, "MAP%02i", gamemap);
-        wminfo.partime = 35 * cpars[gamemap - 1];
-    }
-    else
-    {
-        sprintf(levid, "E%iM%i", gameepisode, gamemap);
-        wminfo.partime = 35 * pars[gameepisode][gamemap];
-    }
 
     // See if there is a par time definition.
     if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && minfo.partime > 0)
@@ -2157,25 +2135,17 @@ void G_DoSaveGame(void)
     Draw_SaveIcon();
 
     SV_HxSaveGame(savegameslot, savedescription);
-    gameaction = ga_nothing;
-    savedescription[0] = 0;
-    P_SetMessage(&players[consoleplayer], TXT_GAMESAVED);
-
 #else
     char    name[100];
 
     SV_SaveGameFile(savegameslot, name);
     SV_SaveGame(name, savedescription);
+#endif
 
     gameaction = ga_nothing;
     savedescription[0] = 0;
 
-#  if __JDOOM__
-    P_SetMessage(players + consoleplayer, GGSAVED);
-#  elif __JHERETIC__
-    P_SetMessage(&players[consoleplayer], TXT_GAMESAVED);
-#  endif
-#endif
+    P_SetMessage(players + consoleplayer, TXT_GAMESAVED);
 }
 
 #if __JHEXEN__ || __JSTRIFE__
@@ -2325,7 +2295,7 @@ void G_InitNew(skill_t skill, int episode, int map)
 {
     int     i;
 
-#if __JHERETIC__
+#if __JDOOM__ || __JHERETIC__
     int     speed;
 #endif
 
@@ -2335,7 +2305,6 @@ void G_InitNew(skill_t skill, int episode, int map)
     if(paused)
     {
         paused = false;
-        //S_ResumeSound ();
     }
 
     if(skill < sk_baby)
@@ -2349,11 +2318,7 @@ void G_InitNew(skill_t skill, int episode, int map)
     M_ClearRandom();
 
 #if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-#  if __JDOOM__
-    if(skill == sk_nightmare || respawnparm)
-#  elif __JHERETIC__
     if(respawnparm)
-#  endif
         respawnmonsters = true;
     else
         respawnmonsters = false;
@@ -2366,6 +2331,7 @@ void G_InitNew(skill_t skill, int episode, int map)
         respawnmonsters = cfg.respawnMonstersNightmare;
     }
 
+    // Fast monsters?
     if(fastparm || (skill == sk_nightmare && gameskill != sk_nightmare))
     {
         for(i = S_SARG_RUN1; i <= S_SARG_RUN8; i++)
@@ -2374,9 +2340,6 @@ void G_InitNew(skill_t skill, int episode, int map)
             states[i].tics = 4;
         for(i = S_SARG_PAIN; i <= S_SARG_PAIN2; i++)
             states[i].tics = 1;
-        mobjinfo[MT_BRUISERSHOT].speed = 20 * FRACUNIT;
-        mobjinfo[MT_HEADSHOT].speed = 20 * FRACUNIT;
-        mobjinfo[MT_TROOPSHOT].speed = 20 * FRACUNIT;
     }
     else
     {
@@ -2386,12 +2349,17 @@ void G_InitNew(skill_t skill, int episode, int map)
             states[i].tics = 8;
         for(i = S_SARG_PAIN; i <= S_SARG_PAIN2; i++)
             states[i].tics = 2;
-        mobjinfo[MT_BRUISERSHOT].speed = 15 * FRACUNIT;
-        mobjinfo[MT_HEADSHOT].speed = 10 * FRACUNIT;
-        mobjinfo[MT_TROOPSHOT].speed = 10 * FRACUNIT;
     }
-#elif __JHERETIC__
+#endif
+
+    // Fast missiles?
+#if __JDOOM__ || __JHERETIC__
+#   if __JDOOM__
+    speed = (fastparm || (skill == sk_nightmare && gameskill != sk_nightmare));
+#   else
     speed = skill == sk_nightmare;
+#   endif
+
     for(i = 0; MonsterMissileInfo[i].type != -1; i++)
     {
         mobjinfo[MonsterMissileInfo[i].type].speed =
@@ -2804,21 +2772,6 @@ DEFCC(CCmdCycleSpy)
 DEFCC(CCmdInventory)
 {
     inventoryMove(players + consoleplayer, !stricmp(argv[0], "invright"));
-    return true;
-}
-#endif
-
-#if !__JHEXEN__
-/*
- * Exit the current level and goto the intermission.
- */
-DEFCC(CCmdExitLevel)
-{
-    if(gamestate == GS_LEVEL)
-        G_ExitLevel();
-    else
-        Con_Message("You can only exit a level when in-game!\n");
-
     return true;
 }
 #endif

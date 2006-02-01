@@ -247,6 +247,7 @@ boolean P_CheckSpot(int playernum, thing_t * mthing, boolean doTeleSpark)
     }
 #endif
 
+
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
 
@@ -516,13 +517,9 @@ void P_GetMapLumpName(int episode, int map, char *lumpName)
     {
         sprintf(lumpName, "E%iM%i", episode, map);
     }
-#endif
-
-#ifdef __JHERETIC__
+#elif  __JHERETIC__
     sprintf(lumpName, "E%iM%i", episode, map);
-#endif
-
-#if __JHEXEN__ || __JSTRIFE__
+#else
     sprintf(lumpName, "MAP%02i", map);
 #endif
 }
