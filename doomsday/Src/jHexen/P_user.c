@@ -674,372 +674,367 @@ void P_PlayerJump(player_t *player)
 
 void P_PlayerThink(player_t *player)
 {
-	ticcmd_t *cmd;
-	weapontype_t newweapon;
-	int     floorType;
-	mobj_t *pmo = player->plr->mo;
-	int     playerNumber = player - players;
+    ticcmd_t *cmd;
+    weapontype_t newweapon;
+    int     floorType;
+    mobj_t *pmo = player->plr->mo;
+    int     playerNumber = player - players;
 
-	// No-clip cheat
-	if(player->cheats & CF_NOCLIP)
-	{
-		pmo->flags |= MF_NOCLIP;
-	}
-	else
-	{
-		pmo->flags &= ~MF_NOCLIP;
-	}
+    // No-clip cheat
+    if(player->cheats & CF_NOCLIP)
+    {
+        pmo->flags |= MF_NOCLIP;
+    }
+    else
+    {
+        pmo->flags &= ~MF_NOCLIP;
+    }
 
-	// Selector 0 = Generic (used by default)
-	// Selector 1..4 = Weapon 1..4
-	pmo->selector =
-		pmo->selector & ~DDMOBJ_SELECTOR_MASK | (player->readyweapon + 1);
+    // Selector 0 = Generic (used by default)
+    // Selector 1..4 = Weapon 1..4
+    pmo->selector =
+        pmo->selector & ~DDMOBJ_SELECTOR_MASK | (player->readyweapon + 1);
 
-	P_CameraThink(player);		// $democam
+    P_CameraThink(player);      // $democam
 
-	cmd = &player->cmd;
-	if(pmo->flags & MF_JUSTATTACKED)
-	{							// Gauntlets attack auto forward motion
-		cmd->angle = pmo->angle >> 16;	// Don't turn.
-		cmd->forwardMove = 0xc800 / 512;
-		cmd->sideMove = 0;
-		pmo->flags &= ~MF_JUSTATTACKED;
-		// The client must know of this.
-		player->plr->flags |= DDPF_FIXANGLES;
-	}
-	// messageTics is above the rest of the counters so that messages will 
-	//      go away, even in death.
-	player->messageTics--;		// Can go negative
-	if(!player->messageTics || player->messageTics == -1)
-	{							// Refresh the screen when a message goes away
-		player->ultimateMessage = false;	// clear out any chat messages.
-		player->yellowMessage = false;
-		if(player == &players[consoleplayer])
-		{
-			//BorderTopRefresh = true;
-			GL_Update(DDUF_TOP);
-		}
-	}
-	player->worldTimer++;
-	if(player->playerstate == PST_DEAD)
-	{
-		P_DeathThink(player);
-		return;
-	}
-	if(player->jumpTics)
-	{
-		player->jumpTics--;
-	}
-	if(player->morphTics)
-	{
-		P_MorphPlayerThink(player);
-	}
-	// Handle movement
-	if(player->plr->mo->reactiontime)
-	{							// Player is frozen
-		player->plr->mo->reactiontime--;
-	}
-	else
-	{
-		P_MovePlayer(player);
-		pmo = player->plr->mo;
-		if(player->powers[pw_speed] && !(leveltime & 1) &&
-		   P_ApproxDistance(pmo->momx, pmo->momy) > 12 * FRACUNIT)
-		{
-			mobj_t *speedMo;
-			int     playerNum;
+    cmd = &player->cmd;
+    if(pmo->flags & MF_JUSTATTACKED)
+    {                           // Gauntlets attack auto forward motion
+        cmd->angle = pmo->angle >> 16;  // Don't turn.
+        cmd->forwardMove = 0xc800 / 512;
+        cmd->sideMove = 0;
+        pmo->flags &= ~MF_JUSTATTACKED;
+        // The client must know of this.
+        player->plr->flags |= DDPF_FIXANGLES;
+    }
+    // messageTics is above the rest of the counters so that messages will
+    //      go away, even in death.
+    player->messageTics--;      // Can go negative
+    if(!player->messageTics || player->messageTics == -1)
+    {                           // Refresh the screen when a message goes away
+        player->ultimateMessage = false;    // clear out any chat messages.
+        player->yellowMessage = false;
+        if(player == &players[consoleplayer])
+        {
+            //BorderTopRefresh = true;
+            GL_Update(DDUF_TOP);
+        }
+    }
+    player->worldTimer++;
+    if(player->playerstate == PST_DEAD)
+    {
+        P_DeathThink(player);
+        return;
+    }
+    if(player->jumpTics)
+    {
+        player->jumpTics--;
+    }
+    if(player->morphTics)
+    {
+        P_MorphPlayerThink(player);
+    }
+    // Handle movement
+    if(player->plr->mo->reactiontime)
+    {                           // Player is frozen
+        player->plr->mo->reactiontime--;
+    }
+    else
+    {
+        P_MovePlayer(player);
+        pmo = player->plr->mo;
+        if(player->powers[pw_speed] && !(leveltime & 1) &&
+           P_ApproxDistance(pmo->momx, pmo->momy) > 12 * FRACUNIT)
+        {
+            mobj_t *speedMo;
+            int     playerNum;
 
-			speedMo = P_SpawnMobj(pmo->x, pmo->y, pmo->z, MT_PLAYER_SPEED);
-			if(speedMo)
-			{
-				speedMo->angle = pmo->angle;
-				playerNum = P_GetPlayerNum(player);
-				if(player->class == PCLASS_FIGHTER)
-				{
-					// The first type should be blue, and the 
-					// third should be the Fighter's original gold color
-					if(playerNum == 0)
-					{
-						speedMo->flags |= 2 << MF_TRANSSHIFT;
-					}
-					else if(playerNum != 2)
-					{
-						speedMo->flags |= playerNum << MF_TRANSSHIFT;
-					}
-				}
-				else if(playerNum)
-				{				// Set color translation bits for player sprites
-					speedMo->flags |= playerNum << MF_TRANSSHIFT;
-				}
-				speedMo->target = pmo;
-				speedMo->special1 = player->class;
-				if(speedMo->special1 > 2)
-				{
-					speedMo->special1 = 0;
-				}
-				speedMo->sprite = pmo->sprite;
-				speedMo->floorclip = pmo->floorclip;
-				if(player == &players[consoleplayer])
-				{
-					speedMo->flags2 |= MF2_DONTDRAW;
-				}
-			}
-		}
-	}
-	P_CalcHeight(player);
-	if(xsectors[P_GetIntp(player->plr->mo->subsector, DMU_SECTOR)].special)
-	{
-		P_PlayerInSpecialSector(player);
-	}
-	if((floorType = P_GetThingFloorType(player->plr->mo)) != FLOOR_SOLID)
-	{
-		P_PlayerOnSpecialFlat(player, floorType);
-	}
-	switch (player->class)
-	{
-	case PCLASS_FIGHTER:
-		if(player->plr->mo->momz <= -35 * FRACUNIT &&
-		   player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
-		   !S_IsPlaying(SFX_PLAYER_FIGHTER_FALLING_SCREAM, player->plr->mo))
-		{
-			S_StartSound(SFX_PLAYER_FIGHTER_FALLING_SCREAM, player->plr->mo);
-		}
-		break;
-	case PCLASS_CLERIC:
-		if(player->plr->mo->momz <= -35 * FRACUNIT &&
-		   player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
-		   !S_IsPlaying(SFX_PLAYER_CLERIC_FALLING_SCREAM, player->plr->mo))
-		{
-			S_StartSound(SFX_PLAYER_CLERIC_FALLING_SCREAM, player->plr->mo);
-		}
-		break;
-	case PCLASS_MAGE:
-		if(player->plr->mo->momz <= -35 * FRACUNIT &&
-		   player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
-		   !S_IsPlaying(SFX_PLAYER_MAGE_FALLING_SCREAM, player->plr->mo))
-		{
-			S_StartSound(SFX_PLAYER_MAGE_FALLING_SCREAM, player->plr->mo);
-		}
-		break;
-	default:
-		break;
-	}
+            speedMo = P_SpawnMobj(pmo->x, pmo->y, pmo->z, MT_PLAYER_SPEED);
+            if(speedMo)
+            {
+                speedMo->angle = pmo->angle;
+                playerNum = P_GetPlayerNum(player);
+                if(player->class == PCLASS_FIGHTER)
+                {
+                    // The first type should be blue, and the
+                    // third should be the Fighter's original gold color
+                    if(playerNum == 0)
+                    {
+                        speedMo->flags |= 2 << MF_TRANSSHIFT;
+                    }
+                    else if(playerNum != 2)
+                    {
+                        speedMo->flags |= playerNum << MF_TRANSSHIFT;
+                    }
+                }
+                else if(playerNum)
+                {               // Set color translation bits for player sprites
+                    speedMo->flags |= playerNum << MF_TRANSSHIFT;
+                }
+                speedMo->target = pmo;
+                speedMo->special1 = player->class;
+                if(speedMo->special1 > 2)
+                {
+                    speedMo->special1 = 0;
+                }
+                speedMo->sprite = pmo->sprite;
+                speedMo->floorclip = pmo->floorclip;
+                if(player == &players[consoleplayer])
+                {
+                    speedMo->flags2 |= MF2_DONTDRAW;
+                }
+            }
+        }
+    }
+    P_CalcHeight(player);
+    if(xsectors[P_GetIntp(player->plr->mo->subsector, DMU_SECTOR)].special)
+    {
+        P_PlayerInSpecialSector(player);
+    }
+    if((floorType = P_GetThingFloorType(player->plr->mo)) != FLOOR_SOLID)
+    {
+        P_PlayerOnSpecialFlat(player, floorType);
+    }
+    switch (player->class)
+    {
+    case PCLASS_FIGHTER:
+        if(player->plr->mo->momz <= -35 * FRACUNIT &&
+           player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
+           !S_IsPlaying(SFX_PLAYER_FIGHTER_FALLING_SCREAM, player->plr->mo))
+        {
+            S_StartSound(SFX_PLAYER_FIGHTER_FALLING_SCREAM, player->plr->mo);
+        }
+        break;
+    case PCLASS_CLERIC:
+        if(player->plr->mo->momz <= -35 * FRACUNIT &&
+           player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
+           !S_IsPlaying(SFX_PLAYER_CLERIC_FALLING_SCREAM, player->plr->mo))
+        {
+            S_StartSound(SFX_PLAYER_CLERIC_FALLING_SCREAM, player->plr->mo);
+        }
+        break;
+    case PCLASS_MAGE:
+        if(player->plr->mo->momz <= -35 * FRACUNIT &&
+           player->plr->mo->momz >= -40 * FRACUNIT && !player->morphTics &&
+           !S_IsPlaying(SFX_PLAYER_MAGE_FALLING_SCREAM, player->plr->mo))
+        {
+            S_StartSound(SFX_PLAYER_MAGE_FALLING_SCREAM, player->plr->mo);
+        }
+        break;
+    default:
+        break;
+    }
 
-	if(cmd->suicide)
-	{
-		P_DamageMobj(player->plr->mo, NULL, NULL, 10000);
-	}
+    if(cmd->jump && onground && !player->jumpTics)
+    {
+        P_PlayerJump(player);
+    }
 
-	if(cmd->jump && onground && !player->jumpTics)
-	{
-		P_PlayerJump(player);
-	}
-		
-	if(cmd->arti)
-	{							// Use an artifact
-		if(cmd->arti == NUMARTIFACTS)
-		{						// use one of each artifact (except puzzle artifacts)
-			int     i;
+    if(cmd->arti)
+    {                           // Use an artifact
+        if(cmd->arti == NUMARTIFACTS)
+        {                       // use one of each artifact (except puzzle artifacts)
+            int     i;
 
-			for(i = 1; i < arti_firstpuzzitem; i++)
-			{
-				P_PlayerUseArtifact(player, i);
-			}
-		}
-		else
-		{
-			P_PlayerUseArtifact(player, cmd->arti);
-		}
-	}
-	// Check for weapon change
-	if(cmd->changeWeapon && !player->morphTics)
-	{
-		// The actual changing of the weapon is done when the weapon
-		// psprite can do it (A_WeaponReady), so it doesn't happen in
-		// the middle of an attack.
-		newweapon = cmd->changeWeapon - 1;
-		if(player->weaponowned[newweapon] && newweapon != player->readyweapon)
-		{
-			player->pendingweapon = newweapon;
-			player->update |= PSF_WEAPONS;
-		}
-	}
-	// Check for use
-	if(cmd->use)
-	{
-		if(!player->usedown)
-		{
-			P_UseLines(player);
-			player->usedown = true;
-		}
-	}
-	else
-	{
-		player->usedown = false;
-	}
-	// Morph counter
-	if(player->morphTics)
-	{
-		if(!--player->morphTics)
-		{						// Attempt to undo the pig
-			P_UndoPlayerMorph(player);
-		}
-	}
-	// Cycle psprites
-	P_MovePsprites(player);
-	// Other Counters
-	if(player->powers[pw_invulnerability])
-	{
-		if(player->class == PCLASS_CLERIC)
-		{
-			if(!(leveltime & 7) && player->plr->mo->flags & MF_SHADOW &&
-			   !(player->plr->mo->flags2 & MF2_DONTDRAW))
-			{
-				player->plr->mo->flags &= ~MF_SHADOW;
-				if(!(player->plr->mo->flags & MF_ALTSHADOW))
-				{
-					player->plr->mo->flags2 |= MF2_DONTDRAW | MF2_NONSHOOTABLE;
-				}
-			}
-			if(!(leveltime & 31))
-			{
-				if(player->plr->mo->flags2 & MF2_DONTDRAW)
-				{
-					if(!(player->plr->mo->flags & MF_SHADOW))
-					{
-						player->plr->mo->flags |= MF_SHADOW | MF_ALTSHADOW;
-					}
-					else
-					{
-						player->plr->mo->flags2 &=
-							~(MF2_DONTDRAW | MF2_NONSHOOTABLE);
-					}
-				}
-				else
-				{
-					player->plr->mo->flags |= MF_SHADOW;
-					player->plr->mo->flags &= ~MF_ALTSHADOW;
-				}
-			}
-		}
-		if(!(--player->powers[pw_invulnerability]))
-		{
-			player->plr->mo->flags2 &= ~(MF2_INVULNERABLE | MF2_REFLECTIVE);
-			if(player->class == PCLASS_CLERIC)
-			{
-				player->plr->mo->flags2 &= ~(MF2_DONTDRAW | MF2_NONSHOOTABLE);
-				player->plr->mo->flags &= ~(MF_SHADOW | MF_ALTSHADOW);
-			}
-		}
-	}
-	if(player->powers[pw_minotaur])
-	{
-		player->powers[pw_minotaur]--;
-	}
-	if(player->powers[pw_infrared])
-	{
-		player->powers[pw_infrared]--;
-	}
-	if(player->powers[pw_flight] && IS_NETGAME)
-	{
-		if(!--player->powers[pw_flight])
-		{
-			if(player->plr->mo->z != player->plr->mo->floorz)
-			{
-				/*#ifdef __WATCOMC__
-				   if(!useexterndriver)
-				   {
-				   player->centering = true;
-				   }
-				   #else */
-				player->centering = true;
-				//#endif
-			}
-			player->plr->mo->flags2 &= ~MF2_FLY;
-			player->plr->mo->flags &= ~MF_NOGRAVITY;
-			//BorderTopRefresh = true; //make sure the sprite's cleared out
-			GL_Update(DDUF_TOP);
-		}
-	}
-	if(player->powers[pw_speed])
-	{
-		player->powers[pw_speed]--;
-	}
-	if(player->damagecount)
-	{
-		player->damagecount--;
-	}
-	if(player->bonuscount)
-	{
-		player->bonuscount--;
-	}
-	if(player->poisoncount && !(leveltime & 15))
-	{
-		player->poisoncount -= 5;
-		if(player->poisoncount < 0)
-		{
-			player->poisoncount = 0;
-		}
-		P_PoisonDamage(player, player->poisoner, 1, true);
-	}
-	// Colormaps
-	//  if(player->powers[pw_invulnerability])
-	//  {
-	//      if(player->powers[pw_invulnerability] > BLINKTHRESHOLD
-	//          || (player->powers[pw_invulnerability]&8))
-	//      {
-	//          player->plr->fixedcolormap = INVERSECOLORMAP;
-	//      }
-	//      else
-	//      {
-	//          player->plr->fixedcolormap = 0;
-	//      }
-	//  }
-	//  else 
-	if(player->powers[pw_infrared])
-	{
-		if(player->powers[pw_infrared] <= BLINKTHRESHOLD)
-		{
-			if(player->powers[pw_infrared] & 8)
-			{
-				player->plr->fixedcolormap = 0;
-			}
-			else
-			{
-				player->plr->fixedcolormap = 1;
-			}
-		}
-		else if(!(leveltime & 16))	/* && player == &players[consoleplayer]) */
-		{
-			ddplayer_t *dp = player->plr;
+            for(i = 1; i < arti_firstpuzzitem; i++)
+            {
+                P_PlayerUseArtifact(player, i);
+            }
+        }
+        else
+        {
+            P_PlayerUseArtifact(player, cmd->arti);
+        }
+    }
+    // Check for weapon change
+    if(cmd->changeWeapon && !player->morphTics)
+    {
+        // The actual changing of the weapon is done when the weapon
+        // psprite can do it (A_WeaponReady), so it doesn't happen in
+        // the middle of an attack.
+        newweapon = cmd->changeWeapon - 1;
+        if(player->weaponowned[newweapon] && newweapon != player->readyweapon)
+        {
+            player->pendingweapon = newweapon;
+            player->update |= PSF_WEAPONS;
+        }
+    }
+    // Check for use
+    if(cmd->use)
+    {
+        if(!player->usedown)
+        {
+            P_UseLines(player);
+            player->usedown = true;
+        }
+    }
+    else
+    {
+        player->usedown = false;
+    }
+    // Morph counter
+    if(player->morphTics)
+    {
+        if(!--player->morphTics)
+        {                       // Attempt to undo the pig
+            P_UndoPlayerMorph(player);
+        }
+    }
+    // Cycle psprites
+    P_MovePsprites(player);
+    // Other Counters
+    if(player->powers[pw_invulnerability])
+    {
+        if(player->class == PCLASS_CLERIC)
+        {
+            if(!(leveltime & 7) && player->plr->mo->flags & MF_SHADOW &&
+               !(player->plr->mo->flags2 & MF2_DONTDRAW))
+            {
+                player->plr->mo->flags &= ~MF_SHADOW;
+                if(!(player->plr->mo->flags & MF_ALTSHADOW))
+                {
+                    player->plr->mo->flags2 |= MF2_DONTDRAW | MF2_NONSHOOTABLE;
+                }
+            }
+            if(!(leveltime & 31))
+            {
+                if(player->plr->mo->flags2 & MF2_DONTDRAW)
+                {
+                    if(!(player->plr->mo->flags & MF_SHADOW))
+                    {
+                        player->plr->mo->flags |= MF_SHADOW | MF_ALTSHADOW;
+                    }
+                    else
+                    {
+                        player->plr->mo->flags2 &=
+                            ~(MF2_DONTDRAW | MF2_NONSHOOTABLE);
+                    }
+                }
+                else
+                {
+                    player->plr->mo->flags |= MF_SHADOW;
+                    player->plr->mo->flags &= ~MF_ALTSHADOW;
+                }
+            }
+        }
+        if(!(--player->powers[pw_invulnerability]))
+        {
+            player->plr->mo->flags2 &= ~(MF2_INVULNERABLE | MF2_REFLECTIVE);
+            if(player->class == PCLASS_CLERIC)
+            {
+                player->plr->mo->flags2 &= ~(MF2_DONTDRAW | MF2_NONSHOOTABLE);
+                player->plr->mo->flags &= ~(MF_SHADOW | MF_ALTSHADOW);
+            }
+        }
+    }
+    if(player->powers[pw_minotaur])
+    {
+        player->powers[pw_minotaur]--;
+    }
+    if(player->powers[pw_infrared])
+    {
+        player->powers[pw_infrared]--;
+    }
+    if(player->powers[pw_flight] && IS_NETGAME)
+    {
+        if(!--player->powers[pw_flight])
+        {
+            if(player->plr->mo->z != player->plr->mo->floorz)
+            {
+                /*#ifdef __WATCOMC__
+                   if(!useexterndriver)
+                   {
+                   player->centering = true;
+                   }
+                   #else */
+                player->centering = true;
+                //#endif
+            }
+            player->plr->mo->flags2 &= ~MF2_FLY;
+            player->plr->mo->flags &= ~MF_NOGRAVITY;
+            //BorderTopRefresh = true; //make sure the sprite's cleared out
+            GL_Update(DDUF_TOP);
+        }
+    }
+    if(player->powers[pw_speed])
+    {
+        player->powers[pw_speed]--;
+    }
+    if(player->damagecount)
+    {
+        player->damagecount--;
+    }
+    if(player->bonuscount)
+    {
+        player->bonuscount--;
+    }
+    if(player->poisoncount && !(leveltime & 15))
+    {
+        player->poisoncount -= 5;
+        if(player->poisoncount < 0)
+        {
+            player->poisoncount = 0;
+        }
+        P_PoisonDamage(player, player->poisoner, 1, true);
+    }
+    // Colormaps
+    //  if(player->powers[pw_invulnerability])
+    //  {
+    //      if(player->powers[pw_invulnerability] > BLINKTHRESHOLD
+    //          || (player->powers[pw_invulnerability]&8))
+    //      {
+    //          player->plr->fixedcolormap = INVERSECOLORMAP;
+    //      }
+    //      else
+    //      {
+    //          player->plr->fixedcolormap = 0;
+    //      }
+    //  }
+    //  else
+    if(player->powers[pw_infrared])
+    {
+        if(player->powers[pw_infrared] <= BLINKTHRESHOLD)
+        {
+            if(player->powers[pw_infrared] & 8)
+            {
+                player->plr->fixedcolormap = 0;
+            }
+            else
+            {
+                player->plr->fixedcolormap = 1;
+            }
+        }
+        else if(!(leveltime & 16))  /* && player == &players[consoleplayer]) */
+        {
+            ddplayer_t *dp = player->plr;
 
-			if(newtorch[playerNumber])
-			{
-				if(dp->fixedcolormap + newtorchdelta[playerNumber] > 7 ||
-				   dp->fixedcolormap + newtorchdelta[playerNumber] < 1 ||
-				   newtorch[playerNumber] == dp->fixedcolormap)
-				{
-					newtorch[playerNumber] = 0;
-				}
-				else
-				{
-					dp->fixedcolormap += newtorchdelta[playerNumber];
-				}
-			}
-			else
-			{
-				newtorch[playerNumber] = (M_Random() & 7) + 1;
-				newtorchdelta[playerNumber] =
-					(newtorch[playerNumber] ==
-					 dp->fixedcolormap) ? 0 : ((newtorch[playerNumber] >
-												dp->fixedcolormap) ? 1 : -1);
-			}
-		}
-	}
-	else
-	{
-		player->plr->fixedcolormap = 0;
-	}
+            if(newtorch[playerNumber])
+            {
+                if(dp->fixedcolormap + newtorchdelta[playerNumber] > 7 ||
+                   dp->fixedcolormap + newtorchdelta[playerNumber] < 1 ||
+                   newtorch[playerNumber] == dp->fixedcolormap)
+                {
+                    newtorch[playerNumber] = 0;
+                }
+                else
+                {
+                    dp->fixedcolormap += newtorchdelta[playerNumber];
+                }
+            }
+            else
+            {
+                newtorch[playerNumber] = (M_Random() & 7) + 1;
+                newtorchdelta[playerNumber] =
+                    (newtorch[playerNumber] ==
+                     dp->fixedcolormap) ? 0 : ((newtorch[playerNumber] >
+                                                dp->fixedcolormap) ? 1 : -1);
+            }
+        }
+    }
+    else
+    {
+        player->plr->fixedcolormap = 0;
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -1796,56 +1791,56 @@ void P_ClientSideThink()
         fly -= 16;
     }
 */
-	if(fly && pl->powers[pw_flight])
-	{
-		if(fly != TOCENTER)
-		{
-			pl->flyheight = fly * 2;
-			if(!(mo->ddflags & DDMF_FLY))
-			{
-				// Start flying.
-				//      mo->ddflags |= DDMF_FLY | DDMF_NOGRAVITY;
-			}
-		}
-		else
-		{
-			//  mo->ddflags &= ~(DDMF_FLY | DDMF_NOGRAVITY);
-		}
-	}
-	// We are flying when the Fly flag is set.
-	if(mo->ddflags & DDMF_FLY)
-	{
-		// Keep the Hexen fly flag in sync.
-		mo->flags2 |= MF2_FLY;
+    if(fly && pl->powers[pw_flight])
+    {
+        if(fly != TOCENTER)
+        {
+            pl->flyheight = fly * 2;
+            if(!(mo->ddflags & DDMF_FLY))
+            {
+                // Start flying.
+                //      mo->ddflags |= DDMF_FLY | DDMF_NOGRAVITY;
+            }
+        }
+        else
+        {
+            //  mo->ddflags &= ~(DDMF_FLY | DDMF_NOGRAVITY);
+        }
+    }
+    // We are flying when the Fly flag is set.
+    if(mo->ddflags & DDMF_FLY)
+    {
+        // Keep the Hexen fly flag in sync.
+        mo->flags2 |= MF2_FLY;
 
-		mo->momz = pl->flyheight * FRACUNIT;
-		if(pl->flyheight)
-			pl->flyheight /= 2;
-		// Do some fly-bobbing.
-		if(mo->z > mo->floorz && leveltime & 2)
-			mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
-	}
-	else
-	{
-		// Clear the Fly flag.
-		mo->flags2 &= ~MF2_FLY;
-	}
+        mo->momz = pl->flyheight * FRACUNIT;
+        if(pl->flyheight)
+            pl->flyheight /= 2;
+        // Do some fly-bobbing.
+        if(mo->z > mo->floorz && leveltime & 2)
+            mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
+    }
+    else
+    {
+        // Clear the Fly flag.
+        mo->flags2 &= ~MF2_FLY;
+    }
 
-	if(xsectors[P_GetIntp(mo->subsector, DMU_SECTOR)].special)
-		P_PlayerInSpecialSector(pl);
+    if(xsectors[P_GetIntp(mo->subsector, DMU_SECTOR)].special)
+        P_PlayerInSpecialSector(pl);
 
-	// Set consoleplayer thrust multiplier.
-	if(mo->z > mo->floorz)		// Airborne?
-	{
-		Set(DD_CPLAYER_THRUST_MUL, (mo->ddflags & DDMF_FLY) ? FRACUNIT : 0);
-	}
-	else
-	{
-		Set(DD_CPLAYER_THRUST_MUL,
-			(P_GetThingFloorType(mo) == FLOOR_ICE) ? FRACUNIT >> 1 : FRACUNIT);
-	}
+    // Set consoleplayer thrust multiplier.
+    if(mo->z > mo->floorz)      // Airborne?
+    {
+        Set(DD_CPLAYER_THRUST_MUL, (mo->ddflags & DDMF_FLY) ? FRACUNIT : 0);
+    }
+    else
+    {
+        Set(DD_CPLAYER_THRUST_MUL,
+            (P_GetThingFloorType(mo) == FLOOR_ICE) ? FRACUNIT >> 1 : FRACUNIT);
+    }
 
-	// Update view angles. The server fixes them if necessary.
-	mo->angle = dpl->clAngle;
-	dpl->lookdir = dpl->clLookDir;
+    // Update view angles. The server fixes them if necessary.
+    mo->angle = dpl->clAngle;
+    dpl->lookdir = dpl->clLookDir;
 }
