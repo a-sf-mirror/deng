@@ -257,7 +257,7 @@ void H_PreInit(void)
     cfg.netColor = 4;           // Use the default color by default.
     cfg.netMobDamageModifier = 1;
     cfg.netMobHealthModifier = 1;
-    cfg.eyeHeight = 41;
+    cfg.plrViewHeight = 41;
     cfg.levelTitle = true;
   //cfg.hideAuthorIdSoft = true;
     cfg.menuColor[0] = deffontRGB[0];   // use the default colour by default.
@@ -315,11 +315,10 @@ void H_PreInit(void)
     cfg.msgColor[1] = deffontRGB2[1];
     cfg.msgColor[2] = deffontRGB2[2];
 
-    cfg.customMusic = true;
   //cfg.killMessages = true;
     cfg.bobView = 1;
     cfg.bobWeapon = 1;
-  //cfg.bobWeaponLower = true;
+    cfg.bobWeaponLower = true;
     cfg.cameraNoClip = true;
   //cfg.respawnMonstersNightmare = true;
 
@@ -368,6 +367,9 @@ void H_PostInit(void)
 
     // Common post init routine
     G_PostInit();
+
+    // Initialize weapon info using definitions.
+    P_InitWeaponInfo();
 
     // Print a game mode banner with rulers.
     Con_FPrintf(CBLF_RULER | CBLF_WHITE | CBLF_CENTER,
