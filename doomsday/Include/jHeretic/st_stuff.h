@@ -6,20 +6,21 @@
 #endif
 
 // Called by main loop.
-void            ST_Ticker(void);
+void    ST_Ticker(void);
 
 // Called by main loop.
-void            ST_Drawer(int fullscreenmode, boolean refresh);
+void    ST_Drawer(int fullscreenmode, boolean refresh);
 
 // Called when the console player is spawned on each level.
-void            ST_Start(void);
+void    ST_Start(void);
 
-void            ST_Stop(void);
+void    ST_Stop(void);
 
 // Called by startup code.
-void            ST_Init(void);
+void    ST_Register(void);
+void    ST_Init(void);
 
-void            ST_updateGraphics(void);
+void    ST_updateGraphics(void);
 
 // States for status bar code.
 typedef enum {

@@ -27,7 +27,7 @@
 
 void        cht_GodFunc(player_t *player);
 void        cht_NoClipFunc(player_t *player);
-
+void        cht_SuicideFunc(player_t *player);
 boolean     cht_Responder(event_t *ev);
 
 #endif
