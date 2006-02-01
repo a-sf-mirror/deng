@@ -263,9 +263,9 @@ void H2_PreInit(void)
     cfg.statusbarAlpha = 1;
     cfg.statusbarCounterAlpha = 1;
 
-    cfg.automapPos = 5;
+/*    cfg.automapPos = 5;
     cfg.automapWidth = 1.0f;
-    cfg.automapHeight = 1.0f;
+    cfg.automapHeight = 1.0f;*/
 
     cfg.automapL0[0] = 0.42f;   // Unseen areas
     cfg.automapL0[1] = 0.42f;

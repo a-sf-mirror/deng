@@ -89,76 +89,76 @@ void R_SetViewSize(int blocks, int detail)
 
 void R_HandleSectorSpecials()
 {
-	int     i, scrollOffset = leveltime >> 1 & 63;
+    int     i, scrollOffset = leveltime >> 1 & 63;
     int     sectorCount = DD_GetInteger(DD_SECTOR_COUNT);
 
-	for(i = 0; i < sectorCount; i++)
+    for(i = 0; i < sectorCount; i++)
     {
         xsector_t* sect = P_XSector(P_ToPtr(DMU_SECTOR, i));
-		switch (sect->special)
-		{						// Handle scrolling flats
-		case 201:
-		case 202:
-		case 203:				// Scroll_North_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+        switch (sect->special)
+        {                       // Handle scrolling flats
+        case 201:
+        case 202:
+        case 203:               // Scroll_North_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        (63 - scrollOffset) << (sect->special - 201));
-			break;
-		case 204:
-		case 205:
-		case 206:				// Scroll_East_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 204:
+        case 205:
+        case 206:               // Scroll_East_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        (63 - scrollOffset) << (sect->special - 204));
-			break;
-		case 207:
-		case 208:
-		case 209:				// Scroll_South_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+            break;
+        case 207:
+        case 208:
+        case 209:               // Scroll_South_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        scrollOffset << (sect->special - 207));
-			break;
-		case 210:
-		case 211:
-		case 212:				// Scroll_West_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 210:
+        case 211:
+        case 212:               // Scroll_West_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        scrollOffset << (sect->special - 210));
-			break;
-		case 213:
-		case 214:
-		case 215:				// Scroll_NorthWest_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 213:
+        case 214:
+        case 215:               // Scroll_NorthWest_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        scrollOffset << (sect->special - 213));
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        (63 - scrollOffset) << (sect->special - 213));
-			break;
-		case 216:
-		case 217:
-		case 218:				// Scroll_NorthEast_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 216:
+        case 217:
+        case 218:               // Scroll_NorthEast_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        (63 - scrollOffset) << (sect->special - 216));
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        (63 - scrollOffset) << (sect->special - 216));
-			break;
-		case 219:
-		case 220:
-		case 221:				// Scroll_SouthEast_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 219:
+        case 220:
+        case 221:               // Scroll_SouthEast_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        (63 - scrollOffset) << (sect->special - 219));
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        scrollOffset << (sect->special - 219));
-			break;
-		case 222:
-		case 223:
-		case 224:				// Scroll_SouthWest_xxx
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 
+            break;
+        case 222:
+        case 223:
+        case 224:               // Scroll_SouthWest_xxx
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X,
                        scrollOffset << (sect->special - 222));
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y,
                        scrollOffset << (sect->special - 222));
-			break;
-		default:
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 0);
-			P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 0);
-			break;
-		}
-	}
+            break;
+        default:
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_X, 0);
+            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_OFFSET_Y, 0);
+            break;
+        }
+    }
 }
 
 //==========================================================================
@@ -226,121 +226,122 @@ extern boolean inhelpscreens;
 #define SIZEFACT2 16
 void G_Drawer(void)
 {
-	static boolean viewactivestate = false;
-	static boolean menuactivestate = false;
-	static boolean inhelpscreensstate = false;
-	static int targx =0, targy = 0, targw =0, targh = 0;
-	static int /*x = 0, y = 0, */ w = 320, h = 200, offy = 0;
-	static int fullscreenmode = 0;
-	static gamestate_t oldgamestate = -1;
-	int     py;
-	player_t *vplayer = &players[displayplayer];
-	boolean iscam = (vplayer->plr->flags & DDPF_CAMERA) != 0;	// $democam
+    static boolean viewactivestate = false;
+    static boolean menuactivestate = false;
+    static boolean inhelpscreensstate = false;
+    static int targx =0, targy = 0, targw =0, targh = 0;
+    static int /*x = 0, y = 0, */ w = 320, h = 200, offy = 0;
+    static int fullscreenmode = 0;
+    static gamestate_t oldgamestate = -1;
+    int     py;
+    player_t *vplayer = &players[displayplayer];
+    boolean iscam = (vplayer->plr->flags & DDPF_CAMERA) != 0;   // $democam
 
-	// $democam: can be set on every frame
-	if(cfg.setblocks > 10 || iscam)
-	{
-		// Full screen.
-		targx = 0;
-		targy = 0;
-		targw = 320;
-		targh = 200;
-	}
-	else
-	{
-		targw = cfg.setblocks * 32;
-		targh = cfg.setblocks * (200 - SBARHEIGHT * cfg.sbarscale / 20) / 10;
-		targx = 160 - (targw >> 1);
-		targy = (200 - SBARHEIGHT * cfg.sbarscale / 20 - targh) >> 1;
-	}
+    // $democam: can be set on every frame
+    if(cfg.setblocks > 10 || iscam)
+    {
+        // Full screen.
+        targx = 0;
+        targy = 0;
+        targw = 320;
+        targh = 200;
+    }
+    else
+    {
+        targw = cfg.setblocks * 32;
+        targh = cfg.setblocks * (200 - SBARHEIGHT * cfg.sbarscale / 20) / 10;
+        targx = 160 - (targw >> 1);
+        targy = (200 - SBARHEIGHT * cfg.sbarscale / 20 - targh) >> 1;
+    }
 
-	if(targw > w)
-		w+= (((targw-w)>> 1)+SIZEFACT2)>>SIZEFACT;
-	if(targw < w)
-		w-= (((w-targw)>> 1)+SIZEFACT2)>>SIZEFACT;
-	if(targh > h)
-		h+= (((targh-h)>> 1)+SIZEFACT2)>>SIZEFACT;
-	if(targh < h)
-		h-= (((h-targh)>> 1)+SIZEFACT2)>>SIZEFACT;
+    if(targw > w)
+        w+= (((targw-w)>> 1)+SIZEFACT2)>>SIZEFACT;
+    if(targw < w)
+        w-= (((w-targw)>> 1)+SIZEFACT2)>>SIZEFACT;
+    if(targh > h)
+        h+= (((targh-h)>> 1)+SIZEFACT2)>>SIZEFACT;
+    if(targh < h)
+        h-= (((h-targh)>> 1)+SIZEFACT2)>>SIZEFACT;
 
-	if(cfg.setblocks < 10)
-	{
-		offy = (SBARHEIGHT * cfg.sbarscale/20);
-		R_ViewWindow(160-(w>>1), 100-((h+offy) >>1), w, h);
-	} else
-		R_ViewWindow(targx, targy, targw, targh);
+    if(cfg.setblocks < 10)
+    {
+        offy = (SBARHEIGHT * cfg.sbarscale/20);
+        R_ViewWindow(160-(w>>1), 100-((h+offy) >>1), w, h);
+    } else
+        R_ViewWindow(targx, targy, targw, targh);
 
-	// Do buffered drawing
-	switch (gamestate)
-	{
-	case GS_LEVEL:
-		// Clients should be a little careful about the first frames.
-		if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
-			break;
+    // Do buffered drawing
+    switch (gamestate)
+    {
+    case GS_LEVEL:
+        // Clients should be a little careful about the first frames.
+        if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
+            break;
 
-		// Good luck trying to render the view without a viewpoint...
-		if(!vplayer->plr->mo)
-			break;
+        // Good luck trying to render the view without a viewpoint...
+        if(!vplayer->plr->mo)
+            break;
 
-		if(leveltime < 2)
-		{
-			// Don't render too early; the first couple of frames 
-			// might be a bit unstable -- this should be considered
-			// a bug, but since there's an easy fix...
-			break;
-		}
+        if(leveltime < 2)
+        {
+            // Don't render too early; the first couple of frames
+            // might be a bit unstable -- this should be considered
+            // a bug, but since there's an easy fix...
+            break;
+        }
 
-		if(!automapactive || !amap_fullyopen || cfg.automapBack[3] < 1 || cfg.automapWidth < 1 || cfg.automapHeight < 1)
-		{
-			boolean special200 = false;
+        if(!automapactive || !amap_fullyopen || cfg.automapBack[3] < 1
+           /*|| cfg.automapWidth < 1 || cfg.automapHeight < 1*/)
+        {
+            boolean special200 = false;
 
-			R_HandleSectorSpecials();
-			// Set flags for the renderer.
-			if(IS_CLIENT)
-			{
-				// Server updates mobj flags in NetSv_Ticker.
-				R_SetAllDoomsdayFlags();
-			}
-			GL_SetFilter(vplayer->plr->filter);	// $democam
-			// Check for the sector special 200: use sky2.
-			// I wonder where this is used?
-			if(P_XSectorOfSubsector(vplayer->plr->mo->subsector)->special == 200)
-			{
-				special200 = true;
-				Rend_SkyParams(0, DD_DISABLE, 0);
-				Rend_SkyParams(1, DD_ENABLE, 0);
-			}
-			// How about a bit of quake?
-			if(localQuakeHappening[displayplayer] && !paused)
-			{
-				int     intensity = localQuakeHappening[displayplayer];
+            R_HandleSectorSpecials();
+            // Set flags for the renderer.
+            if(IS_CLIENT)
+            {
+                // Server updates mobj flags in NetSv_Ticker.
+                R_SetAllDoomsdayFlags();
+            }
+            GL_SetFilter(vplayer->plr->filter); // $democam
+            // Check for the sector special 200: use sky2.
+            // I wonder where this is used?
+            if(P_XSectorOfSubsector(vplayer->plr->mo->subsector)->special == 200)
+            {
+                special200 = true;
+                Rend_SkyParams(0, DD_DISABLE, 0);
+                Rend_SkyParams(1, DD_ENABLE, 0);
+            }
+            // How about a bit of quake?
+            if(localQuakeHappening[displayplayer] && !paused)
+            {
+                int     intensity = localQuakeHappening[displayplayer];
 
-				Set(DD_VIEWX_OFFSET,
-					((M_Random() % (intensity << 2)) -
-					 (intensity << 1)) << FRACBITS);
-				Set(DD_VIEWY_OFFSET,
-					((M_Random() % (intensity << 2)) -
-					 (intensity << 1)) << FRACBITS);
-			}
-			else
-			{
-				Set(DD_VIEWX_OFFSET, 0);
-				Set(DD_VIEWY_OFFSET, 0);
-			}
-			// The view angle offset.
-			Set(DD_VIEWANGLE_OFFSET, ANGLE_MAX * -lookOffset);
-			// Render the view.
-			if(!dontrender)
-			{
-				R_RenderPlayerView(vplayer->plr);
-			}
-			if(special200)
-			{
-				Rend_SkyParams(0, DD_ENABLE, 0);
-				Rend_SkyParams(1, DD_DISABLE, 0);
-			}
-			if(!iscam)
-				X_Drawer();		// Draw the crosshair.
+                Set(DD_VIEWX_OFFSET,
+                    ((M_Random() % (intensity << 2)) -
+                     (intensity << 1)) << FRACBITS);
+                Set(DD_VIEWY_OFFSET,
+                    ((M_Random() % (intensity << 2)) -
+                     (intensity << 1)) << FRACBITS);
+            }
+            else
+            {
+                Set(DD_VIEWX_OFFSET, 0);
+                Set(DD_VIEWY_OFFSET, 0);
+            }
+            // The view angle offset.
+            Set(DD_VIEWANGLE_OFFSET, ANGLE_MAX * -lookOffset);
+            // Render the view.
+            if(!dontrender)
+            {
+                R_RenderPlayerView(vplayer->plr);
+            }
+            if(special200)
+            {
+                Rend_SkyParams(0, DD_ENABLE, 0);
+                Rend_SkyParams(1, DD_DISABLE, 0);
+            }
+            if(!iscam)
+                X_Drawer();     // Draw the crosshair.
 
         }
 
