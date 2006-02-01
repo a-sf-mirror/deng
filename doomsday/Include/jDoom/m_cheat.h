@@ -44,6 +44,7 @@ int         cht_CheckCheat(cheatseq_t * cht, char key);
 void        cht_GetParam(cheatseq_t * cht, char *buffer);
 
 void        cht_GodFunc(player_t *plyr);
+void        cht_SuicideFunc(player_t *plyr);
 void        cht_GiveFunc(player_t *plyr, boolean weapons, boolean ammo,
                          boolean armor, boolean cards, cheatseq_t *cheat);
 void        cht_MusicFunc(player_t *plyr, char *buf);
