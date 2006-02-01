@@ -303,6 +303,8 @@ cvar_t  gameCVars[] = {
     "1=Start multiplayers games as deathmatch.",
     "player-move-speed", 0, CVT_FLOAT, &cfg.playerMoveSpeed, 0, 1,
     "Player movement speed modifier.",
+    {"player-eyeheight", 0, CVT_INT, &cfg.plrViewHeight, 41, 54,
+        "Player eye height (the original is 41)."},
 
     {"player-autoswitch", 0, CVT_BYTE,
         &cfg.weaponAutoSwitch, 0, 2,

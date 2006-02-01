@@ -756,7 +756,7 @@ void P_ZMovement(mobj_t *mo)
     {
         mo->player->plr->viewheight -= mo->floorz - mo->z;
         mo->player->plr->deltaviewheight =
-            (VIEWHEIGHT - mo->player->plr->viewheight) >> 3;
+            ((cfg.plrViewHeight << FRACBITS) - mo->player->plr->viewheight) >> 3;
     }
     //
     // adjust height
@@ -873,16 +873,9 @@ void P_ZMovement(mobj_t *mo)
                     {
                         S_StartSound(SFX_PLAYER_LAND, mo);
                     }
-                    /*#ifdef __WATCOMC__
-                       if(!useexterndriver)
-                       {
-                       mo->player->centering = true;
-                       }
-                       #else */
-                    // If mouselook is active, we don't want lookspring.
-                    if(!cfg.usemlook)   // || demorecording || demoplayback)
+
+                    if(!cfg.usemlook)
                         mo->player->centering = true;
-                    //#endif
                 }
             }
             else if(mo->type >= MT_POTTERY1 && mo->type <= MT_POTTERY3)
@@ -1233,7 +1226,7 @@ void P_MobjThinker(mobj_t *mobj)
                         mobj->player->plr->viewheight -=
                             onmo->z + onmo->height - mobj->z;
                         mobj->player->plr->deltaviewheight =
-                            (VIEWHEIGHT - mobj->player->plr->viewheight) >> 3;
+                            ((cfg.plrViewHeight << FRACBITS) - mobj->player->plr->viewheight) >> 3;
                         mobj->z = onmo->z + onmo->height;
                         mobj->flags2 |= MF2_ONMOBJ;
                         mobj->momz = 0;
@@ -1538,7 +1531,8 @@ void P_SpawnPlayer(thing_t * mthing, int playernum)
     p->morphTics = 0;
     p->plr->extralight = 0;
     p->plr->fixedcolormap = 0;
-    p->plr->viewheight = VIEWHEIGHT;
+    p->plr->viewheight = (cfg.plrViewHeight << FRACBITS);
+    p->plr->viewz = mobj->z + p->plr->viewheight;
     p->plr->lookdir = 0;
     P_SetupPsprites(p);
     if(deathmatch)
@@ -2459,7 +2453,7 @@ mobj_t *P_SpawnPlayerMissile(mobj_t *source, mobjtype_t type)
     }
     else
     {
-        z = source->z + 4 * 8 * FRACUNIT +
+        z = source->z + (cfg.plrViewHeight - 9) * FRACUNIT +
             (((int) source->player->plr->lookdir) << FRACBITS) / 173;
         z -= source->floorclip;
     }
@@ -2597,7 +2591,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle)
     }
     x = source->x;
     y = source->y;
-    z = source->z + 4 * 8 * FRACUNIT +
+    z = source->z + (cfg.plrViewHeight - 9) * FRACUNIT +
         (((int) source->player->plr->lookdir) << FRACBITS) / 173;
     z -= source->floorclip;
     th = P_SpawnMobj(x, y, z, type);
