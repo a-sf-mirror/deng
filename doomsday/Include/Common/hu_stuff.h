@@ -99,9 +99,6 @@ extern boolean  message_noecho;
 // Plutonia and TNT map names.
 extern char    *mapnamesp[32], *mapnamest[32];
 
-#define PLUT_AUTHOR    "Dario Casali and Milo Casali"
-#define TNT_AUTHOR     "Team TNT"
-
 #endif
 
 void        HU_Start(void);
