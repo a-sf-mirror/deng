@@ -1062,6 +1062,7 @@ void            Draw_LoadIcon(void);
 void            Draw_BeginZoom(float s, float originX, float originY);
 void            Draw_EndZoom(void);
 void            cht_GodFunc(player_t *player);
+void            cht_SuicideFunc(player_t *player);
 void            cht_NoClipFunc(player_t *player);
 
 //-----------------
