@@ -61,6 +61,8 @@ typedef struct {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+DEFCC(CCmdCrosshair);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -90,7 +92,46 @@ cross_t crosshairs[NUM_XHAIRS] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+// CVARs for the crosshair
+cvar_t xhairCVars[] =
+{
+    {"view-cross-type", CVF_NO_MAX | CVF_PROTECTED, CVT_INT, &cfg.xhair, 0, 0,
+        "The current crosshair."},
+
+    {"view-cross-size", CVF_NO_MAX, CVT_INT, &cfg.xhairSize, 0, 0,
+        "Crosshair size: 1=Normal."},
+
+    {"view-cross-r", 0, CVT_BYTE, &cfg.xhairColor[0], 0, 255,
+        "Crosshair color red component."},
+    {"view-cross-g", 0, CVT_BYTE, &cfg.xhairColor[1], 0, 255,
+        "Crosshair color green component."},
+    {"view-cross-b", 0, CVT_BYTE, &cfg.xhairColor[2], 0, 255,
+        "Crosshair color blue component."},
+    {"view-cross-a", 0, CVT_BYTE, &cfg.xhairColor[3], 0, 255,
+        "Crosshair color alpha component."},
+    {NULL}
+};
+
+// Console commands for the crosshair
+ccmd_t  xhairCCmds[] = {
+    {"crosshair",      CCmdCrosshair,  "Crosshair setup.", 0 },
+    {NULL}
+};
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Register CVARs and CCmds for the crosshair.
+ */
+void X_Register(void)
+{
+    int     i;
+
+    for(i = 0; xhairCVars[i].name; i++)
+        Con_AddVariable(xhairCVars + i);
+    for(i = 0; xhairCCmds[i].name; i++)
+        Con_AddCommand(xhairCCmds + i);
+}
 
 void X_Drawer(void)
 {
@@ -111,6 +152,7 @@ void X_Drawer(void)
         return;
 
     gl.Disable(DGL_TEXTURING);
+
     // Push the current matrices.
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PushMatrix();
@@ -118,8 +160,7 @@ void X_Drawer(void)
     gl.MatrixMode(DGL_PROJECTION);
     gl.PushMatrix();
     gl.LoadIdentity();
-    // We need the 1:1 coordinates.
-    //gluOrtho2D(0, gi.Get(DD_SCREEN_WIDTH), 0, gi.Get(DD_SCREEN_HEIGHT));
+
     gl.Ortho(0, 0, Get(DD_SCREEN_WIDTH), Get(DD_SCREEN_HEIGHT), -1, 1);
 
     cross = crosshairs + cfg.xhair - 1;
@@ -136,12 +177,16 @@ void X_Drawer(void)
     gl.End();
 
     gl.Enable(DGL_TEXTURING);
+
     // Pop back the old matrices.
     gl.PopMatrix();
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PopMatrix();
 }
 
+/*
+ * Console command for configuring the crosshair.
+ */
 DEFCC(CCmdCrosshair)
 {
     if(argc == 1)
