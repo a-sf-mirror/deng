@@ -74,9 +74,9 @@ typedef struct {
     float           statusbarCounterAlpha;
 
     // Automap stuff.
-    int             automapPos;
+/*    int             automapPos;
     float           automapWidth;
-    float           automapHeight;
+    float           automapHeight; */
     float           automapL0[3];
     float           automapL1[3];
     float           automapL2[3];
@@ -98,6 +98,7 @@ typedef struct {
     byte            reverbDebug;
 
     int             dclickuse;
+    int             plrViewHeight;
     int             levelTitle;
     float           menuScale;
     int             menuEffects;
