@@ -22,17 +22,18 @@
 #ifndef __COMMON_PLAYSETUP_H__
 #define __COMMON_PLAYSETUP_H__
 
-extern int numvertexes;
-extern int numsegs;
-extern int numsectors;
-extern int numsubsectors;
-extern int numnodes;
-extern int numlines;
-extern int numsides;
 extern int numthings;
 
+#define numvertexes DD_GetInteger(DD_VERTEX_COUNT)
+#define numsegs     DD_GetInteger(DD_SEG_COUNT)
+#define numsectors  DD_GetInteger(DD_SECTOR_COUNT)
+#define numsubsectors DD_GetInteger(DD_SUBSECTOR_COUNT)
+#define numnodes    DD_GetInteger(DD_NODE_COUNT)
+#define numlines    DD_GetInteger(DD_LINE_COUNT)
+#define numsides    DD_GetInteger(DD_SIDE_COUNT)
+
 #if __JHEXEN__
-extern int numpolyobjs;
+#define numpolyobjs DD_GetInteger(DD_POLYOBJ_COUNT)
 #endif
 
 void        P_SetupLevel(int episode, int map, int playermask, skill_t skill);
