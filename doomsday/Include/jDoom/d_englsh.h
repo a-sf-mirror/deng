@@ -118,7 +118,7 @@
 //
 //  G_game.C
 //
-#define GGSAVED GET_TXT(TXT_GGSAVED)
+#define TXT_GAMESAVED GET_TXT(TXT_GGSAVED)
 
 //
 //  HU_stuff.C
