@@ -342,8 +342,6 @@ void D_PreInit(void)
     cfg.xhairSize = 1;
     for(i = 0; i < 4; i++)
         cfg.xhairColor[i] = 255;
-    cfg.snd_3D = false;
-    cfg.snd_ReverbFactor = 100;
     cfg.moveCheckZ = true;
     cfg.jumpPower = 9;
     cfg.airborneMovement = 1;
@@ -414,7 +412,6 @@ void D_PreInit(void)
     cfg.msgColor[0] = 1;
     cfg.msgColor[1] = cfg.msgColor[2] = 0;
 
-    cfg.customMusic = true;
     cfg.killMessages = true;
     cfg.bobWeapon = 1;
     cfg.bobView = 1;
