@@ -49,6 +49,7 @@
 
 #include "Common/dmu_lib.h"
 #include "r_common.h"
+#include "p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -84,18 +85,7 @@ extern int actual_leveltime;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int numvertexes;
-int numsegs;
-int numsectors;
-int numsubsectors;
-int numnodes;
-int numlines;
-int numsides;
 int numthings;
-
-#if __JHEXEN__
-int numpolyobjs;
-#endif
 
 // Our private map data structures
 xsector_t *xsectors;
@@ -107,6 +97,9 @@ int        numxlines;
 boolean levelSetup;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+static int oldNumLines;
+static int oldNumSectors;
 
 // CODE --------------------------------------------------------------------
 
@@ -182,16 +175,15 @@ void P_SetupForThings(int num)
  */
 void P_SetupForLines(int num)
 {
-    int oldNum = numlines;
+    int newnum = oldNumLines + num;
 
-    numlines += num;
-
-    if(oldNum > 0)
-        xlines = Z_Realloc(xlines, numlines * sizeof(xline_t), PU_LEVEL);
+    if(oldNumLines > 0)
+        xlines = Z_Realloc(xlines, newnum * sizeof(xline_t), PU_LEVEL);
     else
-        xlines = Z_Malloc(numlines * sizeof(xline_t), PU_LEVEL, 0);
+        xlines = Z_Malloc(newnum * sizeof(xline_t), PU_LEVEL, 0);
 
-    memset(xlines + oldNum, 0, num * sizeof(xline_t));
+    memset(xlines + oldNumLines, 0, num * sizeof(xline_t));
+    oldNumLines = newnum;
 }
 
 void P_SetupForSides(int num)
@@ -204,16 +196,15 @@ void P_SetupForSides(int num)
  */
 void P_SetupForSectors(int num)
 {
-    int oldNum = numsectors;
+    int newnum = oldNumSectors + num;
 
-    numsectors += num;
-
-    if(oldNum > 0)
-        xsectors = Z_Realloc(xsectors, numsectors * sizeof(xsector_t), PU_LEVEL);
+    if(oldNumSectors > 0)
+        xsectors = Z_Realloc(xsectors, newnum * sizeof(xsector_t), PU_LEVEL);
     else
-        xsectors = Z_Malloc(numsectors * sizeof(xsector_t), PU_LEVEL, 0);
+        xsectors = Z_Malloc(newnum * sizeof(xsector_t), PU_LEVEL, 0);
 
-    memset(xsectors + oldNum, 0, num * sizeof(xsector_t));
+    memset(xsectors + oldNumSectors, 0, num * sizeof(xsector_t));
+    oldNumSectors = newnum;
 }
 
 /*
@@ -227,15 +218,10 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // It begins
     levelSetup = true;
 
-    // Reset our local global element counters.
-    // Any local data should have been free'd by now (PU_LEVEL)
-    numvertexes = 0;
-    numsegs = 0;
-    numsectors = 0;
-    numsubsectors = 0;
-    numnodes = 0;
-    numlines = 0;
-    numsides = 0;
+    // Reset our local counters for xobjects
+    // Used to allow objects to be allocated in a non-continous order
+    oldNumLines = 0;
+    oldNumSectors = 0;
 
     // Map thing data for the level IS stored game-side.
     // However, Doomsday tells us how many things there are.
@@ -270,18 +256,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 
     // Now the map data has been loaded we can update the
     // global data struct counters
-    numvertexes = DD_GetInteger(DD_VERTEX_COUNT);
-    numsegs = DD_GetInteger(DD_SEG_COUNT);
-    numsectors = DD_GetInteger(DD_SECTOR_COUNT);
-    numsubsectors = DD_GetInteger(DD_SUBSECTOR_COUNT);
-    numnodes = DD_GetInteger(DD_NODE_COUNT);
-    numlines = DD_GetInteger(DD_LINE_COUNT);
-    numsides = DD_GetInteger(DD_SIDE_COUNT);
     numthings = DD_GetInteger(DD_THING_COUNT);
-
-#if __JHEXEN__
-    numpolyobjs = DD_GetInteger(DD_POLYOBJ_COUNT);
-#endif
 
 #if __JHERETIC__
     P_InitAmbientSound();

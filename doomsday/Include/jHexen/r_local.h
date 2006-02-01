@@ -146,16 +146,6 @@ typedef byte    lighttable_t;      // this could be wider for >8 bit display
 //=============================================================================
 
 // Map data is in the main engine, so these are helpers...
-extern int numvertexes;
-extern int numsegs;
-extern int numsectors;
-extern int numsubsectors;
-extern int numnodes;
-extern int numlines;
-extern int numsides;
-extern int numthings;
-extern int po_NumPolyobjs;
-
 extern angle_t  clipangle;
 
 extern int      viewangletox[FINEANGLES / 2];
