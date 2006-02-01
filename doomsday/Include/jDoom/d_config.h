@@ -18,7 +18,6 @@
 /*
  * d_config.h: jDoom configuration.
  * Global settings. Most of these are console variables.
- * Could use a thorough clean-up.
  */
 
 #ifndef __JDOOM_SETTINGS_H__
@@ -37,16 +36,13 @@ enum {
     HUD_FACE
 };
 
-// This struct should be cleaned up. Currently some of the data isn't
-// even used any more.
-
 // WARNING: Do not use the boolean type. Its size can be either 1 or 4 bytes
 //          depending on build settings.
 
-typedef struct jdoom_config_s {    // All of these might not be used any more.
+typedef struct jdoom_config_s {
     float           playerMoveSpeed;
-    int             mouseSensiX /* = 8 */ , mouseSensiY /* = 8 */ ;
-    int             dclickuse /* = true */ ;
+    int             mouseSensiX, mouseSensiY;
+    int             dclickuse;
     int             usemlook;      // Mouse look (mouse Y => viewpitch)
     int             usejlook;      // Joy look (joy Y => viewpitch)
     int             alwaysRun;     // Always run.
@@ -58,8 +54,8 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     int             lookSpring;
     int             lookSpeed;
     int             turnSpeed;
-    byte            povLookAround /* = false */ ;
-    int             jumpEnabled /* = false */ ;
+    byte            povLookAround;
+    int             jumpEnabled;
     float           jumpPower;
     int             airborneMovement;
     byte            setsizeneeded;
@@ -85,9 +81,6 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     float           hudColor[4];
     float           hudIconAlpha;
     byte            usePatchReplacement;
-    byte            snd_3D;
-    byte            snd_ReverbFactor;   // 0..100.
-    byte            reverbDebug;
     byte            moveCheckZ;    // if true, mobjs can move over/under each other.
     byte            weaponAutoSwitch;
     byte            berserkAutoSwitch;
@@ -97,7 +90,6 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     byte            levelTitle, hideAuthorIdSoft;
     float           menuColor[3];
     float           menuColor2[3];
-    //byte            mobjInter;
     byte            noCoopDamage;
     byte            noTeamDamage;
     byte            noCoopWeapons;
@@ -144,7 +136,6 @@ typedef struct jdoom_config_s {    // All of these might not be used any more.
     char           *chat_macros[10];
 
     int             corpseTime;
-    byte            customMusic;
     byte            killMessages;
     float           bobWeapon, bobView;
     byte            bobWeaponLower;
