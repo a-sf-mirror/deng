@@ -73,11 +73,6 @@ typedef struct
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-/* // DJS - Not implemented in jHeretic yet
-boolean levelTimer;
-int     levelTimeCount;
-*/
-
 int   numlinespecials;
 line_t *linespeciallist[MAXLINEANIMS];
 
@@ -1039,16 +1034,6 @@ void P_UpdateSpecials(void)
     // Extended lines and sectors.
     XG_Ticker();
 
-/*  // DJS - Not implemented in jHeretic yet
-    //  LEVEL TIMER
-    if(levelTimer == true)
-    {
-        levelTimeCount--;
-        if(!levelTimeCount)
-            G_ExitLevel();
-    }
-*/
-
     //  ANIMATE LINE SPECIALS
     for(i = 0; i < numlinespecials; i++)
     {
@@ -1202,27 +1187,6 @@ void P_SpawnSpecials(void)
     sector_t *sector;
     int     i;
 
-/*  // DJS - Not implemented in jHeretic yet
-    // See if -TIMER needs to be used.
-    levelTimer = false;
-
-    i = ArgCheck("-avg");
-    if(i && deathmatch)
-    {
-        levelTimer = true;
-        levelTimeCount = 20 * 60 * 35;
-    }
-
-    i = ArgCheck("-timer");
-    if(i && deathmatch)
-    {
-        int     time;
-
-        time = atoi(Argv(i + 1)) * 60 * 35;
-        levelTimer = true;
-        levelTimeCount = time;
-    }
-*/
     //  Init special SECTORs.
     for(i = 0; i < numsectors; i++)
     {

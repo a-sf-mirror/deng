@@ -41,12 +41,6 @@
 
 extern int     *TerrainTypes;
 
-//
-// End-level timer (-TIMER option) - DJS not in jHeretic yet
-//
-//extern boolean  levelTimer;
-//extern int      levelTimeCount;
-
 //      Define values for map objects
 #define MO_TELEPORTMAN          14
 
