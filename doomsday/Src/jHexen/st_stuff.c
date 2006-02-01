@@ -18,6 +18,7 @@
 #include "jHexen/soundst.h"
 #include "Common/hu_stuff.h"
 #include "jHexen/st_stuff.h"
+#include "jHexen/mn_def.h"
 #include "x_config.h"
 #include "Common/st_lib.h"
 #include "d_net.h"
@@ -127,6 +128,9 @@ void M_ClearMenus(void);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+// Console commands for the HUD/Statusbar
+DEFCC(CCmdStatusBarSize);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void DrINumber(signed int val, int x, int y, float r, float g, float b, float a);
@@ -180,6 +184,8 @@ extern boolean automapactive;
 extern int     cheating;
 extern boolean ShowKills;
 extern unsigned ShowKillsCount;
+
+extern int messageResponse;
 
 // PUBLIC DATA DECLARATIONS ------------------------------------------------
 
@@ -759,7 +765,66 @@ static Cheat_t Cheats[] = {
     {NULL, NULL, NULL, {0, 0}, 0}   // Terminator
 };
 
+// CVARs for the HUD/Statusbar
+cvar_t hudCVars[] =
+{
+    // HUD scale
+    {"hud-scale", 0, CVT_FLOAT, &cfg.hudScale, 0.1f, 10,
+        "Scaling for HUD info."},
+
+    {"hud-status-size", CVF_PROTECTED, CVT_INT, &cfg.sbarscale, 1, 20,
+        "Status bar size (1-20)."},
+
+    // HUD colour + alpha
+    {"hud-color-r", 0, CVT_FLOAT, &cfg.hudColor[0], 0, 1,
+        "HUD info color red component."},
+    {"hud-color-g", 0, CVT_FLOAT, &cfg.hudColor[1], 0, 1,
+        "HUD info color green component."},
+    {"hud-color-b", 0, CVT_FLOAT, &cfg.hudColor[2], 0, 1,
+        "HUD info color alpha component."},
+    {"hud-color-a", 0, CVT_FLOAT, &cfg.hudColor[3], 0, 1,
+        "HUD info alpha value."},
+    {"hud-icon-alpha", 0, CVT_FLOAT, &cfg.hudIconAlpha, 0, 1,
+        "HUD icon alpha value."},
+
+    {"hud-status-alpha", 0, CVT_FLOAT, &cfg.statusbarAlpha, 0, 1,
+        "Status bar Alpha level."},
+    {"hud-status-icon-a", 0, CVT_FLOAT, &cfg.statusbarCounterAlpha, 0, 1,
+        "Status bar icons & counters Alpha level."},
+
+    // HUD icons
+    {"hud-mana", 0, CVT_BYTE, &cfg.hudShown[HUD_MANA], 0, 2,
+        "Show mana when the status bar is hidden. 1= top, 2= bottom, 0= off"},
+    {"hud-health", 0, CVT_BYTE, &cfg.hudShown[HUD_HEALTH], 0, 1,
+        "Show health when the status bar is hidden."},
+    {"hud-artifact", 0, CVT_BYTE, &cfg.hudShown[HUD_ARTI], 0, 1,
+        "Show artifact when the status bar is hidden."},
+
+    // HUD displays
+
+    {NULL}
+};
+
+// Console commands for the HUD/Status bar
+ccmd_t  hudCCmds[] = {
+    {"sbsize",      CCmdStatusBarSize,  "Status bar size adjustment.", 0 },
+    {NULL}
+};
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Register CVARs and CCmds for the HUD/Status bar
+ */
+void ST_Register(void)
+{
+    int     i;
+
+    for(i = 0; hudCVars[i].name; i++)
+        Con_AddVariable(hudCVars + i);
+    for(i = 0; hudCCmds[i].name; i++)
+        Con_AddCommand(hudCCmds + i);
+}
 
 void ST_loadGraphics(void)
 {
@@ -2408,6 +2473,39 @@ void Draw_LoadIcon(void)
     GL_Update(DDUF_FULLSCREEN);
 }
 
+/*
+ * Console command to change the size of the status bar.
+ */
+DEFCC(CCmdStatusBarSize)
+{
+    int     min = 1, max = 20, *val = &cfg.sbarscale;
+
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (size)\n", argv[0]);
+        Con_Printf("Size can be: +, -, (num).\n");
+        return true;
+    }
+
+    if(!stricmp(argv[1], "+"))
+        (*val)++;
+    else if(!stricmp(argv[1], "-"))
+        (*val)--;
+    else
+        *val = strtol(argv[1], NULL, 0);
+
+    if(*val < min)
+        *val = min;
+    if(*val > max)
+        *val = max;
+
+    // Update the view size if necessary.
+    R_SetViewSize(cfg.screenblocks, 0);
+    return true;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
 static boolean canCheat()
 {
     if(IS_NETGAME && !IS_CLIENT && netSvAllowCheats)
@@ -2586,6 +2684,30 @@ static void CheatNoClipFunc(player_t *player, Cheat_t * cheat)
     {
         P_SetMessage(player, TXT_CHEATNOCLIPOFF);
     }
+}
+
+void cht_SuicideFunc(player_t *plyr)
+{
+    P_DamageMobj(plyr->plr->mo, NULL, NULL, 10000);
+}
+
+boolean SuicideResponse(int option, void *data)
+{
+    if(messageResponse == 1) // Yes
+    {
+        GL_Update(DDUF_BORDER);
+        M_StopMessage();
+        M_ClearMenus();
+        cht_SuicideFunc(&players[consoleplayer]);
+        return true;
+    }
+    else if(messageResponse == -1 || messageResponse == -2)
+    {
+        M_StopMessage();
+        M_ClearMenus();
+        return true;
+    }
+    return false;
 }
 
 static void CheatWeaponsFunc(player_t *player, Cheat_t * cheat)
@@ -2878,8 +3000,8 @@ static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
     char    textBuffer[256];
 
     if(!player->plr->mo)
-        return;        
-    
+        return;
+
     sprintf(textBuffer, "MAP %d (%d)  X:%5d  Y:%5d  Z:%5d",
             P_GetMapWarpTrans(gamemap), gamemap,
             player->plr->mo->x >> FRACBITS, player->plr->mo->y >> FRACBITS,
@@ -3040,6 +3162,30 @@ DEFCC(CCmdCheatClip)
     if(!canCheat())
         return false;           // Can't cheat!
     CheatNoClipFunc(players + consoleplayer, NULL);
+    return true;
+}
+
+DEFCC(CCmdCheatSuicide)
+{
+    if(gamestate != GS_LEVEL)
+    {
+        S_LocalSound(SFX_CHAT, NULL);
+        Con_Printf("Can only suicide when in a game!\n");
+        return true;
+    }
+
+    if(IS_NETGAME)
+    {
+        NetCl_CheatRequest("suicide");
+    }
+    else
+    {
+        // When not in a netgame we'll ask the player to confirm.
+        Con_Open(false);
+        menuactive = false;
+        M_StartMessage("Are you sure you want to suicide?\n\nPress Y or N.",
+                       SuicideResponse, true);
+    }
     return true;
 }
 

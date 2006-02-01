@@ -43,9 +43,7 @@ void    SN_InitSequenceScript(void);
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 DEFCC(CCmdPause);
-DEFCC(CCmdCheat);
 DEFCC(CCmdScriptInfo);
-DEFCC(CCmdSuicide);
 DEFCC(CCmdSetDemoMode);
 DEFCC(CCmdCrosshair);
 DEFCC(CCmdViewSize);
@@ -61,6 +59,7 @@ DEFCC(CCmdPrintPlayerCoords);
 DEFCC(CCmdMovePlane);
 
 // The cheats.
+DEFCC(CCmdCheat);
 DEFCC(CCmdCheatGod);
 DEFCC(CCmdCheatClip);
 DEFCC(CCmdCheatGive);
@@ -71,16 +70,13 @@ DEFCC(CCmdCheatShadowcaster);
 DEFCC(CCmdCheatWhere);
 DEFCC(CCmdCheatRunScript);
 DEFCC(CCmdCheatReveal);
+DEFCC(CCmdCheatSuicide);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 extern ccmd_t netCCmds[];
-
-extern boolean mn_SuicideConsole;
-
-extern int messageResponse;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -221,18 +217,7 @@ cvar_t  gameCVars[] = {
     "The number of the flat to use for the console background.",
     "con-zoom", 0, CVT_FLOAT, &consoleZoom, 0.1f, 100.0f,
     "Zoom factor for the console background.",
-    "view-cross-r", 0, CVT_BYTE, &cfg.xhairColor[0], 0, 255,
-    "Crosshair color red component.",
-    "view-cross-g", 0, CVT_BYTE, &cfg.xhairColor[1], 0, 255,
-    "Crosshair color green component.",
-    "view-cross-b", 0, CVT_BYTE, &cfg.xhairColor[2], 0, 255,
-    "Crosshair color blue component.",
-    "view-cross-a", 0, CVT_BYTE, &cfg.xhairColor[3], 0, 255,
-    "Crosshair color alpha component.",
-    "view-cross-size", CVF_NO_MAX, CVT_INT, &cfg.xhairSize, 0, 0,
-    "Crosshair size: 1=Normal.",
-    "view-cross-type", CVF_NO_MAX | CVF_PROTECTED, CVT_INT, &cfg.xhair, 0, 0,
-    "The current crosshair.",
+
     "view-bob-height", 0, CVT_FLOAT, &cfg.bobView, 0, 1,
     "Scaling factor for viewheight bobbing.",
     "view-bob-weapon", 0, CVT_FLOAT, &cfg.bobWeapon, 0, 1,
@@ -266,16 +251,7 @@ cvar_t  gameCVars[] = {
     "1=Translucent frozen monsters.",
     "game-maulator-time", CVF_NO_MAX, CVT_INT, &MaulatorSeconds, 1, 0,
     "Dark Servant lifetime, in seconds (default: 25).",
-    "hud-fps", CVF_NO_ARCHIVE, CVT_INT, &cfg.showFPS, 0, 1,
-    "1=Show the frames per second counter.",
-    "hud-mana", 0, CVT_BYTE, &cfg.hudShown[HUD_MANA], 0, 2,
-    "Show mana when the status bar is hidden. 1= top, 2= bottom, 0= off",
-    "hud-health", 0, CVT_BYTE, &cfg.hudShown[HUD_HEALTH], 0, 1,
-    "Show health when the status bar is hidden.",
-    "hud-artifact", 0, CVT_BYTE, &cfg.hudShown[HUD_ARTI], 0, 1,
-    "Show artifact when the status bar is hidden.",
-    "hud-status-size", CVF_PROTECTED, CVT_INT, &cfg.sbarscale, 1, 20,
-    "Status bar size (1-20).",
+
     "hud-title", 0, CVT_BYTE, &cfg.levelTitle, 0, 1,
     "1=Show map title after entering map.",
     "input-joy-x", 0, CVT_INT, &cfg.joyaxis[0], 0, 4,
@@ -296,19 +272,6 @@ cvar_t  gameCVars[] = {
     "Mouse X axis sensitivity.",
     "input-mouse-y-sensi", CVF_NO_MAX, CVT_INT, &cfg.mouseSensiY, 0, 25,
     "Mouse Y axis sensitivity.",
-
-        "hud-scale", 0, CVT_FLOAT, &cfg.hudScale, .1f, 1,
-        "Scaling for HUD elements (status bar hidden).",
-    "hud-color-r", 0, CVT_FLOAT, &cfg.hudColor[0], 0, 1, "HUD info color.",
-    "hud-color-g", 0, CVT_FLOAT, &cfg.hudColor[1], 0, 1, "HUD info color.",
-    "hud-color-b", 0, CVT_FLOAT, &cfg.hudColor[2], 0, 1, "HUD info color.",
-    "hud-color-a", 0, CVT_FLOAT, &cfg.hudColor[3], 0, 1, "HUD info alpha value.",
-    "hud-icon-alpha", 0, CVT_FLOAT, &cfg.hudIconAlpha, 0, 1, "HUD icon alpha value.",
-
-    "hud-status-alpha", 0, CVT_FLOAT, &cfg.statusbarAlpha, 0, 1,
-    "Status bar Alpha level.",
-    "hud-status-icon-a", 0, CVT_FLOAT, &cfg.statusbarCounterAlpha, 0, 1,
-    "Status bar icons & counters Alpha level.",
 
     "msg-align", 0, CVT_INT, &cfg.msgAlign, 0, 2,
     "Alignment of HUD messages. 0 = left, 1 = center, 2 = right.",
@@ -381,9 +344,7 @@ ccmd_t  gameCCmds[] = {
     {"spy",         CCmdCycleSpy,       "Change the viewplayer when not in deathmatch.", 0 },
     {"screenshot",  CCmdScreenShot,     "Take a screenshot.", 0 },
     {"viewsize",    CCmdViewSize,       "Set the view size.", 0 },
-    {"sbsize",      CCmdViewSize,       "Set the status bar size.", 0 },
     {"pause",       CCmdPause,          "Pause the game (same as pressing the pause key).", 0 },
-    {"crosshair",   CCmdCrosshair,      "Crosshair settings.", 0 },
 
     // $cheats
     {"cheat",       CCmdCheat,          "Issue a cheat code using the original Hexen cheats.", 0 },
@@ -392,9 +353,9 @@ ccmd_t  gameCCmds[] = {
     {"warp",        CCmdCheatWarp,      "Warp to a map.", 0 },
     {"reveal",      CCmdCheatReveal,    "Map cheat.", 0 },
     {"give",        CCmdCheatGive,      "Cheat command to give you various kinds of things.", 0 },
-
     {"kill",        CCmdCheatMassacre,  "Kill all the monsters on the level.", 0 },
-    {"suicide",     CCmdSuicide,        "Kill yourself. What did you think?", 0 },
+    {"suicide",     CCmdCheatSuicide,   "Kill yourself. What did you think?", 0 },
+
     {"hexenfont",   CCmdHexenFont,      "Use the Hexen font.", 0 },
     {"message",     CCmdLocalMessage,   "Show a local game message.", 0 },
     /*{"exitlevel",   CCmdExitLevel,      "Exit the current level.", 0 },*/
@@ -452,52 +413,6 @@ DEFCC(CCmdPause)
     return true;
 }
 
-boolean SuicideResponse(int option, void *data)
-{
-    if(messageResponse == 1) // Yes
-    {
-        GL_Update(DDUF_BORDER);
-        mn_SuicideConsole = true;
-        M_StopMessage();
-        M_ClearMenus();
-        return true;
-    }
-    else if(messageResponse == -1 || messageResponse == -2)
-    {
-        M_StopMessage();
-        M_ClearMenus();
-        return true;
-    }
-    return false;
-}
-
-DEFCC(CCmdSuicide)
-{
-    if(gamestate != GS_LEVEL)
-    {
-        S_LocalSound(SFX_CHAT, NULL);
-        Con_Printf("Can only suicide when in a game!\n", argv[0]);
-        return true;
-
-    }
-
-    if(deathmatch)
-    {
-        S_LocalSound(SFX_CHAT, NULL);
-        Con_Printf("Can't suicide during a deathmatch!\n", argv[0]);
-        return true;
-    }
-
-    if (!stricmp(argv[0], "suicide"))
-    {
-        Con_Open(false);
-        menuactive = false;
-        M_StartMessage("Are you sure you want to suicide?\n\nPress Y or N.", SuicideResponse, true);
-        return true;
-    }
-    return false;
-}
-
 DEFCC(CCmdViewSize)
 {
     int     min = 3, max = 13, *val = &cfg.screenblocks;
@@ -508,12 +423,7 @@ DEFCC(CCmdViewSize)
         Con_Printf("Size can be: +, -, (num).\n");
         return true;
     }
-    if(!stricmp(argv[0], "sbsize"))
-    {
-        min = 1;
-        max = 20;
-        val = &cfg.sbarscale;
-    }
+
     if(!stricmp(argv[1], "+"))
         (*val)++;
     else if(!stricmp(argv[1], "-"))
