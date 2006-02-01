@@ -16,6 +16,8 @@
 #include "jHexen/p_local.h"
 #include "jHexen/r_local.h"
 
+#include "p_mapsetup.h"
+
 // MACROS ------------------------------------------------------------------
 
 /* Returns the special data pointer of the polyobj. */
