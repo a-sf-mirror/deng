@@ -675,7 +675,7 @@ void NetCl_SaveGame(void *data)
         return;
     SV_SaveClient(*(unsigned int *) data);
 #ifdef __JDOOM__
-    P_SetMessage(&players[consoleplayer], GGSAVED);
+    P_SetMessage(&players[consoleplayer], TXT_GAMESAVED);
 #endif
 }
 
@@ -757,8 +757,6 @@ void *NetCl_WriteCommands(ticcmd_t *cmd, int count)
             buttons |= CMDF_BTN_JUMP;
         if(cmd->pause)
             buttons |= CMDF_BTN_PAUSE;
-        if(cmd->suicide)
-            buttons |= CMDF_BTN_SUICIDE;
 
         // Always include nonzero buttons.
         if(buttons != 0)

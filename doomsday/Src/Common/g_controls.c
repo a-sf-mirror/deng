@@ -106,7 +106,6 @@ static void G_UpdateCmdControls(ticcmd_t *cmd, float elapsedTime);
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 extern boolean sendpause;
-extern boolean mn_SuicideConsole;
 
 #if __JHERETIC__ || __JHEXEN__
 extern boolean inventory;
@@ -433,7 +432,6 @@ void G_MergeTiccmd(ticcmd_t *dest, ticcmd_t *src)
     dest->use |= src->use;
     dest->jump |= src->jump;
     dest->pause |= src->pause;
-    dest->suicide |= src->suicide;
 }
 
 /*
@@ -567,12 +565,6 @@ static void G_UpdateCmdControls(ticcmd_t *cmd, float elapsedTime)
         {
             look = TOCENTER;
         }
-    }
-
-    if(mn_SuicideConsole)
-    {
-        cmd->suicide = true;
-        mn_SuicideConsole = false;
     }
 
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__

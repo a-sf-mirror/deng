@@ -242,7 +242,6 @@ boolean devparm = false;
 boolean inhelpscreens;
 boolean menuactive;
 int     InfoType;
-boolean mn_SuicideConsole;
 Menu_t *currentMenu;
 
 // Blocky mode, has default, 0 = high, 1 = normal

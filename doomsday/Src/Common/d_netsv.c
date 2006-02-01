@@ -208,12 +208,10 @@ void *NetSv_ReadCommands(byte *msg, uint size)
             cmd->use = ((buttons & CMDF_BTN_USE) != 0);
             cmd->jump = ((buttons & CMDF_BTN_JUMP) != 0);
             cmd->pause = ((buttons & CMDF_BTN_PAUSE) != 0);
-            cmd->suicide = ((buttons & CMDF_BTN_SUICIDE) != 0);
         }
         else
         {
-            cmd->attack = cmd->use = cmd->jump = cmd->pause =
-                cmd->suicide = false;
+            cmd->attack = cmd->use = cmd->jump = cmd->pause = false;
         }
         if(flags & CMDF_LOOKFLY)
             cmd->fly = *msg++;
@@ -1317,6 +1315,10 @@ void NetSv_DoCheat(int player, const char *data)
     else if(!strnicmp(command, "noclip", 6))
     {
         cht_NoClipFunc(players + player);
+    }
+    else if(!strnicmp(command, "suicide", 7))
+    {
+        cht_SuicideFunc(players + player);
     }
     else if(!strnicmp(command, "give", 4))
     {
