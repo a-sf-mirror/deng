@@ -23,6 +23,9 @@
 #  error "Using jHeretic headers without __JHERETIC__"
 #endif
 
+// Basics.
+#include "tables.h"
+
 // We need the WAD data structure for Map things,
 // from the THINGS lump.
 #include "Doomdata.h"

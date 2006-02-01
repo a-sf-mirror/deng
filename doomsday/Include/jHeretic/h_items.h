@@ -38,10 +38,13 @@ typedef struct {
     int             atkstate;
     int             holdatkstate;
     int             flashstate;
+    int             static_switch; // Weapon is not lowered during switch.
 } weaponinfo_t;
 
 extern weaponinfo_t wpnlev1info[NUMWEAPONS];
 extern weaponinfo_t wpnlev2info[NUMWEAPONS];
+
+void            P_InitWeaponInfo(void);
 
 #define NUMINVENTORYSLOTS   14
 typedef struct {

@@ -238,6 +238,59 @@ static int MaceSpotCount;
 
 // CODE --------------------------------------------------------------------
 
+/*
+ * Return the default for a value (retrieved from Doomsday)
+ */
+int GetDefInt(char *def, int *returned_value)
+{
+    char   *data;
+    int     val;
+
+    // Get the value.
+    if(!Def_Get(DD_DEF_VALUE, def, &data))
+        return 0;               // No such value...
+    // Convert to integer.
+    val = strtol(data, 0, 0);
+    if(returned_value)
+        *returned_value = val;
+    return val;
+}
+
+void GetDefState(char *def, int *val)
+{
+    char   *data;
+
+    // Get the value.
+    if(!Def_Get(DD_DEF_VALUE, def, &data))
+        return;
+    // Get the state number.
+    *val = Def_Get(DD_DEF_STATE, data, 0);
+    if(*val < 0)
+        *val = 0;
+}
+
+/*
+ *Initialize weapon info, maxammo and clipammo.
+ */
+void P_InitWeaponInfo()
+{
+#define WPINF "Weapon Info|"
+
+    int     i;
+    char    buf[80];
+
+    for(i = 0; i < NUMWEAPONS; i++)
+    {
+        // Level 1 (don't use a sublevel for level 1)
+        sprintf(buf, WPINF "%i|Static", i);
+        wpnlev1info[i].static_switch = GetDefInt(buf, 0);
+
+        // Level 2
+        sprintf(buf, WPINF "%i|2|Static", i);
+        wpnlev2info[i].static_switch = GetDefInt(buf, 0);
+    }
+}
+
 void P_OpenWeapons(void)
 {
     MaceSpotCount = 0;
@@ -625,34 +678,59 @@ void C_DECL A_ReFire(player_t *player, pspdef_t * psp)
     }
 }
 
+/*
+ * Lowers current weapon, and changes weapon at bottom.
+ */
 void C_DECL A_Lower(player_t *player, pspdef_t * psp)
 {
+    if(player->chickenTics)
+        psp->sy = WEAPONBOTTOM;
+    else
+        psp->sy += LOWERSPEED;
+
     // Psprite state.
     player->plr->psprites[0].state = DDPSP_DOWN;
 
-    if(player->chickenTics)
+    // Should we disable the lowering?
+    if(!cfg.bobWeaponLower ||
+      ((player->powers[pw_weaponlevel2] && wpnlev2info[player->readyweapon].static_switch) ||
+       wpnlev1info[player->readyweapon].static_switch))
     {
-        psp->sy = WEAPONBOTTOM;
+        DD_SetInteger(DD_WEAPON_OFFSET_SCALE_Y, 0);
     }
-    else
-    {
-        psp->sy += LOWERSPEED;
-    }
+
+    // Is already down.
     if(psp->sy < WEAPONBOTTOM)
-    {                           // Not lowered all the way yet
         return;
-    }
+
+    // Player is dead.
     if(player->playerstate == PST_DEAD)
-    {                           // Player is dead, so don't bring up a pending weapon
+    {
         psp->sy = WEAPONBOTTOM;
+
+        // don't bring weapon back up
         return;
     }
+
+    // The old weapon has been lowered off the screen,
+    // so change the weapon and start raising it
     if(!player->health)
-    {                           // Player is dead, so keep the weapon off screen
+    {
+        // Player is dead, so keep the weapon off screen
         P_SetPsprite(player, ps_weapon, S_NULL);
         return;
     }
+
     player->readyweapon = player->pendingweapon;
+
+    // Should we suddenly lower the weapon?
+    if(cfg.bobWeaponLower &&
+      ((player->powers[pw_weaponlevel2] && !wpnlev2info[player->readyweapon].static_switch) ||
+       !wpnlev1info[player->readyweapon].static_switch))
+    {
+        DD_SetInteger(DD_WEAPON_OFFSET_SCALE_Y, 1000);
+    }
+
     P_BringUpWeapon(player);
 }
 
@@ -665,25 +743,37 @@ void C_DECL A_BeakRaise(player_t *player, pspdef_t * psp)
 
 void C_DECL A_Raise(player_t *player, pspdef_t * psp)
 {
+    statenum_t newstate;
+
     // Psprite state.
     player->plr->psprites[0].state = DDPSP_UP;
 
+    // Should we disable the lowering?
+    if(!cfg.bobWeaponLower ||
+      ((player->powers[pw_weaponlevel2] && wpnlev2info[player->readyweapon].static_switch) ||
+       wpnlev1info[player->readyweapon].static_switch))
+    {
+        DD_SetInteger(DD_WEAPON_OFFSET_SCALE_Y, 0);
+    }
+
     psp->sy -= RAISESPEED;
+
     if(psp->sy > WEAPONTOP)
-    {                           // Not raised all the way yet
         return;
-    }
+
+    // Enable the pspr Y offset once again.
+    DD_SetInteger(DD_WEAPON_OFFSET_SCALE_Y, 1000);
+
     psp->sy = WEAPONTOP;
+
+    // The weapon has been raised all the way,
+    //  so change to the ready state.
     if(player->powers[pw_weaponlevel2])
-    {
-        P_SetPsprite(player, ps_weapon,
-                     wpnlev2info[player->readyweapon].readystate);
-    }
+        newstate = wpnlev2info[player->readyweapon].readystate;
     else
-    {
-        P_SetPsprite(player, ps_weapon,
-                     wpnlev1info[player->readyweapon].readystate);
-    }
+        newstate = wpnlev1info[player->readyweapon].readystate;
+
+    P_SetPsprite(player, ps_weapon, newstate);
 }
 
 /*
