@@ -10,6 +10,7 @@
 #include "Common/d_net.h"
 #include "jHeretic/g_game.h"
 #include "jHeretic/st_stuff.h"
+#include "jHeretic/Mn_def.h"
 #include "Common/st_lib.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/m_cheat.h"
@@ -119,6 +120,9 @@ boolean cht_Responder(event_t *ev);
 
 void ST_drawWidgets(boolean refresh);
 
+// Console commands for the HUD/Statusbar
+DEFCC(CCmdStatusBarSize);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void ShadeChain(void);
@@ -151,6 +155,8 @@ static void CheatIDDQDFunc(player_t *player, Cheat_t * cheat);
 extern boolean automapactive;
 extern int  cheating;
 extern byte *screen;
+
+extern int messageResponse;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -523,7 +529,73 @@ static Cheat_t Cheats[] = {
     {NULL, NULL, NULL, {0, 0}, 0}   // Terminator
 };
 
+// CVARs for the HUD/Statusbar
+cvar_t hudCVars[] =
+{
+    // HUD scale
+    {"hud-scale", 0, CVT_FLOAT, &cfg.hudScale, 0.1f, 10,
+        "Scaling for HUD info."},
+
+    {"hud-status-size", CVF_PROTECTED, CVT_INT, &cfg.sbarscale, 1, 20,
+        "Status bar size (1-20)."},
+
+    // HUD colour + alpha
+    {"hud-color-r", 0, CVT_FLOAT, &cfg.hudColor[0], 0, 1,
+        "HUD info color red component."},
+    {"hud-color-g", 0, CVT_FLOAT, &cfg.hudColor[1], 0, 1,
+        "HUD info color green component."},
+    {"hud-color-b", 0, CVT_FLOAT, &cfg.hudColor[2], 0, 1,
+        "HUD info color alpha component."},
+    {"hud-color-a", 0, CVT_FLOAT, &cfg.hudColor[3], 0, 1,
+        "HUD info alpha value."},
+    {"hud-icon-alpha", 0, CVT_FLOAT, &cfg.hudIconAlpha, 0, 1,
+        "HUD icon alpha value."},
+
+    {"hud-status-alpha", 0, CVT_FLOAT, &cfg.statusbarAlpha, 0, 1,
+        "Status bar Alpha level."},
+    {"hud-status-icon-a", 0, CVT_FLOAT, &cfg.statusbarCounterAlpha, 0, 1,
+        "Status bar icons & counters Alpha level."},
+
+    // HUD icons
+    {"hud-ammo", 0, CVT_BYTE, &cfg.hudShown[HUD_AMMO], 0, 1,
+        "1=Show ammo when the status bar is hidden."},
+    {"hud-armor", 0, CVT_BYTE, &cfg.hudShown[HUD_ARMOR], 0, 1,
+        "1=Show armor when the status bar is hidden."},
+    {"hud-keys", 0, CVT_BYTE, &cfg.hudShown[HUD_KEYS], 0, 1,
+        "1=Show keys when the status bar is hidden."},
+    {"hud-health", 0, CVT_BYTE, &cfg.hudShown[HUD_HEALTH], 0, 1,
+        "1=Show health when the status bar is hidden."},
+    {"hud-artifact", 0, CVT_BYTE, &cfg.hudShown[HUD_ARTI], 0, 1,
+        "1=Show artifact when the status bar is hidden."},
+
+    // HUD displays
+    {"hud-tome-timer", CVF_NO_MAX, CVT_INT, &cfg.tomeCounter, 0, 0,
+        "Countdown seconds for the Tome of Power."},
+    {"hud-tome-sound", CVF_NO_MAX, CVT_INT, &cfg.tomeSound, 0, 0,
+        "Seconds for countdown sound of Tome of Power."},
+    {NULL}
+};
+
+// Console commands for the HUD/Status bar
+ccmd_t  hudCCmds[] = {
+    {"sbsize",      CCmdStatusBarSize,  "Status bar size adjustment.", 0 },
+    {NULL}
+};
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Register CVARs and CCmds for the HUD/Status bar
+ */
+void ST_Register(void)
+{
+    int     i;
+
+    for(i = 0; hudCVars[i].name; i++)
+        Con_AddVariable(hudCVars + i);
+    for(i = 0; hudCCmds[i].name; i++)
+        Con_AddCommand(hudCCmds + i);
+}
 
 void ST_loadGraphics()
 {
@@ -711,13 +783,6 @@ void ST_updateWidgets(void)
         st_invslot[i] = plyr->inventory[x + i].type +5;  // plus 5 for useartifact patches
         st_invslotcount[i] = plyr->inventory[x + i].count;
     }
-
-/*
-    // get rid of chat window if up because of message
-    if(!--st_msgcounter)
-        st_chat = st_oldchat;
-*/
-
 }
 
 void ST_createWidgets(void)
@@ -1571,6 +1636,38 @@ void ST_doFullscreenStuff(void)
     }
 }
 
+/*
+ * Console command to change the size of the status bar.
+ */
+DEFCC(CCmdStatusBarSize)
+{
+    int     min = 1, max = 20, *val = &cfg.sbarscale;
+
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (size)\n", argv[0]);
+        Con_Printf("Size can be: +, -, (num).\n");
+        return true;
+    }
+
+    if(!stricmp(argv[1], "+"))
+        (*val)++;
+    else if(!stricmp(argv[1], "-"))
+        (*val)--;
+    else
+        *val = strtol(argv[1], NULL, 0);
+
+    if(*val < min)
+        *val = min;
+    if(*val > max)
+        *val = max;
+
+    // Update the view size if necessary.
+    R_SetViewSize(cfg.screenblocks, 0);
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////
 boolean cht_Responder(event_t *ev)
 {
     int     i;
@@ -1662,6 +1759,30 @@ void cht_GodFunc(player_t *player)
 void cht_NoClipFunc(player_t *player)
 {
     CheatNoClipFunc(player, NULL);
+}
+
+void cht_SuicideFunc(player_t *plyr)
+{
+    P_DamageMobj(plyr->plr->mo, NULL, NULL, 10000);
+}
+
+boolean SuicideResponse(int option, void *data)
+{
+    if(messageResponse == 1) // Yes
+    {
+        GL_Update(DDUF_BORDER);
+        M_StopMessage();
+        M_ClearMenus();
+        cht_SuicideFunc(&players[consoleplayer]);
+        return true;
+    }
+    else if(messageResponse == -1 || messageResponse == -2)
+    {
+        M_StopMessage();
+        M_ClearMenus();
+        return true;
+    }
+    return false;
 }
 
 static void CheatGodFunc(player_t *player, Cheat_t * cheat)
@@ -1968,6 +2089,30 @@ DEFCC(CCmdCheatClip)
     return true;
 }
 
+DEFCC(CCmdCheatSuicide)
+{
+    if(gamestate != GS_LEVEL)
+    {
+        S_LocalSound(sfx_chat, NULL);
+        Con_Printf("Can only suicide when in a game!\n");
+        return true;
+    }
+
+    if(IS_NETGAME)
+    {
+        NetCl_CheatRequest("suicide");
+    }
+    else
+    {
+        // When not in a netgame we'll ask the player to confirm.
+        Con_Open(false);
+        menuactive = false;
+        M_StartMessage("Are you sure you want to suicide?\n\nPress Y or N.",
+                       SuicideResponse, true);
+    }
+    return true;
+}
+
 DEFCC(CCmdCheatGive)
 {
     int     tellUsage = false;
@@ -2047,6 +2192,26 @@ DEFCC(CCmdCheatWarp)
     // We don't want that keys are repeated while we wait.
     DD_ClearKeyRepeaters();
     CheatWarpFunc(players + consoleplayer, &cheat);
+    return true;
+}
+
+/*
+ * Exit the current level and goto the intermission.
+ */
+DEFCC(CCmdCheatExitLevel)
+{
+    if(!canCheat())
+        return false;           // Can't cheat!
+    if(gamestate != GS_LEVEL)
+    {
+        S_LocalSound(sfx_chat, NULL);
+        Con_Printf("Can only exit a level when in a game!\n");
+        return true;
+    }
+
+    // Exit the level.
+    G_ExitLevel();
+
     return true;
 }
 
