@@ -77,7 +77,6 @@ static void P_PrintMapBanner(int episode, int map);
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 #if __JDOOM__
-extern int actual_leveltime;
 extern boolean bossKilled;
 #endif
 
@@ -366,9 +365,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 static void P_ResetWorldState(void)
 {
     int i;
-#if __JHERETIC__ || __JHEXEN__
     int     parm;
-#endif
 
 #if __JDOOM__
     wminfo.maxfrags = 0;
@@ -385,10 +382,6 @@ static void P_ResetWorldState(void)
     totalkills = totalitems = totalsecret = 0;
 #endif
 
-#if __JHERETIC__ || __JHEXEN__
-    //
-    // if deathmatch, randomly spawn the active players
-    //
     TimerGame = 0;
     if(deathmatch)
     {
@@ -398,7 +391,6 @@ static void P_ResetWorldState(void)
             TimerGame = atoi(Argv(parm + 1)) * 35 * 60;
         }
     }
-#endif
 
     // Initial height of PointOfView; will be set by player think.
     players[consoleplayer].plr->viewz = 1;
@@ -491,20 +483,6 @@ static void P_PrintMapBanner(int episode, int map)
     // Retrieve the name and author strings from the engine.
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
     lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
-
-#if __JDOOM__
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-    {
-        lname = mapnamesp[map - 1];
-        lauthor = PLUT_AUTHOR;
-    }
-    else if(gamemission == pack_tnt)
-    {
-        lname = mapnamest[map - 1];
-        lauthor = TNT_AUTHOR;
-    }
-#endif
 #else
     char lname[64];
     boolean lauthor = false;

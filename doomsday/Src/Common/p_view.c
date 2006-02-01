@@ -41,11 +41,8 @@
 
 // MACROS ------------------------------------------------------------------
 
-#if __JDOOM__
-#   define VIEW_HEIGHT  (cfg.plrViewHeight << FRACBITS)
-#else
-#   define VIEW_HEIGHT  VIEWHEIGHT
-#endif
+
+#define VIEW_HEIGHT  (cfg.plrViewHeight << FRACBITS)
 
 #define MAXBOB  0x100000        // 16 pixels of bob.
 

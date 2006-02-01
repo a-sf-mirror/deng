@@ -25,6 +25,7 @@
 #  include "d_event.h"
 #  include "p_local.h"
 #  include "doomstat.h"
+#  include "g_game.h"
 #elif __JHERETIC__
 #  include "jHeretic/h_event.h"
 #  include "jHeretic/P_local.h"
@@ -73,7 +74,9 @@ boolean P_IsPaused(void)
     return paused || (!IS_NETGAME && menuactive);
 }
 
-// This is called at all times, no matter gamestate.
+/*
+ * This is called at all times, no matter gamestate.
+ */
 void P_RunPlayers(void)
 {
     boolean pauseState = P_IsPaused();
@@ -134,19 +137,17 @@ void P_DoTick(void)
 
     actual_leveltime++;
 
-#if __JHERETIC__
     if(!IS_CLIENT && TimerGame && !paused)
     {
         if(!--TimerGame)
-            G_ExitLevel();
-    }
-#elif __JHEXEN__
-    if(!IS_CLIENT && TimerGame)
-    {
-        if(!--TimerGame)
+        {
+#if __JHEXEN__
             G_Completed(P_TranslateMap(P_GetMapNextMap(gamemap)), 0);
-    }
+#else
+            G_ExitLevel();
 #endif
+        }
+    }
 
     // pause if in menu and at least one tic has been run
     if(!IS_NETGAME && menuactive && !Get(DD_PLAYBACK) &&
