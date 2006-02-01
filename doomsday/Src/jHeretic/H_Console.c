@@ -50,6 +50,8 @@ DEFCC(CCmdCheatGive);
 DEFCC(CCmdCheatMassacre);
 DEFCC(CCmdCheatWhere);
 DEFCC(CCmdCheatPig);
+DEFCC(CCmdCheatExitLevel);
+DEFCC(CCmdCheatSuicide);
 DEFCC(CCmdMakeLocal);
 DEFCC(CCmdSetCamera);
 DEFCC(CCmdSetViewLock);
@@ -58,24 +60,16 @@ DEFCC(CCmdPlayDemo);
 DEFCC(CCmdRecordDemo);
 DEFCC(CCmdStopDemo);
 DEFCC(CCmdPrintPlayerCoords);
-DEFCC(CCmdExitLevel);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 DEFCC(CCmdScreenShot);
-DEFCC(CCmdSuicide);
 DEFCC(CCmdViewSize);
 DEFCC(CCmdPause);
 DEFCC(CCmdHereticFont);
 DEFCC(CCmdInventory);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-extern int testcvar;
-
-extern boolean mn_SuicideConsole;
-
-extern int messageResponse;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -97,9 +91,6 @@ cvar_t  gameCVars[] = {
     "0=None, 1=Move, 2=Turn, 3=Strafe, 4=Look.",
     "i_JoyZAxis", OBSOLETE, CVT_INT, &cfg.joyaxis[2], 0, 4,
     "0=None, 1=Move, 2=Turn, 3=Strafe, 4=Look.",
-    //"i_JoyDeadZone", OBSOLETE, CVT_INT, &cfg.joydead, 10, 90, "Joystick dead zone, in percents.",
-    //"FPS", OBSOLETE | CVF_NO_ARCHIVE, CVT_INT, &cfg.showFPS, 0, 1,
-    //"1=Show the frames per second counter.",
     "EchoMsg", OBSOLETE, CVT_INT, &cfg.echoMsg, 0, 1,
     "1=Echo all messages to the console.",
     "ImmediateUse", OBSOLETE, CVT_INT, &cfg.chooseAndUse, 0, 1,
@@ -136,12 +127,6 @@ cvar_t  gameCVars[] = {
     "Blue crosshair color component.",
     "XHairSize", OBSOLETE | CVF_NO_MAX, CVT_INT, &cfg.xhairSize, 0, 0,
     "Crosshair size: 1=Normal.",
-    //  "s_3D", OBSOLETE, CVT_INT, &cfg.snd_3D, 0, 1, "1=Play sounds in 3D.",
-    //  "s_ReverbVol", OBSOLETE, CVT_FLOAT, &cfg.snd_ReverbFactor, 0, 1, "General reverb strength (0-1).",
-    "s_Custom", OBSOLETE, CVT_BYTE, &cfg.customMusic, 0, 1,
-    "1=Enable custom (external) music files.\n",
-    //  "SoundDebug", OBSOLETE|CVF_NO_ARCHIVE, CVT_INT, &DebugSound, 0, 1, "1=Display sound debug information.",
-    //"ReverbDebug", OBSOLETE|CVF_NO_ARCHIVE, CVT_BYTE, &cfg.reverbDebug, 0, 1, "1=Reverberation debug information in the console.",
     "Messages", OBSOLETE, CVT_BYTE, &cfg.msgShow, 0, 1, "1=Show messages.",
     "ShowAmmo", OBSOLETE, CVT_BYTE, &cfg.hudShown[0], 0, 1,
     "1=Show ammo when the status bar is hidden.",
@@ -194,7 +179,7 @@ cvar_t  gameCVars[] = {
     "Seconds for countdown sound of Tome of Power.",
     "FastMonsters", OBSOLETE, CVT_BYTE, &cfg.fastMonsters, 0, 1,
     "1=Fast monsters in non-demo single player.",
-    "EyeHeight", OBSOLETE, CVT_INT, &cfg.eyeHeight, 41, 54,
+    "EyeHeight", OBSOLETE, CVT_INT, &cfg.plrViewHeight, 41, 54,
     "Player eye height (the original is 41).",
 
     "LevelTitle", OBSOLETE, CVT_BYTE, &cfg.levelTitle, 0, 1,
@@ -228,13 +213,10 @@ cvar_t  gameCVars[] = {
     "First slider control.",
     "input-joy-slider2", 0, CVT_INT, &cfg.joyaxis[7], 0, 4,
     "Second slider control.",
-    //  "input-joy-deadzone",   0,          CVT_INT,    &cfg.joydead,       10, 90, "Joystick dead zone, in percents.",
     "player-camera-noclip", 0, CVT_INT, &cfg.cameraNoClip, 0, 1,
     "1=Camera players have no movement clipping.",
     "ctl-look-joy-delta", 0, CVT_INT, &cfg.jlookDeltaMode, 0, 1,
     "1=Joystick values => look angle delta.",
-    "hud-fps", CVF_NO_ARCHIVE, CVT_INT, &cfg.showFPS, 0, 1,
-    "1=Show the frames per second counter.",
 
     "ctl-use-immediate", 0, CVT_INT, &cfg.chooseAndUse, 0, 1,
     "1=Use items immediately from the inventory.",
@@ -260,56 +242,13 @@ cvar_t  gameCVars[] = {
     "1=Autoaiming disabled.",
     "view-size", CVF_PROTECTED, CVT_INT, &cfg.screenblocks, 3, 13,
     "View window size (3-13).",
-    "hud-status-size", CVF_PROTECTED, CVT_INT, &cfg.sbarscale, 1, 20,
-    "Status bar size (1-20).",
-    "hud-status-alpha", 0, CVT_FLOAT, &cfg.statusbarAlpha, 0, 1,
-    "Status bar Alpha level.",
-    "hud-status-icon-a", 0, CVT_FLOAT, &cfg.statusbarCounterAlpha, 0, 1,
-    "Status bar icons & counters Alpha level.",
-
-    "view-cross-type", CVF_NO_MAX | CVF_PROTECTED, CVT_INT, &cfg.xhair, 0, 0,
-    "The current crosshair.",
-    "view-cross-r", 0, CVT_BYTE, &cfg.xhairColor[0], 0, 255,
-    "Crosshair color red component.",
-    "view-cross-g", 0, CVT_BYTE, &cfg.xhairColor[1], 0, 255,
-    "Crosshair color green component.",
-    "view-cross-b", 0, CVT_BYTE, &cfg.xhairColor[2], 0, 255,
-    "Crosshair color blue component.",
-    "view-cross-a", 0, CVT_BYTE, &cfg.xhairColor[3], 0, 255,
-    "Crosshair color alpha component.",
-    "view-cross-size", CVF_NO_MAX, CVT_INT, &cfg.xhairSize, 0, 0,
-    "Crosshair size: 1=Normal.",
 
     "view-bob-height", 0, CVT_FLOAT, &cfg.bobView, 0, 1,
     "Scaling factor for viewheight bobbing.",
     "view-bob-weapon", 0, CVT_FLOAT, &cfg.bobWeapon, 0, 1,
     "Scaling factor for player weapon bobbing.",
-
-    /*  "sound-3d",         0,          CVT_INT,    &cfg.snd_3D,        0, 1,   "1=Play sounds in 3D.",
-       "sound-reverb-volume", 0,        CVT_FLOAT,  &cfg.snd_ReverbFactor, 0, 1, "General reverb strength (0-1).",
-     */ "music-custom", 0, CVT_BYTE, &cfg.customMusic, 0, 1,
-    "1=Enable custom (external) music files.\n",
-    //  "sound-debug",  CVF_NO_ARCHIVE, CVT_INT,    &DebugSound,        0, 1,   "1=Display sound debug information.",
-    //  "sound-reverb-debug", CVF_NO_ARCHIVE,   CVT_BYTE,   &cfg.reverbDebug,   0, 1,   "1=Reverberation debug information in the console.",
-
-    "hud-ammo", 0, CVT_BYTE, &cfg.hudShown[HUD_AMMO], 0, 1,
-    "1=Show ammo when the status bar is hidden.",
-    "hud-armor", 0, CVT_BYTE, &cfg.hudShown[HUD_ARMOR], 0, 1,
-    "1=Show armor when the status bar is hidden.",
-    "hud-keys", 0, CVT_BYTE, &cfg.hudShown[HUD_KEYS], 0, 1,
-    "1=Show keys when the status bar is hidden.",
-    "hud-health", 0, CVT_BYTE, &cfg.hudShown[HUD_HEALTH], 0, 1,
-    "1=Show health when the status bar is hidden.",
-    "hud-artifact", 0, CVT_BYTE, &cfg.hudShown[HUD_ARTI], 0, 1,
-    "1=Show artifact when the status bar is hidden.",
-
-        "hud-scale", 0, CVT_FLOAT, &cfg.hudScale, .1f, 1,
-        "Scaling for HUD elements (status bar hidden).",
-    "hud-color-r", 0, CVT_FLOAT, &cfg.hudColor[0], 0, 1, "HUD info color red component.",
-    "hud-color-g", 0, CVT_FLOAT, &cfg.hudColor[1], 0, 1, "HUD info color green component.",
-    "hud-color-b", 0, CVT_FLOAT, &cfg.hudColor[2], 0, 1, "HUD info color alpha component.",
-    "hud-color-a", 0, CVT_FLOAT, &cfg.hudColor[3], 0, 1, "HUD info alpha value.",
-    "hud-icon-alpha", 0, CVT_FLOAT, &cfg.hudIconAlpha, 0, 1, "HUD icon alpha value.",
+    "view-bob-weapon-switch-lower", 0, CVT_BYTE, &cfg.bobWeaponLower, 0, 1,
+    "HUD weapon lowered during weapon switching.",
 
     "chat-macro0", 0, CVT_CHARPTR, &cfg.chat_macros[0], 0, 0, "Chat macro 1.",
     "chat-macro1", 0, CVT_CHARPTR, &cfg.chat_macros[1], 0, 0, "Chat macro 2.",
@@ -348,13 +287,10 @@ cvar_t  gameCVars[] = {
     "Ring effect filter. 1=Brownish, 2=Blue.",
     "player-jump", 0, CVT_INT, &cfg.jumpEnabled, 0, 1, "1=Allow jumping.",
     "player-jump-power", 0, CVT_FLOAT, &cfg.jumpPower, 0, 100, "Jump power.",
-    "hud-tome-timer", CVF_NO_MAX, CVT_INT, &cfg.tomeCounter, 0, 0,
-    "Countdown seconds for the Tome of Power.",
-    "hud-tome-sound", CVF_NO_MAX, CVT_INT, &cfg.tomeSound, 0, 0,
-    "Seconds for countdown sound of Tome of Power.",
+
     "game-fastmonsters", 0, CVT_BYTE, &cfg.fastMonsters, 0, 1,
     "1=Fast monsters in non-demo single player.",
-    "player-eyeheight", 0, CVT_INT, &cfg.eyeHeight, 41, 54,
+    "player-eyeheight", 0, CVT_INT, &cfg.plrViewHeight, 41, 54,
     "Player eye height (the original is 41).",
     "player-move-speed", 0, CVT_FLOAT, &cfg.playerMoveSpeed, 0, 1,
     "Player movement speed modifier.",
@@ -402,9 +338,7 @@ ccmd_t  gameCCmds[] = {
     {"spy",        CCmdCycleSpy,       "Change the viewplayer when not in deathmatch.", 0 },
     {"screenshot", CCmdScreenShot,     "Take a screenshot.", 0 },
     {"viewsize",   CCmdViewSize,       "Set the view size.", 0 },
-    {"sbsize",     CCmdViewSize,       "Set the status bar size.", 0 },
     {"pause",      CCmdPause,          "Pause the game (same as pressing the pause key).", 0 },
-    {"crosshair",  CCmdCrosshair,      "Crosshair setup.", 0 },
 
     // $cheats
     {"cheat",      CCmdCheat,          "Issue a cheat code using the original Hexen cheats.", 0 },
@@ -413,12 +347,12 @@ ccmd_t  gameCCmds[] = {
     {"warp",       CCmdCheatWarp,      "Warp to a map.", 0 },
     {"reveal",     CCmdCheatReveal,    "Map cheat.", 0 },
     {"give",       CCmdCheatGive,      "Cheat command to give you various kinds of things.", 0 },
-
     {"kill",       CCmdCheatMassacre,  "Kill all the monsters on the level.", 0 },
-    {"suicide",    CCmdSuicide,        "Kill yourself. What did you think?", 0 },
+    {"exitlevel",  CCmdCheatExitLevel, "Exit the current level.", 0 },
+    {"suicide",    CCmdCheatSuicide,   "Kill yourself. What did you think?", 0 },
+
     {"hereticfont",CCmdHereticFont,    "Use the Heretic font.", 0 },
     {"message",    CCmdLocalMessage,   "Show a local game message.", 0 },
-    {"exitlevel",  CCmdExitLevel,      "Exit the current level.", 0 },
 
     // $infine
     {"startinf",   CCmdStartInFine,    "Start an InFine script.", 0 },
@@ -481,52 +415,6 @@ DEFCC(CCmdPause)
     return true;
 }
 
-boolean SuicideResponse(int option, void *data)
-{
-    if(messageResponse == 1) // Yes
-    {
-        GL_Update(DDUF_BORDER);
-        mn_SuicideConsole = true;
-        M_StopMessage();
-        M_ClearMenus();
-        return true;
-    }
-    else if(messageResponse == -1 || messageResponse == -2)
-    {
-        M_StopMessage();
-        M_ClearMenus();
-        return true;
-    }
-    return false;
-}
-
-DEFCC(CCmdSuicide)
-{
-    if(gamestate != GS_LEVEL)
-    {
-        S_LocalSound(sfx_chat, NULL);
-        Con_Printf("Can only suicide when in a game!\n", argv[0]);
-        return true;
-
-    }
-
-    if(deathmatch)
-    {
-        S_LocalSound(sfx_chat, NULL);
-        Con_Printf("Can't suicide during a deathmatch!\n", argv[0]);
-        return true;
-    }
-
-    if (!stricmp(argv[0], "suicide"))
-    {
-        Con_Open(false);
-        menuactive = false;
-        M_StartMessage("Are you sure you want to suicide?\n\nPress Y or N.", SuicideResponse, true);
-        return true;
-    }
-    return false;
-}
-
 DEFCC(CCmdViewSize)
 {
     int     min = 3, max = 13, *val = &cfg.screenblocks;
@@ -537,12 +425,7 @@ DEFCC(CCmdViewSize)
         Con_Printf("Size can be: +, -, (num).\n");
         return true;
     }
-    if(!stricmp(argv[0], "sbsize"))
-    {
-        min = 1;
-        max = 20;
-        val = &cfg.sbarscale;
-    }
+
     if(!stricmp(argv[1], "+"))
         (*val)++;
     else if(!stricmp(argv[1], "-"))
@@ -602,21 +485,3 @@ DEFCC(CCmdHereticFont)
     Con_SetFont(&cfont);
     return true;
 }
-
-#if 0
-DEFCC(CCmdTest)
-{
-    /*int       i;
-
-       for(i=0; i<MAXPLAYERS; i++)
-       if(players[i].plr->ingame)
-       {
-       Con_Printf( "%i: cls:%i col:%i look:%f\n", i, PlayerClass[i],
-       PlayerColor[i], players[i].plr->lookdir);
-       } */
-    if(argc != 2)
-        return false;
-    S_LocalSound(NULL, atoi(argv[1]));
-    return true;
-}
-#endif
