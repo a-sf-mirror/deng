@@ -53,25 +53,25 @@
 
 // N/256*100% probability
 //  that the normal face state will change
-#define ST_FACEPROBABILITY      96
+#define ST_FACEPROBABILITY  96
 
 // Location of status bar
 #define ST_X                0
 #define ST_X2               104
 
-#define ST_FX           144
-#define ST_FY           169
+#define ST_FX               144
+#define ST_FY               169
 
 // Number of status faces.
 #define ST_NUMPAINFACES     5
 #define ST_NUMSTRAIGHTFACES 3
 #define ST_NUMTURNFACES     2
-#define ST_NUMSPECIALFACES      3
+#define ST_NUMSPECIALFACES  3
 
 #define ST_FACESTRIDE \
           (ST_NUMSTRAIGHTFACES+ST_NUMTURNFACES+ST_NUMSPECIALFACES)
 
-#define ST_NUMEXTRAFACES        2
+#define ST_NUMEXTRAFACES    2
 
 #define ST_NUMFACES \
           (ST_FACESTRIDE*ST_NUMPAINFACES+ST_NUMEXTRAFACES)
@@ -151,8 +151,8 @@
 
 // Indicate maximum ammunition.
 // Only needed because backpack exists.
-#define ST_MAXAMMO0WIDTH        3
-#define ST_MAXAMMO0HEIGHT       5
+#define ST_MAXAMMO0WIDTH    3
+#define ST_MAXAMMO0HEIGHT   5
 #define ST_MAXAMMO0X        314
 #define ST_MAXAMMO0Y        173
 #define ST_MAXAMMO1WIDTH        ST_MAXAMMO0WIDTH
@@ -212,11 +212,14 @@ enum {
 
 void    ST_Stop(void);
 
+// Console commands for the HUD/Statusbar
+DEFCC(CCmdStatusBarSize);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern char *mapnames[];
+extern boolean hu_showallfrags; // in hu_stuff.c currently
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -312,9 +315,6 @@ static st_number_t w_frags;
 // health widget
 static st_percent_t w_health;
 
-// arms background
-//static st_binicon_t w_armsbg;
-
 // weapon ownership widgets
 static st_multicon_t w_arms[6];
 
@@ -357,7 +357,74 @@ static int st_randomnumber;
 static boolean st_stopped = true;
 static int st_palette = 0;
 
+// CVARs for the HUD/Statusbar
+cvar_t hudCVars[] =
+{
+    // HUD scale
+    {"hud-scale", 0, CVT_FLOAT, &cfg.hudScale, 0.1f, 10,
+        "Scaling for HUD info."},
+
+    {"hud-status-size", CVF_PROTECTED, CVT_INT, &cfg.sbarscale, 1, 20,
+        "Status bar size (1-20)."},
+
+    // HUD colour + alpha
+    {"hud-color-r", 0, CVT_FLOAT, &cfg.hudColor[0], 0, 1,
+        "HUD info color red component."},
+    {"hud-color-g", 0, CVT_FLOAT, &cfg.hudColor[1], 0, 1,
+        "HUD info color green component."},
+    {"hud-color-b", 0, CVT_FLOAT, &cfg.hudColor[2], 0, 1,
+        "HUD info color alpha component."},
+    {"hud-color-a", 0, CVT_FLOAT, &cfg.hudColor[3], 0, 1,
+        "HUD info alpha value."},
+    {"hud-icon-alpha", 0, CVT_FLOAT, &cfg.hudIconAlpha, 0, 1,
+        "HUD icon alpha value."},
+
+    {"hud-status-alpha", 0, CVT_FLOAT, &cfg.statusbarAlpha, 0, 1,
+        "Status bar Alpha level."},
+    {"hud-status-icon-a", 0, CVT_FLOAT, &cfg.statusbarCounterAlpha, 0, 1,
+        "Status bar icons & counters Alpha level."},
+
+    // HUD icons
+    {"hud-face", 0, CVT_BYTE, &cfg.hudShown[HUD_FACE], 0, 1,
+        "1=Show Doom guy's face in HUD."},
+    {"hud-health", 0, CVT_BYTE, &cfg.hudShown[HUD_HEALTH], 0, 1,
+        "1=Show health in HUD."},
+    {"hud-armor", 0, CVT_BYTE, &cfg.hudShown[HUD_ARMOR], 0, 1,
+        "1=Show armor in HUD."},
+    {"hud-ammo", 0, CVT_BYTE, &cfg.hudShown[HUD_AMMO], 0, 1,
+        "1=Show ammo in HUD."},
+    {"hud-keys", 0, CVT_BYTE, &cfg.hudShown[HUD_KEYS], 0, 1,
+        "1=Show keys in HUD."},
+
+    // HUD displays
+    {"hud-frags", 0, CVT_BYTE, &cfg.hudShown[HUD_FRAGS], 0, 1,
+        "1=Show deathmatch frags in HUD."},
+
+    {"hud-frags-all", 0, CVT_BYTE, &hu_showallfrags, 0, 1,
+        "Debug: HUD shows all frags of all players."},
+    {NULL}
+};
+
+// Console commands for the HUD/Status bar
+ccmd_t  hudCCmds[] = {
+    {"sbsize",      CCmdStatusBarSize,  "Status bar size adjustment.", 0 },
+    {NULL}
+};
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Register CVARs and CCmds for the HUD/Status bar
+ */
+void ST_Register(void)
+{
+    int     i;
+
+    for(i = 0; hudCVars[i].name; i++)
+        Con_AddVariable(hudCVars + i);
+    for(i = 0; hudCCmds[i].name; i++)
+        Con_AddCommand(hudCCmds + i);
+}
 
 void ST_refreshBackground(void)
 {
@@ -1291,4 +1358,35 @@ void ST_Init(void)
 {
     veryfirsttime = 0;
     ST_loadData();
+}
+
+/*
+ * Console command to change the size of the status bar.
+ */
+DEFCC(CCmdStatusBarSize)
+{
+    int     min = 1, max = 20, *val = &cfg.sbarscale;
+
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (size)\n", argv[0]);
+        Con_Printf("Size can be: +, -, (num).\n");
+        return true;
+    }
+
+    if(!stricmp(argv[1], "+"))
+        (*val)++;
+    else if(!stricmp(argv[1], "-"))
+        (*val)--;
+    else
+        *val = strtol(argv[1], NULL, 0);
+
+    if(*val < min)
+        *val = min;
+    if(*val > max)
+        *val = max;
+
+    // Update the view size if necessary.
+    R_SetViewSize(cfg.screenblocks, 0);
+    return true;
 }
