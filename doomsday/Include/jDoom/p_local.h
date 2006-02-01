@@ -77,6 +77,8 @@
 
 #define thinkercap      (*gi.thinkercap)
 
+extern int      TimerGame;         // tic countdown for deathmatch
+
 //
 // P_PSPR
 //
