@@ -897,6 +897,71 @@ boolean P_GetMapFormat(void)
 }
 
 /*
+ * Configure the map data objects so they can be accessed by the
+ * games, using the DMU functions of the Doomsday public API.
+ */
+void SetupMapDataForDMU(void)
+{
+    int i;
+    vertex_t* vert;
+    seg_t* seg;
+    line_t* line;
+    side_t* side;
+    subsector_t* ssec;
+    sector_t* sec;
+    polyobj_t* pobj;
+    node_t* node;
+
+    if(numvertexes > 0)
+    {
+        for(vert = vertexes, i = numvertexes; i--; ++vert)
+            vert->header.type = DMU_VERTEX;
+    }
+
+    if(numsegs > 0)
+    {
+        for(seg = segs, i = numsegs; i--; ++seg)
+            seg->header.type = DMU_SEG;
+    }
+
+    if(numlines > 0)
+    {
+        for(line = lines, i = numlines; i--; ++line)
+            line->header.type = DMU_LINE;
+    }
+
+    if(numsides > 0)
+    {
+        for(side = sides, i = numsides; i--; ++side)
+            side->header.type = DMU_SIDE;
+    }
+
+    if(numsubsectors > 0)
+    {
+        for(ssec = subsectors, i = numsubsectors; i--; ++ssec)
+            ssec->header.type = DMU_SUBSECTOR;
+    }
+
+    if(numsectors > 0)
+    {
+        for(sec = sectors, i = numsectors; i--; ++sec)
+            sec->header.type = DMU_SECTOR;
+    }
+
+    if(po_NumPolyobjs > 0)
+    {
+        for(pobj = polyobjs, i = po_NumPolyobjs; i--; ++pobj)
+            pobj->header.type = DMU_POLYOBJ;
+    }
+
+    if(numnodes > 0)
+    {
+        for(node = nodes, i = numnodes; i--; ++node)
+            node->header.type = DMU_NODE;
+    }
+}
+
+/*
  * Loads the map data structures for a level.
  *
  * @param levelId   Identifier of the map to be loaded (eg "E1M1").
@@ -977,7 +1042,6 @@ boolean P_LoadMapData(char *levelId)
         P_ReadMapData(mlSegs);
         P_ReadMapData(mlSSectors);
         P_ReadMapData(mlNodes);
-
         //P_PrintDebugMapData();
 
     /*    if(glNodeData)
@@ -985,6 +1049,8 @@ boolean P_LoadMapData(char *levelId)
 
         // We have complete level data but we're not out of the woods yet...
         FreeMapDataLumps();
+
+        SetupMapDataForDMU();
 
         // Load the Reject LUT
         P_LoadReject(lumpNumbers[0] + ML_REJECT);
