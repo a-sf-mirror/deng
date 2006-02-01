@@ -1964,8 +1964,8 @@ static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *bu
             ld->v1 = VERTEX_PTR(SHORT(mld->v1));
             ld->v2 = VERTEX_PTR(SHORT(mld->v2));
 
-            P_SetLineSideNum(&(ld->sidenum[0]), SHORT(mld->sidenum[0]));
-            P_SetLineSideNum(&(ld->sidenum[1]), SHORT(mld->sidenum[1]));
+            P_SetLineSideNum(&ld->sidenum[0], SHORT(mld->sidenum[0]));
+            P_SetLineSideNum(&ld->sidenum[1], SHORT(mld->sidenum[1]));
         }
         break;
 
@@ -1992,12 +1992,12 @@ static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *bu
             ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
             ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
 
-            P_SetLineSideNum(&(ld->sidenum[0]), SHORT(mldhex->sidenum[0]));
-            P_SetLineSideNum(&(ld->sidenum[1]), SHORT(mldhex->sidenum[1]));
+            P_SetLineSideNum(&ld->sidenum[0], SHORT(mldhex->sidenum[0]));
+            P_SetLineSideNum(&ld->sidenum[1], SHORT(mldhex->sidenum[1]));
         }
         break;
     default:
-        Con_Error("Error. unsupported linedef format\n");
+        Con_Error("Error: unsupported linedef format\n");
         break;
     }
 }
@@ -2005,15 +2005,14 @@ static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *bu
 // FIXME: Could be a macro?
 static void P_SetLineSideNum(int *side, unsigned short num)
 {
-    num = SHORT(num);
-
-    *side = -1;
-    if(num == ((unsigned short)-1))
+    if(num == ((unsigned short)NO_INDEX))
     {
-        // do nothing
+        *side = -1;
     }
     else
+    {
         *side = num;
+    }        
 }
 
 /*
@@ -2079,12 +2078,12 @@ static void P_FinishLineDefs(void)
             ld->bbox[BOXTOP] = v1->y;
         }
 
-        if(ld->sidenum[0] != NO_INDEX)
+        if(ld->sidenum[0] >= 0 && ld->sidenum[0] < numsides)
             ld->frontsector = SIDE_PTR(ld->sidenum[0])->sector;
         else
             ld->frontsector = 0;
 
-        if(ld->sidenum[1] != NO_INDEX)
+        if(ld->sidenum[1] >= 0 && ld->sidenum[1] < numsides)
             ld->backsector = SIDE_PTR(ld->sidenum[1])->sector;
         else
             ld->backsector = 0;
