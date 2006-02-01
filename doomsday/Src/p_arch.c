@@ -900,65 +900,33 @@ boolean P_GetMapFormat(void)
  * Configure the map data objects so they can be accessed by the
  * games, using the DMU functions of the Doomsday public API.
  */
-void SetupMapDataForDMU(void)
+static void SetupMapDataForDMU(void)
 {
     int i;
-    vertex_t* vert;
-    seg_t* seg;
-    line_t* line;
-    side_t* side;
-    subsector_t* ssec;
-    sector_t* sec;
-    polyobj_t* pobj;
-    node_t* node;
+    
+    for(i = 0; i < numvertexes; ++i)
+        vertexes[i].header.type = DMU_VERTEX;
 
-    if(numvertexes > 0)
-    {
-        for(vert = vertexes, i = numvertexes; i--; ++vert)
-            vert->header.type = DMU_VERTEX;
-    }
+    for(i = 0; i < numsegs; ++i)
+        segs[i].header.type = DMU_SEG;
 
-    if(numsegs > 0)
-    {
-        for(seg = segs, i = numsegs; i--; ++seg)
-            seg->header.type = DMU_SEG;
-    }
+    for(i = 0; i < numlines; ++i)
+        lines[i].header.type = DMU_LINE;
 
-    if(numlines > 0)
-    {
-        for(line = lines, i = numlines; i--; ++line)
-            line->header.type = DMU_LINE;
-    }
+    for(i = 0; i < numsides; ++i)
+        sides[i].header.type = DMU_SIDE;
 
-    if(numsides > 0)
-    {
-        for(side = sides, i = numsides; i--; ++side)
-            side->header.type = DMU_SIDE;
-    }
+    for(i = 0; i < numsubsectors; ++i)
+        subsectors[i].header.type = DMU_SUBSECTOR;
 
-    if(numsubsectors > 0)
-    {
-        for(ssec = subsectors, i = numsubsectors; i--; ++ssec)
-            ssec->header.type = DMU_SUBSECTOR;
-    }
+    for(i = 0; i < numsectors; ++i)
+        sectors[i].header.type = DMU_SECTOR;
 
-    if(numsectors > 0)
-    {
-        for(sec = sectors, i = numsectors; i--; ++sec)
-            sec->header.type = DMU_SECTOR;
-    }
+    for(i = 0; i < po_NumPolyobjs; ++i)
+        polyobjs[i].header.type = DMU_POLYOBJ;
 
-    if(po_NumPolyobjs > 0)
-    {
-        for(pobj = polyobjs, i = po_NumPolyobjs; i--; ++pobj)
-            pobj->header.type = DMU_POLYOBJ;
-    }
-
-    if(numnodes > 0)
-    {
-        for(node = nodes, i = numnodes; i--; ++node)
-            node->header.type = DMU_NODE;
-    }
+    for(i = 0; i < numnodes; ++i)
+        nodes[i].header.type = DMU_NODE;
 }
 
 /*
