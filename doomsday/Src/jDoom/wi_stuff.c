@@ -388,12 +388,6 @@ void WI_drawLF(void)
 
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
 
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-        lname = mapnamesp[gamemap - 1];
-    else if(gamemission == pack_tnt)
-        lname = mapnamest[gamemap - 1];
-
     if(gamemode == commercial)
         mapnum = wbs->last;
     else
@@ -443,12 +437,6 @@ void WI_drawEL(void)
     // See if there is a level name
     if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && minfo.name)
         lname = minfo.name;
-
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-        lname = mapnamesp[wbs->next];
-    else if(gamemission == pack_tnt)
-        lname = mapnamest[wbs->next];
 
     ptr = strchr(lname, ':');   // Skip the E#M# or Level #.
     if(ptr)

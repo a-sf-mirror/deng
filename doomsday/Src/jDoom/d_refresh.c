@@ -185,17 +185,6 @@ void R_DrawLevelTitle(void)
 
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
     lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
-    // Plutonia and TNT are special cases.
-    if(gamemission == pack_plut)
-    {
-        lname = mapnamesp[gamemap - 1];
-        lauthor = PLUT_AUTHOR;
-    }
-    else if(gamemission == pack_tnt)
-    {
-        lname = mapnamest[gamemap - 1];
-        lauthor = TNT_AUTHOR;
-    }
 
     if(gamemode == commercial)
         mapnum = gamemap -1;
