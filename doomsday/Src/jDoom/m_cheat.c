@@ -28,6 +28,7 @@
 #include "f_infine.h"
 #include "d_net.h"
 #include "st_stuff.h"
+#include "Mn_def.h"
 
 #include "Common/g_common.h"
 
@@ -49,6 +50,8 @@ void M_ClearMenus(void);
 
 extern boolean automapactive;
 extern int cheating;
+
+extern int messageResponse;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -326,6 +329,30 @@ void cht_GodFunc(player_t *plyr)
                  (plyr->cheats & CF_GODMODE) ? STSTR_DQDON : STSTR_DQDOFF);
 }
 
+void cht_SuicideFunc(player_t *plyr)
+{
+    P_DamageMobj(plyr->plr->mo, NULL, NULL, 10000);
+}
+
+boolean SuicideResponse(int option, void *data)
+{
+    if(messageResponse == 1) // Yes
+    {
+        GL_Update(DDUF_BORDER);
+        M_StopMessage();
+        M_ClearMenus();
+        cht_SuicideFunc(&players[consoleplayer]);
+        return true;
+    }
+    else if(messageResponse == -1 || messageResponse == -2)
+    {
+        M_StopMessage();
+        M_ClearMenus();
+        return true;
+    }
+    return false;
+}
+
 void cht_GiveFunc(player_t *plyr, boolean weapons, boolean ammo, boolean armor,
                   boolean cards, cheatseq_t *cheat)
 {
@@ -516,6 +543,30 @@ DEFCC(CCmdCheatNoClip)
     return true;
 }
 
+DEFCC(CCmdCheatSuicide)
+{
+    if(gamestate != GS_LEVEL)
+    {
+        S_LocalSound(sfx_oof, NULL);
+        Con_Printf("Can only suicide when in a game!\n");
+        return true;
+    }
+
+    if(IS_NETGAME)
+    {
+        NetCl_CheatRequest("suicide");
+    }
+    else
+    {
+        // When not in a netgame we'll ask the player to confirm.
+        Con_Open(false);
+        menuactive = false;
+        M_StartMessage("Are you sure you want to suicide?\n\nPress Y or N.",
+                       SuicideResponse, true);
+    }
+    return true;
+}
+
 DEFCC(CCmdCheatWarp)
 {
     char    buf[10];
@@ -701,5 +752,25 @@ DEFCC(CCmdCheatGive)
 DEFCC(CCmdCheatMassacre)
 {
     Con_Printf("%i monsters killed.\n", P_Massacre());
+    return true;
+}
+
+/*
+ * Exit the current level and goto the intermission.
+ */
+DEFCC(CCmdCheatExitLevel)
+{
+    if(!can_cheat())
+        return false;           // Can't cheat!
+    if(gamestate != GS_LEVEL)
+    {
+        S_LocalSound(sfx_oof, NULL);
+        Con_Printf("Can only exit a level when in a game!\n");
+        return true;
+    }
+
+    // Exit the level.
+    G_ExitLevel();
+
     return true;
 }

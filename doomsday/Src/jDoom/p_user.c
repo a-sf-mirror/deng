@@ -454,11 +454,6 @@ void P_PlayerThink(player_t *player)
         cmd->changeWeapon = 0;
     }
 
-    if(cmd->suicide)
-    {
-        P_DamageMobj(player->plr->mo, NULL, NULL, 10000);
-    }
-
     // Check for weapon change.
     if(cmd->changeWeapon)
     {
