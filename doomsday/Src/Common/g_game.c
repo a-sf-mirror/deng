@@ -2730,20 +2730,6 @@ DEFCC(CCmdPrintPlayerCoords)
     return true;
 }
 
-/*
- * Display a local game message.
- */
-DEFCC(CCmdLocalMessage)
-{
-    if(argc != 2)
-    {
-        Con_Printf("%s (msg)\n", argv[0]);
-        return true;
-    }
-    D_NetMessageNoSound(argv[1]);
-    return true;
-}
-
 DEFCC(CCmdCycleSpy)
 {
     // FIXME: The engine should do this.
