@@ -31,16 +31,12 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define OBSOLETE    CVF_HIDE|CVF_NO_ARCHIVE
-
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
-DEFCC(CCmdCycleSpy);
-DEFCC(CCmdCrosshair);
 DEFCC(CCmdCheat);
 DEFCC(CCmdCheatGod);
 DEFCC(CCmdCheatClip);
@@ -52,14 +48,22 @@ DEFCC(CCmdCheatWhere);
 DEFCC(CCmdCheatPig);
 DEFCC(CCmdCheatExitLevel);
 DEFCC(CCmdCheatSuicide);
+
 DEFCC(CCmdMakeLocal);
 DEFCC(CCmdSetCamera);
 DEFCC(CCmdSetViewLock);
-DEFCC(CCmdSpawnMobj);
+
+DEFCC(CCmdCycleSpy);
+
 DEFCC(CCmdPlayDemo);
 DEFCC(CCmdRecordDemo);
 DEFCC(CCmdStopDemo);
+
+DEFCC(CCmdSpawnMobj);
+
 DEFCC(CCmdPrintPlayerCoords);
+
+DEFCC(CCmdInventory);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -67,7 +71,6 @@ DEFCC(CCmdScreenShot);
 DEFCC(CCmdViewSize);
 DEFCC(CCmdPause);
 DEFCC(CCmdHereticFont);
-DEFCC(CCmdInventory);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -76,51 +79,85 @@ DEFCC(CCmdInventory);
 int     consoleFlat = 6;
 float   consoleZoom = 1;
 
+// Console variables.
 cvar_t  gameCVars[] = {
+// Console
+    {"con-flat", CVF_NO_MAX, CVT_INT, &consoleFlat, 0, 0,
+        "The number of the flat to use for the console background."},
+    {"con-zoom", 0, CVT_FLOAT, &consoleZoom, 0.1f, 100.0f,
+        "Zoom factor for the console background."},
 
-    "con-flat", CVF_NO_MAX, CVT_INT, &consoleFlat, 0, 0,
-    "The number of the flat to use for the console background.",
-    "con-zoom", 0, CVT_FLOAT, &consoleZoom, 0.1f, 100.0f,
-    "Zoom factor for the console background.",
+// View/Refresh
+    {"view-size", CVF_PROTECTED, CVT_INT, &cfg.screenblocks, 3, 13,
+        "View window size (3-13)."},
+    {"hud-title", 0, CVT_BYTE, &cfg.levelTitle, 0, 1,
+        "1=Show level title and author in the beginning."},
 
-    "view-size", CVF_PROTECTED, CVT_INT, &cfg.screenblocks, 3, 13,
-    "View window size (3-13).",
+    {"view-bob-height", 0, CVT_FLOAT, &cfg.bobView, 0, 1,
+        "Scale for viewheight bobbing."},
+    {"view-bob-weapon", 0, CVT_FLOAT, &cfg.bobWeapon, 0, 1,
+        "Scale for player weapon bobbing."},
+    {"view-bob-weapon-switch-lower", 0, CVT_BYTE, &cfg.bobWeaponLower, 0, 1,
+        "HUD weapon lowered during weapon switching."},
 
-    "player-camera-noclip", 0, CVT_INT, &cfg.cameraNoClip, 0, 1,
-    "1=Camera players have no movement clipping.",
-    "view-bob-height", 0, CVT_FLOAT, &cfg.bobView, 0, 1,
-    "Scaling factor for viewheight bobbing.",
-    "view-bob-weapon", 0, CVT_FLOAT, &cfg.bobWeapon, 0, 1,
-    "Scaling factor for player weapon bobbing.",
-    "view-bob-weapon-switch-lower", 0, CVT_BYTE, &cfg.bobWeaponLower, 0, 1,
-    "HUD weapon lowered during weapon switching.",
+    {"view-ringfilter", 0, CVT_INT, &cfg.ringFilter, 1, 2,
+        "Ring effect filter. 1=Brownish, 2=Blue."},
 
-    // Game settings for servers.
-    "server-game-nomonsters", 0, CVT_BYTE, &cfg.netNomonsters, 0, 1,
-    "1=No monsters.",
-    "server-game-respawn", 0, CVT_BYTE, &cfg.netRespawn, 0, 1,
-    "1= -respawn was used.",
-    "server-game-skill", 0, CVT_BYTE, &cfg.netSkill, 0, 4,
-    "Skill level in multiplayer games.",
-    "server-game-map", 0, CVT_BYTE, &cfg.netMap, 1, 31,
-    "Map to use in multiplayer games.",
-    "server-game-episode", 0, CVT_BYTE, &cfg.netEpisode, 1, 6,
-    "Episode to use in multiplayer games.",
-    "server-game-jump", 0, CVT_BYTE, &cfg.netJumping, 0, 1,
-    "1=Allow jumping in multiplayer games.",
-    "server-game-deathmatch", 0, CVT_BYTE, &cfg.netDeathmatch, 0, 1,
-    "1=Start multiplayers games as deathmatch.",
+// Server-side options
+    // Game state
+    {"server-game-skill", 0, CVT_BYTE,
+        &cfg.netSkill, 0, 4,
+        "Skill level in multiplayer games."},
+    {"server-game-map", 0, CVT_BYTE,
+        &cfg.netMap, 1, 31,
+        "Map to use in multiplayer games."},
+    {"server-game-episode", 0, CVT_BYTE,
+        &cfg.netEpisode, 1, 6,
+        "Episode to use in multiplayer games."},
+    {"server-game-deathmatch", 0, CVT_BYTE,
+        &cfg.netDeathmatch, 0, 1, /* jHeretic only has one deathmatch mode */
+        "Start multiplayers games as deathmatch."},
 
-    // Player data.
-    "player-color", 0, CVT_BYTE, &cfg.netColor, 0, 4,
-    "Player color: 0=green, 1=yellow, 2=red, 3=blue, 4=default.",
-    {"player-air-movement", 0, CVT_BYTE,
-        &cfg.airborneMovement, 0, 32,
+    // Modifiers
+    {"server-game-mod-damage", 0, CVT_BYTE,
+        &cfg.netMobDamageModifier, 1, 100,
+        "Enemy (mob) damage modifier, multiplayer (1..100)."},
+    {"server-game-mod-health", 0, CVT_BYTE,
+        &cfg.netMobHealthModifier, 1, 20,
+        "Enemy (mob) health modifier, multiplayer (1..20)."},
+
+    // Gameplay options
+    {"server-game-jump", 0, CVT_BYTE,
+        &cfg.netJumping, 0, 1,
+        "1=Allow jumping in multiplayer games."},
+    {"server-game-nomonsters", 0, CVT_BYTE,
+        &cfg.netNomonsters, 0, 1,
+        "1=No monsters."},
+    {"server-game-respawn", 0, CVT_BYTE,
+        &cfg.netRespawn, 0, 1,
+        "1= -respawn was used."},
+
+// Player
+    // Player data
+    {"player-color", 0, CVT_BYTE, &cfg.netColor, 0, 4,
+        "Player color: 0=green, 1=yellow, 2=red, 3=blue, 4=default."},
+    {"player-eyeheight", 0, CVT_INT, &cfg.plrViewHeight, 41, 54,
+        "Player eye height. The original is 41."},
+
+    // Movment
+    {"player-move-speed", 0, CVT_FLOAT, &cfg.playerMoveSpeed, 0, 1,
+        "Player movement speed modifier."},
+    {"player-jump", 0, CVT_INT, &cfg.jumpEnabled, 0, 1,
+        "1=Allow jumping."},
+    {"player-jump-power", 0, CVT_FLOAT, &cfg.jumpPower, 0, 100,
+        "Jump power."},
+    {"player-air-movement", 0, CVT_BYTE, &cfg.airborneMovement, 0, 32,
         "Player movement speed while airborne."},
-    "view-ringfilter", 0, CVT_INT, &cfg.ringFilter, 1, 2,
-    "Ring effect filter. 1=Brownish, 2=Blue.",
-    "player-jump", 0, CVT_INT, &cfg.jumpEnabled, 0, 1, "1=Allow jumping.",
-    "player-jump-power", 0, CVT_FLOAT, &cfg.jumpPower, 0, 100, "Jump power.",
+
+    // Weapon switch preferences
+    {"player-autoswitch", 0, CVT_BYTE,
+        &cfg.weaponAutoSwitch, 0, 2,
+        "Change weapon automatically when picking one up. 1=If better 2=Always"},
 
     // Weapon Order preferences
     {"player-weapon-order0", 0, CVT_BYTE,
@@ -151,28 +188,22 @@ cvar_t  gameCVars[] = {
         &cfg.weaponOrder[8], 0, NUMWEAPONS,
         "Weapon change order, slot 8."},
 
-    "game-fastmonsters", 0, CVT_BYTE, &cfg.fastMonsters, 0, 1,
-    "1=Fast monsters in non-demo single player.",
-    "player-eyeheight", 0, CVT_INT, &cfg.plrViewHeight, 41, 54,
-    "Player eye height (the original is 41).",
-    "player-move-speed", 0, CVT_FLOAT, &cfg.playerMoveSpeed, 0, 1,
-    "Player movement speed modifier.",
+    // Misc
+    {"player-camera-noclip", 0, CVT_INT, &cfg.cameraNoClip, 0, 1,
+        "1=Camera players have no movement clipping."},
 
-    {"server-game-mod-damage", 0, CVT_BYTE,
-        &cfg.netMobDamageModifier, 1, 100,
-        "Enemy (mob) damage modifier, multiplayer (1..100)."},
-    {"server-game-mod-health", 0, CVT_BYTE,
-        &cfg.netMobHealthModifier, 1, 20,
-        "Enemy (mob) health modifier, multiplayer (1..20)."},
+// Game state
+    {"game-fastmonsters", 0, CVT_BYTE, &cfg.fastMonsters, 0, 1,
+        "1=Fast monsters in non-demo single player."},
 
-    "hud-title", 0, CVT_BYTE, &cfg.levelTitle, 0, 1,
-    "1=Show level title and author in the beginning.",
-    "game-corpsetime", CVF_NO_MAX, CVT_INT, &cfg.corpseTime, 0, 0,
-    "Number of seconds after which dead monsters disappear.",
+// Gameplay
+    {"game-corpse-time", CVF_NO_MAX, CVT_INT, &cfg.corpseTime, 0, 0,
+        "Corpse vanish time in seconds, 0=disabled."},
 
-    "xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages.",
+// Misc
+    {"xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
 
-    NULL
+    {NULL}
 };
 
 //  Console commands
@@ -226,7 +257,9 @@ ccmd_t  gameCCmds[] = {
 
 // CODE --------------------------------------------------------------------
 
-// Add the console variables and commands.
+/*
+ * Add the console variables and commands.
+ */
 void G_ConsoleRegistration()
 {
     int     i;
@@ -237,6 +270,10 @@ void G_ConsoleRegistration()
         Con_AddCommand(gameCCmds + i);
 }
 
+/*
+ * Settings for console background drawing.
+ * Called EVERY FRAME by the console drawer.
+ */
 void H_ConsoleBg(int *width, int *height)
 {
     extern int consoleFlat;
@@ -247,49 +284,10 @@ void H_ConsoleBg(int *width, int *height)
     *height = (int) (64 * consoleZoom);
 }
 
-DEFCC(CCmdPause)
-{
-    extern boolean sendpause;
-
-    if(!menuactive)
-        sendpause = true;
-    return true;
-}
-
-DEFCC(CCmdViewSize)
-{
-    int     min = 3, max = 13, *val = &cfg.screenblocks;
-
-    if(argc != 2)
-    {
-        Con_Printf("Usage: %s (size)\n", argv[0]);
-        Con_Printf("Size can be: +, -, (num).\n");
-        return true;
-    }
-
-    if(!stricmp(argv[1], "+"))
-        (*val)++;
-    else if(!stricmp(argv[1], "-"))
-        (*val)--;
-    else
-        *val = strtol(argv[1], NULL, 0);
-
-    if(*val < min)
-        *val = min;
-    if(*val > max)
-        *val = max;
-
-    // Update the view size if necessary.
-    R_SetViewSize(cfg.screenblocks, 0);
-    return true;
-}
-
-DEFCC(CCmdScreenShot)
-{
-    G_ScreenShot();
-    return true;
-}
-
+/*
+ * Draw (char *) text in the game's font.
+ * Called by the console drawer.
+ */
 int ConTextOut(char *text, int x, int y)
 {
     extern int typein_time;
@@ -301,17 +299,80 @@ int ConTextOut(char *text, int x, int y)
     return 0;
 }
 
-
+/*
+ * Get the visual width of (char*) text in the game's font.
+ */
 int ConTextWidth(char *text)
 {
     return M_StringWidth(text, hu_font_a);
 }
 
+/*
+ * Custom filter when drawing text in the game's font.
+ */
 void ConTextFilter(char *text)
 {
     strupr(text);
 }
 
+/*
+ * Console command to take a screenshot (duh).
+ */
+DEFCC(CCmdScreenShot)
+{
+    G_ScreenShot();
+    return true;
+}
+
+/*
+ * Console command to change the size of the view window.
+ */
+DEFCC(CCmdViewSize)
+{
+    int     min = 3, max = 13, *val = &cfg.screenblocks;
+
+    if(argc != 2)
+    {
+        Con_Printf("Usage: %s (size)\n", argv[0]);
+        Con_Printf("Size can be: +, -, (num).\n");
+        return true;
+    }
+
+    // Adjust/set the value
+    if(!stricmp(argv[1], "+"))
+        (*val)++;
+    else if(!stricmp(argv[1], "-"))
+        (*val)--;
+    else
+        *val = strtol(argv[1], NULL, 0);
+
+    // Clamp it
+    if(*val < min)
+        *val = min;
+    if(*val > max)
+        *val = max;
+
+    // Update the view size if necessary.
+    R_SetViewSize(cfg.screenblocks, 0);
+    return true;
+}
+
+/*
+ * Console command to pause the game (when not in the menu).
+ */
+DEFCC(CCmdPause)
+{
+    extern boolean sendpause;
+
+    if(!menuactive)
+        sendpause = true;
+
+    return true;
+}
+
+/*
+ * Configure the console to use the game's font.
+ */
 DEFCC(CCmdHereticFont)
 {
     ddfont_t cfont;

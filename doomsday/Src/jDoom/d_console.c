@@ -70,8 +70,6 @@ DEFCC(CCmdDoomFont);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern boolean hu_showallfrags; // in hu_stuff.c currently
-
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int     consoleFlat = 10;
@@ -252,7 +250,7 @@ cvar_t  gameCVars[] = {
 // Misc
     {"xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
 
-    NULL
+    {NULL}
 };
 
 //  Console commands
