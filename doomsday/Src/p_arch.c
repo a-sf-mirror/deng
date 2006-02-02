@@ -385,9 +385,9 @@ maplumpinfo_t mapLumpInfo[] = {
 
 // Versions of map data structures
 mapdataformat_t mapDataFormats[] = {
-    {"DOOM", {{1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {0, NULL}, {1, NULL},
+    {"DOOM", {{1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
               {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {-1, NULL}}, true},
-    {"HEXEN",{{2, NULL}, {2, NULL}, {1, NULL}, {1, NULL}, {0, NULL}, {1, NULL},
+    {"HEXEN",{{2, NULL}, {2, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
               {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}}, true},
     {NULL}
 };
@@ -903,7 +903,7 @@ boolean P_GetMapFormat(void)
 static void SetupMapDataForDMU(void)
 {
     int i;
-    
+
     for(i = 0; i < numvertexes; ++i)
         vertexes[i].header.type = DMU_VERTEX;
 
@@ -1859,104 +1859,112 @@ static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byt
 static void P_ProcessSegs(int version)
 {
     int     i;
-    seg_t  *li;
+    seg_t  *seg;
     line_t *ldef;
-
     mapseg_t *ml;
 
     ml = segstemp;
 
-    for(i = 0; i < numsegs; i++, ml++)
+    for(i = 0; i < numsegs; ++i, ++ml)
     {
-        li = SEG_PTR(i);
+        seg = SEG_PTR(i);
 
         // Which version?
         switch(version)
         {
-            case 0:  // (mapseg_t)
-                li->v1 = VERTEX_PTR(ml->v1);
-                li->v2 = VERTEX_PTR(ml->v2);
-                break;
+        case 1:  // (mapseg_t)
+            seg->v1 = VERTEX_PTR(ml->v1);
+            seg->v2 = VERTEX_PTR(ml->v2);
+            break;
 
-            case 1:  // (glseg_t)
-                li->v1 =
-                    VERTEX_PTR(ml->v1 & 0x8000 ?
-                              firstGLvertex + (ml->v1 & ~0x8000) :
-                              ml->v1);
-                li->v2 =
-                    VERTEX_PTR(ml->v2 & 0x8000 ?
-                              firstGLvertex + (ml->v2 & ~0x8000) :
-                              ml->v2);
-                break;
+        case 2:  // (glseg_t)
+            seg->v1 =
+                VERTEX_PTR(ml->v1 & 0x8000 ?
+                          firstGLvertex + (ml->v1 & ~0x8000) :
+                          ml->v1);
+            seg->v2 =
+                VERTEX_PTR(ml->v2 & 0x8000 ?
+                          firstGLvertex + (ml->v2 & ~0x8000) :
+                          ml->v2);
+            break;
 
-            case 3:
-            case 5:
-                li->v1 =
-                    VERTEX_PTR(ml->v1 & 0xc0000000 ?
-                              firstGLvertex + (ml->v1 & ~0xc0000000) :
-                              ml->v1);
-                li->v2 =
-                    VERTEX_PTR(ml->v2 & 0xc0000000 ?
-                              firstGLvertex + (ml->v2 & ~0xc0000000) :
-                              ml->v2);
-                break;
+        case 3:
+        case 5:
+            seg->v1 =
+                VERTEX_PTR(ml->v1 & 0xc0000000 ?
+                          firstGLvertex + (ml->v1 & ~0xc0000000) :
+                          ml->v1);
+            seg->v2 =
+                VERTEX_PTR(ml->v2 & 0xc0000000 ?
+                          firstGLvertex + (ml->v2 & ~0xc0000000) :
+                          ml->v2);
+            break;
 
-            default:
-                Con_Error("P_ProcessSegs: Error. Unsupported Seg format.");
-                break;
+        default:
+            Con_Error("P_ProcessSegs: Error. Unsupported Seg format.");
+            break;
         }
 
-        li->angle = ml->angle;
-        li->offset = ml->offset;
+        if(ml->angle)
+            seg->angle = ml->angle;
+        else
+            seg->angle = -1;
+
+        if(ml->offset)
+            seg->offset = ml->offset;
+        else
+            seg->offset = -1;
 
         if(ml->linedef != NO_INDEX)
         {
             ldef = LINE_PTR(ml->linedef);
-            li->linedef = ldef;
-            li->sidedef = SIDE_PTR(ldef->sidenum[ml->side]);
-            li->frontsector = SIDE_PTR(ldef->sidenum[ml->side])->sector;
+            seg->linedef = ldef;
+            seg->sidedef = SIDE_PTR(ldef->sidenum[ml->side]);
+            seg->frontsector = SIDE_PTR(ldef->sidenum[ml->side])->sector;
+
             if(ldef->flags & ML_TWOSIDED &&
                ldef->sidenum[ml->side ^ 1] != NO_INDEX)
             {
-                li->backsector = SIDE_PTR(ldef->sidenum[ml->side ^ 1])->sector;
+                seg->backsector = SIDE_PTR(ldef->sidenum[ml->side ^ 1])->sector;
             }
             else
             {
                 ldef->flags &= ~ML_TWOSIDED;
-                li->backsector = 0;
+                seg->backsector = 0;
             }
 
-            if(!li->offset)
+            if(!seg->offset)
             {
                 if(ml->side == 0)
-                    li->offset =
-                        FRACUNIT * AccurateDistance(li->v1->x - ldef->v1->x,
-                                                    li->v1->y - ldef->v1->y);
+                    seg->offset =
+                        FRACUNIT * AccurateDistance(seg->v1->x - ldef->v1->x,
+                                                    seg->v1->y - ldef->v1->y);
                 else
-                    li->offset =
-                        FRACUNIT * AccurateDistance(li->v1->x - ldef->v2->x,
-                                                    li->v1->y - ldef->v2->y);
+                    seg->offset =
+                        FRACUNIT * AccurateDistance(seg->v1->x - ldef->v2->x,
+                                                    seg->v1->y - ldef->v2->y);
             }
 
-            if(!li->angle)
-                li->angle =
-                    bamsAtan2((li->v2->y - li->v1->y) >> FRACBITS,
-                              (li->v2->x - li->v1->x) >> FRACBITS) << FRACBITS;
+            if(!seg->angle)
+                seg->angle =
+                    bamsAtan2((seg->v2->y - seg->v1->y) >> FRACBITS,
+                              (seg->v2->x - seg->v1->x) >> FRACBITS) << FRACBITS;
         }
         else
         {
-            li->linedef = NULL;
-            li->sidedef = NULL;
-            li->frontsector = NULL;
-            li->backsector = NULL;
+
+            seg->linedef = NULL;
+            seg->sidedef = NULL;
+            seg->frontsector = NULL;
+            seg->backsector = NULL;
         }
 
         // Calculate the length of the segment. We need this for
         // the texture coordinates. -jk
-        li->length =
-            AccurateDistance(li->v2->x - li->v1->x, li->v2->y - li->v1->y);
-        if(version == 0 && li->length == 0)
-            li->length = 0.01f; // Hmm...
+        seg->length =
+            AccurateDistance(seg->v2->x - seg->v1->x, seg->v2->y - seg->v1->y);
+        if(version == 0 && seg->length == 0)
+            seg->length = 0.01f; // Hmm...
     }
 
     // We're done with the temporary data
@@ -2046,7 +2054,7 @@ static void P_SetLineSideNum(int *side, unsigned short num)
     else
     {
         *side = num;
-    }        
+    }
 }
 
 /*
