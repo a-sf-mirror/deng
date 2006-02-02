@@ -46,6 +46,9 @@
 
 float   maxSpriteAngle = 60;
 
+// If true - use the "no translucency" blending mode for sprites/masked walls
+boolean noSpriteTrans = false;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // The colors to modify when sprites are lit.
@@ -767,6 +770,11 @@ void Rend_RenderSprite(vissprite_t * spr)
         // Change the blending mode.
         gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE);
     }
+    else if(noSpriteTrans)
+    {
+        // Use the "no translucency" blending mode.
+        GL_BlendMode(BM_ZEROALPHA);
+    }
 
     // Transparent sprites shouldn't be written to the Z buffer.
     if(alpha < 250 || additiveBlending)
@@ -826,7 +834,7 @@ void Rend_RenderSprite(vissprite_t * spr)
     if(usingSRVO)
         gl.PopMatrix();
 
-    if(additiveBlending)
+    if(noSpriteTrans || additiveBlending)
     {
         // Change to normal blending.
         gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE_MINUS_SRC_ALPHA);

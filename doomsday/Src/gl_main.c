@@ -812,6 +812,11 @@ void GL_BlendMode(blendmode_t mode)
 {
     switch (mode)
     {
+    case BM_ZEROALPHA:
+        gl.Func(DGL_BLENDING_OP, DGL_ADD, 0);
+        gl.Func(DGL_BLENDING, DGL_ONE, DGL_ZERO);
+        break;
+
     case BM_ADD:
         gl.Func(DGL_BLENDING_OP, DGL_ADD, 0);
         gl.Func(DGL_BLENDING, DGL_SRC_ALPHA, DGL_ONE);

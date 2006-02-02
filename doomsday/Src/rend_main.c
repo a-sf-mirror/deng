@@ -133,7 +133,6 @@ void Rend_Register(void)
     C_VAR_INT("rend-tex-shiny", &useShinySurfaces, 0, 0, 1,
               "1=Enable shiny textures on surfaces of the map.");
 
-
     C_VAR_FLOAT("rend-light-compression", &r_lightcompression, 0, -100, 100,
               "Sector light range compression (brighten dark areas / darken light areas).");
 
@@ -1004,6 +1003,9 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
                 quad.vertices[i].color.rgba[3] = side->midrgba[3];
 
             // Blendmode too
+            if(sid->blendmode == BM_NORMAL && noSpriteTrans)
+                quad.blendmode = BM_ZEROALPHA; // "no translucency" mode
+            else
                 quad.blendmode = sid->blendmode;
 
             quad.top = gaptop = MIN_OF(rbceil, rfceil);
