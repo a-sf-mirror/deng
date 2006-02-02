@@ -151,6 +151,8 @@ void    HU_UpdatePsprites(void);
 void    G_ConsoleRegistration(void);
 void    DetectIWADs(void);
 
+void    G_ControlRegister(void);
+
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 void    G_PlayerReborn(int player);
@@ -658,6 +660,7 @@ void G_PreInit(void)
     G_ConsoleRegistration();    // main command list
     D_NetConsoleRegistration(); // for network
     G_Register();               // read-only game status cvars (for playsim)
+    G_ControlRegister();        // for controls/input
     AM_Register();              // for the automap
     MN_Register();              // for the menu
     HUMsg_Register();           // for the message buffer/chat widget

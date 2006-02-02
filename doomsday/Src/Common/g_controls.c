@@ -181,7 +181,84 @@ boolean usearti = true;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+// CVars for control/input
+cvar_t  controlCVars[] = {
+// Input (settings)
+    // Mouse
+    {"input-mouse-x-sensi", CVF_NO_MAX, CVT_INT, &cfg.mouseSensiX, 0, 25,
+        "Mouse X axis sensitivity."},
+    {"input-mouse-y-sensi", CVF_NO_MAX, CVT_INT, &cfg.mouseSensiY, 0, 25,
+        "Mouse Y axis sensitivity."},
+
+    // Joystick/Gamepad
+    {"input-joy-x", 0, CVT_INT, &cfg.joyaxis[0], 0, 4,
+        "X axis control: 0=None, 1=Move, 2=Turn, 3=Strafe, 4=Look."},
+    {"input-joy-y", 0, CVT_INT, &cfg.joyaxis[1], 0, 4,
+        "Y axis control."},
+    {"input-joy-z", 0, CVT_INT, &cfg.joyaxis[2], 0, 4,
+        "Z axis control."},
+    {"input-joy-rx", 0, CVT_INT, &cfg.joyaxis[3], 0, 4,
+        "X rotational axis control."},
+    {"input-joy-ry", 0, CVT_INT, &cfg.joyaxis[4], 0, 4,
+        "Y rotational axis control."},
+    {"input-joy-rz", 0, CVT_INT, &cfg.joyaxis[5], 0, 4,
+        "Z rotational axis control."},
+
+    {"input-joy-slider1", 0, CVT_INT, &cfg.joyaxis[6], 0, 4,
+        "First slider control."},
+    {"input-joy-slider2", 0, CVT_INT, &cfg.joyaxis[7], 0, 4,
+        "Second slider control."},
+
+// Control (options/preferences)
+    {"ctl-aim-noauto", 0, CVT_INT, &cfg.noAutoAim, 0, 1,
+        "1=Autoaiming disabled."},
+
+    {"ctl-turn-speed", 0, CVT_INT, &cfg.turnSpeed, 1, 5,
+        "The speed of turning left/right."},
+    {"ctl-run", 0, CVT_INT, &cfg.alwaysRun, 0, 1,
+        "1=Always run."},
+
+    {"ctl-use-dclick", 0, CVT_INT, &cfg.dclickuse, 0, 1,
+        "1=Doubleclick forward/strafe equals use key."},
+#if !__JDOOM__
+    {"ctl-use-immediate", 0, CVT_INT, &cfg.chooseAndUse, 0, 1,
+        "1=Use items immediately from the inventory."},
+#endif
+
+    {"ctl-look-speed", 0, CVT_INT, &cfg.lookSpeed, 1, 5,
+        "The speed of looking up/down."},
+    {"ctl-look-spring", 0, CVT_INT, &cfg.lookSpring, 0, 1,
+        "1=Lookspring active."},
+
+    {"ctl-look-mouse", 0, CVT_INT, &cfg.usemlook, 0, 1,
+        "1=Mouse look active."},
+    {"ctl-look-mouse-inverse", 0, CVT_INT, &cfg.mlookInverseY, 0, 1,
+        "1=Inverse mouse look Y axis."},
+
+    {"ctl-look-pov", 0, CVT_BYTE, &cfg.povLookAround, 0, 1,
+        "1=Look around using the POV hat."},
+    {"ctl-look-joy", 0, CVT_INT, &cfg.usejlook, 0, 1,
+        "1=Joystick look active."},
+    {"ctl-look-joy-inverse", 0, CVT_INT, &cfg.jlookInverseY, 0, 1,
+        "1=Inverse joystick look Y axis."},
+    {"ctl-look-joy-delta", 0, CVT_INT, &cfg.jlookDeltaMode, 0, 1,
+        "1=Joystick values => look angle delta."},
+
+    {NULL}
+};
+
 // CODE --------------------------------------------------------------------
+
+/*
+ * Register the CVars and CCmds for input/controls.
+ */
+void G_ControlRegister(void)
+{
+    int     i;
+
+    for(i = 0; controlCVars[i].name; i++)
+        Con_AddVariable(controlCVars + i);
+}
 
 /*
  * Registers the additional bind classes the game requires
@@ -231,6 +308,7 @@ void G_DefaultBindings(void)
                     controls[i].bindClass, evname + 1, buff);
             DD_Execute(cmd, true);
         }
+
         if(ctr->defMouse)
         {
             event.type = ev_mousebdown;
@@ -241,6 +319,7 @@ void G_DefaultBindings(void)
                     controls[i].bindClass, evname + 1, buff);
             DD_Execute(cmd, true);
         }
+
         if(ctr->defJoy)
         {
             event.type = ev_joybdown;
@@ -330,8 +409,8 @@ void G_AdjustLookDir(player_t *player, int look, float elapsed)
 }
 
 /*
- * Updates the viewers' look angle
- * Called every tic by G_Ticker
+ * Updates the viewers' look angle.
+ * Called every tic by G_Ticker.
  */
 void G_LookAround(void)
 {
@@ -353,10 +432,12 @@ void G_LookAround(void)
     {
         float   diff = (targetLookOffset - lookOffset) / 2;
 
+        // Clamp it.
         if(diff > .075f)
             diff = .075f;
         if(diff < -.075f)
             diff = -.075f;
+
         lookOffset += diff;
     }
 }
@@ -366,11 +447,12 @@ void G_SetCmdViewAngles(ticcmd_t *cmd, player_t *pl)
     // These will be sent to the server (or P_MovePlayer).
     cmd->angle = pl->plr->clAngle >> 16;
 
-    // 110 corresponds 85 degrees.
+    // Clamp it. 110 corresponds 85 degrees.
     if(pl->plr->clLookDir > 110)
         pl->plr->clLookDir = 110;
     if(pl->plr->clLookDir < -110)
         pl->plr->clLookDir = -110;
+
     cmd->pitch = pl->plr->clLookDir / 110 * DDMAXSHORT;
 }
 
