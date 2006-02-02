@@ -710,7 +710,8 @@ void CP_CvarList(ui_object_t *ob)
     }
     if(!var)
         return;
-    *(int *) var->ptr = value;
+
+    Con_SetInteger(var->name, value, true);
 }
 
 //===========================================================================
@@ -734,11 +735,11 @@ void CP_CvarSlider(ui_object_t *ob)
     if(!var)
         return;
     if(var->type == CVT_FLOAT)
-        *(float *) var->ptr = (int) (100 * slid->value + .5f) / 100.0f;
+        Con_SetFloat(var->name, (int) (100 * slid->value + .5f) / 100.0f, true);
     else if(var->type == CVT_INT)
-        *(int *) var->ptr = (int) (slid->value + 0.5f);
+        Con_SetInteger(var->name, (int) (slid->value + 0.5f), true);
     else if(var->type == CVT_BYTE)
-        *(byte *) var->ptr = (byte) (slid->value + 0.5f);
+        Con_SetInteger(var->name, (byte) (slid->value + 0.5f), true);
 }
 
 //===========================================================================

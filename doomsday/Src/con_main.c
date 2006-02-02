@@ -321,15 +321,11 @@ char   *TrimmedFloat(float val)
     return trimmedFloatBuffer;
 }
 
-//--------------------------------------------------------------------------
-//
-// Console Variable Handling
-//
-//--------------------------------------------------------------------------
+/*
+ * Console Variable Handling
+ *
+ */
 
-//===========================================================================
-// Con_SetString
-//===========================================================================
 void Con_SetString(const char *name, char *text, byte override)
 {
     cvar_t *cvar = Con_GetVariable(name);
@@ -352,6 +348,10 @@ void Con_SetString(const char *name, char *text, byte override)
         cvar->flags |= CVF_CAN_FREE;
         CV_CHARPTR(cvar) = malloc(strlen(text) + 1);
         strcpy(CV_CHARPTR(cvar), text);
+
+        // Make the change notification callback
+        if(cvar->notifyChanged != NULL)
+            cvar->notifyChanged(cvar);
     }
     else
         Con_Error("Con_SetString: cvar is not of type char*.\n");
@@ -368,10 +368,9 @@ cvar_t *Con_GetVariable(const char *name)
     return NULL;
 }
 
-//===========================================================================
-// Con_SetInteger
-//  Also works with bytes.
-//===========================================================================
+/*
+ * NOTE: Also works with bytes.
+ */
 void Con_SetInteger(const char *name, int value, byte override)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -391,11 +390,12 @@ void Con_SetInteger(const char *name, int value, byte override)
         CV_BYTE(var) = value;
     if(var->type == CVT_FLOAT)
         CV_FLOAT(var) = value;
+
+    // Make the change notification callback
+    if(var->notifyChanged != NULL)
+        var->notifyChanged(var);
 }
 
-//===========================================================================
-// Con_SetFloat
-//===========================================================================
 void Con_SetFloat(const char *name, float value, byte override)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -415,11 +415,12 @@ void Con_SetFloat(const char *name, float value, byte override)
         CV_BYTE(var) = (byte) value;
     if(var->type == CVT_FLOAT)
         CV_FLOAT(var) = value;
+
+    // Make the change notification callback
+    if(var->notifyChanged != NULL)
+        var->notifyChanged(var);
 }
 
-//===========================================================================
-// Con_GetInteger
-//===========================================================================
 int Con_GetInteger(const char *name)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -435,9 +436,6 @@ int Con_GetInteger(const char *name)
     return CV_INT(var);
 }
 
-//===========================================================================
-// Con_GetFloat
-//===========================================================================
 float Con_GetFloat(const char *name)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -453,9 +451,6 @@ float Con_GetFloat(const char *name)
     return CV_FLOAT(var);
 }
 
-//===========================================================================
-// Con_GetByte
-//===========================================================================
 byte Con_GetByte(const char *name)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -471,9 +466,6 @@ byte Con_GetByte(const char *name)
     return CV_BYTE(var);
 }
 
-//===========================================================================
-// Con_GetString
-//===========================================================================
 char   *Con_GetString(const char *name)
 {
     cvar_t *var = Con_GetVariable(name);
@@ -482,9 +474,6 @@ char   *Con_GetString(const char *name)
         return "";
     return CV_CHARPTR(var);
 }
-
-//--------------------------------------------------------------------------
-//--------------------------------------------------------------------------
 
 static int C_DECL wordListSorter(const void *e1, const void *e2)
 {
@@ -496,9 +485,6 @@ static int C_DECL knownWordListSorter(const void *e1, const void *e2)
     return stricmp(((knownword_t *) e1)->word, ((knownword_t *) e2)->word);
 }
 
-//===========================================================================
-// Con_Init
-//===========================================================================
 void Con_Init()
 {
     ConsoleInited = true;
@@ -552,9 +538,6 @@ void Con_Init()
     H_Register();
 }
 
-//===========================================================================
-// Con_MaxLineLength
-//===========================================================================
 void Con_MaxLineLength(void)
 {
     int     cw = FR_TextWidth("A");
@@ -569,10 +552,9 @@ void Con_MaxLineLength(void)
         maxLineLen = 250;
 }
 
-//===========================================================================
-// Con_UpdateKnownWords
-//  Variables with CVF_HIDE are not considered known words.
-//===========================================================================
+/*
+ * Variables with CVF_HIDE are not considered known words.
+ */
 void Con_UpdateKnownWords()
 {
     int     i, c, known_vars;
@@ -682,7 +664,9 @@ void Con_AddVariable(cvar_t *var)
     qsort(cvars, numCVars, sizeof(cvar_t), wordListSorter);
 }
 
-// Returns NULL if the specified alias can't be found.
+/*
+ * Returns NULL if the specified alias can't be found.
+ */
 calias_t *Con_GetAlias(const char *name)
 {
     int     i;
@@ -694,10 +678,9 @@ calias_t *Con_GetAlias(const char *name)
     return NULL;
 }
 
-//===========================================================================
-// Con_Alias
-//  Create an alias.
-//===========================================================================
+/*
+ * Create an alias.
+ */
 void Con_Alias(char *aName, char *command)
 {
     calias_t *cal = Con_GetAlias(aName);
@@ -748,10 +731,9 @@ void Con_Alias(char *aName, char *command)
     Con_UpdateKnownWords();
 }
 
-//===========================================================================
-// Con_WriteAliasesToFile
-//  Called by the config file writer.
-//===========================================================================
+/*
+ * Called by the config file writer.
+ */
 void Con_WriteAliasesToFile(FILE * file)
 {
     int     i;
@@ -782,8 +764,10 @@ void Con_ClearBuffer()
     bLineOff = 0;
 }
 
-// Send a console command to the server.
-// This shouldn't be called unless we're logged in with the right password.
+/*
+ * Send a console command to the server.
+ * This shouldn't be called unless we're logged in with the right password.
+ */
 void Con_Send(const char *command, int silent)
 {
     unsigned short len = strlen(command) + 1;
@@ -1221,7 +1205,7 @@ static int executeSubCmd(const char *subCmd, int src)
                         (!(var->flags & CVF_NO_MAX) && val > var->max)))
                         out_of_range = true;
                     else
-                        CV_BYTE(var) = val;
+                        Con_SetInteger(var->name, val, false);
                 }
                 else if(var->type == CVT_INT)
                 {
@@ -1362,10 +1346,9 @@ int DD_Execute(const char *command, int silent)
     return Con_Execute(CMDS_GAME, command, silent);
 }
 
-//===========================================================================
-// Con_Execute
-//  Returns false if a command fails.
-//===========================================================================
+/*
+ * Returns false if a command fails.
+ */
 int Con_Execute(int src, const char *command, int silent)
 {
     int     ret;
@@ -1396,9 +1379,6 @@ int DD_Executef(int silent, const char *command, ...)
     return Con_Execute(CMDS_GAME, buffer, silent);
 }
 
-//===========================================================================
-// Con_Executef
-//===========================================================================
 int Con_Executef(int src, int silent, const char *command, ...)
 {
     va_list argptr;
@@ -1433,11 +1413,10 @@ static void updateCmdLine()
         Sys_ConUpdateCmdLine(cmdLine);
 }
 
-//===========================================================================
-// stramb
-//  Ambiguous string check. 'amb' is cut at the first character that
-//  differs when compared to 'str' (case ignored).
-//===========================================================================
+/*
+ * Ambiguous string check. 'amb' is cut at the first character that
+ * differs when compared to 'str' (case ignored).
+ */
 void stramb(char *amb, const char *str)
 {
     while(*str && tolower((unsigned) *amb) == tolower((unsigned) *str))
@@ -1448,11 +1427,10 @@ void stramb(char *amb, const char *str)
     *amb = 0;
 }
 
-//===========================================================================
-// completeWord
-//  Look at the last word and try to complete it. If there are
-//  several possibilities, print them.
-//===========================================================================
+/*
+ * Look at the last word and try to complete it. If there are
+ * several possibilities, print them.
+ */
 static void completeWord(void)
 {
     int     pass, i, c, cp = strlen(cmdLine) - 1;
@@ -1839,9 +1817,6 @@ void Con_SetFont(ddfont_t *cfont)
     Cfont = *cfont;
 }
 
-//===========================================================================
-// Con_DrawRuler2
-//===========================================================================
 void Con_DrawRuler2(int y, int lineHeight, float alpha, int scrWidth)
 {
     int     xoff = 5;
@@ -1850,13 +1825,11 @@ void Con_DrawRuler2(int y, int lineHeight, float alpha, int scrWidth)
     UI_GradientEx(xoff, y + (lineHeight - rh) / 2 + 1, scrWidth - 2 * xoff, rh,
                   rh / 2, UI_COL(UIC_SHADOW), UI_COL(UIC_BG_DARK), alpha / 3,
                   alpha);
-    UI_DrawRectEx(xoff, y + (lineHeight - rh) / 2 + 1, scrWidth - 2 * xoff, rh, rh / 2, false, UI_COL(UIC_TEXT), NULL,  /*UI_COL(UIC_BG_DARK), UI_COL(UIC_BG_LIGHT), */
+    UI_DrawRectEx(xoff, y + (lineHeight - rh) / 2 + 1, scrWidth - 2 * xoff, rh,
+                  rh / 2, false, UI_COL(UIC_TEXT), NULL, /*UI_COL(UIC_BG_DARK), UI_COL(UIC_BG_LIGHT), */
                   alpha, -1);
 }
 
-//===========================================================================
-// Con_DrawRuler
-//===========================================================================
 void Con_DrawRuler(int y, int lineHeight, float alpha)
 {
     Con_DrawRuler2(y, lineHeight, alpha, screenWidth);
@@ -1899,10 +1872,9 @@ void Con_DrawSideText(const char *text, int line, float alpha)
     }
 }
 
-//===========================================================================
-// Con_Drawer
-//  Slightly messy...
-//===========================================================================
+/*
+ * Slightly messy...
+ */
 void Con_Drawer(void)
 {
     int     i, k;               // Line count and buffer cursor.
@@ -2071,10 +2043,9 @@ void Con_Drawer(void)
     gl.PopMatrix();
 }
 
-//===========================================================================
-// Con_AddRuler
-//  A ruler line will be added into the console. bPos is moved down by 1.
-//===========================================================================
+/*
+ * A ruler line will be added into the console. bPos is moved down by 1.
+ */
 void Con_AddRuler(void)
 {
     cbline_t *line = Con_GetBufferLine(bPos++);
@@ -2213,7 +2184,9 @@ void Con_FPrintf(int flags, const char *format, ...)    // Flagged printf
     va_end(args);
 }
 
-// As you can see, several commands can be handled inside one command function.
+/*
+ * As you can see, several commands can be handled inside one command function.
+ */
 D_CMD(Console)
 {
     if(!stricmp(argv[0], "help"))
@@ -2369,10 +2342,9 @@ void Con_Open(int yes)
     }
 }
 
-//===========================================================================
-// UpdateEngineState
-//  What is this kind of a routine doing in Console.c?
-//===========================================================================
+/*
+ * What is this kind of a routine doing in Console.c?
+ */
 void UpdateEngineState()
 {
     // Update refresh.
@@ -2573,10 +2545,9 @@ D_CMD(Font)
     return true;
 }
 
-//===========================================================================
-// CCmdAlias
-//  Aliases will be saved to the config file.
-//===========================================================================
+/*
+ * Aliases will be saved to the config file.
+ */
 D_CMD(Alias)
 {
     if(argc != 3 && argc != 2)
@@ -2637,9 +2608,6 @@ D_CMD(Parse)
     return true;
 }
 
-//===========================================================================
-// CCmdWait
-//===========================================================================
 D_CMD(Wait)
 {
     timespan_t offset;
@@ -2688,7 +2656,9 @@ D_CMD(Echo)
     return true;
 }
 
-// Rather messy, wouldn't you say?
+/*
+ * Rather messy, wouldn't you say?
+ */
 D_CMD(AddSub)
 {
     boolean force = false, incdec;
@@ -3341,6 +3311,9 @@ static void registerVariables(void)
               "1=Use additive blending for explosions.");
     C_VAR_INT("rend-sprite-lit", &litSprites, 0, 0, 1,
               "1=Sprites lit using dynamic lights.");
+    C_VAR_BYTE("rend-sprite-mode", &noSpriteTrans, 0, 0, 1,
+               "1=Draw sprites and masked walls with hard edges.");
+
     // * Render-Model
     C_VAR_INT("rend-model", &useModels, CVF_NO_MAX, 0, 1,
               "Render using 3D models when possible.");

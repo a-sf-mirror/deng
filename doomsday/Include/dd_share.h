@@ -527,10 +527,10 @@ extern          "C" {
         DMU_LINE_OF_SECTOR      = 0x80000000,
         DMU_SECTOR_OF_SUBSECTOR = 0x40000000,
         DMU_SEG_OF_POLYOBJ      = 0x20000000,
-        
+
         DMU_ALL = -1,
         DMU_NONE = 0,
-        
+
         DMU_VERTEX = 1,
         DMU_SEG,
         DMU_LINE,
@@ -1126,6 +1126,7 @@ typedef enum blendmode_e {
         float           min, max;  /* Minimum and maximum values
                                       (for ints and floats). */
         const char     *help;      // A short help text.
+        void          (*notifyChanged)(struct cvar_s* cvar);
     } cvar_t;
 
     //------------------------------------------------------------------------
