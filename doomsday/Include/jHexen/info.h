@@ -4,8 +4,6 @@
 #ifndef __INFO_CONSTANTS_H__
 #define __INFO_CONSTANTS_H__
 
-#include "xgclass.h"
-
 // Sprites.
 typedef enum {
     SPR_MAN1,                       // 000
@@ -3571,7 +3569,7 @@ typedef enum {
 
 // Text.
 typedef enum {
-    TXT_PRESSKEY = NUMXGCLASSES,
+    TXT_PRESSKEY,
     TXT_PRESSYN,
     TXT_TXT_PAUSED,
     TXT_QUITMSG,
