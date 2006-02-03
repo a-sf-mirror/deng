@@ -248,8 +248,6 @@ cvar_t  gameCVars[] = {
         "1=Corpses slide down stairs and ledges."},
 
 // Misc
-    {"xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
-
     {NULL}
 };
 
