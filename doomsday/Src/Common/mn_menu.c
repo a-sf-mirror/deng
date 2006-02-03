@@ -1201,31 +1201,6 @@ static Menu_t ColorWidgetMnu = {
 // Cvars for the menu
 cvar_t menuCVars[] =
 {
-    // Old names (obsolete) -------------------------------------------------------
-
-    {"flash_R", OBSOLETE, CVT_FLOAT, &cfg.flashcolor[0], 0, 1,
-    "Menu selection flash color, red component."},
-    {"flash_G", OBSOLETE, CVT_FLOAT, &cfg.flashcolor[1], 0, 1,
-    "Menu selection flash color, green component."},
-    {"flash_B", OBSOLETE, CVT_FLOAT, &cfg.flashcolor[2], 0, 1,
-    "Menu selection flash color, blue component."},
-    {"flash_Speed", OBSOLETE, CVT_INT, &cfg.flashspeed, 0, 50,
-    "Menu selection flash speed."},
-    {"MenuScale", OBSOLETE, CVT_FLOAT, &cfg.menuScale, .1f, 1,
-    "Scaling for menus."},
-    {"MenuEffects", OBSOLETE, CVT_INT, &cfg.menuEffects, 0, 2,
-    "Disable menu effects: 1=type-in, 2=all."},
-    {"Menu_R", OBSOLETE, CVT_FLOAT, &cfg.menuColor[0], 0, 1,
-    "Menu color red component."},
-    {"Menu_G", OBSOLETE, CVT_FLOAT, &cfg.menuColor[1], 0, 1,
-    "Menu color green component."},
-    {"Menu_B", OBSOLETE, CVT_FLOAT, &cfg.menuColor[2], 0, 1,
-    "Menu color blue component."},
-    {"MenuFog", OBSOLETE, CVT_INT, &cfg.menuFog, 0, 1,
-    "Menu fog mode: 0=blue vertical, 1=black smoke."},
-
-    // NEW names ------------------------------------------------------------------
-
     {"menu-scale", 0, CVT_FLOAT, &cfg.menuScale, .1f, 1,
         "Scaling for menus."},
     {"menu-flash-r", 0, CVT_FLOAT, &cfg.flashcolor[0], 0, 1,
