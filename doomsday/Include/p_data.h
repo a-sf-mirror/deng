@@ -46,8 +46,8 @@ typedef struct {
 
 #define GET_VERTEX_IDX(vtx)     ((vtx) - vertexes)
 #define GET_LINE_IDX(li)        ((li) - lines)
-#define GET_SIDE_IDX(si)        ((si) - sides) 
-#define GET_SECTOR_IDX(sec)     ((sec) - sectors) 
+#define GET_SIDE_IDX(si)        ((si) - sides)
+#define GET_SECTOR_IDX(sec)     ((sec) - sectors)
 #define GET_SUBSECTOR_IDX(sub)  ((sub) - subsectors)
 #define GET_POLYOBJ_IDX(po)     ((po) - polyobjs)
 #define GET_SEG_IDX(seg)        ((seg) - segs)
@@ -256,9 +256,8 @@ extern int      numUniqueLines;
 extern int     *missingFronts;
 extern int      numMissingFronts;
 
-void            P_ValidateLevel(void);
-void            P_LoadBlockMap(int lump);
-void            P_LoadReject(int lump);
+boolean         P_LoadBlockMap(struct mapdatalumpInfo_s *maplump);
+boolean         P_LoadReject(struct mapdatalumpInfo_s *maplump);
 void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);
 void            P_CeilingChanged(sector_t *sector);
@@ -266,4 +265,6 @@ void            P_Init(void);
 
 int             P_CheckTexture(char *name, boolean planeTex, int dataType,
                                unsigned int element, int property);
+
+boolean         P_CheckLevel(char *levelID, boolean silent);
 #endif

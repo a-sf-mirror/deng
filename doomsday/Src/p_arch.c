@@ -47,25 +47,9 @@
 // GL Node versions
 #define GLNODE_FORMATS  5
 
-// TYPES -------------------------------------------------------------------
+#define ML_SIDEDEFS     3 // TODO: read sidedefs using the generic data code
 
-// This is the standard map data lump order. Problem is some PWADS use
-// a non-standard lump order so we'll have to find them.
-enum {
-    ML_LABEL,                      // A separator, name, ExMx or MAPxx
-    ML_THINGS,                     // Monsters, items..
-    ML_LINEDEFS,                   // LineDefs, from editing
-    ML_SIDEDEFS,                   // SideDefs, from editing
-    ML_VERTEXES,                   // Vertices, edited and BSP splits generated
-    ML_SEGS,                       // LineSegs, from LineDefs split by BSP
-    ML_SSECTORS,                   // SubSectors, list of LineSegs
-    ML_NODES,                      // BSP nodes
-    ML_SECTORS,                    // Sectors, from editing
-    ML_REJECT,                     // LUT, sector-sector visibility
-    ML_BLOCKMAP,                   // LUT, motion clipping, walls/grid element
-    ML_BEHAVIOR,                   // ACS Scripts (not supported currently)
-    NUM_MAPDATALUMPS
-};
+// TYPES -------------------------------------------------------------------
 
 // Common map format properties
 enum {
@@ -79,6 +63,9 @@ enum {
     DAM_SEG,
     DAM_SUBSECTOR,
     DAM_NODE,
+    DAM_MAPBLOCK,
+    DAM_SECREJECT,
+    DAM_ACSSCRIPT,
 
     // Object properties
     DAM_X,
@@ -313,15 +300,6 @@ typedef struct {
     int           sidenum[2];
 } mapline_t;
 
-typedef struct {
-    int     lumpNum;
-    byte   *lumpp;      // ptr to the lump data
-    int     version;
-    int     lumpClass;
-    int     startOffset;
-    int     length;
-} mapdatalumpInfo_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -330,28 +308,25 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean  P_DetermineMapFormat(void);
-static void     P_ReadMapData(int lumpclass);
+static boolean  ReadMapData(int doClass);
+static boolean  DetermineMapFormat(void);
 
-static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
-                                size_t elmsize, unsigned int elements, unsigned int version,
+static void     P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
+                                size_t elmsize, unsigned int elements,
                                 unsigned int values, const datatype_t *types);
-static void P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                          size_t elmsize, unsigned int elements, unsigned int version,
+static void     P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
+                          size_t elmsize, unsigned int elements,
                           unsigned int values, const datatype_t *types);
-static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, unsigned int elements, unsigned int version,
-                           unsigned int values, const datatype_t *types);
 
 static void     P_ReadSideDefTextures(int lump);
 static void     P_FinishLineDefs(void);
 static void     P_ProcessSegs(int version);
 static void     P_ProcessLines(int version);
 
-static void P_SetLineSideNum(int *side, unsigned short num);
+static void     P_SetLineSideNum(int *side, unsigned short num);
 
 #if _DEBUG
-static void P_PrintDebugMapData(void);
+static void     P_PrintDebugMapData(void);
 #endif
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -370,22 +345,22 @@ boolean glNodeData = false;
 // types of MAP data structure
 // These arrays are temporary. Some of the data will be provided via DED definitions.
 maplumpinfo_t mapLumpInfo[] = {
-//   lumpname    readfunc             MD  GL  datatype      lumpclass     required?  precache?
-    {"THINGS",   P_ReadBinaryMapData, 0, -1,  DAM_THING,     mlThings,     true,     false},
-    {"LINEDEFS", P_ReadBinaryMapData, 1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
-    {"SIDEDEFS", P_ReadSideDefs,      2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
-    {"VERTEXES", P_ReadBinaryMapData, 3, -1,  DAM_VERTEX,    mlVertexes,   true,     false},
-    {"SEGS",     P_ReadBinaryMapData, 4, -1,  DAM_SEG,       mlSegs,       true,     false},
-    {"SSECTORS", P_ReadBinaryMapData, 5, -1,  DAM_SUBSECTOR, mlSSectors,   true,     false},
-    {"NODES",    P_ReadBinaryMapData, 6, -1,  DAM_NODE,      mlNodes,      true,     false},
-    {"SECTORS",  P_ReadBinaryMapData, 7, -1,  DAM_SECTOR,    mlSectors,    true,     false},
-    {"REJECT",   NULL,                8, -1,  -1,            mlReject,     false,    false},
-    {"BLOCKMAP", NULL,                9, -1,  -1,            mlBlockMap,   false,    false},
-    {"BEHAVIOR", NULL,                10,-1,  -1,            mlBehavior,   false,    false},
-    {"GL_VERT",  P_ReadBinaryMapData, -1, 0,  DAM_VERTEX,    glVerts,      false,    false},
-    {"GL_SEGS",  P_ReadBinaryMapData, -1, 1,  DAM_SEG,       glSegs,       false,    false},
-    {"GL_SSECT", P_ReadBinaryMapData, -1, 2,  DAM_SUBSECTOR, glSSects,     false,    false},
-    {"GL_NODES", P_ReadBinaryMapData, -1, 3,  DAM_NODE,      glNodes,      false,    false},
+//   lumpname    MD  GL  datatype      lumpclass     required?  precache?
+    {"THINGS",   0, -1,  DAM_THING,     mlThings,     true,     false},
+    {"LINEDEFS", 1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
+    {"SIDEDEFS", 2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
+    {"VERTEXES", 3, -1,  DAM_VERTEX,    mlVertexes,   true,     false},
+    {"SEGS",     4, -1,  DAM_SEG,       mlSegs,       true,     false},
+    {"SSECTORS", 5, -1,  DAM_SUBSECTOR, mlSSectors,   true,     false},
+    {"NODES",    6, -1,  DAM_NODE,      mlNodes,      true,     false},
+    {"SECTORS",  7, -1,  DAM_SECTOR,    mlSectors,    true,     false},
+    {"REJECT",   8, -1,  DAM_SECREJECT, mlReject,     false,    false},
+    {"BLOCKMAP", 9, -1,  DAM_MAPBLOCK,  mlBlockMap,   false,    false},
+    {"BEHAVIOR", 10,-1,  DAM_ACSSCRIPT, mlBehavior,   false,    false},
+    {"GL_VERT",  -1, 0,  DAM_VERTEX,    glVerts,      false,    false},
+    {"GL_SEGS",  -1, 1,  DAM_SEG,       glSegs,       false,    false},
+    {"GL_SSECT", -1, 2,  DAM_SUBSECTOR, glSSects,     false,    false},
+    {"GL_NODES", -1, 3,  DAM_NODE,      glNodes,      false,    false},
     {NULL}
 };
 
@@ -439,6 +414,9 @@ const char* DAM_Str(int prop)
         { DAM_SEG, "DAM_SEG" },
         { DAM_SUBSECTOR, "DAM_SUBSECTOR" },
         { DAM_NODE, "DAM_NODE" },
+        { DAM_MAPBLOCK, "DAM_MAPBLOCK" },
+        { DAM_SECREJECT, "DAM_SECREJECT" },
+        { DAM_ACSSCRIPT, "DAM_ACSSCRIPT" },
         { DAM_X, "DAM_X" },
         { DAM_Y, "DAM_Y" },
         { DAM_DX, "DAM_DX" },
@@ -748,15 +726,28 @@ static boolean VerifyMapData(char *levelID)
             }
         }
 
-        // We didn't find any lumps of this required lump class?
-        if(!found && mapLmpInf->required)
+        // We didn't find any lumps of this class?
+        if(!found)
         {
-            // Darn, the map data is incomplete. We arn't able to to load this map :`(
-            // Inform the user.
-            Con_Message("VerifyMapData: %s for \"%s\" could not be found.\n" \
-                        " This lump is required in order to play this map.",
-                        mapLmpInf->lumpname, levelID);
-            return false;
+            // Is it a required class?
+            if(mapLmpInf->required)
+            {
+                // Darn, the map data is incomplete. We arn't able to to load this map :`(
+                // Inform the user.
+                Con_Message("VerifyMapData: %s for \"%s\" could not be found.\n" \
+                            " This lump is required in order to play this map.\n",
+                            mapLmpInf->lumpname, levelID);
+                return false;
+            }
+            else
+            {
+                // It's not required (we can generate it/we don't need it)
+                Con_Message("VerifyMapData: %s for \"%s\" could not be found.\n" \
+                            "Useable data will be generated automatically if needed.\n",
+                            mapLmpInf->lumpname, levelID);
+                // Add a dummy lump to the list
+                AddMapDataLump(-1, mapLmpInf->lumpclass);
+            }
         }
     }
 
@@ -773,7 +764,7 @@ static boolean VerifyMapData(char *levelID)
  *
  * @return boolean     (True) If its a format we support.
  */
-static boolean P_DetermineMapFormat(void)
+static boolean DetermineMapFormat(void)
 {
     unsigned int i;
     int lumpClass;
@@ -847,7 +838,7 @@ static boolean P_DetermineMapFormat(void)
                 // We know the GL Node format
                 glNodeFormat = i;
 
-                Con_Message("P_DetermineMapFormat: (%s gl Node data found)\n",
+                Con_Message("DetermineMapFormat: (%s gl Node data found)\n",
                             nodeFormat->vername);
 
                 // Do we support this GL Node format?
@@ -875,14 +866,13 @@ static boolean P_DetermineMapFormat(void)
                 else
                 {
                     // Unsupported GL Node format.
-                    Con_Message("P_DetermineMapFormat: Sorry, %s GL Nodes arn't supported\n",
+                    Con_Message("DetermineMapFormat: Sorry, %s GL Nodes arn't supported\n",
                                 nodeFormat->vername);
-
                     return false;
                 }
             }
         }
-        Con_Message("P_DetermineMapFormat: Could not determine GL Node format\n");
+        Con_Message("DetermineMapFormat: Could not determine GL Node format\n");
         return false;
     }
 
@@ -892,7 +882,7 @@ static boolean P_DetermineMapFormat(void)
 
 boolean P_GetMapFormat(void)
 {
-    if(P_DetermineMapFormat())
+    if(DetermineMapFormat())
         return true;
     else
     {
@@ -904,12 +894,16 @@ boolean P_GetMapFormat(void)
 }
 
 /*
+ * Do any final initialization of map data members.
+ *
  * Configure the map data objects so they can be accessed by the
  * games, using the DMU functions of the Doomsday public API.
  */
-static void SetupMapDataForDMU(void)
+static void FinalizeMapData(void)
 {
     int i;
+    sector_t* sec;
+    side_t* side;
 
     for(i = 0; i < numvertexes; ++i)
         vertexes[i].header.type = DMU_VERTEX;
@@ -921,19 +915,62 @@ static void SetupMapDataForDMU(void)
         lines[i].header.type = DMU_LINE;
 
     for(i = 0; i < numsides; ++i)
-        sides[i].header.type = DMU_SIDE;
+    {
+        side = &sides[i];
+
+        side->header.type = DMU_SIDE;
+
+        memset(side->toprgb, 0xff, 3);
+        memset(side->midrgba, 0xff, 4);
+        memset(side->bottomrgb, 0xff, 3);
+        side->blendmode = BM_NORMAL;
+
+        // Make sure the texture references are good.
+        if(side->toptexture > numtextures - 1)
+            side->toptexture = 0;
+        if(side->midtexture > numtextures - 1)
+            side->midtexture = 0;
+        if(side->bottomtexture > numtextures - 1)
+            side->bottomtexture = 0;
+    }
 
     for(i = 0; i < numsubsectors; ++i)
         subsectors[i].header.type = DMU_SUBSECTOR;
 
     for(i = 0; i < numsectors; ++i)
-        sectors[i].header.type = DMU_SECTOR;
+    {
+        sec = &sectors[i];
+        sec->header.type = DMU_SECTOR;
+
+        sec->thinglist = NULL;
+        memset(sec->rgb, 0xff, 3);
+        memset(sec->floorrgb, 0xff, 3);
+        memset(sec->ceilingrgb, 0xff, 3);
+    }
 
     for(i = 0; i < po_NumPolyobjs; ++i)
         polyobjs[i].header.type = DMU_POLYOBJ;
 
     for(i = 0; i < numnodes; ++i)
         nodes[i].header.type = DMU_NODE;
+}
+
+static boolean P_ReadMapData(int doClass)
+{
+    // Cant load GL NODE data if we don't have it.
+    if(!glNodeData && (doClass >= glVerts && doClass <= glNodes))
+        // Not having the data is considered a success.
+        // This is due to us invoking the dpMapLoader plugin at an awkward
+        // point in the map loading process (at the start).
+        return true;
+
+    if(!ReadMapData(doClass))
+    {
+        FreeMapDataLumps();
+        return false;
+    }
+
+    return true;
 }
 
 /*
@@ -948,16 +985,6 @@ boolean P_LoadMapData(char *levelId)
     int lumpNumbers[2];
 
     numMapDataLumps = 0;
-
-    // Reset the global map data struct counters.
-    numvertexes = 0;
-    numsubsectors = 0;
-    numsectors = 0;
-    numnodes = 0;
-    numsides = 0;
-    numlines = 0;
-    numsegs = 0;
-    numthings = 0;
 
     // We'll assume we're loading a DOOM format map to begin with.
     mapFormat = 0;
@@ -995,41 +1022,62 @@ boolean P_LoadMapData(char *levelId)
         // Excellent, its a map we can read. Load it in!
         Con_Message("P_LoadMapData: %s\n", levelId);
 
+        // Reset the global map data struct counters.
+        numvertexes = 0;
+        numsubsectors = 0;
+        numsectors = 0;
+        numnodes = 0;
+        numsides = 0;
+        numlines = 0;
+        numsegs = 0;
+        numthings = 0;
+
         // Load all lumps of each class in this order.
         //
         // NOTE:
         // DJS 01/10/05 - revised load order to allow for cross-referencing
         //                data during loading (detect + fix trivial errors).
-        P_ReadMapData(mlVertexes);
-        P_ReadMapData(glVerts);
-        P_ReadMapData(mlSectors);
-        P_ReadMapData(mlSideDefs);
-        P_ReadMapData(mlLineDefs);
+        if(!P_ReadMapData(mlVertexes))
+            return false;
+        if(!P_ReadMapData(glVerts))
+            return false;
+        if(!P_ReadMapData(mlSectors))
+            return false;
+        if(!P_ReadMapData(mlSideDefs))
+            return false;
+        if(!P_ReadMapData(mlLineDefs))
+            return false;
 
         P_ReadSideDefTextures(lumpNumbers[0] + ML_SIDEDEFS);
         P_FinishLineDefs();
 
-        // Load/Generate the blockmap
-        P_LoadBlockMap(lumpNumbers[0] + ML_BLOCKMAP);
+        if(!P_ReadMapData(mlBlockMap))
+            return false;
 
-        P_ReadMapData(mlThings);
+        if(!P_ReadMapData(mlThings))
+            return false;
+        if(!P_ReadMapData(mlSegs))
+            return false;
+        if(!P_ReadMapData(mlSSectors))
+            return false;
+        if(!P_ReadMapData(mlNodes))
+            return false;
+        if(!P_ReadMapData(mlReject))
+            return false;
 
-        P_ReadMapData(mlSegs);
-        P_ReadMapData(mlSSectors);
-        P_ReadMapData(mlNodes);
         //P_PrintDebugMapData();
-
-    /*    if(glNodeData)
-            setupflags |= DDSLF_DONT_CLIP; */
 
         // We have complete level data but we're not out of the woods yet...
         FreeMapDataLumps();
 
-        SetupMapDataForDMU();
+    /*    if(glNodeData)
+            setupflags |= DDSLF_DONT_CLIP; */
 
-        // Load the Reject LUT
-        P_LoadReject(lumpNumbers[0] + ML_REJECT);
-        return true;
+        FinalizeMapData();
+
+        // Do any initialization/error checking work we need to do.
+        // Must be called before we go any further
+        return P_CheckLevel(levelId, false);
     }
     else
     {
@@ -1043,19 +1091,24 @@ boolean P_LoadMapData(char *levelId)
  * of the requested class.
  *
  * @param: doClass      The class of map data lump to process.
+ *
+ * @return: boolean     (True) All the lumps of the requested class
+ *                      were processed successfully.
  */
-static void P_ReadMapData(int doClass)
+static boolean ReadMapData(int doClass)
 {
-    unsigned int i;
     int internalType;
+    int lumpCount;
+    unsigned int i;
     unsigned int elements;
     unsigned int oldNum, newNum;
 
-    uint startTime;
     datatype_t *dataTypes;
     mapdatalumpInfo_t* mapLump = mapDataLumps;
     mapdatalumpformat_t* lumpFormat;
     maplumpinfo_t*  lumpInfo;
+
+    uint startTime;
 
     // Are gl Nodes available?
     if(glNodeData)
@@ -1068,49 +1121,53 @@ static void P_ReadMapData(int doClass)
         else if(doClass == mlNodes)
             doClass = glNodes;
     }
-    else
-    {
-        // Cant load GL NODE data if we don't have it.
-        if(doClass >= glVerts &&
-           doClass <= glNodes)
-            return;
-    }
 
+    lumpCount = 0;
     for(i = numMapDataLumps; i--; ++mapLump)
     {
         lumpInfo = &mapLumpInfo[mapLump->lumpClass];
 
         // Only process lumps that match the class requested
-        if(doClass == mapLump->lumpClass && lumpInfo->func != NULL)
+        if(doClass == mapLump->lumpClass)
         {
             internalType = lumpInfo->dataType;
 
-            // use the original map data structures by default
-            if(lumpInfo->mdLump >= 0)
+            // Is this a "real" lump? (ie do we have to generate the data for it?)
+            if(mapLump->lumpNum != -1)
             {
-                lumpFormat = &mapDataFormats[mapFormat].verInfo[lumpInfo->mdLump];
-            }
-            else // its a gl node lumpclass
-            {
-                lumpFormat = &glNodeFormats[glNodeFormat].verInfo[lumpInfo->glLump];
-            }
+                // use the original map data structures by default
+                if(lumpInfo->mdLump >= 0)
+                {
+                    lumpFormat = &mapDataFormats[mapFormat].verInfo[lumpInfo->mdLump];
+                }
+                else // its a gl node lumpclass
+                {
+                    lumpFormat = &glNodeFormats[glNodeFormat].verInfo[lumpInfo->glLump];
+                }
 
-            if(lumpFormat->values != NULL)
-                dataTypes = lumpFormat->values;
+                if(lumpFormat->values != NULL)
+                    dataTypes = lumpFormat->values;
+                else
+                    dataTypes = NULL;
+
+                // How many elements are in the lump?
+                elements = (mapLump->length - mapLump->startOffset) / (int) lumpFormat->elmSize;
+
+                VERBOSE(Con_Message("P_ReadMapData: Processing \"%s\" (#%d) ver %d...\n",
+                                    W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME), elements,
+                                    mapLump->version));
+
+                // Have we cached the lump yet?
+                if(mapLump->lumpp == NULL)
+                {
+                    mapLump->lumpp = (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
+                }
+            }
             else
-                dataTypes = NULL;
-
-            // How many elements are in the lump?
-            elements = (mapLump->length - mapLump->startOffset) / (int) lumpFormat->elmSize;
-
-            VERBOSE(Con_Message("P_ReadMapData: Processing \"%s\" (#%d) ver %d...\n",
-                                W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
-                                elements, mapLump->version));
-
-            // Have we cached the lump yet?
-            if(mapLump->lumpp == NULL)
             {
-                mapLump->lumpp = (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
+                // Not a problem, we'll generate useable data automatically.
+                VERBOSE(Con_Message("P_ReadMapData: Generating \"%s\"\n",
+                                    lumpInfo->lumpname));
             }
 
             // Allocate and init depending on the type of data and if this is the
@@ -1252,23 +1309,40 @@ static void P_ReadMapData(int doClass)
 
             // Read in the lump data
             startTime = Sys_GetRealTime();
-            lumpInfo->func(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
-                           lumpFormat->elmSize, elements, mapLump->version, lumpFormat->numValues,
-                           dataTypes);
-
-            // Perform any additional processing required
-            switch(internalType)
+            if(internalType == DAM_MAPBLOCK)
             {
-            case DAM_SEG:
-                P_ProcessSegs(mapLump->version);
-                break;
+                if(!P_LoadBlockMap(mapLump))
+                    return false;
+            }
+            else if(internalType == DAM_SECREJECT)
+            {
+                if(!P_LoadReject(mapLump))
+                    return false;
+            }
+            else
+            {
+                // Temporary
+                if(internalType == DAM_SIDE)
+                    P_ReadSideDefs(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
+                                   lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
+                else
+                    P_ReadBinaryMapData(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
+                                        lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
 
-            case DAM_LINE:
-                P_ProcessLines(mapLump->version);
-                break;
+                // Perform any additional processing required (temporary)
+                switch(internalType)
+                {
+                case DAM_SEG:
+                    P_ProcessSegs(mapLump->version);
+                    break;
 
-            default:
-                break;
+                case DAM_LINE:
+                    P_ProcessLines(mapLump->version);
+                    break;
+
+                default:
+                    break;
+                }
             }
 
             // How much time did we spend?
@@ -1276,10 +1350,18 @@ static void P_ReadMapData(int doClass)
                                  (Sys_GetRealTime() - startTime) / 1000.0f));
 
             // We're finished with this lump.
-            Z_Free(mapLump->lumpp);
-            mapLump->lumpp = 0;
+            if(mapLump->lumpp)
+            {
+                Z_Free(mapLump->lumpp);
+                mapLump->lumpp = 0;
+            }
+
+            // Remember how many lumps of this class we've processed
+            ++lumpCount;
         }
     }
+
+    return true;
 }
 
 /*
@@ -1821,8 +1903,8 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
  * Not very pretty to look at but it IS pretty quick :-)
  */
 static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
-                                size_t elmSize, unsigned int elements, unsigned int version,
-                                unsigned int numValues, const datatype_t *types)
+                                size_t elmSize, unsigned int elements, unsigned int numValues,
+                                const datatype_t *types)
 {
 #define NUMBLOCKS 8
 #define BLOCK for(k = numValues, mytypes = types; k--; ++mytypes) \
@@ -2051,7 +2133,7 @@ static void P_FinishLineDefs(void)
     vertex_t *v1;
     vertex_t *v2;
 
-    Con_Message("Finalizing Linedefs...\n");
+    VERBOSE2(Con_Message("Finalizing Linedefs...\n"));
 
     numUniqueLines = 0;
     for(i = 0; i < numlines; i++)
@@ -2131,14 +2213,14 @@ static void P_FinishLineDefs(void)
  * TODO: Remove this and use the generic P_ReadBinaryMapData
  */
 static void P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, unsigned int elements, unsigned int version,
-                           unsigned int values, const datatype_t *types)
+                           size_t elmsize, unsigned int elements, unsigned int values,
+                           const datatype_t *types)
 {
     int     i, index;
     mapsidedef_t *msd;
     side_t *sd;
 
-    Con_Message("Loading Sidedefs (%i) ver %i...\n", elements, version);
+    Con_Message("Loading Sidedefs (%i)...\n", elements);
 
     sd = SIDE_PTR(0);
     msd = (mapsidedef_t *) buffer;
@@ -2708,11 +2790,11 @@ void P_InitMapDataFormats(void)
             }
             else if(lumpClass == mlReject)
             {
-                *mlptr = 0;
+                *mlptr = 1;
             }
             else if(lumpClass == mlBlockMap)
             {
-                *mlptr = 0;
+                *mlptr = 1;
             }
         }
     }

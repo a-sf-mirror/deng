@@ -83,9 +83,6 @@ typedef struct glnodeformat_s {
 
 typedef struct {
     char *lumpname;
-    void (*func) (unsigned int startIndex, int dataType, const byte *buffer,
-                  size_t elmSize, unsigned int elements, unsigned int version,
-                  unsigned int values, const datatype_t *types);
     int  mdLump;
     int  glLump;
     int  dataType;
@@ -93,6 +90,15 @@ typedef struct {
     boolean required;
     boolean precache;
 } maplumpinfo_t;
+
+typedef struct mapdatalumpInfo_s {
+    int     lumpNum;
+    byte   *lumpp;      // ptr to the lump data
+    int     version;
+    int     lumpClass;
+    int     startOffset;
+    int     length;
+} mapdatalumpInfo_t;
 
 void        P_InitMapDataFormats(void);
 boolean     P_LoadMapData(char *levelId);

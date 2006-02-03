@@ -385,6 +385,9 @@ extern polyblock_t **polyblockmap;
 extern byte    *rejectmatrix;      // for fast sight rejection
 extern nodepile_t thingnodes, linenodes;
 
+extern int      createBMap;
+extern int      createReject;
+
 extern lumptexinfo_t *lumptexinfo;
 extern int      numlumptexinfo;
 extern int      viewwidth, viewheight;
@@ -394,7 +397,6 @@ extern translation_t *texturetranslation;   // for global animation
 extern int      numgroups;
 extern animgroup_t *groups;
 extern int      LevelFullBright;
-extern int      createBMap;
 extern int      r_texglow;
 extern int      r_precache_sprites, r_precache_skins;
 

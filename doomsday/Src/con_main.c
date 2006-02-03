@@ -2355,7 +2355,10 @@ void UpdateEngineState()
 
     gx.UpdateState(DD_PRE);
     R_Update();
-    P_ValidateLevel();
+
+    //DJS - Why do we need to recheck sidedef textures at this time?
+    //P_ValidateLevel();
+
     gx.UpdateState(DD_POST);
 }
 
@@ -3413,5 +3416,8 @@ static void registerVariables(void)
     // Misc
     C_VAR_INT("blockmap-build", &createBMap, 0, 0, 2,
               "Automatically generate blockmap data when necessary, "
+              "0=Never, 1=When needed, 2=Always.");
+    C_VAR_INT("reject-build", &createReject, 0, 0, 2,
+              "Automatically generate reject data when necessary, "
               "0=Never, 1=When needed, 2=Always.");
 }

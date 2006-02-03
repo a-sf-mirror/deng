@@ -86,7 +86,6 @@ typedef struct {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void P_CheckLevel(char *levelID, boolean silent);
 static void P_GroupLines(void);
 static void P_FreeBadTexList(void);
 
@@ -127,7 +126,11 @@ side_t     *sides;
 // 2: Always generate new
 int         createBMap = 1;
 
-int         createReject = 0;
+// Should we generate new reject data if its invalid?
+// 0: error out
+// 1: generate new
+// 2: Always generate new
+int         createReject = 1;
 
 // mapthings are actually stored & handled game-side
 int         numthings;
@@ -316,26 +319,6 @@ void P_Init(void)
 {
     P_InitMapDataFormats();
     P_InitMapUpdate();
-}
-
-/*
- *  Make sure all texture references in the level data are good.
- */
-void P_ValidateLevel(void)
-{
-    int     i;
-
-    for(i = 0; i < numsides; i++)
-    {
-        side_t *side = SIDE_PTR(i);
-
-        if(side->toptexture > numtextures - 1)
-            side->toptexture = 0;
-        if(side->midtexture > numtextures - 1)
-            side->midtexture = 0;
-        if(side->bottomtexture > numtextures - 1)
-            side->bottomtexture = 0;
-    }
 }
 
 /*
@@ -660,42 +643,44 @@ void P_CreateBlockMap(void)
  * it's zero length or we are forcing a rebuild - we'll have to
  * generate the blockmap data ourselves.
  */
-void P_LoadBlockMap(int lump)
+boolean P_LoadBlockMap(mapdatalumpInfo_t* maplump)
 {
     long i, count;
     boolean generateBMap = (createBMap == 2)? true : false;
 
-    count = W_LumpLength(lump) / 2;
-
-    // Is there valid BLOCKMAP data?
-    if(count >= 0x10000)
+    // Do we have a lump to process?
+    if(maplump->lumpNum != -1)
     {
-        // No
-        Con_Message("P_LoadBlockMap: Map exceeds limits of +/- 32767 map units.\n");
+        count = maplump->length / 2;
 
-        // Are we allowed to generate new blockmap data?
-        if(createBMap == 0)
-            Con_Error("P_LoadBlockMap: Map has invalid BLOCKMAP resource.\n"
-                      "You can circumvent this error by allowing Doomsday to\n"
-                      "generate this resource when needed by setting the CVAR:"
-                      "blockmap-build 1");
-        else
-            generateBMap = true;
+        // Is there valid BLOCKMAP data?
+        if(count >= 0x10000)
+        {
+            // No
+            Con_Message("P_LoadBlockMap: Map exceeds limits of +/- 32767 map units.\n");
+
+            // Are we allowed to generate new blockmap data?
+            if(createBMap == 0)
+                Con_Error("P_LoadBlockMap: Map has invalid BLOCKMAP resource.\n"
+                          "You can circumvent this error by allowing Doomsday to\n"
+                          "generate this resource when needed by setting the CVAR:"
+                          "blockmap-build 1");
+            else
+                generateBMap = true;
+        }
     }
+    else // We'll HAVE to generate it.
+        generateBMap = true;
 
     // Are we generating new blockmap data?
     if(generateBMap)
     {
-        uint startTime;
-
-        Con_Message("P_LoadBlockMap: Generating blockmap...\n");
-
-        startTime = Sys_GetRealTime();
+        // Only announce if the user has choosen to always generate new data.
+        // (As we will have already announced it if the lump was missing).
+        if(maplump->lumpNum != -1)
+            Con_Message("P_LoadBlockMap: Generating NEW blockmap...\n");
 
         P_CreateBlockMap();
-
-        Con_Message("P_LoadBlockMap: Done in %.4f seconds.\n",
-                    (Sys_GetRealTime() - startTime) / 1000.0f);
     }
     else
     {
@@ -703,9 +688,12 @@ void P_LoadBlockMap(int lump)
         // Data in PWAD is little endian.
         short *wadBlockMapLump;
 
-        Con_Message("P_LoadBlockMap: Loading BLOCKMAP...\n");
+        // Have we cached the lump yet?
+        if(maplump->lumpp == NULL)
+            maplump->lumpp = (byte *) W_CacheLumpNum(maplump->lumpNum, PU_STATIC);
 
-        wadBlockMapLump = W_CacheLumpNum(lump, PU_STATIC);
+        wadBlockMapLump = (short *) maplump->lumpp;
+
         blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
         // Expand WAD blockmap into larger internal one, by treating all
@@ -728,7 +716,6 @@ void P_LoadBlockMap(int lump)
         bmapwidth = blockmaplump[2];
         bmapheight = blockmaplump[3];
 
-        Z_Free(wadBlockMapLump);
         blockmap = blockmaplump + 4;
     }
 
@@ -739,6 +726,9 @@ void P_LoadBlockMap(int lump)
 
     for(i = 0; i < bmapwidth * bmapheight; i++)
         blockrings[i].next = blockrings[i].prev = (mobj_t *) &blockrings[i];
+
+    // Success!
+    return true;
 }
 
 /*
@@ -786,15 +776,46 @@ void P_LoadBlockMap(int lump)
  *
  *   ceiling(numsectors^2)
  */
-void P_LoadReject(int lump)
+boolean P_LoadReject(mapdatalumpInfo_t* maplump)
 {
-    int rejectLength = W_LumpLength(lump);
-    int requiredLength = (((numsectors*numsectors) + 7) & ~7) /8;
+    int rejectLength;
+    int requiredLength;
+    boolean generateReject = (createReject == 2)? true : false;
 
-    // If no reject matrix is found, issue a warning.
-    if(rejectLength < requiredLength)
+    // Do we have a lump to process?
+    if(maplump->lumpNum != -1)
     {
-        Con_Message("P_LoadReject: Valid REJECT data could not be found.\n");
+        // Yes, check the length
+        rejectLength = maplump->length;
+        requiredLength = (((numsectors*numsectors) + 7) & ~7) /8;
+
+        if(rejectLength < requiredLength)
+        {
+            Con_Message("P_LoadReject: REJECT data is invalid.\n");
+
+            if(createBMap == 0)
+            {
+                Con_Message("P_LoadReject: Map has invalid REJECT resource.\n"
+                            "You can circumvent this error by allowing Doomsday to\n"
+                            "generate this resource when needed by setting the CVAR:"
+                            "reject-build 1\n");
+
+                return false;
+            }
+            else
+                generateReject = true;
+        }
+    }
+    else // We'll HAVE to generate it.
+         generateReject = true;
+
+    // Are we generating new reject data?
+    if(generateReject)
+    {
+        // Only announce if the user has choosen to always generate new data.
+        // (As we will have already announced it if the lump was missing).
+        if(maplump->lumpNum != -1)
+            Con_Message("P_LoadBlockMap: Generating NEW reject...\n");
 
         if(createReject)
         {
@@ -808,9 +829,16 @@ void P_LoadReject(int lump)
     }
     else
     {
-        // Load the REJECT
-        rejectmatrix = W_CacheLumpNum(lump, PU_LEVEL);
+        // Have we cached the lump yet?
+        if(maplump->lumpp == NULL)
+            maplump->lumpp = (byte *) W_CacheLumpNum(maplump->lumpNum, PU_STATIC);
+
+        rejectmatrix = Z_Malloc(maplump->length, PU_LEVEL, 0);
+        memcpy(rejectmatrix, maplump->lumpp, maplump->length);
     }
+
+    // Success!
+    return true;
 }
 
 /*
@@ -896,10 +924,6 @@ boolean P_LoadMap(char *levelId)
     if(P_LoadMapData(levelId))
     {
         // ALL the map data was loaded/generated successfully.
-        // Do any initialization/error checking work we need to do.
-
-        // Must be called before we go any further
-        P_CheckLevel(levelId, false);
 
         // Must be called before any mobjs are spawned.
         Con_Message("Init links\n");
@@ -927,12 +951,13 @@ boolean P_LoadMap(char *levelId)
  *       doom.exe renderer hacks and other stuff.
  *
  * @param silent - don't announce non-critical errors
+ * @return boolean  (True) We can continue setting up the level.
  */
-static void P_CheckLevel(char *levelID, boolean silent)
+boolean P_CheckLevel(char *levelID, boolean silent)
 {
     int i, printCount;
     boolean canContinue = !numMissingFronts;
-    //boolean hasErrors = (numBadTexNames || numMissingFronts);
+    boolean hasErrors = (numBadTexNames != 0 || numMissingFronts != 0);
 
     Con_Message("P_CheckLevel: Checking %s for errors...\n", levelID);
 
@@ -980,10 +1005,13 @@ static void P_CheckLevel(char *levelID, boolean silent)
 
     if(!canContinue)
     {
-        Con_Error("\nP_CheckLevel: Critical errors encountered "
-                  "(marked with '!').\n  You will need to fix these errors in "
-                  "order to play this map.\n");
+        Con_Message("\nP_CheckLevel: Critical errors encountered "
+                    "(marked with '!').\n  You will need to fix these errors in "
+                    "order to play this map.\n");
+        return false;
     }
+
+    return true;
 }
 
 /*
@@ -1002,21 +1030,10 @@ static void P_GroupLines(void)
     line_t **linebptr;
     line_t  *li;
 
-    side_t  *sid;
     sector_t *sec;
     subsector_t *ss;
     seg_t  *seg;
     fixed_t bbox[4];
-
-    // This doesn't belong here, belongs in a P_InitSides func
-    for(i = numsides - 1; i >= 0; --i, sid++)
-    {
-        sid = SIDE_PTR(i);
-        memset(sid->toprgb, 0xff, 3);
-        memset(sid->midrgba, 0xff, 4);
-        memset(sid->bottomrgb, 0xff, 3);
-        sid->blendmode = BM_NORMAL;
-    }
 
     Con_Message(" Sector look up\n");
     // look up sector number for each subsector
@@ -1047,12 +1064,6 @@ static void P_GroupLines(void)
             sec->Lines = linebptr;
             linebptr += sec->linecount;
         }
-        // These don't really belong here.
-        // Should go in a P_InitSectors() func
-        sec->thinglist = NULL;
-        memset(sec->rgb, 0xff, 3);
-        memset(sec->floorrgb, 0xff, 3);
-        memset(sec->ceilingrgb, 0xff, 3);
     }
 
     for(k = numlines -1, li = LINE_PTR(0); k >= 0; --k, li++)
@@ -1073,7 +1084,7 @@ static void P_GroupLines(void)
     for(i = numsectors, sec = SECTOR_PTR(0); i; --i, sec++)
     {
         if(linesInSector[numsectors- i] != sec->linecount)
-            Con_Error("P_GroupLines: miscounted");
+            Con_Error("P_GroupLines: miscounted"); // Hmm? Unusual...
 
         if(sec->linecount != 0)
         {

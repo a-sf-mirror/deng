@@ -43,6 +43,9 @@ enum {
     DAM_SEG,
     DAM_SUBSECTOR,
     DAM_NODE,
+    DAM_MAPBLOCK,
+    DAM_SECREJECT,
+    DAM_ACSSCRIPT,
 
     DAM_X,
     DAM_Y,
