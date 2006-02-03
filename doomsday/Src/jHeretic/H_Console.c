@@ -201,8 +201,6 @@ cvar_t  gameCVars[] = {
         "Corpse vanish time in seconds, 0=disabled."},
 
 // Misc
-    {"xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
-
     {NULL}
 };
 
