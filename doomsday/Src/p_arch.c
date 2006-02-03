@@ -179,8 +179,7 @@ typedef struct {
 } mapthinghex_t;    // (HEXEN format)
 
 // LINEDEF formats
-*/
-// TODO: we still use these structs for byte offsets
+
 typedef struct {
     short           v1;
     short           v2;
@@ -203,7 +202,6 @@ typedef struct {
     short           sidenum[2];
 } maplinedefhex_t;  // (HEXEN format)
 
-/*
 // VERTEX formats
 typedef struct {
     short           x;
@@ -298,7 +296,7 @@ typedef struct {
 } glnode4_t;        // (gl node ver 4)
 */
 
-// temporary format
+// temporary formats
 typedef struct {
     int           v1;
     int           v2;
@@ -307,6 +305,13 @@ typedef struct {
     int           side;
     int           offset;
 } mapseg_t;
+
+typedef struct {
+    int           v1;
+    int           v2;
+    short         flags;
+    int           sidenum[2];
+} mapline_t;
 
 typedef struct {
     int     lumpNum;
@@ -341,6 +346,7 @@ static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *bu
 static void     P_ReadSideDefTextures(int lump);
 static void     P_FinishLineDefs(void);
 static void     P_ProcessSegs(int version);
+static void     P_ProcessLines(int version);
 
 static void P_SetLineSideNum(int *side, unsigned short num);
 
@@ -366,7 +372,7 @@ boolean glNodeData = false;
 maplumpinfo_t mapLumpInfo[] = {
 //   lumpname    readfunc             MD  GL  datatype      lumpclass     required?  precache?
     {"THINGS",   P_ReadBinaryMapData, 0, -1,  DAM_THING,     mlThings,     true,     false},
-    {"LINEDEFS", P_ReadLineDefs,      1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
+    {"LINEDEFS", P_ReadBinaryMapData, 1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
     {"SIDEDEFS", P_ReadSideDefs,      2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
     {"VERTEXES", P_ReadBinaryMapData, 3, -1,  DAM_VERTEX,    mlVertexes,   true,     false},
     {"SEGS",     P_ReadBinaryMapData, 4, -1,  DAM_SEG,       mlSegs,       true,     false},
@@ -409,6 +415,7 @@ static mapdatalumpInfo_t* mapDataLumps;
 static int numMapDataLumps;
 
 static mapseg_t *segstemp;
+static mapline_t *linestemp;
 
 // CODE --------------------------------------------------------------------
 
@@ -1103,7 +1110,7 @@ static void P_ReadMapData(int doClass)
             // Have we cached the lump yet?
             if(mapLump->lumpp == NULL)
             {
-                mapLump->lumpp = W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
+                mapLump->lumpp = (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
             }
 
             // Allocate and init depending on the type of data and if this is the
@@ -1136,15 +1143,23 @@ static void P_ReadMapData(int doClass)
                 break;
 
             case DAM_LINE:
+                // Lines are read into a temporary buffer before processing
                 oldNum = numlines;
                 newNum = numlines+= elements;
 
                 if(oldNum != 0)
+                {
                     lines = Z_Realloc(lines, numlines * sizeof(line_t), PU_LEVEL);
+                    linestemp = Z_Realloc(linestemp, numlines * sizeof(mapline_t), PU_STATIC);
+                }
                 else
+                {
                     lines = Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, 0);
+                    linestemp = Z_Malloc(numlines * sizeof(mapline_t), PU_STATIC, 0);
+                }
 
                 memset(LINE_PTR(oldNum), 0, elements * sizeof(line_t));
+                memset(linestemp + oldNum, 0, elements * sizeof(mapline_t));
 
                 // for missing front detection
                 missingFronts = malloc(numlines * sizeof(int));
@@ -1246,6 +1261,10 @@ static void P_ReadMapData(int doClass)
             {
             case DAM_SEG:
                 P_ProcessSegs(mapLump->version);
+                break;
+
+            case DAM_LINE:
+                P_ProcessLines(mapLump->version);
                 break;
 
             default:
@@ -1519,9 +1538,9 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
             break;
             }
 
-        case DAM_LINE:
+        case DAM_LINE:  // Lines are read into an interim format
             {
-            line_t *p = LINE_PTR(element);
+            mapline_t *p = &linestemp[element];
             switch(prop->property)
             {
             case DAM_VERTEX1:
@@ -1905,12 +1924,12 @@ static void P_ProcessSegs(int version)
             break;
         }
 
-        if(ml->angle)
+        if(ml->angle != 0)
             seg->angle = ml->angle;
         else
             seg->angle = -1;
 
-        if(ml->offset)
+        if(ml->offset != 0)
             seg->offset = ml->offset;
         else
             seg->offset = -1;
@@ -1933,7 +1952,7 @@ static void P_ProcessSegs(int version)
                 seg->backsector = 0;
             }
 
-            if(!seg->offset)
+            if(seg->offset == -1)
             {
                 if(ml->side == 0)
                     seg->offset =
@@ -1945,7 +1964,7 @@ static void P_ProcessSegs(int version)
                                                     seg->v1->y - ldef->v2->y);
             }
 
-            if(!seg->angle)
+            if(seg->angle == -1)
                 seg->angle =
                     bamsAtan2((seg->v2->y - seg->v1->y) >> FRACBITS,
                               (seg->v2->x - seg->v1->x) >> FRACBITS) << FRACBITS;
@@ -1972,76 +1991,34 @@ static void P_ProcessSegs(int version)
 }
 
 /*
- * TODO: Remove this and use the generic P_ReadBinaryMapData
+ * Converts the temporary line data into real lines.
+ *
  */
-static void P_ReadLineDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, unsigned int elements, unsigned int version,
-                           unsigned int values, const datatype_t *types)
+static void P_ProcessLines(int version)
 {
-    int     i;
-    maplinedef_t *mld;
-    maplinedefhex_t *mldhex;
-    line_t *ld;
-    short   tmp;
-    byte    tmpb;
+    int i;
+    line_t *line;
+    mapline_t *mline;
 
-    Con_Message("Loading Linedefs (%i) ver %i...\n", elements, version);
+    line = lines;
+    mline = linestemp;
 
-    mld = (maplinedef_t *) buffer;
-    mldhex = (maplinedefhex_t *) buffer;
-    switch(version)
+    for(i = 0; i < numlines; i++, ++mline, ++line)
     {
-    case 1: // DOOM format
-        for(i = 0; i < numlines; i++, mld++, mldhex++)
-        {
-            ld = LINE_PTR(i);
+        line->v1 = VERTEX_PTR(mline->v1);
+        line->v2 = VERTEX_PTR(mline->v2);
 
-            ld->flags = SHORT(mld->flags);
+        if(mline->flags)
+            line->flags = mline->flags;
+        else
+            line->flags = 0;
 
-            tmp = SHORT(mld->special);
-            gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_SPECIAL, 0, &tmp);
-            tmp = SHORT(mld->tag);
-            gx.HandleMapDataProperty(i, DDVT_INT, DAM_LINE_TAG, 0, &tmp);
-
-            ld->v1 = VERTEX_PTR(SHORT(mld->v1));
-            ld->v2 = VERTEX_PTR(SHORT(mld->v2));
-
-            P_SetLineSideNum(&ld->sidenum[0], SHORT(mld->sidenum[0]));
-            P_SetLineSideNum(&ld->sidenum[1], SHORT(mld->sidenum[1]));
-        }
-        break;
-
-    case 2: // HEXEN format
-        for(i = 0; i < numlines; i++, mld++, mldhex++)
-        {
-            ld = LINE_PTR(i);
-
-            ld->flags = SHORT(mldhex->flags);
-
-            tmpb = mldhex->special;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_SPECIAL, 0, &tmpb);
-            tmpb = mldhex->arg1;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG1, 0, &tmpb);
-            tmpb = mldhex->arg2;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG2, 0, &tmpb);
-            tmpb = mldhex->arg3;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG3, 0, &tmpb);
-            tmpb = mldhex->arg4;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG4, 0, &tmpb);
-            tmpb = mldhex->arg5;
-            gx.HandleMapDataProperty(i, DDVT_BYTE, DAM_LINE_ARG5, 0, &tmpb);
-
-            ld->v1 = VERTEX_PTR(SHORT(mldhex->v1));
-            ld->v2 = VERTEX_PTR(SHORT(mldhex->v2));
-
-            P_SetLineSideNum(&ld->sidenum[0], SHORT(mldhex->sidenum[0]));
-            P_SetLineSideNum(&ld->sidenum[1], SHORT(mldhex->sidenum[1]));
-        }
-        break;
-    default:
-        Con_Error("Error: unsupported linedef format\n");
-        break;
+        P_SetLineSideNum(&line->sidenum[0], mline->sidenum[0]);
+        P_SetLineSideNum(&line->sidenum[1], mline->sidenum[1]);
     }
+
+    // We're done with the temporary data
+    Z_Free(linestemp);
 }
 
 // FIXME: Could be a macro?
@@ -2389,9 +2366,125 @@ void P_InitMapDataFormats(void)
             else if(lumpClass == mlLineDefs)
             {
                 if(mlver == 1)  // DOOM format
-                    *mlptr = sizeof(maplinedef_t);
+                {
+                    *mlptr = 14;
+                    stiptr->verInfo[index].numValues = 7;
+                    stiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 7, PU_STATIC, 0);
+                    // v1
+                    stiptr->verInfo[index].values[0].property = DAM_VERTEX1;
+                    stiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[0].size =  2;
+                    stiptr->verInfo[index].values[0].offset = 0;
+                    stiptr->verInfo[index].values[0].gameprop = 0;
+                    // v2
+                    stiptr->verInfo[index].values[1].property = DAM_VERTEX2;
+                    stiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[1].size =  2;
+                    stiptr->verInfo[index].values[1].offset = 2;
+                    stiptr->verInfo[index].values[1].gameprop = 0;
+                    // flags
+                    stiptr->verInfo[index].values[2].property = DAM_FLAGS;
+                    stiptr->verInfo[index].values[2].flags = 0;
+                    stiptr->verInfo[index].values[2].size =  2;
+                    stiptr->verInfo[index].values[2].offset = 4;
+                    stiptr->verInfo[index].values[2].gameprop = 0;
+                    // special
+                    stiptr->verInfo[index].values[3].property = DAM_LINE_SPECIAL;
+                    stiptr->verInfo[index].values[3].flags = 0;
+                    stiptr->verInfo[index].values[3].size =  2;
+                    stiptr->verInfo[index].values[3].offset = 6;
+                    stiptr->verInfo[index].values[3].gameprop = 1;
+                    // tag
+                    stiptr->verInfo[index].values[4].property = DAM_LINE_TAG;
+                    stiptr->verInfo[index].values[4].flags = 0;
+                    stiptr->verInfo[index].values[4].size =  2;
+                    stiptr->verInfo[index].values[4].offset = 8;
+                    stiptr->verInfo[index].values[4].gameprop = 1;
+                    // front side
+                    stiptr->verInfo[index].values[5].property = DAM_SIDE0;
+                    stiptr->verInfo[index].values[5].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[5].size =  2;
+                    stiptr->verInfo[index].values[5].offset = 10;
+                    stiptr->verInfo[index].values[5].gameprop = 0;
+                    // back side
+                    stiptr->verInfo[index].values[6].property = DAM_SIDE1;
+                    stiptr->verInfo[index].values[6].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[6].size =  2;
+                    stiptr->verInfo[index].values[6].offset = 12;
+                    stiptr->verInfo[index].values[6].gameprop = 0;
+                }
                 else            // HEXEN format
-                    *mlptr = sizeof(maplinedefhex_t);
+                {
+                    *mlptr = 16;
+                    stiptr->verInfo[index].numValues = 11;
+                    stiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 11, PU_STATIC, 0);
+                    // v1
+                    stiptr->verInfo[index].values[0].property = DAM_VERTEX1;
+                    stiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[0].size =  2;
+                    stiptr->verInfo[index].values[0].offset = 0;
+                    stiptr->verInfo[index].values[0].gameprop = 0;
+                    // v2
+                    stiptr->verInfo[index].values[1].property = DAM_VERTEX2;
+                    stiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[1].size =  2;
+                    stiptr->verInfo[index].values[1].offset = 2;
+                    stiptr->verInfo[index].values[1].gameprop = 0;
+                    // flags
+                    stiptr->verInfo[index].values[2].property = DAM_FLAGS;
+                    stiptr->verInfo[index].values[2].flags = 0;
+                    stiptr->verInfo[index].values[2].size =  2;
+                    stiptr->verInfo[index].values[2].offset = 4;
+                    stiptr->verInfo[index].values[2].gameprop = 0;
+                    // special
+                    stiptr->verInfo[index].values[3].property = DAM_LINE_SPECIAL;
+                    stiptr->verInfo[index].values[3].flags = 0;
+                    stiptr->verInfo[index].values[3].size =  1;
+                    stiptr->verInfo[index].values[3].offset = 6;
+                    stiptr->verInfo[index].values[3].gameprop = 1;
+                    // arg1
+                    stiptr->verInfo[index].values[4].property = DAM_LINE_ARG1;
+                    stiptr->verInfo[index].values[4].flags = 0;
+                    stiptr->verInfo[index].values[4].size =  1;
+                    stiptr->verInfo[index].values[4].offset = 7;
+                    stiptr->verInfo[index].values[4].gameprop = 1;
+                    // arg2
+                    stiptr->verInfo[index].values[5].property = DAM_LINE_ARG2;
+                    stiptr->verInfo[index].values[5].flags = 0;
+                    stiptr->verInfo[index].values[5].size =  1;
+                    stiptr->verInfo[index].values[5].offset = 8;
+                    stiptr->verInfo[index].values[5].gameprop = 1;
+                    // arg3
+                    stiptr->verInfo[index].values[6].property = DAM_LINE_ARG3;
+                    stiptr->verInfo[index].values[6].flags = 0;
+                    stiptr->verInfo[index].values[6].size =  1;
+                    stiptr->verInfo[index].values[6].offset = 9;
+                    stiptr->verInfo[index].values[6].gameprop = 1;
+                    // arg4
+                    stiptr->verInfo[index].values[7].property = DAM_LINE_ARG4;
+                    stiptr->verInfo[index].values[7].flags = 0;
+                    stiptr->verInfo[index].values[7].size =  1;
+                    stiptr->verInfo[index].values[7].offset = 10;
+                    stiptr->verInfo[index].values[7].gameprop = 1;
+                    // arg5
+                    stiptr->verInfo[index].values[8].property = DAM_LINE_ARG5;
+                    stiptr->verInfo[index].values[8].flags = 0;
+                    stiptr->verInfo[index].values[8].size =  1;
+                    stiptr->verInfo[index].values[8].offset = 11;
+                    stiptr->verInfo[index].values[8].gameprop = 1;
+                    // front side
+                    stiptr->verInfo[index].values[9].property = DAM_SIDE0;
+                    stiptr->verInfo[index].values[9].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[9].size =  2;
+                    stiptr->verInfo[index].values[9].offset = 12;
+                    stiptr->verInfo[index].values[9].gameprop = 0;
+                    // back side
+                    stiptr->verInfo[index].values[10].property = DAM_SIDE1;
+                    stiptr->verInfo[index].values[10].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[10].size =  2;
+                    stiptr->verInfo[index].values[10].offset = 14;
+                    stiptr->verInfo[index].values[10].gameprop = 0;
+                }
             }
             else if(lumpClass == mlSideDefs)
             {
@@ -2440,13 +2533,13 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[2].gameprop = 0;
                 // linedef
                 stiptr->verInfo[index].values[3].property = DAM_LINE;
-                stiptr->verInfo[index].values[3].flags = 0;
+                stiptr->verInfo[index].values[3].flags = DT_NOINDEX;
                 stiptr->verInfo[index].values[3].size =  2;
                 stiptr->verInfo[index].values[3].offset = 6;
                 stiptr->verInfo[index].values[3].gameprop = 0;
                 // side
                 stiptr->verInfo[index].values[4].property = DAM_SIDE;
-                stiptr->verInfo[index].values[4].flags = DT_NOINDEX;
+                stiptr->verInfo[index].values[4].flags = 0;
                 stiptr->verInfo[index].values[4].size =  2;
                 stiptr->verInfo[index].values[4].offset = 8;
                 stiptr->verInfo[index].values[4].gameprop = 0;
@@ -2677,52 +2770,7 @@ void P_InitMapDataFormats(void)
             }
             else if(lumpClass == glSegs)
             {
-                if(glver == 1)
-                {
-                    // NOTE: this is the same as the original seg format.
-                    // GL_SEGS never come in this format, it is here due to us not
-                    // having a generic system to handle map data lump formats (yet).
-                    *glptr = 12;
-                    glstiptr->verInfo[index].numValues = 6;
-                    glstiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 6, PU_STATIC, 0);
-                    // v1
-                    glstiptr->verInfo[index].values[0].property = DAM_VERTEX1;
-                    glstiptr->verInfo[index].values[0].flags = DT_UNSIGNED;
-                    glstiptr->verInfo[index].values[0].size =  2;
-                    glstiptr->verInfo[index].values[0].offset = 0;
-                    glstiptr->verInfo[index].values[0].gameprop = 0;
-                    // v2
-                    glstiptr->verInfo[index].values[1].property = DAM_VERTEX2;
-                    glstiptr->verInfo[index].values[1].flags = DT_UNSIGNED;
-                    glstiptr->verInfo[index].values[1].size =  2;
-                    glstiptr->verInfo[index].values[1].offset = 2;
-                    glstiptr->verInfo[index].values[1].gameprop = 0;
-                    // angle
-                    glstiptr->verInfo[index].values[2].property = DAM_ANGLE;
-                    glstiptr->verInfo[index].values[2].flags = DT_FRACBITS;
-                    glstiptr->verInfo[index].values[2].size =  2;
-                    glstiptr->verInfo[index].values[2].offset = 4;
-                    glstiptr->verInfo[index].values[2].gameprop = 0;
-                    // linedef
-                    glstiptr->verInfo[index].values[3].property = DAM_LINE;
-                    glstiptr->verInfo[index].values[3].flags = 0;
-                    glstiptr->verInfo[index].values[3].size =  2;
-                    glstiptr->verInfo[index].values[3].offset = 6;
-                    glstiptr->verInfo[index].values[3].gameprop = 0;
-                    // side
-                    glstiptr->verInfo[index].values[4].property = DAM_SIDE;
-                    glstiptr->verInfo[index].values[4].flags = DT_NOINDEX;
-                    glstiptr->verInfo[index].values[4].size =  2;
-                    glstiptr->verInfo[index].values[4].offset = 8;
-                    glstiptr->verInfo[index].values[4].gameprop = 0;
-                    // offset
-                    glstiptr->verInfo[index].values[5].property = DAM_OFFSET;
-                    glstiptr->verInfo[index].values[5].flags = DT_FRACBITS;
-                    glstiptr->verInfo[index].values[5].size =  2;
-                    glstiptr->verInfo[index].values[5].offset = 10;
-                    glstiptr->verInfo[index].values[5].gameprop = 0;
-                }
-                else if(glver == 2)
+                if(glver == 2)
                 {
                     *glptr = 10;
                     glstiptr->verInfo[index].numValues = 4;
@@ -2741,7 +2789,7 @@ void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[1].gameprop = 0;
                     // linedef
                     glstiptr->verInfo[index].values[2].property = DAM_LINE;
-                    glstiptr->verInfo[index].values[2].flags = DT_UNSIGNED;
+                    glstiptr->verInfo[index].values[2].flags = DT_NOINDEX;
                     glstiptr->verInfo[index].values[2].size =  2;
                     glstiptr->verInfo[index].values[2].offset = 4;
                     glstiptr->verInfo[index].values[2].gameprop = 0;
@@ -3013,7 +3061,7 @@ void P_InitMapDataFormats(void)
     }
 }
 
-#ifdef _DEBUG
+#if _DEBUG
 static void P_PrintDebugMapData(void)
 {
     int i;
@@ -3040,7 +3088,8 @@ static void P_PrintDebugMapData(void)
                     GET_VERTEX_IDX(seg->v1), GET_VERTEX_IDX(seg->v2),
                     seg->angle >> FRACBITS,
                     (seg->linedef != NULL)? GET_LINE_IDX(seg->linedef) : -1,
-                    GET_SIDE_IDX(seg->sidedef), seg->offset >> FRACBITS);
+                    (seg->sidedef != NULL)? GET_SIDE_IDX(seg->sidedef) : -1,
+                    seg->offset >> FRACBITS);
     }
 
     Con_Printf("SECTORS:\n");
