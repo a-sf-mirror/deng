@@ -146,7 +146,6 @@ boolean ConsoleSilent = false;
 int     CmdReturnValue = 0;
 
 float   ConsoleOpenY;           // Where the console bottom is when open.
-
 int     consoleTurn;            // The rotation variable.
 int     consoleLight = 50, consoleAlpha = 75;
 int     conCompMode = 0;        // Completion mode.
@@ -156,6 +155,7 @@ int     consoleActiveKey = '`'; // Tilde.
 boolean consoleShowKeys = false;
 boolean consoleShowFPS = false;
 boolean consoleShadowText = true;
+float   consoleMoveSpeed = .2f; // Speed of console opening/closing
 
 cvar_t *cvars = NULL;
 int     numCVars, maxCVars;
@@ -925,7 +925,7 @@ void Con_Ticker(timespan_t time)
     // Move the console to the destination Y.
     if(ConsoleDestY > ConsoleY)
     {
-        float   diff = (ConsoleDestY - ConsoleY) / 4;
+        float   diff = (ConsoleDestY - ConsoleY) * consoleMoveSpeed;
 
         if(diff < 1)
             diff = 1;
@@ -935,7 +935,7 @@ void Con_Ticker(timespan_t time)
     }
     else if(ConsoleDestY < ConsoleY)
     {
-        float   diff = (ConsoleY - ConsoleDestY) / 4;
+        float   diff = (ConsoleY - ConsoleDestY) * consoleMoveSpeed;
 
         if(diff < 1)
             diff = 1;
@@ -3160,6 +3160,8 @@ static void registerVariables(void)
                "1=Show FPS counter on screen.");
     C_VAR_BYTE("con-text-shadow", &consoleShadowText, 0, 0, 1,
                "1=Text in the console has a shadow (might be slow).");
+    C_VAR_FLOAT("con-move-speed", &consoleMoveSpeed, 0, 0, 1,
+                "Speed of console opening/closing.");
 
     // User Interface
     C_VAR_BYTE("ui-panel-help", &panel_show_help, 0, 0, 1,
