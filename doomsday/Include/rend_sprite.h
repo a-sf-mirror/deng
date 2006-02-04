@@ -23,6 +23,7 @@
 #define __DOOMSDAY_RENDER_SPRITE_H__
 
 extern float    maxSpriteAngle;
+extern boolean  noSpriteTrans;
 
 void            Rend_DrawMasked(void);
 void            Rend_DrawPlayerSprites(void);
