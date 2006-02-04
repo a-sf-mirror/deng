@@ -121,10 +121,12 @@ void P_InitPicAnims(void)
     // Has a custom ANIMATED lump been loaded?
     if(lump > 0)
     {
+        Con_Message("P_InitPicAnims: \"ANIMATED\" lump found. Reading animations...\n");
+
         animdefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
 
         // Read structures until -1 is found
-        for(i = 0; animdefs[i].istexture != -1 ; i++)
+        for(i = 0; animdefs[i].istexture != -1 ; ++i)
         {
             // Is it a texture?
             if(animdefs[i].istexture)
@@ -154,27 +156,37 @@ void P_InitPicAnims(void)
                 Con_Error("P_InitPicAnims: bad cycle from %s to %s",
                          animdefs[i].startname, animdefs[i].endname);
 
-            // We have a valid animation.
-            // Create a new animation group for it.
-            groupNum =
-                R_CreateAnimGroup(isTexture ? DD_TEXTURE : DD_FLAT, AGF_SMOOTH);
+            if(startFrame != -1 && endFrame != -1)
+            {
+                // We have a valid animation.
+                // Create a new animation group for it.
+                groupNum =
+                    R_CreateAnimGroup(isTexture ? DD_TEXTURE : DD_FLAT, AGF_SMOOTH);
 
-            // Doomsday's group animation needs to know the lump IDs of
-            // ALL frames in the animation group so we'll have to step
-            // through the lump directory adding frames as we go.
-            // (DOOM only required the start/end lumps and would animate
-            // all textures/flats inbetween).
+                // Doomsday's group animation needs to know the lump IDs of
+                // ALL frames in the animation group so we'll have to step
+                // through the lump directory adding frames as we go.
+                // (DOOM only required the start/end lumps and would animate
+                // all textures/flats inbetween).
 
-            // Get the start & end lump numbers.
-            startFrame = W_CheckNumForName(animdefs[i].startname);
-            endFrame = W_CheckNumForName(animdefs[i].endname);
+                Con_Message("P_InitPicAnims: ADD Anim (\"%s\" > \"%s\")\n",
+                            animdefs[i].startname, animdefs[i].endname);
 
-            // Add all frames from start to end to the group.
-            for(j = startFrame; j <= endFrame; j++)
-                R_AddToAnimGroup(groupNum, j, ticsPerFrame, 0);
+                // Add all frames from start to end to the group.
+                if(endFrame > startFrame)
+                {
+                    for(j = startFrame; j <= endFrame; j++)
+                        R_AddToAnimGroup(groupNum, j, ticsPerFrame, 0);
+                }
+                else
+                {
+                    for(j = endFrame; j >= startFrame; j--)
+                        R_AddToAnimGroup(groupNum, j, ticsPerFrame, 0);
+                }
+            }
         }
-
         Z_Free(animdefs);
+        Con_Message("P_InitPicAnims: Done.\n");
     }
 }
 
