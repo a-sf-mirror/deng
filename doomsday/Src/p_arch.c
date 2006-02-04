@@ -342,25 +342,31 @@ int     firstGLvertex = 0;
 // Set to true if glNodeData exists for the level.
 boolean glNodeData = false;
 
+enum {
+    NO,        // Not required.
+    BSPBUILD,  // If we can build nodes we don't require it.
+    YES        // MUST be present
+};
+
 // types of MAP data structure
 // These arrays are temporary. Some of the data will be provided via DED definitions.
 maplumpinfo_t mapLumpInfo[] = {
 //   lumpname    MD  GL  datatype      lumpclass     required?  precache?
-    {"THINGS",   0, -1,  DAM_THING,     mlThings,     true,     false},
-    {"LINEDEFS", 1, -1,  DAM_LINE,      mlLineDefs,   true,     false},
-    {"SIDEDEFS", 2, -1,  DAM_SIDE,      mlSideDefs,   true,     false},
-    {"VERTEXES", 3, -1,  DAM_VERTEX,    mlVertexes,   true,     false},
-    {"SEGS",     4, -1,  DAM_SEG,       mlSegs,       true,     false},
-    {"SSECTORS", 5, -1,  DAM_SUBSECTOR, mlSSectors,   true,     false},
-    {"NODES",    6, -1,  DAM_NODE,      mlNodes,      true,     false},
-    {"SECTORS",  7, -1,  DAM_SECTOR,    mlSectors,    true,     false},
-    {"REJECT",   8, -1,  DAM_SECREJECT, mlReject,     false,    false},
-    {"BLOCKMAP", 9, -1,  DAM_MAPBLOCK,  mlBlockMap,   false,    false},
-    {"BEHAVIOR", 10,-1,  DAM_ACSSCRIPT, mlBehavior,   false,    false},
-    {"GL_VERT",  -1, 0,  DAM_VERTEX,    glVerts,      false,    false},
-    {"GL_SEGS",  -1, 1,  DAM_SEG,       glSegs,       false,    false},
-    {"GL_SSECT", -1, 2,  DAM_SUBSECTOR, glSSects,     false,    false},
-    {"GL_NODES", -1, 3,  DAM_NODE,      glNodes,      false,    false},
+    {"THINGS",   0, -1,  DAM_THING,     mlThings,     YES,   false},
+    {"LINEDEFS", 1, -1,  DAM_LINE,      mlLineDefs,   YES,   false},
+    {"SIDEDEFS", 2, -1,  DAM_SIDE,      mlSideDefs,   YES,   false},
+    {"VERTEXES", 3, -1,  DAM_VERTEX,    mlVertexes,   YES,   false},
+    {"SEGS",     4, -1,  DAM_SEG,       mlSegs,       BSPBUILD, false},
+    {"SSECTORS", 5, -1,  DAM_SUBSECTOR, mlSSectors,   BSPBUILD, false},
+    {"NODES",    6, -1,  DAM_NODE,      mlNodes,      BSPBUILD, false},
+    {"SECTORS",  7, -1,  DAM_SECTOR,    mlSectors,    YES,   false},
+    {"REJECT",   8, -1,  DAM_SECREJECT, mlReject,     NO,    false},
+    {"BLOCKMAP", 9, -1,  DAM_MAPBLOCK,  mlBlockMap,   NO,    false},
+    {"BEHAVIOR", 10,-1,  DAM_ACSSCRIPT, mlBehavior,   NO,    false},
+    {"GL_VERT",  -1, 0,  DAM_VERTEX,    glVerts,      NO,    false},
+    {"GL_SEGS",  -1, 1,  DAM_SEG,       glSegs,       NO,    false},
+    {"GL_SSECT", -1, 2,  DAM_SUBSECTOR, glSSects,     NO,    false},
+    {"GL_NODES", -1, 3,  DAM_NODE,      glNodes,      NO,    false},
     {NULL}
 };
 
@@ -686,6 +692,7 @@ static boolean VerifyMapData(char *levelID)
 {
     unsigned int i, k;
     boolean found;
+    boolean required;
     mapdatalumpInfo_t* mapDataLump;
     maplumpinfo_t* mapLmpInf = mapLumpInfo;
 
@@ -729,8 +736,15 @@ static boolean VerifyMapData(char *levelID)
         // We didn't find any lumps of this class?
         if(!found)
         {
-            // Is it a required class?
-            if(mapLmpInf->required)
+            // Is it a required lump class?
+            //   Is this lump that will be generated if a BSP builder is available?
+            if(mapLmpInf->required == BSPBUILD &&
+               Plug_CheckForHook(HOOK_LOAD_MAP_LUMPS) && bspBuild)
+                required = false;
+            else if(mapLmpInf->required)
+                required = true;
+
+            if(required)
             {
                 // Darn, the map data is incomplete. We arn't able to to load this map :`(
                 // Inform the user.

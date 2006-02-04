@@ -87,7 +87,7 @@ typedef struct {
     int  glLump;
     int  dataType;
     int  lumpclass;
-    boolean required;
+    int  required;
     boolean precache;
 } maplumpinfo_t;
 
