@@ -743,6 +743,8 @@ static boolean VerifyMapData(char *levelID)
                 required = false;
             else if(mapLmpInf->required)
                 required = true;
+            else
+                required = false;
 
             if(required)
             {
