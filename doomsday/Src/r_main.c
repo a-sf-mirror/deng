@@ -103,7 +103,7 @@ static boolean resetNextViewer = true;
 static boolean showFrameTimePos = false;
 
 // BSP cvars.
-static int bspBuild = true;
+int bspBuild = true;
 static int bspCache = true;
 static int bspFactor = 7;
 

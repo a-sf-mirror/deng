@@ -385,6 +385,7 @@ extern polyblock_t **polyblockmap;
 extern byte    *rejectmatrix;      // for fast sight rejection
 extern nodepile_t thingnodes, linenodes;
 
+extern int      bspBuild;
 extern int      createBMap;
 extern int      createReject;
 
