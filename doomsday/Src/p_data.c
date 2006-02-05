@@ -643,7 +643,7 @@ void P_CreateBlockMap(void)
  * it's zero length or we are forcing a rebuild - we'll have to
  * generate the blockmap data ourselves.
  */
-boolean P_LoadBlockMap(mapdatalumpInfo_t* maplump)
+boolean P_LoadBlockMap(struct mapdatalumpinfo_s* maplump)
 {
     long i, count;
     boolean generateBMap = (createBMap == 2)? true : false;
@@ -776,7 +776,7 @@ boolean P_LoadBlockMap(mapdatalumpInfo_t* maplump)
  *
  *   ceiling(numsectors^2)
  */
-boolean P_LoadReject(mapdatalumpInfo_t* maplump)
+boolean P_LoadReject(struct mapdatalumpinfo_s* maplump)
 {
     int rejectLength;
     int requiredLength;

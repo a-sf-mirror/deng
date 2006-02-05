@@ -392,7 +392,7 @@ glnodeformat_t glNodeFormats[] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static mapdatalumpInfo_t* mapDataLumps;
+static mapdatalumpinfo_t* mapDataLumps;
 static int numMapDataLumps;
 
 static mapseg_t *segstemp;
@@ -472,12 +472,12 @@ const char* DAM_Str(int prop)
 static void AddMapDataLump(int lumpNum, int lumpClass)
 {
     int num = numMapDataLumps;
-    mapdatalumpInfo_t* mapDataLump;
+    mapdatalumpinfo_t* mapDataLump;
 
     numMapDataLumps++;
 
     mapDataLumps =
-        realloc(mapDataLumps, sizeof(mapdatalumpInfo_t) * numMapDataLumps);
+        realloc(mapDataLumps, sizeof(mapdatalumpinfo_t) * numMapDataLumps);
 
     mapDataLump = &mapDataLumps[num];
     mapDataLump->lumpNum = lumpNum;
@@ -597,7 +597,7 @@ static void P_FindMapLumps(int startLump)
  *
  * @param mapLump   Ptr to the map lump struct to work with.
  */
-static void DetermineMapDataLumpFormat(mapdatalumpInfo_t* mapLump)
+static void DetermineMapDataLumpFormat(mapdatalumpinfo_t* mapLump)
 {
     byte lumpHeader[4];
 
@@ -693,7 +693,7 @@ static boolean VerifyMapData(char *levelID)
     unsigned int i, k;
     boolean found;
     boolean required;
-    mapdatalumpInfo_t* mapDataLump;
+    mapdatalumpinfo_t* mapDataLump;
     maplumpinfo_t* mapLmpInf = mapLumpInfo;
 
     // Itterate our known lump classes array.
@@ -784,7 +784,7 @@ static boolean DetermineMapFormat(void)
 {
     unsigned int i;
     int lumpClass;
-    mapdatalumpInfo_t* mapLump;
+    mapdatalumpinfo_t* mapLump;
 
     // Now that we know the map data format we need to update the internal
     // version number for any lumps that don't declare a version (-1).
@@ -1120,7 +1120,7 @@ static boolean ReadMapData(int doClass)
     unsigned int oldNum, newNum;
 
     datatype_t *dataTypes;
-    mapdatalumpInfo_t* mapLump = mapDataLumps;
+    mapdatalumpinfo_t* mapLump = mapDataLumps;
     mapdatalumpformat_t* lumpFormat;
     maplumpinfo_t*  lumpInfo;
 
