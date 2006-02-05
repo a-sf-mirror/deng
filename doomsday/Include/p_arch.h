@@ -26,12 +26,13 @@
 #define __DOOMSDAY_ARCHIVED_MAP_H__
 
 // number of map data lumps for a level
-#define NUM_MAPLUMPS 11
+#define NUM_MAPLUMPS 12
 
 // well, there is GL_PVIS too but we arn't interested in that
-#define NUM_GLLUMPS 4
+#define NUM_GLLUMPS 5
 
 enum {
+    mlLabel,
     mlThings,
     mlLineDefs,
     mlSideDefs,
@@ -43,6 +44,7 @@ enum {
     mlReject,
     mlBlockMap,
     mlBehavior,
+    glLabel,
     glVerts,
     glSegs,
     glSSects,

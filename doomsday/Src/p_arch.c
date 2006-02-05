@@ -53,8 +53,10 @@
 
 // Common map format properties
 enum {
-    // Object types
-    DAM_NONE = 0,
+    DAM_UNKNOWN = -1,
+    DAM_NONE,
+
+    // Object/Data types
     DAM_THING,
     DAM_VERTEX,
     DAM_LINE,
@@ -137,6 +139,12 @@ enum {
     DAM_PROPERTY_COUNT
 };
 
+typedef struct {
+    char* level;
+    char* builder;
+    char* time;
+    char* checksum;
+} glbuildinfo_t;
 
 // THING formats
 // These formats are FYI
@@ -309,7 +317,7 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static boolean  ReadMapData(int doClass);
-static boolean  DetermineMapFormat(void);
+static boolean  DetermineMapDataFormat(void);
 
 static void     P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmsize, unsigned int elements,
@@ -352,41 +360,43 @@ enum {
 // These arrays are temporary. Some of the data will be provided via DED definitions.
 maplumpinfo_t mapLumpInfo[] = {
 //   lumpname    MD  GL  datatype      lumpclass     required?  precache?
-    {"THINGS",   0, -1,  DAM_THING,     mlThings,     YES,   false},
-    {"LINEDEFS", 1, -1,  DAM_LINE,      mlLineDefs,   YES,   false},
-    {"SIDEDEFS", 2, -1,  DAM_SIDE,      mlSideDefs,   YES,   false},
-    {"VERTEXES", 3, -1,  DAM_VERTEX,    mlVertexes,   YES,   false},
-    {"SEGS",     4, -1,  DAM_SEG,       mlSegs,       BSPBUILD, false},
-    {"SSECTORS", 5, -1,  DAM_SUBSECTOR, mlSSectors,   BSPBUILD, false},
-    {"NODES",    6, -1,  DAM_NODE,      mlNodes,      BSPBUILD, false},
-    {"SECTORS",  7, -1,  DAM_SECTOR,    mlSectors,    YES,   false},
-    {"REJECT",   8, -1,  DAM_SECREJECT, mlReject,     NO,    false},
-    {"BLOCKMAP", 9, -1,  DAM_MAPBLOCK,  mlBlockMap,   NO,    false},
-    {"BEHAVIOR", 10,-1,  DAM_ACSSCRIPT, mlBehavior,   NO,    false},
-    {"GL_VERT",  -1, 0,  DAM_VERTEX,    glVerts,      NO,    false},
-    {"GL_SEGS",  -1, 1,  DAM_SEG,       glSegs,       NO,    false},
-    {"GL_SSECT", -1, 2,  DAM_SUBSECTOR, glSSects,     NO,    false},
-    {"GL_NODES", -1, 3,  DAM_NODE,      glNodes,      NO,    false},
+    {NULL,       0, -1,  DAM_UNKNOWN,   mlLabel,      NO,    false},
+    {"THINGS",   1, -1,  DAM_THING,     mlThings,     YES,   false},
+    {"LINEDEFS", 2, -1,  DAM_LINE,      mlLineDefs,   YES,   false},
+    {"SIDEDEFS", 3, -1,  DAM_SIDE,      mlSideDefs,   YES,   false},
+    {"VERTEXES", 4, -1,  DAM_VERTEX,    mlVertexes,   YES,   false},
+    {"SEGS",     5, -1,  DAM_SEG,       mlSegs,       BSPBUILD, false},
+    {"SSECTORS", 6, -1,  DAM_SUBSECTOR, mlSSectors,   BSPBUILD, false},
+    {"NODES",    7, -1,  DAM_NODE,      mlNodes,      BSPBUILD, false},
+    {"SECTORS",  8, -1,  DAM_SECTOR,    mlSectors,    YES,   false},
+    {"REJECT",   9, -1,  DAM_SECREJECT, mlReject,     NO,    false},
+    {"BLOCKMAP", 10, -1, DAM_MAPBLOCK,  mlBlockMap,   NO,    false},
+    {"BEHAVIOR", 11,-1,  DAM_ACSSCRIPT, mlBehavior,   NO,    false},
+    {NULL,       -1, 0,  DAM_UNKNOWN,   glLabel,      NO,    false},
+    {"GL_VERT",  -1, 1,  DAM_VERTEX,    glVerts,      NO,    false},
+    {"GL_SEGS",  -1, 2,  DAM_SEG,       glSegs,       NO,    false},
+    {"GL_SSECT", -1, 3,  DAM_SUBSECTOR, glSSects,     NO,    false},
+    {"GL_NODES", -1, 4,  DAM_NODE,      glNodes,      NO,    false},
     {NULL}
 };
 
 // Versions of map data structures
 mapdataformat_t mapDataFormats[] = {
-    {"DOOM", {{1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
+    {"DOOM", {{1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
               {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {-1, NULL}}, true},
-    {"HEXEN",{{2, NULL}, {2, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
+    {"HEXEN",{{1, NULL}, {2, NULL}, {2, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL},
               {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}, {1, NULL}}, true},
     {NULL}
 };
 
 // Versions of GL node data structures
 glnodeformat_t glNodeFormats[] = {
-// Ver String   Verts       Segs        SSects       Nodes     Supported?
-    {"V1", {{1, NULL},   {2, NULL},   {1, NULL},   {1, NULL}}, true},
-    {"V2", {{2, "gNd2"}, {2, NULL},   {1, NULL},   {1, NULL}}, true},
-    {"V3", {{2, "gNd2"}, {3, "gNd3"}, {3, "gNd3"}, {1, NULL}}, false},
-    {"V4", {{4, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
-    {"V5", {{5, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
+// Ver String   Label       Verts       Segs        SSects       Nodes     Supported?
+    {"V1", {{1, NULL},   {1, NULL},   {2, NULL},   {1, NULL},   {1, NULL}}, true},
+    {"V2", {{1, NULL},   {2, "gNd2"}, {2, NULL},   {1, NULL},   {1, NULL}}, true},
+    {"V3", {{1, NULL},   {2, "gNd2"}, {3, "gNd3"}, {3, "gNd3"}, {1, NULL}}, false},
+    {"V4", {{1, NULL},   {4, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
+    {"V5", {{1, NULL},   {5, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
     {NULL}
 };
 
@@ -394,6 +404,8 @@ glnodeformat_t glNodeFormats[] = {
 
 static mapdatalumpinfo_t* mapDataLumps;
 static int numMapDataLumps;
+
+static glbuildinfo_t *glBuilderInfo;
 
 static mapseg_t *segstemp;
 static mapline_t *linestemp;
@@ -411,6 +423,7 @@ const char* DAM_Str(int prop)
         const char* str;
     } props[] =
     {
+        { DAM_UNKNOWN, "(unknown)" },
         { 0, "(invalid)" },
         { DAM_THING, "DAM_THING" },
         { DAM_VERTEX, "DAM_VERTEX" },
@@ -467,6 +480,107 @@ const char* DAM_Str(int prop)
 
     sprintf(propStr, "(unnamed %i)", prop);
     return propStr;
+}
+
+static void ParseGLBSPInf(mapdatalumpinfo_t* mapLump)
+{
+    int i, n, keylength;
+    char* ch;
+    char line[250];
+
+    glbuildinfo_t *newInfo = malloc(sizeof(glbuildinfo_t));
+
+    struct glbsp_keyword_s {
+        const char* label;
+        char** data;
+    } keywords[] =
+    {
+        {"LEVEL", &newInfo->level},
+        {"BUILDER", &newInfo->builder},
+        {"TIME", &newInfo->time},
+        {"CHECKSUM", &newInfo->checksum},
+        {NULL}
+    };
+
+    newInfo->level = NULL;
+    newInfo->builder = NULL;
+    newInfo->time = NULL;
+    newInfo->checksum = NULL;
+
+    // Have we cached the lump yet?
+    if(mapLump->lumpp == NULL)
+        mapLump->lumpp = (byte *) W_CacheLumpNum(mapLump->lumpNum, PU_STATIC);
+
+    ch = (char *) mapLump->lumpp;
+    n = 0;
+    for(;;)
+    {
+        // Read a line
+        memset(line, 0, 250);
+        for(i = 0; i < 250 - 1; ++n)    // Make the last null stay there.
+        {
+            if(n == mapLump->length || *ch == '\n')
+                break;
+
+            if(*ch == '=')
+                keylength = i;
+
+            line[i++] = *ch;
+            ch++;
+        }
+
+        // Only one keyword per line. Is it known?
+        for(i = 0; keywords[i].label; ++i)
+            if(!strncmp(line, keywords[i].label, keylength))
+            {
+                *keywords[i].data = malloc(strlen(line) - keylength + 1);
+                strncpy(*keywords[i].data, line + keylength + 1,
+                        strlen(line) - keylength);
+            }
+
+        n++;
+
+        // End of lump;
+        if(n == mapLump->length)
+            break;
+        ch++;
+    }
+
+    glBuilderInfo = newInfo;
+}
+
+static void FreeGLBSPInf(void)
+{
+    // Free the glBuilder info
+    if(glBuilderInfo != NULL)
+    {
+        if(glBuilderInfo->level)
+        {
+            free(glBuilderInfo->level);
+            glBuilderInfo->level = NULL;
+        }
+
+        if(glBuilderInfo->builder)
+        {
+            free(glBuilderInfo->builder);
+            glBuilderInfo->builder = NULL;
+        }
+
+        if(glBuilderInfo->time)
+        {
+            free(glBuilderInfo->time);
+            glBuilderInfo->time = NULL;
+        }
+
+        if(glBuilderInfo->checksum)
+        {
+            free(glBuilderInfo->checksum);
+            glBuilderInfo->checksum = NULL;
+        }
+
+        free(glBuilderInfo);
+        glBuilderInfo = NULL;
+    }
 }
 
 static void AddMapDataLump(int lumpNum, int lumpClass)
@@ -552,7 +666,7 @@ static boolean P_LocateMapData(char *levelID, int *lumpIndices)
 
 /*
  * Find the lump offsets for this map dataset automatically.
- * Some PWADs have these lumps in a non-standard order... tsk, tsk.
+ * Some obscure PWADs have these lumps in a non-standard order... tsk, tsk.
  *
  * @param startLump     The lump number to begin our search with.
  */
@@ -563,9 +677,13 @@ static void P_FindMapLumps(int startLump)
     boolean scan;
     maplumpinfo_t* mapLmpInf;
 
-    // We don't want to check the marker lump.
-    ++startLump;
+    // Add the marker lump to the list (there might be useful info in it)
+    if(!strncmp(W_CacheLumpNum(startLump, PU_GETNAME), "GL_", 3))
+        AddMapDataLump(startLump, glLabel);
+    else
+        AddMapDataLump(startLump, mlLabel);
 
+    ++startLump;
     // Keep checking lumps to see if its a map data lump.
     for(i = (unsigned) startLump; ; ++i)
     {
@@ -574,6 +692,7 @@ static void P_FindMapLumps(int startLump)
         mapLmpInf = mapLumpInfo;
         for(k = NUM_LUMPCLASSES; k-- && scan; ++mapLmpInf)
         {
+            if(mapLmpInf->lumpname)
             if(!strncmp(mapLmpInf->lumpname, W_CacheLumpNum(i, PU_GETNAME), 8))
             {
                 // Lump name matches a known lump name.
@@ -671,6 +790,14 @@ static void DetermineMapDataLumpFormat(mapdatalumpinfo_t* mapLump)
         // ignore it when determining the GL Node format.
         return;
     }
+    else if(mapLump->lumpClass == glLabel)
+    {
+        // It's a GL NODE identifier lump.
+        // Perhaps it can tell us something useful about this map data?
+        // It is a text lump that contains a simple label=value pair list.
+        if(mapLump->length > 0)
+            ParseGLBSPInf(mapLump);
+    }
 
     // It isn't a (known) named special format.
     // Use the default data format for this lump (map format specific).
@@ -695,6 +822,8 @@ static boolean VerifyMapData(char *levelID)
     boolean required;
     mapdatalumpinfo_t* mapDataLump;
     maplumpinfo_t* mapLmpInf = mapLumpInfo;
+
+    FreeGLBSPInf();
 
     // Itterate our known lump classes array.
     for(i = NUM_LUMPCLASSES; i--; ++mapLmpInf)
@@ -724,7 +853,7 @@ static boolean VerifyMapData(char *levelID)
                 DetermineMapDataLumpFormat(mapDataLump);
 
                 // Announce
-                VERBOSE2(Con_Message("%s - (%s) is %d bytes.\n",
+                VERBOSE2(Con_Message("%s - %s is %d bytes.\n",
                                      W_CacheLumpNum(mapDataLump->lumpNum, PU_GETNAME),
                                      DAM_Str(mapLmpInf->dataType), mapDataLump->length));
 
@@ -732,6 +861,11 @@ static boolean VerifyMapData(char *levelID)
                 found = true;
             }
         }
+
+        // We arn't interested in indetifier lumps
+        if(mapLmpInf->lumpclass == mlLabel ||
+           mapLmpInf->lumpclass == glLabel)
+           continue;
 
         // We didn't find any lumps of this class?
         if(!found)
@@ -780,14 +914,14 @@ static boolean VerifyMapData(char *levelID)
  *
  * @return boolean     (True) If its a format we support.
  */
-static boolean DetermineMapFormat(void)
+static boolean DetermineMapDataFormat(void)
 {
     unsigned int i;
     int lumpClass;
     mapdatalumpinfo_t* mapLump;
 
-    // Now that we know the map data format we need to update the internal
-    // version number for any lumps that don't declare a version (-1).
+    // Now that we know the data format of the lumps we need to update the
+    // internal version number for any lumps that don't declare a version (-1).
     // Taken from the version stipulated in the map format.
     mapLump = mapDataLumps;
     for(i = numMapDataLumps; i--; ++mapLump)
@@ -795,8 +929,8 @@ static boolean DetermineMapFormat(void)
         lumpClass = mapLumpInfo[mapLump->lumpClass].mdLump;
 
         // Is it a map data lump class?
-        if(!(mapLump->lumpClass >= glVerts &&
-           mapLump->lumpClass <= glNodes))
+        if(mapLump->lumpClass >= mlThings &&
+           mapLump->lumpClass <= mlBehavior)
         {
             // Set the lump version number for this format.
             if(mapLump->version == -1)
@@ -835,8 +969,7 @@ static boolean DetermineMapFormat(void)
                     // SHOULD this lump format declare a version (magic bytes)?
                     if(mapLump->version == -1)
                     {
-                        if(nodeFormat->verInfo[lumpClass].magicid != NULL &&
-                           mapLump->version == -1)
+                        if(nodeFormat->verInfo[lumpClass].magicid != NULL)
                             failed = true;
                     }
                     else
@@ -854,8 +987,26 @@ static boolean DetermineMapFormat(void)
                 // We know the GL Node format
                 glNodeFormat = i;
 
-                Con_Message("DetermineMapFormat: (%s gl Node data found)\n",
+                Con_Message("DetermineMapDataFormat: (%s GL Node Data)\n",
                             nodeFormat->vername);
+
+                // Did we find any glbuild info?
+                if(glBuilderInfo)
+                {
+                    Con_Message("(");
+                    if(glBuilderInfo->level)
+                        Con_Message("%s | ", glBuilderInfo->level);
+
+                    if(glBuilderInfo->builder)
+                        Con_Message("%s | ", glBuilderInfo->builder);
+
+                    if(glBuilderInfo->time)
+                        Con_Message("%s | ", glBuilderInfo->time);
+
+                    if(glBuilderInfo->checksum)
+                        Con_Message("%s", glBuilderInfo->checksum);
+                    Con_Message(")\n");
+                }
 
                 // Do we support this GL Node format?
                 if(nodeFormat->supported)
@@ -882,13 +1033,13 @@ static boolean DetermineMapFormat(void)
                 else
                 {
                     // Unsupported GL Node format.
-                    Con_Message("DetermineMapFormat: Sorry, %s GL Nodes arn't supported\n",
+                    Con_Message("DetermineMapDataFormat: Sorry, %s GL Nodes arn't supported\n",
                                 nodeFormat->vername);
                     return false;
                 }
             }
         }
-        Con_Message("DetermineMapFormat: Could not determine GL Node format\n");
+        Con_Message("DetermineMapDataFormat: Could not determine GL Node format\n");
         return false;
     }
 
@@ -898,13 +1049,17 @@ static boolean DetermineMapFormat(void)
 
 boolean P_GetMapFormat(void)
 {
-    if(DetermineMapFormat())
+    if(DetermineMapDataFormat())
+    {
+        // We support the map data format.
         return true;
+    }
     else
     {
         // Darn, we can't load this map.
         // Free any lumps we may have already precached in the process.
         FreeMapDataLumps();
+        FreeGLBSPInf();
         return false;
     }
 }
@@ -983,6 +1138,7 @@ static boolean P_ReadMapData(int doClass)
     if(!ReadMapData(doClass))
     {
         FreeMapDataLumps();
+        FreeGLBSPInf();
         return false;
     }
 
@@ -1026,6 +1182,7 @@ boolean P_LoadMapData(char *levelId)
         // Darn, the level data is incomplete.
         // Free any lumps we may have already precached in the process.
         FreeMapDataLumps();
+        FreeGLBSPInf();
 
         // Sorry, but we can't continue.
         return false;
@@ -1085,6 +1242,7 @@ boolean P_LoadMapData(char *levelId)
 
         // We have complete level data but we're not out of the woods yet...
         FreeMapDataLumps();
+        FreeGLBSPInf();
 
     /*    if(glNodeData)
             setupflags |= DDSLF_DONT_CLIP; */
