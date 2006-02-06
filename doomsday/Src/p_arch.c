@@ -209,7 +209,7 @@ typedef struct glvert2_s {
 
 // SIDEDEF formats
 */
-// TODO: we still use this struct for byte offsets
+// TODO: we still use this struct for texture byte offsets
 typedef struct {
     short           textureoffset;
     short           rowoffset;
@@ -301,13 +301,6 @@ typedef struct {
     int           offset;
 } mapseg_t;
 
-typedef struct {
-    int           v1;
-    int           v2;
-    short         flags;
-    int           sidenum[2];
-} mapline_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -322,16 +315,10 @@ static boolean  DetermineMapDataFormat(void);
 static void     P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmsize, unsigned int elements,
                                 unsigned int values, const datatype_t *types);
-static void     P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                          size_t elmsize, unsigned int elements,
-                          unsigned int values, const datatype_t *types);
 
 static void     P_ReadSideDefTextures(int lump);
 static void     P_FinishLineDefs(void);
 static void     P_ProcessSegs(int version);
-static void     P_ProcessLines(int version);
-
-static void     P_SetLineSideNum(int *side, unsigned short num);
 
 #if _DEBUG
 static void     P_PrintDebugMapData(void);
@@ -408,7 +395,6 @@ static int numMapDataLumps;
 static glbuildinfo_t *glBuilderInfo;
 
 static mapseg_t *segstemp;
-static mapline_t *linestemp;
 
 // CODE --------------------------------------------------------------------
 
@@ -646,6 +632,11 @@ static boolean P_LocateMapData(char *levelID, int *lumpIndices)
     {
         // The plugin failed.
         lumpIndices[0] = W_CheckNumForName(levelID);
+
+        // FIXME: The latest GLBSP spec supports maps with non-standard
+        // identifiers. To support these we must check the lump named
+        // GL_LEVEL. In this lump will be a text string which identifies
+        // the name of the lump the data is for.
         lumpIndices[1] = W_CheckNumForName(glLumpName);
     }
 
@@ -1374,23 +1365,15 @@ static boolean ReadMapData(int doClass)
                 break;
 
             case DAM_LINE:
-                // Lines are read into a temporary buffer before processing
                 oldNum = numlines;
                 newNum = numlines+= elements;
 
                 if(oldNum != 0)
-                {
                     lines = Z_Realloc(lines, numlines * sizeof(line_t), PU_LEVEL);
-                    linestemp = Z_Realloc(linestemp, numlines * sizeof(mapline_t), PU_STATIC);
-                }
                 else
-                {
                     lines = Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, 0);
-                    linestemp = Z_Malloc(numlines * sizeof(mapline_t), PU_STATIC, 0);
-                }
 
                 memset(LINE_PTR(oldNum), 0, elements * sizeof(line_t));
-                memset(linestemp + oldNum, 0, elements * sizeof(mapline_t));
 
                 // for missing front detection
                 missingFronts = malloc(numlines * sizeof(int));
@@ -1495,23 +1478,14 @@ static boolean ReadMapData(int doClass)
             }
             else
             {
-                // Temporary
-                if(internalType == DAM_SIDE)
-                    P_ReadSideDefs(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
-                                   lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
-                else
-                    P_ReadBinaryMapData(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
-                                        lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
+                P_ReadBinaryMapData(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
+                                    lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
 
                 // Perform any additional processing required (temporary)
                 switch(internalType)
                 {
                 case DAM_SEG:
                     P_ProcessSegs(mapLump->version);
-                    break;
-
-                case DAM_LINE:
-                    P_ProcessLines(mapLump->version);
                     break;
 
                 default:
@@ -1604,7 +1578,7 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
             Con_Error("ReadValue: DDVT_SHORT incompatible with value type.\n");
          }
     }
-    else if(valueType = DDVT_FIXED)
+    else if(valueType == DDVT_FIXED)
     {
         fixed_t* d = dest;
 
@@ -1638,7 +1612,7 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
             Con_Error("ReadValue: DDVT_FIXED incompatible with value type.\n");
         }
     }
-    else if(valueType = DDVT_ULONG)
+    else if(valueType == DDVT_ULONG)
     {
         unsigned long* d = dest;
 
@@ -1716,6 +1690,67 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
 
         default:
             Con_Error("ReadValue: DDVT_INT incompatible with value type.\n");
+        }
+    }
+    else if(valueType == DDVT_SECT_PTR || valueType == DDVT_VERT_PTR)
+    {
+        int idx = NO_INDEX;
+
+        switch(prop->size) // Number of src bytes
+        {
+        case 2:
+            if(flags & DT_UNSIGNED)
+            {
+                idx = USHORT(*((short*)(src)));
+            }
+            else
+            {
+                if(flags & DT_NOINDEX)
+                {
+                    unsigned short num = SHORT(*((short*)(src)));
+
+                    if(num != ((unsigned short)-1))
+                        idx = num;
+                }
+                else
+                {
+                    idx = SHORT(*((short*)(src)));
+                }
+            }
+            break;
+
+        case 4:
+            if(flags & DT_UNSIGNED)
+                idx = ULONG(*((long*)(src)));
+            else
+                idx = LONG(*((long*)(src)));
+            break;
+
+        default:
+            Con_Error("ReadValue: DDVT_SECT_PTR incompatible with value type.\n");
+        }
+
+        switch(valueType)
+        {
+        case DDVT_SECT_PTR:
+            {
+            sector_t** d = dest;
+            if(idx >= 0 && idx < numsectors)
+                *d = &sectors[idx];
+            else
+                *d = NULL;
+            break;
+            }
+
+        case DDVT_VERT_PTR:
+            {
+            vertex_t** d = dest;
+            if(idx >= 0 && idx < numvertexes)
+                *d = &vertexes[idx];
+            else
+                *d = NULL;
+            break;
+            }
         }
     }
     else
@@ -1796,17 +1831,17 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
 
         case DAM_LINE:  // Lines are read into an interim format
             {
-            mapline_t *p = &linestemp[element];
+            line_t *p = LINE_PTR(element);
             switch(prop->property)
             {
             case DAM_VERTEX1:
                 dest = &p->v1;
-                destType = DDVT_INT;
+                destType = DDVT_VERT_PTR;
                 break;
 
             case DAM_VERTEX2:
                 dest = &p->v2;
-                destType = DDVT_INT;
+                destType = DDVT_VERT_PTR;
                 break;
 
             case DAM_FLAGS:
@@ -1865,7 +1900,7 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
 
             case DAM_FRONT_SECTOR:
                 dest = &p->sector;
-                destType = DDVT_INT;
+                destType = DDVT_SECT_PTR;
                 break;
 
             default:
@@ -2247,50 +2282,6 @@ static void P_ProcessSegs(int version)
 }
 
 /*
- * Converts the temporary line data into real lines.
- *
- */
-static void P_ProcessLines(int version)
-{
-    int i;
-    line_t *line;
-    mapline_t *mline;
-
-    line = lines;
-    mline = linestemp;
-
-    for(i = 0; i < numlines; i++, ++mline, ++line)
-    {
-        line->v1 = VERTEX_PTR(mline->v1);
-        line->v2 = VERTEX_PTR(mline->v2);
-
-        if(mline->flags)
-            line->flags = mline->flags;
-        else
-            line->flags = 0;
-
-        P_SetLineSideNum(&line->sidenum[0], mline->sidenum[0]);
-        P_SetLineSideNum(&line->sidenum[1], mline->sidenum[1]);
-    }
-
-    // We're done with the temporary data
-    Z_Free(linestemp);
-}
-
-// FIXME: Could be a macro?
-static void P_SetLineSideNum(int *side, unsigned short num)
-{
-    if(num == ((unsigned short)NO_INDEX))
-    {
-        *side = -1;
-    }
-    else
-    {
-        *side = num;
-    }
-}
-
-/*
  * Completes the linedef loading by resolving the front/back
  * sector ptrs which we couldn't do earlier as the sidedefs
  * hadn't been loaded at the time.
@@ -2384,30 +2375,6 @@ static void P_FinishLineDefs(void)
 }
 
 /*
- * TODO: Remove this and use the generic P_ReadBinaryMapData
- */
-static void P_ReadSideDefs(unsigned int startIndex, int dataType, const byte *buffer,
-                           size_t elmsize, unsigned int elements, unsigned int values,
-                           const datatype_t *types)
-{
-    int     i, index;
-    mapsidedef_t *msd;
-    side_t *sd;
-
-    Con_Message("Loading Sidedefs (%i)...\n", elements);
-
-    sd = SIDE_PTR(0);
-    msd = (mapsidedef_t *) buffer;
-/*    for(i = numsides -1; i >= 0; --i, msd++, sd++)
-    {
-        // There may be bogus sector indices here.
-        index = SHORT(msd->sector);
-        if(index >= 0 && index < numsectors)
-            sd->sector = SECTOR_PTR(index);
-    }*/
-}
-
-/*
  * MUST be called after Linedefs are loaded.
  *
  * Sidedef texture fields might be overloaded with all kinds of
@@ -2443,12 +2410,6 @@ static void P_ReadSideDefTextures(int lump)
     for(i = 0; i < numsides; i++, msd++)
     {
         sd = SIDE_PTR(i);
-        index = SHORT(msd->sector);
-        if(index >= 0 && index < numsectors)
-            sd->sector = SECTOR_PTR(index);
-        sd->textureoffset = SHORT(msd->textureoffset) << FRACBITS;
-        sd->rowoffset = SHORT(msd->rowoffset) << FRACBITS;
-
         sd->toptexture = P_CheckTexture(msd->toptexture, false, DAM_SIDE,
                                         i, DAM_TOP_TEXTURE);
 
@@ -2658,13 +2619,13 @@ void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].values[4].gameprop = 1;
                     // front side
                     stiptr->verInfo[index].values[5].property = DAM_SIDE0;
-                    stiptr->verInfo[index].values[5].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[5].flags = DT_NOINDEX;
                     stiptr->verInfo[index].values[5].size =  2;
                     stiptr->verInfo[index].values[5].offset = 10;
                     stiptr->verInfo[index].values[5].gameprop = 0;
                     // back side
                     stiptr->verInfo[index].values[6].property = DAM_SIDE1;
-                    stiptr->verInfo[index].values[6].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[6].flags = DT_NOINDEX;
                     stiptr->verInfo[index].values[6].size =  2;
                     stiptr->verInfo[index].values[6].offset = 12;
                     stiptr->verInfo[index].values[6].gameprop = 0;
@@ -2730,13 +2691,13 @@ void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].values[8].gameprop = 1;
                     // front side
                     stiptr->verInfo[index].values[9].property = DAM_SIDE0;
-                    stiptr->verInfo[index].values[9].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[9].flags = DT_NOINDEX;
                     stiptr->verInfo[index].values[9].size =  2;
                     stiptr->verInfo[index].values[9].offset = 12;
                     stiptr->verInfo[index].values[9].gameprop = 0;
                     // back side
                     stiptr->verInfo[index].values[10].property = DAM_SIDE1;
-                    stiptr->verInfo[index].values[10].flags = DT_UNSIGNED;
+                    stiptr->verInfo[index].values[10].flags = DT_NOINDEX;
                     stiptr->verInfo[index].values[10].size =  2;
                     stiptr->verInfo[index].values[10].offset = 14;
                     stiptr->verInfo[index].values[10].gameprop = 0;
@@ -2744,7 +2705,27 @@ void P_InitMapDataFormats(void)
             }
             else if(lumpClass == mlSideDefs)
             {
-                *mlptr = sizeof(mapsidedef_t);
+                *mlptr = 30;
+                stiptr->verInfo[index].numValues = 3;
+                stiptr->verInfo[index].values = Z_Malloc(sizeof(datatype_t) * 3, PU_STATIC, 0);
+                // x offset
+                stiptr->verInfo[index].values[0].property = DAM_TEXTURE_OFFSET_X;
+                stiptr->verInfo[index].values[0].flags = DT_FRACBITS;
+                stiptr->verInfo[index].values[0].size =  2;
+                stiptr->verInfo[index].values[0].offset = 0;
+                stiptr->verInfo[index].values[0].gameprop = 0;
+                // y offset
+                stiptr->verInfo[index].values[1].property = DAM_TEXTURE_OFFSET_Y;
+                stiptr->verInfo[index].values[1].flags = DT_FRACBITS;
+                stiptr->verInfo[index].values[1].size =  2;
+                stiptr->verInfo[index].values[1].offset = 2;
+                stiptr->verInfo[index].values[1].gameprop = 0;
+                // sector
+                stiptr->verInfo[index].values[2].property = DAM_FRONT_SECTOR;
+                stiptr->verInfo[index].values[2].flags = 0;
+                stiptr->verInfo[index].values[2].size =  2;
+                stiptr->verInfo[index].values[2].offset = 28;
+                stiptr->verInfo[index].values[2].gameprop = 0;
             }
             else if(lumpClass == mlVertexes)
             {
