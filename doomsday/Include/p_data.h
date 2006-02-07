@@ -257,8 +257,6 @@ extern int      numUniqueLines;
 extern int     *missingFronts;
 extern int      numMissingFronts;
 
-boolean         P_LoadBlockMap(struct mapdatalumpinfo_s *maplump);
-boolean         P_LoadReject(struct mapdatalumpinfo_s *maplump);
 void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);
 void            P_CeilingChanged(sector_t *sector);
