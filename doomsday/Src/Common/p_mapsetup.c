@@ -212,7 +212,6 @@ void P_SetupForSectors(int num)
  */
 void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 {
-    int     setupflags = DDSLF_POLYGONIZE | DDSLF_FIX_SKY | DDSLF_REVERB;
     char    levelId[9];
 
     // It begins
@@ -280,17 +279,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // This needs to be sorted out. R_SetupLevel should be called from the
     // engine but in order to move it there we need to decide how polyobject
     // init/setup is going to be handled.
-
-    // It's imperative that this is called!
-    // - dlBlockLinks initialized
-    // - necessary GL data generated
-    // - sky fix
-    // - map info setup
 #if __JHEXEN__
-    // Server can't be initialized before PO_Init is done, but PO_Init
-    // can't be done until SetupLevel is called...
-    R_SetupLevel(levelId, setupflags | DDSLF_NO_SERVER);
-
     // Initialize polyobjs.
     Con_Message("PO init\n");
     PO_Init(W_GetNumForName(levelId) + ML_THINGS);   // Initialize the polyobjs
@@ -302,9 +291,9 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     Con_Message("Load ACS scripts\n");
     P_LoadACScripts(W_GetNumForName(levelId) + ML_BEHAVIOR); // ACS object code
 #else
-
-    R_SetupLevel(levelId, setupflags);
-
+    // Now we can init the server.
+    Con_Message("Init server\n");
+    R_SetupLevel(levelId, DDSLF_SERVER_ONLY);
 #endif
 
     P_DealPlayerStarts();
