@@ -96,12 +96,12 @@ typedef struct {
 typedef struct mapdatalumpinfo_s {
     int     lumpNum;
     byte   *lumpp;      // ptr to the lump data
-    int     version;
+    mapdatalumpformat_t     *format;
     int     lumpClass;
     int     startOffset;
     int     length;
 } mapdatalumpinfo_t;
 
 void        P_InitMapDataFormats(void);
-boolean     P_LoadMapData(char *levelId);
+boolean    P_LoadMapData(char *levelId);
 #endif
