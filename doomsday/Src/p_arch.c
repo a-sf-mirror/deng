@@ -30,6 +30,7 @@
 
 #include "p_arch.h"
 #include "m_bams.h"
+#include "m_misc.h"
 #include <math.h>
 
 // MACROS ------------------------------------------------------------------
@@ -48,6 +49,16 @@
 #define GLNODE_FORMATS  5
 
 #define ML_SIDEDEFS     3 // TODO: read sidedefs using the generic data code
+
+// MAXRADIUS is for precalculated sector block boxes
+// the spider demon is larger,
+// but we do not have any moving sectors nearby
+#define MAXRADIUS       32*FRACUNIT
+
+// internal blockmap stuff
+#define BLKSHIFT 7                // places to shift rel position for cell num
+#define BLKMASK ((1<<BLKSHIFT)-1) // mask for rel position within cell
+#define BLKMARGIN 0               // size guardband around map used
 
 // TYPES -------------------------------------------------------------------
 
@@ -145,6 +156,12 @@ typedef struct {
     char* time;
     char* checksum;
 } glbuildinfo_t;
+
+// used to list lines in each block
+typedef struct linelist_t {
+    long num;
+    struct linelist_t *next;
+} linelist_t;
 
 // THING formats
 // These formats are FYI
@@ -301,7 +318,46 @@ typedef struct {
     int           offset;
 } mapseg_t;
 
+typedef struct gamemap_s {
+    int      numvertexes;
+    vertex_t *vertexes;
+
+    int      numsegs;
+    seg_t   *segs;
+
+    int      numsectors;
+    sector_t *sectors;
+
+    int      numsubsectors;
+    subsector_t *subsectors;
+
+    int      numnodes;
+    node_t  *nodes;
+
+    int      numlines;
+    line_t  *lines;
+
+    int      numsides;
+    side_t  *sides;
+
+    int      po_NumPolyobjs;
+    polyobj_t *polyobjs;
+
+    int      numthings;
+
+    long       *blockmaplump;           // offsets in blockmap are from here
+    long       *blockmap;
+
+    int         bmapwidth, bmapheight;  // in mapblocks
+    fixed_t     bmaporgx, bmaporgy;     // origin of block map
+    linkmobj_t *blockrings;             // for thing rings
+
+    byte    *rejectmatrix;
+} gamemap_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+static void P_CreateBlockMap(gamemap_t* map);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -309,20 +365,23 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean  ReadMapData(int doClass);
+static boolean  ReadMapData(gamemap_t* map, int doClass);
 static boolean  DetermineMapDataFormat(void);
 
-static void     P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
+static void     P_ReadBinaryMapData(gamemap_t* map, unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmsize, unsigned int elements,
                                 unsigned int values, const datatype_t *types);
 
-static void     P_ReadSideDefTextures(int lump);
-static void     P_FinishLineDefs(void);
-static void     P_ProcessSegs(int version);
+static void     P_ReadSideDefTextures(gamemap_t* map, int lump);
+static void     P_FinishLineDefs(gamemap_t* map);
+static void     P_ProcessSegs(gamemap_t* map, int version);
 
-#if _DEBUG
-static void     P_PrintDebugMapData(void);
-#endif
+static boolean  P_LoadReject(gamemap_t* map, mapdatalumpinfo_t* maplump);
+static boolean  P_LoadBlockMap(gamemap_t* map, mapdatalumpinfo_t* maplump);
+static void     P_GroupLines(gamemap_t* map);
+//#if _DEBUG
+static void     P_PrintDebugMapData(gamemap_t* map);
+//#endif
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -395,6 +454,8 @@ static int numMapDataLumps;
 static glbuildinfo_t *glBuilderInfo;
 
 static mapseg_t *segstemp;
+
+static gamemap_t* currentMap;
 
 // CODE --------------------------------------------------------------------
 
@@ -584,7 +645,7 @@ static void AddMapDataLump(int lumpNum, int lumpClass)
     mapDataLump->lumpClass = lumpClass;
     mapDataLump->lumpp = NULL;
     mapDataLump->length = 0;
-    mapDataLump->version = -1;
+    mapDataLump->format = NULL;
     mapDataLump->startOffset = 0;
 }
 
@@ -765,7 +826,7 @@ static void DetermineMapDataLumpFormat(mapdatalumpinfo_t* mapLump)
                 {
                     // Aha! It IS a "named" format.
                     // Record the version number.
-                    mapLump->version = mapDataLumpFormat->version;
+                    mapLump->format = mapDataLumpFormat;
 
                     // Set the start offset into byte stream.
                     mapLump->startOffset = 4; // num of bytes
@@ -828,17 +889,17 @@ static boolean VerifyMapData(char *levelID)
             // Is this a lump of the class we are looking for?
             if(mapDataLump->lumpClass == mapLmpInf->lumpclass)
             {
-                // Are we precaching lumps of this class?
-                if(mapLmpInf->precache)
-                   mapDataLump->lumpp =
-                        (byte *) W_CacheLumpNum(mapDataLump->lumpNum, PU_STATIC);
-
                 // Store the lump length.
                 mapDataLump->length = W_LumpLength(mapDataLump->lumpNum);
 
                 // If this is a BEHAVIOR lump, then this MUST be a HEXEN format map.
                 if(mapDataLump->lumpClass == LCM_BEHAVIOR)
                     mapFormat = 1;
+
+                // Are we precaching lumps of this class?
+                if(mapLmpInf->precache && mapDataLump->lumpNum != -1)
+                   mapDataLump->lumpp =
+                        (byte *) W_CacheLumpNum(mapDataLump->lumpNum, PU_STATIC);
 
                 // Attempt to determine the format of this map data lump.
                 DetermineMapDataLumpFormat(mapDataLump);
@@ -924,8 +985,8 @@ static boolean DetermineMapDataFormat(void)
            mapLump->lumpClass <= LCM_BEHAVIOR)
         {
             // Set the lump version number for this format.
-            if(mapLump->version == -1)
-                mapLump->version = mapDataFormats[mapFormat].verInfo[lumpClass].version;
+            if(mapLump->format == NULL)
+                mapLump->format = &mapDataFormats[mapFormat].verInfo[lumpClass];
         }
     }
 
@@ -955,10 +1016,10 @@ static boolean DetermineMapDataFormat(void)
                                 W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME),
                                 mapLumpInfo[mapLump->lumpClass].glLump,
                                 glNodeFormats[i].verInfo[lumpClass].version,
-                                mapLump->version);*/
+                                mapLump->format->version);*/
 
                     // SHOULD this lump format declare a version (magic bytes)?
-                    if(mapLump->version == -1)
+                    if(mapLump->format == NULL)
                     {
                         if(nodeFormat->verInfo[lumpClass].magicid != NULL)
                             failed = true;
@@ -966,7 +1027,7 @@ static boolean DetermineMapDataFormat(void)
                     else
                     {
                         // Compare the versions.
-                        if(mapLump->version != nodeFormat->verInfo[lumpClass].version)
+                        if(mapLump->format->version != nodeFormat->verInfo[lumpClass].version)
                             failed = true;
                     }
                 }
@@ -1015,8 +1076,8 @@ static boolean DetermineMapDataFormat(void)
                            mapLump->lumpClass <= LCG_NODES)
                         {
                             // Set the lump version number for this format.
-                            if(mapLump->version == -1)
-                                mapLump->version = nodeFormat->verInfo[lumpClass].version;
+                            if(mapLump->format == NULL)
+                                mapLump->format = &nodeFormat->verInfo[lumpClass];
                         }
                     }
                     return true;
@@ -1061,24 +1122,26 @@ boolean P_GetMapFormat(void)
  * Configure the map data objects so they can be accessed by the
  * games, using the DMU functions of the Doomsday public API.
  */
-static void FinalizeMapData(void)
+static void FinalizeMapData(gamemap_t* map)
 {
     int i;
     sector_t* sec;
     side_t* side;
 
-    for(i = 0; i < numvertexes; ++i)
-        vertexes[i].header.type = DMU_VERTEX;
+    P_GroupLines(map);
 
-    for(i = 0; i < numsegs; ++i)
-        segs[i].header.type = DMU_SEG;
+    for(i = 0; i < map->numvertexes; ++i)
+        map->vertexes[i].header.type = DMU_VERTEX;
 
-    for(i = 0; i < numlines; ++i)
-        lines[i].header.type = DMU_LINE;
+    for(i = 0; i < map->numsegs; ++i)
+        map->segs[i].header.type = DMU_SEG;
 
-    for(i = 0; i < numsides; ++i)
+    for(i = 0; i < map->numlines; ++i)
+        map->lines[i].header.type = DMU_LINE;
+
+    for(i = 0; i < map->numsides; ++i)
     {
-        side = &sides[i];
+        side = &map->sides[i];
 
         side->header.type = DMU_SIDE;
 
@@ -1096,12 +1159,12 @@ static void FinalizeMapData(void)
             side->bottomtexture = 0;
     }
 
-    for(i = 0; i < numsubsectors; ++i)
-        subsectors[i].header.type = DMU_SUBSECTOR;
+    for(i = 0; i < map->numsubsectors; ++i)
+        map->subsectors[i].header.type = DMU_SUBSECTOR;
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < map->numsectors; ++i)
     {
-        sec = &sectors[i];
+        sec = &map->sectors[i];
         sec->header.type = DMU_SECTOR;
 
         sec->thinglist = NULL;
@@ -1110,14 +1173,14 @@ static void FinalizeMapData(void)
         memset(sec->ceilingrgb, 0xff, 3);
     }
 
-    for(i = 0; i < po_NumPolyobjs; ++i)
-        polyobjs[i].header.type = DMU_POLYOBJ;
+    for(i = 0; i < map->po_NumPolyobjs; ++i)
+        map->polyobjs[i].header.type = DMU_POLYOBJ;
 
-    for(i = 0; i < numnodes; ++i)
-        nodes[i].header.type = DMU_NODE;
+    for(i = 0; i < map->numnodes; ++i)
+        map->nodes[i].header.type = DMU_NODE;
 }
 
-static boolean P_ReadMapData(int doClass)
+static boolean P_ReadMapData(gamemap_t* map, int doClass)
 {
     // Cant load GL NODE data if we don't have it.
     if(!glNodeData && (doClass >= LCG_VERTEXES && doClass <= LCG_NODES))
@@ -1126,7 +1189,7 @@ static boolean P_ReadMapData(int doClass)
         // point in the map loading process (at the start).
         return true;
 
-    if(!ReadMapData(doClass))
+    if(!ReadMapData(map, doClass))
     {
         FreeMapDataLumps();
         FreeGLBSPInf();
@@ -1136,16 +1199,60 @@ static boolean P_ReadMapData(int doClass)
     return true;
 }
 
+static void SetCurrentMap(gamemap_t* map)
+{
+    numvertexes = map->numvertexes;
+    vertexes = map->vertexes;
+
+    numsegs = map->numsegs;
+    segs = map->segs;
+
+    numsectors = map->numsectors;
+    sectors = map->sectors;
+
+    numsubsectors = map->numsubsectors;
+    subsectors = map->subsectors;
+
+    numnodes = map->numnodes;
+    nodes = map->nodes;
+
+    numlines = map->numlines;
+    lines = map->lines;
+
+    numsides = map->numsides;
+    sides = map->sides;
+
+    po_NumPolyobjs = map->po_NumPolyobjs;
+    polyobjs = map->polyobjs;
+
+    numthings = map->numthings;
+
+    blockmaplump = map->blockmaplump;
+    blockmap = map->blockmap;
+
+    bmapwidth = map->bmapwidth;
+    bmapheight = map->bmapheight;
+    bmaporgx = map->bmaporgx;
+    bmaporgy = map->bmaporgy;
+    blockrings = map->blockrings;
+
+    rejectmatrix = map->rejectmatrix;
+
+    currentMap = map;
+}
+
 /*
  * Loads the map data structures for a level.
  *
  * @param levelId   Identifier of the map to be loaded (eg "E1M1").
  *
- * @return boolean  (True) If we loaded/generated all map data successfully.
+ * @return gamemap_t*  Ptr to loaded map. NULL if unsuccessful.
  */
 boolean P_LoadMapData(char *levelId)
 {
+    int setupflags = DDSLF_POLYGONIZE | DDSLF_FIX_SKY | DDSLF_REVERB;
     int lumpNumbers[2];
+    gamemap_t* newmap;
 
     numMapDataLumps = 0;
 
@@ -1183,66 +1290,91 @@ boolean P_LoadMapData(char *levelId)
     // Try to determine the format of this map.
     if(P_GetMapFormat())
     {
+        newmap = malloc(sizeof(gamemap_t));
         // Excellent, its a map we can read. Load it in!
         Con_Message("P_LoadMapData: %s\n", levelId);
 
         // Reset the global map data struct counters.
-        numvertexes = 0;
-        numsubsectors = 0;
-        numsectors = 0;
-        numnodes = 0;
-        numsides = 0;
-        numlines = 0;
-        numsegs = 0;
-        numthings = 0;
+        newmap->numvertexes = 0;
+        newmap->numsubsectors = 0;
+        newmap->numsectors = 0;
+        newmap->numnodes = 0;
+        newmap->numsides = 0;
+        newmap->numlines = 0;
+        newmap->numsegs = 0;
+        newmap->numthings = 0;
 
         // Load all lumps of each class in this order.
         //
         // NOTE:
         // DJS 01/10/05 - revised load order to allow for cross-referencing
         //                data during loading (detect + fix trivial errors).
-        if(!P_ReadMapData(LCM_VERTEXES))
+        if(!P_ReadMapData(newmap, LCM_VERTEXES))
             return false;
-        if(!P_ReadMapData(LCG_VERTEXES))
+        if(!P_ReadMapData(newmap, LCG_VERTEXES))
             return false;
-        if(!P_ReadMapData(LCM_SECTORS))
+        if(!P_ReadMapData(newmap, LCM_SECTORS))
             return false;
-        if(!P_ReadMapData(LCM_SIDEDEFS))
+        if(!P_ReadMapData(newmap, LCM_SIDEDEFS))
             return false;
-        if(!P_ReadMapData(LCM_LINEDEFS))
-            return false;
-
-        P_ReadSideDefTextures(lumpNumbers[0] + ML_SIDEDEFS);
-        P_FinishLineDefs();
-
-        if(!P_ReadMapData(LCM_BLOCKMAP))
+        if(!P_ReadMapData(newmap, LCM_LINEDEFS))
             return false;
 
-        if(!P_ReadMapData(LCM_THINGS))
-            return false;
-        if(!P_ReadMapData(LCM_SEGS))
-            return false;
-        if(!P_ReadMapData(LCM_SUBSECTORS))
-            return false;
-        if(!P_ReadMapData(LCM_NODES))
-            return false;
-        if(!P_ReadMapData(LCM_REJECT))
+        P_ReadSideDefTextures(newmap, lumpNumbers[0] + ML_SIDEDEFS);
+        P_FinishLineDefs(newmap);
+
+        if(!P_ReadMapData(newmap, LCM_BLOCKMAP))
             return false;
 
-        //P_PrintDebugMapData();
+        if(!P_ReadMapData(newmap, LCM_THINGS))
+            return false;
+        if(!P_ReadMapData(newmap, LCM_SEGS))
+            return false;
+        if(!P_ReadMapData(newmap, LCM_SUBSECTORS))
+            return false;
+        if(!P_ReadMapData(newmap, LCM_NODES))
+            return false;
+        if(!P_ReadMapData(newmap, LCM_REJECT))
+            return false;
+
+        P_PrintDebugMapData(newmap);
 
         // We have complete level data but we're not out of the woods yet...
         FreeMapDataLumps();
         FreeGLBSPInf();
 
-    /*    if(glNodeData)
-            setupflags |= DDSLF_DONT_CLIP; */
-
-        FinalizeMapData();
-
         // Do any initialization/error checking work we need to do.
         // Must be called before we go any further
-        return P_CheckLevel(levelId, false);
+        FinalizeMapData(newmap);
+
+        if(currentMap != NULL)
+            free(currentMap);
+
+        SetCurrentMap(newmap);
+
+        // Must be called before any mobjs are spawned.
+        Con_Message("Init links\n");
+        R_SetupLevel(levelId, DDSLF_INIT_LINKS);
+
+        // DJS - TODO:
+        // This needs to be sorted out. R_SetupLevel should be called from the
+        // engine but in order to move it there we need to decide how polyobject
+        // init/setup is going to be handled.
+
+        // It's imperative that this is called!
+        // - dlBlockLinks initialized
+        // - necessary GL data generated
+        // - sky fix
+        // - map info setup
+
+        // Server can't be initialized before PO_Init is done, but PO_Init
+        // can't be done until SetupLevel is called...
+        if(glNodeData)
+            setupflags |= DDSLF_DONT_CLIP;
+Con_Message("Do next\n");
+        R_SetupLevel(levelId, setupflags | DDSLF_NO_SERVER);
+
+        return true;
     }
     else
     {
@@ -1260,7 +1392,7 @@ boolean P_LoadMapData(char *levelId)
  * @return: boolean     (True) All the lumps of the requested class
  *                      were processed successfully.
  */
-static boolean ReadMapData(int doClass)
+static boolean ReadMapData(gamemap_t* map, int doClass)
 {
     int internalType;
     int lumpCount;
@@ -1300,15 +1432,7 @@ static boolean ReadMapData(int doClass)
             // Is this a "real" lump? (ie do we have to generate the data for it?)
             if(mapLump->lumpNum != -1)
             {
-                // use the original map data structures by default
-                if(lumpInfo->mdLump >= 0)
-                {
-                    lumpFormat = &mapDataFormats[mapFormat].verInfo[lumpInfo->mdLump];
-                }
-                else // its a gl node lumpclass
-                {
-                    lumpFormat = &glNodeFormats[glNodeFormat].verInfo[lumpInfo->glLump];
-                }
+                lumpFormat = mapLump->format;
 
                 if(lumpFormat->values != NULL)
                     dataTypes = lumpFormat->values;
@@ -1320,7 +1444,7 @@ static boolean ReadMapData(int doClass)
 
                 VERBOSE(Con_Message("P_ReadMapData: Processing \"%s\" (#%d) ver %d...\n",
                                     W_CacheLumpNum(mapLump->lumpNum, PU_GETNAME), elements,
-                                    mapLump->version));
+                                    mapLump->format->version));
 
                 // Have we cached the lump yet?
                 if(mapLump->lumpp == NULL)
@@ -1340,24 +1464,24 @@ static boolean ReadMapData(int doClass)
             switch(internalType)
             {
             case DAM_VERTEX:
-                oldNum = numvertexes;
-                newNum = numvertexes+= elements;
+                oldNum = map->numvertexes;
+                newNum = map->numvertexes+= elements;
 
                 if(oldNum != 0)
-                    vertexes = Z_Realloc(vertexes, numvertexes * sizeof(vertex_t), PU_LEVEL);
+                    map->vertexes = Z_Realloc(map->vertexes, map->numvertexes * sizeof(vertex_t), PU_LEVEL);
                 else
-                    vertexes = Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, 0);
+                    map->vertexes = Z_Malloc(map->numvertexes * sizeof(vertex_t), PU_LEVEL, 0);
 
-                memset(VERTEX_PTR(oldNum), 0, elements * sizeof(vertex_t));
+                memset(&map->vertexes[oldNum], 0, elements * sizeof(vertex_t));
 
                 if(mapLump->lumpClass == LCM_VERTEXES && oldNum == 0)
-                    firstGLvertex = numvertexes;
+                    firstGLvertex = map->numvertexes;
                 break;
 
             case DAM_THING:
                 // mapthings are game-side
-                oldNum = numthings;
-                newNum = numthings+= elements;
+                oldNum = map->numthings;
+                newNum = map->numthings+= elements;
 
                 // Call the game's setup routine
                 if(gx.SetupForThings)
@@ -1365,18 +1489,18 @@ static boolean ReadMapData(int doClass)
                 break;
 
             case DAM_LINE:
-                oldNum = numlines;
-                newNum = numlines+= elements;
+                oldNum = map->numlines;
+                newNum = map->numlines+= elements;
 
                 if(oldNum != 0)
-                    lines = Z_Realloc(lines, numlines * sizeof(line_t), PU_LEVEL);
+                    map->lines = Z_Realloc(lines, map->numlines * sizeof(line_t), PU_LEVEL);
                 else
-                    lines = Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, 0);
+                    map->lines = Z_Malloc(map->numlines * sizeof(line_t), PU_LEVEL, 0);
 
-                memset(LINE_PTR(oldNum), 0, elements * sizeof(line_t));
+                memset(&map->lines[oldNum], 0, elements * sizeof(line_t));
 
                 // for missing front detection
-                missingFronts = malloc(numlines * sizeof(int));
+                missingFronts = malloc(map->numlines * sizeof(int));
                 memset(missingFronts, 0, sizeof(missingFronts));
 
                 // Call the game's setup routine
@@ -1385,15 +1509,15 @@ static boolean ReadMapData(int doClass)
                 break;
 
             case DAM_SIDE:
-                oldNum = numsides;
-                newNum = numsides+= elements;
+                oldNum = map->numsides;
+                newNum = map->numsides+= elements;
 
                 if(oldNum != 0)
-                    sides = Z_Realloc(sides, numsides * sizeof(side_t), PU_LEVEL);
+                    map->sides = Z_Realloc(map->sides, map->numsides * sizeof(side_t), PU_LEVEL);
                 else
-                    sides = Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, 0);
+                    map->sides = Z_Malloc(map->numsides * sizeof(side_t), PU_LEVEL, 0);
 
-                memset(SIDE_PTR(oldNum), 0, elements * sizeof(side_t));
+                memset(&map->sides[oldNum], 0, elements * sizeof(side_t));
 
                 // Call the game's setup routine
                 if(gx.SetupForSides)
@@ -1402,58 +1526,58 @@ static boolean ReadMapData(int doClass)
 
             case DAM_SEG:
                 // Segs are read into a temporary buffer before processing
-                oldNum = numsegs;
-                newNum = numsegs+= elements;
+                oldNum = map->numsegs;
+                newNum = map->numsegs+= elements;
 
                 if(oldNum != 0)
                 {
-                    segs = Z_Realloc(segs, numsegs * sizeof(seg_t), PU_LEVEL);
-                    segstemp = Z_Realloc(segstemp, numsegs * sizeof(mapseg_t), PU_STATIC);
+                    map->segs = Z_Realloc(map->segs, map->numsegs * sizeof(seg_t), PU_LEVEL);
+                    segstemp = Z_Realloc(segstemp, map->numsegs * sizeof(mapseg_t), PU_STATIC);
                 }
                 else
                 {
-                    segs = Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
-                    segstemp = Z_Malloc(numsegs * sizeof(mapseg_t), PU_STATIC, 0);
+                    map->segs = Z_Malloc(map->numsegs * sizeof(seg_t), PU_LEVEL, 0);
+                    segstemp = Z_Malloc(map->numsegs * sizeof(mapseg_t), PU_STATIC, 0);
                 }
 
-                memset(SEG_PTR(oldNum), 0, elements * sizeof(seg_t));
-                memset(segstemp + oldNum, 0, elements * sizeof(mapseg_t));
+                memset(&map->segs[oldNum], 0, elements * sizeof(seg_t));
+                memset(&segstemp[oldNum], 0, elements * sizeof(mapseg_t));
                 break;
 
             case DAM_SUBSECTOR:
-                oldNum = numsubsectors;
-                newNum = numsubsectors+= elements;
+                oldNum = map->numsubsectors;
+                newNum = map->numsubsectors+= elements;
 
                 if(oldNum != 0)
-                    subsectors = Z_Realloc(subsectors, numsubsectors * sizeof(subsector_t), PU_LEVEL);
+                    map->subsectors = Z_Realloc(map->subsectors, map->numsubsectors * sizeof(subsector_t), PU_LEVEL);
                 else
-                    subsectors = Z_Malloc(numsubsectors * sizeof(subsector_t), PU_LEVEL, 0);
+                    map->subsectors = Z_Malloc(map->numsubsectors * sizeof(subsector_t), PU_LEVEL, 0);
 
-                memset(SUBSECTOR_PTR(oldNum), 0, elements * sizeof(subsector_t));
+                memset(&map->subsectors[oldNum], 0, elements * sizeof(subsector_t));
                 break;
 
             case DAM_NODE:
-                oldNum = numnodes;
-                newNum = numnodes+= elements;
+                oldNum = map->numnodes;
+                newNum = map->numnodes+= elements;
 
                 if(oldNum != 0)
-                    nodes = Z_Realloc(nodes, numnodes * sizeof(node_t), PU_LEVEL);
+                    map->nodes = Z_Realloc(map->nodes, map->numnodes * sizeof(node_t), PU_LEVEL);
                 else
-                    nodes = Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
+                    map->nodes = Z_Malloc(map->numnodes * sizeof(node_t), PU_LEVEL, 0);
 
-                memset(NODE_PTR(oldNum), 0, elements * sizeof(node_t));
+                memset(&map->nodes[oldNum], 0, elements * sizeof(node_t));
                 break;
 
             case DAM_SECTOR:
-                oldNum = numsectors;
-                newNum = numsectors+= elements;
+                oldNum = map->numsectors;
+                newNum = map->numsectors+= elements;
 
                 if(oldNum != 0)
-                    sectors = Z_Realloc(sectors, numsectors * sizeof(sector_t), PU_LEVEL);
+                    map->sectors = Z_Realloc(map->sectors, map->numsectors * sizeof(sector_t), PU_LEVEL);
                 else
-                    sectors = Z_Malloc(numsectors * sizeof(sector_t), PU_LEVEL, 0);
+                    map->sectors = Z_Malloc(map->numsectors * sizeof(sector_t), PU_LEVEL, 0);
 
-                memset(SECTOR_PTR(oldNum), 0, elements * sizeof(sector_t));
+                memset(&map->sectors[oldNum], 0, elements * sizeof(sector_t));
 
                 // Call the game's setup routine
                 if(gx.SetupForSectors)
@@ -1468,24 +1592,24 @@ static boolean ReadMapData(int doClass)
             startTime = Sys_GetRealTime();
             if(internalType == DAM_MAPBLOCK)
             {
-                if(!P_LoadBlockMap(mapLump))
+                if(!P_LoadBlockMap(map, mapLump))
                     return false;
             }
             else if(internalType == DAM_SECREJECT)
             {
-                if(!P_LoadReject(mapLump))
+                if(!P_LoadReject(map, mapLump))
                     return false;
             }
             else
             {
-                P_ReadBinaryMapData(oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
+                P_ReadBinaryMapData(map, oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
                                     lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
 
                 // Perform any additional processing required (temporary)
                 switch(internalType)
                 {
                 case DAM_SEG:
-                    P_ProcessSegs(mapLump->version);
+                    P_ProcessSegs(map, mapLump->format->version);
                     break;
 
                 default:
@@ -1517,8 +1641,8 @@ static boolean ReadMapData(int doClass)
  * type checking so that incompatible types are not assigned.
  * Simple conversions are also done, e.g., float to fixed.
  */
-static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
-                      const datatype_t* prop, unsigned int index)
+static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
+                      const byte *src, const datatype_t* prop, unsigned int index)
 {
     int flags = prop->flags;
 
@@ -1735,8 +1859,8 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
         case DDVT_SECT_PTR:
             {
             sector_t** d = dest;
-            if(idx >= 0 && idx < numsectors)
-                *d = &sectors[idx];
+            if(idx >= 0 && idx < map->numsectors)
+                *d = &map->sectors[idx];
             else
                 *d = NULL;
             break;
@@ -1745,8 +1869,8 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
         case DDVT_VERT_PTR:
             {
             vertex_t** d = dest;
-            if(idx >= 0 && idx < numvertexes)
-                *d = &vertexes[idx];
+            if(idx >= 0 && idx < map->numvertexes)
+                *d = &map->vertexes[idx];
             else
                 *d = NULL;
             break;
@@ -1759,8 +1883,8 @@ static void ReadValue(void* dest, valuetype_t valueType, const byte *src,
     }
 }
 
-static void ReadMapProperty(int dataType, unsigned int element, const datatype_t* prop,
-                            const byte *buffer)
+static void ReadMapProperty(gamemap_t* map, int dataType, unsigned int element,
+                            const datatype_t* prop, const byte *buffer)
 {
     valuetype_t destType;
     void*   dest;
@@ -1795,7 +1919,7 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
             Con_Error("ReadMapProperty: Unsupported data type id %i.\n", prop->size);
         };
 
-        ReadValue(dest, prop->size, buffer + prop->offset, prop, element);
+        ReadValue(map, dest, prop->size, buffer + prop->offset, prop, element);
 
         gx.HandleMapDataProperty(element, dataType, prop->property, prop->size, dest);
     }
@@ -1807,7 +1931,7 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
         {
         case DAM_VERTEX:
             {
-            vertex_t *p = VERTEX_PTR(element);
+            vertex_t *p = &map->vertexes[element];
             switch(prop->property)
             {
             case DAM_X:
@@ -1825,13 +1949,13 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
         case DAM_LINE:  // Lines are read into an interim format
             {
-            line_t *p = LINE_PTR(element);
+            line_t *p = &map->lines[element];
             switch(prop->property)
             {
             case DAM_VERTEX1:
@@ -1864,13 +1988,13 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
         case DAM_SIDE:
             {
-            side_t *p = SIDE_PTR(element);
+            side_t *p = &map->sides[element];
             switch(prop->property)
             {
             case DAM_TEXTURE_OFFSET_X:
@@ -1908,13 +2032,13 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
         case DAM_SECTOR:
             {
-            sector_t *p = SECTOR_PTR(element);
+            sector_t *p = &map->sectors[element];
             switch(prop->property)
             {
             case DAM_FLOOR_HEIGHT:
@@ -1947,7 +2071,7 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
@@ -1991,13 +2115,13 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
         case DAM_SUBSECTOR:
             {
-            subsector_t *p = SUBSECTOR_PTR(element);
+            subsector_t *p = &map->subsectors[element];
             switch(prop->property)
             {
             case DAM_LINE_COUNT:
@@ -2015,13 +2139,13 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
 
         case DAM_NODE:
             {
-            node_t *p = NODE_PTR(element);
+            node_t *p = &map->nodes[element];
             switch(prop->property)
             {
             case DAM_X:
@@ -2099,7 +2223,7 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
                           DAM_Str(prop->property));
             }
 
-            ReadValue(dest, destType, buffer + prop->offset, prop, element);
+            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
             break;
             }
         default:
@@ -2111,14 +2235,14 @@ static void ReadMapProperty(int dataType, unsigned int element, const datatype_t
 /*
  * Not very pretty to look at but it IS pretty quick :-)
  */
-static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byte *buffer,
+static void P_ReadBinaryMapData(gamemap_t* map, unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmSize, unsigned int elements, unsigned int numValues,
                                 const datatype_t *types)
 {
 #define NUMBLOCKS 8
 #define BLOCK for(k = numValues, mytypes = types; k--; ++mytypes) \
               { \
-                  ReadMapProperty(dataType, index, mytypes, buffer); \
+                  ReadMapProperty(map, dataType, index, mytypes, buffer); \
               } \
               buffer += elmSize; \
               ++index;
@@ -2156,7 +2280,7 @@ static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byt
         case 2: BLOCK
         case 1:
             for(k = numValues, mytypes = types; k--; ++mytypes)
-                ReadMapProperty(dataType, index, mytypes, buffer);
+                ReadMapProperty(map, dataType, index, mytypes, buffer);
         }
     }
 }
@@ -2166,7 +2290,7 @@ static void P_ReadBinaryMapData(unsigned int startIndex, int dataType, const byt
  * If angle and offset information is not provided they are
  * calculated here.
  */
-static void P_ProcessSegs(int version)
+static void P_ProcessSegs(gamemap_t* map, int version)
 {
     int     i;
     seg_t  *seg;
@@ -2175,39 +2299,39 @@ static void P_ProcessSegs(int version)
 
     ml = segstemp;
 
-    for(i = 0; i < numsegs; ++i, ++ml)
+    for(i = 0; i < map->numsegs; ++i, ++ml)
     {
-        seg = SEG_PTR(i);
+        seg = &map->segs[i];
 
         // Which version?
         switch(version)
         {
         case 1:  // (mapseg_t)
-            seg->v1 = VERTEX_PTR(ml->v1);
-            seg->v2 = VERTEX_PTR(ml->v2);
+            seg->v1 = &map->vertexes[ml->v1];
+            seg->v2 = &map->vertexes[ml->v2];
             break;
 
         case 2:  // (glseg_t)
             seg->v1 =
-                VERTEX_PTR(ml->v1 & 0x8000 ?
+                &map->vertexes[ml->v1 & 0x8000 ?
                           firstGLvertex + (ml->v1 & ~0x8000) :
-                          ml->v1);
+                          ml->v1];
             seg->v2 =
-                VERTEX_PTR(ml->v2 & 0x8000 ?
+                &map->vertexes[ml->v2 & 0x8000 ?
                           firstGLvertex + (ml->v2 & ~0x8000) :
-                          ml->v2);
+                          ml->v2];
             break;
 
         case 3:
         case 5:
             seg->v1 =
-                VERTEX_PTR(ml->v1 & 0xc0000000 ?
+                &map->vertexes[ml->v1 & 0xc0000000 ?
                           firstGLvertex + (ml->v1 & ~0xc0000000) :
-                          ml->v1);
+                          ml->v1];
             seg->v2 =
-                VERTEX_PTR(ml->v2 & 0xc0000000 ?
+                &map->vertexes[ml->v2 & 0xc0000000 ?
                           firstGLvertex + (ml->v2 & ~0xc0000000) :
-                          ml->v2);
+                          ml->v2];
             break;
 
         default:
@@ -2227,15 +2351,15 @@ static void P_ProcessSegs(int version)
 
         if(ml->linedef != NO_INDEX)
         {
-            ldef = LINE_PTR(ml->linedef);
+            ldef = &map->lines[ml->linedef];
             seg->linedef = ldef;
-            seg->sidedef = SIDE_PTR(ldef->sidenum[ml->side]);
-            seg->frontsector = SIDE_PTR(ldef->sidenum[ml->side])->sector;
+            seg->sidedef = &map->sides[ldef->sidenum[ml->side]];
+            seg->frontsector = map->sides[ldef->sidenum[ml->side]].sector;
 
             if(ldef->flags & ML_TWOSIDED &&
                ldef->sidenum[ml->side ^ 1] != NO_INDEX)
             {
-                seg->backsector = SIDE_PTR(ldef->sidenum[ml->side ^ 1])->sector;
+                seg->backsector = map->sides[ldef->sidenum[ml->side ^ 1]].sector;
             }
             else
             {
@@ -2291,7 +2415,7 @@ static void P_ProcessSegs(int version)
  *
  * Sidedefs MUST be loaded before this is called
  */
-static void P_FinishLineDefs(void)
+static void P_FinishLineDefs(gamemap_t* map)
 {
     int i;
     line_t *ld;
@@ -2301,9 +2425,9 @@ static void P_FinishLineDefs(void)
     VERBOSE2(Con_Message("Finalizing Linedefs...\n"));
 
     numUniqueLines = 0;
-    for(i = 0; i < numlines; i++)
+    for(i = 0; i < map->numlines; i++)
     {
-        ld = LINE_PTR(i);
+        ld = &map->lines[i];
 
         v1 = ld->v1;
         v2 = ld->v2;
@@ -2344,13 +2468,13 @@ static void P_FinishLineDefs(void)
             ld->bbox[BOXTOP] = v1->y;
         }
 
-        if(ld->sidenum[0] >= 0 && ld->sidenum[0] < numsides)
-            ld->frontsector = SIDE_PTR(ld->sidenum[0])->sector;
+        if(ld->sidenum[0] >= 0 && ld->sidenum[0] < map->numsides)
+            ld->frontsector = map->sides[ld->sidenum[0]].sector;
         else
             ld->frontsector = 0;
 
-        if(ld->sidenum[1] >= 0 && ld->sidenum[1] < numsides)
-            ld->backsector = SIDE_PTR(ld->sidenum[1])->sector;
+        if(ld->sidenum[1] >= 0 && ld->sidenum[1] < map->numsides)
+            ld->backsector = map->sides[ld->sidenum[1]].sector;
         else
             ld->backsector = 0;
 
@@ -2394,7 +2518,7 @@ static void P_FinishLineDefs(void)
  * If the game doesn't know what the erogenous value means:
  * We'll ignore it and assign the "MISSING" texture instead.
  */
-static void P_ReadSideDefTextures(int lump)
+static void P_ReadSideDefTextures(gamemap_t* map, int lump)
 {
     byte   *data;
     int     i, index;
@@ -2407,9 +2531,9 @@ static void P_ReadSideDefTextures(int lump)
 
     msd = (mapsidedef_t *) data;
 
-    for(i = 0; i < numsides; i++, msd++)
+    for(i = 0; i < map->numsides; i++, msd++)
     {
-        sd = SIDE_PTR(i);
+        sd = &map->sides[i];
         sd->toptexture = P_CheckTexture(msd->toptexture, false, DAM_SIDE,
                                         i, DAM_TOP_TEXTURE);
 
@@ -2421,6 +2545,647 @@ static void P_ReadSideDefTextures(int lump)
     }
 
     Z_Free(data);
+}
+
+/*
+ * Builds sector line lists and subsector sector numbers.
+ * Finds block bounding boxes for sectors.
+ */
+static void P_GroupLines(gamemap_t* map)
+{
+    int     *linesInSector;
+    int     block;
+    int     i, k;
+    int     secid;
+    unsigned long     j;
+
+    line_t **linebuffer;
+    line_t **linebptr;
+    line_t  *li;
+
+    sector_t *sec;
+    subsector_t *ss;
+    seg_t  *seg;
+    fixed_t bbox[4];
+
+    Con_Message("Group lines\n");
+    Con_Message(" Sector look up\n");
+    // look up sector number for each subsector
+    for(i = map->numsubsectors - 1, ss = map->subsectors; i >= 0; --i, ss++)
+    {
+        seg = &map->segs[ss->firstline];
+        ss->sector = seg->sidedef->sector;
+        for(j = ss->linecount -1; j >= 0; --j, seg++)
+            if(seg->sidedef)
+            {
+                ss->sector = seg->sidedef->sector;
+                break;
+            }
+    }
+
+    Con_Message(" Build line tables\n");
+    // build line tables for each sector
+    linebuffer = malloc(numUniqueLines * sizeof(line_t));
+    linebptr = linebuffer;
+    linesInSector = malloc(map->numsectors * sizeof(int));
+    memset(linesInSector, 0, map->numsectors * sizeof(int));
+
+    for(i = map->numsectors -1, sec = map->sectors; i >= 0; --i, sec++)
+    {
+        if(sec->linecount > 0)
+        {
+            sec->Lines = linebptr;
+            linebptr += sec->linecount;
+        }
+    }
+
+    for(k = map->numlines -1, li = map->lines; k >= 0; --k, li++)
+    {
+        if(li->frontsector != NULL)
+        {
+            secid = li->frontsector - map->sectors;
+            li->frontsector->Lines[linesInSector[secid]++] = li;
+        }
+
+        if(li->backsector != NULL && li->backsector != li->frontsector)
+        {
+            secid = li->backsector - map->sectors;
+            li->backsector->Lines[linesInSector[secid]++] = li;
+        }
+    }
+
+    for(i = map->numsectors, sec = map->sectors; i; --i, sec++)
+    {
+        if(linesInSector[map->numsectors- i] != sec->linecount)
+            Con_Error("P_GroupLines: miscounted"); // Hmm? Unusual...
+
+        if(sec->linecount != 0)
+        {
+            M_ClearBox(bbox);
+
+            for(k = sec->linecount; k ; --k)
+            {
+                li = sec->Lines[sec->linecount - k];
+                M_AddToBox(bbox, li->v1->x, li->v1->y);
+                M_AddToBox(bbox, li->v2->x, li->v2->y);
+            }
+        }
+/*
+        //FIXME: jDoom would like to know this.
+        else // stops any wayward line specials from misbehaving
+            sec->tag = 0;
+*/
+        // set the degenmobj_t to the middle of the bounding box
+        sec->soundorg.x = (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
+        sec->soundorg.y = (bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2;
+
+        // adjust bounding box to map blocks
+        block = (bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+        block = block >= bmapheight ? bmapheight - 1 : block;
+        sec->blockbox[BOXTOP] = block;
+
+        block = (bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
+        block = block < 0 ? 0 : block;
+        sec->blockbox[BOXBOTTOM] = block;
+
+        block = (bbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
+        block = block >= bmapwidth ? bmapwidth - 1 : block;
+        sec->blockbox[BOXRIGHT] = block;
+
+        block = (bbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
+        block = block < 0 ? 0 : block;
+        sec->blockbox[BOXLEFT] = block;
+    }
+
+    free(linebuffer);
+    free(linesInSector);
+    Con_Message("Done group lines\n");
+}
+
+/*
+ * Generate valid blockmap data from the already loaded level data.
+ * Adapted from algorithm used in prBoom 2.2.6 -DJS
+ *
+ * Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
+ */
+
+/*
+ * Subroutine to add a line number to a block list
+ * It simply returns if the line is already in the block
+ */
+static void AddBlockLine(linelist_t **lists, int *count, int *done,
+                         int blockno, long lineno)
+{
+    linelist_t *l;
+
+    if(done[blockno])
+        return;
+
+    l = malloc(sizeof(linelist_t));
+    l->num = lineno;
+    l->next = lists[blockno];
+
+    lists[blockno] = l;
+
+    count[blockno]++;
+
+    done[blockno] = 1;
+}
+
+/*
+ * Actually construct the blockmap lump from the level data
+ *
+ * This finds the intersection of each linedef with the column and
+ * row lines at the left and bottom of each blockmap cell. It then
+ * adds the line to all block lists touching the intersection.
+ */
+static void P_CreateBlockMap(gamemap_t* map)
+{
+    int i, j;
+    int bMapWidth, bMapHeight;      // blockmap dimensions
+    static vec2_t bMapOrigin;       // blockmap origin (lower left)
+    static vec2_t blockSize;        // size of the blocks
+    int *blockcount = NULL;          // array of counters of line lists
+    int *blockdone = NULL;           // array keeping track of blocks/line
+    int numBlocks;                     // number of cells = nrows*ncols
+
+    linelist_t **blocklists = NULL;  // array of pointers to lists of lines
+    long linetotal = 0;              // total length of all blocklists
+
+    vec2_t  bounds[2], point, dims;
+    vertex_t *vtx;
+
+    // scan for map limits, which the blockmap must enclose
+    for(i = 0; i < map->numvertexes; i++)
+    {
+        vtx = &map->vertexes[i];
+        V2_Set(point, FIX2FLT(vtx->x), FIX2FLT(vtx->y));
+        if(!i)
+            V2_InitBox(bounds, point);
+        else
+            V2_AddToBox(bounds, point);
+    }
+
+    // Setup the blockmap area to enclose the whole map,
+    // plus a margin (margin is needed for a map that fits
+    // entirely inside one blockmap cell).
+    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN + 1, bounds[1][VY] + BLKMARGIN + 1);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, 128, 128);
+    V2_Copy(bMapOrigin, bounds[0]);   // min point
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    bMapWidth = ceil(dims[VX] / blockSize[VX]) + 1;
+    bMapHeight = ceil(dims[VY] / blockSize[VY]) + 1;
+    numBlocks = bMapWidth * bMapHeight;
+
+    // Create the array of pointers on NBlocks to blocklists,
+    // create an array of linelist counts on NBlocks, then finally,
+    // make an array in which we can mark blocks done per line
+    blocklists = calloc(numBlocks, sizeof(linelist_t *));
+    blockcount = calloc(numBlocks, sizeof(int));
+    blockdone = malloc(numBlocks * sizeof(int));
+
+    // Initialize each blocklist, and enter the trailing -1 in all blocklists.
+    // NOTE: the linked list of lines grows backwards.
+    for(i = 0; i < numBlocks; i++)
+    {
+        blocklists[i] = malloc(sizeof(linelist_t));
+        blocklists[i]->num = -1;
+        blocklists[i]->next = NULL;
+        blockcount[i]++;
+    }
+
+    // For each linedef in the wad, determine all blockmap blocks it touches
+    // and add the linedef number to the blocklists for those blocks.
+    {
+    int xorg = FLT2FIX(bMapOrigin[VX]) >> FRACBITS;
+    int yorg = FLT2FIX(bMapOrigin[VY]) >> FRACBITS;
+
+    for(i = 0; i < map->numlines; i++)
+    {
+        line_t *line = &map->lines[i];
+        int x1 = line->v1->x >> FRACBITS;
+        int y1 = line->v1->y >> FRACBITS;
+        int x2 = line->v2->x >> FRACBITS;
+        int y2 = line->v2->y >> FRACBITS;
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int vert = !dx;
+        int horiz = !dy;
+        int spos = (dx ^ dy) > 0;
+        int sneg = (dx ^ dy) < 0;
+        int bx, by;
+        // extremal lines[i] coords
+        int minx = x1 > x2? x2 : x1;
+        int maxx = x1 > x2? x1 : x2;
+        int miny = y1 > y2? y2 : y1;
+        int maxy = y1 > y2? y1 : y2;
+
+        // no blocks done for this linedef yet
+        memset(blockdone, 0, numBlocks * sizeof(int));
+
+        // The line always belongs to the blocks containing its endpoints
+        bx = (x1 - xorg) >> BLKSHIFT;
+        by = (y1 - yorg) >> BLKSHIFT;
+        AddBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx, i);
+
+        bx = (x2 - xorg) >> BLKSHIFT;
+        by = (y2 - yorg) >> BLKSHIFT;
+        AddBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx, i);
+
+        // For each column, see where the line along its left edge, which
+        // it contains, intersects the Linedef i. Add i to each corresponding
+        // blocklist.
+        // We don't want to interesect vertical lines with columns.
+        if(!vert)
+        {
+            for(j = 0; j < bMapWidth; j++)
+            {
+                // intersection of Linedef with x=xorg+(j<<BLKSHIFT)
+                // (y-y1)*dx = dy*(x-x1)
+                // y = dy*(x-x1)+y1*dx;
+                int x = xorg + (j << BLKSHIFT);       // (x,y) is intersection
+                int y = (dy * (x - x1)) / dx + y1;
+                int yb = (y - yorg) >> BLKSHIFT;      // block row number
+                int yp = (y - yorg) & BLKMASK;        // y position within block
+
+                // Already outside the blockmap?
+                if(yb < 0 || yb > (bMapHeight - 1))
+                    continue;
+
+                // Does the line touch this column at all?
+                if(x < minx || x > maxx)
+                    continue;
+
+                // The cell that contains the intersection point is always added
+                AddBlockLine(blocklists, blockcount, blockdone, bMapWidth * yb + j, i);
+
+                // If the intersection is at a corner it depends on the slope
+                // (and whether the line extends past the intersection) which
+                // blocks are hit.
+
+                // Where does the intersection occur?
+                if(yp == 0)
+                {
+                    // Intersection occured at a corner
+                    if(sneg) //   \ - blocks x,y-, x-,y
+                    {
+                        if(yb > 0 && miny < y)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, bMapWidth * (yb - 1) + j, i);
+
+                        if(j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, bMapWidth * yb + j - 1, i);
+                    }
+                    else if(spos) //   / - block x-,y-
+                    {
+                        if(yb > 0 && j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, bMapWidth * (yb - 1) + j - 1, i);
+                    }
+                    else if(horiz) //   - - block x-,y
+                    {
+                        if(j > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount,
+                                         blockdone, bMapWidth * yb + j - 1, i);
+                    }
+                }
+                else if(j > 0 && minx < x)
+                {
+                    // Else not at corner: x-,y
+                    AddBlockLine(blocklists, blockcount,
+                                 blockdone, bMapWidth * yb + j - 1, i);
+                }
+            }
+        }
+
+        // For each row, see where the line along its bottom edge, which
+        // it contains, intersects the Linedef i. Add i to all the corresponding
+        // blocklists.
+        if(!horiz)
+        {
+            for(j = 0; j < bMapHeight; j++)
+            {
+                // intersection of Linedef with y=yorg+(j<<BLKSHIFT)
+                // (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
+                // x = dx*(y-y1)/dy+x1;
+                int y = yorg + (j << BLKSHIFT);       // (x,y) is intersection
+                int x = (dx * (y - y1)) / dy + x1;
+                int xb = (x - xorg) >> BLKSHIFT;      // block column number
+                int xp = (x - xorg) & BLKMASK;        // x position within block
+
+                // Outside the blockmap?
+                if(xb < 0 || xb > bMapWidth - 1)
+                    continue;
+
+                // Touches this row?
+                if(y < miny || y > maxy)
+                    continue;
+
+                // The cell that contains the intersection point is always added
+                AddBlockLine(blocklists, blockcount, blockdone, bMapWidth * j + xb, i);
+
+                // If the intersection is at a corner it depends on the slope
+                // (and whether the line extends past the intersection) which
+                // blocks are hit
+
+                // Where does the intersection occur?
+                if(xp == 0)
+                {
+                    // Intersection occured at a corner
+                    if(sneg) //   \ - blocks x,y-, x-,y
+                    {
+                        if(j > 0 && miny < y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         bMapWidth * (j - 1) + xb, i);
+                        if(xb > 0 && minx < x)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         bMapWidth * j + xb - 1, i);
+                    }
+                    else if(vert) //   | - block x,y-
+                    {
+                        if(j > 0 && miny < y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         bMapWidth * (j - 1) + xb, i);
+                    }
+                    else if(spos) //   / - block x-,y-
+                    {
+                        if(xb > 0 && j > 0 && miny < y)
+                            AddBlockLine(blocklists, blockcount, blockdone,
+                                         bMapWidth * (j - 1) + xb -1, i);
+                    }
+                }
+                else if(j > 0 && miny < y)
+                {
+                    // Else not on a corner: x, y-
+                    AddBlockLine(blocklists, blockcount, blockdone,
+                                 bMapWidth * (j - 1) + xb, i);
+                }
+            }
+        }
+    }
+    }
+
+    // Add initial 0 to all blocklists
+    // count the total number of lines (and 0's and -1's)
+    memset(blockdone, 0, numBlocks * sizeof(int));
+    for(i = 0, linetotal = 0; i < numBlocks; i++)
+    {
+        AddBlockLine(blocklists, blockcount, blockdone, i, 0);
+        linetotal += blockcount[i];
+    }
+
+    // Create the blockmap lump
+    map->blockmaplump = Z_Malloc(sizeof(*map->blockmaplump) * (4 + numBlocks + linetotal),
+                            PU_LEVEL, 0);
+    // blockmap header
+    map->blockmaplump[0] = map->bmaporgx = FLT2FIX(bMapOrigin[VX]);
+    map->blockmaplump[1] = map->bmaporgy = FLT2FIX(bMapOrigin[VY]);
+    map->blockmaplump[2] = map->bmapwidth  = bMapWidth;
+    map->blockmaplump[3] = map->bmapheight = bMapHeight;
+
+    // offsets to lists and block lists
+    for(i = 0; i < numBlocks; i++)
+    {
+        linelist_t *bl = blocklists[i];
+        long offs = map->blockmaplump[4 + i] =   // set offset to block's list
+        (i? map->blockmaplump[4 + i - 1] : 4 + numBlocks) + (i? blockcount[i - 1] : 0);
+
+        // add the lines in each block's list to the blockmaplump
+        // delete each list node as we go
+        while (bl)
+        {
+            linelist_t *tmp = bl->next;
+
+            map->blockmaplump[offs++] = bl->num;
+            free(bl);
+            bl = tmp;
+        }
+    }
+
+    map->blockmap = map->blockmaplump + 4;
+
+    // free all temporary storage
+    free(blocklists);
+    free(blockcount);
+    free(blockdone);
+}
+
+/*
+ * Attempts to load the BLOCKMAP data resource.
+ *
+ * If the level is too large (would overflow the size limit of
+ * the BLOCKMAP lump in a WAD therefore it will have been truncated),
+ * it's zero length or we are forcing a rebuild - we'll have to
+ * generate the blockmap data ourselves.
+ */
+static boolean P_LoadBlockMap(gamemap_t* map, mapdatalumpinfo_t* maplump)
+{
+    long i, count;
+    boolean generateBMap = (createBMap == 2)? true : false;
+
+    // Do we have a lump to process?
+    if(maplump->lumpNum != -1)
+    {
+        count = maplump->length / 2;
+
+        // Is there valid BLOCKMAP data?
+        if(count >= 0x10000)
+        {
+            // No
+            Con_Message("P_LoadBlockMap: Map exceeds limits of +/- 32767 map units.\n");
+
+            // Are we allowed to generate new blockmap data?
+            if(createBMap == 0)
+                Con_Error("P_LoadBlockMap: Map has invalid BLOCKMAP resource.\n"
+                          "You can circumvent this error by allowing Doomsday to\n"
+                          "generate this resource when needed by setting the CVAR:"
+                          "blockmap-build 1");
+            else
+                generateBMap = true;
+        }
+    }
+    else // We'll HAVE to generate it.
+        generateBMap = true;
+
+    // Are we generating new blockmap data?
+    if(generateBMap)
+    {
+        // Only announce if the user has choosen to always generate new data.
+        // (As we will have already announced it if the lump was missing).
+        if(maplump->lumpNum != -1)
+            Con_Message("P_LoadBlockMap: Generating NEW blockmap...\n");
+
+        P_CreateBlockMap(map);
+    }
+    else
+    {
+        // No, the existing data is valid - so load it in.
+        // Data in PWAD is little endian.
+        short *wadBlockMapLump;
+
+        // Have we cached the lump yet?
+        if(maplump->lumpp == NULL)
+            maplump->lumpp = (byte *) W_CacheLumpNum(maplump->lumpNum, PU_STATIC);
+
+        wadBlockMapLump = (short *) maplump->lumpp;
+
+        map->blockmaplump = Z_Malloc(sizeof(*map->blockmaplump) * count, PU_LEVEL, 0);
+
+        // Expand WAD blockmap into larger internal one, by treating all
+        // offsets except -1 as unsigned and zero-extending them. This
+        // potentially doubles the size of blockmaps allowed because DOOM
+        // originally considered the offsets as always signed.
+        map->blockmaplump[0] = SHORT(wadBlockMapLump[0]);
+        map->blockmaplump[1] = SHORT(wadBlockMapLump[1]);
+        map->blockmaplump[2] = (long)(SHORT(wadBlockMapLump[2])) & 0xffff;
+        map->blockmaplump[3] = (long)(SHORT(wadBlockMapLump[3])) & 0xffff;
+
+        for(i = 4; i < count; i++)
+        {
+            short t = SHORT(wadBlockMapLump[i]);
+            map->blockmaplump[i] = t == -1? -1 : (long) t & 0xffff;
+        }
+
+        map->bmaporgx = map->blockmaplump[0] << FRACBITS;
+        map->bmaporgy = map->blockmaplump[1] << FRACBITS;
+        map->bmapwidth = map->blockmaplump[2];
+        map->bmapheight = map->blockmaplump[3];
+
+        map->blockmap = map->blockmaplump + 4;
+    }
+
+    // Clear out mobj rings.
+    count = sizeof(*map->blockrings) * map->bmapwidth * map->bmapheight;
+    map->blockrings = Z_Malloc(count, PU_LEVEL, 0);
+    memset(map->blockrings, 0, count);
+
+    for(i = 0; i < map->bmapwidth * map->bmapheight; i++)
+        map->blockrings[i].next = map->blockrings[i].prev = (mobj_t *) &map->blockrings[i];
+
+    // Success!
+    return true;
+}
+
+/*
+ * Attempt to load the REJECT.
+ *
+ * If a lump is not found, we'll generate an empty REJECT LUT.
+ * TODO: We could generate a proper table if a suitable one is
+ *       not made available to us once we've loaded the map.
+ *
+ * The REJECT resource is a LUT that provides the results of
+ * trivial line-of-sight tests between sectors. This is done
+ * with a matrix of sector pairs ie if a monster in sector 4
+ * can see the player in sector 2 - the inverse should be true.
+ *
+ * NOTE: Some PWADS have carefully constructed REJECT data to
+ *       create special effects. For example it is possible to
+ *       make a player completely invissible in certain sectors.
+ *
+ * The format of the table is a simple matrix of boolean values,
+ * a (true) value indicates that it is impossible for mobjs in
+ * sector A to see mobjs in sector B (and vice-versa). A (false)
+ * value indicates that a line-of-sight MIGHT be possible an a
+ * more accurate (thus more expensive) calculation will have to
+ * be made.
+ *
+ * The table itself is constructed as follows:
+ *
+ *  X = sector num player is in
+ *  Y = sector num monster is in
+ *
+ *         X
+ *
+ *       0 1 2 3 4 ->
+ *     0 1 - 1 - -
+ *  Y  1 - - 1 - -
+ *     2 1 1 - - 1
+ *     3 - - - 1 -
+ *    \|/
+ *
+ * These results are read left-to-right, top-to-bottom and are
+ * packed into bytes (each byte represents eight results).
+ * As are all lumps in WAD the data is in little-endian order.
+ *
+ * Thus the size of a valid REJECT lump can be calculated as:
+ *
+ *   ceiling(numsectors^2)
+ */
+
+/*
+ * This is temporary. Ideally reject data should be loaded with
+ * P_ReadBinaryMapData but not treated as an aggregate data type.
+ * We should only need this func if we have to generate data.
+ */
+static boolean P_LoadReject(gamemap_t* map, mapdatalumpinfo_t* maplump)
+{
+    int rejectLength;
+    int requiredLength;
+    boolean generateReject = (createReject == 2)? true : false;
+
+    // Do we have a lump to process?
+    if(maplump->lumpNum != -1)
+    {
+        // Yes, check the length
+        rejectLength = maplump->length;
+        requiredLength = (((map->numsectors*map->numsectors) + 7) & ~7) /8;
+
+        if(rejectLength < requiredLength)
+        {
+            Con_Message("P_LoadReject: REJECT data is invalid.\n");
+
+            if(createBMap == 0)
+            {
+                Con_Message("P_LoadReject: Map has invalid REJECT resource.\n"
+                            "You can circumvent this error by allowing Doomsday to\n"
+                            "generate this resource when needed by setting the CVAR:"
+                            "reject-build 1\n");
+
+                return false;
+            }
+            else
+                generateReject = true;
+        }
+    }
+    else // We'll HAVE to generate it.
+         generateReject = true;
+
+    // Are we generating new reject data?
+    if(generateReject)
+    {
+        // Only announce if the user has choosen to always generate new data.
+        // (As we will have already announced it if the lump was missing).
+        if(maplump->lumpNum != -1)
+            Con_Message("P_LoadBlockMap: Generating NEW reject...\n");
+
+        if(createReject)
+        {
+            // Simply generate an empty REJECT LUT for now.
+            map->rejectmatrix = Z_Malloc(requiredLength, PU_LEVEL, 0);
+            memset(map->rejectmatrix, 0, requiredLength);
+            // TODO: Generate valid REJECT for the map.
+        }
+        else
+            map->rejectmatrix = NULL;
+    }
+    else
+    {
+        // Have we cached the lump yet?
+        if(maplump->lumpp == NULL)
+            maplump->lumpp = (byte *) W_CacheLumpNum(maplump->lumpNum, PU_STATIC);
+
+        map->rejectmatrix = Z_Malloc(maplump->length, PU_LEVEL, 0);
+        memcpy(map->rejectmatrix, maplump->lumpp, maplump->length);
+    }
+
+    // Success!
+    return true;
 }
 
 /*
@@ -2884,13 +3649,13 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[11].gameprop = 0;
                 // children[0]
                 stiptr->verInfo[index].values[12].property = DAM_CHILD_RIGHT;
-                stiptr->verInfo[index].values[12].flags = DT_UNSIGNED;
+                stiptr->verInfo[index].values[12].flags = 0;
                 stiptr->verInfo[index].values[12].size =  2;
                 stiptr->verInfo[index].values[12].offset = 24;
                 stiptr->verInfo[index].values[12].gameprop = 0;
                 // children[1]
                 stiptr->verInfo[index].values[13].property = DAM_CHILD_LEFT;
-                stiptr->verInfo[index].values[13].flags = DT_UNSIGNED;
+                stiptr->verInfo[index].values[13].flags = 0;
                 stiptr->verInfo[index].values[13].size =  2;
                 stiptr->verInfo[index].values[13].offset = 26;
                 stiptr->verInfo[index].values[13].gameprop = 0;
@@ -3298,8 +4063,8 @@ void P_InitMapDataFormats(void)
     }
 }
 
-#if _DEBUG
-static void P_PrintDebugMapData(void)
+//#if _DEBUG
+static void P_PrintDebugMapData(gamemap_t* map)
 {
     int i;
     vertex_t *vtx;
@@ -3311,28 +4076,28 @@ static void P_PrintDebugMapData(void)
     node_t  *no;
 
     Con_Printf("VERTEXES:\n");
-    for(i = 0; i < numvertexes; i++)
+    for(i = 0; i < map->numvertexes; i++)
     {
-        vtx = VERTEX_PTR(i);
+        vtx = &map->vertexes[i];
         Con_Printf("x=%i y=%i\n", vtx->x >> FRACBITS, vtx->y >> FRACBITS);
     }
 
     Con_Printf("SEGS:\n");
-    for(i = 0; i < numsegs; i++)
+    for(i = 0; i < map->numsegs; i++)
     {
-        seg = SEG_PTR(i);
+        seg = &map->segs[i];
         Con_Printf("v1=%i v2=%i angle=%i line=%i side=%i offset=%i\n",
-                    GET_VERTEX_IDX(seg->v1), GET_VERTEX_IDX(seg->v2),
+                    seg->v1 - map->vertexes, seg->v2 - map->vertexes,
                     seg->angle >> FRACBITS,
-                    (seg->linedef != NULL)? GET_LINE_IDX(seg->linedef) : -1,
-                    (seg->sidedef != NULL)? GET_SIDE_IDX(seg->sidedef) : -1,
+                    (seg->linedef != NULL)? seg->linedef - map->lines : -1,
+                    (seg->sidedef != NULL)? seg->sidedef - map->sides : -1,
                     seg->offset >> FRACBITS);
     }
 
     Con_Printf("SECTORS:\n");
-    for(i = 0; i < numsectors; i++)
+    for(i = 0; i < map->numsectors; i++)
     {
-        sec = SECTOR_PTR(i);
+        sec = &map->sectors[i];
         Con_Printf("floor=%i ceiling=%i floorpic(%i)=\"%s\" ",
                      sec->floorheight >> FRACBITS, sec->ceilingheight >> FRACBITS,
                      sec->floorpic, W_CacheLumpNum(sec->floorpic, PU_GETNAME));
@@ -3342,16 +4107,16 @@ static void P_PrintDebugMapData(void)
     }
 
     Con_Printf("SSECTORS:\n");
-    for(i = 0; i < numsubsectors; i++)
+    for(i = 0; i < map->numsubsectors; i++)
     {
-        ss = SUBSECTOR_PTR(i);
+        ss = &map->subsectors[i];
         Con_Printf("numlines=%i firstline=%i\n", ss->linecount, ss->firstline);
     }
 
     Con_Printf("NODES:\n");
-    for(i = 0; i < numnodes; i++)
+    for(i = 0; i < map->numnodes; i++)
     {
-        no = NODE_PTR(i);
+        no = &map->nodes[i];
         Con_Printf("x=%i y=%i dx=%i dy=%i bb[0][0]=%i bb[0][1]=%i bb[0][2]=%i bb[0][3]=%i " \
                    "bb[1][0]=%i bb[1][1]=%i bb[1][2]=%i bb[1][3]=%i child[0]=%i child[1]=%i\n",
                     no->x >> FRACBITS, no->y >> FRACBITS, no->dx >> FRACBITS, no->dy >>FRACBITS,
@@ -3363,28 +4128,28 @@ static void P_PrintDebugMapData(void)
     }
 
     Con_Printf("LINEDEFS:\n");
-    for(i = 0; i < numlines; i++)
+    for(i = 0; i < map->numlines; i++)
     {
-        li = LINE_PTR(i);
+        li = &map->lines[i];
         Con_Printf("v1=%i v2=%i flags=%i frontside=%i backside=%i\n",
-                     GET_VERTEX_IDX(li->v1), GET_VERTEX_IDX(li->v2),
+                     li->v1 - map->vertexes, li->v2 - map->vertexes,
                      li->flags, li->sidenum[0],
                      (li->sidenum[1] == NO_INDEX)? -1 : li->sidenum[1]);
     }
 
     Con_Printf("SIDEDEFS:\n");
-    for(i = 0; i < numsides; i++)
+    for(i = 0; i < map->numsides; i++)
     {
-        si = SIDE_PTR(i);
+        si = &map->sides[i];
         Con_Printf("xoff=%i yoff=%i toptex\"%s\" bottomtex\"%s\" midtex=\"%s\" sec=%i\n",
                     si->textureoffset >> FRACBITS, si->rowoffset >> FRACBITS,
                     si->toptexture? R_TextureNameForNum(si->toptexture) : "-",
                     si->bottomtexture? R_TextureNameForNum(si->bottomtexture) : "-",
                     si->midtexture? R_TextureNameForNum(si->midtexture) : "-",
-                    GET_SECTOR_IDX(si->sector));
+                    si->sector - map->sectors);
     }
 }
-#endif
+//#endif
 
 float AccurateDistance(fixed_t dx, fixed_t dy)
 {
