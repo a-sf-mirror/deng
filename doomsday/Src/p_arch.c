@@ -347,23 +347,23 @@ enum {
 // These arrays are temporary. Some of the data will be provided via DED definitions.
 maplumpinfo_t mapLumpInfo[] = {
 //   lumpname    MD  GL  datatype      lumpclass     required?  precache?
-    {NULL,       0, -1,  DAM_UNKNOWN,   mlLabel,      NO,    false},
-    {"THINGS",   1, -1,  DAM_THING,     mlThings,     YES,   false},
-    {"LINEDEFS", 2, -1,  DAM_LINE,      mlLineDefs,   YES,   false},
-    {"SIDEDEFS", 3, -1,  DAM_SIDE,      mlSideDefs,   YES,   false},
-    {"VERTEXES", 4, -1,  DAM_VERTEX,    mlVertexes,   YES,   false},
-    {"SEGS",     5, -1,  DAM_SEG,       mlSegs,       BSPBUILD, false},
-    {"SSECTORS", 6, -1,  DAM_SUBSECTOR, mlSSectors,   BSPBUILD, false},
-    {"NODES",    7, -1,  DAM_NODE,      mlNodes,      BSPBUILD, false},
-    {"SECTORS",  8, -1,  DAM_SECTOR,    mlSectors,    YES,   false},
-    {"REJECT",   9, -1,  DAM_SECREJECT, mlReject,     NO,    false},
-    {"BLOCKMAP", 10, -1, DAM_MAPBLOCK,  mlBlockMap,   NO,    false},
-    {"BEHAVIOR", 11,-1,  DAM_ACSSCRIPT, mlBehavior,   NO,    false},
-    {NULL,       -1, 0,  DAM_UNKNOWN,   glLabel,      NO,    false},
-    {"GL_VERT",  -1, 1,  DAM_VERTEX,    glVerts,      NO,    false},
-    {"GL_SEGS",  -1, 2,  DAM_SEG,       glSegs,       NO,    false},
-    {"GL_SSECT", -1, 3,  DAM_SUBSECTOR, glSSects,     NO,    false},
-    {"GL_NODES", -1, 4,  DAM_NODE,      glNodes,      NO,    false},
+    {NULL,       0, -1,  DAM_UNKNOWN,   LCM_LABEL,      NO,    false},
+    {"THINGS",   1, -1,  DAM_THING,     LCM_THINGS,     YES,   false},
+    {"LINEDEFS", 2, -1,  DAM_LINE,      LCM_LINEDEFS,   YES,   false},
+    {"SIDEDEFS", 3, -1,  DAM_SIDE,      LCM_SIDEDEFS,   YES,   false},
+    {"VERTEXES", 4, -1,  DAM_VERTEX,    LCM_VERTEXES,   YES,   false},
+    {"SEGS",     5, -1,  DAM_SEG,       LCM_SEGS,       BSPBUILD, false},
+    {"SSECTORS", 6, -1,  DAM_SUBSECTOR, LCM_SUBSECTORS,   BSPBUILD, false},
+    {"NODES",    7, -1,  DAM_NODE,      LCM_NODES,      BSPBUILD, false},
+    {"SECTORS",  8, -1,  DAM_SECTOR,    LCM_SECTORS,    YES,   false},
+    {"REJECT",   9, -1,  DAM_SECREJECT, LCM_REJECT,     NO,    false},
+    {"BLOCKMAP", 10, -1, DAM_MAPBLOCK,  LCM_BLOCKMAP,   NO,    false},
+    {"BEHAVIOR", 11,-1,  DAM_ACSSCRIPT, LCM_BEHAVIOR,   NO,    false},
+    {NULL,       -1, 0,  DAM_UNKNOWN,   LCG_LABEL,      NO,    false},
+    {"GL_VERT",  -1, 1,  DAM_VERTEX,    LCG_VERTEXES,      NO,    false},
+    {"GL_SEGS",  -1, 2,  DAM_SEG,       LCG_SEGS,       NO,    false},
+    {"GL_SSECT", -1, 3,  DAM_SUBSECTOR, LCG_SUBSECTORS,     NO,    false},
+    {"GL_NODES", -1, 4,  DAM_NODE,      LCG_NODES,      NO,    false},
     {NULL}
 };
 
@@ -670,9 +670,9 @@ static void P_FindMapLumps(int startLump)
 
     // Add the marker lump to the list (there might be useful info in it)
     if(!strncmp(W_CacheLumpNum(startLump, PU_GETNAME), "GL_", 3))
-        AddMapDataLump(startLump, glLabel);
+        AddMapDataLump(startLump, LCG_LABEL);
     else
-        AddMapDataLump(startLump, mlLabel);
+        AddMapDataLump(startLump, LCM_LABEL);
 
     ++startLump;
     // Keep checking lumps to see if its a map data lump.
@@ -742,8 +742,8 @@ static void DetermineMapDataLumpFormat(mapdatalumpinfo_t* mapLump)
         return;
     }
     else if(glNodeData &&
-            mapLump->lumpClass >= glVerts &&
-            mapLump->lumpClass <= glNodes)
+            mapLump->lumpClass >= LCG_VERTEXES &&
+            mapLump->lumpClass <= LCG_NODES)
     {
         unsigned int i;
         int lumpClass = mapLumpInfo[mapLump->lumpClass].glLump;
@@ -781,7 +781,7 @@ static void DetermineMapDataLumpFormat(mapdatalumpinfo_t* mapLump)
         // ignore it when determining the GL Node format.
         return;
     }
-    else if(mapLump->lumpClass == glLabel)
+    else if(mapLump->lumpClass == LCG_LABEL)
     {
         // It's a GL NODE identifier lump.
         // Perhaps it can tell us something useful about this map data?
@@ -837,7 +837,7 @@ static boolean VerifyMapData(char *levelID)
                 mapDataLump->length = W_LumpLength(mapDataLump->lumpNum);
 
                 // If this is a BEHAVIOR lump, then this MUST be a HEXEN format map.
-                if(mapDataLump->lumpClass == mlBehavior)
+                if(mapDataLump->lumpClass == LCM_BEHAVIOR)
                     mapFormat = 1;
 
                 // Attempt to determine the format of this map data lump.
@@ -854,8 +854,8 @@ static boolean VerifyMapData(char *levelID)
         }
 
         // We arn't interested in indetifier lumps
-        if(mapLmpInf->lumpclass == mlLabel ||
-           mapLmpInf->lumpclass == glLabel)
+        if(mapLmpInf->lumpclass == LCM_LABEL ||
+           mapLmpInf->lumpclass == LCG_LABEL)
            continue;
 
         // We didn't find any lumps of this class?
@@ -920,8 +920,8 @@ static boolean DetermineMapDataFormat(void)
         lumpClass = mapLumpInfo[mapLump->lumpClass].mdLump;
 
         // Is it a map data lump class?
-        if(mapLump->lumpClass >= mlThings &&
-           mapLump->lumpClass <= mlBehavior)
+        if(mapLump->lumpClass >= LCM_THINGS &&
+           mapLump->lumpClass <= LCM_BEHAVIOR)
         {
             // Set the lump version number for this format.
             if(mapLump->version == -1)
@@ -945,8 +945,8 @@ static boolean DetermineMapDataFormat(void)
             for(k = numMapDataLumps, failed = false; k-- && !failed; ++mapLump)
             {
                 // Is it a GL Node data lump class?
-                if(mapLump->lumpClass >= glVerts &&
-                   mapLump->lumpClass <= glNodes)
+                if(mapLump->lumpClass >= LCG_VERTEXES &&
+                   mapLump->lumpClass <= LCG_NODES)
                 {
                     lumpClass = mapLumpInfo[mapLump->lumpClass].glLump;
 
@@ -1011,8 +1011,8 @@ static boolean DetermineMapDataFormat(void)
                         lumpClass = mapLumpInfo[mapLump->lumpClass].glLump;
 
                         // Is it a GL Node data lump class?
-                        if(mapLump->lumpClass >= glVerts &&
-                           mapLump->lumpClass <= glNodes)
+                        if(mapLump->lumpClass >= LCG_VERTEXES &&
+                           mapLump->lumpClass <= LCG_NODES)
                         {
                             // Set the lump version number for this format.
                             if(mapLump->version == -1)
@@ -1120,7 +1120,7 @@ static void FinalizeMapData(void)
 static boolean P_ReadMapData(int doClass)
 {
     // Cant load GL NODE data if we don't have it.
-    if(!glNodeData && (doClass >= glVerts && doClass <= glNodes))
+    if(!glNodeData && (doClass >= LCG_VERTEXES && doClass <= LCG_NODES))
         // Not having the data is considered a success.
         // This is due to us invoking the dpMapLoader plugin at an awkward
         // point in the map loading process (at the start).
@@ -1201,32 +1201,32 @@ boolean P_LoadMapData(char *levelId)
         // NOTE:
         // DJS 01/10/05 - revised load order to allow for cross-referencing
         //                data during loading (detect + fix trivial errors).
-        if(!P_ReadMapData(mlVertexes))
+        if(!P_ReadMapData(LCM_VERTEXES))
             return false;
-        if(!P_ReadMapData(glVerts))
+        if(!P_ReadMapData(LCG_VERTEXES))
             return false;
-        if(!P_ReadMapData(mlSectors))
+        if(!P_ReadMapData(LCM_SECTORS))
             return false;
-        if(!P_ReadMapData(mlSideDefs))
+        if(!P_ReadMapData(LCM_SIDEDEFS))
             return false;
-        if(!P_ReadMapData(mlLineDefs))
+        if(!P_ReadMapData(LCM_LINEDEFS))
             return false;
 
         P_ReadSideDefTextures(lumpNumbers[0] + ML_SIDEDEFS);
         P_FinishLineDefs();
 
-        if(!P_ReadMapData(mlBlockMap))
+        if(!P_ReadMapData(LCM_BLOCKMAP))
             return false;
 
-        if(!P_ReadMapData(mlThings))
+        if(!P_ReadMapData(LCM_THINGS))
             return false;
-        if(!P_ReadMapData(mlSegs))
+        if(!P_ReadMapData(LCM_SEGS))
             return false;
-        if(!P_ReadMapData(mlSSectors))
+        if(!P_ReadMapData(LCM_SUBSECTORS))
             return false;
-        if(!P_ReadMapData(mlNodes))
+        if(!P_ReadMapData(LCM_NODES))
             return false;
-        if(!P_ReadMapData(mlReject))
+        if(!P_ReadMapData(LCM_REJECT))
             return false;
 
         //P_PrintDebugMapData();
@@ -1279,12 +1279,12 @@ static boolean ReadMapData(int doClass)
     if(glNodeData)
     {
         // Use the gl versions of the following lumps:
-        if(doClass == mlSSectors)
-            doClass = glSSects;
-        else if(doClass == mlSegs)
-            doClass = glSegs;
-        else if(doClass == mlNodes)
-            doClass = glNodes;
+        if(doClass == LCM_SUBSECTORS)
+            doClass = LCG_SUBSECTORS;
+        else if(doClass == LCM_SEGS)
+            doClass = LCG_SEGS;
+        else if(doClass == LCM_NODES)
+            doClass = LCG_NODES;
     }
 
     lumpCount = 0;
@@ -1350,7 +1350,7 @@ static boolean ReadMapData(int doClass)
 
                 memset(VERTEX_PTR(oldNum), 0, elements * sizeof(vertex_t));
 
-                if(mapLump->lumpClass == mlVertexes && oldNum == 0)
+                if(mapLump->lumpClass == LCM_VERTEXES && oldNum == 0)
                     firstGLvertex = numvertexes;
                 break;
 
@@ -2457,7 +2457,7 @@ void P_InitMapDataFormats(void)
             mlptr = &(mapDataFormats[i].verInfo[index].elmSize);
             stiptr = &(mapDataFormats[i]);
 
-            if(lumpClass == mlThings)
+            if(lumpClass == LCM_THINGS)
             {
                 if(mlver == 1)  // DOOM Format
                 {
@@ -2580,7 +2580,7 @@ void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].values[12].gameprop = 1;
                 }
             }
-            else if(lumpClass == mlLineDefs)
+            else if(lumpClass == LCM_LINEDEFS)
             {
                 if(mlver == 1)  // DOOM format
                 {
@@ -2703,7 +2703,7 @@ void P_InitMapDataFormats(void)
                     stiptr->verInfo[index].values[10].gameprop = 0;
                 }
             }
-            else if(lumpClass == mlSideDefs)
+            else if(lumpClass == LCM_SIDEDEFS)
             {
                 *mlptr = 30;
                 stiptr->verInfo[index].numValues = 3;
@@ -2727,7 +2727,7 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[2].offset = 28;
                 stiptr->verInfo[index].values[2].gameprop = 0;
             }
-            else if(lumpClass == mlVertexes)
+            else if(lumpClass == LCM_VERTEXES)
             {
                 *mlptr = 4;
                 stiptr->verInfo[index].numValues = 2;
@@ -2745,7 +2745,7 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[1].offset = 2;
                 stiptr->verInfo[index].values[1].gameprop = 0;
             }
-            else if(lumpClass == mlSegs)
+            else if(lumpClass == LCM_SEGS)
             {
                 *mlptr = 12;
                 stiptr->verInfo[index].numValues = 6;
@@ -2787,7 +2787,7 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[5].offset = 10;
                 stiptr->verInfo[index].values[5].gameprop = 0;
             }
-            else if(lumpClass == mlSSectors)
+            else if(lumpClass == LCM_SUBSECTORS)
             {
                 *mlptr = 4;
                 stiptr->verInfo[index].numValues = 2;
@@ -2805,7 +2805,7 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[1].offset = 2;
                 stiptr->verInfo[index].values[1].gameprop = 0;
             }
-            else if(lumpClass == mlNodes)
+            else if(lumpClass == LCM_NODES)
             {
                 *mlptr = 28;
                 stiptr->verInfo[index].numValues = 14;
@@ -2895,7 +2895,7 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[13].offset = 26;
                 stiptr->verInfo[index].values[13].gameprop = 0;
             }
-            else if(lumpClass == mlSectors)
+            else if(lumpClass == LCM_SECTORS)
             {
                 *mlptr = 26;
                 stiptr->verInfo[index].numValues = 7;
@@ -2943,11 +2943,11 @@ void P_InitMapDataFormats(void)
                 stiptr->verInfo[index].values[6].offset = 24;
                 stiptr->verInfo[index].values[6].gameprop = 1;
             }
-            else if(lumpClass == mlReject)
+            else if(lumpClass == LCM_REJECT)
             {
                 *mlptr = 1;
             }
-            else if(lumpClass == mlBlockMap)
+            else if(lumpClass == LCM_BLOCKMAP)
             {
                 *mlptr = 1;
             }
@@ -2966,7 +2966,7 @@ void P_InitMapDataFormats(void)
             glptr = &(glNodeFormats[i].verInfo[index].elmSize);
             glstiptr = &(glNodeFormats[i]);
 
-            if(lumpClass == glVerts)
+            if(lumpClass == LCG_VERTEXES)
             {
                 if(glver == 1)
                 {
@@ -3005,7 +3005,7 @@ void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
             }
-            else if(lumpClass == glSegs)
+            else if(lumpClass == LCG_SEGS)
             {
                 if(glver == 2)
                 {
@@ -3072,7 +3072,7 @@ void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[3].gameprop = 0;
                 }
             }
-            else if(lumpClass == glSSects)
+            else if(lumpClass == LCG_SUBSECTORS)
             {
                 if(glver == 1)
                 {
@@ -3111,7 +3111,7 @@ void P_InitMapDataFormats(void)
                     glstiptr->verInfo[index].values[1].gameprop = 0;
                 }
             }
-            else if(lumpClass == glNodes)
+            else if(lumpClass == LCG_NODES)
             {
                 if(glver == 1)
                 {
