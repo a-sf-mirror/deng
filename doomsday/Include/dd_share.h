@@ -100,7 +100,12 @@ extern          "C" {
         DDVT_ULONG,
         DDVT_PTR,
         DDVT_FLAT_INDEX,
-        DDVT_BLENDMODE
+        DDVT_BLENDMODE,
+        DDVT_VERT_PTR,
+        DDVT_LINE_PTR,
+        DDVT_SIDE_PTR,
+        DDVT_SECT_PTR,
+        DDVT_SEG_PTR
     } valuetype_t;
 
     enum {
