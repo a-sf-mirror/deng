@@ -822,11 +822,16 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
 
     patchString = Def_Get(DD_DEF_VALUE, def, &string);
 
-    if(!cfg.usePatchReplacement || !W_IsFromIWAD(lump) ||
-       (!patchString && altstring == NULL))
+    if(W_IsFromIWAD(lump) &&
+      ((cfg.usePatchReplacement == 1 && patchString) ||
+       (cfg.usePatchReplacement == 2 && altstring))) // Built-in patch replacement.
+    {
+        WI_DrawParamText(x, y, patchString? string : altstring, hu_font_b,
+                         r, g, b, a, false, true, halign);
+    }
+    else
     {
         // Replacement string not found
-
         if(halign == ALIGN_CENTER)
             posx -= SHORT(patch->width) /2;
         else if(halign == ALIGN_RIGHT)
@@ -834,12 +839,7 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
 
         gl.Color4f(1, 1, 1, a);
         GL_DrawPatch_CS(posx, y, lump);
-
-        return;
     }
-
-    WI_DrawParamText(x, y, patchString? string : altstring, hu_font_b,
-                     r, g, b, a, false, true, halign);
 }
 void Draw_BeginZoom(float s, float originX, float originY)
 {
