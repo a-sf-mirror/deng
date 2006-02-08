@@ -318,7 +318,7 @@ void D_PreInit(void)
     cfg.echoMsg = true;
     cfg.lookSpeed = 3;
     cfg.turnSpeed = 2;
-    cfg.usePatchReplacement = true;
+    cfg.usePatchReplacement = 1;
     cfg.menuScale = .9f;
     cfg.menuGlitter = .5f;
     cfg.menuShadow = 0.33f;

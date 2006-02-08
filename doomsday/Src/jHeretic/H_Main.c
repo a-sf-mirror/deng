@@ -219,7 +219,7 @@ void H_PreInit(void)
     cfg.echoMsg = true;
     cfg.lookSpeed = 3;
     cfg.turnSpeed = 2;
-    cfg.usePatchReplacement = true;
+    cfg.usePatchReplacement = 1;
     cfg.menuScale = .9f;
     cfg.menuGlitter = 0;
     cfg.menuShadow = 0;
