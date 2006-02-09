@@ -167,6 +167,7 @@ typedef struct sector_s {
     // height changes
     plane_t         planes[2];     // PLN_*
     degenmobj_t     soundorg;      // origin for any sounds
+    degenmobj_t     floorsoundorg, ceilingsoundorg;
     // played by the sector
 } sector_t;
 
