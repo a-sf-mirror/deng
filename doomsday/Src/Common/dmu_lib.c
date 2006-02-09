@@ -113,6 +113,7 @@ void P_CopySector(sector_t* from, sector_t* to)
     // Copy the built-in properties
     P_Copyp(DMU_LIGHT_LEVEL, from, to);
     P_Copyp(DMU_COLOR, from, to);
+    P_Copyp(DMU_SOUND_REVERB, from, to);
 
     P_Copyp(DMU_FLOOR_HEIGHT, from, to);
     P_Copyp(DMU_FLOOR_TEXTURE, from, to);
