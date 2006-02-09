@@ -613,6 +613,7 @@ extern          "C" {
         DMU_THINGS,                 // pointer to start of sector thinglist
         DMU_BOUNDING_BOX,           // fixed_t[4]
         DMU_SOUND_ORIGIN,
+        DMU_SOUND_REVERB,
 
         DMU_FLOOR_HEIGHT,
         DMU_FLOOR_TEXTURE,
