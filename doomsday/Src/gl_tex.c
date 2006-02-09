@@ -174,11 +174,10 @@ static int glmode[6] =          // Indexed by 'mipmapping'.
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// CeilPow2
-//  Finds the power of 2 that is equal to or greater than
-//  the specified number.
-//===========================================================================
+/*
+ * Finds the power of 2 that is equal to or greater than
+ * the specified number.
+ */
 int CeilPow2(int num)
 {
     int     cumul;
@@ -187,11 +186,10 @@ int CeilPow2(int num)
     return cumul;
 }
 
-//===========================================================================
-// FloorPow2
-//  Finds the power of 2 that is less than or equal to
-//  the specified number.
-//===========================================================================
+/*
+ * Finds the power of 2 that is less than or equal to
+ * the specified number.
+ */
 int FloorPow2(int num)
 {
     int     fl = CeilPow2(num);
@@ -201,11 +199,10 @@ int FloorPow2(int num)
     return fl;
 }
 
-//===========================================================================
-// RoundPow2
-//  Finds the power of 2 that is nearest the specified number.
-//  In ambiguous cases, the smaller number is returned.
-//===========================================================================
+/*
+ * Finds the power of 2 that is nearest the specified number.
+ * In ambiguous cases, the smaller number is returned.
+ */
 int RoundPow2(int num)
 {
     int     cp2 = CeilPow2(num), fp2 = FloorPow2(num);
@@ -213,11 +210,10 @@ int RoundPow2(int num)
     return (cp2 - num >= num - fp2) ? fp2 : cp2;
 }
 
-//===========================================================================
-// WeightPow2
-//  Weighted rounding. Weight determines the point where the number
-//  is still rounded down (0..1).
-//===========================================================================
+/*
+ * Weighted rounding. Weight determines the point where the number
+ * is still rounded down (0..1).
+ */
 int WeightPow2(int num, float weight)
 {
     int     fp2 = FloorPow2(num);
@@ -229,12 +225,11 @@ int WeightPow2(int num, float weight)
         return (fp2 << 1);
 }
 
-//===========================================================================
-// pixBlt
-//  Copies a rectangular region of the source buffer to the destination
-//  buffer. Doesn't perform clipping, so be careful.
-//  Yeah, 13 parameters...
-//===========================================================================
+/*
+ * Copies a rectangular region of the source buffer to the destination
+ * buffer. Doesn't perform clipping, so be careful.
+ * Yeah, 13 parameters...
+ */
 void pixBlt(byte *src, int srcWidth, int srcHeight, byte *dest, int destWidth,
             int destHeight, int alpha, int srcRegX, int srcRegY, int destRegX,
             int destRegY, int regWidth, int regHeight)
@@ -259,11 +254,10 @@ void pixBlt(byte *src, int srcWidth, int srcHeight, byte *dest, int destWidth,
     }
 }
 
-//===========================================================================
-// LookupPal18to8
-//  Prepare the pal18to8 table.
-//  A time-consuming operation (64 * 64 * 64 * 256!).
-//===========================================================================
+/*
+ * Prepare the pal18to8 table.
+ * A time-consuming operation (64 * 64 * 64 * 256!).
+ */
 static void LookupPal18to8(byte *palette)
 {
     int     r, g, b, i;
@@ -302,9 +296,6 @@ static void LookupPal18to8(byte *palette)
     }
 }
 
-//===========================================================================
-// LoadPalette
-//===========================================================================
 static void LoadPalette()
 {
     byte   *playpal = W_CacheLumpNum(pallump =
@@ -322,11 +313,10 @@ static void LoadPalette()
     gl.Palette(DGL_RGB, paldata);
 }
 
-//===========================================================================
-// GL_InitPalettedTexture
-//  Initializes the paletted texture extension.
-//  Returns true iff successful.
-//===========================================================================
+/*
+ * Initializes the paletted texture extension.
+ * Returns true iff successful.
+ */
 int GL_InitPalettedTexture()
 {
     // Should the extension be used?
@@ -346,10 +336,9 @@ int GL_InitPalettedTexture()
     return true;
 }
 
-//===========================================================================
-// GL_InitTextureManager
-//  This should be cleaned up once and for all.
-//===========================================================================
+/*
+ * This should be cleaned up once and for all.
+ */
 void GL_InitTextureManager(void)
 {
     int     i;
@@ -412,10 +401,9 @@ void GL_InitTextureManager(void)
     GL_InitSmartFilter();
 }
 
-//===========================================================================
-// GL_ShutdownTextureManager
-//  Call this if a full cleanup of the textures is required (engine update).
-//===========================================================================
+/*
+ * Call this if a full cleanup of the textures is required (engine update).
+ */
 void GL_ShutdownTextureManager()
 {
     if(!texInited)
@@ -431,10 +419,9 @@ void GL_ShutdownTextureManager()
     texInited = false;
 }
 
-//===========================================================================
-// GL_DestroySkinNames
-//  This is called at final shutdown.
-//===========================================================================
+/*
+ * This is called at final shutdown.
+ */
 void GL_DestroySkinNames(void)
 {
     free(skinnames);
@@ -442,10 +429,9 @@ void GL_DestroySkinNames(void)
     numskinnames = 0;
 }
 
-//===========================================================================
-// GL_LoadLightMap
-//  Lightmaps should be monochrome images.
-//===========================================================================
+/*
+ * Lightmaps should be monochrome images.
+ */
 void GL_LoadLightMap(ded_lightmap_t * map)
 {
     image_t image;
@@ -498,9 +484,6 @@ void GL_LoadLightMap(ded_lightmap_t * map)
     }
 }
 
-//===========================================================================
-// GL_DeleteLightMap
-//===========================================================================
 void GL_DeleteLightMap(ded_lightmap_t * map)
 {
     if(map->tex != lightingTexNames[LST_DYNAMIC])
@@ -510,11 +493,10 @@ void GL_DeleteLightMap(ded_lightmap_t * map)
     map->tex = 0;
 }
 
-//===========================================================================
-// GL_LoadReflectionMap
-//  Loads both the shiny texture and the mask.  Returns true if there is
-//  a reflection map to can be used.
-//===========================================================================
+/*
+ * Loads both the shiny texture and the mask.  Returns true if there is
+ * a reflection map to can be used.
+ */
 boolean GL_LoadReflectionMap(ded_reflection_t *loading_ref)
 {
     ded_reflection_t *ref;
@@ -565,9 +547,6 @@ boolean GL_LoadReflectionMap(ded_reflection_t *loading_ref)
     return true;
 }
 
-//===========================================================================
-// GL_DeleteReflectionMap
-//===========================================================================
 void GL_DeleteReflectionMap(ded_reflection_t *ref)
 {
     if(ref->shiny_tex)
@@ -583,10 +562,9 @@ void GL_DeleteReflectionMap(ded_reflection_t *ref)
     }
 }
 
-//===========================================================================
-// GL_LoadDDTextures
-//  Called from GL_LoadSystemTextures.
-//===========================================================================
+/*
+ * Called from GL_LoadSystemTextures.
+ */
 void GL_LoadDDTextures(void)
 {
     int     i;
@@ -602,19 +580,15 @@ void GL_LoadDDTextures(void)
         }
 }
 
-//===========================================================================
-// GL_ClearDDTextures
-//===========================================================================
 void GL_ClearDDTextures(void)
 {
     gl.DeleteTextures(NUM_DD_TEXTURES, dd_textures);
     memset(dd_textures, 0, sizeof(dd_textures));
 }
 
-//===========================================================================
-// GL_LoadSystemTextures
-//  Prepares all the system textures (dlight, ptcgens).
-//===========================================================================
+/*
+ * Prepares all the system textures (dlight, ptcgens).
+ */
 void GL_LoadSystemTextures(boolean loadLightMaps)
 {
     int     i, k;
@@ -660,11 +634,10 @@ void GL_LoadSystemTextures(boolean loadLightMaps)
     PG_InitTextures();
 }
 
-//===========================================================================
-// GL_ClearSystemTextures
-//  System textures are loaded at startup and remain in memory all the time.
-//  After clearing they must be manually reloaded.
-//===========================================================================
+/*
+ * System textures are loaded at startup and remain in memory all the time.
+ * After clearing they must be manually reloaded.
+ */
 void GL_ClearSystemTextures(void)
 {
     int     i, k;
@@ -702,11 +675,10 @@ void GL_ClearSystemTextures(void)
     PG_ShutdownTextures();
 }
 
-//===========================================================================
-// GL_ClearRuntimeTextures
-//  Runtime textures are not loaded until precached or actually needed.
-//  They may be cleared, in which case they will be reloaded when needed.
-//===========================================================================
+/*
+ * Runtime textures are not loaded until precached or actually needed.
+ * They may be cleared, in which case they will be reloaded when needed.
+ */
 void GL_ClearRuntimeTextures(void)
 {
     dtexinst_t *dtex;
@@ -778,9 +750,6 @@ void GL_ClearRuntimeTextures(void)
     }
 }
 
-//===========================================================================
-// GL_ClearTextureMemory
-//===========================================================================
 void GL_ClearTextureMemory(void)
 {
     if(!texInited)
@@ -793,9 +762,6 @@ void GL_ClearTextureMemory(void)
     GL_ClearSystemTextures();
 }
 
-//===========================================================================
-// GL_UpdateGamma
-//===========================================================================
 void GL_UpdateGamma(void)
 {
     /*if(gammaSupport)
@@ -810,10 +776,9 @@ void GL_UpdateGamma(void)
     //}
 }
 
-//===========================================================================
-// GL_BindTexture
-//  Binds the texture if necessary.
-//===========================================================================
+/*
+ * Binds the texture if necessary.
+ */
 void GL_BindTexture(DGLuint texname)
 {
     /*if(curtex != texname)
@@ -823,9 +788,6 @@ void GL_BindTexture(DGLuint texname)
     //}
 }
 
-//===========================================================================
-// PalIdxToRGB
-//===========================================================================
 void PalIdxToRGB(byte *pal, int idx, byte *rgb)
 {
     int     c;
@@ -835,14 +797,13 @@ void PalIdxToRGB(byte *pal, int idx, byte *rgb)
         rgb[c] = gammatable[gammalevel][pal[idx * 3 + c]];
 }
 
-//===========================================================================
-// GL_ConvertBuffer
-//  in/outformat:
-//  1 = palette indices
-//  2 = palette indices followed by alpha values
-//  3 = RGB
-//  4 = RGBA
-//===========================================================================
+/*
+ * in/outformat:
+ * 1 = palette indices
+ * 2 = palette indices followed by alpha values
+ * 3 = RGB
+ * 4 = RGBA
+ */
 void GL_ConvertBuffer(int width, int height, int informat, int outformat,
                       byte *in, byte *out, boolean gamma)
 {
@@ -909,13 +870,12 @@ void GL_ConvertBuffer(int width, int height, int informat, int outformat,
     }
 }
 
-//===========================================================================
-// scaleLine
-//  Len is measured in out units. Comps is the number of components per
-//  pixel, or rather the number of bytes per pixel (3 or 4). The strides
-//  must be byte-aligned anyway, though; not in pixels.
-//  FIXME: Probably could be optimized.
-//===========================================================================
+/*
+ * Len is measured in out units. Comps is the number of components per
+ * pixel, or rather the number of bytes per pixel (3 or 4). The strides
+ * must be byte-aligned anyway, though; not in pixels.
+ * FIXME: Probably could be optimized.
+ */
 static void scaleLine(byte *in, int inStride, byte *out, int outStride,
                       int outLen, int inLen, int comps)
 {
@@ -1006,9 +966,6 @@ static void scaleLine(byte *in, int inStride, byte *out, int outStride,
     }
 }
 
-//===========================================================================
-// GL_ScaleBuffer32
-//===========================================================================
 void GL_ScaleBuffer32(byte *in, int inWidth, int inHeight, byte *out,
                       int outWidth, int outHeight, int comps)
 {
@@ -1034,11 +991,10 @@ void GL_ScaleBuffer32(byte *in, int inWidth, int inHeight, byte *out,
     M_Free(temp);
 }
 
-//===========================================================================
-// GL_DownMipmap32
-//  Works within the given data, reducing the size of the picture to half
-//  its original. Width and height must be powers of two.
-//===========================================================================
+/*
+ * Works within the given data, reducing the size of the picture to half
+ * its original. Width and height must be powers of two.
+ */
 void GL_DownMipmap32(byte *in, int width, int height, int comps)
 {
     byte   *out;
@@ -1149,14 +1105,13 @@ boolean GL_OptimalSize(int width, int height, int *optWidth, int *optHeight,
     return noStretch;
 }
 
-//===========================================================================
-// GL_UploadTexture
-//  Can be rather time-consuming.
-//  Returns the name of the texture.
-//  The texture parameters will NOT be set here.
-//  'data' contains indices to the playpal. If 'alphachannel' is true,
-//  'data' also contains the alpha values (after the indices).
-//===========================================================================
+/*
+ * Can be rather time-consuming.
+ * Returns the name of the texture.
+ * The texture parameters will NOT be set here.
+ * 'data' contains indices to the playpal. If 'alphachannel' is true,
+ * 'data' also contains the alpha values (after the indices).
+ */
 DGLuint GL_UploadTexture(byte *data, int width, int height,
                          boolean alphaChannel, boolean generateMipmaps,
                          boolean RGBData, boolean noStretch)
@@ -1338,10 +1293,9 @@ DGLuint GL_UploadTexture(byte *data, int width, int height,
     return texName;
 }
 
-//===========================================================================
-// GL_GetDetailInstance
-//  The contrast is rounded.
-//===========================================================================
+/*
+ * The contrast is rounded.
+ */
 dtexinst_t *GL_GetDetailInstance(int lump, float contrast,
                                  const char *external)
 {
@@ -1371,10 +1325,9 @@ dtexinst_t *GL_GetDetailInstance(int lump, float contrast,
     return i;
 }
 
-//===========================================================================
-// GL_LoadDetailTexture
-//  Detail textures are grayscale images.
-//===========================================================================
+/*
+ * Detail textures are grayscale images.
+ */
 DGLuint GL_LoadDetailTexture(int num, float contrast, const char *external)
 {
     byte   *lumpData, *image;
@@ -1473,11 +1426,10 @@ DGLuint GL_LoadDetailTexture(int num, float contrast, const char *external)
     return inst->tex;
 }
 
-//===========================================================================
-// GL_PrepareDetailTexture
-//  This is only called when loading a wall texture or a flat
-//  (not too time-critical).
-//===========================================================================
+/*
+ * This is only called when loading a wall texture or a flat
+ * (not too time-critical).
+ */
 DGLuint GL_PrepareDetailTexture(int index, boolean is_wall_texture,
                                 ded_detailtexture_t **dtdef)
 {
@@ -1517,10 +1469,9 @@ DGLuint GL_PrepareDetailTexture(int index, boolean is_wall_texture,
     return 0;                   // There is no detail texture for this.
 }
 
-//===========================================================================
-// GL_BindTexFlat
-//  No translation is done.
-//===========================================================================
+/*
+ * No translation is done.
+ */
 unsigned int GL_BindTexFlat(flat_t * fl)
 {
     DGLuint name;
@@ -1602,19 +1553,15 @@ unsigned int GL_BindTexFlat(flat_t * fl)
     return name;
 }
 
-//===========================================================================
-// GL_PrepareFlat
-//===========================================================================
 unsigned int GL_PrepareFlat(int idx)
 {
     return GL_PrepareFlat2(idx, true);
 }
 
-//===========================================================================
-// GL_PrepareFlat
-//  Returns the OpenGL name of the texture.
-//  (idx is really a lumpnum)
-//===========================================================================
+/*
+ * Returns the OpenGL name of the texture.
+ * (idx is really a lumpnum)
+ */
 unsigned int GL_PrepareFlat2(int idx, boolean translate)
 {
     flat_t *flat = R_GetFlat(idx);
@@ -1636,10 +1583,9 @@ unsigned int GL_PrepareFlat2(int idx, boolean translate)
     return lumptexinfo[flat->lump].tex[0];
 }
 
-//===========================================================================
-// GL_GetFlatColor
-//  'fnum' is really a lump number.
-//===========================================================================
+/*
+ * 'fnum' is really a lump number.
+ */
 void GL_GetFlatColor(int fnum, unsigned char *rgb)
 {
     flat_t *flat = R_GetFlat(fnum);
@@ -1647,24 +1593,19 @@ void GL_GetFlatColor(int fnum, unsigned char *rgb)
     memcpy(rgb, flat->color.rgb, 3);
 }
 
-//===========================================================================
-// GL_SetFlat
-//===========================================================================
 void GL_SetFlat(int idx)
 {
     gl.Bind(curtex = GL_PrepareFlat2(idx, false));
 }
 
-//===========================================================================
-// DrawRealPatch
-//  The buffer must have room for the alpha values.
-//  Returns true if the buffer really has alpha information.
-//  If !checkForAlpha, returns false.
-//  Origx and origy set the origin of the patch.
-//
-//  Modified to allow taller masked textures - GMJ Aug 2002
-//
-//===========================================================================
+/*
+ * The buffer must have room for the alpha values.
+ * Returns true if the buffer really has alpha information.
+ * If !checkForAlpha, returns false.
+ * Origx and origy set the origin of the patch.
+ *
+ * Modified to allow taller masked textures - GMJ Aug 2002
+ */
 static int DrawRealPatch(byte *buffer, byte *palette, int texwidth,
                          int texheight, patch_t *patch, int origx, int origy,
                          boolean maskZero, unsigned char *transtable,
@@ -1760,10 +1701,9 @@ static int DrawRealPatch(byte *buffer, byte *palette, int texwidth,
     return false;               // Doesn't have alpha data.
 }
 
-//===========================================================================
-// TranslatePatch
-//  Translate colors in the specified patch.
-//===========================================================================
+/*
+ * Translate colors in the specified patch.
+ */
 void TranslatePatch(patch_t *patch, byte *transTable)
 {
     int     count;
@@ -1790,10 +1730,9 @@ void TranslatePatch(patch_t *patch, byte *transTable)
     }
 }
 
-//===========================================================================
-// GL_ConvertToLuminance
-//  Converts the image data to grayscale luminance in-place.
-//===========================================================================
+/*
+ * Converts the image data to grayscale luminance in-place.
+ */
 void GL_ConvertToLuminance(image_t * image)
 {
     int     p, total = image->width * image->height;
@@ -1813,9 +1752,6 @@ void GL_ConvertToLuminance(image_t * image)
     image->pixelSize = 1;
 }
 
-//===========================================================================
-// GL_ConvertToAlpha
-//===========================================================================
 void GL_ConvertToAlpha(image_t * image, boolean makeWhite)
 {
     int     p, total = image->width * image->height;
@@ -1832,13 +1768,12 @@ void GL_ConvertToAlpha(image_t * image, boolean makeWhite)
     image->pixelSize = 2;
 }
 
-//===========================================================================
-// GL_LoadImage
-//  Loads PCX, TGA and PNG images. The returned buffer must be freed
-//  with M_Free. Color keying is done if "-ck." is found in the filename.
-//  The allocated memory buffer always has enough space for 4-component
-//  colors.
-//===========================================================================
+/*
+ * Loads PCX, TGA and PNG images. The returned buffer must be freed
+ * with M_Free. Color keying is done if "-ck." is found in the filename.
+ * The allocated memory buffer always has enough space for 4-component
+ * colors.
+ */
 byte   *GL_LoadImage(image_t * img, const char *imagefn, boolean useModelPath)
 {
     DFILE  *file;
@@ -1955,11 +1890,10 @@ byte   *GL_LoadImage(image_t * img, const char *imagefn, boolean useModelPath)
     return img->pixels;
 }
 
-//===========================================================================
-// GL_LoadImageCK
-//  First sees if there is a color-keyed version of the given image. If
-//  there is it is loaded. Otherwise the 'regular' version is loaded.
-//===========================================================================
+/*
+ * First sees if there is a color-keyed version of the given image. If
+ * there is it is loaded. Otherwise the 'regular' version is loaded.
+ */
 byte   *GL_LoadImageCK(image_t * img, const char *name, boolean useModelPath)
 {
     char    keyFileName[256];
@@ -1982,20 +1916,18 @@ byte   *GL_LoadImageCK(image_t * img, const char *name, boolean useModelPath)
     return GL_LoadImage(img, name, useModelPath);
 }
 
-//===========================================================================
-// GL_DestroyImage
-//  Frees all memory associated with the image.
-//===========================================================================
+/*
+ * Frees all memory associated with the image.
+ */
 void GL_DestroyImage(image_t * img)
 {
     M_Free(img->pixels);
     img->pixels = NULL;
 }
 
-//===========================================================================
-// GL_LoadHighRes
-//  Name must end in \0.
-//===========================================================================
+/*
+ * Name must end in \0.
+ */
 byte *GL_LoadHighRes(image_t *img, char *name, char *prefix,
                      boolean allowColorKey, resourceclass_t resClass)
 {
@@ -2014,21 +1946,19 @@ byte *GL_LoadHighRes(image_t *img, char *name, char *prefix,
     return GL_LoadImage(img, fileName, false);
 }
 
-//===========================================================================
-// GL_LoadTexture
-//  Use this when loading custom textures from the Data\*\Textures dir.
-//  The returned buffer must be freed with M_Free.
-//===========================================================================
+/*
+ * Use this when loading custom textures from the Data\*\Textures dir.
+ * The returned buffer must be freed with M_Free.
+ */
 byte *GL_LoadTexture(image_t * img, char *name)
 {
     return GL_LoadHighRes(img, name, "", true, RC_TEXTURE);
 }
 
-//===========================================================================
-// GL_LoadHighResTexture
-//  Use this when loading high-res wall textures.
-//  The returned buffer must be freed with M_Free.
-//===========================================================================
+/*
+ * Use this when loading high-res wall textures.
+ * The returned buffer must be freed with M_Free.
+ */
 byte *GL_LoadHighResTexture(image_t * img, char *name)
 {
     if(noHighResTex)
@@ -2036,10 +1966,9 @@ byte *GL_LoadHighResTexture(image_t * img, char *name)
     return GL_LoadTexture(img, name);
 }
 
-//===========================================================================
-// GL_LoadHighResFlat
-//  The returned buffer must be freed with M_Free.
-//===========================================================================
+/*
+ * The returned buffer must be freed with M_Free.
+ */
 byte *GL_LoadHighResFlat(image_t * img, char *name)
 {
     byte *ptr;
@@ -2055,12 +1984,11 @@ byte *GL_LoadHighResFlat(image_t * img, char *name)
     return GL_LoadHighRes(img, name, "Flat-", false, RC_TEXTURE);
 }
 
-//===========================================================================
-// GL_LoadGraphics2
-//  Extended version that uses a custom resource class.
-//  Set mode to 2 to include an alpha channel. Set to 3 to make the
-//  actual pixel colors all white.
-//===========================================================================
+/*
+ * Extended version that uses a custom resource class.
+ * Set mode to 2 to include an alpha channel. Set to 3 to make the
+ * actual pixel colors all white.
+ */
 DGLuint GL_LoadGraphics2(resourceclass_t resClass, const char *name,
                          gfxmode_t mode, int useMipmap, boolean clamped)
 {
@@ -2122,18 +2050,14 @@ DGLuint GL_LoadGraphics2(resourceclass_t resClass, const char *name,
     return texture;
 }
 
-//===========================================================================
-// GL_LoadGraphics
-//===========================================================================
 DGLuint GL_LoadGraphics(const char *name, gfxmode_t mode)
 {
     return GL_LoadGraphics2(RC_GRAPHICS, name, mode, DGL_FALSE, true);
 }
 
-//===========================================================================
-// GL_BufferTexture
-//  Renders the given texture into the buffer.
-//===========================================================================
+/*
+ * Renders the given texture into the buffer.
+ */
 boolean GL_BufferTexture(texture_t *tex, byte *buffer, int width, int height,
                          int *has_big_patch)
 {
@@ -2172,19 +2096,17 @@ boolean GL_BufferTexture(texture_t *tex, byte *buffer, int width, int height,
     return alphaChannel;
 }
 
-//===========================================================================
-// GL_PrepareTexture
-//  Returns the DGL texture name.
-//===========================================================================
+/*
+ * Returns the DGL texture name.
+ */
 unsigned int GL_PrepareTexture(int idx)
 {
     return GL_PrepareTexture2(idx, true);
 }
 
-//===========================================================================
-// GL_PrepareTexture2
-//  Returns the DGL texture name.
-//===========================================================================
+/*
+ * Returns the DGL texture name.
+ */
 unsigned int GL_PrepareTexture2(int idx, boolean translate)
 {
     ded_detailtexture_t *def;
@@ -2286,19 +2208,17 @@ unsigned int GL_PrepareTexture2(int idx, boolean translate)
     return GL_GetTextureInfo2(originalIndex, translate);
 }
 
-//===========================================================================
-// GL_GetTextureInfo
-//  Returns the texture name, if it has been prepared.
-//===========================================================================
+/*
+ * Returns the texture name, if it has been prepared.
+ */
 DGLuint GL_GetTextureInfo(int index)
 {
     return GL_GetTextureInfo2(index, true);
 }
 
-//===========================================================================
-// GL_GetTextureInfo2
-//  Returns the texture name, if it has been prepared.
-//===========================================================================
+/*
+ * Returns the texture name, if it has been prepared.
+ */
 DGLuint GL_GetTextureInfo2(int index, boolean translate)
 {
     texture_t *tex;
@@ -2321,17 +2241,11 @@ DGLuint GL_GetTextureInfo2(int index, boolean translate)
     return tex->tex;
 }
 
-//===========================================================================
-// GL_SetTexture
-//===========================================================================
 void GL_SetTexture(int idx)
 {
     gl.Bind(GL_PrepareTexture(idx));
 }
 
-//===========================================================================
-// LineAverageRGB
-//===========================================================================
 int LineAverageRGB(byte *imgdata, int width, int height, int line, byte *rgb,
                    byte *palette, boolean has_alpha)
 {
@@ -2363,10 +2277,9 @@ int LineAverageRGB(byte *imgdata, int width, int height, int line, byte *rgb,
     return 1;                   // Successful.
 }
 
-//===========================================================================
-// ImageAverageRGB
-//  The imgdata must have alpha info, too.
-//===========================================================================
+/*
+ * The imgdata must have alpha info, too.
+ */
 void ImageAverageRGB(byte *imgdata, int width, int height, byte *rgb,
                      byte *palette)
 {
@@ -2386,12 +2299,11 @@ void ImageAverageRGB(byte *imgdata, int width, int height, byte *rgb,
             rgb[c] = integerRGB[c] / count;
 }
 
-//===========================================================================
-// ColorOutlines
-//  Fills the empty pixels with reasonable color indices.
-//  This gets rid of the black outlines.
-//  Not a very efficient algorithm...
-//===========================================================================
+/*
+ * Fills the empty pixels with reasonable color indices.
+ * This gets rid of the black outlines.
+ * Not a very efficient algorithm...
+ */
 static void ColorOutlines(byte *buffer, int width, int height)
 {
     int     numpels = width * height;
@@ -2418,12 +2330,11 @@ static void ColorOutlines(byte *buffer, int width, int height)
             }
 }
 
-//===========================================================================
-// DeSaturate
-//  Desaturates the texture in the dest buffer by averaging the colour then
-//  looking up the nearest match in the PLAYPAL. Increases the brightness
-//  to maximum.
-//===========================================================================
+/*
+ * Desaturates the texture in the dest buffer by averaging the colour then
+ * looking up the nearest match in the PLAYPAL. Increases the brightness
+ * to maximum.
+ */
 static void DeSaturate(byte *buffer, int width, int height)
 {
     byte   *rgb;
@@ -2459,11 +2370,10 @@ static void DeSaturate(byte *buffer, int width, int height)
     }
 }
 
-//===========================================================================
-// GL_BufferSkyTexture
-//  Draws the given sky texture in a buffer. The returned buffer must be
-//  freed by the caller. Idx must be a valid texture number.
-//===========================================================================
+/*
+ * Draws the given sky texture in a buffer. The returned buffer must be
+ * freed by the caller. Idx must be a valid texture number.
+ */
 void GL_BufferSkyTexture(int idx, byte **outbuffer, int *width, int *height,
                          boolean zeroMask)
 {
@@ -2528,19 +2438,17 @@ void GL_BufferSkyTexture(int idx, byte **outbuffer, int *width, int *height,
     *outbuffer = imgdata;
 }
 
-//===========================================================================
-// GL_PrepareSky
-//  Sky textures are usually 256 pixels wide.
-//===========================================================================
+/*
+ * Sky textures are usually 256 pixels wide.
+ */
 unsigned int GL_PrepareSky(int idx, boolean zeroMask)
 {
     return GL_PrepareSky2(idx, zeroMask, true);
 }
 
-//===========================================================================
-// GL_PrepareSky2
-//  Sky textures are usually 256 pixels wide.
-//===========================================================================
+/*
+ * Sky textures are usually 256 pixels wide.
+ */
 unsigned int GL_PrepareSky2(int idx, boolean zeroMask, boolean translate)
 {
     boolean RGBData, alphaChannel;
@@ -2599,10 +2507,9 @@ unsigned int GL_PrepareSky2(int idx, boolean zeroMask, boolean translate)
     return textures[idx]->tex;
 }
 
-//===========================================================================
-// GL_GetSkyColor
-//  Return a skycol_t for texidx.
-//===========================================================================
+/*
+ * Return a skycol_t for texidx.
+ */
 skycol_t *GL_GetSkyColor(int texidx)
 {
     int     i, width, height;
@@ -2632,10 +2539,9 @@ skycol_t *GL_GetSkyColor(int texidx)
     return skycol;
 }
 
-//===========================================================================
-// GL_GetSkyTopColor
-//  Returns the sky fadeout color of the given texture.
-//===========================================================================
+/*
+ * Returns the sky fadeout color of the given texture.
+ */
 void GL_GetSkyTopColor(int texidx, byte *rgb)
 {
     skycol_t *skycol = GL_GetSkyColor(texidx);
@@ -2649,9 +2555,6 @@ void GL_GetSkyTopColor(int texidx, byte *rgb)
         memcpy(rgb, skycol->rgb, 3);
 }
 
-//===========================================================================
-// GL_NewTranslatedSprite
-//===========================================================================
 transspr_t *GL_NewTranslatedSprite(int pnum, unsigned char *table)
 {
     transspr_t *news;
@@ -2665,9 +2568,6 @@ transspr_t *GL_NewTranslatedSprite(int pnum, unsigned char *table)
     return news;
 }
 
-//===========================================================================
-// GL_GetTranslatedSprite
-//===========================================================================
 transspr_t *GL_GetTranslatedSprite(int pnum, unsigned char *table)
 {
     int     i;
@@ -2678,11 +2578,10 @@ transspr_t *GL_GetTranslatedSprite(int pnum, unsigned char *table)
     return 0;
 }
 
-//===========================================================================
-// amplify
-//  The given RGB color is scaled uniformly so that the highest component
-//  becomes one.
-//===========================================================================
+/*
+ * The given RGB color is scaled uniformly so that the highest component
+ * becomes one.
+ */
 int amplify(byte *rgb)
 {
     int     i, max = 0;
@@ -2698,11 +2597,10 @@ int amplify(byte *rgb)
     return max;
 }
 
-//===========================================================================
-// averageColorIdx
-//  Used by flares and dynamic lights. The resulting average color is
-//  amplified to be as bright as possible.
-//===========================================================================
+/*
+ * Used by flares and dynamic lights. The resulting average color is
+ * amplified to be as bright as possible.
+ */
 void averageColorIdx(rgbcol_t * col, byte *data, int w, int h, byte *palette,
                      boolean has_alpha)
 {
@@ -2734,9 +2632,6 @@ void averageColorIdx(rgbcol_t * col, byte *data, int w, int h, byte *palette,
     amplify(col->rgb);
 }
 
-//===========================================================================
-// averageColorRGB
-//===========================================================================
 void averageColorRGB(rgbcol_t * col, byte *data, int w, int h)
 {
     int     i, count = w * h;
@@ -2756,12 +2651,11 @@ void averageColorRGB(rgbcol_t * col, byte *data, int w, int h)
     amplify(col->rgb);
 }
 
-//==========================================================================
-// GL_CalcLuminance
-//  Calculates the properties of a dynamic light that the given sprite
-//  frame casts.
-//  2003-05-30 (skyjake): Modified to handle pixel sizes 1 (==2), 3 and 4.
-//==========================================================================
+/*
+ * Calculates the properties of a dynamic light that the given sprite
+ * frame casts.
+ * 2003-05-30 (skyjake): Modified to handle pixel sizes 1 (==2), 3 and 4.
+ */
 void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
                       int pixelsize)
 {
@@ -2877,12 +2771,11 @@ void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
         slump->lumsize = 1;
 }
 
-//==========================================================================
-// GL_SetTexCoords
-//  Calculates texture coordinates based on the given dimensions. The
-//  coordinates are calculated as width/CeilPow2(width), or 1 if the
-//  CeilPow2 would go over maxTexSize.
-//==========================================================================
+/*
+ * Calculates texture coordinates based on the given dimensions. The
+ * coordinates are calculated as width/CeilPow2(width), or 1 if the
+ * CeilPow2 would go over maxTexSize.
+ */
 void GL_SetTexCoords(float *tc, int wid, int hgt)
 {
     int     pw = CeilPow2(wid), ph = CeilPow2(hgt);
@@ -2941,9 +2834,6 @@ unsigned int GL_PrepareSpriteBuffer(int pnum, image_t *image,
     return texture;
 }
 
-//===========================================================================
-// GL_PrepareTranslatedSprite
-//===========================================================================
 unsigned int GL_PrepareTranslatedSprite(int pnum, int tmap, int tclass)
 {
     byte   *table =
@@ -2995,12 +2885,11 @@ unsigned int GL_PrepareTranslatedSprite(int pnum, int tmap, int tclass)
     return tspr->tex;
 }
 
-//===========================================================================
-// GL_PrepareSprite
-//  Spritemodes:
-//  0 = Normal sprite
-//  1 = Psprite (HUD)
-//===========================================================================
+/*
+ * Spritemodes:
+ * 0 = Normal sprite
+ * 1 = Psprite (HUD)
+ */
 unsigned int GL_PrepareSprite(int pnum, int spriteMode)
 {
     DGLuint *texture;
@@ -3060,9 +2949,6 @@ unsigned int GL_PrepareSprite(int pnum, int spriteMode)
     return *texture;
 }
 
-//===========================================================================
-// GL_DeleteSprite
-//===========================================================================
 void GL_DeleteSprite(int spritelump)
 {
     if(spritelump < 0 || spritelump >= numspritelumps)
@@ -3078,9 +2964,6 @@ void GL_DeleteSprite(int spritelump)
     }
 }
 
-//===========================================================================
-// GL_GetSpriteColor
-//===========================================================================
 void GL_GetSpriteColor(int pnum, unsigned char *rgb)
 {
     if(pnum > numspritelumps - 1)
@@ -3088,36 +2971,26 @@ void GL_GetSpriteColor(int pnum, unsigned char *rgb)
     memcpy(rgb, spritelumps[pnum].color.rgb, 3);
 }
 
-//===========================================================================
-// GL_SetSprite
-//  0 = Normal sprite
-//  1 = Psprite (HUD)
-//===========================================================================
+/*
+ * 0 = Normal sprite
+ * 1 = Psprite (HUD)
+ */
 void GL_SetSprite(int pnum, int spriteType)
 {
     GL_BindTexture(GL_PrepareSprite(pnum, spriteType));
 }
 
-//===========================================================================
-// GL_SetTranslatedSprite
-//===========================================================================
 void GL_SetTranslatedSprite(int pnum, int tmap, int tclass)
 {
     GL_BindTexture(GL_PrepareTranslatedSprite(pnum, tmap, tclass));
 }
 
-//===========================================================================
-// GL_NewRawLump
-//===========================================================================
 void GL_NewRawLump(int lump)
 {
     rawlumps = realloc(rawlumps, sizeof(int) * ++numrawlumps);
     rawlumps[numrawlumps - 1] = lump;
 }
 
-//===========================================================================
-// GL_GetOtherPart
-//===========================================================================
 DGLuint GL_GetOtherPart(int lump)
 {
     return lumptexinfo[lump].tex[1];
@@ -3386,10 +3259,9 @@ void GL_PrepareLumpPatch(int lump)
     M_Free(buffer);
 }
 
-//===========================================================================
-// GL_SetPatch
-//  No mipmaps are generated for regular patches.
-//===========================================================================
+/*
+ * No mipmaps are generated for regular patches.
+ */
 void GL_SetPatch(int lump)
 {
     if(lump >= numlumps)
@@ -3568,12 +3440,12 @@ DGLuint GL_PrepareLSTexture(lightingtex_t which)
                 lightingTexNames[which] =
                     GL_LoadGraphics("RadioOO", LGM_WHITE_ALPHA);
                 break;
-                
+
             case LST_RADIO_OE:
                 lightingTexNames[which] =
                     GL_LoadGraphics("RadioOE", LGM_WHITE_ALPHA);
                 break;
-                    
+
             default:
                 break;
             }
@@ -3594,9 +3466,6 @@ DGLuint GL_PrepareLSTexture(lightingtex_t which)
     }
 }
 
-//===========================================================================
-// GL_PrepareFlareTexture
-//===========================================================================
 DGLuint GL_PrepareFlareTexture(int flare)
 {
     int     w, h;
@@ -3636,27 +3505,20 @@ DGLuint GL_PrepareFlareTexture(int flare)
     return flaretexnames[flare];
 }
 
-//===========================================================================
-// GL_GetLumpTexWidth
-//===========================================================================
 int GL_GetLumpTexWidth(int lump)
 {
     return lumptexinfo[lump].width[0];
 }
 
-//===========================================================================
-// GL_GetLumpTexHeight
-//===========================================================================
 int GL_GetLumpTexHeight(int lump)
 {
     return lumptexinfo[lump].height;
 }
 
-//===========================================================================
-// GL_SetTextureParams
-//  Updates the textures, flats and sprites (gameTex) or the user
-//  interface textures (patches and raw screens).
-//===========================================================================
+/*
+ * Updates the textures, flats and sprites (gameTex) or the user
+ * interface textures (patches and raw screens).
+ */
 void GL_SetTextureParams(int minMode, int magMode, int gameTex, int uiTex)
 {
     int     i, k;
@@ -3711,30 +3573,33 @@ void GL_SetTextureParams(int minMode, int magMode, int gameTex, int uiTex)
     }
 }
 
-//===========================================================================
-// GL_UpdateTexParams
-//===========================================================================
 void GL_UpdateTexParams(int mipmode)
 {
     mipmapping = mipmode;
     GL_SetTextureParams(glmode[mipmode], glmode[texMagMode], true, false);
 }
 
-//===========================================================================
-// GL_LowRes
-//===========================================================================
-void GL_LowRes()
+void GL_TexReset(void)
+{
+    GL_ClearTextureMemory();
+    GL_LoadSystemTextures(true);
+    Con_Printf("All DGL textures deleted.\n");
+}
+
+void GL_LowRes(void)
 {
     // Set everything as low as they go.
     GL_SetTextureParams(DGL_NEAREST, DGL_NEAREST, true, true);
+
+    // And do a texreset so everything is updated.
+    GL_TexReset();
 }
 
-//===========================================================================
-// GL_DeleteRawImages
-//  To save texture memory, delete all raw image textures. Raw images are
-//  used as interlude backgrounds, title screens, etc. Called from
-//  DD_SetupLevel.
-//===========================================================================
+/*
+ * To save texture memory, delete all raw image textures. Raw images are
+ * used as interlude backgrounds, title screens, etc. Called from
+ * DD_SetupLevel.
+ */
 void GL_DeleteRawImages(void)
 {
     int     i;
@@ -3750,10 +3615,9 @@ void GL_DeleteRawImages(void)
     numrawlumps = 0;
 }
 
-//===========================================================================
-// GL_UpdateRawScreenParams
-//  Updates the raw screen smoothing (linear magnification).
-//===========================================================================
+/*
+ * Updates the raw screen smoothing (linear magnification).
+ */
 void GL_UpdateRawScreenParams(int smoothing)
 {
     int     i;
@@ -3771,9 +3635,6 @@ void GL_UpdateRawScreenParams(int smoothing)
     }
 }
 
-//===========================================================================
-// GL_TextureFilterMode
-//===========================================================================
 void GL_TextureFilterMode(int target, int parm)
 {
     if(target == DD_TEXTURES)
@@ -3782,10 +3643,9 @@ void GL_TextureFilterMode(int target, int parm)
         GL_UpdateRawScreenParams(parm);
 }
 
-//===========================================================================
-// GL_DeleteTexture
-//  Deletes a texture. Only for textures (not for sprites, flats, etc.).
-//===========================================================================
+/*
+ * Deletes a texture. Only for textures (not for sprites, flats, etc.).
+ */
 void GL_DeleteTexture(int texidx)
 {
     if(texidx < 0 || texidx >= numtextures)
@@ -3798,17 +3658,11 @@ void GL_DeleteTexture(int texidx)
     }
 }
 
-//===========================================================================
-// GL_GetTextureName
-//===========================================================================
 unsigned int GL_GetTextureName(int texidx)
 {
     return textures[texidx]->tex;
 }
 
-//===========================================================================
-// GL_GetSkinTex
-//===========================================================================
 skintex_t *GL_GetSkinTex(const char *skin)
 {
     int     i;
@@ -3838,9 +3692,6 @@ skintex_t *GL_GetSkinTex(const char *skin)
     return st;
 }
 
-//===========================================================================
-// GL_GetSkinTexByIndex
-//===========================================================================
 skintex_t *GL_GetSkinTexByIndex(int id)
 {
     if(id < 0 || id >= numskinnames)
@@ -3848,9 +3699,6 @@ skintex_t *GL_GetSkinTexByIndex(int id)
     return skinnames + id;
 }
 
-//===========================================================================
-// GL_GetSkinTexIndex
-//===========================================================================
 int GL_GetSkinTexIndex(const char *skin)
 {
     skintex_t *sk = GL_GetSkinTex(skin);
@@ -3860,9 +3708,6 @@ int GL_GetSkinTexIndex(const char *skin)
     return sk - skinnames;
 }
 
-//===========================================================================
-// GL_PrepareSkin
-//===========================================================================
 unsigned int GL_PrepareSkin(model_t * mdl, int skin)
 {
     int     width, height, size;
@@ -3911,9 +3756,6 @@ unsigned int GL_PrepareSkin(model_t * mdl, int skin)
     return st->tex;
 }
 
-//===========================================================================
-// GL_PrepareShinySkin
-//===========================================================================
 unsigned int GL_PrepareShinySkin(modeldef_t * md, int sub)
 {
     //  model_t *mdl = modellist[md->sub[sub].model];
@@ -3946,12 +3788,11 @@ unsigned int GL_PrepareShinySkin(modeldef_t * md, int sub)
     return stp->tex;
 }
 
-//===========================================================================
-// GL_IsColorKeyed
-//  Returns true if the given path name refers to an image, which should
-//  be color keyed. Color keying is done for both (0,255,255) and
-//  (255,0,255).
-//===========================================================================
+/*
+ * Returns true if the given path name refers to an image, which should
+ * be color keyed. Color keying is done for both (0,255,255) and
+ * (255,0,255).
+ */
 boolean GL_IsColorKeyed(const char *path)
 {
     char    buf[256];
@@ -3961,20 +3802,18 @@ boolean GL_IsColorKeyed(const char *path)
     return strstr(buf, "-ck.") != NULL;
 }
 
-//===========================================================================
-// GL_ColorKey
-//  Returns true if the given color is either (0,255,255) or (255,0,255).
-//===========================================================================
+/*
+ * Returns true if the given color is either (0,255,255) or (255,0,255).
+ */
 boolean GL_ColorKey(byte *color)
 {
     return color[CB] == 0xff && ((color[CR] == 0xff && color[CG] == 0) ||
                                  (color[CR] == 0 && color[CG] == 0xff));
 }
 
-//===========================================================================
-// GL_DoColorKeying
-//  Buffer must be RGBA. Doesn't touch the non-keyed pixels.
-//===========================================================================
+/*
+ * Buffer must be RGBA. Doesn't touch the non-keyed pixels.
+ */
 void GL_DoColorKeying(byte *rgbaBuf, int width)
 {
     int     i;
@@ -3986,9 +3825,6 @@ void GL_DoColorKeying(byte *rgbaBuf, int width)
 
 //--------------------------------------------------------------------------
 
-//===========================================================================
-// CCmdLowRes
-//===========================================================================
 D_CMD(LowRes)
 {
     GL_LowRes();
@@ -4047,9 +3883,7 @@ D_CMD(TranslateFont)
 
 D_CMD(ResetTextures)
 {
-    GL_ClearTextureMemory();
-    GL_LoadSystemTextures(true);
-    Con_Printf("All DGL textures deleted.\n");
+    GL_TexReset();
     return true;
 }
 
