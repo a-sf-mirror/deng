@@ -19,9 +19,9 @@
 /*
  * p_dmu.c: Doomsday Map Update API
  *
- * The Map Update API is used for accessing and making changes to map data 
- * during gameplay. From here, the relevant engine's subsystems will be 
- * notified of changes in the map data they use, thus allowing them to 
+ * The Map Update API is used for accessing and making changes to map data
+ * during gameplay. From here, the relevant engine's subsystems will be
+ * notified of changes in the map data they use, thus allowing them to
  * update their status whenever needed.
  */
 
@@ -153,6 +153,7 @@ const char* DMU_Str(int prop)
         { DMU_FLOOR_TEXTURE_MOVE_X, "DMU_FLOOR_TEXTURE_MOVE_X" },
         { DMU_FLOOR_TEXTURE_MOVE_Y, "DMU_FLOOR_TEXTURE_MOVE_Y" },
         { DMU_FLOOR_TEXTURE_MOVE_XY, "DMU_FLOOR_TEXTURE_MOVE_XY" },
+        { DMU_FLOOR_SOUND_ORIGIN, "DMU_FLOOR_SOUND_ORIGIN" },
         { DMU_CEILING_HEIGHT, "DMU_CEILING_HEIGHT" },
         { DMU_CEILING_TEXTURE, "DMU_CEILING_TEXTURE" },
         { DMU_CEILING_OFFSET_X, "DMU_CEILING_OFFSET_X" },
@@ -164,14 +165,15 @@ const char* DMU_Str(int prop)
         { DMU_CEILING_TEXTURE_MOVE_X, "DMU_CEILING_TEXTURE_MOVE_X" },
         { DMU_CEILING_TEXTURE_MOVE_Y, "DMU_CEILING_TEXTURE_MOVE_Y" },
         { DMU_CEILING_TEXTURE_MOVE_XY, "DMU_CEILING_TEXTURE_MOVE_XY" },
+        { DMU_CEILING_SOUND_ORIGIN, "DMU_CEILING_SOUND_ORIGIN" },
         { 0, NULL }
     };
     int i;
-    
+
     for(i = 0; props[i].str; ++i)
         if(props[i].prop == prop)
             return props[i].str;
-    
+
     sprintf(propStr, "(unnamed %i)", prop);
     return propStr;
 }
@@ -184,7 +186,7 @@ const char* DMU_Str(int prop)
 static int DMU_GetType(const void* ptr)
 {
     int type = ((const runtime_mapdata_header_t*)ptr)->type;
-    
+
     // Make sure it's valid.
     switch(type)
     {
@@ -197,7 +199,7 @@ static int DMU_GetType(const void* ptr)
         case DMU_POLYOBJ:
         case DMU_NODE:
             return type;
-            
+
         default:
             // Unknown.
             break;
@@ -206,7 +208,7 @@ static int DMU_GetType(const void* ptr)
 }
 
 /*
- * Initializes a setargs struct. 
+ * Initializes a setargs struct.
  *
  * @param type  Type of the map data object (e.g., DMU_LINE).
  * @param prop  Property of the map data object.
@@ -236,14 +238,14 @@ void P_InitMapUpdate(void)
 /*
  * Allocates a new dummy object.
  *
- * @param type  DMU type of the dummy object. 
+ * @param type  DMU type of the dummy object.
  * @param extraData  Extra data pointer of the dummy. Points to caller-allocated
  *                   memory area of extra data for the dummy.
  */
 void* P_AllocDummy(int type, void* extraData)
 {
     int i;
-    
+
     switch(type)
     {
     case DMU_LINE:
@@ -257,12 +259,12 @@ void* P_AllocDummy(int type, void* extraData)
             }
         }
         break;
-        
+
     default:
         Con_Error("P_AllocDummy: Dummies of type %s not supported.\n",
                   DMU_Str(type));
     }
-    
+
     Con_Error("P_AllocDummy: Out of dummies of type %s.\n", DMU_Str(type));
     return 0;
 }
@@ -273,13 +275,13 @@ void* P_AllocDummy(int type, void* extraData)
 void P_FreeDummy(void* dummy)
 {
     int type = P_DummyType(dummy);
-    
+
     switch(type)
     {
     case DMU_LINE:
         ((dummyline_t*)dummy)->inUse = false;
         break;
-        
+
     default:
         Con_Error("P_FreeDummy: Dummy is of unknown type.\n");
         break;
@@ -294,12 +296,12 @@ void P_FreeDummy(void* dummy)
 int P_DummyType(void* dummy)
 {
     // Is it a line?
-    if(dummy >= (void*) &dummyLines[0] && 
+    if(dummy >= (void*) &dummyLines[0] &&
        dummy <= (void*) &dummyLines[dummyCount - 1])
     {
         return DMU_LINE;
     }
-    
+
     // Unknown.
     return DMU_NONE;
 }
@@ -321,8 +323,8 @@ void* P_DummyExtraData(void* dummy)
     switch(P_DummyType(dummy))
     {
     case DMU_LINE:
-        return ((dummyline_t*)dummy)->extraData; 
-        
+        return ((dummyline_t*)dummy)->extraData;
+
     default:
         break;
     }
@@ -1135,7 +1137,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
                       DMU_Str(args->valueType));
         }
     }
-    else if(valueType == DDVT_BLENDMODE) 
+    else if(valueType == DDVT_BLENDMODE)
     {
         const blendmode_t* s = src;
 
@@ -1177,9 +1179,9 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
 static int GetProperty(void* ptr, void* context)
 {
     setargs_t* args = (setargs_t*) context;
-    
+
     // Check modified cases first.
-    if(args->type == DMU_SECTOR && 
+    if(args->type == DMU_SECTOR &&
        (args->modifiers & DMU_LINE_OF_SECTOR))
     {
         sector_t* p = ptr;
@@ -1190,10 +1192,10 @@ static int GetProperty(void* ptr, void* context)
         }
         GetValue(DDVT_PTR, &p->Lines[args->prop], args, 0);
         return false; // stop iteration
-    }       
-    
-    if(args->type == DMU_SECTOR || 
-       (args->type == DMU_SUBSECTOR && 
+    }
+
+    if(args->type == DMU_SECTOR ||
+       (args->type == DMU_SUBSECTOR &&
         (args->modifiers & DMU_SECTOR_OF_SUBSECTOR)))
     {
         sector_t* p = NULL;
@@ -1204,7 +1206,7 @@ static int GetProperty(void* ptr, void* context)
             p = ((subsector_t*)ptr)->sector;
         else
             Con_Error("GetProperty: Invalid args.\n");
-        
+
         switch(args->prop)
         {
         case DMU_LIGHT_LEVEL:
@@ -1249,7 +1251,7 @@ static int GetProperty(void* ptr, void* context)
         }
         return false; // stop iteration
     }
-    
+
     switch(args->type)
     {
     case DMU_VERTEX:
@@ -2226,7 +2228,7 @@ void P_Copyp(int prop, void* from, void* to)
     {
         Con_Error("P_Copyp: Type mismatch.\n");
     }
-    
+
     InitArgs(&args, type, prop);
 
     switch(ptype)
@@ -2438,9 +2440,9 @@ void P_Swapp(int prop, void* from, void* to)
 
     if(DMU_GetType(to) != type)
     {
-        Con_Error("P_Swapp: Type mismatch.\n");        
+        Con_Error("P_Swapp: Type mismatch.\n");
     }
-    
+
     InitArgs(&argsA, type, prop);
     InitArgs(&argsB, type, prop);
 
