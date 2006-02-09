@@ -103,67 +103,91 @@ static int numswitches;
 // CODE --------------------------------------------------------------------
 
 /*
- * Only called at game initialization.
+ * Called at game initialization or when the engine's state must be updated
+ * (eg a new WAD is loaded at runtime). This routine will populate the list
+ * of known switches and buttons. This enables their texture to change when
+ * activated, and in the case of buttons, change back after a timeout.
+ *
+ * This routine modified to read its data from a predefined lump or
+ * PWAD lump called SWITCHES rather than a static table in this module to
+ * allow wad designers to insert or modify switches.
+ *
+ * Lump format is an array of byte packed switchlist_t structures, terminated
+ * by a structure with episode == -0. The lump can be generated from a
+ * text source file using SWANTBLS.EXE, distributed with the BOOM utils.
+ * The standard list of switches and animations is contained in the example
+ * source text file DEFSWANI.DAT also in the BOOM util distribution.
+ */
+
+/*
+ * DJS - We'll support this BOOM extension but we should discourage it's use
+ *       and instead implement a better method for creating new switches.
  */
 void P_InitSwitchList(void)
 {
-    int     i;
-    int     index;
-    int     episode;
-
-    episode = 1;
+    int i, index, episode;
+    int lump = W_CheckNumForName("SWITCHES");
+    switchlist_t* sList = alphSwitchList;
 
     if(gamemode == registered || gamemode == retail)
         episode = 2;
+    else if(gamemode == commercial)
+        episode = 3;
     else
+        episode = 1;
+
+    // Has a custom SWITCHES lump been loaded?
+    if(lump > 0)
     {
-        if(gamemode == commercial)
-            episode = 3;
+        Con_Message("P_InitSwitchList: \"SWITCHES\" lump found. Reading switches...\n");
+        sList = (switchlist_t *) W_CacheLumpNum(lump, PU_STATIC);
     }
 
-    for(index = 0, i = 0;; i++)
+    for(index = 0, i = 0; ; ++i)
     {
         if(index+1 >= max_numswitches)
         {
             switchlist = realloc(switchlist, sizeof *switchlist *
-            (max_numswitches = max_numswitches ? max_numswitches*2 : 8));
+                (max_numswitches = max_numswitches ? max_numswitches*2 : 8));
         }
 
-        if(!alphSwitchList[i].episode)
+        if(SHORT(sList[i].episode) <= episode)
         {
-            numswitches = index / 2;
-            switchlist[index] = -1;
-            break;
-        }
+            if(!SHORT(sList[i].episode))
+                break;
 
-        if(alphSwitchList[i].episode <= episode)
-        {
-            switchlist[index++] = R_TextureNumForName(alphSwitchList[i].name1);
-            switchlist[index++] = R_TextureNumForName(alphSwitchList[i].name2);
+            switchlist[index++] = R_TextureNumForName(sList[i].name1);
+            switchlist[index++] = R_TextureNumForName(sList[i].name2);
+            Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
+                        sList[i].name1, sList[i].name2, SHORT(sList[i].episode));
         }
     }
+
+    numswitches = index / 2;
+    switchlist[index] = -1;
 }
 
 /*
- * Start a button counting down till it turns off.
+ * Start a button (retriggerable switch) counting down till it turns off.
+ *
+ * Passed the linedef the button is on, which texture on the sidedef contains
+ * the button, the texture number of the button, and the time the button is
+ * to remain active in gametics.
  */
 void P_StartButton(line_t *line, bwhere_e w, int texture, int time)
 {
     int     i;
 
     // See if button is already pressed
-    for(i = 0; i < MAXBUTTONS; i++)
+    for(i = 0; i < MAXBUTTONS; ++i)
     {
         if(buttonlist[i].btimer && buttonlist[i].line == line)
-        {
-
             return;
-        }
     }
 
     for(i = 0; i < MAXBUTTONS; i++)
     {
-        if(!buttonlist[i].btimer)
+        if(!buttonlist[i].btimer) // use first unused element of list
         {
             buttonlist[i].line = line;
             buttonlist[i].where = w;

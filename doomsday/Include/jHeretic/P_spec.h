@@ -162,11 +162,13 @@ void            P_SpawnGlowingLight(sector_t *sector);
 //
 // P_SWITCH
 //
+// This struct is used to provide byte offsets when reading a custom
+// SWITCHES lump thus it must be packed and cannot be altered.
 typedef struct {
+    /* Do NOT change these members in any way */
     char            name1[9];
     char            name2[9];
     short           episode;
-
 } switchlist_t;
 
 typedef enum {
@@ -183,9 +185,6 @@ typedef struct {
     mobj_t         *soundorg;
 
 } button_t;
-
- // max # of wall switches in a level
-#define MAXSWITCHES 50
 
  // 4 players, 4 buttons each at once, max.
 #define MAXBUTTONS  16
