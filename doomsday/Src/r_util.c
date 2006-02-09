@@ -50,10 +50,13 @@ extern int tantoangle[SLOPERANGE + 1];  // get from tables.c
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// R_PointOnSide
-//  Returns side 0 (front) or 1 (back).
-//===========================================================================
+/*
+ * Which side of the node does the point lie?
+ *
+ * @param x         X coordinate to test.
+ * @param y         Y coordinate to test.
+ * @return int      (0) if the front. OR (1) the back.
+ */
 int R_PointOnSide(fixed_t x, fixed_t y, node_t * node)
 {
     fixed_t dx, dy;
@@ -92,9 +95,6 @@ int R_PointOnSide(fixed_t x, fixed_t y, node_t * node)
 }
 
 /*
-   //===========================================================================
-   // R_PointOnSegSide
-   //===========================================================================
    int  R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
    {
    fixed_t  lx, ly;
@@ -141,9 +141,6 @@ int R_PointOnSide(fixed_t x, fixed_t y, node_t * node)
    }
  */
 
-//===========================================================================
-// R_SlopeDiv
-//===========================================================================
 int R_SlopeDiv(unsigned num, unsigned den)
 {
     unsigned ans;
@@ -154,14 +151,18 @@ int R_SlopeDiv(unsigned num, unsigned den)
     return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
 
-//===========================================================================
-// R_PointToAngle
-// to get a global angle from cartesian coordinates, the coordinates are
-// flipped until they are in the first octant of the coordinate system, then
-// the y (<=x) is scaled and divided by x to get a tangent (slope) value
-// which is looked up in the tantoangle[] table.  The +1 size is to handle
-// the case when x==y without additional checking.
-//===========================================================================
+/*
+ * To get a global angle from cartesian coordinates, the coordinates are
+ * flipped until they are in the first octant of the coordinate system, then
+ * the y (<=x) is scaled and divided by x to get a tangent (slope) value
+ * which is looked up in the tantoangle[] table.  The +1 size is to handle
+ * the case when x==y without additional checking.
+ *
+ * @param   x           X coordinate to test.
+ * @param   y           Y coordinate to test.
+ *
+ * @return  angle_t     Angle between the test point and viewx,y.
+ */
 angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
     x -= viewx;
@@ -209,9 +210,6 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
     return 0;
 }
 
-//===========================================================================
-// R_PointToAngle2
-//===========================================================================
 angle_t R_PointToAngle2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 {
     viewx = x1;
@@ -219,9 +217,6 @@ angle_t R_PointToAngle2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
     return R_PointToAngle(x2, y2);
 }
 
-//===========================================================================
-// R_PointToDist
-//===========================================================================
 fixed_t R_PointToDist(fixed_t x, fixed_t y)
 {
     int     angle;
@@ -246,9 +241,6 @@ fixed_t R_PointToDist(fixed_t x, fixed_t y)
     return dist;
 }
 
-//===========================================================================
-// R_PointInSubsector
-//===========================================================================
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
     node_t *node;
@@ -268,9 +260,6 @@ subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
     return SUBSECTOR_PTR(nodenum & ~NF_SUBSECTOR);
 }
 
-//===========================================================================
-// R_GetLineForSide
-//===========================================================================
 line_t *R_GetLineForSide(int sideNumber)
 {
     side_t *side = SIDE_PTR(sideNumber);
@@ -291,12 +280,17 @@ line_t *R_GetLineForSide(int sideNumber)
     return NULL;
 }
 
-//===========================================================================
-// R_IsPointInSector
-//  Returns true if the point is inside the sector, according to the lines
-//  that completely surround the sector. Uses the well-known algorithm
-//  described here: http://www.alienryderflex.com/polygon/
-//===========================================================================
+/*
+ * Is the point inside the sector, according to the edge lines of the
+ * subsector. Uses the well-known algorithm described here:
+ * http://www.alienryderflex.com/polygon/
+ *
+ * @param   x           X coordinate to test.
+ * @param   y           Y coordinate to test.
+ * @param   sector      Sector to test.
+ *
+ * @return  boolean     (TRUE) If the point is inside the sector.
+ */
 boolean R_IsPointInSector(fixed_t x, fixed_t y, sector_t *sector)
 {
     int     i;
@@ -329,14 +323,19 @@ boolean R_IsPointInSector(fixed_t x, fixed_t y, sector_t *sector)
     return isOdd;
 }
 
-//===========================================================================
-// R_IsPointInSector2
-//  Returns true if the point is inside the sector, according
-//  to the edge lines of the subsector. Uses the well-known algorithm
-//  described here: http://www.alienryderflex.com/polygon/
-//
-//  More accurate than R_IsPointInSector.
-//===========================================================================
+/*
+ * Is the point inside the sector, according to the edge lines of the
+ * subsector. Uses the well-known algorithm described here:
+ * http://www.alienryderflex.com/polygon/
+ *
+ * More accurate than R_IsPointInSector.
+ *
+ * @param   x           X coordinate to test.
+ * @param   y           Y coordinate to test.
+ * @param   sector      Sector to test.
+ *
+ * @return  boolean     (TRUE) If the point is inside the sector.
+ */
 boolean R_IsPointInSector2(fixed_t x, fixed_t y, sector_t *sector)
 {
     int     i;
@@ -380,10 +379,13 @@ boolean R_IsPointInSector2(fixed_t x, fixed_t y, sector_t *sector)
     return true;
 }
 
-//===========================================================================
-// R_GetSectorNumForDegen
-//  Returns the index of the sector who owns the given degenmobj.
-//===========================================================================
+/*
+ * Returns the index of the sector who owns the given degenmobj.
+ *
+ * @param degenmobj     degenmobj to search for.
+ *
+ * @return int          Sector number where the degenmobj resides else -1.
+ */
 int R_GetSectorNumForDegen(void *degenmobj)
 {
     int     i;
@@ -391,10 +393,10 @@ int R_GetSectorNumForDegen(void *degenmobj)
     // Check all sectors; find where the sound is coming from.
     for(i = 0; i < numsectors; i++)
     {
-        if(degenmobj == &SECTOR_PTR(i)->soundorg)
-        {
+        if(degenmobj == &SECTOR_PTR(i)->soundorg ||
+           degenmobj == &SECTOR_PTR(i)->floorsoundorg ||
+           degenmobj == &SECTOR_PTR(i)->ceilingsoundorg)
             return i;
-        }
     }
     return -1;
 }
