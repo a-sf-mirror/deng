@@ -149,11 +149,10 @@ void R_InitSkyMap(void)
     skyflatnum = R_FlatNumForName(skyflatname);
 }
 
-//===========================================================================
-// R_ViewWindow
-//  Don't really change anything here, because i might be in the middle of
-//  a refresh.  The change will take effect next refresh.
-//===========================================================================
+/*
+ * Don't really change anything here, because i might be in the middle of
+ * a refresh.  The change will take effect next refresh.
+ */
 void R_ViewWindow(int x, int y, int w, int h)
 {
     viewwindowx = x;
@@ -162,11 +161,10 @@ void R_ViewWindow(int x, int y, int w, int h)
     viewheight = h;
 }
 
-//===========================================================================
-// R_Init
-//  One-time initialization of the refresh daemon. Called by DD_Main.
-//  GL has not yet been inited.
-//===========================================================================
+/*
+ * One-time initialization of the refresh daemon. Called by DD_Main.
+ * GL has not yet been inited.
+ */
 void R_Init(void)
 {
     R_InitData();
@@ -185,10 +183,9 @@ void R_Init(void)
     Def_PostInit();
 }
 
-//===========================================================================
-// R_Update
-//  Re-initialize almost everything.
-//===========================================================================
+/*
+ * Re-initialize almost everything.
+ */
 void R_Update(void)
 {
     int     i;
@@ -228,10 +225,9 @@ void R_Update(void)
 #endif
 }
 
-//===========================================================================
-// R_Shutdown
-//  Shutdown the refresh daemon.
-//===========================================================================
+/*
+ * Shutdown the refresh daemon.
+ */
 void R_Shutdown(void)
 {
     R_ShutdownModels();
@@ -239,17 +235,11 @@ void R_Shutdown(void)
     // Most allocated memory goes down with the zone.
 }
 
-//===========================================================================
-// R_ResetViewer
-//===========================================================================
 void R_ResetViewer(void)
 {
     resetNextViewer = 1;
 }
 
-//===========================================================================
-// R_InterpolateViewer
-//===========================================================================
 void R_InterpolateViewer(viewer_t * start, viewer_t * end, float pos,
                          viewer_t * out)
 {
@@ -262,9 +252,6 @@ void R_InterpolateViewer(viewer_t * start, viewer_t * end, float pos,
 //  out->pitch = inv * start->pitch + pos * end->pitch;
 }
 
-//===========================================================================
-// R_SetViewPos
-//===========================================================================
 void R_SetViewPos(viewer_t * v)
 {
     viewx = v->x;
@@ -274,11 +261,10 @@ void R_SetViewPos(viewer_t * v)
     viewpitch = v->pitch;
 }
 
-//===========================================================================
-// R_CheckViewerLimits
-//  The components whose difference is too large for interpolation will be
-//  snapped to the sharp values.
-//===========================================================================
+/*
+ * The components whose difference is too large for interpolation will be
+ * snapped to the sharp values.
+ */
 void R_CheckViewerLimits(viewer_t * src, viewer_t * dst)
 {
 #define MAXMOVE (FRACUNIT*32)
@@ -543,10 +529,9 @@ void R_SetupFrame(ddplayer_t *player)
     M_CrossProduct(viewfrontvec, viewupvec, viewsidevec);
 }
 
-//===========================================================================
-// R_RenderPlayerView
-//  Draw the view of the player inside the view window.
-//===========================================================================
+/*
+ * Draw the view of the player inside the view window.
+ */
 void R_RenderPlayerView(ddplayer_t *player)
 {
     extern boolean firstFrameAfterLoad;

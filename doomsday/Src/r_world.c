@@ -80,11 +80,10 @@ static float mapBounds[4];
 #  pragma optimize("g", off)
 #endif
 
-//===========================================================================
-// R_IsValidLink
-//  We mustn't create links which form loops. This will start looking
-//  from destlink, and if it finds startsec we're in trouble.
-//===========================================================================
+/*
+ * We mustn't create links which form loops. This will start looking
+ * from destlink, and if it finds startsec we're in trouble.
+ */
 boolean R_IsValidLink(sector_t *startsec, sector_t *destlink, boolean is_floor)
 {
     sector_t *sec = destlink;
@@ -116,11 +115,10 @@ boolean R_IsValidLink(sector_t *startsec, sector_t *destlink, boolean is_floor)
     return true;
 }
 
-//===========================================================================
-// R_SetSectorLinks
-//  Called every frame. Sector heights may change at any time
-//  without notice.
-//===========================================================================
+/*
+ * Called every frame. Sector heights may change at any time
+ * without notice.
+ */
 void R_SetSectorLinks(sector_t *sec)
 {
     int     i = GET_SECTOR_IDX(sec), k;
@@ -212,10 +210,9 @@ void R_SetSectorLinks(sector_t *sec)
 #  pragma optimize("", on)
 #endif
 
-//==========================================================================
-// edgeClipper
-//  Returns a pointer to the list of points. It must be used.
-//==========================================================================
+/*
+ * Returns a pointer to the list of points. It must be used.
+ */
 fvertex_t *edgeClipper(int *numpoints, fvertex_t * points, int numclippers,
                        fdivline_t * clippers)
 {
@@ -304,18 +301,12 @@ fvertex_t *edgeClipper(int *numpoints, fvertex_t * points, int numclippers,
     return points;
 }
 
-//==========================================================================
-//
-// R_ConvexClipper
-//
-//==========================================================================
-
 void R_ConvexClipper(subsector_t *ssec, int num, divline_t * list)
 {
     int     numclippers = num + ssec->linecount;
     int     i, numedgepoints;
     fvertex_t *edgepoints;
-    fdivline_t *clippers = (fdivline_t *) 
+    fdivline_t *clippers = (fdivline_t *)
         Z_Malloc(numclippers * sizeof(fdivline_t), PU_STATIC, 0);
 
     // Convert the divlines to float, in reverse order.
@@ -407,12 +398,6 @@ void R_PrepareSubsector(subsector_t *sub)
     sub->midpoint.y /= num;
 }
 
-//==========================================================================
-//
-// R_PolygonizeWithoutCarving
-//
-//==========================================================================
-
 void R_PolygonizeWithoutCarving()
 {
     int     i;
@@ -436,10 +421,9 @@ void R_PolygonizeWithoutCarving()
     }
 }
 
-//==========================================================================
-// R_CreateFloorsAndCeilings
-//  Recursively polygonizes all ceilings and floors.
-//==========================================================================
+/*
+ * Recursively polygonizes all ceilings and floors.
+ */
 void R_CreateFloorsAndCeilings(int bspnode, int numdivlines,
                                divline_t * divlines)
 {
@@ -488,12 +472,11 @@ void R_CreateFloorsAndCeilings(int bspnode, int numdivlines,
     free(childlist);
 }
 
-//==========================================================================
-// R_SkyFix
-//  Fixing the sky means that for adjacent sky sectors the lower sky
-//  ceiling is lifted to match the upper sky. The raising only affects
-//  rendering, it has no bearing on gameplay.
-//==========================================================================
+/*
+ * Fixing the sky means that for adjacent sky sectors the lower sky
+ * ceiling is lifted to match the upper sky. The raising only affects
+ * rendering, it has no bearing on gameplay.
+ */
 void R_SkyFix(void)
 {
     boolean adjusted;
@@ -600,10 +583,9 @@ static float TriangleArea(fvertex_t * o, fvertex_t * s, fvertex_t * t)
     return area;
 }
 
-//===========================================================================
-// R_TestTriFan
-//  Returns true if 'base' is a good tri-fan base.
-//===========================================================================
+/*
+ * Returns true if 'base' is a good tri-fan base.
+ */
 int R_TestTriFan(subsector_t *sub, int base)
 {
 #define TRIFAN_LIMIT    0.1
@@ -628,9 +610,6 @@ int R_TestTriFan(subsector_t *sub, int base)
     return true;
 }
 
-//===========================================================================
-// R_SubsectorPlanes
-//===========================================================================
 void R_SubsectorPlanes(void)
 {
     int     i, k, num;
@@ -700,11 +679,10 @@ void R_SetVertexOwner(int idx, sector_t *secptr)
     own->list[own->num - 1] = sector;
 }
 
-//==========================================================================
-// R_InitVertexOwners
-//  Generates an array of sector references for each vertex. The list
-//  includes all the sectors the vertex belongs to.
-//==========================================================================
+/*
+ * Generates an array of sector references for each vertex. The list
+ * includes all the sectors the vertex belongs to.
+ */
 void R_InitVertexOwners(void)
 {
     int     i, k, p, v[2];
@@ -767,10 +745,9 @@ void R_InitVertexOwners(void)
    return true;
    } */
 
-//===========================================================================
-// R_GetContainingSectorOf
-//  The test is done on subsectors.
-//===========================================================================
+/*
+ * The test is done on subsectors.
+ */
 sector_t *R_GetContainingSectorOf(sector_t *sec)
 {
     int     i;
@@ -809,9 +786,6 @@ sector_t *R_GetContainingSectorOf(sector_t *sec)
     return closest;
 }
 
-//===========================================================================
-// R_InitSectorInfo
-//===========================================================================
 void R_InitSectorInfo(void)
 {
     int     i, k;
@@ -890,9 +864,6 @@ void R_InitSectorInfo(void)
     }
 }
 
-//===========================================================================
-// R_InitSegInfo
-//===========================================================================
 void R_InitSegInfo(void)
 {
     int i, k, j, n;
@@ -921,9 +892,6 @@ void R_InitSegInfo(void)
     }
 }
 
-//===========================================================================
-// R_InitPlanePoly
-//===========================================================================
 void R_InitPlanePoly(planeinfo_t *plane, boolean reverse,
                      subsector_t *subsector)
 {
@@ -984,9 +952,6 @@ void R_InitPlanePoly(planeinfo_t *plane, boolean reverse,
     }
 }
 
-//===========================================================================
-// R_InitSubsectorInfo
-//===========================================================================
 void R_InitSubsectorInfo(void)
 {
     int     i;
@@ -1019,10 +984,9 @@ void R_InitSubsectorInfo(void)
     Z_CheckHeap();
 }
 
-//===========================================================================
-// R_SetupFog
-//  Mapinfo must be set.
-//===========================================================================
+/*
+ *  Mapinfo must be set.
+ */
 void R_SetupFog(void)
 {
     int     flags;
@@ -1053,10 +1017,9 @@ void R_SetupFog(void)
     }
 }
 
-//===========================================================================
-// R_SetupSky
-//  Mapinfo must be set.
-//===========================================================================
+/*
+ * Mapinfo must be set.
+ */
 void R_SetupSky(void)
 {
     int     i, k;
@@ -1586,9 +1549,6 @@ void R_SetupLevel(char *level_id, int flags)
     Con_Progress(10, 0);        // 50%.
 }
 
-//===========================================================================
-// R_ClearSectorFlags
-//===========================================================================
 void R_ClearSectorFlags(void)
 {
     int     i;
@@ -1601,9 +1561,6 @@ void R_ClearSectorFlags(void)
     }
 }
 
-//===========================================================================
-// R_GetLinkedSector
-//===========================================================================
 sector_t *R_GetLinkedSector(sector_t *startsec, boolean getfloor)
 {
     sector_t *sec = startsec;
