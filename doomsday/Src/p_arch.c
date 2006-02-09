@@ -1371,7 +1371,7 @@ boolean P_LoadMapData(char *levelId)
         // can't be done until SetupLevel is called...
         if(glNodeData)
             setupflags |= DDSLF_DONT_CLIP;
-Con_Message("Do next\n");
+
         R_SetupLevel(levelId, setupflags | DDSLF_NO_SERVER);
 
         return true;
@@ -2636,8 +2636,15 @@ static void P_GroupLines(gamemap_t* map)
             sec->tag = 0;
 */
         // set the degenmobj_t to the middle of the bounding box
-        sec->soundorg.x = (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
-        sec->soundorg.y = (bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2;
+        sec->soundorg.x = sec->floorsoundorg.x = sec->ceilingsoundorg.x =
+            (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
+        sec->soundorg.y = sec->floorsoundorg.y = sec->ceilingsoundorg.y =
+            (bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2;
+
+        // set the z height of the sound origins
+        sec->soundorg.z = (sec->ceilingheight - sec->floorheight) / 2;
+        sec->floorsoundorg.z = sec->floorheight;
+        sec->ceilingsoundorg.z = sec->ceilingheight;
 
         // adjust bounding box to map blocks
         block = (bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
