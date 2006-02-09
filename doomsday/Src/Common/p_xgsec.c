@@ -1826,10 +1826,6 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling, void *context,
     // Copy the properties of the target sector.
     P_CopySector(from, sector);
 
-#ifdef TODO_MAP_UPDATE
-    memcpy(sector->reverb, from->reverb, sizeof(from->reverb));
-#endif
-
     P_ChangeSector(sector, false);
 
     // Copy type as well.
@@ -2320,11 +2316,10 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
     dummyLine = P_AllocDummyLine();
     xdummyLine = P_XLine(dummyLine);
 
-#ifdef TODO_MAP_UPDATE
-    line.frontsector = sec;
-    line.sidenum[0] = -1;
-    line.sidenum[1] = -1;
-#endif
+    P_SetPtrp(dummyLine, DMU_FRONT_SECTOR, sec);
+    P_SetIntp(dummyLine, DMU_SIDE0, -1);
+    P_SetIntp(dummyLine, DMU_SIDE1, -1);
+
     xdummyLine->special =
         (ch == XSCE_FUNCTION ? activating : info->chain[ch]);
 
