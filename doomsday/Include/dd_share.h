@@ -628,6 +628,7 @@ extern          "C" {
         DMU_FLOOR_TEXTURE_MOVE_X,
         DMU_FLOOR_TEXTURE_MOVE_Y,
         DMU_FLOOR_TEXTURE_MOVE_XY,
+        DMU_FLOOR_SOUND_ORIGIN,
 
         DMU_CEILING_HEIGHT,
         DMU_CEILING_TEXTURE,
@@ -643,6 +644,7 @@ extern          "C" {
         DMU_CEILING_TEXTURE_MOVE_X,
         DMU_CEILING_TEXTURE_MOVE_Y,
         DMU_CEILING_TEXTURE_MOVE_XY,
+        DMU_CEILING_SOUND_ORIGIN,
 
         DMU_SEG_LIST,               // array of seg_t*'s
         DMU_SEG_COUNT,
