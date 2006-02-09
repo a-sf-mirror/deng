@@ -62,5 +62,5 @@ int             Rend_MidTexturePos(float *top, float *bottom, float *texoffy,
 
 int             Rend_ApplyLightAdaptation(int lightvalue);
 
-void Rend_CalcLightRangeModMatrix(boolean forceUpdate);
+void Rend_CalcLightRangeModMatrix(struct cvar_s* unused);
 #endif

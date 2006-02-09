@@ -1375,7 +1375,7 @@ void R_SetupLevel(char *level_id, int flags)
             Con_StartupDone();
 
         // Recalculate the light range mod matrix.
-        Rend_CalcLightRangeModMatrix(true);
+        Rend_CalcLightRangeModMatrix(NULL);
 
         // Run any commands specified in Map Info.
         if(mapinfo && mapinfo->execute)

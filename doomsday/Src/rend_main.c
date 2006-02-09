@@ -101,14 +101,10 @@ int     r_lightAdaptDarkTime = 80;
 int     r_lightAdaptBrightTime = 10;
 
 float   r_lightAdaptRamp = 0.004f;
-float   r_lightAdaptRamplast;
 float   r_lightAdaptMul = 0.2f;
-float   r_lightAdaptMullast;
 
 int     r_lightrangeshift = 0;
-int     r_lightrangeshiftlast;
 float   r_lightcompression = 80; //80%
-float   r_lightcompressionlast; // FIXME should do this more elegantly
 
 signed short     lightRangeModMatrix[MOD_RANGE][255];
 
@@ -133,18 +129,19 @@ void Rend_Register(void)
     C_VAR_INT("rend-tex-shiny", &useShinySurfaces, 0, 0, 1,
               "1=Enable shiny textures on surfaces of the map.");
 
-    C_VAR_FLOAT("rend-light-compression", &r_lightcompression, 0, -100, 100,
-              "Sector light range compression (brighten dark areas / darken light areas).");
+    C_VAR_FLOAT2("rend-light-compression", &r_lightcompression, 0, -100, 100,
+                 "Sector light range compression (brighten dark areas / darken light areas).",
+                 Rend_CalcLightRangeModMatrix);
 
 
     C_VAR_FLOAT("rend-light-adaptation", &r_lightAdapt, 0, 0, 1,
                 "Controls the overall strength of light adaptation");
 
-    C_VAR_FLOAT("rend-light-adaptation-mul", &r_lightAdaptMul, CVF_PROTECTED, 0, 1,
-              "Light adaptation range multiplier.");
+    C_VAR_FLOAT2("rend-light-adaptation-mul", &r_lightAdaptMul, CVF_PROTECTED, 0, 1,
+                 "Light adaptation range multiplier.", Rend_CalcLightRangeModMatrix);
 
-    C_VAR_FLOAT("rend-light-adaptation-ramp", &r_lightAdaptRamp, CVF_PROTECTED, 0, 1,
-                "Light adaptation range ramp multiplier.");
+    C_VAR_FLOAT2("rend-light-adaptation-ramp", &r_lightAdaptRamp, CVF_PROTECTED, 0, 1,
+                 "Light adaptation range ramp multiplier.", Rend_CalcLightRangeModMatrix);
 
     C_VAR_INT("rend-light-adaptation-darktime", &r_lightAdaptDarkTime, 0, 0, 200,
               "Time it takes to adapt to dark lighting conditions in seconds.");
@@ -163,9 +160,6 @@ void Rend_Register(void)
     Rend_RadioRegister();
 }
 
-//===========================================================================
-// Rend_SignedPointDist2D
-//===========================================================================
 float Rend_SignedPointDist2D(float c[2])
 {
     /*          (YA-YC)(XB-XA)-(XA-XC)(YB-YA)
@@ -176,29 +170,25 @@ float Rend_SignedPointDist2D(float c[2])
     return (vz - c[VY]) * viewsidex - (vx - c[VX]) * viewsidey;
 }
 
-//===========================================================================
-// Rend_PointDist3D
-//  Approximated! The Z axis aspect ratio is corrected.
-//===========================================================================
+/*
+ * Approximated! The Z axis aspect ratio is corrected.
+ */
 float Rend_PointDist3D(float c[3])
 {
     return M_ApproxDistance3f(vx - c[VX], vz - c[VY], 1.2f * (vy - c[VZ]));
 }
 
-//===========================================================================
-// Rend_Init
-//===========================================================================
 void Rend_Init(void)
 {
     C_Init();                   // Clipper.
     RL_Init();                  // Rendering lists.
     Rend_InitSky();             // The sky.
+    Rend_CalcLightRangeModMatrix(NULL);
 }
 
-//===========================================================================
-// Rend_Reset
-//  Used to be called before starting a new level.
-//===========================================================================
+/*
+ * Used to be called before starting a new level.
+ */
 void Rend_Reset(void)
 {
     // Textures are deleted (at least skies need this???).
@@ -206,9 +196,6 @@ void Rend_Reset(void)
     DL_Clear();
 }
 
-//===========================================================================
-// Rend_ModelViewMatrix
-//===========================================================================
 void Rend_ModelViewMatrix(boolean use_angles)
 {
     vx = FIX2FLT(viewx);
@@ -228,12 +215,11 @@ void Rend_ModelViewMatrix(boolean use_angles)
 }
 
 #if 0
-//===========================================================================
-// R_AttenuateLevel
-//  Models the effect of distance to the light level. Extralight (torch)
-//  is also noted. This is meant to be used for white light only
-//  (a light level).
-//===========================================================================
+/*
+ * Models the effect of distance to the light level. Extralight (torch)
+ * is also noted. This is meant to be used for white light only
+ * (a light level).
+ */
 int R_AttenuateLevel(int lightlevel, float distance)
 {
     float   light = lightlevel / 255.0f, real, minimum;
@@ -278,9 +264,6 @@ int R_AttenuateLevel(int lightlevel, float distance)
 }
 #endif
 
-//===========================================================================
-// Rend_SegFacingDir
-//===========================================================================
 int Rend_SegFacingDir(float v1[2], float v2[2])
 {
     // The dot product. (1 if facing front.)
@@ -288,9 +271,6 @@ int Rend_SegFacingDir(float v1[2], float v2[2])
                                                                     vz) > 0;
 }
 
-//===========================================================================
-// Rend_FixedSegFacingDir
-//===========================================================================
 int Rend_FixedSegFacingDir(seg_t *seg)
 {
     // The dot product. (1 if facing front.)
@@ -298,9 +278,6 @@ int Rend_FixedSegFacingDir(seg_t *seg)
         FIX2FLT(seg->v2->x - seg->v1->x) * FIX2FLT(seg->v1->y - viewy) > 0;
 }
 
-//===========================================================================
-// Rend_SegFacingPoint
-//===========================================================================
 int Rend_SegFacingPoint(float v1[2], float v2[2], float pnt[2])
 {
     float   nx = v1[VY] - v2[VY], ny = v2[VX] - v1[VX];
@@ -351,12 +328,11 @@ static void Rend_ShinySurfaceColor(gl_rgba_t *color, ded_reflection_t *ref)
     color->rgba[3] = (DGLubyte) (ref->shininess * 255);
 }
 
-//===========================================================================
-// Rend_AddShinyWallSeg
-//  The poly that is passed as argument to this function must not be
-//  modified because others may be using it afterwards.  A shiny wall
-//  segment polygon is created.
-//===========================================================================
+/*
+ * The poly that is passed as argument to this function must not be
+ * modified because others may be using it afterwards.  A shiny wall
+ * segment polygon is created.
+ */
 void Rend_AddShinyWallSeg(int texture, const rendpoly_t *poly)
 {
     rendpoly_t q;
@@ -416,11 +392,10 @@ void Rend_AddShinyWallSeg(int texture, const rendpoly_t *poly)
     RL_AddPoly(&q);
 }
 
-//===========================================================================
-// Rend_AddShinyFlat
-//  The poly that is passed as argument to this function WILL be modified
-//  during the execution of this function.
-//===========================================================================
+/*
+ * The poly that is passed as argument to this function WILL be modified
+ * during the execution of this function.
+ */
 void RL_AddShinyFlat(planeinfo_t *plane, rendpoly_t *poly,
                      subsector_t *subsector)
 {
@@ -486,9 +461,6 @@ void RL_AddShinyFlat(planeinfo_t *plane, rendpoly_t *poly,
     RL_AddPoly(poly);
 }
 
-//===========================================================================
-// Rend_PolyTextureBlend
-//===========================================================================
 void Rend_PolyTextureBlend(int texture, rendpoly_t *poly)
 {
     translation_t *xlat = &texturetranslation[texture];
@@ -513,9 +485,6 @@ void Rend_PolyTextureBlend(int texture, rendpoly_t *poly)
     poly->interpos = xlat->inter;
 }
 
-//===========================================================================
-// Rend_PolyFlatBlend
-//===========================================================================
 void Rend_PolyFlatBlend(int flat, rendpoly_t *poly)
 {
     flat_t *ptr = R_GetFlat(flat);
@@ -541,10 +510,9 @@ void Rend_PolyFlatBlend(int flat, rendpoly_t *poly)
     poly->interpos = ptr->translation.inter;
 }
 
-//===========================================================================
-// Rend_CheckDiv
-//  Returns true if the quad has a division at the specified height.
-//===========================================================================
+/*
+ * Returns true if the quad has a division at the specified height.
+ */
 int Rend_CheckDiv(rendpoly_t *quad, int side, float height)
 {
     int     i;
@@ -555,11 +523,10 @@ int Rend_CheckDiv(rendpoly_t *quad, int side, float height)
     return false;
 }
 
-//===========================================================================
-// Rend_WallHeightDivision
-//  Division will only happen if it must be done.
-//  Converts quads to divquads.
-//===========================================================================
+/*
+ * Division will only happen if it must be done.
+ * Converts quads to divquads.
+ */
 void Rend_WallHeightDivision(rendpoly_t *quad, seg_t *seg, sector_t *frontsec,
                              int mode)
 {
@@ -660,13 +627,12 @@ void Rend_WallHeightDivision(rendpoly_t *quad, seg_t *seg, sector_t *frontsec,
     }
 }
 
-//===========================================================================
-// Rend_MidTexturePos
-//  Calculates the placement for a middle texture (top, bottom, offset).
-//  Texture must be prepared so texh is known.
-//  texoffy may be NULL.
-//  Returns false if the middle texture isn't visible (in the opening).
-//===========================================================================
+/*
+ * Calculates the placement for a middle texture (top, bottom, offset).
+ * Texture must be prepared so texh is known.
+ * texoffy may be NULL.
+ * Returns false if the middle texture isn't visible (in the opening).
+ */
 int Rend_MidTexturePos(float *top, float *bottom, float *texoffy, float tcyoff,
                        boolean lower_unpeg)
 {
@@ -704,12 +670,11 @@ int Rend_MidTexturePos(float *top, float *bottom, float *texoffy, float tcyoff,
     return true;
 }
 
-//===========================================================================
-// Rend_RenderWallSeg
-//  The sector height should've been checked by now.
-//  This seriously needs to be rewritten! Witness the accumulation of hacks
-//  on kludges...
-//===========================================================================
+/*
+ * The sector height should've been checked by now.
+ * This seriously needs to be rewritten! Witness the accumulation of hacks
+ * on kludges...
+ */
 void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 {
     int i;
@@ -1282,9 +1247,6 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     }
 }
 
-//===========================================================================
-// Rend_SectorLight
-//===========================================================================
 int Rend_SectorLight(sector_t *sec)
 {
     int     i;
@@ -1314,99 +1276,89 @@ int Rend_SectorLight(sector_t *sec)
  * The offsets in the lightRangeModTables are added to the sector->lightlevel
  * during rendering (both positive and negative).
  */
-void Rend_CalcLightRangeModMatrix(boolean forceUpdate)
+void Rend_CalcLightRangeModMatrix(cvar_t* unused)
 {
     int r, j, n;
     int mid = MOD_RANGE / 2;
     float f, mod, factor;
     double multiplier, mx;
 
-    // Only update when needed/requested.
-    if(r_lightcompression != r_lightcompressionlast ||
-       r_lightAdaptMul != r_lightAdaptMullast ||
-       r_lightrangeshift != r_lightrangeshiftlast ||
-       r_lightAdaptRamp != r_lightAdaptRamplast || forceUpdate)
+    memset(lightRangeModMatrix, 0, (sizeof(byte) * 255) * MOD_RANGE);
+
+    if(r_lightcompression > 0)
+        factor = r_lightcompression;
+    else
+        factor = 1;
+
+    multiplier = r_lightAdaptMul / MOD_RANGE;
+
+    for(n = 0, r = -mid; r < mid; ++n, ++r)
     {
-        r_lightcompressionlast = r_lightcompression;
-        r_lightAdaptMullast = r_lightAdaptMul;
-        r_lightrangeshiftlast = r_lightrangeshift;
-        r_lightAdaptRamplast = r_lightAdaptRamp;
+        // Calculate the light mod value for this range
+        mod = (MOD_RANGE + n) / 255.0f;
 
-        memset(lightRangeModMatrix, 0, (sizeof(byte) * 255) * MOD_RANGE);
+        // Calculate the multiplier.
+        mx = (r * multiplier) * MOD_RANGE;
 
-        if(r_lightcompression > 0)
-            factor = r_lightcompression;
-        else
-            factor = 1;
-
-        multiplier = r_lightAdaptMul / MOD_RANGE;
-
-        for(n = 0, r = -mid; r < mid; ++n, ++r)
+        //Con_Printf("Range %i {\n",n, mx);
+        for(j = 0; j < 255; ++j)
         {
-            // Calculate the light mod value for this range
-            mod = (MOD_RANGE + n) / 255.0f;
-
-            // Calculate the multiplier.
-            mx = (r * multiplier) * MOD_RANGE;
-
-            //Con_Printf("Range %i {\n",n, mx);
-            for(j = 0; j < 255; ++j)
+            if(r < 0)  // Dark to light range
             {
-                if(r < 0)  // Dark to light range
-                {
-                    // Apply the mod factor
-                    f = -((mod * j) / (n + 1));
+                // Apply the mod factor
+                f = -((mod * j) / (n + 1));
 
-                    // Apply the multiplier
-                    f += -r * ((f * (mx * j)) * r_lightAdaptRamp);
-                }
-                else  // Light to dark range
-                {
-                    f = ((255 - j) * mod) / (MOD_RANGE - n);
-                    f -= r * ((f * (mx * (255 - j))) * r_lightAdaptRamp);
-                }
-
-                // Adjust the white point/dark point
-                if(r_lightcompression >= 0)
-                    f += (int)((255.f - j) * (r_lightcompression / 255.f));
-                else
-                    f += (int)((j) * (r_lightcompression / 255.f));
-
-                // Apply the linear range shift
-                f += r_lightrangeshift;
-
-                // Round to nearest (signed) whole.
-                if(f >= 0)
-                    f += 0.5f;
-                else
-                    f -= 0.5f;
-
-                // Clamp the result as a modifier to the light value (j).
-                if(r < 0)
-                {
-                    if((j+f) >= 255)
-                        f = 254 - j;
-                }
-                else
-                {
-                    if((j+f) <= 0)
-                        f = -j;
-                }
-
-                // Insert it into the matrix
-                lightRangeModMatrix[n][j] = (signed short) f;
-
-                //Con_Printf("%i ",lightRangeModMatrix[n][j]);
+                // Apply the multiplier
+                f += -r * ((f * (mx * j)) * r_lightAdaptRamp);
             }
-            //Con_Printf("}\n");
+            else  // Light to dark range
+            {
+                f = ((255 - j) * mod) / (MOD_RANGE - n);
+                f -= r * ((f * (mx * (255 - j))) * r_lightAdaptRamp);
+            }
+
+            // Adjust the white point/dark point
+            if(r_lightcompression >= 0)
+                f += (int)((255.f - j) * (r_lightcompression / 255.f));
+            else
+                f += (int)((j) * (r_lightcompression / 255.f));
+
+            // Apply the linear range shift
+            f += r_lightrangeshift;
+
+            // Round to nearest (signed) whole.
+            if(f >= 0)
+                f += 0.5f;
+            else
+                f -= 0.5f;
+
+            // Clamp the result as a modifier to the light value (j).
+            if(r < 0)
+            {
+                if((j+f) >= 255)
+                    f = 254 - j;
+            }
+            else
+            {
+                if((j+f) <= 0)
+                    f = -j;
+            }
+
+            // Insert it into the matrix
+            lightRangeModMatrix[n][j] = (signed short) f;
+
+            //Con_Printf("%i ",lightRangeModMatrix[n][j]);
         }
+        //Con_Printf("}\n");
     }
 }
 
 /*
  * Grabs the light value of the sector each player is currently
- * in a
+ * in and chooses an appropriate light range.
  *
+ * TODO: Interpolate between current range and last when player
+ *       changes sector.
  */
 void Rend_RetrieveLightSample(void)
 {
@@ -1558,13 +1510,12 @@ int Rend_ApplyLightAdaptation(int lightvalue)
     return lightvalue + lightRangeModMatrix[range][lightvalue];
 }
 
-//===========================================================================
-// Rend_OccludeSubsector
-//  Creates new occlusion planes from the subsector's sides.
-//  Before testing, occlude subsector's backfaces. After testing occlude
-//  the remaining faces, i.e. the forward facing segs. This is done before
-//  rendering segs, so solid segments cut out all unnecessary oranges.
-//===========================================================================
+/*
+ * Creates new occlusion planes from the subsector's sides.
+ * Before testing, occlude subsector's backfaces. After testing occlude
+ * the remaining faces, i.e. the forward facing segs. This is done before
+ * rendering segs, so solid segments cut out all unnecessary oranges.
+ */
 void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
 {
     sector_t *front = sub->sector, *back;
@@ -1612,7 +1563,8 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
             if((backh[0] > fronth[0] && vy <= backh[0]) ||
                (backh[0] < fronth[0] && vy >= fronth[0]))
             {
-                C_AddViewRelOcclusion(startv, endv, MAX_OF(fronth[0], backh[0]), false);    // Occlude down.
+                // Occlude down.
+                C_AddViewRelOcclusion(startv, endv, MAX_OF(fronth[0], backh[0]), false);
             }
         }
         // Do not create an occlusion for sky ceilings.
@@ -1622,15 +1574,13 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
             if((backh[1] < fronth[1] && vy >= backh[1]) ||
                (backh[1] > fronth[1] && vy <= fronth[1]))
             {
-                C_AddViewRelOcclusion(startv, endv, MIN_OF(fronth[1], backh[1]), true); // Occlude up.
+                // Occlude up.
+                C_AddViewRelOcclusion(startv, endv, MIN_OF(fronth[1], backh[1]), true);
             }
         }
     }
 }
 
-//===========================================================================
-// Rend_RenderPlane
-//===========================================================================
 void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
                       subsector_t *subsector, sectorinfo_t *sin)
 {
@@ -1746,9 +1696,6 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     }
 }
 
-//===========================================================================
-// Rend_RenderSubsector
-//===========================================================================
 void Rend_RenderSubsector(int ssecidx)
 {
     subsector_t *ssec = SUBSECTOR_PTR(ssecidx);
@@ -1839,9 +1786,6 @@ void Rend_RenderSubsector(int ssecidx)
     Rend_RenderPlane(&subin->ceil, ceilingLightLinks[ssecidx], ssec, sin);
 }
 
-//===========================================================================
-// Rend_RenderNode
-//===========================================================================
 void Rend_RenderNode(int bspnum)
 {
     node_t *bsp;
@@ -1869,9 +1813,6 @@ void Rend_RenderNode(int bspnum)
     Rend_RenderNode(bsp->children[side ^ 1]);   // ...and back space.
 }
 
-//===========================================================================
-// Rend_RenderMap
-//===========================================================================
 void Rend_RenderMap(void)
 {
     binangle_t viewside;
@@ -1891,7 +1832,6 @@ void Rend_RenderMap(void)
     if(!freezeRLs)
     {
         // Prepare for rendering.
-        Rend_CalcLightRangeModMatrix(false);
         R_UpdatePlanes();       // Update all planes.
         RL_ClearLists();        // Clear the lists for new quads.
         C_ClearRanges();        // Clear the clipper.
