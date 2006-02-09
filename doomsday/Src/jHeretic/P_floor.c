@@ -222,7 +222,7 @@ void T_MoveFloor(floormove_t * floor)
                     floor->crush, 0, floor->direction);
 
     if(!(leveltime & 7))
-        S_SectorSound(floor->sector, sfx_dormov);
+        S_SectorSound(floor->sector, SORG_FLOOR, sfx_dormov);
 
     if(res == pastdest)
     {
@@ -261,7 +261,7 @@ void T_MoveFloor(floormove_t * floor)
         P_RemoveThinker(&floor->thinker);
 
         if(floor->type == raiseBuildStep)
-            S_SectorSound(floor->sector, sfx_pstop);
+            S_SectorSound(floor->sector, SORG_FLOOR, sfx_pstop);
     }
 }
 

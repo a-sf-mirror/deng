@@ -62,7 +62,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
                         false, 1, ceiling->direction);
 
         if(!(leveltime & 7))
-            S_SectorSound(ceiling->sector, sfx_dormov);
+            S_SectorSound(ceiling->sector, SORG_CEILING, sfx_dormov);
 
         if(res == pastdest)
         {
@@ -88,7 +88,7 @@ void T_MoveCeiling(ceiling_t * ceiling)
                         ceiling->crush, 1, ceiling->direction);
 
         if(!(leveltime & 7))
-            S_SectorSound(ceiling->sector, sfx_dormov);
+            S_SectorSound(ceiling->sector, SORG_CEILING, sfx_dormov);
 
         if(res == pastdest)
         {

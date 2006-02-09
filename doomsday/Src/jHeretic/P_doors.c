@@ -62,12 +62,12 @@ void T_VerticalDoor(vldoor_t * door)
             {
             case normal:
                 door->direction = -1;   // time to go back down
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
 
             case close30ThenOpen:
                 door->direction = 1;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
 
             default:
@@ -85,7 +85,7 @@ void T_VerticalDoor(vldoor_t * door)
             case raiseIn5Mins:
                 door->direction = 1;
                 door->type = normal;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
 
             default:
@@ -108,7 +108,7 @@ void T_VerticalDoor(vldoor_t * door)
             case close:
                 xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
-                S_SectorSound(door->sector, sfx_dorcls);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_dorcls);
                 break;
 
             case close30ThenOpen:
@@ -129,7 +129,7 @@ void T_VerticalDoor(vldoor_t * door)
 
             default:
                 door->direction = 1;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
             }
         }
@@ -155,7 +155,7 @@ void T_VerticalDoor(vldoor_t * door)
                 xsec->specialdata = NULL;
                 P_RemoveThinker(&door->thinker);    // unlink and free
                 S_StopSound(0, (mobj_t *) P_GetPtrp(door->sector,
-                                                    DMU_SOUND_ORIGIN));
+                                                    DMU_CEILING_SOUND_ORIGIN));
                 break;
 
             default:
@@ -202,7 +202,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             door->direction = -1;
             door->speed = VDOORSPEED;
-            S_SectorSound(door->sector, sfx_doropn);
+            S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
             break;
 
         case close30ThenOpen:
@@ -210,7 +210,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT);
             door->direction = -1;
             door->speed = VDOORSPEED;
-            S_SectorSound(door->sector, sfx_doropn);
+            S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
             break;
 
         case blazeOpen:
@@ -220,7 +220,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->speed = VDOORSPEED * 3;
             if(door->topheight !=
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT))
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
             break;
 
         case normal:
@@ -231,7 +231,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->speed = VDOORSPEED;
             if(door->topheight !=
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT))
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
             break;
 
         default:
@@ -337,12 +337,12 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     case 1:
     case 31:
         // NORMAL DOOR SOUND
-        S_SectorSound(sec, sfx_doropn);
+        S_SectorSound(sec, SORG_CEILING, sfx_doropn);
         break;
 
     default:
         // LOCKED DOOR SOUND
-        S_SectorSound(sec, sfx_doropn);
+        S_SectorSound(sec, SORG_CEILING, sfx_doropn);
         break;
     }
 

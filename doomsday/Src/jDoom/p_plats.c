@@ -66,14 +66,14 @@ void T_PlatRaise(plat_t * plat)
            plat->type == raiseToNearestAndChange)
         {
             if(!(leveltime & 7))
-                S_SectorSound(plat->sector, sfx_stnmov);
+                S_SectorSound(plat->sector, SORG_FLOOR, sfx_stnmov);
         }
 
         if(res == crushed && (!plat->crush))
         {
             plat->count = plat->wait;
             plat->status = down;
-            S_SectorSound(plat->sector, sfx_pstart);
+            S_SectorSound(plat->sector, SORG_FLOOR, sfx_pstart);
         }
         else
         {
@@ -81,7 +81,7 @@ void T_PlatRaise(plat_t * plat)
             {
                 plat->count = plat->wait;
                 plat->status = waiting;
-                S_SectorSound(plat->sector, sfx_pstop);
+                S_SectorSound(plat->sector, SORG_FLOOR, sfx_pstop);
 
                 switch (plat->type)
                 {
@@ -110,7 +110,7 @@ void T_PlatRaise(plat_t * plat)
         {
             plat->count = plat->wait;
             plat->status = waiting;
-            S_SectorSound(plat->sector, sfx_pstop);
+            S_SectorSound(plat->sector, SORG_FLOOR, sfx_pstop);
         }
         break;
 
@@ -121,7 +121,7 @@ void T_PlatRaise(plat_t * plat)
                 plat->status = up;
             else
                 plat->status = down;
-            S_SectorSound(plat->sector, sfx_pstart);
+            S_SectorSound(plat->sector, SORG_FLOOR, sfx_pstart);
         }
         break;
 
@@ -196,7 +196,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             // NO MORE DAMAGE, IF APPLICABLE
             xsectors[secnum].special = 0;
 
-            S_SectorSound(sec, sfx_stnmov);
+            S_SectorSound(sec, SORG_FLOOR, sfx_stnmov);
             break;
 
         case raiseAndChange:
@@ -209,7 +209,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->wait = 0;
             plat->status = up;
 
-            S_SectorSound(sec, sfx_stnmov);
+            S_SectorSound(sec, SORG_FLOOR, sfx_stnmov);
             break;
 
         case downWaitUpStay:
@@ -223,7 +223,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
 
-            S_SectorSound(sec, sfx_pstart);
+            S_SectorSound(sec, SORG_FLOOR, sfx_pstart);
             break;
 
         case blazeDWUS:
@@ -237,7 +237,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->wait = 35 * PLATWAIT;
             plat->status = down;
 
-            S_SectorSound(sec, sfx_pstart);
+            S_SectorSound(sec, SORG_FLOOR, sfx_pstart);
             break;
 
         case perpetualRaise:
@@ -255,7 +255,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
             plat->wait = 35 * PLATWAIT;
             plat->status = P_Random() & 1;
 
-            S_SectorSound(sec, sfx_pstart);
+            S_SectorSound(sec, SORG_FLOOR, sfx_pstart);
             break;
         }
         P_AddActivePlat(plat);

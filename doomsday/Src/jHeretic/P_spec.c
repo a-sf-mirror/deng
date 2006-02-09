@@ -164,14 +164,15 @@ void P_InitPicAnims(void)
                 groupNum =
                     R_CreateAnimGroup(isTexture ? DD_TEXTURE : DD_FLAT, AGF_SMOOTH);
 
-                // Doomsday's group animation needs to know the lump IDs of
-                // ALL frames in the animation group so we'll have to step
-                // through the lump directory adding frames as we go.
-                // (DOOM only required the start/end lumps and would animate
-                // all textures/flats inbetween).
+                // Doomsday's group animation needs to know the texture/flat
+                // numbers of ALL frames in the animation group so we'll have
+                // to step through the directory adding frames as we go.
+                // (DOOM only required the start/end texture/flat numbers and
+                // would animate all textures/flats inbetween).
 
-                Con_Message("P_InitPicAnims: ADD Anim (\"%s\" > \"%s\")\n",
-                            animdefs[i].startname, animdefs[i].endname);
+                Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
+                            animdefs[i].startname, animdefs[i].endname,
+                            ticsPerFrame);
 
                 // Add all frames from start to end to the group.
                 if(endFrame > startFrame)

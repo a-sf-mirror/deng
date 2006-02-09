@@ -12,7 +12,13 @@
 
 #include "jHeretic/Sounds.h"                // Sfx and music indices.
 
+enum {
+    SORG_CENTER,
+    SORG_FLOOR,
+    SORG_CEILING
+};
+
 void            S_LevelMusic(void);
-void            S_SectorSound(sector_t *sector, int sound_id);
+void            S_SectorSound(sector_t *sector, int origin, int sound_id);
 
 #endif

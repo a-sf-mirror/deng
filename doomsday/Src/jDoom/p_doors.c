@@ -62,17 +62,17 @@ void T_VerticalDoor(vldoor_t * door)
             {
             case blazeRaise:
                 door->direction = -1;   // time to go back down
-                S_SectorSound(door->sector, sfx_bdcls);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_bdcls);
                 break;
 
             case normal:
                 door->direction = -1;   // time to go back down
-                S_SectorSound(door->sector, sfx_dorcls);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_dorcls);
                 break;
 
             case close30ThenOpen:
                 door->direction = 1;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
 
             default:
@@ -90,7 +90,7 @@ void T_VerticalDoor(vldoor_t * door)
             case raiseIn5Mins:
                 door->direction = 1;
                 door->type = normal;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
 
             default:
@@ -118,7 +118,7 @@ void T_VerticalDoor(vldoor_t * door)
                 // This is what causes blazing doors to produce two closing
                 // sounds as one has already been played when the door starts
                 // to close (above)
-                S_SectorSound(door->sector, sfx_bdcls);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_bdcls);
                 break;
 
             case normal:
@@ -149,7 +149,7 @@ void T_VerticalDoor(vldoor_t * door)
 
             default:
                 door->direction = 1;
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
                 break;
             }
         }
@@ -278,21 +278,21 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             door->direction = -1;
             door->speed = VDOORSPEED * 4;
-            S_SectorSound(door->sector, sfx_bdcls);
+            S_SectorSound(door->sector, SORG_CEILING, sfx_bdcls);
             break;
 
         case close:
             door->topheight = P_FindLowestCeilingSurrounding(sec);
             door->topheight -= 4 * FRACUNIT;
             door->direction = -1;
-            S_SectorSound(door->sector, sfx_dorcls);
+            S_SectorSound(door->sector, SORG_CEILING, sfx_dorcls);
             break;
 
         case close30ThenOpen:
             door->topheight =
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT);
             door->direction = -1;
-            S_SectorSound(door->sector, sfx_dorcls);
+            S_SectorSound(door->sector, SORG_CEILING, sfx_dorcls);
             break;
 
         case blazeRaise:
@@ -303,7 +303,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->speed = VDOORSPEED * 4;
             if(door->topheight !=
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT))
-                S_SectorSound(door->sector, sfx_bdopn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_bdopn);
             break;
 
         case normal:
@@ -313,7 +313,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
             door->topheight -= 4 * FRACUNIT;
             if(door->topheight !=
                 P_GetFixedp(sec, DMU_CEILING_HEIGHT))
-                S_SectorSound(door->sector, sfx_doropn);
+                S_SectorSound(door->sector, SORG_CEILING, sfx_doropn);
             break;
 
         default:
@@ -420,18 +420,18 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     case 117:
     case 118:
         // BLAZING DOOR RAISE/OPEN
-        S_SectorSound(sec, sfx_bdopn);
+        S_SectorSound(sec, SORG_CEILING, sfx_bdopn);
         break;
 
     case 1:
     case 31:
         // NORMAL DOOR SOUND
-        S_SectorSound(sec, sfx_doropn);
+        S_SectorSound(sec, SORG_CEILING, sfx_doropn);
         break;
 
     default:
         // LOCKED DOOR SOUND
-        S_SectorSound(sec, sfx_doropn);
+        S_SectorSound(sec, SORG_CEILING, sfx_doropn);
         break;
     }
 
