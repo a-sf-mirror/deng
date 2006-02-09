@@ -313,8 +313,15 @@ void P_PlaneChanged(sector_t *sector, boolean theCeiling)
     subsector_t *sub;
     seg_t *seg;
 
-    // FIXME: Find a better way to find the subsectors of a sector.
+    // Update the z positions of the degenmobjs for this sector.
+    if(theCeiling)
+        sector->ceilingsoundorg.z = sector->ceilingheight;
+    else
+        sector->floorsoundorg.z = sector->floorheight;
 
+    sector->soundorg.z = (sector->ceilingheight - sector->floorheight) / 2;
+
+    // FIXME: Find a better way to find the subsectors of a sector.
     for(i = 0; i < numsubsectors; ++i)
     {
         sub = SUBSECTOR_PTR(i);
