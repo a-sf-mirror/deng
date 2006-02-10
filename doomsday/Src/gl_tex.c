@@ -3331,60 +3331,19 @@ void GL_SetNoTexture(void)
  */
 DGLuint GL_PrepareLSTexture(lightingtex_t which)
 {
-    int     i;
-
     switch (which)
     {
     case LST_DYNAMIC:
         // The dynamic light map is a 64x64 grayscale 8-bit image.
         if(!lightingTexNames[LST_DYNAMIC])
         {
-            // We need to generate the texture, I see.
-            byte   *data = W_CacheLumpName("DLIGHT", PU_CACHE);
-            byte   *image, *alpha;
-
-            if(!data)
-            {
-                Con_Error("GL_SetLightTexture: DLIGHT not found.\n");
-            }
-
-            // Prepare the data by adding an alpha channel.
-            image = Z_Malloc(64 * 64 * 2, PU_STATIC, 0);
-            memset(image, 255, 64 * 64);    // The colors are just white.
-            alpha = image + 64 * 64;
-            memcpy(alpha, data, 64 * 64);
-
-            // The edges of the light texture must be fully transparent,
-            // to prevent all unwanted repeating.
-            for(i = 0; i < 64; i++)
-            {
-                // Top and bottom row.
-                alpha[i] = 0;
-                alpha[i + 64 * 63] = 0;
-
-                // Leftmost and rightmost column.
-                alpha[i * 64] = 0;
-                alpha[63 + i * 64] = 0;
-            }
-
-            /*#ifdef _DEBUG
-               for(i = 28; i < 34; i++)
-               {
-               alpha[i] = 64;
-               alpha[i + 64 * 63] = 64;
-               alpha[i * 64] = 5;
-               alpha[63 + i * 64] = 64;
-               }
-               #endif */
-
             // We don't want to compress the flares (banding would be
             // noticeable).
             gl.Disable(DGL_TEXTURE_COMPRESSION);
 
-            lightingTexNames[LST_DYNAMIC] = gl.NewTexture();
+            lightingTexNames[LST_DYNAMIC] =
+                GL_LoadGraphics("DLight", LGM_WHITE_ALPHA);
 
-            // No mipmapping or resizing is needed, upload directly.
-            gl.TexImage(DGL_LUMINANCE_PLUS_A8, 64, 64, 0, image);
             gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
             gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
             gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
@@ -3392,12 +3351,8 @@ DGLuint GL_PrepareLSTexture(lightingtex_t which)
 
             // Enable texture compression as usual.
             gl.Enable(DGL_TEXTURE_COMPRESSION);
-
-            Z_Free(image);
         }
-        // Set the info.
-        texw = texh = 64;
-        texmask = 0;
+        // Global tex variables not set! (scalable texture)
         return lightingTexNames[LST_DYNAMIC];
 
     case LST_GRADIENT:
@@ -3479,18 +3434,19 @@ DGLuint GL_PrepareFlareTexture(int flare)
 
     if(!flaretexnames[flare])
     {
-        byte   *image =
-            W_CacheLumpName(flare == 0 ? "FLARE" : flare ==
-                            1 ? "BRFLARE" : "BIGFLARE", PU_CACHE);
-        if(!image)
-            Con_Error("GL_PrepareFlareTexture: flare texture %i not found!\n",
-                      flare);
-
         // We don't want to compress the flares (banding would be noticeable).
         gl.Disable(DGL_TEXTURE_COMPRESSION);
 
-        flaretexnames[flare] = gl.NewTexture();
-        gl.TexImage(DGL_LUMINANCE, w, h, 0, image);
+        flaretexnames[flare] =
+            GL_LoadGraphics(flare == 0 ? "Flare" : flare == 1 ? "BRFlare" :
+                           "BigFlare", LGM_WHITE_ALPHA);
+
+        if(flaretexnames[flare] == 0)
+        {
+            Con_Error("GL_PrepareFlareTexture: flare texture %i not found!\n",
+                      flare);
+        }
+
         gl.TexParameter(DGL_MIN_FILTER, DGL_NEAREST);
         gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
         gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
@@ -3499,9 +3455,7 @@ DGLuint GL_PrepareFlareTexture(int flare)
         // Allow texture compression as usual.
         gl.Enable(DGL_TEXTURE_COMPRESSION);
     }
-    texmask = 0;
-    texw = w;
-    texh = h;
+
     return flaretexnames[flare];
 }
 
