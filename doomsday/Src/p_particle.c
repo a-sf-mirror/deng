@@ -72,9 +72,6 @@ static line_t *ptc_hitline;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// P_FreePtcGen
-//===========================================================================
 void P_FreePtcGen(ptcgen_t * gen)
 {
     int     i;
@@ -91,10 +88,9 @@ void P_FreePtcGen(ptcgen_t * gen)
         }
 }
 
-//===========================================================================
-// P_NewPtcGen
-//  Allocates a new active ptcgen and adds it to the list of active ptcgens.
-//===========================================================================
+/*
+ * Allocates a new active ptcgen and adds it to the list of active ptcgens.
+ */
 ptcgen_t *P_NewPtcGen(void)
 {
     ptcgen_t *gen = Z_Malloc(sizeof(ptcgen_t), PU_LEVEL, 0);
@@ -136,10 +132,9 @@ ptcgen_t *P_NewPtcGen(void)
     return gen;
 }
 
-//===========================================================================
-// P_InitParticleGen
-//  Set gen->count prior to calling this function.
-//===========================================================================
+/*
+ * Set gen->count prior to calling this function.
+ */
 void P_InitParticleGen(ptcgen_t * gen, ded_ptcgen_t * def)
 {
     int     i;
@@ -189,9 +184,6 @@ void P_InitParticleGen(ptcgen_t * gen, ded_ptcgen_t * def)
     }
 }
 
-//===========================================================================
-// P_PresimParticleGen
-//===========================================================================
 void P_PresimParticleGen(ptcgen_t * gen, int tics)
 {
     for(; tics > 0; tics--)
@@ -201,11 +193,10 @@ void P_PresimParticleGen(ptcgen_t * gen, int tics)
     gen->age = 0;
 }
 
-//===========================================================================
-// P_SpawnParticleGen
-//  Creates a new mobj-triggered particle generator based on the given
-//  definition. The generator is added to the list of active ptcgens.
-//===========================================================================
+/*
+ * Creates a new mobj-triggered particle generator based on the given
+ * definition. The generator is added to the list of active ptcgens.
+ */
 void P_SpawnParticleGen(ded_ptcgen_t * def, mobj_t *source)
 {
     ptcgen_t *gen;
@@ -230,11 +221,10 @@ void P_SpawnParticleGen(ded_ptcgen_t * def, mobj_t *source)
     P_PresimParticleGen(gen, def->presim);
 }
 
-//===========================================================================
-// P_SpawnPlaneParticleGen
-//  Creates a new flat-triggered particle generator based on the given
-//  definition. The generator is added to the list of active ptcgens.
-//===========================================================================
+/*
+ * Creates a new flat-triggered particle generator based on the given
+ * definition. The generator is added to the list of active ptcgens.
+ */
 void P_SpawnPlaneParticleGen(ded_ptcgen_t * def, sector_t *sec,
                              boolean is_ceiling)
 {
@@ -266,11 +256,10 @@ void P_SpawnPlaneParticleGen(ded_ptcgen_t * def, sector_t *sec,
     P_PresimParticleGen(gen, def->presim);
 }
 
-//===========================================================================
-// P_Uncertain
-//  The offset is spherical and random.
-//  Low and High should be positive.
-//===========================================================================
+/*
+ * The offset is spherical and random.
+ * Low and High should be positive.
+ */
 void P_Uncertain(fixed_t *pos, fixed_t low, fixed_t high)
 {
     fixed_t off;
@@ -303,9 +292,6 @@ void P_Uncertain(fixed_t *pos, fixed_t low, fixed_t high)
     }
 }
 
-//===========================================================================
-// P_SetParticleAngles
-//===========================================================================
 void P_SetParticleAngles(particle_t * pt, int flags)
 {
     if(flags & PTCF_ZERO_YAW)
@@ -318,9 +304,6 @@ void P_SetParticleAngles(particle_t * pt, int flags)
         pt->pitch = M_FRandom() * 65536;
 }
 
-//===========================================================================
-// P_ParticleSound
-//===========================================================================
 void P_ParticleSound(fixed_t pos[3], ded_embsound_t * sound)
 {
     int     i;
@@ -335,10 +318,9 @@ void P_ParticleSound(fixed_t pos[3], ded_embsound_t * sound)
     S_LocalSoundAtVolumeFrom(sound->id, NULL, orig, sound->volume);
 }
 
-//===========================================================================
-// P_NewParticle
-//  Spawns a new particle.
-//===========================================================================
+/*
+ * Spawns a new particle.
+ */
 void P_NewParticle(ptcgen_t * gen)
 {
     ded_ptcgen_t *def = gen->def;
@@ -565,10 +547,9 @@ void P_NewParticle(ptcgen_t * gen)
     P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
 }
 
-//===========================================================================
-// PIT_ClientMobjParticles
-//  Callback for the client mobj iterator, called from P_ManyNewParticles.
-//===========================================================================
+/*
+ * Callback for the client mobj iterator, called from P_ManyNewParticles.
+ */
 boolean PIT_ClientMobjParticles(clmobj_t *cmo, void *parm)
 {
     ptcgen_t *gen = parm;
@@ -589,10 +570,9 @@ boolean PIT_ClientMobjParticles(clmobj_t *cmo, void *parm)
     return true;
 }
 
-//===========================================================================
-// P_ManyNewParticles
-//  Spawn multiple new particles using all applicable sources.
-//===========================================================================
+/*
+ * Spawn multiple new particles using all applicable sources.
+ */
 void P_ManyNewParticles(ptcgen_t * gen)
 {
     thinker_t *it;
@@ -621,9 +601,6 @@ void P_ManyNewParticles(ptcgen_t * gen)
     gen->source = NULL;
 }
 
-//===========================================================================
-// PIT_CheckLinePtc
-//===========================================================================
 boolean PIT_CheckLinePtc(line_t *ld, void *data)
 {
     fixed_t bbox[4];
@@ -667,10 +644,9 @@ boolean PIT_CheckLinePtc(line_t *ld, void *data)
     return true;
 }
 
-//===========================================================================
-// P_TouchParticle
-//  Particle touches something solid. Returns false iff the particle dies.
-//===========================================================================
+/*
+ * Particle touches something solid. Returns false iff the particle dies.
+ */
 int P_TouchParticle(particle_t * pt, ptcstage_t * stage,
                     ded_ptcstage_t * stageDef, boolean touchWall)
 {
@@ -694,10 +670,9 @@ int P_TouchParticle(particle_t * pt, ptcstage_t * stage,
     return true;
 }
 
-//===========================================================================
-// P_FixedCrossProduct
-//  Semi-fixed, actually.
-//===========================================================================
+/*
+ * Semi-fixed, actually.
+ */
 void P_FixedCrossProduct(float *fa, fixed_t *b, fixed_t *result)
 {
     result[VX] =
@@ -712,9 +687,6 @@ void P_FixedCrossProduct(float *fa, fixed_t *b, fixed_t *result)
 }
 
 #if 0
-//===========================================================================
-// P_FixedDotProduct
-//===========================================================================
 fixed_t P_FixedDotProduct(fixed_t *a, fixed_t *b)
 {
     return FixedMul(a[VX], b[VX]) + FixedMul(a[VY], b[VY]) + FixedMul(a[VZ],
@@ -722,12 +694,11 @@ fixed_t P_FixedDotProduct(fixed_t *a, fixed_t *b)
 }
 #endif
 
-//===========================================================================
-// P_GetParticleRadius
-//  Takes care of consistent variance.
-//  Currently only used visually, collisions use the constant radius.
-//  The variance can be negative (results will be larger).
-//===========================================================================
+/*
+ * Takes care of consistent variance.
+ * Currently only used visually, collisions use the constant radius.
+ * The variance can be negative (results will be larger).
+ */
 float P_GetParticleRadius(ded_ptcstage_t * stage_def, int ptc_index)
 {
     float   rnd[16] = { .875f, .125f, .3125f, .75f, .5f, .375f,
@@ -741,10 +712,9 @@ float P_GetParticleRadius(ded_ptcstage_t * stage_def, int ptc_index)
             (1 - stage_def->radius_variance)) * stage_def->radius;
 }
 
-//===========================================================================
-// P_GetParticleZ
-//  A particle may be attached to the floor or ceiling of the sector.
-//===========================================================================
+/*
+ * A particle may be attached to the floor or ceiling of the sector.
+ */
 fixed_t P_GetParticleZ(particle_t *pt)
 {
     if(pt->pos[VZ] == DDMAXINT)
@@ -756,9 +726,6 @@ fixed_t P_GetParticleZ(particle_t *pt)
     return pt->pos[VZ];
 }
 
-//===========================================================================
-// P_SpinParticle
-//===========================================================================
 void P_SpinParticle(ptcgen_t *gen, particle_t *pt)
 {
     ded_ptcstage_t *stDef = gen->def->stages + pt->stage;
@@ -783,13 +750,12 @@ void P_SpinParticle(ptcgen_t *gen, particle_t *pt)
     pt->pitch *= 1 - stDef->spin_resistance[1];
 }
 
-//===========================================================================
-// P_MoveParticle
-//  The movement is done in two steps:
-//  Z movement is done first. Skyflat kills the particle.
-//  XY movement checks for hits with solid walls (no backsector).
-//  This is supposed to be fast and simple (but not too simple).
-//===========================================================================
+/*
+ * The movement is done in two steps:
+ * Z movement is done first. Skyflat kills the particle.
+ * XY movement checks for hits with solid walls (no backsector).
+ * This is supposed to be fast and simple (but not too simple).
+ */
 void P_MoveParticle(ptcgen_t * gen, particle_t * pt)
 {
     int     x, y, z, xl, xh, yl, yh, bx, by;
@@ -1052,10 +1018,9 @@ void P_MoveParticle(ptcgen_t * gen, particle_t * pt)
         pt->sector = R_PointInSubsector(x, y)->sector;
 }
 
-//===========================================================================
-// P_PtcGenThinker
-//  Spawn and move particles.
-//===========================================================================
+/*
+ * Spawn and move particles.
+ */
 void P_PtcGenThinker(ptcgen_t * gen)
 {
     ded_ptcgen_t *def = gen->def;
@@ -1195,10 +1160,9 @@ ded_ptcgen_t *P_GetPtcGenForFlat(int flatpic)
     return flat->ptcgen = NULL;
 }
 
-//===========================================================================
-// P_HasActivePtcGen
-//  Returns true iff there is an active ptcgen for the given plane.
-//===========================================================================
+/*
+ * Returns true iff there is an active ptcgen for the given plane.
+ */
 boolean P_HasActivePtcGen(sector_t *sector, int is_ceiling)
 {
     int     i;
@@ -1210,10 +1174,9 @@ boolean P_HasActivePtcGen(sector_t *sector, int is_ceiling)
     return false;
 }
 
-//===========================================================================
-// P_CheckPtcPlanes
-//  Spawns new ptcgens for planes, if necessary.
-//===========================================================================
+/*
+ * Spawns new ptcgens for planes, if necessary.
+ */
 void P_CheckPtcPlanes(void)
 {
     int     i, p, plane;
@@ -1248,12 +1211,11 @@ void P_CheckPtcPlanes(void)
     }
 }
 
-//===========================================================================
-// P_SpawnTypeParticleGens
-//  Spawns all type-triggered particle generators, regardless of whether
-//  the type of thing exists in the level or not (things might be
-//  dynamically created).
-//===========================================================================
+/*
+ * Spawns all type-triggered particle generators, regardless of whether
+ * the type of thing exists in the level or not (things might be
+ * dynamically created).
+ */
 void P_SpawnTypeParticleGens(void)
 {
     int     i;
@@ -1281,9 +1243,6 @@ void P_SpawnTypeParticleGens(void)
     }
 }
 
-//===========================================================================
-// P_SpawnMapParticleGens
-//===========================================================================
 void P_SpawnMapParticleGens(char *map_id)
 {
     int     i;
@@ -1310,10 +1269,9 @@ void P_SpawnMapParticleGens(char *map_id)
     }
 }
 
-//===========================================================================
-// P_SpawnDamageParticleGen
-//  A public function (games can call this directly).
-//===========================================================================
+/*
+ * A public function (games can call this directly).
+ */
 void P_SpawnDamageParticleGen(mobj_t *mo, mobj_t *inflictor, int amount)
 {
     ptcgen_t *gen;

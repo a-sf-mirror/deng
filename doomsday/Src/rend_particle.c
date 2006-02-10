@@ -167,18 +167,12 @@ void PG_InitTextures(void)
     }
 }
 
-//===========================================================================
-// PG_ShutdownTextures
-//===========================================================================
 void PG_ShutdownTextures(void)
 {
     gl.DeleteTextures(NUM_TEX_NAMES, ptctexname);
     memset(ptctexname, 0, sizeof(ptctexname));
 }
 
-//===========================================================================
-// PG_InitForLevel
-//===========================================================================
 void PG_InitForLevel(void)
 {
     pgLinks = Z_Malloc(sizeof(pglink_t *) * numsectors, PU_LEVEL, 0);
@@ -197,10 +191,9 @@ void PG_InitForLevel(void)
     order = Z_Malloc(sizeof(porder_t) * orderSize, PU_LEVEL, 0);
 }
 
-//===========================================================================
-// PG_GetLink
-//  Returns an unused link from the pgStore.
-//===========================================================================
+/*
+ * Returns an unused link from the pgStore.
+ */
 static pglink_t *PG_GetLink(void)
 {
     if(pgCursor == pgMax)
@@ -212,9 +205,6 @@ static pglink_t *PG_GetLink(void)
     return &pgStore[pgCursor++];
 }
 
-//===========================================================================
-// PG_LinkPtcGen
-//===========================================================================
 void PG_LinkPtcGen(ptcgen_t * gen, sector_t *sector)
 {
     int     si = GET_SECTOR_IDX(sector);
@@ -234,10 +224,9 @@ void PG_LinkPtcGen(ptcgen_t * gen, sector_t *sector)
     pgLinks[si] = link;
 }
 
-//===========================================================================
-// PG_InitForNewFrame
-//  Init all active particle generators for a new frame.
-//===========================================================================
+/*
+ * Init all active particle generators for a new frame.
+ */
 void PG_InitForNewFrame(void)
 {
     int     i, k;
@@ -259,11 +248,10 @@ void PG_InitForNewFrame(void)
         }
 }
 
-//===========================================================================
-// PG_SectorIsVisible
-//  The given sector is visible. All PGs in it should be rendered.
-//  Scans PG links.
-//===========================================================================
+/*
+ * The given sector is visible. All PGs in it should be rendered.
+ * Scans PG links.
+ */
 void PG_SectorIsVisible(sector_t *sector)
 {
     pglink_t *it = pgLinks[GET_SECTOR_IDX(sector)];
@@ -272,10 +260,9 @@ void PG_SectorIsVisible(sector_t *sector)
         it->gen->flags |= PGF_VISIBLE;
 }
 
-//===========================================================================
-// PG_Sorter
-//  Sorts in descending order.
-//===========================================================================
+/*
+ * Sorts in descending order.
+ */
 int C_DECL PG_Sorter(const void *pt1, const void *pt2)
 {
     if(((porder_t *) pt1)->distance > ((porder_t *) pt2)->distance)
@@ -286,10 +273,9 @@ int C_DECL PG_Sorter(const void *pt1, const void *pt2)
     return 0;
 }
 
-//===========================================================================
-// PG_CheckOrderBuffer
-//  Allocate more memory for the particle ordering buffer, if necessary.
-//===========================================================================
+/*
+ * Allocate more memory for the particle ordering buffer, if necessary.
+ */
 void PG_CheckOrderBuffer(uint max)
 {
     while(max > orderSize)
@@ -297,10 +283,9 @@ void PG_CheckOrderBuffer(uint max)
     order = Z_Realloc(order, sizeof(*order) * orderSize, PU_LEVEL);
 }
 
-//===========================================================================
-// PG_ListVisibleParticles
-//  Returns true iff there are particles to render.
-//===========================================================================
+/*
+ * Returns true iff there are particles to render.
+ */
 int PG_ListVisibleParticles(void)
 {
     int     i, p, m, stagetype;
@@ -396,9 +381,6 @@ int PG_ListVisibleParticles(void)
     return true;
 }
 
-//===========================================================================
-// PG_RenderParticles
-//===========================================================================
 void PG_RenderParticles(int rtype, boolean with_blend)
 {
     float   leftoff[3], rightoff[3], mark, inv_mark;
@@ -733,9 +715,6 @@ void PG_RenderParticles(int rtype, boolean with_blend)
     }
 }
 
-//===========================================================================
-// PG_RenderPass
-//===========================================================================
 void PG_RenderPass(boolean use_blending)
 {
     int     i;
@@ -762,13 +741,12 @@ void PG_RenderPass(boolean use_blending)
         GL_BlendMode(BM_NORMAL);
 }
 
-//===========================================================================
-// PG_Render
-//  Render all the visible particle generators.
-//  We must render all particles ordered back->front, or otherwise
-//  particles from one generator will obscure particles from another.
-//  This would be especially bad with smoke trails.
-//===========================================================================
+/*
+ * Render all the visible particle generators.
+ * We must render all particles ordered back->front, or otherwise
+ * particles from one generator will obscure particles from another.
+ * This would be especially bad with smoke trails.
+ */
 void PG_Render(void)
 {
     if(!r_use_particles)
