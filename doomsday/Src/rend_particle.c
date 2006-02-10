@@ -80,9 +80,6 @@ static boolean hasModels;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// PG_PointDist
-//===========================================================================
 static fixed_t PG_PointDist(fixed_t c[3])
 {
     fixed_t dist = FixedMul(viewy - c[VY], -viewsin)    //viewsidex
@@ -97,15 +94,11 @@ static fixed_t PG_PointDist(fixed_t c[3])
        c[VZ] - viewz); */
 }
 
-//===========================================================================
-// PG_InitTextures
-//  The particle texture is a modification of the dynlight texture.
-//===========================================================================
+/*
+ * The particle texture is a modification of the dynlight texture.
+ */
 void PG_InitTextures(void)
 {
-    // We need to generate the texture, I see.
-    byte   *image = Z_Malloc(64 * 64, PU_STATIC, 0);
-    byte   *data = W_CacheLumpName("DLIGHT", PU_CACHE);
     int     i;
     boolean reported = false;
 
@@ -115,25 +108,14 @@ void PG_InitTextures(void)
     // Clear the texture names array.
     memset(ptctexname, 0, sizeof(ptctexname));
 
-    if(!data)
-        Con_Error("PG_InitTextures: No DLIGHT texture.\n");
+    // Load the zeroth texture (the default: a blurred point).
+    ptctexname[0] =
+        GL_LoadGraphics2(RC_GRAPHICS, "Zeroth", LGM_WHITE_ALPHA, DGL_TRUE, true);
 
-    // Mipmap it down to 32x32 and create an alpha mask.
-    memcpy(image, data, 64 * 64);
-    GL_DownMipmap32(image, 64, 64, 1);
-    memcpy(image + 32 * 32, image, 32 * 32);
-    memset(image, 255, 32 * 32);
-
-    // No further mipmapping or resizing is needed, upload directly.
-    // The zeroth texture is the default: a blurred point.
-    ptctexname[0] = gl.NewTexture();
-    gl.TexImage(DGL_LUMINANCE_PLUS_A8, 32, 32, 0, image);
-    gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
-    gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
-    gl.TexParameter(DGL_WRAP_S, DGL_CLAMP);
-    gl.TexParameter(DGL_WRAP_T, DGL_CLAMP);
-
-    Z_Free(image);
+    if(ptctexname[0] == 0)
+    {
+        Con_Error("PG_InitTextures: \"Zeroth\" not found.\n");
+    }
 
     // Load any custom particle textures. They are loaded from the
     // highres texture directory and are named "ParticleNN.(tga|png|pcx)".
