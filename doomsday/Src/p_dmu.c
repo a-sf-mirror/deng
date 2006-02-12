@@ -167,6 +167,24 @@ const char* DMU_Str(int prop)
         { DMU_CEILING_TEXTURE_MOVE_Y, "DMU_CEILING_TEXTURE_MOVE_Y" },
         { DMU_CEILING_TEXTURE_MOVE_XY, "DMU_CEILING_TEXTURE_MOVE_XY" },
         { DMU_CEILING_SOUND_ORIGIN, "DMU_CEILING_SOUND_ORIGIN" },
+        { DMU_SEG_LIST, "DMU_SEG_LIST" },
+        { DMU_SEG_COUNT, "DMU_SEG_COUNT" },
+        { DMU_TAG, "DMU_TAG" },
+        { DMU_ORIGINAL_POINTS, "DMU_ORIGINAL_POINTS" },
+        { DMU_PREVIOUS_POINTS, "DMU_PREVIOUS_POINTS" },
+        { DMU_START_SPOT, "DMU_START_SPOT" },
+        { DMU_START_SPOT_X, "DMU_START_SPOT_X" },
+        { DMU_START_SPOT_Y, "DMU_START_SPOT_Y" },
+        { DMU_START_SPOT_XY, "DMU_START_SPOT_XY" },
+        { DMU_DESTINATION_X, "DMU_DESTINATION_X" },
+        { DMU_DESTINATION_Y, "DMU_DESTINATION_Y" },
+        { DMU_DESTINATION_XY, "DMU_DESTINATION_XY" },
+        { DMU_DESTINATION_ANGLE, "DMU_DESTINATION_ANGLE" },
+        { DMU_SPEED, "DMU_SPEED" },
+        { DMU_ANGLE_SPEED, "DMU_ANGLE_SPEED" },
+        { DMU_SEQUENCE_TYPE, "DMU_SEQUENCE_TYPE" },
+        { DMU_CRUSH, "DMU_CRUSH" },
+        { DMU_SPECIAL_DATA, "DMU_SPECIAL_DATA" },
         { 0, NULL }
     };
     int i;
@@ -503,7 +521,19 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
                 if(!callback(SECTOR_PTR(i), context)) return false;
         }
         break;
-
+        
+    case DMU_POLYOBJ:
+        if(index >= 0 && index < po_NumPolyobjs)
+        {
+            return callback(PO_PTR(index), context);
+        }
+        else if(index == DMU_ALL)
+        {
+            for(i = 0; i < po_NumPolyobjs; i++)
+                if(!callback(PO_PTR(i), context)) return false;
+        }
+        break;
+        
     case DMU_LINE_BY_TAG:
     case DMU_SECTOR_BY_TAG:
     case DMU_LINE_BY_ACT_TAG:
@@ -520,6 +550,8 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
     default:
         Con_Error("P_Callback: Type %s unknown (index %i).\n", DMU_Str(type), index);
     }
+
+    // Successfully completed.
     return true;
 }
 
@@ -1422,7 +1454,7 @@ static int GetProperty(void* ptr, void* context)
         }
 
     case DMU_SUBSECTOR:
-        {
+    {
         subsector_t* p = ptr;
         valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
@@ -1450,7 +1482,25 @@ static int GetProperty(void* ptr, void* context)
                       DMU_Str(args->prop));
         }
         break;
+    }
+        
+    case DMU_POLYOBJ:
+    {
+        polyobj_t* p = ptr;
+        switch(args->prop)
+        {
+        case DMU_ORIGINAL_POINTS:
+            GetValue(DDVT_PTR, &p->originalPts, args, 0);
+            break;
+        case DMU_TAG:
+            GetValue(DDVT_INT, &p->tag, args, 0);
+            break;
+        default:
+            Con_Error("GetProperty: DMU_POLYOBJ has no property %s.\n",
+                      DMU_Str(args->prop));
         }
+        break;
+    }
 
     default:
         Con_Error("GetProperty: Type %s not readable.\n", DMU_Str(args->type));

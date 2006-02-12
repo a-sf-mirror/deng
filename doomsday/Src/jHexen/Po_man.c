@@ -1096,7 +1096,7 @@ void PO_Init(int lump)
         if(!P_GetPtr(DMU_POLYOBJ, i, DMU_ORIGINAL_POINTS))
         {
             Con_Error
-                ("PO_Init:  StartSpot located without an Anchor point: %d\n",
+                ("PO_Init: StartSpot located without an Anchor point: %d\n",
                  P_GetInt(DMU_POLYOBJ, i, DMU_TAG));
         }
     }
