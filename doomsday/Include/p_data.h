@@ -178,7 +178,7 @@ typedef struct side_s {
     short           toptexture, bottomtexture, midtexture;
     byte            toprgb[3], bottomrgb[3], midrgba[4];
     blendmode_t     blendmode;
-    int             flags;
+    short           flags;
     sector_t        *sector;
 } side_t;
 
