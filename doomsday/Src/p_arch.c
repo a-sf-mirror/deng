@@ -2574,8 +2574,7 @@ static void P_GroupLines(gamemap_t* map)
     for(i = map->numsubsectors - 1, ss = map->subsectors; i >= 0; --i, ss++)
     {
         seg = &map->segs[ss->firstline];
-        ss->sector = seg->sidedef->sector;
-        for(j = ss->linecount -1; j >= 0; --j, seg++)
+        for(j = 0; j < ss->linecount; j++, seg++)
             if(seg->sidedef)
             {
                 ss->sector = seg->sidedef->sector;
@@ -2585,12 +2584,12 @@ static void P_GroupLines(gamemap_t* map)
 
     Con_Message(" Build line tables\n");
     // build line tables for each sector
-    linebuffer = malloc(numUniqueLines * sizeof(line_t));
+    linebuffer = Z_Malloc(numUniqueLines * sizeof(line_t), PU_LEVEL, NULL);
     linebptr = linebuffer;
-    linesInSector = malloc(map->numsectors * sizeof(int));
+    linesInSector = Z_Malloc(map->numsectors * sizeof(int), PU_LEVEL, NULL);
     memset(linesInSector, 0, map->numsectors * sizeof(int));
 
-    for(i = map->numsectors -1, sec = map->sectors; i >= 0; --i, sec++)
+    for(i = 0, sec = map->sectors; i < map->numsectors; i++, sec++)
     {
         if(sec->linecount > 0)
         {
@@ -2599,7 +2598,7 @@ static void P_GroupLines(gamemap_t* map)
         }
     }
 
-    for(k = map->numlines -1, li = map->lines; k >= 0; --k, li++)
+    for(k = 0, li = map->lines; k < map->numlines; k++, li++)
     {
         if(li->frontsector != NULL)
         {
@@ -2664,8 +2663,6 @@ static void P_GroupLines(gamemap_t* map)
         sec->blockbox[BOXLEFT] = block;
     }
 
-    free(linebuffer);
-    free(linesInSector);
     Con_Message("Done group lines\n");
 }
 
