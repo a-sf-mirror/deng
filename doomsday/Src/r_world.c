@@ -697,14 +697,15 @@ void R_InitVertexOwners(void)
     for(i = 0, sec = sectors; i < numsectors; i++, sec++)
     {
         // Traversing the line list will do fine.
-        for(k = sec->linecount - 1; k >= 0; --k)
+        for(k = 0; k < sec->linecount; k++)
         {
-            v[0] = GET_VERTEX_IDX(sec->Lines[k]->v1);
-            v[1] = GET_VERTEX_IDX(sec->Lines[k]->v2);
-            for(p = 1; p >= 0 ; --p)
+            line_t* line = sec->Lines[k];
+            v[0] = GET_VERTEX_IDX(line->v1);
+            v[1] = GET_VERTEX_IDX(line->v2);
+            for(p = 0; p < 2; p++)
             {
-                R_SetVertexOwner(v[p], sec->Lines[k]->frontsector);
-                R_SetVertexOwner(v[p], sec->Lines[k]->backsector);
+                R_SetVertexOwner(v[p], line->frontsector);
+                R_SetVertexOwner(v[p], line->backsector);
             }
         }
     }
