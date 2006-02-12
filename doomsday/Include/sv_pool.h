@@ -162,6 +162,8 @@ typedef enum {
 
 #define SNDDF_VOLUME            0x01    // 0=stop, 1=full, >1=no att.
 #define SNDDF_REPEAT            0x02    // Start repeating sound.
+#define SNDDF_FLOOR             0x04    // Play sound from floor.
+#define SNDDF_CEILING           0x08    // Play sound from ceiling.
 
 typedef enum deltastate_e {
     DELTA_NEW,

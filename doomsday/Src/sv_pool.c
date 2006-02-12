@@ -2260,6 +2260,16 @@ void Sv_NewSoundDelta(int soundId, mobj_t *emitter, int sourceSector,
     {
         type = DT_SECTOR_SOUND;
         id = sourceSector;
+
+        // Clients need to know which emitter to use.
+        if(emitter)
+        {
+            if(emitter == (mobj_t*) &SECTOR_PTR(sourceSector)->floorsoundorg)
+                df |= SNDDF_FLOOR;
+            else if(emitter == (mobj_t*) &SECTOR_PTR(sourceSector)->ceilingsoundorg)
+                df |= SNDDF_CEILING;
+            // else client assumes sector->soundorg
+        }
     }
     else if(sourcePoly >= 0)
     {
