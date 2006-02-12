@@ -79,16 +79,15 @@ short  *xlat_lump;
 
 // CODE --------------------------------------------------------------------
 
-//==========================================================================
-// Cl_InitTranslations
-//  Allocates and inits the lump translation array. Clients use this
-//  to make sure lump (e.g. flats) references are correct (in case the
-//  server and the client are using different WAD configurations and
-//  the lump index numbers happen to differ).
-//
-//  FIXME: A bit questionable? Why not allow the clients to download
-//  data from the server in ambiguous cases?
-//==========================================================================
+/*
+ * Allocates and inits the lump translation array. Clients use this
+ * to make sure lump (e.g. flats) references are correct (in case the
+ * server and the client are using different WAD configurations and
+ * the lump index numbers happen to differ).
+ *
+ * FIXME: A bit questionable? Why not allow the clients to download
+ * data from the server in ambiguous cases?
+ */
 void Cl_InitTranslations(void)
 {
     int     i;
@@ -99,9 +98,6 @@ void Cl_InitTranslations(void)
         xlat_lump[i] = i;       // Identity translation.
 }
 
-//===========================================================================
-// Cl_SetLumpTranslation
-//===========================================================================
 void Cl_SetLumpTranslation(short lumpnum, char *name)
 {
     if(lumpnum < 0 || lumpnum >= MAX_TRANSLATIONS)
@@ -115,10 +111,9 @@ void Cl_SetLumpTranslation(short lumpnum, char *name)
     }
 }
 
-//==========================================================================
-// Cl_TranslateLump
-//  This is a fail-safe operation.
-//==========================================================================
+/*
+ * This is a fail-safe operation.
+ */
 short Cl_TranslateLump(short lump)
 {
     if(lump < 0 || lump >= MAX_TRANSLATIONS)
@@ -126,10 +121,9 @@ short Cl_TranslateLump(short lump)
     return xlat_lump[lump];
 }
 
-//==========================================================================
-// Cl_InitMovers
-//  Clears the arrays that track active plane and polyobj mover thinkers.
-//==========================================================================
+/*
+ * Clears the arrays that track active plane and polyobj mover thinkers.
+ */
 void Cl_InitMovers()
 {
     memset(activemovers, 0, sizeof(activemovers));
@@ -149,10 +143,9 @@ void Cl_RemoveActiveMover(mover_t * mover)
         }
 }
 
-//==========================================================================
-// Cl_RemoveActivePoly
-//  Removes the given polymover from the active polys array.
-//==========================================================================
+/*
+ * Removes the given polymover from the active polys array.
+ */
 void Cl_RemoveActivePoly(polymover_t * mover)
 {
     int     i;
@@ -166,10 +159,9 @@ void Cl_RemoveActivePoly(polymover_t * mover)
         }
 }
 
-//===========================================================================
-// Cl_MoverThinker
-//  Plane mover.
-//===========================================================================
+/*
+ * Plane mover.
+ */
 void Cl_MoverThinker(mover_t * mover)
 {
     fixed_t *current = mover->current, original = *current;
@@ -269,9 +261,6 @@ void Cl_AddMover(int sectornum, movertype_t type, fixed_t dest, fixed_t speed)
         }
 }
 
-//==========================================================================
-// Cl_PolyMoverThinker
-//==========================================================================
 void Cl_PolyMoverThinker(polymover_t * mover)
 {
     polyobj_t *poly = mover->poly;
@@ -321,9 +310,6 @@ void Cl_PolyMoverThinker(polymover_t * mover)
         Cl_RemoveActivePoly(mover);
 }
 
-//==========================================================================
-// Cl_FindActivePoly
-//==========================================================================
 polymover_t *Cl_FindActivePoly(int number)
 {
     int     i;
@@ -334,9 +320,6 @@ polymover_t *Cl_FindActivePoly(int number)
     return NULL;
 }
 
-//==========================================================================
-// Cl_NewPolyMover
-//==========================================================================
 polymover_t *Cl_NewPolyMover(int number)
 {
     polymover_t *mover;
@@ -351,9 +334,6 @@ polymover_t *Cl_NewPolyMover(int number)
     return mover;
 }
 
-//==========================================================================
-// Cl_SetPolyMover
-//==========================================================================
 void Cl_SetPolyMover(int number, int move, int rotate)
 {
     polymover_t *mover;
@@ -369,10 +349,9 @@ void Cl_SetPolyMover(int number, int move, int rotate)
         mover->rotate = true;
 }
 
-//==========================================================================
-// Cl_RemoveMovers
-//  Removes all the active movers.
-//==========================================================================
+/*
+ * Removes all the active movers.
+ */
 void Cl_RemoveMovers()
 {
     int     i;
@@ -405,10 +384,9 @@ mover_t *Cl_GetActiveMover(int sectornum, movertype_t type)
     return NULL;
 }
 
-//===========================================================================
-// Cl_ReadLumpDelta
-//  Returns false iff the end marker is found (lump index zero).
-//===========================================================================
+/*
+ * Returns false iff the end marker is found (lump index zero).
+ */
 int Cl_ReadLumpDelta(void)
 {
     int     num = Msg_ReadPackedShort();
@@ -428,13 +406,12 @@ int Cl_ReadLumpDelta(void)
     return true;
 }
 
-//==========================================================================
-// Cl_ReadSectorDelta
-//  Reads a sector delta from the message buffer and applies it to
-//  the world. Returns false only if the end marker is found.
-//
-//  THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
-//==========================================================================
+/*
+ * Reads a sector delta from the message buffer and applies it to
+ * the world. Returns false only if the end marker is found.
+ *
+ * THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
+ */
 int Cl_ReadSectorDelta(void)
 {
     short   num = Msg_ReadPackedShort();
@@ -501,6 +478,25 @@ int Cl_ReadSectorDelta(void)
     if(df & SDF_CEIL_COLOR_BLUE)
         sec->ceilingrgb[2] = Msg_ReadByte();
 
+    if(df & SDF_FLOOR_GLOW_RED)
+        sec->floorglowrgb[0] = Msg_ReadByte();
+    if(df & SDF_FLOOR_GLOW_GREEN)
+        sec->floorglowrgb[1] = Msg_ReadByte();
+    if(df & SDF_FLOOR_GLOW_BLUE)
+        sec->floorglowrgb[2] = Msg_ReadByte();
+
+    if(df & SDF_CEIL_GLOW_RED)
+        sec->ceilingglowrgb[0] = Msg_ReadByte();
+    if(df & SDF_CEIL_GLOW_GREEN)
+        sec->ceilingglowrgb[1] = Msg_ReadByte();
+    if(df & SDF_CEIL_GLOW_BLUE)
+        sec->ceilingglowrgb[2] = Msg_ReadByte();
+
+    if(df & SDF_FLOOR_GLOW)
+        sec->floorglow = (float) (Msg_ReadShort() / DDMAXSHORT);
+    if(df & SDF_CEIL_GLOW)
+        sec->ceilingglow = (float) (Msg_ReadShort() / DDMAXSHORT);
+
     // Do we need to start any moving planes?
     if(df & (SDF_FLOOR_TARGET | SDF_FLOOR_SPEED))
     {
@@ -517,13 +513,12 @@ int Cl_ReadSectorDelta(void)
     return true;
 }
 
-//==========================================================================
-// Cl_ReadSideDelta
-//  Reads a side delta from the message buffer and applies it to
-//  the world. Returns false only if the end marker is found.
-//
-//  THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
-//==========================================================================
+/*
+ * Reads a side delta from the message buffer and applies it to
+ * the world. Returns false only if the end marker is found.
+ *
+ * THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
+ */
 int Cl_ReadSideDelta(void)
 {
     short   num = Msg_ReadPackedShort();
@@ -545,6 +540,23 @@ int Cl_ReadSideDelta(void)
         sid->midtexture = Msg_ReadPackedShort();
     if(df & SIDF_BOTTOMTEX)
         sid->bottomtexture = Msg_ReadPackedShort();
+
+    if(df & SIDF_LINE_FLAGS)
+    {
+        byte    updatedFlags = Msg_ReadByte();
+        line_t *line = R_GetLineForSide(num);
+
+        if(line)
+        {
+            // The delta includes the lowest byte.
+            line->flags &= ~0xff;
+            line->flags |= updatedFlags;
+#if _DEBUG
+            Con_Printf("lineflag %i: %02x\n", GET_LINE_IDX(line),
+                       updatedFlags);
+#endif
+        }
+    }
 
     if(df & SIDF_TOP_COLOR_RED)
         sid->toprgb[0] = Msg_ReadByte();
@@ -572,34 +584,25 @@ int Cl_ReadSideDelta(void)
     if(df & SIDF_MID_BLENDMODE)
         sid->blendmode = Msg_ReadShort() << 16;
 
-    if(df & SIDF_LINE_FLAGS)
+    if(df & SIDF_FLAGS)
     {
         byte    updatedFlags = Msg_ReadByte();
-        line_t *line = R_GetLineForSide(num);
 
-        if(line)
-        {
-            // The delta includes the lowest byte.
-            line->flags &= ~0xff;
-            line->flags |= updatedFlags;
-#if _DEBUG
-            Con_Printf("lineflag %i: %02x\n", GET_LINE_IDX(line),
-                       updatedFlags);
-#endif
-        }
+        // The delta includes the lowest byte.
+        sid->flags &= ~0xff;
+        sid->flags |= updatedFlags;
     }
 
     // Continue reading.
     return true;
 }
 
-//==========================================================================
-// Cl_ReadPolyDelta
-//  Reads a poly delta from the message buffer and applies it to
-//  the world. Returns false only if the end marker is found.
-//
-//  THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
-//==========================================================================
+/*
+ * Reads a poly delta from the message buffer and applies it to
+ * the world. Returns false only if the end marker is found.
+ *
+ * THIS FUNCTION IS NOW OBSOLETE (only used with psv_frame packets)
+ */
 int Cl_ReadPolyDelta(void)
 {
     int     df;
@@ -737,6 +740,25 @@ void Cl_ReadSectorDelta2(boolean skip)
     if(df & SDF_CEIL_COLOR_BLUE)
         sec->ceilingrgb[2] = Msg_ReadByte();
 
+    if(df & SDF_FLOOR_GLOW_RED)
+        sec->floorglowrgb[0] = Msg_ReadByte();
+    if(df & SDF_FLOOR_GLOW_GREEN)
+        sec->floorglowrgb[1] = Msg_ReadByte();
+    if(df & SDF_FLOOR_GLOW_BLUE)
+        sec->floorglowrgb[2] = Msg_ReadByte();
+
+    if(df & SDF_CEIL_GLOW_RED)
+        sec->ceilingglowrgb[0] = Msg_ReadByte();
+    if(df & SDF_CEIL_GLOW_GREEN)
+        sec->ceilingglowrgb[1] = Msg_ReadByte();
+    if(df & SDF_CEIL_GLOW_BLUE)
+        sec->ceilingglowrgb[2] = Msg_ReadByte();
+
+    if(df & SDF_FLOOR_GLOW)
+        sec->floorglow = (float) (Msg_ReadShort() / DDMAXSHORT);
+    if(df & SDF_CEIL_GLOW)
+        sec->ceilingglow = (float) (Msg_ReadShort() / DDMAXSHORT);
+
     // The whole delta has been read. If we're about to skip, let's do so.
     if(skip)
         return;
@@ -768,7 +790,7 @@ void Cl_ReadSideDelta2(boolean skip)
 {
     unsigned short num;
     int     df, toptexture, midtexture, bottomtexture, blendmode;
-    byte    lineFlags;
+    byte    lineFlags, sideFlags;
     byte    toprgb[3], midrgba[3], bottomrgb[2];
     side_t *sid;
 
@@ -812,6 +834,9 @@ void Cl_ReadSideDelta2(boolean skip)
 
     if(df & SIDF_MID_BLENDMODE)
         blendmode = Msg_ReadShort() << 16;
+
+    if(df & SIDF_FLAGS)
+        sideFlags = Msg_ReadByte();
 
     // Must we skip this?
     if(skip)
@@ -859,6 +884,13 @@ void Cl_ReadSideDelta2(boolean skip)
 
     if(df & SIDF_MID_BLENDMODE)
         sid->blendmode = blendmode;
+
+    if(df & SIDF_FLAGS)
+    {
+        // The delta includes the entire lowest byte.
+        sid->flags &= ~0xff;
+        sid->flags |= sideFlags;
+    }
 
     if(df & SIDF_LINE_FLAGS)
     {

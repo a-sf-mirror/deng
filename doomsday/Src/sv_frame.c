@@ -205,7 +205,6 @@ void Sv_WriteMobjDelta(const void *deltaPtr)
         moreFlags |= MDFE_TRANSLUCENCY;
     }
 
-    // FIXME: Confuse old clients
     // A fade target?
     if(df & MDFC_FADETARGET)
     {
@@ -321,7 +320,6 @@ void Sv_WriteMobjDelta(const void *deltaPtr)
     if(df & MDFC_TRANSLUCENCY)
         Msg_WriteByte(d->translucency);
 
-    // FIXME: Confuse old clients
     if(df & MDFC_FADETARGET)
         Msg_WriteByte((byte)(d->vistarget +1));
 }
@@ -497,7 +495,6 @@ void Sv_WriteSectorDelta(const void *deltaPtr)
     if(df & SDF_COLOR_BLUE)
         Msg_WriteByte(d->rgb[2]);
 
-    // FIXME: Confuse old clients
     if(df & SDF_FLOOR_COLOR_RED)
         Msg_WriteByte(d->floorrgb[0]);
     if(df & SDF_FLOOR_COLOR_GREEN)
@@ -511,6 +508,27 @@ void Sv_WriteSectorDelta(const void *deltaPtr)
         Msg_WriteByte(d->ceilingrgb[1]);
     if(df & SDF_CEIL_COLOR_BLUE)
         Msg_WriteByte(d->ceilingrgb[2]);
+
+    if(df & SDF_FLOOR_GLOW_RED)
+        Msg_WriteByte(d->floorglowrgb[0]);
+    if(df & SDF_FLOOR_GLOW_GREEN)
+        Msg_WriteByte(d->floorglowrgb[1]);
+    if(df & SDF_FLOOR_GLOW_BLUE)
+        Msg_WriteByte(d->floorglowrgb[2]);
+
+    if(df & SDF_CEIL_GLOW_RED)
+        Msg_WriteByte(d->ceilingglowrgb[0]);
+    if(df & SDF_CEIL_GLOW_GREEN)
+        Msg_WriteByte(d->ceilingglowrgb[1]);
+    if(df & SDF_CEIL_GLOW_BLUE)
+        Msg_WriteByte(d->ceilingglowrgb[2]);
+
+    if(df & SDF_FLOOR_GLOW)
+        Msg_WriteShort(d->floorglow < 0 ? 0 : d->floorglow > 1 ? DDMAXSHORT :
+                       (short)(d->floorglow * DDMAXSHORT));
+    if(df & SDF_CEIL_GLOW)
+        Msg_WriteShort(d->ceilingglow < 0 ? 0 : d->ceilingglow > 1 ? DDMAXSHORT :
+                       (short)(d->ceilingglow * DDMAXSHORT));
 }
 
 /*
@@ -535,7 +553,9 @@ void Sv_WriteSideDelta(const void *deltaPtr)
     if(df & SIDF_BOTTOMTEX)
         Msg_WritePackedShort(d->bottomTexture);
 
-    // FIXME: Confuse old clients
+    if(df & SIDF_LINE_FLAGS)
+        Msg_WriteByte(d->lineFlags);
+
     if(df & SIDF_TOP_COLOR_RED)
         Msg_WriteByte(d->toprgb[0]);
     if(df & SIDF_TOP_COLOR_GREEN)
@@ -562,8 +582,8 @@ void Sv_WriteSideDelta(const void *deltaPtr)
     if(df & SIDF_MID_BLENDMODE)
         Msg_WriteShort(d->blendmode >> 16);
 
-    if(df & SIDF_LINE_FLAGS)
-        Msg_WriteByte(d->lineFlags);
+    if(df & SIDF_FLAGS)
+        Msg_WriteByte(d->flags);
 }
 
 /*

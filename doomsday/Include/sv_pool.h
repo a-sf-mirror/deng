@@ -112,28 +112,36 @@ typedef enum {
 // The flags that are not included when a player is not the viewpoint.
 #define PDF_NONCAMERA_EXCLUDE   0x70de
 
-#define SDF_FLOORPIC            0x0001
-#define SDF_CEILINGPIC          0x0002
-#define SDF_LIGHT               0x0004
-#define SDF_FLOOR_TARGET        0x0008
-#define SDF_FLOOR_SPEED         0x0010
-#define SDF_CEILING_TARGET      0x0020
-#define SDF_CEILING_SPEED       0x0040
-#define SDF_FLOOR_TEXMOVE       0x0080
-#define SDF_CEILING_TEXMOVE     0x0100
-#define SDF_COLOR_RED           0x0200
-#define SDF_COLOR_GREEN         0x0400
-#define SDF_COLOR_BLUE          0x0800
-#define SDF_FLOOR_SPEED_44      0x1000  // Used for sent deltas.
-#define SDF_CEILING_SPEED_44    0x2000  // Used for sent deltas.
-#define SDF_FLOOR_HEIGHT        0x4000
-#define SDF_CEILING_HEIGHT      0x8000
-#define SDF_FLOOR_COLOR_RED     0x010000
-#define SDF_FLOOR_COLOR_GREEN   0x020000
-#define SDF_FLOOR_COLOR_BLUE    0x040000
-#define SDF_CEIL_COLOR_RED      0x080000
-#define SDF_CEIL_COLOR_GREEN    0x100000
-#define SDF_CEIL_COLOR_BLUE     0x200000
+#define SDF_FLOORPIC            0x00000001
+#define SDF_CEILINGPIC          0x00000002
+#define SDF_LIGHT               0x00000004
+#define SDF_FLOOR_TARGET        0x00000008
+#define SDF_FLOOR_SPEED         0x00000010
+#define SDF_CEILING_TARGET      0x00000020
+#define SDF_CEILING_SPEED       0x00000040
+#define SDF_FLOOR_TEXMOVE       0x00000080
+#define SDF_CEILING_TEXMOVE     0x00000100
+#define SDF_COLOR_RED           0x00000200
+#define SDF_COLOR_GREEN         0x00000400
+#define SDF_COLOR_BLUE          0x00000800
+#define SDF_FLOOR_SPEED_44      0x00001000  // Used for sent deltas.
+#define SDF_CEILING_SPEED_44    0x00002000  // Used for sent deltas.
+#define SDF_FLOOR_HEIGHT        0x00004000
+#define SDF_CEILING_HEIGHT      0x00008000
+#define SDF_FLOOR_COLOR_RED     0x00010000
+#define SDF_FLOOR_COLOR_GREEN   0x00020000
+#define SDF_FLOOR_COLOR_BLUE    0x00040000
+#define SDF_CEIL_COLOR_RED      0x00080000
+#define SDF_CEIL_COLOR_GREEN    0x00100000
+#define SDF_CEIL_COLOR_BLUE     0x00200000
+#define SDF_FLOOR_GLOW_RED      0x00400000
+#define SDF_FLOOR_GLOW_GREEN    0x00800000
+#define SDF_FLOOR_GLOW_BLUE     0x01000000
+#define SDF_CEIL_GLOW_RED       0x02000000
+#define SDF_CEIL_GLOW_GREEN     0x04000000
+#define SDF_CEIL_GLOW_BLUE      0x08000000
+#define SDF_FLOOR_GLOW          0x10000000
+#define SDF_CEIL_GLOW           0x20000000
 
 #define SIDF_TOPTEX             0x0001
 #define SIDF_MIDTEX             0x0002
@@ -150,6 +158,7 @@ typedef enum {
 #define SIDF_BOTTOM_COLOR_GREEN 0x1000
 #define SIDF_BOTTOM_COLOR_BLUE  0x2000
 #define SIDF_MID_BLENDMODE      0x4000
+#define SIDF_FLAGS              0x8000
 
 #define PODF_DEST_X             0x01
 #define PODF_DEST_Y             0x02
@@ -236,11 +245,15 @@ typedef struct {
     short           ceilingPic;
     short           lightlevel;
     byte            rgb[3];
-    byte            floorrgb[3];
-    byte            ceilingrgb[3];
     plane_t         planes[2];
     int             floorHeight;
     int             ceilingHeight;
+    byte            floorrgb[3];
+    byte            ceilingrgb[3];
+    byte            floorglowrgb[3];
+    byte            ceilingglowrgb[3];
+    float           floorglow;
+    float           ceilingglow;
 } dt_sector_t;
 
 typedef struct {
@@ -256,11 +269,12 @@ typedef struct {
     short           topTexture;
     short           midTexture;
     short           bottomTexture;
+    byte            lineFlags;     // note: only a byte!
     byte            toprgb[3];
     byte            midrgba[4];
     byte            bottomrgb[3];
     int             blendmode;
-    byte            lineFlags;     // note: only a byte!
+    byte            flags;         // Sidedef flags.
 } dt_side_t;
 
 typedef struct {

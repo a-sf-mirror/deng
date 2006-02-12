@@ -424,11 +424,16 @@ void Sv_RegisterSector(dt_sector_t * reg, int number)
     reg->ceilingPic = sec->ceilingpic;
     reg->lightlevel = sec->lightlevel;
     memcpy(reg->rgb, sec->rgb, 3);
-    memcpy(reg->floorrgb, sec->floorrgb, 3);
-    memcpy(reg->ceilingrgb, sec->ceilingrgb, 3);
     reg->floorHeight = sec->floorheight;
     reg->ceilingHeight = sec->ceilingheight;
     memcpy(reg->planes, sec->planes, sizeof(sec->planes));
+
+    memcpy(reg->floorrgb, sec->floorrgb, 3);
+    memcpy(reg->ceilingrgb, sec->ceilingrgb, 3);
+    memcpy(reg->floorglowrgb, sec->floorglowrgb, 3);
+    memcpy(reg->ceilingglowrgb, sec->ceilingglowrgb, 3);
+    reg->floorglow = sec->floorglow;
+    reg->ceilingglow = sec->ceilingglow;
 }
 
 /*
@@ -443,11 +448,13 @@ void Sv_RegisterSide(dt_side_t * reg, int number)
     reg->topTexture = side->toptexture;
     reg->midTexture = side->midtexture;
     reg->bottomTexture = side->bottomtexture;
+    reg->lineFlags = (line ? line->flags & 0xff : 0);
+
     memcpy(reg->toprgb, side->toprgb, 3);
     memcpy(reg->midrgba, side->midrgba, 4);
     memcpy(reg->bottomrgb, side->bottomrgb, 3);
     reg->blendmode = side->blendmode;
-    reg->lineFlags = (line ? line->flags & 0xff : 0);
+    reg->flags = side->flags & 0xff;
 }
 
 /*
@@ -644,6 +651,25 @@ boolean Sv_RegisterCompareSector(cregister_t * reg, int number,
     if(r->ceilingrgb[2] != s->ceilingrgb[2])
         df |= SDF_CEIL_COLOR_BLUE;
 
+    if(r->floorglowrgb[0] != s->floorglowrgb[0])
+        df |= SDF_FLOOR_GLOW_RED;
+    if(r->floorglowrgb[1] != s->floorglowrgb[1])
+        df |= SDF_FLOOR_GLOW_GREEN;
+    if(r->floorglowrgb[2] != s->floorglowrgb[2])
+        df |= SDF_FLOOR_GLOW_BLUE;
+
+    if(r->ceilingglowrgb[0] != s->ceilingglowrgb[0])
+        df |= SDF_CEIL_GLOW_RED;
+    if(r->ceilingglowrgb[1] != s->ceilingglowrgb[1])
+        df |= SDF_CEIL_GLOW_GREEN;
+    if(r->ceilingglowrgb[2] != s->ceilingglowrgb[2])
+        df |= SDF_CEIL_GLOW_BLUE;
+
+    if(r->floorglow != s->floorglow)
+        df |= SDF_FLOOR_GLOW;
+    if(r->ceilingglow != s->ceilingglow)
+        df |= SDF_CEIL_GLOW;
+
     // The cases where an immediate change to a plane's height is needed:
     // 1) Plane is not moving, but the heights are different. This means
     //    the plane's height was changed unpredictably.
@@ -739,6 +765,7 @@ boolean Sv_RegisterCompareSide(cregister_t * reg, int number, sidedelta_t * d,
     dt_side_t *r = &reg->sides[number];
     int     df = 0;
     byte    lineFlags = (line ? line->flags & 0xff : 0);
+    byte    sideFlags = s->flags & 0xff;
 
     if(r->topTexture != s->toptexture)
     {
@@ -759,6 +786,13 @@ boolean Sv_RegisterCompareSide(cregister_t * reg, int number, sidedelta_t * d,
         df |= SIDF_BOTTOMTEX;
         if(doUpdate)
             r->bottomTexture = s->bottomtexture;
+    }
+
+    if(r->lineFlags != lineFlags)
+    {
+        df |= SIDF_LINE_FLAGS;
+        if(doUpdate)
+            r->lineFlags = lineFlags;
     }
 
     if(r->toprgb[0] != s->toprgb[0])
@@ -838,11 +872,11 @@ boolean Sv_RegisterCompareSide(cregister_t * reg, int number, sidedelta_t * d,
             r->blendmode = s->blendmode;
     }
 
-    if(r->lineFlags != lineFlags)
+    if(r->flags != sideFlags)
     {
-        df |= SIDF_LINE_FLAGS;
+        df |= SIDF_FLAGS;
         if(doUpdate)
-            r->lineFlags = lineFlags;
+            r->flags = sideFlags;
     }
 
     // Was there any change?
@@ -1292,6 +1326,25 @@ void Sv_ApplyDeltaData(void *destDelta, const void *srcDelta)
             d->ceilingrgb[1] = s->ceilingrgb[1];
         if(sf & SDF_CEIL_COLOR_BLUE)
             d->ceilingrgb[2] = s->ceilingrgb[2];
+
+        if(sf & SDF_FLOOR_GLOW_RED)
+            d->floorglowrgb[0] = s->floorglowrgb[0];
+        if(sf & SDF_FLOOR_GLOW_GREEN)
+            d->floorglowrgb[1] = s->floorglowrgb[1];
+        if(sf & SDF_FLOOR_GLOW_BLUE)
+            d->floorglowrgb[2] = s->floorglowrgb[2];
+
+        if(sf & SDF_CEIL_GLOW_RED)
+            d->ceilingglowrgb[0] = s->ceilingglowrgb[0];
+        if(sf & SDF_CEIL_GLOW_GREEN)
+            d->ceilingglowrgb[1] = s->ceilingglowrgb[1];
+        if(sf & SDF_CEIL_GLOW_BLUE)
+            d->ceilingglowrgb[2] = s->ceilingglowrgb[2];
+
+        if(sf & SDF_FLOOR_GLOW)
+            d->floorglow = s->floorglow;
+        if(sf & SDF_CEIL_GLOW)
+            d->ceilingglow = s->ceilingglow;
     }
     else if(src->type == DT_SIDE)
     {
@@ -1304,6 +1357,8 @@ void Sv_ApplyDeltaData(void *destDelta, const void *srcDelta)
             d->midTexture = s->midTexture;
         if(sf & SIDF_BOTTOMTEX)
             d->bottomTexture = s->bottomTexture;
+        if(sf & SIDF_LINE_FLAGS)
+            d->lineFlags = s->lineFlags;
 
         if(sf & SIDF_TOP_COLOR_RED)
             d->toprgb[0] = s->toprgb[0];
@@ -1331,8 +1386,8 @@ void Sv_ApplyDeltaData(void *destDelta, const void *srcDelta)
         if(sf & SIDF_MID_BLENDMODE)
             d->blendmode = s->blendmode;
 
-        if(sf & SIDF_LINE_FLAGS)
-            d->lineFlags = s->lineFlags;
+        if(sf & SIDF_FLAGS)
+            d->flags = s->flags;
     }
     else if(src->type == DT_POLY)
     {
