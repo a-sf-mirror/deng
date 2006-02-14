@@ -360,7 +360,7 @@ void DD_Main(void)
     // Any startup hooks?
     Plug_DoHook(HOOK_STARTUP, 0, 0);
 
-    //DD_AddStartupWAD("}Data\\Doomsday.wad");
+    DD_AddStartupWAD("}Data\\Doomsday.pk3");
     R_InitExternalResources();
 
     // The name of the .cfg will invariably be overwritten by the Game.
