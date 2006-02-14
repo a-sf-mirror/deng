@@ -282,10 +282,9 @@ int Sv_Latency(byte cmdtime)
     return Net_TimeDelta(SECONDS_TO_TICKS(gameTime), cmdtime);
 }
 
-//===========================================================================
-// Sv_FixLocalAngles
-//  For local players.
-//===========================================================================
+/*
+ * For local players.
+ */
 void Sv_FixLocalAngles()
 {
     ddplayer_t *pl;
@@ -454,15 +453,10 @@ void Sv_HandlePacket(void)
     }
 }
 
-//========================================================================
-//
-// Sv_Login
-//
-// Handles a login packet. If the password is OK and no other client
-// is current logged in, a response is sent.
-//
-//========================================================================
-
+/*
+ * Handles a login packet. If the password is OK and no other client
+ * is current logged in, a response is sent.
+ */
 void Sv_Login(void)
 {
     if(net_remoteuser)
@@ -488,15 +482,10 @@ void Sv_Login(void)
     Net_SendBuffer(net_remoteuser, SPF_ORDERED);
 }
 
-//========================================================================
-//
-// Sv_ExecuteCommand
-//
-// Executes the command in the message buffer.
-// Usually sent by Con_Send.
-//
-//========================================================================
-
+/*
+ * Executes the command in the message buffer.
+ * Usually sent by Con_Send.
+ */
 void Sv_ExecuteCommand(void)
 {
     unsigned short len;
@@ -752,7 +741,10 @@ void Sv_PlayerLeaves(unsigned int nodeID)
     clients[pNumber].id = 0;
 }
 
-// The player will be sent the introductory handshake packets.
+
+/*
+ * The player will be sent the introductory handshake packets.
+ */
 void Sv_Handshake(int playernum, boolean newplayer)
 {
     int     i;
@@ -868,11 +860,10 @@ void Sv_SendText(int to, int con_flags, char *text)
     Net_SendBuffer(to, SPF_ORDERED);
 }
 
-//===========================================================================
-// Sv_Kick
-//  Asks a client to disconnect. Clients will immediately disconnect
-//  after receiving the psv_server_close message.
-//===========================================================================
+/*
+ * Asks a client to disconnect. Clients will immediately disconnect
+ * after receiving the psv_server_close message.
+ */
 void Sv_Kick(int who)
 {
     if(!clients[who].connected)
@@ -883,9 +874,6 @@ void Sv_Kick(int who)
     //players[who].ingame = false;
 }
 
-//===========================================================================
-// Sv_Ticker
-//===========================================================================
 void Sv_Ticker(void)
 {
     //static trigger_t fixed = { 1.0 / 35 };
