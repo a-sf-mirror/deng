@@ -347,6 +347,14 @@ typedef struct gamemap_s {
     byte    *rejectmatrix;
 } gamemap_t;
 
+typedef struct {
+    size_t elmsize;
+    unsigned int elements;
+    unsigned int numvalues;
+    datatype_t* types;
+    gamemap_t* map;
+} damargs_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 static void P_CreateBlockMap(gamemap_t* map);
@@ -360,9 +368,13 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 static boolean  ReadMapData(gamemap_t* map, int doClass);
 static boolean  DetermineMapDataFormat(void);
 
-static void     P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startIndex, int dataType, const byte *buffer,
-                                size_t elmsize, unsigned int elements,
-                                unsigned int values, const datatype_t *types);
+int P_CallbackEX(int dataType, int index, unsigned int startIndex, const byte *buffer,
+                 void* context,
+                 int (*callback)(gamemap_t* map, int dataType, void* ptr,
+                                 const datatype_t* prop, const byte *buffer));
+
+static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
+                            const datatype_t* prop, const byte *buffer);
 
 static void     P_ReadSideDefTextures(gamemap_t* map, int lump);
 static void     P_FinishLineDefs(gamemap_t* map);
@@ -436,6 +448,69 @@ glnodeformat_t glNodeFormats[] = {
     {"V4", {{1, NULL},   {4, "gNd4"}, {4, NULL},   {4, NULL},   {4, NULL}}, false},
     {"V5", {{1, NULL},   {5, "gNd5"}, {5, NULL},   {3, NULL},   {4, NULL}}, true},
     {NULL}
+};
+
+// FIXME: This way of initializing the array is unsafe considering changes
+// to the DMU constants. Maybe use a similar type of array as in p_dmu.c for
+// DMU_Str, but used for initializing DAMpropertyTypes[] in P_Init.
+
+const valuetype_t DAMpropertyTypes[] = {
+    DDVT_NONE,          // DAM_NONE,
+
+    // Object/Data types
+    DDVT_PTR,           // DAM_THING,
+    DDVT_PTR,           // DAM_VERTEX,
+    DDVT_PTR,           // DAM_LINE,
+    DDVT_PTR,           // DAM_SIDE,
+    DDVT_PTR,           // DAM_SECTOR,
+    DDVT_PTR,           // DAM_SEG,
+    DDVT_PTR,           // DAM_SUBSECTOR,
+    DDVT_PTR,           // DAM_NODE,
+    DDVT_NONE,          // DAM_MAPBLOCK,
+    DDVT_NONE,          // DAM_SECREJECT,
+    DDVT_NONE,          // DAM_ACSSCRIPT,
+
+    // Object properties
+    DDVT_FIXED,         // DAM_X,
+    DDVT_FIXED,         // DAM_Y,
+    DDVT_FIXED,         // DAM_DX,
+    DDVT_FIXED,         // DAM_DY,
+
+    DDVT_VERT_PTR,      // DAM_VERTEX1,
+    DDVT_VERT_PTR,      // DAM_VERTEX2,
+    DDVT_INT,           // DAM_FLAGS,
+    DDVT_INT,           // DAM_SIDE0,
+    DDVT_INT,           // DAM_SIDE1,
+
+    DDVT_FIXED,         // DAM_TEXTURE_OFFSET_X,
+    DDVT_FIXED,         // DAM_TEXTURE_OFFSET_Y,
+    DDVT_FLAT_INDEX,    // DAM_TOP_TEXTURE,
+    DDVT_FLAT_INDEX,    // DAM_MIDDLE_TEXTURE,
+    DDVT_FLAT_INDEX,    // DAM_BOTTOM_TEXTURE,
+    DDVT_SECT_PTR,      // DAM_FRONT_SECTOR,
+
+    DDVT_FIXED,         // DAM_FLOOR_HEIGHT,
+    DDVT_FLAT_INDEX,    // DAM_FLOOR_TEXTURE,
+    DDVT_FIXED,         // DAM_CEILING_HEIGHT,
+    DDVT_FLAT_INDEX,    // DAM_CEILING_TEXTURE,
+    DDVT_SHORT,         // DAM_LIGHT_LEVEL,
+
+    DDVT_ANGLE,         // DAM_ANGLE,
+    DDVT_FIXED,         // DAM_OFFSET,
+
+    DDVT_INT,           // DAM_LINE_COUNT,
+    DDVT_INT,           // DAM_LINE_FIRST,
+
+    DDVT_FIXED,         // DAM_BBOX_RIGHT_TOP_Y,
+    DDVT_FIXED,         // DAM_BBOX_RIGHT_LOW_Y,
+    DDVT_FIXED,         // DAM_BBOX_RIGHT_LOW_X,
+    DDVT_FIXED,         // DAM_BBOX_RIGHT_TOP_X,
+    DDVT_FIXED,         // DAM_BBOX_LEFT_TOP_Y,
+    DDVT_FIXED,         // DAM_BBOX_LEFT_LOW_Y,
+    DDVT_FIXED,         // DAM_BBOX_LEFT_LOW_X,
+    DDVT_FIXED,         // DAM_BBOX_LEFT_TOP_X,
+    DDVT_INT,           // DAM_CHILD_RIGHT,
+    DDVT_INT            // DAM_CHILD_LEFT
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -1294,6 +1369,7 @@ boolean P_LoadMapData(char *levelId)
         newmap->numlines = 0;
         newmap->numsegs = 0;
         newmap->numthings = 0;
+        newmap->po_NumPolyobjs = 0;
 
         // Load all lumps of each class in this order.
         //
@@ -1585,8 +1661,17 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
             }
             else
             {
-                P_ReadBinaryMapData(map, DAM_ALL, oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
-                                    lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
+                damargs_t args;
+
+                args.map = map;
+                args.elmsize = lumpFormat->elmSize;
+                args.elements = elements;
+                args.numvalues = lumpFormat->numValues;
+                args.types = dataTypes;
+
+                P_CallbackEX(internalType, DAM_ALL, oldNum,
+                             (mapLump->lumpp + mapLump->startOffset),
+                             &args, ReadMapProperty);
 
                 // Perform any additional processing required (temporary)
                 switch(internalType)
@@ -1624,14 +1709,14 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
  * type checking so that incompatible types are not assigned.
  * Simple conversions are also done, e.g., float to fixed.
  */
-static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
-                      const byte *src, const datatype_t* prop, unsigned int index)
+static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
+                      const byte *src, const datatype_t* prop, int element)
 {
     int flags = prop->flags;
 
     if(valueType == DDVT_BYTE)
     {
-        byte* d = dest;
+        byte* d = dst;
         switch(prop->size)
         {
         case 1:
@@ -1649,7 +1734,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
     {
-        short* d = dest;
+        short* d = dst;
         switch(prop->size)
         {
         case 2:
@@ -1670,24 +1755,26 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
             break;
 
         case 8:
+            {
             if(flags & DT_TEXTURE)
             {
                 *d = P_CheckTexture((char*)((long long*)(src)), false, valueType,
-                                    index, prop->property);
+                                    element, prop->property);
             }
             else if(flags & DT_FLAT)
             {
                 *d = P_CheckTexture((char*)((long long*)(src)), true, valueType,
-                                    index, prop->property);
+                                    element, prop->property);
             }
             break;
+            }
          default:
             Con_Error("ReadValue: DDVT_SHORT incompatible with value type.\n");
          }
     }
     else if(valueType == DDVT_FIXED)
     {
-        fixed_t* d = dest;
+        fixed_t* d = dst;
 
         switch(prop->size) // Number of src bytes
         {
@@ -1721,7 +1808,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
     else if(valueType == DDVT_ULONG)
     {
-        unsigned long* d = dest;
+        unsigned long* d = dst;
 
         switch(prop->size) // Number of src bytes
         {
@@ -1755,7 +1842,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
     else if(valueType == DDVT_INT)
     {
-        int* d = dest;
+        int* d = dst;
 
         switch(prop->size) // Number of src bytes
         {
@@ -1801,14 +1888,14 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
     else if(valueType == DDVT_ANGLE)
     {
-        angle_t* d = dest;
+        angle_t* d = dst;
         switch(prop->size) // Number of src bytes
         {
         case 2:
             if(flags & DT_FRACBITS)
-                *d = (angle_t*) SHORT(*((short*)(src))) << FRACBITS;
+                *d = (angle_t) (SHORT(*((short*)(src))) << FRACBITS);
             else
-                *d = (angle_t*) SHORT(*((short*)(src)));
+                *d = (angle_t) SHORT(*((short*)(src)));
             break;
 
         default:
@@ -1861,7 +1948,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
         {
         case DDVT_LINE_PTR:
             {
-            line_t** d = dest;
+            line_t** d = dst;
             if(idx >= 0 && idx < map->numlines)
                 *d = &map->lines[idx];
             else
@@ -1871,7 +1958,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
 
         case DDVT_SECT_PTR:
             {
-            sector_t** d = dest;
+            sector_t** d = dst;
             if(idx >= 0 && idx < map->numsectors)
                 *d = &map->sectors[idx];
             else
@@ -1881,7 +1968,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
 
         case DDVT_VERT_PTR:
             {
-            vertex_t** d = dest;
+            vertex_t** d = dst;
 
             // If GL NODES are available this might be an "extra" vertex.
             if(glNodeData)
@@ -1924,387 +2011,442 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
 }
 
-static void ReadMapProperty(gamemap_t* map, int dataType, unsigned int element,
+static int ReadCustomMapProperty(gamemap_t* map, int dataType, void *ptr,
+                                 const datatype_t* prop, const byte *buffer)
+{
+    void*   dest;
+    int     idx;
+
+    byte    tmpbyte = 0;
+    short   tmpshort = 0;
+    fixed_t tmpfixed = 0;
+    int     tmpint = 0;
+    float   tmpfloat = 0;
+
+    switch(dataType)
+    {
+    case DAM_THING:
+        idx = *(int*) ptr;
+        break;
+    case DAM_LINE:
+        idx = ((line_t*) ptr) - map->lines;
+        break;
+    case DAM_SIDE:
+        idx = ((side_t*) ptr) - map->sides;
+        break;
+    case DAM_SECTOR:
+        idx = ((sector_t*) ptr) - map->sectors;
+        break;
+    default:
+        Con_Error("ReadCustomMapProperty: Type does not support custom properties\n");
+    }
+
+    switch(prop->size)
+    {
+    case DDVT_BYTE:
+        dest = &tmpbyte;
+        break;
+    case DDVT_SHORT:
+        dest = &tmpshort;
+        break;
+    case DDVT_FIXED:
+        dest = &tmpfixed;
+        break;
+    case DDVT_INT:
+        dest = &tmpint;
+        break;
+    case DDVT_FLOAT:
+        dest = &tmpfloat;
+        break;
+    default:
+        Con_Error("ReadCustomMapProperty: Unsupported data type id %i.\n", prop->size);
+    };
+
+    ReadValue(map, prop->size, dest, buffer + prop->offset, prop, idx);
+
+    gx.HandleMapDataProperty(idx, dataType, prop->property, prop->size, dest);
+
+    return true;
+}
+
+static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
                             const datatype_t* prop, const byte *buffer)
 {
-    valuetype_t destType;
-    void*   dest;
-
     // Handle unknown (game specific) properties.
     if(prop->gameprop)
-    {
-        byte    tmpbyte = 0;
-        short   tmpshort = 0;
-        fixed_t tmpfixed = 0;
-        int     tmpint = 0;
-        float   tmpfloat = 0;
+        return ReadCustomMapProperty(map, dataType, ptr, prop, buffer);
 
-        switch(prop->size)
+    // These are the exported map data properties that can be
+    // assigned to when reading map data.
+    switch(dataType)
+    {
+    case DAM_VERTEX:
         {
-        case DDVT_BYTE:
-            dest = &tmpbyte;
+        vertex_t* p = ptr;
+        int     idx = p - map->vertexes;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_X:
+            ReadValue(map, destType, &p->x, buffer + prop->offset, prop, idx);
             break;
-        case DDVT_SHORT:
-            dest = &tmpshort;
+
+        case DAM_Y:
+            ReadValue(map, destType, &p->y, buffer + prop->offset, prop, idx);
             break;
-        case DDVT_FIXED:
-            dest = &tmpfixed;
-            break;
-        case DDVT_INT:
-            dest = &tmpint;
-            break;
-        case DDVT_FLOAT:
-            dest = &tmpfloat;
-            break;
+
         default:
-            Con_Error("ReadMapProperty: Unsupported data type id %i.\n", prop->size);
-        };
-
-        ReadValue(map, dest, prop->size, buffer + prop->offset, prop, element);
-
-        gx.HandleMapDataProperty(element, dataType, prop->property, prop->size, dest);
-    }
-    else
-    {
-        // These are the exported map data properties that can be
-        // assigned to when reading map data.
-        switch(dataType)
+            Con_Error("ReadMapProperty: DAM_VERTEX has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    case DAM_LINE:  // Lines are read into an interim format
         {
-        case DAM_VERTEX:
-            {
-            vertex_t *p = &map->vertexes[element];
-            switch(prop->property)
-            {
-            case DAM_X:
-                dest = &p->x;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_Y:
-                dest = &p->y;
-                destType = DDVT_FIXED;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_VERTEX has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
+        line_t* p = ptr;
+        int     idx = p - map->lines;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_VERTEX1:
+            ReadValue(map, destType, &p->v1, buffer + prop->offset, prop, idx);
             break;
-            }
 
-        case DAM_LINE:  // Lines are read into an interim format
-            {
-            line_t *p = &map->lines[element];
-            switch(prop->property)
-            {
-            case DAM_VERTEX1:
-                dest = &p->v1;
-                destType = DDVT_VERT_PTR;
-                break;
-
-            case DAM_VERTEX2:
-                dest = &p->v2;
-                destType = DDVT_VERT_PTR;
-                break;
-
-            case DAM_FLAGS:
-                dest = &p->flags;
-                destType = DDVT_INT;
-                break;
-
-            case DAM_SIDE0:
-                dest = &p->sidenum[0];
-                destType = DDVT_INT;
-                break;
-
-            case DAM_SIDE1:
-                dest = &p->sidenum[1];
-                destType = DDVT_INT;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_LINE has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
+        case DAM_VERTEX2:
+            ReadValue(map, destType, &p->v2, buffer + prop->offset, prop, idx);
             break;
-            }
+
+        case DAM_FLAGS:
+            ReadValue(map, destType, &p->flags, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_SIDE0:
+            ReadValue(map, destType, &p->sidenum[0], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_SIDE1:
+            ReadValue(map, destType, &p->sidenum[1], buffer + prop->offset, prop, idx);
+            break;
+
+        default:
+            Con_Error("ReadMapProperty: DAM_LINE has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    case DAM_SIDE:
+        {
+        side_t* p = ptr;
+        int     idx = p - map->sides;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_TEXTURE_OFFSET_X:
+            ReadValue(map, destType, &p->textureoffset, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_TEXTURE_OFFSET_Y:
+            ReadValue(map, destType, &p->rowoffset, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_TOP_TEXTURE:
+            ReadValue(map, destType, &p->toptexture, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_MIDDLE_TEXTURE:
+            ReadValue(map, destType, &p->midtexture, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BOTTOM_TEXTURE:
+            ReadValue(map, destType, &p->bottomtexture, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_FRONT_SECTOR:
+            ReadValue(map, destType, &p->sector, buffer + prop->offset, prop, idx);
+            break;
+
+        default:
+            Con_Error("ReadMapProperty: DAM_SIDE has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    case DAM_SECTOR:
+        {
+        sector_t* p = ptr;
+        int     idx = p - map->sectors;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_FLOOR_HEIGHT:
+            ReadValue(map, destType, &p->floorheight, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_CEILING_HEIGHT:
+            ReadValue(map, destType, &p->ceilingheight, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_FLOOR_TEXTURE:
+            ReadValue(map, destType, &p->floorpic, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_CEILING_TEXTURE:
+            ReadValue(map, destType, &p->ceilingpic, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_LIGHT_LEVEL:
+            ReadValue(map, destType, &p->lightlevel, buffer + prop->offset, prop, idx);
+            break;
+
+        default:
+            Con_Error("ReadMapProperty: DAM_SECTOR has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    case DAM_SEG:
+        {
+        seg_t* p = ptr;
+        int     idx = p - map->segs;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_VERTEX1:
+            ReadValue(map, destType, &p->v1, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_VERTEX2:
+            ReadValue(map, destType, &p->v2, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_ANGLE:
+            ReadValue(map, destType, &p->angle, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_LINE:
+            // KLUDGE: Set the data tpye implicitly as DAM_LINE is DDVT_PTR
+            ReadValue(map, DDVT_LINE_PTR, &p->linedef, buffer + prop->offset, prop, idx);
+            break;
 
         case DAM_SIDE:
-            {
-            side_t *p = &map->sides[element];
-            switch(prop->property)
-            {
-            case DAM_TEXTURE_OFFSET_X:
-                dest = &p->textureoffset;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_TEXTURE_OFFSET_Y:
-                dest = &p->rowoffset;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_TOP_TEXTURE:
-                dest = &p->toptexture;
-                destType = DDVT_FLAT_INDEX;
-                break;
-
-            case DAM_MIDDLE_TEXTURE:
-                dest = &p->midtexture;
-                destType = DDVT_FLAT_INDEX;
-                break;
-
-            case DAM_BOTTOM_TEXTURE:
-                dest = &p->bottomtexture;
-                destType = DDVT_FLAT_INDEX;
-                break;
-
-            case DAM_FRONT_SECTOR:
-                dest = &p->sector;
-                destType = DDVT_SECT_PTR;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_SIDE has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
+            // KLUDGE: Store the side id into the flags field
+            ReadValue(map, DDVT_BYTE, &p->flags, buffer + prop->offset, prop, idx);
             break;
-            }
 
-        case DAM_SECTOR:
-            {
-            sector_t *p = &map->sectors[element];
-            switch(prop->property)
-            {
-            case DAM_FLOOR_HEIGHT:
-                dest = &p->floorheight;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_CEILING_HEIGHT:
-                dest = &p->ceilingheight;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_FLOOR_TEXTURE:
-                dest = &p->floorpic;
-                destType = DDVT_FLAT_INDEX;
-                break;
-
-            case DAM_CEILING_TEXTURE:
-                dest = &p->ceilingpic;
-                destType = DDVT_FLAT_INDEX;
-                break;
-
-            case DAM_LIGHT_LEVEL:
-                dest = &p->lightlevel;
-                destType = DDVT_SHORT;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_SECTOR has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
+        case DAM_OFFSET:
+            ReadValue(map, destType, &p->offset, buffer + prop->offset, prop, idx);
             break;
-            }
 
-        case DAM_SEG:
-            {
-            seg_t *p = &map->segs[element];
-            switch(prop->property)
-            {
-            case DAM_VERTEX1:
-                dest = &p->v1;
-                destType = DDVT_VERT_PTR;
-                break;
-
-            case DAM_VERTEX2:
-                dest = &p->v2;
-                destType = DDVT_VERT_PTR;
-                break;
-
-            case DAM_ANGLE:
-                dest = &p->angle;
-                destType = DDVT_ANGLE;
-                break;
-
-            case DAM_LINE:
-                dest = &p->linedef;
-                destType = DDVT_LINE_PTR;
-                break;
-
-            case DAM_SIDE:
-                // KLUDGE:
-                // Store the side id into the flags field
-                dest = &p->flags;
-                destType = DDVT_BYTE;
-                break;
-
-            case DAM_OFFSET:
-                dest = &p->offset;
-                destType = DDVT_FIXED;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_SEG has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
-            break;
-            }
-
-        case DAM_SUBSECTOR:
-            {
-            subsector_t *p = &map->subsectors[element];
-            switch(prop->property)
-            {
-            case DAM_LINE_COUNT:
-                dest = &p->linecount;
-                destType = DDVT_INT;
-                break;
-
-            case DAM_LINE_FIRST:
-                dest = &p->firstline;
-                destType = DDVT_INT;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_SUBSECTOR has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
-            break;
-            }
-
-        case DAM_NODE:
-            {
-            node_t *p = &map->nodes[element];
-            switch(prop->property)
-            {
-            case DAM_X:
-                dest = &p->x;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_Y:
-                dest = &p->y;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_DX:
-                dest = &p->dx;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_DY:
-                dest = &p->dy;
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_RIGHT_TOP_Y:
-                dest = &p->bbox[0][0];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_RIGHT_LOW_Y:
-                dest = &p->bbox[0][1];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_RIGHT_LOW_X:
-                dest = &p->bbox[0][2];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_RIGHT_TOP_X:
-                dest = &p->bbox[0][3];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_LEFT_TOP_Y:
-                dest = &p->bbox[1][0];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_LEFT_LOW_Y:
-                dest = &p->bbox[1][1];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_LEFT_LOW_X:
-                dest = &p->bbox[1][2];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_BBOX_LEFT_TOP_X:
-                dest = &p->bbox[1][3];
-                destType = DDVT_FIXED;
-                break;
-
-            case DAM_CHILD_RIGHT:
-                dest = &p->children[0];
-                destType = DDVT_INT;
-                break;
-
-            case DAM_CHILD_LEFT:
-                dest = &p->children[1];
-                destType = DDVT_INT;
-                break;
-
-            default:
-                Con_Error("ReadMapProperty: DAM_NODE has no property %s.\n",
-                          DAM_Str(prop->property));
-            }
-
-            ReadValue(map, dest, destType, buffer + prop->offset, prop, element);
-            break;
-            }
         default:
-            Con_Error("ReadMapProperty: Type cannot be assigned to from a map format.\n");
+            Con_Error("ReadMapProperty: DAM_SEG has no property %s.\n",
+                      DAM_Str(prop->property));
         }
+        break;
+        }
+    case DAM_SUBSECTOR:
+        {
+        subsector_t* p = ptr;
+        int     idx = p - map->subsectors;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_LINE_COUNT:
+            ReadValue(map, destType, &p->linecount, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_LINE_FIRST:
+            ReadValue(map, destType, &p->firstline, buffer + prop->offset, prop, idx);
+            break;
+
+        default:
+            Con_Error("ReadMapProperty: DAM_SUBSECTOR has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    case DAM_NODE:
+        {
+        node_t* p = ptr;
+        int     idx = p - map->nodes;
+        valuetype_t destType = DAMpropertyTypes[prop->property];
+        switch(prop->property)
+        {
+        case DAM_X:
+            ReadValue(map, destType, &p->x, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_Y:
+            ReadValue(map, destType, &p->y, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_DX:
+            ReadValue(map, destType, &p->dx, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_DY:
+            ReadValue(map, destType, &p->dy, buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_RIGHT_TOP_Y:
+            ReadValue(map, destType, &p->bbox[0][0], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_RIGHT_LOW_Y:
+            ReadValue(map, destType, &p->bbox[0][1], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_RIGHT_LOW_X:
+            ReadValue(map, destType, &p->bbox[0][2], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_RIGHT_TOP_X:
+            ReadValue(map, destType, &p->bbox[0][3], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_LEFT_TOP_Y:
+            ReadValue(map, destType, &p->bbox[1][0], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_LEFT_LOW_Y:
+            ReadValue(map, destType, &p->bbox[1][1], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_LEFT_LOW_X:
+            ReadValue(map, destType, &p->bbox[1][2], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_BBOX_LEFT_TOP_X:
+            ReadValue(map, destType, &p->bbox[1][3], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_CHILD_RIGHT:
+            ReadValue(map, destType, &p->children[0], buffer + prop->offset, prop, idx);
+            break;
+
+        case DAM_CHILD_LEFT:
+            ReadValue(map, destType, &p->children[1], buffer + prop->offset, prop, idx);
+            break;
+
+        default:
+            Con_Error("ReadMapProperty: DAM_NODE has no property %s.\n",
+                      DAM_Str(prop->property));
+        }
+        break;
+        }
+    default:
+        Con_Error("ReadMapProperty: Type cannot be assigned to from a map format.\n");
     }
+
+    return true; // Continue itteration
 }
 
 /*
- * Not very pretty to look at but it IS pretty quick :-)
+ * Make multiple calls to a callback function on a selection of archived
+ * map data objects.
+ *
+ * This function is essentially the same as P_Callback in p_dmu.c but with
+ * the following key differences:
+ *
+ *  1  Multiple callbacks can be made for each object.
+ *  2  Any number of properties (of different types) per object
+ *     can be manipulated. To accomplish the same result using
+ *     P_Callback would require numorous rounds of itteration.
+ *  3  Optimised for bulk processing.
+ *
+ * Returns true if all the calls to the callback function return true. False
+ * is returned when the callback function returns false; in this case, the
+ * iteration is aborted immediately when the callback function returns false.
+ *
+ * NOTE: Not very pretty to look at but it IS pretty quick :-)
  */
-static void P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startIndex, int dataType, const byte *buffer,
-                                size_t elmSize, unsigned int elements, unsigned int numValues,
-                                const datatype_t *types)
+int P_CallbackEX(int dataType, int index, unsigned int startIndex,
+                 const byte *buffer, void* context,
+                 int (*callback)(gamemap_t* map, int dataType, void* ptr,
+                                 const datatype_t* prop, const byte *buffer))
 {
+#define GETOBJECT(t, id) if(t == DAM_LINE) \
+            ptr = &map->lines[id]; \
+        else if(t == DAM_SIDE) \
+            ptr = &map->sides[id]; \
+        else if(t == DAM_VERTEX) \
+            ptr = &map->vertexes[id]; \
+        else if(t == DAM_SEG) \
+            ptr = &map->segs[id]; \
+        else if(t == DAM_SUBSECTOR) \
+            ptr = &map->subsectors[id]; \
+        else if(t == DAM_NODE) \
+            ptr = &map->nodes[id]; \
+        else if(t == DAM_SECTOR) \
+            ptr = &map->sectors[id]; \
+        else \
+            ptr = &idx;
+
 #define NUMBLOCKS 8
-#define BLOCK for(k = numValues, mytypes = types; k--; ++mytypes) \
-              { \
-                  ReadMapProperty(map, dataType, idx, mytypes, buffer); \
-              } \
-              buffer += elmSize; \
-              ++idx;
+#define BLOCK GETOBJECT(dataType, idx); \
+        for(k = args->numvalues, myTypes = args->types; k--; ++myTypes) \
+        { \
+          if(!callback(map, dataType, ptr, myTypes, buffer)) \
+            return false; \
+        } \
+        buffer += args->elmsize; \
+        ++idx;
 
-    unsigned int     i = 0, k;
-    unsigned int     blocklimit = (elements / NUMBLOCKS) * NUMBLOCKS;
+    int              objectCount;
     unsigned int     idx;
-    const datatype_t* mytypes;
+    unsigned int     i = 0, k;
+    damargs_t*       args = (damargs_t*) context;
+    gamemap_t*       map = args->map;
+    unsigned int     blockLimit = (args->elements / NUMBLOCKS) * NUMBLOCKS;
+    void*            ptr;
+    const datatype_t* myTypes;
 
-    // Are we processing every element in the buffer?
-    if(index == DAM_ALL)
+    // Is it a known type?
+    switch(dataType)
+    {
+    case DAM_THING:
+        objectCount = map->numthings;
+        break;
+    case DAM_LINE:
+        objectCount = map->numlines;
+        break;
+    case DAM_SIDE:
+        objectCount = map->numsides;
+        break;
+    case DAM_VERTEX:
+        objectCount = map->numvertexes;
+        break;
+    case DAM_SEG:
+        objectCount = map->numsegs;
+        break;
+    case DAM_SUBSECTOR:
+        objectCount = map->numsubsectors;
+        break;
+    case DAM_NODE:
+        objectCount = map->numnodes;
+        break;
+    case DAM_SECTOR:
+        objectCount = map->numsectors;
+        break;
+
+    default:
+        Con_Error("P_CallbackEX: Type %s unknown.\n", DMU_Str(dataType));
+    }
+
+    // Just one object to process?
+    if(index >= 0 && index < objectCount)
+    {
+        GETOBJECT(dataType, index);
+        for(k = args->numvalues, myTypes = args->types; k--; ++myTypes)
+            if(!callback(map, dataType, ptr, myTypes, buffer)) return false;
+    }
+    else // No we have a batch to do.
     {
         // Have we got enough to do some in blocks?
-        if(elements >= blocklimit)
+        if(args->elements >= blockLimit)
         {
-            while(i < blocklimit)
+            idx = startIndex + i;
+            while(i < blockLimit)
             {
-                idx = startIndex + i;
-
                 BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK
 
                 i += NUMBLOCKS;
@@ -2312,11 +2454,11 @@ static void P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startInd
         }
 
         // Have we got any left to do?
-        if(i < elements)
+        if(i < args->elements)
         {
-            // Yes, jump into the switch at the number of elements remaining
+            // Yes, jump in at the number of elements remaining
             idx = startIndex + i;
-            switch(elements - i)
+            switch(args->elements - i)
             {
             case 7: BLOCK
             case 6: BLOCK
@@ -2325,16 +2467,14 @@ static void P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startInd
             case 3: BLOCK
             case 2: BLOCK
             case 1:
-                for(k = numValues, mytypes = types; k--; ++mytypes)
-                    ReadMapProperty(map, dataType, idx, mytypes, buffer);
+                GETOBJECT(dataType, idx);
+                for(k = args->numvalues, myTypes = args->types; k--; ++myTypes)
+                    if(!callback(map, dataType, ptr, myTypes, buffer)) return false;
             }
         }
     }
-    else // No, just one element.
-    {
-        for(k = numValues, mytypes = types; k--; ++mytypes)
-            ReadMapProperty(map, dataType, index, mytypes, buffer);
-    }
+
+    return true;
 }
 
 /*
