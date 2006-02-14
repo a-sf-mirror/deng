@@ -229,6 +229,7 @@ const valuetype_t propertyTypes[] = {
     DDVT_NONE,        // DMU_THINGS
     DDVT_FIXED,       // DMU_BOUNDING_BOX
     DDVT_PTR,         // DMU_SOUND_ORIGIN
+    DDVT_FLOAT,       // DMU_SOUND_REVERB
 
     DDVT_FIXED,       // DMU_FLOOR_HEIGHT
     DDVT_FLAT_INDEX,  // DMU_FLOOR_TEXTURE
@@ -244,6 +245,7 @@ const valuetype_t propertyTypes[] = {
     DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_X
     DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_Y
     DDVT_INT,         // DMU_FLOOR_TEXTURE_MOVE_XY
+    DDVT_PTR,         // DMU_FLOOR_SOUND_ORIGIN
 
     DDVT_FIXED,       // DMU_CEILING_HEIGHT
     DDVT_FLAT_INDEX,  // DMU_CEILING_TEXTURE
@@ -259,6 +261,7 @@ const valuetype_t propertyTypes[] = {
     DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_X
     DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_Y
     DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_XY
+    DDVT_PTR,         // DMU_CEILING_SOUND_ORIGIN
 
     DDVT_NONE,        // DMU_SEG_LIST
     DDVT_INT,         // DMU_SEG_COUNT
