@@ -64,7 +64,9 @@
 
 // Common map format properties
 enum {
-    DAM_UNKNOWN = -1,
+    DAM_UNKNOWN = -2,
+
+    DAM_ALL = -1,
     DAM_NONE,
 
     // Object/Data types
@@ -308,16 +310,6 @@ typedef struct {
 } glnode4_t;        // (gl node ver 4)
 */
 
-// temporary formats
-typedef struct {
-    int           v1;
-    int           v2;
-    int           angle;
-    int           linedef;
-    int           side;
-    int           offset;
-} mapseg_t;
-
 typedef struct gamemap_s {
     int      numvertexes;
     vertex_t *vertexes;
@@ -368,7 +360,7 @@ float AccurateDistance(fixed_t dx, fixed_t dy);
 static boolean  ReadMapData(gamemap_t* map, int doClass);
 static boolean  DetermineMapDataFormat(void);
 
-static void     P_ReadBinaryMapData(gamemap_t* map, unsigned int startIndex, int dataType, const byte *buffer,
+static void     P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmsize, unsigned int elements,
                                 unsigned int values, const datatype_t *types);
 
@@ -453,8 +445,6 @@ static int numMapDataLumps;
 
 static glbuildinfo_t *glBuilderInfo;
 
-static mapseg_t *segstemp;
-
 static gamemap_t* currentMap;
 
 // CODE --------------------------------------------------------------------
@@ -471,6 +461,7 @@ const char* DAM_Str(int prop)
     } props[] =
     {
         { DAM_UNKNOWN, "(unknown)" },
+        { DAM_ALL, "DAM_ALL" },
         { 0, "(invalid)" },
         { DAM_THING, "DAM_THING" },
         { DAM_VERTEX, "DAM_VERTEX" },
@@ -1525,23 +1516,15 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                 break;
 
             case DAM_SEG:
-                // Segs are read into a temporary buffer before processing
                 oldNum = map->numsegs;
                 newNum = map->numsegs+= elements;
 
                 if(oldNum != 0)
-                {
                     map->segs = Z_Realloc(map->segs, map->numsegs * sizeof(seg_t), PU_LEVEL);
-                    segstemp = Z_Realloc(segstemp, map->numsegs * sizeof(mapseg_t), PU_STATIC);
-                }
                 else
-                {
                     map->segs = Z_Malloc(map->numsegs * sizeof(seg_t), PU_LEVEL, 0);
-                    segstemp = Z_Malloc(map->numsegs * sizeof(mapseg_t), PU_STATIC, 0);
-                }
 
                 memset(&map->segs[oldNum], 0, elements * sizeof(seg_t));
-                memset(&segstemp[oldNum], 0, elements * sizeof(mapseg_t));
                 break;
 
             case DAM_SUBSECTOR:
@@ -1549,7 +1532,7 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                 newNum = map->numsubsectors+= elements;
 
                 if(oldNum != 0)
-                    map->subsectors = Z_Realloc(map->subsectors, map->numsubsectors * sizeof(subsector_t), PU_LEVEL);
+                    map->subsectors = Z_Realloc(map->subsectors, map->numsubsectors * sizeof(subsector_t),PU_LEVEL);
                 else
                     map->subsectors = Z_Malloc(map->numsubsectors * sizeof(subsector_t), PU_LEVEL, 0);
 
@@ -1602,7 +1585,7 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
             }
             else
             {
-                P_ReadBinaryMapData(map, oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
+                P_ReadBinaryMapData(map, DAM_ALL, oldNum, internalType, (mapLump->lumpp + mapLump->startOffset),
                                     lumpFormat->elmSize, elements, lumpFormat->numValues, dataTypes);
 
                 // Perform any additional processing required (temporary)
@@ -1816,7 +1799,24 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
             Con_Error("ReadValue: DDVT_INT incompatible with value type.\n");
         }
     }
-    else if(valueType == DDVT_SECT_PTR || valueType == DDVT_VERT_PTR)
+    else if(valueType == DDVT_ANGLE)
+    {
+        angle_t* d = dest;
+        switch(prop->size) // Number of src bytes
+        {
+        case 2:
+            if(flags & DT_FRACBITS)
+                *d = (angle_t*) SHORT(*((short*)(src))) << FRACBITS;
+            else
+                *d = (angle_t*) SHORT(*((short*)(src)));
+            break;
+
+        default:
+            Con_Error("ReadValue: DDVT_ANGLE incompatible with value type.\n");
+        }
+    }
+    else if(valueType == DDVT_SECT_PTR || valueType == DDVT_VERT_PTR ||
+            valueType == DDVT_LINE_PTR)
     {
         int idx = NO_INDEX;
 
@@ -1851,11 +1851,24 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_SECT_PTR incompatible with value type.\n");
+            Con_Error("ReadValue: %s incompatible with value type.\n",
+                      valueType == DDVT_SECT_PTR? "DDVT_SECT_PTR" :
+                      valueType == DDVT_VERT_PTR? "DDVT_VERT_PTR" :
+                      "DDVT_LINE_PTR");
         }
 
         switch(valueType)
         {
+        case DDVT_LINE_PTR:
+            {
+            line_t** d = dest;
+            if(idx >= 0 && idx < map->numlines)
+                *d = &map->lines[idx];
+            else
+                *d = NULL;
+            break;
+            }
+
         case DDVT_SECT_PTR:
             {
             sector_t** d = dest;
@@ -1869,6 +1882,34 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
         case DDVT_VERT_PTR:
             {
             vertex_t** d = dest;
+
+            // If GL NODES are available this might be an "extra" vertex.
+            if(glNodeData)
+            {
+            switch(glNodeFormats[glNodeFormat].verInfo[mapLumpInfo[LCG_SEGS].glLump].version)
+            {
+            case 2:
+                if(idx & 0x8000)
+                {
+                    idx &= ~0x8000;
+                    idx += firstGLvertex;
+                }
+                break;
+
+            case 3:
+            case 5:
+                if(idx & 0xc0000000)
+                {
+                    idx &= ~0xc0000000;
+                    idx += firstGLvertex;
+                }
+                break;
+
+            default:
+                break;
+            }
+            }
+
             if(idx >= 0 && idx < map->numvertexes)
                 *d = &map->vertexes[idx];
             else
@@ -1879,7 +1920,7 @@ static void ReadValue(gamemap_t* map, void* dest, valuetype_t valueType,
     }
     else
     {
-        Con_Error("ReadValue: unknown value type %s.\n", DMU_Str(valueType));
+        Con_Error("ReadValue: unknown value type %d.\n", valueType);
     }
 }
 
@@ -2075,39 +2116,41 @@ static void ReadMapProperty(gamemap_t* map, int dataType, unsigned int element,
             break;
             }
 
-        case DAM_SEG:  // Segs are read into an interim format
+        case DAM_SEG:
             {
-            mapseg_t *p = &segstemp[element];
+            seg_t *p = &map->segs[element];
             switch(prop->property)
             {
             case DAM_VERTEX1:
                 dest = &p->v1;
-                destType = DDVT_INT;
+                destType = DDVT_VERT_PTR;
                 break;
 
             case DAM_VERTEX2:
                 dest = &p->v2;
-                destType = DDVT_INT;
+                destType = DDVT_VERT_PTR;
                 break;
 
             case DAM_ANGLE:
                 dest = &p->angle;
-                destType = DDVT_INT;
+                destType = DDVT_ANGLE;
                 break;
 
             case DAM_LINE:
                 dest = &p->linedef;
-                destType = DDVT_INT;
+                destType = DDVT_LINE_PTR;
                 break;
 
             case DAM_SIDE:
-                dest = &p->side;
-                destType = DDVT_INT;
+                // KLUDGE:
+                // Store the side id into the flags field
+                dest = &p->flags;
+                destType = DDVT_BYTE;
                 break;
 
             case DAM_OFFSET:
                 dest = &p->offset;
-                destType = DDVT_INT;
+                destType = DDVT_FIXED;
                 break;
 
             default:
@@ -2235,58 +2278,68 @@ static void ReadMapProperty(gamemap_t* map, int dataType, unsigned int element,
 /*
  * Not very pretty to look at but it IS pretty quick :-)
  */
-static void P_ReadBinaryMapData(gamemap_t* map, unsigned int startIndex, int dataType, const byte *buffer,
+static void P_ReadBinaryMapData(gamemap_t* map, int index, unsigned int startIndex, int dataType, const byte *buffer,
                                 size_t elmSize, unsigned int elements, unsigned int numValues,
                                 const datatype_t *types)
 {
 #define NUMBLOCKS 8
 #define BLOCK for(k = numValues, mytypes = types; k--; ++mytypes) \
               { \
-                  ReadMapProperty(map, dataType, index, mytypes, buffer); \
+                  ReadMapProperty(map, dataType, idx, mytypes, buffer); \
               } \
               buffer += elmSize; \
-              ++index;
+              ++idx;
 
     unsigned int     i = 0, k;
     unsigned int     blocklimit = (elements / NUMBLOCKS) * NUMBLOCKS;
-    unsigned int     index;
+    unsigned int     idx;
     const datatype_t* mytypes;
 
-    // Have we got enough to do some in blocks?
-    if(elements >= blocklimit)
+    // Are we processing every element in the buffer?
+    if(index == DAM_ALL)
     {
-        while(i < blocklimit)
+        // Have we got enough to do some in blocks?
+        if(elements >= blocklimit)
         {
-            index = startIndex + i;
+            while(i < blocklimit)
+            {
+                idx = startIndex + i;
 
-            BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK
+                BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK BLOCK
 
-            i += NUMBLOCKS;
+                i += NUMBLOCKS;
+            }
+        }
+
+        // Have we got any left to do?
+        if(i < elements)
+        {
+            // Yes, jump into the switch at the number of elements remaining
+            idx = startIndex + i;
+            switch(elements - i)
+            {
+            case 7: BLOCK
+            case 6: BLOCK
+            case 5: BLOCK
+            case 4: BLOCK
+            case 3: BLOCK
+            case 2: BLOCK
+            case 1:
+                for(k = numValues, mytypes = types; k--; ++mytypes)
+                    ReadMapProperty(map, dataType, idx, mytypes, buffer);
+            }
         }
     }
-
-    // Have we got any left to do?
-    if(i < elements)
+    else // No, just one element.
     {
-        // Yes, jump into the switch at the number of elements remaining
-        index = startIndex + i;
-        switch(elements - i)
-        {
-        case 7: BLOCK
-        case 6: BLOCK
-        case 5: BLOCK
-        case 4: BLOCK
-        case 3: BLOCK
-        case 2: BLOCK
-        case 1:
-            for(k = numValues, mytypes = types; k--; ++mytypes)
-                ReadMapProperty(map, dataType, index, mytypes, buffer);
-        }
+        for(k = numValues, mytypes = types; k--; ++mytypes)
+            ReadMapProperty(map, dataType, index, mytypes, buffer);
     }
 }
 
 /*
- * Converts the temporary seg data into "real" segs.
+ * Finalizes the segs by linking the various side & sector ptrs
+ * and calculating the length of each segment.
  * If angle and offset information is not provided they are
  * calculated here.
  */
@@ -2295,71 +2348,33 @@ static void P_ProcessSegs(gamemap_t* map, int version)
     int     i;
     seg_t  *seg;
     line_t *ldef;
-    mapseg_t *ml;
+    int     side;
 
-    ml = segstemp;
-
-    for(i = 0; i < map->numsegs; ++i, ++ml)
+    for(i = 0; i < map->numsegs; ++i)
     {
         seg = &map->segs[i];
 
-        // Which version?
-        switch(version)
-        {
-        case 1:  // (mapseg_t)
-            seg->v1 = &map->vertexes[ml->v1];
-            seg->v2 = &map->vertexes[ml->v2];
-            break;
-
-        case 2:  // (glseg_t)
-            seg->v1 =
-                &map->vertexes[ml->v1 & 0x8000 ?
-                          firstGLvertex + (ml->v1 & ~0x8000) :
-                          ml->v1];
-            seg->v2 =
-                &map->vertexes[ml->v2 & 0x8000 ?
-                          firstGLvertex + (ml->v2 & ~0x8000) :
-                          ml->v2];
-            break;
-
-        case 3:
-        case 5:
-            seg->v1 =
-                &map->vertexes[ml->v1 & 0xc0000000 ?
-                          firstGLvertex + (ml->v1 & ~0xc0000000) :
-                          ml->v1];
-            seg->v2 =
-                &map->vertexes[ml->v2 & 0xc0000000 ?
-                          firstGLvertex + (ml->v2 & ~0xc0000000) :
-                          ml->v2];
-            break;
-
-        default:
-            Con_Error("P_ProcessSegs: Error. Unsupported Seg format.");
-            break;
-        }
-
-        if(ml->angle != 0)
-            seg->angle = ml->angle;
-        else
+        if(seg->angle == 0)
             seg->angle = -1;
 
-        if(ml->offset != 0)
-            seg->offset = ml->offset;
-        else
+        if(seg->offset == 0)
             seg->offset = -1;
 
-        if(ml->linedef != NO_INDEX)
+        // Kludge: The flags member is used as a temporary holder
+        // for the side value.
+        side = seg->flags;
+        seg->flags = 0;
+
+        if(seg->linedef)
         {
-            ldef = &map->lines[ml->linedef];
-            seg->linedef = ldef;
-            seg->sidedef = &map->sides[ldef->sidenum[ml->side]];
-            seg->frontsector = map->sides[ldef->sidenum[ml->side]].sector;
+            ldef = seg->linedef;
+            seg->sidedef = &map->sides[ldef->sidenum[side]];
+            seg->frontsector = map->sides[ldef->sidenum[side]].sector;
 
             if(ldef->flags & ML_TWOSIDED &&
-               ldef->sidenum[ml->side ^ 1] != NO_INDEX)
+               ldef->sidenum[side ^ 1] != NO_INDEX)
             {
-                seg->backsector = map->sides[ldef->sidenum[ml->side ^ 1]].sector;
+                seg->backsector = map->sides[ldef->sidenum[side ^ 1]].sector;
             }
             else
             {
@@ -2369,7 +2384,7 @@ static void P_ProcessSegs(gamemap_t* map, int version)
 
             if(seg->offset == -1)
             {
-                if(ml->side == 0)
+                if(side == 0)
                     seg->offset =
                         FRACUNIT * AccurateDistance(seg->v1->x - ldef->v1->x,
                                                     seg->v1->y - ldef->v1->y);
@@ -2397,12 +2412,10 @@ static void P_ProcessSegs(gamemap_t* map, int version)
         // the texture coordinates. -jk
         seg->length =
             AccurateDistance(seg->v2->x - seg->v1->x, seg->v2->y - seg->v1->y);
+
         if(version == 0 && seg->length == 0)
             seg->length = 0.01f; // Hmm...
     }
-
-    // We're done with the temporary data
-    Z_Free(segstemp);
 }
 
 /*
@@ -2521,7 +2534,7 @@ static void P_FinishLineDefs(gamemap_t* map)
 static void P_ReadSideDefTextures(gamemap_t* map, int lump)
 {
     byte   *data;
-    int     i, index;
+    int     i;
     mapsidedef_t *msd;
     side_t *sd;
 
@@ -2557,7 +2570,7 @@ static void P_GroupLines(gamemap_t* map)
     int     block;
     int     i, k;
     int     secid;
-    unsigned long     j;
+    int     j;
 
     line_t **linebuffer;
     line_t **linebptr;
