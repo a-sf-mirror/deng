@@ -2068,7 +2068,8 @@ void C_DECL A_SpawnTeleGlitter(mobj_t *actor)
 
     mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
                      actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
-                     P_GetFixedp(actor->subsector, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(actor->subsector,
+                                 DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER);
 
     mo->momz = FRACUNIT / 4;
@@ -2080,7 +2081,8 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t *actor)
 
     mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
                      actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
-                     P_GetFixedp(actor->subsector, DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(actor->subsector,
+                                 DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER2);
 
     mo->momz = FRACUNIT / 4;

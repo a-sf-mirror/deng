@@ -181,9 +181,9 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
     //
-    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(newsubsec, DMU_CEILING_HEIGHT);
-    tmfloorpic = P_GetFixedp(newsubsec, DMU_FLOOR_TEXTURE);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    tmfloorpic = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE);
 
     Validcount++;
     numspechit = 0;
@@ -823,9 +823,9 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
     //
-    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(newsubsec, DMU_CEILING_HEIGHT);
-    tmfloorpic = P_GetFixedp(newsubsec, DMU_FLOOR_TEXTURE);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    tmfloorpic = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE);
 
     Validcount++;
     numspechit = 0;
@@ -911,9 +911,9 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
     // the base floor / ceiling is from the subsector that contains the
     // point.  Any contacted lines the step closer together will adjust them
     //
-    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_FLOOR_HEIGHT);
-    tmceilingz = P_GetFixedp(newsubsec, DMU_CEILING_HEIGHT);
-    tmfloorpic = P_GetFixedp(newsubsec, DMU_FLOOR_TEXTURE);
+    tmfloorz = tmdropoffz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+    tmceilingz = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    tmfloorpic = P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE);
 
     Validcount++;
     numspechit = 0;
@@ -1074,7 +1074,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
         }
         else if(BlockingMobj->z + BlockingMobj->height - thing->z >
                 24 * FRACUNIT ||
-                (P_GetFixedp(BlockingMobj->subsector, DMU_CEILING_HEIGHT) -
+                (P_GetFixedp(BlockingMobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT) -
                  (BlockingMobj->z + BlockingMobj->height) < thing->height) ||
                 (tmceilingz - (BlockingMobj->z + BlockingMobj->height) <
                  thing->height))
@@ -1123,7 +1123,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
             return (false);
         }
         if(thing->flags2 & MF2_CANTLEAVEFLOORPIC &&
-           (tmfloorpic != P_GetIntp(thing->subsector, DMU_FLOOR_TEXTURE) ||
+           (tmfloorpic != P_GetIntp(thing->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE) ||
             tmfloorz - thing->z != 0))
         {                       // must stay within a sector of a certain floor type
             return false;
@@ -1147,7 +1147,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y)
 
     if(thing->flags2 & MF2_FLOORCLIP)
     {
-        if(thing->z == P_GetFixedp(thing->subsector, DMU_FLOOR_HEIGHT) &&
+        if(thing->z == P_GetFixedp(thing->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) &&
            P_GetThingFloorType(thing) >= FLOOR_LIQUID)
         {
             thing->floorclip = 10 * FRACUNIT;
@@ -1819,8 +1819,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
             stepz = FixedDiv(dz, step);
 
             // Backtrack until we find a non-empty sector.
-            while(P_GetFixedp(contact, DMU_CEILING_HEIGHT) <=
-                  P_GetFixedp(contact, DMU_FLOOR_HEIGHT) &&
+            while(P_GetFixedp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT) <=
+                  P_GetFixedp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) &&
                   contact != originSub)
             {
                 dx -= 8 * stepx;

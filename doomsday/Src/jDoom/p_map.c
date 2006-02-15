@@ -208,10 +208,10 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, boolean alwaysstomp)
     // Any contacted lines the step closer together
     // will adjust them.
     tmfloorz = tmdropoffz =
-        P_GetFixedp(newsubsec, DMU_FLOOR_HEIGHT);
+        P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
 
     tmceilingz =
-        P_GetFixedp(newsubsec, DMU_CEILING_HEIGHT);
+        P_GetFixedp(newsubsec, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
 
     validCount++;
     numspechit = 0;
@@ -1206,8 +1206,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
             stepy = FixedDiv(dy, step);
             stepz = FixedDiv(dz, step);
 
-            cfloor = P_GetFixedp(contact, DMU_FLOOR_HEIGHT);
-            cceil = P_GetFixedp(contact, DMU_CEILING_HEIGHT);
+            cfloor = P_GetFixedp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+            cceil = P_GetFixedp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
             // Backtrack until we find a non-empty sector.
             while(cceil <= cfloor && contact != originSub)
             {
@@ -1227,9 +1227,9 @@ boolean PTR_ShootTraverse(intercept_t * in)
 
             // We must not hit a sky plane.
             if((z > ctop &&
-                P_GetIntp(contact, DMU_CEILING_TEXTURE) == skyflatnum) ||
+                P_GetIntp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_TEXTURE) == skyflatnum) ||
                (z < cbottom &&
-                P_GetIntp(contact, DMU_FLOOR_TEXTURE) == skyflatnum))
+                P_GetIntp(contact, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE) == skyflatnum))
                 return false;
 
             // Find the approximate hitpoint by stepping back and

@@ -679,7 +679,7 @@ void P_XYMovement(mobj_t *mo)
            mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
         {
             if(mo->floorz != P_GetFixedp(mo->subsector,
-                                         DMU_FLOOR_HEIGHT))
+                                         DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
             {
                 return;
             }
@@ -943,7 +943,7 @@ void P_ZMovement(mobj_t *mo)
             {
                 return;
             }
-            if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) ==
+            if(P_GetIntp(mo->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_TEXTURE) ==
                skyflatnum)
             {
                 if(mo->type == MT_BLOODYSKULL)
@@ -1357,9 +1357,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     // Set subsector and/or block links.
     P_SetThingPosition(mobj);
-    mobj->floorz = P_GetIntp(mobj->subsector, DMU_FLOOR_HEIGHT);
+    mobj->floorz = P_GetIntp(mobj->subsector,
+                             DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
     mobj->ceilingz = P_GetIntp(mobj->subsector,
-                               DMU_CEILING_HEIGHT);
+                               DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
     if(z == ONFLOORZ)
     {
         mobj->z = mobj->floorz;
@@ -1392,7 +1393,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     }
     if(mobj->flags2 & MF2_FLOORCLIP &&
        P_GetThingFloorType(mobj) >= FLOOR_LIQUID &&
-       mobj->z == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
+       mobj->z == P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
     {
         mobj->floorclip = 10 * FRACUNIT;
     }
@@ -2067,7 +2068,7 @@ int P_GetThingFloorType(mobj_t *thing)
     else
     {
         return (TerrainTypes[P_GetIntp(thing->subsector,
-                                       DMU_FLOOR_TEXTURE)]);
+                                       DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE)]);
     }
 }
 
@@ -2084,7 +2085,7 @@ int P_HitFloor(mobj_t *thing)
     int     smallsplash = false;
 
     if(thing->floorz != P_GetFixedp(thing->subsector,
-                                    DMU_FLOOR_HEIGHT))
+                                    DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
     {                           // don't splash if landing on the edge above water/lava/etc....
         return (FLOOR_SOLID);
     }

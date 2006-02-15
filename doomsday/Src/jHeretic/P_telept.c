@@ -31,7 +31,7 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 {
     subsector_t *ss = R_PointInSubsector(x, y);
 
-    return P_SpawnMobj(x, y, P_GetFixedp(ss,DMU_FLOOR_HEIGHT) +
+    return P_SpawnMobj(x, y, P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) +
                              TELEFOGHEIGHT, MT_TFOG);
 }
 
