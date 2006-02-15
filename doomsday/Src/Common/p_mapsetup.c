@@ -382,25 +382,32 @@ static void P_FinalizeLevel(void)
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
+    {
+    int     k;
+    int     lumpnum = R_TextureNumForName("NUKE24");
+    int     bottomTex;
+    int     midTex;
+    fixed_t yoff;
+    side_t* side;
+    line_t* line;
+
     for(i = 0; i < numlines; i++)
     {
-        side_t* side;
-        int     lumpnum = R_TextureNumForName("NUKE24");
-        fixed_t yoff;
+        line = P_ToPtr(DMU_LINE, i);
+        for(k = 0; k < 2; k++)
+        {
+            if(P_GetPtrp(line, k == 0? DMU_FRONT_SECTOR : DMU_BACK_SECTOR))
+            {
+                side = P_GetPtrp(line, k == 0? DMU_SIDE0 : DMU_SIDE1);
+                yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
+                bottomTex = P_GetIntp(side, DMU_BOTTOM_TEXTURE);
+                midTex = P_GetIntp(side, DMU_MIDDLE_TEXTURE) ;
 
-        side = P_GetPtr(DMU_LINE, i, DMU_SIDE0);
-        yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
-
-        if(P_GetIntp(side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
-
-        side = P_GetPtr(DMU_LINE, i, DMU_SIDE1);
-        yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
-
-        if(P_GetIntp(side, DMU_BOTTOM_TEXTURE) == lumpnum &&
-           P_GetIntp(side, DMU_MIDDLE_TEXTURE) == 0)
-            P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
+                if(bottomTex == lumpnum && midTex == 0)
+                    P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);
+            }
+        }
+    }
     }
 
 #elif __JHERETIC__

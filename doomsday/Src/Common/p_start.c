@@ -299,7 +299,7 @@ boolean P_CheckSpot(int playernum, thing_t * mthing, boolean doTeleSpark)
 #if __JDOOM__ || __JHEXEN__ || __JSTRIFE__
         mo = P_SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
                          P_GetFixedp(R_PointInSubsector(x, y),
-                                     DMU_FLOOR_HEIGHT),
+                                     DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                          MT_TFOG);
 #else                           // __JHERETIC__
         mo = P_SpawnTeleFog(x + 20 * finecosine[an], y + 20 * finesine[an]);
