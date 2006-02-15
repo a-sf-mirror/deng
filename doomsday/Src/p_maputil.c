@@ -62,13 +62,17 @@ typedef struct {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+fixed_t opentop, openbottom, openrange;
+fixed_t lowfloor;
+
+divline_t trace;
+boolean earlyout;
+int     ptflags;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-//==========================================================================
-// P_AccurateDistance
-//==========================================================================
 float P_AccurateDistance(fixed_t dx, fixed_t dy)
 {
     float   fx = FIX2FLT(dx), fy = FIX2FLT(dy);
@@ -76,10 +80,9 @@ float P_AccurateDistance(fixed_t dx, fixed_t dy)
     return (float) sqrt(fx * fx + fy * fy);
 }
 
-//===========================================================================
-// P_ApproxDistance
-//  Gives an estimation of distance (not exact).
-//===========================================================================
+/*
+ * Gives an estimation of distance (not exact).
+ */
 fixed_t P_ApproxDistance(fixed_t dx, fixed_t dy)
 {
     dx = abs(dx);
@@ -87,21 +90,19 @@ fixed_t P_ApproxDistance(fixed_t dx, fixed_t dy)
     return dx + dy - ((dx < dy ? dx : dy) >> 1);
 }
 
-//===========================================================================
-// P_ApproxDistance3
-//  Gives an estimation of 3D distance (not exact).
-//  The Z axis aspect ratio is corrected.
-//===========================================================================
+/*
+ * Gives an estimation of 3D distance (not exact).
+ * The Z axis aspect ratio is corrected.
+ */
 fixed_t P_ApproxDistance3(fixed_t dx, fixed_t dy, fixed_t dz)
 {
     return P_ApproxDistance(P_ApproxDistance(dx, dy),
                             FixedMul(dz, 1.2f * FRACUNIT));
 }
 
-//===========================================================================
-// P_LineUnitVector
-//  Returns a two-component float unit vector parallel to the line.
-//===========================================================================
+/*
+ * Returns a two-component float unit vector parallel to the line.
+ */
 void P_LineUnitVector(line_t *line, float *unitvec)
 {
     float   dx = FIX2FLT(line->dx), dy = FIX2FLT(line->dy);
@@ -118,11 +119,10 @@ void P_LineUnitVector(line_t *line, float *unitvec)
     }
 }
 
-//===========================================================================
-// P_MobjPointDistancef
-//  Either end or fixpoint must be specified. The distance is measured
-//  (approximately) in 3D. Start must always be specified.
-//===========================================================================
+/*
+ * Either end or fixpoint must be specified. The distance is measured
+ * (approximately) in 3D. Start must always be specified.
+ */
 float P_MobjPointDistancef(mobj_t *start, mobj_t *end, float *fixpoint)
 {
     if(!start)
@@ -149,11 +149,10 @@ float P_MobjPointDistancef(mobj_t *start, mobj_t *end, float *fixpoint)
     return 0;
 }
 
-//==========================================================================
-// P_FloatPointOnLineSide
-//  Determines on which side of dline the point is. Returns true if the
-//  point is on the line or on the right side.
-//==========================================================================
+/*
+ * Determines on which side of dline the point is. Returns true if the
+ * point is on the line or on the right side.
+ */
 #ifdef WIN32
 #  pragma optimize("g", off)
 #endif
@@ -173,10 +172,9 @@ int P_FloatPointOnLineSide(fvertex_t * pnt, fdivline_t * dline)
             (dline->x - pnt->x) * dline->dy >= 0);
 }
 
-//==========================================================================
-// P_FloatInterceptVertex
-//  Lines start, end and fdiv must intersect.
-//==========================================================================
+/*
+ * Lines start, end and fdiv must intersect.
+ */
 float P_FloatInterceptVertex(fvertex_t * start, fvertex_t * end,
                              fdivline_t * fdiv, fvertex_t * inter)
 {
@@ -201,16 +199,14 @@ float P_FloatInterceptVertex(fvertex_t * start, fvertex_t * end,
     inter->y = ay + r * (by - ay);
     return r;
 }
-
 #ifdef WIN32
 #  pragma optimize("", on)
 #endif
 
-//===========================================================================
-// P_SectorBoundingBox
-//  (0,1) = top left; (2,3) = bottom right
-//  Assumes sectors are always closed.
-//===========================================================================
+/*
+ * (0,1) = top left; (2,3) = bottom right
+ * Assumes sectors are always closed.
+ */
 void P_SectorBoundingBox(sector_t *sec, float *bbox)
 {
     float   x, y;
@@ -238,15 +234,8 @@ void P_SectorBoundingBox(sector_t *sec, float *bbox)
 }
 
 /*
-   ==================
-   =
-   = P_PointOnLineSide
-   =
-   = Reformatted
-   = Returns 0 or 1
-   ==================
+ * Returns 0 or 1
  */
-
 int P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 {
     return !line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy <
@@ -257,16 +246,10 @@ int P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 }
 
 /*
-   =================
-   =
-   = P_BoxOnLineSide
-   =
-   = Considers the line to be infinite
-   = Reformatted
-   = Returns side 0 or 1, -1 if box crosses the line
-   =================
+ * Considers the line to be infinite
+ * Reformatted
+ * Returns side 0 or 1, -1 if box crosses the line
  */
-
 int P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
 {
     switch (ld->slopetype)
@@ -301,15 +284,8 @@ int P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
 }
 
 /*
-   ==================
-   =
-   = P_PointOnDivlineSide
-   =
-   = Reformatted
-   = Returns 0 or 1
-   ==================
+ * Returns 0 or 1
  */
-
 int P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t * line)
 {
     return !line->dx ? x <= line->x ? line->dy > 0 : line->dy <
@@ -320,14 +296,6 @@ int P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t * line)
         FixedMul(line->dy >> 8, x >> 8);
 }
 
-/*
-   ==============
-   =
-   = P_MakeDivline
-   =
-   ==============
- */
-
 void P_MakeDivline(line_t *li, divline_t * dl)
 {
     dl->x = li->v1->x;
@@ -337,17 +305,10 @@ void P_MakeDivline(line_t *li, divline_t * dl)
 }
 
 /*
-   ===============
-   =
-   = P_InterceptVector
-   =
-   = Returns the fractional intercept point along the first divline
-   =
-   = Reformatted
-   = This is only called by the addthings and addlines traversers
-   ===============
+ * Returns the fractional intercept point along the first divline
+ *
+ * This is only called by the addthings and addlines traversers
  */
-
 fixed_t P_InterceptVector(divline_t * v2, divline_t * v1)
 {
     fixed_t den =
@@ -358,18 +319,9 @@ fixed_t P_InterceptVector(divline_t * v2, divline_t * v1)
 }
 
 /*
-   ==================
-   =
-   = P_LineOpening
-   =
-   = Sets opentop and openbottom to the window through a two sided line
-   = OPTIMIZE: keep this precalculated
-   ==================
+ * Sets opentop and openbottom to the window through a two sided line
+ * OPTIMIZE: keep this precalculated
  */
-
-fixed_t opentop, openbottom, openrange;
-fixed_t lowfloor;
-
 void P_LineOpening(line_t *linedef)
 {
     sector_t *front, *back;
@@ -402,28 +354,18 @@ void P_LineOpening(line_t *linedef)
 }
 
 /*
-   ===============================================================================
-
-   THING POSITION SETTING
-
-   ===============================================================================
+ * The index is not checked.
  */
-
-//===========================================================================
-// P_GetBlockRootIdx
-//  The index is not checked.
-//===========================================================================
 mobj_t *P_GetBlockRootIdx(int index)
 {
     return (mobj_t *) (blockrings + index);
 }
 
-//==========================================================================
-// P_GetBlockRoot
-//  Returns a pointer to the root linkmobj_t of the given mobj. If such
-//  a block does not exist, NULL is returned. This routine is exported
-//  for use in Games.
-//==========================================================================
+/*
+ * Returns a pointer to the root linkmobj_t of the given mobj. If such
+ * a block does not exist, NULL is returned. This routine is exported
+ * for use in Games.
+ */
 mobj_t *P_GetBlockRoot(int blockx, int blocky)
 {
     // We must be in the block map range.
@@ -434,28 +376,25 @@ mobj_t *P_GetBlockRoot(int blockx, int blocky)
     return (mobj_t *) (blockrings + (blocky * bmapwidth + blockx));
 }
 
-//===========================================================================
-// P_GetBlockRootXY
-//  Same as P_GetBlockRoot, but takes world coordinates as parameters.
-//===========================================================================
+/*
+ * Same as P_GetBlockRoot, but takes world coordinates as parameters.
+ */
 mobj_t *P_GetBlockRootXY(int x, int y)
 {
     return P_GetBlockRoot((x - bmaporgx) >> MAPBLOCKSHIFT,
                           (y - bmaporgy) >> MAPBLOCKSHIFT);
 }
 
-//===========================================================================
-// P_UnlinkFromSector
-//  Only call if it is certain the thing is linked to a sector!
-//===========================================================================
+/*
+ * Only call if it is certain the thing is linked to a sector!
+ * Two links to update:
+ * 1) The link to us from the previous node (sprev, always set) will
+ *    be modified to point to the node following us.
+ * 2) If there is a node following us, set its sprev pointer to point
+ *    to the pointer that points back to it (our sprev, just modified).
+ */
 void P_UnlinkFromSector(mobj_t *thing)
 {
-    // Two links to update:
-    // 1) The link to us from the previous node (sprev, always set) will
-    //    be modified to point to the node following us.
-    // 2) If there is a node following us, set its sprev pointer to point
-    //    to the pointer that points back to it (our sprev, just modified).
-
     if((*thing->sprev = thing->snext))
         thing->snext->sprev = thing->sprev;
 
@@ -464,10 +403,9 @@ void P_UnlinkFromSector(mobj_t *thing)
     thing->sprev = NULL;
 }
 
-//===========================================================================
-// P_UnlinkFromBlock
-//  Only call if it is certain that the thing is linked to a block!
-//===========================================================================
+/*
+ * Only call if it is certain that the thing is linked to a block!
+ */
 void P_UnlinkFromBlock(mobj_t *thing)
 {
     (thing->bnext->bprev = thing->bprev)->bnext = thing->bnext;
@@ -475,11 +413,10 @@ void P_UnlinkFromBlock(mobj_t *thing)
     thing->bnext = thing->bprev = NULL;
 }
 
-//===========================================================================
-// P_UnlinkFromLines
-//  Unlinks the thing from all the lines it's been linked to. Can be called
-//  without checking that the list does indeed contain lines.
-//===========================================================================
+/*
+ * Unlinks the thing from all the lines it's been linked to. Can be called
+ * without checking that the list does indeed contain lines.
+ */
 void P_UnlinkFromLines(mobj_t *thing)
 {
     linknode_t *tn = thingnodes.nodes;
@@ -506,10 +443,9 @@ void P_UnlinkFromLines(mobj_t *thing)
     thing->lineroot = 0;
 }
 
-//==========================================================================
-// P_UnlinkThing
-//  Unlinks a thing from everything it has been linked to.
-//==========================================================================
+/*
+ * Unlinks a thing from everything it has been linked to.
+ */
 void P_UnlinkThing(mobj_t *thing)
 {
     if(IS_SECTOR_LINKED(thing))
@@ -519,11 +455,10 @@ void P_UnlinkThing(mobj_t *thing)
     P_UnlinkFromLines(thing);
 }
 
-//===========================================================================
-// PIT_LinkToLines
-//  The given line might cross the thing. If necessary, link the mobj
-//  into the line's ring.
-//===========================================================================
+/*
+ * The given line might cross the thing. If necessary, link the mobj
+ * into the line's ring.
+ */
 boolean PIT_LinkToLines(line_t *ld, void *parm)
 {
     linelinker_data_t *data = parm;
@@ -564,10 +499,9 @@ boolean PIT_LinkToLines(line_t *ld, void *parm)
     return true;
 }
 
-//===========================================================================
-// P_LinkToLines
-//  The thing must be currently unlinked.
-//===========================================================================
+/*
+ * The thing must be currently unlinked.
+ */
 void P_LinkToLines(mobj_t *thing)
 {
     int     xl, yl, xh, yh, bx, by;
@@ -594,12 +528,11 @@ void P_LinkToLines(mobj_t *thing)
             P_BlockLinesIterator(bx, by, PIT_LinkToLines, &data);
 }
 
-//==========================================================================
-// P_LinkThing
-//  Links a thing into both a block and a subsector based on it's (x,y).
-//  Sets thing->subsector properly. Calling with flags==0 only updates
-//  the subsector pointer. Can be called without unlinking first.
-//==========================================================================
+/*
+ * Links a thing into both a block and a subsector based on it's (x,y).
+ * Sets thing->subsector properly. Calling with flags==0 only updates
+ * the subsector pointer. Can be called without unlinking first.
+ */
 void P_LinkThing(mobj_t *thing, byte flags)
 {
     sector_t *sec;
@@ -652,10 +585,9 @@ void P_LinkThing(mobj_t *thing, byte flags)
     }
 }
 
-//===========================================================================
-// P_BlockThingsIterator
-//  'func' can do whatever it pleases to the mobjs.
-//===========================================================================
+/*
+ * 'func' can do whatever it pleases to the mobjs.
+ */
 boolean P_BlockThingsIterator(int x, int y, boolean (*func) (mobj_t *, void *),
                               void *data)
 {
@@ -671,11 +603,10 @@ boolean P_BlockThingsIterator(int x, int y, boolean (*func) (mobj_t *, void *),
     return true;
 }
 
-//===========================================================================
-// P_ThingLinesIterator
-//  The callback function will be called once for each line that crosses
-//  trough the object. This means all the lines will be two-sided.
-//===========================================================================
+/*
+ * The callback function will be called once for each line that crosses
+ * trough the object. This means all the lines will be two-sided.
+ */
 boolean P_ThingLinesIterator(mobj_t *thing, boolean (*func) (line_t *, void *),
                              void *data)
 {
@@ -692,13 +623,12 @@ boolean P_ThingLinesIterator(mobj_t *thing, boolean (*func) (line_t *, void *),
     return true;
 }
 
-//===========================================================================
-// P_ThingSectorsIterator
-//  Increment validcount before calling this routine. The callback function
-//  will be called once for each sector the thing is touching
-//  (totally or partly inside). This is not a 3D check; the thing may
-//  actually reside above or under the sector.
-//===========================================================================
+/*
+ * Increment validcount before calling this routine. The callback function
+ * will be called once for each sector the thing is touching
+ * (totally or partly inside). This is not a 3D check; the thing may
+ * actually reside above or under the sector.
+ */
 boolean P_ThingSectorsIterator(mobj_t *thing,
                                boolean (*func) (sector_t *, void *),
                                void *data)
@@ -740,9 +670,6 @@ boolean P_ThingSectorsIterator(mobj_t *thing,
     return true;
 }
 
-//===========================================================================
-// P_LineThingsIterator
-//===========================================================================
 boolean P_LineThingsIterator(line_t *line, boolean (*func) (mobj_t *, void *),
                              void *data)
 {
@@ -756,15 +683,14 @@ boolean P_LineThingsIterator(line_t *line, boolean (*func) (mobj_t *, void *),
     return true;
 }
 
-//===========================================================================
-// P_SectorTouchingThingsIterator
-//  Increment validcount before using this. 'func' is called for each mobj
-//  that is (even partly) inside the sector. This is not a 3D test, the
-//  mobjs may actually be above or under the sector.
-//
-//  (Lovely name; actually this is a combination of SectorThings and
-//  a bunch of LineThings iterations.)
-//===========================================================================
+/*
+ * Increment validcount before using this. 'func' is called for each mobj
+ * that is (even partly) inside the sector. This is not a 3D test, the
+ * mobjs may actually be above or under the sector.
+ *
+ * (Lovely name; actually this is a combination of SectorThings and
+ * a bunch of LineThings iterations.)
+ */
 boolean P_SectorTouchingThingsIterator(sector_t *sector,
                                        boolean (*func) (mobj_t *, void *),
                                        void *data)
@@ -804,31 +730,11 @@ boolean P_SectorTouchingThingsIterator(sector_t *sector,
 }
 
 /*
-   ===============================================================================
-
-   INTERCEPT ROUTINES
-
-   ===============================================================================
+ * Looks for lines in the given block that intercept the given trace
+ * to add to the intercepts list
+ * A line is crossed if its endpoints are on opposite sides of the trace
+ * Returns true if earlyout and a solid line hit
  */
-
-//intercept_t       intercepts[MAXINTERCEPTS], *intercept_p;
-
-divline_t trace;
-boolean earlyout;
-int     ptflags;
-
-/*
-   ==================
-   =
-   = PIT_AddLineIntercepts
-   =
-   = Looks for lines in the given block that intercept the given trace
-   = to add to the intercepts list
-   = A line is crossed if its endpoints are on opposite sides of the trace
-   = Returns true if earlyout and a solid line hit
-   ==================
- */
-
 boolean PIT_AddLineIntercepts(line_t *ld, void *data)
 {
     int     s1, s2;
@@ -862,22 +768,10 @@ boolean PIT_AddLineIntercepts(line_t *ld, void *data)
     if(earlyout && frac < FRACUNIT && !ld->backsector)
         return false;           // stop checking
 
-    /*  intercept_p->frac = frac;
-       intercept_p->isaline = true;
-       intercept_p->d.line = ld;
-       intercept_p++; */
     P_AddIntercept(frac, true, ld);
 
     return true;                // continue
 }
-
-/*
-   ==================
-   =
-   = PIT_AddThingIntercepts
-   =
-   ==================
- */
 
 boolean PIT_AddThingIntercepts(mobj_t *thing, void *data)
 {
@@ -893,7 +787,6 @@ boolean PIT_AddThingIntercepts(mobj_t *thing, void *data)
     tracepositive = (trace.dx ^ trace.dy) > 0;
 
     // check a corner to corner crossection for hit
-
     if(tracepositive)
     {
         x1 = thing->x - thing->radius;
@@ -910,6 +803,7 @@ boolean PIT_AddThingIntercepts(mobj_t *thing, void *data)
         x2 = thing->x + thing->radius;
         y2 = thing->y + thing->radius;
     }
+
     s1 = P_PointOnDivlineSide(x1, y1, &trace);
     s2 = P_PointOnDivlineSide(x2, y2, &trace);
     if(s1 == s2)
@@ -919,28 +813,20 @@ boolean PIT_AddThingIntercepts(mobj_t *thing, void *data)
     dl.y = y1;
     dl.dx = x2 - x1;
     dl.dy = y2 - y1;
+
     frac = P_InterceptVector(&trace, &dl);
     if(frac < 0)
         return true;            // behind source
-    /*  intercept_p->frac = frac;
-       intercept_p->isaline = false;
-       intercept_p->d.thing = thing;
-       intercept_p++; */
+
     P_AddIntercept(frac, false, thing);
 
     return true;                // keep going
 }
 
 /*
-   ==================
-   =
-   = P_PathTraverse
-   =
-   = Traces a line from x1,y1 to x2,y2, calling the traverser function for each
-   = Returns true if the traverser function returns true for all lines
-   ==================
+ * Traces a line from x1,y1 to x2,y2, calling the traverser function for each
+ * Returns true if the traverser function returns true for all lines
  */
-
 boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
                        int flags, boolean (*trav) (intercept_t *))
 {
@@ -1057,11 +943,8 @@ boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
     return P_TraverseIntercepts(trav, FRACUNIT);
 }
 
-//===========================================================================
-// P_PointToBlock
-//===========================================================================
 void P_PointToBlock(fixed_t x, fixed_t y, int *bx, int *by)
 {
-   	*bx = (x - bmaporgx) >> MAPBLOCKSHIFT;
-	*by = (y - bmaporgy) >> MAPBLOCKSHIFT;
+    *bx = (x - bmaporgx) >> MAPBLOCKSHIFT;
+    *by = (y - bmaporgy) >> MAPBLOCKSHIFT;
 }
