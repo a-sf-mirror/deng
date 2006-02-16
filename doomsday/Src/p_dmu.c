@@ -540,7 +540,7 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
                 if(!callback(SECTOR_PTR(i), context)) return false;
         }
         break;
-        
+
     case DMU_POLYOBJ:
         if(index >= 0 && index < po_NumPolyobjs)
         {
@@ -552,7 +552,7 @@ int P_Callback(int type, int index, void* context, int (*callback)(void* p, void
                 if(!callback(PO_PTR(i), context)) return false;
         }
         break;
-        
+
     case DMU_LINE_BY_TAG:
     case DMU_SECTOR_BY_TAG:
     case DMU_LINE_BY_ACT_TAG:
@@ -594,6 +594,13 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
         {
             return callback(ptr, context);
         }
+#if _DEBUG
+        else
+        {
+            Con_Message("P_Callbackp: Type mismatch %s != %s\n",
+                        DMU_Str(type), DMU_Str(DMU_GetType(ptr)));
+        }
+#endif
         break;
 
     // TODO: If necessary, add special types for accessing multiple objects.
@@ -1224,7 +1231,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
     }
     else
     {
-        Con_Error("GetValue: unknown value type %s.\n", DMU_Str(valueType));
+        Con_Error("GetValue: unknown value type %d.\n", valueType);
     }
 }
 
@@ -1300,6 +1307,84 @@ static int GetProperty(void* ptr, void* context)
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
                       DMU_Str(args->prop));
+        }
+        return false; // stop iteration
+    }
+
+    if(args->type == DMU_SIDE ||
+       (args->type == DMU_LINE &&
+        ((args->modifiers & DMU_SIDE0_OF_LINE) ||
+         (args->modifiers & DMU_SIDE1_OF_LINE))))
+    {
+        side_t* p = NULL;
+        valuetype_t type = propertyTypes[args->prop];
+        if(args->type == DMU_SIDE)
+            p = ptr;
+        else if(args->type == DMU_LINE)
+        {
+            line_t* line = (line_t*)ptr;
+            if(args->modifiers & DMU_SIDE0_OF_LINE)
+                p = SIDE_PTR(line->sidenum[0]);
+            else
+            {
+                if(line->sidenum[1] == NO_INDEX)
+                    Con_Error("GetProperty: Line %d does not have a back side.\n",
+                              GET_LINE_IDX(line));
+
+                p = SIDE_PTR(line->sidenum[1]);
+            }
+        }
+        else
+            Con_Error("GetProperty: Invalid args.\n");
+
+        switch(args->prop)
+        {
+        case DMU_SECTOR:
+            GetValue(type, &p->sector, args, 0);
+            break;
+        case DMU_TEXTURE_OFFSET_X:
+            GetValue(type, &p->textureoffset, args, 0);
+            break;
+        case DMU_TEXTURE_OFFSET_Y:
+            GetValue(type, &p->rowoffset, args, 0);
+            break;
+        case DMU_TEXTURE_OFFSET_XY:
+            GetValue(type, &p->textureoffset, args, 0);
+            GetValue(type, &p->rowoffset, args, 1);
+            break;
+        case DMU_TOP_TEXTURE:
+            GetValue(type, &p->toptexture, args, 0);
+            break;
+        case DMU_TOP_COLOR:
+            GetValue(type, &p->toprgb[0], args, 0);
+            GetValue(type, &p->toprgb[1], args, 1);
+            GetValue(type, &p->toprgb[2], args, 2);
+            break;
+        case DMU_MIDDLE_TEXTURE:
+            GetValue(type, &p->midtexture, args, 0);
+            break;
+        case DMU_MIDDLE_COLOR:
+            GetValue(type, &p->midrgba[0], args, 0);
+            GetValue(type, &p->midrgba[1], args, 1);
+            GetValue(type, &p->midrgba[2], args, 2);
+            GetValue(type, &p->midrgba[3], args, 3);
+            break;
+        case DMU_MIDDLE_BLENDMODE:
+            GetValue(type, &p->blendmode, args, 0);
+            break;
+        case DMU_BOTTOM_TEXTURE:
+            GetValue(type, &p->bottomtexture, args, 0);
+            break;
+        case DMU_BOTTOM_COLOR:
+            GetValue(type, &p->bottomrgb[0], args, 0);
+            GetValue(type, &p->bottomrgb[1], args, 1);
+            GetValue(type, &p->bottomrgb[2], args, 2);
+            break;
+        case DMU_FLAGS:
+            GetValue(type, &p->flags, args, 0);
+            break;
+        default:
+            Con_Error("GetProperty: DMU_SIDE has no property %s.\n", DMU_Str(args->prop));
         }
         return false; // stop iteration
     }
@@ -1416,62 +1501,6 @@ static int GetProperty(void* ptr, void* context)
         break;
         }
 
-    case DMU_SIDE:
-        {
-        side_t* p = ptr;
-        valuetype_t type = propertyTypes[args->prop];
-        switch(args->prop)
-        {
-        case DMU_SECTOR:
-            GetValue(type, &p->sector, args, 0);
-            break;
-        case DMU_TEXTURE_OFFSET_X:
-            GetValue(type, &p->textureoffset, args, 0);
-            break;
-        case DMU_TEXTURE_OFFSET_Y:
-            GetValue(type, &p->rowoffset, args, 0);
-            break;
-        case DMU_TEXTURE_OFFSET_XY:
-            GetValue(type, &p->textureoffset, args, 0);
-            GetValue(type, &p->rowoffset, args, 1);
-            break;
-        case DMU_TOP_TEXTURE:
-            GetValue(type, &p->toptexture, args, 0);
-            break;
-        case DMU_TOP_COLOR:
-            GetValue(type, &p->toprgb[0], args, 0);
-            GetValue(type, &p->toprgb[1], args, 1);
-            GetValue(type, &p->toprgb[2], args, 2);
-            break;
-        case DMU_MIDDLE_TEXTURE:
-            GetValue(type, &p->midtexture, args, 0);
-            break;
-        case DMU_MIDDLE_COLOR:
-            GetValue(type, &p->midrgba[0], args, 0);
-            GetValue(type, &p->midrgba[1], args, 1);
-            GetValue(type, &p->midrgba[2], args, 2);
-            GetValue(type, &p->midrgba[3], args, 3);
-            break;
-        case DMU_MIDDLE_BLENDMODE:
-            GetValue(type, &p->blendmode, args, 0);
-            break;
-        case DMU_BOTTOM_TEXTURE:
-            GetValue(type, &p->bottomtexture, args, 0);
-            break;
-        case DMU_BOTTOM_COLOR:
-            GetValue(type, &p->bottomrgb[0], args, 0);
-            GetValue(type, &p->bottomrgb[1], args, 1);
-            GetValue(type, &p->bottomrgb[2], args, 2);
-            break;
-        case DMU_FLAGS:
-            GetValue(type, &p->flags, args, 0);
-            break;
-        default:
-            Con_Error("GetProperty: DMU_SIDE has no property %s.\n", DMU_Str(args->prop));
-        }
-        break;
-        }
-
     case DMU_SUBSECTOR:
     {
         subsector_t* p = ptr;
@@ -1502,7 +1531,7 @@ static int GetProperty(void* ptr, void* context)
         }
         break;
     }
-        
+
     case DMU_POLYOBJ:
     {
         polyobj_t* p = ptr;
