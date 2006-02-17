@@ -311,7 +311,6 @@ const char* value_Str(int val)
         const char* str;
     } valuetypes[] =
     {
-        { DMU_ALL, "DMU_ALL" },
         { DDVT_BOOL, "DDVT_BOOL" },
         { DDVT_BYTE, "DDVT_BYTE" },
         { DDVT_SHORT, "DDVT_SHORT" },
