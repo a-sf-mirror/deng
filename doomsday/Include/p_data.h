@@ -262,7 +262,7 @@ void            P_PolyobjChanged(polyobj_t *po);
 void            P_FloorChanged(sector_t *sector);
 void            P_CeilingChanged(sector_t *sector);
 void            P_Init(void);
-
+const char*     value_Str(int val);
 int             P_CheckTexture(char *name, boolean planeTex, int dataType,
                                unsigned int element, int property);
 

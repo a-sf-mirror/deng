@@ -1734,7 +1734,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             *d = *src;
             break;
         default:
-            Con_Error("ReadValue: DDVT_BYTE incompatible with value type\n");
+            Con_Error("ReadValue: DDVT_BYTE incompatible with value type %s\n",
+                      value_Str(prop->size));
         }
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
@@ -1774,7 +1775,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
             }
          default:
-            Con_Error("ReadValue: DDVT_SHORT incompatible with value type.\n");
+            Con_Error("ReadValue: DDVT_SHORT incompatible with value type %s.\n",
+                      value_Str(prop->size));
          }
     }
     else if(valueType == DDVT_FIXED)
@@ -1808,7 +1810,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_FIXED incompatible with value type.\n");
+            Con_Error("ReadValue: DDVT_FIXED incompatible with value type %s.\n",
+                      value_Str(prop->size));
         }
     }
     else if(valueType == DDVT_ULONG)
@@ -1842,7 +1845,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_ULONG incompatible with value type.\n");
+            Con_Error("ReadValue: DDVT_ULONG incompatible with value type %s.\n",
+                      value_Str(prop->size));
         }
     }
     else if(valueType == DDVT_INT)
@@ -1888,7 +1892,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_INT incompatible with value type.\n");
+            Con_Error("ReadValue: DDVT_INT incompatible with value type %s.\n",
+                      value_Str(prop->size));
         }
     }
     else if(valueType == DDVT_ANGLE)
@@ -1904,7 +1909,8 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
 
         default:
-            Con_Error("ReadValue: DDVT_ANGLE incompatible with value type.\n");
+            Con_Error("ReadValue: DDVT_ANGLE incompatible with value type %s.\n",
+                      value_Str(prop->size));
         }
     }
     else if(valueType == DDVT_SECT_PTR || valueType == DDVT_VERT_PTR ||
@@ -1943,10 +1949,10 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             break;
 
         default:
-            Con_Error("ReadValue: %s incompatible with value type.\n",
+            Con_Error("ReadValue: %s incompatible with value type %s.\n",
                       valueType == DDVT_SECT_PTR? "DDVT_SECT_PTR" :
                       valueType == DDVT_VERT_PTR? "DDVT_VERT_PTR" :
-                      "DDVT_LINE_PTR");
+                      "DDVT_LINE_PTR", value_Str(prop->size));
         }
 
         switch(valueType)
