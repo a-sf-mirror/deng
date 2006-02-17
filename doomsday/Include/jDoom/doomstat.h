@@ -42,6 +42,8 @@
 // ------------------------
 // Command line parameters.
 //
+extern int     verbose;
+
 extern boolean  nomonsters;        // checkparm of -nomonsters
 extern boolean  respawnparm;       // checkparm of -respawn
 extern boolean  fastparm;          // checkparm of -fast

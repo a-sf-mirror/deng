@@ -650,6 +650,12 @@ extern boolean  deathmatch;        // only if started as net death
 
 extern boolean  netcheat;          // allow cheating during netgames
 
+// Verbose messages.
+extern int     verbose;
+
+#define VERBOSE(code)   { if(verbose >= 1) { code; } }
+#define VERBOSE2(code)  { if(verbose >= 2) { code; } }
+
 
 #define IS_NETGAME   Get(DD_NETGAME)
 

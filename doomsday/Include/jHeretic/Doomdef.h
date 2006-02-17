@@ -45,6 +45,10 @@
 #define DATAPATH      "}Data\\"GAMENAMETEXT"\\"
 #define STARTUPWAD    "}Data\\"GAMENAMETEXT"\\"GAMENAMETEXT".wad"
 
+// Verbose messages.
+#define VERBOSE(code)   { if(verbose >= 1) { code; } }
+#define VERBOSE2(code)  { if(verbose >= 2) { code; } }
+
 extern game_import_t gi;
 extern game_export_t gx;
 

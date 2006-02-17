@@ -56,6 +56,10 @@ extern game_export_t gx;
 #define states      (*gi.states)
 #define validCount  (*gi.validcount)
 
+// Verbose messages.
+#define VERBOSE(code)   { if(verbose >= 1) { code; } }
+#define VERBOSE2(code)  { if(verbose >= 2) { code; } }
+
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
 typedef enum {
