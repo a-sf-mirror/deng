@@ -1678,10 +1678,15 @@ void R_UpdatePlanes(void)
                 GL_GetFlatColor(sec->floorpic, sec->floorglowrgb);
 
                 // Do we need to update the plane glow flags?
-                if(!(R_FlatFlags(sin->oldfloorpic) & TXF_GLOW))
-                    setFloorGlow = 1; // Turn the subsector plane glow flags on
+                if(sin->oldfloorpic)
+                {
+                    if(!(R_FlatFlags(sin->oldfloorpic) & TXF_GLOW))
+                        setFloorGlow = 1; // Turn the subsector plane glow flags on
+                }
+                else
+                    setFloorGlow = 1;
             }
-            else if(R_FlatFlags(sin->oldfloorpic) & TXF_GLOW)
+            else if(sin->oldfloorpic && (R_FlatFlags(sin->oldfloorpic) & TXF_GLOW))
             {
                 // The old texture was glowing but the new one is not.
                 // Clear the glow properties for this plane.
@@ -1704,14 +1709,14 @@ void R_UpdatePlanes(void)
             // gameplay (the RENDER_GLOWFLATS text string is depreciated and
             // the only time this property might change is after a console
             // RESET) so it doesn't matter.
-            if(sec->floorglow)
+            if(!(R_FlatFlags(sec->floorpic) & TXF_GLOW) && sec->floorglow != 0)
             {
                 // The current flat is no longer glowing
                 sec->floorglow = 0;
                 memset(sec->floorglowrgb, 0, 3);
                 setFloorGlow = -1; // Turn the subsector plane glow flags off
             }
-            else
+            else if((R_FlatFlags(sec->floorpic) & TXF_GLOW) && sec->floorglow == 0)
             {
                 // The current flat is now glowing
                 sec->floorglow = 1;
@@ -1728,10 +1733,16 @@ void R_UpdatePlanes(void)
             {
                 sec->ceilingglow = 1;
                 GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
-                if(!(R_FlatFlags(sin->oldceilingpic) & TXF_GLOW))
+
+                if(sin->oldceilingpic)
+                {
+                    if(!(R_FlatFlags(sin->oldceilingpic) & TXF_GLOW))
+                        setCeilingGlow = 1;
+                }
+                else
                     setCeilingGlow = 1;
             }
-            else
+            else if(sin->oldceilingpic && (R_FlatFlags(sin->oldceilingpic) & TXF_GLOW))
             {
                 sec->ceilingglow = 0;
                 memset(sec->ceilingglowrgb, 0, 3);
@@ -1741,13 +1752,13 @@ void R_UpdatePlanes(void)
         }
         else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) != (sec->ceilingglow != 0))
         {
-            if(sec->ceilingglow)
+            if(!(R_FlatFlags(sec->ceilingpic) & TXF_GLOW) && sec->ceilingglow != 0)
             {
                 sec->ceilingglow = 0;
                 memset(sec->ceilingglowrgb, 0, 3);
                 setCeilingGlow = -1;
             }
-            else
+            else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) && sec->ceilingglow == 0)
             {
                 sec->ceilingglow = 1;
                 GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
