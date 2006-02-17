@@ -1238,6 +1238,10 @@ static void FinalizeMapData(gamemap_t* map)
         memset(sec->rgb, 0xff, 3);
         memset(sec->floorrgb, 0xff, 3);
         memset(sec->ceilingrgb, 0xff, 3);
+        memset(sec->floorglowrgb, 0xff, 3);
+        memset(sec->ceilingglowrgb, 0xff, 3);
+        sec->floorglow = 0;
+        sec->ceilingglow = 0;
     }
 
     for(i = 0; i < map->po_NumPolyobjs; ++i)
