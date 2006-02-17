@@ -637,7 +637,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_FIXED incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_FLOAT)
@@ -660,7 +660,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_FLOAT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BOOL)
@@ -674,7 +674,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_BOOL incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BYTE)
@@ -697,7 +697,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_BYTE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_INT)
@@ -723,7 +723,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_INT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
@@ -749,7 +749,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_SHORT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_ANGLE)
@@ -763,7 +763,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_ANGLE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BLENDMODE)
@@ -781,7 +781,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_BLENDMODE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_PTR)
@@ -795,7 +795,7 @@ static void SetValue(valuetype_t valueType, void* dst, setargs_t* args, int inde
             break;
         default:
             Con_Error("SetValue: DDVT_PTR incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else
@@ -1066,7 +1066,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_FIXED incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_FLOAT)
@@ -1089,7 +1089,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_FLOAT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BOOL)
@@ -1103,7 +1103,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_BOOL incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BYTE)
@@ -1126,7 +1126,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_BYTE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_INT)
@@ -1152,7 +1152,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_INT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_SHORT || valueType == DDVT_FLAT_INDEX)
@@ -1179,7 +1179,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_SHORT incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_ANGLE)
@@ -1193,7 +1193,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_ANGLE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_BLENDMODE)
@@ -1207,7 +1207,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_BLENDMODE incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else if(valueType == DDVT_PTR)
@@ -1226,7 +1226,7 @@ static void GetValue(valuetype_t valueType, const void* src, setargs_t* args, in
             break;
         default:
             Con_Error("GetValue: DDVT_PTR incompatible with value type %s.\n",
-                      DMU_Str(args->valueType));
+                      args->valueType);
         }
     }
     else
@@ -1495,6 +1495,13 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &sidePtr, args, 0);
             break;
         }
+        case DMU_BOUNDING_BOX:
+            GetValue(type, &p->bbox[0], args, 0);
+            GetValue(type, &p->bbox[1], args, 1);
+            GetValue(type, &p->bbox[2], args, 2);
+            GetValue(type, &p->bbox[3], args, 3);
+            break;
+
         default:
             Con_Error("GetProperty: DMU_LINE has no property %s.\n", DMU_Str(args->prop));
         }
