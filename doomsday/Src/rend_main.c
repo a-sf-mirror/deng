@@ -1256,9 +1256,6 @@ int Rend_SectorLight(sector_t *sec)
     // Apply light adaptation
     Rend_ApplyLightAdaptation(&i);
 
-    // Clamp to upper limit
-    if(i > 255)
-        i = 255;
     return i;
 }
 
@@ -1300,7 +1297,6 @@ void Rend_CalcLightRangeModMatrix(cvar_t* unused)
         // Calculate the multiplier.
         mx = (r * multiplier) * MOD_RANGE;
 
-        //Con_Printf("Range %i {\n",n, mx);
         for(j = 0; j < 255; ++j)
         {
             if(r < 0)  // Dark to light range
@@ -1346,10 +1342,7 @@ void Rend_CalcLightRangeModMatrix(cvar_t* unused)
 
             // Insert it into the matrix
             lightRangeModMatrix[n][j] = (signed short) f;
-
-            //Con_Printf("%i ",lightRangeModMatrix[n][j]);
         }
-        //Con_Printf("}\n");
     }
 }
 
@@ -1493,16 +1486,29 @@ void Rend_RetrieveLightSample(void)
 }
 
 /*
- * Applies the offset from the lightRangeModMatrix to the given light value
- * and returns the result.
+ * Applies the offset from the lightRangeModMatrix to the given light value.
  *
  * The range chosen is that of the current viewplayer.
  * (calculated based on the lighting conditions for that player)
+ *
+ * The lightRangeModMatrix is used to implement (precalculated) ambient light
+ * limit, light range compression, light range shift AND light adaptation
+ * response curves. By generating this precalculated matrix we save on a LOT
+ * of calculations (replacing them all with one single addition) which would
+ * otherwise all have to be performed each frame for each call. The values are
+ * applied to sector lightlevels, lightgrid point evaluations, vissprite
+ * lightlevels, fakeradio shadows etc, etc...
+ *
+ * NOTE: There is no need to do any clamping here. Since the offset values in
+ *       the lightRangeModMatrix have already been clamped so that the resultant
+ *       lightvalue is NEVER outside the range 0-254 when the original lightvalue
+ *       is used as the index.
  *
  * @param lightvalue    Ptr to the value to apply the adaptation to.
  */
 void Rend_ApplyLightAdaptation(byte* lightvalue)
 {
+    // The default range.
     int range = MOD_RANGE / 2;
 
     if(lightvalue == NULL)
@@ -1512,7 +1518,7 @@ void Rend_ApplyLightAdaptation(byte* lightvalue)
     if(r_lightAdapt)
         range = playerLightRange[viewplayer - players];
 
-    *lightvalue += lightRangeModMatrix[range][*lightvalue];
+    *lightvalue += lightRangeModMatrix[range][*lightvalue -1];
 }
 
 /*
@@ -1910,7 +1916,7 @@ static void DrawRangeBox(int x, int y, int w, int h, ui_color_t *c)
 void R_DrawLightRange(void)
 {
     int i, r;
-    int x, y;
+    int y;
     char *title = "Light Range Matrix";
     signed short v;
     float barwidth = 2.5f;
@@ -1948,9 +1954,9 @@ void R_DrawLightRange(void)
             c = (byte) v;
 
             // Show the ambient light modifier using alpha
-            if(r_ambient < 0 && i < r_ambient)
+            if(r_ambient < 0 && i > r_ambient)
                 a = 128;
-            else if(r_ambient > 0 && i > r_ambient)
+            else if(r_ambient > 0 && i < r_ambient)
                 a = 128;
             else
                 a = 255;
