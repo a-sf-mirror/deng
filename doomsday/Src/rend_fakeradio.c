@@ -109,7 +109,9 @@ float Rend_RadioShadowDarkness(int lightlevel)
  */
 void Rend_RadioInitForSector(sector_t *sector)
 {
-    int sectorlight = Rend_ApplyLightAdaptation(sector->lightlevel);
+    byte sectorlight = sector->lightlevel;
+
+    Rend_ApplyLightAdaptation(&sectorlight);
 
     // By default, the shadow is disabled.
     shadowSize = 0;
@@ -1169,7 +1171,7 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
     int     i, /*dir = (isFloor? 1 : -1), */ *idx;
     int     floorIndices[] = { 0, 1, 2, 3 };
     int     ceilIndices[] = { 0, 3, 2, 1 };
-    int     sectorlight;
+    byte     sectorlight;
     vec2_t  inner[2];
 
     // This is the sector the shadow is actually in.
@@ -1179,7 +1181,8 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 
     z = (isFloor ? SECT_FLOOR(sector) : SECT_CEIL(sector));
 
-    sectorlight = Rend_ApplyLightAdaptation(sector->lightlevel);
+    sectorlight = sector->lightlevel;
+    Rend_ApplyLightAdaptation(&sectorlight);
 
     // Sector lightlevel affects the darkness of the shadows.
     if(darkness > 1)

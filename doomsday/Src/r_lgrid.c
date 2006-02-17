@@ -639,7 +639,7 @@ void LG_Update(void)
     }
 }
 
-/**
+/*
  * Calculate the light level for a 3D point in the world.
  *
  * @param point  3D point.
@@ -701,7 +701,7 @@ void LG_Evaluate(const float *point, byte *color)
         for(i = 0; i < 3; ++i)
         {
             // Add the light range compression factor
-            color[i] = Rend_ApplyLightAdaptation(color[i]);
+            Rend_ApplyLightAdaptation(&color[i]);
 
             // Apply the dimming
             color[i] *= dimming;
@@ -711,7 +711,7 @@ void LG_Evaluate(const float *point, byte *color)
     {
         // Just add the light range compression factor
         for(i = 0; i < 3; ++i)
-            color[i] = Rend_ApplyLightAdaptation(color[i]);
+            Rend_ApplyLightAdaptation(&color[i]);
     }
 }
 

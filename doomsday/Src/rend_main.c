@@ -1249,12 +1249,12 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 int Rend_SectorLight(sector_t *sec)
 {
-    int     i;
+    byte     i;
 
     i = LevelFullBright ? 255 : sec->lightlevel;
 
     // Apply light adaptation
-    i = Rend_ApplyLightAdaptation(i);
+    Rend_ApplyLightAdaptation(&i);
 
     // Clamp to upper limit
     if(i > 255)
@@ -1498,16 +1498,21 @@ void Rend_RetrieveLightSample(void)
  *
  * The range chosen is that of the current viewplayer.
  * (calculated based on the lighting conditions for that player)
+ *
+ * @param lightvalue    Ptr to the value to apply the adaptation to.
  */
-int Rend_ApplyLightAdaptation(int lightvalue)
+void Rend_ApplyLightAdaptation(byte* lightvalue)
 {
     int range = MOD_RANGE / 2;
+
+    if(lightvalue == NULL)
+        return; // Can't apply adaptation to a NULL val ptr...
 
     // Apply light adaptation?
     if(r_lightAdapt)
         range = playerLightRange[viewplayer - players];
 
-    return lightvalue + lightRangeModMatrix[range][lightvalue];
+    *lightvalue += lightRangeModMatrix[range][*lightvalue];
 }
 
 /*

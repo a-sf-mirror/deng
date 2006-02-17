@@ -190,11 +190,14 @@ void Rend_DrawPlayerSprites(void)
                 }
                 else
                 {
-                    float light = Rend_ApplyLightAdaptation((int)(psp[i].light * 255.0f)) / 255.0f;
+                    byte light = (byte)(psp[i].light * 255.0f);
+                    float lval;
 
-                    GL_SetColorAndAlpha(light * (secRGB[CR] / 255.0f),
-                                        light * (secRGB[CG] / 255.0f),
-                                        light * (secRGB[CB] / 255.0f),
+                    Rend_ApplyLightAdaptation(&light);
+                    lval = light / 255.0f;
+                    GL_SetColorAndAlpha(lval * (secRGB[CR] / 255.0f),
+                                        lval * (secRGB[CG] / 255.0f),
+                                        lval * (secRGB[CB] / 255.0f),
                                         psp[i].alpha);
                 }
             }

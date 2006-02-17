@@ -540,7 +540,10 @@ void R_ProjectPlayerSprites(void)
                    R_GetSectorLightColor(viewplayer->mo->subsector->sector), 3);
 
             if(psp->light < 1)
-                vis->data.mo.lightlevel = Rend_ApplyLightAdaptation((int)((psp->light - .1f) * 255));
+            {
+                vis->data.mo.lightlevel = (byte)((psp->light - .1f) * 255);
+                Rend_ApplyLightAdaptation(&vis->data.mo.lightlevel);
+            }
             else
                 vis->data.mo.lightlevel = 255;
         }
@@ -870,7 +873,8 @@ void R_ProjectSprite(mobj_t *thing)
     else
     {
         // Diminished light (with compression).
-        vis->data.mo.lightlevel = Rend_ApplyLightAdaptation(sect->lightlevel);
+        vis->data.mo.lightlevel = sect->lightlevel;
+        Rend_ApplyLightAdaptation(&vis->data.mo.lightlevel);
     }
 
     // The three highest bits of the selector are used for an alpha level.
