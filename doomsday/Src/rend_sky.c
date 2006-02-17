@@ -81,9 +81,6 @@ static fadeout_t *currentFO;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// Rend_RenderSkyModels
-//===========================================================================
 void Rend_RenderSkyModels(void)
 {
     int     i, k;
@@ -151,7 +148,9 @@ void Rend_RenderSkyModels(void)
     gl.PopMatrix();
 }
 
-// Calculate the vertex and texture coordinates.
+/*
+ * Calculate the vertex and texture coordinates.
+ */
 static void SkyVertex(int r, int c)
 {
     // The direction must be clockwise.
@@ -198,11 +197,10 @@ static void CapSideVertex(int r, int c)
     gl.Vertex3f(svtx->x, svtx->y * (yflip ? -1 : 1), svtx->z);
 }
 
-//===========================================================================
-// Rend_SkyRenderer
-//  Hemi is Upper or Lower. Zero is not acceptable.
-//  The current texture is used. SKYHEMI_NO_TOPCAP can be used.
-//===========================================================================
+/*
+ * Hemi is Upper or Lower. Zero is not acceptable.
+ * The current texture is used. SKYHEMI_NO_TOPCAP can be used.
+ */
 void Rend_SkyRenderer(int hemi)
 {
     int     r, c;
@@ -281,9 +279,6 @@ void Rend_SkyRenderer(int hemi)
     }
 }
 
-//===========================================================================
-// SetupFadeout
-//===========================================================================
 static void SetupFadeout(skylayer_t * slayer)
 {
     int     i;
@@ -303,9 +298,6 @@ static void SetupFadeout(skylayer_t * slayer)
         }
 }
 
-//===========================================================================
-// Rend_SkyRenderHemisphere
-//===========================================================================
 void Rend_RenderSkyHemisphere(int whichHemi)
 {
     int     i, resetup;
@@ -350,9 +342,6 @@ void Rend_RenderSkyHemisphere(int whichHemi)
     }
 }
 
-//===========================================================================
-// Rend_RenderSky
-//===========================================================================
 void Rend_RenderSky(int hemis)
 {
     // IS there a sky to be rendered?
@@ -401,10 +390,9 @@ void Rend_RenderSky(int hemis)
     }
 }
 
-//===========================================================================
-// Rend_InitSky
-//  Calculate sky vertices.
-//===========================================================================
+/*
+ * Calculate sky vertices.
+ */
 void Rend_InitSky()
 {
     int     i;
@@ -422,9 +410,6 @@ void Rend_InitSky()
     }
 }
 
-//===========================================================================
-// Rend_ShutdownSky
-//===========================================================================
 void Rend_ShutdownSky()
 {
     free(skyVerts);
@@ -432,9 +417,6 @@ void Rend_ShutdownSky()
     numSkyVerts = 0;
 }
 
-//===========================================================================
-// Rend_SkyDetail
-//===========================================================================
 void Rend_SkyDetail(int quarterDivs, int rows)
 {
     float   topAngle, sideAngle, realRadius, scale = 1 /*32 */ ;
@@ -541,9 +523,6 @@ static void internalSkyParams(skylayer_t * slayer, int parm, float value)
     }
 }
 
-//===========================================================================
-// Rend_SkyParams
-//===========================================================================
 void Rend_SkyParams(int layer, int parm, float value)
 {
     int     i;
@@ -586,9 +565,6 @@ void Rend_SkyParams(int layer, int parm, float value)
         internalSkyParams(skyLayers + layer, parm, value);
 }
 
-//===========================================================================
-// CCmdSkyDetail
-//===========================================================================
 D_CMD(SkyDetail)
 {
     if(!stricmp(argv[0], "skydetail"))

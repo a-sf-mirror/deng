@@ -171,11 +171,10 @@ void P_InitSubsectorBlockMap(void)
              subMapWidth, subMapHeight));
 }
 
-//==========================================================================
-// P_InitPolyBlockMap
-//  Allocates and clears the polyobj blockmap.
-//  Normal blockmap must already be initialized when this is called.
-//==========================================================================
+/*
+ * Allocates and clears the polyobj blockmap.
+ * Normal blockmap must already be initialized when this is called.
+ */
 void P_InitPolyBlockMap(void)
 {
     if(verbose)
@@ -188,12 +187,11 @@ void P_InitPolyBlockMap(void)
     memset(polyblockmap, 0, bmapwidth * bmapheight * sizeof(polyblock_t *));
 }
 
-//===========================================================================
-// P_BlockLinesIterator
-//  The validcount flags are used to avoid checking lines that are marked
-//  in multiple mapblocks, so increment validcount before the first call
-//  to P_BlockLinesIterator, then make one or more calls to it.
-//===========================================================================
+/*
+ * The validcount flags are used to avoid checking lines that are marked
+ * in multiple mapblocks, so increment validcount before the first call
+ * to P_BlockLinesIterator, then make one or more calls to it.
+ */
 boolean P_BlockLinesIterator(int x, int y, boolean (*func) (line_t *, void *),
                              void *data)
 {
@@ -252,12 +250,11 @@ boolean P_BlockLinesIterator(int x, int y, boolean (*func) (line_t *, void *),
     return true;                // everything was checked
 }
 
-//===========================================================================
-// P_BlockPolyobjsIterator
-//  The validcount flags are used to avoid checking polys
-//  that are marked in multiple mapblocks, so increment validcount
-//  before the first call, then make one or more calls to it.
-//===========================================================================
+/*
+ * The validcount flags are used to avoid checking polys
+ * that are marked in multiple mapblocks, so increment validcount
+ * before the first call, then make one or more calls to it.
+ */
 boolean P_BlockPolyobjsIterator(int x, int y,
                                 boolean (*func) (polyobj_t *, void *),
                                 void *data)
@@ -285,11 +282,10 @@ boolean P_BlockPolyobjsIterator(int x, int y,
     return true;
 }
 
-//===========================================================================
-// P_SubsectorBoxIteratorv
-//  Same as the fixed-point version of this routine, but the bounding box
-//  is specified using an vec2_t array (see m_vector.c).
-//===========================================================================
+/*
+ * Same as the fixed-point version of this routine, but the bounding box
+ * is specified using an vec2_t array (see m_vector.c).
+ */
 boolean P_SubsectorBoxIteratorv(arvec2_t box, sector_t *sector,
                                 boolean (*func) (subsector_t *, void *),
                                 void *parm)
@@ -347,10 +343,9 @@ boolean P_SubsectorBoxIteratorv(arvec2_t box, sector_t *sector,
     return true;
 }
 
-//===========================================================================
-// P_SubsectorBoxIterator
-//  Returns false only if the iterator func returns false.
-//===========================================================================
+/*
+ * Returns false only if the iterator func returns false.
+ */
 boolean P_SubsectorBoxIterator(fixed_t *box, sector_t *sector,
                                boolean (*func) (subsector_t *, void *),
                                void *parm)

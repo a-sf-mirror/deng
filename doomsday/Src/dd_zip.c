@@ -1,4 +1,3 @@
-
 /* DE1: $Id$
  * Copyright (C) 2003, 2004 Jaakko Keränen <jaakko.keranen@iki.fi>
  *

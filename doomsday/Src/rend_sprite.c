@@ -58,11 +58,10 @@ static vissprite_t *slSpr;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// Rend_Draw3DPlayerSprites
-//  Fog is turned off while rendering. It's not feasible to think that the
-//  fog would obstruct the player's view of his own weapon.
-//===========================================================================
+/*
+ * Fog is turned off while rendering. It's not feasible to think that the
+ * fog would obstruct the player's view of his own weapon.
+ */
 void Rend_Draw3DPlayerSprites(void)
 {
     int     i;
@@ -90,11 +89,10 @@ void Rend_Draw3DPlayerSprites(void)
         gl.Enable(DGL_FOG);
 }
 
-//===========================================================================
-// Rend_DrawPlayerSprites
-//  Draws 2D player sprites. If they were already drawn 3D, this
-//  won't do anything.
-//===========================================================================
+/*
+ * Draws 2D player sprites. If they were already drawn 3D, this
+ * won't do anything.
+ */
 void Rend_DrawPlayerSprites(void)
 {
     spriteinfo_t info[DDMAXPSPRITES];
@@ -209,12 +207,11 @@ void Rend_DrawPlayerSprites(void)
     }
 }
 
-//===========================================================================
-// Rend_RenderMaskedWall
-//  A sort of a sprite, I guess... Masked walls must be rendered sorted
-//  with sprites, so no artifacts appear when sprites are seen behind
-//  masked walls.
-//===========================================================================
+/*
+ * A sort of a sprite, I guess... Masked walls must be rendered sorted
+ * with sprites, so no artifacts appear when sprites are seen behind
+ * masked walls.
+ */
 void Rend_RenderMaskedWall(vissprite_t * vis)
 {
     float   color[4];
@@ -345,17 +342,16 @@ void Rend_RenderMaskedWall(vissprite_t * vis)
     GL_BlendMode(BM_NORMAL);
 }
 
-//===========================================================================
-// Rend_DrawMasked
-//  Render sprites, 3D models, masked wall segments and halos, ordered
-//  back to front. Halos are rendered with Z-buffer tests and writes
-//  disabled, so they don't go into walls or interfere with real objects.
-//  It means that halos can be partly occluded by objects that are closer
-//  to the viewpoint, but that's the price to pay for not having access to
-//  the actual Z-buffer per-pixel depth information. The other option would
-//  be for halos to shine through masked walls, sprites and models, which
-//  looks even worse. (Plus, they are *halos*, not real lens flares...)
-//===========================================================================
+/*
+ * Render sprites, 3D models, masked wall segments and halos, ordered
+ * back to front. Halos are rendered with Z-buffer tests and writes
+ * disabled, so they don't go into walls or interfere with real objects.
+ * It means that halos can be partly occluded by objects that are closer
+ * to the viewpoint, but that's the price to pay for not having access to
+ * the actual Z-buffer per-pixel depth information. The other option would
+ * be for halos to shine through masked walls, sprites and models, which
+ * looks even worse. (Plus, they are *halos*, not real lens flares...)
+ */
 void Rend_DrawMasked(void)
 {
     extern boolean willRenderSprites;
@@ -427,9 +423,6 @@ void Rend_DrawMasked(void)
     }
 }
 
-//===========================================================================
-// Rend_SpriteTexCoord
-//===========================================================================
 void Rend_SpriteTexCoord(int pnum, int x, int y)
 {
     // Mode zero (tc[0]) is used with regular sprites.
@@ -437,9 +430,6 @@ void Rend_SpriteTexCoord(int pnum, int x, int y)
                   spritelumps[pnum].tc[0][VY] * y);
 }
 
-//===========================================================================
-// Rend_SpriteLighter
-//===========================================================================
 static boolean Rend_SpriteLighter(lumobj_t * lum, fixed_t dist)
 {
     int     i, temp;
@@ -537,9 +527,6 @@ static boolean Rend_SpriteLighter(lumobj_t * lum, fixed_t dist)
     return true;
 }
 
-//===========================================================================
-// Rend_ScaledAmbientLight
-//===========================================================================
 void Rend_ScaledAmbientLight(byte *out, byte *ambient, float mul)
 {
     int     i;
@@ -553,9 +540,6 @@ void Rend_ScaledAmbientLight(byte *out, byte *ambient, float mul)
             out[i] = ambient[i] * mul;
 }
 
-//===========================================================================
-// Rend_RenderSprite
-//===========================================================================
 void Rend_RenderSprite(vissprite_t * spr)
 {
     int     patch = spr->data.mo.patch;

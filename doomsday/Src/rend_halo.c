@@ -84,21 +84,13 @@ int     haloOccludeSpeed = 48;
 float   haloZMagDiv = 100, haloMinRadius = 20;
 float   haloDimStart = 10, haloDimEnd = 100;
 
-/*
-   gl_fc3vertex_t   *haloData = 0;
-   int              dataSize = 0, usedData;
- */
 float   haloFadeMax = 0, haloFadeMin = 0, minHaloSize = 1;
 
-//float         flareZOffset = 1;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// H_Register
-//===========================================================================
 void H_Register(void)
 {
     cvar_t  cvars[] = {
@@ -115,9 +107,6 @@ void H_Register(void)
     Con_AddVariableList(cvars);
 }
 
-//===========================================================================
-// H_SetupState
-//===========================================================================
 void H_SetupState(boolean dosetup)
 {
     if(dosetup)
@@ -138,14 +127,13 @@ void H_SetupState(boolean dosetup)
     }
 }
 
-//===========================================================================
-// H_RenderHalo
-//  The caller must check that the sourcevis really has a ->light!
-//  If 'primary' is true, we'll draw the primary halo, otherwise the
-//  secondary ones (which won't be clipped or occluded by anything;
-//  they're drawn after everything else, during a separate pass).
-//  If 'primary' is false, the caller must setup the rendering state.
-//===========================================================================
+/*
+ * The caller must check that the sourcevis really has a ->light!
+ * If 'primary' is true, we'll draw the primary halo, otherwise the
+ * secondary ones (which won't be clipped or occluded by anything;
+ * they're drawn after everything else, during a separate pass).
+ * If 'primary' is false, the caller must setup the rendering state.
+ */
 void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
 {
     float   viewpos[3] = { vx, vy, vz };
@@ -403,11 +391,10 @@ void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
         H_SetupState(false);
 }
 
-//===========================================================================
-// CCmdFlareConfig
-//  flareconfig list
-//  flareconfig (num) pos/size/alpha/tex (val)
-//===========================================================================
+/*
+ * flareconfig list
+ * flareconfig (num) pos/size/alpha/tex (val)
+ */
 D_CMD(FlareConfig)
 {
     int     i;

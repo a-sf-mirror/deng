@@ -77,18 +77,14 @@ int     r_texglow = true;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// R_ShutdownData
-//===========================================================================
 void R_ShutdownData(void)
 {
 }
 
-//===========================================================================
-// R_CollectFlats
-//  Returns a NULL-terminated array of pointers to all the flats.
-//  The array must be freed with Z_Free.
-//===========================================================================
+/*
+ * Returns a NULL-terminated array of pointers to all the flats.
+ * The array must be freed with Z_Free.
+ */
 flat_t **R_CollectFlats(int *count)
 {
     int     i, num;
@@ -117,10 +113,9 @@ flat_t **R_CollectFlats(int *count)
     return array;
 }
 
-//===========================================================================
-// R_FindFlat
-//  Returns a flat_t* for the given lump, if one already exists.
-//===========================================================================
+/*
+ * Returns a flat_t* for the given lump, if one already exists.
+ */
 flat_t *R_FindFlat(int lumpnum)
 {
     flat_t *i;
@@ -166,9 +161,6 @@ flat_t *R_GetFlat(int lumpnum)
     return f;
 }
 
-//===========================================================================
-// R_SetFlatTranslation
-//===========================================================================
 int R_SetFlatTranslation(int flat, int translateTo)
 {
     flat_t *f = R_GetFlat(flat);
@@ -179,9 +171,6 @@ int R_SetFlatTranslation(int flat, int translateTo)
     return old;
 }
 
-//===========================================================================
-// R_SetTextureTranslation
-//===========================================================================
 int R_SetTextureTranslation(int tex, int translateTo)
 {
     int     old = texturetranslation[tex].current;
@@ -192,11 +181,10 @@ int R_SetTextureTranslation(int tex, int translateTo)
     return old;
 }
 
-//===========================================================================
-// R_SetAnimGroup
-//  Textures/flats in the same animation group are precached at the same
-//  time. 'type' can be either DD_TEXTURE or DD_FLAT.
-//===========================================================================
+/*
+ * Textures/flats in the same animation group are precached at the same
+ * time. 'type' can be either DD_TEXTURE or DD_FLAT.
+ */
 void R_SetAnimGroup(int type, int number, int group)
 {
     /*  flat_t *flat;
@@ -216,11 +204,10 @@ void R_SetAnimGroup(int type, int number, int group)
        } */
 }
 
-//===========================================================================
-// R_CreateAnimGroup
-//  Create a new animation group. Returns the group number.
-//  This function is exported and accessible from DLLs.
-//===========================================================================
+/*
+ * Create a new animation group. Returns the group number.
+ * This function is exported and accessible from DLLs.
+ */
 int R_CreateAnimGroup(int type, int flags)
 {
     animgroup_t *group;
@@ -245,9 +232,6 @@ int R_CreateAnimGroup(int type, int flags)
     return group->id;
 }
 
-//===========================================================================
-// R_GetAnimGroup
-//===========================================================================
 animgroup_t *R_GetAnimGroup(int number)
 {
     if(--number < 0 || number >= numgroups)
@@ -255,10 +239,9 @@ animgroup_t *R_GetAnimGroup(int number)
     return groups + number;
 }
 
-//===========================================================================
-// R_AddToAnimGroup
-//  This function is exported and accessible from DLLs.
-//===========================================================================
+/*
+ * This function is exported and accessible from DLLs.
+ */
 void R_AddToAnimGroup(int groupNum, int number, int tics, int randomTics)
 {
     animgroup_t *group = R_GetAnimGroup(groupNum);
@@ -291,9 +274,6 @@ void R_AddToAnimGroup(int groupNum, int number, int tics, int randomTics)
     }
 }
 
-//===========================================================================
-// R_IsInAnimGroup
-//===========================================================================
 boolean R_IsInAnimGroup(int groupNum, int type, int number)
 {
     animgroup_t *group = R_GetAnimGroup(groupNum);
@@ -318,10 +298,9 @@ boolean R_IsInAnimGroup(int groupNum, int type, int number)
     return false;
 }
 
-//===========================================================================
-// R_InitAnimGroup
-//  Initialize an entire animation using the data in the definition.
-//===========================================================================
+/*
+ * Initialize an entire animation using the data in the definition.
+ */
 void R_InitAnimGroup(ded_group_t * def)
 {
     int     i;
@@ -355,11 +334,10 @@ void R_InitAnimGroup(ded_group_t * def)
     }
 }
 
-//===========================================================================
-// R_ResetAnimGroups
-//  All animation groups are reseted back to their original state.
-//  Called when setting up a map.
-//===========================================================================
+/*
+ * All animation groups are reseted back to their original state.
+ * Called when setting up a map.
+ */
 void R_ResetAnimGroups(void)
 {
     int     i;
@@ -383,11 +361,10 @@ void R_ResetAnimGroups(void)
     R_AnimateAnimGroups();
 }
 
-//===========================================================================
-// R_InitSwitchAnimGroups
-//  Assigns switch texture pairs (SW1/SW2) to their own texture precaching
-//  groups. This'll allow them to be precached at the same time.
-//===========================================================================
+/*
+ * Assigns switch texture pairs (SW1/SW2) to their own texture precaching
+ * groups. This'll allow them to be precached at the same time.
+ */
 void R_InitSwitchAnimGroups(void)
 {
     int     i, k, group;
@@ -417,10 +394,9 @@ void R_InitSwitchAnimGroups(void)
     }
 }
 
-//===========================================================================
-// R_InitTextures
-//  Initializes the texture list with the textures from the world map.
-//===========================================================================
+/*
+ * Initializes the texture list with the textures from the world map.
+ */
 void R_InitTextures(void)
 {
     strifemaptexture_t *smtexture;
@@ -580,18 +556,12 @@ void R_InitTextures(void)
     R_InitSwitchAnimGroups();
 }
 
-//===========================================================================
-// R_UpdateTextures
-//===========================================================================
 void R_UpdateTextures(void)
 {
     Z_FreeTags(PU_REFRESHTEX, PU_REFRESHTEX);
     R_InitTextures();
 }
 
-//===========================================================================
-// R_TextureFlags
-//===========================================================================
 int R_TextureFlags(int texture)
 {
     if(!r_texglow)
@@ -602,9 +572,6 @@ int R_TextureFlags(int texture)
     return textures[texture]->flags;
 }
 
-//===========================================================================
-// R_FlatFlags
-//===========================================================================
 int R_FlatFlags(int flat)
 {
     flat_t *fl = R_GetFlat(flat);
@@ -614,17 +581,11 @@ int R_FlatFlags(int flat)
     return fl->flags;
 }
 
-//===========================================================================
-// R_InitFlats
-//===========================================================================
 void R_InitFlats(void)
 {
     memset(flathash, 0, sizeof(flathash));
 }
 
-//===========================================================================
-// R_UpdateFlats
-//===========================================================================
 void R_UpdateFlats(void)
 {
     Z_FreeTags(PU_FLAT, PU_FLAT);
@@ -632,9 +593,6 @@ void R_UpdateFlats(void)
     R_InitFlats();
 }
 
-//===========================================================================
-// R_InitLumpTexInfo
-//===========================================================================
 void R_InitLumpTexInfo(void)
 {
     if(lumptexinfo)
@@ -645,11 +603,10 @@ void R_InitLumpTexInfo(void)
     lumptexinfo = Z_Calloc(sizeof(*lumptexinfo) * numlumps, PU_STATIC, 0);
 }
 
-//===========================================================================
-// R_InitData
-//  Locates all the lumps that will be used by all views.
-//  Must be called after W_Init.
-//===========================================================================
+/*
+ * Locates all the lumps that will be used by all views.
+ * Must be called after W_Init.
+ */
 void R_InitData(void)
 {
     R_InitTextures();
@@ -658,9 +615,6 @@ void R_InitData(void)
     Cl_InitTranslations();
 }
 
-//===========================================================================
-// R_UpdateData
-//===========================================================================
 void R_UpdateData(void)
 {
     R_UpdateTextures();
@@ -669,9 +623,6 @@ void R_UpdateData(void)
     Cl_InitTranslations();
 }
 
-//===========================================================================
-// R_InitTranslationTables
-//===========================================================================
 void R_InitTranslationTables(void)
 {
     int     i;
@@ -695,18 +646,12 @@ void R_InitTranslationTables(void)
     }
 }
 
-//===========================================================================
-// R_UpdateTranslationTables
-//===========================================================================
 void R_UpdateTranslationTables(void)
 {
     Z_FreeTags(PU_REFRESHTRANS, PU_REFRESHTRANS);
     R_InitTranslationTables();
 }
 
-//===========================================================================
-// R_FlatNumForName
-//===========================================================================
 int R_FlatNumForName(char *name)
 {
     int     i;
@@ -723,9 +668,6 @@ int R_FlatNumForName(char *name)
     return i;                   //R_GetFlatIndex(i);//i - firstflat;
 }
 
-//===========================================================================
-// R_CheckTextureNumForName
-//===========================================================================
 int R_CheckTextureNumForName(char *name)
 {
     int     i;
@@ -740,9 +682,6 @@ int R_CheckTextureNumForName(char *name)
     return -1;
 }
 
-//===========================================================================
-// R_TextureNumForName
-//===========================================================================
 int R_TextureNumForName(char *name)
 {
     int     i;
@@ -754,9 +693,6 @@ int R_TextureNumForName(char *name)
     return i;
 }
 
-//===========================================================================
-// R_TextureNameForNum
-//===========================================================================
 char   *R_TextureNameForNum(int num)
 {
     if(num < 0 || num > numtextures - 1)
@@ -764,10 +700,9 @@ char   *R_TextureNameForNum(int num)
     return textures[num]->name;
 }
 
-//===========================================================================
-// R_IsCustomTexture
-//  Returns true if the texture is probably not from the original game.
-//===========================================================================
+/*
+ * Returns true if the texture is probably not from the original game.
+ */
 boolean R_IsCustomTexture(int texture)
 {
     int     i, lump;
@@ -792,21 +727,19 @@ boolean R_IsCustomTexture(int texture)
     return false;
 }
 
-//===========================================================================
-// R_IsValidLightDecoration
-//  Returns true if the given light decoration definition is valid.
-//===========================================================================
+/*
+ * Returns true if the given light decoration definition is valid.
+ */
 boolean R_IsValidLightDecoration(ded_decorlight_t * lightDef)
 {
     return lightDef->color[0] != 0 || lightDef->color[1] != 0 ||
         lightDef->color[2] != 0;
 }
 
-//===========================================================================
-// R_IsAllowedDecoration
-//  Returns true if the given decoration works under the specified
-//  circumstances.
-//===========================================================================
+/*
+ * Returns true if the given decoration works under the specified
+ * circumstances.
+ */
 boolean R_IsAllowedDecoration(ded_decor_t * def, int index,
                               boolean hasExternal)
 {
@@ -836,12 +769,11 @@ boolean R_IsAllowedDecoration(ded_decor_t * def, int index,
     return (def->flags & DCRF_PWAD) != 0;
 }
 
-//===========================================================================
-// R_PrecacheFlat
-//  Prepares the specified flat and all the other flats in the same
-//  animation group. Has the consequence that all lumps inside the
-//  F_START...F_END block obtain a flat_t record.
-//===========================================================================
+/*
+ * Prepares the specified flat and all the other flats in the same
+ * animation group. Has the consequence that all lumps inside the
+ * F_START...F_END block obtain a flat_t record.
+ */
 void R_PrecacheFlat(int num)
 {
     int     i, k;
@@ -866,11 +798,10 @@ void R_PrecacheFlat(int num)
     }
 }
 
-//===========================================================================
-// R_PrecacheTexture
-//  Prepares the specified texture and all the other textures in the
-//  same animation group.
-//===========================================================================
+/*
+ * Prepares the specified texture and all the other textures in the
+ * same animation group.
+ */
 void R_PrecacheTexture(int num)
 {
     int     i, k;
@@ -895,14 +826,13 @@ void R_PrecacheTexture(int num)
     }
 }
 
-//===========================================================================
-// R_PrecacheLevel
-//  Prepare all relevant skins, textures, flats and sprites.
-//  Doesn't unload anything, though (so that if there's enough
-//  texture memory it will be used more efficiently). That much trust
-//  is placed in the GL/D3D drivers. The prepared textures are also bound
-//  here once so they should be ready for use ASAP.
-//===========================================================================
+/*
+ * Prepare all relevant skins, textures, flats and sprites.
+ * Doesn't unload anything, though (so that if there's enough
+ * texture memory it will be used more efficiently). That much trust
+ * is placed in the GL/D3D drivers. The prepared textures are also bound
+ * here once so they should be ready for use ASAP.
+ */
 void R_PrecacheLevel(void)
 {
     char   *texturepresent;
@@ -1021,9 +951,6 @@ void R_PrecacheLevel(void)
     Con_HideProgress();
 }
 
-//===========================================================================
-// R_GetTranslation
-//===========================================================================
 translation_t *R_GetTranslation(boolean isTexture, int number)
 {
     if(isTexture)
@@ -1036,9 +963,6 @@ translation_t *R_GetTranslation(boolean isTexture, int number)
     }
 }
 
-//===========================================================================
-// R_AnimateAnimGroups
-//===========================================================================
 void R_AnimateAnimGroups(void)
 {
     animgroup_t *group;
@@ -1123,11 +1047,10 @@ void R_AnimateAnimGroups(void)
     }
 }
 
-//===========================================================================
-// R_GenerateDecorMap
-//  If necessary and possible, generate an RGB lightmap texture for the
-//  decoration's light sources.
-//===========================================================================
+/*
+ * If necessary and possible, generate an RGB lightmap texture for the
+ * decoration's light sources.
+ */
 void R_GenerateDecorMap(ded_decor_t * def)
 {
     int     i, count;

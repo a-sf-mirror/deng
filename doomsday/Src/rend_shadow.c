@@ -51,11 +51,10 @@ float   shadowFactor = 0.5f;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// Rend_ShadowIterator
-//  This is called for each sector a shadow-caster is touching.
-//  The highest floor height will be searched.
-//===========================================================================
+/*
+ * This is called for each sector a shadow-caster is touching.
+ * The highest floor height will be searched.
+ */
 boolean Rend_ShadowIterator(sector_t *sector, void *data)
 {
     float  *height = data;
@@ -66,9 +65,6 @@ boolean Rend_ShadowIterator(sector_t *sector, void *data)
     return true;                // Continue iteration.
 }
 
-//===========================================================================
-// Rend_ProcessThingShadow
-//===========================================================================
 void Rend_ProcessThingShadow(mobj_t *mo)
 {
     fixed_t moz;
@@ -175,9 +171,6 @@ void Rend_ProcessThingShadow(mobj_t *mo)
     RL_AddPoly(&poly);
 }
 
-//===========================================================================
-// Rend_RenderShadows
-//===========================================================================
 void Rend_RenderShadows(void)
 {
     sector_t *sec;

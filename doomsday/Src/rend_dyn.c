@@ -300,9 +300,6 @@ void DL_ThingRadius(lumobj_t * lum, lightconfig_t * cf)
         lum->flareSize = 8;
 }
 
-//===========================================================================
-// DL_ThingColor
-//===========================================================================
 void DL_ThingColor(lumobj_t * lum, DGLubyte * outRGB, float light)
 {
     int     i;
@@ -338,9 +335,6 @@ void DL_ThingColor(lumobj_t * lum, DGLubyte * outRGB, float light)
     }
 }
 
-//===========================================================================
-// DL_InitLinks
-//===========================================================================
 void DL_InitLinks(void)
 {
     vertex_t min, max;
@@ -379,10 +373,9 @@ void DL_InitLinks(void)
         Z_Malloc(sizeof(int) * dlBlockWidth * dlBlockHeight, PU_LEVEL, 0);
 }
 
-//===========================================================================
-// DL_SegTexCoords
-//  Returns true if the coords are in range.
-//===========================================================================
+/*
+ * Returns true if the coords are in range.
+ */
 boolean DL_SegTexCoords(float *t, float top, float bottom, lumobj_t * lum)
 {
     float   lightZ = FIX2FLT(lum->thing->z) + lum->center;
@@ -394,10 +387,9 @@ boolean DL_SegTexCoords(float *t, float top, float bottom, lumobj_t * lum)
     return t[0] < 1 && t[1] > 0;
 }
 
-//===========================================================================
-// DL_ProcessWallSeg
-//  The front sector must be given because of polyobjs.
-//===========================================================================
+/*
+ * The front sector must be given because of polyobjs.
+ */
 void DL_ProcessWallSeg(lumobj_t * lum, seg_t *seg, sector_t *frontsec)
 {
     int     present = 0;
@@ -738,9 +730,6 @@ void DL_ProcessWallGlow(seg_t *seg, sector_t *sect)
     }
 }
 
-//===========================================================================
-// DL_Clear
-//===========================================================================
 void DL_Clear()
 {
     if(luminousList)
@@ -754,9 +743,6 @@ void DL_Clear()
     dlBlockWidth = dlBlockHeight = 0;
 }
 
-//===========================================================================
-// DL_ClearForFrame
-//===========================================================================
 void DL_ClearForFrame(void)
 {
 #ifdef DD_PROFILE
@@ -778,10 +764,9 @@ void DL_ClearForFrame(void)
     numLuminous = 0;
 }
 
-//===========================================================================
-// DL_NewLuminous
-//  Allocates a new lumobj and returns a pointer to it.
-//===========================================================================
+/*
+ * Allocates a new lumobj and returns a pointer to it.
+ */
 int DL_NewLuminous(void)
 {
     lumobj_t *newList;
@@ -816,10 +801,9 @@ int DL_NewLuminous(void)
     return numLuminous;         // == index + 1
 }
 
-//===========================================================================
-// DL_GetLuminous
-//  Returns a pointer to the lumobj with the given 1-based index.
-//===========================================================================
+/*
+ * Returns a pointer to the lumobj with the given 1-based index.
+ */
 lumobj_t *DL_GetLuminous(int index)
 {
     if(index <= 0 || index > numLuminous)
@@ -827,11 +811,10 @@ lumobj_t *DL_GetLuminous(int index)
     return luminousList + index - 1;
 }
 
-//===========================================================================
-// DL_AddLuminous
-//  Registers the given thing as a luminous, light-emitting object.
-//  Note that this is called each frame for each luminous object!
-//===========================================================================
+/*
+ * Registers the given thing as a luminous, light-emitting object.
+ * Note that this is called each frame for each luminous object!
+ */
 void DL_AddLuminous(mobj_t *thing)
 {
     spritedef_t *sprdef;
@@ -972,17 +955,11 @@ void DL_AddLuminous(mobj_t *thing)
     }
 }
 
-//===========================================================================
-// DL_ContactSector
-//===========================================================================
 void DL_ContactSector(lumobj_t * lum, fixed_t *box, sector_t *sector)
 {
     P_SubsectorBoxIterator(box, sector, DL_AddContact, lum);
 }
 
-//===========================================================================
-// DLIT_ContactFinder
-//===========================================================================
 boolean DLIT_ContactFinder(line_t *line, void *data)
 {
     contactfinder_data_t *light = data;
@@ -1081,12 +1058,11 @@ boolean DLIT_ContactFinder(line_t *line, void *data)
     return true;
 }
 
-//===========================================================================
-// DL_FindContacts
-//  Create a contact for this lumobj in all the subsectors this light
-//  source is contacting (tests done on bounding boxes and the sector
-//  spread test).
-//===========================================================================
+/*
+ * Create a contact for this lumobj in all the subsectors this light
+ * source is contacting (tests done on bounding boxes and the sector
+ * spread test).
+ */
 void DL_FindContacts(lumobj_t * lum)
 {
     int     firstValid = ++validcount;
@@ -1144,9 +1120,6 @@ void DL_FindContacts(lumobj_t * lum)
        #endif */
 }
 
-//===========================================================================
-// DL_SpreadBlocks
-//===========================================================================
 void DL_SpreadBlocks(subsector_t *subsector)
 {
     int     xl, xh, yl, yh, x, y, *count;
@@ -1186,10 +1159,9 @@ void DL_SpreadBlocks(subsector_t *subsector)
         }
 }
 
-//===========================================================================
-// lumobjSorter
-//  Used to sort lumobjs by distance from viewpoint.
-//===========================================================================
+/*
+ * Used to sort lumobjs by distance from viewpoint.
+ */
 int C_DECL lumobjSorter(const void *e1, const void *e2)
 {
     lumobj_t *lum1 = DL_GetLuminous(*(const ushort *) e1);
@@ -1202,10 +1174,9 @@ int C_DECL lumobjSorter(const void *e1, const void *e2)
     return 0;
 }
 
-//===========================================================================
-// DL_LinkLuminous
-//  Clears the dlBlockLinks and then links all the listed luminous objects.
-//===========================================================================
+/*
+ * Clears the dlBlockLinks and then links all the listed luminous objects.
+ */
 void DL_LinkLuminous()
 {
 #define MAX_LUMS 8192           // Normally 100-200, heavy: 1000
@@ -1249,10 +1220,9 @@ void DL_LinkLuminous()
     }
 }
 
-//===========================================================================
-// DL_IsTexUsed
-//  Returns true if the texture is already used in the list of dynlights.
-//===========================================================================
+/*
+ * Returns true if the texture is already used in the list of dynlights.
+ */
 boolean DL_IsTexUsed(dynlight_t *node, DGLuint texture)
 {
     for(; node; node = node->next)
@@ -1261,9 +1231,6 @@ boolean DL_IsTexUsed(dynlight_t *node, DGLuint texture)
     return false;
 }
 
-//===========================================================================
-// DL_LightIteratorFunc
-//===========================================================================
 boolean DL_LightIteratorFunc(lumobj_t * lum, flatitervars_t * fi)
 {
     int     i;

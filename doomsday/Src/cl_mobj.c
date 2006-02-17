@@ -351,15 +351,14 @@ void Cl_UpdateRealPlayerMobj(mobj_t *mo, mobj_t *clmo, int flags)
     //if(flags & MDF_FLAGS) CON_Printf("Cl_RMD: ddf=%x\n", mo->ddflags);
 }
 
-//==========================================================================
-// Cl_ReadMobjDelta
-//  Reads a single mobj delta from the message buffer and applies
-//  it to the client mobj in question.
-//  For client mobjs that belong to players, updates the real player mobj.
-//  Returns false only if the list of deltas ends.
-//
-//  THIS FUNCTION IS NOW OBSOLETE (only used with old psv_frame packets)
-//==========================================================================
+/*
+ * Reads a single mobj delta from the message buffer and applies
+ * it to the client mobj in question.
+ * For client mobjs that belong to players, updates the real player mobj.
+ * Returns false only if the list of deltas ends.
+ *
+ * THIS FUNCTION IS NOW OBSOLETE (only used with old psv_frame packets)
+ */
 int Cl_ReadMobjDelta(void)
 {
     thid_t  id = Msg_ReadShort();   // Read the ID.

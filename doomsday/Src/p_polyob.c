@@ -78,9 +78,6 @@ void PO_SetCallback(void (*func) (mobj_t *, void *, void *))
     po_callback = func;
 }
 
-//==========================================================================
-// GetPolyobj
-//==========================================================================
 polyobj_t *GetPolyobj(int polyNum)
 {
     int     i;
@@ -95,9 +92,6 @@ polyobj_t *GetPolyobj(int polyNum)
     return NULL;
 }
 
-//==========================================================================
-// UpdateSegBBox
-//==========================================================================
 void UpdateSegBBox(seg_t *seg)
 {
     line_t *line;
@@ -149,9 +143,6 @@ void UpdateSegBBox(seg_t *seg)
     }
 }
 
-//==========================================================================
-// PO_MovePolyobj
-//==========================================================================
 boolean PO_MovePolyobj(int num, int x, int y)
 {
     int     count;
@@ -256,9 +247,6 @@ boolean PO_MovePolyobj(int num, int x, int y)
     return true;
 }
 
-//==========================================================================
-// RotatePt
-//==========================================================================
 static void RotatePt(int an, fixed_t *x, fixed_t *y, fixed_t startSpotX,
                      fixed_t startSpotY)
 {
@@ -277,9 +265,6 @@ static void RotatePt(int an, fixed_t *x, fixed_t *y, fixed_t startSpotX,
     *y = (gyt + gxt) + startSpotY;
 }
 
-//==========================================================================
-// PO_RotatePolyobj
-//==========================================================================
 boolean PO_RotatePolyobj(int num, angle_t angle)
 {
     int     count;
@@ -361,9 +346,6 @@ boolean PO_RotatePolyobj(int num, angle_t angle)
     return true;
 }
 
-//==========================================================================
-// PO_UnLinkPolyobj
-//==========================================================================
 void PO_UnLinkPolyobj(polyobj_t * po)
 {
     polyblock_t *link;
@@ -393,9 +375,6 @@ void PO_UnLinkPolyobj(polyobj_t * po)
     }
 }
 
-//==========================================================================
-// PO_LinkPolyobj
-//==========================================================================
 void PO_LinkPolyobj(polyobj_t * po)
 {
     int     leftX, rightX;
@@ -477,9 +456,6 @@ void PO_LinkPolyobj(polyobj_t * po)
     }
 }
 
-//==========================================================================
-// CheckMobjBlocking
-//==========================================================================
 static boolean CheckMobjBlocking(seg_t *seg, polyobj_t * po)
 {
     mobj_t *mobj, *root;
@@ -542,11 +518,10 @@ static boolean CheckMobjBlocking(seg_t *seg, polyobj_t * po)
     return blocked;
 }
 
-//===========================================================================
-// PO_GetNumForDegen
-//  Returns the index of the polyobj that owns the degenmobj.
-//  Returns -1 if nothing is found.
-//===========================================================================
+/*
+ * Returns the index of the polyobj that owns the degenmobj.
+ * Returns -1 if nothing is found.
+ */
 int PO_GetNumForDegen(void *degenMobj)
 {
     int     i;

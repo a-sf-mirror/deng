@@ -383,9 +383,10 @@ static void     P_ProcessSegs(gamemap_t* map, int version);
 static boolean  P_LoadReject(gamemap_t* map, mapdatalumpinfo_t* maplump);
 static boolean  P_LoadBlockMap(gamemap_t* map, mapdatalumpinfo_t* maplump);
 static void     P_GroupLines(gamemap_t* map);
-//#if _DEBUG
+
+#if _DEBUG
 static void     P_PrintDebugMapData(gamemap_t* map);
-//#endif
+#endif
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -416,16 +417,16 @@ maplumpinfo_t mapLumpInfo[] = {
     {"SIDEDEFS", 3, -1,  DAM_SIDE,      LCM_SIDEDEFS,   YES,   false},
     {"VERTEXES", 4, -1,  DAM_VERTEX,    LCM_VERTEXES,   YES,   false},
     {"SEGS",     5, -1,  DAM_SEG,       LCM_SEGS,       BSPBUILD, false},
-    {"SSECTORS", 6, -1,  DAM_SUBSECTOR, LCM_SUBSECTORS,   BSPBUILD, false},
+    {"SSECTORS", 6, -1,  DAM_SUBSECTOR, LCM_SUBSECTORS, BSPBUILD, false},
     {"NODES",    7, -1,  DAM_NODE,      LCM_NODES,      BSPBUILD, false},
     {"SECTORS",  8, -1,  DAM_SECTOR,    LCM_SECTORS,    YES,   false},
     {"REJECT",   9, -1,  DAM_SECREJECT, LCM_REJECT,     NO,    false},
-    {"BLOCKMAP", 10, -1, DAM_MAPBLOCK,  LCM_BLOCKMAP,   NO,    false},
+    {"BLOCKMAP", 10,-1,  DAM_MAPBLOCK,  LCM_BLOCKMAP,   NO,    false},
     {"BEHAVIOR", 11,-1,  DAM_ACSSCRIPT, LCM_BEHAVIOR,   NO,    false},
     {NULL,       -1, 0,  DAM_UNKNOWN,   LCG_LABEL,      NO,    false},
-    {"GL_VERT",  -1, 1,  DAM_VERTEX,    LCG_VERTEXES,      NO,    false},
+    {"GL_VERT",  -1, 1,  DAM_VERTEX,    LCG_VERTEXES,   NO,    false},
     {"GL_SEGS",  -1, 2,  DAM_SEG,       LCG_SEGS,       NO,    false},
-    {"GL_SSECT", -1, 3,  DAM_SUBSECTOR, LCG_SUBSECTORS,     NO,    false},
+    {"GL_SSECT", -1, 3,  DAM_SUBSECTOR, LCG_SUBSECTORS, NO,    false},
     {"GL_NODES", -1, 4,  DAM_NODE,      LCG_NODES,      NO,    false},
     {NULL}
 };
@@ -1404,7 +1405,7 @@ boolean P_LoadMapData(char *levelId)
         if(!P_ReadMapData(newmap, LCM_REJECT))
             return false;
 
-        P_PrintDebugMapData(newmap);
+        //P_PrintDebugMapData(newmap);
 
         // We have complete level data but we're not out of the woods yet...
         FreeMapDataLumps();
@@ -2358,6 +2359,16 @@ static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
  * iteration is aborted immediately when the callback function returns false.
  *
  * NOTE: Not very pretty to look at but it IS pretty quick :-)
+ *
+ * TODO: Make required changes to make signature compatible with the other
+ *       P_Callback function (may need to add a dummy parameter to P_Callback
+ *       since (byte*) buffer needs to be accessed here.).
+ *       Do NOT access the contents of (void*) context since we can't be
+ *       sure what it is.
+ *       DAM specific parameters could be passed to the callback function by
+ *       using a (void*) context parameter. This would allow our callbacks to
+ *       use the same signature as the DMU callbacks.
+ *       Think of a way to combine index and startIndex.
  */
 int P_CallbackEX(int dataType, int index, unsigned int startIndex,
                  const byte *buffer, void* context,
@@ -4220,7 +4231,7 @@ void P_InitMapDataFormats(void)
     }
 }
 
-//#if _DEBUG
+#if _DEBUG
 static void P_PrintDebugMapData(gamemap_t* map)
 {
     int i;
@@ -4306,7 +4317,7 @@ static void P_PrintDebugMapData(gamemap_t* map)
                     si->sector - map->sectors);
     }
 }
-//#endif
+#endif
 
 float AccurateDistance(fixed_t dx, fixed_t dy)
 {

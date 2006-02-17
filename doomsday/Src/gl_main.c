@@ -120,18 +120,14 @@ void GL_Register(void)
               "Default fog mode: 0=linear, 1=exp, 2=exp2.");
 }
 
-//===========================================================================
-// GL_IsInited
-//===========================================================================
 boolean GL_IsInited(void)
 {
     return initOk;
 }
 
-//===========================================================================
-// GL_Update
-//  This update stuff is really old-fashioned...
-//===========================================================================
+/*
+ * This update stuff is really old-fashioned...
+ */
 void GL_Update(int flags)
 {
     if(flags & DDUF_BORDER)
@@ -151,10 +147,9 @@ void GL_Update(int flags)
         GL_DoUpdate();
 }
 
-//==========================================================================
-// GL_DoUpdate
-//  Swaps buffers / blits the back buffer to the front.
-//==========================================================================
+/*
+ * Swaps buffers / blits the back buffer to the front.
+ */
 void GL_DoUpdate(void)
 {
     // Check for color adjustment changes.
@@ -247,9 +242,6 @@ void GL_GetGammaRamp(unsigned short *ramp)
 #endif
 }
 
-//===========================================================================
-// GL_SetGammaRamp
-//===========================================================================
 void GL_SetGammaRamp(unsigned short *ramp)
 {
     if(!gamma_support)
@@ -284,12 +276,11 @@ void GL_SetGammaRamp(unsigned short *ramp)
 #endif
 }
 
-//===========================================================================
-// GL_MakeGammaRamp
-//  Gamma      - non-linear factor (curvature; >1.0 multiplies)
-//  Contrast   - steepness
-//  Brightness - uniform offset
-//===========================================================================
+/*
+ * Gamma      - non-linear factor (curvature; >1.0 multiplies)
+ * Contrast   - steepness
+ * Brightness - uniform offset
+ */
 void GL_MakeGammaRamp(unsigned short *ramp, float gamma, float contrast,
                       float bright)
 {
@@ -335,10 +326,9 @@ void GL_MakeGammaRamp(unsigned short *ramp, float gamma, float contrast,
     }
 }
 
-//===========================================================================
-// GL_SetGamma
-//  Updates the gamma ramp based on vid_gamma, vid_contrast and vid_bright.
-//===========================================================================
+/*
+ * Updates the gamma ramp based on vid_gamma, vid_contrast and vid_bright.
+ */
 void GL_SetGamma(void)
 {
     gramp_t myramp;
@@ -351,9 +341,6 @@ void GL_SetGamma(void)
     GL_SetGammaRamp(myramp);
 }
 
-//===========================================================================
-// GL_InitFont
-//===========================================================================
 void GL_InitFont(void)
 {
     FR_Init();
@@ -363,18 +350,12 @@ void GL_InitFont(void)
     //Con_Execute("font default", true);    // Set the console font.
 }
 
-//===========================================================================
-// GL_ShutdownFont
-//===========================================================================
 void GL_ShutdownFont(void)
 {
     FR_Shutdown();
     glFontFixed = glFontVariable = 0;
 }
 
-//===========================================================================
-// GL_InitVarFont
-//===========================================================================
 void GL_InitVarFont(void)
 {
     int     old_font;
@@ -400,9 +381,6 @@ void GL_InitVarFont(void)
     varFontInited = true;
 }
 
-//===========================================================================
-// GL_ShutdownVarFont
-//===========================================================================
 void GL_ShutdownVarFont(void)
 {
     if(novideo || !varFontInited)
@@ -413,10 +391,9 @@ void GL_ShutdownVarFont(void)
     varFontInited = false;
 }
 
-//===========================================================================
-// GL_Init
-//  One-time initialization of DGL and the renderer.
-//===========================================================================
+/*
+ * One-time initialization of DGL and the renderer.
+ */
 void GL_Init(void)
 {
     if(initOk)
@@ -505,31 +482,28 @@ void GL_Init(void)
     initOk = true;
 }
 
-//===========================================================================
-// GL_InitRefresh
-//  Initializes the graphics library for refresh. Also called at update.
-//  Loadmaps can be loaded after all definitions have been read.
-//===========================================================================
+/*
+ * Initializes the graphics library for refresh. Also called at update.
+ * Loadmaps can be loaded after all definitions have been read.
+ */
 void GL_InitRefresh(boolean loadLightMaps)
 {
     GL_InitTextureManager();
     GL_LoadSystemTextures(loadLightMaps);
 }
 
-//===========================================================================
-// GL_ShutdownRefresh
-//  Called once at final shutdown.
-//===========================================================================
+/*
+ * Called once at final shutdown.
+ */
 void GL_ShutdownRefresh(void)
 {
     GL_ShutdownTextureManager();
     GL_DestroySkinNames();
 }
 
-//===========================================================================
-// GL_Shutdown
-//  Kills the graphics library for good.
-//===========================================================================
+/*
+ * Kills the graphics library for good.
+ */
 void GL_Shutdown(void)
 {
     if(!initOk)
@@ -552,10 +526,9 @@ void GL_Shutdown(void)
     initOk = false;
 }
 
-//===========================================================================
-// GL_Init2DState
-//  Initializes the renderer to 2D state.
-//===========================================================================
+/*
+ * Initializes the renderer to 2D state.
+ */
 void GL_Init2DState(void)
 {
     // The variables.
@@ -587,9 +560,6 @@ void GL_Init2DState(void)
        glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST); */
 }
 
-//===========================================================================
-// GL_SwitchTo3DState
-//===========================================================================
 void GL_SwitchTo3DState(boolean push_state)
 {
     if(push_state)
@@ -623,9 +593,6 @@ void GL_SwitchTo3DState(boolean push_state)
     GL_ProjectionMatrix();
 }
 
-//===========================================================================
-// GL_Restore2DState
-//===========================================================================
 void GL_Restore2DState(int step)
 {
     switch (step)
@@ -660,9 +627,6 @@ void GL_Restore2DState(int step)
     }
 }
 
-//===========================================================================
-// GL_ProjectionMatrix
-//===========================================================================
 void GL_ProjectionMatrix(void)
 {
     // We're assuming pixels are squares.
@@ -676,9 +640,6 @@ void GL_ProjectionMatrix(void)
     gl.Scalef(1, 1, -1);
 }
 
-//===========================================================================
-// GL_UseFog
-//===========================================================================
 void GL_UseFog(int yes)
 {
     if(!useFog && yes)
@@ -696,12 +657,11 @@ void GL_UseFog(int yes)
     // Otherwise we won't do a thing.
 }
 
-//===========================================================================
-// GL_TotalReset
-//  This needs to be called twice: first shutdown, then restore.
-//  GL is reset back to the state it was right after initialization.
-//  Lightmaps can be loaded after defs have been loaded (during restore).
-//===========================================================================
+/*
+ * This needs to be called twice: first shutdown, then restore.
+ * GL is reset back to the state it was right after initialization.
+ * Lightmaps can be loaded after defs have been loaded (during restore).
+ */
 void GL_TotalReset(boolean doShutdown, boolean loadLightMaps)
 {
     static char oldFontName[256];
@@ -753,13 +713,12 @@ void GL_TotalReset(boolean doShutdown, boolean loadLightMaps)
     }
 }
 
-//===========================================================================
-// GL_ChangeResolution
-//  Changes the resolution to the specified one.
-//  The change is carried out by SHUTTING DOWN the rendering DLL and then
-//  restarting it. All textures will be lost in the process.
-//  Restarting the renderer is the compatible way to do the change.
-//===========================================================================
+/*
+ * Changes the resolution to the specified one.
+ * The change is carried out by SHUTTING DOWN the rendering DLL and then
+ * restarting it. All textures will be lost in the process.
+ * Restarting the renderer is the compatible way to do the change.
+ */
 int GL_ChangeResolution(int w, int h, int bits)
 {
     if(novideo)
@@ -790,12 +749,11 @@ int GL_ChangeResolution(int w, int h, int bits)
     return true;
 }
 
-//===========================================================================
-// GL_GrabScreen
-//  Copies the current contents of the frame buffer and returns a pointer
-//  to data containing 24-bit RGB triplets. The caller must free the
-//  returned buffer using free()!
-//===========================================================================
+/*
+ * Copies the current contents of the frame buffer and returns a pointer
+ * to data containing 24-bit RGB triplets. The caller must free the
+ * returned buffer using free()!
+ */
 unsigned char *GL_GrabScreen(void)
 {
     unsigned char *buffer = malloc(screenWidth * screenHeight * 3);
@@ -804,10 +762,9 @@ unsigned char *GL_GrabScreen(void)
     return buffer;
 }
 
-//===========================================================================
-// GL_BlendMode
-//  Set the GL blending mode.
-//===========================================================================
+/*
+ * Set the GL blending mode.
+ */
 void GL_BlendMode(blendmode_t mode)
 {
     switch (mode)
@@ -859,10 +816,9 @@ void GL_BlendMode(blendmode_t mode)
     }
 }
 
-//==========================================================================
-// CCmdSetRes
-//  Change graphics mode resolution.
-//==========================================================================
+/*
+ * Change graphics mode resolution.
+ */
 D_CMD(SetRes)
 {
     if(isDedicated)
@@ -879,9 +835,6 @@ D_CMD(SetRes)
     return GL_ChangeResolution(atoi(argv[1]), atoi(argv[2]), 0);
 }
 
-//===========================================================================
-// CCmdUpdateGammaRamp
-//===========================================================================
 D_CMD(UpdateGammaRamp)
 {
     GL_SetGamma();

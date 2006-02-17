@@ -98,20 +98,16 @@ static int demostarttic;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// Demo_Init
-//===========================================================================
 void Demo_Init(void)
 {
     // Make sure the demo path is there.
     M_CheckPath(demoPath);
 }
 
-//==========================================================================
-// Demo_BeginRecording
-//  Open a demo file and begin recording.
-//  Returns false if the recording can't be begun.
-//==========================================================================
+/*
+ * Open a demo file and begin recording.
+ * Returns false if the recording can't be begun.
+ */
 boolean Demo_BeginRecording(char *fileName, int playerNum)
 {
     char    buf[200];
@@ -161,9 +157,6 @@ boolean Demo_BeginRecording(char *fileName, int playerNum)
     return true;
 }
 
-//===========================================================================
-// Demo_PauseRecording
-//===========================================================================
 void Demo_PauseRecording(int playerNum)
 {
     client_t *cl = clients + playerNum;
@@ -176,10 +169,9 @@ void Demo_PauseRecording(int playerNum)
     cl->recordPaused = true;
 }
 
-//===========================================================================
-// Demo_ResumeRecording
-//  Resumes a paused recording.
-//===========================================================================
+/*
+ * Resumes a paused recording.
+ */
 void Demo_ResumeRecording(int playerNum)
 {
     client_t *cl = clients + playerNum;
@@ -195,10 +187,9 @@ void Demo_ResumeRecording(int playerNum)
     writeInfo[playerNum].begintime += DEMOTIC - writeInfo[playerNum].pausetime;
 }
 
-//===========================================================================
-// Demo_StopRecording
-//  Stop recording a demo.
-//===========================================================================
+/*
+ * Stop recording a demo.
+ */
 void Demo_StopRecording(int playerNum)
 {
     client_t *cl = clients + playerNum;
@@ -212,9 +203,6 @@ void Demo_StopRecording(int playerNum)
     cl->recording = false;
 }
 
-//===========================================================================
-// Demo_WritePacket
-//===========================================================================
 void Demo_WritePacket(int playerNum)
 {
     LZFILE *file;
@@ -420,10 +408,9 @@ boolean Demo_ReadPacket(void)
     return true;
 }
 
-//==========================================================================
-// Demo_WriteLocalCamera
-//  Writes a view angle and coords packet. Doesn't send the packet outside.
-//==========================================================================
+/*
+ * Writes a view angle and coords packet. Doesn't send the packet outside.
+ */
 void Demo_WriteLocalCamera(int plnum)
 {
     mobj_t *mo = players[plnum].mo;
@@ -464,11 +451,10 @@ void Demo_WriteLocalCamera(int plnum)
     Net_SendBuffer(plnum, SPF_DONT_SEND);
 }
 
-//==========================================================================
-// Demo_ReadLocalCamera
-//  Read a view angle and coords packet. NOTE: The Z coordinate of the
-//  camera is the real eye Z coordinate, not the player mobj's Z coord.
-//==========================================================================
+/*
+ * Read a view angle and coords packet. NOTE: The Z coordinate of the
+ * camera is the real eye Z coordinate, not the player mobj's Z coord.
+ */
 void Demo_ReadLocalCamera(void)
 {
     ddplayer_t *pl = players + consoleplayer;
@@ -553,10 +539,9 @@ void Demo_ReadLocalCamera(void)
     }
 }
 
-//==========================================================================
-// Demo_Ticker
-//  Called once per tic.
-//==========================================================================
+/*
+ * Called once per tic.
+ */
 void Demo_Ticker(timespan_t time)
 {
     static trigger_t fixed = { 1 / 35.0 };
@@ -591,13 +576,6 @@ void Demo_Ticker(timespan_t time)
     }
 }
 
-//------------------------------------------------------------------------
-// Console Commands
-//------------------------------------------------------------------------
-
-//===========================================================================
-// CCmdPlayDemo
-//===========================================================================
 D_CMD(PlayDemo)
 {
     if(argc != 2)
@@ -609,9 +587,6 @@ D_CMD(PlayDemo)
     return Demo_BeginPlayback(argv[1]);
 }
 
-//===========================================================================
-// CCmdRecordDemo
-//===========================================================================
 D_CMD(RecordDemo)
 {
     int     plnum = consoleplayer;
@@ -638,9 +613,6 @@ D_CMD(RecordDemo)
     return Demo_BeginRecording(argv[1], plnum);
 }
 
-//===========================================================================
-// CCmdPauseDemo
-//===========================================================================
 D_CMD(PauseDemo)
 {
     int     plnum = consoleplayer;
@@ -665,9 +637,6 @@ D_CMD(PauseDemo)
     return true;
 }
 
-//===========================================================================
-// CCmdStopDemo
-//===========================================================================
 D_CMD(StopDemo)
 {
     int     plnum = consoleplayer;
@@ -694,10 +663,9 @@ D_CMD(StopDemo)
     return true;
 }
 
-//===========================================================================
-// CCmdDemoLump
-//  Make a demo lump.
-//===========================================================================
+/*
+ * Make a demo lump.
+ */
 D_CMD(DemoLump)
 {
     char    buf[64];

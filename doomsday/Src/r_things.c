@@ -21,6 +21,12 @@
  * r_things.c: Object Management and Refresh
  */
 
+/*
+ * Sprite rotation 0 is facing the viewer, rotation 1 is one angle
+ * turn CLOCKWISE around the axis. This is not the same as the angle,
+ * which increases counter clockwise (protractor).
+ */
+
 // HEADER FILES ------------------------------------------------------------
 
 #include <stdio.h>
@@ -87,23 +93,14 @@ int     newvissprite;
 
 int     r_maxmodelz = 1500;
 
+int     LevelFullBright = false;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static mobj_t *projectedThing;  // Used during RIT_VisMobjZ
 
 // CODE --------------------------------------------------------------------
 
-/*
- * Sprite rotation 0 is facing the viewer, rotation 1 is one angle
- * turn CLOCKWISE around the axis. This is not the same as the angle,
- * which increases counter clockwise (protractor).
- */
-
-int     LevelFullBright = false;
-
-//===========================================================================
-// R_InitSpriteLumps
-//===========================================================================
 void R_InitSpriteLumps(void)
 {
     patch_t *patch;
@@ -129,10 +126,9 @@ void R_InitSpriteLumps(void)
     Con_HideProgress();
 }
 
-//===========================================================================
-// R_NewSpriteLump
-//  Returns the new sprite lump number.
-//===========================================================================
+/*
+ * Returns the new sprite lump number.
+ */
 int R_NewSpriteLump(int lump)
 {
     spritelump_t *newlist, *ptr;
@@ -157,10 +153,9 @@ int R_NewSpriteLump(int lump)
     return numspritelumps - 1;
 }
 
-//===========================================================================
-// R_InstallSpriteLump
-//   Local function for R_InitSprites.
-//===========================================================================
+/*
+ * Local function for R_InitSprites.
+ */
 void R_InstallSpriteLump(int lump, unsigned frame, unsigned rotation,
                          boolean flipped)
 {
@@ -209,17 +204,16 @@ void R_InstallSpriteLump(int lump, unsigned frame, unsigned rotation,
     sprtemp[frame].flip[rotation] = (byte) flipped;
 }
 
-//===========================================================================
-// R_InitSpriteDefs
-//  Pass a null terminated list of sprite names (4 chars exactly) to be used
-//  Builds the sprite rotation matrixes to account for horizontally flipped
-//  sprites.  Will report an error if the lumps are inconsistant.
-//
-//  Sprite lump names are 4 characters for the actor, a letter for the frame,
-//  and a number for the rotation, A sprite that is flippable will have an
-//  additional letter/number appended.  The rotation character can be 0 to
-//  signify no rotations.
-//===========================================================================
+/*
+ * Pass a null terminated list of sprite names (4 chars exactly) to be used
+ * Builds the sprite rotation matrixes to account for horizontally flipped
+ * sprites.  Will report an error if the lumps are inconsistant.
+ *
+ * Sprite lump names are 4 characters for the actor, a letter for the frame,
+ * and a number for the rotation, A sprite that is flippable will have an
+ * additional letter/number appended.  The rotation character can be 0 to
+ * signify no rotations.
+ */
 void R_InitSpriteDefs(void)
 {
     int     i, l, intname, frame, rotation;
@@ -341,9 +335,6 @@ void R_InitSpriteDefs(void)
     }
 }
 
-//===========================================================================
-// R_GetSpriteInfo
-//===========================================================================
 void R_GetSpriteInfo(int sprite, int frame, spriteinfo_t *sprinfo)
 {
     spritedef_t *sprdef;
@@ -377,9 +368,6 @@ void R_GetSpriteInfo(int sprite, int frame, spriteinfo_t *sprinfo)
     sprinfo->height = sprlump->height;
 }
 
-//===========================================================================
-// R_GetPatchInfo
-//===========================================================================
 void R_GetPatchInfo(int lump, spriteinfo_t *info)
 {
     patch_t *patch = W_CacheLumpNum(lump, PU_CACHE);
@@ -392,10 +380,9 @@ void R_GetPatchInfo(int lump, spriteinfo_t *info)
     info->offset = SHORT(patch->leftoffset);
 }
 
-//===========================================================================
-// R_VisualRadius
-//  Returns the radius of the mobj as it would visually appear to be.
-//===========================================================================
+/*
+ * Returns the radius of the mobj as it would visually appear to be.
+ */
 int R_VisualRadius(mobj_t *mo)
 {
     modeldef_t *mf, *nextmf;
@@ -417,17 +404,6 @@ int R_VisualRadius(mobj_t *mo)
     return sprinfo.width / 2;
 }
 
-/*
-   ===============================================================================
-
-   GAME FUNCTIONS
-
-   ===============================================================================
- */
-
-//===========================================================================
-// R_InitSprites
-//===========================================================================
 void R_InitSprites(void)
 {
     // Free all previous sprite memory.
@@ -436,18 +412,14 @@ void R_InitSprites(void)
     R_InitSpriteLumps();
 }
 
-//===========================================================================
-// R_ClearSprites
-//  Called at frame start.
-//===========================================================================
+/*
+ * Called at frame start.
+ */
 void R_ClearSprites(void)
 {
     vissprite_p = vissprites;
 }
 
-//===========================================================================
-// R_NewVisSprite
-//===========================================================================
 vissprite_t *R_NewVisSprite(void)
 {
     if(vissprite_p == &vissprites[MAXVISSPRITES])
@@ -456,9 +428,6 @@ vissprite_t *R_NewVisSprite(void)
     return vissprite_p - 1;
 }
 
-//===========================================================================
-// R_ProjectDecoration
-//===========================================================================
 void R_ProjectDecoration(mobj_t *source)
 {
     float   v1[2];
@@ -480,11 +449,10 @@ void R_ProjectDecoration(mobj_t *source)
     vis->data.mo.gz = vis->data.mo.gzt = source->z;
 }
 
-//===========================================================================
-// R_ProjectPlayerSprites
-//  If 3D models are found for psprites, here we will create vissprites
-//  for them.
-//===========================================================================
+/*
+ * If 3D models are found for psprites, here we will create vissprites
+ * for them.
+ */
 void R_ProjectPlayerSprites(void)
 {
     int     i;
@@ -581,18 +549,12 @@ void R_ProjectPlayerSprites(void)
     }
 }
 
-//===========================================================================
-// R_MovementYaw
-//===========================================================================
 float R_MovementYaw(fixed_t momx, fixed_t momy)
 {
     // Multiply by 100 to get some artificial accuracy in bamsAtan2.
     return BANG2DEG(bamsAtan2(-100 * FIX2FLT(momy), 100 * FIX2FLT(momx)));
 }
 
-//===========================================================================
-// R_MovementPitch
-//===========================================================================
 float R_MovementPitch(fixed_t momx, fixed_t momy, fixed_t momz)
 {
     return
@@ -626,10 +588,9 @@ boolean RIT_VisMobjZ(sector_t *sector, void *data)
     return true;
 }
 
-//===========================================================================
-// R_ProjectSprite
-//  Generates a vissprite for a thing if it might be visible.
-//===========================================================================
+/*
+ * Generates a vissprite for a thing if it might be visible.
+ */
 void R_ProjectSprite(mobj_t *thing)
 {
     sector_t *sect = thing->subsector->sector;
@@ -985,14 +946,6 @@ void R_ProjectSprite(mobj_t *thing)
     }
 }
 
-/*
-   ========================
-   =
-   = R_AddSprites
-   =
-   ========================
- */
-
 void R_AddSprites(sector_t *sec)
 {
     mobj_t *thing;
@@ -1028,14 +981,6 @@ void R_AddSprites(sector_t *sec)
         }
     }
 }
-
-/*
-   ========================
-   =
-   = R_SortVisSprites
-   =
-   ========================
- */
 
 vissprite_t vsprsortedhead;
 

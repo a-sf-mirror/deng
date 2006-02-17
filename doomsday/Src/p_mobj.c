@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not: http://www.opensource.org/
- *
- * Based on Hexen by Raven Software.
  */
 
 /*
@@ -46,6 +44,8 @@
 #define MINMOVE         (FRACUNIT >> 7)
 
 #define MIN_STEP(d)     ((d) <= MINMOVE && (d) >= -MINMOVE)
+
+#define STOPSPEED           0x1000
 
 // TYPES -------------------------------------------------------------------
 
@@ -89,14 +89,15 @@ mobj_t *slidemo;
 fixed_t tmxmove;
 fixed_t tmymove;
 
+boolean nofit;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// P_SetState
-//  'statenum' must be a valid state (not null!).
-//===========================================================================
+/*
+ * 'statenum' must be a valid state (not null!).
+ */
 void P_SetState(mobj_t *mobj, int statenum)
 {
     state_t *st = states + statenum;
@@ -127,14 +128,9 @@ void P_SetState(mobj_t *mobj, int statenum)
         Con_Execute(CMDS_DED, defs.states[statenum].execute, true);
 }
 
-//
-// MOVEMENT ITERATOR FUNCTIONS
-//
-
-//===========================================================================
-// PIT_CheckLine
-//  Adjusts tmfloorz and tmceilingz as lines are contacted.
-//===========================================================================
+/*
+ * Adjusts tmfloorz and tmceilingz as lines are contacted.
+ */
 static boolean PIT_CheckLine(line_t *ld, void *parm)
 {
     checkpos_data_t *tm = parm;
@@ -179,9 +175,6 @@ static boolean PIT_CheckLine(line_t *ld, void *parm)
     return true;
 }
 
-//===========================================================================
-// PIT_CheckThing
-//===========================================================================
 static boolean PIT_CheckThing(mobj_t *thing, void *parm)
 {
     checkpos_data_t *tm = parm;
@@ -249,10 +242,6 @@ static boolean PIT_CheckThing(mobj_t *thing, void *parm)
     }
     return false;
 }
-
-//
-// MOVEMENT CLIPPING
-//
 
 /*
  * Returns true if it the thing can be positioned in the coordinates.
@@ -522,16 +511,11 @@ static boolean P_HeightClip(mobj_t *thing)
     return true;
 }
 
-//
-// SLIDE MOVE
-// Allows the player to slide along any angled walls.
-//
-
-//
-// P_WallMomSlide
-// Adjusts the xmove / ymove
-// so that the next move will slide along the wall.
-//
+/*
+ * Allows the player to slide along any angled walls.
+ * Adjusts the xmove / ymove so that the next move will
+ * slide along the wall.
+ */
 static void P_WallMomSlide(line_t *ld)
 {
     int     side;
@@ -575,9 +559,6 @@ static void P_WallMomSlide(line_t *ld)
     tmymove = FixedMul(newlen, finesine[lineangle]);
 }
 
-//
-// PTR_SlideTraverse
-//
 static boolean PTR_SlideTraverse(intercept_t * in)
 {
     line_t *li;
@@ -625,14 +606,12 @@ static boolean PTR_SlideTraverse(intercept_t * in)
     return false;               // stop
 }
 
-//
-// The momx / momy move is bad, so try to slide
-// along a wall.
-// Find the first line hit, move flush to it,
-// and slide along it
-//
-// This is a kludgy mess. (No kidding?)
-//
+/*
+ * The momx / momy move is bad, so try to slide along a wall.
+ * Find the first line hit, move flush to it, and slide along it
+ *
+ * This is a kludgy mess. (No kidding?)
+ */
 static void P_ThingSlidingMove(mobj_t *mo)
 {
     fixed_t leadx;
@@ -726,16 +705,12 @@ static void P_ThingSlidingMove(mobj_t *mo)
     }
 }
 
-//
-// SECTOR HEIGHT CHANGING
-// After modifying a sectors floor or ceiling height,
-// call this routine to adjust the positions
-// of all things that touch the sector.
-//
-// If anything doesn't fit anymore, true will be returned.
-//
-boolean nofit;
-
+/*
+ * After modifying a sectors floor or ceiling height, call this routine
+ * to adjust the positions of all things that touch the sector.
+ *
+ * If anything doesn't fit anymore, true will be returned.
+ */
 static boolean PIT_SectorPlanesChanged(mobj_t *thing, void *data)
 {
     // Always keep checking.
@@ -760,17 +735,14 @@ boolean P_SectorPlanesChanged(sector_t *sector)
     return nofit;
 }
 
-//
-// P_XYMovement
-//
-#define STOPSPEED           0x1000
-
 void P_ThingMovement(mobj_t *mo)
 {
     P_ThingMovement2(mo, NULL);
 }
 
-// Playmove can be NULL. It's only used with player mobjs.
+/*
+ * Playmove can be NULL. It's only used with player mobjs.
+ */
 void P_ThingMovement2(mobj_t *mo, void *pstate)
 {
     playerstate_t *playstate = pstate;
@@ -875,9 +847,6 @@ void P_ThingMovement2(mobj_t *mo, void *pstate)
     }
 }
 
-//
-// P_ZMovement
-//
 void P_ThingZMovement(mobj_t *mo)
 {
     // check for smooth step up

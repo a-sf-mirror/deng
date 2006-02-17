@@ -57,9 +57,6 @@ static divline_t strace;
 
 // CODE --------------------------------------------------------------------
 
-//==========================================================================
-// PTR_SightTraverse
-//==========================================================================
 boolean PTR_SightTraverse(intercept_t * in)
 {
     line_t *li;
@@ -95,9 +92,6 @@ boolean PTR_SightTraverse(intercept_t * in)
     return true;                // keep going
 }
 
-//==========================================================================
-// P_SightBlockLinesIterator
-//==========================================================================
 boolean P_SightBlockLinesIterator(int x, int y)
 {
     int     offset;
@@ -196,11 +190,10 @@ boolean P_SightBlockLinesIterator(int x, int y)
     return true;                // everything was checked
 }
 
-//==========================================================================
-// P_SightPathTraverse
-//  Traces a line from x1,y1 to x2,y2, calling the traverser function for
-//  each. Returns true if the traverser function returns true for all lines.
-//==========================================================================
+/*
+ * Traces a line from x1,y1 to x2,y2, calling the traverser function for
+ * each. Returns true if the traverser function returns true for all lines.
+ */
 boolean P_SightPathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 {
     fixed_t xt1, yt1, xt2, yt2;
@@ -442,11 +435,10 @@ boolean P_SightPathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 }
 #endif
 
-//==========================================================================
-// P_CheckReject
-//  Checks the reject matrix to find out if the two sectors are visible
-//  from each other.
-//==========================================================================
+/*
+ * Checks the reject matrix to find out if the two sectors are visible
+ * from each other.
+ */
 boolean P_CheckReject(sector_t *sec1, sector_t *sec2)
 {
     int     s1;
@@ -475,13 +467,12 @@ boolean P_CheckReject(sector_t *sec1, sector_t *sec2)
     return true;
 }
 
-//==========================================================================
-// P_CheckSight
-//  Returns true if a straight line between t1 and t2 is unobstructed.
-//  Look from eyes of t1 to any part of t2 (start from middle of t1).
-//  Uses specialized forms of the maputils routines for optimized
-//  performance.
-//==========================================================================
+/*
+ * Returns true if a straight line between t1 and t2 is unobstructed.
+ * Look from eyes of t1 to any part of t2 (start from middle of t1).
+ * Uses specialized forms of the maputils routines for optimized
+ * performance.
+ */
 boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 {
     // If either is unlinked, they can't see each other.

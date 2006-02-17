@@ -174,10 +174,9 @@ void Def_Init(void)
     }
 }
 
-//===========================================================================
-// Def_Destroy
-//  Destroy databases.
-//===========================================================================
+/*
+ * Destroy databases.
+ */
 void Def_Destroy(void)
 {
     // To make sure...
@@ -218,10 +217,9 @@ void Def_GetAutoPath(char *path)
     strcpy(lastSlash + 1, "Auto" DIR_SEP_STR);
 }
 
-//===========================================================================
-// Def_GetSpriteNum
-//  Returns the number of the given sprite, or -1 if it doesn't exist.
-//===========================================================================
+/*
+ * Returns the number of the given sprite, or -1 if it doesn't exist.
+ */
 int Def_GetSpriteNum(char *name)
 {
     int     i;
@@ -295,11 +293,10 @@ int Def_GetSoundNum(char *id)
     return -1;
 }
 
-//===========================================================================
-// Def_GetSoundNumForName
-//  Looks up a sound using the Name key. If the name is not found, returns
-//  the NULL sound index (zero).
-//===========================================================================
+/*
+ * Looks up a sound using the Name key. If the name is not found, returns
+ * the NULL sound index (zero).
+ */
 int Def_GetSoundNumForName(char *name)
 {
     int     i;
@@ -479,10 +476,9 @@ int Def_GetTextNumForName(char *name)
     return -1;
 }
 
-//===========================================================================
-// DD_InitTextDef
-//  Escape sequences are un-escaped (\n, \r, \t, \s, \_).
-//===========================================================================
+/*
+ * Escape sequences are un-escaped (\n, \r, \t, \s, \_).
+ */
 void Def_InitTextDef(ddtext_t *txt, char *str)
 {
     char   *out, *in;
@@ -513,10 +509,9 @@ void Def_InitTextDef(ddtext_t *txt, char *str)
     txt->text = realloc(txt->text, strlen(txt->text) + 1);
 }
 
-//===========================================================================
-// Def_ReadDEDFile
-//  Callback for DD_ReadProcessDED.
-//===========================================================================
+/*
+ * Callback for DD_ReadProcessDED.
+ */
 int Def_ReadDEDFile(const char *fn, filetype_t type, void *parm)
 {
     // Skip directories.
@@ -539,9 +534,6 @@ int Def_ReadDEDFile(const char *fn, filetype_t type, void *parm)
     return true;
 }
 
-//===========================================================================
-// Def_ReadProcessDED
-//===========================================================================
 void Def_ReadProcessDED(const char *fileName)
 {
     filename_t fn, fullFn;
@@ -571,10 +563,9 @@ void Def_ReadProcessDED(const char *fileName)
     }
 }
 
-//===========================================================================
-// Def_CountMsg
-//  Prints a count with a 2-space indentation.
-//===========================================================================
+/*
+ * Prints a count with a 2-space indentation.
+ */
 void Def_CountMsg(int count, const char *label)
 {
     if(!verbose && !count)
@@ -582,10 +573,9 @@ void Def_CountMsg(int count, const char *label)
     Con_Message("%5i %s\n", count, label);
 }
 
-//===========================================================================
-// DD_ReadLumpDefs
-//  Reads all DD_DEFNS lumps found in the lumpinfo.
-//===========================================================================
+/*
+ * Reads all DD_DEFNS lumps found in the lumpinfo.
+ */
 void Def_ReadLumpDefs(void)
 {
     int     i, c;
@@ -608,10 +598,9 @@ void Def_ReadLumpDefs(void)
     }
 }
 
-//===========================================================================
-// Def_StateForMobj
-//  Uses gettingFor. Initializes the state-owners information.
-//===========================================================================
+/*
+ * Uses gettingFor. Initializes the state-owners information.
+ */
 int Def_StateForMobj(char *state_id)
 {
     int     num = Def_GetStateNum(state_id);
@@ -651,11 +640,10 @@ int Def_GetIntValue(char *val, int *returned_val)
     return false;
 }
 
-//===========================================================================
-// Def_Read
-//  Reads the specified definition files, and creates the sprite name,
-//  state, mobjinfo, sound, music, text and mapinfo databases accordingly.
-//===========================================================================
+/*
+ * Reads the specified definition files, and creates the sprite name,
+ * state, mobjinfo, sound, music, text and mapinfo databases accordingly.
+ */
 void Def_Read(void)
 {
     int     i, k;
@@ -953,11 +941,10 @@ void Def_Read(void)
     defsInited = true;
 }
 
-//===========================================================================
-// Def_PostInit
-//  Initialize definitions that must be initialized when engine init is
-//  complete (called from R_Init).
-//===========================================================================
+/*
+ * Initialize definitions that must be initialized when engine init is
+ * complete (called from R_Init).
+ */
 void Def_PostInit(void)
 {
     int     i, k;
@@ -1084,9 +1071,6 @@ void Def_PostInit(void)
     }
 }
 
-//===========================================================================
-// Def_SetLightMap
-//===========================================================================
 void Def_SetLightMap(ded_lightmap_t * map, const char *id,
                      unsigned int texture)
 {
@@ -1095,9 +1079,6 @@ void Def_SetLightMap(ded_lightmap_t * map, const char *id,
     map->tex = texture;
 }
 
-//===========================================================================
-// Def_LightMapLoaded
-//===========================================================================
 void Def_LightMapLoaded(const char *id, unsigned int texture)
 {
     int     i, k;
@@ -1124,11 +1105,10 @@ void Def_LightMapLoaded(const char *id, unsigned int texture)
     }
 }
 
-//==========================================================================
-// Def_SameStateSequence
-//  Can we reach 'snew' if we start searching from 'sold'?
-//  Take a maximum of 16 steps.
-//==========================================================================
+/*
+ * Can we reach 'snew' if we start searching from 'sold'?
+ * Take a maximum of 16 steps.
+ */
 boolean Def_SameStateSequence(state_t * snew, state_t * sold)
 {
     int     it, target = snew - states, start = sold - states;
@@ -1150,10 +1130,9 @@ boolean Def_SameStateSequence(state_t * snew, state_t * sold)
 }
 
 #if 0
-//===========================================================================
-// DD_HasMobjState
-//  Returns true if the mobj (in mobjinfo) has the given state.
-//===========================================================================
+/*
+ * Returns true if the mobj (in mobjinfo) has the given state.
+ */
 boolean DD_HasMobjState(int mobj_num, int state_num)
 {
     mobjinfo_t *mo = mobjinfo + mobj_num;
@@ -1186,11 +1165,10 @@ static int Friendly(int num)
     return num;
 }
 
-//===========================================================================
-// Def_CopyLineType
-//  Converts a DED line type to the internal format.
-//  Bit of a nuisance really...
-//===========================================================================
+/*
+ * Converts a DED line type to the internal format.
+ * Bit of a nuisance really...
+ */
 void Def_CopyLineType(linetype_t * l, ded_linetype_t * def)
 {
     int     i, k, a;
@@ -1282,10 +1260,9 @@ void Def_CopyLineType(linetype_t * l, ded_linetype_t * def)
     }
 }
 
-//===========================================================================
-// Def_CopySectorType
-//  Converts a DED sector type to the internal format.
-//===========================================================================
+/*
+ * Converts a DED sector type to the internal format.
+ */
 void Def_CopySectorType(sectortype_t * s, ded_sectortype_t * def)
 {
     int     i, k;
@@ -1331,10 +1308,9 @@ void Def_CopySectorType(sectortype_t * s, ded_sectortype_t * def)
     LOOPi(2) s->ceil_interval[i] = def->ceil_interval[i];
 }
 
-//===========================================================================
-// Def_Get
-//  Returns true if the definition was found.
-//===========================================================================
+/*
+ * Returns true if the definition was found.
+ */
 int Def_Get(int type, char *id, void *out)
 {
     int     i;
@@ -1469,11 +1445,10 @@ int Def_Get(int type, char *id, void *out)
     return true;
 }
 
-//===========================================================================
-// Def_Set
-//  This is supposed to be the main interface for outside parties to
-//  modify definitions (unless they want to do it manually with dedfile.h).
-//===========================================================================
+/*
+ * This is supposed to be the main interface for outside parties to
+ * modify definitions (unless they want to do it manually with dedfile.h).
+ */
 int Def_Set(int type, int index, int value, void *ptr)
 {
     ded_music_t *musdef = 0;

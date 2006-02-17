@@ -164,11 +164,11 @@ const valuetype_t propertyTypes[] = {
     DDVT_NONE,        // DMU_POLYBLOCKMAP
     DDVT_PTR,         // DMU_POLYOBJ
 
-    DDVT_NONE,        // DMU_LINE_BY_TAG
-    DDVT_NONE,        // DMU_SECTOR_BY_TAG
+    DDVT_PTR,         // DMU_LINE_BY_TAG
+    DDVT_PTR,         // DMU_SECTOR_BY_TAG
 
-    DDVT_NONE,        // DMU_LINE_BY_ACT_TAG
-    DDVT_NONE,        // DMU_SECTOR_BY_ACT_TAG
+    DDVT_PTR,         // DMU_LINE_BY_ACT_TAG
+    DDVT_PTR,         // DMU_SECTOR_BY_ACT_TAG
 
     DDVT_NONE,        // unused1
     DDVT_NONE,        // unused2
@@ -226,7 +226,7 @@ const valuetype_t propertyTypes[] = {
     DDVT_BYTE,        // DMU_COLOR_GREEN
     DDVT_BYTE,        // DMU_COLOR_BLUE
     DDVT_SHORT,       // DMU_LIGHT_LEVEL
-    DDVT_NONE,        // DMU_THINGS
+    DDVT_PTR,         // DMU_THINGS
     DDVT_FIXED,       // DMU_BOUNDING_BOX
     DDVT_PTR,         // DMU_SOUND_ORIGIN
     DDVT_FLOAT,       // DMU_SOUND_REVERB
@@ -263,7 +263,7 @@ const valuetype_t propertyTypes[] = {
     DDVT_INT,         // DMU_CEILING_TEXTURE_MOVE_XY
     DDVT_PTR,         // DMU_CEILING_SOUND_ORIGIN
 
-    DDVT_NONE,        // DMU_SEG_LIST
+    DDVT_PTR,         // DMU_SEG_LIST
     DDVT_INT,         // DMU_SEG_COUNT
     DDVT_INT,         // DMU_TAG
     DDVT_PTR,         // DMU_ORIGINAL_POINTS

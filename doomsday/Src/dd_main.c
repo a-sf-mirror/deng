@@ -129,10 +129,9 @@ static char *wadfiles[MAXWADFILES];
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// DD_AddIWAD
-//      Adds the given IWAD to the list of default IWADs.
-//===========================================================================
+/*
+ * Adds the given IWAD to the list of default IWADs.
+ */
 void DD_AddIWAD(const char *path)
 {
     int     i = 0;
@@ -145,9 +144,6 @@ void DD_AddIWAD(const char *path)
     strcpy(iwadlist[i], buf);
 }
 
-//===========================================================================
-// AddToWadList
-//===========================================================================
 #define ATWSEPS ",; \t"
 static void AddToWadList(char *list)
 {
@@ -164,9 +160,9 @@ static void AddToWadList(char *list)
     free(buffer);
 }
 
-//===========================================================================
-// autoDataAdder (f_forall_func_t)
-//===========================================================================
+/*
+ * (f_forall_func_t)
+ */
 static int autoDataAdder(const char *fileName, filetype_t type,
                          void *ptr)
 {
@@ -190,12 +186,11 @@ static int autoDataAdder(const char *fileName, filetype_t type,
     return true;
 }
 
-//===========================================================================
-// DD_AddAutoData
-//  Files with the extensions wad, lmp, pk3, zip and deh in the automatical data
-//  directory are added to the wadfiles list.  Returns the number of new
-//  files that were loaded.
-//===========================================================================
+/*
+ * Files with the extensions wad, lmp, pk3, zip and deh in the automatical data
+ * directory are added to the wadfiles list.  Returns the number of new
+ * files that were loaded.
+ */
 int DD_AddAutoData(boolean loadFiles)
 {
     autoload_t data;
@@ -222,31 +217,26 @@ int DD_AddAutoData(boolean loadFiles)
     return data.count;
 }
 
-//===========================================================================
-// DD_SetConfigFile
-//===========================================================================
 void DD_SetConfigFile(char *filename)
 {
     strcpy(configFileName, filename);
     Dir_FixSlashes(configFileName);
 }
 
-//===========================================================================
-// DD_SetDefsFile (exported)
-//      Set the primary DED file, which is included immediately after
-//      Doomsday.ded.
-//===========================================================================
+/*
+ * Set the primary DED file, which is included immediately after
+ * Doomsday.ded.
+ */
 void DD_SetDefsFile(char *filename)
 {
     sprintf(topDefsFileName, "%sDefs\\%s", ddBasePath, filename);
     Dir_FixSlashes(topDefsFileName);
 }
 
-//===========================================================================
-// DD_Verbosity
-//      Sets the level of verbosity that was requested using the -verbose
-//      option(s).
-//===========================================================================
+/*
+ * Sets the level of verbosity that was requested using the -verbose
+ * option(s).
+ */
 void DD_Verbosity(void)
 {
     int     i;
@@ -256,10 +246,9 @@ void DD_Verbosity(void)
             verbose++;
 }
 
-//===========================================================================
-// DD_DefineBuiltinVDM
-//      Define Auto mappings for the runtime directory.
-//===========================================================================
+/*
+ * Define Auto mappings for the runtime directory.
+ */
 void DD_DefineBuiltinVDM(void)
 {
     filename_t dest;
@@ -273,11 +262,10 @@ void DD_DefineBuiltinVDM(void)
     F_AddMapping("Auto", dest);
 }
 
-//===========================================================================
-// DD_Main
-//      Engine and game initialization. When complete, starts the game loop.
-//      What a mess...
-//===========================================================================
+/*
+ * Engine and game initialization. When complete, starts the game loop.
+ * What a mess...
+ */
 void DD_Main(void)
 {
     int     p;
@@ -611,9 +599,6 @@ void DD_Main(void)
     DD_GameLoop();              // Never returns...
 }
 
-//==========================================================================
-// HandleArgs
-//==========================================================================
 static void HandleArgs(int state)
 {
     int     order, p;
@@ -646,9 +631,6 @@ static void HandleArgs(int state)
     }
 }
 
-//===========================================================================
-// DD_CheckTimeDemo
-//===========================================================================
 void DD_CheckTimeDemo(void)
 {
     static boolean checked = false;
@@ -667,12 +649,11 @@ void DD_CheckTimeDemo(void)
     }
 }
 
-//==========================================================================
-// DD_AddStartupWAD
-//      This is a 'public' WAD file addition routine. The caller can put a
-//      greater-than character (>) in front of the name to prepend the base
-//      path to the file name (providing it's a relative path).
-//==========================================================================
+/*
+ * This is a 'public' WAD file addition routine. The caller can put a
+ * greater-than character (>) in front of the name to prepend the base
+ * path to the file name (providing it's a relative path).
+ */
 void DD_AddStartupWAD(const char *file)
 {
     int     i;
@@ -687,10 +668,9 @@ void DD_AddStartupWAD(const char *file)
     wadfiles[i] = new;
 }
 
-//===========================================================================
-// DD_CheckQuery
-//      Queries are a (poor) way to extend the API without adding new functions.
-//===========================================================================
+/*
+ * Queries are a (poor) way to extend the API without adding new functions.
+ */
 void DD_CheckQuery(int query, int parm)
 {
     switch (query)

@@ -1,14 +1,28 @@
-//**************************************************************************
-//**
-//** NET_MAIN.C
-//**
-//** Client/server networking.
-//** Player number zero is always the server.
-//** In single-player games there is only the server present.
-//**
-//** Once upon a time based on Hexen's peer-to-peer network code.
-//**
-//**************************************************************************
+/* DE1: $Id$
+ * Copyright (C) 2003, 2004 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not: http://www.opensource.org/
+ */
+
+/*
+ * net_main.c: Client/server networking.
+ *
+ * Player number zero is always the server.
+ * In single-player games there is only the server present.
+ *
+ * Once upon a time based on Hexen's peer-to-peer network code.
+ */
 
 // HEADER FILES ------------------------------------------------------------
 
@@ -40,7 +54,8 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void R_DrawLightRange(void);
+void    R_DrawLightRange(void);
+int     Sv_GetRegisteredMobj(pool_t *, thid_t, mobjdelta_t *);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -116,9 +131,6 @@ void Net_Register(void)
     N_Register();
 }
 
-//===========================================================================
-// Net_Init
-//===========================================================================
 void Net_Init(void)
 {
     Net_AllocArrays();
@@ -128,9 +140,6 @@ void Net_Init(void)
     netgame = false;
 }
 
-//===========================================================================
-// Net_Shutdown
-//===========================================================================
 void Net_Shutdown(void)
 {
     netgame = false;
@@ -138,18 +147,14 @@ void Net_Shutdown(void)
     Net_DestroyArrays();
 }
 
-//===========================================================================
-// Net_GetPlayerName
-//  Returns the name of the specified player.
-//===========================================================================
+/*
+ * Returns the name of the specified player.
+ */
 char   *Net_GetPlayerName(int player)
 {
     return clients[player].name;
 }
 
-//===========================================================================
-// Net_GetPlayerID
-//===========================================================================
 ident_t Net_GetPlayerID(int player)
 {
     if(!clients[player].connected)
@@ -157,10 +162,9 @@ ident_t Net_GetPlayerID(int player)
     return clients[player].id;
 }
 
-//===========================================================================
-// Net_SendBuffer
-//  Sends the contents of the netBuffer.
-//===========================================================================
+/*
+ * Sends the contents of the netBuffer.
+ */
 void Net_SendBuffer(int to_player, int sp_flags)
 {
     // Don't send anything during demo playback.
@@ -189,7 +193,9 @@ void Net_SendBuffer(int to_player, int sp_flags)
     N_SendPacket(sp_flags);
 }
 
-// Returns false if there are no packets waiting.
+/*
+ * Returns false if there are no packets waiting.
+ */
 boolean Net_GetPacket(void)
 {
     if(reboundpacket)           // Local packets rebound.
@@ -223,10 +229,9 @@ boolean Net_GetPacket(void)
     return true;
 }
 
-//===========================================================================
-// Net_SendPacket
-//  This is the public interface of the message sender.
-//===========================================================================
+/*
+ * This is the public interface of the message sender.
+ */
 void Net_SendPacket(int to_player, int type, void *data, int length)
 {
     int     flags = 0;
@@ -255,10 +260,9 @@ void Net_SendPacket(int to_player, int type, void *data, int length)
     }
 }
 
-//===========================================================================
-// Net_ShowChatMessage
-//  Prints the message in the console.
-//===========================================================================
+/*
+ * Prints the message in the console.
+ */
 void Net_ShowChatMessage()
 {
     // The current packet in the netBuffer is a chat message,
@@ -267,7 +271,9 @@ void Net_ShowChatMessage()
                 netBuffer.msg.data + 3);
 }
 
-// All arguments are sent out as a chat message.
+/*
+ * All arguments are sent out as a chat message.
+ */
 D_CMD(Chat)
 {
     char    buffer[100];
@@ -524,10 +530,9 @@ void Net_BuildLocalCommands(timespan_t time)
     gx.MergeTicCmd(clients[consoleplayer].aggregateCmd, cmd);
 }
 
-//===========================================================================
-// Net_AllocArrays
-//  Called from Net_Init to initialize the ticcmd arrays.
-//===========================================================================
+/*
+ * Called from Net_Init to initialize the ticcmd arrays.
+ */
 void Net_AllocArrays(void)
 {
     int     i;
@@ -572,10 +577,10 @@ void Net_DestroyArrays(void)
     }
 }
 
-//
-// This is the network one-time initialization.
-// (into single-player mode)
-//
+/*
+ * This is the network one-time initialization.
+ * (into single-player mode)
+ */
 void Net_InitGame(void)
 {
     Cl_InitID();
@@ -602,9 +607,6 @@ void Net_InitGame(void)
         net_ticsync = false;
 }
 
-//===========================================================================
-// Net_StopGame
-//===========================================================================
 void Net_StopGame(void)
 {
     int     i;
@@ -678,18 +680,17 @@ int Net_TimeDelta(byte now, byte then)
     return delta;
 }
 
-//===========================================================================
-// Net_GetTicCmd
-//  This is a bit complicated and quite possibly unnecessarily so. The
-//  idea is, however, that because the ticcmds sent by clients arrive in
-//  bursts, we'll preserve the motion by 'executing' the commands in the
-//  same order in which they were generated. If the client's connection
-//  lags a lot, the difference between the serverside and clientside
-//  positions will be *large*, especially when the client is running.
-//  If too many commands are buffered, the client's coord announcements
-//  will be processed before the actual movement commands, resulting in
-//  serverside warping (which is perceived by all other clients).
-//===========================================================================
+/*
+ * This is a bit complicated and quite possibly unnecessarily so. The
+ * idea is, however, that because the ticcmds sent by clients arrive in
+ * bursts, we'll preserve the motion by 'executing' the commands in the
+ * same order in which they were generated. If the client's connection
+ * lags a lot, the difference between the serverside and clientside
+ * positions will be *large*, especially when the client is running.
+ * If too many commands are buffered, the client's coord announcements
+ * will be processed before the actual movement commands, resulting in
+ * serverside warping (which is perceived by all other clients).
+ */
 int Net_GetTicCmd(void *pCmd, int player)
 {
     client_t *client = &clients[player];
@@ -794,10 +795,9 @@ int Net_GetTicCmd(void *pCmd, int player)
 #endif
 }
 
-//===========================================================================
-// Net_Drawer
-//  Does drawing for the engine's HUD, not just the net.
-//===========================================================================
+/*
+ * Does drawing for the engine's HUD, not just the net.
+ */
 void Net_Drawer(void)
 {
     char    buf[160], tmp[40];
@@ -940,11 +940,6 @@ uint Net_GetAckThreshold(int clientNumber)
     return threshold;
 }
 
-int     Sv_GetRegisteredMobj(pool_t *, thid_t, mobjdelta_t *);
-
-//===========================================================================
-// Net_Ticker
-//===========================================================================
 void Net_Ticker(timespan_t time)
 {
     int     i;
@@ -1039,9 +1034,6 @@ void Net_PrintServerInfo(int index, serverinfo_t *info)
     }
 }
 
-//===========================================================================
-// CCmdKick
-//===========================================================================
 D_CMD(Kick)
 {
     int     num;
@@ -1078,9 +1070,6 @@ D_CMD(Kick)
     return true;
 }
 
-//===========================================================================
-// CCmdSetName
-//===========================================================================
 D_CMD(SetName)
 {
     playerinfo_packet_t info;
@@ -1109,9 +1098,6 @@ D_CMD(SetName)
     return true;
 }
 
-//===========================================================================
-// CCmdSetTicks
-//===========================================================================
 D_CMD(SetTicks)
 {
 //  extern double lastSharpFrameTime;
@@ -1128,9 +1114,6 @@ D_CMD(SetTicks)
     return true;
 }
 
-//===========================================================================
-// CCmdMakeCamera
-//===========================================================================
 D_CMD(MakeCamera)
 {
     /*  int cp;
@@ -1176,9 +1159,6 @@ D_CMD(MakeCamera)
     return true;
 }
 
-//===========================================================================
-// CCmdSetConsole
-//===========================================================================
 D_CMD(SetConsole)
 {
     int     cp;
@@ -1191,11 +1171,10 @@ D_CMD(SetConsole)
     return true;
 }
 
-//===========================================================================
-// CCmdConnect
-//  Intelligently connect to a server. Just provide an IP address and the
-//  rest is automatic.
-//===========================================================================
+/*
+ * Intelligently connect to a server. Just provide an IP address and the
+ * rest is automatic.
+ */
 D_CMD(Connect)
 {
     int     port = 0, returnValue = false;
