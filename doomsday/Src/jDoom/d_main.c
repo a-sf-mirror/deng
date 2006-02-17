@@ -489,8 +489,6 @@ void D_PostInit(void)
     }
 
     // Command line options
-    verbose = ArgExists("-verbose");
-
     nomonsters = ArgCheck("-nomonsters");
     respawnparm = ArgCheck("-respawn");
     fastparm = ArgCheck("-fast");

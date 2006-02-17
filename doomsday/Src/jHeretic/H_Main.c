@@ -392,8 +392,6 @@ void H_PostInit(void)
     /* None */
 
     // Command line options
-    verbose = ArgExists("-verbose");
-
     nomonsters = ArgCheck("-nomonsters");
     respawnparm = ArgCheck("-respawn");
     devparm = ArgCheck("-devparm");

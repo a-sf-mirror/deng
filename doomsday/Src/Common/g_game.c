@@ -635,6 +635,8 @@ void G_PreInit(void)
         Con_Error(GAMENAMETEXT " requires at least Doomsday " DOOMSDAY_VERSION_TEXT
                   "!\n");
 
+    verbose = ArgExists("-verbose");
+
     // Setup the DGL interface.
     G_InitDGL();
 

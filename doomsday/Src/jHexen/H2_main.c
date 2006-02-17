@@ -347,7 +347,6 @@ void H2_PostInit(void)
     /* None */
 
     // Command line options
-    verbose = ArgExists("-verbose");
     HandleArgs();
 
     // Check the -class argument.
