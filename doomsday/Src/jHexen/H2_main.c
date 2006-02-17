@@ -95,6 +95,8 @@ extern int demosequence;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+int     verbose;
+
 // The interface to the Doomsday engine.
 game_export_t gx;
 game_import_t gi;
@@ -345,6 +347,7 @@ void H2_PostInit(void)
     /* None */
 
     // Command line options
+    verbose = ArgExists("-verbose");
     HandleArgs();
 
     // Check the -class argument.

@@ -262,7 +262,6 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     P_InitMonsters();
     P_OpenWeapons();
 #endif
-    Con_Message("Spawn things\n");
     P_SpawnThings();
 
     // killough 3/26/98: Spawn icon landings:
@@ -376,14 +375,12 @@ static void P_ResetWorldState(void)
  */
 static void P_FinalizeLevel(void)
 {
-    int i;
-
 #if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
     {
-    int     k;
+    int i, k;
     int     lumpnum = R_TextureNumForName("NUKE24");
     int     bottomTex;
     int     midTex;
@@ -416,6 +413,8 @@ static void P_FinalizeLevel(void)
     P_TurnGizmosAwayFromDoors();
 
 #elif __JHEXEN__
+    {
+    int i;
     // Load colormap and set the fullbright flag
     i = P_GetMapFadeTable(gamemap);
     if(i == W_GetNumForName("COLORMAP"))
@@ -439,6 +438,7 @@ static void P_FinalizeLevel(void)
     P_InitLightning();
 
     SN_StopAllSequences();
+    }
 #endif
 }
 

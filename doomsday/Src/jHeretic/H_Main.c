@@ -54,6 +54,8 @@ extern float lookOffset;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+int     verbose;
+
 boolean devparm;                // checkparm of -devparm
 boolean nomonsters;             // checkparm of -nomonsters
 boolean respawnparm;            // checkparm of -respawn
@@ -390,6 +392,8 @@ void H_PostInit(void)
     /* None */
 
     // Command line options
+    verbose = ArgExists("-verbose");
+
     nomonsters = ArgCheck("-nomonsters");
     respawnparm = ArgCheck("-respawn");
     devparm = ArgCheck("-devparm");

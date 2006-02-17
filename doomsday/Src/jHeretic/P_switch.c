@@ -96,8 +96,9 @@ void P_InitSwitchList(void)
 
             switchlist[index++] = R_TextureNumForName(sList[i].name1);
             switchlist[index++] = R_TextureNumForName(sList[i].name2);
-            Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
-                        sList[i].name1, sList[i].name2, SHORT(sList[i].episode));
+            VERBOSE(Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
+                                sList[i].name1, sList[i].name2,
+                                SHORT(sList[i].episode)));
         }
     }
 

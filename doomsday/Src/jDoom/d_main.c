@@ -45,6 +45,8 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+int     verbose;
+
 boolean devparm;                // started game with -devparm
 boolean nomonsters;             // checkparm of -nomonsters
 boolean respawnparm;            // checkparm of -respawn
@@ -487,6 +489,8 @@ void D_PostInit(void)
     }
 
     // Command line options
+    verbose = ArgExists("-verbose");
+
     nomonsters = ArgCheck("-nomonsters");
     respawnparm = ArgCheck("-respawn");
     fastparm = ArgCheck("-fast");

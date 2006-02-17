@@ -169,9 +169,9 @@ void P_InitPicAnims(void)
                 // (DOOM only required the start/end texture/flat numbers and
                 // would animate all textures/flats inbetween).
 
-                Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
-                            animdefs[i].startname, animdefs[i].endname,
-                            ticsPerFrame);
+                VERBOSE(Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
+                                    animdefs[i].startname, animdefs[i].endname,
+                                    ticsPerFrame));
 
                 // Add all frames from start to end to the group.
                 if(endFrame > startFrame)
@@ -187,7 +187,7 @@ void P_InitPicAnims(void)
             }
         }
         Z_Free(animdefs);
-        Con_Message("P_InitPicAnims: Done.\n");
+        VERBOSE(Con_Message("P_InitPicAnims: Done.\n"));
     }
 }
 

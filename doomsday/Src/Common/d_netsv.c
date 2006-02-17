@@ -796,7 +796,7 @@ void NetSv_SendGameState(int flags, int to)
         return;
 
     // Print a short message that describes the game state.
-    if(ArgExists("-verbose") || IS_DEDICATED)
+    if(verbose || IS_DEDICATED)
     {
         Con_Printf("Game setup: ep%i map%i %s\n", gameepisode, gamemap,
                    gameConfigString);

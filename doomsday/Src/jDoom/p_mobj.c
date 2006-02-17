@@ -977,11 +977,10 @@ void P_SpawnMapThing(thing_t *th)
     fixed_t y;
     fixed_t z;
 
-    Con_Message("x = %i, y = %i, height = %i, angle = %i, type = %i, options = %i\n",
-                th->x, th->y, th->height, th->angle, th->type, th->options);
+    //Con_Message("x = %i, y = %i, height = %i, angle = %i, type = %i, options = %i\n",
+    //            th->x, th->y, th->height, th->angle, th->type, th->options);
 
-
-    // count deathmatch start positions
+    // Count deathmatch start positions
     if(th->type == 11)
     {
         if(deathmatch_p < &deathmatchstarts[10])
