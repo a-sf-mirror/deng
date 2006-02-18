@@ -293,7 +293,7 @@ boolean Rend_CheckDecorationBounds(fixed_t bounds[6], float fMaxDist)
  */
 float Rend_CheckSectorLight(sector_t *sector, ded_decorlight_t * lightDef)
 {
-    byte    lightlevel;
+    int    lightlevel;
     float   factor;
 
     lightlevel = sector->lightlevel;

@@ -1249,7 +1249,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
 
 int Rend_SectorLight(sector_t *sec)
 {
-    byte     i;
+    int     i;
 
     i = LevelFullBright ? 255 : sec->lightlevel;
 
@@ -1499,26 +1499,57 @@ void Rend_RetrieveLightSample(void)
  * applied to sector lightlevels, lightgrid point evaluations, vissprite
  * lightlevels, fakeradio shadows etc, etc...
  *
- * NOTE: There is no need to do any clamping here. Since the offset values in
+ * NOTE: There is no need to clamp the result. Since the offset values in
  *       the lightRangeModMatrix have already been clamped so that the resultant
  *       lightvalue is NEVER outside the range 0-254 when the original lightvalue
  *       is used as the index.
  *
- * @param lightvalue    Ptr to the value to apply the adaptation to.
+ * @param lightvar    Ptr to the value to apply the adaptation to.
  */
-void Rend_ApplyLightAdaptation(byte* lightvalue)
+void Rend_ApplyLightAdaptation(int* lightvar)
 {
     // The default range.
     int range = MOD_RANGE / 2;
+    int lightval;
 
-    if(lightvalue == NULL)
+    if(lightvar == NULL)
         return; // Can't apply adaptation to a NULL val ptr...
+
+    lightval = *lightvar;
+
+    if(lightval > 255)
+        lightval = 255;
+    else if(lightval < 0)
+        lightval = 0;
 
     // Apply light adaptation?
     if(r_lightAdapt)
         range = playerLightRange[viewplayer - players];
 
-    *lightvalue += lightRangeModMatrix[range][*lightvalue -1];
+    *lightvar += lightRangeModMatrix[range][lightval];
+}
+
+/*
+ * Same as above but instead of applying light adaptation to the var directly
+ * it returns the light adaptation value for the passed light value.
+ *
+ * @param lightvalue    Light value to look up the adaptation value of.
+ * @return int          Adaptation value for the passed light value.
+ */
+int Rend_GetLightAdaptVal(int lightvalue)
+{
+    int range = MOD_RANGE / 2;
+    int lightval = lightvalue;
+
+    if(lightval > 255)
+        lightval = 255;
+    else if(lightval < 0)
+        lightval = 0;
+
+    if(r_lightAdapt)
+        range = playerLightRange[viewplayer - players];
+
+    return lightRangeModMatrix[range][lightval];
 }
 
 /*

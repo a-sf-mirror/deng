@@ -1671,8 +1671,8 @@ void R_UpdatePlanes(void)
             {
                 // The new texture is glowing.
 
-                // Always use a height factor of 1 (0 - 1.0f)
-                sec->floorglow = 1;
+                // Default height factor is 4
+                sec->floorglow = 4;
 
                 // Always use the average colour.
                 GL_GetFlatColor(sec->floorpic, sec->floorglowrgb);
@@ -1719,7 +1719,7 @@ void R_UpdatePlanes(void)
             else if((R_FlatFlags(sec->floorpic) & TXF_GLOW) && sec->floorglow == 0)
             {
                 // The current flat is now glowing
-                sec->floorglow = 1;
+                sec->floorglow = 4;
                 GL_GetFlatColor(sec->floorpic, sec->floorglowrgb);
                 setFloorGlow = 1; // Turn the subsector plane glow flags on
             }
@@ -1731,7 +1731,7 @@ void R_UpdatePlanes(void)
         {
             if(R_FlatFlags(sec->ceilingpic) & TXF_GLOW)
             {
-                sec->ceilingglow = 1;
+                sec->ceilingglow = 4;
                 GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
 
                 if(sin->oldceilingpic)
@@ -1760,7 +1760,7 @@ void R_UpdatePlanes(void)
             }
             else if((R_FlatFlags(sec->ceilingpic) & TXF_GLOW) && sec->ceilingglow == 0)
             {
-                sec->ceilingglow = 1;
+                sec->ceilingglow = 4;
                 GL_GetFlatColor(sec->ceilingpic, sec->ceilingglowrgb);
                 setCeilingGlow = 1;
             }

@@ -97,7 +97,7 @@ boolean dlInited = false;
 int     useDynLights = true, dlBlend = 0;
 float   dlFactor = 0.7f;        // was 0.6f
 int     useWallGlow = true;
-float   glowHeightFactor = 1.0f; // glow height as a multiplier
+float   glowHeightFactor = 3; // glow height as a multiplier
 int     glowHeightMax = 100;     // 100 is the default (0-1024)
 float   glowFogBright = .15f;
 lumobj_t *luminousList = 0;
