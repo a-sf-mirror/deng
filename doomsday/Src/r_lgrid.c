@@ -701,7 +701,7 @@ void LG_Evaluate(const float *point, byte *color)
         for(i = 0; i < 3; ++i)
         {
             // Add the light range compression factor
-            Rend_ApplyLightAdaptation(&color[i]);
+            color[i] += Rend_GetLightAdaptVal((int)color[i]);
 
             // Apply the dimming
             color[i] *= dimming;
@@ -711,7 +711,7 @@ void LG_Evaluate(const float *point, byte *color)
     {
         // Just add the light range compression factor
         for(i = 0; i < 3; ++i)
-            Rend_ApplyLightAdaptation(&color[i]);
+            color[i] += Rend_GetLightAdaptVal((int)color[i]);
     }
 }
 
