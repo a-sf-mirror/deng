@@ -59,6 +59,7 @@
 
 void    InitMapInfo(void);
 void    P_SpawnThings(void);
+void    AM_LevelInit(void);
 
 #if __JHERETIC__
 void P_TurnGizmosAwayFromDoors();
@@ -375,6 +376,8 @@ static void P_ResetWorldState(void)
  */
 static void P_FinalizeLevel(void)
 {
+    AM_LevelInit();
+
 #if __JDOOM__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be

@@ -820,7 +820,7 @@ void AM_findMinMaxBoundaries(void)
         else if(y > max_y)
             max_y = y;
     }
-
+Con_Message("X %d Y %d - X %d Y %d\n", min_x, min_y, max_x, max_y);
     max_w = max_x - min_x;
     max_h = max_y - min_y;
 
@@ -1082,12 +1082,6 @@ void AM_Start(void)
     if(gamestate != GS_LEVEL)
         return;                    // don't show automap if we aren't in a game!
 
-    if(lastlevel != gamemap || lastepisode != gameepisode)
-    {
-        AM_LevelInit();
-        lastlevel = gamemap;
-        lastepisode = gameepisode;
-    }
     AM_initVariables();
     AM_loadPics();
 }
