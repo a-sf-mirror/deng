@@ -795,10 +795,14 @@ static void P_FindMapLumps(int startLump)
     unsigned int i;
     boolean scan;
     maplumpinfo_t* mapLmpInf;
+    boolean aux = false;
 
     // Add the marker lump to the list (there might be useful info in it)
     if(!strncmp(W_CacheLumpNum(startLump, PU_GETNAME), "GL_", 3))
+    {
         AddMapDataLump(startLump, LCG_LABEL);
+        aux = true; // We'll be checking the auxilary lump cache
+    }
     else
         AddMapDataLump(startLump, LCM_LABEL);
 
@@ -806,6 +810,9 @@ static void P_FindMapLumps(int startLump)
     // Keep checking lumps to see if its a map data lump.
     for(i = (unsigned) startLump; ; ++i)
     {
+        if(!aux && i > numlumps - 1) // No more lumps?
+            break;
+
         scan = true;
         // Compare the name of this lump with our known map data lump names
         mapLmpInf = mapLumpInfo;
