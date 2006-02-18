@@ -541,7 +541,7 @@ void R_ProjectPlayerSprites(void)
 
             if(psp->light < 1)
             {
-                vis->data.mo.lightlevel = (byte)((psp->light - .1f) * 255);
+                vis->data.mo.lightlevel = (int)((psp->light - .1f) * 255);
                 Rend_ApplyLightAdaptation(&vis->data.mo.lightlevel);
             }
             else

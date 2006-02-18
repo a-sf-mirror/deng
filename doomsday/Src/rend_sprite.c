@@ -190,7 +190,7 @@ void Rend_DrawPlayerSprites(void)
                 }
                 else
                 {
-                    byte light = (byte)(psp[i].light * 255.0f);
+                    int light = (int)(psp[i].light * 255.0f);
                     float lval;
 
                     Rend_ApplyLightAdaptation(&light);
