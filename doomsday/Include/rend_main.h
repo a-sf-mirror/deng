@@ -60,7 +60,8 @@ int             Rend_SegFacingDir(float v1[2], float v2[2]);
 int             Rend_MidTexturePos(float *top, float *bottom, float *texoffy,
                                    float tcyoff, boolean lower_unpeg);
 
-void            Rend_ApplyLightAdaptation(byte* lightvalue);
+void            Rend_ApplyLightAdaptation(int* lightvalue);
+int             Rend_GetLightAdaptVal(int lightvalue);
 
 void Rend_CalcLightRangeModMatrix(struct cvar_s* unused);
 #endif
