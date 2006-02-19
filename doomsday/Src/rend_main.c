@@ -51,6 +51,7 @@
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 void    Rend_ProjectionMatrix();
+void    Rend_RenderBoundingBoxes(void);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -108,7 +109,8 @@ float   r_lightcompression = 80; //80%
 
 signed short     lightRangeModMatrix[MOD_RANGE][255];
 
-int debugLightModMatrix = 0;
+int     debugLightModMatrix = 0;
+int     devMobjBBox = 0; // 1 = Draw mobj bounding boxes (for debug)
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -120,6 +122,9 @@ void Rend_Register(void)
 {
     C_VAR_INT("rend-dev-freeze", &freezeRLs, 0, 0, 1,
               "1=Stop updating rendering lists.");
+
+    C_VAR_INT("rend-dev-mobj-bbox", &devMobjBBox, 0, 0, 1,
+              "1=Render mobj bounding boxes (as used for collision detection).");
 
     C_VAR_FLOAT("rend-camera-fov", &fieldOfView, 0, 1, 179, "Field of view.");
 
@@ -1925,6 +1930,9 @@ void Rend_RenderMap(void)
     // Draw the Shadow Bias Editor's draw that identifies the current
     // light.
     SBE_DrawCursor();
+
+    // Draw the mobj bounding boxes.
+    Rend_RenderBoundingBoxes();
 }
 
 static void DrawRangeBox(int x, int y, int w, int h, ui_color_t *c)
@@ -2014,6 +2022,178 @@ void R_DrawLightRange(void)
 
     gl.MatrixMode(DGL_PROJECTION);
     gl.PopMatrix();
+}
+
+/*
+ * Draws a textured cube using the currently bound gl texture.
+ * Used to draw mobj bounding boxes.
+ *
+ * @param   x           X coordinate of the center of the box.
+ * @param   y           Y coordinate of the center of the box.
+ * @param   z           Z coordinate of the center of the box.
+ * @param   w           Width of the box.
+ * @param   l           Length of the box.
+ * @param   h           Height of the box.
+ * @param   color       Color to make the box (uniform vertex color).
+ * @param   br          Border amount to overlap box faces.
+ * @param   alignToBase (TRUE) = Align the base of the box to the Z coordinate.
+ */
+void Rend_DrawBBox(float x, float y, float z, float w, float l, float h,
+                   float color[4], float br, boolean alignToBase)
+{
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PushMatrix();
+
+    if(alignToBase)
+        // The Z coordinate is to the bottom of the object.
+        gl.Translatef(x, z + h, y);
+    else
+        gl.Translatef(x, z, y);
+
+    gl.Scalef(w - br - br, h - br - br, l - br - br);
+
+    gl.Begin(DGL_QUADS);
+    {
+        gl.Color4fv(color);
+        // Top
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f+br, 1.0f,-1.0f-br);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f-br, 1.0f,-1.0f-br);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f-br, 1.0f, 1.0f+br);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f( 1.0f+br, 1.0f, 1.0f+br);  // BR
+        // Bottom
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f+br,-1.0f, 1.0f+br);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f-br,-1.0f, 1.0f+br);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f-br,-1.0f,-1.0f-br);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f( 1.0f+br,-1.0f,-1.0f-br);  // BR
+        // Front
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f+br, 1.0f+br, 1.0f);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f-br, 1.0f+br, 1.0f);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f-br,-1.0f-br, 1.0f);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f( 1.0f+br,-1.0f-br, 1.0f);  // BR
+        // Back
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f+br,-1.0f-br,-1.0f);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f-br,-1.0f-br,-1.0f);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f-br, 1.0f+br,-1.0f);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f( 1.0f+br, 1.0f+br,-1.0f);  // BR
+        // Left
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f(-1.0f, 1.0f+br, 1.0f+br);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f, 1.0f+br,-1.0f-br);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f,-1.0f-br,-1.0f-br);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f(-1.0f,-1.0f-br, 1.0f+br);  // BR
+        // Right
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f, 1.0f+br,-1.0f-br);  // TR
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f( 1.0f, 1.0f+br, 1.0f+br);  // TL
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f( 1.0f,-1.0f-br, 1.0f+br);  // BL
+        gl.TexCoord2f(1.0f, 0.0f); gl.Vertex3f( 1.0f,-1.0f-br,-1.0f-br);  // BR
+    }
+    gl.End();
+
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PopMatrix();
+}
+
+/*
+ * Draws a textured triangle using the currently bound gl texture.
+ * Used to draw mobj angle direction arrow.
+ *
+ * @param   x           X coordinate of the center of the base of the triangle.
+ * @param   y           Y coordinate of the center of the base of the triangle.
+ * @param   z           Z coordinate of the center of the base of the triangle.
+ * @param   a           Angle to point the triangle in.
+ * @param   s           Scale of the triangle.
+ * @param   color       Color to make the box (uniform vertex color).
+ */
+void Rend_DrawArrow(float x, float y, float z, angle_t a, float s, float color[4])
+{
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PushMatrix();
+
+    gl.Translatef(x, z, y);
+
+    gl.Rotatef(0, 0, 0, 1);
+    gl.Rotatef(0, 1, 0, 0);
+    gl.Rotatef( (a / (float) ANGLE_MAX *-360), 0, 1, 0);
+
+    gl.Scalef(s, 0, s);
+
+    gl.Begin(DGL_TRIANGLES);
+    {
+        gl.Color4f(0.0f, 0.0f, 0.0f, 0.5f);
+        gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f, 1.0f,-1.0f);  // L
+
+        gl.Color4fv(color);
+        gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f, 1.0f,-1.0f);  // Point
+
+        gl.Color4f(0.0f, 0.0f, 0.0f, 0.5f);
+        gl.TexCoord2f(0.0f, 0.0f); gl.Vertex3f(-1.0f, 1.0f, 1.0f);  // R
+    }
+    gl.End();
+
+    gl.MatrixMode(DGL_MODELVIEW);
+    gl.PopMatrix();
+}
+
+/*
+ * Renders bounding boxes for all mobj's (linked in sec->thinglist, except
+ * the console player) in all sectors that are currently marked as vissible.
+ *
+ * Depth test is disabled to show all mobjs that are being rendered, regardless
+ * if they are actually vissible (hidden by previously drawn map geometry).
+ */
+static void Rend_RenderBoundingBoxes(void)
+{
+    mobj_t *mo;
+    int     i;
+    sector_t *sec;
+    float   size;
+    float   red[4] = { 1, 0.2f, 0.2f, 1}; // non-solid objects
+    float   green[4] = { 0.2f, 1, 0.2f, 1}; // solid objects
+    float   yellow[4] = {0.7f, 0.2f, 0.7f, 1}; // missiles
+
+    if(!devMobjBBox || netgame)
+        return;
+
+    gl.Disable(DGL_DEPTH_TEST);
+    gl.Enable(DGL_TEXTURING);
+    gl.Disable(DGL_CULL_FACE);
+
+    gl.Bind(dd_textures[DDTEX_BBOX]);
+    GL_BlendMode(BM_ADD);
+
+    // For every sector
+    for(i = 0; i < numsectors; i++)
+    {
+        // Is it vissible?
+        if(!(secinfo[i].flags & SIF_VISIBLE))
+            continue;
+
+        // For every mobj in the sector's thinglist
+        sec = SECTOR_PTR(i);
+        for(mo = sec->thinglist; mo; mo = mo->snext)
+        {
+            if(mo == players[consoleplayer].mo)
+                continue; // We don't want the console player.
+
+            // Draw a bounding box in an appropriate color.
+            size = FIX2FLT(mo->radius);
+            Rend_DrawBBox(FIX2FLT(mo->x), FIX2FLT(mo->y), FIX2FLT(mo->z),
+                          size, size, FIX2FLT(mo->height)/2,
+                          (mo->ddflags & DDMF_MISSILE)? yellow :
+                          (mo->ddflags & DDMF_SOLID)? green : red,
+                          0.08f, true);
+
+            Rend_DrawArrow(FIX2FLT(mo->x), FIX2FLT(mo->y), FIX2FLT(mo->z),
+                           mo->angle + ANG45 + ANG90 , size*1.25,
+                           (mo->ddflags & DDMF_MISSILE)? yellow :
+                           (mo->ddflags & DDMF_SOLID)? green : red);
+        }
+    }
+
+    GL_BlendMode(BM_NORMAL);
+
+    gl.Enable(DGL_CULL_FACE);
+    gl.Disable(DGL_TEXTURING);
+    gl.Enable(DGL_DEPTH_TEST);
 }
 
 // Console commands.

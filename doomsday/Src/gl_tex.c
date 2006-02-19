@@ -569,7 +569,8 @@ void GL_LoadDDTextures(void)
 {
     int     i;
     const char *picNames[NUM_DD_TEXTURES] = {
-        "Missing"
+        "Missing",
+        "BBox"
     };
 
     for(i = 0; i < NUM_DD_TEXTURES; i++)

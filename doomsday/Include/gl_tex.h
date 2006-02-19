@@ -33,36 +33,36 @@
  * it must be discarded with GL_DestroyImage.
  */
 typedef struct image_s {
-	char            fileName[256];
-	int             width;
-	int             height;
-	int             pixelSize;
-	boolean         isMasked;
-	int             originalBits;  // Bits per pixel in the image file.
-	byte           *pixels;
+    char            fileName[256];
+    int             width;
+    int             height;
+    int             pixelSize;
+    boolean         isMasked;
+    int             originalBits;  // Bits per pixel in the image file.
+    byte           *pixels;
 } image_t;
 
 /*
  * Processing modes for GL_LoadGraphics.
  */
 typedef enum gfxmode_e {
-	LGM_NORMAL = 0,
-	LGM_GRAYSCALE = 1,
-	LGM_GRAYSCALE_ALPHA = 2,
-	LGM_WHITE_ALPHA = 3
+    LGM_NORMAL = 0,
+    LGM_GRAYSCALE = 1,
+    LGM_GRAYSCALE_ALPHA = 2,
+    LGM_WHITE_ALPHA = 3
 } gfxmode_t;
 
 /*
  * Textures used in the lighting system.
  */
 typedef enum lightingtex_e {
-	LST_DYNAMIC,				   // Round dynamic light
-	LST_GRADIENT,				   // Top-down gradient
-	LST_RADIO_CO,				   // FakeRadio closed/open corner shadow
-	LST_RADIO_CC,				   // FakeRadio closed/closed corner shadow
+    LST_DYNAMIC,                   // Round dynamic light
+    LST_GRADIENT,                  // Top-down gradient
+    LST_RADIO_CO,                  // FakeRadio closed/open corner shadow
+    LST_RADIO_CC,                  // FakeRadio closed/closed corner shadow
     LST_RADIO_OO,                  // FakeRadio open/open shadow
     LST_RADIO_OE,                  // FakeRadio open/edge shadow
-	NUM_LIGHTING_TEXTURES
+    NUM_LIGHTING_TEXTURES
 } lightingtex_t;
 
 /*
@@ -71,6 +71,7 @@ typedef enum lightingtex_e {
  */
 enum {
     DDTEX_MISSING,          // Drawn if a texture/flat is missing
+    DDTEX_BBOX,             // Drawn when rendering bounding boxes
     NUM_DD_TEXTURES
 };
 
@@ -112,12 +113,12 @@ void            TranslatePatch(struct patch_s *patch, byte *transTable);
 void            GL_ConvertToLuminance(image_t * image);
 void            GL_ConvertToAlpha(image_t * image, boolean makeWhite);
 void            GL_ScaleBuffer32(byte *in, int inWidth, int inHeight,
-								 byte *out, int outWidth, int outHeight,
-								 int comps);
+                                 byte *out, int outWidth, int outHeight,
+                                 int comps);
 byte           *GL_LoadImage(image_t * img, const char *imagefn,
-							 boolean useModelPath);
+                             boolean useModelPath);
 byte           *GL_LoadImageCK(image_t * img, const char *imagefn,
-							   boolean useModelPath);
+                               boolean useModelPath);
 void            GL_DestroyImage(image_t * img);
 byte           *GL_LoadTexture(image_t * img, char *name);
 DGLuint         GL_LoadGraphics(const char *name, gfxmode_t mode);
@@ -142,7 +143,7 @@ void            GL_GetSpriteColor(int pnum, unsigned char *rgb);
 void            GL_GetFlatColor(int fnum, unsigned char *rgb);
 void            GL_NewSplitTex(int lump, DGLuint part2name);
 DGLuint         GL_GetOtherPart(int lump);
-void            GL_SetPatch(int lump);	// No mipmaps are generated.
+void            GL_SetPatch(int lump);  // No mipmaps are generated.
 void            GL_SetNoTexture(void);
 int             GL_GetLumpTexWidth(int lump);
 int             GL_GetLumpTexHeight(int lump);
