@@ -327,15 +327,15 @@ void Sv_RegisterRemoveMobj(cregister_t * reg, reg_mobj_t * regMo)
  */
 fixed_t Sv_GetMaxedMobjZ(const mobj_t *mo)
 {
-    if(mo->z == mo->floorz)
+    if(mo->pos[VZ] == mo->floorz)
     {
         return DDMININT;
     }
-    if(mo->z + mo->height == mo->ceilingz)
+    if(mo->pos[VZ] + mo->height == mo->ceilingz)
     {
         return DDMAXINT;
     }
-    return mo->z;
+    return mo->pos[VZ];
 }
 
 /*
@@ -349,9 +349,9 @@ void Sv_RegisterMobj(dt_mobj_t * reg, const mobj_t *mo)
     reg->thinker.id = mo->thinker.id;
     reg->dplayer = mo->dplayer;
     reg->subsector = mo->subsector;
-    reg->x = mo->x;
-    reg->y = mo->y;
-    reg->z = Sv_GetMaxedMobjZ(mo);
+    reg->pos[VX] = mo->pos[VX];
+    reg->pos[VY] = mo->pos[VY];
+    reg->pos[VZ] = Sv_GetMaxedMobjZ(mo);
     reg->floorz = mo->floorz;
     reg->ceilingz = mo->ceilingz;
     reg->momx = mo->momx;
@@ -374,9 +374,9 @@ void Sv_RegisterMobj(dt_mobj_t * reg, const mobj_t *mo)
  */
 void Sv_RegisterResetMobj(dt_mobj_t * reg)
 {
-    reg->x = 0;
-    reg->y = 0;
-    reg->z = 0;
+    reg->pos[VX] = 0;
+    reg->pos[VY] = 0;
+    reg->pos[VZ] = 0;
     reg->angle = 0;
     reg->selector = 0;
     reg->state = 0;
@@ -496,11 +496,11 @@ boolean Sv_RegisterCompareMobj(cregister_t * reg, const mobj_t *s,
         df = MDFC_CREATE;
     }
 
-    if(r->x != s->x)
+    if(r->pos[VX] != s->pos[VX])
         df |= MDF_POS_X;
-    if(r->y != s->y)
+    if(r->pos[VY] != s->pos[VY])
         df |= MDF_POS_Y;
-    if(r->z != Sv_GetMaxedMobjZ(s))
+    if(r->pos[VZ] != Sv_GetMaxedMobjZ(s))
         df |= MDF_POS_Z;
 
     if(r->momx != s->momx)
@@ -995,9 +995,9 @@ void Sv_UpdateOwnerInfo(pool_t * pool)
 
     if(player->mo)
     {
-        info->x = player->mo->x;
-        info->y = player->mo->y;
-        info->z = player->mo->z;
+        info->x = player->mo->pos[VX];
+        info->y = player->mo->pos[VY];
+        info->z = player->mo->pos[VZ];
         info->angle = player->mo->angle;
         info->speed = P_ApproxDistance(player->mo->momx, player->mo->momy);
     }
@@ -1184,11 +1184,11 @@ void Sv_ApplyDeltaData(void *destDelta, const void *srcDelta)
         if(sf & (MDF_POS_X | MDF_POS_Y))
             d->subsector = s->subsector;
         if(sf & MDF_POS_X)
-            d->x = s->x;
+            d->pos[VX] = s->pos[VX];
         if(sf & MDF_POS_Y)
-            d->y = s->y;
+            d->pos[VY] = s->pos[VY];
         if(sf & MDF_POS_Z)
-            d->z = s->z;
+            d->pos[VZ] = s->pos[VZ];
         if(sf & MDF_MOM_X)
             d->momx = s->momx;
         if(sf & MDF_MOM_Y)
@@ -1516,7 +1516,7 @@ fixed_t Sv_MobjDistance(const mobj_t *mo, const ownerinfo_t * info,
         return DDMAXINT;
     }
 
-    z = mo->z;
+    z = mo->pos[VZ];
 
     // Registered mobjs may have a maxed out Z coordinate.
     if(!isReal)
@@ -1527,7 +1527,7 @@ fixed_t Sv_MobjDistance(const mobj_t *mo, const ownerinfo_t * info,
             z = mo->ceilingz - mo->height;
     }
 
-    return P_ApproxDistance3(info->x - mo->x, info->y - mo->y,
+    return P_ApproxDistance3(info->x - mo->pos[VX], info->y - mo->pos[VY],
                              info->z - (z + mo->height / 2));
 }
 

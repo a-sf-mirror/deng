@@ -479,16 +479,16 @@ void Net_Update(void)
 
         coordTimer = net_coordtime; // 35/2
         Msg_Begin(pkt_coords);
-        Msg_WriteShort(mo->x >> 16);
-        Msg_WriteShort(mo->y >> 16);
-        if(mo->z == mo->floorz)
+        Msg_WriteShort(mo->pos[VX] >> 16);
+        Msg_WriteShort(mo->pos[VY] >> 16);
+        if(mo->pos[VZ] == mo->floorz)
         {
             // This'll keep us on the floor even in fast moving sectors.
             Msg_WriteShort(DDMININT >> 16);
         }
         else
         {
-            Msg_WriteShort(mo->z >> 16);
+            Msg_WriteShort(mo->pos[VZ] >> 16);
         }
         Net_SendBuffer(0, 0);
     }

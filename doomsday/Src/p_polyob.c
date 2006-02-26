@@ -492,10 +492,10 @@ static boolean CheckMobjBlocking(seg_t *seg, polyobj_t * po)
             {
                 if(mobj->ddflags & DDMF_SOLID || mobj->dplayer)
                 {
-                    tmbbox[BOXTOP] = mobj->y + mobj->radius;
-                    tmbbox[BOXBOTTOM] = mobj->y - mobj->radius;
-                    tmbbox[BOXLEFT] = mobj->x - mobj->radius;
-                    tmbbox[BOXRIGHT] = mobj->x + mobj->radius;
+                    tmbbox[BOXTOP] = mobj->pos[VY] + mobj->radius;
+                    tmbbox[BOXBOTTOM] = mobj->pos[VY] - mobj->radius;
+                    tmbbox[BOXLEFT] = mobj->pos[VX] - mobj->radius;
+                    tmbbox[BOXRIGHT] = mobj->pos[VX] + mobj->radius;
 
                     if(tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
                        tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||

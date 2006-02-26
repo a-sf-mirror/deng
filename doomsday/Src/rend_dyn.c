@@ -378,7 +378,7 @@ void DL_InitLinks(void)
  */
 boolean DL_SegTexCoords(float *t, float top, float bottom, lumobj_t * lum)
 {
-    float   lightZ = FIX2FLT(lum->thing->z) + lum->center;
+    float   lightZ = FIX2FLT(lum->thing->pos[VZ]) + lum->center;
     float   radius = lum->radius / DYN_ASPECT;
 
     t[0] = (lightZ + radius - top) / (2 * radius);
@@ -479,8 +479,8 @@ void DL_ProcessWallSeg(lumobj_t * lum, seg_t *seg, sector_t *frontsec)
     if(!Rend_SegFacingDir(pos[0], pos[1]))
         return;
 
-    pntLight[VX] = FIX2FLT(lum->thing->x);
-    pntLight[VY] = FIX2FLT(lum->thing->y);
+    pntLight[VX] = FIX2FLT(lum->thing->pos[VX]);
+    pntLight[VY] = FIX2FLT(lum->thing->pos[VY]);
 
     // Calculate distance between seg and light source.
     dist =
@@ -836,7 +836,7 @@ void DL_AddLuminous(mobj_t *thing)
         {
             lump =
                 sprframe->
-                lump[(R_PointToAngle(thing->x, thing->y) - thing->angle +
+                lump[(R_PointToAngle(thing->pos[VX], thing->pos[VY]) - thing->angle +
                       (unsigned) (ANG45 / 2) * 9) >> 29];
         }
         else
@@ -887,7 +887,7 @@ void DL_AddLuminous(mobj_t *thing)
 
         // Will the sprite be allowed to go inside the floor?
         mul =
-            FIX2FLT(thing->z) + spritelumps[lump].topoffset -
+            FIX2FLT(thing->pos[VZ]) + spritelumps[lump].topoffset -
             spritelumps[lump].height -
             FIX2FLT(thing->subsector->sector->floorheight);
         if(!(thing->ddflags & DDMF_NOFITBOTTOM) && mul < 0)
@@ -927,8 +927,8 @@ void DL_AddLuminous(mobj_t *thing)
 
         // Approximate the distance in 3D.
         lum->distance =
-            P_ApproxDistance3(thing->x - viewx, thing->y - viewy,
-                              thing->z - viewz);
+            P_ApproxDistance3(thing->pos[VX] - viewx, thing->pos[VY] - viewy,
+                              thing->pos[VZ] - viewz);
 
         // Is there a model definition?
         R_CheckModelFor(thing, &mf, &nextmf);
@@ -1026,9 +1026,9 @@ boolean DLIT_ContactFinder(line_t *line, void *data)
 
     // Calculate distance to line.
     distance =
-        (FIX2FLT(line->v1->y - light->lum->thing->y) * FIX2FLT(line->dx) -
+        (FIX2FLT(line->v1->y - light->lum->thing->pos[VY]) * FIX2FLT(line->dx) -
          FIX2FLT(line->v1->x -
-                 light->lum->thing->x) * FIX2FLT(line->dy)) / info->length;
+                 light->lum->thing->pos[VX]) * FIX2FLT(line->dy)) / info->length;
 
     if((source == line->frontsector && distance < 0) ||
        (source == line->backsector && distance > 0))
@@ -1080,10 +1080,10 @@ void DL_FindContacts(lumobj_t * lum)
 
     light.lum = lum;
     light.firstValid = firstValid;
-    light.box[BOXTOP] = lum->thing->y + radius;
-    light.box[BOXBOTTOM] = lum->thing->y - radius;
-    light.box[BOXRIGHT] = lum->thing->x + radius;
-    light.box[BOXLEFT] = lum->thing->x - radius;
+    light.box[BOXTOP] = lum->thing->pos[VY] + radius;
+    light.box[BOXBOTTOM] = lum->thing->pos[VY] - radius;
+    light.box[BOXRIGHT] = lum->thing->pos[VX] + radius;
+    light.box[BOXLEFT] = lum->thing->pos[VX] - radius;
 
     DL_ContactSector(lum, light.box, lum->thing->subsector->sector);
 
@@ -1204,8 +1204,8 @@ void DL_LinkLuminous()
 
         // Link this lumobj to the dlBlockLinks, if it can be linked.
         lum->next = NULL;
-        bx = X_TO_DLBX(lum->thing->x);
-        by = Y_TO_DLBY(lum->thing->y);
+        bx = X_TO_DLBX(lum->thing->pos[VX]);
+        by = Y_TO_DLBY(lum->thing->pos[VY]);
         if(bx >= 0 && by >= 0 && bx < dlBlockWidth && by < dlBlockHeight)
         {
             root = DLB_ROOT_DLBXY(bx, by);
@@ -1236,9 +1236,9 @@ boolean DL_LightIteratorFunc(lumobj_t * lum, flatitervars_t * fi)
     int     i;
     int     j;
     seg_t  *seg;
-    float   x = FIX2FLT(lum->thing->x);
-    float   y = FIX2FLT(lum->thing->y);
-    float   z = FIX2FLT(lum->thing->z);
+    float   x = FIX2FLT(lum->thing->pos[VX]);
+    float   y = FIX2FLT(lum->thing->pos[VY]);
+    float   z = FIX2FLT(lum->thing->pos[VZ]);
     float   cdiff, fdiff, applyCeiling, applyFloor, srcRadius;
     float   s[2], t[2];
     dynlight_t *dyn;
@@ -1466,7 +1466,7 @@ boolean DL_RadiusIterator(subsector_t *subsector, fixed_t x, fixed_t y,
     for(con = subContacts[GET_SUBSECTOR_IDX(subsector)]; con; con = con->next)
     {
         dist =
-            P_ApproxDistance(con->lum->thing->x - x, con->lum->thing->y - y);
+            P_ApproxDistance(con->lum->thing->pos[VX] - x, con->lum->thing->pos[VY] - y);
 
         if(dist <= radius && !func(con->lum, dist))
             return false;
@@ -1513,7 +1513,7 @@ void DL_ClipBySight(int ssecidx)
             if(!Rend_SegFacingDir(v1, v2))
                 continue;
 
-            V2_Set(source, FIX2FLT(lumi->thing->x), FIX2FLT(lumi->thing->y));
+            V2_Set(source, FIX2FLT(lumi->thing->pos[VX]), FIX2FLT(lumi->thing->pos[VY]));
 
             if(V2_Intercept2(source, eye, v1, v2, NULL, NULL, NULL))
             {

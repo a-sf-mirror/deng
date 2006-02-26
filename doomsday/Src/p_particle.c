@@ -404,9 +404,9 @@ void P_NewParticle(ptcgen_t * gen)
         }
 
         // Position.
-        pt->pos[VX] = gen->source->x;
-        pt->pos[VY] = gen->source->y;
-        pt->pos[VZ] = gen->source->z - gen->source->floorclip;
+        pt->pos[VX] = gen->source->pos[VX];
+        pt->pos[VY] = gen->source->pos[VY];
+        pt->pos[VZ] = gen->source->pos[VZ] - gen->source->floorclip;
         P_Uncertain(pt->pos, FRACUNIT * def->min_spawn_radius,
                     FRACUNIT * def->spawn_radius);
 
@@ -792,10 +792,10 @@ void P_MoveParticle(ptcgen_t * gen, particle_t * pt)
 
         if(gen->source)
         {
-            delta[VX] = pt->pos[VX] - gen->source->x;
-            delta[VY] = pt->pos[VY] - gen->source->y;
+            delta[VX] = pt->pos[VX] - gen->source->pos[VX];
+            delta[VY] = pt->pos[VY] - gen->source->pos[VY];
             delta[VZ] =
-                P_GetParticleZ(pt) - (gen->source->z + gen->center[VZ]);
+                P_GetParticleZ(pt) - (gen->source->pos[VZ] + gen->center[VZ]);
         }
         else
         {
@@ -1301,13 +1301,13 @@ void P_SpawnDamageParticleGen(mobj_t *mo, mobj_t *inflictor, int amount)
             gen->area = 1;
 
         // Calculate appropriate center coordinates and the vector.
-        gen->center[VX] += mo->x;
-        gen->center[VY] += mo->y;
-        gen->center[VZ] += mo->z + mo->height / 2;
-        gen->vector[VX] += mo->x - inflictor->x;
-        gen->vector[VY] += mo->y - inflictor->y;
+        gen->center[VX] += mo->pos[VX];
+        gen->center[VY] += mo->pos[VY];
+        gen->center[VZ] += mo->pos[VZ] + mo->height / 2;
+        gen->vector[VX] += mo->pos[VX] - inflictor->pos[VX];
+        gen->vector[VY] += mo->pos[VY] - inflictor->pos[VY];
         gen->vector[VZ] +=
-            mo->z + mo->height / 2 - inflictor->z - inflictor->height / 2;
+            mo->pos[VZ] + mo->height / 2 - inflictor->pos[VZ] - inflictor->height / 2;
 
         // Normalize the vector.
         len =

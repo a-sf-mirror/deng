@@ -294,7 +294,7 @@ void Cl_MovePlayer(ddplayer_t *pl)
     if(num == consoleplayer)
     {
         fixed_t air_thrust = FRACUNIT / 32;
-        boolean airborne = (mo->z > mo->floorz && !(mo->ddflags & DDMF_FLY));
+        boolean airborne = (mo->pos[VZ] > mo->floorz && !(mo->ddflags & DDMF_FLY));
 
         if(!(pl->flags & DDPF_DEAD))    // Dead players do not move willfully.
         {
@@ -330,9 +330,7 @@ void Cl_UpdatePlayerPos(ddplayer_t *pl)
     clmo->angle = mo->angle;
     // The player's client mobj is not linked to any lists, so position
     // can be updated without any hassles.
-    clmo->x = mo->x;
-    clmo->y = mo->y;
-    clmo->z = mo->z;
+    memcpy(clmo->pos, mo->pos, sizeof(mo->pos));
     P_LinkThing(clmo, 0);       // Update subsector pointer.
     clmo->floorz = mo->floorz;
     clmo->ceilingz = mo->ceilingz;
@@ -391,23 +389,23 @@ void Cl_MoveLocalPlayer(int dx, int dy, int z, boolean onground)
     if(dx || dy)
     {
         P_UnlinkThing(mo);
-        mo->x += dx;
-        mo->y += dy;
+        mo->pos[VX] += dx;
+        mo->pos[VY] += dy;
         P_LinkThing(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
 
-    mo->subsector = R_PointInSubsector(mo->x, mo->y);
+    mo->subsector = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
     mo->floorz = mo->subsector->sector->floorheight;
     mo->ceilingz = mo->subsector->sector->ceilingheight;
 
     if(onground)
     {
-        mo->z = z - 1;
+        mo->pos[VZ] = z - 1;
         pl->viewheight = 1;
     }
     else
     {
-        mo->z = z;
+        mo->pos[VZ] = z;
         pl->viewheight = 0;
     }
 
@@ -628,5 +626,5 @@ boolean Cl_IsFreeToMove(int player)
 
     if(!mo)
         return false;
-    return (mo->z >= mo->floorz && mo->z + mo->height <= mo->ceilingz);
+    return (mo->pos[VZ] >= mo->floorz && mo->pos[VZ] + mo->height <= mo->ceilingz);
 }

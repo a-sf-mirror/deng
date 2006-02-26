@@ -164,8 +164,8 @@ void Rend_DrawPlayerSprites(void)
         {
             // Evaluate the position of this player in the light grid.
             // TODO: Could be affected by BIAS (dynamic lights?).
-            float point[3] = { FIX2FLT(viewplayer->mo->x), FIX2FLT(viewplayer->mo->y),
-                               FIX2FLT(viewplayer->mo->z + viewplayer->mo->height/2)};
+            float point[3] = { FIX2FLT(viewplayer->mo->pos[VX]), FIX2FLT(viewplayer->mo->pos[VY]),
+                               FIX2FLT(viewplayer->mo->pos[VZ] + viewplayer->mo->height/2)};
             LG_Evaluate(point, secbRGB);
         }
 
@@ -401,8 +401,7 @@ void Rend_DrawMasked(void)
                 // How about a halo?
                 if(spr->data.mo.light)
                 {
-                    H_RenderHalo(spr, true);
-                    haloDrawn = true;
+                    haloDrawn = H_RenderHalo(spr, true);
                 }
             }
         }
@@ -436,10 +435,10 @@ void Rend_SpriteTexCoord(int pnum, int x, int y)
 static boolean Rend_SpriteLighter(lumobj_t * lum, fixed_t dist)
 {
     int     i, temp;
-    float   fdist = FIX2FLT(dist);
+    float   fdist = FIX2FLT(dist) * 1.2f; // Pretend the light is a bit further away.
     fvertex_t lightVec = {
-        FIX2FLT(slSpr->data.mo.gx - lum->thing->x),
-        FIX2FLT(slSpr->data.mo.gy - lum->thing->y)
+        FIX2FLT(slSpr->data.mo.gx - lum->thing->pos[VX]),
+        FIX2FLT(slSpr->data.mo.gy - lum->thing->pos[VY])
     };
     float   directness, side, inleft, inright, zfactor;
 
@@ -451,7 +450,7 @@ static boolean Rend_SpriteLighter(lumobj_t * lum, fixed_t dist)
 
     zfactor =
         (FIX2FLT(slSpr->data.mo.gz + slSpr->data.mo.gzt) / 2 -
-         (FIX2FLT(lum->thing->z) + lum->center)) / dlMaxRad;
+         (FIX2FLT(lum->thing->pos[VZ]) + lum->center)) / dlMaxRad;
     if(zfactor < 0)
         zfactor = -zfactor;
     if(zfactor > 1)
@@ -593,14 +592,15 @@ void Rend_RenderSprite(vissprite_t * spr)
     }
     else
     {
+        int lightLevel = spr->data.mo.lightlevel;
+        Rend_ApplyLightAdaptation(&lightLevel);
+
         v1[VX] = Q_FIX2FLT(spr->data.mo.gx);
         v1[VY] = Q_FIX2FLT(spr->data.mo.gy);
         tempquad.vertices[0].dist = Rend_PointDist2D(v1);
         tempquad.numvertices = 1;
-        RL_VertexColors(&tempquad,
-                        r_ambient >
-                        spr->data.mo.lightlevel ? r_ambient : spr->data.mo.
-                        lightlevel, spr->data.mo.rgb);
+
+        RL_VertexColors(&tempquad, lightLevel, spr->data.mo.rgb);
 
         // Add extra light using dynamic lights.
         if(litSprites)
@@ -789,28 +789,28 @@ void Rend_RenderSprite(vissprite_t * spr)
     gl.Vertex3f(spr->data.mo.v2[VX], bot, spr->data.mo.v2[VY]);
     gl.End();
 
-    /*  // This mirroring would be excellent if it were properly clipped.
-       {
+    // This mirroring would be excellent if it were properly clipped.
+     /*{
        gl.Disable(DGL_DEPTH_TEST);
 
        // Draw a "test mirroring".
        gl.Begin(DGL_QUADS);
-       gl.Color4ub(tempquad.vertices[0].color.rgb[0],
-       tempquad.vertices[0].color.rgb[1],
-       tempquad.vertices[0].color.rgb[2],
+       gl.Color4ub(tempquad.vertices[0].color.rgba[0],
+       tempquad.vertices[0].color.rgba[1],
+       tempquad.vertices[0].color.rgba[2],
        alpha/3);
        gl.TexCoord2f(flip, 0);
-       gl.Vertex3f(spr->v1[VX], 2*spr->secfloor - top, spr->v1[VY]);
+       gl.Vertex3f(spr->data.mo.v1[VX], 2*spr->data.mo.secfloor - top, spr->data.mo.v1[VY]);
        gl.TexCoord2f(flip, 1);
-       gl.Vertex3f(spr->v1[VX], 2*spr->secfloor - bot, spr->v1[VY]);
+       gl.Vertex3f(spr->data.mo.v1[VX], 2*spr->data.mo.secfloor - bot, spr->data.mo.v1[VY]);
        gl.TexCoord2f(!flip, 1);
-       gl.Vertex3f(spr->v2[VX], 2*spr->secfloor - bot, spr->v2[VY]);
+       gl.Vertex3f(spr->data.mo.v2[VX], 2*spr->data.mo.secfloor - bot, spr->data.mo.v2[VY]);
        gl.TexCoord2f(!flip, 0);
-       gl.Vertex3f(spr->v2[VX], 2*spr->secfloor - top, spr->v2[VY]);
+       gl.Vertex3f(spr->data.mo.v2[VX], 2*spr->data.mo.secfloor - top, spr->data.mo.v2[VY]);
        gl.End();
 
        gl.Enable(DGL_DEPTH_TEST);
-       } */
+       }*/
 
     if(restoreMatrix)
     {

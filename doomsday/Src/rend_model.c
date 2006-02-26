@@ -167,9 +167,8 @@ float Mod_Lerp(float start, float end, float pos)
 boolean Mod_LightIterator(lumobj_t * lum, fixed_t xyDist)
 {
     fixed_t zDist =
-        ((mlSpr->data.mo.gz + mlSpr->data.mo.gzt) >> 1) - (lum->thing->z +
-                                                           FRACUNIT *
-                                                           lum->center);
+        ((mlSpr->data.mo.gz + mlSpr->data.mo.gzt) >> 1) -
+        (lum->thing->pos[VZ] + FRACUNIT * lum->center);
     fixed_t dist = P_ApproxDistance(xyDist, zDist);
     int     i, maxIndex;
     fixed_t maxDist = -1;
@@ -768,9 +767,9 @@ void Mod_RenderSubModel(vissprite_t * spr, int number)
                 }
 
                 // The center of the light source.
-                lightCenter[VX] = FIX2FLT(light->lum->thing->x);
-                lightCenter[VY] = FIX2FLT(light->lum->thing->y);
-                lightCenter[VZ] = FIX2FLT(light->lum->thing->z) +
+                lightCenter[VX] = FIX2FLT(light->lum->thing->pos[VX]);
+                lightCenter[VY] = FIX2FLT(light->lum->thing->pos[VY]);
+                lightCenter[VZ] = FIX2FLT(light->lum->thing->pos[VZ]) +
                     light->lum->center;
 
                 // Calculate the normalized direction vector,
@@ -996,6 +995,7 @@ void Rend_RenderModel(vissprite_t * spr)
     modeldef_t *mf = spr->data.mo.mf;
     rendpoly_t quad;
     int     i;
+    int     lightLevel = spr->data.mo.lightlevel;
     float   dist;
     mlight_t *light;
 
@@ -1007,8 +1007,9 @@ void Rend_RenderModel(vissprite_t * spr)
     // This way the distance darkening has an effect.
     quad.vertices[0].dist = Rend_PointDist2D(spr->data.mo.v1);
     quad.numvertices = 1;
-    RL_VertexColors(&quad, r_ambient > spr->data.mo.lightlevel ? r_ambient
-                    : spr->data.mo.lightlevel, spr->data.mo.rgb);
+
+    Rend_ApplyLightAdaptation(&lightLevel);
+    RL_VertexColors(&quad, lightLevel, spr->data.mo.rgb);
 
     // Determine the ambient light affecting the model.
     for(i = 0; i < 3; i++)

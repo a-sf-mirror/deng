@@ -245,37 +245,37 @@ void Cl_CheckMobj(clmobj_t *cmo, boolean justCreated)
     mobj_t *mo = &cmo->mo;
     boolean onFloor = false, inCeiling = false;
 
-    if(mo->z == DDMININT)
+    if(mo->pos[VZ] == DDMININT)
     {
         // Make the mobj stick to the floor.
         cmo->flags |= CLMF_STICK_FLOOR;
 
         // Give it a real Z coordinate.
         onFloor = true;
-        mo->z = mo->floorz;
+        mo->pos[VZ] = mo->floorz;
     }
-    if(mo->z == DDMAXINT)
+    if(mo->pos[VZ] == DDMAXINT)
     {
         // Make the mobj stick to the ceiling.
         cmo->flags |= CLMF_STICK_CEILING;
 
         // Give it a real Z coordinate.
         inCeiling = true;
-        mo->z = mo->ceilingz - mo->height;
+        mo->pos[VZ] = mo->ceilingz - mo->height;
     }
 
     // Find out floor and ceiling z.
-    P_CheckPosXYZ(mo, mo->x, mo->y, mo->z);
+    P_CheckPosXYZ(mo, mo->pos[VX], mo->pos[VY], mo->pos[VZ]);
     mo->floorz = tmfloorz;
     mo->ceilingz = tmceilingz;
 
     if(onFloor)
     {
-        mo->z = mo->floorz;
+        mo->pos[VZ] = mo->floorz;
     }
     if(inCeiling)
     {
-        mo->z = mo->ceilingz - mo->height;
+        mo->pos[VZ] = mo->ceilingz - mo->height;
     }
 
 #if 0
@@ -286,7 +286,7 @@ void Cl_CheckMobj(clmobj_t *cmo, boolean justCreated)
     if(justCreated && mo->ddflags & DDMF_MISSILE)
     {
         Con_Printf("Misl creat %i, (%x %x %x) mom (%x %x %x)\n",
-                   mo->thinker.id, mo->x, mo->y, mo->z, mo->momx, mo->momy,
+                   mo->thinker.id, mo->pos[VX], mo->pos[VY], mo->pos[VZ], mo->momx, mo->momy,
                    mo->momz);
     }
 #  endif
@@ -323,11 +323,11 @@ void Cl_UpdateRealPlayerMobj(mobj_t *mo, mobj_t *clmo, int flags)
     {
         // We have to unlink the real mobj before we move it.
         P_UnlinkThing(mo);
-        mo->x = clmo->x;
-        mo->y = clmo->y;
+        mo->pos[VX] = clmo->pos[VX];
+        mo->pos[VY] = clmo->pos[VY];
         P_LinkThing(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
-    mo->z = clmo->z;
+    mo->pos[VZ] = clmo->pos[VZ];
     mo->momx = clmo->momx;
     mo->momy = clmo->momy;
     mo->momz = clmo->momz;
@@ -427,14 +427,14 @@ int Cl_ReadMobjDelta(void)
 
     // Coordinates with three bytes.
     if(df & MDF_POS_X)
-        d->x = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VX] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
     if(df & MDF_POS_Y)
-        d->y = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VY] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
     if(df & MDF_POS_Z)
-        d->z = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VZ] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
 
 #ifdef _DEBUG
-    if(!d->x && !d->y)
+    if(!d->pos[VX] && !d->pos[VY])
     {
         /*      if(d->type == 83)
            {
@@ -592,23 +592,23 @@ void Cl_MoveThing(clmobj_t *cmo)
 
     if(mo->momz)
     {
-        mo->z += mo->momz;
+        mo->pos[VZ] += mo->momz;
 
-        if(mo->z < mo->floorz)
+        if(mo->pos[VZ] < mo->floorz)
         {
-            mo->z = mo->floorz;
+            mo->pos[VZ] = mo->floorz;
             mo->momz = 0;
             collided = true;
         }
-        if(mo->z + mo->height > mo->ceilingz)
+        if(mo->pos[VZ] + mo->height > mo->ceilingz)
         {
-            mo->z = mo->ceilingz - mo->height;
+            mo->pos[VZ] = mo->ceilingz - mo->height;
             mo->momz = 0;
             collided = true;
         }
     }
 
-    if(mo->z > mo->floorz)
+    if(mo->pos[VZ] > mo->floorz)
     {
         // Gravity will affect the prediction.
         if(mo->ddflags & DDMF_LOWGRAVITY)
@@ -645,11 +645,11 @@ void Cl_MoveThing(clmobj_t *cmo)
     // Stick to a plane?
     if(cmo->flags & CLMF_STICK_FLOOR)
     {
-        mo->z = mo->floorz;
+        mo->pos[VZ] = mo->floorz;
     }
     if(cmo->flags & CLMF_STICK_CEILING)
     {
-        mo->z = mo->ceilingz - mo->height;
+        mo->pos[VZ] = mo->ceilingz - mo->height;
     }
 }
 
@@ -902,15 +902,15 @@ void Cl_ReadMobjDelta2(boolean allowCreate, boolean skip)
     // Coordinates with three bytes.
     if(df & MDF_POS_X)
     {
-        d->x = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VX] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
     }
     if(df & MDF_POS_Y)
     {
-        d->y = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VY] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
     }
     if(df & MDF_POS_Z)
     {
-        d->z = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
+        d->pos[VZ] = (Msg_ReadShort() << FRACBITS) | (Msg_ReadByte() << 8);
 
         // The mobj won't stick if an explicit coordinate is supplied.
         if(cmo)
@@ -920,11 +920,11 @@ void Cl_ReadMobjDelta2(boolean allowCreate, boolean skip)
     // When these flags are set, the normal Z coord is not included.
     if(moreFlags & MDFE_Z_FLOOR)
     {
-        d->z = DDMININT;
+        d->pos[VZ] = DDMININT;
     }
     if(moreFlags & MDFE_Z_CEILING)
     {
-        d->z = DDMAXINT;
+        d->pos[VZ] = DDMAXINT;
     }
 
     // Momentum using 8.8 fixed point.

@@ -293,9 +293,9 @@ float Sfx_Priority(mobj_t *emitter, float *fixpos, float volume, int starttic)
     // The sound has an origin, base the points on distance.
     if(emitter)
     {
-        orig[VX] = FIX2FLT(emitter->x);
-        orig[VY] = FIX2FLT(emitter->y);
-        orig[VZ] = FIX2FLT(emitter->z);
+        orig[VX] = FIX2FLT(emitter->pos[VX]);
+        orig[VY] = FIX2FLT(emitter->pos[VY]);
+        orig[VZ] = FIX2FLT(emitter->pos[VZ]);
     }
     else
     {
@@ -332,9 +332,9 @@ void Sfx_GetListenerXYZ(float *pos)
         return;
 
     // FIXME: Make it exactly eye-level! (viewheight)
-    pos[VX] = FIX2FLT(listener->x);
-    pos[VY] = FIX2FLT(listener->y);
-    pos[VZ] = FIX2FLT(listener->z + listener->height - (5 << FRACBITS));
+    pos[VX] = FIX2FLT(listener->pos[VX]);
+    pos[VY] = FIX2FLT(listener->pos[VY]);
+    pos[VZ] = FIX2FLT(listener->pos[VZ] + listener->height - (5 << FRACBITS));
 }
 
 /*
@@ -353,9 +353,9 @@ void Sfx_ChannelUpdate(sfxchannel_t * ch)
     // Copy the emitter's position (if any), to the pos coord array.
     if(ch->emitter)
     {
-        ch->pos[VX] = FIX2FLT(ch->emitter->x);
-        ch->pos[VY] = FIX2FLT(ch->emitter->y);
-        ch->pos[VZ] = FIX2FLT(ch->emitter->z);
+        ch->pos[VX] = FIX2FLT(ch->emitter->pos[VX]);
+        ch->pos[VY] = FIX2FLT(ch->emitter->pos[VY]);
+        ch->pos[VZ] = FIX2FLT(ch->emitter->pos[VZ]);
         // If this is a mobj, center the Z pos.
         if(P_IsMobjThinker(ch->emitter->thinker.function))
         {
@@ -437,7 +437,7 @@ void Sfx_ChannelUpdate(sfxchannel_t * ch)
             {
                 angle =
                     (R_PointToAngle2
-                     (listener->x, listener->y, ch->pos[VX] * FRACUNIT,
+                     (listener->pos[VX], listener->pos[VY], ch->pos[VX] * FRACUNIT,
                       ch->pos[VY] * FRACUNIT) -
                      listener->angle) / (float) ANGLE_MAX *360;
                 // We want a signed angle.

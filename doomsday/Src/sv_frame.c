@@ -223,11 +223,11 @@ void Sv_WriteMobjDelta(const void *deltaPtr)
     // Floor/ceiling z?
     if(df & MDF_POS_Z)
     {
-        if(d->z == DDMININT || d->z == DDMAXINT)
+        if(d->pos[VZ] == DDMININT || d->pos[VZ] == DDMAXINT)
         {
             df &= ~MDF_POS_Z;
             df |= MDF_MORE_FLAGS;
-            moreFlags |= (d->z == DDMININT ? MDFE_Z_FLOOR : MDFE_Z_CEILING);
+            moreFlags |= (d->pos[VZ] == DDMININT ? MDFE_Z_FLOOR : MDFE_Z_CEILING);
         }
     }
 
@@ -256,18 +256,18 @@ void Sv_WriteMobjDelta(const void *deltaPtr)
     // Coordinates with three bytes.
     if(df & MDF_POS_X)
     {
-        Msg_WriteShort(d->x >> FRACBITS);
-        Msg_WriteByte(d->x >> 8);
+        Msg_WriteShort(d->pos[VX] >> FRACBITS);
+        Msg_WriteByte(d->pos[VX] >> 8);
     }
     if(df & MDF_POS_Y)
     {
-        Msg_WriteShort(d->y >> FRACBITS);
-        Msg_WriteByte(d->y >> 8);
+        Msg_WriteShort(d->pos[VY] >> FRACBITS);
+        Msg_WriteByte(d->pos[VY] >> 8);
     }
     if(df & MDF_POS_Z)
     {
-        Msg_WriteShort(d->z >> FRACBITS);
-        Msg_WriteByte(d->z >> 8);
+        Msg_WriteShort(d->pos[VZ] >> FRACBITS);
+        Msg_WriteByte(d->pos[VZ] >> 8);
     }
 
     // Momentum using 8.8 fixed point.

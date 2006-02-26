@@ -487,11 +487,11 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
         return false;           // Cameramen don't exist!
 
     // Check precisely.
-    sightzstart = t1->z + t1->height - (t1->height >> 2);
-    topslope = (t2->z + t2->height) - sightzstart;
-    bottomslope = (t2->z) - sightzstart;
+    sightzstart = t1->pos[VZ] + t1->height - (t1->height >> 2);
+    topslope = (t2->pos[VZ] + t2->height) - sightzstart;
+    bottomslope = (t2->pos[VZ]) - sightzstart;
 
-    return P_SightPathTraverse(t1->x, t1->y, t2->x, t2->y);
+    return P_SightPathTraverse(t1->pos[VX], t1->pos[VY], t2->pos[VX], t2->pos[VY]);
 }
 
 boolean P_CheckLineSight(float from[3], float to[3])

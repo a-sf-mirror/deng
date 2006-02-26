@@ -434,8 +434,8 @@ void R_ProjectDecoration(mobj_t *source)
     vissprite_t *vis;
 
     // Calculate edges of the shape.
-    v1[VX] = FIX2FLT(source->x);
-    v1[VY] = FIX2FLT(source->y);
+    v1[VX] = FIX2FLT(source->pos[VX]);
+    v1[VY] = FIX2FLT(source->pos[VY]);
 
     vis = R_NewVisSprite();
     memset(vis, 0, sizeof(*vis));
@@ -444,9 +444,9 @@ void R_ProjectDecoration(mobj_t *source)
     vis->data.mo.patch = -1;    // Doesn't have one!
     vis->data.mo.light = DL_GetLuminous(source->light);
     //  vis->data.mo.flags = thing->ddflags;
-    vis->data.mo.gx = source->x;
-    vis->data.mo.gy = source->y;
-    vis->data.mo.gz = vis->data.mo.gzt = source->z;
+    vis->data.mo.gx = source->pos[VX];
+    vis->data.mo.gy = source->pos[VY];
+    vis->data.mo.gz = vis->data.mo.gzt = source->pos[VZ];
 }
 
 /*
@@ -528,8 +528,8 @@ void R_ProjectPlayerSprites(void)
         {
             // Evaluate the position of this player in the light grid.
             // TODO: Should be affected by BIAS sources.
-            float point[3] = { FIX2FLT(viewplayer->mo->x), FIX2FLT(viewplayer->mo->y),
-                               FIX2FLT(viewplayer->mo->z + viewplayer->mo->height/2)};
+            float point[3] = { FIX2FLT(viewplayer->mo->pos[VX]), FIX2FLT(viewplayer->mo->pos[VY]),
+                               FIX2FLT(viewplayer->mo->pos[VZ] + viewplayer->mo->height/2)};
             LG_Evaluate(point, vis->data.mo.rgb);
 
             vis->data.mo.lightlevel = 255;
@@ -578,12 +578,12 @@ boolean RIT_VisMobjZ(sector_t *sector, void *data)
     assert(data != NULL);
 
     if(vis->data.mo.flooradjust &&
-       projectedThing->z == sector->floorheight)
+       projectedThing->pos[VZ] == sector->floorheight)
     {
         vis->data.mo.gz = FRACUNIT * SECT_FLOOR(sector);
     }
 
-    if(projectedThing->z + projectedThing->height == sector->ceilingheight)
+    if(projectedThing->pos[VZ] + projectedThing->height == sector->ceilingheight)
     {
         vis->data.mo.gz =
             FRACUNIT * SECT_CEIL(sector) - projectedThing->height;
@@ -619,8 +619,8 @@ void R_ProjectSprite(mobj_t *thing)
     }
 
     // Transform the origin point.
-    trx = thing->x - viewx;
-    try = thing->y - viewy;
+    trx = thing->pos[VX] - viewx;
+    try = thing->pos[VY] - viewy;
 
     // Decide which patch to use for sprite relative to player.
 
@@ -640,8 +640,8 @@ void R_ProjectSprite(mobj_t *thing)
     sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
     // Calculate edges of the shape.
-    v1[VX] = FIX2FLT(thing->x);
-    v1[VY] = FIX2FLT(thing->y);
+    v1[VX] = FIX2FLT(thing->pos[VX]);
+    v1[VY] = FIX2FLT(thing->pos[VY]);
 
     distance = Rend_PointDist2D(v1);
 
@@ -661,7 +661,7 @@ void R_ProjectSprite(mobj_t *thing)
     if(sprframe->rotate && !mf)
     {
         // Choose a different rotation based on player view.
-        ang = R_PointToAngle(thing->x, thing->y);
+        ang = R_PointToAngle(thing->pos[VX], thing->pos[VY]);
         rot = (ang - thing->angle + (unsigned) (ANG45 / 2) * 9) >> 29;
         lump = sprframe->lump[rot];
         flip = (boolean) sprframe->flip[rot];
@@ -732,7 +732,7 @@ void R_ProjectSprite(mobj_t *thing)
             // to disappear too early.
             if(P_ApproxDistance
                (distance * FRACUNIT,
-                thing->z + thing->height / 2 - viewz) >
+                thing->pos[VZ] + thing->height / 2 - viewz) >
                MAX_OBJECT_RADIUS * FRACUNIT)
             {
                 return;         // Can't be visible.
@@ -755,9 +755,9 @@ void R_ProjectSprite(mobj_t *thing)
     vis->data.mo.flags = thing->ddflags;
     vis->data.mo.id = thing->thinker.id;
     vis->data.mo.selector = thing->selector;
-    vis->data.mo.gx = thing->x;
-    vis->data.mo.gy = thing->y;
-    vis->data.mo.gz = thing->z;
+    vis->data.mo.gx = thing->pos[VX];
+    vis->data.mo.gy = thing->pos[VY];
+    vis->data.mo.gz = thing->pos[VZ];
 
     vis->data.mo.flooradjust =
         (fabs(SECT_FLOOR(sect) - FIX2FLT(sect->floorheight)) < 8);
@@ -774,8 +774,8 @@ void R_ProjectSprite(mobj_t *thing)
 
     if(useBias)
     {
-        float point[3] = { FIX2FLT(thing->x), FIX2FLT(thing->y),
-                           FIX2FLT(thing->z + thing->height/2)};
+        float point[3] = { FIX2FLT(thing->pos[VX]), FIX2FLT(thing->pos[VY]),
+                           FIX2FLT(thing->pos[VZ] + thing->height/2)};
         LG_Evaluate(point, vis->data.mo.rgb);
     }
     else
@@ -972,16 +972,21 @@ void R_AddSprites(sector_t *sec)
         // sky sectors. Here we will raise the skyfix dynamically, at
         // runtime, to make sure that no sprites get clipped by the sky.
         R_GetSpriteInfo(thing->sprite, thing->frame, &spriteInfo);
-        visibleTop = thing->z + (spriteInfo.height << FRACBITS);
 
-        if(sec->ceilingpic == skyflatnum &&
-           visibleTop > sec->ceilingheight + (sec->skyfix << FRACBITS))
+        // Only check
+        if(thing->pos[VZ] <= sec->ceilingheight)
         {
-            // Raise sector skyfix.
-            sec->skyfix = ((visibleTop - sec->ceilingheight) >> FRACBITS) + 16; // Add some leeway.
+            visibleTop = thing->pos[VZ] + (spriteInfo.height << FRACBITS);
 
-            // This'll adjust all adjacent sectors.
-            R_SkyFix();
+            if(sec->ceilingpic == skyflatnum &&
+               visibleTop > sec->ceilingheight + (sec->skyfix << FRACBITS))
+            {
+                // Raise sector skyfix.
+                sec->skyfix = ((visibleTop - sec->ceilingheight) >> FRACBITS) + 16; // Add some leeway.
+
+                // This'll adjust all adjacent sectors.
+                R_SkyFix();
+            }
         }
     }
 }

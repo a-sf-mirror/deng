@@ -1007,15 +1007,15 @@ void Sv_ClientCoords(int playerNum)
     if(!(players[playerNum].flags & DDPF_FIXPOS) && P_CheckPosXYZ(mo, clx, cly, clz))   // But it must be a valid pos.
     {
         P_UnlinkThing(mo);
-        mo->x = clx;
-        mo->y = cly;
-        mo->z = clz;
+        mo->pos[VX] = clx;
+        mo->pos[VY] = cly;
+        mo->pos[VZ] = clz;
         P_LinkThing(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
         mo->floorz = tmfloorz;
         mo->ceilingz = tmceilingz;
         if(onFloor)
         {
-            mo->z = mo->floorz;
+            mo->pos[VZ] = mo->floorz;
         }
     }
 }

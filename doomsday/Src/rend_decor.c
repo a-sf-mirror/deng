@@ -221,13 +221,13 @@ void Rend_AddLightDecoration(float pos[3], ded_decorlight_t * def,
         return;                 // Out of sources!
 
     // Initialize the essentials in the dummy mobj.
-    source->thing.x = pos[VX] * FRACUNIT;
-    source->thing.y = pos[VY] * FRACUNIT;
-    source->thing.z = pos[VZ] * FRACUNIT;
+    source->thing.pos[VX] = pos[VX] * FRACUNIT;
+    source->thing.pos[VY] = pos[VY] * FRACUNIT;
+    source->thing.pos[VZ] = pos[VZ] * FRACUNIT;
     source->thing.frame = FF_FULLBRIGHT;
     source->thing.halofactor = 0xff;    // Assumed visible.
     source->thing.subsector =
-        R_PointInSubsector(source->thing.x, source->thing.y);
+        R_PointInSubsector(source->thing.pos[VX], source->thing.pos[VY]);
 
     // Fill in the data for a new luminous object.
     source->thing.light = DL_NewLuminous();
@@ -270,8 +270,8 @@ void Rend_AddLightDecoration(float pos[3], ded_decorlight_t * def,
 
     // Approximate the distance.
     lum->distance =
-        P_ApproxDistance3(source->thing.x - viewx, source->thing.y - viewy,
-                          source->thing.z - viewz);
+        P_ApproxDistance3(source->thing.pos[VX] - viewx, source->thing.pos[VY] - viewy,
+                          source->thing.pos[VZ] - viewz);
 }
 
 /*
@@ -582,22 +582,22 @@ void Rend_DecorateLine(int index)
         // 2-sided middle texture?
         // FIXME: Since halos aren't usually clipped by 2-sided middle
         // textures, this looks a bit silly.
-        /*      if(line->sidenum[0] >= 0
-           && (side = SIDE_PTR(line->sidenum[0]))->midtexture)
-           {
-           rendpoly_t quad;
+        /*if(line->sidenum[0] >= 0 && (side = SIDE_PTR(line->sidenum[0]))->midtexture)
+        {
+            rendpoly_t quad;
 
-           // If there is an opening, process it.
-           GL_GetTextureInfo(side->midtexture);
-           quad.top = MIN_OF(frontCeil, backCeil);
-           quad.bottom = MAX_OF(frontFloor, backFloor);
-           if(Rend_MidTexturePos(&quad, FIX2FLT(side->rowoffset),
-           (line->flags & ML_DONTPEGBOTTOM) != 0))
-           {
-           Rend_DecorateLineSection(line, side, side->midtexture,
-           quad.top, quad.bottom, quad.texoffy);
-           }
-           } */
+            // If there is an opening, process it.
+            GL_GetTextureInfo(side->midtexture);
+            quad.top = MIN_OF(frontCeil, backCeil);
+            quad.bottom = MAX_OF(frontFloor, backFloor);
+            quad.texoffy = FIX2FLT(side->textureoffset);
+            if(Rend_MidTexturePos(&quad.top, &quad.bottom, &quad.texoffy, 0,
+                                  (line->flags & ML_DONTPEGBOTTOM) != 0))
+            {
+                Rend_DecorateLineSection(line, side, side->midtexture,
+                                         quad.top, quad.bottom, quad.texoffy);
+            }
+        }*/
     }
     else
     {
