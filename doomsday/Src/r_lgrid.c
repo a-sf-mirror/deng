@@ -734,9 +734,9 @@ void LG_Debug(void)
 
     gl.Disable(DGL_TEXTURING);
 
-    gl.Begin(DGL_QUADS);
     for(block = grid, y = 0; y < lgBlockHeight; ++y)
     {
+        gl.Begin(DGL_QUADS);
         for(x = 0; x < lgBlockWidth; ++x, ++block)
         {
             gl.Color3ubv(block->rgb);
@@ -747,8 +747,8 @@ void LG_Debug(void)
                         y * lgDebugSize + lgDebugSize);
             gl.Vertex2f(x * lgDebugSize, y * lgDebugSize + lgDebugSize);
         }
+        gl.End();
     }
-    gl.End();
 
     gl.Enable(DGL_TEXTURING);
     gl.MatrixMode(DGL_PROJECTION);
