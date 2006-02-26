@@ -50,6 +50,8 @@
 #define MINDIFF 8 // min plane height difference (world units)
 #define INDIFF  8 // max plane height for indifference offset
 
+#define MINHEIGHT 1 // Minimum height of a wall shadow poly (world units)
+
 // TYPES -------------------------------------------------------------------
 
 typedef struct shadowcorner_s {
@@ -109,7 +111,7 @@ float Rend_RadioShadowDarkness(int lightlevel)
  */
 void Rend_RadioInitForSector(sector_t *sector)
 {
-    byte sectorlight = sector->lightlevel;
+    int sectorlight = sector->lightlevel;
 
     Rend_ApplyLightAdaptation(&sectorlight);
 
@@ -118,6 +120,9 @@ void Rend_RadioInitForSector(sector_t *sector)
 
     if(!rendFakeRadio)
         return;                 // Disabled...
+
+    if(sectorlight == 0)
+        return;     // No point drawing shadows in a PITCH black sector.
 
     // Visible plane heights.
     fFloor = SECT_FLOOR(sector);
@@ -173,6 +178,52 @@ void Rend_RadioSetColor(rendpoly_t *q, float darkness)
 boolean Rend_IsSectorOpen(sector_t *sector)
 {
     return sector && sector->ceilingheight > sector->floorheight;
+}
+
+boolean Rend_DoesMidTextureFillGap(line_t* line, boolean frontside)
+{
+    // Check for unmasked midtextures on twosided lines that completely
+    // fill the gap between floor and ceiling (we don't want to give away
+    // the location of any secret areas (false walls)).
+    if(line->backsector)
+    {
+        sector_t *front = (frontside ? line->frontsector : line->backsector);
+        sector_t *back = (frontside ? line->backsector : line->frontsector);
+        sectorinfo_t *fInfo, *bInfo;
+        side_t* side = (frontside ? SIDE_PTR(line->sidenum[0]) :
+                        SIDE_PTR(line->sidenum[1]));
+
+        if(side->midtexture != 0)
+        {
+            fInfo = SECT_INFO(front);
+            bInfo = SECT_INFO(back);
+            GL_GetTextureInfo(side->midtexture);
+            if(!side->blendmode && side->midrgba[3] == 255 && !texmask)
+            {
+                float openTop, gapTop;
+                float openBottom, gapBottom;
+
+                openTop = gapTop = MIN_OF(bInfo->visceil, fInfo->visceil);
+                openBottom = gapBottom = MAX_OF(bInfo->visfloor, fInfo->visfloor);
+
+                // Could the mid texture fill enough of this gap for us
+                // to consider it completely closed?
+                if(texh >= (openTop - openBottom))
+                {
+                    // Possibly. Check the placement of the mid texture.
+                    if(Rend_MidTexturePos
+                       (&gapTop, &gapBottom, NULL, FIX2FLT(side->rowoffset),
+                        0 != (line->flags & ML_DONTPEGBOTTOM)))
+                    {
+                        if(openTop >= gapTop && openBottom <= gapBottom)
+                            return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 /*
@@ -242,9 +293,12 @@ float Rend_RadioLineCorner(line_t *self, line_t *other, const sector_t *mySector
              (oFFloor < fCeil && oFCeil >= fCeil) ||
              (oFFloor < fCeil && oFCeil > fFloor)))  )
         {
-        if(Rend_IsSectorOpen(other->frontsector) &&
-           Rend_IsSectorOpen(other->backsector))
-            return 0;
+            if(Rend_IsSectorOpen(other->frontsector) &&
+               Rend_IsSectorOpen(other->backsector))
+            {
+                if(!Rend_DoesMidTextureFillGap(other, other->frontsector == mySector))
+                    return 0;
+            }
         }
     }
 
@@ -568,7 +622,7 @@ float Rend_RadioLongWallBonus(float span)
  * segment.  The quad must be initialized with all the necessary data
  * (normally comes directly from Rend_RenderWallSeg()).
  */
-void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
+void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
 {
     sector_t *backSector;
     float   bFloor, bCeil, limit, size, segOffset;
@@ -647,7 +701,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
     // The top shadow will reach this far down.
     size = shadowSize + Rend_RadioLongWallBonus(ceilSpan->length);
     limit = fCeil - size;
-    if((q->top > limit && q->bottom < fCeil) &&
+    if((q->top > limit && q->bottom < fCeil && q->top - q->bottom > MINHEIGHT) &&
        Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
     {
         Rend_RadioTexCoordY(q, size);
@@ -813,7 +867,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
      */
     size = shadowSize + Rend_RadioLongWallBonus(floorSpan->length) / 2;
     limit = fFloor + size;
-    if((q->bottom < limit && q->top > fFloor) &&
+    if((q->bottom < limit && q->top > fFloor && q->top - q->bottom > MINHEIGHT) &&
        Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR))
     {
         Rend_RadioTexCoordY(q, -size);
@@ -983,6 +1037,7 @@ void Rend_RadioWallSection(seg_t *seg, rendpoly_t *origQuad)
      * Left/Right Shadows
      */
     size = shadowSize + Rend_RadioLongWallBonus(info->length);
+    if(q->top - q->bottom > MINHEIGHT)
     for(i = 0; i < 2; ++i)
     {
         q->flags |= RPF_HORIZONTAL;
@@ -1144,6 +1199,12 @@ float Rend_RadioEdgeOpenness(line_t *line, boolean frontside, boolean isFloor)
     if(fz <= bz - EDGE_OPEN_THRESHOLD || fz >= bhz)
         return 0;               // Fully closed.
 
+    // Check for unmasked midtextures on twosided lines that completely
+    // fill the gap between floor and ceiling (we don't want to give away
+    // the location of any secret areas (false walls)).
+    if(Rend_DoesMidTextureFillGap(line, frontside))
+        return 0;
+
     if(fz >= bhz - EDGE_OPEN_THRESHOLD)
         return (bhz - fz) / EDGE_OPEN_THRESHOLD;
 
@@ -1171,7 +1232,6 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
     int     i, /*dir = (isFloor? 1 : -1), */ *idx;
     int     floorIndices[] = { 0, 1, 2, 3 };
     int     ceilIndices[] = { 0, 3, 2, 1 };
-    byte     sectorlight;
     vec2_t  inner[2];
 
     // This is the sector the shadow is actually in.
@@ -1181,14 +1241,11 @@ void Rend_RadioAddShadowEdge(shadowpoly_t *shadow, boolean isFloor,
 
     z = (isFloor ? SECT_FLOOR(sector) : SECT_CEIL(sector));
 
-    sectorlight = sector->lightlevel;
-    Rend_ApplyLightAdaptation(&sectorlight);
-
     // Sector lightlevel affects the darkness of the shadows.
     if(darkness > 1)
         darkness = 1;
 
-    darkness *= Rend_RadioShadowDarkness(sectorlight) * .8f;
+    darkness *= shadowDark;
 
     // Determine the inner shadow corners.
     for(i = 0; i < 2; i++)
@@ -1309,6 +1366,13 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
                                        (shadow->flags & SHPF_FRONTSIDE) != 0,
                                        surface);
             if(open >= 1)
+                continue;
+
+            // Hack linedefs of any variety are not currently suitable for
+            // fakeradio plane shadows (we need to rationalize and detect
+            // these kind of tricks, set them as per-sector properties)
+            if(shadow->line->backsector &&
+               shadow->line->backsector == shadow->line->frontsector)
                 continue;
 
             // What about the neighbours?
