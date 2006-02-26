@@ -2653,8 +2653,63 @@ void averageColorRGB(rgbcol_t * col, byte *data, int w, int h)
 }
 
 /*
+ * Calculates a clip region for the buffer that excludes alpha pixels.
+ * NOTE: Cross spread from bottom > top, right > left (inside out).
+ *
+ * @param   buffer      Image data to be processed.
+ * @param   width       Width of the src buffer.
+ * @param   height      Height of the src buffer.
+ * @param   pixelsize   Pixelsize of the src buffer. Handles 1 (==2), 3 and 4.
+ *
+ * @returnval region    Ptr to int[4] to write the resultant region to.
+ */
+void GL_GetNonAlphaRegion(byte *buffer, int width, int height, int pixelsize,
+                       int *region)
+{
+    int     k, i;
+    int     myregion[4] = {width, 0, height, 0};
+    byte   *src = buffer;
+    byte   *alphasrc = NULL;
+
+    if(pixelsize == 1)
+        // In paletted mode, the alpha channel follows the actual image.
+        alphasrc = buffer + width * height;
+
+    for(k = 0; k < height; k++)
+        for(i = 0; i < width; i++, src += pixelsize, alphasrc++)
+        {
+            // Alpha pixels don't count.
+            if(pixelsize == 1)
+            {
+                if(*alphasrc < 255)
+                    continue;
+            }
+            else if(pixelsize == 4)
+            {
+                if(src[3] < 255)
+                    continue;
+            }
+
+            if(i < myregion[0])
+                myregion[0] = i;
+            if(i > myregion[1])
+                myregion[1] = i;
+
+            if(k < myregion[2])
+                myregion[2] = k;
+            if(k > myregion[3])
+                myregion[3] = k;
+        }
+
+    memcpy(region, myregion, sizeof(myregion));
+}
+
+/*
  * Calculates the properties of a dynamic light that the given sprite
  * frame casts.
+ * 2005-02-22 (danij): Modified to handle sprites with large areas of alpha
+ *                     by only working on the region of the buffer that contains
+ *                     non-alpha pixels (crop).
  * 2003-05-30 (skyjake): Modified to handle pixel sizes 1 (==2), 3 and 4.
  */
 void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
@@ -2668,8 +2723,8 @@ void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
     int     limit = 0xc0, poslimit = 0xe0, collimit = 0xc0;
     int     average[3], avcnt = 0, lowavg[3], lowcnt = 0;
     rgbcol_t *sprcol = &slump->color;
+    int     region[4];
 
-    slump->flarex = slump->flarey = 0;
     memset(average, 0, sizeof(average));
     memset(lowavg, 0, sizeof(lowavg));
     src = buffer;
@@ -2680,8 +2735,14 @@ void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
         alphasrc = buffer + width * height;
     }
 
-    for(k = 0; k < height; k++)
-        for(i = 0; i < width; i++, src += pixelsize, alphasrc++)
+    GL_GetNonAlphaRegion(buffer, width, height, pixelsize, &region[0]);
+    src += pixelsize * region[0];
+    alphasrc += pixelsize * region[0];
+    slump->flarex = region[0];
+    slump->flarey = region[2];
+
+    for(k = region[2]; k < region[3]; k++)
+        for(i = region[0]; i < region[1]; i++, src += pixelsize, alphasrc++)
         {
             // Alpha pixels don't count.
             if(pixelsize == 1)
@@ -2734,8 +2795,8 @@ void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
         }
     if(!poscnt)
     {
-        slump->flarex = slump->width / 2.0f;
-        slump->flarey = slump->height / 2.0f;
+        slump->flarex = region[0] + ((region[1] - region[0]) / 2.0f);
+        slump->flarey = region[2] + ((region[3] - region[2]) / 2.0f);
     }
     else
     {
@@ -2743,6 +2804,7 @@ void GL_CalcLuminance(int pnum, byte *buffer, int width, int height,
         slump->flarex /= poscnt;
         slump->flarey /= poscnt;
     }
+
     // The color.
     if(!avcnt)
     {
