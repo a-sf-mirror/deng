@@ -70,27 +70,15 @@
 
 // TYPES -------------------------------------------------------------------
 
-#ifdef __JDOOM__
-
 typedef struct {
-    fixed_t x, y;
+    float pos[3];
 } mpoint_t;
-
-#endif
 
 typedef struct {
     float r, g, b, a, a2, w;    // a2 is used in glow mode in case the glow needs a different alpha
     boolean glow;
     boolean scale;
 } mapline_t;
-
-typedef struct {
-    int     x, y;
-} fpoint_t;
-
-typedef struct {
-    fpoint_t a, b;
-} fline_t;
 
 typedef struct {
     mpoint_t a, b;
@@ -131,20 +119,11 @@ mline_t         keysquare[] = {
 #undef R
 #define NUMKEYSQUARELINES (sizeof(keysquare)/sizeof(mline_t))
 
-#define R (FRACUNIT)
-mline_t         triangle_guy[] = {
-    {{-.867 * R, -.5 * R}, {.867 * R, -.5 * R}},
-    {{.867 * R, -.5 * R}, {0, R}},
-    {{0, R}, {-.867 * R, -.5 * R}}
-};
-#undef R
-#define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
-
-#define R (FRACUNIT)
+#define R ((8*PLAYERRADIUS)/7)
 mline_t         thintriangle_guy[] = {
-    {{-.5 * R, -.7 * R}, {R, 0}},
-    {{R, 0}, {-.5 * R, .7 * R}},
-    {{-.5 * R, .7 * R}, {-.5 * R, -.7 * R}}
+    {{-R / 2, R - R / 2}, {R, 0}}, // >
+    {{R, 0}, {-R / 2, -R + R / 2}},
+    {{-R / 2, -R + R / 2}, {-R / 2, R - R / 2}} // |>
 };
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
@@ -619,7 +598,7 @@ DEFCC(CCmdMapAction)
         if(!stricmp(argv[0], "follow"))  // follow mode toggle
         {
             followplayer = !followplayer;
-            f_oldloc.x = DDMAXINT;
+            f_oldloc.pos[VX] = (float) DDMAXINT;
 
             // Enable/disable the follow mode binding class
             if(!followplayer)
@@ -709,8 +688,8 @@ void AM_getIslope(mline_t * ml, islope_t * is)
 {
     int     dx, dy;
 
-    dy = ml->a.y - ml->b.y;
-    dx = ml->b.x - ml->a.x;
+    dy = ml->a.pos[VY] - ml->b.pos[VY];
+    dx = ml->b.pos[VX] - ml->a.pos[VX];
 
     if(!dy)
         is->islp = (dx < 0 ? -DDMAXINT : DDMAXINT);
@@ -763,8 +742,8 @@ void AM_restoreScaleAndLoc(void)
     }
     else
     {
-        m_x = plr->plr->mo->x - m_w / 2;
-        m_y = plr->plr->mo->y - m_h / 2;
+        m_x = plr->plr->mo->pos[VX] - m_w / 2;
+        m_y = plr->plr->mo->pos[VY] - m_h / 2;
     }
     m_x2 = m_x + m_w;
     m_y2 = m_y + m_h;
@@ -785,8 +764,9 @@ void AM_addMark(void)
                             m_y + m_h / 2);
     */
 
-    markpoints[markpointnum].x = m_x + m_w / 2;
-    markpoints[markpointnum].y = m_y + m_h / 2;
+    markpoints[markpointnum].pos[VX] = m_x + m_w / 2;
+    markpoints[markpointnum].pos[VY] = m_y + m_h / 2;
+    markpoints[markpointnum].pos[VZ] = 0;
     markpointnum = (markpointnum + 1) % AM_NUMMARKPOINTS;
 
 }
@@ -798,7 +778,7 @@ void AM_addMark(void)
 void AM_findMinMaxBoundaries(void)
 {
     int     i;
-    int     x, y;
+    fixed_t x, y;
     fixed_t a;
     fixed_t b;
 
@@ -807,8 +787,8 @@ void AM_findMinMaxBoundaries(void)
 
     for(i = 0; i < numvertexes; i++)
     {
-        x = P_GetInt(DMU_VERTEX, i, DMU_X);
-        y = P_GetInt(DMU_VERTEX, i, DMU_Y);
+        x = P_GetFixed(DMU_VERTEX, i, DMU_X);
+        y = P_GetFixed(DMU_VERTEX, i, DMU_Y);
 
         if(x < min_x)
             min_x = x;
@@ -820,7 +800,7 @@ void AM_findMinMaxBoundaries(void)
         else if(y > max_y)
             max_y = y;
     }
-Con_Message("X %d Y %d - X %d Y %d\n", min_x, min_y, max_x, max_y);
+
     max_w = max_x - min_x;
     max_h = max_y - min_y;
 
@@ -840,15 +820,15 @@ Con_Message("X %d Y %d - X %d Y %d\n", min_x, min_y, max_x, max_y);
  */
 void AM_changeWindowLoc(void)
 {
-    if(m_paninc.x || m_paninc.y)
+    if(m_paninc.pos[VX] || m_paninc.pos[VY])
     {
         followplayer = 0;
 
-        f_oldloc.x = DDMAXINT;
+        f_oldloc.pos[VX] = (float) DDMAXINT;
     }
 
-    m_x += m_paninc.x;
-    m_y += m_paninc.y;
+    m_x += m_paninc.pos[VX];
+    m_y += m_paninc.pos[VY];
 
     if(m_x + m_w / 2 > max_x)
         m_x = max_x - m_w / 2;
@@ -876,12 +856,12 @@ void AM_initVariables(void)
 
     automapactive = true;
 
-    f_oldloc.x = DDMAXINT;
+    f_oldloc.pos[VX] = (float) DDMAXINT;
 
     amclock = 0;
     lightlev = 0;
 
-    m_paninc.x = m_paninc.y = 0;
+    m_paninc.pos[VX] = m_paninc.pos[VY] = 0;
 
 //    if(cfg.automapWidth == 1 && cfg.automapHeight == 1)
     {
@@ -911,8 +891,8 @@ void AM_initVariables(void)
     }
 
     plr = &players[pnum];
-    m_x = plr->plr->mo->x - m_w / 2;
-    m_y = plr->plr->mo->y - m_h / 2;
+    m_x = plr->plr->mo->pos[VX] - m_w / 2;
+    m_y = plr->plr->mo->pos[VY] - m_h / 2;
     AM_changeWindowLoc();
 
     // for saving & restoring
@@ -938,51 +918,51 @@ void AM_initVariables(void)
 #ifdef __JDOOM__
             if(mo->type == MT_MISC4)
             {
-                KeyPoints[0].x = mo->x;
-                KeyPoints[0].y = mo->y;
+                KeyPoints[0].x = mo->pos[VX];
+                KeyPoints[0].y = mo->pos[VY];
             }
             if(mo->type == MT_MISC5)
             {
-                KeyPoints[1].x = mo->x;
-                KeyPoints[1].y = mo->y;
+                KeyPoints[1].x = mo->pos[VX];
+                KeyPoints[1].y = mo->pos[VY];
             }
             if(mo->type == MT_MISC6)
             {
-                KeyPoints[2].x = mo->x;
-                KeyPoints[2].y = mo->y;
+                KeyPoints[2].x = mo->pos[VX];
+                KeyPoints[2].y = mo->pos[VY];
             }
             if(mo->type == MT_MISC7)
             {
-                KeyPoints[3].x = mo->x;
-                KeyPoints[3].y = mo->y;
+                KeyPoints[3].x = mo->pos[VX];
+                KeyPoints[3].y = mo->pos[VY];
             }
             if(mo->type == MT_MISC8)
             {
-                KeyPoints[4].x = mo->x;
-                KeyPoints[4].y = mo->y;
+                KeyPoints[4].x = mo->pos[VX];
+                KeyPoints[4].y = mo->pos[VY];
             }
             if(mo->type == MT_MISC9)
             {
-                KeyPoints[5].x = mo->x;
-                KeyPoints[5].y = mo->y;
+                KeyPoints[5].x = mo->pos[VX];
+                KeyPoints[5].y = mo->pos[VY];
             }
 #elif __JHERETIC__              // NB - Should really put the keys into a struct for neatness.
                                 // name of the vector object, object keyname, colour etc.
                                 // could easily display other objects on the map then...
             if(mo->type == MT_CKEY)
             {
-                KeyPoints[0].x = mo->x;
-                KeyPoints[0].y = mo->y;
+                KeyPoints[0].x = mo->pos[VX];
+                KeyPoints[0].y = mo->pos[VY];
             }
             else if(mo->type == MT_BKYY)
             {
-                KeyPoints[1].x = mo->x;
-                KeyPoints[1].y = mo->y;
+                KeyPoints[1].x = mo->pos[VX];
+                KeyPoints[1].y = mo->pos[VY];
             }
             else if(mo->type == MT_AKYY)
             {
-                KeyPoints[2].x = mo->x;
-                KeyPoints[2].y = mo->y;
+                KeyPoints[2].x = mo->pos[VX];
+                KeyPoints[2].y = mo->pos[VY];
             }
 #endif                                // FIXME: Keys in jHexen!
         }
@@ -1019,15 +999,15 @@ void AM_unloadPics(void)
 
 /*
  * Clears markpoint array
+ * fixme THIS IS BOLLOCKS!
  */
 void AM_clearMarks(void)
 {
     int     i;
 
     for(i = 0; i < AM_NUMMARKPOINTS; i++)
-        markpoints[i].x = -1;    // means empty
+        markpoints[i].pos[VX] = -1;    // means empty
     markpointnum = 0;
-
 }
 
 /*
@@ -1129,16 +1109,16 @@ void AM_changeWindowScale(void)
  */
 void AM_doFollowPlayer(void)
 {
-    if(f_oldloc.x != plr->plr->mo->x || f_oldloc.y != plr->plr->mo->y)
+    if(f_oldloc.pos[VX] != plr->plr->mo->pos[VX] || f_oldloc.pos[VY] != plr->plr->mo->pos[VY])
     {
         // Now that a high resolution is used (compared to 320x200!)
         // there is no need to quantify map scrolling. -jk
-        m_x =  plr->plr->mo->x - m_w / 2;
-        m_y =  plr->plr->mo->y  - m_h / 2;
+        m_x =  plr->plr->mo->pos[VX] - m_w / 2;
+        m_y =  plr->plr->mo->pos[VY]  - m_h / 2;
         m_x2 = m_x + m_w;
         m_y2 = m_y + m_h;
-        f_oldloc.x = plr->plr->mo->x;
-        f_oldloc.y = plr->plr->mo->y;
+        f_oldloc.pos[VX] = plr->plr->mo->pos[VX];
+        f_oldloc.pos[VY] = plr->plr->mo->pos[VY];
     }
 }
 
@@ -1215,19 +1195,19 @@ void AM_Ticker(void)
     {
         // X axis pan
         if(actions[A_MAPPANRIGHT].on) // pan right?
-            m_paninc.x = FTOM(F_PANINC);
+            m_paninc.pos[VX] = FTOM(F_PANINC);
         else if(actions[A_MAPPANLEFT].on) // pan left?
-            m_paninc.x = -FTOM(F_PANINC);
+            m_paninc.pos[VX] = -FTOM(F_PANINC);
         else
-            m_paninc.x = 0;
+            m_paninc.pos[VX] = 0;
 
         // Y axis pan
         if(actions[A_MAPPANUP].on)  // pan up?
-            m_paninc.y = FTOM(F_PANINC);
+            m_paninc.pos[VY] = FTOM(F_PANINC);
         else if(actions[A_MAPPANDOWN].on)  // pan down?
-            m_paninc.y = -FTOM(F_PANINC);
+            m_paninc.pos[VY] = -FTOM(F_PANINC);
         else
-            m_paninc.y = 0;
+            m_paninc.pos[VY] = 0;
     }
     else  // Camera follows the player
         AM_doFollowPlayer();
@@ -1236,7 +1216,7 @@ void AM_Ticker(void)
     AM_changeWindowScale();
 
     // Change window location
-    if(m_paninc.x || m_paninc.y /*|| oldwin_w != cfg.automapWidth || oldwin_h != cfg.automapHeight*/)
+    if(m_paninc.pos[VX] || m_paninc.pos[VY] /*|| oldwin_w != cfg.automapWidth || oldwin_h != cfg.automapHeight*/)
         AM_changeWindowLoc();
 }
 
@@ -1545,8 +1525,8 @@ void AM_drawMline(mline_t * ml, int color)
 {
     GL_SetColor2(color, (am_alpha - (1-cfg.automapLineAlpha)));
 
-    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.x)), FIX2FLT(CYMTOFX(ml->a.y)));
-    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.x)), FIX2FLT(CYMTOFX(ml->b.y)));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.pos[VX])), FIX2FLT(CYMTOFX(ml->a.pos[VY])));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.pos[VX])), FIX2FLT(CYMTOFX(ml->b.pos[VY])));
 }
 
 /*
@@ -1583,10 +1563,10 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
 
         gl.Begin(DGL_QUADS);
 
-        a[VX] = FIX2FLT(CXMTOFX(ml->a.x));
-        a[VY] = FIX2FLT(CYMTOFX(ml->a.y));
-        b[VX] = FIX2FLT(CXMTOFX(ml->b.x));
-        b[VY] = FIX2FLT(CYMTOFX(ml->b.y));
+        a[VX] = FIX2FLT(CXMTOFX(ml->a.pos[VX]));
+        a[VY] = FIX2FLT(CYMTOFX(ml->a.pos[VY]));
+        b[VX] = FIX2FLT(CXMTOFX(ml->b.pos[VX]));
+        b[VY] = FIX2FLT(CYMTOFX(ml->b.pos[VY]));
 
         dx = b[VX] - a[VX];
         dy = b[VY] - a[VY];
@@ -1702,8 +1682,8 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
         // No glow? then draw a regular line
         gl.Begin(DGL_LINES);
 
-        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.x)), FIX2FLT(CYMTOFX(ml->a.y)));
-        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.x)), FIX2FLT(CYMTOFX(ml->b.y)));
+        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.pos[VX])), FIX2FLT(CYMTOFX(ml->a.pos[VY])));
+        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.pos[VX])), FIX2FLT(CYMTOFX(ml->b.pos[VY])));
         gl.End();
     }
 }
@@ -1730,14 +1710,14 @@ void AM_drawGrid(int color)
     end = m_x + m_w;
 
     // draw vertical gridlines
-    ml.a.y = m_y;
-    ml.b.y = m_y + m_h;
+    ml.a.pos[VY] = m_y;
+    ml.b.pos[VY] = m_y + m_h;
 
     gl.Begin(DGL_LINES);
     for(x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS))
     {
-        ml.a.x = x;
-        ml.b.x = x;
+        ml.a.pos[VX] = x;
+        ml.b.pos[VX] = x;
         AM_drawMline(&ml, color);
     }
 
@@ -1750,12 +1730,12 @@ void AM_drawGrid(int color)
     end = m_y + m_h;
 
     // draw horizontal gridlines
-    ml.a.x = m_x;
-    ml.b.x = m_x + m_w;
+    ml.a.pos[VX] = m_x;
+    ml.b.pos[VX] = m_x + m_w;
     for(y = start; y < end; y += (MAPBLOCKUNITS << FRACBITS))
     {
-        ml.a.y = y;
-        ml.b.y = y;
+        ml.a.pos[VY] = y;
+        ml.b.pos[VY] = y;
         AM_drawMline(&ml, color);
     }
     gl.End();
@@ -1766,120 +1746,128 @@ void AM_drawGrid(int color)
  */
 void AM_drawWalls(boolean glowmode)
 {
-    int     i;
-    static mline_t l;
-    ddvertex_t *v1, *v2;
+    int     i, s;
+    line_t  *line;
+    xline_t *xline;
+    mline_t l;
+    sector_t *sec;
     sector_t *frontsector, *backsector;
     mapline_t templine;
     boolean withglow = false;
 
-    for(i = 0; i < numlines; i++)
+    for(s = 0; s < numsectors; ++s)
     {
-        v1 = P_GetPtr(DMU_LINE, i, DMU_VERTEX1);
-        v2 = P_GetPtr(DMU_LINE, i, DMU_VERTEX2);
+        sec = P_ToPtr(DMU_SECTOR, s);
+        for(i = 0; i < P_GetInt(DMU_SECTOR, s, DMU_LINE_COUNT); ++i)
+        {
+            line = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
+            xline = P_XLine(line);
 
-        l.a.x = P_GetFixedp(v1, DMU_X);
-        l.a.y = P_GetFixedp(v1, DMU_Y);
-        l.b.x = P_GetFixedp(v2, DMU_X);
-        l.b.y = P_GetFixedp(v2, DMU_Y);
+            l.a.pos[VX] = P_GetFixedp(line, DMU_VERTEX1_X);
+            l.a.pos[VY] = P_GetFixedp(line, DMU_VERTEX1_Y);
+            l.b.pos[VX] = P_GetFixedp(line, DMU_VERTEX2_X);
+            l.b.pos[VY] = P_GetFixedp(line, DMU_VERTEX2_Y);
 
-        frontsector = P_GetPtr(DMU_LINE, i, DMU_FRONT_SECTOR);
-        backsector = P_GetPtr(DMU_LINE, i, DMU_BACK_SECTOR);
+            frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+            backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
+
+            if(frontsector != sec)
+                continue; // we only want to draw twosided lines once.
 
 #if !__JHEXEN__
 #if !__JSTRIFE__
-        if(cheating == 2)        // Debug cheat.
-        {
-            // Show active XG lines.
-            if(xlines[i].xg && xlines[i].xg->active && (leveltime & 4))
+            if(cheating == 2)        // Debug cheat.
             {
-                templine = AM_getLine( 1, 0);
-                AM_drawMline2(&l, templine, false, glowmode, true);
-            }
-        }
-#endif
-#endif
-        if(cheating || (P_GetInt(DMU_LINE, i, DMU_FLAGS) & ML_MAPPED))
-        {
-            if((P_GetInt(DMU_LINE, i, DMU_FLAGS) & LINE_NEVERSEE) && !cheating)
-                continue;
-
-            if(!P_GetPtr(DMU_LINE, i, DMU_BACK_SECTOR))
-            {
-                // solid wall (well probably anyway...)
-                templine = AM_getLine( 1, 0);
-
-                AM_drawMline2(&l, templine, false, glowmode, false);
-            }
-            else
-            {
-                if(P_GetInt(DMU_LINE, i, DMU_FLAGS) & ML_SECRET)
+                // Show active XG lines.
+                if(xline->xg && xline->xg->active && (leveltime & 4))
                 {
-                    // secret door
+                    templine = AM_getLine( 1, 0);
+                    AM_drawMline2(&l, templine, false, glowmode, true);
+                }
+            }
+#endif
+#endif
+            if(cheating || (P_GetIntp(line, DMU_FLAGS) & ML_MAPPED))
+            {
+                if((P_GetIntp(line, DMU_FLAGS) & LINE_NEVERSEE) && !cheating)
+                    continue;
+
+                if(!backsector)
+                {
+                    // solid wall (well probably anyway...)
                     templine = AM_getLine( 1, 0);
 
                     AM_drawMline2(&l, templine, false, glowmode, false);
                 }
-                else if(cfg.automapShowDoors && AM_checkSpecial(xlines[i].special) > 0 )
+                else
                 {
-                    // some sort of special
+                    if(P_GetIntp(line, DMU_FLAGS) & ML_SECRET)
+                    {
+                        // secret door
+                        templine = AM_getLine( 1, 0);
 
-                    if(cfg.automapDoorGlow > 0 && glowmode)
-                        withglow = true;
+                        AM_drawMline2(&l, templine, false, glowmode, false);
+                    }
+                    else if(cfg.automapShowDoors && AM_checkSpecial(xline->special) > 0 )
+                    {
+                        // some sort of special
 
-                    templine = AM_getLine( 2, xlines[i].special);
+                        if(cfg.automapDoorGlow > 0 && glowmode)
+                            withglow = true;
 
-                    AM_drawMline2(&l, templine, withglow, glowmode, withglow);
-                }
-                else if(P_GetFixedp(backsector, DMU_FLOOR_HEIGHT) !=
-                        P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT))
-                {
-                    // floor level change
-                    templine = AM_getLine( 3, 0);
+                        templine = AM_getLine( 2, xline->special);
 
-                    AM_drawMline2(&l, templine, false, glowmode, false);
-                }
-                else if(P_GetFixedp(backsector, DMU_CEILING_HEIGHT) !=
-                        P_GetFixedp(frontsector, DMU_CEILING_HEIGHT))
-                {
-                    // ceiling level change
-                    templine = AM_getLine( 4, 0);
+                        AM_drawMline2(&l, templine, withglow, glowmode, withglow);
+                    }
+                    else if(P_GetFixedp(backsector, DMU_FLOOR_HEIGHT) !=
+                            P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT))
+                    {
+                        // floor level change
+                        templine = AM_getLine( 3, 0);
 
-                    AM_drawMline2(&l, templine, false, glowmode, false);
-                }
-                else if(cheating)
-                {
-                    templine = AM_getLine( 0, 0);
+                        AM_drawMline2(&l, templine, false, glowmode, false);
+                    }
+                    else if(P_GetFixedp(backsector, DMU_CEILING_HEIGHT) !=
+                            P_GetFixedp(frontsector, DMU_CEILING_HEIGHT))
+                    {
+                        // ceiling level change
+                        templine = AM_getLine( 4, 0);
 
-                    AM_drawMline2(&l, templine, false, glowmode, false);
+                        AM_drawMline2(&l, templine, false, glowmode, false);
+                    }
+                    else if(cheating)
+                    {
+                        templine = AM_getLine( 0, 0);
+
+                        AM_drawMline2(&l, templine, false, glowmode, false);
+                    }
                 }
             }
-        }
-        else if(plr->powers[pw_allmap])
-        {
-            if(!(P_GetInt(DMU_LINE, i, DMU_FLAGS) & LINE_NEVERSEE))
+            else if(plr->powers[pw_allmap])
             {
-                // as yet unseen line
-                templine = AM_getLine( 0, 0);
-                AM_drawMline2(&l, templine, false, glowmode, false);
+                if(!(P_GetIntp(line, DMU_FLAGS) & LINE_NEVERSEE))
+                {
+                    // as yet unseen line
+                    templine = AM_getLine( 0, 0);
+                    AM_drawMline2(&l, templine, false, glowmode, false);
+                }
             }
         }
-
     }
 }
 
 /*
  * Rotation in 2D. Used to rotate player arrow line character.
  */
-void AM_rotate(fixed_t *x, fixed_t *y, angle_t a)
+void AM_rotate(float *x, float *y, angle_t a)
 {
-    fixed_t tmpx;
+    float tmpx;
 
-    tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) -
-                        FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
+    tmpx = (*x * FIX2FLT(finecosine[a >> ANGLETOFINESHIFT])) -
+           (*y * FIX2FLT(finesine[a >> ANGLETOFINESHIFT]));
 
-    *y = FixedMul(*x, finesine[a >> ANGLETOFINESHIFT]) +
-                      FixedMul(*y, finecosine[a >> ANGLETOFINESHIFT]);
+    *y = (*x * FIX2FLT(finesine[a >> ANGLETOFINESHIFT])) +
+         (*y * FIX2FLT(finecosine[a >> ANGLETOFINESHIFT]));
 
     *x = tmpx;
 }
@@ -1887,7 +1875,7 @@ void AM_rotate(fixed_t *x, fixed_t *y, angle_t a)
 /*
  * Draws a line character (eg the player arrow)
  */
-void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, fixed_t scale,
+void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, float scale,
                           angle_t angle, int color, fixed_t x, fixed_t y)
 {
     int     i;
@@ -1896,35 +1884,35 @@ void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, fixed_t scale,
     gl.Begin(DGL_LINES);
     for(i = 0; i < lineguylines; i++)
     {
-        l.a.x = lineguy[i].a.x;
-        l.a.y = lineguy[i].a.y;
+        l.a.pos[VX] = lineguy[i].a.pos[VX];
+        l.a.pos[VY] = lineguy[i].a.pos[VY];
 
         if(scale)
         {
-            l.a.x = FixedMul(scale, l.a.x);
-            l.a.y = FixedMul(scale, l.a.y);
+            l.a.pos[VX] = scale * l.a.pos[VX];
+            l.a.pos[VY] = scale * l.a.pos[VY];
         }
 
         if(angle)
-            AM_rotate(&l.a.x, &l.a.y, angle);
+            AM_rotate(&l.a.pos[VX], &l.a.pos[VY], angle);
 
-        l.a.x += x;
-        l.a.y += y;
+        l.a.pos[VX] += x;
+        l.a.pos[VY] += y;
 
-        l.b.x = lineguy[i].b.x;
-        l.b.y = lineguy[i].b.y;
+        l.b.pos[VX] = lineguy[i].b.pos[VX];
+        l.b.pos[VY] = lineguy[i].b.pos[VY];
 
         if(scale)
         {
-            l.b.x = FixedMul(scale, l.b.x);
-            l.b.y = FixedMul(scale, l.b.y);
+            l.b.pos[VX] = scale * l.b.pos[VX];
+            l.b.pos[VY] = scale * l.b.pos[VY];
         }
 
         if(angle)
-            AM_rotate(&l.b.x, &l.b.y, angle);
+            AM_rotate(&l.b.pos[VX], &l.b.pos[VY], angle);
 
-        l.b.x += x;
-        l.b.y += y;
+        l.b.pos[VX] += x;
+        l.b.pos[VY] += y;
 
         AM_drawMline(&l, color);
     }
@@ -1954,13 +1942,13 @@ void AM_drawPlayers(void)
 #if __JDOOM__
         if(cheating)
             AM_drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0, ang,
-                                 WHITE, plr->plr->mo->x, plr->plr->mo->y);
+                                 WHITE, plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
         else
             AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, ang, WHITE,
-                                 plr->plr->mo->x, plr->plr->mo->y);
+                                 plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
 #else
         AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, plr->plr->clAngle,    //mo->angle,
-                             WHITE, plr->plr->mo->x, plr->plr->mo->y);
+                             WHITE, plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
 #endif
         return;
     }
@@ -1998,7 +1986,7 @@ void AM_drawPlayers(void)
         AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0,
                              consoleplayer ==
                              i ? p->plr->clAngle : p->plr->mo->angle, color,
-                             p->plr->mo->x, p->plr->mo->y);
+                             p->plr->mo->pos[VX], p->plr->mo->pos[VY]);
     }
 }
 
@@ -2015,8 +2003,8 @@ void AM_drawThings(int colors, int colorrange)
         for(iter = P_GetPtr(DMU_SECTOR,i,DMU_THINGS); iter; iter = iter->snext)
         {
             AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-                                 16 << FRACBITS, iter->angle, colors + lightlev,
-                                 iter->x, iter->y);
+                                 0, iter->angle, colors + lightlev,
+                                 iter->pos[VX], iter->pos[VY]);
         }
     }
 }
@@ -2031,13 +2019,13 @@ void AM_drawMarks(void)
 
     for(i = 0; i < AM_NUMMARKPOINTS; i++)
     {
-        if(markpoints[i].x != -1)
+        if(markpoints[i].pos[VX] != -1)
         {
             w = 5;                // because something's wrong with the wad, i guess
             h = 6;                // because something's wrong with the wad, i guess
 
-            fx = FIX2FLT( CXMTOF( markpoints[i].x ) << FRACBITS );
-            fy = FIX2FLT( CYMTOF( markpoints[i].y ) << FRACBITS );
+            fx = FIX2FLT( CXMTOF(markpoints[i].pos[VX]) << FRACBITS );
+            fy = FIX2FLT( CYMTOF(markpoints[i].pos[VY]) << FRACBITS );
 
             GL_DrawPatch_CS(fx, fy, markpnums[i]);
         }
@@ -2057,7 +2045,7 @@ void AM_drawKeys(void)
         if(KeyPoints[i].x != 0 || KeyPoints[i].y != 0)
         {
             AM_drawLineCharacter(keysquare, NUMKEYSQUARELINES, 0, 0, keycolors[i],
-                             KeyPoints[i].x, KeyPoints[i].y);
+                                 KeyPoints[i].x, KeyPoints[i].y);
         }
     }
     gl.End();
