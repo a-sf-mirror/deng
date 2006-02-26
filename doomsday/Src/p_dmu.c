@@ -881,6 +881,15 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->toprgb[1], args, 1);
             SetValue(type, &p->toprgb[2], args, 2);
             break;
+        case DMU_TOP_COLOR_RED:
+            SetValue(type, &p->toprgb[0], args, 0);
+            break;
+        case DMU_TOP_COLOR_GREEN:
+            SetValue(type, &p->toprgb[1], args, 0);
+            break;
+        case DMU_TOP_COLOR_BLUE:
+            SetValue(type, &p->toprgb[2], args, 0);
+            break;
         case DMU_TOP_TEXTURE:
             SetValue(type, &p->toptexture, args, 0);
             break;
@@ -889,6 +898,18 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->midrgba[1], args, 1);
             SetValue(type, &p->midrgba[2], args, 2);
             SetValue(type, &p->midrgba[3], args, 3);
+            break;
+        case DMU_MIDDLE_COLOR_RED:
+            SetValue(type, &p->midrgba[0], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_GREEN:
+            SetValue(type, &p->midrgba[1], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_BLUE:
+            SetValue(type, &p->midrgba[2], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_ALPHA:
+            SetValue(type, &p->midrgba[3], args, 0);
             break;
         case DMU_MIDDLE_BLENDMODE:
             SetValue(type, &p->blendmode, args, 0);
@@ -901,11 +922,20 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->bottomrgb[1], args, 1);
             SetValue(type, &p->bottomrgb[2], args, 2);
             break;
+        case DMU_BOTTOM_COLOR_RED:
+            SetValue(type, &p->bottomrgb[0], args, 0);
+            break;
+        case DMU_BOTTOM_COLOR_GREEN:
+            SetValue(type, &p->bottomrgb[1], args, 0);
+            break;
+        case DMU_BOTTOM_COLOR_BLUE:
+            SetValue(type, &p->bottomrgb[2], args, 0);
+            break;
         case DMU_BOTTOM_TEXTURE:
             SetValue(type, &p->bottomtexture, args, 0);
             break;
         default:
-            Con_Error("SetProperty: Property %s is not writable in DMU_SUBSECTOR.\n",
+            Con_Error("SetProperty: Property %s is not writable in DMU_SIDE.\n",
                       DMU_Str(args->prop));
         }
         break;
@@ -938,6 +968,15 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->rgb[1], args, 1);
             SetValue(type, &p->rgb[2], args, 2);
             break;
+        case DMU_COLOR_RED:
+            SetValue(type, &p->rgb[0], args, 0);
+            break;
+        case DMU_COLOR_GREEN:
+            SetValue(type, &p->rgb[1], args, 0);
+            break;
+        case DMU_COLOR_BLUE:
+            SetValue(type, &p->rgb[2], args, 0);
+            break;
         case DMU_LIGHT_LEVEL:
             SetValue(type, &p->lightlevel, args, 0);
             break;
@@ -945,6 +984,15 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->floorrgb[0], args, 0);
             SetValue(type, &p->floorrgb[1], args, 1);
             SetValue(type, &p->floorrgb[2], args, 2);
+            break;
+        case DMU_FLOOR_COLOR_RED:
+            SetValue(type, &p->floorrgb[0], args, 0);
+            break;
+        case DMU_FLOOR_COLOR_GREEN:
+            SetValue(type, &p->floorrgb[1], args, 0);
+            break;
+        case DMU_FLOOR_COLOR_BLUE:
+            SetValue(type, &p->floorrgb[2], args, 0);
             break;
         case DMU_FLOOR_HEIGHT:
             SetValue(type, &p->floorheight, args, 0);
@@ -983,6 +1031,15 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->ceilingrgb[1], args, 1);
             SetValue(type, &p->ceilingrgb[2], args, 2);
             break;
+        case DMU_CEILING_COLOR_RED:
+            SetValue(type, &p->ceilingrgb[0], args, 0);
+            break;
+        case DMU_CEILING_COLOR_GREEN:
+            SetValue(type, &p->ceilingrgb[1], args, 0);
+            break;
+        case DMU_CEILING_COLOR_BLUE:
+            SetValue(type, &p->ceilingrgb[2], args, 0);
+            break;
         case DMU_CEILING_HEIGHT:
             SetValue(type, &p->ceilingheight, args, 0);
             break;
@@ -1014,6 +1071,9 @@ static int SetProperty(void* ptr, void* context)
             break;
         case DMU_CEILING_SPEED:
             SetValue(type, &p->planes[PLN_CEILING].speed, args, 0);
+            break;
+        case DMU_VALID_COUNT:
+            SetValue(type, &p->validcount, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SEG.\n",
@@ -1276,10 +1336,31 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->rgb[1], args, 1);
             GetValue(type, &p->rgb[2], args, 2);
             break;
+        case DMU_COLOR_RED:
+            GetValue(type, &p->rgb[0], args, 0);
+            break;
+        case DMU_COLOR_GREEN:
+            GetValue(type, &p->rgb[1], args, 0);
+            break;
+        case DMU_COLOR_BLUE:
+            GetValue(type, &p->rgb[2], args, 0);
+            break;
+        case DMU_SOUND_ORIGIN:
+            GetValue(type, &p->soundorg, args, 0);
+            break;
         case DMU_FLOOR_COLOR:
             GetValue(type, &p->floorrgb[0], args, 0);
             GetValue(type, &p->floorrgb[1], args, 1);
             GetValue(type, &p->floorrgb[2], args, 2);
+            break;
+        case DMU_FLOOR_COLOR_RED:
+            GetValue(type, &p->rgb[0], args, 0);
+            break;
+        case DMU_FLOOR_COLOR_GREEN:
+            GetValue(type, &p->rgb[1], args, 0);
+            break;
+        case DMU_FLOOR_COLOR_BLUE:
+            GetValue(type, &p->rgb[2], args, 0);
             break;
         case DMU_FLOOR_HEIGHT:
             GetValue(type, &p->floorheight, args, 0);
@@ -1287,10 +1368,48 @@ static int GetProperty(void* ptr, void* context)
         case DMU_FLOOR_TEXTURE:
             GetValue(type, &p->floorpic, args, 0);
             break;
+        case DMU_FLOOR_SOUND_ORIGIN:
+            GetValue(type, &p->floorsoundorg, args, 0);
+            break;
+        case DMU_FLOOR_OFFSET_X:
+            GetValue(type, &p->flooroffx, args, 0);
+            break;
+        case DMU_FLOOR_OFFSET_Y:
+            GetValue(type, &p->flooroffy, args, 0);
+            break;
+        case DMU_FLOOR_OFFSET_XY:
+            GetValue(type, &p->flooroffx, args, 0);
+            GetValue(type, &p->flooroffy, args, 1);
+            break;
+        case DMU_FLOOR_TEXTURE_MOVE_X:
+            GetValue(type, &p->planes[PLN_FLOOR].texmove[0], args, 0);
+            break;
+        case DMU_FLOOR_TEXTURE_MOVE_Y:
+            GetValue(type, &p->planes[PLN_FLOOR].texmove[1], args, 0);
+            break;
+        case DMU_FLOOR_TEXTURE_MOVE_XY:
+            GetValue(type, &p->planes[PLN_FLOOR].texmove[0], args, 0);
+            GetValue(type, &p->planes[PLN_FLOOR].texmove[1], args, 1);
+            break;
+        case DMU_FLOOR_TARGET:
+            GetValue(type, &p->planes[PLN_FLOOR].target, args, 0);
+            break;
+        case DMU_FLOOR_SPEED:
+            GetValue(type, &p->planes[PLN_FLOOR].speed, args, 0);
+            break;
         case DMU_CEILING_COLOR:
             GetValue(type, &p->ceilingrgb[0], args, 0);
             GetValue(type, &p->ceilingrgb[1], args, 1);
             GetValue(type, &p->ceilingrgb[2], args, 2);
+            break;
+        case DMU_CEILING_COLOR_RED:
+            GetValue(type, &p->rgb[0], args, 0);
+            break;
+        case DMU_CEILING_COLOR_GREEN:
+            GetValue(type, &p->rgb[1], args, 0);
+            break;
+        case DMU_CEILING_COLOR_BLUE:
+            GetValue(type, &p->rgb[2], args, 0);
             break;
         case DMU_CEILING_HEIGHT:
             GetValue(type, &p->ceilingheight, args, 0);
@@ -1298,11 +1417,43 @@ static int GetProperty(void* ptr, void* context)
         case DMU_CEILING_TEXTURE:
             GetValue(type, &p->ceilingpic, args, 0);
             break;
+        case DMU_CEILING_SOUND_ORIGIN:
+            GetValue(type, &p->ceilingsoundorg, args, 0);
+            break;
+        case DMU_CEILING_OFFSET_X:
+            GetValue(type, &p->ceiloffx, args, 0);
+            break;
+        case DMU_CEILING_OFFSET_Y:
+            GetValue(type, &p->ceiloffy, args, 0);
+            break;
+        case DMU_CEILING_OFFSET_XY:
+            GetValue(type, &p->ceiloffx, args, 0);
+            GetValue(type, &p->ceiloffy, args, 1);
+            break;
+        case DMU_CEILING_TEXTURE_MOVE_X:
+            GetValue(type, &p->planes[PLN_CEILING].texmove[0], args, 0);
+            break;
+        case DMU_CEILING_TEXTURE_MOVE_Y:
+            GetValue(type, &p->planes[PLN_CEILING].texmove[1], args, 0);
+            break;
+        case DMU_CEILING_TEXTURE_MOVE_XY:
+            GetValue(type, &p->planes[PLN_CEILING].texmove[0], args, 0);
+            GetValue(type, &p->planes[PLN_CEILING].texmove[1], args, 1);
+            break;
+        case DMU_CEILING_TARGET:
+            GetValue(type, &p->planes[PLN_CEILING].target, args, 0);
+            break;
+        case DMU_CEILING_SPEED:
+            GetValue(type, &p->planes[PLN_CEILING].speed, args, 0);
+            break;
         case DMU_LINE_COUNT:
             GetValue(type, &p->linecount, args, 0);
             break;
         case DMU_THINGS:
             GetValue(type, &p->thinglist, args, 0);
+            break;
+        case DMU_VALID_COUNT:
+            GetValue(type, &p->validcount, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SECTOR has no property %s.\n",
@@ -1360,6 +1511,15 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->toprgb[1], args, 1);
             GetValue(type, &p->toprgb[2], args, 2);
             break;
+        case DMU_TOP_COLOR_RED:
+            GetValue(type, &p->toprgb[0], args, 0);
+            break;
+        case DMU_TOP_COLOR_GREEN:
+            GetValue(type, &p->toprgb[1], args, 0);
+            break;
+        case DMU_TOP_COLOR_BLUE:
+            GetValue(type, &p->toprgb[2], args, 0);
+            break;
         case DMU_MIDDLE_TEXTURE:
             GetValue(type, &p->midtexture, args, 0);
             break;
@@ -1368,6 +1528,18 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->midrgba[1], args, 1);
             GetValue(type, &p->midrgba[2], args, 2);
             GetValue(type, &p->midrgba[3], args, 3);
+            break;
+        case DMU_MIDDLE_COLOR_RED:
+            GetValue(type, &p->midrgba[0], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_GREEN:
+            GetValue(type, &p->midrgba[1], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_BLUE:
+            GetValue(type, &p->midrgba[2], args, 0);
+            break;
+        case DMU_MIDDLE_COLOR_ALPHA:
+            GetValue(type, &p->midrgba[3], args, 0);
             break;
         case DMU_MIDDLE_BLENDMODE:
             GetValue(type, &p->blendmode, args, 0);
@@ -1379,6 +1551,15 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->bottomrgb[0], args, 0);
             GetValue(type, &p->bottomrgb[1], args, 1);
             GetValue(type, &p->bottomrgb[2], args, 2);
+            break;
+        case DMU_BOTTOM_COLOR_RED:
+            GetValue(type, &p->bottomrgb[0], args, 0);
+            break;
+        case DMU_BOTTOM_COLOR_GREEN:
+            GetValue(type, &p->bottomrgb[1], args, 0);
+            break;
+        case DMU_BOTTOM_COLOR_BLUE:
+            GetValue(type, &p->bottomrgb[2], args, 0);
             break;
         case DMU_FLAGS:
             GetValue(type, &p->flags, args, 0);
@@ -1465,8 +1646,20 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VERTEX1:
             GetValue(type, &p->v1, args, 0);
             break;
+        case DMU_VERTEX1_X:
+            GetValue(type, &p->v1->x, args, 0);
+            break;
+        case DMU_VERTEX1_Y:
+            GetValue(type, &p->v1->y, args, 0);
+            break;
         case DMU_VERTEX2:
             GetValue(type, &p->v2, args, 0);
+            break;
+        case DMU_VERTEX2_X:
+            GetValue(type, &p->v2->x, args, 0);
+            break;
+        case DMU_VERTEX2_Y:
+            GetValue(type, &p->v2->y, args, 0);
             break;
         case DMU_DX:
             GetValue(type, &p->dx, args, 0);
