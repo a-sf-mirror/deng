@@ -58,6 +58,7 @@ void    Rend_RenderBoundingBoxes(void);
 extern int useDynLights, translucentIceCorpse;
 extern int skyhemispheres, haloMode;
 extern int dlMaxRad;
+extern int devNoCulling;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -120,8 +121,11 @@ static boolean firstsubsector;  // No range checking for the first one.
 
 void Rend_Register(void)
 {
-    C_VAR_INT("rend-dev-freeze", &freezeRLs, 0, 0, 1,
+    C_VAR_INT("rend-dev-freeze", &freezeRLs, CVF_NO_ARCHIVE, 0, 1,
               "1=Stop updating rendering lists.");
+
+    C_VAR_INT("rend-dev-cull-subsectors", &devNoCulling, CVF_NO_ARCHIVE, 0, 1,
+              "1=Disable non-visible subsector culling\n");
 
     C_VAR_INT("rend-dev-mobj-bbox", &devMobjBBox, 0, 0, 1,
               "1=Render mobj bounding boxes (as used for collision detection).");
@@ -155,7 +159,7 @@ void Rend_Register(void)
               "Time it takes to adapt to bright lighting conditions in seconds.");
 
 
-    C_VAR_INT("rend-dev-light-modmatrix", &debugLightModMatrix, 0, 0, 1,
+    C_VAR_INT("rend-dev-light-modmatrix", &debugLightModMatrix, CVF_NO_ARCHIVE, 0, 1,
               "Show light modification matrix.");
 
     RL_Register();
@@ -276,7 +280,7 @@ int Rend_SegFacingDir(float v1[2], float v2[2])
                                                                     vz) > 0;
 }
 
-int Rend_FixedSegFacingDir(seg_t *seg)
+int Rend_FixedSegFacingDir(const seg_t *seg)
 {
     // The dot product. (1 if facing front.)
     return FIX2FLT(seg->v1->y - seg->v2->y) * FIX2FLT(seg->v1->x - viewx) +
@@ -474,7 +478,7 @@ void Rend_PolyTextureBlend(int texture, rendpoly_t *poly)
     // may occur if the rendering passes don't match for blended and
     // unblended surfaces.
     if(!smoothTexAnim || numTexUnits < 2 || !texture ||
-       xlat->current == xlat->next || (!useFog && xlat->inter <= 0))
+       xlat->current == xlat->next || (!useFog && xlat->inter < 0))
     {
         // No blending for you, my friend.
         memset(&poly->intertex, 0, sizeof(poly->intertex));
@@ -500,7 +504,7 @@ void Rend_PolyFlatBlend(int flat, rendpoly_t *poly)
     if(!smoothTexAnim || numTexUnits < 2 ||
        ptr->translation.current == ptr->translation.next || (!useFog &&
                                                              ptr->translation.
-                                                             inter <= 0))
+                                                             inter < 0))
     {
         memset(&poly->intertex, 0, sizeof(poly->intertex));
         poly->interpos = 0;
@@ -529,10 +533,52 @@ int Rend_CheckDiv(rendpoly_t *quad, int side, float height)
 }
 
 /*
+ * Prepares the correct flat/texture for the passed poly.
+ *
+ * @param tex:      Wall texture id number. If -1 we'll apply the
+ *                  special "missing" texture instead.
+ * @param quad:     Ptr to the quad to apply the texture to.
+ *
+ * @return int      (-1) If the texture reference is invalid.
+ *                  Else return the flags for the texture chosen.
+ */
+int Rend_PrepareTextureForPoly(rendpoly_t *poly, int tex, boolean isFlat)
+{
+    if(tex == 0)
+        return -1;
+
+    if(tex == -1) // A missing texture, draw the "missing" graphic
+    {
+        poly->tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
+        poly->tex.width = poly->tex.height = 64;
+        poly->tex.detail = NULL;
+        return 0 | TXF_GLOW; // Make it stand out
+    }
+    else
+    {
+        // Prepare the flat/texture
+        if(isFlat)
+            poly->tex.id = curtex = GL_PrepareFlat(tex);
+        else
+            poly->tex.id = curtex = GL_PrepareTexture(tex);
+
+        poly->tex.width = texw;
+        poly->tex.height = texh;
+        poly->tex.detail = texdetail;
+
+        // Return the parameters for this surface texture.
+        if(isFlat)
+            return R_FlatFlags(tex);
+        else
+            return R_TextureFlags(tex);
+    }
+}
+
+/*
  * Division will only happen if it must be done.
  * Converts quads to divquads.
  */
-void Rend_WallHeightDivision(rendpoly_t *quad, seg_t *seg, sector_t *frontsec,
+void Rend_WallHeightDivision(rendpoly_t *quad, const seg_t *seg, sector_t *frontsec,
                              int mode)
 {
     int     i, k, vtx[2];       // Vertex indices.
@@ -676,14 +722,68 @@ int Rend_MidTexturePos(float *top, float *bottom, float *texoffy, float tcyoff,
 }
 
 /*
+ * Called by Rend_RenderWallSeg to render ALL solid wall sections
+ * (ie everything other than twosided, masked/blended midtextures).
+ *
+ * TODO: Combine all the boolean (hint) parameters into a single flags var.
+ */
+void Rend_RenderSolidWallSection(rendpoly_t *quad, const seg_t *seg, int texture,
+                                 sector_t *frontsec, int mode,
+                                 const byte *topColor, const byte *bottomColor,
+                                 boolean blend, boolean shadow, boolean shiny, boolean glow)
+{
+    int  segIndex = GET_SEG_IDX(seg);
+
+    if(glow)        // Make it fullbright?
+        quad->flags |= RPF_GLOW;
+
+    // Check for neighborhood division?
+    if(!(mode == SEG_MIDDLE && seg->backsector))
+        Rend_WallHeightDivision(quad, seg, frontsec, mode);
+
+    // Surface color/light.
+    RL_VertexColors(quad, Rend_SectorLight(frontsec), topColor);
+
+    // Bottom color (if different from top)?
+    if(bottomColor != NULL)
+    {
+        int i;
+        for(i=0; i < 2; i++)
+            memcpy(quad->bottomcolor[i].rgba, bottomColor, 3);
+    }
+
+    // Dynamic lights.
+    quad->lights = DL_GetSegLightLinks(segIndex, mode);
+
+    if(blend)       // Smooth Texture Animation?
+        Rend_PolyTextureBlend(texture, quad);
+
+    // Do BIAS lighting for this poly
+    SB_RendPoly(quad, false, frontsec, seginfo[segIndex].illum[1],
+                &seginfo[segIndex].tracker[1], segIndex);
+
+    // Add the poly to the appropriate list
+    RL_AddPoly(quad);
+
+    if(shadow)      // Render Fakeradio polys for this seg?
+        Rend_RadioWallSection(seg, quad);
+
+    if(shiny)       // Render Shiny polys for this seg?
+        Rend_AddShinyWallSeg(texture, quad);
+}
+
+/*
  * The sector height should've been checked by now.
  * This seriously needs to be rewritten! Witness the accumulation of hacks
  * on kludges...
  */
-void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
+void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
 {
     int i;
-    int     segindex, sectorlight;
+    int     segindex;
+    int tex, texFlags;
+    int solidSeg = false; // -1 means NEVER.
+    boolean isFlat;
     sector_t *backsec;
     side_t *sid, *backsid, *side;
     line_t *ldef;
@@ -691,12 +791,15 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     rendpoly_t quad;
     float  *v1, *v2;
     byte    topvis, midvis, botvis;
-    boolean present;
-    boolean frontSide = false, solidSeg = false;
+    boolean frontSide = false;
+    boolean mid_covers_top = false;
+    boolean backsecSkyFix = false;
     const byte *sLightColor;
     byte topColor[] = {0,0,0};
     byte midColor[] = {0,0,0};
     byte bottomColor[] = {0,0,0};
+    byte *colorPtr = NULL;
+    byte *color2Ptr = NULL;
 
     // Let's first check which way this seg is facing.
     if(!Rend_FixedSegFacingDir(seg))
@@ -707,9 +810,17 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     sid = SIDE_PTR(seg->linedef->sidenum[0]);
     backsid = SIDE_PTR(seg->linedef->sidenum[1]);
     ldef = seg->linedef;
+    ldef->flags |= ML_MAPPED; // This line is now seen in the map.
+
     ffloor = SECT_FLOOR(frontsec);
     fceil = SECT_CEIL(frontsec);
     fsh = fceil - ffloor;
+
+    if(backsec)
+    {
+        bceil = SECT_CEIL(backsec);
+        bfloor = SECT_FLOOR(backsec);
+    }
 
     // Which side are we using?
     if(sid == seg->sidedef)
@@ -719,6 +830,10 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     }
     else
         side = backsid;
+
+    if(backsec && backsec == seg->frontsector &&
+       side->toptexture == 0 && side->bottomtexture == 0 && side->midtexture == 0)
+       return; // Ugh... an obvious wall seg hack. Best take no chances...
 
     // Init the quad.
     quad.type = RP_QUAD;
@@ -741,16 +856,12 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     quad.vertices[0].dist = Rend_PointDist2D(v1);
     quad.vertices[1].dist = Rend_PointDist2D(v2);
 
-    // This line is now seen in the map.
-    ldef->flags |= ML_MAPPED;
-
     // Some texture coordinates.
     quad.length = seg->length;
     quad.texoffx = FIX2FLT(side->textureoffset + seg->offset);
     tcyoff = FIX2FLT(side->rowoffset);
 
     // Calculate the color at both vertices.
-    sectorlight = Rend_SectorLight(frontsec);
     sLightColor = R_GetSectorLightColor(frontsec);
 
     // Top wall section color offset?
@@ -780,98 +891,6 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
     else
         memcpy(bottomColor,sLightColor, 3);
 
-    // The middle texture, single sided.
-    if((side->midtexture || side->midtexture == -1) && !backsec)
-    {
-        // Fades
-        if(side->flags & SDF_BLENDMIDTOTOP)
-        {
-            RL_VertexColors(&quad, sectorlight, topColor);
-            for(i=0; i < 2; i++)
-                memcpy(quad.bottomcolor[i].rgba, midColor, 3);
-        }
-        else if(side->flags & SDF_BLENDMIDTOBOTTOM)
-        {
-            RL_VertexColors(&quad, sectorlight, midColor);
-            for(i=0; i < 2; i++)
-                memcpy(quad.bottomcolor[i].rgba, bottomColor, 3);
-        }
-        else
-            RL_VertexColors(&quad, sectorlight, midColor);
-
-        if(side->midtexture == -1)
-        {
-            // A missing texture, draw the "missing" graphic
-            quad.tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
-            quad.tex.width = quad.tex.height = 64;
-            quad.tex.detail = NULL;
-        }
-        else
-        {
-            // Prepare the texture
-            quad.tex.id = curtex = GL_PrepareTexture(side->midtexture);
-            quad.tex.width = texw;
-            quad.tex.height = texh;
-            quad.tex.detail = texdetail;
-        }
-
-        quad.texoffy = tcyoff;
-        if(ldef->flags & ML_DONTPEGBOTTOM)
-            quad.texoffy += texh - fsh;
-
-        // Fill in the remaining quad data.
-        quad.flags = /*seg->flags & DDSEGF_DLIGHT? RPF_DLIT : */ 0;
-
-        // What about glow?
-        if(side->midtexture != -1)
-            if(R_TextureFlags(side->midtexture) & TXF_GLOW)
-                quad.flags |= RPF_GLOW;
-
-        quad.top = fceil;
-        quad.bottom = ffloor;
-
-        // Check for neighborhood division.
-        Rend_WallHeightDivision(&quad, seg, frontsec, SEG_MIDDLE);
-
-        // Dynamic lights.
-        quad.lights = DL_GetSegLightLinks(segindex, SEG_MIDDLE);
-
-        if(side->midtexture != -1)
-            Rend_PolyTextureBlend(side->midtexture, &quad);
-
-        // Do BIAS lighting for this poly
-        SB_RendPoly(&quad, false, frontsec, seginfo[segindex].illum[1],
-                    &seginfo[segindex].tracker[1], segindex);
-
-        // Add the poly to the appropriate list
-        RL_AddPoly(&quad);
-
-        // Render Fakeradio polys for this seg?
-        if(!(flags & RWSF_NO_RADIO))
-        {
-            Rend_RadioWallSection(seg, &quad);
-        }
-
-        if(side->midtexture != -1)
-        {
-            // Render Shiny polys for this seg?
-            Rend_AddShinyWallSeg(side->midtexture, &quad);
-        }
-
-        // This is guaranteed to be a solid segment.
-        C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
-        solidSeg = true;
-    }
-
-    // Restore original type, height division may change this.
-    quad.type = RP_QUAD;
-
-    if(backsec)
-    {
-        bceil = SECT_CEIL(backsec);
-        bfloor = SECT_FLOOR(backsec);
-    }
-
     // The skyfix?
     if(frontsec->skyfix)
     {
@@ -897,12 +916,61 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
         }
     }
 
+    // The middle texture, single sided.
+    if((side->midtexture || side->midtexture == -1) && !backsec)
+    {
+        tex = side->midtexture;
+        isFlat = false;
+        texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
+
+        // Is there a visible surface?
+        if(texFlags != -1)
+        {
+            // Select the correct colors for this surface.
+            if(side->flags & SDF_BLENDMIDTOTOP)
+            {
+                colorPtr = topColor;
+                color2Ptr = midColor;
+            }
+            else if(side->flags & SDF_BLENDMIDTOBOTTOM)
+            {
+                colorPtr = midColor;
+                color2Ptr = bottomColor;
+            }
+            else
+            {
+                colorPtr = midColor;
+                color2Ptr = NULL;
+            }
+
+            // Fill in the remaining quad data.
+            quad.flags = 0;
+            quad.top = fceil;
+            quad.bottom = ffloor;
+
+            quad.texoffy = tcyoff;
+            if(ldef->flags & ML_DONTPEGBOTTOM)
+                quad.texoffy += texh - fsh;
+
+            Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_MIDDLE,
+                           /*Color*/    colorPtr, color2Ptr,
+                           /*Blend?*/   (tex != -1),
+                           /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                           /*Shiny?*/   (tex != -1),
+                           /*Glow?*/    (texFlags & TXF_GLOW));
+        }
+
+        // This is guaranteed to be a solid segment.
+        solidSeg = true;
+    }
+
+    // Restore original type, height division may change this.
+    quad.type = RP_QUAD;
+
     // If there is a back sector we may need upper and lower walls.
     if(backsec)                 // A twosided seg?
     {
-        boolean mid_covers_top = false;
-        boolean backsecSkyFix = false;
-
+        int sectorLight = Rend_SectorLight(frontsec);
         bsh = bceil - bfloor;
 
         // Determine which parts of the segment are visible.
@@ -911,11 +979,13 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
         botvis = (bfloor > ffloor);
 
         // Needs skyfix?
-        if(seg->frontsector->ceilingpic == skyflatnum &&
+        /*if(seg->frontsector->ceilingpic == skyflatnum &&
            fceil + frontsec->skyfix > bceil &&  side->toptexture == 0 &&
            !(backsec->ceilingpic == skyflatnum && bsh > 0) &&
             ((botvis && (side->midtexture || side->midtexture == -1) && side->bottomtexture != 0) ||
-            (side->bottomtexture || side->bottomtexture == -1)))
+            (side->bottomtexture || side->bottomtexture == -1)))*/
+        if(bsh <= 0 && ((frontsec->floorpic == skyflatnum && backsec->floorpic == skyflatnum) ||
+                     (frontsec->ceilingpic == skyflatnum && backsec->ceilingpic == skyflatnum)))
         {
             quad.flags = RPF_SKY_MASK;
             quad.top = fceil + frontsec->skyfix;
@@ -925,18 +995,6 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
             quad.intertex.id = 0;
             RL_AddPoly(&quad);
             backsecSkyFix = true;
-        }
-
-        // Missing top or bottom textures don't occlude visibility.
-        if(backsec != seg->frontsector && (((bceil <= ffloor || bfloor >= fceil) &&
-           !(topvis && side->toptexture == 0 && side->midtexture != 0) &&
-           !(botvis && side->bottomtexture == 0 && side->midtexture != 0)) ||
-           (bsh <= 0 && topvis && (side->toptexture || side->toptexture == -1 || backsecSkyFix)
-            && botvis && (side->bottomtexture || side->bottomtexture == -1)))  )
-        {
-            // The backsector has no space. This is a solid segment.
-            C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
-            solidSeg = true;
         }
 
         // Quite probably a masked texture. Won't be drawn if a visible
@@ -955,18 +1013,18 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
             // Fades?
             if(side->flags & SDF_BLENDMIDTOTOP)
             {
-                RL_VertexColors(&quad, sectorlight, topColor);
+                RL_VertexColors(&quad, sectorLight, topColor);
                 for(i=0; i < 2; i++)
                     memcpy(quad.bottomcolor[i].rgba, midColor, 3);
             }
             else if(side->flags & SDF_BLENDMIDTOBOTTOM)
             {
-                RL_VertexColors(&quad, sectorlight, midColor);
+                RL_VertexColors(&quad, sectorLight, midColor);
                 for(i=0; i < 2; i++)
                     memcpy(quad.bottomcolor[i].rgba, bottomColor, 3);
             }
             else
-                RL_VertexColors(&quad, sectorlight, midColor);
+                RL_VertexColors(&quad, sectorLight, midColor);
 
             // Mid textures have alpha
             for(i = 0; i < 2; i++)
@@ -981,20 +1039,7 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
             quad.top = gaptop = MIN_OF(rbceil, rfceil);
             quad.bottom = gapbottom = MAX_OF(rbfloor, rffloor);
 
-            if(side->midtexture == -1)
-            {
-                // A missing texture, draw the "missing" graphic
-                quad.tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
-                quad.tex.width = quad.tex.height = 64;
-                quad.tex.detail = NULL;
-            }
-            else
-            {
-                quad.tex.id = curtex = GL_PrepareTexture(side->midtexture);
-                quad.tex.detail = texdetail;
-                quad.tex.width = texw;
-                quad.tex.height = texh;
-            }
+            Rend_PrepareTextureForPoly(&quad, side->midtexture, false);
 
             if(topvis && side->toptexture == 0)
             {
@@ -1026,11 +1071,6 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
                 // Dynamic lights.
                 quad.lights = DL_GetSegLightLinks(segindex, SEG_MIDDLE);
 
-                // Should a solid segment be added here?
-                if(!texmask && side->midrgba[3] == 255 && side->blendmode == 0
-                   && quad.top >= gaptop && quad.bottom <= gapbottom)
-                    C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
-
                 if(side->midtexture != -1)
                     Rend_PolyTextureBlend(side->midtexture, &quad);
 
@@ -1039,184 +1079,192 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
                             &seginfo[segindex].tracker[1], segindex);
                 RL_AddPoly(&quad);
 
-                if(!texmask)
+                // Should a solid segment be added here?
+                if(!texmask && side->midrgba[3] == 255 && side->blendmode == 0
+                   && quad.top >= gaptop && quad.bottom <= gapbottom)
                 {
-                    if(!(flags & RWSF_NO_RADIO) && solidSeg)
-                        Rend_RadioWallSection(seg, &quad);
+                    // We KNOW we could make this a solid seg.
+                    solidSeg = true;
 
-                    if(side->midtexture != -1)
-                        Rend_AddShinyWallSeg(side->midtexture, &quad);
+                    // Can the player walk through this mid texture?
+                    if(!(ldef->flags & ML_BLOCKING))
+                    {
+                        mobj_t* mo = viewplayer->mo;
+                        // If the player is close enough we should NOT add a solid seg
+                        // otherwise they'd get HOM when they are directly on top of the
+                        // line (eg passing through an opaque waterfall).
+                        if(mo->subsector->sector == side->sector)
+                        {
+                            // Calculate 2D distance to line.
+                            float a[2], b[2], c[2];
+                            float distance;
+
+                            a[VX] = FIX2FLT(ldef->v1->x);
+                            a[VY] = FIX2FLT(ldef->v1->y);
+
+                            b[VX] = FIX2FLT(ldef->v2->x);
+                            b[VY] = FIX2FLT(ldef->v2->y);
+
+                            c[VX] = FIX2FLT(mo->pos[VX]);
+                            c[VY] = FIX2FLT(mo->pos[VY]);
+                            distance = M_PointLineDistance(a, b, c);
+
+                            if(distance < (FIX2FLT(mo->radius)*.8f))
+                                solidSeg = false;
+                        }
+                    }
+                }
+
+                if(solidSeg)
+                {
+                    if(!texmask)
+                    {
+                        if(!(flags & RWSF_NO_RADIO))
+                            Rend_RadioWallSection(seg, &quad);
+
+                        if(side->midtexture != -1)
+                            Rend_AddShinyWallSeg(side->midtexture, &quad);
+                    }
                 }
             }
         }
+
+        // Restore original type, height division may change this.
+        quad.type = RP_QUAD;
 
         // Upper wall.
         if(topvis && backsec != seg->frontsector &&
            !(frontsec->ceilingpic == skyflatnum &&
              backsec->ceilingpic == skyflatnum) && !mid_covers_top)
         {
-            float   topwh = fceil - bceil;
+            tex = side->toptexture;
+            isFlat = false;
 
-            present = false;
-            if(side->toptexture == -1)
+            if(tex == 0) // Texture missing?
             {
-                // A bad texture name, draw the "missing" graphic
-                quad.tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
-                quad.tex.width = quad.tex.height = 64;
-                quad.tex.detail = NULL;
-                present = true;
-            }
-            else if(side->toptexture) // Has a texture?
-            {
-                quad.tex.id = curtex = GL_PrepareTexture(side->toptexture);
-                quad.tex.detail = texdetail;
-                quad.tex.width = texw;
-                quad.tex.height = texh;
-                present = true;
-            }
-            else
-            {
-                // Texture missing? Take the ceiling texture.
-                int     replacement = frontsec->ceilingpic;
-
-                if(!(botvis && side->toptexture == 0))
+                // See if we can fix it.
+                if(side->midtexture == 0 && side->bottomtexture == 0 &&
+                   side->toptexture == 0)
                 {
-                    if(replacement == skyflatnum)
+                    // Some kind of hack no doubt.
+                    // We can't plug the hole or create a solid seg.
+                    solidSeg = -1;
+                    tex = 0;
+                }
+                else if(!botvis || (frontsec->floorpic == skyflatnum &&
+                                    backsec->floorpic == skyflatnum))
+                {
+                    isFlat = true;
+
+                    if(frontsec->ceilingpic != skyflatnum)
+                        tex = frontsec->ceilingpic;
+                    else
                     {
-                        // The skyflat is not an appropriate replacement!
-                        // Note that both the front and back ceilings can't be
-                        // sky (the upper seg is not visible in that case).
-                        replacement = backsec->ceilingpic;
+                        // We can't plug the hole or create a solid seg.
+                        solidSeg = -1;
+                        tex = 0;
                     }
-                    quad.tex.id = curtex = GL_PrepareFlat(replacement);
-                    quad.tex.detail = texdetail;
-                    quad.tex.width = texw;
-                    quad.tex.height = texh;
-                    present = true;
                 }
             }
+            texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
 
-            if(present)
+            // Is there a visible surface?
+            if(texFlags != -1)
             {
-                // Fades
+                // Select the correct colors for this surface.
                 if(side->flags & SDF_BLENDTOPTOMID)
                 {
-                    RL_VertexColors(&quad, sectorlight, topColor);
-                    for(i=0; i < 2; i++)
-                        memcpy(quad.bottomcolor[i].rgba, midColor, 3);
+                    colorPtr = topColor;
+                    color2Ptr = midColor;
                 }
                 else
-                    RL_VertexColors(&quad, sectorlight, topColor);
+                {
+                    colorPtr = topColor;
+                    color2Ptr = NULL;
+                }
 
                 // Calculate texture coordinates.
                 quad.texoffy = tcyoff;
-                if(!(ldef->flags & ML_DONTPEGTOP))
-                {
-                    // Normal alignment to bottom.
-                    quad.texoffy += texh - topwh;
-                }
-                quad.flags = 0;
-                //if(seg->flags & DDSEGF_DLIGHT) quad.flags |= RPF_DLIT;
-                // What about glow?
-                if(side->toptexture != -1)
-                    if(R_TextureFlags(side->toptexture) & TXF_GLOW)
-                        quad.flags |= RPF_GLOW;
+                if(!(ldef->flags & ML_DONTPEGTOP)) // Normal alignment to bottom.
+                    quad.texoffy += texh - (fceil - bceil);
 
+                quad.flags = 0;
                 quad.top = fceil;
                 quad.bottom = bceil;
                 if(quad.bottom < ffloor)
                     quad.bottom = ffloor;
 
-                // Might be necessary.
-                Rend_WallHeightDivision(&quad, seg, frontsec, SEG_TOP);
-
-                // Dynamic lights.
-                quad.lights = DL_GetSegLightLinks(segindex, SEG_TOP);
-
-                if(side->toptexture != -1)
-                    Rend_PolyTextureBlend(side->toptexture, &quad);
-
-                SB_RendPoly(&quad, false, frontsec,
-                            seginfo[segindex].illum[0],
-                            &seginfo[segindex].tracker[0], segindex);
-                RL_AddPoly(&quad);
-
-                if(side->toptexture != -1)
-                    Rend_AddShinyWallSeg(side->toptexture, &quad);
-
-                if(!(flags & RWSF_NO_RADIO))
-                {
-                    Rend_RadioWallSection(seg, &quad);
-                }
-
-                // Restore original type, height division may change this.
-                quad.type = RP_QUAD;
+                Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_TOP,
+                               /*Color*/    colorPtr, color2Ptr,
+                               /*Blend?*/   (tex != -1),
+                               /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                               /*Shiny?*/   (tex != -1),
+                               /*Glow?*/    (texFlags & TXF_GLOW));
             }
         }
+
+        // Restore original type, height division may change this.
+        quad.type = RP_QUAD;
 
         // Lower wall.
         // If no textures have been assigned to the segment, we won't
         // draw anything.
         if(botvis && backsec != seg->frontsector &&
-              bfloor > ffloor && !(frontsec->floorpic == skyflatnum &&
-                                   backsec->floorpic == skyflatnum))
+           !(frontsec->floorpic == skyflatnum &&
+             backsec->floorpic == skyflatnum))
         {
-            present = false;
-            if(side->bottomtexture == -1)
+            tex = side->bottomtexture;
+            isFlat = false;
+
+            if(tex == 0) // Texture missing?
             {
-                // A bad texture name, draw the "missing" graphic
-                quad.tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
-                quad.tex.width = quad.tex.height = 64;
-                quad.tex.detail = NULL;
-                present = true;
-            }
-            else if(side->bottomtexture)  // There is a texture?
-            {
-                quad.tex.id = curtex = GL_PrepareTexture(side->bottomtexture);
-                quad.tex.detail = texdetail;
-                quad.tex.width = texw;
-                quad.tex.height = texh;
-                present = true;
-            }
-            else
-            {
-                // No texture? Again!
-                if(!(topvis && side->toptexture == 0))
+                // See if we can fix it.
+                if(side->midtexture == 0 && side->bottomtexture == 0 &&
+                   side->toptexture == 0)
                 {
-                    quad.tex.id = curtex = GL_PrepareFlat(frontsec->floorpic);
-                    quad.tex.detail = texdetail;
-                    quad.tex.width = texw;
-                    quad.tex.height = texh;
-                    present = true;
+                    // Some kind of hack no doubt.
+                    // We can't plug the hole or create a solid seg.
+                    solidSeg = -1;
+                    tex = 0;
+                }
+                else if(!topvis || (frontsec->ceilingpic == skyflatnum &&
+                                    backsec->ceilingpic == skyflatnum))
+                {
+                     // Take the floor flat.
+                    isFlat = true;
+                    if(frontsec->floorpic != skyflatnum)
+                        tex = frontsec->floorpic;
+                    else
+                    {
+                        // We can't plug the hole or create a solid seg.
+                        solidSeg = -1;
+                        tex = 0;
+                    }
                 }
             }
+            texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
 
-            if(present)
+            // Is there a visible surface?
+            if(texFlags != -1)
             {
-                // Fades
+                // Select the correct colors for this surface.
                 if(side->flags & SDF_BLENDBOTTOMTOMID)
                 {
-                    RL_VertexColors(&quad, sectorlight, midColor);
-                    for(i=0; i < 2; i++)
-                        memcpy(quad.bottomcolor[i].rgba, bottomColor, 3);
+                    colorPtr = midColor;
+                    color2Ptr = bottomColor;
                 }
                 else
-                    RL_VertexColors(&quad, sectorlight, bottomColor);
+                {
+                    colorPtr = bottomColor;
+                    color2Ptr = NULL;
+                }
 
                 // Calculate texture coordinates.
                 quad.texoffy = tcyoff;
                 if(ldef->flags & ML_DONTPEGBOTTOM)
-                {
-                    // Lower unpegged. Align with normal middle texture.
-                    quad.texoffy += fceil - bfloor;
-                }
-                quad.flags = 0;
-                //          if(seg->flags & DDSEGF_DLIGHT) quad.flags |= RPF_DLIT;
-                // What about glow?
-                if(side->bottomtexture != -1)
-                    if(R_TextureFlags(side->bottomtexture) & TXF_GLOW)
-                        quad.flags |= RPF_GLOW;
+                    quad.texoffy += fceil - bfloor; // Align with normal middle texture.
 
+                quad.flags = 0;
                 quad.top = bfloor;
                 if(quad.top > fceil)
                 {
@@ -1226,29 +1274,56 @@ void Rend_RenderWallSeg(seg_t *seg, sector_t *frontsec, int flags)
                 }
                 quad.bottom = ffloor;
 
-                // Might be necessary.
-                Rend_WallHeightDivision(&quad, seg, frontsec, SEG_BOTTOM);
-
-                // Dynamic lights.
-                quad.lights = DL_GetSegLightLinks(segindex, SEG_BOTTOM);
-
-                if(side->bottomtexture != -1)
-                    Rend_PolyTextureBlend(side->bottomtexture, &quad);
-
-                SB_RendPoly(&quad, false, frontsec,
-                            seginfo[segindex].illum[2],
-                            &seginfo[segindex].tracker[2], segindex);
-                RL_AddPoly(&quad);
-
-                if(!(flags & RWSF_NO_RADIO))
-                {
-                    Rend_RadioWallSection(seg, &quad);
-                }
-
-                if(side->bottomtexture != -1)
-                    Rend_AddShinyWallSeg(side->bottomtexture, &quad);
+                Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_BOTTOM,
+                               /*Color*/    colorPtr, color2Ptr,
+                               /*Blend?*/   (tex != -1),
+                               /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                               /*Shiny?*/   (tex != -1),
+                               /*Glow?*/    (texFlags & TXF_GLOW));
             }
         }
+    }
+
+    // Can we make this a solid segment in the clipper?
+    if(solidSeg == -1)
+        return; // NEVER (we have a hole we couldn't fix).
+
+    if(solidSeg)
+    {
+        // We KNOW we can make it solid.
+        C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
+    }
+    else // We'll have to determine whether we can...
+    {
+        if(backsec && backsec == seg->frontsector)
+        {
+            // An obvious hack, what to do though??
+        }
+        else if((bceil <= ffloor && (side->toptexture != 0 || side->midtexture != 0)) ||
+                (bfloor >= fceil && (side->bottomtexture != 0 || side->midtexture !=0)))
+        {
+            // A closed gap.
+            solidSeg = true;
+        }
+        else if(backsecSkyFix ||
+                (bsh == 0 && bfloor > ffloor && bceil < fceil &&
+                side->toptexture != 0 && side->bottomtexture != 0))
+        {
+            // A zero height back segment
+            solidSeg = true;
+        }
+        /*else if(((bceil <= ffloor || bfloor >= fceil) &&
+           !(topvis && side->toptexture == 0 && side->midtexture != 0) &&
+           !(botvis && side->bottomtexture == 0 && side->midtexture != 0)) ||
+           (bsh <= 0 && topvis && (side->toptexture || side->toptexture == -1 || backsecSkyFix)
+            && botvis && (side->bottomtexture || side->bottomtexture == -1)))
+        {
+            // The backsector has no space. This is a solid segment.
+            C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
+        }*/
+
+        if(solidSeg)
+            C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
     }
 }
 
@@ -1345,6 +1420,10 @@ void Rend_CalcLightRangeModMatrix(cvar_t* unused)
                     f = -j;
             }
 
+            // Lower than the ambient limit?
+            if(j+f <= r_ambient)
+                f = r_ambient - j;
+
             // Insert it into the matrix
             lightRangeModMatrix[n][j] = (signed short) f;
         }
@@ -1364,8 +1443,6 @@ void Rend_RetrieveLightSample(void)
     short light;
     float range;
     float mod;
-    float pos[3];
-    float normal[3];
     float inter;
     ddplayer_t *player;
     subsector_t *sub;
@@ -1379,8 +1456,14 @@ void Rend_RetrieveLightSample(void)
             continue;
 
         player = &players[i];
+        sub = player->mo->subsector;
 
-        sub = R_PointInSubsector(player->mo->x, player->mo->y);
+        // In some circumstances we should disable light adaptation.
+        if(LevelFullBright || P_IsInVoid(player))
+        {
+            playerLightRange[i] = midpoint;
+            continue;
+        }
 
         // Evaluate the light level at the point this player is at.
         // Uses a very simply method which uses the sector in which the player
@@ -1398,9 +1481,9 @@ void Rend_RetrieveLightSample(void)
             // and with the bias light sources.
 
             // Use the players postion.
-            pos[VX] = FIX2FLT(player->mo->x);
-            pos[VY] = FIX2FLT(player->mo->y);
-            pos[VZ] = FIX2FLT(player->mo->z);
+            pos[VX] = FIX2FLT(player->mo->[VX]);
+            pos[VY] = FIX2FLT(player->mo->[VY]);
+            pos[VZ] = FIX2FLT(player->mo->[VZ]);
 
             // TODO: Should be affected by BIAS sources...
             LG_Evaluate(pos, color);
@@ -1575,6 +1658,9 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
     fronth[0] = FIX2FLT(front->floorheight);
     fronth[1] = FIX2FLT(front->ceilingheight);
 
+    if(devNoCulling || P_IsInVoid(viewplayer))
+        return;
+
     for(i = 0; i < sub->linecount; i++)
     {
         seg = SEG_PTR(sub->firstline + i);
@@ -1701,20 +1787,7 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
         }
         else
         {
-            if(planepic == -1)
-            {
-                // A bad texture name, draw the "missing" graphic
-                poly.tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
-                poly.tex.width = poly.tex.height = 64;
-                poly.tex.detail = NULL;
-            }
-            else
-            {
-                poly.tex.id = curtex = GL_PrepareFlat(planepic);
-                poly.tex.detail = texdetail;
-                poly.tex.width = texw;
-                poly.tex.height = texh;
-            }
+            Rend_PrepareTextureForPoly(&poly, planepic, true);
 
             if(plane->isfloor)
             {
@@ -1793,8 +1866,8 @@ void Rend_RenderSubsector(int ssecidx)
         // FIXME: Determine the exact centerpoint of the light in
         // DL_AddLuminous!
         if(!C_IsPointVisible
-           (FIX2FLT(lumi->thing->x), FIX2FLT(lumi->thing->y),
-            FIX2FLT(lumi->thing->z) + lumi->center))
+           (FIX2FLT(lumi->thing->pos[VX]), FIX2FLT(lumi->thing->pos[VY]),
+            FIX2FLT(lumi->thing->pos[VZ]) + lumi->center))
             lumi->flags |= LUMF_CLIPPED;    // Won't have a halo.
     }
     Rend_OccludeSubsector(ssec, true);
@@ -1817,7 +1890,7 @@ void Rend_RenderSubsector(int ssecidx)
     for(j = ssec->linecount, seg = &segs[ssec->firstline]; j > 0;
         --j, seg++)
     {
-        if(seg->linedef)    // "minisegs" have no linedefs.
+        if(seg->linedef != NULL)    // "minisegs" have no linedefs.
             Rend_RenderWallSeg(seg, sect, flags);
     }
 
@@ -1867,14 +1940,17 @@ void Rend_RenderMap(void)
     // Set to true if dynlights are inited for this frame.
     dlInited = false;
 
+    // Calculate the light range to be used for each player
+    Rend_RetrieveLightSample();
+
     // This is all the clearing we'll do.
-    gl.Clear(DGL_DEPTH_BUFFER_BIT);
+    if(P_IsInVoid(viewplayer))
+        gl.Clear(DGL_COLOR_BUFFER_BIT | DGL_DEPTH_BUFFER_BIT);
+    else
+        gl.Clear(DGL_DEPTH_BUFFER_BIT);
 
     // Setup the modelview matrix.
     Rend_ModelViewMatrix(true);
-
-    // Calculate the light range to be used for each player
-    Rend_RetrieveLightSample();
 
     if(!freezeRLs)
     {
@@ -1908,6 +1984,7 @@ void Rend_RenderMap(void)
             C_SafeAddRange(viewside, viewside + angLen);
             C_SafeAddRange(viewside + angLen, viewside + 2 * angLen);
         }
+
         // The viewside line for the depth cue.
         viewsidex = -FIX2FLT(viewsin);
         viewsidey = FIX2FLT(viewcos);
@@ -1992,7 +2069,7 @@ void R_DrawLightRange(void)
 
             c = (byte) v;
 
-            // Show the ambient light modifier using alpha
+            // Show the ambient light modifier using alpha as well
             if(r_ambient < 0 && i > r_ambient)
                 a = 128;
             else if(r_ambient > 0 && i < r_ambient)
@@ -2028,33 +2105,33 @@ void R_DrawLightRange(void)
  * Draws a textured cube using the currently bound gl texture.
  * Used to draw mobj bounding boxes.
  *
- * @param   x           X coordinate of the center of the box.
- * @param   y           Y coordinate of the center of the box.
- * @param   z           Z coordinate of the center of the box.
+ * @param   pos3f       Coordinates of the center of the box.
+ *                      (in "world" coordinates [VX, VY, VZ])
  * @param   w           Width of the box.
  * @param   l           Length of the box.
  * @param   h           Height of the box.
- * @param   color       Color to make the box (uniform vertex color).
+ * @param   color3f     Color to make the box (uniform vertex color).
+ * @param   alpha       Alpha to make the box (uniform vertex color).
  * @param   br          Border amount to overlap box faces.
  * @param   alignToBase (TRUE) = Align the base of the box to the Z coordinate.
  */
-void Rend_DrawBBox(float x, float y, float z, float w, float l, float h,
-                   float color[4], float br, boolean alignToBase)
+void Rend_DrawBBox(float pos3f[3], float w, float l, float h, float color3f[3],
+                   float alpha, float br, boolean alignToBase)
 {
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PushMatrix();
 
     if(alignToBase)
         // The Z coordinate is to the bottom of the object.
-        gl.Translatef(x, z + h, y);
+        gl.Translatef(pos3f[VX], pos3f[VZ] + h, pos3f[VY]);
     else
-        gl.Translatef(x, z, y);
+        gl.Translatef(pos3f[VX], pos3f[VZ], pos3f[VY]);
 
     gl.Scalef(w - br - br, h - br - br, l - br - br);
 
     gl.Begin(DGL_QUADS);
     {
-        gl.Color4fv(color);
+        gl.Color4f(color3f[0], color3f[1], color3f[2], alpha);
         // Top
         gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f+br, 1.0f,-1.0f-br);  // TR
         gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f-br, 1.0f,-1.0f-br);  // TL
@@ -2096,23 +2173,24 @@ void Rend_DrawBBox(float x, float y, float z, float w, float l, float h,
  * Draws a textured triangle using the currently bound gl texture.
  * Used to draw mobj angle direction arrow.
  *
- * @param   x           X coordinate of the center of the base of the triangle.
- * @param   y           Y coordinate of the center of the base of the triangle.
- * @param   z           Z coordinate of the center of the base of the triangle.
+ * @param   pos3f       Coordinates of the center of the base of the triangle.
+ *                      (in "world" coordinates [VX, VY, VZ])
  * @param   a           Angle to point the triangle in.
  * @param   s           Scale of the triangle.
- * @param   color       Color to make the box (uniform vertex color).
+ * @param   color3f     Color to make the box (uniform vertex color).
+ * @param   alpha       Alpha to make the box (uniform vertex color).
  */
-void Rend_DrawArrow(float x, float y, float z, angle_t a, float s, float color[4])
+void Rend_DrawArrow(float pos3f[3], angle_t a, float s, float color3f[3],
+                    float alpha)
 {
     gl.MatrixMode(DGL_MODELVIEW);
     gl.PushMatrix();
 
-    gl.Translatef(x, z, y);
+    gl.Translatef(pos3f[VX], pos3f[VZ], pos3f[VY]);
 
     gl.Rotatef(0, 0, 0, 1);
     gl.Rotatef(0, 1, 0, 0);
-    gl.Rotatef( (a / (float) ANGLE_MAX *-360), 0, 1, 0);
+    gl.Rotatef((a / (float) ANGLE_MAX *-360), 0, 1, 0);
 
     gl.Scalef(s, 0, s);
 
@@ -2121,7 +2199,7 @@ void Rend_DrawArrow(float x, float y, float z, angle_t a, float s, float color[4
         gl.Color4f(0.0f, 0.0f, 0.0f, 0.5f);
         gl.TexCoord2f(1.0f, 1.0f); gl.Vertex3f( 1.0f, 1.0f,-1.0f);  // L
 
-        gl.Color4fv(color);
+        gl.Color4f(color3f[0], color3f[1], color3f[2], alpha);
         gl.TexCoord2f(0.0f, 1.0f); gl.Vertex3f(-1.0f, 1.0f,-1.0f);  // Point
 
         gl.Color4f(0.0f, 0.0f, 0.0f, 0.5f);
@@ -2146,9 +2224,14 @@ static void Rend_RenderBoundingBoxes(void)
     int     i;
     sector_t *sec;
     float   size;
-    float   red[4] = { 1, 0.2f, 0.2f, 1}; // non-solid objects
-    float   green[4] = { 0.2f, 1, 0.2f, 1}; // solid objects
-    float   yellow[4] = {0.7f, 0.2f, 0.7f, 1}; // missiles
+    float   red[3] = { 1, 0.2f, 0.2f}; // non-solid objects
+    float   green[3] = { 0.2f, 1, 0.2f}; // solid objects
+    float   yellow[3] = {0.7f, 0.2f, 0.7f}; // missiles
+    float   alpha;
+    float   eye[3] = {FIX2FLT(viewplayer->mo->pos[VX]),
+                      FIX2FLT(viewplayer->mo->pos[VY]),
+                      FIX2FLT(viewplayer->mo->pos[VZ])};
+    float   pos[3];
 
     if(!devMobjBBox || netgame)
         return;
@@ -2174,18 +2257,24 @@ static void Rend_RenderBoundingBoxes(void)
             if(mo == players[consoleplayer].mo)
                 continue; // We don't want the console player.
 
+            pos[VX] = FIX2FLT(mo->pos[VX]);
+            pos[VY] = FIX2FLT(mo->pos[VY]);
+            pos[VZ] = FIX2FLT(mo->pos[VZ]);
+            alpha = 1 - ((M_Distance(pos, eye)/(screenWidth/2))/4);
+
+            if(alpha < .25f)
+                alpha = .25f; // Don't make them totally invisible.
+
             // Draw a bounding box in an appropriate color.
             size = FIX2FLT(mo->radius);
-            Rend_DrawBBox(FIX2FLT(mo->x), FIX2FLT(mo->y), FIX2FLT(mo->z),
-                          size, size, FIX2FLT(mo->height)/2,
+            Rend_DrawBBox(pos, size, size, FIX2FLT(mo->height)/2,
                           (mo->ddflags & DDMF_MISSILE)? yellow :
                           (mo->ddflags & DDMF_SOLID)? green : red,
-                          0.08f, true);
+                          alpha, 0.08f, true);
 
-            Rend_DrawArrow(FIX2FLT(mo->x), FIX2FLT(mo->y), FIX2FLT(mo->z),
-                           mo->angle + ANG45 + ANG90 , size*1.25,
+            Rend_DrawArrow(pos, mo->angle + ANG45 + ANG90 , size*1.25,
                            (mo->ddflags & DDMF_MISSILE)? yellow :
-                           (mo->ddflags & DDMF_SOLID)? green : red);
+                           (mo->ddflags & DDMF_SOLID)? green : red, alpha);
         }
     }
 
