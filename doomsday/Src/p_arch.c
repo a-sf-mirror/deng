@@ -602,7 +602,7 @@ static void ParseGLBSPInf(mapdatalumpinfo_t* mapLump)
     char* ch;
     char line[250];
 
-    glbuildinfo_t *newInfo = malloc(sizeof(glbuildinfo_t));
+    glbuildinfo_t *newInfo = M_Malloc(sizeof(glbuildinfo_t));
 
     struct glbsp_keyword_s {
         const char* label;
@@ -647,7 +647,7 @@ static void ParseGLBSPInf(mapdatalumpinfo_t* mapLump)
         for(i = 0; keywords[i].label; ++i)
             if(!strncmp(line, keywords[i].label, keylength))
             {
-                *keywords[i].data = malloc(strlen(line) - keylength + 1);
+                *keywords[i].data = M_Malloc(strlen(line) - keylength + 1);
                 strncpy(*keywords[i].data, line + keylength + 1,
                         strlen(line) - keylength);
             }
@@ -670,29 +670,29 @@ static void FreeGLBSPInf(void)
     {
         if(glBuilderInfo->level)
         {
-            free(glBuilderInfo->level);
+            M_Free(glBuilderInfo->level);
             glBuilderInfo->level = NULL;
         }
 
         if(glBuilderInfo->builder)
         {
-            free(glBuilderInfo->builder);
+            M_Free(glBuilderInfo->builder);
             glBuilderInfo->builder = NULL;
         }
 
         if(glBuilderInfo->time)
         {
-            free(glBuilderInfo->time);
+            M_Free(glBuilderInfo->time);
             glBuilderInfo->time = NULL;
         }
 
         if(glBuilderInfo->checksum)
         {
-            free(glBuilderInfo->checksum);
+            M_Free(glBuilderInfo->checksum);
             glBuilderInfo->checksum = NULL;
         }
 
-        free(glBuilderInfo);
+        M_Free(glBuilderInfo);
         glBuilderInfo = NULL;
     }
 }
@@ -705,7 +705,7 @@ static void AddMapDataLump(int lumpNum, int lumpClass)
     numMapDataLumps++;
 
     mapDataLumps =
-        realloc(mapDataLumps, sizeof(mapdatalumpinfo_t) * numMapDataLumps);
+        M_Realloc(mapDataLumps, sizeof(mapdatalumpinfo_t) * numMapDataLumps);
 
     mapDataLump = &mapDataLumps[num];
     mapDataLump->lumpNum = lumpNum;
@@ -731,7 +731,7 @@ static void FreeMapDataLumps(void)
                 mapDataLumps[k].lumpp = 0;
             }
 
-        free(mapDataLumps);
+        M_Free(mapDataLumps);
         mapDataLumps = NULL;
         numMapDataLumps = 0;
     }
@@ -1368,7 +1368,7 @@ boolean P_LoadMapData(char *levelId)
     // Try to determine the format of this map.
     if(P_GetMapFormat())
     {
-        newmap = malloc(sizeof(gamemap_t));
+        newmap = M_Malloc(sizeof(gamemap_t));
         // Excellent, its a map we can read. Load it in!
         Con_Message("P_LoadMapData: %s\n", levelId);
 
@@ -1427,7 +1427,7 @@ boolean P_LoadMapData(char *levelId)
         FinalizeMapData(newmap);
 
         if(currentMap != NULL)
-            free(currentMap);
+            M_Free(currentMap);
 
         SetCurrentMap(newmap);
 
@@ -1579,7 +1579,7 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                 memset(&map->lines[oldNum], 0, elements * sizeof(line_t));
 
                 // for missing front detection
-                missingFronts = malloc(map->numlines * sizeof(int));
+                missingFronts = M_Malloc(map->numlines * sizeof(int));
                 memset(missingFronts, 0, sizeof(missingFronts));
 
                 // Call the game's setup routine
@@ -2866,7 +2866,7 @@ static void AddBlockLine(linelist_t **lists, int *count, int *done,
     if(done[blockno])
         return;
 
-    l = malloc(sizeof(linelist_t));
+    l = M_Malloc(sizeof(linelist_t));
     l->num = lineno;
     l->next = lists[blockno];
 
@@ -2930,15 +2930,15 @@ static void P_CreateBlockMap(gamemap_t* map)
     // Create the array of pointers on NBlocks to blocklists,
     // create an array of linelist counts on NBlocks, then finally,
     // make an array in which we can mark blocks done per line
-    blocklists = calloc(numBlocks, sizeof(linelist_t *));
-    blockcount = calloc(numBlocks, sizeof(int));
-    blockdone = malloc(numBlocks * sizeof(int));
+    blocklists = M_Calloc(numBlocks * sizeof(linelist_t *));
+    blockcount = M_Calloc(numBlocks * sizeof(int));
+    blockdone = M_Malloc(numBlocks * sizeof(int));
 
     // Initialize each blocklist, and enter the trailing -1 in all blocklists.
     // NOTE: the linked list of lines grows backwards.
     for(i = 0; i < numBlocks; i++)
     {
-        blocklists[i] = malloc(sizeof(linelist_t));
+        blocklists[i] = M_Malloc(sizeof(linelist_t));
         blocklists[i]->num = -1;
         blocklists[i]->next = NULL;
         blockcount[i]++;
@@ -3148,7 +3148,7 @@ static void P_CreateBlockMap(gamemap_t* map)
             linelist_t *tmp = bl->next;
 
             map->blockmaplump[offs++] = bl->num;
-            free(bl);
+            M_Free(bl);
             bl = tmp;
         }
     }
@@ -3156,9 +3156,9 @@ static void P_CreateBlockMap(gamemap_t* map)
     map->blockmap = map->blockmaplump + 4;
 
     // free all temporary storage
-    free(blocklists);
-    free(blockcount);
-    free(blockdone);
+    M_Free(blocklists);
+    M_Free(blockcount);
+    M_Free(blockdone);
 }
 
 /*
