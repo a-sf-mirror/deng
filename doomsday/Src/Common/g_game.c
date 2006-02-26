@@ -844,6 +844,7 @@ void G_DoLoadLevel(void)
     Set(DD_DISPLAYPLAYER, consoleplayer);   // view the guy you are playing
     starttime = Sys_GetTime();
     gameaction = ga_nothing;
+
     Z_CheckHeap();
 
     // clear cmd building stuff
@@ -1008,7 +1009,7 @@ void G_Ticker(void)
             players[i].playerstate = PST_REBORN;
             if(!IS_CLIENT)
             {
-                P_SpawnTeleFog(players[i].plr->mo->x, players[i].plr->mo->y);
+                P_SpawnTeleFog(players[i].plr->mo->pos[VX], players[i].plr->mo->pos[VY]);
             }
             // Let's get rid of the mobj.
 #if _DEBUG
@@ -1097,6 +1098,7 @@ void G_Ticker(void)
             gsvInLevel = 1;
 
         P_DoTick();
+
         HU_UpdatePsprites();
 
         // Active briefings once again (they were disabled when loading
@@ -1109,7 +1111,6 @@ void G_Ticker(void)
         ST_Ticker();
         AM_Ticker();
         HU_Ticker();
-
         break;
 
     case GS_INTERMISSION:
@@ -2509,15 +2510,15 @@ int P_CameraXYMovement(mobj_t *mo)
     if(mo->flags & MF_NOCLIP
        // This is a very rough check!
        // Sometimes you get stuck in things.
-       || P_CheckPosition2(mo, mo->x + mo->momx, mo->y + mo->momy, mo->z))
+       || P_CheckPosition2(mo, mo->pos[VX] + mo->momx, mo->pos[VY] + mo->momy, mo->pos[VZ]))
     {
 #endif
 
         P_UnsetThingPosition(mo);
-        mo->x += mo->momx;
-        mo->y += mo->momy;
+        mo->pos[VX] += mo->momx;
+        mo->pos[VY] += mo->momy;
         P_SetThingPosition(mo);
-        P_CheckPosition(mo, mo->x, mo->y);
+        P_CheckPosition(mo, mo->pos[VX], mo->pos[VY]);
         mo->floorz = tmfloorz;
         mo->ceilingz = tmceilingz;
 
@@ -2534,12 +2535,13 @@ int P_CameraZMovement(mobj_t *mo)
 {
     if(!P_IsCamera(mo))
         return false;
-    mo->z += mo->momz;
+    mo->pos[VZ] += mo->momz;
     mo->momz = FixedMul(mo->momz, 0xe800);
-    if(mo->z < mo->floorz + 6 * FRACUNIT)
-        mo->z = mo->floorz + 6 * FRACUNIT;
-    if(mo->z > mo->ceilingz - 6 * FRACUNIT)
-        mo->z = mo->ceilingz - 6 * FRACUNIT;
+
+    /*if(mo->pos[VZ] < mo->floorz + 6 * FRACUNIT)
+        mo->pos[VZ] = mo->floorz + 6 * FRACUNIT;
+    if(mo->pos[VZ] > mo->ceilingz - 6 * FRACUNIT)
+        mo->pos[VZ] = mo->ceilingz - 6 * FRACUNIT;*/
     return true;
 }
 
@@ -2573,14 +2575,16 @@ void P_CameraThink(player_t *player)
         target = players[tp].plr->mo;
         if(players[tp].plr->ingame && target)
         {
-            angle = R_PointToAngle2(mo->x, mo->y, target->x, target->y);
+            angle = R_PointToAngle2(mo->pos[VX], mo->pos[VY],
+                                    target->pos[VX], target->pos[VY]);
             player->plr->clAngle = angle;
             if(full)
             {
-                dist = P_ApproxDistance(mo->x - target->x, mo->y - target->y);
+                dist = P_ApproxDistance(mo->pos[VX] - target->pos[VX],
+                                        mo->pos[VY] - target->pos[VY]);
                 angle =
                     R_PointToAngle2(0, 0,
-                                    target->z + target->height / 2 - mo->z,
+                                    target->pos[VZ] + target->height / 2 - mo->pos[VZ],
                                     dist);
                 player->plr->clLookDir =
                     -(angle / (float) ANGLE_MAX * 360.0f - 90);
@@ -2625,16 +2629,28 @@ DEFCC(CCmdMakeLocal)
 DEFCC(CCmdSetCamera)
 {
     int     p;
+    player_t* player;
 
     if(argc < 2)
         return false;
+
     p = atoi(argv[1]);
     if(p < 0 || p >= MAXPLAYERS)
     {
         Con_Printf("Invalid console number %i.\n", p);
         return false;
     }
-    players[p].plr->flags ^= DDPF_CAMERA;
+
+    player = &players[p];
+
+    player->plr->flags ^= DDPF_CAMERA;
+
+    if(player->plr->ingame && player->plr->flags & DDPF_CAMERA)
+    {
+        // Is now a camera.
+        if(player->plr->mo)
+            player->plr->mo->pos[VZ] += player->plr->viewheight;
+    }
     return true;
 }
 
@@ -2730,8 +2746,8 @@ DEFCC(CCmdPrintPlayerCoords)
 
     if(!mo || gamestate != GS_LEVEL)
         return false;
-    Con_Printf("Console %i: X=%g Y=%g\n", consoleplayer, FIX2FLT(mo->x),
-               FIX2FLT(mo->y));
+    Con_Printf("Console %i: X=%g Y=%g Z=%g\n", consoleplayer,
+               FIX2FLT(mo->pos[VX]), FIX2FLT(mo->pos[VY]), FIX2FLT(mo->pos[VZ]));
     return true;
 }
 
