@@ -70,6 +70,9 @@ void P_CopyLine(line_t* from, line_t* to)
     xline_t* xfrom = P_XLine(from);
     xline_t* xto = P_XLine(to);
 
+    if(from == to)
+        return; // no point copying self
+
     // Copy the built-in properties
     P_Copyp(DMU_FLAGS, from, to);
     P_Copyp(DMU_TEXTURE_OFFSET_XY, from, to);
@@ -109,6 +112,9 @@ void P_CopySector(sector_t* from, sector_t* to)
 {
     xsector_t* xfrom = P_XSector(from);
     xsector_t* xto = P_XSector(to);
+
+    if(from == to)
+        return; // no point copying self
 
     // Copy the built-in properties
     P_Copyp(DMU_LIGHT_LEVEL, from, to);
