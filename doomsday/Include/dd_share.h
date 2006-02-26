@@ -823,7 +823,7 @@ extern          "C" {
     // Base mobj_t elements. Games MUST use this as the basis for mobj_t.
 #define DD_BASE_MOBJ_ELEMENTS() \
     thinker_t       thinker;            /* thinker node */ \
-    fixed_t         x,y,z;              /* position */ \
+    fixed_t         pos[3];             /* position [x,y,z] */ \
 \
     struct mobj_s   *bnext, *bprev;     /* links in blocks (if needed) */ \
     nodeindex_t     lineroot;           /* lines to which this is linked */ \
@@ -1305,6 +1305,9 @@ typedef enum blendmode_e {
         int             fixedcolormap;  // can be set to REDCOLORMAP, etc
         int             extralight; // so gun flashes light up areas
         int             ingame;    // is this player in game?
+        int             invoid;    // True if player is in the void
+                                   // (not entirely accurate so it shouldn't
+                                   /// be used for anything critical).
         int             flags;
         int             filter;    // RGBA filter for the camera
         int             clAngle;   // client side
