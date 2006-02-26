@@ -28,6 +28,7 @@
 #include "de_play.h"
 #include "de_refresh.h"
 #include "de_system.h"
+#include "de_misc.h"
 
 #include "rend_bias.h"
 #include "m_bams.h"
@@ -504,7 +505,7 @@ boolean P_CheckLevel(char *levelID, boolean silent)
 
     // Dont need this stuff anymore
     if(missingFronts != NULL)
-        free(missingFronts);
+        M_Free(missingFronts);
 
     P_FreeBadTexList();
 
@@ -583,11 +584,11 @@ int P_CheckTexture(char *name, boolean planeTex, int dataType,
                 if(maxBadTexNames < numBadTexNames)
                     maxBadTexNames = numBadTexNames;
 
-                badTexNames = realloc(badTexNames, sizeof(badtex_t)
+                badTexNames = M_Realloc(badTexNames, sizeof(badtex_t)
                                                     * maxBadTexNames);
             }
 
-            badTexNames[numBadTexNames -1].name = malloc(strlen(namet) +1);
+            badTexNames[numBadTexNames -1].name = M_Malloc(strlen(namet) +1);
             strcpy(badTexNames[numBadTexNames -1].name, namet);
 
             badTexNames[numBadTexNames -1].planeTex = planeTex;
@@ -613,7 +614,7 @@ static void P_FreeBadTexList(void)
             badTexNames[i].name = NULL;
         }
 
-        free(badTexNames);
+        M_Free(badTexNames);
         badTexNames = NULL;
 
         numBadTexNames = maxBadTexNames = 0;
