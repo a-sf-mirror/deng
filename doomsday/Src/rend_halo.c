@@ -76,6 +76,8 @@ flare_t flares[NUM_FLARES] = {
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+extern int devNoCulling;
+
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int     haloMode = 5, haloBright = 35, haloSize = 50;
@@ -134,7 +136,7 @@ void H_SetupState(boolean dosetup)
  * they're drawn after everything else, during a separate pass).
  * If 'primary' is false, the caller must setup the rendering state.
  */
-void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
+boolean H_RenderHalo(vissprite_t * sourcevis, boolean primary)
 {
     float   viewpos[3] = { vx, vy, vz };
     float   viewtocenter[3], mirror[3], normalviewtocenter[3];
@@ -150,14 +152,24 @@ void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
     if(!primary && haloRealistic)
     {
         // In the realistic mode we don't render secondary halos.
-        return;
+        return false;
+    }
+
+    if(devNoCulling || P_IsInVoid(viewplayer))
+    {
+        // Normal visible surface culling has been disabled meaning that this
+        // halo should, more than likely, be occluded (at least partially) by
+        // something else in the scene.
+        // FIXME: Therefore we need to check using a line-of-sight method
+        //        that only checks front facing geometry...?
+            return false;
     }
 
     lum_distance = FIX2FLT(lum->distance);
 
     if(lum->flags & LUMF_NOHALO || lum_distance == 0 ||
        (haloFadeMax && lum_distance > haloFadeMax))
-        return;
+        return false;
 
     if(haloFadeMax && haloFadeMax != haloFadeMin && lum_distance < haloFadeMax
        && lum_distance >= haloFadeMin)
@@ -168,7 +180,7 @@ void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
 
     occlusionfactor = (lum->thing->halofactor & 0x7f) / 127.0f;
     if(occlusionfactor == 0)
-        return;
+        return false;
     occlusionfactor = (1 + occlusionfactor) / 2;
 
     // viewsidevec is to the left.
@@ -389,6 +401,8 @@ void H_RenderHalo(vissprite_t * sourcevis, boolean primary)
     // Undo the changes to the DGL state.
     if(primary)
         H_SetupState(false);
+
+    return true;
 }
 
 /*
