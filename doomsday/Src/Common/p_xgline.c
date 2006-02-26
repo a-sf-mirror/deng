@@ -629,6 +629,7 @@ void XL_SetLineType(line_t *line, int id)
 void XL_Init(void)
 {
     int    i;
+    line_t *line;
 
     memset(&dummything, 0, sizeof(dummything));
 
@@ -638,8 +639,10 @@ void XL_Init(void)
 
     for(i = 0; i < numlines; i++)
     {
-        xlines[i].xg = 0;
-        XL_SetLineType(P_ToPtr(DMU_LINE, i), xlines[i].special);
+        line = P_ToPtr(DMU_LINE, i);
+        P_XLine(line)->xg = 0;
+
+        XL_SetLineType(line, P_XLine(line)->special);
     }
 }
 
@@ -1224,14 +1227,14 @@ int C_DECL XLTrav_ChangeWallTexture(line_t *line, boolean dummy, void *context,
         if(P_GetPtrp(line, DMU_BACK_SECTOR) < 0)
             return true;
 
-        side = P_GetPtrp(line, DMU_BACK_SECTOR);
+        side = P_GetPtrp(line, DMU_SIDE1);
     }
     else
     {
         if(P_GetPtrp(line, DMU_FRONT_SECTOR) < 0)
             return true;
 
-        side = P_GetPtrp(line, DMU_FRONT_SECTOR);
+        side = P_GetPtrp(line, DMU_SIDE0);
     }
 
     XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(line));
@@ -1303,7 +1306,7 @@ int C_DECL XLTrav_Music(line_t *line, boolean dummy, void *context, void *contex
     }
     else    // we might have a data reference to evaluate
     {
-        if( info->iparm[2] == LREF_NONE)    // data (ip0) will be used to determine next level
+        if(info->iparm[2] == LREF_NONE)    // data (ip0) will be used to determine next level
         {
             song = info->iparm[0];
 
@@ -1388,7 +1391,7 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     // Spawn flash at the old position?
     if(info->iparm[2])
     {
-        flash = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_TFOG);
+        flash = P_SpawnMobj(mobj->pos[VX], mobj->pos[VY], mobj->pos[VZ], MT_TFOG);
 
         // Play a sound?
         if(info->iparm[3])
@@ -1397,9 +1400,9 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
 
     // Get the thing's position along the source linedef
     if(abs(oldldx) > abs(oldldy))
-        pos = FixedDiv(mobj->x - P_GetFixedp(oldv1, DMU_X), oldldx);
+        pos = FixedDiv(mobj->pos[VX] - P_GetFixedp(oldv1, DMU_X), oldldx);
     else
-        pos = FixedDiv(mobj->y - P_GetFixedp(oldv1, DMU_Y), oldldy);
+        pos = FixedDiv(mobj->pos[VY] - P_GetFixedp(oldv1, DMU_Y), oldldy);
 
     // Get the angle between the two linedefs, for rotating
     // orientation and momentum. Rotate 180 degrees, and flip
@@ -1424,7 +1427,7 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
         stepdown = false;
 
     // Height of thing above ground
-    newz = mobj->z - mobj->floorz;
+    newz = mobj->pos[VZ] - mobj->floorz;
 
     // Side to exit the linedef on positionally.
     //
@@ -1461,7 +1464,7 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     }
 
     // Do the Teleport
-    if(!P_TeleportMove (mobj, newx, newy, (info->iparm[5] > 0? true : false)))
+    if(!P_TeleportMove(mobj, newx, newy, (info->iparm[5] > 0? true : false)))
     {
         XG_Dev("XLTrav_Teleport: Something went horribly wrong... aborting.");
         return false;
@@ -1471,9 +1474,9 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     // Ground level at the exit is measured as the higher of the
     // two floor heights at the exit linedef.
     if(stepdown)
-        mobj->z = newz + P_GetFixedp(newfrontsector, DMU_FLOOR_HEIGHT);
+        mobj->pos[VZ] = newz + P_GetFixedp(newfrontsector, DMU_FLOOR_HEIGHT);
     else
-        mobj->z = newz + P_GetFixedp(newbacksector, DMU_FLOOR_HEIGHT);
+        mobj->pos[VZ] = newz + P_GetFixedp(newbacksector, DMU_FLOOR_HEIGHT);
 
     // Rotate mobj's orientation according to difference in linedef angles
     mobj->angle += angle;
@@ -1498,9 +1501,9 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     if(info->iparm[2])
     {
         an = mobj->angle >> ANGLETOFINESHIFT;
-        flash = P_SpawnMobj(mobj->x + 24 * finecosine[an],
-                            mobj->y + 24 * finesine[an],
-                            mobj->z, MT_TFOG);
+        flash = P_SpawnMobj(mobj->pos[VX] + 24 * finecosine[an],
+                            mobj->pos[VY] + 24 * finesine[an],
+                            mobj->pos[VZ], MT_TFOG);
 
         // Play a sound?
         if(info->iparm[3])
@@ -1510,7 +1513,7 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     // Adjust the player's view, incase there has been a height change
     if(mobj->player)
     {
-        mobj->dplayer->viewz = mobj->z + mobj->dplayer->viewheight;
+        mobj->dplayer->viewz = mobj->pos[VZ] + mobj->dplayer->viewheight;
         mobj->dplayer->flags |= DDPF_FIXANGLES | DDPF_FIXPOS | DDPF_FIXMOM;
     }
 
@@ -1523,7 +1526,7 @@ int XL_ValidateMap(int val, int type)
     int episode, level = val;
 
 #ifdef __JDOOM__
-    if (gamemode == commercial)
+    if(gamemode == commercial)
         episode = gameepisode;
     else
         episode = 0;
@@ -1626,7 +1629,7 @@ boolean XL_CheckMobjGone(int thingtype)
             // Not dead.
             XG_Dev("XL_CheckMobjGone: Thing type %i: Found mo id=%i, "
                    "health=%i, pos=(%i,%i)", thingtype, mo->thinker.id,
-                   mo->health, mo->x >> FRACBITS, mo->y >> FRACBITS);
+                   mo->health, mo->pos[VX] >> FRACBITS, mo->pos[VY] >> FRACBITS);
             return false;
         }
     }
@@ -1659,6 +1662,7 @@ boolean XL_SwitchSwap(side_t* side, int section)
     buf[8] = 0;
 
     // Does this texture have another switch texture?
+    // FIXME: Use the switch texture list in p_switches for this.
 #ifdef __JHERETIC__
     // A kludge for Heretic.  Since it has some switch texture names
     // that don't follow the SW1/SW2 pattern, we'll do some special

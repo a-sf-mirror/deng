@@ -239,8 +239,8 @@ boolean P_CheckSpot(int playernum, thing_t * mthing, boolean doTeleSpark)
         for(i = 0; i < playernum; i++)
         {
             if(players[i].plr->mo &&
-               players[i].plr->mo->x == mthing->x << FRACBITS &&
-               players[i].plr->mo->y == mthing->y << FRACBITS)
+               players[i].plr->mo->pos[VX] == mthing->x << FRACBITS &&
+               players[i].plr->mo->pos[VY] == mthing->y << FRACBITS)
                 return false;
         }
         return true;
@@ -673,7 +673,7 @@ void P_MoveThingsOutOfWalls()
                 linelen =
                     P_ApproxDistance(P_GetFixedp(li, DMU_DX),
                                      P_GetFixedp(li, DMU_DY));
-                dist = P_PointLineDistance(li, iter->x, iter->y, &off);
+                dist = P_PointLineDistance(li, iter->pos[VX], iter->pos[VY], &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
                 {
@@ -693,8 +693,8 @@ void P_MoveThingsOutOfWalls()
                 dx *= offlen / len;
                 dy *= offlen / len;
                 P_UnsetThingPosition(iter);
-                iter->x += FRACUNIT * dx;
-                iter->y += FRACUNIT * dy;
+                iter->pos[VX] += FRACUNIT * dx;
+                iter->pos[VY] += FRACUNIT * dy;
                 P_SetThingPosition(iter);
             }
         }
@@ -752,7 +752,7 @@ void P_TurnGizmosAwayFromDoors()
                     P_ApproxDistance(P_GetFixedp(li, DMU_DX),
                                      P_GetFixedp(li, DMU_DY));
 
-                dist = abs(P_PointLineDistance(li, iter->x, iter->y, &off));
+                dist = abs(P_PointLineDistance(li, iter->pos[VX], iter->pos[VY], &off));
                 if(!closestline || dist < closestdist)
                 {
                     closestdist = dist;
@@ -816,7 +816,7 @@ void P_TurnTorchesToFaceWalls()
                 linelen =
                     P_ApproxDistance(P_GetFixedp(li, DMU_DX),
                                      P_GetFixedp(li, DMU_DY));
-                dist = P_PointLineDistance(li, iter->x, iter->y, &off);
+                dist = P_PointLineDistance(li, iter->pos[VX], iter->pos[VY], &off);
                 if(off > -minrad && off < linelen + minrad &&
                    (!closestline || dist < closestdist) && dist >= 0)
                 {

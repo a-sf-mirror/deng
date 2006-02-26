@@ -83,24 +83,20 @@ void P_CalcHeight(player_t *player)
     if(player->bob > MAXBOB)
         player->bob = MAXBOB;
 
-#if __JHERETIC__
+#if __JHERETIC__ || __JHEXEN__
     // When flying, don't bob the view.
-    if(pmo->flags2 & MF2_FLY && pmo->z > pmo->floorz)
+    if(pmo->flags2 & MF2_FLY && pmo->pos[VZ] > pmo->floorz)
     {
         player->bob = FRACUNIT / 2;
     }
+
+#ifdef __JHEXEN__
+    if(player->morphTics)
+        morphed = true;
+#else
     if(player->chickenTics)
         morphed = true;
 #endif
-
-#ifdef __JHEXEN__
-    // When flying, don't bob the view.
-    if(pmo->flags2 & MF2_FLY && pmo->z > pmo->floorz)
-    {
-        player->bob = FRACUNIT / 2;
-    }
-    if(player->morphTics)
-        morphed = true;
 #endif
 
     // During demo playback the view is thought to be airborne
@@ -108,7 +104,7 @@ void P_CalcHeight(player_t *player)
     if(Get(DD_PLAYBACK))
         airborne = !dplay->viewheight;
     else
-        airborne = pmo->z > pmo->floorz;    // Truly in the air?
+        airborne = pmo->pos[VZ] > pmo->floorz;    // Truly in the air?
 
     // Should view bobbing be done?
     if(setz)
@@ -183,7 +179,7 @@ void P_CalcHeight(player_t *player)
     }
 
     // Set the player's eye-level Z coordinate.
-    dplay->viewz = pmo->z + dplay->viewheight;
+    dplay->viewz = pmo->pos[VZ] + dplay->viewheight;
 
     // During demo playback (or camera mode) the viewz will not be
     // modified any further.
@@ -198,7 +194,7 @@ void P_CalcHeight(player_t *player)
         if(player->playerstate != PST_DEAD)
         {
 #if __JHERETIC__
-            if(pmo->flags2 & MF2_FEETARECLIPPED && pmo->z <= pmo->floorz)
+            if(pmo->flags2 & MF2_FEETARECLIPPED && pmo->pos[VZ] <= pmo->floorz)
             {
                 dplay->viewz -= FOOTCLIPSIZE;
             }
@@ -206,7 +202,7 @@ void P_CalcHeight(player_t *player)
 #ifndef __JDOOM__
 #ifndef __JHERETIC__
             // Foot clipping is done for living players.
-            if(pmo->floorclip && pmo->z <= pmo->floorz)
+            if(pmo->floorclip && pmo->pos[VZ] <= pmo->floorz)
             {
                 dplay->viewz -= pmo->floorclip;
             }

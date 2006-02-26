@@ -432,9 +432,9 @@ void SV_WriteMobj(mobj_t *mobj)
 #endif
 
     // Info for drawing: position.
-    SV_WriteLong(mo.x);
-    SV_WriteLong(mo.y);
-    SV_WriteLong(mo.z);
+    SV_WriteLong(mo.pos[VX]);
+    SV_WriteLong(mo.pos[VY]);
+    SV_WriteLong(mo.pos[VZ]);
 
     //More drawing info: to determine current sprite.
     SV_WriteLong(mo.angle);     // orientation
@@ -526,9 +526,9 @@ void SV_ReadMobj(mobj_t *mo)
     }
 
     // Info for drawing: position.
-    mo->x = SV_ReadLong();
-    mo->y = SV_ReadLong();
-    mo->z = SV_ReadLong();
+    mo->pos[VX] = SV_ReadLong();
+    mo->pos[VY] = SV_ReadLong();
+    mo->pos[VZ] = SV_ReadLong();
 
     //More drawing info: to determine current sprite.
     mo->angle = SV_ReadLong();  // orientation
@@ -2174,9 +2174,9 @@ void SV_SaveClient(unsigned int gameid)
 
     // Some important information.
     // Our position and look angles.
-    SV_WriteLong(mo->x);
-    SV_WriteLong(mo->y);
-    SV_WriteLong(mo->z);
+    SV_WriteLong(mo->pos[VX]);
+    SV_WriteLong(mo->pos[VY]);
+    SV_WriteLong(mo->pos[VZ]);
     SV_WriteLong(mo->floorz);
     SV_WriteLong(mo->ceilingz);
     SV_WriteLong(pl->plr->clAngle);
@@ -2225,9 +2225,9 @@ void SV_LoadClient(unsigned int gameid)
     leveltime = hdr.leveltime;
 
     P_UnsetThingPosition(mo);
-    mo->x = SV_ReadLong();
-    mo->y = SV_ReadLong();
-    mo->z = SV_ReadLong();
+    mo->pos[VX] = SV_ReadLong();
+    mo->pos[VY] = SV_ReadLong();
+    mo->pos[VZ] = SV_ReadLong();
     P_SetThingPosition(mo);
     mo->floorz = SV_ReadLong();
     mo->ceilingz = SV_ReadLong();

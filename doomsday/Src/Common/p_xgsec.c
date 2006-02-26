@@ -1846,9 +1846,7 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
     mobj_t *flash;
     thinker_t *thinker;
     unsigned an;
-    fixed_t oldx;
-    fixed_t oldy;
-    fixed_t oldz;
+    fixed_t oldpos[3];
     fixed_t aboveFloor;
     fixed_t fogDelta = 0;
 
@@ -1889,12 +1887,10 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
                 info->iparm[2]? "No Flash":"", info->iparm[3]? "Play Sound":"Silent",
                 info->iparm[4]? " Stomp" : "");
 
-        oldx = thing->x;
-        oldy = thing->y;
-        oldz = thing->z;
-        aboveFloor = thing->z - thing->floorz;
+        memcpy(oldpos, thing->pos, sizeof(thing->pos));
+        aboveFloor = thing->pos[VZ] - thing->floorz;
 
-        if(!P_TeleportMove(thing, mo->x, mo->y, (info->iparm[4] > 0? 1 : 0)))
+        if(!P_TeleportMove(thing, mo->pos[VX], mo->pos[VY], (info->iparm[4] > 0? 1 : 0)))
         {
             XG_Dev("XSTrav_Teleport: No free space at teleport exit. Aborting teleport...");
             return false;
@@ -1906,18 +1902,18 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
 #if __JHERETIC__
             if(thing->player->plr->mo->flags2 & MF2_FLY && aboveFloor)
             {
-                thing->z = thing->floorz + aboveFloor;
-                if(thing->z + thing->height > thing->ceilingz)
+                thing->pos[VZ] = thing->floorz + aboveFloor;
+                if(thing->pos[VZ] + thing->height > thing->ceilingz)
                 {
-                    thing->z = thing->ceilingz - thing->height;
+                    thing->pos[VZ] = thing->ceilingz - thing->height;
                 }
-                thing->dplayer->viewz = thing->z + thing->dplayer->viewheight;
+                thing->dplayer->viewz = thing->pos[VZ] + thing->dplayer->viewheight;
             }
             else
 #endif
             {
-                thing->z = thing->floorz;
-                thing->dplayer->viewz = thing->z + thing->dplayer->viewheight;
+                thing->pos[VZ] = thing->floorz;
+                thing->dplayer->viewz = thing->pos[VZ] + thing->dplayer->viewheight;
                 thing->dplayer->clLookDir = 0;
                 thing->dplayer->lookdir = 0;
             }
@@ -1934,16 +1930,16 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
 #if __JHERETIC__
     else if(thing->flags & MF_MISSILE)
     {
-        thing->z = thing->floorz + aboveFloor;
-        if(thing->z + thing->height > thing->ceilingz)
+        thing->pos[VZ] = thing->floorz + aboveFloor;
+        if(thing->pos[VZ] + thing->height > thing->ceilingz)
         {
-            thing->z = thing->ceilingz - thing->height;
+            thing->pos[VZ] = thing->ceilingz - thing->height;
         }
     }
 #endif
         else
         {
-            thing->z = thing->floorz;
+            thing->pos[VZ] = thing->floorz;
         }
 
         // Spawn flash at the old position?
@@ -1953,7 +1949,7 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
 #if __JHERETIC__
             fogDelta = thing->flags & MF_MISSILE ? 0 : TELEFOGHEIGHT;
 #endif
-            flash = P_SpawnMobj(oldx, oldy, oldz + fogDelta, MT_TFOG);
+            flash = P_SpawnMobj(oldpos[VX], oldpos[VY], oldpos[VZ] + fogDelta, MT_TFOG);
             // Play a sound?
             if(info->iparm[3])
                 S_StartSound(info->iparm[3], flash);
@@ -1965,8 +1961,8 @@ int C_DECL XSTrav_Teleport(sector_t *sector, boolean ceiling, void *context,
         if(!info->iparm[2])
         {
             // New position
-            flash = P_SpawnMobj(mo->x + 20 * finecosine[an], mo->y + 20 * finesine[an],
-                                mo->z + fogDelta, MT_TFOG);
+            flash = P_SpawnMobj(mo->pos[VX] + 20 * finecosine[an], mo->pos[VY] + 20 * finesine[an],
+                                mo->pos[VZ] + fogDelta, MT_TFOG);
             // Play a sound?
             if(info->iparm[3])
                 S_StartSound(info->iparm[3], flash);
@@ -2416,13 +2412,13 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
     {
     case XSCE_FLOOR:
         // Is it touching the floor?
-        if(mo->z > P_GetIntp(sec, DMU_FLOOR_HEIGHT))
+        if(mo->pos[VZ] > P_GetIntp(sec, DMU_FLOOR_HEIGHT))
             return true;
         break;
 
     case XSCE_CEILING:
         // Is it touching the ceiling?
-        if(mo->z + mo->height < P_GetIntp(sec, DMU_CEILING_HEIGHT))
+        if(mo->pos[VZ] + mo->height < P_GetIntp(sec, DMU_CEILING_HEIGHT))
             return true;
         break;
 
@@ -2458,9 +2454,9 @@ int XSTrav_Wind(sector_t *sec, mobj_t *mo, int data)
        (info->flags & STF_MISSILE_WIND && mo->flags & MF_MISSILE))
     {
         if(!(info->flags & (STF_FLOOR_WIND | STF_CEILING_WIND)) ||
-           (info->flags & STF_FLOOR_WIND && mo->z <= mo->floorz) ||
+           (info->flags & STF_FLOOR_WIND && mo->pos[VZ] <= mo->floorz) ||
            (info->flags & STF_CEILING_WIND &&
-            mo->z + mo->height >= mo->ceilingz))
+            mo->pos[VZ] + mo->height >= mo->ceilingz))
         {
             // Apply vertical wind.
             mo->momz += FRACUNIT * info->vertical_wind;

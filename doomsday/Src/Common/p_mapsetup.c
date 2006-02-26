@@ -401,7 +401,7 @@ static void P_FinalizeLevel(void)
                 side = P_GetPtrp(line, k == 0? DMU_SIDE0 : DMU_SIDE1);
                 yoff = P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y);
                 bottomTex = P_GetIntp(side, DMU_BOTTOM_TEXTURE);
-                midTex = P_GetIntp(side, DMU_MIDDLE_TEXTURE) ;
+                midTex = P_GetIntp(side, DMU_MIDDLE_TEXTURE);
 
                 if(bottomTex == lumpnum && midTex == 0)
                     P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, yoff + FRACUNIT);

@@ -224,17 +224,17 @@ void NetCl_UpdateGameState(byte *data)
 
         mo = pl->plr->mo;
         P_UnsetThingPosition(mo);
-        mo->x = NetCl_ReadShort() << 16;
-        mo->y = NetCl_ReadShort() << 16;
-        mo->z = NetCl_ReadShort() << 16;
+        mo->pos[VX] = NetCl_ReadShort() << 16;
+        mo->pos[VY] = NetCl_ReadShort() << 16;
+        mo->pos[VZ] = NetCl_ReadShort() << 16;
         P_SetThingPosition(mo);
         pl->plr->clAngle = mo->angle = NetCl_ReadShort() << 16;
-        pl->plr->viewz = mo->z + pl->plr->viewheight;
+        pl->plr->viewz = mo->pos[VZ] + pl->plr->viewheight;
         // Update floorz and ceilingz.
 #ifdef __JDOOM__
-        P_CheckPosition2(mo, mo->x, mo->y, mo->z);
+        P_CheckPosition2(mo, mo->pos[VX], mo->pos[VY], mo->pos[VZ]);
 #else
-        P_CheckPosition(mo, mo->x, mo->y);
+        P_CheckPosition(mo, mo->pos[VX], mo->pos[VY]);
 #endif
         mo->floorz = tmfloorz;
         mo->ceilingz = tmceilingz;

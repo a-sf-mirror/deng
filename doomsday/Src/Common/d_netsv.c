@@ -884,9 +884,9 @@ void NetSv_SendGameState(int flags, int to)
         {
             mobj_t *mo = players[i].plr->mo;
 
-            WRITE_SHORT(ptr, mo->x >> 16);
-            WRITE_SHORT(ptr, mo->y >> 16);
-            WRITE_SHORT(ptr, mo->z >> 16);
+            WRITE_SHORT(ptr, mo->pos[VX] >> 16);
+            WRITE_SHORT(ptr, mo->pos[VY] >> 16);
+            WRITE_SHORT(ptr, mo->pos[VZ] >> 16);
             WRITE_SHORT(ptr, mo->angle >> 16);
         }
 
@@ -1385,7 +1385,7 @@ void NetSv_SendYellowMessage(int plrNum, char *msg)
 
 void P_Telefrag(mobj_t *thing)
 {
-    P_TeleportMove(thing, thing->x, thing->y, false);
+    P_TeleportMove(thing, thing->pos[VX], thing->pos[VY], false);
 }
 
 /*
