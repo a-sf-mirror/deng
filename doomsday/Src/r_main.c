@@ -288,18 +288,22 @@ void R_GetSharpView(viewer_t *view, ddplayer_t *player)
 
     view->angle = player->clAngle + viewangleoffset;
     view->pitch = player->clLookDir;
-    view->x = player->mo->x + viewxOffset;
-    view->y = player->mo->y + viewyOffset;
+    view->x = player->mo->pos[VX] + viewxOffset;
+    view->y = player->mo->pos[VY] + viewyOffset;
     view->z = player->viewz + viewzOffset;
 
     // Check that the viewz doesn't go too high or low.
-    if(view->z > player->mo->ceilingz - 4 * FRACUNIT)
+    // Cameras are not restricted.
+    if(!(player->flags & DDPF_CAMERA))
     {
-        view->z = player->mo->ceilingz - 4 * FRACUNIT;
-    }
-    if(view->z < player->mo->floorz + 4 * FRACUNIT)
-    {
-        view->z = player->mo->floorz + 4 * FRACUNIT;
+        if(view->z > player->mo->ceilingz - 4 * FRACUNIT)
+        {
+            view->z = player->mo->ceilingz - 4 * FRACUNIT;
+        }
+        if(view->z < player->mo->floorz + 4 * FRACUNIT)
+        {
+            view->z = player->mo->floorz + 4 * FRACUNIT;
+        }
     }
 }
 
