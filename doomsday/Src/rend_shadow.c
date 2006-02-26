@@ -75,8 +75,8 @@ void Rend_ProcessThingShadow(mobj_t *mo)
     float   distance;
 
     // Is this too far?
-    pos[VX] = FIX2FLT(mo->x);
-    pos[VY] = FIX2FLT(mo->y);
+    pos[VX] = FIX2FLT(mo->pos[VX]);
+    pos[VY] = FIX2FLT(mo->pos[VY]);
     if((distance = Rend_PointDist2D(pos)) > shadowMaxDist)
         return;
 
@@ -90,7 +90,7 @@ void Rend_ProcessThingShadow(mobj_t *mo)
     }
 
     // Check the height.
-    moz = mo->z - mo->floorclip;
+    moz = mo->pos[VZ] - mo->floorclip;
     if(mo->ddflags & DDMF_BOB)
     {
         moz -= R_GetBobOffset(mo);
