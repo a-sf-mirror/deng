@@ -2323,14 +2323,22 @@ void RL_RenderAllLists(void)
     rendlist_t *lists[MAX_RLISTS];
     uint    count;
 
-    // The sky might be visible. Render the needed hemispheres.
-    Rend_RenderSky(skyhemispheres);
+    // When in the void we don't render a sky.
+    // FIXME: We could use a stencil when rendering the sky, using the
+    //        already collected skymask polys as a mask.
+    if(!P_IsInVoid(viewplayer))
+        // The sky might be visible. Render the needed hemispheres.
+        Rend_RenderSky(skyhemispheres);
 
     RL_LockVertices();
 
     // Mask the sky in the Z-buffer.
     lists[0] = &skyMaskList;
-    RL_RenderLists(LM_SKYMASK, lists, 1);
+
+    // FIXME: As we arn't rendering the sky when in the void we have
+    //        have no need to render the skymask.
+    if(!P_IsInVoid(viewplayer))
+        RL_RenderLists(LM_SKYMASK, lists, 1);
 
     // Render the real surfaces of the visible world.
 
