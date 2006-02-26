@@ -840,108 +840,108 @@ int     ptflags;
 
 mobj_t *P_RoughMonsterSearch(mobj_t *mo, int distance)
 {
-	int     blockX;
-	int     blockY;
-	int     startX, startY;
-	int     blockIndex;
-	int     firstStop;
-	int     secondStop;
-	int     thirdStop;
-	int     finalStop;
-	int     count;
-	mobj_t *target;
+    int     blockX;
+    int     blockY;
+    int     startX, startY;
+    int     blockIndex;
+    int     firstStop;
+    int     secondStop;
+    int     thirdStop;
+    int     finalStop;
+    int     count;
+    mobj_t *target;
     int     bmapwidth = DD_GetInteger(DD_BLOCKMAP_WIDTH);
     int     bmapheight = DD_GetInteger(DD_BLOCKMAP_HEIGHT);
 
-    P_PointToBlock(mo->x, mo->y, &startX, &startY);
+    P_PointToBlock(mo->pos[VX], mo->pos[VY], &startX, &startY);
 
-	if(startX >= 0 && startX < bmapwidth && 
+    if(startX >= 0 && startX < bmapwidth &&
        startY >= 0 && startY < bmapheight)
-	{
-		if((target = RoughBlockCheck(mo, startY * bmapwidth + startX)) != NULL)
-		{						// found a target right away
-			return target;
-		}
-	}
-	for(count = 1; count <= distance; count++)
-	{
-		blockX = startX - count;
-		blockY = startY - count;
+    {
+        if((target = RoughBlockCheck(mo, startY * bmapwidth + startX)) != NULL)
+        {                       // found a target right away
+            return target;
+        }
+    }
+    for(count = 1; count <= distance; count++)
+    {
+        blockX = startX - count;
+        blockY = startY - count;
 
-		if(blockY < 0)
-		{
-			blockY = 0;
-		}
-		else if(blockY >= bmapheight)
-		{
-			blockY = bmapheight - 1;
-		}
-		if(blockX < 0)
-		{
-			blockX = 0;
-		}
-		else if(blockX >= bmapwidth)
-		{
-			blockX = bmapwidth - 1;
-		}
-		blockIndex = blockY * bmapwidth + blockX;
-		firstStop = startX + count;
-		if(firstStop < 0)
-		{
-			continue;
-		}
-		if(firstStop >= bmapwidth)
-		{
-			firstStop = bmapwidth - 1;
-		}
-		secondStop = startY + count;
-		if(secondStop < 0)
-		{
-			continue;
-		}
-		if(secondStop >= bmapheight)
-		{
-			secondStop = bmapheight - 1;
-		}
-		thirdStop = secondStop * bmapwidth + blockX;
-		secondStop = secondStop * bmapwidth + firstStop;
-		firstStop += blockY * bmapwidth;
-		finalStop = blockIndex;
+        if(blockY < 0)
+        {
+            blockY = 0;
+        }
+        else if(blockY >= bmapheight)
+        {
+            blockY = bmapheight - 1;
+        }
+        if(blockX < 0)
+        {
+            blockX = 0;
+        }
+        else if(blockX >= bmapwidth)
+        {
+            blockX = bmapwidth - 1;
+        }
+        blockIndex = blockY * bmapwidth + blockX;
+        firstStop = startX + count;
+        if(firstStop < 0)
+        {
+            continue;
+        }
+        if(firstStop >= bmapwidth)
+        {
+            firstStop = bmapwidth - 1;
+        }
+        secondStop = startY + count;
+        if(secondStop < 0)
+        {
+            continue;
+        }
+        if(secondStop >= bmapheight)
+        {
+            secondStop = bmapheight - 1;
+        }
+        thirdStop = secondStop * bmapwidth + blockX;
+        secondStop = secondStop * bmapwidth + firstStop;
+        firstStop += blockY * bmapwidth;
+        finalStop = blockIndex;
 
-		// Trace the first block section (along the top)
-		for(; blockIndex <= firstStop; blockIndex++)
-		{
-			if(target = RoughBlockCheck(mo, blockIndex))
-			{
-				return target;
-			}
-		}
-		// Trace the second block section (right edge)
-		for(blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
-		{
-			if(target = RoughBlockCheck(mo, blockIndex))
-			{
-				return target;
-			}
-		}
-		// Trace the third block section (bottom edge)
-		for(blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
-		{
-			if(target = RoughBlockCheck(mo, blockIndex))
-			{
-				return target;
-			}
-		}
-		// Trace the final block section (left edge)
-		for(blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
-		{
-			if(target = RoughBlockCheck(mo, blockIndex))
-			{
-				return target;
-			}
-		}
-	}
-	return NULL;
+        // Trace the first block section (along the top)
+        for(; blockIndex <= firstStop; blockIndex++)
+        {
+            if(target = RoughBlockCheck(mo, blockIndex))
+            {
+                return target;
+            }
+        }
+        // Trace the second block section (right edge)
+        for(blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
+        {
+            if(target = RoughBlockCheck(mo, blockIndex))
+            {
+                return target;
+            }
+        }
+        // Trace the third block section (bottom edge)
+        for(blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
+        {
+            if(target = RoughBlockCheck(mo, blockIndex))
+            {
+                return target;
+            }
+        }
+        // Trace the final block section (left edge)
+        for(blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
+        {
+            if(target = RoughBlockCheck(mo, blockIndex))
+            {
+                return target;
+            }
+        }
+    }
+    return NULL;
 }
 
 //===========================================================================
@@ -1006,8 +1006,8 @@ static mobj_t *RoughBlockCheck(mobj_t *mo, int index)
                 {
                     master = mo->target;
                     angle =
-                        R_PointToAngle2(master->x, master->y, link->x,
-                                        link->y) - master->angle;
+                        R_PointToAngle2(master->pos[VX], master->pos[VY],
+                                        link->pos[VY], link->pos[VY]) - master->angle;
                     angle >>= 24;
                     if(angle > 226 || angle < 30)
                     {

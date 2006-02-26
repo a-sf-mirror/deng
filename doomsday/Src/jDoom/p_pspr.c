@@ -490,8 +490,8 @@ void C_DECL A_Punch(player_t *player, pspdef_t * psp)
         //S_StartSound (player->plr->mo, sfx_punch, player);
         S_StartSound(sfx_punch, player->plr->mo);
         player->plr->mo->angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            linetarget->x, linetarget->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
         player->plr->flags |= DDPF_FIXANGLES;
     }
 }
@@ -524,8 +524,8 @@ void C_DECL A_Saw(player_t *player, pspdef_t * psp)
 
     // turn to face target
     angle =
-        R_PointToAngle2(player->plr->mo->x, player->plr->mo->y, linetarget->x,
-                        linetarget->y);
+        R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                        linetarget->pos[VX], linetarget->pos[VY]);
     if(angle - player->plr->mo->angle > ANG180)
     {
         if(angle - player->plr->mo->angle < -ANG90 / 20)
@@ -748,8 +748,8 @@ void C_DECL A_BFGSpray(mobj_t *mo)
         if(!linetarget)
             continue;
 
-        P_SpawnMobj(linetarget->x, linetarget->y,
-                    linetarget->z + (linetarget->height >> 2), MT_EXTRABFG);
+        P_SpawnMobj(linetarget->pos[VX], linetarget->pos[VY],
+                    linetarget->pos[VZ] + (linetarget->height >> 2), MT_EXTRABFG);
 
         damage = 0;
         for(j = 0; j < 15; j++)

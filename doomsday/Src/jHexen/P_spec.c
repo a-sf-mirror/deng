@@ -911,7 +911,7 @@ void P_PlayerInSpecialSector(player_t *player)
 
     sector = P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
     xsector = P_XSector(sector);
-    if(player->plr->mo->z != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
+    if(player->plr->mo->pos[VZ] != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
     {                           // Player is not touching the floor
         return;
     }
@@ -1004,7 +1004,7 @@ void P_PlayerInSpecialSector(player_t *player)
 
 void P_PlayerOnSpecialFlat(player_t *player, int floorType)
 {
-    if(player->plr->mo->z       /*!= player->plr->mo->floorz */
+    if(player->plr->mo->pos[VZ]       /*!= player->plr->mo->floorz */
        > P_GetFixedp(player->plr->mo->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
     {                           // Player is not touching the floor
         return;

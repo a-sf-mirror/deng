@@ -94,52 +94,52 @@ void P_AnimateSurfaces(void)
     int     i;
     line_t *line;
 
-	// Update scrolling textures
-	for(i = 0; i < numlinespecials; i++)
-	{
+    // Update scrolling textures
+    for(i = 0; i < numlinespecials; i++)
+    {
         side_t* side = 0;
         fixed_t texOff[2];
-		
+
         line = linespeciallist[i];
         side = P_GetPtrp(line, DMU_SIDE0);
         P_GetFixedpv(side, DMU_TEXTURE_OFFSET_XY, texOff);
-        
-		switch (P_XLine(line)->special)
-		{
-		case 100:				// Scroll_Texture_Left
-			texOff[0] += P_XLine(line)->arg1 << 10;
-			break;
-		case 101:				// Scroll_Texture_Right
-			texOff[0] -= P_XLine(line)->arg1 << 10;
-			break;
-		case 102:				// Scroll_Texture_Up
-			texOff[1] += P_XLine(line)->arg1 << 10;
-			break;
-		case 103:				// Scroll_Texture_Down
-			texOff[1] -= P_XLine(line)->arg1 << 10;
-			break;
-		}
-        
+
+        switch (P_XLine(line)->special)
+        {
+        case 100:               // Scroll_Texture_Left
+            texOff[0] += P_XLine(line)->arg1 << 10;
+            break;
+        case 101:               // Scroll_Texture_Right
+            texOff[0] -= P_XLine(line)->arg1 << 10;
+            break;
+        case 102:               // Scroll_Texture_Up
+            texOff[1] += P_XLine(line)->arg1 << 10;
+            break;
+        case 103:               // Scroll_Texture_Down
+            texOff[1] -= P_XLine(line)->arg1 << 10;
+            break;
+        }
+
         P_SetFixedpv(side, DMU_TEXTURE_OFFSET_XY, texOff);
-	}
+    }
 
-	// Update sky column offsets
-	Sky1ColumnOffset += Sky1ScrollDelta;
-	Sky2ColumnOffset += Sky2ScrollDelta;
-	Rend_SkyParams(1, DD_OFFSET, FIX2FLT(Sky1ColumnOffset));
-	Rend_SkyParams(0, DD_OFFSET, FIX2FLT(Sky2ColumnOffset));
+    // Update sky column offsets
+    Sky1ColumnOffset += Sky1ScrollDelta;
+    Sky2ColumnOffset += Sky2ScrollDelta;
+    Rend_SkyParams(1, DD_OFFSET, FIX2FLT(Sky1ColumnOffset));
+    Rend_SkyParams(0, DD_OFFSET, FIX2FLT(Sky2ColumnOffset));
 
-	if(LevelHasLightning)
-	{
-		if(!NextLightningFlash || LightningFlash)
-		{
-			P_LightningFlash();
-		}
-		else
-		{
-			NextLightningFlash--;
-		}
-	}
+    if(LevelHasLightning)
+    {
+        if(!NextLightningFlash || LightningFlash)
+        {
+            P_LightningFlash();
+        }
+        else
+        {
+            NextLightningFlash--;
+        }
+    }
 }
 
 //==========================================================================
@@ -150,139 +150,139 @@ void P_AnimateSurfaces(void)
 
 static void P_LightningFlash(void)
 {
-	int     i;
-	sector_t *tempSec;
-	int    *tempLight;
-	boolean foundSec;
-	int     flashLight;
+    int     i;
+    sector_t *tempSec;
+    int    *tempLight;
+    boolean foundSec;
+    int     flashLight;
 
-	if(LightningFlash)
-	{
-		LightningFlash--;
-		if(LightningFlash)
-		{
-			tempLight = LightningLightLevels;
-			for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-			{
+    if(LightningFlash)
+    {
+        LightningFlash--;
+        if(LightningFlash)
+        {
+            tempLight = LightningLightLevels;
+            for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+            {
                 tempSec = P_ToPtr(DMU_SECTOR, i);
-				if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
-				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
-				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
-				{
-					if(*tempLight < P_GetIntp(tempSec, DMU_LIGHT_LEVEL) - 4)
-					{
-						P_SetIntp(tempSec, DMU_LIGHT_LEVEL, 
+                if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+                   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+                   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
+                {
+                    if(*tempLight < P_GetIntp(tempSec, DMU_LIGHT_LEVEL) - 4)
+                    {
+                        P_SetIntp(tempSec, DMU_LIGHT_LEVEL,
                                   P_GetIntp(tempSec, DMU_LIGHT_LEVEL) - 4);
-					}
-					tempLight++;
-				}
-			}
-		}
-		else
-		{						// remove the alternate lightning flash special
-			tempLight = LightningLightLevels;
-			for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-			{
+                    }
+                    tempLight++;
+                }
+            }
+        }
+        else
+        {                       // remove the alternate lightning flash special
+            tempLight = LightningLightLevels;
+            for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+            {
                 tempSec = P_ToPtr(DMU_SECTOR, i);
-				if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
-				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
-				   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
-				{
-					P_SetIntp(tempSec, DMU_LIGHT_LEVEL, *tempLight);
-					tempLight++;
-				}
-			}
-			Rend_SkyParams(1, DD_DISABLE, 0);
-			Rend_SkyParams(0, DD_ENABLE, 0);
-		}
-		return;
-	}
-	LightningFlash = (P_Random() & 7) + 8;
-	flashLight = 200 + (P_Random() & 31);
-	tempLight = LightningLightLevels;
-	foundSec = false;
-	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-	{
+                if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+                   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+                   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
+                {
+                    P_SetIntp(tempSec, DMU_LIGHT_LEVEL, *tempLight);
+                    tempLight++;
+                }
+            }
+            Rend_SkyParams(1, DD_DISABLE, 0);
+            Rend_SkyParams(0, DD_ENABLE, 0);
+        }
+        return;
+    }
+    LightningFlash = (P_Random() & 7) + 8;
+    flashLight = 200 + (P_Random() & 31);
+    tempLight = LightningLightLevels;
+    foundSec = false;
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+    {
         tempSec = P_ToPtr(DMU_SECTOR, i);
-		if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
-		   P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
-		   P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
-		{
+        if(P_GetIntp(tempSec, DMU_CEILING_TEXTURE) == skyflatnum ||
+           P_XSector(tempSec)->special == LIGHTNING_SPECIAL ||
+           P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
+        {
             int newLevel = *tempLight = P_GetIntp(tempSec, DMU_LIGHT_LEVEL);
-			if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL)
-			{
-				newLevel += 64;
-				if(newLevel > flashLight)
-				{
-					newLevel = flashLight;
-				}
-			}
-			else if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
-			{
-				newLevel += 32;
-				if(newLevel > flashLight)
-				{
-					newLevel = flashLight;
-				}
-			}
-			else
-			{
-				newLevel = flashLight;
-			}
-			if(newLevel < *tempLight)
-			{
-				newLevel = *tempLight;
-			}
+            if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL)
+            {
+                newLevel += 64;
+                if(newLevel > flashLight)
+                {
+                    newLevel = flashLight;
+                }
+            }
+            else if(P_XSector(tempSec)->special == LIGHTNING_SPECIAL2)
+            {
+                newLevel += 32;
+                if(newLevel > flashLight)
+                {
+                    newLevel = flashLight;
+                }
+            }
+            else
+            {
+                newLevel = flashLight;
+            }
+            if(newLevel < *tempLight)
+            {
+                newLevel = *tempLight;
+            }
             P_SetFixedp(tempSec, DMU_LIGHT_LEVEL, newLevel);
-			tempLight++;
-			foundSec = true;
-		}
-	}
+            tempLight++;
+            foundSec = true;
+        }
+    }
 
-	if(foundSec)
-	{
-		mobj_t *plrmo = players[displayplayer].plr->mo;
-		mobj_t *crashorigin = NULL;
+    if(foundSec)
+    {
+        mobj_t *plrmo = players[displayplayer].plr->mo;
+        mobj_t *crashorigin = NULL;
 
-		// Set the alternate (lightning) sky.
-		Rend_SkyParams(0, DD_DISABLE, 0);
-		Rend_SkyParams(1, DD_ENABLE, 0);
-		// If 3D sounds are active, position the clap somewhere above
-		// the player.
-		if(cfg.snd_3D && plrmo)
-		{
-			// SpawnMobj calls P_Random, and we don't want that the 
-			// random number generator gets out of sync.
-			//P_SaveRandom(); 
-			crashorigin =
-				P_SpawnMobj(plrmo->x + (16 * (M_Random() - 127) << FRACBITS),
-							plrmo->y + (16 * (M_Random() - 127) << FRACBITS),
-							plrmo->z + (4000 << FRACBITS), MT_CAMERA);
-			//P_RestoreRandom();
-			crashorigin->tics = 5 * 35;	// Five seconds will do.
-		}
-		// Make it loud!
-		S_StartSound(SFX_THUNDER_CRASH | DDSF_NO_ATTENUATION, crashorigin);
-	}
-	// Calculate the next lighting flash
-	if(!NextLightningFlash)
-	{
-		if(P_Random() < 50)
-		{						// Immediate Quick flash
-			NextLightningFlash = (P_Random() & 15) + 16;
-		}
-		else
-		{
-			if(P_Random() < 128 && !(leveltime & 32))
-			{
-				NextLightningFlash = ((P_Random() & 7) + 2) * 35;
-			}
-			else
-			{
-				NextLightningFlash = ((P_Random() & 15) + 5) * 35;
-			}
-		}
-	}
+        // Set the alternate (lightning) sky.
+        Rend_SkyParams(0, DD_DISABLE, 0);
+        Rend_SkyParams(1, DD_ENABLE, 0);
+        // If 3D sounds are active, position the clap somewhere above
+        // the player.
+        if(cfg.snd_3D && plrmo)
+        {
+            // SpawnMobj calls P_Random, and we don't want that the
+            // random number generator gets out of sync.
+            //P_SaveRandom();
+            crashorigin =
+                P_SpawnMobj(plrmo->pos[VX] + (16 * (M_Random() - 127) << FRACBITS),
+                            plrmo->pos[VY] + (16 * (M_Random() - 127) << FRACBITS),
+                            plrmo->pos[VZ] + (4000 << FRACBITS), MT_CAMERA);
+            //P_RestoreRandom();
+            crashorigin->tics = 5 * 35; // Five seconds will do.
+        }
+        // Make it loud!
+        S_StartSound(SFX_THUNDER_CRASH | DDSF_NO_ATTENUATION, crashorigin);
+    }
+    // Calculate the next lighting flash
+    if(!NextLightningFlash)
+    {
+        if(P_Random() < 50)
+        {                       // Immediate Quick flash
+            NextLightningFlash = (P_Random() & 15) + 16;
+        }
+        else
+        {
+            if(P_Random() < 128 && !(leveltime & 32))
+            {
+                NextLightningFlash = ((P_Random() & 7) + 2) * 35;
+            }
+            else
+            {
+                NextLightningFlash = ((P_Random() & 15) + 5) * 35;
+            }
+        }
+    }
 }
 
 //==========================================================================
@@ -307,35 +307,35 @@ void P_InitLightning(void)
     int     i;
     int     secCount;
 
-	if(!P_GetMapLightning(gamemap))
-	{
-		LevelHasLightning = false;
-		LightningFlash = 0;
-		return;
-	}
-	LightningFlash = 0;
-	secCount = 0;
-	for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
-	{
-		if(P_GetInt(DMU_SECTOR, i, DMU_CEILING_TEXTURE) == skyflatnum ||
-		   xsectors[i].special == LIGHTNING_SPECIAL ||
-		   xsectors[i].special == LIGHTNING_SPECIAL2)
-		{
-			secCount++;
-		}
-	}
-	if(secCount)
-	{
-		LevelHasLightning = true;
-	}
-	else
-	{
-		LevelHasLightning = false;
-		return;
-	}
-	LightningLightLevels =
-		(int *) Z_Malloc(secCount * sizeof(int), PU_LEVEL, NULL);
-	NextLightningFlash = ((P_Random() & 15) + 5) * 35;	// don't flash at level start
+    if(!P_GetMapLightning(gamemap))
+    {
+        LevelHasLightning = false;
+        LightningFlash = 0;
+        return;
+    }
+    LightningFlash = 0;
+    secCount = 0;
+    for(i = 0; i < DD_GetInteger(DD_SECTOR_COUNT); i++)
+    {
+        if(P_GetInt(DMU_SECTOR, i, DMU_CEILING_TEXTURE) == skyflatnum ||
+           xsectors[i].special == LIGHTNING_SPECIAL ||
+           xsectors[i].special == LIGHTNING_SPECIAL2)
+        {
+            secCount++;
+        }
+    }
+    if(secCount)
+    {
+        LevelHasLightning = true;
+    }
+    else
+    {
+        LevelHasLightning = false;
+        return;
+    }
+    LightningLightLevels =
+        (int *) Z_Malloc(secCount * sizeof(int), PU_LEVEL, NULL);
+    NextLightningFlash = ((P_Random() & 15) + 5) * 35;  // don't flash at level start
 }
 
 //==========================================================================

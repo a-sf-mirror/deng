@@ -77,7 +77,7 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
     mobj_t *mo = player->plr->mo;
 
     angle >>= ANGLETOFINESHIFT;
-    if(player->powers[pw_flight] && !(mo->z <= mo->floorz))
+    if(player->powers[pw_flight] && !(mo->pos[VZ] <= mo->floorz))
     {
         /*float xmul=1, ymul=1;
 
@@ -263,7 +263,7 @@ void P_MovePlayer(player_t *player)
     else
     {
 
-        onground = (player->plr->mo->z <= player->plr->mo->floorz ||
+        onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz ||
                     (player->plr->mo->flags2 & MF2_ONMOBJ));
 
         if(cmd->forwardMove)
@@ -369,7 +369,7 @@ void P_DeathThink(player_t *player)
 
     P_MovePsprites(player);
 
-    onground = (player->plr->mo->z <= player->plr->mo->floorz);
+    onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz);
     if(player->plr->mo->type == MT_BLOODYSKULL ||
        player->plr->mo->type == MT_ICECHUNK)
     {                           // Flying bloody skull or flying ice chunk
@@ -549,9 +549,7 @@ boolean P_UndoPlayerMorph(player_t *player)
     mobj_t *fog;
     mobj_t *mo;
     mobj_t *pmo;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     angle_t angle;
     int     playerNum;
     weapontype_t weapon;
@@ -560,9 +558,8 @@ boolean P_UndoPlayerMorph(player_t *player)
     int     oldBeast;
 
     pmo = player->plr->mo;
-    x = pmo->x;
-    y = pmo->y;
-    z = pmo->z;
+    memcpy(pos, pmo->pos, sizeof(pos));
+
     angle = pmo->angle;
     weapon = pmo->special1;
     oldFlags = pmo->flags;
@@ -573,13 +570,13 @@ boolean P_UndoPlayerMorph(player_t *player)
     switch (cfg.PlayerClass[playerNum])
     {
     case PCLASS_FIGHTER:
-        mo = P_SpawnMobj(x, y, z, MT_PLAYER_FIGHTER);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PLAYER_FIGHTER);
         break;
     case PCLASS_CLERIC:
-        mo = P_SpawnMobj(x, y, z, MT_PLAYER_CLERIC);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PLAYER_CLERIC);
         break;
     case PCLASS_MAGE:
-        mo = P_SpawnMobj(x, y, z, MT_PLAYER_MAGE);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PLAYER_MAGE);
         break;
     default:
         Con_Error("P_UndoPlayerMorph:  Unknown player class %d\n",
@@ -588,7 +585,7 @@ boolean P_UndoPlayerMorph(player_t *player)
     if(P_TestMobjLocation(mo) == false)
     {                           // Didn't fit
         P_RemoveMobj(mo);
-        mo = P_SpawnMobj(x, y, z, oldBeast);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], oldBeast);
         mo->angle = angle;
         mo->health = player->health;
         mo->special1 = weapon;
@@ -632,8 +629,8 @@ boolean P_UndoPlayerMorph(player_t *player)
     player->class = cfg.PlayerClass[playerNum];
     angle >>= ANGLETOFINESHIFT;
     fog =
-        P_SpawnMobj(x + 20 * finecosine[angle], y + 20 * finesine[angle],
-                    z + TELEFOGHEIGHT, MT_TFOG);
+        P_SpawnMobj(pos[VX] + 20 * finecosine[angle], pos[VY] + 20 * finesine[angle],
+                    pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(SFX_TELEPORT, fog);
     P_PostMorphWeapon(player, weapon);
     player->update |= PSF_MORPH_TIME | PSF_HEALTH;
@@ -650,7 +647,7 @@ void P_PlayerJump(player_t *player)
     float   power = (IS_CLIENT ? netJumpPower : cfg.jumpPower);
 
     // Check if we are allowed to jump.
-    if((mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ)) ||
+    if((mo->pos[VZ] > mo->floorz && !(mo->flags2 & MF2_ONMOBJ)) ||
        player->jumpTics > 0)
         return;
 
@@ -749,7 +746,8 @@ void P_PlayerThink(player_t *player)
             mobj_t *speedMo;
             int     playerNum;
 
-            speedMo = P_SpawnMobj(pmo->x, pmo->y, pmo->z, MT_PLAYER_SPEED);
+            speedMo = P_SpawnMobj(pmo->pos[VX], pmo->pos[VY], pmo->pos[VZ],
+                                  MT_PLAYER_SPEED);
             if(speedMo)
             {
                 speedMo->angle = pmo->angle;
@@ -939,16 +937,9 @@ void P_PlayerThink(player_t *player)
     {
         if(!--player->powers[pw_flight])
         {
-            if(player->plr->mo->z != player->plr->mo->floorz)
+            if(player->plr->mo->pos[VZ] != player->plr->mo->floorz)
             {
-                /*#ifdef __WATCOMC__
-                   if(!useexterndriver)
-                   {
-                   player->centering = true;
-                   }
-                   #else */
                 player->centering = true;
-                //#endif
             }
             player->plr->mo->flags2 &= ~MF2_FLY;
             player->plr->mo->flags &= ~MF_NOGRAVITY;
@@ -1181,9 +1172,10 @@ void P_BlastMobj(mobj_t *source, mobj_t *victim, fixed_t strength)
 {
     angle_t angle, ang;
     mobj_t *mo;
-    fixed_t x, y, z;
+    fixed_t pos[3];
 
-    angle = R_PointToAngle2(source->x, source->y, victim->x, victim->y);
+    angle = R_PointToAngle2(source->pos[VX], source->pos[VY],
+                            victim->pos[VX], victim->pos[VY]);
     angle >>= ANGLETOFINESHIFT;
     if(strength < BLAST_FULLSTRENGTH)
     {
@@ -1230,12 +1222,14 @@ void P_BlastMobj(mobj_t *source, mobj_t *victim, fixed_t strength)
         victim->momy = FixedMul(BLAST_SPEED, finesine[angle]);
 
         // Spawn blast puff
-        ang = R_PointToAngle2(victim->x, victim->y, source->x, source->y);
+        ang = R_PointToAngle2(victim->pos[VX], victim->pos[VY],
+                              source->pos[VX], source->pos[VY]);
         ang >>= ANGLETOFINESHIFT;
-        x = victim->x + FixedMul(victim->radius + FRACUNIT, finecosine[ang]);
-        y = victim->y + FixedMul(victim->radius + FRACUNIT, finesine[ang]);
-        z = victim->z - victim->floorclip + (victim->height >> 1);
-        mo = P_SpawnMobj(x, y, z, MT_BLASTEFFECT);
+        memcpy(pos, victim->pos, sizeof(pos));
+        pos[VX] += FixedMul(victim->radius + FRACUNIT, finecosine[ang]);
+        pos[VY] += FixedMul(victim->radius + FRACUNIT, finesine[ang]);
+        pos[VZ] -= victim->floorclip + (victim->height >> 1);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_BLASTEFFECT);
         if(mo)
         {
             mo->momx = victim->momx;
@@ -1317,7 +1311,8 @@ void P_BlastRadius(player_t *player)
         {
             continue;
         }
-        dist = P_ApproxDistance(pmo->x - mo->x, pmo->y - mo->y);
+        dist = P_ApproxDistance(pmo->pos[VX] - mo->pos[VX],
+                                pmo->pos[VY] - mo->pos[VY]);
         if(dist > BLAST_RADIUS_DIST)
         {                       // Out of range
             continue;
@@ -1351,7 +1346,8 @@ boolean P_HealRadius(player_t *player)
             continue;
         if(mo->health <= 0)
             continue;
-        dist = P_ApproxDistance(pmo->x - mo->x, pmo->y - mo->y);
+        dist = P_ApproxDistance(pmo->pos[VX] - mo->pos[VX],
+                                pmo->pos[VY] - mo->pos[VY]);
         if(dist > HEAL_RADIUS_DIST)
         {                       // Out of range
             continue;
@@ -1602,9 +1598,9 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         angle = player->plr->mo->angle >> ANGLETOFINESHIFT;
         if(player->class == PCLASS_CLERIC)
         {
-            mo = P_SpawnMobj(player->plr->mo->x + 16 * finecosine[angle],
-                             player->plr->mo->y + 24 * finesine[angle],
-                             player->plr->mo->z - player->plr->mo->floorclip +
+            mo = P_SpawnMobj(player->plr->mo->pos[VX] + 16 * finecosine[angle],
+                             player->plr->mo->pos[VY] + 24 * finesine[angle],
+                             player->plr->mo->pos[VZ] - player->plr->mo->floorclip +
                              8 * FRACUNIT, MT_POISONBAG);
             if(mo)
             {
@@ -1613,9 +1609,9 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         }
         else if(player->class == PCLASS_MAGE)
         {
-            mo = P_SpawnMobj(player->plr->mo->x + 16 * finecosine[angle],
-                             player->plr->mo->y + 24 * finesine[angle],
-                             player->plr->mo->z - player->plr->mo->floorclip +
+            mo = P_SpawnMobj(player->plr->mo->pos[VX] + 16 * finecosine[angle],
+                             player->plr->mo->pos[VY] + 24 * finesine[angle],
+                             player->plr->mo->pos[VZ] - player->plr->mo->floorclip +
                              8 * FRACUNIT, MT_FIREBOMB);
             if(mo)
             {
@@ -1624,8 +1620,9 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         }
         else                    // PCLASS_FIGHTER, obviously (also pig, not so obviously)
         {
-            mo = P_SpawnMobj(player->plr->mo->x, player->plr->mo->y,
-                             player->plr->mo->z - player->plr->mo->floorclip +
+            mo = P_SpawnMobj(player->plr->mo->pos[VX],
+                             player->plr->mo->pos[VY],
+                             player->plr->mo->pos[VZ] - player->plr->mo->floorclip +
                              35 * FRACUNIT, MT_THROWINGBOMB);
             if(mo)
             {
@@ -1634,7 +1631,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
                 mo->momz =
                     4 * FRACUNIT +
                     (((int) player->plr->lookdir) << (FRACBITS - 4));
-                mo->z += ((int) player->plr->lookdir) << (FRACBITS - 4);
+                mo->pos[VZ] += ((int) player->plr->lookdir) << (FRACBITS - 4);
                 P_ThrustMobj(mo, mo->angle, mo->info->speed);
                 mo->momx += player->plr->mo->momx >> 1;
                 mo->momy += player->plr->mo->momy >> 1;
@@ -1817,8 +1814,8 @@ void P_ClientSideThink()
         if(pl->flyheight)
             pl->flyheight /= 2;
         // Do some fly-bobbing.
-        if(mo->z > mo->floorz && leveltime & 2)
-            mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
+        if(mo->pos[VZ] > mo->floorz && leveltime & 2)
+            mo->pos[VZ] += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
     }
     else
     {
@@ -1830,7 +1827,7 @@ void P_ClientSideThink()
         P_PlayerInSpecialSector(pl);
 
     // Set consoleplayer thrust multiplier.
-    if(mo->z > mo->floorz)      // Airborne?
+    if(mo->pos[VZ] > mo->floorz)      // Airborne?
     {
         Set(DD_CPLAYER_THRUST_MUL, (mo->ddflags & DDMF_FLY) ? FRACUNIT : 0);
     }

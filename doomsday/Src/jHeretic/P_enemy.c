@@ -173,7 +173,8 @@ boolean P_CheckMeleeRange(mobj_t *actor)
         return false;
 
     mo = actor->target;
-    dist = P_ApproxDistance(mo->x - actor->x, mo->y - actor->y);
+    dist = P_ApproxDistance(mo->pos[VX] - actor->pos[VX],
+                            mo->pos[VY] - actor->pos[VY]);
     if(dist >= MELEERANGE)
         return false;
 
@@ -181,11 +182,11 @@ boolean P_CheckMeleeRange(mobj_t *actor)
         return false;
 
     // Is the target higher than the attacker?
-    if(mo->z > actor->z + actor->height)
+    if(mo->pos[VZ] > actor->pos[VZ] + actor->height)
     {
         return false;
     }
-    else if(actor->z > mo->z + mo->height)
+    else if(actor->pos[VZ] > mo->pos[VZ] + mo->height)
     {
         // The attacker is higher
         return false;
@@ -212,8 +213,8 @@ boolean P_CheckMissileRange(mobj_t *actor)
 
     dist =
         (P_ApproxDistance
-         (actor->x - actor->target->x,
-          actor->y - actor->target->y) >> FRACBITS) - 64;
+         (actor->pos[VX] - actor->target->pos[VX],
+          actor->pos[VY] - actor->target->pos[VY]) >> FRACBITS) - 64;
 
     // No melee attack, so fire more frequently
     if(!actor->info->meleestate)
@@ -247,18 +248,18 @@ boolean P_Move(mobj_t *actor)
 
     stepx = actor->info->speed / FRACUNIT * xspeed[actor->movedir];
     stepy = actor->info->speed / FRACUNIT * yspeed[actor->movedir];
-    tryx = actor->x + stepx;
-    tryy = actor->y + stepy;
+    tryx = actor->pos[VX] + stepx;
+    tryy = actor->pos[VY] + stepy;
     if(!P_TryMove(actor, tryx, tryy))
     {
         // open any specials
         if(actor->flags & MF_FLOAT && floatok)
         {
             // must adjust height
-            if(actor->z < tmfloorz)
-                actor->z += FLOATSPEED;
+            if(actor->pos[VZ] < tmfloorz)
+                actor->pos[VZ] += FLOATSPEED;
             else
-                actor->z -= FLOATSPEED;
+                actor->pos[VZ] -= FLOATSPEED;
 
             actor->flags |= MF_INFLOAT;
             return true;
@@ -290,10 +291,10 @@ boolean P_Move(mobj_t *actor)
 
     if(!(actor->flags & MF_FLOAT))
     {
-        if(actor->z > actor->floorz)
+        if(actor->pos[VZ] > actor->floorz)
             P_HitFloor(actor);
 
-        actor->z = actor->floorz;
+        actor->pos[VZ] = actor->floorz;
     }
 
     return true;
@@ -327,8 +328,8 @@ void P_NewChaseDir(mobj_t *actor)
     olddir = actor->movedir;
     turnaround = opposite[olddir];
 
-    deltax = actor->target->x - actor->x;
-    deltay = actor->target->y - actor->y;
+    deltax = actor->target->pos[VX] - actor->pos[VX];
+    deltay = actor->target->pos[VY] - actor->pos[VY];
 
     if(deltax > 10 * FRACUNIT)
         d[1] = DI_EAST;
@@ -447,7 +448,8 @@ boolean P_LookForMonsters(mobj_t *actor)
             continue;
 
         // Out of range?
-        if(P_ApproxDistance(actor->x - mo->x, actor->y - mo->y) >
+        if(P_ApproxDistance(actor->pos[VX] - mo->pos[VX],
+                            actor->pos[VY] - mo->pos[VY]) >
            MONS_LOOK_RANGE)
             continue;
 
@@ -519,12 +521,13 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
 
         if(!allaround)
         {
-            an = R_PointToAngle2(actor->x, actor->y, plrmo->x,
-                                 plrmo->y) - actor->angle;
+            an = R_PointToAngle2(actor->pos[VX], actor->pos[VY],
+                                 plrmo->pos[VX], plrmo->pos[VY]) - actor->angle;
             if(an > ANG90 && an < ANG270)
             {
                 dist =
-                    P_ApproxDistance(plrmo->x - actor->x, plrmo->y - actor->y);
+                    P_ApproxDistance(plrmo->pos[VX] - actor->pos[VX],
+                                     plrmo->pos[VY] - actor->pos[VY]);
                 // if real close, react anyway
                 if(dist > MELEERANGE)
                     continue;   // behind back
@@ -534,7 +537,8 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
         // Is player invisible?
         if(plrmo->flags & MF_SHADOW)
         {
-            if((P_ApproxDistance(plrmo->x - actor->x, plrmo->y - actor->y) >
+            if((P_ApproxDistance(plrmo->pos[VX] - actor->pos[VX],
+                                 plrmo->pos[VY] - actor->pos[VY]) >
                 2 * MELEERANGE) &&
                P_ApproxDistance(plrmo->momx, plrmo->momy) < 5 * FRACUNIT)
             {
@@ -717,8 +721,8 @@ void C_DECL A_FaceTarget(mobj_t *actor)
     actor->flags &= ~MF_AMBUSH;
 
     actor->angle =
-        R_PointToAngle2(actor->x, actor->y, actor->target->x,
-                        actor->target->y);
+        R_PointToAngle2(actor->pos[VX], actor->pos[VY],
+                        actor->target->pos[VX], actor->target->pos[VY]);
 
     // Is target a ghost?
     if(actor->target->flags & MF_SHADOW)
@@ -737,9 +741,9 @@ void C_DECL A_DripBlood(mobj_t *actor)
 {
     mobj_t *mo;
 
-    mo = P_SpawnMobj(actor->x + ((P_Random() - P_Random()) << 11),
-                     actor->y + ((P_Random() - P_Random()) << 11), actor->z,
-                     MT_BLOOD);
+    mo = P_SpawnMobj(actor->pos[VX] + ((P_Random() - P_Random()) << 11),
+                     actor->pos[VY] + ((P_Random() - P_Random()) << 11),
+                     actor->pos[VZ], MT_BLOOD);
 
     mo->momx = (P_Random() - P_Random()) << 10;
     mo->momy = (P_Random() - P_Random()) << 10;
@@ -776,12 +780,12 @@ void C_DECL A_ImpExplode(mobj_t *actor)
 {
     mobj_t *mo;
 
-    mo = P_SpawnMobj(actor->x, actor->y, actor->z, MT_IMPCHUNK1);
+    mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_IMPCHUNK1);
     mo->momx = (P_Random() - P_Random()) << 10;
     mo->momy = (P_Random() - P_Random()) << 10;
     mo->momz = 9 * FRACUNIT;
 
-    mo = P_SpawnMobj(actor->x, actor->y, actor->z, MT_IMPCHUNK2);
+    mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_IMPCHUNK2);
     mo->momx = (P_Random() - P_Random()) << 10;
     mo->momy = (P_Random() - P_Random()) << 10;
     mo->momz = 9 * FRACUNIT;
@@ -794,9 +798,9 @@ void C_DECL A_BeastPuff(mobj_t *actor)
 {
     if(P_Random() > 64)
     {
-        P_SpawnMobj(actor->x + ((P_Random() - P_Random()) << 10),
-                    actor->y + ((P_Random() - P_Random()) << 10),
-                    actor->z + ((P_Random() - P_Random()) << 10), MT_PUFFY);
+        P_SpawnMobj(actor->pos[VX] + ((P_Random() - P_Random()) << 10),
+                    actor->pos[VY] + ((P_Random() - P_Random()) << 10),
+                    actor->pos[VZ] + ((P_Random() - P_Random()) << 10), MT_PUFFY);
     }
 }
 
@@ -837,12 +841,13 @@ void C_DECL A_ImpMsAttack(mobj_t *actor)
     actor->momx = FixedMul(12 * FRACUNIT, finecosine[an]);
     actor->momy = FixedMul(12 * FRACUNIT, finesine[an]);
 
-    dist = P_ApproxDistance(dest->x - actor->x, dest->y - actor->y);
+    dist = P_ApproxDistance(dest->pos[VX] - actor->pos[VX],
+                            dest->pos[VY] - actor->pos[VY]);
     dist = dist / (12 * FRACUNIT);
     if(dist < 1)
         dist = 1;
 
-    actor->momz = (dest->z + (dest->height >> 1) - actor->z) / dist;
+    actor->momz = (dest->pos[VZ] + (dest->height >> 1) - actor->pos[VZ]) / dist;
 }
 
 /*
@@ -869,7 +874,7 @@ void C_DECL A_ImpDeath(mobj_t *actor)
     actor->flags &= ~MF_SOLID;
     actor->flags2 |= MF2_FOOTCLIP;
 
-    if(actor->z <= actor->floorz)
+    if(actor->pos[VZ] <= actor->floorz)
         P_SetMobjState(actor, S_IMP_CRASH1);
 }
 
@@ -886,7 +891,7 @@ void C_DECL A_ImpXDeath2(mobj_t *actor)
 {
     actor->flags &= ~MF_NOGRAVITY;
 
-    if(actor->z <= actor->floorz)
+    if(actor->pos[VZ] <= actor->floorz)
         P_SetMobjState(actor, S_IMP_CRASH1);
 }
 
@@ -896,9 +901,7 @@ void C_DECL A_ImpXDeath2(mobj_t *actor)
 boolean P_UpdateChicken(mobj_t *actor, int tics)
 {
     mobj_t *fog;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     mobjtype_t moType;
     mobj_t *mo;
     mobj_t  oldChicken;
@@ -910,20 +913,18 @@ boolean P_UpdateChicken(mobj_t *actor, int tics)
 
     moType = actor->special2;
 
-    x = actor->x;
-    y = actor->y;
-    z = actor->z;
+    memcpy(pos, actor->pos, sizeof(pos));
 
     oldChicken = *actor;
     P_SetMobjState(actor, S_FREETARGMOBJ);
 
-    mo = P_SpawnMobj(x, y, z, moType);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], moType);
     if(P_TestMobjLocation(mo) == false)
     {
         // Didn't fit
         P_RemoveMobj(mo);
 
-        mo = P_SpawnMobj(x, y, z, MT_CHICKEN);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_CHICKEN);
 
         mo->angle = oldChicken.angle;
         mo->flags = oldChicken.flags;
@@ -938,7 +939,7 @@ boolean P_UpdateChicken(mobj_t *actor, int tics)
     mo->angle = oldChicken.angle;
     mo->target = oldChicken.target;
 
-    fog = P_SpawnMobj(x, y, z + TELEFOGHEIGHT, MT_TFOG);
+    fog = P_SpawnMobj(pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(sfx_telept, fog);
 
     return true;
@@ -994,8 +995,8 @@ void C_DECL A_Feathers(mobj_t *actor)
 
     for(i = 0; i < count; i++)
     {
-        mo = P_SpawnMobj(actor->x, actor->y, actor->z + 20 * FRACUNIT,
-                         MT_FEATHER);
+        mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY],
+                         actor->pos[VZ] + 20 * FRACUNIT, MT_FEATHER);
         mo->target = actor;
 
         mo->momx = (P_Random() - P_Random()) << 8;
@@ -1054,7 +1055,7 @@ void C_DECL A_MummySoul(mobj_t *mummy)
 {
     mobj_t *mo;
 
-    mo = P_SpawnMobj(mummy->x, mummy->y, mummy->z + 10 * FRACUNIT,
+    mo = P_SpawnMobj(mummy->pos[VX], mummy->pos[VY], mummy->pos[VZ] + 10 * FRACUNIT,
                      MT_MUMMYSOUL);
     mo->momz = FRACUNIT;
 }
@@ -1136,7 +1137,7 @@ void C_DECL A_SorcererRise(mobj_t *actor)
     mobj_t *mo;
 
     actor->flags &= ~MF_SOLID;
-    mo = P_SpawnMobj(actor->x, actor->y, actor->z, MT_SORCERER2);
+    mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_SORCERER2);
 
     P_SetMobjState(mo, S_SOR2_RISE1);
 
@@ -1149,9 +1150,7 @@ void P_DSparilTeleport(mobj_t *actor)
     int     i;
     fixed_t x;
     fixed_t y;
-    fixed_t prevX;
-    fixed_t prevY;
-    fixed_t prevZ;
+    fixed_t prevpos[3];
     mobj_t *mo;
 
     // No spots?
@@ -1164,15 +1163,13 @@ void P_DSparilTeleport(mobj_t *actor)
         i++;
         x = BossSpots[i % BossSpotCount].x;
         y = BossSpots[i % BossSpotCount].y;
-    } while(P_ApproxDistance(actor->x - x, actor->y - y) < 128 * FRACUNIT);
+    } while(P_ApproxDistance(actor->pos[VX] - x, actor->pos[VY] - y) < 128 * FRACUNIT);
 
-    prevX = actor->x;
-    prevY = actor->y;
-    prevZ = actor->z;
+    memcpy(prevpos, actor->pos, sizeof(prevpos));
 
     if(P_TeleportMove(actor, x, y, false))
     {
-        mo = P_SpawnMobj(prevX, prevY, prevZ, MT_SOR2TELEFADE);
+        mo = P_SpawnMobj(prevpos[VX], prevpos[VY], prevpos[VZ], MT_SOR2TELEFADE);
 
         S_StartSound(sfx_telept, mo);
 
@@ -1180,7 +1177,7 @@ void P_DSparilTeleport(mobj_t *actor)
 
         S_StartSound(sfx_telept, actor);
 
-        actor->z = actor->floorz;
+        actor->pos[VZ] = actor->floorz;
         actor->angle = BossSpots[i % BossSpotCount].angle;
         actor->momx = actor->momy = actor->momz = 0;
     }
@@ -1240,7 +1237,7 @@ void C_DECL A_BlueSpark(mobj_t *actor)
 
     for(i = 0; i < 2; i++)
     {
-        mo = P_SpawnMobj(actor->x, actor->y, actor->z, MT_SOR2FXSPARK);
+        mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_SOR2FXSPARK);
 
         mo->momx = (P_Random() - P_Random()) << 9;
         mo->momy = (P_Random() - P_Random()) << 9;
@@ -1253,8 +1250,8 @@ void C_DECL A_GenWizard(mobj_t *actor)
     mobj_t *mo;
     mobj_t *fog;
 
-    mo = P_SpawnMobj(actor->x, actor->y,
-                     actor->z - mobjinfo[MT_WIZARD].height / 2, MT_WIZARD);
+    mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY],
+                     actor->pos[VZ] - mobjinfo[MT_WIZARD].height / 2, MT_WIZARD);
 
     if(P_TestMobjLocation(mo) == false)
     {
@@ -1269,7 +1266,7 @@ void C_DECL A_GenWizard(mobj_t *actor)
 
     actor->flags &= ~MF_MISSILE;
 
-    fog = P_SpawnMobj(actor->x, actor->y, actor->z, MT_TFOG);
+    fog = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_TFOG);
     S_StartSound(sfx_telept, fog);
 }
 
@@ -1363,10 +1360,11 @@ void C_DECL A_MinotaurDecide(mobj_t *actor)
 
     S_StartSound(sfx_minsit, actor);
 
-    dist = P_ApproxDistance(actor->x - target->x, actor->y - target->y);
+    dist = P_ApproxDistance(actor->pos[VX] - target->pos[VX],
+                            actor->pos[VY] - target->pos[VY]);
 
-    if(target->z + target->height > actor->z &&
-       target->z + target->height < actor->z + actor->height &&
+    if(target->pos[VZ] + target->height > actor->pos[VZ] &&
+       target->pos[VZ] + target->height < actor->pos[VZ] + actor->height &&
        dist < 8 * 64 * FRACUNIT && dist > 1 * 64 * FRACUNIT &&
        P_Random() < 150)
     {
@@ -1384,7 +1382,7 @@ void C_DECL A_MinotaurDecide(mobj_t *actor)
         // Charge duration
         actor->special1 = 35 / 2;
     }
-    else if(target->z == target->floorz && dist < 9 * 64 * FRACUNIT &&
+    else if(target->pos[VZ] == target->floorz && dist < 9 * 64 * FRACUNIT &&
             P_Random() < 220)
     {
         // Floor fire attack
@@ -1406,7 +1404,7 @@ void C_DECL A_MinotaurCharge(mobj_t *actor)
 
     if(actor->special1)
     {
-        puff = P_SpawnMobj(actor->x, actor->y, actor->z, MT_PHOENIXPUFF);
+        puff = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_PHOENIXPUFF);
         puff->momz = 2 * FRACUNIT;
 
         actor->special1--;
@@ -1493,9 +1491,9 @@ void C_DECL A_MntrFloorFire(mobj_t *actor)
 {
     mobj_t *mo;
 
-    actor->z = actor->floorz;
-    mo = P_SpawnMobj(actor->x + ((P_Random() - P_Random()) << 10),
-                     actor->y + ((P_Random() - P_Random()) << 10), ONFLOORZ,
+    actor->pos[VZ] = actor->floorz;
+    mo = P_SpawnMobj(actor->pos[VX] + ((P_Random() - P_Random()) << 10),
+                     actor->pos[VY] + ((P_Random() - P_Random()) << 10), ONFLOORZ,
                      MT_MNTRFX3);
 
     mo->target = actor->target;
@@ -1552,8 +1550,8 @@ void C_DECL A_HeadAttack(mobj_t *actor)
     }
 
     dist =
-        P_ApproxDistance(actor->x - target->x,
-                         actor->y - target->y) > 8 * 64 * FRACUNIT;
+        P_ApproxDistance(actor->pos[VX] - target->pos[VX],
+                         actor->pos[VY] - target->pos[VY]) > 8 * 64 * FRACUNIT;
 
     randAttack = P_Random();
     if(randAttack < atkResolve1[dist])
@@ -1572,7 +1570,7 @@ void C_DECL A_HeadAttack(mobj_t *actor)
             for(i = 0; i < 5; i++)
             {
                 fire =
-                    P_SpawnMobj(baseFire->x, baseFire->y, baseFire->z,
+                    P_SpawnMobj(baseFire->pos[VX], baseFire->pos[VY], baseFire->pos[VZ],
                                 MT_HEADFX3);
                 if(i == 0)
                     S_StartSound(sfx_hedat1, actor);
@@ -1597,7 +1595,7 @@ void C_DECL A_HeadAttack(mobj_t *actor)
         mo = P_SpawnMissile(actor, target, MT_WHIRLWIND);
         if(mo != NULL)
         {
-            mo->z -= 32 * FRACUNIT;
+            mo->pos[VZ] -= 32 * FRACUNIT;
             mo->special1 = (int) target;
             mo->special2 = 50;  // Timer for active sound
             mo->health = 20 * TICSPERSEC;   // Duration
@@ -1638,7 +1636,7 @@ void C_DECL A_HeadIceImpact(mobj_t *ice)
 
     for(i = 0; i < 8; i++)
     {
-        shard = P_SpawnMobj(ice->x, ice->y, ice->z, MT_HEADFX2);
+        shard = P_SpawnMobj(ice->pos[VX], ice->pos[VY], ice->pos[VZ], MT_HEADFX2);
         angle = i * ANG45;
         shard->target = ice->target;
         shard->angle = angle;
@@ -1655,7 +1653,7 @@ void C_DECL A_HeadIceImpact(mobj_t *ice)
 void C_DECL A_HeadFireGrow(mobj_t *fire)
 {
     fire->health--;
-    fire->z += 9 * FRACUNIT;
+    fire->pos[VZ] += 9 * FRACUNIT;
 
     if(fire->health == 0)
     {
@@ -1800,8 +1798,8 @@ void P_DropItem(mobj_t *source, mobjtype_t type, int special, int chance)
     if(P_Random() > chance)
         return;
 
-    mo = P_SpawnMobj(source->x, source->y, source->z + (source->height >> 1),
-                     type);
+    mo = P_SpawnMobj(source->pos[VX], source->pos[VY],
+                     source->pos[VZ] + (source->height >> 1), type);
     mo->momx = (P_Random() - P_Random()) << 8;
     mo->momy = (P_Random() - P_Random()) << 8;
     mo->momz = FRACUNIT * 5 + (P_Random() << 10);
@@ -1870,7 +1868,7 @@ void C_DECL A_Explode(mobj_t *actor)
     {
     case MT_FIREBOMB:
         // Time Bombs
-        actor->z += 32 * FRACUNIT;
+        actor->pos[VZ] += 32 * FRACUNIT;
         actor->flags &= ~MF_SHADOW;
         actor->flags |= MF_BRIGHTSHADOW | MF_VIEWALIGN;
         break;
@@ -1908,8 +1906,8 @@ void C_DECL A_PodPain(mobj_t *actor)
     for(i = 0; i < count; i++)
     {
         goo =
-            P_SpawnMobj(actor->x, actor->y, actor->z + 48 * FRACUNIT,
-                        MT_PODGOO);
+            P_SpawnMobj(actor->pos[VX], actor->pos[VY],
+                        actor->pos[VZ] + 48 * FRACUNIT, MT_PODGOO);
         goo->target = actor;
 
         goo->momx = (P_Random() - P_Random()) << 9;
@@ -1934,20 +1932,17 @@ void C_DECL A_RemovePod(mobj_t *actor)
 void C_DECL A_MakePod(mobj_t *actor)
 {
     mobj_t *mo;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
 
     // Too many generated pods?
     if(actor->special1 == MAX_GEN_PODS)
         return;
 
-    x = actor->x;
-    y = actor->y;
-    z = actor->z;
-    mo = P_SpawnMobj(x, y, ONFLOORZ, MT_POD);
+    memcpy(pos, actor->pos, sizeof(pos));
+    pos[VZ] = ONFLOORZ;
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_POD);
 
-    if(P_CheckPosition(mo, x, y) == false)
+    if(P_CheckPosition(mo, pos[VX], pos[VY]) == false)
     {
         // Didn't fit
         P_RemoveMobj(mo);
@@ -2066,8 +2061,8 @@ void C_DECL A_SpawnTeleGlitter(mobj_t *actor)
 {
     mobj_t *mo;
 
-    mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
-                     actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
+    mo = P_SpawnMobj(actor->pos[VX] + ((P_Random() & 31) - 16) * FRACUNIT,
+                     actor->pos[VY] + ((P_Random() & 31) - 16) * FRACUNIT,
                      P_GetFixedp(actor->subsector,
                                  DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER);
@@ -2079,8 +2074,8 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t *actor)
 {
     mobj_t *mo;
 
-    mo = P_SpawnMobj(actor->x + ((P_Random() & 31) - 16) * FRACUNIT,
-                     actor->y + ((P_Random() & 31) - 16) * FRACUNIT,
+    mo = P_SpawnMobj(actor->pos[VX] + ((P_Random() & 31) - 16) * FRACUNIT,
+                     actor->pos[VY] + ((P_Random() & 31) - 16) * FRACUNIT,
                      P_GetFixedp(actor->subsector,
                                  DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                      MT_TELEGLITTER2);
@@ -2117,7 +2112,7 @@ void C_DECL A_InitKeyGizmo(mobj_t *gizmo)
         break;
     }
 
-    mo = P_SpawnMobj(gizmo->x, gizmo->y, gizmo->z + 60 * FRACUNIT,
+    mo = P_SpawnMobj(gizmo->pos[VX], gizmo->pos[VY], gizmo->pos[VZ] + 60 * FRACUNIT,
                      MT_KEYGIZMOFLOAT);
 
     P_SetMobjState(mo, state);
@@ -2138,8 +2133,8 @@ void C_DECL A_VolcanoBlast(mobj_t *volcano)
     count = 1 + (P_Random() % 3);
     for(i = 0; i < count; i++)
     {
-        blast = P_SpawnMobj(volcano->x, volcano->y,
-                            volcano->z + 44 * FRACUNIT, MT_VOLCANOBLAST);
+        blast = P_SpawnMobj(volcano->pos[VX], volcano->pos[VY],
+                            volcano->pos[VZ] + 44 * FRACUNIT, MT_VOLCANOBLAST);
 
         blast->target = volcano;
 
@@ -2163,17 +2158,17 @@ void C_DECL A_VolcBallImpact(mobj_t *ball)
     mobj_t *tiny;
     angle_t angle;
 
-    if(ball->z <= ball->floorz)
+    if(ball->pos[VZ] <= ball->floorz)
     {
         ball->flags |= MF_NOGRAVITY;
         ball->flags2 &= ~MF2_LOGRAV;
-        ball->z += 28 * FRACUNIT;
+        ball->pos[VZ] += 28 * FRACUNIT;
     }
 
     P_RadiusAttack(ball, ball->target, 25);
     for(i = 0; i < 4; i++)
     {
-        tiny = P_SpawnMobj(ball->x, ball->y, ball->z, MT_VOLCANOTBLAST);
+        tiny = P_SpawnMobj(ball->pos[VX], ball->pos[VY], ball->pos[VZ], MT_VOLCANOTBLAST);
 
         tiny->target = ball;
 
@@ -2195,7 +2190,7 @@ void C_DECL A_SkullPop(mobj_t *actor)
     player_t *player;
 
     actor->flags &= ~MF_SOLID;
-    mo = P_SpawnMobj(actor->x, actor->y, actor->z + 48 * FRACUNIT,
+    mo = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ] + 48 * FRACUNIT,
                      MT_BLOODYSKULL);
 
     mo->momx = (P_Random() - P_Random()) << 9;
@@ -2219,7 +2214,7 @@ void C_DECL A_SkullPop(mobj_t *actor)
 
 void C_DECL A_CheckSkullFloor(mobj_t *actor)
 {
-    if(actor->z <= actor->floorz)
+    if(actor->pos[VZ] <= actor->floorz)
         P_SetMobjState(actor, S_BLOODYSKULLX1);
 }
 
@@ -2238,7 +2233,7 @@ void C_DECL A_CheckBurnGone(mobj_t *actor)
 void C_DECL A_FreeTargMobj(mobj_t *mo)
 {
     mo->momx = mo->momy = mo->momz = 0;
-    mo->z = mo->ceilingz + 4 * FRACUNIT;
+    mo->pos[VZ] = mo->ceilingz + 4 * FRACUNIT;
 
     mo->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY | MF_SOLID);
     mo->flags |= MF_CORPSE | MF_DROPOFF | MF_NOGRAVITY;

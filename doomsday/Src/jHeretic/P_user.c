@@ -66,7 +66,7 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
     sector_t* sector = P_GetPtrp(plrmo->subsector, DMU_SECTOR);
 
     angle >>= ANGLETOFINESHIFT;
-    if(player->powers[pw_flight] && !(plrmo->z <= plrmo->floorz))
+    if(player->powers[pw_flight] && !(plrmo->pos[VZ] <= plrmo->floorz))
     {
         plrmo->momx += FixedMul(move, finecosine[angle]);
         plrmo->momy += FixedMul(move, finesine[angle]);
@@ -93,13 +93,13 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
  */
 boolean P_IsPlayerOnGround(player_t *player)
 {
-    boolean onground = (player->plr->mo->z <= player->plr->mo->floorz);
+    boolean onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz);
 
     if(player->plr->mo->onmobj && !onground)
     {
         mobj_t *on = player->plr->mo->onmobj;
 
-        onground = (player->plr->mo->z <= on->z + on->height);
+        onground = (player->plr->mo->pos[VZ] <= on->pos[VZ] + on->height);
     }
     return onground;
 }
@@ -147,7 +147,7 @@ void P_MovePlayer(player_t *player)
         return;
     }
 
-    onground = (plrmo->z <= plrmo->floorz || (plrmo->flags2 & MF2_ONMOBJ));
+    onground = (plrmo->pos[VZ] <= plrmo->floorz || (plrmo->flags2 & MF2_ONMOBJ));
 
     if(player->chickenTics)
     {                           // Chicken speed
@@ -234,7 +234,7 @@ void P_DeathThink(player_t *player)
 
     P_MovePsprites(player);
 
-    onground = (plrmo->z <= plrmo->floorz);
+    onground = (plrmo->pos[VZ] <= plrmo->floorz);
     if(plrmo->type == MT_BLOODYSKULL)
     {                           // Flying bloody skull
         player->plr->viewheight = 6 * FRACUNIT;
@@ -284,8 +284,8 @@ void P_DeathThink(player_t *player)
     if(!IS_NETGAME && player->attacker && player->attacker != plrmo)
     {
         angle =
-            R_PointToAngle2(plrmo->x, plrmo->y, player->attacker->x,
-                            player->attacker->y);
+            R_PointToAngle2(plrmo->pos[VX], plrmo->pos[VY],
+                            player->attacker->pos[VX], player->attacker->pos[VY]);
         delta = angle - plrmo->angle;
         if(delta < ANG5 || delta > (unsigned) -ANG5)
         {                       // Looking at killer, so fade damage flash down
@@ -340,7 +340,7 @@ void P_ChickenPlayerThink(player_t *player)
     {                           // Twitch view angle
         pmo->angle += (P_Random() - P_Random()) << 19;
     }
-    if((pmo->z <= pmo->floorz) && (P_Random() < 32))
+    if((pmo->pos[VZ] <= pmo->floorz) && (P_Random() < 32))
     {                           // Jump and noise
         pmo->momz += FRACUNIT;
         P_SetMobjState(pmo, S_CHICPLAY_PAIN);
@@ -371,9 +371,7 @@ boolean P_UndoPlayerChicken(player_t *player)
     mobj_t *fog;
     mobj_t *mo;
     mobj_t *pmo;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     angle_t angle;
     int     playerNum;
     weapontype_t weapon;
@@ -383,19 +381,17 @@ boolean P_UndoPlayerChicken(player_t *player)
     player->update |= PSF_CHICKEN_TIME | PSF_POWERS | PSF_HEALTH;
 
     pmo = player->plr->mo;
-    x = pmo->x;
-    y = pmo->y;
-    z = pmo->z;
+    memcpy(pos, pmo->pos, sizeof(pos));
     angle = pmo->angle;
     weapon = pmo->special1;
     oldFlags = pmo->flags;
     oldFlags2 = pmo->flags2;
     P_SetMobjState(pmo, S_FREETARGMOBJ);
-    mo = P_SpawnMobj(x, y, z, MT_PLAYER);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PLAYER);
     if(P_TestMobjLocation(mo) == false)
     {                           // Didn't fit
         P_RemoveMobj(mo);
-        mo = P_SpawnMobj(x, y, z, MT_CHICPLAYER);
+        mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_CHICPLAYER);
         mo->angle = angle;
         mo->health = player->health;
         mo->special1 = weapon;
@@ -429,8 +425,8 @@ boolean P_UndoPlayerChicken(player_t *player)
     player->update |= PSF_CHICKEN_TIME | PSF_HEALTH;
     angle >>= ANGLETOFINESHIFT;
     fog =
-        P_SpawnMobj(x + 20 * finecosine[angle], y + 20 * finesine[angle],
-                    z + TELEFOGHEIGHT, MT_TFOG);
+        P_SpawnMobj(pos[VX] + 20 * finecosine[angle], pos[VY] + 20 * finesine[angle],
+                    pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(sfx_telept, fog);
     P_PostChickenWeapon(player, weapon);
     return (true);
@@ -540,12 +536,12 @@ void P_ClientSideThink()
         if(pl->flyheight)
             pl->flyheight /= 2;
         // Do some fly-bobbing.
-        if(mo->z > mo->floorz && leveltime & 2)
-            mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
+        if(mo->pos[VZ] > mo->floorz && leveltime & 2)
+            mo->pos[VZ] += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
     }
 
     // Set consoleplayer thrust multiplier (used by client move code).
-    if(mo->z > mo->floorz)      // Airborne?
+    if(mo->pos[VZ] > mo->floorz)      // Airborne?
     {
         Set(DD_CPLAYER_THRUST_MUL, (mo->ddflags & DDMF_FLY) ? FRACUNIT : 0);
     }
@@ -718,17 +714,10 @@ void P_PlayerThink(player_t *player)
     {
         if(!--player->powers[pw_flight])
         {
-#ifdef __WATCOMC__
-            if(plrmo->z != plrmo->floorz && !useexterndriver)
+            if(plrmo->pos[VZ] != plrmo->floorz)
             {
                 player->centering = true;
             }
-#else
-            if(plrmo->z != plrmo->floorz)
-            {
-                player->centering = true;
-            }
-#endif
 
             plrmo->flags2 &= ~MF2_FLY;
             plrmo->flags &= ~MF_NOGRAVITY;
@@ -1067,9 +1056,9 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         break;
     case arti_firebomb:
         angle = player->plr->mo->angle >> ANGLETOFINESHIFT;
-        mo = P_SpawnMobj(player->plr->mo->x + 24 * finecosine[angle],
-                         player->plr->mo->y + 24 * finesine[angle],
-                         player->plr->mo->z -
+        mo = P_SpawnMobj(player->plr->mo->pos[VX] + 24 * finecosine[angle],
+                         player->plr->mo->pos[VY] + 24 * finesine[angle],
+                         player->plr->mo->pos[VZ] -
                          15 * FRACUNIT *
                          ((player->plr->mo->flags2 & MF2_FEETARECLIPPED) != 0),
                          MT_FIREBOMB);

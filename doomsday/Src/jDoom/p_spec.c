@@ -923,7 +923,7 @@ void P_PlayerInSpecialSector(player_t *player)
         P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
-    if(player->plr->mo->z != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
+    if(player->plr->mo->pos[VZ] != P_GetFixedp(sector, DMU_FLOOR_HEIGHT))
         return;
 
     // Has hitten ground.

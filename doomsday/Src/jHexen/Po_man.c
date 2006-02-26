@@ -682,7 +682,7 @@ static void ThrustMobj(mobj_t *mobj, seg_t *seg, polyobj_t * po)
 
     if(P_GetBoolp(po, DMU_CRUSH))
     {
-        if(!P_CheckPosition(mobj, mobj->x + thrustX, mobj->y + thrustY))
+        if(!P_CheckPosition(mobj, mobj->pos[VX] + thrustX, mobj->pos[VY] + thrustY))
         {
             P_DamageMobj(mobj, NULL, NULL, 3);
         }

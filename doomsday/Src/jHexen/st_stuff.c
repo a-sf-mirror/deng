@@ -2964,8 +2964,8 @@ void SB_ChangePlayerClass(player_t *player, int newclass)
     if(oldmobj)
     {
         // Use a dummy as the spawn point.
-        dummy.x = oldmobj->x >> FRACBITS;
-        dummy.y = oldmobj->y >> FRACBITS;
+        dummy.x = oldmobj->pos[VX] >> FRACBITS;
+        dummy.y = oldmobj->pos[VY] >> FRACBITS;
         // The +27 (45/2) makes the approximation properly averaged.
         dummy.angle = (short) ((float) oldmobj->angle / ANGLE_MAX * 360) + 27;
         P_SpawnPlayer(&dummy, player - players);
@@ -3004,8 +3004,9 @@ static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
 
     sprintf(textBuffer, "MAP %d (%d)  X:%5d  Y:%5d  Z:%5d",
             P_GetMapWarpTrans(gamemap), gamemap,
-            player->plr->mo->x >> FRACBITS, player->plr->mo->y >> FRACBITS,
-            player->plr->mo->z >> FRACBITS);
+            player->plr->mo->pos[VX] >> FRACBITS,
+            player->plr->mo->pos[VY] >> FRACBITS,
+            player->plr->mo->pos[VZ] >> FRACBITS);
     P_SetMessage(player, textBuffer);
 }
 

@@ -57,40 +57,36 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
                    boolean useFog)
 {
-    fixed_t oldx;
-    fixed_t oldy;
-    fixed_t oldz;
+    fixed_t oldpos[3];
     fixed_t aboveFloor;
     fixed_t fogDelta;
     player_t *player;
     unsigned an;
     mobj_t *fog;
 
-    oldx = thing->x;
-    oldy = thing->y;
-    oldz = thing->z;
-    aboveFloor = thing->z - thing->floorz;
+    memcpy(oldpos, thing->pos, sizeof(oldpos));
+
+    aboveFloor = thing->pos[VZ] - thing->floorz;
     if(!P_TeleportMove(thing, x, y, false))
-    {
         return false;
-    }
+
     if(thing->player)
     {
         player = thing->player;
         player->plr->flags |= DDPF_FIXANGLES | DDPF_FIXPOS | DDPF_FIXMOM;
         if(player->powers[pw_flight] && aboveFloor)
         {
-            thing->z = thing->floorz + aboveFloor;
-            if(thing->z + thing->height > thing->ceilingz)
+            thing->pos[VZ] = thing->floorz + aboveFloor;
+            if(thing->pos[VZ] + thing->height > thing->ceilingz)
             {
-                thing->z = thing->ceilingz - thing->height;
+                thing->pos[VZ] = thing->ceilingz - thing->height;
             }
-            player->plr->viewz = thing->z + player->plr->viewheight;
+            player->plr->viewz = thing->pos[VZ] + player->plr->viewheight;
         }
         else
         {
-            thing->z = thing->floorz;
-            player->plr->viewz = thing->z + player->plr->viewheight;
+            thing->pos[VZ] = thing->floorz;
+            player->plr->viewz = thing->pos[VZ] + player->plr->viewheight;
             if(useFog)
             {
                 player->plr->lookdir = 0;
@@ -99,26 +95,26 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
     }
     else if(thing->flags & MF_MISSILE)
     {
-        thing->z = thing->floorz + aboveFloor;
-        if(thing->z + thing->height > thing->ceilingz)
+        thing->pos[VZ] = thing->floorz + aboveFloor;
+        if(thing->pos[VZ] + thing->height > thing->ceilingz)
         {
-            thing->z = thing->ceilingz - thing->height;
+            thing->pos[VZ] = thing->ceilingz - thing->height;
         }
     }
     else
     {
-        thing->z = thing->floorz;
+        thing->pos[VZ] = thing->floorz;
     }
     // Spawn teleport fog at source and destination
     if(useFog)
     {
         fogDelta = thing->flags & MF_MISSILE ? 0 : TELEFOGHEIGHT;
-        fog = P_SpawnMobj(oldx, oldy, oldz + fogDelta, MT_TFOG);
+        fog = P_SpawnMobj(oldpos[VX], oldpos[VY], oldpos[VZ] + fogDelta, MT_TFOG);
         S_StartSound(SFX_TELEPORT, fog);
         an = angle >> ANGLETOFINESHIFT;
         fog =
             P_SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
-                        thing->z + fogDelta, MT_TFOG);
+                        thing->pos[VZ] + fogDelta, MT_TFOG);
         S_StartSound(SFX_TELEPORT, fog);
         if(thing->player && !thing->player->powers[pw_speed])
         {                       // Freeze player for about .5 sec
@@ -128,7 +124,7 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle,
     }
     if(thing->flags2 & MF2_FLOORCLIP)
     {
-        if(thing->z == P_GetFixedp(thing->subsector,
+        if(thing->pos[VZ] == P_GetFixedp(thing->subsector,
                                    DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) &&
            P_GetThingFloorType(thing) > FLOOR_SOLID)
         {
@@ -195,5 +191,5 @@ boolean EV_Teleport(int tid, mobj_t *thing, boolean fog)
     }
     if(!mo)
         Con_Error("Can't find teleport mapspot\n");
-    return P_Teleport(thing, mo->x, mo->y, mo->angle, fog);
+    return P_Teleport(thing, mo->pos[VX], mo->pos[VY], mo->angle, fog);
 }

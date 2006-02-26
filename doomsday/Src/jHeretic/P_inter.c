@@ -336,7 +336,7 @@ boolean P_GivePower(player_t *player, powertype_t power)
         player->powers[power] = FLIGHTTICS;
         plrmo->flags2 |= MF2_FLY;
         plrmo->flags |= MF_NOGRAVITY;
-        if(plrmo->z <= plrmo->floorz)
+        if(plrmo->pos[VZ] <= plrmo->floorz)
         {
             player->flyheight = 10; // thrust the player in the air a bit
             player->plr->flags |= DDPF_FIXMOM;
@@ -459,7 +459,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
     int     sound;
     boolean respawn;
 
-    delta = special->z - toucher->z;
+    delta = special->pos[VZ] - toucher->pos[VZ];
     if(delta > toucher->height || delta < -32 * FRACUNIT)
     {                           // Out of reach
         return;
@@ -874,7 +874,8 @@ void P_MinotaurSlam(mobj_t *source, mobj_t *target)
     angle_t angle;
     fixed_t thrust;
 
-    angle = R_PointToAngle2(source->x, source->y, target->x, target->y);
+    angle = R_PointToAngle2(source->pos[VX], source->pos[VY],
+                            target->pos[VX], target->pos[VY]);
     angle >>= ANGLETOFINESHIFT;
     thrust = 16 * FRACUNIT + (P_Random() << 10);
     target->momx += FixedMul(thrust, finecosine[angle]);
@@ -920,9 +921,7 @@ boolean P_ChickenMorphPlayer(player_t *player)
     mobj_t *pmo;
     mobj_t *fog;
     mobj_t *chicken;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     angle_t angle;
     int     oldFlags2;
 
@@ -942,17 +941,15 @@ boolean P_ChickenMorphPlayer(player_t *player)
     }
 
     pmo = player->plr->mo;
-    x = pmo->x;
-    y = pmo->y;
-    z = pmo->z;
+    memcpy(pos, pmo->pos, sizeof(pos));
     angle = pmo->angle;
     oldFlags2 = pmo->flags2;
     P_SetMobjState(pmo, S_FREETARGMOBJ);
 
-    fog = P_SpawnMobj(x, y, z + TELEFOGHEIGHT, MT_TFOG);
+    fog = P_SpawnMobj(pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(sfx_telept, fog);
 
-    chicken = P_SpawnMobj(x, y, z, MT_CHICPLAYER);
+    chicken = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_CHICPLAYER);
     chicken->special1 = player->readyweapon;
     chicken->angle = angle;
     chicken->player = player;
@@ -982,9 +979,7 @@ boolean P_ChickenMorph(mobj_t *actor)
     mobj_t *chicken;
     mobj_t *target;
     mobjtype_t moType;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     angle_t angle;
     int     ghost;
 
@@ -1006,18 +1001,16 @@ boolean P_ChickenMorph(mobj_t *actor)
         break;
     }
 
-    x = actor->x;
-    y = actor->y;
-    z = actor->z;
+    memcpy(pos, actor->pos, sizeof(pos));
     angle = actor->angle;
     ghost = actor->flags & MF_SHADOW;
     target = actor->target;
     P_SetMobjState(actor, S_FREETARGMOBJ);
 
-    fog = P_SpawnMobj(x, y, z + TELEFOGHEIGHT, MT_TFOG);
+    fog = P_SpawnMobj(pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(sfx_telept, fog);
 
-    chicken = P_SpawnMobj(x, y, z, MT_CHICKEN);
+    chicken = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_CHICKEN);
     chicken->special2 = moType;
     chicken->special1 = CHICKENTICS + P_Random();
     chicken->flags |= ghost;
@@ -1258,13 +1251,14 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         source->player->readyweapon != wp_gauntlets) &&
        !(inflictor->flags2 & MF2_NODMGTHRUST))
     {
-        ang = R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
+        ang = R_PointToAngle2(inflictor->pos[VX], inflictor->pos[VY],
+                              target->pos[VX], target->pos[VY]);
 
         thrust = damage * (FRACUNIT >> 3) * 150 / target->info->mass;
 
         // make fall forwards sometimes
         if((damage < 40) && (damage > target->health) &&
-           (target->z - inflictor->z > 64 * FRACUNIT) && (P_Random() & 1))
+           (target->pos[VZ] - inflictor->pos[VZ] > 64 * FRACUNIT) && (P_Random() & 1))
         {
             ang += ANG180;
             thrust *= 4;

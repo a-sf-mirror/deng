@@ -115,9 +115,9 @@ static void SV_v13_ReadMobj(mobj_t *mo)
     SV_v13_ReadLong();
     SV_v13_ReadLong();
 
-    mo->x = SV_v13_ReadLong();
-    mo->y = SV_v13_ReadLong();
-    mo->z = SV_v13_ReadLong();
+    mo->pos[VX] = SV_v13_ReadLong();
+    mo->pos[VY] = SV_v13_ReadLong();
+    mo->pos[VZ] = SV_v13_ReadLong();
 
     // Sector links.
     SV_v13_ReadLong();

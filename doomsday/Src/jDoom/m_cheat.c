@@ -479,10 +479,11 @@ void cht_PosFunc(player_t *plyr)
 {
     static char buf[ST_MSGWIDTH];
 
-    sprintf(buf, "ang=0x%x;x,y=(0x%x,0x%x)",
+    sprintf(buf, "ang=0x%x;x,y,z=(0x%x,0x%x,0x%x)",
             players[consoleplayer].plr->mo->angle,
-            players[consoleplayer].plr->mo->x,
-            players[consoleplayer].plr->mo->y);
+            players[consoleplayer].plr->mo->pos[VX],
+            players[consoleplayer].plr->mo->pos[VY],
+            players[consoleplayer].plr->mo->pos[VZ]);
     P_SetMessage(plyr, buf);
 }
 

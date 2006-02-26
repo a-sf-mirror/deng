@@ -386,7 +386,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
     fixed_t delta;
     int     sound;
 
-    delta = special->z - toucher->z;
+    delta = special->pos[VZ] - toucher->pos[VZ];
 
     if(delta > toucher->height || delta < -8 * FRACUNIT)
     {
@@ -802,8 +802,8 @@ void P_KillMobj(mobj_t *source, mobj_t *target, boolean stomping)
     // Don't drop at the exact same place, causes Z flickering with
     // 3D sprites.
     angle = M_Random() << (24 - ANGLETOFINESHIFT);
-    mo = P_SpawnMobj(target->x + 3 * finecosine[angle],
-                     target->y + 3 * finesine[angle], ONFLOORZ, item);
+    mo = P_SpawnMobj(target->pos[VX] + 3 * finecosine[angle],
+                     target->pos[VY] + 3 * finesine[angle], ONFLOORZ, item);
     mo->flags |= MF_DROPPED;    // special versions of items
 }
 
@@ -873,13 +873,14 @@ void P_DamageMobj2(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         source->player->readyweapon != wp_chainsaw))
     {
         ang =
-            R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
+            R_PointToAngle2(inflictor->pos[VX], inflictor->pos[VY],
+                            target->pos[VX], target->pos[VY]);
 
         thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
 
         // make fall forwards sometimes
         if(damage < 40 && damage > target->health &&
-           target->z - inflictor->z > 64 * FRACUNIT && (P_Random() & 1))
+           target->pos[VZ] - inflictor->pos[VZ] > 64 * FRACUNIT && (P_Random() & 1))
         {
             ang += ANG180;
             thrust *= 4;

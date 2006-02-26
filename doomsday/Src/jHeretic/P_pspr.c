@@ -318,11 +318,11 @@ void P_RepositionMace(mobj_t *mo)
 
     P_UnsetThingPosition(mo);
     spot = P_Random() % MaceSpotCount;
-    mo->x = MaceSpots[spot].x;
-    mo->y = MaceSpots[spot].y;
-    ss = R_PointInSubsector(mo->x, mo->y);
+    mo->pos[VX] = MaceSpots[spot].x;
+    mo->pos[VY] = MaceSpots[spot].y;
+    ss = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
 
-    mo->z = mo->floorz = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    mo->pos[VZ] = mo->floorz = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
 
     mo->ceilingz = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
     P_SetThingPosition(mo);
@@ -821,8 +821,8 @@ void C_DECL A_BeakAttackPL1(player_t *player, pspdef_t * psp)
     if(linetarget)
     {
         player->plr->mo->angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            linetarget->x, linetarget->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
     }
     S_StartSound(sfx_chicpk1 + (P_Random() % 3), player->plr->mo);
     player->chickenPeck = 12;
@@ -843,8 +843,8 @@ void C_DECL A_BeakAttackPL2(player_t *player, pspdef_t * psp)
     if(linetarget)
     {
         player->plr->mo->angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            linetarget->x, linetarget->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
     }
     S_StartSound(sfx_chicpk1 + (P_Random() % 3), player->plr->mo);
     player->chickenPeck = 12;
@@ -867,8 +867,8 @@ void C_DECL A_StaffAttackPL1(player_t *player, pspdef_t * psp)
     {
         // turn to face target
         player->plr->mo->angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            linetarget->x, linetarget->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
     }
 }
 
@@ -889,8 +889,8 @@ void C_DECL A_StaffAttackPL2(player_t *player, pspdef_t * psp)
     {
         // turn to face target
         player->plr->mo->angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            linetarget->x, linetarget->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
     }
 }
 
@@ -998,8 +998,8 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t * psp)
         return;
     pmo = player->plr->mo;
     ball =
-        P_SpawnMobj(pmo->x, pmo->y,
-                    pmo->z + 28 * FRACUNIT -
+        P_SpawnMobj(pmo->pos[VX], pmo->pos[VY],
+                    pmo->pos[VZ] + 28 * FRACUNIT -
                     FOOTCLIPSIZE * ((pmo->flags2 & MF2_FEETARECLIPPED) != 0),
                     MT_MACEFX2);
     ball->momz =
@@ -1007,7 +1007,7 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t * psp)
     angle = pmo->angle;
     ball->target = pmo;
     ball->angle = angle;
-    ball->z += ((int) player->plr->lookdir) << (FRACBITS - 4);
+    ball->pos[VZ] += ((int) player->plr->lookdir) << (FRACBITS - 4);
     angle >>= ANGLETOFINESHIFT;
     ball->momx =
         (pmo->momx >> 1) + FixedMul(ball->info->speed, finecosine[angle]);
@@ -1068,12 +1068,12 @@ void C_DECL A_MacePL1Check(mobj_t *ball)
 
 void C_DECL A_MaceBallImpact(mobj_t *ball)
 {
-    if((ball->z <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
+    if((ball->pos[VZ] <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
     {                           // Landed in some sort of liquid
         P_RemoveMobj(ball);
         return;
     }
-    if((ball->health != MAGIC_JUNK) && (ball->z <= ball->floorz) && ball->momz)
+    if((ball->health != MAGIC_JUNK) && (ball->pos[VZ] <= ball->floorz) && ball->momz)
     {                           // Bounce
         ball->health = MAGIC_JUNK;
         ball->momz = (ball->momz * 192) >> 8;
@@ -1094,12 +1094,12 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
     mobj_t *tiny;
     angle_t angle;
 
-    if((ball->z <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
+    if((ball->pos[VZ] <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
     {                           // Landed in some sort of liquid
         P_RemoveMobj(ball);
         return;
     }
-    if((ball->z != ball->floorz) || (ball->momz < 2 * FRACUNIT))
+    if((ball->pos[VZ] != ball->floorz) || (ball->momz < 2 * FRACUNIT))
     {                           // Explode
         ball->momx = ball->momy = ball->momz = 0;
         ball->flags |= MF_NOGRAVITY;
@@ -1110,7 +1110,7 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
         ball->momz = (ball->momz * 192) >> 8;
         P_SetMobjState(ball, ball->info->spawnstate);
 
-        tiny = P_SpawnMobj(ball->x, ball->y, ball->z, MT_MACEFX3);
+        tiny = P_SpawnMobj(ball->pos[VX], ball->pos[VY], ball->pos[VZ], MT_MACEFX3);
         angle = ball->angle + ANG90;
         tiny->target = ball->target;
         tiny->angle = angle;
@@ -1124,7 +1124,7 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
         tiny->momz = ball->momz;
         P_CheckMissileSpawn(tiny);
 
-        tiny = P_SpawnMobj(ball->x, ball->y, ball->z, MT_MACEFX3);
+        tiny = P_SpawnMobj(ball->pos[VX], ball->pos[VY], ball->pos[VZ], MT_MACEFX3);
         angle = ball->angle - ANG90;
         tiny->target = ball->target;
         tiny->angle = angle;
@@ -1156,10 +1156,9 @@ void C_DECL A_FireMacePL2(player_t *player, pspdef_t * psp)
         mo->momy += player->plr->mo->momy;
         mo->momz =
             2 * FRACUNIT + (((int) player->plr->lookdir) << (FRACBITS - 5));
+
         if(linetarget)
-        {
             mo->special1 = (int) linetarget;
-        }
     }
 }
 
@@ -1170,12 +1169,13 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
     angle_t angle;
     boolean newAngle;
 
-    if((ball->z <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
+    if((ball->pos[VZ] <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
     {                           // Landed in some sort of liquid
         P_RemoveMobj(ball);
         return;
     }
-    if((ball->z <= ball->floorz) && ball->momz)
+
+    if((ball->pos[VZ] <= ball->floorz) && ball->momz)
     {                           // Bounce
         newAngle = false;
         target = (mobj_t *) ball->special1;
@@ -1187,8 +1187,8 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
             }
             else
             {                   // Seek
-                angle =
-                    R_PointToAngle2(ball->x, ball->y, target->x, target->y);
+                angle = R_PointToAngle2(ball->pos[VX], ball->pos[VY],
+                                        target->pos[VX], target->pos[VY]);
                 newAngle = true;
             }
         }
@@ -1201,9 +1201,8 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
                 if(linetarget && ball->target != linetarget)
                 {
                     ball->special1 = (int) linetarget;
-                    angle =
-                        R_PointToAngle2(ball->x, ball->y, linetarget->x,
-                                        linetarget->y);
+                    angle = R_PointToAngle2(ball->pos[VX], ball->pos[VY],
+                                            linetarget->pos[VX], linetarget->pos[VY]);
                     newAngle = true;
                     break;
                 }
@@ -1236,7 +1235,7 @@ void C_DECL A_SpawnRippers(mobj_t *actor)
 
     for(i = 0; i < 8; i++)
     {
-        ripper = P_SpawnMobj(actor->x, actor->y, actor->z, MT_RIPPER);
+        ripper = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_RIPPER);
         angle = i * ANG45;
         ripper->target = actor->target;
         ripper->angle = angle;
@@ -1282,9 +1281,9 @@ void C_DECL A_BoltSpark(mobj_t *bolt)
 
     if(P_Random() > 50)
     {
-        spark = P_SpawnMobj(bolt->x, bolt->y, bolt->z, MT_CRBOWFX4);
-        spark->x += (P_Random() - P_Random()) << 10;
-        spark->y += (P_Random() - P_Random()) << 10;
+        spark = P_SpawnMobj(bolt->pos[VX], bolt->pos[VY], bolt->pos[VZ], MT_CRBOWFX4);
+        spark->pos[VX] += (P_Random() - P_Random()) << 10;
+        spark->pos[VY] += (P_Random() - P_Random()) << 10;
     }
 }
 
@@ -1293,10 +1292,10 @@ void C_DECL A_FireSkullRodPL1(player_t *player, pspdef_t * psp)
     mobj_t *mo;
 
     if(player->ammo[am_skullrod] < USE_SKRD_AMMO_1)
-    {
         return;
-    }
+
     player->ammo[am_skullrod] -= USE_SKRD_AMMO_1;
+
     if(IS_CLIENT)
         return;
 
@@ -1317,6 +1316,7 @@ void C_DECL A_FireSkullRodPL2(player_t *player, pspdef_t * psp)
 {
     player->ammo[am_skullrod] -=
         deathmatch ? USE_SKRD_AMMO_1 : USE_SKRD_AMMO_2;
+
     if(IS_CLIENT)
         return;
 
@@ -1332,10 +1332,10 @@ void C_DECL A_FireSkullRodPL2(player_t *player, pspdef_t * psp)
     {                           // Always use red missiles in single player games
         MissileMobj->special2 = 2;
     }
+
     if(linetarget)
-    {
         MissileMobj->special1 = (int) linetarget;
-    }
+
     S_StartSound(sfx_hrnpow, MissileMobj);
 }
 
@@ -1359,6 +1359,7 @@ void C_DECL A_AddPlayerRain(mobj_t *actor)
     {                           // Player is dead
         return;
     }
+
     if(player->rain1 && player->rain2)
     {                           // Terminate an active rain
         if(player->rain1->health < player->rain2->health)
@@ -1424,8 +1425,8 @@ void C_DECL A_SkullRodStorm(mobj_t *actor)
     {                           // Fudge rain frequency
         return;
     }
-    x = actor->x + ((P_Random() & 127) - 64) * FRACUNIT;
-    y = actor->y + ((P_Random() & 127) - 64) * FRACUNIT;
+    x = actor->pos[VX] + ((P_Random() & 127) - 64) * FRACUNIT;
+    y = actor->pos[VY] + ((P_Random() & 127) - 64) * FRACUNIT;
     mo = P_SpawnMobj(x, y, ONCEILINGZ, MT_RAINPLR1 + actor->special2);
     mo->flags |= MF_BRIGHTSHADOW;
     mo->target = actor->target;
@@ -1434,15 +1435,14 @@ void C_DECL A_SkullRodStorm(mobj_t *actor)
     mo->special2 = actor->special2; // Transfer player number
     P_CheckMissileSpawn(mo);
     if(!(actor->special1 & 31))
-    {
         S_StartSound(sfx_ramrain, actor);
-    }
+
     actor->special1++;
 }
 
 void C_DECL A_RainImpact(mobj_t *actor)
 {
-    if(actor->z > actor->floorz)
+    if(actor->pos[VZ] > actor->floorz)
     {
         P_SetMobjState(actor, S_RAINAIRXPLR1_1 + actor->special2);
     }
@@ -1454,7 +1454,7 @@ void C_DECL A_RainImpact(mobj_t *actor)
 
 void C_DECL A_HideInCeiling(mobj_t *actor)
 {
-    actor->z = actor->ceilingz + 4 * FRACUNIT;
+    actor->pos[VZ] = actor->ceilingz + 4 * FRACUNIT;
 }
 
 void C_DECL A_FirePhoenixPL1(player_t *player, pspdef_t * psp)
@@ -1479,13 +1479,15 @@ void C_DECL A_PhoenixPuff(mobj_t *actor)
     angle_t angle;
 
     P_SeekerMissile(actor, ANGLE_1 * 5, ANGLE_1 * 10);
-    puff = P_SpawnMobj(actor->x, actor->y, actor->z, MT_PHOENIXPUFF);
+
+    puff = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_PHOENIXPUFF);
     angle = actor->angle + ANG90;
     angle >>= ANGLETOFINESHIFT;
     puff->momx = FixedMul(FRACUNIT * 1.3, finecosine[angle]);
     puff->momy = FixedMul(FRACUNIT * 1.3, finesine[angle]);
     puff->momz = 0;
-    puff = P_SpawnMobj(actor->x, actor->y, actor->z, MT_PHOENIXPUFF);
+
+    puff = P_SpawnMobj(actor->pos[VX], actor->pos[VY], actor->pos[VZ], MT_PHOENIXPUFF);
     angle = actor->angle - ANG90;
     angle >>= ANGLETOFINESHIFT;
     puff->momx = FixedMul(FRACUNIT * 1.3, finecosine[angle]);
@@ -1506,7 +1508,7 @@ void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t * psp)
     mobj_t *mo;
     mobj_t *pmo;
     angle_t angle;
-    fixed_t x, y, z;
+    fixed_t pos[3];
     fixed_t slope;
 
     if(IS_CLIENT)
@@ -1519,19 +1521,19 @@ void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t * psp)
         player->refire = 0;
         return;
     }
+
     pmo = player->plr->mo;
     angle = pmo->angle;
-    x = pmo->x + ((P_Random() - P_Random()) << 9);
-    y = pmo->y + ((P_Random() - P_Random()) << 9);
-    z = pmo->z + 26 * FRACUNIT +
-        ((int) (player->plr->lookdir) << FRACBITS) / 173;
+    memcpy(pos, pmo->pos, sizeof(pos));
+    pos[VX] += ((P_Random() - P_Random()) << 9);
+    pos[VY] += ((P_Random() - P_Random()) << 9);
+    pos[VZ] += 26 * FRACUNIT + ((int) (player->plr->lookdir) << FRACBITS) / 173;
+
     if(pmo->flags2 & MF2_FEETARECLIPPED)
-    {
-        z -= FOOTCLIPSIZE;
-    }
+        pos[VZ] -= FOOTCLIPSIZE;
 
     slope = FRACUNIT * sin(LOOKDIR2RAD(player->plr->lookdir)) / 1.2;
-    mo = P_SpawnMobj(x, y, z, MT_PHOENIXFX2);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PHOENIXFX2);
     mo->target = pmo;
     mo->angle = angle;
     mo->momx =
@@ -1622,9 +1624,8 @@ void C_DECL A_GauntletAttack(player_t *player, pspdef_t * psp)
         S_StartSound(sfx_gnthit, player->plr->mo);
     }
     // turn to face target
-    angle =
-        R_PointToAngle2(player->plr->mo->x, player->plr->mo->y, linetarget->x,
-                        linetarget->y);
+    angle = R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            linetarget->pos[VX], linetarget->pos[VY]);
     if(angle - player->plr->mo->angle > ANG180)
     {
         if(angle - player->plr->mo->angle < -ANG90 / 20)

@@ -102,15 +102,15 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
         return true;            // skip players!
 
     dist =                      // lever arm
-        +(dx >> FRACBITS) * (mo->y >> FRACBITS) -
-        (dy >> FRACBITS) * (mo->x >> FRACBITS) -
+        +(dx >> FRACBITS) * (mo->pos[VY] >> FRACBITS) -
+        (dy >> FRACBITS) * (mo->pos[VX] >> FRACBITS) -
         (dx >> FRACBITS) * (P_GetFixedp(P_GetPtrp(ld, DMU_VERTEX1),
                                         DMU_Y) >> FRACBITS) +
         (dy >> FRACBITS) * (P_GetFixedp(P_GetPtrp(ld, DMU_VERTEX1),
                                         DMU_X) >> FRACBITS);
 
-    if((dist < 0 && ffloor < mo->z && bfloor >= mo->z) ||
-       (dist >= 0 && bfloor < mo->z && ffloor >= mo->z))
+    if((dist < 0 && ffloor < mo->pos[VZ] && bfloor >= mo->pos[VZ]) ||
+       (dist >= 0 && bfloor < mo->pos[VZ] && ffloor >= mo->pos[VZ]))
     {
         // At this point, we know that the object straddles a two-sided
         // linedef, and that the object's center of mass is above-ground.

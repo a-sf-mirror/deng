@@ -694,8 +694,8 @@ void SV_HxMapTeleport(int map, int position)
     {
         if(players[i].plr->ingame)
         {
-            P_TeleportMove(players[i].plr->mo, players[i].plr->mo->x,
-                           players[i].plr->mo->y, true);
+            P_TeleportMove(players[i].plr->mo, players[i].plr->mo->pos[VX],
+                           players[i].plr->mo->pos[VY], true);
         }
     }
 
@@ -1346,9 +1346,9 @@ void ArchiveMobj(mobj_t *original)
     // 3: Added byte 'vistarget'
     StreamOutByte(3);
 
-    StreamOutLong(mo->x);
-    StreamOutLong(mo->y);
-    StreamOutLong(mo->z);
+    StreamOutLong(mo->pos[VX]);
+    StreamOutLong(mo->pos[VY]);
+    StreamOutLong(mo->pos[VZ]);
     StreamOutLong(mo->angle);
     StreamOutLong(mo->sprite);
     StreamOutLong(mo->frame);
@@ -1393,9 +1393,9 @@ void UnarchiveMobj(mobj_t *mo)
     int     version = GET_BYTE;
 
     memset(mo, 0, sizeof(*mo));
-    mo->x = GET_LONG;
-    mo->y = GET_LONG;
-    mo->z = GET_LONG;
+    mo->pos[VX] = GET_LONG;
+    mo->pos[VY] = GET_LONG;
+    mo->pos[VZ] = GET_LONG;
     mo->angle = GET_LONG;
     mo->sprite = GET_LONG;
     mo->frame = GET_LONG;
@@ -2060,7 +2060,7 @@ static void ArchiveSounds(void)
         }
         if(i == DD_GetInteger(DD_POLYOBJ_COUNT))
         {                       // Sound is attached to a sector, not a polyobj
-            sec = P_GetPtrp(R_PointInSubsector(node->mobj->x, node->mobj->y),
+            sec = P_GetPtrp(R_PointInSubsector(node->mobj->pos[VX], node->mobj->pos[VY]),
                             DMU_SECTOR);
             difference = P_ToIndex(sec);
             StreamOutLong(0);   // 0 -- sector sound origin

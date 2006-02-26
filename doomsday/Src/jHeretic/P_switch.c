@@ -5,6 +5,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "jHeretic/Doomdef.h"
+#include "jHeretic/h_stat.h"
 #include "jHeretic/P_local.h"
 #include "jHeretic/G_game.h"
 #include "jHeretic/Sounds.h"

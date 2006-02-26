@@ -632,15 +632,15 @@ static boolean TagBusy(int tag)
 {
     int     sectorIndex;
 
-	sectorIndex = -1;
-	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
-	{
-		if(xsectors[sectorIndex].specialdata)
-		{
-			return true;
-		}
-	}
-	return false;
+    sectorIndex = -1;
+    while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
+    {
+        if(xsectors[sectorIndex].specialdata)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //==========================================================================
@@ -1281,66 +1281,66 @@ static int CmdPolyWaitDirect(void)
 
 static int CmdChangeFloor(void)
 {
-	int     tag;
-	int     flat;
-	int     sectorIndex;
+    int     tag;
+    int     flat;
+    int     sectorIndex;
 
-	flat = R_FlatNumForName(ACStrings[Pop()]);
-	tag = Pop();
-	sectorIndex = -1;
-	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
-	{
-		P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
-	}
-	return SCRIPT_CONTINUE;
+    flat = R_FlatNumForName(ACStrings[Pop()]);
+    tag = Pop();
+    sectorIndex = -1;
+    while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
+    {
+        P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdChangeFloorDirect(void)
 {
-	int     tag;
-	int     flat;
-	int     sectorIndex;
+    int     tag;
+    int     flat;
+    int     sectorIndex;
 
-	tag = LONG(*PCodePtr++);
-	flat = R_FlatNumForName(ACStrings[LONG(*PCodePtr++)]);
-	sectorIndex = -1;
-	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
-	{
-		P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
-	}
-	return SCRIPT_CONTINUE;
+    tag = LONG(*PCodePtr++);
+    flat = R_FlatNumForName(ACStrings[LONG(*PCodePtr++)]);
+    sectorIndex = -1;
+    while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
+    {
+        P_SetInt(DMU_SECTOR, sectorIndex, DMU_FLOOR_TEXTURE, flat);
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdChangeCeiling(void)
 {
-	int     tag;
-	int     flat;
-	int     sectorIndex;
+    int     tag;
+    int     flat;
+    int     sectorIndex;
 
-	flat = R_FlatNumForName(ACStrings[Pop()]);
-	tag = Pop();
-	sectorIndex = -1;
-	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
-	{
-		P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
-	}
-	return SCRIPT_CONTINUE;
+    flat = R_FlatNumForName(ACStrings[Pop()]);
+    tag = Pop();
+    sectorIndex = -1;
+    while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
+    {
+        P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdChangeCeilingDirect(void)
 {
-	int     tag;
-	int     flat;
-	int     sectorIndex;
+    int     tag;
+    int     flat;
+    int     sectorIndex;
 
-	tag = LONG(*PCodePtr++);
-	flat = R_FlatNumForName(ACStrings[LONG(*PCodePtr++)]);
-	sectorIndex = -1;
-	while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
-	{
-		P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
-	}
-	return SCRIPT_CONTINUE;
+    tag = LONG(*PCodePtr++);
+    flat = R_FlatNumForName(ACStrings[LONG(*PCodePtr++)]);
+    sectorIndex = -1;
+    while((sectorIndex = P_FindSectorFromTag(tag, sectorIndex)) >= 0)
+    {
+        P_SetInt(DMU_SECTOR, sectorIndex, DMU_CEILING_TEXTURE, flat);
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdRestart(void)
@@ -1444,11 +1444,11 @@ static int CmdScriptWaitDirect(void)
 
 static int CmdClearLineSpecial(void)
 {
-	if(ACScript->line)
-	{
-		P_XLine(ACScript->line)->special = 0;
-	}
-	return SCRIPT_CONTINUE;
+    if(ACScript->line)
+    {
+        P_XLine(ACScript->line)->special = 0;
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdCaseGoto(void)
@@ -1580,13 +1580,13 @@ static int CmdSectorSound(void)
     int     volume;
     mobj_t *mobj;
 
-	mobj = NULL;
-	if(ACScript->line)
-	{
+    mobj = NULL;
+    if(ACScript->line)
+    {
         sector_t* front = P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
-		mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
-	}
-	volume = Pop();
+        mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
+    }
+    volume = Pop();
 #if _DEBUG
     Con_Printf("CmdSectorSound: volume=%i\n", volume);
 #endif
@@ -1627,7 +1627,10 @@ static int CmdAmbientSound(void)
     {
         // SpawnMobj calls P_Random. We don't want that
         // the random generator gets out of sync.
-        mobj = P_SpawnMobj(plrmo->x + (((M_Random() - 127) * 2) << FRACBITS), plrmo->y + (((M_Random() - 127) * 2) << FRACBITS), plrmo->z + (((M_Random() - 127) * 2) << FRACBITS), MT_CAMERA); // A camera's a good temporary source.
+        mobj = P_SpawnMobj(plrmo->pos[VX] + (((M_Random() - 127) * 2) << FRACBITS),
+                           plrmo->pos[VY] + (((M_Random() - 127) * 2) << FRACBITS),
+                           plrmo->pos[VZ] + (((M_Random() - 127) * 2) << FRACBITS),
+                           MT_CAMERA); // A camera's a good temporary source.
         mobj->tics = 5 * 35;    // Five seconds should be enough.
     }
     S_StartSoundAtVolume(S_GetSoundID(ACStrings[Pop()]), mobj,
@@ -1639,101 +1642,101 @@ static int CmdSoundSequence(void)
 {
     mobj_t *mobj;
 
-	mobj = NULL;
-	if(ACScript->line)
-	{
+    mobj = NULL;
+    if(ACScript->line)
+    {
         sector_t* front = P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
-		mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
-	}
-	SN_StartSequenceName(mobj, ACStrings[Pop()]);
-	return SCRIPT_CONTINUE;
+        mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
+    }
+    SN_StartSequenceName(mobj, ACStrings[Pop()]);
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdSetLineTexture(void)
 {
-	line_t *line;
-	int     lineTag;
-	int     side;
-	int     position;
-	int     texture;
-	int     searcher;
+    line_t *line;
+    int     lineTag;
+    int     side;
+    int     position;
+    int     texture;
+    int     searcher;
 
-	texture = R_TextureNumForName(ACStrings[Pop()]);
-	position = Pop();
-	side = Pop();
-	lineTag = Pop();
-	searcher = -1;
-	while((line = P_FindLine(lineTag, &searcher)) != NULL)
-	{
-        side_t* sdef = P_GetPtrp(line, 
+    texture = R_TextureNumForName(ACStrings[Pop()]);
+    position = Pop();
+    side = Pop();
+    lineTag = Pop();
+    searcher = -1;
+    while((line = P_FindLine(lineTag, &searcher)) != NULL)
+    {
+        side_t* sdef = P_GetPtrp(line,
                                  (side == 0? DMU_SIDE0 : DMU_SIDE1));
-		if(position == TEXTURE_MIDDLE)
-		{
-			P_SetIntp(sdef, DMU_MIDDLE_TEXTURE, texture);
-		}
-		else if(position == TEXTURE_BOTTOM)
-		{
-			P_SetIntp(sdef, DMU_BOTTOM_TEXTURE, texture);
-		}
-		else
-		{						// TEXTURE_TOP
-			P_SetIntp(sdef, DMU_TOP_TEXTURE, texture);
-		}
-	}
-	return SCRIPT_CONTINUE;
+        if(position == TEXTURE_MIDDLE)
+        {
+            P_SetIntp(sdef, DMU_MIDDLE_TEXTURE, texture);
+        }
+        else if(position == TEXTURE_BOTTOM)
+        {
+            P_SetIntp(sdef, DMU_BOTTOM_TEXTURE, texture);
+        }
+        else
+        {                       // TEXTURE_TOP
+            P_SetIntp(sdef, DMU_TOP_TEXTURE, texture);
+        }
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdSetLineBlocking(void)
 {
-	line_t *line;
-	int     lineTag;
-	boolean blocking;
-	int     searcher;
+    line_t *line;
+    int     lineTag;
+    boolean blocking;
+    int     searcher;
 
-	blocking = Pop()? ML_BLOCKING : 0;
-	lineTag = Pop();
-	searcher = -1;
-	while((line = P_FindLine(lineTag, &searcher)) != NULL)
-	{
-		P_SetIntp(line, DMU_FLAGS, 
+    blocking = Pop()? ML_BLOCKING : 0;
+    lineTag = Pop();
+    searcher = -1;
+    while((line = P_FindLine(lineTag, &searcher)) != NULL)
+    {
+        P_SetIntp(line, DMU_FLAGS,
             (P_GetIntp(line, DMU_FLAGS) & ~ML_BLOCKING) | blocking);
-	}
-	return SCRIPT_CONTINUE;
+    }
+    return SCRIPT_CONTINUE;
 }
 
 static int CmdSetLineSpecial(void)
 {
-	line_t *line;
-	int     lineTag;
-	int     special, arg1, arg2, arg3, arg4, arg5;
-	int     searcher;
+    line_t *line;
+    int     lineTag;
+    int     special, arg1, arg2, arg3, arg4, arg5;
+    int     searcher;
 
-	arg5 = Pop();
-	arg4 = Pop();
-	arg3 = Pop();
-	arg2 = Pop();
-	arg1 = Pop();
-	special = Pop();
-	lineTag = Pop();
-	searcher = -1;
-	while((line = P_FindLine(lineTag, &searcher)) != NULL)
-	{
+    arg5 = Pop();
+    arg4 = Pop();
+    arg3 = Pop();
+    arg2 = Pop();
+    arg1 = Pop();
+    special = Pop();
+    lineTag = Pop();
+    searcher = -1;
+    while((line = P_FindLine(lineTag, &searcher)) != NULL)
+    {
         xline_t* xline = P_XLine(line);
-		xline->special = special;
-		xline->arg1 = arg1;
-		xline->arg2 = arg2;
-		xline->arg3 = arg3;
-		xline->arg4 = arg4;
-		xline->arg5 = arg5;
-	}
-	return SCRIPT_CONTINUE;
+        xline->special = special;
+        xline->arg1 = arg1;
+        xline->arg2 = arg2;
+        xline->arg3 = arg3;
+        xline->arg4 = arg4;
+        xline->arg5 = arg5;
+    }
+    return SCRIPT_CONTINUE;
 }
 
 // Console commands.
 DEFCC(CCmdScriptInfo)
 {
     int     i, whichOne = -1;
-    char   *scriptStates[] = { 
+    char   *scriptStates[] = {
         "Inactive", "Running", "Suspended", "Waiting for tag",
         "Waiting for poly", "Waiting for script", "Terminating"
     };

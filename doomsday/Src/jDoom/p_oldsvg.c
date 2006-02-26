@@ -127,9 +127,9 @@ static void SV_ReadMobj(mobj_t *mo)
     SV_ReadLong();
 
     // Info for drawing: position.
-    mo->x = SV_ReadLong();
-    mo->y = SV_ReadLong();
-    mo->z = SV_ReadLong();
+    mo->pos[VX] = SV_ReadLong();
+    mo->pos[VY] = SV_ReadLong();
+    mo->pos[VZ] = SV_ReadLong();
 
     // More list: links in sector (if needed)
     SV_ReadLong();

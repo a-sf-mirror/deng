@@ -50,9 +50,7 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing)
     unsigned an;
     thinker_t *thinker;
     sector_t *sector;
-    fixed_t oldx;
-    fixed_t oldy;
-    fixed_t oldz;
+    fixed_t oldpos[3];
 
     // don't teleport missiles
     if(thing->flags & MF_MISSILE)
@@ -88,28 +86,26 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing)
                 if(P_ToIndex(sector) != i)
                     continue;
 
-                oldx = thing->x;
-                oldy = thing->y;
-                oldz = thing->z;
+                memcpy(oldpos, thing->pos, sizeof(thing->pos));
 
-                if(!P_TeleportMove(thing, m->x, m->y, false))
+                if(!P_TeleportMove(thing, m->pos[VX], m->pos[VY], false))
                     return 0;
                 // In Final Doom things teleported to their destination
                 // but the height wasn't set to the floor.
                 if(gamemission != pack_tnt && gamemission != pack_plut)
-                    thing->z = thing->floorz;
+                    thing->pos[VZ] = thing->floorz;
 
                 if(thing->player)
                     thing->dplayer->viewz =
-                        thing->z + thing->dplayer->viewheight;
+                        thing->pos[VZ] + thing->dplayer->viewheight;
 
                 // spawn teleport fog at source and destination
-                fog = P_SpawnMobj(oldx, oldy, oldz, MT_TFOG);
+                fog = P_SpawnMobj(oldpos[VX], oldpos[VY], oldpos[VZ], MT_TFOG);
                 S_StartSound(sfx_telept, fog);
                 an = m->angle >> ANGLETOFINESHIFT;
                 fog =
-                    P_SpawnMobj(m->x + 20 * finecosine[an],
-                                m->y + 20 * finesine[an], thing->z, MT_TFOG);
+                    P_SpawnMobj(m->pos[VX] + 20 * finecosine[an],
+                                m->pos[VY] + 20 * finesine[an], thing->pos[VZ], MT_TFOG);
 
                 // emit sound, where?
                 S_StartSound(sfx_telept, fog);

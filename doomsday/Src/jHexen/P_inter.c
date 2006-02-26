@@ -666,7 +666,7 @@ boolean P_GivePower(player_t *player, powertype_t power)
         player->powers[power] = FLIGHTTICS;
         player->plr->mo->flags2 |= MF2_FLY;
         player->plr->mo->flags |= MF_NOGRAVITY;
-        if(player->plr->mo->z <= player->plr->mo->floorz)
+        if(player->plr->mo->pos[VZ] <= player->plr->mo->floorz)
         {
             player->flyheight = 10; // thrust the player in the air a bit
             player->plr->flags |= DDPF_FIXMOM;
@@ -954,7 +954,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
     if(IS_CLIENT)
         return;
 
-    delta = special->z - toucher->z;
+    delta = special->pos[VZ] - toucher->pos[VZ];
     if(delta > toucher->height || delta < -32 * FRACUNIT)
     {                           // Out of reach
         return;
@@ -1555,7 +1555,7 @@ void P_KillMobj(mobj_t *source, mobj_t *target)
     else
     {                           // Normal death
         if((target->type == MT_FIREDEMON) &&
-           (target->z <= target->floorz + 2 * FRACUNIT) &&
+           (target->pos[VZ] <= target->floorz + 2 * FRACUNIT) &&
            (target->info->xdeathstate))
         {
             // This is to fix the imps' staying in fall state
@@ -1581,7 +1581,8 @@ void P_MinotaurSlam(mobj_t *source, mobj_t *target)
     angle_t angle;
     fixed_t thrust;
 
-    angle = R_PointToAngle2(source->x, source->y, target->x, target->y);
+    angle = R_PointToAngle2(source->pos[VX], source->pos[VY],
+                            target->pos[VX], target->pos[VY]);
     angle >>= ANGLETOFINESHIFT;
     thrust = 16 * FRACUNIT + (P_Random() << 10);
     target->momx += FixedMul(thrust, finecosine[angle]);
@@ -1607,9 +1608,7 @@ boolean P_MorphPlayer(player_t *player)
     mobj_t *pmo;
     mobj_t *fog;
     mobj_t *beastMo;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     angle_t angle;
     int     oldFlags2;
 
@@ -1622,15 +1621,13 @@ boolean P_MorphPlayer(player_t *player)
         return false;
     }
     pmo = player->plr->mo;
-    x = pmo->x;
-    y = pmo->y;
-    z = pmo->z;
+    memcpy(pos, pmo->pos, sizeof(pos));
     angle = pmo->angle;
     oldFlags2 = pmo->flags2;
     P_SetMobjState(pmo, S_FREETARGMOBJ);
-    fog = P_SpawnMobj(x, y, z + TELEFOGHEIGHT, MT_TFOG);
+    fog = P_SpawnMobj(pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(SFX_TELEPORT, fog);
-    beastMo = P_SpawnMobj(x, y, z, MT_PIGPLAYER);
+    beastMo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PIGPLAYER);
     beastMo->special1 = player->readyweapon;
     beastMo->angle = angle;
     beastMo->player = player;
@@ -1639,10 +1636,10 @@ boolean P_MorphPlayer(player_t *player)
     player->plr->mo = beastMo;
     memset(&player->armorpoints[0], 0, NUMARMOR * sizeof(int));
     player->class = PCLASS_PIG;
+
     if(oldFlags2 & MF2_FLY)
-    {
         beastMo->flags2 |= MF2_FLY;
-    }
+
     player->morphTics = MORPHTICS;
     player->update |= PSF_MORPH_TIME | PSF_HEALTH;
     player->plr->flags |= DDPF_FIXPOS | DDPF_FIXMOM;
@@ -1660,9 +1657,7 @@ boolean P_MorphMonster(mobj_t *actor)
 {
     mobj_t *master, *monster, *fog;
     mobjtype_t moType;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     mobj_t  oldMonster;
 
     if(actor->player)
@@ -1671,6 +1666,7 @@ boolean P_MorphMonster(mobj_t *actor)
         return false;
     if(actor->flags2 & MF2_BOSS)
         return false;
+
     moType = actor->type;
     switch (moType)
     {
@@ -1685,14 +1681,12 @@ boolean P_MorphMonster(mobj_t *actor)
     }
 
     oldMonster = *actor;
-    x = oldMonster.x;
-    y = oldMonster.y;
-    z = oldMonster.z;
+    memcpy(pos, oldMonster.pos, sizeof(pos));
     P_RemoveMobjFromTIDList(actor);
     P_SetMobjState(actor, S_FREETARGMOBJ);
-    fog = P_SpawnMobj(x, y, z + TELEFOGHEIGHT, MT_TFOG);
+    fog = P_SpawnMobj(pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(SFX_TELEPORT, fog);
-    monster = P_SpawnMobj(x, y, z, MT_PIG);
+    monster = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PIG);
     monster->special2 = moType;
     monster->special1 = MORPHTICS + P_Random();
     monster->flags |= (oldMonster.flags & MF_SHADOW);
@@ -2008,14 +2002,15 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
        !(inflictor->flags2 & MF2_NODMGTHRUST))
     {
         ang =
-            R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
+            R_PointToAngle2(inflictor->pos[VX], inflictor->pos[VY],
+                            target->pos[VX], target->pos[VY]);
         //thrust = damage*(FRACUNIT>>3)*100/target->info->mass;
         if(!target->info->mass)
             Con_Error("P_DamageMobj: No target->info->mass!\n");
         thrust = damage * (FRACUNIT >> 3) * 150 / target->info->mass;
         // make fall forwards sometimes
         if((damage < 40) && (damage > target->health) &&
-           (target->z - inflictor->z > 64 * FRACUNIT) && (P_Random() & 1))
+           (target->pos[VZ] - inflictor->pos[VZ] > 64 * FRACUNIT) && (P_Random() & 1))
         {
             ang += ANG180;
             thrust *= 4;
@@ -2065,10 +2060,10 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
             saved =
                 FixedDiv(FixedMul(damage << FRACBITS, savedPercent),
                          100 * FRACUNIT);
+
             if(saved > savedPercent * 2)
-            {
                 saved = savedPercent * 2;
-            }
+
             damage -= saved >> FRACBITS;
         }
         if(damage >= player->health && ((gameskill == sk_baby) || deathmatch)
@@ -2076,17 +2071,18 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
         {                       // Try to use some inventory health
             P_AutoUseHealth(player, damage - player->health + 1);
         }
+
         player->health -= damage;   // mirror mobj health here for Dave
+
         if(player->health < 0)
-        {
             player->health = 0;
-        }
+
         player->attacker = source;
         player->damagecount += damage;  // add damage after armor / invuln
+
         if(player->damagecount > 100)
-        {
             player->damagecount = 100;  // teleport stomp does 10k points...
-        }
+
         temp = damage < 100 ? damage : 100;
         if(player == &players[consoleplayer])
         {
@@ -2250,15 +2246,13 @@ void P_FallingDamage(player_t *player)
 void P_PoisonPlayer(player_t *player, mobj_t *poisoner, int poison)
 {
     if((player->cheats & CF_GODMODE) || player->powers[pw_invulnerability])
-    {
         return;
-    }
+
     player->poisoncount += poison;
     player->poisoner = poisoner;
+
     if(player->poisoncount > 100)
-    {
         player->poisoncount = 100;
-    }
 }
 
 //==========================================================================

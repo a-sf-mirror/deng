@@ -621,8 +621,8 @@ void ST_updateFaceWidget(void)
             else
             {
                 badguyangle =
-                    R_PointToAngle2(plyr->plr->mo->x, plyr->plr->mo->y,
-                                    plyr->attacker->x, plyr->attacker->y);
+                    R_PointToAngle2(plyr->plr->mo->pos[VX], plyr->plr->mo->pos[VY],
+                                    plyr->attacker->pos[VX], plyr->attacker->pos[VY]);
 
                 if(badguyangle > plyr->plr->mo->angle)
                 {

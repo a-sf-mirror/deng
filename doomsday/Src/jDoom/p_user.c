@@ -95,13 +95,13 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
  */
 boolean P_IsPlayerOnGround(player_t *player)
 {
-    boolean onground = (player->plr->mo->z <= player->plr->mo->floorz);
+    boolean onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz);
 
     if(player->plr->mo->onmobj && !onground)
     {
         mobj_t *on = player->plr->mo->onmobj;
 
-        onground = (player->plr->mo->z <= on->z + on->height);
+        onground = (player->plr->mo->pos[VZ] <= on->pos[VZ] + on->height);
     }
     return onground;
 }
@@ -140,12 +140,12 @@ void P_MovePlayer(player_t *player)
     }
 
     // Do not let the player control movement if not onground.
-    onground = (player->plr->mo->z <= player->plr->mo->floorz);
+    onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz);
     if(player->plr->mo->onmobj && !onground)
     {
         mobj_t *on = player->plr->mo->onmobj;
 
-        onground = (player->plr->mo->z <= on->z + on->height);
+        onground = (player->plr->mo->pos[VZ] <= on->pos[VZ] + on->height);
     }
 
     if(player->plr->flags & DDPF_CAMERA)    // $democam
@@ -193,7 +193,7 @@ void P_DeathThink(player_t *player)
 
     P_MovePsprites(player);
 
-    onground = (player->plr->mo->z <= player->plr->mo->floorz);
+    onground = (player->plr->mo->pos[VZ] <= player->plr->mo->floorz);
     if(cfg.deathLookUp) // Flying bloody skull
     {
         player->plr->viewheight = 6 * FRACUNIT;
@@ -234,8 +234,8 @@ void P_DeathThink(player_t *player)
     if(!IS_NETGAME && player->attacker && player->attacker != player->plr->mo)
     {
         angle =
-            R_PointToAngle2(player->plr->mo->x, player->plr->mo->y,
-                            player->attacker->x, player->attacker->y);
+            R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
+                            player->attacker->pos[VX], player->attacker->pos[VY]);
 
         delta = angle - player->plr->mo->angle;
 
