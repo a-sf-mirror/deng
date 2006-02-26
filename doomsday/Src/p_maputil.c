@@ -132,15 +132,16 @@ float P_MobjPointDistancef(mobj_t *start, mobj_t *end, float *fixpoint)
         // Start -> end.
         return
             FIX2FLT(P_ApproxDistance
-                    (end->z - start->z,
-                     P_ApproxDistance(end->x - start->x, end->y - start->y)));
+                    (end->pos[VZ] - start->pos[VZ],
+                     P_ApproxDistance(end->pos[VX] - start->pos[VX],
+                                      end->pos[VY] - start->pos[VY])));
     }
     if(fixpoint)
     {
         float   sp[3] = {
-            FIX2FLT(start->x),
-            FIX2FLT(start->y),
-            FIX2FLT(start->z)
+            FIX2FLT(start->pos[VX]),
+            FIX2FLT(start->pos[VY]),
+            FIX2FLT(start->pos[VZ])
         };
         return M_ApproxDistancef(fixpoint[VZ] - sp[VZ],
                                  M_ApproxDistancef(fixpoint[VX] - sp[VX],
@@ -512,10 +513,10 @@ void P_LinkToLines(mobj_t *thing)
 
     // Set up a line iterator for doing the linking.
     data.thing = thing;
-    data.box[BOXTOP] = thing->y + thing->radius;
-    data.box[BOXBOTTOM] = thing->y - thing->radius;
-    data.box[BOXRIGHT] = thing->x + thing->radius;
-    data.box[BOXLEFT] = thing->x - thing->radius;
+    data.box[BOXTOP] = thing->pos[VY] + thing->radius;
+    data.box[BOXBOTTOM] = thing->pos[VY] - thing->radius;
+    data.box[BOXRIGHT] = thing->pos[VX] + thing->radius;
+    data.box[BOXLEFT] = thing->pos[VX] - thing->radius;
 
     xl = (data.box[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
     xh = (data.box[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
@@ -539,7 +540,7 @@ void P_LinkThing(mobj_t *thing, byte flags)
     mobj_t *root;
 
     // Link into the sector.
-    sec = (thing->subsector = R_PointInSubsector(thing->x, thing->y))->sector;
+    sec = (thing->subsector = R_PointInSubsector(thing->pos[VX], thing->pos[VY]))->sector;
     if(flags & DDLINK_SECTOR)
     {
         // Unlink from the current sector, if any.
@@ -564,7 +565,7 @@ void P_LinkThing(mobj_t *thing, byte flags)
             P_UnlinkFromBlock(thing);
 
         // Link into the block we're currently in.
-        root = P_GetBlockRootXY(thing->x, thing->y);
+        root = P_GetBlockRootXY(thing->pos[VX], thing->pos[VY]);
         if(root)
         {
             // Only link if we're inside the blockmap.
@@ -582,6 +583,18 @@ void P_LinkThing(mobj_t *thing, byte flags)
 
         // Link to all contacted lines.
         P_LinkToLines(thing);
+    }
+
+    // If this is a player - perform addtional tests to see if they have
+    // entered or exited the void.
+    if(thing->dplayer)
+    {
+        ddplayer_t* player = thing->dplayer;
+
+        player->invoid = true;
+        if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
+                              player->mo->subsector->sector))
+            player->invoid = false;
     }
 }
 
@@ -789,19 +802,19 @@ boolean PIT_AddThingIntercepts(mobj_t *thing, void *data)
     // check a corner to corner crossection for hit
     if(tracepositive)
     {
-        x1 = thing->x - thing->radius;
-        y1 = thing->y + thing->radius;
+        x1 = thing->pos[VX] - thing->radius;
+        y1 = thing->pos[VY] + thing->radius;
 
-        x2 = thing->x + thing->radius;
-        y2 = thing->y - thing->radius;
+        x2 = thing->pos[VX] + thing->radius;
+        y2 = thing->pos[VY] - thing->radius;
     }
     else
     {
-        x1 = thing->x - thing->radius;
-        y1 = thing->y - thing->radius;
+        x1 = thing->pos[VX] - thing->radius;
+        y1 = thing->pos[VY] - thing->radius;
 
-        x2 = thing->x + thing->radius;
-        y2 = thing->y + thing->radius;
+        x2 = thing->pos[VX] + thing->radius;
+        y2 = thing->pos[VY] + thing->radius;
     }
 
     s1 = P_PointOnDivlineSide(x1, y1, &trace);

@@ -193,20 +193,20 @@ static boolean PIT_CheckThing(mobj_t *thing, void *parm)
     if(tm->z != DDMAXINT && (tm->thing->dplayer /* || thing->dplayer */
                              || thing->ddflags & DDMF_NOGRAVITY))
     {
-        if(thing->z > tm->z + tm->height)
+        if(thing->pos[VZ] > tm->z + tm->height)
         {
             // We're under it.
             return true;
         }
-        else if(thing->z + thing->height < tm->z)
+        else if(thing->pos[VZ] + thing->height < tm->z)
         {
             // We're over it.
             return true;
         }
         overlap = true;
     }
-    if(abs(thing->x - tm->x) >= blockdist ||
-       abs(thing->y - tm->y) >= blockdist)
+    if(abs(thing->pos[VX] - tm->x) >= blockdist ||
+       abs(thing->pos[VY] - tm->y) >= blockdist)
     {
         // Didn't hit it.
         return true;
@@ -214,20 +214,20 @@ static boolean PIT_CheckThing(mobj_t *thing, void *parm)
     if(overlap)
     {
         // How are we positioned?
-        if(tm->z >= thing->z + thing->height - 24 * FRACUNIT)
+        if(tm->z >= thing->pos[VZ] + thing->height - 24 * FRACUNIT)
         {
             // Above, allowing stepup.
             tm->thing->onmobj = thing;
-            tm->floorz = thing->z + thing->height;
+            tm->floorz = thing->pos[VZ] + thing->height;
             return true;
         }
 
         // To prevent getting stuck, don't block if moving away from
         // the object.
         if(tm->thing->dplayer &&
-           P_ApproxDistance(tm->thing->x - thing->x,
-                            tm->thing->y - thing->y) <
-           P_ApproxDistance(tm->x - thing->x, tm->y - thing->y) &&
+           P_ApproxDistance(tm->thing->pos[VX] - thing->pos[VX],
+                            tm->thing->pos[VY] - thing->pos[VY]) <
+           P_ApproxDistance(tm->x - thing->pos[VX], tm->y - thing->pos[VY]) &&
            tm->thing->momz > -12 * FRACUNIT)
         {
             // The current distance is smaller than the new one would be.
@@ -346,7 +346,7 @@ boolean P_TryMoveXYZ(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
     blockingMobj = NULL;
 
     // Is this a real move?
-    if(thing->x == x && thing->y == y && thing->z == z)
+    if(thing->pos[VX] == x && thing->pos[VY] == y && thing->pos[VZ] == z)
     {
         // No move. Of course it's successful.
         return true;
@@ -393,9 +393,9 @@ boolean P_TryMoveXYZ(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 
     thing->floorz = tmfloorz;
     thing->ceilingz = tmceilingz;
-    thing->x = x;
-    thing->y = y;
-    thing->z = z;
+    thing->pos[VX] = x;
+    thing->pos[VY] = y;
+    thing->pos[VZ] = z;
 
     // Put back to the same links.
     P_LinkThing(thing, links);
@@ -433,7 +433,7 @@ boolean P_StepMove(mobj_t *thing, fixed_t dx, fixed_t dy, fixed_t dz)
 
         // Can we do this step?
         while(!P_TryMoveXYZ
-              (thing, thing->x + stepX, thing->y + stepY, thing->z + stepZ))
+              (thing, thing->pos[VX] + stepX, thing->pos[VY] + stepY, thing->pos[VZ] + stepZ))
         {
             // We hit something!
             notHit = false;
@@ -480,21 +480,21 @@ static boolean P_HeightClip(mobj_t *thing)
     if(thing->dplayer == &players[consoleplayer] && playback)
         return true;
 
-    onfloor = (thing->z <= thing->floorz);
+    onfloor = (thing->pos[VZ] <= thing->floorz);
 
-    P_CheckPosXYZ(thing, thing->x, thing->y, thing->z);
+    P_CheckPosXYZ(thing, thing->pos[VX], thing->pos[VY], thing->pos[VZ]);
     thing->floorz = tmfloorz;
     thing->ceilingz = tmceilingz;
 
     if(onfloor)
     {
-        thing->z = thing->floorz;
+        thing->pos[VZ] = thing->floorz;
     }
     else
     {
         // don't adjust a floating monster unless forced to
-        if(thing->z + thing->height > thing->ceilingz)
-            thing->z = thing->ceilingz - thing->height;
+        if(thing->pos[VZ] + thing->height > thing->ceilingz)
+            thing->pos[VZ] = thing->ceilingz - thing->height;
     }
 
     // On clientside, players are represented by two mobjs: the real mobj,
@@ -509,6 +509,32 @@ static boolean P_HeightClip(mobj_t *thing)
     if(thing->ceilingz - thing->floorz < thing->height)
         return false;
     return true;
+}
+
+/*
+ * Do we THINK the given (camera) player is currently in the void.
+ * The method used to test this is to compare the position of the mobj
+ * each time it is linked into a subsector.
+ * Cannot be 100% accurate so best not to use it for anything critical...
+ *
+ * @param player        The player to test.
+ *
+ * @return boolean      (TRUE) If the player is thought to be in the void.
+ */
+boolean P_IsInVoid(ddplayer_t* player)
+{
+    if(!player)
+        return false;
+
+    // Cameras are allowed to move completely freely
+    // (so check z height above/below ceiling/floor).
+    if((player->flags & DDPF_CAMERA) &&
+       (player->invoid ||
+         (player->mo->pos[VZ] > player->mo->ceilingz ||
+          player->mo->pos[VZ] < player->mo->floorz)))
+        return true;
+
+    return false;
 }
 
 /*
@@ -537,7 +563,7 @@ static void P_WallMomSlide(line_t *ld)
         return;
     }
 
-    side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
+    side = P_PointOnLineSide(slidemo->pos[VX], slidemo->pos[VY], ld);
     lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
 
     if(side == 1)
@@ -570,7 +596,7 @@ static boolean PTR_SlideTraverse(intercept_t * in)
 
     if(!(li->flags & ML_TWOSIDED))
     {
-        if(P_PointOnLineSide(slidemo->x, slidemo->y, li))
+        if(P_PointOnLineSide(slidemo->pos[VX], slidemo->pos[VY], li))
         {
             // don't hit the back side
             return true;
@@ -584,10 +610,10 @@ static boolean PTR_SlideTraverse(intercept_t * in)
     if(openrange < slidemo->height)
         goto isblocking;        // doesn't fit
 
-    if(opentop - slidemo->z < slidemo->height)
+    if(opentop - slidemo->pos[VZ] < slidemo->height)
         goto isblocking;        // mobj is too high
 
-    if(openbottom - slidemo->z > 24 * FRACUNIT)
+    if(openbottom - slidemo->pos[VZ] > 24 * FRACUNIT)
         goto isblocking;        // too big a step up
 
     // this line doesn't block movement
@@ -632,24 +658,24 @@ static void P_ThingSlidingMove(mobj_t *mo)
     // trace along the three leading corners
     if(mo->momx > 0)
     {
-        leadx = mo->x + mo->radius;
-        trailx = mo->x - mo->radius;
+        leadx = mo->pos[VX] + mo->radius;
+        trailx = mo->pos[VX] - mo->radius;
     }
     else
     {
-        leadx = mo->x - mo->radius;
-        trailx = mo->x + mo->radius;
+        leadx = mo->pos[VX] - mo->radius;
+        trailx = mo->pos[VX] + mo->radius;
     }
 
     if(mo->momy > 0)
     {
-        leady = mo->y + mo->radius;
-        traily = mo->y - mo->radius;
+        leady = mo->pos[VY] + mo->radius;
+        traily = mo->pos[VY] - mo->radius;
     }
     else
     {
-        leady = mo->y - mo->radius;
-        traily = mo->y + mo->radius;
+        leady = mo->pos[VY] - mo->radius;
+        traily = mo->pos[VY] + mo->radius;
     }
 
     bestslidefrac = FRACUNIT + 1;
@@ -666,8 +692,8 @@ static void P_ThingSlidingMove(mobj_t *mo)
     {
         // The move most have hit the middle, so stairstep.
       stairstep:
-        if(!P_TryMoveXYZ(mo, mo->x, mo->y + mo->momy, mo->z))
-            P_TryMoveXYZ(mo, mo->x + mo->momx, mo->y, mo->z);
+        if(!P_TryMoveXYZ(mo, mo->pos[VX], mo->pos[VY] + mo->momy, mo->pos[VZ]))
+            P_TryMoveXYZ(mo, mo->pos[VX] + mo->momx, mo->pos[VY], mo->pos[VZ]);
         return;
     }
 
@@ -677,7 +703,7 @@ static void P_ThingSlidingMove(mobj_t *mo)
     {
         newx = FixedMul(mo->momx, bestslidefrac);
         newy = FixedMul(mo->momy, bestslidefrac);
-        if(!P_TryMoveXYZ(mo, mo->x + newx, mo->y + newy, mo->z))
+        if(!P_TryMoveXYZ(mo, mo->pos[VX] + newx, mo->pos[VY] + newy, mo->pos[VZ]))
             goto stairstep;
     }
 
@@ -699,7 +725,7 @@ static void P_ThingSlidingMove(mobj_t *mo)
     mo->momx = tmxmove;
     mo->momy = tmymove;
 
-    if(!P_TryMoveXYZ(mo, mo->x + tmxmove, mo->y + tmymove, mo->z))
+    if(!P_TryMoveXYZ(mo, mo->pos[VX] + tmxmove, mo->pos[VY] + tmymove, mo->pos[VZ]))
     {
         goto retry;
     }
@@ -773,19 +799,19 @@ void P_ThingMovement2(mobj_t *mo, void *pstate)
     {
         if(xmove > MAXMOVE / 2 || ymove > MAXMOVE / 2)
         {
-            ptryx = mo->x + xmove / 2;
-            ptryy = mo->y + ymove / 2;
+            ptryx = mo->pos[VX] + xmove / 2;
+            ptryy = mo->pos[VY] + ymove / 2;
             xmove >>= 1;
             ymove >>= 1;
         }
         else
         {
-            ptryx = mo->x + xmove;
-            ptryy = mo->y + ymove;
+            ptryx = mo->pos[VX] + xmove;
+            ptryy = mo->pos[VY] + ymove;
             xmove = ymove = 0;
         }
 
-        if(!P_TryMoveXYZ(mo, ptryx, ptryy, mo->z))
+        if(!P_TryMoveXYZ(mo, ptryx, ptryy, mo->pos[VZ]))
         {
             // Blocked move.
             if(player)
@@ -793,11 +819,11 @@ void P_ThingMovement2(mobj_t *mo, void *pstate)
                 if(blockingMobj)
                 {
                     // Slide along the side of the mobj.
-                    if(P_TryMoveXYZ(mo, mo->x, ptryy, mo->z))
+                    if(P_TryMoveXYZ(mo, mo->pos[VX], ptryy, mo->pos[VZ]))
                     {
                         mo->momx = 0;
                     }
-                    else if(P_TryMoveXYZ(mo, ptryx, mo->y, mo->z))
+                    else if(P_TryMoveXYZ(mo, ptryx, mo->pos[VY], mo->pos[VZ]))
                     {
                         mo->momy = 0;
                     }
@@ -825,7 +851,7 @@ void P_ThingMovement2(mobj_t *mo, void *pstate)
     if(mo->ddflags & DDMF_MISSILE)
         return;                 // No friction for missiles, ever.
 
-    if(mo->z > mo->floorz && !mo->onmobj && !(mo->ddflags & DDMF_FLY))
+    if(mo->pos[VZ] > mo->floorz && !mo->onmobj && !(mo->ddflags & DDMF_FLY))
         return;                 // No friction when airborne.
 
     if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED
@@ -850,18 +876,18 @@ void P_ThingMovement2(mobj_t *mo, void *pstate)
 void P_ThingZMovement(mobj_t *mo)
 {
     // check for smooth step up
-    if(mo->dplayer && mo->z < mo->floorz)
+    if(mo->dplayer && mo->pos[VZ] < mo->floorz)
     {
-        mo->dplayer->viewheight -= mo->floorz - mo->z;
+        mo->dplayer->viewheight -= mo->floorz - mo->pos[VZ];
         mo->dplayer->deltaviewheight =
             ((41 << FRACBITS) - mo->dplayer->viewheight) >> 3;
     }
 
     // Adjust height.
-    mo->z += mo->momz;
+    mo->pos[VZ] += mo->momz;
 
     // Clip movement. Another thing?
-    if(mo->onmobj && mo->z <= mo->onmobj->z + mo->onmobj->height)
+    if(mo->onmobj && mo->pos[VZ] <= mo->onmobj->pos[VZ] + mo->onmobj->height)
     {
         if(mo->momz < 0)
         {
@@ -876,11 +902,11 @@ void P_ThingZMovement(mobj_t *mo)
             mo->momz = 0;
         }
         if(!mo->momz)
-            mo->z = mo->onmobj->z + mo->onmobj->height;
+            mo->pos[VZ] = mo->onmobj->pos[VZ] + mo->onmobj->height;
     }
 
     // The floor.
-    if(mo->z <= mo->floorz)
+    if(mo->pos[VZ] <= mo->floorz)
     {
         // Hit the floor.
         if(mo->momz < 0)
@@ -895,7 +921,7 @@ void P_ThingZMovement(mobj_t *mo)
             }
             mo->momz = 0;
         }
-        mo->z = mo->floorz;
+        mo->pos[VZ] = mo->floorz;
     }
     else if(mo->ddflags & DDMF_LOWGRAVITY)
     {
@@ -911,11 +937,11 @@ void P_ThingZMovement(mobj_t *mo)
         else
             mo->momz -= mapgravity;
     }
-    if(mo->z + mo->height > mo->ceilingz)
+    if(mo->pos[VZ] + mo->height > mo->ceilingz)
     {
         // hit the ceiling
         if(mo->momz > 0)
             mo->momz = 0;
-        mo->z = mo->ceilingz - mo->height;
+        mo->pos[VZ] = mo->ceilingz - mo->height;
     }
 }
