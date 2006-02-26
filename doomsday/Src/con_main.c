@@ -2356,6 +2356,9 @@ void UpdateEngineState()
     gx.UpdateState(DD_PRE);
     R_Update();
 
+    // Reset the anim groups (if in-game)
+    R_ResetAnimGroups();
+
     //DJS - Why do we need to recheck sidedef textures at this time?
     //P_ValidateLevel();
 
@@ -3195,8 +3198,8 @@ static void registerVariables(void)
     C_VAR_BYTE("rend-info-lums", &rend_info_lums, 0, 0, 1,
                "1=Print lumobj count after rendering a frame.");
     // * Render-Light
-    C_VAR_INT("rend-light-ambient", &r_ambient, 0, -255, 255,
-              "Ambient light level.");
+    C_VAR_INT2("rend-light-ambient", &r_ambient, 0, -255, 255,
+              "Ambient light level.", Rend_CalcLightRangeModMatrix);
 
     C_VAR_INT("rend-light", &useDynLights, 0, 0, 1,
               "1=Render dynamic lights.");
