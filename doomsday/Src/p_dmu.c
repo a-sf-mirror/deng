@@ -1652,6 +1652,10 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VERTEX1_Y:
             GetValue(type, &p->v1->y, args, 0);
             break;
+        case DMU_VERTEX1_XY:
+            GetValue(type, &p->v1->x, args, 0);
+            GetValue(type, &p->v1->y, args, 1);
+            break;
         case DMU_VERTEX2:
             GetValue(type, &p->v2, args, 0);
             break;
@@ -1661,11 +1665,18 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VERTEX2_Y:
             GetValue(type, &p->v2->y, args, 0);
             break;
+        case DMU_VERTEX2_XY:
+            GetValue(type, &p->v2->x, args, 0);
+            GetValue(type, &p->v2->y, args, 1);
+            break;
         case DMU_DX:
             GetValue(type, &p->dx, args, 0);
             break;
         case DMU_DY:
             GetValue(type, &p->dy, args, 0);
+            break;
+        case DMU_SLOPE_TYPE:
+            GetValue(type, &p->slopetype, args, 0);
             break;
         case DMU_FRONT_SECTOR:
             GetValue(type, &p->frontsector, args, 0);
@@ -1684,7 +1695,7 @@ static int GetProperty(void* ptr, void* context)
         }
         case DMU_SIDE1:
         {
-            side_t* sidePtr = SIDE_PTR(p->sidenum[1]);
+            side_t* sidePtr = (p->sidenum[1] == NO_INDEX)? NULL : SIDE_PTR(p->sidenum[1]);
             GetValue(type, &sidePtr, args, 0);
             break;
         }
