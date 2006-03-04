@@ -854,7 +854,7 @@ int W_OpenAuxiliary(const char *filename)
         destLump->size = LONG(sourceLump->size);
         strncpy(destLump->name, sourceLump->name, 8);
     }
-    Z_Free(fileinfo);
+    M_Free(fileinfo);
 
     // Allocate the auxiliary lumpcache array
     size = numlumps * sizeof(*lumpcache);

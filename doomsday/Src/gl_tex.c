@@ -3886,12 +3886,12 @@ D_CMD(TranslateFont)
         {
             Con_Message("%s...\n", name);
             size = W_LumpLength(lump);
-            patch = (patch_t *) Z_Malloc(size, PU_STATIC, 0);
+            patch = (patch_t *) M_Malloc(size);
             memcpy(patch, W_CacheLumpNum(lump, PU_CACHE), size);
             TranslatePatch(patch, redToWhite);
             sprintf(name, "%s%.3d.lmp", argv[2], i);
             M_WriteFile(name, patch, size);
-            Z_Free(patch);
+            M_Free(patch);
         }
     }
     return true;

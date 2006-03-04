@@ -121,7 +121,7 @@ byte   *PCX_MemoryAllocLoad(byte *imgdata, int len, int *buf_w, int *buf_h,
         outBuffer = M_Malloc(4 * *buf_w * *buf_h);
     }
 
-    palette = Z_Malloc(768, PU_STATIC, 0);
+    palette = M_Malloc(768);
     memcpy(palette, ((byte *) pcx) + len - 768, 768); // Palette is in the end.
 
     pix = outBuffer;
@@ -150,7 +150,7 @@ byte   *PCX_MemoryAllocLoad(byte *imgdata, int len, int *buf_w, int *buf_h,
     if(raw - (byte *) pcx > len)
         Con_Error("PCX_Load: corrupt image!\n");
 
-    Z_Free(palette);
+    M_Free(palette);
     return outBuffer;
 }
 
@@ -178,7 +178,7 @@ byte   *PCX_AllocLoad(const char *fn, int *buf_w, int *buf_h, byte *outBuffer)
     F_Seek(file, 0, SEEK_END);  // Seek to end.
     len = F_Tell(file);         // How long?
     F_Seek(file, 0, SEEK_SET);
-    raw = Z_Malloc(len, PU_STATIC, 0);
+    raw = M_Malloc(len);
     F_Read(raw, len, file);
     F_Close(file);
 
@@ -186,6 +186,6 @@ byte   *PCX_AllocLoad(const char *fn, int *buf_w, int *buf_h, byte *outBuffer)
     if(!(outBuffer = PCX_MemoryAllocLoad(raw, len, buf_w, buf_h, outBuffer)))
         Con_Message("PCX_Load: error loading %s.\n", fn);
 
-    Z_Free(raw);
+    M_Free(raw);
     return outBuffer;
 }
