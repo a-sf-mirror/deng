@@ -92,9 +92,8 @@ void Rend_ProcessThingShadow(mobj_t *mo)
     // Check the height.
     moz = mo->pos[VZ] - mo->floorclip;
     if(mo->ddflags & DDMF_BOB)
-    {
         moz -= R_GetBobOffset(mo);
-    }
+
     height = FIX2FLT(moz - mo->floorz);
     moh = FIX2FLT(mo->height);
     if(!moh)
@@ -136,11 +135,8 @@ void Rend_ProcessThingShadow(mobj_t *mo)
     floor = SECT_FLOOR(mo->subsector->sector);
     P_ThingSectorsIterator(mo, Rend_ShadowIterator, &floor);
 
-    if(floor >= moz + mo->height)
-    {
-        // Can't have a shadow above the object!
-        return;
-    }
+    if(floor >= FIX2FLT(moz + mo->height))
+        return; // Can't have a shadow above the object!
 
     // Prepare the poly.
     memset(&poly, 0, sizeof(poly));
