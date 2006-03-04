@@ -863,7 +863,7 @@ void R_PrecacheLevel(void)
     }
 
     // Precache textures.
-    texturepresent = Z_Malloc(numtextures, PU_STATIC, 0);
+    texturepresent = M_Malloc(numtextures);
     memset(texturepresent, 0, numtextures);
 
     for(i = 0; i < numsides; i++)
@@ -887,7 +887,7 @@ void R_PrecacheLevel(void)
         }
 
     // Precache sprites.
-    spritepresent = Z_Malloc(numsprites, PU_STATIC, 0);
+    spritepresent = M_Malloc(numsprites);
     memset(spritepresent, 0, numsprites);
 
     for(th = thinkercap.next, mocount = 0; th != &thinkercap; th = th->next)
@@ -937,8 +937,8 @@ void R_PrecacheLevel(void)
         }
     }
 
-    Z_Free(texturepresent);
-    Z_Free(spritepresent);
+    M_Free(texturepresent);
+    M_Free(spritepresent);
 
     if(verbose)
     {
