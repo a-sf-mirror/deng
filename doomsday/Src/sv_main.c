@@ -421,7 +421,7 @@ void Sv_HandlePacket(void)
         // Is the message for us?
         mask = Msg_ReadShort();
         // Copy the message into a buffer.
-        msg = Z_Malloc(netBuffer.length - 3, PU_STATIC, 0);
+        msg = M_Malloc(netBuffer.length - 3);
         strcpy(msg, netBuffer.cursor);
         // Message for us? Show it locally.
         if(mask & 1)
@@ -439,7 +439,7 @@ void Sv_HandlePacket(void)
             {
                 Net_SendBuffer(i, SPF_ORDERED);
             }
-        Z_Free(msg);
+        M_Free(msg);
         break;
 
     case pkt_player_info:

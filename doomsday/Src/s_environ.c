@@ -30,6 +30,8 @@
 #include "de_refresh.h"
 #include "de_audio.h"
 
+#include "m_misc.h"
+
 // MACROS ------------------------------------------------------------------
 
 enum                            // Texture types
@@ -67,9 +69,6 @@ typedef struct {
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// S_TextureTypeForName
-//===========================================================================
 int S_TextureTypeForName(char *name)
 {
     int     i, k;
@@ -95,10 +94,9 @@ int S_TextureTypeForName(char *name)
     return TEXTYPE_UNKNOWN;
 }
 
-//===========================================================================
-// S_CalcSectorReverbs
-//  Calculate the reverb settings for each sector.
-//===========================================================================
+/*
+ * Calculate the reverb settings for each sector.
+ */
 void S_CalcSectorReverbs(void)
 {
     int     i, c, type, k;
@@ -110,9 +108,7 @@ void S_CalcSectorReverbs(void)
     subreverb_t *sub_reverb, *rev;
 
     // Allocate memory for the subsector temporary reverb data.
-    sub_reverb =
-        (subreverb_t *) Z_Malloc(sizeof(subreverb_t) * numsubsectors,
-                                 PU_STATIC, 0);
+    sub_reverb = (subreverb_t *) M_Malloc(sizeof(subreverb_t) * numsubsectors);
     memset(sub_reverb, 0, sizeof(subreverb_t) * numsubsectors);
 
     // First determine each subsectors' individual characteristics.
@@ -319,7 +315,7 @@ void S_CalcSectorReverbs(void)
            sec->reverbDamping /= k; */
     }
 
-    Z_Free(sub_reverb);
+    M_Free(sub_reverb);
 
     //gi.Message( "P_CalcSectorReverbs: end at %i\n", gi.GetTime());
 }
