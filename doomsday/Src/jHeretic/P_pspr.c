@@ -322,9 +322,9 @@ void P_RepositionMace(mobj_t *mo)
     mo->pos[VY] = MaceSpots[spot].y;
     ss = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
 
-    mo->pos[VZ] = mo->floorz = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    mo->pos[VZ] = mo->floorz = P_GetFixedp(ss, DMU_CEILING_HEIGHT);
 
-    mo->ceilingz = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    mo->ceilingz = P_GetFixedp(ss, DMU_CEILING_HEIGHT);
     P_SetThingPosition(mo);
 }
 

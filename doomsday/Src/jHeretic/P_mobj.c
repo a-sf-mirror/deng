@@ -408,8 +408,7 @@ void P_XYMovement(mobj_t *mo)
         if(mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 ||
            mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
         {
-            if(mo->floorz != P_GetFixedp(mo->subsector,
-                                         DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
+            if(mo->floorz != P_GetFixedp(mo->subsector, DMU_FLOOR_HEIGHT))
             {
                 return;
             }
@@ -602,8 +601,7 @@ void P_ZMovement(mobj_t *mo)
         }
         if(mo->flags & MF_MISSILE)
         {
-            if(P_GetIntp(mo->subsector,
-                         DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_TEXTURE) == skyflatnum)
+            if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) == skyflatnum)
             {
                 if(mo->type == MT_BLOODYSKULL)
                 {
@@ -635,16 +633,14 @@ void P_NightmareRespawn(mobj_t *mobj)
 
     // spawn a teleport fog at old spot
     mo = P_SpawnMobj(mobj->pos[VX], mobj->pos[VY],
-                     P_GetFixedp(mobj->subsector,
-                                 DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
+                     P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
 
     // spawn a teleport fog at the new spot
     mo = P_SpawnMobj(pos[VX], pos[VY],
-                     P_GetFixedp(R_PointInSubsector(pos[VX], pos[VY]),
-                                 DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
+                     P_GetFixedp(R_PointInSubsector(pos[VX], pos[VY]), DMU_FLOOR_HEIGHT) + TELEFOGHEIGHT,
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
@@ -961,8 +957,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     // Set subsector and/or block links.
     P_SetThingPosition(mobj);
 
-    mobj->floorz = P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
-    mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+    mobj->floorz = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
+    mobj->ceilingz = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 
     if(z == ONFLOORZ)
     {
@@ -991,7 +987,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->pos[VZ] = z;
     }
     if(mobj->flags2 & MF2_FOOTCLIP && P_GetThingFloorType(mobj) != FLOOR_SOLID
-       && mobj->floorz == P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
+       && mobj->floorz == P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT))
     {
         mobj->flags2 |= MF2_FEETARECLIPPED;
     }
@@ -1312,16 +1308,14 @@ void P_RipperBlood(mobj_t *mo)
 
 int P_GetThingFloorType(mobj_t *thing)
 {
-    return (TerrainTypes[P_GetIntp(thing->subsector,
-                                   DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_TEXTURE)]);
+    return (TerrainTypes[P_GetIntp(thing->subsector, DMU_FLOOR_TEXTURE)]);
 }
 
 int P_HitFloor(mobj_t *thing)
 {
     mobj_t *mo;
 
-    if(thing->floorz != P_GetFixedp(thing->subsector,
-                                    DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
+    if(thing->floorz != P_GetFixedp(thing->subsector, DMU_FLOOR_HEIGHT))
     {
         // don't splash if landing on the edge above water/lava/etc....
         return (FLOOR_SOLID);
