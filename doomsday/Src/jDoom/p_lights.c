@@ -216,7 +216,7 @@ void EV_TurnTagLightsOff(line_t *line)
     int     linetag;
     int     lightlevel;
     sector_t *tsec;
-    line_t *templine;
+    line_t *other;
 
     linetag = P_XLine(line)->tag;
 
@@ -227,8 +227,8 @@ void EV_TurnTagLightsOff(line_t *line)
             min = P_GetInt(DMU_SECTOR, j, DMU_LIGHT_LEVEL);
             for(i = 0; i < P_GetInt(DMU_SECTOR, j, DMU_LINE_COUNT); i++)
             {
-                templine = P_GetPtr(DMU_LINE_OF_SECTOR, j, i);
-                tsec = getNextSector(templine, P_ToPtr(DMU_SECTOR, j));
+                other = P_GetPtr(DMU_SECTOR, j, DMU_LINE_OF_SECTOR | i);
+                tsec = getNextSector(other, P_ToPtr(DMU_SECTOR, j));
 
                 if(!tsec)
                     continue;
@@ -266,7 +266,7 @@ void EV_LightTurnOn(line_t *line, int bright)
             {
                 for(j = 0; j < P_GetInt(DMU_SECTOR, i, DMU_LINE_COUNT); j++)
                 {
-                    templine = P_GetPtr(DMU_LINE_OF_SECTOR, i, j);
+                    templine = P_GetPtr(DMU_SECTOR, i, DMU_LINE_OF_SECTOR | j);
                     temp = getNextSector(templine, P_ToPtr(DMU_SECTOR, i));
 
                     if(!temp)

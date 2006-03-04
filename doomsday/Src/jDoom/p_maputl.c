@@ -89,14 +89,15 @@ static boolean PIT_ApplyTorque(line_t *ld, void *data)
 {
     mobj_t *mo = tmthing;
     fixed_t dist;
-    fixed_t ffloor =
-        P_GetFixedp(P_GetPtrp(ld, DMU_FRONT_SECTOR), DMU_FLOOR_HEIGHT);
-
-    fixed_t bfloor =
-        P_GetFixedp(P_GetPtrp(ld, DMU_BACK_SECTOR), DMU_FLOOR_HEIGHT);
-
+    sector_t *frontsec = P_GetPtrp(ld, DMU_FRONT_SECTOR);
+    sector_t *backsec = P_GetPtrp(ld, DMU_BACK_SECTOR);
+    fixed_t ffloor;
+    fixed_t bfloor;
     fixed_t dx = P_GetFixedp(ld, DMU_DX);
     fixed_t dy = P_GetFixedp(ld, DMU_DY);
+
+    ffloor = P_GetFixedp(frontsec, DMU_FLOOR_HEIGHT);
+    bfloor = P_GetFixedp(backsec, DMU_FLOOR_HEIGHT);
 
     if(tmthing->player)
         return true;            // skip players!

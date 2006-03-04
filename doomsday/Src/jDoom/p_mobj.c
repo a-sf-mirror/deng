@@ -218,19 +218,23 @@ void P_XYMovement(mobj_t *mo)
             }
             else if(mo->flags & MF_MISSILE)
             {
-                backsector = P_GetPtrp(ceilingline, DMU_BACK_SECTOR);
-                if(backsector)
+                if(ceilingline)
                 {
-                    // explode a missile?
-                    if(ceilingline &&
-                       P_GetIntp(backsector,
-                                 DMU_CEILING_TEXTURE) == skyflatnum)
+                    backsector = P_GetPtrp(ceilingline, DMU_BACK_SECTOR);
+                    if(backsector)
                     {
-                        // Hack to prevent missiles exploding
-                        // against the sky.
-                        // Does not handle sky floors.
-                        P_RemoveMobj(mo);
-                        return;
+                        // explode a missile?
+                        if(ceilingline &&
+                           P_GetIntp(backsector,
+                                     DMU_CEILING_TEXTURE) == skyflatnum)
+                        {
+                            // Hack to prevent missiles exploding
+                            // against the sky.
+                            // Does not handle sky floors.
+                            Con_Message("Remove missile\n");
+                            P_RemoveMobj(mo);
+                            return;
+                        }
                     }
                 }
                 P_ExplodeMissile(mo);
@@ -516,18 +520,15 @@ void P_ZMovement(mobj_t *mo)
 
 void P_NightmareRespawn(mobj_t *mobj)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     subsector_t *ss;
     mobj_t *mo;
-    thing_t *mthing;
 
-    x = mobj->spawnpoint->x << FRACBITS;
-    y = mobj->spawnpoint->y << FRACBITS;
+    pos[VX] = mobj->spawnpoint.x << FRACBITS;
+    pos[VY] = mobj->spawnpoint.y << FRACBITS;
 
     // somthing is occupying it's position?
-    if(!P_CheckPosition(mobj, x, y))
+    if(!P_CheckPosition(mobj, pos[VX], pos[VY]))
         return;                 // no respwan
 
     // spawn a teleport fog at old spot
@@ -540,29 +541,26 @@ void P_NightmareRespawn(mobj_t *mobj)
     S_StartSound(sfx_telept, mo);
 
     // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector(x, y);
+    ss = R_PointInSubsector(pos[VX], pos[VY]);
 
-    mo = P_SpawnMobj(x, y,
+    mo = P_SpawnMobj(pos[VX], pos[VY],
                      P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
 
-    // spawn the new monster
-    mthing = mobj->spawnpoint;
-
     // spawn it
     if(mobj->info->flags & MF_SPAWNCEILING)
-        z = ONCEILINGZ;
+        pos[VZ] = ONCEILINGZ;
     else
-        z = ONFLOORZ;
+        pos[VZ] = ONFLOORZ;
 
     // inherit attributes from deceased one
-    mo = P_SpawnMobj(x, y, z, mobj->type);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], mobj->type);
     mo->spawnpoint = mobj->spawnpoint;
-    mo->angle = ANG45 * (mthing->angle / 45);
+    mo->angle = ANG45 * (mobj->spawnpoint.angle / 45);
 
-    if(mthing->options & MTF_AMBUSH)
+    if(mobj->spawnpoint.options & MTF_AMBUSH)
         mo->flags |= MF_AMBUSH;
 
     mo->reactiontime = 18;
@@ -793,7 +791,7 @@ void P_RemoveMobj(mobj_t *mobj)
     if((mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED) &&
        (mobj->type != MT_INV) && (mobj->type != MT_INS))
     {
-        itemrespawnque[iquehead] = *mobj->spawnpoint;
+        itemrespawnque[iquehead] = mobj->spawnpoint;
         itemrespawntime[iquehead] = leveltime;
         iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
 
@@ -814,14 +812,10 @@ void P_RemoveMobj(mobj_t *mobj)
 
 void P_RespawnSpecials(void)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-
+    fixed_t pos[3];
     subsector_t *ss;
     mobj_t *mo;
-    thing_t *mthing;
-
+    thing_t mthing;
     int     i;
 
     // only respawn items in deathmatch 2 and optionally in coop.
@@ -836,36 +830,35 @@ void P_RespawnSpecials(void)
     if(leveltime - itemrespawntime[iquetail] < 30 * 35)
         return;
 
-    mthing = &itemrespawnque[iquetail];
+    mthing = itemrespawnque[iquetail];
 
-    x = mthing->x << FRACBITS;
-    y = mthing->y << FRACBITS;
+    pos[VX] = mthing.x << FRACBITS;
+    pos[VY] = mthing.y << FRACBITS;
+
+    ss = R_PointInSubsector(pos[VX], pos[VY]);
+    pos[VZ] = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
 
     // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector(x, y);
-
-    mo = P_SpawnMobj(x, y,
-                     P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
-                     MT_IFOG);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_IFOG);
 
     S_StartSound(sfx_itmbk, mo);
 
     // find which type to spawn
     for(i = 0; i < Get(DD_NUMMOBJTYPES); i++)
     {
-        if(mthing->type == mobjinfo[i].doomednum)
+        if(mthing.type == mobjinfo[i].doomednum)
             break;
     }
 
     // spawn it
     if(mobjinfo[i].flags & MF_SPAWNCEILING)
-        z = ONCEILINGZ;
+        pos[VZ] = ONCEILINGZ;
     else
-        z = ONFLOORZ;
+        pos[VZ] = ONFLOORZ;
 
-    mo = P_SpawnMobj(x, y, z, i);
+    mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], i);
     mo->spawnpoint = mthing;
-    mo->angle = ANG45 * (mthing->angle / 45);
+    mo->angle = ANG45 * (mthing.angle / 45);
 
     // pull it from the que
     iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
@@ -886,9 +879,7 @@ mobj_t *P_SpawnTeleFog(int x, int y)
 void P_SpawnPlayer(thing_t * mthing, int pnum)
 {
     player_t *p;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
     mobj_t *mobj;
     int     i;
 
@@ -906,10 +897,10 @@ void P_SpawnPlayer(thing_t * mthing, int pnum)
     if(p->playerstate == PST_REBORN)
         G_PlayerReborn(pnum);
 
-    x = mthing->x << FRACBITS;
-    y = mthing->y << FRACBITS;
-    z = ONFLOORZ;
-    mobj = P_SpawnMobj(x, y, z, MT_PLAYER);
+    pos[VX] = mthing->x << FRACBITS;
+    pos[VY] = mthing->y << FRACBITS;
+    pos[VZ] = ONFLOORZ;
+    mobj = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_PLAYER);
 
     // With clients all player mobjs are remote, even the consoleplayer.
     if(IS_CLIENT)
@@ -973,9 +964,7 @@ void P_SpawnMapThing(thing_t *th)
     int     i;
     int     bit;
     mobj_t *mobj;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t pos[3];
 
     //Con_Message("x = %i, y = %i, height = %i, angle = %i, type = %i, options = %i\n",
     //            th->x, th->y, th->height, th->angle, th->type, th->options);
@@ -1071,16 +1060,16 @@ void P_SpawnMapThing(thing_t *th)
     }
 
     // spawn it
-    x = th->x << FRACBITS;
-    y = th->y << FRACBITS;
+    pos[VX] = th->x << FRACBITS;
+    pos[VY] = th->y << FRACBITS;
 
     if(mobjinfo[i].flags & MF_SPAWNCEILING)
-        z = ONCEILINGZ;
+        pos[VZ] = ONCEILINGZ;
     else
-        z = ONFLOORZ;
+        pos[VZ] = ONFLOORZ;
 
-    mobj = P_SpawnMobj(x, y, z, i);
-    mobj->spawnpoint = th;
+    mobj = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], i);
+    mobj->spawnpoint = *th;
 
     if(mobj->tics > 0)
         mobj->tics = 1 + (P_Random() % mobj->tics);

@@ -517,6 +517,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
         break;
 
     case SPR_MEDI:
+    {
+        int msg;
         // DOOM bug
         // The following test was originaly placed AFTER the call to
         // P_GiveBody thereby making the first outcome impossible as
@@ -524,15 +526,17 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher)
         // the GOTMEDINEED "Picked up a medikit that you REALLY need"
         // was never used.
         if(player->health < 25)
-            P_SetMessage(player, GOTMEDINEED);
+            msg = TXT_GOTMEDINEED;
         else
-            P_SetMessage(player, GOTMEDIKIT);
+            msg = TXT_GOTMEDIKIT;
 
         if(!P_GiveBody(player, 25))
             return;
-        break;
 
-        // power ups
+        P_SetMessage(player, GET_TXT(msg));
+        break;
+    }
+    // power ups
     case SPR_PINV:
         if(!P_GivePower(player, pw_invulnerability))
             return;

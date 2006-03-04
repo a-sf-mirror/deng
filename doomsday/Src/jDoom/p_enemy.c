@@ -508,7 +508,6 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     int     c;
     int     stop;
     player_t *player;
-    sector_t *sector;
     angle_t an;
     fixed_t dist;
     int     playerCount;
@@ -520,8 +519,6 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     // Are there any players?
     if(!playerCount)
         return false;
-
-    sector = P_GetPtrp(actor->subsector, DMU_SECTOR);
 
     c = 0;
     stop = (actor->lastlook - 1) & 3;
@@ -633,11 +630,12 @@ void C_DECL A_KeenDie(mobj_t *mo)
  */
 void C_DECL A_Look(mobj_t *actor)
 {
-    sector_t* xsec = P_GetPtrp(actor->subsector, DMU_SECTOR);
+    sector_t* sec = NULL;
     mobj_t *targ;
 
     actor->threshold = 0;       // any shot will wake up
-    targ = P_XSector(xsec)->soundtarget;
+    sec = P_GetPtrp(actor->subsector, DMU_SECTOR);
+    targ = P_XSector(sec)->soundtarget;
 
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
