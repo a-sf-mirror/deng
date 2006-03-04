@@ -1204,20 +1204,9 @@ static void FinalizeMapData(gamemap_t* map)
 
     P_GroupLines(map);
 
-    for(i = 0; i < map->numvertexes; ++i)
-        map->vertexes[i].header.type = DMU_VERTEX;
-
-    for(i = 0; i < map->numsegs; ++i)
-        map->segs[i].header.type = DMU_SEG;
-
-    for(i = 0; i < map->numlines; ++i)
-        map->lines[i].header.type = DMU_LINE;
-
     for(i = 0; i < map->numsides; ++i)
     {
         side = &map->sides[i];
-
-        side->header.type = DMU_SIDE;
 
         memset(side->toprgb, 0xff, 3);
         memset(side->midrgba, 0xff, 4);
@@ -1233,13 +1222,9 @@ static void FinalizeMapData(gamemap_t* map)
             side->bottomtexture = 0;
     }
 
-    for(i = 0; i < map->numsubsectors; ++i)
-        map->subsectors[i].header.type = DMU_SUBSECTOR;
-
     for(i = 0; i < map->numsectors; ++i)
     {
         sec = &map->sectors[i];
-        sec->header.type = DMU_SECTOR;
 
         sec->thinglist = NULL;
         memset(sec->rgb, 0xff, 3);
@@ -1253,9 +1238,6 @@ static void FinalizeMapData(gamemap_t* map)
 
     for(i = 0; i < map->po_NumPolyobjs; ++i)
         map->polyobjs[i].header.type = DMU_POLYOBJ;
-
-    for(i = 0; i < map->numnodes; ++i)
-        map->nodes[i].header.type = DMU_NODE;
 }
 
 static boolean P_ReadMapData(gamemap_t* map, int doClass)
@@ -1476,7 +1458,7 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
     int internalType;
     int lumpCount;
     unsigned int i;
-    int k;
+    unsigned int k;
     unsigned int elements;
     unsigned int oldNum, newNum;
 
@@ -1553,6 +1535,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->vertexes = Z_Malloc(map->numvertexes * sizeof(vertex_t), PU_LEVEL, 0);
 
                 memset(&map->vertexes[oldNum], 0, elements * sizeof(vertex_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->vertexes[k].header.type = DMU_VERTEX;
+                }
 
                 if(mapLump->lumpClass == LCM_VERTEXES && oldNum == 0)
                     firstGLvertex = map->numvertexes;
@@ -1578,6 +1564,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->lines = Z_Malloc(map->numlines * sizeof(line_t), PU_LEVEL, 0);
 
                 memset(&map->lines[oldNum], 0, elements * sizeof(line_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->lines[k].header.type = DMU_LINE;
+                }
 
                 // for missing front detection
                 missingFronts = M_Malloc(map->numlines * sizeof(int));
@@ -1598,6 +1588,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->sides = Z_Malloc(map->numsides * sizeof(side_t), PU_LEVEL, 0);
 
                 memset(&map->sides[oldNum], 0, elements * sizeof(side_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->sides[k].header.type = DMU_SIDE;
+                }
 
                 // Call the game's setup routine
                 if(gx.SetupForSides)
@@ -1614,7 +1608,6 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->segs = Z_Malloc(map->numsegs * sizeof(seg_t), PU_LEVEL, 0);
 
                 // Initialize type identifier immediately.
-                // TODO: Do this for the other types as well.
                 memset(&map->segs[oldNum], 0, elements * sizeof(seg_t));
                 for(k = oldNum; k < newNum; ++k)
                 {
@@ -1632,6 +1625,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->subsectors = Z_Malloc(map->numsubsectors * sizeof(subsector_t), PU_LEVEL, 0);
 
                 memset(&map->subsectors[oldNum], 0, elements * sizeof(subsector_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->subsectors[k].header.type = DMU_SUBSECTOR;
+                }
                 break;
 
             case DAM_NODE:
@@ -1644,6 +1641,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->nodes = Z_Malloc(map->numnodes * sizeof(node_t), PU_LEVEL, 0);
 
                 memset(&map->nodes[oldNum], 0, elements * sizeof(node_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->nodes[k].header.type = DMU_NODE;
+                }
                 break;
 
             case DAM_SECTOR:
@@ -1656,6 +1657,10 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                     map->sectors = Z_Malloc(map->numsectors * sizeof(sector_t), PU_LEVEL, 0);
 
                 memset(&map->sectors[oldNum], 0, elements * sizeof(sector_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->sectors[k].header.type = DMU_SECTOR;
+                }
 
                 // Call the game's setup routine
                 if(gx.SetupForSectors)
@@ -2029,7 +2034,7 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
                 *d = NULL;
             break;
             }
-            
+
         default:
             // TODO: Need to react?
             break;
