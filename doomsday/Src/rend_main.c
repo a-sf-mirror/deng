@@ -50,8 +50,7 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-void    Rend_ProjectionMatrix();
-void    Rend_RenderBoundingBoxes(void);
+static void Rend_RenderBoundingBoxes(void);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 

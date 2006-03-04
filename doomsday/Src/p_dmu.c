@@ -589,6 +589,7 @@ int P_Callbackp(int type, void* ptr, void* context, int (*callback)(void* p, voi
     case DMU_NODE:
     case DMU_SUBSECTOR:
     case DMU_SECTOR:
+    case DMU_POLYOBJ:
         // Only do the callback if the type is the same as the object's.
         if(type == DMU_GetType(ptr))
         {
@@ -831,6 +832,26 @@ static int SetProperty(void* ptr, void* context)
         valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
+        case DMU_VERTEX1_X:
+            SetValue(DDVT_FIXED, &p->v1->x, args, 0);
+            break;
+        case DMU_VERTEX1_Y:
+            SetValue(DDVT_FIXED, &p->v1->y, args, 0);
+            break;
+        case DMU_VERTEX1_XY:
+            SetValue(DDVT_FIXED, &p->v1->x, args, 0);
+            SetValue(DDVT_FIXED, &p->v1->y, args, 1);
+            break;
+        case DMU_VERTEX2_X:
+            SetValue(DDVT_FIXED, &p->v2->x, args, 0);
+            break;
+        case DMU_VERTEX2_Y:
+            SetValue(DDVT_FIXED, &p->v2->y, args, 0);
+            break;
+        case DMU_VERTEX2_XY:
+            SetValue(DDVT_FIXED, &p->v2->x, args, 0);
+            SetValue(DDVT_FIXED, &p->v2->y, args, 1);
+            break;
         case DMU_FLAGS:
             SetValue(type, &p->flags, args, 0);
             break;
@@ -849,6 +870,9 @@ static int SetProperty(void* ptr, void* context)
         {
         case DMU_FLAGS:
             SetValue(type, &p->flags, args, 0);
+            break;
+        case DMU_VALID_COUNT:
+            SetValue(DDVT_INT, &p->validcount, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_LINE.\n",
@@ -943,12 +967,15 @@ static int SetProperty(void* ptr, void* context)
 
     case DMU_SUBSECTOR:
         {
-        seg_t* p = ptr;
+        subsector_t* p = ptr;
         valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
         case DMU_FLAGS:
             SetValue(type, &p->flags, args, 0);
+            break;
+        case DMU_POLYOBJ:
+            SetValue(DDVT_PTR, &p->poly, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_SUBSECTOR.\n",
@@ -1076,7 +1103,7 @@ static int SetProperty(void* ptr, void* context)
             SetValue(type, &p->validcount, args, 0);
             break;
         default:
-            Con_Error("SetProperty: Property %s is not writable in DMU_SEG.\n",
+            Con_Error("SetProperty: Property %s is not writable in DMU_SECTOR.\n",
                       DMU_Str(args->prop));
         }
         // TODO: Notify the relevant subsystems.
@@ -1084,9 +1111,62 @@ static int SetProperty(void* ptr, void* context)
         }
 
     case DMU_POLYOBJ:
-        Con_Error("SetProperty: Property %s is not writable in DMU_POLYOBJ.\n",
-                  DMU_Str(args->prop));
+        {
+        polyobj_t* p = ptr;
+        if(args->modifiers & DMU_SEG_OF_POLYOBJ)
+        {
+            if(args->prop >= 0 && args->prop < p->numsegs)
+            {
+                SetValue(DDVT_PTR, &p->segs[args->prop], args, 0);
+                break;
+            }
+            else
+            {
+                Con_Error("SetProperty: Polyobj seg out of range (%i out of %i).\n",
+                          args->prop, p->numsegs);
+            }
+        }
+        
+        switch(args->prop)
+        {
+        case DMU_START_SPOT_X:
+            SetValue(DDVT_FIXED, &p->startSpot.x, args, 0);
+            break;
+        case DMU_START_SPOT_Y:
+            SetValue(DDVT_FIXED, &p->startSpot.y, args, 0);
+            break;
+        case DMU_START_SPOT_XY:
+            SetValue(DDVT_FIXED, &p->startSpot.x, args, 0);
+            SetValue(DDVT_FIXED, &p->startSpot.y, args, 1);
+            break;
+        case DMU_ORIGINAL_POINTS:
+            SetValue(DDVT_PTR, &p->originalPts, args, 0);
+            break;
+        case DMU_PREVIOUS_POINTS:
+            SetValue(DDVT_PTR, &p->prevPts, args, 0);
+            break;
+        case DMU_TAG:
+            SetValue(DDVT_INT, &p->tag, args, 0);
+            break;
+        case DMU_CRUSH:
+            SetValue(DDVT_BOOL, &p->crush, args, 0);
+            break;
+        case DMU_SEQUENCE_TYPE:
+            SetValue(DDVT_INT, &p->seqType, args, 0);
+            break;
+        case DMU_SEG_COUNT:
+            SetValue(DDVT_INT, &p->numsegs, args, 0);
+            break;
+        case DMU_SEG_LIST:
+            SetValue(DDVT_PTR, &p->segs, args, 0);
+            break;
+        default:
+            Con_Error("SetProperty: Property %s is not writable in DMU_POLYOBJ.\n",
+                      DMU_Str(args->prop));
+            break;
+        }
         break;
+        }
 
     case DMU_NODE:
         Con_Error("SetProperty: Property %s is not writable in DMU_NODE.\n",
@@ -1604,8 +1684,28 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VERTEX1:
             GetValue(type, &p->v1, args, 0);
             break;
+        case DMU_VERTEX1_X:
+            GetValue(type, &p->v1->x, args, 0);
+            break;
+        case DMU_VERTEX1_Y:
+            GetValue(type, &p->v1->y, args, 0);
+            break;
+        case DMU_VERTEX1_XY:
+            GetValue(type, &p->v1->x, args, 0);
+            GetValue(type, &p->v1->y, args, 1);
+            break;
         case DMU_VERTEX2:
             GetValue(type, &p->v2, args, 0);
+            break;
+        case DMU_VERTEX2_X:
+            GetValue(type, &p->v2->x, args, 0);
+            break;
+        case DMU_VERTEX2_Y:
+            GetValue(type, &p->v2->y, args, 0);
+            break;
+        case DMU_VERTEX2_XY:
+            GetValue(type, &p->v2->x, args, 0);
+            GetValue(type, &p->v2->y, args, 1);
             break;
         case DMU_LENGTH:
             GetValue(type, &p->length, args, 0);
@@ -1700,10 +1800,21 @@ static int GetProperty(void* ptr, void* context)
             break;
         }
         case DMU_BOUNDING_BOX:
-            GetValue(type, &p->bbox[0], args, 0);
-            GetValue(type, &p->bbox[1], args, 1);
-            GetValue(type, &p->bbox[2], args, 2);
-            GetValue(type, &p->bbox[3], args, 3);
+            if(args->valueType == DDVT_PTR)
+            {
+                fixed_t* bbox = p->bbox;
+                GetValue(DDVT_PTR, &bbox, args, 0);
+            }
+            else
+            {
+                GetValue(DDVT_FIXED, &p->bbox[0], args, 0);
+                GetValue(DDVT_FIXED, &p->bbox[1], args, 1);
+                GetValue(DDVT_FIXED, &p->bbox[2], args, 2);
+                GetValue(DDVT_FIXED, &p->bbox[3], args, 3);
+            }
+            break;
+        case DMU_VALID_COUNT:
+            GetValue(DDVT_INT, &p->validcount, args, 0);
             break;
 
         default:
@@ -1736,6 +1847,9 @@ static int GetProperty(void* ptr, void* context)
         case DMU_THINGS:
             GetValue(type, &p->sector->thinglist, args, 0);
             break;
+        case DMU_POLYOBJ:
+            GetValue(DDVT_PTR, &p->poly, args, 0);
+            break;
         default:
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
                       DMU_Str(args->prop));
@@ -1746,13 +1860,48 @@ static int GetProperty(void* ptr, void* context)
     case DMU_POLYOBJ:
     {
         polyobj_t* p = ptr;
+        if(args->modifiers & DMU_SEG_OF_POLYOBJ)
+        {
+            if(args->prop >= 0 && args->prop < p->numsegs)
+            {
+                GetValue(DDVT_PTR, &p->segs[args->prop], args, 0);
+                break;
+            }
+            else
+            {
+                Con_Error("GetProperty: Polyobj seg out of range (%i out of %i).\n",
+                          args->prop, p->numsegs);
+            }
+        }
+        
         switch(args->prop)
         {
+        case DMU_START_SPOT_X:
+            GetValue(DDVT_FIXED, &p->startSpot.x, args, 0);
+            break;
+        case DMU_START_SPOT_Y:
+            GetValue(DDVT_FIXED, &p->startSpot.y, args, 0);
+            break;
         case DMU_ORIGINAL_POINTS:
             GetValue(DDVT_PTR, &p->originalPts, args, 0);
             break;
+        case DMU_PREVIOUS_POINTS:
+            GetValue(DDVT_PTR, &p->prevPts, args, 0);
+            break;
         case DMU_TAG:
             GetValue(DDVT_INT, &p->tag, args, 0);
+            break;
+        case DMU_SEG_LIST:
+            GetValue(DDVT_PTR, &p->segs, args, 0);
+            break;
+        case DMU_SEG_COUNT:
+            GetValue(DDVT_INT, &p->numsegs, args, 0);
+            break;
+        case DMU_CRUSH:
+            GetValue(DDVT_BOOL, &p->crush, args, 0);
+            break;
+        case DMU_SEQUENCE_TYPE:
+            GetValue(DDVT_INT, &p->seqType, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_POLYOBJ has no property %s.\n",
