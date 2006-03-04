@@ -374,6 +374,11 @@ void* P_DummyExtraData(void* dummy)
  */
 int P_ToIndex(const void* ptr)
 {
+    if(!ptr)
+    {
+        return -1;
+    }
+    
     switch(DMU_GetType(ptr))
     {
     case DMU_VERTEX:
