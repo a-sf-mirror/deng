@@ -271,7 +271,7 @@ void P_XYMovement(mobj_t *mo)
                mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
             {
                 if(mo->floorz !=
-                   P_GetFixedp(mo->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT))
+                   P_GetFixedp(mo->subsector, DMU_FLOOR_HEIGHT))
                     return;
             }
         }
@@ -503,8 +503,7 @@ void P_ZMovement(mobj_t *mo)
 
         if((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
-            if(P_GetIntp(mo->subsector,
-                         DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_TEXTURE) == skyflatnum)
+            if(P_GetIntp(mo->subsector, DMU_CEILING_TEXTURE) == skyflatnum)
             {
                 // Don't explode against sky.
                 P_RemoveMobj(mo);
@@ -534,8 +533,7 @@ void P_NightmareRespawn(mobj_t *mobj)
     // spawn a teleport fog at old spot
     // because of removal of the body?
     mo = P_SpawnMobj(mobj->pos[VX], mobj->pos[VY],
-                     P_GetFixedp(mobj->subsector,
-                                 DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT),
                      MT_TFOG);
     // initiate teleport sound
     S_StartSound(sfx_telept, mo);
@@ -544,7 +542,7 @@ void P_NightmareRespawn(mobj_t *mobj)
     ss = R_PointInSubsector(pos[VX], pos[VY]);
 
     mo = P_SpawnMobj(pos[VX], pos[VY],
-                     P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
+                     P_GetFixedp(ss, DMU_FLOOR_HEIGHT),
                      MT_TFOG);
 
     S_StartSound(sfx_telept, mo);
@@ -586,11 +584,9 @@ void P_MobjThinker(mobj_t *mobj)
     if(mobj->type == MT_LIGHTSOURCE)
     {
         if(mobj->movedir > 0)
-            mobj->pos[VZ] = P_GetFixedp(mobj->subsector,
-                                  DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT) + mobj->movedir;
+            mobj->pos[VZ] = P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT) + mobj->movedir;
         else
-            mobj->pos[VZ] = P_GetFixedp(mobj->subsector,
-                                  DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT) + mobj->movedir;
+            mobj->pos[VZ] = P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT) + mobj->movedir;
         return;
     }
 
@@ -771,10 +767,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     mobj->dropoffz =            //killough $dropoff_fix
         mobj->floorz =
-            P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+            P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
 
     mobj->ceilingz =
-        P_GetFixedp(mobj->subsector, DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+        P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
 
     if(z == ONFLOORZ)
         mobj->pos[VZ] = mobj->floorz;
@@ -836,7 +832,7 @@ void P_RespawnSpecials(void)
     pos[VY] = mthing.y << FRACBITS;
 
     ss = R_PointInSubsector(pos[VX], pos[VY]);
-    pos[VZ] = P_GetFixedp(ss, DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+    pos[VZ] = P_GetFixedp(ss, DMU_FLOOR_HEIGHT);
 
     // spawn a teleport fog at the new spot
     mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], MT_IFOG);
@@ -867,8 +863,7 @@ void P_RespawnSpecials(void)
 mobj_t *P_SpawnTeleFog(int x, int y)
 {
     return P_SpawnMobj(x, y,
-                       P_GetFixedp(R_PointInSubsector(x, y),
-                                   DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT),
+                       P_GetFixedp(R_PointInSubsector(x, y), DMU_FLOOR_HEIGHT),
                        MT_TFOG);
 }
 
