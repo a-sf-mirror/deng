@@ -1728,6 +1728,9 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     if(plane->isfloor)
     {
         // Determine the height of the floor.
+        if(sin->selfRefHack && sector->floorpic == skyflatnum)
+            return;
+
         if(sin->linkedfloor)
         {
             poly.sector = link = R_GetLinkedSector(sin->linkedfloor, true);
@@ -1746,6 +1749,9 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     else
     {
         // This is a ceiling plane.
+        if(sin->selfRefHack && sector->ceilingpic == skyflatnum)
+            return;
+
         if(sin->linkedceil)
         {
             poly.sector = link = R_GetLinkedSector(sin->linkedceil, false);
@@ -1761,6 +1767,11 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
             planepic = sector->ceilingpic;
         }
     }
+
+    // We don't render planes for unclosed sectors when the polys would
+    // be added to the skymask (a DOOM.EXE renderer hack).
+    if(sin->unclosed && planepic == skyflatnum)
+        return;
 
     // Has the texture changed?
     if(planepic != plane->pic)

@@ -46,6 +46,8 @@
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 void    R_PrepareSubsector(subsector_t *sub);
+void    R_FindLineNeighbors(sector_t *sector, line_t *line,
+                            struct line_s **neighbors, int alignment);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -679,14 +681,53 @@ void R_SetVertexOwner(int idx, sector_t *secptr)
     own->list[own->num - 1] = sector;
 }
 
+void R_SetVertexLineOwner(int idx, line_t *lineptr)
+{
+    int     i;
+    vertexowner_t *own;
+    unsigned short *list;
+    int     line;
+
+    if(!lineptr)
+        return;
+    line = GET_LINE_IDX(lineptr);
+    own = vertexowners + idx;
+    // Has this line been already registered?
+    for(i = 0; i < own->numlines; i++)
+        if(own->linelist[i] == line)
+            return;             // Yes, we can exit.
+    // Add a new owner.
+    own->numlines++;
+    // Allocate a new list.
+    list =
+        (unsigned short *) Z_Malloc(sizeof(unsigned short) * own->numlines,
+                                    PU_LEVEL, 0);
+    // If there are previous references, copy them.
+    if(own->numlines > 1)
+    {
+        memcpy(list, own->linelist, sizeof(unsigned short) * (own->numlines - 1));
+        // Free the old list.
+        Z_Free(own->linelist);
+    }
+    own->linelist = list;
+    own->linelist[own->numlines - 1] = line;
+}
+
 /*
  * Generates an array of sector references for each vertex. The list
  * includes all the sectors the vertex belongs to.
+ *
+ * Generates an array of line references for each vertex. The list
+ * includes all the lines the vertex belongs to.
  */
 void R_InitVertexOwners(void)
 {
     int     i, k, p, v[2];
+    int     count;
+    boolean scan;
     sector_t *sec;
+    line_t  *line;
+    vertexowner_t *own;
 
     // Allocate enough memory.
     vertexowners =
@@ -706,6 +747,7 @@ void R_InitVertexOwners(void)
             {
                 R_SetVertexOwner(v[p], line->frontsector);
                 R_SetVertexOwner(v[p], line->backsector);
+                R_SetVertexLineOwner(v[p], line);
             }
         }
     }
@@ -823,6 +865,7 @@ void R_InitSectorInfo(void)
         for(k = 0; k < sec->linecount; k++)
         {
             lin = sec->Lines[k];
+
             if(!lin->frontsector || !lin->backsector ||
                lin->frontsector != lin->backsector)
             {
@@ -830,6 +873,7 @@ void R_InitSectorInfo(void)
                 break;
             }
         }
+
         if(dohack)
         {
             // Link permanently.
@@ -1015,6 +1059,120 @@ void R_SetupFog(void)
     else
     {
         Con_Execute(CMDS_DDAY, "fog off", true);
+    }
+}
+
+/*
+ * Scans all sectors for any supported DOOM.exe renderer hacks.
+ * Updates sectorinfo accordingly.
+ */
+void R_RationalizeSectors(void)
+{
+    int     i, k;
+    sectorinfo_t *info;
+    sector_t *sec;
+    line_t *lin;
+    boolean selfRefHack;
+    boolean unclosed;
+
+    for(i = 0, info = secinfo; i < numsectors; ++i, info++)
+    {
+        sec = SECTOR_PTR(i);
+        if(!sec->linecount)
+            continue;
+
+        // Detect self-referencing sectors.
+        selfRefHack = false;
+        for(k = 0; k < sec->linecount && !selfRefHack; ++k)
+        {
+            lin = sec->Lines[k];
+            if(lin->frontsector && lin->backsector &&
+               lin->frontsector == lin->backsector &&
+               lin->backsector == sec)
+            {
+                vertexowner_t *ownerA, *ownerB;
+                // The line properties indicate that this might be a
+                // self-referencing, hack sector.
+
+                // Make sure this line isn't isolated
+                // (ie both vertexes arn't endpoints).
+                ownerA = &vertexowners[GET_VERTEX_IDX(lin->v1)];
+                ownerB = &vertexowners[GET_VERTEX_IDX(lin->v2)];
+                if(!(ownerA->numlines == 1 && ownerB->numlines == 1))
+                {
+                    // Also, this line could split a sector and both ends
+                    // COULD be vertexes that make up the sector outline.
+                    // So, check all line owners of each vertex.
+
+                    // Test simple case - single line dividing a sector
+                    if(!(ownerA->num == 1 && ownerB->num == 1))
+                    {
+                        int j;
+                        int count;
+                        line_t *owner;
+                        boolean ok = true;
+                        boolean ok2 = true;
+
+                        // Ok, need to check for neighbors.
+                        // Test all the line owners to see that they arn't
+                        // "real" twosided lines.
+                        if(ownerA->num > 1)
+                        {
+                            count = 0;
+                            for(j = 0; j < ownerA->numlines && ok; ++j)
+                            {
+                                owner = LINE_PTR(ownerA->linelist[j]);
+                                if(owner != lin)
+                                if((owner->frontsector == sec ||
+                                    (owner->backsector && owner->backsector == sec)))
+                                {
+                                    ++count;
+                                    if(count > 1)
+                                        ok = false;
+                                }
+                            }
+                        }
+
+                        if(ok && ownerB->num > 1)
+                        {
+                            count = 0;
+                            for(j = 0; j < ownerB->numlines && ok2; ++j)
+                            {
+                                owner = LINE_PTR(ownerB->linelist[j]);
+                                if(owner != lin)
+                                if((owner->frontsector == sec ||
+                                    (owner->backsector && owner->backsector == sec)))
+                                {
+                                    ++count;
+                                    if(count > 1)
+                                        ok2 = false;
+                                }
+                            }
+                        }
+
+                        if(ok && ok2)
+                            selfRefHack = true;
+                    }
+                }
+            }
+        }
+
+        if(selfRefHack)
+            info->selfRefHack = true;
+
+        // Detect unclosed sectors.
+        unclosed = false;
+        if(!(sec->linecount >= 3))
+            unclosed = true;
+        else
+        {
+            // TODO:
+            // Add algorithm to check for unclosed sectors here.
+            // Perhaps have a look at glBSP.
+        }
+
+        if(unclosed)
+            info->unclosed = true;
     }
 }
 
@@ -1473,6 +1631,8 @@ void R_SetupLevel(char *level_id, int flags)
     // Init blockmap for searching subsectors.
     P_InitSubsectorBlockMap();
     R_InitSectorShadows();
+
+    R_RationalizeSectors();
 
     Con_Progress(10, 0);
 
