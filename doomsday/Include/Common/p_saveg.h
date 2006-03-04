@@ -1,6 +1,31 @@
 #ifndef __P_SAVEG__
 #define __P_SAVEG__
 
+enum {
+    sc_normal,
+    sc_ploff,                   // plane offset
+    sc_xg1
+} sectorclass_e;
+
+typedef enum lineclass_e {
+    lc_normal,
+    lc_xg1
+} lineclass_t;
+
+typedef enum {
+    tc_end,
+    tc_mobj,
+    tc_xgmover,
+    tc_ceiling,
+    tc_door,
+    tc_floor,
+    tc_plat,
+    tc_flash,
+    tc_strobe,
+    tc_glow,
+    tc_flicker
+} thinkerclass_t;
+
 void            SV_Init(void);
 void            SV_SaveGameFile(int slot, char *str);
 int             SV_SaveGame(char *filename, char *description);
