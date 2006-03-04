@@ -52,7 +52,9 @@ boolean novideo;                // if true, stay in text mode for debugging
 // CODE --------------------------------------------------------------------
 
 #ifdef WIN32
-// Borrowed from Lee Killough.
+/*
+ * Borrowed from Lee Killough.
+ */
 static void C_DECL handler(int s)
 {
     signal(s, SIG_IGN);  // Ignore future instances of this signal.
@@ -65,10 +67,9 @@ static void C_DECL handler(int s)
 }
 #endif
 
-//==========================================================================
-// Sys_Init
-//  Initialize machine state.
-//==========================================================================
+/*
+ * Initialize machine state.
+ */
 void Sys_Init(void)
 {
 #ifdef WIN32
@@ -99,10 +100,9 @@ void Sys_Init(void)
 #endif
 }
 
-//==========================================================================
-// Sys_Shutdown
-//  Return to default system state.
-//==========================================================================
+/*
+ * Return to default system state.
+ */
 void Sys_Shutdown(void)
 {
     Sys_ShutdownTimer();
@@ -124,9 +124,6 @@ void Sys_Shutdown(void)
 #endif
 }
 
-//===========================================================================
-// Sys_CriticalMessage
-//===========================================================================
 int Sys_CriticalMessage(char *msg)
 {
 #ifdef WIN32
@@ -148,9 +145,6 @@ int Sys_CriticalMessage(char *msg)
 #endif
 }
 
-//===========================================================================
-// Sys_Sleep
-//===========================================================================
 void Sys_Sleep(int millisecs)
 {
 #ifdef WIN32
@@ -162,9 +156,6 @@ void Sys_Sleep(int millisecs)
 #endif
 }
 
-//===========================================================================
-// Sys_ShowCursor
-//===========================================================================
 void Sys_ShowCursor(boolean show)
 {
 #ifdef WIN32
@@ -175,9 +166,6 @@ void Sys_ShowCursor(boolean show)
 #endif
 }
 
-//===========================================================================
-// Sys_HideMouse
-//===========================================================================
 void Sys_HideMouse(void)
 {
     //  if(!I_MousePresent()) return;
@@ -194,9 +182,6 @@ void Sys_HideMouse(void)
 #endif
 }
 
-//===========================================================================
-// Sys_ShowWindow
-//===========================================================================
 void Sys_ShowWindow(boolean show)
 {
     // Showing does not work in dedicated mode.
@@ -212,10 +197,9 @@ void Sys_ShowWindow(boolean show)
 #endif
 }
 
-//==========================================================================
-// Sys_Quit
-//  Shut everything down and quit the program.
-//==========================================================================
+/*
+ * Shut everything down and quit the program.
+ */
 void Sys_Quit(void)
 {
     // Quit netgame if one is in progress.
@@ -235,9 +219,6 @@ void Sys_Quit(void)
     exit(0);
 }
 
-//===========================================================================
-// Sys_MessageBox
-//===========================================================================
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
 #ifdef WIN32
@@ -252,10 +233,9 @@ void Sys_MessageBox(const char *msg, boolean iserror)
 #endif
 }
 
-//===========================================================================
-// Sys_OpenTextEditor
-//  Opens the given file in a suitable text editor.
-//===========================================================================
+/*
+ * Opens the given file in a suitable text editor.
+ */
 void Sys_OpenTextEditor(const char *filename)
 {
 #ifdef WIN32
@@ -264,11 +244,10 @@ void Sys_OpenTextEditor(const char *filename)
 #endif
 }
 
-//===========================================================================
-// Sys_StartThread
-//  Priority can be -3...3, with zero being the normal priority.
-//  Returns a handle to the started thread.
-//===========================================================================
+/*
+ * Priority can be -3...3, with zero being the normal priority.
+ * Returns a handle to the started thread.
+ */
 int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 {
 #ifdef WIN32
@@ -303,10 +282,9 @@ int Sys_StartThread(systhreadfunc_t startpos, void *parm, int priority)
 #endif
 }
 
-//===========================================================================
-// Sys_SuspendThread
-//  Suspends or resumes the execution of a thread.
-//===========================================================================
+/*
+ * Suspends or resumes the execution of a thread.
+ */
 void Sys_SuspendThread(int handle, boolean dopause)
 {
 #ifdef WIN32

@@ -98,9 +98,6 @@ void I_Register(void)
               "1=Inverse joystick slider 2.");
 }
 
-//===========================================================================
-// I_ErrorMsg
-//===========================================================================
 const char *I_ErrorMsg(HRESULT hr)
 {
     return hr == DI_OK ? "OK" : hr == DIERR_GENERIC ? "Generic error" : hr ==
@@ -111,9 +108,6 @@ const char *I_ErrorMsg(HRESULT hr)
         DIERR_NOTFOUND ? "Not found" : "?";
 }
 
-//===========================================================================
-// I_SetProperty
-//===========================================================================
 HRESULT I_SetProperty(void *dev, REFGUID property, DWORD how, DWORD obj,
                       DWORD data)
 {
@@ -128,9 +122,6 @@ HRESULT I_SetProperty(void *dev, REFGUID property, DWORD how, DWORD obj,
                                            property, &dipdw.diph);
 }
 
-//===========================================================================
-// I_SetRangeProperty
-//===========================================================================
 HRESULT I_SetRangeProperty(void *dev, REFGUID property, DWORD how, DWORD obj,
                            int min, int max)
 {
@@ -146,9 +137,6 @@ HRESULT I_SetRangeProperty(void *dev, REFGUID property, DWORD how, DWORD obj,
                                            property, &dipr.diph);
 }
 
-//===========================================================================
-// I_InitMouse
-//===========================================================================
 void I_InitMouse(void)
 {
     if(ArgCheck("-nomouse") || novideo)
@@ -190,9 +178,6 @@ void I_InitMouse(void)
     didMouse = 0;
 }
 
-//===========================================================================
-// I_JoyEnum
-//===========================================================================
 BOOL CALLBACK I_JoyEnum(LPCDIDEVICEINSTANCE lpddi, void *ref)
 {
     // The first joystick is used by default.
@@ -209,9 +194,6 @@ BOOL CALLBACK I_JoyEnum(LPCDIDEVICEINSTANCE lpddi, void *ref)
     return DIENUM_CONTINUE;
 }
 
-//===========================================================================
-// I_InitJoystick
-//===========================================================================
 void I_InitJoystick(void)
 {
     DIDEVICEINSTANCE ddi;
@@ -336,9 +318,6 @@ void I_InitJoystick(void)
     didJoy = 0;
 }
 
-//===========================================================================
-// I_KillDevice
-//===========================================================================
 void I_KillDevice(LPDIRECTINPUTDEVICE8 * dev)
 {
     if(!*dev)
@@ -349,9 +328,6 @@ void I_KillDevice(LPDIRECTINPUTDEVICE8 * dev)
 }
 
 #if 0
-//===========================================================================
-// I_KillDevice2
-//===========================================================================
 void I_KillDevice2(LPDIRECTINPUTDEVICE2 * dev)
 {
     if(!*dev)
@@ -362,10 +338,11 @@ void I_KillDevice2(LPDIRECTINPUTDEVICE2 * dev)
 }
 #endif
 
-//===========================================================================
-// I_Init
-//  Initialize input. Returns true if successful.
-//===========================================================================
+/*
+ * Initialize input.
+ *
+ * @return: int         (true) if successful.
+ */
 int I_Init(void)
 {
     if(initOk)
@@ -397,6 +374,7 @@ int I_Init(void)
         }
         Con_Message("I_Init: Using DirectInput 3.\n");
     }
+
     if(!dInput)
     {
         Con_Message("I_Init: DirectInput init failed.\n");
@@ -451,9 +429,6 @@ int I_Init(void)
     return true;
 }
 
-//===========================================================================
-// I_Shutdown
-//===========================================================================
 void I_Shutdown(void)
 {
     if(!initOk)
@@ -470,25 +445,16 @@ void I_Shutdown(void)
     dInput = 0;
 }
 
-//===========================================================================
-// I_MousePresent
-//===========================================================================
 boolean I_MousePresent(void)
 {
     return (didMouse != 0);
 }
 
-//===========================================================================
-// I_JoystickPresent
-//===========================================================================
 boolean I_JoystickPresent(void)
 {
     return (didJoy != 0);
 }
 
-//===========================================================================
-// I_GetKeyEvents
-//===========================================================================
 int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
 {
     DIDEVICEOBJECTDATA keyData[KEYBUFSIZE];
@@ -525,9 +491,6 @@ int I_GetKeyEvents(keyevent_t *evbuf, int bufsize)
     return i;
 }
 
-//===========================================================================
-// I_GetMouseState
-//===========================================================================
 void I_GetMouseState(mousestate_t *state)
 {
     DIMOUSESTATE2 mstate;
@@ -566,9 +529,6 @@ void I_GetMouseState(mousestate_t *state)
             state->buttons |= 1 << i;
 }
 
-//===========================================================================
-// I_GetJoystickState
-//===========================================================================
 void I_GetJoystickState(joystate_t * state)
 {
     int     tries, i;

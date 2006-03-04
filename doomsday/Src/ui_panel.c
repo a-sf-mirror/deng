@@ -606,17 +606,11 @@ ui_object_t ob_panel[] =
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// CP_ClosePanel
-//===========================================================================
 void CP_ClosePanel(ui_object_t *ob)
 {
     UI_End();
 }
 
-//===========================================================================
-// CP_ChooseGroup
-//===========================================================================
 void CP_ChooseGroup(ui_object_t *ob)
 {
     int     i;
@@ -630,17 +624,11 @@ void CP_ChooseGroup(ui_object_t *ob)
         UI_FlagGroup(ob_panel, 2 + i, UIF_HIDDEN, !panel_buttons[i]);
 }
 
-//===========================================================================
-// CP_DrawLogo
-//===========================================================================
 void CP_DrawLogo(ui_object_t *ob)
 {
     UI_DrawLogo(ob->x, ob->y, ob->w, ob->h);
 }
 
-//===========================================================================
-// CP_DrawBorder
-//===========================================================================
 void CP_DrawBorder(ui_object_t *ob)
 {
     int     b = UI_BORDER;
@@ -671,9 +659,6 @@ void CP_DrawBorder(ui_object_t *ob)
     }
 }
 
-//===========================================================================
-// CP_CvarButton
-//===========================================================================
 void CP_CvarButton(ui_object_t *ob)
 {
     cvarbutton_t *cb = ob->data;
@@ -685,16 +670,13 @@ void CP_CvarButton(ui_object_t *ob)
         GL_TextureFilterMode(DD_RAWSCREENS, cb->active);
         return;
     }
+
     if(!var)
         return;
-    // Change state.
-    //*(char *) var->ptr = cb->active;
+
     Con_SetInteger(cb->cvarname, cb->active, true);
 }
 
-//===========================================================================
-// CP_CvarList
-//===========================================================================
 void CP_CvarList(ui_object_t *ob)
 {
     uidata_list_t *list = ob->data;
@@ -708,15 +690,13 @@ void CP_CvarList(ui_object_t *ob)
         Con_Executef(CMDS_DDAY, false, "mipmap %i", value);
         return;
     }
+
     if(!var)
         return;
 
     Con_SetInteger(var->name, value, true);
 }
 
-//===========================================================================
-// CP_CvarEdit
-//===========================================================================
 void CP_CvarEdit(ui_object_t *ob)
 {
     uidata_edit_t *ed = ob->data;
@@ -724,9 +704,6 @@ void CP_CvarEdit(ui_object_t *ob)
     Con_SetString(ed->data, ed->ptr, true);
 }
 
-//===========================================================================
-// CP_CvarSlider
-//===========================================================================
 void CP_CvarSlider(ui_object_t *ob)
 {
     uidata_slider_t *slid = ob->data;
@@ -734,6 +711,7 @@ void CP_CvarSlider(ui_object_t *ob)
 
     if(!var)
         return;
+
     if(var->type == CVT_FLOAT)
         Con_SetFloat(var->name, (int) (100 * slid->value + .5f) / 100.0f, true);
     else if(var->type == CVT_INT)
@@ -742,9 +720,6 @@ void CP_CvarSlider(ui_object_t *ob)
         Con_SetInteger(var->name, (byte) (slid->value + 0.5f), true);
 }
 
-//===========================================================================
-// CP_KeyGrabResponder
-//===========================================================================
 int CP_KeyGrabResponder(ui_object_t *ob, event_t *ev)
 {
     if((ev->type == ev_mousebdown && UI_MouseInside(ob)) ||
@@ -756,6 +731,7 @@ int CP_KeyGrabResponder(ui_object_t *ob, event_t *ev)
     // Only does something when has the focus.
     if(!(ob->flags & UIF_FOCUS))
         return false;
+
     if(ev->type == ev_keydown)
     {
         Con_SetInteger(ob->text, ev->data1, true);
@@ -766,9 +742,6 @@ int CP_KeyGrabResponder(ui_object_t *ob, event_t *ev)
     return false;
 }
 
-//===========================================================================
-// CP_KeyGrabDrawer
-//===========================================================================
 void CP_KeyGrabDrawer(ui_object_t *ob)
 {
     boolean sel = (ob->flags & UIF_FOCUS) != 0;
@@ -787,25 +760,16 @@ void CP_KeyGrabDrawer(ui_object_t *ob)
                  UI_COL(UIC_TEXT), alpha);
 }
 
-//===========================================================================
-// CP_TexReset
-//===========================================================================
 void CP_TexReset(ui_object_t *ob)
 {
     Con_Execute(CMDS_DDAY, "texreset", false);
 }
 
-//===========================================================================
-// CP_QuickFOV
-//===========================================================================
 void CP_QuickFOV(ui_object_t *ob)
 {
     Con_SetFloat("rend-camera-fov", sld_fov.value = atoi(ob->text), true);
 }
 
-//===========================================================================
-// CP_ResolutionInfo
-//===========================================================================
 void CP_ResolutionInfo(ui_object_t *ob)
 {
     char    buf[80];
@@ -818,9 +782,6 @@ void CP_ResolutionInfo(ui_object_t *ob)
                  1);
 }
 
-//===========================================================================
-// CP_UpdateSetResButton
-//===========================================================================
 void CP_UpdateSetResButton(int w, int h)
 {
     ui_object_t *ob = UI_FindObject(ob_panel, CPG_VIDEO, CPID_SET_RES);
@@ -832,9 +793,6 @@ void CP_UpdateSetResButton(int w, int h)
         ob->flags &= ~UIF_DISABLED;
 }
 
-//===========================================================================
-// CP_ResolutionList
-//===========================================================================
 void CP_ResolutionList(ui_object_t *ob)
 {
     uidata_list_t *list = ob->data;
@@ -850,9 +808,6 @@ void CP_ResolutionList(ui_object_t *ob)
     CP_ResChanged(ob);
 }
 
-//===========================================================================
-// CP_SetDefaultRes
-//===========================================================================
 void CP_SetDefaultRes(ui_object_t *ob)
 {
     int     x = atoi(panel_res_x), y = atoi(panel_res_y);
@@ -863,9 +818,6 @@ void CP_SetDefaultRes(ui_object_t *ob)
     defResY = y;
 }
 
-//===========================================================================
-// CP_SetRes
-//===========================================================================
 void CP_SetRes(ui_object_t *ob)
 {
     int     x = atoi(panel_res_x), y = atoi(panel_res_y);
@@ -874,28 +826,26 @@ void CP_SetRes(ui_object_t *ob)
         return;
     if(x < 320 || y < 240)
         return;
+
     ob->flags |= UIF_DISABLED;
-    // Can't change the resolution while the UI is active (controls need to
-    // be repositioned).
+
+    // Can't change the resolution while the UI is active.
+    // (controls need to be repositioned).
     UI_End();
     GL_ChangeResolution(x, y, 0);
     // Reactivate the panel.
     Con_Execute(CMDS_DDAY, "panel", true);
 }
 
-//===========================================================================
-// CP_ResChanged
-//===========================================================================
 void CP_ResChanged(ui_object_t *ob)
 {
     CP_UpdateSetResButton(atoi(panel_res_x), atoi(panel_res_y));
 }
 
-//===========================================================================
-// CP_FindHover
-//  Returns the option, if any, the mouse is currently hovering on. The
-//  check is based on the coordinates of the Text object.
-//===========================================================================
+/*
+ * Returns the option, if any, the mouse is currently hovering on. The
+ * check is based on the coordinates of the Text object.
+ */
 ui_object_t *CP_FindHover(void)
 {
     ui_object_t *ob;
@@ -905,6 +855,7 @@ ui_object_t *CP_FindHover(void)
         if(ob->flags & UIF_HIDDEN || ob->type != UI_TEXT || ob->group < 2 ||
            ob->relx < 280)
             continue;
+
         // Extend the detection area to the right edge of the screen.
         if(UI_MouseInsideBox(ob->x, ob->y, screenWidth, ob->h))
             return ob;
@@ -912,10 +863,9 @@ ui_object_t *CP_FindHover(void)
     return NULL;
 }
 
-//===========================================================================
-// CP_Ticker
-//  Track the mouse and move the documentation window as needed.
-//===========================================================================
+/*
+ * Track the mouse and move the documentation window as needed.
+ */
 void CP_Ticker(ui_page_t * page)
 {
     int     off;
@@ -979,9 +929,6 @@ void CP_Ticker(ui_page_t * page)
         panel_help_offset = 0;
 }
 
-//===========================================================================
-// CP_LabelText
-//===========================================================================
 int CP_LabelText(char *label, char *text, int x, int y, int w, int h,
                  float alpha)
 {
@@ -994,9 +941,6 @@ int CP_LabelText(char *label, char *text, int x, int y, int w, int h,
                             alpha);
 }
 
-//===========================================================================
-// CP_Drawer
-//===========================================================================
 void CP_Drawer(ui_page_t * page)
 {
     float   alpha = panel_help_offset / (float) HELP_OFFSET;
@@ -1059,15 +1003,17 @@ void CP_Drawer(ui_page_t * page)
 void CP_InitCvarSliders(ui_object_t *ob)
 {
     for(; ob->type; ob++)
+    {
         if(ob->action == CP_CvarSlider)
         {
             uidata_slider_t *slid = ob->data;
 
-            slid->value =
-                slid->floatmode ? Con_GetFloat(slid->
-                                               data) : Con_GetInteger(slid->
-                                                                      data);
+            if(slid->floatmode)
+                slid->value = Con_GetFloat(slid->data);
+            else
+                slid->value = Con_GetInteger(slid-> data);
         }
+    }
 }
 
 /*
@@ -1107,11 +1053,14 @@ D_CMD(OpenPanel)
         // With an argument, choose the appropriate group.
         foc = NULL;
         for(i = 0; i < NUM_CP_BUTTONS; i++)
+        {
             if(!stricmp(ob_panel[i].text, argv[1]))
             {
                 CP_ChooseGroup(foc = ob_panel + i);
                 break;
             }
+        }
+
         if(!foc)
             CP_ChooseGroup(foc = ob_panel);
     }
@@ -1141,6 +1090,7 @@ D_CMD(OpenPanel)
             }
             // Find the cvarbutton representing this one.
             for(cvb = cvarbuttons; cvb->cvarname; cvb++)
+            {
                 if(!strcmp(ob->text, cvb->cvarname))
                 {
                     cvb->active = Con_GetByte(cvb->cvarname) != 0;
@@ -1148,14 +1098,15 @@ D_CMD(OpenPanel)
                     strcpy(ob->text, cvb->active ? cvb->yes : cvb->no);
                     break;
                 }
+            }
         }
-        if(ob->action == CP_CvarList)
+        else if(ob->action == CP_CvarList)
         {
             list = ob->data;
             // Choose the correct list item based on the value of the cvar.
             list->selection = UI_ListFindItem(ob, Con_GetInteger(list->data));
         }
-        if(ob->action == CP_CvarEdit)
+        else if(ob->action == CP_CvarEdit)
         {
             uidata_edit_t *ed = ob->data;
 

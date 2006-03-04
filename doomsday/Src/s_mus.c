@@ -82,11 +82,10 @@ static interface_info_t interfaces[] = {
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// Mus_Init
-//  Initialize the Mus module and choose the interfaces to use. Returns
-//  true if no errors occur.
-//===========================================================================
+/*
+ * Initialize the Mus module and choose the interfaces to use. Returns
+ * true if no errors occur.
+ */
 boolean Mus_Init(void)
 {
     int     i;
@@ -163,9 +162,6 @@ boolean Mus_Init(void)
     return true;
 }
 
-//===========================================================================
-// Mus_Shutdown
-//===========================================================================
 void Mus_Shutdown(void)
 {
     if(!mus_avail)
@@ -187,10 +183,9 @@ void Mus_Shutdown(void)
     icd = 0;
 }
 
-//===========================================================================
-// Mus_StartFrame
-//  Called on each frame by S_StartFrame.
-//===========================================================================
+/*
+ * Called on each frame by S_StartFrame.
+ */
 void Mus_StartFrame(void)
 {
     int     i;
@@ -204,11 +199,10 @@ void Mus_StartFrame(void)
             (*interfaces[i].ip)->Update();
 }
 
-//===========================================================================
-// Mus_SetVolume
-//  Set the general music volume. Affects all music played by all
-//  interfaces.
-//===========================================================================
+/*
+ * Set the general music volume. Affects all music played by all
+ * interfaces.
+ */
 void Mus_SetVolume(float vol)
 {
     int     i;
@@ -222,10 +216,9 @@ void Mus_SetVolume(float vol)
             (*interfaces[i].ip)->Set(MUSIP_VOLUME, vol);
 }
 
-//===========================================================================
-// Mus_Pause
-//  Pauses or resumes the music.
-//===========================================================================
+/*
+ * Pauses or resumes the music.
+ */
 void Mus_Pause(boolean do_pause)
 {
     int     i;
@@ -239,9 +232,6 @@ void Mus_Pause(boolean do_pause)
             (*interfaces[i].ip)->Pause(do_pause);
 }
 
-//===========================================================================
-// Mus_Stop
-//===========================================================================
 void Mus_Stop(void)
 {
     int     i;
@@ -257,23 +247,24 @@ void Mus_Stop(void)
             (*interfaces[i].ip)->Stop();
 }
 
-//===========================================================================
-// Mus_IsMUSLump
-//  Returns true if the specified lump contains a MUS song.
-//===========================================================================
+/*
+ * @return: boolean         (true) if the specified lump contains a MUS song.
+ */
 boolean Mus_IsMUSLump(int lump)
 {
     char    buf[8];
 
     W_ReadLumpSection(lump, buf, 0, 4);
+
     // ASCII "MUS" and CTRL-Z (hex 4d 55 53 1a)
     return !strncmp(buf, "MUS\x01a", 4);
 }
 
-//===========================================================================
-// Mus_GetMUS
-//  The lump may contain non-MUS data. Returns true if successful.
-//===========================================================================
+/*
+ * The lump may contain non-MUS data.
+ *
+ * @return: int             (true) if successful.
+ */
 int Mus_GetMUS(ded_music_t * def)
 {
     int     len, lumpnum;
@@ -296,8 +287,10 @@ int Mus_GetMUS(ded_music_t * def)
 }
 
 /*
- * Returns true if there is an external file name (that exists!).
- * Ext songs can be either in external files or non-MUS lumps.
+ * Load a song file.
+ * Songs can be either in external files or non-MUS lumps.
+ *
+ * @return: int             (true) if an external file of that name exists.
  */
 int Mus_GetExt(ded_music_t * def, char *path)
 {
@@ -367,8 +360,7 @@ int Mus_GetExt(ded_music_t * def, char *path)
 }
 
 /*
- * Mus_GetCD
- *  Returns the track number if successful. Otherwise returns zero.
+ * @return: int         The track number if successful else zero.
  */
 int Mus_GetCD(ded_music_t * def)
 {
@@ -457,9 +449,9 @@ int Mus_Start(ded_music_t * def, boolean looped)
     return false;
 }
 
-//===========================================================================
-// CCmdPlayMusic
-//===========================================================================
+/*
+ * CCmd: Play a music track.
+ */
 D_CMD(PlayMusic)
 {
     int     i, len;
@@ -529,9 +521,6 @@ D_CMD(PlayMusic)
     return true;
 }
 
-//===========================================================================
-// CCmdPlayExt
-//===========================================================================
 D_CMD(PlayExt)
 {
     char    buf[300];
@@ -548,9 +537,6 @@ D_CMD(PlayExt)
     return true;
 }
 
-//===========================================================================
-// CCmdStopMusic
-//===========================================================================
 D_CMD(StopMusic)
 {
     Mus_Stop();

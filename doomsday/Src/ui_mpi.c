@@ -483,7 +483,8 @@ void MPIUpdateServerList(void)
                     DOOMSDAY_VERSION);
                 Con_Message("  remote = %s, local = %s\n",
                             info.gameMode, gx.Get(DD_GAME_MODE));
-                Con_Message("  can join = %i\n", info.canJoin);                             continue;
+                Con_Message("  can join = %i\n", info.canJoin);
+                continue;
             }
 
             MPIFormatServerInfo(lstit_found[k].text, &info);

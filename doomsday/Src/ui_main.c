@@ -181,10 +181,9 @@ void UI_End(void)
     }
 }
 
-//===========================================================================
-// UI_LoadTextures
-//  Called from GL_LoadSystemTextures.
-//===========================================================================
+/*
+ * Called from GL_LoadSystemTextures.
+ */
 void UI_LoadTextures(void)
 {
     int     i;
@@ -204,9 +203,6 @@ void UI_LoadTextures(void)
         }
 }
 
-//===========================================================================
-// UI_ClearTextures
-//===========================================================================
 void UI_ClearTextures(void)
 {
     gl.DeleteTextures(NUM_UI_TEXTURES, ui_textures);
@@ -288,61 +284,48 @@ void UI_InitPage(ui_page_t * page, ui_object_t *objects)
     }
 }
 
-//===========================================================================
-// UI_AvailableWidth
-//  The width of the available page area, in pixels.
-//===========================================================================
+/*
+ * The width of the available page area, in pixels.
+ */
 int UI_AvailableWidth(void)
 {
     return screenWidth - UI_BORDER * 4;
 }
 
-//===========================================================================
-// UI_AvailableHeight
-//===========================================================================
 int UI_AvailableHeight(void)
 {
     return screenHeight - UI_TITLE_HGT - UI_BORDER * 4;
 }
 
-//===========================================================================
-// UI_ScreenX
-//  Convert a relative coordinate to a screen coordinate.
-//===========================================================================
+/*
+ * Convert a relative coordinate to a screen coordinate.
+ */
 int UI_ScreenX(int relx)
 {
     return UI_BORDER * 2 + (relx * UI_AvailableWidth()) / 1000;
 }
 
-//===========================================================================
-// UI_ScreenY
-//  Convert a relative coordinate to a screen coordinate.
-//===========================================================================
+/*
+ * Convert a relative coordinate to a screen coordinate.
+ */
 int UI_ScreenY(int rely)
 {
     return UI_BORDER * 2 + UI_TITLE_HGT + (rely * UI_AvailableHeight()) / 1000;
 }
 
-//===========================================================================
-// UI_ScreenW
-//===========================================================================
 int UI_ScreenW(int relw)
 {
     return (relw * UI_AvailableWidth()) / 1000;
 }
 
-//===========================================================================
-// UI_ScreenH
-//===========================================================================
 int UI_ScreenH(int relh)
 {
     return (relh * UI_AvailableHeight()) / 1000;
 }
 
-//===========================================================================
-// UI_SetPage
-//  Change and prepare the active page.
-//===========================================================================
+/*
+ * Change and prepare the active page.
+ */
 void UI_SetPage(ui_page_t * page)
 {
     int     i;
@@ -359,23 +342,25 @@ void UI_SetPage(ui_page_t * page)
         ob->w = UI_ScreenW(ob->relw);
         ob->y = UI_ScreenY(ob->rely);
         ob->h = UI_ScreenH(ob->relh);
-        // Update edit box text.
+
+        // Update objects on page
         if(ob->type == UI_EDIT)
         {
+            // Update edit box text.
             memset(ob->text, 0, sizeof(ob->text));
             strncpy(ob->text, ((uidata_edit_t *) ob->data)->ptr, 255);
         }
-        // Stay-down button state.
-        if(ob->type == UI_BUTTON2)
+        else if(ob->type == UI_BUTTON2)
         {
+            // Stay-down button state.
             if(*(char *) ob->data)
                 ob->flags |= UIF_ACTIVE;
             else
                 ob->flags &= ~UIF_ACTIVE;
         }
-        // List box number of visible items.
-        if(ob->type == UI_LIST)
+        else if(ob->type == UI_LIST)
         {
+            // List box number of visible items.
             uidata_list_t *dat = ob->data;
 
             dat->numvis = (ob->h - 2 * UI_BORDER) / UI_ListItemHeight(dat);
@@ -406,23 +391,23 @@ int UI_Responder(event_t *ev)
     // Check for Shift events.
     switch (ev->type)
     {
-        case ev_mouse:
-            if(ev->data1 || ev->data2)
-                ui_moved = true;
-            ui_cx += ev->data1;
-            ui_cy += ev->data2;
-            if(ui_cx < 0)
-                ui_cx = 0;
-            if(ui_cy < 0)
-                ui_cy = 0;
-            if(ui_cx >= screenWidth)
-                ui_cx = screenWidth - 1;
-            if(ui_cy >= screenHeight)
-                ui_cy = screenHeight - 1;
-            break;
+    case ev_mouse:
+        if(ev->data1 || ev->data2)
+            ui_moved = true;
+        ui_cx += ev->data1;
+        ui_cy += ev->data2;
+        if(ui_cx < 0)
+            ui_cx = 0;
+        if(ui_cy < 0)
+            ui_cy = 0;
+        if(ui_cx >= screenWidth)
+            ui_cx = screenWidth - 1;
+        if(ui_cy >= screenHeight)
+            ui_cy = screenHeight - 1;
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 
     // Call the page's responder.
@@ -470,8 +455,6 @@ void UI_Drawer(void)
     UI_DrawMouse(ui_cx, ui_cy);
 
     // Restore the original matrices.
-    //gl.MatrixMode(DGL_MODELVIEW);
-    //gl.PopMatrix();
     gl.MatrixMode(DGL_PROJECTION);
     gl.PopMatrix();
 }
@@ -484,9 +467,6 @@ int UI_CountObjects(ui_object_t *list)
     return count;
 }
 
-//===========================================================================
-// UI_FlagGroup
-//===========================================================================
 void UI_FlagGroup(ui_object_t *list, int group, int flags, int set)
 {
     for(; list->type; list++)
@@ -509,22 +489,21 @@ void UI_FlagGroup(ui_object_t *list, int group, int flags, int set)
         }
 }
 
-//===========================================================================
-// UI_FindObject
-//  All the specified flags must be set.
-//===========================================================================
+/*
+ * All the specified flags must be set.
+ */
 ui_object_t *UI_FindObject(ui_object_t *list, int group, int flags)
 {
     for(; list->type; list++)
         if(list->group == group && (list->flags & flags) == flags)
             return list;
+
     return NULL;
 }
 
-//===========================================================================
-// UI_MouseFocus
-//  Set focus to the object under the mouse cursor.
-//===========================================================================
+/*
+ * Set focus to the object under the mouse cursor.
+ */
 void UI_MouseFocus(void)
 {
     int     i;
@@ -538,7 +517,9 @@ void UI_MouseFocus(void)
         }
 }
 
-// Ob must be on the current page! It can't be NULL.
+/*
+ * Ob must be on the current page! It can't be NULL.
+ */
 void UI_Focus(ui_object_t *ob)
 {
     int     i;
@@ -549,6 +530,7 @@ void UI_Focus(ui_object_t *ob)
     // Can the object receive focus?
     if(ob->flags & UIF_NO_FOCUS)
         return;
+
     ui_page->focus = ob - ui_page->objects;
     for(i = 0; i < ui_page->count; i++)
     {
@@ -559,8 +541,10 @@ void UI_Focus(ui_object_t *ob)
     }
 }
 
-// Ob must be on the current page!
-// If ob is NULL, capture is ended.
+/*
+ * Ob must be on the current page!
+ * If ob is NULL, capture is ended.
+ */
 void UI_Capture(ui_object_t *ob)
 {
     if(!ob)
@@ -571,6 +555,7 @@ void UI_Capture(ui_object_t *ob)
     }
     if(!ob->responder)
         return;                 // Sorry, pal...
+
     // Set the capture object.
     ui_page->capture = ob - ui_page->objects;
     // Set focus.
@@ -677,10 +662,9 @@ int UIPage_Responder(ui_page_t * page, event_t *ev)
     return false;
 }
 
-//===========================================================================
-// UIPage_Ticker
-//  Call the ticker routine for each object.
-//===========================================================================
+/*
+ * Call the ticker routine for each object.
+ */
 void UIPage_Ticker(ui_page_t * page)
 {
     int     i;
@@ -948,6 +932,7 @@ void UIEdit_Drawer(ui_object_t *ob)
             // Can we show to the cursor?
             for(curx = 0, i = 0; i < dat->cp; i++)
                 curx += FR_CharWidth(ob->text[i]);
+
             // How much do we need to skip forward?
             for(; curx > maxw; first_in_buf++)
                 curx -= FR_CharWidth(ob->text[first_in_buf]);
@@ -1230,9 +1215,6 @@ void UIList_Drawer(ui_object_t *ob)
     }
 }
 
-//===========================================================================
-// UI_SliderButtonWidth
-//===========================================================================
 int UI_SliderButtonWidth(ui_object_t *ob)
 {
     //  uidata_slider_t *dat = ob->data;
@@ -1243,9 +1225,6 @@ int UI_SliderButtonWidth(ui_object_t *ob)
     return width;
 }
 
-//===========================================================================
-// UI_SliderThumbPos
-//===========================================================================
 int UI_SliderThumbPos(ui_object_t *ob)
 {
     uidata_slider_t *dat = ob->data;
@@ -1264,9 +1243,6 @@ int UI_SliderThumbPos(ui_object_t *ob)
                                                             butw * 3);
 }
 
-//===========================================================================
-// UISlider_Responder
-//===========================================================================
 int UISlider_Responder(ui_object_t *ob, event_t *ev)
 {
     uidata_slider_t *dat = ob->data;
@@ -1392,9 +1368,6 @@ int UISlider_Responder(ui_object_t *ob, event_t *ev)
     return used;
 }
 
-//===========================================================================
-// UISlider_Ticker
-//===========================================================================
 void UISlider_Ticker(ui_object_t *ob)
 {
     uidata_slider_t *dat = ob->data;
@@ -1417,9 +1390,6 @@ void UISlider_Ticker(ui_object_t *ob)
     }
 }
 
-//===========================================================================
-// UISlider_Drawer
-//===========================================================================
 void UISlider_Drawer(ui_object_t *ob)
 {
     uidata_slider_t *dat = ob->data;
@@ -1593,19 +1563,17 @@ int UI_MouseInsideBox(int x, int y, int w, int h)
     return (ui_cx >= x && ui_cx <= x + w && ui_cy >= y && ui_cy <= y + h);
 }
 
-//===========================================================================
-// UI_MouseInside
-//  Returns true if the mouse is inside the object.
-//===========================================================================
+/*
+ * Returns true if the mouse is inside the object.
+ */
 int UI_MouseInside(ui_object_t *ob)
 {
     return UI_MouseInsideBox(ob->x, ob->y, ob->w, ob->h);
 }
 
-//===========================================================================
-// UI_MouseResting
-//  Returns true if the mouse hasn't been moved for a while.
-//===========================================================================
+/*
+ * Returns true if the mouse hasn't been moved for a while.
+ */
 int UI_MouseResting(ui_page_t * page)
 {
     if(!ui_moved)
@@ -1756,15 +1724,18 @@ void UI_Line(int x1, int y1, int x2, int y2, ui_color_t * start,
     gl.Enable(DGL_TEXTURING);
 }
 
-// Draw white, shadowed text.
+/*
+ * Draw white, shadowed text.
+ */
 void UI_TextOut(char *text, int x, int y)
 {
     UI_TextOutEx(text, x, y, false, false, UI_COL(UIC_TEXT), 1);
 }
 
-// Draw shadowed text.
-void UI_TextOutEx(char *text, int x, int y,
-                  int horiz_center, int vert_center,
+/*
+ * Draw shadowed text.
+ */
+void UI_TextOutEx(char *text, int x, int y, int horiz_center, int vert_center,
                   ui_color_t * color, float alpha)
 {
     // Center, if requested.
@@ -1780,19 +1751,15 @@ void UI_TextOutEx(char *text, int x, int y,
     FR_TextOut(text, x, y);
 }
 
-//===========================================================================
-// UI_TextOutWrap
-//===========================================================================
 int UI_TextOutWrap(char *text, int x, int y, int w, int h)
 {
     return UI_TextOutWrapEx(text, x, y, w, h, UI_COL(UIC_TEXT), 1);
 }
 
-//===========================================================================
-// UI_TextOutWrapEx
-//  Draw line-wrapped text inside a box. Returns the Y coordinate of the
-//  last word.
-//===========================================================================
+/*
+ * Draw line-wrapped text inside a box. Returns the Y coordinate of the
+ * last word.
+ */
 int UI_TextOutWrapEx(char *text, int x, int y, int w, int h,
                      ui_color_t * color, float alpha)
 {
@@ -2014,11 +1981,10 @@ void UI_DrawTriangle(int x, int y, int radius, ui_color_t * hi,
     gl.Enable(DGL_TEXTURING);
 }
 
-//===========================================================================
-// UI_DrawHorizTriangle
-//  A horizontal triangle, pointing left or right. Positive radius
-//  means left.
-//===========================================================================
+/*
+ * A horizontal triangle, pointing left or right. Positive radius
+ * means left.
+ */
 void UI_DrawHorizTriangle(int x, int y, int radius, ui_color_t * hi,
                           ui_color_t * med, ui_color_t * low, float alpha)
 {
@@ -2059,17 +2025,11 @@ void UI_DrawHorizTriangle(int x, int y, int radius, ui_color_t * hi,
     gl.Enable(DGL_TEXTURING);
 }
 
-//===========================================================================
-// UI_DefaultButtonBackground
-//===========================================================================
 void UI_DefaultButtonBackground(ui_color_t * col, boolean down)
 {
     UI_MixColors(UI_COL(UIC_TEXT), UI_COL(UIC_SHADOW), col, down ? .1f : .5f);
 }
 
-//===========================================================================
-// UI_DrawButton
-//===========================================================================
 void UI_DrawButton(int x, int y, int w, int h, int brd, float alpha,
                    ui_color_t * background, boolean down, boolean disabled,
                    int arrow)
@@ -2113,9 +2073,6 @@ void UI_DrawButton(int x, int y, int w, int h, int brd, float alpha,
     }
 }
 
-//===========================================================================
-// UI_DrawHelpBox
-//===========================================================================
 void UI_DrawHelpBox(int x, int y, int w, int h, float alpha, char *text)
 {
     int     bor = UI_BUTTON_BORDER;
@@ -2155,19 +2112,15 @@ void UI_DrawMouse(int x, int y)
     gl.End();
 }
 
-//===========================================================================
-// UI_DrawLogo
-//===========================================================================
 void UI_DrawLogo(int x, int y, int w, int h)
 {
     gl.Bind(ui_textures[UITEX_LOGO]);
     GL_DrawRect(x, y, w, h, 1, 1, 1, 1);
 }
 
-//===========================================================================
-// CCmdUIColor
-//  Change the UI colors.
-//===========================================================================
+/*
+ * CCmd: Change the UI colors.
+ */
 D_CMD(UIColor)
 {
     const char *objects[] =     // Also a mapping to UIC.

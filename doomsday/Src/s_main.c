@@ -64,11 +64,11 @@ static boolean nopitch;
 
 // CODE --------------------------------------------------------------------
 
-//===========================================================================
-// S_Init
-//  Main sound system initialization. Inits both the Sfx and Mus modules.
-//  Returns true if there were no errors.
-//===========================================================================
+/*
+ * Main sound system initialization. Inits both the Sfx and Mus modules.
+ *
+ * @return: boolean         (true) if there were no errors.
+ */
 boolean S_Init(void)
 {
     boolean sfx_ok, mus_ok;
@@ -87,20 +87,18 @@ boolean S_Init(void)
     return (sfx_ok && mus_ok);
 }
 
-//===========================================================================
-// S_Shutdown
-//  Shutdown the whole sound system (Sfx + Mus).
-//===========================================================================
+/*
+ * Shutdown the whole sound system (Sfx + Mus).
+ */
 void S_Shutdown(void)
 {
     Sfx_Shutdown();
     Mus_Shutdown();
 }
 
-//===========================================================================
-// S_LevelChange
-//  Must be called before the level is changed.
-//===========================================================================
+/*
+ * Must be called before the level is changed.
+ */
 void S_LevelChange(void)
 {
     // Stop everything in the LSM.
@@ -109,19 +107,15 @@ void S_LevelChange(void)
     Sfx_LevelChange();
 }
 
-//===========================================================================
-// S_Reset
-//  Stop all channels and music, delete the entire sample cache.
-//===========================================================================
+/*
+ * Stop all channels and music, delete the entire sample cache.
+ */
 void S_Reset(void)
 {
     Sfx_Reset();
     S_StopMusic();
 }
 
-//===========================================================================
-// S_StartFrame
-//===========================================================================
 void S_StartFrame(void)
 {
     static int old_mus_volume = -1;
@@ -140,27 +134,22 @@ void S_StartFrame(void)
     Sfx_PurgeLogical();
 }
 
-//===========================================================================
-// S_EndFrame
-//===========================================================================
 void S_EndFrame(void)
 {
     Sfx_EndFrame();
 }
 
-//===========================================================================
-// S_GetListenerMobj
-//  Usually the display player.
-//===========================================================================
+/*
+ * Usually the display player.
+ */
 mobj_t *S_GetListenerMobj(void)
 {
     return players[displayplayer].mo;
 }
 
-//===========================================================================
-// S_GetSoundInfo
-//  freq and volume may be NULL. They will be modified by sound links.
-//===========================================================================
+/*
+ * NOTE: freq and volume may be NULL (they will be modified by sound links).
+ */
 sfxinfo_t *S_GetSoundInfo(int sound_id, float *freq, float *volume)
 {
     float   dummy = 0;
@@ -188,10 +177,9 @@ sfxinfo_t *S_GetSoundInfo(int sound_id, float *freq, float *volume)
     return info;
 }
 
-//===========================================================================
-// S_IsRepeating
-//  Returns true if the specified ID is a repeating sound.
-//===========================================================================
+/*
+ * @return: boolean         (true) if the specified ID is a repeating sound.
+ */
 boolean S_IsRepeating(int idFlags)
 {
     sfxinfo_t *info;
@@ -203,16 +191,17 @@ boolean S_IsRepeating(int idFlags)
     return (info->flags & SF_REPEAT) != 0;
 }
 
-//===========================================================================
-// S_LocalSoundAtVolumeFrom
-//  Plays a sound on the local system. A public interface.
-//  Origin and fixedpos can be both NULL, in which case the sound is
-//  played in 2D and centered.
-//  Flags can be included in the sound ID number (DDSF_*).
-//  Returns nonzero if a sound was started.
-//===========================================================================
-int S_LocalSoundAtVolumeFrom(int soundIdAndFlags, mobj_t *origin,
-                             float *fixedPos, float volume)
+/*
+ * Play a sound on the local system. A public interface.
+ * Origin and fixedpos can be both NULL, in which case the sound is
+ * played in 2D and centered.
+ *
+ * NOTE: Flags can be included in the sound ID number (DDSF_*).
+ *
+ * @return: int             Nonzero if a sound was started.
+ */
+int S_LocalSoundAtVolumeFrom(int soundIdAndFlags, mobj_t *origin, float *fixedPos,
+                             float volume)
 {
     int     soundId = soundIdAndFlags & ~DDSF_FLAG_MASK;
     sfxsample_t *sample;
@@ -297,43 +286,45 @@ int S_LocalSoundAtVolumeFrom(int soundIdAndFlags, mobj_t *origin,
     return result;
 }
 
-//===========================================================================
-// S_LocalSoundAtVolume
-//  Plays a sound on the local system.
-//  This is a public sound interface.
-//  Returns nonzero if a sound was started.
-//===========================================================================
+/*
+ * Plays a sound on the local system at the given volume.
+ * This is a public sound interface.
+ *
+ * @return: int         Nonzero if a sound was started.
+ */
 int S_LocalSoundAtVolume(int sound_id, mobj_t *origin, float volume)
 {
     return S_LocalSoundAtVolumeFrom(sound_id, origin, NULL, volume);
 }
 
-//===========================================================================
-// S_LocalSound
-//  This is a public sound interface.
-//  Returns nonzero if a sound was started.
-//===========================================================================
+/*
+ * Plays a sound on the local system from the given origin.
+ * This is a public sound interface.
+ *
+ * @return: int         Nonzero if a sound was started.
+ */
 int S_LocalSound(int sound_id, mobj_t *origin)
 {
     // Play local sound at max volume.
     return S_LocalSoundAtVolumeFrom(sound_id, origin, NULL, 1);
 }
 
-//===========================================================================
-// S_LocalSoundFrom
-//  This is a public sound interface.
-//  Returns nonzero if a sound was started.
-//===========================================================================
+/*
+ * Plays a sound on the local system at a give distance from listener.
+ * This is a public sound interface.
+ *
+ * @return: int         Nonzero if a sound was started.
+ */
 int S_LocalSoundFrom(int sound_id, float *fixedpos)
 {
     return S_LocalSoundAtVolumeFrom(sound_id, NULL, fixedpos, 1);
 }
 
-//=========================================================================
-// S_StartSound
-//  Play a world sound. All players in the game will hear it.
-//  Returns nonzero if a sound was started.
-//=========================================================================
+/*
+ * Play a world sound. All players in the game will hear it.
+ *
+ * @return: int         Nonzero if a sound was started.
+ */
 int S_StartSound(int sound_id, mobj_t *origin)
 {
     // The sound is audible to everybody.
@@ -343,11 +334,11 @@ int S_StartSound(int sound_id, mobj_t *origin)
     return S_LocalSound(sound_id, origin);
 }
 
-//=========================================================================
-// S_StartSoundAtVolume
-//  Play a world sound. All players in the game will hear it.
-//  Returns nonzero if a sound was started.
-//=========================================================================
+/*
+ * Play a world sound. All players in the game will hear it.
+ *
+ * @return: int         Nonzero if a sound was started.
+ */
 int S_StartSoundAtVolume(int sound_id, mobj_t *origin, float volume)
 {
     Sv_SoundAtVolume(sound_id, origin, volume, SVSF_TO_ALL);
@@ -357,11 +348,11 @@ int S_StartSoundAtVolume(int sound_id, mobj_t *origin, float volume)
     return S_LocalSoundAtVolume(sound_id, origin, volume);
 }
 
-//=========================================================================
-// S_ConsoleSound
-//  Play a player sound. Only the specified player will hear it.
-//  Returns nonzero if a sound was started (always).
-//=========================================================================
+/*
+ * Play a player sound. Only the specified player will hear it.
+ *
+ * @return: int         Nonzero if a sound was started (always).
+ */
 int S_ConsoleSound(int sound_id, mobj_t *origin, int target_console)
 {
     Sv_Sound(sound_id, origin, target_console);
@@ -374,12 +365,11 @@ int S_ConsoleSound(int sound_id, mobj_t *origin, int target_console)
     return true;
 }
 
-//===========================================================================
-// S_StopSound
-//  If sound_id == 0, then stops all sounds of the origin.
-//  If origin == NULL, stops all sounds with the ID.
-//  Otherwise both ID and origin must match.
-//===========================================================================
+/*
+ * If sound_id == 0, then stops all sounds of the origin.
+ * If origin == NULL, stops all sounds with the ID.
+ * Otherwise both ID and origin must match.
+ */
 void S_StopSound(int sound_id, mobj_t *emitter)
 {
     // Sfx provides a routine for this.
@@ -395,22 +385,24 @@ void S_StopSound(int sound_id, mobj_t *emitter)
     }
 }
 
-//===========================================================================
-// S_IsPlaying
-//  Returns true if an instance of the sound is playing with the given
-//  emitter. If sound_id is zero, returns true if the source is emitting
-//  any sounds. An exported function.
-//===========================================================================
+/*
+ * Is an instance of the sound being played using the given emitter?
+ * If sound_id is zero, returns true if the source is emitting any sounds.
+ * An exported function.
+ *
+ * @return: int         Nonzero if a sound is playing.
+ */
 int S_IsPlaying(int sound_id, mobj_t *emitter)
 {
     // The Logical Sound Manager (under Sfx) provides a routine for this.
     return Sfx_IsPlaying(sound_id, emitter);
 }
 
-//===========================================================================
-// S_StartMusicNum
-//  Start a song based on its number. Returns true if the ID exists.
-//===========================================================================
+/*
+ * Start a song based on its number.
+ *
+ * @return: int         (true) if the ID exists.
+ */
 int S_StartMusicNum(int id, boolean looped)
 {
     ded_music_t *def = defs.music + id;
@@ -425,10 +417,9 @@ int S_StartMusicNum(int id, boolean looped)
     return Mus_Start(def, looped);
 }
 
-//===========================================================================
-// S_StartMusic
-//  Returns true if the song is found.
-//===========================================================================
+/*
+ * @return: int         (true) if the song is found.
+ */
 int S_StartMusic(char *musicid, boolean looped)
 {
     int     idx = Def_GetMusicNum(musicid);
@@ -441,19 +432,17 @@ int S_StartMusic(char *musicid, boolean looped)
     return S_StartMusicNum(idx, looped);
 }
 
-//===========================================================================
-// S_StopMusic
-//  Stops playing a song.
-//===========================================================================
+/*
+ * Stops playing a song.
+ */
 void S_StopMusic(void)
 {
     Mus_Stop();
 }
 
-//===========================================================================
-// S_Drawer
-//  Draws debug information on-screen.
-//===========================================================================
+/*
+ * Draws debug information on-screen.
+ */
 void S_Drawer(void)
 {
     if(!sound_info)
@@ -472,10 +461,9 @@ void S_Drawer(void)
     gl.PopMatrix();
 }
 
-//===========================================================================
-// CCmdPlaySound
-//  Console command for playing a sound effect.
-//===========================================================================
+/*
+ * Console command for playing a (local) sound effect.
+ */
 D_CMD(PlaySound)
 {
     int     id = 0;
