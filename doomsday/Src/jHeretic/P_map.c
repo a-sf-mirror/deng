@@ -33,7 +33,7 @@
 fixed_t tmbbox[4];
 mobj_t *tmthing;
 int     tmflags;
-fixed_t tmx, tmy;
+fixed_t tm[3];
 
 boolean floatok; // if true, move would be ok if within tmfloorz - tmceilingz
 
@@ -93,7 +93,7 @@ boolean PIT_StompThing(mobj_t *thing, void *data)
         return true;
 
     blockdist = thing->radius + tmthing->radius;
-    if(abs(thing->pos[VX] - tmx) >= blockdist || abs(thing->pos[VY] - tmy) >= blockdist)
+    if(abs(thing->pos[VX] - tm[VX]) >= blockdist || abs(thing->pos[VY] - tm[VY]) >= blockdist)
     {
         // didn't hit it
         return true;
@@ -136,8 +136,8 @@ boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, int alwaysstomp)
 
     stomping = alwaysstomp;
 
-    tmx = x;
-    tmy = y;
+    tm[VX] = x;
+    tm[VY] = y;
 
     tmbbox[BOXTOP] = y + tmthing->radius;
     tmbbox[BOXBOTTOM] = y - tmthing->radius;
@@ -186,7 +186,9 @@ boolean PIT_CheckLine(line_t *ld, void *data)
 {
     fixed_t dx = P_GetFixedp(ld, DMU_DX);
     fixed_t dy = P_GetFixedp(ld, DMU_DY);
-    fixed_t* bbox = P_GetPtrp(ld, DMU_BOUNDING_BOX);
+    fixed_t bbox[4];
+
+    P_GetFixedpv(ld, DMU_BOUNDING_BOX, bbox);
 
     if(tmbbox[BOXRIGHT] <= bbox[BOXLEFT] ||
        tmbbox[BOXLEFT] >= bbox[BOXRIGHT] ||
@@ -281,7 +283,7 @@ boolean PIT_CheckThing(mobj_t *thing, void *data)
     }
 
     blockdist = thing->radius + tmthing->radius;
-    if(abs(thing->pos[VX] - tmx) >= blockdist || abs(thing->pos[VY] - tmy) >= blockdist)
+    if(abs(thing->pos[VX] - tm[VX]) >= blockdist || abs(thing->pos[VY] - tm[VY]) >= blockdist)
     {
         // Didn't hit thing
         return (true);
@@ -434,7 +436,7 @@ boolean PIT_CheckOnmobjZ(mobj_t *thing, void *data)
         return (true);
     }
     blockdist = thing->radius + tmthing->radius;
-    if(abs(thing->pos[VX] - tmx) >= blockdist || abs(thing->pos[VY] - tmy) >= blockdist)
+    if(abs(thing->pos[VX] - tm[VX]) >= blockdist || abs(thing->pos[VY] - tm[VY]) >= blockdist)
     {                           // Didn't hit thing
         return (true);
     }
@@ -514,8 +516,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
     tmhitline = NULL;
 
-    tmx = x;
-    tmy = y;
+    tm[VX] = x;
+    tm[VY] = y;
 
     tmbbox[BOXTOP] = y + tmthing->radius;
     tmbbox[BOXBOTTOM] = y - tmthing->radius;
@@ -580,8 +582,8 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
     oldmo = *thing;             // save the old mobj before the fake zmovement
     P_FakeZMovement(tmthing);
 
-    tmx = x;
-    tmy = y;
+    tm[VX] = x;
+    tm[VY] = y;
 
     tmbbox[BOXTOP] = y + tmthing->radius;
     tmbbox[BOXBOTTOM] = y - tmthing->radius;
@@ -1154,7 +1156,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
 {
     fixed_t pos[3];
     fixed_t frac;
-    sector_t *backsector, *frontsector;
+    sector_t *backsector = NULL;
+    sector_t *frontsector = NULL;
     line_t *li;
     xline_t *xline;
 

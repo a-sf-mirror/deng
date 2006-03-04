@@ -1140,7 +1140,7 @@ int EV_DoDonut(line_t *line)
         s1 = P_ToPtr(DMU_SECTOR, secnum);
 
         // ALREADY MOVING?  IF SO, KEEP GOING...
-        if(xsectors[secnum].specialdata)
+        if(P_XSector(s1)->specialdata)
             continue;
 
         rtn = 1;
@@ -1150,11 +1150,11 @@ int EV_DoDonut(line_t *line)
         {
             check = P_GetPtrp(s2, DMU_LINE_OF_SECTOR | i);
 
-            if((!P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED) ||
-               (P_GetPtrp(check, DMU_BACK_SECTOR) == s1))
-                continue;
-
             s3 = P_GetPtrp(check, DMU_BACK_SECTOR);
+
+            if((!(P_GetIntp(check, DMU_FLAGS) & ML_TWOSIDED)) ||
+               s3 == s1)
+                continue;
 
             //  Spawn rising slime
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
@@ -1170,7 +1170,7 @@ int EV_DoDonut(line_t *line)
             floor->speed = FLOORSPEED / 2;
             floor->texture = P_GetIntp(s3, DMU_FLOOR_TEXTURE);
             floor->newspecial = 0;
-            floor->floordestheight = P_GetIntp(s3, DMU_FLOOR_HEIGHT);
+            floor->floordestheight = P_GetFixedp(s3, DMU_FLOOR_HEIGHT);
 
             //  Spawn lowering donut-hole
             floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
@@ -1184,7 +1184,7 @@ int EV_DoDonut(line_t *line)
             floor->direction = -1;
             floor->sector = s1;
             floor->speed = FLOORSPEED / 2;
-            floor->floordestheight = P_GetIntp(s3, DMU_FLOOR_HEIGHT);
+            floor->floordestheight = P_GetFixedp(s3, DMU_FLOOR_HEIGHT);
             break;
         }
     }

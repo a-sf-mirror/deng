@@ -626,7 +626,6 @@ void P_NightmareRespawn(mobj_t *mobj)
 {
     fixed_t pos[3];
     mobj_t *mo;
-    thing_t *mthing;
 
     pos[VX] = mobj->spawnpoint.x << FRACBITS;
     pos[VY] = mobj->spawnpoint.y << FRACBITS;
@@ -650,9 +649,6 @@ void P_NightmareRespawn(mobj_t *mobj)
 
     S_StartSound(sfx_telept, mo);
 
-    // spawn the new monster
-    mthing = &mobj->spawnpoint;
-
     // spawn it
     if(mobj->info->flags & MF_SPAWNCEILING)
         pos[VZ] = ONCEILINGZ;
@@ -661,9 +657,9 @@ void P_NightmareRespawn(mobj_t *mobj)
 
     mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], mobj->type);
     mo->spawnpoint = mobj->spawnpoint;
-    mo->angle = ANG45 * (mthing->angle / 45);
+    mo->angle = ANG45 * (mobj->spawnpoint.angle / 45);
 
-    if(mthing->options & MTF_AMBUSH)
+    if(mobj->spawnpoint.options & MTF_AMBUSH)
         mo->flags |= MF_AMBUSH;
 
     mo->reactiontime = 18;

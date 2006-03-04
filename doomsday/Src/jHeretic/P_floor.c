@@ -58,11 +58,11 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
     floorheight = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
     ceilingheight = P_GetFixedp(sector, DMU_CEILING_HEIGHT);
 
-    switch (floorOrCeiling)
+    switch(floorOrCeiling)
     {
     case 0:
         // FLOOR
-        switch (direction)
+        switch(direction)
         {
         case -1:
             // DOWN
@@ -73,9 +73,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
+                    P_SetFixedp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -88,9 +88,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
+                    P_SetFixedp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -107,9 +107,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
+                    P_SetFixedp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -126,9 +126,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     if(crush == true)
                         return crushed;
 
-                    P_SetIntp(sector, DMU_FLOOR_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_FLOOR_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_FLOOR_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_FLOOR_SPEED, 0);
+                    P_SetFixedp(sector, DMU_FLOOR_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -151,9 +151,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
+                    P_SetFixedp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -170,9 +170,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                     if(crush == true)
                         return crushed;
 
-                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
+                    P_SetFixedp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
 
                     return crushed;
@@ -189,9 +189,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
                 flag = P_ChangeSector(sector, crush);
                 if(flag == true)
                 {
-                    P_SetIntp(sector, DMU_CEILING_TARGET, lastpos);
+                    P_SetFixedp(sector, DMU_CEILING_TARGET, lastpos);
                     P_SetFixedp(sector, DMU_CEILING_HEIGHT, lastpos);
-                    P_SetIntp(sector, DMU_CEILING_SPEED, 0);
+                    P_SetFixedp(sector, DMU_CEILING_SPEED, 0);
                     P_ChangeSector(sector, crush);
                 }
 
@@ -525,7 +525,7 @@ int EV_BuildStairs(line_t *line, stair_e type)
         do
         {
             ok = 0;
-            for(i = 0; i < P_GetFixedp(sec, DMU_LINE_COUNT); i++)
+            for(i = 0; i < P_GetIntp(sec, DMU_LINE_COUNT); i++)
             {
                 ln = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
 
