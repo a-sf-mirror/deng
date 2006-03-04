@@ -40,6 +40,7 @@
 #  include "jHeretic/p_oldsvg.h"
 #endif
 
+#include "p_saveg.h"
 #include "f_infine.h"
 #include "d_net.h"
 #include "p_svtexarc.h"
@@ -73,36 +74,9 @@
 
 #define MAX_ARCHIVED_THINGS     1024
 
+#define PRE_VER5_END_SPECIALS   7
+
 // TYPES -------------------------------------------------------------------
-
-enum {
-    sc_normal,
-    sc_ploff,                   // plane offset
-    sc_xg1
-} sectorclass_e;
-
-typedef enum lineclass_e {
-    lc_normal,
-    lc_xg1
-} lineclass_t;
-
-typedef enum {
-    tc_end,
-    tc_mobj,
-    tc_xgmover
-} thinkerclass_t;
-
-enum {
-    tc_ceiling,
-    tc_door,
-    tc_floor,
-    tc_plat,
-    tc_flash,
-    tc_strobe,
-    tc_glow,
-    tc_flicker,
-    tc_endspecials
-} specials_e;
 
 typedef struct {
     int     magic;
@@ -177,7 +151,10 @@ unsigned short SV_ThingArchiveNum(mobj_t *mo)
             return i + 1;
     }
     if(first_empty < 0)
+    {
+        Con_Message("Thing archive exhausted!\n");
         return 0;               // No number available!
+    }
     // OK, place it in an empty pos.
     thing_archive[first_empty] = mo;
     return first_empty + 1;
@@ -410,6 +387,8 @@ void SV_WriteMobj(mobj_t *mobj)
 {
     mobj_t  mo;
 
+    SV_WriteByte(tc_mobj);
+
     // Mangle it!
     memcpy(&mo, mobj, sizeof(mo));
     mo.state = (state_t *) (mo.state - states);
@@ -427,9 +406,10 @@ void SV_WriteMobj(mobj_t *mobj)
     SV_WriteShort(SV_ThingArchiveNum(mo.target));
 
 #if __JDOOM__
-    // Ver 5: Save tracer (fixes Archvile, Revenant bug)
+    // Ver 5 features: Save tracer (fixes Archvile, Revenant bug)
     SV_WriteShort(SV_ThingArchiveNum(mo.tracer));
 #endif
+    SV_WriteShort(SV_ThingArchiveNum(mo.onmobj));
 
     // Info for drawing: position.
     SV_WriteLong(mo.pos[VX]);
@@ -517,12 +497,17 @@ void SV_ReadMobj(mobj_t *mo)
         SV_SetArchiveThing(mo, SV_ReadShort());
         // The reference will be updated after all mobjs are loaded.
         mo->target = (mobj_t *) (int) SV_ReadShort();
+    }
 
-        // Ver 5 saves the tracer too. Updated after all mobjs are loaded.
+    // Ver 5 features:
+    if(ver >= 5)
+    {
 #if __JDOOM__
-        if(ver >= 5)
-            mo->tracer = (mobj_t *) (int) SV_ReadShort();
+        // Tracer for enemy attacks (updated after all mobjs are loaded).
+        mo->tracer = (mobj_t *) (int) SV_ReadShort();
 #endif
+        // mobj this one is on top of (updated after all mobjs are loaded).
+        mo->onmobj = (mobj_t *) (int) SV_ReadShort();
     }
 
     // Info for drawing: position.
@@ -626,6 +611,8 @@ void SV_ReadMobj(mobj_t *mo)
         mo->dplayer->clLookDir = 0;
     }
     mo->visangle = mo->angle >> 16;
+
+    mo->thinker.function = P_MobjThinker;
 }
 
 void SV_WriteSector(sector_t *sec)
@@ -633,8 +620,8 @@ void SV_WriteSector(sector_t *sec)
     int     type;
     xsector_t *xsec = P_XSector(sec);
 
-    int     floorheight = P_GetIntp(sec, DMU_FLOOR_HEIGHT);
-    int     ceilingheight = P_GetIntp(sec, DMU_CEILING_HEIGHT);
+    int     floorheight = P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
+    int     ceilingheight = P_GetFixedp(sec, DMU_CEILING_HEIGHT);
     int     floorpic = P_GetIntp(sec, DMU_FLOOR_TEXTURE);
     int     ceilingpic = P_GetIntp(sec, DMU_CEILING_TEXTURE);
     byte    lightlevel = P_GetIntp(sec, DMU_LIGHT_LEVEL);
@@ -812,8 +799,8 @@ void SV_WriteLine(line_t *li)
         if(!side)
             continue;
 
-        SV_WriteShort(P_GetIntp(side, DMU_TEXTURE_OFFSET_X) >> FRACBITS);
-        SV_WriteShort(P_GetIntp(side, DMU_TEXTURE_OFFSET_Y) >> FRACBITS);
+        SV_WriteShort(P_GetFixedp(side, DMU_TEXTURE_OFFSET_X) >> FRACBITS);
+        SV_WriteShort(P_GetFixedp(side, DMU_TEXTURE_OFFSET_Y) >> FRACBITS);
 
         texid = P_GetIntp(side, DMU_TOP_TEXTURE);
         SV_WriteShort(SV_TextureArchiveNum(texid));
@@ -835,7 +822,7 @@ void SV_WriteLine(line_t *li)
 
         SV_WriteLong(P_GetIntp(side, DMU_MIDDLE_BLENDMODE));
 
-        SV_WriteLong(P_GetIntp(side, DMU_FLAGS));
+        SV_WriteShort(P_GetIntp(side, DMU_FLAGS));
     }
 
     // Extended General?
@@ -881,8 +868,8 @@ void SV_ReadLine(line_t *li)
         if(!side)
             continue;
 
-        P_SetIntp(side, DMU_TEXTURE_OFFSET_X, SV_ReadShort() << FRACBITS);
-        P_SetIntp(side, DMU_TEXTURE_OFFSET_Y, SV_ReadShort() << FRACBITS);
+        P_SetFixedp(side, DMU_TEXTURE_OFFSET_X, SV_ReadShort() << FRACBITS);
+        P_SetFixedp(side, DMU_TEXTURE_OFFSET_Y, SV_ReadShort() << FRACBITS);
 
         topTexID = SV_ReadShort();
         bottomTexID = SV_ReadShort();
@@ -914,10 +901,9 @@ void SV_ReadLine(line_t *li)
 
             P_SetIntp(side, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
 
-            P_SetIntp(side, DMU_FLAGS, SV_ReadLong());
+            P_SetIntp(side, DMU_FLAGS, SV_ReadShort());
         }
     }
-
     // Versions > 1 might include XG data
     if(hdr.version > 1)
         if(type == lc_xg1)
@@ -1021,116 +1007,6 @@ void P_UnArchiveWorld(void)
         SV_ReadLine(P_ToPtr(DMU_LINE, i));
 }
 
-void P_ArchiveThinkers(void)
-{
-    thinker_t *th;
-
-    // save off the current thinkers
-    for(th = thinkercap.next; th != &thinkercap; th = th->next)
-    {
-        if(th->function == P_MobjThinker)
-        {
-            SV_WriteByte(tc_mobj);
-            SV_WriteMobj((mobj_t *) th);
-        }
-        else if(th->function == XS_PlaneMover)
-        {
-            SV_WriteByte(tc_xgmover);
-            SV_WriteXGPlaneMover(th);
-        }
-        // Con_Error ("P_ArchiveThinkers: Unknown thinker function");
-    }
-
-    // add a terminating marker
-    SV_WriteByte(tc_end);
-}
-
-void P_UnArchiveThinkers(void)
-{
-    byte    tclass;
-    thinker_t *currentthinker;
-    thinker_t *next;
-    mobj_t *mobj;
-
-    // remove all the current thinkers
-    currentthinker = thinkercap.next;
-    while(currentthinker != &thinkercap)
-    {
-        next = currentthinker->next;
-
-        if(currentthinker->function == P_MobjThinker)
-            P_RemoveMobj((mobj_t *) currentthinker);
-        else
-            Z_Free(currentthinker);
-
-        currentthinker = next;
-    }
-    P_InitThinkers();
-
-    // read in saved thinkers
-    while(1)
-    {
-        tclass = SV_ReadByte();
-        switch (tclass)
-        {
-        case tc_end:
-            goto end_of_thinkers;   // end of list
-
-        case tc_mobj:
-            mobj = Z_Malloc(sizeof(*mobj), PU_LEVEL, NULL);
-            memset(mobj, 0, sizeof(*mobj));
-            SV_ReadMobj(mobj);
-            if(mobj->dplayer && !mobj->dplayer->ingame)
-            {
-                // This mobj doesn't belong to anyone any more.
-                mobj->dplayer->mo = NULL;
-                Z_Free(mobj);
-                break;
-            }
-            P_SetThingPosition(mobj);
-            mobj->info = &mobjinfo[mobj->type];
-
-            mobj->floorz =
-                P_GetFixedp(mobj->subsector, DMU_FLOOR_HEIGHT);
-
-            mobj->ceilingz =
-                P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
-
-            mobj->thinker.function = P_MobjThinker;
-            P_AddThinker(&mobj->thinker);
-            break;
-
-        case tc_xgmover:
-            SV_ReadXGPlaneMover();
-            break;
-
-        default:
-            Con_Error("P_UnArchiveThinkers: Unknown tclass %i in savegame.",
-                      tclass);
-        }
-    }
-
-  end_of_thinkers:
-
-    // Update references to things.
-    for(currentthinker = thinkercap.next; currentthinker != &thinkercap;
-        currentthinker = currentthinker->next)
-    {
-        if(currentthinker->function != P_MobjThinker)
-            continue;
-        // Update target.
-        mobj = (mobj_t *) currentthinker;
-        mobj->target = SV_GetArchiveThing((int) mobj->target);
-#if __JDOOM__
-        // Update tracer.
-        mobj->tracer = SV_GetArchiveThing((int) mobj->tracer);
-#endif
-    }
-
-    // The activator mobjs must be set.
-    XL_UnArchiveLines();
-}
-
 void SV_WriteCeiling(ceiling_t* ceiling)
 {
     SV_WriteByte(tc_ceiling);
@@ -1188,6 +1064,7 @@ void SV_ReadCeiling(ceiling_t* ceiling)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(ceiling, SIZE_OF_CEILING);
 
         sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
@@ -1250,6 +1127,7 @@ void SV_ReadDoor(vldoor_t* door)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(door, SIZE_OF_DOOR);
 
         sector = P_ToPtr(DMU_SECTOR, (int) door->sector);
@@ -1316,6 +1194,7 @@ void SV_ReadFloor(floormove_t* floor)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(floor, SIZE_OF_FLOOR);
 
         sector = P_ToPtr(DMU_SECTOR, (int) floor->sector);
@@ -1394,6 +1273,7 @@ void SV_ReadPlat(plat_t* plat)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(plat, SIZE_OF_PLAT);
 
         sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
@@ -1449,6 +1329,7 @@ void SV_ReadFlash(lightflash_t* flash)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(flash, SIZE_OF_FLASH);
 
         sector = P_ToPtr(DMU_SECTOR, (int) flash->sector);
@@ -1501,6 +1382,7 @@ void SV_ReadStrobe(strobe_t* strobe)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(strobe, SIZE_OF_STROBE);
 
         sector = P_ToPtr(DMU_SECTOR, (int) strobe->sector);
@@ -1549,6 +1431,7 @@ void SV_ReadGlow(glow_t* glow)
     else
     {
         // Its in the old format
+        // FIXME: We don't need to use the struct for byte offsets.
         SV_Read(glow, SIZE_OF_GLOW);
 
         sector = P_ToPtr(DMU_SECTOR, (int) glow->sector);
@@ -1594,38 +1477,57 @@ void SV_ReadFlicker(fireflicker_t* flicker)
 
     flicker->maxlight = SV_ReadLong();
     flicker->minlight = SV_ReadLong();
+
+    flicker->thinker.function = T_FireFlicker;
 }
 #endif
 
+void SV_AddThinker(int class, thinker_t* th)
+{
+    P_AddThinker(th);
+
+    switch(class)
+    {
+    case tc_ceiling:
+        P_AddActiveCeiling((ceiling_t *) th);
+        break;
+    case tc_plat:
+        P_AddActivePlat((plat_t *) th);
+        break;
+
+    default:
+        break;
+    }
+}
+
 /*
- * Things to handle:
+ * Archives thinkers for both client and server.
+ * Clients do not save all data for all thinkers (the server will send
+ * it to us anyway so saving it would just bloat client save games).
  *
- * T_MoveCeiling, (ceiling_t: sector_t * swizzle), - active list
- * T_VerticalDoor, (vldoor_t: sector_t * swizzle),
- * T_MoveFloor, (floormove_t: sector_t * swizzle),
- * T_LightFlash, (lightflash_t: sector_t * swizzle),
- * T_StrobeFlash, (strobe_t: sector_t *),
- * T_Glow, (glow_t: sector_t *),
- * T_PlatRaise, (plat_t: sector_t *), - active list
- * if __JDOOM__ T_FireFlicker (flicker_t: sector_t *) - Added in Ver5 DJS
+ * NOTE: Some thinker classes are NEVER saved by clients.
  */
-void P_ArchiveSpecials(void)
+void P_ArchiveThinkers(void)
 {
     thinker_t *th;
-    ceiling_t ceiling;
-    vldoor_t door;
-    floormove_t floor;
-    plat_t  plat;
-    lightflash_t flash;
-    strobe_t strobe;
-    glow_t  glow;
-#if __JDOOM__
-    fireflicker_t flicker;
-#endif
 
     // save off the current thinkers
     for(th = thinkercap.next; th != &thinkercap; th = th->next)
     {
+        if(!IS_CLIENT) // Only the server saves these thinker classes.
+        {
+            if(th->function == P_MobjThinker)
+            {
+                SV_WriteMobj((mobj_t *) th);
+                continue;
+            }
+            else if(th->function == XS_PlaneMover)
+            {
+                SV_WriteXGPlaneMover(th);
+                continue;
+            }
+        }
+
         if(th->function == NULL)
         {
             platlist_t *pl;
@@ -1646,167 +1548,258 @@ void P_ArchiveSpecials(void)
 
             continue;
         }
-
-        if(th->function == T_MoveCeiling)
+        else if(th->function == T_MoveCeiling)
         {
         ceiling:                               // killough 2/14/98
-            memcpy(&ceiling, th, SIZE_OF_CEILING);
-            SV_WriteCeiling(&ceiling);
+            SV_WriteCeiling((ceiling_t*) th);
             continue;
         }
-
-        if(th->function == T_VerticalDoor)
+        else if(th->function == T_VerticalDoor)
         {
-            memcpy(&door, th, SIZE_OF_DOOR);
-            SV_WriteDoor(&door);
+            SV_WriteDoor((vldoor_t*) th);
             continue;
         }
-
-        if(th->function == T_MoveFloor)
+        else if(th->function == T_MoveFloor)
         {
-            memcpy(&floor, th, SIZE_OF_FLOOR);
-            SV_WriteFloor(&floor);
+            SV_WriteFloor((floormove_t*) th);
             continue;
         }
-
-        if(th->function == T_PlatRaise)
+        else if(th->function == T_PlatRaise)
         {
         plat:   // killough 2/14/98: added fix for original plat height above
-            memcpy(&plat, th, SIZE_OF_PLAT);
-            SV_WritePlat(&plat);
+            SV_WritePlat((plat_t*) th);
             continue;
         }
-
-        if(th->function == T_LightFlash)
+        else if(th->function == T_LightFlash)
         {
-            memcpy(&flash, th, SIZE_OF_FLASH);
-            SV_WriteFlash(&flash);
+            SV_WriteFlash((lightflash_t*) th);
             continue;
         }
-
-        if(th->function == T_StrobeFlash)
+        else if(th->function == T_StrobeFlash)
         {
-            memcpy(&strobe, th, SIZE_OF_STROBE);
-            SV_WriteStrobe(&strobe);
+            SV_WriteStrobe((strobe_t*) th);
             continue;
         }
-
-        if(th->function == T_Glow)
+        else if(th->function == T_Glow)
         {
-            memcpy(&glow, th, SIZE_OF_GLOW);
-            SV_WriteGlow(&glow);
+            SV_WriteGlow((glow_t*) th);
             continue;
         }
 #if __JDOOM__
-        // Added in Ver5 - DJS
-        if(th->function == T_FireFlicker)
+        else if(th->function == T_FireFlicker)  // Added in Ver5 - DJS
         {
-            memcpy(&flicker, th, SIZE_OF_FIREFLICKER);
-            SV_WriteFlicker(&flicker);
+            SV_WriteFlicker((fireflicker_t*) th);
             continue;
         }
 #endif
     }
 
     // add a terminating marker
-    SV_WriteByte(tc_endspecials);
+    SV_WriteByte(tc_end);
 }
 
-void P_UnArchiveSpecials(void)
+/*
+ * Un-Archives thinkers for both client and server.
+ */
+void P_UnArchiveThinkers(void)
 {
     byte    tclass;
-    ceiling_t *ceiling;
-    vldoor_t *door;
-    floormove_t *floor;
-    plat_t *plat;
-    lightflash_t *flash;
-    strobe_t *strobe;
-    glow_t *glow;
-#if __JDOOM__
-    fireflicker_t *flicker;
-#endif
+    thinker_t *th;
+    thinker_t *next;
+    boolean doSpecials = (hdr.version >= 5);
+
+    // remove all the current thinkers (server only)
+    if(IS_SERVER)
+    {
+        th = thinkercap.next;
+        while(th != &thinkercap)
+        {
+            next = th->next;
+
+            if(th->function == P_MobjThinker)
+                P_RemoveMobj((mobj_t *) th);
+            else
+                Z_Free(th);
+
+            th = next;
+        }
+
+        P_InitThinkers();
+    }
 
     // read in saved thinkers
     while(1)
     {
         tclass = SV_ReadByte();
-        switch (tclass)
+
+        if(hdr.version < 5)
         {
-        case tc_endspecials:
-            return;             // end of list
+            if(doSpecials) // Have we started on the specials yet?
+            {
+                // Versions prior to 5 used a different value to mark
+                // the end of the specials data so we need to manipulate
+                // the thinker class identifier value.
+                if(tclass == PRE_VER5_END_SPECIALS)
+                    tclass = tc_end;
+                else
+                    tclass += 3;
+            }
+            else
+            {
+                if(tclass == tc_end)
+                {
+                    // We have reached the begining of the "specials" block.
+                    doSpecials = true;
+                    continue;
+                }
+            }
+        }
 
-        case tc_ceiling:
-            ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
+        switch(tclass)
+        {
+        case tc_end:
+            goto end_of_thinkers;   // end of list
 
-            SV_ReadCeiling(ceiling);
+        case tc_mobj:
+        {
+            mobj_t *mobj;
 
-            P_AddThinker(&ceiling->thinker);
-            P_AddActiveCeiling(ceiling);
+            if(!IS_SERVER)
+                continue; // Not for us (it shouldn't be here anyway!?).
+
+            th = Z_Malloc(sizeof(mobj_t), PU_LEVEL, NULL);
+            memset(th, 0, sizeof(mobj_t));
+            mobj = (mobj_t*) th;
+
+#if __JDOOM__
+            mobj->tracer = NULL;
+#endif
+            mobj->onmobj = NULL;
+
+            SV_ReadMobj(mobj);
+
+            if(mobj->dplayer && !mobj->dplayer->ingame)
+            {
+                // This mobj doesn't belong to anyone any more.
+                mobj->dplayer->mo = NULL;
+                Z_Free(mobj);
+                continue;
+            }
+
+            P_SetThingPosition(mobj);
+            mobj->info = &mobjinfo[mobj->type];
+            mobj->floorz = P_GetFixedp(mobj->subsector,
+                                       DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+
+            mobj->ceilingz = P_GetFixedp(mobj->subsector,
+                                         DMU_SECTOR_OF_SUBSECTOR | DMU_CEILING_HEIGHT);
+            break;
+        }
+        case tc_xgmover:
+            if(!IS_SERVER)
+                continue; // Not for us (it shouldn't be here anyway!?).
+
+            th = Z_Malloc(sizeof(xgplanemover_t), PU_LEVEL, 0);
+            memset(th, 0, sizeof(xgplanemover_t));
+            SV_ReadXGPlaneMover((xgplanemover_t*) th);
             break;
 
+        case tc_ceiling:
+            if(!doSpecials)
+                continue;
+
+            th = Z_Malloc(sizeof(ceiling_t), PU_LEVEL, NULL);
+            SV_ReadCeiling((ceiling_t*) th);
+            break;
 
         case tc_door:
-            door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadDoor(door);
-
-            P_AddThinker(&door->thinker);
+            th = Z_Malloc(sizeof(vldoor_t), PU_LEVEL, NULL);
+            SV_ReadDoor((vldoor_t*) th);
             break;
 
         case tc_floor:
-            floor = Z_Malloc(sizeof(*floor), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadFloor(floor);
-
-            P_AddThinker(&floor->thinker);
+            th = Z_Malloc(sizeof(floormove_t), PU_LEVEL, NULL);
+            SV_ReadFloor((floormove_t*) th);
             break;
 
         case tc_plat:
-            plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadPlat(plat);
-
-            P_AddThinker(&plat->thinker);
-            P_AddActivePlat(plat);
+            th = Z_Malloc(sizeof(plat_t), PU_LEVEL, NULL);
+            SV_ReadPlat((plat_t*) th);
             break;
 
         case tc_flash:
-            flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadFlash(flash);
-
-            P_AddThinker(&flash->thinker);
+            th = Z_Malloc(sizeof(lightflash_t), PU_LEVEL, NULL);
+            SV_ReadFlash((lightflash_t*) th);
             break;
 
         case tc_strobe:
-            strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadStrobe(strobe);
-
-            P_AddThinker(&strobe->thinker);
+            th = Z_Malloc(sizeof(strobe_t), PU_LEVEL, NULL);
+            SV_ReadStrobe((strobe_t*) th);
             break;
 
         case tc_glow:
-            glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadGlow(glow);
-
-            P_AddThinker(&glow->thinker);
+            th = Z_Malloc(sizeof(glow_t), PU_LEVEL, NULL);
+            SV_ReadGlow((glow_t*) th);
             break;
 #if __JDOOM__
         // Added in Ver5 - DJS
         case tc_flicker:
-            flicker = Z_Malloc(sizeof(*flicker), PU_LEVEL, NULL);
+            if(!doSpecials)
+                continue;
 
-            SV_ReadFlicker(flicker);
-
-            P_AddThinker(&flicker->thinker);
+            th = Z_Malloc(sizeof(fireflicker_t), PU_LEVEL, NULL);
+            SV_ReadFlicker((fireflicker_t*) th);
             break;
 #endif
         default:
-            Con_Error("P_UnArchiveSpecials: Unknown tclass %i " "in savegame.",
+            Con_Error("P_UnArchiveThinkers: Unknown tclass %i " "in savegame.",
                       tclass);
         }
+
+        SV_AddThinker(tclass, th);
+    }
+    end_of_thinkers:
+
+    // Update references to things (server only)
+    if(IS_SERVER)
+    {
+        mobj_t* mobj;
+
+        for(th = thinkercap.next; th != &thinkercap; th = th->next)
+        {
+            if(th->function != P_MobjThinker)
+                continue;
+            // Update target.
+            mobj = (mobj_t *) th;
+            mobj->target = SV_GetArchiveThing((int) mobj->target);
+#if __JDOOM__
+            // Update tracer.
+            mobj->tracer = SV_GetArchiveThing((int) mobj->tracer);
+#endif
+            // Update onmobj.
+            mobj->onmobj = SV_GetArchiveThing((int) mobj->onmobj);
+        }
+
+        // The activator mobjs must be set.
+        XL_UnArchiveLines();
     }
 }
 
@@ -1968,7 +1961,6 @@ int SV_SaveGame(char *filename, char *description)
 
     // In netgames the server tells the clients to save their games.
     NetSv_SaveGame(hdr.gameid);
-
     P_ArchivePlayers();
 
     // Clear the sound target count (determined while saving sectors).
@@ -1976,7 +1968,6 @@ int SV_SaveGame(char *filename, char *description)
 
     P_ArchiveWorld();
     P_ArchiveThinkers();
-    P_ArchiveSpecials();
 
 #ifdef __JDOOM__
     // Doom saves the brain data, too. (It's a part of the world.)
@@ -2087,7 +2078,6 @@ int SV_LoadGame(char *filename)
     P_UnArchivePlayers(infile, loaded);
     P_UnArchiveWorld();
     P_UnArchiveThinkers();
-    P_UnArchiveSpecials();
 
 #ifdef __JDOOM__
     // Doom saves the brain data, too. (It's a part of the world.)
@@ -2184,7 +2174,7 @@ void SV_SaveClient(unsigned int gameid)
     SV_WritePlayer(consoleplayer);
 
     P_ArchiveWorld();
-    P_ArchiveSpecials();
+    P_ArchiveThinkers();
 
     lzClose(savefile);
 }
@@ -2236,7 +2226,7 @@ void SV_LoadClient(unsigned int gameid)
     SV_ReadPlayer(cpl);
 
     P_UnArchiveWorld();
-    P_UnArchiveSpecials();
+    P_UnArchiveThinkers();
 
     lzClose(savefile);
     return;

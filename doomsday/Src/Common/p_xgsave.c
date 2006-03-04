@@ -203,9 +203,9 @@ void SV_ReadXGSector(struct sector_s *sec)
 void SV_WriteXGPlaneMover(thinker_t *th)
 {
     int     i;
-
     xgplanemover_t *mov = (xgplanemover_t *) th;
 
+    SV_WriteByte(tc_xgmover);
     SV_WriteByte(1);            // Version.
 
     SV_WriteLong(P_ToIndex(mov->sector));
@@ -234,16 +234,14 @@ void SV_WriteXGPlaneMover(thinker_t *th)
     SV_WriteLong(mov->timer);
 }
 
-// Reads and adds the plane mover thinker.
-void SV_ReadXGPlaneMover(void)
+/*
+ * Reads the plane mover thinker.
+ */
+void SV_ReadXGPlaneMover(xgplanemover_t* mov)
 {
-    xgplanemover_t *mov = Z_Malloc(sizeof(*mov), PU_LEVEL, 0);
     int     i;
 
-    memset(mov, 0, sizeof(*mov));
-
     SV_ReadByte();                // Version.
-
 
     mov->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
 
@@ -267,9 +265,7 @@ void SV_ReadXGPlaneMover(void)
     mov->maxinterval = SV_ReadLong();
     mov->timer = SV_ReadLong();
 
-    // Add it.
     mov->thinker.function = XS_PlaneMover;
-    P_AddThinker(&mov->thinker);
 }
 
 /*
