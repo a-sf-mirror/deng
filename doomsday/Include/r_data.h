@@ -191,6 +191,9 @@ typedef struct {
     sector_t       *linkedfloor;        // Floor attached to another sector.
     sector_t       *linkedceil;         // Ceiling attached to another sector.
     boolean         permanentlink;
+    boolean         unclosed;           // An unclosed sector (some sort of fancy hack).
+    boolean         selfRefHack;        // A self-referencing hack sector which ISNT
+                                        // enclosed by the sector referenced.
     float           bounds[4];          // Bounding box for the sector.
     int             flags;
     fixed_t         oldfloor[2], oldceil[2];
@@ -294,6 +297,8 @@ typedef struct polyblock_s {
 typedef struct vertexowner_s {
     unsigned short  num;           // Number of owners.
     unsigned short *list;          // Sector indices.
+    unsigned short  numlines;
+    unsigned short *linelist;
 } vertexowner_t;
 
 // The sector divisions list is similar to vertexowners.
