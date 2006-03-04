@@ -171,6 +171,7 @@ void LG_Init(void)
 {
     vertex_t max;
     vertex_t center;
+    vertex_t topleft, topright, bottomleft, bottomright;
     fixed_t width;
     fixed_t height;
     int     i;
@@ -226,17 +227,65 @@ void LG_Init(void)
     {
         for(x = 0; x < lgBlockWidth; ++x, ++block)
         {
+            sector_t *sector, *centersector;
+
             center.x = lgOrigin.x + x * (blockSize << FRACBITS)
                 + (blockSize << (FRACBITS - 1));
             center.y = lgOrigin.y + y * (blockSize << FRACBITS)
                 + (blockSize << (FRACBITS - 1));
 
-            block->sector = R_PointInSubsector(center.x, center.y)->sector;
-
-            if(!R_IsPointInSector2(center.x, center.y, block->sector))
+            centersector = R_PointInSubsector(center.x, center.y)->sector;
             {
-                // This block is not inside any sector.
-                block->sector = NULL;
+            topleft.x = lgOrigin.x + x * (blockSize << FRACBITS);
+            topleft.y = lgOrigin.y + y * (blockSize << FRACBITS);
+            topright.x = lgOrigin.x + (x+1) * (blockSize << FRACBITS);
+            topright.y = topleft.y;
+            bottomleft.x = topleft.x;
+            bottomleft.y = lgOrigin.y + (y+1) * (blockSize << FRACBITS);
+            bottomright.x = topright.x;
+            bottomright.y = bottomleft.y;
+
+            // By simply using the center point of the block we are "rounding"
+            // the corners of each sector. This is what caused the lighting to
+            // "pinch" in the corners.
+
+            // To visualize the problem - edit LG_Evaluate() - uncommenting the
+            // debug code which returns purple for blocks without a sector AND
+            // replace code in THIS parenthesis block with:
+#if 0
+            if(!R_IsPointInSector2(center.x, center.y, centersector))
+                sector = NULL;
+#endif
+            // This isn't entirely "correct" but it fixes the problem with
+            // blocks being said to have no sector when they should.
+            sector = R_PointInSubsector(topleft.x, topleft.y)->sector;
+            if(!R_IsPointInSector2(topleft.x, topleft.y, sector))
+            {
+                sector = R_PointInSubsector(topright.x, topright.y)->sector;
+                if(!R_IsPointInSector2(topright.x, topright.y, sector))
+                {
+                    sector = R_PointInSubsector(bottomleft.x, bottomleft.y)->sector;
+                    if(!R_IsPointInSector2(bottomleft.x, bottomleft.y, sector))
+                    {
+                        sector = R_PointInSubsector(bottomright.x, bottomright.y)->sector;
+                        if(!R_IsPointInSector2(bottomright.x, bottomright.y, sector))
+                        {
+                            // This block is not inside any sector.
+                            sector = NULL;
+                        }
+                        else
+                            sector = centersector;
+                    }
+                    else
+                        sector = centersector;
+                }
+                else
+                    sector = centersector;
+            }
+            else
+                sector = centersector;
+
+            block->sector = sector;
             }
         }
     }
@@ -683,9 +732,19 @@ void LG_Evaluate(const float *point, byte *color)
         dz -= 50;
         if(dz < 0)
             dz = 0;
-    }
 
-    memcpy(color, block->rgb, 3);
+        memcpy(color, block->rgb, 3);
+    }
+#if 0
+    else
+    {
+        // DEBUG:
+        // Bright purple if the block doesn't have a sector.
+        color[1] = 254;
+        color[2] = 0;
+        color[3] = 254;
+    }
+#endif
 
     // Biased ambient light causes a dimming in the Z direction.
     if(dz && block->bias)
