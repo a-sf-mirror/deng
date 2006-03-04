@@ -1476,6 +1476,7 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
     int internalType;
     int lumpCount;
     unsigned int i;
+    int k;
     unsigned int elements;
     unsigned int oldNum, newNum;
 
@@ -1612,7 +1613,13 @@ static boolean ReadMapData(gamemap_t* map, int doClass)
                 else
                     map->segs = Z_Malloc(map->numsegs * sizeof(seg_t), PU_LEVEL, 0);
 
+                // Initialize type identifier immediately.
+                // TODO: Do this for the other types as well.
                 memset(&map->segs[oldNum], 0, elements * sizeof(seg_t));
+                for(k = oldNum; k < newNum; ++k)
+                {
+                    map->segs[k].header.type = DMU_SEG;
+                }
                 break;
 
             case DAM_SUBSECTOR:
@@ -1991,28 +1998,29 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
             // If GL NODES are available this might be an "extra" vertex.
             if(glNodeData)
             {
-            switch(glNodeFormats[glNodeFormat].verInfo[mapLumpInfo[LCG_SEGS].glLump].version)
-            {
-            case 2:
-                if(idx & 0x8000)
+                switch(glNodeFormats[glNodeFormat].
+                       verInfo[mapLumpInfo[LCG_SEGS].glLump].version)
                 {
-                    idx &= ~0x8000;
-                    idx += firstGLvertex;
-                }
-                break;
+                case 2:
+                    if(idx & 0x8000)
+                    {
+                        idx &= ~0x8000;
+                        idx += firstGLvertex;
+                    }
+                    break;
 
-            case 3:
-            case 5:
-                if(idx & 0xc0000000)
-                {
-                    idx &= ~0xc0000000;
-                    idx += firstGLvertex;
-                }
-                break;
+                case 3:
+                case 5:
+                    if(idx & 0xc0000000)
+                    {
+                        idx &= ~0xc0000000;
+                        idx += firstGLvertex;
+                    }
+                    break;
 
-            default:
-                break;
-            }
+                default:
+                    break;
+                }
             }
 
             if(idx >= 0 && idx < map->numvertexes)
@@ -2021,6 +2029,10 @@ static void ReadValue(gamemap_t* map, valuetype_t valueType, void* dst,
                 *d = NULL;
             break;
             }
+            
+        default:
+            // TODO: Need to react?
+            break;
         }
     }
     else
