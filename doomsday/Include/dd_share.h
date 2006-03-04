@@ -529,11 +529,12 @@ extern          "C" {
         // Flags. OR'ed with a DMU property constant. The most significant byte
         // is used for the flags.
         DMU_FLAG_MASK           = 0xff000000,
-        DMU_SIDE1_OF_LINE       = 0x32000000,
-        DMU_SIDE0_OF_LINE       = 0x16000000,
         DMU_LINE_OF_SECTOR      = 0x80000000,
         DMU_SECTOR_OF_SUBSECTOR = 0x40000000,
         DMU_SEG_OF_POLYOBJ      = 0x20000000,
+        DMU_SIDE1_OF_LINE       = 0x10000000,
+        DMU_SIDE0_OF_LINE       = 0x08000000,
+        // (3 bits left)
 
         DMU_ALL = -1,
         DMU_NONE = 0,
