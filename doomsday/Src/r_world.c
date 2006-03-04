@@ -723,11 +723,7 @@ void R_SetVertexLineOwner(int idx, line_t *lineptr)
 void R_InitVertexOwners(void)
 {
     int     i, k, p, v[2];
-    int     count;
-    boolean scan;
     sector_t *sec;
-    line_t  *line;
-    vertexowner_t *own;
 
     // Allocate enough memory.
     vertexowners =
