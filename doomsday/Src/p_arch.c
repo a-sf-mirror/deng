@@ -810,7 +810,7 @@ static void P_FindMapLumps(int startLump)
     // Keep checking lumps to see if its a map data lump.
     for(i = (unsigned) startLump; ; ++i)
     {
-        if(!aux && i > numlumps - 1) // No more lumps?
+        if(!aux && i > (unsigned) numlumps - 1) // No more lumps?
             break;
 
         scan = true;
@@ -2843,8 +2843,6 @@ static void P_GroupLines(gamemap_t* map)
         block = block < 0 ? 0 : block;
         sec->blockbox[BOXLEFT] = block;
     }
-
-    Con_Message("Done group lines\n");
 }
 
 /*
@@ -2901,7 +2899,7 @@ static void P_CreateBlockMap(gamemap_t* map)
     vertex_t *vtx;
 
     // scan for map limits, which the blockmap must enclose
-    for(i = 0; i < map->numvertexes; i++)
+    for(i = 0; i < map->numvertexes; ++i)
     {
         vtx = &map->vertexes[i];
         V2_Set(point, FIX2FLT(vtx->x), FIX2FLT(vtx->y));
@@ -2936,7 +2934,7 @@ static void P_CreateBlockMap(gamemap_t* map)
 
     // Initialize each blocklist, and enter the trailing -1 in all blocklists.
     // NOTE: the linked list of lines grows backwards.
-    for(i = 0; i < numBlocks; i++)
+    for(i = 0; i < numBlocks; ++i)
     {
         blocklists[i] = M_Malloc(sizeof(linelist_t));
         blocklists[i]->num = -1;
@@ -2947,39 +2945,39 @@ static void P_CreateBlockMap(gamemap_t* map)
     // For each linedef in the wad, determine all blockmap blocks it touches
     // and add the linedef number to the blocklists for those blocks.
     {
-    int xorg = FLT2FIX(bMapOrigin[VX]) >> FRACBITS;
-    int yorg = FLT2FIX(bMapOrigin[VY]) >> FRACBITS;
+    int xorg = (int) bMapOrigin[VX];
+    int yorg = (int) bMapOrigin[VY];
 
     for(i = 0; i < map->numlines; i++)
     {
         line_t *line = &map->lines[i];
-        int x1 = line->v1->x >> FRACBITS;
-        int y1 = line->v1->y >> FRACBITS;
-        int x2 = line->v2->x >> FRACBITS;
-        int y2 = line->v2->y >> FRACBITS;
-        int dx = x2 - x1;
-        int dy = y2 - y1;
+        int v1[2] = {line->v1->x >> FRACBITS,
+                     line->v1->y >> FRACBITS};
+        int v2[2] = {line->v2->x >> FRACBITS,
+                     line->v2->y >> FRACBITS};
+        int dx = v2[VX] - v1[VX];
+        int dy = v2[VY] - v1[VY];
         int vert = !dx;
         int horiz = !dy;
-        int spos = (dx ^ dy) > 0;
-        int sneg = (dx ^ dy) < 0;
+        boolean slopePos = (dx ^ dy) > 0;
+        boolean slopeNeg = (dx ^ dy) < 0;
         int bx, by;
         // extremal lines[i] coords
-        int minx = x1 > x2? x2 : x1;
-        int maxx = x1 > x2? x1 : x2;
-        int miny = y1 > y2? y2 : y1;
-        int maxy = y1 > y2? y1 : y2;
+        int minx = v1[VX] > v2[VX]? v2[VX] : v1[VX];
+        int maxx = v1[VX] > v2[VX]? v1[VX] : v2[VX];
+        int miny = v1[VY] > v2[VY]? v2[VY] : v1[VY];
+        int maxy = v1[VY] > v2[VY]? v1[VY] : v2[VY];
 
         // no blocks done for this linedef yet
         memset(blockdone, 0, numBlocks * sizeof(int));
 
         // The line always belongs to the blocks containing its endpoints
-        bx = (x1 - xorg) >> BLKSHIFT;
-        by = (y1 - yorg) >> BLKSHIFT;
+        bx = (v1[VX] - xorg) >> BLKSHIFT;
+        by = (v1[VY] - yorg) >> BLKSHIFT;
         AddBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx, i);
 
-        bx = (x2 - xorg) >> BLKSHIFT;
-        by = (y2 - yorg) >> BLKSHIFT;
+        bx = (v2[VX] - xorg) >> BLKSHIFT;
+        by = (v2[VY] - yorg) >> BLKSHIFT;
         AddBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx, i);
 
         // For each column, see where the line along its left edge, which
@@ -2991,10 +2989,10 @@ static void P_CreateBlockMap(gamemap_t* map)
             for(j = 0; j < bMapWidth; j++)
             {
                 // intersection of Linedef with x=xorg+(j<<BLKSHIFT)
-                // (y-y1)*dx = dy*(x-x1)
-                // y = dy*(x-x1)+y1*dx;
+                // (y-v1[VY])*dx = dy*(x-v1[VX])
+                // y = dy*(x-v1[VX])+v1[VY]*dx;
                 int x = xorg + (j << BLKSHIFT);       // (x,y) is intersection
-                int y = (dy * (x - x1)) / dx + y1;
+                int y = (dy * (x - v1[VX])) / dx + v1[VY];
                 int yb = (y - yorg) >> BLKSHIFT;      // block row number
                 int yp = (y - yorg) & BLKMASK;        // y position within block
 
@@ -3017,7 +3015,7 @@ static void P_CreateBlockMap(gamemap_t* map)
                 if(yp == 0)
                 {
                     // Intersection occured at a corner
-                    if(sneg) //   \ - blocks x,y-, x-,y
+                    if(slopeNeg) //   \ - blocks x,y-, x-,y
                     {
                         if(yb > 0 && miny < y)
                             AddBlockLine(blocklists, blockcount,
@@ -3027,7 +3025,7 @@ static void P_CreateBlockMap(gamemap_t* map)
                             AddBlockLine(blocklists, blockcount,
                                          blockdone, bMapWidth * yb + j - 1, i);
                     }
-                    else if(spos) //   / - block x-,y-
+                    else if(slopePos) //   / - block x-,y-
                     {
                         if(yb > 0 && j > 0 && minx < x)
                             AddBlockLine(blocklists, blockcount,
@@ -3057,10 +3055,10 @@ static void P_CreateBlockMap(gamemap_t* map)
             for(j = 0; j < bMapHeight; j++)
             {
                 // intersection of Linedef with y=yorg+(j<<BLKSHIFT)
-                // (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
-                // x = dx*(y-y1)/dy+x1;
+                // (x,y) on Linedef i satisfies: (y-v1[VY])*dx = dy*(x-v1[VX])
+                // x = dx*(y-v1[VY])/dy+v1[VX];
                 int y = yorg + (j << BLKSHIFT);       // (x,y) is intersection
-                int x = (dx * (y - y1)) / dy + x1;
+                int x = (dx * (y - v1[VY])) / dy + v1[VX];
                 int xb = (x - xorg) >> BLKSHIFT;      // block column number
                 int xp = (x - xorg) & BLKMASK;        // x position within block
 
@@ -3083,7 +3081,7 @@ static void P_CreateBlockMap(gamemap_t* map)
                 if(xp == 0)
                 {
                     // Intersection occured at a corner
-                    if(sneg) //   \ - blocks x,y-, x-,y
+                    if(slopeNeg) //   \ - blocks x,y-, x-,y
                     {
                         if(j > 0 && miny < y)
                             AddBlockLine(blocklists, blockcount, blockdone,
@@ -3098,7 +3096,7 @@ static void P_CreateBlockMap(gamemap_t* map)
                             AddBlockLine(blocklists, blockcount, blockdone,
                                          bMapWidth * (j - 1) + xb, i);
                     }
-                    else if(spos) //   / - block x-,y-
+                    else if(slopePos) //   / - block x-,y-
                     {
                         if(xb > 0 && j > 0 && miny < y)
                             AddBlockLine(blocklists, blockcount, blockdone,
@@ -3119,15 +3117,16 @@ static void P_CreateBlockMap(gamemap_t* map)
     // Add initial 0 to all blocklists
     // count the total number of lines (and 0's and -1's)
     memset(blockdone, 0, numBlocks * sizeof(int));
-    for(i = 0, linetotal = 0; i < numBlocks; i++)
+    for(i = 0, linetotal = 0; i < numBlocks; ++i)
     {
         AddBlockLine(blocklists, blockcount, blockdone, i, 0);
         linetotal += blockcount[i];
     }
 
     // Create the blockmap lump
-    map->blockmaplump = Z_Malloc(sizeof(*map->blockmaplump) * (4 + numBlocks + linetotal),
-                            PU_LEVEL, 0);
+    map->blockmaplump =
+        Z_Malloc(sizeof(*map->blockmaplump) * (4 + numBlocks + linetotal),
+                 PU_LEVEL, 0);
     // blockmap header
     map->blockmaplump[0] = map->bmaporgx = FLT2FIX(bMapOrigin[VX]);
     map->blockmaplump[1] = map->bmaporgy = FLT2FIX(bMapOrigin[VY]);
