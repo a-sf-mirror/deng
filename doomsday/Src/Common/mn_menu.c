@@ -1016,7 +1016,7 @@ static MenuItem_t GameplayItems[] = {
 #if __JDOOM__
     {ITT_EMPTY, 0, NULL, NULL, 0},
     {ITT_EMPTY, 0, "COMPATIBILITY", NULL, 0 },
-    {ITT_EMPTY, 0, "ANY BOSS TRIGGER 666 :", M_ToggleVar, 0, NULL, &cfg.anybossdeath},
+    {ITT_EFUNC, 0, "ANY BOSS TRIGGER 666 :", M_ToggleVar, 0, NULL, &cfg.anybossdeath},
     {ITT_EFUNC, 0, "AV RESURRECTS GHOSTS :", M_ToggleVar, 0, NULL, &cfg.raiseghosts},
     {ITT_EFUNC, 0, "PE LIMITED TO 20 LOST SOULS :", M_ToggleVar, 0, NULL, &cfg.maxskulls},
     {ITT_EFUNC, 0, "LS GET STUCK INSIDE WALLS :", M_ToggleVar, 0, NULL, &cfg.allowskullsinwalls},
@@ -2856,10 +2856,11 @@ void M_DrawGameplay(void)
     M_WriteMenuText(menu, 2, yesno[!cfg.noAutoAim]);
     M_WriteMenuText(menu, 3, yesno[cfg.jumpEnabled != 0]);
 #ifdef __JDOOM__
-    M_WriteMenuText(menu, 6, yesno[cfg.raiseghosts != 0]);
-    M_WriteMenuText(menu, 7, yesno[cfg.maxskulls != 0]);
-    M_WriteMenuText(menu, 8, yesno[cfg.allowskullsinwalls != 0]);
-    M_WriteMenuText(menu, 9, yesno[cfg.slidingCorpses != 0]);
+    M_WriteMenuText(menu, 6, yesno[cfg.anybossdeath != 0]);
+    M_WriteMenuText(menu, 7, yesno[cfg.raiseghosts != 0]);
+    M_WriteMenuText(menu, 8, yesno[cfg.maxskulls != 0]);
+    M_WriteMenuText(menu, 9, yesno[cfg.allowskullsinwalls != 0]);
+    M_WriteMenuText(menu, 10, yesno[cfg.slidingCorpses != 0]);
 #endif
 #endif
 }

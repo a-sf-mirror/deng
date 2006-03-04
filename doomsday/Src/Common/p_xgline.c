@@ -387,7 +387,7 @@ xgclass_t xgClasses[NUMXGCLASSES] =
 
 cvar_t xgCVars[] =
 {
-    {"xg-dev", 0, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
+    {"xg-dev", CVF_NO_ARCHIVE, CVT_INT, &xgDev, 0, 1, "1=Print XG debug messages."},
     {NULL}
 };
 

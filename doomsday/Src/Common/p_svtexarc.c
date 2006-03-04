@@ -35,6 +35,9 @@
 
 // MACROS ------------------------------------------------------------------
 
+#define BADTEXNAME  "DD_BADTX"  // string that will be written in the texture
+                                // archives to denote a missing texture.
+
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -85,7 +88,7 @@ void SV_PrepareTexture(int tex, boolean isflat, texarchive_t * arc)
             strcpy(name, W_CacheLumpNum(tex, PU_GETNAME));
         else
         {
-            strncpy(name, "DD_BADTX", 8);
+            strncpy(name, BADTEXNAME, 8);
             name[8] = 0;
         }
     }
@@ -94,7 +97,7 @@ void SV_PrepareTexture(int tex, boolean isflat, texarchive_t * arc)
         if(R_TextureNameForNum(tex))
             strncpy(name, R_TextureNameForNum(tex), 8);
         else
-            strncpy(name, "DD_BADTX", 8);
+            strncpy(name, BADTEXNAME, 8);
         name[8] = 0;
     }
     // Has this already been registered?
@@ -160,7 +163,7 @@ unsigned short SV_TextureArchiveNum(int texnum)
     if(R_TextureNameForNum(texnum))
         strncpy(name, R_TextureNameForNum(texnum), 8);
     else
-        strncpy(name, "DD_BADTX", 8);
+        strncpy(name, BADTEXNAME, 8);
     name[8] = 0;
     return SV_SearchArchive(&tex_archive, name);
 }
@@ -176,19 +179,25 @@ unsigned short SV_FlatArchiveNum(int flatnum)
     if(flatnum > 0)
         strncpy(name, W_CacheLumpNum(flatnum, PU_GETNAME), 8);
     else
-        strncpy(name, "DD_BADTX", 8);
+        strncpy(name, BADTEXNAME, 8);
     name[8] = 0;
     return SV_SearchArchive(&flat_archive, name);
 }
 
 int SV_GetArchiveFlat(int archivenum)
 {
-    return R_FlatNumForName(flat_archive.table[archivenum].name);
+    if(!strncmp(flat_archive.table[archivenum].name, BADTEXNAME, 8))
+        return -1;
+    else
+        return R_FlatNumForName(flat_archive.table[archivenum].name);
 }
 
 int SV_GetArchiveTexture(int archivenum)
 {
-    return R_TextureNumForName(tex_archive.table[archivenum].name);
+    if(!strncmp(tex_archive.table[archivenum].name, BADTEXNAME, 8))
+        return -1;
+    else
+        return R_TextureNumForName(tex_archive.table[archivenum].name);
 }
 
 void SV_WriteTexArchive(texarchive_t * arc)
