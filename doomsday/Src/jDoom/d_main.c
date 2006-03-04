@@ -319,7 +319,7 @@ void D_PreInit(void)
     cfg.screenblocks = cfg.setblocks = 10;
     cfg.echoMsg = true;
     cfg.lookSpeed = 3;
-    cfg.turnSpeed = 2;
+    cfg.turnSpeed = 1;
     cfg.usePatchReplacement = 1;
     cfg.menuScale = .9f;
     cfg.menuGlitter = .5f;
