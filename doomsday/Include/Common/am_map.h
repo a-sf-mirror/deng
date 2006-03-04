@@ -38,8 +38,6 @@ extern boolean  automapactive;  // Common\f_infine.c is looking for this if not 
 
 // DJS - defined in Include\jDoom\Mn_def.h in all games but jDoom
 #define LINEHEIGHT_A 10
-
- typedef ddvertex_t mpoint_t;
 #endif
 
 // Caleld by Menu
@@ -340,70 +338,3 @@ void            AM_Stop(void);
 
 
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log$
-// Revision 1.1.2.2  2005/12/18 15:06:02  danij
-// Updated to use DMU.
-// See comments in src files for notes on changes.
-//
-// Revision 1.1.2.1  2005/11/27 17:42:07  skyjake
-// Breaking everything with the new Map Update API (=DMU) (only declared, not
-// implemented yet)
-//
-// - jDoom and jHeretic do not compile
-// - jHexen compiles by virtue of #ifdef TODO_MAP_UPDATE, which removes all the
-// portions of code that would not compile
-// - none of the games work, because DMU has not been implemented or used in any
-// of the games
-//
-// Map data is now hidden from the games. The line_t, seg_t and structs are
-// defined only as void*. The functions in the Map Update API (P_Set*, P_Get*,
-// P_Callback, P_ToPtr, P_ToIndex) are used for reading and writing the map data
-// parameters. There are multiple versions of each function so that using them is
-// more convenient in terms of data types.
-//
-// P_Callback can be used for having the engine call a callback function for each
-// of the selected map data objects.
-//
-// The API is not finalized yet.
-//
-// The DMU_* constants defined in dd_share.h are used as the 'type' and 'prop'
-// parameters.
-//
-// The games require map data in numerous places of the code. All of these should
-// be converted to work with DMU in the most sensible fashion (a direct
-// conversion may not always make the most sense). E.g., jHexen has
-// some private map data for sound playing, etc. The placement of this data is
-// not certain at the moment, but it can remain private to the games if
-// necessary.
-//
-// Games can build their own map changing routines on DMU as they see fit. The
-// engine will only provide a generic API, as defined in doomsday.h currently.
-//
-// Revision 1.1  2005/05/29 05:14:15  danij
-// Commonised automap code. Automap window display. Automap keys are bindable. Colours can be configured. Automap menu to configure options.
-//
-// Revision 1.5  2004/05/29 18:19:58  skyjake
-// Refined indentation style
-//
-// Revision 1.4  2004/05/29 09:53:11  skyjake
-// Consistent style (using GNU Indent)
-//
-// Revision 1.3  2004/05/28 17:16:34  skyjake
-// Resolved conflicts (branch-1-7 overrides)
-//
-// Revision 1.1.2.1  2004/05/16 10:01:30  skyjake
-// Merged good stuff from branch-nix for the final 1.7.15
-//
-// Revision 1.1.4.1  2003/11/19 17:08:47  skyjake
-// Modified to compile with gcc and -DUNIX
-//
-// Revision 1.1  2003/02/26 19:18:22  skyjake
-// Initial checkin
-//
-// Revision 1.1  2002/09/29 01:04:12  Jaakko
-// Added all headers
-//
-//
-//-----------------------------------------------------------------------------
