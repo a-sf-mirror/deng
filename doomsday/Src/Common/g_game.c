@@ -2025,10 +2025,12 @@ void G_PrepareWIData(void)
 {
     int     i;
     ddmapinfo_t minfo;
-    char    levid[10];
+    char    levid[8];
 
     wminfo.epsd = gameepisode - 1;
     wminfo.maxfrags = 0;
+
+    P_GetMapLumpName(gameepisode, gamemap, levid);
 
     // See if there is a par time definition.
     if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && minfo.partime > 0)
@@ -2688,7 +2690,7 @@ DEFCC(CCmdSetViewLock)
 DEFCC(CCmdSpawnMobj)
 {
     int     type;
-    int     x, y, z;
+    fixed_t pos[3];
     mobj_t *mo;
 
     if(argc != 5 && argc != 6)
@@ -2718,19 +2720,19 @@ DEFCC(CCmdSpawnMobj)
     }
 
     // The coordinates.
-    x = strtod(argv[2], 0) * FRACUNIT;
-    y = strtod(argv[3], 0) * FRACUNIT;
+    pos[VX] = strtod(argv[2], 0) * FRACUNIT;
+    pos[VY] = strtod(argv[3], 0) * FRACUNIT;
     if(!stricmp(argv[4], "floor"))
-        z = ONFLOORZ;
+        pos[VZ] = ONFLOORZ;
     else if(!stricmp(argv[4], "ceil"))
-        z = ONCEILINGZ;
+        pos[VZ] = ONCEILINGZ;
     else
     {
-        z = strtod(argv[4], 0) * FRACUNIT +
-            P_GetFixedp(R_PointInSubsector(x, y), DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
+        pos[VZ] = strtod(argv[4], 0) * FRACUNIT +
+            P_GetFixedp(R_PointInSubsector(pos[VX], pos[VY]), DMU_SECTOR_OF_SUBSECTOR | DMU_FLOOR_HEIGHT);
     }
 
-    if((mo = P_SpawnMobj(x, y, z, type)) && argc == 6)
+    if((mo = P_SpawnMobj(pos[VX], pos[VY], pos[VZ], type)) && argc == 6)
     {
         mo->angle = ((int) (strtod(argv[5], 0) / 360 * FRACUNIT)) << 16;
     }
