@@ -823,8 +823,9 @@ static void SpawnPolyobj(int index, int tag, boolean crush)
                       P_ToPtr(DMU_SEG, i)); // insert the first seg
             IterFindPolySegs(P_GetFixed(DMU_SEG, i, DMU_VERTEX2_X),
                              P_GetFixed(DMU_SEG, i, DMU_VERTEX2_Y),
-                             P_GetPtrp(P_ToPtr(DMU_POLYOBJ, index),
-                                       DMU_SEG_OF_POLYOBJ | 1));
+                             /*P_GetPtrp(P_ToPtr(DMU_POLYOBJ, index),
+                                       DMU_SEG_OF_POLYOBJ | 1)*/
+                             ((seg_t**)P_GetPtr(DMU_POLYOBJ, index, DMU_SEG_LIST)) + 1);
             P_SetBool(DMU_POLYOBJ, index, DMU_CRUSH, crush);
             P_SetInt(DMU_POLYOBJ, index, DMU_TAG, tag);
 
@@ -1061,9 +1062,9 @@ void PO_Init(int lump)
     {
         x = mt->x;
         y = mt->y;
-        angle = SHORT(mt->angle);
-        type = SHORT(mt->type);
-
+        angle = mt->angle;
+        type = mt->type;
+        
         // 3001 = no crush, 3002 = crushing
         if(type == PO_SPAWN_TYPE ||
            type == PO_SPAWNCRUSH_TYPE)
@@ -1081,8 +1082,8 @@ void PO_Init(int lump)
     {
         x = mt->x;
         y = mt->y;
-        angle = SHORT(mt->angle);
-        type = SHORT(mt->type);
+        angle = mt->angle;
+        type = mt->type;
 
         if(type == PO_ANCHOR_TYPE)
         {                       // Polyobj Anchor Pt.

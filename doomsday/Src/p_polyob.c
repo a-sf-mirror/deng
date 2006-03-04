@@ -66,8 +66,16 @@ int     po_NumPolyobjs;
  */
 void PO_Allocate(void)
 {
+    int i;
+    
     polyobjs = Z_Malloc(po_NumPolyobjs * sizeof(polyobj_t), PU_LEVEL, 0);
     memset(polyobjs, 0, po_NumPolyobjs * sizeof(polyobj_t));
+
+    // Initialize the runtime type identifiers.
+    for(i = 0; i < po_NumPolyobjs; ++i)
+    {
+        polyobjs[i].header.type = DMU_POLYOBJ;
+    }
 }
 
 /*
