@@ -425,12 +425,12 @@ void Rend_DrawMasked(void)
     }
 }
 
-void Rend_SpriteTexCoord(int pnum, int x, int y)
-{
-    // Mode zero (tc[0]) is used with regular sprites.
-    gl.TexCoord2f(spritelumps[pnum].tc[0][VX] * x,
-                  spritelumps[pnum].tc[0][VY] * y);
-}
+// Mode zero (tc[0]) is used with regular sprites
+#define Rend_SpriteTexCoord(pnum, x, y) \
+( \
+    gl.TexCoord2f(spritelumps[pnum].tc[0][VX] * x, \
+                  spritelumps[pnum].tc[0][VY] * y) \
+)
 
 static boolean Rend_SpriteLighter(lumobj_t * lum, fixed_t dist)
 {
@@ -664,9 +664,9 @@ void Rend_RenderSprite(vissprite_t * spr)
                 }
             }
         }
-        gl.Color4ub(tempquad.vertices[0].color.rgba[CR],
-                    tempquad.vertices[0].color.rgba[CG],
-                    tempquad.vertices[0].color.rgba[CB], alpha);
+        tempquad.vertices[0].color.rgba[CA] = alpha;
+        tempquad.vertices[1].color.rgba[CA] = alpha;
+        gl.Color4ubv(tempquad.vertices[0].color.rgba);
     }
 
     // We must find the correct positioning using the sector floor and ceiling
@@ -771,23 +771,37 @@ void Rend_RenderSprite(vissprite_t * spr)
     }
 
     // Render the sprite.
-    gl.Begin(DGL_QUADS);
-    Rend_SpriteTexCoord(patch, flip, 1);
-    gl.Vertex3f(spr->data.mo.v1[VX], bot, spr->data.mo.v1[VY]);
-    Rend_SpriteTexCoord(patch, flip, 0);
-    gl.Vertex3f(spr->data.mo.v1[VX], top, spr->data.mo.v1[VY]);
-
     if(litSprites && spr->data.mo.lightlevel >= 0)
     {
-        gl.Color4ub(tempquad.vertices[1].color.rgba[CR],
-                    tempquad.vertices[1].color.rgba[CG],
-                    tempquad.vertices[1].color.rgba[CB], alpha);
+        // Its a lit sprite
+        gl.Begin(DGL_QUADS);
+        Rend_SpriteTexCoord (patch, flip, 1);
+        gl.Vertex3f(spr->data.mo.v1[VX], bot, spr->data.mo.v1[VY]);
+        Rend_SpriteTexCoord (patch, flip, 0);
+        gl.Vertex3f(spr->data.mo.v1[VX], top, spr->data.mo.v1[VY]);
+
+        gl.Color4ubv(tempquad.vertices[1].color.rgba);
+
+        Rend_SpriteTexCoord (patch, !flip, 0);
+        gl.Vertex3f(spr->data.mo.v2[VX], top, spr->data.mo.v2[VY]);
+        Rend_SpriteTexCoord (patch, !flip, 1);
+        gl.Vertex3f(spr->data.mo.v2[VX], bot, spr->data.mo.v2[VY]);
+        gl.End();
     }
-    Rend_SpriteTexCoord(patch, !flip, 0);
-    gl.Vertex3f(spr->data.mo.v2[VX], top, spr->data.mo.v2[VY]);
-    Rend_SpriteTexCoord(patch, !flip, 1);
-    gl.Vertex3f(spr->data.mo.v2[VX], bot, spr->data.mo.v2[VY]);
-    gl.End();
+    else
+    {
+        gl.Begin(DGL_QUADS);
+        Rend_SpriteTexCoord (patch, flip, 1);
+        gl.Vertex3f(spr->data.mo.v1[VX], bot, spr->data.mo.v1[VY]);
+        Rend_SpriteTexCoord (patch, flip, 0);
+        gl.Vertex3f(spr->data.mo.v1[VX], top, spr->data.mo.v1[VY]);
+
+        Rend_SpriteTexCoord (patch, !flip, 0);
+        gl.Vertex3f(spr->data.mo.v2[VX], top, spr->data.mo.v2[VY]);
+        Rend_SpriteTexCoord (patch, !flip, 1);
+        gl.Vertex3f(spr->data.mo.v2[VX], bot, spr->data.mo.v2[VY]);
+        gl.End();
+    }
 
     // This mirroring would be excellent if it were properly clipped.
      /*{
