@@ -2226,7 +2226,7 @@ static void Rend_RenderBoundingBoxes(void)
     float   size;
     float   red[3] = { 1, 0.2f, 0.2f}; // non-solid objects
     float   green[3] = { 0.2f, 1, 0.2f}; // solid objects
-    float   yellow[3] = {0.7f, 0.2f, 0.7f}; // missiles
+    float   yellow[3] = {0.7f, 0.7f, 0.2f}; // missiles
     float   alpha;
     float   eye[3] = {FIX2FLT(viewplayer->mo->pos[VX]),
                       FIX2FLT(viewplayer->mo->pos[VY]),
@@ -2281,7 +2281,6 @@ static void Rend_RenderBoundingBoxes(void)
     GL_BlendMode(BM_NORMAL);
 
     gl.Enable(DGL_CULL_FACE);
-    gl.Disable(DGL_TEXTURING);
     gl.Enable(DGL_DEPTH_TEST);
 }
 
