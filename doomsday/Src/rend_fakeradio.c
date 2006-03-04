@@ -50,7 +50,8 @@
 #define MINDIFF 8 // min plane height difference (world units)
 #define INDIFF  8 // max plane height for indifference offset
 
-#define MINHEIGHT 1 // Minimum height of a wall shadow poly (world units)
+#define MINHEIGHT 2 // Minimum height of a wall shadow poly (world units)
+                    // Used to fade out wall shadows below this height
 
 // TYPES -------------------------------------------------------------------
 
@@ -690,7 +691,12 @@ void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
     q->lights = NULL;
     q->intertex.id = 0;
     q->intertex.detail = NULL;
-    Rend_RadioSetColor(q, shadowDark);
+
+    // Fade the shadow out if the height is below the min height.
+    if(q->top - q->bottom < MINHEIGHT)
+        Rend_RadioSetColor(q, shadowDark * (MINHEIGHT * q->top - q->bottom));
+    else
+        Rend_RadioSetColor(q, shadowDark);
 
     // <--FIXME
 
@@ -701,7 +707,7 @@ void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
     // The top shadow will reach this far down.
     size = shadowSize + Rend_RadioLongWallBonus(ceilSpan->length);
     limit = fCeil - size;
-    if((q->top > limit && q->bottom < fCeil && q->top - q->bottom > MINHEIGHT) &&
+    if((q->top > limit && q->bottom < fCeil) &&
        Rend_RadioNonGlowingFlat(frontSector, PLN_CEILING))
     {
         Rend_RadioTexCoordY(q, size);
@@ -867,7 +873,7 @@ void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
      */
     size = shadowSize + Rend_RadioLongWallBonus(floorSpan->length) / 2;
     limit = fFloor + size;
-    if((q->bottom < limit && q->top > fFloor && q->top - q->bottom > MINHEIGHT) &&
+    if((q->bottom < limit && q->top > fFloor) &&
        Rend_RadioNonGlowingFlat(frontSector, PLN_FLOOR))
     {
         Rend_RadioTexCoordY(q, -size);
@@ -1037,7 +1043,6 @@ void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
      * Left/Right Shadows
      */
     size = shadowSize + Rend_RadioLongWallBonus(info->length);
-    if(q->top - q->bottom > MINHEIGHT)
     for(i = 0; i < 2; ++i)
     {
         q->flags |= RPF_HORIZONTAL;
