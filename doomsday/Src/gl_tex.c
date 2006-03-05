@@ -3405,7 +3405,7 @@ DGLuint GL_PrepareLSTexture(lightingtex_t which)
             gl.Disable(DGL_TEXTURE_COMPRESSION);
 
             lightingTexNames[LST_DYNAMIC] =
-                GL_LoadGraphics("DLight", LGM_NORMAL); 
+                GL_LoadGraphics("DLight", LGM_WHITE_ALPHA);
 
             gl.TexParameter(DGL_MIN_FILTER, DGL_LINEAR);
             gl.TexParameter(DGL_MAG_FILTER, DGL_LINEAR);
