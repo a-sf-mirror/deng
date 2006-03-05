@@ -320,6 +320,7 @@
 		B0DAE5CE09823E47000A8265 /* p_dmu.h in Headers */ = {isa = PBXBuildFile; fileRef = B0DAE5CD09823E47000A8265 /* p_dmu.h */; };
 		B0DAE5E9098261F8000A8265 /* p_arch.c in Sources */ = {isa = PBXBuildFile; fileRef = B0DAE5E8098261F8000A8265 /* p_arch.c */; };
 		B0DD15B609914A3E00B4D3AE /* analyze.c in Sources */ = {isa = PBXBuildFile; fileRef = B0DD15B509914A3E00B4D3AE /* analyze.c */; };
+		B0E0CF2709BAF826002BE2BF /* d_api.c in Sources */ = {isa = PBXBuildFile; fileRef = B0E0CF2609BAF826002BE2BF /* d_api.c */; };
 		B0F1780A087C5A230051F24A /* SDLMain.h in Headers */ = {isa = PBXBuildFile; fileRef = F5A47A9D01A0482F01D3D55B /* SDLMain.h */; };
 		B0F1780B087C5A230051F24A /* cl_def.h in Headers */ = {isa = PBXBuildFile; fileRef = B02AC38D06B3FA91005824AD /* cl_def.h */; };
 		B0F1780C087C5A230051F24A /* cl_frame.h in Headers */ = {isa = PBXBuildFile; fileRef = B02AC38E06B3FA91005824AD /* cl_frame.h */; };
@@ -678,6 +679,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = B083A65B085CCCEE000D4BAB;
 			remoteInfo = jHexen;
+		};
+		B0E0CF1509BAF7CD002BE2BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0D5B60F06EE3EE600B98CC8 /* jDoom */;
+			remoteInfo = jDoom;
 		};
 		B0F177FC087C5A230051F24A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1297,6 +1305,7 @@
 		B0DD15B509914A3E00B4D3AE /* analyze.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = analyze.c; path = Src/dpMapLoad/glBSP/analyze.c; sourceTree = "<group>"; };
 		B0DDF02F06EDF8C800C418E3 /* drOpenGL.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = drOpenGL.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0DDF03006EDF8C800C418E3 /* drOpenGL-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "drOpenGL-Info.plist"; path = "/Users/jaakko/Projects/deng/doomsday/drOpenGL-Info.plist"; sourceTree = "<absolute>"; };
+		B0E0CF2609BAF826002BE2BF /* d_api.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = d_api.c; path = Src/jDoom/d_api.c; sourceTree = "<group>"; };
 		B0E3D3DF07903950007811F6 /* rend_bias.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rend_bias.c; path = Src/rend_bias.c; sourceTree = "<group>"; };
 		B0E3D3E107903967007811F6 /* rend_bias.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = rend_bias.h; path = Include/rend_bias.h; sourceTree = "<group>"; };
 		B0F1792E087C5A240051F24A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -1998,6 +2007,7 @@
 		B0D5B61D06EE405000B98CC8 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				B0E0CF2609BAF826002BE2BF /* d_api.c */,
 				B0D5B68106EE413B00B98CC8 /* AcFnLink.c */,
 				B0D5B68406EE413B00B98CC8 /* D_Action.c */,
 				B0D5B68506EE413B00B98CC8 /* d_console.c */,
@@ -2891,6 +2901,7 @@
 				B0F177FD087C5A230051F24A /* PBXTargetDependency */,
 				B0F177FF087C5A230051F24A /* PBXTargetDependency */,
 				B0F17801087C5A230051F24A /* PBXTargetDependency */,
+				B0E0CF1609BAF7CD002BE2BF /* PBXTargetDependency */,
 				B0F17807087C5A230051F24A /* PBXTargetDependency */,
 			);
 			name = Doomsday;
@@ -3280,6 +3291,7 @@
 				B04027EE0982F53A00C5F03E /* dmu_lib.c in Sources */,
 				B0AE9D0809839BE2008EFFD0 /* p_mapsetup.c in Sources */,
 				B01C646D098FDA8300444493 /* g_controls.c in Sources */,
+				B0E0CF2709BAF826002BE2BF /* d_api.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3489,6 +3501,11 @@
 			isa = PBXTargetDependency;
 			target = B083A65B085CCCEE000D4BAB /* jHexen */;
 			targetProxy = B011A60D08655A90005075A7 /* PBXContainerItemProxy */;
+		};
+		B0E0CF1609BAF7CD002BE2BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0D5B60F06EE3EE600B98CC8 /* jDoom */;
+			targetProxy = B0E0CF1509BAF7CD002BE2BF /* PBXContainerItemProxy */;
 		};
 		B0F177FB087C5A230051F24A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

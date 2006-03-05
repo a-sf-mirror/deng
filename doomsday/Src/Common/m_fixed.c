@@ -90,10 +90,6 @@ fixed_t FixedDiv2(fixed_t a, fixed_t b)
     return a;
 }
 
-fixed_t D_abs(int x)
-{
-    //FIXME!!!
-}
 #endif
 
 fixed_t FixedDiv(fixed_t a, fixed_t b)

@@ -25,6 +25,7 @@
 #include "jDoom/doomstat.h"
 #include "jDoom/d_config.h"
 #include "AcFnLink.h"
+#include "xgclass.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -65,7 +66,7 @@ void    P_SetupForSides(int num);
 void    P_SetupForSectors(int num);
 
 // Map Objects
-fixed_t P_GetMobjFriction(struct mobj_t *mo);
+fixed_t P_GetMobjFriction(struct mobj_s *mo);
 void    P_MobjThinker(mobj_t *mobj);
 
 // Misc

@@ -360,14 +360,6 @@ extern          "C" {
         }
         // A value is returned regardless of the compiler warning.
     }
-    __inline static int D_abs(int x) {
-        __asm {
-            mov eax,x
-            cdq
-            xor eax,edx
-            sub eax,edx
-        }
-    }
     /* *INDENT-ON* */
 
 #else
@@ -376,7 +368,6 @@ extern          "C" {
     // (link with Src/Common/m_fixed.c)
     fixed_t         FixedMul(fixed_t a, fixed_t b);
     fixed_t         FixedDiv2(fixed_t a, fixed_t b);
-    fixed_t     D_abs(int x);
 #endif
 
     // This one is always in Src/Common/m_fixed.c.
