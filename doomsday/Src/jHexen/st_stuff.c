@@ -2998,6 +2998,7 @@ static void CheatVersionFunc(player_t *player, Cheat_t * cheat)
 static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
 {
     char    textBuffer[256];
+    subsector_t *sub;
 
     if(!player->plr->mo)
         return;
@@ -3008,6 +3009,17 @@ static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
             player->plr->mo->pos[VY] >> FRACBITS,
             player->plr->mo->pos[VZ] >> FRACBITS);
     P_SetMessage(player, textBuffer);
+    
+    // Also print some information to the console.
+    Con_Message(textBuffer);
+    sub = player->plr->mo->subsector;
+    Con_Message("\nSubsector %i:\n", P_ToIndex(sub));
+    Con_Message("  Floorz:%d pic:%d\n", P_GetIntp(sub, DMU_FLOOR_HEIGHT),
+                P_GetIntp(sub, DMU_FLOOR_TEXTURE));
+    Con_Message("  Ceilingz:%d pic:%d\n", P_GetIntp(sub, DMU_CEILING_HEIGHT),
+                P_GetIntp(sub, DMU_CEILING_TEXTURE));
+    Con_Message("Player height:%x   Player radius:%x\n",
+                player->plr->mo->height, player->plr->mo->radius);
 }
 
 static void CheatScriptFunc1(player_t *player, Cheat_t * cheat)
