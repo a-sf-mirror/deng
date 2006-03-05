@@ -396,7 +396,7 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
         if(!check)
             continue;
 
-        if(P_GetFixedp(check, DMU_LIGHT_LEVEL) < min)
+        if(P_GetIntp(check, DMU_LIGHT_LEVEL) < min)
             min = P_GetIntp(check, DMU_LIGHT_LEVEL);
     }
     return min;

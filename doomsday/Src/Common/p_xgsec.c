@@ -662,7 +662,7 @@ int XS_AdjoiningPlanes(sector_t *sector, boolean ceiling, int *heightlist,
         }
 
         if(lightlist)
-            lightlist[count] = P_GetFixedp(other, DMU_LIGHT_LEVEL);
+            lightlist[count] = P_GetIntp(other, DMU_LIGHT_LEVEL);
 
         if(sectorlist)
             sectorlist[count] = other;
