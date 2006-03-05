@@ -1214,11 +1214,11 @@ static void FinalizeMapData(gamemap_t* map)
         side->blendmode = BM_NORMAL;
 
         // Make sure the texture references are good.
-        if(side->toptexture > numtextures - 1)
+        if(side->toptexture >= numtextures)
             side->toptexture = 0;
-        if(side->midtexture > numtextures - 1)
+        if(side->midtexture >= numtextures)
             side->midtexture = 0;
-        if(side->bottomtexture > numtextures - 1)
+        if(side->bottomtexture >= numtextures)
             side->bottomtexture = 0;
     }
 
@@ -2152,7 +2152,7 @@ static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
             break;
 
         case DAM_FLAGS:
-            ReadValue(map, destType, &p->flags, buffer + prop->offset, prop, idx);
+            ReadValue(map, DDVT_SHORT, &p->flags, buffer + prop->offset, prop, idx);
             break;
 
         case DAM_SIDE0:
@@ -2372,7 +2372,7 @@ static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
         Con_Error("ReadMapProperty: Type cannot be assigned to from a map format.\n");
     }
 
-    return true; // Continue itteration
+    return true; // Continue iteration
 }
 
 /*
@@ -2393,6 +2393,9 @@ static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
  * iteration is aborted immediately when the callback function returns false.
  *
  * NOTE: Not very pretty to look at but it IS pretty quick :-)
+ *
+ * NOTE2: I would suggest these manual optimizations be removed. The compiler
+ *       is pretty good in unrolling loops, if need be. -jk
  *
  * TODO: Make required changes to make signature compatible with the other
  *       P_Callback function (may need to add a dummy parameter to P_Callback
