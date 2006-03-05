@@ -24,6 +24,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <time.h>
+#include <math.h>
 #include <stdarg.h>
 
 #ifdef __JDOOM__
@@ -735,6 +736,9 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
         {
             ok = true;
 
+            // TODO: The expression "ok, mo" has no effect here, it is equivalent
+            // to just "mo". Was "ok && mo" the real intention?
+            
             for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); ok, mo; mo = mo->snext)
             {
                 if(mo->type == P_XLine(line)->xg->info.aparm[9])
@@ -756,6 +760,9 @@ int XL_TraversePlanes(line_t *line, int reftype, int ref, void *data,
             reftype == LPREF_THING_NOEXIST_CEILINGS)
         {
             ok = true;
+
+            // TODO: The expression "ok, mo" has no effect here, it is equivalent
+            // to just "mo". Was "ok && mo" the real intention?
 
             for(mo = P_GetPtr(DMU_SECTOR, i, DMU_THINGS); ok, mo; mo = mo->snext)
             {
@@ -1457,7 +1464,7 @@ int C_DECL XLTrav_LineTeleport(line_t *newline, boolean dummy, void *context, vo
     // Make sure we are on correct side of exit linedef.
     while(P_PointOnLineSide(newx, newy, newline) != side && --fudge>=0)
     {
-        if (D_abs(newldx) > D_abs(newldy))
+        if(abs(newldx) > abs(newldy))
             newy -= newldx < 0 != side ? -1 : 1;
         else
             newx += newldy < 0 != side ? -1 : 1;
