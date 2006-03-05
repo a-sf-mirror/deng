@@ -281,7 +281,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // init/setup is going to be handled.
 #if __JHEXEN__
     // Initialize polyobjs.
-    Con_Message("PO init\n");
+    Con_Message("Polyobject init\n");
     PO_Init(W_GetNumForName(levelId) + ML_THINGS);   // Initialize the polyobjs
 
     // Now we can init the server.
