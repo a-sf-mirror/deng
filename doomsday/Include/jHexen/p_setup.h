@@ -34,7 +34,12 @@
 
 // Common map format properties
 enum {
-    DAM_NONE = 0,
+    DAM_UNKNOWN = -2,
+
+    DAM_ALL = -1,
+    DAM_NONE,
+
+    // Object/Data types
     DAM_THING,
     DAM_VERTEX,
     DAM_LINE,
@@ -47,6 +52,7 @@ enum {
     DAM_SECREJECT,
     DAM_ACSSCRIPT,
 
+    // Object properties
     DAM_X,
     DAM_Y,
     DAM_DX,
@@ -66,8 +72,8 @@ enum {
     DAM_FRONT_SECTOR,
 
     DAM_FLOOR_HEIGHT,
-    DAM_CEILING_HEIGHT,
     DAM_FLOOR_TEXTURE,
+    DAM_CEILING_HEIGHT,
     DAM_CEILING_TEXTURE,
     DAM_LIGHT_LEVEL,
 
