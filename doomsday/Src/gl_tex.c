@@ -129,7 +129,7 @@ DGLuint lightingTexNames[NUM_LIGHTING_TEXTURES];
 
 int     texMagMode = 1;         // Linear.
 
-DGLuint dd_textures[NUM_DD_TEXTURES];
+DGLuint ddTextures[NUM_DD_TEXTURES];
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -574,17 +574,17 @@ void GL_LoadDDTextures(void)
     };
 
     for(i = 0; i < NUM_DD_TEXTURES; i++)
-        if(!dd_textures[i])
+        if(!ddTextures[i])
         {
-            dd_textures[i] = GL_LoadGraphics2(RC_GRAPHICS, picNames[i],
+            ddTextures[i] = GL_LoadGraphics2(RC_GRAPHICS, picNames[i],
                                               LGM_NORMAL, DGL_TRUE, false);
         }
 }
 
 void GL_ClearDDTextures(void)
 {
-    gl.DeleteTextures(NUM_DD_TEXTURES, dd_textures);
-    memset(dd_textures, 0, sizeof(dd_textures));
+    gl.DeleteTextures(NUM_DD_TEXTURES, ddTextures);
+    memset(ddTextures, 0, sizeof(ddTextures));
 }
 
 /*

@@ -83,7 +83,7 @@ float   yfov;
 
 int    gamedrawhud = 1;    // Set to zero when we advise that the HUD should not be drawn
 
-extern DGLuint dd_textures[];
+extern DGLuint ddTextures[];
 
 int     playerLightRange[MAXPLAYERS];
 
@@ -548,7 +548,7 @@ int Rend_PrepareTextureForPoly(rendpoly_t *poly, int tex, boolean isFlat)
 
     if(tex == -1) // A missing texture, draw the "missing" graphic
     {
-        poly->tex.id = curtex = (unsigned int) dd_textures[DDTEX_MISSING];
+        poly->tex.id = curtex = (unsigned int) ddTextures[DDTEX_MISSING];
         poly->tex.width = poly->tex.height = 64;
         poly->tex.detail = NULL;
         return 0 | TXF_GLOW; // Make it stand out
@@ -2250,7 +2250,7 @@ static void Rend_RenderBoundingBoxes(void)
     gl.Enable(DGL_TEXTURING);
     gl.Disable(DGL_CULL_FACE);
 
-    gl.Bind(dd_textures[DDTEX_BBOX]);
+    gl.Bind(ddTextures[DDTEX_BBOX]);
     GL_BlendMode(BM_ADD);
 
     // For every sector
