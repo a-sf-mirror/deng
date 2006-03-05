@@ -233,7 +233,7 @@ static void P_LightningFlash(void)
             {
                 newLevel = *tempLight;
             }
-            P_SetFixedp(tempSec, DMU_LIGHT_LEVEL, newLevel);
+            P_SetIntp(tempSec, DMU_LIGHT_LEVEL, newLevel);
             tempLight++;
             foundSec = true;
         }
