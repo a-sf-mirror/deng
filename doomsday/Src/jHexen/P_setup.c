@@ -126,7 +126,7 @@ int P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data)
         things[id].arg5 = *(byte *)data;
         break;
     default:
-        Con_Error("P_HandleMapDataProperty: Unknown property id %i.\n",prop);
+        Con_Error("P_HandleMapDataProperty: Unknown property id %i.\n", prop);
     }
 
     return 1;
