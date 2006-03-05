@@ -1150,6 +1150,15 @@ static int SetProperty(void* ptr, void* context)
         case DMU_PREVIOUS_POINTS:
             SetValue(DDVT_PTR, &p->prevPts, args, 0);
             break;
+        case DMU_ANGLE:
+            SetValue(DDVT_ANGLE, &p->angle, args, 0);
+            break;
+        case DMU_DESTINATION_ANGLE:
+            SetValue(DDVT_ANGLE, &p->destAngle, args, 0);
+            break;
+        case DMU_ANGLE_SPEED:
+            SetValue(DDVT_ANGLE, &p->angleSpeed, args, 0);
+            break;
         case DMU_TAG:
             SetValue(DDVT_INT, &p->tag, args, 0);
             break;
@@ -1164,6 +1173,9 @@ static int SetProperty(void* ptr, void* context)
             break;
         case DMU_SEG_LIST:
             SetValue(DDVT_PTR, &p->segs, args, 0);
+            break;
+        case DMU_SPECIAL_DATA:
+            SetValue(DDVT_PTR, &p->specialdata, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_POLYOBJ.\n",
@@ -1881,6 +1893,12 @@ static int GetProperty(void* ptr, void* context)
         
         switch(args->prop)
         {
+        case DMU_START_SPOT:
+        {
+            void* spot = &p->startSpot;
+            GetValue(DDVT_PTR, &spot, args, 0);
+            break;
+        }
         case DMU_START_SPOT_X:
             GetValue(DDVT_FIXED, &p->startSpot.x, args, 0);
             break;
@@ -1892,6 +1910,15 @@ static int GetProperty(void* ptr, void* context)
             break;
         case DMU_PREVIOUS_POINTS:
             GetValue(DDVT_PTR, &p->prevPts, args, 0);
+            break;
+        case DMU_ANGLE:
+            GetValue(DDVT_ANGLE, &p->angle, args, 0);
+            break;
+        case DMU_DESTINATION_ANGLE:
+            GetValue(DDVT_ANGLE, &p->destAngle, args, 0);
+            break;
+        case DMU_ANGLE_SPEED:
+            GetValue(DDVT_ANGLE, &p->angleSpeed, args, 0);
             break;
         case DMU_TAG:
             GetValue(DDVT_INT, &p->tag, args, 0);
@@ -1907,6 +1934,9 @@ static int GetProperty(void* ptr, void* context)
             break;
         case DMU_SEQUENCE_TYPE:
             GetValue(DDVT_INT, &p->seqType, args, 0);
+            break;
+        case DMU_SPECIAL_DATA:
+            GetValue(DDVT_PTR, &p->specialdata, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_POLYOBJ has no property %s.\n",
