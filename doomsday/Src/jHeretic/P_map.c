@@ -84,31 +84,32 @@ boolean nofit;
 
 // CODE --------------------------------------------------------------------
 
-boolean PIT_StompThing(mobj_t *thing, void *data)
+boolean PIT_StompThing(mobj_t *mo, void *data)
 {
     int stompAnyway;
     fixed_t blockdist;
 
-    if(!(thing->flags & MF_SHOOTABLE))
+    if(!(mo->flags & MF_SHOOTABLE))
         return true;
 
-    blockdist = thing->radius + tmthing->radius;
-    if(abs(thing->pos[VX] - tm[VX]) >= blockdist || abs(thing->pos[VY] - tm[VY]) >= blockdist)
+    blockdist = mo->radius + tmthing->radius;
+
+    if(abs(mo->pos[VX] - tm[VX]) >= blockdist || abs(mo->pos[VY] - tm[VY]) >= blockdist)
     {
         // didn't hit it
         return true;
     }
 
     // don't clip against self
-    if(thing == tmthing)
+    if(mo == tmthing)
         return true;
 
     stompAnyway = *(int*) data;
 
     // Should we stomp anyway? unless self
-    if(thing != tmthing && stompAnyway)
+    if(mo != tmthing && stompAnyway)
     {
-        P_DamageMobj(thing, tmthing, tmthing, 10000);
+        P_DamageMobj(mo, tmthing, tmthing, 10000);
         return true;
     }
 
@@ -118,8 +119,8 @@ boolean PIT_StompThing(mobj_t *thing, void *data)
     }
 
     // Do stomp damage (unless self)
-    if(thing != tmthing)
-        P_DamageMobj(thing, tmthing, tmthing, 10000);
+    if(mo != tmthing)
+        P_DamageMobj(mo, tmthing, tmthing, 10000);
 
     return true;
 }
@@ -233,7 +234,7 @@ boolean PIT_CheckLine(line_t *ld, void *data)
 
         // block monsters only?
         if(!tmthing->player &&
-           P_GetIntp(ld, DMU_FLAGS) & ML_BLOCKMONSTERS &&
+           (P_GetIntp(ld, DMU_FLAGS) & ML_BLOCKMONSTERS) &&
            tmthing->type != MT_POD)
             return false;
     }
@@ -723,18 +724,21 @@ void CheckMissileImpact(mobj_t *mobj)
  */
 boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y)
 {
-    fixed_t oldx, oldy;
-    int     side, oldside;
+    fixed_t oldpos[3];
+    int     side;
+    int     oldside;
     line_t *ld;
 
     floatok = false;
+
     if(!P_CheckPosition(thing, x, y))
     {
-        // Solid wall or thing
+        // Would we hit another thing or a solid wall?
         CheckMissileImpact(thing);
         return false;
     }
 
+    // GMJ 02/02/02
     if(!(thing->flags & MF_NOCLIP))
     {
         if(tmceilingz - tmfloorz < thing->height)
@@ -792,13 +796,12 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y)
     // the move is ok, so link the thing into its new position
     P_UnsetThingPosition(thing);
 
-    oldx = thing->pos[VX];
-    oldy = thing->pos[VY];
+    memcpy(oldpos, thing->pos, sizeof(oldpos));
     thing->floorz = tmfloorz;
     thing->ceilingz = tmceilingz;
+
     thing->pos[VX] = x;
     thing->pos[VY] = y;
-
     P_SetThingPosition(thing);
 
     if(thing->flags2 & MF2_FOOTCLIP &&
@@ -822,7 +825,7 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y)
             if(P_XLine(ld)->special)
             {
                 side = P_PointOnLineSide(thing->pos[VX], thing->pos[VY], ld);
-                oldside = P_PointOnLineSide(oldx, oldy, ld);
+                oldside = P_PointOnLineSide(oldpos[VX], oldpos[VY], ld);
                 if(side != oldside)
                     P_CrossSpecialLine(P_ToIndex(ld), oldside, thing);
             }
@@ -866,8 +869,10 @@ boolean P_ThingHeightClip(mobj_t *thing)
     thing->ceilingz = tmceilingz;
 
     if(onfloor)
+    {
         // walking monsters rise and fall with the floor
         thing->pos[VZ] = thing->floorz;
+    }
     else
     {
         // don't adjust a floating monster unless forced to
@@ -875,21 +880,24 @@ boolean P_ThingHeightClip(mobj_t *thing)
             thing->pos[VZ] = thing->ceilingz - thing->height;
     }
 
-    if(thing->ceilingz - thing->floorz < thing->height)
+    if((thing->ceilingz - thing->floorz) >= thing->height)
+        return true;
+    else
         return false;
-
-    return true;
 }
 
 /*
- * Allows the player to slide along any angled walls
- * Adjusts the xmove / ymove so that the next move will slide along the wall
+ * Allows the player to slide along any angled walls by
+ * adjusting the xmove / ymove so that the NEXT move will
+ * slide along the wall.
  */
 void P_HitSlideLine(line_t *ld)
 {
     int     side;
     angle_t lineangle, moveangle, deltaangle;
     fixed_t movelen, newlen;
+    fixed_t dx = P_GetFixedp(ld, DMU_DX);
+    fixed_t dy = P_GetFixedp(ld, DMU_DY);
 
     if(P_GetIntp(ld, DMU_SLOPE_TYPE) == ST_HORIZONTAL)
     {
@@ -905,10 +913,7 @@ void P_HitSlideLine(line_t *ld)
 
     side = P_PointOnLineSide(slidemo->pos[VX], slidemo->pos[VY], ld);
 
-    lineangle = R_PointToAngle2(0, 0,
-                                P_GetFixedp(ld, DMU_DX),
-                                P_GetFixedp(ld, DMU_DY));
-
+    lineangle = R_PointToAngle2(0, 0, dx, dy);
     if(side == 1)
         lineangle += ANG180;
 
@@ -923,6 +928,7 @@ void P_HitSlideLine(line_t *ld)
 
     movelen = P_ApproxDistance(tmxmove, tmymove);
     newlen = FixedMul(movelen, finecosine[deltaangle]);
+
     tmxmove = FixedMul(newlen, finecosine[lineangle]);
     tmymove = FixedMul(newlen, finesine[lineangle]);
 }
@@ -939,12 +945,16 @@ boolean PTR_SlideTraverse(intercept_t * in)
     if(!(P_GetIntp(li, DMU_FLAGS) & ML_TWOSIDED))
     {
         if(P_PointOnLineSide(slidemo->pos[VX], slidemo->pos[VY], li))
-            return true;        // don't hit the back side
+        {
+            // don't hit the back side
+            return true;
+        }
         goto isblocking;
     }
 
     // set openrange, opentop, openbottom
     P_LineOpening(li);
+
     if(openrange < slidemo->height)
         goto isblocking;        // doesn't fit
 
@@ -954,9 +964,11 @@ boolean PTR_SlideTraverse(intercept_t * in)
     if(openbottom - slidemo->pos[VZ] > 24 * FRACUNIT)
         goto isblocking;        // too big a step up
 
-    return true;                // this line doesn't block movement
+    // this line doesn't block movement
+    return true;
 
-    // the line does block movement, see if it is closer than best so far
+    // the line does block movement,
+    // see if it is closer than best so far
   isblocking:
     if(in->frac < bestslidefrac)
     {
@@ -966,61 +978,64 @@ boolean PTR_SlideTraverse(intercept_t * in)
         bestslideline = li;
     }
 
-    return false;
+    return false;               // stop
 }
 
 /*
- * The momx / momy move is bad, so try to slide along a wall
- * Find the first line hit, move flush to it, and slide along it
+ * The momx / momy move is bad, so try to slide
+ * along a wall.
+ * Find the first line hit, move flush to it,
+ * and slide along it
+ *
  * This is a kludgy mess.
  */
 void P_SlideMove(mobj_t *mo)
 {
-    fixed_t leadx, leady;
-    fixed_t trailx, traily;
+    fixed_t leadpos[3];
+    fixed_t trailpos[3];
     fixed_t newx, newy;
     int     hitcount;
 
     slidemo = mo;
     hitcount = 0;
-  retry:
 
-    // don't loop forever
+  retry:
     if(++hitcount == 3)
-        goto stairstep;
+        goto stairstep; // don't loop forever
 
     // trace along the three leading corners
+    memcpy(leadpos, mo->pos, sizeof(leadpos));
+    memcpy(trailpos, mo->pos, sizeof(trailpos));
     if(mo->momx > 0)
     {
-        leadx = mo->pos[VX] + mo->radius;
-        trailx = mo->pos[VX] - mo->radius;
+        leadpos[VX] += mo->radius;
+        trailpos[VX] -= mo->radius;
     }
     else
     {
-        leadx = mo->pos[VX] - mo->radius;
-        trailx = mo->pos[VX] + mo->radius;
+        leadpos[VX] -= mo->radius;
+        trailpos[VX] += mo->radius;
     }
 
     if(mo->momy > 0)
     {
-        leady = mo->pos[VY] + mo->radius;
-        traily = mo->pos[VY] - mo->radius;
+        leadpos[VY] += mo->radius;
+        trailpos[VY] -= mo->radius;
     }
     else
     {
-        leady = mo->pos[VY] - mo->radius;
-        traily = mo->pos[VY] + mo->radius;
+        leadpos[VY] -= mo->radius;
+        trailpos[VY] += mo->radius;
     }
 
     bestslidefrac = FRACUNIT + 1;
 
-    P_PathTraverse(leadx, leady, leadx + mo->momx, leady + mo->momy,
+    P_PathTraverse(leadpos[VX], leadpos[VY], leadpos[VX] + mo->momx, leadpos[VY] + mo->momy,
                    PT_ADDLINES, PTR_SlideTraverse);
-    P_PathTraverse(trailx, leady, trailx + mo->momx, leady + mo->momy,
+    P_PathTraverse(trailpos[VX], leadpos[VY], trailpos[VX] + mo->momx, leadpos[VY] + mo->momy,
                    PT_ADDLINES, PTR_SlideTraverse);
-    P_PathTraverse(leadx, traily, leadx + mo->momx, traily + mo->momy,
+    P_PathTraverse(leadpos[VX], trailpos[VY], leadpos[VX] + mo->momx, trailpos[VY] + mo->momy,
                    PT_ADDLINES, PTR_SlideTraverse);
-
 
     // move up to the wall
     if(bestslidefrac == FRACUNIT + 1)
@@ -1042,8 +1057,10 @@ void P_SlideMove(mobj_t *mo)
             goto stairstep;
     }
 
-    // now continue along the wall
-    bestslidefrac = FRACUNIT - (bestslidefrac + 0x800); // remainder
+    // Now continue along the wall.
+    // First calculate remainder.
+    bestslidefrac = FRACUNIT - (bestslidefrac + 0x800);
+
     if(bestslidefrac > FRACUNIT)
         bestslidefrac = FRACUNIT;
     if(bestslidefrac <= 0)
@@ -1064,7 +1081,7 @@ void P_SlideMove(mobj_t *mo)
 }
 
 /*
- * Sets linetaget and aimslope when a target is aimed at
+ * Sets linetaget and aimslope when a target is aimed at.
  */
 boolean PTR_AimTraverse(intercept_t * in)
 {
@@ -1076,13 +1093,16 @@ boolean PTR_AimTraverse(intercept_t * in)
 
     if(in->isaline)
     {
+        fixed_t ffloor, bfloor;
+        fixed_t fceil, bceil;
         li = in->d.line;
 
         if(!(P_GetIntp(li, DMU_FLAGS) & ML_TWOSIDED))
             return false;       // stop
 
-        // crosses a two sided line
-        // a two sided line will restrict the possible target ranges
+        // Crosses a two sided line.
+        // A two sided line will restrict
+        // the possible target ranges.
         P_LineOpening(li);
 
         if(openbottom >= opentop)
@@ -1091,18 +1111,21 @@ boolean PTR_AimTraverse(intercept_t * in)
         dist = FixedMul(attackrange, in->frac);
 
         frontsector = P_GetPtrp(li, DMU_FRONT_SECTOR);
-        backsector = P_GetPtrp(li, DMU_BACK_SECTOR);
+        ffloor = P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT);
+        fceil = P_GetFixedp(frontsector, DMU_CEILING_HEIGHT);
 
-        if(P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT) !=
-           P_GetFixedp(backsector, DMU_FLOOR_HEIGHT))
+        backsector = P_GetPtrp(li, DMU_BACK_SECTOR);
+        bfloor = P_GetFixedp(backsector, DMU_FLOOR_HEIGHT);
+        bceil = P_GetFixedp(backsector, DMU_CEILING_HEIGHT);
+
+        if(ffloor != bfloor)
         {
             slope = FixedDiv(openbottom - shootz, dist);
             if(slope > bottomslope)
                 bottomslope = slope;
         }
 
-        if(P_GetFixedp(frontsector, DMU_CEILING_HEIGHT) !=
-           P_GetFixedp(backsector, DMU_CEILING_HEIGHT))
+        if(fceil != bceil)
         {
             slope = FixedDiv(opentop - shootz, dist);
             if(slope < topslope)
@@ -1114,7 +1137,6 @@ boolean PTR_AimTraverse(intercept_t * in)
 
         return true;            // shot continues
     }
-
 
     // shoot a thing
     th = in->d.thing;
@@ -1132,17 +1154,18 @@ boolean PTR_AimTraverse(intercept_t * in)
     // check angles to see if the thing can be aimed at
     dist = FixedMul(attackrange, in->frac);
     thingtopslope = FixedDiv(th->pos[VZ] + th->height - shootz, dist);
+
     if(thingtopslope < bottomslope)
         return true;            // shot over the thing
+
     thingbottomslope = FixedDiv(th->pos[VZ] - shootz, dist);
     if(thingbottomslope > topslope)
         return true;            // shot under the thing
 
-
     // this thing can be hit!
-
     if(thingtopslope > topslope)
         thingtopslope = topslope;
+
     if(thingbottomslope < bottomslope)
         thingbottomslope = bottomslope;
 
@@ -1181,7 +1204,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
     if(in->isaline)
     {
         li = in->d.line;
-        xline = &xlines[P_ToIndex(li)];
+        xline = P_XLine(li);
 
         if(xline->special)
             P_ShootSpecialLine(shootthing, li);
@@ -1193,6 +1216,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
         P_LineOpening(li);
 
         dist = FixedMul(attackrange, in->frac);
+        frontsector = P_GetPtrp(li, DMU_FRONT_SECTOR);
+        backsector = P_GetPtrp(li, DMU_BACK_SECTOR);
 
         if(P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT) !=
            P_GetFixedp(backsector, DMU_FLOOR_HEIGHT))
@@ -1210,10 +1235,10 @@ boolean PTR_ShootTraverse(intercept_t * in)
                 goto hitline;
         }
 
-        return true;            // shot continues
+        // shot continues
+        return true;
 
         // hit line
-
       hitline:
         lineWasHit = true;
 
@@ -1346,7 +1371,8 @@ boolean PTR_ShootTraverse(intercept_t * in)
     pos[VY] = trace->y + FixedMul(trace->dy, frac);
     pos[VZ] = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
 
-    // Spawn bullet puffs.
+    // Spawn bullet puffs or blod spots,
+    // depending on target type.
     if(PuffType == MT_BLASTERPUFF1)
     {
         // Make blaster big puff
@@ -1354,9 +1380,7 @@ boolean PTR_ShootTraverse(intercept_t * in)
         S_StartSound(sfx_blshit, mo);
     }
     else
-    {
         P_SpawnPuff(pos[VX], pos[VY], pos[VZ]);
-    }
 
     if(la_damage)
     {
@@ -1366,15 +1390,19 @@ boolean PTR_ShootTraverse(intercept_t * in)
         }
         P_DamageMobj(th, shootthing, shootthing, la_damage);
     }
-    return false;             // don't go any farther
+
+    // don't go any farther
+    return false;
 }
 
 fixed_t P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance)
 {
-    fixed_t x2, y2;
+    fixed_t x2;
+    fixed_t y2;
 
     angle >>= ANGLETOFINESHIFT;
     shootthing = t1;
+
     x2 = t1->pos[VX] + (distance >> FRACBITS) * finecosine[angle];
     y2 = t1->pos[VY] + (distance >> FRACBITS) * finesine[angle];
     shootz = t1->pos[VZ] + (t1->height >> 1) + 8 * FRACUNIT;
@@ -1389,13 +1417,14 @@ fixed_t P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance)
                    PTR_AimTraverse);
 
     if(linetarget)
-        // While autoaiming, we accept this slope.
+    {
         if(!t1->player || !cfg.noAutoAim)
             return aimslope;
+    }
 
     if(t1->player && cfg.noAutoAim)
     {
-        // We are aiming manually, so the slope is determined by lookdir.
+        // The slope is determined by lookdir.
         return FRACUNIT * (tan(LOOKDIR2RAD(t1->dplayer->lookdir)) / 1.2);
     }
 
@@ -1403,12 +1432,13 @@ fixed_t P_AimLineAttack(mobj_t *t1, angle_t angle, fixed_t distance)
 }
 
 /*
- * if damage == 0, it is just a test trace that will leave linetarget set
+ * If damage == 0, it is just a test trace that will leave linetarget set.
  */
 void P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance, fixed_t slope,
                   int damage)
 {
-    fixed_t x2, y2;
+    fixed_t x2;
+    fixed_t y2;
 
     angle >>= ANGLETOFINESHIFT;
     shootthing = t1;
@@ -1418,6 +1448,7 @@ void P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance, fixed_t slope,
     shootz = t1->pos[VZ] + (t1->height >> 1) + 8 * FRACUNIT;
     if(t1->player && t1->type == MT_PLAYER)
     {
+        // Players shoot at eye height.
         shootz = t1->pos[VZ] + (cfg.plrViewHeight - 5) * FRACUNIT;
     }
 
@@ -1438,11 +1469,13 @@ boolean PTR_UseTraverse(intercept_t * in)
     if(!P_XLine(in->d.line)->special)
     {
         P_LineOpening(in->d.line);
-
         if(openrange <= 0)
-            return false;       // can't use through a wall
-
-        return true;            // not a special line, but keep checking
+        {
+            // can't use through a wall
+            return false;
+        }
+        // not a special line, but keep checking
+        return true;
     }
 
     if(P_PointOnLineSide(usething->pos[VX], usething->pos[VY], in->d.line) == 1)
@@ -1450,23 +1483,27 @@ boolean PTR_UseTraverse(intercept_t * in)
 
     P_UseSpecialLine(usething, in->d.line);
 
-    return false; // can't use for than one special line in a row
+    // can't use more than one special line in a row
+    return false;
 }
 
 /*
- * Looks for special lines in front of the player to activate
+ * Looks for special lines in front of the player to activate.
  */
 void P_UseLines(player_t *player)
 {
     int     angle;
-    fixed_t x1, y1, x2, y2;
-    mobj_t *plrmo = player->plr->mo;
+    fixed_t x1;
+    fixed_t y1;
+    fixed_t x2;
+    fixed_t y2;
 
-    usething = plrmo;
+    usething = player->plr->mo;
 
-    angle = plrmo->angle >> ANGLETOFINESHIFT;
-    x1 = plrmo->pos[VX];
-    y1 = plrmo->pos[VY];
+    angle = player->plr->mo->angle >> ANGLETOFINESHIFT;
+
+    x1 = player->plr->mo->pos[VX];
+    y1 = player->plr->mo->pos[VY];
     x2 = x1 + (USERANGE >> FRACBITS) * finecosine[angle];
     y2 = y1 + (USERANGE >> FRACBITS) * finesine[angle];
 
