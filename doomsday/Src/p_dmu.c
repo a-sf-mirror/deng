@@ -1861,6 +1861,9 @@ static int GetProperty(void* ptr, void* context)
         case DMU_CEILING_TEXTURE:
             GetValue(type, &p->sector->ceilingpic, args, 0);
             break;
+        case DMU_LIGHT_LEVEL:
+            GetValue(type, &p->sector->lightlevel, args, 0);
+            break;
         case DMU_THINGS:
             GetValue(type, &p->sector->thinglist, args, 0);
             break;
