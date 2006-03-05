@@ -96,16 +96,16 @@ typedef struct {
 
 lightsample_t playerLastLightSample[MAXPLAYERS];
 
-float   r_lightAdapt = 0.2f; // Amount of light adaption
+float   r_lightAdapt = 0.8f; // Amount of light adaption
 
 int     r_lightAdaptDarkTime = 80;
-int     r_lightAdaptBrightTime = 10;
+int     r_lightAdaptBrightTime = 3;
 
-float   r_lightAdaptRamp = 0.004f;
-float   r_lightAdaptMul = 0.2f;
+float   r_lightAdaptRamp = 0.001f;
+float   r_lightAdaptMul = 0.02f;
 
 int     r_lightrangeshift = 0;
-float   r_lightcompression = 80; //80%
+float   r_lightcompression = 0;
 
 signed short     lightRangeModMatrix[MOD_RANGE][255];
 
