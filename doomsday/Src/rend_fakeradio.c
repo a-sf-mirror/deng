@@ -196,10 +196,25 @@ boolean Rend_DoesMidTextureFillGap(line_t* line, boolean frontside)
 
         if(side->midtexture != 0)
         {
+            boolean masked;
+            int     texheight;
+
             fInfo = SECT_INFO(front);
             bInfo = SECT_INFO(back);
-            GL_GetTextureInfo(side->midtexture);
-            if(!side->blendmode && side->midrgba[3] == 255 && !texmask)
+
+            if(side->midtexture > 0)
+            {
+                GL_GetTextureInfo(side->midtexture);
+                masked = texmask;
+                texheight = texh;
+            }
+            else // It's a DDay texture.
+            {
+                masked = false;
+                texheight = 64;
+            }
+
+            if(!side->blendmode && side->midrgba[3] == 255 && !masked)
             {
                 float openTop, gapTop;
                 float openBottom, gapBottom;
@@ -209,7 +224,7 @@ boolean Rend_DoesMidTextureFillGap(line_t* line, boolean frontside)
 
                 // Could the mid texture fill enough of this gap for us
                 // to consider it completely closed?
-                if(texh >= (openTop - openBottom))
+                if(texheight >= (openTop - openBottom))
                 {
                     // Possibly. Check the placement of the mid texture.
                     if(Rend_MidTexturePos
@@ -1176,6 +1191,7 @@ float Rend_RadioEdgeOpenness(line_t *line, boolean frontside, boolean isFloor)
     sector_t *front = (frontside ? line->frontsector : line->backsector);
     sector_t *back = (frontside ? line->backsector : line->frontsector);
     sectorinfo_t *fInfo, *bInfo;
+    side_t* fside;
     float   fz, bhz, bz;        // Front and back Z height
 
     if(!back)
@@ -1183,23 +1199,34 @@ float Rend_RadioEdgeOpenness(line_t *line, boolean frontside, boolean isFloor)
 
     fInfo = SECT_INFO(front);
     bInfo = SECT_INFO(back);
-
-    // Is the back sector closed?
-    if(bInfo->visfloor >= bInfo->visceil)
-        return 0;
+    fside = SIDE_PTR(line->sidenum[frontside? 0 : 1]);
 
     if(isFloor)
     {
         fz = fInfo->visfloor;
         bz = bInfo->visfloor;
         bhz = bInfo->visceil;
+
+        // If theres a missing texture and the visible heights are
+        // different - never consider this edge for a plane shadow.
+        // TODO: does not consider any replacements we might make in
+        // Rend_RenderWallSeg to fix the missing texture...
+        if(fz < bz && fside->bottomtexture == 0)
+            return 2; // Consider it fully open.
     }
     else
     {
         fz = -fInfo->visceil;
         bz = -bInfo->visceil;
         bhz = -bInfo->visfloor;
+
+        if(fz < bz && fside->toptexture == 0)
+            return 2; // Consider it fully open.
     }
+
+    // Is the back sector closed?
+    if(bInfo->visfloor >= bInfo->visceil)
+        return 0;
 
     if(fz <= bz - EDGE_OPEN_THRESHOLD || fz >= bhz)
         return 0;               // Fully closed.
@@ -1376,9 +1403,11 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
             // Hack linedefs of any variety are not currently suitable for
             // fakeradio plane shadows (we need to rationalize and detect
             // these kind of tricks, set them as per-sector properties)
-            if(shadow->line->backsector &&
-               shadow->line->backsector == shadow->line->frontsector)
-                continue;
+            if(shadow->line->backsector)
+            {
+               if(shadow->line->backsector == shadow->line->frontsector)
+                    continue;
+            }
 
             // What about the neighbours?
             for(i = 0; i < 2; i++)
