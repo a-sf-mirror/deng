@@ -286,6 +286,8 @@ typedef struct {
     float           length;        // Accurate length.
     binangle_t      angle;         // Calculated from front side's normal.
     lineinfo_side_t side[2];       // 0 = front, 1 = back
+    boolean         selfRefHackRoot; // This line is the root of a self-referencing
+                                     // hack sector.
 } lineinfo_t;
 
 typedef struct polyblock_s {
