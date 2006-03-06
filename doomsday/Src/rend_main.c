@@ -1324,6 +1324,8 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
         if(solidSeg)
             C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
     }
+
+    return;
 }
 
 int Rend_SectorLight(sector_t *sec)
@@ -1714,7 +1716,8 @@ void Rend_OccludeSubsector(subsector_t *sub, boolean forward_facing)
 }
 
 void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
-                      subsector_t *subsector, sectorinfo_t *sin)
+                      subsector_t *subsector, sectorinfo_t *sin,
+                      boolean checkSelfRef)
 {
     rendpoly_t poly;
     sector_t *sector = subsector->sector, *link = NULL;
@@ -1728,7 +1731,7 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     if(plane->isfloor)
     {
         // Determine the height of the floor.
-        if(sin->selfRefHack && sector->floorpic == skyflatnum)
+        if(checkSelfRef && sin->selfRefHack && sector->floorpic == skyflatnum)
             return;
 
         if(sin->linkedfloor)
@@ -1749,7 +1752,7 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     else
     {
         // This is a ceiling plane.
-        if(sin->selfRefHack && sector->ceilingpic == skyflatnum)
+        if(checkSelfRef && sin->selfRefHack && sector->ceilingpic == skyflatnum)
             return;
 
         if(sin->linkedceil)
@@ -1839,6 +1842,7 @@ void Rend_RenderSubsector(int ssecidx)
     float   sceil = sin->visceil, sfloor = sin->visfloor;
     lumobj_t *lumi;             // Lum Iterator, or 'snow' in Finnish. :-)
     subsectorinfo_t *subin;
+    boolean checkSelfRef[2] = {false, false};
 
     if(sceil - sfloor <= 0 || ssec->numverts < 3)
     {
@@ -1901,7 +1905,28 @@ void Rend_RenderSubsector(int ssecidx)
         --j, seg++)
     {
         if(seg->linedef != NULL)    // "minisegs" have no linedefs.
+        {
+            lineinfo_t* linfo = LINE_INFO(seg->linedef);
+
             Rend_RenderWallSeg(seg, sect, flags);
+
+            // If this is a "root" of self-referencing hack sector
+            // we should check whether the planes SHOULD be rendered.
+            if(linfo->selfRefHackRoot)
+            {
+                // NOTE: we already KNOW its twosided.
+                // These checks are placed here instead of in the initial
+                // selfref hack test as the textures can change at any time,
+                // whilest the front/back sectors can't.
+                if(SIDE_PTR(seg->linedef->sidenum[0])->toptexture == 0 &&
+                   SIDE_PTR(seg->linedef->sidenum[1])->toptexture == 0)
+                    checkSelfRef[PLN_CEILING] = true;
+
+                if(SIDE_PTR(seg->linedef->sidenum[0])->bottomtexture == 0 &&
+                   SIDE_PTR(seg->linedef->sidenum[1])->bottomtexture == 0)
+                    checkSelfRef[PLN_FLOOR] = true;
+            }
+        }
     }
 
     // Is there a polyobj on board?
@@ -1912,8 +1937,10 @@ void Rend_RenderSubsector(int ssecidx)
     }
 
     subin = &subsecinfo[ssecidx];
-    Rend_RenderPlane(&subin->floor, floorLightLinks[ssecidx], ssec, sin);
-    Rend_RenderPlane(&subin->ceil, ceilingLightLinks[ssecidx], ssec, sin);
+    Rend_RenderPlane(&subin->floor, floorLightLinks[ssecidx], ssec, sin,
+                     checkSelfRef[PLN_FLOOR]);
+    Rend_RenderPlane(&subin->ceil, ceilingLightLinks[ssecidx], ssec, sin,
+                     checkSelfRef[PLN_CEILING]);
 }
 
 void Rend_RenderNode(int bspnum)

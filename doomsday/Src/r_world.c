@@ -1068,6 +1068,7 @@ void R_RationalizeSectors(void)
     sectorinfo_t *info;
     sector_t *sec;
     line_t *lin;
+    lineinfo_t *linfo;
     boolean selfRefHack;
     boolean unclosed;
 
@@ -1078,10 +1079,13 @@ void R_RationalizeSectors(void)
             continue;
 
         // Detect self-referencing sectors.
+        // NOTE: We need to find ALL the self-referencing "root" lines.
         selfRefHack = false;
         for(k = 0; k < sec->linecount && !selfRefHack; ++k)
         {
             lin = sec->Lines[k];
+            linfo = LINE_INFO(lin);
+
             if(lin->frontsector && lin->backsector &&
                lin->frontsector == lin->backsector &&
                lin->backsector == sec)
@@ -1147,7 +1151,10 @@ void R_RationalizeSectors(void)
                         }
 
                         if(ok && ok2)
+                        {
                             selfRefHack = true;
+                            linfo->selfRefHackRoot = true;
+                        }
                     }
                 }
             }
