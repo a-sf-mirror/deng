@@ -1324,8 +1324,6 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
         if(solidSeg)
             C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
     }
-
-    return;
 }
 
 int Rend_SectorLight(sector_t *sec)
@@ -1723,6 +1721,9 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     sector_t *sector = subsector->sector, *link = NULL;
     int     planepic;
     float   height;
+
+    if(sin->unclosed)
+        return;
 
     // We're creating a flat.
     poly.type = RP_FLAT;

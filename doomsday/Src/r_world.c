@@ -800,7 +800,7 @@ sector_t *R_GetContainingSectorOf(sector_t *sec)
     for(i = 0; i < numsectors; i++)
     {
         other = SECTOR_PTR(i);
-        if(!other->linecount)
+        if(!other->linecount || SECT_INFO(other)->unclosed)
             continue;
         if(other == sec)
             continue;           // Don't try on self!
@@ -832,10 +832,12 @@ void R_InitSectorInfo(void)
     sector_t *sec, *other;
     line_t *lin;
     boolean dohack;
+    boolean unclosed;
 
     secinfo = Z_Calloc(sizeof(sectorinfo_t) * numsectors, PU_LEVEL, 0);
 
     // Calculate bounding boxes for all sectors.
+    // Check for unclosed sectors.
     for(i = 0; i < numsectors; i++)
     {
         P_SectorBoundingBox(SECTOR_PTR(i), secinfo[i].bounds);
@@ -850,6 +852,20 @@ void R_InitSectorInfo(void)
             // Expand the bounding box.
             M_JoinBoxes(mapBounds, secinfo[i].bounds);
         }
+
+        // Detect unclosed sectors.
+        unclosed = false;
+        if(!(SECTOR_PTR(i)->linecount >= 3))
+            unclosed = true;
+        else
+        {
+            // TODO:
+            // Add algorithm to check for unclosed sectors here.
+            // Perhaps have a look at glBSP.
+        }
+
+        if(unclosed)
+            secinfo[i].unclosed = true;
     }
 
     for(i = 0, info = secinfo; i < numsectors; i++, info++)
@@ -857,6 +873,7 @@ void R_InitSectorInfo(void)
         sec = SECTOR_PTR(i);
         if(!sec->linecount)
             continue;
+
         dohack = true;
         for(k = 0; k < sec->linecount; k++)
         {
@@ -1070,7 +1087,6 @@ void R_RationalizeSectors(void)
     line_t *lin;
     lineinfo_t *linfo;
     boolean selfRefHack;
-    boolean unclosed;
 
     for(i = 0, info = secinfo; i < numsectors; ++i, info++)
     {
@@ -1162,20 +1178,6 @@ void R_RationalizeSectors(void)
 
         if(selfRefHack)
             info->selfRefHack = true;
-
-        // Detect unclosed sectors.
-        unclosed = false;
-        if(!(sec->linecount >= 3))
-            unclosed = true;
-        else
-        {
-            // TODO:
-            // Add algorithm to check for unclosed sectors here.
-            // Perhaps have a look at glBSP.
-        }
-
-        if(unclosed)
-            info->unclosed = true;
     }
 }
 
@@ -1962,7 +1964,6 @@ void R_UpdatePlanes(void)
     {
         sec = SECTOR_PTR(i);
         R_SetSectorLinks(sec);
-
         // Floor height.
         if(!sin->linkedfloor)
         {
