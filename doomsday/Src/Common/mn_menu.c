@@ -1007,20 +1007,35 @@ static Menu_t WeaponDef = {
 
 static MenuItem_t GameplayItems[] = {
     {ITT_EFUNC, 0, "ALWAYS RUN :", M_ToggleVar, 0, NULL, &cfg.alwaysRun},
-    {ITT_EFUNC, 0, "LOOKSPRING :", M_ToggleVar, 0, NULL, &cfg.lookSpring},
-    {ITT_EFUNC, 0, "AUTOAIM :", M_ToggleVar, 0, NULL, &cfg.noAutoAim},
+    {ITT_EFUNC, 0, "USE LOOKSPRING :", M_ToggleVar, 0, NULL, &cfg.lookSpring},
+    {ITT_EFUNC, 0, "USE AUTOAIM :", M_ToggleVar, 0, NULL, &cfg.noAutoAim},
 #if __JDOOM__ || __JHERETIC__ || __JSTRIFE__
-    {ITT_EFUNC, 0, "JUMPING :", M_ToggleVar, 0, NULL, &cfg.jumpEnabled},
+    {ITT_EFUNC, 0, "ALLOW JUMPING :", M_ToggleVar, 0, NULL, &cfg.jumpEnabled},
 #endif
 
 #if __JDOOM__
     {ITT_EMPTY, 0, NULL, NULL, 0},
     {ITT_EMPTY, 0, "COMPATIBILITY", NULL, 0 },
-    {ITT_EFUNC, 0, "ANY BOSS TRIGGER 666 :", M_ToggleVar, 0, NULL, &cfg.anybossdeath},
-    {ITT_EFUNC, 0, "AV RESURRECTS GHOSTS :", M_ToggleVar, 0, NULL, &cfg.raiseghosts},
-    {ITT_EFUNC, 0, "PE LIMITED TO 20 LOST SOULS :", M_ToggleVar, 0, NULL, &cfg.maxskulls},
-    {ITT_EFUNC, 0, "LS GET STUCK INSIDE WALLS :", M_ToggleVar, 0, NULL, &cfg.allowskullsinwalls},
-    {ITT_EFUNC, 0, "CORPSES SLIDE DOWN STAIRS :", M_ToggleVar, 0, NULL, &cfg.slidingCorpses}
+    {ITT_EFUNC, 0, "ANY BOSS TRIGGER 666 :", M_ToggleVar, 0, NULL,
+        &cfg.anybossdeath},
+    {ITT_EFUNC, 0, "AV RESURRECTS GHOSTS :", M_ToggleVar, 0, NULL,
+        &cfg.raiseghosts},
+    {ITT_EFUNC, 0, "PE LIMITED TO 20 LOST SOULS :", M_ToggleVar, 0, NULL,
+        &cfg.maxskulls},
+    {ITT_EFUNC, 0, "LS CAN GET STUCK INSIDE WALLS :", M_ToggleVar, 0, NULL,
+        &cfg.allowskullsinwalls},
+    {ITT_EFUNC, 0, "MONSTERS CAN GET STUCK IN DOORS :", M_ToggleVar, 0, NULL,
+        &cfg.monstersStuckInDoors},
+    {ITT_EFUNC, 0, "SOME OBJECTS HANG OVER LEDGES :", M_ToggleVar, 0, NULL,
+        &cfg.avoidDropoffs},
+    {ITT_EFUNC, 0, "OBJECTS FALL UNDER OWN WEIGHT :", M_ToggleVar, 0, NULL,
+        &cfg.fallOff},
+    {ITT_EFUNC, 0, "CORPSES SLIDE DOWN STAIRS :", M_ToggleVar, 0, NULL,
+        &cfg.slidingCorpses},
+    {ITT_EFUNC, 0, "USE EXACTLY DOOM'S CLIPPING CODE :", M_ToggleVar, 0, NULL,
+        &cfg.moveBlock},
+    {ITT_EFUNC, 0, "ZOMBIE PLAYERS CAN EXIT LEVELS :", M_ToggleVar, 0, NULL,
+        &cfg.zombiesCanExit},
 #endif
 };
 
@@ -1040,11 +1055,11 @@ static Menu_t GameplayDef = {
 #if __JHERETIC__
     72, 30,
 #else
-    64, 40,
+    30, 40,
 #endif
     M_DrawGameplay,
 #if __JDOOM__
-    11, GameplayItems,
+    16, GameplayItems,
 #else
     4, GameplayItems,
 #endif
@@ -1053,7 +1068,7 @@ static Menu_t GameplayDef = {
     cfg.menuColor2,
     LINEHEIGHT_A,
 #if __JDOOM__
-    0, 11
+    0, 16
 #else
     0, 4
 #endif
@@ -2860,7 +2875,12 @@ void M_DrawGameplay(void)
     M_WriteMenuText(menu, 7, yesno[cfg.raiseghosts != 0]);
     M_WriteMenuText(menu, 8, yesno[cfg.maxskulls != 0]);
     M_WriteMenuText(menu, 9, yesno[cfg.allowskullsinwalls != 0]);
-    M_WriteMenuText(menu, 10, yesno[cfg.slidingCorpses != 0]);
+    M_WriteMenuText(menu, 10, yesno[cfg.monstersStuckInDoors != 0]);
+    M_WriteMenuText(menu, 11, yesno[cfg.avoidDropoffs != 0]);
+    M_WriteMenuText(menu, 12, yesno[cfg.fallOff != 0]);
+    M_WriteMenuText(menu, 13, yesno[cfg.slidingCorpses != 0]);
+    M_WriteMenuText(menu, 14, yesno[cfg.moveBlock != 0]);
+    M_WriteMenuText(menu, 15, yesno[cfg.zombiesCanExit != 0]);
 #endif
 #endif
 }
