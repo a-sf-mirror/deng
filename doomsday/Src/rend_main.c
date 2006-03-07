@@ -1722,19 +1722,17 @@ void Rend_RenderPlane(planeinfo_t *plane, dynlight_t *lights,
     int     planepic;
     float   height;
 
-    if(sin->unclosed)
-        return;
-
     // We're creating a flat.
     poly.type = RP_FLAT;
     poly.lights = lights;
 
     if(plane->isfloor)
     {
-        // Determine the height of the floor.
+        // This is a floor plane.
         if(checkSelfRef && sin->selfRefHack && sector->floorpic == skyflatnum)
             return;
 
+        // Determine the height of the floor.
         if(sin->linkedfloor)
         {
             poly.sector = link = R_GetLinkedSector(sin->linkedfloor, true);

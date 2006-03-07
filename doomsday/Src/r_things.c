@@ -974,7 +974,7 @@ void R_AddSprites(sector_t *sec)
         R_GetSpriteInfo(thing->sprite, thing->frame, &spriteInfo);
 
         // Only check
-        if(thing->pos[VZ] <= sec->ceilingheight)
+        if(thing->pos[VZ] <= sec->ceilingheight && !SECT_INFO(sec)->selfRefHack)
         {
             visibleTop = thing->pos[VZ] + (spriteInfo.height << FRACBITS);
 

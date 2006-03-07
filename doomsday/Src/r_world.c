@@ -1078,15 +1078,29 @@ void R_SetupFog(void)
 /*
  * Scans all sectors for any supported DOOM.exe renderer hacks.
  * Updates sectorinfo accordingly.
+ *
+ * This algorithm detects self-referencing sector hacks used for
+ * fake 3D structures.
+ *
+ * NOTE: Self-referencing sectors where all lines in the sector
+ *       are self-referencing are NOT handled by this algorthim.
+ *       Those kind of hacks are detected in R_InitSectorInfo().
  */
 void R_RationalizeSectors(void)
 {
-    int     i, k;
+    int     i, j, k, l;
+    int count;
+    int     numroots;
     sectorinfo_t *info;
     sector_t *sec;
     line_t *lin;
+    line_t **currentRun;
+    int      maxRunLength = 20; // Initial size of the "run" (line list).
     lineinfo_t *linfo;
     boolean selfRefHack;
+
+    // Allocate some memory for the line "run" (line list).
+    currentRun = M_Malloc(maxRunLength * sizeof(line_t*));
 
     for(i = 0, info = secinfo; i < numsectors; ++i, info++)
     {
@@ -1094,10 +1108,11 @@ void R_RationalizeSectors(void)
         if(!sec->linecount)
             continue;
 
-        // Detect self-referencing sectors.
-        // NOTE: We need to find ALL the self-referencing "root" lines.
+        // Detect self-referencing "root" lines.
+        // NOTE: We need to find ALL of them.
         selfRefHack = false;
-        for(k = 0; k < sec->linecount && !selfRefHack; ++k)
+        numroots = 0;
+        for(k = 0; k < sec->linecount; ++k)
         {
             lin = sec->Lines[k];
             linfo = LINE_INFO(lin);
@@ -1123,8 +1138,6 @@ void R_RationalizeSectors(void)
                     // Test simple case - single line dividing a sector
                     if(!(ownerA->num == 1 && ownerB->num == 1))
                     {
-                        int j;
-                        int count;
                         line_t *owner;
                         boolean ok = true;
                         boolean ok2 = true;
@@ -1170,6 +1183,9 @@ void R_RationalizeSectors(void)
                         {
                             selfRefHack = true;
                             linfo->selfRefHackRoot = true;
+                            VERBOSE2(Con_Message("L%i selfref root to S%i\n",
+                                        GET_LINE_IDX(lin), GET_SECTOR_IDX(sec)));
+                            ++numroots;
                         }
                     }
                 }
@@ -1177,8 +1193,119 @@ void R_RationalizeSectors(void)
         }
 
         if(selfRefHack)
+        {
+            vertexowner_t *ownerA, *ownerB;
+            line_t *line;
+            line_t *next;
+            vertexowner_t *owner;
+            boolean ok = true;
+            boolean secdone = false;
+
+            // Mark this sector as a self-referencing hack.
             info->selfRefHack = true;
+
+            // Now look for lines inbetween two root lines, in a "run".
+            // Each line in the run must have both a front and back
+            // sides in this sector.
+
+            // If we hit a one-sided line or not both of the lines' sides
+            // are in this sector - the run ends and none of the lines
+            // already collected should be altered.
+
+            // If we find a run, promote all of the lines in the run to
+            // self-referencing, hack sector "root" lines.
+
+            for(k = 0; k < sec->linecount && !secdone; ++k)
+            {
+                lin = sec->Lines[k];
+                linfo = LINE_INFO(lin);
+                if(!linfo->selfRefHackRoot)
+                    continue;
+
+                ownerA = &vertexowners[GET_VERTEX_IDX(lin->v1)];
+                ownerB = &vertexowners[GET_VERTEX_IDX(lin->v2)];
+
+                for(l = 0; l < 2 && !secdone; ++l)
+                {
+                    ok = true;
+                    count = 0;
+                    next = NULL;
+
+                    // Clear the currentRun list.
+                    memset(currentRun, 0, sizeof(currentRun));
+
+                    line = lin;
+                    if(l == 0)
+                        owner = ownerA;
+                    else
+                        owner = ownerB;
+                    for(j = 0; j < owner->numlines && ok; ++j)
+                    {
+                        next = LINE_PTR(owner->linelist[j]);
+                        if(next == line || next == lin)
+                            continue;
+
+                        line = next;
+
+                        if(!(line->frontsector == sec &&
+                           (line->backsector && line->backsector == sec)))
+                            continue;
+
+                        if(LINE_INFO(line)->selfRefHackRoot)
+                        {
+                            // We've found a valid run!
+                            if(count >= 1)
+                            {
+                                // Promote all lines in the run to
+                                // self-referencing root lines.
+                                while(count--)
+                                {
+                                    LINE_INFO(currentRun[count])->selfRefHackRoot = true;
+                                    VERBOSE2(Con_Message("  Promoted L%i selfref root to S%i\n",
+                                                         GET_LINE_IDX(currentRun[count]),
+                                                         GET_SECTOR_IDX(sec)));
+                                }
+                            }
+                            ok = false;
+                            count = 0;
+
+                            if(numroots == 2)
+                                secdone = true; // We've found all the runs.
+                        }
+                        else
+                        {
+                            if(++count > maxRunLength)
+                            {
+                                // Allocate some more memory.
+                                maxRunLength *= 2;
+                                if(maxRunLength < count)
+                                    maxRunLength = count;
+
+                                currentRun =
+                                    M_Realloc(currentRun, sizeof(line_t*) * maxRunLength);
+                            }
+
+                            currentRun[count -1] = line;
+                        }
+
+                        if(!secdone)
+                        {
+                            // Get the vertexowner info for the other vertex.
+                            if(owner - vertexowners == GET_VERTEX_IDX(line->v1))
+                                owner = &vertexowners[GET_VERTEX_IDX(line->v2)];
+                            else
+                                owner = &vertexowners[GET_VERTEX_IDX(line->v1)];
+
+                            j = -1; // Start from the begining.
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    // Free temporary storage.
+    M_Free(currentRun);
 }
 
 /*
