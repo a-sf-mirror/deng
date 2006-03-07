@@ -194,7 +194,7 @@ void P_XYMovement(mobj_t *mo)
         // to pass through walls.
 
         if(xmove > MAXMOVE / 2 || ymove > MAXMOVE / 2 ||
-           ((xmove < -MAXMOVE / 2 || ymove < -MAXMOVE / 2)))
+           (cfg.moveBlock && (xmove < -MAXMOVE / 2 || ymove < -MAXMOVE / 2)))
         {
             ptryx = mo->pos[VX] + xmove / 2;
             ptryy = mo->pos[VY] + ymove / 2;
@@ -614,8 +614,8 @@ void P_MobjThinker(mobj_t *mobj)
         // killough 9/12/98: objects fall off ledges if they are hanging off
         // slightly push off of ledge if hanging more than halfway off
 
-        if(mobj->pos[VZ] > mobj->dropoffz // Only objects contacting dropoff
-           && !(mobj->flags & MF_NOGRAVITY))
+        if(mobj->pos[VZ] > mobj->dropoffz && // Only objects contacting dropoff
+           !(mobj->flags & MF_NOGRAVITY) && cfg.fallOff)
         {
             P_ApplyTorque(mobj);
         }
@@ -625,20 +625,6 @@ void P_MobjThinker(mobj_t *mobj)
             mobj->gear = 0;     // Reset torque
         }
     }
-
-/*---OLD CODE---
-    if ( (mobj->pos[VZ] != mobj->floorz) || mobj->momz )
-    {
-        P_ZMovement (mobj);
-
-        // FIXME: decent NOP/NULL/Nil function pointer please.
-        if (mobj->thinker.function == (actionf_v) (-1))
-            return;     // mobj was removed
-    }
----OLD CODE---*/
-
-    // killough $dropoff_fix: objects fall off ledges if they are hanging off
-    // slightly push off of ledge if hanging more than halfway off
 
     if(cfg.slidingCorpses)
     {

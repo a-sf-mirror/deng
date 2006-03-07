@@ -715,8 +715,11 @@ boolean P_TryMove2(mobj_t *thing, fixed_t x, fixed_t y, boolean dropoff)
         if(!(thing->flags & (MF_DROPOFF | MF_FLOAT)))
         {
             // Dropoff height limit
-            if(!dropoff && tmfloorz - tmdropoffz > 24 * FRACUNIT)
-                return false;
+            if(cfg.avoidDropoffs)
+            {
+                if(!dropoff && tmfloorz - tmdropoffz > 24 * FRACUNIT)
+                    return false;
+            }
             else
             {
                 // set felldown if drop > 24

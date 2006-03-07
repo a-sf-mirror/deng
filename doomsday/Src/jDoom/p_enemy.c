@@ -264,11 +264,7 @@ boolean P_Move(mobj_t *actor, boolean dropoff)
 {
     fixed_t tryx, stepx;
     fixed_t tryy, stepy;
-
     line_t *ld;
-
-    // warning: 'catch', 'throw', and 'try'
-    // are all C++ reserved words
     boolean good;
 
     if(actor->movedir == DI_NODIR)
@@ -325,14 +321,16 @@ boolean P_Move(mobj_t *actor, boolean dropoff)
 
             if(P_UseSpecialLine(actor, ld, 0))
                 good |= ld == blockline ? 1 : 2;
-            //              good = true;
         }
-        return good && ((P_Random() >= 230) ^ (good & 1));
-        //      return good;
+
+        if(!good || cfg.monstersStuckInDoors)
+            return good;
+        else
+            return (P_Random() >= 230) || (good & 1);
     }
     else
     {
-        P_SetThingSRVO(actor, stepx, stepy);    // "servo": movement smoothing
+        P_SetThingSRVO(actor, stepx, stepy);
         actor->flags &= ~MF_INFLOAT;
     }
 
@@ -484,8 +482,9 @@ void P_NewChaseDir(mobj_t *actor)
     if(actor->floorz - actor->dropoffz > FRACUNIT * 24 &&
        actor->pos[VZ] <= actor->floorz &&
        !(actor->flags & (MF_DROPOFF | MF_FLOAT)) &&
-       P_AvoidDropoff(actor))  // Move away from dropoff
+       cfg.avoidDropoffs && P_AvoidDropoff(actor))
     {
+        // Move away from dropoff
         P_DoNewChaseDir(actor, dropoff_deltax, dropoff_deltay);
 
         // $dropoff_fix
@@ -778,7 +777,6 @@ void C_DECL A_Chase(mobj_t *actor)
     }
 
     // chase towards player
-    // killough $dropoff_fix
     if(--actor->movecount < 0 || !P_Move(actor, false))
     {
         P_NewChaseDir(actor);

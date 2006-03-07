@@ -25,6 +25,7 @@
 #include "doomstat.h"
 #include "r_state.h"
 #include "d_net.h"
+#include "d_config.h"
 
 #include "Common/dmu_lib.h"
 
@@ -368,6 +369,14 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
         // Exit level
         if(cyclingMaps && mapCycleNoExit)
             break;
+
+        // killough 10/98: prevent zombies from exiting levels
+        if(thing->player && thing->player->health <= 0 && !cfg.zombiesCanExit)
+        {
+            S_StartSound(sfx_noway, thing);
+            return false;
+        }
+
         P_ChangeSwitchTexture(line, 0);
         G_ExitLevel();
         break;
@@ -442,6 +451,14 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
         // Secret EXIT
         if(cyclingMaps && mapCycleNoExit)
             break;
+
+        // killough 10/98: prevent zombies from exiting levels
+        if(thing->player && thing->player->health <= 0 && !cfg.zombiesCanExit)
+        {
+            S_StartSound(sfx_noway, thing);
+            return false;
+        }
+
         P_ChangeSwitchTexture(line, 0);
         G_SecretExitLevel();
         break;
