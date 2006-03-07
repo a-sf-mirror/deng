@@ -102,10 +102,17 @@ typedef struct jdoom_config_s {
     float           statusbarCounterAlpha;
 
     // Compatibility options.
+    // TODO: Put these into an array so we can use a bit array to change
+    //       multiple options based on a compatibility mode (ala PrBoom).
     byte            raiseghosts;
     byte            maxskulls;
     byte            allowskullsinwalls;
     byte            anybossdeath;
+    byte            monstersStuckInDoors;
+    byte            avoidDropoffs;
+    byte            moveBlock; // Handle large negative movement in P_TryMove.
+    byte            zombiesCanExit; // Zombie players can exit levels.
+    byte            fallOff; // Objects fall under their own weight.
 
     // Automap stuff.
     byte            counterCheat;
