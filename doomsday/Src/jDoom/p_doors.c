@@ -335,6 +335,12 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     xsector_t *xsec;
     vldoor_t *door;
 
+    sec = P_GetPtrp(line, DMU_BACK_SECTOR);
+    if(!sec)
+        return;
+
+    xsec = P_XSector(sec);
+
     //  Check for locks
     player = thing->player;
 
@@ -384,9 +390,6 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // if the sector has an active thinker, use it
-    sec = P_GetPtrp(line, DMU_BACK_SECTOR);
-    xsec = P_XSector(sec);
-
     if(xsec->specialdata)
     {
         door = xsec->specialdata;
