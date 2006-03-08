@@ -231,7 +231,6 @@ void P_XYMovement(mobj_t *mo)
                             // Hack to prevent missiles exploding
                             // against the sky.
                             // Does not handle sky floors.
-                            Con_Message("Remove missile\n");
                             P_RemoveMobj(mo);
                             return;
                         }
