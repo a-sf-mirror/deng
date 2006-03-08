@@ -234,6 +234,16 @@ cvar_t  gameCVars[] = {
     {"game-anybossdeath666", 0, CVT_BYTE,
         &cfg.anybossdeath, 0, 1,
         "1= The death of ANY boss monster triggers a 666 special (on applicable maps)."},
+    {"game-monsters-stuckindoors", 0, CVT_BYTE, &cfg.monstersStuckInDoors, 0, 1,
+        "1= Monsters can get stuck in doortracks (disables DOOM bug fix)."},
+    {"game-objects-hangoverledges", 0, CVT_BYTE, &cfg.avoidDropoffs, 0, 1,
+        "1= Only some objects can hang over tall ledges (enables DOOM bug fix)."},
+    {"game-objects-clipping", 0, CVT_BYTE, &cfg.moveBlock, 0, 1,
+        "1= Use EXACTLY DOOM's clipping code (disables DOOM bug fix)."},
+    {"game-players-zombiescanexit", 0, CVT_BYTE, &cfg.zombiesCanExit, 0, 1,
+        "1= Zombie players can exit levels (disables DOOM bug fix)."},
+    {"game-objects-falloff", 0, CVT_BYTE, &cfg.fallOff, 0, 1,
+        "1= Objects fall under their own weight (enables DOOM bug fix)."},
 
 // Game state
     {"game-fastmonsters", 0, CVT_BYTE, &fastparm, 0, 1,
