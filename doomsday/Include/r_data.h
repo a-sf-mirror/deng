@@ -179,10 +179,10 @@ typedef struct rendpoly_s {
 // This is the dummy mobj_t used for blockring roots.
 // It has some excess information since it has to be compatible with
 // regular mobjs (otherwise the rings don't really work).
-// Note: the thinker and x,y,z data could be used for something else...
+// Note: the thinker and pos data could be used for something else...
 typedef struct linkmobj_s {
     thinker_t       thinker;
-    fixed_t         x, y, z;
+    fixed_t         pos[3];
     struct mobj_s  *next, *prev;
 } linkmobj_t;
 
@@ -190,6 +190,7 @@ typedef struct {
     float           visfloor, visceil;  // Visible floor and ceiling, floats.
     sector_t       *linkedfloor;        // Floor attached to another sector.
     sector_t       *linkedceil;         // Ceiling attached to another sector.
+    sector_t       *containsector;      // Sector that contains this (if any).
     boolean         permanentlink;
     boolean         unclosed;           // An unclosed sector (some sort of fancy hack).
     boolean         selfRefHack;        // A self-referencing hack sector which ISNT
@@ -286,7 +287,7 @@ typedef struct {
     float           length;        // Accurate length.
     binangle_t      angle;         // Calculated from front side's normal.
     lineinfo_side_t side[2];       // 0 = front, 1 = back
-    boolean         selfRefHackRoot; // This line is the root of a self-referencing
+    boolean         selfrefhackroot; // This line is the root of a self-referencing
                                      // hack sector.
 } lineinfo_t;
 
@@ -297,10 +298,11 @@ typedef struct polyblock_s {
 } polyblock_t;
 
 typedef struct vertexowner_s {
-    unsigned short  num;           // Number of owners.
-    unsigned short *list;          // Sector indices.
-    unsigned short  numlines;
-    unsigned short *linelist;
+    int             num;           // Number of sector owners.
+    int            *list;          // Sector indices.
+    int             numlines;      // Number of line owners.
+    int            *linelist;      // Line indices.
+    boolean         anchored;      // One or more of our line owners are one-sided.
 } vertexowner_t;
 
 // The sector divisions list is similar to vertexowners.
