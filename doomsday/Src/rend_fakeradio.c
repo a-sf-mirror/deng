@@ -1403,11 +1403,8 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
             // Hack linedefs of any variety are not currently suitable for
             // fakeradio plane shadows (we need to rationalize and detect
             // these kind of tricks, set them as per-sector properties)
-            if(shadow->line->backsector)
-            {
-               if(shadow->line->backsector == shadow->line->frontsector)
-                    continue;
-            }
+            if(LINE_INFO(shadow->line)->selfrefhackroot)
+                continue;
 
             // What about the neighbours?
             for(i = 0; i < 2; i++)

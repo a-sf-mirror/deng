@@ -120,6 +120,13 @@ boolean R_IsValidLink(sector_t *startsec, sector_t *destlink, boolean is_floor)
 /*
  * Called every frame. Sector heights may change at any time
  * without notice.
+ *
+ * This routine handles plane hacks where all of the sector's
+ * lines are twosided and missing upper or lower textures.
+ *
+ * NOTE: This does not support sectors with disjoint groups of
+ *       lines (eg a sector with a "control" sector such as the
+ *       forcefields in ETERNAL.WAD MAP01).
  */
 void R_SetSectorLinks(sector_t *sec)
 {
@@ -128,7 +135,6 @@ void R_SetSectorLinks(sector_t *sec)
     boolean hackfloor, hackceil;
     side_t *sid, *frontsid, *backsid;
     sector_t *floorlink_candidate = 0, *ceillink_candidate = 0;
-
     //return; //---DEBUG---
 
     // Must have a valid sector!
@@ -141,9 +147,17 @@ void R_SetSectorLinks(sector_t *sec)
     {
         if(!hackfloor && !hackceil)
             break;
-        // Most sectors will fail the test below.
-        if(!sec->Lines[k]->frontsector || !sec->Lines[k]->backsector)
-            return;
+        // We are only interested in two-sided lines.
+        if(!(sec->Lines[k]->frontsector && sec->Lines[k]->backsector))
+            continue;
+
+        // Check the vertex line owners for both verts.
+        // We are only interested in lines that do NOT share either vertex
+        // with a one-sided line (ie, its not "anchored").
+        if(vertexowners[GET_VERTEX_IDX(sec->Lines[k]->v1)].anchored ||
+           vertexowners[GET_VERTEX_IDX(sec->Lines[k]->v2)].anchored)
+            continue;
+
         // Check which way the line is facing.
         sid = SIDE_PTR(sec->Lines[k]->sidenum[0]);
         if(sid->sector == sec)
@@ -159,18 +173,22 @@ void R_SetSectorLinks(sector_t *sec)
         back = backsid->sector;
         if(back == sec)
             return;
+
         // Check that there is something on the other side.
         if(back->ceilingheight == back->floorheight)
             return;
         // Check the conditions that prevent the invis plane.
         if(back->floorheight == sec->floorheight)
+        {
             hackfloor = false;
+        }
         else
         {
             if(back->floorheight > sec->floorheight)
                 sid = frontsid;
             else
                 sid = backsid;
+
             if(sid->bottomtexture || sid->midtexture)
                 hackfloor = false;
             else if(R_IsValidLink(sec, back, true))
@@ -192,7 +210,8 @@ void R_SetSectorLinks(sector_t *sec)
     }
     if(hackfloor)
     {
-        secinfo[i].linkedfloor = floorlink_candidate;
+        if(floorlink_candidate == SECT_INFO(sec)->containsector)
+            secinfo[i].linkedfloor = floorlink_candidate;
 
         /*      if(floorlink_candidate)
            Con_Printf("LF:%i->%i\n",
@@ -200,7 +219,8 @@ void R_SetSectorLinks(sector_t *sec)
     }
     if(hackceil)
     {
-        secinfo[i].linkedceil = ceillink_candidate;
+        if(ceillink_candidate == SECT_INFO(sec)->containsector)
+            secinfo[i].linkedceil = ceillink_candidate;
 
         /*      if(ceillink_candidate)
            Con_Printf("LC:%i->%i\n",
@@ -653,7 +673,7 @@ void R_SetVertexOwner(int idx, sector_t *secptr)
 {
     int     i;
     vertexowner_t *own;
-    unsigned short *list;
+    int    *list;
     int     sector;
 
     if(!secptr)
@@ -667,13 +687,11 @@ void R_SetVertexOwner(int idx, sector_t *secptr)
     // Add a new owner.
     own->num++;
     // Allocate a new list.
-    list =
-        (unsigned short *) Z_Malloc(sizeof(unsigned short) * own->num,
-                                    PU_LEVEL, 0);
+    list = (int*) Z_Malloc(sizeof(int) * own->num, PU_LEVEL, 0);
     // If there are previous references, copy them.
     if(own->num > 1)
     {
-        memcpy(list, own->list, sizeof(unsigned short) * (own->num - 1));
+        memcpy(list, own->list, sizeof(int) * (own->num - 1));
         // Free the old list.
         Z_Free(own->list);
     }
@@ -685,7 +703,7 @@ void R_SetVertexLineOwner(int idx, line_t *lineptr)
 {
     int     i;
     vertexowner_t *own;
-    unsigned short *list;
+    int    *list;
     int     line;
 
     if(!lineptr)
@@ -699,18 +717,20 @@ void R_SetVertexLineOwner(int idx, line_t *lineptr)
     // Add a new owner.
     own->numlines++;
     // Allocate a new list.
-    list =
-        (unsigned short *) Z_Malloc(sizeof(unsigned short) * own->numlines,
-                                    PU_LEVEL, 0);
+    list = (int *) Z_Malloc(sizeof(int) * own->numlines, PU_LEVEL, 0);
     // If there are previous references, copy them.
     if(own->numlines > 1)
     {
-        memcpy(list, own->linelist, sizeof(unsigned short) * (own->numlines - 1));
+        memcpy(list, own->linelist, sizeof(int) * (own->numlines - 1));
         // Free the old list.
         Z_Free(own->linelist);
     }
     own->linelist = list;
     own->linelist[own->numlines - 1] = line;
+
+    // If this is a one-sided line then this is an "anchored" vertex.
+    if(!lineptr->backsector)
+        own->anchored = true;
 }
 
 /*
@@ -874,6 +894,9 @@ void R_InitSectorInfo(void)
         if(!sec->linecount)
             continue;
 
+        // Is this sector completely contained by another?
+        info->containsector = R_GetContainingSectorOf(sec);
+
         dohack = true;
         for(k = 0; k < sec->linecount; k++)
         {
@@ -891,8 +914,7 @@ void R_InitSectorInfo(void)
         {
             // Link permanently.
             info->permanentlink = true;
-            info->linkedceil = info->linkedfloor =
-                R_GetContainingSectorOf(sec);
+            info->linkedceil = info->linkedfloor = info->containsector;
             if(info->linkedceil)
             {
                 Con_Printf("Linking S%i planes permanently to S%i\n", i,
@@ -1182,7 +1204,7 @@ void R_RationalizeSectors(void)
                         if(ok && ok2)
                         {
                             selfRefHack = true;
-                            linfo->selfRefHackRoot = true;
+                            linfo->selfrefhackroot = true;
                             VERBOSE2(Con_Message("L%i selfref root to S%i\n",
                                         GET_LINE_IDX(lin), GET_SECTOR_IDX(sec)));
                             ++numroots;
@@ -1219,7 +1241,7 @@ void R_RationalizeSectors(void)
             {
                 lin = sec->Lines[k];
                 linfo = LINE_INFO(lin);
-                if(!linfo->selfRefHackRoot)
+                if(!linfo->selfrefhackroot)
                     continue;
 
                 ownerA = &vertexowners[GET_VERTEX_IDX(lin->v1)];
@@ -1251,7 +1273,7 @@ void R_RationalizeSectors(void)
                            (line->backsector && line->backsector == sec)))
                             continue;
 
-                        if(LINE_INFO(line)->selfRefHackRoot)
+                        if(LINE_INFO(line)->selfrefhackroot)
                         {
                             // We've found a valid run!
                             if(count >= 1)
@@ -1260,7 +1282,7 @@ void R_RationalizeSectors(void)
                                 // self-referencing root lines.
                                 while(count--)
                                 {
-                                    LINE_INFO(currentRun[count])->selfRefHackRoot = true;
+                                    LINE_INFO(currentRun[count])->selfrefhackroot = true;
                                     VERBOSE2(Con_Message("  Promoted L%i selfref root to S%i\n",
                                                          GET_LINE_IDX(currentRun[count]),
                                                          GET_SECTOR_IDX(sec)));
@@ -1425,7 +1447,7 @@ void R_FindLineNeighbors(sector_t *sector, line_t *line,
             continue;
 
         // Is this a valid neighbour?
-        if(other->frontsector == sector && other->backsector == sector)
+        if(LINE_INFO(other)->selfrefhackroot)
             continue;
 
         // Do we need to test the line alignment?
@@ -1482,8 +1504,9 @@ static void R_FindBackNeighbor(sector_t *backSector, line_t *self,
         line = backSector->Lines[i];
         if(R_IsEquivalent(line, realNeighbor) || R_IsEquivalent(line, self))
             continue;
-        if(line->frontsector == line->backsector)
+        if(LINE_INFO(line)->selfrefhackroot)
             continue;
+
         if(line->v1 == commonVertex || line->v2 == commonVertex)
         {
             *backNeighbor = line;
@@ -1540,7 +1563,8 @@ void R_InitLineInfo(void)
             {
                 // Neighbour must be two-sided.
                 if(side->neighbor[j] && side->neighbor[j]->frontsector &&
-                   side->neighbor[j]->backsector)
+                   side->neighbor[j]->backsector &&
+                   !LINE_INFO(side->neighbor[j])->selfrefhackroot)
                 {
                     side->proxsector[j] =
                         (side->neighbor[j]->frontsector ==
@@ -1762,9 +1786,9 @@ void R_SetupLevel(char *level_id, int flags)
 
     // Init blockmap for searching subsectors.
     P_InitSubsectorBlockMap();
-    R_InitSectorShadows();
 
     R_RationalizeSectors();
+    R_InitSectorShadows(); // Must follow R_RationalizeSectors.
 
     Con_Progress(10, 0);
 

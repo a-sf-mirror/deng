@@ -429,13 +429,13 @@ void RL_PrepareFlat(planeinfo_t *plane, rendpoly_t *poly,
     {
         // A ceiling plane. Blend sector light+color+planecolor
         for(i = 0; i < 3; i++)
-        {            
+        {
             vColor[i] = (byte)(((poly->sector->ceilingrgb[i]/ 255.0f)) * pLightColor[i]);
         }
 
         RL_VertexColors(poly, sectorlight, vColor);
     }
-    else 
+    else
     {
         // Use sector light+color only
         RL_VertexColors(poly, sectorlight, pLightColor);

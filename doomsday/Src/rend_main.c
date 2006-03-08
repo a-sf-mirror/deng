@@ -1911,7 +1911,7 @@ void Rend_RenderSubsector(int ssecidx)
 
             // If this is a "root" of self-referencing hack sector
             // we should check whether the planes SHOULD be rendered.
-            if(linfo->selfRefHackRoot)
+            if(linfo->selfrefhackroot)
             {
                 // NOTE: we already KNOW its twosided.
                 // These checks are placed here instead of in the initial
@@ -2040,12 +2040,12 @@ void Rend_RenderMap(void)
     }
     RL_RenderAllLists();
 
+    // Draw the mobj bounding boxes.
+    Rend_RenderBoundingBoxes();
+
     // Draw the Shadow Bias Editor's draw that identifies the current
     // light.
     SBE_DrawCursor();
-
-    // Draw the mobj bounding boxes.
-    Rend_RenderBoundingBoxes();
 }
 
 static void DrawRangeBox(int x, int y, int w, int h, ui_color_t *c)
