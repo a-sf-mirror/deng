@@ -548,9 +548,10 @@ int Rend_PrepareTextureForPoly(rendpoly_t *poly, int tex, boolean isFlat)
 
     if(tex == -1) // A missing texture, draw the "missing" graphic
     {
-        poly->tex.id = curtex = (unsigned int) ddTextures[DDTEX_MISSING];
-        poly->tex.width = poly->tex.height = 64;
-        poly->tex.detail = NULL;
+        poly->tex.id = curtex = GL_PrepareDDTexture(DDT_MISSING);
+        poly->tex.width = texw;
+        poly->tex.height = texh;
+        poly->tex.detail = texdetail;
         return 0 | TXF_GLOW; // Make it stand out
     }
     else
@@ -2288,7 +2289,7 @@ static void Rend_RenderBoundingBoxes(void)
     gl.Enable(DGL_TEXTURING);
     gl.Disable(DGL_CULL_FACE);
 
-    gl.Bind(ddTextures[DDTEX_BBOX]);
+    gl.Bind(ddTextures[DDT_BBOX]);
     GL_BlendMode(BM_ADD);
 
     // For every sector

@@ -393,6 +393,7 @@ void GL_InitTextureManager(void)
 
     // System textures loaded in GL_LoadSystemTextures.
     memset(lightingTexNames, 0, sizeof(lightingTexNames));
+    memset(ddTextures, 0, sizeof(ddTextures));
 
     // Initialization done.
     texInited = true;
@@ -567,18 +568,8 @@ void GL_DeleteReflectionMap(ded_reflection_t *ref)
  */
 void GL_LoadDDTextures(void)
 {
-    int     i;
-    const char *picNames[NUM_DD_TEXTURES] = {
-        "Missing",
-        "BBox"
-    };
-
-    for(i = 0; i < NUM_DD_TEXTURES; i++)
-        if(!ddTextures[i])
-        {
-            ddTextures[i] = GL_LoadGraphics2(RC_GRAPHICS, picNames[i],
-                                              LGM_NORMAL, DGL_TRUE, false);
-        }
+    GL_PrepareDDTexture(DDT_MISSING);
+    GL_PrepareDDTexture(DDT_BBOX);
 }
 
 void GL_ClearDDTextures(void)
@@ -1582,6 +1573,36 @@ unsigned int GL_PrepareFlat2(int idx, boolean translate)
     texmask = false;
     texdetail = (r_detail && flat->detail.tex ? &flat->detail : 0);
     return lumptexinfo[flat->lump].tex[0];
+}
+
+/*
+ * Prepares one of the "Doomsday Textures" 'which' must be one
+ * of the DDT_* constants.
+ */
+DGLuint GL_PrepareDDTexture(ddtexture_t which)
+{
+    image_t image;
+    static const char *ddTexNames[NUM_DD_TEXTURES] = {
+        "Missing",
+        "BBox"
+    };
+
+    if(which >= 0 && which < NUM_DD_TEXTURES)
+    {
+        if(!ddTextures[which])
+        {
+            ddTextures[which] =
+                GL_LoadGraphics2(RC_GRAPHICS, ddTexNames[which], LGM_NORMAL,
+                                 DGL_TRUE, false);
+        }
+    }
+    else
+        Con_Error("GL_PrepareDDTexture: Invalid ddtexture %i\n", which);
+
+    texw = texh = 64;
+    texmask = false;
+    texdetail = 0;
+    return ddTextures[which];
 }
 
 /*
