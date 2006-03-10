@@ -1110,19 +1110,19 @@ void R_SetupFog(void)
  */
 void R_RationalizeSectors(void)
 {
-    int     i, j, k, l;
+    int     i, j, k, l, m;
     int count;
     int     numroots;
     sectorinfo_t *info;
     sector_t *sec;
     line_t *lin;
-    line_t **currentRun;
-    int      maxRunLength = 20; // Initial size of the "run" (line list).
+    line_t **collectedLines;
+    int      maxNumLines = 20; // Initial size of the "run" (line list).
     lineinfo_t *linfo;
     boolean selfRefHack;
 
     // Allocate some memory for the line "run" (line list).
-    currentRun = M_Malloc(maxRunLength * sizeof(line_t*));
+    collectedLines = M_Malloc(maxNumLines * sizeof(line_t*));
 
     for(i = 0, info = secinfo; i < numsectors; ++i, info++)
     {
@@ -1134,6 +1134,7 @@ void R_RationalizeSectors(void)
         // NOTE: We need to find ALL of them.
         selfRefHack = false;
         numroots = 0;
+
         for(k = 0; k < sec->linecount; ++k)
         {
             lin = sec->Lines[k];
@@ -1167,6 +1168,10 @@ void R_RationalizeSectors(void)
                         // Ok, need to check for neighbors.
                         // Test all the line owners to see that they arn't
                         // "real" twosided lines.
+
+                        // TODO: This approach is too simple. We should instead
+                        //       sort the vertexe's line owners based on angle
+                        //       after init.
                         if(ownerA->num > 1)
                         {
                             count = 0;
@@ -1220,48 +1225,44 @@ void R_RationalizeSectors(void)
             line_t *line;
             line_t *next;
             vertexowner_t *owner;
-            boolean ok = true;
-            boolean secdone = false;
+            boolean scanOwners, addToCollection, found;
 
             // Mark this sector as a self-referencing hack.
             info->selfRefHack = true;
 
-            // Now look for lines inbetween two root lines, in a "run".
-            // Each line in the run must have both a front and back
-            // sides in this sector.
+            // Now look for lines connected to this root line (and any
+            // subsequent lines that connect to those) that match the
+            // requirements for a selfreferencing hack.
 
-            // If we hit a one-sided line or not both of the lines' sides
-            // are in this sector - the run ends and none of the lines
-            // already collected should be altered.
-
-            // If we find a run, promote all of the lines in the run to
-            // self-referencing, hack sector "root" lines.
-
-            for(k = 0; k < sec->linecount && !secdone; ++k)
+            // Once all lines have been collected - promote them to
+            // self-referencing hack lines for this sector.
+            for(k = 0; k < sec->linecount; ++k)
             {
                 lin = sec->Lines[k];
                 linfo = LINE_INFO(lin);
                 if(!linfo->selfrefhackroot)
                     continue;
 
+                if(lin->validcount)
+                    continue; // We've already found this hack group.
+
                 ownerA = &vertexowners[GET_VERTEX_IDX(lin->v1)];
                 ownerB = &vertexowners[GET_VERTEX_IDX(lin->v2)];
-
-                for(l = 0; l < 2 && !secdone; ++l)
+                for(l = 0; l < 2; ++l)
                 {
-                    ok = true;
+                    // Clear the collectedLines list.
+                    memset(collectedLines, 0, sizeof(collectedLines));
                     count = 0;
-                    next = NULL;
-
-                    // Clear the currentRun list.
-                    memset(currentRun, 0, sizeof(currentRun));
 
                     line = lin;
+                    scanOwners = true;
+
                     if(l == 0)
                         owner = ownerA;
                     else
                         owner = ownerB;
-                    for(j = 0; j < owner->numlines && ok; ++j)
+
+                    for(j = 0; j < owner->numlines && scanOwners; ++j)
                     {
                         next = LINE_PTR(owner->linelist[j]);
                         if(next == line || next == lin)
@@ -1273,44 +1274,111 @@ void R_RationalizeSectors(void)
                            (line->backsector && line->backsector == sec)))
                             continue;
 
-                        if(LINE_INFO(line)->selfrefhackroot)
+                        // Is this line already in the current run? (self collision)
+                        addToCollection = true;
+                        for(m = 0; m < count && addToCollection; ++m)
                         {
-                            // We've found a valid run!
-                            if(count >= 1)
+                            if(line == collectedLines[m])
                             {
-                                // Promote all lines in the run to
-                                // self-referencing root lines.
-                                while(count--)
+                                int n, o, p, q;
+                                line_t *lcand;
+                                vertexowner_t *vown;
+
+                                // Pick another candidate to continue line collection.
+
+                                // Logic: Work backwards through the collected line
+                                // list, checking the number of line owners of each
+                                // vertex. If we find one with >2 line owners - check
+                                // the lines to see if it would be a good place to
+                                // recommence line collection (a self-referencing line,
+                                // same sector).
+                                pickNewCandiate:;
+                                found = false;
+                                for(n = count-1; n >= 0 && !found; --n)
                                 {
-                                    LINE_INFO(currentRun[count])->selfrefhackroot = true;
-                                    VERBOSE2(Con_Message("  Promoted L%i selfref root to S%i\n",
-                                                         GET_LINE_IDX(currentRun[count]),
-                                                         GET_SECTOR_IDX(sec)));
+                                    for(q= 0; q < 2 && !found; ++q)
+                                    {
+                                        if(q == 0)
+                                            vown = &vertexowners[GET_VERTEX_IDX(collectedLines[n]->v1)];
+                                        else
+                                            vown = &vertexowners[GET_VERTEX_IDX(collectedLines[n]->v2)];
+
+                                        if(vown->numlines > 2)
+                                        {
+                                            for(o = 0; o <= vown->numlines && !found; ++o)
+                                            {
+                                                lcand = LINE_PTR(vown->linelist[o]);
+                                                if(lcand->frontsector && lcand->backsector &&
+                                                   lcand->frontsector == lcand->backsector &&
+                                                   lcand->frontsector == sec)
+                                                {
+                                                    // Have we already collected it?
+                                                    found = true;
+                                                    for(p = count-1; p >=0  && found; --p)
+                                                        if(lcand == collectedLines[p])
+                                                            found = false; // no good
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if(found)
+                                {
+                                    // Found a suitable one.
+                                    line = lcand;
+                                    owner = vown;
+                                    addToCollection = true;
+                                }
+                                else
+                                {
+                                    // We've found all the lines involved in
+                                    // this self-ref hack.
+                                    if(count >= 1)
+                                    {
+                                        // Promote all lines in the collection
+                                        // to self-referencing root lines.
+                                        while(count--)
+                                        {
+                                            LINE_INFO(collectedLines[count])->selfrefhackroot = true;
+                                            VERBOSE2(Con_Message("  L%i selfref root to S%i\n",
+                                                                 GET_LINE_IDX(collectedLines[count]),
+                                                                 GET_SECTOR_IDX(sec)));
+
+                                            // Use validcount to mark them as done.
+                                            collectedLines[count]->validcount = true;
+                                        }
+                                    }
+                                    // We are done with this group, don't collect.
+                                    addToCollection = false;
+
+                                    // We are done with this vertex for this root.
+                                    scanOwners = false;
+                                    count = 0;
                                 }
                             }
-                            ok = false;
-                            count = 0;
-
-                            if(numroots == 2)
-                                secdone = true; // We've found all the runs.
                         }
-                        else
+
+                        if(addToCollection)
                         {
-                            if(++count > maxRunLength)
+                            if(++count > maxNumLines)
                             {
                                 // Allocate some more memory.
-                                maxRunLength *= 2;
-                                if(maxRunLength < count)
-                                    maxRunLength = count;
+                                maxNumLines *= 2;
+                                if(maxNumLines < count)
+                                    maxNumLines = count;
 
-                                currentRun =
-                                    M_Realloc(currentRun, sizeof(line_t*) * maxRunLength);
+                                collectedLines =
+                                    M_Realloc(collectedLines, sizeof(line_t*) * maxNumLines);
                             }
 
-                            currentRun[count -1] = line;
+                            collectedLines[count-1] = line;
+
+                            if(LINE_INFO(line)->selfrefhackroot)
+                                goto pickNewCandiate;
                         }
 
-                        if(!secdone)
+                        if(scanOwners)
                         {
                             // Get the vertexowner info for the other vertex.
                             if(owner - vertexowners == GET_VERTEX_IDX(line->v1))
@@ -1318,7 +1386,7 @@ void R_RationalizeSectors(void)
                             else
                                 owner = &vertexowners[GET_VERTEX_IDX(line->v1)];
 
-                            j = -1; // Start from the begining.
+                            j = -1; // Start from the begining we this vertex.
                         }
                     }
                 }
@@ -1327,7 +1395,7 @@ void R_RationalizeSectors(void)
     }
 
     // Free temporary storage.
-    M_Free(currentRun);
+    M_Free(collectedLines);
 }
 
 /*
@@ -1447,7 +1515,7 @@ void R_FindLineNeighbors(sector_t *sector, line_t *line,
             continue;
 
         // Is this a valid neighbour?
-        if(LINE_INFO(other)->selfrefhackroot)
+        if(other->frontsector == other->backsector)
             continue;
 
         // Do we need to test the line alignment?
@@ -1516,18 +1584,13 @@ static void R_FindBackNeighbor(sector_t *backSector, line_t *self,
 }
 
 /*
- * Calculate accurate lengths for all lines.  Find line neighbours,
- * which will be used in the FakeRadio calculations.
+ * Calculate accurate lengths for all lines.
  */
 void R_InitLineInfo(void)
 {
     line_t *line;
-    sector_t *sector;
-    int     i, k, j, m;
+    int     i;
     lineinfo_t *info;
-    lineinfo_side_t *side;
-    vertexowner_t *owner;
-    vertex_t *vertices[2];
 
     // Allocate memory for the line info.
     lineinfo = Z_Calloc(sizeof(lineinfo_t) * numlines, PU_LEVEL, NULL);
@@ -1539,6 +1602,20 @@ void R_InitLineInfo(void)
         info->length = P_AccurateDistance(line->dx, line->dy);
         info->angle = bamsAtan2(-(line->dx >> 13), line->dy >> 13);
     }
+}
+
+/*
+ * Find line neighbours, which will be used in the FakeRadio calculations.
+ */
+void R_InitLineNeighbors(void)
+{
+    line_t *line, *other;
+    sector_t *sector;
+    int     i, k, j, m;
+    lineinfo_t *info;
+    lineinfo_side_t *side;
+    vertexowner_t *owner;
+    vertex_t *vertices[2];
 
     // Find neighbours. We'll do this sector by sector.
     for(k = 0; k < numsectors; k++)
@@ -1606,6 +1683,62 @@ void R_InitLineInfo(void)
                R_FindLineNeighbors(line->frontsector == sector?
                line->backsector : line->frontsector,
                line, info->backneighbor); */
+
+            // Attempt to find "pretend" neighbors for this line, if "real"
+            // ones have not been found.
+            // NOTE: selfrefhackroot lines don't have neighbors.
+            //       They can only be "pretend" neighbors.
+
+            // Pretend neighbors are selfrefhackroot lines but BOTH vertices
+            // are owned by this sector and ONE of the vertexes is owned by
+            // this line.
+            if((!side->neighbor[0] || !side->neighbor[1]) && !info->selfrefhackroot)
+            {
+                // Check all lines.
+                for(j = 0; j < numlines; ++j)
+                {
+                    other = LINE_PTR(j);
+                    if(LINE_INFO(other)->selfrefhackroot &&
+                        (other->v1 == line->v1 || other->v1 == line->v2 ||
+                         other->v2 == line->v1 || other->v2 == line->v2))
+                    {
+                        boolean ok, ok2;
+                        ok = false;
+                        owner = &vertexowners[GET_VERTEX_IDX(other->v1)];
+                        for(m = 0; m < owner->num && !ok; ++m)
+                            if(owner->list[m] == k) // k == sector id
+                                ok = true;
+
+                        if(ok)
+                        {
+                            ok2 = false;
+                            owner = &vertexowners[GET_VERTEX_IDX(other->v2)];
+                            for(m = 0; m < owner->num && !ok2; ++m)
+                                if(owner->list[m] == k) // k == sector id
+                                    ok2 = true;
+                        }
+
+                        if(ok && ok2)
+                        {
+#if _DEBUG
+                            VERBOSE2(Con_Message("L%i is a pretend neighbor to L%i\n",
+                                         GET_LINE_IDX(other), GET_LINE_IDX(line)));
+#endif
+
+                            if(other->v1 == vertices[0] || other->v2 == vertices[0])
+                            {
+                                side->neighbor[0] = other;
+                                side->pretendneighbor[0] = true;
+                            }
+                            else
+                            {
+                                side->neighbor[1] = other;
+                                side->pretendneighbor[1] = true;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1788,7 +1921,8 @@ void R_SetupLevel(char *level_id, int flags)
     P_InitSubsectorBlockMap();
 
     R_RationalizeSectors();
-    R_InitSectorShadows(); // Must follow R_RationalizeSectors.
+    R_InitLineNeighbors();  // Must follow R_RationalizeSectors.
+    R_InitSectorShadows();
 
     Con_Progress(10, 0);
 

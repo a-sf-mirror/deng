@@ -1141,6 +1141,12 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
 
             if(tex == 0) // Texture missing?
             {
+                texFlags = -1;
+#if 0
+                // This kind of missing texture replacement is far too
+                // simple. It can cause many more rendering glitches and
+                // some PWADs will crash here because of it.
+
                 // See if we can fix it.
                 if(side->midtexture == 0 && side->bottomtexture == 0 &&
                    side->toptexture == 0)
@@ -1164,8 +1170,10 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
                         tex = 0;
                     }
                 }
+#endif
             }
-            texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
+            else
+                texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
 
             // Is there a visible surface?
             if(texFlags != -1)
@@ -1217,6 +1225,8 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
 
             if(tex == 0) // Texture missing?
             {
+                texFlags = -1;
+#if 0
                 // See if we can fix it.
                 if(side->midtexture == 0 && side->bottomtexture == 0 &&
                    side->toptexture == 0)
@@ -1240,8 +1250,10 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
                         tex = 0;
                     }
                 }
+#endif
             }
-            texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
+            else
+                texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
 
             // Is there a visible surface?
             if(texFlags != -1)
