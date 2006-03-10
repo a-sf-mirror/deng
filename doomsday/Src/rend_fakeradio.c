@@ -401,6 +401,11 @@ int R_GetAlignedNeighbor(line_t **neighbor, const line_t *line, int side,
  * top and bottom edges.  Looks a bit complicated, but that's because
  * the algorithm must handle both the left and right directions, and
  * scans the top and bottom edges at the same time.
+ *
+ * TODO: DJS
+ *       We should stop the scan when a hack sector is encountered,
+ *       at which point we should implicitly set the corner to -1.
+ *       Clean this up... I've made a bit of mess.
  */
 void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
                              line_t *line, int side, edgespan_t spans[2],
@@ -420,10 +425,8 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
     int     scanSide;
     int     i, nIdx = (toLeft ? 0 : 1); // neighbour index
     float   gap[2];
-
     float   iFFloor, iFCeil;
     float   iBFloor, iBCeil;
-
     boolean     closed;
 
     edges[0].done = edges[1].done = false;
@@ -466,8 +469,9 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
             iBCeil  = SECT_CEIL(iter->backsector);
         }
 
-        // We'll do the top and bottom simultaneously.
-        for(i = 0; i < 2; i++)
+        // We'll do the bottom and top simultaneously.
+        for(i = 0; i < 2; ++i)
+        {
             if(!edges[i].done)
             {
                 edges[i].line = iter;
@@ -476,7 +480,7 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
 
                 if(iter != line)
                 {
-                    if(i==0)
+                    if(i==0)  // Bottom
                     {
                         closed = false;
                         if(side == 0 && iter->backsector != NULL)
@@ -499,7 +503,7 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
                             gap[i] = 0;
                         }
                     }
-                    else
+                    else  // Top
                     {
                         closed = false;
                         if(side == 0 && iter->backsector != NULL)
@@ -524,6 +528,7 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
                     }
                 }
             }
+        }
 
         scanSide = R_GetAlignedNeighbor(&iter, iter, scanSide, toLeft);
 
@@ -543,10 +548,15 @@ void Rend_RadioScanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
 
         if(edges[i].sideInfo->neighbor[nIdx])
         {
-            corner->corner =
-                Rend_RadioLineCorner(edges[i].line,
-                                     edges[i].sideInfo->neighbor[nIdx],
-                                     edges[i].sector);
+            if(edges[i].sideInfo->pretendneighbor[nIdx]) // It's a pretend neighbor.
+                corner->corner = 0;
+            else
+            {
+                corner->corner =
+                    Rend_RadioLineCorner(edges[i].line,
+                                         edges[i].sideInfo->neighbor[nIdx],
+                                         edges[i].sector);
+            }
         }
         else
         {
@@ -603,11 +613,13 @@ void Rend_RadioScanEdges(shadowcorner_t topCorners[2],
     // Find the sidecorners first: left and right neighbour.
     for(i = 0; i < 2; i++)
     {
-        if(sInfo->neighbor[i])
+        if(sInfo->neighbor[i] && !sInfo->pretendneighbor[i])
         {
             sideCorners[i].corner =
                 Rend_RadioLineCorner(line, sInfo->neighbor[i], frontSector);
         }
+        else
+            sideCorners[i].corner = 0;
 
         // Scan left/right (both top and bottom).
         Rend_RadioScanNeighbors(topCorners, bottomCorners, line, side, spans,
@@ -773,7 +785,6 @@ void Rend_RadioWallSection(const seg_t *seg, rendpoly_t *origQuad)
             else if(topCn[0].corner <= MIN_OPEN && topCn[1].corner <= MIN_OPEN)  // Both edges are open
             {
                 texture = LST_RADIO_OO;
-
                 if(topCn[0].proximity && topCn[1].proximity)
                 {
                     if(-topCn[0].pOffset >= 0 && -topCn[1].pOffset < 0)
@@ -1403,8 +1414,8 @@ void Rend_RadioSubsectorEdges(subsector_t *subsector)
             // Hack linedefs of any variety are not currently suitable for
             // fakeradio plane shadows (we need to rationalize and detect
             // these kind of tricks, set them as per-sector properties)
-            if(LINE_INFO(shadow->line)->selfrefhackroot)
-                continue;
+            //if(LINE_INFO(shadow->line)->selfrefhackroot)
+            //    continue;
 
             // What about the neighbours?
             for(i = 0; i < 2; i++)
