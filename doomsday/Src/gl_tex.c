@@ -1581,7 +1581,6 @@ unsigned int GL_PrepareFlat2(int idx, boolean translate)
  */
 DGLuint GL_PrepareDDTexture(ddtexture_t which)
 {
-    image_t image;
     static const char *ddTexNames[NUM_DD_TEXTURES] = {
         "Missing",
         "BBox"
