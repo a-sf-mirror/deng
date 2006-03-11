@@ -722,16 +722,16 @@ int Rend_MidTexturePos(float *top, float *bottom, float *texoffy, float tcyoff,
 }
 
 /*
- * Called by Rend_RenderWallSeg to render ALL solid wall sections
- * (ie everything other than twosided, masked/blended midtextures).
+ * Called by Rend_RenderWallSeg to render ALL wall sections.
  *
  * TODO: Combine all the boolean (hint) parameters into a single flags var.
  */
-void Rend_RenderSolidWallSection(rendpoly_t *quad, const seg_t *seg, int texture,
-                                 sector_t *frontsec, int mode,
-                                 const byte *topColor, const byte *bottomColor,
-                                 boolean blend, boolean shadow, boolean shiny, boolean glow)
+void Rend_RenderWallSection(rendpoly_t *quad, const seg_t *seg, int texture,
+                            sector_t *frontsec, int mode,
+                            const byte *topColor, const byte *bottomColor, byte alpha,
+                            boolean blend, boolean shadow, boolean shiny, boolean glow)
 {
+    int  i;
     int  segIndex = GET_SEG_IDX(seg);
 
     if(glow)        // Make it fullbright?
@@ -743,6 +743,10 @@ void Rend_RenderSolidWallSection(rendpoly_t *quad, const seg_t *seg, int texture
 
     // Surface color/light.
     RL_VertexColors(quad, Rend_SectorLight(frontsec), topColor);
+
+    // Alpha?
+    for(i = 0; i < 2; i++)
+        quad->vertices[i].color.rgba[3] = alpha;
 
     // Bottom color (if different from top)?
     if(bottomColor != NULL)
@@ -952,12 +956,12 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
             if(ldef->flags & ML_DONTPEGBOTTOM)
                 quad.texoffy += texh - fsh;
 
-            Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_MIDDLE,
-                           /*Color*/    colorPtr, color2Ptr,
-                           /*Blend?*/   (tex != -1),
-                           /*Shadow?*/  !(flags & RWSF_NO_RADIO),
-                           /*Shiny?*/   (tex != -1),
-                           /*Glow?*/    (texFlags & TXF_GLOW));
+            Rend_RenderWallSection(&quad, seg, tex, frontsec, SEG_MIDDLE,
+                      /*Color*/    colorPtr, color2Ptr, 255,
+                      /*Blend?*/   (tex != -1),
+                      /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                      /*Shiny?*/   (tex != -1),
+                      /*Glow?*/    (texFlags & TXF_GLOW));
         }
 
         // This is guaranteed to be a solid segment.
@@ -968,9 +972,8 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
     quad.type = RP_QUAD;
 
     // If there is a back sector we may need upper and lower walls.
-    if(backsec)                 // A twosided seg?
+    if(backsec) // A twosided seg
     {
-        int sectorLight = Rend_SectorLight(frontsec);
         bsh = bceil - bfloor;
 
         // Determine which parts of the segment are visible.
@@ -979,11 +982,6 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
         botvis = (bfloor > ffloor);
 
         // Needs skyfix?
-        /*if(seg->frontsector->ceilingpic == skyflatnum &&
-           fceil + frontsec->skyfix > bceil &&  side->toptexture == 0 &&
-           !(backsec->ceilingpic == skyflatnum && bsh > 0) &&
-            ((botvis && (side->midtexture || side->midtexture == -1) && side->bottomtexture != 0) ||
-            (side->bottomtexture || side->bottomtexture == -1)))*/
         if(bsh <= 0 && ((frontsec->floorpic == skyflatnum && backsec->floorpic == skyflatnum) ||
                      (frontsec->ceilingpic == skyflatnum && backsec->ceilingpic == skyflatnum)))
         {
@@ -1009,122 +1007,115 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
                     rfceil = finfo->visceil,
                    rffloor = finfo->visfloor;
             float   gaptop, gapbottom;
+            byte    alpha = side->midrgba[3];
 
-            // Fades?
-            if(side->flags & SDF_BLENDMIDTOTOP)
+            tex = side->midtexture;
+            isFlat = false;
+            texFlags = Rend_PrepareTextureForPoly(&quad, tex, isFlat);
+
+            // Is there a visible surface?
+            if(texFlags != -1)
             {
-                RL_VertexColors(&quad, sectorLight, topColor);
-                for(i=0; i < 2; i++)
-                    memcpy(quad.bottomcolor[i].rgba, midColor, 3);
-            }
-            else if(side->flags & SDF_BLENDMIDTOBOTTOM)
-            {
-                RL_VertexColors(&quad, sectorLight, midColor);
-                for(i=0; i < 2; i++)
-                    memcpy(quad.bottomcolor[i].rgba, bottomColor, 3);
-            }
-            else
-                RL_VertexColors(&quad, sectorLight, midColor);
-
-            // Mid textures have alpha
-            for(i = 0; i < 2; i++)
-                quad.vertices[i].color.rgba[3] = side->midrgba[3];
-
-            // Blendmode too
-            if(sid->blendmode == BM_NORMAL && noSpriteTrans)
-                quad.blendmode = BM_ZEROALPHA; // "no translucency" mode
-            else
-                quad.blendmode = sid->blendmode;
-
-            quad.top = gaptop = MIN_OF(rbceil, rfceil);
-            quad.bottom = gapbottom = MAX_OF(rbfloor, rffloor);
-
-            Rend_PrepareTextureForPoly(&quad, side->midtexture, false);
-
-            if(topvis && side->toptexture == 0)
-            {
-                mceil = quad.top;
-                // Extend to cover missing top texture.
-                quad.top = MAX_OF(bceil, fceil);
-                if(texh > quad.top - quad.bottom)
+                // Select the correct colors for this surface.
+                if(side->flags & SDF_BLENDMIDTOTOP)
                 {
-                    mid_covers_top = true;  // At least partially...
-                    tcyoff -= quad.top - mceil;
+                    colorPtr = topColor;
+                    color2Ptr = midColor;
                 }
-            }
-
-            if(Rend_MidTexturePos
-               (&quad.top, &quad.bottom, &quad.texoffy, tcyoff,
-                0 != (ldef->flags & ML_DONTPEGBOTTOM)))
-            {
-                // If alpha, masked or blended we must render as a vissprite
-                if(side->midrgba[3] < 255 || texmask || side->blendmode > 0)
-                    quad.flags = RPF_MASKED;
-                else
-                    quad.flags = 0;
-
-                // What about glow?
-                if(side->midtexture != -1)
-                    if(R_TextureFlags(side->midtexture) & TXF_GLOW)
-                        quad.flags |= RPF_GLOW;
-
-                // Dynamic lights.
-                quad.lights = DL_GetSegLightLinks(segindex, SEG_MIDDLE);
-
-                if(side->midtexture != -1)
-                    Rend_PolyTextureBlend(side->midtexture, &quad);
-
-                SB_RendPoly(&quad, false, frontsec,
-                            seginfo[segindex].illum[1],
-                            &seginfo[segindex].tracker[1], segindex);
-                RL_AddPoly(&quad);
-
-                // Should a solid segment be added here?
-                if(!texmask && side->midrgba[3] == 255 && side->blendmode == 0
-                   && quad.top >= gaptop && quad.bottom <= gapbottom)
+                else if(side->flags & SDF_BLENDMIDTOBOTTOM)
                 {
-                    // We KNOW we could make this a solid seg.
-                    solidSeg = true;
+                    colorPtr = midColor;
+                    color2Ptr = bottomColor;
+                }
+                else
+                {
+                    colorPtr = midColor;
+                    color2Ptr = NULL;
+                }
 
-                    // Can the player walk through this mid texture?
-                    if(!(ldef->flags & ML_BLOCKING))
+                // Calculate texture coordinates.
+                quad.top = gaptop = MIN_OF(rbceil, rfceil);
+                quad.bottom = gapbottom = MAX_OF(rbfloor, rffloor);
+
+                if(topvis && side->toptexture == 0)
+                {
+                    mceil = quad.top;
+                    // Extend to cover missing top texture.
+                    quad.top = MAX_OF(bceil, fceil);
+                    if(texh > quad.top - quad.bottom)
                     {
-                        mobj_t* mo = viewplayer->mo;
-                        // If the player is close enough we should NOT add a solid seg
-                        // otherwise they'd get HOM when they are directly on top of the
-                        // line (eg passing through an opaque waterfall).
-                        if(mo->subsector->sector == side->sector)
+                        mid_covers_top = true;  // At least partially...
+                        tcyoff -= quad.top - mceil;
+                    }
+                }
+
+                if(Rend_MidTexturePos
+                   (&quad.top, &quad.bottom, &quad.texoffy, tcyoff,
+                    0 != (ldef->flags & ML_DONTPEGBOTTOM)))
+                {
+                    // Should a solid segment be added here?
+                    if(quad.top >= gaptop && quad.bottom <= gapbottom)
+                    {
+                        if(!texmask && alpha == 255 && side->blendmode == 0)
+                            solidSeg = true; // We could make this a solid seg.
+
+                        // Can the player walk through this surface?
+                        if(!(ldef->flags & ML_BLOCKING) ||
+                           !(viewplayer->flags & DDPF_NOCLIP))
                         {
-                            // Calculate 2D distance to line.
-                            float a[2], b[2], c[2];
-                            float distance;
+                            mobj_t* mo = viewplayer->mo;
+                            // If the player is close enough we should NOT add a solid seg
+                            // otherwise they'd get HOM when they are directly on top of the
+                            // line (eg passing through an opaque waterfall).
+                            if(mo->subsector->sector == side->sector)
+                            {
+                                // Calculate 2D distance to line.
+                                float a[2], b[2], c[2];
+                                float distance;
 
-                            a[VX] = FIX2FLT(ldef->v1->x);
-                            a[VY] = FIX2FLT(ldef->v1->y);
+                                a[VX] = FIX2FLT(ldef->v1->x);
+                                a[VY] = FIX2FLT(ldef->v1->y);
 
-                            b[VX] = FIX2FLT(ldef->v2->x);
-                            b[VY] = FIX2FLT(ldef->v2->y);
+                                b[VX] = FIX2FLT(ldef->v2->x);
+                                b[VY] = FIX2FLT(ldef->v2->y);
 
-                            c[VX] = FIX2FLT(mo->pos[VX]);
-                            c[VY] = FIX2FLT(mo->pos[VY]);
-                            distance = M_PointLineDistance(a, b, c);
+                                c[VX] = FIX2FLT(mo->pos[VX]);
+                                c[VY] = FIX2FLT(mo->pos[VY]);
+                                distance = M_PointLineDistance(a, b, c);
 
-                            if(distance < (FIX2FLT(mo->radius)*.8f))
-                                solidSeg = false;
+                                if(distance < (FIX2FLT(mo->radius)*.8f))
+                                {
+                                    solidSeg = false;
+                                    // Fade it out the closer the viewplayer gets.
+                                    alpha = ((float)alpha / (FIX2FLT(mo->radius)*.8f));
+                                    alpha *= distance;
+
+                                    // Clamp it.
+                                    if(alpha < 0)
+                                        alpha = 0;
+                                }
+                            }
                         }
                     }
-                }
 
-                if(solidSeg)
-                {
-                    if(!texmask)
-                    {
-                        if(!(flags & RWSF_NO_RADIO))
-                            Rend_RadioWallSection(seg, &quad);
+                    // Blendmode
+                    if(sid->blendmode == BM_NORMAL && noSpriteTrans)
+                        quad.blendmode = BM_ZEROALPHA; // "no translucency" mode
+                    else
+                        quad.blendmode = sid->blendmode;
 
-                        if(side->midtexture != -1)
-                            Rend_AddShinyWallSeg(side->midtexture, &quad);
-                    }
+                    // If alpha, masked or blended we must render as a vissprite
+                    if(alpha < 255 || texmask || side->blendmode > 0)
+                        quad.flags = RPF_MASKED;
+                    else
+                        quad.flags = 0;
+
+                    Rend_RenderWallSection(&quad, seg, tex, frontsec, SEG_MIDDLE,
+                              /*Color*/    colorPtr, color2Ptr, alpha,
+                              /*Blend?*/   (tex != -1),
+                              /*Shadow?*/  (solidSeg && !(flags & RWSF_NO_RADIO) && !texmask),
+                              /*Shiny?*/   (solidSeg && tex != -1 && !texmask),
+                              /*Glow?*/    (texFlags & TXF_GLOW));
                 }
             }
         }
@@ -1202,12 +1193,12 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
                 if(quad.bottom < ffloor)
                     quad.bottom = ffloor;
 
-                Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_TOP,
-                               /*Color*/    colorPtr, color2Ptr,
-                               /*Blend?*/   (tex != -1),
-                               /*Shadow?*/  !(flags & RWSF_NO_RADIO),
-                               /*Shiny?*/   (tex != -1),
-                               /*Glow?*/    (texFlags & TXF_GLOW));
+                Rend_RenderWallSection(&quad, seg, tex, frontsec, SEG_TOP,
+                          /*Color*/    colorPtr, color2Ptr, 255,
+                          /*Blend?*/   (tex != -1),
+                          /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                          /*Shiny?*/   (tex != -1),
+                          /*Glow?*/    (texFlags & TXF_GLOW));
             }
         }
 
@@ -1286,12 +1277,12 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
                 }
                 quad.bottom = ffloor;
 
-                Rend_RenderSolidWallSection(&quad, seg, tex, frontsec, SEG_BOTTOM,
-                               /*Color*/    colorPtr, color2Ptr,
-                               /*Blend?*/   (tex != -1),
-                               /*Shadow?*/  !(flags & RWSF_NO_RADIO),
-                               /*Shiny?*/   (tex != -1),
-                               /*Glow?*/    (texFlags & TXF_GLOW));
+                Rend_RenderWallSection(&quad, seg, tex, frontsec, SEG_BOTTOM,
+                          /*Color*/    colorPtr, color2Ptr, 255,
+                          /*Blend?*/   (tex != -1),
+                          /*Shadow?*/  !(flags & RWSF_NO_RADIO),
+                          /*Shiny?*/   (tex != -1),
+                          /*Glow?*/    (texFlags & TXF_GLOW));
             }
         }
     }
@@ -1324,15 +1315,6 @@ void Rend_RenderWallSeg(const seg_t *seg, sector_t *frontsec, int flags)
             // A zero height back segment
             solidSeg = true;
         }
-        /*else if(((bceil <= ffloor || bfloor >= fceil) &&
-           !(topvis && side->toptexture == 0 && side->midtexture != 0) &&
-           !(botvis && side->bottomtexture == 0 && side->midtexture != 0)) ||
-           (bsh <= 0 && topvis && (side->toptexture || side->toptexture == -1 || backsecSkyFix)
-            && botvis && (side->bottomtexture || side->bottomtexture == -1)))
-        {
-            // The backsector has no space. This is a solid segment.
-            C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
-        }*/
 
         if(solidSeg)
             C_AddViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]);
