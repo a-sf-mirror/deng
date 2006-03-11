@@ -29,6 +29,7 @@
 
 #include "de_base.h"
 #include "de_play.h"
+#include "de_refresh.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -378,7 +379,7 @@ int P_ToIndex(const void* ptr)
     {
         return -1;
     }
-    
+
     switch(DMU_GetType(ptr))
     {
     case DMU_VERTEX:
@@ -1111,7 +1112,10 @@ static int SetProperty(void* ptr, void* context)
             Con_Error("SetProperty: Property %s is not writable in DMU_SECTOR.\n",
                       DMU_Str(args->prop));
         }
-        // TODO: Notify the relevant subsystems.
+
+        // TODO: Notify relevant subsystems of any changes.
+        R_UpdateSector(p, false);
+
         break;
         }
 
@@ -1131,7 +1135,7 @@ static int SetProperty(void* ptr, void* context)
                           args->prop, p->numsegs);
             }
         }
-        
+
         switch(args->prop)
         {
         case DMU_START_SPOT_X:
@@ -1893,7 +1897,7 @@ static int GetProperty(void* ptr, void* context)
                           args->prop, p->numsegs);
             }
         }
-        
+
         switch(args->prop)
         {
         case DMU_START_SPOT:

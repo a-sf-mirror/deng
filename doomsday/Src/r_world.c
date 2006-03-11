@@ -118,8 +118,7 @@ boolean R_IsValidLink(sector_t *startsec, sector_t *destlink, boolean is_floor)
 }
 
 /*
- * Called every frame. Sector heights may change at any time
- * without notice.
+ * Called whenever the sector changes.
  *
  * This routine handles plane hacks where all of the sector's
  * lines are twosided and missing upper or lower textures.
@@ -1825,6 +1824,11 @@ void R_SetupLevel(char *level_id, int flags)
         // Recalculate the light range mod matrix.
         Rend_CalcLightRangeModMatrix(NULL);
 
+        // Update all sectors. Set intial values of various tracked
+        // and interpolated properties (lighting, smoothed planes etc).
+        for(i = 0; i < numsectors; ++i)
+            R_UpdateSector(SECTOR_PTR(i), true);
+
         // Run any commands specified in Map Info.
         if(mapinfo && mapinfo->execute)
             Con_Execute(CMDS_DED, mapinfo->execute, true);
@@ -2045,67 +2049,79 @@ sector_t *R_GetLinkedSector(sector_t *startsec, boolean getfloor)
     }
 }
 
-/*
- * All links will be updated every frame (sectorheights may change at
- * any time without notice).
- */
-void R_UpdatePlanes(void)
+void R_UpdateSector(sector_t* sec, boolean forceUpdate)
 {
-    int     i, j;
-    int setFloorGlow, setCeilingGlow;
-    sector_t *sec;
-    sectorinfo_t *sin;
+    sectorinfo_t *sin = SECT_INFO(sec);
 
-    // Clear all non-permanent sector links.
-    for(i = 0, sin = secinfo; i < numsectors; i++, sin++)
+    // Check if there are any lightlevel or color changes.
+    if(forceUpdate ||
+       (sec->lightlevel != sin->oldlightlevel ||
+        sec->rgb[0] != sin->oldrgb[0] ||
+        sec->rgb[1] != sin->oldrgb[1] ||
+        sec->rgb[2] != sin->oldrgb[2]))
     {
-        if(sin->permanentlink)
-            continue;
+        sin->flags |= SIF_LIGHT_CHANGED;
+        sin->oldlightlevel = sec->lightlevel;
+        memcpy(sin->oldrgb, sec->rgb, 3);
+
+        LG_SectorChanged(sec, sin);
+    }
+    else
+    {
+        sin->flags &= ~SIF_LIGHT_CHANGED;
+    }
+
+    // Any changes to surface colours?
+    // TODO: when surface colours are intergrated with the
+    // bias lighting model we will need to recalculate the
+    // vertex colours when they are changed.
+    if(forceUpdate ||
+       (sec->floorrgb[0] != sin->oldfloorrgb[0] ||
+        sec->floorrgb[1] != sin->oldfloorrgb[1] ||
+        sec->floorrgb[2] != sin->oldfloorrgb[2] ||
+        sec->ceilingrgb[0] != sin->oldceilingrgb[0] ||
+        sec->ceilingrgb[1] != sin->oldceilingrgb[1] ||
+        sec->ceilingrgb[2] != sin->oldceilingrgb[2]))
+    {
+        sin->flags |= SIF_PLANE_COLOR_CHANGED;
+        memcpy(sin->oldfloorrgb, sec->floorrgb, 3);
+        memcpy(sin->oldceilingrgb, sec->ceilingrgb, 3);
+    }
+    else
+    {
+        sin->flags &= ~SIF_PLANE_COLOR_CHANGED;
+    }
+
+    // Geometry change?
+    if(forceUpdate || sin->oldfloor[1] != sec->floorheight)
+    {
+        P_FloorChanged(sec);
+    }
+
+    // Geometry change?
+    if(forceUpdate || sin->oldceil[1] != sec->ceilingheight)
+    {
+        P_CeilingChanged(sec);
+    }
+
+    if(!sin->permanentlink)
+    {
+        // Assign new links
         sin->linkedfloor = sin->linkedceil = NULL;
+        R_SetSectorLinks(sec);
+    }
 
-        // Check if there are any lightlevel or color changes.
-        sec = SECTOR_PTR(i);
-        if(sec->lightlevel != sin->oldlightlevel ||
-           sec->rgb[0] != sin->oldrgb[0] ||
-           sec->rgb[1] != sin->oldrgb[1] ||
-           sec->rgb[2] != sin->oldrgb[2])
-        {
-            sin->flags |= SIF_LIGHT_CHANGED;
-            sin->oldlightlevel = sec->lightlevel;
-            memcpy(sin->oldrgb, sec->rgb, 3);
-
-            LG_SectorChanged(sec, sin);
-        }
-        else
-        {
-            sin->flags &= ~SIF_LIGHT_CHANGED;
-        }
-
-        // Any changes to surface colours?
-        // TODO: when surface colours are intergrated with the
-        // bias lighting model we will need to recalculate the
-        // vertex colours when they are changed.
-        if(sec->floorrgb[0] != sin->oldfloorrgb[0] ||
-           sec->floorrgb[1] != sin->oldfloorrgb[1] ||
-           sec->floorrgb[2] != sin->oldfloorrgb[2] ||
-           sec->ceilingrgb[0] != sin->oldceilingrgb[0] ||
-           sec->ceilingrgb[1] != sin->oldceilingrgb[1] ||
-           sec->ceilingrgb[2] != sin->oldceilingrgb[2] )
-        {
-            sin->flags |= SIF_PLANE_COLOR_CHANGED;
-            memcpy(sin->oldfloorrgb, sec->floorrgb, 3);
-            memcpy(sin->oldceilingrgb, sec->ceilingrgb, 3);
-        }
-        else
-        {
-            sin->flags &= ~SIF_PLANE_COLOR_CHANGED;
-        }
+    {
+        // Update glowing status
+        // FIXME
+        int j;
+        int setFloorGlow, setCeilingGlow;
 
         // Any change to the floor texture or glow properties?
         // TODO: Implement Decoration{ Glow{}} definitions.
         setFloorGlow = 0;
         // The order of these tests is important.
-        if(sec->floorpic != sin->oldfloorpic)
+        if(forceUpdate || (sec->floorpic != sin->oldfloorpic))
         {
             // Check if the new texture is declared as glowing.
             // NOTE: Currently, we always discard the glow settings of the
@@ -2177,7 +2193,7 @@ void R_UpdatePlanes(void)
 
         // Same as above but for ceilings
         setCeilingGlow = 0;
-        if(sec->ceilingpic != sin->oldceilingpic)
+        if(forceUpdate || (sec->ceilingpic != sin->oldceilingpic))
         {
             if(R_FlatFlags(sec->ceilingpic) & TXF_GLOW)
             {
@@ -2243,36 +2259,15 @@ void R_UpdatePlanes(void)
             }
         }
     }
+}
 
-    // Assign new links.
-    for(i = 0, sin = secinfo; i < numsectors; i++, sin++)
-    {
-        sec = SECTOR_PTR(i);
-        R_SetSectorLinks(sec);
-        // Floor height.
-        if(!sin->linkedfloor)
-        {
-            sin->visfloor = FIX2FLT(sec->floorheight) + sin->visflooroffset;
-        }
-        else
-        {
-            sin->visfloor =
-                FIX2FLT(R_GetLinkedSector(sin->linkedfloor, true)->
-                        floorheight);
-        }
-
-        // Ceiling height.
-        if(!sin->linkedceil)
-        {
-            sin->visceil = FIX2FLT(sec->ceilingheight) + sin->visceiloffset;
-        }
-        else
-        {
-            sin->visceil =
-                FIX2FLT(R_GetLinkedSector(sin->linkedceil, false)->
-                        ceilingheight);
-        }
-    }
+/*
+ * All links will be updated every frame (sectorheights may change at
+ * any time without notice).
+ */
+void R_UpdatePlanes(void)
+{
+    // Nothing to do.
 }
 
 /*

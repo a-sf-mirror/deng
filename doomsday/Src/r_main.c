@@ -55,6 +55,8 @@ typedef struct viewer_s {
 
 void    R_InitSkyMap(void);
 
+void    Rend_RetrieveLightSample(void);
+
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
@@ -347,18 +349,10 @@ void R_NewSharpWorld(void)
     R_CheckViewerLimits(lastSharpView, &sharpView);
 
     // $smoothplane: Roll the height tracker buffers.
-    for(i = 0; i < numsectors; i++)
+    for(i = 0; i < numsectors; ++i)
     {
         sector = SECTOR_PTR(i);
         secinfo[i].oldfloor[0] = secinfo[i].oldfloor[1];
-
-        // Geometry change?
-        // FIXME: There has to be better place to do this...
-        if(secinfo[i].oldfloor[1] != sector->floorheight)
-        {
-            P_FloorChanged(sector);
-        }
-
         secinfo[i].oldfloor[1] = sector->floorheight;
 
         if(abs(secinfo[i].oldfloor[0] - secinfo[i].oldfloor[1]) >=
@@ -369,14 +363,6 @@ void R_NewSharpWorld(void)
         }
 
         secinfo[i].oldceil[0] = secinfo[i].oldceil[1];
-
-        // Geometry change?
-        // FIXME: There has to be better place to do this...
-        if(secinfo[i].oldceil[1] != sector->ceilingheight)
-        {
-            P_CeilingChanged(sector);
-        }
-
         secinfo[i].oldceil[1] = sector->ceilingheight;
 
         if(abs(secinfo[i].oldceil[0] - secinfo[i].oldceil[1]) >=
@@ -389,15 +375,92 @@ void R_NewSharpWorld(void)
 }
 
 /*
+ * Prepare for rendering view(s) of the world
+ * (Handles smooth plane movement).
+ */
+void R_SetupWorldFrame(void)
+{
+    int i;
+    sector_t *sector;
+    sectorinfo_t *sin;
+
+    // Calculate the light range to be used for each player
+    Rend_RetrieveLightSample();
+
+    R_ClearSectorFlags();
+
+    if(resetNextViewer)
+    {
+        // $smoothplane: Reset the plane height trackers.
+        for(i = 0; i < numsectors; i++)
+        {
+            secinfo[i].visceiloffset = secinfo[i].visflooroffset = 0;
+
+            // Reset the old Z values.
+            sector = SECTOR_PTR(i);
+            secinfo[i].oldfloor[0] = secinfo[i].oldfloor[1] =
+                sector->floorheight;
+            secinfo[i].oldceil[0] = secinfo[i].oldceil[1] =
+                sector->ceilingheight;
+        }
+    }
+    // While the game is paused there is no need to calculate any
+    // visual plane offsets $smoothplane.
+    else if(!clientPaused)
+    {
+        // $smoothplane: Set the visible offsets.
+        for(i = 0; i < numsectors; ++i)
+        {
+            sector = SECTOR_PTR(i);
+            sin = SECT_INFO(sector);
+
+            sin->visflooroffset =
+                FIX2FLT(sin->oldfloor[0] * (1 - frameTimePos) +
+                        sector->floorheight * frameTimePos -
+                        sector->floorheight);
+
+            sin->visceiloffset =
+                FIX2FLT(sin->oldceil[0] * (1 - frameTimePos) +
+                        sector->ceilingheight * frameTimePos -
+                        sector->ceilingheight);
+
+            // Floor height.
+            if(!sin->linkedfloor)
+            {
+                sin->visfloor =
+                    FIX2FLT(sector->floorheight) + sin->visflooroffset;
+            }
+            else
+            {
+                sin->visfloor =
+                    FIX2FLT(R_GetLinkedSector(sin->linkedfloor, true)->
+                            floorheight);
+            }
+
+            // Ceiling height.
+            if(!sin->linkedceil)
+            {
+                sin->visceil =
+                    FIX2FLT(sector->ceilingheight) + sin->visceiloffset;
+            }
+            else
+            {
+                sin->visceil =
+                    FIX2FLT(R_GetLinkedSector(sin->linkedceil, false)->
+                            ceilingheight);
+            }
+        }
+    }
+}
+
+/*
  * Prepare rendering the view of the given player.
- * Also handles smoothing of camera and plane movement.
  */
 void R_SetupFrame(ddplayer_t *player)
 {
-    int     tableAngle, i;
+    int     tableAngle;
     float   yawRad, pitchRad;
     viewer_t sharpView, smoothView;
-    sector_t *sector;
 
     // Reset the DGL triangle counter.
     gl.GetInteger(DGL_POLY_COUNT);
@@ -416,19 +479,6 @@ void R_SetupFrame(ddplayer_t *player)
 
         memcpy(&lastSharpView[0], &sharpView, sizeof(sharpView));
         memcpy(&lastSharpView[1], &sharpView, sizeof(sharpView));
-
-        // $smoothplane: Reset the plane height trackers.
-        for(i = 0; i < numsectors; i++)
-        {
-            secinfo[i].visceiloffset = secinfo[i].visflooroffset = 0;
-
-            // Reset the old Z values.
-            sector = SECTOR_PTR(i);
-            secinfo[i].oldfloor[0] = secinfo[i].oldfloor[1] =
-                sector->floorheight;
-            secinfo[i].oldceil[0] = secinfo[i].oldceil[1] =
-                sector->ceilingheight;
-        }
     }
     // While the game is paused there is no need to calculate any
     // time offsets or interpolated camera positions.
@@ -465,22 +515,6 @@ void R_SetupFrame(ddplayer_t *player)
             oldtime = nowTime;
         }
 #endif
-
-        // $smoothplane: Set the visible offsets.
-        for(i = 0; i < numsectors; i++)
-        {
-            sector = SECTOR_PTR(i);
-
-            secinfo[i].visflooroffset =
-                FIX2FLT(secinfo[i].oldfloor[0] * (1 - frameTimePos) +
-                        sector->floorheight * frameTimePos -
-                        sector->floorheight);
-
-            secinfo[i].visceiloffset =
-                FIX2FLT(secinfo[i].oldceil[0] * (1 - frameTimePos) +
-                        sector->ceilingheight * frameTimePos -
-                        sector->ceilingheight);
-        }
     }
 
     if(showFrameTimePos)
@@ -552,6 +586,7 @@ void R_RenderPlayerView(ddplayer_t *player)
     }
 
     // Setup for rendering the frame.
+    R_SetupWorldFrame();
     R_SetupFrame(player);
     R_ClearSprites();
     R_ProjectPlayerSprites();   // Only if 3D models exists for them.

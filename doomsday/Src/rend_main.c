@@ -1971,9 +1971,6 @@ void Rend_RenderMap(void)
     // Set to true if dynlights are inited for this frame.
     dlInited = false;
 
-    // Calculate the light range to be used for each player
-    Rend_RetrieveLightSample();
-
     // This is all the clearing we'll do.
     if(P_IsInVoid(viewplayer))
         gl.Clear(DGL_COLOR_BUFFER_BIT | DGL_DEPTH_BUFFER_BIT);
@@ -1986,10 +1983,8 @@ void Rend_RenderMap(void)
     if(!freezeRLs)
     {
         // Prepare for rendering.
-        R_UpdatePlanes();       // Update all planes.
         RL_ClearLists();        // Clear the lists for new quads.
         C_ClearRanges();        // Clear the clipper.
-        R_ClearSectorFlags();
         DL_ClearForFrame();     // Zeroes the links.
         LG_Update();
         SB_BeginFrame();
