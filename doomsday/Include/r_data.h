@@ -416,6 +416,7 @@ extern int      r_precache_sprites, r_precache_skins;
 void            R_InitData(void);
 void            R_UpdateData(void);
 void            R_ShutdownData(void);
+void            R_UpdateSector(sector_t* sec, boolean forceUpdate);
 void            R_PrecacheLevel(void);
 void            R_InitAnimGroup(ded_group_t * def);
 void            R_ResetAnimGroups(void);
