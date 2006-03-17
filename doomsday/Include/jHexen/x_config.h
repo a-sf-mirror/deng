@@ -20,8 +20,8 @@ enum {
 typedef struct {
     float           playerMoveSpeed;
     int             chooseAndUse;
-    int             lookSpeed;
-    int             turnSpeed;
+    float           lookSpeed;
+    float           turnSpeed;
     int             quakeFly;
     byte            fastMonsters;
     int             usemlook, usejlook;

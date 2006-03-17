@@ -52,8 +52,8 @@ typedef struct jdoom_config_s {
     int             joyaxis[8];
     int             jlookDeltaMode;
     int             lookSpring;
-    int             lookSpeed;
-    int             turnSpeed;
+    float           lookSpeed;
+    float           turnSpeed;
     byte            povLookAround;
     int             jumpEnabled;
     float           jumpPower;
