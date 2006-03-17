@@ -220,6 +220,6 @@ game_export_t *GetGameAPI(game_import_t * imports)
     gx.SetupForSectors = P_SetupForSectors;
 
     gx.HandleMapDataProperty = P_HandleMapDataProperty;
-
+    gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
     return &gx;
 }
