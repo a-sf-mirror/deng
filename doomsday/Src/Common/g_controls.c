@@ -181,6 +181,8 @@ boolean usearti = true;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static int     joymove[NUM_JOYSTICK_AXES];
+
 // CVars for control/input
 cvar_t  controlCVars[] = {
 // Input (settings)
@@ -213,7 +215,7 @@ cvar_t  controlCVars[] = {
     {"ctl-aim-noauto", 0, CVT_INT, &cfg.noAutoAim, 0, 1,
         "1=Autoaiming disabled."},
 
-    {"ctl-turn-speed", 0, CVT_INT, &cfg.turnSpeed, 1, 5,
+    {"ctl-turn-speed", 0, CVT_FLOAT, &cfg.turnSpeed, 1, 5,
         "The speed of turning left/right."},
     {"ctl-run", 0, CVT_INT, &cfg.alwaysRun, 0, 1,
         "1=Always run."},
@@ -225,7 +227,7 @@ cvar_t  controlCVars[] = {
         "1=Use items immediately from the inventory."},
 #endif
 
-    {"ctl-look-speed", 0, CVT_INT, &cfg.lookSpeed, 1, 5,
+    {"ctl-look-speed", 0, CVT_FLOAT, &cfg.lookSpeed, 1, 5,
         "The speed of looking up/down."},
     {"ctl-look-spring", 0, CVT_INT, &cfg.lookSpring, 0, 1,
         "1=Lookspring active."},
@@ -367,7 +369,7 @@ void G_AdjustAngle(player_t *player, int turn, float elapsed)
     delta = (fixed_t) (turn << FRACBITS);
 
     if(elapsed > 0)
-        delta *= cfg.turnSpeed * elapsed * 35;
+        delta = FixedMul(delta, FLT2FIX(cfg.turnSpeed * elapsed * 35.f));
 
     player->plr->clAngle += delta;
 }
@@ -536,6 +538,7 @@ static void G_UpdateCmdControls(ticcmd_t *cmd, float elapsedTime)
     int     turn = 0;
     player_t *cplr = &players[consoleplayer];
     int     joyturn = 0, joystrafe = 0, joyfwd = 0, joylook = 0;
+    int    *axes[5] = { 0, &joyfwd, &joyturn, &joystrafe, &joylook };
     int     look = 0, lspeed = 0;
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
     int     flyheight = 0;
@@ -545,6 +548,11 @@ static void G_UpdateCmdControls(ticcmd_t *cmd, float elapsedTime)
 #else
     int     pClass = 0;
 #endif
+
+    // Check the joystick axes.
+    for(i = 0; i < 8; i++)
+        if(axes[cfg.joyaxis[i]])
+            *axes[cfg.joyaxis[i]] += joymove[i];
 
     strafe = actions[A_STRAFE].on;
     speed = actions[A_SPEED].on;
@@ -1085,9 +1093,17 @@ boolean G_AdjustControlState(event_t* ev)
         return false;
 
     case ev_joystick:           // Joystick movement
+        joymove[JA_X] = ev->data1;
+        joymove[JA_Y] = ev->data2;
+        joymove[JA_Z] = ev->data3;
+        joymove[JA_RX] = ev->data4;
+        joymove[JA_RY] = ev->data5;
+        joymove[JA_RZ] = ev->data6;
         return true;            // eat events
 
     case ev_joyslider:          // Joystick slider movement
+        joymove[JA_SLIDER0] = ev->data1;
+        joymove[JA_SLIDER1] = ev->data2;
         return true;
 
     case ev_joybdown:
@@ -1097,16 +1113,22 @@ boolean G_AdjustControlState(event_t* ev)
         return false;           // eat events
 
     case ev_povup:
-        povangle = -1;
-        // If looking around with PoV, don't allow bindings.
-        if(cfg.povLookAround)
-            return true;
+        if(!automapactive && !menuactive)
+        {
+            povangle = -1;
+            // If looking around with PoV, don't allow bindings.
+            if(cfg.povLookAround)
+                return true;
+        }
         break;
 
     case ev_povdown:
-        povangle = ev->data1;
-        if(cfg.povLookAround)
-            return true;
+        if(!automapactive && !menuactive)
+        {
+            povangle = ev->data1;
+            if(cfg.povLookAround)
+                return true;
+        }
         break;
 
     default:
