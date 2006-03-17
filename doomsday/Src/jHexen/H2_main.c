@@ -12,8 +12,6 @@
 
 /*
  * H2_main.c: Hexen specifc Initialization.
- *
- * TODO: Move api related stuff to x_api.c
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -97,10 +95,6 @@ extern int demosequence;
 
 int     verbose;
 
-// The interface to the Doomsday engine.
-game_export_t gx;
-game_import_t gi;
-
 boolean DevMaps;                // true = Map development mode
 char   *DevMapsDir = "";        // development maps directory
 boolean shareware;              // true if only episode 1 present
@@ -157,7 +151,7 @@ static execOpt_t ExecOptions[] = {
 };
 
 // This is returned in D_Get(DD_GAME_MODE), max 16 chars.
-static char gameModeString[17];
+char gameModeString[17];
 
 // CODE --------------------------------------------------------------------
 
@@ -599,120 +593,3 @@ void H2_Ticker(void)
    break;
    }
    } */
-
-char   *G_Get(int id)
-{
-    switch (id)
-    {
-    case DD_GAME_NAME:
-        return GAMENAMETEXT;
-
-    case DD_GAME_ID:
-        return GAMENAMETEXT " " VERSION_TEXT;
-
-    case DD_GAME_MODE:
-        return gameModeString;
-
-    case DD_GAME_CONFIG:
-        return gameConfigString;
-
-    case DD_VERSION_SHORT:
-        return VERSION_TEXT;
-
-    case DD_VERSION_LONG:
-        return VERSIONTEXT
-            "\n"GAMENAMETEXT" is based on Hexen v1.1 by Raven Software.";
-
-    case DD_ACTION_LINK:
-        return (char *) actionlinks;
-
-    case DD_PSPRITE_BOB_X:
-        if(players[consoleplayer].morphTics > 0)
-            return 0;
-        return (char *) (FRACUNIT +
-                         FixedMul(FixedMul
-                                  (FRACUNIT * cfg.bobWeapon,
-                                   players[consoleplayer].bob),
-                                  finecosine[(128 * leveltime) & FINEMASK]));
-
-    case DD_PSPRITE_BOB_Y:
-        if(players[consoleplayer].morphTics > 0)
-            return (char *) (32 * FRACUNIT);
-        return (char *) (32 * FRACUNIT +
-                         FixedMul(FixedMul
-                                  (FRACUNIT * cfg.bobWeapon,
-                                   players[consoleplayer].bob),
-                                  finesine[(128 *
-                                            leveltime) & FINEMASK & (FINEANGLES
-                                                                     / 2 -
-                                                                     1)]));
-
-    case DD_ALT_MOBJ_THINKER:
-        return (char *) P_BlasterMobjThinker;
-
-    case DD_XGFUNC_LINK:
-        return 0;
-
-        /*  case DD_PSPRITE_OFFSET_Y:
-           return (char*) HU_PSpriteYOffset(players + consoleplayer); */
-    }
-    // ID not recognized, return NULL.
-    return 0;
-}
-
-/*
- * Takes a copy of the engine's entry points and exported data. Returns
- * a pointer to the structure that contains our entry points and exports.
- */
-game_export_t *GetGameAPI(game_import_t * imports)
-{
-    // Take a copy of the imports, but only copy as much data as is
-    // allowed and legal.
-    memset(&gi, 0, sizeof(gi));
-    memcpy(&gi, imports, MIN_OF(sizeof(game_import_t), imports->apiSize));
-
-    // Clear all of our exports.
-    memset(&gx, 0, sizeof(gx));
-
-    // Fill in the data for the exports.
-    gx.apiSize = sizeof(gx);
-    gx.PreInit = H2_PreInit;
-    gx.PostInit = H2_PostInit;
-    gx.Shutdown = H2_Shutdown;
-    gx.BuildTicCmd = (void (*)(void*, float)) G_BuildTiccmd;
-    gx.MergeTicCmd = (void (*)(void*, void*)) G_MergeTiccmd;
-    gx.Ticker = H2_Ticker;
-    gx.G_Drawer = G_Drawer;
-    gx.MN_Drawer = M_Drawer;
-    gx.PrivilegedResponder = (boolean (*)(event_t *)) D_PrivilegedResponder;
-    gx.FallbackResponder = M_Responder;
-    gx.G_Responder = G_Responder;
-    gx.MobjThinker = P_MobjThinker;
-    gx.MobjFriction = (fixed_t (*)(void *)) P_GetMobjFriction;
-    gx.EndFrame = H2_EndFrame;
-    gx.ConsoleBackground = H2_ConsoleBg;
-    gx.UpdateState = G_UpdateState;
-#undef Get
-    gx.Get = G_Get;
-
-    gx.NetServerStart = D_NetServerStarted;
-    gx.NetServerStop = D_NetServerClose;
-    gx.NetConnect = D_NetConnect;
-    gx.NetDisconnect = D_NetDisconnect;
-    gx.NetPlayerEvent = D_NetPlayerEvent;
-    gx.NetWorldEvent = D_NetWorldEvent;
-    gx.HandlePacket = D_HandlePacket;
-
-    // The structure sizes.
-    gx.ticcmd_size = sizeof(ticcmd_t);
-
-    gx.SetupForThings = P_SetupForThings;
-    gx.SetupForLines = P_SetupForLines;
-    gx.SetupForSides = P_SetupForSides;
-    gx.SetupForSectors = P_SetupForSectors;
-
-    // These two really need better names. Ideas?
-    gx.HandleMapDataProperty = P_HandleMapDataProperty;
-    gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
-    return &gx;
-}
