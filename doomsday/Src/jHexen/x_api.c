@@ -65,7 +65,7 @@ void    P_SetupForSides(int num);
 void    P_SetupForSectors(int num);
 
 // Map Objects
-fixed_t P_GetMobjFriction(struct mobj_t *mo);
+fixed_t P_GetMobjFriction(struct mobj_s *mo);
 void    P_MobjThinker(mobj_t *mobj);
 void    P_BlasterMobjThinker(mobj_t *mobj);
 
@@ -153,10 +153,7 @@ char *G_Get(int id)
                          FixedMul(FixedMul
                                   (FRACUNIT * cfg.bobWeapon,
                                    players[consoleplayer].bob),
-                                  finesine[(128 *
-                                            leveltime) & FINEMASK & (FINEANGLES
-                                                                     / 2 -
-                                                                     1)]));
+                                  finesine[(128 * leveltime) & FINEMASK & (FINEANGLES / 2 - 1)]));
 
     case DD_ALT_MOBJ_THINKER:
         return (char *) P_BlasterMobjThinker;
