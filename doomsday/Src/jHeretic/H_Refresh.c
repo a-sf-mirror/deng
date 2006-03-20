@@ -60,8 +60,8 @@ extern boolean amap_fullyopen;
 extern boolean inhelpscreens;
 extern float lookOffset;
 
-const float deffontRGB[];
-const float deffontRGB2[];
+extern const float deffontRGB[];
+extern const float deffontRGB2[];
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 

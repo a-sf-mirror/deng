@@ -10,6 +10,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <math.h>
+
 #include "jHeretic/Doomdef.h"
 #include "jHeretic/h_config.h"
 #include "jHeretic/h_event.h"

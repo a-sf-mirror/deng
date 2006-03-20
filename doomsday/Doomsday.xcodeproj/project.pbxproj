@@ -680,6 +680,13 @@
 			remoteGlobalIDString = B083A65B085CCCEE000D4BAB;
 			remoteInfo = jHexen;
 		};
+		B063C7BC09CF279D00F0354B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0237AAB06F3721E0059676A /* jHeretic */;
+			remoteInfo = jHeretic;
+		};
 		B0E0CF1509BAF7CD002BE2BF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
@@ -2902,6 +2909,7 @@
 				B0F177FF087C5A230051F24A /* PBXTargetDependency */,
 				B0F17801087C5A230051F24A /* PBXTargetDependency */,
 				B0E0CF1609BAF7CD002BE2BF /* PBXTargetDependency */,
+				B063C7BD09CF279D00F0354B /* PBXTargetDependency */,
 				B0F17807087C5A230051F24A /* PBXTargetDependency */,
 			);
 			name = Doomsday;
@@ -3501,6 +3509,11 @@
 			isa = PBXTargetDependency;
 			target = B083A65B085CCCEE000D4BAB /* jHexen */;
 			targetProxy = B011A60D08655A90005075A7 /* PBXContainerItemProxy */;
+		};
+		B063C7BD09CF279D00F0354B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0237AAB06F3721E0059676A /* jHeretic */;
+			targetProxy = B063C7BC09CF279D00F0354B /* PBXContainerItemProxy */;
 		};
 		B0E0CF1609BAF7CD002BE2BF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
