@@ -105,7 +105,7 @@ enum {
 //   starting from the middle.
 //
 
-#define R ((8*PLAYERRADIUS)/7)
+#define R (1.0f)
 mline_t         keysquare[] = {
     {{0, 0}, {R / 4, -R / 2}},
     {{R / 4, -R / 2}, {R / 2, -R / 2}},
@@ -117,22 +117,23 @@ mline_t         keysquare[] = {
     {{-3 * R / 4, 0}, {-3 * R / 4, -R / 4}}
 };
 #undef R
-#define NUMKEYSQUARELINES (sizeof(keysquare)/sizeof(mline_t))
+#define NUMKEYSQUARELINES (sizeof(keysquare) / sizeof(mline_t))
 
-#define R ((8*PLAYERRADIUS)/7)
+#define R (1.0f)
 mline_t         thintriangle_guy[] = {
     {{-R / 2, R - R / 2}, {R, 0}}, // >
     {{R, 0}, {-R / 2, -R + R / 2}},
     {{-R / 2, -R + R / 2}, {-R / 2, R - R / 2}} // |>
 };
 #undef R
-#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
+
+#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy) / sizeof(mline_t))
 
 
 // JDOOM Stuff
 #ifdef __JDOOM__
 
-#define R ((8*PLAYERRADIUS)/7)
+#define R (1.0f)
 mline_t player_arrow[] = {
     {{-R + R / 8, 0}, {R, 0}},    // -----
     {{R, 0}, {R - R / 2, R / 4}},    // ----->
@@ -145,7 +146,7 @@ mline_t player_arrow[] = {
 #undef R
 #define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
 
-#define R ((8*PLAYERRADIUS)/7)
+#define R (1.0f)
 mline_t cheat_player_arrow[] = {
     {{-R + R / 8, 0}, {R, 0}},    // -----
     {{R, 0}, {R - R / 2, R / 6}},    // ----->
@@ -174,8 +175,7 @@ mline_t cheat_player_arrow[] = {
 // JHERETIC Stuff
 #ifdef __JHERETIC__
 
-#define R ((8*PLAYERRADIUS)/7)
-
+#define R (1.0f)
 mline_t         player_arrow[] = {
     {{-R + R / 4, 0}, {0, 0}},       // center line.
     {{-R + R / 4, R / 8}, {R, 0}}, // blade
@@ -191,7 +191,7 @@ mline_t         player_arrow[] = {
 #undef R
 #define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
 
-#define R ((8*PLAYERRADIUS)/7)
+#define R (1.0f)
 mline_t         cheat_player_arrow[] = {
     {{-R + R / 8, 0}, {R, 0}},       // -----
     {{R, 0}, {R - R / 2, R / 6}},  // ----->
@@ -219,8 +219,7 @@ mline_t         cheat_player_arrow[] = {
 // JHEXEN Stuff ------------------------------------------------------------
 #ifdef __JHEXEN__
 
-#define R ((8*PLAYERRADIUS)/7)
-
+#define R (1.0f)
 mline_t         player_arrow[] = {
     {{-R + R / 4, 0}, {0, 0}},       // center line.
     {{-R + R / 4, R / 8}, {R, 0}}, // blade
@@ -243,8 +242,7 @@ mline_t         player_arrow[] = {
 // JSTRIFE Stuff ------------------------------------------------------------
 #if __JSTRIFE__
 
-#define R ((8*PLAYERRADIUS)/7)
-
+#define R (1.0f)
 mline_t         player_arrow[] = {
     {{-R + R / 4, 0}, {0, 0}},       // center line.
     {{-R + R / 4, R / 8}, {R, 0}}, // blade
@@ -1525,8 +1523,8 @@ void AM_drawMline(mline_t * ml, int color)
 {
     GL_SetColor2(color, (am_alpha - (1-cfg.automapLineAlpha)));
 
-    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.pos[VX])), FIX2FLT(CYMTOFX(ml->a.pos[VY])));
-    gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.pos[VX])), FIX2FLT(CYMTOFX(ml->b.pos[VY])));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->a.pos[VX]))), FIX2FLT(CYMTOFX(FLT2FIX(ml->a.pos[VY]))));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->b.pos[VX]))), FIX2FLT(CYMTOFX(FLT2FIX(ml->b.pos[VY]))));
 }
 
 /*
@@ -1563,10 +1561,10 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
 
         gl.Begin(DGL_QUADS);
 
-        a[VX] = FIX2FLT(CXMTOFX(ml->a.pos[VX]));
-        a[VY] = FIX2FLT(CYMTOFX(ml->a.pos[VY]));
-        b[VX] = FIX2FLT(CXMTOFX(ml->b.pos[VX]));
-        b[VY] = FIX2FLT(CYMTOFX(ml->b.pos[VY]));
+        a[VX] = FIX2FLT(CXMTOFX(FLT2FIX(ml->a.pos[VX])));
+        a[VY] = FIX2FLT(CYMTOFX(FLT2FIX(ml->a.pos[VY])));
+        b[VX] = FIX2FLT(CXMTOFX(FLT2FIX(ml->b.pos[VX])));
+        b[VY] = FIX2FLT(CYMTOFX(FLT2FIX(ml->b.pos[VY])));
 
         dx = b[VX] - a[VX];
         dy = b[VY] - a[VY];
@@ -1604,15 +1602,15 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
             // two sided
             gl.TexCoord2f(0.5f, 0);
             gl.Vertex2f(a[VX] + normal[VX] * thickness,
-                    a[VY] + normal[VY] * thickness);
+                        a[VY] + normal[VY] * thickness);
             gl.Vertex2f(b[VX] + normal[VX] * thickness,
-                    b[VY] + normal[VY] * thickness);
+                        b[VY] + normal[VY] * thickness);
 
             gl.TexCoord2f(0.5f, 1);
             gl.Vertex2f(b[VX] - normal[VX] * thickness,
-                    b[VY] - normal[VY] * thickness);
+                        b[VY] - normal[VY] * thickness);
             gl.Vertex2f(a[VX] - normal[VX] * thickness,
-                    a[VY] - normal[VY] * thickness);
+                        a[VY] - normal[VY] * thickness);
 
         }
         else if (c.glow == BACK_GLOW)
@@ -1620,31 +1618,27 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
             // back side only
             gl.TexCoord2f(0, 0.25f);
             gl.Vertex2f(a[VX] + normal[VX] * thickness,
-                    a[VY] + normal[VY] * thickness);
+                        a[VY] + normal[VY] * thickness);
             gl.Vertex2f(b[VX] + normal[VX] * thickness,
-                    b[VY] + normal[VY] * thickness);
+                        b[VY] + normal[VY] * thickness);
 
             gl.TexCoord2f(0.5f, 0.25f);
-            gl.Vertex2f(b[VX],
-                    b[VY]);
-            gl.Vertex2f(a[VX],
-                    a[VY]);
+            gl.Vertex2f(b[VX], b[VY]);
+            gl.Vertex2f(a[VX], a[VY]);
 
         }
         else
         {
             // front side only
             gl.TexCoord2f(0.75f, 0.5f);
-            gl.Vertex2f(a[VX],
-                    a[VY]);
-            gl.Vertex2f(b[VX],
-                    b[VY]);
+            gl.Vertex2f(a[VX], a[VY]);
+            gl.Vertex2f(b[VX], b[VY]);
 
             gl.TexCoord2f(0.75f, 1);
             gl.Vertex2f(b[VX] - normal[VX] * thickness,
-                    b[VY] - normal[VY] * thickness);
+                        b[VY] - normal[VY] * thickness);
             gl.Vertex2f(a[VX] - normal[VX] * thickness,
-                    a[VY] - normal[VY] * thickness);
+                        a[VY] - normal[VY] * thickness);
         }
 
         if(caps)
@@ -1682,8 +1676,10 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
         // No glow? then draw a regular line
         gl.Begin(DGL_LINES);
 
-        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->a.pos[VX])), FIX2FLT(CYMTOFX(ml->a.pos[VY])));
-        gl.Vertex2f(FIX2FLT(CXMTOFX(ml->b.pos[VX])), FIX2FLT(CYMTOFX(ml->b.pos[VY])));
+        gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->a.pos[VX]))),
+                    FIX2FLT(CYMTOFX(FLT2FIX(ml->a.pos[VY]))));
+        gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->b.pos[VX]))),
+                    FIX2FLT(CYMTOFX(FLT2FIX(ml->b.pos[VY]))));
         gl.End();
     }
 }
@@ -1710,14 +1706,14 @@ void AM_drawGrid(int color)
     end = m_x + m_w;
 
     // draw vertical gridlines
-    ml.a.pos[VY] = m_y;
-    ml.b.pos[VY] = m_y + m_h;
+    ml.a.pos[VY] = FIX2FLT(m_y);
+    ml.b.pos[VY] = FIX2FLT(m_y + m_h);
 
     gl.Begin(DGL_LINES);
     for(x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS))
     {
-        ml.a.pos[VX] = x;
-        ml.b.pos[VX] = x;
+        ml.a.pos[VX] = FIX2FLT(x);
+        ml.b.pos[VX] = FIX2FLT(x);
         AM_drawMline(&ml, color);
     }
 
@@ -1730,12 +1726,12 @@ void AM_drawGrid(int color)
     end = m_y + m_h;
 
     // draw horizontal gridlines
-    ml.a.pos[VX] = m_x;
-    ml.b.pos[VX] = m_x + m_w;
+    ml.a.pos[VX] = FIX2FLT(m_x);
+    ml.b.pos[VX] = FIX2FLT(m_x + m_w);
     for(y = start; y < end; y += (MAPBLOCKUNITS << FRACBITS))
     {
-        ml.a.pos[VY] = y;
-        ml.b.pos[VY] = y;
+        ml.a.pos[VY] = FIX2FLT(y);
+        ml.b.pos[VY] = FIX2FLT(y);
         AM_drawMline(&ml, color);
     }
     gl.End();
@@ -1750,29 +1746,36 @@ void AM_drawWalls(boolean glowmode)
     line_t  *line;
     xline_t *xline;
     mline_t l;
-    sector_t *sec;
-    sector_t *frontsector, *backsector;
+    subsector_t *ssec;
+    sector_t *sec, *frontsector, *backsector;
+    seg_t *seg;
     mapline_t templine;
     boolean withglow = false;
 
-    for(s = 0; s < numsectors; ++s)
+    for(s = 0; s < numsubsectors; ++s)
     {
-        sec = P_ToPtr(DMU_SECTOR, s);
-        for(i = 0; i < P_GetInt(DMU_SECTOR, s, DMU_LINE_COUNT); ++i)
+        ssec = P_ToPtr(DMU_SUBSECTOR, s);
+        sec = P_GetPtrp(ssec, DMU_SECTOR);
+        for(i = 0; i < P_GetIntp(ssec, DMU_LINE_COUNT); ++i)
         {
-            line = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | i);
-            xline = P_XLine(line);
+            seg = P_GetPtrp(ssec, DMU_SEG_OF_SUBSECTOR | i);
 
-            l.a.pos[VX] = P_GetFixedp(line, DMU_VERTEX1_X);
-            l.a.pos[VY] = P_GetFixedp(line, DMU_VERTEX1_Y);
-            l.b.pos[VX] = P_GetFixedp(line, DMU_VERTEX2_X);
-            l.b.pos[VY] = P_GetFixedp(line, DMU_VERTEX2_Y);
+            frontsector = P_GetPtrp(seg, DMU_FRONT_SECTOR);
+            backsector = P_GetPtrp(seg, DMU_BACK_SECTOR);
 
-            frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
-            backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
+            line = P_GetPtrp(seg, DMU_LINE);
+            if(!line)
+                continue;
 
             if(frontsector != sec)
                 continue; // we only want to draw twosided lines once.
+
+            xline = P_XLine(line);
+
+            l.a.pos[VX] = P_GetFloatp(seg, DMU_VERTEX1_X);
+            l.a.pos[VY] = P_GetFloatp(seg, DMU_VERTEX1_Y);
+            l.b.pos[VX] = P_GetFloatp(seg, DMU_VERTEX2_X);
+            l.b.pos[VY] = P_GetFloatp(seg, DMU_VERTEX2_Y);
 
 #if !__JHEXEN__
 #if !__JSTRIFE__
@@ -1876,7 +1879,7 @@ void AM_rotate(float *x, float *y, angle_t a)
  * Draws a line character (eg the player arrow)
  */
 void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, float scale,
-                          angle_t angle, int color, fixed_t x, fixed_t y)
+                          angle_t angle, int color, float x, float y)
 {
     int     i;
     mline_t l;
@@ -1887,14 +1890,10 @@ void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, float scale,
         l.a.pos[VX] = lineguy[i].a.pos[VX];
         l.a.pos[VY] = lineguy[i].a.pos[VY];
 
-        if(scale)
-        {
-            l.a.pos[VX] = scale * l.a.pos[VX];
-            l.a.pos[VY] = scale * l.a.pos[VY];
-        }
+        l.a.pos[VX] = scale * l.a.pos[VX];
+        l.a.pos[VY] = scale * l.a.pos[VY];
 
-        if(angle)
-            AM_rotate(&l.a.pos[VX], &l.a.pos[VY], angle);
+        AM_rotate(&l.a.pos[VX], &l.a.pos[VY], angle);
 
         l.a.pos[VX] += x;
         l.a.pos[VY] += y;
@@ -1902,14 +1901,10 @@ void AM_drawLineCharacter(mline_t * lineguy, int lineguylines, float scale,
         l.b.pos[VX] = lineguy[i].b.pos[VX];
         l.b.pos[VY] = lineguy[i].b.pos[VY];
 
-        if(scale)
-        {
-            l.b.pos[VX] = scale * l.b.pos[VX];
-            l.b.pos[VY] = scale * l.b.pos[VY];
-        }
+        l.b.pos[VX] = scale * l.b.pos[VX];
+        l.b.pos[VY] = scale * l.b.pos[VY];
 
-        if(angle)
-            AM_rotate(&l.b.pos[VX], &l.b.pos[VY], angle);
+        AM_rotate(&l.b.pos[VX], &l.b.pos[VY], angle);
 
         l.b.pos[VX] += x;
         l.b.pos[VY] += y;
@@ -1934,6 +1929,7 @@ void AM_drawPlayers(void)
     static int their_colors[] = { KEY3, KEY2, BLOODRED, KEY1 };
 #endif
     int     color;
+    float   size = FIX2FLT(PLAYERRADIUS);
     angle_t ang;
 
     if(!IS_NETGAME)
@@ -1941,14 +1937,17 @@ void AM_drawPlayers(void)
         ang = plr->plr->clAngle;
 #if __JDOOM__
         if(cheating)
-            AM_drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0, ang,
-                                 WHITE, plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
+            AM_drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, size, ang,
+                                 WHITE, FIX2FLT(plr->plr->mo->pos[VX]),
+                                 FIX2FLT(plr->plr->mo->pos[VY]));
         else
-            AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, ang, WHITE,
-                                 plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
+            AM_drawLineCharacter(player_arrow, NUMPLYRLINES, size, ang, WHITE,
+                                 FIX2FLT(plr->plr->mo->pos[VX]),
+                                 FIX2FLT(plr->plr->mo->pos[VY]));
 #else
-        AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, plr->plr->clAngle,    //mo->angle,
-                             WHITE, plr->plr->mo->pos[VX], plr->plr->mo->pos[VY]);
+        AM_drawLineCharacter(player_arrow, NUMPLYRLINES, size, plr->plr->clAngle,    //mo->angle,
+                             WHITE, FIX2FLT(plr->plr->mo->pos[VX]),
+                             FIX2FLT(plr->plr->mo->pos[VY]));
 #endif
         return;
     }
@@ -1983,10 +1982,11 @@ void AM_drawPlayers(void)
 #endif
             color = their_colors[cfg.PlayerColor[i]];
 
-        AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0,
+        AM_drawLineCharacter(player_arrow, NUMPLYRLINES, size,
                              consoleplayer ==
                              i ? p->plr->clAngle : p->plr->mo->angle, color,
-                             p->plr->mo->pos[VX], p->plr->mo->pos[VY]);
+                             FIX2FLT(p->plr->mo->pos[VX]),
+                             FIX2FLT(p->plr->mo->pos[VY]));
     }
 }
 
@@ -1997,14 +1997,15 @@ void AM_drawThings(int colors, int colorrange)
 {
     int     i;
     mobj_t *iter;
+    float size = FIX2FLT(PLAYERRADIUS);
 
     for(i = 0; i < numsectors; i++)
     {
         for(iter = P_GetPtr(DMU_SECTOR,i,DMU_THINGS); iter; iter = iter->snext)
         {
             AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-                                 0, iter->angle, colors + lightlev,
-                                 iter->pos[VX], iter->pos[VY]);
+                                 size, iter->angle, colors + lightlev,
+                                 FIX2FLT(iter->pos[VX]), FIX2FLT(iter->pos[VY]));
         }
     }
 }
@@ -2038,14 +2039,15 @@ void AM_drawMarks(void)
 void AM_drawKeys(void)
 {
     int i;
+    float size = FIX2FLT(PLAYERRADIUS);
 
     gl.Begin(DGL_LINES);
 
     for (i=0; i< NUMBEROFKEYS; i++){
         if(KeyPoints[i].x != 0 || KeyPoints[i].y != 0)
         {
-            AM_drawLineCharacter(keysquare, NUMKEYSQUARELINES, 0, 0, keycolors[i],
-                                 KeyPoints[i].x, KeyPoints[i].y);
+            AM_drawLineCharacter(keysquare, NUMKEYSQUARELINES, size, 0, keycolors[i],
+                                 FIX2FLT(KeyPoints[i].x), FIX2FLT(KeyPoints[i].y));
         }
     }
     gl.End();
