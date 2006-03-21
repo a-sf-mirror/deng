@@ -142,3 +142,38 @@ int P_HandleMapDataPropertyValue(int id, int dtype, int prop,
 
     return -1; // We ain't got a clue what to do with it...
 }
+
+/*
+ * These status reports inform us of what Doomsday is doing to a particular
+ * map data object (at any time) that we might want to react to.
+ *
+ * For example, during post processing of map data during level load - if
+ * Doomsday encounters a sector with 0 lines it will send us a "benign sector"
+ * report. In jDoom we respond to this by making sure we remove the sector's
+ * special tag to prevent wayward line specials from misbehaving.
+ *
+ * If we arn't interested in the report - we should simply return true and
+ * take no further action.
+ *
+ * @param code      ID code of the status report (enum in dd_share.h)
+ * @param id        Map data object id.
+ * @param type      Map data object type eg DMU_SECTOR.
+ * @param data      Any relevant data for this report (currently unused).
+ */
+int P_HandleMapObjectStatusReport(int code, int id, int dtype, void *data)
+{
+    switch(code)
+    {
+    case DMUSC_BENIGNSECTOR:
+        // A benign sector is one which has zero lines.
+        // Zero it's tag to prevent it from being selected while searching for
+        // sectors to act on (eg XG and the "built-in" line specials).
+        xsectors[id].tag = 0;
+        break;
+
+    default:
+        break;
+    }
+
+    return 1;
+}

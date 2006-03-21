@@ -88,6 +88,7 @@ int     D_NetWorldEvent(int type, int parm, void *data);
 void    D_HandlePacket(int fromplayer, int type, void *data, int length);
 int     P_HandleMapDataProperty(int id, int dtype, int prop, int type, void *data);
 int     P_HandleMapDataPropertyValue(int id, int dtype, int prop, int type, void *data);
+int     P_HandleMapObjectStatusReport(int code, int id, int dtype, void *data);
 
 // Shutdown
 void    H_Shutdown(void);
@@ -221,5 +222,6 @@ game_export_t *GetGameAPI(game_import_t * imports)
 
     gx.HandleMapDataProperty = P_HandleMapDataProperty;
     gx.HandleMapDataPropertyValue = P_HandleMapDataPropertyValue;
+    gx.HandleMapObjectStatusReport = P_HandleMapObjectStatusReport;
     return &gx;
 }
