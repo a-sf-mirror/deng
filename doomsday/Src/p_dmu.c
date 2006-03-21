@@ -1806,7 +1806,7 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->backsector, args, 0);
             break;
         case DMU_FLAGS:
-            GetValue(type, &p->flags, args, 0);
+            GetValue(DDVT_SHORT, &p->flags, args, 0);
             break;
         case DMU_SIDE0:
         {
