@@ -687,7 +687,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B0237AAB06F3721E0059676A /* jHeretic */;
+			remoteGlobalIDString = B0237AAB06F3721E0059676A;
 			remoteInfo = jHeretic;
 		};
 		B0E0CF1509BAF7CD002BE2BF /* PBXContainerItemProxy */ = {

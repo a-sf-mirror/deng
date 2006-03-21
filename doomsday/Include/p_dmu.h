@@ -32,6 +32,8 @@ int         P_DummyType(void* dummy);
 boolean     P_IsDummy(void* dummy);
 void       *P_DummyExtraData(void* dummy);
 
+int         P_ToIndex(const void* ptr);
+
 const char *DMU_Str(int prop);
 
 #endif
