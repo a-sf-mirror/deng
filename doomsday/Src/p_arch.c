@@ -27,10 +27,8 @@
 #include "de_play.h"
 #include "de_refresh.h"
 #include "de_system.h"
+#include "de_misc.h"
 
-#include "p_arch.h"
-#include "m_bams.h"
-#include "m_misc.h"
 #include <math.h>
 
 // MACROS ------------------------------------------------------------------
@@ -2567,8 +2565,8 @@ static void P_ProcessSegs(gamemap_t* map, int version)
             seg->sidedef = &map->sides[ldef->sidenum[side]];
             seg->frontsector = map->sides[ldef->sidenum[side]].sector;
 
-            if(ldef->flags & ML_TWOSIDED &&
-               ldef->sidenum[side ^ 1] != NO_INDEX)
+            if((ldef->flags & ML_TWOSIDED) &&
+               (ldef->sidenum[side ^ 1] != NO_INDEX))
             {
                 seg->backsector = map->sides[ldef->sidenum[side ^ 1]].sector;
             }
