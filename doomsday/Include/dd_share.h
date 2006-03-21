@@ -661,6 +661,12 @@ extern          "C" {
         DMU_SPECIAL_DATA
     };
 
+    // Map Update status code constants.
+    enum /* do not change the numerical values of the constants */
+    {
+        DMUSC_BENIGNSECTOR
+    };
+
     // Fixed-point vertex position. Utility struct for the game, not
     // used by the engine.
     typedef struct ddvertex_s {

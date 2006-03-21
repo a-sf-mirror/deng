@@ -171,6 +171,12 @@ typedef struct {
     // The action code returned by the game depends on the context.
     int             (*HandleMapDataPropertyValue) (int id, int dtype, int prop,
                                                    int type, void *data);
+    // Post map setup
+    // The engine calls this to inform the game of any changes it is
+    // making to map data object to which the game might want to
+    // take further action.
+    int             (*HandleMapObjectStatusReport) (int code, int id, int dtype,
+                                                    void *data);
 } game_export_t;
 
 typedef game_export_t *(*GETGAMEAPI) (game_import_t *);
