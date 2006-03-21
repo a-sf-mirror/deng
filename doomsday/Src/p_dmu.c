@@ -1414,6 +1414,21 @@ static int GetProperty(void* ptr, void* context)
         return false; // stop iteration
     }
 
+    if(args->type == DMU_SUBSECTOR &&
+       (args->modifiers & DMU_SEG_OF_SUBSECTOR))
+    {
+        subsector_t* p = ptr;
+        seg_t* segptr;
+        if(args->prop < 0 || args->prop >= p->linecount)
+        {
+            Con_Error("GetProperty: DMU_SEG_OF_SECTOR %i does not exist.\n",
+                      args->prop);
+        }
+        segptr = SEG_PTR(p->firstline + args->prop);
+        GetValue(DDVT_PTR, &segptr, args, 0);
+        return false; // stop iteration
+    }
+
     if(args->type == DMU_SECTOR ||
        (args->type == DMU_SUBSECTOR &&
         (args->modifiers & DMU_SECTOR_OF_SUBSECTOR)))
@@ -1873,6 +1888,9 @@ static int GetProperty(void* ptr, void* context)
             break;
         case DMU_POLYOBJ:
             GetValue(DDVT_PTR, &p->poly, args, 0);
+            break;
+        case DMU_LINE_COUNT:
+            GetValue(type, &p->linecount, args, 0);
             break;
         default:
             Con_Error("GetProperty: DMU_SUBSECTOR has no property %s.\n",
