@@ -2375,6 +2375,31 @@ static int ReadMapProperty(gamemap_t* map, int dataType, void* ptr,
     return true; // Continue iteration
 }
 
+static void *P_GetPtrToObject(gamemap_t* map, int objectType, int id)
+{
+    switch (objectType)
+    {
+    case DAM_LINE:
+        return &map->lines[id];
+    case DAM_SIDE:
+        return &map->sides[id];
+    case DAM_VERTEX:
+        return &map->vertexes[id];
+    case DAM_SEG:
+        return &map->segs[id];
+    case DAM_SUBSECTOR:
+        return &map->subsectors[id];
+    case DAM_NODE:
+        return &map->nodes[id];
+    case DAM_SECTOR:
+        return &map->sectors[id];
+    default:
+        Con_Error("P_GetPtrToObject: %i is not a valid type\n", objectType);
+    }
+
+    return NULL;
+}
+
 /*
  * Make multiple calls to a callback function on a selection of archived
  * map data objects.
@@ -2412,25 +2437,8 @@ int P_CallbackEX(int dataType, int index, unsigned int startIndex,
                  int (*callback)(gamemap_t* map, int dataType, void* ptr,
                                  const datatype_t* prop, const byte *buffer))
 {
-#define GETOBJECT(t, id) if(t == DAM_LINE) \
-            ptr = &map->lines[id]; \
-        else if(t == DAM_SIDE) \
-            ptr = &map->sides[id]; \
-        else if(t == DAM_VERTEX) \
-            ptr = &map->vertexes[id]; \
-        else if(t == DAM_SEG) \
-            ptr = &map->segs[id]; \
-        else if(t == DAM_SUBSECTOR) \
-            ptr = &map->subsectors[id]; \
-        else if(t == DAM_NODE) \
-            ptr = &map->nodes[id]; \
-        else if(t == DAM_SECTOR) \
-            ptr = &map->sectors[id]; \
-        else \
-            ptr = &idx;
-
 #define NUMBLOCKS 8
-#define BLOCK GETOBJECT(dataType, idx); \
+#define BLOCK ptr = dataType == DAM_THING? &idx : P_GetPtrToObject(map, dataType, idx);  \
         for(k = args->numvalues, myTypes = args->types; k--; ++myTypes) \
         { \
           if(!callback(map, dataType, ptr, myTypes, buffer)) \
@@ -2483,7 +2491,7 @@ int P_CallbackEX(int dataType, int index, unsigned int startIndex,
     // Just one object to process?
     if(index >= 0 && index < objectCount)
     {
-        GETOBJECT(dataType, index);
+        ptr = dataType == DAM_THING? &index : P_GetPtrToObject(map, dataType, index);
         for(k = args->numvalues, myTypes = args->types; k--; ++myTypes)
             if(!callback(map, dataType, ptr, myTypes, buffer)) return false;
     }
@@ -2515,7 +2523,7 @@ int P_CallbackEX(int dataType, int index, unsigned int startIndex,
             case 3: BLOCK
             case 2: BLOCK
             case 1:
-                GETOBJECT(dataType, idx);
+                ptr = dataType == DAM_THING? &idx : P_GetPtrToObject(map, dataType, idx);
                 for(k = args->numvalues, myTypes = args->types; k--; ++myTypes)
                     if(!callback(map, dataType, ptr, myTypes, buffer)) return false;
             }
@@ -2550,7 +2558,7 @@ static void P_ProcessSegs(gamemap_t* map, int version)
 
         // Kludge: The flags member is used as a temporary holder
         // for the side value.
-        side = seg->flags;
+        side = (int) seg->flags;
         seg->flags = 0;
 
         if(seg->linedef)
@@ -2830,11 +2838,15 @@ static void P_GroupLines(gamemap_t* map)
                 M_AddToBox(bbox, li->v2->x, li->v2->y);
             }
         }
-/*
-        //FIXME: jDoom would like to know this.
-        else // stops any wayward line specials from misbehaving
-            sec->tag = 0;
-*/
+        else // Its a "benign sector"
+        {
+            // Send the game a status report (we don't need to do anything).
+            if(gx.HandleMapObjectStatusReport)
+                gx.HandleMapObjectStatusReport(DMUSC_BENIGNSECTOR,
+                                               sec - map->sectors,
+                                               DMU_SECTOR, NULL);
+        }
+
         // set the degenmobj_t to the middle of the bounding box
         sec->soundorg.x = sec->floorsoundorg.x = sec->ceilingsoundorg.x =
             (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
