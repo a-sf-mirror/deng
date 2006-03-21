@@ -1109,6 +1109,23 @@ void R_SetupFog(void)
  * NOTE: Self-referencing sectors where all lines in the sector
  *       are self-referencing are NOT handled by this algorthim.
  *       Those kind of hacks are detected in R_InitSectorInfo().
+ *
+ * TODO: DJS - We need to collect subsectors into "mutually
+ * exclusive groups" and instead of linking whole sectors to
+ * another for rendering we should instead link each subsector
+ * exclusion group to another sector (in most cases these can be
+ * permanent links). This will allow us to support 99% of DOOM
+ * rendering hacks cleanly.
+ *
+ * This algorthim already collects the complex case of
+ * self-referencing lines attached to none referencing lines
+ * into potential exclusion groups, another algorthim is needed
+ * to collect non-anchored self-referencing lines into similar
+ * groups (the easy part).
+ *
+ * From these line groups, we need to collect subsectors
+ * into groups where all segs are in this group AND THIS side
+ * (or self-referencing) is in this sector.
  */
 void R_RationalizeSectors(void)
 {
@@ -1388,7 +1405,7 @@ void R_RationalizeSectors(void)
                             else
                                 owner = &vertexowners[GET_VERTEX_IDX(line->v1)];
 
-                            j = -1; // Start from the begining we this vertex.
+                            j = -1; // Start from the begining with this vertex.
                         }
                     }
                 }
