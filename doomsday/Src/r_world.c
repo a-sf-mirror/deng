@@ -155,7 +155,7 @@ void R_SetSectorLinks(sector_t *sec)
         // with a one-sided line (ie, its not "anchored").
         if(vertexowners[GET_VERTEX_IDX(sec->Lines[k]->v1)].anchored ||
            vertexowners[GET_VERTEX_IDX(sec->Lines[k]->v2)].anchored)
-            continue;
+            return;
 
         // Check which way the line is facing.
         sid = SIDE_PTR(sec->Lines[k]->sidenum[0]);
@@ -707,12 +707,19 @@ void R_SetVertexLineOwner(int idx, line_t *lineptr)
 
     if(!lineptr)
         return;
+
     line = GET_LINE_IDX(lineptr);
     own = vertexowners + idx;
+
+    // If this is a one-sided line then this is an "anchored" vertex.
+    if(!(lineptr->frontsector && lineptr->backsector))
+        own->anchored = true;
+
     // Has this line been already registered?
     for(i = 0; i < own->numlines; i++)
         if(own->linelist[i] == line)
             return;             // Yes, we can exit.
+
     // Add a new owner.
     own->numlines++;
     // Allocate a new list.
@@ -726,10 +733,6 @@ void R_SetVertexLineOwner(int idx, line_t *lineptr)
     }
     own->linelist = list;
     own->linelist[own->numlines - 1] = line;
-
-    // If this is a one-sided line then this is an "anchored" vertex.
-    if(!lineptr->backsector)
-        own->anchored = true;
 }
 
 /*
