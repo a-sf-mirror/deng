@@ -369,7 +369,7 @@ void D_PreInit(void)
     cfg.allowskullsinwalls = false;
     cfg.anybossdeath = false;
     cfg.monstersStuckInDoors = false;
-    cfg.avoidDropoffs = true;
+    cfg.avoidDropoffs = false;
     cfg.moveBlock = false;
     cfg.fallOff = true;
 
