@@ -116,6 +116,8 @@ static int SaveToRealPlayer[MAXPLAYERS];
 
 static int numSoundTargets = 0;
 
+static byte *junkbuffer;        // Old save data is read into here.
+
 // CODE --------------------------------------------------------------------
 
 /*
@@ -1063,16 +1065,29 @@ void SV_ReadCeiling(ceiling_t* ceiling)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(ceiling, SIZE_OF_CEILING);
+        // Its in the old pre V5 format which serialized ceiling_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        SV_Read(&ceiling->type, sizeof(ceiling_e));
+
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&ceiling->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) ceiling->sector);
 
         if(!sector)
             Con_Error("tc_ceiling: bad sector number\n");
 
         ceiling->sector = sector;
+
+        SV_Read(&ceiling->bottomheight, sizeof(fixed_t));
+        SV_Read(&ceiling->topheight, sizeof(fixed_t));
+        SV_Read(&ceiling->speed, sizeof(fixed_t));
+        SV_Read(&ceiling->crush, sizeof(boolean));
+        SV_Read(&ceiling->direction, sizeof(int));
+        SV_Read(&ceiling->tag, sizeof(int));
+        SV_Read(&ceiling->olddirection, sizeof(int));
 
         if(ceiling->thinker.function)
             ceiling->thinker.function = T_MoveCeiling;
@@ -1126,16 +1141,27 @@ void SV_ReadDoor(vldoor_t* door)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(door, SIZE_OF_DOOR);
+        // Its in the old pre V5 format which serialized vldoor_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        SV_Read(&door->type, sizeof(vldoor_e));
+
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&door->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) door->sector);
 
         if(!sector)
             Con_Error("tc_door: bad sector number\n");
 
         door->sector = sector;
+
+        SV_Read(&door->topheight, sizeof(fixed_t));
+        SV_Read(&door->speed, sizeof(fixed_t));
+        SV_Read(&door->direction, sizeof(int));
+        SV_Read(&door->topwait, sizeof(int));
+        SV_Read(&door->topcountdown, sizeof(int));
     }
 
     P_XSector(door->sector)->specialdata = door;
@@ -1193,16 +1219,29 @@ void SV_ReadFloor(floormove_t* floor)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(floor, SIZE_OF_FLOOR);
+        // Its in the old pre V5 format which serialized floormove_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        SV_Read(&floor->type, sizeof(floor_e));
+
+        SV_Read(&floor->crush, sizeof(boolean));
+
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&floor->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) floor->sector);
 
         if(!sector)
             Con_Error("tc_floor: bad sector number\n");
 
         floor->sector = sector;
+
+        SV_Read(&floor->direction, sizeof(int));
+        SV_Read(&floor->newspecial, sizeof(int));
+        SV_Read(&floor->texture, sizeof(short));
+        SV_Read(&floor->floordestheight, sizeof(fixed_t));
+        SV_Read(&floor->speed, sizeof(fixed_t));
     }
 
     P_XSector(floor->sector)->specialdata = floor;
@@ -1272,16 +1311,30 @@ void SV_ReadPlat(plat_t* plat)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(plat, SIZE_OF_PLAT);
+        // Its in the old pre V5 format which serialized plat_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&plat->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) plat->sector);
 
         if(!sector)
             Con_Error("tc_plat: bad sector number\n");
 
         plat->sector = sector;
+
+        SV_Read(&plat->speed, sizeof(fixed_t));
+        SV_Read(&plat->low, sizeof(fixed_t));
+        SV_Read(&plat->high, sizeof(fixed_t));
+        SV_Read(&plat->wait, sizeof(int));
+        SV_Read(&plat->count, sizeof(int));
+        SV_Read(&plat->status, sizeof(plat_e));
+        SV_Read(&plat->oldstatus, sizeof(plat_e));
+        SV_Read(&plat->crush, sizeof(boolean));
+        SV_Read(&plat->tag, sizeof(int));
+        SV_Read(&plat->type, sizeof(plattype_e));
 
         if(plat->thinker.function)
             plat->thinker.function = T_PlatRaise;
@@ -1328,16 +1381,25 @@ void SV_ReadFlash(lightflash_t* flash)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(flash, SIZE_OF_FLASH);
+        // Its in the old pre V5 format which serialized lightflash_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&flash->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) flash->sector);
 
         if(!sector)
             Con_Error("tc_flash: bad sector number\n");
 
         flash->sector = sector;
+
+        SV_Read(&flash->count, sizeof(int));
+        SV_Read(&flash->maxlight, sizeof(int));
+        SV_Read(&flash->minlight, sizeof(int));
+        SV_Read(&flash->maxtime, sizeof(int));
+        SV_Read(&flash->mintime, sizeof(int));
     }
 
     flash->thinker.function = T_LightFlash;
@@ -1381,16 +1443,25 @@ void SV_ReadStrobe(strobe_t* strobe)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(strobe, SIZE_OF_STROBE);
+        // Its in the old pre V5 format which serialized strobe_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&strobe->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) strobe->sector);
 
         if(!sector)
             Con_Error("tc_strobe: bad sector number\n");
 
         strobe->sector = sector;
+
+        SV_Read(&strobe->count, sizeof(int));
+        SV_Read(&strobe->minlight, sizeof(int));
+        SV_Read(&strobe->maxlight, sizeof(int));
+        SV_Read(&strobe->darktime, sizeof(int));
+        SV_Read(&strobe->brighttime, sizeof(int));
     }
 
     strobe->thinker.function = T_StrobeFlash;
@@ -1430,16 +1501,23 @@ void SV_ReadGlow(glow_t* glow)
     }
     else
     {
-        // Its in the old format
-        // FIXME: We don't need to use the struct for byte offsets.
-        SV_Read(glow, SIZE_OF_GLOW);
+        // Its in the old pre V5 format which serialized strobe_t
+        // Padding at the start (an old thinker_t struct)
+        SV_Read(junkbuffer, (size_t) 16);
 
+        // Start of used data members.
+        // A 32bit pointer to sector, serialized.
+        SV_Read(&glow->sector, sizeof(sector_t*));
         sector = P_ToPtr(DMU_SECTOR, (int) glow->sector);
 
         if(!sector)
             Con_Error("tc_glow: bad sector number\n");
 
         glow->sector = sector;
+
+        SV_Read(&glow->minlight, sizeof(int));
+        SV_Read(&glow->maxlight, sizeof(int));
+        SV_Read(&glow->direction, sizeof(int));
     }
 
     glow->thinker.function = T_Glow;
@@ -2073,6 +2151,10 @@ int SV_LoadGame(char *filename)
     // Set the time.
     leveltime = hdr.leveltime;
 
+    // Allocate a small junk buffer.
+    // (Data from old save versions is read into here)
+    junkbuffer = malloc(sizeof(byte) * 64);
+
     // Dearchive all the data.
     memset(loaded, 0, sizeof(loaded));
     P_UnArchivePlayers(infile, loaded);
@@ -2177,6 +2259,7 @@ void SV_SaveClient(unsigned int gameid)
     P_ArchiveThinkers();
 
     lzClose(savefile);
+    free(junkbuffer);
 }
 
 void SV_LoadClient(unsigned int gameid)
@@ -2201,6 +2284,11 @@ void SV_LoadClient(unsigned int gameid)
         Con_Message("SV_LoadClient: Bad magic!\n");
         return;
     }
+
+    // Allocate a small junk buffer.
+    // (Data from old save versions is read into here)
+    junkbuffer = malloc(sizeof(byte) * 64);
+
     gameskill = hdr.skill;
     deathmatch = hdr.deathmatch;
     nomonsters = hdr.nomonsters;
@@ -2229,5 +2317,7 @@ void SV_LoadClient(unsigned int gameid)
     P_UnArchiveThinkers();
 
     lzClose(savefile);
+    free(junkbuffer);
+
     return;
 }
