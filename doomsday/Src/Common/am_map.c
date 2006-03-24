@@ -308,7 +308,7 @@ static void AM_changeWindowScale(void);
 static void AM_drawLevelName(void);
 static void AM_drawWorldTimer(void);
 
-void    AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, \
+void    AM_drawMline2(mline_t *ml, mapline_t *c, boolean caps, \
                       boolean glowmode, boolean blend);
 
 void    AM_Start(void);
@@ -545,6 +545,9 @@ static int winh = 0;
 // Used to track if a re-scale is needed (automap cfg is changed)
 static int oldwin_w = 0;
 static int oldwin_h = 0;
+
+// Used in subsector debug display.
+static mapline_t subColors[10];
 
 // CODE --------------------------------------------------------------------
 
@@ -847,7 +850,7 @@ void AM_changeWindowLoc(void)
  */
 void AM_initVariables(void)
 {
-    int     pnum;
+    int     i, pnum;
 
     thinker_t *think;
     mobj_t *mo;
@@ -860,6 +863,19 @@ void AM_initVariables(void)
     lightlev = 0;
 
     m_paninc.pos[VX] = m_paninc.pos[VY] = 0;
+
+    // Set the colors for the subsector debug display
+    for(i = 0; i < 10; ++i)
+    {
+        subColors[i].r = ((float) M_Random()) / 255.f;
+        subColors[i].g = ((float) M_Random()) / 255.f;
+        subColors[i].b = ((float) M_Random()) / 255.f;
+        subColors[i].a = 1.0f;
+        subColors[i].a2 =  1.0f;
+        subColors[i].glow = FRONT_GLOW;
+        subColors[i].w = 7.5f;
+        subColors[i].scale = false;
+    }
 
 //    if(cfg.automapWidth == 1 && cfg.automapHeight == 1)
     {
@@ -1523,14 +1539,16 @@ void AM_drawMline(mline_t * ml, int color)
 {
     GL_SetColor2(color, (am_alpha - (1-cfg.automapLineAlpha)));
 
-    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->a.pos[VX]))), FIX2FLT(CYMTOFX(FLT2FIX(ml->a.pos[VY]))));
-    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->b.pos[VX]))), FIX2FLT(CYMTOFX(FLT2FIX(ml->b.pos[VY]))));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->a.pos[VX]))),
+                FIX2FLT(CYMTOFX(FLT2FIX(ml->a.pos[VY]))));
+    gl.Vertex2f(FIX2FLT(CXMTOFX(FLT2FIX(ml->b.pos[VX]))),
+                FIX2FLT(CYMTOFX(FLT2FIX(ml->b.pos[VY]))));
 }
 
 /*
  * Draws the given line including any optional extras
  */
-void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
+void AM_drawMline2(mline_t *ml, mapline_t *c, boolean caps, boolean glowmode,
                    boolean blend)
 {
 
@@ -1538,20 +1556,20 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
     float   length, dx, dy;
 
     // scale line thickness relative to zoom level?
-    if(c.scale)
+    if(c->scale)
         thickness = cfg.automapDoorGlow * FIX2FLT(scale_mtof) * 2.5f + 3;
     else
-        thickness = c.w;
+        thickness = c->w;
 
     // get colour from the passed line.
     // if the line glows and this is glow mode - use alpha 2 else alpha 1
-    if(glowmode && c.glow)
-        GL_SetColorAndAlpha(c.r, c.g, c.b, am_alpha - (1 - c.a2));
+    if(glowmode && c->glow)
+        GL_SetColorAndAlpha(c->r, c->g, c->b, am_alpha - (1 - c->a2));
     else
-        GL_SetColorAndAlpha(c.r, c.g, c.b, am_alpha - (1 - c.a));
+        GL_SetColorAndAlpha(c->r, c->g, c->b, am_alpha - (1 - c->a));
 
     // If we are in glow mode and the line has glow - draw it
-    if(glowmode && c.glow > NO_GLOW){
+    if(glowmode && c->glow > NO_GLOW){
         gl.Enable(DGL_TEXTURING);
 
         if(blend)
@@ -1597,7 +1615,7 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
         }
 
         // The middle part of the line.
-        if(c.glow == TWOSIDED_GLOW )
+        if(c->glow == TWOSIDED_GLOW )
         {
             // two sided
             gl.TexCoord2f(0.5f, 0);
@@ -1613,7 +1631,7 @@ void AM_drawMline2(mline_t * ml, mapline_t c, boolean caps, boolean glowmode,
                         a[VY] - normal[VY] * thickness);
 
         }
-        else if (c.glow == BACK_GLOW)
+        else if (c->glow == BACK_GLOW)
         {
             // back side only
             gl.TexCoord2f(0, 0.25f);
@@ -1742,7 +1760,7 @@ void AM_drawGrid(int color)
  */
 void AM_drawWalls(boolean glowmode)
 {
-    int     i, s;
+    int     i, s, subColor = 0;
     line_t  *line;
     xline_t *xline;
     mline_t l;
@@ -1756,6 +1774,14 @@ void AM_drawWalls(boolean glowmode)
     {
         ssec = P_ToPtr(DMU_SUBSECTOR, s);
         sec = P_GetPtrp(ssec, DMU_SECTOR);
+
+        if(cheating == 3)        // Debug cheat, show subsectors
+        {
+            subColor++;
+            if(subColor == 10)
+                subColor = 0;
+        }
+
         for(i = 0; i < P_GetIntp(ssec, DMU_LINE_COUNT); ++i)
         {
             seg = P_GetPtrp(ssec, DMU_SEG_OF_SUBSECTOR | i);
@@ -1767,15 +1793,21 @@ void AM_drawWalls(boolean glowmode)
             if(!line)
                 continue;
 
-            if(frontsector != sec)
-                continue; // we only want to draw twosided lines once.
-
-            xline = P_XLine(line);
-
             l.a.pos[VX] = P_GetFloatp(seg, DMU_VERTEX1_X);
             l.a.pos[VY] = P_GetFloatp(seg, DMU_VERTEX1_Y);
             l.b.pos[VX] = P_GetFloatp(seg, DMU_VERTEX2_X);
             l.b.pos[VY] = P_GetFloatp(seg, DMU_VERTEX2_Y);
+
+            if(cheating == 3)        // Debug cheat, show subsectors
+            {
+                AM_drawMline2(&l, &subColors[subColor], false, glowmode, true);
+                continue;
+            }
+
+            if(frontsector != P_GetPtrp(line, DMU_SIDE0_OF_LINE | DMU_SECTOR))
+                continue; // we only want to draw twosided lines once.
+
+            xline = P_XLine(line);
 
 #if !__JHEXEN__
 #if !__JSTRIFE__
@@ -1785,7 +1817,7 @@ void AM_drawWalls(boolean glowmode)
                 if(xline->xg && xline->xg->active && (leveltime & 4))
                 {
                     templine = AM_getLine( 1, 0);
-                    AM_drawMline2(&l, templine, false, glowmode, true);
+                    AM_drawMline2(&l, &templine, false, glowmode, true);
                 }
             }
 #endif
@@ -1800,7 +1832,7 @@ void AM_drawWalls(boolean glowmode)
                     // solid wall (well probably anyway...)
                     templine = AM_getLine( 1, 0);
 
-                    AM_drawMline2(&l, templine, false, glowmode, false);
+                    AM_drawMline2(&l, &templine, false, glowmode, false);
                 }
                 else
                 {
@@ -1809,7 +1841,7 @@ void AM_drawWalls(boolean glowmode)
                         // secret door
                         templine = AM_getLine( 1, 0);
 
-                        AM_drawMline2(&l, templine, false, glowmode, false);
+                        AM_drawMline2(&l, &templine, false, glowmode, false);
                     }
                     else if(cfg.automapShowDoors && AM_checkSpecial(xline->special) > 0 )
                     {
@@ -1820,7 +1852,7 @@ void AM_drawWalls(boolean glowmode)
 
                         templine = AM_getLine( 2, xline->special);
 
-                        AM_drawMline2(&l, templine, withglow, glowmode, withglow);
+                        AM_drawMline2(&l, &templine, withglow, glowmode, withglow);
                     }
                     else if(P_GetFixedp(backsector, DMU_FLOOR_HEIGHT) !=
                             P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT))
@@ -1828,7 +1860,7 @@ void AM_drawWalls(boolean glowmode)
                         // floor level change
                         templine = AM_getLine( 3, 0);
 
-                        AM_drawMline2(&l, templine, false, glowmode, false);
+                        AM_drawMline2(&l, &templine, false, glowmode, false);
                     }
                     else if(P_GetFixedp(backsector, DMU_CEILING_HEIGHT) !=
                             P_GetFixedp(frontsector, DMU_CEILING_HEIGHT))
@@ -1836,13 +1868,13 @@ void AM_drawWalls(boolean glowmode)
                         // ceiling level change
                         templine = AM_getLine( 4, 0);
 
-                        AM_drawMline2(&l, templine, false, glowmode, false);
+                        AM_drawMline2(&l, &templine, false, glowmode, false);
                     }
                     else if(cheating)
                     {
                         templine = AM_getLine( 0, 0);
 
-                        AM_drawMline2(&l, templine, false, glowmode, false);
+                        AM_drawMline2(&l, &templine, false, glowmode, false);
                     }
                 }
             }
@@ -1852,7 +1884,7 @@ void AM_drawWalls(boolean glowmode)
                 {
                     // as yet unseen line
                     templine = AM_getLine( 0, 0);
-                    AM_drawMline2(&l, templine, false, glowmode, false);
+                    AM_drawMline2(&l, &templine, false, glowmode, false);
                 }
             }
         }

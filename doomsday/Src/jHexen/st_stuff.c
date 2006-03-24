@@ -3009,7 +3009,7 @@ static void CheatDebugFunc(player_t *player, Cheat_t * cheat)
             player->plr->mo->pos[VY] >> FRACBITS,
             player->plr->mo->pos[VZ] >> FRACBITS);
     P_SetMessage(player, textBuffer);
-    
+
     // Also print some information to the console.
     Con_Message(textBuffer);
     sub = player->plr->mo->subsector;
@@ -3055,11 +3055,9 @@ static void CheatScriptFunc3(player_t *player, Cheat_t * cheat)
     }
 }
 
-extern int cheating;
-
 static void CheatRevealFunc(player_t *player, Cheat_t * cheat)
 {
-    cheating = (cheating + 1) % 3;
+    cheating = (cheating + 1) % 4;
 }
 
 //===========================================================================
@@ -3343,21 +3341,20 @@ DEFCC(CCmdCheatReveal)
         return false;           // Can't cheat!
     if(argc != 2)
     {
-        Con_Printf("Usage: reveal (0-3)\n");
-        Con_Printf("0=nothing, 1=show unseen, 2=full map, 3=map+things\n");
+        Con_Printf("Usage: reveal (0-4)\n");
+        Con_Printf("0=nothing, 1=show unseen, 2=full map, 3=map+things, 4=show subsectors\n");
         return true;
     }
     // Reset them (for 'nothing'). :-)
     cheating = 0;
     players[consoleplayer].powers[pw_allmap] = false;
     option = atoi(argv[1]);
-    if(option < 0 || option > 3)
+    if(option < 0 || option > 4)
         return false;
     if(option == 1)
         players[consoleplayer].powers[pw_allmap] = true;
-    else if(option == 2)
-        cheating = 1;
-    else if(option == 3)
-        cheating = 2;
+    else if(option != 0)
+        cheating = option -1;
+
     return true;
 }
