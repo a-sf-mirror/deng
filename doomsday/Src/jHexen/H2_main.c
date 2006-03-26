@@ -253,7 +253,7 @@ void H2_PreInit(void)
     cfg.hudColor[2] = deffontRGB[2];
     cfg.hudColor[3] = 1;
     cfg.hudIconAlpha = 1;
-    cfg.usePatchReplacement = 1;
+    cfg.usePatchReplacement = 2; // Use built-in replacements if available.
     cfg.cameraNoClip = true;
     cfg.bobView = cfg.bobWeapon = 1;
 
