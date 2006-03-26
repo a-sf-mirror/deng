@@ -183,9 +183,11 @@ void R_DrawLevelTitle(void)
     if(actual_leveltime > 5 * 35)
         alpha = 1 - (actual_leveltime - 5 * 35) / 35.0f;
 
+    // Get the strings from Doomsday
     lname = (char *) DD_GetVariable(DD_MAP_NAME);
     lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
 
+    // Compose the mapnumber used to check the map name patches array.
     if(gamemode == commercial)
         mapnum = gamemap -1;
     else
@@ -201,9 +203,10 @@ void R_DrawLevelTitle(void)
                 lname++;
         }
         WI_DrawPatch(SCREENWIDTH / 2, y, 1, 1, 1, alpha, lnames[mapnum].lump,
-                     lname, ALIGN_CENTER);
+                     lname, false, ALIGN_CENTER);
         y += 14;                //9;
     }
+
     gl.Color4f(.5f, .5f, .5f, alpha);
     if(lauthor && W_IsFromIWAD(lnames[mapnum].lump) &&
        (!cfg.hideAuthorIdSoft || stricmp(lauthor, "id software")))
@@ -402,7 +405,7 @@ void D_Display(void)
             ay = viewwindowy + 4;
 
         WI_DrawPatch(SCREENWIDTH /2, ay, 1, 1, 1, 1, W_GetNumForName("M_PAUSE"),
-                     NULL, ALIGN_CENTER);
+                     NULL, false, ALIGN_CENTER);
     }
 
     // InFine is drawn whenever active.
