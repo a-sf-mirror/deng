@@ -73,7 +73,7 @@ void    R_CachePatch(dpatch_t * dp, char *name);
 
 // Implements patch replacement.
 void    WI_DrawPatch(int x, int y, float r, float g, float b, float a,
-                     int lump, char *altstring, int halign);
+                     int lump, char *altstring, boolean builtin, int halign);
 
 void    WI_DrawParamText(int x, int y, char *string, dpatch_t * defFont,
                          float defRed, float defGreen, float defBlue,
