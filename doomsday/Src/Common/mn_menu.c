@@ -1819,7 +1819,7 @@ void M_Drawer(void)
                                 SHORT(currentMenu->font[17].height) - 1, r, g, b, menu_alpha,
                                 W_GetNumForName(currentMenu->items[i].lumpname),
                                 (currentMenu->items[i].flags & MIF_NOTALTTXT)? NULL :
-                                 currentMenu->items[i].text, ALIGN_LEFT);
+                                 currentMenu->items[i].text, true, ALIGN_LEFT);
                 }
             }
             else if(currentMenu->items[i].text)
@@ -2358,26 +2358,36 @@ void M_DrawMainMenu(void)
     GL_DrawPatch_CS(278, 80, SkullBaseLump + frame);
 
 #elif __JHERETIC__
-    WI_DrawPatch(88, 0, 1, 1, 1, menu_alpha, W_GetNumForName("M_HTIC"), NULL, ALIGN_LEFT);
+    WI_DrawPatch(88, 0, 1, 1, 1, menu_alpha, W_GetNumForName("M_HTIC"),
+                 NULL, false, ALIGN_LEFT);
 
     gl.Color4f( 1, 1, 1, menu_alpha);
     GL_DrawPatch_CS(40, 10, SkullBaseLump + (17 - frame));
     GL_DrawPatch_CS(232, 10, SkullBaseLump + frame);
 #elif __JDOOM__
-    WI_DrawPatch(94, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_DOOM"), NULL, ALIGN_LEFT);
+    WI_DrawPatch(94, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_DOOM"),
+                 NULL, false, ALIGN_LEFT);
 #elif __JSTRIFE__
     Menu_t *menu = &MainDef;
     int    yoffset = 0;
 
-    WI_DrawPatch(86, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_STRIFE"), NULL, ALIGN_LEFT);
+    WI_DrawPatch(86, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_STRIFE"),
+                 NULL, false, ALIGN_LEFT);
 
-    WI_DrawPatch(menu->x, menu->y + yoffset, 1, 1, 1, menu_alpha, W_GetNumForName("M_NGAME"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_NGAME"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_OPTION"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_LOADG"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_SAVEG"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_RDTHIS"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1, menu_alpha, W_GetNumForName("M_QUITG"), NULL, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + yoffset, 1, 1, 1, menu_alpha,
+                 W_GetNumForName("M_NGAME"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_NGAME"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_OPTION"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_LOADG"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_SAVEG"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_RDTHIS"), NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(menu->x, menu->y + (yoffset+= menu->itemHeight), 1, 1, 1,
+                 menu_alpha, W_GetNumForName("M_QUITG"), NULL, false, ALIGN_LEFT);
 #endif
 }
 
@@ -2418,7 +2428,8 @@ void M_DrawEpisode(void)
     M_DrawTitle("WHICH EPISODE?", 4);
 #elif __JDOOM__
     WI_DrawPatch(50, 40, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
-                 W_GetNumForName("M_EPISOD"), "{case}Which Episode{scaley=1.25,y=-3}?", ALIGN_LEFT);
+                 W_GetNumForName("M_EPISOD"), "{case}Which Episode{scaley=1.25,y=-3}?",
+                 true, ALIGN_LEFT);
 #endif
 }
 #endif
@@ -2432,9 +2443,10 @@ void M_DrawSkillMenu(void)
 #elif __JDOOM__
     Menu_t *menu = &SkillDef;
     WI_DrawPatch(96, 14, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
-                 W_GetNumForName("M_NEWG"), "{case}NEW GAME", ALIGN_LEFT);
+                 W_GetNumForName("M_NEWG"), "{case}NEW GAME", true, ALIGN_LEFT);
     WI_DrawPatch(54, 38, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
-                 W_GetNumForName("M_SKILL"), "{case}Choose Skill Level:", ALIGN_LEFT);
+                 W_GetNumForName("M_SKILL"), "{case}Choose Skill Level:", true,
+                 ALIGN_LEFT);
 #endif
 }
 
@@ -2520,7 +2532,7 @@ void M_DrawLoad(void)
     M_DrawTitle("LOAD GAME", 4);
 #else
     WI_DrawPatch(72, 28, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
-                 W_GetNumForName("M_LOADG"), "{case}LOAD GAME", ALIGN_LEFT);
+                 W_GetNumForName("M_LOADG"), "{case}LOAD GAME", true, ALIGN_LEFT);
 #endif
     for(i = 0; i < load_end; i++)
     {
@@ -2547,7 +2559,7 @@ void M_DrawSave(void)
     M_DrawTitle("SAVE GAME", 4);
 #else
     WI_DrawPatch(72, 28, menu->color[0], menu->color[1], menu->color[2], menu_alpha,
-                 W_GetNumForName("M_SAVEG"), "{case}SAVE GAME", ALIGN_LEFT);
+                 W_GetNumForName("M_SAVEG"), "{case}SAVE GAME", true, ALIGN_LEFT);
 #endif
     for(i = 0; i < load_end; i++)
     {
@@ -2743,12 +2755,12 @@ void M_DrawReadThis1(void)
     switch (gamemode)
     {
     case commercial:
-        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP"), NULL, ALIGN_LEFT);
+        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP"), NULL, false, ALIGN_LEFT);
         break;
     case shareware:
     case registered:
     case retail:
-        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP1"), NULL, ALIGN_LEFT);
+        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP1"), NULL, false, ALIGN_LEFT);
         break;
     default:
         break;
@@ -2771,11 +2783,11 @@ void M_DrawReadThis2(void)
     case retail:
     case commercial:
         // This hack keeps us from having to change menus.
-        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("CREDIT"), NULL, ALIGN_LEFT);
+        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("CREDIT"), NULL, false, ALIGN_LEFT);
         break;
     case shareware:
     case registered:
-        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP2"), NULL, ALIGN_LEFT);
+        WI_DrawPatch(0, 0, 1, 1, 1, 1, W_GetNumForName("HELP2"), NULL, false, ALIGN_LEFT);
         break;
     default:
         break;
@@ -2799,31 +2811,22 @@ void M_DrawReadThis3(void)
 
 #endif
 
-//---------------------------------------------------------------------------
-//
-// PROC M_DrawOptions
-//
-//---------------------------------------------------------------------------
-
 void M_DrawOptions(void)
 {
     //Menu_t *menu = &OptionsDef;
 #ifndef __JDOOM__
-    WI_DrawPatch(88, 0, 1, 1, 1, menu_alpha, W_GetNumForName("M_HTIC"), NULL, ALIGN_LEFT);
+    WI_DrawPatch(88, 0, 1, 1, 1, menu_alpha, W_GetNumForName("M_HTIC"),
+                 NULL, false, ALIGN_LEFT);
 
     M_DrawTitle("OPTIONS", 56);
 #else
-    WI_DrawPatch(94, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_DOOM"), NULL, ALIGN_LEFT);
-    WI_DrawPatch(160, 64, cfg.menuColor[0], cfg.menuColor[1], cfg.menuColor[2], menu_alpha,
-                W_GetNumForName("M_OPTTTL"), "{case}OPTIONS", ALIGN_CENTER);
+    WI_DrawPatch(94, 2, 1, 1, 1, menu_alpha, W_GetNumForName("M_DOOM"),
+                 NULL, false, ALIGN_LEFT);
+    WI_DrawPatch(160, 64, cfg.menuColor[0], cfg.menuColor[1], cfg.menuColor[2],
+                 menu_alpha, W_GetNumForName("M_OPTTTL"), "{case}OPTIONS",
+                 true, ALIGN_CENTER);
 #endif
 }
-
-//---------------------------------------------------------------------------
-//
-// PROC M_DrawOptions2
-//
-//---------------------------------------------------------------------------
 
 void M_DrawOptions2(void)
 {

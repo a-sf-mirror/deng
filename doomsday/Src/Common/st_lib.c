@@ -131,21 +131,21 @@ void STlib_drawNum(st_number_t * n, boolean refresh)
     // in the special case of 0, you draw 0
     if(!num)
         WI_DrawPatch(x - w, n->y, 1, 1, 1, *n->alpha, n->p[0].lump,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
 
     // draw the new number
     while(num && numdigits--)
     {
         x -= w;
         WI_DrawPatch(x, n->y, 1, 1, 1, *n->alpha, n->p[num % 10].lump,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
         num /= 10;
     }
 
     // draw a minus sign if necessary
     if(neg)
         WI_DrawPatch(x - 8, n->y, 1, 1, 1, *n->alpha, sttminus_i,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
 }
 
 void STlib_updateNum(st_number_t * n, boolean refresh)
@@ -165,7 +165,7 @@ void STlib_updatePercent(st_percent_t * per, int refresh)
 {
     if(refresh && *per->n.on)
         WI_DrawPatch(per->n.x, per->n.y, 1, 1, 1, *per->n.alpha, per->p->lump,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
 
     STlib_updateNum(&per->n, refresh);
 }
@@ -187,7 +187,7 @@ void STlib_updateMultIcon(st_multicon_t * mi, boolean refresh)
     if(*mi->on && (mi->oldinum != *mi->inum || refresh) && (*mi->inum != -1))
     {
         WI_DrawPatch(mi->x, mi->y, 1, 1, 1, *mi->alpha, mi->p[*mi->inum].lump,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
         mi->oldinum = *mi->inum;
     }
 }
@@ -211,7 +211,7 @@ void STlib_updateBinIcon(st_binicon_t * bi, boolean refresh)
     {
 
         WI_DrawPatch(bi->x, bi->y, 1, 1, 1, *bi->alpha, bi->p->lump,
-                     NULL, ALIGN_LEFT);
+                     NULL, false, ALIGN_LEFT);
         bi->oldval = *bi->val;
     }
 }

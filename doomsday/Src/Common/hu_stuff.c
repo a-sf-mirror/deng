@@ -799,10 +799,16 @@ void M_WriteText3(int x, int y, const char *string, dpatch_t *font,
  * This routine tests for a string-replacement for the patch.
  * If one is found, it's used instead of the original graphic.
  *
+ * "{fontb; r=0.5; g=1; b=0; x=2; y=-2}This is good!"
+ *
  * If the patch is not in an IWAD, it won't be replaced!
+ *
+ * @param altstring     String to use instead of the patch if appropriate.
+ * @param built-in      (True) if the altstring is a built-in replacement
+ *                      (ie it does not originate from a DED definition).
  */
 void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
-                  int lump, char *altstring, int halign)
+                  int lump, char *altstring, boolean builtin, int halign)
 {
     char    def[80], *string;
     const char *name = W_LumpName(lump);
@@ -815,32 +821,52 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
 
     patch = (patch_t *) W_CacheLumpNum(lump, PU_CACHE);
 
-    // "{fontb; r=0.5; g=1; b=0; x=2; y=-2}This is good!"
-
-    strcpy(def, "Patch Replacement|");
-    strcat(def, name);
-
-    patchString = Def_Get(DD_DEF_VALUE, def, &string);
-
-    if(W_IsFromIWAD(lump) &&
-      ((cfg.usePatchReplacement == 1 && patchString) ||
-       (cfg.usePatchReplacement == 2 && altstring))) // Built-in patch replacement.
-    {
-        WI_DrawParamText(x, y, patchString? string : altstring, hu_font_b,
-                         r, g, b, a, false, true, halign);
+    if(altstring && !builtin)
+    {   // We have already determined a string to replace this with.
+        if(W_IsFromIWAD(lump))
+        {
+            WI_DrawParamText(x, y, altstring, hu_font_b, r, g, b, a, false,
+                             true, halign);
+            return;
+        }
     }
-    else
-    {
-        // Replacement string not found
-        if(halign == ALIGN_CENTER)
-            posx -= SHORT(patch->width) /2;
-        else if(halign == ALIGN_RIGHT)
-            posx -= SHORT(patch->width);
+    else if(cfg.usePatchReplacement)
+    {   // We might be able to replace the patch with a string
+        strcpy(def, "Patch Replacement|");
+        strcat(def, name);
 
-        gl.Color4f(1, 1, 1, a);
-        GL_DrawPatch_CS(posx, y, lump);
+        patchString = Def_Get(DD_DEF_VALUE, def, &string);
+
+        if(W_IsFromIWAD(lump))
+        {
+            // A user replacement?
+            if(patchString)
+            {
+                WI_DrawParamText(x, y, string, hu_font_b, r, g, b, a, false,
+                                 true, halign);
+                return;
+            }
+
+            // A built-in replacement?
+            if(cfg.usePatchReplacement == 2 && altstring)
+            {
+                WI_DrawParamText(x, y, altstring, hu_font_b, r, g, b, a, false,
+                                 true, halign);
+                return;
+            }
+        }
     }
+
+    // No replacement possible/wanted - use the original patch.
+    if(halign == ALIGN_CENTER)
+        posx -= SHORT(patch->width) /2;
+    else if(halign == ALIGN_RIGHT)
+        posx -= SHORT(patch->width);
+
+    gl.Color4f(1, 1, 1, a);
+    GL_DrawPatch_CS(posx, y, lump);
 }
+
 void Draw_BeginZoom(float s, float originX, float originY)
 {
     gl.MatrixMode(DGL_MODELVIEW);

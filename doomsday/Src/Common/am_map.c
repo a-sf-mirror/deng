@@ -235,7 +235,6 @@ mline_t         player_arrow[] = {
 
 #undef R
 #define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
-#define NUMKEYSQUARELINES (sizeof(keysquare)/sizeof(mline_t))
 
 #endif
 
@@ -258,7 +257,6 @@ mline_t         player_arrow[] = {
 
 #undef R
 #define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
-#define NUMKEYSQUARELINES (sizeof(keysquare)/sizeof(mline_t))
 
 #endif
 
