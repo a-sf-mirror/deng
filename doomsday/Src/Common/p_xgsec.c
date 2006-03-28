@@ -264,7 +264,8 @@ int C_DECL XLTrav_LineAngle(line_t *line, boolean dummy, void *context,
        P_GetPtrp(line, DMU_BACK_SECTOR) != sec)
         return true;            // Wrong sector, keep looking.
 
-    *(angle_t *) context2 = P_GetAnglep(line, DMU_ANGLE);
+    *(angle_t *) context2 = R_PointToAngle2(0, 0, P_GetFixedp(line, DMU_DX),
+                                            P_GetFixedp(line, DMU_DY));
 
     return false;               // Stop looking after first hit.
 }
@@ -376,8 +377,8 @@ void XS_Init(void)
 
         P_GetBytev(DMU_SECTOR, i, DMU_COLOR, tmprgb);
 
-        xsec->origfloor = P_GetInt(DMU_SECTOR, i, DMU_FLOOR_HEIGHT);
-        xsec->origceiling = P_GetInt(DMU_SECTOR, i, DMU_CEILING_HEIGHT);
+        xsec->origfloor = P_GetFixed(DMU_SECTOR, i, DMU_FLOOR_HEIGHT);
+        xsec->origceiling = P_GetFixed(DMU_SECTOR, i, DMU_CEILING_HEIGHT);
         xsec->origlight = P_GetInt(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
 
         memcpy(xsec->origrgb, tmprgb, 3);
@@ -449,8 +450,8 @@ void XS_PlaneMover(xgplanemover_t * mover)
     byte rgb[3];
     int     res, res2;
     int     dir;
-    int     ceil = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
-    int     floor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);
+    int     ceil = P_GetFixedp(mover->sector, DMU_CEILING_HEIGHT);
+    int     floor = P_GetFixedp(mover->sector, DMU_FLOOR_HEIGHT);
     xsector_t *xsec = P_XSector(mover->sector);
     boolean docrush = (mover->flags & PMF_CRUSH) != 0;
     boolean follows = (mover->flags & PMF_OTHER_FOLLOWS) != 0;
@@ -489,9 +490,9 @@ void XS_PlaneMover(xgplanemover_t * mover)
     if(setorig)
     {
         if(mover->ceiling)
-            xsec->origceiling = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
+            xsec->origceiling = P_GetFixedp(mover->sector, DMU_CEILING_HEIGHT);
         else
-            xsec->origfloor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);;
+            xsec->origfloor = P_GetFixedp(mover->sector, DMU_FLOOR_HEIGHT);;
     }
 
     if(follows)
@@ -505,9 +506,9 @@ void XS_PlaneMover(xgplanemover_t * mover)
         if(setorig)
         {
             if(!mover->ceiling)
-                xsec->origceiling = P_GetIntp(mover->sector, DMU_CEILING_HEIGHT);
+                xsec->origceiling = P_GetFixedp(mover->sector, DMU_CEILING_HEIGHT);
             else
-                xsec->origfloor = P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT);
+                xsec->origfloor = P_GetFixedp(mover->sector, DMU_FLOOR_HEIGHT);
         }
         if(res2 == crushed)
             res = crushed;
@@ -542,13 +543,13 @@ void XS_PlaneMover(xgplanemover_t * mover)
         {
             // Make sure both the planes are where we started from.
             if((!mover->ceiling || follows) &&
-               P_GetIntp(mover->sector, DMU_FLOOR_HEIGHT) != floor)
+               P_GetFixedp(mover->sector, DMU_FLOOR_HEIGHT) != floor)
             {
                 T_MovePlane(mover->sector, mover->speed, floor, docrush, false,
                             -dir);
             }
             if((mover->ceiling || follows) &&
-               P_GetIntp(mover->sector, DMU_CEILING_HEIGHT) != ceil)
+               P_GetFixedp(mover->sector, DMU_CEILING_HEIGHT) != ceil)
             {
                 T_MovePlane(mover->sector, mover->speed, ceil, docrush, true,
                             -dir);
@@ -648,17 +649,17 @@ int XS_AdjoiningPlanes(sector_t *sector, boolean ceiling, int *heightlist,
         if(heightlist)
         {
             if(heightlist[count] == ceiling)
-                P_GetFixedp(other, DMU_CEILING_HEIGHT);
+                heightlist[count] = P_GetFixedp(other, DMU_CEILING_HEIGHT);
             else
-                P_GetFixedp(other, DMU_FLOOR_HEIGHT);
+                heightlist[count] = P_GetFixedp(other, DMU_FLOOR_HEIGHT);
         }
 
         if(piclist)
         {
             if(piclist[count] == ceiling)
-                P_GetFixedp(other, DMU_CEILING_TEXTURE);
+                piclist[count] = P_GetFixedp(other, DMU_CEILING_TEXTURE);
             else
-                P_GetFixedp(other, DMU_FLOOR_TEXTURE);
+                piclist[count] = P_GetFixedp(other, DMU_FLOOR_TEXTURE);
         }
 
         if(lightlist)
@@ -756,10 +757,10 @@ int XS_TextureHeight(line_t *line, int part)
 
     if(twosided)
     {
-        int ffloor = P_GetIntp(front, DMU_FLOOR_HEIGHT);
-        int fceil = P_GetIntp(front, DMU_CEILING_HEIGHT);
-        int bfloor = P_GetIntp(back, DMU_FLOOR_HEIGHT);
-        int bceil = P_GetIntp(back, DMU_CEILING_HEIGHT);
+        int ffloor = P_GetFixedp(front, DMU_FLOOR_HEIGHT);
+        int fceil = P_GetFixedp(front, DMU_CEILING_HEIGHT);
+        int bfloor = P_GetFixedp(back, DMU_FLOOR_HEIGHT);
+        int bceil = P_GetFixedp(back, DMU_CEILING_HEIGHT);
 
         minfloor = ffloor;
         maxfloor = bfloor;
@@ -946,7 +947,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     }
     // Init the values to the current sector's floor.
     if(height)
-        *height = P_GetIntp(sector, DMU_FLOOR_HEIGHT);
+        *height = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
     if(pic)
         *pic = P_GetIntp(sector, DMU_FLOOR_TEXTURE);
     if(planesector)
@@ -1036,14 +1037,14 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
             ref == SPREF_LINE_ACT_TAGGED_FLOOR)
         {
             if(height)
-                *height = P_GetIntp(iter, DMU_FLOOR_HEIGHT);
+                *height = P_GetFixedp(iter, DMU_FLOOR_HEIGHT);
             if(pic)
                 *pic = P_GetIntp(iter, DMU_FLOOR_TEXTURE);
         }
         else
         {
             if(height)
-                *height = P_GetIntp(iter, DMU_CEILING_HEIGHT);
+                *height = P_GetFixedp(iter, DMU_CEILING_HEIGHT);
             if(pic)
                 *pic = P_GetIntp(iter, DMU_CEILING_TEXTURE);
         }
@@ -1064,7 +1065,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
         // Actline's front floor.
         if(height)
-            *height = P_GetIntp(frontsector, DMU_FLOOR_HEIGHT);
+            *height = P_GetFixedp(frontsector, DMU_FLOOR_HEIGHT);
         if(pic)
             *pic = P_GetIntp(frontsector, DMU_FLOOR_TEXTURE);
         if(planesector)
@@ -1085,7 +1086,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
         // Actline's back floor.
         if(height)
-            *height = P_GetIntp(backsector, DMU_FLOOR_HEIGHT);
+            *height = P_GetFixedp(backsector, DMU_FLOOR_HEIGHT);
         if(pic)
             *pic = P_GetIntp(backsector, DMU_FLOOR_TEXTURE);
         if(planesector)
@@ -1106,7 +1107,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
         // Actline's front ceiling.
         if(height)
-            *height = P_GetIntp(frontsector, DMU_CEILING_HEIGHT);
+            *height = P_GetFixedp(frontsector, DMU_CEILING_HEIGHT);
         if(pic)
             *pic = P_GetIntp(frontsector, DMU_CEILING_TEXTURE);
         if(planesector)
@@ -1127,7 +1128,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
 
         // Actline's back ceiling.
         if(height)
-            *height = P_GetIntp(backsector, DMU_CEILING_HEIGHT);
+            *height = P_GetFixedp(backsector, DMU_CEILING_HEIGHT);
         if(pic)
             *pic = P_GetIntp(backsector, DMU_CEILING_TEXTURE);
         if(planesector)
@@ -1153,7 +1154,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     if(ref == SPREF_CURRENT_FLOOR)
     {
         if(height)
-            *height = P_GetIntp(sector, DMU_FLOOR_HEIGHT);
+            *height = P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
         if(pic)
             *pic = P_GetIntp(sector, DMU_FLOOR_TEXTURE);
         return true;
@@ -1161,7 +1162,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     if(ref == SPREF_CURRENT_CEILING)
     {
         if(height)
-            *height = P_GetIntp(sector, DMU_CEILING_HEIGHT);
+            *height = P_GetFixedp(sector, DMU_CEILING_HEIGHT);
         if(pic)
             *pic = P_GetIntp(sector, DMU_CEILING_TEXTURE);
         return true;
@@ -1184,7 +1185,7 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         // The heights are in real world coordinates.
         for(i = 0, k = 0; i < P_GetIntp(sector, DMU_LINE_COUNT); i++)
         {
-            k = XS_TextureHeight(P_GetPtrp(sector, DMU_LINE_OF_SECTOR | k), part);
+            k = XS_TextureHeight(P_GetPtrp(sector, DMU_LINE_OF_SECTOR | i), part);
             if(k != DDMAXINT)
                 heights[num++] = k;
         }
@@ -1213,8 +1214,8 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
     if(!num)
     {
         // Add self.
-        heights[0] = ceiling ? P_GetIntp(sector, DMU_CEILING_HEIGHT) :
-                               P_GetIntp(sector, DMU_FLOOR_HEIGHT);
+        heights[0] = ceiling ? P_GetFixedp(sector, DMU_CEILING_HEIGHT) :
+                               P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
 
         pics[0] = ceiling ? P_GetIntp(sector, DMU_CEILING_TEXTURE) :
                             P_GetIntp(sector, DMU_FLOOR_TEXTURE);
@@ -1230,16 +1231,16 @@ boolean XS_GetPlane(line_t *actline, sector_t *sector, int ref, int refdata,
         i = FindMinOf(heights, num);
 
     if(ref == SPREF_NEXT_HIGHEST_CEILING)
-        i = FindNextOf(heights, num, P_GetIntp(sector, DMU_CEILING_HEIGHT));
+        i = FindNextOf(heights, num, P_GetFixedp(sector, DMU_CEILING_HEIGHT));
 
     if(ref == SPREF_NEXT_HIGHEST_FLOOR)
-        i = FindNextOf(heights, num, P_GetIntp(sector, DMU_FLOOR_HEIGHT));
+        i = FindNextOf(heights, num, P_GetFixedp(sector, DMU_FLOOR_HEIGHT));
 
     if(ref == SPREF_NEXT_LOWEST_CEILING)
-        i = FindPrevOf(heights, num, P_GetIntp(sector, DMU_CEILING_HEIGHT));
+        i = FindPrevOf(heights, num, P_GetFixedp(sector, DMU_CEILING_HEIGHT));
 
     if(ref == SPREF_NEXT_LOWEST_FLOOR)
-        i = FindPrevOf(heights, num, P_GetIntp(sector, DMU_FLOOR_HEIGHT));
+        i = FindPrevOf(heights, num, P_GetFixedp(sector, DMU_FLOOR_HEIGHT));
 
     // The requested plane was not found.
     if(i == -1)
@@ -1439,8 +1440,8 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, line_t *origin,
 
     // Setup the mover.
     if(!stepcount)
-        firstheight = ceiling ? P_GetIntp(sector, DMU_CEILING_HEIGHT) :
-                                P_GetIntp(sector, DMU_FLOOR_HEIGHT);
+        firstheight = ceiling ? P_GetFixedp(sector, DMU_CEILING_HEIGHT) :
+                                P_GetFixedp(sector, DMU_FLOOR_HEIGHT);
 
     mover->destination =
         firstheight + (stepcount + 1) * info->fparm[1] * FRACUNIT;
@@ -1538,8 +1539,8 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
             {
                 line = P_GetPtrp(sec, DMU_LINE_OF_SECTOR | k);
 
-                if(P_GetPtrp(line, DMU_FRONT_SECTOR) ||
-                   P_GetPtrp(line, DMU_BACK_SECTOR))
+                if(!P_GetPtrp(line, DMU_FRONT_SECTOR) ||
+                   !P_GetPtrp(line, DMU_BACK_SECTOR))
                     continue;
 
                 if(P_GetPtrp(line, DMU_FRONT_SECTOR) !=
@@ -1551,14 +1552,12 @@ int C_DECL XSTrav_BuildStairs(sector_t *sector, boolean ceiling, void *context,
                     // Planepic must match.
                     if(ceiling)
                     {
-                        if(P_GetIntp(sec, DMU_CEILING_TEXTURE) !=
-                           mypic)
+                        if(P_GetIntp(sec, DMU_CEILING_TEXTURE) != mypic)
                             continue;
                     }
                     else
                     {
-                        if(P_GetIntp(sec, DMU_FLOOR_TEXTURE) !=
-                           mypic)
+                        if(P_GetIntp(sec, DMU_FLOOR_TEXTURE) != mypic)
                             continue;
                     }
                 }
@@ -2221,7 +2220,7 @@ void XS_UpdatePlanes(sector_t *sec)
     if(UPDFUNC(fn))             // Changed?
     {
         // How much change?
-        i = FRACUNIT * fn->value - P_GetIntp(sec, DMU_FLOOR_HEIGHT);
+        i = FRACUNIT * fn->value - P_GetFixedp(sec, DMU_FLOOR_HEIGHT);
         if(i)
             // Move the floor plane accordingly.
             T_MovePlane(sec, abs(i), FRACUNIT * fn->value, docrush, 0,
@@ -2233,7 +2232,7 @@ void XS_UpdatePlanes(sector_t *sec)
     if(UPDFUNC(fn))             // Changed?
     {
         // How different?
-        i = FRACUNIT * fn->value - P_GetIntp(sec, DMU_CEILING_HEIGHT);
+        i = FRACUNIT * fn->value - P_GetFixedp(sec, DMU_CEILING_HEIGHT);
         if(i)
             // Move the ceiling accordingly.
             T_MovePlane(sec, abs(i), FRACUNIT * fn->value, docrush, 1,
@@ -2412,13 +2411,13 @@ int XSTrav_SectorChain(sector_t *sec, mobj_t *mo, int ch)
     {
     case XSCE_FLOOR:
         // Is it touching the floor?
-        if(mo->pos[VZ] > P_GetIntp(sec, DMU_FLOOR_HEIGHT))
+        if(mo->pos[VZ] > P_GetFixedp(sec, DMU_FLOOR_HEIGHT))
             return true;
         break;
 
     case XSCE_CEILING:
         // Is it touching the ceiling?
-        if(mo->pos[VZ] + mo->height < P_GetIntp(sec, DMU_CEILING_HEIGHT))
+        if(mo->pos[VZ] + mo->height < P_GetFixedp(sec, DMU_CEILING_HEIGHT))
             return true;
         break;
 

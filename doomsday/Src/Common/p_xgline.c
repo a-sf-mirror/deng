@@ -176,10 +176,10 @@ static char msgbuf[80];
 /* ADD NEW XG CLASSES TO THE END - ORIGINAL INDICES MUST STAY THE SAME!!! */
 xgclass_t xgClasses[NUMXGCLASSES] =
 {
-    { NULL, NULL, TRAV_NONE, 0, TXT_XGCLASS000 },
+    { NULL, NULL, TRAV_NONE, 0, 1, 0, "None" },
       // Dummy class (has no functions but enables use of secondary actions) (no params)
 
-    { XL_DoChainSequence, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS001,
+    { XL_DoChainSequence, NULL, TRAV_NONE, 0, 1, 0, "Chain Sequence",
       // Excute a chain of other XG line types (a zero ends the list)
        {{XGPF_INT, "Chain Flags", "chsf_", 0},              // ip0: (chsf_) chain sequence flags
         {XGPF_INT, "Line Type 0", "", -1},                  // ip1: Type to execute
@@ -202,7 +202,7 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "Line Type 17", "", -1},                 // ip18: ""  ""  ""
         {XGPF_INT, "Line Type 18", "", -1} }},              // ip19: ""  ""  ""
 
-    { XSTrav_MovePlane, XS_InitMovePlane, TRAV_PLANES, 0, 1, 0, TXT_XGCLASS002,
+    { XSTrav_MovePlane, XS_InitMovePlane, TRAV_PLANES, 0, 1, 0, "Move Plane",
       // Move one or more planes. Optionaly change textures/types on start/end
        {{XGPF_INT, "Target Ref", "lpref_", 0},              // ip0: (plane ref) plane(s) to move.
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
@@ -220,7 +220,7 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "End Type Ref", "lpref_", 13},           // ip13: (plane ref) end sector type (spec: use i14 as type ID)
         {XGPF_INT, "End Type Num", "", -1} }},              // ip14: data component or type ID
 
-    { XSTrav_BuildStairs, XS_InitStairBuilder, TRAV_PLANES, 0, 1, 0, TXT_XGCLASS003,
+    { XSTrav_BuildStairs, XS_InitStairBuilder, TRAV_PLANES, 0, 1, 0, "Build Stairs",
       // Moves one or more planes, incrementing their height with each move
        {{XGPF_INT, "Target Ref", "lpref_", 0},              // ip0: (plane ref) plane to start from
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
@@ -231,33 +231,33 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "Step End Sound", "", 6 | MAP_SND},      // ip6: step end sound
         {XGPF_INT, "Step Move Sound", "", 7 | MAP_SND} }},  // ip7: step move sound
 
-    { XL_DoDamage, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS004,
+    { XL_DoDamage, NULL, TRAV_NONE, 0, 1, 0, "Damage",
       // Deals health damage to the activator
        {{XGPF_INT, "Min Delta", "", -1},                    // ip0: min damage delta
         {XGPF_INT, "Max Delta", "", -1},                    // ip1: max damage delta
         {XGPF_INT, "Min Limit", "", -1},                    // ip2: min limit (wont damage if health bellow)
         {XGPF_INT, "Max Limit", "", -1} }},                 // ip3: max limit (wont damage if health above)
 
-    { XL_DoPower, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS005,
+    { XL_DoPower, NULL, TRAV_NONE, 0, 1, 0, "Power",
       // Deals armor damage to the activator (must be a player)
        {{XGPF_INT, "Min Delta", "", -1},                    // ip0: min power delta
         {XGPF_INT, "Max Delta", "", -1},                    // ip1: max power delta
         {XGPF_INT, "Min Limit", "", -1},                    // ip2: min limit
         {XGPF_INT, "Max Limit", "", -1} }},                 // ip3: max limit
 
-    { XLTrav_ChangeLineType, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS006,
+    { XLTrav_ChangeLineType, NULL, TRAV_LINES, 0, 1, 0, "Line Type",
       // Changes a line's type (must be an XG type)
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
         {XGPF_INT, "Line Type", "", -1} }},                 // ip2: new type (must be an XG line type)
 
-    { XSTrav_SectorType, NULL, TRAV_SECTORS, 0, 1, 0, TXT_XGCLASS007,
+    { XSTrav_SectorType, NULL, TRAV_SECTORS, 0, 1, 0, "Sector Type",
       // Changes a sector's type (must be an XG type)
        {{XGPF_INT, "Target Ref", "lsref_", 0},              // ip0: (sector ref) sector(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
         {XGPF_INT, "Sector Type", "", -1} }},               // ip2: new type (zero or an XG sector type)
 
-    { XSTrav_SectorLight, NULL, TRAV_SECTORS, 0, 1, 0, TXT_XGCLASS008,
+    { XSTrav_SectorLight, NULL, TRAV_SECTORS, 0, 1, 0, "Sector Light",
       // Change the light level and/or color  of the target sector(s).
        {{XGPF_INT, "Target Ref", "lsref_", 0},              // ip0: (sector ref) sector(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
@@ -272,52 +272,52 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "Green Delta", "", -1},                  // ip8: offset to green delta
         {XGPF_INT, "Blue Delta", "", -1} }},                // ip9: offset to blue delta
 
-    { XLTrav_Activate, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS009,
+    { XLTrav_Activate, NULL, TRAV_LINES, 0, 1, 0, "Activate",
       // Sends a chain event to all the referenced lines
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to activate
         {XGPF_INT, "Target Num", "", -1} }},                // ip1:
 
-    { XL_DoKey, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS010,
+    { XL_DoKey, NULL, TRAV_NONE, 0, 1, 0, "Key",
       // Gives/takes keys to/from the activator (must be a player)
       // Params are bitfields! Bit 1 (0x1) corresponds key 1, bit 2 (0x2) key 2, etc.
        {{XGPF_INT, "Give Keys", "", -1},                    // ip0: keys to give
         {XGPF_INT, "Take Keys", "", -1} }},                 // ip1: keys to take away.
 
-    { XLTrav_Music, NULL, TRAV_LINES, 2, 3, 0, TXT_XGCLASS011,
+    { XLTrav_Music, NULL, TRAV_LINES, 2, 3, 0, "Music",
       // Changes the music track being played
        {{XGPF_INT, "Song ID", "ldref_", 0 | MAP_MUS},       // ip0: song id/name or (line data ref from ip2)
         {XGPF_INT, "Play Looped", "", -1},                  // ip1: non-zero means play looped
         {XGPF_INT, "Data Ref", "lref_", 2},                 // ip2: (line ref) used with line data ref eg set music track to line-tag
         {XGPF_INT, "Data Num", "", -1} }},                  // ip3:
 
-    { XLTrav_LineCount, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS012,
+    { XLTrav_LineCount, NULL, TRAV_LINES, 0, 1, 0, "Line Count",
       // Changes the XG line(s)' internal activation counter
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
         {XGPF_INT, "Set Absolute", "", -1},                 // ip2: non-zero makes ip3 absolute
         {XGPF_INT, "Count Delta", "", -1} }},               // ip3: count delta or absolute
 
-    { XLTrav_EndLevel, NULL, TRAV_LINES, 1, 2, 0, TXT_XGCLASS013,
+    { XLTrav_EndLevel, NULL, TRAV_LINES, 1, 2, 0, "End Level",
       // Ends the current level
        {{XGPF_INT, "Secret Exit", "", -1},                  // ip0: non-zero goto secret level
         {XGPF_INT, "Data Ref", "lref_", 1},                 // ip1: (line ref) line to acquire (line data ref) from
         {XGPF_INT, "Data Num", "", -1},                     // ip2:
         {XGPF_INT, "Goto Level", "ldref_", 3} }},           // ip3: level ID or (line data ref from ip1)
 
-    { XLTrav_DisableLine, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS014,
+    { XLTrav_DisableLine, NULL, TRAV_LINES, 0, 1, 0, "Disable Line",
       // Disables the referenced line(s) if active
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to disable
         {XGPF_INT, "Target Num", "", -1} }},                // ip1:
 
-    { XLTrav_EnableLine, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS015,
+    { XLTrav_EnableLine, NULL, TRAV_LINES, 0, 1, 0, "Enable Line",
       // Enables the referenced line(s) if active
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to enable
         {XGPF_INT, "Target Num", "", -1} }},                // ip1:
 
-    { XL_DoExplode, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS016 },
+    { XL_DoExplode, NULL, TRAV_NONE, 0, 1, 0, "Explode" },
       // Explodes the activator (no params)
 
-    { XSTrav_PlaneTexture, NULL, TRAV_PLANES, 0, 1, 0, TXT_XGCLASS017,
+    { XSTrav_PlaneTexture, NULL, TRAV_PLANES, 0, 1, 0, "Plane Texture",
       // Change the texture and/or surface color of a plane
        {{XGPF_INT, "Target Ref", "lpref_", 0},              // ip0 : (plane ref) plane(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1 : ref data
@@ -327,7 +327,7 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "Green Delta", "", -1},                  // ip5 : "" (green)
         {XGPF_INT, "Blue Delta", "", -1} }},                // ip6 : "" (blue)
 
-    { XLTrav_ChangeWallTexture, NULL, TRAV_LINES, 0, 1, 0, TXT_XGCLASS018,
+    { XLTrav_ChangeWallTexture, NULL, TRAV_LINES, 0, 1, 0, "Wall Texture",
       // Changes texture(s) on the referenced line(s).
       // Changes surface colour(s), alpha, mid textue blendmode and sidedef flags
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) line(s) to change
@@ -350,23 +350,23 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "Bottom Green Delta", "", -1},           // ip17:
         {XGPF_INT, "Bottom Blue Delta", "", -1} }},         // ip18:
 
-    { XL_DoCommand, NULL, TRAV_NONE, 0, 1, 0, TXT_XGCLASS019 },
+    { XL_DoCommand, NULL, TRAV_NONE, 0, 1, 0, "Command" },
       // Executes a console command (CCmd)
 
-    { XSTrav_SectorSound, NULL, TRAV_SECTORS, 0, 1, 0, TXT_XGCLASS020,
+    { XSTrav_SectorSound, NULL, TRAV_SECTORS, 0, 1, 0, "Sector Sound",
       // Plays a sound in sector(s)
        {{XGPF_INT, "Target Ref", "lsref_", 0},              // ip0: (sector ref) sector(s) to play the sound in
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
         {XGPF_INT, "Sound ID", "", 2 | MAP_SND} }},         // ip2: sound name/id to play
 
-    { XSTrav_MimicSector, NULL, TRAV_SECTORS, 0, 1, 0, TXT_XGCLASS021,
+    { XSTrav_MimicSector, NULL, TRAV_SECTORS, 0, 1, 0, "Mimic Sector",
       // Copies all properties from target sector to destination sector(s)
        {{XGPF_INT, "Target Ref", "lsref_", 0},              // ip0: (sector ref) sector(s) to change
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
         {XGPF_INT, "Mimic Ref", "spref_", 2},               // ip2: (spref) sector to mimic
         {XGPF_INT, "Mimic Num", "", -1} }},                 // ip3:
 
-    { XSTrav_Teleport, NULL, TRAV_SECTORS, 0, 1, 0, TXT_XGCLASS022,
+    { XSTrav_Teleport, NULL, TRAV_SECTORS, 0, 1, 0, "Teleport",
       // Teleports the activator to the first teleport exit in the target sector
        {{XGPF_INT, "Target Ref", "lsref_", 0},              // ip0: (sector ref) sector(s) to teleport to (first acceptable target is used)
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
@@ -374,7 +374,7 @@ xgclass_t xgClasses[NUMXGCLASSES] =
         {XGPF_INT, "No Sound", "", -1},                     // ip3: non-zero = no sound
         {XGPF_INT, "Always Stomp", "", -1} }},              // ip4: non-zero = Always telefrag
 
-    { XLTrav_LineTeleport, NULL, TRAV_LINES, 0, 1, 1 | XLE_CROSS, TXT_XGCLASS023,
+    { XLTrav_LineTeleport, NULL, TRAV_LINES, 0, 1, 1 | XLE_CROSS, "Line Teleport",
       // Teleports the activator to the referenced line
        {{XGPF_INT, "Target Ref", "lref_", 0},               // ip0: (line ref) teleport destination
         {XGPF_INT, "Target Num", "", -1},                   // ip1:
@@ -615,7 +615,7 @@ void XL_SetLineType(line_t *line, int id)
         xline->xg->activator = &dummything;
 
         XG_Dev("XL_SetLineType: Line %i (%s), ID %i.", P_ToIndex(line),
-               GET_TXT(xgClasses[xline->xg->info.line_class].className), id);
+               xgClasses[xline->xg->info.line_class].className, id);
 
     }
     else if(id)
@@ -959,7 +959,7 @@ void XL_DoFunction(linetype_t * info, line_t *line, int sidenum,
     XG_Dev("XL_DoFunction: Line %i, side %i, activator id %i, event %s",
             P_ToIndex(line), sidenum, act_thing ? act_thing->thinker.id : 0,
             EVTYPESTR(evtype));
-    XG_Dev("  Executing class: %s (0x%X)...",GET_TXT(xgClass->className), info->line_class);
+    XG_Dev("  Executing class: %s (0x%X)...", xgClass->className, info->line_class);
 
     // Does this class only work with certain events?
     if(xgClass->evtypeflags > 0)
@@ -1751,7 +1751,7 @@ void XL_ChangeTexture(line_t *line, int sidenum, int section, int texture,
 {
     int i;
     int currentFlags;
-    side_t *side = P_ToPtr(DMU_SIDE, sidenum);
+    side_t *side = P_GetPtrp(line, sidenum? DMU_SIDE1:DMU_SIDE0);
 
     if(!side)
         return;
