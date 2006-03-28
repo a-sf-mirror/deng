@@ -57,7 +57,7 @@ typedef struct xgclass_s{
 
     int evtypeflags;                // if > 0 the class only supports certain
                                     // event types (which are flags on this var)
-    int className;                  // txt string id
+    const char *className;          // txt string id
     xgclassparm_t iparm[20];        // iparms
 } xgclass_t;
 
@@ -89,35 +89,6 @@ enum
     LTC_TELEPORT,
     LTC_LINETELEPORT,
     NUMXGCLASSES
-};
-
-// Class name string txt def IDs (printed with XG_Dev messages)
-// Tempoary, will be set via XG Class definitions
-enum {
-    TXT_XGCLASS000,
-    TXT_XGCLASS001,
-    TXT_XGCLASS002,
-    TXT_XGCLASS003,
-    TXT_XGCLASS004,
-    TXT_XGCLASS005,
-    TXT_XGCLASS006,
-    TXT_XGCLASS007,
-    TXT_XGCLASS008,
-    TXT_XGCLASS009,
-    TXT_XGCLASS010,
-    TXT_XGCLASS011,
-    TXT_XGCLASS012,
-    TXT_XGCLASS013,
-    TXT_XGCLASS014,
-    TXT_XGCLASS015,
-    TXT_XGCLASS016,
-    TXT_XGCLASS017,
-    TXT_XGCLASS018,
-    TXT_XGCLASS019,
-    TXT_XGCLASS020,
-    TXT_XGCLASS021,
-    TXT_XGCLASS022,
-    TXT_XGCLASS023
 };
 
 #endif
