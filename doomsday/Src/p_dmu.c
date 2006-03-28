@@ -41,6 +41,12 @@ typedef struct dummyline_s {
     boolean inUse;              // true, if the dummy is being used.
 } dummyline_t;
 
+typedef struct dummysector_s {
+    sector_t  sector;           // Sector data.
+    void*   extraData;          // Pointer to user data.
+    boolean inUse;              // true, if the dummy is being used.
+} dummysector_t;
+
 typedef struct setargs_s {
     int type;
     int prop;
@@ -70,6 +76,7 @@ int     dummyCount = 8;         // Number of dummies to allocate (per type).
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static dummyline_t* dummyLines;
+static dummysector_t* dummySectors;
 
 // CODE --------------------------------------------------------------------
 
@@ -272,6 +279,7 @@ void P_InitMapUpdate(void)
     //   comparisons; if the array is reallocated, its address may change
     //   and all existing dummies are invalidated.
     dummyLines = Z_Calloc(dummyCount * sizeof(dummyline_t), PU_STATIC, NULL);
+    dummySectors = Z_Calloc(dummyCount * sizeof(dummysector_t), PU_STATIC, NULL);
 }
 
 /*
@@ -299,6 +307,18 @@ void* P_AllocDummy(int type, void* extraData)
         }
         break;
 
+    case DMU_SECTOR:
+        for(i = 0; i < dummyCount; ++i)
+        {
+            if(!dummySectors[i].inUse)
+            {
+                dummySectors[i].inUse = true;
+                dummySectors[i].extraData = extraData;
+                return &dummySectors[i];
+            }
+        }
+        break;
+
     default:
         Con_Error("P_AllocDummy: Dummies of type %s not supported.\n",
                   DMU_Str(type));
@@ -321,6 +341,10 @@ void P_FreeDummy(void* dummy)
         ((dummyline_t*)dummy)->inUse = false;
         break;
 
+    case DMU_SECTOR:
+        ((dummysector_t*)dummy)->inUse = false;
+        break;
+
     default:
         Con_Error("P_FreeDummy: Dummy is of unknown type.\n");
         break;
@@ -339,6 +363,13 @@ int P_DummyType(void* dummy)
        dummy <= (void*) &dummyLines[dummyCount - 1])
     {
         return DMU_LINE;
+    }
+
+    // A sector?
+    if(dummy >= (void*) &dummySectors[0] &&
+       dummy <= (void*) &dummySectors[dummyCount - 1])
+    {
+        return DMU_SECTOR;
     }
 
     // Unknown.
@@ -363,6 +394,9 @@ void* P_DummyExtraData(void* dummy)
     {
     case DMU_LINE:
         return ((dummyline_t*)dummy)->extraData;
+
+    case DMU_SECTOR:
+        return ((dummysector_t*)dummy)->extraData;
 
     default:
         break;
@@ -1811,6 +1845,18 @@ static int GetProperty(void* ptr, void* context)
         case DMU_DY:
             GetValue(type, &p->dy, args, 0);
             break;
+        case DMU_LENGTH:
+        {
+            lineinfo_t* info = LINE_INFO(p);
+            GetValue(type, &info->length, args, 0);
+            break;
+        }
+        case DMU_ANGLE:
+        {
+            lineinfo_t* info = LINE_INFO(p);
+            GetValue(type, &info->angle, args, 0);
+            break;
+        }
         case DMU_SLOPE_TYPE:
             GetValue(type, &p->slopetype, args, 0);
             break;
@@ -1852,7 +1898,6 @@ static int GetProperty(void* ptr, void* context)
         case DMU_VALID_COUNT:
             GetValue(DDVT_INT, &p->validcount, args, 0);
             break;
-
         default:
             Con_Error("GetProperty: DMU_LINE has no property %s.\n", DMU_Str(args->prop));
         }
