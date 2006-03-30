@@ -272,6 +272,7 @@ static void InitArgs(setargs_t* args, int type, int prop)
  */
 void P_InitMapUpdate(void)
 {
+    int i;
     // A fixed number of dummies is allocated because:
     // - The number of dummies is mostly dependent on recursive depth of
     //   game functions.
@@ -280,6 +281,13 @@ void P_InitMapUpdate(void)
     //   and all existing dummies are invalidated.
     dummyLines = Z_Calloc(dummyCount * sizeof(dummyline_t), PU_STATIC, NULL);
     dummySectors = Z_Calloc(dummyCount * sizeof(dummysector_t), PU_STATIC, NULL);
+
+    // Set the types of the dummy objects
+    for(i=0; i < dummyCount; ++i)
+    {
+        ((runtime_mapdata_header_t*)&dummyLines[i])->type = DMU_LINE;
+        ((runtime_mapdata_header_t*)&dummySectors[i])->type = DMU_SECTOR;
+    }
 }
 
 /*
@@ -908,11 +916,23 @@ static int SetProperty(void* ptr, void* context)
         valuetype_t type = propertyTypes[args->prop];
         switch(args->prop)
         {
-        case DMU_FLAGS:
-            SetValue(type, &p->flags, args, 0);
+        case DMU_FRONT_SECTOR:
+            SetValue(type, &p->frontsector, args, 0);
+            break;
+        case DMU_BACK_SECTOR:
+            SetValue(type, &p->backsector, args, 0);
+            break;
+        case DMU_SIDE0:
+            SetValue(type, &p->sidenum[0], args, 0);
+            break;
+        case DMU_SIDE1:
+            SetValue(type, &p->sidenum[1], args, 0);
             break;
         case DMU_VALID_COUNT:
             SetValue(DDVT_INT, &p->validcount, args, 0);
+            break;
+        case DMU_FLAGS:
+            SetValue(DDVT_SHORT, &p->flags, args, 0);
             break;
         default:
             Con_Error("SetProperty: Property %s is not writable in DMU_LINE.\n",
