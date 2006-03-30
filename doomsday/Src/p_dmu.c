@@ -285,8 +285,8 @@ void P_InitMapUpdate(void)
     // Set the types of the dummy objects
     for(i=0; i < dummyCount; ++i)
     {
-        ((runtime_mapdata_header_t*)&dummyLines[i])->type = DMU_LINE;
-        ((runtime_mapdata_header_t*)&dummySectors[i])->type = DMU_SECTOR;
+        dummyLines[i].line.header.type = DMU_LINE;
+        dummySectors[i].sector.header.type = DMU_SECTOR;
     }
 }
 
