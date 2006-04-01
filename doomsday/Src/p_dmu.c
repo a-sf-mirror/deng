@@ -1516,8 +1516,11 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->rgb[2], args, 0);
             break;
         case DMU_SOUND_ORIGIN:
-            GetValue(type, &p->soundorg, args, 0);
+        {
+            degenmobj_t *dmo = &p->soundorg;
+            GetValue(type, &dmo, args, 0);
             break;
+        }
         case DMU_FLOOR_COLOR:
             GetValue(type, &p->floorrgb[0], args, 0);
             GetValue(type, &p->floorrgb[1], args, 1);
@@ -1539,8 +1542,11 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->floorpic, args, 0);
             break;
         case DMU_FLOOR_SOUND_ORIGIN:
-            GetValue(type, &p->floorsoundorg, args, 0);
+        {
+            degenmobj_t *dmo = &p->floorsoundorg;
+            GetValue(type, &dmo, args, 0);
             break;
+        }
         case DMU_FLOOR_OFFSET_X:
             GetValue(type, &p->flooroffx, args, 0);
             break;
@@ -1588,8 +1594,11 @@ static int GetProperty(void* ptr, void* context)
             GetValue(type, &p->ceilingpic, args, 0);
             break;
         case DMU_CEILING_SOUND_ORIGIN:
-            GetValue(type, &p->ceilingsoundorg, args, 0);
+        {
+            degenmobj_t *dmo = &p->ceilingsoundorg;
+            GetValue(type, &dmo, args, 0);
             break;
+        }
         case DMU_CEILING_OFFSET_X:
             GetValue(type, &p->ceiloffx, args, 0);
             break;
