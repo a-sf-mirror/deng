@@ -1253,12 +1253,16 @@ boolean N_LookForHosts(const char *address, int port)
             if(result > 0)
             {
                 Str_Appendf(response, buf);
+#ifdef _DEBUG
                 Con_Message("Append to response: %s.\n", buf);
+#endif
             }
             else // Terminated.
             {
                 isDone = true;
+#ifdef _DEBUG
                 Con_Message("result <= 0 (%i)\n", result);
+#endif
             }
         }
         else
