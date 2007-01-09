@@ -57,8 +57,8 @@
 // Communication with the master is done at 'below normal' priority.
 #define MST_PRIORITY    -1
 
-// Maximum time from the first received line of the response (seconds).
-#define RESPONSE_TIMEOUT    2
+// Maximum time from the first received line of the response (milliseconds).
+#define RESPONSE_TIMEOUT    1000
 
 // TYPES -------------------------------------------------------------------
 
@@ -403,7 +403,7 @@ static int C_DECL N_MasterSendRequest(void *parm)
     while((result = recv(s, buf, sizeof(buf) - 1, 0)) >= 0)
     {
         if(!result && Str_Length(&response) > 0 && 
-           Sys_GetSeconds() - startTime > RESPONSE_TIMEOUT)
+           Sys_GetSeconds() - startTime > RESPONSE_TIMEOUT/1000.)
         {        
 #ifdef _DEBUG
             fprintf(outFile, "timed out!\n", startTime);
