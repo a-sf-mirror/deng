@@ -367,7 +367,7 @@ static int C_DECL N_MasterSendRequest(void *parm)
     ddstring_t  response;
     char        buf[128];
     int         result;
-    double      startTime;
+    double      startTime = 0;
 
     // Get host information.
     if((host = N_SockGetHost(masterAddress)) == NULL)
@@ -428,7 +428,7 @@ static int C_DECL N_MasterSendRequest(void *parm)
         }
     }
     N_SockClose(s);
-
+    
     // Let's parse the message.
     N_MasterParseResponse(&response);
 
