@@ -117,11 +117,13 @@ void P_Init(void)
     healthlimit = 200;
 
     godmodehealth = 100;
-
     megaspherehealth = 200;
 
-    //soulspherehealth = 100; // d64tc
+# if __DOOM64TC_
     soulspherehealth = 50;
+# else
+    soulspherehealth = 100;
+# endif
     soulspherelimit = 200;
 
     armorpoints[0] = 100;
