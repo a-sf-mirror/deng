@@ -47,7 +47,7 @@
 
 extern const Control_t *grabbing;
 
-#define NUM_CONTROLS_ITEMS 118
+#define NUM_CONTROLS_ITEMS 121
 
 static const menuitem_t ControlsItems[] = {
     {ITT_EMPTY, 0, "PLAYER ACTIONS", NULL, 0},
@@ -118,6 +118,7 @@ static const menuitem_t ControlsItems[] = {
     {ITT_EFUNC, 0, "SUICIDE :", SCControlConfig, 44},
     {ITT_EFUNC, 0, "END GAME :", SCControlConfig, 46},
     {ITT_EFUNC, 0, "QUIT :", SCControlConfig, 49},
+    {ITT_EMPTY, 0, NULL, NULL, 0},
     {ITT_EMPTY, 0, NULL, NULL, 0},
 
     {ITT_EMPTY, 0, "SCREEN", NULL, 0},
