@@ -407,7 +407,14 @@ void DL_InitForMap(void)
     subSecLightLinks =
         Z_Calloc(numsubsectors * sizeof(subseclight_t), PU_LEVELSTATIC, 0);
     for(i = 0; i < numsubsectors; ++i)
+    {
         subSecLightLinks[i].planeCount = 0;
+        subSecLightLinks[i].planes = NULL;
+    }
+    for(i = 0; i < numsectors; ++i)
+    {
+        DL_PlanesChanged(&sectors[i]);
+    }
 
     // Initialize lumobj -> subsector contacts.
     subContacts =
@@ -1530,6 +1537,37 @@ DGLuint DL_GetFlatDecorLightMap(surface_t *surface)
 #endif
 
 /**
+ * Called when the number of planes in a sector changes.
+ *
+ * @param sect              The changed sector.
+ */
+void DL_PlanesChanged(sector_t *sect)
+{
+    uint        i;
+    uint        ssecidx;
+
+    for(i = 0; i < sect->subscount; ++i)
+    {
+        ssecidx = GET_SUBSECTOR_IDX(sect->subsectors[i]);
+
+        // Has the number of planes changed for this subsector?
+        if(sect->planecount != subSecLightLinks[ssecidx].planeCount)
+        {
+            subseclight_t *sseclight = &subSecLightLinks[ssecidx];
+
+            sseclight->planeCount = sect->planecount;
+            sseclight->planes =
+                    Z_Realloc(sseclight->planes,
+                              sseclight->planeCount * sizeof(dynlight_t*),
+                              PU_LEVEL);
+
+            memset(sseclight->planes, 0,
+                   sseclight->planeCount * sizeof(dynlight_t*));
+        }
+    }
+}
+
+/**
  * Process dynamic lights for the specified subsector.
  */
 void DL_ProcessSubsector(subsector_t *ssec)
@@ -1551,21 +1589,6 @@ void DL_ProcessSubsector(subsector_t *ssec)
 
         planeVars =
             M_Realloc(planeVars, maxPlanes * sizeof(planeitervars_t));
-    }
-
-    // Has the number of planes changed for this subsector?
-    if(sect->planecount != subSecLightLinks[ssecidx].planeCount)
-    {
-        subseclight_t *sseclight = &subSecLightLinks[ssecidx];
-
-        sseclight->planeCount = sect->planecount;
-        sseclight->planes =
-                Z_Realloc(sseclight->planes,
-                          sseclight->planeCount * sizeof(dynlight_t*),
-                          PU_LEVEL);
-
-        memset(sseclight->planes, 0,
-               sseclight->planeCount * sizeof(dynlight_t*));
     }
 
     // First make sure we know which lumobjs are contacting us.
