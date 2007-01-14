@@ -520,6 +520,8 @@ const valuetype_t DAMpropertyTypes[] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static uint numuniquesidedefs;
+
 static mapdatalumpinfo_t* mapDataLumps;
 static int numMapDataLumps;
 
@@ -1416,8 +1418,8 @@ static void SetCurrentMap(gamemap_t* map)
  */
 boolean P_LoadMapData(char *levelId)
 {
-    int lumpNumbers[2];
-    gamemap_t* newmap;
+    int         lumpNumbers[2];
+    gamemap_t  *newmap;
 
     numMapDataLumps = 0;
 
@@ -1481,6 +1483,7 @@ boolean P_LoadMapData(char *levelId)
             return false;
         if(!P_ReadMapData(newmap, LCM_SECTORS))
             return false;
+        numuniquesidedefs = 0;
         if(!P_ReadMapData(newmap, LCM_SIDEDEFS))
             return false;
         if(!P_ReadMapData(newmap, LCM_LINEDEFS))
@@ -1488,6 +1491,9 @@ boolean P_LoadMapData(char *levelId)
 
         P_ReadSideDefTextures(newmap, lumpNumbers[0] + ML_SIDEDEFS);
         P_FinishLineDefs(newmap);
+        if(numuniquesidedefs > newmap->numsides)
+            Con_Error("P_LoadMapData: Map %s utilizes sidedef packing, "
+                      "which is currently unsupported\n", levelId);
 
         if(!P_ReadMapData(newmap, LCM_BLOCKMAP))
             return false;
@@ -2981,12 +2987,18 @@ static void P_FinishLineDefs(gamemap_t* map)
         }
 
         if(ld->L_frontside)
+        {
             ld->L_frontsector = ld->L_frontside->sector;
+            numuniquesidedefs++;
+        }
         else
             ld->L_frontsector = 0;
 
         if(ld->L_backside)
+        {
             ld->L_backsector = ld->L_backside->sector;
+            numuniquesidedefs++;
+        }
         else
             ld->L_backsector = 0;
 
