@@ -144,7 +144,7 @@ copy %SDLMIXER_LIB%\ogg.dll .
 copy %SDLMIXER_LIB%\smpeg.dll .
 copy %SDLMIXER_LIB%\vorbis.dll .
 copy %SDLMIXER_LIB%\vorbisfile.dll .
-copy %EAX_DLL%\eax.dll .
+copy "%EAX_DLL%\eax.dll" .
 GOTO Done
 
 :: *** Mapdata type headers

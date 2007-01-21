@@ -288,14 +288,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\dam_main.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\dam_read.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\dd_dgl.c"
 				>
 			</File>
@@ -465,6 +457,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\net_ping.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\src\p_arch.c"
 				>
 			</File>
 			<File
