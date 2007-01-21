@@ -4048,7 +4048,7 @@
 					../../plugins/jhexen/include,
 					../../plugins/common/include,
 				);
-				INFOPLIST_FILE = "/Users/jaakko/Projects/deng/doomsday/jHexen-Info.plist";
+				INFOPLIST_FILE = "jHexen-Info.plist";
 				INSTALL_PATH = /Doomsday.app/Contents/Bundles;
 				LIBRARY_STYLE = STATIC;
 				OTHER_CFLAGS = "";
@@ -4084,7 +4084,7 @@
 					../../plugins/jhexen/include,
 					../../plugins/common/include,
 				);
-				INFOPLIST_FILE = "/Users/jaakko/Projects/deng/doomsday/jHexen-Info.plist";
+				INFOPLIST_FILE = "jHexen-Info.plist";
 				INSTALL_PATH = /Doomsday.app/Contents/Bundles;
 				LIBRARY_STYLE = BUNDLE;
 				OTHER_CFLAGS = "";
@@ -4147,6 +4147,9 @@
 					"-lncurses",
 					"-lz",
 					/sw/lib/libpng12.a,
+					"-lcurl",
+					"-lssl",
+					"-lcrypto",
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = Doomsday;
@@ -4204,6 +4207,9 @@
 					"-lncurses",
 					"-lz",
 					/sw/lib/libpng12.a,
+					"-lcurl",
+					"-lssl",
+					"-lcrypto",
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = Doomsday;
@@ -4245,11 +4251,15 @@
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
+					"-flat_namespace",
 					"-framework",
 					SDL,
 					"-lncurses",
 					"-lz",
 					/sw/lib/libpng12.a,
+					"-lcurl",
+					"-lssl",
+					"-lcrypto",
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = Doomsday;
