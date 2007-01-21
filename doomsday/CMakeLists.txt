@@ -1,11 +1,11 @@
 ## deng build scripts. 
-## Copyright © 2006:	Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
+## Copyright © 2006 - 2007 Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
 ## This file is licensed under the GNU GPLv2 or any later versions,
 ## or at your option the BSD 3 clause license. Both license texts follow.
 ##
 ## This file is part of the deng build scripts
 ##
-## Copyright © 2006 - Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
+## Copyright © 2006 - 2007 Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
 ##
 ## the deng build scripts is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 ##
 ################################################################################
 ##
-## Copyright (c) © 2006 - Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
+## Copyright © 2006 - 2007 Jamie Jones (Yagisan) <jamie_jones_au@yahoo.com.au>
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@
 ##
 ################################################################################
 PROJECT(deng C CXX)
-CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED (VERSION 2.4.5 FATAL_ERROR)
 SET (BUILDSCRIPTSDATE "$LastChangedDate$")
 SET(deng_VERSION_MAJOR 1)
 SET(deng_VERSION_MINOR 9)
@@ -265,6 +265,8 @@ FIND_PACKAGE(SDL_net REQUIRED)
 FIND_PACKAGE(ZLIB REQUIRED)
 
 FIND_PACKAGE(PNG REQUIRED)
+
+FIND_PACKAGE(CURL REQUIRED)
 
 FIND_PACKAGE(PythonInterp REQUIRED)
 
@@ -502,6 +504,12 @@ IF (NOT PNG_FOUND)
 ENDIF (NOT PNG_FOUND)
 INCLUDE_DIRECTORIES (${PNG_INCLUDE_DIR})
 
+## confirm we have libcurl.
+IF (NOT CURL_FOUND)
+	MESSAGE (FATAL_ERROR "** libcurl not found. On Ubuntu install libcurl3-gnutls-dev. On Mac OSX install FIXME. On Windows install FIXME.")
+ENDIF (NOT CURL_FOUND)
+INCLUDE_DIRECTORIES (${CURL_INCLUDE_DIR})
+
 ## Confirm we have ncurses
 IF (UNIX)
 	IF (CURSES_LIBRARIES STREQUAL "")
@@ -672,7 +680,7 @@ ENDIF (APPLE)
 
 ADD_EXECUTABLE (doomsday MACOSX_BUNDLE ${DENG_PORTABLE_SOURCES} ${DENG_ARCH_SPECIFIC_SOURCES})
 
-TARGET_LINK_LIBRARIES (doomsday ${SDL_LIBRARY} ${SDLNET_LIBRARY} ${ZLIB_LIBRARIES} ${CURSES_LIBRARIES} ${PNG_LIBRARIES} )
+TARGET_LINK_LIBRARIES (doomsday ${SDL_LIBRARY} ${SDLNET_LIBRARY} ${ZLIB_LIBRARIES} ${CURSES_LIBRARIES} ${PNG_LIBRARIES} ${CURL_LIBRARIES})
 
 IF (UNIX)
 	IF (NOT WIN32)
