@@ -33,7 +33,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #ifdef MACOSX
-#  include <SDL_net/SDL_net.h>
+#  include <SDL_net.h>
 #else
 #  include <SDL_net.h>
 #endif

@@ -162,6 +162,11 @@ IF (UNIX)
 	IF (NOT WIN32)
 		IF (APPLE)
 			## FIXME. Add location here for OSX
+			SET (CMAKE_INSTALL_PREFIX .)
+			SET (bindir ${CMAKE_INSTALL_PREFIX}/install)
+			SET (libdir ${CMAKE_INSTALL_PREFIX}/install)
+			SET (datadir ${CMAKE_INSTALL_PREFIX}/install)
+			SET (mandir ${CMAKE_INSTALL_PREFIX}/install)
 		ELSE (APPLE)
 
 		## Do an approximation of the autotools install options. Should make an
@@ -204,8 +209,7 @@ ENDIF (UNIX)
 
 IF (UNIX)
 	IF (NOT WIN32)
-	## Where does it go on OSX ? FIXME
-	## Thess .pk3s is generated in the Generate.pk3 target.
+	## These .pk3s is generated in the Generate.pk3 target.
 	SET (DENG_ENGINE_DATA ${CMAKE_CURRENT_BINARY_DIR}/doomsday.pk3 )
 	SET (DENG_ENGINE_DATA_DIR ${datadir}/data)
 
@@ -420,12 +424,14 @@ ENDIF (WIN32)
 IF (APPLE)
 	ADD_DEFINITIONS ( -DMACOSX)
 	SET (CMAKE_OSX_ARCHITECTURES ppc;i386)
+	SET (CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk)
+	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
 	SET (BUILDSYSTEM MACOSX)
 
 	## Add needed Compiler and Linker flags for OSX
 	IF (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
-		SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flat_namespace -undefined suppress" )
+		SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flat_namespace" )
 		SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flat_namespace -undefined suppress" )
 		SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace -undefined suppress" )
 		SET (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -flat_namespace -undefined suppress" )
@@ -662,23 +668,10 @@ ENDIF (WIN32)
 IF (APPLE)
 	INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR}/engine/mac/include )
 	FILE(GLOB DENG_OSX_SOURCES ${CMAKE_SOURCE_DIR}/engine/mac/src/*.m)
-	SET (DENG_ARCH_SPECIFIC_SOURCES ${DENG_OSX_SOURCES})
+	SET (DENG_ARCH_SPECIFIC_SOURCES ${DENG_ARCH_SPECIFIC_SOURCES} ${DENG_OSX_SOURCES})
 ENDIF (APPLE)
 
-IF (APPLE)
-	SET (MACOSX_BUNDLE_INFO_STRING "The Doomsday Engine: For jDoom, jHeretic and jHexen" )
-	##MACOSX_BUNDLE_ICON_FILE
-	##MACOSX_BUNDLE_GUI_IDENTIFIER
-	SET (MACOSX_BUNDLE_LONG_VERSION_STRING "1.9.0-beta5" )
-	SET (MACOSX_BUNDLE_BUNDLE_NAME "Doomsday" )
-	SET (MACOSX_BUNDLE_SHORT_VERSION_STRING "1.9.0-beta5" )
-	SET (MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0" )
-	## Aplhabetical order ok ?
-	SET (MACOSX_BUNDLE_COPYRIGHT "2006, DaniJ, Skyjake, Yagisan" )
-ENDIF (APPLE)
-
-
-ADD_EXECUTABLE (doomsday MACOSX_BUNDLE ${DENG_PORTABLE_SOURCES} ${DENG_ARCH_SPECIFIC_SOURCES})
+ADD_EXECUTABLE (doomsday ${DENG_PORTABLE_SOURCES} ${DENG_ARCH_SPECIFIC_SOURCES})
 
 TARGET_LINK_LIBRARIES (doomsday ${SDL_LIBRARY} ${SDLNET_LIBRARY} ${ZLIB_LIBRARIES} ${CURSES_LIBRARIES} ${PNG_LIBRARIES} ${CURL_LIBRARIES})
 
@@ -863,6 +856,33 @@ INSTALL(TARGETS doomsday
 RUNTIME DESTINATION ${bindir} 
 LIBRARY DESTINATION ${libdir} )
 INSTALL(FILES ${DENG_ENGINE_DATA} DESTINATION ${DENG_ENGINE_DATA_DIR} )
+
+IF (APPLE)
+    # Bundling.
+    SET (BUNDLE_BASE Doomsday)
+    SET (BUNDLE ${CMAKE_BINARY_DIR}/${BUNDLE_BASE}.app)
+    ADD_CUSTOM_COMMAND( TARGET doomsday POST_BUILD
+        COMMAND rm -rf ${BUNDLE}
+        COMMAND mkdir -p ${BUNDLE}/Contents/MacOS
+        COMMAND cp doomsday ${BUNDLE}/Contents/MacOS/${BUNDLE_BASE}
+        COMMAND cp ${CMAKE_SOURCE_DIR}/build/mac/Info.plist ${BUNDLE}/Contents/Info.plist
+        COMMAND echo 'APPL????' > ${BUNDLE}/Contents/PkgInfo
+        COMMAND mkdir -p ${BUNDLE}/Contents/Resources/English.lproj
+        COMMAND cp -r ${CMAKE_SOURCE_DIR}/engine/mac/res/English.lproj ${BUNDLE}/Contents/Resources
+        COMMAND cp ${CMAKE_SOURCE_DIR}/engine/mac/res/deng.icns ${BUNDLE}/Contents/Resources/
+        COMMAND cp -r ${CMAKE_SOURCE_DIR}/engine/mac/res/Startup.nib ${BUNDLE}/Contents/Resources/
+
+        # Copy frameworks.
+        COMMAND mkdir -p ${BUNDLE}/Contents/Frameworks
+        COMMAND cp -R $ENV{HOME}/Library/Frameworks/{SDL,SDL_mixer,SDL_net}.framework ${BUNDLE}/Contents/Frameworks
+
+        # Copy PK3s.
+        COMMAND cp doomsday.pk3 ${BUNDLE}/Contents/Resources/
+        COMMAND cp jdoom.pk3 jDoom.bundle/Contents/Resources/
+        COMMAND cp jheretic.pk3 jHeretic.bundle/Contents/Resources/
+        COMMAND cp jhexen.pk3 jHexen.bundle/Contents/Resources/
+        )
+ENDIF (APPLE)
 
 IF (BUILDJDOOM)
 	INSTALL(FILES ${DENG_JDOOM_DATA} DESTINATION ${DENG_JDOOM_DATA_DIR} )

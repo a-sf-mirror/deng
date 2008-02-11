@@ -38,8 +38,8 @@
 #include <string.h>
 
 #ifdef MACOSX
-#  include <SDL/SDL.h>
-#  include <SDL_mixer/SDL_mixer.h>
+#  include <SDL.h>
+#  include <SDL_mixer.h>
 #else
 #  include <SDL.h>
 #  include <SDL_mixer.h>

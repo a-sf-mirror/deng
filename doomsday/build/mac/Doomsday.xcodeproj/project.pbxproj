@@ -2562,9 +2562,11 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = B01078300856208A000BF0D8 /* Build configuration list for PBXProject "Doomsday" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Doomsday */;
 			projectDirPath = "";
+			projectRoot = ../..;
 			targets = (
 				B011A5FE08655A71005075A7 /* Everything */,
 				B0F177FA087C5A230051F24A /* Doomsday */,

@@ -314,9 +314,8 @@ void CustomApplicationMain (argc, argv)
 #  undef main
 #endif
 
-
 /* Main entry point to executable - should *not* be SDL_main! */
-int main (int argc, char **argv)
+int main (int argc, char *argv[])
 {
 
     /* Copy the arguments into a global variable */

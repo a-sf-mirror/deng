@@ -69,3 +69,18 @@ ADD_LIBRARY (dpmapload SHARED ${MAPLOAD_SOURCES} ${GLBSP_SOURCES})
 INSTALL(TARGETS dpmapload
 RUNTIME DESTINATION ${bindir}
 LIBRARY DESTINATION ${libdir} )
+
+IF (APPLE)
+    # Bundling.
+    SET (BUNDLE_BASE dpMapLoad)
+    SET (BUNDLE ${CMAKE_BINARY_DIR}/${BUNDLE_BASE}.bundle)
+    ADD_CUSTOM_COMMAND( TARGET dpmapload POST_BUILD
+        COMMAND rm -rf ${BUNDLE}
+        COMMAND mkdir -p ${BUNDLE}/Contents/MacOS
+        COMMAND cp libdpmapload.dylib ${BUNDLE}/Contents/MacOS/${BUNDLE_BASE}
+        COMMAND cp ${CMAKE_SOURCE_DIR}/build/mac/${BUNDLE_BASE}-Info.plist ${BUNDLE}/Contents/Info.plist
+        #COMMAND mkdir -p ${BUNDLE}/Contents/Resources/English.lproj
+        #COMMAND cp ${CMAKE_SOURCE_DIR}/build/mac/InfoPlist.strings ${BUNDLE}/Contents/Resources/English.lproj/
+        COMMAND echo 'APPL????' > ${BUNDLE}/Contents/PkgInfo
+        )
+ENDIF (APPLE)

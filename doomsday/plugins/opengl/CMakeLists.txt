@@ -62,13 +62,13 @@ FILE(GLOB OPENGL_PORTABLE_SOURCES portable/src/*.c)
 SET (OPENGL_SOURCES ${OPENGL_PORTABLE_SOURCES} )
 
 IF (UNIX)
-FILE(GLOB OPENGL_UNIX_SOURCES unix/src/*.c)
-SET (OPENGL_SOURCES ${OPENGL_SOURCES} ${OPENGL_UNIX_SOURCES} )
+    FILE(GLOB OPENGL_UNIX_SOURCES unix/src/*.c)
+    SET (OPENGL_SOURCES ${OPENGL_SOURCES} ${OPENGL_UNIX_SOURCES} )
 ENDIF (UNIX)
 
 IF (WIN32)
-SET (OPENGL_WIN32_SOURCES win32/src/main.c)
-SET (OPENGL_SOURCES ${OPENGL_SOURCES} ${OPENGL_WIN32_SOURCES} )
+    SET (OPENGL_WIN32_SOURCES win32/src/main.c)
+    SET (OPENGL_SOURCES ${OPENGL_SOURCES} ${OPENGL_WIN32_SOURCES} )
 ENDIF (WIN32)
 
 
@@ -81,16 +81,29 @@ ENDIF (ENABLEMAO)
 
 TARGET_LINK_LIBRARIES (dropengl ${OPENGL_LIBRARIES})
 IF (UNIX)
-IF (NOT WIN32)
-TARGET_LINK_LIBRARIES (dropengl  ${SDL_LIBRARIES} )
-ENDIF (NOT WIN32)
+    IF (NOT WIN32)
+        TARGET_LINK_LIBRARIES (dropengl  ${SDL_LIBRARIES} )
+    ENDIF (NOT WIN32)
 ENDIF (UNIX)
 
 IF (WIN32)
 TARGET_LINK_LIBRARIES (dropengl deng)
 ENDIF (WIN32)
+
 ################################################################################
 ######################## Install Targets  ######################################
 INSTALL(TARGETS dropengl
 RUNTIME DESTINATION ${bindir}
 LIBRARY DESTINATION ${libdir} )
+
+IF (APPLE)
+    SET (BUNDLE_BASE drOpenGL)
+    SET (BUNDLE ${CMAKE_BINARY_DIR}/${BUNDLE_BASE}.bundle)
+    ADD_CUSTOM_COMMAND( TARGET dropengl POST_BUILD
+        COMMAND rm -rf ${BUNDLE}
+        COMMAND mkdir -p ${BUNDLE}/Contents/MacOS
+        COMMAND cp libdropengl.dylib ${BUNDLE}/Contents/MacOS/${BUNDLE_BASE}
+        COMMAND cp ${CMAKE_SOURCE_DIR}/build/mac/${BUNDLE_BASE}-Info.plist ${BUNDLE}/Contents/Info.plist
+        COMMAND echo 'APPL????' > ${BUNDLE}/Contents/PkgInfo
+        )
+ENDIF (APPLE)
