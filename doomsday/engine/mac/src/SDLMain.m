@@ -14,6 +14,9 @@
     Feel free to customize this file to suit your needs
 */
 
+#include <stdint.h>
+typedef uint64_t      io_user_reference_t; 
+
 #import "SDL.h"
 #import "../include/SDLMain.h"
 #import <sys/param.h> /* for MAXPATHLEN */

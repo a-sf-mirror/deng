@@ -424,8 +424,10 @@ ENDIF (WIN32)
 IF (APPLE)
 	ADD_DEFINITIONS ( -DMACOSX)
 	SET (CMAKE_OSX_ARCHITECTURES ppc;i386)
-	SET (CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk)
+	SET (CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
 	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
+	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.4" )
+	#SET (CMAKE_LD_FLAGS "${LDFLAGS} /opt/local/lib/libpng12.a")
 	SET (BUILDSYSTEM MACOSX)
 
 	## Add needed Compiler and Linker flags for OSX
@@ -433,7 +435,7 @@ IF (APPLE)
 
 		SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flat_namespace" )
 		SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flat_namespace -undefined suppress" )
-		SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace -undefined suppress" )
+		SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /opt/local/lib/libpng12.a -flat_namespace -undefined suppress" )
 		SET (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -flat_namespace -undefined suppress" )
 		SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flat_namespace -undefined suppress" )
 
