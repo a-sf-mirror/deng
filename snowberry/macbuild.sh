@@ -9,7 +9,7 @@ echo "Building version "$VERSION
 echo $VERSION > VERSION
 
 # Locations.
-DENG_DIR=../doomsday/build/mac/jaakko
+DENG_DIR=../doomsday/mybuild/
 TARGET_IMAGE=images/deng-$VERSION.dmg
 
 # Clean.
