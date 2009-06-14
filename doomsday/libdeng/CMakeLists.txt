@@ -1,14 +1,16 @@
 # Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
 
-INCLUDE_DIRECTORIES ( api portable/include ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR}
-    ${SDLNET_INCLUDE_DIR} ${PNG_PNG_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${CURL_INCLUDE_DIR}
-    ${CURSES_INCLUDE_PATH} ${ZLIB_INCLUDE_DIR} )
+INCLUDE_DIRECTORIES ( api portable/include ../external/lzss/portable/include 
+    ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${PNG_PNG_INCLUDE_DIR} 
+    ${OPENGL_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${CURSES_INCLUDE_PATH} ${ZLIB_INCLUDE_DIR} )
 
 FILE ( GLOB SOURCES portable/src/*.c )
 
-# Platform-specific sources.
+# Platform-specific configuration.
 IF ( WIN32 )
-    #INCLUDE_DIRECTORIES ( win32/include )
+    INCLUDE_DIRECTORIES ( win32/include
+        $ENV{PLATFORMSDKDIR}/include 
+        $ENV{DXDIR}/include )
     FILE ( GLOB WIN_SOURCES win32/src/*.c )
     SET ( SOURCES ${SOURCES} ${WIN_SOURCES} )
 ENDIF ( WIN32 )
@@ -23,7 +25,7 @@ ENDIF ( APPLE )
 IF ( UNIX )
     ADD_DEFINITIONS ( -DNO_FIXED_ASM )
 
-    INCLUDE_DIRECTORIES ( unix/include ../external/lzss/portable/include )
+    INCLUDE_DIRECTORIES ( unix/include )
     FILE ( GLOB UNIX_SOURCES 
         unix/src/*.c 
         ../external/lzss/unix/src/*.c )
@@ -33,8 +35,19 @@ ENDIF ( UNIX )
 ADD_LIBRARY ( deng SHARED ${SOURCES} )
 
 TARGET_LINK_LIBRARIES ( deng ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLNET_LIBRARY} ${PNG_LIBRARY} 
-    ${OPENGL_gl_LIBRARY} ${CURL_LIBRARY} ${CURSES_NCURSES_LIBRARY} ${ZLIB_LIBRARY} )
+    ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${CURL_LIBRARY} ${CURSES_NCURSES_LIBRARY} ${ZLIB_LIBRARY} )
 
+IF ( WIN32 )
+    TARGET_LINK_LIBRARIES ( deng 
+        "$ENV{DXDIR}/lib/dinput8.lib"
+        "$ENV{DXDIR}/lib/dxguid.lib" 
+        wsock32 winmm
+        "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
+        
+    SET_TARGET_PROPERTIES ( deng PROPERTIES 
+        LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
+ENDIF ( WIN32 )
+    
 IF ( APPLE )
     TARGET_LINK_LIBRARIES ( deng ${QUICKTIME_LIBRARY} )
 ENDIF ( APPLE )

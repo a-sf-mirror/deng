@@ -6,8 +6,15 @@ CMAKE_MINIMUM_REQUIRED ( VERSION 2.6 )
 
 PROJECT ( deng )
 
+# Check for an in-tree build.
+IF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
+    MESSAGE ( FATAL_ERROR 
+        "In-tree builds are not supported. For instance, try building in ${CMAKE_SOURCE_DIR}/mybuild/." )
+ENDIF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
+
 # Win32 configuration.
 IF ( WIN32 )
+    INCLUDE_DIRECTORIES ( ${CMAKE_SOURCE_DIR}/external/opengl )
     SET ( CMAKE_INCLUDE_PATH 
         ${CMAKE_SOURCE_DIR}/external/libcurl/include 
         ${CMAKE_SOURCE_DIR}/external/zlib/include
@@ -18,12 +25,6 @@ IF ( WIN32 )
         ${CMAKE_SOURCE_DIR}/external/libpng/lib )
     SET ( PNG_NAMES libpng13 )
 ENDIF ( WIN32 )
-
-# Check for an in-tree build.
-IF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
-    MESSAGE ( FATAL_ERROR 
-        "In-tree builds are not supported. For instance, try building in ${CMAKE_SOURCE_DIR}/mybuild/." )
-ENDIF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
 
 # Dependencies.
 INCLUDE ( ${CMAKE_ROOT}/Modules/FindDoxygen.cmake )
@@ -39,7 +40,7 @@ INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL_ttf.cmake )
 
 # Set up project-wide variables and definitions.
 IF ( WIN32 )
-    ADD_DEFINITIONS ( -DWIN32 )
+    ADD_DEFINITIONS ( -DWIN32 -D_CRT_SECURE_NO_WARNINGS )
 ENDIF ( WIN32 )
 IF ( APPLE )
     INCLUDE ( ${CMAKE_ROOT}/Modules/FindQuickTime.cmake )

@@ -81,7 +81,6 @@ char*           strlwr(char *string);
 
 #if WIN32
 int             snprintf(char* str, size_t size, const char* format, ...);
-int             vsnprintf(char* str, size_t size, const char* format, va_list ap);
 #endif
 
     // Format checking for printf-like functions in GCC2
