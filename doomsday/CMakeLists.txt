@@ -8,8 +8,15 @@ PROJECT ( deng )
 
 # Win32 configuration.
 IF ( WIN32 )
-    SET ( CMAKE_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/external/libcurl/include )
-    SET ( CMAKE_LIBRARY_PATH ${CMAKE_SOURCE_DIR}/external/libcurl/lib )
+    SET ( CMAKE_INCLUDE_PATH 
+        ${CMAKE_SOURCE_DIR}/external/libcurl/include 
+        ${CMAKE_SOURCE_DIR}/external/zlib/include
+        ${CMAKE_SOURCE_DIR}/external/libpng/include )
+    SET ( CMAKE_LIBRARY_PATH 
+        ${CMAKE_SOURCE_DIR}/external/libcurl/lib 
+        ${CMAKE_SOURCE_DIR}/external/zlib/lib
+        ${CMAKE_SOURCE_DIR}/external/libpng/lib )
+    SET ( PNG_NAMES libpng13 )
 ENDIF ( WIN32 )
 
 # Check for an in-tree build.
