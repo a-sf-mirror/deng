@@ -64,7 +64,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
-#include "../../../engine/unix/include/sys_findfile.h"
+#include "../../../libdeng/unix/include/sys_findfile.h"
 #include "lzss.h"
 
 // MACROS ------------------------------------------------------------------

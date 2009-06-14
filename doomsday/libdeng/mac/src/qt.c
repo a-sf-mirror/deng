@@ -36,6 +36,7 @@ typedef uint64_t io_user_reference_t;
 #include "doomsday.h"
 #include "sys_audiod.h"
 #include "sys_audiod_mus.h"
+#include "m_mus2midi.h"
 #include <Carbon/Carbon.h>
 #include <QuickTime/Movies.h>
 
@@ -344,7 +345,7 @@ static int DM_Mus_Play(int looped)
     char fileName[256];
 
     sprintf(fileName, "%s.mid", BUFFERED_MUSIC_FILE);
-    convertMusToMidi((byte*) song, songSize, fileName);
+    M_Mus2Midi((byte*) song, songSize, fileName);
     return playFile(fileName, looped);
 }
 
