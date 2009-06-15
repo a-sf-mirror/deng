@@ -68,6 +68,8 @@ extern          "C" {
 #include "dd_share.h"
 #include "dd_plugin.h"
 
+    int             DD_Entry(int argc, char* argv[]);
+
     // Base.
     void            DD_AddIWAD(const char* path);
     void            DD_AddStartupWAD(const char* file);

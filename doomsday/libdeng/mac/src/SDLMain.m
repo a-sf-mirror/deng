@@ -24,10 +24,6 @@ typedef uint64_t      io_user_reference_t;
 
 #import <AppKit/NSWindowController.h>
 #import "../include/StartupWindowController.h"
-#import "../include/DoomsdayRunner.h"
-
-/* Use this flag to determine whether we use SDLMain.nib or not */
-#define		SDL_USE_NIB_FILE	0
 
 
 int     gArgc;
@@ -40,17 +36,10 @@ static BOOL   gFinderLaunch;
 /* Set when the startup window is created. */
 /*StartupWindowController* gStartupWindowController;*/
 
-#if SDL_USE_NIB_FILE
-/* A helper category for NSString */
-@interface NSString (ReplaceSubString)
-- (NSString *)stringByReplacingRange:(NSRange)aRange with:(NSString *)aString;
-@end
-#else
 /* An internal Apple class used to setup Apple menus */
 @interface NSAppleMenuController:NSObject {}
 - (void)controlMenu:(NSMenu *)aMenu;
 @end
-#endif
 
 @interface SDLApplication : NSApplication
 @end
@@ -93,33 +82,6 @@ static BOOL   gFinderLaunch;
       assert ( chdir ("../../../") == 0 ); /* chdir to the .app's parent */
     }
 }
-
-#if SDL_USE_NIB_FILE
-
-/* Fix menu to contain the real app name instead of "SDL App" */
-- (void)fixMenu:(NSMenu *)aMenu withAppName:(NSString *)appName
-{
-    NSRange aRange;
-    NSEnumerator *enumerator;
-    NSMenuItem *menuItem;
-
-    aRange = [[aMenu title] rangeOfString:@"SDL App"];
-    if (aRange.length != 0)
-        [aMenu setTitle: [[aMenu title] stringByReplacingRange:aRange with:appName]];
-
-    enumerator = [[aMenu itemArray] objectEnumerator];
-    while ((menuItem = [enumerator nextObject]))
-    {
-        aRange = [[menuItem title] rangeOfString:@"SDL App"];
-        if (aRange.length != 0)
-            [menuItem setTitle: [[menuItem title] stringByReplacingRange:aRange with:appName]];
-        if ([menuItem hasSubmenu])
-            [self fixMenu:[menuItem submenu] withAppName:appName];
-    }
-    [ aMenu sizeToFit ];
-}
-
-#else
 
 void setupAppleMenu(void)
 {
@@ -244,36 +206,19 @@ void CustomApplicationMain (argc, argv)
     [pool release];
 }
 
-#endif
-
 /* Called when the internal event loop has just started running */
 - (void) applicationDidFinishLaunching: (NSNotification *) note
 {
-    //int status;
+    int status;
 
     /* Set the working directory to the .app's parent directory */
     [self setupWorkingDirectory:gFinderLaunch];
 
-#if SDL_USE_NIB_FILE
-    /* Set the main menu to contain the real app name instead of "SDL App" */
-    [self fixMenu:[NSApp mainMenu] withAppName:[[NSProcessInfo processInfo] processName]];
-#endif
-
-    /* Start a new thread for the engine. */
-#if 0
-    [NSThread detachNewThreadSelector:@selector(threadEntryPoint:)
-        toTarget:[DoomsdayRunner class] withObject:nil];
-#else
-    // Won't return.
-    [DoomsdayRunner threadEntryPoint:nil];
-#endif
-/*
     // Hand off to main application code 
-    status = SDL_main (gArgc, gArgv);
+    status = SDL_main(gArgc, gArgv);
 
     // We're done, thank you for playing 
     exit(status);
-    */
 }
 @end
 
@@ -317,38 +262,38 @@ void CustomApplicationMain (argc, argv)
 
 @end
 
-
-
+/*
 #ifdef main
 #  undef main
 #endif
+*/
 
 /* Main entry point to executable - should *not* be SDL_main! */
-int main (int argc, char *argv[])
+int DD_Entry(int argc, char *argv[])
 {
-
     /* Copy the arguments into a global variable */
     int i;
     
     /* This is passed if we are launched by double-clicking */
-    if ( argc >= 2 && strncmp (argv[1], "-psn", 4) == 0 ) {
+    if ( argc >= 2 && strncmp (argv[1], "-psn", 4) == 0 ) 
+    {
         gArgc = 1;
-	gFinderLaunch = YES;
-    } else {
+	    gFinderLaunch = YES;
+    } 
+    else 
+    {
         gArgc = argc;
-	gFinderLaunch = NO;
+	    gFinderLaunch = NO;
     }
     gArgv = (char**) malloc (sizeof(*gArgv) * (gArgc+1));
     assert (gArgv != NULL);
     for (i = 0; i < gArgc; i++)
+    {
         gArgv[i] = argv[i];
+    }
     gArgv[i] = NULL;
 
-#if SDL_USE_NIB_FILE
-    [SDLApplication poseAsClass:[NSApplication class]];
-    NSApplicationMain (argc, argv);
-#else
     CustomApplicationMain (argc, argv);
-#endif
+
     return 0;
 }

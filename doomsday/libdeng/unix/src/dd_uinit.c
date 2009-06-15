@@ -295,7 +295,7 @@ static int initDGL(void)
     return Sys_PreInitGL();
 }
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
     char*               cmdLine;
     int                 i, length;

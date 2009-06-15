@@ -1,4 +1,18 @@
+# The Doomsday Engine Project -- libdeng2
+#
 # Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 INCLUDE_DIRECTORIES ( api portable/include ../external/lzss/portable/include 
     ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${PNG_PNG_INCLUDE_DIR} 
@@ -11,6 +25,8 @@ IF ( WIN32 )
     INCLUDE_DIRECTORIES ( win32/include
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )
+    LINK_DIRECTORIES ( $ENV{DXDIR}/lib )
+    
     FILE ( GLOB WIN_SOURCES win32/src/*.c )
     SET ( SOURCES ${SOURCES} ${WIN_SOURCES} )
 ENDIF ( WIN32 )
@@ -23,9 +39,8 @@ IF ( APPLE )
 ENDIF ( APPLE )
 
 IF ( UNIX )
-    ADD_DEFINITIONS ( -DNO_FIXED_ASM )
-
     INCLUDE_DIRECTORIES ( unix/include )
+
     FILE ( GLOB UNIX_SOURCES 
         unix/src/*.c 
         ../external/lzss/unix/src/*.c )
@@ -34,14 +49,17 @@ ENDIF ( UNIX )
 
 ADD_LIBRARY ( deng SHARED ${SOURCES} )
 
-TARGET_LINK_LIBRARIES ( deng ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLNET_LIBRARY} ${PNG_LIBRARY} 
-    ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${CURL_LIBRARY} ${CURSES_NCURSES_LIBRARY} ${ZLIB_LIBRARY} )
+TARGET_LINK_LIBRARIES ( deng 
+    ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLNET_LIBRARY} 
+    ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} 
+    ${CURL_LIBRARY} 
+    ${CURSES_NCURSES_LIBRARY} 
+    ${PNG_LIBRARY} 
+    ${ZLIB_LIBRARY} )
 
 IF ( WIN32 )
     TARGET_LINK_LIBRARIES ( deng 
-        "$ENV{DXDIR}/lib/dinput8.lib"
-        "$ENV{DXDIR}/lib/dxguid.lib" 
-        wsock32 winmm
+        dinput8 dxguid wsock32 winmm
         "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
         
     SET_TARGET_PROPERTIES ( deng PROPERTIES 
