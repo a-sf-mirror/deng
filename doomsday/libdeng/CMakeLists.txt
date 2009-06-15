@@ -62,8 +62,7 @@ IF ( WIN32 )
         dinput8 dxguid wsock32 winmm
         "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
         
-    SET_TARGET_PROPERTIES ( deng PROPERTIES 
-        LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
+    SET_TARGET_PROPERTIES ( deng PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
 ENDIF ( WIN32 )
     
 IF ( APPLE )

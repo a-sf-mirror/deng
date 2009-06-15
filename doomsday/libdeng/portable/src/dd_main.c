@@ -478,7 +478,7 @@ static int DD_StartupWorker(void *parm)
 
     // The name of the .cfg will invariably be overwritten by the Game.
     strncpy(configFileName, "doomsday.cfg", FILENAME_T_MAXLEN);
-    snprintf(defsFileName, FILENAME_T_MAXLEN, "%sdefs\\doomsday.ded",                    ddBasePath);
+    snprintf(defsFileName, FILENAME_T_MAXLEN, "%sdefs\\doomsday.ded", ddBasePath);
 
     // Was the change to userdir OK?
     if(!app.userDirOk)

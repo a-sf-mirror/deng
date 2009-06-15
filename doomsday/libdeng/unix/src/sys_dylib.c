@@ -93,10 +93,6 @@ static void getBundlePath(char *path)
     }
     else
     {
-#ifdef MACOSX
-        // This is the default location where bundles are.
-        sprintf(path, "%s/Bundles", appDir);
-#endif
 #ifdef UNIX
 #ifdef DENG_LIBRARY_DIR
         strcpy(path, DENG_LIBRARY_DIR);
@@ -159,24 +155,16 @@ lt_dlhandle lt_dlopenext(const char *baseFileName)
     getBundlePath(bundleName);
 #ifdef MACOSX
     strcat(bundleName, "/");
-    strcat(bundleName, baseFileName);
-    strcat(bundleName, "/Contents/MacOS/");
+/*    strcat(bundleName, baseFileName);
+    strcat(bundleName, "/Contents/MacOS/");*/
 #endif
     strcat(bundleName, baseFileName);
-//#ifdef UNIX
-//#ifndef MACOSX
-//  strcat(bundleName, ".so");
-//#endif
-//#endif
 
-
-/*  sprintf(bundleName, "Bundles/%s/Contents/MacOS/%s", baseFileName,
-            baseFileName);*/
-#ifdef MACOSX
+/*#ifdef MACOSX
     // Get rid of the ".bundle" in the end.
     if((ptr = strrchr(bundleName, '.')) != NULL)
         *ptr = 0;
-#endif
+#endif*/
     handle = dlopen(bundleName, RTLD_NOW);
     if(!handle)
     {
