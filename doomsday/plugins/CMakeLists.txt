@@ -18,4 +18,4 @@ INCLUDE_DIRECTORIES ( ../libdeng/api common/include ../external/lzss/portable/in
 
 FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c )
 
-SUBDIRS ( jdoom )
+SUBDIRS ( jdoom jheretic jhexen dehread wadmapconverter )

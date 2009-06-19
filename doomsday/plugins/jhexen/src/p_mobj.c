@@ -36,7 +36,7 @@
 #include <math.h>
 #include "jhexen.h"
 
-#include "../../../engine/portable/include/m_bams.h" // for BANG2RAD
+#include "../../../libdeng/portable/include/m_bams.h" // for BANG2RAD
 
 #include "dmu_lib.h"
 #include "p_map.h"
