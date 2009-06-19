@@ -28,16 +28,16 @@ ADD_DEFINITIONS (-D__JDOOM__ )
 
 INCLUDE_DIRECTORIES ( include )
 
-FILE(GLOB JDOOM_SOURCES ${CMAKE_SOURCE_DIR}/plugins/jdoom/src/*.c )
+FILE(GLOB JDOOM_SOURCES ${CMAKE_SOURCE_DIR}/plugins/doom/src/*.c )
 
 IF (ENABLEMAO)
 	CREATE_MODULE_AT_ONCE_FILE (${CMAKE_BINARY_DIR}/_jdoom_mao.c ${JDOOM_SOURCES} )
 	CREATE_MODULE_AT_ONCE_FILE (${CMAKE_BINARY_DIR}/_jdoom_common.c ${COMMON_PLUGIN_SOURCES} )
 #	CREATE_MODULE_AT_ONCE_FILE (${CMAKE_BINARY_DIR}/_jdoom_mobj.c
-# 	${CMAKE_SOURCE_DIR}/plugins/jdoom/src/p_mobj.c ${CMAKE_SOURCE_DIR}/plugins/jdoom/src/p_telept.c )
+# 	${CMAKE_SOURCE_DIR}/plugins/doom/src/p_mobj.c ${CMAKE_SOURCE_DIR}/plugins/doom/src/p_telept.c )
 
 	ADD_LIBRARY (jdoom SHARED ${CMAKE_BINARY_DIR}/_jdoom_mao.c ${CMAKE_BINARY_DIR}/_jdoom_common.c )
-#	${CMAKE_SOURCE_DIR}/plugins/jdoom/src/p_oldsvg.c ${CMAKE_SOURCE_DIR}/plugins/jdoom/src/m_random.c 
+#	${CMAKE_SOURCE_DIR}/plugins/doom/src/p_oldsvg.c ${CMAKE_SOURCE_DIR}/plugins/doom/src/m_random.c 
 #	${CMAKE_BINARY_DIR}/_jdoom_mobj.c )
 
 ELSE (ENABLEMAO)

@@ -39,23 +39,24 @@ IF ( WIN32 )
 ENDIF ( WIN32 )
 
 # Dependencies.
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindDoxygen.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindOpenGL.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindZLIB.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindPNG.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindCURL.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL_mixer.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL_image.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL_net.cmake )
-INCLUDE ( ${CMAKE_ROOT}/Modules/FindSDL_ttf.cmake )
+FIND_PACKAGE ( OpenGL REQUIRED )
+FIND_PACKAGE ( ZLIB REQUIRED )
+FIND_PACKAGE ( PNG REQUIRED )
+FIND_PACKAGE ( CURL REQUIRED )
+FIND_PACKAGE ( SDL REQUIRED )
+FIND_PACKAGE ( SDL_mixer REQUIRED )
+FIND_PACKAGE ( SDL_image REQUIRED )
+FIND_PACKAGE ( SDL_net REQUIRED )
+FIND_PACKAGE ( SDL_ttf REQUIRED )
+FIND_PACKAGE ( PythonInterp REQUIRED )
+FIND_PACKAGE ( Doxygen )
 
 # Set up project-wide variables and definitions.
 IF ( WIN32 )
     ADD_DEFINITIONS ( -DWIN32 -D_CRT_SECURE_NO_WARNINGS )
 ENDIF ( WIN32 )
 IF ( APPLE )
-    INCLUDE ( ${CMAKE_ROOT}/Modules/FindQuickTime.cmake )
+    FIND_PACKAGE ( QuickTime REQUIRED )
 
     ADD_DEFINITIONS ( -DMACOSX )
     IF ( ${CMAKE_OSX_SYSROOT} STREQUAL /Developer/SDKs/MacOSX10.4u.sdk )
@@ -64,9 +65,14 @@ IF ( APPLE )
 	ENDIF ( ${CMAKE_OSX_SYSROOT} STREQUAL /Developer/SDKs/MacOSX10.4u.sdk )
 ENDIF ( APPLE )
 IF ( UNIX )
-    INCLUDE ( ${CMAKE_ROOT}/Modules/FindCurses.cmake )
+    FIND_PACKAGE ( Curses REQUIRED )
 
     ADD_DEFINITIONS ( -DUNIX -DNO_FIXED_ASM )
 ENDIF ( UNIX )
+
+# Package the resources into PK3 files.
+ADD_CUSTOM_TARGET ( packres ALL 
+    ${PYTHON_EXECUTABLE} ./packres.py ${CMAKE_CURRENT_BINARY_DIR} 
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts )
 
 SUBDIRS ( libdeng libdeng2 server client plugins )
