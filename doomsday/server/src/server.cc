@@ -31,5 +31,19 @@ Server::~Server()
 
 dint Server::mainLoop()
 {
-    return DD_Entry(commandLine().count(), commandLine().argv());
+    // For our testing purposes, let's modify the command line to launch Doom1 E1M1 
+    // in dedicated server mode.
+    
+    CommandLine& args = commandLine();
+    
+    args.append("-dedicated");
+    args.append("-game");
+    args.append("plugins/libdeng_doom.dylib");
+    args.append("-file");
+    args.append("../data/doomsday.pk3");
+    args.append("../data/doom.pk3");
+    args.append("-cmd");
+    args.append("\"after 30 \"\"net init\"\"; after 40 \"\"net server start\"\"\"");
+    
+    return DD_Entry(args.count(), const_cast<char**>(args.argv()));
 }

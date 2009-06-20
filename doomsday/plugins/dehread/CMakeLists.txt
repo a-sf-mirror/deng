@@ -21,3 +21,5 @@ FILE ( GLOB SOURCES src/*.c )
 ADD_LIBRARY ( dengplugin_dehread SHARED ${SOURCES} )
 
 TARGET_LINK_LIBRARIES ( dengplugin_dehread deng )
+
+INSTALL ( TARGETS dengplugin_dehread LIBRARY DESTINATION ${PLUGIN_BINARY_DIR} )

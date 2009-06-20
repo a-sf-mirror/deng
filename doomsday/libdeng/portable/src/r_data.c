@@ -2055,7 +2055,7 @@ void R_PrecacheMobjNum(int num)
 {
     int                 i;
 
-    if(!((useModels && precacheSkins) || precacheSprites))
+    if(novideo || !((useModels && precacheSkins) || precacheSprites))
         return;
 
     if(num < 0 || num >= defs.count.mobjs.num)

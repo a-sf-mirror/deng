@@ -19,3 +19,5 @@ INCLUDE_DIRECTORIES ( include )
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/*.h )
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
+
+INSTALL ( TARGETS deng2 LIBRARY DESTINATION bin )

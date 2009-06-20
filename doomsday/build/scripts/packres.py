@@ -57,8 +57,8 @@ class Pack:
 # Directory contents added recursively.
 p = Pack()
 p.add_files(
-    [ ('engine/defs', 'defs'),
-      ('engine/data', 'data') ] )
+    [ ('libdeng/defs', 'defs'),
+      ('libdeng/data', 'data') ] )
 p.create('doomsday.pk3')
 
 # doom.pk3

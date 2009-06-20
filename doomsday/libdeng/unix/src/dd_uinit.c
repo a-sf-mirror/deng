@@ -225,17 +225,13 @@ int LoadPlugin(const char *pluginPath, lt_ptr data)
 
 int LoadPlugin(const char *pluginPath, lt_ptr data)
 {
-#ifndef MACOSX
     filename_t  name;
-#endif
     lt_dlhandle plugin, *handle;
     void (*initializer)(void);
 
-#ifndef MACOSX
     // What is the actual file name?
     _splitpath(pluginPath, NULL, NULL, name, NULL);
-    if(!strncmp(name, "libdp", 5))
-#endif
+    if(!strncmp(name, "libdengplugin_", 14))
     {
         // Try loading this one as a Doomsday plugin.
         if(NULL == (plugin = lt_dlopenext(pluginPath)))
@@ -265,7 +261,7 @@ int LoadPlugin(const char *pluginPath, lt_ptr data)
 static boolean loadAllPlugins(void)
 {
     // Try to load all libraries that begin with libdp.
-    lt_dlforeachfile(NULL, LoadPlugin, NULL);
+    lt_dlforeachfile("plugins", LoadPlugin, NULL);
     return true;
 }
 
@@ -329,6 +325,7 @@ int main(int argc, char* argv[])
     // First order of business: are we running in dedicated mode?
     if(ArgCheck("-dedicated"))
         isDedicated = true;
+    novideo = ArgCheck("-novideo") || isDedicated;
 
     DD_ComposeMainWindowTitle(buf);
 

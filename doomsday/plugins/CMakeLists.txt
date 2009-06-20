@@ -19,3 +19,8 @@ INCLUDE_DIRECTORIES ( ../libdeng/api common/include ../external/lzss/portable/in
 FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c )
 
 SUBDIRS ( doom heretic hexen dehread wadmapconverter )
+
+SET ( PLUGIN_BINARY_DIR ${DENG_BINARY_DIR}/plugins )
+
+#INSTALL ( TARGETS deng_doom deng_heretic heng_hexen dengplugin_dehread dengplugin_wadmapconverter 
+#    LIBRARY DESTINATION bin/plugins )

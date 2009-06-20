@@ -22,10 +22,21 @@
 using namespace de;
 
 CommandLine::CommandLine(int argc, char** v)
-    : argv_(v)
 {
     for(int i = 0; i < argc; ++i)
     {
         arguments_.push_back(v[i]);
+        pointers_.push_back(arguments_[i].c_str());
     }
+}
+
+void CommandLine::append(const std::string& arg)
+{
+    arguments_.push_back(arg);
+    pointers_.push_back(arguments_.rbegin()->c_str());
+}
+
+const char* const* CommandLine::argv() const
+{
+    return &pointers_[0];
 }

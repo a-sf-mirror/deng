@@ -39,6 +39,11 @@ namespace de
          * Returns the command line arguments specified at the start of the application.
          */
         const CommandLine& commandLine() const { return commandLine_; }
+
+        /**
+         * Returns the command line arguments specified at the start of the application.
+         */
+        CommandLine& commandLine() { return commandLine_; }
         
         /**
          * Main loop of the application. To be defined by a derived class.

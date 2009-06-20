@@ -114,25 +114,21 @@ int lt_dlforeachfile(const char *searchPath,
 
     // This is the default location where bundles are.
     getBundlePath(bundlePath);
-
+    
     if(searchPath == NULL)
         searchPath = bundlePath;
 
     dir = opendir(searchPath);
     while((entry = readdir(dir)) != NULL)
     {
-#ifndef MACOSX
         if(entry->d_type != DT_DIR &&
-           !strncmp(entry->d_name, "libdp", 5))
-#endif
-#ifdef MACOSX
-        if(entry->d_type == DT_DIR &&
-           !strncmp(entry->d_name, "dp", 2))
-#endif
-
+           !strncmp(entry->d_name, "libdengplugin_", 14))
         {
-
-            if(func(entry->d_name, data))
+            filename_t libName;
+            strcpy(libName, searchPath);
+            strcat(libName, "/");
+            strcat(libName, entry->d_name);
+            if(func(libName, data))
                 break;
         }
 

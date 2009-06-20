@@ -24,6 +24,10 @@ IF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
         "In-tree builds are not supported. For instance, try building in ${CMAKE_SOURCE_DIR}/mybuild/." )
 ENDIF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
 
+# General configuration.
+SET ( DENG_BINARY_DIR bin )
+SET ( DENG_DATA_DIR data )
+
 # Win32 configuration.
 IF ( WIN32 )
     INCLUDE_DIRECTORIES ( ${CMAKE_SOURCE_DIR}/external/opengl )
@@ -71,8 +75,15 @@ IF ( UNIX )
 ENDIF ( UNIX )
 
 # Package the resources into PK3 files.
-ADD_CUSTOM_TARGET ( packres ALL 
+ADD_CUSTOM_TARGET ( packres 
     ${PYTHON_EXECUTABLE} ./packres.py ${CMAKE_CURRENT_BINARY_DIR} 
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts )
+    
+INSTALL ( FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/doomsday.pk3 
+    ${CMAKE_CURRENT_BINARY_DIR}/doom.pk3 
+    ${CMAKE_CURRENT_BINARY_DIR}/heretic.pk3 
+    ${CMAKE_CURRENT_BINARY_DIR}/hexen.pk3 
+    DESTINATION ${DENG_DATA_DIR} )
 
 SUBDIRS ( libdeng libdeng2 server client plugins )

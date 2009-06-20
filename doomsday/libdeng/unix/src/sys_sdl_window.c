@@ -95,6 +95,9 @@ static __inline ddwindow_t *getWindow(uint idx)
 #if defined(UNIX)
 static void setAttrib(int flags)
 {
+    if(!mainWindowInited)
+        return;
+    
     if(flags & (CBLF_YELLOW | CBLF_LIGHT))
         wattrset(mainWindow.console.winText, A_BOLD);
     else

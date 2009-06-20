@@ -37,14 +37,26 @@ namespace de
         CommandLine(int argc, char** args);
 
         dint count() const { return arguments_.size(); }
-        
-        char** argv() const { return argv_; }
+
+        /**
+         * Appends a new argument to the list of arguments.
+         *
+         * @param arg  Argument to append.
+         */
+        void append(const std::string& arg);
+
+        /**
+         * Returns a list of pointers to the arguments. The list contains
+         * count() strings.
+         */
+        const char* const* argv() const;
         
     private:
         typedef std::vector<std::string> Arguments;
         Arguments arguments_;
     
-        char** argv_;
+        typedef std::vector<const char*> ArgumentPointers;
+        ArgumentPointers pointers_;
     };
 }
 

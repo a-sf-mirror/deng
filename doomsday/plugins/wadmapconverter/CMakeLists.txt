@@ -21,3 +21,5 @@ FILE ( GLOB SOURCES src/*.c )
 ADD_LIBRARY ( dengplugin_wadmapconverter SHARED ${SOURCES} )
 
 TARGET_LINK_LIBRARIES ( dengplugin_wadmapconverter deng )
+
+INSTALL ( TARGETS dengplugin_wadmapconverter LIBRARY DESTINATION ${PLUGIN_BINARY_DIR} )
