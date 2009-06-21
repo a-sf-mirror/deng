@@ -19,6 +19,10 @@
 
 #include "de/commandline.h"
 
+#ifdef UNIX
+#include <unistd.h>
+#endif
+
 using namespace de;
 
 CommandLine::CommandLine(int argc, char** v)
@@ -28,15 +32,70 @@ CommandLine::CommandLine(int argc, char** v)
         arguments_.push_back(v[i]);
         pointers_.push_back(arguments_[i].c_str());
     }
+    // Keep this null terminated.
+    pointers_.push_back(0);
+}
+
+CommandLine::CommandLine(const CommandLine& other)
+    : arguments_(other.arguments_)
+{
+    // Use pointers to the already copied strings.
+    for(Arguments::iterator i = arguments_.begin(); i != arguments_.end(); ++i)
+    {
+        pointers_.push_back(i->c_str());
+    }
+    pointers_.push_back(0);
 }
 
 void CommandLine::append(const std::string& arg)
 {
     arguments_.push_back(arg);
-    pointers_.push_back(arguments_.rbegin()->c_str());
+    pointers_.insert(pointers_.end() - 1, arguments_.rbegin()->c_str());
+}
+
+void CommandLine::insert(duint pos, const std::string& arg)
+{
+    if(pos > arguments_.size())
+    {
+        throw OutOfRangeError("CommandLine::insert", "Index out of range.");
+    }
+    arguments_.insert(arguments_.begin() + pos, arg);
+    pointers_.insert(pointers_.begin() + pos, arguments_[pos].c_str());
+}
+
+void CommandLine::remove(duint pos)
+{
+    if(pos >= arguments_.size())
+    {
+        throw OutOfRangeError("CommandLine::remove", "Index out of range.");
+    }
+    arguments_.erase(arguments_.begin() + pos);
+    pointers_.erase(pointers_.begin() + pos);
 }
 
 const char* const* CommandLine::argv() const
 {
+    assert(*pointers_.rbegin() == 0);
     return &pointers_[0];
+}
+
+void CommandLine::execute(char** envs) const
+{
+#ifdef UNIX
+    // Fork and execute new file.
+    pid_t result = fork();
+    if(!result)
+    {
+        // Here we go in the child process.
+        printf("Child loads %s...\n", pointers_[0]);
+        execve(pointers_[0], const_cast<char* const*>(argv()), const_cast<char* const*>(envs));
+    }
+    else
+    {
+        if(result < 0)
+        {
+            perror("CommandLine::execute");
+        }
+    }
+#endif    
 }

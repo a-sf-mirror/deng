@@ -44,6 +44,12 @@ dint Client::mainLoop()
     args.append("clientdir");
     args.append("-libdir");
     args.append("../plugins");
+
+    CommandLine svArgs = args;
+    svArgs.remove(0);
+    svArgs.insert(0, "./dengsv");
+    extern char** environ;
+    svArgs.execute(environ);
     
     return DD_Entry(args.count(), const_cast<char**>(args.argv()));
 }

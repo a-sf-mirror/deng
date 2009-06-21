@@ -24,6 +24,7 @@
 #include <string>
 
 #include <de/deng.h>
+#include <de/Error>
 
 namespace de
 {
@@ -34,7 +35,11 @@ namespace de
     class CommandLine
     {
     public:
+        DEFINE_ERROR(OutOfRangeError);
+        
+    public:
         CommandLine(int argc, char** args);
+        CommandLine(const CommandLine& other);        
 
         dint count() const { return arguments_.size(); }
 
@@ -46,10 +51,33 @@ namespace de
         void append(const std::string& arg);
 
         /**
+         * Inserts a new argument to the list of arguments at index @c pos.
+         * 
+         * @param pos  Index at which the new argument will be at.
+         */
+        void insert(duint pos, const std::string& arg);
+
+        /**
+         * Removes an argument by index.
+         *
+         * @param pos  Index of argument to remove.
+         */
+        void remove(duint pos);
+
+        /**
          * Returns a list of pointers to the arguments. The list contains
          * count() strings.
          */
         const char* const* argv() const;
+        
+        /**
+         * Spawns a new process using the command line. The first argument
+         * specifies the file name of the executable. Returns immediately
+         * after the process has been started.
+         *
+         * @param envs  Environment variables passed to the new process.
+         */
+        void execute(char** envs) const;
         
     private:
         typedef std::vector<std::string> Arguments;

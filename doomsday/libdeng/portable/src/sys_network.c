@@ -493,7 +493,7 @@ void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
     if(size > DDMAXSHORT)
     {
         Con_Error("N_SendDataBufferReliably: Trying to send a too large data "
-                  "buffer.\n  Attempted size is %ul bytes.\n", size);
+                  "buffer.\n  Attempted size is %lu bytes.\n", size);
     }
 
     // Compose the entire message in the transmission buffer.
@@ -517,7 +517,7 @@ void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
 
     result = SDLNet_TCP_Send(node->sock, transmissionBuffer, (int) size + 2);
 #ifdef _DEBUG
-    VERBOSE2( Con_Message("N_SendDataBufferReliably: Sent %ul bytes, result=%ul\n",
+    VERBOSE2( Con_Message("N_SendDataBufferReliably: Sent %lu bytes, result=%lu\n",
                           (unsigned long) (size + 2), result) );
 #endif
     if(result != size + 2)
