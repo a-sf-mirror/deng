@@ -503,13 +503,15 @@ void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
         transmissionBuffer = M_Realloc(transmissionBuffer, size + 2);
     }
 
-    if(size > sizeof(short))
-        Con_Error("N_SendDataBufferReliably: Tried to send %ul bytes "
-                  "(max pkt size %ul).\n", (unsigned long) size,
-                  (unsigned long) sizeof(short));
+    /*if(size > DDMAXSHORT)
     {
-    short           packetSize = SHORT(size);
-    memcpy(transmissionBuffer, &packetSize, 2);
+        Con_Error("N_SendDataBufferReliably: Tried to send %u bytes "
+                  "(max pkt size %i).\n", (unsigned long) size, DDMAXSHORT);
+    }*/
+    
+    {
+        short packetSize = SHORT(size);
+        memcpy(transmissionBuffer, &packetSize, 2);
     }
     memcpy(transmissionBuffer + 2, data, size);
 

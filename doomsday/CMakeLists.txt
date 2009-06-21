@@ -86,6 +86,6 @@ INSTALL ( FILES
     ${CMAKE_CURRENT_BINARY_DIR}/hexen.pk3 
     DESTINATION ${DENG_DATA_DIR} )
     
-INSTALL ( FILES sv.sh DESTINATION ${DENG_BINARY_DIR} )
+INSTALL ( FILES sv.sh cl.sh DESTINATION ${DENG_BINARY_DIR} )
 
 SUBDIRS ( libdeng libdeng2 server client plugins )

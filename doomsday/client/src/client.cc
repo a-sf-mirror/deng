@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengsv
+ * The Doomsday Engine Project -- dengcl
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,35 +17,31 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "server.h"
+#include "client.h"
 #include "doomsday.h"
 
 using namespace de;
 
-Server::Server(const CommandLine& commandLine)
+Client::Client(const CommandLine& commandLine)
     : App(commandLine)
 {}
 
-Server::~Server()
+Client::~Client()
 {}
 
-dint Server::mainLoop()
+dint Client::mainLoop()
 {
-    // For our testing purposes, let's modify the command line to launch Doom1 E1M1 
-    // in dedicated server mode.
-    
     CommandLine& args = commandLine();
     
-    args.append("-dedicated");
     args.append("-game");
     args.append("libdeng_doom.dylib");
     args.append("-file");
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");
     args.append("-cmd");
-    args.append("\"net-port-control 13209; net-port-data 13210; after 30 \"\"net init\"\"; after 40 \"\"net server start\"\"\"");
+    args.append("\"net-port-control 13211; net-port-data 13212; after 30 \"\"net init\"\"; after 50 \"\"connect localhost:13209\"\"\"");
     args.append("-userdir");
-    args.append("serverdir");
+    args.append("clientdir");
     args.append("-libdir");
     args.append("../plugins");
     
