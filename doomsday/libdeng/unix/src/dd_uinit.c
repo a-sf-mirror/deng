@@ -99,6 +99,8 @@ static void determineGlobalPaths(application_t *app)
 
     // The current working directory is the runtime dir.
     Dir_GetDir(&ddRuntimeDir);
+    
+    printf("Runtime directory: %s\n", ddRuntimeDir.path);
 
     /**
      * The base path is always the same and depends on the build
@@ -261,7 +263,7 @@ int LoadPlugin(const char *pluginPath, lt_ptr data)
 static boolean loadAllPlugins(void)
 {
     // Try to load all libraries that begin with libdp.
-    lt_dlforeachfile("plugins", LoadPlugin, NULL);
+    lt_dlforeachfile(NULL, LoadPlugin, NULL);
     return true;
 }
 

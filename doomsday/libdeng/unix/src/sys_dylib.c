@@ -119,6 +119,12 @@ int lt_dlforeachfile(const char *searchPath,
         searchPath = bundlePath;
 
     dir = opendir(searchPath);
+    if(!dir)
+    {
+        printf("lt_dlforeachfile: %s does not exist\n", searchPath);
+        return 0;
+    }
+    
     while((entry = readdir(dir)) != NULL)
     {
         if(entry->d_type != DT_DIR &&

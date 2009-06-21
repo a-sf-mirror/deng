@@ -134,8 +134,7 @@ void strzncpy(char *dest, const char *src, int count)
     *out = 0;
 }
 
-void _splitpath(const char *path, char *drive, char *dir, char *name,
-                char *ext)
+void _splitpath(const char *path, char *drive, char *dir, char *name, char *ext)
 {
     char       *lastPeriod, *lastSlash;
 
@@ -162,8 +161,10 @@ void _splitpath(const char *path, char *drive, char *dir, char *name,
             strzncpy(name, lastSlash + 1, lastPeriod - lastSlash - 1);
         else if(lastSlash)
             strcpy(name, lastSlash + 1);
-        else
+        else if(lastPeriod)
             strzncpy(name, path, lastPeriod - path);
+        else
+            strcpy(name, path);
     }
 
     // Last period gives us the extension.
