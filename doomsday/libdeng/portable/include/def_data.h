@@ -662,7 +662,6 @@ int             DED_AddMusic(ded_t* ded, char* id);
 int             DED_AddMapInfo(ded_t* ded, char* str);
 int             DED_AddText(ded_t* ded, char* id);
 int             DED_AddTextureEnv(ded_t* ded, char* id);
-int             DED_AddValue(ded_t *ded, const char* id);
 int             DED_AddDetail(ded_t* ded, const char* lumpname);
 int             DED_AddPtcGen(ded_t* ded, const char* state);
 int             DED_AddPtcGenStage(ded_ptcgen_t* gen);
@@ -700,8 +699,6 @@ void            DED_RemoveSectorType(ded_t* ded, int index);
 void            DED_RemoveLineType(ded_t* ded, int index);
 void            DED_RemoveXGClass(ded_t* ded, int index);
 
-void*           DED_NewEntries(void** ptr, ded_count_t* cnt,
-                               size_t elemSize, int count);
 void*           DED_NewEntry(void** ptr, ded_count_t* cnt, size_t elemSize);
 void            DED_DelEntry(int index, void** ptr, ded_count_t* cnt,
                              size_t elemSize);

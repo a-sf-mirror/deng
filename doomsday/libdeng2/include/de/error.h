@@ -22,10 +22,11 @@
 
 #include <string>
 #include <stdexcept>
+#include <de/deng.h>
 
 namespace de
 {
-	class Error : public std::runtime_error
+	class PUBLIC_API Error : public std::runtime_error
 	{
 	public:
 		Error(const std::string& where, const std::string& message)
@@ -40,7 +41,7 @@ namespace de
  * of the caught errors.
  */
 #define DEFINE_SUB_ERROR(Parent, Name) \
-	class Name : public Parent \
+	class PUBLIC_API Name : public Parent \
 	{ \
 	public: \
 		Name(const std::string& message) \

@@ -49,5 +49,5 @@ struct dbinding_s* B_GetControlDeviceBindings(int localNum, int control,
 int         B_NewIdentifier(void);
 const char* B_ShortNameForKey(int ddkey);
 int         B_KeyForShortName(const char* key);
-int         DD_GetKeyCode(const char* key);
+
 #endif

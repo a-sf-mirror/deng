@@ -41,9 +41,6 @@ extern int  novideo;
 
 void            Sys_Init(void);
 void            Sys_Shutdown(void);
-void            Sys_Quit(void);
-int             Sys_CriticalMessage(char* msg);
-void            Sys_Sleep(int millisecs);
 void            Sys_ShowCursor(boolean show);
 void            Sys_HideMouse(void);
 void            Sys_MessageBox(const char* msg, boolean iserror);

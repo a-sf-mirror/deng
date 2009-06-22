@@ -220,8 +220,7 @@ angle_t R_PointToAngle(float x, float y)
     }
 }
 
-angle_t R_PointToAngle2(const float x1, const float y1,
-                        const float x2, const float y2)
+angle_t R_PointToAngle2(float x1, float y1, float x2, float y2)
 {
     viewX = x1;
     viewY = y1;
@@ -252,7 +251,7 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-subsector_t *R_PointInSubsector(const float x, const float y)
+subsector_t *R_PointInSubsector(float x, float y)
 {
     node_t             *node = 0;
     uint                nodenum = 0;

@@ -32,7 +32,13 @@ Client::~Client()
 dint Client::mainLoop()
 {
     CommandLine& args = commandLine();
-    
+
+    CommandLine svArgs = args;
+    svArgs.remove(0);
+    svArgs.insert(0, "./dengsv");
+    extern char** environ;
+    svArgs.execute(environ);
+
     args.append("-game");
     args.append("libdeng_doom.dylib");
     args.append("-file");
@@ -44,12 +50,10 @@ dint Client::mainLoop()
     args.append("clientdir");
     args.append("-libdir");
     args.append("../plugins");
-
-    CommandLine svArgs = args;
-    svArgs.remove(0);
-    svArgs.insert(0, "./dengsv");
-    extern char** environ;
-    svArgs.execute(environ);
     
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()));
+#ifndef WIN32
+    return DD_Entry(args.count(), const_cast<char**>(args.argv()), (void*)GetModuleHandle(NULL));
+#else
+    return DD_Entry(args.count(), const_cast<char**>(args.argv()), 0);
+#endif
 }

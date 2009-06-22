@@ -30,6 +30,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "doomsday.h"
 #include "de_platform.h"
 
 #if defined(WIN32)

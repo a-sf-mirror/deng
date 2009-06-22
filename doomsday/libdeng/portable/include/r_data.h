@@ -299,8 +299,6 @@ void            R_InitData(void);
 void            R_UpdateData(void);
 void            R_ShutdownData(void);
 
-colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
-                                      const byte* data, ushort num);
 const char*     R_GetColorPaletteNameForNum(colorpaletteid_t id);
 colorpaletteid_t R_GetColorPaletteNumForName(const char* name);
 

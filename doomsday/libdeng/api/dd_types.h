@@ -179,4 +179,7 @@ struct plane_s;
 struct surface_s;
 struct material_s;
 
+// think_t is a function pointer to a routine to handle an actor
+typedef void (*think_t) ();
+
 #endif

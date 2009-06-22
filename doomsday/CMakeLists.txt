@@ -40,6 +40,11 @@ IF ( WIN32 )
         ${CMAKE_SOURCE_DIR}/external/zlib/lib
         ${CMAKE_SOURCE_DIR}/external/libpng/lib )
     SET ( PNG_NAMES libpng13 )
+
+    # This will take care of the slash issue.
+    GET_FILENAME_COMPONENT ( SDLDIR $ENV{SDLDIR} ABSOLUTE )
+    GET_FILENAME_COMPONENT ( SDLMIXERDIR $ENV{SDLMIXERDIR} ABSOLUTE )
+    GET_FILENAME_COMPONENT ( SDLNETDIR $ENV{SDLNETDIR} ABSOLUTE )
 ENDIF ( WIN32 )
 
 # Dependencies.
@@ -57,7 +62,7 @@ FIND_PACKAGE ( Doxygen )
 
 # Set up project-wide variables and definitions.
 IF ( WIN32 )
-    ADD_DEFINITIONS ( -DWIN32 -D_CRT_SECURE_NO_WARNINGS )
+    ADD_DEFINITIONS ( -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE )
 ENDIF ( WIN32 )
 IF ( APPLE )
     FIND_PACKAGE ( QuickTime REQUIRED )

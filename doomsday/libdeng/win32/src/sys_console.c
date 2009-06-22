@@ -31,6 +31,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include "doomsday.h"
 #include "de_platform.h"
 #include "de_console.h"
 #include "de_misc.h"

@@ -23,6 +23,15 @@
 #include <cassert>
 #include <iostream>
 
+#ifdef WIN32
+#   define PUBLIC_API __declspec(dllexport)
+// Disable warnings about non-exported (C++ standard library) base classes.
+#   pragma warning(disable: 4275)
+#   pragma warning(disable: 4251)
+#else
+#   define PUBLIC_API
+#endif
+
 /**
  * @namespace de
  *

@@ -45,18 +45,9 @@
 int             Z_Init(void);
 void            Z_Shutdown(void);
 void            Z_EnableFastMalloc(boolean isEnabled);
-//void            Z_PrintStatus(void);
-void*           Z_Malloc(size_t size, int tag, void* ptr);
-void            Z_Free(void* ptr);
-void            Z_FreeTags(int lowTag, int highTag);
-void            Z_CheckHeap(void);
-void            Z_ChangeTag2(void* ptr, int tag);
 void            Z_ChangeUser(void* ptr, void* newUser);
 void*           Z_GetUser(void* ptr);
 int             Z_GetTag(void* ptr);
-void*           Z_Realloc(void* ptr, size_t n, int mallocTag);
-void*           Z_Calloc(size_t size, int tag, void* user);
-void*           Z_Recalloc(void* ptr, size_t n, int callocTag);
 size_t          Z_FreeMemory(void);
 
 typedef struct memblock_s {

@@ -40,6 +40,7 @@ extern game_export_t gx;
 
 int             G_GetInteger(int id);
 void           *G_GetVariable(int id);
-game_export_t  *GetGameAPI(game_import_t *imports);
+
+PUBLIC_API game_export_t  *GetGameAPI(game_import_t *imports);
 
 #endif

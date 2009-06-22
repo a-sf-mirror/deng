@@ -30,6 +30,7 @@
 
 #include <math.h>
 
+#include "doomsday.h"
 #include "de_base.h"
 #include "m_vector.h"
 
@@ -125,7 +126,7 @@ void V2_Scale(pvec2_t vec, float scalar)
 /**
  * Rotate the vector by a radian angle.
  */
-void V2_Rotate(pvec2_t vec, float radians)
+void V2_Rotate(float vec[2], float radians)
 {
     const float         c = cos(radians);
     const float         s = sin(radians);

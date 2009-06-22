@@ -32,7 +32,7 @@ namespace de
      * Stores and provides access to the command line arguments passed
      * to an application at launch.
      */
-    class CommandLine
+    class PUBLIC_API CommandLine
     {
     public:
         DEFINE_ERROR(OutOfRangeError);
@@ -40,6 +40,13 @@ namespace de
     public:
         CommandLine(int argc, char** args);
         CommandLine(const CommandLine& other);        
+        
+#ifdef WIN32
+        /**
+         * Constructs a command line out of the arguments of the current process.
+         */
+        CommandLine();
+#endif
 
         dint count() const { return arguments_.size(); }
 

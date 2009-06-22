@@ -29,6 +29,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <string.h>
+#include "dd_export.h"
 
 #include "jdoom.h"
 

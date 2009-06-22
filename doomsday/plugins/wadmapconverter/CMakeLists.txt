@@ -22,4 +22,6 @@ ADD_LIBRARY ( dengplugin_wadmapconverter SHARED ${SOURCES} )
 
 TARGET_LINK_LIBRARIES ( dengplugin_wadmapconverter deng )
 
-INSTALL ( TARGETS dengplugin_wadmapconverter LIBRARY DESTINATION ${PLUGIN_BINARY_DIR} )
+INSTALL ( TARGETS dengplugin_wadmapconverter 
+    RUNTIME DESTINATION ${PLUGIN_BINARY_DIR}
+    LIBRARY DESTINATION ${PLUGIN_BINARY_DIR} )

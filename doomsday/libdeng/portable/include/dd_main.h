@@ -51,16 +51,7 @@ extern GETGAMEAPI GetGameAPI;
 int             DD_Main(void);
 void            DD_UpdateEngineState(void);
 void            DD_GameUpdate(int flags);
-void            DD_AddStartupWAD(const char* file);
-void            DD_AddIWAD(const char* path);
 void            DD_AutoLoad(void);
-void            DD_SetConfigFile(const char* file);
-void            DD_SetDefsFile(const char* file);
-int             DD_GetInteger(int ddvalue);
-void            DD_SetInteger(int ddvalue, int parm);
-void            DD_SetVariable(int ddvalue, void* ptr);
-void*           DD_GetVariable(int ddvalue);
-ddplayer_t*     DD_GetPlayer(int number);
 void            DD_CheckTimeDemo(void);
 const char*     value_Str(int val);
 #endif

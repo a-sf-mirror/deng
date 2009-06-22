@@ -232,7 +232,7 @@ boolean R_SetDefaultColorPalette(colorpaletteid_t id)
  * @return              Color palette id.
  */
 colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
-                                      const byte* data, ushort num)
+                                      const byte* data, size_t num)
 {
 #define MAX_BPC         (16) // Max bits per component.
 

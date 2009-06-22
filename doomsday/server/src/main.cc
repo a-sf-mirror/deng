@@ -17,15 +17,29 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+//#ifdef WIN32
+//#define WIN32_LEAN_AND_MEAN
+//#include <windows.h>
+//#endif
+
 #include "server.h"
 
 using namespace de;
 
+//#ifndef WIN32
 int main(int argc, char** argv)
+//#else
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nCmdShow*/)
+//#endif
 {
     try
     {
-        Server server(CommandLine(argc, argv));
+//#ifndef WIN32
+        CommandLine args(argc, argv);
+//#else
+        //CommandLine args;
+//#endif
+        Server server(args);
         return server.mainLoop();
     }
     catch(const Error& error)

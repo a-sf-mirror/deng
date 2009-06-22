@@ -59,9 +59,7 @@ int             P_BoxOnLineSide3(const int bbox[4], double lineSX,
                                  double lineSY, double lineDX, double lineDY,
                                  double linePerp, double lineLength,
                                  double epsilon);
-void            P_MakeDivline(const linedef_t* li, divline_t* dl);
 int             P_PointOnDivlineSide(float x, float y, const divline_t* line);
-float           P_InterceptVector(const divline_t* v2, const divline_t* v1);
 int             P_PointOnDivLineSidef(fvertex_t *pnt, fdivline_t *dline);
 float           P_FloatInterceptVertex(fvertex_t *start, fvertex_t *end,
                                        fdivline_t *fdiv, fvertex_t *inter);

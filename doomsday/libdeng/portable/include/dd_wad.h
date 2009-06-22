@@ -62,26 +62,12 @@ void            DD_RegisterVFS(void);
 
 void            W_InitMultipleFiles(char** fileNames);
 void            W_EndStartup(void);
-lumpnum_t       W_CheckNumForName(const char* name);
-lumpnum_t       W_GetNumForName(const char* name);
-size_t          W_LumpLength(lumpnum_t lump);
-const char*     W_LumpName(lumpnum_t lump);
-void            W_ReadLump(lumpnum_t lump, void* dest);
-void            W_ReadLumpSection(lumpnum_t lump, void* dest,
-                                  size_t startOffset, size_t length);
-const void*     W_CacheLumpNum(lumpnum_t lump, int tag);
-const void*     W_CacheLumpName(const char* name, int tag);
 boolean         W_AddFile(const char* fileName,
                           boolean allowDuplicate);
 boolean         W_RemoveFile(const char* fileName);
 void            W_Reset(void);
-lumpnum_t       W_OpenAuxiliary(const char* fileName);
-void            W_ChangeCacheTag(lumpnum_t lump, int tag);
 void            W_CheckIWAD(void);
-boolean         W_IsFromIWAD(lumpnum_t lump);
-const char*     W_LumpSourceFile(lumpnum_t lump);
 unsigned int    W_CRCNumberForRecord(int idx);
-unsigned int    W_CRCNumber(void);
 void            W_GetIWADFileName(char* buf, size_t bufSize);
 void            W_GetPWADFileNames(char* buf, size_t bufSize,
                                    char separator);

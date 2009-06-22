@@ -32,16 +32,6 @@
 void            GL_UsePatchOffset(boolean enable);
 
 // 2D drawing routines:
-void            GL_DrawPatch_CS(int x, int y, lumpnum_t lump);
-void            GL_DrawPatch(int x, int y, lumpnum_t lump);
-void            GL_DrawPatchLitAlpha(int x, int y, float light, float alpha,
-                                     lumpnum_t lump);
-void            GL_DrawFuzzPatch(int x, int y, lumpnum_t lump);
-void            GL_DrawAltFuzzPatch(int x, int y, lumpnum_t lump);
-void            GL_DrawShadowedPatch(int x, int y, lumpnum_t lump);
-void            GL_DrawRawScreen(lumpnum_t lump, float offx, float offy);
-void            GL_DrawRawScreen_CS(lumpnum_t lump, float offx, float offy,
-                                    float scalex, float scaley);
 void            GL_DrawLine(float x1, float y1, float x2, float y2, float r,
                             float g, float b, float a);
 void            GL_DrawRect(float x, float y, float w, float h, float r,
@@ -51,8 +41,6 @@ void            GL_DrawCutRectTiled(float x, float y, float w, float h, int tw, 
                                     int txoff, int tyoff, float cx, float cy, float cw, float ch);
 
 // Filters:
-void            GL_SetFilter(boolean enable);
-void            GL_SetFilterColor(float r, float g, float b, float a);
 int             GL_DrawFilter(void);
 
 #endif

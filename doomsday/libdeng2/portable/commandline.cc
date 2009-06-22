@@ -17,10 +17,16 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef WIN32
+#   define WIN32_LEAN_AND_MEAN
+#   include <windows.h>
+#endif
+
 #include "de/commandline.h"
+#include <doomsday.h>
 
 #ifdef UNIX
-#include <unistd.h>
+#   include <unistd.h>
 #endif
 
 using namespace de;
@@ -35,6 +41,30 @@ CommandLine::CommandLine(int argc, char** v)
     // Keep this null terminated.
     pointers_.push_back(0);
 }
+
+#ifdef WIN32
+CommandLine::CommandLine()
+{
+    /**
+     * @todo  It makes little sense to use the libdeng API to parse the command line
+     * only to have it reparsed at DD_Entry(); the redundancy should be removed.
+     * The CommandLine class should include all the functionality of libdeng m_args.
+     * libdeng should then start using the App's CommandLine while offering a public 
+     * C API.
+     */
+
+    ArgInit(GetCommandLine());
+
+    for(int i = 0; i < Argc(); ++i)
+    {
+        arguments_.push_back(Argv(i));
+        pointers_.push_back(arguments_[i].c_str());
+    }
+    pointers_.push_back(0);
+
+    ArgShutdown();
+}
+#endif
 
 CommandLine::CommandLine(const CommandLine& other)
     : arguments_(other.arguments_)

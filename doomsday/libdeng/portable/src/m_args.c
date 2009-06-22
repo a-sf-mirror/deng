@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "doomsday.h"
 #include "de_base.h"
 #include "de_console.h"
 #include "de_misc.h"

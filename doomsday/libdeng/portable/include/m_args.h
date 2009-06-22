@@ -29,18 +29,6 @@
 #ifndef __COMMAND_LINE_ARGS_H__
 #define __COMMAND_LINE_ARGS_H__
 
-void            ArgInit(const char* cmdline);
-void            ArgShutdown(void);
-void            ArgAbbreviate(const char* longname, const char* shortname);
-
-int             Argc(void);
-const char*     Argv(int i);
-const char**    ArgvPtr(int i);
-const char*     ArgNext(void);
-int             ArgCheck(const char* check);
-int             ArgCheckWith(const char* check, int num);
-int             ArgExists(const char* check);
-int             ArgIsOption(int i);
 int             ArgRecognize(const char* first, const char* second);
 
 #endif							//__COMMAND_LINE_ARGS_H__

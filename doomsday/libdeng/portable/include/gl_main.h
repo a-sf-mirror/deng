@@ -69,7 +69,6 @@ void            GL_BlendMode(blendmode_t mode);
 
 void            GL_InitRefresh(void);
 void            GL_ShutdownRefresh(void);
-void            GL_UseFog(int yes);
 //void            GL_InitVarFont(void);
 //void            GL_ShutdownVarFont(void);
 const char*     GL_ChooseFixedFont(void);
@@ -121,10 +120,6 @@ boolean         GL_QuantizeImageToPalette(byte* out, int outformat,
                                           int height);
 void            GL_DeSaturatePalettedImage(byte* buffer, DGLuint palid,
                                            int width, int height);
-
-// Returns a pointer to a copy of the screen. The pointer must be
-// deallocated by the caller.
-unsigned char*  GL_GrabScreen(void);
 
 // Console commands.
 D_CMD(UpdateGammaRamp);

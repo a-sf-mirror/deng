@@ -91,6 +91,5 @@
 #define BANG_SOUTHEAST  BANG_315
 
 void            bamsInit(void);        // Fill in the tables.
-binangle_t      bamsAtan2(int y, int x);
 
 #endif

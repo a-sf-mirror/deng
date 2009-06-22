@@ -29,7 +29,7 @@ namespace de
     /**
      * The application.
      */
-    class App
+    class PUBLIC_API App
     {
     public:
         App(const CommandLine& commandLine);

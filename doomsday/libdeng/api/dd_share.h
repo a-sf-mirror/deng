@@ -51,7 +51,6 @@ extern "C" {
 #include "dd_types.h"
 #include "dd_maptypes.h"
 #include "dd_gl.h"
-#include "../portable/include/p_think.h" // \todo Not officially a public header file!
 #include "../portable/include/def_share.h" // \todo Not officially a public header file!
 
 //------------------------------------------------------------------------
@@ -64,8 +63,8 @@ extern "C" {
 
 // The case-independent strcmps have different names.
 #if WIN32
-# define strcasecmp stricmp
-# define strncasecmp strnicmp
+#   define strcasecmp stricmp
+#   define strncasecmp strnicmp
 #endif
 
 #if UNIX
@@ -77,10 +76,6 @@ extern "C" {
  */
 char*           strupr(char *string);
 char*           strlwr(char *string);
-#endif
-
-#if WIN32
-int             snprintf(char* str, size_t size, const char* format, ...);
 #endif
 
     // Format checking for printf-like functions in GCC2
@@ -371,12 +366,13 @@ enum {
 
 // Don't use inline assembler in fixed-point calculations.
 // (link with plugins/common/m_fixed.c)
-fixed_t         FixedMul(fixed_t a, fixed_t b);
-fixed_t         FixedDiv2(fixed_t a, fixed_t b);
+PUBLIC_API fixed_t         FixedMul(fixed_t a, fixed_t b);
+PUBLIC_API fixed_t         FixedDiv2(fixed_t a, fixed_t b);
+
 #endif
 
 // This one is always in plugins/common/m_fixed.c.
-fixed_t         FixedDiv(fixed_t a, fixed_t b);
+PUBLIC_API fixed_t         FixedDiv(fixed_t a, fixed_t b);
 
 //------------------------------------------------------------------------
 //
@@ -642,6 +638,13 @@ enum /* Do NOT change the numerical values of the constants. */
 {
     DMUSC_LINE_FIRSTRENDERED
 };
+
+typedef struct thinker_s {
+    struct thinker_s *prev, *next;
+    think_t         function;
+    boolean         inStasis;
+    thid_t          id; // Only used for mobjs (zero is not an ID).
+} thinker_t;
 
 // All map think-able objects must use this as a base. Also used for sound
 // origin purposes for all of: mobj_t, polyobj_t, sector_t/plane_t

@@ -30,8 +30,9 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include "de_platform.h"
 #include <math.h>
+#include "doomsday.h"
+#include "de_platform.h"
 #include "m_bams.h"
 
 // MACROS ------------------------------------------------------------------

@@ -18,6 +18,8 @@ INCLUDE_DIRECTORIES ( api portable/include ../external/lzss/portable/include
     ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${PNG_PNG_INCLUDE_DIR} 
     ${OPENGL_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${CURSES_INCLUDE_PATH} ${ZLIB_INCLUDE_DIR} )
 
+ADD_DEFINITIONS ( -D__INTERNAL_MAP_DATA_ACCESS__ )
+    
 FILE ( GLOB SOURCES portable/src/*.c )
 
 # Platform-specific configuration.
@@ -25,7 +27,6 @@ IF ( WIN32 )
     INCLUDE_DIRECTORIES ( win32/include
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )
-    LINK_DIRECTORIES ( $ENV{DXDIR}/lib )
     
     FILE ( GLOB WIN_SOURCES win32/src/*.c )
     SET ( SOURCES ${SOURCES} ${WIN_SOURCES} )
@@ -59,14 +60,28 @@ TARGET_LINK_LIBRARIES ( deng
 
 IF ( WIN32 )
     TARGET_LINK_LIBRARIES ( deng 
-        dinput8 dxguid wsock32 winmm
+        wsock32 winmm
+        "$ENV{DXDIR}/lib/dinput8.lib" 
+        "$ENV{DXDIR}/lib/dxguid.lib"
         "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
         
     SET_TARGET_PROPERTIES ( deng PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
+
+    # Install DLLs to the binary directory.
+    INSTALL ( FILES 
+        ${SDLDIR}/lib/SDL.dll
+        ${SDLMIXERDIR}/lib/SDL_mixer.dll
+        ${SDLNETDIR}/lib/SDL_net.dll
+        ../external/libpng/lib/libpng13.dll 
+        ../external/zlib/lib/zlib1.dll
+        ../external/lzss/win32/lzss.dll
+        DESTINATION ${DENG_BINARY_DIR} )
 ENDIF ( WIN32 )
     
 IF ( APPLE )
     TARGET_LINK_LIBRARIES ( deng ${QUICKTIME_LIBRARY} )
 ENDIF ( APPLE )
 
-INSTALL ( TARGETS deng LIBRARY DESTINATION bin )
+INSTALL ( TARGETS deng 
+    RUNTIME DESTINATION bin 
+    LIBRARY DESTINATION bin )

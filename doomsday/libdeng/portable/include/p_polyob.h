@@ -29,6 +29,8 @@
 #ifndef __DOOMSDAY_POLYOB_H__
 #define __DOOMSDAY_POLYOB_H__
 
+#include "dd_share.h"
+
 // We'll use the base polyobj template directly as our mobj.
 typedef struct polyobj_s {
 DD_BASE_POLYOBJ_ELEMENTS()} polyobj_t;
@@ -40,21 +42,17 @@ extern uint numPolyObjs;
 
 // Polyobj system.
 void            P_MapInitPolyobjs(void);
-void            P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*));
 
-polyobj_t*      P_GetPolyobj(uint num);
 boolean         P_IsPolyobjOrigin(void* ddMobjBase);
 
 // Polyobject interface.
-boolean         P_PolyobjMove(struct polyobj_s* po, float x, float y);
-boolean         P_PolyobjRotate(struct polyobj_s* po, angle_t angle);
-void            P_PolyobjLink(struct polyobj_s* po);
-void            P_PolyobjUnLink(struct polyobj_s* po);
-
 void            P_PolyobjUpdateBBox(polyobj_t* po);
 
 void            P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link);
 void            P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** link);
 boolean         P_PolyobjLinesIterator(polyobj_t* po, boolean (*func) (struct linedef_s*, void*),
                                        void* data);
+
+#include "doomsday.h"
+
 #endif

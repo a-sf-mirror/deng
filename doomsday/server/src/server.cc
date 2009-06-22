@@ -49,5 +49,9 @@ dint Server::mainLoop()
     args.append("-libdir");
     args.append("../plugins");
     
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()));
+#ifndef WIN32
+    return DD_Entry(args.count(), const_cast<char**>(args.argv()), (void*)GetModuleHandle(NULL));
+#else
+    return DD_Entry(args.count(), const_cast<char**>(args.argv()), 0);
+#endif
 }

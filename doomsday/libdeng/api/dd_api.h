@@ -29,6 +29,7 @@
 #ifndef __DOOMSDAY_GAME_API_H__
 #define __DOOMSDAY_GAME_API_H__
 
+#include "dd_export.h"
 #include "dd_share.h"
 
 /**

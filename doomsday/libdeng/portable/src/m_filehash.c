@@ -30,6 +30,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "doomsday.h"
 #include "de_platform.h"
 #include "de_base.h"
 #include "de_system.h"

@@ -59,7 +59,6 @@ void            F_InitMapping(void);
 void            F_AddMapping(const char* source, const char* destination);
 void            F_InitDirec(void);
 void            F_ShutdownDirec(void);
-int             F_Access(const char *path);
 DFILE          *F_Open(const char *path, const char *mode);
 void            F_Close(DFILE *file);
 size_t          F_Length(DFILE *file);
@@ -70,6 +69,5 @@ size_t          F_Seek(DFILE *file, size_t offset, int whence);
 void            F_Rewind(DFILE *file);
 int             F_ForAll(const char *filespec, void *parm,
                          f_forall_func_t func);
-unsigned int    F_LastModified(const char *fileName);
 
 #endif

@@ -246,15 +246,16 @@ static int initDGL(void)
     return Sys_PreInitGL();
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+/*int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow)*/
+int DD_Entry(int argc, char* argv[], void* instanceHandle)
 {
     BOOL                doShutdown = TRUE;
     int                 exitCode = 0;
-    int                 lnCmdShow = nCmdShow;
+    int                 lnCmdShow = SW_SHOW;
 
     memset(&app, 0, sizeof(app));
-    app.hInstance = hInstance;
+    app.hInstance = instanceHandle;
     app.className = TEXT(MAINWCLASS);
     app.userDirOk = true;
 

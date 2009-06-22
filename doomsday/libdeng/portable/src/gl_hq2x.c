@@ -36,6 +36,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "doomsday.h"
 #include "dd_types.h"
 #include "dd_share.h"
 

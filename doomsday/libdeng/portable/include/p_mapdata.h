@@ -190,25 +190,25 @@ typedef struct {
  */
 extern char mapID[9];
 extern uint numVertexes;
-extern vertex_t* vertexes;
+extern struct vertex_s* vertexes;
 
 extern uint numSegs;
-extern seg_t* segs;
+extern struct seg_s* segs;
 
 extern uint numSectors;
-extern sector_t* sectors;
+extern struct sector_s* sectors;
 
 extern uint numSSectors;
-extern subsector_t* ssectors;
+extern struct subsector_s* ssectors;
 
 extern uint numNodes;
-extern node_t* nodes;
+extern struct node_s* nodes;
 
 extern uint numLineDefs;
-extern linedef_t* lineDefs;
+extern struct linedef_s* lineDefs;
 
 extern uint numSideDefs;
-extern sidedef_t* sideDefs;
+extern struct sidedef_s* sideDefs;
 
 extern watchedplanelist_t* watchedPlaneList;
 extern surfacelist_t* movingSurfaceList;
@@ -223,25 +223,25 @@ typedef struct gamemap_s {
     float           bBox[4];
 
     uint            numVertexes;
-    vertex_t*       vertexes;
+    struct vertex_s*       vertexes;
 
     uint            numSegs;
-    seg_t*          segs;
+    struct seg_s*          segs;
 
     uint            numSectors;
-    sector_t*       sectors;
+    struct sector_s*       sectors;
 
     uint            numSSectors;
-    subsector_t*    ssectors;
+    struct subsector_s*    ssectors;
 
     uint            numNodes;
-    node_t*         nodes;
+    struct node_s*         nodes;
 
     uint            numLineDefs;
-    linedef_t*      lineDefs;
+    struct linedef_s*      lineDefs;
 
     uint            numSideDefs;
-    sidedef_t*      sideDefs;
+    struct sidedef_s*      sideDefs;
 
     uint            numPolyObjs;
     polyobj_t**     polyObjs;
@@ -284,9 +284,6 @@ void            P_FreeBadTexList(void);
 void            P_InitGameMapObjDefs(void);
 void            P_ShutdownGameMapObjDefs(void);
 
-boolean         P_RegisterMapObj(int identifier, const char* name);
-boolean         P_RegisterMapObjProperty(int identifier, int propIdentifier,
-                                         const char* propName, valuetype_t type);
 gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char *objName,
                                     boolean canCreate);
 
@@ -297,11 +294,4 @@ void            P_AddGameMapObjValue(gameobjdata_t* moData, gamemapobjdef_t* gmo
 gamemapobj_t*   P_GetGameMapObj(gameobjdata_t* moData, gamemapobjdef_t* def,
                                 uint elmIdx, boolean canCreate);
 
-uint            P_CountGameMapObjs(int identifier);
-byte            P_GetGMOByte(int identifier, uint elmIdx, int propIdentifier);
-short           P_GetGMOShort(int identifier, uint elmIdx, int propIdentifier);
-int             P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier);
-fixed_t         P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier);
-angle_t         P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier);
-float           P_GetGMOFloat(int identifier, uint elmIdx, int propIdentifier);
 #endif

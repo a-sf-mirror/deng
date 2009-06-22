@@ -27,6 +27,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "doomsday.h"
 #include "de_base.h"
 #include "m_stack.h"
 

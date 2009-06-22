@@ -30,6 +30,8 @@
 #ifndef __DOOMSDAY_GL_H__
 #define __DOOMSDAY_GL_H__
 
+#include "dd_export.h"
+
 enum {
     // Values
     DGL_SCISSOR_BOX,
@@ -178,81 +180,80 @@ typedef struct {
     float           color[4];
 } dgl_fc3vertex_t;
 
-int             DGL_Enable(int cap);
-void            DGL_Disable(int cap);
+PUBLIC_API int             DGL_Enable(int cap);
+PUBLIC_API void            DGL_Disable(int cap);
 
-boolean         DGL_GetIntegerv(int name, int* vec);
-int             DGL_GetInteger(int name);
-boolean         DGL_SetInteger(int name, int value);
-float           DGL_GetFloat(int name);
-boolean         DGL_SetFloat(int name, float value);
+PUBLIC_API boolean         DGL_GetIntegerv(int name, int* vec);
+PUBLIC_API int             DGL_GetInteger(int name);
+PUBLIC_API boolean         DGL_SetInteger(int name, int value);
+PUBLIC_API float           DGL_GetFloat(int name);
+PUBLIC_API boolean         DGL_SetFloat(int name, float value);
 
-void            DGL_Ortho(float left, float top, float right, float bottom, float znear,
-                          float zfar);
-void            DGL_Scissor(int x, int y, int width, int height);
+PUBLIC_API void            DGL_Ortho(float left, float top, float right, float bottom, float znear, float zfar);
+PUBLIC_API void            DGL_Scissor(int x, int y, int width, int height);
 
-void            DGL_MatrixMode(int mode);
-void            DGL_PushMatrix(void);
-void            DGL_PopMatrix(void);
-void            DGL_LoadIdentity(void);
+PUBLIC_API void            DGL_MatrixMode(int mode);
+PUBLIC_API void            DGL_PushMatrix(void);
+PUBLIC_API void            DGL_PopMatrix(void);
+PUBLIC_API void            DGL_LoadIdentity(void);
 
-void            DGL_Translatef(float x, float y, float z);
-void            DGL_Rotatef(float angle, float x, float y, float z);
-void            DGL_Scalef(float x, float y, float z);
+PUBLIC_API void            DGL_Translatef(float x, float y, float z);
+PUBLIC_API void            DGL_Rotatef(float angle, float x, float y, float z);
+PUBLIC_API void            DGL_Scalef(float x, float y, float z);
 
-void            DGL_Begin(dglprimtype_t type);
-void            DGL_End(void);
-boolean         DGL_NewList(DGLuint list, int mode);
-DGLuint         DGL_EndList(void);
-void            DGL_CallList(DGLuint list);
-void            DGL_DeleteLists(DGLuint list, int range);
+PUBLIC_API void            DGL_Begin(dglprimtype_t type);
+PUBLIC_API void            DGL_End(void);
+PUBLIC_API boolean         DGL_NewList(DGLuint list, int mode);
+PUBLIC_API DGLuint         DGL_EndList(void);
+PUBLIC_API void            DGL_CallList(DGLuint list);
+PUBLIC_API void            DGL_DeleteLists(DGLuint list, int range);
 
-void            DGL_SetMaterial(struct material_s* mat);
-void            DGL_SetNoMaterial(void);
-void            DGL_SetPatch(lumpnum_t lump, int wrapS, int wrapT);
-void            DGL_SetPSprite(struct material_s* mat);
-void            DGL_SetTranslatedSprite(struct material_s* mat, int tclass, int tmap);
-void            DGL_SetRawImage(lumpnum_t lump, boolean part2, int wrapS, int wrapT);
+PUBLIC_API void            DGL_SetMaterial(struct material_s* mat);
+PUBLIC_API void            DGL_SetNoMaterial(void);
+PUBLIC_API void            DGL_SetPatch(lumpnum_t lump, int wrapS, int wrapT);
+PUBLIC_API void            DGL_SetPSprite(struct material_s* mat);
+PUBLIC_API void            DGL_SetTranslatedSprite(struct material_s* mat, int tclass, int tmap);
+PUBLIC_API void            DGL_SetRawImage(lumpnum_t lump, boolean part2, int wrapS, int wrapT);
 
-void            DGL_BlendOp(int op);
-void            DGL_BlendFunc(int param1, int param2);
-void            DGL_BlendMode(blendmode_t mode);
+PUBLIC_API void            DGL_BlendOp(int op);
+PUBLIC_API void            DGL_BlendFunc(int param1, int param2);
+PUBLIC_API void            DGL_BlendMode(blendmode_t mode);
 
-void            DGL_Color3ub(DGLubyte r, DGLubyte g, DGLubyte b);
-void            DGL_Color3ubv(const DGLubyte* vec);
-void            DGL_Color4ub(DGLubyte r, DGLubyte g, DGLubyte b, DGLubyte a);
-void            DGL_Color4ubv(const DGLubyte* vec);
-void            DGL_Color3f(float r, float g, float b);
-void            DGL_Color3fv(const float* vec);
-void            DGL_Color4f(float r, float g, float b, float a);
-void            DGL_Color4fv(const float* vec);
+PUBLIC_API void            DGL_Color3ub(DGLubyte r, DGLubyte g, DGLubyte b);
+PUBLIC_API void            DGL_Color3ubv(const DGLubyte* vec);
+PUBLIC_API void            DGL_Color4ub(DGLubyte r, DGLubyte g, DGLubyte b, DGLubyte a);
+PUBLIC_API void            DGL_Color4ubv(const DGLubyte* vec);
+PUBLIC_API void            DGL_Color3f(float r, float g, float b);
+PUBLIC_API void            DGL_Color3fv(const float* vec);
+PUBLIC_API void            DGL_Color4f(float r, float g, float b, float a);
+PUBLIC_API void            DGL_Color4fv(const float* vec);
 
-void            DGL_TexCoord2f(byte target, float s, float t);
-void            DGL_TexCoord2fv(byte target, float* vec);
+PUBLIC_API void            DGL_TexCoord2f(byte target, float s, float t);
+PUBLIC_API void            DGL_TexCoord2fv(byte target, float* vec);
 
-void            DGL_Vertex2f(float x, float y);
-void            DGL_Vertex2fv(const float* vec);
-void            DGL_Vertex3f(float x, float y, float z);
-void            DGL_Vertex3fv(const float* vec);
-void            DGL_Vertices2ftv(int num, const dgl_ft2vertex_t* vec);
-void            DGL_Vertices3ftv(int num, const dgl_ft3vertex_t* vec);
-void            DGL_Vertices3fctv(int num, const dgl_fct3vertex_t* vec);
+PUBLIC_API void            DGL_Vertex2f(float x, float y);
+PUBLIC_API void            DGL_Vertex2fv(const float* vec);
+PUBLIC_API void            DGL_Vertex3f(float x, float y, float z);
+PUBLIC_API void            DGL_Vertex3fv(const float* vec);
+PUBLIC_API void            DGL_Vertices2ftv(int num, const dgl_ft2vertex_t* vec);
+PUBLIC_API void            DGL_Vertices3ftv(int num, const dgl_ft3vertex_t* vec);
+PUBLIC_API void            DGL_Vertices3fctv(int num, const dgl_fct3vertex_t* vec);
 
-void            DGL_DrawLine(float x1, float y1, float x2, float y2,
-                             float r, float g, float b, float a);
-void            DGL_DrawRect(float x, float y, float w, float h, float r,
-                             float g, float b, float a);
-void            DGL_DrawRectTiled(float x, float y, float w, float h,
-                                  int tw, int th);
-void            DGL_DrawCutRectTiled(float x, float y, float w, float h, int tw,
-                                     int th, int txoff, int tyoff, float cx,
-                                     float cy, float cw, float ch);
+PUBLIC_API void            DGL_DrawLine(float x1, float y1, float x2, float y2,
+                                        float r, float g, float b, float a);
+PUBLIC_API void            DGL_DrawRect(float x, float y, float w, float h, float r,
+                                        float g, float b, float a);
+PUBLIC_API void            DGL_DrawRectTiled(float x, float y, float w, float h, int tw, int th);
+PUBLIC_API void            DGL_DrawCutRectTiled(float x, float y, float w, float h, int tw,
+                                                int th, int txoff, int tyoff, float cx,
+                                                float cy, float cw, float ch);
 /**
  * \todo The following routines should not be necessary once materials can
  * be created dynamically.
  */
-int             DGL_Bind(DGLuint texture);
-void            DGL_DeleteTextures(int num, const DGLuint* names);
-void            DGL_EnableTexUnit(byte id);
-void            DGL_DisableTexUnit(byte id);
+PUBLIC_API int             DGL_Bind(DGLuint texture);
+PUBLIC_API void            DGL_DeleteTextures(int num, const DGLuint* names);
+PUBLIC_API void            DGL_EnableTexUnit(byte id);
+PUBLIC_API void            DGL_DisableTexUnit(byte id);
+
 #endif
