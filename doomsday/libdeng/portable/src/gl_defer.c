@@ -427,7 +427,7 @@ DGLuint GL_NewTextureWithParams2(dgltexformat_t format, int width,
  * Same as above except this version is part of the public API and thus some
  * of the paramaters use the DGL counterparts.
  */
-DGLuint GL_NewTextureWithParams3(dgltexformat_t format, int width,
+DGLuint GL_NewTextureWithParams3(int format, int width,
                                  int height, void* pixels, int flags,
                                  int minFilter, int magFilter,
                                  int anisoFilter, int wrapS, int wrapT)

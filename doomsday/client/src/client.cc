@@ -51,7 +51,7 @@ dint Client::mainLoop()
     args.append("-libdir");
     args.append("../plugins");
     
-#ifndef WIN32
+#ifdef WIN32
     return DD_Entry(args.count(), const_cast<char**>(args.argv()), (void*)GetModuleHandle(NULL));
 #else
     return DD_Entry(args.count(), const_cast<char**>(args.argv()), 0);

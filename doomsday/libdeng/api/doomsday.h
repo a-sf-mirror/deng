@@ -63,6 +63,9 @@ extern          "C" {
 #include "dd_share.h"
 #include "dd_plugin.h"
 
+    struct ded_s;
+    struct ded_count_s;
+
 #ifdef __INTERNAL_MAP_DATA_ACCESS__
 #   include "../portable/include/p_maptypes.h"
 #endif
