@@ -22,12 +22,18 @@
 #   include <windows.h>
 #endif
 
-#include "de/commandline.h"
-#include <doomsday.h>
-
 #ifdef UNIX
 #   include <unistd.h>
 #endif
+
+#include "de/commandline.h"
+#include "de/string.h"
+
+#include <fstream>
+#include <sstream>
+#include <cctype>
+
+#include <doomsday.h>
 
 using namespace de;
 
@@ -53,7 +59,7 @@ CommandLine::CommandLine()
      * C API.
      */
 
-    ArgInit(GetCommandLine());
+    /*ArgInit(GetCommandLine());
 
     for(int i = 0; i < Argc(); ++i)
     {
@@ -62,7 +68,7 @@ CommandLine::CommandLine()
     }
     pointers_.push_back(0);
 
-    ArgShutdown();
+    ArgShutdown();*/
 }
 #endif
 
@@ -77,6 +83,13 @@ CommandLine::CommandLine(const CommandLine& other)
     pointers_.push_back(0);
 }
 
+void CommandLine::clear()
+{
+    arguments_.clear();
+    pointers_.clear();
+    pointers_.push_back(0);
+}
+
 void CommandLine::append(const std::string& arg)
 {
     arguments_.push_back(arg);
@@ -87,7 +100,7 @@ void CommandLine::insert(duint pos, const std::string& arg)
 {
     if(pos > arguments_.size())
     {
-        throw OutOfRangeError("CommandLine::insert", "Index out of range.");
+        throw OutOfRangeError("CommandLine::insert", "Index out of range");
     }
     arguments_.insert(arguments_.begin() + pos, arg);
     pointers_.insert(pointers_.begin() + pos, arguments_[pos].c_str());
@@ -97,16 +110,182 @@ void CommandLine::remove(duint pos)
 {
     if(pos >= arguments_.size())
     {
-        throw OutOfRangeError("CommandLine::remove", "Index out of range.");
+        throw OutOfRangeError("CommandLine::remove", "Index out of range");
     }
     arguments_.erase(arguments_.begin() + pos);
     pointers_.erase(pointers_.begin() + pos);
+}
+
+dint CommandLine::check(const std::string& arg, dint numParams) const
+{
+    // Do a search for arg.
+    Arguments::const_iterator i = arguments_.begin();
+    for(; i != arguments_.end() && !matches(arg, *i); ++i);
+    
+    if(i == arguments_.end())
+    {
+        // Not found.
+        return 0;
+    }
+    
+    // It was found, check for the number of non-option parameters.
+    while(numParams-- > 0)
+    {
+        if(++i == arguments_.end() || isOption(*i))
+        {
+            // Ran out of arguments, or encountered an option.
+            return 0;
+        }
+    }
+    
+    return i - arguments_.begin();
+}
+
+dint CommandLine::has(const std::string& arg) const
+{
+    dint howMany = 0;
+    
+    for(Arguments::const_iterator i = arguments_.begin(); i != arguments_.end(); ++i)
+    {
+        if(matches(arg, *i))
+        {
+            howMany++;
+        }
+    }
+    return howMany;
+}
+
+bool CommandLine::isOption(duint pos) const
+{
+    if(pos >= arguments_.size())
+    {
+        throw OutOfRangeError("CommandLine::isOption", "Index out of range");
+    }
+    assert(!arguments_[pos].empty());
+    return isOption(arguments_[pos]);
+}
+
+bool CommandLine::isOption(const std::string& arg)
+{
+    return !(arg.empty() || arg[0] != '-');
 }
 
 const char* const* CommandLine::argv() const
 {
     assert(*pointers_.rbegin() == 0);
     return &pointers_[0];
+}
+
+void CommandLine::parse(const std::string& cmdLine)
+{
+    std::string::const_iterator i = cmdLine.begin();
+
+    // This is unset if we encounter a terminator token.
+    bool isDone = false;
+
+    // Are we currently inside quotes?
+    bool quote = false;
+
+    while(i != cmdLine.end() && !isDone)
+    {
+        // Skip initial whitespace.
+        String::skipSpace(i, cmdLine.end());
+        
+        // Check for response files.
+        bool isResponse = false;
+        if(*i == '@')
+        {
+            isResponse = true;
+            String::skipSpace(++i, cmdLine.end());
+        }
+
+        std::string word;
+
+        while(i != cmdLine.end() && (quote || !std::isspace(*i)))
+        {
+            bool copyChar = true;
+            if(!quote)
+            {
+                // We're not inside quotes.
+                if(*i == '\"') // Quote begins.
+                {
+                    quote = true;
+                    copyChar = false;
+                }
+            }
+            else
+            {
+                // We're inside quotes.
+                if(*i == '\"') // Quote ends.
+                {
+                    if(*(i + 1) == '\"') // Doubles?
+                    {
+                        // Normal processing, but output only one quote.
+                        i++;
+                    }
+                    else
+                    {
+                        quote = false;
+                        copyChar = false;
+                    }
+                }
+            }
+
+            if(copyChar)
+            {
+                word.push_back(*i);
+            }
+            
+            i++;
+        }
+
+        // Word has been extracted, examine it.
+        if(isResponse) // Response file?
+        {
+            // This will quietly ignore missing response files.
+            std::stringbuf response;
+            std::ifstream(word.c_str()) >> &response;
+            parse(response.str());
+        }
+        else if(word == "--") // End of arguments.
+        {
+            isDone = true;
+        }
+        else if(!word.empty()) // Make sure there *is* a word.
+        {
+            arguments_.push_back(word);
+            pointers_.insert(pointers_.end() - 1, arguments_.rbegin()->c_str());
+        }
+    }
+}
+
+void CommandLine::alias(const std::string& full, const std::string& alias)
+{
+    aliases_[full].push_back(alias);
+}
+
+bool CommandLine::matches(const std::string& full, const std::string& fullOrAlias) const
+{
+    if(!String::compareWithoutCase(full, fullOrAlias))
+    {
+        // They are, in fact, the same.
+        return true;
+    }
+    
+    Aliases::const_iterator found = aliases_.find(full);
+    if(found != aliases_.end())
+    {
+        for(Arguments::const_iterator i = found->second.begin(); i != found->second.end(); ++i)
+        {
+            if(!String::compareWithoutCase(*i, fullOrAlias))
+            {
+                // Found it among the aliases.
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 void CommandLine::execute(char** envs) const

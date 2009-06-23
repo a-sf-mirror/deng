@@ -20,8 +20,9 @@
 #ifndef LIBDENG2_COMMANDLINE_H
 #define LIBDENG2_COMMANDLINE_H
 
-#include <vector>
 #include <string>
+#include <vector>
+#include <map>
 
 #include <de/deng.h>
 #include <de/Error>
@@ -48,7 +49,13 @@ namespace de
         CommandLine();
 #endif
 
+        /**
+         * Returns the number of arguments. This includes the program name, which
+         * is the first argument in the list.
+         */
         dint count() const { return arguments_.size(); }
+
+        void clear();
 
         /**
          * Appends a new argument to the list of arguments.
@@ -72,10 +79,66 @@ namespace de
         void remove(duint pos);
 
         /**
+         * Checks whether @c arg is in the arguments. Since the first argument is
+         * the program name, it is not included in the search.
+         *
+         * @param arg  Argument to look for. Don't use aliases here.
+         * @param count  Number of non-option arguments that follow the located argument.
+         *               @see isOption()
+         *
+         * @return  Index of the argument, if found. Otherwise zero.
+         */
+        dint check(const std::string& arg, dint count = 0) const;
+
+        /**
+         * Determines whether @c arg exists in the list of arguments.
+         *
+         * @param arg  Argument to look for. Don't use aliases here.
+         *
+         * @return  Number of times @c arg is found in the arguments.
+         */
+        dint has(const std::string& arg) const;
+
+        /**
+         * Determines whether an argument is an option, i.e., it begins with a hyphen.
+         */
+        bool isOption(duint pos) const;
+
+        /**
+         * Determines whether an argument is an option, i.e., it begins with a hyphen.
+         */
+        static bool isOption(const std::string& arg);
+
+        const std::string& at(duint pos) const { return arguments_.at(pos); }
+
+        /**
          * Returns a list of pointers to the arguments. The list contains
-         * count() strings.
+         * count() strings and is NULL-terminated.
          */
         const char* const* argv() const;
+        
+        /**
+         * Breaks down a single string containing the arguments.
+         *
+         * Examples of behavior:
+         * - -cmd "echo ""this is a command""" => [-cmd] [echo "this is a command"]
+         * - Hello" My"Friend => [Hello MyFriend]
+         * - @@test.rsp [reads contents of test.rsp]
+         * - @@\"Program Files"\test.rsp [reads contents of "\Program Files\test.rsp"]
+         *
+         * @param cmdLine  String containing the arguments.
+         */ 
+        void parse(const std::string& cmdLine);
+        
+        /**
+         * Defines a new alias for a full argument.
+         *
+         * @param full  The full argument, e.g., "--help"
+         * @param alias  Alias for the full argument, e.g., "-h"
+         */
+        void alias(const std::string& full, const std::string& alias);
+
+        bool matches(const std::string& full, const std::string& fullOrAlias) const;
         
         /**
          * Spawns a new process using the command line. The first argument
@@ -92,6 +155,9 @@ namespace de
     
         typedef std::vector<const char*> ArgumentPointers;
         ArgumentPointers pointers_;
+        
+        typedef std::map<std::string, Arguments> Aliases;
+        Aliases aliases_;
     };
 }
 

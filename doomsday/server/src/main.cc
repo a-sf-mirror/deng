@@ -17,28 +17,28 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-//#ifdef WIN32
-//#define WIN32_LEAN_AND_MEAN
-//#include <windows.h>
-//#endif
-
 #include "server.h"
+
+#include <de/String>
+#include <de/CommandLine>
 
 using namespace de;
 
-//#ifndef WIN32
 int main(int argc, char** argv)
-//#else
-//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nCmdShow*/)
-//#endif
 {
     try
     {
-//#ifndef WIN32
+        CommandLine test(0, 0);
+        
+        test.parse("@test.rsp -cmd \"echo \"\"Hello\"\"\" @test.rsp");
+        
+        for(int i = 0; i < test.count(); ++i)
+        {
+            std::cout << i << ": [" << test.at(i) << "]\n";
+        }
+        return 0;
+        
         CommandLine args(argc, argv);
-//#else
-        //CommandLine args;
-//#endif
         Server server(args);
         return server.mainLoop();
     }
