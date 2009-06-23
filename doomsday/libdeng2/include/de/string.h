@@ -96,9 +96,16 @@ namespace de
         /// Extracts the base name from the string (includes extension).
         static String fileName(const std::string& path);
         
-        /// Extracts the remainder of the string after the last occurence
-        /// of '.', including the '.'. An empty string is returned if 
-        /// the string contains no '.'.
+        /**
+         * Extracts the file name extension from a path. A valid extension
+         * is the part of a file name after a period where the file name
+         * itself is at least one character long. For instance:
+         * with "a.ext" the extension is ".ext", but with ".ext" there is
+         * no extension. 
+         * 
+         * @return The extension, including the period in the beginning. 
+         * An empty string is returned if the string contains no period.
+         */
         static String fileNameExtension(const std::string& path);
         
         /// Extracts the path of the string.

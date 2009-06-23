@@ -373,10 +373,16 @@ String String::fileName(const std::string& path)
 String String::fileNameExtension(const std::string& path)
 {
     string::size_type pos = path.find_last_of('.');
+    string::size_type slashPos = path.find_last_of('/');
     
-    if(pos != string::npos)
+    if(pos != string::npos && pos > 0)
     {
-        return path.substr(pos);
+        // If there is a directory included, make sure there it at least
+        // one character's worth of file name before the period.
+        if(slashPos == string::npos || pos > slashPos + 1)
+        {
+            return path.substr(pos);
+        }
     }
     return "";
 }

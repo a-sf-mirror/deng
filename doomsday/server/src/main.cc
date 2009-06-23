@@ -28,14 +28,6 @@ int main(int argc, char** argv)
 {
     try
     {
-        CommandLine test(0, 0);
-        
-        test.parse("@test.rsp -cmd \"echo \"\"Hello\"\"\" @test.rsp");
-        
-        for(int i = 0; i < test.count(); ++i)
-        {
-            std::cout << i << ": [" << test.at(i) << "]\n";
-        }
         return 0;
         
         CommandLine args(argc, argv);
