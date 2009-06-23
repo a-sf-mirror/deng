@@ -17,6 +17,11 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "server.h"
 #include "doomsday.h"
 
@@ -38,7 +43,11 @@ dint Server::mainLoop()
     
     args.append("-dedicated");
     args.append("-game");
+#ifdef WIN32
+    args.append("plugins\\deng_doom.dll");
+#else
     args.append("libdeng_doom.dylib");
+#endif
     args.append("-file");
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");
