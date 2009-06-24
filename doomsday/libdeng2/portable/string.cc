@@ -25,7 +25,14 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
-#include <strings.h> // strcasecmp
+
+#ifdef UNIX
+#   include <strings.h> // strcasecmp
+#endif
+
+#ifdef WIN32
+#   define strcasecmp _stricmp
+#endif
 
 using namespace de;
 
@@ -176,12 +183,12 @@ std::wstring String::stringToWide(const std::string& str)
         
         if(c < 0x10000)
         {
-            output.push_back(c);
+            output.push_back(wchar_t(c));
         }
         else if(c < 0x110000)
         {
             c -= 0x10000;
-            output.push_back(0xd800 | (c >> 10));
+            output.push_back(wchar_t(0xd800 | (c >> 10)));
             output.push_back(0xdc00 | (c & 0x03ff));
         }
         else

@@ -39,38 +39,23 @@ using namespace de;
 
 CommandLine::CommandLine(int argc, char** v)
 {
+    // The pointers list is kept null terminated.
+    pointers_.push_back(0);
+
     for(int i = 0; i < argc; ++i)
     {
-        arguments_.push_back(v[i]);
-        pointers_.push_back(arguments_[i].c_str());
+        if(v[i][0] == '@')
+        {
+            // This is a response file or something else that requires parsing.
+            parse(v[i]);
+        }
+        else
+        {
+            arguments_.push_back(v[i]);
+            pointers_.insert(pointers_.end() - 1, arguments_[i].c_str());
+        }
     }
-    // Keep this null terminated.
-    pointers_.push_back(0);
 }
-
-#ifdef WIN32
-CommandLine::CommandLine()
-{
-    /**
-     * @todo  It makes little sense to use the libdeng API to parse the command line
-     * only to have it reparsed at DD_Entry(); the redundancy should be removed.
-     * The CommandLine class should include all the functionality of libdeng m_args.
-     * libdeng should then start using the App's CommandLine while offering a public 
-     * C API.
-     */
-
-    /*ArgInit(GetCommandLine());
-
-    for(int i = 0; i < Argc(); ++i)
-    {
-        arguments_.push_back(Argv(i));
-        pointers_.push_back(arguments_[i].c_str());
-    }
-    pointers_.push_back(0);
-
-    ArgShutdown();*/
-}
-#endif
 
 CommandLine::CommandLine(const CommandLine& other)
     : arguments_(other.arguments_)
@@ -218,7 +203,7 @@ void CommandLine::parse(const std::string& cmdLine)
                 // We're inside quotes.
                 if(*i == '\"') // Quote ends.
                 {
-                    if(*(i + 1) == '\"') // Doubles?
+                    if(i + 1 != cmdLine.end() && *(i + 1) == '\"') // Doubles?
                     {
                         // Normal processing, but output only one quote.
                         i++;

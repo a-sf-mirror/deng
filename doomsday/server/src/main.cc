@@ -19,19 +19,13 @@
 
 #include "server.h"
 
-#include <de/String>
-#include <de/CommandLine>
-
 using namespace de;
 
 int main(int argc, char** argv)
 {
     try
     {
-        return 0;
-        
-        CommandLine args(argc, argv);
-        Server server(args);
+        Server server(CommandLine(argc, argv));
         return server.mainLoop();
     }
     catch(const Error& error)

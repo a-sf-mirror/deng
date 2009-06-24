@@ -39,15 +39,18 @@ namespace de
         DEFINE_ERROR(OutOfRangeError);
         
     public:
-        CommandLine(int argc, char** args);
-        CommandLine(const CommandLine& other);        
-        
-#ifdef WIN32
         /**
-         * Constructs a command line out of the arguments of the current process.
+         * Constructs a CommandLine out of the provided strings. It is assumed
+         * that @c argc and @c args are the ones passed from the system to the main() 
+         * function. The strings that begin with a @@ character are parsed, the
+         * rest are used without modification.
+         *
+         * @param argc  Number of argument strings.
+         * @param args  The argument strings.
          */
-        CommandLine();
-#endif
+        CommandLine(int argc, char** args);
+
+        CommandLine(const CommandLine& other);        
 
         /**
          * Returns the number of arguments. This includes the program name, which
