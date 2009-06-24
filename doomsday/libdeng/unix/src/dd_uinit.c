@@ -295,34 +295,14 @@ static int initDGL(void)
 
 int main(int argc, char* argv[])
 {
-    char*               cmdLine;
-    int                 i, length;
     int                 exitCode = 0;
     boolean             doShutdown = true;
     char                buf[256];
     const char*         libName = NULL;
 
+    DD_InitCommandLineAliases();
+
     app.userDirOk = true;
-
-    // Assemble a command line string.
-    for(i = 0, length = 0; i < argc; ++i)
-        length += strlen(argv[i]) + 1;
-
-    // Allocate a large enough string.
-    cmdLine = M_Malloc(length);
-
-    for(i = 0, length = 0; i < argc; ++i)
-    {
-        strcpy(cmdLine + length, argv[i]);
-        if(i < argc - 1)
-            strcat(cmdLine, " ");
-        length += strlen(argv[i]) + 1;
-    }
-
-    // Prepare the command line arguments.
-    DD_InitCommandLine(cmdLine);
-    M_Free(cmdLine);
-    cmdLine = NULL;
 
     // First order of business: are we running in dedicated mode?
     if(ArgCheck("-dedicated"))

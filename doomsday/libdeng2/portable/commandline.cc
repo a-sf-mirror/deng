@@ -114,9 +114,10 @@ dint CommandLine::check(const std::string& arg, dint numParams) const
     }
     
     // It was found, check for the number of non-option parameters.
+    Arguments::const_iterator k = i;
     while(numParams-- > 0)
     {
-        if(++i == arguments_.end() || isOption(*i))
+        if(++k == arguments_.end() || isOption(*k))
         {
             // Ran out of arguments, or encountered an option.
             return 0;

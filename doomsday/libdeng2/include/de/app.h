@@ -27,10 +27,16 @@
 namespace de
 {
     /**
-     * The application.
+     * The application. 
+     *
+     * @note This is a singleton class. Only one instance per process is allowed.
      */
     class PUBLIC_API App
     {
+    public:
+        DEFINE_ERROR(TooManyInstancesError);
+        DEFINE_ERROR(NoInstanceError);
+        
     public:
         App(const CommandLine& commandLine);
         virtual ~App();
@@ -51,9 +57,17 @@ namespace de
          * @return Zero on successful exit from the main loop. Nonzero on error.
          */
         virtual dint mainLoop() = 0;
+
+        /**
+         * Returns the singleton App instance. With this the App can be accessed
+         * anywhere.
+         */
+        static App& the();
         
     private:
-        CommandLine commandLine_;        
+        CommandLine commandLine_;
+        
+        static App* singleton_;
     };
 };
 

@@ -14,13 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-INCLUDE_DIRECTORIES ( api portable/include ../external/lzss/portable/include 
-    ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${PNG_PNG_INCLUDE_DIR} 
-    ${OPENGL_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${CURSES_INCLUDE_PATH} ${ZLIB_INCLUDE_DIR} )
+INCLUDE_DIRECTORIES ( api portable/include 
+    ../libdeng2/include
+    ../external/lzss/portable/include 
+    ${SDL_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} 
+    ${OPENGL_INCLUDE_DIR} 
+    ${PNG_PNG_INCLUDE_DIR} 
+    ${CURL_INCLUDE_DIR} 
+    ${CURSES_INCLUDE_PATH} 
+    ${ZLIB_INCLUDE_DIR} )
 
 ADD_DEFINITIONS ( -D__INTERNAL_MAP_DATA_ACCESS__ )
     
-FILE ( GLOB SOURCES portable/src/*.c )
+FILE ( GLOB SOURCES portable/src/*.c portable/src/*.cc )
 
 # Platform-specific configuration.
 IF ( WIN32 )
@@ -50,7 +56,7 @@ ENDIF ( UNIX )
 
 ADD_LIBRARY ( deng SHARED ${SOURCES} )
 
-TARGET_LINK_LIBRARIES ( deng 
+TARGET_LINK_LIBRARIES ( deng deng2
     ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLNET_LIBRARY} 
     ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} 
     ${CURL_LIBRARY} 

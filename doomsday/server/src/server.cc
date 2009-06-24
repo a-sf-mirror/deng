@@ -52,15 +52,11 @@ dint Server::mainLoop()
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");
     args.append("-cmd");
-    args.append("\"net-port-control 13209; net-port-data 13210; after 30 \"\"net init\"\"; after 40 \"\"net server start\"\"\"");
+    args.append("net-port-control 13209; net-port-data 13210; after 30 \"net init\"; after 40 \"net server start\"");
     args.append("-userdir");
     args.append("serverdir");
     args.append("-libdir");
     args.append("../plugins");
     
-#ifdef WIN32
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()), (void*)GetModuleHandle(NULL));
-#else
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()), 0);
-#endif
+    return DD_Entry(0, NULL);
 }

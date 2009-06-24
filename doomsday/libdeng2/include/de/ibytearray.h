@@ -29,7 +29,7 @@ namespace de
      * IByteArray is an interface for byte arrays that support random
      * access to the array elements.
      */ 
-	class IByteArray
+	class PUBLIC_API IByteArray
 	{
 	public:
 		DEFINE_ERROR(OffsetError);

@@ -32,7 +32,7 @@ namespace de
      * The String class extends the STL string class with the IByteArray
      * interface.
      */
-	class String : public std::string, public IByteArray
+	class PUBLIC_API String : public std::string, public IByteArray
 	{
 	public:
 	    /// This exception is thrown if an encoding conversion fails.	    

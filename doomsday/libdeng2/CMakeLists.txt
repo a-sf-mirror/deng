@@ -20,8 +20,6 @@ FILE ( GLOB SOURCES portable/*.cc portable/*.h include/*.h )
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 
-TARGET_LINK_LIBRARIES ( deng2 deng )
-
 INSTALL ( TARGETS deng2 
     RUNTIME DESTINATION bin 
     LIBRARY DESTINATION bin )

@@ -50,15 +50,11 @@ dint Client::mainLoop()
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");
     args.append("-cmd");
-    args.append("\"net-port-control 13211; net-port-data 13212; after 30 \"\"net init\"\"; after 50 \"\"connect localhost:13209\"\"\"");
+    args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
     args.append("-userdir");
     args.append("clientdir");
     args.append("-libdir");
     args.append("../plugins");
     
-#ifdef WIN32
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()), (void*)GetModuleHandle(NULL));
-#else
-    return DD_Entry(args.count(), const_cast<char**>(args.argv()), 0);
-#endif
+    return DD_Entry(0, NULL);
 }

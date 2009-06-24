@@ -41,7 +41,7 @@ void            DD_ErrorBox(boolean error, char* format, ...) PRINTF_F(2,3);
 void            DD_ComposeMainWindowTitle(char* title);
 boolean         DD_EarlyInit(void);
 void            DD_InitAPI(void);
-void            DD_InitCommandLine(const char* cmdLine);
+void            DD_InitCommandLineAliases();
 
 extern game_import_t gi;
 extern game_export_t gx;

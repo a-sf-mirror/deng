@@ -21,9 +21,30 @@
 
 using namespace de;
 
+// This will be set when the app is constructed.
+App* App::singleton_ = 0;
+
 App::App(const CommandLine& commandLine)
     : commandLine_(commandLine)
-{}
+{
+    if(singleton_)
+    {
+        throw TooManyInstancesError("App::App", "Only one instance allowed");
+    }
+    
+    singleton_ = this;
+}
 
 App::~App()
-{}
+{
+    singleton_ = 0;
+}
+
+App& App::the()
+{
+    if(!singleton_)
+    {
+        throw NoInstanceError("App::instance", "App has not been constructed yet");
+    }
+    return *singleton_;
+}

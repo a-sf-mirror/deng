@@ -70,7 +70,7 @@ extern          "C" {
 #   include "../portable/include/p_maptypes.h"
 #endif
 
-    PUBLIC_API int             DD_Entry(int argc, char* argv[], void* instanceHandle);
+    PUBLIC_API int             DD_Entry(int argc, char *argv[]);
 
     // Base.
     PUBLIC_API void            DD_AddIWAD(const char* path);
@@ -533,8 +533,6 @@ extern          "C" {
     PUBLIC_API binangle_t      bamsAtan2(int y, int x);
      
     // Miscellaneous: Command line.
-    PUBLIC_API void            ArgInit(const char* cmdline);
-    PUBLIC_API void            ArgShutdown(void);
     PUBLIC_API void _DECALL    ArgAbbreviate(const char* longName, const char* shortName);
     PUBLIC_API int _DECALL     Argc(void);
     PUBLIC_API const char* _DECALL Argv(int i);

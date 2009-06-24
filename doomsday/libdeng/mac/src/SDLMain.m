@@ -17,24 +17,14 @@
 #include <stdint.h>
 typedef uint64_t      io_user_reference_t; 
 
+#include "doomsday.h"
+
 #import "SDL.h"
 #import "../include/SDLMain.h"
 #import <sys/param.h> /* for MAXPATHLEN */
 #import <unistd.h>
 
 #import <AppKit/NSWindowController.h>
-#import "../include/StartupWindowController.h"
-
-
-int     gArgc;
-char  **gArgv;
-static BOOL   gFinderLaunch;
-
-/* The window controller takes care of the Doomsday startup message window. */
-/*static NSWindowController *gWindowController;*/
-
-/* Set when the startup window is created. */
-/*StartupWindowController* gStartupWindowController;*/
 
 /* An internal Apple class used to setup Apple menus */
 @interface NSAppleMenuController:NSObject {}
@@ -65,7 +55,7 @@ static BOOL   gFinderLaunch;
     char parentdir[MAXPATHLEN];
     char *c;
     
-    strncpy ( parentdir, gArgv[0], sizeof(parentdir) );
+    strncpy ( parentdir, Argv(0), sizeof(parentdir) );
     c = (char*) parentdir;
 
     while (*c != '\0')     /* go to end */
@@ -76,11 +66,13 @@ static BOOL   gFinderLaunch;
     
     *c++ = '\0';             /* cut off last part (binary name) */
   
+#if 0
     if (shouldChdir)
     {
       assert ( chdir (parentdir) == 0 );   /* chdir to the binary app's parent */
       assert ( chdir ("../../../") == 0 ); /* chdir to the .app's parent */
     }
+#endif
 }
 
 void setupAppleMenu(void)
@@ -115,7 +107,6 @@ void setupWindowMenu(void)
     NSMenuItem	*windowMenuItem;
     NSMenuItem	*menuItem;
 
-
     windowMenu = [[NSMenu alloc] initWithTitle:@"Window"];
     
     /* "Minimize" item */
@@ -136,47 +127,6 @@ void setupWindowMenu(void)
     [windowMenuItem release];
 }
 
-void openStartupWindow(void)
-{
-    /*
-    gWindowController = [[NSWindowController alloc] 
-        initWithWindowNibName:@"Startup"];
-    
-    NSWindow* window = [gWindowController window];
-    [window orderFrontRegardless];
-     */
-}
-
-/*
- * Print a message in the startup window. This function is called from the
- * engine when a startup window message is printed.
- */
-void PrintInStartupWindow(const char *message)
-{
-    /*
-    if(gStartupWindowController)
-    {
-        [gStartupWindowController print:message];
-    } 
-     */
-}
-
-/*
- * Called when startup is done.
- */
-void CloseStartupWindow(void)
-{
-    // I don't know if these actually have any effect; the window controller
-    // doesn't seem to realize it has a window in the NIB...
-    // This isn't done in the right thread, though.
-
-    /*
-    [gWindowController close];
-    [gWindowController release];
-    gWindowController = 0;
-     */
-}
-
 /* Replacement for NSApplicationMain */
 void CustomApplicationMain (argc, argv)
 {
@@ -195,9 +145,6 @@ void CustomApplicationMain (argc, argv)
     sdlMain = [[SDLMain alloc] init];
     [NSApp setDelegate:sdlMain];
     
-    /* Create a window for Doomsday startup messages. */
-    openStartupWindow();
-    
     /* Start the main event loop */
     [NSApp run];
         
@@ -212,10 +159,10 @@ void CustomApplicationMain (argc, argv)
     int status;
 
     /* Set the working directory to the .app's parent directory */
-    [self setupWorkingDirectory:gFinderLaunch];
+    [self setupWorkingDirectory:NO];
 
     // Hand off to main application code 
-    status = SDL_main(gArgc, gArgv);
+    status = SDL_main(0, NULL);
 
     // We're done, thank you for playing 
     exit(status);
@@ -262,38 +209,8 @@ void CustomApplicationMain (argc, argv)
 
 @end
 
-/*
-#ifdef main
-#  undef main
-#endif
-*/
-
-/* Main entry point to executable - should *not* be SDL_main! */
 int DD_Entry(int argc, char *argv[])
 {
-    /* Copy the arguments into a global variable */
-    int i;
-    
-    /* This is passed if we are launched by double-clicking */
-    if ( argc >= 2 && strncmp (argv[1], "-psn", 4) == 0 ) 
-    {
-        gArgc = 1;
-	    gFinderLaunch = YES;
-    } 
-    else 
-    {
-        gArgc = argc;
-	    gFinderLaunch = NO;
-    }
-    gArgv = (char**) malloc (sizeof(*gArgv) * (gArgc+1));
-    assert (gArgv != NULL);
-    for (i = 0; i < gArgc; i++)
-    {
-        gArgv[i] = argv[i];
-    }
-    gArgv[i] = NULL;
-
-    CustomApplicationMain (argc, argv);
-
+    CustomApplicationMain(argc, argv);
     return 0;
 }

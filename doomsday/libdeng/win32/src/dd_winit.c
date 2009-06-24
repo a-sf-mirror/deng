@@ -246,16 +246,16 @@ static int initDGL(void)
     return Sys_PreInitGL();
 }
 
-/*int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)*/
-int DD_Entry(int argc, char* argv[], void* instanceHandle)
+int DD_Entry(int argc, char* argv[])
 {
     BOOL                doShutdown = TRUE;
     int                 exitCode = 0;
     int                 lnCmdShow = SW_SHOW;
 
+    DD_InitCommandLineAliases();
+
     memset(&app, 0, sizeof(app));
-    app.hInstance = instanceHandle;
+    app.hInstance = GetModuleHandle(NULL);
     app.className = TEXT(MAINWCLASS);
     app.userDirOk = true;
 
@@ -270,9 +270,6 @@ int DD_Entry(int argc, char* argv[], void* instanceHandle)
 
         // Initialize COM.
         CoInitialize(NULL);
-
-        // Prepare the command line arguments.
-        DD_InitCommandLine(GetCommandLine());
 
         // First order of business: are we running in dedicated mode?
         if(ArgCheck("-dedicated"))

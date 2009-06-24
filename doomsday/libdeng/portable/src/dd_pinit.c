@@ -153,10 +153,8 @@ void DD_InitAPI(void)
            MIN_OF(sizeof(__gx), gameExPtr->apiSize));
 }
 
-void DD_InitCommandLine(const char* cmdLine)
+void DD_InitCommandLineAliases()
 {
-    ArgInit(cmdLine);
-
     // Register some abbreviations for command line options.
     ArgAbbreviate("-game", "-g");
     ArgAbbreviate("-gl", "-r"); // As in (R)enderer...
@@ -268,7 +266,6 @@ void DD_ShutdownAll(void)
     R_Shutdown();
     Def_Destroy();
     F_ShutdownDirec();
-    ArgShutdown();
     Z_Shutdown();
     Sys_ShutdownWindowManager();
 
