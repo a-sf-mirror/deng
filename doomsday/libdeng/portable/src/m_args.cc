@@ -28,6 +28,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "de_base.h"
+#include "de_console.h"
+#include "de_misc.h"
+#include "doomsday.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -35,14 +40,6 @@
 
 #include <de/App>
 #include <de/CommandLine>
-
-/*extern "C"
-{*/
-#include "doomsday.h"
-#include "de_base.h"
-#include "de_console.h"
-#include "de_misc.h"
-//}
 
 using namespace de;
 

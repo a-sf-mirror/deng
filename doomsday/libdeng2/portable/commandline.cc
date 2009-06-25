@@ -293,4 +293,25 @@ void CommandLine::execute(char** envs) const
         }
     }
 #endif    
+
+#ifdef WIN32
+    std::string quotedCmdLine;
+    for(Arguments::const_iterator i = arguments_.begin() + 1; i != arguments_.end(); ++i)
+    {
+        quotedCmdLine += "\"" + *i + "\" ";
+    }
+
+    STARTUPINFO startupInfo;
+    PROCESS_INFORMATION processInfo;
+    ZeroMemory(&startupInfo, sizeof(startupInfo));
+    startupInfo.cb = sizeof(startupInfo);
+    ZeroMemory(&processInfo, sizeof(processInfo));
+
+    if(!CreateProcess(pointers_[0], const_cast<char*>(quotedCmdLine.c_str()), 
+        NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo))
+    {
+        // Failed to start.
+        throw ExecuteError("CommandLine::execute", "Could not create process");
+    }
+#endif
 }

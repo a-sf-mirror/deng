@@ -37,6 +37,7 @@ namespace de
     {
     public:
         DEFINE_ERROR(OutOfRangeError);
+        DEFINE_ERROR(ExecuteError);
         
     public:
         /**
