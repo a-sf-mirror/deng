@@ -446,6 +446,9 @@ int Sys_ChangeVideoMode(int width, int height, int bpp)
  */
 boolean Sys_InitWindowManager(void)
 {
+    if(isDedicated)
+        return true; // No output except standard out and error.
+
     if(winManagerInited)
         return true; // Already been here.
 

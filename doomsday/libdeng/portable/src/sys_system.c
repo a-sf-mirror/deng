@@ -224,24 +224,30 @@ void Sys_Quit(void)
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
 #ifdef WIN32
-    char    title[300];
-    HWND    hWnd = Sys_GetWindowHandle(windowIDX);
-
-    if(!hWnd)
+    if(!isDedicated)
     {
-        suspendMsgPump = true;
-        MessageBox(HWND_DESKTOP,
-                   "Sys_MessageBox: Main window not available.", NULL,
-                   MB_ICONERROR | MB_OK);
-        suspendMsgPump = false;
-        return;
-    }
+        char    title[300];
+        HWND    hWnd = Sys_GetWindowHandle(windowIDX);
 
-    suspendMsgPump = true;
-    GetWindowText(hWnd, title, 300);
-    MessageBox(hWnd, msg, title,
-               MB_OK | (iserror ? MB_ICONERROR : MB_ICONINFORMATION));
-    suspendMsgPump = false;
+        if(!hWnd)
+        {
+            suspendMsgPump = true;
+            MessageBox(HWND_DESKTOP,
+                       "Sys_MessageBox: Main window not available.", NULL,
+                       MB_ICONERROR | MB_OK);
+            suspendMsgPump = false;
+            return;
+        }
+
+        suspendMsgPump = true;
+        GetWindowText(hWnd, title, 300);
+        MessageBox(hWnd, msg, title, MB_OK | (iserror ? MB_ICONERROR : MB_ICONINFORMATION));
+        suspendMsgPump = false;
+    }
+    else
+    {
+        fprintf(stderr, "%s %s\n", iserror ? "**ERROR**" : "---", msg);
+    }
 #endif
 #ifdef UNIX
     fprintf(stderr, "%s %s\n", iserror ? "**ERROR**" : "---", msg);

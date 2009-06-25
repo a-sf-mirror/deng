@@ -375,12 +375,13 @@ int DD_Main(void)
     if(ArgExists("-nofullscreen") || ArgExists("-window"))
         winFlags &= ~DDWF_FULLSCREEN;
 
-    if(!Sys_SetWindow(windowIDX, winX, winY, winWidth, winHeight, winBPP,
-                      winFlags, 0))
-        return -1;
 
     if(!isDedicated)
     {
+        if(!Sys_SetWindow(windowIDX, winX, winY, winWidth, winHeight, winBPP,
+                      winFlags, 0))
+            return -1;
+
         if(!GL_EarlyInit())
         {
             Sys_CriticalMessage("GL_EarlyInit() failed.");
@@ -917,10 +918,10 @@ int DD_GetInteger(int ddvalue)
             return -1;
         }
         case DD_WINDOW_WIDTH:
-            return theWindow->width;
+            return theWindow? theWindow->width : 640;
 
         case DD_WINDOW_HEIGHT:
-            return theWindow->height;
+            return theWindow? theWindow->height : 480;
 
         default:
             break;

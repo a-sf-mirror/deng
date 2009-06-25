@@ -217,13 +217,34 @@ static int loadAllPlugins(application_t *app)
     long                hFile;
     struct _finddata_t  fd;
     char                plugfn[256];
+    const char*         libPath = ".";
 
-    sprintf(plugfn, "%sdp*.dll", ddBinDir.path);
+    // TODO: All this is temporary.
+
+    sprintf(plugfn, "%sdengplugin_*.dll", ddBinDir.path);
+    printf("Trying %s\n", plugfn);
     if((hFile = _findfirst(plugfn, &fd)) == -1L)
-        return TRUE;
+    {
+        
+        if(ArgCheckWith("-libdir", 1))
+        {
+            libPath = ArgNext();
+            sprintf(plugfn, "%s\\dengplugin_*.dll", libPath);
+            Dir_FixSlashes(plugfn, 256);
+            printf("Trying %s\n", plugfn);
+            if((hFile = _findfirst(plugfn, &fd)) == -1L)
+            {
+                printf("Not found.\n");
+                return TRUE;
+            }
+        }
+    }
 
-    do
-        loadPlugin(app, fd.name);
+    do {
+        sprintf(plugfn, "%s\\%s", libPath, fd.name);
+        Dir_FixSlashes(plugfn, 256);
+        loadPlugin(app, plugfn);
+    }
     while(!_findnext(hFile, &fd));
 
     return TRUE;
@@ -328,7 +349,12 @@ int DD_Entry(int argc, char* argv[])
             {
                 DD_ErrorBox(true, "Error initializing memory zone.");
             }
-            else
+            else if(isDedicated)
+            {
+                // We're done.
+                doShutdown = FALSE;
+            }
+            else 
             {
                 if(0 == (windowIDX =
                     Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0,
