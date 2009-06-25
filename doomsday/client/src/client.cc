@@ -40,12 +40,20 @@ dint Client::mainLoop()
 
     CommandLine svArgs = args;
     svArgs.remove(0);
+#ifdef WIN32
+    svArgs.insert(0, "dengsv.exe");
+#else
     svArgs.insert(0, "./dengsv");
+#endif
     extern char** environ;
     svArgs.execute(environ);
 
     args.append("-game");
+#ifdef WIN32
+    args.append("plugins\\deng_doom.dll");
+#else
     args.append("libdeng_doom.dylib");
+#endif
     args.append("-file");
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");

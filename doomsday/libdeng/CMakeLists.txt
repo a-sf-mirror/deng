@@ -26,22 +26,26 @@ INCLUDE_DIRECTORIES ( api portable/include
 
 ADD_DEFINITIONS ( -D__INTERNAL_MAP_DATA_ACCESS__ )
     
-FILE ( GLOB SOURCES portable/src/*.c portable/src/*.cc )
+FILE ( GLOB SOURCES 
+    portable/src/*.c portable/src/*.cc 
+    portable/include/*.h )
 
 # Platform-specific configuration.
 IF ( WIN32 )
+    ADD_DEFINITIONS ( -DWIN32_GAMMA )
+
     INCLUDE_DIRECTORIES ( win32/include
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )
     
-    FILE ( GLOB WIN_SOURCES win32/src/*.c )
+    FILE ( GLOB WIN_SOURCES win32/src/*.c win32/include/*.h )
     SET ( SOURCES ${SOURCES} ${WIN_SOURCES} )
 ENDIF ( WIN32 )
 
 IF ( APPLE )
     INCLUDE_DIRECTORIES ( ${QUICKTIME_INCLUDE_DIR} )
     
-    FILE ( GLOB MAC_SOURCES mac/src/*.m mac/src/*.c )
+    FILE ( GLOB MAC_SOURCES mac/src/*.m mac/src/*.c mac/include/*.h )
     SET ( SOURCES ${SOURCES} ${MAC_SOURCES} )
 ENDIF ( APPLE )
 
@@ -49,7 +53,7 @@ IF ( UNIX )
     INCLUDE_DIRECTORIES ( unix/include )
 
     FILE ( GLOB UNIX_SOURCES 
-        unix/src/*.c 
+        unix/src/*.c unix/include/*.h
         ../external/lzss/unix/src/*.c )
     SET ( SOURCES ${SOURCES} ${UNIX_SOURCES} )
 ENDIF ( UNIX )

@@ -224,8 +224,7 @@ static int loadAllPlugins(application_t *app)
     sprintf(plugfn, "%sdengplugin_*.dll", ddBinDir.path);
     printf("Trying %s\n", plugfn);
     if((hFile = _findfirst(plugfn, &fd)) == -1L)
-    {
-        
+    {        
         if(ArgCheckWith("-libdir", 1))
         {
             libPath = ArgNext();

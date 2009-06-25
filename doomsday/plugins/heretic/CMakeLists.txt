@@ -18,7 +18,7 @@ ADD_DEFINITIONS ( -D__JHERETIC__ )
 
 INCLUDE_DIRECTORIES ( include )
 
-FILE ( GLOB SOURCES src/*.c )
+FILE ( GLOB SOURCES src/*.c include/*.h )
 
 ADD_LIBRARY ( deng_heretic SHARED ${SOURCES} ${COMMON_GAME_SOURCES} )
 
