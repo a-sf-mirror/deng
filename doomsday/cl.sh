@@ -1,3 +1,5 @@
 #!/bin/sh
 mkdir -p clientdir
-DYLD_LIBRARY_PATH=`pwd` ./dengcl -iwad ~/IWADs/Doom.wad -wnd
+export DYLD_LIBRARY_PATH=`pwd`
+export LD_LIBRARY_PATH=`pwd`
+./dengcl -iwad ~/IWADs/Doom.wad -wnd

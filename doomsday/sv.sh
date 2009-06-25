@@ -1,3 +1,5 @@
 #!/bin/sh
 mkdir -p serverdir
-DYLD_LIBRARY_PATH=`pwd` ./dengsv -iwad ~/IWADs/Doom.wad
+export DYLD_LIBRARY_PATH=`pwd`
+export LD_LIBRARY_PATH=`pwd`
+./dengsv -iwad ~/IWADs/Doom.wad

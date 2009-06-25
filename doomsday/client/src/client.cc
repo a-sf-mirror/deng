@@ -52,7 +52,11 @@ dint Client::mainLoop()
 #ifdef WIN32
     args.append("plugins\\deng_doom.dll");
 #else
+#ifdef MACOSX
     args.append("libdeng_doom.dylib");
+#else
+	args.append("deng_doom");
+#endif
 #endif
     args.append("-file");
     args.append("../../data/doomsday.pk3");

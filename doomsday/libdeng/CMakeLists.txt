@@ -50,6 +50,9 @@ IF ( APPLE )
 ENDIF ( APPLE )
 
 IF ( UNIX )
+    # Note that this applies to OS X builds also.
+	ADD_DEFINITIONS ( -DDENG_BASE_DIR="./" )
+
     INCLUDE_DIRECTORIES ( unix/include )
 
     FILE ( GLOB UNIX_SOURCES 

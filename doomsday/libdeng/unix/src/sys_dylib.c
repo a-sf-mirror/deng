@@ -36,6 +36,7 @@
 #include "de_base.h"
 #include "m_args.h"
 #include "sys_dylib.h"
+#include "doomsday.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -155,8 +156,8 @@ lt_dlhandle lt_dlopenext(const char *baseFileName)
 #endif
 
     getBundlePath(bundleName);
-#ifdef MACOSX
     strcat(bundleName, "/");
+#ifdef MACOSX
 /*    strcat(bundleName, baseFileName);
     strcat(bundleName, "/Contents/MacOS/");*/
 #endif

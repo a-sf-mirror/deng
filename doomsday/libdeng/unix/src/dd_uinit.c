@@ -79,23 +79,25 @@ static void determineGlobalPaths(application_t *app)
     if(!app)
         return;
 
-#ifndef MACOSX
-    if(getenv("HOME"))
-    {
-        filename_t homeDir;
-        sprintf(homeDir, "%s/.deng", getenv("HOME"));
-        M_CheckPath(homeDir);
-        Dir_MakeDir(homeDir, &ddRuntimeDir);
-        app->userDirOk = Dir_ChDir(&ddRuntimeDir);
-    }
-#endif
-
     // The -userdir option sets the working directory.
     if(ArgCheckWith("-userdir", 1))
     {
         Dir_MakeDir(ArgNext(), &ddRuntimeDir);
         app->userDirOk = Dir_ChDir(&ddRuntimeDir);
     }
+	else
+	{
+#ifndef MACOSX
+		if(getenv("HOME"))
+		{
+			filename_t homeDir;
+			sprintf(homeDir, "%s/.deng", getenv("HOME"));
+			M_CheckPath(homeDir);
+			Dir_MakeDir(homeDir, &ddRuntimeDir);
+			app->userDirOk = Dir_ChDir(&ddRuntimeDir);
+		}
+#endif
+	}
 
     // The current working directory is the runtime dir.
     Dir_GetDir(&ddRuntimeDir);
@@ -107,11 +109,7 @@ static void determineGlobalPaths(application_t *app)
      * configuration.  Usually this is something like
      * "/usr/share/deng/".
      */
-#ifdef MACOSX
-    strcpy(ddBasePath, "./");
-#else
     strcpy(ddBasePath, DENG_BASE_DIR);
-#endif
 
     if(ArgCheckWith("-basedir", 1))
     {
@@ -293,7 +291,12 @@ static int initDGL(void)
     return Sys_PreInitGL();
 }
 
+#ifdef MACOSX
+// The OS X build has its own entry point in mac/src/SDLmain.m
 int main(int argc, char* argv[])
+#else
+int DD_Entry(int argc, char* argv[])
+#endif
 {
     int                 exitCode = 0;
     boolean             doShutdown = true;
@@ -304,7 +307,7 @@ int main(int argc, char* argv[])
 
     app.userDirOk = true;
 
-    // First order of business: are we running in dedicated mode?
+    // First order of business: are we runing in dedicated mode?
     if(ArgCheck("-dedicated"))
         isDedicated = true;
     novideo = ArgCheck("-novideo") || isDedicated;
