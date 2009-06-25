@@ -44,7 +44,7 @@ App& App::the()
 {
     if(!singleton_)
     {
-        throw NoInstanceError("App::instance", "App has not been constructed yet");
+        throw NoInstanceError("App::the", "App has not been constructed yet");
     }
     return *singleton_;
 }
