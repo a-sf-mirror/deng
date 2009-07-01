@@ -74,8 +74,8 @@ TARGET_LINK_LIBRARIES ( deng deng2
 IF ( WIN32 )
     TARGET_LINK_LIBRARIES ( deng 
         wsock32 winmm
-        "$ENV{DXDIR}/lib/dinput8.lib" 
-        "$ENV{DXDIR}/lib/dxguid.lib"
+        "${DXLIBDIR}/dinput8.lib" 
+        "${DXLIBDIR}/dxguid.lib"
         "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
         
     SET_TARGET_PROPERTIES ( deng PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
