@@ -16,7 +16,7 @@
 
 CMAKE_MINIMUM_REQUIRED ( VERSION 2.6 )
 
-SET ( CMAKE_INSTALL_PREFIX ./install CACHE PATH "Path where to install for packaging." FORCE )
+SET ( CMAKE_INSTALL_PREFIX ./install CACHE PATH "Path where to install for packaging." )
 
 PROJECT ( deng )
 
