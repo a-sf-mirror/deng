@@ -17,38 +17,38 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/app.h"
+#include "de/fs.h"
 
 using namespace de;
 
-// This will be set when the app is constructed.
-App* App::singleton_ = 0;
+FS::FS()
+{}
 
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
+FS::~FS()
+{}
+
+void FS::index(File& file)
 {
-    if(singleton_)
-    {
-        throw TooManyInstancesError("App::App", "Only one instance allowed");
-    }
-    
-    singleton_ = this;
-    
-    fs_ = new FS();
+    index_.insert(IndexEntry(file.name().lower(), &file));
 }
 
-App::~App()
+void FS::deindex(File& file)
 {
-    delete fs_;
-    
-    singleton_ = 0;
+    for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
+    {
+        if(i->second == &file)
+        {
+            // This is the one to deindex.
+            index_.erase(i);
+            break;
+        }
+    }
 }
 
-App& App::the()
+void FS::printIndex()
 {
-    if(!singleton_)
+    for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
     {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
+        std::cout << "[" << i->first << "]: " << i->second->path() << "\n";
     }
-    return *singleton_;
 }

@@ -18,6 +18,8 @@
  */
 
 #include "server.h"
+#include <de/NativeFolder>
+#include <de/FS>
 
 using namespace de;
 
@@ -26,6 +28,13 @@ int main(int argc, char** argv)
     try
     {
         Server server(CommandLine(argc, argv));
+        {
+            NativeFolder testFolder("", "");
+            testFolder.populate();
+            server.fileSystem().printIndex();
+        }
+        return 0;
+        
         return server.mainLoop();
     }
     catch(const Error& error)

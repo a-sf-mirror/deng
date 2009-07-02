@@ -16,39 +16,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "de/app.h"
+ 
+#include "de/compoundfolder.h"
 
 using namespace de;
 
-// This will be set when the app is constructed.
-App* App::singleton_ = 0;
+CompoundFolder::CompoundFolder(const std::string& name)
+    : Folder(name)
+{}
 
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
-{
-    if(singleton_)
-    {
-        throw TooManyInstancesError("App::App", "Only one instance allowed");
-    }
-    
-    singleton_ = this;
-    
-    fs_ = new FS();
-}
+CompoundFolder::~CompoundFolder()
+{}
 
-App::~App()
+void CompoundFolder::populate()
 {
-    delete fs_;
-    
-    singleton_ = 0;
-}
-
-App& App::the()
-{
-    if(!singleton_)
-    {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
-    }
-    return *singleton_;
+    // Populate member folders and form the compound set of files.
 }

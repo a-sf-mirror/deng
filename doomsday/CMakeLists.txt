@@ -16,6 +16,8 @@
 
 CMAKE_MINIMUM_REQUIRED ( VERSION 2.6 )
 
+SET ( CMAKE_INSTALL_PREFIX ./install CACHE PATH "Path where to install for packaging." FORCE )
+
 PROJECT ( deng )
 
 # Check for an in-tree build.
@@ -25,7 +27,6 @@ IF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
 ENDIF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
 
 # General configuration.
-SET ( CMAKE_INSTALL_PREFIX ./install )
 SET ( DENG_BINARY_DIR bin )
 SET ( DENG_DATA_DIR data )
 
@@ -91,7 +92,8 @@ ENDIF ( UNIX )
 # Package the resources into PK3 files.
 ADD_CUSTOM_TARGET ( packres 
     ${PYTHON_EXECUTABLE} ./packres.py ${CMAKE_CURRENT_BINARY_DIR} 
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts )
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts
+    SOURCES ${CMAKE_SOURCE_DIR}/build/scripts/packres.py )
 
 INSTALL ( CODE "EXECUTE_PROCESS ( 
     COMMAND ${PYTHON_EXECUTABLE} ./packres.py ${CMAKE_CURRENT_BINARY_DIR} 

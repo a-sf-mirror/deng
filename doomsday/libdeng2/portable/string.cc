@@ -57,9 +57,9 @@ String::String(const IByteArray& array)
 String::String(const String& other) : string(other)
 {}
 
-String String::concatenatePath(const std::string& other) const
+String String::concatenatePath(const std::string& other, char dirChar) const
 {
-    if(!other.empty() && other[0] == '/')
+    if(!other.empty() && other[0] == dirChar)
     {
         // The other begins with a slash, therefore it's an absolute path.
         // Use it as is.
@@ -68,12 +68,23 @@ String String::concatenatePath(const std::string& other) const
 
     String result = *this;
     // Do a path combination. Check for a slash.
-    if(!empty() && *rbegin() != '/')
+    if(!empty() && *rbegin() != dirChar)
     {
-        result += '/';
+        result += dirChar;
     }
     result += other;
     return result;
+}
+
+String String::concatenateNativePath(const std::string& nativePath) const
+{
+#ifdef UNIX
+    return concatenatePath(nativePath);
+#endif
+
+#ifdef WIN32
+    return concatenatePath(nativePath, '\\');
+#endif
 }
 
 String String::strip() const
@@ -101,6 +112,26 @@ String String::rightStrip() const
         result.erase(result.size() - 1, 1);
     }
     return result;
+}
+
+String String::lower() const
+{
+    std::ostringstream result;
+    for(String::const_iterator i = begin(); i != end(); ++i)
+    {
+        result << char(std::tolower(*i));
+    }
+    return result.str();
+}
+
+String String::upper() const
+{    
+    std::ostringstream result;
+    for(String::const_iterator i = begin(); i != end(); ++i)
+    {
+        result << char(std::toupper(*i));
+    }
+    return result.str();
 }
 
 duint String::size() const

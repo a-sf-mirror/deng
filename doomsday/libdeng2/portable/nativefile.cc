@@ -17,38 +17,26 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/app.h"
+#include "de/nativefile.h"
 
 using namespace de;
 
-// This will be set when the app is constructed.
-App* App::singleton_ = 0;
-
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
+NativeFile::NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode)
+    : File(name), path_(nativePath), mode_(mode)
 {
-    if(singleton_)
-    {
-        throw TooManyInstancesError("App::App", "Only one instance allowed");
-    }
-    
-    singleton_ = this;
-    
-    fs_ = new FS();
+    std::cout << "NativeFile: " << name << ": " << nativePath << "\n";
 }
 
-App::~App()
+NativeFile::~NativeFile()
+{}
+
+duint NativeFile::size() const
 {
-    delete fs_;
-    
-    singleton_ = 0;
+    return 0;
 }
 
-App& App::the()
-{
-    if(!singleton_)
-    {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
-    }
-    return *singleton_;
-}
+void NativeFile::get(Offset at, Byte* values, duint count) const
+{}
+
+void NativeFile::set(Offset at, const Byte* values, duint count)
+{}

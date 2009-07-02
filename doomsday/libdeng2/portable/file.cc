@@ -17,38 +17,50 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "de/file.h"
 #include "de/app.h"
+#include "de/fs.h"
 
 using namespace de;
 
-// This will be set when the app is constructed.
-App* App::singleton_ = 0;
+File::File(const std::string& fileName)
+    : parent_(0), name_(fileName)
+{}
 
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
+File::~File()
 {
-    if(singleton_)
-    {
-        throw TooManyInstancesError("App::App", "Only one instance allowed");
-    }
-    
-    singleton_ = this;
-    
-    fs_ = new FS();
+    fileSystem().deindex(*this);
 }
 
-App::~App()
+FS& File::fileSystem()
 {
-    delete fs_;
-    
-    singleton_ = 0;
+    return App::the().fileSystem();
 }
 
-App& App::the()
+const String File::path() const
 {
-    if(!singleton_)
+    String thePath = name();
+    for(Folder* i = parent_; i; i = i->parent_)
     {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
+        thePath = i->name().concatenatePath(thePath);
     }
-    return *singleton_;
+    return "/" + thePath;
+}
+        
+duint File::size() const
+{
+    return 0;
+}
+
+void File::get(Offset at, Byte* values, duint count) const
+{
+    if(at >= size() || at + count > size())
+    {
+        throw OffsetError("File::get", "Out of range");
+    }
+}
+
+void File::set(Offset at, const Byte* values, duint count)
+{
+    throw ReadOnlyError("File::set", "File can only be read");
 }

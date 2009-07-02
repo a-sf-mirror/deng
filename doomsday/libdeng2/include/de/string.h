@@ -70,7 +70,11 @@ namespace de
 		String(const String& other);
 
         /// Does a path concatenation on this string and the argument.
-        String concatenatePath(const std::string& path) const;
+        String concatenatePath(const std::string& path, char dirChar = '/') const;
+        
+        /// Does a path concatenation on a native path. The directory separator 
+        /// character depends on the platform.
+        String concatenateNativePath(const std::string& nativePath) const;
 
         /// Removes whitespace from the beginning and end of the string.
         /// @return Copy of the string without whitespace.
@@ -83,6 +87,12 @@ namespace de
         /// Removes whitespace from the end of the string.
         /// @return Copy of the string without whitespace.
         String rightStrip() const;
+
+        /// Returns a lower-case version of the string.
+        String lower() const;
+
+        /// Returns an upper-case version of the string.
+        String upper() const;
 
 		// The IByteArray interface:
 		duint size() const;

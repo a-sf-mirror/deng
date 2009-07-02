@@ -44,7 +44,7 @@ namespace de
 		virtual ~IByteArray() {}
 
 		/// Returns the length of the array.
-		virtual duint size() const = 0;
+        virtual duint size() const = 0;
 		
 		/// Get elements from the array.  Raises an OffsetError if the
 		/// offset is invalid.

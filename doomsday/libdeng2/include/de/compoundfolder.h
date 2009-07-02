@@ -17,38 +17,32 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/app.h"
+#ifndef LIBDENG2_COMPOUNDFOLDER_H
+#define LIBDENG2_COMPOUNDFOLDER_H
 
-using namespace de;
+#include <de/Folder>
 
-// This will be set when the app is constructed.
-App* App::singleton_ = 0;
-
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
+namespace de
 {
-    if(singleton_)
+    /**
+     * A special type of folder that merges a set of other folders of any 
+     * kind into one. 
+     *
+     * Files with duplicate names are treated according to the precedence order
+     * of the compound members, so that the last folder with the file name in 
+     * question is the one that is visible.
+     */
+    class PUBLIC_API CompoundFolder : public Folder
     {
-        throw TooManyInstancesError("App::App", "Only one instance allowed");
-    }
-    
-    singleton_ = this;
-    
-    fs_ = new FS();
+    public:
+        CompoundFolder(const std::string& name = "");
+        
+        virtual ~CompoundFolder();
+        
+        void populate();
+        
+    private:        
+    };
 }
 
-App::~App()
-{
-    delete fs_;
-    
-    singleton_ = 0;
-}
-
-App& App::the()
-{
-    if(!singleton_)
-    {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
-    }
-    return *singleton_;
-}
+#endif /* LIBDENG2_COMPOUNDFOLDER_H */

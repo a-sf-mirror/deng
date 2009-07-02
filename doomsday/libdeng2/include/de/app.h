@@ -23,6 +23,7 @@
 #include <de/deng.h>
 #include <de/Error>
 #include <de/CommandLine>
+#include <de/FS>
 
 namespace de
 {
@@ -50,6 +51,11 @@ namespace de
          * Returns the command line arguments specified at the start of the application.
          */
         CommandLine& commandLine() { return commandLine_; }
+
+        /** 
+         * Returns the file system.
+         */
+        FS& fileSystem() { return *fs_; }
         
         /**
          * Main loop of the application. To be defined by a derived class.
@@ -66,6 +72,9 @@ namespace de
         
     private:
         CommandLine commandLine_;
+        
+        /// The file system.
+        FS* fs_;
         
         static App* singleton_;
     };

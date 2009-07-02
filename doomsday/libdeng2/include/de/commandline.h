@@ -72,6 +72,7 @@ namespace de
          * Inserts a new argument to the list of arguments at index @c pos.
          * 
          * @param pos  Index at which the new argument will be at.
+         * @param arg  Argument to insert.
          */
         void insert(duint pos, const std::string& arg);
 
@@ -128,7 +129,7 @@ namespace de
          * - -cmd "echo ""this is a command""" => [-cmd] [echo "this is a command"]
          * - Hello" My"Friend => [Hello MyFriend]
          * - @@test.rsp [reads contents of test.rsp]
-         * - @@\"Program Files"\test.rsp [reads contents of "\Program Files\test.rsp"]
+         * - @@\"Program Files"\\test.rsp [reads contents of "\Program Files\test.rsp"]
          *
          * @param cmdLine  String containing the arguments.
          */ 
