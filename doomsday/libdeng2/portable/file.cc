@@ -24,7 +24,7 @@
 using namespace de;
 
 File::File(const std::string& fileName)
-    : parent_(0), name_(fileName)
+    : parent_(0), originFeed_(0), name_(fileName)
 {}
 
 File::~File()

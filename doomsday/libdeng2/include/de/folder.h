@@ -25,17 +25,24 @@
 #include <de/File>
 
 #include <map>
+#include <list>
 
 namespace de
 {
+    class Feed;
+    
     /**
      * A folder contains a set of files. It is used for building a tree of files
      * in the file system (de::FS). This is the base class for all types of folders.
+     *
+     * @see Feed
      */
     class PUBLIC_API Folder : public File
     {
     public:
         DEFINE_ERROR(DuplicateNameError);
+        
+        typedef std::list<Feed*> Feeds;
         
     public:
         Folder(const std::string& name = "");
@@ -43,19 +50,50 @@ namespace de
         virtual ~Folder();
     
         /**
-         * Populates the folder with a set of File instances. Subclasses will
-         * implement this method to enumerate their contents. Every populated file
-         * will also be added to the file system's main index. This may be called
-         * more than once during the life time of the folder, for example when it's 
-         * necessary to synchronize the file instances with the contents of a hard 
-         * drive folder.
+         * Populates the folder with a set of File instances. Each feed attached to 
+         * the folder will contribute. Every populated file will also be
+         * added to the file system's main index. 
+         *
+         * Repopulation is nondestructive as long as the source data has not changed.
+         * Population may be performed more than once during the lifetime of the folder,
+         * for example when it's necessary to synchronize it with the contents of a 
+         * native hard drive directory.
          */
-        virtual void populate() = 0;
+        virtual void populate();
 
+        /**
+         * Attach a feed to the folder. The feed will provide content for the folder.
+         *
+         * @param feed  Feed to attach to the folder. The folder gets ownership of the feed.
+         */
+        void attach(Feed* feed);
+        
+        /**
+         * Detaches a feed from the folder. The feed object is not deleted.
+         *
+         * @param feed  Feed to detach from the folder.
+         *
+         * @return  The Feed object. Ownership is returned to the caller.
+         */
+        Feed* detach(Feed& feed);
+
+        /**
+         * Provides access to the list of Feeds for this folder. The feeds are responsible
+         * for creating File and Folder instances in the folder.
+         */
+        const Feeds& feeds() const { return feeds_; }
+        
         /**
          * Destroys the contents of the folder. All contained file objects are deleted.
          */
         virtual void clear();
+
+        /**
+         * Checks whether the folder contains a file.
+         *
+         * @param name  File to check for. The name is not case sensitive.
+         */
+        bool has(const String& name) const;
 
         /**
          * Adds an object to the folder. The object must be an instance of a class
@@ -64,12 +102,12 @@ namespace de
          * @param fileObject  Object to add to the folder. The folder takes 
          *      ownership of this object. Cannot be NULL.
          *
-         * @return Reference to @c fileObject, for convenience.
+         * @return  Reference to @c fileObject, for convenience.
          */
         template <typename T>
         T& add(T* fileObject) {
             assert(fileObject != 0);
-            add(dynamic_cast<File*>(fileObject));
+            add(static_cast<File*>(fileObject));
             return *fileObject;
         }
         
@@ -78,7 +116,7 @@ namespace de
          *
          * @param file  File to add. The folder takes ownership of this instance.
          *
-         * @return Reference to the file, for convenience.
+         * @return  Reference to the file, for convenience.
          */
         virtual File& add(File* file);
 
@@ -86,7 +124,7 @@ namespace de
          * Removes a file from the folder, by name. The file is not deleted. The
          * ownership of the file is given to the caller.
          *
-         * @return The removed file object. Ownership of the object is given to
+         * @return  The removed file object. Ownership of the object is given to
          * the caller.
          */
         File* remove(const std::string& name);
@@ -94,7 +132,7 @@ namespace de
         template <typename T>
         T* remove(T* fileObject) {
             assert(fileObject != 0);
-            remove(dynamic_cast<File*>(fileObject));
+            remove(static_cast<File*>(fileObject));
             return fileObject;
         }
 
@@ -102,15 +140,33 @@ namespace de
          * Removes a file from the folder. The file is not deleted. The ownership 
          * of the file is given to the caller.
          *
-         * @return The removed file object. Ownership of the object is given to
+         * @return  The removed file object. Ownership of the object is given to
          * the caller.
          */
         virtual File* remove(File* file);
+
+        /**
+         * Locates a file in this folder or in one of its subfolders. Looks recursively
+         * through subfolders.
+         *
+         * @param path  Path to look for. Relative to this folder.
+         * 
+         * @return  Located File, or @c NULL if the path was not found.
+         */
+        virtual File* locateFile(const String& path) const;
+        
+        template <typename T>
+        T* locate(const String& path) const {
+            return dynamic_cast<T*>(locateFile(path));
+        }
                     
     private:
         /// A map of file names to file instances.
         typedef std::map<std::string, File*> Contents;
         Contents contents_;
+        
+        /// Feeds provide content for the folder.
+        Feeds feeds_;
     };
 }
 

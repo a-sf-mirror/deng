@@ -16,19 +16,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/compoundfolder.h"
+
+#include "de/feed.h"
 
 using namespace de;
 
-CompoundFolder::CompoundFolder(const std::string& name)
-    : Folder(name)
+Feed::Feed()
 {}
 
-CompoundFolder::~CompoundFolder()
+Feed::~Feed()
 {}
-
-void CompoundFolder::populate()
-{
-    // Populate member folders and form the compound set of files.
-}

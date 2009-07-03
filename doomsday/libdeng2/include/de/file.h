@@ -27,6 +27,7 @@ namespace de
 {
     class FS;
     class Folder;
+    class Feed;
     
     /**
      * Base class for all files stored in the file system (de::FS).
@@ -44,7 +45,7 @@ namespace de
         virtual ~File();
 
         /// Returns a reference to the application's file system.
-        FS& fileSystem();
+        static FS& fileSystem();
         
         /// Returns the name of the file.
         const String& name() const {
@@ -62,6 +63,20 @@ namespace de
         Folder* parent() const { return parent_; }
         
         /**
+         * Sets the origin Feed of the File. The origin feed is the feed that is able
+         * to singlehandedly decide whether the File needs to be pruned. Typically
+         * this is the Feed that generated the File.
+         *
+         * @param feed  The origin feed.
+         */ 
+        void setOriginFeed(Feed* feed) { originFeed_ = feed; }
+        
+        /**
+         * Returns the origin Feed of the File. @see setOriginFeed()
+         */
+        Feed* originFeed() const { return originFeed_; }
+        
+        /**
          * Forms the complete path of this file object.
          *
          * @return Path of the object. This is not a native path, but instead 
@@ -76,6 +91,10 @@ namespace de
     private:
         /// The parent folder.
         Folder* parent_;
+        
+        /// Feed that generated the file. This feed is called upon when the file needs 
+        /// to be pruned. May also be NULL.
+        Feed* originFeed_;
         
         /// Name of the file.
         String name_;

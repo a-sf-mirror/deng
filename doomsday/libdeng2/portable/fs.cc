@@ -55,3 +55,8 @@ void FS::printIndex()
         std::cout << "[" << i->first << "]: " << i->second->path() << "\n";
     }
 }
+
+Folder& FS::getFolder(const String& path)
+{
+    return root_;
+}

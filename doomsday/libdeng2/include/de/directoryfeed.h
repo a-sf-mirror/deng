@@ -17,42 +17,42 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_NATIVEFOLDER_H
-#define LIBDENG2_NATIVEFOLDER_H
+#ifndef LIBDENG2_DIRECTORYFEED_H
+#define LIBDENG2_DIRECTORYFEED_H
 
-#include <de/Folder>
+#include <de/Feed>
 #include <de/String>
 
 namespace de
 {
     /**
-     * NativeFolder reads from and writes to directories in the native file system.
+     * DirectoryFeed reads from and writes to directories in the native file system.
      */
-    class PUBLIC_API NativeFolder : public Folder
+    class PUBLIC_API DirectoryFeed : public Feed
     {
     public:
         DEFINE_ERROR(NotFoundError);
         
     public:
         /**
-         * Constructs a NativeFolder that accesses a directory in the native file system.
+         * Constructs a DirectoryFeed that accesses a directory in the native file system.
          *
-         * @param name  Name of the folder object.
          * @param nativePath  Path of the native directory.
          */
-        NativeFolder(const std::string& name, const std::string& nativePath);
+        DirectoryFeed(const std::string& nativePath);
         
-        virtual ~NativeFolder();
+        virtual ~DirectoryFeed();
         
-        void populate();
+        void populate(Folder& folder);
+        bool prune(File& file) const;
 
     protected:
-        void populateSubFolder(const std::string& entryName);
-        void populateFile(const std::string& entryName);
+        void populateSubFolder(Folder& folder, const std::string& entryName);
+        void populateFile(Folder& folder, const std::string& entryName);
 
     private:
         const String nativePath_;
     };
 }
 
-#endif /* LIBDENG2_NATIVEFOLDER_H */
+#endif /* LIBDENG2_DIRECTORYFEED_H */

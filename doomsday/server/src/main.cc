@@ -18,7 +18,8 @@
  */
 
 #include "server.h"
-#include <de/NativeFolder>
+#include <de/Folder>
+#include <de/DirectoryFeed>
 #include <de/FS>
 
 using namespace de;
@@ -29,7 +30,8 @@ int main(int argc, char** argv)
     {
         Server server(CommandLine(argc, argv));
         {
-            NativeFolder testFolder("", "");
+            Folder testFolder("");
+            testFolder.attach(new DirectoryFeed("."));
             testFolder.populate();
             server.fileSystem().printIndex();
         }
