@@ -45,7 +45,11 @@ namespace de
         virtual ~NativeFolder();
         
         void populate();
-                
+
+    protected:
+        void populateSubFolder(const std::string& entryName);
+        void populateFile(const std::string& entryName);
+
     private:
         const String nativePath_;
     };

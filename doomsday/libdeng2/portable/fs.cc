@@ -34,13 +34,16 @@ void FS::index(File& file)
 
 void FS::deindex(File& file)
 {
-    for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
+    if(!index_.empty()) 
     {
-        if(i->second == &file)
+        for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
         {
-            // This is the one to deindex.
-            index_.erase(i);
-            break;
+            if(i->second == &file)
+            {
+                // This is the one to deindex.
+                index_.erase(i);
+                break;
+            }
         }
     }
 }

@@ -46,7 +46,7 @@ String::String(const char* cStr) : string(cStr)
 
 String::String(const IByteArray& array)
 {
-	duint len = array.size();
+	Size len = array.size();
 	Byte* buffer = new Byte[len + 1];
 	array.get(0, buffer, len);
     buffer[len] = 0;
@@ -83,6 +83,8 @@ String String::concatenateNativePath(const std::string& nativePath) const
 #endif
 
 #ifdef WIN32
+    /// @todo Check for "(drive-letter):" and "(drive-letter):\".
+
     return concatenatePath(nativePath, '\\');
 #endif
 }
@@ -134,12 +136,12 @@ String String::upper() const
     return result.str();
 }
 
-duint String::size() const
+String::Size String::size() const
 {
 	return std::string::size();
 }
 
-void String::get(Offset at, Byte* values, duint count) const
+void String::get(Offset at, Byte* values, Size count) const
 {
 	if(at + count > size())
 	{
@@ -149,7 +151,7 @@ void String::get(Offset at, Byte* values, duint count) const
 	memcpy(values, c_str() + at, count);
 }
 
-void String::set(Offset at, const Byte* values, duint count)
+void String::set(Offset at, const Byte* values, Size count)
 {
 	replace(at, count, reinterpret_cast<const char*>(values));
 }

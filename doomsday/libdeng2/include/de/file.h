@@ -69,9 +69,9 @@ namespace de
          */
         const String path() const;
         
-        duint size() const;
-		void get(Offset at, Byte* values, duint count) const;
-		void set(Offset at, const Byte* values, duint count);
+        Size size() const;
+		void get(Offset at, Byte* values, Size count) const;
+		void set(Offset at, const Byte* values, Size count);
         
     private:
         /// The parent folder.

@@ -54,6 +54,7 @@ namespace de
 	typedef unsigned long long int  duint64;    ///< 64-bit unsigned integer.
 	typedef float				    dfloat;     ///< 32-bit floating point number.
 	typedef double				    ddouble;    ///< 64-bit floating point number.
+    typedef size_t                  dsize;
 }
 
 #endif /* LIBDENG2_H */

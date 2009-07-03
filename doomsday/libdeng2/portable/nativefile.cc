@@ -22,7 +22,7 @@
 using namespace de;
 
 NativeFile::NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode)
-    : File(name), path_(nativePath), mode_(mode)
+    : File(name), path_(nativePath), mode_(mode), size_(0)
 {
     std::cout << "NativeFile: " << name << ": " << nativePath << "\n";
 }
@@ -30,13 +30,18 @@ NativeFile::NativeFile(const std::string& name, const std::string& nativePath, c
 NativeFile::~NativeFile()
 {}
 
-duint NativeFile::size() const
+void NativeFile::setSize(Size newSize)
 {
-    return 0;
+    size_ = newSize;
 }
 
-void NativeFile::get(Offset at, Byte* values, duint count) const
+NativeFile::Size NativeFile::size() const
+{
+    return size_;
+}
+
+void NativeFile::get(Offset at, Byte* values, Size count) const
 {}
 
-void NativeFile::set(Offset at, const Byte* values, duint count)
+void NativeFile::set(Offset at, const Byte* values, Size count)
 {}

@@ -48,16 +48,24 @@ namespace de
         NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode = Mode());
         
         virtual ~NativeFile();
-        
-        duint size() const;
-		void get(Offset at, Byte* values, duint count) const;
-		void set(Offset at, const Byte* values, duint count);
+
+        /**
+         * Sets the size of the file.
+         */
+        virtual void setSize(Size newSize);
+
+        Size size() const;
+		void get(Offset at, Byte* values, Size count) const;
+		void set(Offset at, const Byte* values, Size count);
         
     private:
         std::string path_;
         
         /// Mode flags.
         Mode mode_;    
+
+        /// Size of the file.
+        Size size_;
     };
 }
 

@@ -47,12 +47,12 @@ const String File::path() const
     return "/" + thePath;
 }
         
-duint File::size() const
+File::Size File::size() const
 {
     return 0;
 }
 
-void File::get(Offset at, Byte* values, duint count) const
+void File::get(Offset at, Byte* values, Size count) const
 {
     if(at >= size() || at + count > size())
     {
@@ -60,7 +60,7 @@ void File::get(Offset at, Byte* values, duint count) const
     }
 }
 
-void File::set(Offset at, const Byte* values, duint count)
+void File::set(Offset at, const Byte* values, Size count)
 {
     throw ReadOnlyError("File::set", "File can only be read");
 }

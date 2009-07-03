@@ -95,9 +95,9 @@ namespace de
         String upper() const;
 
 		// The IByteArray interface:
-		duint size() const;
-		void get(Offset at, Byte* values, duint count) const;
-		void set(Offset at, const Byte* values, duint count);	
+		Size size() const;
+		void get(Offset at, Byte* values, Size count) const;
+		void set(Offset at, const Byte* values, Size count);	
 	
 		/// Converts the string to a wide-character STL wstring.
         std::wstring wide() const;

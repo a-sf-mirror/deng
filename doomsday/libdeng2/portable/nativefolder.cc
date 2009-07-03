@@ -27,6 +27,10 @@
 #   include <dirent.h>
 #endif
 
+#ifdef WIN32
+#   include <io.h>
+#endif
+
 using namespace de;
 
 NativeFolder::NativeFolder(const std::string& name, const std::string& nativePath)
@@ -53,24 +57,55 @@ void NativeFolder::populate()
         switch(entry->d_type)
         {
         case DT_DIR:
-            if(entryName != "." && entryName != "..")
-            {
-                add(new NativeFolder(entryName,
-                    nativePath_.concatenateNativePath(entryName))).populate();
-            }
+            populateSubFolder(entryName);
             break;
             
         default:
-            {
-                NativeFile& file = add(new NativeFile(entryName, 
-                    nativePath_.concatenateNativePath(entryName)));
-                    
-                // Include files the main index.
-                fileSystem().index(file);
-            }
+            populateFile(entryName);
             break;
         }
     } 
     closedir(dir);
 #endif
+
+#ifdef WIN32
+    _finddata_t fd;
+    intptr_t handle;
+    if((handle = _findfirst(nativePath_.concatenateNativePath("*").c_str(), &fd)) != -1L)
+    {
+        // Found something.
+        do
+        {
+            const std::string entryName = fd.name;
+            if(fd.attrib & _A_SUBDIR)
+            {
+                populateSubFolder(entryName);
+            }
+            else
+            {
+                populateFile(entryName);
+            }
+        } 
+        while(!_findnext(handle, &fd));
+        _findclose(handle);
+    }
+#endif
+}
+
+void NativeFolder::populateSubFolder(const std::string& entryName)
+{
+    if(entryName != "." && entryName != "..")
+    {
+        add(new NativeFolder(entryName,
+            nativePath_.concatenateNativePath(entryName))).populate();
+    }
+}
+
+void NativeFolder::populateFile(const std::string& entryName)
+{
+    NativeFile& file = add(new NativeFile(entryName, 
+        nativePath_.concatenateNativePath(entryName)));
+        
+    // Include files the main index.
+    fileSystem().index(file);
 }
