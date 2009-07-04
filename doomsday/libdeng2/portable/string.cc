@@ -25,6 +25,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 #ifdef UNIX
 #   include <strings.h> // strcasecmp
@@ -56,6 +57,16 @@ String::String(const IByteArray& array)
 
 String::String(const String& other) : string(other)
 {}
+
+bool String::beginsWith(const std::string& s) const
+{
+    if(size() < s.size())
+    {
+        // This is too short to be a match.
+        return false;
+    }
+    return std::equal(s.begin(), s.end(), begin());
+}
 
 String String::concatenatePath(const std::string& other, char dirChar) const
 {

@@ -17,45 +17,43 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_DIRECTORYFEED_H
-#define LIBDENG2_DIRECTORYFEED_H
+#ifndef LIBDENG2_LIBRARYFILE_H
+#define LIBDENG2_LIBRARYFILE_H
 
-#include <de/Feed>
-#include <de/String>
+#include <de/File>
 
 namespace de
 {
     /**
-     * DirectoryFeed reads from and writes to directories in the native file system.
+     * LibraryFile provides a way to load a shared library.
+     *
+     * @see Library
      *
      * @ingroup fs
      */
-    class PUBLIC_API DirectoryFeed : public Feed
+    class LibraryFile : public File
     {
     public:
-        /// The native directory was not found. @ingroup errors
-        DEFINE_ERROR(NotFoundError);
+        /**
+         * Constructs a new LibraryFile instance.
+         *
+         * @param source  Library file. Ownership transferred to LibraryFile.
+         */
+        LibraryFile(File* source);
         
+        virtual ~LibraryFile();
+
     public:
         /**
-         * Constructs a DirectoryFeed that accesses a directory in the native file system.
+         * Determines whether a file appears suitable for use with LibraryFile.
          *
-         * @param nativePath  Path of the native directory.
+         * @param file  File whose content to recognize.
          */
-        DirectoryFeed(const std::string& nativePath);
+        static bool recognize(const File& file);
         
-        virtual ~DirectoryFeed();
-        
-        void populate(Folder& folder);
-        bool prune(File& file) const;
-
-    protected:
-        void populateSubFolder(Folder& folder, const std::string& entryName);
-        void populateFile(Folder& folder, const std::string& entryName);
-
     private:
-        const String nativePath_;
+        File* source_;
     };
 }
 
-#endif /* LIBDENG2_DIRECTORYFEED_H */
+#endif /* LIBDENG2_LIBRARYFILE_H */

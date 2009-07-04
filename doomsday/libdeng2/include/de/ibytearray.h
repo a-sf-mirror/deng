@@ -32,6 +32,7 @@ namespace de
 	class PUBLIC_API IByteArray
 	{
 	public:
+	    /// Invalid offset was used in set() or get(). @ingroup errors
 		DEFINE_ERROR(OffsetError);
 		
         /// Size of the array is indicated with this type.

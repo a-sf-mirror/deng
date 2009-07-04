@@ -26,6 +26,12 @@
 
 #include <map>
 
+/**
+ * @defgroup fs File System
+ * The file system (de::FS) governs a tree of files and folders, and provides the means to
+ * access all data in libdeng2.
+ */
+
 namespace de
 {
     /**
@@ -40,10 +46,13 @@ namespace de
      * instances for a directory in the native file system. 
      *
      * The file system can be repopulated at any time to resynchronize it with the
-     * source data. This is needed for instance when native files get deleted 
+     * source data. Repopulation is nondestructive as long as the source data has not
+     * changed. Repopulation is needed for instance when native files get deleted 
      * in the directory a folder is feeding on. The feeds are responsible for
      * deciding when instances get out-of-date and need to be deleted (pruning). 
      * Pruning occurs when a folder that is already populated with files is repopulated.
+     *
+     * @ingroup fs
      */
     class PUBLIC_API FS
     {
@@ -63,6 +72,18 @@ namespace de
          * @param path  Path of the folder. Relative to the root folder.
          */
         Folder& getFolder(const String& path);
+        
+        /**
+         * Creates an interpreter for the data in a file. 
+         *
+         * @param sourceData  File with the source data.
+         *
+         * @return  If the format of the source data was recognized, returns a new File
+         *      that can be used for accessing the data. Ownership of the @c sourceData 
+         *      will be transferred to the new interpreter File instance.
+         *      If the format was not recognized, @c sourceData is returned as is.
+         */
+        File* interpret(File* sourceData);
         
         /**
          * Adds a file to the main index.

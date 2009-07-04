@@ -36,10 +36,13 @@ namespace de
      * in the file system (de::FS). This is the base class for all types of folders.
      *
      * @see Feed
+     *
+     * @ingroup fs
      */
     class PUBLIC_API Folder : public File
     {
     public:
+        /// A folder cannot contain two or more files with the same name. @ingroup errors
         DEFINE_ERROR(DuplicateNameError);
         
         typedef std::list<Feed*> Feeds;

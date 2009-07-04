@@ -18,6 +18,7 @@
  */
 
 #include "de/fs.h"
+#include "de/libraryfile.h"
 
 using namespace de;
 
@@ -59,4 +60,17 @@ void FS::printIndex()
 Folder& FS::getFolder(const String& path)
 {
     return root_;
+}
+
+File* FS::interpret(File* sourceData)
+{
+    if(LibraryFile::recognize(*sourceData))
+    {
+        std::cout << "Interpreted " << sourceData->name() << " as a shared library\n";
+        
+        // It is a shared library intended for Doomsday.
+        return new LibraryFile(sourceData);
+    }
+
+    return sourceData;
 }

@@ -36,7 +36,10 @@ namespace de
     class PUBLIC_API CommandLine
     {
     public:
+        /// Tried to access an argument that does not exist. @ingroup errors
         DEFINE_ERROR(OutOfRangeError);
+
+        /// Execution of the command line failed. @ingroup errors
         DEFINE_ERROR(ExecuteError);
         
     public:

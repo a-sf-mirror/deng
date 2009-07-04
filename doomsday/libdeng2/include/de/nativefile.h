@@ -27,6 +27,8 @@ namespace de
 {
     /**
      * NativeFile reads from and writes to files in the native file system.
+     *
+     * @ingroup fs
      */
     class PUBLIC_API NativeFile : public File
     {

@@ -134,14 +134,17 @@ void DirectoryFeed::populateFile(Folder& folder, const std::string& entryName)
         // Already has an entry for this, skip it.
         return;
     }
-    
-    NativeFile& file = folder.add(new NativeFile(entryName, 
+
+    File* file = folder.fileSystem().interpret(new NativeFile(entryName, 
         nativePath_.concatenateNativePath(entryName)));
-        
-    file.setOriginFeed(this);
+
+    // We will decide on pruning this.
+    file->setOriginFeed(this);
+    
+    folder.add(file);
         
     // Include files the main index.
-    folder.fileSystem().index(file);
+    folder.fileSystem().index(*file);
 }
 
 bool DirectoryFeed::prune(File& file) const

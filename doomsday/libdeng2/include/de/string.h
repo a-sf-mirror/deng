@@ -35,11 +35,10 @@ namespace de
 	class PUBLIC_API String : public std::string, public IByteArray
 	{
 	public:
-	    /// This exception is thrown if an encoding conversion fails.	    
+	    /// Encoding conversion failed. @ingroup errors
         DEFINE_ERROR(ConversionError);
 
-	    /// This exception is thrown when an error is encountered in 
-	    /// string pattern replacements.
+	    /// An error was encountered in string pattern replacement. @ingroup errors
         DEFINE_ERROR(IllegalPatternError);
 
 	    /**
@@ -49,8 +48,7 @@ namespace de
 	    class IPatternArg 
 	    {
         public:
-            /// This exception is thrown if an incompatible type is requested
-            /// in asText() or asNumber().
+            /// An incompatible type is requested in asText() or asNumber(). @ingroup errors
             DEFINE_ERROR(TypeError);
 	        
 	    public:
@@ -68,6 +66,9 @@ namespace de
         String(const char* cStr);
 		String(const IByteArray& array);
 		String(const String& other);
+
+        /// Checks if the string begins with the substring @c s.
+        bool beginsWith(const std::string& s) const;
 
         /// Does a path concatenation on this string and the argument.
         String concatenatePath(const std::string& path, char dirChar = '/') const;

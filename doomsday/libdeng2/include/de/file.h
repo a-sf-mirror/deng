@@ -33,10 +33,13 @@ namespace de
      * Base class for all files stored in the file system (de::FS).
      * 
      * Note that folders are also files.
+     *
+     * @ingroup fs
      */
     class PUBLIC_API File : public IByteArray
     {
     public:
+        /// An attempt was made to write to a read-only file.  @ingroup errors
         DEFINE_ERROR(ReadOnlyError);
         
     public:
@@ -76,6 +79,10 @@ namespace de
          */
         Feed* originFeed() const { return originFeed_; }
         
+        virtual const File& source() const;
+        
+        virtual File& source();
+                
         /**
          * Forms the complete path of this file object.
          *

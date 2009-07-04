@@ -35,7 +35,11 @@ namespace de
     class PUBLIC_API App
     {
     public:
+        /// Only one instance of App is allowed. @ingroup errors
         DEFINE_ERROR(TooManyInstancesError);
+
+        /// The App instance has not been created but someone is trying to access it. 
+        /// @ingroup errors
         DEFINE_ERROR(NoInstanceError);
         
     public:

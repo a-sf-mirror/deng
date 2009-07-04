@@ -47,6 +47,16 @@ const String File::path() const
     return "/" + thePath;
 }
         
+const File& File::source() const
+{
+    return *this;
+}
+
+File& File::source()
+{
+    return *this;
+}
+        
 File::Size File::size() const
 {
     return 0;

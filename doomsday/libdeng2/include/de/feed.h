@@ -38,6 +38,8 @@ namespace de
      * destroyed (pruned). For instance, pruning a NativeFile is necessary if the 
      * corresponding native file has been deleted from the hard drive since the 
      * latest population was done.
+     *
+     * @ingroup fs
      */
     class Feed
     {
@@ -46,6 +48,14 @@ namespace de
         
         virtual ~Feed();
 
+        /**
+         * Populates a folder with File instances. Subclasses implement this to 
+         * produce the appropriate instances for the data they handle.
+         *
+         * @param folder  Folder where the File instances are placed.
+         *
+         * @see Folder::populate()
+         */
         virtual void populate(Folder& folder) = 0;
         
         /**
