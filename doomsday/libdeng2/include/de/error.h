@@ -26,6 +26,7 @@
 
 /**
  * @defgroup errors Exceptions
+ *
  * These are exceptions thrown by libdeng2 when an error occurs.
  */
 namespace de

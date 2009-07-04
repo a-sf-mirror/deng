@@ -28,6 +28,7 @@
 
 /**
  * @defgroup fs File System
+ *
  * The file system (de::FS) governs a tree of files and folders, and provides the means to
  * access all data in libdeng2.
  */
@@ -66,6 +67,11 @@ namespace de
         Folder& root() { return root_; }
         
         /**
+         * Refresh the file system. Populates all folders with files from the feeds.
+         */
+        void refresh();
+        
+        /**
          * Retrieves a folder in the file system. The folder gets created if it
          * does not exist. Any missing parent folders will also be created.
          *
@@ -100,13 +106,13 @@ namespace de
         void deindex(File& file);
         
     private:  
-        /// The root folder of the entire file system.
-        Folder root_;
-        
         /// The main index to all files in the file system.
         typedef std::multimap<std::string, File*> Index;
         typedef std::pair<std::string, File*> IndexEntry;
         Index index_;
+
+        /// The root folder of the entire file system.
+        Folder root_;
     };
 }
 

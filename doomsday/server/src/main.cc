@@ -21,6 +21,7 @@
 #include <de/Folder>
 #include <de/DirectoryFeed>
 #include <de/FS>
+#include <de/Library>
 
 using namespace de;
 
@@ -29,12 +30,6 @@ int main(int argc, char** argv)
     try
     {
         Server server(CommandLine(argc, argv));
-        {
-            Folder testFolder("");
-            testFolder.attach(new DirectoryFeed("."));
-            testFolder.populate();
-            server.fileSystem().printIndex();
-        }
         return 0;
         
         return server.mainLoop();

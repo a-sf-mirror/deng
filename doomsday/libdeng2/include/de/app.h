@@ -59,7 +59,7 @@ namespace de
         /** 
          * Returns the file system.
          */
-        FS& fileSystem() { return *fs_; }
+        FS& fileSystem();
         
         /**
          * Main loop of the application. To be defined by a derived class.

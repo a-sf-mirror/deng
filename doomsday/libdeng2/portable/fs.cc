@@ -19,14 +19,22 @@
 
 #include "de/fs.h"
 #include "de/libraryfile.h"
+#include "de/directoryfeed.h"
 
 using namespace de;
 
 FS::FS()
-{}
+{
+    root_.attach(new DirectoryFeed("."));
+}
 
 FS::~FS()
 {}
+
+void FS::refresh()
+{
+    root_.populate();
+}
 
 void FS::index(File& file)
 {

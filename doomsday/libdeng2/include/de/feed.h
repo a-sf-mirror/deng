@@ -20,6 +20,8 @@
 #ifndef LIBDENG2_FEED_H
 #define LIBDENG2_FEED_H
 
+#include <de/deng.h>
+
 #include <list>
 
 namespace de
@@ -41,7 +43,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class Feed
+    class PUBLIC_API Feed
     {
     public:
         Feed();

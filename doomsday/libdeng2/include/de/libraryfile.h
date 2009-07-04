@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class LibraryFile : public File
+    class PUBLIC_API LibraryFile : public File
     {
     public:
         /**

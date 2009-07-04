@@ -30,7 +30,7 @@ namespace de
     class Feed;
     
     /**
-     * Base class for all files stored in the file system (de::FS).
+     * Base class for all files stored in the file system.
      * 
      * Note that folders are also files.
      *

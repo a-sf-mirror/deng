@@ -34,7 +34,9 @@ App::App(const CommandLine& commandLine)
     
     singleton_ = this;
     
+    // Now we can proceed with the members.
     fs_ = new FS();
+    fs_->refresh();
 }
 
 App::~App()
@@ -51,4 +53,13 @@ App& App::the()
         throw NoInstanceError("App::the", "App has not been constructed yet");
     }
     return *singleton_;
+}
+
+FS& App::fileSystem() 
+{ 
+    if(!fs_)
+    {
+        throw Error("App::fileSystem", "FS not available yet");
+    }
+    return *fs_; 
 }
