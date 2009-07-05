@@ -33,6 +33,8 @@
 
 namespace de
 {
+    class Library;
+    
     /**
      * The application. 
      *
@@ -70,6 +72,13 @@ namespace de
         FS& fileSystem();
 
         /**
+         * Returns the game library.
+         *
+         * @return The game library, or @c NULL if one is not loaded at the moment.
+         */
+        Library* game();
+
+        /**
          * Loads the basic plugins (named "dengplugin_").
          */
         void loadPlugins();
@@ -93,6 +102,9 @@ namespace de
         
         /// The file system.
         FS* fs_;
+
+        // The game library.
+        Library* game_;
         
         static App* singleton_;
     };

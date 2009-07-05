@@ -27,7 +27,7 @@ using namespace de;
 App* App::singleton_ = 0;
 
 App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine)
+    : commandLine_(commandLine), fs_(0), game_(0)
 {
     if(singleton_)
     {
@@ -57,16 +57,42 @@ FS& App::fileSystem()
     return *fs_; 
 }
 
+Library* App::game()
+{
+    return game_;
+}
+
 void App::loadPlugins()
 {
     const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
     for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
     {
-        if(i->second->name().contains("dengplugin_"))
+        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+        if(libFile.name().contains("dengplugin_"))
         {
             // Initialize the plugin.
-            static_cast<LibraryFile*>(i->second)->library();
-            std::cout << "App::loadPlugins() loaded " << i->second->path() << "\n";
+            libFile.library();
+            std::cout << "App::loadPlugins() loaded " << libFile.path() << "\n";
+        }
+    }
+    
+    // Also the load the specified game plugin, if there is one.
+    dint pos = commandLine_.check("-game", 1);
+    if(pos)
+    {
+        std::string gameName = commandLine_.at(pos + 1);
+        std::cout << "Looking for game '" << gameName << "'\n";
+        
+        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+        {
+            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+            if(libFile.name().contains("_" + gameName + "."))
+            {
+                // This is the one.
+                game_ = &libFile.library();
+                std::cout << "App::loadPlugins() loaded the game " << libFile.path() << "\n";
+                break;
+            }
         }
     }
 }

@@ -42,16 +42,6 @@ dint Server::mainLoop()
     CommandLine& args = commandLine();
     
     args.append("-dedicated");
-    args.append("-game");
-#ifdef WIN32
-    args.append("plugins\\deng_doom.dll");
-#else
-#ifdef MACOSX
-    args.append("libdeng_doom.dylib");
-#else
-	args.append("deng_doom");
-#endif
-#endif
     args.append("-file");
     args.append("../../data/doomsday.pk3");
     args.append("../../data/doom.pk3");
@@ -59,8 +49,6 @@ dint Server::mainLoop()
     args.append("net-port-control 13209; net-port-data 13210; after 30 \"net init\"; after 40 \"net server start\"");
     args.append("-userdir");
     args.append("serverdir");
-    args.append("-libdir");
-    args.append("../plugins");
     
     return DD_Entry(0, NULL);
 }

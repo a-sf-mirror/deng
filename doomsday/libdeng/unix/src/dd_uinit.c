@@ -37,10 +37,6 @@
 #include <limits.h>
 #include <SDL.h>
 
-#ifdef UNIX
-#  include "sys_dylib.h"
-#endif
-
 #include "de_base.h"
 #include "de_graphics.h"
 #include "de_console.h"
@@ -123,6 +119,7 @@ static void determineGlobalPaths(application_t *app)
     printf("determineGlobalPaths: Base path = %s\n", ddBasePath);
 }
 
+/*
 static boolean loadGamePlugin(application_t *app, const char *libPath)
 {
     if(!libPath || !app)
@@ -151,139 +148,13 @@ static boolean loadGamePlugin(application_t *app, const char *libPath)
     // Everything seems to be working...
     return true;
 }
-
-static lt_dlhandle *NextPluginHandle(void)
-{
-    int                 i;
-
-    for(i = 0; i < MAX_PLUGS; ++i)
-    {
-        if(!app.hInstPlug[i])
-            return &app.hInstPlug[i];
-    }
-
-    return NULL;
-}
-
-/*
-#if 0
-int LoadPlugin(const char *pluginPath, lt_ptr data)
-{
-    filename_t name;
-    lt_dlhandle plugin, *handle;
-    void (*initializer)(void);
-
-    // What is the actual file name?
-    _splitpath(pluginPath, NULL, NULL, name, NULL);
-
-    printf("LP: %s => %s\n", pluginPath, name);
-
-    if(!strncmp(name, "libdp", 5))
-    {
-#if 0
-        filename_t fullPath;
-
-#ifdef DENG_LIBRARY_DIR
-        sprintf(fullPath, DENG_LIBRARY_DIR "/%s", name);
-#else
-        strcpy(fullPath, pluginPath);
-#endif
-        //if(strchr(name, '.'))
-            strcpy(name, pluginPath);
-        else
-        {
-            strcpy(name, pluginPath);
-            strcat(name, ".dylib");
-            }
-#endif
-        // Try loading this one as a Doomsday plugin.
-        if(NULL == (plugin = lt_dlopenext(pluginPath)))
-        {
-            printf("LoadPlugin: Failed to open %s!\n", pluginPath);
-            return 0;
-        }
-
-        if(NULL == (initializer = lt_dlsym(plugin, "DP_Initialize")) ||
-           NULL == (handle = NextPluginHandle()))
-        {
-            printf("LoadPlugin: Failed to load %s!\n", pluginPath);
-            lt_dlclose(plugin);
-            return 0;
-        }
-
-        // This seems to be a Doomsday plugin.
-        *handle = plugin;
-
-        printf("LoadPlugin: %s\n", pluginPath);
-        initializer();
-    }
-
-    return 0;
-}
-#endif
 */
-
-int LoadPlugin(const char *pluginPath, lt_ptr data)
-{
-    filename_t  name;
-    lt_dlhandle plugin, *handle;
-    void (*initializer)(void);
-
-    // What is the actual file name?
-    _splitpath(pluginPath, NULL, NULL, name, NULL);
-    if(!strncmp(name, "libdengplugin_", 14))
-    {
-        // Try loading this one as a Doomsday plugin.
-        if(NULL == (plugin = lt_dlopenext(pluginPath)))
-            return 0;
-
-        if(NULL == (initializer = lt_dlsym(plugin, "DP_Initialize")) ||
-           NULL == (handle = NextPluginHandle()))
-        {
-            printf("LoadPlugin: Failed to load %s!\n", pluginPath);
-            lt_dlclose(plugin);
-            return 0;
-        }
-
-        // This seems to be a Doomsday plugin.
-        *handle = plugin;
-
-        printf("LoadPlugin: %s\n", pluginPath);
-        initializer();
-    }
-
-    return 0;
-}
-
-/**
- * Loads all the plugins from the library directory.
- */
-static boolean loadAllPlugins(void)
-{
-    // Try to load all libraries that begin with libdp.
-    lt_dlforeachfile(NULL, LoadPlugin, NULL);
-    return true;
-}
 
 static int initTimingSystem(void)
 {
     // For timing, we use SDL under *nix, so get it initialized.
     // SDL_Init() returns zero on success.
     return !SDL_Init(SDL_INIT_TIMER);
-}
-
-static int initPluginSystem(void)
-{
-    // Initialize libtool's dynamic library routines.
-    lt_dlinit();
-
-#ifdef DENG_LIBRARY_DIR
-    // The default directory is defined in the Makefile.  For
-    // instance, "/usr/local/lib".
-    lt_dladdsearchdir(DENG_LIBRARY_DIR);
-#endif
-
-    return true;
 }
 
 static int initDGL(void)
@@ -325,23 +196,8 @@ int DD_Entry(int argc, char* argv[])
     }
     else
     {
-        char                libPath[PATH_MAX];
-
-        if(!initPluginSystem())
-        {
-            DD_ErrorBox(true, "Error initializing plugin system.");
-        }
-
         // Determine our basedir, and other global paths.
         determineGlobalPaths(&app);
-
-        // Compose the full path to the game library.
-        // Under *nix this is handled a bit differently.
-#ifdef MACOSX
-        strcpy(libPath, libName);
-#else
-        sprintf(libPath, "lib%s.so", libName);
-#endif
 
         if(!DD_EarlyInit())
         {
@@ -356,16 +212,12 @@ int DD_Entry(int argc, char* argv[])
         {
             DD_ErrorBox(true, "Error initializing DGL.");
         }
+        /*
         // Load the game plugin.
         else if(!loadGamePlugin(&app, libPath))
         {
             DD_ErrorBox(true, "Error loading game library.");
-        }
-        // Load all other plugins that are found.
-        else if(!loadAllPlugins())
-        {
-            DD_ErrorBox(true, "Error loading plugins.");
-        }
+        }*/
         // Init memory zone.
         else if(!Z_Init())
         {
@@ -418,13 +270,4 @@ void DD_Shutdown(void)
     DD_ShutdownAll();
 
     SDL_Quit();
-
-    // Close the dynamic libraries.
-    lt_dlclose(app.hInstGame);
-    app.hInstGame = NULL;
-    for(i = 0; app.hInstPlug[i]; ++i)
-        lt_dlclose(app.hInstPlug[i]);
-    memset(app.hInstPlug, 0, sizeof(app.hInstPlug));
-
-    lt_dlexit();
 }

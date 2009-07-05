@@ -36,6 +36,8 @@ namespace de
     /**
      * The Library class allows loading shared library files (DLL/so/dylib) and
      * looks up exported symbols in the library.
+     *
+     * @ingroup core
      */
     class PUBLIC_API Library
     {

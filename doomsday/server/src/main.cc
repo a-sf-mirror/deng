@@ -30,8 +30,6 @@ int main(int argc, char** argv)
     try
     {
         Server server(CommandLine(argc, argv));
-        return 0;
-        
         return server.mainLoop();
     }
     catch(const Error& error)
