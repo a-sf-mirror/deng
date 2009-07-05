@@ -38,7 +38,7 @@ IF ( WIN32 )
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )
     
-    FILE ( GLOB WIN_SOURCES win32/src/*.c win32/include/*.h )
+    FILE ( GLOB WIN_SOURCES win32/src/*.c win32/src/*.cc win32/include/*.h )
     SET ( SOURCES ${SOURCES} ${WIN_SOURCES} )
 ENDIF ( WIN32 )
 

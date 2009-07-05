@@ -43,6 +43,11 @@ IF ( WIN32 )
         ${CMAKE_SOURCE_DIR}/external/libpng/lib )
     SET ( PNG_NAMES libpng13 )
 
+    IF ( "$ENV{SDLDIR}" STREQUAL "" )
+        MESSAGE ( FATAL_ERROR
+            "You have not set the SDK environment variables. See build\\win32\\dengenv.bat." )
+    ENDIF ( "$ENV{SDLDIR}" STREQUAL "" )
+    
     # This will take care of the slash issue.
     GET_FILENAME_COMPONENT ( SDLDIR $ENV{SDLDIR} ABSOLUTE )
     GET_FILENAME_COMPONENT ( SDLMIXERDIR $ENV{SDLMIXERDIR} ABSOLUTE )

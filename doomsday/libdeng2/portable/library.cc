@@ -55,7 +55,7 @@ Library::Library(const std::string& nativePath)
         // Automatically call the initialization function, if one exists.
         SYMBOL(deng_InitializePlugin)();
     }
-    catch(const SymbolMissingError& error)
+    catch(const SymbolMissingError&)
     {}
 }
 
@@ -68,7 +68,7 @@ Library::~Library()
             // Automatically call the shutdown function, if one exists.
             SYMBOL(deng_ShutdownPlugin)();
         }
-        catch(const SymbolMissingError& error)
+        catch(const SymbolMissingError&)
         {}
 
         std::cout << "Unloading library with address " << handle_ << "\n";
