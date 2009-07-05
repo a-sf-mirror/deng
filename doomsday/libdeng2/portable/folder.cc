@@ -149,6 +149,7 @@ void Folder::attach(Feed* feed)
 Feed* Folder::detach(Feed& feed)
 {
     feeds_.remove(&feed);
+    return &feed;
 }
 
 void Folder::populate()
