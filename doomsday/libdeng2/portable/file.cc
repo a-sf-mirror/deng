@@ -34,7 +34,7 @@ File::~File()
 
 FS& File::fileSystem()
 {
-    return App::theApp().fileSystem();
+    return App::app().fileSystem();
 }
 
 const String File::path() const

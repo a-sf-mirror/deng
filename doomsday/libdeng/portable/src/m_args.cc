@@ -67,7 +67,7 @@ static int lastMatch = 0;
 
 inline CommandLine& appCommandLine()
 {
-    return App::theApp().commandLine();
+    return App::app().commandLine();
 }
 
 /**

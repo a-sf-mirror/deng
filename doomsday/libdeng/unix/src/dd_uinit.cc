@@ -127,7 +127,7 @@ static void determineGlobalPaths(application_t *app)
 
 static boolean loadGamePlugin(application_t *app)
 {
-    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::theApp().game()->address("GetGameAPI"));
+    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::app().game()->address("GetGameAPI"));
 
     // Do the API transfer.
     DD_InitAPI();
@@ -171,7 +171,7 @@ int DD_Entry(int argc, char* argv[])
     DD_ComposeMainWindowTitle(buf);
 
     // Was a game library specified?
-    if(!App::theApp().game())
+    if(!App::app().game())
     {
         DD_ErrorBox(true, "loadGamePlugin: No game library was specified.\n");
     }
