@@ -58,6 +58,13 @@ namespace de
     class PUBLIC_API FS
     {
     public:
+        /// No index is found for the specified type. @ingroup errors
+        DEFINE_ERROR(UnknownTypeError);
+        
+        typedef std::multimap<std::string, File*> Index;
+        typedef std::pair<std::string, File*> IndexEntry;
+        
+    public:
         FS();
         
         virtual ~FS();
@@ -92,6 +99,27 @@ namespace de
         File* interpret(File* sourceData);
         
         /**
+         * Provides access to the main index of the file system. This can be used for
+         * efficiently looking up files based on name. @note The file names are
+         * indexed in lower case.
+         */
+        const Index& nameIndex() const { return index_; }
+        
+        /**
+         * Retrieves the index of files of a particular type.
+         *
+         * @param typeIdentifier  Type identifier to look for. Use the TYPE_NAME() macro. 
+         *
+         * @return  A subset of the main index containing only the entries of the given type.
+         *
+         * For example, to look up the index for NativeFile instances:
+         * @code
+         * FS::Index& nativeFileIndex = fileSystem().indexFor(TYPE_NAME(NativeFile));
+         * @endcode
+         */
+        const Index& indexFor(const std::string& typeIdentifier) const;
+        
+        /**
          * Adds a file to the main index.
          *
          * @param file  File to index.
@@ -104,12 +132,15 @@ namespace de
          * @param file  File to remove from the index.
          */
         void deindex(File& file);
-        
+
     private:  
         /// The main index to all files in the file system.
-        typedef std::multimap<std::string, File*> Index;
-        typedef std::pair<std::string, File*> IndexEntry;
         Index index_;
+        
+        /// Index of file types. Each entry in the index is another index of names 
+        /// to file instances.
+        typedef std::map<std::string, Index> TypeIndex;
+        TypeIndex typeIndex_;
 
         /// The root folder of the entire file system.
         Folder root_;

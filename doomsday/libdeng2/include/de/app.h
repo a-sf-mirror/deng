@@ -60,6 +60,11 @@ namespace de
          * Returns the file system.
          */
         FS& fileSystem();
+
+        /**
+         * Loads the basic plugins (named "dengplugin_").
+         */
+        void loadPlugins();
         
         /**
          * Main loop of the application. To be defined by a derived class.
@@ -68,6 +73,7 @@ namespace de
          */
         virtual dint mainLoop() = 0;
 
+    public:
         /**
          * Returns the singleton App instance. With this the App can be accessed
          * anywhere.

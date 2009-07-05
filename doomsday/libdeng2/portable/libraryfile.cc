@@ -18,16 +18,55 @@
  */
 
 #include "de/libraryfile.h"
+#include "de/nativefile.h"
+#include "de/library.h"
 
 using namespace de;
 
 LibraryFile::LibraryFile(File* source)
-    : File(source->name()), source_(source)
-{}
+    : File(source->name()), source_(source), library_(0)
+{
+    assert(source_ != 0);
+    
+    std::cout << "LibraryFile: " << name() << ": " << source->path() << "\n";
+}
 
 LibraryFile::~LibraryFile()
 {
+    delete library_;
     delete source_;
+}
+
+Library& LibraryFile::library()
+{
+    assert(source_ != 0);
+    
+    if(library_)
+    {
+        return *library_;
+    }
+    
+    // Currently we only load shared libraries directly from native files.
+    // Other kinds of files would require a temporary native file.
+    /// @todo A method for File for making a NativeFile out of any File.
+    NativeFile* native = dynamic_cast<NativeFile*>(source_);
+    if(!native)
+    {
+        throw UnsupportedSourceError("LibraryFile::library", source_->path() + 
+            ": can only load from NativeFile");
+    }
+    
+    library_ = new Library(native->nativePath());
+    return *library_;
+}
+
+void LibraryFile::unload()
+{
+    if(library_)
+    {
+        delete library_;
+        library_ = 0;
+    }
 }
 
 bool LibraryFile::recognize(const File& file)

@@ -33,6 +33,7 @@ using namespace de;
 Library::Library(const std::string& nativePath)
     : handle_(0)
 {
+    std::cout << "Loading library: " << nativePath << "\n";
 #ifdef UNIX
     if((handle_ = dlopen(nativePath.c_str(), RTLD_LAZY)) == NULL)
     {
@@ -47,12 +48,15 @@ Library::Library(const std::string& nativePath)
         throw LoadError("Library::Library", "LoadLibrary failed: '" + nativePath + "'");
     }
 #endif
+    std::cout << "...loaded, address is " << handle_ << "\n";
 }
 
 Library::~Library()
 {
     if(handle_)
     {
+        std::cout << "Unloading library with address " << handle_ << "\n";
+        
 #ifdef UNIX
         // Close the library.
         dlclose(handle_);

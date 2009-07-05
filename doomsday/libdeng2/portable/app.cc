@@ -18,6 +18,7 @@
  */
 
 #include "de/app.h"
+#include "de/libraryfile.h"
 
 using namespace de;
 
@@ -37,6 +38,9 @@ App::App(const CommandLine& commandLine)
     // Now we can proceed with the members.
     fs_ = new FS();
     fs_->refresh();
+    
+    // Load the basic plugins.
+    loadPlugins();
 }
 
 App::~App()
@@ -46,15 +50,6 @@ App::~App()
     singleton_ = 0;
 }
 
-App& App::the()
-{
-    if(!singleton_)
-    {
-        throw NoInstanceError("App::the", "App has not been constructed yet");
-    }
-    return *singleton_;
-}
-
 FS& App::fileSystem() 
 { 
     if(!fs_)
@@ -62,4 +57,22 @@ FS& App::fileSystem()
         throw Error("App::fileSystem", "FS not available yet");
     }
     return *fs_; 
+}
+
+void App::loadPlugins()
+{
+    const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
+    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+    {
+        std::cout << "App::loadPlugins() found " << i->second->path() << "\n";
+    }
+}
+
+App& App::the()
+{
+    if(!singleton_)
+    {
+        throw NoInstanceError("App::the", "App has not been constructed yet");
+    }
+    return *singleton_;
 }

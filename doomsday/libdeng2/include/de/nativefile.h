@@ -22,6 +22,7 @@
 
 #include <de/File>
 #include <de/Flag>
+#include <de/String>
 
 namespace de
 {
@@ -52,6 +53,11 @@ namespace de
         virtual ~NativeFile();
 
         /**
+         * Returns the native path of the file.
+         */
+        const String& nativePath() const { return nativePath_; }
+
+        /**
          * Sets the size of the file.
          */
         virtual void setSize(Size newSize);
@@ -61,7 +67,8 @@ namespace de
 		void set(Offset at, const Byte* values, Size count);
         
     private:
-        std::string path_;
+        /// Path of the native file in the OS file system.
+        String nativePath_;
         
         /// Mode flags.
         Mode mode_;    

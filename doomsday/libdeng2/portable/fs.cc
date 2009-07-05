@@ -34,27 +34,57 @@ FS::~FS()
 void FS::refresh()
 {
     root_.populate();
+    
+    printIndex();
 }
 
 void FS::index(File& file)
 {
-    index_.insert(IndexEntry(file.name().lower(), &file));
+    const String lowercaseName = file.name().lower();
+    
+    index_.insert(IndexEntry(lowercaseName, &file));
+    
+    // Also make an entry in the type index.
+    Index& indexOfType = typeIndex_[TYPE_NAME(file)];
+    indexOfType.insert(IndexEntry(lowercaseName, &file));
+}
+
+static void removeFromIndex(FS::Index& idx, File& file)
+{
+    if(idx.empty()) 
+    {
+        return;
+    }
+
+    // Look up the ones that might be this file.
+    std::pair<FS::Index::iterator, FS::Index::iterator> range =
+        idx.equal_range(file.name().lower());
+
+    for(FS::Index::iterator i = range.first; i != range.second; ++i)
+    {
+        if(i->second == &file)
+        {
+            // This is the one to deindex.
+            idx.erase(i);
+            break;
+        }
+    }
 }
 
 void FS::deindex(File& file)
 {
-    if(!index_.empty()) 
+    removeFromIndex(index_, file);
+    removeFromIndex(typeIndex_[TYPE_NAME(file)], file);
+}
+
+const FS::Index& FS::indexFor(const std::string& typeName) const
+{
+    TypeIndex::const_iterator found = typeIndex_.find(typeName);
+    if(found != typeIndex_.end())
     {
-        for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
-        {
-            if(i->second == &file)
-            {
-                // This is the one to deindex.
-                index_.erase(i);
-                break;
-            }
-        }
+        return found->second;
     }
+    throw UnknownTypeError("FS::indexForType", "No files of type '" + typeName + "' have been indexed");
 }
 
 void FS::printIndex()
@@ -62,6 +92,15 @@ void FS::printIndex()
     for(Index::iterator i = index_.begin(); i != index_.end(); ++i)
     {
         std::cout << "[" << i->first << "]: " << i->second->path() << "\n";
+    }
+    
+    for(TypeIndex::iterator k = typeIndex_.begin(); k != typeIndex_.end(); ++k)
+    {
+        std::cout << "\nIndex for type '" << k->first << "':\n";
+        for(Index::iterator i = k->second.begin(); i != k->second.end(); ++i)
+        {
+            std::cout << "[" << i->first << "]: " << i->second->path() << "\n";
+        }
     }
 }
 

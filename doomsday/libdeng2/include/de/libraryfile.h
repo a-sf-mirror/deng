@@ -24,8 +24,12 @@
 
 namespace de
 {
+    class Library;
+    
     /**
-     * LibraryFile provides a way to load a shared library.
+     * LibraryFile provides a way to load a shared library. The Library will be loaded
+     * automatically when someone attempts to use it. Unloading the library occurs when
+     * the LibraryFile instance is deleted, or when unload() is called.
      *
      * @see Library
      *
@@ -34,14 +38,42 @@ namespace de
     class PUBLIC_API LibraryFile : public File
     {
     public:
+        /// Attempted to load a shared library from a source file with unsupported type.
+        /// @ingroup errors
+        DEFINE_ERROR(UnsupportedSourceError);
+        
+    public:
         /**
          * Constructs a new LibraryFile instance.
          *
          * @param source  Library file. Ownership transferred to LibraryFile.
          */
         LibraryFile(File* source);
-        
+
+        /**
+         * When the LibraryFile is deleted the library is gets unloaded.
+         */
         virtual ~LibraryFile();
+        
+        /**
+         * Determines whether the library is loaded and ready for use.
+         *
+         * @return  @c true, if the library has been loaded.
+         */
+        bool loaded() const { return library_ != 0; }
+        
+        /**
+         * Provides access to the loaded library. Automatically attempts to load 
+         * the library if it hasn't been loaded yet.
+         *
+         * @return  The library.
+         */
+        Library& library();
+        
+        /**
+         * Unloads the library.
+         */
+        void unload();
 
     public:
         /**
@@ -52,7 +84,10 @@ namespace de
         static bool recognize(const File& file);
         
     private:
+        /// Shared library binary file.
         File* source_;
+        
+        Library* library_;
     };
 }
 

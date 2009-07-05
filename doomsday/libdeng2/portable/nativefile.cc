@@ -22,7 +22,7 @@
 using namespace de;
 
 NativeFile::NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode)
-    : File(name), path_(nativePath), mode_(mode), size_(0)
+    : File(name), nativePath_(nativePath), mode_(mode), size_(0)
 {
     std::cout << "NativeFile: " << name << ": " << nativePath << "\n";
 }

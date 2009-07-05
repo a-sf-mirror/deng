@@ -47,6 +47,11 @@
 #endif
 
 /**
+ * Macro for determining the name of a type (using RTTI).
+ */
+#define TYPE_NAME(x) (typeid(x).name())
+
+/**
  * @namespace de
  *
  * The @c de namespace contains all the classes, functions and other
