@@ -32,6 +32,8 @@ namespace de
     /**
      * Stores and provides access to the command line arguments passed
      * to an application at launch.
+     *
+     * @ingroup core
      */
     class PUBLIC_API CommandLine
     {

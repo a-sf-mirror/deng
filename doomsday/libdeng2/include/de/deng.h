@@ -17,6 +17,7 @@
  * along with this program; if not, see http://www.gnu.org/licenses/
  *
  * <h2>Table of Contents</h2>
+ * - @ref core
  * - @ref fs
  * - @ref errors
  */

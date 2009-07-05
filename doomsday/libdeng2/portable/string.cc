@@ -68,6 +68,11 @@ bool String::beginsWith(const std::string& s) const
     return std::equal(s.begin(), s.end(), begin());
 }
 
+bool String::contains(const std::string& s) const
+{
+    return find(s) != npos;
+}
+
 String String::concatenatePath(const std::string& other, char dirChar) const
 {
     if(!other.empty() && other[0] == dirChar)

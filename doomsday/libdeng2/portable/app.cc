@@ -19,6 +19,7 @@
 
 #include "de/app.h"
 #include "de/libraryfile.h"
+#include "de/library.h"
 
 using namespace de;
 
@@ -52,10 +53,7 @@ App::~App()
 
 FS& App::fileSystem() 
 { 
-    if(!fs_)
-    {
-        throw Error("App::fileSystem", "FS not available yet");
-    }
+    assert(fs_ != 0);
     return *fs_; 
 }
 
@@ -64,7 +62,12 @@ void App::loadPlugins()
     const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
     for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
     {
-        std::cout << "App::loadPlugins() found " << i->second->path() << "\n";
+        if(i->second->name().contains("dengplugin_"))
+        {
+            // Initialize the plugin.
+            static_cast<LibraryFile*>(i->second)->library();
+            std::cout << "App::loadPlugins() loaded " << i->second->path() << "\n";
+        }
     }
 }
 

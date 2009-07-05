@@ -49,12 +49,28 @@ Library::Library(const std::string& nativePath)
     }
 #endif
     std::cout << "...loaded, address is " << handle_ << "\n";
+    
+    try 
+    {
+        // Automatically call the initialization function, if one exists.
+        SYMBOL(deng_InitializePlugin)();
+    }
+    catch(const SymbolMissingError& error)
+    {}
 }
 
 Library::~Library()
 {
     if(handle_)
     {
+        try 
+        {
+            // Automatically call the shutdown function, if one exists.
+            SYMBOL(deng_ShutdownPlugin)();
+        }
+        catch(const SymbolMissingError& error)
+        {}
+
         std::cout << "Unloading library with address " << handle_ << "\n";
         
 #ifdef UNIX
@@ -68,7 +84,7 @@ Library::~Library()
     }
 }
 
-void* Library::symbol(const std::string& name)
+void* Library::address(const std::string& name)
 {
     if(!handle_)
     {
@@ -82,30 +98,22 @@ void* Library::symbol(const std::string& name)
         return found->second;
     }
     
-    void* address = 0;
+    void* ptr = 0;
 
 #ifdef UNIX
-    address = dlsym(handle_, name.c_str());
+    ptr = dlsym(handle_, name.c_str());
 #endif
 
 #ifdef WIN32
-    address = reinterpret_cast<void*>(
+    ptr = reinterpret_cast<void*>(
         GetProcAddress(reinterpret_cast<HMODULE>(handle_), name.c_str()));
 #endif 
 
-    if(address)
+    if(!ptr)
     {
-        symbols_[name] = address;
+        throw SymbolMissingError("Library::symbol", "Symbol '" + name + "' was not found");
     }
-    return address;
-}
 
-void* Library::operator [] (const std::string& name)
-{
-    void* address = symbol(name);
-    if(!address)
-    {
-        throw SymbolMissingError("Library::operator[]", "Symbol '" + name + "' was not found");
-    }
-    return address;
+    symbols_[name] = ptr;
+    return ptr;
 }

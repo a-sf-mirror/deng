@@ -25,6 +25,12 @@
 #include <string>
 #include <map>
 
+/**
+ * Convenience macro for accessing symbols that have a type defined in de::Library
+ * with the type name matching the symbol name.
+ */
+#define SYMBOL(Name) symbol<de::Library::Name>(#Name)
+
 namespace de
 {
     /**
@@ -40,6 +46,20 @@ namespace de
         /// A symbol was not found. @ingroup errors
         DEFINE_ERROR(SymbolMissingError);
         
+        // Common function profiles.
+        /**
+         * Performs any one-time initialization necessary for the usage of the plugin.
+         * If this symbol is exported from a shared library, it gets called automatically
+         * when the library is loaded. 
+         */
+        typedef void (*deng_InitializePlugin)(void);
+        
+        /**
+         * Frees resources reserved by the plugin. If this symbol is exported from a 
+         * shared library, it gets called automatically when the library is unloaded.
+         */
+        typedef void (*deng_ShutdownPlugin)(void);
+        
     public:
         /**
          * Constructs a new Library by loading a native shared library.
@@ -54,15 +74,6 @@ namespace de
         virtual ~Library();
 
         /**
-         * Gets the address of an exported symbol.
-         *
-         * @param name  Name of the exported symbol.
-         *
-         * @return  A pointer to the symbol. @c NULL, if there is no such symbol.
-         */
-        void* symbol(const std::string& name);
-        
-        /**
          * Gets the address of an exported symbol. This will always return a valid
          * pointer to the symbol.
          *
@@ -71,7 +82,12 @@ namespace de
          * @return  A pointer to the symbol. If the symbol is not found,  
          *      SymbolMissingError is thrown.
          */
-        void* operator [] (const std::string& name);
+        void* address(const std::string& name);
+        
+        template <typename T>
+        T symbol(const std::string& name) {
+            return reinterpret_cast<T>(address(name));
+        }
                 
     private:  
         /// Handle to the shared library.

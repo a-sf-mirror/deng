@@ -25,12 +25,20 @@
 #include <de/CommandLine>
 #include <de/FS>
 
+/**
+ * @defgroup core Core
+ *
+ * These classes contain the core functionality of libdeng2.
+ */
+
 namespace de
 {
     /**
      * The application. 
      *
      * @note This is a singleton class. Only one instance per process is allowed.
+     *
+     * @ingroup core
      */
     class PUBLIC_API App
     {
