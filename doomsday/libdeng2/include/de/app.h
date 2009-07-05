@@ -95,7 +95,7 @@ namespace de
          * Returns the singleton App instance. With this the App can be accessed
          * anywhere.
          */
-        static App& the();
+        static App& theApp();
         
     private:
         CommandLine commandLine_;

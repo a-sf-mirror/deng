@@ -114,7 +114,7 @@ namespace de
          *
          * For example, to look up the index for NativeFile instances:
          * @code
-         * FS::Index& nativeFileIndex = App::the().fileSystem().indexFor(TYPE_NAME(NativeFile));
+         * FS::Index& nativeFileIndex = App::theApp().fileSystem().indexFor(TYPE_NAME(NativeFile));
          * @endcode
          */
         const Index& indexFor(const std::string& typeIdentifier) const;

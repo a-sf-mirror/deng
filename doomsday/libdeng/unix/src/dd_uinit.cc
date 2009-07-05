@@ -31,12 +31,19 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Library>
+
+using namespace de;
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <SDL.h>
 
+extern "C" 
+{
 #include "de_base.h"
 #include "de_graphics.h"
 #include "de_console.h"
@@ -62,11 +69,10 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-uint            windowIDX;   // Main window.
+uint windowIDX;   // Main window.
+application_t app;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-application_t app;
 
 // CODE --------------------------------------------------------------------
 
@@ -119,28 +125,9 @@ static void determineGlobalPaths(application_t *app)
     printf("determineGlobalPaths: Base path = %s\n", ddBasePath);
 }
 
-/*
-static boolean loadGamePlugin(application_t *app, const char *libPath)
+static boolean loadGamePlugin(application_t *app)
 {
-    if(!libPath || !app)
-        return false;
-
-    // Load the library and get the API/exports.
-    app->hInstGame = lt_dlopenext(libPath);
-    if(!app->hInstGame)
-    {
-        DD_ErrorBox(true, "loadGamePlugin: Loading of %s failed (%s).\n",
-                    libPath, lt_dlerror());
-        return false;
-    }
-
-    app->GetGameAPI = (GETGAMEAPI) lt_dlsym(app->hInstGame, "GetGameAPI");
-    if(!app->GetGameAPI)
-    {
-        DD_ErrorBox(true, "loadGamePlugin: Failed to get address of "
-                          "GetGameAPI (%s).\n", lt_dlerror());
-        return false;
-    }
+    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::theApp().game()->address("GetGameAPI"));
 
     // Do the API transfer.
     DD_InitAPI();
@@ -148,7 +135,6 @@ static boolean loadGamePlugin(application_t *app, const char *libPath)
     // Everything seems to be working...
     return true;
 }
-*/
 
 static int initTimingSystem(void)
 {
@@ -172,7 +158,6 @@ int DD_Entry(int argc, char* argv[])
     int                 exitCode = 0;
     boolean             doShutdown = true;
     char                buf[256];
-    const char*         libName = NULL;
 
     DD_InitCommandLineAliases();
 
@@ -185,12 +170,8 @@ int DD_Entry(int argc, char* argv[])
 
     DD_ComposeMainWindowTitle(buf);
 
-    // First we need to locate the game lib name among the command line
-    // arguments.
-    DD_CheckArg("-game", &libName);
-
     // Was a game library specified?
-    if(!libName)
+    if(!App::theApp().game())
     {
         DD_ErrorBox(true, "loadGamePlugin: No game library was specified.\n");
     }
@@ -212,12 +193,11 @@ int DD_Entry(int argc, char* argv[])
         {
             DD_ErrorBox(true, "Error initializing DGL.");
         }
-        /*
         // Load the game plugin.
-        else if(!loadGamePlugin(&app, libPath))
+        else if(!loadGamePlugin(&app))
         {
             DD_ErrorBox(true, "Error loading game library.");
-        }*/
+        }
         // Init memory zone.
         else if(!Z_Init())
         {
@@ -226,8 +206,8 @@ int DD_Entry(int argc, char* argv[])
         else
         {
             if(0 == (windowIDX =
-                Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0, isDedicated,
-                                 buf, NULL)))
+                Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0, 
+                    isDedicated? WT_CONSOLE : WT_NORMAL, buf, NULL)))
             {
                 DD_ErrorBox(true, "Error creating main window.");
             }
@@ -271,3 +251,5 @@ void DD_Shutdown(void)
 
     SDL_Quit();
 }
+
+} /* extern "C" */

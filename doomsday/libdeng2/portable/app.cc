@@ -97,7 +97,7 @@ void App::loadPlugins()
     }
 }
 
-App& App::the()
+App& App::theApp()
 {
     if(!singleton_)
     {

@@ -56,7 +56,7 @@ IF ( UNIX )
     INCLUDE_DIRECTORIES ( unix/include )
 
     FILE ( GLOB UNIX_SOURCES 
-        unix/src/*.c unix/include/*.h
+        unix/src/*.c unix/src/*.cc unix/include/*.h
         ../external/lzss/unix/src/*.c )
     SET ( SOURCES ${SOURCES} ${UNIX_SOURCES} )
 ENDIF ( UNIX )
