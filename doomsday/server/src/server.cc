@@ -42,9 +42,11 @@ dint Server::mainLoop()
     CommandLine& args = commandLine();
     
     args.append("-dedicated");
+    args.append("-iwad");
+    args.append("/Users/jaakko/IWADs/Doom.wad");
     args.append("-file");
-    args.append("../../data/doomsday.pk3");
-    args.append("../../data/doom.pk3");
+    args.append("}Resources/doomsday.pk3");
+    args.append("}Resources/doom.pk3");
     args.append("-cmd");
     args.append("net-port-control 13209; net-port-data 13210; after 30 \"net init\"; after 40 \"net server start\"");
     args.append("-userdir");

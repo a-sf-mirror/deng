@@ -155,14 +155,17 @@ IF ( APPLE )
     INSTALL ( DIRECTORY 
         ${SDL_LIBRARY_CLEAN}
         DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN "Headers" EXCLUDE
         PATTERN ".DS_Store" EXCLUDE )
     INSTALL ( DIRECTORY 
         ${SDLMIXER_LIBRARY}
         DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN "Headers" EXCLUDE
         PATTERN ".DS_Store" EXCLUDE )
     INSTALL ( DIRECTORY 
         ${SDLNET_LIBRARY}
         DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN "Headers" EXCLUDE
         PATTERN ".DS_Store" EXCLUDE )
 ENDIF ( APPLE )
 

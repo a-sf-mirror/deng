@@ -34,5 +34,5 @@ ENDIF ( DOXYGEN_FOUND )
 
 IF ( APPLE )
     # Make sure the library is found inside the bundle.
-    SET_TARGET_PROPERTIES ( deng2 PROPERTIES INSTALL_NAME_DIR "@executable_path")
+    SET_TARGET_PROPERTIES ( deng2 PROPERTIES INSTALL_NAME_DIR "@executable_path/../MacOS")
 ENDIF ( APPLE )

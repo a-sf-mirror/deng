@@ -37,28 +37,28 @@ Client::~Client()
 dint Client::mainLoop()
 {
     CommandLine& args = commandLine();
-/*
+
     CommandLine svArgs = args;
-    svArgs.remove(0);
 #ifdef WIN32
     svArgs.insert(0, "dengsv.exe");
-#else
-    svArgs.insert(0, "./dengsv");
 #endif
+#ifdef MACOSX
+    svArgs.insert(0, String::fileNamePath(args.at(0)).concatenatePath("../Resources/dengsv"));
+#endif
+    svArgs.remove(1);
     extern char** environ;
     svArgs.execute(environ);
-*/
+
     args.append("-wnd");
 
     args.append("-iwad");
     args.append("/Users/jaakko/IWADs/Doom.wad");
 
     args.append("-file");
-    args.append("Resources/doomsday.pk3");
-    args.append("Resources/doom.pk3");
-/*    args.append("-cmd");
+    args.append("}Resources/doomsday.pk3");
+    args.append("}Resources/doom.pk3");
+    args.append("-cmd");
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
-    */
     args.append("-userdir");
     args.append("clientdir");
     

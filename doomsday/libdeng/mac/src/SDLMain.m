@@ -49,6 +49,7 @@ typedef uint64_t      io_user_reference_t;
 /* The main class of the application, the application's delegate */
 @implementation SDLMain
 
+#if 0
 /* Set the working directory to the .app's parent directory */
 - (void) setupWorkingDirectory:(BOOL)shouldChdir
 {
@@ -72,6 +73,7 @@ typedef uint64_t      io_user_reference_t;
         //assert( chdir("../../../") == 0 ); /* chdir to the .app's parent */
     }
 }
+#endif
 
 void setupAppleMenu(void)
 {

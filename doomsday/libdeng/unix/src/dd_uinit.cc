@@ -81,6 +81,24 @@ static void determineGlobalPaths(application_t *app)
     if(!app)
         return;
 
+    /**
+     * The base path is always the same and depends on the build
+     * configuration.  Usually this is something like
+     * "/usr/share/deng/".
+     */
+    strcpy(ddBasePath, DENG_BASE_DIR);
+
+    if(ArgCheckWith("-basedir", 1))
+    {
+        strcpy(ddBasePath, ArgNext());
+        Dir_ValidDir(ddBasePath, FILENAME_T_MAXLEN);
+    }
+
+    Dir_MakeAbsolute(ddBasePath, FILENAME_T_MAXLEN);
+    Dir_ValidDir(ddBasePath, FILENAME_T_MAXLEN);
+
+    printf("determineGlobalPaths: Base path = %s\n", ddBasePath);
+
     // The -userdir option sets the working directory.
     if(ArgCheckWith("-userdir", 1))
     {
@@ -103,26 +121,8 @@ static void determineGlobalPaths(application_t *app)
 
     // The current working directory is the runtime dir.
     Dir_GetDir(&ddRuntimeDir);
-    
+
     printf("Runtime directory: %s\n", ddRuntimeDir.path);
-
-    /**
-     * The base path is always the same and depends on the build
-     * configuration.  Usually this is something like
-     * "/usr/share/deng/".
-     */
-    strcpy(ddBasePath, DENG_BASE_DIR);
-
-    if(ArgCheckWith("-basedir", 1))
-    {
-        strcpy(ddBasePath, ArgNext());
-        Dir_ValidDir(ddBasePath, FILENAME_T_MAXLEN);
-    }
-
-    Dir_MakeAbsolute(ddBasePath, FILENAME_T_MAXLEN);
-    Dir_ValidDir(ddBasePath, FILENAME_T_MAXLEN);
-
-    printf("determineGlobalPaths: Base path = %s\n", ddBasePath);
 }
 
 static boolean loadGamePlugin(application_t *app)
@@ -140,7 +140,7 @@ static int initTimingSystem(void)
 {
     // For timing, we use SDL under *nix, so get it initialized.
     // SDL_Init() returns zero on success.
-    return !SDL_Init(SDL_INIT_TIMER);
+    return !SDL_Init(SDL_INIT_TIMER | (isDedicated? SDL_INIT_VIDEO : 0));
 }
 
 static int initDGL(void)

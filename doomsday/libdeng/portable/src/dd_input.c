@@ -964,7 +964,10 @@ void DD_ReadKeyboard(void)
 
     // Read the new keyboard events.
     if(isDedicated)
-        numkeyevs = I_GetConsoleKeyEvents(keyevs, KBDQUESIZE);
+    {
+        numkeyevs = 0; //I_GetConsoleKeyEvents(keyevs, KBDQUESIZE);
+        SDL_PumpEvents();
+    }
     else
         numkeyevs = I_GetKeyEvents(keyevs, KBDQUESIZE);
 
