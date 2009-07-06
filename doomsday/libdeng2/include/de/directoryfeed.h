@@ -36,6 +36,9 @@ namespace de
         /// The native directory was not found. @ingroup errors
         DEFINE_ERROR(NotFoundError);
         
+        /// An error occurred changing the working directory. @ingroup errors
+        DEFINE_ERROR(WorkingDirError);
+        
     public:
         /**
          * Constructs a DirectoryFeed that accesses a directory in the native file system.
@@ -48,6 +51,14 @@ namespace de
         
         void populate(Folder& folder);
         bool prune(File& file) const;
+
+    public:
+        /**
+         * Changes the native working directory.
+         *
+         * @param nativePath  New path to use as the working directory.
+         */
+        static void changeWorkingDir(const std::string& nativePath);
 
     protected:
         void populateSubFolder(Folder& folder, const std::string& entryName);

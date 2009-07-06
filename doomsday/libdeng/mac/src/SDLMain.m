@@ -65,14 +65,12 @@ typedef uint64_t      io_user_reference_t;
         c--;
     
     *c++ = '\0';             /* cut off last part (binary name) */
-  
-#if 0
-    if (shouldChdir)
+    
+    if(shouldChdir)
     {
-      assert ( chdir (parentdir) == 0 );   /* chdir to the binary app's parent */
-      assert ( chdir ("../../../") == 0 ); /* chdir to the .app's parent */
+        assert( chdir(parentdir) == 0 );   /* chdir to the binary app's parent */
+        //assert( chdir("../../../") == 0 ); /* chdir to the .app's parent */
     }
-#endif
 }
 
 void setupAppleMenu(void)
@@ -159,7 +157,7 @@ void CustomApplicationMain (argc, argv)
     int status;
 
     /* Set the working directory to the .app's parent directory */
-    [self setupWorkingDirectory:NO];
+    //[self setupWorkingDirectory:NO];
 
     // Hand off to main application code 
     status = SDL_main(0, NULL);

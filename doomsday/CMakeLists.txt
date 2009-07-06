@@ -62,6 +62,14 @@ IF ( WIN32 )
     MESSAGE ( STATUS "DirectX libraries: ${DXLIBDIR}" )
 ENDIF ( WIN32 )
 
+# Apple configuration.
+IF ( APPLE )
+    # Install into a bundle directory.
+    SET ( DENG_BUNDLE_DIR Doomsday.app/Contents )
+    SET ( DENG_BINARY_DIR ${DENG_BUNDLE_DIR}/MacOS )
+    SET ( DENG_DATA_DIR ${DENG_BUNDLE_DIR}/Resources )
+ENDIF ( APPLE )
+
 # Dependencies.
 FIND_PACKAGE ( OpenGL REQUIRED )
 FIND_PACKAGE ( ZLIB REQUIRED )
@@ -86,7 +94,7 @@ IF ( APPLE )
     IF ( ${CMAKE_OSX_SYSROOT} STREQUAL /Developer/SDKs/MacOSX10.4u.sdk )
 	    SET ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
 	    SET ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.4" )
-	ENDIF ( ${CMAKE_OSX_SYSROOT} STREQUAL /Developer/SDKs/MacOSX10.4u.sdk )
+	ENDIF ()
 ENDIF ( APPLE )
 IF ( UNIX )
     FIND_PACKAGE ( Curses REQUIRED )
@@ -100,6 +108,7 @@ ADD_CUSTOM_TARGET ( packres
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts
     SOURCES ${CMAKE_SOURCE_DIR}/build/scripts/packres.py )
 
+# Installation.
 INSTALL ( CODE "EXECUTE_PROCESS ( 
     COMMAND ${PYTHON_EXECUTABLE} ./packres.py ${CMAKE_CURRENT_BINARY_DIR} 
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build/scripts )" )
@@ -111,6 +120,51 @@ INSTALL ( FILES
     ${CMAKE_CURRENT_BINARY_DIR}/hexen.pk3 
     DESTINATION ${DENG_DATA_DIR} )
     
-INSTALL ( FILES sv.sh cl.sh DESTINATION ${DENG_BINARY_DIR} )
+# Win32-specific installation.
+IF ( WIN32 )
+    # Install DLLs to the binary directory.
+    INSTALL ( FILES 
+        ${SDLDIR}/lib/SDL.dll
+        ${SDLMIXERDIR}/lib/SDL_mixer.dll
+        ${SDLNETDIR}/lib/SDL_net.dll
+        ../external/libpng/lib/libpng13.dll 
+        ../external/zlib/lib/zlib1.dll
+        ../external/lzss/win32/lzss.dll
+        DESTINATION ${DENG_BINARY_DIR} )
+ENDIF ( WIN32 )
+    
+# Install OS X specific files.
+IF ( APPLE )
+    INSTALL ( FILES 
+        build/mac/Info.plist
+        build/mac/PkgInfo
+        DESTINATION ${DENG_BUNDLE_DIR} )
 
+    INSTALL ( FILES
+        libdeng/mac/res/deng.icns 
+        DESTINATION ${DENG_DATA_DIR} )
+
+    INSTALL ( DIRECTORY
+        libdeng/mac/res/English.lproj
+        DESTINATION ${DENG_DATA_DIR} 
+        PATTERN ".svn" EXCLUDE )
+
+    # Frameworks.
+    # Clean the framework path.
+    STRING ( REGEX REPLACE "([^;]*);.*" "\\1" SDL_LIBRARY_CLEAN "${SDL_LIBRARY}" )
+    INSTALL ( DIRECTORY 
+        ${SDL_LIBRARY_CLEAN}
+        DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN ".DS_Store" EXCLUDE )
+    INSTALL ( DIRECTORY 
+        ${SDLMIXER_LIBRARY}
+        DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN ".DS_Store" EXCLUDE )
+    INSTALL ( DIRECTORY 
+        ${SDLNET_LIBRARY}
+        DESTINATION ${DENG_BUNDLE_DIR}/Frameworks 
+        PATTERN ".DS_Store" EXCLUDE )
+ENDIF ( APPLE )
+
+# The real work is done in the subdirectories.
 SUBDIRS ( libdeng libdeng2 server client plugins )

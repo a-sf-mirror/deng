@@ -26,6 +26,7 @@
 
 #include <de/deng.h>
 #include <de/Error>
+#include <de/String>
 
 namespace de
 {

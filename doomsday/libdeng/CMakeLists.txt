@@ -79,22 +79,18 @@ IF ( WIN32 )
         "${CMAKE_SOURCE_DIR}/external/lzss/win32/lzss.lib" )
         
     SET_TARGET_PROPERTIES ( deng PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT" )
-
-    # Install DLLs to the binary directory.
-    INSTALL ( FILES 
-        ${SDLDIR}/lib/SDL.dll
-        ${SDLMIXERDIR}/lib/SDL_mixer.dll
-        ${SDLNETDIR}/lib/SDL_net.dll
-        ../external/libpng/lib/libpng13.dll 
-        ../external/zlib/lib/zlib1.dll
-        ../external/lzss/win32/lzss.dll
-        DESTINATION ${DENG_BINARY_DIR} )
 ENDIF ( WIN32 )
     
 IF ( APPLE )
     TARGET_LINK_LIBRARIES ( deng ${QUICKTIME_LIBRARY} )
 ENDIF ( APPLE )
 
+# Installation.
 INSTALL ( TARGETS deng 
-    RUNTIME DESTINATION bin 
-    LIBRARY DESTINATION bin )
+    RUNTIME DESTINATION ${DENG_BINARY_DIR} 
+    LIBRARY DESTINATION ${DENG_BINARY_DIR} )
+
+IF ( APPLE )
+    # Make sure the library is found inside the bundle.
+    SET_TARGET_PROPERTIES ( deng PROPERTIES INSTALL_NAME_DIR "@executable_path")
+ENDIF ( APPLE )

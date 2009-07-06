@@ -20,7 +20,8 @@ FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c )
 
 SUBDIRS ( doom heretic hexen dehread wadmapconverter )
 
-SET ( PLUGIN_BINARY_DIR ${DENG_BINARY_DIR}/plugins )
-
-#INSTALL ( TARGETS deng_doom deng_heretic heng_hexen dengplugin_dehread dengplugin_wadmapconverter 
-#    LIBRARY DESTINATION bin/plugins )
+IF ( APPLE )
+    SET ( PLUGIN_BINARY_DIR ${DENG_BINARY_DIR} )
+ELSE ( APPLE )
+    SET ( PLUGIN_BINARY_DIR ${DENG_BINARY_DIR}/plugins )
+ENDIF ( APPLE )

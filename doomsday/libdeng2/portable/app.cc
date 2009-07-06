@@ -20,6 +20,7 @@
 #include "de/app.h"
 #include "de/libraryfile.h"
 #include "de/library.h"
+#include "de/directoryfeed.h"
 
 using namespace de;
 
@@ -35,6 +36,15 @@ App::App(const CommandLine& commandLine)
     }
     
     singleton_ = this;
+
+#ifdef MACOSX
+    // When the application is started through Finder, we get a special command
+    // line argument. The working directory needs to be changed.
+    if(commandLine_.count() >= 2 && String(commandLine_.at(1)).beginsWith("-psn"))
+    {
+        DirectoryFeed::changeWorkingDir(String::fileNamePath(commandLine_.at(0)) + "/..");
+    }
+#endif
     
     // Now we can proceed with the members.
     fs_ = new FS();
@@ -64,7 +74,9 @@ Library* App::game()
 
 void App::loadPlugins()
 {
+    // Get the index of libraries.
     const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
+    
     for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
     {
         LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
@@ -76,23 +88,25 @@ void App::loadPlugins()
         }
     }
     
-    // Also the load the specified game plugin, if there is one.
+    // Also load the specified game plugin, if there is one.
+    std::string gameName = "doom";
     dint pos = commandLine_.check("-game", 1);
     if(pos)
     {
-        std::string gameName = commandLine_.at(pos + 1);
-        std::cout << "Looking for game '" << gameName << "'\n";
+        gameName = commandLine_.at(pos + 1);
+    }
+    
+    std::cout << "Looking for game '" << gameName << "'\n";
         
-        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+    {
+        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+        if(libFile.name().contains("_" + gameName + "."))
         {
-            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
-            if(libFile.name().contains("_" + gameName + "."))
-            {
-                // This is the one.
-                game_ = &libFile.library();
-                std::cout << "App::loadPlugins() loaded the game " << libFile.path() << "\n";
-                break;
-            }
+            // This is the one.
+            game_ = &libFile.library();
+            std::cout << "App::loadPlugins() loaded the game " << libFile.path() << "\n";
+            break;
         }
     }
 }

@@ -26,6 +26,8 @@
 #ifdef UNIX
 #   include <sys/types.h>
 #   include <dirent.h>
+#   include <unistd.h>
+#   include <errno.h>
 #endif
 
 #ifdef WIN32
@@ -158,4 +160,15 @@ bool DirectoryFeed::prune(File& file) const
     
     // Everything must go!
     return true;
+}
+
+void DirectoryFeed::changeWorkingDir(const std::string& nativePath)
+{
+#ifdef UNIX
+    if(chdir(nativePath.c_str()))
+    {
+        throw WorkingDirError("DirectoryFeed::changeWorkingDir",
+            nativePath + ": " + strerror(errno));
+    }
+#endif
 }
