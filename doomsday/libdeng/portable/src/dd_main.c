@@ -498,8 +498,7 @@ static int DD_StartupWorker(void *parm)
 
     DAM_Init();
 
-    if(gx.PreInit)
-        gx.PreInit();
+    game_Call("G_CommonPreInit");
 
     Con_SetProgress(40);
 

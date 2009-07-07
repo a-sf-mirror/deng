@@ -1792,7 +1792,7 @@ void Con_Error(const char *error, ...)
     // Already in an error?
     if(!ConsoleInited || errorInProgress)
     {
-        fprintf(outFile, "Con_Error: Stack overflow imminent, aborting...\n");
+        if(outFile) fprintf(outFile, "Con_Error: Stack overflow imminent, aborting...\n");
 
         va_start(argptr, error);
         vsnprintf(buff, sizeof(buff), error, argptr);
@@ -1966,7 +1966,7 @@ D_CMD(Clear)
 D_CMD(Version)
 {
     Con_Printf("Doomsday Engine %s (" __TIME__ ")\n", DOOMSDAY_VERSIONTEXT);
-    Con_Printf("Game DLL: %s\n", (char *) gx.GetVariable(DD_VERSION_LONG));
+    Con_Printf("Game DLL: %s\n", game_GetString(DD_VERSION_LONG));
     Con_Printf("%s\n", DOOMSDAY_PROJECTURL);
     return true;
 }

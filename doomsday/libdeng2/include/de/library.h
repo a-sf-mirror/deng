@@ -20,6 +20,7 @@
 #ifndef LIBDENG2_LIBRARY_H
 #define LIBDENG2_LIBRARY_H
 
+#include <de/deng.h>
 #include <de/Error>
 
 #include <string>
@@ -61,6 +62,12 @@ namespace de
          * shared library, it gets called automatically when the library is unloaded.
          */
         typedef void (*deng_ShutdownPlugin)(void);
+        
+        // Common game function profiles.
+        typedef dint (*deng_GetInteger)(dint id);
+        typedef const char* (*deng_GetString)(dint id);
+        typedef void* (*deng_GetAddress)(dint id);
+        typedef void (*deng_Ticker)(ddouble tickLength);
         
     public:
         /**

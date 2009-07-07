@@ -220,9 +220,9 @@ void Con_DrawRuler(int y, int lineHeight, float alpha)
 void Con_InitUI(void)
 {
     // Update the secondary title and the game status.
-    strncpy(secondaryTitleText, (char *) gx.GetVariable(DD_GAME_ID),
+    strncpy(secondaryTitleText, game_GetString(DD_GAME_ID),
             sizeof(secondaryTitleText) - 1);
-    strncpy(statusText, (char *) gx.GetVariable(DD_GAME_MODE),
+    strncpy(statusText, game_GetString(DD_GAME_MODE),
             sizeof(statusText) - 1);
 }
 

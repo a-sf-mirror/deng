@@ -67,11 +67,6 @@ FS& App::fileSystem()
     return *fs_; 
 }
 
-Library* App::game()
-{
-    return game_;
-}
-
 void App::loadPlugins()
 {
     // Get the index of libraries.
@@ -118,4 +113,14 @@ App& App::app()
         throw NoInstanceError("App::app", "App has not been constructed yet");
     }
     return *singleton_;
+}
+
+Library& App::game()
+{
+    App& self = app();
+    if(!self.game_)
+    {
+        throw NoGameError("App::game", "No game library loaded");
+    }
+    return *self.game_;
 }

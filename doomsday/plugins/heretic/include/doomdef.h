@@ -282,8 +282,9 @@ enum { CR, CG, CB, CA }; // Color indices.
 #define MUSICVOLUME     (Get(DD_MUSIC_VOLUME)/17)
 
 void        G_IdentifyVersion(void);
-int         G_GetInteger(int id);
-void       *G_GetVariable(int id);
+int         deng_GetInteger(int id);
+const char* deng_GetString(int id);
+void       *deng_GetAddress(int id);
 
 // Most damage defined using HITDICE
 #define HITDICE(a)          ((1+(P_Random()&7))*a)

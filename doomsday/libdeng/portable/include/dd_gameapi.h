@@ -3,8 +3,9 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2005-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2009 Daniel Swanson <danij@dengine.net>
+ *                    (add more authors here)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,37 +24,24 @@
  */
 
 /**
- * d_main.h:
+ * dd_gameapi.h: C Wrappers for Game Library Calls
  */
 
-#ifndef __D_MAIN_H__
-#define __D_MAIN_H__
+#ifndef __DOOMSDAY_GAME_WRAPPER_H__
+#define __DOOMSDAY_GAME_WRAPPER_H__
 
-#ifndef __JDOOM__
-#  error "Using jDoom headers without __JDOOM__"
+#if __cplusplus
+extern "C" {
 #endif
 
-#include "doomdef.h"
+int         game_GetInteger(int id);
+const char* game_GetString(int id);
+void*       game_GetAddress(int id);
+void        game_Ticker(double tickLength);
+void        game_Call(const char* funcName);
 
-extern int verbose;
-extern boolean devParm;
-extern boolean noMonstersParm;
-extern boolean respawnParm;
-extern boolean fastParm;
-extern boolean turboParm;
-extern float turboMul;
-extern gamemode_t gameMode;
-extern int gameModeBits;
-extern gamemission_t gameMission;
-extern char gameModeString[];
-extern boolean monsterInfight;
-extern char *borderLumps[];
-
-void            G_PostInit(void);
-void            G_DetectIWADs(void);
-void            G_IdentifyVersion(void);
-void            G_EndFrame(void);
-
-boolean         G_SetGameMode(gamemode_t mode);
+#if __cplusplus
+}
+#endif
 
 #endif

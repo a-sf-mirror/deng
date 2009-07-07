@@ -52,6 +52,10 @@ namespace de
         /// @ingroup errors
         DEFINE_ERROR(NoInstanceError);
         
+        /// An attempt is made to access the game library while one is not loaded.
+        /// @ingroup errors
+        DEFINE_ERROR(NoGameError);
+        
     public:
         App(const CommandLine& commandLine);
         virtual ~App();
@@ -72,16 +76,14 @@ namespace de
         FS& fileSystem();
 
         /**
-         * Returns the game library.
-         *
-         * @return The game library, or @c NULL if one is not loaded at the moment.
-         */
-        Library* game();
-
-        /**
          * Loads the basic plugins (named "dengplugin_").
          */
         void loadPlugins();
+        
+        /**
+         * Determines whether a game library is currently loaded.
+         */
+        bool hasGame() const { return game_ != 0; }
         
         /**
          * Main loop of the application. To be defined by a derived class.
@@ -96,6 +98,11 @@ namespace de
          * anywhere.
          */
         static App& app();
+
+        /**
+         * Returns the game library.
+         */
+        static Library& game();
         
     private:
         CommandLine commandLine_;

@@ -129,9 +129,6 @@ void Sys_Shutdown(void)
 {
     Sys_ShutdownTimer();
 
-    if(gx.Shutdown)
-        gx.Shutdown();
-
     Net_Shutdown();
     Huff_Shutdown();
     // Let's shut down sound first, so Windows' HD-hogging doesn't jam

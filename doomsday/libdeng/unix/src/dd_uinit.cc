@@ -127,7 +127,7 @@ static void determineGlobalPaths(application_t *app)
 
 static boolean loadGamePlugin(application_t *app)
 {
-    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::app().game()->address("GetGameAPI"));
+    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::game().address("GetGameAPI"));
 
     // Do the API transfer.
     DD_InitAPI();
@@ -170,62 +170,54 @@ int DD_Entry(int argc, char* argv[])
 
     DD_ComposeMainWindowTitle(buf);
 
-    // Was a game library specified?
-    if(!App::app().game())
+    // Determine our basedir, and other global paths.
+    determineGlobalPaths(&app);
+
+    if(!DD_EarlyInit())
     {
-        DD_ErrorBox(true, "loadGamePlugin: No game library was specified.\n");
+        DD_ErrorBox(true, "Error during early init.");
+    }
+    else if(!initTimingSystem())
+    {
+        DD_ErrorBox(true, "Error initalizing timing system.");
+    }
+    // Load the rendering DLL.
+    else if(!initDGL())
+    {
+        DD_ErrorBox(true, "Error initializing DGL.");
+    }
+    // Load the game plugin.
+    else if(!loadGamePlugin(&app))
+    {
+        DD_ErrorBox(true, "Error loading game library.");
+    }
+    // Init memory zone.
+    else if(!Z_Init())
+    {
+        DD_ErrorBox(true, "Error initializing memory zone.");
     }
     else
     {
-        // Determine our basedir, and other global paths.
-        determineGlobalPaths(&app);
-
-        if(!DD_EarlyInit())
+        if(0 == (windowIDX =
+            Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0, 
+                isDedicated? WT_CONSOLE : WT_NORMAL, buf, NULL)))
         {
-            DD_ErrorBox(true, "Error during early init.");
+            DD_ErrorBox(true, "Error creating main window.");
         }
-        else if(!initTimingSystem())
+        else if(!Sys_InitGL())
         {
-            DD_ErrorBox(true, "Error initalizing timing system.");
-        }
-        // Load the rendering DLL.
-        else if(!initDGL())
-        {
-            DD_ErrorBox(true, "Error initializing DGL.");
-        }
-        // Load the game plugin.
-        else if(!loadGamePlugin(&app))
-        {
-            DD_ErrorBox(true, "Error loading game library.");
-        }
-        // Init memory zone.
-        else if(!Z_Init())
-        {
-            DD_ErrorBox(true, "Error initializing memory zone.");
+            DD_ErrorBox(true, "Error initializing OpenGL.");
         }
         else
-        {
-            if(0 == (windowIDX =
-                Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0, 
-                    isDedicated? WT_CONSOLE : WT_NORMAL, buf, NULL)))
-            {
-                DD_ErrorBox(true, "Error creating main window.");
-            }
-            else if(!Sys_InitGL())
-            {
-                DD_ErrorBox(true, "Error initializing OpenGL.");
-            }
-            else
-            {   // All initialization complete.
-                doShutdown = false;
+        {   // All initialization complete.
+            doShutdown = false;
 
-                // Append the main window title with the game name and ensure it
-                // is the at the foreground, with focus.
-                DD_ComposeMainWindowTitle(buf);
-                Sys_SetWindowTitle(windowIDX, buf);
+            // Append the main window title with the game name and ensure it
+            // is the at the foreground, with focus.
+            DD_ComposeMainWindowTitle(buf);
+            Sys_SetWindowTitle(windowIDX, buf);
 
-               // \todo Set foreground window and focus.
-            }
+           // \todo Set foreground window and focus.
         }
     }
 

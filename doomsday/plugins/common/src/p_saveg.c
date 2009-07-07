@@ -4732,9 +4732,9 @@ void SV_Init(void)
     {
         // Use the default path.
 #if __JHEXEN__
-        sprintf(savePath, "hexndata\\%s\\", (char *) G_GetVariable(DD_GAME_MODE));
+        sprintf(savePath, "hexndata\\%s\\", (char *) deng_GetString(DD_GAME_MODE));
 #else
-        sprintf(savePath, "savegame\\%s\\", (char *) G_GetVariable(DD_GAME_MODE));
+        sprintf(savePath, "savegame\\%s\\", (char *) deng_GetString(DD_GAME_MODE));
 #endif
     }
 

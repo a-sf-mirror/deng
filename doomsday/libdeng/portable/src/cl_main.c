@@ -136,7 +136,7 @@ void Cl_SendHello(void)
 
     // The game mode is included in the hello packet.
     memset(buf, 0, sizeof(buf));
-    strncpy(buf, (char *) gx.GetVariable(DD_GAME_MODE), sizeof(buf) - 1);
+    strncpy(buf, game_GetString(DD_GAME_MODE), sizeof(buf) - 1);
 
 #ifdef _DEBUG
 Con_Message("Cl_SendHello: game mode = %s\n", buf);

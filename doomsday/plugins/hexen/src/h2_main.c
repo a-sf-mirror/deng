@@ -228,7 +228,7 @@ void G_DetectIWADs(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-void G_PreInit(void)
+void deng_InitializePlugin(void)
 {
     int                     i;
 
@@ -364,13 +364,6 @@ void G_PreInit(void)
     cfg.weaponOrder[1] = WT_THIRD;
     cfg.weaponOrder[2] = WT_SECOND;
     cfg.weaponOrder[3] = WT_FIRST;
-
-    // Hexen has a nifty "Ethereal Travel" screen, so don't show the
-    // console during map setup.
-    Con_SetInteger("con-show-during-setup", 0, true);
-
-    // Do the common pre init routine.
-    G_CommonPreInit();
 }
 
 /**
@@ -382,6 +375,10 @@ void G_PostInit(void)
     int                     p;
     int                     pClass;
     char                    mapStr[6];
+
+    // Hexen has a nifty "Ethereal Travel" screen, so don't show the
+    // console during map setup.
+    //Con_SetInteger("con-show-during-setup", 0, true);
 
     // Do this early as other systems need to know.
     P_InitPlayerClassInfo();
@@ -612,7 +609,7 @@ static void execOptionDevMaps(const char** args, int tag)
     SC_Close();
 }
 
-void G_Shutdown(void)
+void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

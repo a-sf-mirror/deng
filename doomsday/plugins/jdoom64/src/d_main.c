@@ -241,7 +241,7 @@ void G_IdentifyVersion(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-void G_PreInit(void)
+void deng_InitializePlugin(void)
 {
     int                 i;
 
@@ -389,9 +389,6 @@ void G_PreInit(void)
     cfg.weaponRecoil = true;
 
     cfg.berserkAutoSwitch = true;
-
-    // Do the common pre init routine.
-    G_CommonPreInit();
 }
 
 /**
@@ -536,7 +533,7 @@ void G_PostInit(void)
     }
 }
 
-void G_Shutdown(void)
+void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

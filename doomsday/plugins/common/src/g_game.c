@@ -441,6 +441,7 @@ void G_CommonPreInit(void)
     if(gi.version < DOOMSDAY_VERSION)
         Con_Error(GAME_NICENAME " requires at least Doomsday " DOOMSDAY_VERSION_TEXT
                   "!\n");
+          
 #ifdef TIC_DEBUG
     rndDebugfile = fopen("rndtrace.txt", "wt");
 #endif
@@ -1046,7 +1047,7 @@ void G_UpdateGSVarsForPlayer(player_t* pl)
  *
  * @param ticLength     How long this tick is, in seconds.
  */
-void G_Ticker(timespan_t ticLength)
+void deng_Ticker(timespan_t ticLength)
 {
     static gamestate_t  oldGameState = -1;
     static trigger_t    fixed = {1.0 / TICSPERSEC};
@@ -2666,7 +2667,7 @@ void G_DoScreenShot(void)
     char*               numPos;
 
     // Use game mode as the file name base.
-    sprintf(name, "%s-", (char *) G_GetVariable(DD_GAME_MODE));
+    sprintf(name, "%s-", (char *) deng_GetString(DD_GAME_MODE));
     numPos = name + strlen(name);
 
     // Find an unused file name.

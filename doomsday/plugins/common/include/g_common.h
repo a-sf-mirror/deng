@@ -57,7 +57,6 @@ enum {
 extern boolean singledemo;
 
 void            G_Register(void);
-void            G_PreInit(void);
 void            G_PostInit(void);
 void            G_StartTitle(void);
 

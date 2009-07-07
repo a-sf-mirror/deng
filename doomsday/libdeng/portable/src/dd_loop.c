@@ -321,7 +321,7 @@ void DD_Ticker(timespan_t time)
         realFrameTimePos += time * TICSPERSEC;
 
         // Game logic.
-        gx.Ticker(time);
+        game_Ticker(time);
 
         if(M_RunTrigger(&sharedFixedTrigger, time))
         {   // A new 35 Hz tick begins.
