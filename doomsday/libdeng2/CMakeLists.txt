@@ -14,11 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api )
+INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
+    ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} )
 
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
+
+TARGET_LINK_LIBRARIES ( deng2
+    ${SDL_LIBRARY} ${SDLNET_LIBRARY} )
 
 # Installation.
 INSTALL ( TARGETS deng2 

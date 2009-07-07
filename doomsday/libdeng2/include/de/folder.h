@@ -107,8 +107,8 @@ namespace de
          *
          * @return  Reference to @c fileObject, for convenience.
          */
-        template <typename T>
-        T& add(T* fileObject) {
+        template <typename Type>
+        Type& add(Type* fileObject) {
             assert(fileObject != 0);
             add(static_cast<File*>(fileObject));
             return *fileObject;
@@ -132,8 +132,8 @@ namespace de
          */
         File* remove(const std::string& name);
 
-        template <typename T>
-        T* remove(T* fileObject) {
+        template <typename Type>
+        Type* remove(Type* fileObject) {
             assert(fileObject != 0);
             remove(static_cast<File*>(fileObject));
             return fileObject;
@@ -158,9 +158,9 @@ namespace de
          */
         virtual File* locateFile(const String& path) const;
         
-        template <typename T>
-        T* locate(const String& path) const {
-            return dynamic_cast<T*>(locateFile(path));
+        template <typename Type>
+        Type* locate(const String& path) const {
+            return dynamic_cast<Type*>(locateFile(path));
         }
                     
     private:

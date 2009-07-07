@@ -93,9 +93,9 @@ namespace de
          */
         void* address(const std::string& name);
         
-        template <typename T>
-        T symbol(const std::string& name) {
-            return reinterpret_cast<T>(address(name));
+        template <typename Type>
+        Type symbol(const std::string& name) {
+            return reinterpret_cast<Type>(address(name));
         }
                 
     private:  

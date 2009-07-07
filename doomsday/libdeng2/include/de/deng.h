@@ -36,6 +36,7 @@
 #include <cassert>
 #include <iostream>
 #include <typeinfo>
+#include <memory>
 
 #ifdef WIN32
 #   define PUBLIC_API __declspec(dllexport)
@@ -79,5 +80,7 @@ namespace de
 	typedef double				    ddouble;    ///< 64-bit floating point number.
     typedef size_t                  dsize;
 }
+
+#include <de/Error>
 
 #endif /* LIBDENG2_H */
