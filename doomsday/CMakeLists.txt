@@ -141,11 +141,11 @@ IF ( APPLE )
         DESTINATION ${DENG_BUNDLE_DIR} )
 
     INSTALL ( FILES
-        libdeng/mac/res/deng.icns 
+        build/mac/deng.icns 
         DESTINATION ${DENG_DATA_DIR} )
 
     INSTALL ( DIRECTORY
-        libdeng/mac/res/English.lproj
+        build/mac/English.lproj
         DESTINATION ${DENG_DATA_DIR} 
         PATTERN ".svn" EXCLUDE )
 
