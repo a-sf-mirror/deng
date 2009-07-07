@@ -131,8 +131,13 @@ Reader& Reader::operator >> (IByteArray& byteArray)
 
 Reader& Reader::operator >> (ISerializable& serializable)
 {
-    Block serial;
-    *this >> serial;
+    duint size = 0;
+    *this >> size;
+    
+    Block serial(size);
+    source_.get(offset_, const_cast<IByteArray::Byte*>(serial.data()), size);
+    offset_ += size;
+    
     serializable << serial;
     return *this;
 }

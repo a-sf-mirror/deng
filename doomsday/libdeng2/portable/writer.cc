@@ -130,5 +130,14 @@ Writer& Writer::operator << (const ISerializable& serializable)
 {
     Block serial;
     serializable >> serial;
-    return *this << serial;
+    
+    // First write the length of the array.
+    duint size = serial.size();
+    *this << size;
+
+    // Write the data.
+    destination_.set(offset_, serial.data(), size);
+    
+    offset_ += size;    
+    return *this;
 }

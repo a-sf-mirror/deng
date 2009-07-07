@@ -34,6 +34,8 @@ namespace de
      *
      * As the data gets sent, the objects received from the outgoing buffer
      * are deleted.
+     *
+     * @ingroup net
      */
     class SenderThread : public Thread
     {

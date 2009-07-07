@@ -32,6 +32,8 @@ namespace de
      * The receiver thread is responsible for reading the owner's socket
      * for incoming data and storing the received packets to the incoming
      * buffer.
+     *
+     * @ingroup net
      */
     class ReceiverThread : public Thread
     {
