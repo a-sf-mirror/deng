@@ -30,6 +30,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <SDL.h>
 
 #include "doomsday.h"
 #include "de_base.h"

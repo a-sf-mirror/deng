@@ -38,6 +38,21 @@ dint Client::mainLoop()
 {
     CommandLine& args = commandLine();
 
+#ifdef MACOSX
+    args.append("-iwad");
+    args.append("/Users/jaakko/IWADs/Doom.wad");
+#endif
+
+    args.append("-file");
+#ifdef MACOSX
+    args.append("}Resources/doomsday.pk3");
+    args.append("}Resources/doom.pk3");
+#endif
+#ifdef WIN32
+    args.append("..\\..\\data\\doomsday.pk3");
+    args.append("..\\..\\data\\doom.pk3");
+#endif
+
     CommandLine svArgs = args;
 #ifdef WIN32
     svArgs.insert(0, "dengsv.exe");
@@ -51,12 +66,6 @@ dint Client::mainLoop()
 
     args.append("-wnd");
 
-    args.append("-iwad");
-    args.append("/Users/jaakko/IWADs/Doom.wad");
-
-    args.append("-file");
-    args.append("}Resources/doomsday.pk3");
-    args.append("}Resources/doom.pk3");
     args.append("-cmd");
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
     args.append("-userdir");

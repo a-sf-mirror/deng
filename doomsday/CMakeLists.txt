@@ -127,9 +127,9 @@ IF ( WIN32 )
         ${SDLDIR}/lib/SDL.dll
         ${SDLMIXERDIR}/lib/SDL_mixer.dll
         ${SDLNETDIR}/lib/SDL_net.dll
-        ../external/libpng/lib/libpng13.dll 
-        ../external/zlib/lib/zlib1.dll
-        ../external/lzss/win32/lzss.dll
+        external/libpng/lib/libpng13.dll 
+        external/zlib/lib/zlib1.dll
+        external/lzss/win32/lzss.dll
         DESTINATION ${DENG_BINARY_DIR} )
 ENDIF ( WIN32 )
     
