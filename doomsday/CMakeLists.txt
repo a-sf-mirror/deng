@@ -24,7 +24,7 @@ PROJECT ( deng )
 IF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
     MESSAGE ( FATAL_ERROR 
         "In-tree builds are not supported. For instance, try building in ${CMAKE_SOURCE_DIR}/mybuild/." )
-ENDIF ( ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR} )
+ENDIF ()
 
 # General configuration.
 SET ( DENG_BINARY_DIR bin )
@@ -46,7 +46,7 @@ IF ( WIN32 )
     IF ( "$ENV{SDLDIR}" STREQUAL "" )
         MESSAGE ( FATAL_ERROR
             "You have not set the SDK environment variables. See build\\win32\\dengenv.bat." )
-    ENDIF ( "$ENV{SDLDIR}" STREQUAL "" )
+    ENDIF ()
     
     # This will take care of the slash issue.
     GET_FILENAME_COMPONENT ( SDLDIR $ENV{SDLDIR} ABSOLUTE )
