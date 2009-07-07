@@ -44,27 +44,30 @@ dint Client::mainLoop()
 #endif
 
     args.append("-file");
-#ifdef MACOSX
+#if defined(MACOSX)
     args.append("}Resources/doomsday.pk3");
     args.append("}Resources/doom.pk3");
-#endif
-#ifdef WIN32
+#elif defined(WIN32)
     args.append("..\\..\\data\\doomsday.pk3");
     args.append("..\\..\\data\\doom.pk3");
+#else
+    args.append("../../data/doomsday.pk3");
+    args.append("../../data/doom.pk3");
 #endif
 
     CommandLine svArgs = args;
-#ifdef WIN32
+#if defined(WIN32)
     svArgs.insert(0, "dengsv.exe");
-#endif
-#ifdef MACOSX
+#elif defined(MACOSX)
     svArgs.insert(0, String::fileNamePath(args.at(0)).concatenatePath("../Resources/dengsv"));
+#else
+    svArgs.insert(0, "./dengsv");
 #endif
     svArgs.remove(1);
     extern char** environ;
     svArgs.execute(environ);
 
-    args.append("-wnd");
+    //args.append("-wnd");
 
     args.append("-cmd");
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");

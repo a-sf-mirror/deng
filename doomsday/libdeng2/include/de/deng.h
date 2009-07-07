@@ -35,6 +35,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <typeinfo>
 
 #ifdef WIN32
 #   define PUBLIC_API __declspec(dllexport)
