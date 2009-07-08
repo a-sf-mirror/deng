@@ -128,5 +128,6 @@ Writer& Writer::operator << (const IByteArray& byteArray)
 
 Writer& Writer::operator << (const ISerializable& serializable)
 {
-    return serializable >> *this;
+    serializable >> *this;
+    return *this;
 }

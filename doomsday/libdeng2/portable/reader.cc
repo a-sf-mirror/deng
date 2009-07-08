@@ -131,5 +131,6 @@ Reader& Reader::operator >> (IByteArray& byteArray)
 
 Reader& Reader::operator >> (ISerializable& serializable)
 {
-    return serializable << *this;
+    serializable << *this;
+    return *this;
 }

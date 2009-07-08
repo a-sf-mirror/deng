@@ -44,19 +44,15 @@ namespace de
          * Serialize the object using the provided Writer.
          *
          * @param to  Writer using which the data is written.
-         *
-         * @return  Reference to the Writer @c to.
          */
-        virtual Writer& operator >> (Writer& to) const = 0;
+        virtual void operator >> (Writer& to) const = 0;
 
         /**
          * Restore the object from the provided Reader.
          *
          * @param from  Reader where the data is read from.
-         *
-         * @return  Reference to the Reader @c from.
          */
-        virtual Reader& operator << (Reader& from) = 0;
+        virtual void operator << (Reader& from) = 0;
     };
 }
 
