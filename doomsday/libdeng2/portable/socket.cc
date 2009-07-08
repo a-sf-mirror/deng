@@ -26,9 +26,9 @@
 
 using namespace de;
 
-const duint RECEIVE_TIMEOUT = 10000; // milliseconds
+const duint RECEIVE_TIMEOUT = 500; //0000; // milliseconds
 
-Socket::Socket(const Address& address) : socket_(NULL)
+Socket::Socket(const Address& address) : socket_(0)
 {
     IPaddress ip;
 
@@ -40,33 +40,24 @@ Socket::Socket(const Address& address) : socket_(NULL)
         throw ConnectionError("Socket::Socket", "Failed to connect: " +
             std::string(SDLNet_GetError()));
     }
-    
-    initialize();
 }
 
 Socket::Socket(void* existingSocket) : socket_(existingSocket)
-{
-    initialize();
-}
+{}
 
 Socket::~Socket()
 {
-    SDLNet_FreeSocketSet(static_cast<SDLNet_SocketSet>(socketSet_));
+    close();
+}
 
+void Socket::close()
+{
     // Close the socket.
     if(socket_)
     {
         SDLNet_TCP_Close(static_cast<TCPsocket>(socket_));
+        socket_ = 0;
     }
-}
-
-void Socket::initialize()
-{
-    // Allocate a set of sockets for waiting on.
-    socketSet_ = SDLNet_AllocSocketSet(1);
-    
-    SDLNet_AddSocket(static_cast<SDLNet_SocketSet>(socketSet_),
-        static_cast<SDLNet_GenericSocket>(socket_));
 }
 
 /// Write the 4-byte header to the beginning of the buffer.
@@ -127,29 +118,18 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     // Wait indefinitely until there is something to receive.
     while(received < count)
     {
-        int result = SDLNet_CheckSockets(
-            static_cast<SDLNet_SocketSet>(socketSet_), RECEIVE_TIMEOUT);
+        // There is something to receive.
+        int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_),
+            buffer + received, count - received);
             
-        if(result < 0)
+        if(recvResult <= 0)
         {
-            throw DisconnectedError("Socket::receive", 
-                "While checking sockets: " + std::string(SDLNet_GetError()));                                    
+            // There is an error!
+            throw DisconnectedError("Socket::receive",
+                "While receiving data: " + std::string(SDLNet_GetError()));
         }
-        else if(result > 0)
-        {
-            // There is something to receive.
-            int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_),
-                buffer + received, count - received);
-                
-            if(recvResult < 0)
-            {
-                // There is an error!
-                throw DisconnectedError("Socket::receive",
-                    "While receiving data: " + std::string(SDLNet_GetError()));
-            }
-            
-            received += recvResult;
-        }
+        
+        received += recvResult;
     }
 }
 

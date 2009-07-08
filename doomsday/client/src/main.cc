@@ -19,6 +19,11 @@
 
 #include "client.h"
 
+#include <de/Link>
+#include <de/Address>
+#include <de/Reader>
+#include <de/Time>
+
 using namespace de;
 
 int main(int argc, char** argv)
@@ -26,6 +31,22 @@ int main(int argc, char** argv)
     try
     {
         Client client(CommandLine(argc, argv));
+        
+        Link link(Address("localhost", 8080));
+        while(!link.hasIncoming())
+        {
+            std::cout << "Waiting for data\n";
+            Time::sleep(.1);
+        }
+        
+        IByteArray* data = link.receive();
+        std::string str;
+        Reader(*data) >> str;        
+        
+        std::cout << "Received '" << str << "'\n";
+        
+        return 0;
+        
         return client.mainLoop();
     }
     catch(const Error& error)

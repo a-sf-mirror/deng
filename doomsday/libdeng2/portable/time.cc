@@ -47,3 +47,8 @@ Time Time::now()
     /// @todo Detect when the number of ticks wraps around (49 days).
     return SDL_GetTicks() / 1000.0;
 }
+
+void Time::sleep(const Time& duration)
+{
+    SDL_Delay(duration.asMilliSeconds());
+}

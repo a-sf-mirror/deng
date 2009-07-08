@@ -48,4 +48,6 @@ void ReceiverThread::run()
         perror("ReceiverThread:");
         std::cerr << "Fatal exception in ReceiverThread::run(): " << err.what() << "\n";
     }
+    
+    std::cout << "ReceiverThread ends\n";
 }

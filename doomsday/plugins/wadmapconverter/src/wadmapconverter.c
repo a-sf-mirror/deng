@@ -78,6 +78,12 @@ PUBLIC_API void deng_InitializePlugin(void)
     Plug_AddHook(HOOK_MAP_CONVERT, ConvertMapHook);
 }
 
+PUBLIC_API void deng_ShutdownPlugin(void)
+{
+    printf("deng_ShutdownPlugin: WAD Map Converter\n");
+    Plug_RemoveHook(HOOK_MAP_CONVERT, ConvertMapHook);
+}
+
 #ifdef WIN32
 /**
  * Windows calls this when the DLL is loaded.

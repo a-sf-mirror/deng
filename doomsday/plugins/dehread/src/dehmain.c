@@ -2011,6 +2011,12 @@ PUBLIC_API void deng_InitializePlugin(void)
     Plug_AddHook(HOOK_DEFS, DefsHook);
 }
 
+PUBLIC_API void deng_ShutdownPlugin(void)
+{
+    printf("deng_ShutdownPlugin: DEH Reader\n");
+    Plug_RemoveHook(HOOK_DEFS, DefsHook);
+}
+
 #ifdef WIN32
 /**
  * Windows calls this when the DLL is loaded.

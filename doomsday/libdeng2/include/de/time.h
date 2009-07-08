@@ -52,9 +52,13 @@ namespace de
         /// time as milliseconds.
         duint asMilliSeconds() const;
 
+    public:
         /// Return the amount of time elapsed since the program was
         /// started.
         static Time now();
+        
+        /// Suspend execution for a period of time.
+        static void sleep(const Time& duration);
 
     private:
         Type seconds_;

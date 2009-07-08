@@ -21,6 +21,7 @@
 #define LIBDENG2_THREAD_H
 
 #include <de/deng.h>
+#include <de/Waitable>
 
 namespace de
 {
@@ -54,11 +55,16 @@ namespace de
         bool shouldStopNow() const;
     
     private:
+        static int runner(void* owner);
+ 
         /// This is set to true when the thread should stop.
         volatile bool stopNow_;
         
         /// Pointer to the internal thread data.
         void* thread_;
+        
+        /// Signals the end of the thread.
+        Waitable endOfThread_;
     };
 }
 

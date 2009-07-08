@@ -18,6 +18,7 @@
  */
 
 #include "de/thread.h"
+#include "de/time.h"
 #include "sdl.h"
 
 #include <SDL_thread.h>
@@ -28,9 +29,12 @@ using namespace de;
  * Call the Thread instance's run() method.  Called by SDL when the
  * thread is created.
  */
-static int ThreadRunner(void* owner)
+int Thread::runner(void* owner)
 {
-    static_cast<Thread*>(owner)->run();
+    Thread* self = static_cast<Thread*>(owner);
+    
+    self->run();
+    self->endOfThread_.post();
 
     // The return value is not used at the moment.
     return 0;
@@ -41,11 +45,11 @@ Thread::Thread() : stopNow_(false), thread_(NULL)
 
 Thread::~Thread()
 {
-    // If not already stopped, the thread is forcibly killed.
-    if(thread_)
-    {
-        SDL_KillThread(static_cast<SDL_Thread*>(thread_));
-    }
+    stop();
+
+    std::cout << "Waiting on thread to stop...\n";
+    endOfThread_.wait(4);
+    std::cout << "...it stopped\n";
 }
 
 void Thread::start()
@@ -56,7 +60,7 @@ void Thread::start()
         return;
     }
 
-    thread_ = SDL_CreateThread(ThreadRunner, this);
+    thread_ = SDL_CreateThread(runner, this);
 }
 
 void Thread::stop()

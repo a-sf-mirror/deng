@@ -77,7 +77,7 @@ namespace de
         /**
          * Determines whether the buffer is empty.
          */
-        bool isEmpty() {
+        bool empty() const {
             lock();
             bool empty = objects_.empty();
             unlock();

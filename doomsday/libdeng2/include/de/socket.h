@@ -68,7 +68,9 @@ namespace de
          * @return  Received bytes. Caller is responsible for deleting the data.
          */
         Block* receive();
-    
+        
+        void close();
+        
     private:
         /// Create a Socket object for a previously opened socket.  
         Socket(void* existingSocket);
@@ -89,9 +91,6 @@ namespace de
         /// Pointer to the internal socket data.
         void* socket_;
         
-        /// Set of sockets for waiting for incoming communication.
-        void* socketSet_;
-
         /** 
          * ListenSocket creates instances of Socket so it needs to use
          * the special private constructor that takes an existing

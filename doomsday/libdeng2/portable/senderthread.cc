@@ -37,17 +37,20 @@ void SenderThread::run()
 		try
 		{
 			// Wait for new outgoing messages.
-			buffer_.wait(2);
+			buffer_.wait(1);
 
 			// There is a new outgoing message.
-			Block* data = buffer_.get();
-			assert(data != NULL);
+			const IByteArray* data = buffer_.get();
+			if(data)
+			{
+                std::cout << "sending " << data->size() << " bytes\n";
 
-			// Write this to the socket.
-			socket_.send(*data);
+			    // Write this to the socket.
+			    socket_.send(*data);
 
-			// The packet can be discarded.
-            delete data;
+			    // The packet can be discarded.
+                delete data;
+            }
 		}
 		catch(const Waitable::TimeOutError&)
 		{
@@ -60,4 +63,5 @@ void SenderThread::run()
             stop();
         }
 	}			
+    std::cout << "SenderThread ends\n";
 }

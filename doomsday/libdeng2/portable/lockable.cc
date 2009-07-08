@@ -37,7 +37,7 @@ Lockable::~Lockable()
     SDL_DestroyMutex(static_cast<SDL_mutex*>(mutex_));
 }
 
-void Lockable::lock()
+void Lockable::lock() const
 {
     // Acquire the lock.  Blocks until the operation succeeds.
     if(SDL_LockMutex(static_cast<SDL_mutex*>(mutex_)) < 0)
@@ -48,12 +48,12 @@ void Lockable::lock()
     isLocked_ = true;
 }
 
-void Lockable::unlock()
+void Lockable::unlock() const
 {
+    isLocked_ = false;
+
     // Release the lock.
     SDL_UnlockMutex(static_cast<SDL_mutex*>(mutex_));
-
-    isLocked_ = false;
 }
 
 void Lockable::assertLocked() const

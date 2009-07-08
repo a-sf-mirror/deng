@@ -40,7 +40,7 @@ namespace de
     class SenderThread : public Thread
     {
     public:
-        typedef WaitableFIFO<Block> OutgoingBuffer;
+        typedef WaitableFIFO<IByteArray> OutgoingBuffer;
         
     public:
         /**

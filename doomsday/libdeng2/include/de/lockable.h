@@ -36,10 +36,10 @@ namespace de
         virtual ~Lockable();
 
         /// Acquire the lock.  Blocks until the operation succeeds.
-        void lock();
+        void lock() const;
 
         /// Release the lock.
-        void unlock();
+        void unlock() const;
 
         /// Returns true, if the lock is currently locked.
         bool isLocked() const;
@@ -53,7 +53,7 @@ namespace de
         /// Pointer to the internal mutex data.
         void* mutex_;
         
-        bool isLocked_;
+        mutable bool isLocked_;
     };
 }
 

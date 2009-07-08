@@ -38,7 +38,8 @@ namespace de
     class ReceiverThread : public Thread
     {
     public:
-        typedef FIFO<Block> IncomingBuffer;        
+        typedef Block Packet;
+        typedef FIFO<Packet> IncomingBuffer;        
         
     public:
         ReceiverThread(Socket& socket, IncomingBuffer& buffer);
