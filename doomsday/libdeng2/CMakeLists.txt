@@ -19,6 +19,10 @@ INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api
 
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
 
+IF ( UNIX AND NOT APPLE )
+    ADD_DEFINITIONS ( -DLIBDENG2_USE_SOCKET_SET )
+ENDIF ()
+
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 
 TARGET_LINK_LIBRARIES ( deng2

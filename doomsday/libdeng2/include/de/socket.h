@@ -90,6 +90,9 @@ namespace de
     
         /// Pointer to the internal socket data.
         void* socket_;
+
+        /// Used if LIBDENG2_USE_SOCKET_SET is defined.
+        void* socketSet_;
         
         /** 
          * ListenSocket creates instances of Socket so it needs to use

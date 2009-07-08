@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 using namespace de;
 
-Socket::Socket(const Address& address) : socket_(0)
+Socket::Socket(const Address& address) : socket_(0), socketSet_(0)
 {
     IPaddress ip;
 
@@ -38,14 +38,37 @@ Socket::Socket(const Address& address) : socket_(0)
         throw ConnectionError("Socket::Socket", "Failed to connect: " +
             std::string(SDLNet_GetError()));
     }
+
+    initialize();
 }
 
-Socket::Socket(void* existingSocket) : socket_(existingSocket)
-{}
+Socket::Socket(void* existingSocket) : socket_(existingSocket), socketSet_(0)
+{
+    initialize();
+}
 
 Socket::~Socket()
 {
     close();
+
+#ifdef LIBDENG2_USE_SOCKET_SET
+    if(socketSet_)
+    {
+        SDLNet_FreeSocketSet(static_cast<SDLNet_SocketSet>(socketSet_));
+        socketSet_ = 0;
+    }
+#endif
+}
+
+void Socket::initialize()
+{
+#ifdef LIBDENG2_USE_SOCKET_SET
+    // Allocate a socket set for waiting on.
+    socketSet_ = SDLNet_AllocSocketSet(1);
+
+    SDLNet_AddSocket(static_cast<SDLNet_SocketSet>(socketSet_),
+        static_cast<SDLNet_GenericSocket>(socket_));
+#endif
 }
 
 void Socket::close()
@@ -116,6 +139,30 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     // Wait indefinitely until there is something to receive.
     while(received < count)
     {
+        if(!socket_)
+        {
+            // The socket has been closed.
+            break;
+        }
+
+#ifdef LIBDENG2_USE_SOCKET_SET
+        const duint RECEIVE_TIMEOUT = 100;
+
+        int result = SDLNet_CheckSockets(
+            static_cast<SDLNet_SocketSet>(socketSet_), RECEIVE_TIMEOUT);
+
+        if(result < 0)
+        {
+            throw DisconnectedError("Socket::receive",
+                "While checking sockets: " + std::string(SDLNet_GetError()));
+        }
+        else if(!result)
+        {
+            // Nothing yet.
+            continue;
+        }
+#endif
+
         // There is something to receive.
         int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_),
             buffer + received, count - received);
