@@ -168,7 +168,7 @@ static void determineGlobalPaths(application_t *app)
 static boolean loadGamePlugin(application_t *app)
 {
     // Get the function.
-    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::game()->address("GetGameAPI"));
+    app->GetGameAPI = reinterpret_cast<GETGAMEAPI>(App::game().address("GetGameAPI"));
 
     // Do the API transfer.
     DD_InitAPI();

@@ -21,25 +21,25 @@
 
 using namespace de;
 
-ByteSubArray::ByteSubArray(IByteArray& mainArray, Offset at, duint size)
+ByteSubArray::ByteSubArray(IByteArray& mainArray, Offset at, Size size)
     : mainArray_(&mainArray), constMainArray_(&mainArray), at_(at), size_(size)
 {}
 
-ByteSubArray::ByteSubArray(const IByteArray& mainArray, Offset at, duint size)
+ByteSubArray::ByteSubArray(const IByteArray& mainArray, Offset at, Size size)
     : mainArray_(0), constMainArray_(&mainArray), at_(at), size_(size)
 {}
 
-duint ByteSubArray::size() const
+ByteSubArray::Size ByteSubArray::size() const
 {
     return size_;
 }
 
-void ByteSubArray::get(Offset at, Byte* values, duint count) const
+void ByteSubArray::get(Offset at, Byte* values, Size count) const
 {
     constMainArray_->get(at_ + at, values, count);
 }
 
-void ByteSubArray::set(Offset at, const Byte* values, duint count)
+void ByteSubArray::set(Offset at, const Byte* values, Size count)
 {
     if(!mainArray_)
     {

@@ -33,7 +33,7 @@ namespace de
      *
      * @ingroup net
      */
-    class Link
+    class PUBLIC_API Link
     {
     public:
         /**

@@ -38,25 +38,25 @@ namespace de
          * Constructs a modifiable sub-array which refers to the
          * @c mainArray.
          */
-        ByteSubArray(IByteArray& mainArray, Offset at, duint size);
+        ByteSubArray(IByteArray& mainArray, Offset at, Size size);
         
         /**
          * Constructs a non-modifiable sub-array which refers to the
          * @c mainArray.
          */
-        ByteSubArray(const IByteArray& mainArray, Offset at, duint size);
+        ByteSubArray(const IByteArray& mainArray, Offset at, Size size);
         
         virtual ~ByteSubArray() {}
 
-        duint size() const;
-        void get(Offset at, Byte* values, duint count) const;
-        void set(Offset at, const Byte* values, duint count);
+        Size size() const;
+        void get(Offset at, Byte* values, Size count) const;
+        void set(Offset at, const Byte* values, Size count);
         
     private:
         IByteArray* mainArray_;
         const IByteArray* constMainArray_;
         Offset at_;
-        duint size_;
+        Size size_;
     };
 }
 

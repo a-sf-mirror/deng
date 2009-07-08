@@ -140,7 +140,13 @@ static int initTimingSystem(void)
 {
     // For timing, we use SDL under *nix, so get it initialized.
     // SDL_Init() returns zero on success.
-    return !SDL_Init(SDL_INIT_TIMER | (isDedicated? SDL_INIT_VIDEO : 0));
+    if(SDL_InitSubSystem(SDL_INIT_TIMER) == -1)
+        return false;
+        
+    if(isDedicated && SDL_InitSubSystem(SDL_INIT_VIDEO) == -1)
+        return false;
+        
+    return true;
 }
 
 static int initDGL(void)
@@ -240,8 +246,6 @@ void DD_Shutdown(void)
 
     // Shutdown all subsystems.
     DD_ShutdownAll();
-
-    SDL_Quit();
 }
 
 } /* extern "C" */

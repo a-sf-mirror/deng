@@ -21,12 +21,7 @@
 #include "de/byteorder.h"
 #include "de/block.h"
 #include "de/iserializable.h"
-
-#ifdef UNIX
-#   include <netinet/in.h>
-#endif
-
-#include <cstring> // for memcpy
+#include "sdl.h"
 
 using namespace de;
 
@@ -55,7 +50,7 @@ Reader& Reader::operator >> (duint16& word)
 {
     source_.get(offset_, reinterpret_cast<IByteArray::Byte*>(&word), 2);
     offset_ += 2;
-    word = ntohs(word);
+    word = SDLNet_Read16(&word);
     
     return *this;
 }
@@ -69,7 +64,7 @@ Reader& Reader::operator >> (duint32& dword)
 {
     source_.get(offset_, reinterpret_cast<IByteArray::Byte*>(&dword), 4);
     offset_ += 4;
-    dword = ntohl(dword);
+    dword = SDLNet_Read32(&dword);
     
     return *this;
 }

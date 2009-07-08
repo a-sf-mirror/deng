@@ -21,6 +21,7 @@
 #include "de/libraryfile.h"
 #include "de/library.h"
 #include "de/directoryfeed.h"
+#include "sdl.h"
 
 using namespace de;
 
@@ -36,6 +37,16 @@ App::App(const CommandLine& commandLine)
     }
     
     singleton_ = this;
+
+    // Start by initializing SDL.
+    if(SDL_Init(0) == -1)
+    {
+        throw SDLError("App::App", SDL_GetError());
+    }
+    if(SDLNet_Init() == -1)
+    {
+        throw SDLError("App::App", SDLNet_GetError());
+    }
 
 #ifdef MACOSX
     // When the application is started through Finder, we get a special command
@@ -57,7 +68,11 @@ App::App(const CommandLine& commandLine)
 App::~App()
 {
     delete fs_;
-    
+ 
+    // Shut down SDL.
+    SDLNet_Quit();
+    SDL_Quit();
+
     singleton_ = 0;
 }
 

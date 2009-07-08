@@ -21,12 +21,7 @@
 #include "de/byteorder.h"
 #include "de/block.h"
 #include "de/iserializable.h"
-
-#ifdef UNIX
-#   include <netinet/in.h>
-#endif
-
-#include <cstring> // for memcpy
+#include "sdl.h"
 
 using namespace de;
 
@@ -56,7 +51,8 @@ Writer& Writer::operator << (const dint16& word)
 
 Writer& Writer::operator << (const duint16& word)
 {
-    duint16 netWord = htons(word);  
+    duint16 netWord;
+    SDLNet_Write16(word, &netWord);
     destination_.set(offset_, reinterpret_cast<IByteArray::Byte*>(&netWord), 2);
     offset_ += 2;
     return *this;
@@ -69,7 +65,8 @@ Writer& Writer::operator << (const dint32& dword)
 
 Writer& Writer::operator << (const duint32& dword)
 {
-    duint32 netDword = htonl(dword);
+    duint32 netDword;
+    SDLNet_Write32(dword, &netDword);
     destination_.set(offset_, reinterpret_cast<IByteArray::Byte*>(&netDword), 4);
     offset_ += 4;
     return *this;

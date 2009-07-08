@@ -55,6 +55,9 @@ namespace de
         /// An attempt is made to access the game library while one is not loaded.
         /// @ingroup errors
         DEFINE_ERROR(NoGameError);
+
+        /// There was a problem with SDL. Contains the SDL error message. @ingroup errors
+        DEFINE_ERROR(SDLError);
         
     public:
         App(const CommandLine& commandLine);
