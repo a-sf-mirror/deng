@@ -37,7 +37,7 @@ void SenderThread::run()
 		try
 		{
 			// Wait for new outgoing messages.
-			buffer_.wait(1);
+			buffer_.wait(10);
 
 			// There is a new outgoing message.
 			const IByteArray* data = buffer_.get();

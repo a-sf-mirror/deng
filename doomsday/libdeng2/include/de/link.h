@@ -78,7 +78,7 @@ namespace de
         void initialize();
     
     private:
-        /// Socker over which the link communicates.
+        /// Socket over which the link communicates.
         Socket* socket_; 
         
         /// Thread that writes outgoing data to the socket.

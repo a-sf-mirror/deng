@@ -26,8 +26,6 @@
 
 using namespace de;
 
-const duint RECEIVE_TIMEOUT = 500; //0000; // milliseconds
-
 Socket::Socket(const Address& address) : socket_(0)
 {
     IPaddress ip;
