@@ -49,37 +49,39 @@ namespace de
          * @param object  Object to add to the buffer. FIFO gets ownership.
          */
         void put(Type* object) {
-        	// The FIFO must be locked before it can be modified.
-        	lock();
-        	objects_.push_front(object);
-        	unlock();
+            // The FIFO must be locked before it can be modified.
+            lock();
+            objects_.push_front(object);
+            unlock();
         }        
         
         /**
          * Get the oldest object in the buffer.  
          *
-         * @return The last object in the buffer, or NULL if the buffer is empty. 
+         * @return The oldest object in the buffer, or NULL if the buffer is empty. 
          * Caller gets ownership of the returned object.
          */
         Type* get() {
-        	// The FIFO must be locked before it can be modified.
-        	lock();
-        	if(objects_.empty()) {
-        		unlock();
-        		return NULL;
-        	}
-        	Type* last = objects_.back();
-        	objects_.pop_back();
-        	unlock();
-        	return last;
+            // The FIFO must be locked before it can be modified.
+            lock();
+            if(objects_.empty()) {
+                unlock();
+                return NULL;
+            }
+            Type* last = objects_.back();
+            objects_.pop_back();
+            unlock();
+            return last;
         }        
         
-        /// Returns true, if the buffer is empty.
+        /**
+         * Determines whether the buffer is empty.
+         */
         bool isEmpty() {
-        	lock();
-        	bool empty = objects_.empty();
-        	unlock();
-        	return empty;
+            lock();
+            bool empty = objects_.empty();
+            unlock();
+            return empty;
         }
 
     private:

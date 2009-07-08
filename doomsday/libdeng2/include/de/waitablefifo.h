@@ -30,11 +30,11 @@ namespace de
      * there are objects in the buffer.
      */  
     template <typename Type>
-	class WaitableFIFO : public FIFO<Type>, public Waitable
-	{
-	public:
-		WaitableFIFO() {}
-	};
+    class WaitableFIFO : public FIFO<Type>, public Waitable
+    {
+    public:
+        WaitableFIFO() {}
+    };
 }
 
 #endif /* LIBDENG2_WAITABLEFIFO_H */

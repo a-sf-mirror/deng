@@ -72,16 +72,16 @@ void Socket::initialize()
 /// Write the 4-byte header to the beginning of the buffer.
 void Socket::writeHeader(IByteArray::Byte* buffer, const IByteArray& packet)
 {
-    /** - 2 bits for flags. */
+    /** - 3 bits for flags. */
     duint flags = 0;
 
-    /** - 3 bits for the protocol version number. */
+    /** - 2 bits for the protocol version number. */
     const duint PROTOCOL_VERSION = 0;
     
     /** - 16+11 bits for the packet length (max: 134 MB). */
     duint header = ( (packet.size() & 0x7ffffff) |
                      (PROTOCOL_VERSION << 27) |
-                     (flags << 30) );
+                     (flags << 29) );
 
     SDLNet_Write32(header, buffer);
 }
@@ -93,8 +93,8 @@ void Socket::readHeader(duint header, duint& size)
 
     // These aren't used for anything yet.
     /*
-    unsigned protocol = (hostHeader >> 27) & 7;
-    unsigned flags    = (hostHeader >> 30) & 3;
+    unsigned protocol = (hostHeader >> 27) & 3;
+    unsigned flags    = (hostHeader >> 29) & 7;
      */    
 }
 

@@ -23,6 +23,12 @@
 #include <de/deng.h>
 #include <de/IByteArray>
 
+/**
+ * @defgroup net Network
+ *
+ * Classes responsible for network communications.
+ */
+
 namespace de
 {
     class Address;

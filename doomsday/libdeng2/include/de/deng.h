@@ -19,6 +19,7 @@
  * <h2>Table of Contents</h2>
  * - @ref core
  * - @ref fs
+ * - @ref net
  * - @ref errors
  */
 
