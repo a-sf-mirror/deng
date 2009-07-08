@@ -83,7 +83,7 @@ int DD_CheckArg(char* tag, const char** value)
     return 1;
 }
 
-void DD_ErrorBox(boolean error, char* format, ...)
+void DD_ErrorBox(boolean error, const char* format, ...)
 {
     char                buff[200];
     va_list             args;
