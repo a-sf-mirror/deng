@@ -602,7 +602,7 @@ static boolean TagBusy(int tag)
     // in an iteration at a higher level.
     for(k = 0; k < numsectors; ++k)
     {
-        sec = P_ToPtr(DMU_SECTOR, k);
+        sec = DMU_ToPtr(DMU_SECTOR, k);
         xsec = P_ToXSector(sec);
 
         if(xsec->tag != tag)
@@ -1246,7 +1246,7 @@ static int CmdChangeFloor(void)
     sector_t*           sec = NULL;
     iterlist_t*         list;
 
-    mat = P_ToPtr(DMU_MATERIAL, P_MaterialNumForName(GetACString(Pop()),
+    mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName(GetACString(Pop()),
                                                      MN_FLATS));
     tag = Pop();
 
@@ -1256,7 +1256,7 @@ static int CmdChangeFloor(void)
         P_IterListResetIterator(list, true);
         while((sec = P_IterListIterator(list)) != NULL)
         {
-            P_SetPtrp(sec, DMU_FLOOR_MATERIAL, mat);
+            DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL, mat);
         }
     }
 
@@ -1271,7 +1271,7 @@ static int CmdChangeFloorDirect(void)
     iterlist_t*         list;
 
     tag = LONG(*PCodePtr++);
-    mat = P_ToPtr(DMU_MATERIAL, P_MaterialNumForName(
+    mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName(
         GetACString(LONG(*PCodePtr++)), MN_FLATS));
 
     list = P_GetSectorIterListForTag(tag, false);
@@ -1280,7 +1280,7 @@ static int CmdChangeFloorDirect(void)
         P_IterListResetIterator(list, true);
         while((sec = P_IterListIterator(list)) != NULL)
         {
-            P_SetPtrp(sec, DMU_FLOOR_MATERIAL, mat);
+            DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL, mat);
         }
     }
 
@@ -1294,7 +1294,7 @@ static int CmdChangeCeiling(void)
     sector_t*           sec = NULL;
     iterlist_t*         list;
 
-    mat = P_ToPtr(DMU_MATERIAL,
+    mat = DMU_ToPtr(DMU_MATERIAL,
         P_MaterialNumForName(GetACString(Pop()), MN_FLATS));
     tag = Pop();
 
@@ -1304,7 +1304,7 @@ static int CmdChangeCeiling(void)
         P_IterListResetIterator(list, true);
         while((sec = P_IterListIterator(list)) != NULL)
         {
-            P_SetPtrp(sec, DMU_CEILING_MATERIAL, mat);
+            DMU_SetPtrp(sec, DMU_CEILING_MATERIAL, mat);
         }
     }
 
@@ -1319,7 +1319,7 @@ static int CmdChangeCeilingDirect(void)
     iterlist_t*         list;
 
     tag = LONG(*PCodePtr++);
-    mat = P_ToPtr(DMU_MATERIAL,
+    mat = DMU_ToPtr(DMU_MATERIAL,
         P_MaterialNumForName(GetACString(LONG(*PCodePtr++)), MN_FLATS));
 
     list = P_GetSectorIterListForTag(tag, false);
@@ -1328,7 +1328,7 @@ static int CmdChangeCeilingDirect(void)
         P_IterListResetIterator(list, true);
         while((sec = P_IterListIterator(list)) != NULL)
         {
-            P_SetPtrp(sec, DMU_CEILING_MATERIAL, mat);
+            DMU_SetPtrp(sec, DMU_CEILING_MATERIAL, mat);
         }
     }
 
@@ -1580,9 +1580,9 @@ static int CmdSectorSound(void)
     if(ACScript->line)
     {
         sector_t*           front =
-            P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
+            DMU_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
 
-        mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
+        mobj = DMU_GetPtrp(front, DMU_SOUND_ORIGIN);
     }
     volume = Pop();
 
@@ -1647,9 +1647,9 @@ static int CmdSoundSequence(void)
     if(ACScript->line)
     {
         sector_t*           front =
-            P_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
+            DMU_GetPtrp(ACScript->line, DMU_FRONT_SECTOR);
 
-        mobj = P_GetPtrp(front, DMU_SOUND_ORIGIN);
+        mobj = DMU_GetPtrp(front, DMU_SOUND_ORIGIN);
     }
     SN_StartSequenceName(mobj, GetACString(Pop()));
 
@@ -1663,7 +1663,7 @@ static int CmdSetLineTexture(void)
     linedef_t*          line;
     iterlist_t*         list;
 
-    mat = P_ToPtr(DMU_MATERIAL, P_MaterialNumForName(GetACString(Pop()), MN_TEXTURES));
+    mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName(GetACString(Pop()), MN_TEXTURES));
     position = Pop();
     side = Pop();
     lineTag = Pop();
@@ -1675,19 +1675,19 @@ static int CmdSetLineTexture(void)
         while((line = P_IterListIterator(list)) != NULL)
         {
             sidedef_t*          sdef =
-                P_GetPtrp(line, (side == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1));
+                DMU_GetPtrp(line, (side == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1));
 
             if(position == TEXTURE_MIDDLE)
             {
-                P_SetPtrp(sdef, DMU_MIDDLE_MATERIAL, mat);
+                DMU_SetPtrp(sdef, DMU_MIDDLE_MATERIAL, mat);
             }
             else if(position == TEXTURE_BOTTOM)
             {
-                P_SetPtrp(sdef, DMU_BOTTOM_MATERIAL, mat);
+                DMU_SetPtrp(sdef, DMU_BOTTOM_MATERIAL, mat);
             }
             else
             {                       // TEXTURE_TOP
-                P_SetPtrp(sdef, DMU_TOP_MATERIAL, mat);
+                DMU_SetPtrp(sdef, DMU_TOP_MATERIAL, mat);
             }
         }
     }
@@ -1711,8 +1711,8 @@ static int CmdSetLineBlocking(void)
         P_IterListResetIterator(list, true);
         while((line = P_IterListIterator(list)) != NULL)
         {
-            P_SetIntp(line, DMU_FLAGS,
-                (P_GetIntp(line, DMU_FLAGS) & ~DDLF_BLOCKING) | blocking);
+            DMU_SetIntp(line, DMU_FLAGS,
+                (DMU_GetIntp(line, DMU_FLAGS) & ~DDLF_BLOCKING) | blocking);
         }
     }
 

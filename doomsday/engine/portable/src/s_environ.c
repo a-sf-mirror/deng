@@ -258,9 +258,9 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
 static boolean calcSSecReverb(subsector_t* ssec)
 {
     uint                i, v;
-    seg_t**             ptr;
+    hedge_t*            ptr;
     float               total = 0;
-    material_env_class_t     mclass;
+    material_env_class_t mclass;
     float               materials[NUM_MATERIAL_ENV_CLASSES];
 
     if(!ssec->sector)
@@ -280,25 +280,26 @@ static boolean calcSSecReverb(subsector_t* ssec)
 
     // The other reverb properties can be found out by taking a look at the
     // materials of all surfaces in the subsector.
-    ptr = ssec->segs;
-    while(*ptr)
+    if((ptr = ssec->hEdge))
     {
-        seg_t*              seg = *ptr;
-
-        if(seg->lineDef && SEG_SIDEDEF(seg) &&
-           SEG_SIDEDEF(seg)->SW_middlematerial)
+        do
         {
-            material_t*         mat = SEG_SIDEDEF(seg)->SW_middlematerial;
+            hedge_t*            hEdge = ptr;
+            seg_t*              seg = (seg_t*) (ptr)->data;
 
-            // The material determines its type.
-            mclass = Material_GetEnvClass(mat);
-            total += seg->length;
-            if(!(mclass >= 0 && mclass < NUM_MATERIAL_ENV_CLASSES))
-                mclass = MEC_WOOD; // Assume it's wood if unknown.
-            materials[mclass] += seg->length;
-        }
+            if(seg->lineDef && HEDGE_SIDEDEF(hEdge) &&
+               HEDGE_SIDEDEF(hEdge)->SW_middlematerial)
+            {
+                material_t*         mat = HEDGE_SIDEDEF(hEdge)->SW_middlematerial;
 
-        *ptr++;
+                // The material determines its type.
+                mclass = Material_GetEnvClass(mat);
+                total += seg->length;
+                if(!(mclass >= 0 && mclass < NUM_MATERIAL_ENV_CLASSES))
+                    mclass = MEC_WOOD; // Assume it's wood if unknown.
+                materials[mclass] += seg->length;
+            }
+        } while((ptr = ptr->next) != ssec->hEdge);
     }
 
     if(!total)

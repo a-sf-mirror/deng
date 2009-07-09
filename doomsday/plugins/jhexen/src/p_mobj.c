@@ -91,7 +91,7 @@ static mobj_t *TIDMobj[MAX_TID_COUNT];
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo)
 {
-    sector_t*           sec = P_GetPtrp(mo->subsector, DMU_SECTOR);
+    sector_t*           sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
 
     return P_GetPlaneMaterialType(sec, PLN_FLOOR);
 }
@@ -591,11 +591,11 @@ explode:
 
                 //// kludge: Prevent missiles exploding against the sky.
                 if(ceilingLine &&
-                   (backSec = P_GetPtrp(ceilingLine, DMU_BACK_SECTOR)))
+                   (backSec = DMU_GetPtrp(ceilingLine, DMU_BACK_SECTOR)))
                 {
-                    if((P_GetIntp(P_GetPtrp(backSec, DMU_CEILING_MATERIAL),
+                    if((DMU_GetIntp(DMU_GetPtrp(backSec, DMU_CEILING_MATERIAL),
                                     DMU_FLAGS) & MATF_SKYMASK) &&
-                       mo->pos[VZ] > P_GetFloatp(backSec, DMU_CEILING_HEIGHT))
+                       mo->pos[VZ] > DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT))
                     {
                         if(mo->type == MT_BLOODYSKULL)
                         {
@@ -616,11 +616,11 @@ explode:
                 }
 
                 if(floorLine &&
-                   (backSec = P_GetPtrp(floorLine, DMU_BACK_SECTOR)))
+                   (backSec = DMU_GetPtrp(floorLine, DMU_BACK_SECTOR)))
                 {
-                    if((P_GetIntp(P_GetPtrp(backSec, DMU_FLOOR_MATERIAL),
+                    if((DMU_GetIntp(DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL),
                                     DMU_FLAGS) & MATF_SKYMASK) &&
-                       mo->pos[VZ] < P_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
+                       mo->pos[VZ] < DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
                     {
                         if(mo->type == MT_BLOODYSKULL)
                         {
@@ -672,7 +672,7 @@ explode:
         if(mo->mom[MX] > 1.0f / 4 || mo->mom[MX] < -1.0f / 4 ||
            mo->mom[MY] > 1.0f / 4 || mo->mom[MY] < -1.0f / 4)
         {
-            if(mo->floorZ != P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+            if(mo->floorZ != DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
             {
                 return;
             }
@@ -948,7 +948,7 @@ void P_MobjMoveZ(mobj_t *mo)
             if(mo->type == MT_LIGHTNING_CEILING)
                 return;
 
-            if(P_GetIntp(P_GetPtrp(mo->subsector, DMU_CEILING_MATERIAL),
+            if(DMU_GetIntp(DMU_GetPtrp(mo->subsector, DMU_CEILING_MATERIAL),
                            DMU_FLAGS) & MATF_SKYMASK)
             {
                 if(mo->type == MT_BLOODYSKULL)
@@ -1297,8 +1297,8 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     // Set subsector and/or block links.
     P_MobjSetPosition(mo);
 
-    mo->floorZ = P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ = P_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
     if((spawnFlags & MSF_Z_CEIL) || (info->flags & MF_SPAWNCEILING))
     {
@@ -1330,7 +1330,7 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->floorClip = 0;
 
     if((mo->flags2 & MF2_FLOORCLIP) &&
-        mo->pos[VZ] == P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+        mo->pos[VZ] == DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
     {
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 
@@ -1521,7 +1521,7 @@ boolean P_HitFloor(mobj_t *thing)
     int                 smallsplash = false;
     const terraintype_t* tt;
 
-    if(thing->floorZ != P_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
+    if(thing->floorZ != DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
     {   // Don't splash if landing on the edge above water/lava/etc....
         return false;
     }

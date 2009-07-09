@@ -55,20 +55,20 @@ internal
 #define FRONT 0
 #define BACK  1
 
-#define SG_v(n)                 v[(n)]
-#define SG_vpos(n)              SG_v(n)->V_pos
+#define HE_v(n)                 v[(n)]
+#define HE_vpos(n)              HE_v(n)->V_pos
 
-#define SG_v1                   SG_v(0)
-#define SG_v1pos                SG_v(0)->V_pos
+#define HE_v1                   HE_v(0)
+#define HE_v1pos                HE_v(0)->V_pos
 
-#define SG_v2                   SG_v(1)
-#define SG_v2pos                SG_v(1)->V_pos
+#define HE_v2                   HE_v(1)
+#define HE_v2pos                HE_v(1)->V_pos
+
+#define HEDGE_SIDEDEF(e)        (((seg_t*)(e)->data)->lineDef? ((seg_t*)(e)->data)->lineDef->sideDefs[((seg_t*) (e)->data)->side] : NULL)
 
 #define SG_sector(n)            sec[(n)]
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
-
-#define SEG_SIDEDEF(s)          ((s)->lineDef->sideDefs[(s)->side])
 
 // Seg flags
 #define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
@@ -79,22 +79,38 @@ internal
 end
 
 public
-#define DMT_SEG_SIDEDEF         DDVT_PTR
+#define DMT_HEDGE_SIDEDEF       DDVT_PTR
+#define DMT_HEDGE_LINEDEF       DDVT_PTR
+#define DMT_HEDGE_SEC           DDVT_PTR
+#define DMT_HEDGE_SUBSECTOR     DDVT_PTR
+#define DMT_HEDGE_ANGLE         DDVT_ANGLE
+#define DMT_HEDGE_SIDE          DDVT_BYTE
+#define DMT_HEDGE_FLAGS         DDVT_BYTE
+#define DMT_HEDGE_LENGTH        DDVT_FLOAT
+#define DMT_HEDGE_OFFSET        DDVT_FLOAT
 end
 
-struct seg
-    PTR     vertex_s*[2] v          // [Start, End] of the segment.
-    PTR     linedef_s*  lineDef
-    PTR     sector_s*[2] sec
-    PTR     subsector_s* subsector
-    PTR     seg_s*      backSeg
-    ANGLE   angle_t     angle
-    BYTE    byte        side        // 0=front, 1=back
-    BYTE    byte        flags
-    FLOAT   float       length      // Accurate length of the segment (v1 -> v2).
-    FLOAT   float       offset
-    -       biassurface_t*[3] bsuf // 0=middle, 1=top, 2=bottom
-    -       short       frameFlags
+internal
+typedef struct seg_s {
+    struct linedef_s* lineDef;
+    struct sector_s* sec[2];
+    struct subsector_s* subsector;
+    angle_t     angle;
+    byte        side; // 0=front, 1=back
+    byte        flags;
+    float       length; // Accurate length of the segment (v1 -> v2).
+    float       offset;
+    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
+    short       frameFlags;
+} seg_t;
+end
+
+struct hedge
+    PTR     vertex_s*[2] v // [Start, End] of the hedge.
+    PTR     hedge_s*    twin
+    PTR		hedge_s*	next
+    PTR		hedge_s*	prev
+	-		void*		data
 end
 
 internal
@@ -102,8 +118,8 @@ internal
 end
 
 struct subsector
-    UINT    uint        segCount
-    PTR     seg_s**     segs // [segcount] size.
+    UINT    uint        hEdgeCount
+    PTR     hedge_s*    hEdge // First half-edge of this subsector.
     PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
     PTR     sector_s*   sector
     -       int         addSpriteCount // frame number of last R_AddSprites
@@ -408,8 +424,8 @@ end
 
 struct sidedef
     -       surface_t[3] sections
-    UINT    uint        segCount
-    PTR     seg_s**     segs        // [segcount] size, segs arranged left>right
+    UINT    uint        hEdgeCount
+    PTR     hedge_s**   hEdges // [hEdgeCount] size, hedges arranged left>right
     PTR		linedef_s*	line
     PTR     sector_s*   sector
     SHORT   short       flags

@@ -80,14 +80,14 @@ static boolean PIT_ApplyTorque(linedef_t* ld, void* data)
     if(tmThing->player)
         return true; // Skip players!
 
-    if(!(frontsec = P_GetPtrp(ld, DMU_FRONT_SECTOR)) ||
-       !(backsec = P_GetPtrp(ld, DMU_BACK_SECTOR)))
+    if(!(frontsec = DMU_GetPtrp(ld, DMU_FRONT_SECTOR)) ||
+       !(backsec = DMU_GetPtrp(ld, DMU_BACK_SECTOR)))
         return true; // Shouldn't ever happen.
 
-    ffloor = P_GetFloatp(frontsec, DMU_FLOOR_HEIGHT);
-    bfloor = P_GetFloatp(backsec, DMU_FLOOR_HEIGHT);
-    P_GetFloatpv(ld, DMU_DXY, d1);
-    P_GetFloatpv(P_GetPtrp(ld, DMU_VERTEX0), DMU_XY, vtx);
+    ffloor = DMU_GetFloatp(frontsec, DMU_FLOOR_HEIGHT);
+    bfloor = DMU_GetFloatp(backsec, DMU_FLOOR_HEIGHT);
+    DMU_GetFloatpv(ld, DMU_DXY, d1);
+    DMU_GetFloatpv(DMU_GetPtrp(ld, DMU_VERTEX0), DMU_XY, vtx);
 
     // Lever-arm:
     dist = +d1[0] * mo->pos[VY] - d1[1] * mo->pos[VX] -

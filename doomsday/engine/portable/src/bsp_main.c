@@ -206,10 +206,10 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                 // Handle the 'One-Sided Window' trick.
                 if(line->buildData.windowEffect && front)
                 {
-                    hedge_t    *other;
+                    hedge_t*            other;
 
-                    other = HEdge_Create(front->lineDef, line,
-                                         line->v[1], line->v[0],
+                    other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                         line, line->v[1], line->v[0],
                                          line->buildData.windowEffect, true);
 
                     BSP_AddHEdgeToSuperBlock(block, other);
@@ -285,7 +285,6 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
     BSP_InitSuperBlockAllocator();
     BSP_InitIntersectionAllocator();
-    BSP_InitHEdgeAllocator();
 
     BSP_InitForNodeBuild(map);
 
@@ -295,7 +294,7 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
     // Build the BSP.
     {
     uint                buildStartTime = Sys_GetRealTime();
-    cutlist_t          *cutList;
+    cutlist_t*          cutList;
 
     cutList = BSP_CutListCreate();
 
@@ -316,12 +315,12 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
     if(builtOK)
     {   // Success!
-        // Wind the BSP tree and link to the map.
+        // Wind the BSP tree and save to the map.
         ClockwiseBspTree(rootNode);
         SaveMap(map, rootNode, vertexes, numVertexes);
 
-        Con_Message("BSP_Build: Built %d Nodes, %d Subsectors, %d Segs, %d Vertexes\n",
-                    map->numNodes, map->numSSectors, map->numSegs,
+        Con_Message("BSP_Build: Built %d Nodes, %d Subsectors, %d HEdges, %d Vertexes\n",
+                    map->numNodes, map->numSSectors, map->numHEdges,
                     map->numVertexes);
 
         if(rootNode && !BinaryTree_IsLeaf(rootNode))
@@ -347,7 +346,6 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
     rootNode = NULL;
 
     // Free temporary storage.
-    BSP_ShutdownHEdgeAllocator();
     BSP_ShutdownIntersectionAllocator();
     BSP_ShutdownSuperBlockAllocator();
 

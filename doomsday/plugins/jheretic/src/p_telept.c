@@ -142,7 +142,7 @@ boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
         thing->floorClip = 0;
 
         if(thing->pos[VZ] ==
-           P_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
+           DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -185,7 +185,7 @@ static boolean findMobj(thinker_t* th, void* context)
 
     // Must be in the specified sector?
     if(params->sec &&
-       params->sec != P_GetPtrp(mo->subsector, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(mo->subsector, DMU_SECTOR))
         return true; // Continue iteration.
 
     // Found it!

@@ -108,11 +108,11 @@ static boolean crossSSec(uint ssecIdx, losdata_t* los)
     if(ssec->polyObj)
     {   // Check polyobj lines.
         polyobj_t*          po = ssec->polyObj;
-        seg_t**             segPtr = po->segs;
+        hedge_t**           ptr = po->hEdges;
 
-        while(*segPtr)
+        while(*ptr)
         {
-            seg_t*              seg = *segPtr;
+            seg_t*              seg = (seg_t*) (*ptr)->data;
 
             if(seg->lineDef && seg->lineDef->validCount != validCount)
             {
@@ -124,82 +124,84 @@ static boolean crossSSec(uint ssecIdx, losdata_t* los)
                     return false; // Stop iteration.
             }
 
-            *segPtr++;
+            *ptr++;
         }
     }
 
     {
     // Check lines.
-    seg_t**             segPtr = ssec->segs;
-    while(*segPtr)
+    hedge_t*             hEdge;
+
+    if((hEdge = ssec->hEdge))
     {
-        seg_t*              seg = *segPtr;
-
-        if(seg->lineDef && seg->lineDef->validCount != validCount)
+        do
         {
-            const linedef_t*    li = seg->lineDef;
-            divline_t           dl;
+            seg_t*              seg = (seg_t*) (hEdge)->data;
 
-            seg->lineDef->validCount = validCount;
-
-            if(crossLineDef(li, los, &dl))
+            if(seg->lineDef && seg->lineDef->validCount != validCount)
             {
-                const sector_t*     front, *back;
+                const linedef_t*    li = seg->lineDef;
+                divline_t           dl;
 
-                // Must be twosided.
-                if(!li->L_frontside || !li->L_backside)
-                    return false; // Stop iteration.
+                seg->lineDef->validCount = validCount;
 
-                front = seg->SG_frontsector;
-                back  = seg->SG_backsector;
+                if(crossLineDef(li, los, &dl))
+                {
+                    const sector_t*     front, *back;
 
-                // Do we need to check for occluding upper lower sections?
-                if(front->SP_floorheight != back->SP_floorheight ||
-                   front->SP_ceilheight  != back->SP_ceilheight)
-                {   // A possible occluder.
-                    float               openTop, openBottom, frac;
-
-                    if(front->SP_ceilheight < back->SP_ceilheight)
-                        openTop = front->SP_ceilheight;
-                    else
-                        openTop = back->SP_ceilheight;
-
-                    if(front->SP_floorheight > back->SP_floorheight)
-                        openBottom = front->SP_floorheight;
-                    else
-                        openBottom = back->SP_floorheight;
-
-                    // Completely closed?
-                    if(openBottom >= openTop)
+                    // Must be twosided.
+                    if(!li->L_frontside || !li->L_backside)
                         return false; // Stop iteration.
 
-                    frac = P_InterceptVector(&los->trace, &dl);
+                    front = seg->SG_frontsector;
+                    back  = seg->SG_backsector;
 
-                    if(front->SP_floorheight != back->SP_floorheight)
-                    {
-                        float               slope =
-                            (openBottom - los->startZ) / frac;
+                    // Do we need to check for occluding upper lower sections?
+                    if(front->SP_floorheight != back->SP_floorheight ||
+                       front->SP_ceilheight  != back->SP_ceilheight)
+                    {   // A possible occluder.
+                        float               openTop, openBottom, frac;
 
-                        if(slope > los->bottomSlope)
-                            los->bottomSlope = slope;
+                        if(front->SP_ceilheight < back->SP_ceilheight)
+                            openTop = front->SP_ceilheight;
+                        else
+                            openTop = back->SP_ceilheight;
+
+                        if(front->SP_floorheight > back->SP_floorheight)
+                            openBottom = front->SP_floorheight;
+                        else
+                            openBottom = back->SP_floorheight;
+
+                        // Completely closed?
+                        if(openBottom >= openTop)
+                            return false; // Stop iteration.
+
+                        frac = P_InterceptVector(&los->trace, &dl);
+
+                        if(front->SP_floorheight != back->SP_floorheight)
+                        {
+                            float               slope =
+                                (openBottom - los->startZ) / frac;
+
+                            if(slope > los->bottomSlope)
+                                los->bottomSlope = slope;
+                        }
+
+                        if(front->SP_ceilheight != back->SP_ceilheight)
+                        {
+                            float               slope =
+                                (openTop - los->startZ) / frac;
+
+                            if(slope < los->topSlope)
+                                los->topSlope = slope;
+                        }
+
+                        if(los->topSlope <= los->bottomSlope)
+                            return false; // Stop iteration.
                     }
-
-                    if(front->SP_ceilheight != back->SP_ceilheight)
-                    {
-                        float               slope =
-                            (openTop - los->startZ) / frac;
-
-                        if(slope < los->topSlope)
-                            los->topSlope = slope;
-                    }
-
-                    if(los->topSlope <= los->bottomSlope)
-                        return false; // Stop iteration.
                 }
             }
-        }
-
-        *segPtr++;
+        } while((hEdge = hEdge->next) != ssec->hEdge);
     }
     }
 

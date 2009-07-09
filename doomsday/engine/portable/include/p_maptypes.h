@@ -53,20 +53,20 @@ typedef struct vertex_s {
 #define FRONT 0
 #define BACK  1
 
-#define SG_v(n)                 v[(n)]
-#define SG_vpos(n)              SG_v(n)->V_pos
+#define HE_v(n)                 v[(n)]
+#define HE_vpos(n)              HE_v(n)->V_pos
 
-#define SG_v1                   SG_v(0)
-#define SG_v1pos                SG_v(0)->V_pos
+#define HE_v1                   HE_v(0)
+#define HE_v1pos                HE_v(0)->V_pos
 
-#define SG_v2                   SG_v(1)
-#define SG_v2pos                SG_v(1)->V_pos
+#define HE_v2                   HE_v(1)
+#define HE_v2pos                HE_v(1)->V_pos
+
+#define HEDGE_SIDEDEF(e)        (((seg_t*)(e)->data)->lineDef? ((seg_t*)(e)->data)->lineDef->sideDefs[((seg_t*) (e)->data)->side] : NULL)
 
 #define SG_sector(n)            sec[(n)]
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
-
-#define SEG_SIDEDEF(s)          ((s)->lineDef->sideDefs[(s)->side])
 
 // Seg flags
 #define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
@@ -76,27 +76,33 @@ typedef struct vertex_s {
 #define SEGINF_BACKSECSKYFIX    0x0002
 
 typedef struct seg_s {
-    runtime_mapdata_header_t header;
-    struct vertex_s*    v[2];          // [Start, End] of the segment.
-    struct linedef_s*   lineDef;
-    struct sector_s*    sec[2];
+    struct linedef_s* lineDef;
+    struct sector_s* sec[2];
     struct subsector_s* subsector;
-    struct seg_s*       backSeg;
-    angle_t             angle;
-    byte                side;          // 0=front, 1=back
-    byte                flags;
-    float               length;        // Accurate length of the segment (v1 -> v2).
-    float               offset;
-    biassurface_t*      bsuf[3];       // 0=middle, 1=top, 2=bottom
-    short               frameFlags;
+    angle_t     angle;
+    byte        side; // 0=front, 1=back
+    byte        flags;
+    float       length; // Accurate length of the segment (v1 -> v2).
+    float       offset;
+    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
+    short       frameFlags;
 } seg_t;
+
+typedef struct hedge_s {
+    runtime_mapdata_header_t header;
+    struct vertex_s*    v[2];          // [Start, End] of the hedge.
+    struct hedge_s*     twin;
+    struct hedge_s*     next;
+    struct hedge_s*     prev;
+    void*               data;
+} hedge_t;
 
 #define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
 
 typedef struct subsector_s {
     runtime_mapdata_header_t header;
-    unsigned int        segCount;
-    struct seg_s**      segs;          // [segcount] size.
+    unsigned int        hEdgeCount;
+    struct hedge_s*     hEdge;         // First half-edge of this subsector.
     struct polyobj_s*   polyObj;       // NULL, if there is no polyobj.
     struct sector_s*    sector;
     int                 addSpriteCount; // frame number of last R_AddSprites
@@ -390,8 +396,8 @@ typedef struct msidedef_s {
 typedef struct sidedef_s {
     runtime_mapdata_header_t header;
     surface_t           sections[3];
-    unsigned int        segCount;
-    struct seg_s**      segs;          // [segcount] size, segs arranged left>right
+    unsigned int        hEdgeCount;
+    struct hedge_s**    hEdges;        // [hEdgeCount] size, hedges arranged left>right
     struct linedef_s*   line;
     struct sector_s*    sector;
     short               flags;

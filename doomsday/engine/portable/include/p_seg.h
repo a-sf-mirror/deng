@@ -32,7 +32,7 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
-boolean         Seg_GetProperty(const seg_t *seg, setargs_t *args);
-boolean         Seg_SetProperty(seg_t *seg, const setargs_t *args);
+boolean         Seg_GetProperty(const hedge_t* hEdge, setargs_t* args);
+boolean         Seg_SetProperty(hedge_t* hEdge, const setargs_t* args);
 
 #endif

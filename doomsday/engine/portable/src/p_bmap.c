@@ -991,81 +991,82 @@ static boolean rendBlockSubsector(subsector_t* ssec, void* data)
 {
     vec2_t              start, end;
     arvec2_t            bbox = data;
-    seg_t**             segs = ssec->segs;
+    hedge_t*            hEdge;
 
-    while(*segs)
+    if((hEdge = ssec->hEdge))
     {
-        seg_t*              seg = *segs;
-
-        V2_Set(start,
-               seg->SG_v1pos[VX] - bbox[0][VX], seg->SG_v1pos[VY] - bbox[0][VY]);
-
-        V2_Set(end,
-               seg->SG_v2pos[VX] - bbox[0][VX], seg->SG_v2pos[VY] - bbox[0][VY]);
-
-        glBegin(GL_LINES);
-            glVertex2fv(start);
-            glVertex2fv(end);
-        glEnd();
-
+        do
         {
-        float               length, dx, dy;
-        float               normal[2], unit[2];
-        float               scale = MAX_OF(bmapDebugSize, 1);
-        float               width = (theWindow->width / 16) / scale;
+            V2_Set(start, hEdge->HE_v1pos[VX] - bbox[0][VX],
+                   hEdge->HE_v1pos[VY] - bbox[0][VY]);
 
-        dx = end[VX] - start[VX];
-        dy = end[VY] - start[VY];
-        length = sqrt(dx * dx + dy * dy);
-        if(length > 0)
-        {
-            unit[VX] = dx / length;
-            unit[VY] = dy / length;
-            normal[VX] = -unit[VY];
-            normal[VY] = unit[VX];
+            V2_Set(end, hEdge->HE_v2pos[VX] - bbox[0][VX],
+                   hEdge->HE_v2pos[VY] - bbox[0][VY]);
 
-            glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
-
-            glEnable(GL_TEXTURE_2D);
-            GL_BlendOp(GL_FUNC_ADD);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-            glBegin(GL_QUADS);
-                glTexCoord2f(0.75f, 0.5f);
+            glBegin(GL_LINES);
                 glVertex2fv(start);
-                glTexCoord2f(0.75f, 0.5f);
                 glVertex2fv(end);
-                glTexCoord2f(0.75f, 1);
-                glVertex2f(end[VX] - normal[VX] * width,
-                           end[VY] - normal[VY] * width);
-                glTexCoord2f(0.75f, 1);
-                glVertex2f(start[VX] - normal[VX] * width,
-                           start[VY] - normal[VY] * width);
             glEnd();
 
-            glDisable(GL_TEXTURE_2D);
-            GL_BlendMode(BM_NORMAL);
+            {
+            float               length, dx, dy;
+            float               normal[2], unit[2];
+            float               scale = MAX_OF(bmapDebugSize, 1);
+            float               width = (theWindow->width / 16) / scale;
+
+            dx = end[VX] - start[VX];
+            dy = end[VY] - start[VY];
+            length = sqrt(dx * dx + dy * dy);
+            if(length > 0)
+            {
+                unit[VX] = dx / length;
+                unit[VY] = dy / length;
+                normal[VX] = -unit[VY];
+                normal[VY] = unit[VX];
+
+                glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
+
+                glEnable(GL_TEXTURE_2D);
+                GL_BlendOp(GL_FUNC_ADD);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+                glBegin(GL_QUADS);
+                    glTexCoord2f(0.75f, 0.5f);
+                    glVertex2fv(start);
+                    glTexCoord2f(0.75f, 0.5f);
+                    glVertex2fv(end);
+                    glTexCoord2f(0.75f, 1);
+                    glVertex2f(end[VX] - normal[VX] * width,
+                               end[VY] - normal[VY] * width);
+                    glTexCoord2f(0.75f, 1);
+                    glVertex2f(start[VX] - normal[VX] * width,
+                               start[VY] - normal[VY] * width);
+                glEnd();
+
+                glDisable(GL_TEXTURE_2D);
+                GL_BlendMode(BM_NORMAL);
+                }
             }
-        }
 
-        // Draw the bounding box.
-        V2_Set(start, ssec->bBox[0].pos[VX] - bbox[0][VX],
-                      ssec->bBox[0].pos[VY] - bbox[0][VY]);
-        V2_Set(end, ssec->bBox[1].pos[VX] - bbox[0][VX],
-                    ssec->bBox[1].pos[VY] - bbox[0][VY]);
+            // Draw the bounding box.
+            V2_Set(start, ssec->bBox[0].pos[VX] - bbox[0][VX],
+                          ssec->bBox[0].pos[VY] - bbox[0][VY]);
+            V2_Set(end, ssec->bBox[1].pos[VX] - bbox[0][VX],
+                        ssec->bBox[1].pos[VY] - bbox[0][VY]);
 
-        glBegin(GL_LINES);
-            glVertex2f(start[VX], start[VY]);
-            glVertex2f(end[VX], start[VY]);
-            glVertex2f(end[VX], start[VY]);
-            glVertex2f(end[VX], end[VY]);
-            glVertex2f(end[VX], end[VY]);
-            glVertex2f(start[VX], end[VY]);
-            glVertex2f(start[VX], end[VY]);
-            glVertex2f(start[VX], start[VY]);
-        glEnd();
-        *segs++;
+            glBegin(GL_LINES);
+                glVertex2f(start[VX], start[VY]);
+                glVertex2f(end[VX], start[VY]);
+                glVertex2f(end[VX], start[VY]);
+                glVertex2f(end[VX], end[VY]);
+                glVertex2f(end[VX], end[VY]);
+                glVertex2f(start[VX], end[VY]);
+                glVertex2f(start[VX], end[VY]);
+                glVertex2f(start[VX], start[VY]);
+            glEnd();
+        } while((hEdge = hEdge->next) != ssec->hEdge);
     }
+
     return true; // Continue iteration.
 }
 

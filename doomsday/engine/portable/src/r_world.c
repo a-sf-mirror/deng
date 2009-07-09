@@ -1186,14 +1186,20 @@ void R_InitLinks(gamemap_t *map)
  * point cannot be found use the center of subsector instead (it will
  * always be valid as subsectors are convex).
  */
-static void triangulateSubSector(subsector_t *ssec)
+void R_TriangulateSubSector(subsector_t* ssec)
 {
     uint                baseIDX = 0, i, n;
     boolean             found = false;
+    hedge_t*            hEdge;
+
+    if(ssec->vertices)
+        return; // Already complete.
+
+    ssec->flags &= ~SUBF_MIDPOINT;
 
     // We need to find a good tri-fan base vertex, (one that doesn't
     // generate zero-area triangles).
-    if(ssec->segCount <= 3)
+    if(ssec->hEdgeCount <= 3)
     {   // Always valid.
         found = true;
     }
@@ -1202,23 +1208,23 @@ static void triangulateSubSector(subsector_t *ssec)
         // the first good one.
 #define TRIFAN_LIMIT    0.1
 
-        fvertex_t          *base, *a, *b;
+        fvertex_t*          base, *a, *b;
 
         baseIDX = 0;
+        hEdge = ssec->hEdge;
         do
         {
-            seg_t              *seg = ssec->segs[baseIDX];
+            hedge_t*            hEdge2;
 
-            base = &seg->SG_v1->v;
+            base = &hEdge->HE_v1->v;
             i = 0;
+            hEdge2 = ssec->hEdge;
             do
             {
-                seg_t              *seg2 = ssec->segs[i];
-
                 if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
                 {
-                    a = &seg2->SG_v1->v;
-                    b = &seg2->SG_v2->v;
+                    a = &hEdge2->HE_v1->v;
+                    b = &hEdge2->HE_v2->v;
 
                     if(TRIFAN_LIMIT >=
                        M_TriangleArea(base->pos, a->pos, b->pos))
@@ -1228,18 +1234,18 @@ static void triangulateSubSector(subsector_t *ssec)
                 }
 
                 i++;
-            } while(base && i < ssec->segCount);
+            } while(base && (hEdge2 = hEdge2->next) != ssec->hEdge);
 
             if(!base)
                 baseIDX++;
-        } while(!base && baseIDX < ssec->segCount);
+        } while(!base && (hEdge = hEdge->next) != ssec->hEdge);
 
         if(base)
             found = true;
 #undef TRIFAN_LIMIT
     }
 
-    ssec->numVertices = ssec->segCount;
+    ssec->numVertices = ssec->hEdgeCount;
     if(!found)
         ssec->numVertices += 2;
     ssec->vertices =
@@ -1250,50 +1256,22 @@ static void triangulateSubSector(subsector_t *ssec)
     n = 0;
     if(!found)
         ssec->vertices[n++] = &ssec->midPoint;
-    for(i = 0; i < ssec->segCount; ++i)
-    {
-        uint                idx;
-        seg_t              *seg;
 
-        idx = baseIDX + i;
-        if(idx >= ssec->segCount)
-            idx = idx - ssec->segCount;
-        seg = ssec->segs[idx];
-        ssec->vertices[n++] = &seg->SG_v1->v;
-    }
+    // Find the start.
+    hEdge = ssec->hEdge;
+    i = 0;
+    while(i++ < baseIDX)
+        hEdge = hEdge->next;
+
+    for(i = 0; i < ssec->hEdgeCount; ++i, hEdge = hEdge->next)
+        ssec->vertices[n++] = &hEdge->HE_v1->v;
+
     if(!found)
-        ssec->vertices[n++] = &ssec->segs[0]->SG_v1->v;
+        ssec->vertices[n++] = &ssec->hEdge->HE_v1->v;
     ssec->vertices[n] = NULL; // terminate.
 
     if(!found)
         ssec->flags |= SUBF_MIDPOINT;
-}
-
-/**
- * Polygonizes all subsectors in the map.
- */
-void R_PolygonizeMap(gamemap_t *map)
-{
-    uint                i;
-    uint                startTime;
-
-    startTime = Sys_GetRealTime();
-
-    // Polygonize each subsector.
-    for(i = 0; i < map->numSSectors; ++i)
-    {
-        subsector_t        *sub = &map->ssectors[i];
-        triangulateSubSector(sub);
-    }
-
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("R_PolygonizeMap: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
-
-#ifdef _DEBUG
-    Z_CheckHeap();
-#endif
 }
 
 /**
@@ -1790,20 +1768,21 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
         ssecp = sec->ssectors;
         while(*ssecp)
         {
-            subsector_t*    ssec = *ssecp;
-            seg_t**         segp = ssec->segs;
+            subsector_t*        ssec = *ssecp;
+            hedge_t*            hEdge;
 
-            while(*segp)
+            if((hEdge = ssec->hEdge))
             {
-                seg_t*          seg = *segp;
-
-                if(seg->lineDef)
+                do
                 {
-                    for(i = 0; i < 3; ++i)
-                        SB_SurfaceMoved(seg->bsuf[i]);
-                }
+                    seg_t*              seg = (seg_t*) hEdge->data;
 
-                *segp++;
+                    if(seg->lineDef)
+                    {
+                        for(i = 0; i < 3; ++i)
+                            SB_SurfaceMoved(seg->bsuf[i]);
+                    }
+                } while((hEdge = hEdge->next) != ssec->hEdge);
             }
 
             SB_SurfaceMoved(ssec->bsuf[pln->planeID]);

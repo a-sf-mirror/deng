@@ -53,7 +53,7 @@
 /**
  * Update the subsector, property is selected by DMU_* name.
  */
-boolean Subsector_SetProperty(subsector_t *sub, const setargs_t *args)
+boolean Subsector_SetProperty(subsector_t* sub, const setargs_t* args)
 {
     Con_Error("Subsector_SetProperty: Property %s is not writable.\n",
               DMU_Str(args->prop));
@@ -64,7 +64,7 @@ boolean Subsector_SetProperty(subsector_t *sub, const setargs_t *args)
 /**
  * Get the value of a subsector property, selected by DMU_* name.
  */
-boolean Subsector_GetProperty(const subsector_t *sub, setargs_t *args)
+boolean Subsector_GetProperty(const subsector_t* sub, setargs_t* args)
 {
     switch(args->prop)
     {
@@ -80,8 +80,8 @@ boolean Subsector_GetProperty(const subsector_t *sub, setargs_t *args)
     case DMU_SEG_COUNT:
     {
         // FIXME:
-        //DMU_GetValue(DMT_SUBSECTOR_SEGCOUNT, &sub->segCount, args, 0);
-        int val = (int) sub->segCount;
+        //DMU_GetValue(DMT_SUBSECTOR_SEGCOUNT, &sub->hEdgeCount, args, 0);
+        int val = (int) sub->hEdgeCount;
         DMU_GetValue(DDVT_INT, &val, args, 0);
         break;
     }

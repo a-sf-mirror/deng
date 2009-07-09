@@ -105,7 +105,7 @@ void SV_PrepareMaterial(material_t* mat, materialarchive_t* arc)
     if(!mat)
         return;
     matName = P_GetMaterialName(mat);
-    mnamespace = P_GetIntp(mat, DMU_NAMESPACE);
+    mnamespace = DMU_GetIntp(mat, DMU_NAMESPACE);
 
     // Get the name of the material.
     if(matName)
@@ -151,15 +151,15 @@ void SV_InitMaterialArchives(void)
 
     for(i = 0; i < numsectors; ++i)
     {
-        SV_PrepareMaterial(P_GetPtr(DMU_SECTOR, i, DMU_FLOOR_MATERIAL), &matArchive);
-        SV_PrepareMaterial(P_GetPtr(DMU_SECTOR, i, DMU_CEILING_MATERIAL), &matArchive);
+        SV_PrepareMaterial(DMU_GetPtr(DMU_SECTOR, i, DMU_FLOOR_MATERIAL), &matArchive);
+        SV_PrepareMaterial(DMU_GetPtr(DMU_SECTOR, i, DMU_CEILING_MATERIAL), &matArchive);
     }
 
     for(i = 0; i < numsides; ++i)
     {
-        SV_PrepareMaterial(P_GetPtr(DMU_SIDEDEF, i, DMU_MIDDLE_MATERIAL), &matArchive);
-        SV_PrepareMaterial(P_GetPtr(DMU_SIDEDEF, i, DMU_TOP_MATERIAL), &matArchive);
-        SV_PrepareMaterial(P_GetPtr(DMU_SIDEDEF, i, DMU_BOTTOM_MATERIAL), &matArchive);
+        SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_MIDDLE_MATERIAL), &matArchive);
+        SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_TOP_MATERIAL), &matArchive);
+        SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_BOTTOM_MATERIAL), &matArchive);
     }
 }
 
@@ -218,7 +218,7 @@ material_t* SV_GetArchiveMaterial(int archivenum, int group)
     if(!strncmp(matArchive.table[archivenum].name, BADTEXNAME, 8))
         return NULL;
     else
-        return P_ToPtr(DMU_MATERIAL,
+        return DMU_ToPtr(DMU_MATERIAL,
             P_MaterialNumForName(matArchive.table[archivenum].name,
                                  matArchive.table[archivenum].mnamespace));
 }

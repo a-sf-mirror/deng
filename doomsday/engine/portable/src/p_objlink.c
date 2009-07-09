@@ -98,7 +98,7 @@ typedef struct objcontactlist_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void processSeg(seg_t* seg, void* data);
+static void processSeg(hedge_t* seg, void* data);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -289,30 +289,38 @@ boolean RIT_LinkObjToSubSector(subsector_t* subsector, void* data)
  */
 static void spreadInSsec(subsector_t* ssec, void* data)
 {
-    seg_t**             segPtr = ssec->segs;
+    hedge_t*            hEdge;
 
-    while(*segPtr)
-        processSeg(*segPtr++, data);
+    if((hEdge = ssec->hEdge))
+    {
+        do
+        {
+            processSeg(hEdge, data);
+        } while((hEdge = hEdge->next) != ssec->hEdge);
+    }
 }
 
-static void processSeg(seg_t* seg, void* data)
+static void processSeg(hedge_t* hEdge, void* data)
 {
     contactfinderparams_t* params = (contactfinderparams_t*) data;
     subsector_t*        source, *dest;
     float               distance;
     vertex_t*           vtx;
+    seg_t*              seg = (seg_t*) hEdge->data, *twin;
 
     // Seg must be between two different ssecs.
     if(seg->lineDef &&
-       (!seg->backSeg || seg->subsector == seg->backSeg->subsector))
+       (!hEdge->twin ||
+       seg->subsector == ((seg_t*) hEdge->twin->data)->subsector))
         return;
+    twin = (seg_t*) hEdge->twin->data;
 
     // Which way does the spread go?
     if(seg->subsector->validCount == validCount &&
-       seg->backSeg->subsector->validCount != validCount)
+       twin->subsector->validCount != validCount)
     {
         source = seg->subsector;
-        dest = seg->backSeg->subsector;
+        dest = twin->subsector;
     }
     else
     {
@@ -347,17 +355,17 @@ static void processSeg(seg_t* seg, void* data)
         // Don't spread if the middle material completely fills the gap between
         // floor and ceiling (direction is from dest to source).
         if(Rend_DoesMidTextureFillGap(seg->lineDef,
-            dest == seg->backSeg->subsector? false : true))
+            dest == twin->subsector? false : true))
             return;
     }
 
-    // Calculate 2D distance to seg.
+    // Calculate 2D distance to hEdge.
     {
     float               dx, dy;
 
-    dx = seg->SG_v2pos[VX] - seg->SG_v1pos[VX];
-    dy = seg->SG_v2pos[VY] - seg->SG_v1pos[VY];
-    vtx = seg->SG_v1;
+    dx = hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX];
+    dy = hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY];
+    vtx = hEdge->HE_v1;
     distance = ((vtx->V_pos[VY] - params->objPos[VY]) * dx -
                 (vtx->V_pos[VX] - params->objPos[VX]) * dy) / seg->length;
     }
@@ -365,7 +373,7 @@ static void processSeg(seg_t* seg, void* data)
     if(seg->lineDef)
     {
         if((source == seg->subsector && distance < 0) ||
-           (source == seg->backSeg->subsector && distance > 0))
+           (source == twin->subsector && distance > 0))
         {
             // Can't spread in this direction.
             return;

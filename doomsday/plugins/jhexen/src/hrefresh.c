@@ -33,6 +33,7 @@
 
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "f_infine.h"
 #include "r_common.h"
 #include "p_mapsetup.h"
@@ -448,7 +449,7 @@ void R_SetAllDoomsdayFlags(void)
 
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)
-        for(mo = P_GetPtr(DMU_SECTOR, i, DMT_MOBJS); mo; mo = mo->sNext)
+        for(mo = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS); mo; mo = mo->sNext)
         {
             if(IS_CLIENT && mo->ddFlags & DDMF_REMOTE)
                 continue;

@@ -101,13 +101,13 @@ xline_t* P_ToXLine(linedef_t* line)
         return NULL;
 
     // Is it a dummy?
-    if(P_IsDummy(line))
+    if(DMU_IsDummy(line))
     {
-        return P_DummyExtraData(line);
+        return DMU_DummyExtraData(line);
     }
     else
     {
-        return &xlines[P_ToIndex(line)];
+        return &xlines[DMU_ToIndex(line)];
     }
 }
 
@@ -120,13 +120,13 @@ xsector_t* P_ToXSector(sector_t* sector)
         return NULL;
 
     // Is it a dummy?
-    if(P_IsDummy(sector))
+    if(DMU_IsDummy(sector))
     {
-        return P_DummyExtraData(sector);
+        return DMU_DummyExtraData(sector);
     }
     else
     {
-        return &xsectors[P_ToIndex(sector)];
+        return &xsectors[DMU_ToIndex(sector)];
     }
 }
 
@@ -140,16 +140,16 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* sub)
     if(!sub)
         return NULL;
 
-    sec = P_GetPtrp(sub, DMU_SECTOR);
+    sec = DMU_GetPtrp(sub, DMU_SECTOR);
 
     // Is it a dummy?
-    if(P_IsDummy(sec))
+    if(DMU_IsDummy(sec))
     {
-        return P_DummyExtraData(sec);
+        return DMU_DummyExtraData(sec);
     }
     else
     {
-        return &xsectors[P_ToIndex(sec)];
+        return &xsectors[DMU_ToIndex(sec)];
     }
 }
 
@@ -253,14 +253,14 @@ int applySurfaceColor(void* obj, void* context)
     applysurfacecolorparams_t* params =
         (applysurfacecolorparams_t*) context;
     byte                dFlags =
-        P_GetGMOByte(MO_XLINEDEF, P_ToIndex(li), MO_DRAWFLAGS);
+        P_GetGMOByte(MO_XLINEDEF, DMU_ToIndex(li), MO_DRAWFLAGS);
     byte                tFlags =
-        P_GetGMOByte(MO_XLINEDEF, P_ToIndex(li), MO_TEXFLAGS);
+        P_GetGMOByte(MO_XLINEDEF, DMU_ToIndex(li), MO_TEXFLAGS);
 
     if((dFlags & LDF_BLEND) &&
-       params->frontSec == P_GetPtrp(li, DMU_FRONT_SECTOR))
+       params->frontSec == DMU_GetPtrp(li, DMU_FRONT_SECTOR))
     {
-        sidedef_t*          side = P_GetPtrp(li, DMU_SIDEDEF0);
+        sidedef_t*          side = DMU_GetPtrp(li, DMU_SIDEDEF0);
 
         if(side)
         {
@@ -272,23 +272,23 @@ int applySurfaceColor(void* obj, void* context)
             bottom = (tFlags & LTF_SWAPCOLORS)? params->topColor :
                 params->bottomColor;
 
-            P_SetFloatpv(side, DMU_TOP_COLOR, top);
-            P_SetFloatpv(side, DMU_BOTTOM_COLOR, bottom);
+            DMU_SetFloatpv(side, DMU_TOP_COLOR, top);
+            DMU_SetFloatpv(side, DMU_BOTTOM_COLOR, bottom);
 
-            flags = P_GetIntp(side, DMU_FLAGS);
+            flags = DMU_GetIntp(side, DMU_FLAGS);
             if(!(dFlags & LDF_NOBLENDTOP))
                 flags |= SDF_BLENDTOPTOMID;
             if(!(dFlags & LDF_NOBLENDBOTTOM))
                 flags |= SDF_BLENDBOTTOMTOMID;
 
-            P_SetIntp(side, DMU_FLAGS, flags);
+            DMU_SetIntp(side, DMU_FLAGS, flags);
         }
     }
 
     if((dFlags & LDF_BLEND) &&
-       params->frontSec == P_GetPtrp(li, DMU_BACK_SECTOR))
+       params->frontSec == DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        sidedef_t*          side = P_GetPtrp(li, DMU_SIDEDEF1);
+        sidedef_t*          side = DMU_GetPtrp(li, DMU_SIDEDEF1);
 
         if(side)
         {
@@ -300,16 +300,16 @@ int applySurfaceColor(void* obj, void* context)
             bottom = /*(tFlags & LTF_SWAPCOLORS)? params->topColor :*/
                 params->bottomColor;
 
-            P_SetFloatpv(side, DMU_TOP_COLOR, top);
-            P_SetFloatpv(side, DMU_BOTTOM_COLOR, bottom);
+            DMU_SetFloatpv(side, DMU_TOP_COLOR, top);
+            DMU_SetFloatpv(side, DMU_BOTTOM_COLOR, bottom);
 
-            flags = P_GetIntp(side, DMU_FLAGS);
+            flags = DMU_GetIntp(side, DMU_FLAGS);
             if(!(dFlags & LDF_NOBLENDTOP))
                 flags |= SDF_BLENDTOPTOMID;
             if(!(dFlags & LDF_NOBLENDBOTTOM))
                 flags |= SDF_BLENDBOTTOMTOMID;
 
-            P_SetIntp(side, DMU_FLAGS, flags);
+            DMU_SetIntp(side, DMU_FLAGS, flags);
         }
     }
 
@@ -424,7 +424,7 @@ static void P_LoadMapObjs(void)
 
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec = P_ToPtr(DMU_SECTOR, i);
+        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
         xsector_t*          xsec = &xsectors[i];
 
         xsec->special = P_GetGMOShort(MO_XSECTOR, i, MO_TYPE);
@@ -437,11 +437,11 @@ static void P_LoadMapObjs(void)
 
         getSurfaceColor(TOLIGHTIDX(
             P_GetGMOShort(MO_XSECTOR, i, MO_FLOORCOLOR)), rgba);
-        P_SetFloatpv(sec, DMU_FLOOR_COLOR, rgba);
+        DMU_SetFloatpv(sec, DMU_FLOOR_COLOR, rgba);
 
         getSurfaceColor(TOLIGHTIDX(
             P_GetGMOShort(MO_XSECTOR, i, MO_CEILINGCOLOR)), rgba);
-        P_SetFloatpv(sec, DMU_CEILING_COLOR, rgba);
+        DMU_SetFloatpv(sec, DMU_CEILING_COLOR, rgba);
 
         // Now set the side surface colors.
         params.frontSec = sec;
@@ -452,7 +452,7 @@ static void P_LoadMapObjs(void)
             P_GetGMOShort(MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
                           params.bottomColor);
 
-        P_Iteratep(sec, DMU_LINEDEF, &params, applySurfaceColor);
+        DMU_Iteratep(sec, DMU_LINEDEF, &params, applySurfaceColor);
         }
 #endif
     }
@@ -501,7 +501,7 @@ static void P_LoadMapObjs(void)
             subsector_t*        ssec =
                 R_PointInSubsector(spot->pos[VX], spot->pos[VY]);
             xsector_t*          xsector =
-                P_ToXSector(P_GetPtrp(ssec, DMU_SECTOR));
+                P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 
             xsector->seqType = spot->doomEdNum - 1400;
             continue;
@@ -712,7 +712,7 @@ static void interpretLinedefFlags(void)
             xline->flags &= ~ML_MAPPED;
         }
 
-        P_SetInt(DMU_LINEDEF, i, DMU_FLAGS, flags);
+        DMU_SetInt(DMU_LINEDEF, i, DMU_FLAGS, flags);
     }
 
 #undef ML_BLOCKING
@@ -740,8 +740,6 @@ int P_SetupMapWorker(void* ptr)
     // It begins...
     mapSetup = true;
 
-    // The engine manages polyobjects, so reset the count.
-    DD_SetInteger(DD_POLYOBJ_COUNT, 0);
     P_ResetWorldState();
 
     // Let the engine know that we are about to start setting up a map.
@@ -995,7 +993,7 @@ static void P_FinalizeMap(void)
     // visible due to texture repeating and interpolation.
     {
     uint                i, k;
-    material_t*         mat = P_ToPtr(DMU_MATERIAL, P_MaterialNumForName("NUKE24", MN_TEXTURES));
+    material_t*         mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName("NUKE24", MN_TEXTURES));
     material_t*         bottomMat, *midMat;
     float               yoff;
     sidedef_t*          sidedef;
@@ -1003,21 +1001,21 @@ static void P_FinalizeMap(void)
 
     for(i = 0; i < numlines; ++i)
     {
-        line = P_ToPtr(DMU_LINEDEF, i);
+        line = DMU_ToPtr(DMU_LINEDEF, i);
 
         for(k = 0; k < 2; ++k)
         {
-            sidedef = P_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
+            sidedef = DMU_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
 
             if(sidedef)
             {
-                bottomMat = P_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
-                midMat = P_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL);
+                bottomMat = DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
+                midMat = DMU_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL);
 
                 if(bottomMat == mat && midMat == NULL)
                 {
-                    yoff = P_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
-                    P_SetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y, yoff + 1.0f);
+                    yoff = DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
+                    DMU_SetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y, yoff + 1.0f);
                 }
             }
         }

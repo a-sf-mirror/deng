@@ -51,6 +51,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "dmu_lib.h"
 #include "p_tick.h"
 #include "p_mapsetup.h"
 #include "p_user.h"
@@ -981,7 +982,7 @@ boolean unstuckMobjInLinedef(linedef_t* li, void* context)
     unstuckmobjinlinedefparams_t *params =
         (unstuckmobjinlinedefparams_t*) context;
 
-    if(!P_GetPtrp(li, DMU_BACK_SECTOR))
+    if(!DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
         float               pos, linePoint[2], lineDelta[2], result[2];
 
@@ -992,8 +993,8 @@ boolean unstuckMobjInLinedef(linedef_t* li, void* context)
          * the projected point.
          */
 
-        P_GetFloatpv(P_GetPtrp(li, DMU_VERTEX0), DMU_XY, linePoint);
-        P_GetFloatpv(li, DMU_DXY, lineDelta);
+        DMU_GetFloatpv(DMU_GetPtrp(li, DMU_VERTEX0), DMU_XY, linePoint);
+        DMU_GetFloatpv(li, DMU_DXY, lineDelta);
 
         pos = M_ProjectPointOnLine(params->pos, linePoint, lineDelta, 0, result);
 
@@ -1100,8 +1101,8 @@ float P_PointLineDistance(linedef_t *line, float x, float y, float *offset)
 {
     float   a[2], b[2], c[2], d[2], len;
 
-    P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX0), DMU_XY, a);
-    P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX1), DMU_XY, b);
+    DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX0), DMU_XY, a);
+    DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX1), DMU_XY, b);
 
     c[VX] = x;
     c[VY] = y;
@@ -1136,11 +1137,11 @@ void P_TurnGizmosAwayFromDoors(void)
 
     for(i = 0; i < numsectors; ++i)
     {
-        sec = P_ToPtr(DMU_SECTOR, i);
+        sec = DMU_ToPtr(DMU_SECTOR, i);
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = P_GetPtrp(sec, DMT_MOBJS);
+        for(k = 0, iter = DMU_GetPtrp(sec, DMT_MOBJS);
             k < MAXLIST - 1 && iter; iter = iter->sNext)
         {
             if(iter->type == MT_KEYGIZMOBLUE ||
@@ -1157,9 +1158,9 @@ void P_TurnGizmosAwayFromDoors(void)
             {
                 float               d1[2];
 
-                li = P_ToPtr(DMU_LINEDEF, l);
+                li = DMU_ToPtr(DMU_LINEDEF, l);
 
-                if(P_GetPtrp(li, DMU_BACK_SECTOR))
+                if(DMU_GetPtrp(li, DMU_BACK_SECTOR))
                     continue;
 
                 xli = P_ToXLine(li);
@@ -1170,7 +1171,7 @@ void P_TurnGizmosAwayFromDoors(void)
                     xli->special != 27 && xli->special != 28))
                     continue;
 
-                P_GetFloatpv(li, DMU_DXY, d1);
+                DMU_GetFloatpv(li, DMU_DXY, d1);
                 linelen = P_ApproxDistance(d1[0], d1[1]);
 
                 dist = fabs(P_PointLineDistance(li, iter->pos[VX],
@@ -1187,11 +1188,11 @@ void P_TurnGizmosAwayFromDoors(void)
                 vertex_t*       v0, *v1;
                 float           v0p[2], v1p[2];
 
-                v0 = P_GetPtrp(closestline, DMU_VERTEX0);
-                v1 = P_GetPtrp(closestline, DMU_VERTEX1);
+                v0 = DMU_GetPtrp(closestline, DMU_VERTEX0);
+                v1 = DMU_GetPtrp(closestline, DMU_VERTEX1);
 
-                P_GetFloatpv(v0, DMU_XY, v0p);
-                P_GetFloatpv(v1, DMU_XY, v1p);
+                DMU_GetFloatpv(v0, DMU_XY, v0p);
+                DMU_GetFloatpv(v1, DMU_XY, v1p);
 
                 iter->angle = R_PointToAngle2(v0p[VX], v0p[VY],
                                               v1p[VX], v1p[VY]) - ANG90;

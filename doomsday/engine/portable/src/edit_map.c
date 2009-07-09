@@ -847,9 +847,9 @@ static void finishSectors(gamemap_t *map)
 static void finishLineDefs(gamemap_t* map)
 {
     uint                i;
-    linedef_t          *ld;
-    vertex_t           *v[2];
-    seg_t              *startSeg, *endSeg;
+    linedef_t*          ld;
+    vertex_t*           v[2];
+    hedge_t*            startHEdge, *endHEdge;
 
     VERBOSE2(Con_Message("Finalizing Linedefs...\n"));
 
@@ -857,13 +857,13 @@ static void finishLineDefs(gamemap_t* map)
     {
         ld = &map->lineDefs[i];
 
-        if(!ld->sideDefs[0]->segCount)
+        if(!ld->sideDefs[0]->hEdgeCount)
             continue;
 
-        startSeg = ld->sideDefs[0]->segs[0];
-        endSeg = ld->sideDefs[0]->segs[ld->sideDefs[0]->segCount - 1];
-        ld->v[0] = v[0] = startSeg->SG_v1;
-        ld->v[1] = v[1] = endSeg->SG_v2;
+        startHEdge = ld->sideDefs[0]->hEdges[0];
+        endHEdge = ld->sideDefs[0]->hEdges[ld->sideDefs[0]->hEdgeCount - 1];
+        ld->v[0] = v[0] = startHEdge->HE_v1;
+        ld->v[1] = v[1] = endHEdge->HE_v2;
         ld->dX = v[1]->V_pos[VX] - v[0]->V_pos[VX];
         ld->dY = v[1]->V_pos[VY] - v[0]->V_pos[VY];
 
@@ -930,37 +930,39 @@ static void updateMapBounds(gamemap_t *map)
     }
 }
 
-static void updateSSecMidPoint(subsector_t *sub)
+static void updateSSecMidPoint(subsector_t* sub)
 {
-    seg_t             **ptr;
-    fvertex_t          *vtx;
+    hedge_t*            hEdge;
 
     // Find the center point. First calculate the bounding box.
-    ptr = sub->segs;
-    vtx = &((*ptr)->SG_v1->v);
-    sub->bBox[0].pos[VX] = sub->bBox[1].pos[VX] = sub->midPoint.pos[VX] = vtx->pos[VX];
-    sub->bBox[0].pos[VY] = sub->bBox[1].pos[VY] = sub->midPoint.pos[VY] = vtx->pos[VY];
-
-    *ptr++;
-    while(*ptr)
+    if((hEdge = sub->hEdge))
     {
-        vtx = &((*ptr)->SG_v1->v);
-        if(vtx->pos[VX] < sub->bBox[0].pos[VX])
-            sub->bBox[0].pos[VX] = vtx->pos[VX];
-        if(vtx->pos[VY] < sub->bBox[0].pos[VY])
-            sub->bBox[0].pos[VY] = vtx->pos[VY];
-        if(vtx->pos[VX] > sub->bBox[1].pos[VX])
-            sub->bBox[1].pos[VX] = vtx->pos[VX];
-        if(vtx->pos[VY] > sub->bBox[1].pos[VY])
-            sub->bBox[1].pos[VY] = vtx->pos[VY];
+        fvertex_t*          vtx;
 
-        sub->midPoint.pos[VX] += vtx->pos[VX];
-        sub->midPoint.pos[VY] += vtx->pos[VY];
-        *ptr++;
+        vtx = &hEdge->HE_v1->v;
+        sub->bBox[0].pos[VX] = sub->bBox[1].pos[VX] = sub->midPoint.pos[VX] = vtx->pos[VX];
+        sub->bBox[0].pos[VY] = sub->bBox[1].pos[VY] = sub->midPoint.pos[VY] = vtx->pos[VY];
+
+        while((hEdge = hEdge->next) != sub->hEdge)
+        {
+            vtx = &hEdge->HE_v1->v;
+
+            if(vtx->pos[VX] < sub->bBox[0].pos[VX])
+                sub->bBox[0].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] < sub->bBox[0].pos[VY])
+                sub->bBox[0].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] > sub->bBox[1].pos[VX])
+                sub->bBox[1].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] > sub->bBox[1].pos[VY])
+                sub->bBox[1].pos[VY] = vtx->pos[VY];
+
+            sub->midPoint.pos[VX] += vtx->pos[VX];
+            sub->midPoint.pos[VY] += vtx->pos[VY];
+        }
+
+        sub->midPoint.pos[VX] /= sub->hEdgeCount; // num vertices.
+        sub->midPoint.pos[VY] /= sub->hEdgeCount;
     }
-
-    sub->midPoint.pos[VX] /= sub->segCount; // num vertices.
-    sub->midPoint.pos[VY] /= sub->segCount;
 
     // Calculate the worldwide grid offset.
     sub->worldGridOffset[VX] = fmod(sub->bBox[0].pos[VX], 64);
@@ -1378,7 +1380,8 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
     {
         uint                j;
         polyobj_t*          destP, *srcP = src->polyObjs[i];
-        seg_t*              segs;
+        hedge_t*            hEdges;
+        seg_t*              storage;
 
         destP = Z_Calloc(POLYOBJ_SIZE, PU_MAP, 0);
         destP->idx = i;
@@ -1388,40 +1391,44 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
         destP->pos[VX] = srcP->pos[VX];
         destP->pos[VY] = srcP->pos[VY];
 
-        destP->numSegs = srcP->buildData.lineCount;
+        destP->numHEdges = srcP->buildData.lineCount;
 
         destP->originalPts =
-            Z_Malloc(destP->numSegs * sizeof(fvertex_t), PU_MAP, 0);
+            Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
         destP->prevPts =
-            Z_Malloc(destP->numSegs * sizeof(fvertex_t), PU_MAP, 0);
+            Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
 
-        // Create a seg for each line of this polyobj.
-        segs = Z_Calloc(sizeof(seg_t) * destP->numSegs, PU_MAP, 0);
-        destP->segs = Z_Malloc(sizeof(seg_t*) * (destP->numSegs+1), PU_MAP, 0);
-        for(j = 0; j < destP->numSegs; ++j)
+        // Create a hedge for each line of this polyobj.
+        hEdges = Z_Calloc((sizeof(hedge_t) + sizeof(seg_t)) * destP->numHEdges, PU_MAP, 0);
+        storage = (seg_t*) (((byte*) hEdges) + sizeof(hedge_t) * destP->numHEdges);
+
+        destP->hEdges = Z_Malloc(sizeof(hedge_t*) * (destP->numHEdges+1), PU_MAP, 0);
+
+        for(j = 0; j < destP->numHEdges; ++j)
         {
             linedef_t*          line =
                 &dest->lineDefs[srcP->buildData.lineDefs[j]->buildData.index - 1];
-            seg_t*              seg = &segs[j];
+            hedge_t*            hEdge = &hEdges[j];
+            seg_t*              seg;
             float               dx, dy;
+
+            hEdge->data = storage++;
+            seg = (seg_t*) hEdge->data;
 
             // This line is part of a polyobj.
             line->inFlags |= LF_POLYOBJ;
 
-            seg->header.type = DMU_SEG;
+            hEdge->header.type = DMU_HEDGE;
             seg->lineDef = line;
             dx = line->L_v2pos[VX] - line->L_v1pos[VX];
             dy = line->L_v2pos[VY] - line->L_v1pos[VY];
             seg->length = P_AccurateDistance(dx, dy);
-            seg->backSeg = NULL;
-            seg->subsector = NULL;
             seg->SG_frontsector = line->L_frontsector;
-            seg->SG_backsector = NULL;
             seg->flags |= SEGF_POLYOBJ;
 
-            destP->segs[j] = seg;
+            destP->hEdges[j] = hEdge;
         }
-        destP->segs[j] = NULL; // Terminate.
+        destP->hEdges[j] = NULL; // Terminate.
 
         // Add this polyobj to the global list.
         dest->polyObjs[i] = destP;
@@ -1797,38 +1804,34 @@ boolean MPE_End(void)
     for(i = 0; i < gamemap->numPolyObjs; ++i)
     {
         polyobj_t*          po = gamemap->polyObjs[i];
-        seg_t**             segPtr;
+        hedge_t**             ptr;
         size_t              n;
 
-        segPtr = po->segs;
+        ptr = po->hEdges;
         n = 0;
-        while(*segPtr)
+        while(*ptr)
         {
-            seg_t*              seg = *segPtr;
+            hedge_t*              hEdge = *ptr;
 
-            seg->SG_v1 = seg->lineDef->L_v1;
-            seg->SG_v2 = seg->lineDef->L_v2;
+            hEdge->HE_v1 = ((seg_t*) hEdge->data)->lineDef->L_v1;
+            hEdge->HE_v2 = ((seg_t*) hEdge->data)->lineDef->L_v2;
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each seg, not each linedef.
-            po->originalPts[n].pos[VX] = seg->SG_v1pos[VX] - po->pos[VX];
-            po->originalPts[n].pos[VY] = seg->SG_v1pos[VY] - po->pos[VY];
+            po->originalPts[n].pos[VX] = hEdge->HE_v1pos[VX] - po->pos[VX];
+            po->originalPts[n].pos[VY] = hEdge->HE_v1pos[VY] - po->pos[VY];
 
-            *segPtr++;
+            *ptr++;
             n++;
         }
     }
-
-    // Polygonize.
-    R_PolygonizeMap(gamemap);
 
     buildSectorSSecLists(gamemap);
 
     // Announce any issues detected with the map.
     MPE_PrintMapErrors();
 
-    // Map must be polygonized and sector->ssectors must be built before
-    // this is called!
+    // sector->ssectors must be built before this is called!
     hardenPlanes(gamemap, map);
 
     // Destroy the rest of editable map, we are finished with it.

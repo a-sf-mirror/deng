@@ -354,42 +354,45 @@ boolean R_IsPointInSector(const float x, const float y,
  * @return              @c true, if the point is inside the sector.
  */
 boolean R_IsPointInSector2(const float x, const float y,
-                           const sector_t *sector)
+                           const sector_t* sector)
 {
-    uint                i;
-    subsector_t        *subsector;
-    fvertex_t          *vi, *vj;
+    subsector_t*        ssec;
+    fvertex_t*          vi, *vj;
+    hedge_t*            hEdge;
 
-    subsector = R_PointInSubsector(x, y);
-    if(subsector->sector != sector)
+    ssec = R_PointInSubsector(x, y);
+    if(ssec->sector != sector)
     {
         // Wrong sector.
         return false;
     }
 
-    for(i = 0; i < subsector->segCount; ++i)
+    if((hEdge = ssec->hEdge))
     {
-        vi = &subsector->segs[i]->SG_v1->v;
-        vj = &subsector->segs[(i + 1) % subsector->segCount]->SG_v1->v;
-
-        if(((vi->pos[VY] - y) * (vj->pos[VX] - vi->pos[VX]) -
-            (vi->pos[VX] - x) * (vj->pos[VY] - vi->pos[VY])) < 0)
+        do
         {
-            // Outside the subsector's edges.
-            return false;
-        }
+            vi = &hEdge->HE_v1->v;
+            vj = &hEdge->next->HE_v1->v;
 
-/*      if((vi->pos[VY] < y && vj->pos[VY] >= y) ||
-           (vj->pos[VY] < y && vi->pos[VY] >= y))
-        {
-            if(vi->pos[VX] + (((y - vi->pos[VY])/(vj->pos[VY] - vi->pos[VY])) *
-                              (vj->pos[VX] - vi->pos[VX])) < x)
+            if(((vi->pos[VY] - y) * (vj->pos[VX] - vi->pos[VX]) -
+                (vi->pos[VX] - x) * (vj->pos[VY] - vi->pos[VY])) < 0)
             {
-                // Toggle oddness.
-                isOdd = !isOdd;
+                // Outside the subsector's edges.
+                return false;
             }
-        }
-*/
+
+    /*      if((vi->pos[VY] < y && vj->pos[VY] >= y) ||
+               (vj->pos[VY] < y && vi->pos[VY] >= y))
+            {
+                if(vi->pos[VX] + (((y - vi->pos[VY])/(vj->pos[VY] - vi->pos[VY])) *
+                                  (vj->pos[VX] - vi->pos[VX])) < x)
+                {
+                    // Toggle oddness.
+                    isOdd = !isOdd;
+                }
+            }
+    */
+        } while((hEdge = hEdge->next) != ssec->hEdge);
     }
 
     // All tests passed.

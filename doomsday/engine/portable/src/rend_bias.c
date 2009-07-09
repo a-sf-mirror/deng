@@ -358,9 +358,13 @@ void SB_InitForMap(const char* uniqueID)
     vertexillum_t*      illums;
 
     // First, determine the total number of vertexillum_ts we need.
-    for(i = 0; i < numSegs; ++i)
-        if(segs[i].lineDef)
+    for(i = 0; i < numHEdges; ++i)
+    {
+        hedge_t*              hEdge = &hEdges[i];
+
+        if(((seg_t*) hEdge->data)->lineDef)
             numVertIllums++;
+    }
 
     numVertIllums *= 3 * 4;
 
@@ -381,7 +385,7 @@ void SB_InitForMap(const char* uniqueID)
     {
         polyobj_t*          po = polyObjs[i];
 
-        numVertIllums += po->numSegs * 3 * 4;
+        numVertIllums += po->numHEdges * 3 * 4;
     }
 
     // Allocate and initialize the vertexillum_ts.
@@ -390,9 +394,10 @@ void SB_InitForMap(const char* uniqueID)
         SB_InitVertexIllum(&illums[i]);
 
     // Allocate bias surfaces and attach vertexillum_ts.
-    for(i = 0; i < numSegs; ++i)
+    for(i = 0; i < numHEdges; ++i)
     {
-        seg_t*              seg = &segs[i];
+        hedge_t*              hEdge = &hEdges[i];
+        seg_t*          seg = (seg_t*) hEdge->data;
         int                 j;
 
         if(!seg->lineDef)
@@ -440,9 +445,10 @@ void SB_InitForMap(const char* uniqueID)
         polyobj_t*          po = polyObjs[i];
         uint                j;
 
-        for(j = 0; j < po->numSegs; ++j)
+        for(j = 0; j < po->numHEdges; ++j)
         {
-            seg_t*              seg = po->segs[j];
+            hedge_t*              hEdge = po->hEdges[j];
+            seg_t*          seg = (seg_t*) hEdge->data;
             int                 k;
 
             for(k = 0; k < 3; ++k)
@@ -961,9 +967,9 @@ void SB_RendPoly(struct rcolor_s* rcolors, biassurface_t* bsuf,
          */
         if(isSeg)
         {
-            seg_t*          seg = (seg_t*) mapObject;
+            hedge_t*          seg = (hedge_t*) mapObject;
 
-            updateAffected(bsuf, &seg->SG_v1->v, &seg->SG_v2->v, normal);
+            updateAffected(bsuf, &seg->HE_v1->v, &seg->HE_v2->v, normal);
         }
         else
         {

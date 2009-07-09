@@ -60,26 +60,18 @@ typedef struct edgetip_s {
     struct hedge_s*     hEdges[2];
 } edgetip_t;
 
-typedef struct hedge_s {
-    vertex_t*           v[2]; // [Start, End] of the half-edge..
-
-    // Half-edge on the other side, or NULL if one-sided. This relationship
-    // is always one-to-one -- if one of the half-edges is split, the twin
-    // must also be split.
-    struct hedge_s*     twin;
-
-    struct hedge_s*     next;
-    struct hedge_s*     nextOnSide;
-    struct hedge_s*     prevOnSide;
-
+typedef struct {
     // Index of the half-edge. Only valid once the half-edge has been added
     // to a polygon. A negative value means it is invalid -- there
     // shouldn't be any of these once the BSP tree has been built.
     int                 index;
 
     // The superblock that contains this half-edge, or NULL if the half-edge
-    // is no longer in any superblock (e.g. now in a subsector).
+    // is no longer in any superblock (e.g., now in a leaf).
     struct superblock_s* block;
+    // The leaf that contains this half-edge, or NULL if the half-edge is
+    // not yet in a leaf (e.g., it is in a superblock).
+    struct bspleafdata_s* leaf;
 
     // Precomputed data for faster calculations.
     double              pSX, pSY;
@@ -101,7 +93,7 @@ typedef struct hedge_s {
 
     sector_t*           sector; // Adjacent sector, or NULL if invalid sidedef or minihedge.
     byte                side; // 0 for right, 1 for left.
-} hedge_t;
+} bsp_hedgeinfo_t;
 
 void        BSP_InitHEdgeAllocator(void);
 void        BSP_ShutdownHEdgeAllocator(void);

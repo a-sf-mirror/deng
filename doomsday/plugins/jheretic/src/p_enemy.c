@@ -104,7 +104,7 @@ static float dropoffDelta[2], floorZ;
 void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
     VALIDCOUNT++;
-    P_RecursiveSound(target, P_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
+    P_RecursiveSound(target, DMU_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
 boolean P_CheckMeleeRange(mobj_t *actor)
@@ -352,8 +352,8 @@ static void newChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    sector_t*           backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
-    float*              bbox = P_GetPtrp(line, DMU_BOUNDING_BOX);
+    sector_t*           backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
+    float*              bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
     if(backsector &&
        tmBBox[BOXRIGHT]  > bbox[BOXLEFT] &&
@@ -362,13 +362,13 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
        tmBBox[BOXBOTTOM] < bbox[BOXTOP]    &&
        P_BoxOnLineSide(tmBBox, line) == -1)
     {
-        sector_t*           frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
-        float               front = P_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
-        float               back = P_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
+        sector_t*           frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+        float               front = DMU_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
+        float               back = DMU_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
         float               d1[2];
         angle_t             angle;
 
-        P_GetFloatpv(line, DMU_DXY, d1);
+        DMU_GetFloatpv(line, DMU_DXY, d1);
 
         // The monster must contact one of the two floors, and the other
         // must be a tall drop off (more than 24).
@@ -548,7 +548,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = P_GetPtrp(actor->subsector, DMU_SECTOR);
+    sector = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
     c = 0;
     stop = (actor->lastLook - 1) & 3;
     for(;; actor->lastLook = (actor->lastLook + 1) & 3)
@@ -619,7 +619,7 @@ void C_DECL A_Look(mobj_t *actor)
 
     // Any shot will wake up
     actor->threshold = 0;
-    sec = P_GetPtrp(actor->subsector, DMU_SECTOR);
+    sec = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
     targ = P_ToXSector(sec)->soundTarget;
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
@@ -2201,7 +2201,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           P_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;
@@ -2219,7 +2219,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER2,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           P_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;

@@ -82,7 +82,7 @@ void T_FloorWaggle(waggle_t* waggle)
     case WS_REDUCE:
         if((waggle->scale -= waggle->scaleDelta) <= 0)
         {   // Remove.
-            P_SetFloatp(waggle->sector, DMU_FLOOR_HEIGHT,
+            DMU_SetFloatp(waggle->sector, DMU_FLOOR_HEIGHT,
                         waggle->originalHeight);
             P_ChangeSector(waggle->sector, true);
             P_ToXSector(waggle->sector)->specialData = NULL;
@@ -96,9 +96,9 @@ void T_FloorWaggle(waggle_t* waggle)
     waggle->accumulator += waggle->accDelta;
     fh = waggle->originalHeight +
         FLOATBOBOFFSET(((int) waggle->accumulator) & 63) * waggle->scale;
-    P_SetFloatp(waggle->sector, DMU_FLOOR_HEIGHT, fh);
-    P_SetFloatp(waggle->sector, DMU_FLOOR_TARGET_HEIGHT, fh);
-    P_SetFloatp(waggle->sector, DMU_FLOOR_SPEED, 0);
+    DMU_SetFloatp(waggle->sector, DMU_FLOOR_HEIGHT, fh);
+    DMU_SetFloatp(waggle->sector, DMU_FLOOR_TARGET_HEIGHT, fh);
+    DMU_SetFloatp(waggle->sector, DMU_FLOOR_SPEED, 0);
     P_ChangeSector(waggle->sector, true);
 }
 
@@ -128,7 +128,7 @@ boolean EV_StartFloorWaggle(int tag, int height, int speed, int offset,
 
         P_ToXSector(sec)->specialData = waggle;
         waggle->sector = sec;
-        waggle->originalHeight = P_GetFloatp(sec, DMU_FLOOR_HEIGHT);
+        waggle->originalHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT);
         waggle->accumulator = offset;
         waggle->accDelta = FIX2FLT(speed << 10);
         waggle->scale = 0;

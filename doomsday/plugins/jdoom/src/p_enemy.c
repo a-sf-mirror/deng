@@ -104,7 +104,7 @@ static const float dirSpeed[8][2] =
 void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
     VALIDCOUNT++;
-    P_RecursiveSound(target, P_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
+    P_RecursiveSound(target, DMU_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
 static boolean checkMeleeRange(mobj_t *actor)
@@ -370,8 +370,8 @@ static void doNewChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    sector_t*           backsector = P_GetPtrp(line, DMU_BACK_SECTOR);
-    float*              bbox = P_GetPtrp(line, DMU_BOUNDING_BOX);
+    sector_t*           backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
+    float*              bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
     if(backsector &&
        tmBBox[BOXRIGHT]  > bbox[BOXLEFT] &&
@@ -380,13 +380,13 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
        tmBBox[BOXBOTTOM] < bbox[BOXTOP]    &&
        P_BoxOnLineSide(tmBBox, line) == -1)
     {
-        sector_t*           frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
-        float               front = P_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
-        float               back = P_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
+        sector_t*           frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+        float               front = DMU_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
+        float               back = DMU_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
         float               d1[2];
         angle_t             angle;
 
-        P_GetFloatpv(line, DMU_DXY, d1);
+        DMU_GetFloatpv(line, DMU_DXY, d1);
 
         // The monster must contact one of the two floors, and the other
         // must be a tall drop off (more than 24).
@@ -647,7 +647,7 @@ void C_DECL A_Look(mobj_t* actor)
     sector_t*           sec = NULL;
     mobj_t*             targ;
 
-    sec = P_GetPtrp(actor->subsector, DMU_SECTOR);
+    sec = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
 
     if(!sec)
         return;
@@ -1498,13 +1498,13 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
         if(!(newmobj = P_SpawnMobj3fv(MT_SKULL, pos, angle, 0)))
             return;
 
-        sec = P_GetPtrp(newmobj->subsector, DMU_SECTOR);
+        sec = DMU_GetPtrp(newmobj->subsector, DMU_SECTOR);
 
         // Check to see if the new Lost Soul's z value is above the
         // ceiling of its new sector, or below the floor. If so, kill it.
         if((newmobj->pos[VZ] >
-              (P_GetFloatp(sec, DMU_CEILING_HEIGHT) - newmobj->height)) ||
-           (newmobj->pos[VZ] < P_GetFloatp(sec, DMU_FLOOR_HEIGHT)))
+              (DMU_GetFloatp(sec, DMU_CEILING_HEIGHT) - newmobj->height)) ||
+           (newmobj->pos[VZ] < DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT)))
         {
             // Kill it immediately.
             P_DamageMobj(newmobj, actor, actor, 10000, false);

@@ -89,7 +89,7 @@ const char* DMU_Str(uint prop)
     {
         { DMU_NONE, "(invalid)" },
         { DMU_VERTEX, "DMU_VERTEX" },
-        { DMU_SEG, "DMU_SEG" },
+        { DMU_HEDGE, "DMU_HEDGE" },
         { DMU_LINEDEF, "DMU_LINEDEF" },
         { DMU_SIDEDEF, "DMU_SIDEDEF" },
         { DMU_NODE, "DMU_NODE" },
@@ -174,7 +174,7 @@ static int DMU_GetType(const void* ptr)
     switch(type)
     {
         case DMU_VERTEX:
-        case DMU_SEG:
+        case DMU_HEDGE:
         case DMU_LINEDEF:
         case DMU_SIDEDEF:
         case DMU_SUBSECTOR:
@@ -359,6 +359,46 @@ void* P_DummyExtraData(void* dummy)
     return NULL;
 }
 
+void* P_GetVariable(int value)
+{
+    switch(value)
+    {
+    case DMU_SECTOR_COUNT:
+        return &numSectors;
+
+    case DMU_LINE_COUNT:
+        return &numLineDefs;
+
+    case DMU_SIDE_COUNT:
+        return &numSideDefs;
+
+    case DMU_VERTEX_COUNT:
+        return &numVertexes;
+
+    case DMU_POLYOBJ_COUNT:
+        return &numPolyObjs;
+
+    case DMU_HEDGE_COUNT:
+        return &numHEdges;
+
+    case DMU_SUBSECTOR_COUNT:
+        return &numSSectors;
+
+    case DMU_NODE_COUNT:
+        return &numNodes;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+void P_SetVariable(int value, void* data)
+{
+    // Stub.
+}
+
 /**
  * Convert pointer to index.
  */
@@ -374,8 +414,8 @@ uint P_ToIndex(const void* ptr)
     case DMU_VERTEX:
         return GET_VERTEX_IDX((vertex_t*) ptr);
 
-    case DMU_SEG:
-        return GET_SEG_IDX((seg_t*) ptr);
+    case DMU_HEDGE:
+        return GET_HEDGE_IDX((hedge_t*) ptr);
 
     case DMU_LINEDEF:
         return GET_LINE_IDX((linedef_t*) ptr);
@@ -414,8 +454,8 @@ void* P_ToPtr(int type, uint index)
     case DMU_VERTEX:
         return VERTEX_PTR(index);
 
-    case DMU_SEG:
-        return SEG_PTR(index);
+    case DMU_HEDGE:
+        return HEDGE_PTR(index);
 
     case DMU_LINEDEF:
         return LINE_PTR(index);
@@ -513,17 +553,19 @@ int P_Iteratep(void *ptr, uint prop, void* context,
     case DMU_SUBSECTOR:
         switch(prop)
         {
-        case DMU_SEG:
+        case DMU_HEDGE:
             {
             subsector_t*        ssec = (subsector_t*) ptr;
             int                 result = 1;
+            hedge_t*            hEdge;
 
-            if(ssec->segs)
+            if((hEdge = ssec->hEdge))
             {
-                seg_t**             segPtr = ssec->segs;
-
-                while(*segPtr && (result = callback(*segPtr, context)) != 0)
-                    *segPtr++;
+                do
+                {
+                    if((result = callback(hEdge, context)) == 0)
+                        break;
+                } while((hEdge = hEdge->next) != ssec->hEdge);
             }
 
             return result;
@@ -546,7 +588,7 @@ int P_Iteratep(void *ptr, uint prop, void* context,
 /**
  * Call a callback function on a selection of map data objects. The
  * selected objects will be specified by 'type' and 'index'.
-
+ *
  * @param context       Is passed to the callback function.
  *
  * @return              @c true if all the calls to the callback function
@@ -566,9 +608,9 @@ int P_Callback(int type, uint index, void* context,
             return callback(VERTEX_PTR(index), context);
         break;
 
-    case DMU_SEG:
-        if(index < numSegs)
-            return callback(SEG_PTR(index), context);
+    case DMU_HEDGE:
+        if(index < numHEdges)
+            return callback(HEDGE_PTR(index), context);
         break;
 
     case DMU_LINEDEF:
@@ -637,7 +679,7 @@ int P_Callbackp(int type, void* ptr, void* context,
     switch(type)
     {
     case DMU_VERTEX:
-    case DMU_SEG:
+    case DMU_HEDGE:
     case DMU_LINEDEF:
     case DMU_SIDEDEF:
     case DMU_NODE:
@@ -1033,7 +1075,7 @@ static int setProperty(void* obj, void* context)
         Vertex_SetProperty(obj, args);
         break;
 
-    case DMU_SEG:
+    case DMU_HEDGE:
         Seg_SetProperty(obj, args);
         break;
 
@@ -1445,7 +1487,7 @@ static int getProperty(void* obj, void* context)
         Vertex_GetProperty(obj, args);
         break;
 
-    case DMU_SEG:
+    case DMU_HEDGE:
         Seg_GetProperty(obj, args);
         break;
 

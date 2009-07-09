@@ -177,9 +177,9 @@ void P_InitSwitchList(void)
         if(!switchInfo[i].soundID)
             break;
 
-        switchlist[index++] = P_ToPtr(DMU_MATERIAL,
+        switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialCheckNumForName(switchInfo[i].name1, MN_TEXTURES));
-        switchlist[index++] = P_ToPtr(DMU_MATERIAL,
+        switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialCheckNumForName(switchInfo[i].name2, MN_TEXTURES));
     }
 
@@ -251,9 +251,9 @@ void P_InitSwitchList(void)
             if(!SHORT(sList[i].episode))
                 break;
 
-            switchlist[index++] = P_ToPtr(DMU_MATERIAL,
+            switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
                 P_MaterialNumForName(sList[i].name1, MN_TEXTURES));
-            switchlist[index++] = P_ToPtr(DMU_MATERIAL,
+            switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
                 P_MaterialNumForName(sList[i].name2, MN_TEXTURES));
             VERBOSE(Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
                                 sList[i].name1, sList[i].name2,
@@ -291,16 +291,16 @@ void T_MaterialChanger(materialchanger_t* mchanger)
 {
     if(!(--mchanger->timer))
     {
-        P_SetPtrp(mchanger->side,
+        DMU_SetPtrp(mchanger->side,
                   mchanger->ssurfaceID == SID_MIDDLE? DMU_MIDDLE_MATERIAL :
                   mchanger->ssurfaceID == SID_TOP? DMU_TOP_MATERIAL :
                   DMU_BOTTOM_MATERIAL, mchanger->material);
 #if __JDOOM__ || __JDOOM64__
-        S_StartSound(SFX_SWTCHN, P_GetPtrp(
-            P_GetPtrp(mchanger->side, DMU_SECTOR), DMU_SOUND_ORIGIN));
+        S_StartSound(SFX_SWTCHN, DMU_GetPtrp(
+            DMU_GetPtrp(mchanger->side, DMU_SECTOR), DMU_SOUND_ORIGIN));
 #elif __JHERETIC__
-        S_StartSound(SFX_SWITCH, P_GetPtrp(
-            P_GetPtrp(mchanger->side, DMU_SECTOR), DMU_SOUND_ORIGIN));
+        S_StartSound(SFX_SWITCH, DMU_GetPtrp(
+            DMU_GetPtrp(mchanger->side, DMU_SECTOR), DMU_SOUND_ORIGIN));
 #endif
 
         DD_ThinkerRemove(&mchanger->thinker);
@@ -372,7 +372,7 @@ boolean P_ToggleSwitch2(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
     material_t*         mat, *current;
     const switchlist_t* info;
 
-    current = P_GetPtrp(side,
+    current = DMU_GetPtrp(side,
                         ssurfaceID == SID_MIDDLE? DMU_MIDDLE_MATERIAL :
                         ssurfaceID == SID_TOP? DMU_TOP_MATERIAL :
                         DMU_BOTTOM_MATERIAL);
@@ -393,11 +393,11 @@ boolean P_ToggleSwitch2(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
 #endif
             }
 
-            S_StartSound(sound, P_GetPtrp(P_GetPtrp(side, DMU_SECTOR),
+            S_StartSound(sound, DMU_GetPtrp(DMU_GetPtrp(side, DMU_SECTOR),
                                           DMU_SOUND_ORIGIN));
         }
 
-        P_SetPtrp(side, ssurfaceID == SID_MIDDLE? DMU_MIDDLE_MATERIAL :
+        DMU_SetPtrp(side, ssurfaceID == SID_MIDDLE? DMU_MIDDLE_MATERIAL :
                         ssurfaceID == SID_TOP? DMU_TOP_MATERIAL :
                         DMU_BOTTOM_MATERIAL, mat);
         if(tics > 0)

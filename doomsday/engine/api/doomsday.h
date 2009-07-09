@@ -58,7 +58,7 @@ extern          "C" {
     typedef struct vertex_s {int type; } vertex_t;
     typedef struct linedef_s { int type; } linedef_t;
     typedef struct sidedef_s { int type; } sidedef_t;
-    typedef struct seg_s { int type; } seg_t;
+    typedef struct hedge_s { int type; } hedge_t;
     typedef struct subsector_s { int type; } subsector_t;
     typedef struct sector_s { int type; } sector_t;
     typedef struct plane_s { int type; } plane_t;
@@ -263,6 +263,8 @@ extern          "C" {
     boolean         P_LoadMap(const char* mapID);
 
     // Play: Map Data Updates and Information Access.
+    void*           P_GetVariable(int value);
+    void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
     int             P_Callback(int type, uint index, void* context,

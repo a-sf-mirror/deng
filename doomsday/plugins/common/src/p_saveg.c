@@ -1742,9 +1742,9 @@ static void RestoreMobj(mobj_t *mo, int ver)
 
     P_MobjSetPosition(mo);
     mo->floorZ =
-        P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+        DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
     mo->ceilingZ =
-        P_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+        DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
     return;
 }
@@ -2189,17 +2189,17 @@ Con_Printf("P_UnArchivePlayers: Saved %i is now %i.\n", i, j);
 static void SV_WriteSector(sector_t *sec)
 {
     int         i, type;
-    float       flooroffx = P_GetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_X);
-    float       flooroffy = P_GetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_Y);
-    float       ceiloffx = P_GetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_X);
-    float       ceiloffy = P_GetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_Y);
-    byte        lightlevel = (byte) (255.f * P_GetFloatp(sec, DMU_LIGHT_LEVEL));
-    short       floorheight = (short) P_GetIntp(sec, DMU_FLOOR_HEIGHT);
-    short       ceilingheight = (short) P_GetIntp(sec, DMU_CEILING_HEIGHT);
-    short       floorFlags = (short) P_GetIntp(sec, DMU_FLOOR_FLAGS);
-    short       ceilingFlags = (short) P_GetIntp(sec, DMU_CEILING_FLAGS);
-    material_t* floorMaterial = P_GetPtrp(sec, DMU_FLOOR_MATERIAL);
-    material_t* ceilingMaterial = P_GetPtrp(sec, DMU_CEILING_MATERIAL);
+    float       flooroffx = DMU_GetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_X);
+    float       flooroffy = DMU_GetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_Y);
+    float       ceiloffx = DMU_GetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_X);
+    float       ceiloffy = DMU_GetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_Y);
+    byte        lightlevel = (byte) (255.f * DMU_GetFloatp(sec, DMU_LIGHT_LEVEL));
+    short       floorheight = (short) DMU_GetIntp(sec, DMU_FLOOR_HEIGHT);
+    short       ceilingheight = (short) DMU_GetIntp(sec, DMU_CEILING_HEIGHT);
+    short       floorFlags = (short) DMU_GetIntp(sec, DMU_FLOOR_FLAGS);
+    short       ceilingFlags = (short) DMU_GetIntp(sec, DMU_CEILING_FLAGS);
+    material_t* floorMaterial = DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL);
+    material_t* ceilingMaterial = DMU_GetPtrp(sec, DMU_CEILING_MATERIAL);
     xsector_t*  xsec = P_ToXSector(sec);
     float       rgb[3];
 
@@ -2234,15 +2234,15 @@ static void SV_WriteSector(sector_t *sec)
     SV_WriteByte(lightlevel);
 #endif
 
-    P_GetFloatpv(sec, DMU_COLOR, rgb);
+    DMU_GetFloatpv(sec, DMU_COLOR, rgb);
     for(i = 0; i < 3; ++i)
         SV_WriteByte((byte)(255.f * rgb[i]));
 
-    P_GetFloatpv(sec, DMU_FLOOR_COLOR, rgb);
+    DMU_GetFloatpv(sec, DMU_FLOOR_COLOR, rgb);
     for(i = 0; i < 3; ++i)
         SV_WriteByte((byte)(255.f * rgb[i]));
 
-    P_GetFloatpv(sec, DMU_CEILING_COLOR, rgb);
+    DMU_GetFloatpv(sec, DMU_CEILING_COLOR, rgb);
     for(i = 0; i < 3; ++i)
         SV_WriteByte((byte)(255.f * rgb[i]));
 
@@ -2313,23 +2313,23 @@ static void SV_ReadSector(sector_t *sec)
     fh = SV_ReadShort();
     ch = SV_ReadShort();
 
-    P_SetIntp(sec, DMU_FLOOR_HEIGHT, fh);
-    P_SetIntp(sec, DMU_CEILING_HEIGHT, ch);
+    DMU_SetIntp(sec, DMU_FLOOR_HEIGHT, fh);
+    DMU_SetIntp(sec, DMU_CEILING_HEIGHT, ch);
 #if __JHEXEN__
     // Update the "target heights" of the planes.
-    P_SetIntp(sec, DMU_FLOOR_TARGET_HEIGHT, fh);
-    P_SetIntp(sec, DMU_CEILING_TARGET_HEIGHT, ch);
+    DMU_SetIntp(sec, DMU_FLOOR_TARGET_HEIGHT, fh);
+    DMU_SetIntp(sec, DMU_CEILING_TARGET_HEIGHT, ch);
     // The move speed is not saved; can cause minor problems.
-    P_SetIntp(sec, DMU_FLOOR_SPEED, 0);
-    P_SetIntp(sec, DMU_CEILING_SPEED, 0);
+    DMU_SetIntp(sec, DMU_FLOOR_SPEED, 0);
+    DMU_SetIntp(sec, DMU_CEILING_SPEED, 0);
 #endif
 
 #if !__JHEXEN__
     if(hdr.version == 1)
     {   // Flat numbers are the original flat lump indices - (lump) "F_START".
-        floorMaterial = P_ToPtr(DMU_MATERIAL,
+        floorMaterial = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
-        ceilingMaterial = P_ToPtr(DMU_MATERIAL,
+        ceilingMaterial = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
     }
     else if(hdr.version >= 4)
@@ -2340,13 +2340,13 @@ static void SV_ReadSector(sector_t *sec)
         ceilingMaterial = SV_GetArchiveMaterial(SV_ReadShort(), 0);
     }
 
-    P_SetPtrp(sec, DMU_FLOOR_MATERIAL, floorMaterial);
-    P_SetPtrp(sec, DMU_CEILING_MATERIAL, ceilingMaterial);
+    DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL, floorMaterial);
+    DMU_SetPtrp(sec, DMU_CEILING_MATERIAL, ceilingMaterial);
 
     if(ver >= 3)
     {
-        P_SetIntp(sec, DMU_FLOOR_FLAGS, SV_ReadShort());
-        P_SetIntp(sec, DMU_CEILING_FLAGS, SV_ReadShort());
+        DMU_SetIntp(sec, DMU_FLOOR_FLAGS, SV_ReadShort());
+        DMU_SetIntp(sec, DMU_CEILING_FLAGS, SV_ReadShort());
     }
 
 #if __JHEXEN__
@@ -2358,7 +2358,7 @@ static void SV_ReadSector(sector_t *sec)
     else
         lightlevel = SV_ReadByte();
 #endif
-    P_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) lightlevel / 255.f);
+    DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) lightlevel / 255.f);
 
 #if !__JHEXEN__
     if(hdr.version > 1)
@@ -2366,7 +2366,7 @@ static void SV_ReadSector(sector_t *sec)
     {
         SV_Read(rgb, 3);
         for(i = 0; i < 3; ++i)
-            P_SetFloatp(sec, DMU_COLOR_RED + i, rgb[i] / 255.f);
+            DMU_SetFloatp(sec, DMU_COLOR_RED + i, rgb[i] / 255.f);
     }
 
     // Ver 2 includes surface colours
@@ -2374,11 +2374,11 @@ static void SV_ReadSector(sector_t *sec)
     {
         SV_Read(rgb, 3);
         for(i = 0; i < 3; ++i)
-            P_SetFloatp(sec, DMU_FLOOR_COLOR_RED + i, rgb[i] / 255.f);
+            DMU_SetFloatp(sec, DMU_FLOOR_COLOR_RED + i, rgb[i] / 255.f);
 
         SV_Read(rgb, 3);
         for(i = 0; i < 3; ++i)
-            P_SetFloatp(sec, DMU_CEILING_COLOR_RED + i, rgb[i] / 255.f);
+            DMU_SetFloatp(sec, DMU_CEILING_COLOR_RED + i, rgb[i] / 255.f);
     }
 
     xsec->special = SV_ReadShort();
@@ -2394,10 +2394,10 @@ static void SV_ReadSector(sector_t *sec)
 #endif
        )
     {
-        P_SetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_X, SV_ReadFloat());
-        P_SetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_Y, SV_ReadFloat());
-        P_SetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_X, SV_ReadFloat());
-        P_SetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_Y, SV_ReadFloat());
+        DMU_SetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_X, SV_ReadFloat());
+        DMU_SetFloatp(sec, DMU_FLOOR_MATERIAL_OFFSET_Y, SV_ReadFloat());
+        DMU_SetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_X, SV_ReadFloat());
+        DMU_SetFloatp(sec, DMU_CEILING_MATERIAL_OFFSET_Y, SV_ReadFloat());
     }
 
 #if !__JHEXEN__
@@ -2458,39 +2458,39 @@ static void SV_WriteLine(linedef_t* li)
     // For each side
     for(i = 0; i < 2; ++i)
     {
-        sidedef_t *si = P_GetPtrp(li, (i? DMU_SIDEDEF1:DMU_SIDEDEF0));
+        sidedef_t *si = DMU_GetPtrp(li, (i? DMU_SIDEDEF1:DMU_SIDEDEF0));
         if(!si)
             continue;
 
-        SV_WriteShort(P_GetIntp(si, DMU_TOP_MATERIAL_OFFSET_X));
-        SV_WriteShort(P_GetIntp(si, DMU_TOP_MATERIAL_OFFSET_Y));
-        SV_WriteShort(P_GetIntp(si, DMU_MIDDLE_MATERIAL_OFFSET_X));
-        SV_WriteShort(P_GetIntp(si, DMU_MIDDLE_MATERIAL_OFFSET_Y));
-        SV_WriteShort(P_GetIntp(si, DMU_BOTTOM_MATERIAL_OFFSET_X));
-        SV_WriteShort(P_GetIntp(si, DMU_BOTTOM_MATERIAL_OFFSET_Y));
+        SV_WriteShort(DMU_GetIntp(si, DMU_TOP_MATERIAL_OFFSET_X));
+        SV_WriteShort(DMU_GetIntp(si, DMU_TOP_MATERIAL_OFFSET_Y));
+        SV_WriteShort(DMU_GetIntp(si, DMU_MIDDLE_MATERIAL_OFFSET_X));
+        SV_WriteShort(DMU_GetIntp(si, DMU_MIDDLE_MATERIAL_OFFSET_Y));
+        SV_WriteShort(DMU_GetIntp(si, DMU_BOTTOM_MATERIAL_OFFSET_X));
+        SV_WriteShort(DMU_GetIntp(si, DMU_BOTTOM_MATERIAL_OFFSET_Y));
 
-        SV_WriteShort(P_GetIntp(si, DMU_TOP_FLAGS));
-        SV_WriteShort(P_GetIntp(si, DMU_MIDDLE_FLAGS));
-        SV_WriteShort(P_GetIntp(si, DMU_BOTTOM_FLAGS));
+        SV_WriteShort(DMU_GetIntp(si, DMU_TOP_FLAGS));
+        SV_WriteShort(DMU_GetIntp(si, DMU_MIDDLE_FLAGS));
+        SV_WriteShort(DMU_GetIntp(si, DMU_BOTTOM_FLAGS));
 
-        SV_WriteShort(SV_MaterialArchiveNum(P_GetPtrp(si, DMU_TOP_MATERIAL)));
-        SV_WriteShort(SV_MaterialArchiveNum(P_GetPtrp(si, DMU_BOTTOM_MATERIAL)));
-        SV_WriteShort(SV_MaterialArchiveNum(P_GetPtrp(si, DMU_MIDDLE_MATERIAL)));
+        SV_WriteShort(SV_MaterialArchiveNum(DMU_GetPtrp(si, DMU_TOP_MATERIAL)));
+        SV_WriteShort(SV_MaterialArchiveNum(DMU_GetPtrp(si, DMU_BOTTOM_MATERIAL)));
+        SV_WriteShort(SV_MaterialArchiveNum(DMU_GetPtrp(si, DMU_MIDDLE_MATERIAL)));
 
-        P_GetFloatpv(si, DMU_TOP_COLOR, rgba);
+        DMU_GetFloatpv(si, DMU_TOP_COLOR, rgba);
         for(j = 0; j < 3; ++j)
             SV_WriteByte((byte)(255 * rgba[j]));
 
-        P_GetFloatpv(si, DMU_BOTTOM_COLOR, rgba);
+        DMU_GetFloatpv(si, DMU_BOTTOM_COLOR, rgba);
         for(j = 0; j < 3; ++j)
             SV_WriteByte((byte)(255 * rgba[j]));
 
-        P_GetFloatpv(si, DMU_MIDDLE_COLOR, rgba);
+        DMU_GetFloatpv(si, DMU_MIDDLE_COLOR, rgba);
         for(j = 0; j < 4; ++j)
             SV_WriteByte((byte)(255 * rgba[j]));
 
-        SV_WriteLong(P_GetIntp(si, DMU_MIDDLE_BLENDMODE));
-        SV_WriteShort(P_GetIntp(si, DMU_FLAGS));
+        SV_WriteLong(DMU_GetIntp(si, DMU_MIDDLE_BLENDMODE));
+        SV_WriteShort(DMU_GetIntp(si, DMU_FLAGS));
     }
 
 #if !__JHEXEN__
@@ -2538,7 +2538,7 @@ static void SV_ReadLine(linedef_t *li)
     flags = SV_ReadShort();
     if(ver < 3 && (flags & 0x0100)) // the old ML_MAPPED flag
     {
-        uint                lineIDX = P_ToIndex(li);
+        uint                lineIDX = DMU_ToIndex(li);
 
         // Set line as having been seen by all players..
         memset(xli->mapped, 0, sizeof(xli->mapped));
@@ -2569,7 +2569,7 @@ static void SV_ReadLine(linedef_t *li)
     // For each side
     for(i = 0; i < 2; ++i)
     {
-        sidedef_t*          si = P_GetPtrp(li, (i? DMU_SIDEDEF1:DMU_SIDEDEF0));
+        sidedef_t*          si = DMU_GetPtrp(li, (i? DMU_SIDEDEF1:DMU_SIDEDEF0));
 
         if(!si)
             continue;
@@ -2581,15 +2581,15 @@ static void SV_ReadLine(linedef_t *li)
 
             offset[VX] = (float) SV_ReadShort();
             offset[VY] = (float) SV_ReadShort();
-            P_SetFloatpv(si, DMU_TOP_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_TOP_MATERIAL_OFFSET_XY, offset);
 
             offset[VX] = (float) SV_ReadShort();
             offset[VY] = (float) SV_ReadShort();
-            P_SetFloatpv(si, DMU_MIDDLE_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_MIDDLE_MATERIAL_OFFSET_XY, offset);
 
             offset[VX] = (float) SV_ReadShort();
             offset[VY] = (float) SV_ReadShort();
-            P_SetFloatpv(si, DMU_BOTTOM_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_BOTTOM_MATERIAL_OFFSET_XY, offset);
         }
         else
         {
@@ -2598,16 +2598,16 @@ static void SV_ReadLine(linedef_t *li)
             offset[VX] = (float) SV_ReadShort();
             offset[VY] = (float) SV_ReadShort();
 
-            P_SetFloatpv(si, DMU_TOP_MATERIAL_OFFSET_XY, offset);
-            P_SetFloatpv(si, DMU_MIDDLE_MATERIAL_OFFSET_XY, offset);
-            P_SetFloatpv(si, DMU_BOTTOM_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_TOP_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_MIDDLE_MATERIAL_OFFSET_XY, offset);
+            DMU_SetFloatpv(si, DMU_BOTTOM_MATERIAL_OFFSET_XY, offset);
         }
 
         if(ver >= 3)
         {
-            P_SetIntp(si, DMU_TOP_FLAGS, SV_ReadShort());
-            P_SetIntp(si, DMU_MIDDLE_FLAGS, SV_ReadShort());
-            P_SetIntp(si, DMU_BOTTOM_FLAGS, SV_ReadShort());
+            DMU_SetIntp(si, DMU_TOP_FLAGS, SV_ReadShort());
+            DMU_SetIntp(si, DMU_MIDDLE_FLAGS, SV_ReadShort());
+            DMU_SetIntp(si, DMU_BOTTOM_FLAGS, SV_ReadShort());
         }
 
 #if !__JHEXEN__
@@ -2620,9 +2620,9 @@ static void SV_ReadLine(linedef_t *li)
             middleMaterial = SV_GetArchiveMaterial(SV_ReadShort(), 1);
         }
 
-        P_SetPtrp(si, DMU_TOP_MATERIAL, topMaterial);
-        P_SetPtrp(si, DMU_BOTTOM_MATERIAL, bottomMaterial);
-        P_SetPtrp(si, DMU_MIDDLE_MATERIAL, middleMaterial);
+        DMU_SetPtrp(si, DMU_TOP_MATERIAL, topMaterial);
+        DMU_SetPtrp(si, DMU_BOTTOM_MATERIAL, bottomMaterial);
+        DMU_SetPtrp(si, DMU_MIDDLE_MATERIAL, middleMaterial);
 
         // Ver2 includes surface colours
         if(ver >= 2)
@@ -2632,19 +2632,19 @@ static void SV_ReadLine(linedef_t *li)
             for(j = 0; j < 3; ++j)
                 rgba[j] = (float) SV_ReadByte() / 255.f;
             rgba[3] = 1;
-            P_SetFloatpv(si, DMU_TOP_COLOR, rgba);
+            DMU_SetFloatpv(si, DMU_TOP_COLOR, rgba);
 
             for(j = 0; j < 3; ++j)
                 rgba[j] = (float) SV_ReadByte() / 255.f;
             rgba[3] = 1;
-            P_SetFloatpv(si, DMU_BOTTOM_COLOR, rgba);
+            DMU_SetFloatpv(si, DMU_BOTTOM_COLOR, rgba);
 
             for(j = 0; j < 4; ++j)
                 rgba[j] = (float) SV_ReadByte() / 255.f;
-            P_SetFloatpv(si, DMU_MIDDLE_COLOR, rgba);
+            DMU_SetFloatpv(si, DMU_MIDDLE_COLOR, rgba);
 
-            P_SetIntp(si, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
-            P_SetIntp(si, DMU_FLAGS, SV_ReadShort());
+            DMU_SetIntp(si, DMU_MIDDLE_BLENDMODE, SV_ReadLong());
+            DMU_SetIntp(si, DMU_FLAGS, SV_ReadShort());
         }
     }
 
@@ -2705,10 +2705,10 @@ static void P_ArchiveWorld(void)
 
     SV_BeginSegment(ASEG_WORLD);
     for(i = 0; i < numsectors; ++i)
-        SV_WriteSector(P_ToPtr(DMU_SECTOR, i));
+        SV_WriteSector(DMU_ToPtr(DMU_SECTOR, i));
 
     for(i = 0; i < numlines; ++i)
-        SV_WriteLine(P_ToPtr(DMU_LINEDEF, i));
+        SV_WriteLine(DMU_ToPtr(DMU_LINEDEF, i));
 
 #if __JHEXEN__
     SV_BeginSegment(ASEG_POLYOBJS);
@@ -2741,11 +2741,11 @@ static void P_UnArchiveWorld(void)
     AssertSegment(ASEG_WORLD);
     // Load sectors.
     for(i = 0; i < numsectors; ++i)
-        SV_ReadSector(P_ToPtr(DMU_SECTOR, i));
+        SV_ReadSector(DMU_ToPtr(DMU_SECTOR, i));
 
     // Load lines.
     for(i = 0; i < numlines; ++i)
-        SV_ReadLine(P_ToPtr(DMU_LINEDEF, i));
+        SV_ReadLine(DMU_ToPtr(DMU_LINEDEF, i));
 
 #if __JHEXEN__
     // Load polyobjects.
@@ -2763,7 +2763,7 @@ static void SV_WriteCeiling(const ceiling_t* ceiling)
     SV_WriteByte(2); // Write a version byte.
 
     SV_WriteByte((byte) ceiling->type);
-    SV_WriteLong(P_ToIndex(ceiling->sector));
+    SV_WriteLong(DMU_ToIndex(ceiling->sector));
 
     SV_WriteShort((int)ceiling->bottomHeight);
     SV_WriteShort((int)ceiling->topHeight);
@@ -2801,7 +2801,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
 
         ceiling->type = (ceilingtype_e) SV_ReadByte();
 
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
 
         if(!sector)
             Con_Error("TC_CEILING: bad sector number\n");
@@ -2834,7 +2834,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         // Start of used data members.
 #if __JHEXEN__
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
         if(!sector)
             Con_Error("TC_CEILING: bad sector number\n");
         ceiling->sector = sector;
@@ -2844,7 +2844,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         ceiling->type = SV_ReadLong();
 
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
         if(!sector)
             Con_Error("TC_CEILING: bad sector number\n");
         ceiling->sector = sector;
@@ -2879,7 +2879,7 @@ static void SV_WriteDoor(const door_t *door)
 
     SV_WriteByte((byte) door->type);
 
-    SV_WriteLong(P_ToIndex(door->sector));
+    SV_WriteLong(DMU_ToIndex(door->sector));
 
     SV_WriteShort((int)door->topHeight);
     SV_WriteLong(FLT2FIX(door->speed));
@@ -2903,7 +2903,7 @@ static int SV_ReadDoor(door_t *door)
 
         door->type = (doortype_e) SV_ReadByte();
 
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
 
         if(!sector)
             Con_Error("TC_DOOR: bad sector number\n");
@@ -2926,7 +2926,7 @@ static int SV_ReadDoor(door_t *door)
         // Start of used data members.
 #if __JHEXEN__
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_DOOR: bad sector number\n");
         door->sector = sector;
@@ -2936,7 +2936,7 @@ static int SV_ReadDoor(door_t *door)
         door->type = SV_ReadLong();
 
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_DOOR: bad sector number\n");
         door->sector = sector;
@@ -2964,7 +2964,7 @@ static void SV_WriteFloor(const floor_t *floor)
 
     SV_WriteByte((byte) floor->type);
 
-    SV_WriteLong(P_ToIndex(floor->sector));
+    SV_WriteLong(DMU_ToIndex(floor->sector));
 
     SV_WriteByte((byte) floor->crush);
 
@@ -3001,7 +3001,7 @@ static int SV_ReadFloor(floor_t* floor)
 
         floor->type = (floortype_e) SV_ReadByte();
 
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
 
         if(!sector)
             Con_Error("TC_FLOOR: bad sector number\n");
@@ -3016,7 +3016,7 @@ static int SV_ReadFloor(floor_t* floor)
         if(ver >= 2)
             floor->material = SV_GetArchiveMaterial(SV_ReadShort(), 0);
         else
-            floor->material = P_ToPtr(DMU_MATERIAL,
+            floor->material = DMU_ToPtr(DMU_MATERIAL,
                 P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
 
         floor->floorDestHeight = (float) SV_ReadShort();
@@ -3042,7 +3042,7 @@ static int SV_ReadFloor(floor_t* floor)
         // Start of used data members.
 #if __JHEXEN__
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLOOR: bad sector number\n");
         floor->sector = sector;
@@ -3055,14 +3055,14 @@ static int SV_ReadFloor(floor_t* floor)
         floor->crush = SV_ReadLong();
 
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLOOR: bad sector number\n");
         floor->sector = sector;
 #endif
         floor->state = (int) SV_ReadLong();
         floor->newSpecial = SV_ReadLong();
-        floor->material = P_ToPtr(DMU_MATERIAL,
+        floor->material = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
 
         floor->floorDestHeight = FIX2FLT((fixed_t) SV_ReadLong());
@@ -3092,7 +3092,7 @@ static void SV_WritePlat(const plat_t *plat)
 
     SV_WriteByte((byte) plat->type);
 
-    SV_WriteLong(P_ToIndex(plat->sector));
+    SV_WriteLong(DMU_ToIndex(plat->sector));
 
     SV_WriteLong(FLT2FIX(plat->speed));
     SV_WriteShort((int)plat->low);
@@ -3133,7 +3133,7 @@ static int SV_ReadPlat(plat_t *plat)
 
         plat->type = (plattype_e) SV_ReadByte();
 
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
 
         if(!sector)
             Con_Error("TC_PLAT: bad sector number\n");
@@ -3162,7 +3162,7 @@ static int SV_ReadPlat(plat_t *plat)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_PLAT: bad sector number\n");
         plat->sector = sector;
@@ -3200,7 +3200,7 @@ static void SV_WriteLight(const light_t* th)
 
     SV_WriteByte((byte) th->type);
 
-    SV_WriteLong(P_ToIndex(th->sector));
+    SV_WriteLong(DMU_ToIndex(th->sector));
 
     SV_WriteLong((int) (255.0f * th->value1));
     SV_WriteLong((int) (255.0f * th->value2));
@@ -3219,7 +3219,7 @@ static int SV_ReadLight(light_t* th)
 
         th->type = (lighttype_t) SV_ReadByte();
 
-        sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
         if(!sector)
             Con_Error("TC_LIGHT: bad sector number\n");
         th->sector = sector;
@@ -3239,7 +3239,7 @@ static int SV_ReadLight(light_t* th)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_LIGHT: bad sector number\n");
         th->sector = sector;
@@ -3264,7 +3264,7 @@ static void SV_WritePhase(const phase_t* th)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(th->sector));
+    SV_WriteLong(DMU_ToIndex(th->sector));
 
     SV_WriteLong(th->index);
     SV_WriteLong((int) (255.0f * th->baseValue));
@@ -3279,7 +3279,7 @@ static int SV_ReadPhase(phase_t* th)
         // Note: the thinker class byte has already been read.
         /*int ver =*/ SV_ReadByte(); // version byte.
 
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_PHASE: bad sector number\n");
         th->sector = sector;
@@ -3296,7 +3296,7 @@ static int SV_ReadPhase(phase_t* th)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_PHASE: bad sector number\n");
         th->sector = sector;
@@ -3317,7 +3317,7 @@ static void SV_WriteScript(const acs_t* th)
     SV_WriteByte(1); // Write a version byte.
 
     SV_WriteLong(SV_ThingArchiveNum(th->activator));
-    SV_WriteLong(th->line ? P_ToIndex(th->line) : -1);
+    SV_WriteLong(th->line ? DMU_ToIndex(th->line) : -1);
     SV_WriteLong(th->side);
     SV_WriteLong(th->number);
     SV_WriteLong(th->infoIndex);
@@ -3346,7 +3346,7 @@ static int SV_ReadScript(acs_t* th)
         if(temp == -1)
             th->line = NULL;
         else
-            th->line = P_ToPtr(DMU_LINEDEF, temp);
+            th->line = DMU_ToPtr(DMU_LINEDEF, temp);
         th->side = SV_ReadLong();
         th->number = SV_ReadLong();
         th->infoIndex = SV_ReadLong();
@@ -3372,7 +3372,7 @@ static int SV_ReadScript(acs_t* th)
         if(temp == -1)
             th->line = NULL;
         else
-            th->line = P_ToPtr(DMU_LINEDEF, temp);
+            th->line = DMU_ToPtr(DMU_LINEDEF, temp);
         th->side = SV_ReadLong();
         th->number = SV_ReadLong();
         th->infoIndex = SV_ReadLong();
@@ -3566,7 +3566,7 @@ static void SV_WritePillar(const pillar_t* th)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(th->sector));
+    SV_WriteLong(DMU_ToIndex(th->sector));
 
     SV_WriteLong(FLT2FIX(th->ceilingSpeed));
     SV_WriteLong(FLT2FIX(th->floorSpeed));
@@ -3586,7 +3586,7 @@ static int SV_ReadPillar(pillar_t* th)
         /*int ver =*/ SV_ReadByte(); // version byte.
 
         // Start of used data members.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_BUILD_PILLAR: bad sector number\n");
         th->sector = sector;
@@ -3607,7 +3607,7 @@ static int SV_ReadPillar(pillar_t* th)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_BUILD_PILLAR: bad sector number\n");
         th->sector = sector;
@@ -3633,7 +3633,7 @@ static void SV_WriteFloorWaggle(const waggle_t* th)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(th->sector));
+    SV_WriteLong(DMU_ToIndex(th->sector));
 
     SV_WriteLong(FLT2FIX(th->originalHeight));
     SV_WriteLong(FLT2FIX(th->accumulator));
@@ -3654,7 +3654,7 @@ static int SV_ReadFloorWaggle(waggle_t* th)
         /*int ver =*/ SV_ReadByte(); // version byte.
 
         // Start of used data members.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLOOR_WAGGLE: bad sector number\n");
         th->sector = sector;
@@ -3677,7 +3677,7 @@ static int SV_ReadFloorWaggle(waggle_t* th)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLOOR_WAGGLE: bad sector number\n");
         th->sector = sector;
@@ -3707,7 +3707,7 @@ static void SV_WriteFlash(const lightflash_t* flash)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(flash->sector));
+    SV_WriteLong(DMU_ToIndex(flash->sector));
 
     SV_WriteLong(flash->count);
     SV_WriteLong((int) (255.0f * flash->maxLight));
@@ -3725,7 +3725,7 @@ static int SV_ReadFlash(lightflash_t* flash)
         /*int ver =*/ SV_ReadByte(); // version byte.
 
         // Start of used data members.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLASH: bad sector number\n");
         flash->sector = sector;
@@ -3744,7 +3744,7 @@ static int SV_ReadFlash(lightflash_t* flash)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_FLASH: bad sector number\n");
         flash->sector = sector;
@@ -3767,7 +3767,7 @@ static void SV_WriteStrobe(const strobe_t* strobe)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(strobe->sector));
+    SV_WriteLong(DMU_ToIndex(strobe->sector));
 
     SV_WriteLong(strobe->count);
     SV_WriteLong((int) (255.0f * strobe->maxLight));
@@ -3784,7 +3784,7 @@ static int SV_ReadStrobe(strobe_t* strobe)
     {   // Note: the thinker class byte has already been read.
         /*int ver =*/ SV_ReadByte(); // version byte.
 
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_STROBE: bad sector number\n");
         strobe->sector = sector;
@@ -3803,7 +3803,7 @@ static int SV_ReadStrobe(strobe_t* strobe)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_STROBE: bad sector number\n");
         strobe->sector = sector;
@@ -3826,7 +3826,7 @@ static void SV_WriteGlow(const glow_t* glow)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(glow->sector));
+    SV_WriteLong(DMU_ToIndex(glow->sector));
 
     SV_WriteLong((int) (255.0f * glow->maxLight));
     SV_WriteLong((int) (255.0f * glow->minLight));
@@ -3841,7 +3841,7 @@ static int SV_ReadGlow(glow_t* glow)
     {   // Note: the thinker class byte has already been read.
         /*int ver =*/ SV_ReadByte(); // version byte.
 
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_GLOW: bad sector number\n");
         glow->sector = sector;
@@ -3858,7 +3858,7 @@ static int SV_ReadGlow(glow_t* glow)
 
         // Start of used data members.
         // A 32bit pointer to sector, serialized.
-        sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+        sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
         if(!sector)
             Con_Error("TC_GLOW: bad sector number\n");
         glow->sector = sector;
@@ -3880,7 +3880,7 @@ static void SV_WriteFlicker(const fireflicker_t* flicker)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(flicker->sector));
+    SV_WriteLong(DMU_ToIndex(flicker->sector));
 
     SV_WriteLong((int) (255.0f * flicker->maxLight));
     SV_WriteLong((int) (255.0f * flicker->minLight));
@@ -3896,7 +3896,7 @@ static int SV_ReadFlicker(fireflicker_t* flicker)
     /*int ver =*/ SV_ReadByte(); // version byte.
 
     // Note: the thinker class byte has already been read.
-    sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+    sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
     if(!sector)
         Con_Error("TC_FLICKER: bad sector number\n");
     flicker->sector = sector;
@@ -3917,7 +3917,7 @@ static void SV_WriteBlink(const lightblink_t* blink)
     // Note we don't bother to save a byte to tell if the function
     // is present as we ALWAYS add one when loading.
 
-    SV_WriteLong(P_ToIndex(blink->sector));
+    SV_WriteLong(DMU_ToIndex(blink->sector));
 
     SV_WriteLong(blink->count);
     SV_WriteLong((int) (255.0f * blink->maxLight));
@@ -3936,7 +3936,7 @@ static int SV_ReadBlink(lightblink_t* blink)
     /*int ver =*/ SV_ReadByte(); // version byte.
 
     // Note: the thinker class byte has already been read.
-    sector = P_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
+    sector = DMU_ToPtr(DMU_SECTOR, (int) SV_ReadLong());
     if(!sector)
         Con_Error("tc_lightblink: bad sector number\n");
     blink->sector = sector;
@@ -3964,7 +3964,7 @@ static void SV_WriteMaterialChanger(const materialchanger_t* mchanger)
     // materials as well as sidedef surface materials).
     SV_WriteByte(0);
     SV_WriteLong(mchanger->timer);
-    SV_WriteLong(P_ToIndex(mchanger->side));
+    SV_WriteLong(DMU_ToIndex(mchanger->side));
     SV_WriteByte((byte) mchanger->ssurfaceID);
     SV_WriteShort(SV_MaterialArchiveNum(mchanger->material));
 }
@@ -3977,7 +3977,7 @@ static int SV_ReadMaterialChanger(materialchanger_t* mchanger)
     SV_ReadByte(); // Type byte.
     mchanger->timer = SV_ReadLong();
     // Note: the thinker class byte has already been read.
-    side = P_ToPtr(DMU_SIDEDEF, (int) SV_ReadLong());
+    side = DMU_ToPtr(DMU_SIDEDEF, (int) SV_ReadLong());
     if(!side)
         Con_Error("t_materialchanger: bad sidedef number\n");
     mchanger->side = side;
@@ -4270,7 +4270,7 @@ static void P_UnArchiveThinkers(void)
 
         for(i = 0; i < numlines; ++i)
         {
-            xline_t *xline = P_ToXLine(P_ToPtr(DMU_LINEDEF, i));
+            xline_t *xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
             if(xline->xg)
                 xline->xg->activator =
                     SV_GetArchiveThing((int) xline->xg->activator,
@@ -4329,7 +4329,7 @@ static void P_ArchiveSoundTargets(void)
     // Write the mobj references using the mobj archive.
     for(i = 0; i < numsectors; ++i)
     {
-        xsec = P_ToXSector(P_ToPtr(DMU_SECTOR, i));
+        xsec = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
 
         if(xsec->soundTarget)
         {
@@ -4361,7 +4361,7 @@ static void P_UnArchiveSoundTargets(void)
         if(secid > numsectors)
             Con_Error("P_UnArchiveSoundTargets: bad sector number\n");
 
-        xsec = P_ToXSector(P_ToPtr(DMU_SECTOR, secid));
+        xsec = P_ToXSector(DMU_ToPtr(DMU_SECTOR, secid));
         xsec->soundTarget = (mobj_t*) (int) SV_ReadShort();
         xsec->soundTarget =
             SV_GetArchiveThing((int) xsec->soundTarget, &xsec->soundTarget);
@@ -4404,9 +4404,9 @@ static void P_ArchiveSounds(void)
 
         if(i == numpolyobjs)
         {   // Sound is attached to a sector, not a polyobj.
-            sec = P_GetPtrp(R_PointInSubsector(node->mobj->pos[VX], node->mobj->pos[VY]),
+            sec = DMU_GetPtrp(R_PointInSubsector(node->mobj->pos[VX], node->mobj->pos[VY]),
                             DMU_SECTOR);
-            difference = P_ToIndex(sec);
+            difference = DMU_ToIndex(sec);
             SV_WriteLong(0); // 0 -- sector sound origin.
         }
         else
@@ -4446,7 +4446,7 @@ static void P_UnArchiveSounds(void)
         secNum = SV_ReadLong();
         if(!polySnd)
         {
-            sndMobj = P_GetPtr(DMU_SECTOR, secNum, DMU_SOUND_ORIGIN);
+            sndMobj = DMU_GetPtr(DMU_SECTOR, secNum, DMU_SOUND_ORIGIN);
         }
         else
         {

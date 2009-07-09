@@ -32,6 +32,7 @@
 
 #include "jheretic.h"
 
+#include "dmu_lib.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
 #include "hu_msg.h"
@@ -482,7 +483,7 @@ void R_SetAllDoomsdayFlags(void)
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)
     {
-        iter = P_GetPtr(DMU_SECTOR, i, DMT_MOBJS);
+        iter = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS);
 
         while(iter)
         {

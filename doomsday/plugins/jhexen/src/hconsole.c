@@ -30,6 +30,7 @@
 
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "d_net.h"
 #include "hu_stuff.h"
 #include "f_infine.h"
@@ -352,7 +353,7 @@ DEFCC(CCmdConBackground)
         return true;
     }
 
-    if((mat = P_ToPtr(DMU_MATERIAL,
+    if((mat = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialCheckNumForName(argv[1], MN_ANY))))
         consoleBG = mat;
 
