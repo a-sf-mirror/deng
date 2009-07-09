@@ -450,6 +450,7 @@ static void Con_Send(const char *command, byte src, int silent)
 {
     ushort          len = (ushort) (strlen(command) + 1);
 
+#if 0
     Msg_Begin(PKT_COMMAND2);
     // Mark high bit for silent commands.
     Msg_WriteShort(len | (silent ? 0x8000 : 0));
@@ -458,6 +459,7 @@ static void Con_Send(const char *command, byte src, int silent)
     Msg_Write(command, len);
     // Send it reliably.
     Net_SendBuffer(0, SPF_ORDERED);
+#endif
 }
 
 static void Con_QueueCmd(const char *singleCmd, timespan_t atSecond,

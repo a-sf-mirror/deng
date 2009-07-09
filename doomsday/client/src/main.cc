@@ -32,6 +32,7 @@ int main(int argc, char** argv)
     {
         Client client(CommandLine(argc, argv));
         
+        /*
         Link link(Address("localhost", 8080));
         while(!link.hasIncoming())
         {
@@ -46,6 +47,7 @@ int main(int argc, char** argv)
         std::cout << "Received '" << str << "'\n";
         
         return 0;
+        */
         
         return client.mainLoop();
     }

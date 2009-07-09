@@ -34,6 +34,7 @@ int main(int argc, char** argv)
     {
         Server server(CommandLine(argc, argv));
         
+        /*
         ListenSocket entry(8080);
         Socket* client = 0;
         
@@ -54,7 +55,8 @@ int main(int argc, char** argv)
 
         std::cout << "Closing...\n";
         return 0;
-        
+        */
+
         return server.mainLoop();
     }
     catch(const Error& error)
