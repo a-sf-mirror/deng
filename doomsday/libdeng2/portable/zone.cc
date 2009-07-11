@@ -684,26 +684,49 @@ Zone::MemVolume* Zone::newVolume(dsize volumeSize)
     return vol;
 }
 
-Zone::Batch::Batch(Zone& zone, dsize sizeOfElement, duint batchSize, PurgeTag tag)
-    : zone_(zone), elementsPerBlock_(batchSize), elementSize_(sizeOfElement), tag_(tag)
+Zone::Batch& Zone::newBatch(dsize sizeOfElement, duint batchSize, PurgeTag tag)
 {
-    // Allocate the first block right away.
-    addBlock();
+    batches_.push_back(Batch(*this, sizeOfElement, batchSize, tag));
+    return batches_.back();
 }
+
+void Zone::deleteBatch(Batch& batch)
+{
+    for(Batches::iterator i = batches_.begin(); i != batches_.end(); ++i)
+    {
+        if(&*i == &batch)
+        {
+            batches_.erase(i);
+            return;
+        }
+    }
+}
+
+Zone::Batch::Batch(Zone& zone, dsize sizeOfElement, duint batchSize, PurgeTag tag)
+    : zone_(zone), elementsPerBlock_(batchSize), elementSize_(sizeOfElement), tag_(tag), blocks_(0)
+{}
 
 Zone::Batch::~Batch()
 {
-    // Free the elements from each block.
-    for(duint i = 0; i < count_; ++i)
+    if(blocks_)
     {
-        zone_.free(blocks_[i].elements);
+        // Free the elements from each block.
+        for(duint i = 0; i < count_; ++i)
+        {
+            zone_.free(blocks_[i].elements);
+        }
+        zone_.free(blocks_);
     }
-
-    zone_.free(blocks_);
 }
 
 void* Zone::Batch::allocate()
 {
+    if(!blocks_)
+    {
+        // The first one.
+        addBlock();
+    }
+    
     ZBlock* block = &blocks_[count_ - 1];
 
     // When this is called, there is always an available element in the topmost

@@ -241,7 +241,7 @@ namespace de
          * number of memory blocks. It should be used in performance-critical places
          * instead of separate calls to allocate().
          */
-        class Batch
+        class PUBLIC_API Batch
         {
         public:
             /**
