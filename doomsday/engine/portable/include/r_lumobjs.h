@@ -46,7 +46,7 @@ typedef enum {
 typedef struct lumobj_s {
     lumtype_t       type;
     float           pos[3]; // Center of the obj.
-    subsector_t*    subsector;
+    face_t*         face;
     float           maxDistance;
     void*           decorSource; // decorsource_t ptr, else @c NULL.
 
@@ -100,7 +100,7 @@ void            LO_BeginFrame(void);
 
 void            LO_UnlinkMobjLumobjs(cvar_t* var);
 
-uint            LO_NewLuminous(lumtype_t type, subsector_t* ssec);
+uint            LO_NewLuminous(lumtype_t type, face_t* ssec);
 lumobj_t*       LO_GetLuminous(uint idx);
 uint            LO_ToIndex(const lumobj_t* lum);
 boolean         LO_IsClipped(uint idx, int i);
@@ -109,12 +109,12 @@ float           LO_DistanceToViewer(uint idx, int i);
 uint            LO_GetNumLuminous(void);
 
 // Helpers.
-boolean         LO_LumobjsRadiusIterator(subsector_t* subsector, float x, float y,
+boolean         LO_LumobjsRadiusIterator(face_t* subsector, float x, float y,
                                          float radius, void* data,
                                          boolean (*func) (const lumobj_t*, float, void *data));
 
-void            LO_ClipInSubsector(uint ssecidx);
-void            LO_ClipInSubsectorBySight(uint ssecidx);
+void            LO_ClipInSubsector(face_t* face);
+void            LO_ClipInSubsectorBySight(face_t* face);
 
 void            LO_DrawLumobjs(void);
 #endif

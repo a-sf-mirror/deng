@@ -104,7 +104,7 @@ static float dropoffDelta[2], floorZ;
 void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
 {
     VALIDCOUNT++;
-    P_RecursiveSound(target, DMU_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
+    P_RecursiveSound(target, DMU_GetPtrp(emitter->face, DMU_SECTOR), 0);
 }
 
 boolean P_CheckMeleeRange(mobj_t *actor)
@@ -548,7 +548,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
+    sector = DMU_GetPtrp(actor->face, DMU_SECTOR);
     c = 0;
     stop = (actor->lastLook - 1) & 3;
     for(;; actor->lastLook = (actor->lastLook + 1) & 3)
@@ -619,7 +619,7 @@ void C_DECL A_Look(mobj_t *actor)
 
     // Any shot will wake up
     actor->threshold = 0;
-    sec = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
+    sec = DMU_GetPtrp(actor->face, DMU_SECTOR);
     targ = P_ToXSector(sec)->soundTarget;
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
@@ -2201,7 +2201,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->face, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;
@@ -2219,7 +2219,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER2,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->face, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;

@@ -252,13 +252,13 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-subsector_t *R_PointInSubsector(const float x, const float y)
+face_t* R_PointInSubsector(const float x, const float y)
 {
-    node_t             *node = 0;
+    node_t*             node = 0;
     uint                nodenum = 0;
 
-    if(!numNodes)               // single subsector is a special case
-        return (subsector_t *) ssectors;
+    if(!numNodes) // Single subsector is a special case.
+        return (face_t *) faces;
 
     nodenum = numNodes - 1;
 
@@ -269,14 +269,14 @@ subsector_t *R_PointInSubsector(const float x, const float y)
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return SUBSECTOR_PTR(nodenum & ~NF_SUBSECTOR);
+    return FACE_PTR(nodenum & ~NF_SUBSECTOR);
 }
 
-linedef_t *R_GetLineForSide(const uint sideNumber)
+linedef_t* R_GetLineForSide(const uint sideNumber)
 {
     uint                i;
-    sidedef_t          *side = SIDE_PTR(sideNumber);
-    sector_t           *sector = side->sector;
+    sidedef_t*          side = SIDE_PTR(sideNumber);
+    sector_t*           sector = side->sector;
 
     // All sides may not have a sector.
     if(!sector)
@@ -356,18 +356,17 @@ boolean R_IsPointInSector(const float x, const float y,
 boolean R_IsPointInSector2(const float x, const float y,
                            const sector_t* sector)
 {
-    subsector_t*        ssec;
+    const face_t*       face = R_PointInSubsector(x, y);
     fvertex_t*          vi, *vj;
     hedge_t*            hEdge;
 
-    ssec = R_PointInSubsector(x, y);
-    if(ssec->sector != sector)
+    if(((const subsector_t*) face->data)->sector != sector)
     {
         // Wrong sector.
         return false;
     }
 
-    if((hEdge = ssec->hEdge))
+    if((hEdge = face->hEdge))
     {
         do
         {
@@ -392,7 +391,7 @@ boolean R_IsPointInSector2(const float x, const float y,
                 }
             }
     */
-        } while((hEdge = hEdge->next) != ssec->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 
     // All tests passed.

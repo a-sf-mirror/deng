@@ -1742,9 +1742,9 @@ static void RestoreMobj(mobj_t *mo, int ver)
 
     P_MobjSetPosition(mo);
     mo->floorZ =
-        DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+        DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
     mo->ceilingZ =
-        DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+        DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
 
     return;
 }

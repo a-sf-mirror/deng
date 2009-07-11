@@ -133,7 +133,7 @@ xsector_t* P_ToXSector(sector_t* sector)
 /**
  * Given a subsector - find its parent xsector.
  */
-xsector_t* P_ToXSectorOfSubsector(subsector_t* sub)
+xsector_t* P_ToXSectorOfSubsector(face_t* sub)
 {
     sector_t*           sec;
 
@@ -498,7 +498,7 @@ static void P_LoadMapObjs(void)
         // Sound sequence origin?
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
-            subsector_t*        ssec =
+            face_t*        ssec =
                 R_PointInSubsector(spot->pos[VX], spot->pos[VY]);
             xsector_t*          xsector =
                 P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));

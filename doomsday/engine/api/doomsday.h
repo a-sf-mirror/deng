@@ -59,7 +59,7 @@ extern          "C" {
     typedef struct linedef_s { int type; } linedef_t;
     typedef struct sidedef_s { int type; } sidedef_t;
     typedef struct hedge_s { int type; } hedge_t;
-    typedef struct subsector_s { int type; } subsector_t;
+    typedef struct face_s { int type; } face_t;
     typedef struct sector_s { int type; } sector_t;
     typedef struct plane_s { int type; } plane_t;
     typedef struct material_s { int type; } material_t;
@@ -234,7 +234,7 @@ extern          "C" {
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
     boolean         P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
-                                           boolean (*func) (subsector_t*, void*),
+                                           boolean (*func) (face_t*, void*),
                                            void* data);
     boolean         P_PolyobjsBoxIterator(const float box[4],
                                           boolean (*func) (struct polyobj_s*, void*),
@@ -427,7 +427,7 @@ extern          "C" {
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);
-    struct subsector_s* R_PointInSubsector(float x, float y);
+    struct face_s* R_PointInSubsector(float x, float y);
 
     colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
                                           const byte* data, size_t num);

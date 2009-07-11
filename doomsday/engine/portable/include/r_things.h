@@ -106,7 +106,7 @@ typedef struct rendspriteparams_s {
     uint            vLightListIdx;
 
 // Misc
-    struct subsector_s* subsector;
+    struct face_s* subsector;
 } rendspriteparams_t;
 
 #define MAX_VISSPRITE_LIGHTS    (10)
@@ -141,12 +141,12 @@ typedef struct vispsprite_s {
 
     union vispsprite_data_u {
         struct vispsprite_sprite_s {
-            subsector_t*    subsector;
+            face_t*         face;
             float           alpha;
             boolean         isFullBright;
         } sprite;
         struct vispsprite_model_s {
-            subsector_t*    subsector;
+            face_t*         face;
             float           gzt; // global top for silhouette clipping
             int             flags; // for color translation and shadow draw
             uint            id;
@@ -172,19 +172,19 @@ typedef struct vispsprite_s {
 typedef struct collectaffectinglights_params_s {
     float           center[3];
     float*          ambientColor;
-    subsector_t*    subsector;
+    face_t*         face;
     boolean         starkLight; // World light has a more pronounced effect.
 } collectaffectinglights_params_t;
 
 extern spritedef_t* sprites;
-extern int      numSprites;
-extern float    pspOffset[2];
-extern int      alwaysAlign;
-extern float    weaponOffsetScale, weaponFOVShift;
-extern int      weaponOffsetScaleY;
-extern float    modelSpinSpeed;
-extern int      maxModelDistance, noSpriteZWrite;
-extern int      useSRVO, useSRVOAngle;
+extern int numSprites;
+extern float pspOffset[2];
+extern int alwaysAlign;
+extern float weaponOffsetScale, weaponFOVShift;
+extern int weaponOffsetScaleY;
+extern float modelSpinSpeed;
+extern int maxModelDistance, noSpriteZWrite;
+extern int useSRVO, useSRVOAngle;
 extern vissprite_t visSprites[MAXVISSPRITES], *visSpriteP;
 extern vissprite_t visSprSortedHead;
 extern vispsprite_t visPSprites[DDMAXPSPRITES];
@@ -200,7 +200,7 @@ void            R_ProjectSprite(struct mobj_s* mobj);
 void            R_ProjectPlayerSprites(void);
 void            R_SortVisSprites(void);
 vissprite_t*    R_NewVisSprite(void);
-void            R_AddSprites(subsector_t* ssec);
+void            R_AddSprites(face_t* ssec);
 void            R_AddPSprites(void);
 void            R_DrawSprites(void);
 

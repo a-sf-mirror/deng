@@ -1269,14 +1269,15 @@ clipnode_t *C_AngleClippedBy(binangle_t bang)
 }
 
 /**
- * @return              Non-zero if the subsector might be visible.
+ * @return              Non-zero if the face might be visible.
  */
-int C_CheckSubsector(subsector_t* ssec)
+int C_CheckFace(face_t* face)
 {
     uint                i;
+    subsector_t*        ssec = (subsector_t*) face->data;
     hedge_t*            hEdge;
 
-    if(!ssec || ssec->hEdgeCount < 3)
+    if(!face || ssec->hEdgeCount < 3)
         return 0;
 
     if(devNoCulling)
@@ -1293,7 +1294,7 @@ int C_CheckSubsector(subsector_t* ssec)
          Z_Realloc(anglist, sizeof(binangle_t) * anglistSize, PU_STATIC);
     }
 
-    if((hEdge = ssec->hEdge))
+    if((hEdge = face->hEdge))
     {
         i = 0;
         do
@@ -1303,14 +1304,14 @@ int C_CheckSubsector(subsector_t* ssec)
             // Shift for more accuracy.
             anglist[i++] = bamsAtan2((int) ((vtx->V_pos[VY] - vz) * 100),
                                      (int) ((vtx->V_pos[VX] - vx) * 100));
-        } while((hEdge = hEdge->next) != ssec->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 
     // Check each of the ranges defined by the edges.
     for(i = 0; i < ssec->hEdgeCount - 1; ++i)
     {
-        uint        end = i + 1;
-        binangle_t  angLen;
+        uint                end = i + 1;
+        binangle_t          angLen;
 
         // The last edge won't be checked. This is because the edges
         // define a closed, convex polygon and the last edge's range is

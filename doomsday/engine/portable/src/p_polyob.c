@@ -198,8 +198,8 @@ void P_MapInitPolyobjs(void)
     for(i = 0; i < numPolyObjs; ++i)
     {
         polyobj_t*          po = polyObjs[i];
-        hedge_t**             ptr;
-        subsector_t*        ssec;
+        hedge_t**           ptr;
+        face_t*             face;
         fvertex_t           avg; // Used to find a polyobj's center, and hence subsector.
 
         avg.pos[VX] = 0;
@@ -208,7 +208,7 @@ void P_MapInitPolyobjs(void)
         ptr = po->hEdges;
         while(*ptr)
         {
-            hedge_t*              hEdge = *ptr;
+            hedge_t*            hEdge = *ptr;
             sidedef_t*          side = HEDGE_SIDEDEF(hEdge);
             surface_t*          surface = &side->SW_topsurface;
             float               length = ((seg_t*) hEdge->data)->length;
@@ -234,17 +234,18 @@ void P_MapInitPolyobjs(void)
         avg.pos[VX] /= po->numHEdges;
         avg.pos[VY] /= po->numHEdges;
 
-        ssec = R_PointInSubsector(avg.pos[VX], avg.pos[VY]);
-        if(ssec)
+        if((face = R_PointInSubsector(avg.pos[VX], avg.pos[VY])))
         {
+            subsector_t*        ssec = (subsector_t*) face->data;
+
             if(ssec->polyObj)
             {
                 Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
-                            "  (ssec %i, sector %i). Previous polyobj overridden.\n",
-                            GET_SUBSECTOR_IDX(ssec), GET_SECTOR_IDX(ssec->sector));
+                            "  (face %i, sector %i). Previous polyobj overridden.\n",
+                            GET_FACE_IDX(face), GET_SECTOR_IDX(ssec->sector));
             }
             ssec->polyObj = po;
-            po->subsector = ssec;
+            po->face = face;
         }
 
         P_PolyobjUnLink(po);

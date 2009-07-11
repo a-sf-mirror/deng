@@ -319,8 +319,8 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
         ClockwiseBspTree(rootNode);
         SaveMap(map, rootNode, vertexes, numVertexes);
 
-        Con_Message("BSP_Build: Built %d Nodes, %d Subsectors, %d HEdges, %d Vertexes\n",
-                    map->numNodes, map->numSSectors, map->numHEdges,
+        Con_Message("BSP_Build: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
+                    map->numNodes, map->numFaces, map->numHEdges,
                     map->numVertexes);
 
         if(rootNode && !BinaryTree_IsLeaf(rootNode))

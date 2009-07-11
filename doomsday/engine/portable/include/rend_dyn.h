@@ -66,7 +66,8 @@ void            DL_InitForMap(void);
 void            DL_InitForNewFrame(void);
 
 // Action.
-uint            DL_ProjectOnSurface(subsector_t* ssec, const vectorcomp_t topLeft[3],
+uint            DL_ProjectOnSurface(face_t* face,
+                                    const vectorcomp_t topLeft[3],
                                     const vectorcomp_t bottomRight[3],
                                     const vectorcomp_t normal[3], byte flags);
 // Helpers.

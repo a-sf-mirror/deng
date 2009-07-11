@@ -132,10 +132,10 @@ boolean         P_AllLinesBoxIteratorv(const arvec2_t box,
 
 // Subsectors in bounding box iterators.
 boolean         P_SubsectorsBoxIterator(const float box[4], sector_t *sector,
-                                       boolean (*func) (subsector_t *, void *),
+                                       boolean (*func) (face_t *, void *),
                                        void *parm);
 boolean         P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t *sector,
-                                        boolean (*func) (subsector_t *,
+                                        boolean (*func) (face_t *,
                                                          void *), void *data);
 
 boolean         P_PathTraverse(float x1, float y1, float x2, float y2,

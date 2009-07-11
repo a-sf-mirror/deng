@@ -82,7 +82,7 @@ static boolean findMobj(thinker_t* th, void* context)
 
     // Must be in the specified sector?
     if(params->sec &&
-       params->sec != DMU_GetPtrp(mo->subsector, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(mo->face, DMU_SECTOR))
         return true; // Continue iteration.
 
     // Found it!
@@ -168,7 +168,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
         {
             mo->floorClip = 0;
 
-            if(mo->pos[VZ] == DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+            if(mo->pos[VZ] == DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
             {
                 const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 
@@ -306,7 +306,7 @@ static boolean fadeSpawn(thinker_t* th, void* context)
     mobjtype_t          spawntype;
 
     if(params->sec &&
-       params->sec != DMU_GetPtrp(origin->subsector, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(origin->face, DMU_SECTOR))
         return true; // Contiue iteration.
 
     // Only fade spawn origins of a certain type.
@@ -392,7 +392,7 @@ boolean PIT_ChangeMobjFlags(thinker_t* th, void* context)
     mobj_t*             mo = (mobj_t*) th;
 
     if(params->sec &&
-       params->sec != DMU_GetPtrp(mo->subsector, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(mo->face, DMU_SECTOR))
         return true; // Continue iteration.
 
     if(params->notPlayers && mo->player)

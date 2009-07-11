@@ -101,14 +101,15 @@ static boolean crossLineDef(const linedef_t* li, losdata_t* los,
 /**
  * @return              @c true iff trace crosses the given subsector.
  */
-static boolean crossSSec(uint ssecIdx, losdata_t* los)
+static boolean crossSSec(uint faceIdx, losdata_t* los)
 {
-    const subsector_t*  ssec = &ssectors[ssecIdx];
+    const face_t*       face = &faces[faceIdx];
 
-    if(ssec->polyObj)
+    if(((const subsector_t*) face->data)->polyObj)
     {   // Check polyobj lines.
-        polyobj_t*          po = ssec->polyObj;
-        hedge_t**           ptr = po->hEdges;
+        const subsector_t*  ssec = (const subsector_t*) face->data;
+        const polyobj_t*    po = ssec->polyObj;
+        const hedge_t**     ptr = po->hEdges;
 
         while(*ptr)
         {
@@ -132,7 +133,7 @@ static boolean crossSSec(uint ssecIdx, losdata_t* los)
     // Check lines.
     hedge_t*             hEdge;
 
-    if((hEdge = ssec->hEdge))
+    if((hEdge = face->hEdge))
     {
         do
         {
@@ -201,7 +202,7 @@ static boolean crossSSec(uint ssecIdx, losdata_t* los)
                     }
                 }
             }
-        } while((hEdge = hEdge->next) != ssec->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
     }
 

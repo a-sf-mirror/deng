@@ -365,14 +365,14 @@ void Rend_VertexColorsApplyTorchLight(rcolor_t* colors,
 }
 
 void Rend_PreparePlane(rvertex_t* rvertices, size_t numVertices,
-                       float height, const subsector_t* subsector,
+                       float height, const fvertex_t** vertices,
                        boolean antiClockwise)
 {
     size_t              i, vid;
 
     // First vertex is always #0.
-    rvertices[0].pos[VX] = subsector->vertices[0]->pos[VX];
-    rvertices[0].pos[VY] = subsector->vertices[0]->pos[VY];
+    rvertices[0].pos[VX] = vertices[0]->pos[VX];
+    rvertices[0].pos[VY] = vertices[0]->pos[VY];
     rvertices[0].pos[VZ] = height;
 
     // Copy the vertices in reverse order for ceilings (flip faces).
@@ -383,8 +383,8 @@ void Rend_PreparePlane(rvertex_t* rvertices, size_t numVertices,
 
     for(i = 1; i < numVertices; ++i)
     {
-        rvertices[i].pos[VX] = subsector->vertices[vid]->pos[VX];
-        rvertices[i].pos[VY] = subsector->vertices[vid]->pos[VY];
+        rvertices[i].pos[VX] = vertices[vid]->pos[VX];
+        rvertices[i].pos[VY] = vertices[vid]->pos[VY];
         rvertices[i].pos[VZ] = height;
 
         (antiClockwise? vid-- : vid++);
@@ -1949,7 +1949,7 @@ static boolean doRenderSeg(hedge_t* hEdge,
     return false; // Do not clip with this.
 }
 
-static void renderPlane(subsector_t* ssec, planetype_t type,
+static void renderPlane(face_t* face, planetype_t type,
                         float height, const vectorcomp_t normal[3],
                         material_t* inMat, short sufInFlags,
                         const float sufColor[4], blendmode_t blendMode,
@@ -1962,6 +1962,7 @@ static void renderPlane(subsector_t* ssec, planetype_t type,
 {
     float               inter = 0;
     rendworldpoly_params_t params;
+    subsector_t*        ssec = (subsector_t*) face->data;
     uint                numVertices = ssec->numVertices;
     rvertex_t*          rvertices;
     boolean             blended = false;
@@ -2048,7 +2049,8 @@ static void renderPlane(subsector_t* ssec, planetype_t type,
         if(addDLights && !params.glowing)
         {
             params.lightListIdx =
-                DL_ProjectOnSurface(ssec, params.texTL, params.texBR, normal,
+                DL_ProjectOnSurface(face, params.texTL, params.texBR,
+                                    normal,
                                     (DLF_NO_PLANAR |
                                      (type == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
         }
@@ -2061,7 +2063,8 @@ static void renderPlane(subsector_t* ssec, planetype_t type,
     }
 
     rvertices = R_AllocRendVertices(numVertices);
-    Rend_PreparePlane(rvertices, numVertices, height, ssec, !(normal[VZ] > 0));
+    Rend_PreparePlane(rvertices, numVertices, height, ssec->vertices,
+                      !(normal[VZ] > 0));
 
     if(params.type != RPT_SKY_MASK)
     {
@@ -2074,7 +2077,7 @@ static void renderPlane(subsector_t* ssec, planetype_t type,
     R_FreeRendVertices(rvertices);
 }
 
-static void Rend_RenderPlane(subsector_t* ssec, planetype_t type,
+static void Rend_RenderPlane(face_t* face, planetype_t type,
                              float height, const vectorcomp_t normal[3],
                              material_t* inMat, short sufInFlags,
                              const float sufColor[4], blendmode_t blendMode,
@@ -2084,12 +2087,16 @@ static void Rend_RenderPlane(subsector_t* ssec, planetype_t type,
                              biassurface_t* bsuf, uint elmIdx /*tmp*/,
                              int texMode /*tmp*/)
 {
-    sector_t*           sec = ssec->sector;
+    subsector_t*        ssec;
+    sector_t*           sec;
     vec3_t              vec;
 
     // Must have a visible surface.
     if(!inMat || (inMat->flags & MATF_NO_DRAW))
         return;
+
+    ssec = (subsector_t*) face->data;
+    sec = ssec->sector;
 
     V3_Set(vec, vx - ssec->midPoint.pos[VX], vz - ssec->midPoint.pos[VY],
            vy - height);
@@ -2105,7 +2112,7 @@ static void Rend_RenderPlane(subsector_t* ssec, planetype_t type,
         V3_Set(texBR, ssec->bBox[1].pos[VX],
                ssec->bBox[type == PLN_FLOOR? 0 : 1].pos[VY], height);
 
-        renderPlane(ssec, type, height, normal, inMat, sufInFlags,
+        renderPlane(face, type, height, normal, inMat, sufInFlags,
                     sufColor, blendMode, texTL, texBR, texOffset, texScale,
                     skyMasked, addDLights, isGlowing, bsuf, elmIdx, texMode);
     }
@@ -2132,7 +2139,7 @@ static boolean isVisible(surface_t* surface, sector_t* frontsec,
     return false;
 }
 
-static boolean rendSegSection(subsector_t* ssec, hedge_t* hEdge,
+static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
                               segsection_t section, surface_t* surface,
                               const fvertex_t* from, const fvertex_t* to,
                               float bottom, float top,
@@ -2354,21 +2361,24 @@ static boolean rendSegSection(subsector_t* ssec, hedge_t* hEdge,
 /**
  * Renders the given single-sided seg into the world.
  */
-static boolean Rend_RenderSSWallSeg(subsector_t* ssec, hedge_t* hEdge)
+static boolean Rend_RenderSSWallSeg(face_t* face, hedge_t* hEdge)
 {
     int                 pid;
     float               ffloor, fceil;
+    subsector_t*        ssec;
     sector_t*           frontsec;
     boolean             backSide, solidSeg = true;
     sidedef_t*          side;
     linedef_t*          ldef;
-    seg_t*          seg;
+    seg_t*              seg;
 
     if(!(side = HEDGE_SIDEDEF(hEdge)))
     {   // A one-way window.
         return false;
     }
+
     seg = (seg_t*) hEdge->data;
+    ssec = (subsector_t*) face->data;
 
     solidSeg = true;
     frontsec = ssec->sector;
@@ -2406,7 +2416,7 @@ static boolean Rend_RenderSSWallSeg(subsector_t* ssec, hedge_t* hEdge)
 
         Rend_RadioUpdateLinedef(seg->lineDef, seg->side);
 
-        rendSegSection(ssec, hEdge, SEG_MIDDLE, &side->SW_middlesurface,
+        rendSegSection(face, hEdge, SEG_MIDDLE, &side->SW_middlesurface,
                        &hEdge->HE_v1->v, &hEdge->HE_v2->v, ffloor, fceil,
                        texOffset, /*temp >*/ frontsec, /*< temp*/
                        false, true, side->flags);
@@ -2539,7 +2549,7 @@ static boolean findBottomTop(segsection_t section, float segOffset,
 /**
  * Renders wall sections for given two-sided seg.
  */
-static boolean Rend_RenderWallSeg(subsector_t* ssec, hedge_t* hEdge)
+static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
 {
     int                 pid = viewPlayer - ddPlayers;
     float               bottom, top, texOffset[2];
@@ -2548,7 +2558,8 @@ static boolean Rend_RenderWallSeg(subsector_t* ssec, hedge_t* hEdge)
     plane_t*            ffloor, *fceil, *bfloor, *bceil;
     linedef_t*          line;
     int                 solidSeg = false;
-    seg_t*          seg = (seg_t*) hEdge->data;
+    seg_t*              seg = (seg_t*) hEdge->data;
+    subsector_t*        ssec = (subsector_t*) face->data;
 
     frontSide = HEDGE_SIDEDEF(hEdge);
     backSide = HEDGE_SIDEDEF(hEdge->twin);
@@ -2602,7 +2613,7 @@ static boolean Rend_RenderWallSeg(subsector_t* ssec, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            solidSeg = rendSegSection(ssec, hEdge, SEG_MIDDLE, suf,
+            solidSeg = rendSegSection(face, hEdge, SEG_MIDDLE, suf,
                                       &hEdge->HE_v1->v, &hEdge->HE_v2->v,
                                       bottom, top, texOffset, frontSec,
                                       (((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
@@ -2647,7 +2658,7 @@ static boolean Rend_RenderWallSeg(subsector_t* ssec, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(ssec, hEdge, SEG_TOP, suf,
+            rendSegSection(face, hEdge, SEG_TOP, suf,
                            &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top,
                            texOffset, frontSec, false, true,
                            frontSide->flags);
@@ -2667,7 +2678,7 @@ static boolean Rend_RenderWallSeg(subsector_t* ssec, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(ssec, hEdge, SEG_BOTTOM, suf,
+            rendSegSection(face, hEdge, SEG_BOTTOM, suf,
                            &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top,
                            texOffset, frontSec, false, true,
                            frontSide->flags);
@@ -2721,12 +2732,12 @@ float Rend_SectorLight(sector_t* sec)
     return sec->lightLevel;
 }
 
-static void Rend_MarkSegsFacingFront(subsector_t* sub)
+static void Rend_MarkSegsFacingFront(face_t* face)
 {
     uint                i;
     hedge_t*            hEdge;
 
-    if((hEdge = sub->hEdge))
+    if((hEdge = face->hEdge))
     {
         do
         {
@@ -2745,15 +2756,17 @@ static void Rend_MarkSegsFacingFront(subsector_t* sub)
 
                 Rend_MarkSegSectionsPVisible(hEdge);
             }
-        } while((hEdge = hEdge->next) != sub->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 
-    if(sub->polyObj)
+    if(((subsector_t*) face->data)->polyObj)
     {
-        for(i = 0; i < sub->polyObj->numHEdges; ++i)
+        subsector_t*        ssec = (subsector_t*) face->data;
+
+        for(i = 0; i < ssec->polyObj->numHEdges; ++i)
         {
-            hedge_t*              hEdge = sub->polyObj->hEdges[i];
-            seg_t*          seg = (seg_t*) hEdge->data;
+            hedge_t*            hEdge = ssec->polyObj->hEdges[i];
+            seg_t*              seg = (seg_t*) hEdge->data;
 
             seg->frameFlags &= ~SEGINF_BACKSECSKYFIX;
 
@@ -2798,7 +2811,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
     quadTexCoords(coords, verts, wallLength, texOrigin[0]);
 }
 
-static void Rend_SSectSkyFixes(subsector_t *ssec)
+static void Rend_SSectSkyFixes(face_t* face)
 {
     float               ffloor, fceil, bfloor, bceil, bsh;
     rvertex_t           rvertices[4];
@@ -2810,6 +2823,7 @@ static void Rend_SSectSkyFixes(subsector_t *ssec)
     uint                j, num;
     hedge_t*            hEdge;
     sidedef_t*          side;
+    subsector_t*        ssec = (subsector_t*) face->data;
 
     // Init the poly.
     memset(rTU, 0, sizeof(rTU));
@@ -2839,7 +2853,7 @@ static void Rend_SSectSkyFixes(subsector_t *ssec)
 
     num  = ssec->hEdgeCount;
 
-    for(j = 0, hEdge = ssec->hEdge; j < num; ++j, hEdge = hEdge->next)
+    for(j = 0, hEdge = face->hEdge; j < num; ++j, hEdge = hEdge->next)
     {
         seg_t*              seg = (seg_t*) hEdge->data;
 
@@ -2975,20 +2989,22 @@ static void Rend_SSectSkyFixes(subsector_t *ssec)
  * the remaining faces, i.e. the forward facing segs. This is done before
  * rendering segs, so solid segments cut out all unnecessary oranges.
  */
-static void occludeSubsector(const subsector_t* sub, boolean forwardFacing)
+static void occludeSubsector(const face_t* face, boolean forwardFacing)
 {
     float               fronth[2], backh[2];
     float*              startv, *endv;
-    sector_t*           front = sub->sector, *back;
+    sector_t*           front, *back;
     hedge_t*            hEdge;
 
     if(devNoCulling || P_IsInVoid(viewPlayer))
         return;
 
+    front = ((subsector_t*) face->data)->sector;
+
     fronth[0] = front->SP_floorheight;
     fronth[1] = front->SP_ceilheight;
 
-    if((hEdge = sub->hEdge))
+    if((hEdge = face->hEdge))
     {
         do
         {
@@ -3042,14 +3058,15 @@ static void occludeSubsector(const subsector_t* sub, boolean forwardFacing)
                     }
                 }
             }
-        } while((hEdge = hEdge->next) != sub->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 }
 
-static void Rend_RenderSubsector(uint ssecidx)
+static void Rend_RenderSubsector(uint faceidx)
 {
     uint                i;
-    subsector_t*        ssec = SUBSECTOR_PTR(ssecidx);
+    face_t*             face = FACE_PTR(faceidx);
+    subsector_t*        ssec = (subsector_t*) face->data;
     hedge_t*            hEdge;
     sector_t*           sect;
     float               sceil, sfloor;
@@ -3059,7 +3076,7 @@ static void Rend_RenderSubsector(uint ssecidx)
         return;
     }
 
-    R_TriangulateSubSector(ssec);
+    R_TriangulateSubSector(face);
 
     sect = ssec->sector;
     sceil = sect->SP_ceilvisheight;
@@ -3074,7 +3091,7 @@ static void Rend_RenderSubsector(uint ssecidx)
 
     if(!firstsubsector)
     {
-        if(!C_CheckSubsector(ssec))
+        if(!C_CheckFace(face))
             return; // This isn't visible.
     }
     else
@@ -3088,20 +3105,20 @@ static void Rend_RenderSubsector(uint ssecidx)
     // Retrieve the sector light color.
     sLightColor = R_GetSectorLightColor(sect);
 
-    Rend_MarkSegsFacingFront(ssec);
+    Rend_MarkSegsFacingFront(face);
 
-    R_InitForSubsector(ssec);
+    R_InitForSubsector(face);
 
-    Rend_RadioSubsectorEdges(ssec);
+    Rend_RadioSubsectorEdges(face);
 
-    occludeSubsector(ssec, false);
-    LO_ClipInSubsector(ssecidx);
-    occludeSubsector(ssec, true);
+    occludeSubsector(face, false);
+    LO_ClipInSubsector(face);
+    occludeSubsector(face, true);
 
     if(ssec->polyObj)
     {
         // Polyobjs don't obstruct, do clip lights with another algorithm.
-        LO_ClipInSubsectorBySight(ssecidx);
+        LO_ClipInSubsectorBySight(face);
     }
 
     // Mark the particle generators in the sector visible.
@@ -3110,7 +3127,7 @@ static void Rend_RenderSubsector(uint ssecidx)
     // Sprites for this subsector have to be drawn. This must be done before
     // the segments of this subsector are added to the clipper. Otherwise
     // the sprites would get clipped by them, and that wouldn't be right.
-    R_AddSprites(ssec);
+    R_AddSprites(face);
 
     // Draw the various skyfixes for all front facing segs in this ssec
     // (includes polyobject segs).
@@ -3129,11 +3146,11 @@ static void Rend_RenderSubsector(uint ssecidx)
         } while(!doSkyFixes && i < ssec->sector->planeCount);
 
         if(doSkyFixes)
-            Rend_SSectSkyFixes(ssec);
+            Rend_SSectSkyFixes(face);
     }
 
     // Draw the walls.
-    if((hEdge = ssec->hEdge))
+    if((hEdge = face->hEdge))
     {
         do
         {
@@ -3146,9 +3163,9 @@ static void Rend_RenderSubsector(uint ssecidx)
                 boolean             solid;
 
                 if(!seg->SG_backsector || !seg->SG_frontsector)
-                    solid = Rend_RenderSSWallSeg(ssec, hEdge);
+                    solid = Rend_RenderSSWallSeg(face, hEdge);
                 else
-                    solid = Rend_RenderWallSeg(ssec, hEdge);
+                    solid = Rend_RenderWallSeg(face, hEdge);
 
                 if(solid)
                 {
@@ -3156,7 +3173,7 @@ static void Rend_RenderSubsector(uint ssecidx)
                                     hEdge->HE_v2pos[VX], hEdge->HE_v2pos[VY]);
                 }
             }
-        } while((hEdge = hEdge->next) != ssec->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 
     // Is there a polyobj on board?
@@ -3165,14 +3182,14 @@ static void Rend_RenderSubsector(uint ssecidx)
         for(i = 0; i < ssec->polyObj->numHEdges; ++i)
         {
             hedge_t*              hEdge = ssec->polyObj->hEdges[i];
-            seg_t*          seg = (seg_t*) hEdge->data;
+            seg_t*              seg = (seg_t*) hEdge->data;
 
             // Let's first check which way this seg is facing.
             if(seg->frameFlags & SEGINF_FACINGFRONT)
             {
                 boolean             solid;
 
-                if((solid = Rend_RenderSSWallSeg(ssec, hEdge)))
+                if((solid = Rend_RenderSSWallSeg(face, hEdge)))
                 {
                     C_AddViewRelSeg(hEdge->HE_v1pos[VX], hEdge->HE_v1pos[VY],
                                     hEdge->HE_v2pos[VX], hEdge->HE_v2pos[VY]);
@@ -3245,7 +3262,7 @@ static void Rend_RenderSubsector(uint ssecidx)
                              (mat && (mat->flags & MATF_GLOW)))))
             isGlowing = true;
 
-        Rend_RenderPlane(ssec, plane->type, height, suf->normal, mat,
+        Rend_RenderPlane(face, plane->type, height, suf->normal, mat,
                          suf->inFlags, suf->rgba,
                          suf->blendMode, texOffset, texScale,
                          R_IsSkySurface(suf), true, isGlowing,
@@ -3276,7 +3293,7 @@ static void Rend_RenderSubsector(uint ssecidx)
             if(vy < plane->visHeight)
                 normal[VZ] *= -1;
 
-            Rend_RenderPlane(ssec, PLN_MID, plane->visHeight, normal,
+            Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
                              P_GetMaterial(DDT_GRAY, MN_SYSTEM),
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
@@ -3296,7 +3313,7 @@ static void Rend_RenderSubsector(uint ssecidx)
             if(vy > plane->visHeight)
                 normal[VZ] *= -1;
 
-            Rend_RenderPlane(ssec, PLN_MID, plane->visHeight, normal,
+            Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
                              P_GetMaterial(DDT_GRAY, MN_SYSTEM),
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
@@ -3444,10 +3461,10 @@ void Rend_RenderNormals(void)
         }
     }
 
-    for(i = 0; i < numSSectors; ++i)
+    for(i = 0; i < numFaces; ++i)
     {
         uint                j;
-        subsector_t*        ssec = &ssectors[i];
+        const subsector_t*  ssec = (subsector_t*) faces[i].data;
 
         for(j = 0; j < ssec->sector->planeCount; ++j)
         {
@@ -3560,6 +3577,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 {
     vertex_t*           vtx = li->L_v1;
     polyobj_t*          po = context;
+    subsector_t*        ssec = (subsector_t*) po->face->data;
     float               dist2D =
         M_ApproxDistancef(vx - vtx->V_pos[VX], vz - vtx->V_pos[VY]);
 
@@ -3569,8 +3587,8 @@ static boolean drawVertex1(linedef_t* li, void* context)
 
         if(alpha > 0)
         {
-            float               bottom = po->subsector->sector->SP_floorvisheight;
-            float               top = po->subsector->sector->SP_ceilvisheight;
+            float               bottom = ssec->sector->SP_floorvisheight;
+            float               top = ssec->sector->SP_ceilvisheight;
 
             glDisable(GL_TEXTURE_2D);
 
@@ -3593,7 +3611,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 
         pos[VX] = vtx->V_pos[VX];
         pos[VY] = vtx->V_pos[VY];
-        pos[VZ] = po->subsector->sector->SP_floorvisheight;
+        pos[VZ] = ssec->sector->SP_floorvisheight;
 
         dist3D = M_Distance(pos, eye);
 

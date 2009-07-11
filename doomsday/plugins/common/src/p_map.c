@@ -179,7 +179,7 @@ float P_GetGravity(void)
  * Checks the reject matrix to find out if the two sectors are visible
  * from each other.
  */
-static boolean checkReject(subsector_t* a, subsector_t* b)
+static boolean checkReject(face_t* a, face_t* b)
 {
     if(rejectMatrix != NULL)
     {
@@ -219,14 +219,14 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     float               fPos[3];
 
     // If either is unlinked, they can't see each other.
-    if(!from->subsector || !to->subsector)
+    if(!from->face || !to->face)
         return false;
 
     if(to->dPlayer && (to->dPlayer->flags & DDPF_CAMERA))
         return false; // Cameramen don't exist!
 
     // Check for trivial rejection.
-    if(!checkReject(from->subsector, to->subsector))
+    if(!checkReject(from->face, to->face))
         return false;
 
     fPos[VX] = from->pos[VX];
@@ -287,7 +287,7 @@ boolean PIT_StompThing(mobj_t* mo, void* data)
 boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 {
     int                 stomping;
-    subsector_t*        newSSec;
+    face_t*        newSSec;
     float               box[4];
 
     // Kill anything occupying the position.
@@ -1218,7 +1218,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             goto pushline;
         }
         else if(blockingMobj->pos[VZ] + blockingMobj->height - thing->pos[VZ] > 24 ||
-                (DMU_GetFloatp(blockingMobj->subsector, DMU_CEILING_HEIGHT) -
+                (DMU_GetFloatp(blockingMobj->face, DMU_CEILING_HEIGHT) -
                  (blockingMobj->pos[VZ] + blockingMobj->height) < thing->height) ||
                 (tmCeilingZ - (blockingMobj->pos[VZ] + blockingMobj->height) <
                  thing->height))
@@ -1384,7 +1384,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #if __JHEXEN__
         // Must stay within a sector of a certain floor type?
         if((thing->flags2 & MF2_CANTLEAVEFLOORPIC) &&
-           (tmFloorMaterial != DMU_GetPtrp(thing->subsector, DMU_FLOOR_MATERIAL) ||
+           (tmFloorMaterial != DMU_GetPtrp(thing->face, DMU_FLOOR_MATERIAL) ||
             tmFloorZ - thing->pos[VZ] != 0))
         {
             return false;
@@ -1424,7 +1424,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     {
         thing->floorClip = 0;
 
-        if(thing->pos[VZ] == DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
+        if(thing->pos[VZ] == DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -1538,7 +1538,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
     divline_t*          trace =
         (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
     sector_t*           frontSec = NULL, *backSec = NULL;
-    subsector_t* contact, *originSub;
+    face_t* contact, *originSub;
     xline_t*            xline;
     boolean             lineWasHit;
 
@@ -2806,7 +2806,7 @@ boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
 
 mobj_t* P_CheckOnMobj(mobj_t* thing)
 {
-    subsector_t*        newSSec;
+    face_t*        newSSec;
     float               pos[3], box[4];
     mobj_t              oldMo;
 

@@ -53,7 +53,7 @@
 /**
  * Update the subsector, property is selected by DMU_* name.
  */
-boolean Subsector_SetProperty(subsector_t* sub, const setargs_t* args)
+boolean Subsector_SetProperty(face_t* sub, const setargs_t* args)
 {
     Con_Error("Subsector_SetProperty: Property %s is not writable.\n",
               DMU_Str(args->prop));
@@ -64,24 +64,24 @@ boolean Subsector_SetProperty(subsector_t* sub, const setargs_t* args)
 /**
  * Get the value of a subsector property, selected by DMU_* name.
  */
-boolean Subsector_GetProperty(const subsector_t* sub, setargs_t* args)
+boolean Subsector_GetProperty(const face_t* face, setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_SECTOR:
-        DMU_GetValue(DMT_SUBSECTOR_SECTOR, &sub->sector, args, 0);
+        DMU_GetValue(DMT_FACE_SECTOR, &((subsector_t*) face->data)->sector, args, 0);
         break;
     case DMU_LIGHT_LEVEL:
-        DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &sub->sector->lightLevel, args, 0);
+        DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &((subsector_t*) face->data)->sector->lightLevel, args, 0);
         break;
     case DMT_MOBJS:
-        DMU_GetValue(DMT_SECTOR_MOBJLIST, &sub->sector->mobjList, args, 0);
+        DMU_GetValue(DMT_SECTOR_MOBJLIST, &((subsector_t*) face->data)->sector->mobjList, args, 0);
         break;
     case DMU_SEG_COUNT:
     {
         // FIXME:
-        //DMU_GetValue(DMT_SUBSECTOR_SEGCOUNT, &sub->hEdgeCount, args, 0);
-        int val = (int) sub->hEdgeCount;
+        //DMU_GetValue(DMT_SUBSECTOR_SEGCOUNT, &((subsector_t*) face->data)->hEdgeCount, args, 0);
+        int val = (int) ((subsector_t*) face->data)->hEdgeCount;
         DMU_GetValue(DDVT_INT, &val, args, 0);
         break;
     }

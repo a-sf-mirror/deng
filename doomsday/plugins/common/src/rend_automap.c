@@ -707,7 +707,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     return 1; // Continue iteration.
 }
 
-static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
+static boolean drawSegsOfSubsector(face_t* ssec, void* context)
 {
     return DMU_Iteratep(ssec, DMU_HEDGE, context, Rend_AutomapSeg);
 }
@@ -748,7 +748,7 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
         // contain all walls, not just those visible *now*.
         for(i = 0; i < numsubsectors; ++i)
         {
-            DMU_Iteratep(DMU_ToPtr(DMU_SUBSECTOR, i), DMU_HEDGE, &params,
+            DMU_Iteratep(DMU_ToPtr(DMU_FACE, i), DMU_HEDGE, &params,
                        Rend_AutomapSeg);
         }
     }

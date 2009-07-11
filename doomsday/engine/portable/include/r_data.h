@@ -309,7 +309,7 @@ void            R_GetColorPaletteRGBf(colorpaletteid_t id, float rgb[3],
                                       int idx, boolean correctGamma);
 boolean         R_SetDefaultColorPalette(colorpaletteid_t id);
 
-//boolean         R_UpdateSubSector(struct subsector_t* ssec, boolean forceUpdate);
+//boolean         R_UpdateSubSector(struct face_t* ssec, boolean forceUpdate);
 boolean         R_UpdateSector(struct sector_s* sec, boolean forceUpdate);
 boolean         R_UpdateLinedef(struct linedef_s* line, boolean forceUpdate);
 boolean         R_UpdateSidedef(struct sidedef_s* side, boolean forceUpdate);

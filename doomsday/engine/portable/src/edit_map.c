@@ -608,41 +608,43 @@ boolean MPE_Begin(const char *name)
     return true;
 }
 
-static void hardenSectorSSecList(gamemap_t *map, uint secIDX)
+static void hardenSectorSSecList(gamemap_t* map, uint secIDX)
 {
     uint                i, n, count;
-    sector_t           *sec = &map->sectors[secIDX];
+    sector_t*           sec = &map->sectors[secIDX];
 
     count = 0;
-    for(i = 0; i < map->numSSectors; ++i)
+    for(i = 0; i < map->numFaces; ++i)
     {
-        subsector_t *ssec = &map->ssectors[i];
-        if(ssec->sector == sec)
+        const face_t*       face = &map->faces[i];
+
+        if(((const subsector_t*) face->data)->sector == sec)
             count++;
     }
 
-    sec->ssectors =
-        Z_Malloc((count + 1) * sizeof(subsector_t*), PU_MAPSTATIC, NULL);
+    sec->faces = Z_Malloc((count + 1) * sizeof(face_t*), PU_MAPSTATIC, NULL);
 
     n = 0;
-    for(i = 0; i < map->numSSectors; ++i)
+    for(i = 0; i < map->numFaces; ++i)
     {
-        subsector_t        *ssec = &map->ssectors[i];
+        face_t*             face = &map->faces[i];
+        subsector_t*        ssec = (subsector_t*) face->data;
 
         if(ssec->sector == sec)
         {
             ssec->inSectorID = n;
-            sec->ssectors[n++] = ssec;
+            sec->faces[n++] = face;
         }
     }
-    sec->ssectors[n] = NULL; // Terminate.
-    sec->ssectorCount = count;
+
+    sec->faces[n] = NULL; // Terminate.
+    sec->faceCount = count;
 }
 
 /**
  * Build subsector tables for all sectors.
  */
-static void buildSectorSSecLists(gamemap_t *map)
+static void buildSectorSSecLists(gamemap_t* map)
 {
     uint                i;
 
@@ -930,54 +932,55 @@ static void updateMapBounds(gamemap_t *map)
     }
 }
 
-static void updateSSecMidPoint(subsector_t* sub)
+static void updateSSecMidPoint(face_t* face)
 {
     hedge_t*            hEdge;
+    subsector_t*        ssec = (subsector_t*) face->data;
 
     // Find the center point. First calculate the bounding box.
-    if((hEdge = sub->hEdge))
+    if((hEdge = face->hEdge))
     {
         fvertex_t*          vtx;
 
         vtx = &hEdge->HE_v1->v;
-        sub->bBox[0].pos[VX] = sub->bBox[1].pos[VX] = sub->midPoint.pos[VX] = vtx->pos[VX];
-        sub->bBox[0].pos[VY] = sub->bBox[1].pos[VY] = sub->midPoint.pos[VY] = vtx->pos[VY];
+        ssec->bBox[0].pos[VX] = ssec->bBox[1].pos[VX] = ssec->midPoint.pos[VX] = vtx->pos[VX];
+        ssec->bBox[0].pos[VY] = ssec->bBox[1].pos[VY] = ssec->midPoint.pos[VY] = vtx->pos[VY];
 
-        while((hEdge = hEdge->next) != sub->hEdge)
+        while((hEdge = hEdge->next) != face->hEdge)
         {
             vtx = &hEdge->HE_v1->v;
 
-            if(vtx->pos[VX] < sub->bBox[0].pos[VX])
-                sub->bBox[0].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] < sub->bBox[0].pos[VY])
-                sub->bBox[0].pos[VY] = vtx->pos[VY];
-            if(vtx->pos[VX] > sub->bBox[1].pos[VX])
-                sub->bBox[1].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] > sub->bBox[1].pos[VY])
-                sub->bBox[1].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] < ssec->bBox[0].pos[VX])
+                ssec->bBox[0].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] < ssec->bBox[0].pos[VY])
+                ssec->bBox[0].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] > ssec->bBox[1].pos[VX])
+                ssec->bBox[1].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] > ssec->bBox[1].pos[VY])
+                ssec->bBox[1].pos[VY] = vtx->pos[VY];
 
-            sub->midPoint.pos[VX] += vtx->pos[VX];
-            sub->midPoint.pos[VY] += vtx->pos[VY];
+            ssec->midPoint.pos[VX] += vtx->pos[VX];
+            ssec->midPoint.pos[VY] += vtx->pos[VY];
         }
 
-        sub->midPoint.pos[VX] /= sub->hEdgeCount; // num vertices.
-        sub->midPoint.pos[VY] /= sub->hEdgeCount;
+        ssec->midPoint.pos[VX] /= ssec->hEdgeCount; // num vertices.
+        ssec->midPoint.pos[VY] /= ssec->hEdgeCount;
     }
 
     // Calculate the worldwide grid offset.
-    sub->worldGridOffset[VX] = fmod(sub->bBox[0].pos[VX], 64);
-    sub->worldGridOffset[VY] = fmod(sub->bBox[1].pos[VY], 64);
+    ssec->worldGridOffset[VX] = fmod(ssec->bBox[0].pos[VX], 64);
+    ssec->worldGridOffset[VY] = fmod(ssec->bBox[1].pos[VY], 64);
 }
 
-static void prepareSubSectors(gamemap_t *map)
+static void prepareSubSectors(gamemap_t* map)
 {
     uint                i;
 
-    for(i = 0; i < map->numSSectors; ++i)
+    for(i = 0; i < map->numFaces; ++i)
     {
-        subsector_t *ssec = &map->ssectors[i];
+        face_t*             face = &map->faces[i];
 
-        updateSSecMidPoint(ssec);
+        updateSSecMidPoint(face);
     }
 }
 
@@ -987,13 +990,13 @@ static void prepareSubSectors(gamemap_t *map)
  * pre: rootVtx must point to the vertex common between a and b
  *      which are (lineowner_t*) ptrs.
  */
-static int C_DECL lineAngleSorter(const void *a, const void *b)
+static int C_DECL lineAngleSorter(const void* a, const void* b)
 {
     uint                i;
     fixed_t             dx, dy;
     binangle_t          angles[2];
-    lineowner_t        *own[2];
-    linedef_t          *line;
+    lineowner_t*        own[2];
+    linedef_t*          line;
 
     own[0] = (lineowner_t *)a;
     own[1] = (lineowner_t *)b;

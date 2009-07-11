@@ -181,7 +181,7 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {   // Local light.
             ddpsp->light =
-                DMU_GetFloatp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL);
+                DMU_GetFloatp(pl->plr->mo->face, DMU_LIGHT_LEVEL);
         }
 #if !__JSTRIFE__
         // Needs fullbright?

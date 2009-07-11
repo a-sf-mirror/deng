@@ -525,6 +525,8 @@ void Sfx_ListenerUpdate(void)
 
     if(listener)
     {
+        subsector_t*            ssec = (subsector_t*) listener->face->data;
+
         // Position. At eye-level.
         Sfx_GetListenerXYZ(vec);
         iSFX->Listenerv(SFXLP_POSITION, vec);
@@ -543,9 +545,9 @@ void Sfx_ListenerUpdate(void)
         iSFX->Listenerv(SFXLP_VELOCITY, vec);
 
         // Reverb effects. Has the current sector changed?
-        if(listenerSector != listener->subsector->sector)
+        if(listenerSector != ssec->sector)
         {
-            listenerSector = listener->subsector->sector;
+            listenerSector = ssec->sector;
 
             for(i = 0; i < NUM_REVERB_DATA; ++i)
             {

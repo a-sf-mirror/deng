@@ -355,8 +355,8 @@ static void SV_v13_ReadMobj(void)
     }
     P_MobjSetPosition(mo);
     mo->info = info;
-    mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
 }
 
 void P_v13_UnArchivePlayers(void)

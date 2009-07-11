@@ -72,7 +72,7 @@ mobj_t *missileMobj;
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo)
 {
-    sector_t*           sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
+    sector_t*           sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
 
     return P_GetPlaneMaterialType(sec, PLN_FLOOR);
 }
@@ -285,7 +285,7 @@ void P_WindThrust(mobj_t *mo)
 {
     static int          windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
-    sector_t           *sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
+    sector_t           *sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
     int                 special = P_ToXSector(sec)->special;
 
     switch(special)
@@ -327,7 +327,7 @@ float P_MobjGetFriction(mobj_t *mo)
     }
     else
     {
-        sector_t           *sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
+        sector_t           *sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
 
         if(P_ToXSector(sec)->special == 15)
         {
@@ -500,7 +500,7 @@ void P_MobjMoveXY(mobj_t* mo)
                mo->mom[MY] > 1.0f / 4 || mo->mom[MY] < -1.0f / 4)
             {
                 if(mo->floorZ !=
-                   DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+                   DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
                     return;
             }
         }
@@ -534,7 +534,7 @@ void P_MobjMoveXY(mobj_t* mo)
         else
         {
 #if __JHERETIC__
-            if(P_ToXSector(DMU_GetPtrp(mo->subsector, DMU_SECTOR))->special == 15)
+            if(P_ToXSector(DMU_GetPtrp(mo->face, DMU_SECTOR))->special == 15)
             {
                 // Friction_Low
                 mo->mom[MX] *= FRICTION_LOW;
@@ -562,7 +562,7 @@ void P_MobjMoveZ(mobj_t *mo)
     if(P_CameraZMovement(mo))
         return;
 
-    gravity = XS_Gravity(DMU_GetPtrp(mo->subsector, DMU_SECTOR));
+    gravity = XS_Gravity(DMU_GetPtrp(mo->face, DMU_SECTOR));
 
     // Check for smooth step up.
     if(mo->player && mo->pos[VZ] < mo->floorZ)
@@ -774,7 +774,7 @@ void P_MobjMoveZ(mobj_t *mo)
 
         if((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
-            if(DMU_GetIntp(DMU_GetPtrp(mo->subsector, DMU_CEILING_MATERIAL),
+            if(DMU_GetIntp(DMU_GetPtrp(mo->face, DMU_CEILING_MATERIAL),
                            DMU_FLAGS) & MATF_SKYMASK)
             {
 #if __JHERETIC__
@@ -1136,9 +1136,9 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     // Set subsector and/or block links.
     P_MobjSetPosition(mo);
 
-    mo->floorZ   = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->floorZ   = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
     mo->dropOffZ = mo->floorZ;
-    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
 
     if((spawnFlags & MSF_Z_CEIL) || (info->flags & MF_SPAWNCEILING))
     {
@@ -1168,7 +1168,7 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->floorClip = 0;
 
     if((mo->flags2 & MF2_FLOORCLIP) &&
-       mo->pos[VZ] == DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+       mo->pos[VZ] == DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
     {
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 
@@ -1200,7 +1200,7 @@ mobj_t* P_SpawnMobj3fv(mobjtype_t type, const float pos[3], angle_t angle,
 void P_RepositionMace(mobj_t* mo)
 {
     int                 spot;
-    subsector_t*        ss;
+    face_t*        ss;
 
     P_MobjUnsetPosition(mo);
     spot = P_Random() % maceSpotCount;
@@ -1271,7 +1271,7 @@ boolean P_HitFloor(mobj_t* thing)
     mobj_t*             mo;
     const terraintype_t* tt;
 
-    if(thing->floorZ != DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
+    if(thing->floorZ != DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
     {
         // Don't splash if landing on the edge above water/lava/etc....
         return false;

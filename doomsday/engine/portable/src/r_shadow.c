@@ -182,17 +182,18 @@ void R_UpdateVertexShadowOffsets(vertex_t *vtx)
 /**
  * Link a seg to an arbitary subsector for the purposes of shadowing.
  */
-static void linkShadowLineDefToSSec(linedef_t *line, byte side,
-                                    subsector_t *subsector)
+static void linkShadowLineDefToSSec(linedef_t* line, byte side,
+                                    face_t* face)
 {
-    shadowlink_t           *link;
+    shadowlink_t*       link;
+    subsector_t*        ssec = (subsector_t*) face->data;
 
 #ifdef _DEBUG
 // Check the links for dupes!
 {
-shadowlink_t *i;
+shadowlink_t*       i;
 
-for(i = subsector->shadows; i; i = i->next)
+for(i = ssec->shadows; i; i = i->next)
     if(i->lineDef == line && i->side == side)
         Con_Error("R_LinkShadow: Already here!!\n");
 }
@@ -202,14 +203,14 @@ for(i = subsector->shadows; i; i = i->next)
     link = Z_BlockNewElement(shadowLinksBlockSet);
 
     // The links are stored into a linked list.
-    link->next = subsector->shadows;
-    subsector->shadows = link;
+    link->next = ssec->shadows;
+    ssec->shadows = link;
     link->lineDef = line;
     link->side = side;
 }
 
 typedef struct shadowlinkerparms_s {
-    linedef_t          *lineDef;
+    linedef_t*          lineDef;
     byte                side;
 } shadowlinkerparms_t;
 
@@ -217,11 +218,11 @@ typedef struct shadowlinkerparms_s {
  * If the shadow polygon (parm) contacts the subsector, link the poly
  * to the subsector's shadow list.
  */
-boolean RIT_ShadowSubsectorLinker(subsector_t *subsector, void *parm)
+boolean RIT_ShadowSubsectorLinker(face_t* face, void* parm)
 {
-    shadowlinkerparms_t *data = (shadowlinkerparms_t*) parm;
+    shadowlinkerparms_t* data = (shadowlinkerparms_t*) parm;
 
-    linkShadowLineDefToSSec(data->lineDef, data->side, subsector);
+    linkShadowLineDefToSSec(data->lineDef, data->side, face);
     return true;
 }
 
@@ -253,8 +254,8 @@ void R_InitSectorShadows(void)
 
     uint            i, j;
     vec2_t          bounds[2], point;
-    vertex_t       *vtx0, *vtx1;
-    lineowner_t    *vo0, *vo1;
+    vertex_t*       vtx0, *vtx1;
+    lineowner_t*    vo0, *vo1;
     shadowlinkerparms_t data;
 
     for(i = 0; i < numVertexes; ++i)
@@ -278,7 +279,7 @@ void R_InitSectorShadows(void)
 
     for(i = 0; i < numLineDefs; ++i)
     {
-        linedef_t          *line = LINE_PTR(i);
+        linedef_t*          line = LINE_PTR(i);
 
         if(R_IsShadowingLinedef(line))
             for(j = 0; j < 2; ++j)

@@ -93,7 +93,8 @@ static void processMobjShadow(mobj_t* mo)
 
     float               moz;
     float               height, moh, halfmoh, alpha, pos[2];
-    sector_t*           sec = mo->subsector->sector;
+    subsector_t*        ssec = (subsector_t*) mo->face->data;
+    sector_t*           sec = ssec->sector;
     float               radius;
     uint                i;
     rvertex_t           rvertices[4];
@@ -160,7 +161,7 @@ static void processMobjShadow(mobj_t* mo)
         radius = (float) shadowMaxRad;
 
     // Figure out the visible floor height.
-    plane = mo->subsector->sector->SP_plane(PLN_FLOOR);
+    plane = ssec->sector->SP_plane(PLN_FLOOR);
     P_MobjSectorsIterator(mo, Rend_ShadowIterator, &plane);
 
     if(plane->visHeight >= moz + mo->height)

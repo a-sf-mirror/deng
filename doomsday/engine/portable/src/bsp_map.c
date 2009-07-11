@@ -297,8 +297,8 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     M_Free(index);
 }
 
-static void hardenLeaf(gamemap_t* map, subsector_t* dest,
-                       const bspleafdata_t* src)
+static void hardenLeaf(gamemap_t* map, face_t* dest,
+                       const bspleafdata_t* src, subsector_t** storage)
 {
     boolean             found;
     size_t              hEdgeCount;
@@ -326,10 +326,16 @@ static void hardenLeaf(gamemap_t* map, subsector_t* dest,
             &map->hEdges[((bsp_hedgeinfo_t*) n->next->hEdge->data)->index];
     }
 
-    dest->header.type = DMU_SUBSECTOR;
-    dest->hEdgeCount = (uint) hEdgeCount;
-    dest->shadows = NULL;
-    dest->vertices = NULL;
+    dest->header.type = DMU_FACE;
+    dest->data = *storage, (*storage)++;
+
+    {
+    subsector_t*        ssec = ((subsector_t*) dest->data);
+
+    ssec->hEdgeCount = (uint) hEdgeCount;
+    ssec->shadows = NULL;
+    ssec->vertices = NULL;
+    }
 
     // Determine which sector this subsector belongs to.
     found = false;
@@ -340,14 +346,14 @@ static void hardenLeaf(gamemap_t* map, subsector_t* dest,
 
         if(!found && (side = HEDGE_SIDEDEF(hEdge)))
         {
-            dest->sector = side->sector;
+            ((subsector_t*) dest->data)->sector = side->sector;
             found = true;
         }
 
-       ((seg_t*) hEdge->data)->subsector = dest;
+        hEdge->face = dest;
     } while((hEdge = hEdge->next) != dest->hEdge);
 
-    if(!dest->sector)
+    if(!((subsector_t*) dest->data)->sector)
     {
         Con_Message("hardenLeaf: Warning orphan subsector %p.\n", dest);
     }
@@ -355,8 +361,9 @@ static void hardenLeaf(gamemap_t* map, subsector_t* dest,
 
 typedef struct {
     gamemap_t*      dest;
-    uint            ssecCurIndex;
+    uint            faceCurIndex;
     uint            nodeCurIndex;
+    subsector_t*    storage;
 } hardenbspparams_t;
 
 static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
@@ -396,10 +403,11 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
         if(BinaryTree_IsLeaf(right))
         {
             bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(right);
-            uint            idx = params->ssecCurIndex++;
+            uint            idx = params->faceCurIndex++;
 
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, &params->dest->ssectors[idx], leaf);
+            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+                       &params->storage);
         }
         else
         {
@@ -415,10 +423,11 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
         if(BinaryTree_IsLeaf(left))
         {
             bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(left);
-            uint            idx = params->ssecCurIndex++;
+            uint            idx = params->faceCurIndex++;
 
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, &params->dest->ssectors[idx], leaf);
+            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+                       &params->storage);
         }
         else
         {
@@ -439,7 +448,7 @@ static boolean C_DECL countNode(binarytree_t* tree, void* data)
     return true; // Continue iteration.
 }
 
-static boolean C_DECL countSSec(binarytree_t* tree, void* data)
+static boolean C_DECL countFace(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
         (*((uint*) data))++;
@@ -454,18 +463,20 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
     dest->nodes =
         Z_Calloc(dest->numNodes * sizeof(node_t), PU_MAPSTATIC, 0);
 
-    dest->numSSectors = 0;
-    BinaryTree_PostOrder(rootNode, countSSec, &dest->numSSectors);
-    dest->ssectors =
-        Z_Calloc(dest->numSSectors * sizeof(subsector_t), PU_MAPSTATIC, 0);
+    dest->numFaces = 0;
+    BinaryTree_PostOrder(rootNode, countFace, &dest->numFaces);
+    dest->faces =
+        Z_Calloc(dest->numFaces * sizeof(face_t), PU_MAPSTATIC, 0);
 
     if(rootNode)
     {
         hardenbspparams_t params;
 
         params.dest = dest;
-        params.ssecCurIndex = 0;
+        params.faceCurIndex = 0;
         params.nodeCurIndex = 0;
+        params.storage = Z_Calloc(dest->numFaces * sizeof(subsector_t),
+                                  PU_MAPSTATIC, 0);
 
         BinaryTree_PostOrder(rootNode, hardenNode, &params);
     }

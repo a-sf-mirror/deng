@@ -513,7 +513,7 @@ static void CheatDebugFunc(player_t* player, cheatseq_t* cheat)
 {
     char                lumpName[9];
     char                textBuffer[256];
-    subsector_t*        sub;
+    face_t*        sub;
 
     if(!player->plr->mo || !userGame)
         return;
@@ -526,7 +526,7 @@ static void CheatDebugFunc(player_t* player, cheatseq_t* cheat)
 
     // Also print some information to the console.
     Con_Message(textBuffer);
-    sub = player->plr->mo->subsector;
+    sub = player->plr->mo->face;
     Con_Message("\nSubsector %i:\n", DMU_ToIndex(sub));
     Con_Message("  FloorZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_FLOOR_HEIGHT),
                 P_GetMaterialName(DMU_GetPtrp(sub, DMU_FLOOR_MATERIAL)));

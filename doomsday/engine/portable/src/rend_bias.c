@@ -371,13 +371,14 @@ void SB_InitForMap(const char* uniqueID)
     for(i = 0; i < numSectors; ++i)
     {
         sector_t*           sec = &sectors[i];
-        subsector_t**       ssecPtr = sec->ssectors;
+        face_t**            facePtr = sec->faces;
 
-        while(*ssecPtr)
+        while(*facePtr)
         {
-            subsector_t*        ssec = *ssecPtr;
+            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
+
             numVertIllums += ssec->numVertices * sec->planeCount;
-            *ssecPtr++;
+            *facePtr++;
         }
     }
 
@@ -418,11 +419,11 @@ void SB_InitForMap(const char* uniqueID)
     for(i = 0; i < numSectors; ++i)
     {
         sector_t*           sec = &sectors[i];
-        subsector_t**       ssecPtr = sec->ssectors;
+        face_t**            facePtr = sec->faces;
 
-        while(*ssecPtr)
+        while(*facePtr)
         {
-            subsector_t*        ssec = *ssecPtr;
+            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
             uint                j;
 
             for(j = 0; j < sec->planeCount; ++j)
@@ -436,7 +437,7 @@ void SB_InitForMap(const char* uniqueID)
                 ssec->bsuf[j] = bsuf;
             }
 
-            *ssecPtr++;
+            *facePtr++;
         }
     }
 
@@ -447,8 +448,8 @@ void SB_InitForMap(const char* uniqueID)
 
         for(j = 0; j < po->numHEdges; ++j)
         {
-            hedge_t*              hEdge = po->hEdges[j];
-            seg_t*          seg = (seg_t*) hEdge->data;
+            hedge_t*            hEdge = po->hEdges[j];
+            seg_t*              seg = (seg_t*) hEdge->data;
             int                 k;
 
             for(k = 0; k < 3; ++k)
@@ -780,11 +781,12 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
         {
             float               minLevel = s->sectorLevel[0];
             float               maxLevel = s->sectorLevel[1];
+            subsector_t*        ssec = (subsector_t*)
+                R_PointInSubsector(s->pos[VX], s->pos[VY])->data;
             sector_t*           sector;
             float               oldIntensity = s->intensity;
 
-            sector =
-                R_PointInSubsector(s->pos[VX], s->pos[VY])->sector;
+            sector = ssec->sector;
 
             // The lower intensities are useless for light emission.
             if(sector->lightLevel >= maxLevel)
@@ -967,14 +969,15 @@ void SB_RendPoly(struct rcolor_s* rcolors, biassurface_t* bsuf,
          */
         if(isSeg)
         {
-            hedge_t*          seg = (hedge_t*) mapObject;
+            hedge_t*            seg = (hedge_t*) mapObject;
 
             updateAffected(bsuf, &seg->HE_v1->v, &seg->HE_v2->v, normal);
         }
         else
         {
-            subsector_t*    ssec = (subsector_t*) mapObject;
-            vec3_t          point;
+            face_t*             face = (face_t*) mapObject;
+            const subsector_t*  ssec = (subsector_t*) face->data;
+            vec3_t              point;
 
             V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
                    ssec->sector->planes[elmIdx]->height);

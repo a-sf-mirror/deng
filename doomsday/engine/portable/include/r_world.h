@@ -71,7 +71,7 @@ float           R_ExtraLightDelta(void);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 boolean         R_IsSkySurface(const surface_t* suf);
 
-void            R_TriangulateSubSector(subsector_t* ssec);
+void            R_TriangulateSubSector(face_t* ssec);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
 void            R_UpdatePlanes(void);

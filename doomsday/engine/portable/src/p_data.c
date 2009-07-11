@@ -79,8 +79,8 @@ hedge_t* hEdges = NULL;
 uint numSectors = 0;
 sector_t* sectors = NULL;
 
-uint numSSectors = 0;
-subsector_t* ssectors = NULL;
+uint numFaces = 0;
+face_t* faces = NULL;
 
 uint numNodes = 0;
 node_t* nodes = NULL;
@@ -184,8 +184,8 @@ void P_SetCurrentMap(gamemap_t* map)
     numSectors = map->numSectors;
     sectors = map->sectors;
 
-    numSSectors = map->numSSectors;
-    ssectors = map->ssectors;
+    numFaces = map->numFaces;
+    faces = map->faces;
 
     numNodes = map->numNodes;
     nodes = map->nodes;

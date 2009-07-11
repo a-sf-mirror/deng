@@ -93,7 +93,7 @@ const char* DMU_Str(uint prop)
         { DMU_LINEDEF, "DMU_LINEDEF" },
         { DMU_SIDEDEF, "DMU_SIDEDEF" },
         { DMU_NODE, "DMU_NODE" },
-        { DMU_SUBSECTOR, "DMU_SUBSECTOR" },
+        { DMU_FACE, "DMU_FACE" },
         { DMU_SECTOR, "DMU_SECTOR" },
         { DMU_PLANE, "DMU_PLANE" },
         { DMU_MATERIAL, "DMU_MATERIAL" },
@@ -177,7 +177,7 @@ static int DMU_GetType(const void* ptr)
         case DMU_HEDGE:
         case DMU_LINEDEF:
         case DMU_SIDEDEF:
-        case DMU_SUBSECTOR:
+        case DMU_FACE:
         case DMU_SECTOR:
         case DMU_PLANE:
         case DMU_NODE:
@@ -381,8 +381,8 @@ void* P_GetVariable(int value)
     case DMU_HEDGE_COUNT:
         return &numHEdges;
 
-    case DMU_SUBSECTOR_COUNT:
-        return &numSSectors;
+    case DMU_FACE_COUNT:
+        return &numFaces;
 
     case DMU_NODE_COUNT:
         return &numNodes;
@@ -423,8 +423,8 @@ uint P_ToIndex(const void* ptr)
     case DMU_SIDEDEF:
         return GET_SIDE_IDX((sidedef_t*) ptr);
 
-    case DMU_SUBSECTOR:
-        return GET_SUBSECTOR_IDX((subsector_t*) ptr);
+    case DMU_FACE:
+        return GET_FACE_IDX((face_t*) ptr);
 
     case DMU_SECTOR:
         return GET_SECTOR_IDX((sector_t*) ptr);
@@ -463,8 +463,8 @@ void* P_ToPtr(int type, uint index)
     case DMU_SIDEDEF:
         return SIDE_PTR(index);
 
-    case DMU_SUBSECTOR:
-        return SUBSECTOR_PTR(index);
+    case DMU_FACE:
+        return FACE_PTR(index);
 
     case DMU_SECTOR:
         return SECTOR_PTR(index);
@@ -528,17 +528,17 @@ int P_Iteratep(void *ptr, uint prop, void* context,
             return result;
             }
 
-        case DMU_SUBSECTOR:
+        case DMU_FACE:
             {
             sector_t*           sec = (sector_t*) ptr;
             int                 result = 1;
 
-            if(sec->ssectors)
+            if(sec->faces)
             {
-                subsector_t**       ssecPtr = sec->ssectors;
+                face_t**       facePtr = sec->faces;
 
-                while(*ssecPtr && (result = callback(*ssecPtr, context)) != 0)
-                    *ssecPtr++;
+                while(*facePtr && (result = callback(*facePtr, context)) != 0)
+                    *facePtr++;
             }
 
             return result;
@@ -550,12 +550,12 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         }
         break;
 
-    case DMU_SUBSECTOR:
+    case DMU_FACE:
         switch(prop)
         {
         case DMU_HEDGE:
             {
-            subsector_t*        ssec = (subsector_t*) ptr;
+            face_t*        ssec = (face_t*) ptr;
             int                 result = 1;
             hedge_t*            hEdge;
 
@@ -628,9 +628,9 @@ int P_Callback(int type, uint index, void* context,
             return callback(NODE_PTR(index), context);
         break;
 
-    case DMU_SUBSECTOR:
-        if(index < numSSectors)
-            return callback(SUBSECTOR_PTR(index), context);
+    case DMU_FACE:
+        if(index < numFaces)
+            return callback(FACE_PTR(index), context);
         break;
 
     case DMU_SECTOR:
@@ -683,7 +683,7 @@ int P_Callbackp(int type, void* ptr, void* context,
     case DMU_LINEDEF:
     case DMU_SIDEDEF:
     case DMU_NODE:
-    case DMU_SUBSECTOR:
+    case DMU_FACE:
     case DMU_SECTOR:
     case DMU_PLANE:
     case DMU_MATERIAL:
@@ -919,7 +919,7 @@ static int setProperty(void* obj, void* context)
     linedef_t*          updateLinedef = NULL;
     sidedef_t*          updateSidedef = NULL;
     surface_t*          updateSurface = NULL;
-    // subsector_t*        updateSubSector = NULL;
+    // face_t*        updateSubSector = NULL;
 
     /**
      * \algorithm:
@@ -938,18 +938,18 @@ static int setProperty(void* obj, void* context)
      */
 
     // Dereference where necessary. Note the order, these cascade.
-    if(args->type == DMU_SUBSECTOR)
+    if(args->type == DMU_FACE)
     {
-        // updateSubSector = (subsector_t*) obj;
+        // updateSubSector = (face_t*) obj;
 
         if(args->modifiers & DMU_FLOOR_OF_SECTOR)
         {
-            obj = ((subsector_t*) obj)->sector;
+            obj = ((subsector_t*)((face_t*) obj)->data)->sector;
             args->type = DMU_SECTOR;
         }
         else if(args->modifiers & DMU_CEILING_OF_SECTOR)
         {
-            obj = ((subsector_t*) obj)->sector;
+            obj = ((subsector_t*)((face_t*) obj)->data)->sector;
             args->type = DMU_SECTOR;
         }
     }
@@ -960,13 +960,13 @@ static int setProperty(void* obj, void* context)
 
         if(args->modifiers & DMU_FLOOR_OF_SECTOR)
         {
-            sector_t           *sec = (sector_t*) obj;
+            sector_t*           sec = (sector_t*) obj;
             obj = sec->SP_plane(PLN_FLOOR);
             args->type = DMU_PLANE;
         }
         else if(args->modifiers & DMU_CEILING_OF_SECTOR)
         {
-            sector_t           *sec = (sector_t*) obj;
+            sector_t*           sec = (sector_t*) obj;
             obj = sec->SP_plane(PLN_CEILING);
             args->type = DMU_PLANE;
         }
@@ -1087,7 +1087,7 @@ static int setProperty(void* obj, void* context)
         Sidedef_SetProperty(obj, args);
         break;
 
-    case DMU_SUBSECTOR:
+    case DMU_FACE:
         Subsector_SetProperty(obj, args);
         break;
 
@@ -1368,16 +1368,16 @@ static int getProperty(void* obj, void* context)
     setargs_t*          args = (setargs_t*) context;
 
     // Dereference where necessary. Note the order, these cascade.
-    if(args->type == DMU_SUBSECTOR)
+    if(args->type == DMU_FACE)
     {
         if(args->modifiers & DMU_FLOOR_OF_SECTOR)
         {
-            obj = ((subsector_t*) obj)->sector;
+            obj = ((subsector_t*)((face_t*) obj)->data)->sector;
             args->type = DMU_SECTOR;
         }
         else if(args->modifiers & DMU_CEILING_OF_SECTOR)
         {
-            obj = ((subsector_t*) obj)->sector;
+            obj = ((subsector_t*)((face_t*) obj)->data)->sector;
             args->type = DMU_SECTOR;
         }
     }
@@ -1386,13 +1386,13 @@ static int getProperty(void* obj, void* context)
     {
         if(args->modifiers & DMU_FLOOR_OF_SECTOR)
         {
-            sector_t           *sec = (sector_t*) obj;
+            sector_t*           sec = (sector_t*) obj;
             obj = sec->SP_plane(PLN_FLOOR);
             args->type = DMU_PLANE;
         }
         else if(args->modifiers & DMU_CEILING_OF_SECTOR)
         {
-            sector_t           *sec = (sector_t*) obj;
+            sector_t*           sec = (sector_t*) obj;
             obj = sec->SP_plane(PLN_CEILING);
             args->type = DMU_PLANE;
         }
@@ -1407,7 +1407,7 @@ static int getProperty(void* obj, void* context)
         }
         else if(args->modifiers & DMU_SIDEDEF1_OF_LINE)
         {
-            linedef_t          *li = ((linedef_t*) obj);
+            linedef_t*          li = ((linedef_t*) obj);
             if(!li->L_backside)
                 Con_Error("DMU_setProperty: Linedef %i has no back side.\n",
                           P_ToIndex(li));
@@ -1511,7 +1511,7 @@ static int getProperty(void* obj, void* context)
         Sidedef_GetProperty(obj, args);
         break;
 
-    case DMU_SUBSECTOR:
+    case DMU_FACE:
         Subsector_GetProperty(obj, args);
         break;
 

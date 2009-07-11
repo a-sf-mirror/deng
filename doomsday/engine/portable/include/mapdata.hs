@@ -94,7 +94,6 @@ internal
 typedef struct seg_s {
     struct linedef_s* lineDef;
     struct sector_s* sec[2];
-    struct subsector_s* subsector;
     angle_t     angle;
     byte        side; // 0=front, 1=back
     byte        flags;
@@ -110,30 +109,41 @@ struct hedge
     PTR     hedge_s*    twin
     PTR		hedge_s*	next
     PTR		hedge_s*	prev
+    PTR     face_s*		face
 	-		void*		data
 end
 
 internal
 #define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
+
+typedef struct subsector_s {
+    uint        hEdgeCount;
+    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
+    struct sector_s* sector;
+    int         addSpriteCount; // frame number of last R_AddSprites
+    uint        inSectorID;
+    int         flags;
+    int         validCount;
+    uint        reverb[NUM_REVERB_DATA];
+    fvertex_t   bBox[2]; // Min and max points.
+    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
+    fvertex_t   midPoint; // Center of vertices.
+    ushort      numVertices;
+    fvertex_t** vertices; // [numvertices] size
+    struct shadowlink_s* shadows;
+    biassurface_t** bsuf; // [sector->planeCount] size.
+} subsector_t;
 end
 
-struct subsector
-    UINT    uint        hEdgeCount
+public
+#define DMT_FACE_HEDGECOUNT		DDVT_UINT
+#define DMT_FACE_POLYOBJ		DDVT_PTR
+#define DMT_FACE_SECTOR			DDVT_PTR
+end
+
+struct face
     PTR     hedge_s*    hEdge // First half-edge of this subsector.
-    PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
-    PTR     sector_s*   sector
-    -       int         addSpriteCount // frame number of last R_AddSprites
-    -       uint        inSectorID
-    -       int         flags
-    -       int         validCount
-    -       uint[NUM_REVERB_DATA] reverb
-    -       fvertex_t   bBox[2] // Min and max points.
-    -       float[2]    worldGridOffset // Offset to align the top left of the bBox to the world grid.
-    -       fvertex_t   midPoint // Center of vertices.
-    -       ushort      numVertices
-    -       fvertex_s** vertices // [numvertices] size
-    -       shadowlink_s* shadows
-    -       biassurface_s** bsuf // [sector->planeCount] size.
+	-		void*		data
 end
 
 internal
@@ -198,7 +208,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    subsector_t*		subsector;
+    face_t*				face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -345,10 +355,10 @@ struct sector
     PTR     mobj_s*     mobjList // List of mobjs in the sector.
     UINT    uint        lineDefCount
     PTR     linedef_s** lineDefs // [lineDefCount+1] size.
-    UINT    uint        ssectorCount
-    PTR     subsector_s** ssectors // [ssectorCount+1] size.
-    -       uint        numReverbSSecAttributors
-    -       subsector_s** reverbSSecs // [numReverbSSecAttributors] size.
+    UINT    uint        faceCount
+    PTR     face_s**    faces // [faceCount+1] size.
+    -       uint        numReverbFaceAttributors
+    -       face_s**	reverbFaces // [numReverbFaceAttributors] size.
     PTR     ddmobj_base_t soundOrg
     UINT    uint        planeCount
     -       plane_s**   planes // [planeCount+1] size.

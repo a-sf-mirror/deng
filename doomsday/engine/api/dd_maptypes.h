@@ -20,11 +20,13 @@
 #define DMT_HEDGE_TWIN DDVT_PTR
 #define DMT_HEDGE_NEXT DDVT_PTR
 #define DMT_HEDGE_PREV DDVT_PTR
+#define DMT_HEDGE_FACE DDVT_PTR
 
-#define DMT_SUBSECTOR_HEDGECOUNT DDVT_UINT
-#define DMT_SUBSECTOR_HEDGE DDVT_PTR   // First half-edge of this subsector.
-#define DMT_SUBSECTOR_POLYOBJ DDVT_PTR // NULL, if there is no polyobj.
-#define DMT_SUBSECTOR_SECTOR DDVT_PTR
+#define DMT_FACE_HEDGECOUNT     DDVT_UINT
+#define DMT_FACE_POLYOBJ        DDVT_PTR
+#define DMT_FACE_SECTOR         DDVT_PTR
+
+#define DMT_FACE_HEDGE DDVT_PTR        // First half-edge of this subsector.
 
 #define DMT_MATERIAL_MNAMESPACE DDVT_INT
 #define DMT_MATERIAL_FLAGS DDVT_SHORT  // MATF_* flags
@@ -52,8 +54,8 @@
 #define DMT_SECTOR_MOBJLIST DDVT_PTR   // List of mobjs in the sector.
 #define DMT_SECTOR_LINEDEFCOUNT DDVT_UINT
 #define DMT_SECTOR_LINEDEFS DDVT_PTR   // [lineDefCount+1] size.
-#define DMT_SECTOR_SSECTORCOUNT DDVT_UINT
-#define DMT_SECTOR_SSECTORS DDVT_PTR   // [ssectorCount+1] size.
+#define DMT_SECTOR_FACECOUNT DDVT_UINT
+#define DMT_SECTOR_FACES DDVT_PTR      // [faceCount+1] size.
 #define DMT_SECTOR_SOUNDORG DDVT_PTR
 #define DMT_SECTOR_PLANECOUNT DDVT_UINT
 #define DMT_SECTOR_REVERB DDVT_FLOAT

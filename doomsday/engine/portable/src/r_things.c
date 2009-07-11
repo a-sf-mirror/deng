@@ -863,12 +863,14 @@ void R_ProjectPlayerSprites(void)
 
             spr->type = VPSPR_MODEL;
 
-            spr->data.model.subsector = ddpl->mo->subsector;
+            spr->data.model.face = ddpl->mo->face;
             spr->data.model.flags = 0;
             // 32 is the raised weapon height.
             spr->data.model.gzt = viewZ;
-            spr->data.model.secFloor = ddpl->mo->subsector->sector->SP_floorvisheight;
-            spr->data.model.secCeil = ddpl->mo->subsector->sector->SP_ceilvisheight;
+            spr->data.model.secFloor =
+                ((subsector_t*) ddpl->mo->face->data)->sector->SP_floorvisheight;
+            spr->data.model.secCeil =
+                ((subsector_t*) ddpl->mo->face->data)->sector->SP_ceilvisheight;
             spr->data.model.pClass = 0;
             spr->data.model.floorClip = 0;
 
@@ -905,7 +907,7 @@ void R_ProjectPlayerSprites(void)
             spr->center[VY] = viewY;
             spr->center[VZ] = viewZ;
 
-            spr->data.sprite.subsector = ddpl->mo->subsector;
+            spr->data.sprite.face = ddpl->mo->face;
             spr->data.sprite.alpha = psp->alpha;
             spr->data.sprite.isFullBright = isFullBright;
         }
@@ -964,7 +966,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
                                           material_t* mat, boolean matFlipS, boolean matFlipT, blendmode_t blendMode,
                                           float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                           uint vLightListIdx,
-                                          int transMap, int transClass, subsector_t* ssec,
+                                          int transMap, int transClass, face_t* ssec,
                                           boolean floorAdjust, boolean fitTop, boolean fitBottom,
                                           boolean viewAligned,
                                           boolean brightShadow, boolean shadow, boolean altShadow,
@@ -1023,7 +1025,7 @@ void setupModelParamsForVisSprite(rendmodelparams_t *params,
                                   struct modeldef_s* mf, struct modeldef_s* nextMF, float inter,
                                   float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                   uint vLightListIdx,
-                                  int id, int selector, subsector_t* ssec, int mobjDDFlags, int tmap,
+                                  int id, int selector, face_t* ssec, int mobjDDFlags, int tmap,
                                   boolean viewAlign, boolean fullBright,
                                   boolean alwaysInterpolate)
 {
@@ -1068,7 +1070,7 @@ void setupModelParamsForVisSprite(rendmodelparams_t *params,
     params->vLightListIdx = vLightListIdx;
 }
 
-void getLightingParams(float x, float y, float z, subsector_t* ssec,
+void getLightingParams(float x, float y, float z, face_t* face,
                        float distance, boolean fullBright,
                        float ambientColor[3], uint* vLightListIdx)
 {
@@ -1091,6 +1093,7 @@ void getLightingParams(float x, float y, float z, subsector_t* ssec,
         }
         else
         {
+            const subsector_t*  ssec = (const subsector_t*) face->data;
             float               lightLevel = ssec->sector->lightLevel;
             const float*        secColor =
                 R_GetSectorLightColor(ssec->sector);
@@ -1121,7 +1124,7 @@ void getLightingParams(float x, float y, float z, subsector_t* ssec,
         lparams.center[VX] = x;
         lparams.center[VY] = y;
         lparams.center[VZ] = z;
-        lparams.subsector = ssec;
+        lparams.face = face;
         lparams.ambientColor = ambientColor;
 
         *vLightListIdx = R_CollectAffectingLights(&lparams);
@@ -1133,7 +1136,8 @@ void getLightingParams(float x, float y, float z, subsector_t* ssec,
  */
 void R_ProjectSprite(mobj_t* mo)
 {
-    sector_t*           sect = mo->subsector->sector;
+    subsector_t*        ssec = (subsector_t*) mo->face->data;
+    sector_t*           sect = ssec->sector;
     float               thangle = 0, alpha, floorClip, secFloor, secCeil;
     float               pos[2], yaw, pitch;
     vec3_t              visOff;
@@ -1315,8 +1319,8 @@ void R_ProjectSprite(mobj_t* mo)
     viewAlign = (align || alwaysAlign == 3)? true : false;
     fullBright = ((mo->state->flags & STF_FULLBRIGHT) || levelFullBright)? true : false;
 
-    secFloor = mo->subsector->sector->SP_floorvisheight;
-    secCeil = mo->subsector->sector->SP_ceilvisheight;
+    secFloor = ssec->sector->SP_floorvisheight;
+    secCeil = ssec->sector->SP_ceilvisheight;
 
     // Foot clipping.
     floorClip = mo->floorClip;
@@ -1472,9 +1476,8 @@ void R_ProjectSprite(mobj_t* mo)
         gzt -= floorClip;
 
         getLightingParams(vis->center[VX], vis->center[VY],
-                          gzt - ms.height / 2.0f,
-                          mo->subsector, vis->distance, fullBright,
-                          ambientColor, &vLightListIdx);
+                          gzt - ms.height / 2.0f, mo->face, vis->distance,
+                          fullBright, ambientColor, &vLightListIdx);
 
         setupSpriteParamsForVisSprite(&vis->data.sprite,
                                       vis->center[VX], vis->center[VY],
@@ -1487,7 +1490,7 @@ void R_ProjectSprite(mobj_t* mo)
                                       vLightListIdx,
                                       tmap,
                                       tclass,
-                                      mo->subsector,
+                                      mo->face,
                                       floorAdjust,
                                       fitTop,
                                       fitBottom,
@@ -1498,7 +1501,7 @@ void R_ProjectSprite(mobj_t* mo)
     else
     {
         getLightingParams(vis->center[VX], vis->center[VY], vis->center[VZ],
-                          mo->subsector, vis->distance, fullBright,
+                          mo->face, vis->distance, fullBright,
                           ambientColor, &vLightListIdx);
 
         setupModelParamsForVisSprite(&vis->data.model,
@@ -1507,7 +1510,7 @@ void R_ProjectSprite(mobj_t* mo)
                                      mf, nextmf, interp,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB], alpha,
                                      vLightListIdx, mo->thinker.id, mo->selector,
-                                     mo->subsector, mo->ddFlags,
+                                     mo->face, mo->ddFlags,
                                      mo->tmap,
                                      viewAlign,
                                      fullBright && !(mf && (mf->sub[0].flags & MFF_DIM)),
@@ -1516,14 +1519,15 @@ void R_ProjectSprite(mobj_t* mo)
 }
 
 typedef struct {
-    subsector_t*        ssec;
+    face_t*        face;
 } addspriteparams_t;
 
 boolean RIT_AddSprite(void* ptr, void* data)
 {
     mobj_t*             mo = (mobj_t*) ptr;
     addspriteparams_t*  params = (addspriteparams_t*) data;
-    sector_t*           sec = params->ssec->sector;
+    subsector_t*        ssec = (subsector_t*) params->face->data;
+    sector_t*           sec = ssec->sector;
 
     if(mo->addFrameCount != frameCount)
     {
@@ -1560,19 +1564,19 @@ boolean RIT_AddSprite(void* ptr, void* data)
     return true; // Continue iteration.
 }
 
-void R_AddSprites(subsector_t* ssec)
+void R_AddSprites(face_t* face)
 {
-    addspriteparams_t params;
+    addspriteparams_t   params;
 
     // Don't use validCount, because other parts of the renderer may
     // change it.
-    if(ssec->addSpriteCount == frameCount)
+    if(((subsector_t*) face->data)->addSpriteCount == frameCount)
         return; // Already added.
 
-    params.ssec = ssec;
-    R_IterateSubsectorContacts(ssec, OT_MOBJ, RIT_AddSprite, &params);
+    params.face = face;
+    R_IterateSubsectorContacts(face, OT_MOBJ, RIT_AddSprite, &params);
 
-    ssec->addSpriteCount = frameCount;
+    ((subsector_t*) face->data)->addSpriteCount = frameCount;
 }
 
 void R_SortVisSprites(void)
@@ -1820,7 +1824,7 @@ uint R_CollectAffectingLights(const collectaffectinglights_params_t* params)
     linkVLightNodeToList(node, vLightListIdx);
 
     // Add extra light by interpreting lumobjs into vlights.
-    if(loInited && params->subsector)
+    if(loInited && params->face)
     {
         vlightiterparams_t vars;
 
@@ -1830,7 +1834,7 @@ uint R_CollectAffectingLights(const collectaffectinglights_params_t* params)
         vars.haveList = true;
         vars.listIdx = vLightListIdx;
 
-        LO_LumobjsRadiusIterator(params->subsector, params->center[VX],
+        LO_LumobjsRadiusIterator(params->face, params->center[VX],
                                  params->center[VY], (float) loMaxRadius,
                                  &vars, visSpriteLightIterator);
     }

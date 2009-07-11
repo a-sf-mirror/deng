@@ -30,9 +30,9 @@
 #define __COMMON_PLAYSETUP_H__
 
 #define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
-#define numsegs     (*(uint*) P_GetVariable(DMU_SEG_COUNT))
+#define numsegs     (*(uint*) P_GetVariable(DMU_HEDGE_COUNT))
 #define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
-#define numsubsectors (*(uint*) P_GetVariable(DMU_SUBSECTOR_COUNT))
+#define numsubsectors (*(uint*) P_GetVariable(DMU_FACE_COUNT))
 #define numnodes    (*(uint*) P_GetVariable(DMU_NODE_COUNT))
 #define numlines    (*(uint*) P_GetVariable(DMU_LINE_COUNT))
 #define numsides    (*(uint*) P_GetVariable(DMU_SIDE_COUNT))

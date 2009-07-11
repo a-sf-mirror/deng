@@ -78,7 +78,6 @@ typedef struct vertex_s {
 typedef struct seg_s {
     struct linedef_s* lineDef;
     struct sector_s* sec[2];
-    struct subsector_s* subsector;
     angle_t     angle;
     byte        side; // 0=front, 1=back
     byte        flags;
@@ -94,30 +93,35 @@ typedef struct hedge_s {
     struct hedge_s*     twin;
     struct hedge_s*     next;
     struct hedge_s*     prev;
+    struct face_s*      face;
     void*               data;
 } hedge_t;
 
 #define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
 
 typedef struct subsector_s {
-    runtime_mapdata_header_t header;
-    unsigned int        hEdgeCount;
-    struct hedge_s*     hEdge;         // First half-edge of this subsector.
-    struct polyobj_s*   polyObj;       // NULL, if there is no polyobj.
-    struct sector_s*    sector;
-    int                 addSpriteCount; // frame number of last R_AddSprites
-    unsigned int        inSectorID;
-    int                 flags;
-    int                 validCount;
-    unsigned int        reverb[NUM_REVERB_DATA];
-    fvertex_t           bBox[2];       // Min and max points.
-    float               worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t           midPoint;      // Center of vertices.
-    unsigned short      numVertices;
-    struct fvertex_s**  vertices;      // [numvertices] size
+    uint        hEdgeCount;
+    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
+    struct sector_s* sector;
+    int         addSpriteCount; // frame number of last R_AddSprites
+    uint        inSectorID;
+    int         flags;
+    int         validCount;
+    uint        reverb[NUM_REVERB_DATA];
+    fvertex_t   bBox[2]; // Min and max points.
+    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
+    fvertex_t   midPoint; // Center of vertices.
+    ushort      numVertices;
+    fvertex_t** vertices; // [numvertices] size
     struct shadowlink_s* shadows;
-    struct biassurface_s** bsuf;       // [sector->planeCount] size.
+    biassurface_t** bsuf; // [sector->planeCount] size.
 } subsector_t;
+
+typedef struct face_s {
+    runtime_mapdata_header_t header;
+    struct hedge_s*     hEdge;         // First half-edge of this subsector.
+    void*               data;
+} face_t;
 
 typedef struct materiallayer_s {
     int             stage; // -1 => layer not in use.
@@ -179,7 +183,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    subsector_t*        subsector;
+    face_t*             face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -320,10 +324,10 @@ typedef struct sector_s {
     struct mobj_s*      mobjList;      // List of mobjs in the sector.
     unsigned int        lineDefCount;
     struct linedef_s**  lineDefs;      // [lineDefCount+1] size.
-    unsigned int        ssectorCount;
-    struct subsector_s** ssectors;     // [ssectorCount+1] size.
-    unsigned int        numReverbSSecAttributors;
-    struct subsector_s** reverbSSecs;  // [numReverbSSecAttributors] size.
+    unsigned int        faceCount;
+    struct face_s**     faces;         // [faceCount+1] size.
+    unsigned int        numReverbFaceAttributors;
+    struct face_s**     reverbFaces;   // [numReverbFaceAttributors] size.
     ddmobj_base_t       soundOrg;
     unsigned int        planeCount;
     struct plane_s**    planes;        // [planeCount+1] size.

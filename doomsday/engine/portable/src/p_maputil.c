@@ -703,8 +703,8 @@ void P_MobjLink(mobj_t* mo, byte flags)
     sector_t*           sec;
 
     // Link into the sector.
-    mo->subsector = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
-    sec = mo->subsector->sector;
+    mo->face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
+    sec = ((subsector_t*) mo->face->data)->sector;
 
     if(flags & DDLINK_SECTOR)
     {
@@ -749,7 +749,7 @@ void P_MobjLink(mobj_t* mo, byte flags)
         player->inVoid = true;
         if(R_IsPointInSector2(player->mo->pos[VX],
                               player->mo->pos[VY],
-                              player->mo->subsector->sector))
+                              ((subsector_t*) player->mo->face->data)->sector))
             player->inVoid = false;
     }
 }
@@ -796,7 +796,7 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
     sector_t*           sec;
 
     // Always process the mobj's own sector first.
-    *end++ = sec = mo->subsector->sector;
+    *end++ = sec = ((subsector_t*) mo->face->data)->sector;
     sec->validCount = validCount;
 
     // Any good lines around here?
@@ -985,7 +985,7 @@ boolean P_LinesBoxIteratorv(const arvec2_t box,
  * @return              @c false, if the iterator func returns @c false.
  */
 boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
-                                boolean (*func) (subsector_t*, void*),
+                                boolean (*func) (face_t*, void*),
                                 void* parm)
 {
     vec2_t              bounds[2];
@@ -1003,7 +1003,7 @@ boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
  * is specified using an vec2_t array (see m_vector.c).
  */
 boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
-                                 boolean (*func) (subsector_t*, void*),
+                                 boolean (*func) (face_t*, void*),
                                  void* data)
 {
     static int          localValidCount = 0;

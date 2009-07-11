@@ -1057,7 +1057,7 @@ int P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source,
     if(player)
     {   // Player specific.
         // End of game hell hack.
-        if(P_ToXSectorOfSubsector(target->subsector)->special == 11 &&
+        if(P_ToXSectorOfSubsector(target->face)->special == 11 &&
            damage >= target->health)
         {
             damage = target->health - 1;

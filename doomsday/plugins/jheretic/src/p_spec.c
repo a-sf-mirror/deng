@@ -999,7 +999,7 @@ static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line)
 void P_PlayerInSpecialSector(player_t *player)
 {
     sector_t *sector =
-        DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+        DMU_GetPtrp(player->plr->mo->face, DMU_SECTOR);
 
     // Falling, not all the way down yet?
     if(player->plr->mo->pos[VZ] != DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT))
@@ -1295,7 +1295,7 @@ void P_InitLava(void)
 void P_PlayerInWindSector(player_t *player)
 {
     sector_t *sector =
-        DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+        DMU_GetPtrp(player->plr->mo->face, DMU_SECTOR);
 
     static int pushTab[5] = {
         2048 * 5,

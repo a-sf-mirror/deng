@@ -66,7 +66,7 @@ typedef struct lumlistnode_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean      iterateSubsectorLumObjs(subsector_t* ssec,
+static boolean      iterateSubsectorLumObjs(face_t* ssec,
                                             boolean (*func) (void*, void*),
                                             void* data);
 
@@ -96,11 +96,11 @@ static float* luminousDist = NULL;
 static byte* luminousClipped = NULL;
 static uint* luminousOrder = NULL;
 
-// List of unused and used list nodes, for linking lumobjs with subsectors.
+// List of unused and used list nodes, for linking lumobjs with faces.
 static lumlistnode_t* listNodeFirst = NULL, *listNodeCursor = NULL;
 
-// List of lumobjs for each subsector;
-static lumlistnode_t** subLumObjList = NULL;
+// List of lumobjs for each face;
+static lumlistnode_t** faceLumObjList = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -141,12 +141,12 @@ static lumlistnode_t* allocListNode(void)
     return ln;
 }
 
-static void linkLumObjToSSec(lumobj_t* lum)
+static void linkLumObjToFace(lumobj_t* lum)
 {
     lumlistnode_t*         ln = allocListNode();
     lumlistnode_t**        root;
 
-    root = &subLumObjList[GET_SUBSECTOR_IDX(lum->subsector)];
+    root = &faceLumObjList[GET_FACE_IDX(lum->face)];
     ln->next = *root;
     ln->data = lum;
     *root = ln;
@@ -167,8 +167,8 @@ static uint lumToIndex(const lumobj_t* lum)
 void LO_InitForMap(void)
 {
     // First initialize the subsector links (root pointers).
-    subLumObjList =
-        Z_Calloc(sizeof(*subLumObjList) * numSSectors, PU_MAPSTATIC, 0);
+    faceLumObjList =
+        Z_Calloc(sizeof(*faceLumObjList) * numFaces, PU_MAPSTATIC, 0);
 
     maxLuminous = 0;
     luminousBlockSet = NULL; // Will have already been free'd.
@@ -220,8 +220,8 @@ void LO_ClearForFrame(void)
 
     // Start reusing nodes from the first one in the list.
     listNodeCursor = listNodeFirst;
-    if(subLumObjList)
-        memset(subLumObjList, 0, sizeof(lumlistnode_t*) * numSSectors);
+    if(faceLumObjList)
+        memset(faceLumObjList, 0, sizeof(lumlistnode_t*) * numFaces);
     numLuminous = 0;
 }
 
@@ -282,14 +282,14 @@ static lumobj_t* allocLumobj(void)
  *
  * @return              Index (name) by which the lumobj should be referred.
  */
-uint LO_NewLuminous(lumtype_t type, subsector_t* ssec)
+uint LO_NewLuminous(lumtype_t type, face_t* face)
 {
     lumobj_t*           lum = allocLumobj();
 
     lum->type = type;
-    lum->subsector = ssec;
+    lum->face = face;
 
-    linkLumObjToSSec(lum);
+    linkLumObjToFace(lum);
 
     R_ObjLinkCreate(lum, OT_LUMOBJ); // For spreading purposes.
 
@@ -460,7 +460,7 @@ if(!mat)
 
         // Will the sprite be allowed to go inside the floor?
         mul = mo->pos[VZ] + spriteTextures[texInst->tex->ofTypeID]->offY -
-            (float) ms.height - mo->subsector->sector->SP_floorheight;
+            (float) ms.height - ((const subsector_t*) mo->face->data)->sector->SP_floorheight;
         if(!(mo->ddFlags & DDMF_NOFITBOTTOM) && mul < 0)
         {
             // Must adjust.
@@ -504,7 +504,7 @@ if(!mat)
 
         // This'll allow a halo to be rendered. If the light is hidden from
         // view by world geometry, the light pointer will be set to NULL.
-        mo->lumIdx = LO_NewLuminous(LT_OMNI, mo->subsector);
+        mo->lumIdx = LO_NewLuminous(LT_OMNI, mo->face);
 
         l = LO_GetLuminous(mo->lumIdx);
         l->pos[VX] = mo->pos[VX];
@@ -636,10 +636,11 @@ END_PROF( PROF_LUMOBJ_FRAME_SORT );
  *
  * @param ssec          Ptr to the subsector to process.
  */
-static void createGlowLightPerPlaneForSubSector(subsector_t* ssec)
+static void createGlowLightPerPlaneForSubSector(face_t* face)
 {
     uint                g;
     plane_t*            glowPlanes[2], *pln;
+    subsector_t*        ssec = (subsector_t*) face->data;
 
     glowPlanes[PLN_FLOOR] = ssec->sector->planes[PLN_FLOOR];
     glowPlanes[PLN_CEILING] = ssec->sector->planes[PLN_CEILING];
@@ -655,7 +656,7 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* ssec)
         if(pln->glow <= 0)
             continue;
 
-        lumIdx = LO_NewLuminous(LT_PLANE, ssec);
+        lumIdx = LO_NewLuminous(LT_PLANE, face);
 
         l = LO_GetLuminous(lumIdx);
         l->pos[VX] = ssec->midPoint.pos[VX];
@@ -681,7 +682,7 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* ssec)
 
         params.obj = l;
         params.type = OT_LUMOBJ;
-        RIT_LinkObjToSubSector(l->subsector, &params);
+        RIT_LinkObjToSubsector(l->face, &params);
         }
     }
 }
@@ -711,16 +712,16 @@ BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
             }
         }
 
-        // If the segs of this subsector are affected by glowing planes we need
-        // to create dynlights and link them.
-        if(useWallGlow && seciter->ssectors)
+        // If the segs of this subsector are affected by glowing planes we
+        // need to create dynlights and link them.
+        if(useWallGlow && seciter->faces)
         {
-            subsector_t**       ssec = seciter->ssectors;
+            face_t**            facePtr = seciter->faces;
 
-            while(*ssec)
+            while(*facePtr)
             {
-                createGlowLightPerPlaneForSubSector(*ssec);
-                *ssec++;
+                createGlowLightPerPlaneForSubSector(*facePtr);
+                *facePtr++;
             }
         }
     }
@@ -752,7 +753,7 @@ boolean LOIT_RadiusLumobjs(void* ptr, void* data)
 /**
  * Calls func for all luminous objects within the specified origin range.
  *
- * @param subsector     The subsector in which the origin resides.
+ * @param face          The face in which the origin resides.
  * @param x             X coordinate of the origin (must be within subsector).
  * @param y             Y coordinate of the origin (must be within subsector).
  * @param radius        Radius of the range around the origin point.
@@ -761,13 +762,13 @@ boolean LOIT_RadiusLumobjs(void* ptr, void* data)
  *
  * @return              @c true, iff every callback returns @c true, else @c false.
  */
-boolean LO_LumobjsRadiusIterator(subsector_t* ssec, float x, float y,
+boolean LO_LumobjsRadiusIterator(face_t* face, float x, float y,
                                  float radius, void* data,
                                  boolean (*func) (const lumobj_t*, float, void*))
 {
     lumobjiterparams_t  params;
 
-    if(!ssec)
+    if(!face)
         return true;
 
     params.origin[VX] = x;
@@ -776,7 +777,7 @@ boolean LO_LumobjsRadiusIterator(subsector_t* ssec, float x, float y,
     params.func = func;
     params.data = data;
 
-    return R_IterateSubsectorContacts(ssec, OT_LUMOBJ, LOIT_RadiusLumobjs,
+    return R_IterateSubsectorContacts(face, OT_LUMOBJ, LOIT_RadiusLumobjs,
                                       (void*) &params);
 }
 
@@ -807,16 +808,15 @@ boolean LOIT_ClipLumObj(void* data, void* context)
  *
  * @param ssecidx       Subsector index in which lights will be clipped.
  */
-void LO_ClipInSubsector(uint ssecidx)
+void LO_ClipInSubsector(face_t* face)
 {
-    iterateSubsectorLumObjs(&ssectors[ssecidx], LOIT_ClipLumObj, NULL);
+    iterateSubsectorLumObjs(face, LOIT_ClipLumObj, NULL);
 }
 
 boolean LOIT_ClipLumObjBySight(void* data, void* context)
 {
     lumobj_t*           lum = (lumobj_t*) data;
     uint                lumIdx = lumToIndex(lum);
-    subsector_t*        ssec = (subsector_t*) context;
 
     if(lum->type != LT_OMNI)
         return true; // Only interested in omnilights.
@@ -825,6 +825,7 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
     {
         uint                i;
         vec2_t              eye;
+        subsector_t*        ssec = (subsector_t*) ((face_t*) context)->data;
 
         V2_Set(eye, vx, vz);
 
@@ -861,19 +862,18 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
  *
  * @param ssecidx       Subsector index in which lumobjs will be clipped.
  */
-void LO_ClipInSubsectorBySight(uint ssecidx)
+void LO_ClipInSubsectorBySight(face_t* face)
 {
-    iterateSubsectorLumObjs(&ssectors[ssecidx], LOIT_ClipLumObjBySight,
-                              &ssectors[ssecidx]);
+    iterateSubsectorLumObjs(face, LOIT_ClipLumObjBySight, face);
 }
 
-static boolean iterateSubsectorLumObjs(subsector_t* ssec,
+static boolean iterateSubsectorLumObjs(face_t* face,
                                        boolean (*func) (void*, void*),
                                        void* data)
 {
     lumlistnode_t*      ln;
 
-    ln = subLumObjList[GET_SUBSECTOR_IDX(ssec)];
+    ln = faceLumObjList[GET_FACE_IDX(face)];
     while(ln)
     {
         if(!func(ln->data, data))

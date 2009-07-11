@@ -399,14 +399,14 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
                                         float size, float mark, float alpha)
 {
     int                 frame;
-    subsector_t*        ssec;
+    face_t*             face;
 
     // Render the particle as a model.
     params->center[VX] = center[VX];
     params->center[VY] = center[VZ];
     params->center[VZ] = params->gzt = center[VY];
     params->distance = dist;
-    ssec = R_PointInSubsector(center[VX], center[VY]);
+    face = R_PointInSubsector(center[VX], center[VY]);
 
     params->extraScale = size; // Extra scaling factor.
     params->mf = &modefs[dst->model];
@@ -487,7 +487,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
         lparams.center[VX] = params->center[VX];
         lparams.center[VY] = params->center[VY];
         lparams.center[VZ] = params->center[VZ];
-        lparams.subsector = ssec;
+        lparams.face = face;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);

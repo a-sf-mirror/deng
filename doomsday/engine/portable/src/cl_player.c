@@ -114,7 +114,7 @@ void Cl_LocalCommand(void)
     }
 
     //s->forwardMove = cl->lastCmd->forwardMove * 2048;
-    
+
     P_GetControlState(consolePlayer, CTL_WALK, &vel, &off);
     s->forwardMove = (off + vel) * 2048;
 
@@ -176,7 +176,7 @@ int Cl_ReadPlayerDelta(void)
             // Find the new mobj.
             s->cmo = Cl_FindMobj(s->mobjId);
 #ifdef _DEBUG
-Con_Message("Pl%i: mobj=%i old=%ul\n", num, s->mobjId, (uint) old);
+Con_Message("Pl%i: mobj=%i old=%p\n", num, s->mobjId, old);
 Con_Message("  x=%f y=%f z=%f\n", s->cmo->mo.pos[VX],
             s->cmo->mo.pos[VY], s->cmo->mo.pos[VZ]);
 #endif
@@ -332,7 +332,7 @@ void Cl_MovePlayer(int plrNum)
     // Move.
     P_MobjMovement2(mo, st);
     P_MobjZMovement(mo);
-    
+
 #ifdef _DEBUG
     VERBOSE2(Con_Message("Cl_MovePlayer: Pl%i: mo x=%g y=%g\n", plrNum, mo->pos[VX], mo->pos[VY]));
 #endif
@@ -575,9 +575,9 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
         P_MobjLink(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
 
-    mo->subsector = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
-    mo->floorZ = mo->subsector->sector->SP_floorheight;
-    mo->ceilingZ = mo->subsector->sector->SP_ceilheight;
+    mo->face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
+    mo->floorZ = ((subsector_t*) mo->face->data)->sector->SP_floorheight;
+    mo->ceilingZ = ((subsector_t*) mo->face->data)->sector->SP_ceilheight;
 
     if(onground)
     {
@@ -758,8 +758,8 @@ void Cl_ReadPlayerDelta2(boolean skip)
             }
 
 #if _DEBUG
-Con_Message("Cl_RdPlrD2: Pl%i: mobj=%i old=%ul\n", num, s->mobjId,
-            (unsigned int) old);
+Con_Message("Cl_RdPlrD2: Pl%i: mobj=%i old=%p\n", num, s->mobjId,
+            old);
 Con_Message("  x=%g y=%g z=%g fz=%g cz=%g\n", s->cmo->mo.pos[VX],
             s->cmo->mo.pos[VY], s->cmo->mo.pos[VZ],
             s->cmo->mo.floorZ, s->cmo->mo.ceilingZ);

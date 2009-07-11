@@ -44,6 +44,6 @@ void            Rend_RadioUpdateLinedef(linedef_t* line, boolean backSide);
 void            Rend_RadioSegSection(const rvertex_t* rvertices,
                                      const walldiv_t* divs,
                                      const rendsegradio_params_t* params);
-void            Rend_RadioSubsectorEdges(subsector_t* subsector);
+void            Rend_RadioSubsectorEdges(face_t* subsector);
 
 #endif
