@@ -19,9 +19,16 @@ INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api
 
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
 
+# Platform-specific configuration.
 IF ( UNIX AND NOT APPLE )
+    # In non-Apple Unix, we use the SDLNet socket set to wait to socket activity.
     ADD_DEFINITIONS ( -DLIBDENG2_USE_SOCKET_SET )
 ENDIF ()
+
+IF ( APPLE )
+    FILE ( GLOB MAC_SOURCES mac/*.m mac/*.h )
+    SET ( SOURCES ${SOURCES} ${MAC_SOURCES} )
+ENDIF ( APPLE )
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 

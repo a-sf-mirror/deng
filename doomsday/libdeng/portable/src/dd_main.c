@@ -434,22 +434,10 @@ int DD_Main(void)
     Con_InitUI();
 
     // Start the game loop.
-    exitCode = DD_GameLoop();
+    //exitCode = DD_GameLoop();
 
-    // Time to shutdown.
-
-    if(netGame)
-    {   // Quit netGame if one is in progress.
-        Con_Execute(CMDS_DDAY, isServer ? "net server close" : "net disconnect",
-                    true, false);
-    }
-
-    Demo_StopPlayback();
-    Con_SaveDefaults();
-    Sys_Shutdown();
-    B_Shutdown();
-
-    return exitCode;
+    //return exitCode;
+    return 0;
 }
 
 static int DD_StartupWorker(void *parm)

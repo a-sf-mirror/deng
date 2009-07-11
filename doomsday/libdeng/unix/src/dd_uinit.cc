@@ -161,8 +161,7 @@ int main(int argc, char* argv[])
 int DD_Entry(int argc, char* argv[])
 #endif
 {
-    int                 exitCode = 0;
-    boolean             doShutdown = true;
+    //int                 exitCode = 0;
     char                buf[256];
 
     DD_InitCommandLineAliases();
@@ -216,7 +215,7 @@ int DD_Entry(int argc, char* argv[])
         }
         else
         {   // All initialization complete.
-            doShutdown = false;
+            //doShutdown = false;
 
             // Append the main window title with the game name and ensure it
             // is the at the foreground, with focus.
@@ -227,22 +226,38 @@ int DD_Entry(int argc, char* argv[])
         }
     }
 
-    if(!doShutdown)
+/*
+    //if(!doShutdown)
     {   // Fire up the engine. The game loop will also act as the message pump.
         exitCode = DD_Main();
     }
-    DD_Shutdown();
+    //DD_Shutdown();
 
     // Bye!
     return exitCode;
+    */
+    
+    DD_Main();
+    return 0;
 }
 
 /**
- * Shuts down the engine.
+ * Shuts down the engine. Called after main loop finishes.
  */
 void DD_Shutdown(void)
 {
-    int                 i;
+#if 0
+    if(netGame)
+    {   // Quit netGame if one is in progress.
+        Con_Execute(CMDS_DDAY, isServer ? "net server close" : "net disconnect",
+                    true, false);
+    }
+#endif
+
+    Demo_StopPlayback();
+    Con_SaveDefaults();
+    Sys_Shutdown();
+    B_Shutdown();
 
     // Shutdown all subsystems.
     DD_ShutdownAll();

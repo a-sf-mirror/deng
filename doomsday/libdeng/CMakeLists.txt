@@ -45,7 +45,7 @@ ENDIF ( WIN32 )
 IF ( APPLE )
     INCLUDE_DIRECTORIES ( ${QUICKTIME_INCLUDE_DIR} )
     
-    FILE ( GLOB MAC_SOURCES mac/src/*.m mac/src/*.c mac/include/*.h )
+    FILE ( GLOB MAC_SOURCES mac/src/*.c )
     SET ( SOURCES ${SOURCES} ${MAC_SOURCES} )
 ENDIF ( APPLE )
 

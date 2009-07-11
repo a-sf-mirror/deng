@@ -26,7 +26,7 @@
 
 using namespace de;
 
-int main(int argc, char** argv)
+int deng_Main(int argc, char** argv)
 {
     try
     {

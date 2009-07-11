@@ -32,11 +32,11 @@ ListenSocket::ListenSocket(duint16 port) : socket_(NULL)
     IPaddress ip;
 
     internal::convertAddress(address, &ip);
-    
+
     if((socket_ = SDLNet_TCP_Open(&ip)) == NULL)
     {
         throw OpenError("ListenSocket::ListenSocket", SDLNet_GetError());
-    }           
+    }
 }
 
 ListenSocket::~ListenSocket()

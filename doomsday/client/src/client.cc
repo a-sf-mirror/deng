@@ -74,5 +74,14 @@ dint Client::mainLoop()
     args.append("-userdir");
     args.append("clientdir");
     
-    return DD_Entry(0, NULL);
+    // Initialize the engine.
+    DD_Entry(0, NULL);
+    
+    // Run the main loop.
+    dint returnCode = DD_GameLoop();
+
+    // Shutdown the engine.
+    DD_Shutdown();
+    
+    return returnCode;
 }

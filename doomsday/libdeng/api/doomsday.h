@@ -71,7 +71,9 @@ extern          "C" {
 #endif
 
     PUBLIC_API int             DD_Entry(int argc, char *argv[]);
-
+    PUBLIC_API void            DD_Shutdown(void);
+    PUBLIC_API int             DD_GameLoop(void);
+    
     // Base.
     PUBLIC_API void            DD_AddIWAD(const char* path);
     PUBLIC_API void            DD_AddStartupWAD(const char* file);
