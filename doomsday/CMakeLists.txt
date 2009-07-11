@@ -84,9 +84,22 @@ FIND_PACKAGE ( PythonInterp REQUIRED )
 FIND_PACKAGE ( Doxygen )
 
 # Set up project-wide variables and definitions.
+IF ( CMAKE_BUILD_TYPE STREQUAL Debug )
+    ADD_DEFINITIONS ( -D_DEBUG -DENABLERANGECHECKING )
+ENDIF ()
 IF ( WIN32 )
     ADD_DEFINITIONS ( -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE )
+    
+    SET ( APP_SUPPORT_SOURCES "" )
 ENDIF ( WIN32 )
+IF ( UNIX )
+     # Note that this applies to APPLE as well.
+    FIND_PACKAGE ( Curses REQUIRED )
+
+    ADD_DEFINITIONS ( -DUNIX -DNO_FIXED_ASM )
+
+    SET ( APP_SUPPORT_SOURCES "" )
+ENDIF ( UNIX )
 IF ( APPLE )
     FIND_PACKAGE ( QuickTime REQUIRED )
 
@@ -95,12 +108,9 @@ IF ( APPLE )
 	    SET ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
 	    SET ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.4" )
 	ENDIF ()
-ENDIF ( APPLE )
-IF ( UNIX )
-    FIND_PACKAGE ( Curses REQUIRED )
 
-    ADD_DEFINITIONS ( -DUNIX -DNO_FIXED_ASM )
-ENDIF ( UNIX )
+    SET ( APP_SUPPORT_SOURCES ${CMAKE_SOURCE_DIR}/support/mac/sdlmain.m )
+ENDIF ( APPLE )
 
 # Package the resources into PK3 files.
 ADD_CUSTOM_TARGET ( packres 

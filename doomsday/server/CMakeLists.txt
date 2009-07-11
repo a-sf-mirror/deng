@@ -16,11 +16,13 @@
 
 INCLUDE_DIRECTORIES ( 
     ${CMAKE_SOURCE_DIR}/libdeng2/include 
-    ${CMAKE_SOURCE_DIR}/libdeng/api )
+    ${CMAKE_SOURCE_DIR}/libdeng/api 
+    ${CMAKE_SOURCE_DIR}/support/include
+    ${SDL_INCLUDE_DIR} )
 
 FILE ( GLOB SOURCES src/*.cc src/*.h )
 
-ADD_EXECUTABLE ( dengsv ${SOURCES} )
+ADD_EXECUTABLE ( dengsv ${SOURCES} ${APP_SUPPORT_SOURCES} )
 
 TARGET_LINK_LIBRARIES ( dengsv deng2 deng )
 

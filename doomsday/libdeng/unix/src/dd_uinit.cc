@@ -154,12 +154,7 @@ static int initDGL(void)
     return Sys_PreInitGL();
 }
 
-#ifdef MACOSX
-// The OS X build has its own entry point in mac/src/SDLmain.m
-int main(int argc, char* argv[])
-#else
 int DD_Entry(int argc, char* argv[])
-#endif
 {
     //int                 exitCode = 0;
     char                buf[256];

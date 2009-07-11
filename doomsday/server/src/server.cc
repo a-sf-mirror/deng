@@ -27,14 +27,8 @@
 
 using namespace de;
 
-Server::Server(const CommandLine& commandLine)
-    : App(commandLine)
-{}
-
-Server::~Server()
-{}
-
-dint Server::mainLoop()
+Server::Server(const CommandLine& arguments)
+    : App(arguments)
 {
     // For our testing purposes, let's modify the command line to launch Doom1 E1M1 
     // in dedicated server mode.
@@ -49,12 +43,16 @@ dint Server::mainLoop()
     
     // Initialize the engine.
     DD_Entry(0, NULL);
-    
-    // Run the main loop.
-    dint returnCode = DD_GameLoop();
+}
 
+Server::~Server()
+{
     // Shutdown the engine.
     DD_Shutdown();
-    
-    return returnCode;
+}
+
+dint Server::mainLoop()
+{
+    // Run the main loop.
+    return DD_GameLoop();
 }

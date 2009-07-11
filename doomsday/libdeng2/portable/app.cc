@@ -29,7 +29,7 @@ using namespace de;
 App* App::singleton_ = 0;
 
 App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine), fs_(0), game_(0)
+    : commandLine_(commandLine), fs_(0), gameLib_(0)
 {
     if(singleton_)
     {
@@ -114,9 +114,38 @@ void App::loadPlugins()
         if(libFile.name().contains("_" + gameName + "."))
         {
             // This is the one.
-            game_ = &libFile.library();
-            std::cout << "App::loadPlugins() loaded the game " << libFile.path() << "\n";
+            gameLib_ = &libFile;
+            std::cout << "App::loadPlugins() located the game " << libFile.path() << "\n";
             break;
+        }
+    }
+}
+
+void App::unloadGame()
+{
+    // Unload the game first.
+    if(gameLib_)
+    {
+        gameLib_->unload();
+        gameLib_ = 0;
+    }
+}
+
+void App::unloadPlugins()
+{
+    unloadGame();
+    
+    // Get the index of libraries.
+    const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
+    
+    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+    {
+        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+        if(libFile.name().contains("dengplugin_"))
+        {
+            // Initialize the plugin.
+            libFile.unload();
+            std::cout << "App::unloadPlugins() unloaded " << libFile.path() << "\n";
         }
     }
 }
@@ -133,9 +162,9 @@ App& App::app()
 Library& App::game()
 {
     App& self = app();
-    if(!self.game_)
+    if(!self.gameLib_)
     {
-        throw NoGameError("App::game", "No game library loaded");
+        throw NoGameError("App::game", "No game library located");
     }
-    return *self.game_;
+    return self.gameLib_->library();
 }

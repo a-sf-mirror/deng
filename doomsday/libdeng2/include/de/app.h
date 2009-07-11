@@ -34,6 +34,7 @@
 namespace de
 {
     class Library;
+    class LibraryFile;
     
     /**
      * The application. 
@@ -82,11 +83,21 @@ namespace de
          * Loads the basic plugins (named "dengplugin_").
          */
         void loadPlugins();
+
+        /**
+         * Unloads the game plugin.
+         */
+        void unloadGame();
         
         /**
-         * Determines whether a game library is currently loaded.
+         * Unloads all loaded plugins.
          */
-        bool hasGame() const { return game_ != 0; }
+        void unloadPlugins();
+        
+        /**
+         * Determines whether a game library is currently available.
+         */
+        bool hasGame() const { return gameLib_ != 0; }
         
         /**
          * Main loop of the application. To be defined by a derived class.
@@ -114,7 +125,7 @@ namespace de
         FS* fs_;
 
         // The game library.
-        Library* game_;
+        LibraryFile* gameLib_;
         
         static App* singleton_;
     };

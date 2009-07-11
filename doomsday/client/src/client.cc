@@ -27,17 +27,11 @@
 
 using namespace de;
 
-Client::Client(const CommandLine& commandLine)
-    : App(commandLine)
-{}
-
-Client::~Client()
-{}
-
-dint Client::mainLoop()
-{
+Client::Client(const CommandLine& arguments)
+    : App(arguments)
+{        
     CommandLine& args = commandLine();
-
+    
 #ifdef MACOSX
     args.append("-iwad");
     args.append("/Users/jaakko/IWADs/Doom.wad");
@@ -73,15 +67,19 @@ dint Client::mainLoop()
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
     args.append("-userdir");
     args.append("clientdir");
-    
+
     // Initialize the engine.
     DD_Entry(0, NULL);
-    
-    // Run the main loop.
-    dint returnCode = DD_GameLoop();
+}
 
+Client::~Client()
+{
     // Shutdown the engine.
     DD_Shutdown();
-    
-    return returnCode;
+}
+
+dint Client::mainLoop()
+{
+    // Run the main loop.
+    return DD_GameLoop();
 }

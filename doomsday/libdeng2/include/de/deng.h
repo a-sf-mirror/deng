@@ -80,6 +80,22 @@ namespace de
 	typedef float				    dfloat;     ///< 32-bit floating point number.
 	typedef double				    ddouble;    ///< 64-bit floating point number.
     typedef size_t                  dsize;
+
+    /**
+     * Template for determining the minimum value.
+     */
+    template <typename Type>
+    Type min(const Type& a, const Type& b) {
+        return (a < b? a : b);
+    }
+
+    /**
+     * Template for determining the maximum value.
+     */
+    template <typename Type>
+    Type max(const Type& a, const Type& b) {
+        return (a > b? a : b);
+    }
 }
 
 #include <de/Error>

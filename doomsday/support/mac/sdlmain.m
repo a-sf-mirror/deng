@@ -1,34 +1,28 @@
-/** 
- * @file sdlmain.m Main entry point for our Cocoa-ized SDL app.
- * @section License
- * License: LGPL
- *
- * @author Copyright © 2006-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- * @author Copyright © Max Horn <max@quendi.de>
- * @author Copyright © Darrell Walisser <dwaliss1@purdue.edu>
- *
- * 
- */
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project -- Supporting code
  *
  * Copyright (c) 2006-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  * Copyright (c) Max Horn <max@quendi.de>
  * Copyright (c) Darrell Walisser <dwaliss1@purdue.edu>
  *
  * License: LGPL
+ *
+ * This file defines the entry point for a Cocoa SDL app. Once the app is
+ * initialized and running, it hands control to deng_Main().
  */
 
 #include <stdint.h>
 typedef uint64_t      io_user_reference_t; 
 
-#include "doomsday.h"
+//#include "doomsday.h"
 
-#import "SDL.h"
-#import "sdlmain.h"
-//#import <unistd.h>
+#include <dengmain.h>
 
-extern int deng_Main(int argc, char* argv[]);
+#import <SDL.h>
+#import <Cocoa/Cocoa.h>
+
+@interface SDLMain : NSObject
+@end
 
 //#import <AppKit/NSWindowController.h>
 

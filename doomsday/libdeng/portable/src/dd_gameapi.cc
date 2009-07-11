@@ -27,7 +27,7 @@
  * dd_gameapi.cc: C Wrappers for Game Library API Calls
  *
  * This is for convenience only, so that all source files need not be
- * converted to C++.
+ * converted to C++ within libdeng.
  */
 
 // HEADER FILES ------------------------------------------------------------
