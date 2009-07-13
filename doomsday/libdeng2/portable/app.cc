@@ -21,6 +21,7 @@
 #include "de/libraryfile.h"
 #include "de/library.h"
 #include "de/directoryfeed.h"
+#include "de/zone.h"
 #include "sdl.h"
 
 using namespace de;
@@ -29,7 +30,7 @@ using namespace de;
 App* App::singleton_ = 0;
 
 App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine), fs_(0), gameLib_(0)
+    : commandLine_(commandLine), memory_(0), fs_(0), gameLib_(0)
 {
     if(singleton_)
     {
@@ -47,6 +48,9 @@ App::App(const CommandLine& commandLine)
     {
         throw SDLError("App::App", SDLNet_GetError());
     }
+    
+    // The memory zone.
+    memory_ = new Zone();
 
 #ifdef MACOSX
     // When the application is started through Finder, we get a special command
@@ -67,19 +71,17 @@ App::App(const CommandLine& commandLine)
 
 App::~App()
 {
+    // Deleting the file system will unload everything owned by the files, including 
+    // all plugin libraries.
     delete fs_;
+    
+    delete memory_;
  
     // Shut down SDL.
     SDLNet_Quit();
     SDL_Quit();
 
     singleton_ = 0;
-}
-
-FS& App::fileSystem() 
-{ 
-    assert(fs_ != 0);
-    return *fs_; 
 }
 
 void App::loadPlugins()
@@ -157,6 +159,20 @@ App& App::app()
         throw NoInstanceError("App::app", "App has not been constructed yet");
     }
     return *singleton_;
+}
+
+Zone& App::memory()
+{
+    App& self = app();
+    assert(self.memory_ != 0);
+    return *self.memory_;
+}
+
+FS& App::fileSystem() 
+{ 
+    App& self = app();
+    assert(self.fs_ != 0);
+    return *self.fs_; 
 }
 
 Library& App::game()

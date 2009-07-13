@@ -39,7 +39,6 @@ extern timespan_t sysTime, gameTime, demoTime, ddMapTime;
 extern trigger_t sharedFixedTrigger;
 
 void            DD_RegisterLoop(void);
-int             DD_GameLoop(void);
 void            DD_DrawAndBlit(void);
 void            DD_StartFrame(void);
 void            DD_EndFrame(void);

@@ -35,6 +35,7 @@ namespace de
 {
     class Library;
     class LibraryFile;
+    class Zone;
     
     /**
      * The application. 
@@ -74,11 +75,6 @@ namespace de
          */
         CommandLine& commandLine() { return commandLine_; }
 
-        /** 
-         * Returns the file system.
-         */
-        FS& fileSystem();
-
         /**
          * Loads the basic plugins (named "dengplugin_").
          */
@@ -113,13 +109,26 @@ namespace de
          */
         static App& app();
 
+        /** 
+         * Returns the file system.
+         */
+        static FS& fileSystem();
+
         /**
          * Returns the game library.
          */
         static Library& game();
         
+        /**
+         * Returns the memory zone.
+         */
+        static Zone& memory();
+        
     private:
         CommandLine commandLine_;
+        
+        /// The memory zone.
+        Zone* memory_;
         
         /// The file system.
         FS* fs_;

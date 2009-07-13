@@ -46,7 +46,7 @@ namespace de
      * are being allocated in a rapid sequence, with no frees in between (e.g.,
      * map setup).
      *
-     * Block sequences. The MAP_STATIC purge tag has a special purpose.
+     * Sequences: The MAP_STATIC purge tag has a special purpose.
      * It works like MAP so that it is purged on a per map basis, but
      * blocks allocated as MAP_STATIC should not be freed at any time when the
      * map is being used. Internally, the map-static blocks are linked into
@@ -68,6 +68,7 @@ namespace de
     {
     public:
         class Batch;
+        template <typename T> class Allocator;
         
         /// The specified memory address was outside the zone. @ingroup errors
         DEFINE_ERROR(ForeignError);
@@ -130,22 +131,50 @@ namespace de
         void enableFastMalloc(bool enabled = true);
         
         /**
-         * Allocates a block of memory.
+         * Allocates an untyped block of memory.
          * 
          * @param size  Size of the block to allocate.        
          * @param tag   Purge tag. Indicates when the block can be freed.
          * @param user  You can a NULL user if the tag is < PURGE_LEVEL.
+         *
+         * @return  Pointer to the allocated memory.
          */
-        void* allocate(dsize size, PurgeTag tag = STATIC, void* user = 0);
+        void* alloc(dsize size, PurgeTag tag = STATIC, void* user = 0);
 
         /**
-         * Allocates and clears a block of memory.
+         * Allocates a typed block of memory.
+         * 
+         * @param count Number of elements to allocate.        
+         * @param tag   Purge tag. Indicates when the block can be freed.
+         * @param user  You can a NULL user if the tag is < PURGE_LEVEL.
+         *
+         * @return  Pointer to the allocated memory.
+         */
+        template <typename Type>
+        Type* allocate(dsize count, PurgeTag tag = STATIC, void* user = 0) {
+            return static_cast<Type*>(alloc(sizeof(Type) * count, tag, user));
+        }
+
+        /**
+         * Allocates and clears an untyped block of memory.
          * 
          * @param size  Size of the block to allocate.        
          * @param tag   Purge tag. Indicates when the block can be freed.
          * @param user  You can a NULL user if the tag is < PURGE_LEVEL.
          */
-        void* allocateClear(dsize size, PurgeTag tag = STATIC, void* user = 0);
+        void* allocClear(dsize size, PurgeTag tag = STATIC, void* user = 0);
+
+        /**
+         * Allocates and clears a typed block of memory.
+         * 
+         * @param count Numebr of elements to allocate.        
+         * @param tag   Purge tag. Indicates when the block can be freed.
+         * @param user  You can a NULL user if the tag is < PURGE_LEVEL.
+         */
+        template <typename Type>
+        Type* allocateClear(dsize count, PurgeTag tag = STATIC, void* user = 0) {
+            return static_cast<Type*>(allocClear(sizeof(Type) * count, tag, user));
+        }
 
         /**
          * Resizes a block of memory.
@@ -159,6 +188,12 @@ namespace de
          */
         void* resize(void* ptr, dsize newSize, PurgeTag tagForNewAlloc = STATIC);
 
+        template <typename Type>
+        Type* resize(Type* ptr, dsize newCount, PurgeTag tagForNewAlloc = STATIC) {
+            return static_cast<Type*>(resize(reinterpret_cast<void*>(ptr), 
+                sizeof(Type) * newCount, tagForNewAlloc));
+        }
+
         /**
          * Resizes a block of memory so that any new allocated memory is filled with zeroes.
          *
@@ -168,6 +203,12 @@ namespace de
          */
         void* resizeClear(void* ptr, dsize newSize, PurgeTag tagForNewAlloc = STATIC);
 
+        template <typename Type>
+        Type* resizeClear(Type* ptr, dsize newCount, PurgeTag tagForNewAlloc = STATIC) {
+            return static_cast<Type*>(resizeClear(reinterpret_cast<void*>(ptr), 
+                sizeof(Type) * newCount, tagForNewAlloc));
+        }
+
         /**
          * Free memory that was allocated with allocate().
          *
@@ -176,14 +217,16 @@ namespace de
         void free(void *ptr);
 
         /**
-         * Free memory blocks in all volumes with a tag in the specified range.
+         * Free all memory blocks (in all volumes) with a tag in the specified range.
+         * Both @c lowTag and @c highTag are included in the range.
          */
-        void freeTags(PurgeTag lowTag, PurgeTag highTag = CACHE);
+        void purgeRange(PurgeTag lowTag, PurgeTag highTag = CACHE);
 
         /**
          * Sets the tag of a memory block.
          *
          * @param ptr  Pointer to memory allocated from the zone.
+         * @param tag  New purge tag.
          */
         void setTag(void* ptr, PurgeTag tag);
 
@@ -198,6 +241,7 @@ namespace de
          * Sets the user of a memory block.
          *
          * @param ptr  Pointer to memory allocated from the zone.
+         * @param newUser  User for the memory block.
          */
         void setUser(void* ptr, void* newUser);
         
@@ -215,33 +259,55 @@ namespace de
          * Check all zone volumes for consistency.
          */
         void verify() const;
-        
+
         /**
-         * Constructs a new batch allocator. When the allocator is deleted, all
+         * Constructs a new  batch allocator. When the allocator is deleted, all
          * the memory blocks allocated by it are automatically freed.
          * The zone retains ownership of the allocator. Batches are deleted automatically
          * based on their purge tags.
          *
-         * @see Zone::Batch
-         * @see deleteBatch()
+         * @see Zone::Batch, deleteBatch()
          *
-         * @return  Reference to the allocator. 
+         * @return  Pointer to the allocator. The zone will automatically delete the
+         *      batch if its tag gets purged or when the zone is deleted.
          */
-        Batch& newBatch(dsize sizeOfElement, duint batchSize, PurgeTag tag = STATIC);
+        Batch* newBatch(duint elementSize, duint batchSize, PurgeTag tag = STATIC) {
+            batches_.push_back(new Batch(*this, elementSize, batchSize, tag));
+            return batches_.back();
+        }
+        
+        /**
+         * Constructs a new specialized batch allocator. When the allocator is deleted, all
+         * the memory blocks allocated by it are automatically freed.
+         * The zone retains ownership of the allocator. Batches are deleted automatically
+         * based on their purge tags.
+         *
+         * @see Zone::Allocator, deleteBatch()
+         *
+         * @return  Pointer to the allocator. The zone will automatically delete the
+         *      batch if its tag gets purged or when the zone is deleted.
+         */
+        template <typename Type>
+        Allocator<Type>* newAllocator(duint batchSize, PurgeTag tag = STATIC) {
+            batches_.push_back(new Allocator<Type>(*this, batchSize, tag));
+            return static_cast<Allocator<Type>*>(batches_.back());
+        }
         
         /**
          * Deletes a batch owned by the zone. Note that batches are freed automatically
          * according to the purge tags.
+         *
+         * @param batch  Batch to delete. @c delete is called on this.
          */
-        void deleteBatch(Batch& batch);
+        void deleteBatch(Batch* batch);
 
     public:
         /**
          * The Batch is an allocator utility that efficiently allocates a large
-         * number of memory blocks. It should be used in performance-critical places
-         * instead of separate calls to allocate().
+         * number of memory blocks of a specific type. It should be used in 
+         * performance-critical places instead of separate calls to allocate().
          */
-        class PUBLIC_API Batch
+        class Batch
         {
         public:
             /**
@@ -254,51 +320,125 @@ namespace de
              * allocated block of elements or create a new block just in time.
              *
              * @param zone  Memory zone for the allocations.
-             * @param sizeOfElement Required size of each element.
-             * @param batchSize     Number of elements in each zblock of the set.
+             * @param elementSize  Size of one element.
+             * @param batchSize  Number of elements in each zblock of the set.
+             * @param tag  Purge tag for the batch itself and the elements.
              *
              * @return  Pointer to the newly created batch.
              */
-            Batch(Zone& zone, dsize sizeOfElement, duint batchSize, PurgeTag tag = STATIC);
+            Batch(Zone& zone, dsize elementSize, dsize batchSize, PurgeTag tag = STATIC) 
+                : zone_(zone), elementSize_(elementSize), elementsPerBlock_(batchSize), 
+                  tag_(tag), max_(0), count_(0), blocks_(0) {
+                // The first block.
+                expand();
+            }
 
             /**
              * Frees the entire batch.
              * All memory allocated is released for all elements in all blocks.
              */
-            ~Batch();
+            ~Batch() {
+                if(blocks_) {
+                    // Free the elements from each block.
+                    for(dsize i = 0; i < count_; ++i) {
+                        zone_.free(blocks_[i].elements);
+                    }
+                    zone_.free(blocks_);
+                }
+            }
 
             /**
-             * Allocates a new memory block within the batch.
+             * Allocates a new element within the batch.
              *
              * @return  Pointer to memory block. Do not call Zone::free() on this.
              */
-            void* allocate();
+            virtual void* allocateElement() {
+                // When this is called, there is always an available element in the topmost
+                // block. We will return it.
+                ZBlock* block = lastBlock();
+                void* element = block->elements + elementSize_ * block->count;
+
+                // Reserve the element.
+                block->count++;
+
+                // If we run out of space in the topmost block, add a new one.
+                if(block->count == block->max) {
+                    expand();
+                }
+                return element;
+            }
             
             /**
              * Returns the purge tag used by the allocator.
              */
             PurgeTag tag() const { return tag_; }
+            
+        protected:
+            struct ZBlock {
+                dsize max;              ///< maximum number of elements
+                dsize count;            ///< number of used elements
+                dbyte* elements;        ///< block of memory where elements are
+            };
 
-        private:
             /**
-             * Allocate a new block of memory to be used for linear object allocations.
+             * Returns the last block.
+             */ 
+            ZBlock* lastBlock() {
+                assert(count_ > 0);
+                return &blocks_[count_ - 1];
+            }
+
+            /**
+             * Allocate new block(s) of memory to be used for linear object allocations.
              */
-            void addBlock();
+            void expand() {
+                // Get a new block by resizing the blocks array. This is done relatively
+                // seldom, since there is a large number of elements per each block.
+                count_++;
+                if(count_ > max_ || !max_) {
+                    max_ *= 2;
+                    if(!max_) max_ = count_;
+                    blocks_ = zone_.resizeClear<ZBlock>(blocks_, max_, tag_);
+                }
+
+                // Initialize the block's data.
+                ZBlock* block = lastBlock();
+                block->max = elementsPerBlock_;
+                block->elements = zone_.allocate<dbyte>(elementSize_ * block->max, tag_);
+                block->count = 0;
+            }
 
         private:
             Zone& zone_;
 
-            duint elementsPerBlock_;
+            const dsize elementSize_;
 
-            dsize elementSize_;
+            dsize elementsPerBlock_;
 
             /// All blocks in a blockset have the same tag.
             PurgeTag tag_; 
 
-            duint count_;
+            dsize max_;
+            dsize count_;
             
-            struct ZBlock;
             ZBlock* blocks_;
+        };
+        
+        /**
+         * Specialized batch allocator.
+         */
+        template <typename Type>
+        class Allocator : public Batch
+        {
+        public:
+            typedef Type Element;
+            
+            Allocator(Zone& zone, dsize batchSize, PurgeTag tag = STATIC) 
+                : Batch(zone, sizeof(Type), batchSize, tag) {}
+                
+            Type* allocate() {
+                return static_cast<Type*>(allocateElement());
+            }
         };
 
     protected:
@@ -328,7 +468,7 @@ namespace de
         MemVolume* volumeRoot_;
 
         /**
-         * If false, Z_Malloc will free purgable blocks and aggressively look for
+         * If false, alloc() will free purgable blocks and aggressively look for
          * free memory blocks inside each memory volume before creating new volumes.
          * This leads to slower mallocing performance, but reduces memory fragmentation
          * as free and purgable blocks are utilized within the volumes. Fast mode is
@@ -337,7 +477,7 @@ namespace de
          */
         bool fastMalloc_;
         
-        typedef std::list<Batch> Batches;
+        typedef std::list<Batch*> Batches;
         Batches batches_;
     };
     

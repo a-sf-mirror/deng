@@ -30,9 +30,9 @@
 #ifndef __DOOMSDAY_GAME_WRAPPER_H__
 #define __DOOMSDAY_GAME_WRAPPER_H__
 
-#if __cplusplus
-extern "C" {
-#endif
+#include "dd_export.h"
+
+BEGIN_EXTERN_C
 
 int         game_GetInteger(int id);
 const char* game_GetString(int id);
@@ -40,8 +40,6 @@ void*       game_GetAddress(int id);
 void        game_Ticker(double tickLength);
 void        game_Call(const char* funcName);
 
-#if __cplusplus
-}
-#endif
+END_EXTERN_C
 
 #endif

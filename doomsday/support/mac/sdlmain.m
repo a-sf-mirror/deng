@@ -30,6 +30,8 @@ typedef uint64_t      io_user_reference_t;
 static int mainArgc;
 static char** mainArgv;
 
+//static NSAutoreleasePool *pool;
+
 // Return value from deng_Main().
 static int dengMainResult;
 
@@ -49,6 +51,8 @@ static int dengMainResult;
  */
 - (void)terminate:(id)sender
 {
+    //printf("SDLApplication terminate: sending SDL_QUIT\n");
+    
     /* Post a SDL_QUIT event */
     SDL_Event event;
     event.type = SDL_QUIT;
@@ -122,7 +126,13 @@ void setupWindowMenu(void)
     dengMainResult = deng_Main(mainArgc, mainArgv);
 
     // Stop the event loop.
-    [NSApp stop:NULL];
+    exit(dengMainResult);
+}
+
+- (NSApplicationTerminateReply) applicationShouldTerminate: (NSApplication *)sender
+{
+    //printf("applicationShouldTerminate\n");
+    return YES;
 }
 
 @end // SDLMain
@@ -157,8 +167,9 @@ int main(int argc, char *argv[])
     // Start the main event loop.
     [NSApp run];
         
+    // Won't reach here.
     [sdlMain release];
     [pool release];
 
-    return dengMainResult;
+    return 0;
 }

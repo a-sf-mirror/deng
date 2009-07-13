@@ -247,11 +247,6 @@ int DD_Entry(int argc, char* argv[])
             {
                 DD_ErrorBox(true, "Error loading game library.");
             }
-            // Initialize the memory zone.
-            else if(!Z_Init())
-            {
-                DD_ErrorBox(true, "Error initializing memory zone.");
-            }
             else if(isDedicated)
             {
                 // We're done.

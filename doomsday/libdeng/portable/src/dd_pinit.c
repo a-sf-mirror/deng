@@ -258,7 +258,6 @@ void DD_ShutdownAll(void)
     R_Shutdown();
     Def_Destroy();
     F_ShutdownDirec();
-    Z_Shutdown();
     Sys_ShutdownWindowManager();
 
     // Close the message output file.

@@ -71,13 +71,6 @@ struct Zone::MemVolume {
     Zone::MemVolume*      next;
 };
 
-struct Zone::Batch::ZBlock {
-    duint           max;            // maximum number of elements
-    duint           count;          // number of used elements
-    dsize           elementSize;    // size of a single element
-    void*           elements;       // block of memory where elements are
-};
-
 static void* M_Malloc(dsize amount)
 {
     return new dbyte[amount];
@@ -118,6 +111,12 @@ Zone::Zone() : volumeRoot_(0), fastMalloc_(false)
 
 Zone::~Zone()
 {        
+    // Delete the batches.
+    while(!batches_.empty())
+    {
+        deleteBatch(batches_.front());
+    }
+    
     int numVolumes = 0;
     dsize totalMemory = 0;
 
@@ -147,7 +146,7 @@ void Zone::enableFastMalloc(bool enabled)
     fastMalloc_ = enabled;
 }
 
-void* Zone::allocate(dsize size, PurgeTag tag, void* user)
+void* Zone::alloc(dsize size, PurgeTag tag, void* user)
 {
     dsize         extra;
     MemBlock     *start, *rover, *newb, *base;
@@ -357,9 +356,9 @@ void* Zone::allocate(dsize size, PurgeTag tag, void* user)
     }
 }
 
-void* Zone::allocateClear(dsize size, PurgeTag tag, void* user)
+void* Zone::allocClear(dsize size, PurgeTag tag, void* user)
 {
-    void* ptr = allocate(size, tag, user);
+    void* ptr = alloc(size, tag, user);
     std::memset(ptr, 0, size);
     return ptr;
 }
@@ -367,7 +366,7 @@ void* Zone::allocateClear(dsize size, PurgeTag tag, void* user)
 void* Zone::resize(void* ptr, dsize n, PurgeTag tagForNewAlloc)
 {
     PurgeTag tag = ptr ? getTag(ptr) : tagForNewAlloc;
-    void* p = allocate(n, tag);    // User always 0
+    void* p = alloc(n, tag);    // User always 0
 
     if(ptr)
     {
@@ -391,7 +390,7 @@ void* Zone::resizeClear(void* ptr, dsize newSize, PurgeTag tagForNewAlloc)
 
     if(ptr)                     // Has old data.
     {
-        p = allocate(newSize, getTag(ptr));
+        p = alloc(newSize, getTag(ptr));
         block = getBlock(ptr);
         bsize = block->size - sizeof(MemBlock);
         if(bsize <= newSize)
@@ -408,7 +407,7 @@ void* Zone::resizeClear(void* ptr, dsize newSize, PurgeTag tagForNewAlloc)
     }
     else
     {   // Totally new allocation.
-        p = allocateClear(newSize, tagForNewAlloc);
+        p = allocClear(newSize, tagForNewAlloc);
     }
 
     return p;
@@ -482,13 +481,14 @@ void Zone::free(void *ptr)
     }
 }
 
-void Zone::freeTags(PurgeTag lowTag, PurgeTag highTag)
+void Zone::purgeRange(PurgeTag lowTag, PurgeTag highTag)
 {
     // Check batch allocator tags and free as called for.
     for(Batches::iterator i = batches_.begin(); i != batches_.end(); )
     {
-        if(i->tag() >= lowTag && i->tag() <= highTag)
+        if((*i)->tag() >= lowTag && (*i)->tag() <= highTag)
         {
+            delete *i;
             batches_.erase(i++);
         }
         else
@@ -684,82 +684,15 @@ Zone::MemVolume* Zone::newVolume(dsize volumeSize)
     return vol;
 }
 
-Zone::Batch& Zone::newBatch(dsize sizeOfElement, duint batchSize, PurgeTag tag)
-{
-    batches_.push_back(Batch(*this, sizeOfElement, batchSize, tag));
-    return batches_.back();
-}
-
-void Zone::deleteBatch(Batch& batch)
+void Zone::deleteBatch(Batch* batch)
 {
     for(Batches::iterator i = batches_.begin(); i != batches_.end(); ++i)
     {
-        if(&*i == &batch)
+        if(*i == batch)
         {
             batches_.erase(i);
+            delete batch;
             return;
         }
     }
-}
-
-Zone::Batch::Batch(Zone& zone, dsize sizeOfElement, duint batchSize, PurgeTag tag)
-    : zone_(zone), elementsPerBlock_(batchSize), elementSize_(sizeOfElement), tag_(tag), blocks_(0)
-{}
-
-Zone::Batch::~Batch()
-{
-    if(blocks_)
-    {
-        // Free the elements from each block.
-        for(duint i = 0; i < count_; ++i)
-        {
-            zone_.free(blocks_[i].elements);
-        }
-        zone_.free(blocks_);
-    }
-}
-
-void* Zone::Batch::allocate()
-{
-    if(!blocks_)
-    {
-        // The first one.
-        addBlock();
-    }
-    
-    ZBlock* block = &blocks_[count_ - 1];
-
-    // When this is called, there is always an available element in the topmost
-    // block. We will return it.
-    void* element = ((dbyte*)block->elements) + (block->elementSize * block->count);
-
-    // Reserve the element.
-    block->count++;
-
-    // If we run out of space in the topmost block, add a new one.
-    if(block->count == block->max)
-    {
-        // Just being cautious: adding a new block invalidates existing
-        // pointers to the blocks.
-        block = 0;
-
-        addBlock();
-    }
-
-    return element;
-}
-
-void Zone::Batch::addBlock()
-{
-    // Get a new block by resizing the blocks array. This is done relatively
-    // seldom, since there is a large number of elements per each block.
-    count_++;
-    blocks_ = static_cast<ZBlock*>(zone_.resizeClear(blocks_, sizeof(ZBlock) * count_, tag_));
-
-    // Initialize the block's data.
-    ZBlock* block = &blocks_[count_ - 1];
-    block->max = elementsPerBlock_;
-    block->elementSize = elementSize_;
-    block->elements = zone_.allocate(block->elementSize * block->max, tag_);
-    block->count = 0;
 }

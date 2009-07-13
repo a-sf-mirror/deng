@@ -36,8 +36,6 @@
 #define PU_MODEL        16
 #define PU_SPRITE       20
 
-int             Z_Init(void);
-void            Z_Shutdown(void);
 void            Z_EnableFastMalloc(boolean isEnabled);
 void            Z_ChangeUser(void* ptr, void* newUser);
 void*           Z_GetUser(void* ptr);
