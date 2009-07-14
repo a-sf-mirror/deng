@@ -24,9 +24,13 @@
 extern "C" {
 #endif
 
-#if !defined(MACOSX)
+#if defined(WIN32)
     // Called from SDL.
 #   define deng_Main SDL_main
+#endif
+
+#if defined(UNIX) && !defined(MACOSX)
+#   define deng_Main main
 #endif
 
 /**
