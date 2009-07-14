@@ -17,6 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "de/library.h"
+
 #ifdef UNIX
 #   include <dlfcn.h>
 #endif
@@ -25,8 +27,6 @@
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
 #endif
-
-#include "de/library.h"
 
 using namespace de;
 

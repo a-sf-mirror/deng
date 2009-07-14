@@ -17,12 +17,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "server.h"
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-#include "server.h"
 #include "doomsday.h"
 
 using namespace de;
@@ -47,6 +48,8 @@ Server::Server(const CommandLine& arguments)
 
 Server::~Server()
 {
+    std::cout << "~Server\n";
+
     // Shutdown the engine.
     DD_Shutdown();
 }

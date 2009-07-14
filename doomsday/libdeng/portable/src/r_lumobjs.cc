@@ -30,6 +30,11 @@
 
 #include <math.h>
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 extern "C" {
 #include "de_base.h"
 #include "de_refresh.h"
@@ -39,11 +44,6 @@ extern "C" {
 #include "de_play.h"
 #include "de_defs.h"
 }
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

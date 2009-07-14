@@ -354,7 +354,7 @@ void G_IdentifyVersion(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-void deng_InitializePlugin(void)
+PUBLIC_API void deng_InitializePlugin(void)
 {
     int                 i;
 
@@ -696,7 +696,7 @@ void G_PostInit(void)
     }
 }
 
-void deng_ShutdownPlugin(void)
+PUBLIC_API void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

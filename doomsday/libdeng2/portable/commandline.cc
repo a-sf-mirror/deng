@@ -17,6 +17,9 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "de/commandline.h"
+#include "de/string.h"
+
 #ifdef WIN32
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
@@ -25,9 +28,6 @@
 #ifdef UNIX
 #   include <unistd.h>
 #endif
-
-#include "de/commandline.h"
-#include "de/string.h"
 
 #include <fstream>
 #include <sstream>

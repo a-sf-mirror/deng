@@ -28,6 +28,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 extern "C" {
 #include "de_base.h"
 #include "de_console.h"
@@ -35,11 +40,6 @@ extern "C" {
 #include "de_misc.h"
 #include "de_play.h"
 }
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

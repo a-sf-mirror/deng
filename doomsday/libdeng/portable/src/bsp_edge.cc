@@ -34,6 +34,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 #include "dd_export.h"
 BEGIN_EXTERN_C
 
@@ -47,11 +52,6 @@ END_EXTERN_C
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

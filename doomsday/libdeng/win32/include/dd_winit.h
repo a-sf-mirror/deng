@@ -45,6 +45,4 @@ typedef struct {
 extern uint windowIDX; // Main window.
 extern application_t app;
 
-void            DD_Shutdown(void);
-
 #endif

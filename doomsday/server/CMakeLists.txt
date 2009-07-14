@@ -26,7 +26,12 @@ ADD_EXECUTABLE ( dengsv ${SOURCES} ${APP_SUPPORT_SOURCES} )
 
 TARGET_LINK_LIBRARIES ( dengsv deng2 deng )
 
+IF ( WIN32 )
+    SET_TARGET_PROPERTIES ( dengsv PROPERTIES LINK_FLAGS "/NODEFAULTLIB:msvcrt" )
+ENDIF ( WIN32 )
+
 IF ( APPLE )
+    # The server binary goes under Resources as it's not a GUI application.
     INSTALL ( TARGETS dengsv RUNTIME DESTINATION ${DENG_DATA_DIR} )
 ELSE ()
     INSTALL ( TARGETS dengsv RUNTIME DESTINATION ${DENG_BINARY_DIR} )

@@ -228,7 +228,7 @@ void G_DetectIWADs(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-void deng_InitializePlugin(void)
+PUBLIC_API void deng_InitializePlugin(void)
 {
     int                     i;
 
@@ -609,7 +609,7 @@ static void execOptionDevMaps(const char** args, int tag)
     SC_Close();
 }
 
-void deng_ShutdownPlugin(void)
+PUBLIC_API void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

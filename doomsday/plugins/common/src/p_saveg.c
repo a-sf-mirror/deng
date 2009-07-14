@@ -69,6 +69,7 @@
 #include "p_plat.h"
 #include "p_switch.h"
 #include "hu_log.h"
+#include "g_common.h"
 #if __JHERETIC__ || __JHEXEN__
 #include "hu_inventory.h"
 #endif

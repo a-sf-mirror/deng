@@ -419,10 +419,15 @@ void Con_Shutdown(void)
     VERBOSE(Con_Printf("Con_Shutdown: Shuting down the console...\n"));
 
     Con_DestroyBuffer(histBuf); // The console history buffer.
+    histBuf = 0; 
     Con_DestroyBuffer(oldCmds); // The old commands buffer.
+    oldCmds = 0; 
 
     if(prbuff)
+    {
         M_Free(prbuff); // Free the print buffer.
+        prbuff = 0;
+    }
 
     Con_DestroyMatchedWordList();
     Con_DestroyDatabases();
@@ -996,7 +1001,10 @@ static void Con_DestroyMatchedWordList(void)
 {
     // Free the matched words array.
     if(matchedWordCount)
+    {
         M_Free(matchedWords);
+        matchedWords = 0;
+    }
 }
 
 /**
@@ -1678,7 +1686,7 @@ void conPrintf(int flags, const char *format, va_list args)
     // Format the message to prbuff.
     vsnprintf(prbuff, PRBUFF_SIZE, format, args);
 
-    if(consoleDump)
+    if(consoleDump && outFile)
         fprintf(outFile, "%s", prbuff);
 
     // Servers might have to send the text to a number of clients.
@@ -1814,7 +1822,7 @@ void Con_Error(const char *error, ...)
     va_start(argptr, error);
     vsnprintf(err, sizeof(err), error, argptr);
     va_end(argptr);
-    fprintf(outFile, "%s\n", err);
+    if(outFile) fprintf(outFile, "%s\n", err);
 
     strcpy(buff, "");
     if(histBuf != NULL)
@@ -1873,7 +1881,7 @@ void Con_AbnormalShutdown(const char* message)
     DD_Shutdown();
 
     // Open Doomsday.out in a text editor.
-    fflush(outFile); // Make sure all the buffered stuff goes into the file.
+    if(outFile) fflush(outFile); // Make sure all the buffered stuff goes into the file.
     Sys_OpenTextEditor("doomsday.out");
 
     // Get outta here.

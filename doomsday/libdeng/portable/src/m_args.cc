@@ -28,6 +28,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/CommandLine>
+
+using namespace de;
+
 #include "dd_export.h"
 BEGIN_EXTERN_C
 #include "de_base.h"
@@ -40,11 +45,6 @@ END_EXTERN_C
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-
-#include <de/App>
-#include <de/CommandLine>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

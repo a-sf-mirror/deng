@@ -28,6 +28,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 #include <ctype.h> // For tolower()
 
 extern "C" {
@@ -40,11 +45,6 @@ extern "C" {
 #include "de_misc.h"
 #include "de_audio.h" // For texture, environmental audio properties.
 }
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

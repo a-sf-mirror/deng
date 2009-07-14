@@ -71,6 +71,8 @@ App::App(const CommandLine& commandLine)
 
 App::~App()
 {
+    std::cout << "~App\n";
+
     // Deleting the file system will unload everything owned by the files, including 
     // all plugin libraries.
     delete fs_;

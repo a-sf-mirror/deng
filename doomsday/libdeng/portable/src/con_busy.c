@@ -347,10 +347,18 @@ static void Con_BusyLoop(void)
         glPopMatrix();
     }
 
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
+
     if(verbose)
     {
         Con_Message("Con_Busy: Was busy for %.2lf seconds.\n", busyTime);
     }
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 /**
@@ -601,7 +609,15 @@ static void Con_BusyDrawer(void)
 {
     float               pos = 0;
 
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
+
     Con_DrawScreenshotBackground(0, 0, theWindow->width, theWindow->height);
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 
     // Indefinite activity?
     if(busyMode & BUSYF_ACTIVITY)
@@ -615,11 +631,19 @@ static void Con_BusyDrawer(void)
     }
     Con_BusyDrawIndicator(theWindow->width/2, theWindow->height/2, theWindow->height/12, pos);
 
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
+
     // Output from the console?
     if(busyMode & BUSYF_CONSOLE_OUTPUT)
     {
         Con_BusyDrawConsoleOutput();
     }
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 
     Sys_UpdateWindow(windowIDX);
 }

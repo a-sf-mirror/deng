@@ -22,6 +22,11 @@
  * Boston, MA  02110-1301  USA
  */
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 #include "dd_export.h"
 BEGIN_EXTERN_C
 #include "de_base.h"
@@ -32,11 +37,6 @@ BEGIN_EXTERN_C
 #include "de_edit.h"
 #include "de_dam.h"
 END_EXTERN_C
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 typedef struct linelink_s {
     linedef_t      *line;

@@ -30,6 +30,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 extern "C" {
 #include "de_base.h"
 #include "de_edit.h"
@@ -43,11 +48,6 @@ extern "C" {
 }
 
 #include <math.h>
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

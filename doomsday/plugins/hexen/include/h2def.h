@@ -346,12 +346,7 @@ extern boolean  modifiedgame;
 void            H2_Main(void);
 
 void            G_IdentifyVersion(void);
-void            G_CommonPreInit(void);
 void            G_CommonPostInit(void);
-
-int             deng_GetInteger(int id);
-const char*     deng_GetString(int id);
-void*           deng_GetAddress(int id);
 
 void            G_DeathMatchSpawnPlayer(int playernum);
 int             G_GetMapNumber(int episode, int map);

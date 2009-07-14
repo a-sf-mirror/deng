@@ -442,10 +442,10 @@ namespace de
         };
 
     protected:
-        class MemZone;
-        class MemVolume;
-        class MemBlock;
-        class BlockSet;
+        struct MemZone;
+        struct MemVolume;
+        struct MemBlock;
+        struct BlockSet;
 
         /**
          * Gets the memory block header of an allocated memory block.

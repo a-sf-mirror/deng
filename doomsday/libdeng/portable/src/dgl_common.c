@@ -421,6 +421,10 @@ void GL_SetMultisample(boolean on)
     else
         glDisable(GL_MULTISAMPLE_ARB);
 #endif
+
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 void DGL_Scissor(int x, int y, int width, int height)
@@ -562,6 +566,10 @@ void DGL_DisableTexUnit(byte id)
 
 int DGL_Enable(int cap)
 {
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
+
     switch(cap)
     {
     case DGL_TEXTURING:
@@ -591,11 +599,19 @@ int DGL_Enable(int cap)
         return 0;
     }
 
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
+
     return 1;
 }
 
 void DGL_Disable(int cap)
 {
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
+
     switch(cap)
     {
     case DGL_TEXTURING:
@@ -622,6 +638,10 @@ void DGL_Disable(int cap)
     default:
         break;
     }
+
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 void DGL_BlendOp(int op)

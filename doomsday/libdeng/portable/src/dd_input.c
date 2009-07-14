@@ -873,10 +873,10 @@ static void dispatchEvents(timespan_t ticLength)
  */
 static void postEvents(timespan_t ticLength)
 {
-    DD_ReadKeyboard();
-
     if(!isDedicated)
-    {   // In dedicated mode, we don't do mice or joysticks.
+    {   
+        // In dedicated mode, we don't do mice or joysticks.
+        DD_ReadKeyboard();
         DD_ReadMouse(ticLength);
         DD_ReadJoystick();
     }

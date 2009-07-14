@@ -548,6 +548,10 @@ END_PROF( PROF_MOBJ_INIT_ADD );
  */
 void R_BeginWorldFrame(void)
 {
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
+
     R_ClearSectorFlags();
 
     R_InterpolateWatchedPlanes(watchedPlaneList, resetNextViewer);
@@ -581,6 +585,10 @@ void R_BeginWorldFrame(void)
         // Link objs to all contacted surfaces.
         R_LinkObjs();
     }
+
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 /**
@@ -588,6 +596,10 @@ void R_BeginWorldFrame(void)
  */
 void R_EndWorldFrame(void)
 {
+#ifdef _DEBUG
+    Sys_CheckGLError();
+#endif
+
     if(!freezeRLs)
     {
         // Wrap up with Source, Bias lights.

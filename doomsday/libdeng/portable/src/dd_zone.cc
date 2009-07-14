@@ -27,15 +27,15 @@
  * dd_zone.cc: Memory Zone Wrappers
  */
 
-extern "C" {
-#include "de_base.h"
-}
-#include "doomsday.h"
-
 #include <de/App>
 #include <de/Zone>
 
 using namespace de;
+
+extern "C" {
+#include "de_base.h"
+}
+#include "doomsday.h"
 
 void* _DECALL Z_Malloc(size_t size, int tag, void* user)
 {
@@ -79,7 +79,7 @@ void Z_CheckHeap(void)
 
 void Z_EnableFastMalloc(boolean isEnabled)
 {
-    App::memory().enableFastMalloc(isEnabled);
+    App::memory().enableFastMalloc(isEnabled != 0);
 }
 
 void Z_ChangeUser(void* ptr, void* newUser)
@@ -89,7 +89,7 @@ void Z_ChangeUser(void* ptr, void* newUser)
 
 void* Z_GetUser(void* ptr)
 {
-    App::memory().getUser(ptr);
+    return App::memory().getUser(ptr);
 }
 
 int Z_GetTag(void* ptr)

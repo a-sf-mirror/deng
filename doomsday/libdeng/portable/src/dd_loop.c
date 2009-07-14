@@ -218,7 +218,15 @@ void DD_DrawAndBlit(void)
         glLoadIdentity();
         glOrtho(0, 320, 200, 0, -1, 1);
 
+#ifdef _DEBUG
+        Sys_CheckGLError();
+#endif
+
         R_RenderViewPorts();
+
+#ifdef _DEBUG
+        Sys_CheckGLError();
+#endif
 
         // Draw any over/outside view window game graphics (e.g. fullscreen
         // menus and other displays).
@@ -226,6 +234,10 @@ void DD_DrawAndBlit(void)
         {
             gx.G_Drawer2();
         }
+
+#ifdef _DEBUG
+        Sys_CheckGLError();
+#endif
 
         // Restore the projection mode that was previously in effect.
         glMatrixMode(GL_PROJECTION);

@@ -30,6 +30,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <de/App>
+#include <de/Library>
+
+using namespace de;
+
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_DCOM
 #define STRICT
@@ -40,11 +45,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <de/App>
-#include <de/Library>
-
-using namespace de;
 
 extern "C" {
 
@@ -111,6 +111,131 @@ BOOL InitApplication(application_t *app)
 
     // Register our window class.
     return RegisterClassEx(&wcex);
+}
+
+
+/**
+ * All messages go to the default window message processor.
+ */
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    BOOL        forwardMsg = true;
+    LRESULT     result = 0;
+    static PAINTSTRUCT ps;
+
+    switch(msg)
+    {
+    case WM_SIZE:
+        if(!appShutdown)
+        {
+            switch(wParam)
+            {
+            case SIZE_MAXIMIZED:
+                Sys_SetWindow(windowIDX, 0, 0, 0, 0, 0, DDWF_FULLSCREEN,
+                             DDSW_NOBPP|DDSW_NOSIZE|DDSW_NOMOVE|DDSW_NOCENTER);
+                forwardMsg = FALSE;
+                break;
+
+            default:
+                break;
+            }
+        }
+        break;
+
+    case WM_NCLBUTTONDOWN:
+        switch(wParam)
+        {
+        case HTMINBUTTON:
+            ShowWindow(hWnd, SW_MINIMIZE);
+            break;
+
+        case HTCLOSE:
+            PostQuitMessage(0);
+            return 0;
+
+        default:
+            break;
+        }
+        // Un-acquire device when entering menu or re-sizing the mouse
+        // cursor again.
+        //g_bActive = FALSE;
+        //SetAcquire();
+        break;
+
+    case WM_CLOSE:
+        PostQuitMessage(0);
+        ignoreInput = TRUE;
+        forwardMsg = FALSE;
+        break;
+
+    case WM_PAINT:
+        if(BeginPaint(hWnd, &ps))
+            EndPaint(hWnd, &ps);
+        forwardMsg = FALSE;
+        break;
+
+    case WM_KEYDOWN:
+        forwardMsg = FALSE;
+        break;
+
+    case WM_KEYUP:
+        forwardMsg = FALSE;
+        break;
+
+    case WM_SYSKEYDOWN:
+        forwardMsg = TRUE;
+        break;
+
+    case WM_SYSKEYUP:
+        forwardMsg = TRUE;
+        break;
+
+    case WM_HOTKEY: // A hot-key combination we have registered has been used.
+        // Used to override alt+return and other easily misshit combinations,
+        // at the user's request.
+        forwardMsg = FALSE;
+        break;
+
+    case WM_SYSCOMMAND:
+        switch(wParam)
+        {
+        case SC_SCREENSAVE: // Screensaver about to begin.
+        case SC_MONITORPOWER: // Monitor trying to enter power save.
+            forwardMsg = FALSE;
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case WM_ACTIVATE:
+        if(!appShutdown)
+        {
+            if(LOWORD(wParam) == WA_ACTIVE ||
+               (!HIWORD(wParam) && LOWORD(wParam) == WA_CLICKACTIVE))
+            {
+                SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+                DD_ClearEvents(); // For good measure.
+                ignoreInput = FALSE;
+            }
+            else
+            {
+                SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
+                ignoreInput = TRUE;
+            }
+        }
+        forwardMsg = FALSE;
+        break;
+
+    default:
+        break;
+    }
+
+    if(forwardMsg)
+        return DefWindowProc(hWnd, msg, wParam, lParam);
+
+    return result;
 }
 
 static void determineGlobalPaths(application_t *app)
@@ -285,7 +410,21 @@ int DD_Entry(int argc, char* argv[])
     {   // Fire up the engine. The game loop will also act as the message pump.
         exitCode = DD_Main();
     }
-    DD_Shutdown();
+    return exitCode;
+}
+
+/**
+ * Shuts down the engine.
+ */
+void DD_Shutdown(void)
+{
+    Demo_StopPlayback();
+    Con_SaveDefaults();
+    Sys_Shutdown();
+    B_Shutdown();
+
+    // Shutdown all subsystems.
+    DD_ShutdownAll();
 
     // No more use of COM beyond this point.
     CoUninitialize();
@@ -294,140 +433,6 @@ int DD_Entry(int argc, char* argv[])
     UnregisterClass(app.className, app.hInstance);
 
     // Bye!
-    return exitCode;
-}
-
-/**
- * All messages go to the default window message processor.
- */
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    BOOL        forwardMsg = true;
-    LRESULT     result = 0;
-    static PAINTSTRUCT ps;
-
-    switch(msg)
-    {
-    case WM_SIZE:
-        if(!appShutdown)
-        {
-            switch(wParam)
-            {
-            case SIZE_MAXIMIZED:
-                Sys_SetWindow(windowIDX, 0, 0, 0, 0, 0, DDWF_FULLSCREEN,
-                             DDSW_NOBPP|DDSW_NOSIZE|DDSW_NOMOVE|DDSW_NOCENTER);
-                forwardMsg = FALSE;
-                break;
-
-            default:
-                break;
-            }
-        }
-        break;
-
-    case WM_NCLBUTTONDOWN:
-        switch(wParam)
-        {
-        case HTMINBUTTON:
-            ShowWindow(hWnd, SW_MINIMIZE);
-            break;
-
-        case HTCLOSE:
-            PostQuitMessage(0);
-            return 0;
-
-        default:
-            break;
-        }
-        // Un-acquire device when entering menu or re-sizing the mouse
-        // cursor again.
-        //g_bActive = FALSE;
-        //SetAcquire();
-        break;
-
-    case WM_CLOSE:
-        PostQuitMessage(0);
-        ignoreInput = TRUE;
-        forwardMsg = FALSE;
-        break;
-
-    case WM_PAINT:
-        if(BeginPaint(hWnd, &ps))
-            EndPaint(hWnd, &ps);
-        forwardMsg = FALSE;
-        break;
-
-    case WM_KEYDOWN:
-        forwardMsg = FALSE;
-        break;
-
-    case WM_KEYUP:
-        forwardMsg = FALSE;
-        break;
-
-    case WM_SYSKEYDOWN:
-        forwardMsg = TRUE;
-        break;
-
-    case WM_SYSKEYUP:
-        forwardMsg = TRUE;
-        break;
-
-    case WM_HOTKEY: // A hot-key combination we have registered has been used.
-        // Used to override alt+return and other easily misshit combinations,
-        // at the user's request.
-        forwardMsg = FALSE;
-        break;
-
-    case WM_SYSCOMMAND:
-        switch(wParam)
-        {
-        case SC_SCREENSAVE: // Screensaver about to begin.
-        case SC_MONITORPOWER: // Monitor trying to enter power save.
-            forwardMsg = FALSE;
-            break;
-
-        default:
-            break;
-        }
-        break;
-
-    case WM_ACTIVATE:
-        if(!appShutdown)
-        {
-            if(LOWORD(wParam) == WA_ACTIVE ||
-               (!HIWORD(wParam) && LOWORD(wParam) == WA_CLICKACTIVE))
-            {
-                SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-                DD_ClearEvents(); // For good measure.
-                ignoreInput = FALSE;
-            }
-            else
-            {
-                SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
-                ignoreInput = TRUE;
-            }
-        }
-        forwardMsg = FALSE;
-        break;
-
-    default:
-        break;
-    }
-
-    if(forwardMsg)
-        return DefWindowProc(hWnd, msg, wParam, lParam);
-
-    return result;
-}
-
-/**
- * Shuts down the engine.
- */
-void DD_Shutdown(void)
-{
-    // Shutdown all subsystems.
-    DD_ShutdownAll();
 }
 
 } // extern "C"

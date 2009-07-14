@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+#if !defined(MACOSX)
+    // Called from SDL.
+#   define deng_Main SDL_main
+#endif
+
 /**
  * Main entry point for a libdeng2 application.
  */

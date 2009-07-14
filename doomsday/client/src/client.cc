@@ -17,12 +17,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "client.h"
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-#include "client.h"
 #include "doomsday.h"
 
 using namespace de;
@@ -74,6 +75,8 @@ Client::Client(const CommandLine& arguments)
 
 Client::~Client()
 {
+    std::cout << "~Client\n";
+
     // Shutdown the engine.
     DD_Shutdown();
 }

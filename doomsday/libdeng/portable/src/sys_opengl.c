@@ -731,6 +731,8 @@ void Sys_CheckGLError(void)
     GLenum  error;
 
     if((error = glGetError()) != GL_NO_ERROR)
+    {
         Con_Error("OpenGL error: %i\n", error);
+    }
 #endif
 }

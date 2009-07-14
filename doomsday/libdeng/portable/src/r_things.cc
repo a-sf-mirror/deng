@@ -41,6 +41,11 @@
 #include <math.h>
 #include <assert.h>
 
+#include <de/App>
+#include <de/Zone>
+
+using namespace de;
+
 extern "C" {
 #include "de_base.h"
 #include "de_console.h"
@@ -57,11 +62,6 @@ void getLightingParams(float x, float y, float z, subsector_t* ssec,
                        float distance, boolean fullBright,
                        float ambientColor[3], uint* vLightListIdx);
 }
-
-#include <de/App>
-#include <de/Zone>
-
-using namespace de;
 
 // MACROS ------------------------------------------------------------------
 

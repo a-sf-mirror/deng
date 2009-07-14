@@ -154,6 +154,10 @@ void GL_ReserveNames(void)
         reservedCount = NUM_RESERVED_NAMES;
     }
     Sys_Unlock(deferredMutex);
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 void GL_ReleaseReservedNames(void)
@@ -166,6 +170,10 @@ void GL_ReleaseReservedNames(void)
     memset(reservedNames, 0, sizeof(reservedNames));
     reservedCount = 0;
     Sys_Unlock(deferredMutex);
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 }
 
 DGLuint GL_GetReservedName(void)
@@ -216,6 +224,10 @@ void GL_InitTextureContent(texturecontent_t* content)
 void GL_UploadTextureContent(texturecontent_t* content)
 {
     boolean             result = false;
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 
     if(content->flags & TXCF_EASY_UPLOAD)
     {
@@ -294,6 +306,7 @@ void GL_UploadTextureContent(texturecontent_t* content)
     if(GL_state.useAnisotropic)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
                         GL_GetTexAnisoMul(content->anisoFilter));
+
 #ifdef _DEBUG
     Sys_CheckGLError();
 #endif
@@ -472,4 +485,8 @@ void GL_UploadDeferredContent(uint timeOutMilliSeconds)
         GL_ReserveNames();
     }
     GL_ReserveNames();
+
+#if _DEBUG
+    Sys_CheckGLError();
+#endif
 }
