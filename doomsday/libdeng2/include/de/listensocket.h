@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,10 +50,15 @@ namespace de
         /// that represents the new client, or NULL if there were no
         /// pending connection requests.
         Socket* accept();
+        
+        /// Returns the port the socket is listening on.
+        duint16 port() const;
     
     private:
         /// Pointer to the internal socket data.
         void* socket_;
+        
+        duint16 port_;
     };
 }
 

@@ -125,6 +125,17 @@ dint CommandLine::check(const std::string& arg, dint numParams) const
     return i - arguments_.begin();
 }
 
+bool CommandLine::getParameter(const std::string& arg, std::string& param) const
+{
+    dint pos = check(arg, 1);
+    if(pos > 0)
+    {
+        param = at(pos + 1);
+        return true;
+    }
+    return false;
+}
+
 dint CommandLine::has(const std::string& arg) const
 {
     dint howMany = 0;

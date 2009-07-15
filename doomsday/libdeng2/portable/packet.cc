@@ -20,6 +20,7 @@
 #include "de/packet.h"
 #include "de/writer.h"
 #include "de/reader.h"
+#include "de/string.h"
 
 using namespace de;
 
@@ -44,8 +45,23 @@ void Packet::operator << (Reader& from)
     char ident[5];
     from >> ident[0] >> ident[1] >> ident[2] >> ident[3];
     ident[4] = 0;
-    type_ = std::string(ident);
+    
+    // Having been constructed as a specific type, the identifier is already
+    // set and cannot change. Let's check if it's the correct one.
+    if(String::compareWithCase(type_, ident))
+    {
+        throw InvalidTypeError("Packet::operator <<", "Invalid ID");
+    }
 }
 
 void Packet::execute() const
 {}
+
+bool Packet::checkType(Reader& from, const String& type)
+{
+    char ident[5];
+    from >> ident[0] >> ident[1] >> ident[2] >> ident[3];
+    ident[4] = 0;
+    from.rewind(4);
+    return !String::compareWithCase(type, ident);
+}

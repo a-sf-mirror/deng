@@ -73,8 +73,6 @@ static void removeFromIndex(FS::Index& idx, File& file)
 
 void FS::deindex(File& file)
 {
-    std::cout << "Deindexing " << file.name() << " of type " << TYPE_NAME(file) << "\n";
-    
     removeFromIndex(index_, file);
     removeFromIndex(typeIndex_[TYPE_NAME(file)], file);
 }

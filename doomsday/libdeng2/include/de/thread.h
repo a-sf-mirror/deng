@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,15 +44,25 @@ namespace de
         /// Start executing the thread.
         virtual void start();
 
-        /// Signals the thread to stop.
+        /// Signals the thread to stop. Returns immediately.
         virtual void stop();
+        
+        /** 
+         * Signals the thread to stop and waits until it does.
+          *
+         * @param timeOut  Maximum period of time to wait.
+         */
+        virtual void join(const Time::Delta& timeOut);
 
         /// This method is executed when the thread is started.
         virtual void run() = 0;
         
-        /// @return True, if the thread should stop itself as soon as
+        /// @return @c true, if the thread should stop itself as soon as
         /// possible.
         bool shouldStopNow() const;
+        
+        /// @return @c true, if the thread is currently running.
+        bool isRunning() const;
     
     private:
         static int runner(void* owner);

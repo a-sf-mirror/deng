@@ -19,6 +19,10 @@
 
 #include "server.h"
 #include <de/Date>
+#include <de/CommandPacket>
+#include <de/Socket>
+
+#include <sstream>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -30,16 +34,24 @@
 using namespace de;
 
 Server::Server(const CommandLine& arguments)
-    : App(arguments)
+    : App(arguments), listenSocket_(0)
 {
-    // For our testing purposes, let's modify the command line to launch Doom1 E1M1 
-    // in dedicated server mode.
-    
     CommandLine& args = commandLine();
+
+    // Start listening.
+    duint16 port = DEFAULT_LISTEN_PORT;
+    std::string param;
+    if(args.getParameter("--port", param))
+    {
+        std::istringstream is(param);
+        is >> port;
+    }
+    
+    std::cout << "Server uses port " << port << "\n";
+    listenSocket_ = new ListenSocket(port);
     
     args.append("-dedicated");
-    args.append("-cmd");
-    args.append("net-port-control 13209; net-port-data 13210; after 30 \"net init\"; after 40 \"net server start\"");
+    
     args.append("-userdir");
     args.append("serverdir");
 
@@ -49,12 +61,71 @@ Server::Server(const CommandLine& arguments)
 
 Server::~Server()
 {
+    // Close all links.
+    for(Clients::iterator i = clients_.begin(); i != clients_.end(); ++i)
+    {
+        delete *i;
+    }
+    
     // Shutdown the engine.
     DD_Shutdown();
+
+    delete listenSocket_;
 }
 
 void Server::iterate()
 {
+    // Check for incoming connections.
+    Socket* incoming = listenSocket_->accept();
+    if(incoming)
+    {
+        std::cout << "New client connected from " << incoming->peerAddress().asText() << "!\n";
+        clients_.push_back(new Link(incoming));
+    }
+
+    tendClients();
+    
     // libdeng main loop tasks.
     DD_GameLoop();
+}
+
+void Server::tendClients()
+{
+    for(Clients::iterator i = clients_.begin(); i != clients_.end(); ++i)
+    {
+        std::auto_ptr<AddressedBlock> message((*i)->receive());
+        if(message.get())
+        {
+            std::auto_ptr<Packet> packet(protocol_.interpret(*message));
+            if(packet.get())
+            {
+                // Attribute the packet to the sender.
+                packet.get()->setFrom(message->address());
+                
+                processPacket(packet.get());
+            }            
+        }
+    }
+}
+
+void Server::processPacket(const Packet* packet)
+{
+    /// @todo  Check IP-based access rights.
+    
+    assert(packet != NULL);
+    
+    const CommandPacket* cmd = dynamic_cast<const CommandPacket*>(packet);
+    if(cmd)
+    {
+        std::cout << "Server received command (from " << packet->from().asText() << 
+            "): " << cmd->command() << "\n";
+        
+        if(cmd->command() == "quit")
+        {
+            stop();
+        }
+    }
+    
+    // Perform any function the packet may define for itself.    
+    packet->execute();
 }

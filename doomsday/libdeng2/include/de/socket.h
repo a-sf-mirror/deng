@@ -67,8 +67,10 @@ namespace de
          * a temporary buffer before sending.
          *
          * @param data  Data to send.
+         *
+         * @return  Reference to this socket.
          */
-        void send(const IByteArray& data);
+        Socket& operator << (const IByteArray& data);
 
         /**
          * Receives an array of bytes by reading from the socket until a full

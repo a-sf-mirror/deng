@@ -163,6 +163,9 @@ namespace de
          */
         std::string asText() const;
 
+    public:
+        static void sleep(const Time::Delta& delta) { delta.sleep(); }
+
     private:
         time_t time_;
         dint micro_;

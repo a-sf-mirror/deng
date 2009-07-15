@@ -28,6 +28,7 @@
 namespace de
 {
     class Value;
+    class Block;
     
     static const char* COMMAND_PACKET_TYPE = "CMND";
     
@@ -42,7 +43,7 @@ namespace de
         typedef std::list<Value*> Arguments;
         
     public:
-        CommandPacket();
+        CommandPacket(const String& cmd = "");
         ~CommandPacket();
         
         const String& command() const { return command_; }
@@ -56,6 +57,10 @@ namespace de
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
+
+    public:
+        /// Constructor for the Protocol.
+        static Packet* fromBlock(const Block& block);
         
     private:
         String command_;

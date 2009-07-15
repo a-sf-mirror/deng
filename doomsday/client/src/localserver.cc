@@ -20,6 +20,12 @@
 #include "localserver.h"
 
 #include <de/App>
+#include <de/Socket>
+#include <de/Block>
+#include <de/Writer>
+#include <de/CommandPacket>
+#include <de/Link>
+#include <de/NumberValue>
 
 using namespace de;
 
@@ -34,6 +40,10 @@ LocalServer::LocalServer(duint16 listenOnPort) : listenOnPort_(listenOnPort)
 #else
     svArgs.insert(0, "./dengsv");
 #endif
+
+    svArgs.append("--port");
+    svArgs.append(NumberValue(listenOnPort_).asText());
+
     svArgs.remove(1);
     extern char** environ;
     svArgs.execute(environ);
@@ -41,5 +51,17 @@ LocalServer::LocalServer(duint16 listenOnPort) : listenOnPort_(listenOnPort)
 
 LocalServer::~LocalServer()
 {
-    std::cout << "Stopping local server...\n";
+    try
+    {
+        std::cout << "Stopping local server...\n";
+
+        Link link(Address("localhost", listenOnPort_));
+        Block message;
+        Writer(message) << CommandPacket("quit");
+        link << message;
+    }
+    catch(const Socket::ConnectionError&)
+    {
+        std::cout << "Couldn't connect to local server!\n";
+    }
 }

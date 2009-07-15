@@ -143,8 +143,12 @@ namespace de
         
         /**
          * Stops the main loop.
+         *
+         * @param code  Exit code for the application.
+         *
+         * @see setExitCode()
          */
-        virtual void stop();
+        virtual void stop(dint code = 0);
         
     public:
         /**

@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,16 +40,14 @@ void SenderThread::run()
 			buffer_.wait(10);
 
 			// There is a new outgoing message.
-			const IByteArray* data = buffer_.get();
+			const IByteArray* data = buffer_.peek();
 			if(data)
 			{
-                std::cout << "sending " << data->size() << " bytes\n";
-
 			    // Write this to the socket.
-			    socket_.send(*data);
+			    socket_ << *data;
 
 			    // The packet can be discarded.
-                delete data;
+                delete buffer_.get();
             }
 		}
 		catch(const Waitable::TimeOutError&)

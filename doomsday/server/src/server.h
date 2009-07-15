@@ -21,6 +21,11 @@
 #define SERVER_H
 
 #include <de/App>
+#include <de/ListenSocket>
+#include <de/Protocol>
+#include <de/Link>
+
+#define DEFAULT_LISTEN_PORT 13209
 
 /**
  * The server application.
@@ -32,8 +37,30 @@ public:
     ~Server();
     
     void iterate();
+
+protected:
+    /**
+     * Check if there are any incoming requests from connected clients.
+     * Process any incoming packets.
+     */
+    void tendClients();
+
+    /**
+     * Process a packet received from the network.
+     *
+     * @param packet  Packet.
+     */    
+    void processPacket(const de::Packet* packet);
     
 private:
+    /// The server listens on this socket.
+    de::ListenSocket* listenSocket_;
+    
+    /// Protocol for incoming packets.
+    de::Protocol protocol_;
+    
+    typedef std::list<de::Link*> Clients;
+    Clients clients_;
 };
 
 #endif /* SERVER_H */

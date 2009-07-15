@@ -22,6 +22,8 @@
 
 #include <de/deng.h>
 
+#include <string>
+
 namespace de
 {
     /**
@@ -38,6 +40,15 @@ namespace de
     public:
         Address();
         Address(const char* address, duint16 port = 0);
+
+        /**
+         * Checks two addresses for equality.
+         *
+         * @param other  Address.
+         *
+         * @return @c true if the addresses are equal.
+         */
+        bool operator == (const Address& other) const;
 
         /**
          * Resolve the given address.  If the address string contains a
@@ -57,6 +68,11 @@ namespace de
         duint16 port() const { return port_; }
         
         void setPort(duint16 p) { port_ = p; }
+        
+        /**
+         * Converts the address to text.
+         */
+        std::string asText() const;
 
     private:
         duint32 ip_;

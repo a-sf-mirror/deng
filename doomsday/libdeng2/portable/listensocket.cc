@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 using namespace de;
 
-ListenSocket::ListenSocket(duint16 port) : socket_(NULL)
+ListenSocket::ListenSocket(duint16 port) : socket_(NULL), port_(port)
 {
     // Listening address.
     Address address(NULL, port);
@@ -56,4 +56,9 @@ Socket* ListenSocket::accept()
     }
     // We can use this constructor because we are Socket's friend.
     return new Socket(clientSocket);
+}
+
+duint16 ListenSocket::port() const
+{
+    return port_;
 }

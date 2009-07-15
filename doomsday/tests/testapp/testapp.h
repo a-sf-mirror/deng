@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,21 +17,23 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dengmain.h>
-#include "client.h"
+#ifndef TESTAPP_H
+#define TESTAPP_H
 
-using namespace de;
+#include <de/App>
 
-int deng_Main(int argc, char** argv)
+class TestApp : public de::App
 {
-    try
-    {
-        Client client(CommandLine(argc, argv));
-        return client.mainLoop();
+public:
+    TestApp(const de::CommandLine& args) : de::App(args) {
+        std::cout << "TestApp constructed.\n";
     }
-    catch(const Error& error)
-    {
-        std::cout << error.what() << std::endl;
-    }    
-    return 0;
-}
+    
+    ~TestApp() {
+        std::cout << "TestApp destructed.\n";
+    }
+
+    void iterate() {}
+};
+
+#endif /* TESTAPP_H */

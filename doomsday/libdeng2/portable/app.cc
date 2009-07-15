@@ -86,41 +86,46 @@ App::~App()
 
 void App::loadPlugins()
 {
-    // Get the index of libraries.
-    const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
-    
-    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+    try
     {
-        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
-        if(libFile.name().contains("dengplugin_"))
+        // Get the index of libraries.
+        const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
+    
+        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
         {
-            // Initialize the plugin.
-            libFile.library();
-            std::cout << "App::loadPlugins() loaded " << libFile.path() << "\n";
+            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+            if(libFile.name().contains("dengplugin_"))
+            {
+                // Initialize the plugin.
+                libFile.library();
+                std::cout << "App::loadPlugins() loaded " << libFile.path() << "\n";
+            }
         }
-    }
     
-    // Also load the specified game plugin, if there is one.
-    std::string gameName = "doom";
-    dint pos = commandLine_.check("-game", 1);
-    if(pos)
-    {
-        gameName = commandLine_.at(pos + 1);
-    }
+        // Also load the specified game plugin, if there is one.
+        std::string gameName = "doom";
+        dint pos = commandLine_.check("-game", 1);
+        if(pos)
+        {
+            gameName = commandLine_.at(pos + 1);
+        }
     
-    std::cout << "Looking for game '" << gameName << "'\n";
+        std::cout << "Looking for game '" << gameName << "'\n";
         
-    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
-    {
-        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
-        if(libFile.name().contains("_" + gameName + "."))
+        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
         {
-            // This is the one.
-            gameLib_ = &libFile;
-            std::cout << "App::loadPlugins() located the game " << libFile.path() << "\n";
-            break;
+            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+            if(libFile.name().contains("_" + gameName + "."))
+            {
+                // This is the one.
+                gameLib_ = &libFile;
+                std::cout << "App::loadPlugins() located the game " << libFile.path() << "\n";
+                break;
+            }
         }
     }
+    catch(const FS::UnknownTypeError&)
+    {}
 }
 
 void App::unloadGame()
@@ -165,9 +170,10 @@ dint App::mainLoop()
     return exitCode_;
 }
 
-void App::stop()
+void App::stop(dint code)
 {
     runMainLoop_ = false;
+    setExitCode(code);
 }
 
 App& App::app()

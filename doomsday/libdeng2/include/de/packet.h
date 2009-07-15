@@ -23,8 +23,12 @@
 #include <de/ISerializable>
 #include <de/Address>
 
+#include <string>
+
 namespace de
 {
+    class String;
+    
     /// Type identifier for instances of the Packet class.
     static const char* PACKET_TYPE = "NONE";
     
@@ -37,6 +41,9 @@ namespace de
     class Packet : public ISerializable
     {
     public:
+        /// While deserializing, an invalid type identifier was encountered. @ingroup errors
+        DEFINE_SUB_ERROR(DeserializationError, InvalidTypeError);
+        
         /// Length of a type identifier.
         static const duint TYPE_SIZE = 4;
         
@@ -56,13 +63,6 @@ namespace de
          * Returns the type identifier of the packet.
          */
         const Type& type() const { return type_; }
-        
-        /**
-         * Sets the type identifier.
-         *
-         * @param t  New type identifier. Must be exactly TYPE_SIZE characters long.
-         */
-        void setType(const Type& t);
 
         /** 
          * Determines where the packet was received from.
@@ -74,7 +74,7 @@ namespace de
          *
          * @param from  Address of the sender.
          */ 
-        void setFrom(Address& from) { from_ = from; }
+        void setFrom(const Address& from) { from_ = from; }
 
         /**
          * Execute whatever action the packet defines. This is called for all packets
@@ -87,8 +87,26 @@ namespace de
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
+    protected:
+        /**
+         * Sets the type identifier.
+         *
+         * @param t  Type identifier. Must be exactly TYPE_SIZE characters long.
+         */
+        void setType(const Type& t);
+        
+    public:
+        /**
+         * Checks if the packet starting at the current offset in the reader 
+         * has the given type identifier.
+         *
+         * @param from  Reader.
+         * @param type  Packet identifier.
+         */
+        static bool checkType(Reader& from, const String& type);
+        
     private:  
-        /// The type is identifier with a four-character string.
+        /// The type is identified with a four-character string.
         Type type_;
         
         /// Address where the packet was received from.

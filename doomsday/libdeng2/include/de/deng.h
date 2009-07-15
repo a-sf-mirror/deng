@@ -67,6 +67,8 @@ namespace de
 	typedef char	    		    dchar;	    ///< 8-bit signed integer.
 	typedef unsigned char		    dbyte;	    ///< 8-bit unsigned integer.
 	typedef unsigned char		    duchar;     ///< 8-bit unsigned integer.
+    typedef dchar                   dint8;      ///< 8-bit signed integer.
+    typedef dbyte                   duint8;     ///< 8-bit unsigned integer.
 	typedef signed short int	    dint16;     ///< 16-bit signed integer.
 	typedef unsigned short int	    duint16;    ///< 16-bit unsigned integer.
 	typedef dint16          	    dshort;     ///< 16-bit signed integer.

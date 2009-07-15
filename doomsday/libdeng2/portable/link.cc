@@ -21,6 +21,7 @@
 #include "de/socket.h"
 #include "de/address.h"
 #include "de/block.h"
+#include "de/time.h"
 
 using namespace de;
 
@@ -48,6 +49,8 @@ void Link::initialize()
 
 Link::~Link()
 {
+    flush();
+    
     // Inform the threads that they can stop as soon as possible.
     receiver_->stop();
     sender_->stop();
@@ -63,13 +66,28 @@ Link::~Link()
     delete socket_;
 }
 
-void Link::send(const IByteArray& data)
+Link& Link::operator << (const IByteArray& data)
 {
     outgoing_.put(new Block(data));
     outgoing_.post();
+    return *this;
 }
 
 AddressedBlock* Link::receive()
 {
     return incoming_.get();
+}
+
+void Link::flush()
+{
+    while(sender_->isRunning() && !outgoing_.empty())
+    {
+        Time::sleep(.01);
+    }
+}
+
+Address Link::peerAddress() const
+{
+    assert(socket_ != NULL);
+    return socket_->peerAddress();
 }

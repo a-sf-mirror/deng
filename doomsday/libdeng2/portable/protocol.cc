@@ -18,11 +18,14 @@
  */
 
 #include "de/protocol.h"
+#include "de/commandpacket.h"
 
 using namespace de;
 
 Protocol::Protocol()
-{}
+{
+    define(CommandPacket::fromBlock);
+}
 
 Protocol::~Protocol()
 {}

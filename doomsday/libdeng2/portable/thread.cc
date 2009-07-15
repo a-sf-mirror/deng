@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ int Thread::runner(void* owner)
     
     self->run();
     self->endOfThread_.post();
+    self->thread_ = NULL;
 
     // The return value is not used at the moment.
     return 0;
@@ -45,21 +46,14 @@ Thread::Thread() : stopNow_(false), thread_(NULL)
 
 Thread::~Thread()
 {
-    stop();
-
-    std::cout << "Waiting on thread to stop...\n";
-    endOfThread_.wait(4);
-    std::cout << "...it stopped\n";
+    join(4);
 }
 
 void Thread::start()
 {
-    if(thread_)
-    {
-        // The thread is already running!
-        return;
-    }
+    assert(thread_ == NULL);
 
+    stopNow_ = false;
     thread_ = SDL_CreateThread(runner, this);
 }
 
@@ -69,7 +63,24 @@ void Thread::stop()
     stopNow_ = true;
 }
 
+void Thread::join(const Time::Delta& timeOut)
+{
+    stop();
+    if(thread_)
+    {
+        thread_ = NULL;
+        std::cout << "Waiting on thread to stop...\n";
+        endOfThread_.wait(timeOut);
+        std::cout << "...it stopped\n";
+    }
+}
+
 bool Thread::shouldStopNow() const
 {
     return stopNow_;
+}
+
+bool Thread::isRunning() const
+{
+    return thread_ != NULL;
 }

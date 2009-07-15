@@ -180,4 +180,4 @@ IF ( APPLE )
 ENDIF ( APPLE )
 
 # The real work is done in the subdirectories.
-SUBDIRS ( libdeng libdeng2 server client plugins )
+SUBDIRS ( libdeng libdeng2 server client plugins tests )

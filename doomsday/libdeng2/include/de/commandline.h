@@ -94,12 +94,23 @@ namespace de
          * the program name, it is not included in the search.
          *
          * @param arg  Argument to look for. Don't use aliases here.
-         * @param count  Number of non-option arguments that follow the located argument.
-         *               @see isOption()
+         * @param count  Number of parameters (non-option arguments) that follow 
+         *      the located argument.* @see isOption()
          *
          * @return  Index of the argument, if found. Otherwise zero.
          */
         dint check(const std::string& arg, dint count = 0) const;
+
+        /**
+         * Gets the parameter for an argument.
+         *
+         * @param arg  Argument to look for. Don't use aliases here.
+         * @param param  The parameter is returned here, if found.
+         *
+         * @return  @c true, if parameter was successfully returned.
+         *      Otherwise @c false, in which case @c param is not modified.
+         */
+        bool getParameter(const std::string& arg, std::string& param) const;
 
         /**
          * Determines whether @c arg exists in the list of arguments.

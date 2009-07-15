@@ -53,8 +53,11 @@ Client::Client(const CommandLine& arguments)
 
     localServer_ = new LocalServer(13209);
 
+    /*
     args.append("-cmd");
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
+    */
+    
     args.append("-userdir");
     args.append("clientdir");
 

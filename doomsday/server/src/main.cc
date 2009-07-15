@@ -27,30 +27,6 @@ int deng_Main(int argc, char** argv)
     try
     {
         Server server(CommandLine(argc, argv));
-
-        /*
-        ListenSocket entry(8080);
-        Socket* client = 0;
-        
-        while((client = entry.accept()) == NULL)
-        {
-            std::cout << "Still waiting for incoming...\n";
-            Time::sleep(.5);
-        }
-
-        std::cout << "Sending...\n";
-        
-        Link link(client);
-        Block packet;
-        Writer(packet) << "Hello world!";
-        link.send(packet);
-        
-        Time::sleep(1);
-
-        std::cout << "Closing...\n";
-        return 0;
-        */
-
         return server.mainLoop();
     }
     catch(const Error& error)

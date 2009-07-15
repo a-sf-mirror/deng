@@ -113,9 +113,12 @@ void Socket::readHeader(duint header, duint& size)
      */    
 }
 
-void Socket::send(const IByteArray& packet)
+Socket& Socket::operator << (const IByteArray& packet)
 {
-    if(!socket_) return;
+    if(!socket_) 
+    {
+        throw DisconnectedError("Socket::operator << ", "Socket closed");
+    }
 
     duint packetSize = packet.size() + 4;
     IByteArray::Byte* buffer = new IByteArray::Byte[packetSize];
@@ -131,8 +134,10 @@ void Socket::send(const IByteArray& packet)
     // Did the transmission fail?
     if(sentBytes != packetSize)
     {
-        throw DisconnectedError("Socket::send", std::string(SDLNet_GetError()));
+        throw DisconnectedError("Socket::operator << ", std::string(SDLNet_GetError()));
     }
+    
+    return *this;
 }
 
 void Socket::receiveBytes(duint count, dbyte* buffer)
@@ -183,7 +188,10 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
 
 AddressedBlock* Socket::receive()
 {
-    if(!socket_) return NULL;
+    if(!socket_) 
+    {
+        throw DisconnectedError("Socket::receive", "Socket closed");
+    }
 
     // First read the header.
     duint header = 0;

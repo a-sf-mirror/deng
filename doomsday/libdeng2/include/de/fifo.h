@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,24 @@ namespace de
             unlock();
             return last;
         }        
+        
+        /**
+         * Peek at the oldest object in the buffer.
+         *
+         * @return The oldest object in the buffer, or NULL if the buffer is empty.
+         * The object is not removed from the buffer.
+         */
+        Type* peek() {
+            // The FIFO must be locked before it can be modified.
+            lock();
+            if(objects_.empty()) {
+                unlock();
+                return NULL;
+            }
+            Type* last = objects_.back();
+            unlock();
+            return last;
+        }
         
         /**
          * Determines whether the buffer is empty.

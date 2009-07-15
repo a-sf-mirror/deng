@@ -57,7 +57,7 @@ namespace de
          *
          * @param data  Data to send.
          */
-        void send(const IByteArray& data);
+        Link& operator << (const IByteArray& data);
         
         /**
          * Receives an array of data.
@@ -73,7 +73,17 @@ namespace de
         bool hasIncoming() const {
             return !incoming_.empty();
         }
-
+        
+        /**
+         * Wait until all data has been sent.
+         */
+        void flush();
+        
+        /**
+         * Returns the address of the remote end of the link.
+         */ 
+        Address peerAddress() const;
+        
     protected:
         void initialize();
     

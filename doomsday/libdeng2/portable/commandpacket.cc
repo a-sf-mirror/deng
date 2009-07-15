@@ -21,10 +21,11 @@
 #include "de/value.h"
 #include "de/writer.h"
 #include "de/reader.h"
+#include "de/block.h"
 
 using namespace de;
 
-CommandPacket::CommandPacket() : Packet(COMMAND_PACKET_TYPE)
+CommandPacket::CommandPacket(const String& cmd) : Packet(COMMAND_PACKET_TYPE), command_(cmd)
 {}
 
 CommandPacket::~CommandPacket()
@@ -64,4 +65,16 @@ void CommandPacket::operator << (Reader& from)
     {
         arguments_.push_back(Value::constructFrom(from));
     }
+}
+
+Packet* CommandPacket::fromBlock(const Block& block)
+{
+    Reader from(block);
+    if(checkType(from, COMMAND_PACKET_TYPE))
+    {    
+        std::auto_ptr<CommandPacket> p(new CommandPacket);
+        from >> *p.get();
+        return p.release();
+    }
+    return NULL;
 }

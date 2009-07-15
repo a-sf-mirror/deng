@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,11 @@ Address::Address() : ip_(0), port_(0)
 Address::Address(const char* address, duint16 port)
 {
     set(address, port);
+}
+
+bool Address::operator == (const Address& other) const
+{
+    return ip_ == other.ip_ && port_ == other.port_;
 }
 
 void Address::set(const char* address, duint16 port)
@@ -69,4 +74,17 @@ void Address::set(const char* address, duint16 port)
 
     ip_   = SDLNet_Read32(&resolved.host);
     port_ = SDLNet_Read16(&resolved.port);
+}
+
+std::string Address::asText() const
+{
+    duint part[4] = {
+        (ip_ >> 24) & 0xff,
+        (ip_ >> 16) & 0xff,
+        (ip_ >> 8) & 0xff,
+        ip_ & 0xff
+    };
+    std::ostringstream os;
+    os << part[0] << "." << part[1] << "." << part[2] << "." << part[3] << ":" << duint(port_);
+    return os.str();
 }
