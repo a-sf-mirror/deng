@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 #include <de/Thread>
 #include <de/FIFO>
-#include <de/Block>
+#include <de/AddressedBlock>
 
 namespace de
 {
@@ -38,8 +38,8 @@ namespace de
     class ReceiverThread : public Thread
     {
     public:
-        typedef Block Packet;
-        typedef FIFO<Packet> IncomingBuffer;        
+        typedef AddressedBlock PacketType;
+        typedef FIFO<PacketType> IncomingBuffer;        
         
     public:
         ReceiverThread(Socket& socket, IncomingBuffer& buffer);

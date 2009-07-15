@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <de/deng.h>
 #include <de/IByteArray>
+#include <de/Address>
 
 /**
  * @defgroup net Network
@@ -31,8 +32,7 @@
 
 namespace de
 {
-    class Address;
-    class Block;
+    class AddressedBlock;
 
     /**
      * Socket provides an interface for a TCP/IP network socket.
@@ -43,11 +43,20 @@ namespace de
     class PUBLIC_API Socket
     {
     public:
+        // Flags.
+        enum 
+        {
+            HUFFMAN = 0x1      ///< Payload is in Huffman code.
+        };
+        
         /// Creating the TCP/IP connection failed. @ingroup errors
         DEFINE_ERROR(ConnectionError);
         
         /// The TCP/IP connection was disconnected. @ingroup errors
         DEFINE_ERROR(DisconnectedError);
+        
+        /// There is no peer connected. @ingroup errors
+        DEFINE_ERROR(PeerError);
     
     public:
         Socket(const Address& address);
@@ -64,14 +73,22 @@ namespace de
         /**
          * Receives an array of bytes by reading from the socket until a full
          * packet has been received.  Returns only after a full packet has been received. 
+         * The block is marked with the address where it was received from.
          *
          * @return  Received bytes. Caller is responsible for deleting the data.
          */
-        Block* receive();
+        AddressedBlock* receive();
+        
+        /**
+         * Determines the IP address of the remote end of a connected socket.
+         *
+         * @return  Address of the peer.
+         */
+        Address peerAddress() const;
         
         void close();
         
-    private:
+    protected:
         /// Create a Socket object for a previously opened socket.  
         Socket(void* existingSocket);
 
@@ -88,11 +105,14 @@ namespace de
 
         void readHeader(duint header, duint& size);
     
+    private:
         /// Pointer to the internal socket data.
         void* socket_;
 
         /// Used if LIBDENG2_USE_SOCKET_SET is defined.
         void* socketSet_;
+        
+        Address peerAddress_;
         
         /** 
          * ListenSocket creates instances of Socket so it needs to use

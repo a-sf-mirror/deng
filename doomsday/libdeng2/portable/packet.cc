@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,26 +17,35 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#include "de/packet.h"
+#include "de/writer.h"
+#include "de/reader.h"
 
-#include <de/App>
+using namespace de;
 
-class LocalServer;
-
-/**
- * The client application.
- */
-class Client : public de::App
+Packet::Packet(const Type& t)
 {
-public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
-    
-    void iterate();
-    
-private:
-    LocalServer* localServer_;
-};
+    setType(t);
+}
 
-#endif /* CLIENT_H */
+void Packet::setType(const Type& t)
+{
+    assert(t.size() == TYPE_SIZE);
+    type_ = t;
+}
+
+void Packet::operator >> (Writer& to) const
+{
+    to << type_[0] << type_[1] << type_[2] << type_[3];
+}
+
+void Packet::operator << (Reader& from)
+{
+    char ident[5];
+    from >> ident[0] >> ident[1] >> ident[2] >> ident[3];
+    ident[4] = 0;
+    type_ = std::string(ident);
+}
+
+void Packet::execute() const
+{}

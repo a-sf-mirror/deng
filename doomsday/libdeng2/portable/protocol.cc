@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,26 +17,30 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#include "de/protocol.h"
 
-#include <de/App>
+using namespace de;
 
-class LocalServer;
+Protocol::Protocol()
+{}
 
-/**
- * The client application.
- */
-class Client : public de::App
+Protocol::~Protocol()
+{}
+
+void Protocol::define(Constructor constructor)
 {
-public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
-    
-    void iterate();
-    
-private:
-    LocalServer* localServer_;
-};
+    constructors_.push_back(constructor);
+}
 
-#endif /* CLIENT_H */
+Packet* Protocol::interpret(const Block& block) const
+{
+    for(Constructors::const_iterator i = constructors_.begin(); i != constructors_.end(); ++i)
+    {
+        Packet* p = (*i)(block);
+        if(p)
+        {
+            return p;
+        }
+    }
+    return NULL;
+}

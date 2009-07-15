@@ -17,26 +17,31 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef LOCALSERVER_H
+#define LOCALSERVER_H
 
-#include <de/App>
-
-class LocalServer;
+#include <de/deng.h>
 
 /**
- * The client application.
+ * Responsible for starting and stopping the local server process.
  */
-class Client : public de::App
+class LocalServer
 {
 public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
+    /**
+     * Starts the local server.
+     *
+     * @param listenOnPort  Port on which the server listens for incoming communications.
+     */
+    LocalServer(de::duint16 listenOnPort);
     
-    void iterate();
+    /**
+     * Stops the local server.
+     */
+    ~LocalServer();
     
 private:
-    LocalServer* localServer_;
+    de::duint16 listenOnPort_;
 };
 
-#endif /* CLIENT_H */
+#endif /* LOCALSERVER_H */

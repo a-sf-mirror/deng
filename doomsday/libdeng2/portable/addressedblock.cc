@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,26 +17,18 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#include "de/addressedblock.h"
 
-#include <de/App>
+using namespace de;
 
-class LocalServer;
+AddressedBlock::AddressedBlock(const Address& addr, Size initialSize)
+    : Block(initialSize), address_(addr)
+{}
 
-/**
- * The client application.
- */
-class Client : public de::App
-{
-public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
-    
-    void iterate();
-    
-private:
-    LocalServer* localServer_;
-};
+AddressedBlock::AddressedBlock(const Address& addr, const IByteArray& other)
+    : Block(other), address_(addr)
+{}
 
-#endif /* CLIENT_H */
+AddressedBlock::AddressedBlock(const Address& addr, const IByteArray& other, Offset at, Size count)
+    : Block(other, at, count), address_(addr)
+{}

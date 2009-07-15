@@ -18,6 +18,7 @@
  */
 
 #include "client.h"
+#include "localserver.h"
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -50,19 +51,7 @@ Client::Client(const CommandLine& arguments)
     args.append("../../data/doom.pk3");
 #endif
 
-    CommandLine svArgs = args;
-#if defined(WIN32)
-    svArgs.insert(0, "dengsv.exe");
-#elif defined(MACOSX)
-    svArgs.insert(0, String::fileNamePath(args.at(0)).concatenatePath("../Resources/dengsv"));
-#else
-    svArgs.insert(0, "./dengsv");
-#endif
-    svArgs.remove(1);
-    extern char** environ;
-    svArgs.execute(environ);
-
-    //args.append("-wnd");
+    localServer_ = new LocalServer(13209);
 
     args.append("-cmd");
     args.append("net-port-control 13211; net-port-data 13212; after 30 \"net init\"; after 50 \"connect localhost:13209\"");
@@ -75,6 +64,8 @@ Client::Client(const CommandLine& arguments)
 
 Client::~Client()
 {
+    delete localServer_;
+    
     // Shutdown the engine.
     DD_Shutdown();
 }

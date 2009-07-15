@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,10 @@
 #include <de/deng.h>
 #include <de/IByteArray>
 
-#include <string>
-
 namespace de
 {
     class ISerializable;
+    class String;
     
     /**
      * Writer provides a protocol for writing network byte ordered data
@@ -52,7 +51,7 @@ namespace de
         //@}
 
         /// Write a string to the destination buffer.
-        Writer& operator << (const std::string& text);
+        Writer& operator << (const String& text);
         
         /// Writes a sequence bytes to the destination buffer. As with 
         /// strings, the length of the array is included in the data.

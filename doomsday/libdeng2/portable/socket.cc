@@ -18,7 +18,7 @@
  */
 
 #include "de/socket.h"
-#include "de/block.h"
+#include "de/addressedblock.h"
 #include "internal.h"
 #include "sdl.h"
 
@@ -69,6 +69,9 @@ void Socket::initialize()
     SDLNet_AddSocket(static_cast<SDLNet_SocketSet>(socketSet_),
         static_cast<SDLNet_GenericSocket>(socket_));
 #endif
+
+    // Incoming packets will be marked with this address.
+    peerAddress_ = peerAddress();
 }
 
 void Socket::close()
@@ -178,7 +181,7 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     }
 }
 
-Block* Socket::receive()
+AddressedBlock* Socket::receive()
 {
     if(!socket_) return NULL;
 
@@ -189,7 +192,20 @@ Block* Socket::receive()
     duint incomingSize = 0;
     readHeader(header, incomingSize);
 
-    std::auto_ptr<Block> data(new Block(incomingSize)); 
+    std::auto_ptr<AddressedBlock> data(new AddressedBlock(peerAddress_, incomingSize)); 
     receiveBytes(incomingSize, const_cast<dbyte*>(data.get()->data()));
     return data.release();
+}
+
+Address Socket::peerAddress() const
+{
+    if(socket_)
+    {
+        IPaddress* ip = SDLNet_TCP_GetPeerAddress(static_cast<TCPsocket>(socket_));
+        if(ip)
+        {
+            return internal::convertAddress(ip);
+        }                
+    }
+    throw PeerError("Socket::peerAddress", SDLNet_GetError());
 }

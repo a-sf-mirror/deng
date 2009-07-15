@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 
 #include "de/writer.h"
+#include "de/string.h"
 #include "de/byteorder.h"
 #include "de/block.h"
 #include "de/iserializable.h"
@@ -95,7 +96,7 @@ Writer& Writer::operator << (const ddouble& value)
     return *this << *reinterpret_cast<const duint64*>(&value);
 }
 
-Writer& Writer::operator << (const std::string& text)
+Writer& Writer::operator << (const String& text)
 {
     // First write the length of the text.
     duint size = text.length();

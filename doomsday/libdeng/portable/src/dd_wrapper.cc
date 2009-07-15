@@ -3,9 +3,7 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
+ *\author Copyright © 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +33,7 @@ using namespace de;
 extern "C" {
 #include "de_base.h"
 }
+
 #include "doomsday.h"
 
 void* _DECALL Z_Malloc(size_t size, int tag, void* user)

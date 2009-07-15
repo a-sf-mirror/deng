@@ -69,7 +69,7 @@ void Link::send(const IByteArray& data)
     outgoing_.post();
 }
 
-IByteArray* Link::receive()
+AddressedBlock* Link::receive()
 {
     return incoming_.get();
 }

@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,9 @@ namespace de
 	{
 		/// Convert an Address to SDL_net's IPaddress.
 		void convertAddress(const Address& address, IPaddress* ip);
+
+        /// Convert SDL_Net's IPaddress to an Address.
+        Address convertAddress(const IPaddress* ip);
 
 		/// Create an SDL surface.
         SDL_Surface* createSDLSurface(duint flags, duint width, duint height, duint bitsPerPixel);

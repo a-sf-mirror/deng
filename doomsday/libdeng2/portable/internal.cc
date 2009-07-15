@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,19 @@ namespace de
 	{
 		SDLNet_Write32(address.ip(), &ip->host);
 		SDLNet_Write16(address.port(), &ip->port);
+	}
+	
+	Address internal::convertAddress(const IPaddress* ip)
+	{
+        duint32 host;
+        SDLNet_Write32(ip->host, &host);
+        duint16 port;
+        SDLNet_Write16(ip->port, &port);
+        
+        Address address;
+        address.setIp(host);
+        address.setPort(port);
+        return address;
 	}
 
     SDL_Surface* internal::createSDLSurface(duint flags, duint width, duint height, duint bitsPerPixel)

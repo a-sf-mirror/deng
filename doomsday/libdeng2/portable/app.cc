@@ -100,11 +100,6 @@ void App::loadPlugins()
         }
     }
     
-    std::cout << "Press Enter.\n";
-    std::string t;
-    std::cin >> t;
-    fileSystem().refresh();
-    
     // Also load the specified game plugin, if there is one.
     std::string gameName = "doom";
     dint pos = commandLine_.check("-game", 1);

@@ -17,26 +17,29 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#include "localserver.h"
 
 #include <de/App>
 
-class LocalServer;
+using namespace de;
 
-/**
- * The client application.
- */
-class Client : public de::App
+LocalServer::LocalServer(duint16 listenOnPort) : listenOnPort_(listenOnPort)
 {
-public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
+    CommandLine svArgs = App::app().commandLine();
     
-    void iterate();
-    
-private:
-    LocalServer* localServer_;
-};
+#if defined(WIN32)
+    svArgs.insert(0, "dengsv.exe");
+#elif defined(MACOSX)
+    svArgs.insert(0, String::fileNamePath(svArgs.at(0)).concatenatePath("../Resources/dengsv"));
+#else
+    svArgs.insert(0, "./dengsv");
+#endif
+    svArgs.remove(1);
+    extern char** environ;
+    svArgs.execute(environ);
+}
 
-#endif /* CLIENT_H */
+LocalServer::~LocalServer()
+{
+    std::cout << "Stopping local server...\n";
+}

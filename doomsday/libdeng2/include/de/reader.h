@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,9 @@
 #include <de/deng.h>
 #include <de/IByteArray>
 
-#include <string>
-
 namespace de
 {
+    class String;
     class ISerializable;
     
     /**   
@@ -52,7 +51,7 @@ namespace de
         //@}
 
         /// Reads a string from the source buffer.
-        Reader& operator >> (std::string& text);
+        Reader& operator >> (String& text);
         
         /// Reads a sequence bytes from the source buffer. As with 
         /// strings, the length of the array is included in the data.
@@ -78,6 +77,13 @@ namespace de
         void setOffset(IByteArray::Offset offset) {
             offset_ = offset;
         }
+
+        /**
+         * Rewinds the read offset by a number of bytes.
+         *
+         * @param count  Number of bytes.
+         */
+        void rewind(dint count);
     
     private:
         const IByteArray& source_;

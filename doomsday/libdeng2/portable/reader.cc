@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 
 #include "de/reader.h"
+#include "de/string.h"
 #include "de/byteorder.h"
 #include "de/block.h"
 #include "de/iserializable.h"
@@ -93,14 +94,14 @@ Reader& Reader::operator >> (ddouble& value)
     return *this >> *reinterpret_cast<duint64*>(&value);
 }
 
-Reader& Reader::operator >> (std::string& text)
+Reader& Reader::operator >> (String& text)
 {
     duint size = 0;
     *this >> size;
 
     text.clear();
     text.reserve(size);
-    for(unsigned i = 0; i < size; ++i)
+    for(duint i = 0; i < size; ++i)
     {
         IByteArray::Byte ch = 0;
         *this >> ch;
@@ -128,4 +129,13 @@ Reader& Reader::operator >> (ISerializable& serializable)
 {
     serializable << *this;
     return *this;
+}
+
+void Reader::rewind(dint count)
+{
+    if(count > offset_)
+    {
+        throw IByteArray::OffsetError("Reader::rewind", "Rewound past beginning of source");
+    }
+    offset_ -= count;
 }

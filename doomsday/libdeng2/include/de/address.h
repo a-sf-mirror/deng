@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,11 +44,19 @@ namespace de
          * port (after a colon), it will always be used instead of
          * the @c port parameter.  When creating an address for
          * listening, set @c address to NULL.
+         *
+         * @param address  Address to resolve. E.g., "localhost" or "127.0.0.1".
+         * @param port  TCP port.
          */
         void set(const char* address, duint16 port);
 
         duint32 ip() const { return ip_; }
+        
+        void setIp(duint32 ip) { ip_ = ip; }
+        
         duint16 port() const { return port_; }
+        
+        void setPort(duint16 p) { port_ = p; }
 
     private:
         duint32 ip_;

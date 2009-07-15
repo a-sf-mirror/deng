@@ -65,7 +65,7 @@ namespace de
          * @return  Received data array, or @c NULL if nothing has been received.
          *      Caller gets ownership of the returned object.
          */
-        IByteArray* receive();
+        AddressedBlock* receive();
         
         /**
          * Checks if any incoming data has been received.

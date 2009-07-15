@@ -64,7 +64,7 @@
 namespace de 
 {
 	/* Basic types. */
-	typedef signed char			    dchar;	    ///< 8-bit signed integer.
+	typedef char	    		    dchar;	    ///< 8-bit signed integer.
 	typedef unsigned char		    dbyte;	    ///< 8-bit unsigned integer.
 	typedef unsigned char		    duchar;     ///< 8-bit unsigned integer.
 	typedef signed short int	    dint16;     ///< 16-bit signed integer.
