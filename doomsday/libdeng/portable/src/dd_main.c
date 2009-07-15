@@ -433,6 +433,12 @@ int DD_Main(void)
     // Final preparations for using the console UI.
     Con_InitUI();
 
+    // Limit the frame rate to 35 when running in dedicated mode.
+    if(isDedicated)
+    {
+        maxFrameRate = 35;
+    }
+
     // Start the game loop.
     //exitCode = DD_GameLoop();
 

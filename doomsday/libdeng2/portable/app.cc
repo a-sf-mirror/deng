@@ -30,7 +30,7 @@ using namespace de;
 App* App::singleton_ = 0;
 
 App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine), memory_(0), fs_(0), gameLib_(0)
+    : commandLine_(commandLine), memory_(0), fs_(0), gameLib_(0), runMainLoop_(true), exitCode_(0)
 {
     if(singleton_)
     {
@@ -64,12 +64,6 @@ App::App(const CommandLine& commandLine)
     // Now we can proceed with the members.
     fs_ = new FS();
     fs_->refresh();
-    std::cout << "Press Enter.\n";
-    std::string s;
-    std::cin >> s;
-    
-    std::cout << "\n\nREDOING REFRESH\n\n";
-    fs_->refresh();
     
     // Load the basic plugins.
     loadPlugins();
@@ -77,8 +71,6 @@ App::App(const CommandLine& commandLine)
 
 App::~App()
 {
-    std::cout << "~App\n";
-
     // Deleting the file system will unload everything owned by the files, including 
     // all plugin libraries.
     delete fs_;
@@ -163,6 +155,24 @@ void App::unloadPlugins()
             std::cout << "App::unloadPlugins() unloaded " << libFile.path() << "\n";
         }
     }
+}
+
+dint App::mainLoop()
+{
+    // Now running the main loop.
+    runMainLoop_ = true;
+    
+    while(runMainLoop_)
+    {
+        iterate();
+    }
+    
+    return exitCode_;
+}
+
+void App::stop()
+{
+    runMainLoop_ = false;
 }
 
 App& App::app()

@@ -31,7 +31,7 @@ public:
     Client(const de::CommandLine& commandLine);
     ~Client();
     
-    de::dint mainLoop();
+    void iterate();
     
 private:
 };

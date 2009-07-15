@@ -75,14 +75,12 @@ Client::Client(const CommandLine& arguments)
 
 Client::~Client()
 {
-    std::cout << "~Client\n";
-
     // Shutdown the engine.
     DD_Shutdown();
 }
 
-dint Client::mainLoop()
+void Client::iterate()
 {
-    // Run the main loop.
-    return DD_GameLoop();
+    // libdeng main loop tasks.
+    DD_GameLoop();
 }

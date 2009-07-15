@@ -210,14 +210,6 @@ void Sys_HideMouse(void)
 #endif
 }
 
-/**
- * Called when Doomsday should quit (will be deferred until convienent).
- */
-void Sys_Quit(void)
-{
-    appShutdown = true;
-}
-
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
 #ifdef WIN32

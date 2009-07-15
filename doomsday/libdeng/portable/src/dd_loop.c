@@ -77,7 +77,6 @@ void            DD_RunTics(void);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-boolean appShutdown = false; // Set to true when we should exit (normally).
 #ifdef WIN32
 boolean suspendMsgPump = false; // Set to true to disable checking windows msgs.
 #endif
@@ -122,31 +121,26 @@ void DD_RegisterLoop(void)
  */
 int DD_GameLoop(void)
 {
-    int                 exitCode = 0;
+/*    int                 exitCode = 0;
 #ifdef WIN32
     MSG                 msg;
 #endif
-
-    // Limit the frame rate to 35 when running in dedicated mode.
-    if(isDedicated)
+*/
+    //while(!appShutdown)
     {
-        maxFrameRate = 35;
-    }
-
-    while(!appShutdown)
-    {
+    #if 0
 #ifdef WIN32
-        /**
-         * Start by checking Windows messages.
-         * \note Must be in the same thread as that which registered the
-         *       window it is handling messages for - DJS.
-         */
+        /// Start by checking Windows messages.
+        /// note Must be in the same thread as that which registered the
+        ///   window it is handling messages for - DJS.
+        ///
         while(!suspendMsgPump &&
               PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) > 0)
         {
             if(msg.message == WM_QUIT)
             {
-                appShutdown = true;
+                //appShutdown = true;
+                
                 suspendMsgPump = true;
                 exitCode = msg.wParam;
             }
@@ -157,8 +151,9 @@ int DD_GameLoop(void)
             }
         }
 
-        if(appShutdown)
-            continue;
+        /*if(appShutdown)
+            continue;*/
+#endif
 #endif
 
         // Frame syncronous I/O operations.
@@ -183,7 +178,7 @@ int DD_GameLoop(void)
         DD_CheckTimeDemo();
     }
 
-    return exitCode;
+    //return exitCode;
 }
 
 /**

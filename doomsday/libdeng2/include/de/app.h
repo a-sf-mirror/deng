@@ -38,7 +38,8 @@ namespace de
     class Zone;
     
     /**
-     * The application. 
+     * The application. This is an abstract class. Subclasses will need to define
+     * the iterate() method that performs tasks while the main loop is running.
      *
      * @note This is a singleton class. Only one instance per process is allowed.
      *
@@ -96,18 +97,54 @@ namespace de
         bool hasGame() const { return gameLib_ != 0; }
         
         /**
-         * Returns the amount of time since the initializion of the App.
+         * Returns the amount of time since the creation of the App.
          */
         Time::Delta uptime() const {
             return initializedAt_.since();
         }
                 
         /**
-         * Main loop of the application. To be defined by a derived class.
+         * Main loop of the application.
          *
-         * @return Zero on successful exit from the main loop. Nonzero on error.
+         * @return  Application exit code.
+         *
+         * @see iterate(), setExitCode()
          */
-        virtual dint mainLoop() = 0;
+        virtual dint mainLoop();
+        
+        /**
+         * Called on every iteration of the main loop.
+         */
+        virtual void iterate() = 0;
+        
+        /** 
+         * Determines whether the main loop should be running.
+         *
+         * @return @c true if main loop running.
+         */
+        bool runningMainLoop() const { return runMainLoop_; }
+        
+        /**
+         * Sets the code to be returned from the deng_Main() function to the
+         * operating system upon quitting.
+         *
+         * @param exitCode  Exit code.
+         */
+        virtual void setExitCode(dint exitCode) { exitCode_ = exitCode; }
+
+        /**
+         * Returns the current exit code.
+         *
+         * @return  Exit code for operating system.
+         *
+         * @see setExitCode()
+         */
+        dint exitCode() const { return exitCode_; }
+        
+        /**
+         * Stops the main loop.
+         */
+        virtual void stop();
         
     public:
         /**
@@ -143,8 +180,14 @@ namespace de
         /// The file system.
         FS* fs_;
 
-        // The game library.
+        /// The game library.
         LibraryFile* gameLib_;
+        
+        /// @c true while the main loop is running.
+        bool runMainLoop_;
+        
+        /// Exit code passed to the operating system when quitting.
+        dint exitCode_;
         
         static App* singleton_;
     };

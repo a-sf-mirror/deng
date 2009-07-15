@@ -43,33 +43,18 @@ Server::Server(const CommandLine& arguments)
     args.append("-userdir");
     args.append("serverdir");
 
-    Time now;
-    std::cout << "now: " << now.asText() << "\n";
-    now -= 5.5;
-    std::cout << "then: " << now.asText() << "\n";
-    now += 10.9;
-    std::cout << "later: " << now.asText() << "\n";
-    
-    for(;;)//int i = 0; i < 20; ++i)
-    {
-        std::cout << uptime() << " ... " << Date(Time()).asText() << "\n";
-        Time::Delta(0.05).sleep();
-    }
-    
     // Initialize the engine.
     DD_Entry(0, NULL);
 }
 
 Server::~Server()
 {
-    std::cout << "~Server\n";
-
     // Shutdown the engine.
     DD_Shutdown();
 }
 
-dint Server::mainLoop()
+void Server::iterate()
 {
-    // Run the main loop.
-    return DD_GameLoop();
+    // libdeng main loop tasks.
+    DD_GameLoop();
 }

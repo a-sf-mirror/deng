@@ -24,7 +24,7 @@
  */
 
 /**
- * dd_zone.cc: Memory Zone Wrappers
+ * dd_wrapper.cc: libdeng2 Wrappers
  */
 
 #include <de/App>
@@ -100,4 +100,9 @@ int Z_GetTag(void* ptr)
 size_t Z_FreeMemory(void)
 {
     return App::memory().availableMemory();
+}
+
+void Sys_Quit(void)
+{
+    App::app().stop();
 }

@@ -31,7 +31,7 @@ public:
     Server(const de::CommandLine& commandLine);
     ~Server();
     
-    de::dint mainLoop();
+    void iterate();
     
 private:
 };
