@@ -43,8 +43,7 @@ Server::Server(const CommandLine& arguments)
     std::string param;
     if(args.getParameter("--port", param))
     {
-        std::istringstream is(param);
-        is >> port;
+        std::istringstream(param) >> port;
     }
     
     std::cout << "Server uses port " << port << "\n";
@@ -99,9 +98,7 @@ void Server::tendClients()
             std::auto_ptr<Packet> packet(protocol_.interpret(*message));
             if(packet.get())
             {
-                // Attribute the packet to the sender.
                 packet.get()->setFrom(message->address());
-                
                 processPacket(packet.get());
             }            
         }

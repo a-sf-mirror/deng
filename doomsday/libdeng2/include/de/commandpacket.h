@@ -22,6 +22,7 @@
 
 #include <de/Packet>
 #include <de/String>
+#include <de/ArrayValue>
 
 #include <list>
 
@@ -38,10 +39,7 @@ namespace de
      * @ingroup net
      */
     class PUBLIC_API CommandPacket : public Packet
-    {
-    public:
-        typedef std::list<Value*> Arguments;
-        
+    {    
     public:
         CommandPacket(const String& cmd = "");
         ~CommandPacket();
@@ -50,9 +48,9 @@ namespace de
         
         void setCommand(const String& c) { command_ = c; }
 
-        const Arguments& arguments() const { return arguments_; }
+        const ArrayValue& arguments() const { return arguments_; }
         
-        Arguments& arguments() { return arguments_; }
+        ArrayValue& arguments() { return arguments_; }
         
         // Implements ISerializable.
         void operator >> (Writer& to) const;
@@ -65,8 +63,8 @@ namespace de
     private:
         String command_;
         
-        /// List of arguments for the command (owned by this object).
-        Arguments arguments_;
+        /// Command arguments.
+        ArrayValue arguments_;
     };
 } 
 

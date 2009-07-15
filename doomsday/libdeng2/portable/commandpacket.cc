@@ -29,42 +29,18 @@ CommandPacket::CommandPacket(const String& cmd) : Packet(COMMAND_PACKET_TYPE), c
 {}
 
 CommandPacket::~CommandPacket()
-{
-    // Delete the argument values.
-    for(Arguments::iterator i = arguments_.begin(); i != arguments_.end(); ++i)
-    {
-        delete *i;
-    }
-}
+{}
 
 void CommandPacket::operator >> (Writer& to) const
 {
     Packet::operator >> (to);
-    
-    // The command itself.
-    to << command_;
-    
-    // Arguments.
-    to << duint(arguments_.size());
-    for(Arguments::const_iterator i = arguments_.begin(); i != arguments_.end(); ++i)
-    {
-        to << **i;
-    }
+    to << command_ << arguments_;
 }
 
 void CommandPacket::operator << (Reader& from)
 {
     Packet::operator << (from);
-    
-    // The command.
-    from >> command_;
-    
-    duint count = 0;
-    from >> count;
-    while(count-- > 0)
-    {
-        arguments_.push_back(Value::constructFrom(from));
-    }
+    from >> command_ >> arguments_;
 }
 
 Packet* CommandPacket::fromBlock(const Block& block)
