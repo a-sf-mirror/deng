@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ void Waitable::wait()
     }
 }
 
-void Waitable::wait(const Time& timeOut)
+void Waitable::wait(const Time::Delta& timeOut)
 {
     int result = SDL_SemWaitTimeout(static_cast<SDL_sem*>(semaphore_),
                                     timeOut.asMilliSeconds());

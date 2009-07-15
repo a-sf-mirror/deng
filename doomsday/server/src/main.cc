@@ -20,13 +20,6 @@
 #include <dengmain.h>
 #include "server.h"
 
-#include <de/ListenSocket>
-#include <de/Socket>
-#include <de/Time>
-#include <de/Link>
-#include <de/Block>
-#include <de/Writer>
-
 using namespace de;
 
 int deng_Main(int argc, char** argv)
@@ -34,7 +27,7 @@ int deng_Main(int argc, char** argv)
     try
     {
         Server server(CommandLine(argc, argv));
-        
+
         /*
         ListenSocket entry(8080);
         Socket* client = 0;

@@ -20,6 +20,7 @@
 #ifndef LIBDENG2_DIRECTORYFEED_H
 #define LIBDENG2_DIRECTORYFEED_H
 
+#include <de/File>
 #include <de/Feed>
 #include <de/String>
 
@@ -36,6 +37,9 @@ namespace de
         /// The native directory was not found. @ingroup errors
         DEFINE_ERROR(NotFoundError);
         
+        /// Failed attempt to find out the status of a file. @ingroup errors
+        DEFINE_ERROR(StatusError);
+        
         /// An error occurred changing the working directory. @ingroup errors
         DEFINE_ERROR(WorkingDirError);
         
@@ -50,6 +54,7 @@ namespace de
         virtual ~DirectoryFeed();
         
         void populate(Folder& folder);
+
         bool prune(File& file) const;
 
     public:
@@ -59,6 +64,24 @@ namespace de
          * @param nativePath  New path to use as the working directory.
          */
         static void changeWorkingDir(const std::string& nativePath);
+
+        /**
+         * Determines whether a native path exists.
+         *
+         * @param nativePath  Path to check.
+         *
+         * @return @c true if the path exists, @c false otherwise.
+         */
+        static bool exists(const std::string& nativePath);
+
+        /**
+         * Determines the status of a file in the directory.
+         *
+         * @param nativePath  Path of the file.
+         *
+         * @return  Status of the file.
+         */
+        static File::Status fileStatus(const std::string& nativePath);
 
     protected:
         void populateSubFolder(Folder& folder, const std::string& entryName);

@@ -41,6 +41,19 @@ Server::Server(const CommandLine& arguments)
     args.append("net-port-control 13209; net-port-data 13210; after 30 \"net init\"; after 40 \"net server start\"");
     args.append("-userdir");
     args.append("serverdir");
+
+    Time now;
+    std::cout << "now: " << now.asText() << "\n";
+    now -= 5.5;
+    std::cout << "then: " << now.asText() << "\n";
+    now += 10.9;
+    std::cout << "later: " << now.asText() << "\n";
+    
+    for(;;)//int i = 0; i < 20; ++i)
+    {
+        std::cout << uptime() << "\n";
+        Time::Delta(0.05).sleep();
+    }
     
     // Initialize the engine.
     DD_Entry(0, NULL);

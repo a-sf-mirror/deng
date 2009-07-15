@@ -17,33 +17,36 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/nativefile.h"
+#ifndef LIBDENG2_DATE_H
+#define LIBDENG2_DATE_H
 
-using namespace de;
+#include <de/Time>
 
-NativeFile::NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode)
-    : File(name), nativePath_(nativePath), mode_(mode), size_(0)
+namespace de
 {
-    std::cout << "NativeFile: " << name << ": " << nativePath << "\n";
+    /**
+     * Information about a date.
+     */
+    class Date
+    {
+    public:
+        Date(const Time& time);
+        
+        /**
+         * Forms a textual representation of the date.
+         */
+        std::string asText() const;
+        
+        dint microSeconds;
+        dint seconds;
+        dint minutes;
+        dint hours;
+        dint month;
+        dint year;
+        dint weekDay;
+        dint dayOfMonth;
+        dint dayOfYear;
+    };
 }
 
-NativeFile::~NativeFile()
-{
-    deindex();
-}
-
-void NativeFile::setSize(Size newSize)
-{
-    size_ = newSize;
-}
-
-NativeFile::Size NativeFile::size() const
-{
-    return size_;
-}
-
-void NativeFile::get(Offset at, Byte* values, Size count) const
-{}
-
-void NativeFile::set(Offset at, const Byte* values, Size count)
-{}
+#endif /* LIBDENG2_DATE_H */

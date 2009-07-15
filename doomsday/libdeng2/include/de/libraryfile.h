@@ -84,9 +84,6 @@ namespace de
         static bool recognize(const File& file);
         
     private:
-        /// Shared library binary file.
-        File* source_;
-        
         Library* library_;
     };
 }

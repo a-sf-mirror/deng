@@ -22,9 +22,11 @@
 #include "de/nativefile.h"
 #include "de/string.h"
 #include "de/fs.h"
+#include "de/date.h"
 
 #ifdef UNIX
 #   include <sys/types.h>
+#   include <sys/stat.h>
 #   include <dirent.h>
 #   include <unistd.h>
 #   include <string.h>
@@ -54,6 +56,7 @@ void DirectoryFeed::populate(Folder& folder)
     {
         throw NotFoundError("DirectoryFeed::populate", "Path '" + nativePath_ + "' not found");
     }
+    File* f;
     struct dirent* entry;
     while((entry = readdir(dir)) != NULL)   
     {
@@ -134,12 +137,17 @@ void DirectoryFeed::populateFile(Folder& folder, const std::string& entryName)
 {
     if(folder.has(entryName))
     {
-        // Already has an entry for this, skip it.
+        // Already has an entry for this, skip it (wasn't pruned so it's OK).
         return;
     }
+    
+    String entryPath = nativePath_.concatenateNativePath(entryName);
 
-    File* file = folder.fileSystem().interpret(new NativeFile(entryName, 
-        nativePath_.concatenateNativePath(entryName)));
+    // Protect against errors.
+    std::auto_ptr<NativeFile> nativeFile(new NativeFile(entryName, entryPath));
+
+    File* file = folder.fileSystem().interpret(nativeFile.get());
+    file->setStatus(fileStatus(entryPath));
 
     // We will decide on pruning this.
     file->setOriginFeed(this);
@@ -148,28 +156,82 @@ void DirectoryFeed::populateFile(Folder& folder, const std::string& entryName)
         
     // Include files the main index.
     folder.fileSystem().index(*file);
+    
+    // We're in the clear.
+    nativeFile.release();
 }
 
 bool DirectoryFeed::prune(File& file) const
 {
-    /** 
-     * @todo Rules for pruning:
-     * - A NativeFile will be pruned if it's out of sync with the hard drive version (size, mod time).
-     * - A Folder will be pruned if the corresponding directory does not exist.
-     * - Other types of Files will not be pruned.
-     */
+    /// Rules for pruning:
+    /// - A file sourced by NativeFile will be pruned if it's out of sync with the hard 
+    ///   drive version (size, time of last modification).
+    NativeFile* nativeFile = dynamic_cast<NativeFile*>(file.source());
+    if(nativeFile)
+    {
+        try
+        {
+            if(fileStatus(nativeFile->nativePath()) != nativeFile->status())
+            {
+                // It's not up to date.
+                std::cout << nativeFile->nativePath() << ": status has changed, pruning!\n";
+                return true;
+            }
+        }
+        catch(const StatusError&)
+        {
+            // Get rid of it.
+            return true;
+        }
+    }
     
-    // Everything must go!
-    return true;
+    /// - A Folder will be pruned if the corresponding directory does not exist (providing
+    ///   a DirectoryFeed is the sole feed in the folder).
+    Folder* subFolder = dynamic_cast<Folder*>(&file);
+    if(subFolder)
+    {
+        if(subFolder->feeds().size() == 1)
+        {
+            DirectoryFeed* dirFeed = dynamic_cast<DirectoryFeed*>(subFolder->feeds().front());
+            if(dirFeed && !exists(dirFeed->nativePath_))
+            {
+                std::cout << nativePath_ << " no longer there, pruning!\n";
+                return true;
+            }
+        }
+    }
+
+    /// - Other types of Files will not be pruned.
+    return false;
 }
 
 void DirectoryFeed::changeWorkingDir(const std::string& nativePath)
 {
-#ifdef UNIX
     if(chdir(nativePath.c_str()))
     {
         throw WorkingDirError("DirectoryFeed::changeWorkingDir",
             nativePath + ": " + strerror(errno));
     }
+}
+
+bool DirectoryFeed::exists(const std::string& nativePath)
+{
+#ifdef UNIX
+    std::cout << "exists? " << nativePath << "\n";
+    struct stat s;
+    return !stat(nativePath.c_str(), &s);
+#endif
+}
+
+File::Status DirectoryFeed::fileStatus(const std::string& nativePath)
+{
+#ifdef UNIX
+    // Get file status information.
+    struct stat s;
+    if(!stat(nativePath.c_str(), &s))
+    {                                                    
+        return File::Status(s.st_size, s.st_mtime);
+    }
+    throw StatusError("DirectoryFeed::fileStatus", nativePath + ": " + strerror(errno));
 #endif
 }

@@ -38,7 +38,7 @@ namespace de
         DEFINE_FLAG(WRITE, 0);
         DEFINE_FLAG(TRUNCATE, 1);
         DEFINE_FINAL_FLAG(APPEND, 2, Mode);
-        
+
     public:
         /**
          * Constructs a NativeFile that accesses a file in the native file system.

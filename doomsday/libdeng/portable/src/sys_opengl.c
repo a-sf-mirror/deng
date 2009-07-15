@@ -728,11 +728,13 @@ void Sys_PrintGLExtensions(void)
 void Sys_CheckGLError(void)
 {
 #ifdef _DEBUG
-    GLenum  error;
-
-    if((error = glGetError()) != GL_NO_ERROR)
+    if(!isDedicated)
     {
-        Con_Error("OpenGL error: %i\n", error);
+        GLenum  error;
+        if((error = glGetError()) != GL_NO_ERROR)
+        {
+            Con_Error("OpenGL error: %i\n", error);
+        }
     }
 #endif
 }

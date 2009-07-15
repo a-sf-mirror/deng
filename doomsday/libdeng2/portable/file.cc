@@ -20,14 +20,25 @@
 #include "de/file.h"
 #include "de/app.h"
 #include "de/fs.h"
+#include "de/folder.h"
 
 using namespace de;
 
 File::File(const std::string& fileName)
-    : parent_(0), originFeed_(0), name_(fileName)
+    : parent_(0), source_(this), originFeed_(0), name_(fileName)
 {}
 
 File::~File()
+{
+    if(parent_)
+    {
+        // Remove from parent folder.
+        parent_->remove(this);
+    }
+    deindex();
+}
+
+void File::deindex()
 {
     fileSystem().deindex(*this);
 }
@@ -35,6 +46,14 @@ File::~File()
 FS& File::fileSystem()
 {
     return App::fileSystem();
+}
+
+void File::setOriginFeed(Feed* feed)
+{
+    // Folders should never have an origin feed.
+    assert(dynamic_cast<Folder*>(this) == NULL);
+
+    originFeed_ = feed;
 }
 
 const String File::path() const
@@ -47,16 +66,51 @@ const String File::path() const
     return "/" + thePath;
 }
         
-const File& File::source() const
+void File::setSource(File* source)
 {
-    return *this;
+    source_ = source;
+}        
+        
+const File* File::source() const
+{
+    if(source_ != this)
+    {
+        return source_->source();
+    }
+    return const_cast<const File*>(source_);
 }
 
-File& File::source()
+File* File::source()
 {
-    return *this;
+    if(source_ != this)
+    {
+        return source_->source();
+    }
+    return source_;
 }
-        
+
+void File::setStatus(const Status& status)
+{
+    // The source file status is the official one.
+    if(this != source_)
+    {
+        source()->setStatus(status);
+    }
+    else
+    {
+        status_ = status;
+    }
+}
+
+const File::Status& File::status() const 
+{
+    if(this != source_)
+    {
+        return source_->status();
+    }
+    return status_;
+}
+
 File::Size File::size() const
 {
     return 0;

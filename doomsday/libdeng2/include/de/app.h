@@ -96,12 +96,19 @@ namespace de
         bool hasGame() const { return gameLib_ != 0; }
         
         /**
+         * Returns the amount of time since the initializion of the App.
+         */
+        Time::Delta uptime() const {
+            return initializedAt_.since();
+        }
+                
+        /**
          * Main loop of the application. To be defined by a derived class.
          *
          * @return Zero on successful exit from the main loop. Nonzero on error.
          */
         virtual dint mainLoop() = 0;
-
+        
     public:
         /**
          * Returns the singleton App instance. With this the App can be accessed
@@ -123,9 +130,12 @@ namespace de
          * Returns the memory zone.
          */
         static Zone& memory();
-        
+
     private:
         CommandLine commandLine_;
+        
+        /// Time when the App was initialized.
+        Time initializedAt_;
         
         /// The memory zone.
         Zone* memory_;

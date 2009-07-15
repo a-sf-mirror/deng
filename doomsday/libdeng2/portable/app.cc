@@ -64,6 +64,12 @@ App::App(const CommandLine& commandLine)
     // Now we can proceed with the members.
     fs_ = new FS();
     fs_->refresh();
+    std::cout << "Press Enter.\n";
+    std::string s;
+    std::cin >> s;
+    
+    std::cout << "\n\nREDOING REFRESH\n\n";
+    fs_->refresh();
     
     // Load the basic plugins.
     loadPlugins();
@@ -101,6 +107,11 @@ void App::loadPlugins()
             std::cout << "App::loadPlugins() loaded " << libFile.path() << "\n";
         }
     }
+    
+    std::cout << "Press Enter.\n";
+    std::string t;
+    std::cin >> t;
+    fileSystem().refresh();
     
     // Also load the specified game plugin, if there is one.
     std::string gameName = "doom";

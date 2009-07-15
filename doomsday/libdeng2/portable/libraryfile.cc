@@ -24,23 +24,24 @@
 using namespace de;
 
 LibraryFile::LibraryFile(File* source)
-    : File(source->name()), source_(source), library_(0)
+    : File(source->name()), library_(0)
 {
-    assert(source_ != 0);
+    assert(source != 0);
+    setSource(source);
     
     std::cout << "LibraryFile: " << name() << ": " << source->path() << "\n";
 }
 
 LibraryFile::~LibraryFile()
 {
+    deindex();
+    
     delete library_;
-    delete source_;
+    delete source();
 }
 
 Library& LibraryFile::library()
 {
-    assert(source_ != 0);
-    
     if(library_)
     {
         return *library_;
@@ -49,10 +50,10 @@ Library& LibraryFile::library()
     // Currently we only load shared libraries directly from native files.
     // Other kinds of files would require a temporary native file.
     /// @todo A method for File for making a NativeFile out of any File.
-    NativeFile* native = dynamic_cast<NativeFile*>(source_);
+    NativeFile* native = dynamic_cast<NativeFile*>(source());
     if(!native)
     {
-        throw UnsupportedSourceError("LibraryFile::library", source_->path() + 
+        throw UnsupportedSourceError("LibraryFile::library", source()->path() + 
             ": can only load from NativeFile");
     }
     

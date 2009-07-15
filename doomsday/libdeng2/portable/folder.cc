@@ -29,6 +29,8 @@ Folder::Folder(const std::string& name)
 
 Folder::~Folder()
 {
+    deindex();
+    
     // Empty the contents.
     clear();
     
@@ -41,9 +43,12 @@ Folder::~Folder()
 
 void Folder::clear()
 {
+    if(contents_.empty()) return;
+    
     // Destroy all the file objects.
     for(Contents::iterator i = contents_.begin(); i != contents_.end(); ++i)
     {
+        i->second->setParent(NULL);
         delete i->second;
     }
     contents_.clear();

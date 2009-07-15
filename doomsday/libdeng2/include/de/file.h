@@ -22,6 +22,7 @@
 
 #include <de/IByteArray>
 #include <de/String>
+#include <de/Time>
 
 namespace de
 {
@@ -32,12 +33,39 @@ namespace de
     /**
      * Base class for all files stored in the file system.
      * 
-     * Note that folders are also files.
+     * @note Subclasses must call deindex() in their destructors so that
+     *       the instances indexed under the subclasses' type are removed
+     *       from the index also.
      *
      * @ingroup fs
      */
     class PUBLIC_API File : public IByteArray
     {
+    public:
+        /**
+         * Record of a file's status.
+         */
+        class Status
+        {
+        public:
+            Status(dsize s = 0, const Time& modTime = Time()) 
+                : size_(s), modifiedAt_(modTime) {}
+            
+            dsize size() const { return size_; }
+            
+            const Time& modifiedAt() const { return modifiedAt_; }
+            
+            bool operator == (const Status& s) const {
+                return size_ == s.size_ && modifiedAt_ == s.modifiedAt_;
+            }
+            
+            bool operator != (const Status& s) const { return !(*this == s); }
+            
+        private:
+            dsize size_;
+            Time modifiedAt_;            
+        };
+        
     public:
         /// An attempt was made to write to a read-only file.  @ingroup errors
         DEFINE_ERROR(ReadOnlyError);
@@ -45,6 +73,14 @@ namespace de
     public:
         File(const std::string& name = "");
         
+        /**
+         * When destroyed, a file is automatically removed from its parent folder 
+         * and deindexed from the file system.
+         *
+         * @note  Subclasses must call deindex() in their destructors so that
+         *      the instances indexed under the subclasses' type are removed
+         *      from the index also.
+         */
         virtual ~File();
 
         /// Returns a reference to the application's file system.
@@ -68,21 +104,56 @@ namespace de
         /**
          * Sets the origin Feed of the File. The origin feed is the feed that is able
          * to singlehandedly decide whether the File needs to be pruned. Typically
-         * this is the Feed that generated the File.
+         * this is the Feed that generated the File. 
+         *
+         * @note  Folder instances should not have an origin feed as the folder may
+         *      be shared by many feeds.
          *
          * @param feed  The origin feed.
          */ 
-        void setOriginFeed(Feed* feed) { originFeed_ = feed; }
+        void setOriginFeed(Feed* feed);
         
         /**
          * Returns the origin Feed of the File. @see setOriginFeed()
          */
         Feed* originFeed() const { return originFeed_; }
         
-        virtual const File& source() const;
+        /**
+         * Sets the source file of this file. The source is where this file is getting
+         * its data from. File interpreters use this to access their uninterpreted data.
+         * By default all files use themselves as the source, so there is always a
+         * valid source for every file.
+         *
+         * @param source  Source file.
+         */ 
+        void setSource(File* source);
         
-        virtual File& source();
-                
+        /**
+         * Returns the source file. @see setSource()
+         *
+         * @return  Source file. Always returns a valid pointer.
+         */
+        const File* source() const;
+        
+        /**
+         * Returns the source file. @see setSource()
+         *
+         * @return  Source file. Always returns a valid pointer.
+         */
+        File* source();
+        
+        /**
+         * Updates the status of the file.
+         *
+         * @param status  New status.
+         */
+        void setStatus(const Status& status);
+
+        /**
+         * Returns the status of the file.
+         */
+        const Status& status() const;
+                        
         /**
          * Forms the complete path of this file object.
          *
@@ -90,6 +161,11 @@ namespace de
          *      intended for de::FS.
          */
         const String path() const;
+
+        /**
+         * Remove this file from its file system's index.
+         */
+        void deindex();
         
         Size size() const;
 		void get(Offset at, Byte* values, Size count) const;
@@ -99,12 +175,18 @@ namespace de
         /// The parent folder.
         Folder* parent_;
         
+        /// The source file (NULL for non-interpreted files).
+        File* source_;
+                
         /// Feed that generated the file. This feed is called upon when the file needs 
         /// to be pruned. May also be NULL.
         Feed* originFeed_;
         
         /// Name of the file.
         String name_;
+        
+        /// Status of the file.
+        Status status_;
     }; 
 }
 

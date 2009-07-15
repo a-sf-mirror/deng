@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,10 @@
 #define LIBDENG2_WAITABLE_H
 
 #include <de/deng.h>
+#include <de/Time>
 
 namespace de
 {
-    class Time;
-
     /**
      * Waitable implements a semaphore, which allows creating resources
      * that can be waited on.
@@ -48,7 +47,7 @@ namespace de
 
         /// Wait for the specified period of time to secure the
         /// resource.  If timeout occurs, an exception is thrown.
-        void wait(const Time& timeOut);
+        void wait(const Time::Delta& timeOut);
         
         /// Mark the resource as available by incrementing the
         /// semaphore value.
