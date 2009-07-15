@@ -60,6 +60,6 @@ std::string Date::asText() const
         setw(2) << hours << ":" << 
         setw(2) << minutes << ":" << 
         setw(2) << seconds << "." << 
-        setw(2) << microSeconds/1000;
+        setw(2) << microSeconds/10000;
     return os.str();
 }
