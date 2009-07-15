@@ -64,7 +64,7 @@ void Waitable::wait()
 void Waitable::wait(const Time::Delta& timeOut)
 {
     int result = SDL_SemWaitTimeout(static_cast<SDL_sem*>(semaphore_),
-                                    timeOut.asMilliSeconds());
+                                    duint32(timeOut.asMilliSeconds()));
 
     if(result == SDL_MUTEX_TIMEDOUT)
     {

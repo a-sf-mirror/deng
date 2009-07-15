@@ -18,6 +18,7 @@
  */
 
 #include "server.h"
+#include <de/Date>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -51,7 +52,7 @@ Server::Server(const CommandLine& arguments)
     
     for(;;)//int i = 0; i < 20; ++i)
     {
-        std::cout << uptime() << "\n";
+        std::cout << uptime() << " ... " << Date(Time()).asText() << "\n";
         Time::Delta(0.05).sleep();
     }
     

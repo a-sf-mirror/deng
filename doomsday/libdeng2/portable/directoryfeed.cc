@@ -24,17 +24,19 @@
 #include "de/fs.h"
 #include "de/date.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <cstring>
+
 #ifdef UNIX
-#   include <sys/types.h>
-#   include <sys/stat.h>
 #   include <dirent.h>
 #   include <unistd.h>
-#   include <string.h>
-#   include <errno.h>
 #endif
 
 #ifdef WIN32
 #   include <io.h>
+#   include <direct.h>
 #endif
 
 using namespace de;
@@ -149,6 +151,8 @@ void DirectoryFeed::populateFile(Folder& folder, const std::string& entryName)
     File* file = folder.fileSystem().interpret(nativeFile.get());
     file->setStatus(fileStatus(entryPath));
 
+    std::cout << entryPath << ": " << Date(file->status().modifiedAt()).asText() << "\n";
+
     // We will decide on pruning this.
     file->setOriginFeed(this);
     
@@ -207,19 +211,33 @@ bool DirectoryFeed::prune(File& file) const
 
 void DirectoryFeed::changeWorkingDir(const std::string& nativePath)
 {
+#ifdef UNIX
     if(chdir(nativePath.c_str()))
     {
         throw WorkingDirError("DirectoryFeed::changeWorkingDir",
             nativePath + ": " + strerror(errno));
     }
+#endif
+
+#ifdef WIN32
+    if(_chdir(nativePath.c_str()))
+    {
+        throw WorkingDirError("DirectoryFeed::changeWorkingDir",
+            nativePath + ": " + strerror(errno));
+    }
+#endif
 }
 
 bool DirectoryFeed::exists(const std::string& nativePath)
 {
-#ifdef UNIX
     std::cout << "exists? " << nativePath << "\n";
+#ifdef UNIX
     struct stat s;
     return !stat(nativePath.c_str(), &s);
+#endif
+
+#ifdef WIN32
+    return !_access_s(nativePath.c_str(), 0);
 #endif
 }
 
@@ -230,6 +248,15 @@ File::Status DirectoryFeed::fileStatus(const std::string& nativePath)
     struct stat s;
     if(!stat(nativePath.c_str(), &s))
     {                                                    
+        return File::Status(s.st_size, s.st_mtime);
+    }
+    throw StatusError("DirectoryFeed::fileStatus", nativePath + ": " + strerror(errno));
+#endif
+
+#ifdef WIN32
+    struct _stat s;
+    if(!_stat(nativePath.c_str(), &s))
+    {
         return File::Status(s.st_size, s.st_mtime);
     }
     throw StatusError("DirectoryFeed::fileStatus", nativePath + ": " + strerror(errno));

@@ -38,7 +38,7 @@ namespace de
         /**
          * The difference between to points of time.
          */ 
-        class Delta
+        class PUBLIC_API Delta
         {
         public:
             /**
@@ -87,9 +87,7 @@ namespace de
          */
         Time();
         
-#ifdef UNIX
         Time(const time_t& t, dint m = 0) : time_(t), micro_(m) {}
-#endif
 
         bool operator < (const Time& t) const;
 
@@ -166,10 +164,8 @@ namespace de
         std::string asText() const;
 
     private:
-#ifdef UNIX
         time_t time_;
         dint micro_;
-#endif
 
         friend class Date;
     };

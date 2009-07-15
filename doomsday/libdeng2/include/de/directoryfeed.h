@@ -76,6 +76,8 @@ namespace de
 
         /**
          * Determines the status of a file in the directory.
+         * StatusError is thrown if the file status cannot be determined
+         * due to any reason.
          *
          * @param nativePath  Path of the file.
          *

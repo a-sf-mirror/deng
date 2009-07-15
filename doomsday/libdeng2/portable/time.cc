@@ -25,8 +25,11 @@
 #include <iomanip>
 
 #ifdef UNIX
-#   include <ctime>
 #   include <sys/time.h>
+#endif
+
+#ifdef WIN32
+#   include <sys/timeb.h>
 #endif
 
 using namespace de;
@@ -48,7 +51,7 @@ Time::Delta Time::Delta::operator - (const ddouble& d) const
 
 void Time::Delta::sleep() const
 {
-    SDL_Delay(asMilliSeconds());
+    SDL_Delay(duint32(asMilliSeconds()));
 }
 
 Time::Time() 
@@ -59,24 +62,27 @@ Time::Time()
     time_ = tv.tv_sec;
     micro_ = tv.tv_usec;
 #endif
+
+#ifdef WIN32
+    struct __timeb64 tb;
+    _ftime64(&tb);
+    time_ = tb.time;
+    micro_ = tb.millitm * 1000;
+#endif
 }
 
 bool Time::operator < (const Time& t) const
 {
-#ifdef UNIX
     if(time_ > t.time_)
     {
         return false;
     }
     return time_ < t.time_ || micro_ < t.micro_;
-#endif
 }
 
 bool Time::operator == (const Time& t) const
 {
-#ifdef UNIX
     return time_ == t.time_ && micro_ == t.micro_;
-#endif
 }
 
 Time Time::operator + (const Delta& delta) const
@@ -88,7 +94,6 @@ Time Time::operator + (const Delta& delta) const
 
 Time& Time::operator += (const Delta& delta)
 {
-#ifdef UNIX
     ddouble amount = std::fabs(delta);
     ddouble fullSeconds = std::floor(amount);
     ddouble fraction = amount - fullSeconds;
@@ -96,9 +101,9 @@ Time& Time::operator += (const Delta& delta)
     {
         time_ += time_t(fullSeconds);
         micro_ += dint(fraction * 1.0e6);
-        if(micro_ > 1e6)
+        if(micro_ > 1000000)
         {
-            micro_ -= 1e6;
+            micro_ -= 1000000;
             time_ += 1;
         }
     }
@@ -108,22 +113,19 @@ Time& Time::operator += (const Delta& delta)
         micro_ -= dint(fraction * 1.0e6);
         if(micro_ < 0)
         {
-            micro_ += 1e6;
+            micro_ += 1000000;
             time_ -= 1;
         }
     }
-#endif
     return *this;
 }
 
 Time::Delta Time::operator - (const Time& earlierTime) const
 {
-#ifdef UNIX
     ddouble seconds = std::difftime(time_, earlierTime.time_);
     // The fraction.
     seconds += (micro_ - earlierTime.micro_) / 1.0e6;
     return seconds;
-#endif    
 }
 
 std::string Time::asText() const

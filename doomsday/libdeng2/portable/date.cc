@@ -25,12 +25,18 @@
 
 using namespace de;
 
-Date::Date(const Time& at)
+Date::Date(const Time& at) : microSeconds(at.micro_)
 {
 #ifdef UNIX
     struct tm t;
     localtime_r(&at.time_, &t);
-    microSeconds = at.micro_;
+#endif
+
+#ifdef WIN32
+    struct tm t;
+    memcpy(&t, _localtime64(&at.time_), sizeof(t));
+#endif
+
     seconds = t.tm_sec;
     minutes = t.tm_min;
     hours = t.tm_hour;
@@ -39,7 +45,6 @@ Date::Date(const Time& at)
     weekDay = t.tm_wday;
     dayOfMonth = t.tm_mday;
     dayOfYear = t.tm_yday;
-#endif
 }
 
 std::string Date::asText() const

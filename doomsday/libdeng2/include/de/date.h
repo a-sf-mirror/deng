@@ -27,7 +27,7 @@ namespace de
     /**
      * Information about a date.
      */
-    class Date
+    class PUBLIC_API Date
     {
     public:
         Date(const Time& time);
