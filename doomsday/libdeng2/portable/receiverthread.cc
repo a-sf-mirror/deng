@@ -38,7 +38,7 @@ void ReceiverThread::run()
             buffer_.put(socket_.receive());
         }
     }
-    catch(const Socket::DisconnectedError& err)
+    catch(const Socket::DisconnectedError&)
     {
         // No need to react. When the socket is closed, this is the exception
         // that is thrown.
