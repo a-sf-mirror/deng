@@ -51,24 +51,20 @@ Socket::~Socket()
 {
     close();
 
-#ifdef LIBDENG2_USE_SOCKET_SET
     if(socketSet_)
     {
         SDLNet_FreeSocketSet(static_cast<SDLNet_SocketSet>(socketSet_));
         socketSet_ = 0;
     }
-#endif
 }
 
 void Socket::initialize()
 {
-#ifdef LIBDENG2_USE_SOCKET_SET
     // Allocate a socket set for waiting on.
     socketSet_ = SDLNet_AllocSocketSet(1);
 
     SDLNet_AddSocket(static_cast<SDLNet_SocketSet>(socketSet_),
         static_cast<SDLNet_GenericSocket>(socket_));
-#endif
 
     // Incoming packets will be marked with this address.
     peerAddress_ = peerAddress();
@@ -148,11 +144,14 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     // Wait indefinitely until there is something to receive.
     while(received < count)
     {
-#ifdef LIBDENG2_USE_SOCKET_SET
-        const duint RECEIVE_TIMEOUT = 10000;
-
         int result = SDLNet_CheckSockets(
-            static_cast<SDLNet_SocketSet>(socketSet_), RECEIVE_TIMEOUT);
+            static_cast<SDLNet_SocketSet>(socketSet_), LIBDENG2_SOCKET_RECV_TIMEOUT);
+
+        if(!socket_ || !socketSet_)
+        {
+            // The socket has been closed.
+            throw DisconnectedError("Socket::receive", "Socket was closed");
+        }
 
         if(result < 0)
         {
@@ -163,12 +162,6 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
         {
             // Nothing yet.
             continue;
-        }
-#endif
-        if(!socket_)
-        {
-            // The socket has been closed.
-            throw DisconnectedError("Socket::receive", "Socket was closed");
         }
 
         // There is something to receive.

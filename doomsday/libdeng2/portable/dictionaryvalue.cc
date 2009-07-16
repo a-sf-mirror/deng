@@ -27,10 +27,10 @@
 
 using namespace de;
 
-DictionaryValue::DictionaryValue() : iteration_(0)
+DictionaryValue::DictionaryValue() : iteration_(0), validIteration_(false)
 {}
 
-DictionaryValue::DictionaryValue(const DictionaryValue& other) : iteration_(0)
+DictionaryValue::DictionaryValue(const DictionaryValue& other) : iteration_(0), validIteration_(false)
 {
     for(Elements::const_iterator i = other.elements_.begin(); i != other.elements_.end(); ++i)
     {
@@ -144,15 +144,16 @@ bool DictionaryValue::contains(const Value& value) const
 
 Value* DictionaryValue::begin()
 {
-    iteration_ = 0;
+    validIteration_ = false;
     return next();
 }
 
 Value* DictionaryValue::next()
 {
-    if(iteration_ == 0)
+    if(!validIteration_)
     {
         iteration_ = elements_.begin();
+        validIteration_ = true;
     }
     else if(iteration_ == elements_.end())
     {

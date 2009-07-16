@@ -111,7 +111,7 @@ namespace de
         /// Pointer to the internal socket data.
         void* socket_;
 
-        /// Used if LIBDENG2_USE_SOCKET_SET is defined.
+        /// Used for waiting on activity.
         void* socketSet_;
         
         Address peerAddress_;

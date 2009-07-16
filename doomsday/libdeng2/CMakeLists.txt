@@ -19,8 +19,12 @@ INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api
 
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
 
-# Use the SDLNet socket set to wait for socket activity.
-ADD_DEFINITIONS ( -DLIBDENG2_USE_SOCKET_SET )
+# Configure behavior for waiting on socket activity.
+IF ( APPLE )
+    ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=10000 )
+ELSE ()
+    ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=100 )
+ENDIF ()
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 

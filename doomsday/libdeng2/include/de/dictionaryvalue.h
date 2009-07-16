@@ -94,6 +94,7 @@ namespace de
     private:
         Elements elements_;
         Elements::iterator iteration_;
+        bool validIteration_;
     };
 }
 
