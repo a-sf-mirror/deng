@@ -58,7 +58,7 @@ Link::~Link()
     // Close the socket.
     socket_->close();
     
-    // Wake up the sender thread.
+    // Wake up the sender thread (it's waiting for outgoing packets).
     outgoing_.post();
         
     delete sender_;

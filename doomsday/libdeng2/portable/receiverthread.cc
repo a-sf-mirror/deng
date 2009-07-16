@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@ void ReceiverThread::run()
     {
         // No need to react. When the socket is closed, this is the exception
         // that is thrown.
-        std::cerr << "ReceivedThread::run received " << err.what() << "\n";
     }
     catch(const Error& err)
     {

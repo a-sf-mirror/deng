@@ -26,10 +26,10 @@
 
 using namespace de;
 
-Address::Address() : ip_(0), port_(0)
+Address::Address(duint32 ip, duint16 port) : ip_(ip), port_(port)
 {}
 
-Address::Address(const char* address, duint16 port)
+Address::Address(const std::string& address, duint16 port)
 {
     set(address, port);
 }
@@ -39,35 +39,32 @@ bool Address::operator == (const Address& other) const
     return ip_ == other.ip_ && port_ == other.port_;
 }
 
-void Address::set(const char* address, duint16 port)
+void Address::set(const std::string& address, duint16 port)
 {
     using std::string;
     using std::istringstream;
 
     string hostName;
 
-    if(address)
+    string::size_type pos = address.find(':');
+    if(pos != string::npos)
     {
-        const char *separator = strchr(address, ':');
-        if(separator)
-        {
-            hostName = string(address, separator);
+        hostName = address.substr(0, pos); 
 
-            // Use the port number that has been specified in the
-            // address string.
-            istringstream(separator + 1) >> port;
-        }
-        else
-        {
-            // We'll assume the entire address string is just a host
-            // name.
-            hostName = address;
-        }
+        // Use the port number that has been specified in the
+        // address string.
+        istringstream(address.substr(pos + 1)) >> port;
+    }
+    else
+    {
+        // We'll assume the entire address string is just a host
+        // name.
+        hostName = address;
     }
     
     // Use SDL_net to resolve the name.
     IPaddress resolved;
-    if(SDLNet_ResolveHost(&resolved, address? hostName.c_str() : NULL, port) < 0)
+    if(SDLNet_ResolveHost(&resolved, !hostName.empty()? hostName.c_str() : NULL, port) < 0)
     {
         throw ResolveError("Address::set", SDLNet_GetError());
     }

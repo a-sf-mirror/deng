@@ -43,8 +43,6 @@ void SenderThread::run()
 			const IByteArray* data = buffer_.peek();
 			if(data)
 			{
-                std::cout << "Sending " << data->size() << " bytes.\n";
-
 			    // Write this to the socket.
 			    socket_ << *data;
 

@@ -28,7 +28,7 @@ using namespace de;
 ListenSocket::ListenSocket(duint16 port) : socket_(NULL), port_(port)
 {
     // Listening address.
-    Address address(NULL, port);
+    Address address(0, port);
     IPaddress ip;
 
     internal::convertAddress(address, &ip);

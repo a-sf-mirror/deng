@@ -34,10 +34,7 @@ namespace de
         duint16 port;
         SDLNet_Write16(ip->port, &port);
         
-        Address address;
-        address.setIp(host);
-        address.setPort(port);
-        return address;
+        return Address(host, port);
 	}
 
     SDL_Surface* internal::createSDLSurface(duint flags, duint width, duint height, duint bitsPerPixel)

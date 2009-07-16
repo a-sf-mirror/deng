@@ -38,8 +38,15 @@ namespace de
         DEFINE_ERROR(ResolveError);
     
     public:
-        Address();
-        Address(const char* address, duint16 port = 0);
+        Address(duint32 ip = 0, duint16 port = 0);
+        
+        /**
+         * Constructs an Address by resolving a textual network address.
+         *
+         * @param address  Network address. E.g., "localhost" or "127.0.0.1".
+         * @param port  Port number.
+         */
+        Address(const std::string& address, duint16 port = 0);
 
         /**
          * Checks two addresses for equality.
@@ -57,9 +64,9 @@ namespace de
          * listening, set @c address to NULL.
          *
          * @param address  Address to resolve. E.g., "localhost" or "127.0.0.1".
-         * @param port  TCP port.
+         * @param port  Port port.
          */
-        void set(const char* address, duint16 port);
+        void set(const std::string& address, duint16 port);
 
         duint32 ip() const { return ip_; }
         
