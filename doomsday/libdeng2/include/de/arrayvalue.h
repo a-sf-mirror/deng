@@ -30,7 +30,7 @@ namespace de
      * The ArrayValue class is a subclass of Value that holds a dynamic
      * array of other values. The array is indexed using (integer) numbers.
      */
-	class ArrayValue : public Value
+	class PUBLIC_API ArrayValue : public Value
 	{
 	public:
 		/// Attempt to index the array with indices that are not defined for the array. @ingroup errors
@@ -99,7 +99,7 @@ namespace de
         // Implementations of pure virtual methods.
         Value* duplicate() const;
 		Text asText() const;
-		duint size() const;		
+		dsize size() const;		
 		const Value* element(const Value& index) const;	
 		Value* element(const Value& index);	
         void setElement(const Value& index, Value* value);

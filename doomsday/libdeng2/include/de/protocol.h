@@ -20,6 +20,8 @@
 #ifndef LIBDENG2_PROTOCOL_H
 #define LIBDENG2_PROTOCOL_H
 
+#include <de/deng.h>
+
 #include <list>
 
 namespace de
@@ -33,7 +35,7 @@ namespace de
      *
      * @ingroup net
      */
-    class Protocol
+    class PUBLIC_API Protocol
     {
     public:
         /**

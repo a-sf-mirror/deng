@@ -30,7 +30,7 @@ namespace de
      * DictionaryValue is a subclass of Value that contains an array of values, 
      * indexed by any value.
      */
-    class DictionaryValue : public Value
+    class PUBLIC_API DictionaryValue : public Value
     {
     public:
         /// An invalid key was used. @ingroup errors
@@ -75,7 +75,7 @@ namespace de
         // Implementations of pure virtual methods.
         Value* duplicate() const;
 		Text asText() const;
-		duint size() const;		
+		dsize size() const;		
 		const Value* element(const Value& index) const;	
 		Value* element(const Value& index);	
         void setElement(const Value& index, Value* value);

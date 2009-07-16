@@ -29,7 +29,7 @@ namespace de
     /**
      * Value is the base class for all runtime values.  This is an abstract class.
      */
-	class Value : public String::IPatternArg, public ISerializable
+	class PUBLIC_API Value : public String::IPatternArg, public ISerializable
 	{
 	public:
 		/// An illegal operation (i.e., one that is not defined by the Value) was attempted. 

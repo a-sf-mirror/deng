@@ -29,6 +29,7 @@
 #include <string>
 #include <sstream>
 #include <cctype>
+#include <cmath>
 
 using namespace de;
 using std::list;
@@ -58,7 +59,7 @@ Value::Text TextValue::asText() const
 	return value_;
 }
 
-duint TextValue::size() const
+dsize TextValue::size() const
 {
 	return value_.size();
 }
@@ -103,7 +104,7 @@ void TextValue::multiply(const Value& value)
         throw ArithmeticError("Value::multiply", "Value cannot be multiplied");
     }
     
-    int factor = other->asNumber();
+    dint factor = dint(std::floor(other->asNumber()));
     
     if(factor < 1)
     {
@@ -111,11 +112,12 @@ void TextValue::multiply(const Value& value)
     }
     else
     {
-        string mul = value_;
-        while(--factor > 0)
+        ostringstream os;
+        while(factor-- > 0)
         {
-            value_ += mul;
+            os << value_;
         }
+        value_ = os.str();
     }
 }
 

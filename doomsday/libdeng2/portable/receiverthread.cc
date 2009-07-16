@@ -38,14 +38,14 @@ void ReceiverThread::run()
             buffer_.put(socket_.receive());
         }
     }
-    catch(const Socket::DisconnectedError&)
+    catch(const Socket::DisconnectedError& err)
     {
         // No need to react. When the socket is closed, this is the exception
         // that is thrown.
+        std::cerr << "ReceivedThread::run received " << err.what() << "\n";
     }
     catch(const Error& err)
     {
-        perror("ReceiverThread:");
         std::cerr << "Fatal exception in ReceiverThread::run(): " << err.what() << "\n";
     }
     

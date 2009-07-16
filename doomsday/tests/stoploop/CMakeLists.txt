@@ -1,4 +1,4 @@
-# The Doomsday Engine Project -- Tests
+# The Doomsday Engine Project
 #
 # Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
 #
@@ -14,8 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-OPTION ( ENABLE_TESTS "Build the tests" ON )
+INCLUDE_DIRECTORIES ( 
+    ${CMAKE_SOURCE_DIR}/libdeng2/include 
+    ${CMAKE_SOURCE_DIR}/support/include
+    ${SDL_INCLUDE_DIR} )
 
-IF ( ENABLE_TESTS )
-    SUBDIRS ( basiclink stoploop )
-ENDIF ()
+FILE ( GLOB SOURCES *.cc *.h )
+
+ADD_EXECUTABLE ( test_stoploop ${SOURCES} ${APP_SUPPORT_SOURCES} )
+
+TARGET_LINK_LIBRARIES ( test_stoploop deng2 )
+
+IF ( WIN32 )
+    SET_TARGET_PROPERTIES ( test_stoploop PROPERTIES LINK_FLAGS "/NODEFAULTLIB:msvcrt" )
+ENDIF ( WIN32 )
+
+INSTALL ( TARGETS test_stoploop RUNTIME DESTINATION ${DENG_BINARY_DIR} )

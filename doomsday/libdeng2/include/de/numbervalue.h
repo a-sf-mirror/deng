@@ -28,7 +28,7 @@ namespace de
      * The NumberValue class is a subclass of Value that holds a single
      * double precision floating point number.
      */
-	class NumberValue : public Value
+	class PUBLIC_API NumberValue : public Value
 	{
 	public:
 	    /// Truth values for logical operations. They are treated as
@@ -40,6 +40,12 @@ namespace de
 	    
 	public:
 		NumberValue(Number initialValue = 0);
+
+        /**
+         * Conversion template that forces a cast to another type.
+         */
+        template <typename Type>
+        Type as() const { return Type(value_); }
 
         Value* duplicate() const;
 		Number asNumber() const;

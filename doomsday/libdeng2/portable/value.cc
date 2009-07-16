@@ -46,7 +46,7 @@ Value::Number Value::asSafeNumber(const Number& defaultValue) const
     }
 }
 
-duint Value::size() const
+dsize Value::size() const
 {
 	throw IllegalError("Value::size", "Size is meaningless");
 }

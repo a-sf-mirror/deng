@@ -79,8 +79,9 @@ void Socket::close()
     // Close the socket.
     if(socket_)
     {
-        SDLNet_TCP_Close(static_cast<TCPsocket>(socket_));
+        TCPsocket s = static_cast<TCPsocket>(socket_);
         socket_ = 0;
+        SDLNet_TCP_Close(s);
     }
 }
 
@@ -147,12 +148,6 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     // Wait indefinitely until there is something to receive.
     while(received < count)
     {
-        if(!socket_)
-        {
-            // The socket has been closed.
-            break;
-        }
-
 #ifdef LIBDENG2_USE_SOCKET_SET
         const duint RECEIVE_TIMEOUT = 100;
 
@@ -170,6 +165,11 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
             continue;
         }
 #endif
+        if(!socket_)
+        {
+            // The socket has been closed.
+            throw DisconnectedError("Socket::receive", "Socket was closed");
+        }
 
         // There is something to receive.
         int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_),

@@ -332,7 +332,6 @@ int DD_Main(void)
     int             winWidth, winHeight, winBPP, winX, winY;
     uint            winFlags = DDWF_VISIBLE | DDWF_CENTER;
     boolean         noCenter = false;
-    int             exitCode;
 
     // By default, use the resolution defined in (default).cfg.
     winX = 0;

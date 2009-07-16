@@ -73,7 +73,7 @@ Value::Text ArrayValue::asText() const
 	return s.str();
 }
 
-duint ArrayValue::size() const
+dsize ArrayValue::size() const
 {
 	return elements_.size();
 }
@@ -85,7 +85,7 @@ const Value* ArrayValue::element(const Value& indexValue) const
     {
         throw IllegalIndexError("ArrayValue::element", "Array index must be a number");
     }
-    dint index = v->asNumber();
+    dint index = v->as<dint>();
     Elements::const_iterator elem = indexToIterator(index);
     return *elem;
 }
@@ -102,7 +102,7 @@ void ArrayValue::setElement(const Value& indexValue, Value* value)
     {
         throw IllegalIndexError("ArrayValue::setElement", "Array index must be a number");
     }
-    replace(v->asNumber(), value);
+    replace(v->as<dint>(), value);
 }
 
 bool ArrayValue::contains(const Value& value) const
@@ -189,7 +189,7 @@ ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)
     {
         return elements_.begin() + index;
     }
-    else if(index < 0 && index > -size())
+    else if(index < 0 && index > -dint(size()))
     {
         return elements_.begin() + size() + index;
     }
@@ -205,7 +205,7 @@ ArrayValue::Elements::const_iterator ArrayValue::indexToIterator(dint index) con
     {
         return elements_.begin() + index;
     }
-    else if(index < 0 && index >= -size())
+    else if(index < 0 && index >= -dint(size()))
     {
         return elements_.begin() + size() + index;
     }

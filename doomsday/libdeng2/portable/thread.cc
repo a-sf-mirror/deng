@@ -34,8 +34,8 @@ int Thread::runner(void* owner)
     Thread* self = static_cast<Thread*>(owner);
     
     self->run();
-    self->endOfThread_.post();
     self->thread_ = NULL;
+    self->endOfThread_.post();
 
     // The return value is not used at the moment.
     return 0;
@@ -66,13 +66,13 @@ void Thread::stop()
 void Thread::join(const Time::Delta& timeOut)
 {
     stop();
+    std::cout << "Waiting on thread to stop...\n";
     if(thread_)
     {
-        thread_ = NULL;
-        std::cout << "Waiting on thread to stop...\n";
         endOfThread_.wait(timeOut);
-        std::cout << "...it stopped\n";
+        assert(thread_ == NULL);
     }
+    std::cout << "...it stopped\n";
 }
 
 bool Thread::shouldStopNow() const

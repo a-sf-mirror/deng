@@ -41,11 +41,7 @@
 
 using namespace de;
 
-DirectoryFeed::DirectoryFeed(const std::string& nativePath)
-    : nativePath_(nativePath)
-{
-    std::cout << "DirectoryFeed: " << nativePath << "\n";
-}
+DirectoryFeed::DirectoryFeed(const std::string& nativePath) : nativePath_(nativePath) {}
 
 DirectoryFeed::~DirectoryFeed()
 {}
@@ -151,8 +147,6 @@ void DirectoryFeed::populateFile(Folder& folder, const std::string& entryName)
     File* file = folder.fileSystem().interpret(nativeFile.get());
     file->setStatus(fileStatus(entryPath));
 
-    std::cout << entryPath << ": " << Date(file->status().modifiedAt()).asText() << "\n";
-
     // We will decide on pruning this.
     file->setOriginFeed(this);
     
@@ -230,7 +224,6 @@ void DirectoryFeed::changeWorkingDir(const std::string& nativePath)
 
 bool DirectoryFeed::exists(const std::string& nativePath)
 {
-    std::cout << "exists? " << nativePath << "\n";
 #ifdef UNIX
     struct stat s;
     return !stat(nativePath.c_str(), &s);

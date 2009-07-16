@@ -30,7 +30,7 @@ namespace de
     /**
      * The TextValue class is a subclass of Value that holds a text string.
      */
-	class TextValue : public Value
+	class PUBLIC_API TextValue : public Value
 	{
 	public:
 	    /// An error occurs in string pattern replacements. @ingroup errors
@@ -42,7 +42,7 @@ namespace de
         Value* duplicate() const;
 		Number asNumber() const;
 		Text asText() const;
-		duint size() const;
+		dsize size() const;
         bool isTrue() const;
         dint compare(const Value& value) const;
         void sum(const Value& value);

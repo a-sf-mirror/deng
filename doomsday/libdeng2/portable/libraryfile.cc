@@ -28,8 +28,6 @@ LibraryFile::LibraryFile(File* source)
 {
     assert(source != 0);
     setSource(source);
-    
-    std::cout << "LibraryFile: " << name() << ": " << source->path() << "\n";
 }
 
 LibraryFile::~LibraryFile()

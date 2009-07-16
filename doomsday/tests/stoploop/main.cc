@@ -31,6 +31,8 @@ using namespace de;
 
 int deng_Main(int argc, char** argv)
 {
+    std::cout << "Server runs until client tells it to stop.\n";
+
     try
     {
         CommandLine args(argc, argv);
@@ -39,35 +41,30 @@ int deng_Main(int argc, char** argv)
         if(args.has("--server"))
         {
             ListenSocket entry(8080);
-            Socket* client = 0;
             
+            Socket* client = 0;
             while((client = entry.accept()) == NULL)
             {
-                std::cout << "Still waiting for incoming...\n";
-                Time::sleep(.5);
+                Time::sleep(.1);
             }
 
-            std::cout << "Sending...\n";
-            
             Link link(client);
-            Block packet;
-            Writer(packet) << "Hello world!";
-            link << packet;
+            AddressedBlock* ab = 0;
+            while((ab = link.receive()) == NULL)
+            {
+                Time::sleep(.1);
+            }
+            String str;
+            Reader(*ab) >> str;
+            std::cout << "Received '" << str << "'\n";
+            delete ab;
         }
         else
         {
             Link link(Address("localhost", 8080));
-            while(!link.hasIncoming())
-            {
-                std::cout << "Waiting for data\n";
-                Time::sleep(.1);
-            }
-            
-            IByteArray* data = link.receive();
-            String str;
-            Reader(*data) >> str;        
-            
-            std::cout << "Received '" << str << "'\n";
+            Block block;
+            Writer(block) << "QUIT";        
+            link << block;
         }
     }
     catch(const Error& err)

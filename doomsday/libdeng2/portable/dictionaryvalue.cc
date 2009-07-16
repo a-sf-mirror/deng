@@ -101,7 +101,7 @@ Value::Text DictionaryValue::asText() const
 	return s.str();
 }
 
-duint DictionaryValue::size() const
+dsize DictionaryValue::size() const
 {
     return elements_.size();
 }

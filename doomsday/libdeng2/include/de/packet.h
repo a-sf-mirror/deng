@@ -38,7 +38,7 @@ namespace de
      *
      * @ingroup net
      */
-    class Packet : public ISerializable
+    class PUBLIC_API Packet : public ISerializable
     {
     public:
         /// While deserializing, an invalid type identifier was encountered. @ingroup errors
