@@ -149,7 +149,7 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     while(received < count)
     {
 #ifdef LIBDENG2_USE_SOCKET_SET
-        const duint RECEIVE_TIMEOUT = 100;
+        const duint RECEIVE_TIMEOUT = 10000;
 
         int result = SDLNet_CheckSockets(
             static_cast<SDLNet_SocketSet>(socketSet_), RECEIVE_TIMEOUT);
