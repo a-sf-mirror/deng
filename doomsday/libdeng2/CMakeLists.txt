@@ -20,7 +20,7 @@ INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api
 FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
 
 # Configure behavior for waiting on socket activity.
-IF ( APPLE )
+IF ( APPLE OR WIN32 )
     ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=10000 )
 ELSE ()
     ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=100 )
