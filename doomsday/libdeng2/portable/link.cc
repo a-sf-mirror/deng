@@ -45,6 +45,8 @@ void Link::initialize()
     
     sender_->start();
     receiver_->start();
+    
+    peerAddress_ = socket_->peerAddress();
 }
 
 Link::~Link()
@@ -75,7 +77,18 @@ Link& Link::operator << (const IByteArray& data)
 
 AddressedBlock* Link::receive()
 {
-    return incoming_.get();
+    AddressedBlock* b = incoming_.get();
+    if(b)
+    {
+        // A packet was waiting.
+        return b;
+    }    
+    if(!receiver_->isRunning())
+    {
+        // Receiver has stopped, which means the remote end closed.
+        throw DisconnectedError("Link::receive", "Link has been closed");
+    }
+    return NULL;
 }
 
 void Link::flush()
@@ -88,6 +101,5 @@ void Link::flush()
 
 Address Link::peerAddress() const
 {
-    assert(socket_ != NULL);
-    return socket_->peerAddress();
+    return peerAddress_;
 }

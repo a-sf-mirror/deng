@@ -23,6 +23,7 @@
 #include <de/deng.h>
 #include <de/IByteArray>
 #include <de/Address>
+#include <de/Lockable>
 
 /**
  * @defgroup net Network
@@ -40,7 +41,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API Socket
+    class PUBLIC_API Socket : public Lockable
     {
     public:
         // Flags.
@@ -106,6 +107,8 @@ namespace de
         void writeHeader(IByteArray::Byte* buffer, const IByteArray& packet);
 
         void readHeader(duint header, duint& size);
+        
+        inline void checkValid();
     
     private:
         /// Pointer to the internal socket data.

@@ -75,9 +75,11 @@ void Socket::close()
     // Close the socket.
     if(socket_)
     {
+        lock();
         TCPsocket s = static_cast<TCPsocket>(socket_);
         socket_ = 0;
         SDLNet_TCP_Close(s);
+        unlock();
     }
 }
 
@@ -137,45 +139,66 @@ Socket& Socket::operator << (const IByteArray& packet)
     return *this;
 }
 
+void Socket::checkValid()
+{
+    if(!socket_ || !socketSet_)
+    {
+        // The socket has been closed.
+        throw DisconnectedError("Socket::receive", "Socket was closed");
+    }
+}
+
 void Socket::receiveBytes(duint count, dbyte* buffer)
 {
     duint received = 0;
-    
-    // Wait indefinitely until there is something to receive.
-    while(received < count)
+
+    try
     {
-        int result = SDLNet_CheckSockets(
-            static_cast<SDLNet_SocketSet>(socketSet_), LIBDENG2_SOCKET_RECV_TIMEOUT);
-
-        if(!socket_ || !socketSet_)
-        {
-            // The socket has been closed.
-            throw DisconnectedError("Socket::receive", "Socket was closed");
-        }
-
-        if(result < 0)
-        {
-            throw DisconnectedError("Socket::receive",
-                "While checking sockets: " + std::string(SDLNet_GetError()));
-        }
-        else if(!result)
-        {
-            // Nothing yet.
-            continue;
-        }
-
-        // There is something to receive.
-        int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_),
-            buffer + received, count - received);
-            
-        if(recvResult <= 0)
-        {
-            // There is an error!
-            throw DisconnectedError("Socket::receive",
-                "While receiving data: " + std::string(SDLNet_GetError()));
-        }
+        // We make sure that the socket is valid while we're locked.
+        lock();
+        checkValid();
         
-        received += recvResult;
+        // Wait indefinitely until there is something to receive.
+        while(received < count)
+        {
+            unlock();
+
+            int result = SDLNet_CheckSockets(
+                static_cast<SDLNet_SocketSet>(socketSet_), LIBDENG2_SOCKET_RECV_TIMEOUT);
+
+            lock();
+            checkValid();
+
+            if(result < 0)
+            {
+                throw DisconnectedError("Socket::receive", "Socket broken while waiting");
+            }
+            else if(!result)
+            {
+                // Nothing yet.
+                continue;
+            }
+
+            // There is something to receive.
+            int recvResult = SDLNet_TCP_Recv(static_cast<TCPsocket>(socket_), 
+                buffer + received, count - received);
+
+            if(recvResult <= 0)
+            {
+                // There is an error!
+                throw DisconnectedError("Socket::receive", "Socket broken while receiving data");
+            }
+        
+            received += recvResult;
+        }
+
+        unlock();
+    }
+    catch(const Error& err)
+    {
+        // We leave here unlocked.
+        unlock();
+        throw err;
     }
 }
 

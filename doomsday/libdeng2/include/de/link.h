@@ -36,6 +36,10 @@ namespace de
     class PUBLIC_API Link
     {
     public:
+        /// The remote end has closed the link. @ingroup errors
+        DEFINE_ERROR(DisconnectedError);
+        
+    public:
         /**
          * Constructs a new communications link. A new socket is created for the link.
          *
@@ -60,7 +64,9 @@ namespace de
         Link& operator << (const IByteArray& data);
         
         /**
-         * Receives an array of data.
+         * Receives an array of data. 
+         *
+         * The DisconnectedError is thrown if the remote end has closed the connection.
          *
          * @return  Received data array, or @c NULL if nothing has been received.
          *      Caller gets ownership of the returned object.
@@ -90,6 +96,9 @@ namespace de
     private:
         /// Socket over which the link communicates.
         Socket* socket_; 
+
+        /// Address of the remote end.
+        Address peerAddress_;
         
         /// Thread that writes outgoing data to the socket.
         SenderThread* sender_;

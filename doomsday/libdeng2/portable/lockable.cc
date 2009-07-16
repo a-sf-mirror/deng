@@ -50,14 +50,21 @@ void Lockable::lock() const
 
 void Lockable::unlock() const
 {
-    isLocked_ = false;
+    if(isLocked_)
+    {
+        isLocked_ = false;
 
-    // Release the lock.
-    SDL_UnlockMutex(static_cast<SDL_mutex*>(mutex_));
+        // Release the lock.
+        SDL_UnlockMutex(static_cast<SDL_mutex*>(mutex_));
+    }
+}
+
+bool Lockable::isLocked() const
+{
+    return isLocked_;
 }
 
 void Lockable::assertLocked() const
 {
     assert(isLocked_);
 }
-

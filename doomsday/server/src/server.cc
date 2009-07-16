@@ -90,17 +90,46 @@ void Server::iterate()
 
 void Server::tendClients()
 {
-    for(Clients::iterator i = clients_.begin(); i != clients_.end(); ++i)
+    for(Clients::iterator i = clients_.begin(); i != clients_.end(); )
     {
-        std::auto_ptr<AddressedBlock> message((*i)->receive());
-        if(message.get())
+        bool deleteClient = false;
+        
+        try
         {
-            std::auto_ptr<Packet> packet(protocol_.interpret(*message));
-            if(packet.get())
+            // Process incoming packets.
+            std::auto_ptr<AddressedBlock> message((*i)->receive());
+            if(message.get())
             {
-                packet.get()->setFrom(message->address());
-                processPacket(packet.get());
-            }            
+                std::auto_ptr<Packet> packet(protocol_.interpret(*message));
+                if(packet.get())
+                {
+                    packet.get()->setFrom(message->address());
+                    processPacket(packet.get());
+                }            
+            }
+        }
+        catch(const ISerializable::DeserializationError&)
+        {
+            // Malformed packet!
+            std::cout << "Client from " << (*i)->peerAddress().asText() << " sent nonsense.\n";
+            deleteClient = true;
+        }
+        catch(const Link::DisconnectedError&)
+        {
+            // The client was disconnected.
+            std::cout << "Client from " << (*i)->peerAddress().asText() << " disconnected.\n";
+            deleteClient = true;
+        }
+
+        // Move on.
+        if(deleteClient)
+        {
+            delete *i;
+            clients_.erase(i++);
+        }
+        else
+        {
+            ++i;
         }
     }
 }
