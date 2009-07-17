@@ -1089,10 +1089,11 @@ void* DD_GetVariable(int ddvalue)
 
         case DD_TORCH_ADDITIVE:
             return &torchAdditive;
-#ifdef WIN32
+
+/*#ifdef WIN32
         case DD_WINDOW_HANDLE:
             return Sys_GetWindowHandle(windowIDX);
-#endif
+#endif*/
 
         // We have to separately calculate the 35 Hz ticks.
         case DD_GAMETIC:

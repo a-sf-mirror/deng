@@ -30,22 +30,27 @@ namespace de
     /// Absolute value.
     template <typename Type>
     inline Type abs(const Type& a) {
-        if(a < 0)
+        if(a < 0.0)
         {
             return -a;
         }
         return a;
     }
 
+    // Special case, this is never negative.
+    inline duint abs(const duint& a) {
+        return a;
+    }
+
     /// Minimum of two values.
     template <typename Type>
-    inline Type min(const Type& a, const Type& b) {
+    inline const Type& min(const Type& a, const Type& b) {
         return (a < b? a : b);
     }
 
     /// Maximum of two values.
     template <typename Type>
-    inline Type max(const Type& a, const Type& b) {
+    inline const Type& max(const Type& a, const Type& b) {
         return (a > b? a : b);
     }
     

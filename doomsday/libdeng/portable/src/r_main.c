@@ -781,12 +781,12 @@ void R_UseViewPort(viewport_t* port)
 {
     if(!port)
     {
-        glViewport(0, FLIP(0 + DD_WindowHeight() - 1), DD_WindowWidth(), DD_WindowHeight());
+        //glViewport(0, FLIP(0 + DD_WindowHeight() - 1), DD_WindowWidth(), DD_WindowHeight());
     }
     else
     {
         currentPort = port;
-        glViewport(port->x, FLIP(port->y + port->height - 1), port->width, port->height);
+        //glViewport(port->x, FLIP(port->y + port->height - 1), port->width, port->height);
     }
 }
 

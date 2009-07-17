@@ -60,7 +60,8 @@ void Animator::set(ValueType targetValue, const Time::Delta& transition)
     
     if(!clock_)
     {
-        throw ClockMissingError("Animator::set", "Animator has no clock");
+        // Default to the application.        
+        clock_ = &App::app();
     }
     
     if(transition > 0.0)
@@ -125,18 +126,64 @@ Animator::ValueType Animator::target() const
     return start_ + transition_;
 }
 
+Animator Animator::operator - () const
+{
+    Animator inversed = Animator(*this);
+    inversed.start_ = -inversed.start_;
+    inversed.transition_ = -inversed.transition_;
+    return inversed;
+}
+
+Animator Animator::operator * (ddouble scalar) const
+{
+    Animator scaled = Animator(*this);
+    scaled.start_ = scalar * scaled.start_;
+    scaled.transition_ = scalar * scaled.transition_;
+    return scaled;
+}
+
+Animator Animator::operator / (ddouble scalar) const
+{
+    Animator scaled = Animator(*this);
+    scaled.start_ = scaled.start_ / scalar;
+    scaled.transition_ = scaled.transition_ / scalar;
+    return scaled;
+}
+
 Animator Animator::operator + (const ValueType& offset) const
 {
     Animator shifted = Animator(*this);
-    shifted.start_ += offset;
+    shifted += offset;
     return shifted;
 }
 
 Animator Animator::operator - (const ValueType& offset) const
 {
     Animator shifted = Animator(*this);
-    shifted.start_ -= offset;
+    shifted -= offset;
     return shifted;
+}
+
+Animator& Animator::operator += (const ValueType& offset)
+{
+    start_ += offset;
+    return *this;
+}
+
+Animator& Animator::operator -= (const ValueType& offset)
+{
+    start_ -= offset;
+    return *this;
+}
+
+bool Animator::operator < (const ValueType& offset) const
+{
+    return now() < offset;
+}
+
+bool Animator::operator > (const ValueType& offset) const
+{
+    return now() > offset;
 }
 
 AnimatorVector2 AnimatorVector2::operator + (const Vector2<Animator::ValueType>& offset) const

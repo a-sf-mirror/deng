@@ -748,7 +748,7 @@ void GL_SwitchTo3DState(boolean push_state, viewport_t* port)
     viewpy = port->y + viewwindowy / 200.0f * port->height;
     viewpw = port->width * viewwidth / 320.0f;
     viewph = port->height * viewheight / 200.0f;
-    glViewport(viewpx, FLIP(viewpy + viewph - 1), viewpw, viewph);
+    //glViewport(viewpx, FLIP(viewpy + viewph - 1), viewpw, viewph);
 
     // The 3D projection matrix.
     GL_ProjectionMatrix();
@@ -772,8 +772,8 @@ void GL_Restore2DState(int step)
         break;
 
     case 2: // After Restore Step 2 nothing special happens.
-        glViewport(currentView.x, FLIP(currentView.y + currentView.height - 1),
-                   currentView.width, currentView.height);
+        //glViewport(currentView.x, FLIP(currentView.y + currentView.height - 1),
+        //           currentView.width, currentView.height);
         break;
 
     case 3: // After Restore Step 3 we're back in 2D rendering mode.

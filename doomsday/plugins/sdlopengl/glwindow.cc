@@ -69,6 +69,13 @@ void GLWindow::setSDLVideoMode()
 
     if(!SDL_SetVideoMode(place().width(), place().height(), 0, flags))
     {
-        throw SDLOpenGLVideo::SDLError("GLWindow::setSDLVideoMode", SDL_GetError());
-    }    
+        // Without multisample?
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+
+        if(!SDL_SetVideoMode(place().width(), place().height(), 0, flags))
+        {
+            throw SDLOpenGLVideo::SDLError("GLWindow::setSDLVideoMode", SDL_GetError());
+        }    
+    }
 }

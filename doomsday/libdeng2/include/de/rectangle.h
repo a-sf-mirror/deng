@@ -51,8 +51,8 @@ namespace de
         bool contains(const Corner& point) const {
             return point >= topLeft && point <= bottomRight;
         }
-        std::string str() const { 
-            return "[" + topLeft.str() + ", " + bottomRight.str() + "]";
+        std::string asText() const { 
+            return "[" + topLeft.asText() + ", " + bottomRight.asText() + "]";
         }
         Corner topRight() const {
             return Corner(bottomRight.x, topLeft.y);
@@ -61,19 +61,19 @@ namespace de
             return Corner(topLeft.x, bottomRight.y);
         }
         Corner midLeft() const {
-            return Corner(topLeft.x, (topLeft.y + bottomRight.y)/2);
+            return Corner(topLeft.x, (topLeft.y + bottomRight.y)/2.0);
         }
         Corner midRight() const {
-            return Corner(bottomRight.x, (topLeft.y + bottomRight.y)/2);
+            return Corner(bottomRight.x, (topLeft.y + bottomRight.y)/2.0);
         }
         Corner midTop() const {
-            return Corner((topLeft.x + bottomRight.x)/2, topLeft.y);
+            return Corner((topLeft.x + bottomRight.x)/2.0, topLeft.y);
         }
         Corner midBottom() const {
-            return Corner((topLeft.x + bottomRight.x)/2, bottomRight.y);
+            return Corner((topLeft.x + bottomRight.x)/2.0, bottomRight.y);
         }
         Corner middle() const {
-            return Corner((topLeft.x + bottomRight.x)/2, (topLeft.y + bottomRight.y)/2);
+            return Corner((topLeft.x + bottomRight.x)/2.0, (topLeft.y + bottomRight.y)/2.0);
         }
     
     public:

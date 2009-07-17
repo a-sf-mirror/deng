@@ -19,6 +19,7 @@
 
 #include <dengmain.h>
 #include <de/Vector>
+#include <de/Animator>
 #include "../testapp.h"
 
 using namespace de;

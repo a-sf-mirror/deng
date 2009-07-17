@@ -53,6 +53,8 @@ SDLOpenGLVideo::~SDLOpenGLVideo()
 
 void SDLOpenGLVideo::update(const Time::Delta& /*elapsed*/)
 {
+    SDL_PumpEvents();
+
     // Render the graphics in the main window.
     mainWindow().draw();
 }

@@ -26,6 +26,8 @@
 #include <de/IClock>
 #include <de/Flag>
 
+#include <sstream>
+
 namespace de
 {
     /**
@@ -33,7 +35,7 @@ namespace de
      *
      * @ingroup video
      */
-    class Animator
+    class PUBLIC_API Animator
     {
     public:
         typedef ddouble ValueType;
@@ -61,11 +63,35 @@ namespace de
          * @param initialValue  Initial value for the animator.
          */
         Animator(ValueType initialValue = 0.0);
-        
+
         Animator(const IClock& clock, ValueType initialValue = 0.0);
         Animator(const Animator& copyFrom);
 
-        virtual ~Animator();
+        virtual ~Animator();        
+
+        /**
+         * The automatic conversion takes the animator's current value.
+         *
+         * @return Current value of the animator.
+         */
+        operator dfloat () const {
+            return dfloat(now());
+        }
+
+        /**
+         * The automatic conversion takes the animator's current value.
+         *
+         * @return Current value of the animator.
+         */
+        operator ddouble () const {
+            return now();
+        }
+
+        operator std::string () const {
+            std::ostringstream os;
+            os << now();
+            return os.str();
+        }
 
         void setClock(const IClock& clock);
 
@@ -87,11 +113,40 @@ namespace de
          */
         ValueType target() const;
 
+        /// Inverses the animator.
+        Animator operator - () const;
+
+        /// Multiplies the animator by a scalar.
+        Animator operator * (ddouble scalar) const;
+
+        /// Divides the animator by a scalar.
+        Animator operator / (ddouble scalar) const;
+
         /// Apply an offset to the value.
         Animator operator + (const ValueType& offset) const;
 
         /// Apply an offset to the value.
         Animator operator - (const ValueType& offset) const;
+
+        Animator& operator += (const ValueType& offset);
+
+        Animator& operator -= (const ValueType& offset);
+
+        /// Compares the current value.
+        bool operator < (const ValueType& offset) const;
+
+        /// Compares the current value.
+        bool operator > (const ValueType& offset) const;
+
+        /// Compares the current value.
+        bool operator <= (const ValueType& offset) const {
+            return !(*this > offset);
+        }
+
+        /// Compares the current value.
+        bool operator >= (const ValueType& offset) const {
+            return !(*this < offset);
+        }
 
         void setObserver(IObserver* observer) { observer_ = observer; }
 
@@ -115,7 +170,7 @@ namespace de
      *
      * @ingroup video
      */
-    class AnimatorVector2 : public Vector2<Animator>
+    class PUBLIC_API AnimatorVector2 : public Vector2<Animator>
     {
     public:
         AnimatorVector2() {}
@@ -125,12 +180,15 @@ namespace de
 
         AnimatorVector2(const AnimatorVector2& copyFrom) 
             : Vector2<Animator>(copyFrom.x, copyFrom.y) {}
-    
+
+        AnimatorVector2(const Vector2<Animator>& copyFrom) 
+            : Vector2<Animator>(copyFrom.x, copyFrom.y) {}
+
         AnimatorVector2(const IClock& clock, Animator::ValueType initialX = 0.0, 
             Animator::ValueType initialY = 0.0) : Vector2<Animator>(initialX, initialY) {
             x.setClock(clock);
             y.setClock(clock);
-        }    
+        }
 
         void set(const Vector2f& targetValue, const Time::Delta& transition = 0) {
             x.set(targetValue.x, transition);
@@ -138,11 +196,11 @@ namespace de
         }
 
         Vector2f now() const { 
-            return Vector2f(x.now(), y.now());
+            return Vector2f(dfloat(x.now()), dfloat(y.now()));
         }
 
         Vector2f target() const {
-            return Vector2f(x.target(), y.target());
+            return Vector2f(dfloat(x.target()), dfloat(y.target()));
         }
 
         AnimatorVector2 operator + (const Vector2<Animator::ValueType>& offset) const;
@@ -159,7 +217,7 @@ namespace de
      *
      * @ingroup video
      */
-    class AnimatorVector4 : public AnimatorVector2
+    class PUBLIC_API AnimatorVector4 : public AnimatorVector2
     {
     public:
         AnimatorVector4() : AnimatorVector2() {}
@@ -180,11 +238,13 @@ namespace de
         }
 
         Vector4f now() const {
-            return Vector4f(x.now(), y.now(), z.now(), w.now());
+            return Vector4f(dfloat(x.now()), dfloat(y.now()), 
+                dfloat(z.now()), dfloat(w.now()));
         }
 
         Vector4f target() const {
-            return Vector4f(x.target(), y.target(), z.target(), w.target());
+            return Vector4f(dfloat(x.target()), dfloat(y.target()), 
+                dfloat(z.target()), dfloat(w.target()));
         }
         
     public:
@@ -197,7 +257,7 @@ namespace de
      *
      * @ingroup video
      */ 
-    class AnimatorRectangle : public Rectangle<AnimatorVector2>
+    class PUBLIC_API AnimatorRectangle : public Rectangle<AnimatorVector2>
     {
     public:
         AnimatorRectangle(const IClock& clock, const Vector2f& tl = Vector2f(), 
@@ -214,8 +274,9 @@ namespace de
         }
 
         Rectanglef now() const { 
-            return Rectanglef(Vector2f(topLeft.x.now(), topLeft.y.now()),
-                Vector2f(bottomRight.x.now(), bottomRight.y.now()));
+            return Rectanglef(
+                Vector2f(dfloat(topLeft.x.now()), dfloat(topLeft.y.now())),
+                Vector2f(dfloat(bottomRight.x.now()), dfloat(bottomRight.y.now())));
         }
     };
 }

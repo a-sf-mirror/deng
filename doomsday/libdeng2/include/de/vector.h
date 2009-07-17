@@ -42,11 +42,14 @@ namespace de
 
         /// Conversion operator to a float vector.
         operator Vector2<dfloat> () const {
-            return Vector2<dfloat>(x, y);
+            return Vector2<dfloat>(dfloat(x), dfloat(y));
         }
         /// Conversion operator to a double vector.
         operator Vector2<ddouble> () const {
-            return Vector2<ddouble>(x, y);
+            return Vector2<ddouble>(ddouble(x), ddouble(y));
+        }
+        operator std::string () const {
+            return asText();
         }
         Vector2 operator + (const Vector2& other) const {
             return Vector2(x + other.x, y + other.y);
@@ -80,11 +83,11 @@ namespace de
             return x <= other.x && y <= other.y;
         }
         ddouble length() const { 
-            return std::sqrt(x*x + y*y); 
+            return std::sqrt(ddouble(x*x + y*y)); 
         }
         std::string asText() const { 
             std::ostringstream s;
-            s << "(" << x << ", " << y << ")";
+            s << "(" << ddouble(x) << ", " << ddouble(y) << ")";
             return s.str();
         }
         Vector2 min(const Vector2& other) const {
@@ -117,6 +120,9 @@ namespace de
         /// Conversion operator to a double vector.
         operator Vector3<ddouble> () const {
             return Vector3<ddouble>(Vector2<Type>::x, Vector2<Type>::y, z);
+        }
+        operator std::string () const {
+            return asText();
         }
         Vector3 operator + (const Vector3& other) const {
             return Vector3(Vector2<Type>::x + other.x, Vector2<Type>::y + other.y, z + other.z);
@@ -190,6 +196,9 @@ namespace de
         /// Conversion operator to a double vector.
         operator Vector4<ddouble> () const {
             return Vector4<ddouble>(Vector3<Type>::x, Vector3<Type>::y, Vector3<Type>::z, w);
+        }
+        operator std::string () const {
+            return asText();
         }
         Vector4 operator + (const Vector4& other) const {
             return Vector4(Vector3<Type>::x + other.x, Vector3<Type>::y + other.y, 

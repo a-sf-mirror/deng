@@ -32,8 +32,6 @@ FILE ( GLOB SOURCES
 
 # Platform-specific configuration.
 IF ( WIN32 )
-    ADD_DEFINITIONS ( -DWIN32_GAMMA )
-
     INCLUDE_DIRECTORIES ( win32/include
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )

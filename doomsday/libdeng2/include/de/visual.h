@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup video
      */
-    class Visual
+    class PUBLIC_API Visual
     {
     public:
         enum DrawingStage {

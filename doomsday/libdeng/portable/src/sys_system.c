@@ -143,7 +143,7 @@ void Sys_Shutdown(void)
 
 int Sys_CriticalMessage(char *msg)
 {
-#ifdef WIN32
+#ifdef NEVER_DO_THIS //WIN32
     char        buf[256];
     int         ret;
     HWND        hWnd = Sys_GetWindowHandle(windowIDX);
@@ -212,7 +212,7 @@ void Sys_HideMouse(void)
 
 void Sys_MessageBox(const char *msg, boolean iserror)
 {
-#ifdef WIN32
+#ifdef NEVER_DO_THIS //WIN32
     if(!isDedicated)
     {
         char    title[300];
@@ -237,8 +237,7 @@ void Sys_MessageBox(const char *msg, boolean iserror)
     {
         fprintf(stderr, "%s %s\n", iserror ? "**ERROR**" : "---", msg);
     }
-#endif
-#ifdef UNIX
+#else
     fprintf(stderr, "%s %s\n", iserror ? "**ERROR**" : "---", msg);
 #endif
 }

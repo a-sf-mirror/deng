@@ -36,7 +36,7 @@
 
 typedef struct {
     HINSTANCE       hInstance;
-    LPCSTR          className;
+    //LPCSTR          className;
     BOOL            suspendMsgPump; // Set to true to disable checking windows msgs.
     BOOL            userDirOk;
     GETGAMEAPI      GetGameAPI;

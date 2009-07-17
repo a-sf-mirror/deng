@@ -59,7 +59,7 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
     singleton_ = this;
 
     // Start by initializing SDL.
-    if(SDL_Init(0) == -1)
+    if(SDL_Init(SDL_INIT_TIMER) == -1)
     {
         throw SDLError("App::App", SDL_GetError());
     }

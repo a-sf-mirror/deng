@@ -31,11 +31,7 @@
 #include <ctype.h>
 #include <math.h>
 
-/*
-#ifdef UNIX
-#   include <SDL.h>
-#endif
-*/
+#include <SDL.h>
 
 #include "doomsday.h"
 #include "de_base.h"
@@ -1065,16 +1061,20 @@ void I_SetUIMouseMode(boolean on)
 {
     uiMouseMode = on;
     
-#ifdef UNIX
     {
         boolean isFullScreen = true;
         Sys_GetWindowFullscreen(1, &isFullScreen);
         if(!isFullScreen)
         {
             SDL_WM_GrabInput(on? SDL_GRAB_OFF : SDL_GRAB_ON);
+            SDL_ShowCursor(on? SDL_ENABLE : SDL_DISABLE);
+        }
+        else
+        {
+            SDL_WM_GrabInput(SDL_GRAB_ON);
+            SDL_ShowCursor(SDL_DISABLE);
         }
     }
-#endif
 }
 
 /**

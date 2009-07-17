@@ -40,7 +40,7 @@ namespace de
      * 
      * @ingroup video
      */
-    class Video : public ISubsystem
+    class PUBLIC_API Video : public ISubsystem
     {
     public:
         typedef std::set<Window*> Windows;

@@ -32,5 +32,5 @@ MACRO ( DENG2_TEST_EXECUTABLE TEST_NAME )
 ENDMACRO ( DENG2_TEST_EXECUTABLE )
 
 IF ( ENABLE_TESTS )
-    SUBDIRS ( basiclink stoploop vectors )
+    SUBDIRS ( basiclink stoploop vectors sdlwindow )
 ENDIF ()

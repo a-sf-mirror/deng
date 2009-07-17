@@ -70,7 +70,7 @@ extern "C" {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+//LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -87,11 +87,11 @@ application_t app;
 
 BOOL InitApplication(application_t *app)
 {
+#if 0
     WNDCLASSEX          wcex;
 
     if(GetClassInfoEx(app->hInstance, app->className, &wcex))
         return TRUE; // Already registered a window class.
-
     // Initialize a window class for our window.
     ZeroMemory(&wcex, sizeof(wcex));
     wcex.cbSize = sizeof(wcex);
@@ -111,9 +111,11 @@ BOOL InitApplication(application_t *app)
 
     // Register our window class.
     return RegisterClassEx(&wcex);
+#endif
+    return TRUE;
 }
 
-
+#if 0
 /**
  * All messages go to the default window message processor.
  */
@@ -131,9 +133,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             switch(wParam)
             {
             case SIZE_MAXIMIZED:
+                /*
                 Sys_SetWindow(windowIDX, 0, 0, 0, 0, 0, DDWF_FULLSCREEN,
                              DDSW_NOBPP|DDSW_NOSIZE|DDSW_NOMOVE|DDSW_NOCENTER);
                 forwardMsg = FALSE;
+                */
                 break;
 
             default:
@@ -237,6 +241,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     return result;
 }
+#endif
 
 static void determineGlobalPaths(application_t *app)
 {
@@ -323,7 +328,7 @@ int DD_Entry(int argc, char* argv[])
 
     memset(&app, 0, sizeof(app));
     app.hInstance = GetModuleHandle(NULL);
-    app.className = TEXT(MAINWCLASS);
+    //app.className = TEXT(MAINWCLASS);
     app.userDirOk = true;
 
     if(!InitApplication(&app))
@@ -379,6 +384,7 @@ int DD_Entry(int argc, char* argv[])
             }
             else 
             {
+                /*
                 if(0 == (windowIDX =
                     Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0,
                                      (isDedicated ? WT_CONSOLE : WT_NORMAL),
@@ -386,7 +392,8 @@ int DD_Entry(int argc, char* argv[])
                 {
                     DD_ErrorBox(true, "Error creating main window.");
                 }
-                else if(!Sys_InitGL())
+                else */
+                if(!Sys_InitGL())
                 {
                     DD_ErrorBox(true, "Error initializing OpenGL.");
                 }
@@ -430,7 +437,9 @@ void DD_Shutdown(void)
     CoUninitialize();
 
     // Unregister our window class.
+#if 0
     UnregisterClass(app.className, app.hInstance);
+#endif
 
     // Bye!
 }
