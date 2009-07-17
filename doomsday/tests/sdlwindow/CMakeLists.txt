@@ -1,8 +1,11 @@
-INCLUDE_DIRECTORIES ( ${SDL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/libdeng2/include )
+INCLUDE_DIRECTORIES ( 
+        ${SDL_INCLUDE_DIR} 
+        ${CMAKE_SOURCE_DIR}/libdeng2/include 
+        ${CMAKE_SOURCE_DIR}/support/include )
 
 FILE ( GLOB SOURCES *.cc *.h )
 
-ADD_EXECUTABLE ( test_sdl ${SOURCES} )
+ADD_EXECUTABLE ( test_sdl ${SOURCES} ${APP_SUPPORT_SOURCES} )
 
 TARGET_LINK_LIBRARIES ( test_sdl deng2 ${SDL_LIBRARY} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} )
 

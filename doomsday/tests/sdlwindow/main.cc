@@ -1,3 +1,4 @@
+#include <dengmain.h>
 #include <de/CommandLine>
 #include <iostream>
 #include <SDL.h>
@@ -8,7 +9,7 @@ using std::cout;
 using std::endl;
 using namespace de;
 
-int main(int argc, char* argv[])
+int deng_Main(int argc, char* argv[])
 {
     CommandLine args(argc, argv);
 
