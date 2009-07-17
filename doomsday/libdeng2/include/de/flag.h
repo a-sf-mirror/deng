@@ -38,6 +38,6 @@ namespace de
 #define DEFINE_FINAL_FLAG(Name, NBit, FlagSetName) \
     DEFINE_FLAG(Name, NBit) \
     static const duint FlagSetName##_NUM_FLAGS = Name##_BIT + 1; \
-    typedef std::bitset<FlagSetName##_NUM_FLAGS> FlagSetName;
+    typedef std::bitset<Name##_BIT + 1> FlagSetName;
 
 #endif /* LIBDENG2_FLAG_H */

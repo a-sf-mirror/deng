@@ -34,7 +34,7 @@
 using namespace de;
 
 Server::Server(const CommandLine& arguments)
-    : App(arguments), listenSocket_(0)
+    : App(arguments, "none", "none"), listenSocket_(0)
 {
     CommandLine& args = commandLine();
 

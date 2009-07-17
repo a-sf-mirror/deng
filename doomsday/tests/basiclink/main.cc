@@ -25,7 +25,7 @@
 #include <de/Writer>
 #include <de/Reader>
 #include <de/Time>
-#include "../testapp/testapp.h"
+#include "../testapp.h"
 
 using namespace de;
 

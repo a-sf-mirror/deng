@@ -194,6 +194,12 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
 
         unlock();
     }
+    catch(const DisconnectedError& err)
+    {
+        // We leave here unlocked.
+        unlock();
+        throw err;
+    }
     catch(const Error& err)
     {
         // We leave here unlocked.
@@ -206,7 +212,7 @@ AddressedBlock* Socket::receive()
 {
     if(!socket_) 
     {
-        throw DisconnectedError("Socket::receive", "Socket closed");
+        throw DisconnectedError("Socket::receive", "Socket is closed");
     }
 
     // First read the header.

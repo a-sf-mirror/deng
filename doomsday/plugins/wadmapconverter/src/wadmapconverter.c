@@ -68,6 +68,11 @@ boolean verbose;
 
 // CODE --------------------------------------------------------------------
 
+PUBLIC_API const char* deng_LibraryType(void)
+{
+    return "deng-plugin/generic";
+}
+
 /**
  * This function is called automatically when the plugin is loaded.
  * We let the engine know what we'd like to do.

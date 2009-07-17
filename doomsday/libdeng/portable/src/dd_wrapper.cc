@@ -27,6 +27,10 @@
 
 #include <de/App>
 #include <de/Zone>
+#include <de/Video>
+#include <de/Window>
+#include <de/Image>
+#include <de/Surface>
 
 using namespace de;
 
@@ -104,4 +108,70 @@ size_t Z_FreeMemory(void)
 void Sys_Quit(void)
 {
     App::app().stop();
+}
+
+int DD_WindowWidth(void)
+{
+    if(App::app().hasVideo())
+    {
+        return App::video().mainWindow().width();
+    }
+    return 640;
+}
+
+int DD_WindowHeight(void)
+{
+    if(App::app().hasVideo())
+    {
+        return App::video().mainWindow().height();
+    }
+    return 480;
+}
+
+int DD_WindowBPP(void)
+{
+    if(App::app().hasVideo())
+    {
+        return App::video().mainWindow().surface().colorDepth();
+    }
+    return 32;
+}
+
+boolean GL_Grab(int x, int y, int width, int height, dgltexformat_t format, void *buffer)
+{
+    if(format != DGL_RGB)
+        return false;
+
+/*
+    // y+height-1 is the bottom edge of the rectangle. It's
+    // flipped to change the origin.
+    glReadPixels(x, FLIP(y + height - 1), width, height, GL_RGB,
+                 GL_UNSIGNED_BYTE, buffer);
+                 */
+                 
+    Image* captured = App::video().mainWindow().surface().toImage();
+    assert(captured->bytesPerPixel() == 3);
+    memcpy(buffer, captured->data(), width * height * 3);
+    delete captured;
+    return true;
+}
+
+boolean Sys_SetWindowTitle(uint idx, const char *title)
+{
+    if(App::app().hasVideo())
+    {
+        App::video().mainWindow().setTitle(title);
+        return true;
+    }
+    return false;
+}
+
+boolean Sys_GetWindowFullscreen(uint idx, boolean *fullscreen)
+{
+    if(App::app().hasVideo())
+    {
+        *fullscreen = App::video().mainWindow().mode().test(Window::FULLSCREEN_BIT);
+        return true;
+    }
+    return false;
 }

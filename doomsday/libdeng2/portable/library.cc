@@ -30,8 +30,10 @@
 
 using namespace de;
 
+const char* Library::DEFAULT_TYPE = "library/generic";
+
 Library::Library(const std::string& nativePath)
-    : handle_(0)
+    : handle_(0), type_(DEFAULT_TYPE)
 {
     std::cout << "Loading library: " << nativePath << "\n";
 #ifdef UNIX
@@ -48,12 +50,19 @@ Library::Library(const std::string& nativePath)
         throw LoadError("Library::Library", "LoadLibrary failed: '" + nativePath + "'");
     }
 #endif
-    std::cout << "...loaded, address is " << handle_ << "\n";
-    
+
     try 
     {
         // Automatically call the initialization function, if one exists.
         SYMBOL(deng_InitializePlugin)();
+    }
+    catch(const SymbolMissingError&)
+    {}
+    
+    try
+    {
+        // Query the type identifier.
+        type_ = SYMBOL(deng_LibraryType)();
     }
     catch(const SymbolMissingError&)
     {}
@@ -71,8 +80,6 @@ Library::~Library()
         catch(const SymbolMissingError&)
         {}
 
-        std::cout << "Unloading library with address " << handle_ << "\n";
-        
 #ifdef UNIX
         // Close the library.
         dlclose(handle_);

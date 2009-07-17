@@ -16,6 +16,21 @@
 
 OPTION ( ENABLE_TESTS "Build the tests" ON )
 
+# Macro for easily defining the test target.
+MACRO ( DENG2_TEST_EXECUTABLE TEST_NAME )
+    INCLUDE_DIRECTORIES ( 
+        ${CMAKE_SOURCE_DIR}/libdeng2/include 
+        ${CMAKE_SOURCE_DIR}/support/include
+        ${SDL_INCLUDE_DIR} )
+    FILE ( GLOB SOURCES *.cc *.h )
+    ADD_EXECUTABLE ( ${TEST_NAME} ${SOURCES} ${APP_SUPPORT_SOURCES} )
+    TARGET_LINK_LIBRARIES ( ${TEST_NAME} deng2 )
+    IF ( WIN32 )
+        SET_TARGET_PROPERTIES ( ${TEST_NAME} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:msvcrt" )
+    ENDIF ( WIN32 )
+    INSTALL ( TARGETS ${TEST_NAME} RUNTIME DESTINATION ${DENG_BINARY_DIR} )
+ENDMACRO ( DENG2_TEST_EXECUTABLE )
+
 IF ( ENABLE_TESTS )
-    SUBDIRS ( basiclink stoploop )
+    SUBDIRS ( basiclink stoploop vectors )
 ENDIF ()

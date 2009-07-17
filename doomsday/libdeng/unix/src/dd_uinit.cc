@@ -193,13 +193,15 @@ int DD_Entry(int argc, char* argv[])
     }
     else
     {
+        /*
         if(0 == (windowIDX =
             Sys_CreateWindow(&app, 0, 0, 0, 640, 480, 32, 0, 
                 isDedicated? WT_CONSOLE : WT_NORMAL, buf, NULL)))
         {
             DD_ErrorBox(true, "Error creating main window.");
         }
-        else if(!Sys_InitGL())
+        else*/
+        if(!Sys_InitGL())
         {
             DD_ErrorBox(true, "Error initializing OpenGL.");
         }

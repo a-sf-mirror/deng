@@ -228,7 +228,7 @@ boolean DD_EarlyInit(void)
     }
 
     // Bring the window manager online.
-    Sys_InitWindowManager();
+    //Sys_InitWindowManager();
 
     return true;
 }
@@ -258,7 +258,7 @@ void DD_ShutdownAll(void)
     R_Shutdown();
     Def_Destroy();
     F_ShutdownDirec();
-    Sys_ShutdownWindowManager();
+    //Sys_ShutdownWindowManager();
 
     // Close the message output file.
     if(outFile)

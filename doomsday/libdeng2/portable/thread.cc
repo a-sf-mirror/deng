@@ -66,13 +66,11 @@ void Thread::stop()
 void Thread::join(const Time::Delta& timeOut)
 {
     stop();
-    std::cout << "Waiting on thread to stop...\n";
     if(thread_)
     {
         endOfThread_.wait(timeOut);
         assert(thread_ == NULL);
     }
-    std::cout << "...it stopped\n";
 }
 
 bool Thread::shouldStopNow() const

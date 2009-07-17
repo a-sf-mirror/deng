@@ -30,6 +30,8 @@
  * The availabilty of features and behavioral traits can be queried for.
  */
 
+#if 0
+
 // HEADER FILES ------------------------------------------------------------
 
 #define WIN32_LEAN_AND_MEAN
@@ -1486,3 +1488,5 @@ HWND Sys_GetWindowHandle(uint idx)
 
     return NULL;
 }
+
+#endif 0

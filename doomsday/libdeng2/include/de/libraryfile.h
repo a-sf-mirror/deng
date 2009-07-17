@@ -74,6 +74,13 @@ namespace de
          * Unloads the library.
          */
         void unload();
+        
+        /**
+         * Checks whether the name of the library file matches.
+         *
+         * @param nameAfterUnderscore  Part of the name following underscore.
+         */
+        bool hasUnderscoreName(const std::string& nameAfterUnderscore) const;
 
     public:
         /**

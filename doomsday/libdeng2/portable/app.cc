@@ -18,19 +18,38 @@
  */
 
 #include "de/app.h"
+#include "de/zone.h"
 #include "de/libraryfile.h"
 #include "de/library.h"
 #include "de/directoryfeed.h"
-#include "de/zone.h"
+#include "de/isubsystem.h"
+#include "de/video.h"
+#include "de/audio.h"
 #include "sdl.h"
 
 using namespace de;
 
+/// Name of the default video subsystem.
+static const std::string DEFAULT_VIDEO = "sdlopengl";
+
+/// Name of the default audio subsystem.
+static const std::string DEFAULT_AUDIO = "fmod";
+
 // This will be set when the app is constructed.
 App* App::singleton_ = 0;
 
-App::App(const CommandLine& commandLine)
-    : commandLine_(commandLine), memory_(0), fs_(0), gameLib_(0), runMainLoop_(true), exitCode_(0)
+App::App(const CommandLine& commandLine, const std::string& defaultVideo, const std::string& defaultAudio)
+    : commandLine_(commandLine), 
+      memory_(0), 
+      fs_(0), 
+      gameLib_(0), 
+      video_(0), 
+      defaultVideo_(defaultVideo), 
+      audio_(0),
+      defaultAudio_(defaultAudio),
+      runMainLoop_(true), 
+      firstIteration_(true), 
+      exitCode_(0)
 {
     if(singleton_)
     {
@@ -71,6 +90,8 @@ App::App(const CommandLine& commandLine)
 
 App::~App()
 {
+    clearSubsystems();
+    
     // Deleting the file system will unload everything owned by the files, including 
     // all plugin libraries.
     delete fs_;
@@ -86,46 +107,88 @@ App::~App()
 
 void App::loadPlugins()
 {
-    try
+    // Names of preferred plugins.
+    std::string gameName = "doom"; /// @todo There is no default game, really...
+    commandLine_.getParameter("--game", gameName);
+    
+    std::string videoName = defaultVideo_.empty()? DEFAULT_VIDEO : defaultVideo_;
+    commandLine_.getParameter("--video", videoName);
+    
+    std::string audioName = defaultAudio_.empty()? DEFAULT_AUDIO : defaultAudio_;
+    commandLine_.getParameter("--audio", audioName);
+
+    // Get the index of libraries.
+    const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
+
+    // Check all libraries we have access to and see what can be done with them.
+    for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
     {
-        // Get the index of libraries.
-        const FS::Index& index = fs_->indexFor(TYPE_NAME(LibraryFile));
-    
-        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
+        LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
+        if(libFile.name().contains("dengplugin_"))
         {
-            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
-            if(libFile.name().contains("dengplugin_"))
+            // Initialize the plugin.
+            std::string type = libFile.library().type();
+
+            // What kind of a library do we have?
+            if(type == "deng-plugin/game")
             {
-                // Initialize the plugin.
-                libFile.library();
-                std::cout << "App::loadPlugins() loaded " << libFile.path() << "\n";
+                if(libFile.hasUnderscoreName(gameName) && !gameLib_)
+                {
+                    // This is the right game.
+                    gameLib_ = &libFile;
+                    std::cout << "App::loadPlugins() located the game " << libFile.path() << "\n";
+                }
+                else
+                {
+                    // Not the right game.
+                    libFile.unload();
+                    continue;
+                }
             }
-        }
-    
-        // Also load the specified game plugin, if there is one.
-        std::string gameName = "doom";
-        dint pos = commandLine_.check("-game", 1);
-        if(pos)
-        {
-            gameName = commandLine_.at(pos + 1);
-        }
-    
-        std::cout << "Looking for game '" << gameName << "'\n";
-        
-        for(FS::Index::const_iterator i = index.begin(); i != index.end(); ++i)
-        {
-            LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
-            if(libFile.name().contains("_" + gameName + "."))
+            else if(type == "deng-plugin/video")
             {
-                // This is the one.
-                gameLib_ = &libFile;
-                std::cout << "App::loadPlugins() located the game " << libFile.path() << "\n";
-                break;
+                if(videoName != "none" && libFile.hasUnderscoreName(videoName) && !video_)
+                {
+                    video_ = libFile.library().SYMBOL(deng_NewVideo)();
+                    subsystems_.push_back(video_);
+                    std::cout << "App::loadPlugins() constructed video subsystem " << libFile.path() << "\n";                
+                }
+                else
+                {
+                    // Not the right one.
+                    libFile.unload();
+                    continue;
+                }
             }
+            else if(type == "deng-plugin/audio")
+            {
+                if(audioName != "none" && libFile.hasUnderscoreName(audioName) && !audio_)
+                {
+                    audio_ = libFile.library().SYMBOL(deng_NewAudio)();
+                    subsystems_.push_back(audio_);
+                    std::cout << "App::loadPlugins() constructed audio subsystem " << libFile.path() << "\n";                
+                }
+                else
+                {
+                    // Not the right one.
+                    libFile.unload();
+                    continue;
+                }
+            }      
+            
+            std::cout << "App::loadPlugins() loaded " << libFile.path() << " [" << 
+                libFile.library().type() << "]\n";
         }
     }
-    catch(const FS::UnknownTypeError&)
-    {}
+}
+
+void App::clearSubsystems()
+{
+    for(Subsystems::iterator i = subsystems_.begin(); i != subsystems_.end(); ++i)
+    {
+        delete *i;
+    }
+    subsystems_.clear();
 }
 
 void App::unloadGame()
@@ -140,6 +203,7 @@ void App::unloadGame()
 
 void App::unloadPlugins()
 {
+    clearSubsystems();
     unloadGame();
     
     // Get the index of libraries.
@@ -161,10 +225,32 @@ dint App::mainLoop()
 {
     // Now running the main loop.
     runMainLoop_ = true;
+    firstIteration_ = true;
     
     while(runMainLoop_)
     {
+        // Determine elapsed time.
+        Time::Delta elapsed = 0;
+        currentTime_ = Time();
+        if(firstIteration_)
+        {
+            firstIteration_ = false;
+            elapsed = 0;
+        }
+        else
+        {
+            elapsed = currentTime_ - lastTime_;
+        }
+        lastTime_ = currentTime_;
+
+        // Do the loop iteration.
         iterate();
+        
+        // Update subsystems (draw graphics, update sounds, etc.).
+        for(Subsystems::iterator i = subsystems_.begin(); i != subsystems_.end(); ++i)
+        {
+            (*i)->update(elapsed);
+        }
     }
     
     return exitCode_;
@@ -207,4 +293,14 @@ Library& App::game()
         throw NoGameError("App::game", "No game library located");
     }
     return self.gameLib_->library();
+}
+
+Video& App::video()
+{
+    App& self = app();
+    if(!self.video_)
+    {
+        throw NoVideoError("App::video", "No video subsystem available");
+    }
+    return *self.video_;
 }

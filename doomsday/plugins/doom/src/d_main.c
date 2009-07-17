@@ -350,6 +350,11 @@ void G_IdentifyVersion(void)
            "-");
 }
 
+PUBLIC_API const char* deng_LibraryType(void)
+{
+    return "deng-plugin/game";
+}
+
 /**
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.

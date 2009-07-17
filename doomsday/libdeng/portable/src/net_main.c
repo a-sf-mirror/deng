@@ -744,7 +744,7 @@ void Net_Drawer(void)
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-    glOrtho(0, theWindow->width, theWindow->height, 0, -1, 1);
+    glOrtho(0, DD_WindowWidth(), DD_WindowHeight(), 0, -1, 1);
 
     if(showBlinkR && SECONDS_TO_TICKS(gameTime) & 8)
     {
@@ -763,14 +763,14 @@ void Net_Drawer(void)
         }
 
         strcat(buf, "]");
-        i = theWindow->width - FR_TextWidth(buf);
+        i = DD_WindowWidth() - FR_TextWidth(buf);
         //glColor3f(0, 0, 0);
         //FR_TextOut(buf, i - 8, 12);
         glColor3f(1, 1, 1);
         FR_ShadowTextOut(buf, i - 10, 10);
     }
 
-    Rend_ConsoleFPS(theWindow->width - 10, 30);
+    Rend_ConsoleFPS(DD_WindowWidth() - 10, 30);
 
     // Restore original matrix.
     glMatrixMode(GL_PROJECTION);

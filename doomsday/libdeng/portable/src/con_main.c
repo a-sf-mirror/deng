@@ -131,8 +131,6 @@ static void Con_SplitIntoSubCommands(const char *command,
 static void Con_ClearExecBuffer(void);
 static void Con_DestroyMatchedWordList(void);
 
-static void updateDedicatedConsoleCmdLine(void);
-
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
@@ -582,7 +580,7 @@ void Con_SetMaxLineLength(void)
 {
     int         cw = FR_TextWidth("A");
     int         length;
-    float       winWidth = theWindow->width? theWindow->width : 640;
+    float       winWidth = DD_WindowWidth();
 
     if(!cw)
     {
@@ -1253,19 +1251,6 @@ static void updateCmdLine(void)
     matchedWordListGood = false;
 }
 
-static void updateDedicatedConsoleCmdLine(void)
-{
-    int         flags = 0;
-
-    if(!isDedicated)
-        return;
-
-    if(cmdInsMode)
-        flags |= CLF_CURSOR_LARGE;
-
-    Sys_SetConWindowCmdLine(windowIDX, cmdLine, cmdCursor+1, flags);
-}
-
 void Con_Open(int yes)
 {
     // The console cannot be closed in dedicated mode.
@@ -1385,7 +1370,6 @@ boolean Con_Responder(ddevent_t* ev)
             ocPos--;
         // Update the command line.
         updateCmdLine();
-        updateDedicatedConsoleCmdLine();
         return true;
 
     case DDKEY_DOWNARROW:
@@ -1400,7 +1384,6 @@ boolean Con_Responder(ddevent_t* ev)
             ocPos++;
 
         updateCmdLine();
-        updateDedicatedConsoleCmdLine();
         return true;
     }
     case DDKEY_PGUP:
@@ -1456,7 +1439,6 @@ boolean Con_Responder(ddevent_t* ev)
         complPos = 0;
         matchedWordListGood = false;
         Rend_ConsoleCursorResetBlink();
-        updateDedicatedConsoleCmdLine();
         return true;
 
     case DDKEY_INS:
@@ -1464,7 +1446,6 @@ boolean Con_Responder(ddevent_t* ev)
             break;
 
         cmdInsMode = !cmdInsMode; // Toggle text insert mode.
-        updateDedicatedConsoleCmdLine();
         return true;
 
     case DDKEY_DEL:
@@ -1478,7 +1459,6 @@ boolean Con_Responder(ddevent_t* ev)
             complPos = cmdCursor;
             matchedWordListGood = false;
             Rend_ConsoleCursorResetBlink();
-            updateDedicatedConsoleCmdLine();
         }
         return true;
 
@@ -1494,7 +1474,6 @@ boolean Con_Responder(ddevent_t* ev)
             complPos = cmdCursor;
             matchedWordListGood = false;
             Rend_ConsoleCursorResetBlink();
-            updateDedicatedConsoleCmdLine();
         }
         return true;
 
@@ -1522,7 +1501,6 @@ boolean Con_Responder(ddevent_t* ev)
         }
 
         Rend_ConsoleCursorResetBlink();
-        updateDedicatedConsoleCmdLine();
         }
         return true;
 
@@ -1539,7 +1517,6 @@ boolean Con_Responder(ddevent_t* ev)
         }
         complPos = cmdCursor;
         Rend_ConsoleCursorResetBlink();
-        updateDedicatedConsoleCmdLine();
         break;
 
     case DDKEY_RIGHTARROW:
@@ -1562,7 +1539,6 @@ boolean Con_Responder(ddevent_t* ev)
                         cmdLine[cmdCursor] = line->text[cmdCursor];
                         cmdCursor++;
                         matchedWordListGood = false;
-                        updateDedicatedConsoleCmdLine();
                     }
                 }
             }
@@ -1577,7 +1553,6 @@ boolean Con_Responder(ddevent_t* ev)
 
         complPos = cmdCursor;
         Rend_ConsoleCursorResetBlink();
-        updateDedicatedConsoleCmdLine();
         break;
 
     case DDKEY_F5:
@@ -1606,7 +1581,6 @@ boolean Con_Responder(ddevent_t* ev)
             complPos = 0;
             matchedWordListGood = false;
             Rend_ConsoleCursorResetBlink();
-            updateDedicatedConsoleCmdLine();
             return true;
         }
 
@@ -1638,7 +1612,6 @@ boolean Con_Responder(ddevent_t* ev)
         complPos = cmdCursor;   //strlen(cmdLine);
         matchedWordListGood = false;
         Rend_ConsoleCursorResetBlink();
-        updateDedicatedConsoleCmdLine();
         return true;
     }
     }
@@ -1661,12 +1634,13 @@ void Con_AddRuler(void)
         for(i = 0; i < 7; ++i)
         {
             fprintf(outFile, "----------");
+            /*
             if(isDedicated)
-                Sys_ConPrint(windowIDX, "----------", 0);
+                Sys_ConPrint(windowIDX, "----------", 0);*/
         }
         fprintf(outFile, "\n");
-        if(isDedicated)
-            Sys_ConPrint(windowIDX, "\n", 0);
+/*        if(isDedicated)
+            Sys_ConPrint(windowIDX, "\n", 0);*/
     }
 }
 
@@ -1700,7 +1674,7 @@ void conPrintf(int flags, const char *format, va_list args)
 
     if(isDedicated)
     {
-        Sys_ConPrint(windowIDX, prbuff, flags);
+        //Sys_ConPrint(windowIDX, prbuff, flags);
     }
     else
     {

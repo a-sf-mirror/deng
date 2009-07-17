@@ -21,6 +21,7 @@
  */
 
 #include "de/zone.h"
+#include "de/math.h"
 
 #include <cstdlib>
 #include <cstring>

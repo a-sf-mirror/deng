@@ -68,25 +68,27 @@ void LibraryFile::unload()
     }
 }
 
+bool LibraryFile::hasUnderscoreName(const std::string& nameAfterUnderscore) const
+{
+    return name().contains("_" + nameAfterUnderscore + ".");
+}
+
 bool LibraryFile::recognize(const File& file)
 {
 #if defined(MACOSX)
-    if((file.name().beginsWith("libdeng_") ||
-        file.name().beginsWith("libdengplugin_")) &&
+    if(file.name().beginsWith("libdengplugin_") &&
         String::fileNameExtension(file.name()) == ".dylib")
     {
         return true;
     }
 #elif defined(UNIX)
-    if((file.name().beginsWith("libdeng_") ||
-        file.name().beginsWith("libdengplugin_")) &&
+    if(file.name().beginsWith("libdengplugin_") &&
         String::fileNameExtension(file.name()) == ".so")
     {
         return true;
     }
 #elif defined(WIN32)
-    if((file.name().beginsWith("deng_") ||
-        file.name().beginsWith("dengplugin_")) &&
+    if(file.name().beginsWith("dengplugin_") &&
         String::fileNameExtension(file.name()) == ".dll")
     {
         return true;

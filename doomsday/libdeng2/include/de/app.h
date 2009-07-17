@@ -21,9 +21,11 @@
 #define LIBDENG2_APP_H
 
 #include <de/deng.h>
-#include <de/Error>
+#include <de/IClock>
 #include <de/CommandLine>
 #include <de/FS>
+
+#include <list>
 
 /**
  * @defgroup core Core
@@ -36,6 +38,9 @@ namespace de
     class Library;
     class LibraryFile;
     class Zone;
+    class ISubsystem;
+    class Video;
+    class Audio;
     
     /**
      * The application. This is an abstract class. Subclasses will need to define
@@ -45,7 +50,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API App
+    class PUBLIC_API App : public IClock
     {
     public:
         /// Only one instance of App is allowed. @ingroup errors
@@ -58,12 +63,27 @@ namespace de
         /// An attempt is made to access the game library while one is not loaded.
         /// @ingroup errors
         DEFINE_ERROR(NoGameError);
+        
+        /// An attempt is made to access the video subsystem while on is not available.
+        /// @ingroup errors
+        DEFINE_ERROR(NoVideoError);
 
         /// There was a problem with SDL. Contains the SDL error message. @ingroup errors
         DEFINE_ERROR(SDLError);
         
     public:
-        App(const CommandLine& commandLine);
+        /**
+         * Constructs the application.
+         * 
+         * @param commandLine  Command line arguments.
+         * @param defaultVideo  Name of the default video subsystem. "none" if the video
+         *      subsystem should not be used. Leave blank to use the built-in default.
+         * @param defaultAudio  Name of the default audio subsystem. "none" if the audio
+         *      subsystem should not be used. Leave blank to use the built-in default.
+         */
+        App(const CommandLine& commandLine, const std::string& defaultVideo = "", 
+            const std::string& defaultAudio = "");
+            
         virtual ~App();
 
         /**
@@ -97,12 +117,17 @@ namespace de
         bool hasGame() const { return gameLib_ != 0; }
         
         /**
+         * Determines whether a video subsystem is currently available.
+         */
+        bool hasVideo() const { return video_ != 0; }
+        
+        /**
          * Returns the amount of time since the creation of the App.
          */
         Time::Delta uptime() const {
             return initializedAt_.since();
         }
-                
+        
         /**
          * Main loop of the application.
          *
@@ -150,6 +175,15 @@ namespace de
          */
         virtual void stop(dint code = 0);
         
+        // Implements IClock.
+        const Time& now() const { return currentTime_; }
+        
+    protected:
+        /**
+         * Delete all the subsystems currently in use.
+         */
+        void clearSubsystems();
+        
     public:
         /**
          * Returns the singleton App instance. With this the App can be accessed
@@ -171,7 +205,12 @@ namespace de
          * Returns the memory zone.
          */
         static Zone& memory();
-
+        
+        /**
+         * Returns the video subsystem.
+         */
+        static Video& video();
+        
     private:
         CommandLine commandLine_;
         
@@ -187,12 +226,31 @@ namespace de
         /// The game library.
         LibraryFile* gameLib_;
         
+        /// Subsystems.
+        typedef std::list<ISubsystem*> Subsystems;
+        Subsystems subsystems_;
+        
+        /// The video subsystem. Can be NULL.
+        Video* video_;
+        std::string defaultVideo_;
+        
+        /// The audio subsystem. Can be NULL.
+        Audio* audio_;
+        std::string defaultAudio_;
+        
         /// @c true while the main loop is running.
         bool runMainLoop_;
+
+        /// Time in effect for the current main loop iteration.
+        Time currentTime_;
+        
+        bool firstIteration_;
+        Time lastTime_;
         
         /// Exit code passed to the operating system when quitting.
         dint exitCode_;
         
+        /// The singleton instance of the App.
         static App* singleton_;
     };
 };

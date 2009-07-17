@@ -1029,9 +1029,9 @@ int M_ScreenShot(const char* filename, int bits)
     screen = GL_GrabScreen();
 
     if(bits == 16)
-        TGA_Save16_rgb888(filename, theWindow->width, theWindow->height, screen);
+        TGA_Save16_rgb888(filename, DD_WindowWidth(), DD_WindowHeight(), screen);
     else
-        TGA_Save24_rgb888(filename, theWindow->width, theWindow->height, screen);
+        TGA_Save24_rgb888(filename, DD_WindowWidth(), DD_WindowHeight(), screen);
 
     M_Free(screen);
     return true;

@@ -40,7 +40,7 @@ IF ( ENABLE_DOOM64 )
     SUBDIRS ( jdoom64 )
 ENDIF ()
 
-SUBDIRS ( dehread wadmapconverter )
+SUBDIRS ( sdlopengl dehread wadmapconverter )
 
 IF ( APPLE )
     SET ( PLUGIN_BINARY_DIR ${DENG_BINARY_DIR} )

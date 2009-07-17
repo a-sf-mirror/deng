@@ -198,8 +198,8 @@ int R_GetViewPort(int player, int* x, int* y, int* w, int* h)
  */
 void R_ViewPortPlacement(viewport_t* port, int x, int y)
 {
-    float               w = theWindow->width / (float) gridCols;
-    float               h = theWindow->height / (float) gridRows;
+    float               w = DD_WindowWidth() / (float) gridCols;
+    float               h = DD_WindowHeight() / (float) gridRows;
 
     port->x = x * w;
     port->y = y * h;
@@ -781,7 +781,7 @@ void R_UseViewPort(viewport_t* port)
 {
     if(!port)
     {
-        glViewport(0, FLIP(0 + theWindow->height - 1), theWindow->width, theWindow->height);
+        glViewport(0, FLIP(0 + DD_WindowHeight() - 1), DD_WindowWidth(), DD_WindowHeight());
     }
     else
     {

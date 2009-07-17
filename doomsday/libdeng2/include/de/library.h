@@ -34,9 +34,19 @@
 
 namespace de
 {
+    class Audio;
+    class Video;
+    
     /**
      * The Library class allows loading shared library files (DLL/so/dylib) and
      * looks up exported symbols in the library.
+     *
+     * Library type identifiers;
+     * - <code>library/generic</code>: A shared library with no special function.
+     * - <code>deng-plugin/generic</code>": Generic libdeng2 plugin. Loaded always.
+     * - <code>deng-plugin/game</code>: The game plugin. Only one of these can be loaded.
+     * - <code>deng-plugin/video</code>: Video subsystem. Optional. One of these can be loaded.
+     * - <code>deng-plugin/audio</code>: Audio subsystem. Optional. One of these can be loaded.
      *
      * @ingroup core
      */
@@ -49,7 +59,18 @@ namespace de
         /// A symbol was not found. @ingroup errors
         DEFINE_ERROR(SymbolMissingError);
         
+        /// Default type identifier.
+        static const char* DEFAULT_TYPE;
+        
         // Common function profiles.
+        /**
+         * Queries the plugin for a type identifier string. If this function is not
+         * defined, the identifier defaults to DEFAULT_TYPE.
+         *
+         * @return  Type identifier string.
+         */
+        typedef const char* (*deng_LibraryType)(void);
+        
         /**
          * Performs any one-time initialization necessary for the usage of the plugin.
          * If this symbol is exported from a shared library, it gets called automatically
@@ -63,7 +84,20 @@ namespace de
          */
         typedef void (*deng_ShutdownPlugin)(void);
         
-        // Common game function profiles.
+        /**
+         * Constructs a new instance of a video subsystem.
+         *
+         * @return  Video subsystem. 
+         */
+        typedef Video* (*deng_NewVideo)(void);
+
+        /**
+         * Constructs a new instance of an audio subsystem.
+         *
+         * @return  Audio subsystem. 
+         */
+        typedef Audio* (*deng_NewAudio)(void);
+        
         typedef dint (*deng_GetInteger)(dint id);
         typedef const char* (*deng_GetString)(dint id);
         typedef void* (*deng_GetAddress)(dint id);
@@ -81,6 +115,12 @@ namespace de
          * Unloads the shared library.
          */
         virtual ~Library();
+
+        /**
+         * Returns the type identifier of the library. This affects how libdeng2
+         * will treat the library.
+         */
+        const std::string& type() const { return type_; }
 
         /**
          * Gets the address of an exported symbol. This will always return a valid
@@ -104,6 +144,10 @@ namespace de
         
         typedef std::map<std::string, void*> Symbols;
         Symbols symbols_;
+        
+        /// Type identifier for the library (e.g., "deng-plugin/generic").
+        /// Queried by calling deng_Identifier(), if one is exported in the library.
+        std::string type_;
     };
 }
 
