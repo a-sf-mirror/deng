@@ -77,6 +77,9 @@ int deng_Main(int argc, char* argv[])
             cout << "Window resize event: " << ev.resize.w << " x " << ev.resize.h << endl;
             w = ev.resize.w;
             h = ev.resize.h;
+#ifdef UNIX
+            SDL_SetVideoMode(w, h, 0, SDL_OPENGL|SDL_RESIZABLE);
+#endif
             break;
 
         default:
