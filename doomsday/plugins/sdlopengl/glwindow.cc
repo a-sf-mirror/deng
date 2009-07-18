@@ -39,7 +39,7 @@ SDLOpenGLVideo& GLWindow::sdlVideo() const
 
 void GLWindow::setMode(Flag modeFlags, bool yes)
 {
-    setSDLVideoMode();
+    //setSDLVideoMode();
 }
 
 void GLWindow::setTitle(const std::string& title)

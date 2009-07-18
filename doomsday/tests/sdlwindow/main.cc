@@ -30,61 +30,60 @@ int deng_Main(int argc, char* argv[])
     while(!quitNow)
     {
         SDL_Event ev;
-        if(!SDL_PollEvent(&ev))
+        glClearColor(++counter/255.f, counter/255.f, counter/255.f, 1);
+        if(counter > 255) counter = 0;
+        glClear(GL_COLOR_BUFFER_BIT);
+        SDL_GL_SwapBuffers();
+
+        while(SDL_PollEvent(&ev))
         {
-            glClearColor(++counter/255.f, counter/255.f, counter/255.f, 1);
-            if(counter > 255) counter = 0;
-            glClear(GL_COLOR_BUFFER_BIT);
-            SDL_GL_SwapBuffers();
-            SDL_Delay(5);
-            continue;
-        }
-
-        switch(ev.type)
-        {
-        case SDL_QUIT:
-            quitNow = true;
-            break;
-
-        case SDL_ACTIVEEVENT:
-            cout << "Active:";
-            cout << (ev.active.state & SDL_APPMOUSEFOCUS? " mousefocus" : "") <<
-                (ev.active.state & SDL_APPINPUTFOCUS? " inputfocus" : "") <<
-                (ev.active.state & SDL_APPACTIVE? " app" : "") << ", gain:" << int(ev.active.gain) << endl;
-            break;
-
-        case SDL_KEYDOWN:
-            cout << "Keydown: scancode:" << int(ev.key.keysym.scancode) << 
-                ", unicode:" << int(ev.key.keysym.unicode) << ", sym:" << int(ev.key.keysym.sym) <<
-                ", mod:" << int(ev.key.keysym.mod) << endl;
-            break;
-
-        case SDL_MOUSEMOTION:
-            break;
-
-        case SDL_SYSWMEVENT:
-            if(args.has("--syswm"))
+            switch(ev.type)
             {
+            case SDL_QUIT:
+                quitNow = true;
+                break;
+
+            case SDL_ACTIVEEVENT:
+                cout << "Active:";
+                cout << (ev.active.state & SDL_APPMOUSEFOCUS? " mousefocus" : "") <<
+                    (ev.active.state & SDL_APPINPUTFOCUS? " inputfocus" : "") <<
+                    (ev.active.state & SDL_APPACTIVE? " app" : "") << ", gain:" << int(ev.active.gain) << endl;
+                break;
+
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                cout << "Keydown: scancode:" << int(ev.key.keysym.scancode) << 
+                    ", unicode:" << int(ev.key.keysym.unicode) << ", sym:" << int(ev.key.keysym.sym) <<
+                    ", mod:" << int(ev.key.keysym.mod) << endl;
+                break;
+
+            case SDL_MOUSEMOTION:
+                break;
+
+            case SDL_SYSWMEVENT:
+                if(args.has("--syswm"))
+                {
 #ifdef WIN32
-                cout << "System event: hwnd:" << (void*)(ev.syswm.msg->hwnd) << ", msg:0x" << std::hex
-                    << ev.syswm.msg->msg << std::dec << ", w:" << ev.syswm.msg->wParam << ", l:" << 
-                    ev.syswm.msg->lParam << endl;
+                    cout << "System event: hwnd:" << (void*)(ev.syswm.msg->hwnd) << ", msg:0x" << std::hex
+                        << ev.syswm.msg->msg << std::dec << ", w:" << ev.syswm.msg->wParam << ", l:" << 
+                        ev.syswm.msg->lParam << endl;
 #endif
-            }
-            break;
+                }
+                break;
 
-        case SDL_VIDEORESIZE:
-            cout << "Window resize event: " << ev.resize.w << " x " << ev.resize.h << endl;
-            w = ev.resize.w;
-            h = ev.resize.h;
+            case SDL_VIDEORESIZE:
+                cout << "Window resize event: " << ev.resize.w << " x " << ev.resize.h << endl;
+                w = ev.resize.w;
+                h = ev.resize.h;
 #ifdef UNIX
-            SDL_SetVideoMode(w, h, 0, SDL_OPENGL|SDL_RESIZABLE);
+                SDL_SetVideoMode(w, h, 0, SDL_OPENGL|SDL_RESIZABLE);
 #endif
-            break;
+                break;
 
-        default:
-            cout << "Got event with type " << int(ev.type) << endl;
-            break;
+            default:
+                cout << "Got event with type " << int(ev.type) << endl;
+                break;
+            }
         }
     }
 

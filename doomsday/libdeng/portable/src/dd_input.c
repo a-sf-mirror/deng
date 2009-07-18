@@ -1067,12 +1067,12 @@ void I_SetUIMouseMode(boolean on)
         if(!isFullScreen)
         {
             SDL_WM_GrabInput(on? SDL_GRAB_OFF : SDL_GRAB_ON);
-            SDL_ShowCursor(on? SDL_ENABLE : SDL_DISABLE);
+            //SDL_ShowCursor(on? SDL_ENABLE : SDL_DISABLE);
         }
         else
         {
             SDL_WM_GrabInput(SDL_GRAB_ON);
-            SDL_ShowCursor(SDL_DISABLE);
+            //SDL_ShowCursor(SDL_DISABLE);
         }
     }
 }

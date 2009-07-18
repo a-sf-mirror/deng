@@ -189,16 +189,19 @@ void Sys_Sleep(int millisecs)
 
 void Sys_ShowCursor(boolean show)
 {
-#ifdef WIN32
+    // This is the video subsystem's responsibility.
+/*#ifdef WIN32
     ShowCursor(show);
 #endif
-#ifdef UNIX
-    SDL_ShowCursor(show ? SDL_ENABLE : SDL_DISABLE);
-#endif
+#ifdef UNIX*/
+//    SDL_ShowCursor(show ? SDL_ENABLE : SDL_DISABLE);
+//#endif
 }
 
 void Sys_HideMouse(void)
 {
+    // This is the video subsystem's responsibility.
+    /*
 #ifdef WIN32
     if(novideo)
         return;
@@ -207,7 +210,7 @@ void Sys_HideMouse(void)
 #endif
 #ifdef UNIX
     Sys_ShowCursor(false);
-#endif
+#endif*/
 }
 
 void Sys_MessageBox(const char *msg, boolean iserror)
