@@ -17,7 +17,13 @@ int deng_Main(int argc, char* argv[])
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_EnableUNICODE(SDL_ENABLE);
-    SDL_SetVideoMode(640, 480, 0, SDL_OPENGL | SDL_RESIZABLE);
+
+    int flags = SDL_OPENGL;
+    if(args.has("--fullscreen"))
+        flags |= SDL_FULLSCREEN;
+    else
+        flags |= SDL_RESIZABLE;
+    SDL_SetVideoMode(640, 480, 0, flags);
 
     int w = 640;
     int h = 480;
@@ -75,9 +81,9 @@ int deng_Main(int argc, char* argv[])
                 cout << "Window resize event: " << ev.resize.w << " x " << ev.resize.h << endl;
                 w = ev.resize.w;
                 h = ev.resize.h;
-#ifdef UNIX
+/*#ifdef UNIX
                 SDL_SetVideoMode(w, h, 0, SDL_OPENGL|SDL_RESIZABLE);
-#endif
+#endif*/
                 break;
 
             default:

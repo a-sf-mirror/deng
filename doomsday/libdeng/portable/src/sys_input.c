@@ -202,6 +202,39 @@ int I_TranslateKeyCode(SDLKey sym)
     case SDLK_SCROLLOCK:
         return DDKEY_SCROLL;
 
+#if SDL_MINOR_VERSION >= 3
+    // The *scancodes* are the same for the keypad and arrow keys for some reason,
+    // bug in SDL-svn?
+    case SDLK_KP0:
+        return DDKEY_INS;
+
+    case SDLK_KP1:
+        return DDKEY_END;
+
+    case SDLK_KP2:
+        return DDKEY_DOWNARROW;
+
+    case SDLK_KP3:
+        return DDKEY_PGDN;
+
+    case SDLK_KP4:
+        return DDKEY_LEFTARROW;
+
+    case SDLK_KP5:
+        return DDKEY_NUMPAD5;
+
+    case SDLK_KP6:
+        return DDKEY_RIGHTARROW;
+
+    case SDLK_KP7:
+        return DDKEY_HOME;
+
+    case SDLK_KP8:
+        return DDKEY_UPARROW;
+
+    case SDLK_KP9:
+        return DDKEY_PGUP;
+#else
     case SDLK_KP0:
         return DDKEY_NUMPAD0;
 
@@ -231,6 +264,7 @@ int I_TranslateKeyCode(SDLKey sym)
 
     case SDLK_KP9:
         return DDKEY_NUMPAD9;
+#endif
 
     case SDLK_KP_PERIOD:
         return DDKEY_DECIMAL;
@@ -293,7 +327,7 @@ void I_PollEvents(void)
             e = I_NewKeyEvent();
             e->event = (event.type == SDL_KEYDOWN ? IKE_KEY_DOWN : IKE_KEY_UP);
             e->ddkey = I_TranslateKeyCode(event.key.keysym.sym);
-            /*printf("sdl:%i ddkey:%i\n", event.key.keysym.scancode, e->ddkey);*/
+            //Con_Message("sdl:%i ddkey:%i\n", event.key.keysym.scancode, e->ddkey);
             break;
 
         case SDL_MOUSEBUTTONDOWN:
@@ -451,7 +485,12 @@ void I_GetMouseState(mousestate_t *state)
     if(!I_MousePresent() || !initIOk)
         return;
 
-    buttons = SDL_GetRelativeMouseState(&state->x, &state->y);
+    buttons = 
+#if SDL_MINOR_VERSION >= 3
+        SDL_GetRelativeMouseState(0, &state->x, &state->y);
+#else
+        SDL_GetRelativeMouseState(&state->x, &state->y);
+#endif
 
     // Ignore the first nonzero offset, it appears it's a nasty jump.
     if(!gotFirstMouseMove && (state->x || state->y))
