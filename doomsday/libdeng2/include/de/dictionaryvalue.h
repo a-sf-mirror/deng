@@ -76,16 +76,16 @@ namespace de
         
         // Implementations of pure virtual methods.
         Value* duplicate() const;
-		Text asText() const;
-		dsize size() const;		
-		const Value* element(const Value& index) const;	
-		Value* element(const Value& index);	
+        Text asText() const;
+        dsize size() const;     
+        const Value* element(const Value& index) const; 
+        Value* element(const Value& index); 
         void setElement(const Value& index, Value* value);
         bool contains(const Value& value) const;
         Value* begin();
         Value* next();
         bool isTrue() const;
-	    dint compare(const Value& value) const;
+        dint compare(const Value& value) const;
         void sum(const Value& value);
         void subtract(const Value& subtrahend);
         

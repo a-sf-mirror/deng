@@ -52,30 +52,30 @@ Value* ArrayValue::duplicate() const
 
 Value::Text ArrayValue::asText() const
 {
-	std::ostringstream s;
-	s << "[";
+    std::ostringstream s;
+    s << "[";
 
-	bool isFirst = true;
+    bool isFirst = true;
 
-	// Compose a textual representation of the array elements.
-	for(Elements::const_iterator i = elements_.begin();
-		i != elements_.end(); ++i)
-	{
-		if(!isFirst)
-		{
-			s << ",";
-		}
-		s << " " << (*i)->asText();
-		isFirst = false;
-	}
-	
-	s << " ]";
-	return s.str();
+    // Compose a textual representation of the array elements.
+    for(Elements::const_iterator i = elements_.begin();
+        i != elements_.end(); ++i)
+    {
+        if(!isFirst)
+        {
+            s << ",";
+        }
+        s << " " << (*i)->asText();
+        isFirst = false;
+    }
+    
+    s << " ]";
+    return s.str();
 }
 
 dsize ArrayValue::size() const
 {
-	return elements_.size();
+    return elements_.size();
 }
 
 const Value* ArrayValue::element(const Value& indexValue) const
@@ -195,7 +195,7 @@ ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)
     }
     else
     {
-		throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
+        throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
     }    
 }
 
@@ -211,7 +211,7 @@ ArrayValue::Elements::const_iterator ArrayValue::indexToIterator(dint index) con
     }
     else
     {
-		throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
+        throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
     }    
 }
 

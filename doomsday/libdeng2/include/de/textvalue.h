@@ -32,19 +32,19 @@ namespace de
      *
      * @ingroup data
      */
-	class PUBLIC_API TextValue : public Value
-	{
-	public:
-	    /// An error occurs in string pattern replacements. @ingroup errors
+    class PUBLIC_API TextValue : public Value
+    {
+    public:
+        /// An error occurs in string pattern replacements. @ingroup errors
         DEFINE_ERROR(IllegalPatternError);
-	    
-	public:
-		TextValue(const Text& initialValue = "");
+        
+    public:
+        TextValue(const Text& initialValue = "");
 
         Value* duplicate() const;
-		Number asNumber() const;
-		Text asText() const;
-		dsize size() const;
+        Number asNumber() const;
+        Text asText() const;
+        dsize size() const;
         bool isTrue() const;
         dint compare(const Value& value) const;
         void sum(const Value& value);
@@ -59,9 +59,9 @@ namespace de
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
-	private:
-		Text value_;
-	};
+    private:
+        Text value_;
+    };
 }
 
 #endif /* LIBDENG2_TEXTVALUE_H */

@@ -48,20 +48,20 @@ Value* TextValue::duplicate() const
 
 Value::Number TextValue::asNumber() const
 {
-	std::istringstream str(value_);
-	Number number = 0;
-	str >> number;
-	return number;
+    std::istringstream str(value_);
+    Number number = 0;
+    str >> number;
+    return number;
 }
 
 Value::Text TextValue::asText() const
 {
-	return value_;
+    return value_;
 }
 
 dsize TextValue::size() const
 {
-	return value_.size();
+    return value_.size();
 }
 
 bool TextValue::isTrue() const

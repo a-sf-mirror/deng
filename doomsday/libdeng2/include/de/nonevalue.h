@@ -29,20 +29,20 @@ namespace de
      *
      * @ingroup data
      */
-	class PUBLIC_API NoneValue : public Value
-	{
-	public:
-		NoneValue();
+    class PUBLIC_API NoneValue : public Value
+    {
+    public:
+        NoneValue();
 
         Value* duplicate() const;
-		Text asText() const;
+        Text asText() const;
         bool isTrue() const;
         dint compare(const Value& value) const;
 
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
-	};
+    };
 }
 
 #endif /* LIBDENG2_NONEVALUE_H */

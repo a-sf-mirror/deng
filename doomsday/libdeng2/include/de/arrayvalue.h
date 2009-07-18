@@ -32,22 +32,22 @@ namespace de
      *
      * @ingroup data
      */
-	class PUBLIC_API ArrayValue : public Value
-	{
-	public:
-		/// Attempt to index the array with indices that are not defined for the array. @ingroup errors
-		DEFINE_ERROR(OutOfBoundsError);
-		
-		/// The index used for accessing the array is of the wrong type. @ingroup errors
+    class PUBLIC_API ArrayValue : public Value
+    {
+    public:
+        /// Attempt to index the array with indices that are not defined for the array. @ingroup errors
+        DEFINE_ERROR(OutOfBoundsError);
+        
+        /// The index used for accessing the array is of the wrong type. @ingroup errors
         DEFINE_ERROR(IllegalIndexError);
 
         /// Type for the elements. Public because const access to the elements is public.
-		typedef std::vector<Value*> Elements;
-		
-	public:
-		ArrayValue();
+        typedef std::vector<Value*> Elements;
+        
+    public:
+        ArrayValue();
         ArrayValue(const ArrayValue& other);
-		~ArrayValue();
+        ~ArrayValue();
 
         /// Const accessor to the array elements.
         const Elements& elements() const { return elements_; }
@@ -100,32 +100,32 @@ namespace de
         
         // Implementations of pure virtual methods.
         Value* duplicate() const;
-		Text asText() const;
-		dsize size() const;		
-		const Value* element(const Value& index) const;	
-		Value* element(const Value& index);	
+        Text asText() const;
+        dsize size() const;     
+        const Value* element(const Value& index) const; 
+        Value* element(const Value& index); 
         void setElement(const Value& index, Value* value);
         bool contains(const Value& value) const;
         Value* begin();
         Value* next();
         bool isTrue() const;
-	    dint compare(const Value& value) const;
+        dint compare(const Value& value) const;
         void sum(const Value& value);
 
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
-	
-	private:
+    
+    private:
         Elements::iterator indexToIterator(dint index);
         Elements::const_iterator indexToIterator(dint index) const;
-	
-	private:
-		Elements elements_;
-		
-		/// Current position of the iterator.
+    
+    private:
+        Elements elements_;
+        
+        /// Current position of the iterator.
         dint iteration_;
-	};
+    };
 }
 
 #endif /* LIBDENG2_ARRAYVALUE_H */

@@ -37,83 +37,83 @@ namespace de
      *
      * @ingroup data
      */
-	class PUBLIC_API Value : public String::IPatternArg, public ISerializable
-	{
-	public:
-		/// An illegal operation (i.e., one that is not defined by the Value) was attempted. 
-		/// @ingroup errors
-		DEFINE_ERROR(IllegalError);
-		
-		/// An illegal conversion was attempted. @ingroup errors
-		DEFINE_SUB_ERROR(IllegalError, ConversionError);
-		
-		/// An illegal arithmetic operation is attempted (e.g., division by text). @ingroup errors
+    class PUBLIC_API Value : public String::IPatternArg, public ISerializable
+    {
+    public:
+        /// An illegal operation (i.e., one that is not defined by the Value) was attempted. 
+        /// @ingroup errors
+        DEFINE_ERROR(IllegalError);
+        
+        /// An illegal conversion was attempted. @ingroup errors
+        DEFINE_SUB_ERROR(IllegalError, ConversionError);
+        
+        /// An illegal arithmetic operation is attempted (e.g., division by text). @ingroup errors
         DEFINE_SUB_ERROR(IllegalError, ArithmeticError);
 
-		// Types used by all values:
-		typedef ddouble Number;		/**< Numbers are in double-precision. */
-		typedef String Text;	    /**< Text strings. */
+        // Types used by all values:
+        typedef ddouble Number;     /**< Numbers are in double-precision. */
+        typedef String Text;        /**< Text strings. */
 
-	public:
-		virtual ~Value();
-		
-		/**
-		 * Creates a duplicate copy of the value.
-		 *
-		 * @return New Value object. Caller gets ownership of the object.
-		 */
+    public:
+        virtual ~Value();
+        
+        /**
+         * Creates a duplicate copy of the value.
+         *
+         * @return New Value object. Caller gets ownership of the object.
+         */
         virtual Value* duplicate() const = 0;
 
-		/**
-		 * Convert the value to a number.  Implementing this is
-		 * optional.  The default implementation will raise an
-		 * exception.
-		 */
-		virtual Number asNumber() const;
-		
-		/**
-		 * Convert the value to a number. This will never raise an
-		 * exception. If the conversion is not possible, it will 
-		 * return @c defaultValue.
-		 *
-		 * @return Value as number.
-		 */
+        /**
+         * Convert the value to a number.  Implementing this is
+         * optional.  The default implementation will raise an
+         * exception.
+         */
+        virtual Number asNumber() const;
+        
+        /**
+         * Convert the value to a number. This will never raise an
+         * exception. If the conversion is not possible, it will 
+         * return @c defaultValue.
+         *
+         * @return Value as number.
+         */
         virtual Number asSafeNumber(const Number& defaultValue = 0.0) const;
-		
-		/**
-		 * Convert the value to into a text string.  All values have
-		 * to implement this.
-		 */
-		virtual Text asText() const = 0;
+        
+        /**
+         * Convert the value to into a text string.  All values have
+         * to implement this.
+         */
+        virtual Text asText() const = 0;
 
-		/**
-		 * Determine the size of the value.  The meaning of this
-		 * depends on the type of the value.
-		 */
-		virtual dsize size() const;
+        /**
+         * Determine the size of the value.  The meaning of this
+         * depends on the type of the value.
+         */
+        virtual dsize size() const;
 
-		/**
-		 * Get a specific element of the value.  This is meaningful with 
-		 * arrays and dictionaries.
-		 */
-		virtual const Value* element(const Value& index) const;
+        /**
+         * Get a specific element of the value.  This is meaningful with 
+         * arrays and dictionaries.
+         */
+        virtual const Value* element(const Value& index) const;
 
-		/**
-		 * Get a specific element of the value.  This is meaningful with 
-		 * arrays and dictionaries. This method is non-const, meaning that
-		 * the returned value can be modified.
-		 */
-		virtual Value* element(const Value& index);
-		
-		/**
-		 * Set a specific element of the value. This is meaningful only with
-		 * arrays and dictionaries, which are composed out of modifiable 
-		 * elements.
-		 *
-		 * @param index  Index of the element.
-		 * @param elementValue  New value for the element. This value will take
-		 *               ownership of @c elementValue.
-		 */
+        /**
+         * Get a specific element of the value.  This is meaningful with 
+         * arrays and dictionaries. This method is non-const, meaning that
+         * the returned value can be modified.
+         */
+        virtual Value* element(const Value& index);
+        
+        /**
+         * Set a specific element of the value. This is meaningful only with
+         * arrays and dictionaries, which are composed out of modifiable 
+         * elements.
+         *
+         * @param index  Index of the element.
+         * @param elementValue  New value for the element. This value will take
+         *               ownership of @c elementValue.
+         */
         virtual void setElement(const Value& index, Value* elementValue);
 
         /**
@@ -144,14 +144,14 @@ namespace de
          */
         virtual Value* next();
 
-		/**
-		 * Determine if the value can be thought of as a logical truth.
-		 */
-		virtual bool isTrue() const = 0;
+        /**
+         * Determine if the value can be thought of as a logical truth.
+         */
+        virtual bool isTrue() const = 0;
 
-		/**
-		 * Determine if the value can be thought of as a logical falsehood.
-		 */
+        /**
+         * Determine if the value can be thought of as a logical falsehood.
+         */
         virtual bool isFalse() const;
 
         /**
@@ -219,7 +219,7 @@ namespace de
             ARRAY,
             DICTIONARY
         };
-	};
+    };
 }
 
 #endif /* LIBDENG2_VALUE_H */

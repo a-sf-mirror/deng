@@ -30,18 +30,18 @@ namespace de
      *
      * @ingroup data
      */
-	class PUBLIC_API NumberValue : public Value
-	{
-	public:
-	    /// Truth values for logical operations. They are treated as
-	    /// number values.
-	    enum {
-	        FALSE = 0,
-	        TRUE = 1
+    class PUBLIC_API NumberValue : public Value
+    {
+    public:
+        /// Truth values for logical operations. They are treated as
+        /// number values.
+        enum {
+            FALSE = 0,
+            TRUE = 1
         };
-	    
-	public:
-		NumberValue(Number initialValue = 0);
+        
+    public:
+        NumberValue(Number initialValue = 0);
 
         /**
          * Conversion template that forces a cast to another type.
@@ -50,8 +50,8 @@ namespace de
         Type as() const { return Type(value_); }
 
         Value* duplicate() const;
-		Number asNumber() const;
-		Text asText() const;
+        Number asNumber() const;
+        Text asText() const;
         bool isTrue() const;
         dint compare(const Value& value) const;
         void negate();        
@@ -65,9 +65,9 @@ namespace de
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
-	private:
-		Number value_;
-	};
+    private:
+        Number value_;
+    };
 }
 
 #endif /* LIBDENG2_NUMBERVALUE_H */

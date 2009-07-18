@@ -82,23 +82,23 @@ Value* DictionaryValue::duplicate() const
 Value::Text DictionaryValue::asText() const
 {
     std::ostringstream s;
-	s << "{";
+    s << "{";
 
-	bool isFirst = true;
+    bool isFirst = true;
 
-	// Compose a textual representation of the array elements.
-	for(Elements::const_iterator i = elements_.begin(); i != elements_.end(); ++i)
-	{
-		if(!isFirst)
-		{
-			s << ",";
-		}
+    // Compose a textual representation of the array elements.
+    for(Elements::const_iterator i = elements_.begin(); i != elements_.end(); ++i)
+    {
+        if(!isFirst)
+        {
+            s << ",";
+        }
         s << " " << i->first.value->asText() << ": " << i->second->asText();
-		isFirst = false;
-	}
-	
-	s << " }";
-	return s.str();
+        isFirst = false;
+    }
+    
+    s << " }";
+    return s.str();
 }
 
 dsize DictionaryValue::size() const
