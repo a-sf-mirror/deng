@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -325,8 +325,8 @@ String String::patternFormat(std::string::const_iterator& formatIter,
     
     // An argument comes here.
     bool rightAlign = true;
-    dint maxWidth = 0;
-    dint minWidth = 0;
+    duint maxWidth = 0;
+    duint minWidth = 0;
 
     if(*formatIter == '%')
     {

@@ -34,6 +34,8 @@ namespace de
      * so that all the relevant information about the object is included.
      * The original object can then be restored by deserializing the byte
      * array.
+     *
+     * @ingroup data
      */
     class PUBLIC_API ISerializable
     {

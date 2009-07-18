@@ -31,6 +31,8 @@ namespace de
     /**
      * Writer provides a protocol for writing network byte ordered data
      * into a byte array object (anything with a IByteArray interface).
+     *
+     * @ingroup data
      */
     class PUBLIC_API Writer
     {

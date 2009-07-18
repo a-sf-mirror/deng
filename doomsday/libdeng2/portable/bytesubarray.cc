@@ -44,7 +44,6 @@ void ByteSubArray::set(Offset at, const Byte* values, Size count)
     if(!mainArray_)
     {
         throw NonModifiableError("ByteSubArray::set", "Array is non-modifiable.");
-    }
-    
+    }    
     mainArray_->set(at_ + at, values, count);
 }

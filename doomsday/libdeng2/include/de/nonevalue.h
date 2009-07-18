@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,51 +17,32 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_TEXTVALUE_H
-#define LIBDENG2_TEXTVALUE_H
+#ifndef LIBDENG2_NONEVALUE_H
+#define LIBDENG2_NONEVALUE_H
 
 #include <de/Value>
-#include <de/String>
-
-#include <list>
 
 namespace de
 {
     /**
-     * The TextValue class is a subclass of Value that holds a text string.
+     * The NoneValue class is a subclass of Value that does not contain any actual data.
      *
      * @ingroup data
      */
-	class PUBLIC_API TextValue : public Value
+	class PUBLIC_API NoneValue : public Value
 	{
 	public:
-	    /// An error occurs in string pattern replacements. @ingroup errors
-        DEFINE_ERROR(IllegalPatternError);
-	    
-	public:
-		TextValue(const Text& initialValue = "");
+		NoneValue();
 
         Value* duplicate() const;
-		Number asNumber() const;
 		Text asText() const;
-		dsize size() const;
         bool isTrue() const;
         dint compare(const Value& value) const;
-        void sum(const Value& value);
-        void multiply(const Value& value);
-        void divide(const Value& value);
-        void modulo(const Value& divisor);
-        
-        static std::string substitutePlaceholders(const std::string& pattern, 
-            const std::list<const Value*>& args);
-        
+
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
-        
-	private:
-		Text value_;
 	};
 }
 
-#endif /* LIBDENG2_TEXTVALUE_H */
+#endif /* LIBDENG2_NONEVALUE_H */

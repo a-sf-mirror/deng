@@ -89,10 +89,10 @@ static void M_Free(void* ptr)
     delete [] static_cast<dbyte*>(ptr);
 }
 
-/**
+/*
  * Conversion from string to long, with the "k" and "m" suffixes.
  */
-static long superatol(char *s)
+/*static long superatol(char *s)
 {
     char           *endptr;
     long            val = strtol(s, &endptr, 0);
@@ -102,7 +102,7 @@ static long superatol(char *s)
     else if(*endptr == 'm' || *endptr == 'M')
         val *= 1048576;
     return val;
-}
+}*/
 
 Zone::Zone() : volumeRoot_(0), fastMalloc_(false)
 {

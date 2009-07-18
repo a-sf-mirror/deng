@@ -16,43 +16,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/commandpacket.h"
-#include "de/value.h"
+
+#include "de/nonevalue.h"
 #include "de/writer.h"
 #include "de/reader.h"
-#include "de/block.h"
 
 using namespace de;
 
-static const char* COMMAND_PACKET_TYPE = "CMND";
-
-CommandPacket::CommandPacket(const String& cmd) : Packet(COMMAND_PACKET_TYPE), command_(cmd)
+NoneValue::NoneValue()
 {}
 
-CommandPacket::~CommandPacket()
-{}
-
-void CommandPacket::operator >> (Writer& to) const
+Value* NoneValue::duplicate() const
 {
-    Packet::operator >> (to);
-    to << command_ << arguments_;
+    return new NoneValue();
 }
 
-void CommandPacket::operator << (Reader& from)
+Value::Text NoneValue::asText() const
 {
-    Packet::operator << (from);
-    from >> command_ >> arguments_;
+	return "(none)";
 }
 
-Packet* CommandPacket::fromBlock(const Block& block)
+bool NoneValue::isTrue() const
 {
-    Reader from(block);
-    if(checkType(from, COMMAND_PACKET_TYPE))
-    {    
-        std::auto_ptr<CommandPacket> p(new CommandPacket);
-        from >> *p.get();
-        return p.release();
+    return false;
+}
+
+dint NoneValue::compare(const Value& value) const
+{
+    const NoneValue* other = dynamic_cast<const NoneValue*>(&value);
+    if(other)
+    {
+        // All nones are equal.
+        return 0;
+    }    
+    // None is less than everything else.
+    return 1;
+}
+
+void NoneValue::operator >> (Writer& to) const
+{
+    to << SerialId(NONE);
+}
+
+void NoneValue::operator << (Reader& from)
+{
+    SerialId id;
+    from >> id;
+    if(id != NONE)
+    {
+        throw DeserializationError("NoneValue::operator <<", "Invalid ID");
     }
-    return NULL;
 }

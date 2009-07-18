@@ -26,6 +26,8 @@ namespace de
 {
     /**
      * ByteSubArray accesses a portion of a IByteArray object.
+     *
+     * @ingroup data
      */
     class PUBLIC_API ByteSubArray : public IByteArray
     {

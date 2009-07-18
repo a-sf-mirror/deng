@@ -54,7 +54,6 @@ void DirectoryFeed::populate(Folder& folder)
     {
         throw NotFoundError("DirectoryFeed::populate", "Path '" + nativePath_ + "' not found");
     }
-    File* f;
     struct dirent* entry;
     while((entry = readdir(dir)) != NULL)   
     {

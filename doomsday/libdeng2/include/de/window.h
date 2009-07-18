@@ -85,7 +85,7 @@ namespace de
          * Changes the value of the mode flags. Subclass should override to
          * update the state of the concrete window.
          *
-         * @param modeFlag  Mode flag(s).
+         * @param modeFlags  Mode flag(s).
          * @param yes  @c true, if the flag(s) should be set. @c false to unset.
          */
         virtual void setMode(Flag modeFlags, bool yes = true);

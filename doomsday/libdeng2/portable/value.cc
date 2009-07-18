@@ -18,6 +18,7 @@
  */
 
 #include "de/value.h"
+#include "de/nonevalue.h"
 #include "de/numbervalue.h"
 #include "de/textvalue.h"
 #include "de/arrayvalue.h"
@@ -134,6 +135,10 @@ Value* Value::constructFrom(Reader& reader)
     
     switch(id)
     {
+    case NONE:
+        result = new NoneValue();
+        break;
+        
     case NUMBER:
         result = new NumberValue();
         break;

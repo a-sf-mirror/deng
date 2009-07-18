@@ -27,6 +27,8 @@ namespace de
     /**
      * Template for 2D rectangles.
      * The members are public for convenient access.
+     *
+     * @ingroup types
      */
     template <typename VectorType>
     class Rectangle

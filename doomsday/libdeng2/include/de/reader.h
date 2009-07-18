@@ -31,6 +31,8 @@ namespace de
     /**   
      * Reader provides a protocol for reading network byte ordered data
      * from a byte array object (anything with a IByteArray interface).
+     *
+     * @ingroup data
      */
     class PUBLIC_API Reader
     {

@@ -29,6 +29,8 @@ namespace de
     /**
      * The ArrayValue class is a subclass of Value that holds a dynamic
      * array of other values. The array is indexed using (integer) numbers.
+     *
+     * @ingroup data
      */
 	class PUBLIC_API ArrayValue : public Value
 	{

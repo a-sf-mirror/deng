@@ -17,9 +17,17 @@
  * along with this program; if not, see http://www.gnu.org/licenses/
  *
  * <h2>Table of Contents</h2>
+ *
+ * <h3>Main Modules</h3>
  * - @ref core
  * - @ref fs
  * - @ref net
+ *      - @ref protocol
+ * - @ref video
+ *
+ * <h3>Supporting Modules</h3>
+ * - @ref types
+ * - @ref data
  * - @ref errors
  */
 
@@ -63,7 +71,16 @@
  */
 namespace de 
 {
-	/* Basic types. */
+    /**
+     * @defgroup types Basic Data Types
+     * 
+     * Basic data types.
+     * 
+     * @todo Use native types that are guaranteed to have the right size.
+     */
+    
+    //@{
+    /// @ingroup types
 	typedef char	    		    dchar;	    ///< 8-bit signed integer.
 	typedef unsigned char		    dbyte;	    ///< 8-bit unsigned integer.
 	typedef unsigned char		    duchar;     ///< 8-bit unsigned integer.
@@ -82,6 +99,7 @@ namespace de
 	typedef float				    dfloat;     ///< 32-bit floating point number.
 	typedef double				    ddouble;    ///< 64-bit floating point number.
     typedef size_t                  dsize;
+    //@}
 }
 
 #include <de/Error>

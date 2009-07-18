@@ -51,34 +51,28 @@ Library::Library(const std::string& nativePath)
     }
 #endif
 
-    try 
-    {
-        // Automatically call the initialization function, if one exists.
-        SYMBOL(deng_InitializePlugin)();
-    }
-    catch(const SymbolMissingError&)
-    {}
-    
-    try
+    if(address("deng_LibraryType")) 
     {
         // Query the type identifier.
         type_ = SYMBOL(deng_LibraryType)();
     }
-    catch(const SymbolMissingError&)
-    {}
+    
+    if(type_.beginsWith("deng-plugin/") && address("deng_InitializePlugin"))
+    {
+        // Automatically call the initialization function, if one exists.
+        SYMBOL(deng_InitializePlugin)();
+    }
 }
 
 Library::~Library()
 {
     if(handle_)
     {
-        try 
+        if(type_.beginsWith("deng-plugin/") && address("deng_ShutdownPlugin")) 
         {
             // Automatically call the shutdown function, if one exists.
             SYMBOL(deng_ShutdownPlugin)();
         }
-        catch(const SymbolMissingError&)
-        {}
 
 #ifdef UNIX
         // Close the library.

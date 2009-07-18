@@ -55,7 +55,6 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
     {
         throw TooManyInstancesError("App::App", "Only one instance allowed");
     }
-    
     singleton_ = this;
 
     // Start by initializing SDL.
@@ -67,25 +66,40 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
     {
         throw SDLError("App::App", SDLNet_GetError());
     }
-    
-    // The memory zone.
-    memory_ = new Zone();
+
+    try
+    {
+        // The memory zone.
+        std::auto_ptr<Zone> memoryPtr(new Zone());
+        memory_ = memoryPtr.get();
 
 #ifdef MACOSX
-    // When the application is started through Finder, we get a special command
-    // line argument. The working directory needs to be changed.
-    if(commandLine_.count() >= 2 && String(commandLine_.at(1)).beginsWith("-psn"))
-    {
-        DirectoryFeed::changeWorkingDir(String::fileNamePath(commandLine_.at(0)) + "/..");
-    }
+        // When the application is started through Finder, we get a special command
+        // line argument. The working directory needs to be changed.
+        if(commandLine_.count() >= 2 && String(commandLine_.at(1)).beginsWith("-psn"))
+        {
+            DirectoryFeed::changeWorkingDir(String::fileNamePath(commandLine_.at(0)) + "/..");
+        }
 #endif
     
-    // Now we can proceed with the members.
-    fs_ = new FS();
-    fs_->refresh();
-    
-    // Load the basic plugins.
-    loadPlugins();
+        // Now we can proceed with the members.
+        std::auto_ptr<FS> fsPtr(new FS());
+        fs_ = fsPtr.get();
+        fs_->refresh();
+        
+        // Load the basic plugins.
+        loadPlugins();
+
+        // Successful construction without errors, so drop our guard.
+        memoryPtr.release();
+        fsPtr.release();
+    }
+    catch(const Error& err)
+    {
+        // Make sure the subsystems that were created during plugin loading are deleted.
+        clearSubsystems();
+        err.raise();
+    }
 }
 
 App::~App()

@@ -42,8 +42,8 @@ Animator::Animator(const Animator& other)
       startTime_(other.startTime_), 
       transition_(other.transition_), 
       transitionTime_(other.transitionTime_),
-      status_(other.status_), 
-      observer_(0)
+      observer_(0),
+      status_(other.status_)
 {}
 
 Animator::~Animator()

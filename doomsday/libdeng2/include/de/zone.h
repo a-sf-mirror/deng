@@ -337,7 +337,7 @@ namespace de
              * Frees the entire batch.
              * All memory allocated is released for all elements in all blocks.
              */
-            ~Batch() {
+            virtual ~Batch() {
                 if(blocks_) {
                     // Free the elements from each block.
                     for(dsize i = 0; i < count_; ++i) {

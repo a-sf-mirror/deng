@@ -30,6 +30,8 @@ namespace de
     /**
      * Template class for 2D vectors (points).
      * The members are public for convenient access.
+     *
+     * @ingroup types
      */ 
     template <typename Type>
     class Vector2
@@ -105,6 +107,8 @@ namespace de
     /**
      * Template class for 3D vectors (points).
      * The members are public for convenient access.
+     *
+     * @ingroup types
      */ 
     template <typename Type>
     class Vector3 : public Vector2<Type>
@@ -181,6 +185,8 @@ namespace de
     /**
      * Template class for 4D vectors.
      * The members are public for convenient access.
+     *
+     * @ingroup types
      */ 
     template <typename Type>
     class Vector4 : public Vector3<Type>
@@ -260,19 +266,21 @@ namespace de
         Type w;
     };
     
-    // Common types.
-    typedef Vector2<dint> Vector2i;
-    typedef Vector2<duint> Vector2ui;
-    typedef Vector2<dfloat> Vector2f;
-    typedef Vector2<ddouble> Vector2d;
-    typedef Vector3<dint> Vector3i;
-    typedef Vector3<duint> Vector3ui;
-    typedef Vector3<dfloat> Vector3f;
-    typedef Vector3<ddouble> Vector3d;
-    typedef Vector4<dint> Vector4i;
-    typedef Vector4<duint> Vector4ui;
-    typedef Vector4<dfloat> Vector4f;
-    typedef Vector4<ddouble> Vector4d;
+    //@{
+    /// @ingroup types 
+    typedef Vector2<dint> Vector2i;     ///< 2-component vector of integer values.
+    typedef Vector2<duint> Vector2ui;   ///< 2-component vector of unsigned integer values.
+    typedef Vector2<dfloat> Vector2f;   ///< 2-component vector of floating point values.
+    typedef Vector2<ddouble> Vector2d;  ///< 2-component vector of high-precision floating point values.
+    typedef Vector3<dint> Vector3i;     ///< 3-component vector of integer values.
+    typedef Vector3<duint> Vector3ui;   ///< 3-component vector of unsigned integer values.
+    typedef Vector3<dfloat> Vector3f;   ///< 3-component vector of floating point values.
+    typedef Vector3<ddouble> Vector3d;  ///< 3-component vector of high-precision floating point values.
+    typedef Vector4<dint> Vector4i;     ///< 4-component vector of integer values.
+    typedef Vector4<duint> Vector4ui;   ///< 4-component vector of unsigned integer values.
+    typedef Vector4<dfloat> Vector4f;   ///< 4-component vector of floating point values.
+    typedef Vector4<ddouble> Vector4d;  ///< 4-component vector of high-precision floating point values.
+    //@}
 };
 
 #endif /* LIBDENG2_VECTOR_H */

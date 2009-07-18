@@ -36,7 +36,8 @@ int deng_Main(int argc, char* argv[])
     while(!quitNow)
     {
         SDL_Event ev;
-        glClearColor(++counter/255.f, counter/255.f, counter/255.f, 1);
+        counter++;
+        glClearColor(counter/255.f, counter/255.f, counter/255.f, 1);
         if(counter > 255) counter = 0;
         glClear(GL_COLOR_BUFFER_BIT);
         SDL_GL_SwapBuffers();

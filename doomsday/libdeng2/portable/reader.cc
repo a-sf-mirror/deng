@@ -133,7 +133,7 @@ Reader& Reader::operator >> (ISerializable& serializable)
 
 void Reader::rewind(dint count)
 {
-    if(count > offset_)
+    if(offset_ + count < 0)
     {
         throw IByteArray::OffsetError("Reader::rewind", "Rewound past beginning of source");
     }

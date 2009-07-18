@@ -29,6 +29,8 @@ namespace de
     /**
      * DictionaryValue is a subclass of Value that contains an array of values, 
      * indexed by any value.
+     *
+     * @ingroup data
      */
     class PUBLIC_API DictionaryValue : public Value
     {

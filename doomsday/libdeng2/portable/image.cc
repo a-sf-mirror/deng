@@ -45,7 +45,7 @@ void Image::set(Format format, const Dimensions& dims, const Byte* data, Size da
     else
     {
         // Copy line by line, then.
-        for(int y = 0; y < dims.y; ++y)
+        for(duint y = 0; y < dims.y; ++y)
         {
             Block::set(y * dims.x * bytesPerPixel(), &data[y * linePitchBytes], 
                 dims.x * bytesPerPixel());
@@ -90,7 +90,7 @@ void Image::luminocityToAlpha()
     Byte* dest = filtered;
     const Byte* source = data();
     
-    for(int i = 0; i < count/4; ++i)
+    for(duint i = 0; i < count/4; ++i)
     {
         // White for RGB.
         *dest++ = 0xff;

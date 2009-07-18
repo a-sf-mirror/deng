@@ -39,6 +39,7 @@ namespace de
 	public:
 		Error(const std::string& where, const std::string& message)
 			: std::runtime_error(std::string("(") + where + ") " + message) {}
+        virtual void raise() const { throw *this; }
 	};
 }
 	
@@ -55,6 +56,7 @@ namespace de
 			: Parent("-", message) {} \
 		Name(const std::string& where, const std::string& message) \
 			: Parent(where, message) {}							   \
+        virtual void raise() const { throw *this; } \
     };    
 
 /**

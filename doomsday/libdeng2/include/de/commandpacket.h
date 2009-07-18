@@ -31,12 +31,10 @@ namespace de
     class Value;
     class Block;
     
-    static const char* COMMAND_PACKET_TYPE = "CMND";
-    
     /**
      * Command packet. Used for controlling a libdeng2 based application.
      *
-     * @ingroup net
+     * @ingroup protocol
      */
     class PUBLIC_API CommandPacket : public Packet
     {    

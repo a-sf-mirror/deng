@@ -22,8 +22,8 @@
 
 #include <de/deng.h>
 #include <de/Error>
+#include <de/String>
 
-#include <string>
 #include <map>
 
 /**
@@ -147,7 +147,7 @@ namespace de
         
         /// Type identifier for the library (e.g., "deng-plugin/generic").
         /// Queried by calling deng_Identifier(), if one is exported in the library.
-        std::string type_;
+        String type_;
     };
 }
 

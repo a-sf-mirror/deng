@@ -24,10 +24,18 @@
 #include <de/ISerializable>
 #include <de/String>
 
+/**
+ * @defgroup data Data
+ *
+ * Classes related to accessing, storing, and processing of data.
+ */
+
 namespace de
 {
     /**
      * Value is the base class for all runtime values.  This is an abstract class.
+     *
+     * @ingroup data
      */
 	class PUBLIC_API Value : public String::IPatternArg, public ISerializable
 	{
@@ -205,6 +213,7 @@ namespace de
         typedef dbyte SerialId;
         
         enum SerialIds {
+            NONE,
             NUMBER,
             TEXT,
             ARRAY,

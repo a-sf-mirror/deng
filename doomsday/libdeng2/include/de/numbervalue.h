@@ -27,6 +27,8 @@ namespace de
     /**
      * The NumberValue class is a subclass of Value that holds a single
      * double precision floating point number.
+     *
+     * @ingroup data
      */
 	class PUBLIC_API NumberValue : public Value
 	{

@@ -24,6 +24,14 @@
 
 #include <list>
 
+/**
+ * @defgroup protocol Communication Protocol
+ *
+ * Classes that define the protocol for network communications.
+ * 
+ * @ingroup net
+ */
+
 namespace de
 {
     class Block;
@@ -33,7 +41,7 @@ namespace de
      * The protocol is responsible for recognizing an incoming data packet and
      * constructing a specialized packet object of the appropriate type.
      *
-     * @ingroup net
+     * @ingroup protocol
      */
     class PUBLIC_API Protocol
     {

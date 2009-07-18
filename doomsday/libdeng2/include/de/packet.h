@@ -36,7 +36,7 @@ namespace de
      * Base class for all network packets in the libdeng2 network communications protocol.
      * All packets are based on this.
      *
-     * @ingroup net
+     * @ingroup protocol
      */
     class PUBLIC_API Packet : public ISerializable
     {

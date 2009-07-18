@@ -125,7 +125,7 @@ Value* ArrayValue::begin()
 
 Value* ArrayValue::next()
 {
-    if(iteration_ < elements_.size())
+    if(iteration_ < dint(elements_.size()))
     {
         return elements_[iteration_++]->duplicate();
     }
@@ -185,7 +185,7 @@ void ArrayValue::add(Value* value)
 
 ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)
 {
-    if(index >= 0 && index < size())
+    if(index >= 0 && index < dint(size()))
     {
         return elements_.begin() + index;
     }
@@ -201,7 +201,7 @@ ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)
 
 ArrayValue::Elements::const_iterator ArrayValue::indexToIterator(dint index) const
 {
-    if(index >= 0 && index < size())
+    if(index >= 0 && index < dint(size()))
     {
         return elements_.begin() + index;
     }
@@ -217,7 +217,7 @@ ArrayValue::Elements::const_iterator ArrayValue::indexToIterator(dint index) con
 
 void ArrayValue::insert(dint index, Value* value)
 {
-    if(index == size())
+    if(index == dint(size()))
     {
         add(value);
     }
