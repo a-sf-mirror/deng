@@ -413,6 +413,8 @@ boolean Sys_InitGL(void)
         firstTimeInit = false;
     }
 
+    Sys_InitGLState();
+
     return true;
 }
 

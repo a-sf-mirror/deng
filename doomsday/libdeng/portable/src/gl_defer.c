@@ -372,9 +372,9 @@ DGLuint GL_NewTexture(texturecontent_t* content, boolean* result)
         // Let's do this right away. No need to take a copy.
         GL_UploadTextureContent(content);
 #ifdef _DEBUG
-Con_Message("GL_NewTexture: Uploading (%i:%ix%i) while not busy! "
+VERBOSE( Con_Message("GL_NewTexture: Uploading (%i:%ix%i) while not busy! "
             "Should be precached in busy mode?\n", content->name,
-            content->width, content->height);
+            content->width, content->height) );
 #endif
         deferred = false; // We haven't deferred.
     }

@@ -603,6 +603,7 @@ boolean MPE_Begin(const char *name)
 
     if(name && name[0])
     {
+        memset(map->name, 0, sizeof(map->name));
         strncpy(map->name, name, 8);
     }
 
