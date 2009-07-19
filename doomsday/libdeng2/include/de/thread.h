@@ -31,6 +31,8 @@ namespace de
      *
      * This is an abstract class because no implementation has been
      * specified for run().
+     *
+     * @ingroup core
      */
     class Thread
     {

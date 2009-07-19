@@ -43,15 +43,15 @@ int deng_Main(int argc, char** argv)
 
         cout << "First operand defines type of result:" << endl;
         
-        cout << "Vector2f + Vector3f: " << (a + b).asText() << endl;
-        cout << "Vector3f + Vector2f: " << (b + a).asText() << endl;
+        cout << "Vector2f + Vector3f: " << a + b << endl;
+        cout << "Vector3f + Vector2f: " << b + a << endl;
 
         // This would downgrade the latter to int; won't do it.
         //cout << "Vector2i + Vector2f: " << (c + a).asText() << endl;
         
         Vector2i c(6, 5);
-        cout << "Vector2i: " << c.asText() << endl;
-        cout << "Vector2f + Vector2i: " << (a + c).asText() << endl;
+        cout << "Vector2i: " << c << endl;
+        cout << "Vector2f + Vector2i: " << a + c << endl;
 
         a += b;
         b += a;
@@ -60,6 +60,20 @@ int deng_Main(int argc, char** argv)
         
         cout << "a > b: " << (a > b) << endl;
         cout << "b > a: " << (b > a) << endl;
+        
+        Vector2f s(1, 1);
+        Vector3f t(2, 2, 2);
+        cout << "s: " << s << " t:" << t << endl;
+        cout << "s > t: " << (s > t) << endl;
+        cout << "t > s: " << (t > s) << endl;
+        cout << "s < t: " << (s < t) << endl;
+        cout << "t < s: " << (t < s) << endl;
+        t.z = -100;
+        cout << "t is now: " << t << endl;
+        cout << "s > t: " << (s > t) << endl;
+        cout << "t > s: " << (t > s) << endl;
+        cout << "s < t: " << (s < t) << " <- first operand causes 2-component conversion" << endl;
+        cout << "t < s: " << (t < s) << endl;
     }
     catch(const Error& err)
     {

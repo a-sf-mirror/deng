@@ -31,12 +31,16 @@ namespace de
      * The Time class represents a single time measurement. It represents
      * one absolute point in time (since the epoch).  Instances of Time should be
      * used wherever time needs to be measured, calculated or stored.
+     *
+     * @ingroup types
      */
     class PUBLIC_API Time
     {   
     public: 
         /**
          * The difference between to points of time.
+         *
+         * @ingroup types
          */ 
         class PUBLIC_API Delta
         {

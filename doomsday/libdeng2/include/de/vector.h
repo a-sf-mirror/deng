@@ -95,7 +95,7 @@ namespace de
         }
         std::string asText() const { 
             std::ostringstream s;
-            s << "(" << ddouble(x) << ", " << ddouble(y) << ")";
+            s << *this;
             return s.str();
         }
         Vector2 min(const Vector2& other) const {
@@ -109,6 +109,13 @@ namespace de
         Type x;
         Type y;  
     };
+    
+    template <typename Type> 
+    std::ostream& operator << (std::ostream& os, const Vector2<Type>& vec2)
+    {
+        os << "(" << vec2.x << ", " << vec2.y << ")";
+        return os;
+    }
     
     /**
      * Template class for 3D vectors (points).
@@ -177,9 +184,9 @@ namespace de
         ddouble length() const { return std::sqrt(Vector2<Type>::x*Vector2<Type>::x +
             Vector2<Type>::y*Vector2<Type>::y + z*z); }
         std::string asText() const { 
-            std::ostringstream s;
-            s << "(" << Vector2<Type>::x << ", " << Vector2<Type>::y << ", " << z << ")";
-            return s.str();
+            std::ostringstream os;
+            os << *this;
+            return os.str();
         }
         Vector3 min(const Vector3& other) const {
             return Vector3(de::min(Vector2<Type>::x, other.x), de::min(Vector2<Type>::y, other.y), 
@@ -193,6 +200,13 @@ namespace de
     public:
         Type z;
     };
+    
+    template <typename Type> 
+    std::ostream& operator << (std::ostream& os, const Vector3<Type>& vec3)
+    {
+        os << "(" << vec3.x << ", " << vec3.y << ", " << vec3.z << ")";
+        return os;
+    }
     
     /**
      * Template class for 4D vectors.
@@ -264,10 +278,9 @@ namespace de
             return Vector3<Type>::operator <= (other) && w <= other.w;
         }
         std::string asText() const { 
-            std::ostringstream s;
-            s << "(" << Vector3<Type>::x << ", " << Vector3<Type>::y << ", " << 
-                Vector3<Type>::z << ", " << w << ")";
-            return s.str();
+            std::ostringstream os;
+            os << *this;
+            return os.str();
         }
         Vector4 min(const Vector4& other) const {
             return Vector4(de::min(Vector3<Type>::x, other.x), de::min(Vector3<Type>::y, other.y),
@@ -281,6 +294,13 @@ namespace de
     public:
         Type w;
     };
+    
+    template <typename Type> 
+    std::ostream& operator << (std::ostream& os, const Vector4<Type>& vec4)
+    {
+        os << "(" << vec4.x << ", " << vec4.y << ", " << vec4.z << ", " << vec4.w << ")";
+        return os;
+    }
     
     //@{
     /// @ingroup types 
