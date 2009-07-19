@@ -24,6 +24,7 @@
 #include <de/IClock>
 #include <de/CommandLine>
 #include <de/FS>
+#include <de/Protocol>
 
 #include <list>
 
@@ -87,16 +88,6 @@ namespace de
         virtual ~App();
 
         /**
-         * Returns the command line arguments specified at the start of the application.
-         */
-        const CommandLine& commandLine() const { return commandLine_; }
-
-        /**
-         * Returns the command line arguments specified at the start of the application.
-         */
-        CommandLine& commandLine() { return commandLine_; }
-
-        /**
          * Loads the basic plugins (named "dengplugin_").
          */
         void loadPlugins();
@@ -110,23 +101,6 @@ namespace de
          * Unloads all loaded plugins.
          */
         void unloadPlugins();
-        
-        /**
-         * Determines whether a game library is currently available.
-         */
-        bool hasGame() const { return gameLib_ != 0; }
-        
-        /**
-         * Determines whether a video subsystem is currently available.
-         */
-        bool hasVideo() const { return video_ != 0; }
-        
-        /**
-         * Returns the amount of time since the creation of the App.
-         */
-        Time::Delta uptime() const {
-            return initializedAt_.since();
-        }
         
         /**
          * Main loop of the application.
@@ -190,11 +164,26 @@ namespace de
          * anywhere.
          */
         static App& app();
+        
+        /**
+         * Returns the version number of the library.
+         */
+        static Version version();
+
+        /**
+         * Returns the command line arguments specified at the start of the application.
+         */
+        static CommandLine& commandLine();
 
         /** 
          * Returns the file system.
          */
         static FS& fileSystem();
+
+        /**
+         * Returns the network protocol.
+         */
+        static Protocol& protocol();
 
         /**
          * Returns the game library.
@@ -211,6 +200,21 @@ namespace de
          */
         static Video& video();
         
+        /**
+         * Determines whether a game library is currently available.
+         */
+        static bool hasGame();
+        
+        /**
+         * Determines whether a video subsystem is currently available.
+         */
+        static bool hasVideo();
+        
+        /**
+         * Returns the amount of time since the creation of the App.
+         */
+        static Time::Delta uptime();
+
     private:
         CommandLine commandLine_;
         
@@ -222,6 +226,9 @@ namespace de
         
         /// The file system.
         FS* fs_;
+
+        /// Protocol for incoming packets.
+        Protocol protocol_;
 
         /// The game library.
         LibraryFile* gameLib_;

@@ -18,8 +18,10 @@
  */
 
 #include "server.h"
+#include <de/data.h>
 #include <de/Date>
 #include <de/CommandPacket>
+#include <de/RecordPacket>
 #include <de/Socket>
 
 #include <sstream>
@@ -34,7 +36,7 @@
 using namespace de;
 
 Server::Server(const CommandLine& arguments)
-    : App(arguments, "none", "none"), listenSocket_(0)
+    : App(arguments, "none", "none"), listenSocket_(0), session_(0)
 {
     CommandLine& args = commandLine();
 
@@ -78,7 +80,7 @@ void Server::iterate()
     Socket* incoming = listenSocket_->accept();
     if(incoming)
     {
-        std::cout << "New client connected from " << incoming->peerAddress().asText() << "!\n";
+        std::cout << "New client connected from " << incoming->peerAddress() << "!\n";
         clients_.push_back(new Link(incoming));
     }
 
@@ -86,6 +88,18 @@ void Server::iterate()
     
     // libdeng main loop tasks.
     DD_GameLoop();
+}
+
+Server::Client& Server::clientByAddress(const Address& address) const
+{
+    for(Clients::const_iterator i = clients_.begin(); i != clients_.end(); ++i)
+    {
+        if((*i)->peerAddress() == address)
+        {
+            return **i;
+        }
+    }
+    throw UnknownAddressError("Server::clientByAddress", "Address not in use by any client");
 }
 
 void Server::tendClients()
@@ -100,24 +114,32 @@ void Server::tendClients()
             std::auto_ptr<AddressedBlock> message((*i)->receive());
             if(message.get())
             {
-                std::auto_ptr<Packet> packet(protocol_.interpret(*message));
+                std::auto_ptr<Packet> packet(protocol().interpret(*message));
                 if(packet.get())
                 {
                     packet.get()->setFrom(message->address());
-                    processPacket(packet.get());
+                    processPacket(*packet.get());
                 }            
             }
         }
         catch(const ISerializable::DeserializationError&)
         {
             // Malformed packet!
-            std::cout << "Client from " << (*i)->peerAddress().asText() << " sent nonsense.\n";
+            std::cout << "Client from " << (*i)->peerAddress() << " sent nonsense.\n";
             deleteClient = true;
         }
+        catch(const NoSessionError&)
+        {
+            std::cout << "Client from " << (*i)->peerAddress() << 
+                " tried to access nonexistent session.\n";
+            deleteClient = true;
+        }
+        catch(const UnknownAddressError&)
+        {}
         catch(const Link::DisconnectedError&)
         {
             // The client was disconnected.
-            std::cout << "Client from " << (*i)->peerAddress().asText() << " disconnected.\n";
+            std::cout << "Client from " << (*i)->peerAddress() << " disconnected.\n";
             deleteClient = true;
         }
 
@@ -134,24 +156,65 @@ void Server::tendClients()
     }
 }
 
-void Server::processPacket(const Packet* packet)
+void Server::processPacket(const Packet& packet)
 {
     /// @todo  Check IP-based access rights.
     
-    assert(packet != NULL);
-    
-    const CommandPacket* cmd = dynamic_cast<const CommandPacket*>(packet);
+    const CommandPacket* cmd = dynamic_cast<const CommandPacket*>(&packet);
     if(cmd)
     {
-        std::cout << "Server received command (from " << packet->from().asText() << 
+        std::cout << "Server received command (from " << packet.from() << 
             "): " << cmd->command() << "\n";
-        
-        if(cmd->command() == "quit")
+          
+        // Session commands are handled by the session.
+        if(cmd->command().beginsWith("session."))
+        {
+            if(!session_)
+            {
+                throw NoSessionError("Server::processPacket", "No session available");
+            }
+            // Session handles it.
+            //session_->processCommand(*cmd);
+        }
+        else if(cmd->command() == "status")
+        {
+            replyStatus(packet.from());
+        }
+        else if(cmd->command() == "quit")
         {
             stop();
         }
     }
     
     // Perform any function the packet may define for itself.    
-    packet->execute();
+    packet.execute();
+}
+
+void Server::replyStatus(const Address& to)
+{
+    RecordPacket status;
+    Record& rec = status.record();
+
+    dint sessionCount = (session_? 1 : 0);
+    
+    // Version.
+    const Version v = version();
+    ArrayValue& array = rec.addArrayVariable("version").value<ArrayValue>();
+    array.add(new NumberValue(v.major));
+    array.add(new NumberValue(v.minor));
+    array.add(new NumberValue(v.patchlevel));
+    array.add(new NumberValue(v.revision));
+    
+    // Number of sessions.
+    rec.addNumberVariable("sessionCount", sessionCount);
+    
+    Record& sub = rec.add("sessions", new Record());
+    if(sessionCount > 0)
+    {
+        Record& sesSub = sub.add(session_->id(), new Record());
+        // Information about the session.
+        
+    }
+    
+    clientByAddress(to) << status;
 }

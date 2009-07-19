@@ -16,41 +16,58 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/CommandPacket"
-#include "de/Value"
+
+#include "de/RecordPacket"
+#include "de/Record"
 #include "de/Writer"
 #include "de/Reader"
 #include "de/Block"
 
 using namespace de;
 
-static const char* COMMAND_PACKET_TYPE = "CMND";
+static const char* RECORD_PACKET_TYPE = "RECO";
 
-CommandPacket::CommandPacket(const String& cmd) : Packet(COMMAND_PACKET_TYPE), command_(cmd)
-{}
+RecordPacket::RecordPacket(const std::string& label) : Packet(RECORD_PACKET_TYPE), label_(label), record_(0)
+{
+    record_ = new Record();
+}
 
-CommandPacket::~CommandPacket()
-{}
+RecordPacket::~RecordPacket()
+{
+    delete record_;
+}
 
-void CommandPacket::operator >> (Writer& to) const
+void RecordPacket::take(Record* newRecord)
+{
+    delete record_;
+    record_ = newRecord;
+}
+
+Record* RecordPacket::give()
+{
+    Record* detached = record_;
+    record_ = new Record();
+    return detached;
+}
+
+void RecordPacket::operator >> (Writer& to) const
 {
     Packet::operator >> (to);
-    to << command_ << arguments_;
+    to << label_ << *record_;
 }
 
-void CommandPacket::operator << (Reader& from)
+void RecordPacket::operator << (Reader& from)
 {
     Packet::operator << (from);
-    from >> command_ >> arguments_;
+    from >> label_ >> *record_;
 }
 
-Packet* CommandPacket::fromBlock(const Block& block)
+Packet* RecordPacket::fromBlock(const Block& block)
 {
     Reader from(block);
-    if(checkType(from, COMMAND_PACKET_TYPE))
+    if(checkType(from, RECORD_PACKET_TYPE))
     {    
-        std::auto_ptr<CommandPacket> p(new CommandPacket);
+        std::auto_ptr<RecordPacket> p(new RecordPacket);
         from >> *p.get();
         return p.release();
     }

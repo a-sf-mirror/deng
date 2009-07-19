@@ -43,7 +43,7 @@ using namespace de;
 struct Zone::MemBlock 
 {
     dsize           size; // Including header and possibly tiny fragments.
-    void**          user; // NULL if a free block.
+    void**          user; // 0 if a free block.
     Zone::PurgeTag  tag; // Purge level.
     int             id; // Should be ZONEID.
     Zone::MemVolume*      volume; // Volume this block belongs to.
@@ -162,7 +162,7 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
     if(!size)
     {
         // You can't allocate "nothing."
-        return NULL;
+        return 0;
     }
 
     // Account for size of block header.
@@ -173,7 +173,7 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
     // enough.)
     for(volume = volumeRoot_; ; volume = volume->next)
     {
-        if(volume == NULL)
+        if(volume == 0)
         {
             // We've run out of volumes.  Let's allocate a new one
             // with enough memory.
@@ -185,7 +185,7 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
             volume = newVolume(newVolumeSize);
         }
 
-        assert(volume->zone != NULL);
+        assert(volume->zone != 0);
 
         // Scan through the block list looking for the first free block of
         // sufficient size, throwing out any purgable blocks along the
@@ -290,13 +290,13 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
                     // block.
                     newb = (MemBlock *) ((dbyte *) base + size);
                     newb->size = extra;
-                    newb->user = NULL;       // free block
+                    newb->user = 0;       // free block
                     newb->tag = UNDEFINED;
-                    newb->volume = NULL;
+                    newb->volume = 0;
                     newb->prev = base;
                     newb->next = base->next;
                     newb->next->prev = newb;
-                    newb->seqFirst = newb->seqLast = NULL;
+                    newb->seqFirst = newb->seqLast = 0;
                     base->next = newb;
                     base->size = size;
                 }
@@ -337,7 +337,7 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
                 else
                 {
                     // Not part of a sequence.
-                    base->seqLast = base->seqFirst = NULL;
+                    base->seqLast = base->seqFirst = 0;
                 }
 
                 // next allocation will start looking here
@@ -431,14 +431,14 @@ void Zone::free(void *ptr)
 
     if(block->user > (void **) 0x100) // Smaller values are not pointers.
         *block->user = 0; // Clear the user's mark.
-    block->user = NULL; // Mark as free.
+    block->user = 0; // Mark as free.
     block->tag = UNDEFINED;
-    block->volume = NULL;
+    block->volume = 0;
     block->id = 0;
 
 #ifdef LIBDENG2_FAKE_MEMORY_ZONE
     M_Free(block->area);
-    block->area = NULL;
+    block->area = 0;
 #endif
 
     /**
@@ -453,7 +453,7 @@ void Zone::free(void *ptr)
         MemBlock* iter = first;
         while(iter->seqFirst == first)
         {
-            iter->seqFirst = iter->seqLast = NULL;
+            iter->seqFirst = iter->seqLast = 0;
             iter = iter->next;
         }
     }
@@ -676,8 +676,8 @@ Zone::MemVolume* Zone::newVolume(dsize volumeSize)
     vol->zone->rover = block;
 
     block->prev = block->next = &vol->zone->blockList;
-    block->user = NULL;         // free block
-    block->seqFirst = block->seqLast = NULL;
+    block->user = 0;         // free block
+    block->seqFirst = block->seqLast = 0;
     block->size = vol->zone->size - sizeof(MemZone);
 
     std::cout << "Zone::newVolume: New " << vol->size / 1024.0 / 1024.0 << " MB memory volume.\n";

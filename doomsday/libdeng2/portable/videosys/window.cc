@@ -42,7 +42,7 @@ void Window::setPlace(const Placement& p)
 
 Surface& Window::surface() const
 {
-    assert(surface_ != NULL);
+    assert(surface_ != 0);
     return *surface_;
 }
 

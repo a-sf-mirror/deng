@@ -53,7 +53,7 @@ FS& File::fileSystem()
 void File::setOriginFeed(Feed* feed)
 {
     // Folders should never have an origin feed.
-    assert(dynamic_cast<Folder*>(this) == NULL);
+    assert(!dynamic_cast<Folder*>(this));
 
     originFeed_ = feed;
 }

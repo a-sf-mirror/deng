@@ -21,7 +21,7 @@
 
 using namespace de;
 
-Visual::Visual() : parent_(NULL)
+Visual::Visual() : parent_(0)
 {}
 
 Visual::~Visual()
@@ -37,7 +37,7 @@ void Visual::clear()
 {
     for(Children::iterator i = children_.begin(); i != children_.end(); ++i)
     {
-        (*i)->parent_ = NULL;
+        (*i)->parent_ = 0;
         delete *i;
     }
     children_.clear();
@@ -52,7 +52,7 @@ Visual* Visual::add(Visual* visual)
 
 Visual* Visual::remove(Visual* visual)
 {
-    visual->parent_ = NULL;
+    visual->parent_ = 0;
     children_.remove(visual);
     return visual;
 }

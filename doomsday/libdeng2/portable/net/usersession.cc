@@ -17,35 +17,35 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/Protocol"
+#include "de/UserSession"
+#include "de/App"
+#include "de/Library"
+#include "de/Link"
+#include "de/User"
+#include "de/World"
 #include "de/CommandPacket"
-#include "de/RecordPacket"
+#include "de/NumberValue"
 
 using namespace de;
 
-Protocol::Protocol()
+UserSession::UserSession(Link* link, Id session)
+    : link_(link), user_(0), world_(0)
 {
-    define(CommandPacket::fromBlock);
-    define(RecordPacket::fromBlock);
-}
+    // Create a blank user and world. The user is configured jointly
+    // from configuration and by the game. The world is mirrored from
+    // the server's session when we join.
+    user_ = App::game().SYMBOL(deng_NewUser)();
+    world_ = App::game().SYMBOL(deng_NewWorld)();
+    
+    // Ask to join the session.
+    CommandPacket join("session.join");
+    join.arguments().add(new NumberValue(session));
+    *link_ << join;
+}   
 
-Protocol::~Protocol()
-{}
-
-void Protocol::define(Constructor constructor)
+UserSession::~UserSession()
 {
-    constructors_.push_back(constructor);
-}
-
-Packet* Protocol::interpret(const Block& block) const
-{
-    for(Constructors::const_iterator i = constructors_.begin(); i != constructors_.end(); ++i)
-    {
-        Packet* p = (*i)(block);
-        if(p)
-        {
-            return p;
-        }
-    }
-    return 0;
+    delete user_;
+    delete world_;    
+    delete link_;
 }

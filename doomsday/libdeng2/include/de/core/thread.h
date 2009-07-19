@@ -73,7 +73,8 @@ namespace de
         volatile bool stopNow_;
         
         /// Pointer to the internal thread data.
-        void* thread_;
+        typedef void* Handle;
+        volatile Handle thread_;
         
         /// Signals the end of the thread.
         Waitable endOfThread_;

@@ -55,10 +55,7 @@ LocalServer::~LocalServer()
     {
         std::cout << "Stopping local server...\n";
 
-        Link link(Address("localhost", listenOnPort_));
-        Block message;
-        Writer(message) << CommandPacket("quit");
-        link << message;
+        Link(Address("localhost", listenOnPort_)) << CommandPacket("quit");
     }
     catch(const Socket::ConnectionError&)
     {

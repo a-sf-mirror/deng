@@ -19,6 +19,11 @@
 
 #include "client.h"
 #include "localserver.h"
+#include <de/Link>
+#include <de/CommandPacket>
+#include <de/RecordPacket>
+#include <de/Record>
+#include <de/Session>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -30,7 +35,7 @@
 using namespace de;
 
 Client::Client(const CommandLine& arguments)
-    : App(arguments)
+    : App(arguments), localServer_(0), session_(0)
 {        
     CommandLine& args = commandLine();
     
@@ -51,7 +56,10 @@ Client::Client(const CommandLine& arguments)
     args.append("../../data/doom.pk3");
 #endif
 
-    localServer_ = new LocalServer(13209);
+    const duint16 SERVER_PORT = 13209;
+
+    std::auto_ptr<LocalServer> svPtr(new LocalServer(SERVER_PORT));
+    localServer_ = svPtr.get();
 
     /*
     args.append("-cmd");
@@ -63,6 +71,22 @@ Client::Client(const CommandLine& arguments)
 
     // Initialize the engine.
     DD_Entry(0, NULL);
+    
+    // DEVEL: Join the game session.
+    // Query the on-going sessions.
+    Link* link = new Link(Address("localhost", SERVER_PORT));
+    duint sessionToJoin;
+    
+    *link << CommandPacket("status");
+    // We should receive a reply directly.
+    std::auto_ptr<RecordPacket> status(link->receive<RecordPacket>());
+    std::cout << "Here's what the server said:\n" << status->record();
+        
+    //session_ = new UserSession(link);
+    delete link;
+    
+    // Good to go.
+    svPtr.release();
 }
 
 Client::~Client()

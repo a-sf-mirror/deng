@@ -55,7 +55,7 @@ void DirectoryFeed::populate(Folder& folder)
         throw NotFoundError("DirectoryFeed::populate", "Path '" + nativePath_ + "' not found");
     }
     struct dirent* entry;
-    while((entry = readdir(dir)) != NULL)   
+    while((entry = readdir(dir)) != 0)   
     {
         const std::string entryName = entry->d_name;
         switch(entry->d_type)

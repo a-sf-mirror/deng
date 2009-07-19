@@ -32,6 +32,7 @@ using namespace de;
 Variable::Variable(const std::string& name, Value* initial, const Mode& m)
     : name_(name), mode_(m), value_(0)
 {
+    verifyName(name_);
     if(!initial)
     {
         initial = new NoneValue();
@@ -63,7 +64,7 @@ void Variable::set(const Value& v)
 
 const Value& Variable::value() const
 {
-    assert(value_ != NULL);
+    assert(value_ != 0);
     return *value_;
 }
 
@@ -87,6 +88,14 @@ void Variable::verifyValid(const Value& v) const
     {
         throw InvalidError("Variable::verifyValid", 
             "Value type is not allowed by the variable '" + name_ + "'");
+    }
+}
+
+void Variable::verifyName(const std::string& s)
+{
+    if(s.find('/') != std::string::npos)
+    {
+        throw NameError("Variable::verifyName", "Name contains '/': " + s);
     }
 }
 

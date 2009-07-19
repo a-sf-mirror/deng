@@ -129,7 +129,7 @@ Value* ArrayValue::next()
     {
         return elements_[iteration_++]->duplicate();
     }
-    return NULL;
+    return 0;
 }
 
 bool ArrayValue::isTrue() const

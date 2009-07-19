@@ -37,7 +37,7 @@ Library::Library(const std::string& nativePath)
 {
     std::cout << "Loading library: " << nativePath << "\n";
 #ifdef UNIX
-    if((handle_ = dlopen(nativePath.c_str(), RTLD_LAZY)) == NULL)
+    if((handle_ = dlopen(nativePath.c_str(), RTLD_LAZY)) == 0)
     {
         // Opening of the dynamic library failed.
         throw LoadError("Library::Library", dlerror());
@@ -89,7 +89,7 @@ void* Library::address(const std::string& name)
 {
     if(!handle_)
     {
-        return NULL;
+        return 0;
     }
     
     // Already looked up?

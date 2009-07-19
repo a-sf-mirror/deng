@@ -25,7 +25,7 @@
 
 using namespace de;
 
-ListenSocket::ListenSocket(duint16 port) : socket_(NULL), port_(port)
+ListenSocket::ListenSocket(duint16 port) : socket_(0), port_(port)
 {
     // Listening address.
     Address address(0, port);
@@ -33,7 +33,7 @@ ListenSocket::ListenSocket(duint16 port) : socket_(NULL), port_(port)
 
     internal::convertAddress(address, &ip);
 
-    if((socket_ = SDLNet_TCP_Open(&ip)) == NULL)
+    if((socket_ = SDLNet_TCP_Open(&ip)) == 0)
     {
         throw OpenError("ListenSocket::ListenSocket", SDLNet_GetError());
     }
@@ -52,7 +52,7 @@ Socket* ListenSocket::accept()
     TCPsocket clientSocket = SDLNet_TCP_Accept(static_cast<TCPsocket>(socket_));
     if(!clientSocket)
     {
-        return NULL;
+        return 0;
     }
     // We can use this constructor because we are Socket's friend.
     return new Socket(clientSocket);

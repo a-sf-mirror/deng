@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,22 +17,33 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "glwindowsurface.h"
+#ifndef LIBDENG2_WORLD_H
+#define LIBDENG2_WORLD_H
 
-#include <SDL.h>
+/**
+ * @defgroup World
+ * 
+ * The world subsystem takes care of the game world and the players in the world.
+ */
 
-using namespace de;
-
-GLWindowSurface::GLWindowSurface(const Size& size, GLWindow* owner)
-    : de::Surface(size), owner_(owner)
-{}
-
-GLWindowSurface::~GLWindowSurface()
-{}
-
-duint GLWindowSurface::colorDepth() const
+namespace de
 {
-    SDL_Surface* surf = SDL_GetVideoSurface();
-    assert(surf != 0);
-    return surf->format->BitsPerPixel;
+    /**
+     * Base class for the game world. The game plugin is responsible for creating concrete
+     * instances of the World. The game plugin can extend this with whatever information it
+     * needs.
+     *
+     * @ingroup world
+     */
+    class World
+    {
+    public:
+        World();
+        
+        virtual ~World();
+        
+    private:
+    };
 }
+
+#endif /* LIBDENG2_WORLD_H */

@@ -27,6 +27,7 @@ namespace de
 {   
     class Address;
     class Socket;
+    class Packet;
     
     /**
      * Network communications link.
@@ -38,6 +39,12 @@ namespace de
     public:
         /// The remote end has closed the link. @ingroup errors
         DEFINE_ERROR(DisconnectedError);
+        
+        /// A packet of specific type was expected but something else was received instead. @ingroup errors
+        DEFINE_ERROR(UnexpectedError);
+        
+        /// Specified timeout elapsed. @ingroup errors
+        DEFINE_ERROR(TimeOutError);
         
     public:
         /**
@@ -62,6 +69,43 @@ namespace de
          * @param data  Data to send.
          */
         Link& operator << (const IByteArray& data);
+        
+        /**
+         * Sends a packet. The packet is first serialized and then sent.
+         *
+         * @param packet  Packet.
+         */
+        Link& operator << (const Packet& packet);
+        
+        /**
+         * Receives a packet. Will not return until the packet has been received,
+         * or the timeout has expired.
+         *
+         * @param timeOut  Maximum period of time to wait.
+         *
+         * @return  The received packet. Never returns NULL. Caller gets ownership
+          *      of the packet.
+         */
+        Packet* receivePacket(const Time::Delta& timeOut = 10);
+
+        /**
+         * Receives a packet of specific type. Will not return until the packet has been received,
+         * or the timeout has expired.
+         *
+         * @param timeOut  Maximum period of time to wait.
+         *
+         * @return  The received packet. Never returns NULL. Caller gets ownership
+         *      of the packet.
+         */
+        template <typename Type>
+        Type* receive(const Time::Delta& timeOut = 10) {
+            Type* packet = dynamic_cast<Type*>(receivePacket(timeOut));
+            if(!packet)
+            {
+                throw UnexpectedError("Link::receive", "Received wrong type of packet");
+            }
+            return packet;
+        }
         
         /**
          * Receives an array of data. 

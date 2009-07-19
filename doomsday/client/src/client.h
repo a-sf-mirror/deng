@@ -21,6 +21,7 @@
 #define CLIENT_H
 
 #include <de/App>
+#include <de/UserSession>
 
 class LocalServer;
 
@@ -37,6 +38,9 @@ public:
     
 private:
     LocalServer* localServer_;
+    
+    /// The game session.
+    de::UserSession* session_;
 };
 
 #endif /* CLIENT_H */

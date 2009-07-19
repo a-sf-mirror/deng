@@ -32,7 +32,7 @@ Socket::Socket(const Address& address) : socket_(0), socketSet_(0)
 
     internal::convertAddress(address, &ip);
     socket_ = SDLNet_TCP_Open(&ip);
-    if(socket_ == NULL)
+    if(socket_ == 0)
     {
         throw ConnectionError("Socket::Socket", "Failed to connect: " +
             std::string(SDLNet_GetError()));

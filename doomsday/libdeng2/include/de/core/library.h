@@ -36,6 +36,8 @@ namespace de
 {
     class Audio;
     class Video;
+    class World;
+    class User;
     
     /**
      * The Library class allows loading shared library files (DLL/so/dylib) and
@@ -97,6 +99,16 @@ namespace de
          * @return  Audio subsystem. 
          */
         typedef Audio* (*deng_NewAudio)(void);
+        
+        /**
+         * Constructs a new game world.
+         */
+        typedef World* (*deng_NewWorld)(void);
+        
+        /**
+         * Constructs a new user.
+         */
+        typedef User* (*deng_NewUser)(void);
         
         typedef dint (*deng_GetInteger)(dint id);
         typedef const char* (*deng_GetString)(dint id);

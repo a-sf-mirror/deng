@@ -46,6 +46,12 @@ namespace de
         /// given type with the variable. @ingroup errors
         DEFINE_ERROR(InvalidError);
         
+        /// Variable name contains invalid characters. @ingroup errors
+        DEFINE_ERROR(NameError);
+        
+        /// Value could not be converted to the attempted type. @ingroup errors
+        DEFINE_ERROR(TypeError);
+        
         /** @name Mode Flags */
         //@{
         DEFINE_FLAG(READ_ONLY, 0);
@@ -69,7 +75,7 @@ namespace de
         /**
          * Constructs a new variable.
          *
-         * @param name  Name for the variable.
+         * @param name  Name for the variable. Any forward slashes (/) are not allowed.
          * @param initial  Initial value. Variable gets ownership. If no value is given here,
          *      a NoneValue will be created for the variable.
          * @param mode  Mode flags.
@@ -101,6 +107,18 @@ namespace de
          * Returns the value of the variable.
          */
         const Value& value() const;
+
+        /**
+         * Returns the value of the variable.
+         */
+        template <typename Type>
+        Type& value() {
+            Type* v = dynamic_cast<Type*>(value_);
+            if(!v) {
+                throw TypeError("Variable::value<Type>", "Type conversion failed");
+            }
+            return *v;
+        }
         
         /**
          * Checks that a value is valid, checking what is allowed in the mode
@@ -119,6 +137,14 @@ namespace de
          * @param v  Value to test.
          */
         void verifyValid(const Value& v) const;
+        
+        /**
+         * Verifies that a string is a valid name for the variable. If not,
+         * an exception is thrown.
+         *
+         * @param s  Name to test.
+         */
+        static void verifyName(const std::string& s);
         
         // Implements ISerializable.
         void operator >> (Writer& to) const;

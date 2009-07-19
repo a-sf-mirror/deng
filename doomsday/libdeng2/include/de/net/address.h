@@ -85,6 +85,8 @@ namespace de
         duint32 ip_;
         duint16 port_;
     };
+    
+    std::ostream& operator << (std::ostream& os, const Address& address);
 }
 
 #endif /* LIBDENG2_ADDRESS_H */

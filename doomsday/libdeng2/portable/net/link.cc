@@ -22,6 +22,10 @@
 #include "de/Address"
 #include "de/Block"
 #include "de/Time"
+#include "de/Writer"
+#include "de/Packet"
+#include "de/App"
+#include "de/Protocol"
 
 using namespace de;
 
@@ -38,7 +42,7 @@ Link::Link(Socket* socket) : socket_(socket), sender_(0), receiver_(0)
 
 void Link::initialize()
 {
-    assert(socket_ != NULL);
+    assert(socket_ != 0);
     
     sender_ = new SenderThread(*socket_, outgoing_);
     receiver_ = new ReceiverThread(*socket_, incoming_);
@@ -75,6 +79,36 @@ Link& Link::operator << (const IByteArray& data)
     return *this;
 }
 
+Link& Link::operator << (const Packet& packet)
+{
+    Block data;
+    Writer(data) << packet;
+    return *this << data;
+}
+
+Packet* Link::receivePacket(const Time::Delta& timeOut)
+{
+    Time startedAt;
+    while(startedAt.since() <= timeOut)
+    {
+        std::auto_ptr<AddressedBlock> block(receive());
+        if(!block.get())
+        {
+            // Wait for a bit.
+            Time::sleep(.05);
+            continue;
+        }
+        Packet* packet = App::protocol().interpret(*block.get());
+        if(!packet)
+        {
+            throw UnexpectedError("Link::receivePacket", 
+                "Expected a packet, but something else was received");
+        }
+        return packet;
+    }
+    throw TimeOutError("Link::receivePacket", "Timeout expired before anything was received");
+}
+
 AddressedBlock* Link::receive()
 {
     AddressedBlock* b = incoming_.get();
@@ -88,7 +122,7 @@ AddressedBlock* Link::receive()
         // Receiver has stopped, which means the remote end closed.
         throw DisconnectedError("Link::receive", "Link has been closed");
     }
-    return NULL;
+    return 0;
 }
 
 void Link::flush()

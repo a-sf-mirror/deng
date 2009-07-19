@@ -41,7 +41,7 @@ int Thread::runner(void* owner)
     return 0;
 }
 
-Thread::Thread() : stopNow_(false), thread_(NULL)
+Thread::Thread() : stopNow_(false), thread_(0)
 {}
 
 Thread::~Thread()
@@ -69,7 +69,7 @@ void Thread::join(const Time::Delta& timeOut)
     if(thread_)
     {
         endOfThread_.wait(timeOut);
-        assert(thread_ == NULL);
+        //assert(thread_ == NULL);
     }
 }
 
@@ -80,5 +80,5 @@ bool Thread::shouldStopNow() const
 
 bool Thread::isRunning() const
 {
-    return thread_ != NULL;
+    return thread_ != 0;
 }

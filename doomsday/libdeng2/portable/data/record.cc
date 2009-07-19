@@ -21,7 +21,12 @@
 #include "de/Variable"
 #include "de/Reader"
 #include "de/Writer"
-#include "de/Value"
+#include "de/NumberValue"
+#include "de/ArrayValue"
+#include "de/Vector"
+
+#include <list>
+#include <iomanip>
 
 using namespace de;
 
@@ -35,32 +40,75 @@ Record::~Record()
 
 void Record::clear()
 {
-    if(members_.empty())
+    if(!members_.empty())
     {
-        return;
+        for(Members::iterator i = members_.begin(); i != members_.end(); ++i)
+        {
+            delete i->second;
+        }
+        members_.clear();
     }
-    for(Members::iterator i = members_.begin(); i != members_.end(); ++i)
+    if(!subrecords_.empty())
     {
-        delete i->second;
+        for(Subrecords::iterator i = subrecords_.begin(); i != subrecords_.end(); ++i)
+        {
+            delete i->second;
+        }
+        subrecords_.clear();
     }
-    members_.clear();
 }
 
-Variable* Record::add(Variable* variable)
+Variable& Record::add(Variable* variable)
 {
     std::auto_ptr<Variable> var(variable);
     if(variable->name().empty())
     {
-        throw UnnamedVariableError("Record::add", "All variables in record must have a name");
+        throw UnnamedError("Record::add", "All variables in a record must have a name");
     }
     members_[variable->name()] = var.release();
-    return variable;
+    return *variable;
 }
 
 Variable* Record::remove(Variable& variable)
 {
     members_.erase(variable.name());
     return &variable;
+}
+
+Variable& Record::addNumberVariable(const std::string& name, const Value::Number& number)
+{
+    Variable::verifyName(name);
+    return add(new Variable(name, new NumberValue(number), Variable::NUMBER));
+}
+
+Variable& Record::addArrayVariable(const std::string& name)
+{
+    Variable::verifyName(name);
+    return add(new Variable(name, new ArrayValue()));
+}
+    
+Record& Record::add(const std::string& name, Record* subrecord)
+{
+    std::auto_ptr<Record> sub(subrecord);
+    Variable::verifyName(name);
+    if(name.empty())
+    {
+        throw UnnamedError("Record::add", "All subrecords in a record must have a name");
+    }
+    subrecords_[name] = sub.release();
+    return *subrecord;
+}
+
+Record* Record::remove(const std::string& name)
+{
+    Subrecords::iterator found = subrecords_.find(name);
+    if(found != subrecords_.end())
+    {
+        Record* rec = found->second;
+        subrecords_.erase(found);
+        return rec;
+    }
+    throw NotFoundError("Record::remove", "Subrecord '" + name + "' not found");
 }
     
 Variable& Record::operator [] (const std::string& name)
@@ -70,26 +118,64 @@ Variable& Record::operator [] (const std::string& name)
     
 const Variable& Record::operator [] (const std::string& name) const
 {
+    // Path notation allows looking into subrecords.
+    std::string::size_type pos = name.find('/');
+    if(pos != std::string::npos)
+    {
+        return subrecord(name.substr(0, pos))[name.substr(pos + 1)];
+    }
+    
     Members::const_iterator found = members_.find(name);
     if(found != members_.end())
     {
         return *found->second;
     }
-    throw NotFoundError("Record::operator []", "'" + name + "' not found");
+    throw NotFoundError("Record::operator []", "Variable '" + name + "' not found");
 }
 
+Record& Record::subrecord(const std::string& name)
+{
+    return const_cast<Record&>((const_cast<const Record*>(this))->subrecord(name));
+}
+
+const Record& Record::subrecord(const std::string& name) const
+{
+    // Path notation allows looking into subrecords.
+    std::string::size_type pos = name.find('/');
+    if(pos != std::string::npos)
+    {
+        return subrecord(name.substr(0, pos)).subrecord(name.substr(pos + 1));
+    }
+
+    Subrecords::const_iterator found = subrecords_.find(name);
+    if(found != subrecords_.end())
+    {
+        return *found->second;
+    }
+    throw NotFoundError("Record::subrecords", "Subrecord '" + name + "' not found");
+}
+    
 void Record::operator >> (Writer& to) const
 {
-    to << duint(members_.size());
+    to << duint32(members_.size());
     for(Members::const_iterator i = members_.begin(); i != members_.end(); ++i)
     {
         to << *i->second;
+    }
+    // Any subrecords?
+    to << duint32(subrecords_.size());
+    if(!subrecords_.empty())
+    {
+        for(Subrecords::const_iterator i = subrecords_.begin(); i != subrecords_.end(); ++i)
+        {
+            to << i->first << *i->second;
+        }
     }
 }
     
 void Record::operator << (Reader& from)
 {
-    duint count = 0;
+    duint32 count = 0;
     from >> count;
     clear();
     while(count-- > 0)
@@ -98,15 +184,43 @@ void Record::operator << (Reader& from)
         from >> *var.get();
         add(var.release());
     }
+    // Also subrecords.
+    from >> count;
+    while(count-- > 0)
+    {
+        std::auto_ptr<Record> sub(new Record());
+        String subName;
+        from >> subName >> *sub.get();
+        add(subName, sub.release());
+    }
 }
     
 std::ostream& de::operator << (std::ostream& os, const Record& record)
 {
+    typedef std::pair<std::string, std::string> KeyValue;
+    typedef std::list<KeyValue> List;
+    
+    List lines;
+    Vector2ui maxLength;
+    
     for(Record::Members::const_iterator i = record.members().begin(); 
         i != record.members().end(); ++i)
     {
-        os << i->first << ": ";
-        os << i->second->value().asText() << "\n";
+        KeyValue kv(i->first, i->second->value().asText());
+        lines.push_back(kv);
+        maxLength = maxLength.max(Vector2ui(kv.first.size(), kv.second.size()));
+    }
+    
+    for(List::iterator i = lines.begin(); i != lines.end(); ++i)
+    {
+        os << std::setw(maxLength.x) << i->first << ": " << i->second << "\n";
+    }
+
+    for(Record::Subrecords::const_iterator i = record.subrecords().begin();
+        i != record.subrecords().end(); ++i)
+    {
+        os << "Subrecord '" + i->first + "':\n";
+        os << *i->second;
     }
     return os;
 }

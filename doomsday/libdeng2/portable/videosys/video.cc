@@ -35,13 +35,13 @@ Video::~Video()
 
 Window& Video::mainWindow() const
 {
-    assert(mainWindow_ != NULL);
+    assert(mainWindow_ != 0);
     return *mainWindow_;
 }
     
 void Video::setMainWindow(Window* window)
 {
-    assert(window != NULL);
+    assert(window != 0);
     assert(windows_.find(window) != windows_.end());
     mainWindow_ = window;
 }

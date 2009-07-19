@@ -25,7 +25,7 @@
 
 using namespace de;
 
-Waitable::Waitable(duint initialValue) : semaphore_(NULL)
+Waitable::Waitable(duint initialValue) : semaphore_(0)
 {
     semaphore_ = SDL_CreateSemaphore(initialValue);
 }
@@ -35,7 +35,7 @@ Waitable::~Waitable()
     SDL_sem* sem = static_cast<SDL_sem*>(semaphore_);
 
     // The semaphore will be destroyed.  This'll make sure no new waits can begin.
-    semaphore_ = NULL;
+    semaphore_ = 0;
     
     if(sem)
     {

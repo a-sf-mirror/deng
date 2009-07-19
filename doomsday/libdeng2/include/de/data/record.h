@@ -22,6 +22,7 @@
 
 #include <de/ISerializable>
 #include <de/Variable>
+#include <de/Value>
 
 #include <iostream>
 #include <map>
@@ -29,7 +30,8 @@
 namespace de
 {
     /**
-     * A Record is a set of variables.
+     * A Record is a set of variables. A record may have any number of subrecords.
+     * Note that the members of a record do not have an order.
      *
      * @see http://en.wikipedia.org/wiki/Record_(computer_science)
      *
@@ -41,10 +43,11 @@ namespace de
         /// Unknown variable name was given. @ingroup errors
         DEFINE_ERROR(NotFoundError);
 
-        /// All variables in the record must have a name. @ingroup errors
-        DEFINE_ERROR(UnnamedVariableError);
+        /// All variables and subrecords in the record must have a name. @ingroup errors
+        DEFINE_ERROR(UnnamedError);
         
         typedef std::map<std::string, Variable*> Members;
+        typedef std::map<std::string, Record*> Subrecords;
         
     public:
         Record();
@@ -63,7 +66,7 @@ namespace de
          *
          * @return @c variable, for convenience.
          */
-        Variable* add(Variable* variable);
+        Variable& add(Variable* variable);
 
         /**
          * Removes a variable from the record.
@@ -75,7 +78,49 @@ namespace de
         Variable* remove(Variable& variable);
         
         /**
-         * Looks up a variable in the record.
+         * Adds a number variable to the record. The variable is set up to only accept
+         * number values.
+         *
+         * @param name  Name of the variable.
+         * @param number  Value of the variable.
+         *
+         * @return  The number variable.
+         */
+        Variable& addNumberVariable(const std::string& name, const Value::Number& number);
+        
+        /**
+         * Adds an array variable to the record. The variable is set up to only accept
+         * array values.
+         *
+         * @param name  Name of the variable.
+         *
+         * @return  The array variable.
+         */
+        Variable& addArrayVariable(const std::string& name);
+        
+        /**
+         * Adds a new subrecord to the record. 
+         *
+         * @param name  Name to use for the subrecord. This must be a valid variable name.
+         * @param subrecord  Record to add. This record gets ownership
+         *      of the subrecord. The variable must have a name.
+         *
+         * @return @c variable, for convenience.
+         */
+        Record& add(const std::string& name, Record* subrecord);
+
+        /**
+         * Removes a subrecord from the record.
+         * 
+         * @param subrecord  Subrecord owned by this record.
+         *
+         * @return  Caller gets ownership of the removed record.
+         */
+        Record* remove(const std::string& name);
+        
+        /**
+         * Looks up a variable in the record. Variables in subrecords can be accessed
+         * using the path notation: subrecord-name/variable-name.
          *
          * @param name  Variable name.
          *
@@ -84,7 +129,8 @@ namespace de
         Variable& operator [] (const std::string& name);
         
         /**
-         * Looks up a variable in the record.
+         * Looks up a variable in the record. Variables in subrecords can be accessed
+         * using the path notation: subrecord-name/variable-name.
          *
          * @param name  Variable name.
          *
@@ -93,9 +139,32 @@ namespace de
         const Variable& operator [] (const std::string& name) const;
 
         /**
+         * Looks up a subrecord in the record.
+         *
+         * @param name  Name of the subrecord.
+         *
+         * @return  Subrecord.
+         */
+        Record& subrecord(const std::string& name);
+
+        /**
+         * Looks up a subrecord in the record.
+         *
+         * @param name  Name of the subrecord.
+         *
+         * @return  Subrecord (non-modifiable).
+         */
+        const Record& subrecord(const std::string& name) const;
+
+        /**
          * Returns a non-modifiable map of the members.
          */
         const Members& members() const { return members_; }
+        
+        /**
+         * Returns a non-modifiable map of the subrecords.
+         */
+        const Subrecords& subrecords() const { return subrecords_; }
         
         // Implements ISerializable.
         void operator >> (Writer& to) const;
@@ -103,6 +172,7 @@ namespace de
         
     private:  
         Members members_;
+        Subrecords subrecords_;
     };
     
     /// Converts the record into a human-readable text representation.

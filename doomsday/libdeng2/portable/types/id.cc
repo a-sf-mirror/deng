@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,22 +17,43 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "glwindowsurface.h"
+#include "de/Id"
+#include "de/String"
 
-#include <SDL.h>
+#include <sstream>
 
 using namespace de;
 
-GLWindowSurface::GLWindowSurface(const Size& size, GLWindow* owner)
-    : de::Surface(size), owner_(owner)
-{}
+const Id::Type Id::NONE = 0;
 
-GLWindowSurface::~GLWindowSurface()
-{}
+// The Id generator starts from one.
+Id::Type Id::generator_ = 1;
 
-duint GLWindowSurface::colorDepth() const
+Id::Id() : id_(generator_++)
 {
-    SDL_Surface* surf = SDL_GetVideoSurface();
-    assert(surf != 0);
-    return surf->format->BitsPerPixel;
+    if(id_ == NONE) 
+    {
+        ++id_;   
+    }
+}
+
+Id::~Id()
+{}
+
+Id::operator std::string () const
+{
+    return asText();
+}
+    
+String Id::asText() const
+{
+    std::ostringstream os;
+    os << *this;
+    return os.str();
+}
+
+std::ostream& de::operator << (std::ostream& os, const Id& id)
+{
+    os << "<" << duint(id) << ">";
+    return os;
 }

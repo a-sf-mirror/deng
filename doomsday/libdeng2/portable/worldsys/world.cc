@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project
+ * The Doomsday Engine Project -- libdeng2
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,22 +17,12 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "glwindowsurface.h"
-
-#include <SDL.h>
+#include "de/World"
 
 using namespace de;
 
-GLWindowSurface::GLWindowSurface(const Size& size, GLWindow* owner)
-    : de::Surface(size), owner_(owner)
+World::World()
 {}
 
-GLWindowSurface::~GLWindowSurface()
+World::~World()
 {}
-
-duint GLWindowSurface::colorDepth() const
-{
-    SDL_Surface* surf = SDL_GetVideoSurface();
-    assert(surf != 0);
-    return surf->format->BitsPerPixel;
-}

@@ -157,7 +157,7 @@ Value* DictionaryValue::next()
     }
     else if(iteration_ == elements_.end())
     {
-        return NULL;
+        return 0;
     }
     ArrayValue* pair = new ArrayValue;
     pair->add(iteration_->first.value->duplicate());

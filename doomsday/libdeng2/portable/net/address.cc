@@ -64,7 +64,7 @@ void Address::set(const std::string& address, duint16 port)
     
     // Use SDL_net to resolve the name.
     IPaddress resolved;
-    if(SDLNet_ResolveHost(&resolved, !hostName.empty()? hostName.c_str() : NULL, port) < 0)
+    if(SDLNet_ResolveHost(&resolved, !hostName.empty()? hostName.c_str() : 0, port) < 0)
     {
         throw ResolveError("Address::set", SDLNet_GetError());
     }
@@ -75,13 +75,19 @@ void Address::set(const std::string& address, duint16 port)
 
 std::string Address::asText() const
 {
-    duint part[4] = {
-        (ip_ >> 24) & 0xff,
-        (ip_ >> 16) & 0xff,
-        (ip_ >> 8) & 0xff,
-        ip_ & 0xff
-    };
     std::ostringstream os;
-    os << part[0] << "." << part[1] << "." << part[2] << "." << part[3] << ":" << duint(port_);
+    os << *this;
     return os.str();
+}
+
+std::ostream& de::operator << (std::ostream& os, const Address& address)
+{
+    duint part[4] = {
+        (address.ip() >> 24) & 0xff,
+        (address.ip() >> 16) & 0xff,
+        (address.ip() >> 8) & 0xff,
+        address.ip() & 0xff
+    };
+    os << part[0] << "." << part[1] << "." << part[2] << "." << part[3] << ":" << duint(address.port());
+    return os;
 }

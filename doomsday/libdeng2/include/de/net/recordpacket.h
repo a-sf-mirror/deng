@@ -16,44 +16,56 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef LIBDENG2_COMMANDPACKET_H
-#define LIBDENG2_COMMANDPACKET_H
+
+#ifndef LIBDENG2_RECORDPACKET_H
+#define LIBDENG2_RECORDPACKET_H
 
 #include <de/Packet>
 #include <de/String>
-#include <de/ArrayValue>
-
-#include <list>
 
 namespace de
 {
-    class Value;
     class Block;
-    
+    class Record;
+
     /**
-     * Command packet. Used for controlling a libdeng2 based application.
+     * A packet that contains a Record. A label string can be attached.
      *
      * @ingroup protocol
      */
-    class PUBLIC_API CommandPacket : public Packet
-    {    
+    class RecordPacket : public Packet
+    {
     public:
-        CommandPacket(const String& cmd = "");
-        ~CommandPacket();
-        
-        /// Returns the command of the packet.
-        const String& command() const { return command_; }
+        RecordPacket(const std::string& label = "");
+        virtual ~RecordPacket();
+
+        /// Returns the caption of the packet.
+        const String& label() const { return label_; }
         
         /// Sets the command of the packet.
-        void setCommand(const String& c) { command_ = c; }
+        void setLabel(const String& s) { label_ = s; }
 
         /// Returns the arguments of the packet (non-modifiable).
-        const ArrayValue& arguments() const { return arguments_; }
+        const Record& record() const { return *record_; }
         
         /// Returns the arguments of the packet.
-        ArrayValue& arguments() { return arguments_; }
+        Record& record() { return *record_; }
+
+        /**
+         * Takes ownership of a previously created record.
+         *
+         * @param record  New record for the packet.
+         */
+        void take(Record* record);
         
+        /**
+         * Detaches the Record instance from the packet. The packet is
+         * left with an empty record.
+         *
+         * @return  Caller gets ownership of the returned record.
+         */
+        Record* give();
+
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
@@ -61,14 +73,13 @@ namespace de
     public:
         /// Constructor for the Protocol.
         static Packet* fromBlock(const Block& block);
-        
-    private:
-        String command_;
-        
-        /// Command arguments.
-        ArrayValue arguments_;
-    };
-} 
 
-#endif /* LIBDENG2_COMMANDPACKET_H */
- 
+    private:
+        String label_;
+
+        /// The record.
+        Record* record_;
+    };
+}
+
+#endif /* LIBDENG2_RECORDPACKET_H */

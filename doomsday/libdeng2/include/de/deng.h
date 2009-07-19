@@ -52,8 +52,6 @@
     // Disable warnings about non-exported (C++ standard library) base classes.
 #   pragma warning(disable: 4275)
 #   pragma warning(disable: 4251)
-    // Disable signed/unsigned mismatch warning.
-#   pragma warning(disable: 4018)
 #else
 #   define PUBLIC_API
 #endif
@@ -103,5 +101,6 @@ namespace de
 }
 
 #include <de/Error>
+#include "version.h"
 
 #endif /* LIBDENG2_H */

@@ -14,6 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+ADD_DEFINITIONS ( 
+    -DLIBDENG2_MAJOR_VERSION=${LIBDENG2_MAJOR_VERSION}
+    -DLIBDENG2_MINOR_VERSION=${LIBDENG2_MINOR_VERSION}
+    -DLIBDENG2_PATCHLEVEL=${LIBDENG2_PATCHLEVEL}
+    -DLIBDENG2_RELEASE_LABEL="${LIBDENG2_RELEASE_LABEL}" )
+
+MESSAGE ( STATUS "libdeng2 version ${LIBDENG2_RELEASE_LABEL} ${LIBDENG2_MAJOR_VERSION}.${LIBDENG2_MINOR_VERSION}.${LIBDENG2_PATCHLEVEL}")
+
+# Generate revision.h.
+IF ( Subversion_FOUND )
+    Subversion_WC_INFO ( ${CMAKE_SOURCE_DIR} ROOT )
+    MESSAGE( STATUS "Revision: ${ROOT_WC_REVISION}" )
+    FILE ( WRITE include/de/revision.h "#define LIBDENG2_REVISION ${ROOT_WC_REVISION}\n" )
+ENDIF ( Subversion_FOUND )
+
 INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
     ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} )
 

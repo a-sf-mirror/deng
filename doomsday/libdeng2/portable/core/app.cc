@@ -93,6 +93,8 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
         // Successful construction without errors, so drop our guard.
         memoryPtr.release();
         fsPtr.release();
+        
+        std::cout << "libdeng2 App " << LIBDENG2_VERSION << " initialized.\n";
     }
     catch(const Error& err)
     {
@@ -285,6 +287,22 @@ App& App::app()
     return *singleton_;
 }
 
+Version App::version()
+{
+    Version ver;
+    ver.label = LIBDENG2_RELEASE_LABEL;
+    ver.major = LIBDENG2_MAJOR_VERSION;
+    ver.minor = LIBDENG2_MINOR_VERSION;
+    ver.patchlevel = LIBDENG2_PATCHLEVEL;
+    ver.revision = LIBDENG2_REVISION;
+    return ver;
+}
+
+CommandLine& App::commandLine() 
+{ 
+    return app().commandLine_; 
+}
+
 Zone& App::memory()
 {
     App& self = app();
@@ -297,6 +315,11 @@ FS& App::fileSystem()
     App& self = app();
     assert(self.fs_ != 0);
     return *self.fs_; 
+}
+
+Protocol& App::protocol()
+{
+    return app().protocol_;
 }
 
 Library& App::game()
@@ -317,4 +340,19 @@ Video& App::video()
         throw NoVideoError("App::video", "No video subsystem available");
     }
     return *self.video_;
+}
+
+bool App::hasGame() 
+{ 
+    return app().gameLib_ != 0;
+}
+
+bool App::hasVideo() 
+{ 
+    return app().video_ != 0; 
+}
+
+Time::Delta App::uptime()
+{
+    return app().initializedAt_.since();
 }

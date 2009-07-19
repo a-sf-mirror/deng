@@ -48,7 +48,7 @@ void Folder::clear()
     // Destroy all the file objects.
     for(Contents::iterator i = contents_.begin(); i != contents_.end(); ++i)
     {
-        i->second->setParent(NULL);
+        i->second->setParent(0);
         delete i->second;
     }
     contents_.clear();
@@ -109,7 +109,7 @@ File* Folder::locateFile(const String& path) const
         {
             return found->second;
         }
-        return NULL;
+        return 0;
     }
 
     String component = path.substr(0, end);
@@ -125,7 +125,7 @@ File* Folder::locateFile(const String& path) const
         if(!parent())
         {
             // Can't go there.
-            return NULL;
+            return 0;
         }
         return parent()->locateFile(remainder);
     }
@@ -143,7 +143,7 @@ File* Folder::locateFile(const String& path) const
     }
     
     // Dead end.
-    return NULL;
+    return 0;
 }
 
 void Folder::attach(Feed* feed)
