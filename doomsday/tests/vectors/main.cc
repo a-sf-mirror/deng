@@ -57,6 +57,9 @@ int deng_Main(int argc, char** argv)
         b += a;
         cout << "After sum:" << endl;
         cout << a.asText() << " " << b.asText() << endl;
+        
+        cout << "a > b: " << (a > b) << endl;
+        cout << "b > a: " << (b > a) << endl;
     }
     catch(const Error& err)
     {

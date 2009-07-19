@@ -52,6 +52,13 @@ int deng_Main(int argc, char** argv)
         Block b;
         Writer(b) << rec;
         std::cout << "Serialized record to " << b.size() << " bytes.\n";
+        
+        for(duint i = 0; i < b.size(); ++i)
+        {
+            std::cout << dint(b.data()[i]) << " ";
+        }
+        std::cout << "\n";
+        
         Reader(b) >> rec2;        
         std::cout << "\nAfter being (de)serialized:\n" << rec2;
     }

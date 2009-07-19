@@ -78,6 +78,12 @@ namespace de
             y -= other.y;
             return *this;
         }
+        bool operator > (const Vector2& other) const {
+            return x > other.x && y > other.y;
+        }
+        bool operator < (const Vector2& other) const {
+            return x < other.x && y < other.y;
+        }
         bool operator >= (const Vector2& other) const {
             return x >= other.x && y >= other.y;
         }
@@ -156,11 +162,17 @@ namespace de
             z -= other.z;
             return *this;
         }
+        bool operator > (const Vector3& other) const {
+            return Vector2<Type>::operator > (other) && z > other.z;
+        }
+        bool operator < (const Vector3& other) const {
+            return Vector2<Type>::operator < (other) && z < other.z;
+        }
         bool operator >= (const Vector3& other) const {
-            return Vector2<Type>::x >= other.x && Vector2<Type>::y >= other.y && z >= other.z;
+            return Vector2<Type>::operator >= (other) && z >= other.z;
         }
         bool operator <= (const Vector3& other) const {
-            return Vector2<Type>::x <= other.x && Vector2<Type>::y <= other.y && z <= other.z;
+            return Vector2<Type>::operator <= (other) && z <= other.z;
         }
         ddouble length() const { return std::sqrt(Vector2<Type>::x*Vector2<Type>::x +
             Vector2<Type>::y*Vector2<Type>::y + z*z); }
@@ -239,13 +251,17 @@ namespace de
             w -= other.w;
             return *this;
         }
+        bool operator > (const Vector4& other) const {
+            return Vector3<Type>::operator > (other) && w > other.w;
+        }
+        bool operator < (const Vector4& other) const {
+            return Vector3<Type>::operator < (other) && w < other.w;
+        }
         bool operator >= (const Vector4& other) const {
-            return Vector3<Type>::x >= other.x && Vector3<Type>::y >= other.y && 
-                Vector3<Type>::z >= other.z && w >= other.w;
+            return Vector3<Type>::operator >= (other) && w >= other.w;
         }
         bool operator <= (const Vector4& other) const {
-            return Vector3<Type>::x <= other.x && Vector3<Type>::y <= other.y && 
-                Vector3<Type>::z <= other.z && w <= other.w;
+            return Vector3<Type>::operator <= (other) && w <= other.w;
         }
         std::string asText() const { 
             std::ostringstream s;
