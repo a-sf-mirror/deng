@@ -17,7 +17,7 @@
 INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
     ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} )
 
-FILE ( GLOB SOURCES portable/*.cc portable/*.h include/de/*.h )
+FILE ( GLOB_RECURSE SOURCES portable/*.cc portable/*.h include/de/*.h )
 
 # Configure behavior for waiting on socket activity.
 IF ( APPLE OR WIN32 )

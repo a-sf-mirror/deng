@@ -21,7 +21,7 @@
 #define LIBDENG2_INTERNAL_H
 
 #include "de/deng.h"
-#include "de/address.h"
+#include "de/Address"
 #include "sdl.h"
 
 /**
