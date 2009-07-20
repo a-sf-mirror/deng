@@ -37,10 +37,19 @@ Id::Id() : id_(generator_++)
     }
 }
 
+Id::Id(const String& text) : id_(NONE)
+{
+    if(text.beginsWith("{") && text.endsWith("}"))
+    {
+        std::istringstream is(text.substr(1, text.size() - 2));
+        is >> id_;
+    }
+}
+
 Id::~Id()
 {}
 
-Id::operator std::string () const
+Id::operator String () const
 {
     return asText();
 }

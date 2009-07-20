@@ -72,6 +72,9 @@ namespace de
         /// Checks if the string begins with the substring @c s.
         bool beginsWith(const std::string& s) const;
 
+        /// Checks if the string ends with the substring @c s.
+        bool endsWith(const std::string& s) const;
+
         /// Checks if the string contains the substring @c s.
         bool contains(const std::string& s) const;
 

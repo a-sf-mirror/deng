@@ -115,7 +115,19 @@ namespace de
         Type& value() {
             Type* v = dynamic_cast<Type*>(value_);
             if(!v) {
-                throw TypeError("Variable::value<Type>", "Type conversion failed");
+                throw TypeError("Variable::value<Type>", "Illegal type conversion");
+            }
+            return *v;
+        }
+
+        /**
+         * Returns the value of the variable.
+         */
+        template <typename Type>
+        const Type& value() const {
+            const Type* v = dynamic_cast<const Type*>(value_);
+            if(!v) {
+                throw TypeError("Variable::value<Type>", "Illegal type conversion");
             }
             return *v;
         }

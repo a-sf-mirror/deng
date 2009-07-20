@@ -41,6 +41,9 @@ namespace de
     public:
         TextValue(const Text& initialValue = "");
 
+        /// Converts the TextValue to plain text.
+        operator const String& () const;
+
         Value* duplicate() const;
         Number asNumber() const;
         Text asText() const;

@@ -68,6 +68,16 @@ bool String::beginsWith(const std::string& s) const
     return std::equal(s.begin(), s.end(), begin());
 }
 
+bool String::endsWith(const std::string& s) const
+{
+    if(size() < s.size())
+    {
+        // Too short to be a match.
+        return false;
+    }
+    return std::equal(s.begin(), s.end(), s.end() - s.size());
+}
+
 bool String::contains(const std::string& s) const
 {
     return find(s) != npos;

@@ -20,11 +20,11 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "session.h"
 #include <de/App>
 #include <de/ListenSocket>
 #include <de/Protocol>
 #include <de/Link>
-#include <de/Session>
 
 #define DEFAULT_LISTEN_PORT 13209
 
@@ -86,7 +86,7 @@ private:
     de::ListenSocket* listenSocket_;
     
     /// The active game session.
-    de::Session* session_;
+    Session* session_;
     
     typedef std::list<Client*> Clients;
     Clients clients_;

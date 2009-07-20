@@ -37,7 +37,11 @@ using std::ostringstream;
 
 TextValue::TextValue(const Text& initialValue)
     : value_(initialValue)
-{    
+{}
+
+TextValue::operator const String& () const
+{
+    return value_;
 }
 
 Value* TextValue::duplicate() const

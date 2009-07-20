@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project -- dengcl
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,18 +17,15 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/UserSession"
-#include "de/App"
-#include "de/Library"
-#include "de/Protocol"
-#include "de/Link"
-#include "de/User"
-#include "de/World"
-#include "de/CommandPacket"
+#include "usersession.h"
+#include "client.h"
+#include <de/Library>
+#include <de/Protocol>
+#include <de/CommandPacket>
 
 using namespace de;
 
-UserSession::UserSession(Link* link, Id session)
+UserSession::UserSession(Link* link, const Id& session)
     : link_(link), user_(0), world_(0)
 {
     // Create a blank user and world. The user is configured jointly
@@ -39,7 +36,7 @@ UserSession::UserSession(Link* link, Id session)
     
     // Ask to join the session.
     CommandPacket join("session.join");
-    join.arguments().addNumber("id", session);
+    join.arguments().addText("id", session);
     App::app().protocol().decree(*link_, join);
 }   
 

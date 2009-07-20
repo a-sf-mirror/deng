@@ -20,6 +20,7 @@
 #include "de/Protocol"
 #include "de/CommandPacket"
 #include "de/RecordPacket"
+#include "de/TextValue"
 #include "de/Record"
 #include "de/Link"
 
@@ -56,6 +57,7 @@ void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** res
 {
     to << command;
     std::auto_ptr<RecordPacket> rep(to.receive<RecordPacket>());
+
     // Check the answer.
     if(rep->label() == "failure")
     {
@@ -67,6 +69,8 @@ void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** res
         throw DenyError("Protocol::decree", "Command '" + command.command() +
             "' was denied: " + (*rep)["message"].value().asText());
     }
+    std::cout << "Reply to the decree '" << command.command() << "' was:\n" <<
+        rep->label() << ":\n" << rep->record();
     if(response)
     {
         *response = rep.release();

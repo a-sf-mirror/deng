@@ -39,13 +39,25 @@ namespace de
         static const Type NONE;
         
     public:
+        /**
+         * Constructs a new identifier. It is automatically unique (until the duint range
+         * is depleted).
+         */
         Id();
+        
+        /**
+         * Constructs an identifier from the text representation.
+         *
+         * @param text  Text representation of an identifier, such as returned by asText().
+         */
+        Id(const String& text);
+
         ~Id();
 
         operator Type () const { return id_; }
 
         /// Converts the Id to a text string.
-        operator std::string () const;
+        operator String () const;
         
         /// Converts the Id to a text string.
         String asText() const;

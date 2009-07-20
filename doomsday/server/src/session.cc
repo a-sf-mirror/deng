@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project -- dengsv
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,13 +17,12 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/Session"
-#include "de/App"
-#include "de/Library"
-#include "de/Protocol"
-#include "de/World"
-#include "de/CommandPacket"
-#include "de/Record"
+#include "session.h"
+#include "server.h"
+#include <de/Library>
+#include <de/Protocol>
+#include <de/Record>
+#include <de/TextValue>
 
 using namespace de;
 
@@ -40,18 +39,35 @@ Session::~Session()
 
 void Session::processCommand(Link& sender, const CommandPacket& packet)
 {
-    if(packet.command() == "session.new")
+    try
     {
-        // Initialize the session with the provided settings.
-        try
+        if(packet.command() == "session.new")
         {
-            world_->setMap(packet.arguments()["map"].value().asText());
+            // Initialize the session with the provided settings.
+            world_->setMap(packet.arguments()["map"].value<TextValue>());
             // Respond.
             App::protocol().reply(sender);
         }
-        catch(const Error& err)        
+        else if(packet.command() == "session.join")
         {
-            App::protocol().reply(sender, Protocol::FAILURE, err.what());
+            // Require to join this session?
+            Id which(packet.arguments()["id"].value<TextValue>());
+            if(which != id_)
+            {
+                // Not intended for this session.
+                return;
+            }
+            promote(sender);
         }
     }
+    catch(const Error& err)        
+    {
+        // No go, pal.
+        App::protocol().reply(sender, Protocol::FAILURE, err.what());
+    }
+}
+
+void Session::promote(Link& client)
+{
+    
 }

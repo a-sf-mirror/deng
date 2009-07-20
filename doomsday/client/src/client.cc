@@ -19,11 +19,11 @@
 
 #include "client.h"
 #include "localserver.h"
+#include "usersession.h"
 #include <de/Link>
 #include <de/CommandPacket>
 #include <de/RecordPacket>
 #include <de/Record>
-#include <de/Session>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -75,26 +75,28 @@ Client::Client(const CommandLine& arguments)
     // DEVEL: Join the game session.
     // Query the on-going sessions.
     Link* link = new Link(Address("localhost", SERVER_PORT));
-    duint sessionToJoin;
 
     CommandPacket createSession("session.new");
     createSession.arguments().addText("map", "E1M1");
     protocol().decree(*link, createSession);
     
     *link << CommandPacket("status");
-    // We should receive a reply directly.
     std::auto_ptr<RecordPacket> status(link->receive<RecordPacket>());
     std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
+
+    Id sessionToJoin(status->record().subrecord("sessions").subrecords().begin()->first);
+    std::cout << "Going to join session " << sessionToJoin << "\n";
+
+    // Join the session.
+    session_ = new UserSession(link, sessionToJoin);
         
-    //session_ = new UserSession(link);
-    delete link;
-    
     // Good to go.
     svPtr.release();
 }
 
 Client::~Client()
 {
+    delete session_;
     delete localServer_;
     
     // Shutdown the engine.

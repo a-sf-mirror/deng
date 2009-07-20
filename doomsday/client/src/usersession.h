@@ -17,30 +17,40 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef USERSESSION_H
+#define USERSESSION_H
 
-#include "usersession.h"
-#include <de/App>
-
-class LocalServer;
+#include <de/Id>
+#include <de/User>
+#include <de/World>
+#include <de/Link>
+#include <de/Address>
 
 /**
- * The client application.
+ * UserSession maintain the game session on the clientside.
  */
-class Client : public de::App
+class UserSession
 {
 public:
-    Client(const de::CommandLine& commandLine);
-    ~Client();
+    /**
+     * Constructs a new user session.
+     *
+     * @param link  Open connection to the server. Ownership given to UserSession.
+     * @param session  Session to join.
+     */
+    UserSession(de::Link* link, const de::Id& session = 0);
     
-    void iterate();
+    virtual ~UserSession();
     
 private:
-    LocalServer* localServer_;
-    
-    /// The game session.
-    UserSession* session_;
+    /// Link to the server.
+    de::Link* link_;
+
+    /// The user that owns the UserSession.
+    de::User* user_;
+
+    /// The game world. Mirrors the game world in the server's Session.
+    de::World* world_;
 };
 
-#endif /* CLIENT_H */
+#endif /* USERSESSION_H */
