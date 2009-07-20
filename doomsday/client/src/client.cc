@@ -76,11 +76,15 @@ Client::Client(const CommandLine& arguments)
     // Query the on-going sessions.
     Link* link = new Link(Address("localhost", SERVER_PORT));
     duint sessionToJoin;
+
+    CommandPacket createSession("session.new");
+    createSession.arguments().addText("map", "E1M1");
+    protocol().decree(*link, createSession);
     
     *link << CommandPacket("status");
     // We should receive a reply directly.
     std::auto_ptr<RecordPacket> status(link->receive<RecordPacket>());
-    std::cout << "Here's what the server said:\n" << status->record();
+    std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
         
     //session_ = new UserSession(link);
     delete link;

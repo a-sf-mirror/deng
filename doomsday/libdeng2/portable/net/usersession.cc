@@ -20,11 +20,11 @@
 #include "de/UserSession"
 #include "de/App"
 #include "de/Library"
+#include "de/Protocol"
 #include "de/Link"
 #include "de/User"
 #include "de/World"
 #include "de/CommandPacket"
-#include "de/NumberValue"
 
 using namespace de;
 
@@ -39,8 +39,8 @@ UserSession::UserSession(Link* link, Id session)
     
     // Ask to join the session.
     CommandPacket join("session.join");
-    join.arguments().add(new NumberValue(session));
-    *link_ << join;
+    join.arguments().addNumber("id", session);
+    App::app().protocol().decree(*link_, join);
 }   
 
 UserSession::~UserSession()

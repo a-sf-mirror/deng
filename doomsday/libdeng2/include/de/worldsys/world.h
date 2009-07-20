@@ -20,6 +20,8 @@
 #ifndef LIBDENG2_WORLD_H
 #define LIBDENG2_WORLD_H
 
+#include <string>
+
 /**
  * @defgroup World
  * 
@@ -28,6 +30,8 @@
 
 namespace de
 {
+    class Map;
+    
     /**
      * Base class for the game world. The game plugin is responsible for creating concrete
      * instances of the World. The game plugin can extend this with whatever information it
@@ -42,7 +46,16 @@ namespace de
         
         virtual ~World();
         
+        /**
+         * Loads a map and prepares it for play.
+         *
+         * @param name  Name of the map.
+         */
+        virtual void setMap(const std::string& name);
+        
     private:
+        /// The current map.
+        Map* map_;
     };
 }
 

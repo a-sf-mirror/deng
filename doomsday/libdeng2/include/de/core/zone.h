@@ -81,8 +81,7 @@ namespace de
         DEFINE_ERROR(ConsistencyError);
         
         /// Purge tags indicate when/if a block can be freed.
-        enum PurgeTag
-        {
+        enum PurgeTag {
             UNDEFINED = 0,
             STATIC = 1,     ///< Static entire execution time.
             SOUND = 2,      ///< Static while playing.
@@ -94,7 +93,6 @@ namespace de
             PATCH = 15,
             MODEL = 16,
             SPRITE = 20,
-
             USER1 = 40,
             USER2,
             USER3,
@@ -105,10 +103,8 @@ namespace de
             USER8,
             USER9,
             USER10,
-            
             MAP = 50,   ///< Static until map exited (may still be freed during the map, though).
             MAP_STATIC = 52, ///< Not freed until map exited.
-
             // Tags >= 100 are purgable whenever needed.
             PURGE_LEVEL = 100,
             CACHE = 101

@@ -23,6 +23,7 @@
 #include <de/CommandPacket>
 #include <de/RecordPacket>
 #include <de/Socket>
+#include <de/Session>
 
 #include <sstream>
 
@@ -62,11 +63,14 @@ Server::Server(const CommandLine& arguments)
 
 Server::~Server()
 {
+    delete session_;
+
     // Close all links.
     for(Clients::iterator i = clients_.begin(); i != clients_.end(); ++i)
     {
         delete *i;
     }
+    clients_.clear();
     
     // Shutdown the engine.
     DD_Shutdown();
@@ -169,12 +173,22 @@ void Server::processPacket(const Packet& packet)
         // Session commands are handled by the session.
         if(cmd->command().beginsWith("session."))
         {
+            if(cmd->command() == "session.new")
+            {
+                if(session_)
+                {
+                    // Could allow several...
+                    delete session_;
+                }
+                // Start a new session.
+                session_ = new Session();
+            }
             if(!session_)
             {
                 throw NoSessionError("Server::processPacket", "No session available");
             }
-            // Session handles it.
-            //session_->processCommand(*cmd);
+            // Execute the command.
+            session_->processCommand(clientByAddress(packet.from()), *cmd);
         }
         else if(cmd->command() == "status")
         {
@@ -192,29 +206,30 @@ void Server::processPacket(const Packet& packet)
 
 void Server::replyStatus(const Address& to)
 {
-    RecordPacket status;
+    RecordPacket status("server.status");
     Record& rec = status.record();
-
-    dint sessionCount = (session_? 1 : 0);
     
     // Version.
     const Version v = version();
-    ArrayValue& array = rec.addArrayVariable("version").value<ArrayValue>();
+    ArrayValue& array = rec.addArray("version").value<ArrayValue>();
     array.add(new NumberValue(v.major));
     array.add(new NumberValue(v.minor));
     array.add(new NumberValue(v.patchlevel));
     array.add(new NumberValue(v.revision));
     
-    // Number of sessions.
-    rec.addNumberVariable("sessionCount", sessionCount);
-    
-    Record& sub = rec.add("sessions", new Record());
-    if(sessionCount > 0)
+    // The sessions.
+    Record& sub = rec.addRecord("sessions");
+    if(session_)
     {
-        Record& sesSub = sub.add(session_->id(), new Record());
+        Record& sesSub = sub.addRecord(session_->id());
         // Information about the session.
         
     }
     
     clientByAddress(to) << status;
+}
+
+Server& Server::server()
+{
+    return static_cast<Server&>(App::app());
 }

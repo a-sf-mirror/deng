@@ -20,53 +20,39 @@
 #ifndef LIBDENG2_COMMANDPACKET_H
 #define LIBDENG2_COMMANDPACKET_H
 
-#include <de/Packet>
+#include <de/RecordPacket>
 #include <de/String>
-#include <de/ArrayValue>
 
 #include <list>
 
 namespace de
 {
-    class Value;
-    class Block;
-    
     /**
      * Command packet. Used for controlling a libdeng2 based application.
      *
      * @ingroup protocol
      */
-    class PUBLIC_API CommandPacket : public Packet
+    class PUBLIC_API CommandPacket : public RecordPacket
     {    
     public:
         CommandPacket(const String& cmd = "");
         ~CommandPacket();
         
         /// Returns the command of the packet.
-        const String& command() const { return command_; }
+        const String& command() const { return label(); }
         
         /// Sets the command of the packet.
-        void setCommand(const String& c) { command_ = c; }
+        void setCommand(const String& c) { setLabel(c); }
 
         /// Returns the arguments of the packet (non-modifiable).
-        const ArrayValue& arguments() const { return arguments_; }
+        const Record& arguments() const { return record(); }
         
         /// Returns the arguments of the packet.
-        ArrayValue& arguments() { return arguments_; }
-        
-        // Implements ISerializable.
-        void operator >> (Writer& to) const;
-        void operator << (Reader& from);
+        Record& arguments() { return record(); }
 
     public:
         /// Constructor for the Protocol.
         static Packet* fromBlock(const Block& block);
-        
-    private:
-        String command_;
-        
-        /// Command arguments.
-        ArrayValue arguments_;
     };
 } 
 

@@ -54,6 +54,6 @@ String Id::asText() const
 
 std::ostream& de::operator << (std::ostream& os, const Id& id)
 {
-    os << "<" << duint(id) << ">";
+    os << "{" << duint(id) << "}";
     return os;
 }

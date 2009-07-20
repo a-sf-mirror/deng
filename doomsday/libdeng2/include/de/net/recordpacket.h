@@ -21,19 +21,20 @@
 #define LIBDENG2_RECORDPACKET_H
 
 #include <de/Packet>
+#include <de/Record>
 #include <de/String>
 
 namespace de
 {
     class Block;
-    class Record;
+    class Variable;
 
     /**
      * A packet that contains a Record. A label string can be attached.
      *
      * @ingroup protocol
      */
-    class RecordPacket : public Packet
+    class PUBLIC_API RecordPacket : public Packet
     {
     public:
         RecordPacket(const std::string& label = "");
@@ -65,6 +66,15 @@ namespace de
          * @return  Caller gets ownership of the returned record.
          */
         Record* give();
+
+        /**
+         * Returns a variable in the packet's record.
+         *
+         * @param variableName  Name of variable.
+         *
+         * @return  Variable.
+         */
+        const Variable& operator [] (const std::string& variableName) const;
 
         // Implements ISerializable.
         void operator >> (Writer& to) const;

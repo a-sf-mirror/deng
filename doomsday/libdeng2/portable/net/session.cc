@@ -18,11 +18,40 @@
  */
 
 #include "de/Session"
+#include "de/App"
+#include "de/Library"
+#include "de/Protocol"
+#include "de/World"
+#include "de/CommandPacket"
+#include "de/Record"
 
 using namespace de;
 
 Session::Session() : world_(0)
-{}
+{
+    // Create a blank world.
+    world_ = App::game().SYMBOL(deng_NewWorld)();
+}
 
 Session::~Session()
-{}
+{
+    delete world_;
+}
+
+void Session::processCommand(Link& sender, const CommandPacket& packet)
+{
+    if(packet.command() == "session.new")
+    {
+        // Initialize the session with the provided settings.
+        try
+        {
+            world_->setMap(packet.arguments()["map"].value().asText());
+            // Respond.
+            App::protocol().reply(sender);
+        }
+        catch(const Error& err)        
+        {
+            App::protocol().reply(sender, Protocol::FAILURE, err.what());
+        }
+    }
+}

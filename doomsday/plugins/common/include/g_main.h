@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -16,33 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/CommandPacket"
-#include "de/Value"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Block"
 
-using namespace de;
+/**
+ * @file g_main.h  Public interface of the game plugin.
+ */
 
-static const char* COMMAND_PACKET_TYPE = "CMND";
+#ifndef G_MAIN_H
+#define G_MAIN_H
 
-CommandPacket::CommandPacket(const String& cmd) : RecordPacket(cmd)
-{
-    setType(COMMAND_PACKET_TYPE);
-}
-
-CommandPacket::~CommandPacket()
-{}
-
-Packet* CommandPacket::fromBlock(const Block& block)
-{
-    Reader from(block);
-    if(checkType(from, COMMAND_PACKET_TYPE))
-    {    
-        std::auto_ptr<CommandPacket> p(new CommandPacket);
-        from >> *p.get();
-        return p.release();
-    }
-    return 0;
-}
+#endif /* G_MAIN_H */

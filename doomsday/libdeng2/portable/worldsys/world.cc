@@ -26,3 +26,7 @@ World::World()
 
 World::~World()
 {}
+
+void World::setMap(const std::string& name)
+{
+}

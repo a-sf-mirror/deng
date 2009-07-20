@@ -26,8 +26,8 @@
 namespace de
 {   
     class Address;
-    class Socket;
     class Packet;
+    class Socket;
     
     /**
      * Network communications link.

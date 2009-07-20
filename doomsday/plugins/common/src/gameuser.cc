@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -16,33 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/CommandPacket"
-#include "de/Value"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Block"
+
+/**
+ * @file gameuser.cc  Game plugin's derivation of the User.
+ */
+
+#include "gameuser.h"
 
 using namespace de;
 
-static const char* COMMAND_PACKET_TYPE = "CMND";
-
-CommandPacket::CommandPacket(const String& cmd) : RecordPacket(cmd)
-{
-    setType(COMMAND_PACKET_TYPE);
-}
-
-CommandPacket::~CommandPacket()
+GameUser::GameUser()
 {}
 
-Packet* CommandPacket::fromBlock(const Block& block)
-{
-    Reader from(block);
-    if(checkType(from, COMMAND_PACKET_TYPE))
-    {    
-        std::auto_ptr<CommandPacket> p(new CommandPacket);
-        from >> *p.get();
-        return p.release();
-    }
-    return 0;
-}
+GameUser::~GameUser()
+{}

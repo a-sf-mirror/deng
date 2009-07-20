@@ -25,6 +25,8 @@
 
 namespace de
 {
+    class CommandPacket;
+    class Link;
     class World;
     
     /**
@@ -39,6 +41,15 @@ namespace de
         virtual ~Session();
         
         Id id() const { return id_; }
+
+        /**
+         * Process a command related to the session. Any access rights must be
+         * checked before calling this.
+         *
+         * @param sender  Sender of the command. A reply will be sent here.
+         * @param packet  Packet received from the network.
+         */
+        void processCommand(Link& sender, const CommandPacket& packet);
         
     private:
         Id id_;

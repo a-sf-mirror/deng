@@ -19,6 +19,7 @@
 
 #include "de/ArrayValue"
 #include "de/NumberValue"
+#include "de/TextValue"
 #include "de/Writer"
 #include "de/Reader"
 
@@ -181,6 +182,16 @@ void ArrayValue::sum(const Value& value)
 void ArrayValue::add(Value* value)
 {
     elements_.push_back(value);
+}
+
+void ArrayValue::add(const std::string& text)
+{
+    add(new TextValue(text));
+}
+
+const Value& ArrayValue::at(dint index) const
+{
+    return **indexToIterator(index);
 }
 
 ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)

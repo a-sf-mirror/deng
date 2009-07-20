@@ -76,6 +76,10 @@ public:
      * @param to  Address of the client to send the status to.
      */
     void replyStatus(const de::Address& to);
+
+public:
+    /// Returns the singleton Server instance.
+    static Server& server();
     
 private:
     /// The server listens on this socket.

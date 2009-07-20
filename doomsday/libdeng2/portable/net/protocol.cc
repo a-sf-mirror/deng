@@ -20,6 +20,8 @@
 #include "de/Protocol"
 #include "de/CommandPacket"
 #include "de/RecordPacket"
+#include "de/Record"
+#include "de/Link"
 
 using namespace de;
 
@@ -48,4 +50,50 @@ Packet* Protocol::interpret(const Block& block) const
         }
     }
     return 0;
+}
+
+void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** response)
+{
+    to << command;
+    std::auto_ptr<RecordPacket> rep(to.receive<RecordPacket>());
+    // Check the answer.
+    if(rep->label() == "failure")
+    {
+        throw FailureError("Protocol::decree", "Command '" + command.command() + 
+            "' failed: " + (*rep)["message"].value().asText());
+    }
+    else if(rep->label() == "deny")
+    {
+        throw DenyError("Protocol::decree", "Command '" + command.command() +
+            "' was denied: " + (*rep)["message"].value().asText());
+    }
+    if(response)
+    {
+        *response = rep.release();
+    }
+}
+
+void Protocol::reply(Link& to, Reply type, const std::string& message)
+{
+    std::string label;
+    switch(type)
+    {
+    case OK:
+        label = "ok";
+        break;
+        
+    case FAILURE:
+        label = "failure";
+        break;
+        
+    case DENY:
+        label = "deny";
+        break;
+    }
+    RecordPacket packet(label);
+    if(!message.empty())
+    {
+        packet.record().addText("message", message);
+    }
+    to << packet;
 }

@@ -50,6 +50,11 @@ Record* RecordPacket::give()
     return detached;
 }
 
+const Variable& RecordPacket::operator [] (const std::string& variableName) const
+{
+    return (*record_)[variableName];
+}
+
 void RecordPacket::operator >> (Writer& to) const
 {
     Packet::operator >> (to);

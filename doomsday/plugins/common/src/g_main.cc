@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -16,33 +16,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "de/CommandPacket"
-#include "de/Value"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Block"
+
+/**
+ * @file g_main.cc  Public interface of the game plugin.
+ */
+
+#include "dd_export.h"
+#include "g_main.h"
+#include "gameworld.h"
+#include "gameuser.h"
 
 using namespace de;
 
-static const char* COMMAND_PACKET_TYPE = "CMND";
+BEGIN_EXTERN_C
 
-CommandPacket::CommandPacket(const String& cmd) : RecordPacket(cmd)
+/**
+ * Constructs a new game world.
+ */
+PUBLIC_API World* deng_NewWorld()
 {
-    setType(COMMAND_PACKET_TYPE);
+    return new GameWorld();
 }
 
-CommandPacket::~CommandPacket()
-{}
-
-Packet* CommandPacket::fromBlock(const Block& block)
+/**
+ * Constructs a new user.
+ */
+PUBLIC_API User* deng_NewUser()
 {
-    Reader from(block);
-    if(checkType(from, COMMAND_PACKET_TYPE))
-    {    
-        std::auto_ptr<CommandPacket> p(new CommandPacket);
-        from >> *p.get();
-        return p.release();
-    }
-    return 0;
+    return new GameUser();
 }
+
+END_EXTERN_C

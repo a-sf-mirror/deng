@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-INCLUDE_DIRECTORIES ( ../libdeng/api common/include ../external/lzss/portable/include )
+INCLUDE_DIRECTORIES ( ../libdeng/api ../libdeng2/include common/include 
+    ../external/lzss/portable/include )
 
-FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c )
+FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c common/src/*.cc )
 
 # Building the plugins is optional.
 OPTION ( ENABLE_DOOM "Build the Doom game plugin" ON )

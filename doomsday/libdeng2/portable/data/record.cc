@@ -22,7 +22,9 @@
 #include "de/Reader"
 #include "de/Writer"
 #include "de/NumberValue"
+#include "de/TextValue"
 #include "de/ArrayValue"
+#include "de/DictionaryValue"
 #include "de/Vector"
 
 #include <list>
@@ -75,16 +77,28 @@ Variable* Record::remove(Variable& variable)
     return &variable;
 }
 
-Variable& Record::addNumberVariable(const std::string& name, const Value::Number& number)
+Variable& Record::addNumber(const std::string& name, const Value::Number& number)
 {
     Variable::verifyName(name);
     return add(new Variable(name, new NumberValue(number), Variable::NUMBER));
 }
 
-Variable& Record::addArrayVariable(const std::string& name)
+Variable& Record::addText(const std::string& name, const Value::Text& text)
 {
     Variable::verifyName(name);
-    return add(new Variable(name, new ArrayValue()));
+    return add(new Variable(name, new TextValue(text), Variable::TEXT));
+}
+
+Variable& Record::addArray(const std::string& name)
+{
+    Variable::verifyName(name);
+    return add(new Variable(name, new ArrayValue(), Variable::ARRAY));
+}
+
+Variable& Record::addDictionary(const std::string& name)
+{
+    Variable::verifyName(name);
+    return add(new Variable(name, new DictionaryValue(), Variable::DICTIONARY));
 }
     
 Record& Record::add(const std::string& name, Record* subrecord)
@@ -97,6 +111,11 @@ Record& Record::add(const std::string& name, Record* subrecord)
     }
     subrecords_[name] = sub.release();
     return *subrecord;
+}
+
+Record& Record::addRecord(const std::string& name)
+{
+    return add(name, new Record());
 }
 
 Record* Record::remove(const std::string& name)
@@ -221,6 +240,7 @@ std::ostream& de::operator << (std::ostream& os, const Record& record)
     {
         os << "Subrecord '" + i->first + "':\n";
         os << *i->second;
+        os << "End subrecord '" + i->first + "'\n";
     }
     return os;
 }

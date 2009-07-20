@@ -61,12 +61,19 @@ namespace de
         void add(Value* value);
         
         /**
+         * Adds a new TextValue to the elements of the array. The value is
+         * added to the end of the list of elements.
+         * param text Text to add to the array.
+         */
+        void add(const std::string& text);
+        
+        /**
          * Pops the last element and gives its ownership to the caller.
          *
          * @return Last element of the array. Ownership transferred.
          */
         Value* pop();
-        
+
         /**
          * Inserts a new Value into the elements of the array at an 
          * arbitrary location. The new Value's index will be @c index.
@@ -89,6 +96,15 @@ namespace de
          * @param index  Index of the Value to remove.
          */
         void remove(dint index);
+
+        /**
+         * Returns a reference to a value in the array.
+         *
+         * @param index  Index of the element.
+         *
+         * @return  Element at the index.
+         */
+        const Value& at(dint index) const;
         
         /**
          * Empties the array of all values.

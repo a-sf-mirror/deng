@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup data
      */
-    class Record : public ISerializable
+    class PUBLIC_API Record : public ISerializable
     {
     public:
         /// Unknown variable name was given. @ingroup errors
@@ -81,22 +81,43 @@ namespace de
          * Adds a number variable to the record. The variable is set up to only accept
          * number values.
          *
-         * @param name  Name of the variable.
+         * @param variableName  Name of the variable.
          * @param number  Value of the variable.
          *
          * @return  The number variable.
          */
-        Variable& addNumberVariable(const std::string& name, const Value::Number& number);
+        Variable& addNumber(const std::string& variableName, const Value::Number& number);
+        
+        /**
+         * Adds a text variable to the record. The variable is set up to only accept
+         * text values.
+         *
+         * @param variableName  Name of the variable.
+         * @param text  Value of the variable.
+         *
+         * @return  The text variable.
+         */
+        Variable& addText(const std::string& variableName, const Value::Text& text);
         
         /**
          * Adds an array variable to the record. The variable is set up to only accept
          * array values.
          *
-         * @param name  Name of the variable.
+         * @param variableName  Name of the variable.
          *
          * @return  The array variable.
          */
-        Variable& addArrayVariable(const std::string& name);
+        Variable& addArray(const std::string& variableName);
+
+        /**
+         * Adds a dictionary variable to the record. The variable is set up to only accept
+         * dictionary values.
+         *
+         * @param variableName  Name of the variable.
+         *
+         * @return  The dictionary variable.
+         */
+        Variable& addDictionary(const std::string& variableName);
         
         /**
          * Adds a new subrecord to the record. 
@@ -108,6 +129,15 @@ namespace de
          * @return @c variable, for convenience.
          */
         Record& add(const std::string& name, Record* subrecord);
+
+        /**
+         * Adds a new empty subrecord to the record.
+         *
+         * @param name  Name to use for the subrecord. This must be a valid variable name.
+         *
+         * @return  The new subrecord.
+         */
+        Record& addRecord(const std::string& name);
 
         /**
          * Removes a subrecord from the record.
