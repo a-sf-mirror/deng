@@ -50,7 +50,7 @@ namespace de
         typedef SenderThread::OutgoingBuffer OutgoingBuffer;
         typedef ReceiverThread::IncomingBuffer IncomingBuffer;
         
-        /// Observer interface for deleting the link.
+        /// Link observer interface.
         class IObserver {
         public:
             virtual ~IObserver() {}

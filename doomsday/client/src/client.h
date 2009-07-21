@@ -31,7 +31,7 @@ class LocalServer;
 class Client : public de::App
 {
 public:
-    Client(const de::CommandLine& commandLine);
+    Client(const de::CommandLine& arguments);
     ~Client();
     
     void iterate();

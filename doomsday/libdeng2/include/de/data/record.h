@@ -152,7 +152,7 @@ namespace de
         /**
          * Removes a subrecord from the record.
          * 
-         * @param subrecord  Subrecord owned by this record.
+         * @param name  Name of subrecord owned by this record.
          *
          * @return  Caller gets ownership of the removed record.
          */

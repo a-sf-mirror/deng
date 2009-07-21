@@ -20,7 +20,7 @@
 #include "client.h"
 #include "localserver.h"
 #include "usersession.h"
-#include <de/Link>
+#include <de/MultiplexLink>
 #include <de/CommandPacket>
 #include <de/RecordPacket>
 #include <de/Record>
@@ -74,7 +74,7 @@ Client::Client(const CommandLine& arguments)
     
     // DEVEL: Join the game session.
     // Query the on-going sessions.
-    Link* link = new Link(Address("localhost", SERVER_PORT));
+    MultiplexLink* link = new MultiplexLink(Address("localhost", SERVER_PORT));
 
     CommandPacket createSession("session.new");
     createSession.arguments().addText("map", "E1M1");

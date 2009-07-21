@@ -84,7 +84,7 @@ namespace de
          * Sends the given data over the socket. Copes the data into
          * a temporary buffer before sending.
          *
-         * @param data  Data to send.
+         * @param packet  Data to send.
          * @param channel  Channel to send the data on.
          */
         void send(const IByteArray& packet, duint channel = 0);

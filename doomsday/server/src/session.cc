@@ -59,7 +59,7 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
         }
         else if(packet.command() == "session.join")
         {
-            // Require to join this session?
+            // Request to join this session?
             Id which(packet.arguments().value<TextValue>("id"));
             if(which != id_)
             {
@@ -118,7 +118,10 @@ RemoteUser& Session::promote(Server::Client& client)
             << remote->user();
         for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
         {
-            i->second->client().send(userJoined, client.UPDATES);
+            if(i->second != remote)
+            {                
+                i->second->client().send(userJoined, client.UPDATES);
+            }
         }
         
         return *remote;

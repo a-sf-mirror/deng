@@ -61,6 +61,25 @@ namespace de
         bool hasIncoming() const;
         
         /**
+         * Receives a packet of specific type. Will not return until the packet has been received,
+         * or the timeout has expired.
+         *
+         * @param timeOut  Maximum period of time to wait.
+         *
+         * @return  The received packet. Never returns NULL. Caller gets ownership
+         *      of the packet.
+         */
+        template <typename Type>
+        Type* receive(const Time::Delta& timeOut = 10) {
+            Type* packet = dynamic_cast<Type*>(receivePacket(timeOut));
+            if(!packet)
+            {
+                throw UnexpectedError("MultiplexLink::receive", "Received wrong type of packet");
+            }
+            return packet;
+        }
+        
+        /**
          * Sets the channel used for receiving packets.
          *
          * @param channel  Channel.

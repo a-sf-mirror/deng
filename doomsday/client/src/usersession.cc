@@ -29,7 +29,7 @@
 
 using namespace de;
 
-UserSession::UserSession(Link* link, const Id& session)
+UserSession::UserSession(MultiplexLink* link, const Id& session)
     : link_(link), user_(0), world_(0)
 {
     // Create a blank user and world. The user is configured jointly

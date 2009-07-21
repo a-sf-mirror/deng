@@ -23,7 +23,7 @@
 #include <de/Id>
 #include <de/User>
 #include <de/World>
-#include <de/Link>
+#include <de/MultiplexLink>
 #include <de/Address>
 
 /**
@@ -38,18 +38,18 @@ public:
      * @param link  Open connection to the server. Ownership given to UserSession.
      * @param session  Session to join.
      */
-    UserSession(de::Link* link, const de::Id& session = 0);
+    UserSession(de::MultiplexLink* link, const de::Id& session = 0);
     
     virtual ~UserSession();
     
     /**
-     * Listen to notifications and other data coming from the server.
+     * Listen to updates and other data coming from the server.
      */
     void listen();
     
 private:
     /// Link to the server.
-    de::Link* link_;
+    de::MultiplexLink* link_;
 
     /// The user that owns the UserSession.
     de::User* user_;
