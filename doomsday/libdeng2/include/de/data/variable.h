@@ -64,12 +64,14 @@ namespace de
         /// ArrayValue allowed as value.
         DEFINE_FLAG(ARRAY, 4);
         /// DictionaryValue allowed as value.
-        DEFINE_FINAL_FLAG(DICTIONARY, 5, Mode);
+        DEFINE_FLAG(DICTIONARY, 5);
+        /// BlockValue allowed as value.
+        DEFINE_FINAL_FLAG(BLOCK, 6, Mode);
         //@}
         
         /// The default mode allows reading and writing all types of values, 
         /// including NoneValue.
-        static const Flag DEFAULT_MODE = NONE | NUMBER | TEXT | ARRAY | DICTIONARY;
+        static const Flag DEFAULT_MODE = NONE | NUMBER | TEXT | ARRAY | DICTIONARY | BLOCK;
         
     public:
         /**

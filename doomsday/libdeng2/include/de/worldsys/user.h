@@ -22,6 +22,7 @@
 
 #include <de/deng.h>
 #include <de/Id>
+#include <de/ISerializable>
 
 namespace de
 {
@@ -30,9 +31,12 @@ namespace de
      * concrete User instances. The game plugin can extend the User class with any
      * extra information it needs.
      *
+     * The state of the user can be (de)serialized. This is used for transmitting
+     * the state to remote parties and when saving it to a savegame.
+     *
      * @ingroup world
      */ 
-    class User
+    class User : public ISerializable
     {
     public:
         User();
@@ -48,23 +52,12 @@ namespace de
          */ 
         void setId(const Id& id) { id_ = id; }
 
-        /**
-         * Sets the communications link used to communicate with a remote user.
-         * 
-         * @param link  Link. User does not get ownership of the Link.
-         */
-        //virtual void setLink(Link& link);
-
-        /**
-         * Returns the client's communications link.
-         */
-        //Link& link();
+        // Implements ISerializable.
+        void operator >> (Writer& to) const;
+        void operator << (Reader& from);
                 
     private:
         Id id_;
-        
-        /// Link used to communicate with the user. NULL for the local user.
-        //Link* link_;
     };
 };
 

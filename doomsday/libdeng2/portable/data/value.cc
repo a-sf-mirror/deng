@@ -23,6 +23,7 @@
 #include "de/TextValue"
 #include "de/ArrayValue"
 #include "de/DictionaryValue"
+#include "de/BlockValue"
 #include "de/Reader"
 
 using namespace de;
@@ -153,6 +154,10 @@ Value* Value::constructFrom(Reader& reader)
         
     case DICTIONARY:
         result = new DictionaryValue();
+        break;
+        
+    case BLOCK:
+        result = new BlockValue();
         break;
         
     default:

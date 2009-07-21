@@ -17,7 +17,7 @@
 INCLUDE_DIRECTORIES ( ../libdeng/api ../libdeng2/include common/include 
     ../external/lzss/portable/include )
 
-FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c common/src/*.cc )
+FILE ( GLOB COMMON_GAME_SOURCES common/src/*.c common/src/*.cc common/include/*.h )
 
 # Building the plugins is optional.
 OPTION ( ENABLE_DOOM "Build the Doom game plugin" ON )

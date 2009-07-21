@@ -25,6 +25,7 @@
 #include "de/TextValue"
 #include "de/ArrayValue"
 #include "de/DictionaryValue"
+#include "de/BlockValue"
 #include "de/Vector"
 
 #include <list>
@@ -99,6 +100,12 @@ Variable& Record::addDictionary(const std::string& name)
 {
     Variable::verifyName(name);
     return add(new Variable(name, new DictionaryValue(), Variable::DICTIONARY));
+}
+
+Variable& Record::addBlock(const std::string& name)
+{
+    Variable::verifyName(name);
+    return add(new Variable(name, new BlockValue(), Variable::BLOCK));
 }
     
 Record& Record::add(const std::string& name, Record* subrecord)

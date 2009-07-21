@@ -1,5 +1,6 @@
 #include "data/arrayvalue.h"
 #include "data/block.h"
+#include "data/blockvalue.h"
 #include "data/byteorder.h"
 #include "data/bytesubarray.h"
 #include "data/dictionaryvalue.h"

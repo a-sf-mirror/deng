@@ -217,7 +217,8 @@ namespace de
             NUMBER,
             TEXT,
             ARRAY,
-            DICTIONARY
+            DICTIONARY,
+            BLOCK
         };
     };
 }

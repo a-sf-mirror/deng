@@ -73,6 +73,13 @@ const Block::Byte* Block::data() const
     return &data_[0];
 }
 
+Block& Block::operator += (const Block& other)
+{
+    data_.reserve(size() + other.size());
+    data_.insert(data_.end(), other.data_.begin(), other.data_.end());
+    return *this;
+}
+
 void Block::clear()
 {
     data_.clear();

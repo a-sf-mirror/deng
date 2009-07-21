@@ -58,6 +58,9 @@ namespace de
          */
         const Byte* data() const;
         
+        /// Appends a block after this one.
+        Block& operator += (const Block& other);        
+        
         /// Empties the data of the block.         
         void clear();
         

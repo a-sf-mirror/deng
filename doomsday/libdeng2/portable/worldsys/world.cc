@@ -30,3 +30,11 @@ World::~World()
 void World::setMap(const std::string& name)
 {
 }
+
+void World::operator >> (Writer& to) const
+{
+}
+
+void World::operator << (Reader& from)
+{
+}

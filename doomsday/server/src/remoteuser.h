@@ -21,6 +21,7 @@
 #define REMOTEUSER_H
 
 #include "server.h"
+#include "session.h"
 #include <de/User>
 #include <de/Address>
 
@@ -33,9 +34,10 @@ public:
     /**
      * Constructs a new remote user.
      *
-     * @param link  Network link for communicating with the user.
+     * @param client  Network link for communicating with the user.
+     * @param session  Session to which this RemoteUser belongs.
      */
-    RemoteUser(Server::Client& client);
+    RemoteUser(Server::Client& client, Session& session);
     
     virtual ~RemoteUser();
 
@@ -55,12 +57,20 @@ public:
     Server::Client& client() const;
     
     /**
+     * Returns the session to which this remote user belongs.
+     */
+    Session& session() const;
+    
+    /**
      * Returns the User instance of the remote user.
      */
     de::User& user();
     
 private:
     Server::Client* client_;
+    
+    /// Session to which this remote user belongs.
+    Session& session_;
     
     /// The game user.
     de::User* user_;

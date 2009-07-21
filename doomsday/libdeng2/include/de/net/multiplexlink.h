@@ -27,8 +27,8 @@ namespace de
 {
     /**
      * Multiplexes one Link so that multiple isolated communication channels
-     * can operate over it. Duplicates the Link class's sending and reception
-     * interface.
+     * can operate over it. A multiplex link will only return the incoming
+     * data on the channel it has been tuned to.
      */
     class MultiplexLink : public Link
     {

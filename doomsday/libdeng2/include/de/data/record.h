@@ -120,6 +120,16 @@ namespace de
         Variable& addDictionary(const std::string& variableName);
         
         /**
+         * Adds a block variable to the record. The variable is set up to only accept
+         * block values.
+         *
+         * @param variableName  Name of the variable.
+         *
+         * @return  The block variable.
+         */
+        Variable& addBlock(const std::string& variableName);
+        
+        /**
          * Adds a new subrecord to the record. 
          *
          * @param name  Name to use for the subrecord. This must be a valid variable name.

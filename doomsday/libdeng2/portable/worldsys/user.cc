@@ -21,20 +21,16 @@
 
 using namespace de;
 
-User::User() //: link_(0)
+User::User()
 {}
 
 User::~User()
 {}
 
-/*
-void User::setLink(Link& link)
+void User::operator >> (Writer& to) const
 {
-    link_ = &link;
 }
 
-Link& User::link()
+void User::operator << (Reader& from)
 {
-    return link_;
 }
-*/

@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,52 +17,49 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_WORLD_H
-#define LIBDENG2_WORLD_H
+#ifndef LIBDENG2_BLOCKVALUE_H
+#define LIBDENG2_BLOCKVALUE_H
 
-#include <de/ISerializable>
-
-#include <string>
-
-/**
- * @defgroup World
- * 
- * The world subsystem takes care of the game world and the players in the world.
- */
+#include <de/Value>
+#include <de/Block>
 
 namespace de
 {
-    class Map;
-    
     /**
-     * Base class for the game world. The game plugin is responsible for creating concrete
-     * instances of the World. The game plugin can extend this with whatever information it
-     * needs.
+     * The BlockValue class is a subclass of Value that holds a data block.
      *
-     * @ingroup world
+     * @ingroup data
      */
-    class World : public ISerializable
+    class PUBLIC_API BlockValue : public Value
     {
     public:
-        World();
+        BlockValue();
         
-        virtual ~World();
-        
-        /**
-         * Loads a map and prepares it for play.
-         *
-         * @param name  Name of the map.
-         */
-        virtual void setMap(const std::string& name);
+        /// Copies the content of an existing block.
+        BlockValue(const Block& block);
+
+        /// Converts the BlockValue to a plain byte array (non-modifiable).
+        operator const IByteArray& () const;
+
+        /// Converts the BlockValue to a plain byte array.
+        operator IByteArray& ();
+
+        /// Empties the block value.
+        void clear();
+
+        Value* duplicate() const;
+        Text asText() const;
+        dsize size() const;
+        bool isTrue() const;
+        void sum(const Value& value);
         
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
     private:
-        /// The current map.
-        Map* map_;
+        Block value_;
     };
 }
 
-#endif /* LIBDENG2_WORLD_H */
+#endif /* LIBDENG2_BLOCKVALUE_H */

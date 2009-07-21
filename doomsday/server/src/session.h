@@ -20,7 +20,6 @@
 #ifndef SESSION_H
 #define SESSION_H
 
-#include "remoteuser.h"
 #include "server.h"
 #include <de/deng.h>
 #include <de/Id>
@@ -30,6 +29,8 @@
 #include <de/World>
 
 #include <map>
+
+class RemoteUser;
 
 /**
  * A session instance is the host for a game session. It owns the game world and 

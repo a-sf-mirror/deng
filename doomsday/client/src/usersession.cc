@@ -24,6 +24,8 @@
 #include <de/Library>
 #include <de/Protocol>
 #include <de/CommandPacket>
+#include <de/BlockValue>
+#include <de/Writer>
 
 using namespace de;
 
@@ -39,14 +41,14 @@ UserSession::UserSession(Link* link, const Id& session)
     // Ask to join the session.
     CommandPacket join("session.join");
     join.arguments().addText("id", session);
+
+    // Include our initial user state in the arguments.
+    Writer(join.arguments().addBlock("userState").value<BlockValue>()) << *user_;
+
     RecordPacket* response;
     App::app().protocol().decree(*link_, join, &response);
     // Get the user id.
-    user_->setId(response->valueAsText("userid"));
-    
-    // Open the update link for getting updates.
-    //updateLink_ = new Link(link->address());
-    
+    user_->setId(response->valueAsText("userId"));
 }   
 
 UserSession::~UserSession()

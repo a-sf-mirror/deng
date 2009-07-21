@@ -19,10 +19,10 @@
 
 #include "session.h"
 #include "server.h"
+#include "remoteuser.h"
+#include <de/data.h>
 #include <de/Library>
 #include <de/Protocol>
-#include <de/Record>
-#include <de/TextValue>
 
 using namespace de;
 
@@ -67,8 +67,13 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
                 return;
             }
             RemoteUser& newUser = promote(sender);
+     
+            // The sender has provided us with the initial state.
+            Reader(packet.arguments().value<BlockValue>("userState")) >> newUser.user();
+     
+            // Reply with the official user id.
             Record* reply = new Record();
-            reply->addText("userid", newUser.id());
+            reply->addText("userId", newUser.id());
             App::protocol().reply(sender, Protocol::OK, reply);
         }
     }
@@ -89,10 +94,33 @@ RemoteUser& Session::promote(Server::Client& client)
     }
     catch(const UnknownAddressError&)
     {
-        RemoteUser* remote = new RemoteUser(client);
+        // Compose a welcome packet for the new user.
+        RecordPacket welcome("user.welcome");
+        Writer(welcome.record().addBlock("worldState").value<BlockValue>()) << *world_;
+        Record& userStateRec = welcome.record().addRecord("users");
+        for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
+        {
+            Writer(userStateRec.addBlock(i->second->user().id()).value<BlockValue>())
+                << i->second->user();
+        }
+        client.send(welcome, client.UPDATES);
+
+        RemoteUser* remote = new RemoteUser(client, *this);
         users_[remote->id()] = remote;
+
         // Start observing when this link closes.
         client.observers.add(this);
+
+        // Update the others.
+        RecordPacket userJoined("user.joined");
+        userJoined.record().addText("id", remote->id());
+        Writer(userJoined.record().addBlock("userState").value<BlockValue>()) 
+            << remote->user();
+        for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
+        {
+            i->second->client().send(userJoined, client.UPDATES);
+        }
+        
         return *remote;
     }
 }
