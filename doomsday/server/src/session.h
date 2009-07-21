@@ -20,24 +20,36 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include "remoteuser.h"
+#include "server.h"
 #include <de/deng.h>
 #include <de/Id>
 #include <de/CommandPacket>
+#include <de/User>
 #include <de/Link>
 #include <de/World>
+
+#include <map>
 
 /**
  * A session instance is the host for a game session. It owns the game world and 
  * is responsible for synchronizing the clients' UserSession instances.
  */
-class Session
+class Session : public de::Link::IObserver
 {
+public:
+    /// Given address is not in use by anyone. @ingroup errors
+    DEFINE_ERROR(UnknownAddressError);
+    
+    /// A client that already was a user in the session attempted promotion. @ingroup errors
+    DEFINE_ERROR(AlreadyPromotedError);
+    
 public:
     Session();
 
     virtual ~Session();
 
-    de::Id id() const { return id_; }
+    const de::Id& id() const { return id_; }
 
     /**
      * Process a command related to the session. Any access rights must be
@@ -46,18 +58,34 @@ public:
      * @param sender  Sender of the command. A reply will be sent here.
      * @param packet  Packet received from the network.
      */
-    void processCommand(de::Link& sender, const de::CommandPacket& packet);
+    void processCommand(Server::Client& sender, const de::CommandPacket& packet);
 
     /**
      * Promotes a client to a User in the session. 
      */
-    void promote(de::Link& client);
+    RemoteUser& promote(Server::Client& client);
+
+    /**
+     * Finds a user.
+     *
+     * @param address  Address of the user to find.
+     *
+     * @return  User with the given address.
+     */
+    RemoteUser& userByAddress(const de::Address& address) const;
+
+    // Implements de::Link::IObserver.
+    void linkBeingDeleted(de::Link& link);
 
 private:
     de::Id id_;
 
     /// The game world.
     de::World* world_;
+    
+    // The remote users.
+    typedef std::map<de::Id, RemoteUser*> Users;
+    Users users_;
 };
 
 #endif /* SESSION_H */

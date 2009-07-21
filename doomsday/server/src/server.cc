@@ -85,7 +85,7 @@ void Server::iterate()
     if(incoming)
     {
         std::cout << "New client connected from " << incoming->peerAddress() << "!\n";
-        clients_.push_back(new Link(incoming));
+        clients_.push_back(new Client(incoming));
     }
 
     tendClients();
@@ -115,7 +115,7 @@ void Server::tendClients()
         try
         {
             // Process incoming packets.
-            std::auto_ptr<AddressedBlock> message((*i)->receive());
+            std::auto_ptr<Consignment> message((*i)->receive());
             if(message.get())
             {
                 std::auto_ptr<Packet> packet(protocol().interpret(*message));

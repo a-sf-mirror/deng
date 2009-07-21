@@ -1,7 +1,7 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Ker‰nen <jaakko.keranen@iki.fi>
+ * Copyright (c) 2004-2009 Jaakko Ker√§nen <jaakko.keranen@iki.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 namespace de
 {
+    class Consignment;
     class Socket;
 
     /**
@@ -40,7 +41,8 @@ namespace de
     class SenderThread : public Thread
     {
     public:
-        typedef WaitableFIFO<IByteArray> OutgoingBuffer;
+        typedef Consignment PacketType;
+        typedef WaitableFIFO<PacketType> OutgoingBuffer;
         
     public:
         /**

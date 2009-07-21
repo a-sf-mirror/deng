@@ -57,6 +57,12 @@ Link::~Link()
 {
     flush();
     
+    // Inform observers.
+    for(Observers::Loop o(observers); !o.done(); ++o)
+    {
+        o->linkBeingDeleted(*this);
+    }
+    
     // Inform the threads that they can stop as soon as possible.
     receiver_->stop();
     sender_->stop();
@@ -74,16 +80,29 @@ Link::~Link()
 
 Link& Link::operator << (const IByteArray& data)
 {
-    outgoing_.put(new Block(data));
-    outgoing_.post();
+    send(data, 0);
     return *this;
 }
 
 Link& Link::operator << (const Packet& packet)
 {
+    send(packet, 0);
+    return *this;
+}
+
+void Link::send(const IByteArray& data, duint channel)
+{
+    Consignment* cons = new Consignment(data);
+    cons->setChannel(channel);
+    outgoing_.put(cons);
+    outgoing_.post();
+}
+
+void Link::send(const Packet& packet, duint channel)
+{
     Block data;
     Writer(data) << packet;
-    return *this << data;
+    send(data, channel);
 }
 
 Packet* Link::receivePacket(const Time::Delta& timeOut)
@@ -91,14 +110,14 @@ Packet* Link::receivePacket(const Time::Delta& timeOut)
     Time startedAt;
     while(startedAt.since() <= timeOut)
     {
-        std::auto_ptr<AddressedBlock> block(receive());
-        if(!block.get())
+        std::auto_ptr<Consignment> consignment(receive());
+        if(!consignment.get())
         {
             // Wait for a bit.
             Time::sleep(.05);
             continue;
         }
-        Packet* packet = App::protocol().interpret(*block.get());
+        Packet* packet = App::protocol().interpret(*consignment.get());
         if(!packet)
         {
             throw UnexpectedError("Link::receivePacket", 
@@ -109,12 +128,12 @@ Packet* Link::receivePacket(const Time::Delta& timeOut)
     throw TimeOutError("Link::receivePacket", "Timeout expired before anything was received");
 }
 
-AddressedBlock* Link::receive()
+Consignment* Link::receive()
 {
-    AddressedBlock* b = incoming_.get();
+    Consignment* b = incoming_.get();
     if(b)
     {
-        // A packet was waiting.
+        // A consignment was waiting.
         return b;
     }    
     if(!receiver_->isRunning())
@@ -123,6 +142,11 @@ AddressedBlock* Link::receive()
         throw DisconnectedError("Link::receive", "Link has been closed");
     }
     return 0;
+}
+
+bool Link::hasIncoming() const 
+{
+    return !incoming_.empty();
 }
 
 void Link::flush()

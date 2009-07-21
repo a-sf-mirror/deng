@@ -195,6 +195,19 @@ namespace de
          * Returns a non-modifiable map of the subrecords.
          */
         const Subrecords& subrecords() const { return subrecords_; }
+
+        /**
+         * Convenience template for getting the value of a variable in a 
+         * specific type.
+         *
+         * @param name  Name of variable.
+         *
+         * @return  Value cast to a specific value type.
+         */
+        template <typename ValueType>
+        const ValueType& value(const std::string& name) const {
+            return (*this)[name].value<ValueType>();
+        }
         
         // Implements ISerializable.
         void operator >> (Writer& to) const;

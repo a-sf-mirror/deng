@@ -20,6 +20,7 @@
 #include "de/SenderThread"
 #include "de/Socket"
 #include "de/Time"
+#include "de/Consignment"
 
 using namespace de;
 
@@ -39,12 +40,13 @@ void SenderThread::run()
 			// Wait for new outgoing messages.
 			buffer_.wait(10);
 
-			// There is a new outgoing message.
-			const IByteArray* data = buffer_.peek();
+			// There is a new outgoing message. We'll keep it in the FIFO
+			// until it has been sent.
+			const Consignment* data = buffer_.peek();
 			if(data)
 			{
 			    // Write this to the socket.
-			    socket_ << *data;
+			    socket_.send(*data, data->channel());
 
 			    // The packet can be discarded.
                 delete buffer_.get();

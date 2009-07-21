@@ -17,18 +17,21 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/AddressedBlock"
+#include "de/Consignment"
 
 using namespace de;
 
-AddressedBlock::AddressedBlock(const Address& addr, Size initialSize)
-    : Block(initialSize), address_(addr)
+Consignment::Consignment(const IByteArray& other) : Block(other), channel_(0)
 {}
 
-AddressedBlock::AddressedBlock(const Address& addr, const IByteArray& other)
-    : Block(other), address_(addr)
+Consignment::Consignment(Channel channel, const Address& addr, Size initialSize)
+    : Block(initialSize), address_(addr), channel_(channel)
 {}
 
-AddressedBlock::AddressedBlock(const Address& addr, const IByteArray& other, Offset at, Size count)
-    : Block(other, at, count), address_(addr)
+Consignment::Consignment(Channel channel, const Address& addr, const IByteArray& other)
+    : Block(other), address_(addr), channel_(channel)
+{}
+
+Consignment::Consignment(Channel channel, const Address& addr, const IByteArray& other, Offset at, Size count)
+    : Block(other, at, count), address_(addr), channel_(channel)
 {}

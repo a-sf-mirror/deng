@@ -22,7 +22,7 @@
 
 #include <de/Thread>
 #include <de/FIFO>
-#include <de/AddressedBlock>
+#include <de/Consignment>
 
 namespace de
 {
@@ -38,7 +38,7 @@ namespace de
     class ReceiverThread : public Thread
     {
     public:
-        typedef AddressedBlock PacketType;
+        typedef Consignment PacketType;
         typedef FIFO<PacketType> IncomingBuffer;        
         
     public:

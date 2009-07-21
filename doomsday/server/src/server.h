@@ -20,11 +20,12 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "session.h"
 #include <de/App>
 #include <de/ListenSocket>
 #include <de/Protocol>
-#include <de/Link>
+#include <de/MultiplexLink>
+
+class Session;
 
 #define DEFAULT_LISTEN_PORT 13209
 
@@ -40,7 +41,7 @@ public:
     /// Specified address was not in use by any client. @ingroup errors
     DEFINE_ERROR(UnknownAddressError);
     
-    typedef de::Link Client;
+    typedef de::MultiplexLink Client;
     
 public:
     Server(const de::CommandLine& commandLine);

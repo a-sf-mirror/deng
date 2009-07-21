@@ -55,6 +55,11 @@ const Variable& RecordPacket::operator [] (const std::string& variableName) cons
     return (*record_)[variableName];
 }
 
+String RecordPacket::valueAsText(const std::string& variableName) const
+{
+    return (*record_)[variableName].value().asText();
+}
+
 void RecordPacket::operator >> (Writer& to) const
 {
     Packet::operator >> (to);

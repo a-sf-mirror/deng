@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project -- dengsv
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,45 +17,53 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USERSESSION_H
-#define USERSESSION_H
+#ifndef REMOTEUSER_H
+#define REMOTEUSER_H
 
-#include <de/Id>
+#include "server.h"
 #include <de/User>
-#include <de/World>
-#include <de/Link>
 #include <de/Address>
 
 /**
- * UserSession maintain the game session on the clientside.
+ * RemoteUser represents a User on the serverside.
  */
-class UserSession
+class RemoteUser
 {
 public:
     /**
-     * Constructs a new user session.
+     * Constructs a new remote user.
      *
-     * @param link  Open connection to the server. Ownership given to UserSession.
-     * @param session  Session to join.
+     * @param link  Network link for communicating with the user.
      */
-    UserSession(de::Link* link, const de::Id& session = 0);
+    RemoteUser(Server::Client& client);
     
-    virtual ~UserSession();
+    virtual ~RemoteUser();
+
+    /**
+     * Returns the user's id.
+     */
+    const de::Id& id() const { return user_->id(); }
+
+    /**
+     * Returns the address of the remote user.
+     */
+    de::Address address() const;
     
     /**
-     * Listen to notifications and other data coming from the server.
+     * Returns the network link for communicating with the remote user.
      */
-    void listen();
+    Server::Client& client() const;
+    
+    /**
+     * Returns the User instance of the remote user.
+     */
+    de::User& user();
     
 private:
-    /// Link to the server.
-    de::Link* link_;
-
-    /// The user that owns the UserSession.
+    Server::Client* client_;
+    
+    /// The game user.
     de::User* user_;
-
-    /// The game world. Mirrors the game world in the server's Session.
-    de::World* world_;
 };
 
-#endif /* USERSESSION_H */
+#endif /* REMOTEUSER_H */

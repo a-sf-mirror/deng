@@ -35,9 +35,10 @@
 namespace de
 {
     class Block;
+    class CommandPacket;
     class Link;
     class Packet;
-    class CommandPacket;
+    class Record;
     class RecordPacket;
     
     /**
@@ -115,9 +116,20 @@ namespace de
          *
          * @param to  Link where to send the reply.
          * @param type  Type of reply.
+         * @param record  Optional data to send along the reply. Protocol takes
+         *      ownership of the record.
+         */
+        void reply(Link& to, Reply type = OK, Record* record = 0);
+
+        /**
+         * Sends a reply over a link. This is used as a general response to 
+         * commands or any messages received from the link.
+         *
+         * @param to  Link where to send the reply.
+         * @param type  Type of reply.
          * @param message  Optional message (human readable).
          */
-        void reply(Link& to, Reply type = OK, const std::string& message = "");
+        void reply(Link& to, Reply type, const std::string& message);
 
     private:
         typedef std::list<Constructor> Constructors;

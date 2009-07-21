@@ -41,6 +41,43 @@ namespace de
         typedef typename Members::const_iterator const_iterator;
         typedef typename Members::size_type size_type;
         
+        /**
+         * Loop iterator for the observers. This should be used when notifying 
+         * observers, because it is safe against the observer removing itself
+         * from the observer set.
+         */
+        class Loop {
+        public:
+            Loop(Observers& observers) : observers_(observers) {
+                next_ = observers.begin();
+                next();
+            }
+            bool done() {
+                return current_ == observers_.end();
+            }
+            void next() {
+                current_ = next_;
+                if(next_ != observers_.end())
+                {
+                    ++next_;
+                }
+            }
+            iterator& get() {
+                return current_;
+            }
+            Type* operator -> () {
+                return *get();
+            }
+            Loop& operator ++ () {
+                next();
+                return *this;
+            }
+        private:
+            Observers& observers_;
+            iterator current_;
+            iterator next_;
+        };
+        
     public:
         Observers() : members_(0) {}
 

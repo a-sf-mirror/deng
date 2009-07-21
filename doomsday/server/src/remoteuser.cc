@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- libdeng2
+ * The Doomsday Engine Project -- dengsv
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,24 +17,34 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/User"
+#include "remoteuser.h"
+#include <de/App>
+#include <de/Library>
 
 using namespace de;
 
-User::User() //: link_(0)
-{}
-
-User::~User()
-{}
-
-/*
-void User::setLink(Link& link)
+RemoteUser::RemoteUser(Server::Client& client) : client_(&client), user_(0)
 {
-    link_ = &link;
+    user_ = App::game().SYMBOL(deng_NewUser)();
 }
 
-Link& User::link()
+RemoteUser::~RemoteUser()
 {
-    return link_;
+    delete user_;
 }
-*/
+
+Server::Client& RemoteUser::client() const
+{
+    assert(client_ != NULL);
+    return *client_;
+}
+
+de::User& RemoteUser::user()
+{
+    return *user_;
+}
+
+de::Address RemoteUser::address() const
+{
+    return client().peerAddress();
+}

@@ -62,12 +62,12 @@ void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** res
     if(rep->label() == "failure")
     {
         throw FailureError("Protocol::decree", "Command '" + command.command() + 
-            "' failed: " + (*rep)["message"].value().asText());
+            "' failed: " + rep->valueAsText("message"));
     }
     else if(rep->label() == "deny")
     {
         throw DenyError("Protocol::decree", "Command '" + command.command() +
-            "' was denied: " + (*rep)["message"].value().asText());
+            "' was denied: " + rep->valueAsText("message"));
     }
     std::cout << "Reply to the decree '" << command.command() << "' was:\n" <<
         rep->label() << ":\n" << rep->record();
@@ -77,7 +77,7 @@ void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** res
     }
 }
 
-void Protocol::reply(Link& to, Reply type, const std::string& message)
+void Protocol::reply(Link& to, Reply type, Record* record)
 {
     std::string label;
     switch(type)
@@ -95,9 +95,19 @@ void Protocol::reply(Link& to, Reply type, const std::string& message)
         break;
     }
     RecordPacket packet(label);
-    if(!message.empty())
+    if(record)
     {
-        packet.record().addText("message", message);
+        packet.take(record);
     }
     to << packet;
+}
+
+void Protocol::reply(Link& to, Reply type, const std::string& message)
+{
+    Record* rec = new Record();
+    if(!message.empty())
+    {
+        rec->addText("message", message);
+    }
+    reply(to, type, rec);
 }

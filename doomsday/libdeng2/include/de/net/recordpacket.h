@@ -76,6 +76,16 @@ namespace de
          */
         const Variable& operator [] (const std::string& variableName) const;
 
+        /**
+         * Convenience method that returns a variable's value as text from
+         * the packet's record.
+         *
+         * @param variableName  Name of variable.
+         *
+         * @return  Variable's value as text.
+         */
+        String valueAsText(const std::string& variableName) const;
+
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);

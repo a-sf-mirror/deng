@@ -21,6 +21,7 @@
 #define LIBDENG2_USER_H
 
 #include <de/deng.h>
+#include <de/Id>
 
 namespace de
 {
@@ -34,15 +35,36 @@ namespace de
     class User
     {
     public:
-        /// Identifier for the user.
-        typedef duint Id;
-        
-    public:
         User();
         
         virtual ~User();
+
+        const Id& id() const { return id_; }
+
+        /**
+         * Sets the id of the user.
+         *
+         * @param id  New identifier.
+         */ 
+        void setId(const Id& id) { id_ = id; }
+
+        /**
+         * Sets the communications link used to communicate with a remote user.
+         * 
+         * @param link  Link. User does not get ownership of the Link.
+         */
+        //virtual void setLink(Link& link);
+
+        /**
+         * Returns the client's communications link.
+         */
+        //Link& link();
                 
     private:
+        Id id_;
+        
+        /// Link used to communicate with the user. NULL for the local user.
+        //Link* link_;
     };
 };
 

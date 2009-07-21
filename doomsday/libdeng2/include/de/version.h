@@ -31,15 +31,27 @@
 // SVN revision, file created during build. Defines LIBDENG2_REVISION.
 #include "revision.h"
 
-#define LIBDENG2_VER5(Label, Major, Minor, Patch, Rev) #Label" "#Major"."#Minor"."#Patch" ("#Rev")"
-#define LIBDENG2_VER4(Major, Minor, Patch, Rev) #Major"."#Minor"."#Patch" ("#Rev")"
+//#define LIBDENG2_VER5(Label, Major, Minor, Patch, Rev) Label##" "Major"."Minor"."Patch" ("Rev")"
+//define LIBDENG2_VER4(Major, Minor, Patch, Rev) Major"."Minor"."Patch" ("Rev")"
+
+#define LIBDENG2_TO_STRING(s) #s
+#define LIBDENG2_VER5(Label, Major, Minor, Patch, Rev) \
+    Label" "LIBDENG2_TO_STRING(Major)"."LIBDENG2_TO_STRING(Minor)"."\
+    LIBDENG2_TO_STRING(Patch)" ("LIBDENG2_TO_STRING(Rev)")"
 
 #ifdef LIBDENG2_RELEASE_LABEL
-#   define LIBDENG2_VERSION LIBDENG2_VER5(LIBDENG2_RELEASE_LABEL, \
-        LIBDENG2_MAJOR_VERSION, LIBDENG2_MINOR_VERSION, LIBDENG2_PATCHLEVEL, LIBDENG2_REVISION)
+#   define LIBDENG2_VERSION LIBDENG2_VER5( \
+        LIBDENG2_RELEASE_LABEL, \
+        LIBDENG2_MAJOR_VERSION, \
+        LIBDENG2_MINOR_VERSION, \
+        LIBDENG2_PATCHLEVEL, \
+        LIBDENG2_REVISION)
 #else
-#   define LIBDENG2_VERSION LIBDENG2_VER4(\
-        LIBDENG2_MAJOR_VERSION, LIBDENG2_MINOR_VERSION, LIBDENG2_PATCHLEVEL, LIBDENG2_REVISION)
+#   define LIBDENG2_VERSION LIBDENG2_VER4( \
+        LIBDENG2_MAJOR_VERSION, \
+        LIBDENG2_MINOR_VERSION, \
+        LIBDENG2_PATCHLEVEL, \
+        LIBDENG2_REVISION)
 #endif
 
 namespace de

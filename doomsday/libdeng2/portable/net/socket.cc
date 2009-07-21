@@ -18,13 +18,18 @@
  */
 
 #include "de/Socket"
-#include "de/AddressedBlock"
+#include "de/Consignment"
 #include "../internal.h"
 #include "../sdl.h"
 
 #include <string>
 
 using namespace de;
+
+/// Version of the block transfer protocol.
+static const duint PROTOCOL_VERSION = 0;
+
+Socket::Header::Header() : version(PROTOCOL_VERSION), huffman(false), channel(0), size(0) {}
 
 Socket::Socket(const Address& address) : socket_(0), socketSet_(0)
 {
@@ -83,35 +88,40 @@ void Socket::close()
 }
 
 /// Write the 4-byte header to the beginning of the buffer.
-void Socket::writeHeader(IByteArray::Byte* buffer, const IByteArray& packet)
+void Socket::writeHeader(const Header& header, IByteArray::Byte* buffer)
 {
     /** - 3 bits for flags. */
-    duint flags = 0;
+    duint flags = 
+        (header.huffman? HUFFMAN : 0) |
+        (header.channel == 1? CHANNEL_1 : 0);
 
     /** - 2 bits for the protocol version number. */
-    const duint PROTOCOL_VERSION = 0;
-    
     /** - 16+11 bits for the packet length (max: 134 MB). */
-    duint header = ( (packet.size() & 0x7ffffff) |
-                     (PROTOCOL_VERSION << 27) |
-                     (flags << 29) );
+    duint bits = ( (header.size & 0x7ffffff) |
+                   ((header.version & 3) << 27) |
+                   (flags << 29) );
 
-    SDLNet_Write32(header, buffer);
+    SDLNet_Write32(bits, buffer);
 }
 
-void Socket::readHeader(duint header, duint& size)
+void Socket::readHeader(duint headerBytes, Header& header)
 {
-    duint hostHeader = SDLNet_Read32(&header);
-    size = hostHeader & 0x7ffffff;
-
-    // These aren't used for anything yet.
-    /*
-    unsigned protocol = (hostHeader >> 27) & 3;
-    unsigned flags    = (hostHeader >> 29) & 7;
-     */    
+    duint hostHeader = SDLNet_Read32(&headerBytes);
+    duint flags = (hostHeader >> 29) & 7;
+    
+    header.version = (hostHeader >> 27) & 3;
+    header.huffman = (flags & HUFFMAN) != 0;
+    header.channel = (flags & CHANNEL_1? 1 : 0);
+    header.size = hostHeader & 0x7ffffff;
 }
 
 Socket& Socket::operator << (const IByteArray& packet)
+{
+    send(packet, 0);
+    return *this;
+}
+
+void Socket::send(const IByteArray& packet, duint channel)
 {
     if(!socket_) 
     {
@@ -122,7 +132,10 @@ Socket& Socket::operator << (const IByteArray& packet)
     IByteArray::Byte* buffer = new IByteArray::Byte[packetSize];
 
     // Write the packet header: packet length, version, possible flags.
-    writeHeader(buffer, packet);
+    Header header;
+    header.channel = channel;
+    header.size = packet.size();
+    writeHeader(header, buffer);
     
     packet.get(0, buffer + 4, packet.size());
     unsigned int sentBytes = SDLNet_TCP_Send(
@@ -134,8 +147,6 @@ Socket& Socket::operator << (const IByteArray& packet)
     {
         throw DisconnectedError("Socket::operator << ", std::string(SDLNet_GetError()));
     }
-    
-    return *this;
 }
 
 void Socket::checkValid()
@@ -207,7 +218,7 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     }
 }
 
-AddressedBlock* Socket::receive()
+Consignment* Socket::receive()
 {
     if(!socket_) 
     {
@@ -215,14 +226,20 @@ AddressedBlock* Socket::receive()
     }
 
     // First read the header.
-    duint header = 0;
-    receiveBytes(4, reinterpret_cast<dbyte*>(&header));
+    duint headerBytes = 0;
+    receiveBytes(4, reinterpret_cast<dbyte*>(&headerBytes));
 
-    duint incomingSize = 0;
-    readHeader(header, incomingSize);
-
-    std::auto_ptr<AddressedBlock> data(new AddressedBlock(peerAddress_, incomingSize)); 
-    receiveBytes(incomingSize, const_cast<dbyte*>(data.get()->data()));
+    Header incoming;
+    readHeader(headerBytes, incoming);
+    
+    // Check for valid protocols.
+    if(incoming.version != PROTOCOL_VERSION)
+    {
+        throw UnknownProtocolError("Socket::receive", "Incoming packet has unknown protocol");
+    }
+    
+    std::auto_ptr<Consignment> data(new Consignment(incoming.channel, peerAddress_, incoming.size)); 
+    receiveBytes(incoming.size, const_cast<dbyte*>(data.get()->data()));
     return data.release();
 }
 

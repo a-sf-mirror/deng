@@ -17,8 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_ADDRESSEDBLOCK_H
-#define LIBDENG2_ADDRESSEDBLOCK_H
+#ifndef LIBDENG2_CONSIGNMENT_H
+#define LIBDENG2_CONSIGNMENT_H
 
 #include <de/Block>
 #include <de/Address>
@@ -26,16 +26,20 @@
 namespace de
 {
     /**
-     * Block with a network address.
+     * Block with the sender's network address and the multiplex channel.
      *
      * @ingroup net
      */
-    class PUBLIC_API AddressedBlock : public Block
+    class PUBLIC_API Consignment : public Block
     {
     public:
-        AddressedBlock(const Address& addr, Size initialSize = 0);
-        AddressedBlock(const Address& addr, const IByteArray& other);    
-        AddressedBlock(const Address& addr, const IByteArray& other, Offset at, Size count);        
+        typedef duint Channel;
+        
+    public:
+        Consignment(const IByteArray& other);    
+        Consignment(Channel channel, const Address& addr, Size initialSize = 0);
+        Consignment(Channel channel, const Address& addr, const IByteArray& other);    
+        Consignment(Channel channel, const Address& addr, const IByteArray& other, Offset at, Size count);        
 
         /**
          * Returns the address associated with the block.
@@ -43,10 +47,23 @@ namespace de
         const Address& address() const {
             return address_;
         }
+
+        /**
+         * Sets the channel over which the block was received.
+         *
+         * @param channel  Multiplex channel.
+         */
+        void setChannel(Channel channel) { channel_ = channel; }
+        
+        /**
+         * Returns the channel over which the block was received.
+         */
+        Channel channel() const { return channel_; }
         
     private:
         Address address_;
+        Channel channel_;
     };    
 }
 
-#endif /* LIBDENG2_ADDRESSEDBLOCK_H */
+#endif /* LIBDENG2_CONSIGNMENT_H */

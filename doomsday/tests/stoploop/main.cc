@@ -49,15 +49,15 @@ int deng_Main(int argc, char** argv)
             }
 
             Link link(client);
-            AddressedBlock* ab = 0;
-            while((ab = link.receive()) == NULL)
+            Consignment* cons = 0;
+            while((cons = link.receive()) == NULL)
             {
                 Time::sleep(.1);
             }
             String str;
-            Reader(*ab) >> str;
+            Reader(*cons) >> str;
             std::cout << "Received '" << str << "'\n";
-            delete ab;
+            delete cons;
         }
         else
         {

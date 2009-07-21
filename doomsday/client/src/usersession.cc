@@ -19,6 +19,8 @@
 
 #include "usersession.h"
 #include "client.h"
+#include <de/data.h>
+#include <de/Id>
 #include <de/Library>
 #include <de/Protocol>
 #include <de/CommandPacket>
@@ -37,7 +39,14 @@ UserSession::UserSession(Link* link, const Id& session)
     // Ask to join the session.
     CommandPacket join("session.join");
     join.arguments().addText("id", session);
-    App::app().protocol().decree(*link_, join);
+    RecordPacket* response;
+    App::app().protocol().decree(*link_, join, &response);
+    // Get the user id.
+    user_->setId(response->valueAsText("userid"));
+    
+    // Open the update link for getting updates.
+    //updateLink_ = new Link(link->address());
+    
 }   
 
 UserSession::~UserSession()
@@ -45,4 +54,9 @@ UserSession::~UserSession()
     delete user_;
     delete world_;    
     delete link_;
+}
+
+void UserSession::listen()
+{
+    
 }

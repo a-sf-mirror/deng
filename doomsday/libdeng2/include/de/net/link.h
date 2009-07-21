@@ -22,6 +22,7 @@
 
 #include <de/SenderThread>
 #include <de/ReceiverThread>
+#include <de/Observers>
 
 namespace de
 {   
@@ -46,6 +47,22 @@ namespace de
         /// Specified timeout elapsed. @ingroup errors
         DEFINE_ERROR(TimeOutError);
         
+        typedef SenderThread::OutgoingBuffer OutgoingBuffer;
+        typedef ReceiverThread::IncomingBuffer IncomingBuffer;
+        
+        /// Observer interface for deleting the link.
+        class IObserver {
+        public:
+            virtual ~IObserver() {}
+            
+            /**
+             * Called when the observed Link is about to be deleted.
+             *
+             * @param link  Link begin deleted.
+             */
+            virtual void linkBeingDeleted(Link& link) = 0;
+        };
+        
     public:
         /**
          * Constructs a new communications link. A new socket is created for the link.
@@ -65,6 +82,7 @@ namespace de
         
         /**
          * Sends an array of data.
+         * Always sent on channel zero.
          *
          * @param data  Data to send.
          */
@@ -72,10 +90,31 @@ namespace de
         
         /**
          * Sends a packet. The packet is first serialized and then sent.
+         * Always sent on channel zero.
          *
          * @param packet  Packet.
          */
         Link& operator << (const Packet& packet);
+
+        /**
+         * Sends an array of data.
+         *
+         * @param data  Data to send.
+         * @param channel  Channel to send on.
+         *
+         * @see MultiplexLink
+         */
+        void send(const IByteArray& data, duint channel = 0);
+
+        /**
+         * Sends a packet. The packet is first serialized and then sent.
+         *
+         * @param packet  Packet.
+         * @param channel  Channel to send on.
+         *
+         * @see MultiplexLink
+         */
+        void send(const Packet& packet, duint channel = 0);
         
         /**
          * Receives a packet. Will not return until the packet has been received,
@@ -115,14 +154,12 @@ namespace de
          * @return  Received data array, or @c NULL if nothing has been received.
          *      Caller gets ownership of the returned object.
          */
-        AddressedBlock* receive();
+        virtual Consignment* receive();
         
         /**
          * Checks if any incoming data has been received.
          */
-        bool hasIncoming() const {
-            return !incoming_.empty();
-        }
+        virtual bool hasIncoming() const;
         
         /**
          * Wait until all data has been sent.
@@ -136,6 +173,10 @@ namespace de
         
     protected:
         void initialize();
+
+    public:
+        typedef Observers<IObserver> Observers;
+        Observers observers;
     
     private:
         /// Socket over which the link communicates.
@@ -150,8 +191,8 @@ namespace de
         /// Thread that reads incoming data from the socket.
         ReceiverThread* receiver_;
         
-        SenderThread::OutgoingBuffer outgoing_;
-        ReceiverThread::IncomingBuffer incoming_;
+        OutgoingBuffer outgoing_;
+        IncomingBuffer incoming_;
     };
 }
 

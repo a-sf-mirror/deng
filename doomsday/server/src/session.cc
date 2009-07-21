@@ -34,40 +34,93 @@ Session::Session() : world_(0)
 
 Session::~Session()
 {
+    if(!users_.empty())
+    {
+        for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
+        {
+            i->second->client().observers.remove(this);
+            delete i->second;
+        }
+        users_.clear();
+    }
     delete world_;
 }
 
-void Session::processCommand(Link& sender, const CommandPacket& packet)
+void Session::processCommand(Server::Client& sender, const CommandPacket& packet)
 {
     try
     {
         if(packet.command() == "session.new")
         {
             // Initialize the session with the provided settings.
-            world_->setMap(packet.arguments()["map"].value<TextValue>());
+            world_->setMap(packet.arguments().value<TextValue>("map"));
             // Respond.
             App::protocol().reply(sender);
         }
         else if(packet.command() == "session.join")
         {
             // Require to join this session?
-            Id which(packet.arguments()["id"].value<TextValue>());
+            Id which(packet.arguments().value<TextValue>("id"));
             if(which != id_)
             {
                 // Not intended for this session.
                 return;
             }
-            promote(sender);
+            RemoteUser& newUser = promote(sender);
+            Record* reply = new Record();
+            reply->addText("userid", newUser.id());
+            App::protocol().reply(sender, Protocol::OK, reply);
         }
     }
-    catch(const Error& err)        
+    catch(const Error& err)
     {
         // No go, pal.
         App::protocol().reply(sender, Protocol::FAILURE, err.what());
     }
 }
 
-void Session::promote(Link& client)
+RemoteUser& Session::promote(Server::Client& client)
 {
-    
+    try
+    {
+        userByAddress(client.peerAddress());
+        throw AlreadyPromotedError("Session::promote", "Client from " + 
+            client.peerAddress().asText() + " already is a user");
+    }
+    catch(const UnknownAddressError&)
+    {
+        RemoteUser* remote = new RemoteUser(client);
+        users_[remote->id()] = remote;
+        // Start observing when this link closes.
+        client.observers.add(this);
+        return *remote;
+    }
+}
+
+RemoteUser& Session::userByAddress(const Address& address) const
+{
+    for(Users::const_iterator i = users_.begin(); i != users_.end(); ++i)
+    {
+        // Make RemoteUser a class of its own, that has a User instance.
+        if(i->second->address() == address)
+        {
+            return *i->second;
+        }
+    }
+    throw UnknownAddressError("Session::userByAddress", "No one has address " + address.asText());
+}
+
+void Session::linkBeingDeleted(de::Link& link)
+{
+    for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
+    {
+        if(&i->second->client() == &link)
+        {
+            // This user's link has been closed. The remote user will disappear.
+            delete i->second;
+            users_.erase(i);
+            return;
+        }
+    }
+    std::cout << "Session::linkBeingDeleted: " << link.peerAddress() << " not used by any user\n";
 }

@@ -105,6 +105,11 @@ Client::~Client()
 
 void Client::iterate()
 {
+    if(session_)
+    {
+        session_->listen();
+    }
+    
     // libdeng main loop tasks.
     DD_GameLoop();
 }
