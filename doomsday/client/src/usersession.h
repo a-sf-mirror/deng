@@ -26,6 +26,8 @@
 #include <de/MuxLink>
 #include <de/Packet>
 
+#include <map>
+
 /**
  * UserSession maintain the game session on the clientside.
  *
@@ -38,9 +40,10 @@ public:
      * Constructs a new user session.
      *
      * @param link  Open connection to the server. Ownership given to UserSession.
-     * @param session  Session to join.
+     * @param id  Session to join. Ongoing sessions on a server can be queried with
+     *      the "status" command.
      */
-    UserSession(de::MuxLink* link, const de::Id& session = 0);
+    UserSession(de::MuxLink* link, const de::Id& id = 0);
     
     virtual ~UserSession();
     
@@ -55,16 +58,25 @@ protected:
     
     /// Processes a packet received from the server.
     void processPacket(const de::Packet& packet);
+
+    void clearOthers();
     
 private:
     /// Link to the server.
     de::MuxLink* link_;
+    
+    /// Id of the session on the server.
+    de::Id sessionId_;
+
+    /// The game world. Mirrors the game world in the server's Session.
+    de::World* world_;
 
     /// The user that owns the UserSession.
     de::User* user_;
 
-    /// The game world. Mirrors the game world in the server's Session.
-    de::World* world_;
+    /// The others.
+    typedef std::map<de::Id, de::User*> Others;
+    Others others_;
 };
 
 #endif /* USERSESSION_H */

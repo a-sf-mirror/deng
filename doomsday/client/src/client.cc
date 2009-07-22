@@ -89,7 +89,23 @@ Client::Client(const CommandLine& arguments)
 
     // Join the session.
     session_ = new UserSession(link, sessionToJoin);
-        
+
+    {
+        link->base() << CommandPacket("status");
+        std::auto_ptr<RecordPacket> status(link->base().receivePacket<RecordPacket>());
+        std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
+    }        
+    
+    CommandPacket leave("session.leave");
+    leave.arguments().addText("id", sessionToJoin);
+    link->base() << leave;
+
+    {
+        link->base() << CommandPacket("status");
+        std::auto_ptr<RecordPacket> status(link->base().receivePacket<RecordPacket>());
+        std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
+    }        
+    
     // Good to go.
     svPtr.release();
 }

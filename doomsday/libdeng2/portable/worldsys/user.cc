@@ -27,6 +27,11 @@ User::User()
 User::~User()
 {}
 
+void User::setName(const std::string& name)
+{
+    name_ = name;
+}
+
 void User::operator >> (Writer& to) const
 {
 }

@@ -54,6 +54,14 @@ namespace de
 
         ~Id();
 
+        bool operator < (const Id& other) const { return id_ < other.id_; }
+
+        bool operator == (const Id& other) const { return id_ == other.id_; }
+
+        bool operator != (const Id& other) const { return id_ != other.id_; }
+        
+        operator bool () const { return id_ != NONE; }
+
         operator Type () const { return id_; }
 
         /// Converts the Id to a text string.

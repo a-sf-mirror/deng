@@ -29,8 +29,8 @@
 
 using namespace de;
 
-UserSession::UserSession(MuxLink* link, const Id& session)
-    : link_(link), user_(0), world_(0)
+UserSession::UserSession(MuxLink* link, const Id& id)
+    : link_(link), sessionId_(id), world_(0), user_(0)
 {
     // Create a blank user and world. The user is configured jointly
     // from configuration and by the game. The world is mirrored from
@@ -40,19 +40,29 @@ UserSession::UserSession(MuxLink* link, const Id& session)
     
     // Ask to join the session.
     CommandPacket join("session.join");
-    join.arguments().addText("id", session);
+    join.arguments().addText("id", id);
 
     // Include our initial user state in the arguments.
     Writer(join.arguments().addBlock("userState").value<BlockValue>()) << *user_;
 
     RecordPacket* response;
     App::app().protocol().decree(*link_, join, &response);
+
     // Get the user id.
     user_->setId(response->valueAsText("userId"));
 }   
 
 UserSession::~UserSession()
 {
+    if(sessionId_)
+    {
+        // Inform that we are leaving.
+        CommandPacket leave("session.leave");
+        leave.arguments().addText("id", sessionId_);
+        link_->base() << leave;
+    }
+    clearOthers();
+
     delete user_;
     delete world_;    
     delete link_;
@@ -60,7 +70,46 @@ UserSession::~UserSession()
 
 void UserSession::processPacket(const Packet& packet)
 {
-    
+    const RecordPacket* record = dynamic_cast<const RecordPacket*>(&packet);
+    if(record)
+    {
+        const Record& rec = record->record();
+        std::cout << record->label() << "\n" << rec;
+
+        if(record->label() == "user.welcome")
+        {
+            // State of the world.
+            Reader(rec.value<BlockValue>("worldState")) >> *world_;
+            
+            // State of existing users.
+            clearOthers();
+            const Record& existingUsers = rec.subrecord("users");
+            for(Record::Members::const_iterator i = existingUsers.members().begin();
+                i != existingUsers.members().end(); ++i)
+            {
+                User* remoteUser = App::game().SYMBOL(deng_NewUser)();
+                others_[Id(i->first)] = remoteUser;                
+                Reader(i->second->value<BlockValue>()) >> *remoteUser;
+            }
+        }
+        else if(record->label() == "user.joined")
+        {
+            User* remoteUser = App::game().SYMBOL(deng_NewUser)();
+            others_[Id(rec.value<TextValue>("id"))] = remoteUser;
+            
+            // State of the new user.
+            Reader(rec.value<BlockValue>("userState")) >> *remoteUser;
+        }
+        else if(record->label() == "user.left")
+        {
+            Others::iterator found = others_.find(Id(rec.value<TextValue>("id")));
+            if(found != others_.end())
+            {
+                delete found->second;
+                others_.erase(found);
+            }
+        }
+    }
 }
 
 void UserSession::listenForUpdates()
@@ -94,4 +143,13 @@ void UserSession::listen()
         // Malformed packet!
         std::cout << "Server sent sent nonsense.\n";
     }
+}
+
+void UserSession::clearOthers()
+{
+    for(Others::iterator i = others_.begin(); i != others_.end(); ++i)
+    {
+        delete i->second;
+    }
+    others_.clear();
 }

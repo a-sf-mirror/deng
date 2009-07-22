@@ -33,13 +33,17 @@
 class RemoteUser
 {
 public:
+    /// No session specified for the remote user. @ingroup errors
+    DEFINE_ERROR(NotInSessionError);
+    
+public:
     /**
      * Constructs a new remote user.
      *
      * @param client  Network link for communicating with the user.
      * @param session  Session to which this RemoteUser belongs.
      */
-    RemoteUser(Server::Client& client, Session& session);
+    RemoteUser(Server::Client& client, Session* session);
     
     virtual ~RemoteUser();
 
@@ -64,15 +68,27 @@ public:
     Session& session() const;
     
     /**
+     * Sets the session this remote user belong to.
+     *
+     * @param session  Session.
+     */
+    void setSession(Session* session);
+        
+    /**
      * Returns the User instance of the remote user.
      */
     de::User& user();
+
+    /**
+     * Returns the User instance of the remote user.
+     */
+    const de::User& user() const;
     
 private:
     Server::Client* client_;
     
     /// Session to which this remote user belongs.
-    Session& session_;
+    Session* session_;
     
     /// The game user.
     de::User* user_;

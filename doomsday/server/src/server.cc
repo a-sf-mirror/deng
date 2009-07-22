@@ -68,9 +68,11 @@ Server::~Server()
     // Close all links.
     for(Clients::iterator i = clients_.begin(); i != clients_.end(); ++i)
     {
+        std::cout << "Deleting clients\n";
         delete *i;
     }
     clients_.clear();
+    std::cout << "Clients cleared\n";
     
     // Shutdown the engine.
     DD_Shutdown();
@@ -221,9 +223,8 @@ void Server::replyStatus(const Address& to)
     Record& sub = rec.addRecord("sessions");
     if(session_)
     {
-        /*Record& sesSub =*/ sub.addRecord(session_->id());
         // Information about the session.
-        
+        session_->describe(sub.addRecord(session_->id()));
     }
     
     clientByAddress(to).base() << status;

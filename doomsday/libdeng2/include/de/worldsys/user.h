@@ -52,12 +52,24 @@ namespace de
          */ 
         void setId(const Id& id) { id_ = id; }
 
+        const std::string& name() const { return name_; }
+
+        /**
+         * Sets the name of the user.
+         *
+         * @param name  Name of the user.
+         */
+        void setName(const std::string& name);
+
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
                 
     private:
         Id id_;
+        
+        /// Name of the user.
+        std::string name_;
     };
 };
 
