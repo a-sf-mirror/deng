@@ -27,7 +27,7 @@
 namespace de
 {
     /**
-     * Block is a simple data buffer that implements the byte array interface.
+     * Simple data buffer that implements the byte array interface.
      *
      * @ingroup data
      */

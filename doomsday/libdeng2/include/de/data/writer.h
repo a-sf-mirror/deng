@@ -29,7 +29,7 @@ namespace de
     class String;
     
     /**
-     * Writer provides a protocol for writing network byte ordered data
+     * Provides a protocol for writing network byte ordered data
      * into a byte array object (anything with a IByteArray interface).
      *
      * @ingroup data

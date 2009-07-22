@@ -64,6 +64,8 @@ void NoneValue::operator << (Reader& from)
     from >> id;
     if(id != NONE)
     {
+        /// @throw DeserializationError The identifier that species the type of the 
+        /// serialized value was invalid.
         throw DeserializationError("NoneValue::operator <<", "Invalid ID");
     }
 }

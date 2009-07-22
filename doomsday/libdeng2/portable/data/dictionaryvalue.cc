@@ -247,6 +247,8 @@ void DictionaryValue::operator << (Reader& from)
     from >> id;
     if(id != DICTIONARY)
     {
+        /// @throw DeserializationError The identifier that species the type of the 
+        /// serialized value was invalid.
         throw DeserializationError("DictionaryValue::operator <<", "Invalid ID");
     }
     duint count = 0;

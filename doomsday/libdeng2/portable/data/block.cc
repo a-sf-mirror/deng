@@ -49,7 +49,8 @@ void Block::get(Offset at, Byte* values, Size count) const
 {
     if(at + count > size())
     {
-        throw OffsetError("Block::get", "out of range");
+        /// @throw OffsetError The accessed region of the block was out of range.
+        throw OffsetError("Block::get", "Out of range");
     }
 
     for(Data::const_iterator i = data_.begin() + at; count > 0; ++i, --count)
@@ -62,7 +63,8 @@ void Block::set(Offset at, const Byte* values, Size count)
 {
     if(at > size())
     {
-        throw OffsetError("Block::set", "out of range");
+        /// @throw OffsetError The accessed region of the block was out of range.
+        throw OffsetError("Block::set", "Out of range");
     }
 
     data_.insert(data_.begin() + at, values, values + count);

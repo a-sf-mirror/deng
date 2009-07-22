@@ -25,9 +25,8 @@
 namespace de
 {
     /**
-     * Lockable implements a mutex that can be used to synchronize access
-     * to a resource.  All classes of lockable resources should be derived
-     * from Lockable.
+     * A mutex that can be used to synchronize access to a resource.  All classes 
+     * of lockable resources should be derived from this class.
      *
      * @ingroup data
      */

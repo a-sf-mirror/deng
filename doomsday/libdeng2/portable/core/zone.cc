@@ -156,6 +156,7 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
 
     if(tag < STATIC || tag > CACHE)
     {
+        /// @throw TagError @a tag is not one of the allowed purge tags.
         throw TagError("Zone::allocate", "Invalid purge tag");
     }
 
@@ -317,7 +318,10 @@ void* Zone::alloc(dsize size, PurgeTag tag, void* user)
                 else
                 {
                     if(tag >= PURGE_LEVEL)
+                    {
+                        /// @throw OwnerError Purgable memory blocks must have an owner.
                         throw OwnerError("Zone::allocate", "Owner is required for purgable blocks");
+                    }
                     base->user = (void**) 2;    // mark as in use, but unowned
                 }
                 base->tag = tag;
@@ -531,6 +535,7 @@ void Zone::setTag(void* ptr, PurgeTag tag)
     MemBlock *block = getBlock(ptr);
     if(tag >= PURGE_LEVEL && duint64(block->user) < 0x100)
     {
+        /// @throw OwnerError Purgable memory blocks must have an owner.
         throw OwnerError("Zone::changeTag", "Owner is required for purgable blocks");
     }
     block->tag = tag;
@@ -585,14 +590,19 @@ void Zone::verify() const
             if(block->next != &volume->zone->blockList)
             {
                 if(block->size == 0)
+                    /// @throw ConsistencyError A zero-sized memory block was encountered.
                     throw ConsistencyError("Zone::verify", "Zero-size block");
                 if((dbyte *) block + block->size != (dbyte *) block->next)
+                    /// @throw ConsistencyError Memory block's size does not touch the next block.
                     throw ConsistencyError("Zone::verify", "Block size does not touch the next block");
                 if(block->next->prev != block)
+                    /// @throw ConsistencyError The next block does not have a proper back link.
                     throw ConsistencyError("Zone::verify", "Next block doesn't have proper back link");
                 if(!block->user && !block->next->user)
+                    /// @throw ConsistencyError Two consecutive free blocks encountered.
                     throw ConsistencyError("Zone::verify", "Two consecutive free blocks");
                 if(block->user == (void **) -1)
+                    /// @throw ConsistencyError The user pointer of a memory block is invalid.
                     throw ConsistencyError("Zone::verify", "Bad user pointer");
 
                 if(block->seqFirst)
@@ -600,6 +610,7 @@ void Zone::verify() const
                     if(block->seqFirst->seqLast != block)
                     {
                         if(block->next->seqFirst != block->seqFirst)
+                            /// @throw ConsistencyError A sequence of memory blocks is broken.
                             throw ConsistencyError("Zone::verify", "Disconnected sequence");
                     }
                 }
@@ -633,6 +644,7 @@ Zone::MemBlock *Zone::getBlock(void *ptr) const
             }
         }
     }
+    /// @throw ForeignError @a ptr does not point to a block within the zone.
     throw ForeignError("Zone::getBlock: Address not allocated within the zone");
 
 #else

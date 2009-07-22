@@ -61,11 +61,13 @@ void Protocol::decree(Transceiver& to, const CommandPacket& command, RecordPacke
     // Check the answer.
     if(rep->label() == "failure")
     {
+        /// @throw FailureError The response to @a command was FAILURE.
         throw FailureError("Protocol::decree", "Command '" + command.command() + 
             "' failed: " + rep->valueAsText("message"));
     }
     else if(rep->label() == "deny")
     {
+        /// @throw DenyError The response to @a command was DENY.
         throw DenyError("Protocol::decree", "Command '" + command.command() +
             "' was denied: " + rep->valueAsText("message"));
     }

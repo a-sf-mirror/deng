@@ -31,7 +31,7 @@
 namespace de
 {
     /**
-     * Animator provides a way to gradually move between target values.
+     * Provides a way to gradually move between target values.
      *
      * @ingroup video
      */

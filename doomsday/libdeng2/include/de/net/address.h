@@ -60,8 +60,8 @@ namespace de
         /**
          * Resolve the given address.  If the address string contains a
          * port (after a colon), it will always be used instead of
-         * the @c port parameter.  When creating an address for
-         * listening, set @c address to NULL.
+         * the @a port parameter.  When creating an address for
+         * listening, set @a address to NULL.
          *
          * @param address  Address to resolve. E.g., "localhost" or "127.0.0.1".
          * @param port  Port port.

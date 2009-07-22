@@ -32,7 +32,7 @@
 namespace de
 {
     /**
-     * Audio is the abstract base class for an audio subsystem.
+     * The abstract base class for an audio subsystem.
      *
      * @ingroup audio
      */

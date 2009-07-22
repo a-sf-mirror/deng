@@ -26,8 +26,7 @@
 namespace de
 {
     /**
-     * IByteArray is an interface for byte arrays that support random
-     * access to the array elements.
+     * Interface for byte arrays that support random access to the array elements.
      *
      * @ingroup data
      */ 
@@ -56,9 +55,9 @@ namespace de
         /// offset is invalid.
         virtual void get(Offset at, Byte* values, Size count) const = 0;
         
-        /// Set the array elements starting from location @c at to the
+        /// Set the array elements starting from location @a at to the
         /// given values.  If the offset is exactly at the end of the
-        /// array, the array is grown by @c count.  An illegal offset
+        /// array, the array is grown by @a count.  An illegal offset
         /// causes an OffsetError exception.
         virtual void set(Offset at, const Byte* values, Size count) = 0;
     };

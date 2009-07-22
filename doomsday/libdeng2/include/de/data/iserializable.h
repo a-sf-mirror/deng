@@ -28,12 +28,11 @@ namespace de
     class Reader;
     
     /**
-     * ISerializable is an interface that classes can implement if they
-     * want to support operations where serialization is needed.
-     * Serialization means that an object is converted into a byte array
-     * so that all the relevant information about the object is included.
-     * The original object can then be restored by deserializing the byte
-     * array.
+     * Interface that classes can implement if they want to support operations 
+     * where serialization is needed. Serialization means that an object is 
+     * converted into a byte array so that all the relevant information about 
+     * the object is included. The original object can then be restored by 
+     * deserializing the byte array.
      *
      * @ingroup data
      */

@@ -45,12 +45,12 @@ Library& LibraryFile::library()
         return *library_;
     }
     
-    // Currently we only load shared libraries directly from native files.
-    // Other kinds of files would require a temporary native file.
     /// @todo A method for File for making a NativeFile out of any File.
     NativeFile* native = dynamic_cast<NativeFile*>(source());
     if(!native)
     {
+        /// @throw UnsupportedSourceError Currently shared libraries are only loaded directly
+        /// from native files. Other kinds of files would require a temporary native file.
         throw UnsupportedSourceError("LibraryFile::library", source()->path() + 
             ": can only load from NativeFile");
     }

@@ -33,6 +33,7 @@ Value::~Value()
 
 Value::Number Value::asNumber() const
 {
+    /// @throw ConversionError Value cannot be converted to number.
 	throw ConversionError("Value::asNumber", "Illegal conversion");
 }
 
@@ -50,36 +51,43 @@ Value::Number Value::asSafeNumber(const Number& defaultValue) const
 
 dsize Value::size() const
 {
+    /// @throw IllegalError Size is meaningless.
 	throw IllegalError("Value::size", "Size is meaningless");
 }
 
 const Value* Value::element(const Value& index) const
 {
+    /// @throw IllegalError Value cannot be indexed.
 	throw IllegalError("Value::element", "Value cannot be indexed");
 }
 
 Value* Value::element(const Value& index)
 {
+    /// @throw IllegalError Value cannot be indexed.
     throw IllegalError("Value::element", "Value cannot be indexed");
 }
 
 void Value::setElement(const Value& index, Value* elementValue)
 {
+    /// @throw IllegalError Value cannot be indexed.
     throw IllegalError("Value::setElement", "Value cannot be indexed");
 }
 
 bool Value::contains(const Value& value) const
 {
+    /// @throw IllegalError Value cannot contain other values.
 	throw IllegalError("Value::contains", "Value is not a container");
 }
 
 Value* Value::begin()
 {
+    /// @throw IllegalError Value is not iterable.
     throw IllegalError("Value::begin", "Value is not iterable");
 }
 
 Value* Value::next()
 {
+    /// @throw IllegalError Value is not iterable.
     throw IllegalError("Value::next", "Value is not iterable");
 }
 
@@ -98,31 +106,37 @@ dint Value::compare(const Value& value) const
 
 void Value::negate()
 {
+    /// @throw ArithmeticError Value cannot be negated.
     throw ArithmeticError("Value::negate", "Value cannot be negated");
 }
  
 void Value::sum(const Value& value)
 {
+    /// @throw ArithmeticError Value cannot be summed.
     throw ArithmeticError("Value::sum", "Value cannot be summed");
 }
 
 void Value::subtract(const Value& subtrahend)
 {
+    /// @throw ArithmeticError Value cannot be subtracted from.
     throw ArithmeticError("Value::subtract", "Value cannot be subtracted from");    
 }
  
 void Value::divide(const Value& divisor)
 {
+    /// @throw ArithmeticError Value cannot be divided.
     throw ArithmeticError("Value::divide", "Value cannot be divided");
 }
  
 void Value::multiply(const Value& value)
 {
+    /// @throw ArithmeticError Value cannot be multiplied.
     throw ArithmeticError("Value::multiply", "Value cannot be multiplied");
 }
  
 void Value::modulo(const Value& divisor)
 {
+    /// @throw ArithmeticError Module operation is not defined for the value.
     throw ArithmeticError("Value::modulo", "Modulo not defined");
 }
 
@@ -161,6 +175,8 @@ Value* Value::constructFrom(Reader& reader)
         break;
         
     default:
+        /// @throw DeserializationError The identifier that species the type of the 
+        /// serialized value was invalid.
         throw DeserializationError("Value::constructFrom", "Invalid value identifier");
     }
 

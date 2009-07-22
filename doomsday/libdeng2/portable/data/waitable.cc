@@ -57,6 +57,7 @@ void Waitable::wait()
     // Wait until the resource becomes available.
     if(SDL_SemWait(static_cast<SDL_sem*>(semaphore_)) < 0)
     {
+        /// @throw WaitError Failed to secure the resource due to an error.
         throw WaitError("Waitable::wait", SDL_GetError());
     }
 }
@@ -68,10 +69,12 @@ void Waitable::wait(const Time::Delta& timeOut)
 
     if(result == SDL_MUTEX_TIMEDOUT)
     {
+        /// @throw TimeOutError Timeout expired before the resource was secured.
         throw TimeOutError("Waitable::wait", "timed out");
     }
     if(result < 0)
     {
+        /// @throw TimeOutError Failed to secure the resource due to an error.
         throw WaitError("Waitable::wait", SDL_GetError());
     }
 }

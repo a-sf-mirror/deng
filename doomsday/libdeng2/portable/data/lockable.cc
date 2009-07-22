@@ -42,6 +42,7 @@ void Lockable::lock() const
     // Acquire the lock.  Blocks until the operation succeeds.
     if(SDL_LockMutex(static_cast<SDL_mutex*>(mutex_)) < 0)
     {
+        /// @throw Error Acquiring the mutex failed due to an error.
         throw Error("Lockable::lock", "SDL_LockMutex failed");
     }
 

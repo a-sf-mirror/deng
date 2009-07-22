@@ -25,9 +25,8 @@
 namespace de
 {
     /**
-     * ISubsystem is the interface for all subsystems. A subsystem is 
-     * semi-autonomous entity (such as audio playback) whose presence can be optional.
-     * Subsystems can be implemented in plugins.
+     * The interface for all subsystems. A subsystem is  semi-autonomous entity (such as 
+     * audio playback) whose presence can be optional. Subsystems can be implemented in plugins.
      *
      * @ingroup core
      */

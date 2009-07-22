@@ -69,13 +69,13 @@ namespace de
 		String(const IByteArray& array);
 		String(const String& other);
 
-        /// Checks if the string begins with the substring @c s.
+        /// Checks if the string begins with the substring @a s.
         bool beginsWith(const std::string& s) const;
 
-        /// Checks if the string ends with the substring @c s.
+        /// Checks if the string ends with the substring @a s.
         bool endsWith(const std::string& s) const;
 
-        /// Checks if the string contains the substring @c s.
+        /// Checks if the string contains the substring @a s.
         bool contains(const std::string& s) const;
 
         /// Does a path concatenation on this string and the argument.
@@ -139,16 +139,16 @@ namespace de
         /**
          * Compare two strings (case sensitive).
          *
-         * @return 0, if @c a and @c b are identical. Positive, if @c a > @c b.
-         *         Negative, if @c a < @c b.
+         * @return 0, if @a a and @a b are identical. Positive, if @a a > @a b.
+         *         Negative, if @a a < @a b.
          */
         static dint compareWithCase(const std::string& a, const std::string& b);
         
         /**
          * Compare two strings (case insensitive).
          *
-         * @return 0, if @c a and @c b are identical. Positive, if @c a > @c b.
-         *         Negative, if @c a < @c b.
+         * @return 0, if @a a and @a b are identical. Positive, if @a a > @a b.
+         *         Negative, if @a a < @a b.
          */
         static dint compareWithoutCase(const std::string& a, const std::string& b);
 

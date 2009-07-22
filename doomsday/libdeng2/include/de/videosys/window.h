@@ -29,8 +29,7 @@ namespace de
     class Surface;
     
     /**
-     * Window is the abstract base class for windows in the operating system's
-     * windowing system.
+     * The abstract base class for windows in the operating system's windowing system.
      *
      * @ingroup video
      */ 

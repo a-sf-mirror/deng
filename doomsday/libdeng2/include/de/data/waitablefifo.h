@@ -26,8 +26,8 @@
 namespace de
 {
     /**
-     * FIFO with a semaphore that allows threads to wait until
-     * there are objects in the buffer.
+     * FIFO with a semaphore that allows threads to wait until there are objects in 
+     * the buffer.
      *
      * @ingroup data
      */  

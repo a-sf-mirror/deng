@@ -25,7 +25,7 @@
 namespace de
 {
     /**
-     * ByteSubArray accesses a portion of a IByteArray object.
+     * Accesses a portion of a IByteArray object.
      *
      * @ingroup data
      */
@@ -37,14 +37,12 @@ namespace de
         
     public:
         /**
-         * Constructs a modifiable sub-array which refers to the
-         * @c mainArray.
+         * Constructs a modifiable sub-array which refers to the @a mainArray.
          */
         ByteSubArray(IByteArray& mainArray, Offset at, Size size);
         
         /**
-         * Constructs a non-modifiable sub-array which refers to the
-         * @c mainArray.
+         * Constructs a non-modifiable sub-array which refers to the @a mainArray.
          */
         ByteSubArray(const IByteArray& mainArray, Offset at, Size size);
         

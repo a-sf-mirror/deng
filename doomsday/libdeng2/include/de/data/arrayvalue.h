@@ -76,7 +76,7 @@ namespace de
 
         /**
          * Inserts a new Value into the elements of the array at an 
-         * arbitrary location. The new Value's index will be @c index.
+         * arbitrary location. The new Value's index will be @a index.
          * @param index  Index for the new Value. 
          * @param value  Value to add. The array takes ownership of the object.
          */ 

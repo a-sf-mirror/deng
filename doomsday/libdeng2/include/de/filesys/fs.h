@@ -92,9 +92,9 @@ namespace de
          * @param sourceData  File with the source data.
          *
          * @return  If the format of the source data was recognized, returns a new File
-         *      that can be used for accessing the data. Ownership of the @c sourceData 
+         *      that can be used for accessing the data. Ownership of the @a sourceData 
          *      will be transferred to the new interpreter File instance.
-         *      If the format was not recognized, @c sourceData is returned as is.
+         *      If the format was not recognized, @a sourceData is returned as is.
          */
         File* interpret(File* sourceData);
         

@@ -48,7 +48,7 @@ namespace de
     public:
         /**
          * Constructs a CommandLine out of the provided strings. It is assumed
-         * that @c argc and @c args are the ones passed from the system to the main() 
+         * that @a argc and @a args are the ones passed from the system to the main() 
          * function. The strings that begin with a @@ character are parsed, the
          * rest are used without modification.
          *
@@ -75,7 +75,7 @@ namespace de
         void append(const std::string& arg);
 
         /**
-         * Inserts a new argument to the list of arguments at index @c pos.
+         * Inserts a new argument to the list of arguments at index @a pos.
          * 
          * @param pos  Index at which the new argument will be at.
          * @param arg  Argument to insert.
@@ -90,7 +90,7 @@ namespace de
         void remove(duint pos);
 
         /**
-         * Checks whether @c arg is in the arguments. Since the first argument is
+         * Checks whether @a arg is in the arguments. Since the first argument is
          * the program name, it is not included in the search.
          *
          * @param arg  Argument to look for. Don't use aliases here.
@@ -108,16 +108,16 @@ namespace de
          * @param param  The parameter is returned here, if found.
          *
          * @return  @c true, if parameter was successfully returned.
-         *      Otherwise @c false, in which case @c param is not modified.
+         *      Otherwise @c false, in which case @a param is not modified.
          */
         bool getParameter(const std::string& arg, std::string& param) const;
 
         /**
-         * Determines whether @c arg exists in the list of arguments.
+         * Determines whether @a arg exists in the list of arguments.
          *
          * @param arg  Argument to look for. Don't use aliases here.
          *
-         * @return  Number of times @c arg is found in the arguments.
+         * @return  Number of times @a arg is found in the arguments.
          */
         dint has(const std::string& arg) const;
 

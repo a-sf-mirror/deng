@@ -26,7 +26,7 @@
 namespace de
 {
     /**
-     * Image holds an array of image pixel data.
+     * Holds an array of image pixel data.
      *
      * @ingroup video
      */ 

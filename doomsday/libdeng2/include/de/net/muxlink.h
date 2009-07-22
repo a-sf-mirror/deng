@@ -27,8 +27,9 @@ namespace de
 {
     /**
      * Multiplexes one Link so that multiple isolated communication channels
-     * can operate over it. A multiplex link will only return the incoming
-     * data on the channel it has been tuned to.
+     * can operate over it.
+     *
+     * @ingroup net
      */
     class PUBLIC_API MuxLink
     {
@@ -41,6 +42,8 @@ namespace de
         
         /**
          * The channel is a virtual transceiver working on top of a Link.
+         *
+         * @ingroup net
          */ 
         class PUBLIC_API Channel : public Transceiver {
         public:

@@ -42,7 +42,7 @@ namespace de
         typedef typename Members::size_type size_type;
         
         /**
-         * Loop iterator for the observers. This should be used when notifying 
+         * Iteration utility for observers. This should be used when notifying 
          * observers, because it is safe against the observer removing itself
          * from the observer set.
          */

@@ -35,7 +35,7 @@
 namespace de
 {
     /**
-     * Video is the abstract base class for a video subsystem. The video subsystem
+     * The abstract base class for a video subsystem. The video subsystem
      * is responsible for graphical presentation of the UI.
      * 
      * @ingroup video

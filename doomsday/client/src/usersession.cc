@@ -67,7 +67,6 @@ void UserSession::listenForUpdates()
 {
     for(;;)
     {
-        // Tune to the right channel.
         std::auto_ptr<Message> message(link_->updates().receive());
         if(!message.get())
         {

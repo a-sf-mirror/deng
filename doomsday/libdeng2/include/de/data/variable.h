@@ -29,10 +29,8 @@ namespace de
     class Value;
     
     /**
-     * Variable stores a value and is identified by a name. Variables are stored
-     * in Record instances.
-     *
-     * The variable's behavior is defined by the mode flags.
+     * Stores a value and name identifier. Variables are typically stored in a Record.
+     * A variable's behavior is defined by its mode flags.
      *
      * @ingroup data
      */
@@ -117,6 +115,7 @@ namespace de
         Type& value() {
             Type* v = dynamic_cast<Type*>(value_);
             if(!v) {
+                /// @throw TypeError Casting to Type failed.
                 throw TypeError("Variable::value<Type>", "Illegal type conversion");
             }
             return *v;
@@ -129,6 +128,7 @@ namespace de
         const Type& value() const {
             const Type* v = dynamic_cast<const Type*>(value_);
             if(!v) {
+                /// @throw TypeError Casting to Type failed.
                 throw TypeError("Variable::value<Type>", "Illegal type conversion");
             }
             return *v;

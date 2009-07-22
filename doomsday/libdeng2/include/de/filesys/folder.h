@@ -105,7 +105,7 @@ namespace de
          * @param fileObject  Object to add to the folder. The folder takes 
          *      ownership of this object. Cannot be NULL.
          *
-         * @return  Reference to @c fileObject, for convenience.
+         * @return  Reference to @a fileObject, for convenience.
          */
         template <typename Type>
         Type& add(Type* fileObject) {

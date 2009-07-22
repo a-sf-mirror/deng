@@ -27,8 +27,7 @@
 namespace de
 {
     /**
-     * DictionaryValue is a subclass of Value that contains an array of values, 
-     * indexed by any value.
+     * Subclass of Value that contains an array of values, indexed by any value.
      *
      * @ingroup data
      */

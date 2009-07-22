@@ -95,6 +95,7 @@ void Variable::verifyName(const std::string& s)
 {
     if(s.find('/') != std::string::npos)
     {
+        /// @throw NameError The name cannot contain forward slashes '/'.
         throw NameError("Variable::verifyName", "Name contains '/': " + s);
     }
 }

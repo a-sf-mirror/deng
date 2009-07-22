@@ -26,8 +26,7 @@
 namespace de
 {
     /**
-     * Waitable implements a semaphore, which allows creating resources
-     * that can be waited on.
+     * Semaphore that allows objects to be waited on.
      *
      * @ingroup data
      */

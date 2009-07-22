@@ -84,6 +84,7 @@ const Value* ArrayValue::element(const Value& indexValue) const
     const NumberValue* v = dynamic_cast<const NumberValue*>(&indexValue);
     if(!v)
     {
+        /// @throw IllegalIndexError @a indexValue is not a NumberValue.
         throw IllegalIndexError("ArrayValue::element", "Array index must be a number");
     }
     dint index = v->as<dint>();
@@ -101,6 +102,7 @@ void ArrayValue::setElement(const Value& indexValue, Value* value)
     const NumberValue* v = dynamic_cast<const NumberValue*>(&indexValue);
     if(!v)
     {
+        /// @throw IllegalIndexError @a indexValue is not a NumberValue.
         throw IllegalIndexError("ArrayValue::setElement", "Array index must be a number");
     }
     replace(v->as<dint>(), value);
@@ -170,6 +172,8 @@ void ArrayValue::sum(const Value& value)
     const ArrayValue* array = dynamic_cast<const ArrayValue*>(&value);
     if(!array)
     {
+        /// @throw ArithmeticError @a value was not an Array. ArrayValue can only be summed
+        /// with another ArrayValue.
         throw ArithmeticError("ArrayValue::sum", "Array cannot be summed with value");
     }
     
@@ -206,6 +210,7 @@ ArrayValue::Elements::iterator ArrayValue::indexToIterator(dint index)
     }
     else
     {
+        /// @throw OutOfBoundsError @a index is out of bounds.
         throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
     }    
 }
@@ -222,6 +227,7 @@ ArrayValue::Elements::const_iterator ArrayValue::indexToIterator(dint index) con
     }
     else
     {
+        /// @throw OutOfBoundsError @a index is out of bounds.
         throw OutOfBoundsError("ArrayValue::indexToIterator", "Index is out of bounds");
     }    
 }
@@ -290,6 +296,8 @@ void ArrayValue::operator << (Reader& from)
     from >> id;
     if(id != ARRAY)
     {
+        /// @throw DeserializationError The identifier that species the type of the 
+        /// serialized value was invalid.
         throw DeserializationError("ArrayValue::operator <<", "Invalid ID");
     }
     // Number of elements.

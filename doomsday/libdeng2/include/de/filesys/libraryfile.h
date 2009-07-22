@@ -27,7 +27,7 @@ namespace de
     class Library;
     
     /**
-     * LibraryFile provides a way to load a shared library. The Library will be loaded
+     * Provides a way to load a shared library. The Library will be loaded
      * automatically when someone attempts to use it. Unloading the library occurs when
      * the LibraryFile instance is deleted, or when unload() is called.
      *

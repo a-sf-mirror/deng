@@ -35,6 +35,7 @@ ListenSocket::ListenSocket(duint16 port) : socket_(0), port_(port)
 
     if((socket_ = SDLNet_TCP_Open(&ip)) == 0)
     {
+        /// @throw OpenError Opening the socket failed.
         throw OpenError("ListenSocket::ListenSocket", SDLNet_GetError());
     }
 }

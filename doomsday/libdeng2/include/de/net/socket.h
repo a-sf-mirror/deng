@@ -37,8 +37,8 @@ namespace de
     class Message;
 
     /**
-     * Socket provides an interface for a TCP/IP network socket.
-     * ListenSocket will generate Sockets for client connections.
+     * TCP/IP network socket. ListenSocket will construct Socket instances for 
+     * incoming connections.
      *
      * @ingroup net
      */
@@ -100,6 +100,7 @@ namespace de
         void close();
         
     protected:
+        /// Values for the transmission block header.
         struct Header {
             /// These flags are written to the sent headers.
             enum Flags {

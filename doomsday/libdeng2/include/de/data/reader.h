@@ -29,8 +29,8 @@ namespace de
     class ISerializable;
     
     /**   
-     * Reader provides a protocol for reading network byte ordered data
-     * from a byte array object (anything with a IByteArray interface).
+     * Provides a protocol for reading network byte ordered data from a byte array object
+     * (anything with a IByteArray interface).
      *
      * @ingroup data
      */

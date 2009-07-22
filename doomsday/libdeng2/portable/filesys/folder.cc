@@ -64,6 +64,7 @@ File& Folder::add(File* file)
     assert(file != 0);
     if(has(file->name()))
     {
+        /// @throw DuplicateNameError All file names in a folder must be unique.
         throw DuplicateNameError("Folder::add", "Folder cannot contain two files with the same name: '" +
             file->name() + "'");
     }

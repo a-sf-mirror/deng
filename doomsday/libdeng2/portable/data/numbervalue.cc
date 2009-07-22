@@ -141,6 +141,8 @@ void NumberValue::operator << (Reader& from)
     from >> id;
     if(id != NUMBER)
     {
+        /// @throw DeserializationError The identifier that species the type of the 
+        /// serialized value was invalid.
         throw DeserializationError("NumberValue::operator <<", "Invalid ID");
     }
     from >> value_;

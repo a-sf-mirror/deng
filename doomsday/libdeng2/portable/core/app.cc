@@ -53,6 +53,8 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
 {
     if(singleton_)
     {
+        /// @throw TooManyInstancesError Attempted to construct a new instance of App while
+        /// one already exists. There can only be one instance of App per process.
         throw TooManyInstancesError("App::App", "Only one instance allowed");
     }
     singleton_ = this;
@@ -60,6 +62,7 @@ App::App(const CommandLine& commandLine, const std::string& defaultVideo, const 
     // Start by initializing SDL.
     if(SDL_Init(SDL_INIT_TIMER) == -1)
     {
+        /// @throw SDLError SDL initialization failed.
         throw SDLError("App::App", SDL_GetError());
     }
     if(SDLNet_Init() == -1)
@@ -282,6 +285,7 @@ App& App::app()
 {
     if(!singleton_)
     {
+        /// @throw NoInstanceError No App instance is currently available.
         throw NoInstanceError("App::app", "App has not been constructed yet");
     }
     return *singleton_;
@@ -327,6 +331,7 @@ Library& App::game()
     App& self = app();
     if(!self.gameLib_)
     {
+        /// @throw NoGameError No game library is currently available.
         throw NoGameError("App::game", "No game library located");
     }
     return self.gameLib_->library();
@@ -337,6 +342,7 @@ Video& App::video()
     App& self = app();
     if(!self.video_)
     {
+        /// @throw NoVideoError The video subsystem is not available. 
         throw NoVideoError("App::video", "No video subsystem available");
     }
     return *self.video_;

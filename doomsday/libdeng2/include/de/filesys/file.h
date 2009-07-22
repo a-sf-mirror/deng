@@ -43,7 +43,7 @@ namespace de
     {
     public:
         /**
-         * Record of a file's status.
+         * Stores the status of a file (size, time of last modification).
          */
         class Status
         {

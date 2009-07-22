@@ -52,6 +52,7 @@ void DirectoryFeed::populate(Folder& folder)
     DIR* dir = opendir(nativePath_.empty()? "." : nativePath_.c_str());
     if(!dir)
     {
+        /// @throw NotFoundError The native directory was not accessible.
         throw NotFoundError("DirectoryFeed::populate", "Path '" + nativePath_ + "' not found");
     }
     struct dirent* entry;
@@ -207,6 +208,7 @@ void DirectoryFeed::changeWorkingDir(const std::string& nativePath)
 #ifdef UNIX
     if(chdir(nativePath.c_str()))
     {
+        /// @throw WorkingDirError Changing to @a nativePath failed.
         throw WorkingDirError("DirectoryFeed::changeWorkingDir",
             nativePath + ": " + strerror(errno));
     }
@@ -242,6 +244,7 @@ File::Status DirectoryFeed::fileStatus(const std::string& nativePath)
     {                                                    
         return File::Status(s.st_size, s.st_mtime);
     }
+    /// @throw StatusError Determining the file status was not possible.
     throw StatusError("DirectoryFeed::fileStatus", nativePath + ": " + strerror(errno));
 #endif
 

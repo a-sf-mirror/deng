@@ -27,7 +27,7 @@
 namespace de
 {
     /**
-     * NativeFile reads from and writes to files in the native file system.
+     * Reads from and writes to files in the native file system.
      *
      * @ingroup fs
      */

@@ -66,6 +66,7 @@ Variable& Record::add(Variable* variable)
     std::auto_ptr<Variable> var(variable);
     if(variable->name().empty())
     {
+        /// @throw UnnamedError All variables in a record must have a name.
         throw UnnamedError("Record::add", "All variables in a record must have a name");
     }
     members_[variable->name()] = var.release();
@@ -80,30 +81,35 @@ Variable* Record::remove(Variable& variable)
 
 Variable& Record::addNumber(const std::string& name, const Value::Number& number)
 {
+    /// @throw Variable::NameError @a name is not a valid variable name.
     Variable::verifyName(name);
     return add(new Variable(name, new NumberValue(number), Variable::NUMBER));
 }
 
 Variable& Record::addText(const std::string& name, const Value::Text& text)
 {
+    /// @throw Variable::NameError @a name is not a valid variable name.
     Variable::verifyName(name);
     return add(new Variable(name, new TextValue(text), Variable::TEXT));
 }
 
 Variable& Record::addArray(const std::string& name)
 {
+    /// @throw Variable::NameError @a name is not a valid variable name.
     Variable::verifyName(name);
     return add(new Variable(name, new ArrayValue(), Variable::ARRAY));
 }
 
 Variable& Record::addDictionary(const std::string& name)
 {
+    /// @throw Variable::NameError @a name is not a valid variable name.
     Variable::verifyName(name);
     return add(new Variable(name, new DictionaryValue(), Variable::DICTIONARY));
 }
 
 Variable& Record::addBlock(const std::string& name)
 {
+    /// @throw Variable::NameError @a name is not a valid variable name.
     Variable::verifyName(name);
     return add(new Variable(name, new BlockValue(), Variable::BLOCK));
 }
@@ -111,9 +117,11 @@ Variable& Record::addBlock(const std::string& name)
 Record& Record::add(const std::string& name, Record* subrecord)
 {
     std::auto_ptr<Record> sub(subrecord);
+    /// @throw Variable::NameError Subrecord names must be valid variable names.
     Variable::verifyName(name);
     if(name.empty())
     {
+        /// @throw UnnamedError All subrecords in a record must have a name.
         throw UnnamedError("Record::add", "All subrecords in a record must have a name");
     }
     subrecords_[name] = sub.release();

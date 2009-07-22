@@ -83,6 +83,7 @@ void CommandLine::insert(duint pos, const std::string& arg)
 {
     if(pos > arguments_.size())
     {
+        /// @throw OutOfRangeError @a pos is out of range.
         throw OutOfRangeError("CommandLine::insert", "Index out of range");
     }
     arguments_.insert(arguments_.begin() + pos, arg);
@@ -93,6 +94,7 @@ void CommandLine::remove(duint pos)
 {
     if(pos >= arguments_.size())
     {
+        /// @throw OutOfRangeError @a pos is out of range.
         throw OutOfRangeError("CommandLine::remove", "Index out of range");
     }
     arguments_.erase(arguments_.begin() + pos);
@@ -154,6 +156,7 @@ bool CommandLine::isOption(duint pos) const
 {
     if(pos >= arguments_.size())
     {
+        /// @throw OutOfRangeError @a pos is out of range.
         throw OutOfRangeError("CommandLine::isOption", "Index out of range");
     }
     assert(!arguments_[pos].empty());
@@ -319,7 +322,7 @@ void CommandLine::execute(char** envs) const
     if(!CreateProcess(pointers_[0], const_cast<char*>(quotedCmdLine.c_str()), 
         NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo))
     {
-        // Failed to start.
+        /// @throw ExecuteError The system call to start a new process failed.
         throw ExecuteError("CommandLine::execute", "Could not create process");
     }
 #endif

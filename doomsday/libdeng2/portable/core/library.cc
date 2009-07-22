@@ -39,7 +39,7 @@ Library::Library(const std::string& nativePath)
 #ifdef UNIX
     if((handle_ = dlopen(nativePath.c_str(), RTLD_LAZY)) == 0)
     {
-        // Opening of the dynamic library failed.
+        /// @throw LoadError Opening of the dynamic library failed.
         throw LoadError("Library::Library", dlerror());
     }
 #endif 
@@ -112,6 +112,7 @@ void* Library::address(const std::string& name)
 
     if(!ptr)
     {
+        /// @throw SymbolMissingError There is no symbol @a name in the library.
         throw SymbolMissingError("Library::symbol", "Symbol '" + name + "' was not found");
     }
 

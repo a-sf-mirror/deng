@@ -30,7 +30,7 @@
 namespace de
 {
     /**
-     * A Record is a set of variables. A record may have any number of subrecords.
+     * A set of variables. A record may have any number of subrecords.
      * Note that the members of a record do not have an order.
      *
      * @see http://en.wikipedia.org/wiki/Record_(computer_science)
@@ -64,7 +64,7 @@ namespace de
          * @param variable  Variable to add. Record gets ownership. 
          *      The variable must have a name.
          *
-         * @return @c variable, for convenience.
+         * @return @a variable, for convenience.
          */
         Variable& add(Variable* variable);
 
@@ -136,7 +136,7 @@ namespace de
          * @param subrecord  Record to add. This record gets ownership
          *      of the subrecord. The variable must have a name.
          *
-         * @return @c variable, for convenience.
+         * @return @a subrecord, for convenience.
          */
         Record& add(const std::string& name, Record* subrecord);
 

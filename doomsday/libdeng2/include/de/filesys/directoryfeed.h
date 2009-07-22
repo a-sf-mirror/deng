@@ -27,7 +27,7 @@
 namespace de
 {
     /**
-     * DirectoryFeed reads from and writes to directories in the native file system.
+     * Reads from and writes to directories in the native file system.
      *
      * @ingroup fs
      */

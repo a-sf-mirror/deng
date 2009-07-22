@@ -33,7 +33,7 @@
 namespace de
 {
     /**
-     * Value is the base class for all runtime values.  This is an abstract class.
+     * The base class for all runtime values.  This is an abstract class.
      *
      * @ingroup data
      */
@@ -74,7 +74,7 @@ namespace de
         /**
          * Convert the value to a number. This will never raise an
          * exception. If the conversion is not possible, it will 
-         * return @c defaultValue.
+         * return @a defaultValue.
          *
          * @return Value as number.
          */
@@ -112,7 +112,7 @@ namespace de
          *
          * @param index  Index of the element.
          * @param elementValue  New value for the element. This value will take
-         *               ownership of @c elementValue.
+         *               ownership of @a elementValue.
          */
         virtual void setElement(const Value& index, Value* elementValue);
 
@@ -159,8 +159,8 @@ namespace de
          * 
          * @param value Value to compare with.
          * 
-         * @return 0, if the values are equal. 1, if @c value is greater than
-         *      this value. -1, if @c value is less than this value.
+         * @return 0, if the values are equal. 1, if @a value is greater than
+         *      this value. -1, if @a value is less than this value.
          */
         virtual dint compare(const Value& value) const;
         
@@ -182,19 +182,19 @@ namespace de
         virtual void subtract(const Value& subtrahend);
         
         /**
-         * Calculate the division of this value divided by @c divisor, storing
+         * Calculate the division of this value divided by @a divisor, storing
          * the result in this value.
          */
         virtual void divide(const Value& divisor);
         
         /**
-         * Calculate the multiplication of this value by @c value, storing
+         * Calculate the multiplication of this value by @a value, storing
          * the result in this value.
          */
         virtual void multiply(const Value& value);
         
         /**
-         * Calculate the modulo of this value divided by @c divisor, storing
+         * Calculate the modulo of this value divided by @a divisor, storing
          * the result in this value.
          */
         virtual void modulo(const Value& divisor);

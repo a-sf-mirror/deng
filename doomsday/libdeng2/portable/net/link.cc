@@ -96,7 +96,8 @@ Message* Link::receive()
     }    
     if(!receiver_->isRunning())
     {
-        // Receiver has stopped, which means the remote end closed.
+        /// @throw DisconnectedError The receiver is no longer running, which indicates
+        /// that the remote end has closed the connection.
         throw DisconnectedError("Link::receive", "Link has been closed");
     }
     return 0;

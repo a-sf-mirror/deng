@@ -92,6 +92,7 @@ namespace de
             Type* packet = dynamic_cast<Type*>(receivePacket(timeOut));
             if(!packet)
             {
+                /// @throw UnexpectedError A packet was received but it's type was not Type.
                 throw UnexpectedError("Transceiver::receive", "Received wrong type of packet");
             }
             return packet;

@@ -211,7 +211,7 @@ namespace de
 
         /**
          * Free all memory blocks (in all volumes) with a tag in the specified range.
-         * Both @c lowTag and @c highTag are included in the range.
+         * Both @a lowTag and @a highTag are included in the range.
          */
         void purgeRange(PurgeTag lowTag, PurgeTag highTag = CACHE);
 
@@ -296,7 +296,7 @@ namespace de
 
     public:
         /**
-         * The Batch is an allocator utility that efficiently allocates a large
+         * An allocator utility that efficiently allocates a large
          * number of memory blocks of a specific type. It should be used in 
          * performance-critical places instead of separate calls to allocate().
          */
@@ -308,7 +308,7 @@ namespace de
              * calls to Zone::allocate() when the number of required elements is unknown and
              * when linear allocation would be too slow.
              *
-             * Memory is allocated as needed in blocks of @c batchSize elements. When
+             * Memory is allocated as needed in blocks of @a batchSize elements. When
              * a new element is required we simply reserve a pointer in the previously
              * allocated block of elements or create a new block just in time.
              *

@@ -45,7 +45,7 @@ namespace de
      *
      * Library type identifiers;
      * - <code>library/generic</code>: A shared library with no special function.
-     * - <code>deng-plugin/generic</code>": Generic libdeng2 plugin. Loaded always.
+     * - <code>deng-plugin/generic</code>: Generic libdeng2 plugin. Loaded always.
      * - <code>deng-plugin/game</code>: The game plugin. Only one of these can be loaded.
      * - <code>deng-plugin/video</code>: Video subsystem. Optional. One of these can be loaded.
      * - <code>deng-plugin/audio</code>: Audio subsystem. Optional. One of these can be loaded.
@@ -140,8 +140,7 @@ namespace de
          *
          * @param name  Name of the exported symbol.
          *
-         * @return  A pointer to the symbol. If the symbol is not found,  
-         *      SymbolMissingError is thrown.
+         * @return  A pointer to the symbol.
          */
         void* address(const std::string& name);
         

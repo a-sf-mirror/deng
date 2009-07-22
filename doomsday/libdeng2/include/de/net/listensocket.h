@@ -27,9 +27,8 @@ namespace de
     class Socket;
 
     /**
-     * ListenSocket is a TCP/IP server socket.  It can only be used for
-     * accepting incoming TCP/IP connections.  Normal communications using
-     * a listen socket are not possible.
+     * TCP/IP server socket.  It can only be used for accepting incoming TCP/IP
+     * connections.  Normal communications using a listen socket are not possible.
      *
      * @ingroup net
      */

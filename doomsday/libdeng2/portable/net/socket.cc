@@ -39,6 +39,7 @@ Socket::Socket(const Address& address) : socket_(0), socketSet_(0)
     socket_ = SDLNet_TCP_Open(&ip);
     if(socket_ == 0)
     {
+        /// @throw ConnectionError Opening the socket to @a address failed.
         throw ConnectionError("Socket::Socket", "Failed to connect: " +
             std::string(SDLNet_GetError()));
     }
@@ -95,14 +96,17 @@ Socket& Socket::operator << (const IByteArray& packet)
 
 void Socket::writeHeader(const Header& header, IByteArray::Byte* buffer)
 {
-    /// Writes the 4-byte header to the beginning of the buffer.
-    /// - 3 bits for flags.
+    /**
+     * Writes the 4-byte header to the beginning of the buffer.
+     * - 3 bits for flags.
+     * - 2 bits for the protocol version number.
+     * - 16+11 bits for the packet length (max: 134 MB).
+     */
+     
     duint flags = 
         (header.huffman? Header::HUFFMAN : 0) |
         (header.channel == 1? Header::CHANNEL_1 : 0);
 
-    /// - 2 bits for the protocol version number.
-    /// - 16+11 bits for the packet length (max: 134 MB).
     duint bits = ( (header.size & 0x7ffffff) |
                    ((header.version & 3) << 27) |
                    (flags << 29) );
@@ -125,6 +129,7 @@ void Socket::send(const IByteArray& packet, duint channel)
 {
     if(!socket_) 
     {
+        /// @throw DisconnectedError Sending is not possible because the socket has been closed.
         throw DisconnectedError("Socket::operator << ", "Socket closed");
     }
 
@@ -145,6 +150,7 @@ void Socket::send(const IByteArray& packet, duint channel)
     // Did the transmission fail?
     if(sentBytes != packetSize)
     {
+        /// @throw DisconnectedError All the data was not sent successfully.
         throw DisconnectedError("Socket::operator << ", std::string(SDLNet_GetError()));
     }
 }
@@ -153,7 +159,7 @@ void Socket::checkValid()
 {
     if(!socket_ || !socketSet_)
     {
-        // The socket has been closed.
+        /// @throw DisconnectedError The socket has been closed.
         throw DisconnectedError("Socket::receive", "Socket was closed");
     }
 }
@@ -181,6 +187,8 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
 
             if(result < 0)
             {
+                /// @throw DisconnectedError There was an error in the socket while waiting 
+                /// for incoming data.
                 throw DisconnectedError("Socket::receive", "Socket broken while waiting");
             }
             else if(!result)
@@ -195,7 +203,8 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
 
             if(recvResult <= 0)
             {
-                // There is an error!
+                /// @throw DisconnectedError An error occurred in the socket while receiving
+                /// data. Only part of the data was received (or none of it).
                 throw DisconnectedError("Socket::receive", "Socket broken while receiving data");
             }
         
@@ -222,6 +231,7 @@ Message* Socket::receive()
 {
     if(!socket_) 
     {
+        /// @throw DisconnectedError Receiving data is not possible because the socket is closed.
         throw DisconnectedError("Socket::receive", "Socket is closed");
     }
 
@@ -235,6 +245,9 @@ Message* Socket::receive()
     // Check for valid protocols.
     if(incoming.version != PROTOCOL_VERSION)
     {
+        /// @throw UnknownProtocolError The received data block's protocol version number
+        /// was not recognized. This is probably because the remote end is not a libdeng2
+        /// application.
         throw UnknownProtocolError("Socket::receive", "Incoming packet has unknown protocol");
     }
     
@@ -253,5 +266,6 @@ Address Socket::peerAddress() const
             return internal::convertAddress(ip);
         }                
     }
+    /// @throw PeerError Could not determine the TCP/IP address of the socket.
     throw PeerError("Socket::peerAddress", SDLNet_GetError());
 }
