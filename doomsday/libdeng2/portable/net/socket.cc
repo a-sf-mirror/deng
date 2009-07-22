@@ -18,7 +18,7 @@
  */
 
 #include "de/Socket"
-#include "de/Consignment"
+#include "de/Message"
 #include "../internal.h"
 #include "../sdl.h"
 
@@ -87,16 +87,22 @@ void Socket::close()
     }
 }
 
-/// Write the 4-byte header to the beginning of the buffer.
+Socket& Socket::operator << (const IByteArray& packet)
+{
+    send(packet, mode[CHANNEL_1_BIT]? 1 : 0);
+    return *this;
+}
+
 void Socket::writeHeader(const Header& header, IByteArray::Byte* buffer)
 {
-    /** - 3 bits for flags. */
+    /// Writes the 4-byte header to the beginning of the buffer.
+    /// - 3 bits for flags.
     duint flags = 
-        (header.huffman? HUFFMAN : 0) |
-        (header.channel == 1? CHANNEL_1 : 0);
+        (header.huffman? Header::HUFFMAN : 0) |
+        (header.channel == 1? Header::CHANNEL_1 : 0);
 
-    /** - 2 bits for the protocol version number. */
-    /** - 16+11 bits for the packet length (max: 134 MB). */
+    /// - 2 bits for the protocol version number.
+    /// - 16+11 bits for the packet length (max: 134 MB).
     duint bits = ( (header.size & 0x7ffffff) |
                    ((header.version & 3) << 27) |
                    (flags << 29) );
@@ -113,12 +119,6 @@ void Socket::readHeader(duint headerBytes, Header& header)
     header.huffman = (flags & HUFFMAN) != 0;
     header.channel = (flags & CHANNEL_1? 1 : 0);
     header.size = hostHeader & 0x7ffffff;
-}
-
-Socket& Socket::operator << (const IByteArray& packet)
-{
-    send(packet, 0);
-    return *this;
 }
 
 void Socket::send(const IByteArray& packet, duint channel)
@@ -218,7 +218,7 @@ void Socket::receiveBytes(duint count, dbyte* buffer)
     }
 }
 
-Consignment* Socket::receive()
+Message* Socket::receive()
 {
     if(!socket_) 
     {
@@ -238,7 +238,7 @@ Consignment* Socket::receive()
         throw UnknownProtocolError("Socket::receive", "Incoming packet has unknown protocol");
     }
     
-    std::auto_ptr<Consignment> data(new Consignment(incoming.channel, peerAddress_, incoming.size)); 
+    std::auto_ptr<Message> data(new Message(peerAddress_, incoming.channel, incoming.size)); 
     receiveBytes(incoming.size, const_cast<dbyte*>(data.get()->data()));
     return data.release();
 }

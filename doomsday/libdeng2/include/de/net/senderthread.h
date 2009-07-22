@@ -26,7 +26,7 @@
 
 namespace de
 {
-    class Consignment;
+    class Message;
     class Socket;
 
     /**
@@ -41,7 +41,7 @@ namespace de
     class SenderThread : public Thread
     {
     public:
-        typedef Consignment PacketType;
+        typedef Message PacketType;
         typedef WaitableFIFO<PacketType> OutgoingBuffer;
         
     public:

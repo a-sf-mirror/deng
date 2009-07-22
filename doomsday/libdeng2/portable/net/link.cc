@@ -20,7 +20,7 @@
 #include "de/Link"
 #include "de/Socket"
 #include "de/Address"
-#include "de/Block"
+#include "de/Message"
 #include "de/Time"
 #include "de/Writer"
 #include "de/Packet"
@@ -78,62 +78,20 @@ Link::~Link()
     delete socket_;
 }
 
-Link& Link::operator << (const IByteArray& data)
+void Link::send(const IByteArray& data)
 {
-    send(data, 0);
-    return *this;
-}
-
-Link& Link::operator << (const Packet& packet)
-{
-    send(packet, 0);
-    return *this;
-}
-
-void Link::send(const IByteArray& data, duint channel)
-{
-    Consignment* cons = new Consignment(data);
-    cons->setChannel(channel);
-    outgoing_.put(cons);
+    Message* message = new Message(data);
+    message->setChannel(mode[CHANNEL_1_BIT]? 1 : 0);
+    outgoing_.put(message);
     outgoing_.post();
 }
 
-void Link::send(const Packet& packet, duint channel)
+Message* Link::receive()
 {
-    Block data;
-    Writer(data) << packet;
-    send(data, channel);
-}
-
-Packet* Link::receivePacket(const Time::Delta& timeOut)
-{
-    Time startedAt;
-    while(startedAt.since() <= timeOut)
-    {
-        std::auto_ptr<Consignment> consignment(receive());
-        if(!consignment.get())
-        {
-            // Wait for a bit.
-            Time::sleep(.05);
-            continue;
-        }
-        Packet* packet = App::protocol().interpret(*consignment.get());
-        if(!packet)
-        {
-            throw UnexpectedError("Link::receivePacket", 
-                "Expected a packet, but something else was received");
-        }
-        return packet;
-    }
-    throw TimeOutError("Link::receivePacket", "Timeout expired before anything was received");
-}
-
-Consignment* Link::receive()
-{
-    Consignment* b = incoming_.get();
+    Message* b = incoming_.get();
     if(b)
     {
-        // A consignment was waiting.
+        // A message was waiting.
         return b;
     }    
     if(!receiver_->isRunning())
@@ -144,7 +102,7 @@ Consignment* Link::receive()
     return 0;
 }
 
-bool Link::hasIncoming() const 
+bool Link::hasIncoming() const
 {
     return !incoming_.empty();
 }

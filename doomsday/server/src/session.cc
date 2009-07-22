@@ -38,7 +38,7 @@ Session::~Session()
     {
         for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
         {
-            i->second->client().observers.remove(this);
+            i->second->client().link().observers.remove(this);
             delete i->second;
         }
         users_.clear();
@@ -103,13 +103,13 @@ RemoteUser& Session::promote(Server::Client& client)
             Writer(userStateRec.addBlock(i->second->user().id()).value<BlockValue>())
                 << i->second->user();
         }
-        client.send(welcome, client.UPDATES);
+        client.updates() << welcome;
 
         RemoteUser* remote = new RemoteUser(client, *this);
         users_[remote->id()] = remote;
 
         // Start observing when this link closes.
-        client.observers.add(this);
+        client.link().observers.add(this);
 
         // Update the others.
         RecordPacket userJoined("user.joined");
@@ -120,7 +120,7 @@ RemoteUser& Session::promote(Server::Client& client)
         {
             if(i->second != remote)
             {                
-                i->second->client().send(userJoined, client.UPDATES);
+                i->second->client().updates() << userJoined;
             }
         }
         
@@ -145,7 +145,7 @@ void Session::linkBeingDeleted(de::Link& link)
 {
     for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
     {
-        if(&i->second->client() == &link)
+        if(&i->second->client().link() == &link)
         {
             // This user's link has been closed. The remote user will disappear.
             delete i->second;

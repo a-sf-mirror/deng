@@ -24,6 +24,7 @@
 #include <de/IByteArray>
 #include <de/Address>
 #include <de/Lockable>
+#include <de/Flag>
 
 /**
  * @defgroup net Network
@@ -33,7 +34,7 @@
 
 namespace de
 {
-    class Consignment;
+    class Message;
 
     /**
      * Socket provides an interface for a TCP/IP network socket.
@@ -44,16 +45,16 @@ namespace de
     class PUBLIC_API Socket : public Lockable
     {
     public:
-        // Flags.
-        enum 
-        {
-            HUFFMAN = 0x1,      ///< Payload is in Huffman code.
-            CHANNEL_1 = 0x2,    ///< Payload belongs to channel 1 instead of the default channel 0.
-        };
+        /// Payload is in Huffman code.
+        DEFINE_FLAG(HUFFMAN, 0); 
+
+        /// Payload belongs to channel 1 instead of the default channel 0.
+        DEFINE_FINAL_FLAG(CHANNEL_1, 1, Mode);
         
         /// Creating the TCP/IP connection failed. @ingroup errors
         DEFINE_ERROR(ConnectionError);
 
+        /// Error subclass for all situations where the socket is left unusable. @ingroup errors
         DEFINE_ERROR(BrokenError);
         
         /// The TCP/IP connection was disconnected. @ingroup errors
@@ -71,8 +72,8 @@ namespace de
 
         /**
          * Sends the given data over the socket.  Copies the data into
-         * a temporary buffer before sending. The data is always sent on
-         * channel zero.
+         * a temporary buffer before sending. The data is sent on the current
+         * sending channel.
          *
          * @param data  Data to send.
          *
@@ -81,22 +82,13 @@ namespace de
         Socket& operator << (const IByteArray& data);
 
         /**
-         * Sends the given data over the socket. Copes the data into
-         * a temporary buffer before sending.
-         *
-         * @param packet  Data to send.
-         * @param channel  Channel to send the data on.
-         */
-        void send(const IByteArray& packet, duint channel = 0);
-
-        /**
          * Receives an array of bytes by reading from the socket until a full
          * packet has been received.  Returns only after a full packet has been received. 
          * The block is marked with the address where it was received from.
          *
          * @return  Received bytes. Caller is responsible for deleting the data.
          */
-        Consignment* receive();
+        Message* receive();
         
         /**
          * Determines the IP address of the remote end of a connected socket.
@@ -109,6 +101,11 @@ namespace de
         
     protected:
         struct Header {
+            /// These flags are written to the sent headers.
+            enum Flags {
+                HUFFMAN = 0x1,
+                CHANNEL_1 = 0x2
+            };
             duint version;
             bool huffman;
             duint channel;
@@ -128,11 +125,17 @@ namespace de
          */
         void receiveBytes(duint count, dbyte* buffer);
 
+        void send(const IByteArray& packet, duint channel);
+        
         void writeHeader(const Header& header, IByteArray::Byte* buffer);
 
         void readHeader(duint headerBytes, Header& header);
         
         inline void checkValid();
+
+    public:
+        /// Operating mode.
+        Mode mode;
     
     private:
         /// Pointer to the internal socket data.

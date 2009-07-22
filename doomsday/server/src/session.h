@@ -35,6 +35,8 @@ class RemoteUser;
 /**
  * A session instance is the host for a game session. It owns the game world and 
  * is responsible for synchronizing the clients' UserSession instances.
+ *
+ * @ingroup server
  */
 class Session : public de::Link::IObserver
 {

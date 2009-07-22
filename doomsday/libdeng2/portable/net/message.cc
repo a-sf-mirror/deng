@@ -17,21 +17,21 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/Consignment"
+#include "de/Message"
 
 using namespace de;
 
-Consignment::Consignment(const IByteArray& other) : Block(other), channel_(0)
+Message::Message(const IByteArray& other) : Block(other), channel_(0)
 {}
 
-Consignment::Consignment(Channel channel, const Address& addr, Size initialSize)
+Message::Message(const Address& addr, Channel channel, Size initialSize)
     : Block(initialSize), address_(addr), channel_(channel)
 {}
 
-Consignment::Consignment(Channel channel, const Address& addr, const IByteArray& other)
+Message::Message(const Address& addr, Channel channel, const IByteArray& other)
     : Block(other), address_(addr), channel_(channel)
 {}
 
-Consignment::Consignment(Channel channel, const Address& addr, const IByteArray& other, Offset at, Size count)
+Message::Message(const Address& addr, Channel channel, const IByteArray& other, Offset at, Size count)
     : Block(other, at, count), address_(addr), channel_(channel)
 {}

@@ -24,6 +24,8 @@
 
 /**
  * Responsible for starting and stopping the local server process.
+ *
+ * @ingroup client
  */
 class LocalServer
 {

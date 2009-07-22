@@ -23,14 +23,21 @@
 #include <de/App>
 #include <de/ListenSocket>
 #include <de/Protocol>
-#include <de/MultiplexLink>
+#include <de/MuxLink>
 
 class Session;
 
 #define DEFAULT_LISTEN_PORT 13209
 
 /**
+ * @defgroup client Client
  * The server application.
+ */
+
+/**
+ * The server application.
+ *
+ * @ingroup server
  */
 class Server : public de::App
 {
@@ -41,7 +48,7 @@ public:
     /// Specified address was not in use by any client. @ingroup errors
     DEFINE_ERROR(UnknownAddressError);
     
-    typedef de::MultiplexLink Client;
+    typedef de::MuxLink Client;
     
 public:
     Server(const de::CommandLine& commandLine);

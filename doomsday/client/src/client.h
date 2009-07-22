@@ -26,7 +26,14 @@
 class LocalServer;
 
 /**
+ * @defgroup client Client
  * The client application.
+ */
+
+/**
+ * The client application.
+ *
+ * @ingroup client
  */
 class Client : public de::App
 {

@@ -115,7 +115,7 @@ void Server::tendClients()
         try
         {
             // Process incoming packets.
-            std::auto_ptr<Consignment> message((*i)->receive());
+            std::auto_ptr<Message> message((*i)->base().receive());
             if(message.get())
             {
                 std::auto_ptr<Packet> packet(protocol().interpret(*message));
@@ -221,12 +221,12 @@ void Server::replyStatus(const Address& to)
     Record& sub = rec.addRecord("sessions");
     if(session_)
     {
-        Record& sesSub = sub.addRecord(session_->id());
+        /*Record& sesSub =*/ sub.addRecord(session_->id());
         // Information about the session.
         
     }
     
-    clientByAddress(to) << status;
+    clientByAddress(to).base() << status;
 }
 
 Server& Server::server()

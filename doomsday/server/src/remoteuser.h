@@ -27,6 +27,8 @@
 
 /**
  * RemoteUser represents a User on the serverside.
+ *
+ * @ingroup server
  */
 class RemoteUser
 {

@@ -22,7 +22,7 @@
 #include "de/RecordPacket"
 #include "de/TextValue"
 #include "de/Record"
-#include "de/Link"
+#include "de/Transceiver"
 
 using namespace de;
 
@@ -53,10 +53,10 @@ Packet* Protocol::interpret(const Block& block) const
     return 0;
 }
 
-void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** response)
+void Protocol::decree(Transceiver& to, const CommandPacket& command, RecordPacket** response)
 {
     to << command;
-    std::auto_ptr<RecordPacket> rep(to.receive<RecordPacket>());
+    std::auto_ptr<RecordPacket> rep(to.receivePacket<RecordPacket>());
 
     // Check the answer.
     if(rep->label() == "failure")
@@ -77,7 +77,7 @@ void Protocol::decree(Link& to, const CommandPacket& command, RecordPacket** res
     }
 }
 
-void Protocol::reply(Link& to, Reply type, Record* record)
+void Protocol::reply(Transceiver& to, Reply type, Record* record)
 {
     std::string label;
     switch(type)
@@ -102,7 +102,7 @@ void Protocol::reply(Link& to, Reply type, Record* record)
     to << packet;
 }
 
-void Protocol::reply(Link& to, Reply type, const std::string& message)
+void Protocol::reply(Transceiver& to, Reply type, const std::string& message)
 {
     Record* rec = new Record();
     if(!message.empty())

@@ -20,9 +20,11 @@
 #ifndef LIBDENG2_LINK_H
 #define LIBDENG2_LINK_H
 
+#include <de/Transceiver>
 #include <de/SenderThread>
 #include <de/ReceiverThread>
 #include <de/Observers>
+#include <de/Flag>
 
 namespace de
 {   
@@ -35,17 +37,11 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API Link
+    class PUBLIC_API Link : public Transceiver
     {
     public:
         /// The remote end has closed the link. @ingroup errors
         DEFINE_ERROR(DisconnectedError);
-        
-        /// A packet of specific type was expected but something else was received instead. @ingroup errors
-        DEFINE_ERROR(UnexpectedError);
-        
-        /// Specified timeout elapsed. @ingroup errors
-        DEFINE_ERROR(TimeOutError);
         
         typedef SenderThread::OutgoingBuffer OutgoingBuffer;
         typedef ReceiverThread::IncomingBuffer IncomingBuffer;
@@ -63,6 +59,9 @@ namespace de
             virtual void linkBeingDeleted(Link& link) = 0;
         };
         
+        /// Sending on channel 1 instead of the default 0.
+        DEFINE_FINAL_FLAG(CHANNEL_1, 0, Mode);
+        
     public:
         /**
          * Constructs a new communications link. A new socket is created for the link.
@@ -79,92 +78,27 @@ namespace de
         Link(Socket* socket);
         
         virtual ~Link();
-        
-        /**
-         * Sends an array of data.
-         * Always sent on channel zero.
-         *
-         * @param data  Data to send.
-         */
-        Link& operator << (const IByteArray& data);
-        
-        /**
-         * Sends a packet. The packet is first serialized and then sent.
-         * Always sent on channel zero.
-         *
-         * @param packet  Packet.
-         */
-        Link& operator << (const Packet& packet);
 
-        /**
-         * Sends an array of data.
-         *
-         * @param data  Data to send.
-         * @param channel  Channel to send on.
-         *
-         * @see MultiplexLink
-         */
-        void send(const IByteArray& data, duint channel = 0);
-
-        /**
-         * Sends a packet. The packet is first serialized and then sent.
-         *
-         * @param packet  Packet.
-         * @param channel  Channel to send on.
-         *
-         * @see MultiplexLink
-         */
-        void send(const Packet& packet, duint channel = 0);
-        
-        /**
-         * Receives a packet. Will not return until the packet has been received,
-         * or the timeout has expired.
-         *
-         * @param timeOut  Maximum period of time to wait.
-         *
-         * @return  The received packet. Never returns NULL. Caller gets ownership
-          *      of the packet.
-         */
-        Packet* receivePacket(const Time::Delta& timeOut = 10);
-
-        /**
-         * Receives a packet of specific type. Will not return until the packet has been received,
-         * or the timeout has expired.
-         *
-         * @param timeOut  Maximum period of time to wait.
-         *
-         * @return  The received packet. Never returns NULL. Caller gets ownership
-         *      of the packet.
-         */
-        template <typename Type>
-        Type* receive(const Time::Delta& timeOut = 10) {
-            Type* packet = dynamic_cast<Type*>(receivePacket(timeOut));
-            if(!packet)
-            {
-                throw UnexpectedError("Link::receive", "Received wrong type of packet");
-            }
-            return packet;
-        }
-        
-        /**
-         * Receives an array of data. 
-         *
-         * The DisconnectedError is thrown if the remote end has closed the connection.
-         *
-         * @return  Received data array, or @c NULL if nothing has been received.
-         *      Caller gets ownership of the returned object.
-         */
-        virtual Consignment* receive();
-        
+        // Implements Transceiver.
+        void send(const IByteArray& data);
+        Message* receive();
+      
         /**
          * Checks if any incoming data has been received.
          */
-        virtual bool hasIncoming() const;
+        bool hasIncoming() const;
         
         /**
          * Wait until all data has been sent.
          */
         void flush();
+
+        /**
+         * Returns the socket over which the Link communicates.
+         *
+         * @return  Socket.
+         */ 
+        Socket& socket() { return *socket_; }
         
         /**
          * Returns the address of the remote end of the link.
@@ -177,6 +111,9 @@ namespace de
     public:
         typedef Observers<IObserver> Observers;
         Observers observers;
+
+        /// Mode flags.
+        Mode mode;
     
     private:
         /// Socket over which the link communicates.

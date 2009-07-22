@@ -378,7 +378,7 @@ CASE_SENSE_NAMES       = NO
 # will show members with their full class and namespace scopes in the 
 # documentation. If set to YES the scope will be hidden.
 
-HIDE_SCOPE_NAMES       = NO
+HIDE_SCOPE_NAMES       = YES
 
 # If the SHOW_INCLUDE_FILES tag is set to YES (the default) then Doxygen 
 # will put a list of the files that are included by a file in the documentation 
@@ -409,7 +409,7 @@ SORT_BRIEF_DOCS        = NO
 # hierarchy of group names into alphabetical order. If set to NO (the default) 
 # the group names will appear in their defined order.
 
-SORT_GROUP_NAMES       = NO
+SORT_GROUP_NAMES       = YES
 
 # If the SORT_BY_SCOPE_NAME tag is set to YES, the class list will be 
 # sorted by fully-qualified names, including namespaces. If set to 
@@ -952,7 +952,7 @@ ENUM_VALUES_PER_LINE   = 4
 # releases of Doxygen, the values YES and NO are equivalent to FRAME and NONE 
 # respectively.
 
-GENERATE_TREEVIEW      = FRAME
+GENERATE_TREEVIEW      = HIERARCHIES
 
 # If the treeview is enabled (see GENERATE_TREEVIEW) then this tag can be 
 # used to set the initial width (in pixels) of the frame in which the tree 

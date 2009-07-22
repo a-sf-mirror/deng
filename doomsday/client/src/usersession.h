@@ -23,11 +23,13 @@
 #include <de/Id>
 #include <de/User>
 #include <de/World>
-#include <de/MultiplexLink>
-#include <de/Address>
+#include <de/MuxLink>
+#include <de/Packet>
 
 /**
  * UserSession maintain the game session on the clientside.
+ *
+ * @ingroup client
  */
 class UserSession
 {
@@ -38,7 +40,7 @@ public:
      * @param link  Open connection to the server. Ownership given to UserSession.
      * @param session  Session to join.
      */
-    UserSession(de::MultiplexLink* link, const de::Id& session = 0);
+    UserSession(de::MuxLink* link, const de::Id& session = 0);
     
     virtual ~UserSession();
     
@@ -47,9 +49,16 @@ public:
      */
     void listen();
     
+protected:
+    /// Listens on the updates channel.
+    void listenForUpdates();
+    
+    /// Processes a packet received from the server.
+    void processPacket(const de::Packet& packet);
+    
 private:
     /// Link to the server.
-    de::MultiplexLink* link_;
+    de::MuxLink* link_;
 
     /// The user that owns the UserSession.
     de::User* user_;

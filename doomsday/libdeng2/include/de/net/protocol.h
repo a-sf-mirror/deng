@@ -36,7 +36,7 @@ namespace de
 {
     class Block;
     class CommandPacket;
-    class Link;
+    class Transceiver;
     class Packet;
     class Record;
     class RecordPacket;
@@ -101,35 +101,35 @@ namespace de
          * Sends a command packet and waits for reply. This is intended for issuing
          * commands that rarely fail.
          *
-         * @param to  Link over which to converse.
+         * @param to  Transceiver over which to converse.
          * @param command  Packet to send.
          * @param response  If not NULL, the reponse packet is returned to caller here.
          *      Otherwise the response packet is deleted.
          *
          * @return  Response from the remote end. Caller gets ownership of the packet.
          */
-        void decree(Link& to, const CommandPacket& command, RecordPacket** response = 0);
+        void decree(Transceiver& to, const CommandPacket& command, RecordPacket** response = 0);
 
         /**
          * Sends a reply over a link. This is used as a general response to 
          * commands or any messages received from the link.
          *
-         * @param to  Link where to send the reply.
+         * @param to  Transceiver where to send the reply.
          * @param type  Type of reply.
          * @param record  Optional data to send along the reply. Protocol takes
          *      ownership of the record.
          */
-        void reply(Link& to, Reply type = OK, Record* record = 0);
+        void reply(Transceiver& to, Reply type = OK, Record* record = 0);
 
         /**
          * Sends a reply over a link. This is used as a general response to 
          * commands or any messages received from the link.
          *
-         * @param to  Link where to send the reply.
+         * @param to  Transceiver where to send the reply.
          * @param type  Type of reply.
          * @param message  Optional message (human readable).
          */
-        void reply(Link& to, Reply type, const std::string& message);
+        void reply(Transceiver& to, Reply type, const std::string& message);
 
     private:
         typedef std::list<Constructor> Constructors;

@@ -29,7 +29,7 @@
 
 using namespace de;
 
-UserSession::UserSession(MultiplexLink* link, const Id& session)
+UserSession::UserSession(MuxLink* link, const Id& session)
     : link_(link), user_(0), world_(0)
 {
     // Create a blank user and world. The user is configured jointly
@@ -58,7 +58,41 @@ UserSession::~UserSession()
     delete link_;
 }
 
-void UserSession::listen()
+void UserSession::processPacket(const Packet& packet)
 {
     
+}
+
+void UserSession::listenForUpdates()
+{
+    for(;;)
+    {
+        // Tune to the right channel.
+        std::auto_ptr<Message> message(link_->updates().receive());
+        if(!message.get())
+        {
+            // That was all.
+            break;
+        }
+        std::auto_ptr<Packet> packet(App::protocol().interpret(*message));
+        if(packet.get())
+        {
+            // It's always from the server.
+            packet.get()->setFrom(message->address());
+            processPacket(*packet.get());
+        }
+    }
+}
+
+void UserSession::listen()
+{
+    try
+    {
+        listenForUpdates();
+    }
+    catch(const ISerializable::DeserializationError&)
+    {
+        // Malformed packet!
+        std::cout << "Server sent sent nonsense.\n";
+    }
 }

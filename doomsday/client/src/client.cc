@@ -20,7 +20,7 @@
 #include "client.h"
 #include "localserver.h"
 #include "usersession.h"
-#include <de/MultiplexLink>
+#include <de/MuxLink>
 #include <de/CommandPacket>
 #include <de/RecordPacket>
 #include <de/Record>
@@ -74,14 +74,14 @@ Client::Client(const CommandLine& arguments)
     
     // DEVEL: Join the game session.
     // Query the on-going sessions.
-    MultiplexLink* link = new MultiplexLink(Address("localhost", SERVER_PORT));
+    MuxLink* link = new MuxLink(Address("localhost", SERVER_PORT));
 
     CommandPacket createSession("session.new");
     createSession.arguments().addText("map", "E1M1");
     protocol().decree(*link, createSession);
     
-    *link << CommandPacket("status");
-    std::auto_ptr<RecordPacket> status(link->receive<RecordPacket>());
+    link->base() << CommandPacket("status");
+    std::auto_ptr<RecordPacket> status(link->base().receivePacket<RecordPacket>());
     std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
 
     Id sessionToJoin(status->record().subrecord("sessions").subrecords().begin()->first);
@@ -105,9 +105,18 @@ Client::~Client()
 
 void Client::iterate()
 {
-    if(session_)
+    try
     {
-        session_->listen();
+        if(session_)
+        {
+            session_->listen();
+        }
+    }
+    catch(const Link::DisconnectedError& err)
+    {
+        std::cout << "Disconnected from server: " << err.what() << "\n";
+        delete session_;
+        session_ = 0;
     }
     
     // libdeng main loop tasks.

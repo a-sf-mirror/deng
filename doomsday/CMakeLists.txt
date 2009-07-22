@@ -191,5 +191,12 @@ IF ( APPLE )
         PATTERN ".DS_Store" EXCLUDE )
 ENDIF ( APPLE )
 
+# Documentation.
+IF ( DOXYGEN_FOUND )
+    ADD_CUSTOM_TARGET ( alldocs
+        ${DOXYGEN_EXECUTABLE} 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+ENDIF ( DOXYGEN_FOUND )
+
 # The real work is done in the subdirectories.
 SUBDIRS ( libdeng libdeng2 server client plugins tests )

@@ -17,8 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_CONSIGNMENT_H
-#define LIBDENG2_CONSIGNMENT_H
+#ifndef LIBDENG2_MESSAGE_H
+#define LIBDENG2_MESSAGE_H
 
 #include <de/Block>
 #include <de/Address>
@@ -26,20 +26,20 @@
 namespace de
 {
     /**
-     * Block with the sender's network address and the multiplex channel.
+     * Data block with the sender's network address and a multiplex channel.
      *
      * @ingroup net
      */
-    class PUBLIC_API Consignment : public Block
+    class PUBLIC_API Message : public Block
     {
     public:
         typedef duint Channel;
         
     public:
-        Consignment(const IByteArray& other);    
-        Consignment(Channel channel, const Address& addr, Size initialSize = 0);
-        Consignment(Channel channel, const Address& addr, const IByteArray& other);    
-        Consignment(Channel channel, const Address& addr, const IByteArray& other, Offset at, Size count);        
+        Message(const IByteArray& other);    
+        Message(const Address& addr, Channel channel, Size initialSize = 0);
+        Message(const Address& addr, Channel channel, const IByteArray& other);    
+        Message(const Address& addr, Channel channel, const IByteArray& other, Offset at, Size count);        
 
         /**
          * Returns the address associated with the block.
@@ -66,4 +66,4 @@ namespace de
     };    
 }
 
-#endif /* LIBDENG2_CONSIGNMENT_H */
+#endif /* LIBDENG2_MESSAGE_H */
