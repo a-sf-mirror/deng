@@ -128,6 +128,7 @@ RemoteUser& Session::promote(Server::Client& client)
         client.updates() << welcome;
 
         RemoteUser* remote = new RemoteUser(client, this);
+        std::cout << "Id of new remote user: " << remote->id() << "\n";
         users_[remote->id()] = remote;
 
         // Start observing when this link closes.

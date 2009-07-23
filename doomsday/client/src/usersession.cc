@@ -38,6 +38,9 @@ UserSession::UserSession(de::MuxLink* link, const de::Id& id)
     user_ = App::game().SYMBOL(deng_NewUser)();
     world_ = App::game().SYMBOL(deng_NewWorld)();
     
+    // The server will tell our id.
+    user_->setId(Id::NONE);
+    
     // Ask to join the session.
     CommandPacket join("session.join");
     join.arguments().addText("id", id);
@@ -93,7 +96,7 @@ void UserSession::processPacket(const de::Packet& packet)
         else if(record->label() == "user.joined")
         {
             User* remoteUser = App::game().SYMBOL(deng_NewUser)();
-            others_[Id(rec.value<TextValue>("id"))] = remoteUser;
+            others_[Id(record->valueAsText("id"))] = remoteUser;
             
             // State of the new user.
             Reader(rec.value<BlockValue>("userState")) >> *remoteUser;
