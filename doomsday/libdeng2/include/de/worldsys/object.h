@@ -16,40 +16,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#ifndef LIBDENG2_OBJECT_H
+#define LIBDENG2_OBJECT_H
 
-#include "de/World"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Map"
+#include <de/ISerializable>
+#include <de/Enumerator>
+#include <de/Vector>
 
-using namespace de;
-
-World::World() : map_(0)
+namespace de
 {
-    // Create a blank map.
-    map_ = new Map();
+    /**
+     * Movable entity within in a map, represented by a sprite or a 3D model.
+     *
+     * @ingroup world
+     */
+    class PUBLIC_API Object : public ISerializable
+    {
+    public:
+        typedef Enumerator::Type Id;
+        
+    public:
+        Object();
+        
+        virtual ~Object();
+
+        // Implements ISerializable.
+        void operator >> (Writer& to) const;
+        void operator << (Reader& from);
+        
+    private:
+        Id id_;
+        
+        /// Position of the object's origin.
+        Vector3f pos_;
+    };
 }
 
-World::~World()
-{
-    delete map_;
-}
-
-void World::loadMap(const std::string& name)
-{
-    assert(map_ != NULL);
-    delete map_;
-
-    // The map will do its own loading.
-    map_ = new Map(name);
-}
-
-void World::operator >> (Writer& to) const
-{
-    to << info_ << *map_;
-}
-
-void World::operator << (Reader& from)
-{
-    from >> info_ >> *map_;
-}
+#endif /* LIBDENG2_OBJECT_H */

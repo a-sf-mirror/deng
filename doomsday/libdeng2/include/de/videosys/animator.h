@@ -25,6 +25,7 @@
 #include <de/Rectangle>
 #include <de/IClock>
 #include <de/Flag>
+#include <de/ISerializable>
 
 #include <sstream>
 
@@ -35,7 +36,7 @@ namespace de
      *
      * @ingroup video
      */
-    class PUBLIC_API Animator
+    class PUBLIC_API Animator : public ISerializable
     {
     public:
         typedef ddouble ValueType;
@@ -151,6 +152,10 @@ namespace de
         void setObserver(IObserver* observer) { observer_ = observer; }
 
         IObserver* observer() const { return observer_; }
+        
+        // Doesn't actually implement ISerializable.
+        void operator >> (Writer& /*to*/) const { assert(false); }
+        void operator << (Reader& /*from*/) { assert(false); }
 
     private:
         const IClock* clock_;

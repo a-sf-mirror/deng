@@ -17,46 +17,40 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_WORLD_H
-#define LIBDENG2_WORLD_H
+#ifndef LIBDENG2_MAP_H
+#define LIBDENG2_MAP_H
 
 #include <de/ISerializable>
+#include <de/Enumerator>
 #include <de/Record>
+#include <de/Object>
+#include <de/String>
 
-#include <string>
-
-/**
- * @defgroup World
- * 
- * The world subsystem takes care of the game world and the players in the world.
- */
+#include <map>
 
 namespace de
 {
-    class Map;
-    
     /**
-     * Base class for the game world. The game plugin is responsible for creating concrete
-     * instances of the World. The game plugin can extend this with whatever information it
-     * needs.
+     * Contains everything that makes a map work: sectors, lines, scripts, 
+     * objects, etc.
      *
      * @ingroup world
      */
-    class PUBLIC_API World : public ISerializable
+    class PUBLIC_API Map : public ISerializable
     {
     public:
-        World();
-        
-        virtual ~World();
-        
         /**
-         * Loads a map and prepares it for play. This must be called before the world
-         * is used or otherwise there is nothing for anyone to see.
+         * Constructs a map.
          *
-         * @param name  Name of the map.
+         * @param name  Identifier of the map. The resources of the map are
+         *      located based on this identifier. If not specified, the instance
+         *      becomes a blank map that is expected to be deserialized from
+         *      somewhere.
          */
-        virtual void loadMap(const std::string& name);
+        Map(const std::string& name = "");
         
+        virtual ~Map();
+
         const Record& info() const { return info_; }
 
         Record& info() { return info_; }
@@ -66,12 +60,18 @@ namespace de
         void operator << (Reader& from);
         
     private:
-        /// Worldwide parameters. These will live on even when the map changes.
+        /// Name of the map.
+        String name_;
+        
+        /// Map-specific information. Lost when the map changes.
         Record info_;
         
-        /// The current map.
-        Map* map_;
+        /// Generates ids for objects.
+        Enumerator objectEnum_;
+        
+        typedef std::map<Object::Id, Object*> Objects;
+        Objects objects_;
     };
 }
 
-#endif /* LIBDENG2_WORLD_H */
+#endif /* LIBDENG2_MAP_H */

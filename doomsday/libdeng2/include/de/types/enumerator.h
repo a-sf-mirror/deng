@@ -17,39 +17,41 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/World"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Map"
+#ifndef LIBDENG2_ENUMERATOR_H
+#define LIBDENG2_ENUMERATOR_H
 
-using namespace de;
+#include <de/deng.h>
 
-World::World() : map_(0)
+namespace de
 {
-    // Create a blank map.
-    map_ = new Map();
+    /**
+     * Provides unique 32-bit unsigned integer numbers.
+     *
+     * @see Id
+     *
+     * @ingroup types
+     */
+    class PUBLIC_API Enumerator
+    {
+    public:
+        typedef duint32 Type;
+        
+        enum { 
+            /// Zero is reserved as a special case.
+            NONE = 0 
+        };
+        
+    public:
+        Enumerator();
+        
+        /**
+         * Returns the next unique 32-bit unsigned integer. Never returns zero.
+         */
+        Type get();
+        
+    private:
+        Type current_;
+    };
 }
 
-World::~World()
-{
-    delete map_;
-}
-
-void World::loadMap(const std::string& name)
-{
-    assert(map_ != NULL);
-    delete map_;
-
-    // The map will do its own loading.
-    map_ = new Map(name);
-}
-
-void World::operator >> (Writer& to) const
-{
-    to << info_ << *map_;
-}
-
-void World::operator << (Reader& from)
-{
-    from >> info_ >> *map_;
-}
+#endif /* LIBDENG2_ENUMERATOR_H */

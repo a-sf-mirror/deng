@@ -21,6 +21,9 @@
 #define LIBDENG2_VECTOR_H
 
 #include <de/math.h>
+#include <de/ISerializable>
+#include <de/Writer>
+#include <de/Reader>
 
 #include <sstream>
 #include <cmath>
@@ -30,11 +33,12 @@ namespace de
     /**
      * Template class for 2D vectors (points).
      * The members are public for convenient access.
+     * The used value type must be serializable.
      *
      * @ingroup types
      */ 
     template <typename Type>
-    class Vector2
+    class Vector2 : public ISerializable
     {
     public:
         typedef Type ValueType;
@@ -103,6 +107,13 @@ namespace de
         }
         Vector2 max(const Vector2& other) const {
             return Vector2(de::max(x, other.x), de::max(y, other.y));
+        }
+        // Implements ISerializable.
+        void operator >> (Writer& to) const {
+            to << x << y;
+        }
+        void operator << (Reader& from) {
+            from >> x >> y;
         }
         
     public:
@@ -195,6 +206,15 @@ namespace de
         Vector3 max(const Vector3& other) const {
             return Vector3(de::max(Vector2<Type>::x, other.x), de::max(Vector2<Type>::y, other.y), 
                 de::max(z, other.z));
+        }
+        // Implements ISerializable.
+        void operator >> (Writer& to) const {
+            Vector2<Type>::operator >> (to);
+            to << z;
+        }
+        void operator << (Reader& from) {
+            Vector2<Type>::operator << (from);
+            from >> z;
         }
         
     public:
@@ -289,6 +309,15 @@ namespace de
         Vector4 max(const Vector4& other) const {
             return Vector4(de::max(Vector3<Type>::x, other.x), de::max(Vector3<Type>::y, other.y),
                 de::max(Vector3<Type>::z, other.z), de::max(w, other.w));
+        }
+        // Implements ISerializable.
+        void operator >> (Writer& to) const {
+            Vector3<Type>::operator >> (to);
+            to << w;
+        }
+        void operator << (Reader& from) {
+            Vector3<Type>::operator << (from);
+            from >> w;
         }
         
     public:

@@ -16,40 +16,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "de/World"
+ 
+#include "de/Object"
 #include "de/Writer"
 #include "de/Reader"
-#include "de/Map"
 
 using namespace de;
 
-World::World() : map_(0)
+Object::Object() : id_(0)
+{}
+
+Object::~Object()
+{}
+
+void Object::operator >> (Writer& to) const
 {
-    // Create a blank map.
-    map_ = new Map();
+    to << id_ << pos_;
 }
 
-World::~World()
+void Object::operator << (Reader& from)
 {
-    delete map_;
-}
-
-void World::loadMap(const std::string& name)
-{
-    assert(map_ != NULL);
-    delete map_;
-
-    // The map will do its own loading.
-    map_ = new Map(name);
-}
-
-void World::operator >> (Writer& to) const
-{
-    to << info_ << *map_;
-}
-
-void World::operator << (Reader& from)
-{
-    from >> info_ >> *map_;
+    from >> id_ >> pos_;
 }

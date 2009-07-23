@@ -62,7 +62,7 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
         if(packet.command() == "session.new")
         {
             // Initialize the session with the provided settings.
-            world_->setMap(packet.arguments().value<TextValue>("map"));
+            world_->loadMap(packet.arguments().value<TextValue>("map"));
             // Respond.
             Record* reply = new Record();
             reply->addText("id", id_);

@@ -1,4 +1,5 @@
 #include "Date"
+#include "Enumerator"
 #include "Flag"
 #include "IClock"
 #include "Id"

@@ -16,40 +16,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "de/World"
-#include "de/Writer"
-#include "de/Reader"
-#include "de/Map"
+ 
+#include "de/Enumerator"
 
 using namespace de;
 
-World::World() : map_(0)
-{
-    // Create a blank map.
-    map_ = new Map();
-}
+Enumerator::Enumerator() : current_(NONE)
+{}
 
-World::~World()
+Enumerator::Type Enumerator::get()
 {
-    delete map_;
-}
-
-void World::loadMap(const std::string& name)
-{
-    assert(map_ != NULL);
-    delete map_;
-
-    // The map will do its own loading.
-    map_ = new Map(name);
-}
-
-void World::operator >> (Writer& to) const
-{
-    to << info_ << *map_;
-}
-
-void World::operator << (Reader& from)
-{
-    from >> info_ >> *map_;
+    while(!++current_);
+    return current_;
 }

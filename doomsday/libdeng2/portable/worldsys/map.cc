@@ -17,39 +17,24 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/World"
+#include "de/Map"
 #include "de/Writer"
 #include "de/Reader"
-#include "de/Map"
 
 using namespace de;
 
-World::World() : map_(0)
+Map::Map(const std::string& name) : name_(name)
+{}
+
+Map::~Map()
+{}
+
+void Map::operator >> (Writer& to) const
 {
-    // Create a blank map.
-    map_ = new Map();
+    to << name_ << info_;
 }
 
-World::~World()
+void Map::operator << (Reader& from)
 {
-    delete map_;
-}
-
-void World::loadMap(const std::string& name)
-{
-    assert(map_ != NULL);
-    delete map_;
-
-    // The map will do its own loading.
-    map_ = new Map(name);
-}
-
-void World::operator >> (Writer& to) const
-{
-    to << info_ << *map_;
-}
-
-void World::operator << (Reader& from)
-{
-    from >> info_ >> *map_;
+    from >> name_ >> info_;
 }
