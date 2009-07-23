@@ -24,8 +24,6 @@
 
 using namespace de;
 
-const char* Packet::PACKET_TYPE = "NONE";
-
 Packet::Packet(const Type& t)
 {
     setType(t);

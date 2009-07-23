@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup world
      */ 
-    class User : public ISerializable
+    class PUBLIC_API User : public ISerializable
     {
     public:
         User();
@@ -60,7 +60,7 @@ namespace de
         /**
          * Returns the name of the player.
          */
-        const std::string& name() const;
+        const std::string name() const;
 
         /**
          * Sets the name of the user.

@@ -36,8 +36,7 @@ Animator::Animator(const IClock& clock, ValueType initialValue)
 {}
 
 Animator::Animator(const Animator& other)
-    : clock_(other.clock_), 
-      motion_(other.motion_), 
+    : clock_(other.clock_), motion_(other.motion_), 
       start_(other.start_), 
       startTime_(other.startTime_), 
       transition_(other.transition_), 
@@ -204,4 +203,10 @@ void AnimatorVector2::setObserver(Animator::IObserver* observer)
 {
     x.setObserver(observer);
     y.setObserver(observer);
+}
+
+std::ostream& de::operator << (std::ostream& os, const Animator& anim)
+{
+    os << anim.now() << " (=> " << anim.target() << ")";
+    return os;
 }

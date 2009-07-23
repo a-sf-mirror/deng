@@ -41,9 +41,6 @@ namespace de
         /// While deserializing, an invalid type identifier was encountered. @ingroup errors
         DEFINE_SUB_ERROR(DeserializationError, InvalidTypeError);
         
-        /// Type identifier for instances of the Packet class.
-        static const char* PACKET_TYPE;
-        
         /// Length of a type identifier.
         static const duint TYPE_SIZE = 4;
         
@@ -55,7 +52,7 @@ namespace de
          *
          * @param type  Type identifier of the packet.
          */
-        Packet(const Type& type = PACKET_TYPE);
+        Packet(const Type& type);
         
         virtual ~Packet() {}
         

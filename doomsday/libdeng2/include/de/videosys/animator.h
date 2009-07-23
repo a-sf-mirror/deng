@@ -165,6 +165,8 @@ namespace de
         mutable Status status_;
     };
 
+    PUBLIC_API std::ostream& operator << (std::ostream& os, const Animator& anim);
+
     /**
      * 2D vector animator.
      *

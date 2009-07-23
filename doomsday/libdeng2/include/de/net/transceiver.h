@@ -33,7 +33,7 @@ namespace de
      *
      * @ingroup net
      */
-    class Transceiver
+    class PUBLIC_API Transceiver
     {
     public:
         /// A packet of specific type was expected but something else was received instead. @ingroup errors

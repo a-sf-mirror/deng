@@ -30,13 +30,13 @@ namespace de
      * Unique identifier number. Zero is not a valid identifier, as it reserved
      * for the "no identifier" special case.
      */
-    class Id
+    class PUBLIC_API Id
     {
     public:
         typedef duint Type;
 
         /// The special "no identifier".
-        static const Type NONE;
+        enum { NONE = 0 };
         
     public:
         /**
@@ -77,7 +77,7 @@ namespace de
         static Type generator_;
     };
     
-    std::ostream& operator << (std::ostream& os, const Id& id);
+    PUBLIC_API std::ostream& operator << (std::ostream& os, const Id& id);
 }
 
 #endif /* LIBDENG2_ID_H */

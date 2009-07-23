@@ -229,7 +229,7 @@ namespace de
     };
     
     /// Converts the record into a human-readable text representation.
-    std::ostream& operator << (std::ostream& os, const Record& record);
+    PUBLIC_API std::ostream& operator << (std::ostream& os, const Record& record);
 }
 
 #endif /* LIBDENG2_RECORD_H */

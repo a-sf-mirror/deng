@@ -52,6 +52,8 @@
     // Disable warnings about non-exported (C++ standard library) base classes.
 #   pragma warning(disable: 4275)
 #   pragma warning(disable: 4251)
+    // Disable warning about using this pointer in initializer list.
+#   pragma warning(disable: 4355)
 #else
 #   define PUBLIC_API
 #endif

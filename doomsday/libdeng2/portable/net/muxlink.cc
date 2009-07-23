@@ -50,9 +50,10 @@ void MuxLink::demux()
     {
         std::auto_ptr<Message> message(link_->receive());
         // We will quietly ignore channels we can't receive.
-        if(message->channel() < NUM_CHANNELS)
+        duint chan = message->channel();
+        if(chan < NUM_CHANNELS)
         {
-            buffers_[message->channel()].put(message.release());
+            buffers_[chan].put(message.release());
         }
     }
 }

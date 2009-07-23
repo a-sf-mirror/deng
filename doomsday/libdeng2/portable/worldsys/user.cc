@@ -34,7 +34,7 @@ User::User()
 User::~User()
 {}
 
-const std::string& User::name() const
+const std::string User::name() const
 {
     return info_["name"].value().asText();
 }

@@ -24,8 +24,6 @@
 
 using namespace de;
 
-const Id::Type Id::NONE = 0;
-
 // The Id generator starts from one.
 Id::Type Id::generator_ = 1;
 

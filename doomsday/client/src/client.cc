@@ -90,7 +90,7 @@ Client::Client(const de::CommandLine& arguments)
     // Join the session.
     session_ = new UserSession(link, sessionToJoin);
 
-    Link(Address("localhost", SERVER_PORT)) << CommandPacket("quit");
+    //Link(Address("localhost", SERVER_PORT)) << CommandPacket("quit");
     
     // Good to go.
     svPtr.release();
