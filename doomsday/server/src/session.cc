@@ -34,14 +34,19 @@ Session::Session() : world_(0)
 
 Session::~Session()
 {
-    std::cout << "~Session\n";
     if(!users_.empty())
     {
+        RecordPacket sessionEnded("session.ended");
+        sessionEnded.record().addText("id", id_);
+        
         for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
         {
-            std::cout << "Deleting user\n";
             i->second->client().link().observers.remove(this);
             i->second->setSession(0);
+            
+            // Inform that the session has ended.
+            i->second->client().updates() << sessionEnded;
+            
             delete i->second;
         }
         users_.clear();
@@ -64,8 +69,7 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
         else if(packet.command() == "session.join")
         {
             // Request to join this session?
-            Id which(packet.arguments().value<TextValue>("id"));
-            if(which != id_)
+            if(Id(packet.arguments().value<TextValue>("id")) != id_)
             {
                 // Not intended for this session.
                 return;
@@ -89,9 +93,7 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
         }
         else if(packet.command() == "session.leave")
         {
-            // Request to join this session?
-            Id which(packet.arguments().value<TextValue>("id"));
-            if(which != id_)
+            if(Id(packet.arguments().value<TextValue>("id")) != id_)
             {
                 // Not intended for this session.
                 return;
@@ -156,7 +158,6 @@ RemoteUser& Session::userByAddress(const Address& address) const
 {
     for(Users::const_iterator i = users_.begin(); i != users_.end(); ++i)
     {
-        // Make RemoteUser a class of its own, that has a User instance.
         if(i->second->address() == address)
         {
             return *i->second;

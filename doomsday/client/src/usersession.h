@@ -29,12 +29,16 @@
 #include <map>
 
 /**
- * UserSession maintain the game session on the clientside.
+ * Maintains the game session on the clientside.
  *
  * @ingroup client
  */
 class UserSession
 {
+public:
+    /// The serverside session has ended, making this user session invalid. @ingroup errors
+    DEFINE_ERROR(SessionEndedError);
+    
 public:
     /**
      * Constructs a new user session.
@@ -56,7 +60,11 @@ protected:
     /// Listens on the updates channel.
     void listenForUpdates();
     
-    /// Processes a packet received from the server.
+    /**
+     * Processes a packet received from the server.
+     *
+     * @param packet  Packet to process.
+     */
     void processPacket(const de::Packet& packet);
 
     void clearOthers();

@@ -29,7 +29,7 @@
 
 using namespace de;
 
-UserSession::UserSession(MuxLink* link, const Id& id)
+UserSession::UserSession(de::MuxLink* link, const de::Id& id)
     : link_(link), sessionId_(id), world_(0), user_(0)
 {
     // Create a blank user and world. The user is configured jointly
@@ -68,7 +68,7 @@ UserSession::~UserSession()
     delete link_;
 }
 
-void UserSession::processPacket(const Packet& packet)
+void UserSession::processPacket(const de::Packet& packet)
 {
     const RecordPacket* record = dynamic_cast<const RecordPacket*>(&packet);
     if(record)
@@ -109,6 +109,18 @@ void UserSession::processPacket(const Packet& packet)
                 others_.erase(found);
             }
         }
+        else if(record->label() == "session.ended")
+        {
+            if(Id(rec.value<TextValue>("id")) == sessionId_)
+            {
+                std::cout << "This session ended!\n";
+                sessionId_ = Id::NONE;
+                /// @throw SessionEndedError The user session is no longer valid due to
+                /// the serverside session having ended.
+                throw SessionEndedError("UserSession::processPacket", 
+                    "Serverside session ended");
+            }
+        }
     }
 }
 
@@ -141,7 +153,7 @@ void UserSession::listen()
     catch(const ISerializable::DeserializationError&)
     {
         // Malformed packet!
-        std::cout << "Server sent sent nonsense.\n";
+        std::cout << "Server sent nonsense.\n";
     }
 }
 

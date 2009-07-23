@@ -45,6 +45,8 @@ namespace de
          */
         Id();
         
+        Id(const Type& idValue) : id_(idValue) {}
+        
         /**
          * Constructs an identifier from the text representation.
          *

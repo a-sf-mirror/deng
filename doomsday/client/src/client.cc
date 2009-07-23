@@ -34,7 +34,7 @@
 
 using namespace de;
 
-Client::Client(const CommandLine& arguments)
+Client::Client(const de::CommandLine& arguments)
     : App(arguments), localServer_(0), session_(0)
 {        
     CommandLine& args = commandLine();
@@ -90,21 +90,7 @@ Client::Client(const CommandLine& arguments)
     // Join the session.
     session_ = new UserSession(link, sessionToJoin);
 
-    {
-        link->base() << CommandPacket("status");
-        std::auto_ptr<RecordPacket> status(link->base().receivePacket<RecordPacket>());
-        std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
-    }        
-    
-    CommandPacket leave("session.leave");
-    leave.arguments().addText("id", sessionToJoin);
-    link->base() << leave;
-
-    {
-        link->base() << CommandPacket("status");
-        std::auto_ptr<RecordPacket> status(link->base().receivePacket<RecordPacket>());
-        std::cout << "Here's what the server said:\n" << status->label() << "\n" << status->record();
-    }        
+    Link(Address("localhost", SERVER_PORT)) << CommandPacket("quit");
     
     // Good to go.
     svPtr.release();
@@ -127,6 +113,12 @@ void Client::iterate()
         {
             session_->listen();
         }
+    }
+    catch(const UserSession::SessionEndedError& err)
+    {
+        std::cout << "Session ended: " << err.what() << "\n";
+        delete session_;
+        session_ = 0;
     }
     catch(const Link::DisconnectedError& err)
     {

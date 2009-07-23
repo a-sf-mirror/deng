@@ -29,7 +29,7 @@
 
 using namespace de;
 
-LocalServer::LocalServer(duint16 listenOnPort) : listenOnPort_(listenOnPort)
+LocalServer::LocalServer(de::duint16 listenOnPort) : listenOnPort_(listenOnPort)
 {
     CommandLine svArgs = App::app().commandLine();
     

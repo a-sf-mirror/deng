@@ -62,10 +62,12 @@ Packet* Transceiver::receivePacket(const Time::Delta& timeOut)
         Packet* packet = App::protocol().interpret(*message.get());
         if(!packet)
         {
+            /// @throw UnexpectedError Something that was not recognized as a Packet was received.
             throw UnexpectedError("Transceiver::receivePacket", 
                 "Expected a packet, but something else was received");
         }
         return packet;
     }
+    /// @throw TimeOutError Timeout expired before anything was received.
     throw TimeOutError("Transceiver::receivePacket", "Timeout expired before anything was received");
 }
