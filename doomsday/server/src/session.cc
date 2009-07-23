@@ -37,8 +37,6 @@ Session::~Session()
     if(!users_.empty())
     {
         RecordPacket sessionEnded("session.ended");
-        sessionEnded.record().addText("id", id_);
-        
         for(Users::iterator i = users_.begin(); i != users_.end(); ++i)
         {
             i->second->client().link().observers.remove(this);
@@ -59,12 +57,16 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
 {
     try
     {
+        std::cout << "Processing '" << packet.command() << "' with args:\n" << packet.arguments();
+        
         if(packet.command() == "session.new")
         {
             // Initialize the session with the provided settings.
             world_->setMap(packet.arguments().value<TextValue>("map"));
             // Respond.
-            App::protocol().reply(sender);
+            Record* reply = new Record();
+            reply->addText("id", id_);
+            App::protocol().reply(sender, Protocol::OK, reply);
         }
         else if(packet.command() == "session.join")
         {
@@ -93,11 +95,6 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
         }
         else if(packet.command() == "session.leave")
         {
-            if(Id(packet.arguments().value<TextValue>("id")) != id_)
-            {
-                // Not intended for this session.
-                return;
-            }
             delete &userByAddress(packet.from());
             // No reply necessary.
         }

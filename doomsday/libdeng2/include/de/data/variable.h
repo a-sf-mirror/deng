@@ -99,6 +99,13 @@ namespace de
         /**
          * Sets the value of the variable.
          *
+         * @param v  New value. Variable gets ownership.
+         */
+        Variable& operator = (Value* v);
+        
+        /**
+         * Sets the value of the variable.
+         *
          * @param v  New value. Variable takes a copy of this.
          */
         void set(const Value& v);

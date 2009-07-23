@@ -23,6 +23,7 @@
 #include <de/deng.h>
 #include <de/Id>
 #include <de/ISerializable>
+#include <de/Record>
 
 namespace de
 {
@@ -52,7 +53,14 @@ namespace de
          */ 
         void setId(const Id& id) { id_ = id; }
 
-        const std::string& name() const { return name_; }
+        const Record& info() const { return info_; }
+
+        Record& info() { return info_; }
+
+        /**
+         * Returns the name of the player.
+         */
+        const std::string& name() const;
 
         /**
          * Sets the name of the user.
@@ -60,16 +68,17 @@ namespace de
          * @param name  Name of the user.
          */
         void setName(const std::string& name);
-
+        
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
                 
     private:
+        /// User's id in the session. Assigned by the server's Session.
         Id id_;
         
-        /// Name of the user.
-        std::string name_;
+        /// Description of the user.
+        Record info_;
     };
 };
 

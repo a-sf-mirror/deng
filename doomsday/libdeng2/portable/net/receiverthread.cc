@@ -47,6 +47,4 @@ void ReceiverThread::run()
     {
         std::cerr << "Fatal exception in ReceiverThread::run(): " << err.what() << "\n";
     }
-    
-    std::cout << "ReceiverThread ends\n";
 }

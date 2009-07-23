@@ -64,5 +64,4 @@ void SenderThread::run()
             stop();
         }
 	}			
-    std::cout << "SenderThread ends\n";
 }

@@ -172,6 +172,7 @@ void Server::processPacket(const Packet& packet)
         std::cout << "Server received command (from " << packet.from() << 
             "): " << cmd->command() << "\n";
           
+        /// @todo  Session new/delete commands require admin access rights.
         // Session commands are handled by the session.
         if(cmd->command().beginsWith("session."))
         {
@@ -184,6 +185,15 @@ void Server::processPacket(const Packet& packet)
                 }
                 // Start a new session.
                 session_ = new Session();
+            }
+            else if(cmd->command() == "session.delete")
+            {
+                if(session_)
+                {
+                    delete session_;
+                    session_ = 0;
+                    return;
+                }
             }
             if(!session_)
             {

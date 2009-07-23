@@ -21,6 +21,7 @@
 #define LIBDENG2_WORLD_H
 
 #include <de/ISerializable>
+#include <de/Record>
 
 #include <string>
 
@@ -55,11 +56,17 @@ namespace de
          */
         virtual void setMap(const std::string& name);
         
+        const Record& info() const { return info_; }
+
+        Record& info() { return info_; }
+
         // Implements ISerializable.
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
     private:
+        Record info_;
+        
         /// The current map.
         Map* map_;
     };

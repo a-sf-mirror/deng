@@ -55,6 +55,12 @@ void Variable::set(Value* v)
     value_ = val.release();
 }
 
+Variable& Variable::operator = (Value* v)
+{
+    set(v);
+    return *this;
+}
+
 void Variable::set(const Value& v)
 {
     verifyValid(v);

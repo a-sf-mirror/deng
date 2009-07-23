@@ -18,24 +18,45 @@
  */
 
 #include "de/User"
+#include "de/Variable"
+#include "de/TextValue"
+#include "de/Writer"
+#include "de/Reader"
 
 using namespace de;
 
 User::User()
-{}
+{
+    /// @todo  The name is read from the configuration.
+    info_.addText("name", "read-from-config");
+}
 
 User::~User()
 {}
 
+const std::string& User::name() const
+{
+    return info_["name"].value().asText();
+}
+
 void User::setName(const std::string& name)
 {
-    name_ = name;
+    info_["name"] = new TextValue(name);
 }
 
 void User::operator >> (Writer& to) const
 {
+    to << duint32(id_) << info_;
 }
 
 void User::operator << (Reader& from)
 {
+    duint32 newId = 0;
+    from >> newId;
+    if(newId != 0)
+    {
+        // Once assigned, the id can't be cleared.
+        id_ = newId;
+    }
+    from >> info_;
 }

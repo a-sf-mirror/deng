@@ -57,9 +57,7 @@ UserSession::~UserSession()
     if(sessionId_)
     {
         // Inform that we are leaving.
-        CommandPacket leave("session.leave");
-        leave.arguments().addText("id", sessionId_);
-        link_->base() << leave;
+        link_->base() << CommandPacket("session.leave");
     }
     clearOthers();
 
@@ -111,15 +109,12 @@ void UserSession::processPacket(const de::Packet& packet)
         }
         else if(record->label() == "session.ended")
         {
-            if(Id(rec.value<TextValue>("id")) == sessionId_)
-            {
-                std::cout << "This session ended!\n";
-                sessionId_ = Id::NONE;
-                /// @throw SessionEndedError The user session is no longer valid due to
-                /// the serverside session having ended.
-                throw SessionEndedError("UserSession::processPacket", 
-                    "Serverside session ended");
-            }
+            std::cout << "The session ended!\n";
+            sessionId_ = Id::NONE;
+            /// @throw SessionEndedError The user session is no longer valid due to
+            /// the serverside session having ended.
+            throw SessionEndedError("UserSession::processPacket", 
+                "Serverside session ended");
         }
     }
 }
