@@ -18,7 +18,7 @@
  */
 
 #include "usersession.h"
-#include "client.h"
+#include "clientapp.h"
 #include <de/data.h>
 #include <de/Id>
 #include <de/Library>

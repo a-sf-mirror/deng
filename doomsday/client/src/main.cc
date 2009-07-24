@@ -18,7 +18,7 @@
  */
 
 #include <dengmain.h>
-#include "client.h"
+#include "clientapp.h"
 
 using namespace de;
 
@@ -26,8 +26,7 @@ int deng_Main(int argc, char** argv)
 {
     try
     {
-        Client client(CommandLine(argc, argv));
-        return client.mainLoop();
+        return ClientApp(CommandLine(argc, argv)).mainLoop();
     }
     catch(const Error& error)
     {

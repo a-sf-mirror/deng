@@ -23,7 +23,7 @@
 
 using namespace de;
 
-RemoteUser::RemoteUser(Server::Client& client, Session* session) 
+RemoteUser::RemoteUser(Client& client, Session* session) 
     : client_(&client), session_(session), user_(0)
 {
     user_ = App::game().SYMBOL(deng_NewUser)();
@@ -39,7 +39,7 @@ RemoteUser::~RemoteUser()
     delete user_;
 }
 
-Server::Client& RemoteUser::client() const
+Client& RemoteUser::client() const
 {
     assert(client_ != NULL);
     return *client_;

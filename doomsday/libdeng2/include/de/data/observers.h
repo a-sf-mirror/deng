@@ -24,6 +24,14 @@
 
 #include <set>
 
+/**
+ * Macro for looping through all observers.
+ *
+ * @param Var  Variable used in the loop
+ * @param Name  Name of the observer set.
+ */
+#define FOR_EACH_OBSERVER(Var, Name) for(Observers::Loop Var(Name); !Var.done(); ++Var)
+
 namespace de
 {
     /**

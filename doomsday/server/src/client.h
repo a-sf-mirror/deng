@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengcl
+ * The Doomsday Engine Project -- dengsv
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -20,34 +20,30 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include "usersession.h"
-#include <de/App>
-
-class LocalServer;
+#include <de/MuxLink>
+#include <de/Flag>
 
 /**
- * @defgroup client Client
- * The client application.
+ * Represents a network connection to a remote party.
  */
-
-/**
- * The client application.
- *
- * @ingroup client
- */
-class Client : public de::App
+class Client : public de::MuxLink
 {
 public:
-    Client(const de::CommandLine& arguments);
-    ~Client();
+    /// Client has administration rights. Granted to local users automatically.
+    DEFINE_FINAL_FLAG(ADMIN, 0, Rights);
     
-    void iterate();
+public:
+    Client(const de::Address& address);
+    Client(de::Socket* socket);
     
-private:
-    LocalServer* localServer_;
+    /**
+     * Grants the client whatever rights it should have.
+     */
+    void grantRights();
     
-    /// The game session.
-    UserSession* session_;
+public:
+    /// Access rights of the client.
+    Rights rights;
 };
 
 #endif /* CLIENT_H */

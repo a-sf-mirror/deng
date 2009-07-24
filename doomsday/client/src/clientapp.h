@@ -1,5 +1,5 @@
 /*
- * The Doomsday Engine Project -- dengsv
+ * The Doomsday Engine Project -- dengcl
  *
  * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *
@@ -17,20 +17,37 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dengmain.h>
-#include "serverapp.h"
+#ifndef CLIENTAPP_H
+#define CLIENTAPP_H
 
-using namespace de;
+#include "usersession.h"
+#include <de/App>
 
-int deng_Main(int argc, char** argv)
+class LocalServer;
+
+/**
+ * @defgroup client Client
+ * The client application.
+ */
+
+/**
+ * The client application.
+ *
+ * @ingroup client
+ */
+class ClientApp : public de::App
 {
-    try
-    {
-        return ServerApp(CommandLine(argc, argv)).mainLoop();
-    }
-    catch(const Error& error)
-    {
-        std::cout << error.what() << std::endl;
-    }    
-    return 0;
-}
+public:
+    ClientApp(const de::CommandLine& arguments);
+    ~ClientApp();
+    
+    void iterate();
+    
+private:
+    LocalServer* localServer_;
+    
+    /// The game session.
+    UserSession* session_;
+};
+
+#endif /* CLIENTAPP_H */

@@ -73,6 +73,11 @@ void Address::set(const std::string& address, duint16 port)
     port_ = SDLNet_Read16(&resolved.port);
 }
 
+bool Address::matches(const Address& other, duint32 mask)
+{
+    return (ip_ & mask) == (other.ip_ & mask);
+}
+
 std::string Address::asText() const
 {
     std::ostringstream os;

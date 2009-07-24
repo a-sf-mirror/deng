@@ -43,24 +43,11 @@ namespace de
         /// The remote end has closed the link. @ingroup errors
         DEFINE_ERROR(DisconnectedError);
         
-        typedef SenderThread::OutgoingBuffer OutgoingBuffer;
-        typedef ReceiverThread::IncomingBuffer IncomingBuffer;
-        
-        /// Link observer interface.
-        class IObserver {
-        public:
-            virtual ~IObserver() {}
-            
-            /**
-             * Called when the observed Link is about to be deleted.
-             *
-             * @param link  Link begin deleted.
-             */
-            virtual void linkBeingDeleted(Link& link) = 0;
-        };
-        
         /// Sending on channel 1 instead of the default 0.
         DEFINE_FINAL_FLAG(CHANNEL_1, 0, Mode);
+        
+        typedef SenderThread::OutgoingBuffer OutgoingBuffer;
+        typedef ReceiverThread::IncomingBuffer IncomingBuffer;
         
     public:
         /**
@@ -109,6 +96,19 @@ namespace de
         void initialize();
 
     public:
+        /// Link observer interface.
+        class IObserver {
+        public:
+            virtual ~IObserver() {}
+            
+            /**
+             * Called when the observed Link is about to be deleted.
+             *
+             * @param link  Link begin deleted.
+             */
+            virtual void linkBeingDeleted(Link& link) = 0;
+        };
+        
         typedef Observers<IObserver> Observers;
         Observers observers;
 

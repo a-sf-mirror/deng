@@ -57,11 +57,7 @@ Link::~Link()
 {
     flush();
     
-    // Inform observers.
-    for(Observers::Loop o(observers); !o.done(); ++o)
-    {
-        o->linkBeingDeleted(*this);
-    }
+    FOR_EACH_OBSERVER(o, observers) o->linkBeingDeleted(*this);
     
     // Inform the threads that they can stop as soon as possible.
     receiver_->stop();

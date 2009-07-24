@@ -17,7 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "server.h"
+#include "serverapp.h"
+#include "client.h"
 #include "session.h"
 #include <de/data.h>
 #include <de/Date>
@@ -36,7 +37,7 @@
 
 using namespace de;
 
-Server::Server(const CommandLine& arguments)
+ServerApp::ServerApp(const CommandLine& arguments)
     : App(arguments, "none", "none"), listenSocket_(0), session_(0)
 {
     CommandLine& args = commandLine();
@@ -61,7 +62,7 @@ Server::Server(const CommandLine& arguments)
     DD_Entry(0, NULL);
 }
 
-Server::~Server()
+ServerApp::~ServerApp()
 {
     delete session_;
 
@@ -80,7 +81,7 @@ Server::~Server()
     delete listenSocket_;
 }
 
-void Server::iterate()
+void ServerApp::iterate()
 {
     // Check for incoming connections.
     Socket* incoming = listenSocket_->accept();
@@ -96,7 +97,7 @@ void Server::iterate()
     DD_GameLoop();
 }
 
-Server::Client& Server::clientByAddress(const Address& address) const
+Client& ServerApp::clientByAddress(const Address& address) const
 {
     for(Clients::const_iterator i = clients_.begin(); i != clients_.end(); ++i)
     {
@@ -105,10 +106,10 @@ Server::Client& Server::clientByAddress(const Address& address) const
             return **i;
         }
     }
-    throw UnknownAddressError("Server::clientByAddress", "Address not in use by any client");
+    throw UnknownAddressError("ServerApp::clientByAddress", "Address not in use by any client");
 }
 
-void Server::tendClients()
+void ServerApp::tendClients()
 {
     for(Clients::iterator i = clients_.begin(); i != clients_.end(); )
     {
@@ -127,6 +128,11 @@ void Server::tendClients()
                     processPacket(*packet.get());
                 }            
             }
+        }
+        catch(const RightsError& err)
+        {
+            // Reply that requires rights are missing.
+            protocol().reply(**i, Protocol::DENY, err.what());
         }
         catch(const ISerializable::DeserializationError&)
         {
@@ -162,10 +168,8 @@ void Server::tendClients()
     }
 }
 
-void Server::processPacket(const Packet& packet)
+void ServerApp::processPacket(const Packet& packet)
 {
-    /// @todo  Check IP-based access rights.
-    
     const CommandPacket* cmd = dynamic_cast<const CommandPacket*>(&packet);
     if(cmd)
     {
@@ -178,6 +182,7 @@ void Server::processPacket(const Packet& packet)
         {
             if(cmd->command() == "session.new")
             {
+                verifyAdmin(packet.from());
                 if(session_)
                 {
                     // Could allow several...
@@ -188,6 +193,7 @@ void Server::processPacket(const Packet& packet)
             }
             else if(cmd->command() == "session.delete")
             {
+                verifyAdmin(packet.from());
                 if(session_)
                 {
                     delete session_;
@@ -197,7 +203,7 @@ void Server::processPacket(const Packet& packet)
             }
             if(!session_)
             {
-                throw NoSessionError("Server::processPacket", "No session available");
+                throw NoSessionError("ServerApp::processPacket", "No session available");
             }
             // Execute the command.
             session_->processCommand(clientByAddress(packet.from()), *cmd);
@@ -208,6 +214,7 @@ void Server::processPacket(const Packet& packet)
         }
         else if(cmd->command() == "quit")
         {
+            verifyAdmin(packet.from());
             stop();
         }
     }
@@ -216,7 +223,7 @@ void Server::processPacket(const Packet& packet)
     packet.execute();
 }
 
-void Server::replyStatus(const Address& to)
+void ServerApp::replyStatus(const Address& to)
 {
     RecordPacket status("server.status");
     Record& rec = status.record();
@@ -240,7 +247,16 @@ void Server::replyStatus(const Address& to)
     clientByAddress(to).base() << status;
 }
 
-Server& Server::server()
+void ServerApp::verifyAdmin(const de::Address& clientAddress) const
 {
-    return static_cast<Server&>(App::app());
+    if(!clientByAddress(clientAddress).rights[Client::ADMIN_BIT])
+    {
+        /// @throw RightsError Client does not have administration rights.
+        throw RightsError("ServerApp::verifyAdmin", "Admin rights required");
+    }
+}
+
+ServerApp& ServerApp::serverApp()
+{
+    return static_cast<ServerApp&>(App::app());
 }

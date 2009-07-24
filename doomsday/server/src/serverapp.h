@@ -17,8 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef SERVERAPP_H
+#define SERVERAPP_H
 
 #include <de/App>
 #include <de/ListenSocket>
@@ -26,6 +26,7 @@
 #include <de/MuxLink>
 
 class Session;
+class Client;
 
 #define DEFAULT_LISTEN_PORT 13209
 
@@ -39,7 +40,7 @@ class Session;
  *
  * @ingroup server
  */
-class Server : public de::App
+class ServerApp : public de::App
 {
 public:
     /// No session is currently active. @ingroup errors
@@ -48,11 +49,12 @@ public:
     /// Specified address was not in use by any client. @ingroup errors
     DEFINE_ERROR(UnknownAddressError);
     
-    typedef de::MuxLink Client;
+    /// Client does not have access rights to perform the operation. @ingroup errors
+    DEFINE_ERROR(RightsError);
     
 public:
-    Server(const de::CommandLine& commandLine);
-    ~Server();
+    ServerApp(const de::CommandLine& commandLine);
+    ~ServerApp();
     
     void iterate();
 
@@ -85,9 +87,16 @@ public:
      */
     void replyStatus(const de::Address& to);
 
+    /**
+     * Checks that a client has administration rights.
+     *
+     * @param clientAddress  Address of the client.
+     */
+    void verifyAdmin(const de::Address& clientAddress) const;
+
 public:
     /// Returns the singleton Server instance.
-    static Server& server();
+    static ServerApp& serverApp();
     
 private:
     /// The server listens on this socket.
@@ -100,4 +109,4 @@ private:
     Clients clients_;
 };
 
-#endif /* SERVER_H */
+#endif /* SERVERAPP_H */

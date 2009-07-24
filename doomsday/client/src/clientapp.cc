@@ -17,7 +17,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "client.h"
+#include "clientapp.h"
 #include "localserver.h"
 #include "usersession.h"
 #include <de/MuxLink>
@@ -34,7 +34,7 @@
 
 using namespace de;
 
-Client::Client(const de::CommandLine& arguments)
+ClientApp::ClientApp(const de::CommandLine& arguments)
     : App(arguments), localServer_(0), session_(0)
 {        
     CommandLine& args = commandLine();
@@ -96,7 +96,7 @@ Client::Client(const de::CommandLine& arguments)
     svPtr.release();
 }
 
-Client::~Client()
+ClientApp::~ClientApp()
 {
     delete session_;
     delete localServer_;
@@ -105,7 +105,7 @@ Client::~Client()
     DD_Shutdown();
 }
 
-void Client::iterate()
+void ClientApp::iterate()
 {
     try
     {

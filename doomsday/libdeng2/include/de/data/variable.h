@@ -22,6 +22,7 @@
 
 #include <de/ISerializable>
 #include <de/String>
+#include <de/Observers>
 #include <de/Flag>
 
 namespace de
@@ -52,6 +53,7 @@ namespace de
         
         /** @name Mode Flags */
         //@{
+        /// Variable's value cannot change.
         DEFINE_FLAG(READ_ONLY, 0);
         /// NoneValue allowed as value.
         DEFINE_FLAG(NONE, 1);
@@ -171,12 +173,30 @@ namespace de
         void operator >> (Writer& to) const;
         void operator << (Reader& from);
         
+    public:
+        /// Observer interface.
+        class IObserver {
+        public:
+            virtual ~IObserver() {}
+
+            /**
+             * The value of the variable has changed.
+             *
+             * @param variable  Variable.
+             * @param newValue  New value of the variable.
+             */
+            virtual void variableValueChanged(Variable& variable, const Value& newValue) = 0;
+        };
+        
+        typedef Observers<IObserver> Observers;
+        Observers observers;
+
+        /// Mode flags.        
+        Mode mode;
+        
     private:        
         String name_;
 
-        /// Mode flags.        
-        Mode mode_;
-        
         /// Value of the variable.
         Value* value_;
     };

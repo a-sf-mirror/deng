@@ -24,13 +24,14 @@
 #include "de/TextValue"
 #include "de/ArrayValue"
 #include "de/DictionaryValue"
+#include "de/BlockValue"
 #include "de/Reader"
 #include "de/Writer"
 
 using namespace de;
 
 Variable::Variable(const std::string& name, Value* initial, const Mode& m)
-    : name_(name), mode_(m), value_(0)
+    : mode(m), name_(name), value_(0)
 {
     verifyName(name_);
     if(!initial)
@@ -47,18 +48,20 @@ Variable::~Variable()
     delete value_;
 }
 
+Variable& Variable::operator = (Value* v)
+{
+    set(v);
+    return *this;
+}
+
 void Variable::set(Value* v)
 {
     std::auto_ptr<Value> val(v);
     verifyValid(*v);
     delete value_;
     value_ = val.release();
-}
-
-Variable& Variable::operator = (Value* v)
-{
-    set(v);
-    return *this;
+    
+    FOR_EACH_OBSERVER(o, observers) o->variableValueChanged(*this, *value_);
 }
 
 void Variable::set(const Value& v)
@@ -66,6 +69,8 @@ void Variable::set(const Value& v)
     verifyValid(v);
     delete value_;
     value_ = v.duplicate();
+
+    FOR_EACH_OBSERVER(o, observers) o->variableValueChanged(*this, *value_);
 }
 
 const Value& Variable::value() const
@@ -76,11 +81,12 @@ const Value& Variable::value() const
 
 bool Variable::isValid(const Value& v) const
 {
-    if((dynamic_cast<const NoneValue*>(&v) && !mode_[NONE_BIT]) ||
-        (dynamic_cast<const NumberValue*>(&v) && !mode_[NUMBER_BIT]) ||
-        (dynamic_cast<const TextValue*>(&v) && !mode_[TEXT_BIT]) ||
-        (dynamic_cast<const ArrayValue*>(&v) && !mode_[ARRAY_BIT]) ||
-        (dynamic_cast<const DictionaryValue*>(&v) && !mode_[DICTIONARY_BIT]))
+    if((dynamic_cast<const NoneValue*>(&v) && !mode[NONE_BIT]) ||
+        (dynamic_cast<const NumberValue*>(&v) && !mode[NUMBER_BIT]) ||
+        (dynamic_cast<const TextValue*>(&v) && !mode[TEXT_BIT]) ||
+        (dynamic_cast<const ArrayValue*>(&v) && !mode[ARRAY_BIT]) ||
+        (dynamic_cast<const DictionaryValue*>(&v) && !mode[DICTIONARY_BIT]) ||
+        (dynamic_cast<const BlockValue*>(&v) && !mode[BLOCK_BIT]))
     {
         return false;
     }
@@ -108,14 +114,14 @@ void Variable::verifyName(const std::string& s)
 
 void Variable::operator >> (Writer& to) const
 {
-    to << name_ << duint32(mode_.to_ulong()) << *value_;
+    to << name_ << duint32(mode.to_ulong()) << *value_;
 }
 
 void Variable::operator << (Reader& from)
 {
     duint32 modeFlags = 0;
     from >> name_ >> modeFlags;
-    mode_ = modeFlags;
+    mode = modeFlags;
     delete value_;
     try
     {

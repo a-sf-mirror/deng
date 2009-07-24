@@ -48,8 +48,8 @@ namespace de
  * @see DEFINE_FINAL_FLAG
  */
 #define DEFINE_FLAG(Name, NBit) \
-    static const duint Name##_BIT = NBit; \
-    static const Flag Name = 1L << Name##_BIT; \
+    static const de::duint Name##_BIT = NBit; \
+    static const de::Flag Name = 1L << Name##_BIT; \
 
 /**
  * Macro to define the final flag in a series of flags.
@@ -60,7 +60,7 @@ namespace de
  */
 #define DEFINE_FINAL_FLAG(Name, NBit, FlagSetName) \
     DEFINE_FLAG(Name, NBit) \
-    static const duint FlagSetName##_NUM_FLAGS = Name##_BIT + 1; \
+    static const de::duint FlagSetName##_NUM_FLAGS = Name##_BIT + 1; \
     typedef std::bitset<FlagSetName##_NUM_FLAGS> FlagSetName;
 
 #endif /* LIBDENG2_FLAG_H */

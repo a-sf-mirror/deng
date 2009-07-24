@@ -17,20 +17,25 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dengmain.h>
-#include "serverapp.h"
+#include "client.h"
 
 using namespace de;
 
-int deng_Main(int argc, char** argv)
+Client::Client(const de::Address& address) : de::MuxLink(address) 
 {
-    try
+    grantRights();
+}
+
+Client::Client(de::Socket* socket) : de::MuxLink(socket) 
+{
+    grantRights();
+}
+
+void Client::grantRights()
+{
+    /// Local clients get the admin rights automatically.
+    if(peerAddress().matches(Address("127.0.0.1")))
     {
-        return ServerApp(CommandLine(argc, argv)).mainLoop();
+        rights.set(ADMIN_BIT);
     }
-    catch(const Error& error)
-    {
-        std::cout << error.what() << std::endl;
-    }    
-    return 0;
 }

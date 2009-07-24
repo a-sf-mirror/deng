@@ -75,6 +75,15 @@ namespace de
         duint16 port() const { return port_; }
         
         void setPort(duint16 p) { port_ = p; }
+
+        /**
+         * Checks if two IP address match. Port numbers are ignored.
+         *
+         * @param other  Address to check against.
+         * @param mask  Net mask. Use to check if subnets match. The default
+         *      checks if two IP addresses match.
+         */
+        bool matches(const Address& other, duint32 mask = 0xffffffff);
         
         /**
          * Converts the address to text.

@@ -20,7 +20,8 @@
 #ifndef SESSION_H
 #define SESSION_H
 
-#include "server.h"
+#include "serverapp.h"
+#include "client.h"
 #include <de/deng.h>
 #include <de/net.h>
 #include <de/Id>
@@ -82,12 +83,12 @@ public:
      * @param sender  Sender of the command. A reply will be sent here.
      * @param packet  Packet received from the network.
      */
-    void processCommand(Server::Client& sender, const de::CommandPacket& packet);
+    void processCommand(Client& sender, const de::CommandPacket& packet);
 
     /**
      * Promotes a client to a User in the session. 
      */
-    RemoteUser& promote(Server::Client& client);
+    RemoteUser& promote(Client& client);
 
     /**
      * Remove a user from the session.

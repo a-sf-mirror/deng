@@ -18,7 +18,7 @@
  */
 
 #include "session.h"
-#include "server.h"
+#include "serverapp.h"
 #include "remoteuser.h"
 #include <de/data.h>
 #include <de/Library>
@@ -53,7 +53,7 @@ Session::~Session()
     delete world_;
 }
 
-void Session::processCommand(Server::Client& sender, const CommandPacket& packet)
+void Session::processCommand(Client& sender, const CommandPacket& packet)
 {
     try
     {
@@ -106,7 +106,7 @@ void Session::processCommand(Server::Client& sender, const CommandPacket& packet
     }
 }
 
-RemoteUser& Session::promote(Server::Client& client)
+RemoteUser& Session::promote(Client& client)
 {
     try
     {

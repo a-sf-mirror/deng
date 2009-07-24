@@ -20,10 +20,12 @@
 #ifndef REMOTEUSER_H
 #define REMOTEUSER_H
 
-#include "server.h"
+#include "serverapp.h"
 #include "session.h"
 #include <de/User>
 #include <de/Address>
+
+class Client;
 
 /**
  * RemoteUser represents a User on the serverside.
@@ -43,7 +45,7 @@ public:
      * @param client  Network link for communicating with the user.
      * @param session  Session to which this RemoteUser belongs.
      */
-    RemoteUser(Server::Client& client, Session* session);
+    RemoteUser(Client& client, Session* session);
     
     virtual ~RemoteUser();
 
@@ -60,7 +62,7 @@ public:
     /**
      * Returns the network link for communicating with the remote user.
      */
-    Server::Client& client() const;
+    Client& client() const;
     
     /**
      * Returns the session to which this remote user belongs.
@@ -85,7 +87,7 @@ public:
     const de::User& user() const;
     
 private:
-    Server::Client* client_;
+    Client* client_;
     
     /// Session to which this remote user belongs.
     Session* session_;
