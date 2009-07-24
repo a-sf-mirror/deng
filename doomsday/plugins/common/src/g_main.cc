@@ -24,6 +24,7 @@
 #include "dd_export.h"
 #include "g_main.h"
 #include "gameworld.h"
+#include "gamemap.h"
 #include "gameuser.h"
 
 using namespace de;
@@ -44,6 +45,14 @@ PUBLIC_API World* deng_NewWorld()
 PUBLIC_API User* deng_NewUser()
 {
     return new GameUser();
+}
+
+/**
+ * Constructs a new (empty) map.
+ */
+PUBLIC_API Map* deng_NewMap(const char* name)
+{
+    return new GameMap(name);
 }
 
 END_EXTERN_C

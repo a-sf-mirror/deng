@@ -35,9 +35,10 @@
 namespace de
 {
     class Audio;
+    class Map;
+    class User;
     class Video;
     class World;
-    class User;
     
     /**
      * The Library class allows loading shared library files (DLL/so/dylib) and
@@ -104,6 +105,13 @@ namespace de
          * Constructs a new game world.
          */
         typedef World* (*deng_NewWorld)(void);
+        
+        /**
+         * Constructs a new game map.
+         *
+         * @param name  Name of the map.
+         */
+        typedef Map* (*deng_NewMap)(const char* name);
         
         /**
          * Constructs a new user.

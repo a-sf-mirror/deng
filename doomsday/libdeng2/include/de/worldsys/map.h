@@ -32,7 +32,9 @@ namespace de
 {
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
-     * objects, etc.
+     * objects, etc. The game plugin is responsible for creating concrete
+     * instances of the World. The game plugin can extend this with whatever 
+     * information it needs.
      *
      * @ingroup world
      */

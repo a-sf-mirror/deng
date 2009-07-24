@@ -131,7 +131,7 @@ void ServerApp::tendClients()
         }
         catch(const RightsError& err)
         {
-            // Reply that requires rights are missing.
+            // Reply that required rights are missing.
             protocol().reply(**i, Protocol::DENY, err.what());
         }
         catch(const ISerializable::DeserializationError&)

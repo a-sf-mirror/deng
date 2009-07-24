@@ -21,6 +21,8 @@
 #include "de/Writer"
 #include "de/Reader"
 #include "de/Map"
+#include "de/App"
+#include "de/Library"
 
 using namespace de;
 
@@ -41,7 +43,7 @@ void World::loadMap(const std::string& name)
     delete map_;
 
     // The map will do its own loading.
-    map_ = new Map(name);
+    map_ = App::game().SYMBOL(deng_NewMap)(name.c_str());
 }
 
 void World::operator >> (Writer& to) const

@@ -18,22 +18,19 @@
  */
 
 /**
- * @file gameworld.h  Game plugin's derivation of the World.
+ * @file gamemap.h  Game plugin's derivation of the Map.
  */
 
-#ifndef GAMEWORLD_H
-#define GAMEWORLD_H
+#ifndef GAMEMAP_H
+#define GAMEMAP_H
 
-#include <de/World>
+#include <de/Map>
 
-class GameWorld : public de::World
+class GameMap : public de::Map
 {
 public:
-    GameWorld();
-
-    ~GameWorld();
-        
-private:
+    GameMap(const std::string& name);
+    ~GameMap();
 };
 
-#endif /* GAMEWORLD_H */
+#endif /* GAMEMAP_H */

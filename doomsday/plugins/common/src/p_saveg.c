@@ -1024,7 +1024,7 @@ static void SV_WritePlayer(int playernum)
 
     SV_WriteLong(p->playerState);
 #if __JHEXEN__
-    SV_WriteLong(p->class);    // 2nd class...?
+    SV_WriteLong(p->class_);    // 2nd class...?
 #endif
     SV_WriteLong(FLT2FIX(dp->viewZ));
     SV_WriteLong(FLT2FIX(dp->viewHeight));
@@ -1165,7 +1165,7 @@ static void SV_WritePlayer(int playernum)
     SV_WriteLong(p->flameCount);
 
     // Added in ver 2
-    SV_WriteByte(p->class);
+    SV_WriteByte(p->class_);
 #endif
 }
 
@@ -1190,7 +1190,7 @@ static void SV_ReadPlayer(player_t* p)
 
     p->playerState = SV_ReadLong();
 #if __JHEXEN__
-    p->class = SV_ReadLong();        // 2nd class...?
+    p->class_ = SV_ReadLong();        // 2nd class...?
 #endif
     dp->viewZ = FIX2FLT(SV_ReadLong());
     dp->viewHeight = FIX2FLT(SV_ReadLong());
@@ -1382,7 +1382,7 @@ static void SV_ReadPlayer(player_t* p)
     p->flameCount = SV_ReadLong();
 
     if(ver >= 2)
-        p->class = SV_ReadByte();
+        p->class_ = SV_ReadByte();
 #endif
 
 #if !__JHEXEN__
