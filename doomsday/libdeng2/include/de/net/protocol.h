@@ -47,7 +47,7 @@ namespace de
      *
      * @ingroup protocol
      */
-    class PUBLIC_API Protocol
+    class LIBDENG2_API Protocol
     {
     public:
         /// The response was not success. @ingroup errors

@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup video
      */
-    class PUBLIC_API Visual
+    class LIBDENG2_API Visual
     {
     public:
         enum DrawingStage {

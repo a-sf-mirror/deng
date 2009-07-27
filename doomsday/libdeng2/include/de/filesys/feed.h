@@ -43,7 +43,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API Feed
+    class LIBDENG2_API Feed
     {
     public:
         Feed();

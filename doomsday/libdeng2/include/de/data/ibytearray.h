@@ -29,7 +29,7 @@ namespace de
      *
      * @ingroup data
      */ 
-    class PUBLIC_API IByteArray
+    class LIBDENG2_API IByteArray
     {
     public:
         /// Invalid offset was used in set() or get(). @ingroup errors

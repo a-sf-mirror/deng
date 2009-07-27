@@ -38,7 +38,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API ISerializable : public IWritable, public IReadable
+    class LIBDENG2_API ISerializable : public IWritable, public IReadable
     {
     public:
         /// Deserialization of the provided data failed. @ingroup errors

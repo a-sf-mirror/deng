@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup types
      */
-	class PUBLIC_API String : public std::string, public IByteArray, public IBlock
+	class LIBDENG2_API String : public std::string, public IByteArray, public IBlock
 	{
 	public:
 	    /// Encoding conversion failed. @ingroup errors

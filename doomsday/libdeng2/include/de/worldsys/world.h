@@ -42,7 +42,7 @@ namespace de
      *
      * @ingroup world
      */
-    class PUBLIC_API World : public ISerializable
+    class LIBDENG2_API World : public ISerializable
     {
     public:
         World();

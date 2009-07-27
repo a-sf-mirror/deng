@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API Message : public Block
+    class LIBDENG2_API Message : public Block
     {
     public:
         typedef duint Channel;

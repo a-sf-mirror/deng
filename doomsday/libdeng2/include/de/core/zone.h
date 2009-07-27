@@ -61,7 +61,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API Zone
+    class LIBDENG2_API Zone
     {
     public:
         class Batch;
@@ -300,7 +300,7 @@ namespace de
          * number of memory blocks of a specific type. It should be used in 
          * performance-critical places instead of separate calls to allocate().
          */
-        class PUBLIC_API Batch
+        class LIBDENG2_API Batch
         {
         public:
             /**

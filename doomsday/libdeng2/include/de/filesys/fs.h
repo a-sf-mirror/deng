@@ -59,7 +59,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API FS
+    class LIBDENG2_API FS
     {
     public:
         /// No index is found for the specified type. @ingroup errors

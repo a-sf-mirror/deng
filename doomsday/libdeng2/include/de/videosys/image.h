@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup video
      */ 
-    class PUBLIC_API Image : public Block
+    class LIBDENG2_API Image : public Block
     {
     public:
         /// The data buffer passed to the set() method contains the wrong amount of data.

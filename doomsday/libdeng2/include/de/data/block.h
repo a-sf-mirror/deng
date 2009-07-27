@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Block : public IByteArray, public IBlock
+    class LIBDENG2_API Block : public IByteArray, public IBlock
     {
     public:
         Block(Size initialSize = 0);

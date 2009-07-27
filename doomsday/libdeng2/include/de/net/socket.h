@@ -42,7 +42,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API Socket : public Lockable
+    class LIBDENG2_API Socket : public Lockable
     {
     public:
         /// Payload is in Huffman code.

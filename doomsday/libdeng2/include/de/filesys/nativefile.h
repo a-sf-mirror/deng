@@ -34,7 +34,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API NativeFile : public File
+    class LIBDENG2_API NativeFile : public File
     {
     public:
         /// I/O to the native file failed. @ingroup errors

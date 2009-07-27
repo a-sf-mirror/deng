@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API LibraryFile : public File
+    class LIBDENG2_API LibraryFile : public File
     {
     public:
         /// Attempted to load a shared library from a source file with unsupported type.

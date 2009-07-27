@@ -43,7 +43,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Archive : public IWritable
+    class LIBDENG2_API Archive : public IWritable
     {
     public:
         /// Base class for format-related errors. @ingroup errors

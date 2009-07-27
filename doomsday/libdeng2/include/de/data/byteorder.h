@@ -29,7 +29,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API ByteOrder 
+    class LIBDENG2_API ByteOrder 
     {
     public:
         virtual ~ByteOrder() {}
@@ -96,7 +96,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API BigEndianByteOrder : public ByteOrder
+    class LIBDENG2_API BigEndianByteOrder : public ByteOrder
     {
     public:
         using ByteOrder::foreignToNative;
@@ -118,7 +118,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API LittleEndianByteOrder : public ByteOrder
+    class LIBDENG2_API LittleEndianByteOrder : public ByteOrder
     {
     public:
         using ByteOrder::foreignToNative;
@@ -147,10 +147,10 @@ namespace de
     duint64 swap64(const duint64& n);    
     
     /// Globally available big-endian byte order converter.
-    PUBLIC_API extern BigEndianByteOrder bigEndianByteOrder;
+    LIBDENG2_API extern BigEndianByteOrder bigEndianByteOrder;
 
     /// Globally available little-endian byte order converter.
-    PUBLIC_API extern LittleEndianByteOrder littleEndianByteOrder;
+    LIBDENG2_API extern LittleEndianByteOrder littleEndianByteOrder;
 }
 
 #endif /* LIBDENG2_BYTEORDER_H */

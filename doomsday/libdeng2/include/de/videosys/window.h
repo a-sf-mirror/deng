@@ -33,7 +33,7 @@ namespace de
      *
      * @ingroup video
      */ 
-    class PUBLIC_API Window
+    class LIBDENG2_API Window
     {
     public:
         typedef Rectangleui Placement;

@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Variable : public ISerializable
+    class LIBDENG2_API Variable : public ISerializable
     {
     public:
         /// There was an attempt to change the value of a read-only variable. @ingroup errors

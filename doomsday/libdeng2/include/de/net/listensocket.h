@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API ListenSocket
+    class LIBDENG2_API ListenSocket
     {
     public:
         /// Opening the socket failed. @ingroup errors

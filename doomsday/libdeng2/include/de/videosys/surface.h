@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup video
      */
-    class PUBLIC_API Surface
+    class LIBDENG2_API Surface
     {
     public:
         typedef Vector2ui Size;

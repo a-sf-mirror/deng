@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup types
      */
-    class PUBLIC_API Enumerator
+    class LIBDENG2_API Enumerator
     {
     public:
         typedef duint32 Type;

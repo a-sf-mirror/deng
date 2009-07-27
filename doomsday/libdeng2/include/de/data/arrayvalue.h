@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API ArrayValue : public Value
+    class LIBDENG2_API ArrayValue : public Value
     {
     public:
         /// Attempt to index the array with indices that are not defined for the array. @ingroup errors

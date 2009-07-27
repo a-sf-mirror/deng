@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup world
      */
-    class PUBLIC_API Object : public ISerializable
+    class LIBDENG2_API Object : public ISerializable
     {
     public:
         typedef Enumerator::Type Id;

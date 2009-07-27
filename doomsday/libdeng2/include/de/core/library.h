@@ -52,7 +52,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API Library
+    class LIBDENG2_API Library
     {
     public:
         /// Loading the shared library failed. @ingroup errors

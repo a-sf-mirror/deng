@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Record : public ISerializable
+    class LIBDENG2_API Record : public ISerializable
     {
     public:
         /// Unknown variable name was given. @ingroup errors
@@ -229,7 +229,7 @@ namespace de
     };
     
     /// Converts the record into a human-readable text representation.
-    PUBLIC_API std::ostream& operator << (std::ostream& os, const Record& record);
+    LIBDENG2_API std::ostream& operator << (std::ostream& os, const Record& record);
 }
 
 #endif /* LIBDENG2_RECORD_H */

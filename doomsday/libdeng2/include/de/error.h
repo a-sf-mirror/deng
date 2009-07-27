@@ -34,7 +34,7 @@ namespace de
     /**
      * Base class for error exceptions thrown by libdeng2.
      */
-	class PUBLIC_API Error : public std::runtime_error
+	class LIBDENG2_API Error : public std::runtime_error
 	{
 	public:
 		Error(const std::string& where, const std::string& message)

@@ -39,7 +39,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API File : public IByteArray
+    class LIBDENG2_API File : public IByteArray
     {
     public:
         /**

@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Writer
+    class LIBDENG2_API Writer
     {
     public:
         /**

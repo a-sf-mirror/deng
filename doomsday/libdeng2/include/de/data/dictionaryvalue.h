@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API DictionaryValue : public Value
+    class LIBDENG2_API DictionaryValue : public Value
     {
     public:
         /// An invalid key was used. @ingroup errors

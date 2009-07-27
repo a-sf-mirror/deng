@@ -34,7 +34,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API IReadable
+    class LIBDENG2_API IReadable
     {
     public:
         virtual ~IReadable() {}

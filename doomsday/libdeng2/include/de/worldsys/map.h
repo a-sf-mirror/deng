@@ -38,7 +38,7 @@ namespace de
      *
      * @ingroup world
      */
-    class PUBLIC_API Map : public ISerializable
+    class LIBDENG2_API Map : public ISerializable
     {
     public:
         /**

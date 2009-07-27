@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Waitable
+    class LIBDENG2_API Waitable
     {
     public:
         /// wait() failed due to timing out before the resource is secured. @ingroup errors

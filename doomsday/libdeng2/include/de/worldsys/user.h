@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup world
      */ 
-    class PUBLIC_API User : public ISerializable
+    class LIBDENG2_API User : public ISerializable
     {
     public:
         User();

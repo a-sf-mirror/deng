@@ -22,8 +22,8 @@
 
 using namespace de;
 
-PUBLIC_API BigEndianByteOrder de::bigEndianByteOrder;
-PUBLIC_API LittleEndianByteOrder de::littleEndianByteOrder;
+LIBDENG2_API BigEndianByteOrder de::bigEndianByteOrder;
+LIBDENG2_API LittleEndianByteOrder de::littleEndianByteOrder;
 
 void ByteOrder::nativeToForeign(const dint16& nativeValue, dint16& foreignValue) const
 {

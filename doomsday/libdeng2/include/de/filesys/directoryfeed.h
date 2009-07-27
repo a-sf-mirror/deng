@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API DirectoryFeed : public Feed
+    class LIBDENG2_API DirectoryFeed : public Feed
     {
     public:
         /// The native directory was not found. @ingroup errors

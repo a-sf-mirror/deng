@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API Link : public Transceiver
+    class LIBDENG2_API Link : public Transceiver
     {
     public:
         /// The remote end has closed the link. @ingroup errors

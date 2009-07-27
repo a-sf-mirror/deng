@@ -36,7 +36,7 @@ namespace de
      *
      * @ingroup video
      */
-    class PUBLIC_API Animator : public ISerializable
+    class LIBDENG2_API Animator : public ISerializable
     {
     public:
         typedef ddouble ValueType;
@@ -170,14 +170,14 @@ namespace de
         mutable Status status_;
     };
 
-    PUBLIC_API std::ostream& operator << (std::ostream& os, const Animator& anim);
+    LIBDENG2_API std::ostream& operator << (std::ostream& os, const Animator& anim);
 
     /**
      * 2D vector animator.
      *
      * @ingroup video
      */
-    class PUBLIC_API AnimatorVector2 : public Vector2<Animator>
+    class LIBDENG2_API AnimatorVector2 : public Vector2<Animator>
     {
     public:
         AnimatorVector2() {}
@@ -224,7 +224,7 @@ namespace de
      *
      * @ingroup video
      */
-    class PUBLIC_API AnimatorVector4 : public AnimatorVector2
+    class LIBDENG2_API AnimatorVector4 : public AnimatorVector2
     {
     public:
         AnimatorVector4() : AnimatorVector2() {}
@@ -264,7 +264,7 @@ namespace de
      *
      * @ingroup video
      */ 
-    class PUBLIC_API AnimatorRectangle : public Rectangle<AnimatorVector2>
+    class LIBDENG2_API AnimatorRectangle : public Rectangle<AnimatorVector2>
     {
     public:
         AnimatorRectangle(const IClock& clock, const Vector2f& tl = Vector2f(), 

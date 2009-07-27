@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Lockable
+    class LIBDENG2_API Lockable
     {
     public:
         Lockable();

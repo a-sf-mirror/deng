@@ -34,7 +34,7 @@ namespace de
      *
      * @ingroup types
      */
-    class PUBLIC_API Time
+    class LIBDENG2_API Time
     {   
     public: 
         /**
@@ -42,7 +42,7 @@ namespace de
          *
          * @ingroup types
          */ 
-        class PUBLIC_API Delta
+        class LIBDENG2_API Delta
         {
         public:
             /**
@@ -177,7 +177,7 @@ namespace de
         friend class Date;
     };
     
-    PUBLIC_API std::ostream& operator << (std::ostream& os, const Time& t);
+    LIBDENG2_API std::ostream& operator << (std::ostream& os, const Time& t);
 }
 
 #endif /* LIBDENG2_TIME_H */

@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API TextValue : public Value
+    class LIBDENG2_API TextValue : public Value
     {
     public:
         /// An error occurs in string pattern replacements. @ingroup errors

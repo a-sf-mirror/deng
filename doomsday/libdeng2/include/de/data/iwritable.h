@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API IWritable
+    class LIBDENG2_API IWritable
     {
     public:
         virtual ~IWritable() {}

@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Reader
+    class LIBDENG2_API Reader
     {
     public:
         /**

@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API CommandLine
+    class LIBDENG2_API CommandLine
     {
     public:
         /// Tried to access an argument that does not exist. @ingroup errors

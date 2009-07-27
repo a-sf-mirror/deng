@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup net 
      */
-    class PUBLIC_API Address
+    class LIBDENG2_API Address
     {
     public:
         /// The address cannot be resolved successfully. @ingroup errors
@@ -95,7 +95,7 @@ namespace de
         duint16 port_;
     };
     
-    PUBLIC_API std::ostream& operator << (std::ostream& os, const Address& address);
+    LIBDENG2_API std::ostream& operator << (std::ostream& os, const Address& address);
 }
 
 #endif /* LIBDENG2_ADDRESS_H */

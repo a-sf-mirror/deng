@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API BlockValue : public Value
+    class LIBDENG2_API BlockValue : public Value
     {
     public:
         BlockValue();

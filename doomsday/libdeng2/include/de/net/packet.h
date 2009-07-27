@@ -35,7 +35,7 @@ namespace de
      *
      * @ingroup protocol
      */
-    class PUBLIC_API Packet : public ISerializable
+    class LIBDENG2_API Packet : public ISerializable
     {
     public:
         /// While deserializing, an invalid type identifier was encountered. @ingroup errors

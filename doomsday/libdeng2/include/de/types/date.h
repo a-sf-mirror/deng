@@ -29,7 +29,7 @@ namespace de
      *
      * @ingroup types
      */
-    class PUBLIC_API Date
+    class LIBDENG2_API Date
     {
     public:
         /**
@@ -62,7 +62,7 @@ namespace de
         dint dayOfYear;
     };
     
-    PUBLIC_API std::ostream& operator << (std::ostream& os, const Date& date);
+    LIBDENG2_API std::ostream& operator << (std::ostream& os, const Date& date);
 }
 
 #endif /* LIBDENG2_DATE_H */

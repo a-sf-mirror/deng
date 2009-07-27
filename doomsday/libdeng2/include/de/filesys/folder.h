@@ -38,7 +38,7 @@ namespace de
      *
      * @ingroup fs
      */
-    class PUBLIC_API Folder : public File
+    class LIBDENG2_API Folder : public File
     {
     public:
         /// A folder cannot contain two or more files with the same name. @ingroup errors

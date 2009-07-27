@@ -29,7 +29,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API ByteSubArray : public IByteArray
+    class LIBDENG2_API ByteSubArray : public IByteArray
     {
     public:
         /// set() is attempted on a nonmodifiable array. @ingroup errors

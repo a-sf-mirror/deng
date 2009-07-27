@@ -49,9 +49,9 @@
 
 #ifdef WIN32
 #   ifdef LIBDENG2_EXPORTS
-#       define PUBLIC_API __declspec(dllexport)
+#       define LIBDENG2_API __declspec(dllexport)
 #   else
-#       define PUBLIC_API __declspec(dllimport)
+#       define LIBDENG2_API __declspec(dllimport)
 #   endif
 #   define LIBDENG2_EXPORT __declspec(dllexport)
     // Disable warnings about non-exported (C++ standard library) base classes.
@@ -60,8 +60,8 @@
     // Disable warning about using this pointer in initializer list.
 #   pragma warning(disable: 4355)
 #else
-#   define PUBLIC_API
-#   define PUBLIC_API_EXPORT
+#   define LIBDENG2_API
+#   define LIBDENG2_EXPORT
 #endif
 
 /**

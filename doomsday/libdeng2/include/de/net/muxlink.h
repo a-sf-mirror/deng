@@ -31,7 +31,7 @@ namespace de
      *
      * @ingroup net
      */
-    class PUBLIC_API MuxLink
+    class LIBDENG2_API MuxLink
     {
     public:
         enum ChannelId {
@@ -45,7 +45,7 @@ namespace de
          *
          * @ingroup net
          */ 
-        class PUBLIC_API Channel : public Transceiver {
+        class LIBDENG2_API Channel : public Transceiver {
         public:
             Channel(MuxLink& mux, duint channel) : mux_(mux), channel_(channel) {}
 

@@ -32,7 +32,7 @@ namespace de
      *
      * @ingroup protocol
      */
-    class PUBLIC_API CommandPacket : public RecordPacket
+    class LIBDENG2_API CommandPacket : public RecordPacket
     {    
     public:
         CommandPacket(const String& cmd = "");

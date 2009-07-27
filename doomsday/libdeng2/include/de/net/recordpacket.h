@@ -34,7 +34,7 @@ namespace de
      *
      * @ingroup protocol
      */
-    class PUBLIC_API RecordPacket : public Packet
+    class LIBDENG2_API RecordPacket : public Packet
     {
     public:
         RecordPacket(const std::string& label = "");

@@ -51,7 +51,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API App : public IClock
+    class LIBDENG2_API App : public IClock
     {
     public:
         /// Only one instance of App is allowed. @ingroup errors

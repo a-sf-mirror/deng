@@ -30,7 +30,7 @@ namespace de
      *
      * @ingroup core
      */
-    class PUBLIC_API ISubsystem
+    class LIBDENG2_API ISubsystem
     {
     public:
         virtual ~ISubsystem() {}

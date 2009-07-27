@@ -37,7 +37,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Value : public String::IPatternArg, public ISerializable
+    class LIBDENG2_API Value : public String::IPatternArg, public ISerializable
     {
     public:
         /// An illegal operation (i.e., one that is not defined by the Value) was attempted. 
