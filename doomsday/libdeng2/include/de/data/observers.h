@@ -25,12 +25,13 @@
 #include <set>
 
 /**
- * Macro for looping through all observers.
+ * Macro for looping through all observers. @note The @a Audience type needs to be defined
+ * in the scope.
  *
  * @param Var  Variable used in the loop
  * @param Name  Name of the observer set.
  */
-#define FOR_EACH_OBSERVER(Var, Name) for(Observers::Loop Var(Name); !Var.done(); ++Var)
+#define FOR_EACH_OBSERVER(Var, Name) for(Audience::Loop Var(Name); !Var.done(); ++Var)
 
 namespace de
 {

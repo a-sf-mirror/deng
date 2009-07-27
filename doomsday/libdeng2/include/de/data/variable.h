@@ -188,8 +188,8 @@ namespace de
             virtual void variableValueChanged(Variable& variable, const Value& newValue) = 0;
         };
         
-        typedef Observers<IObserver> Observers;
-        Observers observers;
+        typedef Observers<IObserver> Audience;
+        Audience observers;
 
         /// Mode flags.        
         Mode mode;

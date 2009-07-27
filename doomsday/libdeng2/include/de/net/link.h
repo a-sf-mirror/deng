@@ -109,8 +109,8 @@ namespace de
             virtual void linkBeingDeleted(Link& link) = 0;
         };
         
-        typedef Observers<IObserver> Observers;
-        Observers observers;
+        typedef Observers<IObserver> Audience;
+        Audience observers;
 
         /// Mode flags.
         Mode mode;
