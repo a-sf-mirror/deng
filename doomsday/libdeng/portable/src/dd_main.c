@@ -128,6 +128,8 @@ filename_t bindingsConfigFileName;
 filename_t defsFileName, topDefsFileName;
 filename_t ddBasePath = "";     // Doomsday root directory is at...?
 
+int isDeng2Client = false;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static char *wadFiles[MAXWADFILES];
@@ -884,7 +886,8 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] = {
     {&gameDrawHUD, 0},
     {&upscaleAndSharpenPatches, &upscaleAndSharpenPatches},
     {&symbolicEchoMode, &symbolicEchoMode},
-    {&GL_state.maxTexUnits, 0}
+    {&GL_state.maxTexUnits, 0},
+    {&isDeng2Client, &isDeng2Client}
 };
 /* *INDENT-ON* */
 

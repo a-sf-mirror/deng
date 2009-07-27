@@ -29,7 +29,7 @@ using namespace de;
 World::World() : map_(0)
 {
     // Create a blank map.
-    map_ = new Map();
+    map_ = App::game().SYMBOL(deng_NewMap)("");
 }
 
 World::~World()

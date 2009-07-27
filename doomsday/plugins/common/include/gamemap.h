@@ -31,6 +31,8 @@ class GameMap : public de::Map
 public:
     GameMap(const std::string& name);
     ~GameMap();
+    
+    void operator << (de::Reader& from);    
 };
 
 #endif /* GAMEMAP_H */

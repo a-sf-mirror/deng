@@ -40,3 +40,17 @@ GameMap::GameMap(const std::string& name) : Map(name)
 
 GameMap::~GameMap()
 {}
+
+void GameMap::operator << (Reader& from)
+{
+    bool wasVoid = isVoid();
+    
+    Map::operator << (from);
+    
+    if(wasVoid)
+    {
+#if __JDOOM__ || __JHERETIC__ || __JDOOM64__
+        G_InitNew(SM_MEDIUM, 1, 1);
+#endif
+    }
+}

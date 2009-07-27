@@ -29,6 +29,11 @@ Map::Map(const std::string& name) : name_(name)
 Map::~Map()
 {}
 
+bool Map::isVoid() const
+{
+    return name_.empty();
+}
+
 void Map::operator >> (Writer& to) const
 {
     to << name_ << info_;

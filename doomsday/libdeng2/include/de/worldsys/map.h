@@ -33,7 +33,7 @@ namespace de
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
      * objects, etc. The game plugin is responsible for creating concrete
-     * instances of the World. The game plugin can extend this with whatever 
+     * instances of Map. The game plugin can extend this with whatever 
      * information it needs.
      *
      * @ingroup world
@@ -56,6 +56,12 @@ namespace de
         const Record& info() const { return info_; }
 
         Record& info() { return info_; }
+
+        /**
+         * Determines whether the map is void. A map is void when no map data 
+         * has been loaded.
+         */
+        bool isVoid() const;
 
         // Implements ISerializable.
         void operator >> (Writer& to) const;

@@ -17,6 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <SDL.h>
+
 #include "serverapp.h"
 #include "client.h"
 #include "session.h"
@@ -88,6 +90,8 @@ void ServerApp::iterate()
         std::cout << "New client connected from " << incoming->peerAddress() << "!\n";
         clients_.push_back(new Client(incoming));
     }
+
+    SDL_PumpEvents();
 
     tendClients();
     

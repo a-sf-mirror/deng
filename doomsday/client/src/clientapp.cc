@@ -68,6 +68,7 @@ ClientApp::ClientApp(const de::CommandLine& arguments)
     args.append("clientdir");
 
     // Initialize the engine.
+    DD_SetInteger(DD_DENG2_CLIENT, true);
     DD_Entry(0, NULL);
     
     // DEVEL: Join the game session.
