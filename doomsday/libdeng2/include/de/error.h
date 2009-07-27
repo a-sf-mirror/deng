@@ -50,7 +50,7 @@ namespace de
  * of the caught errors.
  */
 #define DEFINE_SUB_ERROR(Parent, Name) \
-	class PUBLIC_API Name : public Parent { \
+	class Name : public Parent { \
 	public: \
 		Name(const std::string& message) \
 			: Parent("-", message) {} \

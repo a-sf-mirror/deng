@@ -22,18 +22,18 @@
 
 extern "C"
 {
-    PUBLIC_API const char* deng_LibraryType(void)
+    LIBDENG2_EXPORT const char* deng_LibraryType(void)
     {
         return "deng-plugin/video";
     }
 
-    PUBLIC_API void deng_InitializePlugin(void)
+    LIBDENG2_EXPORT void deng_InitializePlugin(void)
     {}
 
-    PUBLIC_API void deng_ShutdownPlugin(void)
+    LIBDENG2_EXPORT void deng_ShutdownPlugin(void)
     {}
 
-    PUBLIC_API de::Video* deng_NewVideo(void)
+    LIBDENG2_EXPORT de::Video* deng_NewVideo(void)
     {
         return new SDLOpenGLVideo();
     }

@@ -224,7 +224,7 @@ void G_DetectIWADs(void)
     DD_AddIWAD("hexen.wad");
 }
 
-PUBLIC_API const char* deng_LibraryType(void)
+DENG_EXPORT const char* deng_LibraryType(void)
 {
     return "deng-plugin/game";
 }
@@ -233,7 +233,7 @@ PUBLIC_API const char* deng_LibraryType(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-PUBLIC_API void deng_InitializePlugin(void)
+DENG_EXPORT void deng_InitializePlugin(void)
 {
     int                     i;
 
@@ -614,7 +614,7 @@ static void execOptionDevMaps(const char** args, int tag)
     SC_Close();
 }
 
-PUBLIC_API void deng_ShutdownPlugin(void)
+DENG_EXPORT void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

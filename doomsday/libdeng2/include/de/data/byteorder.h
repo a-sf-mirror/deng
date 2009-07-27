@@ -147,10 +147,10 @@ namespace de
     duint64 swap64(const duint64& n);    
     
     /// Globally available big-endian byte order converter.
-    extern BigEndianByteOrder bigEndianByteOrder;
+    PUBLIC_API extern BigEndianByteOrder bigEndianByteOrder;
 
     /// Globally available little-endian byte order converter.
-    extern LittleEndianByteOrder littleEndianByteOrder;
+    PUBLIC_API extern LittleEndianByteOrder littleEndianByteOrder;
 }
 
 #endif /* LIBDENG2_BYTEORDER_H */

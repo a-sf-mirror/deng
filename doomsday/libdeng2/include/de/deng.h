@@ -48,7 +48,12 @@
 #include <memory>
 
 #ifdef WIN32
-#   define PUBLIC_API __declspec(dllexport)
+#   ifdef LIBDENG2_EXPORTS
+#       define PUBLIC_API __declspec(dllexport)
+#   else
+#       define PUBLIC_API __declspec(dllimport)
+#   endif
+#   define LIBDENG2_EXPORT __declspec(dllexport)
     // Disable warnings about non-exported (C++ standard library) base classes.
 #   pragma warning(disable: 4275)
 #   pragma warning(disable: 4251)
@@ -56,6 +61,7 @@
 #   pragma warning(disable: 4355)
 #else
 #   define PUBLIC_API
+#   define PUBLIC_API_EXPORT
 #endif
 
 /**

@@ -242,7 +242,7 @@ void G_IdentifyVersion(void)
     }
 }
 
-PUBLIC_API const char* deng_LibraryType(void)
+DENG_EXPORT const char* deng_LibraryType(void)
 {
     return "deng-plugin/game";
 }
@@ -251,7 +251,7 @@ PUBLIC_API const char* deng_LibraryType(void)
  * Pre Engine Initialization routine.
  * All game-specific actions that should take place at this time go here.
  */
-PUBLIC_API void deng_InitializePlugin(void)
+DENG_EXPORT void deng_InitializePlugin(void)
 {
     int                 i;
 
@@ -580,7 +580,7 @@ void G_PostInit(void)
     }
 }
 
-PUBLIC_API void deng_ShutdownPlugin(void)
+DENG_EXPORT void deng_ShutdownPlugin(void)
 {
     Hu_MsgShutdown();
     Hu_UnloadData();

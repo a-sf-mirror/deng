@@ -30,17 +30,23 @@ IF ( Subversion_FOUND )
     FILE ( WRITE include/de/revision.h "#define LIBDENG2_REVISION ${ROOT_WC_REVISION}\n" )
 ENDIF ( Subversion_FOUND )
 
-INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
-    ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} )
-
-FILE ( GLOB_RECURSE SOURCES portable/*.cc portable/*.h include/de/*.h )
-
+# Configuration.
+IF ( WIN32 )
+    # Tell Windows to export symbols.
+    ADD_DEFINITIONS ( -DLIBDENG2_EXPORTS )
+ENDIF ()
 # Configure behavior for waiting on socket activity.
 IF ( APPLE OR WIN32 )
     ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=10000 )
 ELSE ()
     ADD_DEFINITIONS ( -DLIBDENG2_SOCKET_RECV_TIMEOUT=100 )
 ENDIF ()
+
+INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
+    ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} )
+
+# Sources.
+FILE ( GLOB_RECURSE SOURCES portable/*.cc portable/*.h include/de/*.h )
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 

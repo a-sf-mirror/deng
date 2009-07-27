@@ -43,7 +43,7 @@ namespace de
      *
      * @ingroup data
      */
-    class Archive : public IWritable
+    class PUBLIC_API Archive : public IWritable
     {
     public:
         /// Base class for format-related errors. @ingroup errors
@@ -165,7 +165,7 @@ namespace de
             dsize offset;           ///< Offset from the start of the archive file.
             dsize size;             ///< Uncompressed size.
             dsize sizeInArchive;    ///< Size within the archive.
-            duint compression;      ///< Type of compression employed by the entry.
+            duint16 compression;    ///< Type of compression employed by the entry.
             duint32 crc32;          ///< CRC32 checksum.
             dsize localHeaderOffset;///< Offset of the local file header.
             Time modifiedAt;        ///< Latest modification timestamp.

@@ -45,10 +45,10 @@
 #endif
 
 // Common public functions.
-PUBLIC_API int          deng_GetInteger(int id);
-PUBLIC_API const char*  deng_GetString(int id);
-PUBLIC_API void*        deng_GetAddress(int id);
-PUBLIC_API void         G_CommonPreInit(void);
+DENG_EXPORT int          deng_GetInteger(int id);
+DENG_EXPORT const char*  deng_GetString(int id);
+DENG_EXPORT void*        deng_GetAddress(int id);
+DENG_EXPORT void         G_CommonPreInit(void);
 
 #define OBSOLETE        CVF_HIDE|CVF_NO_ARCHIVE
 

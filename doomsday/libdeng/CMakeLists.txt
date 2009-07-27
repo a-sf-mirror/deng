@@ -32,6 +32,9 @@ FILE ( GLOB SOURCES
 
 # Platform-specific configuration.
 IF ( WIN32 )
+    # Tell Windows to export.
+    ADD_DEFINITIONS ( -DDENG_EXPORTS )
+    
     INCLUDE_DIRECTORIES ( win32/include
         $ENV{PLATFORMSDKDIR}/include 
         $ENV{DXDIR}/include )

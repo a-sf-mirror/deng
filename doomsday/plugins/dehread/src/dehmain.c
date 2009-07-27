@@ -2001,7 +2001,7 @@ int DefsHook(int hook_type, int parm, void *data)
     return true;
 }
 
-PUBLIC_API const char* deng_LibraryType(void)
+DENG_EXPORT const char* deng_LibraryType(void)
 {
     return "deng-plugin/generic";
 }
@@ -2010,13 +2010,13 @@ PUBLIC_API const char* deng_LibraryType(void)
  * This function is called automatically when the plugin is loaded.
  * We let the engine know what we'd like to do.
  */
-PUBLIC_API void deng_InitializePlugin(void)
+DENG_EXPORT void deng_InitializePlugin(void)
 {
     printf("deng_InitializePlugin: DEH Reader\n");
     Plug_AddHook(HOOK_DEFS, DefsHook);
 }
 
-PUBLIC_API void deng_ShutdownPlugin(void)
+DENG_EXPORT void deng_ShutdownPlugin(void)
 {
     printf("deng_ShutdownPlugin: DEH Reader\n");
     Plug_RemoveHook(HOOK_DEFS, DefsHook);

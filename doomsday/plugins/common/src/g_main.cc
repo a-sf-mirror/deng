@@ -34,7 +34,7 @@ BEGIN_EXTERN_C
 /**
  * Constructs a new game world.
  */
-PUBLIC_API World* deng_NewWorld()
+DENG_EXPORT World* deng_NewWorld()
 {
     return new GameWorld();
 }
@@ -42,7 +42,7 @@ PUBLIC_API World* deng_NewWorld()
 /**
  * Constructs a new user.
  */
-PUBLIC_API User* deng_NewUser()
+DENG_EXPORT User* deng_NewUser()
 {
     return new GameUser();
 }
@@ -50,7 +50,7 @@ PUBLIC_API User* deng_NewUser()
 /**
  * Constructs a new (empty) map.
  */
-PUBLIC_API Map* deng_NewMap(const char* name)
+DENG_EXPORT Map* deng_NewMap(const char* name)
 {
     return new GameMap(name);
 }

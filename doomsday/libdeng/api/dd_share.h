@@ -366,13 +366,13 @@ enum {
 
 // Don't use inline assembler in fixed-point calculations.
 // (link with plugins/common/m_fixed.c)
-PUBLIC_API fixed_t         FixedMul(fixed_t a, fixed_t b);
-PUBLIC_API fixed_t         FixedDiv2(fixed_t a, fixed_t b);
+DENG_API fixed_t         FixedMul(fixed_t a, fixed_t b);
+DENG_API fixed_t         FixedDiv2(fixed_t a, fixed_t b);
 
 #endif
 
 // This one is always in plugins/common/m_fixed.c.
-PUBLIC_API fixed_t         FixedDiv(fixed_t a, fixed_t b);
+DENG_API fixed_t         FixedDiv(fixed_t a, fixed_t b);
 
 //------------------------------------------------------------------------
 //

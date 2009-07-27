@@ -30,11 +30,17 @@
 
 // The calling convention.
 #if defined(WIN32)
-#   define _DECALL      __cdecl
-#   define PUBLIC_API   __declspec(dllexport)
+#   define _DECALL  __cdecl
+#   ifdef DENG_EXPORTS
+#       define DENG_API __declspec(dllexport)
+#   else
+#       define DENG_API __declspec(dllimport)
+#   endif
+#   define DENG_EXPORT __declspec(dllexport)
 #else
 #   define _DECALL
-#   define PUBLIC_API
+#   define DENG_API
+#   define DENG_EXPORT
 #endif
 
 #ifdef __cplusplus
