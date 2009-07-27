@@ -64,7 +64,6 @@ void NativeFile::get(Offset at, Byte* values, Size count) const
     is.read(reinterpret_cast<char*>(values), count);
 }
 
-#include <iomanip>
 void NativeFile::set(Offset at, const Byte* values, Size count)
 {
     std::ofstream& os = output();
@@ -80,11 +79,6 @@ void NativeFile::set(Offset at, const Byte* values, Size count)
     {
         throw OutputError("NativeFile::set", "Error writing to stream");
     }
-
-    std::cout << "NativeFile::set: @" << std::setw(4) << at << " [" << std::setw(4) << count << "]: ";
-    for(duint i = 0; i < count; ++i) std::cout << std::hex << duint(values[i]) << " ";
-    std::cout << std::dec << "\n";
-    
     // Update status.
     Status st = status();
     st.size = max(st.size, at + count);
