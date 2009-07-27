@@ -34,9 +34,11 @@
 
 namespace de
 {
-    template <typename Type>
-    inline bool cannotCastFileTo(File* file) {
-        return dynamic_cast<Type*>(file) == NULL;
+    namespace internal {
+        template <typename Type>
+        inline bool cannotCastFileTo(File* file) {
+            return dynamic_cast<Type*>(file) == NULL;
+        }
     }
         
     /**
@@ -118,7 +120,7 @@ namespace de
             FoundFiles found;
             find(path, found);
             // Filter out the wrong types.
-            found.remove_if(cannotCastFileTo<Type>);
+            found.remove_if(internal::cannotCastFileTo<Type>);
             if(found.size() > 1) {
                 /// @throw AmbiguousError  More than one file matches the conditions.
                 throw AmbiguousError("FS::find", "More than one file found");

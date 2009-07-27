@@ -53,7 +53,7 @@ Session::~Session()
     delete world_;
 }
 
-void Session::processCommand(Client& sender, const CommandPacket& packet)
+void Session::processCommand(Client& sender, const de::CommandPacket& packet)
 {
     try
     {
@@ -112,6 +112,7 @@ RemoteUser& Session::promote(Client& client)
     try
     {
         userByAddress(client.peerAddress());
+        /// @throw AlreadyPromotedError  The client already is a user in the session.
         throw AlreadyPromotedError("Session::promote", "Client from " + 
             client.peerAddress().asText() + " already is a user");
     }
@@ -153,7 +154,7 @@ void Session::demote(RemoteUser& remoteUser)
     broadcast() << userLeft;
 }
 
-RemoteUser& Session::userByAddress(const Address& address) const
+RemoteUser& Session::userByAddress(const de::Address& address) const
 {
     for(Users::const_iterator i = users_.begin(); i != users_.end(); ++i)
     {
@@ -162,6 +163,7 @@ RemoteUser& Session::userByAddress(const Address& address) const
             return *i->second;
         }
     }
+    /// @throw UnknownAddressError  No user has the address @a address.
     throw UnknownAddressError("Session::userByAddress", "No one has address " + address.asText());
 }
 
@@ -180,7 +182,7 @@ void Session::linkBeingDeleted(de::Link& link)
     std::cout << "Session::linkBeingDeleted: " << link.peerAddress() << " not used by any user\n";
 }
 
-void Session::describe(Record& record) const
+void Session::describe(de::Record& record) const
 {
     // User names and identifiers in a dictionary.
     DictionaryValue& dict = record.addDictionary("users").value<DictionaryValue>();
@@ -190,7 +192,7 @@ void Session::describe(Record& record) const
     }
 }
 
-void Session::Broadcast::send(const IByteArray& data)
+void Session::Broadcast::send(const de::IByteArray& data)
 {
     for(Users::iterator i = session_.users_.begin(); i != session_.users_.end(); ++i)
     {

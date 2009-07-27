@@ -113,7 +113,7 @@ namespace de
          * Reads and decompresses an entry from the archive.
          *
          * @param path              Path of the entry within the archive.
-         * @param decompressedData  Data is written here.
+         * @param uncompressedData  Data is written here.
          */
         void read(const std::string& path, IBlock& uncompressedData) const;
 
@@ -139,8 +139,8 @@ namespace de
         void clear();
 
         /**
-         * Writes the archive into a byte array. Entries are compressed before 
-         * writing.
+         * Writes the archive to a Writer. Uncompressed entries are compressed 
+         * just-in-time before writing.
          *
          * @param to  Where to write.
          */

@@ -35,7 +35,7 @@
 
 using namespace de;
 
-ServerApp::ServerApp(const CommandLine& arguments)
+ServerApp::ServerApp(const de::CommandLine& arguments)
     : App(arguments, "none", "none"), listenSocket_(0), session_(0)
 {
     CommandLine& args = commandLine();
@@ -95,7 +95,7 @@ void ServerApp::iterate()
     DD_GameLoop();
 }
 
-Client& ServerApp::clientByAddress(const Address& address) const
+Client& ServerApp::clientByAddress(const de::Address& address) const
 {
     for(Clients::const_iterator i = clients_.begin(); i != clients_.end(); ++i)
     {
@@ -166,7 +166,7 @@ void ServerApp::tendClients()
     }
 }
 
-void ServerApp::processPacket(const Packet& packet)
+void ServerApp::processPacket(const de::Packet& packet)
 {
     const CommandPacket* cmd = dynamic_cast<const CommandPacket*>(&packet);
     if(cmd)
@@ -221,7 +221,7 @@ void ServerApp::processPacket(const Packet& packet)
     packet.execute();
 }
 
-void ServerApp::replyStatus(const Address& to)
+void ServerApp::replyStatus(const de::Address& to)
 {
     RecordPacket status("server.status");
     Record& rec = status.record();

@@ -170,7 +170,8 @@ namespace de
          * through subfolders.
          *
          * @param path  Path to look for. Relative to this folder.
-         * @param  The found file.
+         *
+         * @return  The found file.
          */
         template <typename Type>
         Type& find(const String& path) const {
