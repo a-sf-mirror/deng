@@ -20,12 +20,12 @@
 #ifndef LIBDENG2_ANIMATOR_H
 #define LIBDENG2_ANIMATOR_H
 
-#include <de/deng.h>
-#include <de/Vector>
-#include <de/Rectangle>
-#include <de/IClock>
-#include <de/Flag>
-#include <de/ISerializable>
+#include "../deng.h"
+#include "../Vector"
+#include "../Rectangle"
+#include "../IClock"
+#include "../Flag"
+#include "../ISerializable"
 
 #include <sstream>
 

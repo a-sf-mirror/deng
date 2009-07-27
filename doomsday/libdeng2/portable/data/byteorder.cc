@@ -18,8 +18,156 @@
  */
 
 #include "de/data/byteorder.h"
+#include "../sdl.h"
 
 using namespace de;
+
+BigEndianByteOrder de::bigEndianByteOrder;
+LittleEndianByteOrder de::littleEndianByteOrder;
+
+void ByteOrder::nativeToForeign(const dint16& nativeValue, dint16& foreignValue) const
+{
+    nativeToForeign(reinterpret_cast<const duint16&>(nativeValue),
+                    reinterpret_cast<      duint16&>(foreignValue));
+}
+
+void ByteOrder::nativeToForeign(const dint32& nativeValue, dint32& foreignValue) const
+{
+    nativeToForeign(reinterpret_cast<const duint32&>(nativeValue),
+                    reinterpret_cast<      duint32&>(foreignValue));
+}
+
+void ByteOrder::nativeToForeign(const dint64& nativeValue, dint64& foreignValue) const
+{
+    nativeToForeign(reinterpret_cast<const duint64&>(nativeValue),
+                    reinterpret_cast<      duint64&>(foreignValue));
+}
+
+void ByteOrder::foreignToNative(const dint16& foreignValue, dint16& nativeValue) const
+{
+    foreignToNative(reinterpret_cast<const duint16&>(foreignValue),
+                    reinterpret_cast<      duint16&>(nativeValue));
+}
+
+void ByteOrder::foreignToNative(const dint32& foreignValue, dint32& nativeValue) const
+{
+    foreignToNative(reinterpret_cast<const duint32&>(foreignValue),
+                    reinterpret_cast<      duint32&>(nativeValue));
+}
+
+void ByteOrder::foreignToNative(const dint64& foreignValue, dint64& nativeValue) const
+{
+    foreignToNative(reinterpret_cast<const duint64&>(foreignValue),
+                    reinterpret_cast<      duint64&>(nativeValue));
+}
+
+void BigEndianByteOrder::foreignToNative(const duint16& foreignValue, duint16& nativeValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap16(foreignValue);
+#endif
+}
+
+void BigEndianByteOrder::foreignToNative(const duint32& foreignValue, duint32& nativeValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap32(foreignValue);
+#endif
+}
+
+void BigEndianByteOrder::foreignToNative(const duint64& foreignValue, duint64& nativeValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap64(foreignValue);
+#endif
+}
+
+void BigEndianByteOrder::nativeToForeign(const duint16& nativeValue, duint16& foreignValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap16(nativeValue);
+#endif
+}
+
+void BigEndianByteOrder::nativeToForeign(const duint32& nativeValue, duint32& foreignValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap32(nativeValue);
+#endif
+}
+
+void BigEndianByteOrder::nativeToForeign(const duint64& nativeValue, duint64& foreignValue) const
+{
+#ifdef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap64(nativeValue);
+#endif
+}
+
+void LittleEndianByteOrder::foreignToNative(const duint16& foreignValue, duint16& nativeValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap16(foreignValue);
+#endif
+}
+
+void LittleEndianByteOrder::foreignToNative(const duint32& foreignValue, duint32& nativeValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap32(foreignValue);
+#endif
+}
+
+void LittleEndianByteOrder::foreignToNative(const duint64& foreignValue, duint64& nativeValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    nativeValue = foreignValue;
+#else
+    nativeValue = swap64(foreignValue);
+#endif
+}
+
+void LittleEndianByteOrder::nativeToForeign(const duint16& nativeValue, duint16& foreignValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap16(nativeValue);
+#endif
+}
+
+void LittleEndianByteOrder::nativeToForeign(const duint32& nativeValue, duint32& foreignValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap32(nativeValue);
+#endif
+}
+
+void LittleEndianByteOrder::nativeToForeign(const duint64& nativeValue, duint64& foreignValue) const
+{
+#ifndef __BIG_ENDIAN__ 
+    foreignValue = nativeValue;
+#else
+    foreignValue = swap64(nativeValue);
+#endif
+}
 
 duint64 de::swap64(const duint64& n)
 {

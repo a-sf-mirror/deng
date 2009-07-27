@@ -18,14 +18,7 @@
  */
 
 #include <dengmain.h>
-#include <de/Record>
-#include <de/Variable>
-#include <de/Value>
-#include <de/TextValue>
-#include <de/NumberValue>
-#include <de/Block>
-#include <de/Writer>
-#include <de/Reader>
+#include <de/data.h>
 #include "../testapp.h"
 
 using namespace de;

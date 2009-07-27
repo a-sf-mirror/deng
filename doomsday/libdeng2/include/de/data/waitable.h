@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_WAITABLE_H
 #define LIBDENG2_WAITABLE_H
 
-#include <de/deng.h>
-#include <de/Time>
+#include "../deng.h"
+#include "../Time"
 
 namespace de
 {

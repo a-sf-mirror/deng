@@ -18,8 +18,7 @@
  */
 
 #include <dengmain.h>
-#include <de/Vector>
-#include <de/Animator>
+#include <de/types.h>
 #include "../testapp.h"
 
 using namespace de;

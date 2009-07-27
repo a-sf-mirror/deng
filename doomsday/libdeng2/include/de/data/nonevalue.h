@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_NONEVALUE_H
 #define LIBDENG2_NONEVALUE_H
 
-#include <de/Value>
+#include "../Value"
 
 namespace de
 {

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+# Version numbering.
 ADD_DEFINITIONS ( 
     -DLIBDENG2_MAJOR_VERSION=${LIBDENG2_MAJOR_VERSION}
     -DLIBDENG2_MINOR_VERSION=${LIBDENG2_MINOR_VERSION}
@@ -30,7 +31,7 @@ IF ( Subversion_FOUND )
 ENDIF ( Subversion_FOUND )
 
 INCLUDE_DIRECTORIES ( include ${CMAKE_SOURCE_DIR}/libdeng/api 
-    ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} )
+    ${SDL_INCLUDE_DIR} ${SDLNET_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} )
 
 FILE ( GLOB_RECURSE SOURCES portable/*.cc portable/*.h include/de/*.h )
 
@@ -43,7 +44,7 @@ ENDIF ()
 
 ADD_LIBRARY ( deng2 SHARED ${SOURCES} )
 
-TARGET_LINK_LIBRARIES ( deng2 ${SDL_LIBRARY} ${SDLNET_LIBRARY} )
+TARGET_LINK_LIBRARIES ( deng2 ${SDL_LIBRARY} ${SDLNET_LIBRARY} ${ZLIB_LIBRARY} )
 
 # Installation.
 INSTALL ( TARGETS deng2 

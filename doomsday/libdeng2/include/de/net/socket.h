@@ -20,11 +20,11 @@
 #ifndef LIBDENG2_SOCKET_H
 #define LIBDENG2_SOCKET_H
 
-#include <de/deng.h>
-#include <de/IByteArray>
-#include <de/Address>
-#include <de/Lockable>
-#include <de/Flag>
+#include "../deng.h"
+#include "../IByteArray"
+#include "../Address"
+#include "../Lockable"
+#include "../Flag"
 
 /**
  * @defgroup net Network

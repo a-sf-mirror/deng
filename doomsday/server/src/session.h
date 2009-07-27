@@ -24,9 +24,8 @@
 #include "client.h"
 #include <de/deng.h>
 #include <de/net.h>
-#include <de/Id>
-#include <de/User>
-#include <de/World>
+#include <de/types.h>
+#include <de/world.h>
 
 #include <map>
 

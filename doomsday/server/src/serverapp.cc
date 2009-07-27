@@ -21,10 +21,8 @@
 #include "client.h"
 #include "session.h"
 #include <de/data.h>
-#include <de/Date>
-#include <de/CommandPacket>
-#include <de/RecordPacket>
-#include <de/Socket>
+#include <de/types.h>
+#include <de/net.h>
 
 #include <sstream>
 

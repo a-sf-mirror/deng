@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_MUXLINK_H
 #define LIBDENG2_MUXLINK_H
 
-#include <de/deng.h>
-#include <de/Link>
+#include "../deng.h"
+#include "../Link"
 
 namespace de
 {
@@ -73,7 +73,7 @@ namespace de
          * Constructs a new multiplex linx. 
          *
          * @param socket  Socket to use for network traffic. MuxLink
-         *      creates its own Link for this socket.
+         *                creates its own Link for this socket.
          */
         MuxLink(Socket* socket);
         

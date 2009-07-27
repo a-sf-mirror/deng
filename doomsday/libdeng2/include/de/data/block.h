@@ -20,7 +20,8 @@
 #ifndef LIBDENG2_BLOCK_H
 #define LIBDENG2_BLOCK_H
 
-#include <de/IByteArray>
+#include "../IByteArray"
+#include "../IBlock"
 
 #include <vector>
 
@@ -31,7 +32,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API Block : public IByteArray
+    class PUBLIC_API Block : public IByteArray, public IBlock
     {
     public:
         Block(Size initialSize = 0);
@@ -41,28 +42,25 @@ namespace de
          * Construct a new block and copy its contents from the specified
          * location at another array.
          *
-         * @param other  Source data.
-         * @param at     Offset without source data.
+         * @param array  Source data.
+         * @param at     Offset within source data.
          * @param count  Number of bytes to copy. Also the size of the new block.
          */
-        Block(const IByteArray& other, Offset at, Size count);
+        Block(const IByteArray& array, Offset at, Size count);
         
+        // Implements IByteArray.
         Size size() const;
         void get(Offset at, Byte* values, Size count) const;
         void set(Offset at, const Byte* values, Size count);
-
-        /**
-         * Gives const access to the data directly.
-         *
-         * @return Pointer to the beginning of the image data.
-         */
-        const Byte* data() const;
         
+        // Implements IBlock.
+        void clear();
+        void copyFrom(const IByteArray& array, Offset at, Size count);
+        void resize(Size size);
+        const Byte* data() const;        
+      
         /// Appends a block after this one.
         Block& operator += (const Block& other);        
-        
-        /// Empties the data of the block.         
-        void clear();
         
     private:
         typedef std::vector<Byte> Data;

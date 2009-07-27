@@ -20,9 +20,9 @@
 #include "session.h"
 #include "serverapp.h"
 #include "remoteuser.h"
+#include <de/core.h>
 #include <de/data.h>
-#include <de/Library>
-#include <de/Protocol>
+#include <de/net.h>
 
 using namespace de;
 
@@ -63,6 +63,7 @@ void Session::processCommand(Client& sender, const CommandPacket& packet)
         {
             // Initialize the session with the provided settings.
             world_->loadMap(packet.arguments().value<TextValue>("map"));
+
             // Respond.
             Record* reply = new Record();
             reply->addText("id", id_);

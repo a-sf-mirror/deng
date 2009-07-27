@@ -38,6 +38,45 @@ void FS::refresh()
     printIndex();
 }
 
+Folder& FS::getFolder(const String& path)
+{
+    return root_;
+}
+
+File* FS::interpret(File* sourceData)
+{
+    if(LibraryFile::recognize(*sourceData))
+    {
+        std::cout << "Interpreted " << sourceData->name() << " as a shared library\n";
+        
+        // It is a shared library intended for Doomsday.
+        return new LibraryFile(sourceData);
+    }
+
+    return sourceData;
+}
+
+void FS::find(const String& path, FoundFiles& found) const
+{
+    found.clear();
+    String baseName = String::fileName(path).lower();
+    String dir = String::fileNamePath(path).lower();
+    if(!dir.beginsWith("/"))
+    {
+        // Always begin with a slash. We don't want to match partial folder names.
+        dir = "/" + dir;
+    }
+    ConstIndexRange range = index_.equal_range(baseName);
+    for(Index::const_iterator i = range.first; i != range.second; ++i)    
+    {
+        File* file = i->second;
+        if(file->path().endsWith(dir))
+        {
+            found.push_back(file);
+        }
+    }
+}
+
 void FS::index(File& file)
 {
     const String lowercaseName = file.name().lower();
@@ -57,8 +96,7 @@ static void removeFromIndex(FS::Index& idx, File& file)
     }
 
     // Look up the ones that might be this file.
-    std::pair<FS::Index::iterator, FS::Index::iterator> range =
-        idx.equal_range(file.name().lower());
+    FS::IndexRange range = idx.equal_range(file.name().lower());
 
     for(FS::Index::iterator i = range.first; i != range.second; ++i)
     {
@@ -103,22 +141,4 @@ void FS::printIndex()
             std::cout << "[" << i->first << "]: " << i->second->path() << "\n";
         }
     }
-}
-
-Folder& FS::getFolder(const String& path)
-{
-    return root_;
-}
-
-File* FS::interpret(File* sourceData)
-{
-    if(LibraryFile::recognize(*sourceData))
-    {
-        std::cout << "Interpreted " << sourceData->name() << " as a shared library\n";
-        
-        // It is a shared library intended for Doomsday.
-        return new LibraryFile(sourceData);
-    }
-
-    return sourceData;
 }

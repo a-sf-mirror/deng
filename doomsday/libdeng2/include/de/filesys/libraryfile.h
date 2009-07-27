@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_LIBRARYFILE_H
 #define LIBDENG2_LIBRARYFILE_H
 
-#include <de/File>
+#include "../File"
 
 namespace de
 {

@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_VIDEO_H
 #define LIBDENG2_VIDEO_H
 
-#include <de/ISubsystem>
-#include <de/Window>
+#include "../ISubsystem"
+#include "../Window"
 
 #include <set>
 

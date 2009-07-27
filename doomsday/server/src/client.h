@@ -20,8 +20,8 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <de/MuxLink>
-#include <de/Flag>
+#include <de/types.h>
+#include <de/net.h>
 
 /**
  * Represents a network connection to a remote party.

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_BYTESUBARRAY_H
 #define LIBDENG2_BYTESUBARRAY_H
 
-#include <de/IByteArray>
+#include "../IByteArray"
 
 namespace de
 {

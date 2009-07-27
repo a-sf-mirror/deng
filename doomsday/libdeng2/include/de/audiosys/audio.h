@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_AUDIO_H
 #define LIBDENG2_AUDIO_H
 
-#include <de/ISubsystem>
+#include "../ISubsystem"
 
 /**
  * @defgroup audio Audio Subsystem

@@ -20,10 +20,10 @@
 #ifndef LIBDENG2_USER_H
 #define LIBDENG2_USER_H
 
-#include <de/deng.h>
-#include <de/Id>
-#include <de/ISerializable>
-#include <de/Record>
+#include "../deng.h"
+#include "../Id"
+#include "../ISerializable"
+#include "../Record"
 
 namespace de
 {

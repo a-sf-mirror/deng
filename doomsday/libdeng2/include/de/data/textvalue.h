@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_TEXTVALUE_H
 #define LIBDENG2_TEXTVALUE_H
 
-#include <de/Value>
-#include <de/String>
+#include "../Value"
+#include "../String"
 
 #include <list>
 

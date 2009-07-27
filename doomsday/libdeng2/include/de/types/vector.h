@@ -20,10 +20,10 @@
 #ifndef LIBDENG2_VECTOR_H
 #define LIBDENG2_VECTOR_H
 
-#include <de/math.h>
-#include <de/ISerializable>
-#include <de/Writer>
-#include <de/Reader>
+#include "../math.h"
+#include "../ISerializable"
+#include "../Writer"
+#include "../Reader"
 
 #include <sstream>
 #include <cmath>

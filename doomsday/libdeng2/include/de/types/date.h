@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_DATE_H
 #define LIBDENG2_DATE_H
 
-#include <de/Time>
+#include "../Time"
 
 namespace de
 {
@@ -32,12 +32,24 @@ namespace de
     class PUBLIC_API Date
     {
     public:
+        /**
+         * Constructs a new Date out of the current time.
+         */
+        Date();        
+        
         Date(const Time& time);
         
         /**
          * Forms a textual representation of the date.
          */
         std::string asText() const;
+        
+        /**
+         * Converts the date back to a Time.
+         *
+         * @return  The corresponding Time.
+         */
+        Time asTime() const;
         
         dint microSeconds;
         dint seconds;
@@ -49,6 +61,8 @@ namespace de
         dint dayOfMonth;
         dint dayOfYear;
     };
+    
+    PUBLIC_API std::ostream& operator << (std::ostream& os, const Date& date);
 }
 
 #endif /* LIBDENG2_DATE_H */

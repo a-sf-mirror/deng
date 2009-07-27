@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_ADDRESS_H
 #define LIBDENG2_ADDRESS_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <string>
 

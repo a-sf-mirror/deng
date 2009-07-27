@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_IMAGE_H
 #define LIBDENG2_IMAGE_H
 
-#include <de/Block>
-#include <de/Vector>
+#include "../Block"
+#include "../Vector"
 
 namespace de
 {

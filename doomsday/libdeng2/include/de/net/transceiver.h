@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_TRANSCEIVER_H
 #define LIBDENG2_TRANSCEIVER_H
 
-#include <de/Time>
+#include "../Time"
 
 namespace de
 {
@@ -36,7 +36,8 @@ namespace de
     class PUBLIC_API Transceiver
     {
     public:
-        /// A packet of specific type was expected but something else was received instead. @ingroup errors
+        /// A packet of specific type was expected but something else was received 
+        /// instead. @ingroup errors
         DEFINE_ERROR(UnexpectedError);
         
         /// Specified timeout elapsed. @ingroup errors
@@ -56,7 +57,7 @@ namespace de
          * Receives an array of data. 
          *
          * @return  Received data array, or @c NULL if nothing has been received.
-         *      Caller gets ownership of the returned object.
+         *          Caller gets ownership of the returned object.
          */
         virtual Message* receive() = 0;
  
@@ -74,18 +75,18 @@ namespace de
          * @param timeOut  Maximum period of time to wait.
          *
          * @return  The received packet. Never returns NULL. Caller gets ownership
-          *      of the packet.
+          *         of the packet.
          */
         virtual Packet* receivePacket(const Time::Delta& timeOut = 10);
 
         /**
-         * Receives a packet of specific type. Will not return until the packet has been received,
-         * or the timeout has expired.
+         * Receives a packet of specific type. Will not return until the packet has 
+         * been received, or the timeout has expired.
          *
          * @param timeOut  Maximum period of time to wait.
          *
          * @return  The received packet. Never returns NULL. Caller gets ownership
-         *      of the packet.
+         *          of the packet.
          */
         template <typename Type>
         Type* receivePacket(const Time::Delta& timeOut = 10) {

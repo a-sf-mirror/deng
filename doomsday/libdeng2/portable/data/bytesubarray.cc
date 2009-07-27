@@ -18,6 +18,7 @@
  */
 
 #include "de/ByteSubArray"
+#include "de/math.h"
 
 using namespace de;
 
@@ -47,4 +48,5 @@ void ByteSubArray::set(Offset at, const Byte* values, Size count)
         throw NonModifiableError("ByteSubArray::set", "Array is non-modifiable.");
     }    
     mainArray_->set(at_ + at, values, count);
+    size_ = max(size_, at + count);
 }

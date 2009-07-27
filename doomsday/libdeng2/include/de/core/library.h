@@ -20,9 +20,8 @@
 #ifndef LIBDENG2_LIBRARY_H
 #define LIBDENG2_LIBRARY_H
 
-#include <de/deng.h>
-#include <de/Error>
-#include <de/String>
+#include "../deng.h"
+#include "../String"
 
 #include <map>
 

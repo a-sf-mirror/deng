@@ -21,26 +21,30 @@
 #include "de/String"
 #include "de/Block"
 #include "de/ISerializable"
+#include "de/FixedByteArray"
 #include "de/data/byteorder.h"
-#include "../sdl.h"
 
 using namespace de;
 
-Writer::Writer(IByteArray& destination, IByteArray::Offset offset)
-    : destination_(destination), offset_(offset)
+Writer::Writer(IByteArray& destination, const ByteOrder& byteOrder, IByteArray::Offset offset)
+    : destination_(destination), offset_(offset), fixedOffset_(0), convert_(byteOrder)
+{}
+
+Writer::Writer(const Writer& other, const ByteOrder& byteOrder)
+    : destination_(other.destination_), offset_(0), 
+      fixedOffset_(other.fixedOffset_ + other.offset_), convert_(byteOrder)
 {}
 
 Writer& Writer::operator << (const dchar& byte)
 {
-    destination_.set(offset_,
-                     reinterpret_cast<const IByteArray::Byte*>(&byte), 1);
+    destination_.set(fixedOffset_ + offset_, reinterpret_cast<const IByteArray::Byte*>(&byte), 1);
     ++offset_;
     return *this;
 }
 
 Writer& Writer::operator << (const duchar& byte)
 {
-    destination_.set(offset_, &byte, 1);
+    destination_.set(fixedOffset_ + offset_, &byte, 1);
     ++offset_;
     return *this;
 }
@@ -53,8 +57,8 @@ Writer& Writer::operator << (const dint16& word)
 Writer& Writer::operator << (const duint16& word)
 {
     duint16 netWord;
-    SDLNet_Write16(word, &netWord);
-    destination_.set(offset_, reinterpret_cast<IByteArray::Byte*>(&netWord), 2);
+    convert_.nativeToForeign(word, netWord);
+    destination_.set(fixedOffset_ + offset_, reinterpret_cast<IByteArray::Byte*>(&netWord), 2);
     offset_ += 2;
     return *this;
 }
@@ -67,8 +71,8 @@ Writer& Writer::operator << (const dint32& dword)
 Writer& Writer::operator << (const duint32& dword)
 {
     duint32 netDword;
-    SDLNet_Write32(dword, &netDword);
-    destination_.set(offset_, reinterpret_cast<IByteArray::Byte*>(&netDword), 4);
+    convert_.nativeToForeign(dword, netDword);
+    destination_.set(fixedOffset_ + offset_, reinterpret_cast<IByteArray::Byte*>(&netDword), 4);
     offset_ += 4;
     return *this;
 }
@@ -80,8 +84,9 @@ Writer& Writer::operator << (const dint64& qword)
 
 Writer& Writer::operator << (const duint64& qword)
 {
-    duint64 netQword = nativeToBigEndian(qword);
-    destination_.set(offset_, reinterpret_cast<IByteArray::Byte*>(&netQword), 8);
+    duint64 netQword;
+    convert_.nativeToForeign(qword, netQword);
+    destination_.set(fixedOffset_ + offset_, reinterpret_cast<IByteArray::Byte*>(&netQword), 8);
     offset_ += 8;
     return *this;
 }
@@ -102,7 +107,7 @@ Writer& Writer::operator << (const String& text)
     duint size = text.length();
     *this << size;
 
-    destination_.set(offset_,
+    destination_.set(fixedOffset_ + offset_,
                      reinterpret_cast<const IByteArray::Byte*>(text.c_str()),
                      size);
     offset_ += size;
@@ -112,20 +117,48 @@ Writer& Writer::operator << (const String& text)
 Writer& Writer::operator << (const IByteArray& byteArray)
 {
     // First write the length of the array.
-    duint size = byteArray.size();
-    *this << size;
+    return *this << duint32(byteArray.size()) << FixedByteArray(byteArray);
+}
 
-    // Read the entire contents of the array.
-    std::auto_ptr<IByteArray::Byte> data(new IByteArray::Byte[size]);
-    byteArray.get(0, data.get(), size);
+Writer& Writer::operator << (const FixedByteArray& fixedByteArray)
+{
+    /**
+     * @note  A copy of @a fixedByteArray is done because there is no certainty
+     * that the source data actually exists anywhere. The object implementing
+     * IByteArray could be generating it on the fly.
+     */
     
-    destination_.set(offset_, data.get(), size);
+    // Read the entire contents of the array.
+    const dsize size = fixedByteArray.size();
+    std::auto_ptr<IByteArray::Byte> data(new IByteArray::Byte[size]);
+    fixedByteArray.get(0, data.get(), size);
+    destination_.set(fixedOffset_ + offset_, data.get(), size);
     offset_ += size;
     return *this;
 }
 
-Writer& Writer::operator << (const ISerializable& serializable)
+Writer& Writer::operator << (const Block& block)
 {
-    serializable >> *this;
+    // First write the length of the block.
+    duint size = block.size();
+    *this << size;
+
+    destination_.set(fixedOffset_ + offset_, block.data(), size);
+    offset_ += size;
     return *this;
+}
+
+Writer& Writer::operator << (const IWritable& writable)
+{
+    writable >> *this;
+    return *this;
+}
+
+void Writer::seek(dint count)
+{
+    if(dint(fixedOffset_ + offset_) + count < 0)
+    {
+        throw IByteArray::OffsetError("Writer::seek", "Seek past beginning of destination");
+    }
+    offset_ += count;
 }

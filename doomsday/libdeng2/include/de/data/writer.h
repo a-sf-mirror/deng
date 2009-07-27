@@ -20,16 +20,19 @@
 #ifndef LIBDENG2_WRITER_H
 #define LIBDENG2_WRITER_H
 
-#include <de/deng.h>
-#include <de/IByteArray>
+#include "../deng.h"
+#include "../IByteArray"
+#include "../ByteOrder"
 
 namespace de
 {
-    class ISerializable;
+    class IWritable;
     class String;
+    class Block;
+    class FixedByteArray;
     
     /**
-     * Provides a protocol for writing network byte ordered data
+     * Provides a protocol for writing data in a specific byte order 
      * into a byte array object (anything with a IByteArray interface).
      *
      * @ingroup data
@@ -37,9 +40,27 @@ namespace de
     class PUBLIC_API Writer
     {
     public:
-        Writer(IByteArray& destination, IByteArray::Offset offset = 0);
+        /**
+         * Constructs a new writer.
+         *
+         * @param destination  Byte array to write to.
+         * @param byteOrder    Byte order to use. The byte order defaults to network 
+         *                     (big-endian) byte order.
+         * @param offset       Offset in @a destination where to start writing.
+         */
+        Writer(IByteArray& destination, const ByteOrder& byteOrder = bigEndianByteOrder, 
+            IByteArray::Offset offset = 0);
+            
+        /**
+         * Constructs a new writer that uses the current offset of @a other as its 
+         * zero offset.
+         *
+         * @param other      Writer.
+         * @param byteOrder  Byte order. Defaults to big-endian.
+         */
+        Writer(const Writer& other, const ByteOrder& byteOrder = bigEndianByteOrder);
 
-        //@{ Write a number to the destination buffer, in network byte order.
+        //@{ Write a number to the destination buffer, in the chosen byte order.
         Writer& operator << (const dchar& byte);
         Writer& operator << (const duchar& byte);
         Writer& operator << (const dint16& word);
@@ -55,12 +76,26 @@ namespace de
         /// Write a string to the destination buffer.
         Writer& operator << (const String& text);
         
-        /// Writes a sequence bytes to the destination buffer. As with 
-        /// strings, the length of the array is included in the data.
+        /// Writes a sequence bytes to the destination buffer.
         Writer& operator << (const IByteArray& byteArray);
+    
+        /**
+         * Writes a fixed-size sequence of bytes to the destination buffer.
+         * The size of the sequence is not included in the written data.
+         * When reading, the reader must know the size beforehand.
+         * @see Reader::operator >> (FixedByteArray& fixedByteArray)
+         *
+         * @param fixedByteArray  Data to write.
+         *
+         * @return  Reference to the Writer.
+         */
+        Writer& operator << (const FixedByteArray& fixedByteArray);
         
-        /// Writes a serializable object into the destination buffer.
-        Writer& operator << (const ISerializable& serializable);
+        /// Writes the Block @a block into the destination buffer.
+        Writer& operator << (const Block& block);
+        
+        /// Writes a writable object into the destination buffer.
+        Writer& operator << (const IWritable& writable);
 
         /**
          * Returns the destination byte array used by the writer.
@@ -86,10 +121,26 @@ namespace de
         void setOffset(IByteArray::Offset offset) {
             offset_ = offset;
         }
+
+        /**
+         * Returns the byte order of the writer.
+         */
+        const ByteOrder& byteOrder() const {
+            return convert_;
+        }
+
+        /**
+         * Moves the writer offset forward by a number of bytes.
+         *
+         * @param count  Number of bytes to move forward.
+         */
+        void seek(dint count);
         
     private:
         IByteArray& destination_;
         IByteArray::Offset offset_;
+        const IByteArray::Offset fixedOffset_;
+        const ByteOrder& convert_;
     };
 }
 

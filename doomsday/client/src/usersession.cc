@@ -19,13 +19,10 @@
 
 #include "usersession.h"
 #include "clientapp.h"
+#include <de/core.h>
 #include <de/data.h>
-#include <de/Id>
-#include <de/Library>
-#include <de/Protocol>
-#include <de/CommandPacket>
-#include <de/BlockValue>
-#include <de/Writer>
+#include <de/types.h>
+#include <de/net.h>
 
 using namespace de;
 

@@ -20,11 +20,11 @@
 #ifndef LIBDENG2_LINK_H
 #define LIBDENG2_LINK_H
 
-#include <de/Transceiver>
-#include <de/SenderThread>
-#include <de/ReceiverThread>
-#include <de/Observers>
-#include <de/Flag>
+#include "../Transceiver"
+#include "../SenderThread"
+#include "../ReceiverThread"
+#include "../Observers"
+#include "../Flag"
 
 namespace de
 {   
@@ -66,10 +66,6 @@ namespace de
         
         virtual ~Link();
 
-        // Implements Transceiver.
-        void send(const IByteArray& data);
-        Message* receive();
-      
         /**
          * Checks if any incoming data has been received.
          */
@@ -92,6 +88,10 @@ namespace de
          */ 
         Address peerAddress() const;
         
+        // Implements Transceiver.
+        void send(const IByteArray& data);
+        Message* receive();
+      
     protected:
         void initialize();
 

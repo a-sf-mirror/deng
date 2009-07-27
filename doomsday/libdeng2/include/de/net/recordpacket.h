@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_RECORDPACKET_H
 #define LIBDENG2_RECORDPACKET_H
 
-#include <de/Packet>
-#include <de/Record>
-#include <de/String>
+#include "../Packet"
+#include "../Record"
+#include "../String"
 
 namespace de
 {

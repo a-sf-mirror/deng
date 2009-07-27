@@ -20,8 +20,7 @@
 #ifndef LIBDENG2_IBYTEARRAY_H
 #define LIBDENG2_IBYTEARRAY_H
 
-#include <de/deng.h>
-#include <de/Error>
+#include "../deng.h"
 
 namespace de
 {

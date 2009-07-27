@@ -20,10 +20,10 @@
 #ifndef LIBDENG2_VARIABLE_H
 #define LIBDENG2_VARIABLE_H
 
-#include <de/ISerializable>
-#include <de/String>
-#include <de/Observers>
-#include <de/Flag>
+#include "../ISerializable"
+#include "../String"
+#include "../Observers"
+#include "../Flag"
 
 namespace de
 {

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_FIFO_H
 #define LIBDENG2_FIFO_H
 
-#include <de/Lockable>
+#include "../Lockable"
 
 #include <list>
 

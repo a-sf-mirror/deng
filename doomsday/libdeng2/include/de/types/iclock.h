@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_ICLOCK_H
 #define LIBDENG2_ICLOCK_H
 
-#include <de/Time>
+#include "../Time"
 
 namespace de
 {

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_PROTOCOL_H
 #define LIBDENG2_PROTOCOL_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <list>
 
@@ -102,10 +102,10 @@ namespace de
          * commands that rarely fail and where the response is usually "ok"
          * without any extra information attached.
          *
-         * @param to  Transceiver over which to converse.
-         * @param command  Packet to send.
+         * @param to        Transceiver over which to converse.
+         * @param command   Packet to send.
          * @param response  If not NULL, the reponse packet is returned to caller here.
-         *      Otherwise the response packet is deleted.
+         *                  Otherwise the response packet is deleted.
          */
         void decree(Transceiver& to, const CommandPacket& command, RecordPacket** response = 0);
 
@@ -113,10 +113,10 @@ namespace de
          * Sends a reply over a link. This is used as a general response to 
          * commands or any messages received from the link.
          *
-         * @param to  Transceiver where to send the reply.
-         * @param type  Type of reply.
+         * @param to      Transceiver where to send the reply.
+         * @param type    Type of reply.
          * @param record  Optional data to send along the reply. Protocol takes
-         *      ownership of the record.
+         *                ownership of the record.
          */
         void reply(Transceiver& to, Reply type = OK, Record* record = 0);
 
@@ -124,8 +124,8 @@ namespace de
          * Sends a reply over a link. This is used as a general response to 
          * commands or any messages received from the link.
          *
-         * @param to  Transceiver where to send the reply.
-         * @param type  Type of reply.
+         * @param to       Transceiver where to send the reply.
+         * @param type     Type of reply.
          * @param message  Optional message (human readable).
          */
         void reply(Transceiver& to, Reply type, const std::string& message);

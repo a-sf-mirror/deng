@@ -21,13 +21,14 @@
 #include "de/String"
 #include "de/Block"
 #include "de/ISerializable"
+#include "de/FixedByteArray"
 #include "de/data/byteorder.h"
 #include "../sdl.h"
 
 using namespace de;
 
-Reader::Reader(const IByteArray& source, IByteArray::Offset offset)
-    : source_(source), offset_(offset)
+Reader::Reader(const IByteArray& source, const ByteOrder& byteOrder, IByteArray::Offset offset)
+    : source_(source), offset_(offset), convert_(byteOrder)
 {}
 
 Reader& Reader::operator >> (dchar& byte)
@@ -51,8 +52,7 @@ Reader& Reader::operator >> (duint16& word)
 {
     source_.get(offset_, reinterpret_cast<IByteArray::Byte*>(&word), 2);
     offset_ += 2;
-    word = SDLNet_Read16(&word);
-    
+    convert_.foreignToNative(word, word);
     return *this;
 }
 
@@ -65,8 +65,7 @@ Reader& Reader::operator >> (duint32& dword)
 {
     source_.get(offset_, reinterpret_cast<IByteArray::Byte*>(&dword), 4);
     offset_ += 4;
-    dword = SDLNet_Read32(&dword);
-    
+    convert_.foreignToNative(dword, dword);
     return *this;
 }
 
@@ -79,8 +78,7 @@ Reader& Reader::operator >> (duint64& qword)
 {
     source_.get(offset_, reinterpret_cast<IByteArray::Byte*>(&qword), 8);
     offset_ += 8;
-    qword = bigEndianToNative(qword);
-
+    convert_.foreignToNative(qword, qword);
     return *this;
 }
 
@@ -115,27 +113,64 @@ Reader& Reader::operator >> (IByteArray& byteArray)
 {
     duint size = 0;
     *this >> size;
-    
+
+    /**
+     * @note  A temporary copy of the contents of the array is made
+     * because the destination byte array is not guaranteed to be
+     * a memory buffer where you can copy the contents directly.
+     */
     std::auto_ptr<IByteArray::Byte> data(new IByteArray::Byte[size]);
     source_.get(offset_, data.get(), size);
     offset_ += size;
-    
     byteArray.set(0, data.get(), size);
-    
     return *this;
 }
 
-Reader& Reader::operator >> (ISerializable& serializable)
+Reader& Reader::operator >> (FixedByteArray& fixedByteArray)
 {
-    serializable << *this;
+    /**
+     * @note  A temporary copy of the contents of the array is made
+     * because the destination byte array is not guaranteed to be
+     * a memory buffer where you can copy the contents directly.
+     */
+    const dsize size = fixedByteArray.size();
+    std::auto_ptr<IByteArray::Byte> data(new IByteArray::Byte[size]);
+    source_.get(offset_, data.get(), size);
+    offset_ += size;
+    fixedByteArray.set(0, data.get(), size);
     return *this;
+}
+
+Reader& Reader::operator >> (Block& block)
+{
+    duint size = 0;
+    *this >> size;
+
+    block.copyFrom(source_, offset_, size);
+    offset_ += size;
+    return *this;
+}
+
+Reader& Reader::operator >> (IReadable& readable)
+{
+    readable << *this;
+    return *this;
+}
+
+void Reader::seek(dint count)
+{
+    if(IByteArray::Offset(offset_ + count) >= source_.size())
+    {
+        throw IByteArray::OffsetError("Reader::seek", "Seek past bounds of source data");
+    }
+    offset_ += count;
 }
 
 void Reader::rewind(dint count)
 {
-    if(offset_ + count < 0)
+    if(IByteArray::Offset(offset_ + count) >= source_.size())
     {
-        throw IByteArray::OffsetError("Reader::rewind", "Rewound past beginning of source");
+        throw IByteArray::OffsetError("Reader::rewind", "Rewound past bounds of source data");
     }
     offset_ -= count;
 }

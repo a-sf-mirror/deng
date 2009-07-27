@@ -20,9 +20,8 @@
 #ifndef LIBDENG2_FOLDER_H
 #define LIBDENG2_FOLDER_H
 
-#include <de/deng.h>
-#include <de/Error>
-#include <de/File>
+#include "../deng.h"
+#include "../File"
 
 #include <map>
 #include <list>
@@ -44,6 +43,9 @@ namespace de
     public:
         /// A folder cannot contain two or more files with the same name. @ingroup errors
         DEFINE_ERROR(DuplicateNameError);
+        
+        /// File path did not point to a file. @ingroup errors
+        DEFINE_ERROR(NotFoundError);
         
         typedef std::list<Feed*> Feeds;
         
@@ -154,13 +156,31 @@ namespace de
          *
          * @param path  Path to look for. Relative to this folder.
          * 
-         * @return  Located File, or @c NULL if the path was not found.
+         * @return  The located file, or @c NULL if the path was not found.
          */
         virtual File* locateFile(const String& path) const;
         
         template <typename Type>
         Type* locate(const String& path) const {
             return dynamic_cast<Type*>(locateFile(path));
+        }
+
+        /**
+         * Locates a file in this folder or in one of its subfolders. Looks recusively
+         * through subfolders.
+         *
+         * @param path  Path to look for. Relative to this folder.
+         * @param  The found file.
+         */
+        template <typename Type>
+        Type& find(const String& path) const {
+            Type* found = locate<Type>(path);
+            if(!found) {
+                /// @throw NotFoundError  Path didn't exist, or the located file had
+                /// an incompatible type.
+                throw NotFoundError("FS::find", path +": path was not found or had incompatible type");
+            }
+            return *found;
         }
                     
     private:

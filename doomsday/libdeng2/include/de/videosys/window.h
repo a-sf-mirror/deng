@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_WINDOW_H
 #define LIBDENG2_WINDOW_H
 
-#include <de/Rectangle>
-#include <de/Visual>
+#include "../Rectangle"
+#include "../Visual"
 
 namespace de
 {

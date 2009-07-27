@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_TIME_H
 #define LIBDENG2_TIME_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <string>
 #include <ctime>
@@ -176,6 +176,8 @@ namespace de
 
         friend class Date;
     };
+    
+    PUBLIC_API std::ostream& operator << (std::ostream& os, const Time& t);
 }
 
 #endif /* LIBDENG2_TIME_H */

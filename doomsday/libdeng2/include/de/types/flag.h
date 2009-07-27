@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_FLAG_H
 #define LIBDENG2_FLAG_H
 
-#include <de/deng.h>
+#include "../deng.h"
 #include <bitset>
 
 namespace de

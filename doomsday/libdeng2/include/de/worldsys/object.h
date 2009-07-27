@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_OBJECT_H
 #define LIBDENG2_OBJECT_H
 
-#include <de/ISerializable>
-#include <de/Enumerator>
-#include <de/Vector>
+#include "../ISerializable"
+#include "../Enumerator"
+#include "../Vector"
 
 namespace de
 {

@@ -33,7 +33,9 @@ using namespace de;
 
 GameMap::GameMap(const std::string& name) : Map(name)
 {
-    G_DeferedInitNew(SM_MEDIUM, 1, 1);
+#if __JDOOM__ || __JHERETIC__ || __JDOOM64__
+    G_InitNew(SM_MEDIUM, 1, 1);
+#endif
 }
 
 GameMap::~GameMap()

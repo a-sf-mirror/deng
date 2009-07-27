@@ -20,10 +20,8 @@
 #include "clientapp.h"
 #include "localserver.h"
 #include "usersession.h"
-#include <de/MuxLink>
-#include <de/CommandPacket>
-#include <de/RecordPacket>
-#include <de/Record>
+#include <de/net.h>
+#include <de/data.h>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN

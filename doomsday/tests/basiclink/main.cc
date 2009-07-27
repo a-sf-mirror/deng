@@ -18,13 +18,9 @@
  */
 
 #include <dengmain.h>
-#include <de/ListenSocket>
-#include <de/Socket>
-#include <de/Link>
-#include <de/Block>
-#include <de/Writer>
-#include <de/Reader>
-#include <de/Time>
+#include <de/types.h>
+#include <de/data.h>
+#include <de/net.h>
 #include "../testapp.h"
 
 using namespace de;

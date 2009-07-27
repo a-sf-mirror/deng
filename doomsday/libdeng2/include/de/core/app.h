@@ -20,11 +20,11 @@
 #ifndef LIBDENG2_APP_H
 #define LIBDENG2_APP_H
 
-#include <de/deng.h>
-#include <de/IClock>
-#include <de/CommandLine>
-#include <de/FS>
-#include <de/Protocol>
+#include "../deng.h"
+#include "../IClock"
+#include "../CommandLine"
+#include "../FS"
+#include "../Protocol"
 
 #include <list>
 

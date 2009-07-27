@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_LISTENSOCKET_H
 #define LIBDENG2_LISTENSOCKET_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 namespace de
 {

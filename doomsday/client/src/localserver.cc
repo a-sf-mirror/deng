@@ -19,13 +19,9 @@
 
 #include "localserver.h"
 
-#include <de/App>
-#include <de/Socket>
-#include <de/Block>
-#include <de/Writer>
-#include <de/CommandPacket>
-#include <de/Link>
-#include <de/NumberValue>
+#include <de/core.h>
+#include <de/net.h>
+#include <de/data.h>
 
 using namespace de;
 

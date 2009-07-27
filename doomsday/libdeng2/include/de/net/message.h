@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_MESSAGE_H
 #define LIBDENG2_MESSAGE_H
 
-#include <de/Block>
-#include <de/Address>
+#include "../Block"
+#include "../Address"
 
 namespace de
 {

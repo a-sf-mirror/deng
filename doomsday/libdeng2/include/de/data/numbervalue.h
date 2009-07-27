@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_NUMBERVALUE_H
 #define LIBDENG2_NUMBERVALUE_H
 
-#include <de/Value>
+#include "../Value"
 
 namespace de
 {

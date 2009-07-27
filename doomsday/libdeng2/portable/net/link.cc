@@ -74,6 +74,24 @@ Link::~Link()
     delete socket_;
 }
 
+bool Link::hasIncoming() const
+{
+    return !incoming_.empty();
+}
+
+void Link::flush()
+{
+    while(sender_->isRunning() && !outgoing_.empty())
+    {
+        Time::sleep(.01);
+    }
+}
+
+Address Link::peerAddress() const
+{
+    return peerAddress_;
+}
+
 void Link::send(const IByteArray& data)
 {
     Message* message = new Message(data);
@@ -97,22 +115,4 @@ Message* Link::receive()
         throw DisconnectedError("Link::receive", "Link has been closed");
     }
     return 0;
-}
-
-bool Link::hasIncoming() const
-{
-    return !incoming_.empty();
-}
-
-void Link::flush()
-{
-    while(sender_->isRunning() && !outgoing_.empty())
-    {
-        Time::sleep(.01);
-    }
-}
-
-Address Link::peerAddress() const
-{
-    return peerAddress_;
 }

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_ISUBSYSTEM_H
 #define LIBDENG2_ISUBSYSTEM_H
 
-#include <de/Time>
+#include "../Time"
 
 namespace de
 {

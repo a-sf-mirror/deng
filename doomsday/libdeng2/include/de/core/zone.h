@@ -22,7 +22,7 @@
 #ifndef LIBDENG2_ZONE_H
 #define LIBDENG2_ZONE_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <list>
 

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_OBSERVERS_H
 #define LIBDENG2_OBSERVERS_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <set>
 

@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_BLOCKVALUE_H
 #define LIBDENG2_BLOCKVALUE_H
 
-#include <de/Value>
-#include <de/Block>
+#include "../Value"
+#include "../Block"
 
 namespace de
 {

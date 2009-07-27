@@ -20,9 +20,8 @@
 #ifndef LIBDENG2_FS_H
 #define LIBDENG2_FS_H
 
-#include <de/deng.h>
-#include <de/Error>
-#include <de/Folder>
+#include "../deng.h"
+#include "../Folder"
 
 #include <map>
 
@@ -35,6 +34,11 @@
 
 namespace de
 {
+    template <typename Type>
+    inline bool cannotCastFileTo(File* file) {
+        return dynamic_cast<Type*>(file) == NULL;
+    }
+        
     /**
      * The file system maintains a tree of files and folders. It provides a way
      * to quickly and efficiently locate files anywhere in the tree. It also
@@ -61,8 +65,18 @@ namespace de
         /// No index is found for the specified type. @ingroup errors
         DEFINE_ERROR(UnknownTypeError);
         
+        /// No files found. @ingroup errors
+        DEFINE_ERROR(NotFoundError);
+        
+        /// More than one file found and there is not enough information to choose 
+        /// between them. @ingroup errors
+        DEFINE_ERROR(AmbiguousError);
+        
         typedef std::multimap<std::string, File*> Index;
+        typedef std::pair<Index::iterator, Index::iterator> IndexRange;
+        typedef std::pair<Index::const_iterator, Index::const_iterator> ConstIndexRange;
         typedef std::pair<std::string, File*> IndexEntry;
+        typedef std::list<File*> FoundFiles;
         
     public:
         FS();
@@ -85,6 +99,36 @@ namespace de
          * @param path  Path of the folder. Relative to the root folder.
          */
         Folder& getFolder(const String& path);
+
+        /**
+         * Finds a file based on a full or partial path.
+         *
+         * @param path   Path or file name to look for.
+         * @param found  Set of files that match the result.
+         */ 
+        void find(const String& path, FoundFiles& found) const;
+        
+        /**
+         * Finds a file of a specific type.
+         *
+         * @param path  Full/partial path or file name to look for.
+         */
+        template <typename Type>
+        Type& find(const String& path) const {
+            FoundFiles found;
+            find(path, found);
+            // Filter out the wrong types.
+            found.remove_if(cannotCastFileTo<Type>);
+            if(found.size() > 1) {
+                /// @throw AmbiguousError  More than one file matches the conditions.
+                throw AmbiguousError("FS::find", "More than one file found");
+            }
+            if(found.empty()) {
+                /// @throw NotFoundError  No files found matching the condition.
+                throw NotFoundError("FS::find", "No files found");
+            }
+            return *dynamic_cast<Type*>(found.front());
+        }
         
         /**
          * Creates an interpreter for the data in a file. 
@@ -92,9 +136,9 @@ namespace de
          * @param sourceData  File with the source data.
          *
          * @return  If the format of the source data was recognized, returns a new File
-         *      that can be used for accessing the data. Ownership of the @a sourceData 
-         *      will be transferred to the new interpreter File instance.
-         *      If the format was not recognized, @a sourceData is returned as is.
+         *          that can be used for accessing the data. Ownership of the @a sourceData 
+         *          will be transferred to the new interpreter File instance.
+         *          If the format was not recognized, @a sourceData is returned as is.
          */
         File* interpret(File* sourceData);
         

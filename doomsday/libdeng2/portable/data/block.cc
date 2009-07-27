@@ -35,9 +35,7 @@ Block::Block(const IByteArray& other)
 
 Block::Block(const IByteArray& other, Offset at, Size count) : IByteArray()
 {
-    // Read the other's data directly into our data buffer.
-    data_.resize(count);
-    other.get(at, &data_[0], count);
+    copyFrom(other, at, count);
 }
 
 Block::Size Block::size() const
@@ -68,6 +66,18 @@ void Block::set(Offset at, const Byte* values, Size count)
     }
 
     data_.insert(data_.begin() + at, values, values + count);
+}
+
+void Block::copyFrom(const IByteArray& array, Offset at, Size count)
+{
+    // Read the other's data directly into our data buffer.
+    data_.resize(count);
+    array.get(at, &data_[0], count);
+}
+
+void Block::resize(Size size)
+{
+    data_.resize(size);
 }
 
 const Block::Byte* Block::data() const

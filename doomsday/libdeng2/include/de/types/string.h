@@ -22,9 +22,10 @@
 
 #include <string>
 
-#include <de/deng.h>
-#include <de/Error>
-#include <de/IByteArray>
+#include "../deng.h"
+#include "../Error"
+#include "../IByteArray"
+#include "../IBlock"
 
 namespace de
 {
@@ -34,7 +35,7 @@ namespace de
      *
      * @ingroup types
      */
-	class PUBLIC_API String : public std::string, public IByteArray
+	class PUBLIC_API String : public std::string, public IByteArray, public IBlock
 	{
 	public:
 	    /// Encoding conversion failed. @ingroup errors
@@ -103,14 +104,20 @@ namespace de
         /// Returns an upper-case version of the string.
         String upper() const;
 
-		// The IByteArray interface:
-		Size size() const;
-		void get(Offset at, Byte* values, Size count) const;
-		void set(Offset at, const Byte* values, Size count);	
-	
 		/// Converts the string to a wide-character STL wstring.
         std::wstring wide() const;
-            
+
+		// Implements IByteArray.
+        Size size() const;
+		void get(Offset at, Byte* values, Size count) const;
+		void set(Offset at, const Byte* values, Size count);	
+		
+        // Implements IBlock.
+        void clear() { std::string::clear(); }
+        void copyFrom(const IByteArray& array, Offset at, Size count);
+        void resize(Size size) { std::string::resize(size); }
+        const Byte* data() const { return reinterpret_cast<const Byte*>(std::string::data()); }
+	
     public:
         /// Extracts the base name from the string (includes extension).
         static String fileName(const std::string& path);

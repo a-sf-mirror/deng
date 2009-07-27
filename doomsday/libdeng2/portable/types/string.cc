@@ -47,12 +47,12 @@ String::String(const char* cStr) : string(cStr)
 
 String::String(const IByteArray& array)
 {
-	Size len = array.size();
-	Byte* buffer = new Byte[len + 1];
-	array.get(0, buffer, len);
+    Size len = array.size();
+    Byte* buffer = new Byte[len + 1];
+    array.get(0, buffer, len);
     buffer[len] = 0;
-	set(0, buffer, len);
-	delete [] buffer;
+    set(0, buffer, len);
+    delete [] buffer;
 }
 
 String::String(const String& other) : string(other)
@@ -164,22 +164,27 @@ String String::upper() const
 
 String::Size String::size() const
 {
-	return std::string::size();
+    return std::string::size();
 }
 
 void String::get(Offset at, Byte* values, Size count) const
 {
-	if(at + count > size())
-	{
-		throw OffsetError("String::get", "Out of range");
-	}
-
-	memcpy(values, c_str() + at, count);
+    if(at + count > size())
+    {
+        throw OffsetError("String::get", "Out of range");
+    }
+    memcpy(values, c_str() + at, count);
 }
 
 void String::set(Offset at, const Byte* values, Size count)
 {
-	replace(at, count, reinterpret_cast<const char*>(values));
+    replace(at, count, reinterpret_cast<const char*>(values));
+}
+
+void String::copyFrom(const IByteArray& array, Offset at, Size count)
+{
+    resize(count);
+    array.get(at, const_cast<Byte*>(data()), count);
 }
 
 std::wstring String::wide() const

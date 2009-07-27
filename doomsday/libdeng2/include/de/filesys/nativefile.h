@@ -20,9 +20,12 @@
 #ifndef LIBDENG2_NATIVEFILE_H
 #define LIBDENG2_NATIVEFILE_H
 
-#include <de/File>
-#include <de/Flag>
-#include <de/String>
+#include "../deng.h"
+#include "../File"
+#include "../Flag"
+#include "../String"
+
+#include <fstream>
 
 namespace de
 {
@@ -34,21 +37,33 @@ namespace de
     class PUBLIC_API NativeFile : public File
     {
     public:
+        /// I/O to the native file failed. @ingroup errors
+        DEFINE_ERROR(IOError);
+
+        /// Only reading is allowed from the file. @ingroup errors
+        DEFINE_SUB_ERROR(IOError, ReadOnlyError);
+
+        /// Input from the native file failed. @ingroup errors
+        DEFINE_SUB_ERROR(IOError, InputError);
+        
+        /// Output to the native file failed. @ingroup errors
+        DEFINE_SUB_ERROR(IOError, OutputError);
+        
         // Mode flags.
         DEFINE_FLAG(WRITE, 0);
-        DEFINE_FLAG(TRUNCATE, 1);
-        DEFINE_FINAL_FLAG(APPEND, 2, Mode);
+        DEFINE_FINAL_FLAG(TRUNCATE, 1, Mode);
 
     public:
         /**
-         * Constructs a NativeFile that accesses a file in the native file system.
+         * Constructs a NativeFile that accesses a file in the native file system
+         * in read-only mode.
          * 
-         * @param name  Name of the file object.
+         * @param name        Name of the file object.
          * @param nativePath  Path in the native file system to access. Relative to the
-         *      current working directory.
-         * @param mode  Mode for accessing the file. Defaults to read-only.
+         *                    current working directory.
+         * @param mode        Access mode for the file.
          */
-        NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode = Mode());
+        NativeFile(const std::string& name, const std::string& nativePath, const Mode& mode = 0);
         
         virtual ~NativeFile();
 
@@ -58,13 +73,32 @@ namespace de
         const String& nativePath() const { return nativePath_; }
 
         /**
-         * Sets the size of the file.
+         * Returns the mode of the file.
          */
-        virtual void setSize(Size newSize);
+        const Mode& mode() const { return mode_; }
+        
+        /**
+         * Changes the mode of the file. For example, using TRUNCATE as the
+         * mode would empty the contents of the file and open it in writing mode.
+         *
+         * @param newMode  Mode.
+         */
+        void setMode(const Mode& newMode);
 
+        // Implements IByteArray.
         Size size() const;
 		void get(Offset at, Byte* values, Size count) const;
 		void set(Offset at, const Byte* values, Size count);
+        
+    protected:
+        /// Returns the input stream.
+        std::ifstream& input() const;
+
+        /// Returns the output stream.
+        std::ofstream& output();
+
+        /// Close any open streams.
+        void close();
         
     private:
         /// Path of the native file in the OS file system.
@@ -72,9 +106,12 @@ namespace de
         
         /// Mode flags.
         Mode mode_;    
-
-        /// Size of the file.
-        Size size_;
+        
+        /// Input stream.
+        mutable std::ifstream* in_;
+        
+        /// Output stream.
+        std::ofstream* out_;
     };
 }
 

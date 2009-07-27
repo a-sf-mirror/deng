@@ -20,11 +20,9 @@
 #ifndef USERSESSION_H
 #define USERSESSION_H
 
-#include <de/Id>
-#include <de/User>
-#include <de/World>
-#include <de/MuxLink>
-#include <de/Packet>
+#include <de/types.h>
+#include <de/net.h>
+#include <de/world.h>
 
 #include <map>
 

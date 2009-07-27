@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_THREAD_H
 #define LIBDENG2_THREAD_H
 
-#include <de/deng.h>
-#include <de/Waitable>
+#include "../deng.h"
+#include "../Waitable"
 
 namespace de
 {

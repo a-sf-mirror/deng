@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_PACKET_H
 #define LIBDENG2_PACKET_H
 
-#include <de/ISerializable>
-#include <de/Address>
+#include "../ISerializable"
+#include "../Address"
 
 #include <string>
 

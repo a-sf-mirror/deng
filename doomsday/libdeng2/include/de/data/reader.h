@@ -20,13 +20,16 @@
 #ifndef LIBDENG2_READER_HH
 #define LIBDENG2_READER_HH
 
-#include <de/deng.h>
-#include <de/IByteArray>
+#include "../deng.h"
+#include "../IByteArray"
+#include "../ByteOrder"
 
 namespace de
 {
+    class Block;
     class String;
-    class ISerializable;
+    class IReadable;
+    class FixedByteArray;
     
     /**   
      * Provides a protocol for reading network byte ordered data from a byte array object
@@ -37,7 +40,16 @@ namespace de
     class PUBLIC_API Reader
     {
     public:
-        Reader(const IByteArray& source, IByteArray::Offset offset = 0);
+        /**
+         * Constructs a new reader.
+         *
+         * @param source     Byte array containing the data to be read.
+         * @param byteOrder  Byte order to use. The byte order defaults to network 
+         *                   (big-endian) byte order.
+         * @param offset     Offset in @a source where to start reading.
+         */
+        Reader(const IByteArray& source, const ByteOrder& byteOrder = bigEndianByteOrder, 
+            IByteArray::Offset offset = 0);
 
         //@{ Read a number from the source buffer, in network byte order.
         Reader& operator >> (dchar& byte);
@@ -55,12 +67,25 @@ namespace de
         /// Reads a string from the source buffer.
         Reader& operator >> (String& text);
         
-        /// Reads a sequence bytes from the source buffer. As with 
-        /// strings, the length of the array is included in the data.
+        /// Reads a sequence bytes from the source buffer.
         Reader& operator >> (IByteArray& byteArray);
         
+        /**
+         * Reads a fixed-size sequence of bytes from the source buffer.
+         * The size of the sequence is determined by the size of 
+         * @a fixedByteArray.
+         *
+         * @param fixedByteArray  Destination buffer.
+         *
+         * @return  Reference to the Reader.
+         */
+        Reader& operator >> (FixedByteArray& fixedByteArray);
+        
+        /// Reads a Block from the source buffer.
+        Reader& operator >> (Block& block);
+        
         /// Reads a serializable object from the source buffer.
-        Reader& operator >> (ISerializable& serializable);
+        Reader& operator >> (IReadable& readable);
     
         /** 
          * Returns the source byte array of the reader.
@@ -75,21 +100,41 @@ namespace de
         IByteArray::Offset offset() const {
             return offset_;
         }
-        
+
+        /**
+         * Move to a specific position in the source data.
+         *
+         * @param offset  Offset to move to.
+         */
         void setOffset(IByteArray::Offset offset) {
             offset_ = offset;
         }
 
         /**
+         * Moves the reader offset forward by a number of bytes.
+         *
+         * @param count  Number of bytes to move forward.
+         */
+        void seek(dint count);
+
+        /**
          * Rewinds the read offset by a number of bytes.
          *
-         * @param count  Number of bytes.
+         * @param count  Number of bytes to move backward.
          */
         void rewind(dint count);
     
+        /**
+         * Returns the byte order of the writer.
+         */
+        const ByteOrder& byteOrder() const {
+            return convert_;
+        }
+        
     private:
         const IByteArray& source_;
         IByteArray::Offset offset_;
+        const ByteOrder& convert_;
     };
 }
 

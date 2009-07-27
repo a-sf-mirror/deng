@@ -22,8 +22,7 @@
 
 #include "serverapp.h"
 #include "session.h"
-#include <de/User>
-#include <de/Address>
+#include <de/net.h>
 
 class Client;
 

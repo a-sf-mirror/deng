@@ -134,3 +134,9 @@ std::string Time::asText() const
     os << time_ << "." << std::setw(6) << std::setfill('0') << micro_;
     return os.str();
 }
+
+std::ostream& de::operator << (std::ostream& os, const Time& t)
+{
+    os << t.asText();
+    return os;
+}

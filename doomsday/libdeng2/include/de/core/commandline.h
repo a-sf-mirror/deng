@@ -24,9 +24,8 @@
 #include <vector>
 #include <map>
 
-#include <de/deng.h>
-#include <de/Error>
-#include <de/String>
+#include "../deng.h"
+#include "../String"
 
 namespace de
 {

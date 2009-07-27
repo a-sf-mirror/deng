@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_WORLD_H
 #define LIBDENG2_WORLD_H
 
-#include <de/ISerializable>
-#include <de/Record>
+#include "../ISerializable"
+#include "../Record"
 
 #include <string>
 

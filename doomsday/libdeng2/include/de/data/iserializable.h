@@ -20,7 +20,9 @@
 #ifndef LIBDENG2_ISERIALIZABLE_H
 #define LIBDENG2_ISERIALIZABLE_H
 
-#include <de/deng.h>
+#include "../deng.h"
+#include "../IWritable"
+#include "../IReadable"
 
 namespace de
 {
@@ -36,7 +38,7 @@ namespace de
      *
      * @ingroup data
      */
-    class PUBLIC_API ISerializable
+    class PUBLIC_API ISerializable : public IWritable, public IReadable
     {
     public:
         /// Deserialization of the provided data failed. @ingroup errors
@@ -44,20 +46,6 @@ namespace de
         
     public:
         virtual ~ISerializable() {}
-
-        /**
-         * Serialize the object using the provided Writer.
-         *
-         * @param to  Writer using which the data is written.
-         */
-        virtual void operator >> (Writer& to) const = 0;
-
-        /**
-         * Restore the object from the provided Reader.
-         *
-         * @param from  Reader where the data is read from.
-         */
-        virtual void operator << (Reader& from) = 0;
     };
 }
 

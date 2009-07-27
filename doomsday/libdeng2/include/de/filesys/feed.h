@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_FEED_H
 #define LIBDENG2_FEED_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 #include <list>
 

@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_SURFACE_H
 #define LIBDENG2_SURFACE_H
 
-#include <de/Vector>
+#include "../Vector"
 
 namespace de
 {

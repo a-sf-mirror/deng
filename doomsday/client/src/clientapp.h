@@ -21,7 +21,7 @@
 #define CLIENTAPP_H
 
 #include "usersession.h"
-#include <de/App>
+#include <de/core.h>
 
 class LocalServer;
 

@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_DIRECTORYFEED_H
 #define LIBDENG2_DIRECTORYFEED_H
 
-#include <de/File>
-#include <de/Feed>
-#include <de/String>
+#include "../File"
+#include "../Feed"
+#include "../String"
 
 namespace de
 {

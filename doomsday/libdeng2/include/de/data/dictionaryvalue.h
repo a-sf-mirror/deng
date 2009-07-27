@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_DICTIONARYVALUE_H
 #define LIBDENG2_DICTIONARYVALUE_H
 
-#include <de/Value>
+#include "../Value"
 
 #include <map>
 

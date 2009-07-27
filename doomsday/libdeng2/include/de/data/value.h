@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_VALUE_H
 #define LIBDENG2_VALUE_H
 
-#include <de/deng.h>
-#include <de/ISerializable>
-#include <de/String>
+#include "../deng.h"
+#include "../ISerializable"
+#include "../String"
 
 /**
  * @defgroup data Data

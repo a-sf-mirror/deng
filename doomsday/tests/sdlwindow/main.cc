@@ -1,5 +1,5 @@
 #include <dengmain.h>
-#include <de/CommandLine>
+#include <de/core.h>
 #include <iostream>
 #include <SDL.h>
 #include <SDL_opengl.h>

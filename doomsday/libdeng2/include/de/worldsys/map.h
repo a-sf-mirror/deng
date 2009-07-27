@@ -20,11 +20,11 @@
 #ifndef LIBDENG2_MAP_H
 #define LIBDENG2_MAP_H
 
-#include <de/ISerializable>
-#include <de/Enumerator>
-#include <de/Record>
-#include <de/Object>
-#include <de/String>
+#include "../ISerializable"
+#include "../Enumerator"
+#include "../Record"
+#include "../Object"
+#include "../String"
 
 #include <map>
 

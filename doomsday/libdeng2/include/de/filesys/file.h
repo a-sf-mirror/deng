@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_FILE_H
 #define LIBDENG2_FILE_H
 
-#include <de/IByteArray>
-#include <de/String>
-#include <de/Time>
+#include "../IByteArray"
+#include "../String"
+#include "../Time"
 
 namespace de
 {
@@ -48,22 +48,33 @@ namespace de
         class Status
         {
         public:
+            /// Type of file.
+            enum Type {
+                FILE = 0,           
+                FOLDER = 1
+            };
+            
+        public:
             Status(dsize s = 0, const Time& modTime = Time()) 
-                : size_(s), modifiedAt_(modTime) {}
-            
-            dsize size() const { return size_; }
-            
-            const Time& modifiedAt() const { return modifiedAt_; }
+                : size(s), modifiedAt(modTime), type_(FILE) {}
+                
+            Status(Type t, dsize s = 0, const Time& modTime = Time())
+                : size(s), modifiedAt(modTime), type_(t) {}
+
+            Type type() const { return type_; }
             
             bool operator == (const Status& s) const {
-                return size_ == s.size_ && modifiedAt_ == s.modifiedAt_;
+                return size == s.size && modifiedAt == s.modifiedAt;
             }
             
             bool operator != (const Status& s) const { return !(*this == s); }
+
+        public:
+            dsize size;
+            Time modifiedAt;
             
         private:
-            dsize size_;
-            Time modifiedAt_;            
+            Type type_;
         };
         
     public:
@@ -78,8 +89,8 @@ namespace de
          * and deindexed from the file system.
          *
          * @note  Subclasses must call deindex() in their destructors so that
-         *      the instances indexed under the subclasses' type are removed
-         *      from the index also.
+         *        the instances indexed under the subclasses' type are removed
+         *        from the index also.
          */
         virtual ~File();
 
@@ -107,7 +118,7 @@ namespace de
          * this is the Feed that generated the File. 
          *
          * @note  Folder instances should not have an origin feed as the folder may
-         *      be shared by many feeds.
+         *        be shared by many feeds.
          *
          * @param feed  The origin feed.
          */ 
@@ -147,7 +158,7 @@ namespace de
          *
          * @param status  New status.
          */
-        void setStatus(const Status& status);
+        virtual void setStatus(const Status& status);
 
         /**
          * Returns the status of the file.
@@ -158,7 +169,7 @@ namespace de
          * Forms the complete path of this file object.
          *
          * @return Path of the object. This is not a native path, but instead 
-         *      intended for de::FS.
+         *         intended for de::FS.
          */
         const String path() const;
 

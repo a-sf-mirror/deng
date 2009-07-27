@@ -20,20 +20,26 @@
 #include "de/Date"
 
 #include <ctime>
+#include <cstring>
 #include <sstream>
 #include <iomanip>
 
 using namespace de;
 
+Date::Date()
+{
+    *this = Date(Time());
+}
+
 Date::Date(const Time& at) : microSeconds(at.micro_)
 {
-#ifdef UNIX
     struct tm t;
+
+#ifdef UNIX
     localtime_r(&at.time_, &t);
 #endif
 
 #ifdef WIN32
-    struct tm t;
     memcpy(&t, _localtime64(&at.time_), sizeof(t));
 #endif
 
@@ -49,17 +55,44 @@ Date::Date(const Time& at) : microSeconds(at.micro_)
 
 std::string Date::asText() const
 {
+    std::ostringstream os;
+    os << *this;
+    return os.str();
+}
+
+Time Date::asTime() const
+{
+    struct tm t;
+    
+    std::memset(&t, 0, sizeof(t));
+    t.tm_sec = seconds;
+    t.tm_min = minutes;
+    t.tm_hour = hours;
+    t.tm_mon = month - 1;
+    t.tm_year = year - 1900;
+    t.tm_mday = dayOfMonth;
+    
+#ifdef UNIX
+    return mktime(&t);
+#endif
+
+#ifdef WIN32
+    return _mktime64(&t);
+#endif
+}
+
+std::ostream& de::operator << (std::ostream& os, const Date& d)
+{
     using std::setfill;
     using std::setw;
 
-    std::ostringstream os;
     os << setfill('0') << 
-        year << "-" << 
-        setw(2) << month << "-" << 
-        setw(2) << dayOfMonth << " " << 
-        setw(2) << hours << ":" << 
-        setw(2) << minutes << ":" << 
-        setw(2) << seconds << "." << 
-        setw(2) << microSeconds/10000;
-    return os.str();
+        d.year << "-" << 
+        setw(2) << d.month << "-" << 
+        setw(2) << d.dayOfMonth << " " << 
+        setw(2) << d.hours << ":" << 
+        setw(2) << d.minutes << ":" << 
+        setw(2) << d.seconds << "." << 
+        setw(2) << d.microSeconds/10000;
+    return os;
 }

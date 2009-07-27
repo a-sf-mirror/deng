@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_WAITABLEFIFO_H
 #define LIBDENG2_WAITABLEFIFO_H
 
-#include <de/FIFO>
-#include <de/Waitable>
+#include "../FIFO"
+#include "../Waitable"
 
 namespace de
 {

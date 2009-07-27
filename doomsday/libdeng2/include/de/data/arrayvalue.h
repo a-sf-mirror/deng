@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_ARRAYVALUE_H
 #define LIBDENG2_ARRAYVALUE_H
 
-#include <de/Value>
+#include "../Value"
 
 #include <vector>
 

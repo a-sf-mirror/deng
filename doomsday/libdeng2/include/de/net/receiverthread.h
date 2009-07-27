@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_RECEIVERTHREAD_H
 #define LIBDENG2_RECEIVERTHREAD_H
 
-#include <de/Thread>
-#include <de/FIFO>
-#include <de/Message>
+#include "../Thread"
+#include "../FIFO"
+#include "../Message"
 
 namespace de
 {

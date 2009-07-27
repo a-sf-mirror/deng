@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_SENDERTHREAD_H
 #define LIBDENG2_SENDERTHREAD_H
 
-#include <de/Thread>
-#include <de/Block>
-#include <de/WaitableFIFO>
+#include "../Thread"
+#include "../Block"
+#include "../WaitableFIFO"
 
 namespace de
 {

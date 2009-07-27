@@ -18,8 +18,7 @@
  */
 
 #include "remoteuser.h"
-#include <de/App>
-#include <de/Library>
+#include <de/core.h>
 
 using namespace de;
 

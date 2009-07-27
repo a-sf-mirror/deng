@@ -20,7 +20,7 @@
 #ifndef LIBDENG2_ID_H
 #define LIBDENG2_ID_H
 
-#include <de/deng.h>
+#include "../deng.h"
 
 namespace de
 {

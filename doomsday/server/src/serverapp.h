@@ -20,10 +20,8 @@
 #ifndef SERVERAPP_H
 #define SERVERAPP_H
 
-#include <de/App>
-#include <de/ListenSocket>
-#include <de/Protocol>
-#include <de/MuxLink>
+#include <de/core.h>
+#include <de/net.h>
 
 class Session;
 class Client;

@@ -20,8 +20,8 @@
 #ifndef LIBDENG2_COMMANDPACKET_H
 #define LIBDENG2_COMMANDPACKET_H
 
-#include <de/RecordPacket>
-#include <de/String>
+#include "../RecordPacket"
+#include "../String"
 
 #include <list>
 

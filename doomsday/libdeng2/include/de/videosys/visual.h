@@ -20,7 +20,7 @@
 #ifndef LIBDEN2_VISUAL_H
 #define LIBDEN2_VISUAL_H
 
-#include <de/AnimatorVector>
+#include "../AnimatorVector"
 
 #include <list>
 

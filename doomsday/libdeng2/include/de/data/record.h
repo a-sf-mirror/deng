@@ -20,9 +20,9 @@
 #ifndef LIBDENG2_RECORD_H
 #define LIBDENG2_RECORD_H
 
-#include <de/ISerializable>
-#include <de/Variable>
-#include <de/Value>
+#include "../ISerializable"
+#include "../Variable"
+#include "../Value"
 
 #include <iostream>
 #include <map>
