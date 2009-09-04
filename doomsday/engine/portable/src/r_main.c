@@ -323,15 +323,15 @@ void R_Update(void)
     for(i = 0; i < numPolyObjs; ++i)
     {
         polyobj_t*          po = polyObjs[i];
-        seg_t**             segPtr = po->segs;
+        hedge_t**             ptr = po->hEdges;
 
-        while(*segPtr)
+        while(*ptr)
         {
-            sidedef_t*          side = SEG_SIDEDEF(*segPtr);
+            sidedef_t*          side = HEDGE_SIDEDEF(*ptr);
 
             Surface_Update(&side->SW_middlesurface);
 
-            *segPtr++;
+            *ptr++;
         }
     }
 

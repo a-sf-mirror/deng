@@ -73,21 +73,24 @@
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Used when sorting subsector hEdges by angle around midpoint.
-static size_t hEdgeSortBufSize;
-static hedge_t **hEdgeSortBuf;
+static size_t nodeSortBufSize;
+static hedge_node_t** nodeSortBuf;
 
 // CODE --------------------------------------------------------------------
 
-static __inline int pointOnHEdgeSide(double x, double y, const hedge_t *part)
+static __inline int pointOnHEdgeSide(double x, double y,
+                                     const hedge_t* part)
 {
-    return P_PointOnLinedefSide2(x, y, part->pDX, part->pDY, part->pPerp,
-                              part->pLength, DIST_EPSILON);
+    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) part->data;
+
+    return P_PointOnLinedefSide2(x, y, data->pDX, data->pDY, data->pPerp,
+                                 data->pLength, DIST_EPSILON);
 }
 
 /**
  * Add the given half-edge to the specified list.
  */
-void BSP_AddHEdgeToSuperBlock(superblock_t *block, hedge_t *hEdge)
+void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
 {
 #define SUPER_IS_LEAF(s)  \
     ((s)->bbox[BOXRIGHT] - (s)->bbox[BOXLEFT] <= 256 && \
@@ -104,14 +107,14 @@ void BSP_AddHEdgeToSuperBlock(superblock_t *block, hedge_t *hEdge)
         midPoint[VY] = (block->bbox[BOXBOTTOM] + block->bbox[BOXTOP])   / 2;
 
         // Update half-edge counts.
-        if(hEdge->lineDef)
+        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef)
             block->realNum++;
         else
             block->miniNum++;
 
         if(SUPER_IS_LEAF(block))
         {   // Block is a leaf -- no subdivision possible.
-            BSP_LinkHEdgeToSuperBlock(block, hEdge);
+            SuperBlock_LinkHEdge(block, hEdge);
             return;
         }
 
@@ -133,7 +136,7 @@ void BSP_AddHEdgeToSuperBlock(superblock_t *block, hedge_t *hEdge)
             child = 0;
         else
         {   // Line crosses midpoint -- link it in and return.
-            BSP_LinkHEdgeToSuperBlock(block, hEdge);
+            SuperBlock_LinkHEdge(block, hEdge);
             return;
         }
 
@@ -173,24 +176,27 @@ void BSP_AddHEdgeToSuperBlock(superblock_t *block, hedge_t *hEdge)
 #undef SUPER_IS_LEAF
 }
 
-static boolean getAveragedCoords(hedge_t *headPtr, double *x, double *y)
+static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
+                                 double* y)
 {
-    size_t      total = 0;
-    double      avg[2];
-    hedge_t    *cur;
+    size_t              total = 0;
+    double              avg[2];
+    const hedge_node_t* n;
 
     if(!x || !y)
         return false;
 
     avg[VX] = avg[VY] = 0;
 
-    for(cur = headPtr; cur; cur = cur->next)
+    for(n = headPtr; n; n = n->next)
     {
-        avg[VX] += cur->v[0]->buildData.pos[VX];
-        avg[VY] += cur->v[0]->buildData.pos[VY];
+        const hedge_t*      hEdge = n->hEdge;
 
-        avg[VX] += cur->v[1]->buildData.pos[VX];
-        avg[VY] += cur->v[1]->buildData.pos[VY];
+        avg[VX] += hEdge->v[0]->buildData.pos[VX];
+        avg[VY] += hEdge->v[0]->buildData.pos[VY];
+
+        avg[VX] += hEdge->v[1]->buildData.pos[VX];
+        avg[VY] += hEdge->v[1]->buildData.pos[VY];
 
         total += 2;
     }
@@ -212,7 +218,7 @@ static boolean getAveragedCoords(hedge_t *headPtr, double *x, double *y)
  * \note Algorithm:
  * Uses the now famous "double bubble" sorter :).
  */
-static void sortHEdgesByAngleAroundPoint(hedge_t **hEdges, size_t total,
+static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
                                          double x, double y)
 {
     size_t              i;
@@ -220,20 +226,25 @@ static void sortHEdgesByAngleAroundPoint(hedge_t **hEdges, size_t total,
     i = 0;
     while(i + 1 < total)
     {
-        hedge_t    *a = hEdges[i];
-        hedge_t    *b = hEdges[i+1];
-        angle_g     angle1, angle2;
+        hedge_node_t*       a = nodes[i];
+        hedge_node_t*       b = nodes[i+1];
+        angle_g             angle1, angle2;
 
-        angle1 = M_SlopeToAngle(a->v[0]->buildData.pos[VX] - x,
-                                a->v[0]->buildData.pos[VY] - y);
-        angle2 = M_SlopeToAngle(b->v[0]->buildData.pos[VX] - x,
-                                b->v[0]->buildData.pos[VY] - y);
+        {
+        const hedge_t*      hEdgeA = a->hEdge;
+        const hedge_t*      hEdgeB = b->hEdge;
+
+        angle1 = M_SlopeToAngle(hEdgeA->v[0]->buildData.pos[VX] - x,
+                                hEdgeA->v[0]->buildData.pos[VY] - y);
+        angle2 = M_SlopeToAngle(hEdgeB->v[0]->buildData.pos[VX] - x,
+                                hEdgeB->v[0]->buildData.pos[VY] - y);
+        }
 
         if(angle1 + ANG_EPSILON < angle2)
         {
             // Swap them.
-            hEdges[i] = b;
-            hEdges[i + 1] = a;
+            nodes[i] = b;
+            nodes[i + 1] = a;
 
             // Bubble down.
             if(i > 0)
@@ -257,39 +268,41 @@ static void sortHEdgesByAngleAroundPoint(hedge_t **hEdges, size_t total,
  * @param x             X coordinate of the point to order around.
  * @param y             Y coordinate of the point to order around.
  */
-static void clockwiseOrder(hedge_t **headPtr, size_t num, double x,
+static void clockwiseOrder(hedge_node_t** headPtr, size_t num, double x,
                            double y)
 {
-    size_t              i;
-    hedge_t            *hEdge;
+    size_t              i, idx;
+    hedge_node_t*       n;
 
-    // Insert ptrs to the hEdges into the sort buffer.
-    for(hEdge = *headPtr, i = 0; hEdge; hEdge = hEdge->next, ++i)
-        hEdgeSortBuf[i] = hEdge;
-    hEdgeSortBuf[i] = NULL; // Terminate.
+    // Insert ptrs to the into the sort buffer.
+    idx = 0;
+    for(n = *headPtr; n; n = n->next)
+        nodeSortBuf[idx++] = n;
+    nodeSortBuf[idx] = NULL; // Terminate.
 
-    if(i != num)
+    if(idx != num)
         Con_Error("clockwiseOrder: Miscounted?");
 
-    sortHEdgesByAngleAroundPoint(hEdgeSortBuf, num, x, y);
+    sortHEdgesByAngleAroundPoint(nodeSortBuf, num, x, y);
 
-    // Re-link the half-edge list in the order of the sorted array.
+    // Re-link the list in the order of the sorted array.
     *headPtr = NULL;
     for(i = 0; i < num; ++i)
     {
         size_t              idx = (num - 1) - i;
         size_t              j = idx % num;
 
-        hEdgeSortBuf[j]->next = *headPtr;
-        *headPtr = hEdgeSortBuf[j];
+        nodeSortBuf[j]->next = *headPtr;
+        *headPtr = nodeSortBuf[j];
     }
 
 /*#if _DEBUG
 Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
 
-for(hEdge = sub->hEdges; hEdge; hEdge = hEdge->next)
+for(n = sub->hEdges; n; n = n->next)
 {
-    angle_g     angle =
+    const hedge_t*      hEdge = n->hEdge;
+    angle_g             angle =
         M_SlopeToAngle(hEdge->v[0]->V_pos[VX] - x,
                        hEdge->v[0]->V_pos[VY] - y);
 
@@ -300,17 +313,18 @@ for(hEdge = sub->hEdges; hEdge; hEdge = hEdge->next)
 #endif*/
 }
 
-static void sanityCheckClosed(const bspleafdata_t *leaf)
+static void sanityCheckClosed(const bspleafdata_t* leaf)
 {
     int                 total = 0, gaps = 0;
-    hedge_t            *cur, *next;
+    const hedge_node_t* n;
 
-    for(cur = leaf->hEdges; cur; cur = cur->next)
+    for(n = leaf->hEdges; n; n = n->next)
     {
-        next = (cur->next? cur->next : leaf->hEdges);
+        const hedge_t*      a = n->hEdge;
+        const hedge_t*      b = (n->next? n->next : leaf->hEdges)->hEdge;
 
-        if(cur->v[1]->buildData.pos[VX] != next->v[0]->buildData.pos[VX] ||
-           cur->v[1]->buildData.pos[VY] != next->v[0]->buildData.pos[VY])
+        if(a->v[1]->buildData.pos[VX] != b->v[0]->buildData.pos[VX] ||
+           a->v[1]->buildData.pos[VY] != b->v[0]->buildData.pos[VY])
             gaps++;
 
         total++;
@@ -322,118 +336,135 @@ static void sanityCheckClosed(const bspleafdata_t *leaf)
                     "(%d gaps, %d half-edges)\n", leaf, gaps, total);
 
 /*#if _DEBUG
-for(cur = leaf->hEdges; cur; cur = cur->next)
+for(n = leaf->hEdges; n; n = n->next)
 {
-    Con_Message("  half-edge %p  (%1.1f,%1.1f) --> (%1.1f,%1.1f)\n", cur,
-                cur->v[0]->pos[VX], cur->v[0]->pos[VY],
-                cur->v[1]->pos[VX], cur->v[1]->pos[VY]);
+    const hedge_t*      hEdge = n->hEdge;
+
+    Con_Message("  half-edge %p  (%1.1f,%1.1f) --> (%1.1f,%1.1f)\n", hEdge,
+                hEdge->v[0]->pos[VX], hEdge->v[0]->pos[VY],
+                hEdge->v[1]->pos[VX], hEdge->v[1]->pos[VY]);
 }
 #endif*/
     }
 }
 
-static void sanityCheckSameSector(const bspleafdata_t *leaf)
+static void sanityCheckSameSector(const bspleafdata_t* leaf)
 {
-    hedge_t            *cur, *compare;
+    const hedge_node_t* cur;
+    const bsp_hedgeinfo_t* data;
+
+    {
+    const hedge_node_t* n;
 
     // Find a suitable half-edge for comparison.
-    for(compare = leaf->hEdges; compare; compare = compare->next)
+    for(n = leaf->hEdges; n; n = n->next)
     {
-        if(!compare->sector)
+        const hedge_t*      hEdge = n->hEdge;
+
+        if(!((bsp_hedgeinfo_t*) hEdge->data)->sector)
             continue;
 
         break;
     }
 
-    if(!compare)
+    if(!n)
         return;
 
-    for(cur = compare->next; cur; cur = cur->next)
+    cur = n->next;
+    data = (bsp_hedgeinfo_t*) n->hEdge->data;
+    }
+
+    for(; cur; cur = cur->next)
     {
-        if(!cur->sector)
+        const hedge_t*      hEdge = cur->hEdge;
+        const bsp_hedgeinfo_t* curData = (bsp_hedgeinfo_t*) hEdge->data;
+
+        if(!curData->sector)
             continue;
 
-        if(cur->sector == compare->sector)
+        if(curData->sector == data->sector)
             continue;
 
         // Prevent excessive number of warnings.
-        if(compare->sector->buildData.warnedFacing ==
-           cur->sector->buildData.index)
+        if(data->sector->buildData.warnedFacing ==
+           curData->sector->buildData.index)
             continue;
 
-        compare->sector->buildData.warnedFacing =
-            cur->sector->buildData.index;
+        data->sector->buildData.warnedFacing =
+            curData->sector->buildData.index;
 
         if(verbose >= 1)
         {
-            if(cur->lineDef)
-                Con_Message("Sector #%d has sidedef facing #%d (line #%d).\n", compare->sector->buildData.index,
-                            cur->sector->buildData.index,
-                            cur->lineDef->buildData.index);
+            if(curData->lineDef)
+                Con_Message("Sector #%d has sidedef facing #%d (line #%d).\n",
+                            data->sector->buildData.index,
+                            curData->sector->buildData.index,
+                            curData->lineDef->buildData.index);
             else
                 Con_Message("Sector #%d has sidedef facing #%d.\n",
-                            compare->sector->buildData.index,
-                            cur->sector->buildData.index);
+                            data->sector->buildData.index,
+                            curData->sector->buildData.index);
         }
     }
 }
 
-static boolean sanityCheckHasRealHEdge(const bspleafdata_t *leaf)
+static boolean sanityCheckHasRealHEdge(const bspleafdata_t* leaf)
 {
-    hedge_t            *cur;
+    const hedge_node_t* n;
 
-    for(cur = leaf->hEdges; cur; cur = cur->next)
+    for(n = leaf->hEdges; n; n = n->next)
     {
-        if(cur->lineDef)
+        const hedge_t*      hEdge = n->hEdge;
+
+        if(((const bsp_hedgeinfo_t*) hEdge->data)->lineDef)
             return true;
     }
 
     return false;
 }
 
-static void renumberLeafHEdges(bspleafdata_t *leaf, uint *curIndex)
+static void renumberLeafHEdges(bspleafdata_t* leaf, uint* curIndex)
 {
-    uint                n;
-    hedge_t            *cur;
+    const hedge_node_t* n;
 
-    n = 0;
-    for(cur = leaf->hEdges; cur; cur = cur->next)
+    for(n = leaf->hEdges; n; n = n->next)
     {
-        cur->index = *curIndex;
+        const hedge_t*      hEdge = n->hEdge;
+
+        ((bsp_hedgeinfo_t*) hEdge->data)->index = *curIndex;
         (*curIndex)++;
-        n++;
     }
 }
 
-static void prepareHEdgeSortBuffer(size_t numHEdges)
+static void prepareNodeSortBuffer(size_t num)
 {
     // Do we need to enlarge our sort buffer?
-    if(numHEdges + 1 > hEdgeSortBufSize)
+    if(num + 1 > nodeSortBufSize)
     {
-        hEdgeSortBufSize = numHEdges + 1;
-        hEdgeSortBuf =
-            M_Realloc(hEdgeSortBuf, hEdgeSortBufSize * sizeof(hedge_t *));
+        nodeSortBufSize = num + 1;
+        nodeSortBuf =
+            M_Realloc(nodeSortBuf, nodeSortBufSize * sizeof(hedge_node_t*));
     }
 }
 
-static boolean C_DECL clockwiseLeaf(binarytree_t *tree, void *data)
+static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {   // obj is a leaf.
         size_t              total;
-        hedge_t            *hEdge;
-        bspleafdata_t      *leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
+        const hedge_node_t* n;
+        bspleafdata_t*      leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
         double              midPoint[2];
 
         getAveragedCoords(leaf->hEdges, &midPoint[VX], &midPoint[VY]);
 
         // Count half-edges.
         total = 0;
-        for(hEdge = leaf->hEdges; hEdge; hEdge = hEdge->next)
+        for(n = leaf->hEdges; n; n = n->next)
             total++;
 
         // Ensure the sort buffer is large enough.
-        prepareHEdgeSortBuffer(total);
+        prepareNodeSortBuffer(total);
 
         clockwiseOrder(&leaf->hEdges, total, midPoint[VX], midPoint[VY]);
         renumberLeafHEdges(leaf, data);
@@ -458,46 +489,45 @@ static boolean C_DECL clockwiseLeaf(binarytree_t *tree, void *data)
  * half-edge with a twin may insert another half-edge into that twin's list,
  * usually in the wrong place order-wise.
  */
-void ClockwiseBspTree(binarytree_t *rootNode)
+void ClockwiseBspTree(binarytree_t* rootNode)
 {
     uint                curIndex;
 
-    hEdgeSortBufSize = 0;
-    hEdgeSortBuf = NULL;
+    nodeSortBufSize = 0;
+    nodeSortBuf = NULL;
 
     curIndex = 0;
     BinaryTree_PostOrder(rootNode, clockwiseLeaf, &curIndex);
 
     // Free temporary storage.
-    if(hEdgeSortBuf)
+    if(nodeSortBuf)
     {
-        M_Free(hEdgeSortBuf);
-        hEdgeSortBuf = NULL;
+        M_Free(nodeSortBuf);
+        nodeSortBuf = NULL;
     }
 }
 
-static void createBSPLeafWorker(bspleafdata_t *leaf, superblock_t *block)
+static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
 {
     uint                num;
 
     while(block->hEdges)
     {
-        hedge_t            *cur = block->hEdges;
+        hedge_node_t*       node = block->hEdges;
+        hedge_t*            hEdge = node->hEdge;
 
-        // Un-link first half-edge from the block.
-        block->hEdges = cur->next;
+        SuperBlock_UnLinkHEdge(block, hEdge);
+        ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
 
-        // Link it into head of the subsector's list.
-        cur->next = leaf->hEdges;
-        cur->block = NULL;
-
-        leaf->hEdges = cur;
+        // Link it into head of the BSP leaf's list.
+        BSPLeaf_LinkHEdge(leaf, hEdge);
+        ((bsp_hedgeinfo_t*) hEdge->data)->leaf = leaf;
     }
 
     // Recursively handle sub-blocks.
     for(num = 0; num < 2; ++num)
     {
-        superblock_t       *a = block->subs[num];
+        superblock_t*       a = block->subs[num];
 
         if(a)
         {
@@ -514,38 +544,39 @@ static void createBSPLeafWorker(bspleafdata_t *leaf, superblock_t *block)
     block->realNum = block->miniNum = 0;
 }
 
-static __inline bspleafdata_t *allocBSPLeaf(void)
+static __inline bspleafdata_t* allocBSPLeaf(void)
 {
     return M_Malloc(sizeof(bspleafdata_t));
 }
 
-static __inline void freeBSPLeaf(bspleafdata_t *leaf)
+static __inline void freeBSPLeaf(bspleafdata_t* leaf)
 {
     M_Free(leaf);
 }
 
-bspleafdata_t *BSPLeaf_Create(void)
+bspleafdata_t* BSPLeaf_Create(void)
 {
-    bspleafdata_t       *leaf = allocBSPLeaf();
+    bspleafdata_t*      leaf = allocBSPLeaf();
 
     leaf->hEdges = NULL;
 
     return leaf;
 }
 
-void BSPLeaf_Destroy(bspleafdata_t *leaf)
+void BSPLeaf_Destroy(bspleafdata_t* leaf)
 {
-    hedge_t            *cur, *np;
-
     if(!leaf)
         return;
 
-    cur = leaf->hEdges;
-    while(cur)
+    while(leaf->hEdges)
     {
-        np = cur->next;
-        HEdge_Destroy(cur);
-        cur = np;
+        hedge_t*            hEdge = leaf->hEdges->hEdge;
+
+        BSPLeaf_UnLinkHEdge(leaf, hEdge);
+
+        if(hEdge->data)
+            Z_Free(hEdge->data);
+        HEdge_Destroy(hEdge);
     }
 
     freeBSPLeaf(leaf);
@@ -554,9 +585,9 @@ void BSPLeaf_Destroy(bspleafdata_t *leaf)
 /**
  * Create a new leaf from a list of half-edges.
  */
-static bspleafdata_t *createBSPLeaf(superblock_t *hEdgeList)
+static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
 {
-    bspleafdata_t      *leaf = BSPLeaf_Create();
+    bspleafdata_t*      leaf = BSPLeaf_Create();
 
     // Link the half-edges into the new leaf.
     createBSPLeafWorker(leaf, hEdgeList);
@@ -585,7 +616,7 @@ boolean BuildNodes(superblock_t* hEdgeList, binarytree_t** parent,
     superblock_t*       hEdgeSet[2];
     bspleafdata_t*      leaf;
     boolean             builtOK = false;
-    bspartition_t      partition;
+    bspartition_t       partition;
 
     *parent = NULL;
 
@@ -595,7 +626,7 @@ BSP_PrintSuperblockHEdges(hEdgeList);
 #endif*/
 
     // Pick the next partition to use.
-    if(!BSP_PickPartition(hEdgeList, depth, &partition))
+    if(!SuperBlock_PickPartition(hEdgeList, depth, &partition))
     {   // No partition required, already convex.
 /*#if _DEBUG
 Con_Message("BuildNodes: Convex.\n");

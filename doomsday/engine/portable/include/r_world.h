@@ -55,7 +55,6 @@ extern skyfix_t skyFix[2]; // [floor, ceiling]
 
 void            R_SetupMap(int mode, int flags);
 void            R_InitLinks(gamemap_t* map);
-void            R_PolygonizeMap(gamemap_t* map);
 void            R_BuildSectorLinks(gamemap_t* map);
 void            R_SetupFog(float start, float end, float density, float* rgb);
 void            R_SetupFogDefaults(void);
@@ -68,6 +67,7 @@ float           R_ExtraLightDelta(void);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 boolean         R_IsSkySurface(const surface_t* suf);
 
+void            R_TriangulateSubSector(face_t* ssec);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
 void            R_UpdatePlanes(void);

@@ -43,9 +43,9 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct ssecmapblock_s {
-    subsector_t**   ssecs;
-} ssecmapblock_t;
+typedef struct facemapblock_s {
+    face_t**        faces;
+} facemapblock_t;
 
 typedef struct bmapblock_s {
     linedef_t**     lineDefs;
@@ -174,21 +174,21 @@ blockmap_t* P_BlockmapCreate(const pvec2_t min, const pvec2_t max,
             ("P_BlockMapCreate: w=%i h=%i\n", bmap->dimensions[VX],
              bmap->dimensions[VY]));
 
-    return (blockmap_t *) bmap;
+    return (blockmap_t*) bmap;
 }
 
 void P_SSecBlockmapSetBlock(blockmap_t* blockmap, uint x, uint y,
-                            subsector_t** ssecs)
+                            face_t** faces)
 {
     if(blockmap)
     {
         bmap_t*             bmap = (bmap_t*) blockmap;
-        ssecmapblock_t*     block =
+        facemapblock_t*     block =
             M_GridmapGetBlock(bmap->gridmap, x, y, true);
 
         if(block)
         {
-            block->ssecs = ssecs;
+            block->faces = faces;
         }
     }
 }
@@ -218,7 +218,7 @@ typedef struct subsecmap_s {
     ssecmap_t*          bmap, *block;
     vec2_t              bounds[2], blockSize, dims;
     blockmap_t*         ssecBlockMap;
-    subsector_t**       ssecLinks;
+    face_t**            faceLinks;
     size_t              totalLinks;
 
     // Setup the blockmap area to enclose the whole map, plus a margin
@@ -256,9 +256,10 @@ typedef struct subsecmap_s {
 
     // Process all the subsectors in the map.
     totalLinks = 0;
-    for(i = 0; i < map->numSSectors; ++i)
+    for(i = 0; i < map->numFaces; ++i)
     {
-        subsector_t*        ssec = &map->ssectors[i];
+        face_t*             face = &map->faces[i];
+        subsector_t*        ssec = (subsector_t*) face->data;
 
         if(!ssec->sector)
             continue;
@@ -280,7 +281,7 @@ typedef struct subsecmap_s {
 
                 // Create a new node.
                 iter = M_Malloc(sizeof(ssecnode_t));
-                iter->data = ssec;
+                iter->data = face;
 
                 // Link to the temporary map.
                 block = &bmap[x + y * subMapWidth];
@@ -293,7 +294,7 @@ typedef struct subsecmap_s {
             }
     }
 
-    ssecLinks = Z_Malloc(totalLinks * sizeof(subsector_t*), PU_MAP, NULL);
+    faceLinks = Z_Malloc(totalLinks * sizeof(face_t*), PU_MAP, NULL);
 
     // Create the actual links by 'hardening' the lists into arrays.
     for(y = 0; y < subMapHeight; ++y)
@@ -303,16 +304,16 @@ typedef struct subsecmap_s {
 
             if(block->count > 0)
             {
-                subsector_t**       ssecs, **ptr;
+                face_t**       faces, **ptr;
 
                 // A NULL-terminated array of pointers to subsectors.
-                ssecs = ssecLinks;
+                faces = faceLinks;
 
                 // Copy pointers to the array, delete the nodes.
-                ptr = ssecs;
+                ptr = faces;
                 for(iter = block->nodes; iter; iter = next)
                 {
-                    *ptr++ = (subsector_t *) iter->data;
+                    *ptr++ = (face_t *) iter->data;
                     // Kill the node.
                     next = iter->next;
                     M_Free(iter);
@@ -321,9 +322,9 @@ typedef struct subsecmap_s {
                 *ptr = NULL;
 
                 // Link it into the ssecblockmap.
-                P_SSecBlockmapSetBlock(ssecBlockMap, x, y, ssecs);
+                P_SSecBlockmapSetBlock(ssecBlockMap, x, y, faces);
 
-                ssecLinks += block->count + 1;
+                faceLinks += block->count + 1;
             }
         }
 
@@ -686,28 +687,29 @@ boolean P_BlockBoxMobjsIterator(blockmap_t *blockmap, const uint blockBox[4],
                                  bmapBlockMobjsIterator, (void*) &args);
 }
 
-typedef struct sseciterparams_s {
+typedef struct faceiterparams_s {
     arvec2_t        box;
     sector_t*       sector;
     int             localValidCount;
-    boolean       (*func) (subsector_t*, void*);
+    boolean       (*func) (face_t*, void*);
     void*           param;
-} sseciterparams_t;
+} faceiterparams_t;
 
-static boolean ssecBlockIterator(void* ptr, void* context)
+static boolean faceBlockIterator(void* ptr, void* context)
 {
-    ssecmapblock_t*     block = (ssecmapblock_t*) ptr;
+    facemapblock_t*     block = (facemapblock_t*) ptr;
 
-    if(block->ssecs)
+    if(block->faces)
     {
-        subsector_t**       iter;
-        sseciterparams_t*   args = (sseciterparams_t*) context;
+        face_t**            iter;
+        faceiterparams_t*   args = (faceiterparams_t*) context;
 
-        iter = block->ssecs;
+        iter = block->faces;
 
         while(*iter)
         {
-            subsector_t*        ssec = *iter;
+            face_t*             face = *iter;
+            subsector_t*        ssec = (subsector_t*) face->data;
 
             if(ssec->validCount != args->localValidCount)
             {
@@ -729,7 +731,7 @@ static boolean ssecBlockIterator(void* ptr, void* context)
 
                 if(ok)
                 {
-                    if(!args->func(ssec, args->param))
+                    if(!args->func(face, args->param))
                         return false;
                 }
             }
@@ -744,18 +746,18 @@ static boolean ssecBlockIterator(void* ptr, void* context)
 boolean P_BlockmapSubsectorsIterator(blockmap_t* blockmap, const uint block[2],
                                      sector_t* sector, const arvec2_t box,
                                      int localValidCount,
-                                     boolean (*func) (subsector_t*, void*),
+                                     boolean (*func) (face_t*, void*),
                                      void* data)
 {
     if(blockmap)
     {
         bmap_t*             bmap = (bmap_t*) blockmap;
-        ssecmapblock_t*     ssecBlock =
+        facemapblock_t*     faceBlock =
             M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
 
-        if(ssecBlock && ssecBlock->ssecs)
+        if(faceBlock && faceBlock->faces)
         {
-            sseciterparams_t    args;
+            faceiterparams_t    args;
 
             args.box = box;
             args.localValidCount = localValidCount;
@@ -763,21 +765,22 @@ boolean P_BlockmapSubsectorsIterator(blockmap_t* blockmap, const uint block[2],
             args.func = func;
             args.param = data;
 
-            return ssecBlockIterator(ssecBlock, &args);
+            return faceBlockIterator(faceBlock, &args);
         }
     }
 
     return true;
 }
 
-boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap, const uint blockBox[4],
+boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap,
+                                     const uint blockBox[4],
                                      sector_t* sector,  const arvec2_t box,
                                      int localValidCount,
-                                     boolean (*func) (subsector_t*, void*),
+                                     boolean (*func) (face_t*, void*),
                                      void* data)
 {
     bmap_t*             bmap = (bmap_t *) blockmap;
-    sseciterparams_t    args;
+    faceiterparams_t    args;
 
     args.box = box;
     args.localValidCount = localValidCount;
@@ -786,7 +789,7 @@ boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap, const uint blockBox[4
     args.param = data;
 
     return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 ssecBlockIterator, (void*) &args);
+                                 faceBlockIterator, (void*) &args);
 }
 
 typedef struct poiterparams_s {
@@ -987,85 +990,90 @@ static boolean rendBlockLinedef(linedef_t* line, void* data)
     return true; // Continue iteration.
 }
 
-static boolean rendBlockSubsector(subsector_t* ssec, void* data)
+static boolean rendBlockSubsector(face_t* face, void* data)
 {
     vec2_t              start, end;
     arvec2_t            bbox = data;
-    seg_t**             segs = ssec->segs;
+    hedge_t*            hEdge;
 
-    while(*segs)
+    if((hEdge = face->hEdge))
     {
-        seg_t*              seg = *segs;
-
-        V2_Set(start,
-               seg->SG_v1pos[VX] - bbox[0][VX], seg->SG_v1pos[VY] - bbox[0][VY]);
-
-        V2_Set(end,
-               seg->SG_v2pos[VX] - bbox[0][VX], seg->SG_v2pos[VY] - bbox[0][VY]);
-
-        glBegin(GL_LINES);
-            glVertex2fv(start);
-            glVertex2fv(end);
-        glEnd();
-
+        do
         {
-        float               length, dx, dy;
-        float               normal[2], unit[2];
-        float               scale = MAX_OF(bmapDebugSize, 1);
-        float               width = (theWindow->width / 16) / scale;
+            V2_Set(start, hEdge->HE_v1pos[VX] - bbox[0][VX],
+                   hEdge->HE_v1pos[VY] - bbox[0][VY]);
 
-        dx = end[VX] - start[VX];
-        dy = end[VY] - start[VY];
-        length = sqrt(dx * dx + dy * dy);
-        if(length > 0)
-        {
-            unit[VX] = dx / length;
-            unit[VY] = dy / length;
-            normal[VX] = -unit[VY];
-            normal[VY] = unit[VX];
+            V2_Set(end, hEdge->HE_v2pos[VX] - bbox[0][VX],
+                   hEdge->HE_v2pos[VY] - bbox[0][VY]);
 
-            glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
-
-            glEnable(GL_TEXTURE_2D);
-            GL_BlendOp(GL_FUNC_ADD);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-            glBegin(GL_QUADS);
-                glTexCoord2f(0.75f, 0.5f);
+            glBegin(GL_LINES);
                 glVertex2fv(start);
-                glTexCoord2f(0.75f, 0.5f);
                 glVertex2fv(end);
-                glTexCoord2f(0.75f, 1);
-                glVertex2f(end[VX] - normal[VX] * width,
-                           end[VY] - normal[VY] * width);
-                glTexCoord2f(0.75f, 1);
-                glVertex2f(start[VX] - normal[VX] * width,
-                           start[VY] - normal[VY] * width);
             glEnd();
 
-            glDisable(GL_TEXTURE_2D);
-            GL_BlendMode(BM_NORMAL);
+            {
+            float               length, dx, dy;
+            float               normal[2], unit[2];
+            float               scale = MAX_OF(bmapDebugSize, 1);
+            float               width = (theWindow->width / 16) / scale;
+
+            dx = end[VX] - start[VX];
+            dy = end[VY] - start[VY];
+            length = sqrt(dx * dx + dy * dy);
+            if(length > 0)
+            {
+                unit[VX] = dx / length;
+                unit[VY] = dy / length;
+                normal[VX] = -unit[VY];
+                normal[VY] = unit[VX];
+
+                glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
+
+                glEnable(GL_TEXTURE_2D);
+                GL_BlendOp(GL_FUNC_ADD);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+                glBegin(GL_QUADS);
+                    glTexCoord2f(0.75f, 0.5f);
+                    glVertex2fv(start);
+                    glTexCoord2f(0.75f, 0.5f);
+                    glVertex2fv(end);
+                    glTexCoord2f(0.75f, 1);
+                    glVertex2f(end[VX] - normal[VX] * width,
+                               end[VY] - normal[VY] * width);
+                    glTexCoord2f(0.75f, 1);
+                    glVertex2f(start[VX] - normal[VX] * width,
+                               start[VY] - normal[VY] * width);
+                glEnd();
+
+                glDisable(GL_TEXTURE_2D);
+                GL_BlendMode(BM_NORMAL);
+                }
             }
-        }
 
-        // Draw the bounding box.
-        V2_Set(start, ssec->bBox[0].pos[VX] - bbox[0][VX],
-                      ssec->bBox[0].pos[VY] - bbox[0][VY]);
-        V2_Set(end, ssec->bBox[1].pos[VX] - bbox[0][VX],
-                    ssec->bBox[1].pos[VY] - bbox[0][VY]);
+            // Draw the bounding box.
+            {
+            const subsector_t*  ssec = (const subsector_t*) face->data;
 
-        glBegin(GL_LINES);
-            glVertex2f(start[VX], start[VY]);
-            glVertex2f(end[VX], start[VY]);
-            glVertex2f(end[VX], start[VY]);
-            glVertex2f(end[VX], end[VY]);
-            glVertex2f(end[VX], end[VY]);
-            glVertex2f(start[VX], end[VY]);
-            glVertex2f(start[VX], end[VY]);
-            glVertex2f(start[VX], start[VY]);
-        glEnd();
-        *segs++;
+            V2_Set(start, ssec->bBox[0].pos[VX] - bbox[0][VX],
+                          ssec->bBox[0].pos[VY] - bbox[0][VY]);
+            V2_Set(end, ssec->bBox[1].pos[VX] - bbox[0][VX],
+                        ssec->bBox[1].pos[VY] - bbox[0][VY]);
+            }
+
+            glBegin(GL_LINES);
+                glVertex2f(start[VX], start[VY]);
+                glVertex2f(end[VX], start[VY]);
+                glVertex2f(end[VX], start[VY]);
+                glVertex2f(end[VX], end[VY]);
+                glVertex2f(end[VX], end[VY]);
+                glVertex2f(start[VX], end[VY]);
+                glVertex2f(start[VX], end[VY]);
+                glVertex2f(start[VX], start[VY]);
+            glEnd();
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
+
     return true; // Continue iteration.
 }
 
@@ -1145,11 +1153,11 @@ void rendBlockMobjs(void* blockPtr, void* data,
 void rendBlockSubsectors(void* blockPtr, void* param,
                          float r, float g, float b, float a)
 {
-    ssecmapblock_t*     block = blockPtr;
+    facemapblock_t*     block = blockPtr;
 
-    if(block->ssecs)
+    if(block->faces)
     {
-        sseciterparams_t    args;
+        faceiterparams_t    args;
 
         args.box = NULL;
         args.localValidCount = validCount;
@@ -1158,7 +1166,7 @@ void rendBlockSubsectors(void* blockPtr, void* param,
         args.param = param;
 
         glColor4f(r, g, b, a);
-        ssecBlockIterator(block, &args);
+        faceBlockIterator(block, &args);
     }
 }
 

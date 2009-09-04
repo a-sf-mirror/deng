@@ -252,13 +252,13 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-subsector_t *R_PointInSubsector(const float x, const float y)
+face_t* R_PointInSubsector(const float x, const float y)
 {
-    node_t             *node = 0;
+    node_t*             node = 0;
     uint                nodenum = 0;
 
-    if(!numNodes)               // single subsector is a special case
-        return (subsector_t *) ssectors;
+    if(!numNodes) // Single subsector is a special case.
+        return (face_t *) faces;
 
     nodenum = numNodes - 1;
 
@@ -269,14 +269,14 @@ subsector_t *R_PointInSubsector(const float x, const float y)
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return SUBSECTOR_PTR(nodenum & ~NF_SUBSECTOR);
+    return FACE_PTR(nodenum & ~NF_SUBSECTOR);
 }
 
-linedef_t *R_GetLineForSide(const uint sideNumber)
+linedef_t* R_GetLineForSide(const uint sideNumber)
 {
     uint                i;
-    sidedef_t          *side = SIDE_PTR(sideNumber);
-    sector_t           *sector = side->sector;
+    sidedef_t*          side = SIDE_PTR(sideNumber);
+    sector_t*           sector = side->sector;
 
     // All sides may not have a sector.
     if(!sector)
@@ -341,53 +341,9 @@ boolean R_IsPointInSector(const float x, const float y,
 }
 
 /**
- * Is the point inside the subsector, according to the edge lines of the
+ * Is the point inside the sector, according to the edge lines of the
  * subsector. Uses the well-known algorithm described here:
  * http://www.alienryderflex.com/polygon/
- *
- * @param x             X coordinate to test.
- * @param y             Y coordinate to test.
- * @param ssec          Subsector to test.
- *
- * @return              @c true, if the point is inside the subsector.
- */
-boolean R_IsPointInSubsector(const float x, const float y,
-                             const subsector_t* ssec)
-{
-    uint                i;
-    fvertex_t*          vi, *vj;
-
-    for(i = 0; i < ssec->segCount; ++i)
-    {
-        vi = &ssec->segs[i]->SG_v1->v;
-        vj = &ssec->segs[(i + 1) % ssec->segCount]->SG_v1->v;
-
-        if(((vi->pos[VY] - y) * (vj->pos[VX] - vi->pos[VX]) -
-            (vi->pos[VX] - x) * (vj->pos[VY] - vi->pos[VY])) < 0)
-        {
-            // Outside the subsector's edges.
-            return false;
-        }
-
-/*      if((vi->pos[VY] < y && vj->pos[VY] >= y) ||
-           (vj->pos[VY] < y && vi->pos[VY] >= y))
-        {
-            if(vi->pos[VX] + (((y - vi->pos[VY])/(vj->pos[VY] - vi->pos[VY])) *
-                              (vj->pos[VX] - vi->pos[VX])) < x)
-            {
-                // Toggle oddness.
-                isOdd = !isOdd;
-            }
-        }
-*/
-    }
-
-    return true;
-}
-
-/**
- * Is the point inside the sector, according to the edge lines of the
- * subsector.
  *
  * More accurate than R_IsPointInSector.
  *
@@ -400,14 +356,46 @@ boolean R_IsPointInSubsector(const float x, const float y,
 boolean R_IsPointInSector2(const float x, const float y,
                            const sector_t* sector)
 {
-    subsector_t*        ssec = R_PointInSubsector(x, y);
+    const face_t*       face = R_PointInSubsector(x, y);
+    fvertex_t*          vi, *vj;
+    hedge_t*            hEdge;
 
-    if(ssec->sector != sector)
-    {   // Wrong sector.
+    if(((const subsector_t*) face->data)->sector != sector)
+    {
+        // Wrong sector.
         return false;
     }
 
-    return R_IsPointInSubsector(x, y, ssec);
+    if((hEdge = face->hEdge))
+    {
+        do
+        {
+            vi = &hEdge->HE_v1->v;
+            vj = &hEdge->next->HE_v1->v;
+
+            if(((vi->pos[VY] - y) * (vj->pos[VX] - vi->pos[VX]) -
+                (vi->pos[VX] - x) * (vj->pos[VY] - vi->pos[VY])) < 0)
+            {
+                // Outside the subsector's edges.
+                return false;
+            }
+
+    /*      if((vi->pos[VY] < y && vj->pos[VY] >= y) ||
+               (vj->pos[VY] < y && vi->pos[VY] >= y))
+            {
+                if(vi->pos[VX] + (((y - vi->pos[VY])/(vj->pos[VY] - vi->pos[VY])) *
+                                  (vj->pos[VX] - vi->pos[VX])) < x)
+                {
+                    // Toggle oddness.
+                    isOdd = !isOdd;
+                }
+            }
+    */
+        } while((hEdge = hEdge->next) != face->hEdge);
+    }
+
+    // All tests passed.
+    return true;
 }
 
 void R_ScaleAmbientRGB(float *out, const float *in, float mul)

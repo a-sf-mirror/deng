@@ -984,30 +984,6 @@ void* DD_GetVariable(int ddvalue)
         case DD_VIEWANGLE_OFFSET:
             return &viewAngleOffset;
 
-        case DD_SECTOR_COUNT:
-            return &numSectors;
-
-        case DD_LINE_COUNT:
-            return &numLineDefs;
-
-        case DD_SIDE_COUNT:
-            return &numSideDefs;
-
-        case DD_VERTEX_COUNT:
-            return &numVertexes;
-
-        case DD_POLYOBJ_COUNT:
-            return &numPolyObjs;
-
-        case DD_SEG_COUNT:
-            return &numSegs;
-
-        case DD_SUBSECTOR_COUNT:
-            return &numSSectors;
-
-        case DD_NODE_COUNT:
-            return &numNodes;
-
         case DD_MATERIAL_COUNT:
             return &numMaterialBinds;
 

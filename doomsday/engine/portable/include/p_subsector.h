@@ -32,7 +32,7 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
-boolean         Subsector_GetProperty(const subsector_t* sub, setargs_t* args);
-boolean         Subsector_SetProperty(subsector_t* sub, const setargs_t* args);
+boolean         Subsector_GetProperty(const face_t* sub, setargs_t* args);
+boolean         Subsector_SetProperty(face_t* sub, const setargs_t* args);
 
 #endif

@@ -672,7 +672,7 @@ static void CheatDebugFunc(player_t *player, cheatseq_t *cheat)
 {
     char                lumpName[9];
     char                textBuffer[256];
-    subsector_t        *sub;
+    face_t        *sub;
 
     if(!player->plr->mo || !userGame)
         return;
@@ -687,12 +687,12 @@ static void CheatDebugFunc(player_t *player, cheatseq_t *cheat)
 
     // Also print some information to the console.
     Con_Message(textBuffer);
-    sub = player->plr->mo->subsector;
-    Con_Message("\nSubsector %i:\n", P_ToIndex(sub));
-    Con_Message("  FloorZ:%g Material:%s\n", P_GetFloatp(sub, DMU_FLOOR_HEIGHT),
-                P_GetMaterialName(P_GetPtrp(sub, DMU_FLOOR_MATERIAL)));
-    Con_Message("  CeilingZ:%g Material:%s\n", P_GetFloatp(sub, DMU_CEILING_HEIGHT),
-                P_GetMaterialName(P_GetPtrp(sub, DMU_CEILING_MATERIAL)));
+    sub = player->plr->mo->face;
+    Con_Message("\nSubsector %i:\n", DMU_ToIndex(sub));
+    Con_Message("  FloorZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_FLOOR_HEIGHT),
+                P_GetMaterialName(DMU_GetPtrp(sub, DMU_FLOOR_MATERIAL)));
+    Con_Message("  CeilingZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_CEILING_HEIGHT),
+                P_GetMaterialName(DMU_GetPtrp(sub, DMU_CEILING_MATERIAL)));
     Con_Message("Player height:%g   Player radius:%g\n",
                 player->plr->mo->height, player->plr->mo->radius);
 }

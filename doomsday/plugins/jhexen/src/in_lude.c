@@ -33,6 +33,7 @@
 
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "d_net.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"

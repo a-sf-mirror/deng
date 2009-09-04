@@ -264,14 +264,6 @@ enum {
     DD_WINDOW_HANDLE,
     DD_DYNLIGHT_TEXTURE,
     DD_GAME_EXPORTS,
-    DD_SECTOR_COUNT,
-    DD_LINE_COUNT,
-    DD_SIDE_COUNT,
-    DD_VERTEX_COUNT,
-    DD_SEG_COUNT,
-    DD_SUBSECTOR_COUNT,
-    DD_NODE_COUNT,
-    DD_POLYOBJ_COUNT,
     DD_MATERIAL_COUNT,
     DD_XGFUNC_LINK, // XG line classes
     DD_SHARED_FIXED_TRIGGER,
@@ -552,11 +544,11 @@ enum /* Do not change the numerical values of the constants! */
     DMU_NONE = 0,
 
     DMU_VERTEX = 1,
-    DMU_SEG,
+    DMU_HEDGE,
     DMU_LINEDEF,
     DMU_SIDEDEF,
     DMU_NODE,
-    DMU_SUBSECTOR,
+    DMU_FACE,
     DMU_SECTOR,
     DMU_PLANE,
     DMU_SURFACE,
@@ -615,6 +607,18 @@ enum /* Do not change the numerical values of the constants! */
     DMU_SPEED,
     DMU_SEG_COUNT,
     DMU_NAMESPACE
+};
+
+// Map Update value names:
+enum {
+    DMU_SECTOR_COUNT,
+    DMU_LINE_COUNT,
+    DMU_SIDE_COUNT,
+    DMU_VERTEX_COUNT,
+    DMU_HEDGE_COUNT,
+    DMU_FACE_COUNT,
+    DMU_NODE_COUNT,
+    DMU_POLYOBJ_COUNT
 };
 
 // Linedef flags:
@@ -814,7 +818,7 @@ enum { MX, MY, MZ }; // Momentum axis indices.
     nodeindex_t     lineRoot; /* lines to which this is linked */ \
     struct mobj_s*  sNext, **sPrev; /* links in sector (if needed) */ \
 \
-    struct subsector_s* subsector; /* subsector in which this resides */ \
+    struct face_s*  face; /* subsector in which this resides */ \
     float           mom[3]; \
     angle_t         angle; \
     spritenum_t     sprite; /* used to find patch_t and flip value */ \
@@ -849,7 +853,7 @@ enum { MX, MY, MZ }; // Momentum axis indices.
 #define DD_BASE_POLYOBJ_ELEMENTS() \
     DD_BASE_DDMOBJ_ELEMENTS() \
 \
-    struct subsector_s* subsector; /* subsector in which this resides */ \
+    struct face_s*  face; /* subsector in which this resides */ \
     unsigned int    idx; /* Idx of polyobject. */ \
     int             tag; /* Reference tag. */ \
     int             validCount; \
@@ -858,8 +862,8 @@ enum { MX, MY, MZ }; // Momentum axis indices.
     angle_t         angle; \
     angle_t         destAngle; /* Destination angle. */ \
     angle_t         angleSpeed; /* Rotation speed. */ \
-    unsigned int    numSegs; \
-    struct seg_s**  segs; \
+    unsigned int    numHEdges; \
+    struct hedge_s**  hEdges; \
     struct fvertex_s* originalPts; /* Used as the base for the rotations. */ \
     struct fvertex_s* prevPts; /* Use to restore the old point values. */ \
     float           speed; /* Movement speed. */ \

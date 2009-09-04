@@ -188,13 +188,13 @@ sector_t *P_GetNextSector(linedef_t *line, sector_t *sec)
     if(!sec || !line)
         return NULL;
 
-    frontSec = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    frontSec = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
 
     if(!frontSec)
         return NULL;
 
     if(frontSec == sec)
-        return P_GetPtrp(line, DMU_BACK_SECTOR);
+        return DMU_GetPtrp(line, DMU_BACK_SECTOR);
 
     return frontSec;
 }
@@ -218,7 +218,7 @@ int findExtremalLightLevelInAdjacentSectors(void *ptr, void *context)
     if(other)
     {
         float               lightLevel =
-            P_GetFloatp(other, DMU_LIGHT_LEVEL);
+            DMU_GetFloatp(other, DMU_LIGHT_LEVEL);
 
         if(params->flags & FELLF_MIN)
         {
@@ -256,7 +256,7 @@ sector_t* P_FindSectorSurroundingLowestLight(sector_t *sec, float *val)
     params.baseSec = sec;
     params.flags = FELLF_MIN;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params,
+    DMU_Iteratep(sec, DMU_LINEDEF, &params,
                findExtremalLightLevelInAdjacentSectors);
 
     if(*val)
@@ -275,7 +275,7 @@ sector_t* P_FindSectorSurroundingHighestLight(sector_t *sec, float *val)
     params.baseSec = sec;
     params.flags = 0;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params,
+    DMU_Iteratep(sec, DMU_LINEDEF, &params,
                findExtremalLightLevelInAdjacentSectors);
 
     if(val)
@@ -304,7 +304,7 @@ int findNextLightLevel(void *ptr, void *context)
     if(other)
     {
         float               otherLight =
-            P_GetFloatp(other, DMU_LIGHT_LEVEL);
+            DMU_GetFloatp(other, DMU_LIGHT_LEVEL);
 
         if(params->flags & FNLLF_ABOVE)
         {
@@ -347,7 +347,7 @@ sector_t* P_FindSectorSurroundingNextLowestLight(sector_t *sec,
     params.flags = 0;
     params.foundSec = NULL;
     params.val = DDMINFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextLightLevel);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextLightLevel);
 
     if(*val)
         *val = params.val;
@@ -368,7 +368,7 @@ sector_t* P_FindSectorSurroundingNextHighestLight(sector_t *sec,
     params.flags = FNLLF_ABOVE;
     params.foundSec = NULL;
     params.val = DDMAXFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextLightLevel);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextLightLevel);
 
     if(*val)
         *val = params.val;
@@ -396,7 +396,7 @@ int findExtremalPlaneHeight(void *ptr, void *context)
     if(other)
     {
         float               height =
-            P_GetFloatp(other, ((params->flags & FEPHF_FLOOR)?
+            DMU_GetFloatp(other, ((params->flags & FEPHF_FLOOR)?
                                    DMU_FLOOR_HEIGHT : DMU_CEILING_HEIGHT));
 
         if(params->flags & FEPHF_MIN)
@@ -431,7 +431,7 @@ sector_t* P_FindSectorSurroundingLowestFloor(sector_t* sec, float* val)
     params.flags = FEPHF_MIN | FEPHF_FLOOR;
     params.val = DDMAXFLOAT;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -449,7 +449,7 @@ sector_t* P_FindSectorSurroundingHighestFloor(sector_t* sec, float* val)
     params.flags = FEPHF_FLOOR;
     params.val = DDMINFLOAT;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -467,7 +467,7 @@ sector_t* P_FindSectorSurroundingLowestCeiling(sector_t *sec, float *val)
     params.flags = FEPHF_MIN;
     params.val = DDMAXFLOAT;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -485,7 +485,7 @@ sector_t* P_FindSectorSurroundingHighestCeiling(sector_t *sec, float *val)
     params.flags = 0;
     params.val = DDMINFLOAT;
     params.foundSec = NULL;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findExtremalPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -514,7 +514,7 @@ int findNextPlaneHeight(void *ptr, void *context)
     if(other)
     {
         float               otherHeight =
-            P_GetFloatp(other, ((params->flags & FNPHF_FLOOR)? DMU_FLOOR_HEIGHT : DMU_CEILING_HEIGHT));
+            DMU_GetFloatp(other, ((params->flags & FNPHF_FLOOR)? DMU_FLOOR_HEIGHT : DMU_CEILING_HEIGHT));
 
         if(params->flags & FNPHF_ABOVE)
         {
@@ -551,7 +551,7 @@ sector_t* P_FindSectorSurroundingNextHighestFloor(sector_t *sec,
     params.flags = FNPHF_FLOOR | FNPHF_ABOVE;
     params.foundSec = NULL;
     params.val = DDMAXFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -573,7 +573,7 @@ sector_t* P_FindSectorSurroundingNextHighestCeiling(sector_t *sec,
     params.flags = FNPHF_ABOVE;
     params.foundSec = NULL;
     params.val = DDMAXFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -595,7 +595,7 @@ sector_t* P_FindSectorSurroundingNextLowestFloor(sector_t *sec,
     params.flags = FNPHF_FLOOR;
     params.foundSec = NULL;
     params.val = DDMINFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -617,7 +617,7 @@ sector_t* P_FindSectorSurroundingNextLowestCeiling(sector_t *sec,
     params.flags = 0;
     params.foundSec = NULL;
     params.val = DDMINFLOAT;
-    P_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, findNextPlaneHeight);
 
     if(val)
         *val = params.val;
@@ -638,8 +638,8 @@ int spreadSoundToNeighbors(void *ptr, void *context)
         (spreadsoundtoneighborsparams_t*) context;
     sector_t           *frontSec, *backSec;
 
-    frontSec = P_GetPtrp(li, DMU_FRONT_SECTOR);
-    backSec  = P_GetPtrp(li, DMU_BACK_SECTOR);
+    frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
+    backSec  = DMU_GetPtrp(li, DMU_BACK_SECTOR);
 
     if(frontSec && backSec)
     {
@@ -683,18 +683,18 @@ void P_RecursiveSound(struct mobj_s *soundTarget, sector_t *sec,
     xsector_t          *xsec = P_ToXSector(sec);
 
     // Wake up all monsters in this sector.
-    if(P_GetIntp(sec, DMU_VALID_COUNT) == VALIDCOUNT &&
+    if(DMU_GetIntp(sec, DMU_VALID_COUNT) == VALIDCOUNT &&
        xsec->soundTraversed <= soundBlocks + 1)
         return; // Already flooded.
 
-    P_SetIntp(sec, DMU_VALID_COUNT, VALIDCOUNT);
+    DMU_SetIntp(sec, DMU_VALID_COUNT, VALIDCOUNT);
     xsec->soundTraversed = soundBlocks + 1;
     xsec->soundTarget = soundTarget;
 
     params.baseSec = sec;
     params.soundBlocks = soundBlocks;
     params.soundTarget = soundTarget;
-    P_Iteratep(sec, DMU_LINEDEF, &params, spreadSoundToNeighbors);
+    DMU_Iteratep(sec, DMU_LINEDEF, &params, spreadSoundToNeighbors);
 }
 
 /**
@@ -706,5 +706,5 @@ void P_RecursiveSound(struct mobj_s *soundTarget, sector_t *sec,
 const terraintype_t* P_GetPlaneMaterialType(sector_t* sec, int plane)
 {
     return P_TerrainTypeForMaterial(
-        P_GetPtrp(sec, (plane? DMU_CEILING_MATERIAL : DMU_FLOOR_MATERIAL)));
+        DMU_GetPtrp(sec, (plane? DMU_CEILING_MATERIAL : DMU_FLOOR_MATERIAL)));
 }

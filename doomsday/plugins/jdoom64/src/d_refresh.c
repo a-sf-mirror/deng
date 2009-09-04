@@ -34,6 +34,7 @@
 
 #include "jdoom64.h"
 
+#include "dmu_lib.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
 #include "hu_pspr.h"
@@ -508,14 +509,13 @@ void P_SetDoomsdayFlags(mobj_t* mo)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    int                 i;
-    int                 count = DD_GetInteger(DD_SECTOR_COUNT);
+    uint                i;
     mobj_t*             iter;
 
     // Only visible things are in the sector thinglists, so this is good.
-    for(i = 0; i < count; ++i)
+    for(i = 0; i < numsectors; ++i)
     {
-        for(iter = P_GetPtr(DMU_SECTOR, i, DMT_MOBJS); iter; iter = iter->sNext)
+        for(iter = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS); iter; iter = iter->sNext)
             P_SetDoomsdayFlags(iter);
     }
 }

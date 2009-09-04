@@ -101,7 +101,7 @@
  *
  * Every mobj_t is linked into a single sector
  * based on its origin coordinates.
- * The subsector_t is found with R_PointInSubsector(x,y),
+ * The face_t is found with R_PointInSubsector(x,y),
  * and the sector_t can be found with subsector->sector.
  * The sector links are only used by the rendering code,
  * the play simulation does not care about them at all.
@@ -117,10 +117,10 @@
  * every linedef_t that it contains a piece of, and every
  * interactable mobj_t that has its origin contained.
  *
- * A valid mobj_t is a mobj_t that has the proper subsector_t
+ * A valid mobj_t is a mobj_t that has the proper face_t
  * filled in for its xy coordinates and is linked into the
  * sector from which the subsector was made, or has the
- * MF_NOSECTOR flag set (the subsector_t needs to be valid
+ * MF_NOSECTOR flag set (the face_t needs to be valid
  * even if MF_NOSECTOR is set).
  * Links should only be modified by the P_[Un]SetThingPosition()
  * functions.

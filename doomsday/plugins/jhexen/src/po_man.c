@@ -31,6 +31,7 @@
 
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_map.h"
 #include "g_common.h"
@@ -549,8 +550,8 @@ static int getPolyobjMirror(uint poly)
 
         if(po->tag == poly)
         {
-            seg_t*              seg = po->segs[0];
-            linedef_t*          linedef = P_GetPtrp(seg, DMU_LINEDEF);
+            hedge_t*              hEdge = po->hEdges[0];
+            linedef_t*          linedef = DMU_GetPtrp(hEdge, DMU_LINEDEF);
 
             return P_ToXLine(linedef)->arg2;
         }
@@ -561,7 +562,7 @@ static int getPolyobjMirror(uint poly)
 
 static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
 {
-    seg_t*              seg = (seg_t*) segp;
+    hedge_t*              seg = (hedge_t*) segp;
     polyobj_t*          po = (polyobj_t*) pop;
     uint                thrustAn;
     float               thrustX, thrustY, force;
@@ -578,7 +579,7 @@ static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
         return;
 
     thrustAn =
-        (P_GetAnglep(seg, DMU_ANGLE) - ANGLE_90) >> ANGLETOFINESHIFT;
+        (DMU_GetAnglep(seg, DMU_ANGLE) - ANGLE_90) >> ANGLETOFINESHIFT;
 
     pe = (polyevent_t*) po->specialData;
     if(pe)

@@ -610,7 +610,7 @@ static void rendLine2(const automap_t* map, const automapcfg_t* mcfg,
 
 int Rend_AutomapSeg(void* obj, void* data)
 {
-    seg_t*              seg = (seg_t*) obj;
+    hedge_t*              seg = (hedge_t*) obj;
     rendwallseg_params_t* p = (rendwallseg_params_t*) data;
     float               v1[2], v2[2];
     linedef_t*          line;
@@ -620,7 +620,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     player_t*           plr = p->plr;
     automapid_t         id;
 
-    line = P_GetPtrp(seg, DMU_LINEDEF);
+    line = DMU_GetPtrp(seg, DMU_LINEDEF);
     if(!line)
         return 1;
 
@@ -632,8 +632,8 @@ int Rend_AutomapSeg(void* obj, void* data)
        !(p->map->flags & AMF_REND_ALLLINES))
         return 1;
 
-    frontSector = P_GetPtrp(line, DMU_FRONT_SECTOR);
-    if(frontSector != P_GetPtrp(line, DMU_SIDEDEF0_OF_LINE | DMU_SECTOR))
+    frontSector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+    if(frontSector != DMU_GetPtrp(line, DMU_SIDEDEF0_OF_LINE | DMU_SECTOR))
         return 1; // We only want to draw twosided lines once.
 
     id = AM_MapForPlayer(plr - players);
@@ -641,7 +641,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     if((p->map->flags & AMF_REND_ALLLINES) ||
        xLine->mapped[plr - players])
     {
-        backSector = P_GetPtrp(line, DMU_BACK_SECTOR);
+        backSector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
 
         // Perhaps this is a specially colored line?
         info = AM_GetInfoForSpecialLine(id, xLine->special, frontSector,
@@ -655,14 +655,14 @@ int Rend_AutomapSeg(void* obj, void* data)
             }
             else
             {
-                if(P_GetFloatp(backSector, DMU_FLOOR_HEIGHT) !=
-                   P_GetFloatp(frontSector, DMU_FLOOR_HEIGHT))
+                if(DMU_GetFloatp(backSector, DMU_FLOOR_HEIGHT) !=
+                   DMU_GetFloatp(frontSector, DMU_FLOOR_HEIGHT))
                 {
                     // Floor level change.
                     info = AM_GetMapObjectInfo(id, AMO_FLOORCHANGELINE);
                 }
-                else if(P_GetFloatp(backSector, DMU_CEILING_HEIGHT) !=
-                        P_GetFloatp(frontSector, DMU_CEILING_HEIGHT))
+                else if(DMU_GetFloatp(backSector, DMU_CEILING_HEIGHT) !=
+                        DMU_GetFloatp(frontSector, DMU_CEILING_HEIGHT))
                 {
                     // Ceiling level change.
                     info = AM_GetMapObjectInfo(id, AMO_CEILINGCHANGELINE);
@@ -686,8 +686,8 @@ int Rend_AutomapSeg(void* obj, void* data)
     if(info && (p->objType == -1 ||
                 info == &p->cfg->mapObjectInfo[p->objType]))
     {
-        P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX0), DMU_XY, v1);
-        P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX1), DMU_XY, v2);
+        DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX0), DMU_XY, v1);
+        DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX1), DMU_XY, v2);
 
         rendLine2(p->map, p->cfg, v1[VX], v1[VY], v2[VX], v2[VY],
                   info->rgba,
@@ -707,9 +707,9 @@ int Rend_AutomapSeg(void* obj, void* data)
     return 1; // Continue iteration.
 }
 
-static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
+static boolean drawSegsOfSubsector(face_t* ssec, void* context)
 {
-    return P_Iteratep(ssec, DMU_SEG, context, Rend_AutomapSeg);
+    return DMU_Iteratep(ssec, DMU_HEDGE, context, Rend_AutomapSeg);
 }
 
 /**
@@ -748,7 +748,7 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
         // contain all walls, not just those visible *now*.
         for(i = 0; i < numsubsectors; ++i)
         {
-            P_Iteratep(P_ToPtr(DMU_SUBSECTOR, i), DMU_SEG, &params,
+            DMU_Iteratep(DMU_ToPtr(DMU_FACE, i), DMU_HEDGE, &params,
                        Rend_AutomapSeg);
         }
     }
@@ -758,14 +758,14 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
                           float a, blendmode_t blendMode,
                           boolean drawNormal)
 {
-    float               length = P_GetFloatp(line, DMU_LENGTH);
+    float               length = DMU_GetFloatp(line, DMU_LENGTH);
 
     if(length > 0)
     {
         float               v1[2], v2[2];
 
-        P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX0), DMU_XY, v1);
-        P_GetFloatpv(P_GetPtrp(line, DMU_VERTEX1), DMU_XY, v2);
+        DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX0), DMU_XY, v1);
+        DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX1), DMU_XY, v2);
 
         DGL_BlendMode(blendMode);
         DGL_Color4f(r, g, b, a);
@@ -784,7 +784,7 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
 
             float               normal[2], unit[2], d1[2];
 
-            P_GetFloatpv(line, DMU_DXY, d1);
+            DMU_GetFloatpv(line, DMU_DXY, d1);
 
             unit[VX] = d1[0] / length;
             unit[VY] = d1[1] / length;
@@ -819,14 +819,14 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
  */
 int renderPolyObjSeg(void* obj, void* context)
 {
-    seg_t*              seg = (seg_t*) obj;
+    hedge_t*              seg = (hedge_t*) obj;
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
     linedef_t*          line;
     xline_t*            xLine;
     const mapobjectinfo_t* info;
     automapobjectname_t amo;
 
-    if(!(line = P_GetPtrp(seg, DMU_LINEDEF)) || !(xLine = P_ToXLine(line)))
+    if(!(line = DMU_GetPtrp(seg, DMU_LINEDEF)) || !(xLine = P_ToXLine(line)))
         return 1;
 
     if(xLine->validCount == VALIDCOUNT)
@@ -861,10 +861,10 @@ int renderPolyObjSeg(void* obj, void* context)
 
 boolean drawSegsOfPolyobject(polyobj_t* po, void* context)
 {
-    seg_t**             segPtr;
+    hedge_t**             segPtr;
     int                 result = 1;
 
-    segPtr = po->segs;
+    segPtr = po->hEdges;
     while(*segPtr && (result = renderPolyObjSeg(*segPtr, context)) != 0)
         *segPtr++;
 
@@ -1444,7 +1444,7 @@ static void renderVertexes(float alpha)
     DGL_Begin(DGL_POINTS);
     for(i = 0; i < numvertexes; ++i)
     {
-        P_GetFloatv(DMU_VERTEX, i, DMU_XY, v);
+        DMU_GetFloatv(DMU_VERTEX, i, DMU_XY, v);
         DGL_TexCoord2f(0, v[VX], v[VY]);
         DGL_Vertex2f(v[VX], v[VY]);
     }

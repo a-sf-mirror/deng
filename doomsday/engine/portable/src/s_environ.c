@@ -135,11 +135,11 @@ static ownernode_t* newOwnerNode(void)
     return node;
 }
 
-static void setSubSecSectorOwner(ownerlist_t* ownerList, subsector_t* ssec)
+static void setSectorOwner(ownerlist_t* ownerList, face_t* face)
 {
     ownernode_t*        node;
 
-    if(!ssec)
+    if(!face)
         return;
 
     // Add a new owner.
@@ -147,7 +147,7 @@ static void setSubSecSectorOwner(ownerlist_t* ownerList, subsector_t* ssec)
     ownerList->count++;
 
     node = newOwnerNode();
-    node->data = ssec;
+    node->data = face;
     node->next = ownerList->head;
     ownerList->head = node;
 }
@@ -155,13 +155,12 @@ static void setSubSecSectorOwner(ownerlist_t* ownerList, subsector_t* ssec)
 static void findSSecsAffectingSector(gamemap_t* map, uint secIDX)
 {
     uint                i;
-    subsector_t*        sub;
     ownernode_t*        node, *p;
     float               bbox[4];
-    ownerlist_t         subSecOwnerList;
+    ownerlist_t         faceOwnerList;
     sector_t*           sec = &map->sectors[secIDX];
 
-    memset(&subSecOwnerList, 0, sizeof(subSecOwnerList));
+    memset(&faceOwnerList, 0, sizeof(faceOwnerList));
 
     memcpy(bbox, sec->bBox, sizeof(bbox));
     bbox[BOXLEFT]   -= 128;
@@ -174,37 +173,38 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
             bbox[BOXLEFT], bbox[BOXTOP], bbox[BOXRIGHT], bbox[BOXBOTTOM]);
 #endif
 */
-    for(i = 0; i < map->numSSectors; ++i)
+    for(i = 0; i < map->numFaces; ++i)
     {
-        sub = &map->ssectors[i];
+        face_t*             face = &map->faces[i];
+        subsector_t*        ssec = (subsector_t*) face->data;
 
         // Is this subsector close enough?
-        if(sub->sector == sec || // subsector is IN this sector
-           (sub->midPoint.pos[VX] > bbox[BOXLEFT] &&
-            sub->midPoint.pos[VX] < bbox[BOXRIGHT] &&
-            sub->midPoint.pos[VY] < bbox[BOXTOP] &&
-            sub->midPoint.pos[VY] > bbox[BOXBOTTOM]))
+        if(ssec->sector == sec || // subsector is IN this sector
+           (ssec->midPoint.pos[VX] > bbox[BOXLEFT] &&
+            ssec->midPoint.pos[VX] < bbox[BOXRIGHT] &&
+            ssec->midPoint.pos[VY] < bbox[BOXTOP] &&
+            ssec->midPoint.pos[VY] > bbox[BOXBOTTOM]))
         {
             // It will contribute to the reverb settings of this sector.
-            setSubSecSectorOwner(&subSecOwnerList, sub);
+            setSectorOwner(&faceOwnerList, face);
         }
     }
 
     // Now harden the list.
-    sec->numReverbSSecAttributors = subSecOwnerList.count;
-    if(sec->numReverbSSecAttributors)
+    sec->numReverbFaceAttributors = faceOwnerList.count;
+    if(sec->numReverbFaceAttributors)
     {
-        subsector_t **ptr;
+        face_t**            ptr;
 
-        sec->reverbSSecs =
-            Z_Malloc((sec->numReverbSSecAttributors + 1) * sizeof(subsector_t*),
+        sec->reverbFaces =
+            Z_Malloc((sec->numReverbFaceAttributors + 1) * sizeof(face_t*),
                      PU_MAPSTATIC, 0);
 
-        for(i = 0, ptr = sec->reverbSSecs, node = subSecOwnerList.head;
-            i < sec->numReverbSSecAttributors; ++i, ptr++)
+        for(i = 0, ptr = sec->reverbFaces, node = faceOwnerList.head;
+            i < sec->numReverbFaceAttributors; ++i, ptr++)
         {
             p = node->next;
-            *ptr = (subsector_t*) node->data;
+            *ptr = (face_t*) node->data;
 
             if(i < numSectors - 1)
             {   // Move this node to the unused list for re-use.
@@ -255,12 +255,13 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
              (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
-static boolean calcSSecReverb(subsector_t* ssec)
+static boolean calcSSecReverb(face_t* face)
 {
     uint                i, v;
-    seg_t**             ptr;
+    hedge_t*            ptr;
+    subsector_t*        ssec = (subsector_t*) face->data;
     float               total = 0;
-    material_env_class_t     mclass;
+    material_env_class_t mclass;
     float               materials[NUM_MATERIAL_ENV_CLASSES];
 
     if(!ssec->sector)
@@ -280,25 +281,26 @@ static boolean calcSSecReverb(subsector_t* ssec)
 
     // The other reverb properties can be found out by taking a look at the
     // materials of all surfaces in the subsector.
-    ptr = ssec->segs;
-    while(*ptr)
+    if((ptr = face->hEdge))
     {
-        seg_t*              seg = *ptr;
-
-        if(seg->lineDef && SEG_SIDEDEF(seg) &&
-           SEG_SIDEDEF(seg)->SW_middlematerial)
+        do
         {
-            material_t*         mat = SEG_SIDEDEF(seg)->SW_middlematerial;
+            hedge_t*            hEdge = ptr;
+            seg_t*              seg = (seg_t*) (ptr)->data;
 
-            // The material determines its type.
-            mclass = Material_GetEnvClass(mat);
-            total += seg->length;
-            if(!(mclass >= 0 && mclass < NUM_MATERIAL_ENV_CLASSES))
-                mclass = MEC_WOOD; // Assume it's wood if unknown.
-            materials[mclass] += seg->length;
-        }
+            if(seg->lineDef && HEDGE_SIDEDEF(hEdge) &&
+               HEDGE_SIDEDEF(hEdge)->SW_middlematerial)
+            {
+                material_t*         mat = HEDGE_SIDEDEF(hEdge)->SW_middlematerial;
 
-        *ptr++;
+                // The material determines its type.
+                mclass = Material_GetEnvClass(mat);
+                total += seg->length;
+                if(!(mclass >= 0 && mclass < NUM_MATERIAL_ENV_CLASSES))
+                    mclass = MEC_WOOD; // Assume it's wood if unknown.
+                materials[mclass] += seg->length;
+            }
+        } while((ptr = ptr->next) != face->hEdge);
     }
 
     if(!total)
@@ -355,10 +357,8 @@ Con_Message("ssec %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
  */
 void S_CalcSectorReverb(sector_t* sec)
 {
-    uint                i;
-    subsector_t*        sub;
+    uint                i, sectorSpace;
     float               spaceScatter;
-    uint                sectorSpace;
 
     if(!sec)
         return; // Wha?
@@ -371,20 +371,22 @@ void S_CalcSectorReverb(sector_t* sec)
 Con_Message("sector %i: secsp:%i\n", c, sectorSpace);
 #endif
 */
-    for(i = 0; i < sec->numReverbSSecAttributors; ++i)
+    for(i = 0; i < sec->numReverbFaceAttributors; ++i)
     {
-        sub = sec->reverbSSecs[i];
+        face_t*             face = sec->reverbFaces[i];
 
-        if(calcSSecReverb(sub))
+        if(calcSSecReverb(face))
         {
-            sec->reverb[SRD_SPACE]   += sub->reverb[SRD_SPACE];
+            const subsector_t*  ssec = (subsector_t*) face->data;
+
+            sec->reverb[SRD_SPACE]   += ssec->reverb[SRD_SPACE];
 
             sec->reverb[SRD_VOLUME]  +=
-                sub->reverb[SRD_VOLUME]  / 255.0f * sub->reverb[SRD_SPACE];
+                ssec->reverb[SRD_VOLUME]  / 255.0f * ssec->reverb[SRD_SPACE];
             sec->reverb[SRD_DECAY]   +=
-                sub->reverb[SRD_DECAY]   / 255.0f * sub->reverb[SRD_SPACE];
+                ssec->reverb[SRD_DECAY]   / 255.0f * ssec->reverb[SRD_SPACE];
             sec->reverb[SRD_DAMPING] +=
-                sub->reverb[SRD_DAMPING] / 255.0f * sub->reverb[SRD_SPACE];
+                ssec->reverb[SRD_DAMPING] / 255.0f * ssec->reverb[SRD_SPACE];
         }
     }
 

@@ -40,10 +40,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "dmu_lib.h"
 #include "hu_log.h"
 #include "hu_stuff.h"
 #include "f_infine.h"
@@ -1863,13 +1862,13 @@ void FIC_End(void)
 
 void FIC_BGFlat(void)
 {
-    fi->bgMaterial = P_ToPtr(DMU_MATERIAL,
+    fi->bgMaterial = DMU_ToPtr(DMU_MATERIAL,
         P_MaterialCheckNumForName(FI_GetToken(), MN_FLATS));
 }
 
 void FIC_BGTexture(void)
 {
-    fi->bgMaterial = P_ToPtr(DMU_MATERIAL,
+    fi->bgMaterial = DMU_ToPtr(DMU_MATERIAL,
         P_MaterialCheckNumForName(FI_GetToken(), MN_TEXTURES));
 }
 

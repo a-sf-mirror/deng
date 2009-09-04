@@ -59,110 +59,94 @@
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static zblockset_t *hEdgeBlockSet;
-static boolean hEdgeAllocatorInited = false;
-
 // CODE --------------------------------------------------------------------
 
-static __inline hedge_t *allocHEdge(void)
+static __inline hedge_t* allocHEdge(void)
 {
-    if(hEdgeAllocatorInited)
-    {   // Use the block allocator.
-        hedge_t            *hEdge = Z_BlockNewElement(hEdgeBlockSet);
-        memset(hEdge, 0, sizeof(hedge_t));
-        return hEdge;
-    }
-
-    return M_Calloc(sizeof(hedge_t));
+    return Z_Calloc(sizeof(hedge_t), PU_MAP, 0);
 }
 
-static __inline void freeHEdge(hedge_t *hEdge)
+static __inline void freeHEdge(hedge_t* hEdge)
 {
-    if(hEdgeAllocatorInited)
-    {   // Ignore, it'll be free'd along with the block allocator.
-        return;
-    }
-
-    M_Free(hEdge);
+    Z_Free(hEdge);
 }
 
-static __inline edgetip_t *allocEdgeTip(void)
+static __inline hedge_t* createHEdge(void)
+{
+    hedge_t*            hEdge = allocHEdge();
+
+    hEdge->data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
+    return hEdge;
+}
+
+static void copyHEdge(hedge_t* dst, const hedge_t* src)
+{
+    dst->v[0] = src->v[0];
+    dst->v[1] = src->v[1];
+    dst->twin = src->twin;
+    dst->next = src->next;
+    dst->prev = src->prev;
+
+    memcpy(dst->data, src->data, sizeof(bsp_hedgeinfo_t));
+}
+
+static __inline edgetip_t* allocEdgeTip(void)
 {
     return M_Calloc(sizeof(edgetip_t));
 }
 
-static __inline void freeEdgeTip(edgetip_t *tip)
+static __inline void freeEdgeTip(edgetip_t* tip)
 {
     M_Free(tip);
 }
 
 /**
- * Init the half-edge block allocator.
+ * Update the precomputed members of the hEdge.
  */
-void BSP_InitHEdgeAllocator(void)
+static void updateHEdge(const hedge_t* hEdge)
 {
-    if(hEdgeAllocatorInited)
-        return; // Already been here.
+    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
 
-    hEdgeBlockSet = Z_BlockCreate(sizeof(hedge_t), 512, PU_STATIC);
-    hEdgeAllocatorInited = true;
-}
+    data->pSX = hEdge->v[0]->buildData.pos[VX];
+    data->pSY = hEdge->v[0]->buildData.pos[VY];
+    data->pEX = hEdge->v[1]->buildData.pos[VX];
+    data->pEY = hEdge->v[1]->buildData.pos[VY];
+    data->pDX = data->pEX - data->pSX;
+    data->pDY = data->pEY - data->pSY;
 
-/**
- * Shutdown the half-edge block allocator. All elements will be free'd!
- */
-void BSP_ShutdownHEdgeAllocator(void)
-{
-    if(hEdgeAllocatorInited)
-    {
-        Z_BlockDestroy(hEdgeBlockSet);
-        hEdgeBlockSet = NULL;
+    data->pLength = M_Length(data->pDX, data->pDY);
+    data->pAngle  = M_SlopeToAngle(data->pDX, data->pDY);
 
-        hEdgeAllocatorInited = false;
-    }
-}
+    if(data->pLength <= 0)
+        Con_Error("HEdge %p has zero p_length.", hEdge);
 
-/**
- * Update the precomputed members of the hedge.
- */
-static void updateHEdge(hedge_t *hedge)
-{
-    hedge->pSX = hedge->v[0]->buildData.pos[VX];
-    hedge->pSY = hedge->v[0]->buildData.pos[VY];
-    hedge->pEX = hedge->v[1]->buildData.pos[VX];
-    hedge->pEY = hedge->v[1]->buildData.pos[VY];
-    hedge->pDX = hedge->pEX - hedge->pSX;
-    hedge->pDY = hedge->pEY - hedge->pSY;
-
-    hedge->pLength = M_Length(hedge->pDX, hedge->pDY);
-    hedge->pAngle  = M_SlopeToAngle(hedge->pDX, hedge->pDY);
-
-    if(hedge->pLength <= 0)
-        Con_Error("Hedge %p has zero p_length.", hedge);
-
-    hedge->pPerp =  hedge->pSY * hedge->pDX - hedge->pSX * hedge->pDY;
-    hedge->pPara = -hedge->pSX * hedge->pDX - hedge->pSY * hedge->pDY;
+    data->pPerp =  data->pSY * data->pDX - data->pSX * data->pDY;
+    data->pPara = -data->pSX * data->pDX - data->pSY * data->pDY;
 }
 
 /**
  * Create a new half-edge.
  */
-hedge_t *HEdge_Create(linedef_t *line, linedef_t *sourceLine,
-                      vertex_t *start, vertex_t *end, sector_t *sec,
+hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
+                      vertex_t* start, vertex_t* end, sector_t* sec,
                       boolean back)
 {
-    hedge_t            *hEdge = allocHEdge();
+    hedge_t*            hEdge = createHEdge();
 
     hEdge->v[0] = start;
     hEdge->v[1] = end;
-    hEdge->lineDef = line;
-    hEdge->side = (back? 1 : 0);
-    hEdge->sector = sec;
     hEdge->twin = NULL;
-    hEdge->nextOnSide = hEdge->prevOnSide = NULL;
+    hEdge->next = hEdge->prev = NULL;
 
-    hEdge->sourceLine = sourceLine;
-    hEdge->index = -1;
+    {
+    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
+
+    data->lineDef = line;
+    data->side = (back? 1 : 0);
+    data->sector = sec;
+    data->sourceLine = sourceLine;
+    data->index = -1;
+    }
 
     updateHEdge(hEdge);
 
@@ -174,7 +158,7 @@ hedge_t *HEdge_Create(linedef_t *line, linedef_t *sourceLine,
  *
  * @param hEdge         Ptr to the half-edge to be destroyed.
  */
-void HEdge_Destroy(hedge_t *hEdge)
+void HEdge_Destroy(hedge_t* hEdge)
 {
     if(hEdge)
     {
@@ -199,23 +183,25 @@ void HEdge_Destroy(hedge_t *hEdge)
  * half-edge (and/or backseg), so that future processing is not messed up by
  * incorrect counts.
  */
-hedge_t *HEdge_Split(hedge_t *oldHEdge, double x, double y)
+hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
 {
-    hedge_t            *newHEdge;
-    vertex_t           *newVert;
+    hedge_t*            newHEdge;
+    bsp_hedgeinfo_t*    newData,
+                       *oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
+    vertex_t*           newVert;
 
 /*#if _DEBUG
 if(oldHEdge->lineDef)
     Con_Message("Splitting Linedef %d (%p) at (%1.1f,%1.1f)\n",
-                oldHEdge->lineDef->index, oldHEdge, x, y);
+                oldData->lineDef->index, oldHEdge, x, y);
 else
     Con_Message("Splitting MiniHEdge %p at (%1.1f,%1.1f)\n", oldHEdge, x, y);
 #endif*/
 
     // Update superblock, if needed.
-    if(oldHEdge->block)
-        BSP_IncSuperBlockHEdgeCounts(oldHEdge->block,
-                                     (oldHEdge->lineDef != NULL));
+    if(oldData->block)
+        SuperBlock_IncHEdgeCounts(oldData->block,
+                                  (oldData->lineDef != NULL));
     /**
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
@@ -226,19 +212,19 @@ else
     newVert->buildData.refCount = (oldHEdge->twin? 4 : 2);
 
     // Compute wall_tip info.
-    BSP_CreateVertexEdgeTip(newVert, -oldHEdge->pDX, -oldHEdge->pDY,
+    BSP_CreateVertexEdgeTip(newVert, -oldData->pDX, -oldData->pDY,
                             oldHEdge, oldHEdge->twin);
-    BSP_CreateVertexEdgeTip(newVert, oldHEdge->pDX, oldHEdge->pDY,
+    BSP_CreateVertexEdgeTip(newVert, oldData->pDX, oldData->pDY,
                             oldHEdge->twin, oldHEdge);
 
-    newHEdge = allocHEdge();
-
+    newHEdge = createHEdge();
     // Copy the old half-edge info.
-    memcpy(newHEdge, oldHEdge, sizeof(hedge_t));
-    newHEdge->next = NULL;
+    copyHEdge(newHEdge, oldHEdge);
 
-    newHEdge->prevOnSide = oldHEdge;
-    oldHEdge->nextOnSide = newHEdge;
+    newData = (bsp_hedgeinfo_t*) newHEdge->data;
+
+    newHEdge->prev = oldHEdge;
+    oldHEdge->next = newHEdge;
 
     oldHEdge->v[1] = newVert;
     updateHEdge(oldHEdge);
@@ -254,25 +240,22 @@ Con_Message("Splitting Vertex is %04X at (%1.1f,%1.1f)\n",
     // Handle the twin.
     if(oldHEdge->twin)
     {
+        bsp_hedgeinfo_t*    oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
+
 /*#if _DEBUG
 Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
 #endif*/
 
-        // Update superblock, if needed.
-        if(oldHEdge->twin->block)
-            BSP_IncSuperBlockHEdgeCounts(oldHEdge->twin->block,
-                                         (oldHEdge->twin != NULL));
+        newHEdge->twin = createHEdge();
 
-        newHEdge->twin = allocHEdge();
-
-        // Copy seg info.
-        memcpy(newHEdge->twin, oldHEdge->twin, sizeof(hedge_t));
+        // Copy edge info.
+        copyHEdge(newHEdge->twin, oldHEdge->twin);
 
         // It is important to keep the twin relationship valid.
         newHEdge->twin->twin = newHEdge;
 
-        newHEdge->twin->nextOnSide = oldHEdge->twin;
-        oldHEdge->twin->prevOnSide = newHEdge->twin;
+        newHEdge->twin->next = oldHEdge->twin;
+        oldHEdge->twin->prev = newHEdge->twin;
 
         oldHEdge->twin->v[0] = newVert;
         updateHEdge(oldHEdge->twin);
@@ -280,18 +263,28 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
         newHEdge->twin->v[1] = newVert;
         updateHEdge(newHEdge->twin);
 
-        // Link it into list.
-        oldHEdge->twin->next = newHEdge->twin;
+        // Update superblock, if needed.
+        if(oldInfo->block)
+        {
+            SuperBlock_IncHEdgeCounts(oldInfo->block,
+                                      (oldHEdge->twin != NULL));
+            SuperBlock_LinkHEdge(oldInfo->block, newHEdge->twin);
+        }
+        else if(oldInfo->leaf)
+        {
+            // Link it into list for the leaf.
+            BSPLeaf_LinkHEdge(oldInfo->leaf, newHEdge->twin);
+        }
     }
 
     return newHEdge;
 }
 
-void BSP_CreateVertexEdgeTip(vertex_t *vert, double dx, double dy,
-                             hedge_t *back, hedge_t *front)
+void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
+                             hedge_t* back, hedge_t* front)
 {
-    edgetip_t          *tip = allocEdgeTip();
-    edgetip_t          *after;
+    edgetip_t*          tip = allocEdgeTip();
+    edgetip_t*          after;
 
     tip->angle = M_SlopeToAngle(dx, dy);
     tip->ET_edge[BACK]  = back;
@@ -327,7 +320,7 @@ void BSP_CreateVertexEdgeTip(vertex_t *vert, double dx, double dy,
     }
 }
 
-void BSP_DestroyVertexEdgeTip(edgetip_t *tip)
+void BSP_DestroyVertexEdgeTip(edgetip_t* tip)
 {
     if(tip)
     {
@@ -340,9 +333,9 @@ void BSP_DestroyVertexEdgeTip(edgetip_t *tip)
  * at this vertex is open. Returns a sector reference if it's open,
  * or NULL if closed (void space or directly along a linedef).
  */
-sector_t *BSP_VertexCheckOpen(vertex_t *vert, double dX, double dY)
+sector_t* BSP_VertexCheckOpen(vertex_t* vert, double dX, double dY)
 {
-    edgetip_t          *tip;
+    edgetip_t*          tip;
     angle_g             angle = M_SlopeToAngle(dX, dY);
 
     // First check whether there's a wall_tip that lies in the exact
@@ -350,7 +343,7 @@ sector_t *BSP_VertexCheckOpen(vertex_t *vert, double dX, double dY)
     // vertex).
     for(tip = vert->buildData.tipSet; tip; tip = tip->ET_next)
     {
-        angle_g     diff = fabs(tip->angle - angle);
+        angle_g             diff = fabs(tip->angle - angle);
 
         if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
         {   // Yes, found one.
@@ -365,14 +358,16 @@ sector_t *BSP_VertexCheckOpen(vertex_t *vert, double dX, double dY)
     {
         if(angle + ANG_EPSILON < tip->angle)
         {   // Found it.
-            return (tip->ET_edge[FRONT]? tip->ET_edge[FRONT]->sector : NULL);
+            return (tip->ET_edge[FRONT]?
+                ((bsp_hedgeinfo_t*) tip->ET_edge[FRONT]->data)->sector : NULL);
         }
 
         if(!tip->ET_next)
         {
             // No more tips, thus we must be on the BACK side of the tip
             // with the largest angle.
-            return (tip->ET_edge[BACK]? tip->ET_edge[BACK]->sector : NULL);
+            return (tip->ET_edge[BACK]?
+                ((bsp_hedgeinfo_t*) tip->ET_edge[BACK]->data)->sector : NULL);
         }
     }
 

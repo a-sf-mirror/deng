@@ -29,18 +29,16 @@
 #ifndef __COMMON_PLAYSETUP_H__
 #define __COMMON_PLAYSETUP_H__
 
-#define numvertexes (*(uint*) DD_GetVariable(DD_VERTEX_COUNT))
-#define numsegs     (*(uint*) DD_GetVariable(DD_SEG_COUNT))
-#define numsectors  (*(uint*) DD_GetVariable(DD_SECTOR_COUNT))
-#define numsubsectors (*(uint*) DD_GetVariable(DD_SUBSECTOR_COUNT))
-#define numnodes    (*(uint*) DD_GetVariable(DD_NODE_COUNT))
-#define numlines    (*(uint*) DD_GetVariable(DD_LINE_COUNT))
-#define numsides    (*(uint*) DD_GetVariable(DD_SIDE_COUNT))
-#define nummaterials (*(uint*) DD_GetVariable(DD_MATERIAL_COUNT))
+#define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
+#define numsegs     (*(uint*) P_GetVariable(DMU_HEDGE_COUNT))
+#define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
+#define numsubsectors (*(uint*) P_GetVariable(DMU_FACE_COUNT))
+#define numnodes    (*(uint*) P_GetVariable(DMU_NODE_COUNT))
+#define numlines    (*(uint*) P_GetVariable(DMU_LINE_COUNT))
+#define numsides    (*(uint*) P_GetVariable(DMU_SIDE_COUNT))
+#define numpolyobjs (*(uint*) P_GetVariable(DMU_POLYOBJ_COUNT))
 
-#if __JHEXEN__
-#define numpolyobjs (*(uint*) DD_GetVariable(DD_POLYOBJ_COUNT))
-#endif
+#define nummaterials (*(uint*) DD_GetVariable(DD_MATERIAL_COUNT))
 
 void        P_SetupForMapData(int type, uint num);
 

@@ -62,13 +62,13 @@ void T_FireFlicker(fireflicker_t *flick)
     if(--flick->count)
         return;
 
-    lightLevel = P_GetFloatp(flick->sector, DMU_LIGHT_LEVEL);
+    lightLevel = DMU_GetFloatp(flick->sector, DMU_LIGHT_LEVEL);
     amount = ((P_Random() & 3) * 16) / 255.0f;
 
     if(lightLevel - amount < flick->minLight)
-        P_SetFloatp(flick->sector, DMU_LIGHT_LEVEL, flick->minLight);
+        DMU_SetFloatp(flick->sector, DMU_LIGHT_LEVEL, flick->minLight);
     else
-        P_SetFloatp(flick->sector, DMU_LIGHT_LEVEL,
+        DMU_SetFloatp(flick->sector, DMU_LIGHT_LEVEL,
                     flick->maxLight - amount);
 
     flick->count = 4;
@@ -76,7 +76,7 @@ void T_FireFlicker(fireflicker_t *flick)
 
 void P_SpawnFireFlicker(sector_t *sector)
 {
-    float               lightLevel = P_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
     fireflicker_t      *flick;
 
@@ -110,15 +110,15 @@ void T_LightFlash(lightflash_t *flash)
     if(--flash->count)
         return;
 
-    lightLevel = P_GetFloatp(flash->sector, DMU_LIGHT_LEVEL);
+    lightLevel = DMU_GetFloatp(flash->sector, DMU_LIGHT_LEVEL);
     if(lightLevel == flash->maxLight)
     {
-        P_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->minLight);
+        DMU_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->minLight);
         flash->count = (P_Random() & flash->minTime) + 1;
     }
     else
     {
-        P_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->maxLight);
+        DMU_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->maxLight);
         flash->count = (P_Random() & flash->maxTime) + 1;
     }
 }
@@ -129,7 +129,7 @@ void T_LightFlash(lightflash_t *flash)
  */
 void P_SpawnLightFlash(sector_t *sector)
 {
-    float               lightLevel = P_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
     lightflash_t       *flash;
 
@@ -164,15 +164,15 @@ void T_StrobeFlash(strobe_t *flash)
     if(--flash->count)
         return;
 
-    lightLevel = P_GetFloatp(flash->sector, DMU_LIGHT_LEVEL);
+    lightLevel = DMU_GetFloatp(flash->sector, DMU_LIGHT_LEVEL);
     if(lightLevel == flash->minLight)
     {
-        P_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->maxLight);
+        DMU_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->maxLight);
         flash->count = flash->brightTime;
     }
     else
     {
-        P_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->minLight);
+        DMU_SetFloatp(flash->sector, DMU_LIGHT_LEVEL, flash->minLight);
         flash->count = flash->darkTime;
     }
 }
@@ -184,7 +184,7 @@ void T_StrobeFlash(strobe_t *flash)
 void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
 {
     strobe_t           *flash;
-    float               lightLevel = P_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
@@ -250,13 +250,13 @@ void EV_TurnTagLightsOff(linedef_t *line)
     P_IterListResetIterator(list, true);
     while((sec = P_IterListIterator(list)) != NULL)
     {
-        lightLevel = P_GetFloatp(sec, DMU_LIGHT_LEVEL);
+        lightLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
         otherLevel = DDMAXFLOAT;
         P_FindSectorSurroundingLowestLight(sec, &otherLevel);
         if(otherLevel < lightLevel)
             lightLevel = otherLevel;
 
-        P_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
+        DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
     }
 }
 
@@ -280,20 +280,20 @@ void EV_LightTurnOn(linedef_t *line, float max)
         // surrounding sector.
         if(max == 0)
         {
-            lightLevel = P_GetFloatp(sec, DMU_LIGHT_LEVEL);
+            lightLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
             otherLevel = DDMINFLOAT;
             P_FindSectorSurroundingHighestLight(sec, &otherLevel);
             if(otherLevel > lightLevel)
                 lightLevel = otherLevel;
         }
 
-        P_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
+        DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
     }
 }
 
 void T_Glow(glow_t *g)
 {
-    float               lightLevel = P_GetFloatp(g->sector, DMU_LIGHT_LEVEL);
+    float               lightLevel = DMU_GetFloatp(g->sector, DMU_LIGHT_LEVEL);
     float               glowDelta = (1.0f / 255.0f) * (float) GLOWSPEED;
 
     switch(g->direction)
@@ -321,12 +321,12 @@ void T_Glow(glow_t *g)
         break;
     }
 
-    P_SetFloatp(g->sector, DMU_LIGHT_LEVEL, lightLevel);
+    DMU_SetFloatp(g->sector, DMU_LIGHT_LEVEL, lightLevel);
 }
 
 void P_SpawnGlowingLight(sector_t *sector)
 {
-    float               lightLevel = P_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
     glow_t             *g;
 

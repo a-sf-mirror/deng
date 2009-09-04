@@ -58,8 +58,8 @@ extern          "C" {
     typedef struct vertex_s {int type; } vertex_t;
     typedef struct linedef_s { int type; } linedef_t;
     typedef struct sidedef_s { int type; } sidedef_t;
-    typedef struct seg_s { int type; } seg_t;
-    typedef struct subsector_s { int type; } subsector_t;
+    typedef struct hedge_s { int type; } hedge_t;
+    typedef struct face_s { int type; } face_t;
     typedef struct sector_s { int type; } sector_t;
     typedef struct plane_s { int type; } plane_t;
     typedef struct material_s { int type; } material_t;
@@ -234,7 +234,7 @@ extern          "C" {
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
     boolean         P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
-                                           boolean (*func) (subsector_t*, void*),
+                                           boolean (*func) (face_t*, void*),
                                            void* data);
     boolean         P_PolyobjsBoxIterator(const float box[4],
                                           boolean (*func) (struct polyobj_s*, void*),
@@ -263,6 +263,8 @@ extern          "C" {
     boolean         P_LoadMap(const char* mapID);
 
     // Play: Map Data Updates and Information Access.
+    void*           P_GetVariable(int value);
+    void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
     int             P_Callback(int type, uint index, void* context,
@@ -425,7 +427,7 @@ extern          "C" {
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);
-    struct subsector_s* R_PointInSubsector(float x, float y);
+    struct face_s* R_PointInSubsector(float x, float y);
 
     colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
                                           const byte* data, size_t num);

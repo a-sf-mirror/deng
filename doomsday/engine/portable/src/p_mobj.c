@@ -337,7 +337,7 @@ boolean PIT_MobjCollide(mobj_t* mo, void* parm)
  */
 boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
 {
-    subsector_t        *newsubsec;
+    subsector_t*        newsubsec;
     checkpos_data_t     data;
     vec2_t              point;
     boolean             result = true;
@@ -362,7 +362,7 @@ boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
     V2_Set(point, x + mo->radius + DDMOBJ_RADIUS_MAX, y + mo->radius + DDMOBJ_RADIUS_MAX);
     V2_AddToBox(data.box, point);
 
-    newsubsec = R_PointInSubsector(x, y);
+    newsubsec = (subsector_t*) R_PointInSubsector(x, y)->data;
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.

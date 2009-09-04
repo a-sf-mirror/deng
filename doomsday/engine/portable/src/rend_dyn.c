@@ -555,10 +555,10 @@ boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
     return true; // Continue iteration.
 }
 
-static uint processSubSector(subsector_t* ssec, surfacelumobjiterparams_t* params)
+static uint processFace(face_t* face, surfacelumobjiterparams_t* params)
 {
     // Process each lumobj contacting the subsector.
-    R_IterateSubsectorContacts(ssec, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
+    R_IterateSubsectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
                                params);
 
     // Did we generate a light list?
@@ -585,7 +585,7 @@ static uint processSubSector(subsector_t* ssec, surfacelumobjiterparams_t* param
  * @return              Dynlight list name if the quad is lit by one or more
  *                      light sources, else @c 0.
  */
-uint DL_ProjectOnSurface(subsector_t* ssec, const vectorcomp_t topLeft[3],
+uint DL_ProjectOnSurface(face_t* face, const vectorcomp_t topLeft[3],
                          const vectorcomp_t bottomRight[3],
                          const vectorcomp_t normal[3], byte flags)
 {
@@ -594,7 +594,7 @@ uint DL_ProjectOnSurface(subsector_t* ssec, const vectorcomp_t topLeft[3],
     if(!useDynLights && !useWallGlow)
         return 0; // Disabled.
 
-    if(!ssec)
+    if(!face)
         return 0;
 
     V3_Copy(params.v1, topLeft);
@@ -604,7 +604,7 @@ uint DL_ProjectOnSurface(subsector_t* ssec, const vectorcomp_t topLeft[3],
     params.haveList = false;
     params.listIdx = 0;
 
-    return processSubSector(ssec, &params);
+    return processFace(face, &params);
 }
 
 /**

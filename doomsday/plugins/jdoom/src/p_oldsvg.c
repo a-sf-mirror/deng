@@ -340,10 +340,8 @@ static void SV_ReadMobj(void)
     }
     P_MobjSetPosition(mo);
     mo->info = info;
-    mo->floorZ =
-        P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ =
-        P_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
 }
 
 void P_v19_UnArchivePlayers(void)
@@ -389,17 +387,17 @@ void P_v19_UnArchiveWorld(void)
     // Do sectors.
     for(i = 0; i < numsectors; ++i)
     {
-        sec = P_ToPtr(DMU_SECTOR, i);
+        sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
 
-        P_SetFloatp(sec, DMU_FLOOR_HEIGHT, (float) (*get++));
-        P_SetFloatp(sec, DMU_CEILING_HEIGHT, (float) (*get++));
-        P_SetPtrp(sec, DMU_FLOOR_MATERIAL,
-                  P_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
-        P_SetPtrp(sec, DMU_CEILING_MATERIAL,
-                  P_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
+        DMU_SetFloatp(sec, DMU_FLOOR_HEIGHT, (float) (*get++));
+        DMU_SetFloatp(sec, DMU_CEILING_HEIGHT, (float) (*get++));
+        DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL,
+                  DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
+        DMU_SetPtrp(sec, DMU_CEILING_MATERIAL,
+                  DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
 
-        P_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) (*get++) / 255.0f);
+        DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) (*get++) / 255.0f);
         xsec->special = *get++; // needed?
         /*xsec->tag =*/ *get++; // needed?
         xsec->specialData = 0;
@@ -409,7 +407,7 @@ void P_v19_UnArchiveWorld(void)
     // Do lines.
     for(i = 0; i < numlines; ++i)
     {
-        line = P_ToPtr(DMU_LINEDEF, i);
+        line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
 
         xline->flags = *get++;
@@ -418,23 +416,23 @@ void P_v19_UnArchiveWorld(void)
 
         for(j = 0; j < 2; ++j)
         {
-            sidedef_t* sdef = P_GetPtrp(line, (j? DMU_SIDEDEF1:DMU_SIDEDEF0));
+            sidedef_t* sdef = DMU_GetPtrp(line, (j? DMU_SIDEDEF1:DMU_SIDEDEF0));
 
             if(!sdef)
                 continue;
 
             matOffset[VX] = (float) (*get++);
             matOffset[VY] = (float) (*get++);
-            P_SetFloatpv(sdef, DMU_TOP_MATERIAL_OFFSET_XY, matOffset);
-            P_SetFloatpv(sdef, DMU_MIDDLE_MATERIAL_OFFSET_XY, matOffset);
-            P_SetFloatpv(sdef, DMU_BOTTOM_MATERIAL_OFFSET_XY, matOffset);
+            DMU_SetFloatpv(sdef, DMU_TOP_MATERIAL_OFFSET_XY, matOffset);
+            DMU_SetFloatpv(sdef, DMU_MIDDLE_MATERIAL_OFFSET_XY, matOffset);
+            DMU_SetFloatpv(sdef, DMU_BOTTOM_MATERIAL_OFFSET_XY, matOffset);
 
-            P_SetPtrp(sdef, DMU_TOP_MATERIAL,
-                      P_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
-            P_SetPtrp(sdef, DMU_BOTTOM_MATERIAL,
-                      P_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
-            P_SetPtrp(sdef, DMU_MIDDLE_MATERIAL,
-                      P_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+            DMU_SetPtrp(sdef, DMU_TOP_MATERIAL,
+                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+            DMU_SetPtrp(sdef, DMU_BOTTOM_MATERIAL,
+                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+            DMU_SetPtrp(sdef, DMU_MIDDLE_MATERIAL,
+                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
         }
     }
 
@@ -509,7 +507,7 @@ typedef struct {
     ceiling->type = SV_ReadLong();
 
     // A 32bit pointer to sector, serialized.
-    ceiling->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    ceiling->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!ceiling->sector)
         Con_Error("tc_ceiling: bad sector number\n");
 
@@ -550,7 +548,7 @@ typedef struct {
     door->type = SV_ReadLong();
 
     // A 32bit pointer to sector, serialized.
-    door->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    door->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!door->sector)
         Con_Error("tc_door: bad sector number\n");
 
@@ -589,13 +587,13 @@ typedef struct {
     floor->crush = SV_ReadLong();
 
     // A 32bit pointer to sector, serialized.
-    floor->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    floor->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!floor->sector)
         Con_Error("tc_floor: bad sector number\n");
 
     floor->state = (int) SV_ReadLong();
     floor->newSpecial = SV_ReadLong();
-    floor->material = P_ToPtr(DMU_MATERIAL,
+    floor->material = DMU_ToPtr(DMU_MATERIAL,
         P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
     floor->floorDestHeight = FIX2FLT(SV_ReadLong());
     floor->speed = FIX2FLT(SV_ReadLong());
@@ -631,7 +629,7 @@ typedef struct {
 
     // Start of used data members.
     // A 32bit pointer to sector, serialized.
-    plat->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    plat->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!plat->sector)
         Con_Error("tc_plat: bad sector number\n");
 
@@ -672,7 +670,7 @@ typedef struct {
 
     // Start of used data members.
     // A 32bit pointer to sector, serialized.
-    flash->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    flash->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!flash->sector)
         Con_Error("tc_flash: bad sector number\n");
 
@@ -704,7 +702,7 @@ typedef struct {
 
     // Start of used data members.
     // A 32bit pointer to sector, serialized.
-    strobe->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    strobe->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!strobe->sector)
         Con_Error("tc_strobe: bad sector number\n");
 
@@ -734,7 +732,7 @@ typedef struct {
 
     // Start of used data members.
     // A 32bit pointer to sector, serialized.
-    glow->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    glow->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
     if(!glow->sector)
         Con_Error("tc_glow: bad sector number\n");
 

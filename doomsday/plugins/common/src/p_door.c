@@ -175,7 +175,7 @@ void T_Door(door_t* door)
     case DS_DOWN:
         res =
             T_MovePlane(door->sector, door->speed,
-                        P_GetFloatp(door->sector, DMU_FLOOR_HEIGHT),
+                        DMU_GetFloatp(door->sector, DMU_FLOOR_HEIGHT),
                         false, 1, -1);
 
         if(res == pastdest)
@@ -298,7 +298,7 @@ void T_Door(door_t* door)
 #endif
                 DD_ThinkerRemove(&door->thinker); // Unlink and free.
 #if __JHERETIC__
-                S_StopSound(0, (mobj_t *) P_GetPtrp(door->sector,
+                S_StopSound(0, (mobj_t *) DMU_GetPtrp(door->sector,
                                                     DMU_CEILING_SOUND_ORIGIN));
 #endif
                 break;
@@ -373,7 +373,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
             break;
 
         case DT_CLOSE30THENOPEN:
-            door->topHeight = P_GetFloatp(sec, DMU_CEILING_HEIGHT);
+            door->topHeight = DMU_GetFloatp(sec, DMU_CEILING_HEIGHT);
             door->state = DS_DOWN;
 #if !__JHEXEN__
             sound = SFX_DOORCLOSE;
@@ -393,7 +393,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
 # else
             door->speed *= 4;
 # endif
-            if(door->topHeight != P_GetFloatp(sec, DMU_CEILING_HEIGHT))
+            if(door->topHeight != DMU_GetFloatp(sec, DMU_CEILING_HEIGHT))
                 sound = SFX_DOORBLAZEOPEN;
             break;
 #endif
@@ -405,7 +405,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
             door->topHeight -= 4;
 
 #if !__JHEXEN__
-            if(door->topHeight != P_GetFloatp(sec, DMU_CEILING_HEIGHT))
+            if(door->topHeight != DMU_GetFloatp(sec, DMU_CEILING_HEIGHT))
                 sound = SFX_DOOROPEN;
 #endif
             break;
@@ -694,7 +694,7 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     sector_t*           sec;
     door_t*             door;
 
-    sec = P_GetPtrp(line, DMU_BACK_SECTOR);
+    sec = DMU_GetPtrp(line, DMU_BACK_SECTOR);
     if(!sec)
         return false;
 

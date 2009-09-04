@@ -55,20 +55,20 @@ internal
 #define FRONT 0
 #define BACK  1
 
-#define SG_v(n)                 v[(n)]
-#define SG_vpos(n)              SG_v(n)->V_pos
+#define HE_v(n)                 v[(n)]
+#define HE_vpos(n)              HE_v(n)->V_pos
 
-#define SG_v1                   SG_v(0)
-#define SG_v1pos                SG_v(0)->V_pos
+#define HE_v1                   HE_v(0)
+#define HE_v1pos                HE_v(0)->V_pos
 
-#define SG_v2                   SG_v(1)
-#define SG_v2pos                SG_v(1)->V_pos
+#define HE_v2                   HE_v(1)
+#define HE_v2pos                HE_v(1)->V_pos
+
+#define HEDGE_SIDEDEF(e)        (((seg_t*)(e)->data)->lineDef? ((seg_t*)(e)->data)->lineDef->sideDefs[((seg_t*) (e)->data)->side] : NULL)
 
 #define SG_sector(n)            sec[(n)]
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
-
-#define SEG_SIDEDEF(s)          ((s)->lineDef->sideDefs[(s)->side])
 
 // Seg flags
 #define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
@@ -79,45 +79,71 @@ internal
 end
 
 public
-#define DMT_SEG_SIDEDEF         DDVT_PTR
+#define DMT_HEDGE_SIDEDEF       DDVT_PTR
+#define DMT_HEDGE_LINEDEF       DDVT_PTR
+#define DMT_HEDGE_SEC           DDVT_PTR
+#define DMT_HEDGE_SUBSECTOR     DDVT_PTR
+#define DMT_HEDGE_ANGLE         DDVT_ANGLE
+#define DMT_HEDGE_SIDE          DDVT_BYTE
+#define DMT_HEDGE_FLAGS         DDVT_BYTE
+#define DMT_HEDGE_LENGTH        DDVT_FLOAT
+#define DMT_HEDGE_OFFSET        DDVT_FLOAT
 end
 
-struct seg
-    PTR     vertex_s*[2] v          // [Start, End] of the segment.
-    PTR     linedef_s*  lineDef
-    PTR     sector_s*[2] sec
-    PTR     subsector_s* subsector
-    PTR     seg_s*      backSeg
-    ANGLE   angle_t     angle
-    BYTE    byte        side        // 0=front, 1=back
-    BYTE    byte        flags
-    FLOAT   float       length      // Accurate length of the segment (v1 -> v2).
-    FLOAT   float       offset
-    -       biassurface_t*[3] bsuf // 0=middle, 1=top, 2=bottom
-    -       short       frameFlags
+internal
+typedef struct seg_s {
+    struct linedef_s* lineDef;
+    struct sector_s* sec[2];
+    angle_t     angle;
+    byte        side; // 0=front, 1=back
+    byte        flags;
+    float       length; // Accurate length of the segment (v1 -> v2).
+    float       offset;
+    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
+    short       frameFlags;
+} seg_t;
+end
+
+struct hedge
+    PTR     vertex_s*[2] v // [Start, End] of the hedge.
+    PTR     hedge_s*    twin
+    PTR		hedge_s*	next
+    PTR		hedge_s*	prev
+    PTR     face_s*		face
+	-		void*		data
 end
 
 internal
 #define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
+
+typedef struct subsector_s {
+    uint        hEdgeCount;
+    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
+    struct sector_s* sector;
+    int         addSpriteCount; // frame number of last R_AddSprites
+    uint        inSectorID;
+    int         flags;
+    int         validCount;
+    uint        reverb[NUM_REVERB_DATA];
+    fvertex_t   bBox[2]; // Min and max points.
+    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
+    fvertex_t   midPoint; // Center of vertices.
+    ushort      numVertices;
+    fvertex_t** vertices; // [numvertices] size
+    struct shadowlink_s* shadows;
+    biassurface_t** bsuf; // [sector->planeCount] size.
+} subsector_t;
 end
 
-struct subsector
-    UINT    uint        segCount
-    PTR     seg_s**     segs // [segcount] size.
-    PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
-    PTR     sector_s*   sector
-    -       int         addSpriteCount // frame number of last R_AddSprites
-    -       uint        inSectorID
-    -       int         flags
-    -       int         validCount
-    -       uint[NUM_REVERB_DATA] reverb
-    -       fvertex_t   bBox[2] // Min and max points.
-    -       float[2]    worldGridOffset // Offset to align the top left of the bBox to the world grid.
-    -       fvertex_t   midPoint // Center of vertices.
-    -       ushort      numVertices
-    -       fvertex_s** vertices // [numvertices] size
-    -       shadowlink_s* shadows
-    -       biassurface_s** bsuf // [sector->planeCount] size.
+public
+#define DMT_FACE_HEDGECOUNT		DDVT_UINT
+#define DMT_FACE_POLYOBJ		DDVT_PTR
+#define DMT_FACE_SECTOR			DDVT_PTR
+end
+
+struct face
+    PTR     hedge_s*    hEdge // First half-edge of this subsector.
+	-		void*		data
 end
 
 internal
@@ -182,7 +208,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    subsector_t*		subsector;
+    face_t*				face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -329,10 +355,10 @@ struct sector
     PTR     mobj_s*     mobjList // List of mobjs in the sector.
     UINT    uint        lineDefCount
     PTR     linedef_s** lineDefs // [lineDefCount+1] size.
-    UINT    uint        ssectorCount
-    PTR     subsector_s** ssectors // [ssectorCount+1] size.
-    -       uint        numReverbSSecAttributors
-    -       subsector_s** reverbSSecs // [numReverbSSecAttributors] size.
+    UINT    uint        faceCount
+    PTR     face_s**    faces // [faceCount+1] size.
+    -       uint        numReverbFaceAttributors
+    -       face_s**	reverbFaces // [numReverbFaceAttributors] size.
     PTR     ddmobj_base_t soundOrg
     UINT    uint        planeCount
     -       plane_s**   planes // [planeCount+1] size.
@@ -408,8 +434,8 @@ end
 
 struct sidedef
     -       surface_t[3] sections
-    UINT    uint        segCount
-    PTR     seg_s**     segs        // [segcount] size, segs arranged left>right
+    UINT    uint        hEdgeCount
+    PTR     hedge_s**   hEdges // [hEdgeCount] size, hedges arranged left>right
     PTR		linedef_s*	line
     PTR     sector_s*   sector
     SHORT   short       flags

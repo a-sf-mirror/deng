@@ -714,21 +714,22 @@ static void SBE_InfoBox(source_t *s, int rightX, char *title, float alpha)
 
 static void SBE_DrawLevelGauge(int x, int y, int height)
 {
-    static sector_t    *lastSector = NULL;
+    static sector_t*    lastSector = NULL;
     static float        minLevel = 0, maxLevel = 0;
 
-    sector_t           *sector;
+    sector_t*           sector;
     int                 off = FR_TextWidth("000");
     int                 secY, maxY = 0, minY = 0, p;
     char                buf[80];
-    source_t           *src;
+    source_t*           src;
 
     if(SBE_GetGrabbed())
         src = SBE_GetGrabbed();
     else
         src = SBE_GetNearest();
 
-    sector = R_PointInSubsector(src->pos[VX], src->pos[VY])->sector;
+    sector = ((subsector_t*)
+        R_PointInSubsector(src->pos[VX], src->pos[VY])->data)->sector;
 
     if(lastSector != sector)
     {

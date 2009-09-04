@@ -73,14 +73,14 @@ char mapID[9]; // Name by which the game referred to the current map.
 uint numVertexes = 0;
 vertex_t* vertexes = NULL;
 
-uint numSegs = 0;
-seg_t* segs = NULL;
+uint numHEdges = 0;
+hedge_t* hEdges = NULL;
 
 uint numSectors = 0;
 sector_t* sectors = NULL;
 
-uint numSSectors = 0;
-subsector_t* ssectors = NULL;
+uint numFaces = 0;
+face_t* faces = NULL;
 
 uint numNodes = 0;
 node_t* nodes = NULL;
@@ -125,12 +125,12 @@ void P_InitData(void)
 void P_PolyobjChanged(polyobj_t* po)
 {
     uint                i;
-    seg_t**             segPtr = po->segs;
+    hedge_t**             ptr = po->hEdges;
 
-    for(i = 0; i < po->numSegs; ++i, segPtr++)
+    for(i = 0; i < po->numHEdges; ++i, ptr++)
     {
         int                 j;
-        seg_t*              seg = *segPtr;
+        seg_t*          seg = (seg_t*) (*ptr)->data;
 
         // Shadow bias must be told.
         for(j = 0; j < 3; ++j)
@@ -178,14 +178,14 @@ void P_SetCurrentMap(gamemap_t* map)
     numVertexes = map->numVertexes;
     vertexes = map->vertexes;
 
-    numSegs = map->numSegs;
-    segs = map->segs;
+    numHEdges = map->numHEdges;
+    hEdges = map->hEdges;
 
     numSectors = map->numSectors;
     sectors = map->sectors;
 
-    numSSectors = map->numSSectors;
-    ssectors = map->ssectors;
+    numFaces = map->numFaces;
+    faces = map->faces;
 
     numNodes = map->numNodes;
     nodes = map->nodes;

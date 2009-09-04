@@ -625,7 +625,7 @@ void XL_SetLineType(linedef_t* line, int id)
         xline->xg->active = (typebuffer.flags & LTF_ACTIVE) != 0;
         xline->xg->activator = &dummyThing;
 
-        XG_Dev("XL_SetLineType: Line %i (%s), ID %i.", P_ToIndex(line),
+        XG_Dev("XL_SetLineType: Line %i (%s), ID %i.", DMU_ToIndex(line),
                xgClasses[xline->xg->info.lineClass].className, id);
 
         // If there is not already an xlthinker for this line, create one.
@@ -642,7 +642,7 @@ void XL_SetLineType(linedef_t* line, int id)
     else if(id)
     {
         XG_Dev("XL_SetLineType: Line %i, type %i NOT DEFINED.",
-               P_ToIndex(line), id);
+               DMU_ToIndex(line), id);
     }
 }
 
@@ -662,7 +662,7 @@ void XL_Init(void)
 
     for(i = 0; i < numlines; ++i)
     {
-        line = P_ToPtr(DMU_LINEDEF, i);
+        line = DMU_ToPtr(DMU_LINEDEF, i);
         P_ToXLine(line)->xg = 0;
 
         XL_SetLineType(line, P_ToXLine(line)->special);
@@ -693,7 +693,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
             sprintf(buff, ": %i", ref);
 
         XG_Dev("XL_Traverse%s: Line %i, ref (%s%s)",
-               travsectors? "Sectors":"Planes", P_ToIndex(line),
+               travsectors? "Sectors":"Planes", DMU_ToIndex(line),
                travsectors? LSREFTYPESTR(refType) : LPREFTYPESTR(refType),
                ref? buff: "");
     }
@@ -701,8 +701,8 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
     if(refType == LPREF_NONE)
         return false; // This is not a reference!
 
-    frontSec = P_GetPtrp(line, DMU_FRONT_SECTOR);
-    backSec = P_GetPtrp(line, DMU_BACK_SECTOR);
+    frontSec = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+    backSec = DMU_GetPtrp(line, DMU_BACK_SECTOR);
 
     // References to a single plane
     if(refType == LPREF_MY_FLOOR || refType == LPREF_MY_CEILING)
@@ -713,7 +713,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
                         data, context, activator);
         }
 
-        XG_Dev("  Line %i has no front sector!", P_ToIndex(line));
+        XG_Dev("  Line %i has no front sector!", DMU_ToIndex(line));
     }
 
     if(refType == LPREF_BACK_FLOOR || refType == LPREF_BACK_CEILING)
@@ -724,15 +724,15 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
                         data, context, activator);
         }
 
-        XG_Dev("  Line %i has no back sector!", P_ToIndex(line));
+        XG_Dev("  Line %i has no back sector!", DMU_ToIndex(line));
     }
 
     if(refType == LPREF_INDEX_FLOOR)
-        return func(P_ToPtr(DMU_SECTOR, ref), false, data, context,
+        return func(DMU_ToPtr(DMU_SECTOR, ref), false, data, context,
                     activator);
 
     if(refType == LPREF_INDEX_CEILING)
-        return func(P_ToPtr(DMU_SECTOR, ref), true, data, context,
+        return func(DMU_ToPtr(DMU_SECTOR, ref), true, data, context,
                     activator);
 
     // Can we use the tagged sector lists?
@@ -785,7 +785,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
 
         for(i = 0; i < numsectors; ++i)
         {
-            sec = P_ToPtr(DMU_SECTOR, i);
+            sec = DMU_ToPtr(DMU_SECTOR, i);
             xsec = P_ToXSector(sec);
 
             if(refType == LPREF_ALL_FLOORS || refType == LPREF_ALL_CEILINGS)
@@ -811,7 +811,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
             {
                 ok = true;
 
-                for(mo = P_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
+                for(mo = DMU_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
                 {
                     if(mo->type == P_ToXLine(line)->xg->info.aparm[9])
                     {
@@ -834,7 +834,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
             {
                 ok = true;
 
-                for(mo = P_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
+                for(mo = DMU_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
                 {
                     if(mo->type != P_ToXLine(line)->xg->info.aparm[9])
                         continue;
@@ -884,7 +884,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
         sprintf(buff," : %i",ref);
 
     XG_Dev("XL_TraverseLines: Line %i, ref (%s%s)",
-           P_ToIndex(line), LREFTYPESTR(reftype), ref? buff : "");
+           DMU_ToIndex(line), LREFTYPESTR(reftype), ref? buff : "");
 
     if(reftype == LREF_NONE)
         return func(NULL, true, data, context, activator); // Not a real reference
@@ -894,7 +894,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
         return func(line, true, data, context, activator);
 
     if(reftype == LREF_INDEX)
-        return func(P_ToPtr(DMU_LINEDEF, ref), true, data, context, activator);
+        return func(DMU_ToPtr(DMU_LINEDEF, ref), true, data, context, activator);
 
     // Can we use the tagged line lists?
     findLineTagged = false;
@@ -938,7 +938,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
     {
         for(i = 0; i < numlines; ++i)
         {
-            iter = P_ToPtr(DMU_LINEDEF, i);
+            iter = DMU_ToPtr(DMU_LINEDEF, i);
             if(reftype == LREF_ALL)
             {
                 if(!func(iter, true, data, context, activator))
@@ -971,7 +971,7 @@ int XL_ValidateLineRef(linedef_t* line, int reftype, void* context,
     switch(reftype)
     {
     case LDREF_ID: // Line ID.
-        answer = P_ToIndex(line);
+        answer = DMU_ToIndex(line);
         XG_Dev("XL_ValidateLineRef: Using Line ID (%i) as %s", answer, parmname);
         break;
 
@@ -1017,7 +1017,7 @@ int XL_ValidateLineRef(linedef_t* line, int reftype, void* context,
         {
         float               d1[2];
 
-        P_GetFloatpv(line, DMU_DXY, d1);
+        DMU_GetFloatpv(line, DMU_DXY, d1);
         answer = R_PointToAngle2(0, 0, d1[0], d1[1]) / (float) ANGLE_MAX *
             360;
         XG_Dev("XL_ValidateLineRef: Using Line Angle (%i) as %s", answer, parmname);
@@ -1025,91 +1025,91 @@ int XL_ValidateLineRef(linedef_t* line, int reftype, void* context,
         }
     case LDREF_LENGTH: // Line length.
         // Answer should be in map units.
-        answer = P_GetFixedp(line, DMU_LENGTH) >> FRACBITS;
+        answer = DMU_GetFixedp(line, DMU_LENGTH) >> FRACBITS;
 
         XG_Dev("XL_ValidateLineRef: Using Line Length (%i) as %s", answer, parmname);
         break;
 
     case LDREF_TOP_OFFSETX:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_TOP_MATERIAL_OFFSET_X);
+        answer = DMU_GetIntp(side, DMU_TOP_MATERIAL_OFFSET_X);
 
         XG_Dev("XL_ValidateLineRef: Using Line Top X Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_TOP_OFFSETY:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_TOP_MATERIAL_OFFSET_Y);
+        answer = DMU_GetIntp(side, DMU_TOP_MATERIAL_OFFSET_Y);
 
         XG_Dev("XL_ValidateLineRef: Using Line Top Y Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_MIDDLE_OFFSETX:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_MIDDLE_MATERIAL_OFFSET_X);
+        answer = DMU_GetIntp(side, DMU_MIDDLE_MATERIAL_OFFSET_X);
 
         XG_Dev("XL_ValidateLineRef: Using Line Middle X Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_MIDDLE_OFFSETY:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_MIDDLE_MATERIAL_OFFSET_Y);
+        answer = DMU_GetIntp(side, DMU_MIDDLE_MATERIAL_OFFSET_Y);
 
         XG_Dev("XL_ValidateLineRef: Using Line Middle Y Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_BOTTOM_OFFSETX:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_BOTTOM_MATERIAL_OFFSET_X);
+        answer = DMU_GetIntp(side, DMU_BOTTOM_MATERIAL_OFFSET_X);
 
         XG_Dev("XL_ValidateLineRef: Using Line Bottom X Offset (%i) as %s", answer, parmname);
         break;
 
     case LDREF_BOTTOM_OFFSETY:
         // Can this ever fail?
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(!side)
         {
             XG_Dev("XL_ValidateLineRef: REFERENCE MISSING FRONT SIDEDEF!");
             break;
         }
 
-        answer = P_GetIntp(side, DMU_BOTTOM_MATERIAL_OFFSET_Y);
+        answer = DMU_GetIntp(side, DMU_BOTTOM_MATERIAL_OFFSET_Y);
 
         XG_Dev("XL_ValidateLineRef: Using Line Bottom Y Offset (%i) as %s", answer, parmname);
         break;
@@ -1131,7 +1131,7 @@ void XL_DoFunction(linetype_t* info, linedef_t* line, int sideNum,
     xgclass_t*          xgClass = &xgClasses[info->lineClass];
 
     XG_Dev("XL_DoFunction: Line %i, side %i, activator id %i, event %s",
-            P_ToIndex(line), sideNum, actThing ? actThing->thinker.id : 0,
+            DMU_ToIndex(line), sideNum, actThing ? actThing->thinker.id : 0,
             EVTYPESTR(evType));
     XG_Dev("  Executing class: %s (0x%X)...", xgClass->className, info->lineClass);
 
@@ -1449,26 +1449,26 @@ int C_DECL XLTrav_ChangeWallMaterial(linedef_t* line, boolean dummy,
     // Is there a sidedef?
     if(info->iparm[2])
     {
-        if(!P_GetPtrp(line, DMU_BACK_SECTOR))
+        if(!DMU_GetPtrp(line, DMU_BACK_SECTOR))
             return true;
 
-        side = P_GetPtrp(line, DMU_SIDEDEF1);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF1);
     }
     else
     {
-        if(!P_GetPtrp(line, DMU_FRONT_SECTOR))
+        if(!DMU_GetPtrp(line, DMU_FRONT_SECTOR))
             return true;
 
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
     }
 
-    XG_Dev("XLTrav_ChangeWallTexture: Line %i", P_ToIndex(line));
+    XG_Dev("XLTrav_ChangeWallTexture: Line %i", DMU_ToIndex(line));
 
     rgba[0] = info->iparm[9];
     rgba[1] = info->iparm[10];
     rgba[2] = info->iparm[11];
     XL_ChangeMaterial(line, info->iparm[2], LWS_UPPER,
-                      P_ToPtr(DMU_MATERIAL, info->iparm[3]), blend, rgba,
+                      DMU_ToPtr(DMU_MATERIAL, info->iparm[3]), blend, rgba,
                       info->iparm[7]);
 
     rgba[0] = info->iparm[12];
@@ -1476,13 +1476,13 @@ int C_DECL XLTrav_ChangeWallMaterial(linedef_t* line, boolean dummy,
     rgba[2] = info->iparm[14];
     rgba[3] = info->iparm[15];
 
-    if(info->iparm[4] && (P_GetPtrp(side, DMU_MIDDLE_MATERIAL) ||
+    if(info->iparm[4] && (DMU_GetPtrp(side, DMU_MIDDLE_MATERIAL) ||
                           info->iparm[6]))
     {
-        if(!P_GetPtrp(line, DMU_BACK_SECTOR) && info->iparm[4] == -1)
+        if(!DMU_GetPtrp(line, DMU_BACK_SECTOR) && info->iparm[4] == -1)
             mat = NULL;
         else
-            mat = P_ToPtr(DMU_MATERIAL, info->iparm[4]);
+            mat = DMU_ToPtr(DMU_MATERIAL, info->iparm[4]);
     }
 
     XL_ChangeMaterial(line, info->iparm[2], LWS_MID, mat,
@@ -1492,7 +1492,7 @@ int C_DECL XLTrav_ChangeWallMaterial(linedef_t* line, boolean dummy,
     rgba[1] = info->iparm[17];
     rgba[2] = info->iparm[18];
     XL_ChangeMaterial(line, info->iparm[2], LWS_LOWER,
-                      P_ToPtr(DMU_MATERIAL, info->iparm[5]), blend, rgba,
+                      DMU_ToPtr(DMU_MATERIAL, info->iparm[5]), blend, rgba,
                       info->iparm[7]);
 
     return true;
@@ -1601,15 +1601,15 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     }
 
     // Retrieve a few properties to make this look neater.
-    oldV1 = P_GetPtrp(line, DMU_VERTEX0);
-    oldV2 = P_GetPtrp(line, DMU_VERTEX1);
-    P_GetFloatpv(line, DMU_DXY, oldLineDelta);
+    oldV1 = DMU_GetPtrp(line, DMU_VERTEX0);
+    oldV2 = DMU_GetPtrp(line, DMU_VERTEX1);
+    DMU_GetFloatpv(line, DMU_DXY, oldLineDelta);
 
-    newV1 = P_GetPtrp(newLine, DMU_VERTEX0);
-    newV2 = P_GetPtrp(newLine, DMU_VERTEX1);
-    P_GetFloatpv(newLine, DMU_DXY, newLineDelta);
-    newFrontSec = P_GetPtrp(newLine, DMU_FRONT_SECTOR);
-    newBackSec  = P_GetPtrp(newLine, DMU_BACK_SECTOR);
+    newV1 = DMU_GetPtrp(newLine, DMU_VERTEX0);
+    newV2 = DMU_GetPtrp(newLine, DMU_VERTEX1);
+    DMU_GetFloatpv(newLine, DMU_DXY, newLineDelta);
+    newFrontSec = DMU_GetPtrp(newLine, DMU_FRONT_SECTOR);
+    newBackSec  = DMU_GetPtrp(newLine, DMU_BACK_SECTOR);
 
     // i2: 1 = Spawn Fog
     // i3: Sound = Sound to play
@@ -1634,9 +1634,9 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
 
     // Get the thing's position along the source linedef
     if(fabs(oldLineDelta[0]) > fabs(oldLineDelta[1]))
-        pos = (mobj->pos[VX] - P_GetFloatp(oldV1, DMU_X)) / oldLineDelta[0];
+        pos = (mobj->pos[VX] - DMU_GetFloatp(oldV1, DMU_X)) / oldLineDelta[0];
     else
-        pos = (mobj->pos[VY] - P_GetFloatp(oldV1, DMU_Y)) / oldLineDelta[1];
+        pos = (mobj->pos[VY] - DMU_GetFloatp(oldV1, DMU_Y)) / oldLineDelta[1];
 
     // Get the angle between the two linedefs, for rotating orientation and
     // momentum. Rotate 180 degrees, and flip the position across the exit
@@ -1646,16 +1646,16 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
              R_PointToAngle2(0, 0, oldLineDelta[0], oldLineDelta[1]);
 
     // Interpolate position across the exit linedef.
-    newX = P_GetFloatp(newV2, DMU_X) - (pos * newLineDelta[0]);
-    newY = P_GetFloatp(newV2, DMU_Y) - (pos * newLineDelta[1]);
+    newX = DMU_GetFloatp(newV2, DMU_X) - (pos * newLineDelta[0]);
+    newY = DMU_GetFloatp(newV2, DMU_Y) - (pos * newLineDelta[1]);
 
     // Sine, cosine of angle adjustment
     s = FIX2FLT(finesine[angle >> ANGLETOFINESHIFT]);
     c = FIX2FLT(finecosine[angle >> ANGLETOFINESHIFT]);
 
     // Whether walking towards first side of exit linedef steps down
-    if(P_GetFloatp(newFrontSec, DMU_FLOOR_HEIGHT) <
-       P_GetFloatp(newBackSec, DMU_FLOOR_HEIGHT))
+    if(DMU_GetFloatp(newFrontSec, DMU_FLOOR_HEIGHT) <
+       DMU_GetFloatp(newBackSec, DMU_FLOOR_HEIGHT))
         stepDown = true;
     else
         stepDown = false;
@@ -1709,9 +1709,9 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     // level at the exit is measured as the higher of the two floor heights
     // at the exit linedef.
     if(stepDown)
-        mobj->pos[VZ] = newZ + P_GetFloatp(newFrontSec, DMU_FLOOR_HEIGHT);
+        mobj->pos[VZ] = newZ + DMU_GetFloatp(newFrontSec, DMU_FLOOR_HEIGHT);
     else
-        mobj->pos[VZ] = newZ + P_GetFloatp(newBackSec, DMU_FLOOR_HEIGHT);
+        mobj->pos[VZ] = newZ + DMU_GetFloatp(newBackSec, DMU_FLOOR_HEIGHT);
 
     // Rotate mobj's orientation according to difference in linedef angles.
     mobj->angle += angle;
@@ -1729,7 +1729,7 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     {
         mobj->floorClip = 0;
 
-        if(mobj->pos[VZ] == P_GetFloatp(mobj->subsector, DMU_FLOOR_HEIGHT))
+        if(mobj->pos[VZ] == DMU_GetFloatp(mobj->face, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(mobj);
 
@@ -1901,12 +1901,12 @@ void XL_SwapSwitchTextures(linedef_t* line, int snum)
 {
     if(line)
     {
-        sidedef_t*          side = P_GetPtrp(line,
+        sidedef_t*          side = DMU_GetPtrp(line,
             snum? DMU_SIDEDEF1 : DMU_SIDEDEF0);
 
         if(side && P_ToggleSwitch(side, SFX_NONE, true, 0))
             XG_Dev("XL_SwapSwitchTextures: Line %i, side %i",
-                   P_ToIndex(line), P_ToIndex(side));
+                   DMU_ToIndex(line), DMU_ToIndex(side));
     }
 }
 
@@ -1920,7 +1920,7 @@ void XL_ChangeMaterial(linedef_t* line, int sidenum, int section,
     int                 i;
     int                 currentFlags;
     sidedef_t*          side =
-        P_GetPtrp(line, sidenum? DMU_SIDEDEF1:DMU_SIDEDEF0);
+        DMU_GetPtrp(line, sidenum? DMU_SIDEDEF1:DMU_SIDEDEF0);
 
     if(!side)
         return;
@@ -1928,7 +1928,7 @@ void XL_ChangeMaterial(linedef_t* line, int sidenum, int section,
     // Clamping is not necessary since the rgba array has already a byte type.
 
     XG_Dev("XL_ChangeMaterial: Line %i, side %i, section %i, material %i",
-           P_ToIndex(line), sidenum, section, P_ToIndex(mat));
+           DMU_ToIndex(line), sidenum, section, DMU_ToIndex(mat));
     XG_Dev("  red %i, green %i, blue %i, alpha %i, blendmode %i",
            rgba[0], rgba[1], rgba[2], rgba[3], blendmode);
 
@@ -1937,43 +1937,43 @@ void XL_ChangeMaterial(linedef_t* line, int sidenum, int section,
     {
         // Are we removing the middle texture?
         if(mat == (material_t*) -1)
-            P_SetPtrp(side, DMU_MIDDLE_MATERIAL, NULL);
+            DMU_SetPtrp(side, DMU_MIDDLE_MATERIAL, NULL);
         else if(mat)
-            P_SetPtrp(side, DMU_MIDDLE_MATERIAL, mat);
+            DMU_SetPtrp(side, DMU_MIDDLE_MATERIAL, mat);
 
         // Are we changing the blendmode?
         if(blendmode)
-            P_SetIntp(side, DMU_MIDDLE_BLENDMODE, blendmode);
+            DMU_SetIntp(side, DMU_MIDDLE_BLENDMODE, blendmode);
 
         // Are we changing the surface color?
         for(i = 0; i < 4; ++i)
             if(rgba[i])
-                P_SetFloatp(side, TO_DMU_MIDDLE_COLOR(i), rgba[i] / 255.f);
+                DMU_SetFloatp(side, TO_DMU_MIDDLE_COLOR(i), rgba[i] / 255.f);
     }
     else if(section == LWS_UPPER)
     {
         if(mat)
-            P_SetPtrp(side, DMU_TOP_MATERIAL, mat);
+            DMU_SetPtrp(side, DMU_TOP_MATERIAL, mat);
 
         for(i = 0; i < 3; ++i)
             if(rgba[i])
-                P_SetFloatp(side, TO_DMU_TOP_COLOR(i), rgba[i] / 255.f);
+                DMU_SetFloatp(side, TO_DMU_TOP_COLOR(i), rgba[i] / 255.f);
     }
     else if(section == LWS_LOWER)
     {
         if(mat)
-            P_SetPtrp(side, DMU_BOTTOM_MATERIAL, mat);
+            DMU_SetPtrp(side, DMU_BOTTOM_MATERIAL, mat);
 
         for(i = 0; i < 3; ++i)
             if(rgba[i])
-                P_SetFloatp(side, TO_DMU_BOTTOM_COLOR(i), rgba[i] / 255.f);
+                DMU_SetFloatp(side, TO_DMU_BOTTOM_COLOR(i), rgba[i] / 255.f);
     }
 
     // Adjust the side's flags
-    currentFlags = P_GetIntp(side, DMU_FLAGS);
+    currentFlags = DMU_GetIntp(side, DMU_FLAGS);
     currentFlags |= flags;
 
-    P_SetIntp(side, DMU_FLAGS, currentFlags);
+    DMU_SetIntp(side, DMU_FLAGS, currentFlags);
 }
 
 void XL_Message(mobj_t* act, char* msg, boolean global)
@@ -2028,7 +2028,7 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
     xg = P_ToXLine(line)->xg;
 
     XG_Dev("XL_ActivateLine: %s line %i, side %i, type %i",
-           activating ? "Activating" : "Deactivating", P_ToIndex(line),
+           activating ? "Activating" : "Deactivating", DMU_ToIndex(line),
            sidenum, P_ToXLine(line)->special);
 
     if(xg->disabled)
@@ -2045,9 +2045,9 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
     }
 
     // Activation should happen on the front side.
-    frontsector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
     if(frontsector)
-        soundOrg = P_GetPtrp(frontsector, DMU_SOUND_ORIGIN);
+        soundOrg = DMU_GetPtrp(frontsector, DMU_SOUND_ORIGIN);
 
     // Let the line know who's activating it.
     xg->activator = data;
@@ -2097,15 +2097,15 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
         if(!(info->flags2 & LTF2_WHEN_LAST) || info->actCount == 1)
             XL_DoFunction(info, line, sidenum, activator_thing, evtype);
         else
-            XG_Dev("  Line %i FUNCTION TEST FAILED", P_ToIndex(line));
+            XG_Dev("  Line %i FUNCTION TEST FAILED", DMU_ToIndex(line));
     }
     else
     {
         if(activating)
-            XG_Dev("  Line %i has no activation function", P_ToIndex(line));
+            XG_Dev("  Line %i has no activation function", DMU_ToIndex(line));
         else
         {
-            XG_Dev("  Line %i has no deactivation function", P_ToIndex(line));
+            XG_Dev("  Line %i has no deactivation function", DMU_ToIndex(line));
         }
     }
 
@@ -2122,7 +2122,7 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
         // Change the texture of the line if asked to.
         if(info->wallSection && info->actMaterial)
             XL_ChangeMaterial(line, sidenum, info->wallSection,
-                              P_ToPtr(DMU_MATERIAL, info->actMaterial),
+                              DMU_ToPtr(DMU_MATERIAL, info->actMaterial),
                               BM_NORMAL, rgba, 0);
 
         // Change the class of the line if asked to
@@ -2140,7 +2140,7 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
         // Change the texture of the line if asked to.
         if(info->wallSection && info->deactMaterial)
             XL_ChangeMaterial(line, sidenum, info->wallSection,
-                              P_ToPtr(DMU_MATERIAL, info->deactMaterial),
+                              DMU_ToPtr(DMU_MATERIAL, info->deactMaterial),
                               BM_NORMAL, rgba, 0);
 
         // Change the class of the line if asked to.
@@ -2232,7 +2232,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 #endif
 
     XG_Dev("XL_LineEvent: %s line %i, side %i (chained type %i)%s",
-           EVTYPESTR(evtype), P_ToIndex(line), sidenum, linetype,
+           EVTYPESTR(evtype), DMU_ToIndex(line), sidenum, linetype,
            anyTrigger? " ANY Trigger":"");
 
     if(xg->disabled)
@@ -2255,7 +2255,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         if(XL_LineEvent(evtype, info->evChain, line, sidenum, data))
         {
             XG_Dev("  Event %s, line %i, side %i OVERRIDDEN BY EVENT CHAIN %i",
-                   EVTYPESTR(evtype), P_ToIndex(line), sidenum, info->evChain);
+                   EVTYPESTR(evtype), DMU_ToIndex(line), sidenum, info->evChain);
             return true;
         }
     }
@@ -2265,7 +2265,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     if((active && info->actType == LTACT_COUNTED_OFF) ||
        (!active && info->actType == LTACT_COUNTED_ON))
     {   // Can't be processed at this time.
-        XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", P_ToIndex(line),
+        XG_Dev("  Line %i: Active=%i, type=%i ABORTING EVENT", DMU_ToIndex(line),
                active, info->actType);
         return false;
     }
@@ -2321,7 +2321,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         goto type_passes;
 
     // Type doesn't pass, sorry.
-    XG_Dev("  Line %i: ACT REQUIREMENTS NOT FULFILLED, ABORTING EVENT", P_ToIndex(line));
+    XG_Dev("  Line %i: ACT REQUIREMENTS NOT FULFILLED, ABORTING EVENT", DMU_ToIndex(line));
     return false;
 
   type_passes:
@@ -2331,7 +2331,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         // Non-players can't use this line if line is flagged secret.
         if(evtype == XLE_USE && !activator && (xline->flags & ML_SECRET))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to no_other_use_secret", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to no_other_use_secret", DMU_ToIndex(line));
             return false;
         }
     }
@@ -2347,7 +2347,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         // Check the activator's type.
         if(!activator_thing || activator_thing->type != info->aparm[9])
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to activator type", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to activator type", DMU_ToIndex(line));
             return false;
         }
     }
@@ -2358,7 +2358,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         // Only allow (de)activation from the front side.
         if(sidenum != 0)
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line side test", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to line side test", DMU_ToIndex(line));
             return false;
         }
     }
@@ -2366,7 +2366,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     // Check counting.
     if(!info->actCount)
     {
-        XG_Dev("  Line %i: ABORTING EVENT due to Count = 0", P_ToIndex(line));
+        XG_Dev("  Line %i: ABORTING EVENT due to Count = 0", DMU_ToIndex(line));
         return false;
     }
 
@@ -2387,14 +2387,14 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         if(!XL_CheckLineStatus(line, info->aparm[4], info->aparm[5], true,
                                activator_thing))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line_active test", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to line_active test", DMU_ToIndex(line));
             return false;
         }
     if(info->flags2 & LTF2_LINE_INACTIVE)
         if(!XL_CheckLineStatus(line, info->aparm[6], info->aparm[7], false,
                                activator_thing))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to line_inactive test", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to line_inactive test", DMU_ToIndex(line));
             return false;
         }
     // Check game mode.
@@ -2402,7 +2402,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     {
         if(!(info->flags2 & (LTF2_COOPERATIVE | LTF2_DEATHMATCH)))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to netgame mode", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to netgame mode", DMU_ToIndex(line));
             return false;
         }
     }
@@ -2410,7 +2410,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     {
         if(!(info->flags2 & LTF2_SINGLEPLAYER))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to game mode (1p)", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to game mode (1p)", DMU_ToIndex(line));
             return false;
         }
     }
@@ -2426,7 +2426,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     if(!(info->flags2 & i))
     {
         XG_Dev("  Line %i: ABORTING EVENT due to skill level (%i)",
-               P_ToIndex(line), gameSkill);
+               DMU_ToIndex(line), gameSkill);
         return false;
     }
 
@@ -2438,7 +2438,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         if(cfg.playerColor[activator - players] != info->aparm[8])
         {
             XG_Dev("  Line %i: ABORTING EVENT due to activator color (%i)",
-                   P_ToIndex(line), cfg.playerColor[activator-players]);
+                   DMU_ToIndex(line), cfg.playerColor[activator-players]);
             return false;
         }
     }
@@ -2452,7 +2452,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         if(!activator)
         {
             XG_Dev("  Line %i: ABORTING EVENT due to missing key "
-                   "(no activator)", P_ToIndex(line));
+                   "(no activator)", DMU_ToIndex(line));
             return false;
         }
 
@@ -2460,7 +2460,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         if(!XL_CheckKeys(activator_thing, info->flags2, true,
                          (evtype == XLE_USE? true : false)))
         {
-            XG_Dev("  Line %i: ABORTING EVENT due to missing key", P_ToIndex(line));
+            XG_Dev("  Line %i: ABORTING EVENT due to missing key", DMU_ToIndex(line));
             return false;        // Keys missing!
         }
     }
@@ -2471,7 +2471,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
         // Decrement counter.
         info->actCount--;
 
-        XG_Dev("  Line %i: Decrementing counter, now %i", P_ToIndex(line),
+        XG_Dev("  Line %i: Decrementing counter, now %i", DMU_ToIndex(line),
                info->actCount);
     }
 
@@ -2531,14 +2531,14 @@ void XL_DoChain(linedef_t* line, int chain, boolean activating,
     xdummyLine = P_ToXLine(dummyLine);
     xdummyLine->xg = Z_Malloc(sizeof(xgline_t), PU_MAP, 0);
 
-    XG_Dev("XL_DoChain: Line %i, chained type %i", P_ToIndex(line), chain);
-    XG_Dev("  (dummy line will show up as %i)", P_ToIndex(dummyLine));
+    XG_Dev("XL_DoChain: Line %i, chained type %i", DMU_ToIndex(line), chain);
+    XG_Dev("  (dummy line will show up as %i)", DMU_ToIndex(dummyLine));
 
     // Copy all properties to the dummy
     P_CopyLine(dummyLine, line);
 
-    P_SetPtrp(dummyLine, DMU_SIDEDEF0, NULL);
-    P_SetPtrp(dummyLine, DMU_SIDEDEF1, NULL);
+    DMU_SetPtrp(dummyLine, DMU_SIDEDEF0, NULL);
+    DMU_SetPtrp(dummyLine, DMU_SIDEDEF1, NULL);
 
     xdummyLine->xg->active = !activating;
 
@@ -2625,7 +2625,7 @@ void XL_Thinker(xlthinker_t* xl)
         if(xg->chTimer < 0)
         {
             XG_Dev("XL_ChainSequenceThink: Line %i, executing...",
-                   P_ToIndex(line));
+                   DMU_ToIndex(line));
 
             // Are there any more chains?
             if(xg->chIdx < DDLT_MAX_PARAMS && info->iparm[xg->chIdx])
@@ -2669,7 +2669,7 @@ void XL_Thinker(xlthinker_t* xl)
     {
         if(info->actTime >= 0 && xg->timer > FLT2TIC(info->actTime))
         {
-            XG_Dev("XL_Think: Line %i, timed to go %s", P_ToIndex(line),
+            XG_Dev("XL_Think: Line %i, timed to go %s", DMU_ToIndex(line),
                     xg->active ? "INACTIVE" : "ACTIVE");
 
             // Swap line state without any checks.
@@ -2701,43 +2701,43 @@ void XL_Thinker(xlthinker_t* xl)
          */
 
         // Front side.
-        side = P_GetPtrp(line, DMU_SIDEDEF0);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF0);
         if(side)
         {
-            P_GetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
 
-            P_GetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
 
-            P_GetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
         }
 
         // Back side.
-        side = P_GetPtrp(line, DMU_SIDEDEF1);
+        side = DMU_GetPtrp(line, DMU_SIDEDEF1);
         if(side)
         {
-            P_GetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_TOP_MATERIAL_OFFSET_XY, current);
 
-            P_GetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_MIDDLE_MATERIAL_OFFSET_XY, current);
 
-            P_GetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
+            DMU_GetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
             current[VX] += offset[VX];
             current[VY] += offset[VY];
-            P_SetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
+            DMU_SetFloatpv(side, DMU_BOTTOM_MATERIAL_OFFSET_XY, current);
         }
     }
 }

@@ -81,7 +81,7 @@
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo)
 {
-    sector_t*           sec = P_GetPtrp(mo->subsector, DMU_SECTOR);
+    sector_t*           sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
 
     return P_GetPlaneMaterialType(sec, PLN_FLOOR);
 }
@@ -167,7 +167,7 @@ float P_MobjGetFriction(mobj_t *mo)
         return FRICTION_FLY;
     }
 
-    return XS_Friction(P_GetPtrp(mo->subsector, DMU_SECTOR));
+    return XS_Friction(DMU_GetPtrp(mo->face, DMU_SECTOR));
 }
 
 void P_MobjMoveXY(mobj_t* mo)
@@ -248,13 +248,13 @@ void P_MobjMoveXY(mobj_t* mo)
 
                 //// kludge: Prevent missiles exploding against the sky.
                 if(ceilingLine &&
-                   (backSec = P_GetPtrp(ceilingLine, DMU_BACK_SECTOR)))
+                   (backSec = DMU_GetPtrp(ceilingLine, DMU_BACK_SECTOR)))
                 {
                     material_t*         mat =
-                        P_GetPtrp(backSec, DMU_CEILING_MATERIAL);
+                        DMU_GetPtrp(backSec, DMU_CEILING_MATERIAL);
 
-                    if((P_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
-                       mo->pos[VZ] > P_GetFloatp(backSec, DMU_CEILING_HEIGHT))
+                    if((DMU_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
+                       mo->pos[VZ] > DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT))
                     {
                         P_MobjRemove(mo, false);
                         return;
@@ -262,13 +262,13 @@ void P_MobjMoveXY(mobj_t* mo)
                 }
 
                 if(floorLine &&
-                   (backSec = P_GetPtrp(floorLine, DMU_BACK_SECTOR)))
+                   (backSec = DMU_GetPtrp(floorLine, DMU_BACK_SECTOR)))
                 {
                     material_t*         mat =
-                        P_GetPtrp(backSec, DMU_FLOOR_MATERIAL);
+                        DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL);
 
-                    if((P_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
-                       mo->pos[VZ] < P_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
+                    if((DMU_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
+                       mo->pos[VZ] < DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
                     {
                         P_MobjRemove(mo, false);
                         return;
@@ -312,7 +312,7 @@ void P_MobjMoveXY(mobj_t* mo)
                mo->mom[MY] > (1.0f / 4) || mo->mom[MY] < -(1.0f / 4))
             {
                 if(mo->floorZ !=
-                   P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+                   DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
                     return;
             }
         }
@@ -343,7 +343,7 @@ void P_MobjMoveXY(mobj_t* mo)
             mo->mom[MY] *= FRICTION_FLY;
         }
 #if __JHERETIC__
-        else if(P_ToXSector(P_GetPtrp(mo->subsector,
+        else if(P_ToXSector(DMU_GetPtrp(mo->face,
                                     DMU_SECTOR))->special == 15)
         {
             // Friction_Low
@@ -367,7 +367,7 @@ static boolean PIT_Splash(sector_t *sector, void *data)
     mobj_t             *mo = data;
     float               floorheight;
 
-    floorheight = P_GetFloatp(sector, DMU_FLOOR_HEIGHT);
+    floorheight = DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT);
 
     // Is the mobj touching the floor of this sector?
     if(mo->pos[VZ] < floorheight &&
@@ -390,7 +390,7 @@ void P_MobjMoveZ(mobj_t* mo)
 {
     float               gravity, dist, delta;
 
-    gravity = XS_Gravity(P_GetPtrp(mo->subsector, DMU_SECTOR));
+    gravity = XS_Gravity(DMU_GetPtrp(mo->face, DMU_SECTOR));
 
     // $democam: cameramen get special z movement.
     if(P_CameraZMovement(mo))
@@ -627,7 +627,7 @@ void P_MobjMoveZ(mobj_t* mo)
         if(!((mo->flags ^ MF_MISSILE) & (MF_MISSILE | MF_NOCLIP)))
         {
             // Don't explode against sky.
-            if(P_GetIntp(P_GetPtrp(mo->subsector, DMU_CEILING_MATERIAL),
+            if(DMU_GetIntp(DMU_GetPtrp(mo->face, DMU_CEILING_MATERIAL),
                            DMU_FLAGS) & MATF_SKYMASK)
             {
                 P_MobjRemove(mo, false);
@@ -689,10 +689,10 @@ void P_MobjThinker(mobj_t *mobj)
     {
         if(mobj->moveDir > 0)
             mobj->pos[VZ] =
-                P_GetFloatp(mobj->subsector, DMU_FLOOR_HEIGHT);
+                DMU_GetFloatp(mobj->face, DMU_FLOOR_HEIGHT);
         else
             mobj->pos[VZ] =
-                P_GetFixedp(mobj->subsector, DMU_CEILING_HEIGHT);
+                DMU_GetFixedp(mobj->face, DMU_CEILING_HEIGHT);
 
         mobj->pos[VZ] += FIX2FLT(mobj->moveDir);
         return;
@@ -917,9 +917,9 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     // Set subsector and/or block links.
     P_MobjSetPosition(mo);
 
-    mo->floorZ   = P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->floorZ   = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
     mo->dropOffZ = mo->floorZ;
-    mo->ceilingZ = P_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
 
     if((spawnFlags & MSF_Z_CEIL) || (info->flags & MF_SPAWNCEILING))
     {
@@ -955,7 +955,7 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->floorClip = 0;
 
     if((mo->flags2 & MF2_FLOORCLIP) &&
-       mo->pos[VZ] == P_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
+       mo->pos[VZ] == DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
     {
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 

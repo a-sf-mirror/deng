@@ -193,18 +193,18 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the given subsector.
  */
-static boolean crossSSec(uint ssecIdx, losdata_t* los)
+static boolean crossSSec(uint faceIdx, losdata_t* los)
 {
-    const subsector_t*  ssec = &ssectors[ssecIdx];
+    const face_t*       face = &faces[faceIdx];
 
-    if(ssec->polyObj)
+    if(((subsector_t*) face->data)->polyObj)
     {   // Check polyobj lines.
-        polyobj_t*          po = ssec->polyObj;
-        seg_t**             segPtr = po->segs;
+        polyobj_t*          po = ((subsector_t*) face->data)->polyObj;
+        hedge_t**           hEdgePtr = po->hEdges;
 
-        while(*segPtr)
+        while(*hEdgePtr)
         {
-            seg_t*              seg = *segPtr;
+            seg_t*              seg = (seg_t*) (*hEdgePtr)->data;
 
             if(seg->lineDef && seg->lineDef->validCount != validCount)
             {
@@ -216,29 +216,30 @@ static boolean crossSSec(uint ssecIdx, losdata_t* los)
                     return false; // Stop iteration.
             }
 
-            *segPtr++;
+            *hEdgePtr++;
         }
     }
 
     {
     // Check lines.
-    const seg_t**       segPtr = ssec->segs;
+    hedge_t*             hEdge;
 
-    while(*segPtr)
+    if((hEdge = face->hEdge))
     {
-        const seg_t*        seg = *segPtr;
-
-        if(seg->lineDef && seg->lineDef->validCount != validCount)
+        do
         {
-            linedef_t*          li = seg->lineDef;
+            const seg_t*        seg = (seg_t*) (hEdge)->data;
 
-            li->validCount = validCount;
+            if(seg->lineDef && seg->lineDef->validCount != validCount)
+            {
+                linedef_t*          li = seg->lineDef;
 
-            if(!crossLineDef(li, seg->side, los))
-                return false;
-        }
+                li->validCount = validCount;
 
-        *segPtr++;
+                if(!crossLineDef(li, seg->side, los))
+                    return false;
+            }
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
     }
 

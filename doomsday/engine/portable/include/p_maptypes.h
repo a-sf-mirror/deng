@@ -53,20 +53,20 @@ typedef struct vertex_s {
 #define FRONT 0
 #define BACK  1
 
-#define SG_v(n)                 v[(n)]
-#define SG_vpos(n)              SG_v(n)->V_pos
+#define HE_v(n)                 v[(n)]
+#define HE_vpos(n)              HE_v(n)->V_pos
 
-#define SG_v1                   SG_v(0)
-#define SG_v1pos                SG_v(0)->V_pos
+#define HE_v1                   HE_v(0)
+#define HE_v1pos                HE_v(0)->V_pos
 
-#define SG_v2                   SG_v(1)
-#define SG_v2pos                SG_v(1)->V_pos
+#define HE_v2                   HE_v(1)
+#define HE_v2pos                HE_v(1)->V_pos
+
+#define HEDGE_SIDEDEF(e)        (((seg_t*)(e)->data)->lineDef? ((seg_t*)(e)->data)->lineDef->sideDefs[((seg_t*) (e)->data)->side] : NULL)
 
 #define SG_sector(n)            sec[(n)]
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
-
-#define SEG_SIDEDEF(s)          ((s)->lineDef->sideDefs[(s)->side])
 
 // Seg flags
 #define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
@@ -76,42 +76,52 @@ typedef struct vertex_s {
 #define SEGINF_BACKSECSKYFIX    0x0002
 
 typedef struct seg_s {
-    runtime_mapdata_header_t header;
-    struct vertex_s*    v[2];          // [Start, End] of the segment.
-    struct linedef_s*   lineDef;
-    struct sector_s*    sec[2];
-    struct subsector_s* subsector;
-    struct seg_s*       backSeg;
-    angle_t             angle;
-    byte                side;          // 0=front, 1=back
-    byte                flags;
-    float               length;        // Accurate length of the segment (v1 -> v2).
-    float               offset;
-    biassurface_t*      bsuf[3];       // 0=middle, 1=top, 2=bottom
-    short               frameFlags;
+    struct linedef_s* lineDef;
+    struct sector_s* sec[2];
+    angle_t     angle;
+    byte        side; // 0=front, 1=back
+    byte        flags;
+    float       length; // Accurate length of the segment (v1 -> v2).
+    float       offset;
+    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
+    short       frameFlags;
 } seg_t;
+
+typedef struct hedge_s {
+    runtime_mapdata_header_t header;
+    struct vertex_s*    v[2];          // [Start, End] of the hedge.
+    struct hedge_s*     twin;
+    struct hedge_s*     next;
+    struct hedge_s*     prev;
+    struct face_s*      face;
+    void*               data;
+} hedge_t;
 
 #define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
 
 typedef struct subsector_s {
-    runtime_mapdata_header_t header;
-    unsigned int        segCount;
-    struct seg_s**      segs;          // [segcount] size.
-    struct polyobj_s*   polyObj;       // NULL, if there is no polyobj.
-    struct sector_s*    sector;
-    int                 addSpriteCount; // frame number of last R_AddSprites
-    unsigned int        inSectorID;
-    int                 flags;
-    int                 validCount;
-    unsigned int        reverb[NUM_REVERB_DATA];
-    fvertex_t           bBox[2];       // Min and max points.
-    float               worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t           midPoint;      // Center of vertices.
-    unsigned short      numVertices;
-    struct fvertex_s**  vertices;      // [numvertices] size
+    uint        hEdgeCount;
+    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
+    struct sector_s* sector;
+    int         addSpriteCount; // frame number of last R_AddSprites
+    uint        inSectorID;
+    int         flags;
+    int         validCount;
+    uint        reverb[NUM_REVERB_DATA];
+    fvertex_t   bBox[2]; // Min and max points.
+    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
+    fvertex_t   midPoint; // Center of vertices.
+    ushort      numVertices;
+    fvertex_t** vertices; // [numvertices] size
     struct shadowlink_s* shadows;
-    struct biassurface_s** bsuf;       // [sector->planeCount] size.
+    biassurface_t** bsuf; // [sector->planeCount] size.
 } subsector_t;
+
+typedef struct face_s {
+    runtime_mapdata_header_t header;
+    struct hedge_s*     hEdge;         // First half-edge of this subsector.
+    void*               data;
+} face_t;
 
 typedef struct materiallayer_s {
     int             stage; // -1 => layer not in use.
@@ -173,7 +183,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    subsector_t*		subsector;
+    face_t*             face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -217,8 +227,8 @@ typedef enum {
 #define PS_offset               surface.offset
 #define PS_visoffset            surface.visOffset
 #define PS_rgba                 surface.rgba
-#define	PS_flags				surface.flags
-#define	PS_inflags				surface.inFlags
+#define PS_flags                surface.flags
+#define PS_inflags              surface.inFlags
 
 typedef struct plane_s {
     runtime_mapdata_header_t header;
@@ -297,7 +307,7 @@ typedef struct msector_s {
 
     // Suppress superfluous mini warnings.
     int         warnedFacing;
-    int			refCount;
+    int         refCount;
 } msector_t;
 
 typedef struct sector_s {
@@ -314,10 +324,10 @@ typedef struct sector_s {
     struct mobj_s*      mobjList;      // List of mobjs in the sector.
     unsigned int        lineDefCount;
     struct linedef_s**  lineDefs;      // [lineDefCount+1] size.
-    unsigned int        ssectorCount;
-    struct subsector_s** ssectors;     // [ssectorCount+1] size.
-    unsigned int        numReverbSSecAttributors;
-    struct subsector_s** reverbSSecs;  // [numReverbSSecAttributors] size.
+    unsigned int        faceCount;
+    struct face_s**     faces;         // [faceCount+1] size.
+    unsigned int        numReverbFaceAttributors;
+    struct face_s**     reverbFaces;   // [numReverbFaceAttributors] size.
     ddmobj_base_t       soundOrg;
     unsigned int        planeCount;
     struct plane_s**    planes;        // [planeCount+1] size.
@@ -384,14 +394,14 @@ typedef enum segsection_e {
 typedef struct msidedef_s {
     // Sidedef index. Always valid after loading & pruning.
     int         index;
-    int			refCount;
+    int         refCount;
 } msidedef_t;
 
 typedef struct sidedef_s {
     runtime_mapdata_header_t header;
     surface_t           sections[3];
-    unsigned int        segCount;
-    struct seg_s**      segs;          // [segcount] size, segs arranged left>right
+    unsigned int        hEdgeCount;
+    struct hedge_s**    hEdges;        // [hEdgeCount] size, hedges arranged left>right
     struct linedef_s*   line;
     struct sector_s*    sector;
     short               flags;
@@ -425,11 +435,11 @@ typedef struct sidedef_s {
 #define L_backsector            L_sector(BACK)
 
 // Is this line self-referencing (front sec == back sec)?
-#define LINE_SELFREF(l)			((l)->L_frontside && (l)->L_backside && \
-								 (l)->L_frontsector == (l)->L_backsector)
+#define LINE_SELFREF(l)         ((l)->L_frontside && (l)->L_backside && \
+                                 (l)->L_frontsector == (l)->L_backsector)
 
 // Internal flags:
-#define LF_POLYOBJ				0x1 // Line is part of a polyobject.
+#define LF_POLYOBJ              0x1 // Line is part of a polyobject.
 
 #define MLF_TWOSIDED            0x1 // Line is marked two-sided.
 #define MLF_ZEROLENGTH          0x2 // Zero length (line should be totally ignored).
@@ -478,8 +488,8 @@ typedef struct linedef_s {
  * An infinite line of the form point + direction vectors.
  */
 typedef struct partition_s {
-	float				x, y;
-	float				dX, dY;
+    float               x, y;
+    float               dX, dY;
 } partition_t;
 
 typedef struct node_s {

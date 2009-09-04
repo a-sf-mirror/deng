@@ -641,7 +641,7 @@ boolean P_ActivateLine(linedef_t *line, mobj_t *mo, int side, int activationType
     if((lineActivation == SPAC_USE || lineActivation == SPAC_IMPACT) &&
        buttonSuccess)
     {
-        P_ToggleSwitch(P_GetPtrp(line, DMU_SIDEDEF0), 0, false,
+        P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), 0, false,
                        repeat? BUTTONTIME : 0);
     }
 
@@ -661,10 +661,10 @@ void P_PlayerInSpecialSector(player_t *player)
         (1.0f / 32) * 25
     };
 
-    sector = P_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+    sector = DMU_GetPtrp(player->plr->mo->face, DMU_SECTOR);
     xsector = P_ToXSector(sector);
 
-    if(player->plr->mo->pos[VZ] != P_GetFloatp(sector, DMU_FLOOR_HEIGHT))
+    if(player->plr->mo->pos[VZ] != DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT))
         return; // Player is not touching the floor
 
     switch(xsector->special)
@@ -765,7 +765,7 @@ void P_PlayerOnSpecialFloor(player_t* player)
         return;
 
     if(player->plr->mo->pos[VZ] >
-       P_GetFloatp(player->plr->mo->subsector, DMU_FLOOR_HEIGHT))
+       DMU_GetFloatp(player->plr->mo->face, DMU_FLOOR_HEIGHT))
     {
         return; // Player is not touching the floor
     }
@@ -798,7 +798,7 @@ void P_SpawnSpecials(void)
     P_DestroySectorTagLists();
     for(i = 0; i < numsectors; ++i)
     {
-        sec = P_ToPtr(DMU_SECTOR, i);
+        sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
 
         if(xsec->tag)
@@ -833,7 +833,7 @@ void P_SpawnSpecials(void)
     P_DestroyLineTagLists();
     for(i = 0; i < numlines; ++i)
     {
-        line = P_ToPtr(DMU_LINEDEF, i);
+        line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
 
         switch(xline->special)
@@ -867,7 +867,7 @@ void P_AnimateSurfaces(void)
     // Update scrolling plane materials.
     for(i = 0; i < numsectors; ++i)
     {
-        xsector_t*          sect = P_ToXSector(P_ToPtr(DMU_SECTOR, i));
+        xsector_t*          sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
         float               texOff[2];
 
         switch(sect->special)
@@ -875,75 +875,75 @@ void P_AnimateSurfaces(void)
         case 201:
         case 202:
         case 203:               // Scroll_North_xxx
-            texOff[VY] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
+            texOff[VY] = DMU_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
             texOff[VY] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 201);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
             break;
 
         case 204:
         case 205:
         case 206:               // Scroll_East_xxx
-            texOff[VX] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
+            texOff[VX] = DMU_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
             texOff[VX] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 204);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
             break;
 
         case 207:
         case 208:
         case 209:               // Scroll_South_xxx
-            texOff[VY] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
+            texOff[VY] = DMU_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
             texOff[VY] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 207);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
             break;
 
         case 210:
         case 211:
         case 212:               // Scroll_West_xxx
-            texOff[VX] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
+            texOff[VX] = DMU_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
             texOff[VX] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 210);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
             break;
 
         case 213:
         case 214:
         case 215:               // Scroll_NorthWest_xxx
-            P_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             texOff[VX] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 213);
             texOff[VY] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 213);
-            P_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             break;
 
         case 216:
         case 217:
         case 218:               // Scroll_NorthEast_xxx
-            P_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             texOff[VX] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 216);
             texOff[VY] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 216);
-            P_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             break;
 
         case 219:
         case 220:
         case 221:               // Scroll_SouthEast_xxx
-            P_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             texOff[VX] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 219);
             texOff[VY] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 219);
-            P_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             break;
 
         case 222:
         case 223:
         case 224:               // Scroll_SouthWest_xxx
-            P_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_GetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             texOff[VX] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 222);
             texOff[VY] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 222);
-            P_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
+            DMU_SetFloatv(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_XY, texOff);
             break;
 
         default:
             // DJS - Is this really necessary every tic?
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, 0);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, 0);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, 0);
+            DMU_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, 0);
             break;
         }
     }
@@ -958,10 +958,10 @@ void P_AnimateSurfaces(void)
             fixed_t             texOff[2];
             xline_t*            xline = P_ToXLine(line);
 
-            side = P_GetPtrp(line, DMU_SIDEDEF0);
+            side = DMU_GetPtrp(line, DMU_SIDEDEF0);
             for(i = 0; i < 3; ++i)
             {
-                P_GetFixedpv(side,
+                DMU_GetFixedpv(side,
                              (i==0? DMU_TOP_MATERIAL_OFFSET_XY :
                               i==1? DMU_MIDDLE_MATERIAL_OFFSET_XY :
                               DMU_BOTTOM_MATERIAL_OFFSET_XY), texOff);
@@ -983,10 +983,10 @@ void P_AnimateSurfaces(void)
                 default:
                     Con_Error("P_AnimateSurfaces: Invalid line special %i for "
                               "material scroller on linedef %ui.",
-                              xline->special, P_ToIndex(line));
+                              xline->special, DMU_ToIndex(line));
                 }
 
-                P_SetFixedpv(side,
+                DMU_SetFixedpv(side,
                              (i==0? DMU_TOP_MATERIAL_OFFSET_XY :
                               i==1? DMU_MIDDLE_MATERIAL_OFFSET_XY :
                               DMU_BOTTOM_MATERIAL_OFFSET_XY), texOff);
@@ -1023,11 +1023,11 @@ static boolean isLightningSector(sector_t* sec)
        xsec->special == LIGHTNING_SPECIAL2)
         return true;
 
-    if(P_GetIntp(P_GetPtrp(sec, DMU_CEILING_MATERIAL),
+    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_CEILING_MATERIAL),
                    DMU_FLAGS) & MATF_SKYMASK)
         return true;
 
-    if(P_GetIntp(P_GetPtrp(sec, DMU_FLOOR_MATERIAL),
+    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL),
                    DMU_FLAGS) & MATF_SKYMASK)
         return true;
 
@@ -1050,15 +1050,15 @@ static void P_LightningFlash(void)
         {
             for(i = 0; i < numsectors; ++i)
             {
-                sector_t*               sec = P_ToPtr(DMU_SECTOR, i);
+                sector_t*               sec = DMU_ToPtr(DMU_SECTOR, i);
 
                 if(isLightningSector(sec))
                 {
                     float               lightLevel =
-                        P_GetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
+                        DMU_GetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
 
                     if(*tempLight < lightLevel - (4.f / 255))
-                        P_SetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL,
+                        DMU_SetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL,
                                    lightLevel - (1.f / 255) * 4);
 
                     tempLight++;
@@ -1069,11 +1069,11 @@ static void P_LightningFlash(void)
         {   // Remove the alternate lightning flash special.
             for(i = 0; i < numsectors; ++i)
             {
-                sector_t*               sec = P_ToPtr(DMU_SECTOR, i);
+                sector_t*               sec = DMU_ToPtr(DMU_SECTOR, i);
 
                 if(isLightningSector(sec))
                 {
-                    P_SetFloatp(sec, DMU_LIGHT_LEVEL, *tempLight);
+                    DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, *tempLight);
                     tempLight++;
                 }
             }
@@ -1091,12 +1091,12 @@ static void P_LightningFlash(void)
     foundSec = false;
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec = P_ToPtr(DMU_SECTOR, i);
+        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
 
         if(isLightningSector(sec))
         {
             xsector_t*          xsec = P_ToXSector(sec);
-            float               newLevel = P_GetFloatp(sec, DMU_LIGHT_LEVEL);
+            float               newLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
 
             *tempLight = newLevel;
 
@@ -1120,7 +1120,7 @@ static void P_LightningFlash(void)
             if(newLevel < *tempLight)
                 newLevel = *tempLight;
 
-            P_SetFloatp(sec, DMU_LIGHT_LEVEL, newLevel);
+            DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, newLevel);
             tempLight++;
             foundSec = true;
         }
@@ -1192,7 +1192,7 @@ void P_InitLightning(void)
     secCount = 0;
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec = P_ToPtr(DMU_SECTOR, i);
+        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
 
         if(isLightningSector(sec))
         {

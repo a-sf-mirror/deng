@@ -53,12 +53,12 @@
 /**
  * Update the seg, property is selected by DMU_* name.
  */
-boolean Seg_SetProperty(seg_t *seg, const setargs_t *args)
+boolean Seg_SetProperty(hedge_t* hEdge, const setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_FLAGS:
-        DMU_SetValue(DMT_SEG_FLAGS, &seg->flags, args, 0);
+        DMU_SetValue(DMT_HEDGE_FLAGS, &((seg_t*) hEdge->data)->flags, args, 0);
         break;
     default:
         Con_Error("Seg_SetProperty: Property %s is not writable.\n",
@@ -71,49 +71,53 @@ boolean Seg_SetProperty(seg_t *seg, const setargs_t *args)
 /**
  * Get the value of a seg property, selected by DMU_* name.
  */
-boolean Seg_GetProperty(const seg_t *seg, setargs_t *args)
+boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
 {
     switch(args->prop)
     {
     case DMU_VERTEX0:
-        DMU_GetValue(DMT_SEG_V, &seg->SG_v1, args, 0);
+        DMU_GetValue(DMT_HEDGE_V, &hEdge->HE_v1, args, 0);
         break;
     case DMU_VERTEX1:
-        DMU_GetValue(DMT_SEG_V, &seg->SG_v2, args, 0);
+        DMU_GetValue(DMT_HEDGE_V, &hEdge->HE_v2, args, 0);
         break;
     case DMU_LENGTH:
-        DMU_GetValue(DMT_SEG_LENGTH, &seg->length, args, 0);
+        DMU_GetValue(DMT_HEDGE_LENGTH, &((seg_t*) hEdge->data)->length, args, 0);
         break;
     case DMU_OFFSET:
-        DMU_GetValue(DMT_SEG_OFFSET, &seg->offset, args, 0);
+        DMU_GetValue(DMT_HEDGE_OFFSET, &((seg_t*) hEdge->data)->offset, args, 0);
         break;
     case DMU_SIDEDEF:
-        DMU_GetValue(DMT_SEG_SIDEDEF, &SEG_SIDEDEF(seg), args, 0);
+        DMU_GetValue(DMT_HEDGE_SIDEDEF, HEDGE_SIDEDEF(hEdge), args, 0);
         break;
     case DMU_LINEDEF:
-        DMU_GetValue(DMT_SEG_LINEDEF, &seg->lineDef, args, 0);
+        DMU_GetValue(DMT_HEDGE_LINEDEF, &((seg_t*) hEdge->data)->lineDef, args, 0);
         break;
     case DMU_FRONT_SECTOR:
     {
-        sector_t *sec = NULL;
+        seg_t* seg = (seg_t*) hEdge->data;
+        sector_t* sec = NULL;
+
         if(seg->SG_frontsector && seg->lineDef)
             sec = seg->SG_frontsector;
-        DMU_GetValue(DMT_SEG_SEC, &sec, args, 0);
+        DMU_GetValue(DMT_HEDGE_SEC, &sec, args, 0);
         break;
     }
     case DMU_BACK_SECTOR:
     {
-        sector_t *sec = NULL;
+        seg_t* seg = (seg_t*) hEdge->data;
+        sector_t* sec = NULL;
+
         if(seg->SG_backsector && seg->lineDef)
             sec = seg->SG_backsector;
-        DMU_GetValue(DMT_SEG_SEC, &seg->SG_backsector, args, 0);
+        DMU_GetValue(DMT_HEDGE_SEC, &seg->SG_backsector, args, 0);
         break;
     }
     case DMU_FLAGS:
-        DMU_GetValue(DMT_SEG_FLAGS, &seg->flags, args, 0);
+        DMU_GetValue(DMT_HEDGE_FLAGS, &((seg_t*) hEdge->data)->flags, args, 0);
         break;
     case DMU_ANGLE:
-        DMU_GetValue(DMT_SEG_ANGLE, &seg->angle, args, 0);
+        DMU_GetValue(DMT_HEDGE_ANGLE, &((seg_t*) hEdge->data)->angle, args, 0);
         break;
     default:
         Con_Error("Seg_GetProperty: No property %s.\n",

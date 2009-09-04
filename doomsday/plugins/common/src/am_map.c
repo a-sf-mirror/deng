@@ -46,6 +46,7 @@
 #  include "jstrife.h"
 #endif
 
+#include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
@@ -1725,7 +1726,7 @@ static void findMinMaxBoundaries(void)
 
     for(i = 0; i < numvertexes; ++i)
     {
-        P_GetFloatv(DMU_VERTEX, i, DMU_XY, pos);
+        DMU_GetFloatv(DMU_VERTEX, i, DMU_XY, pos);
 
         if(pos[VX] < lowX)
             lowX =  pos[VX];

@@ -32,6 +32,7 @@
 #include <string.h>
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "g_common.h"
 
 // MACROS ------------------------------------------------------------------
@@ -303,13 +304,13 @@ void SN_StartSequence(mobj_t* mobj, int sequence)
 
 void SN_StartSequenceInSec(sector_t* sector, int seqBase)
 {
-    SN_StartSequence(P_GetPtrp(sector, DMU_SOUND_ORIGIN),
+    SN_StartSequence(DMU_GetPtrp(sector, DMU_SOUND_ORIGIN),
                      seqBase + P_ToXSector(sector)->seqType);
 }
 
 void SN_StopSequenceInSec(sector_t* sector)
 {
-    SN_StopSequence(P_GetPtrp(sector, DMU_SOUND_ORIGIN));
+    SN_StopSequence(DMU_GetPtrp(sector, DMU_SOUND_ORIGIN));
 }
 
 void SN_StartSequenceName(mobj_t* mobj, const char* name)

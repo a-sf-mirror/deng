@@ -221,7 +221,7 @@ void T_PlatRaise(plat_t* plat)
     case PS_WAIT:
         if(!--plat->count)
         {
-            if(P_GetFloatp(plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
+            if(DMU_GetFloatp(plat->sector, DMU_FLOOR_HEIGHT) == plat->low)
                 plat->state = PS_UP;
             else
                 plat->state = PS_DOWN;
@@ -250,7 +250,7 @@ static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
     plat_t             *plat;
     sector_t           *sec = NULL;
 #if !__JHEXEN__
-    sector_t           *frontSector = P_GetPtrp(line, DMU_FRONT_SECTOR);
+    sector_t           *frontSector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
 #endif
     xsector_t          *xsec;
     iterlist_t         *list;
@@ -284,15 +284,15 @@ static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
 #if __JHEXEN__
         plat->speed = (float) args[1] * (1.0 / 8);
 #endif
-        floorHeight = P_GetFloatp(sec, DMU_FLOOR_HEIGHT);
+        floorHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT);
         switch(type)
         {
 #if !__JHEXEN__
         case PT_RAISETONEARESTANDCHANGE:
             plat->speed = PLATSPEED * .5;
 
-            P_SetPtrp(sec, DMU_FLOOR_MATERIAL,
-                      P_GetPtrp(frontSector, DMU_FLOOR_MATERIAL));
+            DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL,
+                      DMU_GetPtrp(frontSector, DMU_FLOOR_MATERIAL));
 
             {
             float               nextFloor;
@@ -312,8 +312,8 @@ static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
         case PT_RAISEANDCHANGE:
             plat->speed = PLATSPEED * .5;
 
-            P_SetPtrp(sec, DMU_FLOOR_MATERIAL,
-                      P_GetPtrp(frontSector, DMU_FLOOR_MATERIAL));
+            DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL,
+                      DMU_GetPtrp(frontSector, DMU_FLOOR_MATERIAL));
 
             plat->high = floorHeight + amount;
             plat->wait = 0;

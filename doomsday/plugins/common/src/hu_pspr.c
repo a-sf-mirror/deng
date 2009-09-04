@@ -37,10 +37,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "dmu_lib.h"
 #include "g_controls.h"
 
 // MACROS ------------------------------------------------------------------
@@ -182,7 +181,7 @@ void HU_UpdatePlayerSprite(int pnum)
         else
         {   // Local light.
             ddpsp->light =
-                P_GetFloatp(pl->plr->mo->subsector, DMU_LIGHT_LEVEL);
+                DMU_GetFloatp(pl->plr->mo->face, DMU_LIGHT_LEVEL);
         }
 #if !__JSTRIFE__
         // Needs fullbright?

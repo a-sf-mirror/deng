@@ -444,7 +444,8 @@ Con_Message("SpawnPtcGen: %s/%i (src:%s typ:%s mo:%p)\n",
     // Size of source sector might determine count.
     if(def->flags & PGF_SCALED_RATE)
     {
-        gen->spawnRateMultiplier = source->subsector->sector->approxArea;
+        gen->spawnRateMultiplier =
+            ((const subsector_t*) source->face->data)->sector->approxArea;
     }
     else
     {
@@ -566,7 +567,6 @@ static void P_NewParticle(ptcgen_t* gen)
     int                 i;
     fixed_t             uncertain, len;
     angle_t             ang, ang2;
-    subsector_t*        subsec;
     float*              box, inter = -1;
     modeldef_t*         mf = 0, *nextmf = 0;
 
@@ -711,6 +711,7 @@ static void P_NewParticle(ptcgen_t* gen)
     else if(gen->sector) // The source is a plane?
     {
         fixed_t             radius = gen->stages[pt->stage].radius;
+        face_t*             face;
 
         // Choose a random spot inside the sector, on the spawn plane.
         if(gen->flags & PGF_SPACE_SPAWN)
@@ -749,28 +750,29 @@ static void P_NewParticle(ptcgen_t* gen)
             float               y =
                 (box[BOXBOTTOM] + RNG_RandFloat() * (box[BOXTOP]   - box[BOXBOTTOM]));
 
-            subsec = R_PointInSubsector(x, y);
+            face = R_PointInSubsector(x, y);
 
-            if(subsec->sector == gen->sector)
+            if(((const subsector_t*) face->data)->sector == gen->sector)
                 break;
             else
-                subsec = NULL;
+                face = NULL;
         }
-        if(!subsec)
+        if(!face)
             goto spawn_failed;
 
         // Try a couple of times to get a good random spot.
         for(i = 0; i < 10; ++i) // Max this many tries before giving up.
         {
-            float               x = subsec->bBox[0].pos[VX] +
-                RNG_RandFloat() * (subsec->bBox[1].pos[VX] - subsec->bBox[0].pos[VX]);
-            float               y = subsec->bBox[0].pos[VY] +
-                RNG_RandFloat() * (subsec->bBox[1].pos[VY] - subsec->bBox[0].pos[VY]);
+            const subsector_t*  ssec = (const subsector_t*) face->data;
+            float               x = ssec->bBox[0].pos[VX] +
+                RNG_RandFloat() * (ssec->bBox[1].pos[VX] - ssec->bBox[0].pos[VX]);
+            float               y = ssec->bBox[0].pos[VY] +
+                RNG_RandFloat() * (ssec->bBox[1].pos[VY] - ssec->bBox[0].pos[VY]);
 
             pt->pos[VX] = FLT2FIX(x);
             pt->pos[VY] = FLT2FIX(y);
 
-            if(R_PointInSubsector(x, y) == subsec)
+            if(R_PointInSubsector(x, y) == face)
                 break; // This is a good place.
         }
 
@@ -799,8 +801,9 @@ static void P_NewParticle(ptcgen_t* gen)
     if(gen->sector)
         pt->sector = gen->sector;
     else
-        pt->sector = R_PointInSubsector(FIX2FLT(pt->pos[VX]),
-                                        FIX2FLT(pt->pos[VY]))->sector;
+        pt->sector = ((const subsector_t*)
+            R_PointInSubsector(FIX2FLT(pt->pos[VX]),
+                               FIX2FLT(pt->pos[VY]))->data)->sector;
 
     // Play a stage sound?
     P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
@@ -1283,7 +1286,8 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
 
     // Should we update the sector pointer?
     if(tmcross)
-        pt->sector = R_PointInSubsector(FIX2FLT(x), FIX2FLT(y))->sector;
+        pt->sector = ((const subsector_t*)
+            R_PointInSubsector(FIX2FLT(x), FIX2FLT(y))->data)->sector;
 }
 
 /**

@@ -179,17 +179,17 @@ float P_GetGravity(void)
  * Checks the reject matrix to find out if the two sectors are visible
  * from each other.
  */
-static boolean checkReject(subsector_t* a, subsector_t* b)
+static boolean checkReject(face_t* a, face_t* b)
 {
     if(rejectMatrix != NULL)
     {
         uint                s1, s2, pnum, bytenum, bitnum;
-        sector_t*           sec1 = P_GetPtrp(a, DMU_SECTOR);
-        sector_t*           sec2 = P_GetPtrp(b, DMU_SECTOR);
+        sector_t*           sec1 = DMU_GetPtrp(a, DMU_SECTOR);
+        sector_t*           sec2 = DMU_GetPtrp(b, DMU_SECTOR);
 
         // Determine subsector entries in REJECT table.
-        s1 = P_ToIndex(sec1);
-        s2 = P_ToIndex(sec2);
+        s1 = DMU_ToIndex(sec1);
+        s2 = DMU_ToIndex(sec2);
         pnum = s1 * numsectors + s2;
         bytenum = pnum >> 3;
         bitnum = 1 << (pnum & 7);
@@ -219,14 +219,14 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     float               fPos[3];
 
     // If either is unlinked, they can't see each other.
-    if(!from->subsector || !to->subsector)
+    if(!from->face || !to->face)
         return false;
 
     if(to->dPlayer && (to->dPlayer->flags & DDPF_CAMERA))
         return false; // Cameramen don't exist!
 
     // Check for trivial rejection.
-    if(!checkReject(from->subsector, to->subsector))
+    if(!checkReject(from->face, to->face))
         return false;
 
     fPos[VX] = from->pos[VX];
@@ -287,7 +287,7 @@ boolean PIT_StompThing(mobj_t* mo, void* data)
 boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 {
     int                 stomping;
-    subsector_t*        newSSec;
+    face_t*        newSSec;
     float               box[4];
 
     // Kill anything occupying the position.
@@ -312,10 +312,10 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
-    tmFloorZ = tmDropoffZ = P_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = P_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
+    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
+    tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
 #if __JHEXEN__
-    tmFloorMaterial = P_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
+    tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
 #endif
 
     P_EmptyIterList(spechit);
@@ -365,15 +365,15 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
  */
 boolean PIT_CrossLine(linedef_t* ld, void* data)
 {
-    int                 flags = P_GetIntp(ld, DMU_FLAGS);
+    int                 flags = DMU_GetIntp(ld, DMU_FLAGS);
 
     if((flags & DDLF_BLOCKING) ||
        (P_ToXLine(ld)->flags & ML_BLOCKMONSTERS) ||
-       (!P_GetPtrp(ld, DMU_FRONT_SECTOR) || !P_GetPtrp(ld, DMU_BACK_SECTOR)))
+       (!DMU_GetPtrp(ld, DMU_FRONT_SECTOR) || !DMU_GetPtrp(ld, DMU_BACK_SECTOR)))
     {
         float               bbox[4];
 
-        P_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
+        DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
         if(!(tmBBox[BOXLEFT]   > bbox[BOXRIGHT] ||
              tmBBox[BOXRIGHT]  < bbox[BOXLEFT] ||
@@ -434,7 +434,7 @@ static int untouched(linedef_t* ld)
     float               bbox[4];
     float               radius;
 
-    P_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
+    DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
     x = tmThing->pos[VX];
     y = tmThing->pos[VY];
@@ -927,7 +927,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
     float               bbox[4];
     xline_t*            xline;
 
-    P_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
+    DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
     if(tmBBox[BOXRIGHT]  <= bbox[BOXLEFT] ||
        tmBBox[BOXLEFT]   >= bbox[BOXRIGHT] ||
@@ -948,7 +948,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
         tmHitLine = ld;
 #endif
 
-    if(!P_GetPtrp(ld, DMU_BACK_SECTOR)) // One sided line.
+    if(!DMU_GetPtrp(ld, DMU_BACK_SECTOR)) // One sided line.
     {
 #if __JHEXEN__
         if(tmThing->flags2 & MF2_BLASTED)
@@ -958,7 +958,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
 #else
         float               d1[2];
 
-        P_GetFloatpv(ld, DMU_DXY, d1);
+        DMU_GetFloatpv(ld, DMU_DXY, d1);
 
         /**
          * $unstuck: allow player to move out of 1s wall, to prevent
@@ -982,7 +982,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
     // \fixme Will never pass this test due to above. Is the previous check
     // supposed to qualify player mobjs only?
 #if __JHERETIC__
-    if(!P_GetPtrp(ld, DMU_BACK_SECTOR)) // one sided line
+    if(!DMU_GetPtrp(ld, DMU_BACK_SECTOR)) // one sided line
     {   // One sided line
         if(tmThing->flags & MF_MISSILE)
         {   // Missiles can trigger impact specials
@@ -996,7 +996,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
     if(!(tmThing->flags & MF_MISSILE))
     {
         // Explicitly blocking everything?
-        if(P_GetIntp(ld, DMU_FLAGS) & DDLF_BLOCKING)
+        if(DMU_GetIntp(ld, DMU_FLAGS) & DDLF_BLOCKING)
         {
 #if __JHEXEN__
             if(tmThing->flags2 & MF2_BLASTED)
@@ -1117,7 +1117,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     tmBBox[BOXRIGHT]  = tm[VX] + tmThing->radius;
     tmBBox[BOXLEFT]   = tm[VX] - tmThing->radius;
 
-    newSec = P_GetPtrp(R_PointInSubsector(tm[VX], tm[VY]), DMU_SECTOR);
+    newSec = DMU_GetPtrp(R_PointInSubsector(tm[VX], tm[VY]), DMU_SECTOR);
 
     ceilingLine = floorLine = NULL;
 #if !__JHEXEN__
@@ -1128,10 +1128,10 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
 
     // The base floor/ceiling is from the subsector that contains the point.
     // Any contacted lines the step closer together will adjust them.
-    tmFloorZ = tmDropoffZ = P_GetFloatp(newSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = P_GetFloatp(newSec, DMU_CEILING_HEIGHT);
+    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSec, DMU_FLOOR_HEIGHT);
+    tmCeilingZ = DMU_GetFloatp(newSec, DMU_CEILING_HEIGHT);
 #if __JHEXEN__
-    tmFloorMaterial = P_GetPtrp(newSec, DMU_FLOOR_MATERIAL);
+    tmFloorMaterial = DMU_GetPtrp(newSec, DMU_FLOOR_MATERIAL);
 #endif
 
     P_EmptyIterList(spechit);
@@ -1224,7 +1224,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             goto pushline;
         }
         else if(blockingMobj->pos[VZ] + blockingMobj->height - thing->pos[VZ] > 24 ||
-                (P_GetFloatp(blockingMobj->subsector, DMU_CEILING_HEIGHT) -
+                (DMU_GetFloatp(blockingMobj->face, DMU_CEILING_HEIGHT) -
                  (blockingMobj->pos[VZ] + blockingMobj->height) < thing->height) ||
                 (tmCeilingZ - (blockingMobj->pos[VZ] + blockingMobj->height) <
                  thing->height))
@@ -1390,7 +1390,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #if __JHEXEN__
         // Must stay within a sector of a certain floor type?
         if((thing->flags2 & MF2_CANTLEAVEFLOORPIC) &&
-           (tmFloorMaterial != P_GetPtrp(thing->subsector, DMU_FLOOR_MATERIAL) ||
+           (tmFloorMaterial != DMU_GetPtrp(thing->face, DMU_FLOOR_MATERIAL) ||
             tmFloorZ - thing->pos[VZ] != 0))
         {
             return false;
@@ -1430,7 +1430,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     {
         thing->floorClip = 0;
 
-        if(thing->pos[VZ] == P_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
+        if(thing->pos[VZ] == DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -1544,7 +1544,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
     divline_t*          trace =
         (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
     sector_t*           frontSec = NULL, *backSec = NULL;
-    subsector_t* contact, *originSub;
+    face_t* contact, *originSub;
     xline_t*            xline;
     boolean             lineWasHit;
 
@@ -1557,8 +1557,8 @@ boolean PTR_ShootTraverse(intercept_t* in)
         li = in->d.lineDef;
         xline = P_ToXLine(li);
 
-        frontSec = P_GetPtrp(li, DMU_FRONT_SECTOR);
-        backSec = P_GetPtrp(li, DMU_BACK_SECTOR);
+        frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
+        backSec = DMU_GetPtrp(li, DMU_BACK_SECTOR);
 
         if(!backSec && P_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
             return true; // Continue traversal.
@@ -1578,16 +1578,16 @@ boolean PTR_ShootTraverse(intercept_t* in)
         P_LineOpening(li);
         dist = attackRange * in->frac;
 
-        if(P_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) !=
-           P_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
+        if(DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) !=
+           DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
         {
             slope = (OPENBOTTOM - tracePos[VZ]) / dist;
             if(slope > aimSlope)
                 goto hitline;
         }
 
-        if(P_GetFloatp(frontSec, DMU_CEILING_HEIGHT) !=
-           P_GetFloatp(backSec, DMU_CEILING_HEIGHT))
+        if(DMU_GetFloatp(frontSec, DMU_CEILING_HEIGHT) !=
+           DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT))
         {
             slope = (OPENTOP - tracePos[VZ]) / dist;
             if(slope < aimSlope)
@@ -1610,16 +1610,16 @@ boolean PTR_ShootTraverse(intercept_t* in)
         {
             // Is it a sky hack wall? If the hitpoint is beyond the visible
             // surface, no puff must be shown.
-            if((P_GetIntp(P_GetPtrp(frontSec, DMU_CEILING_MATERIAL),
+            if((DMU_GetIntp(DMU_GetPtrp(frontSec, DMU_CEILING_MATERIAL),
                             DMU_FLAGS) & MATF_SKYMASK) &&
-               (pos[VZ] > P_GetFloatp(frontSec, DMU_CEILING_HEIGHT) ||
-                pos[VZ] > P_GetFloatp(backSec, DMU_CEILING_HEIGHT)))
+               (pos[VZ] > DMU_GetFloatp(frontSec, DMU_CEILING_HEIGHT) ||
+                pos[VZ] > DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT)))
                 return false;
 
-            if((P_GetIntp(P_GetPtrp(backSec, DMU_FLOOR_MATERIAL),
+            if((DMU_GetIntp(DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL),
                             DMU_FLAGS) & MATF_SKYMASK) &&
-               (pos[VZ] < P_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) ||
-                pos[VZ] < P_GetFloatp(backSec, DMU_FLOOR_HEIGHT)))
+               (pos[VZ] < DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) ||
+                pos[VZ] < DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT)))
                 return false;
         }
 
@@ -1640,8 +1640,8 @@ boolean PTR_ShootTraverse(intercept_t* in)
             stepv[VY] = d[VY] / step;
             stepv[VZ] = d[VZ] / step;
 
-            cFloor = P_GetFloatp(contact, DMU_FLOOR_HEIGHT);
-            cCeil = P_GetFloatp(contact, DMU_CEILING_HEIGHT);
+            cFloor = DMU_GetFloatp(contact, DMU_FLOOR_HEIGHT);
+            cCeil = DMU_GetFloatp(contact, DMU_CEILING_HEIGHT);
             // Backtrack until we find a non-empty sector.
             while(cCeil <= cFloor && contact != originSub)
             {
@@ -1661,12 +1661,12 @@ boolean PTR_ShootTraverse(intercept_t* in)
 
             // We must not hit a sky plane.
             if(pos[VZ] > cTop &&
-               (P_GetIntp(P_GetPtrp(contact, DMU_CEILING_MATERIAL),
+               (DMU_GetIntp(DMU_GetPtrp(contact, DMU_CEILING_MATERIAL),
                             DMU_FLAGS) & MATF_SKYMASK))
                 return false;
 
             if(pos[VZ] < cBottom &&
-               (P_GetIntp(P_GetPtrp(contact, DMU_FLOOR_MATERIAL),
+               (DMU_GetIntp(DMU_GetPtrp(contact, DMU_FLOOR_MATERIAL),
                             DMU_FLAGS) & MATF_SKYMASK))
                 return false;
 
@@ -1708,7 +1708,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
         }
 /*
 if(lineWasHit)
-    Con_Message("Hit line [%i,%i]\n", P_GetIntp(li, DMU_SIDEDEF0), P_GetIntp(li, DMU_SIDEDEF1));
+    Con_Message("Hit line [%i,%i]\n", DMU_GetIntp(li, DMU_SIDEDEF0), DMU_GetIntp(li, DMU_SIDEDEF1));
 */
 #endif
         // Don't go any farther.
@@ -1844,8 +1844,8 @@ boolean PTR_AimTraverse(intercept_t* in)
 
         li = in->d.lineDef;
 
-        if(!(frontSec = P_GetPtrp(li, DMU_FRONT_SECTOR)) ||
-           !(backSec  = P_GetPtrp(li, DMU_BACK_SECTOR)))
+        if(!(frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR)) ||
+           !(backSec  = DMU_GetPtrp(li, DMU_BACK_SECTOR)))
         {
             float               tracePos[3];
             divline_t*          trace =
@@ -1870,11 +1870,11 @@ boolean PTR_AimTraverse(intercept_t* in)
 
         dist = attackRange * in->frac;
 
-        fFloor = P_GetFloatp(frontSec, DMU_FLOOR_HEIGHT);
-        fCeil = P_GetFloatp(frontSec, DMU_CEILING_HEIGHT);
+        fFloor = DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT);
+        fCeil = DMU_GetFloatp(frontSec, DMU_CEILING_HEIGHT);
 
-        bFloor = P_GetFloatp(backSec, DMU_FLOOR_HEIGHT);
-        bCeil = P_GetFloatp(backSec, DMU_CEILING_HEIGHT);
+        bFloor = DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT);
+        bCeil = DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT);
 
         if(fFloor != bFloor)
         {
@@ -2348,7 +2348,7 @@ static void P_HitSlideLine(linedef_t* ld)
     unsigned int        an;
     angle_t             lineAngle, moveAngle, deltaAngle;
     float               moveLen, newLen, d1[2];
-    slopetype_t         slopeType = P_GetIntp(ld, DMU_SLOPE_TYPE);
+    slopetype_t         slopeType = DMU_GetIntp(ld, DMU_SLOPE_TYPE);
 
     if(slopeType == ST_HORIZONTAL)
     {
@@ -2362,7 +2362,7 @@ static void P_HitSlideLine(linedef_t* ld)
     }
 
     side = P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
-    P_GetFloatpv(ld, DMU_DXY, d1);
+    DMU_GetFloatpv(ld, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
     moveAngle = R_PointToAngle2(0, 0, tmMove[MX], tmMove[MY]) + 10;
 
@@ -2391,7 +2391,7 @@ boolean PTR_SlideTraverse(intercept_t* in)
 
     li = in->d.lineDef;
 
-    if(!P_GetPtrp(li, DMU_FRONT_SECTOR) || !P_GetPtrp(li, DMU_BACK_SECTOR))
+    if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
         if(P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
             return true; // Don't hit the back side.
@@ -2825,7 +2825,7 @@ boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
 
 mobj_t* P_CheckOnMobj(mobj_t* thing)
 {
-    subsector_t*        newSSec;
+    face_t*        newSSec;
     float               pos[3], box[4];
     mobj_t              oldMo;
 
@@ -2855,9 +2855,9 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     // The base floor/ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
 
-    tmFloorZ = tmDropoffZ = P_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = P_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
-    tmFloorMaterial = P_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
+    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
+    tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
+    tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
 
     P_EmptyIterList(spechit);
 
@@ -2985,7 +2985,7 @@ boolean PTR_BounceTraverse(intercept_t* in)
 
     li = in->d.lineDef;
 
-    if(!P_GetPtrp(li, DMU_FRONT_SECTOR) || !P_GetPtrp(li, DMU_BACK_SECTOR))
+    if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
         if(P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
             return true; // Don't hit the back side.
@@ -3049,7 +3049,7 @@ void P_BounceWall(mobj_t* mo)
         return; // We don't want to crash.
 
     side = P_PointOnLinedefSide(mo->pos[VX], mo->pos[VY], bestSlideLine);
-    P_GetFloatpv(bestSlideLine, DMU_DXY, d1);
+    DMU_GetFloatpv(bestSlideLine, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
     if(side == 1)
         lineAngle += ANG180;

@@ -318,8 +318,10 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         else
         {
             float               lightLevel;
+            const subsector_t*  ssec =
+                (subsector_t*) spr->data.sprite.face->data;
             const float*        secColor =
-                R_GetSectorLightColor(spr->data.sprite.subsector->sector);
+                R_GetSectorLightColor(ssec->sector);
 
             if(spr->psp->light < 1)
                 lightLevel = (spr->psp->light - .1f);
@@ -345,7 +347,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         lparams.center[VX] = spr->center[VX];
         lparams.center[VY] = spr->center[VY];
         lparams.center[VZ] = spr->center[VZ];
-        lparams.subsector = spr->data.sprite.subsector;
+        lparams.face = spr->data.sprite.face;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);
@@ -597,7 +599,7 @@ void Rend_RenderMaskedWall(rendmaskedwallparams_t *params)
                          params->vertices[3].pos[VY]);
 
             glColor4fv(params->vertices[2].color);
-			glMultiTexCoord2fARB(normalTarget, params->texCoord[1][0], params->texCoord[1][1]);
+            glMultiTexCoord2fARB(normalTarget, params->texCoord[1][0], params->texCoord[1][1]);
 
             glMultiTexCoord2fARB(dynTarget, params->modTexCoord[0][1], params->modTexCoord[1][1]);
 
@@ -698,11 +700,13 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
         else
         {
             float               lightLevel;
+            const subsector_t*  ssec =
+                (subsector_t*) spr->data.model.face->data;
             const float*        secColor =
-                R_GetSectorLightColor(spr->data.model.subsector->sector);
+                R_GetSectorLightColor(ssec->sector);
 
             // Diminished light (with compression).
-            lightLevel = spr->data.model.subsector->sector->lightLevel;
+            lightLevel = ssec->sector->lightLevel;
 
             // No need for distance attentuation.
 
@@ -725,7 +729,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
         lparams.center[VX] = spr->center[VX];
         lparams.center[VY] = spr->center[VY];
         lparams.center[VZ] = spr->center[VZ];
-        lparams.subsector = spr->data.model.subsector;
+        lparams.face = spr->data.model.face;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);

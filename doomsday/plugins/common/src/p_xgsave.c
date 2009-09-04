@@ -40,10 +40,9 @@
 # include "jdoom64.h"
 #elif __JHERETIC__
 #  include "jheretic.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_saveg.h"
 #include "p_xg.h"
@@ -216,11 +215,11 @@ void SV_WriteXGPlaneMover(thinker_t *th)
 
     SV_WriteByte(3); // Version.
 
-    SV_WriteLong(P_ToIndex(mov->sector));
+    SV_WriteLong(DMU_ToIndex(mov->sector));
     SV_WriteByte(mov->ceiling);
     SV_WriteLong(mov->flags);
 
-    i = P_ToIndex(mov->origin);
+    i = DMU_ToIndex(mov->origin);
     if(i >= numlines)  // Is it a real line?
         i = 0;         // No...
     else
@@ -251,14 +250,14 @@ int SV_ReadXGPlaneMover(xgplanemover_t* mov)
 
     ver = SV_ReadByte(); // Version.
 
-    mov->sector = P_ToPtr(DMU_SECTOR, SV_ReadLong());
+    mov->sector = DMU_ToPtr(DMU_SECTOR, SV_ReadLong());
 
     mov->ceiling = SV_ReadByte();
     mov->flags = SV_ReadLong();
 
     i = SV_ReadLong();
     if(i)
-        mov->origin = P_ToPtr(DMU_LINEDEF, i - 1);
+        mov->origin = DMU_ToPtr(DMU_LINEDEF, i - 1);
 
     mov->destination = FIX2FLT(SV_ReadLong());
     mov->speed = FIX2FLT(SV_ReadLong());
@@ -267,7 +266,7 @@ int SV_ReadXGPlaneMover(xgplanemover_t* mov)
     if(ver >= 3)
         mov->setMaterial = SV_GetArchiveMaterial(num, 0);
     else
-        mov->setMaterial = P_ToPtr(DMU_MATERIAL,
+        mov->setMaterial = DMU_ToPtr(DMU_MATERIAL,
             P_MaterialNumForName(W_LumpName(num), MN_FLATS));
     mov->setSectorType = SV_ReadLong();
     mov->startSound = SV_ReadLong();

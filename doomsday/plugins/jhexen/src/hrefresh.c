@@ -33,6 +33,7 @@
 
 #include "jhexen.h"
 
+#include "dmu_lib.h"
 #include "f_infine.h"
 #include "r_common.h"
 #include "p_mapsetup.h"
@@ -153,7 +154,7 @@ static void rendPlayerView(int player)
 
     // Check for the sector special 200: use sky2.
     // I wonder where this is used?
-    if(P_ToXSectorOfSubsector(plr->plr->mo->subsector)->special == 200)
+    if(P_ToXSectorOfSubsector(plr->plr->mo->face)->special == 200)
     {
         special200 = true;
         Rend_SkyParams(0, DD_DISABLE, NULL);
@@ -448,7 +449,7 @@ void R_SetAllDoomsdayFlags(void)
 
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)
-        for(mo = P_GetPtr(DMU_SECTOR, i, DMT_MOBJS); mo; mo = mo->sNext)
+        for(mo = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS); mo; mo = mo->sNext)
         {
             if(IS_CLIENT && mo->ddFlags & DDMF_REMOTE)
                 continue;

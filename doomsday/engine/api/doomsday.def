@@ -1,7 +1,7 @@
 NAME            "DOOMSDAY"
 
 ; Highest ordinal is currently
-; --> 448 <--
+; --> 450 <--
 ; Other free ordinals:
 ; 43 formerly P_RegisterPlayerControl
 ; 44 formerly B_FormEventString
@@ -198,6 +198,8 @@ EXPORTS
     P_LoadMap                   @254 NONAME
 
 ; Play: Map Data Updates and Information Access.
+	P_GetVariable				@449 NONAME
+	P_SetVariable				@450 NONAME
     P_ToIndex                   @256 NONAME
     P_ToPtr                     @257 NONAME
     P_Callback                  @258 NONAME

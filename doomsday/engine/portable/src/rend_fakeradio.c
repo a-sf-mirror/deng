@@ -1437,7 +1437,7 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
  * Don't use the global radio state in here, the subsector can be part of
  * any sector, not the one chosen for wall rendering.
  */
-static void radioSubsectorEdges(const subsector_t* subsector)
+static void radioSubsectorEdges(const face_t* face)
 {
     static size_t       doPlaneSize = 0;
     static byte*        doPlane = NULL;
@@ -1452,7 +1452,8 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     vec2_t              inner[2], outer[2];
     boolean             workToDo = false;
     float               shadowSize, shadowDark;
-    float               sectorlight = subsector->sector->lightLevel;
+    const subsector_t*  ssec = (subsector_t*) face->data;
+    float               sectorlight = ssec->sector->lightLevel;
 
     Rend_ApplyLightAdaptation(&sectorlight);
 
@@ -1464,11 +1465,11 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     shadowSize = 2 * (8 + 16 - sectorlight * 16);
     shadowDark = calcShadowDarkness(sectorlight) *.8f;
 
-    vec[VX] = vx - subsector->midPoint.pos[VX];
-    vec[VY] = vz - subsector->midPoint.pos[VY];
+    vec[VX] = vx - ssec->midPoint.pos[VX];
+    vec[VY] = vz - ssec->midPoint.pos[VY];
 
     // Do we need to enlarge the size of the doPlane array?
-    if(subsector->sector->planeCount > doPlaneSize)
+    if(ssec->sector->planeCount > doPlaneSize)
     {
         if(!doPlaneSize)
             doPlaneSize = 2;
@@ -1480,10 +1481,10 @@ static void radioSubsectorEdges(const subsector_t* subsector)
 
     memset(doPlane, 0, doPlaneSize);
 
-    // See if any of this subsector's planes will get shadows.
-    for(pln = 0; pln < subsector->sector->planeCount; ++pln)
+    // See if any of this face's planes will get shadows.
+    for(pln = 0; pln < ssec->sector->planeCount; ++pln)
     {
-        plane_t            *plane = subsector->sector->planes[pln];
+        plane_t*            plane = ssec->sector->planes[pln];
 
         if(R_IsGlowingPlane(plane))
             continue;
@@ -1501,9 +1502,9 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     if(!workToDo)
         return;
 
-    // We need to check all the shadow lines linked to this subsector for
+    // We need to check all the shadow lines linked to this face for
     // the purpose of fakeradio shadowing.
-    for(link = subsector->shadows; link != NULL; link = link->next)
+    for(link = ssec->shadows; link != NULL; link = link->next)
     {
         // Already rendered during the current frame? We only want to
         // render each shadow once per frame.
@@ -1516,7 +1517,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
         line = link->lineDef;
         side = link->side;
 
-        for(pln = 0; pln < subsector->sector->planeCount; ++pln)
+        for(pln = 0; pln < ssec->sector->planeCount; ++pln)
         {
             plane_t*                plane;
 
@@ -1529,7 +1530,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
             // there won't be a shadow at all. Open neighbours cause some
             // changes in the polygon corner vertices (placement, colour).
 
-            suf = &subsector->sector->planes[pln]->surface;
+            suf = &ssec->sector->planes[pln]->surface;
             plnHeight = plane->visHeight;
             vec[VZ] = vy - plnHeight;
 
@@ -1568,7 +1569,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
 
                 if(neighbor != line && !neighbor->L_backside &&
                    neighbor->buildData.windowEffect &&
-                   neighbor->L_frontsector != subsector->sector)
+                   neighbor->L_frontsector != ssec->sector)
                 {   // A one-way window, open side.
                     sideOpen[i] = 1;
                 }
@@ -1631,7 +1632,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     }
 }
 
-void Rend_RadioSubsectorEdges(subsector_t* subsector)
+void Rend_RadioSubsectorEdges(face_t* subsector)
 {
     if(!rendFakeRadio || levelFullBright)
         return;

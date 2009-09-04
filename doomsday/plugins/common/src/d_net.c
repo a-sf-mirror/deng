@@ -40,10 +40,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "dmu_lib.h"
 #include "g_common.h"
 #include "d_net.h"
 #include "p_player.h"
@@ -52,7 +51,7 @@
 
 // MACROS ------------------------------------------------------------------
 
-// TYPES --------------------------------------------------------------------
+// TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -393,10 +392,10 @@ int D_NetWorldEvent(int type, int parm, void *data)
         // High word: sector number, low word: sound id.
         if(parm & 0xffff)
             S_StartSound(parm & 0xffff,
-                         (mobj_t *) P_GetPtr(DMU_SECTOR, parm >> 16,
+                         (mobj_t *) DMU_GetPtr(DMU_SECTOR, parm >> 16,
                                              DMU_SOUND_ORIGIN));
         else
-            S_StopSound(0, (mobj_t *) P_GetPtr(DMU_SECTOR, parm >> 16,
+            S_StopSound(0, (mobj_t *) DMU_GetPtr(DMU_SECTOR, parm >> 16,
                                                DMU_SOUND_ORIGIN));
 
         break;
