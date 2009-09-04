@@ -745,11 +745,13 @@ void P_MobjLink(mobj_t* mo, byte flags)
     if(mo->dPlayer)
     {
         ddplayer_t*         player = mo->dPlayer;
+        const subsector_t*  ssec = ((subsector_t*) player->mo->face->data);
 
         player->inVoid = true;
-        if(R_IsPointInSector2(player->mo->pos[VX],
-                              player->mo->pos[VY],
-                              ((subsector_t*) player->mo->face->data)->sector))
+        if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
+                              ssec->sector) &&
+           (player->mo->pos[VZ] < ssec->sector->SP_ceilvisheight  - 4 &&
+            player->mo->pos[VZ] > ssec->sector->SP_floorvisheight + 4))
             player->inVoid = false;
     }
 }

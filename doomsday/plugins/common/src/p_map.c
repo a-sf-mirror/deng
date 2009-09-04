@@ -236,7 +236,7 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     if(!P_MobjIsCamera(from))
         fPos[VZ] += from->height + -(from->height / 4);
 
-    return P_CheckLineSight(fPos, to->pos, 0, to->height);
+    return P_CheckLineSight(fPos, to->pos, 0, to->height, 0);
 }
 
 boolean PIT_StompThing(mobj_t* mo, void* data)
@@ -462,6 +462,12 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
     // Don't clip against self.
     if(thing == tmThing)
         return true;
+
+#if __JHEXEN__
+    // Don't clip on something we are stood on.
+    if(thing == tmThing->onMobj)
+        return true;
+#endif
 
     if(!(thing->flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)) ||
        P_MobjIsCamera(thing) || P_MobjIsCamera(tmThing))
@@ -1550,19 +1556,23 @@ boolean PTR_ShootTraverse(intercept_t* in)
     {
         li = in->d.lineDef;
         xline = P_ToXLine(li);
-        if(xline->special)
-            P_ActivateLine(li, shootThing, 0, SPAC_IMPACT);
 
         frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
         backSec = DMU_GetPtrp(li, DMU_BACK_SECTOR);
+
+        if(!backSec && P_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
+            return true; // Continue traversal.
+
+        if(xline->special)
+            P_ActivateLine(li, shootThing, 0, SPAC_IMPACT);
+
+        if(!backSec)
+            goto hitline;
 
 #if __JDOOM64__
         if(xline->flags & ML_BLOCKALL) // jd64
             goto hitline;
 #endif
-
-        if(!frontSec || !backSec)
-            goto hitline;
 
         // Crosses a two sided line.
         P_LineOpening(li);
@@ -1836,7 +1846,20 @@ boolean PTR_AimTraverse(intercept_t* in)
 
         if(!(frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR)) ||
            !(backSec  = DMU_GetPtrp(li, DMU_BACK_SECTOR)))
+        {
+            float               tracePos[3];
+            divline_t*          trace =
+                (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
+
+            tracePos[VX] = FIX2FLT(trace->pos[VX]);
+            tracePos[VY] = FIX2FLT(trace->pos[VY]);
+            tracePos[VZ] = shootZ;
+
+            if(P_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
+                return true; // Continue traversal.
+
             return false; // Stop.
+        }
 
         // Crosses a two sided line.
         // A two sided line will restrict the possible target ranges.
@@ -2580,10 +2603,6 @@ void P_SlideMove(mobj_t* mo)
 boolean PIT_ChangeSector(mobj_t* thing, void* data)
 {
     mobj_t*             mo;
-
-    // Don't check things that aren't blocklinked (supposedly immaterial).
-    if(thing->ddFlags & DDMF_NOBLOCKMAP)
-        return true;
 
     if(P_ThingHeightClip(thing))
         return true; // Keep checking...

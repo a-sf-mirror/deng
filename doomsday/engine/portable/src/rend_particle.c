@@ -672,6 +672,8 @@ static void renderParticles(int rtype, boolean withBlend)
         {
             rendmodelparams_t       params;
 
+            memset(&params, 0, sizeof(rendmodelparams_t));
+
             setupModelParamsForParticle(&params, pt, st, dst, center, dist,
                                         size, mark, color[CA]);
             Rend_RenderModel(&params);

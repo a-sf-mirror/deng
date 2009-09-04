@@ -1063,7 +1063,7 @@ static menuitem_t GameplayItems[] = {
     {ITT_EFUNC, 0, "AV RESURRECTS GHOSTS :", M_ToggleVar, 0, NULL,
         "game-raiseghosts"},
 #  endif
-    {ITT_EFUNC, 0, "PE LIMITED TO 20 LOST SOULS :", M_ToggleVar, 0, NULL,
+    {ITT_EFUNC, 0, "PE LIMITED TO 21 LOST SOULS :", M_ToggleVar, 0, NULL,
         "game-maxskulls"},
     {ITT_EFUNC, 0, "LS CAN GET STUCK INSIDE WALLS :", M_ToggleVar, 0, NULL,
         "game-skullsinwalls"},
@@ -1086,6 +1086,7 @@ static menuitem_t GameplayItems[] = {
     {ITT_EFUNC, 0, "ZOMBIE PLAYERS CAN EXIT MAPS :", M_ToggleVar, 0, NULL,
         "game-zombiescanexit"},
     {ITT_EFUNC, 0, "FIX OUCH FACE :", M_ToggleVar, 0, NULL, "hud-face-ouchfix"},
+    {ITT_EFUNC, 0, "FIX WEAPON SLOT DISPLAY :", M_ToggleVar, 0, NULL, "hud-status-weaponslots-ownedfix"}
 # endif
 #endif
 };
@@ -1115,7 +1116,7 @@ static menu_t GameplayDef = {
 #if __JDOOM64__
     17, GameplayItems,
 #elif __JDOOM__
-    18, GameplayItems,
+    19, GameplayItems,
 #else
     12, GameplayItems,
 #endif
@@ -1127,7 +1128,7 @@ static menu_t GameplayDef = {
 #if __JDOOM64__
     0, 17
 #elif __JDOOM__
-    0, 18
+    0, 19
 #else
     0, 12
 #endif
@@ -1987,9 +1988,10 @@ void Hu_MenuCommand(menucommand_e cmd)
         if(menuActive)
         {
             currentMenu->lastOn = itemOn;
-
-            S_LocalSound(SFX_MENU_CLOSE, NULL);
             menuActive = false;
+
+            if(cmd != MCMD_CLOSEFAST)
+                S_LocalSound(SFX_MENU_CLOSE, NULL);
 
             // Disable the menu binding class
             DD_Execute(true, "deactivatebcontext menu");
@@ -2057,23 +2059,23 @@ void Hu_MenuCommand(menucommand_e cmd)
         case MCMD_NAV_LEFT:
             if(item->type == ITT_LRFUNC && item->func != NULL)
             {
-                item->func(LEFT_DIR | item->option, item->data);
                 S_LocalSound(SFX_MENU_SLIDER_MOVE, NULL);
+                item->func(LEFT_DIR | item->option, item->data);
             }
             break;
 
         case MCMD_NAV_RIGHT:
             if(item->type == ITT_LRFUNC && item->func != NULL)
             {
-                item->func(RIGHT_DIR | item->option, item->data);
                 S_LocalSound(SFX_MENU_SLIDER_MOVE, NULL);
+                item->func(RIGHT_DIR | item->option, item->data);
             }
             break;
 
         case MCMD_NAV_PAGEUP:
         case MCMD_NAV_PAGEDOWN:
-            Hu_MenuNavigatePage(menu, cmd == MCMD_NAV_PAGEUP? -1 : +1);
             S_LocalSound(SFX_MENU_NAV_UP, NULL);
+            Hu_MenuNavigatePage(menu, cmd == MCMD_NAV_PAGEUP? -1 : +1);
             break;
 
         case MCMD_NAV_DOWN:
@@ -2118,8 +2120,8 @@ void Hu_MenuCommand(menucommand_e cmd)
             }
             else
             {
-                M_SetupNextMenu(menulist[menu->prevMenu]);
                 S_LocalSound(SFX_MENU_CANCEL, NULL);
+                M_SetupNextMenu(menulist[menu->prevMenu]);
             }
             break;
 
@@ -2128,8 +2130,8 @@ void Hu_MenuCommand(menucommand_e cmd)
             {
                 if(item->func)
                 {
-                    item->func(-1, item->data);
                     S_LocalSound(SFX_MENU_CANCEL, NULL);
+                    item->func(-1, item->data);
                 }
             }
             break;
@@ -2137,21 +2139,21 @@ void Hu_MenuCommand(menucommand_e cmd)
         case MCMD_SELECT:
             if(item->type == ITT_SETMENU)
             {
-                M_SetupNextMenu(menulist[item->option]);
                 S_LocalSound(SFX_MENU_ACCEPT, NULL);
+                M_SetupNextMenu(menulist[item->option]);
             }
             else if(item->func != NULL)
             {
                 menu->lastOn = hasFocus;
                 if(item->type == ITT_LRFUNC)
                 {
-                    item->func(RIGHT_DIR | item->option, item->data);
                     S_LocalSound(SFX_MENU_CYCLE, NULL);
+                    item->func(RIGHT_DIR | item->option, item->data);
                 }
                 else if(item->type == ITT_EFUNC)
                 {
-                    item->func(item->option, item->data);
                     S_LocalSound(SFX_MENU_CYCLE, NULL);
+                    item->func(item->option, item->data);
                 }
             }
             break;
@@ -3059,6 +3061,7 @@ void M_DrawGameplay(void)
 # endif
 # if __JDOOM__
     M_WriteMenuText(menu, idx++, yesno[cfg.fixOuchFace != 0]);
+    M_WriteMenuText(menu, idx++, yesno[cfg.fixStatusbarOwnedWeapons != 0]);
 # endif
 #endif
 }
@@ -4201,6 +4204,7 @@ DEFCC(CCmdMenuAction)
                     if(quickSaveSlot == -2)
                         quickSaveSlot = saveSlot;
 
+                    S_LocalSound(SFX_MENU_ACCEPT, NULL);
                     G_SaveGame(saveSlot, savegamestrings[saveSlot]);
                     Hu_MenuCommand(MCMD_CLOSEFAST);
                 }

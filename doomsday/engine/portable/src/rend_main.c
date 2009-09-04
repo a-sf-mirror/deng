@@ -70,7 +70,6 @@ static DGLuint constructBBox(DGLuint name, float br);
 extern int useDynLights, translucentIceCorpse;
 extern int skyhemispheres;
 extern int loMaxRadius;
-extern int devNoCulling;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -657,7 +656,7 @@ static void calcSegDivisions(walldiv_t* div, const hedge_t* hEdge,
                              float topZ, boolean doRight)
 {
     sidedef_t*          side;
-    seg_t*          seg = (seg_t*) hEdge->data;
+    seg_t*              seg = (seg_t*) hEdge->data;
 
     div->num = 0;
 
@@ -2820,10 +2819,12 @@ static void Rend_SSectSkyFixes(face_t* face)
     rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
     float*              vBL, *vBR, *vTL, *vTR;
     sector_t*           frontsec, *backsec;
-    uint                j, num;
     hedge_t*            hEdge;
     sidedef_t*          side;
     subsector_t*        ssec = (subsector_t*) face->data;
+
+    if(!face->hEdge)
+        return;
 
     // Init the poly.
     memset(rTU, 0, sizeof(rTU));
@@ -2851,9 +2852,8 @@ static void Rend_SSectSkyFixes(face_t* face)
     vTL = rvertices[1].pos;
     vTR = rvertices[3].pos;
 
-    num  = ssec->hEdgeCount;
-
-    for(j = 0, hEdge = face->hEdge; j < num; ++j, hEdge = hEdge->next)
+    hEdge = face->hEdge;
+    do
     {
         seg_t*              seg = (seg_t*) hEdge->data;
 
@@ -2980,7 +2980,7 @@ static void Rend_SSectSkyFixes(face_t* face)
                 seg->frameFlags |= SEGINF_BACKSECSKYFIX;
             }
         }
-    }
+    } while((hEdge = hEdge->next) != face->hEdge);
 }
 
 /**
