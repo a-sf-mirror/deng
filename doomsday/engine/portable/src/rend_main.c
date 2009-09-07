@@ -660,14 +660,15 @@ static void calcSegDivisions(walldiv_t* div, const hedge_t* hEdge,
 
     div->num = 0;
 
-    side = HEDGE_SIDEDEF(hEdge);
+    if(!(side = HEDGE_SIDEDEF(hEdge)))
+        return;
 
     if(seg->flags & SEGF_POLYOBJ)
         return; // Polyobj segs are never split.
 
     // Only segs at sidedef ends can/should be split.
-    if(!((hEdge == side->hEdges[0] && !doRight) ||
-         (hEdge == side->hEdges[side->hEdgeCount -1] && doRight)))
+    if(!((hEdge == side->line->hEdges[seg->side? 1 : 0] && !doRight) ||
+         (hEdge == side->line->hEdges[!seg->side? 1 : 0] && doRight)))
         return;
 
     doCalcSegDivisions(div, seg->lineDef, seg->side, frontSec, bottomZ,

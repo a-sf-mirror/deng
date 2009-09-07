@@ -434,8 +434,6 @@ end
 
 struct sidedef
     -       surface_t[3] sections
-    UINT    uint        hEdgeCount
-    PTR     hedge_s**   hEdges // [hEdgeCount] size, hedges arranged left>right
     PTR		linedef_s*	line
     PTR     sector_s*   sector
     SHORT   short       flags
@@ -510,6 +508,8 @@ struct linedef
     PTR     vertex_s*[2] v
     -       lineowner_s*[2] vo      // Links to vertex line owner nodes [left, right]
     PTR     sidedef_s*[2] sideDefs
+    -       uint        hEdgeCount
+    -       hedge_s*    hEdges[2]   // [leftmost front seg, rightmost front seg]
     INT     int         flags		// Public DDLF_* flags.
     -		byte		inFlags		// Internal LF_* flags
     INT     slopetype_t slopeType
