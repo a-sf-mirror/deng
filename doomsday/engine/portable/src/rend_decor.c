@@ -743,10 +743,10 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
     float               frontCeil, frontFloor, backCeil, backFloor, bottom,
                         top;
 
-    if(!side->hEdges || !side->hEdges[0])
+    if(!side->line->hEdges[0])
         return;
 
-    line = ((seg_t*) side->hEdges[0]->data)->lineDef;
+    line = side->line;
     sid = (line->L_backside && line->L_backside == side)? 1 : 0;
     frontCeil  = line->L_frontsector->SP_ceilvisheight;
     frontFloor = line->L_frontsector->SP_floorvisheight;

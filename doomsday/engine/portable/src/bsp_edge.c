@@ -146,6 +146,7 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
     data->sector = sec;
     data->sourceLine = sourceLine;
     data->index = -1;
+    data->lprev = data->lnext = NULL;
     }
 
     updateHEdge(hEdge);
@@ -223,6 +224,12 @@ else
 
     newData = (bsp_hedgeinfo_t*) newHEdge->data;
 
+    if(((bsp_hedgeinfo_t*)oldHEdge->data)->lnext)
+        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->data)
+            ->lnext->data)->lprev = newHEdge;
+    oldData->lnext = newHEdge;
+    newData->lprev = oldHEdge;
+
     newHEdge->prev = oldHEdge;
     oldHEdge->next = newHEdge;
 
@@ -254,8 +261,15 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
         // It is important to keep the twin relationship valid.
         newHEdge->twin->twin = newHEdge;
 
+        if(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->lprev)
+            ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->twin->data)
+                ->lprev->data)->lnext = newHEdge->twin;
+
         newHEdge->twin->next = oldHEdge->twin;
         oldHEdge->twin->prev = newHEdge->twin;
+
+        ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
+        ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
 
         oldHEdge->twin->v[0] = newVert;
         updateHEdge(oldHEdge->twin);

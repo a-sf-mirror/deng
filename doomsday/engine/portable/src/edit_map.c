@@ -859,11 +859,11 @@ static void finishLineDefs(gamemap_t* map)
     {
         ld = &map->lineDefs[i];
 
-        if(!ld->sideDefs[0]->hEdgeCount)
+        if(!ld->hEdgeCount)
             continue;
 
-        startHEdge = ld->sideDefs[0]->hEdges[0];
-        endHEdge = ld->sideDefs[0]->hEdges[ld->sideDefs[0]->hEdgeCount - 1];
+        startHEdge = ld->hEdges[0];
+        endHEdge = ld->hEdges[1];
         ld->v[0] = v[0] = startHEdge->HE_v1;
         ld->v[1] = v[1] = endHEdge->HE_v2;
         ld->dX = v[1]->V_pos[VX] - v[0]->V_pos[VX];

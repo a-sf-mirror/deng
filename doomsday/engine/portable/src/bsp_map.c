@@ -55,68 +55,45 @@
 
 // CODE --------------------------------------------------------------------
 
-static void hardenSideSegList(gamemap_t* map, sidedef_t* side, hedge_t* seg,
-                              const hedge_t* hEdge)
+static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
+                                 const hedge_t* hEdge)
 {
     uint                count;
-    const hedge_t*      first, *other;
+    const hedge_t*      first, *last;
+    linedef_t*          li = ((seg_t*) seg->data)->lineDef;
+    byte                side = ((seg_t*) seg->data)->side;
 
-    if(!side)
-        return;
-
-    // Have we already processed this side?
-    if(side->hEdges)
+    // Have we already processed this linedef?
+    if(li->hEdges)
         return;
 
     // Find the first hedge for this side.
-    first = hEdge;
-    while(first->prev)
+    first = (side? hEdge->twin : hEdge);
+
+    while(((bsp_hedgeinfo_t*)first->data)->lprev)
+        first = ((bsp_hedgeinfo_t*) first->data)->lprev;
+
+    // Find the last.
+    last = first;
+    count = 1;
+    while(((bsp_hedgeinfo_t*)last->data)->lnext)
     {
-        if(((bsp_hedgeinfo_t*) first->data)->sourceLine !=
-           ((bsp_hedgeinfo_t*) hEdge->data)->sourceLine)
-            break;
-
-        first = first->prev;
-    }
-
-    // Count the hedges for this side.
-    count = 0;
-    other = first;
-    while(other)
-    {
-        if(((bsp_hedgeinfo_t*) other->data)->sourceLine !=
-           ((bsp_hedgeinfo_t*) hEdge->data)->sourceLine)
-            break;
-
-        other = other->next;
+        last = ((bsp_hedgeinfo_t*)last->data)->lnext;
         count++;
     }
 
+    li = ((seg_t*) seg->data)->lineDef;
     if(count)
     {
         // Allocate the final side hedge table.
-        side->hEdgeCount = count;
-        side->hEdges = Z_Malloc(sizeof(hedge_t*) * (side->hEdgeCount+1),
-            PU_MAPSTATIC, 0);
-
-        count = 0;
-        other = first;
-        while(other)
-        {
-            if(((bsp_hedgeinfo_t*) other->data)->sourceLine !=
-               ((bsp_hedgeinfo_t*) hEdge->data)->sourceLine)
-                break;
-
-            side->hEdges[count++] =
-                &map->hEdges[((bsp_hedgeinfo_t*) other->data)->index];
-            other = other->next;
-        }
-        side->hEdges[count] = NULL; // Terminate.
+        li->hEdgeCount = count;
+        li->hEdges[0] = &map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
+        li->hEdges[1] = &map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
     }
     else
     {   // Should never happen.
-        side->hEdgeCount = 0;
-        side->hEdges = NULL;
+        li->hEdgeCount = 0;
+        li->hEdges[0] = li->hEdges[1] = NULL;
     }
 }
 
@@ -262,7 +239,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         }
 
         if(seg->lineDef)
-            hardenSideSegList(map, HEDGE_SIDEDEF(dst), dst, hEdge);
+            hardenLinedefSegList(map, dst, hEdge);
 
         seg->angle =
             bamsAtan2((int) (dst->HE_v2pos[VY] - dst->HE_v1pos[VY]),

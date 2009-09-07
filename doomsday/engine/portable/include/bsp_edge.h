@@ -85,6 +85,7 @@ typedef struct {
 
     // Linedef that this half-edge goes along, or NULL if miniseg.
     linedef_t*          lineDef;
+    hedge_t*            lprev, *lnext; // Previous and next half-edges along linedef side.
 
     // Linedef that this half-edge initially comes from.
     // For "real" half-edges, this is just the same as the 'linedef' field

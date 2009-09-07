@@ -400,8 +400,6 @@ typedef struct msidedef_s {
 typedef struct sidedef_s {
     runtime_mapdata_header_t header;
     surface_t           sections[3];
-    unsigned int        hEdgeCount;
-    struct hedge_s**    hEdges;        // [hEdgeCount] size, hedges arranged left>right
     struct linedef_s*   line;
     struct sector_s*    sector;
     short               flags;
@@ -467,6 +465,8 @@ typedef struct linedef_s {
     struct vertex_s*    v[2];
     struct lineowner_s* vo[2];         // Links to vertex line owner nodes [left, right]
     struct sidedef_s*   sideDefs[2];
+    unsigned int        hEdgeCount;
+    struct hedge_s*     hEdges[2];     // [leftmost front seg, rightmost front seg]
     int                 flags;         // Public DDLF_* flags.
     byte                inFlags;       // Internal LF_* flags
     slopetype_t         slopeType;

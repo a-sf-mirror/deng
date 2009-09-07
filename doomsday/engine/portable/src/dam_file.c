@@ -448,11 +448,11 @@ static void archiveLines(gamemap_t *map, boolean write)
 static void writeSide(const gamemap_t *map, uint idx)
 {
     uint                i;
-    sidedef_t             *s = &map->sideDefs[idx];
+    sidedef_t*          s = &map->sideDefs[idx];
 
     for(i = 0; i < 3; ++i)
     {
-        surface_t          *suf = &s->sections[3];
+        surface_t*          suf = &s->sections[3];
 
         writeLong(suf->flags);
         writeLong(getMaterialDictID(materialDict, suf->material));
@@ -469,9 +469,6 @@ static void writeSide(const gamemap_t *map, uint idx)
     }
     writeLong(s->sector? ((s->sector - map->sectors) + 1) : 0);
     writeShort(s->flags);
-    writeLong((long) s->hEdgeCount);
-    for(i = 0; i < s->hEdgeCount; ++i)
-        writeLong((s->hEdges[i] - map->hEdges) + 1);
 }
 
 static void readSide(const gamemap_t* map, uint idx)
@@ -505,11 +502,6 @@ static void readSide(const gamemap_t* map, uint idx)
     secIdx = readLong();
     s->sector = (secIdx == 0? NULL : &map->sectors[secIdx -1]);
     s->flags = readShort();
-    s->hEdgeCount = (uint) readLong();
-    s->hEdges = Z_Malloc(sizeof(hedge_t*) * (s->hEdgeCount + 1), PU_MAP, 0);
-    for(i = 0; i < s->hEdgeCount; ++i)
-        s->hEdges[i] = &map->hEdges[(unsigned) readLong() - 1];
-    s->hEdges[i] = NULL; // Terminate.
 }
 
 static void archiveSides(gamemap_t* map, boolean write)
