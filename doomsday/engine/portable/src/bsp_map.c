@@ -64,7 +64,7 @@ static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
     byte                side = ((seg_t*) seg->data)->side;
 
     // Have we already processed this linedef?
-    if(li->hEdges)
+    if(li->hEdgeCount)
         return;
 
     // Find the first hedge for this side.
@@ -214,7 +214,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         if(seg->lineDef)
         {
             linedef_t*          ldef = seg->lineDef;
-            vertex_t*           vtx = seg->lineDef->L_v(seg->side);
+            vertex_t*           vtx = seg->lineDef->buildData.v[seg->side];
 
             if(ldef->L_side(seg->side))
                 seg->SG_frontsector = ldef->L_side(seg->side)->sector;
@@ -466,8 +466,8 @@ void BSP_InitForNodeBuild(gamemap_t* map)
     for(i = 0; i < map->numLineDefs; ++i)
     {
         linedef_t*          l = &map->lineDefs[i];
-        vertex_t*           start = l->v[0];
-        vertex_t*           end   = l->v[1];
+        vertex_t*           start = l->buildData.v[0];
+        vertex_t*           end   = l->buildData.v[1];
 
         start->buildData.refCount++;
         end->buildData.refCount++;
@@ -516,19 +516,6 @@ static void hardenVertexes(gamemap_t* dest, vertex_t*** vertexes,
     }
 }
 
-static void updateVertexLinks(gamemap_t* dest)
-{
-    uint                i;
-
-    for(i = 0; i < dest->numLineDefs; ++i)
-    {
-        linedef_t*          line = &dest->lineDefs[i];
-
-        line->L_v1 = &dest->vertexes[line->L_v1->buildData.index - 1];
-        line->L_v2 = &dest->vertexes[line->L_v2->buildData.index - 1];
-    }
-}
-
 void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
              uint* numVertexes)
 {
@@ -536,7 +523,6 @@ void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
     binarytree_t*       rn = (binarytree_t*) rootNode;
 
     hardenVertexes(dest, vertexes, numVertexes);
-    updateVertexLinks(dest);
     buildSegsFromHEdges(dest, rn);
     hardenBSP(dest, rn);
 

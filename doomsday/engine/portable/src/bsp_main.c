@@ -84,10 +84,10 @@ static void findMapLimits(gamemap_t* src, int* bbox)
 
         if(!(l->buildData.mlFlags & MLF_ZEROLENGTH))
         {
-            double              x1 = l->v[0]->buildData.pos[VX];
-            double              y1 = l->v[0]->buildData.pos[VY];
-            double              x2 = l->v[1]->buildData.pos[VX];
-            double              y2 = l->v[1]->buildData.pos[VY];
+            double              x1 = l->buildData.v[0]->buildData.pos[VX];
+            double              y1 = l->buildData.v[0]->buildData.pos[VY];
+            double              x2 = l->buildData.v[1]->buildData.pos[VX];
+            double              y2 = l->buildData.v[1]->buildData.pos[VY];
             int                 lX = (int) floor(MIN_OF(x1, x2));
             int                 lY = (int) floor(MIN_OF(y1, y2));
             int                 hX = (int) ceil(MAX_OF(x1, x2));
@@ -143,12 +143,12 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
            !(line->buildData.mlFlags & MLF_POLYOBJ))
         {
             // Check for Humungously long lines.
-            if(ABS(line->v[0]->buildData.pos[VX] - line->v[1]->buildData.pos[VX]) >= 10000 ||
-               ABS(line->v[0]->buildData.pos[VY] - line->v[1]->buildData.pos[VY]) >= 10000)
+            if(ABS(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX]) >= 10000 ||
+               ABS(line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]) >= 10000)
             {
                 if(3000 >=
-                   M_Length(line->v[0]->buildData.pos[VX] - line->v[1]->buildData.pos[VX],
-                            line->v[0]->buildData.pos[VY] - line->v[1]->buildData.pos[VY]))
+                   M_Length(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX],
+                            line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]))
                 {
                     Con_Message("Linedef #%d is VERY long, it may cause problems\n",
                                 line->buildData.index);
@@ -164,7 +164,8 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                     Con_Message("Bad sidedef on linedef #%d (Z_CheckHeap error)\n",
                                 line->buildData.index);
 
-                front = HEdge_Create(line, line, line->v[0], line->v[1],
+                front = HEdge_Create(line, line, line->buildData.v[0],
+                                     line->buildData.v[1],
                                      side->sector, false);
                 BSP_AddHEdgeToSuperBlock(block, front);
             }
@@ -181,7 +182,8 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                     Con_Message("Bad sidedef on linedef #%d (Z_CheckHeap error)\n",
                                 line->buildData.index);
 
-                back = HEdge_Create(line, line, line->v[1], line->v[0],
+                back = HEdge_Create(line, line, line->buildData.v[1],
+                                    line->buildData.v[0],
                                     side->sector, true);
                 BSP_AddHEdgeToSuperBlock(block, back);
 
@@ -209,7 +211,8 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                     hedge_t*            other;
 
                     other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                         line, line->v[1], line->v[0],
+                                         line, line->buildData.v[1],
+                                         line->buildData.v[0],
                                          line->buildData.windowEffect, true);
 
                     BSP_AddHEdgeToSuperBlock(block, other);
@@ -224,13 +227,13 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
 
         // \todo edge tips should be created when half-edges are created.
         {
-        double x1 = line->v[0]->buildData.pos[VX];
-        double y1 = line->v[0]->buildData.pos[VY];
-        double x2 = line->v[1]->buildData.pos[VX];
-        double y2 = line->v[1]->buildData.pos[VY];
+        double x1 = line->buildData.v[0]->buildData.pos[VX];
+        double y1 = line->buildData.v[0]->buildData.pos[VY];
+        double x2 = line->buildData.v[1]->buildData.pos[VX];
+        double y2 = line->buildData.v[1]->buildData.pos[VY];
 
-        BSP_CreateVertexEdgeTip(line->v[0], x2 - x1, y2 - y1, back, front);
-        BSP_CreateVertexEdgeTip(line->v[1], x1 - x2, y1 - y2, front, back);
+        BSP_CreateVertexEdgeTip(line->buildData.v[0], x2 - x1, y2 - y1, back, front);
+        BSP_CreateVertexEdgeTip(line->buildData.v[1], x1 - x2, y1 - y2, front, back);
         }
     }
 

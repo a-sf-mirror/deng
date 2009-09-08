@@ -185,10 +185,10 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
         if(line->inFlags & LF_POLYOBJ)
             continue; // Polyobj lines don't get into the blockmap.
 
-        v1[VX] = (int) line->L_v1pos[VX];
-        v1[VY] = (int) line->L_v1pos[VY];
-        v2[VX] = (int) line->L_v2pos[VX];
-        v2[VY] = (int) line->L_v2pos[VY];
+        v1[VX] = (int) line->buildData.v[0]->V_pos[VX];
+        v1[VY] = (int) line->buildData.v[0]->V_pos[VY];
+        v2[VX] = (int) line->buildData.v[1]->V_pos[VX];
+        v2[VY] = (int) line->buildData.v[1]->V_pos[VY];
         dx = v2[VX] - v1[VX];
         dy = v2[VY] - v1[VY];
         vert = !dx;

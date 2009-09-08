@@ -842,10 +842,10 @@ Con_Message("BSP_PickPartition: Best has score %d.%02d  (%1.1f,%1.1f) -> "
 #endif*/
         assert(data->lineDef);
 
-        partition->x  = data->lineDef->v[data->side]->buildData.pos[VX];
-        partition->y  = data->lineDef->v[data->side]->buildData.pos[VY];
-        partition->dX = data->lineDef->v[data->side^1]->buildData.pos[VX] - partition->x;
-        partition->dY = data->lineDef->v[data->side^1]->buildData.pos[VY] - partition->y;
+        partition->x  = data->lineDef->buildData.v[data->side]->buildData.pos[VX];
+        partition->y  = data->lineDef->buildData.v[data->side]->buildData.pos[VY];
+        partition->dX = data->lineDef->buildData.v[data->side^1]->buildData.pos[VX] - partition->x;
+        partition->dY = data->lineDef->buildData.v[data->side^1]->buildData.pos[VY] - partition->y;
         partition->lineDef = data->lineDef;
         partition->sourceLine = data->sourceLine;
 

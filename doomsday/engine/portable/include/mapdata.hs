@@ -449,13 +449,13 @@ end
 
 internal
 // Helper macros for accessing linedef data elements.
-#define L_v(n)                  v[(n)]
-#define L_vpos(n)               v[(n)]->V_pos
+#define L_v(n)                  hEdges[(n)]->v[(n)]
+#define L_vpos(n)               L_v(n)->V_pos
 
-#define L_v1                    L_v(0)
+#define L_v1                    hEdges[0]->v[0]
 #define L_v1pos                 L_v(0)->V_pos
 
-#define L_v2                    L_v(1)
+#define L_v2                    hEdges[1]->v[1]
 #define L_v2pos                 L_v(1)->V_pos
 
 #define L_vo(n)                 vo[(n)]
@@ -484,6 +484,7 @@ internal
 #define MLF_POLYOBJ             0x8 // Line is part of a polyobj.
 
 typedef struct mlinedef_s {
+    struct vertex_s* v[2];
     // Linedef index. Always valid after loading & pruning of zero
     // length lines has occurred.
     int         index;
@@ -502,10 +503,10 @@ end
 
 public
 #define DMT_LINEDEF_SEC    DDVT_PTR
+#define DMT_LINEDEF_V      DDVT_PTR
 end
 
 struct linedef
-    PTR     vertex_s*[2] v
     -       lineowner_s*[2] vo      // Links to vertex line owner nodes [left, right]
     PTR     sidedef_s*[2] sideDefs
     -       uint        hEdgeCount

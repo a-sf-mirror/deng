@@ -366,13 +366,11 @@ static void archiveVertexes(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeLine(const gamemap_t *map, uint idx)
+static void writeLine(const gamemap_t* map, uint idx)
 {
     int                 i;
-    linedef_t             *l = &map->lineDefs[idx];
+    linedef_t*          l = &map->lineDefs[idx];
 
-    writeLong((long) ((l->v[0] - map->vertexes) + 1));
-    writeLong((long) ((l->v[1] - map->vertexes) + 1));
     writeLong(l->flags);
     writeByte(l->inFlags);
     writeFloat(l->dX);
@@ -390,14 +388,12 @@ static void writeLine(const gamemap_t *map, uint idx)
         writeByte(l->mapped[DDMAXPLAYERS]? 1 : 0);
 }
 
-static void readLine(const gamemap_t *map, uint idx)
+static void readLine(const gamemap_t* map, uint idx)
 {
     int                 i;
     long                sideIdx;
-    linedef_t             *l = &map->lineDefs[idx];
+    linedef_t*          l = &map->lineDefs[idx];
 
-    l->v[0] = &map->vertexes[(unsigned) (readLong() - 1)];
-    l->v[1] = &map->vertexes[(unsigned) (readLong() - 1)];
     l->flags = (int) readLong();
     l->inFlags = readByte();
     l->dX = readFloat();
@@ -417,7 +413,7 @@ static void readLine(const gamemap_t *map, uint idx)
         l->mapped[i] = (readByte()? true : false);
 }
 
-static void archiveLines(gamemap_t *map, boolean write)
+static void archiveLines(gamemap_t* map, boolean write)
 {
     uint                i;
 
