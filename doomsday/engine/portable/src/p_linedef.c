@@ -64,33 +64,34 @@ boolean Linedef_SetProperty(linedef_t *lin, const setargs_t *args)
     switch(args->prop)
     {
     case DMU_FRONT_SECTOR:
-        DMU_SetValue(DMT_LINEDEF_SEC, &lin->L_frontsector, args, 0);
+        DMU_SetValue(DMT_LINEDEF_SEC, &LINE_FRONTSECTOR(lin), args, 0);
         break;
     case DMU_BACK_SECTOR:
-        DMU_SetValue(DMT_LINEDEF_SEC, &lin->L_backsector, args, 0);
+        DMU_SetValue(DMT_LINEDEF_SEC, &LINE_BACKSECTOR(lin), args, 0);
         break;
+    /**
+     * \todo Re-implement me (need to update all seg->sideDef ptrs).
     case DMU_SIDEDEF0:
-        DMU_SetValue(DMT_LINEDEF_SIDEDEFS, &lin->L_frontside, args, 0);
+        DMU_SetValue(DMT_LINEDEF_SIDE, &LINE_FRONTSIDE(lin), args, 0);
         break;
     case DMU_SIDEDEF1:
-        DMU_SetValue(DMT_LINEDEF_SIDEDEFS, &lin->L_backside, args, 0);
-        break;
+        DMU_SetValue(DMT_LINEDEF_SIDE, &LINE_BACKSIDE(lin), args, 0);
+        break;*/
     case DMU_VALID_COUNT:
         DMU_SetValue(DMT_LINEDEF_VALIDCOUNT, &lin->validCount, args, 0);
         break;
     case DMU_FLAGS:
         {
-        sidedef_t          *s;
+        sidedef_t*          s;
 
         DMU_SetValue(DMT_LINEDEF_FLAGS, &lin->flags, args, 0);
 
-        s = lin->L_frontside;
+        s = LINE_FRONTSIDE(lin);
         Surface_Update(&s->SW_topsurface);
         Surface_Update(&s->SW_bottomsurface);
         Surface_Update(&s->SW_middlesurface);
-        if(lin->L_backside)
+        if((s = LINE_BACKSIDE(lin)))
         {
-            s = lin->L_backside;
             Surface_Update(&s->SW_topsurface);
             Surface_Update(&s->SW_bottomsurface);
             Surface_Update(&s->SW_middlesurface);
@@ -139,13 +140,13 @@ boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
         break;
     case DMU_FRONT_SECTOR:
     {
-        sector_t *sec = (lin->L_frontside? lin->L_frontsector : NULL);
+        sector_t *sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
         DMU_GetValue(DMT_LINEDEF_SEC, &sec, args, 0);
         break;
     }
     case DMU_BACK_SECTOR:
     {
-        sector_t *sec = (lin->L_backside? lin->L_backsector : NULL);
+        sector_t *sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
         DMU_GetValue(DMT_LINEDEF_SEC, &sec, args, 0);
         break;
     }
@@ -153,12 +154,17 @@ boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
         DMU_GetValue(DMT_LINEDEF_FLAGS, &lin->flags, args, 0);
         break;
     case DMU_SIDEDEF0:
-        DMU_GetValue(DDVT_PTR, &lin->L_frontside, args, 0);
+    {
+        sidedef_t *side = LINE_FRONTSIDE(lin);
+        DMU_GetValue(DMT_LINEDEF_SIDE, &side, args, 0);
         break;
+    }
     case DMU_SIDEDEF1:
-        DMU_GetValue(DDVT_PTR, &lin->L_backside, args, 0);
+    {
+        sidedef_t *side = LINE_BACKSIDE(lin);
+        DMU_GetValue(DMT_LINEDEF_SIDE, &side, args, 0);
         break;
-
+    }
     case DMU_BOUNDING_BOX:
         if(args->valueType == DDVT_PTR)
         {

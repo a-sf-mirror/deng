@@ -252,7 +252,7 @@ void R_InitSectorShadows(void)
 {
     uint            startTime = Sys_GetRealTime();
 
-    uint            i, j;
+    uint            i;
     vec2_t          bounds[2], point;
     vertex_t*       vtx0, *vtx1;
     lineowner_t*    vo0, *vo1;
@@ -277,40 +277,39 @@ void R_InitSectorShadows(void)
      */
     shadowLinksBlockSet = Z_BlockCreate(sizeof(shadowlink_t), 1024, PU_MAP);
 
-    for(i = 0; i < numLineDefs; ++i)
+    for(i = 0; i < numSideDefs; ++i)
     {
-        linedef_t*          line = LINE_PTR(i);
+        sidedef_t*          side = SIDE_PTR(i);
+        byte                sid;
 
-        if(R_IsShadowingLinedef(line))
-            for(j = 0; j < 2; ++j)
-            {
-                if(!line->L_side(j))
-                    continue;
+        if(!R_IsShadowingLinedef(side->line))
+            continue;
 
-                vtx0 = line->L_v(j);
-                vtx1 = line->L_v(j^1);
-                vo0 = line->L_vo(j)->LO_next;
-                vo1 = line->L_vo(j^1)->LO_prev;
+        sid = LINE_BACKSIDE(side->line) == side? BACK : FRONT;
 
-                // Use the extended points, they are wider than inoffsets.
-                V2_Set(point, vtx0->V_pos[VX], vtx0->V_pos[VY]);
-                V2_InitBox(bounds, point);
+        vtx0 = side->line->L_v(sid);
+        vtx1 = side->line->L_v(sid^1);
+        vo0 = side->line->L_vo(sid)->LO_next;
+        vo1 = side->line->L_vo(sid^1)->LO_prev;
 
-                V2_Sum(point, point, vo0->shadowOffsets.extended);
-                V2_AddToBox(bounds, point);
+        // Use the extended points, they are wider than inoffsets.
+        V2_Set(point, vtx0->V_pos[VX], vtx0->V_pos[VY]);
+        V2_InitBox(bounds, point);
 
-                V2_Set(point, vtx1->V_pos[VX], vtx1->V_pos[VY]);
-                V2_AddToBox(bounds, point);
+        V2_Sum(point, point, vo0->shadowOffsets.extended);
+        V2_AddToBox(bounds, point);
 
-                V2_Sum(point, point, vo1->shadowOffsets.extended);
-                V2_AddToBox(bounds, point);
+        V2_Set(point, vtx1->V_pos[VX], vtx1->V_pos[VY]);
+        V2_AddToBox(bounds, point);
 
-                data.lineDef = line;
-                data.side = j;
+        V2_Sum(point, point, vo1->shadowOffsets.extended);
+        V2_AddToBox(bounds, point);
 
-                P_SubsectorsBoxIteratorv(bounds, line->L_sector(j),
-                                         RIT_ShadowSubsectorLinker, &data);
-            }
+        data.lineDef = side->line;
+        data.side = sid;
+
+        P_SubsectorsBoxIteratorv(bounds, side->sector,
+                                 RIT_ShadowSubsectorLinker, &data);
     }
 
     // How much time did we spend?

@@ -113,12 +113,12 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
     if(!interceptLineDef(li, los, &dl))
         return true; // Ray does not intercept seg on the X/Y plane.
 
-    if(!li->L_side(side))
+    if(!LINE_SIDE(li, side))
         return true; // Seg is on the back side of a one-sided window.
 
-    fsec = li->L_sector(side);
-    bsec  = (li->L_backside? li->L_sector(side^1) : NULL);
-    noBack = (!li->L_backside || !(bsec->SP_floorheight < bsec->SP_ceilheight));
+    fsec = LINE_SECTOR(li, side);
+    bsec  = (LINE_BACKSIDE(li)? LINE_SECTOR(li, side^1) : NULL);
+    noBack = (!LINE_BACKSIDE(li) || !(bsec->SP_floorheight < bsec->SP_ceilheight));
 
     if(noBack)
     {

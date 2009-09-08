@@ -467,14 +467,14 @@ void P_LineOpening(linedef_t* linedef)
 {
     sector_t*           front, *back;
 
-    if(!linedef->L_backside)
+    if(!LINE_BACKSIDE(linedef))
     {   // Single sided line.
         openrange = 0;
         return;
     }
 
-    front = linedef->L_frontsector;
-    back = linedef->L_backsector;
+    front = LINE_FRONTSECTOR(linedef);
+    back = LINE_BACKSECTOR(linedef);
 
     if(front->SP_ceilheight < back->SP_ceilheight)
         opentop = front->SP_ceilheight;
@@ -593,7 +593,7 @@ boolean PIT_LinkToLines(linedef_t* ld, void* parm)
 
     // One sided lines will not be linked to because a mobj
     // can't legally cross one.
-    if(!ld->L_frontside || !ld->L_backside)
+    if(!LINE_FRONTSIDE(ld) || !LINE_BACKSIDE(ld))
         return true;
 
     // No redundant nodes will be creates since this routine is
@@ -810,7 +810,7 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
             ld = (linedef_t *) tn[nix].ptr;
 
             // All these lines are two-sided. Try front side.
-            sec = ld->L_frontsector;
+            sec = LINE_FRONTSECTOR(ld);
             if(sec->validCount != validCount)
             {
                 *end++ = sec;
@@ -818,9 +818,9 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
             }
 
             // And then the back side.
-            if(ld->L_backside)
+            if(LINE_BACKSIDE(ld))
             {
-                sec = ld->L_backsector;
+                sec = LINE_BACKSECTOR(ld);
                 if(sec->validCount != validCount)
                 {
                     *end++ = sec;
@@ -1124,7 +1124,7 @@ boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
         return true; // Behind source.
 
     // Try to early out the check.
-    if(earlyout && frac < 1 && !ld->L_backside)
+    if(earlyout && frac < 1 && !LINE_BACKSIDE(ld))
         return false; // Stop iteration.
 
     P_AddIntercept(frac, true, ld);

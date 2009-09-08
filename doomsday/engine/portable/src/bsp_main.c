@@ -150,13 +150,13 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                 }
             }
 
-            if(line->sideDefs[FRONT])
+            if(line->buildData.sideDefs[FRONT])
             {
-                sidedef_t     *side = line->sideDefs[FRONT];
+                sidedef_t     *side = line->buildData.sideDefs[FRONT];
 
                 // Check for a bad sidedef.
                 if(!side->sector)
-                    Con_Message("Bad sidedef on linedef #%d (Z_CheckHeap error)\n",
+                    Con_Message("Bad front sidedef on linedef #%d (Z_CheckHeap error)\n",
                                 line->buildData.index);
 
                 front = HEdge_Create(line, line, line->buildData.v[0],
@@ -168,13 +168,13 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                 Con_Message("Linedef #%d has no front sidedef!\n",
                             line->buildData.index);
 
-            if(line->sideDefs[BACK])
+            if(line->buildData.sideDefs[BACK])
             {
-                sidedef_t     *side = line->sideDefs[BACK];
+                sidedef_t     *side = line->buildData.sideDefs[BACK];
 
                 // Check for a bad sidedef.
                 if(!side->sector)
-                    Con_Message("Bad sidedef on linedef #%d (Z_CheckHeap error)\n",
+                    Con_Message("Bad back sidedef on linedef #%d (Z_CheckHeap error)\n",
                                 line->buildData.index);
 
                 back = HEdge_Create(line, line, line->buildData.v[1],

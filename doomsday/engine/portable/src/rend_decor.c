@@ -747,45 +747,45 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
         return;
 
     line = side->line;
-    sid = (line->L_backside && line->L_backside == side)? 1 : 0;
-    frontCeil  = line->L_frontsector->SP_ceilvisheight;
-    frontFloor = line->L_frontsector->SP_floorvisheight;
+    sid = (LINE_BACKSIDE(line) && LINE_BACKSIDE(line) == side)? 1 : 0;
+    frontCeil  = LINE_FRONTSECTOR(line)->SP_ceilvisheight;
+    frontFloor = LINE_FRONTSECTOR(line)->SP_floorvisheight;
 
-    if(line->L_backside)
+    if(LINE_BACKSIDE(line))
     {
-        backCeil  = line->L_backsector->SP_ceilvisheight;
-        backFloor = line->L_backsector->SP_floorvisheight;
+        backCeil  = LINE_BACKSECTOR(line)->SP_ceilvisheight;
+        backFloor = LINE_BACKSECTOR(line)->SP_floorvisheight;
     }
 
     switch(section)
     {
     case SEG_MIDDLE:
         suf = &side->SW_middlesurface;
-        top = line->L_sector(sid)->SP_ceilvisheight;
-        bottom = line->L_sector(sid)->SP_floorvisheight;
+        top = LINE_SECTOR(line, sid)->SP_ceilvisheight;
+        bottom = LINE_SECTOR(line, sid)->SP_floorvisheight;
         visible = true;
         break;
 
     case SEG_TOP:
         suf = &side->SW_topsurface;
-        if(line->L_frontside && line->L_backside && backCeil < frontCeil &&
-           (!R_IsSkySurface(&line->L_backsector->SP_ceilsurface) ||
-            !R_IsSkySurface(&line->L_frontsector->SP_ceilsurface)))
+        if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backCeil < frontCeil &&
+           (!R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_ceilsurface) ||
+            !R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_ceilsurface)))
         {
-            top = line->L_sector(sid)->SP_ceilvisheight;
-            bottom  = line->L_sector(sid^1)->SP_ceilvisheight;
+            top = LINE_SECTOR(line, sid)->SP_ceilvisheight;
+            bottom  = LINE_SECTOR(line, sid^1)->SP_ceilvisheight;
             visible = true;
         }
         break;
 
     case SEG_BOTTOM:
         suf = &side->SW_bottomsurface;
-        if(line->L_frontside && line->L_backside && backFloor > frontFloor &&
-           (!R_IsSkySurface(&line->L_backsector->SP_floorsurface) ||
-            !R_IsSkySurface(&line->L_frontsector->SP_floorsurface)))
+        if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backFloor > frontFloor &&
+           (!R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_floorsurface) ||
+            !R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_floorsurface)))
         {
-            top = line->L_sector(sid^1)->SP_floorvisheight;
-            bottom  = line->L_sector(sid)->SP_floorvisheight;
+            top = LINE_SECTOR(line, sid^1)->SP_floorvisheight;
+            bottom  = LINE_SECTOR(line, sid)->SP_floorvisheight;
             visible = true;
         }
         break;
@@ -793,7 +793,7 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
 
     if(visible && suf->material)
     {
-        if(line->L_backside)
+        if(LINE_BACKSIDE(line))
         {
             if(suf == &side->SW_topsurface)
             {

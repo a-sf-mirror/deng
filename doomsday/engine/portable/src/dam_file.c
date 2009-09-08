@@ -376,8 +376,6 @@ static void writeLine(const gamemap_t* map, uint idx)
     writeFloat(l->dX);
     writeFloat(l->dY);
     writeLong((long) l->slopeType);
-    writeLong((long) (l->sideDefs[0]? ((l->sideDefs[0] - map->sideDefs) + 1) : 0));
-    writeLong((long) (l->sideDefs[1]? ((l->sideDefs[1] - map->sideDefs) + 1) : 0));
     writeFloat(l->bBox[BOXLEFT]);
     writeFloat(l->bBox[BOXRIGHT]);
     writeFloat(l->bBox[BOXBOTTOM]);
@@ -391,7 +389,6 @@ static void writeLine(const gamemap_t* map, uint idx)
 static void readLine(const gamemap_t* map, uint idx)
 {
     int                 i;
-    long                sideIdx;
     linedef_t*          l = &map->lineDefs[idx];
 
     l->flags = (int) readLong();
@@ -399,10 +396,6 @@ static void readLine(const gamemap_t* map, uint idx)
     l->dX = readFloat();
     l->dY = readFloat();
     l->slopeType = (slopetype_t) readLong();
-    sideIdx = readLong();
-    l->sideDefs[0] = (sideIdx == 0? NULL : &map->sideDefs[sideIdx-1]);
-    sideIdx = readLong();
-    l->sideDefs[1] = (sideIdx == 0? NULL : &map->sideDefs[sideIdx-1]);
     l->bBox[BOXLEFT] = readFloat();
     l->bBox[BOXRIGHT] = readFloat();
     l->bBox[BOXBOTTOM] = readFloat();

@@ -233,7 +233,7 @@ boolean PIT_LineCollide(linedef_t* ld, void* parm)
     // A line has been hit.
     tm->mo->wallHit = true;
 
-    if(!ld->L_backside)
+    if(!LINE_BACKSIDE(ld))
         return false; // One sided line, can't go through.
 
     if(!(tm->mo->ddFlags & DDMF_MISSILE))
@@ -637,7 +637,7 @@ static boolean slideTraverse(intercept_t *in)
 
     li = in->d.lineDef;
 
-    if(!li->L_frontside || !li->L_backside)
+    if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
     {
         if(P_PointOnLinedefSide(slideMo->pos[VX],
                              slideMo->pos[VY], li))

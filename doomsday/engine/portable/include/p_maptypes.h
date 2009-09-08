@@ -62,8 +62,6 @@ typedef struct vertex_s {
 #define HE_v2                   HE_v(1)
 #define HE_v2pos                HE_v(1)->V_pos
 
-#define HEDGE_SIDEDEF(e)        (((seg_t*)(e)->data)->lineDef? ((seg_t*)(e)->data)->lineDef->sideDefs[((seg_t*) (e)->data)->side] : NULL)
-
 #define SG_sector(n)            sec[(n)]
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
@@ -77,6 +75,7 @@ typedef struct vertex_s {
 
 typedef struct seg_s {
     struct linedef_s* lineDef;
+    struct sidedef_s* sideDef;
     struct sector_s* sec[2];
     angle_t     angle;
     byte        side; // 0=front, 1=back
@@ -425,41 +424,41 @@ typedef struct sidedef_s {
 #define L_vo1                   L_vo(0)
 #define L_vo2                   L_vo(1)
 
-#define L_side(n)               sideDefs[(n)]
-#define L_frontside             L_side(FRONT)
-#define L_backside              L_side(BACK)
-#define L_sector(n)             sideDefs[(n)]->sector
-#define L_frontsector           L_sector(FRONT)
-#define L_backsector            L_sector(BACK)
+#define LINE_FRONTSIDE(l)       (((seg_t*) (l)->hEdges[0]->data)->sideDef)
+#define LINE_BACKSIDE(l)        ((l)->hEdges[0]->twin? ((seg_t*) (l)->hEdges[0]->twin->data)->sideDef : NULL)
+#define LINE_SIDE(l, s)         ((s)? LINE_BACKSIDE(l) : LINE_FRONTSIDE(l))
+
+#define LINE_FRONTSECTOR(l)     (LINE_FRONTSIDE(l)->sector)
+#define LINE_BACKSECTOR(l)      (LINE_BACKSIDE(l)->sector)
+#define LINE_SECTOR(l, s)       ((s)? LINE_BACKSECTOR(l) : LINE_FRONTSECTOR(l))
 
 // Is this line self-referencing (front sec == back sec)?
-#define LINE_SELFREF(l)         ((l)->L_frontside && (l)->L_backside && \
-                                 (l)->L_frontsector == (l)->L_backsector)
+#define LINE_SELFREF(l)         (LINE_FRONTSIDE(l) && LINE_BACKSIDE(l) && \
+                                 LINE_FRONTSECTOR(l) == LINE_BACKSECTOR(l))
 
 // Internal flags:
 #define LF_POLYOBJ              0x1 // Line is part of a polyobject.
 
 typedef struct mlinedef_s {
     struct vertex_s* v[2];
+    struct sidedef_s* sideDefs[2];
     // Linedef index. Always valid after loading & pruning of zero
     // length lines has occurred.
     int         index;
 
     // One-sided linedef used for a special effect (windows).
     // The value refers to the opposite sector on the back side.
-    struct sector_s *windowEffect;
+    struct sector_s* windowEffect;
 
     // Normally NULL, except when this linedef directly overlaps an earlier
     // one (a rarely-used trick to create higher mid-masked textures).
     // No segs should be created for these overlapping linedefs.
-    struct linedef_s *overlap;
+    struct linedef_s* overlap;
 } mlinedef_t;
 
 typedef struct linedef_s {
     runtime_mapdata_header_t header;
     struct lineowner_s* vo[2];         // Links to vertex line owner nodes [left, right]
-    struct sidedef_s*   sideDefs[2];
-    unsigned int        hEdgeCount;
     struct hedge_s*     hEdges[2];     // [leftmost front seg, rightmost front seg]
     int                 flags;         // Public DDLF_* flags.
     byte                inFlags;       // Internal LF_* flags

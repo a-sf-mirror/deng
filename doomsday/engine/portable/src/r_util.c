@@ -283,11 +283,14 @@ linedef_t* R_GetLineForSide(const uint sideNumber)
         return NULL;
 
     for(i = 0; i < sector->lineDefCount; ++i)
-        if(sector->lineDefs[i]->L_frontside == side ||
-           sector->lineDefs[i]->L_backside == side)
+    {
+        linedef_t*          li = sector->lineDefs[i];
+
+        if(LINE_FRONTSIDE(li) == side || LINE_BACKSIDE(li) == side)
         {
-            return sector->lineDefs[i];
+            return li;
         }
+    }
 
     return NULL;
 }
@@ -311,13 +314,11 @@ boolean R_IsPointInSector(const float x, const float y,
 
     for(i = 0; i < sector->lineDefCount; ++i)
     {
-        linedef_t          *line = sector->lineDefs[i];
-        vertex_t           *vtx[2];
+        linedef_t*          line = sector->lineDefs[i];
+        vertex_t*           vtx[2];
 
         // Skip lines that aren't sector boundaries.
-        if(line->L_frontside && line->L_backside &&
-           line->L_frontsector == sector &&
-           line->L_backsector == sector)
+        if(LINE_SELFREF(line))
             continue;
 
         vtx[0] = line->L_v1;
