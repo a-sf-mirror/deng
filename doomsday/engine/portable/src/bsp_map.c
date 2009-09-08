@@ -64,7 +64,7 @@ static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
     byte                side = ((seg_t*) seg->data)->side;
 
     // Have we already processed this linedef?
-    if(li->hEdges)
+    if(li->hEdgeCount)
         return;
 
     // Find the first hedge for this side.
