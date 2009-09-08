@@ -81,21 +81,17 @@ static void findMapLimits(gamemap_t* src, int* bbox)
     for(i = 0; i < src->numLineDefs; ++i)
     {
         linedef_t*          l = &src->lineDefs[i];
+        double              x1 = l->buildData.v[0]->buildData.pos[VX];
+        double              y1 = l->buildData.v[0]->buildData.pos[VY];
+        double              x2 = l->buildData.v[1]->buildData.pos[VX];
+        double              y2 = l->buildData.v[1]->buildData.pos[VY];
+        int                 lX = (int) floor(MIN_OF(x1, x2));
+        int                 lY = (int) floor(MIN_OF(y1, y2));
+        int                 hX = (int) ceil(MAX_OF(x1, x2));
+        int                 hY = (int) ceil(MAX_OF(y1, y2));
 
-        if(!(l->buildData.mlFlags & MLF_ZEROLENGTH))
-        {
-            double              x1 = l->buildData.v[0]->buildData.pos[VX];
-            double              y1 = l->buildData.v[0]->buildData.pos[VY];
-            double              x2 = l->buildData.v[1]->buildData.pos[VX];
-            double              y2 = l->buildData.v[1]->buildData.pos[VY];
-            int                 lX = (int) floor(MIN_OF(x1, x2));
-            int                 lY = (int) floor(MIN_OF(y1, y2));
-            int                 hX = (int) ceil(MAX_OF(x1, x2));
-            int                 hY = (int) ceil(MAX_OF(y1, y2));
-
-            M_AddToBox(bbox, lX, lY);
-            M_AddToBox(bbox, hX, hY);
-        }
+        M_AddToBox(bbox, lX, lY);
+        M_AddToBox(bbox, hX, hY);
     }
 }
 
@@ -137,10 +133,9 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
 
         front = back = NULL;
 
-        // Ignore zero-length and polyobj lines.
-        if(!(line->buildData.mlFlags & MLF_ZEROLENGTH) &&
-           /*!line->buildData.overlap &&*/
-           !(line->buildData.mlFlags & MLF_POLYOBJ))
+        // Ignore polyobj lines.
+        if(/*!line->buildData.overlap &&*/
+           !(line->inFlags & LF_POLYOBJ))
         {
             // Check for Humungously long lines.
             if(ABS(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX]) >= 10000 ||
@@ -198,13 +193,6 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
             }
             else
             {
-                if(line->buildData.mlFlags & MLF_TWOSIDED)
-                {
-                    Con_Message("Linedef #%d is 2s but has no back sidedef\n",
-                                line->buildData.index);
-                    line->buildData.mlFlags &= ~MLF_TWOSIDED;
-                }
-
                 // Handle the 'One-Sided Window' trick.
                 if(line->buildData.windowEffect && front)
                 {
@@ -288,8 +276,6 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
     BSP_InitSuperBlockAllocator();
     BSP_InitIntersectionAllocator();
-
-    BSP_InitForNodeBuild(map);
 
     // Create initial half-edges.
     hEdgeList = createInitialHEdges(map);

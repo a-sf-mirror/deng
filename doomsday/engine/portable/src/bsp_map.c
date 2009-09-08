@@ -459,39 +459,6 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
     }
 }
 
-void BSP_InitForNodeBuild(gamemap_t* map)
-{
-    uint                i;
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t*          l = &map->lineDefs[i];
-        vertex_t*           start = l->buildData.v[0];
-        vertex_t*           end   = l->buildData.v[1];
-
-        start->buildData.refCount++;
-        end->buildData.refCount++;
-
-        l->buildData.mlFlags = 0;
-
-        // Check for zero-length line.
-        if((fabs(start->buildData.pos[VX] - end->buildData.pos[VX]) < DIST_EPSILON) &&
-           (fabs(start->buildData.pos[VY] - end->buildData.pos[VY]) < DIST_EPSILON))
-            l->buildData.mlFlags |= MLF_ZEROLENGTH;
-
-        if(l->inFlags & LF_POLYOBJ)
-            l->buildData.mlFlags |= MLF_POLYOBJ;
-
-        if(l->sideDefs[BACK] && l->sideDefs[FRONT])
-        {
-            l->buildData.mlFlags |= MLF_TWOSIDED;
-
-            if(l->sideDefs[BACK]->sector == l->sideDefs[FRONT]->sector)
-                l->buildData.mlFlags |= MLF_SELFREF;
-        }
-    }
-}
-
 static void hardenVertexes(gamemap_t* dest, vertex_t*** vertexes,
                            uint* numVertexes)
 {

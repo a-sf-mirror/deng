@@ -363,9 +363,8 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     hedge_t*            newHEdge;
     double              x, y;
     double              a, b;
-    bsp_hedgeinfo_t*         data = ((bsp_hedgeinfo_t*) curHEdge->data);
-    boolean             selfRef =
-        (data->lineDef? (data->lineDef->buildData.mlFlags & MLF_SELFREF) : false);
+    bsp_hedgeinfo_t*    data = ((bsp_hedgeinfo_t*) curHEdge->data);
+    boolean             selfRef = data->lineDef && LINE_SELFREF(data->lineDef);
 
     // Get state of lines' relation to each other.
     a = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->length,
