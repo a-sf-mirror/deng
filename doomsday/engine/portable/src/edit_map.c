@@ -767,13 +767,19 @@ static void updateSectorBounds(sector_t* sec)
         return;
     }
 
-    vtx = sec->lineDefs[0]->L_v1;
-    bbox[BOXLEFT] = bbox[BOXRIGHT]  = vtx->V_pos[VX];
-    bbox[BOXTOP]  = bbox[BOXBOTTOM] = vtx->V_pos[VY];
+    bbox[BOXLEFT] = DDMAXFLOAT;
+    bbox[BOXRIGHT] = DDMINFLOAT;
+    bbox[BOXBOTTOM] = DDMAXFLOAT;
+    bbox[BOXTOP] = DDMINFLOAT;
 
     for(i = 1; i < sec->lineDefCount; ++i)
     {
-        vtx = sec->lineDefs[i]->L_v1;
+        linedef_t*          li = sec->lineDefs[i];
+
+        if(li->inFlags & LF_POLYOBJ)
+            continue;
+
+        vtx = li->L_v1;
 
         if(vtx->V_pos[VX] < bbox[BOXLEFT])
             bbox[BOXLEFT]   = vtx->V_pos[VX];
@@ -782,7 +788,7 @@ static void updateSectorBounds(sector_t* sec)
         if(vtx->V_pos[VY] < bbox[BOXBOTTOM])
             bbox[BOXBOTTOM] = vtx->V_pos[VY];
         if(vtx->V_pos[VY] > bbox[BOXTOP])
-            bbox[BOXTOP]   = vtx->V_pos[VY];
+            bbox[BOXTOP]    = vtx->V_pos[VY];
     }
 
     // This is very rough estimate of sector area.
@@ -1420,8 +1426,8 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
             hEdge->header.type = DMU_HEDGE;
             seg->lineDef = line;
-            dx = line->L_v2pos[VX] - line->L_v1pos[VX];
-            dy = line->L_v2pos[VY] - line->L_v1pos[VY];
+            dx = line->buildData.v[1]->V_pos[VX] - line->buildData.v[0]->V_pos[VX];
+            dy = line->buildData.v[1]->V_pos[VY] - line->buildData.v[0]->V_pos[VY];
             seg->length = P_AccurateDistance(dx, dy);
             seg->SG_frontsector = line->L_frontsector;
             seg->flags |= SEGF_POLYOBJ;
@@ -1811,10 +1817,16 @@ boolean MPE_End(void)
         n = 0;
         while(*ptr)
         {
-            hedge_t*              hEdge = *ptr;
+            hedge_t*            hEdge = *ptr;
+            seg_t*              seg = ((seg_t*) hEdge->data);
 
-            hEdge->HE_v1 = ((seg_t*) hEdge->data)->lineDef->L_v1;
-            hEdge->HE_v2 = ((seg_t*) hEdge->data)->lineDef->L_v2;
+            hEdge->HE_v1 = &gamemap->vertexes[
+                seg->lineDef->buildData.v[0]->buildData.index - 1];
+            hEdge->HE_v2 = &gamemap->vertexes[
+                seg->lineDef->buildData.v[1]->buildData.index - 1];
+
+            seg->lineDef->hEdgeCount = 1; // Always.
+            seg->lineDef->hEdges[0] = seg->lineDef->hEdges[1] = hEdge;
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each seg, not each linedef.
