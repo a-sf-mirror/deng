@@ -327,18 +327,18 @@ static void findEquivalentVertexes(editmap_t *src)
         linedef_t         *l = src->lineDefs[i];
 
         // Handle duplicated vertices.
-        while(l->v[0]->buildData.equiv)
+        while(l->buildData.v[0]->buildData.equiv)
         {
-            l->v[0]->buildData.refCount--;
-            l->v[0] = l->v[0]->buildData.equiv;
-            l->v[0]->buildData.refCount++;
+            l->buildData.v[0]->buildData.refCount--;
+            l->buildData.v[0] = l->buildData.v[0]->buildData.equiv;
+            l->buildData.v[0]->buildData.refCount++;
         }
 
-        while(l->v[1]->buildData.equiv)
+        while(l->buildData.v[1]->buildData.equiv)
         {
-            l->v[1]->buildData.refCount--;
-            l->v[1] = l->v[1]->buildData.equiv;
-            l->v[1]->buildData.refCount++;
+            l->buildData.v[1]->buildData.refCount--;
+            l->buildData.v[1] = l->buildData.v[1]->buildData.equiv;
+            l->buildData.v[1]->buildData.refCount++;
         }
 
         l->buildData.index = newNum + 1;
@@ -849,30 +849,27 @@ static void finishSectors(gamemap_t *map)
 static void finishLineDefs(gamemap_t* map)
 {
     uint                i;
-    linedef_t*          ld;
-    vertex_t*           v[2];
-    hedge_t*            startHEdge, *endHEdge;
 
     VERBOSE2(Con_Message("Finalizing Linedefs...\n"));
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        ld = &map->lineDefs[i];
+        linedef_t*          ld = &map->lineDefs[i];
+        vertex_t*           v[2];
 
         if(!ld->hEdgeCount)
             continue;
 
-        startHEdge = ld->hEdges[0];
-        endHEdge = ld->hEdges[1];
-        ld->v[0] = v[0] = startHEdge->HE_v1;
-        ld->v[1] = v[1] = endHEdge->HE_v2;
+        v[0] = ld->hEdges[0]->HE_v1;
+        v[1] = ld->hEdges[1]->HE_v2;
+
         ld->dX = v[1]->V_pos[VX] - v[0]->V_pos[VX];
         ld->dY = v[1]->V_pos[VY] - v[0]->V_pos[VY];
 
         // Calculate the accurate length of each line.
         ld->length = P_AccurateDistance(ld->dX, ld->dY);
-        ld->angle = bamsAtan2((int) (ld->v[1]->V_pos[VY] - ld->v[0]->V_pos[VY]),
-                      (int) (ld->v[1]->V_pos[VX] - ld->v[0]->V_pos[VX])) << FRACBITS;
+        ld->angle = bamsAtan2((int) (v[1]->V_pos[VY] - v[0]->V_pos[VY]),
+                      (int) (v[1]->V_pos[VX] - v[0]->V_pos[VX])) << FRACBITS;
 
         if(!ld->dX)
             ld->slopeType = ST_VERTICAL;
@@ -1008,10 +1005,10 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
         }
         else
         {
-            vertex_t    *otherVtx;
+            vertex_t*       otherVtx;
 
             line = own[i]->lineDef;
-            otherVtx = line->L_v(line->L_v1 == rootVtx? 1:0);
+            otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
 
             dx = otherVtx->V_pos[VX] - rootVtx->V_pos[VX];
             dy = otherVtx->V_pos[VY] - rootVtx->V_pos[VY];
@@ -1148,7 +1145,7 @@ static void setVertexLineOwner(vertex_t *vtx, linedef_t *lineptr,
     vtx->lineOwners = newOwner;
 
     // Link the line to its respective owner node.
-    if(vtx == lineptr->L_v1)
+    if(vtx == lineptr->buildData.v[0])
         lineptr->L_vo1 = newOwner;
     else
         lineptr->L_vo2 = newOwner;
@@ -1176,7 +1173,7 @@ static void buildVertexOwnerRings(editmap_t* map)
 
         for(p = 0; p < 2; ++p)
         {
-            vertex_t*           vtx = line->L_v(p);
+            vertex_t*           vtx = line->buildData.v[p];
 
             setVertexLineOwner(vtx, line, &allocator);
         }
@@ -1458,11 +1455,11 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
     sector_t*           frontOpen = NULL;
     linedef_t*          frontLine = NULL, *backLine = NULL;
 
-    mX = (l->v[0]->buildData.pos[VX] + l->v[1]->buildData.pos[VX]) / 2.0;
-    mY = (l->v[0]->buildData.pos[VY] + l->v[1]->buildData.pos[VY]) / 2.0;
+    mX = (l->buildData.v[0]->buildData.pos[VX] + l->buildData.v[1]->buildData.pos[VX]) / 2.0;
+    mY = (l->buildData.v[0]->buildData.pos[VY] + l->buildData.v[1]->buildData.pos[VY]) / 2.0;
 
-    dX = l->v[1]->buildData.pos[VX] - l->v[0]->buildData.pos[VX];
-    dY = l->v[1]->buildData.pos[VY] - l->v[0]->buildData.pos[VY];
+    dX = l->buildData.v[1]->buildData.pos[VX] - l->buildData.v[0]->buildData.pos[VX];
+    dY = l->buildData.v[1]->buildData.pos[VY] - l->buildData.v[0]->buildData.pos[VY];
 
     castHoriz = (fabs(dX) < fabs(dY)? true : false);
 
@@ -1478,20 +1475,20 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
            (n->buildData.mlFlags & MLF_ZEROLENGTH)*/)
             continue;
 
-        dX2 = n->v[1]->buildData.pos[VX] - n->v[0]->buildData.pos[VX];
-        dY2 = n->v[1]->buildData.pos[VY] - n->v[0]->buildData.pos[VY];
+        dX2 = n->buildData.v[1]->buildData.pos[VX] - n->buildData.v[0]->buildData.pos[VX];
+        dY2 = n->buildData.v[1]->buildData.pos[VY] - n->buildData.v[0]->buildData.pos[VY];
 
         if(castHoriz)
         {   // Horizontal.
             if(fabs(dY2) < DIST_EPSILON)
                 continue;
 
-            if((MAX_OF(n->v[0]->buildData.pos[VY], n->v[1]->buildData.pos[VY]) < mY - DIST_EPSILON) ||
-               (MIN_OF(n->v[0]->buildData.pos[VY], n->v[1]->buildData.pos[VY]) > mY + DIST_EPSILON))
+            if((MAX_OF(n->buildData.v[0]->buildData.pos[VY], n->buildData.v[1]->buildData.pos[VY]) < mY - DIST_EPSILON) ||
+               (MIN_OF(n->buildData.v[0]->buildData.pos[VY], n->buildData.v[1]->buildData.pos[VY]) > mY + DIST_EPSILON))
                 continue;
 
-            dist = (n->v[0]->buildData.pos[VX] +
-                (mY - n->v[0]->buildData.pos[VY]) * dX2 / dY2) - mX;
+            dist = (n->buildData.v[0]->buildData.pos[VX] +
+                (mY - n->buildData.v[0]->buildData.pos[VY]) * dX2 / dY2) - mX;
 
             isFront = (((dY > 0) != (dist > 0)) ? true : false);
 
@@ -1506,12 +1503,12 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
             if(fabs(dX2) < DIST_EPSILON)
                 continue;
 
-            if((MAX_OF(n->v[0]->buildData.pos[VX], n->v[1]->buildData.pos[VX]) < mX - DIST_EPSILON) ||
-               (MIN_OF(n->v[0]->buildData.pos[VX], n->v[1]->buildData.pos[VX]) > mX + DIST_EPSILON))
+            if((MAX_OF(n->buildData.v[0]->buildData.pos[VX], n->buildData.v[1]->buildData.pos[VX]) < mX - DIST_EPSILON) ||
+               (MIN_OF(n->buildData.v[0]->buildData.pos[VX], n->buildData.v[1]->buildData.pos[VX]) > mX + DIST_EPSILON))
                 continue;
 
-            dist = (n->v[0]->buildData.pos[VY] +
-                (mX - n->v[0]->buildData.pos[VX]) * dY2 / dX2) - mY;
+            dist = (n->buildData.v[0]->buildData.pos[VY] +
+                (mX - n->buildData.v[0]->buildData.pos[VX]) * dY2 / dX2) - mY;
 
             isFront = (((dX > 0) == (dist > 0)) ? true : false);
 
@@ -1609,7 +1606,7 @@ void MPE_DetectWindowEffects(editmap_t* map)
             continue;
 
         oneSiders = twoSiders = 0;
-        countVertexLineOwners(l->v[0], &oneSiders, &twoSiders);
+        countVertexLineOwners(l->buildData.v[0], &oneSiders, &twoSiders);
 
         if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
         {
@@ -1622,7 +1619,7 @@ Con_Message("FUNNY LINE %d : start vertex %d has odd number of one-siders\n",
         }
 
         oneSiders = twoSiders = 0;
-        countVertexLineOwners(l->v[1], &oneSiders, &twoSiders);
+        countVertexLineOwners(l->buildData.v[1], &oneSiders, &twoSiders);
 
         if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
         {
@@ -2071,19 +2068,19 @@ uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
         back = map->sideDefs[backSide - 1];
 
     l = createLine();
-    l->L_v1 = vtx1;
-    l->L_v2 = vtx2;
+    l->buildData.v[0] = vtx1;
+    l->buildData.v[1] = vtx2;
 
-    l->L_v1->buildData.refCount++;
-    l->L_v2->buildData.refCount++;
+    l->buildData.v[0]->buildData.refCount++;
+    l->buildData.v[1]->buildData.refCount++;
 
     l->dX = dx;
     l->dY = dy;
     l->length = length;
 
     l->angle =
-        bamsAtan2((int) (l->L_v2pos[VY] - l->L_v1pos[VY]),
-                  (int) (l->L_v2pos[VX] - l->L_v1pos[VX])) << FRACBITS;
+        bamsAtan2((int) (l->buildData.v[1]->V_pos[VY] - l->buildData.v[0]->V_pos[VY]),
+                  (int) (l->buildData.v[1]->V_pos[VX] - l->buildData.v[0]->V_pos[VX])) << FRACBITS;
 
     if(l->dX == 0)
         l->slopeType = ST_VERTICAL;
@@ -2097,26 +2094,26 @@ uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
             l->slopeType = ST_NEGATIVE;
     }
 
-    if(l->L_v1pos[VX] < l->L_v2pos[VX])
+    if(l->buildData.v[0]->V_pos[VX] < l->buildData.v[1]->V_pos[VX])
     {
-        l->bBox[BOXLEFT]   = l->L_v1pos[VX];
-        l->bBox[BOXRIGHT]  = l->L_v2pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[0]->V_pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[1]->V_pos[VX];
     }
     else
     {
-        l->bBox[BOXLEFT]   = l->L_v2pos[VX];
-        l->bBox[BOXRIGHT]  = l->L_v1pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[1]->V_pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[0]->V_pos[VX];
     }
 
-    if(l->L_v1pos[VY] < l->L_v2pos[VY])
+    if(l->buildData.v[0]->V_pos[VY] < l->buildData.v[1]->V_pos[VY])
     {
-        l->bBox[BOXBOTTOM] = l->L_v1pos[VY];
-        l->bBox[BOXTOP]    = l->L_v2pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->V_pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->V_pos[VY];
     }
     else
     {
-        l->bBox[BOXBOTTOM] = l->L_v1pos[VY];
-        l->bBox[BOXTOP]    = l->L_v2pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->V_pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->V_pos[VY];
     }
 
     l->L_frontside = front;
