@@ -439,17 +439,11 @@ typedef struct sidedef_s {
 // Internal flags:
 #define LF_POLYOBJ              0x1 // Line is part of a polyobject.
 
-#define MLF_TWOSIDED            0x1 // Line is marked two-sided.
-#define MLF_ZEROLENGTH          0x2 // Zero length (line should be totally ignored).
-#define MLF_SELFREF             0x4 // Sector is the same on both sides.
-#define MLF_POLYOBJ             0x8 // Line is part of a polyobj.
-
 typedef struct mlinedef_s {
     struct vertex_s* v[2];
     // Linedef index. Always valid after loading & pruning of zero
     // length lines has occurred.
     int         index;
-    int         mlFlags; // MLF_* flags.
 
     // One-sided linedef used for a special effect (windows).
     // The value refers to the opposite sector on the back side.
