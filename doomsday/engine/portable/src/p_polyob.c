@@ -209,9 +209,10 @@ void P_MapInitPolyobjs(void)
         while(*ptr)
         {
             hedge_t*            hEdge = *ptr;
-            sidedef_t*          side = HEDGE_SIDEDEF(hEdge);
+            seg_t*              seg = ((seg_t*) hEdge->data);
+            sidedef_t*          side = seg->sideDef;
             surface_t*          surface = &side->SW_topsurface;
-            float               length = ((seg_t*) hEdge->data)->length;
+            float               length = seg->length;
 
             side->SW_topinflags |= SUIF_NO_RADIO;
             side->SW_middleinflags |= SUIF_NO_RADIO;
@@ -390,7 +391,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     fvertex_t*          originalPts;
     fvertex_t*          prevPts;
     vertex_t*           vtx;
-    hedge_t**             list;
+    hedge_t**           list;
     boolean             blocked;
 
     if(!po)
@@ -407,10 +408,11 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     for(count = 0; count < po->numHEdges;
         ++count, list++, originalPts++, prevPts++)
     {
-        hedge_t*              hEdge = *list;
-        sidedef_t*          side = HEDGE_SIDEDEF(hEdge);
+        hedge_t*            hEdge = *list;
+        seg_t*              seg = ((seg_t*) hEdge->data);
+        sidedef_t*          side = seg->sideDef;
         surface_t*          surface = &side->SW_topsurface;
-        float               length = ((seg_t*) hEdge->data)->length;
+        float               length = seg->length;
 
         vtx = hEdge->HE_v1;
 

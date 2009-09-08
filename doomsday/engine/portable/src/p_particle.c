@@ -870,12 +870,12 @@ boolean PIT_CheckLinePtc(linedef_t* ld, void* data)
 
     // We are possibly hitting something here.
     ptcHitLine = ld;
-    if(!ld->L_backside)
+    if(!LINE_BACKSIDE(ld))
         return false; // Boing!
 
     // Determine the opening we have here.
-    front = ld->L_frontsector;
-    back = ld->L_backsector;
+    front = LINE_FRONTSECTOR(ld);
+    back = LINE_BACKSECTOR(ld);
     if(front->SP_ceilheight < back->SP_ceilheight)
         ceil = FLT2FIX(front->SP_ceilheight);
     else
@@ -1185,8 +1185,8 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
         {
             sector_t*           front, *back;
 
-            front = (pt->contact->L_frontside? pt->contact->L_frontsector : NULL);
-            back = (pt->contact->L_backside? pt->contact->L_backsector : NULL);
+            front = (LINE_FRONTSIDE(pt->contact)? LINE_FRONTSECTOR(pt->contact) : NULL);
+            back = (LINE_BACKSIDE(pt->contact)? LINE_BACKSECTOR(pt->contact) : NULL);
 
             if(front && back && abs(pt->mov[VZ]) < FRACUNIT / 2)
             {

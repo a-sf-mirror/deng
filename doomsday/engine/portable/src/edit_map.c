@@ -354,7 +354,7 @@ static void pruneLinedefs(editmap_t* map)
     {
         linedef_t*          l = map->lineDefs[i];
 
-        if(!l->L_frontside && !l->L_backside)
+        if(!l->buildData.sideDefs[FRONT] && !l->buildData.sideDefs[BACK])
         {
             unused++;
 
@@ -682,29 +682,29 @@ static void buildSectorLineLists(gamemap_t *map)
         uint        secIDX;
         linelink_t *link;
 
-        if(li->L_frontside)
+        if(LINE_FRONTSIDE(li))
         {
             link = Z_BlockNewElement(lineLinksBlockSet);
 
-            secIDX = li->L_frontsector - map->sectors;
+            secIDX = LINE_FRONTSECTOR(li) - map->sectors;
             link->line = li;
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            li->L_frontsector->lineDefCount++;
+            LINE_FRONTSECTOR(li)->lineDefCount++;
             totallinks++;
         }
 
-        if(li->L_backside && li->L_backsector != li->L_frontsector)
+        if(LINE_BACKSIDE(li) && LINE_BACKSECTOR(li) != LINE_FRONTSECTOR(li))
         {
             link = Z_BlockNewElement(lineLinksBlockSet);
 
-            secIDX = li->L_backsector - map->sectors;
+            secIDX = LINE_BACKSECTOR(li) - map->sectors;
             link->line = li;
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            li->L_backsector->lineDefCount++;
+            LINE_BACKSECTOR(li)->lineDefCount++;
             totallinks++;
         }
     }
@@ -863,7 +863,7 @@ static void finishLineDefs(gamemap_t* map)
         linedef_t*          ld = &map->lineDefs[i];
         vertex_t*           v[2];
 
-        if(!ld->hEdgeCount)
+        if(!ld->hEdges[0])
             continue;
 
         v[0] = ld->hEdges[0]->HE_v1;
@@ -1283,15 +1283,19 @@ static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
 
         memcpy(destL, srcL, sizeof(*destL));
 
+        if(srcL->buildData.sideDefs[FRONT])
+            destL->buildData.sideDefs[FRONT] =
+                &dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1];
+
+        if(srcL->buildData.sideDefs[BACK])
+            destL->buildData.sideDefs[BACK] =
+                &dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1];
+
         //// \todo We shouldn't still have lines with missing fronts but...
-        destL->L_frontside = (srcL->L_frontside?
-            &dest->sideDefs[srcL->L_frontside->buildData.index - 1] : NULL);
-        destL->L_backside = (srcL->L_backside?
-            &dest->sideDefs[srcL->L_backside->buildData.index - 1] : NULL);
-        if(destL->L_frontside)
-            destL->L_frontside->line = destL;
-        if(destL->L_backside)
-            destL->L_backside->line = destL;
+        if(srcL->buildData.sideDefs[FRONT])
+            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1].line = destL;
+        if(srcL->buildData.sideDefs[BACK])
+            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1].line = destL;
     }
 }
 
@@ -1423,13 +1427,15 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
             // This line is part of a polyobj.
             line->inFlags |= LF_POLYOBJ;
-
             hEdge->header.type = DMU_HEDGE;
             seg->lineDef = line;
+            seg->sideDef = &dest->sideDefs[
+                line->buildData.sideDefs[FRONT]->buildData.index - 1];
             dx = line->buildData.v[1]->V_pos[VX] - line->buildData.v[0]->V_pos[VX];
             dy = line->buildData.v[1]->V_pos[VY] - line->buildData.v[0]->V_pos[VY];
             seg->length = P_AccurateDistance(dx, dy);
-            seg->SG_frontsector = line->L_frontsector;
+            seg->SG_frontsector = &dest->sectors[
+                line->buildData.sideDefs[FRONT]->sector->buildData.index - 1];
             seg->flags |= SEGF_POLYOBJ;
 
             destP->hEdges[j] = hEdge;
@@ -1477,7 +1483,8 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
         sidedef_t*          hitSide;
         double              dX2, dY2;
 
-        if(n == l || LINE_SELFREF(n) /*|| n->buildData.overlap ||
+        if(n == l || (n->buildData.sideDefs[FRONT] && n->buildData.sideDefs[BACK] &&
+            n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap ||
            (n->buildData.mlFlags & MLF_ZEROLENGTH)*/)
             continue;
 
@@ -1502,7 +1509,7 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
             if(dist < DIST_EPSILON)
                 continue; // Too close (overlapping lines ?)
 
-            hitSide = n->sideDefs[(dY > 0) ^ (dY2 > 0) ^ !isFront];
+            hitSide = n->buildData.sideDefs[(dY > 0) ^ (dY2 > 0) ^ !isFront];
         }
         else
         {   // Vertical.
@@ -1520,7 +1527,7 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
 
             dist = fabs(dist);
 
-            hitSide = n->sideDefs[(dX > 0) ^ (dX2 > 0) ^ !isFront];
+            hitSide = n->buildData.sideDefs[(dX > 0) ^ (dX2 > 0) ^ !isFront];
         }
 
         if(dist < DIST_EPSILON) // Too close (overlapping lines ?)
@@ -1563,7 +1570,7 @@ Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
             (frontOpen? "OPEN" : "CLOSED"));
 #endif*/
 
-    if(backOpen && frontOpen && l->sideDefs[FRONT]->sector == backOpen)
+    if(backOpen && frontOpen && l->buildData.sideDefs[FRONT]->sector == backOpen)
     {
         Con_Message("Linedef #%d seems to be a One-Sided Window "
                     "(back faces sector #%d).\n", l->buildData.index - 1,
@@ -1583,7 +1590,8 @@ static void countVertexLineOwners(vertex_t* vtx, uint* oneSided,
     p = vtx->lineOwners;
     while(p)
     {
-        if(!p->lineDef->L_frontside || !p->lineDef->L_backside)
+        if(!p->lineDef->buildData.sideDefs[FRONT] ||
+           !p->lineDef->buildData.sideDefs[BACK])
             (*oneSided)++;
         else
             (*twoSided)++;
@@ -1606,7 +1614,8 @@ void MPE_DetectWindowEffects(editmap_t* map)
     {
         linedef_t*          l = map->lineDefs[i];
 
-        if((l->L_frontside && l->L_backside) || !l->L_frontside /*||
+        if((l->buildData.sideDefs[FRONT] && l->buildData.sideDefs[BACK]) ||
+           !l->buildData.sideDefs[FRONT] /*||
            (l->buildData.mlFlags & MLF_ZEROLENGTH) ||
            l->buildData.overlap*/)
             continue;
@@ -1825,7 +1834,6 @@ boolean MPE_End(void)
             hEdge->HE_v2 = &gamemap->vertexes[
                 seg->lineDef->buildData.v[1]->buildData.index - 1];
 
-            seg->lineDef->hEdgeCount = 1; // Always.
             seg->lineDef->hEdges[0] = seg->lineDef->hEdges[1] = hEdge;
 
             // The original Pts are based off the anchor Pt, and are unique
@@ -2128,21 +2136,21 @@ uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
         l->bBox[BOXTOP]    = l->buildData.v[1]->V_pos[VY];
     }
 
-    l->L_frontside = front;
-    l->L_backside = back;
-
     // Remember the number of unique references.
-    if(l->L_frontside)
+    if(front)
     {
-        l->L_frontside->line = l;
-        l->L_frontside->buildData.refCount++;
+        front->line = l;
+        front->buildData.refCount++;
     }
 
-    if(l->L_backside)
+    if(back)
     {
-        l->L_backside->line = l;
-        l->L_backside->buildData.refCount++;
+        back->line = l;
+        back->buildData.refCount++;
     }
+
+    l->buildData.sideDefs[FRONT] = front;
+    l->buildData.sideDefs[BACK] = back;
 
     l->inFlags = 0;
 

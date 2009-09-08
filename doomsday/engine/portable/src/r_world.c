@@ -486,23 +486,23 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
     {
         linedef_t*          li = *linep;
 
-        if(!li->L_backside)
+        if(!LINE_BACKSIDE(li))
         {
             if(pln->type != PLN_MID)
-                Surface_Update(&li->L_frontside->SW_surface(SEG_MIDDLE));
+                Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_MIDDLE));
         }
-        else if(li->L_backsector != li->L_frontsector)
+        else if(LINE_BACKSECTOR(li) != LINE_FRONTSECTOR(li))
         {
             byte                side =
-                (li->L_frontsector == pln->sector? FRONT : BACK);
+                (LINE_FRONTSECTOR(li) == pln->sector? FRONT : BACK);
 
-            Surface_Update(&li->L_side(side)->SW_surface(SEG_BOTTOM));
-            Surface_Update(&li->L_side(side)->SW_surface(SEG_TOP));
+            Surface_Update(&LINE_SIDE(li, side)->SW_surface(SEG_BOTTOM));
+            Surface_Update(&LINE_SIDE(li, side)->SW_surface(SEG_TOP));
 
             if(pln->type == PLN_FLOOR)
-                Surface_Update(&li->L_side(side^1)->SW_surface(SEG_BOTTOM));
+                Surface_Update(&LINE_SIDE(li, side^1)->SW_surface(SEG_BOTTOM));
             else
-                Surface_Update(&li->L_side(side^1)->SW_surface(SEG_TOP));
+                Surface_Update(&LINE_SIDE(li, side^1)->SW_surface(SEG_TOP));
         }
 
         *linep++;
@@ -789,10 +789,10 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
             linedef_t*          li = *linePtr;
 
             // Must be twosided.
-            if(li->L_frontside && li->L_backside)
+            if(LINE_FRONTSIDE(li) && LINE_BACKSIDE(li))
             {
-                sidedef_t*          si = li->L_frontsector == sec?
-                    li->L_frontside : li->L_backside;
+                sidedef_t*          si = LINE_FRONTSECTOR(li) == sec?
+                    LINE_FRONTSIDE(li) : LINE_BACKSIDE(li);
 
                 if(si->SW_middlematerial)
                 {
@@ -967,11 +967,12 @@ void R_SetupSky(ded_sky_t* sky)
  * is the leftmost vertex and verts[1] is the rightmost vertex, when the
  * line lies at the edge of `sector.'
  */
-void R_OrderVertices(const linedef_t *line, const sector_t *sector, vertex_t *verts[2])
+void R_OrderVertices(const linedef_t* line, const sector_t* sector,
+                     vertex_t* verts[2])
 {
-    byte        edge;
+    byte                edge;
 
-    edge = (sector == line->L_frontsector? 0:1);
+    edge = (sector == LINE_FRONTSECTOR(line)? 0:1);
     verts[0] = line->L_v(edge);
     verts[1] = line->L_v(edge^1);
 }
@@ -980,24 +981,24 @@ void R_OrderVertices(const linedef_t *line, const sector_t *sector, vertex_t *ve
  * A neighbour is a line that shares a vertex with 'line', and faces the
  * specified sector.
  */
-linedef_t *R_FindLineNeighbor(const sector_t *sector, const linedef_t *line,
-                              const lineowner_t *own, boolean antiClockwise,
+linedef_t* R_FindLineNeighbor(const sector_t* sector, const linedef_t* line,
+                              const lineowner_t* own, boolean antiClockwise,
                               binangle_t *diff)
 {
-    lineowner_t            *cown = own->link[!antiClockwise];
-    linedef_t              *other = cown->lineDef;
+    lineowner_t*        cown = own->link[!antiClockwise];
+    linedef_t*          other = cown->lineDef;
 
     if(other == line)
         return NULL;
 
     if(diff) *diff += (antiClockwise? cown->angle : own->angle);
 
-    if(!other->L_backside || other->L_frontsector != other->L_backsector)
+    if(!LINE_BACKSIDE(other) || LINE_FRONTSECTOR(other) != LINE_BACKSECTOR(other))
     {
         if(sector) // Must one of the sectors match?
         {
-            if(other->L_frontsector == sector ||
-               (other->L_backside && other->L_backsector == sector))
+            if(LINE_FRONTSECTOR(other) == sector ||
+               (LINE_BACKSIDE(other) && LINE_BACKSECTOR(other) == sector))
                 return other;
         }
         else
@@ -1022,30 +1023,30 @@ linedef_t* R_FindSolidLineNeighbor(const sector_t* sector,
 
     if(diff) *diff += (antiClockwise? cown->angle : own->angle);
 
-    if(!(other->buildData.windowEffect && other->L_frontsector != sector))
+    if(!(other->buildData.windowEffect && LINE_FRONTSECTOR(other) != sector))
     {
-        if(!other->L_frontside || !other->L_backside)
+        if(!LINE_FRONTSIDE(other) || !LINE_BACKSIDE(other))
             return other;
 
         if(!LINE_SELFREF(other) &&
-           (other->L_frontsector->SP_floorvisheight >= sector->SP_ceilvisheight ||
-            other->L_frontsector->SP_ceilvisheight <= sector->SP_floorvisheight ||
-            other->L_backsector->SP_floorvisheight >= sector->SP_ceilvisheight ||
-            other->L_backsector->SP_ceilvisheight <= sector->SP_floorvisheight ||
-            other->L_backsector->SP_ceilvisheight <= other->L_backsector->SP_floorvisheight))
+           (LINE_FRONTSECTOR(other)->SP_floorvisheight >= sector->SP_ceilvisheight ||
+            LINE_FRONTSECTOR(other)->SP_ceilvisheight <= sector->SP_floorvisheight ||
+            LINE_BACKSECTOR(other)->SP_floorvisheight >= sector->SP_ceilvisheight ||
+            LINE_BACKSECTOR(other)->SP_ceilvisheight <= sector->SP_floorvisheight ||
+            LINE_BACKSECTOR(other)->SP_ceilvisheight <= LINE_BACKSECTOR(other)->SP_floorvisheight))
             return other;
 
         // Both front and back MUST be open by this point.
 
         // Check for mid texture which fills the gap between floor and ceiling.
         // We should not give away the location of false walls (secrets).
-        side = (other->L_frontsector == sector? 0 : 1);
-        if(other->sideDefs[side]->SW_middlematerial)
+        side = (LINE_FRONTSECTOR(other) == sector? 0 : 1);
+        if(LINE_SIDE(other, side)->SW_middlematerial)
         {
-            float oFCeil  = other->L_frontsector->SP_ceilvisheight;
-            float oFFloor = other->L_frontsector->SP_floorvisheight;
-            float oBCeil  = other->L_backsector->SP_ceilvisheight;
-            float oBFloor = other->L_backsector->SP_floorvisheight;
+            float oFCeil  = LINE_FRONTSECTOR(other)->SP_ceilvisheight;
+            float oFFloor = LINE_FRONTSECTOR(other)->SP_floorvisheight;
+            float oBCeil  = LINE_BACKSECTOR(other)->SP_ceilvisheight;
+            float oBFloor = LINE_BACKSECTOR(other)->SP_floorvisheight;
 
             if((side == 0 &&
                 ((oBCeil > sector->SP_floorvisheight &&
@@ -1092,11 +1093,11 @@ linedef_t *R_FindLineBackNeighbor(const sector_t *sector,
 
     if(diff) *diff += (antiClockwise? cown->angle : own->angle);
 
-    if(!other->L_backside || other->L_frontsector != other->L_backsector ||
+    if(!LINE_BACKSIDE(other) || LINE_FRONTSECTOR(other) != LINE_BACKSECTOR(other) ||
        other->buildData.windowEffect)
     {
-        if(!(other->L_frontsector == sector ||
-             (other->L_backside && other->L_backsector == sector)))
+        if(!(LINE_FRONTSECTOR(other) == sector ||
+             (LINE_BACKSIDE(other) && LINE_BACKSECTOR(other) == sector)))
             return other;
     }
 
@@ -1132,14 +1133,14 @@ linedef_t *R_FindLineAlignNeighbor(const sector_t *sec,
 
         if(alignment < 0)
             diff -= BANG_180;
-        if(other->L_frontsector != sec)
+        if(LINE_FRONTSECTOR(other) != sec)
             diff -= BANG_180;
         if(diff < SEP || diff > BANG_360 - SEP)
             return other;
     }
 
     // Can't step over non-twosided lines.
-    if((!other->L_backside || !other->L_frontside))
+    if((!LINE_BACKSIDE(other) || !LINE_FRONTSIDE(other)))
         return NULL;
 
     // Not suitable, try the next.
@@ -1342,13 +1343,13 @@ void R_BuildSectorLinks(gamemap_t *map)
                 for(k = 0; k < sec->lineDefCount; ++k)
                 {
                     linedef_t*          lin = sec->lineDefs[k];
-                    sector_t           *other;
+                    sector_t*           other;
 
-                    other = lin->L_frontsector;
+                    other = LINE_FRONTSECTOR(lin);
                     if(other == sec)
                     {
-                        if(lin->L_backside)
-                            other = lin->L_backsector;
+                        if(LINE_BACKSIDE(lin))
+                            other = LINE_BACKSECTOR(lin);
                     }
 
                     if(other && other != sec)
@@ -1621,8 +1622,8 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
     // favouring non-animated materials.
     if(section == SEG_BOTTOM || section == SEG_TOP)
     {
-        byte                sid = (s->line->L_frontside == s? 0 : 1);
-        sector_t*           backSec = s->line->L_sector(sid^1);
+        byte                sid = (LINE_FRONTSIDE(s->line) == s? 0 : 1);
+        sector_t*           backSec = LINE_SECTOR(s->line, sid^1);
 
         if(backSec)
         {
@@ -1672,15 +1673,15 @@ void R_UpdateLinedefsOfSector(sector_t* sec)
         sidedef_t*          front, *back;
         sector_t*           frontSec, *backSec;
 
-        if(!li->L_frontside || !li->L_backside)
+        if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
             continue;
         if(LINE_SELFREF(li))
             continue;
 
-        front = li->L_frontside;
-        back  = li->L_backside;
+        front = LINE_FRONTSIDE(li);
+        back  = LINE_BACKSIDE(li);
         frontSec = front->sector;
-        backSec = li->L_backside? back->sector : NULL;
+        backSec = back->sector;
 
         /**
          * Do as in the original Doom if the texture has not been defined -

@@ -88,7 +88,7 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
         DMU_GetValue(DMT_HEDGE_OFFSET, &((seg_t*) hEdge->data)->offset, args, 0);
         break;
     case DMU_SIDEDEF:
-        DMU_GetValue(DMT_HEDGE_SIDEDEF, HEDGE_SIDEDEF(hEdge), args, 0);
+        DMU_GetValue(DMT_HEDGE_SIDEDEF, &((seg_t*) hEdge->data)->sideDef, args, 0);
         break;
     case DMU_LINEDEF:
         DMU_GetValue(DMT_HEDGE_LINEDEF, &((seg_t*) hEdge->data)->lineDef, args, 0);

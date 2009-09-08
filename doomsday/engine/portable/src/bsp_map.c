@@ -55,16 +55,19 @@
 
 // CODE --------------------------------------------------------------------
 
+/**
+ * \todo This is unnecessary if we ensure the first and last back ptrs in
+ * linedef_t are updated after a half-edge split.
+ */
 static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
                                  const hedge_t* hEdge)
 {
-    uint                count;
     const hedge_t*      first, *last;
     linedef_t*          li = ((seg_t*) seg->data)->lineDef;
     byte                side = ((seg_t*) seg->data)->side;
 
     // Have we already processed this linedef?
-    if(li->hEdgeCount)
+    if(li->hEdges[0])
         return;
 
     // Find the first hedge for this side.
@@ -75,26 +78,12 @@ static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
 
     // Find the last.
     last = first;
-    count = 1;
     while(((bsp_hedgeinfo_t*)last->data)->lnext)
-    {
         last = ((bsp_hedgeinfo_t*)last->data)->lnext;
-        count++;
-    }
 
     li = ((seg_t*) seg->data)->lineDef;
-    if(count)
-    {
-        // Allocate the final side hedge table.
-        li->hEdgeCount = count;
-        li->hEdges[0] = &map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
-        li->hEdges[1] = &map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
-    }
-    else
-    {   // Should never happen.
-        li->hEdgeCount = 0;
-        li->hEdges[0] = li->hEdges[1] = NULL;
-    }
+    li->hEdges[0] = &map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
+    li->hEdges[1] = &map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
 }
 
 static int C_DECL hEdgeCompare(const void* p1, const void* p2)
@@ -208,7 +197,11 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
         seg->side  = data->side;
         if(data->lineDef)
+        {
             seg->lineDef = &map->lineDefs[data->lineDef->buildData.index - 1];
+            if(data->lineDef->buildData.sideDefs[seg->side])
+                seg->sideDef = &map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
+        }
 
         seg->flags = 0;
         if(seg->lineDef)
@@ -216,16 +209,20 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
             linedef_t*          ldef = seg->lineDef;
             vertex_t*           vtx = seg->lineDef->buildData.v[seg->side];
 
-            if(ldef->L_side(seg->side))
-                seg->SG_frontsector = ldef->L_side(seg->side)->sector;
+            if(seg->sideDef)
+            {
+                seg->SG_frontsector = seg->sideDef->sector;
 
-            if(ldef->L_frontside && ldef->L_backside)
-            {
-                seg->SG_backsector = ldef->L_side(seg->side ^ 1)->sector;
+                if(ldef->buildData.sideDefs[FRONT] && ldef->buildData.sideDefs[BACK])
+                    seg->SG_backsector = &map->sectors[
+                        ldef->buildData.sideDefs[seg->side ^ 1]->sector->buildData.index - 1];
             }
-            else
+            else if(ldef->buildData.windowEffect)
             {
-                seg->SG_backsector = 0;
+                seg->SG_frontsector = &map->sectors[
+                    ldef->buildData.windowEffect->buildData.index - 1];
+                seg->SG_backsector = &map->sectors[
+                        ldef->buildData.sideDefs[seg->side ^ 1]->sector->buildData.index - 1];
             }
 
             seg->offset = P_AccurateDistance(dst->HE_v1pos[VX] - vtx->V_pos[VX],
@@ -255,9 +252,9 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
         // Calculate the surface normals
         // Front first
-        if(seg->lineDef && HEDGE_SIDEDEF(dst))
+        if(seg->lineDef && seg->sideDef)
         {
-            sidedef_t*          side = HEDGE_SIDEDEF(dst);
+            sidedef_t*          side = seg->sideDef;
             surface_t*          surface = &side->SW_topsurface;
 
             surface->normal[VY] = (dst->HE_v1pos[VX] - dst->HE_v2pos[VX]) / seg->length;
@@ -303,6 +300,12 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
             &map->hEdges[((bsp_hedgeinfo_t*) n->next->hEdge->data)->index];
     }
 
+    hEdge = dest->hEdge->next;
+    do
+    {
+        hEdge->next->prev = hEdge;
+    } while((hEdge = hEdge->next) != dest->hEdge);
+
     dest->header.type = DMU_FACE;
     dest->data = *storage, (*storage)++;
 
@@ -312,7 +315,6 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     ssec->hEdgeCount = (uint) hEdgeCount;
     ssec->shadows = NULL;
     ssec->vertices = NULL;
-    }
 
     // Determine which sector this subsector belongs to.
     found = false;
@@ -321,18 +323,20 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     {
         sidedef_t*          side;
 
-        if(!found && (side = HEDGE_SIDEDEF(hEdge)))
+        if(!found && (side = ((seg_t*) hEdge->data)->sideDef))
         {
-            ((subsector_t*) dest->data)->sector = side->sector;
+            ssec->sector = side->sector;
             found = true;
         }
 
         hEdge->face = dest;
     } while((hEdge = hEdge->next) != dest->hEdge);
 
-    if(!((subsector_t*) dest->data)->sector)
+    if(!ssec->sector)
     {
-        Con_Message("hardenLeaf: Warning orphan subsector %p.\n", dest);
+        Con_Message("hardenLeaf: Warning orphan subsector %p (%i half-edges).\n",
+                    ssec, ssec->hEdgeCount);
+    }
     }
 }
 
