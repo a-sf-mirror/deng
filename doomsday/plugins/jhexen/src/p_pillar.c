@@ -111,6 +111,7 @@ int EV_BuildPillar(linedef_t *line, byte *args, boolean crush)
 
         pillar = Z_Calloc(sizeof(*pillar), PU_MAP, 0);
         pillar->thinker.function = T_BuildPillar;
+        pillar->thinker.header.type = DMU_THINKER_PILLARBUILDER;
         DD_ThinkerAdd(&pillar->thinker);
 
         P_ToXSector(sec)->specialData = pillar;
@@ -173,6 +174,7 @@ int EV_OpenPillar(linedef_t *line, byte *args)
 
         pillar = Z_Calloc(sizeof(*pillar), PU_MAP, 0);
         pillar->thinker.function = T_BuildPillar;
+        pillar->thinker.header.type = DMU_THINKER_PILLARBUILDER;
         DD_ThinkerAdd(&pillar->thinker);
 
         P_ToXSector(sec)->specialData = pillar;

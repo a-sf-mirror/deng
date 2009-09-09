@@ -1330,10 +1330,10 @@ mobj_t* P_SpawnMobj3fv(mobjtype_t type, const float pos[3], angle_t angle,
                          spawnFlags);
 }
 
-static boolean addToTIDList(thinker_t* th, void* context)
+static int addToTIDList(void* p, void* context)
 {
     size_t*             count = (size_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(mo->tid != 0)
     {
@@ -1355,7 +1355,7 @@ void P_CreateTIDList(void)
 {
     size_t              count = 0;
 
-    DD_IterateThinkers(P_MobjThinker, addToTIDList, &count);
+    P_Iterate(DMU_MOBJ, &count, addToTIDList);
 
     // Add termination marker
     TIDList[count] = 0;
@@ -1736,10 +1736,10 @@ typedef struct {
     mobj_t*             source;
 } radiusblastparams_t;
 
-static boolean radiusBlast(thinker_t* th, void* context)
+static int radiusBlast(void* p, void* context)
 {
     radiusblastparams_t* params = (radiusblastparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
     float               dist;
 
     if(mo == params->source || (mo->flags2 & MF2_BOSS))
@@ -1799,7 +1799,7 @@ void P_BlastRadius(player_t* pl)
 
     params.source = pmo;
     params.maxDistance = BLAST_RADIUS_DIST;
-    DD_IterateThinkers(P_MobjThinker, radiusBlast, &params);
+    P_Iterate(DMU_MOBJ, &params, radiusBlast);
 }
 
 typedef struct {
@@ -1808,10 +1808,10 @@ typedef struct {
     boolean             effective;
 } radiusgiveparams_t;
 
-static boolean radiusGiveArmor(thinker_t* th, void* context)
+static int radiusGiveArmor(void* p, void* context)
 {
     radiusgiveparams_t* params = (radiusgiveparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
     float               dist;
 
     if(!mo->player || mo->health <= 0)
@@ -1835,10 +1835,10 @@ static boolean radiusGiveArmor(thinker_t* th, void* context)
     return true; // Continue iteration.
 }
 
-static boolean radiusGiveBody(thinker_t* th, void* context)
+static int radiusGiveBody(void* p, void* context)
 {
     radiusgiveparams_t* params = (radiusgiveparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
     float               dist;
 
     if(!mo->player || mo->health <= 0)
@@ -1861,10 +1861,10 @@ static boolean radiusGiveBody(thinker_t* th, void* context)
     return true; // Continue iteration.
 }
 
-static boolean radiusGiveMana(thinker_t* th, void* context)
+static int radiusGiveMana(void* p, void* context)
 {
     radiusgiveparams_t* params = (radiusgiveparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
     float               dist;
 
     if(!mo->player || mo->health <= 0)
@@ -1904,15 +1904,15 @@ boolean P_HealRadius(player_t* player)
     switch(player->class)
     {
     case PCLASS_FIGHTER:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveArmor, &params);
+        P_Iterate(DMU_MOBJ, &params, radiusGiveArmor);
         break;
 
     case PCLASS_CLERIC:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveBody, &params);
+        P_Iterate(DMU_MOBJ, &params, radiusGiveBody);
         break;
 
     case PCLASS_MAGE:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveMana, &params);
+        P_Iterate(DMU_MOBJ, &params, radiusGiveMana);
         break;
 
     default:

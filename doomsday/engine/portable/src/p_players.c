@@ -164,7 +164,7 @@ boolean P_IsInVoid(player_t* player)
             sector_t*           sec =
                 ((const subsector_t*) ddpl->mo->face->data)->sector;
 
-            if(R_IsSkySurface(&sec->SP_ceilsurface))
+            if(IS_SKYSURFACE(&sec->SP_ceilsurface))
             {
                if(ddpl->mo->pos[VZ] > skyFix[PLN_CEILING].height - 4)
                    return true;
@@ -172,7 +172,7 @@ boolean P_IsInVoid(player_t* player)
             else if(ddpl->mo->pos[VZ] > sec->SP_ceilvisheight - 4)
                 return true;
 
-            if(R_IsSkySurface(&sec->SP_floorsurface))
+            if(IS_SKYSURFACE(&sec->SP_floorsurface))
             {
                 if(ddpl->mo->pos[VZ] < skyFix[PLN_FLOOR].height + 4)
                     return true;

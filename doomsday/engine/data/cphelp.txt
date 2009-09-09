@@ -713,6 +713,9 @@ desc = Distance at which halos are no longer visible.
 [rend-halo-fade-near]
 desc = Distance to begin fading halos.
 
+[rend-surface-material-fade-seconds]
+desc = When a surface material changes, blend between them for this many seconds.
+
 [rend-tex]
 desc = 1=Render with textures. 2=Render with gray texture.
 

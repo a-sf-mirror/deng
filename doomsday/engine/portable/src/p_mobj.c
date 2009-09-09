@@ -146,6 +146,7 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
     mo->height = height;
     mo->ddFlags = ddflags;
     mo->thinker.function = function;
+    mo->thinker.header.type = DMU_MOBJ;
     if(mo->thinker.function)
         P_ThinkerAdd(&mo->thinker, true); // Make it public.
 

@@ -452,10 +452,10 @@ typedef struct {
     byte                randomSkip;
 } findmobjparams_t;
 
-static boolean findMobj(thinker_t* th, void* context)
+static int findMobj(void* p, void* context)
 {
     findmobjparams_t*   params = (findmobjparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Flags requirement?
     if(params->compFlags > 0 && !(mo->flags & params->compFlags))
@@ -511,7 +511,7 @@ boolean P_LookForMonsters(mobj_t* mo)
     params.compFlags = MF_COUNTKILL;
     params.checkLOS = true;
     params.randomSkip = 16;
-    DD_IterateThinkers(P_MobjThinker, findMobj, &params);
+    P_Iterate(DMU_MOBJ, &params, findMobj);
 
     if(params.foundMobj)
     {
@@ -2079,10 +2079,10 @@ void C_DECL A_MakePod(mobj_t* actor)
     return;
 }
 
-static boolean massacreMobj(thinker_t* th, void* context)
+static int massacreMobj(void* p, void* context)
 {
     int*                count = (int*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(!mo->player && sentient(mo) && (mo->flags & MF_SHOOTABLE))
     {
@@ -2103,7 +2103,7 @@ int P_Massacre(void)
     // Only massacre when actually in a level.
     if(G_GetGameState() == GS_MAP)
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
+        P_Iterate(DMU_MOBJ, &count, massacreMobj);
     }
 
     return count;
@@ -2114,10 +2114,10 @@ typedef struct {
     size_t              count;
 } countmobjoftypeparams_t;
 
-static boolean countMobjOfType(thinker_t* th, void* context)
+static int countMobjOfType(void* p, void* context)
 {
-    countmobjoftypeparams_t *params = (countmobjoftypeparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    countmobjoftypeparams_t* params = (countmobjoftypeparams_t*) context;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(params->type == mo->type && mo->health > 0)
         params->count++;
@@ -2153,7 +2153,7 @@ void C_DECL A_BossDeath(mobj_t* actor)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = actor->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    P_Iterate(DMU_MOBJ, &params, countMobjOfType);
 
     if(params.count)
     {   // Other boss not dead.

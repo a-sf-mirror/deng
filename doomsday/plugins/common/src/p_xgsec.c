@@ -273,9 +273,9 @@ int C_DECL XLTrav_LineAngle(linedef_t* line, boolean dummy, void* context,
     return false; // Stop looking after first hit.
 }
 
-boolean findXSThinker(thinker_t* th, void* context)
+int findXSThinker(void* p, void* context)
 {
-    xsthinker_t*        xs = (xsthinker_t*) th;
+    xsthinker_t*        xs = (xsthinker_t*) p;
 
     if(xs->sector == (sector_t*) context)
         return false; // Stop iteration, we've found it.
@@ -283,9 +283,9 @@ boolean findXSThinker(thinker_t* th, void* context)
     return true; // Continue iteration.
 }
 
-boolean destroyXSThinker(thinker_t* th, void* context)
+int destroyXSThinker(void* p, void* context)
 {
-    xsthinker_t*        xs = (xsthinker_t*) th;
+    xsthinker_t*        xs = (xsthinker_t*) p;
 
     if(xs->sector == (sector_t*) context)
     {
@@ -372,11 +372,13 @@ void XS_SetSectorType(struct sector_s* sec, int special)
         }
 
         // If there is not already an xsthinker for this sector, create one.
-        if(DD_IterateThinkers(XS_Thinker, findXSThinker, sec))
+        if(P_Iterate(DMU_THINKER_XSECTOR, sec, findXSThinker))
         {   // Not created one yet.
             xsthinker_t*    xs = Z_Calloc(sizeof(*xs), PU_MAP, 0);
 
+            xs->thinker.header.type = DMU_THINKER_XSECTOR;
             xs->thinker.function = XS_Thinker;
+
             DD_ThinkerAdd(&xs->thinker);
 
             xs->sector = sec;
@@ -388,7 +390,7 @@ void XS_SetSectorType(struct sector_s* sec, int special)
                special);
 
         // If there is an xsthinker for this, destroy it.
-        DD_IterateThinkers(XS_Thinker, destroyXSThinker, sec);
+        P_Iterate(DMU_THINKER_XSECTOR, sec, destroyXSThinker);
 
         // Free previously allocated XG data.
         if(xsec->xg)
@@ -615,16 +617,16 @@ typedef struct {
     boolean             ceiling;
 } stopplanemoverparams_t;
 
-static boolean stopPlaneMover(thinker_t* th, void* context)
+static int stopPlaneMover(void* p, void* context)
 {
     stopplanemoverparams_t* params = (stopplanemoverparams_t*) context;
-    xgplanemover_t*     mover = (xgplanemover_t *) th;
+    xgplanemover_t*     mover = (xgplanemover_t *) p;
 
     if(mover->sector == params->sec &&
        mover->ceiling == params->ceiling)
     {
         XS_MoverStopped(mover, false);
-        DD_ThinkerRemove(th); // Remove it.
+        DD_ThinkerRemove(p); // Remove it.
     }
 
     return true; // Continue iteration.
@@ -641,11 +643,13 @@ xgplanemover_t *XS_GetPlaneMover(sector_t *sec, boolean ceiling)
 
     params.sec = sec;
     params.ceiling = ceiling;
-    DD_IterateThinkers(XS_PlaneMover, stopPlaneMover, &params);
+    P_Iterate(DMU_THINKER_PLANEMOVER, &params, stopPlaneMover);
 
     // Allocate a new thinker.
     mover = Z_Calloc(sizeof(*mover), PU_MAP, 0);
+    mover->thinker.header.type = DMU_THINKER_PLANEMOVER;
     mover->thinker.function = XS_PlaneMover;
+
     DD_ThinkerAdd(&mover->thinker);
 
     mover->sector = sec;
@@ -2752,11 +2756,11 @@ typedef struct {
     int                 data;
 } xstrav_sectorchainparams_t;
 
-boolean XSTrav_SectorChain(thinker_t* th, void* context)
+int XSTrav_SectorChain(void* p, void* context)
 {
     xstrav_sectorchainparams_t* params =
         (xstrav_sectorchainparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(params->sec == DMU_GetPtrp(mo->face, DMU_SECTOR))
     {
@@ -2817,10 +2821,10 @@ typedef struct {
     sector_t*           sec;
 } xstrav_windparams_t;
 
-boolean XSTrav_Wind(thinker_t* th, void* context)
+int XSTrav_Wind(void* p, void* context)
 {
     xstrav_windparams_t* params = (xstrav_windparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(params->sec == DMU_GetPtrp(mo->face, DMU_SECTOR))
     {
@@ -2906,7 +2910,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_FLOOR;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
         }
 
         // Ceiling chain. Check any mobjs that are touching the ceiling.
@@ -2916,7 +2920,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_CEILING;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
         }
 
         // Inside chain. Check any sectorlinked mobjs.
@@ -2926,7 +2930,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_INSIDE;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
         }
 
         // Ticker chain. Send an activate event if TICKER_D flag is not set.
@@ -2982,7 +2986,7 @@ void XS_Thinker(xsthinker_t* xs)
         xstrav_windparams_t params;
 
         params.sec = sector;
-        DD_IterateThinkers(P_MobjThinker, XSTrav_Wind, &params);
+        P_Iterate(DMU_MOBJ, &params, XSTrav_Wind);
     }
 }
 

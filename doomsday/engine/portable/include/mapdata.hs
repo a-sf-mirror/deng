@@ -1,6 +1,20 @@
 # $Id$
 # Runtime map data defitions. Processed by the makedmt.py script.
+public
+// think_t is a function pointer to a routine to handle an actor
+typedef void    (*think_t) ();
 
+/**
+ * \todo thinker_t should not be part of the public API in its current form.
+ */
+typedef struct thinker_s {
+    runtime_mapdata_header_t header;
+    struct thinker_s *prev, *next;
+    think_t         function;
+    boolean         inStasis;
+    thid_t          id; // Only used for mobjs (zero is not an ID).
+} thinker_t;
+end
 public
 #define DMT_VERTEX_POS  DDVT_FLOAT
 end
@@ -157,6 +171,7 @@ typedef enum {
     MEC_METAL = 0,
     MEC_ROCK,
     MEC_WOOD,
+    MEC_WATER,
     MEC_CLOTH,
     NUM_MATERIAL_ENV_CLASSES
 } material_env_class_t;
@@ -193,6 +208,9 @@ internal
 #define SUIF_UPDATE_FLAG_MASK 0xff00
 #define SUIF_UPDATE_DECORATIONS 0x8000
 
+// Will the specified surface be added to the sky mask?
+#define IS_SKYSURFACE(s)         ((s) && (s)->material && ((s)->material->flags & MATF_SKYMASK))
+
 // Decoration types.
 typedef enum {
     DT_LIGHT,
@@ -226,6 +244,8 @@ struct surface
     INT     int         flags // SUF_ flags
     -       int         oldFlags
     PTR     material_t* material
+    -       material_t* materialB
+    -       float       matBlendFactor
     BLENDMODE blendmode_t blendMode
     FLOAT   float[3]    normal // Surface normal
     -       float[3]    oldNormal

@@ -816,8 +816,8 @@ BEGIN_PROF( PROF_GRID_UPDATE );
             color = R_GetSectorLightColor(sector);
             height = (int) (sector->SP_ceilheight - sector->SP_floorheight);
 
-            isSkyFloor = R_IsSkySurface(&sector->SP_ceilsurface);
-            isSkyCeil = R_IsSkySurface(&sector->SP_floorsurface);
+            isSkyFloor = IS_SKYSURFACE(&sector->SP_ceilsurface);
+            isSkyCeil = IS_SKYSURFACE(&sector->SP_floorsurface);
 
             if(isSkyFloor && !isSkyCeil)
             {

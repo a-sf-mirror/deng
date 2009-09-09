@@ -64,14 +64,6 @@
 // Node flags.
 #define NF_SUBSECTOR        0x80000000
 
-// Runtime map data objects, such as vertices, sectors, and subsectors all
-// have this header as their first member. This makes it possible to treat
-// an unknown map data pointer as a runtime_mapdata_header_t* and determine
-// its type. Note that this information is internal to the engine.
-typedef struct runtime_mapdata_header_s {
-    int             type; // One of the DMU type constants.
-} runtime_mapdata_header_t;
-
 typedef unsigned int gltextureid_t; /// \todo Does not belong here.
 
 typedef struct fvertex_s {

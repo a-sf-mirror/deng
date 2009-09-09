@@ -338,6 +338,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
         rtn = 1;
         door = Z_Calloc(sizeof(*door), PU_MAP, 0);
         door->thinker.function = T_Door;
+        door->thinker.header.type = DMU_THINKER_DOOR;
         DD_ThinkerAdd(&door->thinker);
         xsec->specialData = door;
 
@@ -746,6 +747,7 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     // New door thinker.
     door = Z_Calloc(sizeof(*door), PU_MAP, 0);
     door->thinker.function = T_Door;
+    door->thinker.header.type = DMU_THINKER_DOOR;
     DD_ThinkerAdd(&door->thinker);
     xsec->specialData = door;
     door->sector = sec;
@@ -868,6 +870,7 @@ void P_SpawnDoorCloseIn30(sector_t *sec)
 
     door = Z_Calloc(sizeof(*door), PU_MAP, 0);
     door->thinker.function = T_Door;
+    door->thinker.header.type = DMU_THINKER_DOOR;
     DD_ThinkerAdd(&door->thinker);
 
     P_ToXSector(sec)->specialData = door;
@@ -885,6 +888,7 @@ void P_SpawnDoorRaiseIn5Mins(sector_t *sec)
     door_t           *door;
 
     door = Z_Calloc(sizeof(*door), PU_MAP, 0);
+    door->thinker.header.type = DMU_THINKER_DOOR;
     door->thinker.function = T_Door;
     DD_ThinkerAdd(&door->thinker);
 

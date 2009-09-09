@@ -1032,15 +1032,15 @@ boolean unstuckMobjInLinedef(linedef_t* li, void* context)
     return true; // Continue iteration.
 }
 
-boolean iterateLinedefsNearMobj(thinker_t* th, void* context)
+int iterateLinedefsNearMobj(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t*) th;
+    mobj_t*             mo = (mobj_t*) p;
     mobjtype_t          type = *((mobjtype_t*) context);
     float               aabb[4];
     unstuckmobjinlinedefparams_t params;
 
     // \todo Why not type-prune at an earlier point? We could specify a
-    // custom comparison func for DD_IterateThinkers...
+    // custom comparison func for P_Iterate...
     if(mo->type != type)
         return true; // Continue iteration.
 
@@ -1092,7 +1092,7 @@ void P_MoveThingsOutOfWalls(void)
     {
         mobjtype_t          type = types[i];
 
-        DD_IterateThinkers(P_MobjThinker, iterateLinedefsNearMobj, &type);
+        P_Iterate(DMU_MOBJ, &type, iterateLinedefsNearMobj);
     }
 }
 

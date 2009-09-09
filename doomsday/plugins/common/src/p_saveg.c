@@ -78,7 +78,7 @@
 #if __JDOOM__
 # define MY_SAVE_MAGIC         0x1DEAD666
 # define MY_CLIENT_SAVE_MAGIC  0x2DEAD666
-# define MY_SAVE_VERSION       7
+# define MY_SAVE_VERSION       8
 # define SAVESTRINGSIZE        24
 # define CONSISTENCY           0x2c
 # define SAVEGAMENAME          "DoomSav"
@@ -87,7 +87,7 @@
 #elif __JDOOM64__
 # define MY_SAVE_MAGIC         0x1D6420F4
 # define MY_CLIENT_SAVE_MAGIC  0x2D6420F4
-# define MY_SAVE_VERSION       7
+# define MY_SAVE_VERSION       8
 # define SAVESTRINGSIZE        24
 # define CONSISTENCY           0x2c
 # define SAVEGAMENAME          "D64Sav"
@@ -96,7 +96,7 @@
 #elif __JHERETIC__
 # define MY_SAVE_MAGIC         0x7D9A12C5
 # define MY_CLIENT_SAVE_MAGIC  0x1062AF43
-# define MY_SAVE_VERSION       7
+# define MY_SAVE_VERSION       8
 # define SAVESTRINGSIZE        24
 # define CONSISTENCY           0x9d
 # define SAVEGAMENAME          "HticSav"
@@ -106,7 +106,7 @@
 # define HXS_VERSION_TEXT      "HXS Ver " // Do not change me!
 # define HXS_VERSION_TEXT_LENGTH 16
 
-# define MY_SAVE_VERSION       8
+# define MY_SAVE_VERSION       9
 # define SAVESTRINGSIZE        24
 # define SAVEGAMENAME          "hex"
 # define CLIENTSAVEGAMENAME    "hexencl"
@@ -125,6 +125,8 @@
 
 #define FF_FULLBRIGHT       0x8000 // used to be flag in thing->frame
 #define FF_FRAMEMASK        0x7fff
+
+#define TC_END              0
 
 // TYPES -------------------------------------------------------------------
 
@@ -197,7 +199,7 @@ typedef struct targetplraddress_s {
 #define TSF_SERVERONLY      0x01    // Only saved by servers.
 
 typedef struct thinkerinfo_s {
-    thinkerclass_t  thinkclass;
+    int             dmuType;
     think_t         function;
     int             flags;
     void          (*Write) ();
@@ -323,7 +325,7 @@ static byte* junkbuffer; // Old save data is read into here.
 
 static thinkerinfo_t thinkerInfo[] = {
     {
-      TC_MOBJ,
+      DMU_MOBJ,
       P_MobjThinker,
       TSF_SERVERONLY,
       SV_WriteMobj,
@@ -332,7 +334,7 @@ static thinkerinfo_t thinkerInfo[] = {
     },
 #if !__JHEXEN__
     {
-      TC_XGMOVER,
+      DMU_THINKER_PLANEMOVER,
       XS_PlaneMover,
       0,
       SV_WriteXGPlaneMover,
@@ -341,7 +343,7 @@ static thinkerinfo_t thinkerInfo[] = {
     },
 #endif
     {
-      TC_CEILING,
+      DMU_THINKER_CEILMOVER,
       T_MoveCeiling,
       0,
       SV_WriteCeiling,
@@ -349,7 +351,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(ceiling_t)
     },
     {
-      TC_DOOR,
+      DMU_THINKER_DOOR,
       T_Door,
       0,
       SV_WriteDoor,
@@ -357,7 +359,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(door_t)
     },
     {
-      TC_FLOOR,
+      DMU_THINKER_FLOORMOVER,
       T_MoveFloor,
       0,
       SV_WriteFloor,
@@ -365,7 +367,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(floor_t)
     },
     {
-      TC_PLAT,
+      DMU_THINKER_PLATFORM,
       T_PlatRaise,
       0,
       SV_WritePlat,
@@ -374,7 +376,7 @@ static thinkerinfo_t thinkerInfo[] = {
     },
 #if __JHEXEN__
     {
-     TC_INTERPRET_ACS,
+     DMU_THINKER_ACSSCRIPT,
      T_InterpretACS,
      0,
      SV_WriteScript,
@@ -382,7 +384,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(acs_t)
     },
     {
-     TC_FLOOR_WAGGLE,
+     DMU_THINKER_FLOORWAGGLE,
      T_FloorWaggle,
      0,
      SV_WriteFloorWaggle,
@@ -390,7 +392,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(waggle_t)
     },
     {
-     TC_LIGHT,
+     DMU_THINKER_LIGHT,
      T_Light,
      0,
      SV_WriteLight,
@@ -398,7 +400,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(light_t)
     },
     {
-     TC_PHASE,
+     DMU_THINKER_LIGHTPHASE,
      T_Phase,
      0,
      SV_WritePhase,
@@ -406,7 +408,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(phase_t)
     },
     {
-     TC_BUILD_PILLAR,
+     DMU_THINKER_PILLARBUILDER,
      T_BuildPillar,
      0,
      SV_WritePillar,
@@ -414,7 +416,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(pillar_t)
     },
     {
-     TC_ROTATE_POLY,
+     DMU_THINKER_POLYROTATE,
      T_RotatePoly,
      0,
      SV_WriteRotatePoly,
@@ -422,7 +424,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(polyevent_t)
     },
     {
-     TC_MOVE_POLY,
+     DMU_THINKER_POLYMOVER,
      T_MovePoly,
      0,
      SV_WriteMovePoly,
@@ -430,7 +432,7 @@ static thinkerinfo_t thinkerInfo[] = {
      sizeof(polyevent_t)
     },
     {
-     TC_POLY_DOOR,
+     DMU_THINKER_POLYDOOR,
      T_PolyDoor,
      0,
      SV_WriteDoorPoly,
@@ -439,7 +441,7 @@ static thinkerinfo_t thinkerInfo[] = {
     },
 #else
     {
-      TC_FLASH,
+      DMU_THINKER_LIGHTFLASH,
       T_LightFlash,
       0,
       SV_WriteFlash,
@@ -447,7 +449,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(lightflash_t)
     },
     {
-      TC_STROBE,
+      DMU_THINKER_LIGHTSTROBE,
       T_StrobeFlash,
       0,
       SV_WriteStrobe,
@@ -455,7 +457,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(strobe_t)
     },
     {
-      TC_GLOW,
+      DMU_THINKER_LIGHTGLOW,
       T_Glow,
       0,
       SV_WriteGlow,
@@ -464,7 +466,7 @@ static thinkerinfo_t thinkerInfo[] = {
     },
 # if __JDOOM__ || __JDOOM64__
     {
-      TC_FLICKER,
+      DMU_THINKER_LIGHTFLICK,
       T_FireFlicker,
       0,
       SV_WriteFlicker,
@@ -474,7 +476,7 @@ static thinkerinfo_t thinkerInfo[] = {
 # endif
 # if __JDOOM64__
     {
-      TC_BLINK,
+      DMU_THINKER_LIGHTBLINK,
       T_LightBlink,
       0,
       SV_WriteBlink,
@@ -484,7 +486,7 @@ static thinkerinfo_t thinkerInfo[] = {
 # endif
 #endif
     {
-      TC_MATERIALCHANGER,
+      DMU_THINKER_MATCHANGER,
       T_MaterialChanger,
       0,
       SV_WriteMaterialChanger,
@@ -492,7 +494,7 @@ static thinkerinfo_t thinkerInfo[] = {
       sizeof(materialchanger_t)
     },
     // Terminator
-    { TC_NULL, NULL, 0, NULL, NULL, 0 }
+    { DMU_NONE, NULL, 0, NULL, NULL, 0 }
 };
 
 // CODE --------------------------------------------------------------------
@@ -521,6 +523,89 @@ static void SV_BeginSegment(int segType)
 #endif
 }
 
+static int oldArchiveNameToDMUType(int name)
+{
+/**
+ * Original indices:
+ */
+enum {
+    TC_MOBJ = 1,
+    TC_XGMOVER,
+    TC_CEILING,
+    TC_DOOR,
+    TC_FLOOR,
+    TC_PLAT,
+#if __JHEXEN__
+    TC_INTERPRET_ACS,
+    TC_FLOOR_WAGGLE,
+    TC_LIGHT,
+    TC_PHASE,
+    TC_BUILD_PILLAR,
+    TC_ROTATE_POLY,
+    TC_MOVE_POLY,
+    TC_POLY_DOOR,
+#else
+    TC_FLASH,
+    TC_STROBE,
+# if __JDOOM__ || __JDOOM64__
+    TC_GLOW,
+    TC_FLICKER,
+#  if __JDOOM64__
+    TC_BLINK,
+#  endif
+# else
+    TC_GLOW,
+# endif
+#endif
+    TC_MATERIALCHANGER,
+    NUM_OBJECT_ARCHIVED_NAMES
+};
+
+    struct trans_s {
+        int             dmuType;
+        int             oldName;
+    } xlat[] =
+    {
+        { DMU_MOBJ, TC_MOBJ },
+#if !__JHEXEN__
+        { DMU_THINKER_PLANEMOVER, TC_XGMOVER },
+#endif
+        { DMU_THINKER_CEILMOVER, TC_CEILING },
+        { DMU_THINKER_DOOR, TC_DOOR },
+        { DMU_THINKER_FLOORMOVER, TC_FLOOR },
+        { DMU_THINKER_PLATFORM, TC_PLAT },
+#if __JHEXEN__
+        { DMU_THINKER_ACSSCRIPT, TC_INTERPRET_ACS },
+        { DMU_THINKER_FLOORWAGGLE, TC_FLOOR_WAGGLE },
+        { DMU_THINKER_LIGHT, TC_LIGHT },
+        { DMU_THINKER_LIGHTPHASE, TC_PHASE },
+        { DMU_THINKER_PILLARBUILDER, TC_BUILD_PILLAR },
+        { DMU_THINKER_POLYROTATE, TC_ROTATE_POLY },
+        { DMU_THINKER_POLYMOVER, TC_MOVE_POLY },
+        { DMU_THINKER_POLYDOOR, TC_POLY_DOOR },
+#else
+        { DMU_THINKER_LIGHTFLASH, TC_FLASH },
+        { DMU_THINKER_LIGHTSTROBE, TC_STROBE },
+        { DMU_THINKER_LIGHTGLOW, TC_GLOW },
+# if __JDOOM__ || __JDOOM64__
+        { DMU_THINKER_LIGHTFLICK, TC_FLICKER },
+# endif
+# if __JDOOM64__
+        { DMU_THINKER_LIGHTBLINK, TC_BLINK },
+# endif
+#endif
+        { DMU_THINKER_MATCHANGER, TC_MATERIALCHANGER },
+        { 0,                DMU_NONE } // terminate.
+    };
+    uint                i;
+
+    for(i = 0; xlat[i].dmuType != DMU_NONE; ++i)
+        if(xlat[i].oldName == name)
+            return xlat[i].dmuType;
+
+    return DMU_NONE; // Unknown.
+}
+
 /**
  * @return              Ptr to the thinkerinfo for the given thinker.
  */
@@ -531,9 +616,9 @@ static thinkerinfo_t* infoForThinker(thinker_t* th)
     if(!th)
         return NULL;
 
-    while(thInfo->thinkclass != TC_NULL)
+    while(thInfo->dmuType != DMU_NONE)
     {
-        if(thInfo->function == th->function)
+        if(thInfo->dmuType == th->header.type)
             return thInfo;
 
         thInfo++;
@@ -542,8 +627,10 @@ static thinkerinfo_t* infoForThinker(thinker_t* th)
     return NULL;
 }
 
-static boolean removeThinker(thinker_t* th, void* context)
+static int removeThinker(void* p, void* context)
 {
+    thinker_t*          th = (thinker_t*) p;
+
     if(th->function == P_MobjThinker)
         P_MobjRemove((mobj_t *) th, true);
     else
@@ -557,10 +644,10 @@ typedef struct {
     boolean             savePlayers;
 } countmobjsparams_t;
 
-static boolean countMobjs(thinker_t* th, void* context)
+static int countMobjs(void* p, void* context)
 {
     countmobjsparams_t* params = (countmobjsparams_t*) context;
-    mobj_t*             mo = (mobj_t*) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(!(mo->player && !params->savePlayers))
         params->count++;
@@ -590,7 +677,7 @@ static uint SV_InitThingArchive(boolean load, boolean savePlayers)
     else
     {
         // Count the number of mobjs we'll be writing.
-        DD_IterateThinkers(P_MobjThinker, countMobjs, &params);
+        P_Iterate(DMU_MOBJ, &params, countMobjs);
     }
 
     thingArchive = calloc(params.count, sizeof(mobj_t*));
@@ -2832,6 +2919,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         int                 ver = SV_ReadByte(); // version byte.
 
         ceiling->thinker.function = T_MoveCeiling;
+        ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
 
 #if !__JHEXEN__
         // Should we put this into stasis?
@@ -2903,6 +2991,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         ceiling->oldState = (SV_ReadLong() == -1? CS_DOWN : CS_UP);
 
         ceiling->thinker.function = T_MoveCeiling;
+        ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
 #if !__JHEXEN__
         if(!junk.function)
             DD_ThinkerSetStasis(&ceiling->thinker, true);
@@ -2994,6 +3083,7 @@ static int SV_ReadDoor(door_t *door)
 
     P_ToXSector(door->sector)->specialData = door;
     door->thinker.function = T_Door;
+    door->thinker.header.type = DMU_THINKER_DOOR;
 
     return true; // Add this thinker.
 }
@@ -3125,6 +3215,7 @@ static int SV_ReadFloor(floor_t* floor)
 
     P_ToXSector(floor->sector)->specialData = floor;
     floor->thinker.function = T_MoveFloor;
+    floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
 
     return true; // Add this thinker.
 }
@@ -3164,6 +3255,7 @@ static int SV_ReadPlat(plat_t *plat)
         /*int ver =*/ SV_ReadByte(); // version byte.
 
         plat->thinker.function = T_PlatRaise;
+        plat->thinker.header.type = DMU_THINKER_PLATFORM;
 
 #if !__JHEXEN__
         // Should we put this into stasis?
@@ -3223,6 +3315,7 @@ static int SV_ReadPlat(plat_t *plat)
         plat->type = SV_ReadLong();
 
         plat->thinker.function = T_PlatRaise;
+        plat->thinker.header.type = DMU_THINKER_PLATFORM;
 #if !__JHEXEN__
         if(!junk.function)
             DD_ThinkerSetStasis(&plat->thinker, true);
@@ -3296,6 +3389,7 @@ static int SV_ReadLight(light_t* th)
     }
 
     th->thinker.function = T_Light;
+    th->thinker.header.type = DMU_THINKER_LIGHT;
 
     return true; // Add this thinker.
 }
@@ -3349,6 +3443,7 @@ static int SV_ReadPhase(phase_t* th)
     }
 
     th->thinker.function = T_Phase;
+    th->thinker.header.type = DMU_THINKER_LIGHTPHASE;
 
     return true; // Add this thinker.
 }
@@ -3429,6 +3524,7 @@ static int SV_ReadScript(acs_t* th)
     }
 
     th->thinker.function = T_InterpretACS;
+    th->thinker.header.type = DMU_THINKER_ACSSCRIPT;
 
     return true; // Add this thinker.
 }
@@ -3497,6 +3593,7 @@ static int SV_ReadDoorPoly(polydoor_t* th)
     }
 
     th->thinker.function = T_PolyDoor;
+    th->thinker.header.type = DMU_THINKER_POLYDOOR;
 
     return true; // Add this thinker.
 }
@@ -3548,6 +3645,7 @@ static int SV_ReadMovePoly(polyevent_t* th)
     }
 
     th->thinker.function = T_MovePoly;
+    th->thinker.header.type = DMU_THINKER_POLYMOVER;
 
     return true; // Add this thinker.
 }
@@ -3599,6 +3697,7 @@ static int SV_ReadRotatePoly(polyevent_t* th)
     }
 
     th->thinker.function = T_RotatePoly;
+    th->thinker.header.type = DMU_THINKER_POLYROTATE;
     return true; // Add this thinker.
 }
 
@@ -3664,6 +3763,7 @@ static int SV_ReadPillar(pillar_t* th)
     }
 
     th->thinker.function = T_BuildPillar;
+    th->thinker.header.type = DMU_THINKER_PILLARBUILDER;
 
     P_ToXSector(th->sector)->specialData = th;
     return true; // Add this thinker.
@@ -3736,6 +3836,7 @@ static int SV_ReadFloorWaggle(waggle_t* th)
     }
 
     th->thinker.function = T_FloorWaggle;
+    th->thinker.header.type = DMU_THINKER_FLOORWAGGLE;
 
     P_ToXSector(th->sector)->specialData = th;
     return true; // Add this thinker.
@@ -3800,6 +3901,7 @@ static int SV_ReadFlash(lightflash_t* flash)
     }
 
     flash->thinker.function = T_LightFlash;
+    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     return true; // Add this thinker.
 }
 
@@ -3859,6 +3961,7 @@ static int SV_ReadStrobe(strobe_t* strobe)
     }
 
     strobe->thinker.function = T_StrobeFlash;
+    strobe->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     return true; // Add this thinker.
 }
 
@@ -3912,6 +4015,7 @@ static int SV_ReadGlow(glow_t* glow)
     }
 
     glow->thinker.function = T_Glow;
+    glow->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     return true; // Add this thinker.
 }
 
@@ -3948,6 +4052,7 @@ static int SV_ReadFlicker(fireflicker_t* flicker)
     flicker->minLight = (float) SV_ReadLong() / 255.0f;
 
     flicker->thinker.function = T_FireFlicker;
+    flicker->thinker.header.type = DMU_THINKER_LIGHTFLICK;
     return true; // Add this thinker.
 }
 # endif
@@ -3991,6 +4096,7 @@ static int SV_ReadBlink(lightblink_t* blink)
     blink->minTime = SV_ReadLong();
 
     blink->thinker.function = T_LightBlink;
+    blink->thinker.header.type = DMU_THINKER_LIGHTBLINK;
     return true; // Add this thinker.
 }
 # endif
@@ -4028,6 +4134,7 @@ static int SV_ReadMaterialChanger(materialchanger_t* mchanger)
     mchanger->material = SV_GetArchiveMaterial(SV_ReadShort(), 0);
 
     mchanger->thinker.function = T_MaterialChanger;
+    mchanger->thinker.header.type = DMU_THINKER_MATCHANGER;
 
     return true; // Add this thinker.
 }
@@ -4037,12 +4144,13 @@ static int SV_ReadMaterialChanger(materialchanger_t* mchanger)
  *
  * @param th        The thinker to be archived.
  */
-static boolean archiveThinker(thinker_t* th, void* context)
+static int archiveThinker(void* p, void* context)
 {
+    thinker_t*          th = (thinker_t*) p;
     boolean             savePlayers = *(boolean*) context;
 
     // Are we archiving players?
-    if(!(th->function == P_MobjThinker && ((mobj_t *) th)->player &&
+    if(!(th->function == P_MobjThinker && ((mobj_t*) th)->player &&
        !savePlayers))
     {
         thinkerinfo_t*      thInfo = infoForThinker(th);
@@ -4057,7 +4165,7 @@ static boolean archiveThinker(thinker_t* th, void* context)
 assert(thInfo->Write);
 #endif
             // Write the header block for this thinker.
-            SV_WriteByte(thInfo->thinkclass); // Thinker type byte.
+            SV_WriteLong(thInfo->dmuType); // Type byte.
             SV_WriteByte(th->inStasis? 1 : 0); // In stasis?
 
             // Write the thinker data.
@@ -4085,15 +4193,15 @@ static void P_ArchiveThinkers(boolean savePlayers)
 #endif
 
     // Save off the current thinkers.
-    DD_IterateThinkers(NULL, archiveThinker, &localSavePlayers);
+    P_Iterate(DMU_NONE, &localSavePlayers, archiveThinker);
 
     // Add a terminating marker.
-    SV_WriteByte(TC_END);
+    SV_WriteLong(TC_END);
 }
 
-static boolean restoreMobjLinks(thinker_t* th, void* context)
+static int restoreMobjLinks(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     mo->target = SV_GetArchiveThing((int) mo->target, &mo->target);
     mo->onMobj = SV_GetArchiveThing((int) mo->onMobj, &mo->onMobj);
@@ -4162,9 +4270,9 @@ static boolean restoreMobjLinks(thinker_t* th, void* context)
 static void P_UnArchiveThinkers(void)
 {
     uint        i;
-    byte        tClass;
-    thinker_t  *th = 0;
-    thinkerinfo_t *thInfo = 0;
+    int         type;
+    thinker_t*  th = 0;
+    thinkerinfo_t* thInfo = 0;
     boolean     found, knownThinker;
     boolean     inStasis;
 #if __JHEXEN__
@@ -4177,7 +4285,7 @@ static void P_UnArchiveThinkers(void)
     if(IS_SERVER)
 #endif
     {
-        DD_IterateThinkers(NULL, removeThinker, NULL);
+        P_Iterate(DMU_NONE, NULL, removeThinker);
         DD_InitThinkers();
     }
 
@@ -4201,8 +4309,29 @@ static void P_UnArchiveThinkers(void)
     {
 #if __JHEXEN__
         if(doSpecials)
+        {
 #endif
-            tClass = SV_ReadByte();
+#if __JHEXEN__
+            if(saveVersion >= 9)
+#else
+            if(hdr.version >= 8)
+#endif
+            {
+                type = SV_ReadLong();
+            }
+            else
+            {
+                type = SV_ReadByte();
+
+                if(type != TC_END)
+                {
+                    if((type = oldArchiveNameToDMUType(type)) == DMU_NONE)
+                        Con_Error("P_UnarchiveThinkers: Unknown type %i.", type);
+                }
+            }
+#if __JHEXEN__
+        }
+#endif
 
 #if __JHEXEN__
         if(saveVersion < 4)
@@ -4213,13 +4342,16 @@ static void P_UnArchiveThinkers(void)
                 // the end of the specials data and the thinker class ids
                 // are differrent, so we need to manipulate the thinker
                 // class identifier value.
-                if(tClass != TC_END)
-                    tClass += 2;
+                if(type != TC_END)
+                {
+                    if((type = oldArchiveNameToDMUType(type + 2)) == DMU_NONE)
+                        Con_Error("P_UnarchiveThinkers: Unknown type %i.", type);
+                }
             }
             else
-                tClass = TC_MOBJ;
+                type = DMU_MOBJ;
 
-            if(tClass == TC_MOBJ && i == thingArchiveSize)
+            if(type == DMU_MOBJ && i == thingArchiveSize)
             {
                 AssertSegment(ASEG_THINKERS);
                 // We have reached the begining of the "specials" block.
@@ -4235,12 +4367,12 @@ static void P_UnArchiveThinkers(void)
                 // Versions prior to 5 used a different value to mark
                 // the end of the specials data so we need to manipulate
                 // the thinker class identifier value.
-                if(tClass == PRE_VER5_END_SPECIALS)
-                    tClass = TC_END;
+                if(type == PRE_VER5_END_SPECIALS)
+                    type = TC_END;
                 else
-                    tClass += 3;
+                    type += 3;
             }
-            else if(tClass == TC_END)
+            else if(type == TC_END)
             {
                 // We have reached the begining of the "specials" block.
                 doSpecials = true;
@@ -4248,14 +4380,15 @@ static void P_UnArchiveThinkers(void)
             }
         }
 #endif
-        if(tClass == TC_END)
+
+        if(type == TC_END)
             break; // End of the list.
 
         found = knownThinker = inStasis = false;
         thInfo = thinkerInfo;
-        while(thInfo->thinkclass != TC_NULL && !found)
+        while(thInfo->dmuType != DMU_NONE && !found)
         {
-            if(thInfo->thinkclass == tClass)
+            if(thInfo->dmuType == type)
             {
                 found = true;
 
@@ -4263,7 +4396,7 @@ static void P_UnArchiveThinkers(void)
                 if(!((thInfo->flags & TSF_SERVERONLY) && IS_CLIENT))
                 {
                     // Mobjs use a special engine-side allocator.
-                    if(thInfo->thinkclass == TC_MOBJ)
+                    if(thInfo->dmuType == DMU_MOBJ)
                     {
                         th = (thinker_t*)
                             P_MobjCreate(P_MobjThinker, 0, 0, 0, 0, 64, 64, 0);
@@ -4290,12 +4423,12 @@ static void P_UnArchiveThinkers(void)
                 thInfo++;
         }
 #if __JHEXEN__
-        if(tClass == TC_MOBJ)
+        if(type == DMU_MOBJ)
             i++;
 #endif
         if(!found)
-            Con_Error("P_UnarchiveThinkers: Unknown tClass %i in savegame",
-                      tClass);
+            Con_Error("P_UnarchiveThinkers: Unknown type %i in savegame",
+                      type);
 
         if(knownThinker)
             DD_ThinkerAdd(th);
@@ -4305,11 +4438,11 @@ static void P_UnArchiveThinkers(void)
 
     // Update references to things.
 #if __JHEXEN__
-    DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
+    P_Iterate(DMU_MOBJ, NULL, restoreMobjLinks);
 #else
     if(IS_SERVER)
     {
-        DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
+        P_Iterate(DMU_MOBJ, NULL, restoreMobjLinks);
 
         for(i = 0; i < numlines; ++i)
         {

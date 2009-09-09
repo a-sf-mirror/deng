@@ -97,6 +97,11 @@ const char* DMU_Str(uint prop)
         { DMU_SECTOR, "DMU_SECTOR" },
         { DMU_PLANE, "DMU_PLANE" },
         { DMU_MATERIAL, "DMU_MATERIAL" },
+        { DMU_MOBJ, "DMU_MOBJ" },
+        { DMU_THINKER_PTCGENERATOR, "DMU_THINKER_PTCGENERATOR" },
+        { DMU_THINKER_PLANEMOVER_CL, "DMU_THINKER_PLANEMOVER_CL" },
+        { DMU_THINKER_POLYMOVER_CL, "DMU_THINKER_POLYMOVER_CL" },
+        { DMU_THINKER_MATFADER, "DMU_THINKER_MATFADER" },
         { DMU_LINEDEF_BY_TAG, "DMU_LINEDEF_BY_TAG" },
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINEDEF_BY_ACT_TAG, "DMU_LINEDEF_BY_ACT_TAG" },
@@ -147,9 +152,12 @@ const char* DMU_Str(uint prop)
     };
     uint                i;
 
-    for(i = 0; props[i].str; ++i)
-        if(props[i].prop == prop)
-            return props[i].str;
+    if(prop < DMU_FIRST_GAME_TYPE)
+    {
+        for(i = 0; props[i].str; ++i)
+            if(props[i].prop == prop)
+                return props[i].str;
+    }
 
     sprintf(propStr, "(unnamed %i)", prop);
     return propStr;
@@ -173,21 +181,30 @@ static int DMU_GetType(const void* ptr)
     // Make sure it's valid.
     switch(type)
     {
-        case DMU_VERTEX:
-        case DMU_HEDGE:
-        case DMU_LINEDEF:
-        case DMU_SIDEDEF:
-        case DMU_FACE:
-        case DMU_SECTOR:
-        case DMU_PLANE:
-        case DMU_NODE:
-        case DMU_MATERIAL:
+    case DMU_VERTEX:
+    case DMU_HEDGE:
+    case DMU_LINEDEF:
+    case DMU_SIDEDEF:
+    case DMU_FACE:
+    case DMU_SECTOR:
+    case DMU_PLANE:
+    case DMU_NODE:
+    case DMU_MATERIAL:
+    case DMU_MOBJ:
+    case DMU_THINKER_PTCGENERATOR:
+    case DMU_THINKER_PLANEMOVER_CL:
+    case DMU_THINKER_POLYMOVER_CL:
+    case DMU_THINKER_MATFADER:
+        return type;
+
+    default:
+        if(type >= DMU_FIRST_GAME_TYPE)
             return type;
 
-        default:
-            // Unknown.
-            break;
+        // Unknown.
+        break;
     }
+
     return DMU_NONE;
 }
 
@@ -402,13 +419,29 @@ void P_SetVariable(int value, void* data)
  */
 uint P_ToIndex(const void* ptr)
 {
+    int                 type;
+
     if(!ptr)
     {
         return 0;
     }
 
-    switch(DMU_GetType(ptr))
+    type = DMU_GetType(ptr);
+    if(type >= DMU_FIRST_GAME_TYPE)
+        Con_Error("P_ToIndex: Cannot convert %s to an index.\n",
+          DMU_Str(type));
+
+    switch(type)
     {
+    case DMU_MOBJ:
+    case DMU_THINKER_PTCGENERATOR:
+    case DMU_THINKER_PLANEMOVER_CL:
+    case DMU_THINKER_POLYMOVER_CL:
+    case DMU_THINKER_MATFADER:
+        Con_Error("P_ToIndex: Cannot convert %s to an index.\n",
+                  DMU_Str(type));
+        break;
+
     case DMU_VERTEX:
         return GET_VERTEX_IDX((vertex_t*) ptr);
 
@@ -437,7 +470,7 @@ uint P_ToIndex(const void* ptr)
         return P_ToMaterialNum((material_t*) ptr);
 
     default:
-        Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(DMU_GetType(ptr)));
+        Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(type));
     }
     return 0;
 }
@@ -447,8 +480,21 @@ uint P_ToIndex(const void* ptr)
  */
 void* P_ToPtr(int type, uint index)
 {
+    if(type >= DMU_FIRST_GAME_TYPE)
+        Con_Error("P_ToPtr: Cannot convert %s to a ptr.\n",
+                  DMU_Str(type));
+
     switch(type)
     {
+    case DMU_MOBJ:
+    case DMU_THINKER_PTCGENERATOR:
+    case DMU_THINKER_PLANEMOVER_CL:
+    case DMU_THINKER_POLYMOVER_CL:
+    case DMU_THINKER_MATFADER:
+        Con_Error("P_ToPtr: Cannot convert %s to a ptr.\n",
+                  DMU_Str(type));
+        break;
+
     case DMU_VERTEX:
         return VERTEX_PTR(index);
 
@@ -482,6 +528,75 @@ void* P_ToPtr(int type, uint index)
         Con_Error("P_ToPtr: unknown type %s.\n", DMU_Str(type));
     }
     return NULL;
+}
+
+int P_Iterate(int type, void* context, int (*callback) (void* p, void* ctx))
+{
+    uint                i = 0;
+    int                 result;
+    boolean             useThinkLists = false;
+
+    if(type == DMU_NONE || type >= DMU_FIRST_GAME_TYPE)
+        useThinkLists = true;
+    else
+    {
+        switch(type)
+        {
+        case DMU_MOBJ:
+        case DMU_THINKER_PTCGENERATOR:
+        case DMU_THINKER_PLANEMOVER_CL:
+        case DMU_THINKER_POLYMOVER_CL:
+        case DMU_THINKER_MATFADER:
+            useThinkLists = true;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if(useThinkLists)
+    {
+        return P_IterateThinkers(type, 0x1, callback, context);
+    }
+
+    switch(type)
+    {
+    case DMU_VERTEX:
+        while(i++ < numVertexes &&
+              (result = callback(&vertexes[i], context)) != 0);
+        break;
+    case DMU_HEDGE:
+        while(i++ < numHEdges &&
+              (result = callback(&hEdges[i], context)) != 0);
+        break;
+    case DMU_LINEDEF:
+        while(i++ < numLineDefs &&
+              (result = callback(&lineDefs[i], context)) != 0);
+        break;
+    case DMU_SIDEDEF:
+        while(i++ < numSideDefs &&
+              (result = callback(&sideDefs[i], context)) != 0);
+        break;
+    case DMU_NODE:
+        while(i++ < numNodes &&
+              (result = callback(&nodes[i], context)) != 0);
+        break;
+    case DMU_FACE:
+        while(i++ < numFaces &&
+              (result = callback(&faces[i], context)) != 0);
+        break;
+    case DMU_SECTOR:
+        while(i++ < numSectors &&
+              (result = callback(&sectors[i], context)) != 0);
+        break;
+
+    default:
+        Con_Error("P_Iterate: Type %s unknown.\n", DMU_Str(type));
+        break;
+    }
+
+    return true; // Successfully completed.*/
 }
 
 int P_Iteratep(void *ptr, uint prop, void* context,
@@ -674,18 +789,42 @@ int P_Callback(int type, uint index, void* context,
 int P_Callbackp(int type, void* ptr, void* context,
                 int (*callback)(void* p, void* ctx))
 {
-    switch(type)
+    boolean             isKnownType = false;
+
+    if(type >= DMU_FIRST_GAME_TYPE)
     {
-    case DMU_VERTEX:
-    case DMU_HEDGE:
-    case DMU_LINEDEF:
-    case DMU_SIDEDEF:
-    case DMU_NODE:
-    case DMU_FACE:
-    case DMU_SECTOR:
-    case DMU_PLANE:
-    case DMU_MATERIAL:
+        isKnownType = true;
+    }
+    else
+    {
+        switch(type)
+        {
+        case DMU_VERTEX:
+        case DMU_HEDGE:
+        case DMU_LINEDEF:
+        case DMU_SIDEDEF:
+        case DMU_NODE:
+        case DMU_FACE:
+        case DMU_SECTOR:
+        case DMU_PLANE:
+        case DMU_MATERIAL:
+        case DMU_MOBJ:
+        case DMU_THINKER_PTCGENERATOR:
+        case DMU_THINKER_PLANEMOVER_CL:
+        case DMU_THINKER_POLYMOVER_CL:
+        case DMU_THINKER_MATFADER:
+            isKnownType = true;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if(isKnownType)
+    {
         // Only do the callback if the type is the same as the object's.
+        // \todo If necessary, add special types for accessing multiple objects.
         if(type == DMU_GetType(ptr))
         {
             return callback(ptr, context);
@@ -697,14 +836,12 @@ int P_Callbackp(int type, void* ptr, void* context,
                         DMU_Str(type), DMU_Str(DMU_GetType(ptr)));
         }
 #endif
-        break;
 
-    // \todo If necessary, add special types for accessing multiple objects.
-
-    default:
-        Con_Error("P_Callbackp: Type %s unknown.\n", DMU_Str(type));
+        return true;
     }
-    return true;
+
+    Con_Error("P_Callbackp: Type %s unknown.\n", DMU_Str(type));
+    return false; // Unreachable.
 }
 
 /**

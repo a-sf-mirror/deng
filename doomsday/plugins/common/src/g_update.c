@@ -69,19 +69,19 @@
 
 // CODE --------------------------------------------------------------------
 
-static boolean mangleMobj(thinker_t* th, void* context)
+static int mangleMobj(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     mo->state = MANGLE_STATE(mo->state);
-    mo->info = (mobjinfo_t *) (mo->info - MOBJINFO);
+    mo->info = (mobjinfo_t*) (mo->info - MOBJINFO);
 
     return true; // Continue iteration.
 }
 
-static boolean restoreMobj(thinker_t* th, void* context)
+static int restoreMobj(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     mo->state = RESTORE_STATE(mo->state);
     mo->info = &MOBJINFO[(int) mo->info];
@@ -97,7 +97,7 @@ void G_MangleState(void)
 {
     int                 i;
 
-    DD_IterateThinkers(P_MobjThinker, mangleMobj, NULL);
+    P_Iterate(DMU_MOBJ, NULL, mangleMobj);
 
     for(i = 0; i < MAXPLAYERS; ++i)
     {
@@ -114,7 +114,7 @@ void G_RestoreState(void)
 {
     int                 i;
 
-    DD_IterateThinkers(P_MobjThinker, restoreMobj, NULL);
+    P_Iterate(DMU_MOBJ, NULL, restoreMobj);
 
     for(i = 0; i < MAXPLAYERS; ++i)
     {

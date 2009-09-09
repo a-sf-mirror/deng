@@ -2018,15 +2018,15 @@ uint MPE_SidedefCreate(uint sector, short flags,
     s->flags = flags;
     s->sector = (sector == 0? NULL: map->sectors[sector-1]);
 
-    Surface_SetMaterial(&s->SW_topsurface, P_ToMaterial(topMaterial));
+    Surface_SetMaterial(&s->SW_topsurface, P_ToMaterial(topMaterial), false);
     Surface_SetMaterialOffsetXY(&s->SW_topsurface, topOffsetX, topOffsetY);
     Surface_SetColorRGBA(&s->SW_topsurface, topRed, topGreen, topBlue, 1);
 
-    Surface_SetMaterial(&s->SW_middlesurface, P_ToMaterial(middleMaterial));
+    Surface_SetMaterial(&s->SW_middlesurface, P_ToMaterial(middleMaterial), false);
     Surface_SetMaterialOffsetXY(&s->SW_middlesurface, middleOffsetX, middleOffsetY);
     Surface_SetColorRGBA(&s->SW_middlesurface, middleRed, middleGreen, middleBlue, middleAlpha);
 
-    Surface_SetMaterial(&s->SW_bottomsurface, P_ToMaterial(bottomMaterial));
+    Surface_SetMaterial(&s->SW_bottomsurface, P_ToMaterial(bottomMaterial), false);
     Surface_SetMaterialOffsetXY(&s->SW_bottomsurface, bottomOffsetX, bottomOffsetY);
     Surface_SetColorRGBA(&s->SW_bottomsurface, bottomRed, bottomGreen, bottomBlue, 1);
 
@@ -2181,7 +2181,7 @@ uint MPE_PlaneCreate(uint sector, float height, materialnum_t material,
 
     pln = M_Calloc(sizeof(plane_t));
     pln->height = height;
-    Surface_SetMaterial(&pln->surface, P_ToMaterial(material));
+    Surface_SetMaterial(&pln->surface, P_ToMaterial(material), false);
     Surface_SetColorRGBA(&pln->surface, r, g, b, a);
     Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
     pln->PS_normal[VX] = normalX;

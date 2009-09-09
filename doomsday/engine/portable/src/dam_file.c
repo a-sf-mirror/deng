@@ -472,7 +472,7 @@ static void readSide(const gamemap_t* map, uint idx)
         surface_t          *suf = &s->sections[3];
 
         suf->flags = (int) readLong();
-        Surface_SetMaterial(suf, lookupMaterialFromDict(materialDict, readLong()));
+        Surface_SetMaterial(suf, lookupMaterialFromDict(materialDict, readLong()), false);
         Surface_SetBlendMode(suf, (blendmode_t) readLong());
         suf->normal[VX] = readFloat();
         suf->normal[VY] = readFloat();
@@ -625,7 +625,7 @@ static void readSector(const gamemap_t* map, uint idx)
         p->visHeightDelta = readFloat();
 
         p->surface.flags = (int) readLong();
-        Surface_SetMaterial(&p->surface, lookupMaterialFromDict(materialDict, readLong()));
+        Surface_SetMaterial(&p->surface, lookupMaterialFromDict(materialDict, readLong()), false);
         Surface_SetBlendMode(&p->surface, (blendmode_t) readLong());
         p->surface.normal[VX] = readFloat();
         p->surface.normal[VY] = readFloat();

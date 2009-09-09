@@ -1299,11 +1299,11 @@ typedef struct {
     mobj_t*             foundMobj;
 } findactiveminotaurparams_t;
 
-static boolean findActiveMinotaur(thinker_t* th, void* context)
+static int findActiveMinotaur(void* p, void* context)
 {
     findactiveminotaurparams_t* params =
         (findactiveminotaurparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(mo->type != MT_MINOTAUR)
         return true; // Continue iteration.
@@ -1333,7 +1333,7 @@ mobj_t* ActiveMinotaur(player_t* master)
     params.master = master;
     params.foundMobj = NULL;
 
-    if(!DD_IterateThinkers(P_MobjThinker, findActiveMinotaur, &params))
+    if(!P_Iterate(DMU_MOBJ, &params, findActiveMinotaur))
         return params.foundMobj;
 
     return NULL;

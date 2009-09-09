@@ -45,13 +45,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct {
-    const char  name[9];    // Material type name.
-    int         volumeMul;
-    int         decayMul;
-    int         dampingMul;
-} materialenvinfo_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -65,15 +58,24 @@ typedef struct {
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static materialenvinfo_t matInfo[NUM_MATERIAL_ENV_CLASSES] = {
-    {"Metal",     255,     255,    25},
-    {"Rock",      200,     160,    100},
-    {"Wood",      80,      50,     200},
-    {"Cloth",     5,       5,      255}
+    {"Metal",     0,    255,     255,    25},
+    {"Rock",      0,    200,     160,    100},
+    {"Wood",      0,    80,      50,     200},
+    {"Water",     MEF_BLEND, 20,     80,     140},
+    {"Cloth",     0,    5,       5,      255}
 };
 
 static ownernode_t *unusedNodeList = NULL;
 
 // CODE --------------------------------------------------------------------
+
+const materialenvinfo_t* S_MaterialEnvDef(material_env_class_t id)
+{
+    if(id > MEC_UNKNOWN && id < NUM_MATERIAL_ENV_CLASSES)
+        return &matInfo[id];
+
+    return NULL;
+}
 
 /**
  * Given a texture/flat name, look up the associated material type.
@@ -418,8 +420,8 @@ Con_Message("sector %i: secsp:%i\n", c, sectorSpace);
     if(sec->reverb[SRD_SPACE] > .99)
         sec->reverb[SRD_SPACE] = .99f;
 
-    if(R_IsSkySurface(&sec->SP_ceilsurface) ||
-       R_IsSkySurface(&sec->SP_floorsurface))
+    if(IS_SKYSURFACE(&sec->SP_ceilsurface) ||
+       IS_SKYSURFACE(&sec->SP_floorsurface))
     {   // An "open" sector.
         // It can still be small, in which case; reverb is diminished a bit.
         if(sec->reverb[SRD_SPACE] > .5)

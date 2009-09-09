@@ -66,6 +66,8 @@
 int rendSkyLight = 1; // cvar.
 float rendLightWallAngle = 1; // Intensity of angle-based wall lighting.
 
+float rendMaterialFadeSeconds = .6f;
+
 boolean firstFrameAfterLoad;
 boolean ddMapSetup;
 
@@ -322,6 +324,62 @@ void R_InterpolateMovingSurfaces(boolean resetNextViewer)
     }
 }
 
+/**
+ * @param fader         Material fader to be stopped.
+ */
+void R_StopMatFader(matfader_t* fader)
+{
+    if(fader)
+    {
+        surface_t*          suf = fader->suf;
+
+        fader->suf->materialB = NULL;
+        fader->suf->matBlendFactor = 1;
+
+        P_ThinkerRemove((thinker_t*) fader);
+    }
+}
+
+/**
+ * Thinker function. Updates the surface, blend material and blend factor to
+ * animate smoothly (blend) between material changes.
+ *
+ * @param fader         Material fader.
+ */
+void R_MatFaderThinker(matfader_t* fader)
+{
+    if(fader)
+    {
+        int                 maxTics = rendMaterialFadeSeconds * TICSPERSEC;
+
+        fader->tics++;
+        if(!(fader->tics < maxTics))
+        {
+            R_StopMatFader(fader);
+            return;
+        }
+
+        fader->suf->matBlendFactor = 1 - ((float) fader->tics / maxTics);
+    }
+}
+
+/**
+ * Spawn multiple new particles using all applicable sources.
+ */
+int RIT_StopMatFader(void* p, void* context)
+{
+    matfader_t*         fader = (matfader_t*) p;
+
+    // Surface match?
+    if(fader->suf == (surface_t*) context)
+    {
+        R_StopMatFader(fader);
+        return false; // Stop iteration.
+    }
+
+    return true; // Continue iteration.
+}
+
 void R_AddWatchedPlane(watchedplanelist_t *wpl, plane_t *pln)
 {
     uint                i;
@@ -569,7 +627,7 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
     suf->header.type = DMU_SURFACE; // Setup header for DMU.
     suf->normal[VZ] = suf->oldNormal[VZ] = 1;
     // \todo The initial material should be the "unknown" material.
-    Surface_SetMaterial(suf, NULL);
+    Surface_SetMaterial(suf, NULL, false);
     Surface_SetMaterialOffsetXY(suf, 0, 0);
     Surface_SetColorRGBA(suf, 1, 1, 1, 1);
     Surface_SetBlendMode(suf, BM_NORMAL);
@@ -668,6 +726,10 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     // If this plane's surface if in the deocrated list, remove it.
     R_SurfaceListRemove(decoratedSurfaceList, &plane->surface);
 
+    // Stop active material fade on this surface.
+    P_IterateThinkers(DMU_THINKER_MATFADER, 0x2, // Always non-public
+                      RIT_StopMatFader, &plane->surface);
+
     // Destroy the biassurfaces for this plane.
     facePtr = sec->faces;
     while(*facePtr)
@@ -741,8 +803,8 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
     if(!sec)
         return; // Wha?
 
-    skyFloor = R_IsSkySurface(&sec->SP_floorsurface);
-    skyCeil = R_IsSkySurface(&sec->SP_ceilsurface);
+    skyFloor = IS_SKYSURFACE(&sec->SP_floorsurface);
+    skyCeil = IS_SKYSURFACE(&sec->SP_ceilsurface);
 
     if(!skyFloor && !skyCeil)
         return;
@@ -1581,7 +1643,7 @@ boolean R_IsGlowingPlane(const plane_t* pln)
     material_t*         mat = pln->surface.material;
 
     return ((mat && (mat->flags & MATF_NO_DRAW)) || pln->glow > 0 ||
-            R_IsSkySurface(&pln->surface));
+            IS_SKYSURFACE(&pln->surface));
 }
 
 /**
@@ -1600,7 +1662,7 @@ boolean R_SectorContainsSkySurfaces(const sector_t* sec)
     i = 0;
     do
     {
-        if(R_IsSkySurface(&sec->SP_planesurface(i)))
+        if(IS_SKYSURFACE(&sec->SP_planesurface(i)))
             sectorContainsSkySurfaces = true;
         else
             i++;
@@ -1632,7 +1694,7 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
                     surface;
 
             if(!(backSuf->material && backSuf->material->inAnimGroup) &&
-               !R_IsSkySurface(backSuf))
+               !IS_SKYSURFACE(backSuf))
                 choice = backSuf->material;
         }
 
@@ -1654,11 +1716,11 @@ static void updateSidedefSection(sidedef_t* s, segsection_t section)
 
     suf = &s->sections[section];
     if(!suf->material &&
-       !R_IsSkySurface(&s->sector->
+       !IS_SKYSURFACE(&s->sector->
             SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
                 surface))
     {
-        Surface_SetMaterial(suf, chooseFixMaterial(s, section));
+        Surface_SetMaterial(suf, chooseFixMaterial(s, section), false);
         suf->inFlags |= SUIF_MATERIAL_FIX;
     }
 }

@@ -3,6 +3,17 @@
 #ifndef __DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H__
 #define __DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H__
 
+// think_t is a function pointer to a routine to handle an actor
+typedef void    (*think_t) ();
+
+typedef struct thinker_s {
+    runtime_mapdata_header_t header;
+    struct thinker_s *prev, *next;
+    think_t         function;
+    boolean         inStasis;
+    thid_t          id; // Only used for mobjs (zero is not an ID).
+} thinker_t;
+
 #define DMT_VERTEX_POS  DDVT_FLOAT
 
 
@@ -19,6 +30,7 @@
 #define DMT_HEDGE_V DDVT_PTR           // [Start, End] of the hedge.
 #define DMT_HEDGE_TWIN DDVT_PTR
 #define DMT_HEDGE_NEXT DDVT_PTR
+#define DMT_HEDGE_PREV DDVT_PTR
 #define DMT_HEDGE_FACE DDVT_PTR
 
 #define DMT_FACE_HEDGECOUNT     DDVT_UINT

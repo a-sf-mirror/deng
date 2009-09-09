@@ -29,21 +29,11 @@
 #ifndef __DOOMSDAY_THINKER_H__
 #define __DOOMSDAY_THINKER_H__
 
-// think_t is a function pointer to a routine to handle an actor
-typedef void    (*think_t) ();
-
-typedef struct thinker_s {
-    struct thinker_s *prev, *next;
-    think_t         function;
-    boolean         inStasis;
-    thid_t          id; // Only used for mobjs (zero is not an ID).
-} thinker_t;
-
 boolean         P_ThinkerListInited(void);
 
 void            P_InitThinkerLists(byte flags);
-boolean         P_IterateThinkers(think_t type, byte flags,
-                                  boolean (*callback) (thinker_t* th, void*),
+boolean         P_IterateThinkers(int type, byte flags,
+                                  int (*callback) (void* p, void*),
                                   void* context);
 
 void            P_ThinkerAdd(thinker_t* th, boolean makePublic);
@@ -51,7 +41,8 @@ void            P_ThinkerRemove(thinker_t* th);
 
 void            P_SetMobjID(thid_t id, boolean state);
 boolean         P_IsUsedMobjID(thid_t id);
-boolean         P_IsMobjThinker(think_t thinker);
+
+boolean         P_IsMobjThinker(thinker_t* th, void*);
 
 // Public interface:
 void            DD_InitThinkers(void);
@@ -59,6 +50,4 @@ void            DD_RunThinkers(void);
 void            DD_ThinkerAdd(thinker_t* th);
 void            DD_ThinkerRemove(thinker_t* th);
 void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
-boolean         DD_IterateThinkers(think_t func, boolean (*callback) (thinker_t*, void*),
-                                   void* context);
 #endif

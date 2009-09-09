@@ -33,6 +33,28 @@
 #  error "Using jHexen headers without __JHEXEN__"
 #endif
 
+/**
+ * Game-specific DMU object type constants.
+ *
+ * Do not change the numerical values of the constants (they are used during
+ * serialization for identification)! Add new constants at the end.
+ */
+enum {
+    DMU_THINKER_ACSSCRIPT = DMU_FIRST_GAME_TYPE,
+    DMU_THINKER_CEILMOVER,
+    DMU_THINKER_DOOR,
+    DMU_THINKER_FLOORMOVER,
+    DMU_THINKER_FLOORWAGGLE,
+    DMU_THINKER_LIGHT,
+    DMU_THINKER_LIGHTPHASE,
+    DMU_THINKER_MATCHANGER,
+    DMU_THINKER_PILLARBUILDER,
+    DMU_THINKER_PLATFORM,
+    DMU_THINKER_POLYDOOR,
+    DMU_THINKER_POLYMOVER,
+    DMU_THINKER_POLYROTATE
+};
+
 // Map objects and their properties:
 enum {
     MO_NONE = 0,

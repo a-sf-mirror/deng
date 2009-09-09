@@ -1567,6 +1567,24 @@ Texture Environment {
 }
 
 Texture Environment {
+  ID = "Water";
+  Flat { ID = "NUKAGE1"; };
+  Flat { ID = "NUKAGE2"; };
+  Flat { ID = "NUKAGE3"; };
+  Flat { ID = "FWATER1"; };
+  Flat { ID = "FWATER2"; };
+  Flat { ID = "FWATER3"; };
+  Flat { ID = "FWATER4"; };
+  Flat { ID = "LAVA1"; };
+  Flat { ID = "LAVA2"; };
+  Flat { ID = "LAVA3"; };
+  Flat { ID = "LAVA4"; };
+  Flat { ID = "BLOOD1"; };
+  Flat { ID = "BLOOD2"; };
+  Flat { ID = "BLOOD3"; };
+}
+
+Texture Environment {
   ID = "Cloth";
   Texture { ID = "SW1DIRT"; };
   Texture { ID = "SW2DIRT"; };

@@ -769,8 +769,8 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
     case SEG_TOP:
         suf = &side->SW_topsurface;
         if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backCeil < frontCeil &&
-           (!R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_ceilsurface) ||
-            !R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_ceilsurface)))
+           (!IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_ceilsurface) ||
+            !IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_ceilsurface)))
         {
             top = LINE_SECTOR(line, sid)->SP_ceilvisheight;
             bottom  = LINE_SECTOR(line, sid^1)->SP_ceilvisheight;
@@ -781,8 +781,8 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
     case SEG_BOTTOM:
         suf = &side->SW_bottomsurface;
         if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backFloor > frontFloor &&
-           (!R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_floorsurface) ||
-            !R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_floorsurface)))
+           (!IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_floorsurface) ||
+            !IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_floorsurface)))
         {
             top = LINE_SECTOR(line, sid^1)->SP_floorvisheight;
             bottom  = LINE_SECTOR(line, sid)->SP_floorvisheight;

@@ -272,6 +272,7 @@ static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
 
         plat = Z_Calloc(sizeof(*plat), PU_MAP, 0);
         plat->thinker.function = T_PlatRaise;
+        plat->thinker.header.type = DMU_THINKER_PLATFORM;
         DD_ThinkerAdd(&plat->thinker);
 
         plat->type = type;
@@ -487,9 +488,9 @@ typedef struct {
     int                 count;
 } activateplatparams_t;
 
-static boolean activatePlat(thinker_t* th, void* context)
+static int activatePlat(void* p, void* context)
 {
-    plat_t*             plat = (plat_t*) th;
+    plat_t*             plat = (plat_t*) p;
     activateplatparams_t* params = (activateplatparams_t*) context;
 
     if(plat->tag == (int) params->tag && plat->thinker.inStasis)
@@ -514,7 +515,7 @@ int P_PlatActivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_PlatRaise, activatePlat, &params);
+    P_Iterate(DMU_THINKER_PLATFORM, &params, activatePlat);
 
     return params.count;
 }
@@ -525,9 +526,9 @@ typedef struct {
     int                 count;
 } deactivateplatparams_t;
 
-static boolean deactivatePlat(thinker_t* th, void* context)
+static int deactivatePlat(void* p, void* context)
 {
-    plat_t*             plat = (plat_t*) th;
+    plat_t*             plat = (plat_t*) p;
     deactivateplatparams_t* params = (deactivateplatparams_t*) context;
 
 #if __JHEXEN__
@@ -566,7 +567,7 @@ int P_PlatDeactivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_PlatRaise, deactivatePlat, &params);
+    P_Iterate(DMU_THINKER_PLATFORM, &params, deactivatePlat);
 
     return params.count;
 }

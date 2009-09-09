@@ -590,9 +590,9 @@ float XG_RandomPercentFloat(float value, int percent)
     return value * (1 + i);
 }
 
-boolean findXLThinker(thinker_t* th, void* context)
+int findXLThinker(void* p, void* context)
 {
-    xlthinker_t*        xl = (xlthinker_t*) th;
+    xlthinker_t*        xl = (xlthinker_t*) p;
 
     if(xl->line == (linedef_t*) context)
         return false; // Stop iteration, we've found it.
@@ -629,11 +629,13 @@ void XL_SetLineType(linedef_t* line, int id)
                xgClasses[xline->xg->info.lineClass].className, id);
 
         // If there is not already an xlthinker for this line, create one.
-        if(DD_IterateThinkers(XL_Thinker, findXLThinker, line))
+        if(P_Iterate(DMU_THINKER_XLINE, line, findXLThinker))
         {   // Not created one yet.
             xlthinker_t*    xl = Z_Calloc(sizeof(*xl), PU_MAP, 0);
 
+            xl->thinker.header.type = DMU_THINKER_XLINE;
             xl->thinker.function = XL_Thinker;
+
             DD_ThinkerAdd(&xl->thinker);
 
             xl->line = line;
@@ -1881,10 +1883,10 @@ boolean XL_CheckLineStatus(linedef_t* line, int reftype, int ref, int active,
                             XLTrav_CheckLine);
 }
 
-boolean XL_CheckMobjGone(thinker_t* th, void* context)
+int XL_CheckMobjGone(void* p, void* context)
 {
     int                 thingtype = *(int*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(mo->type == thingtype && mo->health > 0)
     {   // Not dead.
@@ -2338,7 +2340,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 
     if(info->flags & LTF_MOBJ_GONE)
     {
-        if(!DD_IterateThinkers(P_MobjThinker, XL_CheckMobjGone, &info->aparm[9]))
+        if(!P_Iterate(DMU_MOBJ, &info->aparm[9], XL_CheckMobjGone))
             return false;
     }
 

@@ -134,6 +134,14 @@ typedef struct trigger_s {
     timespan_t      accum;
 } trigger_t;
 
+// Runtime map data objects, such as vertices, sectors, and subsectors all
+// have this header as their first member. This makes it possible to treat
+// an unknown map data pointer as a runtime_mapdata_header_t* and determine
+// its type. Note that this information is internal to the engine.
+typedef struct runtime_mapdata_header_s {
+    int             type; // One of the DMU type constants.
+} runtime_mapdata_header_t;
+
 #ifdef __cplusplus
 #  define boolean           int
 #else                           // Plain C.
@@ -168,6 +176,7 @@ typedef unsigned char binangle_t;
 
 // Predeclarations for map data types. The contents of these structs is
 // declared in p_maptypes.h.
+struct runtime_mapdata_header_s;
 struct node_s;
 struct vertex_s;
 struct linedef_s;

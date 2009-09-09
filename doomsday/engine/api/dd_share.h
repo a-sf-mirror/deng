@@ -52,7 +52,6 @@ extern "C" {
 #include "dd_types.h"
 #include "dd_maptypes.h"
 #include "dd_gl.h"
-#include "../portable/include/p_think.h" // \todo Not officially a public header file!
 #include "../portable/include/def_share.h" // \todo Not officially a public header file!
 
 //------------------------------------------------------------------------
@@ -526,6 +525,12 @@ typedef enum
 #define DMUAPI_VER          1 // Public DMU API version number.
                               // Requested by the engine during init.
 
+// Map Update object type identifiers.
+enum
+{
+
+};
+
 // Map Update constants.
 enum /* Do not change the numerical values of the constants! */
 {
@@ -542,8 +547,8 @@ enum /* Do not change the numerical values of the constants! */
     // (1 bits left)
 
     DMU_NONE = 0,
-
-    DMU_VERTEX = 1,
+    DMU_FIRST_TYPE = 1,
+    DMU_VERTEX = DMU_FIRST_TYPE,
     DMU_HEDGE,
     DMU_LINEDEF,
     DMU_SIDEDEF,
@@ -553,6 +558,11 @@ enum /* Do not change the numerical values of the constants! */
     DMU_PLANE,
     DMU_SURFACE,
     DMU_MATERIAL,
+    DMU_MOBJ,
+    DMU_THINKER_PTCGENERATOR,
+    DMU_THINKER_PLANEMOVER_CL,
+    DMU_THINKER_POLYMOVER_CL,
+    DMU_THINKER_MATFADER,
 
     DMU_LINEDEF_BY_TAG,
     DMU_SECTOR_BY_TAG,
@@ -606,7 +616,9 @@ enum /* Do not change the numerical values of the constants! */
     DMU_TARGET_HEIGHT,
     DMU_SPEED,
     DMU_SEG_COUNT,
-    DMU_NAMESPACE
+    DMU_NAMESPACE,
+
+    DMU_FIRST_GAME_TYPE = 1000
 };
 
 // Map Update value names:

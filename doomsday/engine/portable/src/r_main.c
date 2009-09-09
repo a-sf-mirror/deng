@@ -138,26 +138,12 @@ void R_Register(void)
     C_VAR_BYTE("rend-info-frametime", &showFrameTimePos, 0, 0, 1);
     C_VAR_BYTE("rend-info-rendpolys", &rendInfoRPolys, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_INT("rend-info-tris", &rendInfoTris, 0, 0, 1);
-
+    C_VAR_FLOAT("rend-surface-material-fade-seconds", &rendMaterialFadeSeconds, CVF_NO_MAX, 0, 1);
 //    C_VAR_INT("rend-vsync", &useVSync, 0, 0, 1);
 
     C_CMD("viewgrid", "ii", ViewGrid);
 
     P_MaterialManagerRegister();
-}
-
-/**
- * Will the specified surface be added to the sky mask?
- *
- * @param suf           Ptr to the surface to test.
- * @return boolean      @c true, iff the surface will be masked.
- */
-boolean R_IsSkySurface(const surface_t* suf)
-{
-    if(suf && suf->material && (suf->material->flags & MATF_SKYMASK))
-        return true;
-
-    return false;
 }
 
 /**
