@@ -31,9 +31,24 @@
 
 #include "p_mapdata.h"
 
+/**
+ * @defgroup materialEnvironmentFlags Material Environment Flags
+ */
+/*@{*/
+#define MEF_BLEND           0x1 // Enable blending between materials.
+/*@}*/
+
+typedef struct {
+    const char  name[9];    // Material type name.
+    byte        flags; // MEF_* flags.
+    int         volumeMul;
+    int         decayMul;
+    int         dampingMul;
+} materialenvinfo_t;
+
 void            S_CalcSectorReverb(sector_t* sec);
 void            S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map);
 material_env_class_t S_MaterialClassForName(const char* name,
                                             material_namespace_t mnamespace);
-
+const materialenvinfo_t* S_MaterialEnvDef(material_env_class_t id);
 #endif

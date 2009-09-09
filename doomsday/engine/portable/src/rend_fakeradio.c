@@ -1328,9 +1328,9 @@ static uint radioEdgeHackType(linedef_t *line, sector_t *front,
     // Is the back sector closed?
     if(front->SP_floorvisheight >= back->SP_ceilvisheight)
     {
-        if(R_IsSkySurface(&front->planes[isCeiling? PLN_FLOOR:PLN_CEILING]->surface))
+        if(IS_SKYSURFACE(&front->planes[isCeiling? PLN_FLOOR:PLN_CEILING]->surface))
         {
-            if(R_IsSkySurface(&back->planes[isCeiling? PLN_FLOOR:PLN_CEILING]->surface))
+            if(IS_SKYSURFACE(&back->planes[isCeiling? PLN_FLOOR:PLN_CEILING]->surface))
                 return 3; // Consider it fully open.
         }
         else
@@ -1583,8 +1583,8 @@ static void radioSubsectorEdges(const face_t* face)
 
                     // Exclude 'special' neighbors which we pretend to be solid.
                     if(LINE_SELFREF(neighbor) ||
-                       ((R_IsSkySurface(&othersec->SP_planesurface(pln)) ||
-                         R_IsSkySurface(&othersec->SP_planesurface(PLN_CEILING))) &&
+                       ((IS_SKYSURFACE(&othersec->SP_planesurface(pln)) ||
+                         IS_SKYSURFACE(&othersec->SP_planesurface(PLN_CEILING))) &&
                         othersec->SP_floorvisheight >= othersec->SP_ceilvisheight))
                     {
                         sideOpen[i] = 1;

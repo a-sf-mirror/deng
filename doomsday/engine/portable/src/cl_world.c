@@ -481,7 +481,7 @@ if(num >= numSectors)
          * \fixme What if client and server materialnums differ?
          */
         mat = P_ToMaterial(Msg_ReadPackedShort());
-        Surface_SetMaterial(&sec->SP_floorsurface, mat);
+        Surface_SetMaterial(&sec->SP_floorsurface, mat, true);
     }
     if(df & SDF_CEILING_MATERIAL)
     {
@@ -491,7 +491,7 @@ if(num >= numSectors)
          * \fixme What if client and server materialnums differ?
          */
         mat = P_ToMaterial(Msg_ReadPackedShort());
-        Surface_SetMaterial(&sec->SP_ceilsurface, mat);
+        Surface_SetMaterial(&sec->SP_ceilsurface, mat, true);
     }
 
     if(df & SDF_LIGHT)
@@ -727,7 +727,7 @@ if(num >= numSideDefs)
          * \fixme What if client and server materialnums differ?
          */
         mat = P_ToMaterial(topMat);
-        Surface_SetMaterial(&sid->SW_topsurface, mat);
+        Surface_SetMaterial(&sid->SW_topsurface, mat, true);
     }
     if(df & SIDF_MID_MATERIAL)
     {
@@ -737,7 +737,7 @@ if(num >= numSideDefs)
          * \fixme What if client and server materialnums differ?
          */
         mat = P_ToMaterial(midMat);
-        Surface_SetMaterial(&sid->SW_middlesurface, mat);
+        Surface_SetMaterial(&sid->SW_middlesurface, mat, true);
     }
     if(df & SIDF_BOTTOM_MATERIAL)
     {
@@ -747,7 +747,7 @@ if(num >= numSideDefs)
          * \fixme What if client and server materialnums differ?
          */
         mat = P_ToMaterial(botMat);
-        Surface_SetMaterial(&sid->SW_bottomsurface, mat);
+        Surface_SetMaterial(&sid->SW_bottomsurface, mat, true);
     }
 
     if(df & SIDF_TOP_COLOR_RED)

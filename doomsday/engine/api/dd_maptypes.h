@@ -19,11 +19,12 @@
 #define DMT_HEDGE_V DDVT_PTR           // [Start, End] of the hedge.
 #define DMT_HEDGE_TWIN DDVT_PTR
 #define DMT_HEDGE_NEXT DDVT_PTR
+#define DMT_HEDGE_PREV DDVT_PTR
 #define DMT_HEDGE_FACE DDVT_PTR
 
-#define DMT_FACE_HEDGECOUNT     DDVT_UINT
-#define DMT_FACE_POLYOBJ        DDVT_PTR
-#define DMT_FACE_SECTOR         DDVT_PTR
+#define DMT_FACE_HEDGECOUNT		DDVT_UINT
+#define DMT_FACE_POLYOBJ		DDVT_PTR
+#define DMT_FACE_SECTOR			DDVT_PTR
 
 #define DMT_FACE_HEDGE DDVT_PTR        // First half-edge of this subsector.
 

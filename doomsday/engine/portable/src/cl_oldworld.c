@@ -97,7 +97,7 @@ if(!mat)
                 (int) lumpNum);
 #endif
 
-            Surface_SetMaterial(&sec->SP_floorsurface, mat);
+            Surface_SetMaterial(&sec->SP_floorsurface, mat, true);
         }
     }
     if(df & SDF_CEILING_MATERIAL)
@@ -115,7 +115,7 @@ if(!mat)
                 (int) lumpNum);
 #endif
 
-            Surface_SetMaterial(&sec->SP_ceilsurface, mat);
+            Surface_SetMaterial(&sec->SP_ceilsurface, mat, true);
         }
     }
     if(df & SDF_LIGHT)
@@ -231,7 +231,7 @@ int Cl_ReadSideDelta(void)
          * \fixme What if client and server texture nums differ?
          */
         mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
-        Surface_SetMaterial(&sid->SW_topsurface, mat);
+        Surface_SetMaterial(&sid->SW_topsurface, mat, true);
     }
     if(df & SIDF_MID_MATERIAL)
     {
@@ -241,7 +241,7 @@ int Cl_ReadSideDelta(void)
          * \fixme What if client and server texture nums differ?
          */
         mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
-        Surface_SetMaterial(&sid->SW_middlesurface, mat);
+        Surface_SetMaterial(&sid->SW_middlesurface, mat, true);
     }
     if(df & SIDF_BOTTOM_MATERIAL)
     {
@@ -251,7 +251,7 @@ int Cl_ReadSideDelta(void)
          * \fixme What if client and server texture nums differ?
          */
         mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
-        Surface_SetMaterial(&sid->SW_bottomsurface, mat);
+        Surface_SetMaterial(&sid->SW_bottomsurface, mat, true);
     }
 
     if(df & SIDF_LINE_FLAGS)

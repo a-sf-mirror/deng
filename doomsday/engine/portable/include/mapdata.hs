@@ -157,6 +157,7 @@ typedef enum {
     MEC_METAL = 0,
     MEC_ROCK,
     MEC_WOOD,
+    MEC_WATER,
     MEC_CLOTH,
     NUM_MATERIAL_ENV_CLASSES
 } material_env_class_t;
@@ -193,6 +194,9 @@ internal
 #define SUIF_UPDATE_FLAG_MASK 0xff00
 #define SUIF_UPDATE_DECORATIONS 0x8000
 
+// Will the specified surface be added to the sky mask?
+#define IS_SKYSURFACE(s)         ((s) && (s)->material && ((s)->material->flags & MATF_SKYMASK))
+
 // Decoration types.
 typedef enum {
     DT_LIGHT,
@@ -226,6 +230,8 @@ struct surface
     INT     int         flags // SUF_ flags
     -       int         oldFlags
     PTR     material_t* material
+    -       material_t* materialB
+    -       float       matBlendFactor
     BLENDMODE blendmode_t blendMode
     FLOAT   float[3]    normal // Surface normal
     -       float[3]    oldNormal

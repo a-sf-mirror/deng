@@ -133,6 +133,7 @@ typedef enum {
     MEC_METAL = 0,
     MEC_ROCK,
     MEC_WOOD,
+    MEC_WATER,
     MEC_CLOTH,
     NUM_MATERIAL_ENV_CLASSES
 } material_env_class_t;
@@ -168,6 +169,9 @@ typedef struct material_s {
 #define SUIF_UPDATE_FLAG_MASK 0xff00
 #define SUIF_UPDATE_DECORATIONS 0x8000
 
+// Will the specified surface be added to the sky mask?
+#define IS_SKYSURFACE(s)         ((s) && (s)->material && ((s)->material->flags & MATF_SKYMASK))
+
 // Decoration types.
 typedef enum {
     DT_LIGHT,
@@ -182,7 +186,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    face_t*             face;
+    face_t*				face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -201,6 +205,8 @@ typedef struct surface_s {
     int                 flags;         // SUF_ flags
     int                 oldFlags;
     material_t*         material;
+    material_t*         materialB;
+    float               matBlendFactor;
     blendmode_t         blendMode;
     float               normal[3];     // Surface normal
     float               oldNormal[3];
@@ -226,8 +232,8 @@ typedef enum {
 #define PS_offset               surface.offset
 #define PS_visoffset            surface.visOffset
 #define PS_rgba                 surface.rgba
-#define PS_flags                surface.flags
-#define PS_inflags              surface.inFlags
+#define	PS_flags				surface.flags
+#define	PS_inflags				surface.inFlags
 
 typedef struct plane_s {
     runtime_mapdata_header_t header;
@@ -306,7 +312,7 @@ typedef struct msector_s {
 
     // Suppress superfluous mini warnings.
     int         warnedFacing;
-    int         refCount;
+    int			refCount;
 } msector_t;
 
 typedef struct sector_s {
@@ -393,7 +399,7 @@ typedef enum segsection_e {
 typedef struct msidedef_s {
     // Sidedef index. Always valid after loading & pruning.
     int         index;
-    int         refCount;
+    int			refCount;
 } msidedef_t;
 
 typedef struct sidedef_s {
@@ -437,7 +443,7 @@ typedef struct sidedef_s {
                                  LINE_FRONTSECTOR(l) == LINE_BACKSECTOR(l))
 
 // Internal flags:
-#define LF_POLYOBJ              0x1 // Line is part of a polyobject.
+#define LF_POLYOBJ				0x1 // Line is part of a polyobject.
 
 typedef struct mlinedef_s {
     struct vertex_s* v[2];
@@ -481,8 +487,8 @@ typedef struct linedef_s {
  * An infinite line of the form point + direction vectors.
  */
 typedef struct partition_s {
-    float               x, y;
-    float               dX, dY;
+	float				x, y;
+	float				dX, dY;
 } partition_t;
 
 typedef struct node_s {

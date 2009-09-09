@@ -438,10 +438,10 @@ boolean Rend_DoesMidTextureFillGap(linedef_t *line, int backside)
                        (&matBottom[0], &matBottom[1], &matTop[0], &matTop[1],
                         NULL, side->SW_middlevisoffset[VY], ms.height,
                         0 != (line->flags & DDLF_DONTPEGBOTTOM),
-                        !(R_IsSkySurface(&front->SP_ceilsurface) &&
-                          R_IsSkySurface(&back->SP_ceilsurface)),
-                        !(R_IsSkySurface(&front->SP_floorsurface) &&
-                          R_IsSkySurface(&back->SP_floorsurface))))
+                        !(IS_SKYSURFACE(&front->SP_ceilsurface) &&
+                          IS_SKYSURFACE(&back->SP_ceilsurface)),
+                        !(IS_SKYSURFACE(&front->SP_floorsurface) &&
+                          IS_SKYSURFACE(&back->SP_floorsurface))))
                     {
                         if(matTop[0] >= openTop[0] &&
                            matTop[1] >= openTop[1] &&
@@ -482,8 +482,8 @@ static void markSideSectionsPVisible(const linedef_t* line, byte sid)
             side->SW_middlergba[3] <= 0) // Check alpha
             side->sections[SEG_MIDDLE].inFlags &= ~SUIF_PVIS;
 
-        if(R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_ceilsurface) &&
-           R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_ceilsurface))
+        if(IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_ceilsurface) &&
+           IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_ceilsurface))
            side->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
         else
         {
@@ -502,8 +502,8 @@ static void markSideSectionsPVisible(const linedef_t* line, byte sid)
         }
 
         // Bottom
-        if(R_IsSkySurface(&LINE_BACKSECTOR(line)->SP_floorsurface) &&
-           R_IsSkySurface(&LINE_FRONTSECTOR(line)->SP_floorsurface))
+        if(IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_floorsurface) &&
+           IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_floorsurface))
            side->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
         else
         {
@@ -1959,7 +1959,8 @@ static boolean doRenderSeg(hedge_t* hEdge,
 
 static void renderPlane(face_t* face, planetype_t type,
                         float height, const vectorcomp_t normal[3],
-                        material_t* inMat, short sufInFlags,
+                        material_t* inMat, material_t* inMatB,
+                        float matBlendFactor, short sufInFlags,
                         const float sufColor[4], blendmode_t blendMode,
                         const float texTL[3], const float texBR[3],
                         const float texOffset[2], const float texScale[2],
@@ -2076,18 +2077,27 @@ static void renderPlane(face_t* face, planetype_t type,
 
     if(params.type != RPT_SKY_MASK)
     {
-        inter = getSnapshots(&msA, blended? &msB : NULL, mat);
+        if(blended && inMatB)
+        {
+            getSnapshots(&msB, NULL, inMatB);
+            getSnapshots(&msA, NULL, mat);
+            inter = matBlendFactor;
+        }
+        else
+            inter = getSnapshots(&msA, blended? &msB : NULL, mat);
     }
 
     renderWorldPoly(rvertices, numVertices, NULL, &params,
-                    &msA, inter, blended? &msB : NULL);
+                    &msA, inter, (blended || inMatB)? &msB : NULL);
 
     R_FreeRendVertices(rvertices);
 }
 
 static void Rend_RenderPlane(face_t* face, planetype_t type,
                              float height, const vectorcomp_t normal[3],
-                             material_t* inMat, short sufInFlags,
+                             material_t* inMat, material_t* inMatB,
+                             float matBlendFactor,
+                             short sufInFlags,
                              const float sufColor[4], blendmode_t blendMode,
                              const float texOffset[2], const float texScale[2],
                              boolean skyMasked,
@@ -2120,9 +2130,10 @@ static void Rend_RenderPlane(face_t* face, planetype_t type,
         V3_Set(texBR, ssec->bBox[1].pos[VX],
                ssec->bBox[type == PLN_FLOOR? 0 : 1].pos[VY], height);
 
-        renderPlane(face, type, height, normal, inMat, sufInFlags,
-                    sufColor, blendMode, texTL, texBR, texOffset, texScale,
-                    skyMasked, addDLights, isGlowing, bsuf, elmIdx, texMode);
+        renderPlane(face, type, height, normal, inMat, inMatB, matBlendFactor,
+                    sufInFlags, sufColor, blendMode, texTL, texBR, texOffset,
+                    texScale, skyMasked, addDLights, isGlowing, bsuf, elmIdx,
+                    texMode);
     }
 }
 
@@ -2136,8 +2147,8 @@ static boolean isVisible(surface_t* surface, sector_t* frontsec,
     }
     else if(canMask)
     {   // Perhaps add this section to the sky mask?
-        if(R_IsSkySurface(&frontsec->SP_ceilsurface) &&
-           R_IsSkySurface(&frontsec->SP_floorsurface))
+        if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
+           IS_SKYSURFACE(&frontsec->SP_floorsurface))
         {
            *skyMask = true;
            return true;
@@ -2218,10 +2229,10 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         short               tempflags = 0;
         uint                lightListIdx = 0;
         float               texTL[3], texBR[3], texScale[2],
-                            inter = 0;
+                            inter = 0, matBlendFactor = 0;
         walldiv_t           divs[2];
         boolean             forceOpaque = false;
-        material_t*         mat = NULL;
+        material_t*         mat = NULL, *matB = NULL;
         rendpolytype_t      type = RPT_NORMAL;
         boolean             isTwoSided = (seg->lineDef &&
             LINE_FRONTSIDE(seg->lineDef) && LINE_BACKSIDE(seg->lineDef))? true:false;
@@ -2241,7 +2252,7 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         V3_Set(texBR, to->pos  [VX], to->pos  [VY], bottom);
 
         // Fill in the remaining params data.
-        if(skyMask || R_IsSkySurface(surface))
+        if(skyMask || IS_SKYSURFACE(surface))
         {
             // In devSkyMode mode we render all polys destined for the skymask
             // as regular world polys (with a few obvious properties).
@@ -2270,7 +2281,11 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
                 texMode = 0;
 
             if(texMode == 0)
+            {
                 mat = surface->material;
+                matB = surface->materialB;
+                matBlendFactor = surface->matBlendFactor;
+            }
             else if(texMode == 1)
                 // For debug, render the "missing" texture instead of the texture
                 // chosen for surfaces to fix the HOMs.
@@ -2323,7 +2338,14 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
 
         if(type != RPT_SKY_MASK)
         {
-            inter = getSnapshots(&msA, blended? &msB : NULL, mat);
+            if(blended && matB)
+            {
+                getSnapshots(&msB, NULL, matB);
+                getSnapshots(&msA, NULL, mat);
+                inter = matBlendFactor;
+            }
+            else
+                inter = getSnapshots(&msA, blended? &msB : NULL, mat);
         }
 
         if(addDLights && !isGlowing)
@@ -2359,7 +2381,7 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
                                texTL, texBR, texOffset, texScale, blendMode,
                                color, color2,
                                seg->bsuf[section], (uint) section,
-                               &msA, inter, blended? &msB : NULL);
+                               &msA, inter, (blended || matB) ? &msB : NULL);
     }
 
     return solidSeg;
@@ -2529,11 +2551,11 @@ static boolean findBottomTop(segsection_t section, float segOffset,
         else
         {
             boolean             clipBottom =
-                !(R_IsSkySurface(&ffloor->surface) &&
-                  R_IsSkySurface(&bfloor->surface));
+                !(IS_SKYSURFACE(&ffloor->surface) &&
+                  IS_SKYSURFACE(&bfloor->surface));
             boolean             clipTop =
-                !(R_IsSkySurface(&fceil->surface) &&
-                  R_IsSkySurface(&bceil->surface));
+                !(IS_SKYSURFACE(&fceil->surface) &&
+                  IS_SKYSURFACE(&bceil->surface));
 
             if(Rend_MidMaterialPos(bottom, &vR_ZBottom, top, &vR_ZTop,
                     NULL, suf->visOffset[VY], mat->height, unpegBottom,
@@ -2903,8 +2925,8 @@ static void Rend_SSectSkyFixes(face_t* face)
         if(!backsec || backsec != seg->SG_frontsector)
         {
             // Floor.
-            if(R_IsSkySurface(&frontsec->SP_floorsurface) &&
-               !(backsec && R_IsSkySurface(&backsec->SP_floorsurface)) &&
+            if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
+               !(backsec && IS_SKYSURFACE(&backsec->SP_floorsurface)) &&
                ffloor > skyFix[PLN_FLOOR].height)
             {
                 vTL[VZ] = vTR[VZ] = ffloor;
@@ -2921,8 +2943,8 @@ static void Rend_SSectSkyFixes(face_t* face)
             }
 
             // Ceiling.
-            if(R_IsSkySurface(&frontsec->SP_ceilsurface) &&
-               !(backsec && R_IsSkySurface(&backsec->SP_ceilsurface)) &&
+            if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
+               !(backsec && IS_SKYSURFACE(&backsec->SP_ceilsurface)) &&
                fceil < skyFix[PLN_CEILING].height)
             {
                 vTL[VZ] = vTR[VZ] = skyFix[PLN_CEILING].height;
@@ -2943,8 +2965,8 @@ static void Rend_SSectSkyFixes(face_t* face)
         if(backsec && bsh <= 0)
         {
             // Floor.
-            if(R_IsSkySurface(&frontsec->SP_floorsurface) &&
-               R_IsSkySurface(&backsec->SP_floorsurface))
+            if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
+               IS_SKYSURFACE(&backsec->SP_floorsurface))
             {
                 if(bfloor > skyFix[PLN_FLOOR].height)
                 {
@@ -2966,8 +2988,8 @@ static void Rend_SSectSkyFixes(face_t* face)
             }
 
             // Ceiling.
-            if(R_IsSkySurface(&frontsec->SP_ceilsurface) &&
-               R_IsSkySurface(&backsec->SP_ceilsurface))
+            if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
+               IS_SKYSURFACE(&backsec->SP_ceilsurface))
             {
                 if(bceil < skyFix[PLN_CEILING].height)
                 {
@@ -3040,8 +3062,8 @@ static void occludeSubsector(const face_t* face, boolean forwardFacing)
                 }
 
                 // Do not create an occlusion for sky floors.
-                if(!R_IsSkySurface(&back->SP_floorsurface) ||
-                   !R_IsSkySurface(&front->SP_floorsurface))
+                if(!IS_SKYSURFACE(&back->SP_floorsurface) ||
+                   !IS_SKYSURFACE(&front->SP_floorsurface))
                 {
                     // Do the floors create an occlusion?
                     if((backh[0] > fronth[0] && vy <= backh[0]) ||
@@ -3054,8 +3076,8 @@ static void occludeSubsector(const face_t* face, boolean forwardFacing)
                 }
 
                 // Do not create an occlusion for sky ceilings.
-                if(!R_IsSkySurface(&back->SP_ceilsurface) ||
-                   !R_IsSkySurface(&front->SP_ceilsurface))
+                if(!IS_SKYSURFACE(&back->SP_ceilsurface) ||
+                   !IS_SKYSURFACE(&front->SP_ceilsurface))
                 {
                     // Do the ceilings create an occlusion?
                     if((backh[1] < fronth[1] && vy >= backh[1]) ||
@@ -3148,7 +3170,7 @@ static void Rend_RenderSubsector(uint faceidx)
         i = 0;
         do
         {
-            if(R_IsSkySurface(&ssec->sector->SP_planesurface(i)))
+            if(IS_SKYSURFACE(&ssec->sector->SP_planesurface(i)))
                 doSkyFixes = true;
             else
                 i++;
@@ -3218,7 +3240,7 @@ static void Rend_RenderSubsector(uint faceidx)
         boolean             isGlowing = false;
 
         // Determine plane height.
-        if(!R_IsSkySurface(suf))
+        if(!IS_SKYSURFACE(suf))
         {
             height = plane->visHeight;
         }
@@ -3272,9 +3294,10 @@ static void Rend_RenderSubsector(uint faceidx)
             isGlowing = true;
 
         Rend_RenderPlane(face, plane->type, height, suf->normal, mat,
+                         suf->materialB, suf->matBlendFactor,
                          suf->inFlags, suf->rgba,
                          suf->blendMode, texOffset, texScale,
-                         R_IsSkySurface(suf), true, isGlowing,
+                         IS_SKYSURFACE(suf), true, isGlowing,
                          ssec->bsuf[plane->planeID], plane->planeID,
                          texMode);
     }
@@ -3287,7 +3310,7 @@ static void Rend_RenderSubsector(uint faceidx)
          * drawn at a different height due to the skyFix.
          */
         if(sect->SP_floorvisheight > skyFix[PLN_FLOOR].height &&
-           R_IsSkySurface(&sect->SP_floorsurface))
+           IS_SKYSURFACE(&sect->SP_floorsurface))
         {
             vec3_t              normal;
             const plane_t*      plane = sect->SP_plane(PLN_FLOOR);
@@ -3303,7 +3326,7 @@ static void Rend_RenderSubsector(uint faceidx)
                 normal[VZ] *= -1;
 
             Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
-                             P_GetMaterial(DDT_GRAY, MN_SYSTEM),
+                             P_GetMaterial(DDT_GRAY, MN_SYSTEM), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy > plane->visHeight? true : false),
@@ -3312,7 +3335,7 @@ static void Rend_RenderSubsector(uint faceidx)
         }
 
         if(sect->SP_ceilvisheight < skyFix[PLN_CEILING].height &&
-           R_IsSkySurface(&sect->SP_ceilsurface))
+           IS_SKYSURFACE(&sect->SP_ceilsurface))
         {
             vec3_t              normal;
             const plane_t*      plane = sect->SP_plane(PLN_CEILING);
@@ -3323,7 +3346,7 @@ static void Rend_RenderSubsector(uint faceidx)
                 normal[VZ] *= -1;
 
             Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
-                             P_GetMaterial(DDT_GRAY, MN_SYSTEM),
+                             P_GetMaterial(DDT_GRAY, MN_SYSTEM), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy < plane->visHeight? true : false),
@@ -3443,8 +3466,8 @@ void Rend_RenderNormals(void)
 
             if(seg->SG_backsector->SP_ceilvisheight <
                seg->SG_frontsector->SP_ceilvisheight &&
-               !(R_IsSkySurface(&seg->SG_frontsector->SP_ceilsurface) &&
-                 R_IsSkySurface(&seg->SG_backsector->SP_ceilsurface)))
+               !(IS_SKYSURFACE(&seg->SG_frontsector->SP_ceilsurface) &&
+                 IS_SKYSURFACE(&seg->SG_backsector->SP_ceilsurface)))
             {
                 bottom = seg->SG_backsector->SP_ceilvisheight;
                 top = seg->SG_frontsector->SP_ceilvisheight;
@@ -3456,8 +3479,8 @@ void Rend_RenderNormals(void)
 
             if(seg->SG_backsector->SP_floorvisheight >
                seg->SG_frontsector->SP_floorvisheight &&
-               !(R_IsSkySurface(&seg->SG_frontsector->SP_floorsurface) &&
-                 R_IsSkySurface(&seg->SG_backsector->SP_floorsurface)))
+               !(IS_SKYSURFACE(&seg->SG_frontsector->SP_floorsurface) &&
+                 IS_SKYSURFACE(&seg->SG_backsector->SP_floorsurface)))
             {
                 bottom = seg->SG_frontsector->SP_floorvisheight;
                 top = seg->SG_backsector->SP_floorvisheight;
@@ -3482,7 +3505,7 @@ void Rend_RenderNormals(void)
 
             V3_Set(origin, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
                    pln->visHeight);
-            if(pln->type != PLN_MID && R_IsSkySurface(&pln->surface))
+            if(pln->type != PLN_MID && IS_SKYSURFACE(&pln->surface))
                 origin[VZ] = skyFix[pln->type].height;
 
             drawNormal(origin, pln->PS_normal, scale);

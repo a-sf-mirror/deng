@@ -1543,7 +1543,7 @@ boolean RIT_AddSprite(void* ptr, void* data)
         // that no sprites get clipped by the sky.
         // Only check
         if((mat = R_GetMaterialForSprite(mo->sprite, mo->frame)) &&
-           R_IsSkySurface(&sec->SP_ceilsurface))
+           IS_SKYSURFACE(&sec->SP_ceilsurface))
         {
             if(!(mo->dPlayer && mo->dPlayer->flags & DDPF_CAMERA) && // Cameramen don't exist!
                mo->pos[VZ] <= sec->SP_ceilheight &&

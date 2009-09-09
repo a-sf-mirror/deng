@@ -34,6 +34,12 @@ typedef struct viewport_s {
     int             x, y, width, height;
 } viewport_t;
 
+typedef struct {
+    thinker_t   thinker;
+    struct surface_s* suf;
+    int         tics;
+} matfader_t;
+
 extern float    viewX, viewY, viewZ;
 extern float    viewFrontVec[3], viewUpVec[3], viewSideVec[3];
 extern float    viewXOffset, viewYOffset, viewZOffset;
