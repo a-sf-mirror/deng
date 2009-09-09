@@ -204,6 +204,7 @@ EXPORTS
     P_ToPtr                     @257 NONAME
     P_Callback                  @258 NONAME
     P_Callbackp                 @259 NONAME
+    P_Iterate                   @425 NONAME
     P_Iteratep                  @410 NONAME
 
     ; dummy objects
@@ -326,7 +327,6 @@ EXPORTS
 
     DD_RunThinkers              @84 NONAME
     DD_InitThinkers             @85 NONAME
-    DD_IterateThinkers          @425 NONAME
 
 ; Refresh.
     DD_GetFrameRate             @88 NONAME

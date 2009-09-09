@@ -55,10 +55,10 @@
 
 // CODE --------------------------------------------------------------------
 
-boolean P_MobjTicker(thinker_t* th, void* context)
+int P_MobjTicker(void* p, void* context)
 {
     uint                i;
-    mobj_t*             mo = (mobj_t*) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
@@ -143,7 +143,7 @@ void P_Ticker(timespan_t time)
     R_SkyTicker();
 
     // Check all mobjs (always public).
-    P_IterateThinkers(gx.MobjThinker, 0x1, P_MobjTicker, NULL);
+    P_IterateThinkers(DMU_MOBJ, 0x1, P_MobjTicker, NULL);
 
     // Check all client mobjs.
     Cl_MobjIterator(PIT_ClientMobjTicker, NULL);

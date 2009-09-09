@@ -119,4 +119,5 @@ linedef_t*      R_FindLineBackNeighbor(const sector_t* sector,
 
 void            R_MatFaderThinker(matfader_t* fader);
 void            R_StopMatFader(matfader_t* fader);
+int             RIT_StopMatFader(void* p, void* context);
 #endif

@@ -115,8 +115,8 @@ static void initThinkerList(thinkerlist_t* list)
     list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
 }
 
-static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
-                                       boolean canCreate)
+static thinkerlist_t* listForDMUType(int type, boolean isPublic,
+                                     boolean canCreate)
 {
     size_t              i;
 
@@ -124,7 +124,7 @@ static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
     {
         thinkerlist_t*      list = thinkerLists[i];
 
-        if(list->thinkerCap.function == func && list->isPublic == isPublic)
+        if(list->thinkerCap.header.type == type && list->isPublic == isPublic)
             return list;
     }
 
@@ -142,7 +142,7 @@ static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
 
     initThinkerList(list);
     list->isPublic = isPublic;
-    list->thinkerCap.function = func;
+    list->thinkerCap.header.type = type;
     // Set the list sentinel to instasis (safety measure).
     list->thinkerCap.inStasis = true;
 
@@ -150,8 +150,10 @@ static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
     }
 }
 
-static boolean runThinker(thinker_t* th, void* context)
+static int runThinker(void* p, void* context)
 {
+    thinker_t*          th = (thinker_t*) p;
+
     // Thinker cannot think when in stasis.
     if(!th->inStasis)
     {
@@ -179,7 +181,7 @@ static boolean runThinker(thinker_t* th, void* context)
 }
 
 static boolean iterateThinkers(thinkerlist_t* list,
-                               boolean (*callback) (thinker_t*, void*),
+                               int (*callback) (void* p, void*),
                                void* context)
 {
     boolean             result = true;
@@ -222,7 +224,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
     }
 
     // Will it need an ID?
-    if(P_IsMobjThinker(th->function))
+    if(P_IsMobjThinker(th, NULL))
     {
         // It is a mobj, give it an ID.
         th->id = newMobjID();
@@ -234,7 +236,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
     }
 
     // Link the thinker to the thinker list.
-    linkThinkerToList(th, listForThinkFunc(th->function, makePublic, true));
+    linkThinkerToList(th, listForDMUType(th->header.type, makePublic, true));
 }
 
 /**
@@ -266,9 +268,9 @@ void P_ThinkerRemove(thinker_t* th)
     th->function = (think_t) - 1;
 }
 
-boolean P_IsMobjThinker(think_t func)
+boolean P_IsMobjThinker(thinker_t* th, void* context)
 {
-    if(func && func == gx.MobjThinker)
+    if(th && th->function && th->function == gx.MobjThinker)
         return true;
 
     return false;
@@ -316,29 +318,29 @@ boolean P_ThinkerListInited(void)
 /**
  * Iterate the list of thinkers making a callback for each.
  *
- * @param func          If not @c NULL, only make a callback for thinkers
- *                      whose function matches this.
+ * @param type          If not @c DMU_NONE, only make a callback for objects
+ *                      of the specified type.
  * @param flags         Thinker filter flags.
  * @param callback      The callback to make. Iteration will continue
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean P_IterateThinkers(think_t func, byte flags,
-                          boolean (*callback) (thinker_t*, void*),
+boolean P_IterateThinkers(int type, byte flags,
+                          int (*callback) (void* p, void*),
                           void* context)
 {
     if(!inited)
         return true;
 
-    if(func)
-    {   // We might have both public and shared lists for this func.
+    if(type != DMU_NONE)
+    {   // We might have both public and shared lists for this type.
         boolean             result = true;
 
         if(flags & 0x1)
-            result = iterateThinkers(listForThinkFunc(func, true, false),
+            result = iterateThinkers(listForDMUType(type, true, false),
                                      callback, context);
         if(result && (flags & 0x2))
-            result = iterateThinkers(listForThinkFunc(func, false, false),
+            result = iterateThinkers(listForDMUType(type, false, false),
                                      callback, context);
         return result;
     }
@@ -376,7 +378,7 @@ void DD_InitThinkers(void)
  */
 void DD_RunThinkers(void)
 {
-    P_IterateThinkers(NULL, 0x1 | 0x2, runThinker, NULL);
+    P_IterateThinkers(DMU_NONE, 0x1 | 0x2, runThinker, NULL);
 }
 
 /**
@@ -409,14 +411,4 @@ void DD_ThinkerSetStasis(thinker_t* th, boolean on)
     {
         th->inStasis = on;
     }
-}
-
-/**
- * Part of the Doomsday public API.
- */
-boolean DD_IterateThinkers(think_t func,
-                           boolean (*callback) (thinker_t*, void*),
-                           void* context)
-{
-    return P_IterateThinkers(func, 0x1, callback, context);
 }

@@ -1,6 +1,20 @@
 # $Id$
 # Runtime map data defitions. Processed by the makedmt.py script.
+public
+// think_t is a function pointer to a routine to handle an actor
+typedef void    (*think_t) ();
 
+/**
+ * \todo thinker_t should not be part of the public API in its current form.
+ */
+typedef struct thinker_s {
+    runtime_mapdata_header_t header;
+    struct thinker_s *prev, *next;
+    think_t         function;
+    boolean         inStasis;
+    thid_t          id; // Only used for mobjs (zero is not an ID).
+} thinker_t;
+end
 public
 #define DMT_VERTEX_POS  DDVT_FLOAT
 end

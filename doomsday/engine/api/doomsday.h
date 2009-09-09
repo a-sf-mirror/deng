@@ -271,6 +271,8 @@ extern          "C" {
                                int (*callback)(void* p, void* ctx));
     int             P_Callbackp(int type, void* ptr, void* context,
                                 int (*callback)(void* p, void* ctx));
+    int             P_Iterate(int type, void* context,
+                              int (*callback) (void* p, void* ctx));
     int             P_Iteratep(void *ptr, uint prop, void* context,
                                int (*callback) (void* p, void* ctx));
 
@@ -403,8 +405,6 @@ extern          "C" {
     void            DD_ThinkerAdd(thinker_t* th);
     void            DD_ThinkerRemove(thinker_t* th);
     void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
-
-    boolean         DD_IterateThinkers(think_t type, boolean (*func) (thinker_t *th, void*), void* data);
 
     // Refresh.
     int             DD_GetFrameRate(void);

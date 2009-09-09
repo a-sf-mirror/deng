@@ -293,6 +293,7 @@ static int EV_DoCeiling2(int tag, float basespeed, ceilingtype_e type)
         rtn = 1;
         ceiling = Z_Calloc(sizeof(*ceiling), PU_MAP, 0);
 
+        ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
         ceiling->thinker.function = T_MoveCeiling;
         DD_ThinkerAdd(&ceiling->thinker);
 
@@ -479,9 +480,9 @@ typedef struct {
     int                 count;
 } activateceilingparams_t;
 
-static boolean activateCeiling(thinker_t* th, void* context)
+static int activateCeiling(void* p, void* context)
 {
-    ceiling_t*          ceiling = (ceiling_t*) th;
+    ceiling_t*          ceiling = (ceiling_t*) p;
     activateceilingparams_t* params = (activateceilingparams_t*) context;
 
     if(ceiling->tag == (int) params->tag && ceiling->thinker.inStasis)
@@ -507,7 +508,7 @@ int P_CeilingActivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_MoveCeiling, activateCeiling, &params);
+    P_Iterate(DMU_THINKER_CEILMOVER, &params, activateCeiling);
 
     return params.count;
 }
@@ -518,9 +519,9 @@ typedef struct {
     int                 count;
 } deactivateceilingparams_t;
 
-static boolean deactivateCeiling(thinker_t* th, void* context)
+static int deactivateCeiling(void* p, void* context)
 {
-    ceiling_t*          ceiling = (ceiling_t*) th;
+    ceiling_t*          ceiling = (ceiling_t*) p;
     deactivateceilingparams_t* params =
         (deactivateceilingparams_t*) context;
 
@@ -556,7 +557,7 @@ int P_CeilingDeactivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_MoveCeiling, deactivateCeiling, &params);
+    P_Iterate(DMU_THINKER_CEILMOVER, &params, deactivateCeiling);
 
     return params.count;
 }

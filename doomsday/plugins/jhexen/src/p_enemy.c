@@ -394,10 +394,10 @@ typedef struct {
     byte                randomSkip;
 } findmobjparams_t;
 
-static boolean findMobj(thinker_t* th, void* context)
+static int findMobj(void* p, void* context)
 {
     findmobjparams_t*   params = (findmobjparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Flags requirement?
     if(params->compFlags > 0 && !(mo->flags & params->compFlags))
@@ -461,7 +461,7 @@ boolean P_LookForMonsters(mobj_t* mo)
     params.randomSkip = 16;
     params.checkMinotaurTracer = (mo->type == MT_MINOTAUR)?
         ((player_t *) mo->tracer)->plr->mo : NULL;
-    DD_IterateThinkers(P_MobjThinker, findMobj, &params);
+    P_Iterate(DMU_MOBJ, &params, findMobj);
 
     if(params.foundMobj)
     {
@@ -1005,10 +1005,10 @@ typedef struct {
     mobj_t*             foundMobj;
 } findmonsterparams_t;
 
-static boolean findMonster(thinker_t* th, void* context)
+static int findMonster(void* p, void* context)
 {
     findmonsterparams_t* params = (findmonsterparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(!(mo->flags & MF_COUNTKILL))
         return true; // Continue iteration.
@@ -1104,7 +1104,7 @@ void C_DECL A_MinotaurLook(mobj_t *actor)
         params.foundMobj = NULL;
         params.minHealth = 1;
         params.checkMinotaurTracer = actor->tracer;
-        if(!DD_IterateThinkers(P_MobjThinker, findMonster, &params))
+        if(!P_Iterate(DMU_MOBJ, &params, findMonster))
             actor->target = params.foundMobj;
     }
 
@@ -1563,10 +1563,10 @@ void C_DECL A_Explode(mobj_t *actor)
     }
 }
 
-static boolean massacreMobj(thinker_t* th, void* context)
+static int massacreMobj(void* p, void* context)
 {
     int*                count = (int*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(!mo->player && sentient(mo) && (mo->flags & MF_SHOOTABLE))
     {
@@ -1589,7 +1589,7 @@ int P_Massacre(void)
     // Only massacre when actually in a map.
     if(G_GetGameState() == GS_MAP)
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
+        P_Iterate(DMU_MOBJ, &count, massacreMobj);
     }
 
     return count;
@@ -1701,9 +1701,9 @@ void C_DECL A_DeQueueCorpse(mobj_t *actor)
     }
 }
 
-static boolean addMobjToCorpseQueue(thinker_t* th, void* context)
+static int addMobjToCorpseQueue(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Must be a corpse.
     if(!(mo->flags & MF_CORPSE))
@@ -1759,7 +1759,7 @@ void P_InitCreatureCorpseQueue(boolean corpseScan)
         return;
 
     // Search the thinker list for corpses and place them in this queue.
-    DD_IterateThinkers(P_MobjThinker, addMobjToCorpseQueue, NULL);
+    P_Iterate(DMU_MOBJ, NULL, addMobjToCorpseQueue);
 }
 
 void C_DECL A_AddPlayerCorpse(mobj_t *actor)

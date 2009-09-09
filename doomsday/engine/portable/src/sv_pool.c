@@ -2193,10 +2193,10 @@ typedef struct {
     pool_t**            targets;
 } newmobjdeltaparams_t;
 
-static boolean newMobjDelta(thinker_t* th, void* context)
+static int newMobjDelta(void* p, void* context)
 {
     newmobjdeltaparams_t* params = (newmobjdeltaparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Some objects should not be processed.
     if(!Sv_IsMobjIgnored(mo))
@@ -2235,7 +2235,7 @@ void Sv_NewMobjDeltas(cregister_t* reg, boolean doUpdate, pool_t** targets)
     params.targets = targets;
 
     // Mobjs are always public.
-    P_IterateThinkers(gx.MobjThinker, 0x1, newMobjDelta, &params);
+    P_IterateThinkers(DMU_MOBJ, 0x1, newMobjDelta, &params);
 }
 
 /**

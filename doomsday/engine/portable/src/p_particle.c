@@ -173,6 +173,7 @@ static ptcgen_t* P_PtcGenCreate(void)
 
     // Link the thinker to the list of (private) thinkers.
     gen->thinker.function = P_PtcGenThinker;
+    gen->thinker.header.type = DMU_THINKER_PTCGENERATOR;
     P_ThinkerAdd(&gen->thinker, false);
 
     return gen;
@@ -836,10 +837,10 @@ boolean PIT_ClientMobjParticles(clmobj_t* cmo, void* context)
 /**
  * Spawn multiple new particles using all applicable sources.
  */
-static boolean manyNewParticles(thinker_t* th, void* context)
+static int manyNewParticles(void* p, void* context)
 {
     ptcgen_t*           gen = (ptcgen_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Type match?
     if(mo->type == gen->type || mo->type == gen->type2)
@@ -1336,7 +1337,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
                     Cl_MobjIterator(PIT_ClientMobjParticles, gen);
                 }
 
-                P_IterateThinkers(gx.MobjThinker, 0x1, // All mobjs are public
+                P_IterateThinkers(DMU_MOBJ, 0x1, // All mobjs are public
                                   manyNewParticles, gen);
 
                 // The generator has no real source.

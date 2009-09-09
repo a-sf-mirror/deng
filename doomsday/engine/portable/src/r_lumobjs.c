@@ -914,9 +914,9 @@ void LO_UnlinkMobjLumobj(mobj_t* mo)
     mo->lumIdx = 0;
 }
 
-boolean LOIT_UnlinkMobjLumobj(thinker_t* th, void* context)
+int LOIT_UnlinkMobjLumobj(void* p, void* context)
 {
-    LO_UnlinkMobjLumobj((mobj_t*) th);
+    LO_UnlinkMobjLumobj((mobj_t*) p);
 
     return true; // Continue iteration.
 }
@@ -926,7 +926,7 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
     if(!useDynLights)
     {
         // Mobjs are always public.
-        P_IterateThinkers(gx.MobjThinker, 0x1, LOIT_UnlinkMobjLumobj, NULL);
+        P_IterateThinkers(DMU_MOBJ, 0x1, LOIT_UnlinkMobjLumobj, NULL);
     }
 }
 

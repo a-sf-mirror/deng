@@ -71,10 +71,10 @@ typedef struct {
     mobj_t*             foundMobj;
 } findmobjparams_t;
 
-static boolean findMobj(thinker_t* th, void* context)
+static int findMobj(void* p, void* context)
 {
     findmobjparams_t*   params = (findmobjparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Must be of the correct type?
     if(params->type >= 0 && params->type != mo->type)
@@ -108,7 +108,7 @@ static mobj_t* getTeleportDestination(short tag)
         {
             params.sec = sec;
 
-            if(!DD_IterateThinkers(P_MobjThinker, findMobj, &params))
+            if(!P_Iterate(DMU_MOBJ, &params, findMobj))
             {   // Found one.
                 return params.foundMobj;
             }
@@ -299,10 +299,10 @@ typedef struct {
     float               spawnHeight;
 } fadespawnparams_t;
 
-static boolean fadeSpawn(thinker_t* th, void* context)
+static int fadeSpawn(void* p, void* context)
 {
     fadespawnparams_t*  params = (fadespawnparams_t*) context;
-    mobj_t*             origin = (mobj_t *) th;
+    mobj_t*             origin = (mobj_t*) p;
     mobjtype_t          spawntype;
 
     if(params->sec &&
@@ -364,7 +364,7 @@ int EV_FadeSpawn(linedef_t* li, mobj_t* mo)
         while((sec = P_IterListIterator(list)) != NULL)
         {
             params.sec = sec;
-            DD_IterateThinkers(P_MobjThinker, fadeSpawn, &params);
+            P_Iterate(DMU_MOBJ, &params, fadeSpawn);
         }
     }
 
@@ -385,11 +385,11 @@ typedef struct {
     bitwiseop_t         op;
 } pit_changemobjflagsparams_t;
 
-boolean PIT_ChangeMobjFlags(thinker_t* th, void* context)
+int PIT_ChangeMobjFlags(void* p, void* context)
 {
     pit_changemobjflagsparams_t* params =
         (pit_changemobjflagsparams_t*) context;
-    mobj_t*             mo = (mobj_t*) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(params->sec &&
        params->sec != DMU_GetPtrp(mo->face, DMU_SECTOR))
@@ -445,7 +445,7 @@ int EV_FadeAway(linedef_t* line, mobj_t* thing)
         while((sec = P_IterListIterator(list)) != NULL)
         {
             params.sec = sec;
-            DD_IterateThinkers(P_MobjThinker, PIT_ChangeMobjFlags, &params);
+            P_Iterate(DMU_MOBJ, &params, PIT_ChangeMobjFlags);
         }
     }
 

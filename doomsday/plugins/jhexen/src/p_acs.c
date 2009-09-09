@@ -305,6 +305,7 @@ static void StartOpenACS(int number, int infoIndex, const int* address)
 
     script->infoIndex = infoIndex;
     script->ip = address;
+    script->thinker.header.type = DMU_THINKER_ACSSCRIPT;
     script->thinker.function = T_InterpretACS;
     DD_ThinkerAdd(&script->thinker);
 }
@@ -372,6 +373,7 @@ boolean P_StartACS(int number, int map, byte* args, mobj_t* activator,
     script->line = line;
     script->side = side;
     script->ip = ACSInfo[infoIndex].address;
+    script->thinker.header.type = DMU_THINKER_ACSSCRIPT;
     script->thinker.function = T_InterpretACS;
     for(i = 0; i < ACSInfo[infoIndex].argCount; ++i)
     {
@@ -1144,10 +1146,10 @@ typedef struct {
     int                 count;
 } countmobjoftypeparams_t;
 
-static boolean countMobjOfType(thinker_t* th, void* context)
+static int countMobjOfType(void* p, void* context)
 {
     countmobjoftypeparams_t* params = (countmobjoftypeparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     // Does the type match?
     if(mo->type != params->type)
@@ -1203,7 +1205,7 @@ static void ThingCount(int type, int tid)
 
         params.type = moType;
         params.count = 0;
-        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+        P_Iterate(DMU_MOBJ, &params, countMobjOfType);
 
         count = params.count;
     }

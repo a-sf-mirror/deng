@@ -86,6 +86,7 @@ void P_SpawnFireFlicker(sector_t *sector)
 
     flick = Z_Calloc(sizeof(*flick), PU_MAP, 0);
     flick->thinker.function = T_FireFlicker;
+    flick->thinker.header.type = DMU_THINKER_LIGHTFLICK;
     DD_ThinkerAdd(&flick->thinker);
 
     flick->sector = sector;
@@ -139,6 +140,7 @@ void P_SpawnLightFlash(sector_t *sector)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_LightFlash;
+    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -189,6 +191,7 @@ void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_StrobeFlash;
+    flash->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -260,10 +263,10 @@ void EV_TurnTagLightsOff(linedef_t *line)
     }
 }
 
-void EV_LightTurnOn(linedef_t *line, float max)
+void EV_LightTurnOn(linedef_t* line, float max)
 {
-    sector_t           *sec = NULL;
-    iterlist_t         *list;
+    sector_t*           sec = NULL;
+    iterlist_t*         list;
     float               lightLevel, otherLevel;
 
     list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
@@ -291,7 +294,7 @@ void EV_LightTurnOn(linedef_t *line, float max)
     }
 }
 
-void T_Glow(glow_t *g)
+void T_Glow(glow_t* g)
 {
     float               lightLevel = DMU_GetFloatp(g->sector, DMU_LIGHT_LEVEL);
     float               glowDelta = (1.0f / 255.0f) * (float) GLOWSPEED;
@@ -324,13 +327,14 @@ void T_Glow(glow_t *g)
     DMU_SetFloatp(g->sector, DMU_LIGHT_LEVEL, lightLevel);
 }
 
-void P_SpawnGlowingLight(sector_t *sector)
+void P_SpawnGlowingLight(sector_t* sector)
 {
     float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
-    glow_t             *g;
+    glow_t*             g;
 
     g = Z_Calloc(sizeof(*g), PU_MAP, 0);
+    g->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     g->thinker.function = T_Glow;
     DD_ThinkerAdd(&g->thinker);
 

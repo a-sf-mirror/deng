@@ -253,6 +253,7 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
             mov = activemovers[i] = Z_Malloc(sizeof(mover_t), PU_MAP, 0);
             memset(mov, 0, sizeof(mover_t));
             mov->thinker.function = Cl_MoverThinker;
+            mov->thinker.header.type = DMU_THINKER_PLANEMOVER_CL;
             mov->type = type;
             mov->sectornum = sectornum;
             mov->sector = SECTOR_PTR(sectornum);
@@ -342,6 +343,7 @@ polymover_t* Cl_NewPolyMover(uint number)
     mover = Z_Malloc(sizeof(polymover_t), PU_MAP, 0);
     memset(mover, 0, sizeof(*mover));
     mover->thinker.function = Cl_PolyMoverThinker;
+    mover->thinker.header.type = DMU_THINKER_POLYMOVER_CL;
     mover->poly = poly;
     mover->number = number;
     // \fixme Do these need to be public?

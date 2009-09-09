@@ -525,10 +525,10 @@ static boolean lookForPlayers(mobj_t *actor, boolean allAround)
     }
 }
 
-static boolean massacreMobj(thinker_t* th, void* context)
+static int massacreMobj(void* p, void* context)
 {
     int*                count = (int*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(!mo->player && sentient(mo) && (mo->flags & MF_SHOOTABLE))
     {
@@ -549,7 +549,7 @@ int P_Massacre(void)
     // Only massacre when actually in a map.
     if(G_GetGameState() == GS_MAP)
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
+        P_Iterate(DMU_MOBJ, &count, massacreMobj);
     }
 
     return count;
@@ -596,7 +596,7 @@ static boolean findBrainTarget(thinker_t* th, void* context)
 void P_SpawnBrainTargets(void)
 {
     // Find all the target spots.
-    DD_IterateThinkers(P_MobjThinker, findBrainTarget, NULL);
+    P_Iterate(DMU_MOBJ, findBrainTarget, NULL);
 }
 
 typedef struct {
@@ -604,10 +604,10 @@ typedef struct {
     size_t              count;
 } countmobjoftypeparams_t;
 
-static boolean countMobjOfType(thinker_t* th, void* context)
+static int countMobjOfType(void* p, void* context)
 {
-    countmobjoftypeparams_t *params = (countmobjoftypeparams_t*) context;
-    mobj_t*             mo = (mobj_t *) th;
+    countmobjoftypeparams_t* params = (countmobjoftypeparams_t*) context;
+    mobj_t*             mo = (mobj_t*) p;
 
     if(params->type == mo->type && mo->health > 0)
         params->count++;
@@ -627,7 +627,7 @@ void C_DECL A_KeenDie(mobj_t* mo)
     // Check if there are no more Keens left in the map.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    P_Iterate(DMU_MOBJ, &params, countMobjOfType);
 
     if(!params.count)
     {   // No Keens left alive.
@@ -1467,7 +1467,7 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
         // Count total number currently on the map.
         params.type = MT_SKULL;
         params.count = 0;
-        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+        P_Iterate(DMU_MOBJ, &params, countMobjOfType);
 
         if(params.count > 20)
             return; // Too many, don't spit another.
@@ -1707,7 +1707,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    P_Iterate(DMU_MOBJ, &params, countMobjOfType);
 
     if(params.count)
     {   // Other boss not dead.

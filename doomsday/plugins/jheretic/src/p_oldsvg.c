@@ -452,8 +452,10 @@ void P_v13_UnArchiveWorld(void)
     save_p = (byte *) get;
 }
 
-static boolean removeThinker(thinker_t* th, void* context)
+static int removeThinker(void* p, void* context)
 {
+    thinker_t*          th = (thinker_t*) p;
+
     if(th->function == P_MobjThinker)
         P_MobjRemove((mobj_t *) th, true);
     else
@@ -473,7 +475,7 @@ typedef enum
     byte                tclass;
 
     // Remove all the current thinkers.
-    DD_IterateThinkers(NULL, removeThinker, NULL);
+    P_Iterate(DMU_NONE, NULL, removeThinker);
     DD_InitThinkers();
 
     // read in saved thinkers
@@ -532,6 +534,7 @@ typedef struct {
     ceiling->oldState = (SV_v13_ReadLong() == -1? CS_DOWN : CS_UP);
 
     ceiling->thinker.function = T_MoveCeiling;
+    ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
     if(!(temp + V13_THINKER_T_FUNC_OFFSET))
         DD_ThinkerSetStasis(&ceiling->thinker, true);
 
@@ -572,6 +575,7 @@ typedef struct {
     door->topCountDown = SV_v13_ReadLong();
 
     door->thinker.function = T_Door;
+    door->thinker.header.type = DMU_THINKER_DOOR;
 
     P_ToXSector(door->sector)->specialData = T_Door;
     return true; // Add this thinker.
@@ -612,6 +616,7 @@ typedef struct {
     floor->speed = FIX2FLT(SV_v13_ReadLong());
 
     floor->thinker.function = T_MoveFloor;
+    floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
 
     P_ToXSector(floor->sector)->specialData = T_MoveFloor;
     return true; // Add this thinker.
@@ -657,6 +662,7 @@ typedef struct {
     plat->type = SV_v13_ReadLong();
 
     plat->thinker.function = T_PlatRaise;
+    plat->thinker.header.type = DMU_THINKER_PLATFORM;
     if(!(temp + V13_THINKER_T_FUNC_OFFSET))
         DD_ThinkerSetStasis(&plat->thinker, true);
 
@@ -693,6 +699,7 @@ typedef struct {
     flash->minTime = SV_v13_ReadLong();
 
     flash->thinker.function = T_LightFlash;
+    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     return true; // Add this thinker.
 }
 
@@ -725,6 +732,7 @@ typedef struct {
     strobe->brightTime = SV_v13_ReadLong();
 
     strobe->thinker.function = T_StrobeFlash;
+    strobe->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     return true; // Add this thinker.
 }
 
@@ -753,6 +761,7 @@ typedef struct {
     glow->direction = SV_v13_ReadLong();
 
     glow->thinker.function = T_Glow;
+    glow->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     return true; // Add this thinker.
 }
 

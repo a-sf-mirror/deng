@@ -36,26 +36,26 @@ typedef struct setargs_s {
     uint            prop;
     int             modifiers; // Property modifiers (e.g., line of sector)
     valuetype_t     valueType;
-    boolean        *booleanValues;
-    byte           *byteValues;
-    int            *intValues;
-    fixed_t        *fixedValues;
-    float          *floatValues;
-    angle_t        *angleValues;
-    void          **ptrValues;
+    boolean*        booleanValues;
+    byte*           byteValues;
+    int*            intValues;
+    fixed_t*        fixedValues;
+    float*          floatValues;
+    angle_t*        angleValues;
+    void**          ptrValues;
 } setargs_t;
 
 void        P_InitMapUpdate(void);
-void       *P_AllocDummy(int type, void* extraData);
+void*       P_AllocDummy(int type, void* extraData);
 void        P_FreeDummy(void* dummy);
 int         P_DummyType(void* dummy);
 boolean     P_IsDummy(void* dummy);
-void       *P_DummyExtraData(void* dummy);
+void*       P_DummyExtraData(void* dummy);
 
 uint        P_ToIndex(const void* ptr);
 void        P_SetVariable(int value, void* data);
 void*       P_GetVariable(int value);
-const char *DMU_Str(uint prop);
+const char* DMU_Str(uint prop);
 void        DMU_SetValue(valuetype_t valueType, void* dst,
                          const setargs_t* args, uint index);
 void        DMU_GetValue(valuetype_t valueType, const void* src,

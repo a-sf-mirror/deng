@@ -53,23 +53,6 @@
 // CODE --------------------------------------------------------------------
 
 /**
- * Spawn multiple new particles using all applicable sources.
- */
-static boolean stopMatFader(thinker_t* th, void* context)
-{
-    matfader_t*         fader = (matfader_t*) th;
-
-    // Surface match?
-    if(fader->suf == (surface_t*) context)
-    {
-        R_StopMatFader(fader);
-        return false; // Stop iteration.
-    }
-
-    return true; // Continue iteration.
-}
-
-/**
  * Change the material to be used on the specified surface.
  *
  * @param suf           Ptr to the surface to chage the material of.
@@ -91,18 +74,19 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
     // No longer a missing texture fix?
     if(mat && (suf->oldFlags & SUIF_MATERIAL_FIX))
         suf->inFlags &= ~SUIF_MATERIAL_FIX;
-if(!ddMapSetup)
+
     if(!ddMapSetup && fade && rendMaterialFadeSeconds > 0 &&
        ((mat && (env = S_MaterialEnvDef(Material_GetEnvClass(mat))) && (env->flags & MEF_BLEND)) ||
         ((env = S_MaterialEnvDef(Material_GetEnvClass(suf->material))) && (env->flags & MEF_BLEND))))
     {
         // Stop active material fade on this surface.
-        P_IterateThinkers(R_MatFaderThinker, 0x2, // Always non-public
-                          stopMatFader, suf);
+        P_IterateThinkers(DMU_THINKER_MATFADER, 0x2, // Always non-public
+                          RIT_StopMatFader, suf);
 
         fader = Z_Malloc(sizeof(matfader_t), PU_MAP, 0);
         memset(fader, 0, sizeof(*fader));
         fader->thinker.function = R_MatFaderThinker;
+        fader->thinker.header.type = DMU_THINKER_MATFADER;
         fader->suf = suf;
         fader->tics = 0;
 

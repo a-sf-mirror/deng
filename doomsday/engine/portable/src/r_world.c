@@ -363,6 +363,23 @@ void R_MatFaderThinker(matfader_t* fader)
     }
 }
 
+/**
+ * Spawn multiple new particles using all applicable sources.
+ */
+int RIT_StopMatFader(void* p, void* context)
+{
+    matfader_t*         fader = (matfader_t*) p;
+
+    // Surface match?
+    if(fader->suf == (surface_t*) context)
+    {
+        R_StopMatFader(fader);
+        return false; // Stop iteration.
+    }
+
+    return true; // Continue iteration.
+}
+
 void R_AddWatchedPlane(watchedplanelist_t *wpl, plane_t *pln)
 {
     uint                i;
@@ -708,6 +725,10 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     R_SurfaceListRemove(movingSurfaceList, &plane->surface);
     // If this plane's surface if in the deocrated list, remove it.
     R_SurfaceListRemove(decoratedSurfaceList, &plane->surface);
+
+    // Stop active material fade on this surface.
+    P_IterateThinkers(DMU_THINKER_MATFADER, 0x2, // Always non-public
+                      RIT_StopMatFader, &plane->surface);
 
     // Destroy the biassurfaces for this plane.
     facePtr = sec->faces;
