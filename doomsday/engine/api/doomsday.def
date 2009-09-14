@@ -1,7 +1,7 @@
 NAME            "DOOMSDAY"
 
 ; Highest ordinal is currently
-; --> 450 <--
+; --> 451 <--
 ; Other free ordinals:
 ; 43 formerly P_RegisterPlayerControl
 ; 44 formerly B_FormEventString
@@ -91,6 +91,7 @@ EXPORTS
     W_CRCNumber                 @23 NONAME
     W_IsFromIWAD                @239 NONAME
     W_OpenAuxiliary             @247 NONAME
+    W_NumLumps                  @ 451 NONAME
 
 ; Base: Zone.
     Z_Malloc                    @24 NONAME

@@ -103,6 +103,7 @@ extern          "C" {
     uint            W_CRCNumber(void);
     boolean         W_IsFromIWAD(lumpnum_t lump);
     lumpnum_t       W_OpenAuxiliary(const char* fileName);
+    int             W_NumLumps(void);
 
     // Base: Zone.
     void* _DECALL   Z_Malloc(size_t size, int tag, void* ptr);

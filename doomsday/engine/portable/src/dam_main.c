@@ -55,180 +55,7 @@
 
 // CODE --------------------------------------------------------------------
 
-static int mapLumpTypeForName(const char* name)
-{
-    struct maplumpinfo_s {
-        int         type;
-        const char *name;
-    } mapLumpInfos[] =
-    {
-        {ML_THINGS,     "THINGS"},
-        {ML_LINEDEFS,   "LINEDEFS"},
-        {ML_SIDEDEFS,   "SIDEDEFS"},
-        {ML_VERTEXES,   "VERTEXES"},
-        {ML_SEGS,       "SEGS"},
-        {ML_SSECTORS,   "SSECTORS"},
-        {ML_NODES,      "NODES"},
-        {ML_SECTORS,    "SECTORS"},
-        {ML_REJECT,     "REJECT"},
-        {ML_BLOCKMAP,   "BLOCKMAP"},
-        {ML_BEHAVIOR,   "BEHAVIOR"},
-        {ML_SCRIPTS,    "SCRIPTS"},
-        {ML_LIGHTS,     "LIGHTS"},
-        {ML_MACROS,     "MACROS"},
-        {ML_LEAFS,      "LEAFS"},
-        {ML_INVALID,    NULL}
-    };
-
-    int         i;
-
-    if(!name)
-        return ML_INVALID;
-
-    for(i = 0; mapLumpInfos[i].type > ML_INVALID; ++i)
-    {
-        if(!strcmp(name, mapLumpInfos[i].name))
-            return mapLumpInfos[i].type;
-    }
-
-    return ML_INVALID;
-}
-
-/**
- * Allocate a new list node.
- */
-static listnode_t* allocListNode(void)
-{
-    listnode_t         *node = Z_Calloc(sizeof(listnode_t), PU_STATIC, 0);
-    return node;
-}
-
-/**
- * Free all memory acquired for the given list node.
- */
-static void freeListNode(listnode_t *node)
-{
-    if(node)
-        Z_Free(node);
-}
-
-/**
- * Allocate memory for a new map lump info record.
- */
-static maplumpinfo_t* allocMapLumpInfo(void)
-{
-    maplumpinfo_t *info = Z_Calloc(sizeof(maplumpinfo_t), PU_STATIC, 0);
-    return info;
-}
-
-/**
- * Free all memory acquired for the given map lump info record.
- */
-static void freeMapLumpInfo(maplumpinfo_t *info)
-{
-    if(info)
-        Z_Free(info);
-}
-
-/**
- * Free a list of maplumpinfo records.
- */
-static void freeMapLumpInfoList(listnode_t* headPtr)
-{
-    listnode_t*         node, *np;
-
-    node = headPtr;
-    while(node)
-    {
-        np = node->next;
-
-        if(node->data)
-            freeMapLumpInfo(node->data);
-        freeListNode(node);
-
-        node = np;
-    }
-}
-
-/**
- * Create a new map lump info record.
- */
-static maplumpinfo_t* createMapLumpInfo(int lumpNum, int lumpClass)
-{
-    maplumpinfo_t*      info = allocMapLumpInfo();
-
-    info->lumpNum = lumpNum;
-    info->lumpClass = lumpClass;
-    info->length = W_LumpLength(lumpNum);
-    info->format = NULL;
-    info->startOffset = 0;
-
-    return info;
-}
-
-/**
- * Link a maplumpinfo record to an archivedmap record.
- */
-static void addLumpInfoToList(listnode_t** headPtr, maplumpinfo_t* info)
-{
-    listnode_t*         node = allocListNode();
-
-    node->data = info;
-
-    node->next = *headPtr;
-    *headPtr = node;
-}
-
-/**
- * Find the lumps associated with this map dataset and link them to the
- * archivedmap record.
- *
- * \note Some obscure PWADs have these lumps in a non-standard order,
- * so we need to go resort to finding them automatically.
- *
- * @param headPtr       The list to link the created maplump records to.
- * @param startLump     The lump number to begin our search with.
- *
- * @return              The number of collected lumps.
- */
-static uint collectMapLumps(listnode_t** headPtr, int startLump)
-{
-    int                 i;
-    uint                numCollectedLumps = 0;
-
-    VERBOSE(Con_Message("collectMapLumps: Locating lumps...\n"));
-
-    if(startLump > 0 && startLump < numLumps)
-    {
-        // Keep checking lumps to see if its a map data lump.
-        for(i = startLump; i < numLumps; ++i)
-        {
-            int                 lumpType;
-            const char*         lumpName;
-
-            // Lookup the lump name in our list of known map lump names.
-            lumpName = W_LumpName(i);
-            lumpType = mapLumpTypeForName(lumpName);
-
-            if(lumpType != ML_INVALID)
-            {   // Its a known map lump.
-                maplumpinfo_t *info = createMapLumpInfo(i, lumpType);
-
-                addLumpInfoToList(headPtr, info);
-                numCollectedLumps++;
-                continue;
-            }
-
-            // Stop looking, we *should* have found them all.
-            break;
-        }
-    }
-
-    return numCollectedLumps;
-}
-
-static boolean convertMap(gamemap_t** map, const char* file, const char* mapID,
-                          int* lumpList, int numLumps)
+static boolean convertMap(gamemap_t** map, const char* file, const char* mapID)
 {
     boolean             converted = false;
 
@@ -240,7 +67,7 @@ static boolean convertMap(gamemap_t** map, const char* file, const char* mapID,
     {
         // Pass the lump list around the map converters, hopefully
         // one of them will recognise the format and convert it.
-        if(Plug_DoHook(HOOK_MAP_CONVERT, numLumps, (void*) lumpList))
+        if(Plug_DoHook(HOOK_MAP_CONVERT, 0, (void*) mapID))
         {
             converted = true;
             *map = MPE_GetLastBuiltMap();
@@ -256,8 +83,6 @@ static boolean convertMap(gamemap_t** map, const char* file, const char* mapID,
  */
 boolean DAM_AttemptMapLoad(const char* mapID)
 {
-    int                 numLumps;
-    int*                lumpList;
     lumpnum_t           startLump;
     boolean             loadedOK = false;
 
@@ -266,42 +91,8 @@ boolean DAM_AttemptMapLoad(const char* mapID)
 
     startLump = W_CheckNumForName(mapID);
 
-    {   // We've not yet attempted to load this map.
-    int                 i;
-    listnode_t*         ln, *headPtr = NULL;
-
     if(startLump == -1)
         return false;
-
-    // Add the marker lump to the list of lumps for this map.
-    addLumpInfoToList(&headPtr, createMapLumpInfo(startLump, ML_LABEL));
-
-    // Find the rest of the map data lumps associated with this map.
-    collectMapLumps(&headPtr, startLump + 1);
-
-    // Count the lumps for this map
-    numLumps = 0;
-    ln = headPtr;
-    while(ln)
-    {
-        numLumps++;
-        ln = ln->next;
-    }
-
-    // Allocate an array of the lump indices.
-    lumpList = malloc(sizeof(int) * numLumps);
-    ln = headPtr;
-    i = 0;
-    while(ln)
-    {
-        maplumpinfo_t      *info = (maplumpinfo_t*) ln->data;
-
-        lumpList[i++] = info->lumpNum;
-        ln = ln->next;
-    }
-
-    freeMapLumpInfoList(headPtr);
-    }
 
     // Load it in.
     {
@@ -309,7 +100,7 @@ boolean DAM_AttemptMapLoad(const char* mapID)
     ded_mapinfo_t  *mapInfo;
 
     // Try a JIT conversion with the help of a plugin.
-    if(convertMap(&map, W_LumpSourceFile(startLump), mapID, lumpList, numLumps))
+    if(convertMap(&map, W_LumpSourceFile(startLump), mapID))
         loadedOK = true;
 
     if(loadedOK)
@@ -383,6 +174,5 @@ boolean DAM_AttemptMapLoad(const char* mapID)
     }
     }
 
-    free(lumpList);
     return loadedOK;
 }
