@@ -70,25 +70,10 @@ enum {
     NUM_MAPLUMPS
 };
 
-typedef struct maplumpformat_s {
-    int         hversion;
-    char*       formatName;
-    int         lumpClass;
-} maplumpformat_t;
-
 typedef struct maplumpinfo_s {
     int         lumpNum;
-    maplumpformat_t* format;
-    int         lumpClass;
-    int         startOffset;
-    uint        elements;
     size_t      length;
 } maplumpinfo_t;
-
-typedef struct listnode_s {
-    void*       data;
-    struct listnode_s* next;
-} listnode_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -179,111 +164,42 @@ static int mapLumpTypeForName(const char* name)
 }
 
 /**
- * Allocate a new list node.
- */
-static listnode_t* allocListNode(void)
-{
-    listnode_t         *node = calloc(1, sizeof(listnode_t));
-    return node;
-}
-
-/**
- * Free all memory acquired for the given list node.
- */
-static void freeListNode(listnode_t* node)
-{
-    if(node)
-        free(node);
-}
-
-/**
- * Allocate memory for a new map lump info record.
- */
-static maplumpinfo_t* allocMapLumpInfo(void)
-{
-    maplumpinfo_t *info = calloc(1, sizeof(maplumpinfo_t));
-    return info;
-}
-
-/**
- * Free all memory acquired for the given map lump info record.
- */
-static void freeMapLumpInfo(maplumpinfo_t *info)
-{
-    if(info)
-        free(info);
-}
-
-/**
- * Free a list of maplumpinfo records.
- */
-static void freeMapLumpInfoList(listnode_t* headPtr)
-{
-    listnode_t*         node, *np;
-
-    node = headPtr;
-    while(node)
-    {
-        np = node->next;
-
-        if(node->data)
-            freeMapLumpInfo(node->data);
-        freeListNode(node);
-
-        node = np;
-    }
-}
-
-/**
- * Create a new map lump info record.
- */
-static maplumpinfo_t* createMapLumpInfo(int lumpNum, int lumpClass)
-{
-    maplumpinfo_t*      info = allocMapLumpInfo();
-
-    info->lumpNum = lumpNum;
-    info->lumpClass = lumpClass;
-    info->length = W_LumpLength(lumpNum);
-    info->format = NULL;
-    info->startOffset = 0;
-
-    return info;
-}
-
-/**
- * Link a maplumpinfo record to an archivedmap record.
- */
-static void addLumpInfoToList(listnode_t** headPtr, maplumpinfo_t* info)
-{
-    listnode_t*         node = allocListNode();
-
-    node->data = info;
-
-    node->next = *headPtr;
-    *headPtr = node;
-}
-
-/**
- * Find the lumps associated with this map dataset and link them to the
- * archivedmap record.
+ * This function is called when Doomsday is asked to load a map that is not
+ * presently available in its native map format.
  *
- * \note Some obscure PWADs have these lumps in a non-standard order,
- * so we need to go resort to finding them automatically.
- *
- * @param headPtr       The list to link the created maplump records to.
- * @param startLump     The lump number to begin our search with.
- *
- * @return              The number of collected lumps.
+ * Our job is to read in the map data structures then use the Doomsday map
+ * editing interface to recreate the map in native format.
  */
-static uint collectMapLumps(listnode_t** headPtr, int startLump)
+int ConvertMapHook(int hookType, int param, void *data)
 {
-    int                 i, numLumps = W_NumLumps();
-    uint                numCollectedLumps = 0;
+    lumpnum_t           i, numLumps, totalLumps, startLump;
+    lumpnum_t*          lumpList;
+    char*               mapID = (char*) data;
+    boolean             result = false;
 
-    VERBOSE(Con_Message("collectMapLumps: Locating lumps...\n"));
+    startLump = W_CheckNumForName(mapID);
+
+    if(startLump == -1)
+        return false;
+
+    // Add the marker lump to the list of lumps for this map.
+    lumpList = malloc(sizeof(lumpnum_t));
+    lumpList[0] = startLump;
+    numLumps = 1;
+
+    /**
+     * Find the lumps associated with this map dataset and link them to the
+     * archivedmap record.
+     *
+     * \note Some obscure PWADs have these lumps in a non-standard order,
+     * so we need to go resort to finding them automatically.
+     */
+    totalLumps = W_NumLumps();
+
+    VERBOSE(Con_Message("WadMapConverter::Convert: Locating lumps...\n"));
 
     // Keep checking lumps to see if its a map data lump.
-    for(i = startLump; i < numLumps; ++i)
+    for(i = startLump + 1; i < totalLumps; ++i)
     {
         int                 lumpType;
         const char*         lumpName;
@@ -294,71 +210,13 @@ static uint collectMapLumps(listnode_t** headPtr, int startLump)
 
         if(lumpType != ML_INVALID)
         {   // Its a known map lump.
-            maplumpinfo_t *info = createMapLumpInfo(i, lumpType);
-
-            addLumpInfoToList(headPtr, info);
-            numCollectedLumps++;
+            lumpList = realloc(lumpList, sizeof(lumpnum_t) * ++numLumps);
+            lumpList[numLumps - 1] = i;
             continue;
         }
 
         // Stop looking, we *should* have found them all.
         break;
-    }
-
-    return numCollectedLumps;
-}
-
-/**
- * This function is called when Doomsday is asked to load a map that is not
- * presently available in its native map format.
- *
- * Our job is to read in the map data structures then use the Doomsday map
- * editing interface to recreate the map in native format.
- */
-int ConvertMapHook(int hookType, int param, void *data)
-{
-    int                 numLumps, startLump;
-    int*                lumpList;
-    char*               mapID = (char*) data;
-    boolean             result = false;
-
-    startLump = W_CheckNumForName(mapID);
-
-    if(startLump == -1)
-        return false;
-
-    {   // We've not yet attempted to load this map.
-    int                 i;
-    listnode_t*         ln, *headPtr = NULL;
-
-    // Add the marker lump to the list of lumps for this map.
-    addLumpInfoToList(&headPtr, createMapLumpInfo(startLump, ML_LABEL));
-
-    // Find the rest of the map data lumps associated with this map.
-    collectMapLumps(&headPtr, startLump + 1);
-
-    // Count the lumps for this map
-    numLumps = 0;
-    ln = headPtr;
-    while(ln)
-    {
-        numLumps++;
-        ln = ln->next;
-    }
-
-    // Allocate an array of the lump indices.
-    lumpList = malloc(sizeof(int) * numLumps);
-    ln = headPtr;
-    i = 0;
-    while(ln)
-    {
-        maplumpinfo_t      *info = (maplumpinfo_t*) ln->data;
-
-        lumpList[i++] = info->lumpNum;
-        ln = ln->next;
-    }
-
-    freeMapLumpInfoList(headPtr);
     }
 
     verbose = ArgExists("-verbose");
