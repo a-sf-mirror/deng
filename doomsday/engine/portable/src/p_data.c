@@ -613,7 +613,7 @@ void P_ShutdownGameMapObjDefs(void)
 
             for(j = 0; j < def->numProps; ++j)
             {
-                mapobjprop_t       *prop = &def->props[i];
+                mapobjprop_t       *prop = &def->props[j];
 
                 M_Free(prop->name);
             }

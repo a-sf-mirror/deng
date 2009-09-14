@@ -403,7 +403,6 @@ boolean Con_Init(void)
     Net_Register();
     I_Register();
     H_Register();
-    DAM_Register();
     BSP_Register();
     UI_Register();
     Demo_Register();

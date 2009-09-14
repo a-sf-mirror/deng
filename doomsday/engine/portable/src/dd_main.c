@@ -496,7 +496,7 @@ static int DD_StartupWorker(void *parm)
 
     novideo = ArgCheck("-novideo") || isDedicated;
 
-    DAM_Init();
+    P_InitGameMapObjDefs();
 
     if(gx.PreInit)
         gx.PreInit();

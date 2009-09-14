@@ -51,13 +51,13 @@ enum {
 
 typedef struct maplumpformat_s {
     int         hversion;
-    char       *formatName;
+    char*       formatName;
     int         lumpClass;
 } maplumpformat_t;
 
 typedef struct maplumpinfo_s {
     int         lumpNum;
-    maplumpformat_t *format;
+    maplumpformat_t* format;
     int         lumpClass;
     int         startOffset;
     uint        elements;
@@ -65,27 +65,9 @@ typedef struct maplumpinfo_s {
 } maplumpinfo_t;
 
 typedef struct listnode_s {
-    void       *data;
-    struct listnode_s *next;
+    void*       data;
+    struct listnode_s* next;
 } listnode_t;
-
-typedef struct archivedmap_s {
-    char        identifier[9];
-    int         numLumps;
-    int        *lumpList;
-    filename_t  cachedMapDataFile;
-    boolean     cachedMapFound;
-    boolean     lastLoadAttemptFailed;
-} archivedmap_t;
-
-extern byte     mapCache;
-
-void        DAM_Register(void);
-
-void        DAM_Init(void);
-void        DAM_Shutdown(void);
-
-void        DAM_GetCachedMapDir(char* dir, int mainLump, size_t len);
 
 boolean     DAM_AttemptMapLoad(const char* mapID);
 

@@ -1887,30 +1887,6 @@ boolean MPE_End(void)
         gx.SetupForMapData(DMU_SECTOR, gamemap->numSectors);
     }
 
-    /**
-     * Are we caching this map?
-     */
-    if(gamemap->mapID && gamemap->mapID[0])
-    {   // Yes, write the cached map data file.
-        filename_t              cachedMapDir;
-        filename_t              cachedMapDataFile;
-        int                     markerLumpNum;
-
-        markerLumpNum = W_GetNumForName(gamemap->mapID);
-        DAM_GetCachedMapDir(cachedMapDir, markerLumpNum, FILENAME_T_MAXLEN);
-
-        // Ensure the destination path exists.
-        M_CheckPath(cachedMapDir);
-
-        sprintf(cachedMapDataFile, "%s%s", cachedMapDir,
-                                   W_LumpName(markerLumpNum));
-        M_TranslatePath(cachedMapDataFile, cachedMapDataFile,
-                        FILENAME_T_MAXLEN);
-        strncat(cachedMapDataFile, ".dcm", FILENAME_T_MAXLEN);
-
-        DAM_MapWrite(gamemap, cachedMapDataFile);
-    }
-
     lastBuiltMap = gamemap;
 
     // Success!
