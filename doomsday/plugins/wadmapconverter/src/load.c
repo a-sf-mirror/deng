@@ -248,11 +248,6 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
 
 /**
  * Attempts to load the BLOCKMAP data resource.
- *
- * If the map is too large (would overflow the size limit of
- * the BLOCKMAP lump in a WAD therefore it will have been truncated),
- * it's zero length or we are forcing a rebuild - we'll have to
- * generate the blockmap data ourselves.
  */
 #if 0 // Needs updating.
 static boolean loadBlockmap(tempmap_t *map, maplumpinfo_t *maplump)
@@ -323,7 +318,7 @@ static boolean loadBlockmap(tempmap_t *map, maplumpinfo_t *maplump)
          * We'll ensure the blockmap is formed correctly as we go.
          *
          * \todo We could gracefully handle malformed blockmaps by
-         * by cleaning up and then generating our own.
+         * cleaning up and then generating our own.
          */
 
         V2_Set(bounds[0], v[VX], v[VY]);

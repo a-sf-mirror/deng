@@ -266,7 +266,7 @@ int P_GetMapAmbientLightLevel(gamemap_t* map)
  *
  * @return              @c true, if the map was loaded successfully.
  */
-boolean P_LoadMap(const char *mapID)
+boolean P_LoadMap(const char* mapID)
 {
     uint                i;
 
@@ -291,7 +291,7 @@ boolean P_LoadMap(const char *mapID)
         // they're ready to begin receiving frames.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t           *plr = &ddPlayers[i];
+            player_t*           plr = &ddPlayers[i];
 
             if(!(plr->shared.flags & DDPF_LOCAL) && clients[i].connected)
             {
@@ -303,53 +303,127 @@ boolean P_LoadMap(const char *mapID)
         }
     }
 
-    if(DAM_AttemptMapLoad(mapID))
+    if(!DAM_TryMapConversion(mapID))
+        return false;
+
     {
-        uint                i;
-        gamemap_t*          map = P_GetCurrentMap();
+    gamemap_t*          map = NULL;
+    ded_sky_t*          skyDef = NULL;
+    ded_mapinfo_t*      mapInfo;
 
-        // Init the thinker lists (public and private).
-        P_InitThinkerLists(0x1 | 0x2);
+    map = MPE_GetLastBuiltMap();
 
-        // Tell shadow bias to initialize the bias light sources.
-        SB_InitForMap(P_GetUniqueMapID(map));
+    // Do any initialization/error checking work we need to do.
+    // Must be called before we go any further.
+    P_InitUnusedMobjList();
 
-        Cl_Reset();
-        RL_DeleteLists();
-        Rend_CalcLightModRange(NULL);
+    // Must be called before any mobjs are spawned.
+    R_InitLinks(map);
 
-        // Invalidate old cmds and init player values.
-        for(i = 0; i < DDMAXPLAYERS; ++i)
-        {
-            player_t           *plr = &ddPlayers[i];
+    R_BuildSectorLinks(map);
 
-            if(isServer && plr->shared.inGame)
-                clients[i].runTime = SECONDS_TO_TICKS(gameTime);
+    // Init blockmap for searching subsectors.
+    P_BuildSubsectorBlockMap(map);
 
-            plr->extraLight = plr->targetExtraLight = 0;
-            plr->extraLightCounter = 0;
-        }
+    // Init the watched object lists.
+    memset(&map->watchedPlaneList, 0, sizeof(map->watchedPlaneList));
+    memset(&map->movingSurfaceList, 0, sizeof(map->movingSurfaceList));
+    memset(&map->decoratedSurfaceList, 0, sizeof(map->decoratedSurfaceList));
 
-        // Make sure that the next frame doesn't use a filtered viewer.
-        R_ResetViewer();
+    strncpy(map->mapID, mapID, 8);
+    strncpy(map->uniqueID, P_GenerateUniqueMapID(mapID),
+            sizeof(map->uniqueID));
 
-        // Texture animations should begin from their first step.
-        R_ResetAnimGroups();
+    // See what mapinfo says about this map.
+    mapInfo = Def_GetMapInfo(map->mapID);
+    if(!mapInfo)
+        mapInfo = Def_GetMapInfo("*");
 
-        R_InitObjLinksForMap();
-        LO_InitForMap(); // Lumobj management.
-        DL_InitForMap(); // Projected dynlights (from lumobjs) management.
-        VL_InitForMap(); // Converted vlights (from lumobjs) management.
+    if(mapInfo)
+    {
+        skyDef = Def_GetSky(mapInfo->skyID);
+        if(!skyDef)
+            skyDef = &mapInfo->sky;
+    }
 
-        // Init Particle Generator links.
-        P_PtcInitForMap();
+    R_SetupSky(skyDef);
 
-        // Initialize the lighting grid.
-        LG_Init();
+    // Setup accordingly.
+    if(mapInfo)
+    {
+        map->globalGravity = mapInfo->gravity;
+        map->ambientLightLevel = mapInfo->ambient * 255;
+    }
+    else
+    {
+        // No map info found, so set some basic stuff.
+        map->globalGravity = 1.0f;
+        map->ambientLightLevel = 0;
+    }
 
-        if(!isDedicated)
-            R_InitRendVerticesPool();
-        return true;
+    // \todo should be called from P_LoadMap() but R_InitMap requires the
+    // currentMap to be set first.
+    P_SetCurrentMap(map);
+
+    R_InitSectorShadows();
+
+    {
+    uint                startTime = Sys_GetRealTime();
+
+    R_InitSkyFix();
+
+    // How much time did we spend?
+    VERBOSE(Con_Message
+            ("  InitialSkyFix: Done in %.2f seconds.\n",
+             (Sys_GetRealTime() - startTime) / 1000.0f));
+    }
+    }
+    {
+    uint                i;
+    gamemap_t*          map = P_GetCurrentMap();
+
+    // Init the thinker lists (public and private).
+    P_InitThinkerLists(0x1 | 0x2);
+
+    // Tell shadow bias to initialize the bias light sources.
+    SB_InitForMap(P_GetUniqueMapID(map));
+
+    Cl_Reset();
+    RL_DeleteLists();
+    Rend_CalcLightModRange(NULL);
+
+    // Invalidate old cmds and init player values.
+    for(i = 0; i < DDMAXPLAYERS; ++i)
+    {
+        player_t           *plr = &ddPlayers[i];
+
+        if(isServer && plr->shared.inGame)
+            clients[i].runTime = SECONDS_TO_TICKS(gameTime);
+
+        plr->extraLight = plr->targetExtraLight = 0;
+        plr->extraLightCounter = 0;
+    }
+
+    // Make sure that the next frame doesn't use a filtered viewer.
+    R_ResetViewer();
+
+    // Texture animations should begin from their first step.
+    R_ResetAnimGroups();
+
+    R_InitObjLinksForMap();
+    LO_InitForMap(); // Lumobj management.
+    DL_InitForMap(); // Projected dynlights (from lumobjs) management.
+    VL_InitForMap(); // Converted vlights (from lumobjs) management.
+
+    // Init Particle Generator links.
+    P_PtcInitForMap();
+
+    // Initialize the lighting grid.
+    LG_Init();
+
+    if(!isDedicated)
+        R_InitRendVerticesPool();
+    return true;
     }
 
     return false;

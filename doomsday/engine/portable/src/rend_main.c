@@ -1985,7 +1985,7 @@ static void renderPlane(face_t* face, planetype_t type,
     memset(&params, 0, sizeof(params));
 
     params.isWall = false;
-    params.mapObject = ssec;
+    params.mapObject = face;
     params.elmIdx = elmIdx;
     params.bsuf = bsuf;
     params.normal = normal;

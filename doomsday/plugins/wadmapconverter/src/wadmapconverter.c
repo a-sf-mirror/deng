@@ -170,16 +170,14 @@ static int mapLumpTypeForName(const char* name)
  * Our job is to read in the map data structures then use the Doomsday map
  * editing interface to recreate the map in native format.
  */
-int ConvertMapHook(int hookType, int param, void *data)
+int ConvertMapHook(int hookType, int param, void* data)
 {
     lumpnum_t           i, numLumps, totalLumps, startLump;
     lumpnum_t*          lumpList;
     char*               mapID = (char*) data;
     boolean             result = false;
 
-    startLump = W_CheckNumForName(mapID);
-
-    if(startLump == -1)
+    if((startLump = W_CheckNumForName(mapID)) == -1)
         return false;
 
     // Add the marker lump to the list of lumps for this map.
@@ -206,6 +204,8 @@ int ConvertMapHook(int hookType, int param, void *data)
 
         // Lookup the lump name in our list of known map lump names.
         lumpName = W_LumpName(i);
+
+        // @todo Do more validity checking.
         lumpType = mapLumpTypeForName(lumpName);
 
         if(lumpType != ML_INVALID)

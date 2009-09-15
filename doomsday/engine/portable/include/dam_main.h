@@ -28,6 +28,6 @@
 #ifndef __DOOMSDAY_ARCHIVED_MAP_MAIN_H__
 #define __DOOMSDAY_ARCHIVED_MAP_MAIN_H__
 
-boolean     DAM_AttemptMapLoad(const char* mapID);
+boolean     DAM_TryMapConversion(const char* mapID);
 
 #endif

@@ -55,7 +55,7 @@
 
 // CODE --------------------------------------------------------------------
 
-static boolean convertMap(gamemap_t** map, const char* file, const char* mapID)
+static boolean convertMap(const char* mapID)
 {
     boolean             converted = false;
 
@@ -68,10 +68,7 @@ static boolean convertMap(gamemap_t** map, const char* file, const char* mapID)
         // Pass the lump list around the map converters, hopefully
         // one of them will recognise the format and convert it.
         if(Plug_DoHook(HOOK_MAP_CONVERT, 0, (void*) mapID))
-        {
             converted = true;
-            *map = MPE_GetLastBuiltMap();
-        }
     }
 
     Con_Message("convertMap: %s.\n", (converted? "Successful" : "Failed"));
@@ -81,98 +78,8 @@ static boolean convertMap(gamemap_t** map, const char* file, const char* mapID)
 /**
  * Attempt to load the map associated with the specified identifier.
  */
-boolean DAM_AttemptMapLoad(const char* mapID)
+boolean DAM_TryMapConversion(const char* mapID)
 {
-    lumpnum_t           startLump;
-    boolean             loadedOK = false;
-
-    VERBOSE2(
-    Con_Message("DAM_AttemptMapLoad: Loading \"%s\"...\n", mapID));
-
-    startLump = W_CheckNumForName(mapID);
-
-    if(startLump == -1)
-        return false;
-
-    // Load it in.
-    {
-    gamemap_t      *map = NULL;
-    ded_mapinfo_t  *mapInfo;
-
-    // Try a JIT conversion with the help of a plugin.
-    if(convertMap(&map, W_LumpSourceFile(startLump), mapID))
-        loadedOK = true;
-
-    if(loadedOK)
-    {
-        ded_sky_t*          skyDef = NULL;
-
-        // Do any initialization/error checking work we need to do.
-        // Must be called before we go any further.
-        P_InitUnusedMobjList();
-
-        // Must be called before any mobjs are spawned.
-        R_InitLinks(map);
-
-        R_BuildSectorLinks(map);
-
-        // Init blockmap for searching subsectors.
-        P_BuildSubsectorBlockMap(map);
-
-        // Init the watched object lists.
-        memset(&map->watchedPlaneList, 0, sizeof(map->watchedPlaneList));
-        memset(&map->movingSurfaceList, 0, sizeof(map->movingSurfaceList));
-        memset(&map->decoratedSurfaceList, 0, sizeof(map->decoratedSurfaceList));
-
-        strncpy(map->mapID, mapID, 8);
-        strncpy(map->uniqueID, P_GenerateUniqueMapID(mapID),
-                sizeof(map->uniqueID));
-
-        // See what mapinfo says about this map.
-        mapInfo = Def_GetMapInfo(map->mapID);
-        if(!mapInfo)
-            mapInfo = Def_GetMapInfo("*");
-
-        if(mapInfo)
-        {
-            skyDef = Def_GetSky(mapInfo->skyID);
-            if(!skyDef)
-                skyDef = &mapInfo->sky;
-        }
-
-        R_SetupSky(skyDef);
-
-        // Setup accordingly.
-        if(mapInfo)
-        {
-            map->globalGravity = mapInfo->gravity;
-            map->ambientLightLevel = mapInfo->ambient * 255;
-        }
-        else
-        {
-            // No map info found, so set some basic stuff.
-            map->globalGravity = 1.0f;
-            map->ambientLightLevel = 0;
-        }
-
-        // \todo should be called from P_LoadMap() but R_InitMap requires the
-        // currentMap to be set first.
-        P_SetCurrentMap(map);
-
-        R_InitSectorShadows();
-
-        {
-        uint                startTime = Sys_GetRealTime();
-
-        R_InitSkyFix();
-
-        // How much time did we spend?
-        VERBOSE(Con_Message
-                ("  InitialSkyFix: Done in %.2f seconds.\n",
-                 (Sys_GetRealTime() - startTime) / 1000.0f));
-        }
-    }
-    }
-
-    return loadedOK;
+    // Load it in. Try a JIT conversion with the help of a plugin.
+    return convertMap(mapID);
 }
