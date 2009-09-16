@@ -302,7 +302,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
     tmBBox[BOXRIGHT]  = tm[VX] + tmThing->radius;
     tmBBox[BOXLEFT]   = tm[VX] - tmThing->radius;
 
-    newSSec = R_PointInSubsector(tm[VX], tm[VY]);
+    newSSec = P_PointInSubsector(tm[VX], tm[VY]);
 
     ceilingLine = floorLine = NULL;
 #if !__JHEXEN__
@@ -380,8 +380,8 @@ boolean PIT_CrossLine(linedef_t* ld, void* data)
              tmBBox[BOXTOP]    < bbox[BOXBOTTOM] ||
              tmBBox[BOXBOTTOM] > bbox[BOXTOP]))
         {
-            if(P_PointOnLinedefSide(startPos[VX], startPos[VY], ld) !=
-               P_PointOnLinedefSide(endPos[VX], endPos[VY], ld))
+            if(DMU_PointOnLinedefSide(startPos[VX], startPos[VY], ld) !=
+               DMU_PointOnLinedefSide(endPos[VX], endPos[VY], ld))
                 // Line blocks trajectory.
                 return false;
         }
@@ -444,7 +444,7 @@ static int untouched(linedef_t* ld)
        ((box[BOXLEFT]   = x - radius) >= bbox[BOXRIGHT]) ||
        ((box[BOXTOP]    = y + radius) <= bbox[BOXBOTTOM]) ||
        ((box[BOXBOTTOM] = y - radius) >= bbox[BOXTOP]) ||
-       P_BoxOnLineSide(box, ld) != -1)
+       DMU_BoxOnLineSide(box, ld) != -1)
         return true;
 
     return false;
@@ -935,7 +935,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
        tmBBox[BOXBOTTOM] >= bbox[BOXTOP])
         return true;
 
-    if(P_BoxOnLineSide(tmBBox, ld) != -1)
+    if(DMU_BoxOnLineSide(tmBBox, ld) != -1)
         return true;
 
     // A line has been hit
@@ -1038,7 +1038,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
 #endif
 
     // Set OPENRANGE, OPENTOP, OPENBOTTOM.
-    P_LineOpening(ld);
+    DMU_LineOpening(ld);
 
     // Adjust floor / ceiling heights.
     if(OPENTOP < tmCeilingZ)
@@ -1117,7 +1117,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     tmBBox[BOXRIGHT]  = tm[VX] + tmThing->radius;
     tmBBox[BOXLEFT]   = tm[VX] - tmThing->radius;
 
-    newSec = DMU_GetPtrp(R_PointInSubsector(tm[VX], tm[VY]), DMU_SECTOR);
+    newSec = DMU_GetPtrp(P_PointInSubsector(tm[VX], tm[VY]), DMU_SECTOR);
 
     ceilingLine = floorLine = NULL;
 #if !__JHEXEN__
@@ -1449,8 +1449,8 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             // See if the line was crossed.
             if(P_ToXLine(ld)->special)
             {
-                side = P_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], ld);
-                oldSide = P_PointOnLinedefSide(oldpos[VX], oldpos[VY], ld);
+                side = DMU_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], ld);
+                oldSide = DMU_PointOnLinedefSide(oldpos[VX], oldpos[VY], ld);
                 if(side != oldSide)
                 {
 #if __JHEXEN__
@@ -1489,7 +1489,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
         while((ld = P_IterListIterator(spechit)) != NULL)
         {
             // See if the line was crossed.
-            side = P_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], ld);
+            side = DMU_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], ld);
             checkForPushSpecial(ld, side, thing);
         }
     }
@@ -1514,7 +1514,7 @@ boolean P_TryMove(mobj_t* thing, float x, float y, boolean dropoff,
     {
         // Move not possible, see if the thing hit a line and send a Hit
         // event to it.
-        XL_HitLine(tmHitLine, P_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], tmHitLine),
+        XL_HitLine(tmHitLine, DMU_PointOnLinedefSide(thing->pos[VX], thing->pos[VY], tmHitLine),
                    thing);
     }
 
@@ -1560,7 +1560,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
         frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
         backSec = DMU_GetPtrp(li, DMU_BACK_SECTOR);
 
-        if(!backSec && P_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
+        if(!backSec && DMU_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
             return true; // Continue traversal.
 
         if(xline->special)
@@ -1575,7 +1575,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
 #endif
 
         // Crosses a two sided line.
-        P_LineOpening(li);
+        DMU_LineOpening(li);
         dist = attackRange * in->frac;
 
         if(DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) !=
@@ -1626,7 +1626,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
         lineWasHit = true;
 
         // This is the subsector where the trace originates.
-        originSub = R_PointInSubsector(tracePos[VX], tracePos[VY]);
+        originSub = P_PointInSubsector(tracePos[VX], tracePos[VY]);
 
         d[VX] = pos[VX] - tracePos[VX];
         d[VY] = pos[VY] - tracePos[VY];
@@ -1634,7 +1634,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
 
         if(!INRANGE_OF(d[VZ], 0, .0001f)) // Epsilon
         {
-            contact = R_PointInSubsector(pos[VX], pos[VY]);
+            contact = P_PointInSubsector(pos[VX], pos[VY]);
             step = P_ApproxDistance3(d[VX], d[VY], d[VZ]);
             stepv[VX] = d[VX] / step;
             stepv[VY] = d[VY] / step;
@@ -1651,7 +1651,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
                 pos[VX] = tracePos[VX] + d[VX];
                 pos[VY] = tracePos[VY] + d[VY];
                 pos[VZ] = tracePos[VZ] + d[VZ];
-                contact = R_PointInSubsector(pos[VX], pos[VY]);
+                contact = P_PointInSubsector(pos[VX], pos[VY]);
             }
 
             // Should we backtrack to hit a plane instead?
@@ -1855,7 +1855,7 @@ boolean PTR_AimTraverse(intercept_t* in)
             tracePos[VY] = FIX2FLT(trace->pos[VY]);
             tracePos[VZ] = shootZ;
 
-            if(P_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
+            if(DMU_PointOnLinedefSide(tracePos[VX], tracePos[VY], li))
                 return true; // Continue traversal.
 
             return false; // Stop.
@@ -1863,7 +1863,7 @@ boolean PTR_AimTraverse(intercept_t* in)
 
         // Crosses a two sided line.
         // A two sided line will restrict the possible target ranges.
-        P_LineOpening(li);
+        DMU_LineOpening(li);
 
         if(OPENBOTTOM >= OPENTOP)
             return false; // Stop.
@@ -2198,7 +2198,7 @@ boolean PTR_UseTraverse(intercept_t* in)
 
     if(!xline->special)
     {
-        P_LineOpening(in->d.lineDef);
+        DMU_LineOpening(in->d.lineDef);
         if(OPENRANGE <= 0)
         {
             if(useThing->player)
@@ -2223,7 +2223,7 @@ boolean PTR_UseTraverse(intercept_t* in)
     }
 
     side = 0;
-    if(1 == P_PointOnLinedefSide(useThing->pos[VX], useThing->pos[VY],
+    if(1 == DMU_PointOnLinedefSide(useThing->pos[VX], useThing->pos[VY],
                               in->d.lineDef))
         side = 1;
 
@@ -2361,7 +2361,7 @@ static void P_HitSlideLine(linedef_t* ld)
         return;
     }
 
-    side = P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
+    side = DMU_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
     DMU_GetFloatpv(ld, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
     moveAngle = R_PointToAngle2(0, 0, tmMove[MX], tmMove[MY]) + 10;
@@ -2393,7 +2393,7 @@ boolean PTR_SlideTraverse(intercept_t* in)
 
     if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        if(P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
+        if(DMU_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
             return true; // Don't hit the back side.
 
         goto isblocking;
@@ -2404,7 +2404,7 @@ boolean PTR_SlideTraverse(intercept_t* in)
         goto isblocking;
 #endif
 
-    P_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
+    DMU_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
 
     if(OPENRANGE < slideMo->height)
         goto isblocking; // Doesn't fit.
@@ -2695,7 +2695,7 @@ boolean P_ChangeSector(sector_t* sector, boolean crunch)
     crushChange = crunch;
 
     VALIDCOUNT++;
-    P_SectorTouchingMobjsIterator(sector, PIT_ChangeSector, 0);
+    DMU_SectorTouchingMobjsIterator(sector, PIT_ChangeSector, 0);
 
     return noFit;
 }
@@ -2849,7 +2849,7 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     tmBBox[BOXRIGHT]  = pos[VX] + tmThing->radius;
     tmBBox[BOXLEFT]   = pos[VX] - tmThing->radius;
 
-    newSSec = R_PointInSubsector(pos[VX], pos[VY]);
+    newSSec = P_PointInSubsector(pos[VX], pos[VY]);
     ceilingLine = floorLine = NULL;
 
     // The base floor/ceiling is from the subsector that contains the
@@ -2987,13 +2987,13 @@ boolean PTR_BounceTraverse(intercept_t* in)
 
     if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        if(P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
+        if(DMU_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], li))
             return true; // Don't hit the back side.
 
         goto bounceblocking;
     }
 
-    P_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
+    DMU_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
 
     if(OPENRANGE < slideMo->height)
         goto bounceblocking; // Doesn't fit.
@@ -3048,7 +3048,7 @@ void P_BounceWall(mobj_t* mo)
     if(!bestSlideLine)
         return; // We don't want to crash.
 
-    side = P_PointOnLinedefSide(mo->pos[VX], mo->pos[VY], bestSlideLine);
+    side = DMU_PointOnLinedefSide(mo->pos[VX], mo->pos[VY], bestSlideLine);
     DMU_GetFloatpv(bestSlideLine, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
     if(side == 1)
@@ -3079,7 +3079,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
 
         if(xline->special != USE_PUZZLE_ITEM_SPECIAL)
         {
-            P_LineOpening(line);
+            DMU_LineOpening(line);
 
             if(OPENRANGE <= 0)
             {
@@ -3114,7 +3114,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
             return true; // Continue searching...
         }
 
-        if(P_PointOnLinedefSide(puzzleItemUser->pos[VX],
+        if(DMU_PointOnLinedefSide(puzzleItemUser->pos[VX],
                                 puzzleItemUser->pos[VY], line) == 1)
             return false; // Don't use back sides.
 

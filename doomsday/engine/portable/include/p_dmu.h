@@ -46,6 +46,12 @@ typedef struct setargs_s {
 } setargs_t;
 
 void        P_InitMapUpdate(void);
+void        P_ShutdownMapUpdate(void);
+
+void        DMU_ClearObjRecords(int type);
+dmuobjrecordid_t DMU_AddObjRecord(int type, void* p);
+dmuobjrecord_t* DMU_GetObjRecord(int type, void* p);
+
 void*       P_AllocDummy(int type, void* extraData);
 void        P_FreeDummy(void* dummy);
 int         P_DummyType(void* dummy);

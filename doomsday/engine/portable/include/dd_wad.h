@@ -59,7 +59,7 @@ extern char* defaultWads; // A list of wad names, whitespace in between (in .cfg
 extern int numLumps;
 
 void            DD_RegisterVFS(void);
-
+int             W_NumLumps(void);
 void            W_InitMultipleFiles(char** fileNames);
 void            W_EndStartup(void);
 lumpnum_t       W_CheckNumForName(const char* name);

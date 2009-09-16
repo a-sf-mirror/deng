@@ -417,7 +417,7 @@ static void findContacts(objlink_t* oLink)
     contactfinderparams_t params;
     float               radius;
     pvec3_t             pos;
-    face_t**            face;
+    face_t*             face;
 
     switch(oLink->type)
     {
@@ -430,7 +430,7 @@ static void findContacts(objlink_t* oLink)
 
         pos = lum->pos;
         radius = LUM_OMNI(lum)->radius;
-        face = &lum->face;
+        face = lum->face;
         break;
         }
     case OT_MOBJ:
@@ -439,13 +439,13 @@ static void findContacts(objlink_t* oLink)
 
         pos = mo->pos;
         radius = R_VisualRadius(mo);
-        face = &mo->face;
+        face = (face_t*) ((dmuobjrecord_t*) mo->face)->obj;
         break;
         }
     }
 
     // Do the subsector spread. Begin from the obj's own ssec.
-    ((subsector_t*) (*face)->data)->validCount = ++validCount;
+    ((subsector_t*) (face)->data)->validCount = ++validCount;
 
     params.obj = oLink->obj;
     params.objType = oLink->type;
@@ -465,10 +465,10 @@ static void findContacts(objlink_t* oLink)
     params.obj = oLink->obj;
     params.type = oLink->type;
 
-    RIT_LinkObjToSubsector(*face, &params);
+    RIT_LinkObjToSubsector(face, &params);
     }
 
-    spreadInFace(*face, &params);
+    spreadInFace(face, &params);
 }
 
 /**

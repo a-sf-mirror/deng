@@ -49,6 +49,32 @@
 
 // TYPES -------------------------------------------------------------------
 
+enum {
+    ML_INVALID = -1,
+    ML_LABEL, // A separator, name, ExMx or MAPxx
+    ML_THINGS, // Monsters, items..
+    ML_LINEDEFS, // LineDefs, from editing
+    ML_SIDEDEFS, // SideDefs, from editing
+    ML_VERTEXES, // Vertices, edited and BSP splits generated
+    ML_SEGS, // LineSegs, from LineDefs split by BSP
+    ML_SSECTORS, // SubSectors, list of LineSegs
+    ML_NODES, // BSP nodes
+    ML_SECTORS, // Sectors, from editing
+    ML_REJECT, // LUT, sector-sector visibility
+    ML_BLOCKMAP, // LUT, motion clipping, walls/grid element
+    ML_BEHAVIOR, // ACS Scripts (compiled).
+    ML_SCRIPTS, // ACS Scripts (source).
+    ML_LIGHTS, // Surface color tints.
+    ML_MACROS, // DOOM64 format, macro scripts.
+    ML_LEAFS, // DOOM64 format, segs (close subsectors).
+    NUM_MAPLUMPS
+};
+
+typedef struct maplumpinfo_s {
+    int         lumpNum;
+    size_t      length;
+} maplumpinfo_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -98,6 +124,45 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 }
 #endif
 
+static int mapLumpTypeForName(const char* name)
+{
+    struct maplumpinfo_s {
+        int         type;
+        const char *name;
+    } mapLumpInfos[] =
+    {
+        {ML_THINGS,     "THINGS"},
+        {ML_LINEDEFS,   "LINEDEFS"},
+        {ML_SIDEDEFS,   "SIDEDEFS"},
+        {ML_VERTEXES,   "VERTEXES"},
+        {ML_SEGS,       "SEGS"},
+        {ML_SSECTORS,   "SSECTORS"},
+        {ML_NODES,      "NODES"},
+        {ML_SECTORS,    "SECTORS"},
+        {ML_REJECT,     "REJECT"},
+        {ML_BLOCKMAP,   "BLOCKMAP"},
+        {ML_BEHAVIOR,   "BEHAVIOR"},
+        {ML_SCRIPTS,    "SCRIPTS"},
+        {ML_LIGHTS,     "LIGHTS"},
+        {ML_MACROS,     "MACROS"},
+        {ML_LEAFS,      "LEAFS"},
+        {ML_INVALID,    NULL}
+    };
+
+    int         i;
+
+    if(!name)
+        return ML_INVALID;
+
+    for(i = 0; mapLumpInfos[i].type > ML_INVALID; ++i)
+    {
+        if(!strcmp(name, mapLumpInfos[i].name))
+            return mapLumpInfos[i].type;
+    }
+
+    return ML_INVALID;
+}
+
 /**
  * This function is called when Doomsday is asked to load a map that is not
  * presently available in its native map format.
@@ -105,19 +170,64 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
  * Our job is to read in the map data structures then use the Doomsday map
  * editing interface to recreate the map in native format.
  */
-int ConvertMapHook(int hookType, int param, void *data)
+int ConvertMapHook(int hookType, int param, void* data)
 {
-    int                *lumpList = (int*) data;
+    lumpnum_t           i, numLumps, totalLumps, startLump;
+    lumpnum_t*          lumpList;
+    char*               mapID = (char*) data;
     boolean             result = false;
+
+    if((startLump = W_CheckNumForName(mapID)) == -1)
+        return false;
+
+    // Add the marker lump to the list of lumps for this map.
+    lumpList = malloc(sizeof(lumpnum_t));
+    lumpList[0] = startLump;
+    numLumps = 1;
+
+    /**
+     * Find the lumps associated with this map dataset and link them to the
+     * archivedmap record.
+     *
+     * \note Some obscure PWADs have these lumps in a non-standard order,
+     * so we need to go resort to finding them automatically.
+     */
+    totalLumps = W_NumLumps();
+
+    VERBOSE(Con_Message("WadMapConverter::Convert: Locating lumps...\n"));
+
+    // Keep checking lumps to see if its a map data lump.
+    for(i = startLump + 1; i < totalLumps; ++i)
+    {
+        int                 lumpType;
+        const char*         lumpName;
+
+        // Lookup the lump name in our list of known map lump names.
+        lumpName = W_LumpName(i);
+
+        // @todo Do more validity checking.
+        lumpType = mapLumpTypeForName(lumpName);
+
+        if(lumpType != ML_INVALID)
+        {   // Its a known map lump.
+            lumpList = realloc(lumpList, sizeof(lumpnum_t) * ++numLumps);
+            lumpList[numLumps - 1] = i;
+            continue;
+        }
+
+        // Stop looking, we *should* have found them all.
+        break;
+    }
 
     verbose = ArgExists("-verbose");
 
     Con_Message("WadMapConverter::Convert: Attempting map conversion...\n");
     memset(map, 0, sizeof(*map));
 
-    if(!IsSupportedFormat(lumpList, param))
+    if(!IsSupportedFormat(lumpList, numLumps))
     {
         Con_Message("WadMapConverter::Convert: Unknown map format, aborting.\n");
+        free(lumpList);
         return false; // Cannot convert.
     }
 
@@ -127,11 +237,13 @@ int ConvertMapHook(int hookType, int param, void *data)
                  map->format == MF_HEXEN? "Hexen" : "DOOM"));
 
     // Load it in.
-    if(!LoadMap(lumpList, param))
+    if(!LoadMap(lumpList, numLumps))
     {
         Con_Message("WadMapConverter::Convert: Internal error, load failed.\n");
+        free(lumpList);
         return false; // Something went horribly wrong...
     }
+    free(lumpList);
 
     AnalyzeMap();
     return TransferMap();

@@ -539,6 +539,9 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material "
     // Now create a name binding for it.
     newMaterialNameBinding(mat, name, mnamespace, hash);
 
+    // Add this material to the DMU object records.
+    DMU_AddObjRecord(DMU_MATERIAL, mat);
+
     return mat;
 }
 

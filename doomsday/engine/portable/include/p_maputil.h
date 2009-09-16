@@ -116,10 +116,10 @@ boolean         P_PolyobjsBoxIteratorv(const arvec2_t box,
 // (Polyobj in bounding box)->lineDefs iterators.
 boolean         P_PolyobjLinesBoxIterator(const float box[4],
                                           boolean (*func) (linedef_t *, void *),
-                                          void *data);
+                                          void *data, boolean retObjRecord);
 boolean         P_PolyobjLinesBoxIteratorv(const arvec2_t box,
                                            boolean (*func) (linedef_t *, void *),
-                                           void *data);
+                                           void *data, boolean retObjRecord);
 
 // Lines and (Polyobj in bounding box)->lineDefs iterators.
 // Polyobj lines are iterated first.

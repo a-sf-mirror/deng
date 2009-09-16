@@ -499,7 +499,7 @@ static void P_LoadMapObjs(void)
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
             face_t*        ssec =
-                R_PointInSubsector(spot->pos[VX], spot->pos[VY]);
+                P_PointInSubsector(spot->pos[VX], spot->pos[VY]);
             xsector_t*          xsector =
                 P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 
@@ -992,29 +992,29 @@ static void P_FinalizeMap(void)
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
     {
-    uint                i, k;
+    uint                i;
     material_t*         mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName("NUKE24", MN_TEXTURES));
-    material_t*         bottomMat, *midMat;
-    float               yoff;
-    sidedef_t*          sidedef;
-    linedef_t*          line;
-
+    
     for(i = 0; i < numlines; ++i)
     {
-        line = DMU_ToPtr(DMU_LINEDEF, i);
+        linedef_t*          line = DMU_ToPtr(DMU_LINEDEF, i);
+        uint                k;
 
         for(k = 0; k < 2; ++k)
         {
-            sidedef = DMU_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
+            sidedef_t*          sidedef = DMU_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
 
             if(sidedef)
             {
+                material_t*         bottomMat, *midMat;
+
                 bottomMat = DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
                 midMat = DMU_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL);
 
                 if(bottomMat == mat && midMat == NULL)
                 {
-                    yoff = DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
+                    float               yoff =
+                        DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
                     DMU_SetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y, yoff + 1.0f);
                 }
             }

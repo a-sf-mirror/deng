@@ -142,6 +142,14 @@ typedef struct runtime_mapdata_header_s {
     int             type; // One of the DMU type constants.
 } runtime_mapdata_header_t;
 
+typedef int dmuobjrecordid_t;
+
+typedef struct dmuobjrecord_s {
+    int             dummy;
+    runtime_mapdata_header_t header;
+    void*           obj;
+} dmuobjrecord_t;
+
 #ifdef __cplusplus
 #  define boolean           int
 #else                           // Plain C.

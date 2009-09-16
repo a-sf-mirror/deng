@@ -525,7 +525,7 @@ void Sfx_ListenerUpdate(void)
 
     if(listener)
     {
-        subsector_t*            ssec = (subsector_t*) listener->face->data;
+        subsector_t*            ssec = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) listener->face)->obj)->data;
 
         // Position. At eye-level.
         Sfx_GetListenerXYZ(vec);

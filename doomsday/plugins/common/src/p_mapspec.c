@@ -257,7 +257,7 @@ sector_t* P_FindSectorSurroundingLowestLight(sector_t *sec, float *val)
     params.flags = FELLF_MIN;
     params.foundSec = NULL;
     DMU_Iteratep(sec, DMU_LINEDEF, &params,
-               findExtremalLightLevelInAdjacentSectors);
+                 findExtremalLightLevelInAdjacentSectors);
 
     if(*val)
         *val = params.val;
@@ -643,7 +643,7 @@ int spreadSoundToNeighbors(void *ptr, void *context)
 
     if(frontSec && backSec)
     {
-        P_LineOpening(li);
+        DMU_LineOpening(li);
 
         if(OPENRANGE > 0)
         {

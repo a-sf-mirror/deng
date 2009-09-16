@@ -70,7 +70,7 @@ boolean         P_BlockmapMobjsIterator(blockmap_t* bmap, const uint block[2],
                                          void* data);
 boolean         P_BlockmapLinesIterator(blockmap_t* bmap, const uint block[2],
                                         boolean (*func) (linedef_t*, void*),
-                                        void* data);
+                                        void* data, boolean retObjRecord);
 boolean         P_BlockmapSubsectorsIterator(blockmap_t* bmap, const uint block[2],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
@@ -89,7 +89,7 @@ boolean         P_BlockBoxMobjsIterator(blockmap_t* bmap, const uint blockBox[4]
                                          void* data);
 boolean         P_BlockBoxLinesIterator(blockmap_t* bmap, const uint blockBox[4],
                                         boolean (*func) (linedef_t*, void*),
-                                        void* data);
+                                        void* data, boolean retObjRecord);
 boolean         P_BlockBoxSubsectorsIterator(blockmap_t* bmap, const uint blockBox[4],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
@@ -100,7 +100,7 @@ boolean         P_BlockBoxPolyobjsIterator(blockmap_t* bmap, const uint blockBox
                                            void* data);
 boolean         P_BlockBoxPolyobjLinesIterator(blockmap_t* bmap, const uint blockBox[4],
                                                boolean (*func) (linedef_t*, void*),
-                                               void* data);
+                                               void* data, boolean retObjRecord);
 
 // Specialized Traversals:
 boolean         P_BlockPathTraverse(blockmap_t* bmap, const uint start[2],

@@ -69,8 +69,12 @@ boolean Subsector_GetProperty(const face_t* face, setargs_t* args)
     switch(args->prop)
     {
     case DMU_SECTOR:
-        DMU_GetValue(DMT_FACE_SECTOR, &((subsector_t*) face->data)->sector, args, 0);
+        {
+        sector_t*           sec = ((subsector_t*) face->data)->sector;
+        dmuobjrecord_t*     r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        DMU_GetValue(DMT_FACE_SECTOR, &r, args, 0);
         break;
+        }
     case DMU_LIGHT_LEVEL:
         DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &((subsector_t*) face->data)->sector->lightLevel, args, 0);
         break;

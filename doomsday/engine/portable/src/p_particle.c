@@ -446,7 +446,7 @@ Con_Message("SpawnPtcGen: %s/%i (src:%s typ:%s mo:%p)\n",
     if(def->flags & PGF_SCALED_RATE)
     {
         gen->spawnRateMultiplier =
-            ((const subsector_t*) source->face->data)->sector->approxArea;
+            ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) source->face)->obj)->data)->sector->approxArea;
     }
     else
     {

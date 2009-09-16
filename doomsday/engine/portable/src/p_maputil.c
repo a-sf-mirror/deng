@@ -236,6 +236,11 @@ int P_PointOnLinedefSide(float x, float y, const linedef_t* line)
                               line->dX, line->dY);
 }
 
+int DMU_PointOnLinedefSide(float x, float y, void* p)
+{
+    return P_PointOnLinedefSide(x, y, ((dmuobjrecord_t*) p)->obj);
+}
+
 /**
  * Where is the given point in relation to the line.
  *
@@ -391,6 +396,11 @@ int P_BoxOnLineSide(const float* box, const linedef_t* ld)
                             box[BOXBOTTOM], box[BOXTOP], ld);
 }
 
+int DMU_BoxOnLineSide(const float* box, void* p)
+{
+    return P_BoxOnLineSide(box, ((dmuobjrecord_t*) p)->obj);
+}
+
 /**
  * @return              @c 0 if point is in front of the line, else @c 1.
  */
@@ -433,6 +443,11 @@ void P_MakeDivline(const linedef_t* li, divline_t* dl)
     dl->pos[VY] = FLT2FIX(vtx->V_pos[VY]);
     dl->dX = FLT2FIX(li->dX);
     dl->dY = FLT2FIX(li->dY);
+}
+
+void DMU_MakeDivline(void* p, divline_t* dl)
+{
+    P_MakeDivline(((dmuobjrecord_t*) p)->obj, dl);
 }
 
 /**
@@ -493,6 +508,11 @@ void P_LineOpening(linedef_t* linedef)
     }
 
     openrange = opentop - openbottom;
+}
+
+void DMU_LineOpening(void* p)
+{
+    P_LineOpening(((dmuobjrecord_t*) p)->obj);
 }
 
 /**
@@ -700,11 +720,12 @@ boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
-    sector_t*           sec;
+    subsector_t*        ssec;
+    face_t*             face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
 
     // Link into the sector.
-    mo->face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
-    sec = ((subsector_t*) mo->face->data)->sector;
+    mo->face = (face_t*) DMU_GetObjRecord(DMU_FACE, face);
+    ssec = ((subsector_t*) face->data);
 
     if(flags & DDLINK_SECTOR)
     {
@@ -716,10 +737,10 @@ void P_MobjLink(mobj_t* mo, byte flags)
         // Prev pointers point to the pointer that points back to us.
         // (Which practically disallows traversing the list backwards.)
 
-        if((mo->sNext = sec->mobjList))
+        if((mo->sNext = ssec->sector->mobjList))
             mo->sNext->sPrev = &mo->sNext;
 
-        *(mo->sPrev = &sec->mobjList) = mo;
+        *(mo->sPrev = &ssec->sector->mobjList) = mo;
     }
 
     // Link into blockmap?
@@ -745,7 +766,6 @@ void P_MobjLink(mobj_t* mo, byte flags)
     if(mo->dPlayer)
     {
         ddplayer_t*         player = mo->dPlayer;
-        const subsector_t*  ssec = ((subsector_t*) player->mo->face->data);
 
         player->inVoid = true;
         if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
@@ -798,7 +818,7 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
     sector_t*           sec;
 
     // Always process the mobj's own sector first.
-    *end++ = sec = ((subsector_t*) mo->face->data)->sector;
+    *end++ = sec = ((subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data)->sector;
     sec->validCount = validCount;
 
     // Any good lines around here?
@@ -848,6 +868,12 @@ boolean P_LineMobjsIterator(linedef_t* line,
 
     DO_LINKS(it, end);
     return true;
+}
+
+boolean DMU_LineMobjsIterator(void* p, boolean (*func) (mobj_t*, void*),
+                              void* data)
+{
+    return P_LineMobjsIterator(((dmuobjrecord_t*) p)->obj, func, data);
 }
 
 /**
@@ -900,6 +926,13 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
 
     DO_LINKS(it, end);
     return true;
+}
+
+boolean DMU_SectorTouchingMobjsIterator(void* p,
+                                      boolean (*func) (mobj_t*, void*),
+                                      void* data)
+{
+    return P_SectorTouchingMobjsIterator(((dmuobjrecord_t*) p)->obj, func, data);
 }
 
 boolean P_MobjsBoxIterator(const float box[4],
@@ -958,6 +991,17 @@ boolean P_PolyobjsBoxIteratorv(const arvec2_t box,
     return P_BlockBoxPolyobjsIterator(BlockMap, blockBox, func, data);
 }
 
+static boolean linesBoxIteratorv(const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data, boolean retObjRecord)
+{
+    uint                blockBox[4];
+
+    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
+
+    return P_BlockBoxLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
+}
+
 boolean P_LinesBoxIterator(const float box[4],
                            boolean (*func) (linedef_t*, void*),
                            void* data)
@@ -969,18 +1013,14 @@ boolean P_LinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_LinesBoxIteratorv(bounds, func, data);
+    return linesBoxIteratorv(bounds, func, data, true);
 }
 
 boolean P_LinesBoxIteratorv(const arvec2_t box,
                             boolean (*func) (linedef_t*, void*),
                             void* data)
 {
-    uint                blockBox[4];
-
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
-
-    return P_BlockBoxLinesIterator(BlockMap, blockBox, func, data);
+    return linesBoxIteratorv(box, func, data, true);
 }
 
 /**
@@ -998,6 +1038,13 @@ boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
     bounds[1][VY] = box[BOXTOP];
 
     return P_SubsectorsBoxIteratorv(bounds, sector, func, parm);
+}
+
+boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
+                                  boolean (*func) (face_t*, void*),
+                                  void* parm)
+{
+    return P_SubsectorsBoxIterator(box, ((dmuobjrecord_t*) p)->obj, func, parm);
 }
 
 /**
@@ -1023,7 +1070,7 @@ boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
 
 boolean P_PolyobjLinesBoxIterator(const float box[4],
                                   boolean (*func) (linedef_t*, void*),
-                                  void* data)
+                                  void* data, boolean retObjRecord)
 {
     vec2_t              bounds[2];
 
@@ -1032,20 +1079,32 @@ boolean P_PolyobjLinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_PolyobjLinesBoxIteratorv(bounds, func, data);
+    return P_PolyobjLinesBoxIteratorv(bounds, func, data, retObjRecord);
 }
 
 boolean P_PolyobjLinesBoxIteratorv(const arvec2_t box,
                                    boolean (*func) (linedef_t*, void*),
-                                   void* data)
+                                   void* data, boolean retObjRecord)
 {
     uint                blockBox[4];
 
     P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
 
-    return P_BlockBoxPolyobjLinesIterator(BlockMap, blockBox, func, data);
+    return P_BlockBoxPolyobjLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
 }
 
+static boolean allLinesBoxIterator(const arvec2_t box,
+                                   boolean (*func) (linedef_t*, void*),
+                                   void* data, boolean retObjRecord)
+{
+    if(numPolyObjs > 0)
+    {
+        if(!P_PolyobjLinesBoxIteratorv(box, func, data, retObjRecord))
+            return false;
+    }
+
+    return linesBoxIteratorv(box, func, data, retObjRecord);
+}
 
 /**
  * The validCount flags are used to avoid checking lines that are marked
@@ -1063,7 +1122,7 @@ boolean P_AllLinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_AllLinesBoxIteratorv(bounds, func, data);
+    return allLinesBoxIterator(bounds, func, data, true);
 }
 
 /**
@@ -1075,13 +1134,7 @@ boolean P_AllLinesBoxIteratorv(const arvec2_t box,
                                boolean (*func) (linedef_t*, void*),
                                void* data)
 {
-    if(numPolyObjs > 0)
-    {
-        if(!P_PolyobjLinesBoxIteratorv(box, func, data))
-            return false;
-    }
-
-    return P_LinesBoxIteratorv(box, func, data);
+    return allLinesBoxIterator(box, func, data, true);
 }
 
 /**

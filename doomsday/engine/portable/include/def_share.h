@@ -141,7 +141,7 @@ typedef struct {
     int             actSound, deactSound;
     int             evChain, actChain, deactChain;
     int             wallSection;
-    materialnum_t   actMaterial, deactMaterial;
+    int             actMaterial, deactMaterial;
     int             actLineType, deactLineType;
     char*           actMsg, *deactMsg;
     float           materialMoveAngle;

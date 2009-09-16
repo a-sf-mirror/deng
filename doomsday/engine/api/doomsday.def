@@ -1,7 +1,7 @@
 NAME            "DOOMSDAY"
 
 ; Highest ordinal is currently
-; --> 450 <--
+; --> 451 <--
 ; Other free ordinals:
 ; 43 formerly P_RegisterPlayerControl
 ; 44 formerly B_FormEventString
@@ -91,6 +91,7 @@ EXPORTS
     W_CRCNumber                 @23 NONAME
     W_IsFromIWAD                @239 NONAME
     W_OpenAuxiliary             @247 NONAME
+    W_NumLumps                  @ 451 NONAME
 
 ; Base: Zone.
     Z_Malloc                    @24 NONAME
@@ -171,19 +172,19 @@ EXPORTS
     P_AccurateDistance          @57 NONAME
     P_ApproxDistance            @58 NONAME
     P_ApproxDistance3           @243 NONAME
-    P_PointOnLinedefSide        @59 NONAME
-    P_BoxOnLineSide             @60 NONAME
-    P_MakeDivline               @61 NONAME
+    DMU_PointOnLinedefSide      @59 NONAME
+    DMU_BoxOnLineSide           @60 NONAME
+    DMU_MakeDivline             @61 NONAME
     P_PointOnDivlineSide        @62 NONAME
     P_InterceptVector           @63 NONAME
-    P_LineOpening               @64 NONAME
+    DMU_LineOpening             @64 NONAME
     P_MobjsBoxIterator          @346 NONAME
     P_LinesBoxIterator          @435 NONAME
     P_AllLinesBoxIterator       @347 NONAME
     P_PolyobjsBoxIterator       @348 NONAME
-    P_SubsectorsBoxIterator     @345 NONAME
-    P_LineMobjsIterator         @73 NONAME
-    P_SectorTouchingMobjsIterator @74 NONAME
+    DMU_SubsectorsBoxIterator   @345 NONAME
+    DMU_LineMobjsIterator       @73 NONAME
+    DMU_SectorTouchingMobjsIterator @74 NONAME
     P_PathTraverse              @75 NONAME
     P_CheckLineSight            @76 NONAME
     P_MobjSetState              @207 NONAME
@@ -343,7 +344,7 @@ EXPORTS
     R_GetSpriteInfo             @94 NONAME
     R_GetPatchInfo              @237 NONAME
     R_PointToAngle2             @101 NONAME
-    R_PointInSubsector          @102 NONAME
+    P_PointInSubsector          @102 NONAME
     R_CreateAnimGroup           @241 NONAME
     R_AddToAnimGroup            @242 NONAME
     R_HSVToRGB                  @439 NONAME
