@@ -837,6 +837,7 @@ void R_ProjectPlayerSprites(void)
     for(i = 0, psp = ddpl->pSprites; i < DDMAXPSPRITES; ++i, psp++)
     {
         vispsprite_t*       spr = &visPSprites[i];
+        face_t*             face;
 
         spr->type = VPSPR_SPRITE;
         spr->psp = psp;
@@ -859,21 +860,24 @@ void R_ProjectPlayerSprites(void)
                 isModel = true;
         }
 
+        face = (face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj;
+
         if(isModel)
         {   // Yes, draw a 3D model (in Rend_Draw3DPlayerSprites).
             // There are 3D psprites.
+
             psp3d = true;
 
             spr->type = VPSPR_MODEL;
 
-            spr->data.model.face = ddpl->mo->face;
+            spr->data.model.face = face;
             spr->data.model.flags = 0;
             // 32 is the raised weapon height.
             spr->data.model.gzt = viewZ;
             spr->data.model.secFloor =
-                ((subsector_t*) ddpl->mo->face->data)->sector->SP_floorvisheight;
+                ((subsector_t*) face->data)->sector->SP_floorvisheight;
             spr->data.model.secCeil =
-                ((subsector_t*) ddpl->mo->face->data)->sector->SP_ceilvisheight;
+                ((subsector_t*) face->data)->sector->SP_ceilvisheight;
             spr->data.model.pClass = 0;
             spr->data.model.floorClip = 0;
 
@@ -910,7 +914,7 @@ void R_ProjectPlayerSprites(void)
             spr->center[VY] = viewY;
             spr->center[VZ] = viewZ;
 
-            spr->data.sprite.face = ddpl->mo->face;
+            spr->data.sprite.face = face;
             spr->data.sprite.alpha = psp->alpha;
             spr->data.sprite.isFullBright = isFullBright;
         }
@@ -1139,7 +1143,7 @@ void getLightingParams(float x, float y, float z, face_t* face,
  */
 void R_ProjectSprite(mobj_t* mo)
 {
-    subsector_t*        ssec = (subsector_t*) mo->face->data;
+    subsector_t*        ssec = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
     sector_t*           sect = ssec->sector;
     float               thangle = 0, alpha, floorClip, secFloor, secCeil;
     float               pos[2], yaw, pitch;
@@ -1479,7 +1483,7 @@ void R_ProjectSprite(mobj_t* mo)
         gzt -= floorClip;
 
         getLightingParams(vis->center[VX], vis->center[VY],
-                          gzt - ms.height / 2.0f, mo->face, vis->distance,
+                          gzt - ms.height / 2.0f, ((face_t*) ((dmuobjrecord_t*) mo->face)->obj), vis->distance,
                           fullBright, ambientColor, &vLightListIdx);
 
         setupSpriteParamsForVisSprite(&vis->data.sprite,
@@ -1493,7 +1497,7 @@ void R_ProjectSprite(mobj_t* mo)
                                       vLightListIdx,
                                       tmap,
                                       tclass,
-                                      mo->face,
+                                      ((face_t*) ((dmuobjrecord_t*) mo->face)->obj),
                                       floorAdjust,
                                       fitTop,
                                       fitBottom,
@@ -1504,7 +1508,7 @@ void R_ProjectSprite(mobj_t* mo)
     else
     {
         getLightingParams(vis->center[VX], vis->center[VY], vis->center[VZ],
-                          mo->face, vis->distance, fullBright,
+                          ((face_t*) ((dmuobjrecord_t*) mo->face)->obj), vis->distance, fullBright,
                           ambientColor, &vLightListIdx);
 
         setupModelParamsForVisSprite(&vis->data.model,
@@ -1513,7 +1517,7 @@ void R_ProjectSprite(mobj_t* mo)
                                      mf, nextmf, interp,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB], alpha,
                                      vLightListIdx, mo->thinker.id, mo->selector,
-                                     mo->face, mo->ddFlags,
+                                     ((face_t*) ((dmuobjrecord_t*) mo->face)->obj), mo->ddFlags,
                                      mo->tmap,
                                      viewAlign,
                                      fullBright && !(mf && (mf->sub[0].flags & MFF_DIM)),

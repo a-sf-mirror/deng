@@ -37,10 +37,17 @@
 #include "de_play.h"
 #include "de_refresh.h"
 #include "de_audio.h"
+#include "de_misc.h"
 
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
+
+typedef struct dmuobjrecordset_s {
+    dmuobjrecord_t  sentinel;
+    dmuobjrecordid_t num;
+    dmuobjrecordid_t* ids;
+} dmuobjrecordset_t;
 
 typedef struct dummyline_s {
     linedef_t       line; // Line data.
@@ -68,12 +75,168 @@ uint dummyCount = 8; // Number of dummies to allocate (per type).
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static dmuobjrecordid_t numRecords;
+static dmuobjrecord_t* records = NULL;
+
+static int numObjRecordSets;
+static dmuobjrecordset_t** objRecordSets = NULL;
+
 static dummyline_t* dummyLines;
 static dummysector_t* dummySectors;
 
 static int usingDMUAPIver; // Version of the DMU API the game expects.
 
 // CODE --------------------------------------------------------------------
+
+static void addObjRecord(dmuobjrecordset_t* s, dmuobjrecordid_t id)
+{
+    s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t) * ++s->num);
+    s->ids[s->num - 1] = id;
+}
+
+static void destroyRecordSet(int idx)
+{
+    dmuobjrecordset_t*  s = objRecordSets[idx];
+
+    M_Free(s);
+
+    if(numObjRecordSets > 1 && idx != numObjRecordSets - 1)
+        memmove(objRecordSets[idx], objRecordSets[idx+1],
+                sizeof(dmuobjrecordset_t*) * (numObjRecordSets - 1 - idx));
+    numObjRecordSets--;
+}
+
+static int findRecordSetForType(int type)
+{
+    int                 i;
+
+    for(i = 0; i < numObjRecordSets; ++i)
+    {
+        if(objRecordSets[i]->sentinel.header.type == type)
+        {
+            return i;
+        }
+    }
+
+    return -1; // Not found.
+}
+
+static dmuobjrecord_t* findRecordInSet(const dmuobjrecordset_t* s, void* obj)
+{
+    dmuobjrecordid_t    i;
+    
+    for(i = 1; i < s->num; ++i)
+    {
+        if(records[s->ids[i]].obj == obj)
+            return &records[s->ids[i]];
+    }
+
+    return NULL;
+}
+
+void DMU_ClearObjRecords(int type)
+{
+    int                 idx;
+
+    if(type < DMU_FIRST_TYPE)
+        return;
+
+    if((idx = findRecordSetForType(type)) != -1)
+    {
+        dmuobjrecordset_t*  s = objRecordSets[idx];
+        dmuobjrecordid_t    i;
+
+        for(i = 1; i < s->num; ++i)
+        {
+            dmuobjrecord_t*     r = &records[s->ids[i]];
+
+            r->obj = NULL;
+            // Deallocation of records is lazy.
+        }
+
+        s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t));
+        s->num = 1;
+    }
+}
+
+static dmuobjrecordset_t* createObjRecordset(int type)
+{
+    dmuobjrecordset_t*  s;
+
+    objRecordSets = M_Realloc(objRecordSets, sizeof(s) * ++numObjRecordSets);
+    objRecordSets[numObjRecordSets-1] = s = M_Malloc(sizeof(*s));
+
+    s->num = 0;
+    s->ids = NULL;
+
+    // Add the sentinel for this record set.
+    s->sentinel.dummy = -667;
+    s->sentinel.header.type = type;
+    s->sentinel.obj = NULL;
+    addObjRecord(s, -1);
+
+    return s;
+}
+
+dmuobjrecordid_t DMU_AddObjRecord(int type, void* p)
+{
+    int                 idx;
+    dmuobjrecord_t*     r;
+    dmuobjrecordset_t*  s;
+
+    if((idx = findRecordSetForType(type)) != -1)
+        s = objRecordSets[idx];
+    else
+        s = createObjRecordset(type);
+
+    if(!records)
+        records = M_Realloc(records, sizeof(dmuobjrecord_t) * 40000); //++numRecords);
+    numRecords++;
+
+    r = &records[numRecords - 1];
+    r->dummy = -666;
+    r->header.type = type;
+    r->obj = p;
+
+    addObjRecord(s, numRecords - 1);
+
+    //if(!DMU_GetObjRecord(type, r->obj))
+    //    Con_Error("whoops.\n");
+
+    return numRecords - 1;
+}
+
+dmuobjrecord_t* DMU_GetObjRecord(int type, void* p)
+{
+    int                 idx;
+
+    if(!p)
+        return NULL;
+
+    switch(type)
+    {
+    case DMU_VERTEX:
+    case DMU_HEDGE:
+    case DMU_LINEDEF:
+    case DMU_SIDEDEF:
+    case DMU_FACE:
+    case DMU_SECTOR:
+    case DMU_PLANE:
+    case DMU_NODE:
+    case DMU_MATERIAL:
+        break;
+
+    default:
+        Con_Error("DMU_GetObjRecord: Objects of type %i not yet implemented", type);
+    };
+
+    if((idx = findRecordSetForType(type)) != -1)
+    {
+        return findRecordInSet(objRecordSets[idx], p);
+    }
+
+    return NULL;
+}
 
 /**
  * Convert DMU enum constant into a string for error/debug messages.
@@ -176,7 +339,7 @@ static int DMU_GetType(const void* ptr)
     if(type != DMU_NONE)
         return type;
 
-    type = ((const runtime_mapdata_header_t*)ptr)->type;
+    type = ((const dmuobjrecord_t*)ptr)->header.type;
 
     // Make sure it's valid.
     switch(type)
@@ -247,7 +410,45 @@ void P_InitMapUpdate(void)
     //   and all existing dummies are invalidated.
     dummyLines = Z_Calloc(dummyCount * sizeof(dummyline_t), PU_STATIC, NULL);
     dummySectors = Z_Calloc(dummyCount * sizeof(dummysector_t), PU_STATIC, NULL);
+
+    // Initialize the obj record database.
+    records = NULL;
+    numRecords = 0;
+
+    objRecordSets = NULL;
+    numObjRecordSets = 0;
 }
+
+void P_ShutdownMapUpdate(void)
+{
+    P_ShutdownGameMapObjDefs();
+
+    if(objRecordSets)
+    {
+        int                 i;
+
+        for(i = 0; i < numObjRecordSets; ++i)
+        {
+            dmuobjrecordset_t*  s = objRecordSets[i];
+
+            if(s->ids)
+                M_Free(s->ids);
+
+            M_Free(s);
+        }
+
+        M_Free(objRecordSets);
+    }
+
+    objRecordSets = NULL;
+    numObjRecordSets = 0;
+
+    if(records)
+        M_Free(records);
+    records = NULL;
+    numRecords = 0;
+}
+
 
 /**
  * Allocates a new dummy object.
@@ -427,7 +628,7 @@ uint P_ToIndex(const void* ptr)
     }
 
     type = DMU_GetType(ptr);
-    if(type >= DMU_FIRST_GAME_TYPE)
+    if(type < DMU_FIRST_TYPE || type >= DMU_FIRST_GAME_TYPE)
         Con_Error("P_ToIndex: Cannot convert %s to an index.\n",
           DMU_Str(type));
 
@@ -442,32 +643,25 @@ uint P_ToIndex(const void* ptr)
                   DMU_Str(type));
         break;
 
-    case DMU_VERTEX:
-        return GET_VERTEX_IDX((vertex_t*) ptr);
-
-    case DMU_HEDGE:
-        return GET_HEDGE_IDX((hedge_t*) ptr);
-
-    case DMU_LINEDEF:
-        return GET_LINE_IDX((linedef_t*) ptr);
-
-    case DMU_SIDEDEF:
-        return GET_SIDE_IDX((sidedef_t*) ptr);
-
-    case DMU_FACE:
-        return GET_FACE_IDX((face_t*) ptr);
-
     case DMU_SECTOR:
-        return GET_SECTOR_IDX((sector_t*) ptr);
-
+        return ((sector_t*) ((dmuobjrecord_t*) ptr)->obj) - sectors;
+    case DMU_VERTEX:
+        return ((vertex_t*) ((dmuobjrecord_t*) ptr)->obj) - vertexes;
+    case DMU_HEDGE:
+        return ((hedge_t*) ((dmuobjrecord_t*) ptr)->obj) - hEdges;
+    case DMU_LINEDEF:
+        return ((linedef_t*) ((dmuobjrecord_t*) ptr)->obj) - lineDefs;
+    case DMU_SIDEDEF:
+        return ((sidedef_t*) ((dmuobjrecord_t*) ptr)->obj) - sideDefs;
+    case DMU_FACE:
+        return ((face_t*) ((dmuobjrecord_t*) ptr)->obj) - faces;
     case DMU_NODE:
-        return GET_NODE_IDX((node_t*) ptr);
-
+        return ((node_t*) ((dmuobjrecord_t*) ptr)->obj) - nodes;
     case DMU_PLANE:
-        return GET_PLANE_IDX((plane_t*) ptr);
+        return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
     case DMU_MATERIAL:
-        return P_ToMaterialNum((material_t*) ptr);
+        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj);
 
     default:
         Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(type));
@@ -496,33 +690,27 @@ void* P_ToPtr(int type, uint index)
         break;
 
     case DMU_VERTEX:
-        return VERTEX_PTR(index);
-
     case DMU_HEDGE:
-        return HEDGE_PTR(index);
-
     case DMU_LINEDEF:
-        return LINE_PTR(index);
-
     case DMU_SIDEDEF:
-        return SIDE_PTR(index);
-
     case DMU_FACE:
-        return FACE_PTR(index);
-
     case DMU_SECTOR:
-        return SECTOR_PTR(index);
-
     case DMU_NODE:
-        return NODE_PTR(index);
+    case DMU_MATERIAL:
+        {
+        int                 idx;
+        
+        if((idx = findRecordSetForType(type)) != -1)
+            return &records[objRecordSets[idx]->ids[1 + index]];
+
+        Con_Error("P_ToPtr: Invalid type+object index (t=%s, i=%u).\n",
+                  DMU_Str(type), index);
+        }
 
     case DMU_PLANE:
         Con_Error("P_ToPtr: Cannot convert %s to a ptr (sector is unknown).\n",
                   DMU_Str(type));
         break;
-
-    case DMU_MATERIAL:
-        return P_ToMaterial(index);
 
     default:
         Con_Error("P_ToPtr: unknown type %s.\n", DMU_Str(type));
@@ -611,14 +799,16 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         {
         case DMU_LINEDEF:
             {
-            sector_t*           sec = (sector_t*) ptr;
+            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_LINEDEF)];
+            sector_t*           sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
             int                 result = 1;
 
             if(sec->lineDefs)
             {
                 linedef_t**         linePtr = sec->lineDefs;
 
-                while(*linePtr && (result = callback(*linePtr, context)) != 0)
+                while(*linePtr && (result =
+                      callback(findRecordInSet(s, *linePtr), context)) != 0)
                     *linePtr++;
             }
 
@@ -627,6 +817,7 @@ int P_Iteratep(void *ptr, uint prop, void* context,
 
         case DMU_PLANE:
             {
+            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_PLANE)];
             sector_t*           sec = (sector_t*) ptr;
             int                 result = 1;
 
@@ -634,7 +825,8 @@ int P_Iteratep(void *ptr, uint prop, void* context,
             {
                 plane_t**           planePtr = sec->planes;
 
-                while(*planePtr && (result = callback(*planePtr, context)) != 0)
+                while(*planePtr && (result =
+                      callback(findRecordInSet(s, *planePtr), context)) != 0)
                     *planePtr++;
             }
 
@@ -643,14 +835,16 @@ int P_Iteratep(void *ptr, uint prop, void* context,
 
         case DMU_FACE:
             {
+            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_FACE)];
             sector_t*           sec = (sector_t*) ptr;
             int                 result = 1;
 
             if(sec->faces)
             {
-                face_t**       facePtr = sec->faces;
+                face_t**            facePtr = sec->faces;
 
-                while(*facePtr && (result = callback(*facePtr, context)) != 0)
+                while(*facePtr && (result =
+                      callback(findRecordInSet(s, *facePtr), context)) != 0)
                     *facePtr++;
             }
 
@@ -668,7 +862,8 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         {
         case DMU_HEDGE:
             {
-            face_t*        ssec = (face_t*) ptr;
+            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_HEDGE)];
+            face_t*             ssec = (face_t*) ptr;
             int                 result = 1;
             hedge_t*            hEdge;
 
@@ -676,7 +871,8 @@ int P_Iteratep(void *ptr, uint prop, void* context,
             {
                 do
                 {
-                    if((result = callback(hEdge, context)) == 0)
+                    dmuobjrecord_t*     r = findRecordInSet(s, hEdge);
+                    if((result = callback(r, context)) == 0)
                         break;
                 } while((hEdge = hEdge->next) != ssec->hEdge);
             }
@@ -718,22 +914,22 @@ int P_Callback(int type, uint index, void* context,
     {
     case DMU_VERTEX:
         if(index < numVertexes)
-            return callback(VERTEX_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_VERTEX, vertexes + index), context);
         break;
 
     case DMU_HEDGE:
         if(index < numHEdges)
-            return callback(HEDGE_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_HEDGE, hEdges + index), context);
         break;
 
     case DMU_LINEDEF:
         if(index < numLineDefs)
-            return callback(LINE_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_LINEDEF, lineDefs + index), context);
         break;
 
     case DMU_SIDEDEF:
         if(index < numSideDefs)
-            return callback(SIDE_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_SIDEDEF, sideDefs + index), context);
         break;
 
     case DMU_NODE:
@@ -743,12 +939,12 @@ int P_Callback(int type, uint index, void* context,
 
     case DMU_FACE:
         if(index < numFaces)
-            return callback(FACE_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_FACE, faces + index), context);
         break;
 
     case DMU_SECTOR:
         if(index < numSectors)
-            return callback(SECTOR_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_SECTOR, sectors + index), context);
         break;
 
     case DMU_PLANE:
@@ -789,6 +985,7 @@ int P_Callback(int type, uint index, void* context,
 int P_Callbackp(int type, void* ptr, void* context,
                 int (*callback)(void* p, void* ctx))
 {
+    dmuobjrecord_t*     r = (dmuobjrecord_t*) ptr;
     boolean             isKnownType = false;
 
     if(type >= DMU_FIRST_GAME_TYPE)
@@ -825,15 +1022,15 @@ int P_Callbackp(int type, void* ptr, void* context,
     {
         // Only do the callback if the type is the same as the object's.
         // \todo If necessary, add special types for accessing multiple objects.
-        if(type == DMU_GetType(ptr))
+        if(type == DMU_GetType(r))
         {
-            return callback(ptr, context);
+            return callback(r, context);
         }
 #if _DEBUG
         else
         {
             Con_Message("P_Callbackp: Type mismatch %s != %s\n",
-                        DMU_Str(type), DMU_Str(DMU_GetType(ptr)));
+                        DMU_Str(type), DMU_Str(DMU_GetType(r)));
         }
 #endif
 
@@ -1046,9 +1243,11 @@ void DMU_SetValue(valuetype_t valueType, void* dst, const setargs_t* args,
  * When a property changes, the relevant subsystems are notified of the change
  * so that they can update their state accordingly.
  */
-static int setProperty(void* obj, void* context)
+static int setProperty(void* ptr, void* context)
 {
+    dmuobjrecord_t*     r = (dmuobjrecord_t*) ptr;
     setargs_t*          args = (setargs_t*) context;
+    void*               obj = r->obj;
     sector_t*           updateSector1 = NULL, *updateSector2 = NULL;
     plane_t*            updatePlane = NULL;
     linedef_t*          updateLinedef = NULL;
@@ -1499,9 +1698,11 @@ void DMU_GetValue(valuetype_t valueType, const void* src, setargs_t* args,
     }
 }
 
-static int getProperty(void* obj, void* context)
+static int getProperty(void* ptr, void* context)
 {
+    dmuobjrecord_t*     r = (dmuobjrecord_t*) ptr;
     setargs_t*          args = (setargs_t*) context;
+    void*               obj = r->obj;
 
     // Dereference where necessary. Note the order, these cascade.
     if(args->type == DMU_FACE)

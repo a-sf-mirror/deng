@@ -250,6 +250,7 @@ void DD_ShutdownAll(void)
 {
     int                 i;
 
+    P_ShutdownMapUpdate();
     Con_Shutdown();
     DD_ShutdownHelp();
     Zip_Shutdown();
@@ -263,7 +264,6 @@ void DD_ShutdownAll(void)
     for(i = 0; i < DDMAXPLAYERS; ++i)
         Demo_StopRecording(i);
 
-    P_ShutdownGameMapObjDefs();
     P_ControlShutdown();
     Sv_Shutdown();
     R_Shutdown();

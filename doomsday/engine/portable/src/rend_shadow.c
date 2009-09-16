@@ -93,7 +93,7 @@ static void processMobjShadow(mobj_t* mo)
 
     float               moz;
     float               height, moh, halfmoh, alpha, pos[2];
-    subsector_t*        ssec = (subsector_t*) mo->face->data;
+    subsector_t*        ssec = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
     sector_t*           sec = ssec->sector;
     float               radius;
     uint                i;

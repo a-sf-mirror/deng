@@ -215,14 +215,13 @@ extern          "C" {
     float           P_AccurateDistance(float dx, float dy);
     float           P_ApproxDistance(float dx, float dy);
     float           P_ApproxDistance3(float dx, float dy, float dz);
-    int             P_PointOnLinedefSide(float x, float y,
-                                         const struct linedef_s* line);
-    int             P_BoxOnLineSide(const float* tmbox, const struct linedef_s* ld);
-    void            P_MakeDivline(struct linedef_s* li, divline_t* dl);
+    int             DMU_PointOnLinedefSide(float x, float y, void* p);
+    int             DMU_BoxOnLineSide(const float* tmbox, void* p);
+    void            DMU_MakeDivline(void* p, divline_t* dl);
     int             P_PointOnDivlineSide(float x, float y,
                                          const divline_t* line);
     float           P_InterceptVector(divline_t* v2, divline_t* v1);
-    void            P_LineOpening(struct linedef_s* linedef);
+    void            DMU_LineOpening(void* p);
 
     // Object in bounding box iterators.
     boolean         P_MobjsBoxIterator(const float box[4],
@@ -234,7 +233,7 @@ extern          "C" {
     boolean         P_AllLinesBoxIterator(const float box[4],
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
-    boolean         P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
+    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
                                            boolean (*func) (face_t*, void*),
                                            void* data);
     boolean         P_PolyobjsBoxIterator(const float box[4],
@@ -242,12 +241,12 @@ extern          "C" {
                                           void* data);
 
     // Object type touching mobjs iterators.
-    boolean         P_LineMobjsIterator(struct linedef_s* line,
-                                        boolean (*func) (struct mobj_s*,
-                                                         void *), void* data);
-    boolean         P_SectorTouchingMobjsIterator
-                        (sector_t* sector, boolean (*func) (struct mobj_s*, void*),
-                         void* data);
+    boolean         DMU_LineMobjsIterator(void* p,
+                                          boolean (*func) (struct mobj_s*, void *),
+                                          void* data);
+    boolean         DMU_SectorTouchingMobjsIterator(void* p,
+                                                    boolean (*func) (struct mobj_s*, void*),
+                                                    void* data);
 
     boolean         P_PathTraverse(float x1, float y1, float x2, float y2,
                                    int flags,
@@ -428,7 +427,7 @@ extern          "C" {
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);
-    struct face_s* R_PointInSubsector(float x, float y);
+    struct face_s*  P_PointInSubsector(float x, float y);
 
     colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
                                           const byte* data, size_t num);

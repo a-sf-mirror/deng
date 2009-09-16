@@ -28,6 +28,8 @@
 #ifndef __DOOMSDAY_ARCHIVED_MAP_MAIN_H__
 #define __DOOMSDAY_ARCHIVED_MAP_MAIN_H__
 
-boolean     DAM_TryMapConversion(const char* mapID);
+#include "m_string.h"
 
+boolean         DAM_TryMapConversion(const char* mapID);
+ddstring_t*     DAM_ComposeArchiveMapFilepath(const char* mapID);
 #endif

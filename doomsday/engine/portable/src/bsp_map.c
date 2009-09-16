@@ -185,6 +185,8 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
                 &map->hEdges[((bsp_hedgeinfo_t*) hEdge->twin->data)->index];
         else
             dst->twin = NULL;
+
+        DMU_AddObjRecord(DMU_HEDGE, dst);
     }
 
     // Generate seg data from (BSP) line segments.
@@ -308,6 +310,8 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
 
     dest->header.type = DMU_FACE;
     dest->data = *storage, (*storage)++;
+
+    DMU_AddObjRecord(DMU_FACE, dest);
 
     {
     subsector_t*        ssec = ((subsector_t*) dest->data);
@@ -484,6 +488,8 @@ static void hardenVertexes(gamemap_t* dest, vertex_t*** vertexes,
         //// \fixme Add some rounding.
         destV->V_pos[VX] = (float) srcV->buildData.pos[VX];
         destV->V_pos[VY] = (float) srcV->buildData.pos[VY];
+
+        DMU_AddObjRecord(DMU_VERTEX, destV);
     }
 }
 

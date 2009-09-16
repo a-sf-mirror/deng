@@ -376,10 +376,9 @@ boolean Surface_SetProperty(surface_t* suf, const setargs_t* args)
         break;
     case DMU_MATERIAL:
         {
-        material_t*     mat;
-        DMU_SetValue(DMT_SURFACE_MATERIAL, &mat, args, 0);
-
-        Surface_SetMaterial(suf, mat, true);
+        void*           p;
+        DMU_SetValue(DDVT_PTR, &p, args, 0);
+        Surface_SetMaterial(suf, ((dmuobjrecord_t*) p)->obj, true);
         }
         break;
     case DMU_OFFSET_X:
@@ -422,10 +421,12 @@ boolean Surface_GetProperty(const surface_t *suf, setargs_t *args)
     case DMU_MATERIAL:
         {
         material_t*     mat = suf->material;
+        dmuobjrecord_t* r;
 
         if(suf->inFlags & SUIF_MATERIAL_FIX)
             mat = NULL;
-        DMU_GetValue(DMT_SURFACE_MATERIAL, &mat, args, 0);
+        r = DMU_GetObjRecord(DMU_MATERIAL, mat);
+        DMU_GetValue(DMT_SURFACE_MATERIAL, &r, args, 0);
         break;
         }
     case DMU_OFFSET_X:

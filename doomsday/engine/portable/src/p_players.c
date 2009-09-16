@@ -162,7 +162,7 @@ boolean P_IsInVoid(player_t* player)
         if(ddpl->mo->face)
         {
             sector_t*           sec =
-                ((const subsector_t*) ddpl->mo->face->data)->sector;
+                ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj)->data)->sector;
 
             if(IS_SKYSURFACE(&sec->SP_ceilsurface))
             {

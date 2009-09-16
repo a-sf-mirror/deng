@@ -974,6 +974,7 @@ void P_SpawnSpecials(void)
 
     // Init special sectors.
     P_DestroySectorTagLists();
+
     for(i = 0; i < numsectors; ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);

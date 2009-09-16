@@ -460,7 +460,7 @@ if(!mat)
 
         // Will the sprite be allowed to go inside the floor?
         mul = mo->pos[VZ] + spriteTextures[texInst->tex->ofTypeID]->offY -
-            (float) ms.height - ((const subsector_t*) mo->face->data)->sector->SP_floorheight;
+            (float) ms.height - ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data)->sector->SP_floorheight;
         if(!(mo->ddFlags & DDMF_NOFITBOTTOM) && mul < 0)
         {
             // Must adjust.
@@ -504,7 +504,7 @@ if(!mat)
 
         // This'll allow a halo to be rendered. If the light is hidden from
         // view by world geometry, the light pointer will be set to NULL.
-        mo->lumIdx = LO_NewLuminous(LT_OMNI, mo->face);
+        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((dmuobjrecord_t*) mo->face)->obj);
 
         l = LO_GetLuminous(mo->lumIdx);
         l->pos[VX] = mo->pos[VX];

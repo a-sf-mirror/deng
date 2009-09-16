@@ -4580,7 +4580,7 @@ static void P_ArchiveSounds(void)
 
         if(i == numpolyobjs)
         {   // Sound is attached to a sector, not a polyobj.
-            sec = DMU_GetPtrp(R_PointInSubsector(node->mobj->pos[VX], node->mobj->pos[VY]),
+            sec = DMU_GetPtrp(P_PointInSubsector(node->mobj->pos[VX], node->mobj->pos[VY]),
                             DMU_SECTOR);
             difference = DMU_ToIndex(sec);
             SV_WriteLong(0); // 0 -- sector sound origin.

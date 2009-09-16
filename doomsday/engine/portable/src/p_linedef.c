@@ -63,12 +63,16 @@ boolean Linedef_SetProperty(linedef_t *lin, const setargs_t *args)
 {
     switch(args->prop)
     {
+    /**
+     * \todo Re-implement me (conversion from dmuobjrecord_t).
     case DMU_FRONT_SECTOR:
         DMU_SetValue(DMT_LINEDEF_SEC, &LINE_FRONTSECTOR(lin), args, 0);
         break;
+
     case DMU_BACK_SECTOR:
         DMU_SetValue(DMT_LINEDEF_SEC, &LINE_BACKSECTOR(lin), args, 0);
-        break;
+        break;*/
+
     /**
      * \todo Re-implement me (need to update all seg->sideDef ptrs).
     case DMU_SIDEDEF0:
@@ -111,14 +115,22 @@ boolean Linedef_SetProperty(linedef_t *lin, const setargs_t *args)
  */
 boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
 {
-   switch(args->prop)
+    switch(args->prop)
     {
     case DMU_VERTEX0:
-        DMU_GetValue(DMT_LINEDEF_V, &lin->L_v1, args, 0);
+        {
+        vertex_t* v = lin->L_v1;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
+        DMU_GetValue(DMT_LINEDEF_V, &r, args, 0);
         break;
+        }
     case DMU_VERTEX1:
-        DMU_GetValue(DMT_LINEDEF_V, &lin->L_v2, args, 0);
+        {
+        vertex_t* v = lin->L_v2;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
+        DMU_GetValue(DMT_LINEDEF_V, &r, args, 0);
         break;
+        }
     case DMU_DX:
         DMU_GetValue(DMT_LINEDEF_DX, &lin->dX, args, 0);
         break;
@@ -139,32 +151,36 @@ boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
         DMU_GetValue(DMT_LINEDEF_SLOPETYPE, &lin->slopeType, args, 0);
         break;
     case DMU_FRONT_SECTOR:
-    {
-        sector_t *sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
-        DMU_GetValue(DMT_LINEDEF_SEC, &sec, args, 0);
+        {
+        sector_t* sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
-    }
+        }
     case DMU_BACK_SECTOR:
-    {
-        sector_t *sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
-        DMU_GetValue(DMT_LINEDEF_SEC, &sec, args, 0);
+        {
+        sector_t* sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
-    }
+        }
     case DMU_FLAGS:
         DMU_GetValue(DMT_LINEDEF_FLAGS, &lin->flags, args, 0);
         break;
     case DMU_SIDEDEF0:
-    {
-        sidedef_t *side = LINE_FRONTSIDE(lin);
-        DMU_GetValue(DMT_LINEDEF_SIDE, &side, args, 0);
+        {
+        sidedef_t* side = LINE_FRONTSIDE(lin);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
+        DMU_GetValue(DMT_LINEDEF_SIDE, &r, args, 0);
         break;
-    }
+        }
     case DMU_SIDEDEF1:
-    {
-        sidedef_t *side = LINE_BACKSIDE(lin);
-        DMU_GetValue(DMT_LINEDEF_SIDE, &side, args, 0);
+        {
+        sidedef_t* side = LINE_BACKSIDE(lin);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
+        DMU_GetValue(DMT_LINEDEF_SIDE, &r, args, 0);
         break;
-    }
+        }
     case DMU_BOUNDING_BOX:
         if(args->valueType == DDVT_PTR)
         {

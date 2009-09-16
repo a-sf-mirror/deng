@@ -472,6 +472,7 @@ typedef struct bmapiterparams_s {
     int             localValidCount;
     boolean       (*func) (linedef_t*, void *);
     void*           param;
+    boolean         retObjRecord;
 } bmapiterparams_t;
 
 static boolean bmapBlockLinesIterator(void* ptr, void* context)
@@ -490,9 +491,16 @@ static boolean bmapBlockLinesIterator(void* ptr, void* context)
 
             if(line->validCount != args->localValidCount)
             {
+                void*               ptr;
+
                 line->validCount = args->localValidCount;
 
-                if(!args->func(line, args->param))
+                if(args->retObjRecord)
+                    ptr = (void*) DMU_GetObjRecord(DMU_LINEDEF, line);
+                else
+                    ptr = (void*) line;
+
+                if(!args->func(ptr, args->param))
                     return false;
             }
 
@@ -505,7 +513,7 @@ static boolean bmapBlockLinesIterator(void* ptr, void* context)
 
 boolean P_BlockmapLinesIterator(blockmap_t* blockmap, const uint block[2],
                                 boolean (*func) (linedef_t*, void*),
-                                void* data)
+                                void* data, boolean retObjRecord)
 {
     if(blockmap)
     {
@@ -520,6 +528,7 @@ boolean P_BlockmapLinesIterator(blockmap_t* blockmap, const uint block[2],
             args.localValidCount = validCount;
             args.func = func;
             args.param = data;
+            args.retObjRecord = retObjRecord;
 
             return bmapBlockLinesIterator(bmapBlock, &args);
         }
@@ -530,7 +539,7 @@ boolean P_BlockmapLinesIterator(blockmap_t* blockmap, const uint block[2],
 
 boolean P_BlockBoxLinesIterator(blockmap_t* blockmap, const uint blockBox[4],
                                 boolean (*func) (linedef_t*, void*),
-                                void* data)
+                                void* data, boolean retObjRecord)
 {
     bmap_t*             bmap = (bmap_t*) blockmap;
     bmapiterparams_t    args;
@@ -538,6 +547,7 @@ boolean P_BlockBoxLinesIterator(blockmap_t* blockmap, const uint blockBox[4],
     args.localValidCount = validCount;
     args.func = func;
     args.param = data;
+    args.retObjRecord = retObjRecord;
 
     return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
                                  bmapBlockLinesIterator, (void*) &args);
@@ -835,7 +845,7 @@ boolean P_BlockmapPolyobjLinesIterator(blockmap_t* blockmap, const uint block[2]
 
 boolean P_BlockBoxPolyobjLinesIterator(blockmap_t* blockmap, const uint blockBox[4],
                                        boolean (*func) (linedef_t*, void*),
-                                       void* data)
+                                       void* data, boolean retObjRecord)
 {
     bmap_t*             bmap = (bmap_t*) blockmap;
     bmappoiterparams_t  args;
@@ -926,7 +936,7 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
             }
 
             if(!P_BlockmapLinesIterator(BlockMap, block,
-                                        PIT_AddLineIntercepts, 0))
+                                        PIT_AddLineIntercepts, 0, false))
                 return false; // Early out
         }
 

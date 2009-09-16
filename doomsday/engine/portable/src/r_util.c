@@ -269,7 +269,12 @@ face_t* R_PointInSubsector(const float x, const float y)
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return FACE_PTR(nodenum & ~NF_SUBSECTOR);
+    return &faces[nodenum & ~NF_SUBSECTOR];
+}
+
+void* P_PointInSubsector(const float x, const float y)
+{
+    return DMU_GetObjRecord(DMU_FACE, R_PointInSubsector(x, y));
 }
 
 linedef_t* R_GetLineForSide(const uint sideNumber)

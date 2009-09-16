@@ -592,6 +592,10 @@ static int DD_StartupWorker(void *parm)
 
     GL_EarlyInitTextureManager();
 
+    // Initialize the map update interface. Must be done early so that
+    // materials can be added to the public obj record database.
+    P_InitMapUpdate();
+
     // Get the material manager up and running.
     P_InitMaterialManager();
     R_InitTextures();
@@ -600,8 +604,7 @@ static int DD_StartupWorker(void *parm)
 
     Con_SetProgress(130);
 
-    // Now that we've generated the auto-materials we can initialize
-    // definitions.
+    // Now that we've generated the auto-materials we can read definitions.
     Def_Read();
 
 #ifdef WIN32
@@ -645,11 +648,6 @@ static int DD_StartupWorker(void *parm)
 
     if(gx.PostInit)
         gx.PostInit();
-
-    Con_SetProgress(175);
-
-    // Defs have been read; we can now init the map format info.
-    P_InitData();
 
     Con_SetProgress(190);
 

@@ -604,6 +604,8 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
 
     // Setup header for DMU.
     plane->header.type = DMU_PLANE;
+    if(!ddMapSetup)
+        DMU_AddObjRecord(DMU_PLANE, plane);
 
     // Initalize the plane.
     plane->surface.owner = (void*) plane;
@@ -1817,7 +1819,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 
             //// \fixme $nplanes
             if((ddpl->flags & DDPF_CAMERA) &&
-               ((subsector_t*) ddpl->mo->face->data)->sector == sec &&
+               ((subsector_t*) ((face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj)->data)->sector == sec &&
                (ddpl->mo->pos[VZ] > sec->SP_ceilheight ||
                 ddpl->mo->pos[VZ] < sec->SP_floorheight))
             {

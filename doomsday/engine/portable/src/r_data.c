@@ -2104,7 +2104,7 @@ void R_PrecacheMap(void)
     sidedef_t*          side;
     float               startTime;
     material_t*         mat, **matPresent;
-    materialnum_t       numMaterials;
+    int                 numMaterials;
 
     // Don't precache when playing demo.
     if(isDedicated || playback)
@@ -2182,10 +2182,11 @@ void R_PrecacheMap(void)
     }
 
     // \fixme Precache sky materials!
-
-    i = 0;
+    {
+    int i = 0;
     while(i < numMaterials && matPresent[i])
         Material_Precache(matPresent[i++]);
+    }
 
     // We are done with list of used materials.
     M_Free(matPresent);
@@ -2211,7 +2212,7 @@ void R_PrecacheMap(void)
 void R_InitAnimGroup(ded_group_t* def)
 {
     int                 i, groupNumber = -1;
-    materialnum_t       num;
+    int                 num;
 
     for(i = 0; i < def->count.num; ++i)
     {

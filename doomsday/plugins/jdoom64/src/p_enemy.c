@@ -376,7 +376,7 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
        tmBBox[BOXLEFT]   < bbox[BOXRIGHT]  &&
        tmBBox[BOXTOP]    > bbox[BOXBOTTOM] && // Linedef must be contacted
        tmBBox[BOXBOTTOM] < bbox[BOXTOP]    &&
-       P_BoxOnLineSide(tmBBox, line) == -1)
+       DMU_BoxOnLineSide(tmBBox, line) == -1)
     {
         sector_t*           frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
         float               front = DMU_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);

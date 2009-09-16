@@ -75,11 +75,55 @@ static boolean convertMap(const char* mapID)
     return converted;
 }
 
+gamemap_t* DAM_CreateMap(void)
+{
+    return Z_Calloc(sizeof(gamemap_t), PU_MAPSTATIC, 0);
+}
+
+ddstring_t* DAM_ComposeArchiveMapFilepath(const char* mapID)
+{
+    ddstring_t*         s = Str_New();
+
+    Str_Init(s);
+    Str_Appendf(s, "%s.pk3", mapID);
+
+    return s;
+}
+
 /**
  * Attempt to load the map associated with the specified identifier.
  */
 boolean DAM_TryMapConversion(const char* mapID)
 {
     // Load it in. Try a JIT conversion with the help of a plugin.
+    // Destroy DMU obj records for map-owned objects.
+    DMU_ClearObjRecords(DMU_VERTEX);
+    DMU_ClearObjRecords(DMU_LINEDEF);
+    DMU_ClearObjRecords(DMU_SIDEDEF);
+    DMU_ClearObjRecords(DMU_PLANE);
+    DMU_ClearObjRecords(DMU_SECTOR);
+    DMU_ClearObjRecords(DMU_HEDGE);
+    DMU_ClearObjRecords(DMU_FACE);
+
     return convertMap(mapID);
+}
+
+gamemap_t* DAM_LoadMap(const char* mapID)
+{
+    ddstring_t*         s = DAM_ComposeArchiveMapFilepath(mapID);
+    gamemap_t*          map = DAM_CreateMap();
+
+    // Destroy DMU obj records for map-owned objects.
+    DMU_ClearObjRecords(DMU_VERTEX);
+    DMU_ClearObjRecords(DMU_LINEDEF);
+    DMU_ClearObjRecords(DMU_SIDEDEF);
+    DMU_ClearObjRecords(DMU_PLANE);
+    DMU_ClearObjRecords(DMU_SECTOR);
+    DMU_ClearObjRecords(DMU_HEDGE);
+    DMU_ClearObjRecords(DMU_FACE);
+
+    DAM_MapRead(map, Str_Text(s));
+
+    Str_Delete(s);
+    return map;
 }

@@ -546,6 +546,7 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
     mobj_t             *mo = ddpl->mo;
     int                 i;
     float               mom[3];
+    face_t*             face;
 
     if(!mo)
         return;
@@ -575,9 +576,11 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
         P_MobjLink(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
 
-    mo->face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
-    mo->floorZ = ((subsector_t*) mo->face->data)->sector->SP_floorheight;
-    mo->ceilingZ = ((subsector_t*) mo->face->data)->sector->SP_ceilheight;
+    face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
+    mo->floorZ = ((subsector_t*) face->data)->sector->SP_floorheight;
+    mo->ceilingZ = ((subsector_t*) face->data)->sector->SP_ceilheight;
+
+    mo->face = (face_t*) DMU_GetObjRecord(DMU_FACE, face);
 
     if(onground)
     {

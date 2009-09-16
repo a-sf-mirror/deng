@@ -1278,8 +1278,8 @@ static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
 
     for(i = 0; i < dest->numLineDefs; ++i)
     {
-        linedef_t          *destL = &dest->lineDefs[i];
-        linedef_t          *srcL = src->lineDefs[i];
+        linedef_t*          destL = &dest->lineDefs[i];
+        const linedef_t*    srcL = src->lineDefs[i];
 
         memcpy(destL, srcL, sizeof(*destL));
 
@@ -1296,6 +1296,8 @@ static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
             dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1].line = destL;
         if(srcL->buildData.sideDefs[BACK])
             dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1].line = destL;
+
+        DMU_AddObjRecord(DMU_LINEDEF, destL);
     }
 }
 
@@ -1308,8 +1310,8 @@ static void hardenSidedefs(gamemap_t* dest, editmap_t* src)
 
     for(i = 0; i < dest->numSideDefs; ++i)
     {
-        sidedef_t         *destS = &dest->sideDefs[i];
-        sidedef_t         *srcS = src->sideDefs[i];
+        sidedef_t*          destS = &dest->sideDefs[i];
+        const sidedef_t*    srcS = src->sideDefs[i];
 
         memcpy(destS, srcS, sizeof(*destS));
         destS->sector = &dest->sectors[srcS->sector->buildData.index - 1];
@@ -1322,6 +1324,8 @@ static void hardenSidedefs(gamemap_t* dest, editmap_t* src)
         destS->SW_middlesurface.visOffset[1] = destS->SW_middlesurface.offset[1];
         destS->SW_topsurface.visOffset[0] = destS->SW_topsurface.offset[0];
         destS->SW_topsurface.visOffset[1] = destS->SW_topsurface.offset[1];
+
+        DMU_AddObjRecord(DMU_SIDEDEF, destS);
     }
 }
 
@@ -1340,6 +1344,8 @@ static void hardenSectors(gamemap_t* dest, editmap_t* src)
         memcpy(destS, srcS, sizeof(*destS));
         destS->planeCount = 0;
         destS->planes = NULL;
+
+        DMU_AddObjRecord(DMU_SECTOR, &dest->sectors[i]);
     }
 }
 
@@ -1367,6 +1373,8 @@ static void hardenPlanes(gamemap_t* dest, editmap_t* src)
             memcpy(&destP->surface, &srcP->surface, sizeof(destP->surface));
             destP->type = srcP->type;
             destP->sector = destS;
+
+            DMU_AddObjRecord(DMU_PLANE, destP);
         }
     }
 }
@@ -1721,7 +1729,7 @@ boolean findOverlapsForLinedef(linedef_t* l, void* data)
 {
     findoverlaps_params_t* params = (findoverlaps_params_t*) data;
 
-    P_BlockmapLinesIterator(params->blockMap, params->block, testOverlaps, l);
+    P_BlockmapLinesIterator(params->blockMap, params->block, testOverlaps, l, false);
     return true; // Continue iteration.
 }
 
@@ -1745,7 +1753,7 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
             params.block[VY] = y;
 
             P_BlockmapLinesIterator(map->blockMap, params.block,
-                                    findOverlapsForLinedef, &params);
+                                    findOverlapsForLinedef, &params, false);
         }
 
     if(numOverlaps > 0)
@@ -1753,6 +1761,8 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
                             (unsigned long) numOverlaps));
 }
 #endif
+
+extern gamemap_t* DAM_CreateMap(void);
 
 /**
  * Called to complete the map building process.
@@ -1766,7 +1776,7 @@ boolean MPE_End(void)
     if(!editMapInited)
         return false;
 
-    gamemap = Z_Calloc(sizeof(*gamemap), PU_MAPSTATIC, 0);
+    gamemap = DAM_CreateMap();
 
     // Pass on the game map obj database. The game will want to query it
     // once we have finished constructing the map.

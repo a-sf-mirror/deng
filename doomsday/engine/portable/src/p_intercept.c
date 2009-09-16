@@ -104,15 +104,23 @@ intercept_t* P_AddIntercept(float frac, intercepttype_t type, void* ptr)
         intercept_p = intercepts + count;
     }
 
-    if(type == ICPT_LINE && P_ToIndex(ptr) >= numLineDefs)
-    {
-        count = count;
-    }
-
     // Fill in the data that has been provided.
     intercept_p->frac = frac;
     intercept_p->type = type;
-    intercept_p->d.mo = ptr;
+    switch(type)
+    {
+    case ICPT_LINE:
+        intercept_p->d.lineDef = (linedef_t*) DMU_GetObjRecord(DMU_LINEDEF, ptr);
+        break;
+
+    case ICPT_MOBJ:
+        intercept_p->d.mo = ptr;
+        break;
+
+    default:
+        Con_Error("P_AddIntercept: Unknown intercept type %i.", type);
+    }
+
     return intercept_p++;
 }
 

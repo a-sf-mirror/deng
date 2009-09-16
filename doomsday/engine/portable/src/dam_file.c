@@ -304,10 +304,10 @@ static void writeVertex(const gamemap_t *map, uint idx)
     }
 }
 
-static void readVertex(const gamemap_t *map, uint idx)
+static void readVertex(const gamemap_t* map, uint idx)
 {
     uint                i;
-    vertex_t           *v = &map->vertexes[idx];
+    vertex_t*           v = &map->vertexes[idx];
 
     v->V_pos[VX] = readFloat();
     v->V_pos[VY] = readFloat();
@@ -338,7 +338,7 @@ static void readVertex(const gamemap_t *map, uint idx)
     }
 }
 
-static void archiveVertexes(gamemap_t *map, boolean write)
+static void archiveVertexes(gamemap_t* map, boolean write)
 {
     uint                i;
 
@@ -356,6 +356,7 @@ static void archiveVertexes(gamemap_t *map, boolean write)
     else
     {
         map->numVertexes = (uint) readLong();
+        map->vertexes = Z_Malloc(sizeof(vertex_t) * map->numVertexes, PU_MAP, 0);
         for(i = 0; i < map->numVertexes; ++i)
             readVertex(map, i);
     }
@@ -424,6 +425,7 @@ static void archiveLines(gamemap_t* map, boolean write)
     else
     {
         map->numLineDefs = readLong();
+        map->lineDefs = Z_Malloc(sizeof(linedef_t) * map->numLineDefs, PU_MAP, 0);
         for(i = 0; i < map->numLineDefs; ++i)
             readLine(map, i);
     }
@@ -511,6 +513,7 @@ static void archiveSides(gamemap_t* map, boolean write)
     else
     {
         map->numSideDefs = readLong();
+        map->sideDefs = Z_Malloc(sizeof(sidedef_t) * map->numSideDefs, PU_MAP, 0);
         for(i = 0; i < map->numSideDefs; ++i)
             readSide(map, i);
     }
@@ -711,6 +714,7 @@ static void archiveSectors(gamemap_t *map, boolean write)
     else
     {
         map->numSectors = readLong();
+        map->sectors = Z_Malloc(sizeof(sector_t) * map->numSectors, PU_MAP, 0);
         for(i = 0; i < map->numSectors; ++i)
             readSector(map, i);
     }
@@ -800,6 +804,7 @@ static void archiveSubsectors(gamemap_t* map, boolean write)
     else
     {
         map->numFaces = readLong();
+        map->faces = Z_Malloc(sizeof(face_t) * map->numFaces, PU_MAP, 0);
         for(i = 0; i < map->numFaces; ++i)
             readSubsector(map, i);
     }
@@ -880,6 +885,7 @@ static void archiveSegs(gamemap_t *map, boolean write)
     else
     {
         map->numHEdges = readLong();
+        map->hEdges = Z_Malloc(sizeof(hedge_t) * map->numHEdges, PU_MAP, 0);
         for(i = 0; i < map->numHEdges; ++i)
             readSeg(map, i);
     }
@@ -948,6 +954,7 @@ static void archiveNodes(gamemap_t *map, boolean write)
     else
     {
         map->numNodes = readLong();
+        map->nodes = Z_Malloc(sizeof(node_t) * map->numNodes, PU_MAP, 0);
         for(i = 0; i < map->numNodes; ++i)
             readNode(map, i);
     }
@@ -1096,6 +1103,7 @@ static void archivePolyobjs(gamemap_t* map, boolean write)
     else
     {
         map->numPolyObjs = readLong();
+        map->polyObjs = Z_Malloc(sizeof(polyobj_t*) * map->numPolyObjs, PU_MAP, 0);
         for(i = 0; i < map->numPolyObjs; ++i)
             readPolyobj(map, i);
     }
