@@ -309,7 +309,7 @@ void R_InitSectorShadows(void)
         data.side = sid;
 
         P_SubsectorsBoxIteratorv(bounds, side->sector,
-                                 RIT_ShadowSubsectorLinker, &data);
+                                 RIT_ShadowSubsectorLinker, &data, false);
     }
 
     // How much time did we spend?

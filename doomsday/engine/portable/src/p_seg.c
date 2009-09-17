@@ -76,11 +76,19 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
     switch(args->prop)
     {
     case DMU_VERTEX0:
-        DMU_GetValue(DMT_HEDGE_V, &hEdge->HE_v1, args, 0);
+        {
+        seg_t* seg = (seg_t*) hEdge->data;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v1);
+        DMU_GetValue(DMT_HEDGE_V, &r, args, 0);
         break;
+        }
     case DMU_VERTEX1:
-        DMU_GetValue(DMT_HEDGE_V, &hEdge->HE_v2, args, 0);
+        {
+        seg_t* seg = (seg_t*) hEdge->data;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v2);
+        DMU_GetValue(DMT_HEDGE_V, &r, args, 0);
         break;
+        }
     case DMU_LENGTH:
         DMU_GetValue(DMT_HEDGE_LENGTH, &((seg_t*) hEdge->data)->length, args, 0);
         break;
@@ -88,31 +96,35 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
         DMU_GetValue(DMT_HEDGE_OFFSET, &((seg_t*) hEdge->data)->offset, args, 0);
         break;
     case DMU_SIDEDEF:
-        DMU_GetValue(DMT_HEDGE_SIDEDEF, &((seg_t*) hEdge->data)->sideDef, args, 0);
+        {
+        seg_t* seg = (seg_t*) hEdge->data;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, seg->sideDef);
+        DMU_GetValue(DMT_HEDGE_SIDEDEF, &r, args, 0);
         break;
+        }
     case DMU_LINEDEF:
-        DMU_GetValue(DMT_HEDGE_LINEDEF, &((seg_t*) hEdge->data)->lineDef, args, 0);
+        {
+        seg_t* seg = (seg_t*) hEdge->data;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_LINEDEF, seg->lineDef);
+        DMU_GetValue(DMT_HEDGE_LINEDEF, &r, args, 0);
         break;
+        }
     case DMU_FRONT_SECTOR:
-    {
+        {
         seg_t* seg = (seg_t*) hEdge->data;
-        sector_t* sec = NULL;
-
-        if(seg->SG_frontsector && seg->lineDef)
-            sec = seg->SG_frontsector;
-        DMU_GetValue(DMT_HEDGE_SEC, &sec, args, 0);
+        dmuobjrecord_t* r = (seg->SG_frontsector && seg->lineDef)?
+            DMU_GetObjRecord(DMU_SECTOR, seg->SG_frontsector) : NULL;
+        DMU_GetValue(DMT_HEDGE_SEC, &r, args, 0);
         break;
-    }
+        }
     case DMU_BACK_SECTOR:
-    {
+        {
         seg_t* seg = (seg_t*) hEdge->data;
-        sector_t* sec = NULL;
-
-        if(seg->SG_backsector && seg->lineDef)
-            sec = seg->SG_backsector;
-        DMU_GetValue(DMT_HEDGE_SEC, &seg->SG_backsector, args, 0);
+        dmuobjrecord_t* r = (seg->SG_backsector && seg->lineDef)?
+            DMU_GetObjRecord(DMU_SECTOR, seg->SG_backsector) : NULL;
+        DMU_GetValue(DMT_HEDGE_SEC, &r, args, 0);
         break;
-    }
+        }
     case DMU_FLAGS:
         DMU_GetValue(DMT_HEDGE_FLAGS, &((seg_t*) hEdge->data)->flags, args, 0);
         break;

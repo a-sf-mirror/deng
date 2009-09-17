@@ -94,7 +94,7 @@ boolean         P_BlockBoxSubsectorsIterator(blockmap_t* bmap, const uint blockB
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
                                              boolean (*func) (face_t*, void*),
-                                             void* data);
+                                             void* data, boolean retObjRecord);
 boolean         P_BlockBoxPolyobjsIterator(blockmap_t* bmap, const uint blockBox[4],
                                            boolean (*func) (polyobj_t*, void*),
                                            void* data);

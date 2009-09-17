@@ -1028,7 +1028,7 @@ boolean P_LinesBoxIteratorv(const arvec2_t box,
  */
 boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
                                 boolean (*func) (face_t*, void*),
-                                void* parm)
+                                void* parm, boolean retObjRecord)
 {
     vec2_t              bounds[2];
 
@@ -1037,14 +1037,14 @@ boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_SubsectorsBoxIteratorv(bounds, sector, func, parm);
+    return P_SubsectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
 }
 
 boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
                                   boolean (*func) (face_t*, void*),
                                   void* parm)
 {
-    return P_SubsectorsBoxIterator(box, ((dmuobjrecord_t*) p)->obj, func, parm);
+    return P_SubsectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
 }
 
 /**
@@ -1053,7 +1053,7 @@ boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
  */
 boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
                                  boolean (*func) (face_t*, void*),
-                                 void* data)
+                                 void* data, boolean retObjRecord)
 {
     static int          localValidCount = 0;
     uint                blockBox[4];
@@ -1065,7 +1065,8 @@ boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
     P_BoxToBlockmapBlocks(SSecBlockMap, blockBox, box);
 
     return P_BlockBoxSubsectorsIterator(SSecBlockMap, blockBox, sector,
-                                        box, localValidCount, func, data);
+                                        box, localValidCount, func, data,
+                                        retObjRecord);
 }
 
 boolean P_PolyobjLinesBoxIterator(const float box[4],

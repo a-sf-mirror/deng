@@ -818,7 +818,7 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         case DMU_PLANE:
             {
             const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_PLANE)];
-            sector_t*           sec = (sector_t*) ptr;
+            sector_t*           sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
             int                 result = 1;
 
             if(sec->planes)
@@ -836,7 +836,7 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         case DMU_FACE:
             {
             const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_FACE)];
-            sector_t*           sec = (sector_t*) ptr;
+            sector_t*           sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
             int                 result = 1;
 
             if(sec->faces)
@@ -863,7 +863,7 @@ int P_Iteratep(void *ptr, uint prop, void* context,
         case DMU_HEDGE:
             {
             const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_HEDGE)];
-            face_t*             ssec = (face_t*) ptr;
+            face_t*             ssec = (face_t*) ((dmuobjrecord_t*) ptr)->obj;
             int                 result = 1;
             hedge_t*            hEdge;
 
