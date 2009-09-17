@@ -71,8 +71,8 @@ static void parseAnimGroup(material_namespace_t mnamespace)
     ignore = true;
     if(mnamespace == MN_TEXTURES)
     {
-        if((matNumBase = P_MaterialCheckNumForName(sc_String,
-                                                   MN_TEXTURES)) != 0)
+        if((matNumBase = DMU_MaterialCheckNumForName(sc_String,
+                                                     MN_TEXTURES)) != 0)
             ignore = false;
     }
     else
@@ -124,16 +124,16 @@ static void parseAnimGroup(material_namespace_t mnamespace)
                          * same order as they are defined in the
                          * TEXTURE(1...) lump(s).
                          */
-                        R_AddToAnimGroup(groupNumber, matNumBase + picNum - 1,
+                        DMU_AddToAnimGroup(groupNumber, matNumBase + picNum - 1,
                                          min, (max > 0? max - min : 0));
                     }
                     else
                     {
                         materialnum_t       frame =
-                            P_MaterialCheckNumForName(W_LumpName(lumpNumBase + picNum - 1),
+                            DMU_MaterialCheckNumForName(W_LumpName(lumpNumBase + picNum - 1),
                                                       MN_FLATS);
 
-                        R_AddToAnimGroup(groupNumber, frame,
+                        DMU_AddToAnimGroup(groupNumber, frame,
                                          min, (max > 0? max - min : 0));
                     }
                 }

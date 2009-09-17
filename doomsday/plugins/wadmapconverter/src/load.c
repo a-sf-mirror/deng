@@ -224,18 +224,18 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
             sprintf(m->name, "UNK%05i", idx);
             m->name[8] = '\0';
             // First try the prefered namespace, then any.
-            if(!(m->num = P_MaterialCheckNumForIndex(idx,
+            if(!(m->num = DMU_MaterialCheckNumForIndex(idx,
                                                      (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->num = P_MaterialCheckNumForIndex(idx, MN_ANY);
+                m->num = DMU_MaterialCheckNumForIndex(idx, MN_ANY);
         }
         else
         {
             memcpy(m->name, name, 8);
             m->name[8] = '\0';
             // First try the prefered namespace, then any.
-            if(!(m->num = P_MaterialCheckNumForName(m->name,
+            if(!(m->num = DMU_MaterialCheckNumForName(m->name,
                                                     (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->num = P_MaterialCheckNumForName(m->name, MN_ANY);
+                m->num = DMU_MaterialCheckNumForName(m->name, MN_ANY);
         }
 
         // Add it to the list of known materials.

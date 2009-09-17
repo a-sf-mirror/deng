@@ -589,8 +589,7 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
     return NULL;
 }
 
-materialnum_t P_MaterialCheckNumForIndex(uint idx,
-                                         material_namespace_t mnamespace)
+int DMU_MaterialCheckNumForIndex(uint idx, material_namespace_t mnamespace)
 {
     if(!initedOk)
         return 0;
@@ -605,7 +604,8 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
         return 0;
     }
 
-    return getMaterialNumForIndex(idx, mnamespace);
+    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
+        P_ToMaterial(getMaterialNumForIndex(idx, mnamespace))));
 }
 
 /**
@@ -620,15 +620,31 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
  *
  * @return              Unique identifier of the found material, else zero.
  */
-materialnum_t P_MaterialNumForIndex(uint idx, material_namespace_t mnamespace)
+int DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace)
 {
-    materialnum_t       result = P_MaterialCheckNumForIndex(idx, mnamespace);
+    material_t*         mat;
+
+    if(!initedOk)
+        return 0;
+
+    // Caller wants a material in a specific namespace.
+    if(!isKnownMNamespace(mnamespace))
+    {
+#if _DEBUG
+Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
+            (int) mnamespace);
+#endif
+        return 0;
+    }
+
+    mat = P_ToMaterial(getMaterialNumForIndex(idx, mnamespace));
 
     // Not found? Don't announce during map setup or if not yet inited.
-    if(result == 0 && (!ddMapSetup || !initedOk))
-        Con_Message("P_MaterialNumForIndex: %u in namespace %i not found!\n",
+    if(mat && (!ddMapSetup || !initedOk))
+        Con_Message("DMU_MaterialNumForIndex: %u in namespace %i not found!\n",
                     idx, mnamespace);
-    return result;
+
+    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL, mat));
 }
 
 /**
@@ -697,6 +713,13 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
     return getMaterialNumForName(name, hash, mnamespace);
 }
 
+materialnum_t DMU_MaterialCheckNumForName(const char* rawName,
+                                          material_namespace_t mnamespace)
+{
+    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
+        P_ToMaterial(P_MaterialCheckNumForName(rawName, mnamespace))));
+}
+
 /**
  * Given a name and namespace, search the materials db for a match.
  * \note Part of the Doomsday public API.
@@ -729,6 +752,12 @@ materialnum_t P_MaterialNumForName(const char* name,
         Con_Message("P_MaterialNumForName: \"%.8s\" in namespace %i not found!\n",
                     name, mnamespace);
     return result;
+}
+
+int DMU_MaterialNumForName(const char* name,
+                           material_namespace_t mnamespace)
+{
+    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL, P_ToMaterial(P_MaterialNumForName(name, mnamespace))));
 }
 
 /**
@@ -988,21 +1017,17 @@ void R_DestroyAnimGroups(void)
     }
 }
 
-/**
- * \note Part of the Doomsday public API.
- */
-void R_AddToAnimGroup(int groupNum, materialnum_t num, int tics,
-                      int randomTics)
+void R_AddToAnimGroup(int groupNum, int num, int tics, int randomTics)
 {
-    animgroup_t*        group;
-    animframe_t*        frame;
+    animgroup_t*       group;
+    animframe_t*       frame;
     material_t*        mat;
 
     group = getAnimGroup(groupNum);
     if(!group)
         Con_Error("R_AddToAnimGroup: Unknown anim group '%i'\n.", groupNum);
 
-    if(!num || !(mat = getMaterialByNum(num - 1)))
+    if(!num || !(mat = P_ToMaterial(num)))
     {
         Con_Message("R_AddToAnimGroup: Invalid material num '%i'\n.", num);
         return;
@@ -1021,6 +1046,15 @@ void R_AddToAnimGroup(int groupNum, materialnum_t num, int tics,
     frame->mat = mat;
     frame->tics = tics;
     frame->random = randomTics;
+}
+
+/**
+ * \note Part of the Doomsday public API.
+ */
+void DMU_AddToAnimGroup(int groupNum, int num, int tics, int randomTics)
+{
+    R_AddToAnimGroup(groupNum, P_ToMaterialNum(
+        ((dmuobjrecord_t*) P_ToPtr(DMU_MATERIAL, num))->obj), tics, randomTics);
 }
 
 boolean R_IsPrecacheGroup(int groupNum)

@@ -174,22 +174,21 @@ extern          "C" {
     uint            MPE_VertexCreate(float x, float y);
     boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
     uint            MPE_SidedefCreate(uint sector, short flags,
-                                      materialnum_t topMaterial,
+                                      int topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
-                                      materialnum_t middleMaterial,
+                                      int middleMaterial,
                                       float middleOffsetX, float middleOffsetY,
                                       float middleRed, float middleGreen,
                                       float middleBlue, float middleAlpha,
-                                      materialnum_t bottomMaterial,
+                                      int bottomMaterial,
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
     uint            MPE_LinedefCreate(uint v1, uint v2, uint frontSide,
                                       uint backSide, int flags);
     uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    uint            MPE_PlaneCreate(uint sector, float height,
-                                    materialnum_t num,
+    uint            MPE_PlaneCreate(uint sector, float height, int nmaterial,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);
@@ -391,11 +390,15 @@ extern          "C" {
     void            P_SetPolyobjCallback(void (*func)(struct mobj_s*, void*, void*));
 
     // Play: Materials.
-    materialnum_t   P_MaterialCheckNumForName(const char* name, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialNumForName(const char* name, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialCheckNumForIndex(uint idx, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
+    materialnum_t   DMU_MaterialNumForName(const char* name, material_namespace_t mnamespace);
+
     const char*     P_GetMaterialName(material_t* mat);
+
+    int             DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
+    int             DMU_MaterialCheckNumForIndex(uint idx,
+                                                 material_namespace_t mnamespace);
+    int             DMU_MaterialCheckNumForName(const char* rawName,
+                                                material_namespace_t mnamespace);
 
     void            P_MaterialPrecache(material_t* mat);
 
@@ -422,8 +425,8 @@ extern          "C" {
                                     spriteinfo_t* sprinfo);
     boolean         R_GetPatchInfo(lumpnum_t lump, patchinfo_t* info);
     int             R_CreateAnimGroup(int flags);
-    void            R_AddToAnimGroup(int groupNum, materialnum_t num,
-                                     int tics, int randomTics);
+    void            DMU_AddToAnimGroup(int groupNum, int num,
+                                       int tics, int randomTics);
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);

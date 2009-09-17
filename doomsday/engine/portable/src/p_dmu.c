@@ -661,7 +661,7 @@ uint P_ToIndex(const void* ptr)
         return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
     case DMU_MATERIAL:
-        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj);
+        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj) - 1;
 
     default:
         Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(type));

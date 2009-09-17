@@ -1,7 +1,7 @@
 NAME            "DOOMSDAY"
 
 ; Highest ordinal is currently
-; --> 451 <--
+; --> 453 <--
 ; Other free ordinals:
 ; 43 formerly P_RegisterPlayerControl
 ; 44 formerly B_FormEventString
@@ -314,11 +314,11 @@ EXPORTS
     P_SetPolyobjCallback        @83 NONAME
 
 ; Play: Materials.
-    P_MaterialCheckNumForName   @336 NONAME
     P_GetMaterialName           @337 NONAME
-    P_MaterialNumForName        @97 NONAME
-    P_MaterialCheckNumForIndex  @438 NONAME
-    P_MaterialNumForIndex       @437 NONAME
+	DMU_MaterialCheckNumForName @336 NONAME
+    DMU_MaterialNumForName      @97 NONAME
+    DMU_MaterialNumForIndex     @437 NONAME
+    DMU_MaterialCheckNumForIndex @438 NONAME
     P_MaterialPrecache          @436 NONAME
 
 ; Play: Thinkers.
@@ -346,7 +346,7 @@ EXPORTS
     R_PointToAngle2             @101 NONAME
     P_PointInSubsector          @102 NONAME
     R_CreateAnimGroup           @241 NONAME
-    R_AddToAnimGroup            @242 NONAME
+    DMU_AddToAnimGroup          @242 NONAME
     R_HSVToRGB                  @439 NONAME
     R_CreateColorPalette		@444 NONAME
     R_GetColorPaletteNumForName @446 NONAME

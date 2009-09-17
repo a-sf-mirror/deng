@@ -993,7 +993,7 @@ static void P_FinalizeMap(void)
     // visible due to texture repeating and interpolation.
     {
     uint                i;
-    material_t*         mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName("NUKE24", MN_TEXTURES));
+    material_t*         mat = DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForName("NUKE24", MN_TEXTURES));
     
     for(i = 0; i < numlines; ++i)
     {

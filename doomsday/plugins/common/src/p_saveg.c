@@ -2417,9 +2417,9 @@ static void SV_ReadSector(sector_t *sec)
     if(hdr.version == 1)
     {   // Flat numbers are the original flat lump indices - (lump) "F_START".
         floorMaterial = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
+            DMU_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
         ceilingMaterial = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
+            DMU_MaterialNumForIndex(SV_ReadShort(), MN_FLATS));
     }
     else if(hdr.version >= 4)
 #endif
@@ -3150,7 +3150,7 @@ static int SV_ReadFloor(floor_t* floor)
             floor->material = SV_GetArchiveMaterial(SV_ReadShort(), 0);
         else
             floor->material = DMU_ToPtr(DMU_MATERIAL,
-                P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
+                DMU_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
 
         floor->floorDestHeight = (float) SV_ReadShort();
         floor->speed = FIX2FLT(SV_ReadLong());
@@ -3196,7 +3196,7 @@ static int SV_ReadFloor(floor_t* floor)
         floor->state = (int) SV_ReadLong();
         floor->newSpecial = SV_ReadLong();
         floor->material = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
+            DMU_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
 
         floor->floorDestHeight = FIX2FLT((fixed_t) SV_ReadLong());
         floor->speed = FIX2FLT((fixed_t) SV_ReadLong());

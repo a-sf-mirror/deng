@@ -178,9 +178,9 @@ void P_InitSwitchList(void)
             break;
 
         switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialCheckNumForName(switchInfo[i].name1, MN_TEXTURES));
+            DMU_MaterialCheckNumForName(switchInfo[i].name1, MN_TEXTURES));
         switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialCheckNumForName(switchInfo[i].name2, MN_TEXTURES));
+            DMU_MaterialCheckNumForName(switchInfo[i].name2, MN_TEXTURES));
     }
 
     numswitches = index / 2;
@@ -252,9 +252,9 @@ void P_InitSwitchList(void)
                 break;
 
             switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-                P_MaterialNumForName(sList[i].name1, MN_TEXTURES));
+                DMU_MaterialNumForName(sList[i].name1, MN_TEXTURES));
             switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-                P_MaterialNumForName(sList[i].name2, MN_TEXTURES));
+                DMU_MaterialNumForName(sList[i].name2, MN_TEXTURES));
             VERBOSE(Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
                                 sList[i].name1, sList[i].name2,
                                 SHORT(sList[i].episode)));

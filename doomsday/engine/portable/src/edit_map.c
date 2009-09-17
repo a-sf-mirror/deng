@@ -1980,19 +1980,20 @@ boolean MPE_VertexCreatev(size_t num, float* values, uint* indices)
 }
 
 uint MPE_SidedefCreate(uint sector, short flags,
-                       materialnum_t topMaterial,
+                       int topMaterial,
                        float topOffsetX, float topOffsetY, float topRed,
                        float topGreen, float topBlue,
-                       materialnum_t middleMaterial,
+                       int middleMaterial,
                        float middleOffsetX, float middleOffsetY,
                        float middleRed, float middleGreen,
                        float middleBlue, float middleAlpha,
-                       materialnum_t bottomMaterial,
+                       int bottomMaterial,
                        float bottomOffsetX, float bottomOffsetY,
                        float bottomRed, float bottomGreen,
                        float bottomBlue)
 {
     sidedef_t*          s;
+    material_t*         mat;
 
     if(!editMapInited)
         return 0;
@@ -2004,15 +2005,21 @@ uint MPE_SidedefCreate(uint sector, short flags,
     s->flags = flags;
     s->sector = (sector == 0? NULL: map->sectors[sector-1]);
 
-    Surface_SetMaterial(&s->SW_topsurface, P_ToMaterial(topMaterial), false);
+    if((mat = P_ToPtr(DMU_MATERIAL, topMaterial)))
+        mat = ((dmuobjrecord_t*) mat)->obj;
+    Surface_SetMaterial(&s->SW_topsurface, mat, false);
     Surface_SetMaterialOffsetXY(&s->SW_topsurface, topOffsetX, topOffsetY);
     Surface_SetColorRGBA(&s->SW_topsurface, topRed, topGreen, topBlue, 1);
 
-    Surface_SetMaterial(&s->SW_middlesurface, P_ToMaterial(middleMaterial), false);
+    if((mat = P_ToPtr(DMU_MATERIAL, middleMaterial)))
+        mat = ((dmuobjrecord_t*) mat)->obj;
+    Surface_SetMaterial(&s->SW_middlesurface, mat, false);
     Surface_SetMaterialOffsetXY(&s->SW_middlesurface, middleOffsetX, middleOffsetY);
     Surface_SetColorRGBA(&s->SW_middlesurface, middleRed, middleGreen, middleBlue, middleAlpha);
 
-    Surface_SetMaterial(&s->SW_bottomsurface, P_ToMaterial(bottomMaterial), false);
+    if((mat = P_ToPtr(DMU_MATERIAL, bottomMaterial)))
+        mat = ((dmuobjrecord_t*) mat)->obj;
+    Surface_SetMaterial(&s->SW_bottomsurface, mat, false);
     Surface_SetMaterialOffsetXY(&s->SW_bottomsurface, bottomOffsetX, bottomOffsetY);
     Surface_SetColorRGBA(&s->SW_bottomsurface, bottomRed, bottomGreen, bottomBlue, 1);
 
@@ -2148,7 +2155,7 @@ uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
     return l->buildData.index;
 }
 
-uint MPE_PlaneCreate(uint sector, float height, materialnum_t material,
+uint MPE_PlaneCreate(uint sector, float height, int material,
                      float matOffsetX, float matOffsetY,
                      float r, float g, float b, float a,
                      float normalX, float normalY, float normalZ)
@@ -2156,6 +2163,7 @@ uint MPE_PlaneCreate(uint sector, float height, materialnum_t material,
     uint                i;
     sector_t*           s;
     plane_t**           newList, *pln;
+    material_t*         mat;
 
     if(!editMapInited)
         return 0;
@@ -2167,7 +2175,10 @@ uint MPE_PlaneCreate(uint sector, float height, materialnum_t material,
 
     pln = M_Calloc(sizeof(plane_t));
     pln->height = height;
-    Surface_SetMaterial(&pln->surface, P_ToMaterial(material), false);
+
+    if((mat = P_ToPtr(DMU_MATERIAL, material)))
+        mat = ((dmuobjrecord_t*) mat)->obj;
+    Surface_SetMaterial(&pln->surface, mat, false);
     Surface_SetColorRGBA(&pln->surface, r, g, b, a);
     Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
     pln->PS_normal[VX] = normalX;

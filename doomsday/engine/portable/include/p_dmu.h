@@ -58,6 +58,7 @@ int         P_DummyType(void* dummy);
 boolean     P_IsDummy(void* dummy);
 void*       P_DummyExtraData(void* dummy);
 
+void*       P_ToPtr(int type, uint idx);
 uint        P_ToIndex(const void* ptr);
 void        P_SetVariable(int value, void* data);
 void*       P_GetVariable(int value);

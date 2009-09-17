@@ -326,11 +326,11 @@ static void loadAnimDefs(animdef_t* animDefs)
                     for(n = startFrame; n <= endFrame; n++)
                     {
                         materialnum_t       frame =
-                            P_MaterialCheckNumForName(W_LumpName(n),
+                            DMU_MaterialCheckNumForName(W_LumpName(n),
                                                       MN_FLATS);
 
                         if(frame != 0)
-                            R_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
+                            DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
                     }
                 }
                 else
@@ -338,11 +338,11 @@ static void loadAnimDefs(animdef_t* animDefs)
                     for(n = endFrame; n >= startFrame; n--)
                     {
                         materialnum_t       frame =
-                            P_MaterialCheckNumForName(W_LumpName(n),
+                            DMU_MaterialCheckNumForName(W_LumpName(n),
                                                       MN_FLATS);
 
                         if(frame != 0)
-                            R_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
+                            DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
                     }
                 }
             }
@@ -352,9 +352,9 @@ static void loadAnimDefs(animdef_t* animDefs)
             {   // Same as above but for texture groups.
             materialnum_t       startFrame, endFrame, n;
 
-            if((startFrame = P_MaterialCheckNumForName(animDefs[i].startname,
+            if((startFrame = DMU_MaterialCheckNumForName(animDefs[i].startname,
                                                        MN_TEXTURES)) == 0 ||
-               (endFrame = P_MaterialCheckNumForName(animDefs[i].endname,
+               (endFrame = DMU_MaterialCheckNumForName(animDefs[i].endname,
                                                      MN_TEXTURES)) == 0)
                 continue;
 
@@ -380,12 +380,12 @@ static void loadAnimDefs(animdef_t* animDefs)
                 if(endFrame > startFrame)
                 {
                     for(n = startFrame; n <= endFrame; n++)
-                        R_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
+                        DMU_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
                 }
                 else
                 {
                     for(n = endFrame; n >= startFrame; n--)
-                        R_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
+                        DMU_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
                 }
             }
             break;
