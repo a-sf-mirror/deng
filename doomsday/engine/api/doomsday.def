@@ -50,6 +50,7 @@ NAME            "DOOMSDAY"
 ; 349 formerly R_MaterialIsCustom
 ; 375 formerly DGL_MultiTexCoord2f
 ; 376 formerly DGL_MultiTexCoord2fv
+; @337 formerly DMU_GetMaterialName
 
 EXPORTS
 ; Plugins.
@@ -314,12 +315,11 @@ EXPORTS
     P_SetPolyobjCallback        @83 NONAME
 
 ; Play: Materials.
-    P_GetMaterialName           @337 NONAME
 	DMU_MaterialCheckNumForName @336 NONAME
     DMU_MaterialNumForName      @97 NONAME
     DMU_MaterialNumForIndex     @437 NONAME
     DMU_MaterialCheckNumForIndex @438 NONAME
-    P_MaterialPrecache          @436 NONAME
+    DMU_MaterialPrecache        @436 NONAME
 
 ; Play: Thinkers.
     DD_ThinkerAdd               @86 NONAME

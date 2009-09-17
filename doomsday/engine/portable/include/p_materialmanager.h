@@ -49,7 +49,7 @@ material_t*     P_ToMaterial(materialnum_t num);
 materialnum_t   P_ToMaterialNum(const material_t* mat);
 
 // Lookup:
-const char*     P_GetMaterialName(material_t* mat);
+const char*     P_GetMaterialName(const material_t* mat);
 
 materialnum_t   P_MaterialCheckNumForName(const char* name, material_namespace_t mnamespace);
 materialnum_t   P_MaterialNumForName(const char* name, material_namespace_t mnamespace);

@@ -757,7 +757,8 @@ materialnum_t P_MaterialNumForName(const char* name,
 int DMU_MaterialNumForName(const char* name,
                            material_namespace_t mnamespace)
 {
-    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL, P_ToMaterial(P_MaterialNumForName(name, mnamespace))));
+    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
+        P_ToMaterial(P_MaterialCheckNumForName(name, mnamespace))));
 }
 
 /**
@@ -768,7 +769,7 @@ int DMU_MaterialNumForName(const char* name,
  *
  * @return              The associated name.
  */
-const char* P_GetMaterialName(material_t* mat)
+const char* P_GetMaterialName(const material_t* mat)
 {
     materialnum_t       num;
 
@@ -787,12 +788,12 @@ const char* P_GetMaterialName(material_t* mat)
  *
  * @param mat           The material to be precached.
  */
-void P_MaterialPrecache(material_t* mat)
+void DMU_MaterialPrecache(material_t* mat)
 {
     if(!initedOk)
         return;
 
-    Material_Precache(mat);
+    Material_Precache((material_t*) ((dmuobjrecord_t*) mat)->obj);
 }
 
 /**

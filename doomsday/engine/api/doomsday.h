@@ -392,15 +392,13 @@ extern          "C" {
     // Play: Materials.
     materialnum_t   DMU_MaterialNumForName(const char* name, material_namespace_t mnamespace);
 
-    const char*     P_GetMaterialName(material_t* mat);
-
     int             DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
     int             DMU_MaterialCheckNumForIndex(uint idx,
                                                  material_namespace_t mnamespace);
     int             DMU_MaterialCheckNumForName(const char* rawName,
                                                 material_namespace_t mnamespace);
 
-    void            P_MaterialPrecache(material_t* mat);
+    void            DMU_MaterialPrecache(material_t* mat);
 
     // Play: Thinkers.
     void            DD_InitThinkers(void);

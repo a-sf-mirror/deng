@@ -617,6 +617,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_SPEED,
     DMU_SEG_COUNT,
     DMU_NAMESPACE,
+    DMU_NAME,
 
     DMU_FIRST_GAME_TYPE = 1000
 };
