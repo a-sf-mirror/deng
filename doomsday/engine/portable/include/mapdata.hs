@@ -119,31 +119,28 @@ end
 struct hedge
     PTR     vertex_s*[2] v // [Start, End] of the hedge.
     PTR     hedge_s*    twin
-    PTR		hedge_s*	next
-    PTR		hedge_s*	prev
-    PTR     face_s*		face
-	-		void*		data
+    PTR     hedge_s*    next
+    PTR     hedge_s*    prev
+    PTR     face_s*     face
+    -       void*       data
 end
 
 internal
-#define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
-
 typedef struct subsector_s {
     uint        hEdgeCount;
     struct polyobj_s* polyObj; // NULL, if there is no polyobj.
     struct sector_s* sector;
     int         addSpriteCount; // frame number of last R_AddSprites
     uint        inSectorID;
-    int         flags;
     int         validCount;
     uint        reverb[NUM_REVERB_DATA];
     fvertex_t   bBox[2]; // Min and max points.
     float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t   midPoint; // Center of vertices.
-    ushort      numVertices;
-    fvertex_t** vertices; // [numvertices] size
+    fvertex_t   midPoint; // Center of the subsector.
     struct shadowlink_s* shadows;
     biassurface_t** bsuf; // [sector->planeCount] size.
+    hedge_t*    firstFanHEdge;
+    boolean     useMidPoint;
 } subsector_t;
 end
 
@@ -155,7 +152,7 @@ end
 
 struct face
     PTR     hedge_s*    hEdge // First half-edge of this subsector.
-	-		void*		data
+    -       void*       data
 end
 
 internal
@@ -190,10 +187,10 @@ struct material
     -       ded_ptcgen_s*   ptcGen
     -       ded_reflection_s* reflection
     -       boolean         inAnimGroup // True if belongs to some animgroup.
-    -       material_s*		current
-    -       material_s*		next
+    -       material_s*     current
+    -       material_s*     next
     -       float           inter
-    -       material_s*		globalNext // Linear list linking all materials.
+    -       material_s*     globalNext // Linear list linking all materials.
 end
 
 internal
@@ -224,7 +221,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    face_t*				face;
+    face_t*             face;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -249,7 +246,7 @@ struct surface
     FLOAT   float[3]    normal // Surface normal
     -       float[3]    oldNormal
     FLOAT   float[2]    offset // [X, Y] Planar offset to surface material origin.
-	-		float[2][2] oldOffset
+    -       float[2][2] oldOffset
     -       float[2]    visOffset
     -       float[2]    visOffsetDelta
     FLOAT   float[4]    rgba // Surface color tint
@@ -273,8 +270,8 @@ internal
 #define PS_offset               surface.offset
 #define PS_visoffset            surface.visOffset
 #define PS_rgba                 surface.rgba
-#define	PS_flags				surface.flags
-#define	PS_inflags				surface.inFlags
+#define PS_flags                surface.flags
+#define PS_inflags              surface.inFlags
 end
 
 struct plane
@@ -356,7 +353,7 @@ typedef struct msector_s {
 
     // Suppress superfluous mini warnings.
     int         warnedFacing;
-    int			refCount;
+    int         refCount;
 } msector_t;
 end
 
@@ -365,7 +362,7 @@ struct sector
     INT     int         validCount // if == validCount, already checked.
     -       int         flags
     -       float[4]    bBox // Bounding box for the sector.
-    -		float		approxArea // Rough approximation of sector area.
+    -       float       approxArea // Rough approximation of sector area.
     FLOAT   float       lightLevel
     -       float       oldLightLevel
     FLOAT   float[3]    rgb
@@ -376,7 +373,7 @@ struct sector
     UINT    uint        faceCount
     PTR     face_s**    faces // [faceCount+1] size.
     -       uint        numReverbFaceAttributors
-    -       face_s**	reverbFaces // [numReverbFaceAttributors] size.
+    -       face_s**    reverbFaces // [numReverbFaceAttributors] size.
     PTR     ddmobj_base_t soundOrg
     UINT    uint        planeCount
     -       plane_s**   planes // [planeCount+1] size.
@@ -446,13 +443,13 @@ internal
 typedef struct msidedef_s {
     // Sidedef index. Always valid after loading & pruning.
     int         index;
-    int			refCount;
+    int         refCount;
 } msidedef_t;
 end
 
 struct sidedef
     -       surface_t[3] sections
-    PTR		linedef_s*	line
+    PTR     linedef_s*  line
     PTR     sector_s*   sector
     SHORT   short       flags
     -       msidedef_t  buildData
@@ -493,7 +490,7 @@ internal
                                  LINE_FRONTSECTOR(l) == LINE_BACKSECTOR(l))
 
 // Internal flags:
-#define LF_POLYOBJ				0x1 // Line is part of a polyobject.
+#define LF_POLYOBJ              0x1 // Line is part of a polyobject.
 end
 
 internal
@@ -503,7 +500,7 @@ typedef struct mlinedef_s {
     // Linedef index. Always valid after loading & pruning of zero
     // length lines has occurred.
     int         index;
-    
+
     // One-sided linedef used for a special effect (windows).
     // The value refers to the opposite sector on the back side.
     struct sector_s* windowEffect;
@@ -524,8 +521,8 @@ end
 struct linedef
     -       lineowner_s*[2] vo      // Links to vertex line owner nodes [left, right]
     -       hedge_s*    hEdges[2]   // [leftmost front seg, rightmost front seg]
-    INT     int         flags		// Public DDLF_* flags.
-    -		byte		inFlags		// Internal LF_* flags
+    INT     int         flags       // Public DDLF_* flags.
+    -       byte        inFlags     // Internal LF_* flags
     INT     slopetype_t slopeType
     INT     int         validCount
     -       binangle_t  angle       // Calculated from front side's normal
@@ -546,8 +543,8 @@ internal
  * An infinite line of the form point + direction vectors. 
  */
 typedef struct partition_s {
-	float				x, y;
-	float				dX, dY;
+    float        x, y;
+    float        dX, dY;
 } partition_t;
 end
 

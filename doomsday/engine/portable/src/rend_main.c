@@ -363,30 +363,35 @@ void Rend_VertexColorsApplyTorchLight(rcolor_t* colors,
     }
 }
 
-void Rend_PreparePlane(rvertex_t* rvertices, size_t numVertices,
-                       float height, const fvertex_t** vertices,
-                       boolean antiClockwise)
+static void preparePlane(rvertex_t* rvertices, const subsector_t* ssec,
+                         float height, boolean antiClockwise)
 {
-    size_t              i, vid;
+    size_t              i = 0;
+    hedge_t*            hEdge;
 
-    // First vertex is always #0.
-    rvertices[0].pos[VX] = vertices[0]->pos[VX];
-    rvertices[0].pos[VY] = vertices[0]->pos[VY];
-    rvertices[0].pos[VZ] = height;
+    if(ssec->useMidPoint)
+    {
+        rvertices[i].pos[VX] = ssec->midPoint.pos[VX];
+        rvertices[i].pos[VY] = ssec->midPoint.pos[VY];
+        rvertices[i].pos[VZ] = height;
+        ++i;
+    }
 
     // Copy the vertices in reverse order for ceilings (flip faces).
-    if(antiClockwise)
-        vid = numVertices - 1;
-    else
-        vid = 1;
-
-    for(i = 1; i < numVertices; ++i)
+    hEdge = ssec->firstFanHEdge;
+    do
     {
-        rvertices[i].pos[VX] = vertices[vid]->pos[VX];
-        rvertices[i].pos[VY] = vertices[vid]->pos[VY];
+        rvertices[i].pos[VX] = hEdge->HE_v1pos[VX];
+        rvertices[i].pos[VY] = hEdge->HE_v1pos[VY];
         rvertices[i].pos[VZ] = height;
+        ++i;
+    } while((hEdge = (antiClockwise? hEdge->prev : hEdge->next)) != ssec->firstFanHEdge);
 
-        (antiClockwise? vid-- : vid++);
+    if(ssec->useMidPoint)
+    {
+        rvertices[i].pos[VX] = ssec->firstFanHEdge->HE_v1pos[VX];
+        rvertices[i].pos[VY] = ssec->firstFanHEdge->HE_v1pos[VY];
+        rvertices[i].pos[VZ] = height;
     }
 }
 
@@ -1972,7 +1977,7 @@ static void renderPlane(face_t* face, planetype_t type,
     float               inter = 0;
     rendworldpoly_params_t params;
     subsector_t*        ssec = (subsector_t*) face->data;
-    uint                numVertices = ssec->numVertices;
+    uint                numVertices;
     rvertex_t*          rvertices;
     boolean             blended = false;
     sector_t*           sec = ssec->sector;
@@ -2071,9 +2076,9 @@ static void renderPlane(face_t* face, planetype_t type,
         }
     }
 
+    numVertices = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
     rvertices = R_AllocRendVertices(numVertices);
-    Rend_PreparePlane(rvertices, numVertices, height, ssec->vertices,
-                      !(normal[VZ] > 0));
+    preparePlane(rvertices, ssec, height, !(normal[VZ] > 0));
 
     if(params.type != RPT_SKY_MASK)
     {
@@ -3107,7 +3112,7 @@ static void Rend_RenderSubsector(uint faceidx)
         return;
     }
 
-    R_TriangulateSubSector(face);
+    R_PickSubsectorFanBase(face);
 
     sect = ssec->sector;
     sceil = sect->SP_ceilvisheight;

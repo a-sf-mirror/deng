@@ -96,24 +96,21 @@ typedef struct hedge_s {
     void*               data;
 } hedge_t;
 
-#define SUBF_MIDPOINT         0x80    // Midpoint is tri-fan centre.
-
 typedef struct subsector_s {
     uint        hEdgeCount;
     struct polyobj_s* polyObj; // NULL, if there is no polyobj.
     struct sector_s* sector;
     int         addSpriteCount; // frame number of last R_AddSprites
     uint        inSectorID;
-    int         flags;
     int         validCount;
     uint        reverb[NUM_REVERB_DATA];
     fvertex_t   bBox[2]; // Min and max points.
     float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t   midPoint; // Center of vertices.
-    ushort      numVertices;
-    fvertex_t** vertices; // [numvertices] size
+    fvertex_t   midPoint; // Center of the subsector.
     struct shadowlink_s* shadows;
     biassurface_t** bsuf; // [sector->planeCount] size.
+    hedge_t*    firstFanHEdge;
+    boolean     useMidPoint;
 } subsector_t;
 
 typedef struct face_s {
@@ -487,8 +484,8 @@ typedef struct linedef_s {
  * An infinite line of the form point + direction vectors.
  */
 typedef struct partition_s {
-    float               x, y;
-    float               dX, dY;
+    float        x, y;
+    float        dX, dY;
 } partition_t;
 
 typedef struct node_s {
