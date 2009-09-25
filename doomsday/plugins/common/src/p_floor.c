@@ -481,15 +481,14 @@ int findLineInSectorSmallestBottomMaterial(void *ptr, void *context)
     return 1; // Continue iteration.
 }
 
-linedef_t* P_FindLineInSectorSmallestBottomMaterial(sector_t *sec, int *val)
+linedef_t* P_FindLineInSectorSmallestBottomMaterial(sector_t* sec, int* val)
 {
     findlineinsectorsmallestbottommaterialparams_t params;
 
     params.baseSec = sec;
     params.minSize = DDMAXINT;
     params.foundLine = NULL;
-    DMU_Iteratep(sec, DMU_LINEDEF, &params,
-               findLineInSectorSmallestBottomMaterial);
+    DMU_Iteratep(sec, DMU_LINEDEF, findLineInSectorSmallestBottomMaterial, &params);
 
     if(val)
         *val = params.minSize;
@@ -1028,8 +1027,8 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
         params.material = DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL);
         params.foundSec = NULL;
 
-        while(!DMU_Iteratep(params.baseSec, DMU_LINEDEF, &params,
-                          findAdjacentSectorForSpread))
+        while(!DMU_Iteratep(params.baseSec, DMU_LINEDEF,
+                          findAdjacentSectorForSpread, &params))
         {   // We found another sector to spread to.
             height += stairsize;
 
@@ -1143,7 +1142,7 @@ static void processStairSector(sector_t *sec, int type, float height,
 
     // Find all neigboring sectors with sector special equal to type and add
     // them to the stairbuild queue.
-    DMU_Iteratep(sec, DMU_LINEDEF, &params, findSectorNeighborsForStairBuild);
+    DMU_Iteratep(sec, DMU_LINEDEF, findSectorNeighborsForStairBuild, &params);
 }
 #endif
 
@@ -1264,13 +1263,13 @@ int EV_DoDonut(linedef_t *line)
 
         params.baseSec = sec;
         params.foundSec = NULL;
-        if(!DMU_Iteratep(sec, DMU_LINEDEF, &params, findSectorFirstNeighbor))
+        if(!DMU_Iteratep(sec, DMU_LINEDEF, findSectorFirstNeighbor, &params))
         {
             outer = params.foundSec;
 
             params.baseSec = outer;
             params.foundSec = NULL;
-            if(!DMU_Iteratep(outer, DMU_LINEDEF, &params, findSectorFirstNeighbor))
+            if(!DMU_Iteratep(outer, DMU_LINEDEF, findSectorFirstNeighbor, &params))
                 inner = params.foundSec;
         }
 

@@ -870,12 +870,6 @@ boolean P_LineMobjsIterator(linedef_t* line,
     return true;
 }
 
-boolean DMU_LineMobjsIterator(void* p, boolean (*func) (mobj_t*, void*),
-                              void* data)
-{
-    return P_LineMobjsIterator(((dmuobjrecord_t*) p)->obj, func, data);
-}
-
 /**
  * Increment validCount before using this. 'func' is called for each mobj
  * that is (even partly) inside the sector. This is not a 3D test, the
@@ -885,8 +879,7 @@ boolean DMU_LineMobjsIterator(void* p, boolean (*func) (mobj_t*, void*),
  * a bunch of LineMobjs iterations.)
  */
 boolean P_SectorTouchingMobjsIterator(sector_t* sector,
-                                      boolean (*func) (mobj_t*, void*),
-                                      void* data)
+                                      int (*func) (void*, void*), void* data)
 {
     uint                i;
     void*               linkstore[MAXLINKED];
@@ -926,13 +919,6 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
 
     DO_LINKS(it, end);
     return true;
-}
-
-boolean DMU_SectorTouchingMobjsIterator(void* p,
-                                      boolean (*func) (mobj_t*, void*),
-                                      void* data)
-{
-    return P_SectorTouchingMobjsIterator(((dmuobjrecord_t*) p)->obj, func, data);
 }
 
 boolean P_MobjsBoxIterator(const float box[4],

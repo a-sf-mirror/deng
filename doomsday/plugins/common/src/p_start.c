@@ -1141,7 +1141,7 @@ void P_TurnGizmosAwayFromDoors(void)
         memset(tlist, 0, sizeof(tlist));
 
         // First all the things to process.
-        for(k = 0, iter = DMU_GetPtrp(sec, DMT_MOBJS);
+        for(k = 0, iter = DMU_GetPtrp(sec, DMU_MOBJS);
             k < MAXLIST - 1 && iter; iter = iter->sNext)
         {
             if(iter->type == MT_KEYGIZMOBLUE ||

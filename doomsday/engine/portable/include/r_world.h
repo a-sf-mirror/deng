@@ -67,7 +67,7 @@ float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 float           R_ExtraLightDelta(void);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 
-void            R_TriangulateSubSector(face_t* ssec);
+void            R_PickSubsectorFanBase(face_t* ssec);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
 void            R_UpdatePlanes(void);

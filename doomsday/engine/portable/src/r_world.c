@@ -664,7 +664,7 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
             uint                i;
             biassurface_t*      bsuf = SB_CreateSurface();
 
-            bsuf->size = ssec->numVertices;
+            bsuf->size = (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
             bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_MAP, 0);
 
             for(i = 0; i < bsuf->size; ++i)
@@ -1237,53 +1237,45 @@ void R_InitLinks(gamemap_t *map)
 }
 
 /**
- * Create a list of vertices for the subsector which are suitable for
- * use as the points of single a trifan.
+ * Walk the half-edges of the specified subsector, looking for a half-edge
+ * that is suitable for use as the base of a tri-fan.
  *
- * We are assured by the node building process that subsector->segs has
- * been ordered by angle, clockwise starting from the smallest angle.
- * So, most of the time, the points can be created directly from the
- * seg vertexes.
- *
- * However, we do not want any overlapping tris so check the area of
- * each triangle is > 0, if not; try the next vertice in the list until
- * we find a good one to use as the center of the trifan. If a suitable
- * point cannot be found use the center of subsector instead (it will
- * always be valid as subsectors are convex).
+ * We do not want any overlapping tris so check that the area of each triangle
+ * is > 0, if not; try the next vertice until we find a good one to use as the
+ * center of the trifan. If a suitable point cannot be found use the center of
+ * subsector instead (it will always be valid as subsectors are convex).
  */
-void R_TriangulateSubSector(face_t* face)
+void R_PickSubsectorFanBase(face_t* face)
 {
-    uint                baseIDX = 0, i, n;
-    boolean             found = false;
-    hedge_t*            hEdge;
-    subsector_t*        ssec = (subsector_t*) face->data;
-
-    if(ssec->vertices)
-        return; // Already complete.
-
-    ssec->flags &= ~SUBF_MIDPOINT;
-
-    // We need to find a good tri-fan base vertex, (one that doesn't
-    // generate zero-area triangles).
-    if(ssec->hEdgeCount <= 3)
-    {   // Always valid.
-        found = true;
-    }
-    else
-    {   // Higher vertex counts need checking, we'll test each one and pick
-        // the first good one.
 #define TRIFAN_LIMIT    0.1
 
-        fvertex_t*          base, *a, *b;
+    hedge_t*            base = NULL;
+    subsector_t*        ssec = (subsector_t*) face->data;
+
+    if(ssec->firstFanHEdge)
+        return; // Already chosen.
+
+    ssec->useMidPoint = false;
+
+    /**
+     * We need to find a good tri-fan base vertex, (one that doesn't
+     * generate zero-area triangles).
+     */
+    if(ssec->hEdgeCount > 3)
+    {
+        uint                baseIDX;
+        hedge_t*            hEdge;
+        fvertex_t*          a, *b;
 
         baseIDX = 0;
         hEdge = face->hEdge;
         do
         {
+            uint                i;
             hedge_t*            hEdge2;
 
-            base = &hEdge->HE_v1->v;
             i = 0;
+            base = hEdge;
             hEdge2 = face->hEdge;
             do
             {
@@ -1293,7 +1285,7 @@ void R_TriangulateSubSector(face_t* face)
                     b = &hEdge2->HE_v2->v;
 
                     if(TRIFAN_LIMIT >=
-                       M_TriangleArea(base->pos, a->pos, b->pos))
+                       M_TriangleArea(base->HE_v1pos, a->pos, b->pos))
                     {
                         base = NULL;
                     }
@@ -1306,38 +1298,16 @@ void R_TriangulateSubSector(face_t* face)
                 baseIDX++;
         } while(!base && (hEdge = hEdge->next) != face->hEdge);
 
-        if(base)
-            found = true;
-#undef TRIFAN_LIMIT
+        if(!base)
+            ssec->useMidPoint = true;
     }
 
-    ssec->numVertices = ssec->hEdgeCount;
-    if(!found)
-        ssec->numVertices += 2;
-    ssec->vertices =
-        Z_Malloc(sizeof(fvertex_t*) * (ssec->numVertices + 1),PU_MAP, 0);
+    if(base)
+        ssec->firstFanHEdge = base;
+    else
+        ssec->firstFanHEdge = face->hEdge;
 
-    // We can now create the subsector fvertex array.
-    // NOTE: The same polygon is used for all planes of this subsector.
-    n = 0;
-    if(!found)
-        ssec->vertices[n++] = &ssec->midPoint;
-
-    // Find the start.
-    hEdge = face->hEdge;
-    i = 0;
-    while(i++ < baseIDX)
-        hEdge = hEdge->next;
-
-    for(i = 0; i < ssec->hEdgeCount; ++i, hEdge = hEdge->next)
-        ssec->vertices[n++] = &hEdge->HE_v1->v;
-
-    if(!found)
-        ssec->vertices[n++] = &face->hEdge->HE_v1->v;
-    ssec->vertices[n] = NULL; // terminate.
-
-    if(!found)
-        ssec->flags |= SUBF_MIDPOINT;
+#undef TRIFAN_LIMIT
 }
 
 /**

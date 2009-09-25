@@ -709,7 +709,7 @@ int Rend_AutomapSeg(void* obj, void* data)
 
 static boolean drawSegsOfSubsector(face_t* ssec, void* context)
 {
-    return DMU_Iteratep(ssec, DMU_HEDGE, context, Rend_AutomapSeg);
+    return DMU_Iteratep(ssec, DMU_HEDGE, Rend_AutomapSeg, context);
 }
 
 /**
@@ -748,8 +748,7 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
         // contain all walls, not just those visible *now*.
         for(i = 0; i < numsubsectors; ++i)
         {
-            DMU_Iteratep(DMU_ToPtr(DMU_FACE, i), DMU_HEDGE, &params,
-                       Rend_AutomapSeg);
+            DMU_Iteratep(DMU_ToPtr(DMU_FACE, i), DMU_HEDGE, Rend_AutomapSeg, &params);
         }
     }
 }
@@ -938,7 +937,7 @@ static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
 
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_LinesBoxIterator(aabb, renderXGLinedef, &params);
+    DMU_LinesBoxIterator(aabb, renderXGLinedef, &params);
 #endif
 }
 

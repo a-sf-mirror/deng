@@ -302,7 +302,7 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
             &map->hEdges[((bsp_hedgeinfo_t*) n->next->hEdge->data)->index];
     }
 
-    hEdge = dest->hEdge->next;
+    hEdge = dest->hEdge;
     do
     {
         hEdge->next->prev = hEdge;
@@ -318,7 +318,7 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
 
     ssec->hEdgeCount = (uint) hEdgeCount;
     ssec->shadows = NULL;
-    ssec->vertices = NULL;
+    ssec->firstFanHEdge = NULL;
 
     // Determine which sector this subsector belongs to.
     found = false;

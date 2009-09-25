@@ -115,12 +115,15 @@ void*       P_SectorSoundOrigin(sector_t* sector);
 // Play: Map Data Updates and Information Access.
 unsigned int    DMU_ToIndex(const void* ptr);
 void*           DMU_ToPtr(int type, uint index);
-int             DMU_Callback(int type, uint index, void* context,
-                           int (*callback)(void* p, void* ctx));
-int             DMU_Callbackp(int type, void* ptr, void* context,
-                            int (*callback)(void* p, void* ctx));
-int             DMU_Iteratep(void *ptr, uint prop, void* context,
-                           int (*callback) (void* p, void* ctx));
+int             DMU_Callback(int type, uint index,
+                             int (*callback)(void* p, void* ctx),
+                             void* context);
+int             DMU_Callbackp(int type, void* ptr,
+                              int (*callback)(void* p, void* ctx),
+                              void* context);
+int             DMU_Iteratep(void *ptr, uint prop,
+                             int (*callback) (void* p, void* ctx),
+                             void* context);
 
 /* dummy functions */
 void*           DMU_AllocDummy(int type, void* extraData);

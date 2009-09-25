@@ -353,8 +353,7 @@ void P_SpawnLightSequence(sector_t* sector, int indexStep)
         P_ToXSector(params.sec)->special = LIGHT_SEQUENCE_START;
 
         params.nextSec = NULL;
-        DMU_Iteratep(params.sec, DMU_LINEDEF, &params,
-                   findLightSequenceSector);
+        DMU_Iteratep(params.sec, DMU_LINEDEF, findLightSequenceSector, &params);
         params.sec = params.nextSec;
     } while(params.sec);
 
@@ -381,8 +380,7 @@ void P_SpawnLightSequence(sector_t* sector, int indexStep)
         index += indexDelta;
 
         params.nextSec = NULL;
-        DMU_Iteratep(params.sec, DMU_LINEDEF, &params,
-                   findLightSequenceStartSector);
+        DMU_Iteratep(params.sec, DMU_LINEDEF, findLightSequenceStartSector, &params);
         params.sec = params.nextSec;
     } while(params.sec);
     }

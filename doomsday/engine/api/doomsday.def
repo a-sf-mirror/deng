@@ -10,6 +10,8 @@ NAME            "DOOMSDAY"
 ; 68 formerly P_BlockLinesIterator
 ; 69 formerly P_BlockMobjsIterator
 ; 70 formerly P_BlockPolyobjsIterator
+; 73 formeely P_LineMobjsIterator
+; 74 formerly P_SectorTouchingMobjsIterator
 ; 77 formerly P_LoadBlockMap
 ; 78 formerly P_LoadReject
 ; 95 formerly R_FlatNumForName
@@ -205,9 +207,6 @@ EXPORTS
     DMU_LinesBoxIterator        @435 NONAME
     DMU_AllLinesBoxIterator     @347 NONAME
     DMU_SubsectorsBoxIterator   @345 NONAME
-
-    DMU_LineMobjsIterator       @73 NONAME
-    DMU_SectorTouchingMobjsIterator @74 NONAME
 
     ; dummy objects
     P_AllocDummy                @321 NONAME

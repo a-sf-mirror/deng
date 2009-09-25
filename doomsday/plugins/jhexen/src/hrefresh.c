@@ -449,7 +449,7 @@ void R_SetAllDoomsdayFlags(void)
 
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)
-        for(mo = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS); mo; mo = mo->sNext)
+        for(mo = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); mo; mo = mo->sNext)
         {
             if(IS_CLIENT && mo->ddFlags & DDMF_REMOTE)
                 continue;

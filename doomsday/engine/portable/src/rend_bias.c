@@ -377,7 +377,8 @@ void SB_InitForMap(const char* uniqueID)
         {
             subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
 
-            numVertIllums += ssec->numVertices * sec->planeCount;
+            numVertIllums += sec->planeCount *
+                (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
             *facePtr++;
         }
     }
@@ -430,9 +431,9 @@ void SB_InitForMap(const char* uniqueID)
             {
                 biassurface_t*      bsuf = SB_CreateSurface();
 
-                bsuf->size = ssec->numVertices;
+                bsuf->size = (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
                 bsuf->illum = illums;
-                illums += ssec->numVertices;
+                illums += bsuf->size;
 
                 ssec->bsuf[j] = bsuf;
             }

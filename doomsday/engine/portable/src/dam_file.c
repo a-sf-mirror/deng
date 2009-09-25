@@ -730,7 +730,6 @@ static void writeSubsector(const gamemap_t* map, uint idx)
     uint                i;
     const subsector_t*  s = (const subsector_t*) map->faces[idx].data;
 
-    writeLong((long) s->flags);
     writeFloat(s->bBox[0].pos[VX]);
     writeFloat(s->bBox[0].pos[VY]);
     writeFloat(s->bBox[0].pos[VZ]);
@@ -759,7 +758,6 @@ static void readSubsector(const gamemap_t* map, uint idx)
     long                obIdx;
     subsector_t*        s = (subsector_t*) map->faces[idx].data;
 
-    s->flags = (int) readLong();
     s->bBox[0].pos[VX] = readFloat();
     s->bBox[0].pos[VY] = readFloat();
     s->bBox[0].pos[VZ] = readFloat();

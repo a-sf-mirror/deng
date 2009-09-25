@@ -781,8 +781,10 @@ static void mobjSlideMove(mobj_t *mo)
  *
  * If anything doesn't fit anymore, true will be returned.
  */
-boolean PIT_SectorPlanesChanged(mobj_t *mo, void *data)
+int PIT_SectorPlanesChanged(void* obj, void* data)
 {
+    mobj_t*             mo = (mobj_t*) obj;
+
     // Always keep checking.
     if(heightClip(mo))
         return true;
@@ -795,7 +797,7 @@ boolean PIT_SectorPlanesChanged(mobj_t *mo, void *data)
  * Called whenever a sector's planes are moved. This will update the mobjs
  * inside the sector and do crushing.
  */
-boolean P_SectorPlanesChanged(sector_t *sector)
+boolean P_SectorPlanesChanged(sector_t* sector)
 {
     noFit = false;
 
