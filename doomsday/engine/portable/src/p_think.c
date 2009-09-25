@@ -115,8 +115,8 @@ static void initThinkerList(thinkerlist_t* list)
     list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
 }
 
-static thinkerlist_t* listForDMUType(int type, boolean isPublic,
-                                     boolean canCreate)
+static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
+                                       boolean canCreate)
 {
     size_t              i;
 
@@ -124,7 +124,7 @@ static thinkerlist_t* listForDMUType(int type, boolean isPublic,
     {
         thinkerlist_t*      list = thinkerLists[i];
 
-        if(list->thinkerCap.header.type == type && list->isPublic == isPublic)
+        if(list->thinkerCap.function == func && list->isPublic == isPublic)
             return list;
     }
 
@@ -142,7 +142,7 @@ static thinkerlist_t* listForDMUType(int type, boolean isPublic,
 
     initThinkerList(list);
     list->isPublic = isPublic;
-    list->thinkerCap.header.type = type;
+    list->thinkerCap.function = func;
     // Set the list sentinel to instasis (safety measure).
     list->thinkerCap.inStasis = true;
 
@@ -236,7 +236,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
     }
 
     // Link the thinker to the thinker list.
-    linkThinkerToList(th, listForDMUType(th->header.type, makePublic, true));
+    linkThinkerToList(th, listForThinkFunc(th->function, makePublic, true));
 }
 
 /**
@@ -297,17 +297,17 @@ void P_InitThinkerLists(byte flags)
         {
             thinkerlist_t*      list = thinkerLists[i];
 
-            if(list->isPublic && !(flags & 0x1))
+            if(list->isPublic && !(flags & ITF_PUBLIC))
                 continue;
-            if(!list->isPublic && !(flags & 0x2))
+            if(!list->isPublic && !(flags & ITF_PRIVATE))
                 continue;
 
             initThinkerList(list);
         }
     }
+    inited = true;
 
     P_ClearMobjIDs();
-    inited = true;
 }
 
 boolean P_ThinkerListInited(void)
@@ -318,29 +318,28 @@ boolean P_ThinkerListInited(void)
 /**
  * Iterate the list of thinkers making a callback for each.
  *
- * @param type          If not @c DMU_NONE, only make a callback for objects
- *                      of the specified type.
+ * @param func          If not @c NULL, only make a callback for objects whose
+ *                      thinker matches.
  * @param flags         Thinker filter flags.
  * @param callback      The callback to make. Iteration will continue
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean P_IterateThinkers(int type, byte flags,
-                          int (*callback) (void* p, void*),
-                          void* context)
+boolean P_IterateThinkers(think_t func, byte flags,
+                          int (*callback) (void* p, void*), void* context)
 {
     if(!inited)
         return true;
 
-    if(type != DMU_NONE)
+    if(func != NULL)
     {   // We might have both public and shared lists for this type.
         boolean             result = true;
 
-        if(flags & 0x1)
-            result = iterateThinkers(listForDMUType(type, true, false),
+        if(flags & ITF_PUBLIC)
+            result = iterateThinkers(listForThinkFunc(func, true, false),
                                      callback, context);
-        if(result && (flags & 0x2))
-            result = iterateThinkers(listForDMUType(type, false, false),
+        if(result && (flags & ITF_PRIVATE))
+            result = iterateThinkers(listForThinkFunc(func, false, false),
                                      callback, context);
         return result;
     }
@@ -353,9 +352,9 @@ boolean P_IterateThinkers(int type, byte flags,
     {
         thinkerlist_t*      list = thinkerLists[i];
 
-        if(list->isPublic && !(flags & 0x1))
+        if(list->isPublic && !(flags & ITF_PUBLIC))
             continue;
-        if(!list->isPublic && !(flags & 0x2))
+        if(!list->isPublic && !(flags & ITF_PRIVATE))
             continue;
 
         if((result = iterateThinkers(list, callback, context)) == 0)
@@ -370,7 +369,7 @@ boolean P_IterateThinkers(int type, byte flags,
  */
 void DD_InitThinkers(void)
 {
-    P_InitThinkerLists(0x1); // Init the public thinker lists.
+    P_InitThinkerLists(ITF_PUBLIC); // Init the public thinker lists.
 }
 
 /**
@@ -378,7 +377,16 @@ void DD_InitThinkers(void)
  */
 void DD_RunThinkers(void)
 {
-    P_IterateThinkers(DMU_NONE, 0x1 | 0x2, runThinker, NULL);
+    P_IterateThinkers(NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
+}
+
+/**
+ * Part of the Doomsday public API.
+ */
+int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
+                       void* context)
+{
+    return P_IterateThinkers(func, ITF_PUBLIC, callback, context);
 }
 
 /**

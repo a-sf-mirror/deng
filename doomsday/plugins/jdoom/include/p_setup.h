@@ -33,27 +33,6 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-/**
- * Game-specific DMU object type constants.
- *
- * Do not change the numerical values of the constants (they are used during
- * serialization for identification)! Add new constants at the end.
- */
-enum {
-    DMU_THINKER_CEILMOVER = DMU_FIRST_GAME_TYPE,
-    DMU_THINKER_DOOR,
-    DMU_THINKER_FLOORMOVER,
-    DMU_THINKER_LIGHTGLOW,
-    DMU_THINKER_LIGHTFLASH,
-    DMU_THINKER_LIGHTFLICK,
-    DMU_THINKER_LIGHTSTROBE,
-    DMU_THINKER_MATCHANGER,
-    DMU_THINKER_PLANEMOVER,
-    DMU_THINKER_PLATFORM,
-    DMU_THINKER_XLINE,
-    DMU_THINKER_XSECTOR
-};
-
 // Map objects and their properties:
 enum {
     MO_NONE = 0,

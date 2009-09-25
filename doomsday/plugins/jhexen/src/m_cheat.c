@@ -878,9 +878,9 @@ static void CheatDebugFunc(player_t* player, cheat_t* cheat)
     sub = player->plr->mo->face;
     Con_Message("\nSubsector %i:\n", DMU_ToIndex(sub));
     Con_Message("  FloorZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_FLOOR_HEIGHT),
-                P_GetMaterialName(DMU_GetPtrp(sub, DMU_FLOOR_MATERIAL)));
+                DMU_GetPtrp(DMU_GetPtrp(sub, DMU_FLOOR_MATERIAL), DMU_NAME));
     Con_Message("  CeilingZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_CEILING_HEIGHT),
-                P_GetMaterialName(DMU_GetPtrp(sub, DMU_CEILING_MATERIAL)));
+                DMU_GetPtrp(DMU_GetPtrp(sub, DMU_CEILING_MATERIAL), DMU_NAME));
     Con_Message("Player height:%g   Player radius:%g\n",
                 player->plr->mo->height, player->plr->mo->radius);
 }

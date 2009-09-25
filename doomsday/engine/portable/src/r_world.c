@@ -729,7 +729,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     R_SurfaceListRemove(decoratedSurfaceList, &plane->surface);
 
     // Stop active material fade on this surface.
-    P_IterateThinkers(DMU_THINKER_MATFADER, 0x2, // Always non-public
+    P_IterateThinkers(R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                       RIT_StopMatFader, &plane->surface);
 
     // Destroy the biassurfaces for this plane.

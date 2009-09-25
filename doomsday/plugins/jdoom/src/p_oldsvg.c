@@ -393,9 +393,9 @@ void P_v19_UnArchiveWorld(void)
         DMU_SetFloatp(sec, DMU_FLOOR_HEIGHT, (float) (*get++));
         DMU_SetFloatp(sec, DMU_CEILING_HEIGHT, (float) (*get++));
         DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL,
-                  DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
+                  DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForIndex(*get++, MN_FLATS)));
         DMU_SetPtrp(sec, DMU_CEILING_MATERIAL,
-                  DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_FLATS)));
+                  DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForIndex(*get++, MN_FLATS)));
 
         DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) (*get++) / 255.0f);
         xsec->special = *get++; // needed?
@@ -428,11 +428,11 @@ void P_v19_UnArchiveWorld(void)
             DMU_SetFloatpv(sdef, DMU_BOTTOM_MATERIAL_OFFSET_XY, matOffset);
 
             DMU_SetPtrp(sdef, DMU_TOP_MATERIAL,
-                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+                      DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForIndex(*get++, MN_TEXTURES)));
             DMU_SetPtrp(sdef, DMU_BOTTOM_MATERIAL,
-                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+                      DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForIndex(*get++, MN_TEXTURES)));
             DMU_SetPtrp(sdef, DMU_MIDDLE_MATERIAL,
-                      DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForIndex(*get++, MN_TEXTURES)));
+                      DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForIndex(*get++, MN_TEXTURES)));
         }
     }
 
@@ -461,7 +461,7 @@ enum thinkerclass_e {
     byte                tClass;
 
     // Remove all the current thinkers.
-    P_Iterate(DMU_NONE, NULL, removeThinker);
+    DD_IterateThinkers(NULL, removeThinker, NULL);
     DD_InitThinkers();
 
     // Read in saved thinkers.
@@ -522,7 +522,6 @@ typedef struct {
     ceiling->oldState = (SV_ReadLong() == -1? CS_DOWN : CS_UP);
 
     ceiling->thinker.function = T_MoveCeiling;
-    ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
     if(!(temp + V19_THINKER_T_FUNC_OFFSET))
         DD_ThinkerSetStasis(&ceiling->thinker, true);
 
@@ -562,7 +561,6 @@ typedef struct {
     door->topCountDown = SV_ReadLong();
 
     door->thinker.function = T_Door;
-    door->thinker.header.type = DMU_THINKER_DOOR;
     P_ToXSector(door->sector)->specialData = door;
     return true; // Add this thinker.
 }
@@ -597,12 +595,11 @@ typedef struct {
     floor->state = (int) SV_ReadLong();
     floor->newSpecial = SV_ReadLong();
     floor->material = DMU_ToPtr(DMU_MATERIAL,
-        P_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
+        DMU_MaterialNumForName(W_LumpName(SV_ReadShort()), MN_FLATS));
     floor->floorDestHeight = FIX2FLT(SV_ReadLong());
     floor->speed = FIX2FLT(SV_ReadLong());
 
     floor->thinker.function = T_MoveFloor;
-    floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
     P_ToXSector(floor->sector)->specialData = floor;
     return true; // Add this thinker.
 }
@@ -648,7 +645,6 @@ typedef struct {
     plat->type = SV_ReadLong();
 
     plat->thinker.function = T_PlatRaise;
-    plat->thinker.header.type = DMU_THINKER_PLATFORM;
     if(!(temp + V19_THINKER_T_FUNC_OFFSET))
         DD_ThinkerSetStasis(&plat->thinker, true);
 
@@ -685,7 +681,6 @@ typedef struct {
     flash->minTime = SV_ReadLong();
 
     flash->thinker.function = T_LightFlash;
-    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     return true; // Add this thinker.
 }
 
@@ -718,7 +713,6 @@ typedef struct {
     strobe->brightTime = SV_ReadLong();
 
     strobe->thinker.function = T_StrobeFlash;
-    strobe->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     return true; // Add this thinker.
 }
 
@@ -747,7 +741,6 @@ typedef struct {
     glow->direction = SV_ReadLong();
 
     glow->thinker.function = T_Glow;
-    glow->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     return true; // Add this thinker.
 }
 

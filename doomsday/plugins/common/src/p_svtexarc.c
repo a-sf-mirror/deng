@@ -104,7 +104,7 @@ void SV_PrepareMaterial(material_t* mat, materialarchive_t* arc)
 
     if(!mat)
         return;
-    matName = P_GetMaterialName(mat);
+    matName = P_GetPtrp(mat, DMU_NAME);
     mnamespace = DMU_GetIntp(mat, DMU_NAMESPACE);
 
     // Get the name of the material.
@@ -187,8 +187,8 @@ unsigned short SV_MaterialArchiveNum(material_t* mat)
     if(!mat)
         return 0;
 
-    if(P_GetMaterialName(mat))
-        strncpy(name, P_GetMaterialName(mat), 8);
+    if(P_GetPtrp(mat, DMU_NAME))
+        strncpy(name, P_GetPtrp(mat, DMU_NAME), 8);
     else
         strncpy(name, BADTEXNAME, 8);
     name[8] = 0;
@@ -219,8 +219,8 @@ material_t* SV_GetArchiveMaterial(int archivenum, int group)
         return NULL;
     else
         return DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialNumForName(matArchive.table[archivenum].name,
-                                 matArchive.table[archivenum].mnamespace));
+            DMU_MaterialNumForName(matArchive.table[archivenum].name,
+                                   matArchive.table[archivenum].mnamespace));
 }
 
 void SV_WriteMaterialArchive(void)

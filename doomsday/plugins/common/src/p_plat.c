@@ -272,7 +272,6 @@ static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
 
         plat = Z_Calloc(sizeof(*plat), PU_MAP, 0);
         plat->thinker.function = T_PlatRaise;
-        plat->thinker.header.type = DMU_THINKER_PLATFORM;
         DD_ThinkerAdd(&plat->thinker);
 
         plat->type = type;
@@ -515,7 +514,7 @@ int P_PlatActivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    P_Iterate(DMU_THINKER_PLATFORM, &params, activatePlat);
+    DD_IterateThinkers(T_PlatRaise, activatePlat, &params);
 
     return params.count;
 }
@@ -567,7 +566,7 @@ int P_PlatDeactivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    P_Iterate(DMU_THINKER_PLATFORM, &params, deactivatePlat);
+    DD_IterateThinkers(T_PlatRaise, deactivatePlat, &params);
 
     return params.count;
 }

@@ -178,9 +178,9 @@ void P_InitSwitchList(void)
             break;
 
         switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialCheckNumForName(switchInfo[i].name1, MN_TEXTURES));
+            DMU_MaterialCheckNumForName(switchInfo[i].name1, MN_TEXTURES));
         switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-            P_MaterialCheckNumForName(switchInfo[i].name2, MN_TEXTURES));
+            DMU_MaterialCheckNumForName(switchInfo[i].name2, MN_TEXTURES));
     }
 
     numswitches = index / 2;
@@ -252,9 +252,9 @@ void P_InitSwitchList(void)
                 break;
 
             switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-                P_MaterialNumForName(sList[i].name1, MN_TEXTURES));
+                DMU_MaterialNumForName(sList[i].name1, MN_TEXTURES));
             switchlist[index++] = DMU_ToPtr(DMU_MATERIAL,
-                P_MaterialNumForName(sList[i].name2, MN_TEXTURES));
+                DMU_MaterialNumForName(sList[i].name2, MN_TEXTURES));
             VERBOSE(Con_Message("P_InitSwitchList: ADD (\"%s\" | \"%s\" #%d)\n",
                                 sList[i].name1, sList[i].name2,
                                 SHORT(sList[i].episode)));
@@ -314,7 +314,6 @@ void P_SpawnMaterialChanger(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
 
     mchanger = Z_Calloc(sizeof(*mchanger), PU_MAP, 0);
     mchanger->thinker.function = T_MaterialChanger;
-    mchanger->thinker.header.type = DMU_THINKER_MATCHANGER;
     DD_ThinkerAdd(&mchanger->thinker);
 
     mchanger->side = side;
@@ -350,7 +349,7 @@ void P_StartButton(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
     params.ssurfaceID = ssurfaceID;
 
     // See if a material change has already been queued.
-    if(!P_Iterate(DMU_THINKER_MATCHANGER, &params, findMaterialChanger))
+    if(!DD_IterateThinkers(T_MaterialChanger, findMaterialChanger, &params))
         return;
 
     P_SpawnMaterialChanger(side, ssurfaceID, mat, tics);

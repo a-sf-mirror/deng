@@ -610,7 +610,7 @@ static void rendLine2(const automap_t* map, const automapcfg_t* mcfg,
 
 int Rend_AutomapSeg(void* obj, void* data)
 {
-    hedge_t*              seg = (hedge_t*) obj;
+    hedge_t*            seg = (hedge_t*) obj;
     rendwallseg_params_t* p = (rendwallseg_params_t*) data;
     float               v1[2], v2[2];
     linedef_t*          line;

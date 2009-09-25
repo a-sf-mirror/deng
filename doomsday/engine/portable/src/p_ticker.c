@@ -142,8 +142,7 @@ void P_Ticker(timespan_t time)
 
     R_SkyTicker();
 
-    // Check all mobjs (always public).
-    P_IterateThinkers(DMU_MOBJ, 0x1, P_MobjTicker, NULL);
+    P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
 
     // Check all client mobjs.
     Cl_MobjIterator(PIT_ClientMobjTicker, NULL);

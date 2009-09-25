@@ -174,22 +174,21 @@ extern          "C" {
     uint            MPE_VertexCreate(float x, float y);
     boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
     uint            MPE_SidedefCreate(uint sector, short flags,
-                                      materialnum_t topMaterial,
+                                      int topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
-                                      materialnum_t middleMaterial,
+                                      int middleMaterial,
                                       float middleOffsetX, float middleOffsetY,
                                       float middleRed, float middleGreen,
                                       float middleBlue, float middleAlpha,
-                                      materialnum_t bottomMaterial,
+                                      int bottomMaterial,
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
     uint            MPE_LinedefCreate(uint v1, uint v2, uint frontSide,
                                       uint backSide, int flags);
     uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    uint            MPE_PlaneCreate(uint sector, float height,
-                                    materialnum_t num,
+    uint            MPE_PlaneCreate(uint sector, float height, int nmaterial,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);
@@ -227,20 +226,20 @@ extern          "C" {
     boolean         P_MobjsBoxIterator(const float box[4],
                                        boolean (*func) (struct mobj_s*, void*),
                                        void* data);
-    boolean         P_LinesBoxIterator(const float box[4],
-                                       boolean (*func) (struct linedef_s*, void*),
-                                       void* data);
-    boolean         P_AllLinesBoxIterator(const float box[4],
-                                          boolean (*func) (struct linedef_s*, void*),
-                                          void* data);
-    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
-                                           boolean (*func) (face_t*, void*),
-                                           void* data);
     boolean         P_PolyobjsBoxIterator(const float box[4],
                                           boolean (*func) (struct polyobj_s*, void*),
                                           void* data);
 
     // Object type touching mobjs iterators.
+    boolean         DMU_LinesBoxIterator(const float box[4],
+                                       boolean (*func) (struct linedef_s*, void*),
+                                       void* data);
+    boolean         DMU_AllLinesBoxIterator(const float box[4],
+                                          boolean (*func) (struct linedef_s*, void*),
+                                          void* data);
+    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
+                                           boolean (*func) (face_t*, void*),
+                                           void* data);
     boolean         DMU_LineMobjsIterator(void* p,
                                           boolean (*func) (struct mobj_s*, void *),
                                           void* data);
@@ -267,14 +266,15 @@ extern          "C" {
     void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
-    int             P_Callback(int type, uint index, void* context,
-                               int (*callback)(void* p, void* ctx));
-    int             P_Callbackp(int type, void* ptr, void* context,
-                                int (*callback)(void* p, void* ctx));
-    int             P_Iterate(int type, void* context,
-                              int (*callback) (void* p, void* ctx));
-    int             P_Iteratep(void *ptr, uint prop, void* context,
-                               int (*callback) (void* p, void* ctx));
+    int             P_Callback(int type, uint index,
+                               int (*callback)(void* p, void* ctx),
+                               void* context);
+    int             P_Callbackp(int type, void* ptr,
+                                int (*callback)(void* p, void* ctx),
+                                void* context);
+    int             P_Iteratep(void *ptr, uint prop,
+                               int (*callback) (void* p, void* ctx),
+                               void* context);
 
     /* dummy functions */
     void*           P_AllocDummy(int type, void* extraData);
@@ -391,17 +391,23 @@ extern          "C" {
     void            P_SetPolyobjCallback(void (*func)(struct mobj_s*, void*, void*));
 
     // Play: Materials.
-    materialnum_t   P_MaterialCheckNumForName(const char* name, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialNumForName(const char* name, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialCheckNumForIndex(uint idx, material_namespace_t mnamespace);
-    materialnum_t   P_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
-    const char*     P_GetMaterialName(material_t* mat);
+    materialnum_t   DMU_MaterialNumForName(const char* name, material_namespace_t mnamespace);
 
-    void            P_MaterialPrecache(material_t* mat);
+    int             DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
+    int             DMU_MaterialCheckNumForIndex(uint idx,
+                                                 material_namespace_t mnamespace);
+    int             DMU_MaterialCheckNumForName(const char* rawName,
+                                                material_namespace_t mnamespace);
+
+    void            DMU_MaterialPrecache(material_t* mat);
 
     // Play: Thinkers.
     void            DD_InitThinkers(void);
+    int             DD_IterateThinkers(think_t func,
+                              int (*callback) (void* p, void* ctx),
+                              void* context);
     void            DD_RunThinkers(void);
+
     void            DD_ThinkerAdd(thinker_t* th);
     void            DD_ThinkerRemove(thinker_t* th);
     void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
@@ -422,8 +428,8 @@ extern          "C" {
                                     spriteinfo_t* sprinfo);
     boolean         R_GetPatchInfo(lumpnum_t lump, patchinfo_t* info);
     int             R_CreateAnimGroup(int flags);
-    void            R_AddToAnimGroup(int groupNum, materialnum_t num,
-                                     int tics, int randomTics);
+    void            DMU_AddToAnimGroup(int groupNum, int num,
+                                       int tics, int randomTics);
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);

@@ -29,6 +29,45 @@
 #ifndef __P_SAVEG_H__
 #define __P_SAVEG_H__
 
+/**
+ * Original indices must remain unchanged!
+ * Added new think classes to the end.
+ */
+typedef enum thinkclass_e {
+    TC_NULL = -1,
+    TC_END,
+    TC_MOBJ,
+    TC_XGMOVER,
+    TC_CEILING,
+    TC_DOOR,
+    TC_FLOOR,
+    TC_PLAT,
+#if __JHEXEN__
+    TC_INTERPRET_ACS,
+    TC_FLOOR_WAGGLE,
+    TC_LIGHT,
+    TC_PHASE,
+    TC_BUILD_PILLAR,
+    TC_ROTATE_POLY,
+    TC_MOVE_POLY,
+    TC_POLY_DOOR,
+#else
+    TC_FLASH,
+    TC_STROBE,
+# if __JDOOM__ || __JDOOM64__
+    TC_GLOW,
+    TC_FLICKER,
+#  if __JDOOM64__
+    TC_BLINK,
+#  endif
+# else
+    TC_GLOW,
+# endif
+#endif
+    TC_MATERIALCHANGER,
+    NUMTHINKERCLASSES
+} thinkerclass_t;
+
 void            SV_Init(void);
 void            SV_GetSaveGameFileName(char* str, int slot, size_t len);
 int             SV_GetSaveDescription(char* str, const char* filename,

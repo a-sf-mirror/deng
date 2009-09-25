@@ -289,15 +289,15 @@ static int EV_DoCeiling2(int tag, float basespeed, ceilingtype_e type)
         if(xsec->specialData)
             continue;
 
-        // new door thinker
         rtn = 1;
-        ceiling = Z_Calloc(sizeof(*ceiling), PU_MAP, 0);
 
-        ceiling->thinker.header.type = DMU_THINKER_CEILMOVER;
+        // New door thinker.
+        ceiling = Z_Calloc(sizeof(*ceiling), PU_MAP, 0);
         ceiling->thinker.function = T_MoveCeiling;
         DD_ThinkerAdd(&ceiling->thinker);
 
         xsec->specialData = ceiling;
+
         ceiling->sector = sec;
         ceiling->crush = false;
         ceiling->speed = basespeed;
@@ -508,7 +508,7 @@ int P_CeilingActivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    P_Iterate(DMU_THINKER_CEILMOVER, &params, activateCeiling);
+    DD_IterateThinkers(T_MoveCeiling, activateCeiling, &params);
 
     return params.count;
 }
@@ -557,7 +557,7 @@ int P_CeilingDeactivate(short tag)
 
     params.tag = tag;
     params.count = 0;
-    P_Iterate(DMU_THINKER_CEILMOVER, &params, deactivateCeiling);
+    DD_IterateThinkers(T_MoveCeiling, deactivateCeiling, &params);
 
     return params.count;
 }

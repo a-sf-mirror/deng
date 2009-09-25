@@ -29,10 +29,19 @@
 #ifndef __DOOMSDAY_THINKER_H__
 #define __DOOMSDAY_THINKER_H__
 
+void            P_InitThinkerLists(byte flags);
 boolean         P_ThinkerListInited(void);
 
-void            P_InitThinkerLists(byte flags);
-boolean         P_IterateThinkers(int type, byte flags,
+/**
+ * @defgroup iterateThinkerFlags Iterate Thinker Flags
+ * Used with P_IterateThinkers to specify which thinkers to iterate.
+ */
+/*@{*/
+#define ITF_PUBLIC          0x1
+#define ITF_PRIVATE         0x2
+/*@}*/
+
+boolean         P_IterateThinkers(think_t func, byte flags,
                                   int (*callback) (void* p, void*),
                                   void* context);
 

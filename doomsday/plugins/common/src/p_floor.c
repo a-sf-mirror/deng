@@ -548,8 +548,8 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
         // New floor thinker.
         floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
         floor->thinker.function = T_MoveFloor;
-        floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
         DD_ThinkerAdd(&floor->thinker);
+
         xsec->specialData = floor;
 
         floor->type = floortype;
@@ -980,11 +980,11 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
         if(xsec->specialData)
             continue;
 
-        // New floor thinker.
         rtn = 1;
+
+        // New floor thinker.
         floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
         floor->thinker.function = T_MoveFloor;
-        floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
         DD_ThinkerAdd(&floor->thinker);
 
         xsec->specialData = floor;
@@ -1035,7 +1035,6 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
 
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
             floor->thinker.function = T_MoveFloor;
-            floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
             DD_ThinkerAdd(&floor->thinker);
 
             P_ToXSector(params.foundSec)->specialData = floor;
@@ -1101,9 +1100,9 @@ static void processStairSector(sector_t *sec, int type, float height,
     height += stairData.stepDelta;
 
     floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
-    floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
     floor->thinker.function = T_MoveFloor;
     DD_ThinkerAdd(&floor->thinker);
+
     P_ToXSector(sec)->specialData = floor;
     floor->type = FT_RAISEBUILDSTEP;
     floor->state = (stairData.direction == -1? FS_DOWN : FS_UP);
@@ -1283,7 +1282,6 @@ int EV_DoDonut(linedef_t *line)
 
             // Spawn rising slime.
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
-            floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
             floor->thinker.function = T_MoveFloor;
             DD_ThinkerAdd(&floor->thinker);
 
@@ -1300,7 +1298,6 @@ int EV_DoDonut(linedef_t *line)
 
             // Spawn lowering donut-hole.
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
-            floor->thinker.header.type = DMU_THINKER_FLOORMOVER;
             floor->thinker.function = T_MoveFloor;
             DD_ThinkerAdd(&floor->thinker);
 
@@ -1341,7 +1338,7 @@ int EV_FloorCrushStop(linedef_t* line, byte* args)
 {
     boolean             found = false;
 
-    P_Iterate(DMU_THINKER_FLOORMOVER, &found, stopFloorCrush);
+    DD_IterateThinkers(T_MoveFloor, stopFloorCrush, &found);
 
     return (found? 1 : 0);
 }

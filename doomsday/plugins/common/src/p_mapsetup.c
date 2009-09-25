@@ -993,8 +993,8 @@ static void P_FinalizeMap(void)
     // visible due to texture repeating and interpolation.
     {
     uint                i;
-    material_t*         mat = DMU_ToPtr(DMU_MATERIAL, P_MaterialNumForName("NUKE24", MN_TEXTURES));
-    
+    material_t*         mat = DMU_ToPtr(DMU_MATERIAL, DMU_MaterialNumForName("NUKE24", MN_TEXTURES));
+
     for(i = 0; i < numlines; ++i)
     {
         linedef_t*          line = DMU_ToPtr(DMU_LINEDEF, i);
@@ -1006,12 +1006,11 @@ static void P_FinalizeMap(void)
 
             if(sidedef)
             {
-                material_t*         bottomMat, *midMat;
-
-                bottomMat = DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
-                midMat = DMU_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL);
-
-                if(bottomMat == mat && midMat == NULL)
+                material_t*         bottomMat =
+                    DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
+               
+                if(bottomMat == mat &&
+                   DMU_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL) == NULL)
                 {
                     float               yoff =
                         DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);

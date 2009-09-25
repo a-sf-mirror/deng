@@ -49,25 +49,26 @@ material_t*     P_ToMaterial(materialnum_t num);
 materialnum_t   P_ToMaterialNum(const material_t* mat);
 
 // Lookup:
-const char*     P_GetMaterialName(material_t* mat);
+const char*     P_GetMaterialName(const material_t* mat);
 
 materialnum_t   P_MaterialCheckNumForName(const char* name, material_namespace_t mnamespace);
 materialnum_t   P_MaterialNumForName(const char* name, material_namespace_t mnamespace);
 
 material_t*     P_GetMaterial(int ofTypeID, material_namespace_t mnamespace);
-materialnum_t   P_MaterialCheckNumForIndex(uint idx, material_namespace_t mnamespace);
-materialnum_t   P_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
 
 void            P_MaterialPrecache(material_t* mat);
 
 // Anim groups:
 int             R_NumAnimGroups(void);
 int             R_CreateAnimGroup(int flags);
-void            R_AddToAnimGroup(int animGroupNum, materialnum_t num, int tics,
+void            R_AddToAnimGroup(int animGroupNum, int num, int tics,
                                  int randomTics);
 boolean         R_IsInAnimGroup(int animGroupNum, material_t* mat);
 boolean         R_IsPrecacheGroup(int groupNum);
 void            R_DestroyAnimGroups(void);
 void            R_ResetAnimGroups(void);
 void            R_MaterialsPrecacheGroup(material_t* mat);
+
+materialnum_t   DMU_MaterialCheckNumForName(const char* rawName,
+                                            material_namespace_t mnamespace);
 #endif

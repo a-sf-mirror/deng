@@ -146,7 +146,6 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
     mo->height = height;
     mo->ddFlags = ddflags;
     mo->thinker.function = function;
-    mo->thinker.header.type = DMU_MOBJ;
     if(mo->thinker.function)
         P_ThinkerAdd(&mo->thinker, true); // Make it public.
 
@@ -385,7 +384,7 @@ boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
     if(result)
     {   // Nope.
         // Try polyobj->lineDefs and lines.
-        if(!P_AllLinesBoxIteratorv(data.box, PIT_LineCollide, &data))
+        if(!P_AllLinesBoxIteratorv(data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }

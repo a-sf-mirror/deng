@@ -703,6 +703,7 @@ typedef struct faceiterparams_s {
     int             localValidCount;
     boolean       (*func) (face_t*, void*);
     void*           param;
+    boolean         retObjRecord;
 } faceiterparams_t;
 
 static boolean faceBlockIterator(void* ptr, void* context)
@@ -741,7 +742,14 @@ static boolean faceBlockIterator(void* ptr, void* context)
 
                 if(ok)
                 {
-                    if(!args->func(face, args->param))
+                    void*               ptr;
+
+                    if(args->retObjRecord)
+                        ptr = (void*) DMU_GetObjRecord(DMU_FACE, face);
+                    else
+                        ptr = (void*) face;
+
+                    if(!args->func(ptr, args->param))
                         return false;
                 }
             }
@@ -787,7 +795,7 @@ boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap,
                                      sector_t* sector,  const arvec2_t box,
                                      int localValidCount,
                                      boolean (*func) (face_t*, void*),
-                                     void* data)
+                                     void* data, boolean retObjRecord)
 {
     bmap_t*             bmap = (bmap_t *) blockmap;
     faceiterparams_t    args;
@@ -797,6 +805,7 @@ boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap,
     args.sector = sector;
     args.func = func;
     args.param = data;
+    args.retObjRecord = retObjRecord;
 
     return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
                                  faceBlockIterator, (void*) &args);
@@ -1174,6 +1183,7 @@ void rendBlockSubsectors(void* blockPtr, void* param,
         args.sector = NULL;
         args.func = rendBlockSubsector;
         args.param = param;
+        args.retObjRecord = false;
 
         glColor4f(r, g, b, a);
         faceBlockIterator(block, &args);
