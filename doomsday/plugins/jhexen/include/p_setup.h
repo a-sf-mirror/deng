@@ -48,6 +48,7 @@ enum {
     MO_DOOMEDNUM,
     MO_FLAGS,
     MO_TAG,
+    MO_ORIGINALID, // The original id in the archived map format.
     MO_ARG0,
     MO_ARG1,
     MO_ARG2,

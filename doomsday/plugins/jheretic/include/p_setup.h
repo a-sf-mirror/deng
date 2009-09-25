@@ -46,7 +46,8 @@ enum {
     MO_TYPE,
     MO_DOOMEDNUM,
     MO_FLAGS,
-    MO_TAG
+    MO_TAG,
+    MO_ORIGINALID // The original id in the archived map format.
 };
 
 void            P_Init(void);
