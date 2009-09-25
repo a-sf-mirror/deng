@@ -50,13 +50,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-// Bad texture record.
-typedef struct {
-    char       *name;
-    boolean     planeTex;
-    uint    count;
-} badtex_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -108,11 +101,6 @@ float mapGravity;
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static gamemap_t* currentMap = NULL;
-
-// Bad texture list
-static uint numBadTexNames = 0;
-static uint maxBadTexNames = 0;
-static badtex_t *badTexNames = NULL;
 
 // Game-specific, map object type definitions.
 static uint numGameMapObjDefs;
@@ -438,102 +426,18 @@ boolean P_LoadMap(const char* mapID)
     return false;
 }
 
-void P_RegisterUnknownTexture(const char *name, boolean planeTex)
-{
-    uint                i;
-    char                namet[9];
-    boolean             known = false;
-
-    namet[8] = 0;
-    memcpy(namet, name, 8);
-
-    // Do we already know about it?
-    if(numBadTexNames > 0)
-    {
-        for(i = 0; i < numBadTexNames && !known; ++i)
-        {
-            if(!strcmp(badTexNames[i].name, namet) &&
-                badTexNames[i].planeTex == planeTex)
-            {
-                // Yep we already know about it.
-                known = true;
-                badTexNames[i].count++;
-            }
-        }
-    }
-
-    if(!known)
-    {   // A new unknown texture. Add it to the list
-        if(++numBadTexNames > maxBadTexNames)
-        {
-            // Allocate more memory
-            maxBadTexNames *= 2;
-            if(maxBadTexNames < numBadTexNames)
-                maxBadTexNames = numBadTexNames;
-
-            badTexNames = M_Realloc(badTexNames, sizeof(badtex_t)
-                                                * maxBadTexNames);
-        }
-
-        badTexNames[numBadTexNames -1].name = M_Malloc(strlen(namet) +1);
-        strcpy(badTexNames[numBadTexNames -1].name, namet);
-
-        badTexNames[numBadTexNames -1].planeTex = planeTex;
-        badTexNames[numBadTexNames -1].count = 1;
-    }
-}
-
-void P_PrintMissingTextureList(void)
-{
-    // Announce any bad texture names we came across when loading the map.
-    // Non-critical as a "MISSING" texture will be drawn in place of them.
-    if(numBadTexNames)
-    {
-        uint        i;
-
-        Con_Message("  [110] Warning: Found %u bad texture name(s):\n",
-                    numBadTexNames);
-
-        for(i = 0; i < numBadTexNames; ++i)
-            Con_Message(" %4u x \"%s\"\n", badTexNames[i].count,
-                        badTexNames[i].name);
-    }
-}
-
-/**
- * Frees memory we allocated for bad texture name collection.
- */
-void P_FreeBadTexList(void)
-{
-    uint        i;
-
-    if(badTexNames != NULL)
-    {
-        for(i = 0; i < numBadTexNames; ++i)
-        {
-            M_Free(badTexNames[i].name);
-            badTexNames[i].name = NULL;
-        }
-
-        M_Free(badTexNames);
-        badTexNames = NULL;
-
-        numBadTexNames = maxBadTexNames = 0;
-    }
-}
-
 /**
  * Look up a mapobj definition.
  *
  * @param identifer     If objName is @c NULL, compare using this unique identifier.
  * @param objName       If not @c NULL, compare using this unique name.
  */
-gamemapobjdef_t *P_GetGameMapObjDef(int identifier, const char *objName,
+gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char *objName,
                                     boolean canCreate)
 {
     uint                i;
     size_t              len;
-    gamemapobjdef_t    *def;
+    gamemapobjdef_t*    def;
 
     if(objName)
         len = strlen(objName);

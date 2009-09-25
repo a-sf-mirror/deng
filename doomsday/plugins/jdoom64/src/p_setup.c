@@ -95,54 +95,6 @@ void P_RegisterMapObjs(void)
 }
 
 /**
- * \todo This is actually unnecessary. If we say that in the case of BOOM
- * overloaded texture names, rather than setting the surface material as
- * normal, the map converter should instead write to a property in XLinedef
- * which the game can then look up later.
- *
- * Doomsday will call this when loading the map data if it encounters a
- * value that it doesn't understand for a property IT handles.
- *
- * Doomsday thinks we might know what to do with it...
- * If we don't know what to do we'll return -1.
- *
- * @param id            Index of the current element being read.
- * @param dtype         DMU type identifier.
- * @param prop          DMU property identifier.
- * @param type          Data type id of the value pointed to by *data.
- * @param *data         Ptr to the data value (has already been expanded,
- *                      size converted and endian converted where necessary).
- */
-int P_HandleMapDataPropertyValue(uint id, int dtype, int prop,
-                                 valuetype_t type, void *data)
-{
-    switch(dtype)
-    {
-    case DMU_SURFACE:
-        switch(prop)
-        {
-        case DMU_MATERIAL:
-            /**
-             * It could be a BOOM overloaded texture name?
-             * In this context Doomsday expects either -1 (a bad texture name)
-             * Or the id of a wall texture it should set to this section.
-             * \todo Add code to determine what to do.
-             */
-            break;
-
-        default:
-            break;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return -1; // We ain't got a clue what to do with it...
-}
-
-/**
  * These status reports inform us of what Doomsday is doing to a particular
  * map data object (at any time) that we might want to react to.
  *

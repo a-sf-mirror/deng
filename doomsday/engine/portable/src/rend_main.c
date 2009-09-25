@@ -250,9 +250,10 @@ int Rend_SegFacingPoint(float v1[2], float v2[2], float pnt[2])
 }
 #endif
 
-static int C_DECL DivSortAscend(const void *e1, const void *e2)
+static int C_DECL DivSortAscend(const void* e1, const void* e2)
 {
-    float   f1 = *(float *) e1, f2 = *(float *) e2;
+    float               f1 = (*((const plane_t**) e1))->visHeight;
+    float               f2 = (*((const plane_t**) e2))->visHeight;
 
     if(f1 > f2)
         return 1;
@@ -261,9 +262,10 @@ static int C_DECL DivSortAscend(const void *e1, const void *e2)
     return 0;
 }
 
-static int C_DECL DivSortDescend(const void *e1, const void *e2)
+static int C_DECL DivSortDescend(const void* e1, const void* e2)
 {
-    float   f1 = *(float *) e1, f2 = *(float *) e2;
+    float               f1 = (*((const plane_t**) e1))->visHeight;
+    float               f2 = (*((const plane_t**) e2))->visHeight;
 
     if(f1 > f2)
         return -1;
@@ -545,127 +547,129 @@ static void Rend_MarkSegSectionsPVisible(hedge_t* hEdge)
     }
 }
 
-/**
- * @return              @true, if there is a division at the specified height.
- */
-static int checkDiv(walldiv_t *div, float height)
+static boolean testForPlaneDivision(walldiv_t* wdiv, plane_t* pln,
+                                    float bottomZ, float topZ)
 {
-    uint                i;
+    if(pln->visHeight > bottomZ && pln->visHeight < topZ)
+    {
+        uint                i;
 
-    for(i = 0; i < div->num; ++i)
-        if(div->pos[i] == height)
-            return true;
+        // If there is already a division at this height, ignore this plane.
+        for(i = 0; i < wdiv->num; ++i)
+            if(wdiv->divs[i]->visHeight == pln->visHeight)
+                return true; // Continue.
 
-    return false;
+        // A new division.
+        wdiv->divs[wdiv->num++] = pln;
+
+        // Have we reached the div limit?
+        if(wdiv->num == RL_MAX_DIVS)
+            return false; // Stop.
+    }
+
+    return true; // Continue.
 }
 
-static void doCalcSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
                                const sector_t* frontSec, float bottomZ,
                                float topZ, boolean doRight)
 {
-    uint                i, j;
     linedef_t*          iter;
-    sector_t*           scanSec;
     lineowner_t*        base, *own;
     boolean             clockwise = !doRight;
-    boolean             stopScan = false;
-    const seg_t*        seg = ((seg_t*) hEdge->data);
 
     if(bottomZ >= topZ)
         return; // Obviously no division.
 
     // Retrieve the start owner node.
+    {
+    const seg_t*        seg = ((seg_t*) hEdge->data);
     base = own = R_GetVtxLineOwner(seg->lineDef->L_v(seg->side^doRight),
                                    seg->lineDef);
-    do
+    }
+
+    /**
+     * We need to handle the special case of a sector with zero volume.
+     * In this instance, the only potential divisor in the sector is the back
+     * ceiling. This is because elsewhere we automatically fix the case of a
+     * floor above a ceiling by lowering the floor.
+     */
+    while((own = own->link[clockwise]) != base)
     {
-        own = own->link[clockwise];
+        boolean             sectorHasVolume = false;
+        sidedef_t*          side;
+        
+        iter = own->lineDef;
 
-        if(own == base)
-            stopScan = true;
-        else
+        if(LINE_SELFREF(iter))
+            continue;
+
+        side = LINE_SIDE(iter,
+            LINE_FRONTSECTOR(iter) == frontSec? BACK : FRONT);
+
+        if(side)
         {
-            iter = own->lineDef;
+            plane_t*            pln;
+            sector_t*           scanSec = side->sector;
 
-            if(LINE_SELFREF(iter))
-                continue;
+            if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
+                sectorHasVolume = true;
 
-            i = 0;
-            do
-            {   // First front, then back.
-                scanSec = NULL;
-                if(!i && LINE_FRONTSIDE(iter) && LINE_FRONTSECTOR(iter) != frontSec)
-                    scanSec = LINE_FRONTSECTOR(iter);
-                else if(i && LINE_BACKSIDE(iter) && LINE_BACKSECTOR(iter) != frontSec)
-                    scanSec = LINE_BACKSECTOR(iter);
+            if(sectorHasVolume)
+            {
+                // First, the floor.
+                pln = scanSec->SP_plane(PLN_FLOOR);
+                if(testForPlaneDivision(div, pln, bottomZ, topZ))
+                {   // Clip a range bound to this height?
+                    if(pln->visHeight > bottomZ)
+                        bottomZ = pln->visHeight;
 
-                if(scanSec)
-                {
-                    if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
-                    {
-                        for(j = 0; j < scanSec->planeCount && !stopScan; ++j)
-                        {
-                            plane_t            *pln = scanSec->SP_plane(j);
-
-                            if(pln->visHeight > bottomZ && pln->visHeight < topZ)
-                            {
-                                if(!checkDiv(div, pln->visHeight))
-                                {
-                                    div->pos[div->num++] = pln->visHeight;
-
-                                    // Have we reached the div limit?
-                                    if(div->num == RL_MAX_DIVS)
-                                        stopScan = true;
-                                }
-                            }
-
-                            if(!stopScan)
-                            {   // Clip a range bound to this height?
-                                if(pln->type == PLN_FLOOR && pln->visHeight > bottomZ)
-                                    bottomZ = pln->visHeight;
-                                else if(pln->type == PLN_CEILING && pln->visHeight < topZ)
-                                    topZ = pln->visHeight;
-
-                                // All clipped away?
-                                if(bottomZ >= topZ)
-                                    stopScan = true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        /**
-                         * A zero height sector is a special case. In this
-                         * instance, the potential division is at the height
-                         * of the back ceiling. This is because elsewhere
-                         * we automatically fix the case of a floor above a
-                         * ceiling by lowering the floor.
-                         */
-                        float               z = scanSec->SP_ceilvisheight;
-
-                        if(z > bottomZ && z < topZ)
-                        {
-                            if(!checkDiv(div, z))
-                            {
-                                div->pos[div->num++] = z;
-
-                                // Have we reached the div limit?
-                                if(div->num == RL_MAX_DIVS)
-                                    stopScan = true;
-                            }
-                        }
-                    }
+                    // All clipped away?
+                    if(bottomZ >= topZ)
+                        break;
                 }
-            } while(!stopScan && ++i < 2);
 
-            // Stop the scan when a single sided line is reached.
-            if(!LINE_FRONTSIDE(iter) || !LINE_BACKSIDE(iter))
-                stopScan = true;
+                // Next, every plane between floor and ceiling.
+                if(scanSec->planeCount > 2)
+                {
+                    uint                j;
+                    boolean             stop = false;
+
+                    for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
+                    {
+                        pln = scanSec->SP_plane(j);
+                        if(!testForPlaneDivision(div, pln, bottomZ, topZ))
+                            stop = true;
+                    }
+
+                    if(stop)
+                        break;
+                }
+            }
+
+            // Lastly, the ceiling.
+            pln = scanSec->SP_plane(PLN_CEILING);
+            if(testForPlaneDivision(div, pln, bottomZ, topZ) && sectorHasVolume)
+            {   // Clip a range bound to this height?
+                if(pln->visHeight < topZ)
+                    topZ = pln->visHeight;
+
+                // All clipped away?
+                if(bottomZ >= topZ)
+                    break;
+            }
         }
-    } while(!stopScan);
+
+        // Stop the scan when a solid neighbour is reached.
+        if(!side || !sectorHasVolume)
+            break;
+
+        // Prepare for the next round.
+        frontSec = side->sector;
+    }
 }
 
-static void calcSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
                              const sector_t* frontSec, float bottomZ,
                              float topZ, boolean doRight)
 {
@@ -685,44 +689,44 @@ static void calcSegDivisions(walldiv_t* div, const hedge_t* hEdge,
          (hEdge == side->line->hEdges[!seg->side? 1 : 0] && doRight)))
         return;
 
-    doCalcSegDivisions(div, hEdge, frontSec, bottomZ, topZ, doRight);
+    doFindSegDivisions(div, hEdge, frontSec, bottomZ, topZ, doRight);
 }
 
 /**
  * Division will only happen if it must be done.
  */
-static void applyWallHeightDivision(walldiv_t* divs, const hedge_t* hEdge,
+static void applyWallHeightDivision(walldiv_t* wdivs, const hedge_t* hEdge,
                                     const sector_t* frontsec, float low,
                                     float hi)
 {
     uint                i;
-    walldiv_t*          div;
+    walldiv_t*          wdiv;
 
     if(!((seg_t*) hEdge->data)->lineDef)
         return; // Mini-segs arn't drawn.
 
     for(i = 0; i < 2; ++i)
     {
-        div = &divs[i];
-        calcSegDivisions(div, hEdge, frontsec, low, hi, i);
+        wdiv = &wdivs[i];
+        findSegDivisions(wdiv, hEdge, frontsec, low, hi, i);
 
         // We need to sort the divisions for the renderer.
-        if(div->num > 1)
+        if(wdiv->num > 1)
         {
             // Sorting is required. This shouldn't take too long...
             // There seldom are more than one or two divisions.
-            qsort(div->pos, div->num, sizeof(float),
+            qsort(wdiv->divs, wdiv->num, sizeof(plane_t*),
                   i!=0 ? DivSortDescend : DivSortAscend);
         }
 
 #ifdef RANGECHECK
 {
 uint        k;
-for(k = 0; k < div->num; ++k)
-    if(div->pos[k] > hi || div->pos[k] < low)
+for(k = 0; k < wdiv->num; ++k)
+    if(wdiv->divs[k]->visHeight > hi || wdiv->divs[k]->visHeight < low)
     {
         Con_Error("DivQuad: i=%i, pos (%f), hi (%f), low (%f), num=%i\n",
-                  i, div->pos[k], hi, low, div->num);
+                  i, wdiv->divs[k]->visHeight, hi, low, wdiv->num);
     }
 }
 #endif
@@ -2076,10 +2080,6 @@ static void renderPlane(face_t* face, planetype_t type,
         }
     }
 
-    numVertices = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
-    rvertices = R_AllocRendVertices(numVertices);
-    preparePlane(rvertices, ssec, height, !(normal[VZ] > 0));
-
     if(params.type != RPT_SKY_MASK)
     {
         if(blended && inMatB)
@@ -2091,6 +2091,10 @@ static void renderPlane(face_t* face, planetype_t type,
         else
             inter = getSnapshots(&msA, blended? &msB : NULL, mat);
     }
+
+    numVertices = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
+    rvertices = R_AllocRendVertices(numVertices);
+    preparePlane(rvertices, ssec, height, !(normal[VZ] > 0));
 
     renderWorldPoly(rvertices, numVertices, NULL, &params,
                     &msA, inter, (blended || inMatB)? &msB : NULL);

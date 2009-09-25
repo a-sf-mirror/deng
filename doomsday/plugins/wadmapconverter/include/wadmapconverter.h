@@ -44,7 +44,8 @@ enum { VX, VY, VZ };
 
 typedef struct materialref_s {
     char            name[9];
-    materialnum_t   num; // Doomsday's unique identifier for this.
+    materialnum_t   id; // Doomsday's unique identifier for this.
+    uint            refCount;
 } materialref_t;
 
 typedef struct mside_s {
@@ -155,9 +156,9 @@ typedef struct map_s {
     mpolyobj_t**    polyobjs;
     surfacetint_t*  lights;
 
-    size_t          numFlats;
+    size_t          numFlats, numUnknownFlats;
     materialref_t** flats;
-    size_t          numTextures;
+    size_t          numTextures, numUnknownTextures;
     materialref_t** textures;
 
     mapformatid_t   format;

@@ -50,12 +50,14 @@ typedef struct dmuobjrecordset_s {
 } dmuobjrecordset_t;
 
 typedef struct dummyline_s {
+    runtime_mapdata_header_t header;
     linedef_t       line; // Line data.
     void*           extraData; // Pointer to user data.
     boolean         inUse; // true, if the dummy is being used.
 } dummyline_t;
 
 typedef struct dummysector_s {
+    runtime_mapdata_header_t header;
     sector_t        sector; // Sector data.
     void*           extraData; // Pointer to user data.
     boolean         inUse; // true, if the dummy is being used.
@@ -520,7 +522,7 @@ void* P_AllocDummy(int type, void* extraData)
             {
                 dummyLines[i].inUse = true;
                 dummyLines[i].extraData = extraData;
-                dummyLines[i].line.header.type = DMU_LINEDEF;
+                dummyLines[i].header.type = DMU_LINEDEF;
                 return &dummyLines[i];
             }
         }
@@ -533,7 +535,7 @@ void* P_AllocDummy(int type, void* extraData)
             {
                 dummySectors[i].inUse = true;
                 dummySectors[i].extraData = extraData;
-                dummySectors[i].sector.header.type = DMU_SECTOR;
+                dummySectors[i].header.type = DMU_SECTOR;
                 return &dummySectors[i];
             }
         }
@@ -700,7 +702,7 @@ uint P_ToIndex(const void* ptr)
         return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
     case DMU_MATERIAL:
-        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj) - 1;
+        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj);
 
     default:
         Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(type));
@@ -714,6 +716,19 @@ uint P_ToIndex(const void* ptr)
 void* P_ToPtr(int type, uint index)
 {
     int                 idx;
+
+    // Handle special radixes.
+    switch(type)
+    {
+    case DMU_MATERIAL:
+        if(index == 0) // Zero means "no reference".
+            return NULL;
+        index -= 1; // Zero-based internally.
+        break;
+
+    default:
+        break;
+    }
 
     if((idx = findRecordSetForType(type)) != -1)
         return &records[objRecordSets[idx]->ids[1 + index]];

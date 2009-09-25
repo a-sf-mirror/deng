@@ -112,16 +112,6 @@ typedef struct {
     // array of its own private data structures).
     void          (*SetupForMapData) (int type, uint num);
 
-    // This routine is called when trying to assign a value read
-    // from the map data (to a property known to us) that we don't
-    // know what to do with.
-
-    // (eg the side->toptexture field contains a text string that
-    // we don't understand but the game might).
-
-    // The action code returned by the game depends on the context.
-    int           (*HandleMapDataPropertyValue) (uint id, int dtype, int prop,
-                                                 valuetype_t type, void* data);
     // Post map setup
     // The engine calls this to inform the game of any changes it is
     // making to map data object to which the game might want to

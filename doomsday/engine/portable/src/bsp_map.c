@@ -174,7 +174,6 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         const hedge_t*      hEdge = index[i];
         hedge_t*            dst = &map->hEdges[i];
 
-        dst->header.type = DMU_HEDGE;
         dst->data = storage++;
 
         dst->HE_v1 = &map->vertexes[hEdge->v[0]->buildData.index - 1];
@@ -308,7 +307,6 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
         hEdge->next->prev = hEdge;
     } while((hEdge = hEdge->next) != dest->hEdge);
 
-    dest->header.type = DMU_FACE;
     dest->data = *storage, (*storage)++;
 
     DMU_AddObjRecord(DMU_FACE, dest);
@@ -365,7 +363,6 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     params = (hardenbspparams_t*) data;
 
     node = &params->dest->nodes[nodeData->index = params->nodeCurIndex++];
-    node->header.type = DMU_NODE;
 
     node->partition.x = nodeData->partition.x;
     node->partition.y = nodeData->partition.y;
@@ -481,7 +478,6 @@ static void hardenVertexes(gamemap_t* dest, vertex_t*** vertexes,
         vertex_t*           destV = &dest->vertexes[i];
         vertex_t*           srcV = (*vertexes)[i];
 
-        destV->header.type = DMU_VERTEX;
         destV->numLineOwners = srcV->numLineOwners;
         destV->lineOwners = srcV->lineOwners;
 

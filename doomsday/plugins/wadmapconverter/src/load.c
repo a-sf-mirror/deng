@@ -111,13 +111,12 @@ static int C_DECL compareMaterialNames(const void* a, const void* b)
     return stricmp((*(materialref_t**)a)->name, (*(materialref_t**)b)->name);
 }
 
-static const materialref_t* getMaterial(const char* regName,
-                                        materialref_t* const ** list,
-                                        size_t size)
+static materialref_t* getMaterial2(const char* regName,
+                                   materialref_t* const ** list, size_t size)
 {
     int                 result;
     size_t              bottomIdx, topIdx, pivot;
-    const materialref_t* m;
+    materialref_t*      m;
     boolean             isDone;
     char                name[9];
 
@@ -128,13 +127,14 @@ static const materialref_t* getMaterial(const char* regName,
     {
         int                 idx = *((int*) regName);
 
-        sprintf(name, "UNK%05i", idx);
-        name[8] = '\0';
+        dd_snprintf(name, 9, "UNK%05i", idx);
     }
     else
     {
-        strncpy(name, regName, 8);
-        name[8] = '\0';
+        size_t              len = MIN_OF(8, strlen(regName));
+
+        strncpy(name, regName, len);
+        name[len] = '\0';
     }
 
     bottomIdx = 0;
@@ -143,12 +143,15 @@ static const materialref_t* getMaterial(const char* regName,
     isDone = false;
     while(bottomIdx <= topIdx && !isDone)
     {
-        pivot = bottomIdx + (topIdx - bottomIdx)/2;
+        materialref_t*      cand;
 
-        result = stricmp((*list)[pivot]->name, name);
+        pivot = bottomIdx + (topIdx - bottomIdx)/2;
+        cand = (*list)[pivot];
+
+        result = stricmp(cand->name, name);
         if(result == 0)
         {   // Found.
-            m = (*list)[pivot];
+            m = cand;
             isDone = true;
         }
         else
@@ -170,79 +173,141 @@ static const materialref_t* getMaterial(const char* regName,
     return m;
 }
 
-const materialref_t* GetMaterial(const char* name, boolean isFlat)
+static materialref_t* getMaterial(const char* name, boolean isFlat)
 {
-    return getMaterial(name, isFlat? &map->flats : &map->textures,
-                       isFlat? map->numFlats : map->numTextures);
+    return getMaterial2(name, isFlat? &map->flats : &map->textures,
+                        isFlat? map->numFlats : map->numTextures);
 }
 
 static void addMaterialToList(materialref_t* m, materialref_t*** list,
                               size_t* size)
 {
-    size_t              i, n;
+    size_t              i;
 
     // Enlarge the list.
     (*list) = realloc((*list), sizeof(m) * ++(*size));
 
     // Find insertion point.
-    n = 0;
     for(i = 0; i < (*size) - 1; ++i)
         if(compareMaterialNames(&(*list)[i], &m) > 0)
-        {
-            n = i;
             break;
-        }
 
     // Shift the rest over.
     if((*size) > 1)
-        memmove(&(*list)[n+1], &(*list)[n], sizeof(m) * ((*size)-1-n));
+        memmove(&((*list)[i+1]), &((*list)[i]), sizeof(m) * ((*size)-1-i));
 
     // Insert the new element.
-    (*list)[n] = m;
+    (*list)[i] = m;
+}
+
+/**
+ * Is the name of the material reference known to Doomsday?
+ */
+static __inline boolean isUnknownMaterialRef(const materialref_t* m, boolean isFlat)
+{
+    return m->id == 0 ? true : false;
 }
 
 const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
 {
-    const materialref_t* m;
+    materialref_t*      m;
+
+    // When loading DOOM or Hexen format maps check for the special case "-"
+    // texture name (no texture).
+    if(!isFlat && (map->format == MF_DOOM || map->format == MF_HEXEN) &&
+       !stricmp(name, "-"))
+        return NULL;
 
     // Check if this material has already been registered.
-    if((m = GetMaterial(name, isFlat)) != NULL)
+    if((m = getMaterial(name, isFlat)) != NULL)
     {
-        return m; // Already registered.
+        m->refCount++;
+        return m;
     }
     else
     {
-        materialref_t*      m;
         /**
          * A new material.
          */
         m = malloc(sizeof(*m));
+
         if(map->format == MF_DOOM64)
         {
             int                 idx = *((int*) name);
 
-            sprintf(m->name, "UNK%05i", idx);
-            m->name[8] = '\0';
+            dd_snprintf(m->name, 9, "UNK%05i", idx);
+
             // First try the prefered namespace, then any.
-            if(!(m->num = DMU_MaterialCheckNumForIndex(idx,
+            if(!(m->id = DMU_MaterialCheckNumForIndex(idx,
                                                      (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->num = DMU_MaterialCheckNumForIndex(idx, MN_ANY);
+                m->id = DMU_MaterialCheckNumForIndex(idx, MN_ANY);
         }
         else
         {
-            memcpy(m->name, name, 8);
-            m->name[8] = '\0';
+            size_t          len = MIN_OF(8, strlen(name));
+
+            strncpy(m->name, name, len);
+            m->name[len] = '\0';
+
             // First try the prefered namespace, then any.
-            if(!(m->num = DMU_MaterialCheckNumForName(m->name,
+            if(!(m->id = DMU_MaterialCheckNumForName(m->name,
                                                     (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->num = DMU_MaterialCheckNumForName(m->name, MN_ANY);
+                m->id = DMU_MaterialCheckNumForName(m->name, MN_ANY);
         }
 
-        // Add it to the list of known materials.
+        // Add it to the material reference list.
         addMaterialToList(m, isFlat? &map->flats : &map->textures,
                           isFlat? &map->numFlats : &map->numTextures);
+        m->refCount = 1;
+
+        if(isUnknownMaterialRef(m, isFlat))
+        {
+            if(isFlat)
+                ++map->numUnknownFlats;
+            else
+                ++map->numUnknownTextures;
+        }
 
         return m;
+    }
+}
+
+void LogUnknownMaterials(void)
+{
+    static const char* nameStr[] = { "name", "names" };
+
+    if(map->numUnknownFlats)
+    {
+        size_t              i;
+
+        Con_Message("WadMapConverter: Warning: Found %u bad flat %s:\n",
+                    map->numUnknownFlats,
+                    nameStr[map->numUnknownFlats? 1 : 0]);
+
+        for(i = 0; i < map->numFlats; ++i)
+        {
+            materialref_t*      m = map->flats[i];
+
+            if(isUnknownMaterialRef(m, true))
+                Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
+        }
+    }
+
+    if(map->numUnknownTextures)
+    {
+        size_t              i;
+
+        Con_Message("WadMapConverter: Warning: Found %u bad texture %s:\n",
+                    map->numUnknownTextures,
+                    nameStr[map->numUnknownTextures? 1 : 0]);
+
+        for(i = 0; i < map->numTextures; ++i)
+        {
+            materialref_t*      m = map->textures[i];
+
+            if(isUnknownMaterialRef(m, false))
+                Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
+        }
     }
 }
 
@@ -1654,6 +1719,9 @@ boolean TransferMap(void)
     uint                i;
     boolean             result;
 
+    // Announce any bad material names we came across while loading the map.
+    LogUnknownMaterials();
+
     VERBOSE(Con_Message("WadMapConverter::TransferMap...\n"));
 
     MPE_Begin(map->name);
@@ -1672,10 +1740,10 @@ boolean TransferMap(void)
             MPE_SectorCreate((float) sec->lightLevel / 255.0f, 1, 1, 1);
 
         MPE_PlaneCreate(sectorIDX, sec->floorHeight,
-                        sec->floorMaterial->num,
+                        sec->floorMaterial? sec->floorMaterial->id : 0,
                         0, 0, 1, 1, 1, 1, 0, 0, 1);
         MPE_PlaneCreate(sectorIDX, sec->ceilHeight,
-                        sec->ceilMaterial->num,
+                        sec->ceilMaterial? sec->ceilMaterial->id : 0,
                         0, 0, 1, 1, 1, 1, 0, 0, -1);
 
         MPE_GameObjProperty("XSector", i, "Tag", DDVT_SHORT, &sec->tag);
@@ -1705,11 +1773,11 @@ boolean TransferMap(void)
             frontIdx =
                 MPE_SidedefCreate(front->sector,
                                   (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  front->topMaterial->num,
+                                  front->topMaterial? front->topMaterial->id : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1,
-                                  front->middleMaterial->num,
+                                  front->middleMaterial? front->middleMaterial->id : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1, 1,
-                                  front->bottomMaterial->num,
+                                  front->bottomMaterial? front->bottomMaterial->id : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1);
         }
 
@@ -1719,11 +1787,11 @@ boolean TransferMap(void)
             backIdx =
                 MPE_SidedefCreate(back->sector,
                                   (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  back->topMaterial->num,
+                                  back->topMaterial? back->topMaterial->id : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1,
-                                  back->middleMaterial->num,
+                                  back->middleMaterial? back->middleMaterial->id : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1, 1,
-                                  back->bottomMaterial->num,
+                                  back->bottomMaterial? back->bottomMaterial->id : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1);
         }
 

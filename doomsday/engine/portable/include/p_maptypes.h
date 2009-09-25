@@ -42,7 +42,6 @@ typedef struct mvertex_s {
 } mvertex_t;
 
 typedef struct vertex_s {
-    runtime_mapdata_header_t header;
     unsigned int        numLineOwners; // Number of line owners.
     lineowner_t*        lineOwners;    // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
     fvertex_t           v;
@@ -87,7 +86,6 @@ typedef struct seg_s {
 } seg_t;
 
 typedef struct hedge_s {
-    runtime_mapdata_header_t header;
     struct vertex_s*    v[2];          // [Start, End] of the hedge.
     struct hedge_s*     twin;
     struct hedge_s*     next;
@@ -114,7 +112,6 @@ typedef struct subsector_s {
 } subsector_t;
 
 typedef struct face_s {
-    runtime_mapdata_header_t header;
     struct hedge_s*     hEdge;         // First half-edge of this subsector.
     void*               data;
 } face_t;
@@ -136,7 +133,6 @@ typedef enum {
 } material_env_class_t;
 
 typedef struct material_s {
-    runtime_mapdata_header_t header;
     material_namespace_t mnamespace;
     struct ded_material_s* def;        // Can be NULL (was generated automatically).
     short               flags;         // MATF_* flags
@@ -197,7 +193,6 @@ typedef struct surfacedecor_s {
 } surfacedecor_t;
 
 typedef struct surface_s {
-    runtime_mapdata_header_t header;
     void*               owner;         // Either @c DMU_SIDEDEF, or @c DMU_PLANE
     int                 flags;         // SUF_ flags
     int                 oldFlags;
@@ -233,7 +228,6 @@ typedef enum {
 #define PS_inflags              surface.inFlags
 
 typedef struct plane_s {
-    runtime_mapdata_header_t header;
     ddmobj_base_t       soundOrg;      // Sound origin for plane
     struct sector_s*    sector;        // Owner of the plane (temp)
     surface_t           surface;
@@ -313,7 +307,6 @@ typedef struct msector_s {
 } msector_t;
 
 typedef struct sector_s {
-    runtime_mapdata_header_t header;
     int                 frameFlags;
     int                 validCount;    // if == validCount, already checked.
     int                 flags;
@@ -400,7 +393,6 @@ typedef struct msidedef_s {
 } msidedef_t;
 
 typedef struct sidedef_s {
-    runtime_mapdata_header_t header;
     surface_t           sections[3];
     struct linedef_s*   line;
     struct sector_s*    sector;
@@ -460,7 +452,6 @@ typedef struct mlinedef_s {
 } mlinedef_t;
 
 typedef struct linedef_s {
-    runtime_mapdata_header_t header;
     struct lineowner_s* vo[2];         // Links to vertex line owner nodes [left, right]
     struct hedge_s*     hEdges[2];     // [leftmost front seg, rightmost front seg]
     int                 flags;         // Public DDLF_* flags.
@@ -489,7 +480,6 @@ typedef struct partition_s {
 } partition_t;
 
 typedef struct node_s {
-    runtime_mapdata_header_t header;
     partition_t         partition;
     float               bBox[2][4];    // Bounding box for each child.
     unsigned int        children[2];   // If NF_SUBSECTOR it's a subsector.

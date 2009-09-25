@@ -602,8 +602,6 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
     sec->planes[sec->planeCount-1] = plane;
     sec->planes[sec->planeCount] = NULL; // Terminate.
 
-    // Setup header for DMU.
-    plane->header.type = DMU_PLANE;
     if(!ddMapSetup)
         DMU_AddObjRecord(DMU_PLANE, plane);
 
@@ -626,7 +624,6 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
     // Initialize the surface.
     memset(&plane->surface, 0, sizeof(plane->surface));
     suf = &plane->surface;
-    suf->header.type = DMU_SURFACE; // Setup header for DMU.
     suf->normal[VZ] = suf->oldNormal[VZ] = 1;
     // \todo The initial material should be the "unknown" material.
     Surface_SetMaterial(suf, NULL, false);
