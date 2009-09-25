@@ -265,7 +265,6 @@ face_t* R_PointInSubsector(const float x, const float y)
     while(!(nodenum & NF_SUBSECTOR))
     {
         node = NODE_PTR(nodenum);
-        ASSERT_DMU_TYPE(node, DMU_NODE);
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 

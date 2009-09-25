@@ -145,9 +145,9 @@ typedef struct subsector_s {
 end
 
 public
-#define DMT_FACE_HEDGECOUNT		DDVT_UINT
-#define DMT_FACE_POLYOBJ		DDVT_PTR
-#define DMT_FACE_SECTOR			DDVT_PTR
+#define DMT_FACE_HEDGECOUNT     DDVT_UINT
+#define DMT_FACE_POLYOBJ        DDVT_PTR
+#define DMT_FACE_SECTOR         DDVT_PTR
 end
 
 struct face

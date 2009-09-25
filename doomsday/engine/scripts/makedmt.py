@@ -96,7 +96,6 @@ for input_line in sys.stdin.readlines():
                 else:
                     publicName = tokens[1]
                 println(internal_file, "typedef struct %s_s {" % current, line_comment)
-                println(internal_file, "    runtime_mapdata_header_t header;", '')
         else:
             error(input_line, 'syntax error')
     else:

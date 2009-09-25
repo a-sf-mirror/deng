@@ -338,7 +338,7 @@ static material_t* createMaterial(short width, short height, byte flags,
     material_t*         mat = Z_BlockNewElement(materialsBlockSet);
 
     memset(mat, 0, sizeof(*mat));
-    mat->header.type = DMU_MATERIAL;
+    
     mat->mnamespace = mnamespace;
     mat->width = width;
     mat->height = height;

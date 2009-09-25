@@ -267,9 +267,6 @@ int             P_GetMapAmbientLightLevel(gamemap_t* map);
 const char*     P_GenerateUniqueMapID(const char* mapID);
 
 void            P_PolyobjChanged(polyobj_t* po);
-void            P_RegisterUnknownTexture(const char* name, boolean planeTex);
-void            P_PrintMissingTextureList(void);
-void            P_FreeBadTexList(void);
 
 void            P_InitGameMapObjDefs(void);
 void            P_ShutdownGameMapObjDefs(void);

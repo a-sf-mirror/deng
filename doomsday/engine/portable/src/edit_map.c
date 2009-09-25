@@ -82,7 +82,6 @@ vertex_t* createVertex(void)
     vertex_t*               vtx;
 
     vtx = M_Calloc(sizeof(*vtx));
-    vtx->header.type = DMU_VERTEX;
 
     map->vertexes =
         M_Realloc(map->vertexes, sizeof(vtx) * (++map->numVertexes + 1));
@@ -98,7 +97,6 @@ static linedef_t* createLine(void)
     linedef_t*              line;
 
     line = M_Calloc(sizeof(*line));
-    line->header.type = DMU_LINEDEF;
 
     map->lineDefs =
         M_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1));
@@ -114,7 +112,6 @@ static sidedef_t* createSide(void)
     sidedef_t*              side;
 
     side = M_Calloc(sizeof(*side));
-    side->header.type = DMU_SIDEDEF;
 
     map->sideDefs =
         M_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1));
@@ -131,7 +128,6 @@ static sector_t* createSector(void)
     sector_t*           sec;
 
     sec = M_Calloc(sizeof(*sec));
-    sec->header.type = DMU_SECTOR;
 
     map->sectors = M_Realloc(map->sectors, sizeof(sec) * (++map->numSectors + 1));
     map->sectors[map->numSectors-1] = sec;
@@ -1435,7 +1431,7 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
             // This line is part of a polyobj.
             line->inFlags |= LF_POLYOBJ;
-            hEdge->header.type = DMU_HEDGE;
+
             seg->lineDef = line;
             seg->sideDef = &dest->sideDefs[
                 line->buildData.sideDefs[FRONT]->buildData.index - 1];
@@ -1883,7 +1879,6 @@ boolean MPE_End(void)
     S_DetermineSubSecsAffectingSectorReverb(gamemap);
     prepareSubSectors(gamemap);
 
-    P_FreeBadTexList();
     MPE_FreeUnclosedSectorList();
 
     editMapInited = false;
@@ -1915,9 +1910,6 @@ void MPE_PrintMapErrors(void)
 {
     // Announce unclosed sectors.
     MPE_PrintUnclosedSectorList();
-
-    // Announce any bad texture names we came across when loading the map.
-    P_PrintMissingTextureList();
 }
 
 /**
