@@ -629,13 +629,11 @@ void XL_SetLineType(linedef_t* line, int id)
                xgClasses[xline->xg->info.lineClass].className, id);
 
         // If there is not already an xlthinker for this line, create one.
-        if(P_Iterate(DMU_THINKER_XLINE, line, findXLThinker))
+        if(DD_IterateThinkers(XL_Thinker, findXLThinker, line))
         {   // Not created one yet.
             xlthinker_t*    xl = Z_Calloc(sizeof(*xl), PU_MAP, 0);
 
-            xl->thinker.header.type = DMU_THINKER_XLINE;
             xl->thinker.function = XL_Thinker;
-
             DD_ThinkerAdd(&xl->thinker);
 
             xl->line = line;
@@ -2340,7 +2338,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 
     if(info->flags & LTF_MOBJ_GONE)
     {
-        if(!P_Iterate(DMU_MOBJ, &info->aparm[9], XL_CheckMobjGone))
+        if(!DD_IterateThinkers(P_MobjThinker, XL_CheckMobjGone, &info->aparm[9]))
             return false;
     }
 

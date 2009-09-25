@@ -8,7 +8,6 @@ typedef void    (*think_t) ();
  * \todo thinker_t should not be part of the public API in its current form.
  */
 typedef struct thinker_s {
-    runtime_mapdata_header_t header;
     struct thinker_s *prev, *next;
     think_t         function;
     boolean         inStasis;

@@ -558,11 +558,6 @@ enum /* Do not change the numerical values of the constants! */
     DMU_PLANE,
     DMU_SURFACE,
     DMU_MATERIAL,
-    DMU_MOBJ,
-    DMU_THINKER_PTCGENERATOR,
-    DMU_THINKER_PLANEMOVER_CL,
-    DMU_THINKER_POLYMOVER_CL,
-    DMU_THINKER_MATFADER,
 
     DMU_LINEDEF_BY_TAG,
     DMU_SECTOR_BY_TAG,
@@ -617,9 +612,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_SPEED,
     DMU_SEG_COUNT,
     DMU_NAMESPACE,
-    DMU_NAME,
-
-    DMU_FIRST_GAME_TYPE = 1000
+    DMU_NAME
 };
 
 // Map Update value names:

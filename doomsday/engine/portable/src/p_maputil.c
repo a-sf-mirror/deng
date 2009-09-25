@@ -649,7 +649,7 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    P_AllLinesBoxIteratorv(data.box, PIT_LinkToLines, &data);
+    P_AllLinesBoxIteratorv(data.box, PIT_LinkToLines, &data, false);
 }
 
 void P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link)
@@ -1002,7 +1002,7 @@ static boolean linesBoxIteratorv(const arvec2_t box,
     return P_BlockBoxLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
 }
 
-boolean P_LinesBoxIterator(const float box[4],
+boolean DMU_LinesBoxIterator(const float box[4],
                            boolean (*func) (linedef_t*, void*),
                            void* data)
 {
@@ -1114,7 +1114,7 @@ static boolean allLinesBoxIterator(const arvec2_t box,
  */
 boolean P_AllLinesBoxIterator(const float box[4],
                               boolean (*func) (linedef_t*, void*),
-                              void* data)
+                              void* data, boolean retObjRecord)
 {
     vec2_t              bounds[2];
 
@@ -1123,7 +1123,17 @@ boolean P_AllLinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return allLinesBoxIterator(bounds, func, data, true);
+    return allLinesBoxIterator(bounds, func, data, retObjRecord);
+}
+
+/**
+ * Public version of DMU_AllLinesBoxIterator.
+ */
+boolean DMU_AllLinesBoxIterator(const float box[4],
+                                boolean (*func) (linedef_t*, void*),
+                                void* data)
+{
+    return P_AllLinesBoxIterator(box, func, data, true);
 }
 
 /**
@@ -1133,7 +1143,17 @@ boolean P_AllLinesBoxIterator(const float box[4],
  */
 boolean P_AllLinesBoxIteratorv(const arvec2_t box,
                                boolean (*func) (linedef_t*, void*),
-                               void* data)
+                               void* data, boolean retObjRecord)
+{
+    return allLinesBoxIterator(box, func, data, retObjRecord);
+}
+
+/**
+ * Public version of P_AllLinesBoxIteratorv.
+ */
+boolean DMU_AllLinesBoxIteratorv(const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data)
 {
     return allLinesBoxIterator(box, func, data, true);
 }

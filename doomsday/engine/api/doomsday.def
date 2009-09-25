@@ -173,19 +173,10 @@ EXPORTS
     P_AccurateDistance          @57 NONAME
     P_ApproxDistance            @58 NONAME
     P_ApproxDistance3           @243 NONAME
-    DMU_PointOnLinedefSide      @59 NONAME
-    DMU_BoxOnLineSide           @60 NONAME
-    DMU_MakeDivline             @61 NONAME
     P_PointOnDivlineSide        @62 NONAME
     P_InterceptVector           @63 NONAME
-    DMU_LineOpening             @64 NONAME
     P_MobjsBoxIterator          @346 NONAME
-    P_LinesBoxIterator          @435 NONAME
-    P_AllLinesBoxIterator       @347 NONAME
     P_PolyobjsBoxIterator       @348 NONAME
-    DMU_SubsectorsBoxIterator   @345 NONAME
-    DMU_LineMobjsIterator       @73 NONAME
-    DMU_SectorTouchingMobjsIterator @74 NONAME
     P_PathTraverse              @75 NONAME
     P_CheckLineSight            @76 NONAME
     P_MobjSetState              @207 NONAME
@@ -206,8 +197,17 @@ EXPORTS
     P_ToPtr                     @257 NONAME
     P_Callback                  @258 NONAME
     P_Callbackp                 @259 NONAME
-    P_Iterate                   @425 NONAME
+
+    ; iteration methods
     P_Iteratep                  @410 NONAME
+
+    ; specialized iteration methods
+    DMU_LinesBoxIterator        @435 NONAME
+    DMU_AllLinesBoxIterator     @347 NONAME
+    DMU_SubsectorsBoxIterator   @345 NONAME
+
+    DMU_LineMobjsIterator       @73 NONAME
+    DMU_SectorTouchingMobjsIterator @74 NONAME
 
     ; dummy objects
     P_AllocDummy                @321 NONAME
@@ -292,6 +292,12 @@ EXPORTS
     P_GetGMOAngle               @419 NONAME
     P_GetGMOFloat               @420 NONAME
 
+    ; miscellaneous
+    DMU_PointOnLinedefSide      @59 NONAME
+    DMU_BoxOnLineSide           @60 NONAME
+    DMU_MakeDivline             @61 NONAME
+    DMU_LineOpening             @64 NONAME
+
 ; Play: Misc.
     P_MergeCommand              @333 NONAME
     P_RegisterMapObj            @411 NONAME
@@ -326,8 +332,9 @@ EXPORTS
     DD_ThinkerRemove            @87 NONAME
     DD_ThinkerSetStasis         @426 NONAME	
 
-    DD_RunThinkers              @84 NONAME
     DD_InitThinkers             @85 NONAME
+    DD_IterateThinkers          @425 NONAME
+    DD_RunThinkers              @84 NONAME
 
 ; Refresh.
     DD_GetFrameRate             @88 NONAME

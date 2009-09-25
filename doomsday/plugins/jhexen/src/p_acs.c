@@ -298,16 +298,14 @@ static void StartOpenACS(int number, int infoIndex, const int* address)
     acs_t*              script;
 
     script = Z_Calloc(sizeof(*script), PU_MAP, 0);
-    script->number = number;
-
-    // World objects are allotted 1 second for initialization
-    script->delayCount = 35;
-
-    script->infoIndex = infoIndex;
-    script->ip = address;
-    script->thinker.header.type = DMU_THINKER_ACSSCRIPT;
     script->thinker.function = T_InterpretACS;
     DD_ThinkerAdd(&script->thinker);
+
+    // World objects are allotted 1 second for initialization.
+    script->number = number;
+    script->delayCount = 35;
+    script->infoIndex = infoIndex;
+    script->ip = address;
 }
 
 /**
@@ -366,6 +364,8 @@ boolean P_StartACS(int number, int map, byte* args, mobj_t* activator,
     }
 
     script = Z_Calloc(sizeof(*script), PU_MAP, 0);
+    script->thinker.function = T_InterpretACS;
+    DD_ThinkerAdd(&script->thinker);
 
     script->number = number;
     script->infoIndex = infoIndex;
@@ -373,15 +373,13 @@ boolean P_StartACS(int number, int map, byte* args, mobj_t* activator,
     script->line = line;
     script->side = side;
     script->ip = ACSInfo[infoIndex].address;
-    script->thinker.header.type = DMU_THINKER_ACSSCRIPT;
-    script->thinker.function = T_InterpretACS;
+
     for(i = 0; i < ACSInfo[infoIndex].argCount; ++i)
     {
         script->vars[i] = args[i];
     }
 
     *statePtr = ASTE_RUNNING;
-    DD_ThinkerAdd(&script->thinker);
     NewScript = script;
     return true;
 }
@@ -1205,7 +1203,7 @@ static void ThingCount(int type, int tid)
 
         params.type = moType;
         params.count = 0;
-        P_Iterate(DMU_MOBJ, &params, countMobjOfType);
+        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
 
         count = params.count;
     }

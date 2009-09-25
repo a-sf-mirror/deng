@@ -2235,7 +2235,7 @@ void Sv_NewMobjDeltas(cregister_t* reg, boolean doUpdate, pool_t** targets)
     params.targets = targets;
 
     // Mobjs are always public.
-    P_IterateThinkers(DMU_MOBJ, 0x1, newMobjDelta, &params);
+    P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, newMobjDelta, &params);
 }
 
 /**

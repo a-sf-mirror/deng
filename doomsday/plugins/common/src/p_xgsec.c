@@ -372,13 +372,11 @@ void XS_SetSectorType(struct sector_s* sec, int special)
         }
 
         // If there is not already an xsthinker for this sector, create one.
-        if(P_Iterate(DMU_THINKER_XSECTOR, sec, findXSThinker))
+        if(DD_IterateThinkers(XS_Thinker, findXSThinker, sec))
         {   // Not created one yet.
             xsthinker_t*    xs = Z_Calloc(sizeof(*xs), PU_MAP, 0);
 
-            xs->thinker.header.type = DMU_THINKER_XSECTOR;
             xs->thinker.function = XS_Thinker;
-
             DD_ThinkerAdd(&xs->thinker);
 
             xs->sector = sec;
@@ -390,7 +388,7 @@ void XS_SetSectorType(struct sector_s* sec, int special)
                special);
 
         // If there is an xsthinker for this, destroy it.
-        P_Iterate(DMU_THINKER_XSECTOR, sec, destroyXSThinker);
+        DD_IterateThinkers(XS_Thinker, destroyXSThinker, sec);
 
         // Free previously allocated XG data.
         if(xsec->xg)
@@ -643,13 +641,11 @@ xgplanemover_t *XS_GetPlaneMover(sector_t *sec, boolean ceiling)
 
     params.sec = sec;
     params.ceiling = ceiling;
-    P_Iterate(DMU_THINKER_PLANEMOVER, &params, stopPlaneMover);
+    DD_IterateThinkers(XS_PlaneMover, stopPlaneMover, &params);
 
     // Allocate a new thinker.
     mover = Z_Calloc(sizeof(*mover), PU_MAP, 0);
-    mover->thinker.header.type = DMU_THINKER_PLANEMOVER;
     mover->thinker.function = XS_PlaneMover;
-
     DD_ThinkerAdd(&mover->thinker);
 
     mover->sector = sec;
@@ -2910,7 +2906,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_FLOOR;
-            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
+            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Ceiling chain. Check any mobjs that are touching the ceiling.
@@ -2920,7 +2916,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_CEILING;
-            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
+            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Inside chain. Check any sectorlinked mobjs.
@@ -2930,7 +2926,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_INSIDE;
-            P_Iterate(DMU_MOBJ, &params, XSTrav_SectorChain);
+            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Ticker chain. Send an activate event if TICKER_D flag is not set.
@@ -2986,7 +2982,7 @@ void XS_Thinker(xsthinker_t* xs)
         xstrav_windparams_t params;
 
         params.sec = sector;
-        P_Iterate(DMU_MOBJ, &params, XSTrav_Wind);
+        DD_IterateThinkers(P_MobjThinker, XSTrav_Wind, &params);
     }
 }
 

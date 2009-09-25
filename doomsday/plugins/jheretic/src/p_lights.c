@@ -92,7 +92,6 @@ void P_SpawnLightFlash(sector_t *sector)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_LightFlash;
-    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -135,15 +134,14 @@ void T_StrobeFlash(strobe_t *flash)
  * After the map has been loaded, scan each sector for specials that spawn
  * thinkers.
  */
-void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
+void P_SpawnStrobeFlash(sector_t* sector, int fastOrSlow, int inSync)
 {
     float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float               otherLevel = DDMAXFLOAT;
-    strobe_t           *flash;
+    strobe_t*           flash;
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_StrobeFlash;
-    flash->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -282,7 +280,6 @@ void P_SpawnGlowingLight(sector_t *sector)
 
     g = Z_Calloc(sizeof(*g), PU_MAP, 0);
     g->thinker.function = T_Glow;
-    g->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     DD_ThinkerAdd(&g->thinker);
 
     g->sector = sector;

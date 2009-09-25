@@ -314,7 +314,6 @@ void P_SpawnMaterialChanger(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
 
     mchanger = Z_Calloc(sizeof(*mchanger), PU_MAP, 0);
     mchanger->thinker.function = T_MaterialChanger;
-    mchanger->thinker.header.type = DMU_THINKER_MATCHANGER;
     DD_ThinkerAdd(&mchanger->thinker);
 
     mchanger->side = side;
@@ -350,7 +349,7 @@ void P_StartButton(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
     params.ssurfaceID = ssurfaceID;
 
     // See if a material change has already been queued.
-    if(!P_Iterate(DMU_THINKER_MATCHANGER, &params, findMaterialChanger))
+    if(!DD_IterateThinkers(T_MaterialChanger, findMaterialChanger, &params))
         return;
 
     P_SpawnMaterialChanger(side, ssurfaceID, mat, tics);

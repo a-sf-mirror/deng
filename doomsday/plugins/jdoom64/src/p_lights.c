@@ -88,7 +88,6 @@ void P_SpawnFireFlicker(sector_t *sector)
 
     flick = Z_Calloc(sizeof(*flick), PU_MAP, 0);
     flick->thinker.function = T_FireFlicker;
-    flick->thinker.header.type = DMU_THINKER_LIGHTFLICK;
     DD_ThinkerAdd(&flick->thinker);
 
     flick->sector = sector;
@@ -142,7 +141,6 @@ void P_SpawnLightFlash(sector_t *sector)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_LightFlash;
-    flash->thinker.header.type = DMU_THINKER_LIGHTFLASH;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -189,7 +187,6 @@ void P_SpawnLightBlink(sector_t *sector)
 
     blink = Z_Calloc(sizeof(*blink), PU_MAP, 0);
     blink->thinker.function = T_LightBlink;
-    blink->thinker.header.type = DMU_THINKER_LIGHTBLINK;
     DD_ThinkerAdd(&blink->thinker);
 
     blink->sector = sector;
@@ -234,7 +231,6 @@ void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_StrobeFlash;
-    flash->thinker.header.type = DMU_THINKER_LIGHTSTROBE;
     DD_ThinkerAdd(&flash->thinker);
 
     flash->sector = sector;
@@ -373,7 +369,6 @@ void P_SpawnGlowingLight(sector_t* sector)
 
     g = Z_Calloc(sizeof(*g), PU_MAP, 0);
     g->thinker.function = T_Glow;
-    g->thinker.header.type = DMU_THINKER_LIGHTGLOW;
     DD_ThinkerAdd(&g->thinker);
 
     g->sector = sector;

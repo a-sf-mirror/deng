@@ -226,20 +226,20 @@ extern          "C" {
     boolean         P_MobjsBoxIterator(const float box[4],
                                        boolean (*func) (struct mobj_s*, void*),
                                        void* data);
-    boolean         P_LinesBoxIterator(const float box[4],
-                                       boolean (*func) (struct linedef_s*, void*),
-                                       void* data);
-    boolean         P_AllLinesBoxIterator(const float box[4],
-                                          boolean (*func) (struct linedef_s*, void*),
-                                          void* data);
-    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
-                                           boolean (*func) (face_t*, void*),
-                                           void* data);
     boolean         P_PolyobjsBoxIterator(const float box[4],
                                           boolean (*func) (struct polyobj_s*, void*),
                                           void* data);
 
     // Object type touching mobjs iterators.
+    boolean         DMU_LinesBoxIterator(const float box[4],
+                                       boolean (*func) (struct linedef_s*, void*),
+                                       void* data);
+    boolean         DMU_AllLinesBoxIterator(const float box[4],
+                                          boolean (*func) (struct linedef_s*, void*),
+                                          void* data);
+    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
+                                           boolean (*func) (face_t*, void*),
+                                           void* data);
     boolean         DMU_LineMobjsIterator(void* p,
                                           boolean (*func) (struct mobj_s*, void *),
                                           void* data);
@@ -266,14 +266,15 @@ extern          "C" {
     void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
-    int             P_Callback(int type, uint index, void* context,
-                               int (*callback)(void* p, void* ctx));
-    int             P_Callbackp(int type, void* ptr, void* context,
-                                int (*callback)(void* p, void* ctx));
-    int             P_Iterate(int type, void* context,
-                              int (*callback) (void* p, void* ctx));
-    int             P_Iteratep(void *ptr, uint prop, void* context,
-                               int (*callback) (void* p, void* ctx));
+    int             P_Callback(int type, uint index,
+                               int (*callback)(void* p, void* ctx),
+                               void* context);
+    int             P_Callbackp(int type, void* ptr,
+                                int (*callback)(void* p, void* ctx),
+                                void* context);
+    int             P_Iteratep(void *ptr, uint prop,
+                               int (*callback) (void* p, void* ctx),
+                               void* context);
 
     /* dummy functions */
     void*           P_AllocDummy(int type, void* extraData);
@@ -402,7 +403,11 @@ extern          "C" {
 
     // Play: Thinkers.
     void            DD_InitThinkers(void);
+    int             DD_IterateThinkers(think_t func,
+                              int (*callback) (void* p, void* ctx),
+                              void* context);
     void            DD_RunThinkers(void);
+
     void            DD_ThinkerAdd(thinker_t* th);
     void            DD_ThinkerRemove(thinker_t* th);
     void            DD_ThinkerSetStasis(thinker_t* th, boolean on);

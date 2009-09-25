@@ -80,13 +80,12 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
         ((env = S_MaterialEnvDef(Material_GetEnvClass(suf->material))) && (env->flags & MEF_BLEND))))
     {
         // Stop active material fade on this surface.
-        P_IterateThinkers(DMU_THINKER_MATFADER, 0x2, // Always non-public
+        P_IterateThinkers(R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                           RIT_StopMatFader, suf);
 
         fader = Z_Malloc(sizeof(matfader_t), PU_MAP, 0);
         memset(fader, 0, sizeof(*fader));
         fader->thinker.function = R_MatFaderThinker;
-        fader->thinker.header.type = DMU_THINKER_MATFADER;
         fader->suf = suf;
         fader->tics = 0;
 

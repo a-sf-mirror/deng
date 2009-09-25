@@ -173,7 +173,6 @@ static ptcgen_t* P_PtcGenCreate(void)
 
     // Link the thinker to the list of (private) thinkers.
     gen->thinker.function = P_PtcGenThinker;
-    gen->thinker.header.type = DMU_THINKER_PTCGENERATOR;
     P_ThinkerAdd(&gen->thinker, false);
 
     return gen;
@@ -1241,7 +1240,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!P_AllLinesBoxIteratorv(mbox, PIT_CheckLinePtc, 0))
+    if(!P_AllLinesBoxIteratorv(mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t             normal[2], dotp;
 
@@ -1337,8 +1336,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
                     Cl_MobjIterator(PIT_ClientMobjParticles, gen);
                 }
 
-                P_IterateThinkers(DMU_MOBJ, 0x1, // All mobjs are public
-                                  manyNewParticles, gen);
+                P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, manyNewParticles, gen);
 
                 // The generator has no real source.
                 gen->source = NULL;

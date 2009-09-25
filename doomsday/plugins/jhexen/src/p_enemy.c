@@ -461,7 +461,7 @@ boolean P_LookForMonsters(mobj_t* mo)
     params.randomSkip = 16;
     params.checkMinotaurTracer = (mo->type == MT_MINOTAUR)?
         ((player_t *) mo->tracer)->plr->mo : NULL;
-    P_Iterate(DMU_MOBJ, &params, findMobj);
+    DD_IterateThinkers(P_MobjThinker, findMobj, &params);
 
     if(params.foundMobj)
     {
@@ -1104,7 +1104,7 @@ void C_DECL A_MinotaurLook(mobj_t *actor)
         params.foundMobj = NULL;
         params.minHealth = 1;
         params.checkMinotaurTracer = actor->tracer;
-        if(!P_Iterate(DMU_MOBJ, &params, findMonster))
+        if(!DD_IterateThinkers(P_MobjThinker, findMonster, &params))
             actor->target = params.foundMobj;
     }
 
@@ -1589,7 +1589,7 @@ int P_Massacre(void)
     // Only massacre when actually in a map.
     if(G_GetGameState() == GS_MAP)
     {
-        P_Iterate(DMU_MOBJ, &count, massacreMobj);
+        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
     }
 
     return count;
@@ -1759,7 +1759,7 @@ void P_InitCreatureCorpseQueue(boolean corpseScan)
         return;
 
     // Search the thinker list for corpses and place them in this queue.
-    P_Iterate(DMU_MOBJ, NULL, addMobjToCorpseQueue);
+    DD_IterateThinkers(P_MobjThinker, addMobjToCorpseQueue, NULL);
 }
 
 void C_DECL A_AddPlayerCorpse(mobj_t *actor)

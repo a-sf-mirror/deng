@@ -45,28 +45,29 @@ typedef struct setargs_s {
     void**          ptrValues;
 } setargs_t;
 
-void        P_InitMapUpdate(void);
-void        P_ShutdownMapUpdate(void);
+void            P_InitMapUpdate(void);
+void            P_ShutdownMapUpdate(void);
 
-void        DMU_ClearObjRecords(int type);
+void            DMU_ClearObjRecords(int type);
 dmuobjrecordid_t DMU_AddObjRecord(int type, void* p);
 dmuobjrecord_t* DMU_GetObjRecord(int type, void* p);
+void            DMU_RemoveObjRecord(int type, void* p);
 
-void*       P_AllocDummy(int type, void* extraData);
-void        P_FreeDummy(void* dummy);
-int         P_DummyType(void* dummy);
-boolean     P_IsDummy(void* dummy);
-void*       P_DummyExtraData(void* dummy);
+void*           P_AllocDummy(int type, void* extraData);
+void            P_FreeDummy(void* dummy);
+int             P_DummyType(void* dummy);
+boolean         P_IsDummy(void* dummy);
+void*           P_DummyExtraData(void* dummy);
 
-void*       P_ToPtr(int type, uint idx);
-uint        P_ToIndex(const void* ptr);
-void        P_SetVariable(int value, void* data);
-void*       P_GetVariable(int value);
-const char* DMU_Str(uint prop);
-void        DMU_SetValue(valuetype_t valueType, void* dst,
-                         const setargs_t* args, uint index);
-void        DMU_GetValue(valuetype_t valueType, const void* src,
-                         setargs_t* args, uint index);
+void*           P_ToPtr(int type, uint idx);
+uint            P_ToIndex(const void* ptr);
+void            P_SetVariable(int value, void* data);
+void*           P_GetVariable(int value);
+const char*     DMU_Str(uint prop);
+void            DMU_SetValue(valuetype_t valueType, void* dst,
+                             const setargs_t* args, uint index);
+void            DMU_GetValue(valuetype_t valueType, const void* src,
+                             setargs_t* args, uint index);
 
 #ifndef NDEBUG
 # define ASSERT_DMU_TYPE(ptr, dmuType) \
