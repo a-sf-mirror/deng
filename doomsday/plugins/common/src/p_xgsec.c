@@ -1267,8 +1267,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
         params.part = part;
         params.flags = (findMin? FSETHF_MIN : 0);
         params.val = (findMin? DDMAXFLOAT : DDMINFLOAT);
-        DMU_Iteratep(sector, DMU_LINEDEF, &params,
-                   findSectorExtremalMaterialHeight);
+        DMU_Iteratep(sector, DMU_LINEDEF, findSectorExtremalMaterialHeight, &params);
         if(height)
             *height = params.val;
 
@@ -1698,7 +1697,7 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
         params.baseSec = sec;
         params.spreaded = 0;
 
-        DMU_Iteratep(sec, DMU_LINEDEF, &params, spreadBuild);
+        DMU_Iteratep(sec, DMU_LINEDEF, spreadBuild, &params);
         if(params.spreaded > 0)
             result = true;
     }
@@ -1804,7 +1803,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
         params.foundIDX = numlines;
         params.foundSec = NULL;
 
-        DMU_Iteratep(sec, DMU_LINEDEF, &params, findBuildNeighbor);
+        DMU_Iteratep(sec, DMU_LINEDEF, findBuildNeighbor, &params);
 
         if(params.foundSec)
         {
@@ -2152,7 +2151,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
         return false;
     }
 
-    for(mo = DMU_GetPtrp(sector, DMT_MOBJS); mo; mo = mo->sNext)
+    for(mo = DMU_GetPtrp(sector, DMU_MOBJS); mo; mo = mo->sNext)
     {
         thinker_t *th = (thinker_t*) mo;
 

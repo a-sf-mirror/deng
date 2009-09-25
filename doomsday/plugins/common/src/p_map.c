@@ -2600,8 +2600,9 @@ void P_SlideMove(mobj_t* mo)
  * @param thing         The thing to check against height changes.
  * @param data          Unused.
  */
-boolean PIT_ChangeSector(mobj_t* thing, void* data)
+int PIT_ChangeSector(void* ptr, void* data)
 {
+    mobj_t*             thing = (mobj_t*) ptr;
     mobj_t*             mo;
 
     if(P_ThingHeightClip(thing))
@@ -2695,7 +2696,7 @@ boolean P_ChangeSector(sector_t* sector, boolean crunch)
     crushChange = crunch;
 
     VALIDCOUNT++;
-    DMU_SectorTouchingMobjsIterator(sector, PIT_ChangeSector, 0);
+    DMU_Iteratep(sector, DMU_MOBJS, PIT_ChangeSector, 0);
 
     return noFit;
 }

@@ -525,7 +525,7 @@ void R_SetAllDoomsdayFlags(void)
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)
     {
-        for(iter = DMU_GetPtr(DMU_SECTOR, i, DMT_MOBJS); iter;
+        for(iter = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); iter;
             iter = iter->sNext)
         {
             P_SetDoomsdayFlags(iter);

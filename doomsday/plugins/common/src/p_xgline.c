@@ -811,7 +811,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
             {
                 ok = true;
 
-                for(mo = DMU_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
+                for(mo = DMU_GetPtrp(sec, DMU_MOBJS); ok && mo; mo = mo->sNext)
                 {
                     if(mo->type == P_ToXLine(line)->xg->info.aparm[9])
                     {
@@ -834,7 +834,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
             {
                 ok = true;
 
-                for(mo = DMU_GetPtrp(sec, DMT_MOBJS); ok && mo; mo = mo->sNext)
+                for(mo = DMU_GetPtrp(sec, DMU_MOBJS); ok && mo; mo = mo->sNext)
                 {
                     if(mo->type != P_ToXLine(line)->xg->info.aparm[9])
                         continue;

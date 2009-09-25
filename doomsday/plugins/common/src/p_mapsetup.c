@@ -452,7 +452,7 @@ static void P_LoadMapObjs(void)
             P_GetGMOShort(MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
                           params.bottomColor);
 
-        DMU_Iteratep(sec, DMU_LINEDEF, &params, applySurfaceColor);
+        DMU_Iteratep(sec, DMU_LINEDEF, applySurfaceColor, &params);
         }
 #endif
     }

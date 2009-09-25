@@ -84,7 +84,7 @@ boolean         P_LineMobjsIterator(linedef_t* line,
                                     boolean (*func) (mobj_t*, void*),
                                     void* data);
 boolean         P_SectorTouchingMobjsIterator(sector_t* sector,
-                                              boolean (*func) (mobj_t*, void*),
+                                              int (*func) (void*, void*),
                                               void*data);
 
 // Mobjs in bounding box iterators.

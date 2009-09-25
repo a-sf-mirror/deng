@@ -276,22 +276,22 @@ void* DMU_ToPtr(int type, uint index)
     return P_ToPtr(type, index);
 }
 
-int DMU_Callback(int type, uint index, void* context,
-                 int (*callback)(void* p, void* ctx))
+int DMU_Callback(int type, uint index, int (*callback)(void* p, void* ctx),
+                 void* context)
 {
-    return P_Callback(type, index, context, callback);
+    return P_Callback(type, index, callback, context);
 }
 
-int DMU_Callbackp(int type, void* ptr, void* context,
-                  int (*callback)(void* p, void* ctx))
+int DMU_Callbackp(int type, void* ptr, int (*callback)(void* p, void* ctx),
+                  void* context)
 {
-    return P_Callbackp(type, ptr, context, callback);
+    return P_Callbackp(type, ptr, callback, context);
 }
 
-int DMU_Iteratep(void* ptr, uint prop, void* context,
-                 int (*callback) (void* p, void* ctx))
+int DMU_Iteratep(void* ptr, uint prop, int (*callback) (void* p, void* ctx),
+                 void* context)
 {
-    return P_Iteratep(ptr, prop, context, callback);
+    return P_Iteratep(ptr, prop, callback, context);
 }
 
 void* DMU_AllocDummy(int type, void* extraData)

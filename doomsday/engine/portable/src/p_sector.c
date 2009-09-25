@@ -121,7 +121,7 @@ boolean Sector_GetProperty(const sector_t *sec, setargs_t *args)
         DMU_GetValue(DDVT_INT, &val, args, 0);
         break;
     }
-    case DMT_MOBJS:
+    case DMU_MOBJS:
         DMU_GetValue(DMT_SECTOR_MOBJLIST, &sec->mobjList, args, 0);
         break;
     case DMU_VALID_COUNT:

@@ -362,7 +362,7 @@ const char* DMU_Str(uint prop)
         { DMU_COLOR_BLUE, "DMU_COLOR_BLUE" },
         { DMU_ALPHA, "DMU_ALPHA" },
         { DMU_LIGHT_LEVEL, "DMU_LIGHT_LEVEL" },
-        { DMT_MOBJS, "DMT_MOBJS" },
+        { DMU_MOBJS, "DMU_MOBJS" },
         { DMU_BOUNDING_BOX, "DMU_BOUNDING_BOX" },
         { DMU_SOUND_ORIGIN, "DMU_SOUND_ORIGIN" },
         { DMU_WIDTH, "DMU_WIDTH" },
@@ -734,6 +734,9 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
     case DMU_SECTOR:
         switch(prop)
         {
+        case DMU_MOBJS:
+            return P_SectorTouchingMobjsIterator(((dmuobjrecord_t*) ptr)->obj,
+                                                 callback, context);
         case DMU_LINEDEF:
             {
             const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_LINEDEF)];
