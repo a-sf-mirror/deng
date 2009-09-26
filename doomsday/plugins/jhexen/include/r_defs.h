@@ -42,6 +42,8 @@ typedef struct xsector_s {
     mobj_t*         soundTarget; // Thing that made a sound (or null)
     seqtype_t       seqType; // Stone, metal, heavy, etc...
     void*           specialData; // thinker_t for reversable actions
+
+    int             origID; // Original ID from the archived map format.
 } xsector_t;
 
 typedef struct xline_s {
@@ -56,6 +58,8 @@ typedef struct xline_s {
     // for each player.
     boolean         mapped[MAXPLAYERS];
     int             validCount;
+
+    int             origID; // Original ID from the archived map format.
 } xline_t;
 
 extern xline_t* xlines;

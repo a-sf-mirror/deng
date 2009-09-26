@@ -32,9 +32,11 @@
 #include "edit_bias.h"
 
 void            SBE_Register(void);
-void            SBE_EndFrame(void);
 
-void            SBE_DrawCursor(void);
+void            SBE_InitForMap(struct gamemap_s* map);
+void            SBE_EndFrame(struct gamemap_s* map);
+
+void            SBE_DrawCursor(struct gamemap_s* map);
 void            SBE_DrawHUD(void);
 boolean         SBE_UsingHueCircle(void);
 

@@ -404,6 +404,7 @@ static void P_LoadMapObjs(void)
     {
         xline_t*            xl = &xlines[i];
 
+        xl->origID = P_GetGMOInt(MO_XLINEDEF, i, MO_ORIGINALID);
         xl->flags = P_GetGMOShort(MO_XLINEDEF, i, MO_FLAGS);
 #if __JHEXEN__
         xl->special = P_GetGMOByte(MO_XLINEDEF, i, MO_TYPE);
@@ -427,6 +428,7 @@ static void P_LoadMapObjs(void)
         sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
         xsector_t*          xsec = &xsectors[i];
 
+        xsec->origID = P_GetGMOInt(MO_XSECTOR, i, MO_ORIGINALID);
         xsec->special = P_GetGMOShort(MO_XSECTOR, i, MO_TYPE);
         xsec->tag = P_GetGMOShort(MO_XSECTOR, i, MO_TAG);
 
@@ -751,8 +753,6 @@ int P_SetupMapWorker(void* ptr)
 #if __JHEXEN__
     S_StartMusic("chess", true); // Waiting-for-map-load song
 #endif
-
-    Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
 
     P_GetMapLumpName(param->episode, param->map, mapID);
     if(!P_LoadMap(mapID))

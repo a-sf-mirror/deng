@@ -62,6 +62,8 @@ typedef struct xsector_s {
     // stone, metal, heavy, etc...
     byte            seqType;       // NOT USED ATM
 
+    int             origID; // Original ID from the archived map format.
+
     struct {
         float       origHeight;
     } planes[2];    // {floor, ceiling}
@@ -106,11 +108,13 @@ typedef struct xline_s {
     boolean         mapped[MAXPLAYERS];
     int             validCount;
 
-    // Extended generalized lines.
-    xgline_t*       xg;
+    int             origID; // Original ID from the archived map format.
 
     // jDoom64 specific:
     short           useOn;
+
+    // Extended generalized lines.
+    xgline_t*       xg;
 } xline_t;
 
 // Our private map data structures.

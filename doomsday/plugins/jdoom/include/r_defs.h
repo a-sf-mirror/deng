@@ -61,6 +61,7 @@ typedef struct xsector_s {
     // Stone, metal, heavy, etc...
     byte            seqType;       // NOT USED ATM
 
+    int             origID; // Original ID from the archived map format.
     struct {
         float       origHeight;
     } planes[2];    // {floor, ceiling}
@@ -78,6 +79,8 @@ typedef struct xline_s {
     // for each player.
     boolean         mapped[MAXPLAYERS];
     int             validCount;
+
+    int             origID; // Original ID from the archived map format.
 
     // Extended generalized lines.
     xgline_t*       xg;

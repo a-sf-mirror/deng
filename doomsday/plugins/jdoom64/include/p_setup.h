@@ -50,6 +50,7 @@ enum {
     MO_USETYPE,
     MO_FLAGS,
     MO_TAG,
+    MO_ORIGINALID, // The original id in the archived map format.
     MO_DRAWFLAGS,
     MO_TEXFLAGS,
     MO_COLORR,

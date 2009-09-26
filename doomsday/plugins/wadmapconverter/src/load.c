@@ -1746,6 +1746,7 @@ boolean TransferMap(void)
                         sec->ceilMaterial? sec->ceilMaterial->id : 0,
                         0, 0, 1, 1, 1, 1, 0, 0, -1);
 
+        MPE_GameObjProperty("XSector", i, "ID", DDVT_INT, &i);
         MPE_GameObjProperty("XSector", i, "Tag", DDVT_SHORT, &sec->tag);
         MPE_GameObjProperty("XSector", i, "Type", DDVT_SHORT, &sec->type);
 
@@ -1797,6 +1798,7 @@ boolean TransferMap(void)
 
         MPE_LinedefCreate(l->v[0], l->v[1], frontIdx, backIdx, 0);
 
+        MPE_GameObjProperty("XLinedef", i, "ID", DDVT_INT, &i);
         MPE_GameObjProperty("XLinedef", i, "Flags", DDVT_SHORT, &l->flags);
 
         switch(map->format)

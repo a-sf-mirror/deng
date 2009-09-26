@@ -275,9 +275,6 @@ desc = Set intensity of light at cursor.
 [blhue]
 desc = Show/hide the hue circle for color selection.
 
-[blmenu]
-desc = Show/hide the bias menu.
-
 [chat]
 desc = Broadcast a chat message.
 
@@ -1111,12 +1108,6 @@ desc = Default fog mode: 0=linear, 1=exp, 2=exp2.
 
 [rend-bias]
 desc = 1=Enable the experimental shadow bias test setup.
-
-[rend-bias-min]
-desc = Sector lightlevel that is biased completely to zero.
-
-[rend-bias-max]
-desc = Sector lightlevel that retains its normal color.
 
 [rend-bias-lightspeed]
 desc = Milliseconds it takes for light changes to become effective.

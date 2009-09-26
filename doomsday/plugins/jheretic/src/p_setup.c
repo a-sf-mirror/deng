@@ -66,11 +66,13 @@ void P_RegisterMapObjs(void)
     P_RegisterMapObjProperty(MO_THING, MO_FLAGS, "Flags", DDVT_INT);
 
     P_RegisterMapObj(MO_XLINEDEF, "XLinedef");
+    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ORIGINALID, "ID", DDVT_INT);
     P_RegisterMapObjProperty(MO_XLINEDEF, MO_TAG, "Tag", DDVT_SHORT);
     P_RegisterMapObjProperty(MO_XLINEDEF, MO_TYPE, "Type", DDVT_SHORT);
     P_RegisterMapObjProperty(MO_XLINEDEF, MO_FLAGS, "Flags", DDVT_SHORT);
 
     P_RegisterMapObj(MO_XSECTOR, "XSector");
+    P_RegisterMapObjProperty(MO_XSECTOR, MO_ORIGINALID, "ID", DDVT_INT);
     P_RegisterMapObjProperty(MO_XSECTOR, MO_TAG, "Tag", DDVT_SHORT);
     P_RegisterMapObjProperty(MO_XSECTOR, MO_TYPE, "Type", DDVT_SHORT);
 }

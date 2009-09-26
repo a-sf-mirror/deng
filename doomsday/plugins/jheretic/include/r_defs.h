@@ -38,10 +38,6 @@
 
 #include "p_xg.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 #define SP_floororigheight      planes[PLN_FLOOR].origHeight
 #define SP_ceilorigheight       planes[PLN_CEILING].origHeight
 
@@ -58,15 +54,17 @@ typedef struct xsector_s {
     int             soundTraversed;
 
     // thing that made a sound (or null)
-    struct mobj_s  *soundTarget;
+    struct mobj_s*  soundTarget;
 
     // thinker_t for reversable actions
-    void           *specialData;
+    void*           specialData;
 
     byte            blFlags; // Used during stair building.
 
     // stone, metal, heavy, etc...
     byte            seqType;       // NOT USED ATM
+
+    int             origID; // Original ID from the archived map format.
 
     struct {
         float       origHeight;
@@ -74,7 +72,7 @@ typedef struct xsector_s {
 
     float           origLight;
     float           origRGB[3];
-    xgsector_t     *xg;
+    xgsector_t*     xg;
 } xsector_t;
 
 typedef struct xline_s {
@@ -86,12 +84,14 @@ typedef struct xline_s {
     boolean         mapped[MAXPLAYERS];
     int             validCount;
 
+    int             origID; // Original ID from the archived map format.
+
     // Extended generalized lines.
-    xgline_t       *xg;
+    xgline_t*       xg;
 } xline_t;
 
-extern xline_t *xlines;
-extern xsector_t *xsectors;
+extern xline_t* xlines;
+extern xsector_t* xsectors;
 
 xline_t*    P_ToXLine(linedef_t* line);
 xline_t*    P_GetXLine(uint index);

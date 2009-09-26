@@ -42,12 +42,14 @@ extern float fogColor[4];
 extern int rAmbient;
 extern float rendLightDistanceAttentuation;
 extern float lightModRange[255];
+extern int gameDrawHUD;
 
 void            Rend_Register(void);
 void            Rend_Init(void);
 void            Rend_Reset(void);
 
-void            Rend_RenderMap(void);
+void            Rend_RenderMap(struct gamemap_s* map);
+
 void            Rend_ModelViewMatrix(boolean use_angles);
 
 #define Rend_PointDist2D(c) (fabs((vz-c[VY])*viewsidex - (vx-c[VX])*viewsidey))

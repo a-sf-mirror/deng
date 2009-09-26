@@ -45,6 +45,7 @@
 #include "de_audio.h"
 #include "de_misc.h"
 #include "de_ui.h"
+#include "de_edit.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -538,6 +539,8 @@ END_PROF( PROF_MOBJ_INIT_ADD );
  */
 void R_BeginWorldFrame(void)
 {
+    gamemap_t*          map = P_GetCurrentMap();
+
     R_ClearSectorFlags();
 
     R_InterpolateWatchedPlanes(watchedPlaneList, resetNextViewer);
@@ -546,7 +549,7 @@ void R_BeginWorldFrame(void)
     if(!freezeRLs)
     {
         LG_Update();
-        SB_BeginFrame();
+        SB_BeginFrame(map);
         LO_ClearForFrame();
         R_ClearObjLinksForFrame(); // Zeroes the links.
 
@@ -580,8 +583,13 @@ void R_EndWorldFrame(void)
 {
     if(!freezeRLs)
     {
+        gamemap_t*          map = P_GetCurrentMap();
+
         // Wrap up with Source, Bias lights.
-        SB_EndFrame();
+        SB_EndFrame(map);
+
+        // Update the bias light editor.
+        SBE_EndFrame(map);
     }
 }
 
@@ -822,7 +830,9 @@ void R_RenderPlayerView(int num)
 
     // GL is in 3D transformation state only during the frame.
     GL_SwitchTo3DState(true, currentPort);
-    Rend_RenderMap();
+
+    Rend_RenderMap(P_GetCurrentMap());
+
     // Orthogonal projection to the view window.
     GL_Restore2DState(1);
 

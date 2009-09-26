@@ -1576,7 +1576,8 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             if(useBias && p->bsuf)
             {
                 // Do BIAS lighting for this poly.
-                SB_RendPoly(rcolors, p->bsuf, rvertices, numVertices,
+                SB_RendPoly(P_GetCurrentMap(), rcolors, p->bsuf,
+                            rvertices, numVertices,
                             p->normal, *p->sectorLightLevel,
                             p->mapObject, p->elmIdx, p->isWall);
             }
@@ -3809,11 +3810,14 @@ void Rend_Vertexes(void)
     glEnable(GL_DEPTH_TEST);
 }
 
-void Rend_RenderMap(void)
+void Rend_RenderMap(gamemap_t* map)
 {
     binangle_t          viewside;
     boolean             doLums =
         (useDynLights || haloMode || spriteLight || useDecorations);
+
+    if(!map)
+        return;
 
     // Set to true if dynlights are inited for this frame.
     loInited = false;
@@ -3882,8 +3886,11 @@ void Rend_RenderMap(void)
     Rend_Vertexes(); // World vertex positions/indices.
     Rend_RenderGenerators(); // Particle generator origins.
 
-    // Draw the Source Bias Editor's draw that identifies the current light.
-    SBE_DrawCursor();
+    if(!freezeRLs)
+    {
+        // Draw the Source Bias Editor's draw.
+        SBE_DrawCursor(map);
+    }
 
     GL_SetMultisample(false);
 }

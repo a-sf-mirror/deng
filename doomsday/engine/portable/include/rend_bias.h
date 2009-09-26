@@ -82,32 +82,36 @@ extern int      useBias; // Bias lighting enabled.
 extern unsigned int currentTimeSB;
 
 void            SB_Register(void);
-void            SB_InitForMap(const char* uniqueId);
-void            SB_InitVertexIllum(vertexillum_t* villum);
 
-struct biassurface_s* SB_CreateSurface(void);
-void            SB_DestroySurface(struct biassurface_s* bsuf);
-void            SB_SurfaceMoved(struct biassurface_s* bsuf);
+void            SB_InitForMap(struct gamemap_s* map);
+void            SB_BeginFrame(struct gamemap_s* map);
+void            SB_EndFrame(struct gamemap_s* map);
+void            SB_DestroySurfaces(struct gamemap_s* map);
 
-void            SB_BeginFrame(void);
-void            SB_RendPoly(struct rcolor_s* rcolors,
+struct biassurface_s* SB_CreateSurface(struct gamemap_s* map);
+void            SB_DestroySurface(struct gamemap_s* map, struct biassurface_s* bsuf);
+void            SB_SurfaceMoved(struct gamemap_s* map, struct biassurface_s* bsuf);
+
+int             SB_NewSourceAt(struct gamemap_s* map, float x, float y,
+                               float z, float size, float minLight,
+                               float maxLight, float* rgb);
+void            SB_DeleteSource(struct gamemap_s* map, int which);
+void            SB_ClearSources(struct gamemap_s* map);
+
+source_t*       SB_GetSource(struct gamemap_s* map, int which);
+int             SB_ToIndex(struct gamemap_s* map, source_t* source);
+
+void            SB_SourceUpdate(source_t* source, float x, float y, float z,
+                                float size, float minLight, float maxLight,
+                                float* rgb);
+void            SB_SourceSetColor(source_t* src, float* rgb);
+
+void            SB_RendPoly(struct gamemap_s* map, struct rcolor_s* rcolors,
                             struct biassurface_s* bsuf,
                             const struct rvertex_s* rvertices,
                             size_t numVertices, const vectorcomp_t* normal,
                             float sectorLightLevel,
                             void* mapObject, uint elmIdx, boolean isSeg);
-void            SB_EndFrame(void);
 
-int             SB_NewSourceAt(float x, float y, float z, float size, float minLight,
-                               float maxLight, float* rgb);
-void            SB_UpdateSource(int which, float x, float y, float z, float size,
-                                float minLight, float maxLight, float* rgb);
-void            SB_Delete(int which);
-void            SB_Clear(void);
-
-source_t*       SB_GetSource(int which);
-int             SB_ToIndex(source_t* source);
-
-void            SB_SetColor(float* dest, float* src);
-
+void            SB_InitVertexIllum(vertexillum_t* villum);
 #endif
