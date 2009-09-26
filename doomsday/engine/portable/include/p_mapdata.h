@@ -122,6 +122,25 @@ typedef struct biassurface_s {
     struct biassurface_s* next;
 } biassurface_t;
 
+#define GBF_CHANGED     0x1     // Grid block sector light has changed.
+#define GBF_CONTRIBUTOR 0x2     // Contributes light to a changed block.
+
+typedef struct lgridblock_s {
+    struct sector_s *sector;
+
+    byte        flags;
+
+    // Positive bias means that the light is shining in the floor of
+    // the sector.
+    char        bias;
+
+    // Color of the light:
+    float       rgb[3];
+    float       oldRGB[3];  // Used instead of rgb if the lighting in this
+                            // block has changed and we haven't yet done a
+                            // a full grid update.
+} lgridblock_t;
+
 typedef void* blockmap_t;
 
 #include "p_polyob.h"
@@ -254,6 +273,15 @@ typedef struct gamemap_s {
 
     float           globalGravity; // Gravity for the current map.
     int             ambientLightLevel; // Ambient lightlevel for the current map.
+
+    struct {
+        boolean         inited;
+        boolean         needsUpdate;
+        float           origin[3];
+        int             blockWidth;
+        int             blockHeight;
+        lgridblock_t*   grid;
+    } lg;
 } gamemap_t;
 
 gamemap_t*      P_GetCurrentMap(void);
