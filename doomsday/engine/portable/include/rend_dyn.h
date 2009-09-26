@@ -58,20 +58,19 @@ extern float dlFactor, dlFogBright;
 extern int useWallGlow, glowHeightMax;
 extern float glowHeightFactor;
 
-// Initialization
 void            DL_Register(void);
 
-// Setup.
-void            DL_InitForMap(void);
-void            DL_InitForNewFrame(void);
+void            DL_InitForMap(struct gamemap_s* map);
+void            DL_InitForNewFrame(struct gamemap_s* map);
+void            DL_DestroyDynNodes(struct gamemap_s* map);
 
-// Action.
-uint            DL_ProjectOnSurface(face_t* face,
+uint            DL_ProjectOnSurface(struct gamemap_s* map, face_t* face,
                                     const vectorcomp_t topLeft[3],
                                     const vectorcomp_t bottomRight[3],
                                     const vectorcomp_t normal[3], byte flags);
-// Helpers.
-boolean         DL_ListIterator(uint listIdx, void* data,
-                                boolean (*func) (const dynlight_t*, void*));
+
+boolean         DL_ListIterator(struct gamemap_s* map, uint listIdx,
+                                boolean (*func) (const dynlight_t*, void*),
+                                void* context);
 
 #endif

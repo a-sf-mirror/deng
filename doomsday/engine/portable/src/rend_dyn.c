@@ -52,11 +52,6 @@ typedef struct dynnode_s {
     dynlight_t      dyn;
 } dynnode_t;
 
-typedef struct dynlist_s {
-    boolean         sortBrightestFirst;
-    dynnode_t*      head;
-} dynlist_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -78,11 +73,7 @@ int glowHeightMax = 100; // 100 is the default (0-1024).
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Dynlight nodes.
-static dynnode_t* dynFirst, *dynCursor;
-
-// Surface light link lists.
-static uint numDynlightLinkLists = 0, dynlightLinkListCursor = 0;
-static dynlist_t* dynlightLinkLists;
+static dynnode_t* unusedNodes = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -105,29 +96,27 @@ void DL_Register(void)
     Rend_DecorRegister();
 }
 
-/**
- * Initialize the dynlight system in preparation for rendering view(s) of the
- * game world. Called by R_InitLevel().
- */
-void DL_InitForMap(void)
+static dynnode_t* newDynNode(gamemap_t* map)
 {
-    dynlightLinkLists = NULL;
-    numDynlightLinkLists = 0, dynlightLinkListCursor = 0;
-}
+    dynnode_t*          node;
 
-/**
- * Moves all used dynlight nodes to the list of unused nodes, so they
- * can be reused.
- */
-void DL_InitForNewFrame(void)
-{
-    // Start reusing nodes from the first one in the list.
-    dynCursor = dynFirst;
+    // Have we run out of nodes?
+    if(unusedNodes)
+    {
+        node = unusedNodes;
+        unusedNodes = unusedNodes->nextUsed;
+    }
+    else
+    {
+        node = Z_Malloc(sizeof(dynnode_t), PU_STATIC, NULL);
 
-    // Clear the surface light link lists.
-    dynlightLinkListCursor = 0;
-    if(numDynlightLinkLists)
-        memset(dynlightLinkLists, 0, numDynlightLinkLists * sizeof(dynlist_t));
+        // Link the new node to the used list.
+        node->nextUsed = map->dlights.dynFirst;
+        map->dlights.dynFirst = node;
+    }
+
+    node->next = NULL;
+    return node;
 }
 
 /**
@@ -138,60 +127,92 @@ void DL_InitForNewFrame(void)
  *                      in descending order.
  * @return              Identifier for the new list.
  */
-static uint newDynlightList(boolean sortBrightestFirst)
+static uint newLinkList(gamemap_t* map, boolean sortBrightestFirst)
 {
     dynlist_t*          list;
 
     // Ran out of light link lists?
-    if(++dynlightLinkListCursor >= numDynlightLinkLists)
+    if(++map->dlights.numLinkLists >= map->dlights.maxLinkLists)
     {
-        uint                newNum = numDynlightLinkLists * 2;
+        uint                newNum = map->dlights.maxLinkLists * 2;
 
         if(!newNum)
             newNum = 2;
 
-        dynlightLinkLists =
-            Z_Realloc(dynlightLinkLists, newNum * sizeof(dynlist_t), PU_MAP);
-        numDynlightLinkLists = newNum;
+        map->dlights.linkLists = Z_Realloc(map->dlights.linkLists,
+            newNum * sizeof(dynlist_t), PU_STATIC);
+        map->dlights.maxLinkLists = newNum;
     }
 
-    list = &dynlightLinkLists[dynlightLinkListCursor-1];
+    list = &map->dlights.linkLists[map->dlights.numLinkLists-1];
     list->head = NULL;
     list->sortBrightestFirst = sortBrightestFirst;
 
-    return dynlightLinkListCursor - 1;
+    return map->dlights.numLinkLists - 1;
 }
 
-static dynnode_t* newDynNode(void)
+static void destroyLinkLists(gamemap_t* map)
 {
-    dynnode_t*          node;
+    if(map->dlights.linkLists)
+        Z_Free(map->dlights.linkLists);
+    map->dlights.linkLists = NULL;
+    map->dlights.numLinkLists = map->dlights.maxLinkLists = 0;
+}
 
-    // Have we run out of nodes?
-    if(dynCursor == NULL)
+/**
+ * Compare two dynlights.
+ *
+ * @result              @c -1 = @param b is brighter than @param a.
+ *                      @c  1 = @param a is brighter than @param b.
+ *                      @c  0 = @param a and @param b are equivalent.
+ */
+static int compareDynlights(const dynlight_t* a, const dynlight_t* b)
+{
+    float               la = (a->color[CR] + a->color[CG] + a->color[CB]) / 3;
+    float               lb = (b->color[CR] + b->color[CG] + b->color[CB]) / 3;
+
+    if(la < lb)
+        return -1;
+    if(la > lb)
+        return 1;
+    return 0;
+}
+
+static void linkDynNodeToList(dynlist_t* list, dynnode_t* node)
+{
+    dynnode_t**         at = &list->head;
+
+    if(list->sortBrightestFirst && list->head)
     {
-        node = Z_Malloc(sizeof(dynnode_t), PU_STATIC, NULL);
+        /**
+         * We must find the insertion point in the list. Nodes in the list
+         * are ordered from "bright" to "dim" and older nodes take precedence
+         * over new nodes.
+         */
 
-        // Link the new node to the list.
-        node->nextUsed = dynFirst;
-        dynFirst = node;
-    }
-    else
-    {
-        node = dynCursor;
-        dynCursor = dynCursor->nextUsed;
+        for(;;)
+        {
+            if(!(compareDynlights(&(*at)->dyn, &node->dyn) < 0))
+            {
+                if(*(at = &(*at)->next) != NULL)
+                    continue;
+            }
+
+            break; // Insert it here.
+        }
     }
 
-    node->next = NULL;
-    return node;
+    node->next = (*at);
+    (*at) = node;
 }
 
 /**
  * Returns a new dynlight node. If the list of unused nodes is empty,
  * a new node is created.
  */
-static dynnode_t* newDynLight(float* s, float* t)
+static dynnode_t* newDynLight(gamemap_t* map, float* s, float* t)
 {
-    dynnode_t*          node = newDynNode();
+    dynnode_t*          node = newDynNode(map);
     dynlight_t*         dyn = &node->dyn;
 
     if(s)
@@ -206,39 +227,6 @@ static dynnode_t* newDynLight(float* s, float* t)
     }
 
     return node;
-}
-
-static void linkDynNodeToList(dynnode_t* node, uint listIndex)
-{
-    dynlist_t*          list = &dynlightLinkLists[listIndex];
-
-    if(list->sortBrightestFirst && list->head)
-    {
-        float               light = (node->dyn.color[0] +
-            node->dyn.color[1] + node->dyn.color[2]) / 3;
-        dynnode_t*          last, *iter;
-
-        last = iter = list->head;
-        do
-        {
-            // Is this brighter than the one being added?
-            if((iter->dyn.color[0] + iter->dyn.color[1] +
-                iter->dyn.color[2]) / 3 > light)
-            {
-                last = iter;
-                iter = iter->next;
-            }
-            else
-            {   // Need to insert it here.
-                node->next = last->next;
-                last->next = node;
-                return;
-            }
-        } while(iter);
-    }
-
-    node->next = list->head;
-    list->head = node;
 }
 
 /**
@@ -281,7 +269,7 @@ static void calcDynLightColor(float* outRGB, const float* inRGB, float light)
  *
  * @return              Ptr to the projected light, ELSE @c NULL.
  */
-static dynnode_t* projectPlaneGlowOnSegSection(const lumobj_t* lum,
+static dynnode_t* projectPlaneGlowOnSegSection(gamemap_t* map, const lumobj_t* lum,
                                                float bottom, float top)
 {
     float               glowHeight;
@@ -319,7 +307,7 @@ static dynnode_t* projectPlaneGlowOnSegSection(const lumobj_t* lum,
     s[0] = 0;
     s[1] = 1;
 
-    return newDynLight(s, t);
+    return newDynLight(map, s, t);
 }
 
 /**
@@ -423,6 +411,7 @@ static boolean genTexCoords(const pvec3_t point, float scale,
 }
 
 typedef struct surfacelumobjiterparams_s {
+    gamemap_t*      map;
     vec3_t          v1, v2;
     vec3_t          normal;
     boolean         haveList;
@@ -430,7 +419,7 @@ typedef struct surfacelumobjiterparams_s {
     byte            flags; // DLF_* flags.
 } surfacelumobjiterparams_t;
 
-boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
+static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
 {
     lumobj_t*           lum = (lumobj_t*) ptr;
     dynnode_t*          node = NULL;
@@ -506,7 +495,7 @@ boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
                         if(genTexCoords(point, scale, s, t, params->v1,
                                         params->v2, params->normal))
                         {
-                            node = newDynLight(s, t);
+                            node = newDynLight(params->map, s, t);
                         }
                     }
                 }
@@ -522,7 +511,7 @@ boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
         {
             lightRGB = LUM_PLANE(lum)->color;
 
-            node = projectPlaneGlowOnSegSection(lum, params->v2[VZ], params->v1[VZ]);
+            node = projectPlaneGlowOnSegSection(params->map, lum, params->v2[VZ], params->v1[VZ]);
         }
         break;
 
@@ -545,27 +534,57 @@ boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
             boolean             sortBrightestFirst =
                 (params->flags & DLF_SORT_LUMADSC)? true : false;
 
-            params->listIdx = newDynlightList(sortBrightestFirst);
+            params->listIdx = newLinkList(params->map, sortBrightestFirst);
             params->haveList = true;
         }
 
-        linkDynNodeToList(node, params->listIdx);
+        linkDynNodeToList(&params->map->dlights.linkLists[params->listIdx], node);
     }
 
     return true; // Continue iteration.
 }
 
-static uint processFace(face_t* face, surfacelumobjiterparams_t* params)
+/**
+ * Initialize the dynlight system in preparation for rendering view(s) of the
+ * game world. Called by R_InitLevel().
+ */
+void DL_InitForMap(gamemap_t* map)
 {
-    // Process each lumobj contacting the subsector.
-    R_IterateSubsectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
-                               params);
+    if(!map)
+        return;
 
-    // Did we generate a light list?
-    if(params->haveList)
-        return params->listIdx + 1;
+    destroyLinkLists(map);
+}
 
-    return 0; // Nope.
+/**
+ * Moves all used dynlight nodes to the list of unused nodes, so they
+ * can be reused.
+ */
+void DL_InitForNewFrame(gamemap_t* map)
+{
+    if(!map)
+        return;
+
+    // Start reusing nodes.
+    unusedNodes = map->dlights.dynFirst;
+
+    // Clear the surface light link lists.
+    map->dlights.numLinkLists = 0;
+    if(map->dlights.numLinkLists)
+        memset(map->dlights.linkLists, 0,
+               map->dlights.numLinkLists * sizeof(dynlist_t));
+}
+
+void DL_DestroyDynNodes(gamemap_t* map)
+{
+    if(!map)
+        return;
+
+    destroyLinkLists(map);
+
+    // Move dynnodes to the global list of unused nodes so they can be recycled.
+    unusedNodes = map->dlights.dynFirst;
+    map->dlights.dynFirst = NULL;
 }
 
 /**
@@ -585,17 +604,18 @@ static uint processFace(face_t* face, surfacelumobjiterparams_t* params)
  * @return              Dynlight list name if the quad is lit by one or more
  *                      light sources, else @c 0.
  */
-uint DL_ProjectOnSurface(face_t* face, const vectorcomp_t topLeft[3],
+uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
+                         const vectorcomp_t topLeft[3],
                          const vectorcomp_t bottomRight[3],
                          const vectorcomp_t normal[3], byte flags)
 {
     surfacelumobjiterparams_t params;
 
+    if(!map || !face)
+        return 0;
+
     if(!useDynLights && !useWallGlow)
         return 0; // Disabled.
-
-    if(!face)
-        return 0;
 
     V3_Copy(params.v1, topLeft);
     V3_Copy(params.v2, bottomRight);
@@ -603,8 +623,17 @@ uint DL_ProjectOnSurface(face_t* face, const vectorcomp_t topLeft[3],
     params.flags = flags;
     params.haveList = false;
     params.listIdx = 0;
+    params.map = map;
 
-    return processFace(face, &params);
+    // Process each lumobj contacting the subsector.
+    R_IterateSubsectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
+                               &params);
+
+    // Did we generate a light list?
+    if(params.haveList)
+        return params.listIdx + 1;
+
+    return 0; // Nope.
 }
 
 /**
@@ -616,17 +645,20 @@ uint DL_ProjectOnSurface(face_t* face, const vectorcomp_t topLeft[3],
  *
  * @return              @c true, iff every callback returns @c true.
  */
-boolean DL_ListIterator(uint listIdx, void* data,
-                        boolean (*func) (const dynlight_t*, void*))
+boolean DL_ListIterator(gamemap_t* map, uint listIdx,
+                        boolean (*func) (const dynlight_t*, void*), void* data)
 {
     dynnode_t*          node;
     boolean             retVal, isDone;
 
-    if(listIdx == 0 || listIdx > numDynlightLinkLists)
+    if(!map)
+        return true;
+
+    if(listIdx == 0 || listIdx > map->dlights.numLinkLists)
         return true;
     listIdx--;
 
-    node = dynlightLinkLists[listIdx].head;
+    node = map->dlights.linkLists[listIdx].head;
     retVal = true;
     isDone = false;
     while(node && !isDone)

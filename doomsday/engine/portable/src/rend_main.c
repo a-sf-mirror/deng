@@ -922,7 +922,7 @@ void Rend_AddMaskedPoly(const rvertex_t* rvertices,
          * The dynlights will have already been sorted so that the brightest
          * and largest of them is first in the list. So grab that one.
          */
-        DL_ListIterator(lightListIdx, &dyn, RLIT_DynGetFirst);
+        DL_ListIterator(P_GetCurrentMap(), lightListIdx, RLIT_DynGetFirst, &dyn);
 
         vis->data.wall.modTex = dyn->texture;
         vis->data.wall.modTexCoord[0][0] = dyn->s[0];
@@ -1474,7 +1474,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             {
                 dynlight_t*         dyn = NULL;
 
-                DL_ListIterator(p->lightListIdx, &dyn, RLIT_DynGetFirst);
+                DL_ListIterator(P_GetCurrentMap(), p->lightListIdx, RLIT_DynGetFirst, &dyn);
 
                 rtexcoords5 = R_AllocRendTexCoords(realNumVertices);
 
@@ -1722,7 +1722,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         dlparams.texTL = p->texTL;
         dlparams.texBR = p->texBR;
 
-        DL_ListIterator(p->lightListIdx, &dlparams, RLIT_DynLightWrite);
+        DL_ListIterator(P_GetCurrentMap(), p->lightListIdx, RLIT_DynLightWrite, &dlparams);
         numLights += dlparams.lastIdx;
         if(RL_IsMTexLights())
             numLights -= 1;
@@ -2068,7 +2068,7 @@ static void renderPlane(face_t* face, planetype_t type,
         if(addDLights && !params.glowing)
         {
             params.lightListIdx =
-                DL_ProjectOnSurface(face, params.texTL, params.texBR,
+                DL_ProjectOnSurface(P_GetCurrentMap(), face, params.texTL, params.texBR,
                                     normal,
                                     (DLF_NO_PLANAR |
                                      (type == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
@@ -2359,7 +2359,7 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         }
 
         if(addDLights && !isGlowing)
-            lightListIdx = DL_ProjectOnSurface(ssec, texTL, texBR,
+            lightListIdx = DL_ProjectOnSurface(P_GetCurrentMap(), ssec, texTL, texBR,
                                                seg->sideDef->SW_middlenormal,
                                     ((section == SEG_MIDDLE && isTwoSided)? DLF_SORT_LUMADSC : 0));
 
@@ -3851,7 +3851,7 @@ void Rend_RenderMap(gamemap_t* map)
              * the projections are sensitive to distance from the viewer
              * (e.g. some may fade out when far away).
              */
-            DL_InitForNewFrame();
+            DL_InitForNewFrame(map);
         }
 
         // Add the backside clipping range (if vpitch allows).
