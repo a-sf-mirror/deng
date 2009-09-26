@@ -109,6 +109,11 @@ typedef struct surfacelist_s {
     surfacelistnode_t* head;
 } surfacelist_t;
 
+typedef struct dynlist_s {
+    boolean         sortBrightestFirst;
+    struct dynnode_s* head;
+} dynlist_t;
+
 /**
  * Stores the data pertaining to vertex lighting for a worldmap, surface.
  */
@@ -273,6 +278,13 @@ typedef struct gamemap_s {
 
     float           globalGravity; // Gravity for the current map.
     int             ambientLightLevel; // Ambient lightlevel for the current map.
+
+    struct {
+        uint            numLinkLists, maxLinkLists;
+        dynlist_t*      linkLists;
+
+        struct dynnode_s* dynFirst;
+    } dlights; // Surface-projected dynlight link lists.
 
     struct {
         unsigned int    lastChangeOnFrame;
