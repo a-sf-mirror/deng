@@ -112,6 +112,7 @@ void P_PolyobjChanged(polyobj_t* po)
 {
     uint                i;
     hedge_t**           ptr = po->hEdges;
+    gamemap_t*          map = P_GetCurrentMap();
 
     for(i = 0; i < po->numHEdges; ++i, ptr++)
     {
@@ -121,7 +122,7 @@ void P_PolyobjChanged(polyobj_t* po)
         // Shadow bias must be told.
         for(j = 0; j < 3; ++j)
         {
-            SB_SurfaceMoved(seg->bsuf[j]);
+            SB_SurfaceMoved(map, seg->bsuf[j]);
         }
     }
 }
@@ -199,6 +200,14 @@ void P_SetCurrentMap(gamemap_t* map)
     mapGravity = map->globalGravity;
 
     currentMap = map;
+}
+
+void P_DestroyMap(gamemap_t* map)
+{
+    if(!map)
+        return;
+
+    SB_DestroySurfaces(map);
 }
 
 /**
@@ -310,6 +319,8 @@ boolean P_LoadMap(const char* mapID)
         ded_sky_t*          skyDef = NULL;
         ded_mapinfo_t*      mapInfo;
 
+        SBE_InitForMap(map);
+
         // Do any initialization/error checking work we need to do.
         // Must be called before we go any further.
         P_InitUnusedMobjList();
@@ -383,7 +394,7 @@ boolean P_LoadMap(const char* mapID)
         P_InitThinkerLists(0x1 | 0x2);
 
         // Tell shadow bias to initialize the bias light sources.
-        SB_InitForMap(P_GetUniqueMapID(map));
+        SB_InitForMap(map);
 
         Cl_Reset();
         RL_DeleteLists();

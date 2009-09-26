@@ -62,43 +62,29 @@ typedef struct affection_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-void         SB_EvalPoint(float light[4],
-                          vertexillum_t* illum,
-                          biasaffection_t* affectedSources,
-                          const float* point, const float* normal);
+static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
+                      biasaffection_t* affectedSources, const float* point,
+                      const float* normal);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int useBias = false;
-int numSources = 0;
 unsigned int currentTimeSB;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static source_t sources[MAX_BIAS_LIGHTS];
-static int numSourceDelta = 0;
-
 static int useSightCheck = true;
-static float biasMin = .85f;
-static float biasMax = 1.f;
 static int doUpdateAffected = true;
 static float biasIgnoreLimit = .005f;
 static int lightSpeed = 130;
-static unsigned int lastChangeOnFrame;
 
 /**
  * BS_EvalPoint uses these, so they must be set before it is called.
  */
 static biastracker_t trackChanged;
 static biastracker_t trackApplied;
-
-static float biasAmount;
-
-// Head of the biassurface list for the current map.
-static biassurface_t* surfaces = NULL;
-static zblockset_t* biasSurfaceBlockSet = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -108,112 +94,95 @@ static zblockset_t* biasSurfaceBlockSet = NULL;
 void SB_Register(void)
 {
     C_VAR_INT("rend-bias", &useBias, 0, 0, 1);
-
-    C_VAR_FLOAT("rend-bias-min", &biasMin, 0, 0, 1);
-
-    C_VAR_FLOAT("rend-bias-max", &biasMax, 0, 0, 1);
-
     C_VAR_INT("rend-bias-lightspeed", &lightSpeed, 0, 0, 5000);
 
     // Development variables.
     C_VAR_INT("rend-dev-bias-sight", &useSightCheck, CVF_NO_ARCHIVE, 0, 1);
-
     C_VAR_INT("rend-dev-bias-affected", &doUpdateAffected, CVF_NO_ARCHIVE, 0, 1);
+}
 
-/*    C_VAR_INT("rend-dev-bias-solo", &editSelector, CVF_NO_ARCHIVE, -1, 255);*/
+static void linkSurfaceToList(biassurface_t** list, biassurface_t* bsuf)
+{
+    bsuf->next = (*list);
+    (*list) = bsuf;
+}
+
+static void unlinkSurfaceFromList(biassurface_t** list, biassurface_t* bsuf)
+{
+    if((*list) == NULL)
+        return;
+
+    if(bsuf == *list)
+    {
+        *list = (*list)->next;
+    }
+    else if((*list)->next)
+    {
+        biassurface_t*      p = (*list)->next, *last = (*list);
+
+        do
+        {
+            if(p == bsuf)
+            {
+                last->next = p->next;
+                break;
+            }
+
+            last = p;
+            p = p->next;
+        } while(p);
+    }
 }
 
 static __inline biassurface_t* allocBiasSurface(void)
 {
-    if(biasSurfaceBlockSet)
-    {   // Use the block allocator.
-        biassurface_t*      bsuf = Z_BlockNewElement(biasSurfaceBlockSet);
-        memset(bsuf, 0, sizeof(*bsuf));
-        return bsuf;
-    }
-
-    return M_Calloc(sizeof(biassurface_t));
+    return Z_Calloc(sizeof(biassurface_t), PU_STATIC, 0);
 }
 
 static __inline void freeBiasSurface(biassurface_t* bsuf)
 {
-    if(biasSurfaceBlockSet)
-    {   // Ignore, it'll be free'd along with the block allocator.
-        return;
-    }
-
-    M_Free(bsuf);
-}
-
-biassurface_t* SB_CreateSurface(void)
-{
-    biassurface_t*      bsuf = allocBiasSurface();
-
-    // Link it in to the global list.
-    bsuf->next = surfaces;
-    surfaces = bsuf;
-
-    return bsuf;
-}
-
-void SB_DestroySurface(biassurface_t* bsuf)
-{
-    if(!bsuf)
-        return;
-
-    // Unlink this surface from the global list.
-    if(surfaces)
-    {
-        if(bsuf == surfaces)
-        {
-            surfaces = surfaces->next;
-        }
-        else if(surfaces->next)
-        {
-            biassurface_t*      p = surfaces->next, *last = surfaces;
-
-            do
-            {
-                if(p == bsuf)
-                {
-                    last->next = p->next;
-                    break;
-                }
-
-                last = p;
-                p = p->next;
-            } while(p);
-        }
-    }
-
-    Z_Free(bsuf->illum);
     Z_Free(bsuf);
 }
 
-/**
- * Creates a new bias light source and sets the appropriate properties to
- * the values of the passed parameters. The id of the new light source is
- * returned unless there are no free sources available.
- *
- * @param   x           X coordinate of the new light.
- * @param   y           Y coordinate of the new light.
- * @param   z           Z coordinate of the new light.
- * @param   size        Size (strength) of the new light.
- * @param   minLight    Lower sector light level limit.
- * @param   maxLight    Upper sector light level limit.
- * @param   rgb         Ptr to float[3], the color for the new light.
- *
- * @return              The id of the newly created bias light source else -1.
- */
-int SB_NewSourceAt(float x, float y, float z, float size, float minLight,
-                   float maxLight, float* rgb)
+static biassurface_t* createSurface(gamemap_t* map)
+{
+    biassurface_t*      bsuf = allocBiasSurface();
+
+    // Link it to the map's surface list.
+    linkSurfaceToList(&map->bias.surfaces, bsuf);
+    return bsuf;
+}
+
+static void destroySurface(gamemap_t* map, biassurface_t* bsuf)
+{
+    // Unlink this surface from map's surface list.
+    unlinkSurfaceFromList(&map->bias.surfaces, bsuf);
+
+    if(bsuf->illum)
+        Z_Free(bsuf->illum);
+
+    freeBiasSurface(bsuf);
+}
+
+static void destroyAllSurfaces(gamemap_t* map)
+{
+    biassurface_t*      bsuf;
+
+    while((bsuf = map->bias.surfaces))
+    {
+        destroySurface(map, bsuf);
+    }
+}
+
+static int newSourceAt(gamemap_t* map, float x, float y, float z, float size,
+                       float minLight, float maxLight, float* rgb)
 {
     source_t*           src;
 
-    if(numSources == MAX_BIAS_LIGHTS)
+    if(map->bias.numSources == MAX_BIAS_LIGHTS)
         return -1;
 
-    src = &sources[numSources++];
+    src = &map->bias.sources[map->bias.numSources++];
 
     // New lights are automatically locked.
     src->flags = BLF_CHANGED | BLF_LOCKED;
@@ -222,7 +191,7 @@ int SB_NewSourceAt(float x, float y, float z, float size, float minLight,
     src->pos[VY] = y;
     src->pos[VZ] = z;
 
-    SB_SetColor(src->color,rgb);
+    SB_SourceSetColor(src, rgb);
 
     src->primaryIntensity = src->intensity = size;
 
@@ -233,271 +202,35 @@ int SB_NewSourceAt(float x, float y, float z, float size, float minLight,
     // STILL_UNSEEN).
     src->lastUpdateTime = 0;
 
-    return numSources; // == index + 1;
+    return map->bias.numSources; // == index + 1;
 }
 
-/**
- * Same as above really but for updating an existing source.
- */
-void SB_UpdateSource(int which, float x, float y, float z, float size,
-                     float minLight, float maxLight, float *rgb)
-{
-    source_t*           src;
-
-    if(which < 0 || which >= numSources)
-        return;
-
-    src = &sources[which];
-
-    // Position change?
-    src->pos[VX] = x;
-    src->pos[VY] = y;
-    src->pos[VZ] = z;
-
-    SB_SetColor(src->color, rgb);
-
-    src->primaryIntensity = src->intensity = size;
-
-    src->sectorLevel[0] = minLight;
-    src->sectorLevel[1] = maxLight;
-}
-
-/**
- * @return              Ptr to the bias light source for the given id.
- */
-source_t* SB_GetSource(int which)
-{
-    return &sources[which];
-}
-
-/**
- * Convert bias light source ptr to index.
- */
-int SB_ToIndex(source_t* source)
-{
-    if(!source)
-        return -1;
-    else
-        return (source - sources);
-}
-
-/**
- * Removes the specified bias light source from the map.
- *
- * @param which         The id of the bias light source to be deleted.
- */
-void SB_Delete(int which)
+static void deleteSource(gamemap_t* map, int which)
 {
     int                 i;
-
-    if(which < 0 || which >= numSources)
-        return; // Very odd...
 
     // Do a memory move.
-    for(i = which; i < numSources; ++i)
-        sources[i].flags |= BLF_CHANGED;
+    for(i = which; i < map->bias.numSources; ++i)
+        map->bias.sources[i].flags |= BLF_CHANGED;
 
-    if(which < numSources)
-        memmove(&sources[which], &sources[which + 1],
-                sizeof(source_t) * (numSources - which - 1));
+    if(which < map->bias.numSources)
+        memmove(&map->bias.sources[which], &map->bias.sources[which + 1],
+                sizeof(source_t) * (map->bias.numSources - which - 1));
 
-    sources[numSources - 1].intensity = 0;
+    map->bias.sources[map->bias.numSources - 1].intensity = 0;
 
     // Will be one fewer very soon.
-    numSourceDelta--;
+    map->bias.numSourceDelta--;
 }
 
-/**
- * Removes ALL bias light sources on the map.
- */
-void SB_Clear(void)
+static void clearSources(gamemap_t* map)
 {
-    while(numSources-- > 0)
-        sources[numSources].flags |= BLF_CHANGED;
-    numSources = 0;
+    while(map->bias.numSources-- > 0)
+        map->bias.sources[map->bias.numSources].flags |= BLF_CHANGED;
+    map->bias.numSources = 0;
 }
 
-/**
- * Initializes the bias lights according to the loaded Light
- * definitions.
- */
-void SB_InitForMap(const char* uniqueID)
-{
-    uint                startTime = Sys_GetRealTime();
-
-    int                 i;
-    ded_light_t*        def;
-
-    // Start with no sources whatsoever.
-    numSources = 0;
-
-    if(biasSurfaceBlockSet)
-        Z_BlockDestroy(biasSurfaceBlockSet);
-
-    biasSurfaceBlockSet = Z_BlockCreate(sizeof(biassurface_t), 512, PU_STATIC);
-    surfaces = NULL;
-
-    // Check all the loaded Light definitions for any matches.
-    for(i = 0; i < defs.count.lights.num; ++i)
-    {
-        def = &defs.lights[i];
-
-        if(def->state[0] || stricmp(uniqueID, def->uniqueMapID))
-            continue;
-
-        if(SB_NewSourceAt(def->offset[VX], def->offset[VY], def->offset[VZ],
-                          def->size, def->lightLevel[0],
-                          def->lightLevel[1], def->color) == -1)
-            break;
-    }
-
-    // Create biassurfaces for all current worldmap surfaces.
-    {
-    uint                i;
-    size_t              numVertIllums = 0;
-    vertexillum_t*      illums;
-
-    // First, determine the total number of vertexillum_ts we need.
-    for(i = 0; i < numHEdges; ++i)
-    {
-        hedge_t*              hEdge = &hEdges[i];
-
-        if(((seg_t*) hEdge->data)->lineDef)
-            numVertIllums++;
-    }
-
-    numVertIllums *= 3 * 4;
-
-    for(i = 0; i < numSectors; ++i)
-    {
-        sector_t*           sec = &sectors[i];
-        face_t**            facePtr = sec->faces;
-
-        while(*facePtr)
-        {
-            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
-
-            numVertIllums += sec->planeCount *
-                (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
-            *facePtr++;
-        }
-    }
-
-    for(i = 0; i < numPolyObjs; ++i)
-    {
-        polyobj_t*          po = polyObjs[i];
-
-        numVertIllums += po->numHEdges * 3 * 4;
-    }
-
-    // Allocate and initialize the vertexillum_ts.
-    illums = Z_Calloc(sizeof(vertexillum_t) * numVertIllums, PU_MAP, 0);
-    for(i = 0; i < numVertIllums; ++i)
-        SB_InitVertexIllum(&illums[i]);
-
-    // Allocate bias surfaces and attach vertexillum_ts.
-    for(i = 0; i < numHEdges; ++i)
-    {
-        hedge_t*              hEdge = &hEdges[i];
-        seg_t*          seg = (seg_t*) hEdge->data;
-        int                 j;
-
-        if(!seg->lineDef)
-            continue;
-
-        for(j = 0; j < 3; ++j)
-        {
-            biassurface_t*      bsuf = SB_CreateSurface();
-
-            bsuf->size = 4;
-            bsuf->illum = illums;
-            illums += 4;
-
-            seg->bsuf[j] = bsuf;
-        }
-    }
-
-    for(i = 0; i < numSectors; ++i)
-    {
-        sector_t*           sec = &sectors[i];
-        face_t**            facePtr = sec->faces;
-
-        while(*facePtr)
-        {
-            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
-            uint                j;
-
-            for(j = 0; j < sec->planeCount; ++j)
-            {
-                biassurface_t*      bsuf = SB_CreateSurface();
-
-                bsuf->size = (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
-                bsuf->illum = illums;
-                illums += bsuf->size;
-
-                ssec->bsuf[j] = bsuf;
-            }
-
-            *facePtr++;
-        }
-    }
-
-    for(i = 0; i < numPolyObjs; ++i)
-    {
-        polyobj_t*          po = polyObjs[i];
-        uint                j;
-
-        for(j = 0; j < po->numHEdges; ++j)
-        {
-            hedge_t*            hEdge = po->hEdges[j];
-            seg_t*              seg = (seg_t*) hEdge->data;
-            int                 k;
-
-            for(k = 0; k < 3; ++k)
-            {
-                biassurface_t*      bsuf = SB_CreateSurface();
-
-                bsuf->size = 4;
-                bsuf->illum = illums;
-                illums += 4;
-
-                seg->bsuf[k] = bsuf;
-            }
-        }
-    }
-    }
-
-    // How much time did we spend?
-    VERBOSE(Con_Message("SB_InitForMap: Done in %.2f seconds.\n",
-                        (Sys_GetRealTime() - startTime) / 1000.0f));
-}
-
-void SB_SetColor(float* dest, float* src)
-{
-    int                 i;
-    float               largest = 0;
-
-    // Amplify the color.
-    for(i = 0; i < 3; ++i)
-    {
-        dest[i] = src[i];
-        if(largest < dest[i])
-            largest = dest[i];
-    }
-
-    if(largest > 0)
-    {
-        for(i = 0; i < 3; ++i)
-            dest[i] /= largest;
-    }
-    else
-    {
-        // Replace black with white.
-        dest[0] = dest[1] = dest[2] = 1;
-    }
-}
-
-static void SB_AddAffected(affection_t* aff, uint k, float intensity)
+static void addAffected(affection_t* aff, uint k, float intensity)
 {
     uint                i, worst;
 
@@ -522,180 +255,21 @@ static void SB_AddAffected(affection_t* aff, uint k, float intensity)
     }
 }
 
-void SB_InitVertexIllum(vertexillum_t* villum)
-{
-    int                 i;
-
-    villum->flags |= VIF_STILL_UNSEEN;
-
-    for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
-        villum->casted[i].source = -1;
-}
-
-void SB_SurfaceInit(biassurface_t* bsuf)
-{
-    uint                i;
-
-    for(i = 0; i < bsuf->size; ++i)
-    {
-        SB_InitVertexIllum(&bsuf->illum[i]);
-    }
-}
-
-void SB_SurfaceMoved(biassurface_t* bsuf)
-{
-    int                 i;
-
-    for(i = 0; i < MAX_BIAS_AFFECTED && bsuf->affected[i].source >= 0; ++i)
-    {
-        sources[bsuf->affected[i].source].flags |= BLF_CHANGED;
-    }
-}
-
-static float SB_Dot(source_t* src, const vectorcomp_t* point,
-                    const vectorcomp_t* normal)
-{
-    float               delta[3];
-
-    // Delta vector between source and given point.
-    V3_Subtract(delta, src->pos, point);
-
-    // Calculate the distance.
-    V3_Normalize(delta);
-
-    return V3_DotProduct(delta, normal);
-}
-
-static void updateAffected(biassurface_t* bsuf, const fvertex_t* from,
-                           const fvertex_t* to, const vectorcomp_t* normal)
-{
-    int                 i, k;
-    vec2_t              delta;
-    source_t*           src;
-    float               distance = 0, len;
-    float               intensity;
-    affection_t         aff;
-
-    // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == lastChangeOnFrame)
-        return;
-
-    bsuf->updated = lastChangeOnFrame;
-    aff.affected = bsuf->affected;
-    aff.numFound = 0;
-    memset(aff.affected, -1, sizeof(bsuf->affected));
-
-    for(k = 0, src = sources; k < numSources; ++k, ++src)
-    {
-        if(src->intensity <= 0)
-            continue;
-
-        // Calculate minimum 2D distance to the seg.
-        for(i = 0; i < 2; ++i)
-        {
-            if(!i)
-                V2_Set(delta, from->pos[VX] - src->pos[VX],
-                       from->pos[VY] - src->pos[VY]);
-            else
-                V2_Set(delta, to->pos[VX] - src->pos[VX],
-                       to->pos[VY] - src->pos[VY]);
-            len = V2_Normalize(delta);
-
-            if(i == 0 || len < distance)
-                distance = len;
-        }
-
-        if(M_DotProduct(delta, normal) >= 0)
-            continue;
-
-        if(distance < 1)
-            distance = 1;
-
-        intensity = src->intensity / distance;
-
-        // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
-
-        SB_AddAffected(&aff, k, intensity);
-    }
-}
-
-static void updateAffected2(biassurface_t* bsuf, const struct rvertex_s* rvertices,
-                            size_t numVertices, const vectorcomp_t* point,
-                            const vectorcomp_t* normal)
-{
-    int                 i;
-    uint                k;
-    vec2_t              delta;
-    source_t*           src;
-    float               distance = 0, len, dot;
-    float               intensity;
-    affection_t         aff;
-
-    // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == lastChangeOnFrame)
-        return;
-
-    bsuf->updated = lastChangeOnFrame;
-    aff.affected = bsuf->affected;
-    aff.numFound = 0;
-    memset(aff.affected, -1, sizeof(aff.affected));
-
-    for(i = 0, src = sources; i < numSources; ++i, ++src)
-    {
-        if(src->intensity <= 0)
-            continue;
-
-        // Calculate minimum 2D distance to the ssec.
-        // \fixme This is probably too accurate an estimate.
-        for(k = 0; k < bsuf->size; ++k)
-        {
-            V2_Set(delta,
-                   rvertices[k].pos[VX] - src->pos[VX],
-                   rvertices[k].pos[VY] - src->pos[VY]);
-            len = V2_Length(delta);
-
-            if(k == 0 || len < distance)
-                distance = len;
-        }
-        if(distance < 1)
-            distance = 1;
-
-        // Estimate the effect on this surface.
-        dot = SB_Dot(src, point, normal);
-        if(dot <= 0)
-            continue;
-
-        intensity = /*dot * */ src->intensity / distance;
-
-        // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
-
-        SB_AddAffected(&aff, i, intensity);
-    }
-}
-
 /**
  * Sets/clears a bit in the tracker for the given index.
  */
-void SB_TrackerMark(biastracker_t* tracker, int index)
+static void trackerMark(biastracker_t* tracker, int index)
 {
     if(index >= 0)
     {
         tracker->changes[index >> 5] |= (1 << (index & 0x1f));
     }
-    /*else
-    {
-        tracker->changes[(-index) >> 5] &= ~(1 << ((-index) & 0x1f));
-    }*/
 }
 
 /**
  * Checks if the given index bit is set in the tracker.
  */
-int SB_TrackerCheck(biastracker_t* tracker, int index)
+static int trackerCheck(biastracker_t* tracker, int index)
 {
     return (tracker->changes[index >> 5] & (1 << (index & 0x1f))) != 0;
 }
@@ -703,7 +277,7 @@ int SB_TrackerCheck(biastracker_t* tracker, int index)
 /**
  * Copies changes from src to dest.
  */
-void SB_TrackerApply(biastracker_t* dest, const biastracker_t* src)
+static void trackerApply(biastracker_t* dest, const biastracker_t* src)
 {
     unsigned int        i;
 
@@ -716,7 +290,7 @@ void SB_TrackerApply(biastracker_t* dest, const biastracker_t* src)
 /**
  * Clears changes of src from dest.
  */
-void SB_TrackerClear(biastracker_t* dest, const biastracker_t* src)
+static void trackerClear(biastracker_t* dest, const biastracker_t* src)
 {
     unsigned int        i;
 
@@ -726,139 +300,7 @@ void SB_TrackerClear(biastracker_t* dest, const biastracker_t* src)
     }
 }
 
-/**
- * Tests against trackChanged.
- */
-static boolean SB_ChangeInAffected(biasaffection_t* affected,
-                                   biastracker_t* changed)
-{
-    uint                i;
-
-    for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
-    {
-        if(affected[i].source < 0)
-            break;
-
-        if(SB_TrackerCheck(changed, affected[i].source))
-            return true;
-    }
-    return false;
-}
-
-/**
- * Do initial processing that needs to be done before rendering a
- * frame.  Changed lights cause the tracker bits to the set for all
- * segs and planes.
- */
-void SB_BeginFrame(void)
-{
-    int                 l;
-    source_t*           s;
-    biastracker_t       allChanges;
-
-#ifdef DD_PROFILE
-    static int          i;
-
-    if(++i > 40)
-    {
-        i = 0;
-        PRINT_PROF( PROF_BIAS_UPDATE );
-    }
-#endif
-
-    if(!useBias)
-        return;
-
-BEGIN_PROF( PROF_BIAS_UPDATE );
-
-    // The time that applies on this frame.
-    currentTimeSB = Sys_GetRealTime();
-
-    // Check which sources have changed.
-    memset(&allChanges, 0, sizeof(allChanges));
-    for(l = 0, s = sources; l < numSources; ++l, ++s)
-    {
-        if(s->sectorLevel[1] > 0 || s->sectorLevel[0] > 0)
-        {
-            float               minLevel = s->sectorLevel[0];
-            float               maxLevel = s->sectorLevel[1];
-            subsector_t*        ssec = (subsector_t*)
-                R_PointInSubsector(s->pos[VX], s->pos[VY])->data;
-            sector_t*           sector;
-            float               oldIntensity = s->intensity;
-
-            sector = ssec->sector;
-
-            // The lower intensities are useless for light emission.
-            if(sector->lightLevel >= maxLevel)
-            {
-                s->intensity = s->primaryIntensity;
-            }
-
-            if(sector->lightLevel >= minLevel && minLevel != maxLevel)
-            {
-                s->intensity = s->primaryIntensity *
-                    (sector->lightLevel - minLevel) / (maxLevel - minLevel);
-            }
-            else
-            {
-                s->intensity = 0;
-            }
-
-            if(s->intensity != oldIntensity)
-                sources[l].flags |= BLF_CHANGED;
-        }
-
-        if(sources[l].flags & BLF_CHANGED)
-        {
-            SB_TrackerMark(&allChanges, l);
-            sources[l].flags &= ~BLF_CHANGED;
-
-            // This is used for interpolation.
-            sources[l].lastUpdateTime = currentTimeSB;
-
-            // Recalculate which sources affect which surfaces.
-            lastChangeOnFrame = frameCount;
-        }
-    }
-
-    // Apply to all surfaces.
-    {
-    biassurface_t*      bsuf = surfaces;
-
-    for(bsuf = surfaces; bsuf; bsuf = bsuf->next)
-    {
-        SB_TrackerApply(&bsuf->tracker, &allChanges);
-
-        // Everything that is affected by the changed lights will need an
-        // update.
-        if(SB_ChangeInAffected(bsuf->affected, &allChanges))
-        {
-            uint                i;
-
-            // Mark the illumination unseen to force an update.
-            for(i = 0; i < bsuf->size; ++i)
-                bsuf->illum[i].flags |= VIF_STILL_UNSEEN;
-        }
-    }
-    }
-
-END_PROF( PROF_BIAS_UPDATE );
-}
-
-void SB_EndFrame(void)
-{
-    if(numSourceDelta != 0)
-    {
-        numSources += numSourceDelta;
-        numSourceDelta = 0;
-    }
-
-    // Update the editor.
-    SBE_EndFrame();
-}
-
-void SB_AddLight(float dest[4], const float *color, float howMuch)
+static void addLight(float dest[4], const float* color, float howMuch)
 {
     int                 i;
     float               newval, amplified[3], largest = 0;
@@ -896,110 +338,22 @@ void SB_AddLight(float dest[4], const float *color, float howMuch)
     }
 }
 
-#if 0
 /**
- * Color override forces the bias light color to override biased
- * sectorlight.
+ * Add ambient light.
  */
-static boolean SB_CheckColorOverride(biasaffection_t *affected)
+static void ambientLight(const float* point, float* light)
 {
-    int                 i;
+    // Add grid light (represents ambient lighting).
+    float               color[3];
 
-    for(i = 0; affected[i].source >= 0 && i < MAX_BIAS_AFFECTED; ++i)
-    {
-        // If the color is completely black, it means no light was
-        // reached from this affected source.
-        if(!(affected[i].rgb[0] | affected[i].rgb[1] | affected[i].rgb[2]))
-            continue;
-
-        if(sources[affected[i].source].flags & BLF_COLOR_OVERRIDE)
-            return true;
-    }
-
-    return false;
-}
-#endif
-
-/**
- * Surface can be a either a wall or a plane (ceiling or a floor).
- *
- * @param colors        Array of colors to be written to.
- * @param bsuf          Bias data for this surface.
- * @param vertices      Array of vertices to be lit.
- * @param numVertices   Number of vertices (in the array) to be lit.
- * @param normal        Surface normal.
- * @param sectorLightLevel Sector light level.
- * @param mapObject     Ptr to either a seg or subsector.
- * @param elmIdx        Used with subsectors to select a specific plane.
- * @param isSeg         @c true, if surface is to a seg ELSE a subsector.
- */
-void SB_RendPoly(struct rcolor_s* rcolors, biassurface_t* bsuf,
-                 const struct rvertex_s* rvertices,
-                 size_t numVertices, const vectorcomp_t* normal,
-                 float sectorLightLevel,
-                 void* mapObject, uint elmIdx, boolean isSeg)
-{
-    uint                i;
-    boolean             forced;
-
-    // Apply sectorlight bias.  Note: Distance darkening is not used
-    // with bias lights.
-    if(sectorLightLevel > biasMin && biasMax > biasMin)
-    {
-        biasAmount = (sectorLightLevel - biasMin) / (biasMax - biasMin);
-
-        if(biasAmount > 1)
-            biasAmount = 1;
-    }
-    else
-    {
-        biasAmount = 0;
-    }
-
-    memcpy(&trackChanged, &bsuf->tracker, sizeof(trackChanged));
-    memset(&trackApplied, 0, sizeof(trackApplied));
-
-    // Has any of the old affected lights changed?
-    forced = false;
-
-    if(doUpdateAffected)
-    {
-        /**
-         * \todo This could be enhanced so that only the lights on the
-         * right side of the surface are taken into consideration.
-         */
-        if(isSeg)
-        {
-            hedge_t*            seg = (hedge_t*) mapObject;
-
-            updateAffected(bsuf, &seg->HE_v1->v, &seg->HE_v2->v, normal);
-        }
-        else
-        {
-            face_t*             face = (face_t*) mapObject;
-            const subsector_t*  ssec = (subsector_t*) face->data;
-            vec3_t              point;
-
-            V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
-                   ssec->sector->planes[elmIdx]->height);
-
-            updateAffected2(bsuf, rvertices, numVertices, point, normal);
-        }
-    }
-
-    for(i = 0; i < numVertices; ++i)
-        SB_EvalPoint(rcolors[i].rgba, &bsuf->illum[i], bsuf->affected,
-                     rvertices[i].pos, normal);
-
-//    colorOverride = SB_CheckColorOverride(affected);
-
-    SB_TrackerClear(&bsuf->tracker, &trackApplied);
+    LG_Evaluate(point, color);
+    addLight(light, color, 1.0f);
 }
 
 /**
  * Interpolate between current and destination.
  */
-void SB_LerpIllumination(vertexillum_t* illum, float* result)
+static void lerpIllumination(vertexillum_t* illum, float* result)
 {
     uint                i;
 
@@ -1042,8 +396,8 @@ void SB_LerpIllumination(vertexillum_t* illum, float* result)
 /**
  * @return              Light contributed by the specified source.
  */
-float* SB_GetCasted(vertexillum_t* illum, int sourceIndex,
-                    biasaffection_t* affectedSources)
+static float* getCasted(vertexillum_t* illum, int sourceIndex,
+                        biasaffection_t* affectedSources)
 {
     int                 i, k;
     boolean             inUse;
@@ -1079,20 +433,8 @@ float* SB_GetCasted(vertexillum_t* illum, int sourceIndex,
         }
     }
 
-    Con_Error("SB_GetCasted: No light casted by source %i.\n", sourceIndex);
+    Con_Error("getCasted: No light casted by source %i.\n", sourceIndex);
     return NULL;
-}
-
-/**
- * Add ambient light.
- */
-void SB_AmbientLight(const float* point, float* light)
-{
-    // Add grid light (represents ambient lighting).
-    float               color[3];
-
-    LG_Evaluate(point, color);
-    SB_AddLight(light, color, 1.0f);
 }
 
 /**
@@ -1104,9 +446,9 @@ void SB_AmbientLight(const float* point, float* light)
  * \fixme Only recalculate the changed lights.  The colors contributed
  * by the others can be saved with the 'affected' array.
  */
-void SB_EvalPoint(float light[4], vertexillum_t* illum,
-                  biasaffection_t* affectedSources, const float* point,
-                  const float* normal)
+static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
+                      biasaffection_t* affectedSources, const float* point,
+                      const float* normal)
 {
 #define COLOR_CHANGE_THRESHOLD  0.1f
 
@@ -1141,7 +483,7 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
     // Determine if any of the affecting lights have changed since
     // last frame.
     aff = affecting;
-    if(numSources > 0)
+    if(map->bias.numSources > 0)
     {
         for(i = 0;
             affectedSources[i].source >= 0 && i < MAX_BIAS_AFFECTED; ++i)
@@ -1149,26 +491,26 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
             idx = affectedSources[i].source;
 
             // Is this a valid index?
-            if(idx < 0 || idx >= numSources)
+            if(idx < 0 || idx >= map->bias.numSources)
                 continue;
 
             aff->index = idx;
             //aff->affNum = i;
-            aff->source = &sources[idx];
+            aff->source = &map->bias.sources[idx];
             aff->affection = &affectedSources[i];
             aff->overrider = (aff->source->flags & BLF_COLOR_OVERRIDE) != 0;
 
-            if(SB_TrackerCheck(&trackChanged, idx))
+            if(trackerCheck(&trackChanged, idx))
             {
                 aff->changed = true;
                 illuminationChanged = true;
-                SB_TrackerMark(&trackApplied, idx);
+                trackerMark(&trackApplied, idx);
 
                 // Keep track of the earliest time when an affected source
                 // was changed.
-                if(latestSourceUpdate < sources[idx].lastUpdateTime)
+                if(latestSourceUpdate < map->bias.sources[idx].lastUpdateTime)
                 {
-                    latestSourceUpdate = sources[idx].lastUpdateTime;
+                    latestSourceUpdate = map->bias.sources[idx].lastUpdateTime;
                 }
             }
             else
@@ -1185,8 +527,8 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
     if(!illuminationChanged && illum != NULL)
     {
         // Reuse the previous value.
-        SB_LerpIllumination(illum, light);
-        SB_AmbientLight(point, light);
+        lerpIllumination(illum, light);
+        ambientLight(point, light);
         return;
     }
 
@@ -1196,7 +538,7 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
     // Calculate the contribution from each light.
     for(aff = affecting; aff->source; aff++)
     {
-        if(illum && !aff->changed) //SB_TrackerCheck(&trackChanged, aff->index))
+        if(illum && !aff->changed)
         {
             // We can reuse the previously calculated value.  This can
             // only be done if this particular light source hasn't
@@ -1206,7 +548,7 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
 
         s = aff->source;
         if(illum)
-            casted = SB_GetCasted(illum, aff->index, affectedSources);
+            casted = getCasted(illum, aff->index, affectedSources);
         else
             casted = NULL;
 
@@ -1252,65 +594,27 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
         {   // The light casted from this source.
             casted[i] =  s->color[i] * level;
         }
-
-        // Are we already fully lit?
-        /*if(!(newColor[CR] < 1 && newColor[CG] < 1 && new.rgba[2] < 1))
-            break;*/
     }
 
     if(illum)
     {
-        //Con_Message("\n");
-
         boolean             willOverride = false;
 
         // Combine the casted light from each source.
         for(aff = affecting; aff->source; aff++)
         {
-            float              *casted =
-                SB_GetCasted(illum, aff->index, affectedSources);
+            float*              casted =
+                getCasted(illum, aff->index, affectedSources);
 
             if(aff->overrider &&
                (casted[CR] > 0 || casted[CG] > 0 || casted[CB] > 0))
                 willOverride = true;
-
-/*          if(!(casted[3] > 0))
-            {
-                int n;
-                Con_Message("affected: ");
-                for(n = 0; n < MAX_BIAS_AFFECTED; ++n)
-                    Con_Message("%i ", affectedSources[n].source);
-                Con_Message("\n");
-                Con_Error("not updated: s=%i\n", aff->index);
-            }
-*/
-/*            if(editSelector >= 0 && aff->index != editSelector)
-              continue;*/
-
-
-/*            {
-                int n;
-                printf("affected: ");
-                for(n = 0; n < MAX_BIAS_AFFECTED; ++n)
-                    printf("%i ", affectedSources[n].source);
-                printf("casted: ");
-                for(n = 0; n < MAX_BIAS_AFFECTED; ++n)
-                    printf("%i ", illum->casted[n].source);
-                printf("%i:(%g %g %g) ",
-                            aff->index, casted[CR], casted[CG], casted[CB]);
-                printf("\n");
-                }*/
 
             for(i = 0; i < 3; ++i)
             {
                 newColor[i] = MINMAX_OF(0, newColor[i] + casted[i], 1);
             }
         }
-
-        /*if(biasAmount > 0)
-        {
-            SB_AddLight(&new, willOverride ? NULL : biasColor, biasAmount);
-            }*/
 
         // Is there a new destination?
         if(!(illum->dest[CR] < newColor[CR] + COLOR_CHANGE_THRESHOLD &&
@@ -1325,7 +629,7 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
                 // Must not lose the half-way interpolation.
                 float           mid[3];
 
-                SB_LerpIllumination(illum, mid);
+                lerpIllumination(illum, mid);
 
                 // This is current color at this very moment.
                 illum->color[CR] = mid[CR];
@@ -1342,7 +646,7 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
             illum->updatetime = latestSourceUpdate;
         }
 
-        SB_LerpIllumination(illum, light);
+        lerpIllumination(illum, light);
     }
     else
     {
@@ -1351,7 +655,677 @@ void SB_EvalPoint(float light[4], vertexillum_t* illum,
         light[CB] = newColor[CB];
     }
 
-    SB_AmbientLight(point, light);
+    ambientLight(point, light);
 
 #undef COLOR_CHANGE_THRESHOLD
+}
+
+static float biasDot(source_t* src, const vectorcomp_t* point,
+                     const vectorcomp_t* normal)
+{
+    float               delta[3];
+
+    // Delta vector between source and given point.
+    V3_Subtract(delta, src->pos, point);
+
+    // Calculate the distance.
+    V3_Normalize(delta);
+
+    return V3_DotProduct(delta, normal);
+}
+
+#if 0
+/**
+ * Color override forces the bias light color to override biased
+ * sectorlight.
+ */
+static boolean checkColorOverride(biasaffection_t *affected)
+{
+    int                 i;
+
+    for(i = 0; affected[i].source >= 0 && i < MAX_BIAS_AFFECTED; ++i)
+    {
+        // If the color is completely black, it means no light was
+        // reached from this affected source.
+        if(!(affected[i].rgb[0] | affected[i].rgb[1] | affected[i].rgb[2]))
+            continue;
+
+        if(sources[affected[i].source].flags & BLF_COLOR_OVERRIDE)
+            return true;
+    }
+
+    return false;
+}
+#endif
+
+static void updateAffected(gamemap_t* map, biassurface_t* bsuf,
+                           const fvertex_t* from, const fvertex_t* to,
+                           const vectorcomp_t* normal)
+{
+    int                 i, k;
+    vec2_t              delta;
+    source_t*           src;
+    float               distance = 0, len;
+    float               intensity;
+    affection_t         aff;
+
+    // If the data is already up to date, nothing needs to be done.
+    if(bsuf->updated == map->bias.lastChangeOnFrame)
+        return;
+
+    bsuf->updated = map->bias.lastChangeOnFrame;
+    aff.affected = bsuf->affected;
+    aff.numFound = 0;
+    memset(aff.affected, -1, sizeof(bsuf->affected));
+
+    for(k = 0, src = map->bias.sources; k < map->bias.numSources; ++k, ++src)
+    {
+        if(src->intensity <= 0)
+            continue;
+
+        // Calculate minimum 2D distance to the seg.
+        for(i = 0; i < 2; ++i)
+        {
+            if(!i)
+                V2_Set(delta, from->pos[VX] - src->pos[VX],
+                       from->pos[VY] - src->pos[VY]);
+            else
+                V2_Set(delta, to->pos[VX] - src->pos[VX],
+                       to->pos[VY] - src->pos[VY]);
+            len = V2_Normalize(delta);
+
+            if(i == 0 || len < distance)
+                distance = len;
+        }
+
+        if(M_DotProduct(delta, normal) >= 0)
+            continue;
+
+        if(distance < 1)
+            distance = 1;
+
+        intensity = src->intensity / distance;
+
+        // Is the source is too weak, ignore it entirely.
+        if(intensity < biasIgnoreLimit)
+            continue;
+
+        addAffected(&aff, k, intensity);
+    }
+}
+
+static void updateAffected2(gamemap_t* map, biassurface_t* bsuf,
+                            const struct rvertex_s* rvertices,
+                            size_t numVertices, const vectorcomp_t* point,
+                            const vectorcomp_t* normal)
+{
+    int                 i;
+    uint                k;
+    vec2_t              delta;
+    source_t*           src;
+    float               distance = 0, len, dot;
+    float               intensity;
+    affection_t         aff;
+
+    // If the data is already up to date, nothing needs to be done.
+    if(bsuf->updated == map->bias.lastChangeOnFrame)
+        return;
+
+    bsuf->updated = map->bias.lastChangeOnFrame;
+    aff.affected = bsuf->affected;
+    aff.numFound = 0;
+    memset(aff.affected, -1, sizeof(aff.affected));
+
+    for(i = 0, src = map->bias.sources; i < map->bias.numSources; ++i, ++src)
+    {
+        if(src->intensity <= 0)
+            continue;
+
+        // Calculate minimum 2D distance to the ssec.
+        // \fixme This is probably too accurate an estimate.
+        for(k = 0; k < bsuf->size; ++k)
+        {
+            V2_Set(delta,
+                   rvertices[k].pos[VX] - src->pos[VX],
+                   rvertices[k].pos[VY] - src->pos[VY]);
+            len = V2_Length(delta);
+
+            if(k == 0 || len < distance)
+                distance = len;
+        }
+        if(distance < 1)
+            distance = 1;
+
+        // Estimate the effect on this surface.
+        dot = biasDot(src, point, normal);
+        if(dot <= 0)
+            continue;
+
+        intensity = /*dot * */ src->intensity / distance;
+
+        // Is the source is too weak, ignore it entirely.
+        if(intensity < biasIgnoreLimit)
+            continue;
+
+        addAffected(&aff, i, intensity);
+    }
+}
+
+/**
+ * Tests against trackChanged.
+ */
+static boolean changeInAffected(biasaffection_t* affected,
+                                biastracker_t* changed)
+{
+    uint                i;
+
+    for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
+    {
+        if(affected[i].source < 0)
+            break;
+
+        if(trackerCheck(changed, affected[i].source))
+            return true;
+    }
+    return false;
+}
+
+static void markSurfaceSourcesChanged(gamemap_t* map, biassurface_t* bsuf)
+{
+    int                 i;
+
+    for(i = 0; i < MAX_BIAS_AFFECTED && bsuf->affected[i].source >= 0; ++i)
+    {
+        map->bias.sources[bsuf->affected[i].source].flags |= BLF_CHANGED;
+    }
+}
+
+static void newSourcesFromLightDefs(gamemap_t* map)
+{
+    int                 i;
+    ded_light_t*        def;
+    const char*         uniqueID = P_GetUniqueMapID(map);
+
+    // Check all the loaded Light definitions for any matches.
+    for(i = 0; i < defs.count.lights.num; ++i)
+    {
+        def = &defs.lights[i];
+
+        if(def->state[0] || stricmp(uniqueID, def->uniqueMapID))
+            continue;
+
+        if(newSourceAt(map, def->offset[VX], def->offset[VY], def->offset[VZ],
+                       def->size, def->lightLevel[0], def->lightLevel[1],
+                       def->color) == -1)
+            break;
+    }
+}
+
+static void init(gamemap_t* map)
+{
+    map->bias.surfaces = NULL;
+
+    // Start with no sources whatsoever.
+    map->bias.numSources = 0;
+    map->bias.numSourceDelta = 0;
+    map->bias.lastChangeOnFrame = 0;
+
+    newSourcesFromLightDefs(map);
+
+    // Create biassurfaces for all current worldmap surfaces.
+    {
+    uint                i;
+
+    // Allocate bias surfaces and attach vertexillum_ts.
+    for(i = 0; i < numHEdges; ++i)
+    {
+        hedge_t*            hEdge = &hEdges[i];
+        seg_t*              seg = (seg_t*) hEdge->data;
+        int                 j;
+
+        if(!seg->lineDef)
+            continue;
+
+        for(j = 0; j < 3; ++j)
+        {
+            uint                k;
+            biassurface_t*      bsuf = createSurface(map);
+
+            bsuf->size = 4;
+            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                PU_STATIC, 0);
+            for(k = 0; k < bsuf->size; ++k)
+                SB_InitVertexIllum(&bsuf->illum[k]);
+
+            seg->bsuf[j] = bsuf;
+        }
+    }
+
+    for(i = 0; i < numSectors; ++i)
+    {
+        sector_t*           sec = &sectors[i];
+        face_t**            facePtr = sec->faces;
+
+        while(*facePtr)
+        {
+            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
+            uint                j;
+
+            for(j = 0; j < sec->planeCount; ++j)
+            {
+                uint                k;
+                biassurface_t*      bsuf = createSurface(map);
+
+                bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
+                bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                    PU_STATIC, 0);
+                for(k = 0; k < bsuf->size; ++k)
+                    SB_InitVertexIllum(&bsuf->illum[k]);
+
+                ssec->bsuf[j] = bsuf;
+            }
+
+            *facePtr++;
+        }
+    }
+
+    for(i = 0; i < numPolyObjs; ++i)
+    {
+        polyobj_t*          po = polyObjs[i];
+        uint                j;
+
+        for(j = 0; j < po->numHEdges; ++j)
+        {
+            hedge_t*            hEdge = po->hEdges[j];
+            seg_t*              seg = (seg_t*) hEdge->data;
+            int                 k;
+
+            for(k = 0; k < 3; ++k)
+            {
+                uint                l;
+                biassurface_t*      bsuf = createSurface(map);
+
+                bsuf->size = 4;
+                bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                    PU_STATIC, 0);
+                for(l = 0; l < bsuf->size; ++l)
+                    SB_InitVertexIllum(&bsuf->illum[l]);
+
+                seg->bsuf[k] = bsuf;
+            }
+        }
+    }
+    }
+}
+
+/**
+ * Initializes the bias lights according to the loaded Light
+ * definitions.
+ */
+void SB_InitForMap(gamemap_t* map)
+{
+    uint                startTime;
+
+    if(!map)
+        return;
+
+    startTime = Sys_GetRealTime();
+
+    init(map);
+
+    // How much time did we spend?
+    VERBOSE(Con_Message("SB_InitForMap: Done in %.2f seconds.\n",
+                        (Sys_GetRealTime() - startTime) / 1000.0f));
+}
+
+void SB_DestroySurfaces(gamemap_t* map)
+{
+    if(!map)
+        return;
+
+    destroyAllSurfaces(map);
+}
+
+/**
+ * Do initial processing that needs to be done before rendering a frame.
+ * Changed sources cause the tracker bits to the set for all bias surfaces.
+ */
+void SB_BeginFrame(gamemap_t* map)
+{
+    int                 l;
+    source_t*           s;
+    biastracker_t       allChanges;
+
+#ifdef DD_PROFILE
+    static int          i;
+
+    if(++i > 40)
+    {
+        i = 0;
+        PRINT_PROF( PROF_BIAS_UPDATE );
+    }
+#endif
+
+    if(!map)
+        return; 
+
+    if(!useBias)
+        return;
+
+BEGIN_PROF( PROF_BIAS_UPDATE );
+
+    // The time that applies on this frame.
+    currentTimeSB = Sys_GetRealTime();
+
+    // Check which sources have changed.
+    memset(&allChanges, 0, sizeof(allChanges));
+    for(l = 0; l < map->bias.numSources; ++l)
+    {
+        s = &map->bias.sources[l];
+
+        if(s->sectorLevel[1] > 0 || s->sectorLevel[0] > 0)
+        {
+            float               minLevel = s->sectorLevel[0];
+            float               maxLevel = s->sectorLevel[1];
+            subsector_t*        ssec = (subsector_t*)
+                R_PointInSubsector(s->pos[VX], s->pos[VY])->data;
+            sector_t*           sector;
+            float               oldIntensity = s->intensity;
+
+            sector = ssec->sector;
+
+            // The lower intensities are useless for light emission.
+            if(sector->lightLevel >= maxLevel)
+            {
+                s->intensity = s->primaryIntensity;
+            }
+
+            if(sector->lightLevel >= minLevel && minLevel != maxLevel)
+            {
+                s->intensity = s->primaryIntensity *
+                    (sector->lightLevel - minLevel) / (maxLevel - minLevel);
+            }
+            else
+            {
+                s->intensity = 0;
+            }
+
+            if(s->intensity != oldIntensity)
+                s->flags |= BLF_CHANGED;
+        }
+
+        if(s->flags & BLF_CHANGED)
+        {
+            trackerMark(&allChanges, l);
+            s->flags &= ~BLF_CHANGED;
+
+            // This is used for interpolation.
+            s->lastUpdateTime = currentTimeSB;
+
+            // Recalculate which sources affect which surfaces.
+            map->bias.lastChangeOnFrame = frameCount;
+        }
+    }
+
+    // Apply to all surfaces.
+    {
+    biassurface_t*      bsuf;
+
+    for(bsuf = map->bias.surfaces; bsuf; bsuf = bsuf->next)
+    {
+        trackerApply(&bsuf->tracker, &allChanges);
+
+        // Everything that is affected by the changed lights will need an
+        // update.
+        if(changeInAffected(bsuf->affected, &allChanges))
+        {
+            uint                i;
+
+            // Mark the illumination unseen to force an update.
+            for(i = 0; i < bsuf->size; ++i)
+                bsuf->illum[i].flags |= VIF_STILL_UNSEEN;
+        }
+    }
+    }
+
+END_PROF( PROF_BIAS_UPDATE );
+}
+
+void SB_EndFrame(gamemap_t* map)
+{
+    if(!map)
+        return;
+    
+    if(map->bias.numSourceDelta != 0)
+    {
+        map->bias.numSources += map->bias.numSourceDelta;
+        map->bias.numSourceDelta = 0;
+    }
+}
+
+biassurface_t* SB_CreateSurface(gamemap_t* map)
+{
+    if(!map)
+        return NULL;
+
+    return createSurface(map);
+}
+
+void SB_DestroySurface(gamemap_t* map, biassurface_t* bsuf)
+{
+    if(!map || !bsuf)
+        return;
+
+    destroySurface(map, bsuf);
+}
+
+void SB_InitVertexIllum(vertexillum_t* villum)
+{
+    int                 i;
+
+    villum->flags |= VIF_STILL_UNSEEN;
+
+    for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
+        villum->casted[i].source = -1;
+}
+
+void SB_SurfaceInit(biassurface_t* bsuf)
+{
+    uint                i;
+
+    for(i = 0; i < bsuf->size; ++i)
+    {
+        SB_InitVertexIllum(&bsuf->illum[i]);
+    }
+}
+
+void SB_SurfaceMoved(gamemap_t* map, biassurface_t* bsuf)
+{
+    if(!map || !bsuf)
+        return;
+
+    markSurfaceSourcesChanged(map, bsuf);
+}
+
+/**
+ * @return              Ptr to the bias light source for the given id.
+ */
+source_t* SB_GetSource(gamemap_t* map, int which)
+{
+    if(!map || which < 0 || which >= map->bias.numSources)
+        return NULL;
+
+    return &map->bias.sources[which];
+}
+
+/**
+ * Convert bias light source ptr to index.
+ *
+ * @param source        Must be linked to the specified map!
+ */
+int SB_ToIndex(gamemap_t* map, source_t* source)
+{
+    if(!map || !source)
+        return -1;
+
+    return (source - map->bias.sources);
+}
+
+/**
+ * Creates a new bias light source and sets the appropriate properties to
+ * the values of the passed parameters. The id of the new light source is
+ * returned unless there are no free sources available.
+ *
+ * @param map           The map the new source is to be placed in.
+ * @param x             X coordinate of the new light.
+ * @param y             Y coordinate of the new light.
+ * @param z             Z coordinate of the new light.
+ * @param size          Size (strength) of the new light.
+ * @param minLight      Lower sector light level limit.
+ * @param maxLight      Upper sector light level limit.
+ * @param rgb           Ptr to float[3], the color for the new light.
+ *
+ * @return              The id of the newly created bias light source else -1.
+ */
+int SB_NewSourceAt(gamemap_t* map, float x, float y, float z, float size,
+                   float minLight, float maxLight, float* rgb)
+{
+    if(!map)
+        return 0;
+
+    return newSourceAt(map, x, y, z, size, minLight, maxLight, rgb);
+}
+
+/**
+ * Same as above really but for updating an existing source.
+ */
+void SB_SourceUpdate(source_t* src, float x, float y, float z,
+                     float size, float minLight, float maxLight, float* rgb)
+{
+    if(!src)
+        return;
+
+    // Position change?
+    src->pos[VX] = x;
+    src->pos[VY] = y;
+    src->pos[VZ] = z;
+
+    if(rgb)
+        SB_SourceSetColor(src, rgb);
+
+    src->primaryIntensity = src->intensity = size;
+
+    src->sectorLevel[0] = minLight;
+    src->sectorLevel[1] = maxLight;
+}
+
+void SB_SourceSetColor(source_t* src, float* rgb)
+{
+    int                 i;
+    float               largest = 0;
+
+    if(!src || !rgb)
+        return;
+
+    // Amplify the color.
+    for(i = 0; i < 3; ++i)
+    {
+        src->color[i] = rgb[i];
+        if(largest < src->color[i])
+            largest = src->color[i];
+    }
+
+    if(largest > 0)
+    {
+        for(i = 0; i < 3; ++i)
+            src->color[i] /= largest;
+    }
+    else
+    {
+        // Replace black with white.
+        src->color[0] = src->color[1] = src->color[2] = 1;
+    }
+}
+
+/**
+ * Removes the specified bias light source from the map.
+ *
+ * @param which         The id of the bias light source to be deleted.
+ */
+void SB_DeleteSource(gamemap_t* map, int which)
+{
+    if(!map || which < 0 || which >= map->bias.numSources)
+        return; // Very odd...
+
+    deleteSource(map, which);
+}
+
+/**
+ * Removes ALL bias light sources on the map.
+ */
+void SB_ClearSources(gamemap_t* map)
+{
+    if(!map)
+        return;
+
+    clearSources(map);
+}
+
+/**
+ * Surface can be a either a wall or a plane (ceiling or a floor).
+ *
+ * @param colors        Array of colors to be written to.
+ * @param bsuf          Bias data for this surface.
+ * @param vertices      Array of vertices to be lit.
+ * @param numVertices   Number of vertices (in the array) to be lit.
+ * @param normal        Surface normal.
+ * @param sectorLightLevel Sector light level.
+ * @param mapObject     Ptr to either a seg or subsector.
+ * @param elmIdx        Used with subsectors to select a specific plane.
+ * @param isSeg         @c true, if surface is to a seg ELSE a subsector.
+ */
+void SB_RendPoly(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
+                 const rvertex_t* rvertices, size_t numVertices,
+                 const vectorcomp_t* normal, float sectorLightLevel,
+                 void* mapObject, uint elmIdx, boolean isSeg)
+{
+    uint                i;
+    boolean             forced;
+
+    memcpy(&trackChanged, &bsuf->tracker, sizeof(trackChanged));
+    memset(&trackApplied, 0, sizeof(trackApplied));
+
+    // Has any of the old affected lights changed?
+    forced = false;
+
+    if(doUpdateAffected)
+    {
+        /**
+         * \todo This could be enhanced so that only the lights on the
+         * right side of the surface are taken into consideration.
+         */
+        if(isSeg)
+        {
+            hedge_t*            seg = (hedge_t*) mapObject;
+
+            updateAffected(map, bsuf, &seg->HE_v1->v, &seg->HE_v2->v, normal);
+        }
+        else
+        {
+            face_t*             face = (face_t*) mapObject;
+            const subsector_t*  ssec = (subsector_t*) face->data;
+            vec3_t              point;
+
+            V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
+                   ssec->sector->planes[elmIdx]->height);
+
+            updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
+        }
+    }
+
+    for(i = 0; i < numVertices; ++i)
+        evalPoint(map, rcolors[i].rgba, &bsuf->illum[i], bsuf->affected,
+                  rvertices[i].pos, normal);
+
+    trackerClear(&bsuf->tracker, &trackApplied);
 }

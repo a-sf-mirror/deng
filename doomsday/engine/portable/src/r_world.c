@@ -583,13 +583,18 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
     surface_t*          suf;
     plane_t*            plane;
     face_t**            facePtr;
+    gamemap_t*          map;
 
     if(!sec)
         return NULL; // Do wha?
 
-    //if(sec->planeCount >= 2)
-    //    Con_Error("P_NewPlaneForSector: Cannot create plane for sector, "
-    //              "limit is %i per sector.\n", 2);
+    map = P_GetCurrentMap();
+
+/*#if _DEBUG
+if(sec->planeCount >= 2)
+    Con_Error("P_NewPlaneForSector: Cannot create plane for sector, "
+              "limit is %i per sector.\n", 2);
+#endif*/
 
     // Allocate the new plane.
     plane = Z_Malloc(sizeof(plane_t), PU_MAP, 0);
@@ -653,15 +658,16 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
             {
                 newList[n] = ssec->bsuf[n];
             }
+
             Z_Free(ssec->bsuf);
         }
 
         if(!ddMapSetup)
         {
             uint                i;
-            biassurface_t*      bsuf = SB_CreateSurface();
+            biassurface_t*      bsuf = SB_CreateSurface(map);
 
-            bsuf->size = (ssec->hEdgeCount + ssec->useMidPoint? 1 : 0);
+            bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
             bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_MAP, 0);
 
             for(i = 0; i < bsuf->size; ++i)
@@ -690,6 +696,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     uint                i;
     plane_t*            plane, **newList = NULL;
     face_t**            facePtr;
+    gamemap_t*          map = P_GetCurrentMap();
 
     if(!sec)
         return; // Do wha?
@@ -735,7 +742,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     {
         subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
 
-        SB_DestroySurface(ssec->bsuf[id]);
+        SB_DestroySurface(map, ssec->bsuf[id]);
         if(id < sec->planeCount)
             memmove(ssec->bsuf + id, ssec->bsuf + id + 1, sizeof(biassurface_t*));
         *facePtr++;
@@ -1409,11 +1416,20 @@ static __inline void initSurfaceMaterialOffset(surface_t *suf)
  */
 void R_SetupMap(int mode, int flags)
 {
-    uint        i;
+    uint                i;
 
     switch(mode)
     {
     case DDSMM_INITIALIZE:
+        {
+        gamemap_t*          map = P_GetCurrentMap();
+
+        P_DestroyMap(map);
+
+        // @todo remove the PU_MAP and PU_MAPSTATIC zone tags.
+        Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
+        }
+
         // Switch to fast malloc mode in the zone. This is intended for large
         // numbers of mallocs with no frees in between.
         Z_EnableFastMalloc(false);
@@ -1739,6 +1755,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     boolean             changed = false;
     boolean             hasGlow = false;
     sector_t*           sec = pln->sector;
+    gamemap_t*          map = P_GetCurrentMap();
 
     // Update the glow properties.
     hasGlow = false;
@@ -1813,12 +1830,12 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
                     if(seg->lineDef)
                     {
                         for(i = 0; i < 3; ++i)
-                            SB_SurfaceMoved(seg->bsuf[i]);
+                            SB_SurfaceMoved(map, seg->bsuf[i]);
                     }
                 } while((hEdge = hEdge->next) != face->hEdge);
             }
 
-            SB_SurfaceMoved(((subsector_t*) face->data)->bsuf[pln->planeID]);
+            SB_SurfaceMoved(map, ((subsector_t*) face->data)->bsuf[pln->planeID]);
 
             *facePtr++;
         }

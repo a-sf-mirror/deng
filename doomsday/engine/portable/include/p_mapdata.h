@@ -275,14 +275,26 @@ typedef struct gamemap_s {
     int             ambientLightLevel; // Ambient lightlevel for the current map.
 
     struct {
-        boolean         inited;
-        boolean         needsUpdate;
+        unsigned int    lastChangeOnFrame;
+
+        int             numSources, numSourceDelta;
+        source_t        sources[MAX_BIAS_LIGHTS];
+
+        biassurface_t*  surfaces; // Head of the biassurface list.
+
+        int             editGrabbedID;
+    } bias;
+
+    struct {
+        boolean         inited, needsUpdate;
+
         float           origin[3];
-        int             blockWidth;
-        int             blockHeight;
+        int             blockWidth, blockHeight;
         lgridblock_t*   grid;
     } lg;
 } gamemap_t;
+
+void            P_DestroyMap(gamemap_t* map);
 
 gamemap_t*      P_GetCurrentMap(void);
 void            P_SetCurrentMap(gamemap_t* map);
