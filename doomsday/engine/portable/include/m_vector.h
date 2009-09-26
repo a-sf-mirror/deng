@@ -90,6 +90,8 @@ float           V3_ClosestPointOnPlane(pvec3_t dest,
                                        const pvec3_t planeNormal,
                                        const pvec3_t planePoint,
                                        const pvec3_t arbPoint);
+void            V3_BuildUpRight(pvec3_t up, pvec3_t right,
+                                const pvec3_t normal);
 int             V3_MajorAxis(const pvec3_t vec);
 boolean         V3_IsZero(const pvec3_t vec);
 void            V3_Lerp(pvec3_t dest, const pvec3_t a, const pvec3_t b,

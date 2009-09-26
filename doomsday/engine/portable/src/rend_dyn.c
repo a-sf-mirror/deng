@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <float.h>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -311,68 +310,6 @@ static dynnode_t* projectPlaneGlowOnSegSection(gamemap_t* map, const lumobj_t* l
 }
 
 /**
- * Given a normalized normal, construct up and right vectors, oriented to
- * the original normal. Note all vectors and normals are in world-space.
- *
- * @param up            The up vector will be written back here.
- * @param right         The right vector will be written back here.
- * @param normal        Normal to construct vectors for.
- */
-static void buildUpRight(pvec3_t up, pvec3_t right, const pvec3_t normal)
-{
-    const vec3_t rotm[3] = {
-        {0.f, 0.f, 1.f},
-        {0.f, 0.f, 1.f},
-        {0.f, 0.f, 1.f}
-    };
-    int                 axis = VX;
-    vec3_t              fn;
-
-    V3_Set(fn, fabsf(normal[VX]), fabsf(normal[VY]), fabsf(normal[VZ]));
-
-    if(fn[VY] > fn[axis])
-        axis = VY;
-    if(fn[VZ] > fn[axis])
-        axis = VZ;
-
-    if(fabsf(fn[VX] - 1.0f) < FLT_EPSILON ||
-       fabsf(fn[VY] - 1.0f) < FLT_EPSILON ||
-       fabsf(fn[VZ] - 1.0f) < FLT_EPSILON)
-    {   // We must build the right vector manually.
-        if(axis == VX && normal[VX] > 0.f)
-        {
-            V3_Set(right, 0.f, 1.f, 0.f);
-        }
-        else if(axis == VX)
-        {
-            V3_Set(right, 0.f, -1.f, 0.f);
-        }
-
-        if(axis == VY && normal[VY] > 0.f)
-        {
-            V3_Set(right, -1.f, 0.f, 0.f);
-        }
-        else if(axis == VY)
-        {
-            V3_Set(right, 1.f, 0.f, 0.f);
-        }
-
-        if(axis == VZ)
-        {
-            V3_Set(right, 1.f, 0.f, 0.f);
-        }
-    }
-    else
-    {   // Can use a cross product of the surface normal.
-        V3_CrossProduct(right, (const pvec3_t) rotm[axis], normal);
-        V3_Normalize(right);
-    }
-
-    V3_CrossProduct(up, right, normal);
-    V3_Normalize(up);
-}
-
-/**
  * Generate texcoords on surface centered on point.
  *
  * @param point         Point on surface around which texture is centered.
@@ -391,7 +328,7 @@ static boolean genTexCoords(const pvec3_t point, float scale,
 {
     vec3_t              vToPoint, right, up;
 
-    buildUpRight(up, right, normal);
+    V3_BuildUpRight(up, right, normal);
     V3_Subtract(vToPoint, v1, point);
     s[0] = V3_DotProduct(vToPoint, right) * scale + .5f;
     t[0] = V3_DotProduct(vToPoint, up) * scale + .5f;
