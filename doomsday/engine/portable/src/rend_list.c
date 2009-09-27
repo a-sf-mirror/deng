@@ -207,7 +207,7 @@ typedef struct listhash_s {
 
 extern int skyhemispheres;
 extern int devSkyMode;
-extern int useDynLights, dlBlend, simpleSky;
+extern int useDynlights, dlBlend, simpleSky;
 extern boolean usingFog;
 
 extern byte freezeRLs;

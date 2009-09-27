@@ -207,7 +207,7 @@ void P_DestroyMap(gamemap_t* map)
     if(!map)
         return;
 
-    DL_DestroyDynNodes(map);
+    DL_DestroyDynlights(map);
     SB_DestroySurfaces(map);
 }
 
@@ -421,7 +421,6 @@ boolean P_LoadMap(const char* mapID)
 
         R_InitObjLinksForMap();
         LO_InitForMap(); // Lumobj management.
-        DL_InitForMap(map); // Projected dynlights (from lumobjs) management.
         VL_InitForMap(); // Converted vlights (from lumobjs) management.
 
         // Init Particle Generator links.

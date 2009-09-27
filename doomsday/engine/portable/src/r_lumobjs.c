@@ -695,14 +695,14 @@ void LO_AddLuminousMobjs(void)
     uint                i;
     sector_t*           seciter;
 
-    if(!useDynLights && !useWallGlow)
+    if(!useDynlights && !useWallGlow)
         return;
 
 BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
 
     for(i = 0, seciter = sectors; i < numSectors; seciter++, ++i)
     {
-        if(useDynLights)
+        if(useDynlights)
         {
             mobj_t*             iter;
 
@@ -923,7 +923,7 @@ int LOIT_UnlinkMobjLumobj(void* p, void* context)
 
 void LO_UnlinkMobjLumobjs(cvar_t* var)
 {
-    if(!useDynLights)
+    if(!useDynlights)
     {
         // Mobjs are always public.
         P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);

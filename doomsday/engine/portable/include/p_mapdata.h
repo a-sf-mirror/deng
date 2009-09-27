@@ -109,11 +109,6 @@ typedef struct surfacelist_s {
     surfacelistnode_t* head;
 } surfacelist_t;
 
-typedef struct dynlist_s {
-    boolean         sortBrightestFirst;
-    struct dynnode_s* head;
-} dynlist_t;
-
 /**
  * Stores the data pertaining to vertex lighting for a worldmap, surface.
  */
@@ -126,6 +121,10 @@ typedef struct biassurface_s {
 
     struct biassurface_s* next;
 } biassurface_t;
+
+typedef struct dynlist_s {
+    struct dynnode_s* head;
+} dynlist_t;
 
 #define GBF_CHANGED     0x1     // Grid block sector light has changed.
 #define GBF_CONTRIBUTOR 0x2     // Contributes light to a changed block.
@@ -280,11 +279,8 @@ typedef struct gamemap_s {
     int             ambientLightLevel; // Ambient lightlevel for the current map.
 
     struct {
-        uint            numLinkLists, maxLinkLists;
-        dynlist_t*      linkLists;
-
-        struct dynnode_s* dynFirst;
-    } dlights; // Surface-projected dynlight link lists.
+        dynlist_t       linkList; // Surface-projected lumobjs (dynlights).
+    } dlights;
 
     struct {
         unsigned int    lastChangeOnFrame;
