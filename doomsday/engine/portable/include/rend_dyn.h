@@ -32,15 +32,18 @@
 #include "p_object.h"
 #include "rend_list.h"
 
-#define DYN_ASPECT          (1.1f) // 1.2f is just too round for Doom.
-
 #define MAX_GLOWHEIGHT      (1024.0f) // Absolute max glow height.
 
-// Flags for DL_ProjectOnSurface
+/**
+ * @defgroup projectOnSurfaceFlags Project On Surface Flags
+ * For DL_ProjectOnSurface.
+ */
+/*@{*/
 #define DLF_SORT_LUMADSC    0x1 // Sort dynlights by luma, brightest to dullest.
 #define DLF_NO_PLANAR       0x2 // Surface is not lit by planar lights.
 #define DLF_TEX_FLOOR       0x4 // Prefer the "floor" slot when picking textures.
 #define DLF_TEX_CEILING     0x8 // Prefer the "ceiling" slot when picking textures.
+/*@}*/
 
 /**
  * The data of a projected dynamic light is stored in this structure.
@@ -53,24 +56,22 @@ typedef struct dynlight_s {
     DGLuint         texture;
 } dynlight_t;
 
-extern int useDynLights, dlBlend;
+extern int useDynlights, dlBlend;
 extern float dlFactor, dlFogBright;
 extern int useWallGlow, glowHeightMax;
 extern float glowHeightFactor;
 
 void            DL_Register(void);
 
-void            DL_InitForMap(struct gamemap_s* map);
-void            DL_InitForNewFrame(struct gamemap_s* map);
-void            DL_DestroyDynNodes(struct gamemap_s* map);
+void            DL_DestroyDynlights(struct gamemap_s* map);
 
 uint            DL_ProjectOnSurface(struct gamemap_s* map, face_t* face,
                                     const vectorcomp_t topLeft[3],
                                     const vectorcomp_t bottomRight[3],
                                     const vectorcomp_t normal[3], byte flags);
 
-boolean         DL_ListIterator(struct gamemap_s* map, uint listIdx,
-                                boolean (*func) (const dynlight_t*, void*),
-                                void* context);
+boolean         DL_DynlistIterator(uint dynlistID,
+                                   boolean (*func) (const dynlight_t*, void*),
+                                   void* context);
 
 #endif

@@ -82,14 +82,16 @@ void            V3_Sum(pvec3_t dest, const_pvec3_t src1, const_pvec3_t src2);
 void            V3_Subtract(pvec3_t dest, const_pvec3_t src1,
                             const_pvec3_t src2);
 float           V3_DotProduct(const_pvec3_t a, const_pvec3_t b);
-void            V3_CrossProduct(pvec3_t dest, const pvec3_t src1,
-                                const pvec3_t src2);
+void            V3_CrossProduct(pvec3_t dest, const_pvec3_t src1,
+                                const_pvec3_t src2);
 void            V3_PointCrossProduct(pvec3_t dest, const pvec3_t v1,
                                      const pvec3_t v2, const pvec3_t v3);
 float           V3_ClosestPointOnPlane(pvec3_t dest,
-                                       const pvec3_t planeNormal,
-                                       const pvec3_t planePoint,
-                                       const pvec3_t arbPoint);
+                                       const_pvec3_t planeNormal,
+                                       const_pvec3_t planePoint,
+                                       const_pvec3_t arbPoint);
+void            V3_BuildUpRight(pvec3_t up, pvec3_t right,
+                                const_pvec3_t normal);
 int             V3_MajorAxis(const pvec3_t vec);
 boolean         V3_IsZero(const pvec3_t vec);
 void            V3_Lerp(pvec3_t dest, const pvec3_t a, const pvec3_t b,

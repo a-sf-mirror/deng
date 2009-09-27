@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <float.h>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -56,13 +55,17 @@ typedef struct dynnode_s {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+void Dynlight_SetTex(dynlight_t* dyn, DGLuint tex);
+void Dynlight_SetTexCoords(dynlight_t* dyn, const float s[2], const float t[2]);
+void Dynlight_SetColor(dynlight_t* dyn, const float color[3], float luma);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int useDynLights = true, dlBlend = 0;
+int useDynlights = true, dlBlend = 0;
 float dlFactor = .7f;
 float dlFogBright = .15f;
 
@@ -71,6 +74,9 @@ float glowHeightFactor = 3; // Glow height as a multiplier.
 int glowHeightMax = 100; // 100 is the default (0-1024).
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+static uint numDynlists = 0, maxDynlists = 0;
+static dynlist_t* dynlists = NULL;
 
 // Dynlight nodes.
 static dynnode_t* unusedNodes = NULL;
@@ -85,85 +91,82 @@ void DL_Register(void)
     C_VAR_INT("rend-glow-height", &glowHeightMax, 0, 0, 1024);
     C_VAR_FLOAT("rend-glow-scale", &glowHeightFactor, 0, 0.1f, 10);
 
-    C_VAR_INT2("rend-light", &useDynLights, 0, 0, 1, LO_UnlinkMobjLumobjs);
+    C_VAR_INT2("rend-light", &useDynlights, 0, 0, 1, LO_UnlinkMobjLumobjs);
     C_VAR_INT("rend-light-blend", &dlBlend, 0, 0, 2);
     C_VAR_FLOAT("rend-light-bright", &dlFactor, 0, 0, 1);
     C_VAR_FLOAT("rend-light-fog-bright", &dlFogBright, 0, 0, 1);
     C_VAR_INT("rend-light-multitex", &useMultiTexLights, 0, 0, 1);
 
     C_VAR_INT("rend-mobj-light-auto", &useMobjAutoLights, 0, 0, 1);
+
     LO_Register();
     Rend_DecorRegister();
 }
 
-static dynnode_t* newDynNode(gamemap_t* map)
+static void linkDynnodeToList(dynnode_t** at, dynnode_t* node)
+{
+    node->next = (*at);
+    (*at) = node;
+}
+
+static void linkDynnodeToMap(dynnode_t** at, dynnode_t* node)
+{
+    node->nextUsed = (*at);
+    (*at) = node;
+}
+
+static dynnode_t* allocDynnode(void)
 {
     dynnode_t*          node;
 
-    // Have we run out of nodes?
     if(unusedNodes)
-    {
+    {   // We have an unused node we can re-use.
         node = unusedNodes;
         unusedNodes = unusedNodes->nextUsed;
     }
     else
     {
-        node = Z_Malloc(sizeof(dynnode_t), PU_STATIC, NULL);
+        gamemap_t*      map = P_GetCurrentMap();
 
-        // Link the new node to the used list.
-        node->nextUsed = map->dlights.dynFirst;
-        map->dlights.dynFirst = node;
+        node = Z_Malloc(sizeof(*node), PU_STATIC, NULL);
+
+        // Link this node to the map.
+        linkDynnodeToMap(&map->dlights.linkList.head, node);
     }
 
     node->next = NULL;
+
     return node;
 }
 
-/**
- * Create a new dynlight list.
- *
- * @param sortBrightestFirst Nodes in the list will be auto-sorted when
- *                      added by the brightness of the associated dynlight
- *                      in descending order.
- * @return              Identifier for the new list.
- */
-static uint newLinkList(gamemap_t* map, boolean sortBrightestFirst)
+static dynlist_t* allocDynlist(void)
 {
     dynlist_t*          list;
 
     // Ran out of light link lists?
-    if(++map->dlights.numLinkLists >= map->dlights.maxLinkLists)
+    if(++numDynlists >= maxDynlists)
     {
-        uint                newNum = map->dlights.maxLinkLists * 2;
+        uint                newNum = maxDynlists * 2;
 
         if(!newNum)
             newNum = 2;
 
-        map->dlights.linkLists = Z_Realloc(map->dlights.linkLists,
-            newNum * sizeof(dynlist_t), PU_STATIC);
-        map->dlights.maxLinkLists = newNum;
+        dynlists =
+            Z_Realloc(dynlists, newNum * sizeof(dynlist_t), PU_STATIC);
+        maxDynlists = newNum;
     }
 
-    list = &map->dlights.linkLists[map->dlights.numLinkLists-1];
-    list->head = NULL;
-    list->sortBrightestFirst = sortBrightestFirst;
+    list = &dynlists[numDynlists - 1];
+    memset(list, 0, sizeof(list));
 
-    return map->dlights.numLinkLists - 1;
-}
-
-static void destroyLinkLists(gamemap_t* map)
-{
-    if(map->dlights.linkLists)
-        Z_Free(map->dlights.linkLists);
-    map->dlights.linkLists = NULL;
-    map->dlights.numLinkLists = map->dlights.maxLinkLists = 0;
+    return list;
 }
 
 /**
  * Compare two dynlights.
  *
- * @result              @c -1 = @param b is brighter than @param a.
- *                      @c  1 = @param a is brighter than @param b.
+ * @result              @c <0 = @param b is brighter than @param a.
+ *                      @c >0 = @param a is brighter than @param b.
  *                      @c  0 = @param a and @param b are equivalent.
  */
 static int compareDynlights(const dynlight_t* a, const dynlight_t* b)
@@ -178,21 +181,26 @@ static int compareDynlights(const dynlight_t* a, const dynlight_t* b)
     return 0;
 }
 
-static void linkDynNodeToList(dynlist_t* list, dynnode_t* node)
+/**
+ * Find the potential insertion point in list for dynlight.
+ *
+ * @param list          The list to be searched.
+ * @param dl            The dynlight for potential insertion.
+ * @param sortBright    @c true = List is to be ordered from "bright" to
+ *                      "dim" and older dynlights take precedence over new.
+ *
+ * @return              Ptr to the chosen insertion point. Never @c NULL.
+ */
+static dynnode_t** findPlaceInListForDynlight(dynlist_t* list, dynlight_t* dl,
+                                              boolean sortBright)
 {
     dynnode_t**         at = &list->head;
 
-    if(list->sortBrightestFirst && list->head)
+    if(sortBright && list->head)
     {
-        /**
-         * We must find the insertion point in the list. Nodes in the list
-         * are ordered from "bright" to "dim" and older nodes take precedence
-         * over new nodes.
-         */
-
         for(;;)
         {
-            if(!(compareDynlights(&(*at)->dyn, &node->dyn) < 0))
+            if(!(compareDynlights(&(*at)->dyn, dl) < 0))
             {
                 if(*(at = &(*at)->next) != NULL)
                     continue;
@@ -202,88 +210,34 @@ static void linkDynNodeToList(dynlist_t* list, dynnode_t* node)
         }
     }
 
-    node->next = (*at);
-    (*at) = node;
+    return at;
 }
 
 /**
- * Returns a new dynlight node. If the list of unused nodes is empty,
- * a new node is created.
- */
-static dynnode_t* newDynLight(gamemap_t* map, float* s, float* t)
-{
-    dynnode_t*          node = newDynNode(map);
-    dynlight_t*         dyn = &node->dyn;
-
-    if(s)
-    {
-        dyn->s[0] = s[0];
-        dyn->s[1] = s[1];
-    }
-    if(t)
-    {
-        dyn->t[0] = t[0];
-        dyn->t[1] = t[1];
-    }
-
-    return node;
-}
-
-/**
- * Blend the given light value with the lumobj's color, apply any global
- * modifiers and output the result.
+ * Project the given plane light onto the specified surface.
  *
- * @param outRGB        The location the calculated result will be written to.
- * @param lum           Ptr to the lumobj from which the color will be used.
- * @param light         The light value to be used in the calculation.
- */
-static void calcDynLightColor(float* outRGB, const float* inRGB, float light)
-{
-    uint                i;
-
-    if(light < 0)
-        light = 0;
-    else if(light > 1)
-        light = 1;
-    light *= dlFactor;
-
-    // In fog, additive blending is used. The normal fog color
-    // is way too bright.
-    if(usingFog)
-        light *= dlFogBright; // Would be too much.
-
-    // Multiply with the light color.
-    for(i = 0; i < 3; ++i)
-    {
-        outRGB[i] = light * inRGB[i];
-    }
-}
-
-/**
- * Project the given planelight onto the specified seg. If it would be lit,
- * a new dynlight node will be created and returned.
- *
- * @param lum           Ptr to the lumobj lighting the seg.
+ * @param lum           Ptr to the lumobj lighting the surface.
  * @param bottom        Z height (bottom) of the section being lit.
  * @param top           Z height (top) of the section being lit.
+ * @param s             Texture s coords written back here.
+ * @param t             Texture t coords written back here.
  *
- * @return              Ptr to the projected light, ELSE @c NULL.
+ * @return              @c true, if the generated coords are within bounds.
  */
-static dynnode_t* projectPlaneGlowOnSegSection(gamemap_t* map, const lumobj_t* lum,
-                                               float bottom, float top)
+static boolean genGlowTexCoords(const lumobj_t* lum, float bottom, float top,
+                                pvec2_t s, pvec2_t t)
 {
     float               glowHeight;
-    float               s[2], t[2];
 
     if(bottom >= top)
-        return NULL; // No height.
+        return false; // No height.
 
     glowHeight =
         (MAX_GLOWHEIGHT * LUM_PLANE(lum)->intensity) * glowHeightFactor;
 
     // Don't make too small or too large glows.
     if(glowHeight <= 2)
-        return NULL;
+        return false;
 
     if(glowHeight > glowHeightMax)
         glowHeight = glowHeightMax;
@@ -301,75 +255,13 @@ static dynnode_t* projectPlaneGlowOnSegSection(gamemap_t* map, const lumobj_t* l
     }
 
     if(!(t[0] <= 1 || t[1] >= 0))
-        return NULL; // Is above/below on the Y axis.
+        return false; // Is above/below on the Y axis.
 
     // The horizontal direction is easy.
     s[0] = 0;
     s[1] = 1;
 
-    return newDynLight(map, s, t);
-}
-
-/**
- * Given a normalized normal, construct up and right vectors, oriented to
- * the original normal. Note all vectors and normals are in world-space.
- *
- * @param up            The up vector will be written back here.
- * @param right         The right vector will be written back here.
- * @param normal        Normal to construct vectors for.
- */
-static void buildUpRight(pvec3_t up, pvec3_t right, const pvec3_t normal)
-{
-    const vec3_t rotm[3] = {
-        {0.f, 0.f, 1.f},
-        {0.f, 0.f, 1.f},
-        {0.f, 0.f, 1.f}
-    };
-    int                 axis = VX;
-    vec3_t              fn;
-
-    V3_Set(fn, fabsf(normal[VX]), fabsf(normal[VY]), fabsf(normal[VZ]));
-
-    if(fn[VY] > fn[axis])
-        axis = VY;
-    if(fn[VZ] > fn[axis])
-        axis = VZ;
-
-    if(fabsf(fn[VX] - 1.0f) < FLT_EPSILON ||
-       fabsf(fn[VY] - 1.0f) < FLT_EPSILON ||
-       fabsf(fn[VZ] - 1.0f) < FLT_EPSILON)
-    {   // We must build the right vector manually.
-        if(axis == VX && normal[VX] > 0.f)
-        {
-            V3_Set(right, 0.f, 1.f, 0.f);
-        }
-        else if(axis == VX)
-        {
-            V3_Set(right, 0.f, -1.f, 0.f);
-        }
-
-        if(axis == VY && normal[VY] > 0.f)
-        {
-            V3_Set(right, -1.f, 0.f, 0.f);
-        }
-        else if(axis == VY)
-        {
-            V3_Set(right, 1.f, 0.f, 0.f);
-        }
-
-        if(axis == VZ)
-        {
-            V3_Set(right, 1.f, 0.f, 0.f);
-        }
-    }
-    else
-    {   // Can use a cross product of the surface normal.
-        V3_CrossProduct(right, (const pvec3_t) rotm[axis], normal);
-        V3_Normalize(right);
-    }
-
-    V3_CrossProduct(up, right, normal);
-    V3_Normalize(up);
+    return true;
 }
 
 /**
@@ -377,21 +269,21 @@ static void buildUpRight(pvec3_t up, pvec3_t right, const pvec3_t normal)
  *
  * @param point         Point on surface around which texture is centered.
  * @param scale         Scale multiplier for texture.
- * @param s             Texture s coords written back here.
- * @param t             Texture t coords written back here.
  * @param v1            Top left vertex of the surface being projected on.
  * @param v2            Bottom right vertex of the surface being projected on.
  * @param normal        Normal of the surface being projected on.
+ * @param s             Texture s coords written back here.
+ * @param t             Texture t coords written back here.
  *
  * @return              @c true, if the generated coords are within bounds.
  */
-static boolean genTexCoords(const pvec3_t point, float scale,
-                            pvec2_t s, pvec2_t t, const pvec3_t v1,
-                            const pvec3_t v2, const pvec3_t normal)
+static boolean genTexCoords(const_pvec3_t point, float scale,
+                            const_pvec3_t v1, const_pvec3_t v2,
+                            const_pvec3_t normal, pvec2_t s, pvec2_t t)
 {
     vec3_t              vToPoint, right, up;
 
-    buildUpRight(up, right, normal);
+    V3_BuildUpRight(up, right, normal);
     V3_Subtract(vToPoint, v1, point);
     s[0] = V3_DotProduct(vToPoint, right) * scale + .5f;
     t[0] = V3_DotProduct(vToPoint, up) * scale + .5f;
@@ -410,181 +302,182 @@ static boolean genTexCoords(const pvec3_t point, float scale,
     return true;
 }
 
+static DGLuint omniProject(const lumobj_t* lum, byte texSlot,
+                           const_pvec3_t v1, const_pvec3_t v2,
+                           const_pvec3_t normal, const float** color,
+                           float* luma, pvec2_t s, pvec2_t t)
+{
+    DGLuint             tex;
+    vec3_t              lumCenter, vToLum;
+    uint                lumIdx = LO_ToIndex(lum);
+
+    if(LO_IsHidden(lumIdx, viewPlayer - ddPlayers))
+        return 0;
+
+    switch(texSlot)
+    {
+    default:    tex = LUM_OMNI(lum)->tex;       break;
+    case 1:     tex = LUM_OMNI(lum)->floorTex;  break;
+    case 2:     tex = LUM_OMNI(lum)->ceilTex;   break;
+    }
+
+    if(!tex)
+        return 0;
+
+    V3_Set(lumCenter, lum->pos[VX], lum->pos[VY],
+           lum->pos[VZ] + LUM_OMNI(lum)->zOff);
+
+    // On the right side?
+    V3_Subtract(vToLum, v1, lumCenter);
+    if(V3_DotProduct(vToLum, normal) < 0.f)
+    {
+        float               dist;
+        vec3_t              point;
+
+        // Calculate 3D distance between surface and lumobj.
+        V3_ClosestPointOnPlane(point, normal, v1, lumCenter);
+        dist = V3_Distance(point, lumCenter);
+        if(dist > 0 && dist <= LUM_OMNI(lum)->radius)
+        {
+            float               l =
+                LUM_FACTOR(dist, LUM_OMNI(lum)->radius);
+
+            // If a max distance limit is set, lumobjs fade out.
+            if(lum->maxDistance > 0)
+            {
+                float               distFromViewer =
+                    LO_DistanceToViewer(lumIdx, viewPlayer - ddPlayers);
+
+                if(distFromViewer > lum->maxDistance)
+                    l = 0;
+
+                if(distFromViewer > .67f * lum->maxDistance)
+                {
+                    l *= (lum->maxDistance - distFromViewer) /
+                         (.33f * lum->maxDistance);
+                }
+            }
+
+            if(l >= .05f)
+            {
+                float               scale = 1.0f /
+                    ((2.f * LUM_OMNI(lum)->radius) - dist);
+
+                if(genTexCoords(point, scale, v1, v2, normal, s, t))
+                {
+                    *luma = l;
+                    *color = LUM_OMNI(lum)->color;
+                    return tex;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+static DGLuint planeProject(const lumobj_t* lum, const_pvec3_t v1,
+                            const_pvec3_t v2, const float** color,
+                            float* luma, pvec2_t s, pvec2_t t)
+{
+    if(LUM_PLANE(lum)->tex && genGlowTexCoords(lum, v2[VZ], v1[VZ], s, t))
+    {
+        *luma = 1;
+        *color = LUM_PLANE(lum)->color;
+        return LUM_PLANE(lum)->tex;
+    }
+
+    return 0;
+}
+
 typedef struct surfacelumobjiterparams_s {
     gamemap_t*      map;
     vec3_t          v1, v2;
     vec3_t          normal;
-    boolean         haveList;
     uint            listIdx;
     byte            flags; // DLF_* flags.
 } surfacelumobjiterparams_t;
 
-static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* data)
+static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
 {
+    surfacelumobjiterparams_t* p = (surfacelumobjiterparams_t*) context;
     lumobj_t*           lum = (lumobj_t*) ptr;
-    dynnode_t*          node = NULL;
-    surfacelumobjiterparams_t* params = data;
-    DGLuint             tex = 0;
-    float               lightBrightness = 1;
-    float*              lightRGB;
-    uint                lumIdx;
+    DGLuint             tex;
+    const float*        color;
+    float               luma;
+    vec2_t              s, t;
 
-    if(!(lum->type == LT_OMNI || lum->type == LT_PLANE))
+    if(lum->type == LT_PLANE && (p->flags & DLF_NO_PLANAR))
         return true; // Continue iteration.
-
-    lumIdx = LO_ToIndex(lum);
 
     switch(lum->type)
     {
     case LT_OMNI:
-        if(LO_IsHidden(lumIdx, viewPlayer - ddPlayers))
-            return true;
-
-        if(params->flags & DLF_TEX_CEILING)
-            tex = LUM_OMNI(lum)->ceilTex;
-        else if(params->flags & DLF_TEX_FLOOR)
-            tex = LUM_OMNI(lum)->floorTex;
-        else
-            tex = LUM_OMNI(lum)->tex;
-
-        lightRGB = LUM_OMNI(lum)->color;
-
-        if(tex)
         {
-            vec3_t              lumCenter, vToLum;
-
-            V3_Set(lumCenter, lum->pos[VX], lum->pos[VY],
-                   lum->pos[VZ] + LUM_OMNI(lum)->zOff);
-
-            // On the right side?
-            V3_Subtract(vToLum, params->v1, lumCenter);
-            if(V3_DotProduct(vToLum, params->normal) < 0.f)
-            {
-                float               dist;
-                vec3_t              point;
-
-                // Calculate 3D distance between surface and lumobj.
-                V3_ClosestPointOnPlane(point, params->normal, params->v1, lumCenter);
-                dist = V3_Distance(point, lumCenter);
-                if(dist > 0 && dist <= LUM_OMNI(lum)->radius)
-                {
-                    lightBrightness = LUM_FACTOR(dist, LUM_OMNI(lum)->radius);
-
-                    // If a max distance limit is set, lumobjs fade out.
-                    if(lum->maxDistance > 0)
-                    {
-                        float               distFromViewer =
-                            LO_DistanceToViewer(lumIdx, viewPlayer - ddPlayers);
-
-                        if(distFromViewer > lum->maxDistance)
-                            lightBrightness = 0;
-
-                        if(distFromViewer > .67f * lum->maxDistance)
-                        {
-                            lightBrightness *= (lum->maxDistance - distFromViewer) /
-                                (.33f * lum->maxDistance);
-                        }
-                    }
-
-                    if(lightBrightness >= .05f)
-                    {
-                        vec2_t              s, t;
-                        float               scale =
-                            1.0f / ((2.f * LUM_OMNI(lum)->radius) - dist);
-
-                        if(genTexCoords(point, scale, s, t, params->v1,
-                                        params->v2, params->normal))
-                        {
-                            node = newDynLight(params->map, s, t);
-                        }
-                    }
-                }
-            }
-        }
+        byte                texSlot = ((p->flags & DLF_TEX_CEILING)? 2 :
+            (p->flags & DLF_TEX_FLOOR)? 1 : 0);
+        
+        tex = omniProject(lum, texSlot, p->v1, p->v2, p->normal,
+                          &color, &luma, s, t);
         break;
-
-    case LT_PLANE:
-        if(!(params->flags & DLF_NO_PLANAR))
-            tex = LUM_PLANE(lum)->tex;
-
-        if(tex)
-        {
-            lightRGB = LUM_PLANE(lum)->color;
-
-            node = projectPlaneGlowOnSegSection(params->map, lum, params->v2[VZ], params->v1[VZ]);
         }
+    case LT_PLANE:
+        tex = planeProject(lum, p->v1, p->v2, /*p->normal,*/
+                           &color, &luma, s, t);
         break;
 
     default:
-        Con_Error("DLIT_SegLumobjContacts: Invalid value, lum->type = %i.",
-                  (int) lum->type);
         break;
     }
 
-    if(node)
-    {
-        dynlight_t*         dyn = &node->dyn;
-
-        dyn->texture = tex;
-        calcDynLightColor(dyn->color, lightRGB, lightBrightness);
+    if(tex)
+    {   // Projection reached the surface.
+        dynlist_t*          list;
+        dynnode_t*          node;
+        dynlight_t*         dyn;
 
         // Got a list for this surface yet?
-        if(!params->haveList)
+        if(p->listIdx)
         {
-            boolean             sortBrightestFirst =
-                (params->flags & DLF_SORT_LUMADSC)? true : false;
-
-            params->listIdx = newLinkList(params->map, sortBrightestFirst);
-            params->haveList = true;
+            list = &dynlists[p->listIdx - 1];
+        }
+        else
+        {
+            list = allocDynlist();
+            p->listIdx = numDynlists; // 1-based index.
         }
 
-        linkDynNodeToList(&params->map->dlights.linkLists[params->listIdx], node);
+        node = allocDynnode();
+        dyn = &node->dyn;
+
+        Dynlight_SetTex(dyn, tex);
+        Dynlight_SetTexCoords(dyn, s, t);
+        Dynlight_SetColor(dyn, color, luma);
+
+        linkDynnodeToList(
+            findPlaceInListForDynlight(list, dyn,
+                (p->flags & DLF_SORT_LUMADSC)? true : false), node);
     }
 
     return true; // Continue iteration.
 }
 
 /**
- * Initialize the dynlight system in preparation for rendering view(s) of the
- * game world. Called by R_InitLevel().
+ * Destroys all dynlights for the specified map.
  */
-void DL_InitForMap(gamemap_t* map)
+void DL_DestroyDynlights(gamemap_t* map)
 {
     if(!map)
         return;
 
-    destroyLinkLists(map);
-}
+    // Move dynnodes to the global list of unused nodes for recycling.
+    unusedNodes = map->dlights.linkList.head;
+    //map->dlights.linkList.head = NULL;
 
-/**
- * Moves all used dynlight nodes to the list of unused nodes, so they
- * can be reused.
- */
-void DL_InitForNewFrame(gamemap_t* map)
-{
-    if(!map)
-        return;
-
-    // Start reusing nodes.
-    unusedNodes = map->dlights.dynFirst;
-
-    // Clear the surface light link lists.
-    map->dlights.numLinkLists = 0;
-    if(map->dlights.numLinkLists)
-        memset(map->dlights.linkLists, 0,
-               map->dlights.numLinkLists * sizeof(dynlist_t));
-}
-
-void DL_DestroyDynNodes(gamemap_t* map)
-{
-    if(!map)
-        return;
-
-    destroyLinkLists(map);
-
-    // Move dynnodes to the global list of unused nodes so they can be recycled.
-    unusedNodes = map->dlights.dynFirst;
-    map->dlights.dynFirst = NULL;
+    // Clear the surface light link list head ptrs.
+    if(numDynlists)
+        memset(dynlists, 0, numDynlists * sizeof(dynlist_t));
+    numDynlists = 0;
 }
 
 /**
@@ -614,51 +507,46 @@ uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
     if(!map || !face)
         return 0;
 
-    if(!useDynLights && !useWallGlow)
+    if(!useDynlights && !useWallGlow)
         return 0; // Disabled.
 
     V3_Copy(params.v1, topLeft);
     V3_Copy(params.v2, bottomRight);
     V3_Set(params.normal, normal[VX], normal[VY], normal[VZ]);
-    params.flags = flags;
-    params.haveList = false;
-    params.listIdx = 0;
+
     params.map = map;
+    params.flags = flags;
+    params.listIdx = 0;
 
     // Process each lumobj contacting the subsector.
     R_IterateSubsectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
                                &params);
 
     // Did we generate a light list?
-    if(params.haveList)
-        return params.listIdx + 1;
-
-    return 0; // Nope.
+    return params.listIdx;
 }
 
 /**
- * Calls func for all projected dynlights in the given list.
+ * Calls func for all projected dynlights in the specified dynlist.
  *
- * @param listIdx       Identifier of the list to process.
+ * @param dynlistID     Identifier of the dynlist to process.
  * @param data          Ptr to pass to the callback.
  * @param func          Callback to make for each object.
  *
  * @return              @c true, iff every callback returns @c true.
  */
-boolean DL_ListIterator(gamemap_t* map, uint listIdx,
-                        boolean (*func) (const dynlight_t*, void*), void* data)
+boolean DL_DynlistIterator(uint dynlistID,
+                           boolean (*func) (const dynlight_t*, void*),
+                           void* data)
 {
     dynnode_t*          node;
     boolean             retVal, isDone;
 
-    if(!map)
+    if(dynlistID == 0 || dynlistID > numDynlists)
         return true;
+    dynlistID--;
 
-    if(listIdx == 0 || listIdx > map->dlights.numLinkLists)
-        return true;
-    listIdx--;
-
-    node = map->dlights.linkLists[listIdx].head;
+    node = dynlists[dynlistID].head;
     retVal = true;
     isDone = false;
     while(node && !isDone)
@@ -673,4 +561,63 @@ boolean DL_ListIterator(gamemap_t* map, uint listIdx,
     }
 
     return retVal;
+}
+
+void Dynlight_SetTex(dynlight_t* dyn, DGLuint tex)
+{
+    if(!dyn)
+        return;
+
+    dyn->texture = tex;
+}
+
+void Dynlight_SetTexCoords(dynlight_t* dyn, const float s[2], const float t[2])
+{
+    if(!dyn)
+        return;
+
+    if(s)
+    {
+        dyn->s[0] = s[0];
+        dyn->s[1] = s[1];
+    }
+
+    if(t)
+    {
+        dyn->t[0] = t[0];
+        dyn->t[1] = t[1];
+    }
+}
+
+/**
+ * Blend the given light value with the color (applying any global modifiers
+ * in the process).
+ *
+ * @param dyn           Dynlight to be updated.
+ * @param color         Light color.
+ * @param luma          Luminance.
+ */
+void Dynlight_SetColor(dynlight_t* dyn, const float color[3], float luma)
+{
+    uint                i;
+
+    if(!dyn)
+        return;
+
+    if(luma < 0)
+        luma = 0;
+    else if(luma > 1)
+        luma = 1;
+    luma *= dlFactor;
+
+    // In fog, additive blending is used. The normal fog color
+    // is way too bright.
+    if(usingFog)
+        luma *= dlFogBright; // Would be too much.
+
+    // Multiply with the luma color.
+    for(i = 0; i < 3; ++i)
+    {
+        dyn->color[i] = luma * color[i];
+    }
 }

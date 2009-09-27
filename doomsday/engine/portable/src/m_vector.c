@@ -29,6 +29,7 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include <math.h>
+#include <float.h>
 
 #include "de_base.h"
 #include "m_vector.h"
@@ -455,7 +456,7 @@ float V3_DotProduct(const_pvec3_t a, const_pvec3_t b)
  * @param src1          First vector.
  * @param src2          Second vector.
  */
-void V3_CrossProduct(pvec3_t dest, const pvec3_t src1, const pvec3_t src2)
+void V3_CrossProduct(pvec3_t dest, const_pvec3_t src1, const_pvec3_t src2)
 {
     dest[VX] = src1[VY] * src2[VZ] - src1[VZ] * src2[VY];
     dest[VY] = src1[VZ] * src2[VX] - src1[VX] * src2[VZ];
@@ -491,9 +492,9 @@ void V3_PointCrossProduct(pvec3_t dest, const pvec3_t v1, const pvec3_t v2,
  * @return              Distance from the closest point on the plane to the
  *                      specified arbitary point.
  */
-float V3_ClosestPointOnPlane(pvec3_t dest, const pvec3_t planeNormal,
-                             const pvec3_t planePoint,
-                             const pvec3_t arbPoint)
+float V3_ClosestPointOnPlane(pvec3_t dest, const_pvec3_t planeNormal,
+                             const_pvec3_t planePoint,
+                             const_pvec3_t arbPoint)
 {
     vec3_t              pvec;
     float               distance;
@@ -524,6 +525,68 @@ int V3_MajorAxis(const pvec3_t vec)
         axis = VZ;
 
     return axis;
+}
+
+/**
+ * Given a normalized normal, construct up and right vectors, oriented to
+ * the original normal. Note all vectors and normals are in world-space.
+ *
+ * @param up            The up vector will be written back here.
+ * @param right         The right vector will be written back here.
+ * @param normal        Normal to construct vectors for.
+ */
+void V3_BuildUpRight(pvec3_t up, pvec3_t right, const_pvec3_t normal)
+{
+    const vec3_t rotm[3] = {
+        {0.f, 0.f, 1.f},
+        {0.f, 0.f, 1.f},
+        {0.f, 0.f, 1.f}
+    };
+    int                 axis = VX;
+    vec3_t              fn;
+
+    V3_Set(fn, fabsf(normal[VX]), fabsf(normal[VY]), fabsf(normal[VZ]));
+
+    if(fn[VY] > fn[axis])
+        axis = VY;
+    if(fn[VZ] > fn[axis])
+        axis = VZ;
+
+    if(fabsf(fn[VX] - 1.0f) < FLT_EPSILON ||
+       fabsf(fn[VY] - 1.0f) < FLT_EPSILON ||
+       fabsf(fn[VZ] - 1.0f) < FLT_EPSILON)
+    {   // We must build the right vector manually.
+        if(axis == VX && normal[VX] > 0.f)
+        {
+            V3_Set(right, 0.f, 1.f, 0.f);
+        }
+        else if(axis == VX)
+        {
+            V3_Set(right, 0.f, -1.f, 0.f);
+        }
+
+        if(axis == VY && normal[VY] > 0.f)
+        {
+            V3_Set(right, -1.f, 0.f, 0.f);
+        }
+        else if(axis == VY)
+        {
+            V3_Set(right, 1.f, 0.f, 0.f);
+        }
+
+        if(axis == VZ)
+        {
+            V3_Set(right, 1.f, 0.f, 0.f);
+        }
+    }
+    else
+    {   // Can use a cross product of the surface normal.
+        V3_CrossProduct(right, (const pvec3_t) rotm[axis], normal);
+        V3_Normalize(right);
+    }
+
+    V3_CrossProduct(up, right, normal);
+    V3_Normalize(up);
 }
 
 /**

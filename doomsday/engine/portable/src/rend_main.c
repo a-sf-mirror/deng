@@ -67,7 +67,7 @@ static DGLuint constructBBox(DGLuint name, float br);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern int useDynLights, translucentIceCorpse;
+extern int useDynlights, translucentIceCorpse;
 extern int skyhemispheres;
 extern int loMaxRadius;
 
@@ -922,7 +922,7 @@ void Rend_AddMaskedPoly(const rvertex_t* rvertices,
          * The dynlights will have already been sorted so that the brightest
          * and largest of them is first in the list. So grab that one.
          */
-        DL_ListIterator(P_GetCurrentMap(), lightListIdx, RLIT_DynGetFirst, &dyn);
+        DL_DynlistIterator(lightListIdx, RLIT_DynGetFirst, &dyn);
 
         vis->data.wall.modTex = dyn->texture;
         vis->data.wall.modTexCoord[0][0] = dyn->s[0];
@@ -1474,7 +1474,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             {
                 dynlight_t*         dyn = NULL;
 
-                DL_ListIterator(P_GetCurrentMap(), p->lightListIdx, RLIT_DynGetFirst, &dyn);
+                DL_DynlistIterator(p->lightListIdx, RLIT_DynGetFirst, &dyn);
 
                 rtexcoords5 = R_AllocRendTexCoords(realNumVertices);
 
@@ -1722,7 +1722,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         dlparams.texTL = p->texTL;
         dlparams.texBR = p->texBR;
 
-        DL_ListIterator(P_GetCurrentMap(), p->lightListIdx, RLIT_DynLightWrite, &dlparams);
+        DL_DynlistIterator(p->lightListIdx, RLIT_DynLightWrite, &dlparams);
         numLights += dlparams.lastIdx;
         if(RL_IsMTexLights())
             numLights -= 1;
@@ -3814,7 +3814,7 @@ void Rend_RenderMap(gamemap_t* map)
 {
     binangle_t          viewside;
     boolean             doLums =
-        (useDynLights || haloMode || spriteLight || useDecorations);
+        (useDynlights || haloMode || spriteLight || useDecorations);
 
     if(!map)
         return;
@@ -3851,7 +3851,7 @@ void Rend_RenderMap(gamemap_t* map)
              * the projections are sensitive to distance from the viewer
              * (e.g. some may fade out when far away).
              */
-            DL_InitForNewFrame(map);
+            DL_DestroyDynlights(map);
         }
 
         // Add the backside clipping range (if vpitch allows).
