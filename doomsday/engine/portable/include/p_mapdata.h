@@ -123,7 +123,7 @@ typedef struct biassurface_s {
 } biassurface_t;
 
 typedef struct dynlist_s {
-    struct dynnode_s* head;
+    struct dynlistnode_s* head, *tail;
 } dynlist_t;
 
 #define GBF_CHANGED     0x1     // Grid block sector light has changed.

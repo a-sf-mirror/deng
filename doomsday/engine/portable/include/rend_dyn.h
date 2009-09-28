@@ -70,8 +70,9 @@ uint            DL_ProjectOnSurface(struct gamemap_s* map, face_t* face,
                                     const vectorcomp_t bottomRight[3],
                                     const vectorcomp_t normal[3], byte flags);
 
+void            DL_ClearDynlists(void);
 boolean         DL_DynlistIterator(uint dynlistID,
-                                   boolean (*func) (const dynlight_t*, void*),
+                                   boolean (*func) (void* dynlight, void* context),
                                    void* context);
 
 #endif
