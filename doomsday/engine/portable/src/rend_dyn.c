@@ -46,18 +46,22 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct dynnode_s {
-    struct dynnode_s* next, *nextUsed;
-    dynlight_t      dyn;
-} dynnode_t;
+typedef struct dynlistnode_s {
+    struct dynlistnode_s* next;
+    void*           data;
+} dynlistnode_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+dynlight_t* DL_NewDynlight(DGLuint texture, const float color[3],
+                           const float s[2], const float t[2]);
+void DL_DeleteDynlight(dynlight_t* dyn);
+
 void Dynlight_SetTex(dynlight_t* dyn, DGLuint tex);
 void Dynlight_SetTexCoords(dynlight_t* dyn, const float s[2], const float t[2]);
-void Dynlight_SetColor(dynlight_t* dyn, const float color[3], float luma);
+void Dynlight_SetColor(dynlight_t* dyn, const float color[3]);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -78,8 +82,11 @@ int glowHeightMax = 100; // 100 is the default (0-1024).
 static uint numDynlists = 0, maxDynlists = 0;
 static dynlist_t* dynlists = NULL;
 
-// Dynlight nodes.
-static dynnode_t* unusedNodes = NULL;
+// Unused dynlights.
+static dynlist_t unusedDynlights = { NULL, NULL };
+
+// Unused listnodes.
+static dynlistnode_t* unusedNodes = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -103,40 +110,160 @@ void DL_Register(void)
     Rend_DecorRegister();
 }
 
-static void linkDynnodeToList(dynnode_t** at, dynnode_t* node)
+static dynlistnode_t* newListNode(void)
 {
-    node->next = (*at);
-    (*at) = node;
-}
-
-static void linkDynnodeToMap(dynnode_t** at, dynnode_t* node)
-{
-    node->nextUsed = (*at);
-    (*at) = node;
-}
-
-static dynnode_t* allocDynnode(void)
-{
-    dynnode_t*          node;
+    dynlistnode_t*         node;
 
     if(unusedNodes)
-    {   // We have an unused node we can re-use.
+    {
         node = unusedNodes;
-        unusedNodes = unusedNodes->nextUsed;
+        unusedNodes = unusedNodes->next;
+
+        node->next = NULL;
+        node->data = NULL;
     }
     else
     {
-        gamemap_t*      map = P_GetCurrentMap();
-
-        node = Z_Malloc(sizeof(*node), PU_STATIC, NULL);
-
-        // Link this node to the map.
-        linkDynnodeToMap(&map->dlights.linkList.head, node);
+        node = Z_Calloc(sizeof(*node), PU_STATIC, NULL);
     }
 
-    node->next = NULL;
-
     return node;
+}
+
+static void deleteListNode(dynlistnode_t* node)
+{
+    node->next = unusedNodes;
+    unusedNodes = node;
+}
+
+static void listPushFront(dynlist_t* list, void* data)
+{
+    dynlistnode_t*          node = newListNode();
+
+    node->data = data;
+
+    node->next = list->head;
+    list->head = node;
+
+    if(!list->tail)
+        list->tail = node;
+}
+
+static void* listPopFront(dynlist_t* list)
+{
+    if(list->head)
+    {
+        dynlistnode_t*      node = list->head;
+
+        list->head = list->head->next;
+        if(!list->head)
+            list->tail = NULL;
+
+        deleteListNode(node);
+
+        return node->data;
+    }
+
+    Con_Error("listPopFront: Failed, list is empty.");
+    return NULL;
+}
+
+static void listInsertAt(dynlist_t* list, dynlistnode_t** at, void* data)
+{
+    dynlistnode_t*          node = newListNode();
+
+    node->data = data;
+
+    node->next = (*at);
+    (*at) = node;
+
+    if(!list->tail || !(*at)->next)
+        list->tail = node;
+}
+
+/**
+ * Join the two lists by adding @a other to the back of @a dst.
+ */
+static void listSpliceBack(dynlist_t* dst, dynlist_t* other)
+{
+    if(dst->tail)
+    {
+        dst->tail->next = other->head;
+        dst->tail = other->tail;
+    }
+    else
+    {
+        dst->head = other->head;
+        dst->tail = other->tail;
+    }
+
+    other->head = other->tail = NULL;
+}
+
+/**
+ * Clear all data ptrs in the list. The data pointed to is untouched.
+ */
+static void listClear(dynlist_t* list)
+{
+    if(list->head)
+    {
+        // Join the existing unusedNodes to the tail of this list,
+        // then set the unusedNodes list head to the head of this list.
+        list->tail->next = unusedNodes;
+        unusedNodes = list->head;
+    }
+
+    list->head = list->tail = NULL;
+}
+
+static boolean listIsEmpty(dynlist_t* list)
+{
+    return (list->head? false : true);
+}
+
+static int listIterate(dynlist_t* list,
+                       boolean (*callback) (void* obj, void* callerData),
+                       void* callerData)
+{
+    dynlistnode_t*      node;
+    boolean             retVal;
+
+    node = list->head;
+    retVal = true;
+    while(node)
+    {
+        if(!callback(node->data, callerData))
+        {
+            retVal = false;
+
+            node = NULL; // break the loop.
+        }
+        else
+            node = node->next;
+    }
+
+    return retVal;
+}
+
+static dynlight_t* allocDynlight(void)
+{
+    dynlight_t*         dyn;
+
+    if(!listIsEmpty(&unusedDynlights))
+    {   // We have an unused dynlight we can re-use.       
+        dyn = listPopFront(&unusedDynlights);
+    }
+    else
+    {
+        dyn = Z_Malloc(sizeof(*dyn), PU_STATIC, 0);
+    }
+
+    return dyn;
+}
+
+static void linkDynlightToMap(gamemap_t* map, dynlight_t* dyn)
+{
+    listPushFront(&map->dlights.linkList, dyn);
 }
 
 static dynlist_t* allocDynlist(void)
@@ -185,22 +312,22 @@ static int compareDynlights(const dynlight_t* a, const dynlight_t* b)
  * Find the potential insertion point in list for dynlight.
  *
  * @param list          The list to be searched.
- * @param dl            The dynlight for potential insertion.
+ * @param dyn           The dynlight for potential insertion.
  * @param sortBright    @c true = List is to be ordered from "bright" to
  *                      "dim" and older dynlights take precedence over new.
  *
  * @return              Ptr to the chosen insertion point. Never @c NULL.
  */
-static dynnode_t** findPlaceInListForDynlight(dynlist_t* list, dynlight_t* dl,
+static dynlistnode_t** findPlaceInListForDynlight(dynlist_t* list, dynlight_t* dyn,
                                               boolean sortBright)
 {
-    dynnode_t**         at = &list->head;
+    dynlistnode_t**         at = &list->head;
 
     if(sortBright && list->head)
     {
         for(;;)
         {
-            if(!(compareDynlights(&(*at)->dyn, dl) < 0))
+            if(!(compareDynlights((*at)->data, dyn) < 0))
             {
                 if(*(at = &(*at)->next) != NULL)
                     continue;
@@ -211,6 +338,17 @@ static dynnode_t** findPlaceInListForDynlight(dynlist_t* list, dynlight_t* dl,
     }
 
     return at;
+}
+
+static void linkDynlightToList(dynlist_t* list, dynlight_t* dyn,
+                               boolean sortBright)
+{
+    dynlistnode_t**         at;
+
+    if((at = findPlaceInListForDynlight(list, dyn, sortBright)))
+    {
+        listInsertAt(list, at, dyn);
+    }
 }
 
 /**
@@ -302,10 +440,26 @@ static boolean genTexCoords(const_pvec3_t point, float scale,
     return true;
 }
 
-static DGLuint omniProject(const lumobj_t* lum, byte texSlot,
-                           const_pvec3_t v1, const_pvec3_t v2,
-                           const_pvec3_t normal, const float** color,
-                           float* luma, pvec2_t s, pvec2_t t)
+static void applyDynlightColorModifiers(float color[3], float luma)
+{
+    luma *= dlFactor;
+
+    // In fog, additive blending is used. The normal fog color
+    // is way too bright.
+    if(usingFog)
+        luma *= dlFogBright; // Would be too much.
+
+    luma = MINMAX_OF(0, luma, 1);
+
+    // Multiply luma with color.
+    color[CR] *= luma;
+    color[CG] *= luma;
+    color[CB] *= luma;
+}
+
+static dynlight_t* omniProject(const lumobj_t* lum, byte texSlot,
+                               const_pvec3_t v1, const_pvec3_t v2,
+                               const_pvec3_t normal)
 {
     DGLuint             tex;
     vec3_t              lumCenter, vToLum;
@@ -339,7 +493,7 @@ static DGLuint omniProject(const lumobj_t* lum, byte texSlot,
         dist = V3_Distance(point, lumCenter);
         if(dist > 0 && dist <= LUM_OMNI(lum)->radius)
         {
-            float               l =
+            float               luma =
                 LUM_FACTOR(dist, LUM_OMNI(lum)->radius);
 
             // If a max distance limit is set, lumobjs fade out.
@@ -349,45 +503,59 @@ static DGLuint omniProject(const lumobj_t* lum, byte texSlot,
                     LO_DistanceToViewer(lumIdx, viewPlayer - ddPlayers);
 
                 if(distFromViewer > lum->maxDistance)
-                    l = 0;
+                    luma = 0;
 
                 if(distFromViewer > .67f * lum->maxDistance)
                 {
-                    l *= (lum->maxDistance - distFromViewer) /
+                    luma *= (lum->maxDistance - distFromViewer) /
                          (.33f * lum->maxDistance);
                 }
             }
 
-            if(l >= .05f)
+            if(luma >= .05f)
             {
+                vec2_t              s, t;
                 float               scale = 1.0f /
                     ((2.f * LUM_OMNI(lum)->radius) - dist);
 
                 if(genTexCoords(point, scale, v1, v2, normal, s, t))
                 {
-                    *luma = l;
-                    *color = LUM_OMNI(lum)->color;
-                    return tex;
+                    float               color[3];
+
+                    color[CR] = LUM_OMNI(lum)->color[CR];
+                    color[CG] = LUM_OMNI(lum)->color[CG];
+                    color[CB] = LUM_OMNI(lum)->color[CB];
+
+                    applyDynlightColorModifiers(color, luma);
+
+                    return DL_NewDynlight(tex, color, s, t);
                 }
             }
         }
     }
 
-    return 0;
+    return NULL;
 }
 
-static DGLuint planeProject(const lumobj_t* lum, const_pvec3_t v1,
-                            const_pvec3_t v2, const float** color,
-                            float* luma, pvec2_t s, pvec2_t t)
+static dynlight_t* planeProject(const lumobj_t* lum, const_pvec3_t v1,
+                                const_pvec3_t v2)
 {
+    vec2_t              s, t;
+
     if(LUM_PLANE(lum)->tex && genGlowTexCoords(lum, v2[VZ], v1[VZ], s, t))
     {
-        *luma = 1;
-        *color = LUM_PLANE(lum)->color;
-        return LUM_PLANE(lum)->tex;
+        float               color[3];
+
+        color[CR] = LUM_PLANE(lum)->color[CR];
+        color[CG] = LUM_PLANE(lum)->color[CG];
+        color[CB] = LUM_PLANE(lum)->color[CB];
+
+        applyDynlightColorModifiers(color, 1);
+
+        return DL_NewDynlight(LUM_PLANE(lum)->tex, color, s, t);
     }
 
-    return 0;
+    return NULL;
 }
 
 typedef struct surfacelumobjiterparams_s {
@@ -402,10 +570,7 @@ static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
 {
     surfacelumobjiterparams_t* p = (surfacelumobjiterparams_t*) context;
     lumobj_t*           lum = (lumobj_t*) ptr;
-    DGLuint             tex;
-    const float*        color;
-    float               luma;
-    vec2_t              s, t;
+    dynlight_t*         dyn = NULL;
 
     if(lum->type == LT_PLANE && (p->flags & DLF_NO_PLANAR))
         return true; // Continue iteration.
@@ -417,24 +582,20 @@ static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
         byte                texSlot = ((p->flags & DLF_TEX_CEILING)? 2 :
             (p->flags & DLF_TEX_FLOOR)? 1 : 0);
         
-        tex = omniProject(lum, texSlot, p->v1, p->v2, p->normal,
-                          &color, &luma, s, t);
+        dyn = omniProject(lum, texSlot, p->v1, p->v2, p->normal);
         break;
         }
     case LT_PLANE:
-        tex = planeProject(lum, p->v1, p->v2, /*p->normal,*/
-                           &color, &luma, s, t);
+        dyn = planeProject(lum, p->v1, p->v2 /*, p->normal*/);
         break;
 
     default:
         break;
     }
 
-    if(tex)
+    if(dyn)
     {   // Projection reached the surface.
         dynlist_t*          list;
-        dynnode_t*          node;
-        dynlight_t*         dyn;
 
         // Got a list for this surface yet?
         if(p->listIdx)
@@ -447,16 +608,8 @@ static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
             p->listIdx = numDynlists; // 1-based index.
         }
 
-        node = allocDynnode();
-        dyn = &node->dyn;
-
-        Dynlight_SetTex(dyn, tex);
-        Dynlight_SetTexCoords(dyn, s, t);
-        Dynlight_SetColor(dyn, color, luma);
-
-        linkDynnodeToList(
-            findPlaceInListForDynlight(list, dyn,
-                (p->flags & DLF_SORT_LUMADSC)? true : false), node);
+        linkDynlightToMap(p->map, dyn);
+        linkDynlightToList(list, dyn, (p->flags & DLF_SORT_LUMADSC)? true : false);
     }
 
     return true; // Continue iteration.
@@ -470,13 +623,23 @@ void DL_DestroyDynlights(gamemap_t* map)
     if(!map)
         return;
 
-    // Move dynnodes to the global list of unused nodes for recycling.
-    unusedNodes = map->dlights.linkList.head;
-    //map->dlights.linkList.head = NULL;
+    // Move dynlights to the global list of unused dynlights for recycling.
+    listSpliceBack(&unusedDynlights, &map->dlights.linkList);
+}
 
-    // Clear the surface light link list head ptrs.
-    if(numDynlists)
-        memset(dynlists, 0, numDynlists * sizeof(dynlist_t));
+/**
+ * @note Only clears the lists, the dynlights they link to are not touched.
+ */
+void DL_ClearDynlists(void)
+{
+    uint                i;
+
+    // Move all listnodes to the global list of unused listnodes for recycling.
+    for(i = 0; i < numDynlists; ++i)
+    {
+        listClear(&dynlists[i]);
+    }
+
     numDynlists = 0;
 }
 
@@ -530,37 +693,43 @@ uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
  * Calls func for all projected dynlights in the specified dynlist.
  *
  * @param dynlistID     Identifier of the dynlist to process.
+ * @param callback      Callback to make for each object.
  * @param data          Ptr to pass to the callback.
- * @param func          Callback to make for each object.
  *
  * @return              @c true, iff every callback returns @c true.
  */
 boolean DL_DynlistIterator(uint dynlistID,
-                           boolean (*func) (const dynlight_t*, void*),
-                           void* data)
+                           boolean (*callback) (void* dynlight, void* context),
+                           void* context)
 {
-    dynnode_t*          node;
-    boolean             retVal, isDone;
+    dynlist_t*          list;
 
     if(dynlistID == 0 || dynlistID > numDynlists)
         return true;
-    dynlistID--;
 
-    node = dynlists[dynlistID].head;
-    retVal = true;
-    isDone = false;
-    while(node && !isDone)
-    {
-        if(!func(&node->dyn, data))
-        {
-            retVal = false;
-            isDone = true;
-        }
-        else
-            node = node->next;
-    }
+    list = &dynlists[dynlistID - 1 /*1-based index*/];
 
-    return retVal;
+    return listIterate(list, callback, context);
+}
+
+dynlight_t* DL_NewDynlight(DGLuint texture, const float color[3],
+                           const float s[2], const float t[2])
+{
+    dynlight_t*         dyn = allocDynlight();
+        
+    Dynlight_SetTex(dyn, texture);
+    Dynlight_SetTexCoords(dyn, s, t);
+    Dynlight_SetColor(dyn, color);
+
+    return dyn;
+}
+
+void DL_DeleteDynlight(dynlight_t* dyn)
+{
+    if(!dyn)
+        return;
+
+    Z_Free(dyn);
 }
 
 void Dynlight_SetTex(dynlight_t* dyn, DGLuint tex)
@@ -595,29 +764,13 @@ void Dynlight_SetTexCoords(dynlight_t* dyn, const float s[2], const float t[2])
  *
  * @param dyn           Dynlight to be updated.
  * @param color         Light color.
- * @param luma          Luminance.
  */
-void Dynlight_SetColor(dynlight_t* dyn, const float color[3], float luma)
+void Dynlight_SetColor(dynlight_t* dyn, const float color[3])
 {
-    uint                i;
-
     if(!dyn)
         return;
 
-    if(luma < 0)
-        luma = 0;
-    else if(luma > 1)
-        luma = 1;
-    luma *= dlFactor;
-
-    // In fog, additive blending is used. The normal fog color
-    // is way too bright.
-    if(usingFog)
-        luma *= dlFogBright; // Would be too much.
-
-    // Multiply with the luma color.
-    for(i = 0; i < 3; ++i)
-    {
-        dyn->color[i] = luma * color[i];
-    }
+    dyn->color[CR] = color[CR];
+    dyn->color[CG] = color[CG];
+    dyn->color[CB] = color[CB];
 }

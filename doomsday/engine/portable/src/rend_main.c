@@ -3847,11 +3847,12 @@ void Rend_RenderMap(gamemap_t* map)
         if(doLums)
         {
             /**
-             * Clear the projected dynlight lists. This is done here as
-             * the projections are sensitive to distance from the viewer
+             * Clear the projected dynlights. This is done here as the
+             * projections are sensitive to distance from the viewer
              * (e.g. some may fade out when far away).
              */
             DL_DestroyDynlights(map);
+            DL_ClearDynlists();
         }
 
         // Add the backside clipping range (if vpitch allows).
