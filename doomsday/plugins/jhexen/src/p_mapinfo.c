@@ -243,20 +243,27 @@ void P_InitMapInfo(void)
                 info->cdTrack = sc_Number;
                 break;
 
+            /**
+             * \note In MAPINFO sky layer indices are switched compared
+             * to those used by Doomsday (i.e., the background is layer
+             * 2 in MAPINFO and the foreground is layer 1).
+             *
+             * Here we swap them.
+             */
             case MCMD_SKY1:
-                SC_MustGetString();
-                info->sky1Material =
-                    DMU_MaterialNumForName(sc_String, MN_TEXTURES);
-                SC_MustGetNumber();
-                info->sky1ScrollDelta = (float) sc_Number / 256;
-                break;
-
-            case MCMD_SKY2:
                 SC_MustGetString();
                 info->sky2Material =
                     DMU_MaterialNumForName(sc_String, MN_TEXTURES);
                 SC_MustGetNumber();
                 info->sky2ScrollDelta = (float) sc_Number / 256;
+                break;
+
+            case MCMD_SKY2:
+                SC_MustGetString();
+                info->sky1Material =
+                    DMU_MaterialNumForName(sc_String, MN_TEXTURES);
+                SC_MustGetNumber();
+                info->sky1ScrollDelta = (float) sc_Number / 256;
                 break;
 
             case MCMD_DOUBLESKY:

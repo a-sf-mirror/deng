@@ -22,30 +22,58 @@
  * Boston, MA  02110-1301  USA
  */
 
-/*
+/**
  * r_sky.h: Sky Management
  */
 
-#ifndef __DOOMSDAY_REFRESH_SKY_H__
-#define __DOOMSDAY_REFRESH_SKY_H__
+#ifndef DOOMSDAY_REFRESH_SKY_H
+#define DOOMSDAY_REFRESH_SKY_H
 
 #include "r_model.h"
 
-typedef struct skymodel_s {
-    ded_skymodel_t *def;
-    modeldef_t     *model;
-    int             frame;
-    int             timer;
-    int             maxTimer;
-    float           yaw;
-} skymodel_t;
+extern sky_t* theSky;
 
-extern skymodel_t skyModels[NUM_SKY_MODELS];
-extern boolean  skyModelsInited;
-extern boolean  alwaysDrawSphere;
+extern int skyHemispheres;
 
-void            R_SetupSkyModels(ded_sky_t* sky);
-void            R_PrecacheSky(void);
+void            R_SkyPrecache(void);
 void            R_SkyTicker(void);
 
-#endif
+void            R_SetupSky(sky_t* sky, const ded_sky_t* skyDef);
+
+#include "r_data.h"
+#include "p_dmu.h"
+
+void            Sky_InitDefault(sky_t* sky);
+void            Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def);
+void            Sky_Precache(sky_t* sky);
+void            Sky_Ticker(sky_t* sky);
+
+boolean         Sky_ColorGiven(sky_t* sky);
+
+void            Sky_ActivateLayer(sky_t* sky, int layer, boolean active);
+
+void            Sky_SetHeight(sky_t* sky, float height);
+void            Sky_SetHorizonOffset(sky_t* sky, float offset);
+
+void            Sky_SetLayerMask(sky_t* sky, int layer, boolean enable);
+void            Sky_SetLayerMaterial(sky_t* sky, int layer, material_t* mat);
+void            Sky_SetLayerMaterialOffsetX(sky_t* sky, int layer, float offset);
+void            Sky_SetLayerColorFadeLimit(sky_t* sky, int layer, float limit);
+
+boolean         Sky_IsLayerActive(const sky_t* sky, int layer);
+
+int             Sky_GetFirstLayer(const sky_t* sky);
+float           Sky_GetHorizonOffset(sky_t* sky);
+float           Sky_GetMaxSideAngle(sky_t* sky);
+const float*    Sky_GetColor(sky_t* sky);
+
+boolean         Sky_GetLayerMask(const sky_t* sky, int layer);
+material_t*     Sky_GetLayerMaterial(const sky_t* sky, int layer);
+float           Sky_GetLayerMaterialOffsetX(const sky_t* sky, int layer);
+const fadeout_t* Sky_GetLayerFadeout(const sky_t* sky, int layer);
+
+// DMU interface:
+boolean         Sky_SetProperty(sky_t* sky, const setargs_t* args);
+boolean         Sky_GetProperty(const sky_t* sec, setargs_t* args);
+
+#endif /* DOOMSDAY_REFRESH_SKY_H */

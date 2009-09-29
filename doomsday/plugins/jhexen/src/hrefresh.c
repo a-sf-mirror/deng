@@ -157,8 +157,8 @@ static void rendPlayerView(int player)
     if(P_ToXSectorOfSubsector(plr->plr->mo->face)->special == 200)
     {
         special200 = true;
-        Rend_SkyParams(0, DD_DISABLE, NULL);
-        Rend_SkyParams(1, DD_ENABLE, NULL);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
     }
 
     // How about a bit of quake?
@@ -196,8 +196,8 @@ static void rendPlayerView(int player)
 
     if(special200)
     {
-        Rend_SkyParams(0, DD_ENABLE, NULL);
-        Rend_SkyParams(1, DD_DISABLE, NULL);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, true);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, false);
     }
 }
 

@@ -436,7 +436,6 @@ extern          "C" {
 
     // Renderer.
     void            Rend_Reset(void);
-    void            Rend_SkyParams(int layer, int param, void* data);
 
     // Graphics.
     void            GL_UseFog(int yes);

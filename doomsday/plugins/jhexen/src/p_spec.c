@@ -93,9 +93,6 @@ void P_InitLava(void)
 
 void P_InitSky(int map)
 {
-    int                 ival;
-    float               fval;
-
     sky1Material = P_GetMapSky1Material(map);
     sky2Material = P_GetMapSky2Material(map);
     sky1ScrollDelta = P_GetMapSky1ScrollDelta(map);
@@ -104,36 +101,28 @@ void P_InitSky(int map)
     sky2ColumnOffset = 0;
     doubleSky = P_GetMapDoubleSky(map);
 
-    // First disable all sky layers.
-    Rend_SkyParams(DD_SKY, DD_DISABLE, NULL);
+    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER1_OFFSET_X, 0);
+    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER2_OFFSET_X, 0);
 
-    // Sky2 is layer zero and Sky1 is layer one.
-    fval = 0;
-    Rend_SkyParams(0, DD_OFFSET, &fval);
-    Rend_SkyParams(1, DD_OFFSET, &fval);
     if(doubleSky)
     {
-        Rend_SkyParams(0, DD_ENABLE, NULL);
-        ival = DD_NO;
-        Rend_SkyParams(0, DD_MASK, &ival);
-        Rend_SkyParams(0, DD_MATERIAL, &sky2Material);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_MASK, false);
+        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER1_MATERIAL, P_ToPtr(DMU_MATERIAL, sky1Material));
 
-        Rend_SkyParams(1, DD_ENABLE, NULL);
-        ival = DD_YES;
-        Rend_SkyParams(1, DD_MASK, &ival);
-        Rend_SkyParams(1, DD_MATERIAL, &sky1Material);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, true);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_MASK, true);
+        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER2_MATERIAL, P_ToPtr(DMU_MATERIAL, sky2Material));
     }
     else
     {
-        Rend_SkyParams(0, DD_ENABLE, NULL);
-        ival = DD_NO;
-        Rend_SkyParams(0, DD_MASK, &ival);
-        Rend_SkyParams(0, DD_MATERIAL, &sky1Material);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_MASK, false);
+        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER1_MATERIAL, P_ToPtr(DMU_MATERIAL, sky1Material));
 
-        Rend_SkyParams(1, DD_DISABLE, NULL);
-        ival = DD_NO;
-        Rend_SkyParams(1, DD_MASK, &ival);
-        Rend_SkyParams(1, DD_MATERIAL, &sky2Material);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_MASK, false);
+        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER2_MATERIAL, P_ToPtr(DMU_MATERIAL, sky2Material));
     }
 }
 
@@ -997,8 +986,8 @@ void P_AnimateSurfaces(void)
     // Update sky column offsets
     sky1ColumnOffset += sky1ScrollDelta;
     sky2ColumnOffset += sky2ScrollDelta;
-    Rend_SkyParams(1, DD_OFFSET, &sky1ColumnOffset);
-    Rend_SkyParams(0, DD_OFFSET, &sky2ColumnOffset);
+    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER1_OFFSET_X, sky1ColumnOffset);
+    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER2_OFFSET_X, sky2ColumnOffset);
 
     if(mapHasLightning)
     {
@@ -1078,8 +1067,8 @@ static void P_LightningFlash(void)
                 }
             }
 
-            Rend_SkyParams(1, DD_DISABLE, NULL);
-            Rend_SkyParams(0, DD_ENABLE, NULL);
+            DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, false);
+            DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, true);
         }
 
         return;
@@ -1132,8 +1121,8 @@ static void P_LightningFlash(void)
         mobj_t*             crashOrigin = NULL;
 
         // Set the alternate (lightning) sky.
-        Rend_SkyParams(0, DD_DISABLE, NULL);
-        Rend_SkyParams(1, DD_ENABLE, NULL);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
 
         // If 3D sounds are active, position the clap somewhere above
         // the player.

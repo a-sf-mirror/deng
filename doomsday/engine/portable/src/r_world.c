@@ -65,7 +65,6 @@
 
 int rendSkyLight = 1; // cvar.
 float rendLightWallAngle = 1; // Intensity of angle-based wall lighting.
-
 float rendMaterialFadeSeconds = .6f;
 
 boolean firstFrameAfterLoad;
@@ -76,10 +75,6 @@ nodeindex_t* linelinks; // Indices to roots.
 skyfix_t skyFix[2];
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static boolean noSkyColorGiven;
-static float skyColorRGB[4], balancedRGB[4];
-static float skyColorBalance;
 
 static surfacelistnode_t* unusedSurfaceListNodes = NULL;
 
@@ -943,91 +938,6 @@ void R_SetupFogDefaults(void)
 {
     // Go with the defaults.
     Con_Execute(CMDS_DDAY,"fog off", true, false);
-}
-
-void R_SetupSky(ded_sky_t* sky)
-{
-    int                 i;
-    int                 skyTex;
-    int                 ival = 0;
-    float               fval = 0;
-
-    if(!sky)
-    {   // Go with the defaults.
-        fval = .666667f;
-        Rend_SkyParams(DD_SKY, DD_HEIGHT, &fval);
-        Rend_SkyParams(DD_SKY, DD_HORIZON, &ival);
-        Rend_SkyParams(0, DD_ENABLE, NULL);
-        ival = P_MaterialNumForName("SKY1", MN_TEXTURES);
-        Rend_SkyParams(0, DD_MATERIAL, &ival);
-        ival = DD_NO;
-        Rend_SkyParams(0, DD_MASK, &ival);
-        fval = 0;
-        Rend_SkyParams(0, DD_OFFSET, &fval);
-        Rend_SkyParams(1, DD_DISABLE, NULL);
-
-        // There is no sky color.
-        noSkyColorGiven = true;
-        return;
-    }
-
-    Rend_SkyParams(DD_SKY, DD_HEIGHT, &sky->height);
-    Rend_SkyParams(DD_SKY, DD_HORIZON, &sky->horizonOffset);
-    for(i = 0; i < 2; ++i)
-    {
-        ded_skylayer_t*     layer = &sky->layers[i];
-
-        if(layer->flags & SLF_ENABLED)
-        {
-            skyTex = P_MaterialNumForName(layer->material.name,
-                                          layer->material.mnamespace);
-            if(!skyTex)
-            {
-                Con_Message("R_SetupSky: Invalid/missing texture \"%s\"\n",
-                            layer->material.name);
-                skyTex = P_MaterialNumForName("SKY1", MN_TEXTURES);
-            }
-
-            Rend_SkyParams(i, DD_ENABLE, NULL);
-            Rend_SkyParams(i, DD_MATERIAL, &skyTex);
-            ival = ((layer->flags & SLF_MASKED)? DD_YES : DD_NO);
-            Rend_SkyParams(i, DD_MASK, &ival);
-            Rend_SkyParams(i, DD_OFFSET, &layer->offset);
-            Rend_SkyParams(i, DD_COLOR_LIMIT, &layer->colorLimit);
-        }
-        else
-        {
-            Rend_SkyParams(i, DD_DISABLE, NULL);
-        }
-    }
-
-    // Any sky models to setup? Models will override the normal
-    // sphere.
-    R_SetupSkyModels(sky);
-
-    // How about the sky color?
-    noSkyColorGiven = true;
-    for(i = 0; i < 3; ++i)
-    {
-        skyColorRGB[i] = sky->color[i];
-        if(sky->color[i] > 0)
-            noSkyColorGiven = false;
-    }
-
-    // Calculate a balancing factor, so the light in the non-skylit
-    // sectors won't appear too bright.
-    if(sky->color[0] > 0 || sky->color[1] > 0 ||
-        sky->color[2] > 0)
-    {
-        skyColorBalance =
-            (0 +
-             (sky->color[0] * 2 + sky->color[1] * 3 +
-              sky->color[2] * 2) / 7) / 1;
-    }
-    else
-    {
-        skyColorBalance = 1;
-    }
 }
 
 /**
@@ -2014,14 +1924,14 @@ float R_CheckSectorLight(float lightlevel, float min, float max)
 /**
  * Sector light color may be affected by the sky light color.
  */
-const float *R_GetSectorLightColor(const sector_t *sector)
+const float* R_GetSectorLightColor(const sector_t *sector)
 {
-    if(!rendSkyLight || noSkyColorGiven)
+    if(!rendSkyLight || !Sky_ColorGiven(theSky))
         return sector->rgb; // The sector's real color.
 
     if(!R_SectorContainsSkySurfaces(sector))
     {
-        sector_t           *src;
+        sector_t*           src;
 
         // A dominant light source affects this sector?
         src = sector->lightSource;
@@ -2050,5 +1960,5 @@ const float *R_GetSectorLightColor(const sector_t *sector)
     }
 
     // Return the sky color.
-    return skyColorRGB;
+    return Sky_GetColor(theSky);
 }
