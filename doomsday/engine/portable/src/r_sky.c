@@ -54,7 +54,7 @@ int skyHemispheres;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static sky_t sky = { (float) PI / 3, 0 };
+static sky_t sky = { NULL, (float) PI / 3 };
 sky_t* theSky = &sky;
 
 // CODE --------------------------------------------------------------------
@@ -172,10 +172,6 @@ static void initSkyModels(sky_t* sky, const ded_sky_t* def)
     // Clear the whole sky models data.
     memset(sky->models, 0, sizeof(sky->models));
 
-    // Normally the sky sphere is not drawn if models are in use.
-    sky->sphereAlwaysVisible = (def->flags & SIF_DRAW_SPHERE) != 0;
-
-    // The normal sphere is used if no models will be set up.
     sky->modelsInited = false;
 
     for(i = 0; i < NUM_SKY_MODELS; ++i)
@@ -202,7 +198,7 @@ static void init(sky_t* sky)
     int                 i;
 
     sky->firstLayer = 0;
-    sky->noColorGiven = true;
+    sky->def = NULL;
 
     // Initialize the layers.
     for(i = 0; i < MAX_SKY_LAYERS; ++i)
@@ -224,9 +220,6 @@ void Sky_InitDefault(sky_t* sky)
 
     init(sky);
 
-    Sky_SetHeight(sky, .666667f);
-    Sky_SetHorizonOffset(sky, 0);
-
     Sky_ActivateLayer(sky, 0, true);
     Sky_SetLayerMaterial(sky, 0, P_ToMaterial(P_MaterialNumForName("SKY1", MN_TEXTURES)));
     Sky_SetLayerMask(sky, 0, false);
@@ -247,8 +240,7 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 
     init(sky);
 
-    Sky_SetHeight(theSky, def->height);
-    Sky_SetHorizonOffset(theSky, def->horizonOffset);
+    sky->def = def;
 
     for(i = 0; i < 2; ++i)
     {
@@ -272,7 +264,7 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 
             Sky_SetLayerMask(sky, i, (layer->flags & SLF_MASKED)? true : false);
             Sky_SetLayerMaterialOffsetX(sky, i, layer->offset);
-            Sky_SetLayerColorFadeLimit(sky, i, layer->colorLimit);
+            Sky_SetLayerFadeoutColorLimit(sky, i, layer->colorLimit);
         }
         else
         {
@@ -280,35 +272,9 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
         }
     }
 
-    sky->sphereAlwaysVisible = false;
-
     // Any sky models to setup? Models will override the normal sphere unless
     // always visible.
     initSkyModels(sky, def);
-
-    // How about the def color?
-    sky->noColorGiven = true;
-    for(i = 0; i < 3; ++i)
-    {
-        sky->colorRGB[i] = def->color[i];
-        if(def->color[i] > 0)
-            sky->noColorGiven = false;
-    }
-
-    // Calculate a balancing factor, so the light in the non-skylit
-    // sectors won't appear too bright.
-    if(def->color[0] > 0 || def->color[1] > 0 ||
-        def->color[2] > 0)
-    {
-        sky->colorBalance =
-            (0 +
-             (def->color[0] * 2 + def->color[1] * 3 +
-              def->color[2] * 2) / 7) / 1;
-    }
-    else
-    {
-        sky->colorBalance = 1;
-    }
 }
 
 static void modelTicker(skymodel_t* model)
@@ -370,36 +336,16 @@ void Sky_Precache(sky_t* sky)
     }
 }
 
-boolean Sky_ColorGiven(sky_t* sky)
-{
-    if(!sky)
-        return false;
-
-    return !sky->noColorGiven;
-}
-
-float Sky_GetHorizonOffset(sky_t* sky)
-{
-    if(!sky)
-        return 0;
-
-    return sky->horizonOffset;
-}
-
-float Sky_GetMaxSideAngle(sky_t* sky)
-{
-    if(!sky)
-        return 0;
-
-    return sky->maxSideAngle;
-}
-
-const float* Sky_GetColor(sky_t* sky)
+const float* Sky_GetLightColor(sky_t* sky)
 {
     if(!sky)
         return NULL;
 
-    return sky->colorRGB;
+    if(sky->def && (sky->def->color[CR] > 0 || sky->def->color[CG] > 0 ||
+                    sky->def->color[CB] > 0))
+        return sky->def->color;
+
+    return NULL;
 }
 
 int Sky_GetFirstLayer(const sky_t* sky)
@@ -468,26 +414,6 @@ const fadeout_t* Sky_GetLayerFadeout(const sky_t* sky, int layer)
     slayer = &sky->layers[layer];
 
     return &slayer->fadeout;
-}
-
-void Sky_SetHeight(sky_t* sky, float height)
-{
-    if(!sky)
-        return;
-
-    sky->maxSideAngle = PI / 2 * height;
-
-    skyUpdateSphere = true;
-}
-
-void Sky_SetHorizonOffset(sky_t* sky, float offset)
-{
-    if(!sky)
-        return;
-
-    sky->horizonOffset = PI / 2 * offset;
-
-    skyUpdateSphere = true;
 }
 
 void Sky_ActivateLayer(sky_t* sky, int layer, boolean active)
@@ -575,7 +501,7 @@ void Sky_SetLayerMaterialOffsetX(sky_t* sky, int layer, float offset)
     slayer->offset = offset;
 }
 
-void Sky_SetLayerColorFadeLimit(sky_t* sky, int layer, float limit)
+void Sky_SetLayerFadeoutColorLimit(sky_t* sky, int layer, float limit)
 {
     skylayer_t*         slayer;
 
@@ -626,14 +552,14 @@ boolean Sky_SetProperty(sky_t* sky, const setargs_t* args)
     case DMU_LAYER1_ACTIVE:
         {
         boolean         vis;
-        DMU_SetValue(DMT_SKY_VISIBILITY, &vis, args, 0);
+        DMU_SetValue(DMT_SKY_ACTIVE, &vis, args, 0);
         Sky_ActivateLayer(sky, 0, vis);
         break;
         }
     case DMU_LAYER2_ACTIVE:
         {
         boolean         vis;
-        DMU_SetValue(DMT_SKY_VISIBILITY, &vis, args, 0);
+        DMU_SetValue(DMT_SKY_ACTIVE, &vis, args, 0);
         Sky_ActivateLayer(sky, 1, vis);
         break;
         }
@@ -689,13 +615,13 @@ boolean Sky_GetProperty(const sky_t* sky, setargs_t* args)
     case DMU_LAYER1_ACTIVE:
         {
         boolean         vis = (sky->layers[0].flags & SLF_ENABLED)? true : false;
-        DMU_GetValue(DMT_SKY_VISIBILITY, &vis, args, 0);
+        DMU_GetValue(DMT_SKY_ACTIVE, &vis, args, 0);
         break;
         }
     case DMU_LAYER2_ACTIVE:
         {
         boolean         vis = (sky->layers[1].flags & SLF_ENABLED)? true : false;
-        DMU_GetValue(DMT_SKY_VISIBILITY, &vis, args, 0);
+        DMU_GetValue(DMT_SKY_ACTIVE, &vis, args, 0);
         break;
         }
     case DMU_LAYER1_MASK:

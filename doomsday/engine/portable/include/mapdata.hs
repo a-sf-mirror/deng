@@ -589,21 +589,15 @@ public
 // temp
 #define DMT_SKY_MATERIAL DDVT_PTR
 #define DMT_SKY_OFFSET_X DDVT_FLOAT
-#define DMT_SKY_VISIBILITY DDVT_BOOL
+#define DMT_SKY_ACTIVE   DDVT_BOOL
 #define DMT_SKY_MASK     DDVT_BOOL
 end
 
 struct sky
-    -        float       maxSideAngle
-    FLOAT    float       horizonOffset
+    -        const ded_sky_s* def
     -        skylayer_t[MAX_SKY_LAYERS] layers
     -        int         firstLayer // -1 denotes 'no active layers'.
     -        int         activeLayers
-    -        boolean     sphereAlwaysVisible
     -        boolean     modelsInited
     -        skymodel_t[MAX_SKY_MODELS] models
-    -        boolean     noColorGiven
-    -        float[4]    colorRGB
-    -        float[4]    balancedRGB
-    -        float       colorBalance
 end

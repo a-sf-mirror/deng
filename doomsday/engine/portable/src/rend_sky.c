@@ -308,12 +308,24 @@ static void renderHemisphere(const sky_t* sky, boolean upperHemi)
 
 static void renderSphere(const sky_t* sky, int hemis)
 {
-    // Recalculate the vertices.
-    if(skyUpdateSphere)
-    {
-        buildSkySphere(skyColumns, skyRows, Sky_GetHorizonOffset(theSky),
-                       Sky_GetMaxSideAngle(theSky));
+    static float        currentHorizonOffset = DDMAXFLOAT;
+    static float        currentMaxSideAngle = DDMAXFLOAT;
 
+    float               horizonOffset = PI / 2 *
+        (sky->def? sky->def->horizonOffset : 0);
+    float               maxSideAngle = PI / 2 *
+        (sky->def? sky->def->height : .666667f);
+    boolean             buildSphere = skyUpdateSphere ||
+        !INRANGE_OF(horizonOffset, currentHorizonOffset, .00001f) ||
+        !INRANGE_OF(maxSideAngle, currentMaxSideAngle, .00001f); 
+ 
+    // Recalculate the vertices?
+    if(buildSphere)
+    {
+        buildSkySphere(skyColumns, skyRows, horizonOffset, maxSideAngle);
+
+        currentHorizonOffset = horizonOffset;
+        currentMaxSideAngle = maxSideAngle;
         skyUpdateSphere = false;
     }
 
@@ -431,8 +443,10 @@ void Rend_RenderSky(const sky_t* sky, int hemis)
     if(!hemis || sky->firstLayer == -1)
         return;
 
-    // If sky models have been inited, they will be used.
-    if(!sky->modelsInited || sky->sphereAlwaysVisible)
+    // The sky sphere is not drawn if models are in use unless overridden
+    // in the sky definition (in which case it will be drawn first).
+    if(!sky->modelsInited ||
+       (sky->def && (sky->def->flags & SIF_DRAW_SPHERE) != 0))
     {
         renderSphere(sky, hemis);
     }

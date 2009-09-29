@@ -94,9 +94,8 @@ typedef struct thinker_s {
 // temp
 #define DMT_SKY_MATERIAL DDVT_PTR
 #define DMT_SKY_OFFSET_X DDVT_FLOAT
-#define DMT_SKY_VISIBILITY DDVT_BOOL
+#define DMT_SKY_ACTIVE   DDVT_BOOL
 #define DMT_SKY_MASK     DDVT_BOOL
 
-#define DMT_SKY_HORIZONOFFSET DDVT_FLOAT
 
 #endif

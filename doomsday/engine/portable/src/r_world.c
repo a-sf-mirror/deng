@@ -1926,7 +1926,10 @@ float R_CheckSectorLight(float lightlevel, float min, float max)
  */
 const float* R_GetSectorLightColor(const sector_t *sector)
 {
-    if(!rendSkyLight || !Sky_ColorGiven(theSky))
+    const float*        skyLight;
+
+    if(!rendSkyLight ||
+       !(skyLight = Sky_GetLightColor(theSky)))
         return sector->rgb; // The sector's real color.
 
     if(!R_SectorContainsSkySurfaces(sector))
@@ -1942,23 +1945,8 @@ const float* R_GetSectorLightColor(const sector_t *sector)
         }
 
         return sector->rgb;
-/*
-        // Return the sector's real color (balanced against sky's).
-        if(skyColorBalance >= 1)
-        {
-            return sector->rgb;
-        }
-        else
-        {
-            int                 c;
-
-            for(c = 0; c < 3; ++c)
-                balancedRGB[c] = sector->rgb[c] * skyColorBalance;
-            return balancedRGB;
-        }
-*/
     }
 
-    // Return the sky color.
-    return Sky_GetColor(theSky);
+    // Return the sky light color.
+    return skyLight;
 }

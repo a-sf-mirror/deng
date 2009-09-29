@@ -515,18 +515,12 @@ typedef struct skymodel_s {
 } skymodel_t;
 
 typedef struct sky_s {
-    float               maxSideAngle;
-    float               horizonOffset;
+    const struct ded_sky_s* def;
     skylayer_t          layers[MAX_SKY_LAYERS];
     int                 firstLayer;    // -1 denotes 'no active layers'.
     int                 activeLayers;
-    boolean             sphereAlwaysVisible;
     boolean             modelsInited;
     skymodel_t          models[MAX_SKY_MODELS];
-    boolean             noColorGiven;
-    float               colorRGB[4];
-    float               balancedRGB[4];
-    float               colorBalance;
 } sky_t;
 
 #endif
