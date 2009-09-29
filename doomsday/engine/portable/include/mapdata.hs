@@ -553,3 +553,51 @@ struct node
     FLOAT   float[2][4] bBox // Bounding box for each child.
     UINT    uint[2]     children // If NF_SUBSECTOR it's a subsector.
 end
+
+internal
+typedef struct {
+    float           rgb[3]; // The RGB values.
+    short           set, use; // Is this set? Should be used?
+    float           limit; // .3 by default.
+} fadeout_t;
+
+#define MAX_SKY_LAYERS        2
+#define MAX_SKY_MODELS        32
+
+// Sky layer flags.
+#define SLF_ENABLED         0x1 // Layer enabled.
+#define SLF_MASKED          0x2 // Mask the layer texture.
+
+typedef struct skylayer_s {
+    int             flags; // SLF_* flags.
+    material_t*     mat;
+    float           offset;
+    fadeout_t       fadeout;
+} skylayer_t;
+
+typedef struct skymodel_s {
+    const struct ded_skymodel_s* def;
+    struct modeldef_s* model;
+    int             frame;
+    int             timer;
+    int             maxTimer;
+    float           yaw;
+} skymodel_t;
+end
+
+public
+// temp
+#define DMT_SKY_MATERIAL DDVT_PTR
+#define DMT_SKY_OFFSET_X DDVT_FLOAT
+#define DMT_SKY_ACTIVE   DDVT_BOOL
+#define DMT_SKY_MASK     DDVT_BOOL
+end
+
+struct sky
+    -        const ded_sky_s* def
+    -        skylayer_t[MAX_SKY_LAYERS] layers
+    -        int         firstLayer // -1 denotes 'no active layers'.
+    -        int         activeLayers
+    -        boolean     modelsInited
+    -        skymodel_t[MAX_SKY_MODELS] models
+end

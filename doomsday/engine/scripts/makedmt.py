@@ -27,6 +27,8 @@ def println(f, line, comment=''):
     """Print a line of text. Comment will be added optionally."""
     f.write(add_comment(line, comment) + "\n")
 
+# Type symbol to real C type modifier mapping table.
+type_modifiers = ['const', 'volatile']
 
 # Type symbol to real C types mapping table.
 type_replacements = {
@@ -99,32 +101,50 @@ for input_line in sys.stdin.readlines():
         else:
             error(input_line, 'syntax error')
     else:
-        if count == 3:
+        if count == 3 or count == 4:
+            c_type_modifiers = ''
+            if count == 4:
+                unknownModifier = True
+                for modifier in type_modifiers:
+                    if tokens[1] == modifier:
+                        c_type_modifiers = c_type_modifiers + modifier + ' '
+                        unknownModifier = False
+                        break
+
+                if unknownModifier == True:
+                    error(input_line, "unknown C type modifier in struct %s" % current)
+                c_type_token_id = 2
+            else:
+                c_type_token_id = 1
+
             # Use "-" to omit the DDVT type declaration (internal usage only).
             if tokens[0] != '-':
                 println(public_file, 
                     "#define DMT_%s_%s DDVT_%s" % (publicName.upper(),
-                                                   tokens[2].upper(),
+                                                   tokens[c_type_token_id + 1].upper(),
                                                    tokens[0].upper()), line_comment)
             # Determine the C type.
-            c_type = tokens[1]
+            c_type = tokens[c_type_token_id]
             indexed = ''
             if '[' in c_type:
                 pos = c_type.index('[')
                 indexed = c_type[pos:]
                 c_type = c_type[:pos]
-                
+
             # Translate the type into a real C type.
             if '_s' in c_type:
                 c_type = 'struct ' + c_type
             for symbol, real in type_replacements.items():
                 c_type = c_type.replace(symbol, real)
-            
+
+            # Prepend C type modifiers.
+            c_type = c_type_modifiers + c_type
+
             # Add some visual padding to align the members.
             padding = 24 - len(c_type) - 4
             if padding < 1: padding = 1
             
-            println(internal_file, "    %s%s%s%s;" % (c_type, ' '*padding, tokens[2], indexed), 
+            println(internal_file, "    %s%s%s%s;" % (c_type, ' '*padding, tokens[c_type_token_id + 1], indexed), 
                     line_comment)
         elif count == 1:
             if tokens[0] == 'end':

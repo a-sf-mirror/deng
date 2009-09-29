@@ -91,4 +91,11 @@ typedef struct thinker_s {
 #define DMT_NODE_BBOX DDVT_FLOAT       // Bounding box for each child.
 #define DMT_NODE_CHILDREN DDVT_UINT    // If NF_SUBSECTOR it's a subsector.
 
+// temp
+#define DMT_SKY_MATERIAL DDVT_PTR
+#define DMT_SKY_OFFSET_X DDVT_FLOAT
+#define DMT_SKY_ACTIVE   DDVT_BOOL
+#define DMT_SKY_MASK     DDVT_BOOL
+
+
 #endif

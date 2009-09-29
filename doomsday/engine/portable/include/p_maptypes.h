@@ -485,4 +485,42 @@ typedef struct node_s {
     unsigned int        children[2];   // If NF_SUBSECTOR it's a subsector.
 } node_t;
 
+typedef struct {
+    float           rgb[3]; // The RGB values.
+    short           set, use; // Is this set? Should be used?
+    float           limit; // .3 by default.
+} fadeout_t;
+
+#define MAX_SKY_LAYERS        2
+#define MAX_SKY_MODELS        32
+
+// Sky layer flags.
+#define SLF_ENABLED         0x1 // Layer enabled.
+#define SLF_MASKED          0x2 // Mask the layer texture.
+
+typedef struct skylayer_s {
+    int             flags; // SLF_* flags.
+    material_t*     mat;
+    float           offset;
+    fadeout_t       fadeout;
+} skylayer_t;
+
+typedef struct skymodel_s {
+    const struct ded_skymodel_s* def;
+    struct modeldef_s* model;
+    int             frame;
+    int             timer;
+    int             maxTimer;
+    float           yaw;
+} skymodel_t;
+
+typedef struct sky_s {
+    const struct ded_sky_s* def;
+    skylayer_t          layers[MAX_SKY_LAYERS];
+    int                 firstLayer;    // -1 denotes 'no active layers'.
+    int                 activeLayers;
+    boolean             modelsInited;
+    skymodel_t          models[MAX_SKY_MODELS];
+} sky_t;
+
 #endif

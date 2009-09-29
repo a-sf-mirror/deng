@@ -199,18 +199,11 @@ enum {
 
     // General constants (not to be used with Get/Set).
     DD_NEW = -2,
-    DD_SKY = -1,
     DD_DISABLE,
     DD_ENABLE,
     DD_MASK,
     DD_YES,
     DD_NO,
-    DD_MATERIAL,
-    DD_OFFSET,
-    DD_HEIGHT,
-    DD_COLUMNS,
-    DD_ROWS,
-    DD_COLOR_LIMIT,
     DD_PRE,
     DD_POST,
     DD_VERSION_SHORT,
@@ -558,6 +551,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_PLANE,
     DMU_SURFACE,
     DMU_MATERIAL,
+    DMU_SKY,
 
     DMU_LINEDEF_BY_TAG,
     DMU_SECTOR_BY_TAG,
@@ -612,7 +606,17 @@ enum /* Do not change the numerical values of the constants! */
     DMU_SPEED,
     DMU_SEG_COUNT,
     DMU_NAMESPACE,
-    DMU_NAME
+    DMU_NAME,
+
+    // Temporary until we allow for multilayered materials:
+    DMU_LAYER1_MATERIAL,
+    DMU_LAYER2_MATERIAL,
+    DMU_LAYER1_OFFSET_X,
+    DMU_LAYER2_OFFSET_X,
+    DMU_LAYER1_ACTIVE,
+    DMU_LAYER2_ACTIVE,
+    DMU_LAYER1_MASK,
+    DMU_LAYER2_MASK
 };
 
 // Map Update value names:

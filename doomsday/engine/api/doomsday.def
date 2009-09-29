@@ -19,6 +19,7 @@ NAME            "DOOMSDAY"
 ; 98 formerly R_TextureNameForNum
 ; 99 formerly R_MaterialSetTranslation
 ; 100 formerly R_SetTextureTranslation
+; 105 formerly R_SkyParams
 ; 106 formerly DD_GetDGLProcAddress
 ; 107 formerly GL_DoUpdate
 ; 108 formerly GL_ChangeResolution
@@ -419,7 +420,6 @@ EXPORTS
 
 ; Renderer.
     Rend_Reset                  @103 NONAME
-    Rend_SkyParams              @105 NONAME
 
 ; Graphics.
     GL_UseFog                   @104 NONAME

@@ -308,7 +308,7 @@ boolean P_LoadMap(const char* mapID)
 
         map = MPE_GetLastBuiltMap();
 
-        DAM_MapWrite(map, Str_Text(s));
+        //DAM_MapWrite(map, Str_Text(s));
 
         Str_Delete(s);
     }
@@ -355,7 +355,7 @@ boolean P_LoadMap(const char* mapID)
                 skyDef = &mapInfo->sky;
         }
 
-        R_SetupSky(skyDef);
+        R_SetupSky(theSky, skyDef);
 
         // Setup accordingly.
         if(mapInfo)

@@ -2198,7 +2198,7 @@ void R_PrecacheMap(void)
     }
 
     // Sky models usually have big skins.
-    R_PrecacheSky();
+    R_SkyPrecache();
 
     VERBOSE(Con_Message("Precaching took %.2f seconds.\n",
                         Sys_GetSeconds() - startTime))

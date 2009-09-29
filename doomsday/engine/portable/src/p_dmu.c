@@ -327,6 +327,7 @@ const char* DMU_Str(uint prop)
         { DMU_SECTOR, "DMU_SECTOR" },
         { DMU_PLANE, "DMU_PLANE" },
         { DMU_MATERIAL, "DMU_MATERIAL" },
+        { DMU_SKY, "DMU_SKY" },
         { DMU_LINEDEF_BY_TAG, "DMU_LINEDEF_BY_TAG" },
         { DMU_SECTOR_BY_TAG, "DMU_SECTOR_BY_TAG" },
         { DMU_LINEDEF_BY_ACT_TAG, "DMU_LINEDEF_BY_ACT_TAG" },
@@ -412,6 +413,7 @@ static int DMU_GetType(const void* ptr)
     case DMU_PLANE:
     case DMU_NODE:
     case DMU_MATERIAL:
+    case DMU_SKY:
         return type;
 
     default:
@@ -704,6 +706,9 @@ uint P_ToIndex(const void* ptr)
     case DMU_MATERIAL:
         return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj);
 
+    case DMU_SKY:
+        return 0;
+
     default:
         Con_Error("P_ToIndex: Unknown type %s.\n", DMU_Str(type));
     }
@@ -724,6 +729,10 @@ void* P_ToPtr(int type, uint index)
         if(index == 0) // Zero means "no reference".
             return NULL;
         index -= 1; // Zero-based internally.
+        break;
+
+    case DMU_SKY:
+        index = 0; // Only one.
         break;
 
     default:
@@ -912,6 +921,11 @@ int P_Callback(int type, uint index, int (*callback)(void* p, void* ctx),
             return callback(P_ToMaterial(index), context);
         break;
 
+    case DMU_SKY:
+        //if(index < numSkies)
+            return callback(DMU_GetObjRecord(DMU_SKY, theSky /*skies + index*/), context);
+        break;
+
     case DMU_LINEDEF_BY_TAG:
     case DMU_SECTOR_BY_TAG:
     case DMU_LINEDEF_BY_ACT_TAG:
@@ -953,6 +967,7 @@ int P_Callbackp(int type, void* ptr, int (*callback)(void*, void*),
     case DMU_SECTOR:
     case DMU_PLANE:
     case DMU_MATERIAL:
+    case DMU_SKY:
         // Only do the callback if the type is the same as the object's.
         // \todo If necessary, add special types for accessing multiple objects.
         if(type == DMU_GetType(r))
@@ -1368,6 +1383,10 @@ static int setProperty(void* ptr, void* context)
 
     case DMU_MATERIAL:
         Material_SetProperty(obj, args);
+        break;
+
+    case DMU_SKY:
+        Sky_SetProperty(obj, args);
         break;
 
     case DMU_NODE:
@@ -1791,6 +1810,10 @@ static int getProperty(void* ptr, void* context)
 
     case DMU_MATERIAL:
         Material_GetProperty(obj, args);
+        break;
+
+    case DMU_SKY:
+        Sky_GetProperty(obj, args);
         break;
 
     default:

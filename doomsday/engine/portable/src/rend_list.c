@@ -205,9 +205,8 @@ typedef struct listhash_s {
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern int skyhemispheres;
 extern int devSkyMode;
-extern int useDynlights, dlBlend, simpleSky;
+extern int useDynlights, dlBlend, skySimple;
 extern boolean usingFog;
 
 extern byte freezeRLs;
@@ -523,7 +522,7 @@ void RL_ClearLists(void)
     clearVertices();
 
     // \fixme Does this belong here?
-    skyhemispheres = 0;
+    skyHemispheres = 0;
 }
 
 static rendlist_t* createList(listhash_t* hash)
@@ -1792,7 +1791,7 @@ BEGIN_PROF( PROF_RL_RENDER_ALL );
     // already collected skymask polys as a mask.
     if(rendSky && !devSkyMode)
         // The sky might be visible. Render the needed hemispheres.
-        Rend_RenderSky(skyhemispheres);
+        Rend_RenderSky(theSky, skyHemispheres);
 
     // Mask the sky in the Z-buffer.
     lists[0] = &skyMaskList;

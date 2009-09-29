@@ -68,7 +68,6 @@ static DGLuint constructBBox(DGLuint name, float br);
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 extern int useDynlights, translucentIceCorpse;
-extern int skyhemispheres;
 extern int loMaxRadius;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
@@ -184,9 +183,8 @@ float Rend_PointDist3D(const float c[3])
 
 void Rend_Init(void)
 {
-    C_Init();                   // Clipper.
-    RL_Init();                  // Rendering lists.
-    Rend_InitSky();             // The sky.
+    C_Init(); // Clipper.
+    RL_Init(); // Rendering lists.
 }
 
 /**
@@ -2010,7 +2008,7 @@ static void renderPlane(face_t* face, planetype_t type,
 
     if(skyMasked)
     {
-        skyhemispheres |=
+        skyHemispheres |=
             (type == PLN_FLOOR? SKYHEMI_LOWER : SKYHEMI_UPPER);
 
         // In devSkyMode mode we render all polys destined for the
