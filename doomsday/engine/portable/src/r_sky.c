@@ -59,72 +59,6 @@ sky_t* theSky = &sky;
 
 // CODE --------------------------------------------------------------------
 
-static void updateLayerStats(sky_t* sky)
-{
-    int                 i = 0;
-
-    sky->firstLayer = -1;
-    sky->activeLayers = 0;
-    for(i = 0; i < MAX_SKY_LAYERS; ++i)
-    {
-        skylayer_t*         slayer = &sky->layers[i];
-
-        if(slayer->flags & SLF_ENABLED)
-        {
-            sky->activeLayers++;
-            if(sky->firstLayer == -1)
-                sky->firstLayer = i;
-        }
-    }
-}
-
-static void checkFadeoutColorLimit(skylayer_t* slayer)
-{
-    if(slayer->mat)
-    {
-        int                 i;
-
-        slayer->fadeout.use = false;
-        for(i = 0; i < 3; ++i)
-            if(slayer->fadeout.rgb[i] > slayer->fadeout.limit)
-            {
-                // Colored fadeout is needed.
-                slayer->fadeout.use = true;
-                break;
-            }
-    }
-
-    slayer->fadeout.use = true;
-}
-
-static void setupFadeout(skylayer_t* slayer)
-{
-    if(slayer->mat)
-    {
-        material_load_params_t params;
-        material_snapshot_t ms;
-
-        // Ensure we have up to date info on the material.
-        memset(&params, 0, sizeof(params));
-        params.flags = MLF_LOAD_AS_SKY | MLF_TEX_NO_COMPRESSION;
-        if(slayer->flags & SLF_MASKED)
-            params.flags |= MLF_ZEROMASK;
-
-        Material_Prepare(&ms, slayer->mat, true, &params);
-        slayer->fadeout.rgb[CR] = ms.topColor[CR];
-        slayer->fadeout.rgb[CG] = ms.topColor[CG];
-        slayer->fadeout.rgb[CB] = ms.topColor[CB];
-    }
-    else
-    {
-        // An invalid texture, default to black.
-        slayer->fadeout.rgb[CR] = slayer->fadeout.rgb[CG] =
-            slayer->fadeout.rgb[CB] = 0;
-    }
-
-    checkFadeoutColorLimit(slayer);
-}
-
 /**
  * Precache all resources needed for visualizing skies.
  */
@@ -163,6 +97,78 @@ void R_SetupSky(sky_t* sky, const ded_sky_t* skyDef)
         DMU_AddObjRecord(DMU_SKY, theSky);
         inited = true;
     }
+}
+
+static void updateLayerStats(sky_t* sky)
+{
+    int                 i = 0;
+
+    sky->firstLayer = -1;
+    sky->activeLayers = 0;
+    for(i = 0; i < MAX_SKY_LAYERS; ++i)
+    {
+        skylayer_t*         slayer = &sky->layers[i];
+
+        if(slayer->flags & SLF_ENABLED)
+        {
+            sky->activeLayers++;
+            if(sky->firstLayer == -1)
+                sky->firstLayer = i;
+        }
+    }
+}
+
+static void checkFadeoutColorLimit(skylayer_t* slayer)
+{
+    if(slayer->mat)
+    {
+        int                 i;
+
+        slayer->fadeout.use = false;
+        for(i = 0; i < 3; ++i)
+            if(slayer->fadeout.rgb[i] > slayer->fadeout.limit)
+            {
+                // Colored fadeout is needed.
+                slayer->fadeout.use = true;
+                break;
+            }
+    }
+
+    slayer->fadeout.use = true;
+}
+
+static void setLayerFadeoutColorLimit(skylayer_t* slayer, float limit)
+{
+    slayer->fadeout.limit = limit;
+    checkFadeoutColorLimit(slayer);
+}
+
+static void setupFadeout(skylayer_t* slayer)
+{
+    if(slayer->mat)
+    {
+        material_load_params_t params;
+        material_snapshot_t ms;
+
+        // Ensure we have up to date info on the material.
+        memset(&params, 0, sizeof(params));
+        params.flags = MLF_LOAD_AS_SKY | MLF_TEX_NO_COMPRESSION;
+        if(slayer->flags & SLF_MASKED)
+            params.flags |= MLF_ZEROMASK;
+
+        Material_Prepare(&ms, slayer->mat, true, &params);
+        slayer->fadeout.rgb[CR] = ms.topColor[CR];
+        slayer->fadeout.rgb[CG] = ms.topColor[CG];
+        slayer->fadeout.rgb[CB] = ms.topColor[CB];
+    }
+    else
+    {
+        // An invalid texture, default to black.
+        slayer->fadeout.rgb[CR] = slayer->fadeout.rgb[CG] =
+            slayer->fadeout.rgb[CB] = 0;
+    }
+
+    checkFadeoutColorLimit(slayer);
 }
 
 static void initSkyModels(sky_t* sky, const ded_sky_t* def)
@@ -264,7 +270,8 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 
             Sky_SetLayerMask(sky, i, (layer->flags & SLF_MASKED)? true : false);
             Sky_SetLayerMaterialOffsetX(sky, i, layer->offset);
-            Sky_SetLayerFadeoutColorLimit(sky, i, layer->colorLimit);
+
+            setLayerFadeoutColorLimit(&sky->layers[i], layer->colorLimit);
         }
         else
         {
@@ -336,6 +343,14 @@ void Sky_Precache(sky_t* sky)
     }
 }
 
+int Sky_GetFirstLayer(const sky_t* sky)
+{
+    if(!sky)
+        return 0;
+
+    return sky->firstLayer;
+}
+
 const float* Sky_GetLightColor(sky_t* sky)
 {
     if(!sky)
@@ -348,12 +363,17 @@ const float* Sky_GetLightColor(sky_t* sky)
     return NULL;
 }
 
-int Sky_GetFirstLayer(const sky_t* sky)
+const fadeout_t* Sky_GetFadeout(const sky_t* sky)
 {
-    if(!sky)
-        return 0;
+    const skylayer_t*   slayer;
 
-    return sky->firstLayer;
+    if(!sky)
+        return NULL;
+
+    // The fadeout is that of the first layer.
+    slayer = &sky->layers[sky->firstLayer];
+
+    return &slayer->fadeout;
 }
 
 boolean Sky_IsLayerActive(const sky_t* sky, int layer)
@@ -402,18 +422,6 @@ float Sky_GetLayerMaterialOffsetX(const sky_t* sky, int layer)
     slayer = &sky->layers[layer];
 
     return slayer->offset;
-}
-
-const fadeout_t* Sky_GetLayerFadeout(const sky_t* sky, int layer)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return NULL;
-
-    slayer = &sky->layers[layer];
-
-    return &slayer->fadeout;
 }
 
 void Sky_ActivateLayer(sky_t* sky, int layer, boolean active)
@@ -499,19 +507,6 @@ void Sky_SetLayerMaterialOffsetX(sky_t* sky, int layer, float offset)
     slayer = &sky->layers[layer];
 
     slayer->offset = offset;
-}
-
-void Sky_SetLayerFadeoutColorLimit(sky_t* sky, int layer, float limit)
-{
-    skylayer_t*         slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return;
-
-    slayer = &sky->layers[layer];
-
-    slayer->fadeout.limit = limit;
-    checkFadeoutColorLimit(slayer);
 }
 
 /**

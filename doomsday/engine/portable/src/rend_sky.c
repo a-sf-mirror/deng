@@ -254,10 +254,7 @@ static void renderHemisphere2(boolean upperHemi, int rows, int columns,
 static void renderHemisphere(const sky_t* sky, boolean upperHemi)
 {
     int                 i, firstLayer = Sky_GetFirstLayer(sky);
-    const fadeout_t*    fadeout;
-
-    // The fadeout is that of the first layer.
-    fadeout = Sky_GetLayerFadeout(sky, firstLayer);
+    const fadeout_t*    fadeout = Sky_GetFadeout(sky);
 
     // First render the cap and the background for fadeouts, if needed.
     // The color for both is the current fadeout color.

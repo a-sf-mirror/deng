@@ -49,21 +49,19 @@ void            Sky_Precache(sky_t* sky);
 void            Sky_Ticker(sky_t* sky);
 
 void            Sky_ActivateLayer(sky_t* sky, int layer, boolean active);
+boolean         Sky_IsLayerActive(const sky_t* sky, int layer);
 
 void            Sky_SetLayerMask(sky_t* sky, int layer, boolean enable);
 void            Sky_SetLayerMaterial(sky_t* sky, int layer, material_t* mat);
 void            Sky_SetLayerMaterialOffsetX(sky_t* sky, int layer, float offset);
-void            Sky_SetLayerFadeoutColorLimit(sky_t* sky, int layer, float limit);
 
-boolean         Sky_IsLayerActive(const sky_t* sky, int layer);
-
-int             Sky_GetFirstLayer(const sky_t* sky);
 const float*    Sky_GetLightColor(sky_t* sky);
+const fadeout_t* Sky_GetFadeout(const sky_t* sky);
+int             Sky_GetFirstLayer(const sky_t* sky);
 
 boolean         Sky_GetLayerMask(const sky_t* sky, int layer);
 material_t*     Sky_GetLayerMaterial(const sky_t* sky, int layer);
 float           Sky_GetLayerMaterialOffsetX(const sky_t* sky, int layer);
-const fadeout_t* Sky_GetLayerFadeout(const sky_t* sky, int layer);
 
 // DMU interface:
 boolean         Sky_SetProperty(sky_t* sky, const setargs_t* args);
