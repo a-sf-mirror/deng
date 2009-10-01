@@ -30,16 +30,19 @@
 
 #include "p_dmu.h"
 
-// Material load flags:
-#define MLF_LOAD_AS_SKY     0x1
-#define MLF_ZEROMASK        0x2 // Zero the alpha of loaded textures.
-#define MLF_TEX_NO_COMPRESSION  0x4 // Do not compress the loaded textures.
+/**
+ * @defGroup materialPrepareFlags Material Prepare Flags
+ */
+/*@{*/
+#define MPF_SMOOTH          0x1
+#define MPF_AS_SKY          0x2
+#define MPF_AS_PSPRITE      0x4
+#define MPF_TEX_NO_COMPRESSION 0x8
+/*@}*/
 
 typedef struct {
-    int             flags; // MLF_* material load flags
     int             tmap, tclass;
-    boolean         pSprite;
-} material_load_params_t;
+} material_prepare_params_t;
 
 // Material texture unit idents:
 enum {
@@ -73,22 +76,43 @@ typedef struct material_snapshot_s {
     } shiny;
 } material_snapshot_t;
 
-boolean         Material_GetProperty(const material_t* mat, setargs_t* args);
-boolean         Material_SetProperty(material_t* mat, const setargs_t* args);
+byte            Material_Prepare(material_snapshot_t* snapshot,
+                                 material_t* mat, byte flags,
+                                 const material_prepare_params_t* params);
+void            Material_Ticker(material_t* mat, timespan_t time);
+void            Material_DeleteTextures(material_t* mat);
+void            Material_Precache(material_t* mat);
+
+byte            Material_AddLayer(material_t* mat, byte flags, gltextureid_t tex,
+                                  float xOrigin, float yOrigin, float moveAngle,
+                                  float moveSpeed);
 
 const ded_decor_t* Material_GetDecoration(material_t* mat);
 const ded_ptcgen_t* Material_GetPtcGen(material_t* mat);
 material_env_class_t Material_GetEnvClass(material_t* mat);
 
+byte            Material_GetLayerFlags(const material_t* mat, byte layer);
+float           Material_GetLayerTextureOriginX(const material_t* mat, byte layer);
+float           Material_GetLayerTextureOriginY(const material_t* mat, byte layer);
+void            Material_GetLayerTextureOriginXY(const material_t* mat, byte layer, float offset[2]);
+
+void            Material_SetWidth(material_t* mat, float width);
+void            Material_SetHeight(material_t* mat, float height);
+void            Material_SetFlags(material_t* mat, short flags);
 void            Material_SetTranslation(material_t* mat,
                                         material_t* current,
                                         material_t* next, float inter);
 
-byte            Material_Prepare(material_snapshot_t* snapshot,
-                                 material_t* mat, boolean smoothed,
-                                 material_load_params_t* params);
-//void            Material_Ticker(material_t* mat, timespan_t time);
-void            Material_DeleteTextures(material_t* mat);
-void            Material_Precache(material_t* mat);
+void            Material_SetLayerTexture(material_t* mat, byte layer, gltextureid_t tex);
+void            Material_SetLayerTextureOriginX(material_t* mat, byte layer, float offset);
+void            Material_SetLayerTextureOriginY(material_t* mat, byte layer, float offset);
+void            Material_SetLayerTextureOriginXY(material_t* mat, byte layer, const float offset[2]);
 
+void            Material_SetLayerFlags(material_t* mat, byte layer, byte flags);
+void            Material_SetLayerMoveAngle(material_t* mat, byte layer, float angle);
+void            Material_SetLayerMoveSpeed(material_t* mat, byte layer, float speed);
+
+// DMU interface:
+boolean         Material_GetProperty(const material_t* mat, setargs_t* args);
+boolean         Material_SetProperty(material_t* mat, const setargs_t* args);
 #endif

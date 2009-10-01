@@ -256,7 +256,6 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
     int                 frame = psp->statePtr->frame;
     boolean             flip;
     spriteframe_t*      sprFrame;
-    material_load_params_t mparams;
     material_snapshot_t ms;
 
 #ifdef RANGECHECK
@@ -273,9 +272,8 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
 
     sprFrame = &sprDef->spriteFrames[frame];
     flip = sprFrame->flip[0];
-    memset(&mparams, 0, sizeof(mparams));
-    mparams.pSprite = true;
-    Material_Prepare(&ms, sprFrame->mats[0], true, &mparams);
+
+    Material_Prepare(&ms, sprFrame->mats[0], MPF_SMOOTH | MPF_AS_PSPRITE, NULL);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -370,7 +368,7 @@ void Rend_DrawPSprite(const rendpspriteparams_t *params)
         material_t*         mat = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
         material_snapshot_t ms;
 
-        Material_Prepare(&ms, mat, true, NULL);
+        Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
         GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                        ms.units[MTU_PRIMARY].magMode);
     }
@@ -889,8 +887,8 @@ boolean drawVLightVector(const vlight_t* light, void* context)
 void Rend_RenderSprite(const rendspriteparams_t* params)
 {
     int                 i;
-    dgl_color_t          quadColors[4];
-    dgl_vertex_t         quadNormals[4];
+    dgl_color_t         quadColors[4];
+    dgl_vertex_t        quadNormals[4];
     boolean             restoreMatrix = false;
     boolean             restoreZ = false;
     float               spriteCenter[3];
@@ -910,18 +908,17 @@ void Rend_RenderSprite(const rendspriteparams_t* params)
         // Might we need a colour translation?
         if(renderTextures == 1)
         {   // Possibly.
-            material_load_params_t mparams;
+            material_prepare_params_t mparams;
 
             memset(&mparams, 0, sizeof(mparams));
             mparams.tmap = params->tMap;
             mparams.tclass = params->tClass;
-            mparams.pSprite = false;
 
-            Material_Prepare(&ms, mat, true, &mparams);
+            Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
         }
         else
         {
-            Material_Prepare(&ms, mat, true, NULL);
+            Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
         }
 
         GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,

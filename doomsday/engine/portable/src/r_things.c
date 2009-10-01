@@ -483,8 +483,8 @@ void R_PreInitSprites(void)
                 const char*         name;
                 const lumppatch_t*  patch;
                 spritetex_t*        sprTex;
-                const gltexture_t*  glTex;
-
+                material_t*         mat;
+                
                 spriteTextures[idx] = sprTex = &storage[idx];
 
                 patch = (const lumppatch_t *)
@@ -497,16 +497,29 @@ void R_PreInitSprites(void)
                 sprTex->width = SHORT(patch->width);
                 sprTex->height = SHORT(patch->height);
 
-                glTex = GL_CreateGLTexture(name, idx++, GLT_SPRITE);
-
                 // Create a new material for this sprite patch.
-                frame->mat = P_MaterialCreate(name, sprTex->width,
-                    sprTex->height, 0, glTex->id, MN_SPRITES, NULL);
+                mat = P_MaterialCreate(MN_SPRITES, name, sprTex->width,
+                                       sprTex->height, 0, NULL,
+                                       W_IsFromIWAD(sprTex->lump));
+                if(mat)
+                {
+                    const gltexture_t*  glTex =
+                        GL_CreateGLTexture(name, idx++, GLT_SPRITE);
+
+                    Material_AddLayer(mat, MATLF_MASKED, glTex->id, 0, 0, 0, 0);
+                }
+                else
+                {
+                    Con_Error("R_PreInitSprites: Failed creating material "
+                              "\"%s\", in namespace %i", name, MN_SPRITES);
+                }
+                              
+                frame->mat = mat;
             } while((frame = frame->next));
         } while((rec = rec->next));
     }
 
-    VERBOSE(Con_Message("R_InitSpriteRecords: Done in %.2f seconds.\n",
+    VERBOSE(Con_Message("R_PreInitSprites: Done in %.2f seconds.\n",
                         Sys_GetSeconds() - startTime));
 }
 
@@ -981,7 +994,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
 {
     spritetex_t*        sprTex = NULL;
     material_snapshot_t ms;
-    material_load_params_t mparams;
+    material_prepare_params_t mparams;
 
     if(!params)
         return; // Wha?
@@ -990,7 +1003,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
     mparams.tmap = transMap;
     mparams.tclass = transClass;
 
-    Material_Prepare(&ms, mat, true, &mparams);
+    Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -1165,7 +1178,7 @@ void R_ProjectSprite(mobj_t* mo)
     uint                vLightListIdx = 0;
     material_t*         mat;
     material_snapshot_t ms;
-    material_load_params_t mparams;
+    material_prepare_params_t mparams;
 
     if(mo->ddFlags & DDMF_DONTDRAW || mo->translucency == 0xff ||
        mo->state == NULL || mo->state == states)
@@ -1234,7 +1247,7 @@ void R_ProjectSprite(mobj_t* mo)
     mparams.tmap = tmap;
     mparams.tclass = tclass;
 
-    Material_Prepare(&ms, mat, true, &mparams);
+    Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 

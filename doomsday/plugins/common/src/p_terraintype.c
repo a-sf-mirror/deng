@@ -206,9 +206,8 @@ void P_InitTerrainTypes(void)
         if(idx)
         {
             material_t*         mat =
-                DMU_ToPtr(DMU_MATERIAL,
-                        DMU_MaterialCheckNumForName(matTTypeDefs[i].matName,
-                                                  matTTypeDefs[i].matGroup));
+                DMU_MaterialByName(matTTypeDefs[i].matName,
+                                   matTTypeDefs[i].matGroup);
             if(mat)
             {
                 Con_Message("P_InitTerrainTypes: Material '%s' linked to terrain type '%s'.\n",

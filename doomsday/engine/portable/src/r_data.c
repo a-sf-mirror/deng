@@ -1628,14 +1628,24 @@ void R_InitTextures(void)
         {
             doomtexturedef_t*     texDef = doomTextureDefs[i];
             material_t*           mat;
-            const gltexture_t*    tex;
-
-            tex = GL_CreateGLTexture(texDef->name, i, GLT_DOOMTEXTURE);
 
             // Create a material for this texture.
-            mat = P_MaterialCreate(texDef->name, texDef->width, texDef->height,
+            mat = P_MaterialCreate(MN_TEXTURES, texDef->name, texDef->width,
+                                   texDef->height,
                                    ((texDef->flags & TXDF_NODRAW)? MATF_NO_DRAW : 0),
-                                   tex->id, MN_TEXTURES, NULL);
+                                   NULL, (texDef->flags & TXDF_IWAD) != 0);
+            if(mat)
+            {
+                const gltexture_t*    tex =
+                    GL_CreateGLTexture(texDef->name, i, GLT_DOOMTEXTURE);
+
+                Material_AddLayer(mat, MATLF_MASKED, tex->id, 0, 0, 0, 0);
+            }
+            else
+            {
+                Con_Error("R_InitTextures: Failed creating material \"%s\" in "
+                          "namespace %i.", texDef->name, MN_TEXTURES);
+            }
         }
     }
     else
@@ -1668,7 +1678,7 @@ static int R_NewFlat(lumpnum_t lump)
     int                 i;
     flat_t**            newlist, *ptr;
     material_t*         mat;
-    const gltexture_t*  tex;
+    
 
     for(i = 0; i < numFlats; ++i)
     {
@@ -1700,11 +1710,22 @@ static int R_NewFlat(lumpnum_t lump)
     ptr->width = 64; /// \fixme not all flats are 64 texels in width!
     ptr->height = 64; /// \fixme not all flats are 64 texels in height!
 
-    tex = GL_CreateGLTexture(W_LumpName(lump), numFlats - 1, GLT_FLAT);
-
     // Create a material for this flat.
     // \note that width = 64, height = 64 regardless of the flat dimensions.
-    mat = P_MaterialCreate(W_LumpName(lump), 64, 64, 0, tex->id, MN_FLATS, NULL);
+    mat = P_MaterialCreate(MN_FLATS, W_LumpName(lump), 64, 64, 0, NULL,
+                           W_IsFromIWAD(lump));
+    if(mat)
+    {
+        const gltexture_t*  tex =
+            GL_CreateGLTexture(W_LumpName(lump), numFlats - 1, GLT_FLAT);
+
+        Material_AddLayer(mat, 0, tex->id, 0, 0, 0, 0);
+    }
+    else
+    {
+        Con_Error("R_NewFlat: Failed creating material for \"%s\" in "
+                  "namespace %i.", W_LumpName(lump), MN_FLATS);
+    }
 
     return numFlats - 1;
 }
@@ -1960,7 +1981,7 @@ boolean R_IsAllowedDecoration(ded_decor_t* def, material_t* mat,
         return (def->flags & DCRF_EXTERNAL) != 0;
     }
 
-    if(!(mat->flags & MATF_CUSTOM))
+    if(mat->isAutoMaterial)
         return !(def->flags & DCRF_NO_IWAD);
 
     return (def->flags & DCRF_PWAD) != 0;
@@ -1978,7 +1999,7 @@ boolean R_IsAllowedReflection(ded_reflection_t* def, material_t* mat,
         return (def->flags & REFF_EXTERNAL) != 0;
     }
 
-    if(!(mat->flags & MATF_CUSTOM))
+    if(mat->isAutoMaterial)
         return !(def->flags & REFF_NO_IWAD);
 
     return (def->flags & REFF_PWAD) != 0;
@@ -1996,7 +2017,7 @@ boolean R_IsAllowedDetailTex(ded_detailtexture_t* def, material_t* mat,
         return (def->flags & DTLF_EXTERNAL) != 0;
     }
 
-    if(!(mat->flags & MATF_CUSTOM))
+    if(mat->isAutoMaterial)
         return !(def->flags & DTLF_NO_IWAD);
 
     return (def->flags & DTLF_PWAD) != 0;

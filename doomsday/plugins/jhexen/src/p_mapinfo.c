@@ -50,10 +50,12 @@ typedef struct mapinfo_s {
     short           nextMap;
     short           cdTrack;
     char            name[32];
-    materialnum_t   sky1Material;
-    materialnum_t   sky2Material;
-    float           sky1ScrollDelta;
-    float           sky2ScrollDelta;
+    char            skyLayer1Texture[9];
+    char            skyLayer2Texture[9];
+    float           skyLayer1MoveSpeed;
+    float           skyLayer1MoveAngle;
+    float           skyLayer2MoveSpeed;
+    float           skyLayer2MoveAngle;
     boolean         doubleSky;
     boolean         lightning;
     int             fadetable;
@@ -156,9 +158,9 @@ static char* cdSongDefIDs[] =  // Music defs that correspond the above.
  */
 void P_InitMapInfo(void)
 {
-    int         map, mapMax = 1, mcmdValue;
-    char        songMulch[10];
-    mapinfo_t  *info;
+    int                 map, mapMax = 1, mcmdValue;
+    char                songMulch[10];
+    mapinfo_t*          info;
 
     // Put defaults into MapInfo[0]
     info = MapInfo;
@@ -166,11 +168,17 @@ void P_InitMapInfo(void)
     info->warpTrans = 0;
     info->nextMap = 1;          // Always go to map 1 if not specified
     info->cdTrack = 1;
-    info->sky1Material =
-        DMU_MaterialNumForName(shareware ? "SKY2" : DEFAULT_SKY_NAME, MN_TEXTURES);
-    info->sky2Material = info->sky1Material;
-    info->sky1ScrollDelta = 0;
-    info->sky2ScrollDelta = 0;
+
+    memset(info->skyLayer1Texture, 0, sizeof(info->skyLayer1Texture));
+    strncpy(info->skyLayer1Texture, shareware ? "SKY2" : DEFAULT_SKY_NAME, 8);
+    info->skyLayer1MoveSpeed = 0;
+    info->skyLayer1MoveAngle = 0;
+
+    memset(info->skyLayer2Texture, 0, sizeof(info->skyLayer2Texture));
+    strncpy(info->skyLayer2Texture, shareware ? "SKY2" : DEFAULT_SKY_NAME, 8);
+    info->skyLayer2MoveSpeed = 0;
+    info->skyLayer2MoveAngle = 0;
+
     info->doubleSky = false;
     info->lightning = false;
     info->fadetable = W_GetNumForName(DEFAULT_FADE_TABLE);
@@ -252,18 +260,22 @@ void P_InitMapInfo(void)
              */
             case MCMD_SKY1:
                 SC_MustGetString();
-                info->sky2Material =
-                    DMU_MaterialNumForName(sc_String, MN_TEXTURES);
+                memset(info->skyLayer2Texture, 0, sizeof(info->skyLayer2Texture));
+                strncpy(info->skyLayer2Texture, sc_String, 8);
+
                 SC_MustGetNumber();
-                info->sky2ScrollDelta = (float) sc_Number / 256;
+                info->skyLayer2MoveSpeed = TICSPERSEC * (float) sc_Number / 256;
+                info->skyLayer2MoveAngle = 0; // East.
                 break;
 
             case MCMD_SKY2:
                 SC_MustGetString();
-                info->sky1Material =
-                    DMU_MaterialNumForName(sc_String, MN_TEXTURES);
+                memset(info->skyLayer1Texture, 0, sizeof(info->skyLayer1Texture));
+                strncpy(info->skyLayer1Texture, sc_String, 8);
+
                 SC_MustGetNumber();
-                info->sky1ScrollDelta = (float) sc_Number / 256;
+                info->skyLayer1MoveSpeed = TICSPERSEC * (float) sc_Number / 256;
+                info->skyLayer1MoveAngle = 0; // East.
                 break;
 
             case MCMD_DOUBLESKY:
@@ -429,51 +441,79 @@ int P_GetMapNextMap(int map)
 }
 
 /**
- * Retrieve the sky1 material num of the given map.
+ * Retrieve the sky layer 1 texture name of the given map.
  *
  * @param map           The map (logical number) to be queried.
  *
- * @return              The sky1 material num of the map.
+ * @return              Sky layer 1 texture name of the map.
  */
-materialnum_t P_GetMapSky1Material(int map)
+const char* P_GetMapSkyLayer1Texture(int map)
 {
-    return MapInfo[qualifyMap(map)].sky1Material;
+    return MapInfo[qualifyMap(map)].skyLayer1Texture;
 }
 
 /**
- * Retrieve the sky2 material num of the given map.
+ * Retrieve the sky layer 2 texture name of the given map.
  *
  * @param map           The map (logical number) to be queried.
  *
- * @return              The sky2 material num of the map.
+ * @return              Sky layer 2 texture name of the map.
  */
-materialnum_t P_GetMapSky2Material(int map)
+const char* P_GetMapSkyLayer2Texture(int map)
 {
-    return MapInfo[qualifyMap(map)].sky2Material;
+    return MapInfo[qualifyMap(map)].skyLayer2Texture;
 }
 
 /**
- * Retrieve the sky1 scroll delta of the given map.
+ * Retrieve the sky layer 1 move speed of the given map.
  *
  * @param map           The map (logical number) to be queried.
- *
- * @return              The sky1 scroll delta of the map.
+ * @return              Sky layer 1 move speed. 
  */
-float P_GetMapSky1ScrollDelta(int map)
+float P_GetMapSkyLayer1MoveSpeed(int map)
 {
-    return MapInfo[qualifyMap(map)].sky1ScrollDelta;
+    int                 qMap = qualifyMap(map);
+
+    return MapInfo[qMap].skyLayer1MoveSpeed;
 }
 
 /**
- * Retrieve the sky2 scroll delta of the given map.
+ * Retrieve the sky layer 1 move angle of the given map.
  *
  * @param map           The map (logical number) to be queried.
- *
- * @return              The sky2 scroll delta of the map.
+ * @return              Sky layer 1 move angle. 
  */
-float P_GetMapSky2ScrollDelta(int map)
+float P_GetMapSkyLayer1MoveAngle(int map)
 {
-    return MapInfo[qualifyMap(map)].sky2ScrollDelta;
+    int                 qMap = qualifyMap(map);
+
+    return MapInfo[qMap].skyLayer1MoveAngle;
+}
+
+/**
+ * Retrieve the sky layer 2 move speed of the given map.
+ *
+ * @param map           The map (logical number) to be queried.
+ * @return              Sky layer 2 move speed.
+ */
+float P_GetMapSkyLayer2MoveSpeed(int map)
+{
+    int                 qMap = qualifyMap(map);
+
+    return MapInfo[qMap].skyLayer2MoveSpeed;
+}
+
+/**
+ * Retrieve the sky layer 2 move angle of the given map.
+ *
+ * @param map           The map (logical number) to be queried.
+ * @return              Sky layer 2 move angle. 
+ */
+float P_GetMapSkyLayer2MoveAngle(int map)
+{
+    int                 qMap = qualifyMap(map);
+
+    return MapInfo[qMap].skyLayer2MoveAngle;
 }
 
 /**

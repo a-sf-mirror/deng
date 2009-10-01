@@ -188,7 +188,7 @@ static void renderCapSide(int columns, boolean yflip)
     glEnd();
 }
 
-static void renderCap(boolean upperHemi, int columns, const fadeout_t* fadeout)
+static void renderCap(boolean upperHemi, int columns, const float fadeColor[3])
 {
     static const float  black[] = { 0, 0, 0 };
 
@@ -200,13 +200,13 @@ static void renderCap(boolean upperHemi, int columns, const fadeout_t* fadeout)
      */
 
     glDisable(GL_TEXTURE_2D);
-    glColor3fv(fadeout->use ? fadeout->rgb : black);
+    glColor3fv(fadeColor ? fadeColor : black);
 
     renderCapTop(columns, !upperHemi);
 
     // If we are doing a colored fadeout, we must fill the background for the
     // edge row since it'll be partially translucent.
-    if(fadeout->use)
+    if(fadeColor)
     {
         renderCapSide(columns, !upperHemi);
     }
@@ -251,18 +251,34 @@ static void renderHemisphere2(boolean upperHemi, int rows, int columns,
     }
 }
 
-static void renderHemisphere(const sky_t* sky, boolean upperHemi)
+static void renderHemisphere(sky_t* sky, boolean upperHemi)
 {
     int                 i, firstLayer = Sky_GetFirstLayer(sky);
-    const fadeout_t*    fadeout = Sky_GetFadeout(sky);
+    material_snapshot_t ms;
+    const float*        fadeColor = NULL;
+
+    if(renderTextures)
+    {
+        material_t*         material = Sky_GetSphereMaterial(sky);
+
+        Material_Prepare(&ms, material, MPF_SMOOTH | MPF_AS_SKY | MPF_TEX_NO_COMPRESSION, NULL);
+
+        for(i = 0; i < 3; ++i)
+            if(ms.topColor[i] > sky->layers[firstLayer].fadeoutColorLimit)
+            {
+                // Colored fadeout is needed.
+                fadeColor = ms.topColor;
+                break;
+            }
+    }
 
     // First render the cap and the background for fadeouts, if needed.
     // The color for both is the current fadeout color.
-    renderCap(upperHemi, skyColumns, fadeout);
+    renderCap(upperHemi, skyColumns, fadeColor);
 
     for(i = firstLayer; i < MAX_SKY_LAYERS; ++i)
     {
-        int                 texWidth, texHeight;
+        float               texWidth, texHeight, texOffsetX;
 
         if(!Sky_IsLayerActive(sky, i))
             continue;
@@ -270,40 +286,25 @@ static void renderHemisphere(const sky_t* sky, boolean upperHemi)
         // The texture is actually loaded when an update is done.
         if(renderTextures)
         {
-            material_t*         material = Sky_GetLayerMaterial(sky, i);
-            material_snapshot_t ms;
-            byte                result = 0;
-
-            material_load_params_t params;
-
-            memset(&params, 0, sizeof(params));
-            params.flags = MLF_LOAD_AS_SKY | MLF_TEX_NO_COMPRESSION;
-
-            if(Sky_GetLayerMask(sky, i))
-                params.flags |= MLF_ZEROMASK;
-
-            Material_Prepare(&ms, material, true, &params);
-            texWidth =
-                GLTexture_GetWidth(ms.units[MTU_PRIMARY].texInst->tex);
-            texHeight =
-                GLTexture_GetHeight(ms.units[MTU_PRIMARY].texInst->tex);
-
             GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                            ms.units[MTU_PRIMARY].magMode);
+            texWidth  = GLTexture_GetWidth(ms.units[MTU_PRIMARY].texInst->tex);
+            texHeight = GLTexture_GetHeight(ms.units[MTU_PRIMARY].texInst->tex);
+            texOffsetX = ms.units[MTU_PRIMARY].offset[0];
         }
         else
         {
             glBindTexture(GL_TEXTURE_2D, 0);
             texWidth = texHeight = 64;
+            texOffsetX = 0;
         }
 
-        renderHemisphere2(upperHemi, skyRows, skyColumns,
-                          texWidth, Sky_GetLayerMaterialOffsetX(sky, i),
-                          fadeout->use, skySimple);
+        renderHemisphere2(upperHemi, skyRows, skyColumns, texWidth, texOffsetX,
+                          fadeColor != NULL, skySimple);
     }
 }
 
-static void renderSphere(const sky_t* sky, int hemis)
+static void renderSphere(sky_t* sky, int hemis)
 {
     static float        currentHorizonOffset = DDMAXFLOAT;
     static float        currentMaxSideAngle = DDMAXFLOAT;
@@ -358,7 +359,7 @@ static void renderSphere(const sky_t* sky, int hemis)
     glEnable(GL_DEPTH_TEST);
 }
 
-static void renderModels(const sky_t* sky)
+static void renderModels(sky_t* sky)
 {
     int                 i;
 
@@ -431,7 +432,7 @@ void Rend_ShutdownSky(void)
     numSkyVerts = 0;
 }
 
-void Rend_RenderSky(const sky_t* sky, int hemis)
+void Rend_RenderSky(sky_t* sky, int hemis)
 {
     if(!sky)
         return;

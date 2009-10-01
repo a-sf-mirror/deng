@@ -180,7 +180,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                     {
                         materialnum_t       frame =
                             DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                      MN_FLATS);
+                                                        MN_FLATS);
 
                         if(frame != 0)
                             DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
@@ -192,7 +192,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                     {
                         materialnum_t       frame =
                             DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                      MN_FLATS);
+                                                        MN_FLATS);
 
                         if(frame != 0)
                             DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);

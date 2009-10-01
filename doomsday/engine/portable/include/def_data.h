@@ -48,7 +48,7 @@ extern          "C" {
 
 #define DED_MAX_SUB_MODELS  8
 
-#define DED_MAX_MATERIAL_LAYERS 1 //// \temp
+#define DED_MAX_MATERIAL_LAYERS 2
 
 typedef char ded_stringid_t[DED_STRINGID_LEN + 1];
 typedef ded_stringid_t ded_string_t;
@@ -235,7 +235,7 @@ typedef struct {
 typedef struct {
     ded_flags_t     flags;
     ded_materialid_t material;
-    float           offset;
+    float           offset[2];
     float           colorLimit;
 } ded_skylayer_t;
 
@@ -253,6 +253,10 @@ typedef struct ded_skymodel_s {
 
 #define NUM_SKY_LAYERS      2
 #define NUM_SKY_MODELS      32
+
+// Sky layer flags.
+#define SLF_ENABLED         0x1 // Layer enabled.
+#define SLF_MASKED          0x2 // Mask the layer texture.
 
 typedef struct ded_sky_s {
     ded_stringid_t  id;
@@ -514,8 +518,9 @@ typedef struct ded_group_s {
 typedef struct ded_material_layer_stage_s {
     ded_string_t    name; // Material tex name.
     int             type; // Material tex type, @see gltexture_type_t.
-    int             tics;
-    float           variance; // Stage variance (time).
+    float           origin[2];
+    float           moveAngle;
+    float           moveSpeed;
 } ded_material_layer_stage_t;
 
 typedef struct ded_material_layer_s {

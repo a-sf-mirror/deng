@@ -548,8 +548,7 @@ void IN_Drawer(void)
 void IN_DrawStatBack(void)
 {
     DGL_Color4f(1, 1, 1, 1);
-    DGL_SetMaterial(P_ToPtr(DMU_MATERIAL,
-        DMU_MaterialNumForName("FLOOR16", MN_FLATS)));
+    DGL_SetMaterial(DMU_MaterialByName("FLOOR16", MN_FLATS));
     DGL_DrawRectTiled(0, 0, SCREENWIDTH, SCREENHEIGHT, 64, 64);
 }
 

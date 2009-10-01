@@ -53,7 +53,8 @@ NAME            "DOOMSDAY"
 ; 349 formerly R_MaterialIsCustom
 ; 375 formerly DGL_MultiTexCoord2f
 ; 376 formerly DGL_MultiTexCoord2fv
-; @337 formerly DMU_GetMaterialName
+; 337 formerly DMU_GetMaterialName
+; 438 formerly DMU_MaterialCheckNumForIndex
 
 EXPORTS
 ; Plugins.
@@ -322,9 +323,8 @@ EXPORTS
 
 ; Play: Materials.
 	DMU_MaterialCheckNumForName @336 NONAME
-    DMU_MaterialNumForName      @97 NONAME
-    DMU_MaterialNumForIndex     @437 NONAME
-    DMU_MaterialCheckNumForIndex @438 NONAME
+    DMU_MaterialByName          @97 NONAME
+    DMU_MaterialByIndex         @437 NONAME
     DMU_MaterialPrecache        @436 NONAME
 
 ; Play: Thinkers.

@@ -38,6 +38,17 @@
 
 #define TEXQ_BEST               8
 
+// Texture load flags:
+#define TLF_LOAD_AS_SKY     0x1
+#define TLF_LOAD_AS_PSPRITE 0x2
+#define TLF_ZEROMASK        0x4 // Zero the alpha of loaded textures.
+#define TLF_NO_COMPRESSION  0x8 // Do not compress the loaded textures.
+
+typedef struct {
+    byte            flags; // TLF_* texture load flags
+    int             tmap, tclass;
+} texture_load_params_t;
+
 /**
  * gltexture
  *

@@ -1265,10 +1265,10 @@ void R_PrecacheModelSkins(modeldef_t* modef)
         {
             if((sn = R_GetSkinNameByIndex(mdl->skins[k].id)))
             {
-                material_load_params_t params;
+                texture_load_params_t params;
 
                 memset(&params, 0, sizeof(params));
-                params.flags = (!mdl->allowTexComp? MLF_TEX_NO_COMPRESSION : 0);
+                params.flags = (!mdl->allowTexComp? TLF_NO_COMPRESSION : 0);
 
                 GL_PrepareGLTexture(sn->id, &params, NULL);
             }

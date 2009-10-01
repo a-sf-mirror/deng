@@ -117,9 +117,12 @@ typedef struct face_s {
 } face_t;
 
 typedef struct materiallayer_s {
-    int             stage; // -1 => layer not in use.
-    short           tics;
+    byte            flags; // MLF_* flags, @see materialLayerFlags
     gltextureid_t   tex;
+    float           texOrigin[2];
+    float			texPosition[2]; // Current interpolated position.
+    float           moveAngle;
+    float           moveSpeed;
 } material_layer_t;
 
 typedef enum {
@@ -134,12 +137,13 @@ typedef enum {
 
 typedef struct material_s {
     material_namespace_t mnamespace;
-    struct ded_material_s* def;        // Can be NULL (was generated automatically).
+    boolean             isAutoMaterial; // Was generated automatically.
+    const struct ded_material_s* def;  // Can be NULL.
     short               flags;         // MATF_* flags
     short               width;         // Defined width & height of the material (not texture!).
     short               height;
     material_layer_t    layers[DDMAX_MATERIAL_LAYERS];
-    unsigned int        numLayers;
+    byte                numLayers;
     material_env_class_t envClass;     // Used for environmental sound properties.
     struct ded_detailtexture_s* detail;
     struct ded_decor_s* decoration;
@@ -485,24 +489,12 @@ typedef struct node_s {
     unsigned int        children[2];   // If NF_SUBSECTOR it's a subsector.
 } node_t;
 
-typedef struct {
-    float           rgb[3]; // The RGB values.
-    short           set, use; // Is this set? Should be used?
-    float           limit; // .3 by default.
-} fadeout_t;
-
 #define MAX_SKY_LAYERS        2
 #define MAX_SKY_MODELS        32
 
-// Sky layer flags.
-#define SLF_ENABLED         0x1 // Layer enabled.
-#define SLF_MASKED          0x2 // Mask the layer texture.
-
 typedef struct skylayer_s {
-    int             flags; // SLF_* flags.
-    material_t*     mat;
-    float           offset;
-    fadeout_t       fadeout;
+    boolean			enabled;
+    float           fadeoutColorLimit; // .3 by default.
 } skylayer_t;
 
 typedef struct skymodel_s {
@@ -516,6 +508,7 @@ typedef struct skymodel_s {
 
 typedef struct sky_s {
     const struct ded_sky_s* def;
+    material_t*         material;      // Used with sky sphere only.
     skylayer_t          layers[MAX_SKY_LAYERS];
     int                 firstLayer;    // -1 denotes 'no active layers'.
     int                 activeLayers;

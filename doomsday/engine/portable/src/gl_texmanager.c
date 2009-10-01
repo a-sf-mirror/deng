@@ -58,7 +58,7 @@
 // TYPES -------------------------------------------------------------------
 
 typedef struct gltexture_inst_node_s {
-    int             flags; // Texture instance (MLF_*) flags.
+    int             flags; // Texture instance (TLF_*) flags.
     gltexture_inst_t inst;
     struct gltexture_inst_node_s* next; // Next in list of instances.
 } gltexture_inst_node_t;
@@ -356,12 +356,21 @@ void GL_LoadSystemTextures(void)
     for(i = 0; i < NUM_DD_TEXTURES; ++i)
     {
         material_t*         mat;
-        const gltexture_t*  tex;
 
-        tex = GL_CreateGLTexture(ddtexdefs[i].name, ddtexdefs[i].id, GLT_SYSTEM);
+        if((mat = P_MaterialCreate(MN_SYSTEM, ddtexdefs[i].name, 64, 64, 0,
+                                   NULL, false)))
+        {
+            const gltexture_t*  tex =
+                GL_CreateGLTexture(ddtexdefs[i].name, ddtexdefs[i].id,
+                                   GLT_SYSTEM);
 
-        mat = P_MaterialCreate(ddtexdefs[i].name, 64, 64, 0, tex->id,
-                               MN_SYSTEM, NULL);
+            Material_AddLayer(mat, 0, tex->id, 0, 0, 0, 0);
+        }
+        else
+        {
+            Con_Error("GL_LoadSystemTextures: Failing creating material '%s' "
+                      "in namespace %i.", ddtexdefs[i].name, MN_SYSTEM);
+        }
     }
 
     UI_LoadTextures();
@@ -1479,20 +1488,20 @@ static void bufferSkyTexture(const doomtexturedef_t* texDef, byte** outbuffer,
  *                      2 = loaded data from an external resource.
  */
 byte GL_LoadDoomTexture(image_t* image, const gltexture_inst_t* inst,
-                           void* context)
+                        void* context)
 {
     int                 i, flags = 0;
     doomtexturedef_t*   texDef;
     boolean             loadAsSky = false, zeroMask = false;
-    material_load_params_t* params = (material_load_params_t*) context;
+    texture_load_params_t* params = (texture_load_params_t*) context;
 
     if(!image)
         return 0; // Wha?
 
     if(params)
     {
-        loadAsSky = (params->flags & MLF_LOAD_AS_SKY)? true : false;
-        zeroMask = (params->flags & MLF_ZEROMASK)? true : false;
+        loadAsSky = (params->flags & TLF_LOAD_AS_SKY)? true : false;
+        zeroMask = (params->flags & TLF_ZEROMASK)? true : false;
     }
 
     texDef = R_GetDoomTextureDef(inst->tex->ofTypeID);
@@ -1518,7 +1527,7 @@ byte GL_LoadDoomTexture(image_t* image, const gltexture_inst_t* inst,
     {
         bufferSkyTexture(texDef, &image->pixels, image->width,
                          image->height, zeroMask);
-        image->isMasked = zeroMask;
+        image->isMasked = !zeroMask;
     }
     else
     {
@@ -1622,7 +1631,7 @@ byte GL_LoadSprite(image_t* image, const gltexture_inst_t* inst,
     const spritetex_t*  sprTex;
     int                 tmap = 0, tclass = 0;
     boolean             pSprite = false;
-    material_load_params_t* params = (material_load_params_t*) context;
+    texture_load_params_t* params = (texture_load_params_t*) context;
 
     if(!image)
         return 0; // Wha?
@@ -1633,7 +1642,7 @@ byte GL_LoadSprite(image_t* image, const gltexture_inst_t* inst,
     {
         tmap = params->tmap;
         tclass = params->tclass;
-        pSprite = params->pSprite;
+        pSprite = (params->flags & TLF_LOAD_AS_PSPRITE) != 0;
     }
 
     // Attempt to load a high resolution version of this sprite?
@@ -1714,13 +1723,9 @@ byte GL_LoadSprite(image_t* image, const gltexture_inst_t* inst,
 
 void GL_SetPSprite(material_t* mat)
 {
-    material_load_params_t params;
     material_snapshot_t ms;
 
-    memset(&params, 0, sizeof(params));
-    params.pSprite = true;
-
-    Material_Prepare(&ms, mat, true, &params);
+    Material_Prepare(&ms, mat, MPF_SMOOTH | MPF_AS_PSPRITE, NULL);
 
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
@@ -1729,13 +1734,13 @@ void GL_SetPSprite(material_t* mat)
 void GL_SetTranslatedSprite(material_t* mat, int tclass, int tmap)
 {
     material_snapshot_t ms;
-    material_load_params_t params;
+    material_prepare_params_t params;
 
     memset(&params, 0, sizeof(params));
     params.tmap = tmap;
     params.tclass = tclass;
 
-    Material_Prepare(&ms, mat, true, &params);
+    Material_Prepare(&ms, mat, MPF_SMOOTH, &params);
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
 }
@@ -2853,7 +2858,7 @@ const gltexture_t* GL_GetGLTextureByName(const char* rawName, gltexture_type_t t
 static gltexture_inst_t* pickGLTextureInst(gltexture_t* tex, void* context)
 {
     gltexture_inst_node_t* node;
-    material_load_params_t* params = (material_load_params_t*) context;
+    texture_load_params_t* params = (texture_load_params_t*) context;
     int                 flags = 0;
 
     if(params)
@@ -2892,7 +2897,7 @@ static gltexture_inst_t* pickDetailTextureInst(gltexture_t* tex, void* context)
 static gltexture_inst_t* pickSpriteTextureInst(gltexture_t* tex, void* context)
 {
     gltexture_inst_node_t* node;
-    material_load_params_t* params = (material_load_params_t*) context;
+    texture_load_params_t* params = (texture_load_params_t*) context;
     int                 tmap = 0, tclass = 0;
     boolean             pSprite = false;
 
@@ -2900,7 +2905,7 @@ static gltexture_inst_t* pickSpriteTextureInst(gltexture_t* tex, void* context)
     {
         tmap = params->tmap;
         tclass = params->tclass;
-        pSprite = params->pSprite;
+        pSprite = (params->flags & TLF_LOAD_AS_PSPRITE) != 0;
     }
 
     node = (gltexture_inst_node_t*) tex->instances;
@@ -3056,10 +3061,10 @@ gltexture_inst_t* GLTexture_Prepare(gltexture_t* tex, void* context,
                 // Disable compression?
                 if(context)
                 {
-                    material_load_params_t* params =
-                        (material_load_params_t*) context;
+                    texture_load_params_t* params =
+                        (texture_load_params_t*) context;
 
-                    if(params->flags & MLF_TEX_NO_COMPRESSION)
+                    if(params->flags & TLF_NO_COMPRESSION)
                         flags |= TXCF_NO_COMPRESSION;
                 }
 
@@ -3136,10 +3141,10 @@ gltexture_inst_t* GLTexture_Prepare(gltexture_t* tex, void* context,
                     tex->type == GLT_MODELSKIN ||
                     tex->type == GLT_MODELSHINYSKIN))
                 {
-                    material_load_params_t* params =
-                        (material_load_params_t*) context;
+                    texture_load_params_t* params =
+                        (texture_load_params_t*) context;
 
-                    if(params->flags & MLF_TEX_NO_COMPRESSION)
+                    if(params->flags & TLF_NO_COMPRESSION)
                         c.flags |= TXCF_NO_COMPRESSION;
                 }
 
@@ -3224,8 +3229,8 @@ Con_Message("GLTexture_Prepare: Uploaded \"%s\" (%i) while not busy! "
 
         if(tex->type == GLT_SPRITE)
         {
-            material_load_params_t* params =
-                (material_load_params_t*) context;
+            texture_load_params_t* params =
+                (texture_load_params_t*) context;
             int                 tmap = 0, tclass = 0;
             boolean             pSprite = false;
 
@@ -3233,7 +3238,7 @@ Con_Message("GLTexture_Prepare: Uploaded \"%s\" (%i) while not busy! "
             {
                 tmap = params->tmap;
                 tclass = params->tclass;
-                pSprite = params->pSprite;
+                pSprite = (params->flags & TLF_LOAD_AS_PSPRITE) != 0;
             }
 
             texInst->data.sprite.tmap = tmap;
@@ -3284,16 +3289,15 @@ Con_Message("GLTexture_Prepare: Uploaded \"%s\" (%i) while not busy! "
 
         if(tmpResult && texInst == &localInst)
         {   // We have a new instance.
-            int                 flags = 0;
+            byte                flags = 0;
             gltexture_inst_node_t* node;
 
-            if(tex->type != GLT_DETAIL)
+            if(tex->type != GLT_DETAIL && context)
             {
-                material_load_params_t* params =
-                    (material_load_params_t*) context;
+                texture_load_params_t* params =
+                    (texture_load_params_t*) context;
 
-                if(params)
-                    flags = params->flags;
+                flags = params->flags;
             }
 
             // Add it to the list of intances for this gltexture.

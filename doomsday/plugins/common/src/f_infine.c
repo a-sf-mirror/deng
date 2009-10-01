@@ -1862,14 +1862,12 @@ void FIC_End(void)
 
 void FIC_BGFlat(void)
 {
-    fi->bgMaterial = DMU_ToPtr(DMU_MATERIAL,
-        DMU_MaterialCheckNumForName(FI_GetToken(), MN_FLATS));
+    fi->bgMaterial = DMU_MaterialByName(FI_GetToken(), MN_FLATS);
 }
 
 void FIC_BGTexture(void)
 {
-    fi->bgMaterial = DMU_ToPtr(DMU_MATERIAL,
-        DMU_MaterialCheckNumForName(FI_GetToken(), MN_TEXTURES));
+    fi->bgMaterial = DMU_MaterialByName(FI_GetToken(), MN_TEXTURES);
 }
 
 void FIC_NoBGMaterial(void)

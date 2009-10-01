@@ -157,9 +157,12 @@ end
 
 internal
 typedef struct materiallayer_s {
-    int             stage; // -1 => layer not in use.
-    short           tics;
+    byte            flags; // MLF_* flags, @see materialLayerFlags
     gltextureid_t   tex;
+    float           texOrigin[2];
+    float			texPosition[2]; // Current interpolated position.
+    float           moveAngle;
+    float           moveSpeed;
 } material_layer_t;
 
 typedef enum {
@@ -173,14 +176,23 @@ typedef enum {
 } material_env_class_t;
 end
 
+public
+#define DMT_MATERIAL_LAYER_FLAGS DDVT_BYTE
+#define DMT_MATERIAL_LAYER_OFFSET_X DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_OFFSET_Y DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_ANGLE DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_SPEED DDVT_FLOAT
+end
+
 struct material
     INT     material_namespace_t mnamespace
-    -       ded_material_s* def // Can be NULL (was generated automatically).
+    -       boolean         isAutoMaterial // Was generated automatically.
+    -       const ded_material_s* def // Can be NULL.
     SHORT   short           flags // MATF_* flags
     SHORT	short           width // Defined width & height of the material (not texture!).
     SHORT   short           height
     -       material_layer_t layers[DDMAX_MATERIAL_LAYERS]
-    -       uint            numLayers
+    -       byte            numLayers
     -       material_env_class_t envClass // Used for environmental sound properties.
     -       ded_detailtexture_s* detail
     -       ded_decor_s*    decoration
@@ -555,24 +567,12 @@ struct node
 end
 
 internal
-typedef struct {
-    float           rgb[3]; // The RGB values.
-    short           set, use; // Is this set? Should be used?
-    float           limit; // .3 by default.
-} fadeout_t;
-
 #define MAX_SKY_LAYERS        2
 #define MAX_SKY_MODELS        32
 
-// Sky layer flags.
-#define SLF_ENABLED         0x1 // Layer enabled.
-#define SLF_MASKED          0x2 // Mask the layer texture.
-
 typedef struct skylayer_s {
-    int             flags; // SLF_* flags.
-    material_t*     mat;
-    float           offset;
-    fadeout_t       fadeout;
+    boolean			enabled;
+    float           fadeoutColorLimit; // .3 by default.
 } skylayer_t;
 
 typedef struct skymodel_s {
@@ -586,15 +586,12 @@ typedef struct skymodel_s {
 end
 
 public
-// temp
-#define DMT_SKY_MATERIAL DDVT_PTR
-#define DMT_SKY_OFFSET_X DDVT_FLOAT
-#define DMT_SKY_ACTIVE   DDVT_BOOL
-#define DMT_SKY_MASK     DDVT_BOOL
+#define DMT_SKY_LAYER_ACTIVE DDVT_BOOL
 end
 
 struct sky
     -        const ded_sky_s* def
+    PTR      material_t* material // Used with sky sphere only.
     -        skylayer_t[MAX_SKY_LAYERS] layers
     -        int         firstLayer // -1 denotes 'no active layers'.
     -        int         activeLayers

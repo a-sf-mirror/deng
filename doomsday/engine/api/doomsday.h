@@ -174,21 +174,21 @@ extern          "C" {
     uint            MPE_VertexCreate(float x, float y);
     boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
     uint            MPE_SidedefCreate(uint sector, short flags,
-                                      int topMaterial,
+                                      material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
-                                      int middleMaterial,
+                                      material_t* middleMaterial,
                                       float middleOffsetX, float middleOffsetY,
                                       float middleRed, float middleGreen,
                                       float middleBlue, float middleAlpha,
-                                      int bottomMaterial,
+                                      material_t* bottomMaterial,
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
     uint            MPE_LinedefCreate(uint v1, uint v2, uint frontSide,
                                       uint backSide, int flags);
     uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    uint            MPE_PlaneCreate(uint sector, float height, int nmaterial,
+    uint            MPE_PlaneCreate(uint sector, float height, material_t* material,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);
@@ -258,6 +258,13 @@ extern          "C" {
     void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
+    struct material_s* DMU_MaterialByName(const char* name, material_namespace_t mnamespace);
+
+    struct material_s* DMU_MaterialByIndex(uint idx, material_namespace_t mnamespace);
+    int             DMU_MaterialCheckNumForName(const char* rawName,
+                                                material_namespace_t mnamespace);
+
+    void            DMU_MaterialPrecache(material_t* mat);
     int             P_Callback(int type, uint index,
                                int (*callback)(void* p, void* ctx),
                                void* context);
@@ -381,17 +388,6 @@ extern          "C" {
 
     struct polyobj_s* P_GetPolyobj(uint num);
     void            P_SetPolyobjCallback(void (*func)(struct mobj_s*, void*, void*));
-
-    // Play: Materials.
-    materialnum_t   DMU_MaterialNumForName(const char* name, material_namespace_t mnamespace);
-
-    int             DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace);
-    int             DMU_MaterialCheckNumForIndex(uint idx,
-                                                 material_namespace_t mnamespace);
-    int             DMU_MaterialCheckNumForName(const char* rawName,
-                                                material_namespace_t mnamespace);
-
-    void            DMU_MaterialPrecache(material_t* mat);
 
     // Play: Thinkers.
     void            DD_InitThinkers(void);

@@ -66,12 +66,7 @@ static boolean CheckedLockedDoor(mobj_t* mo, byte lock);
 
 mobj_t lavaInflictor;
 
-materialnum_t sky1Material;
-materialnum_t sky2Material;
-float sky1ColumnOffset;
-float sky2ColumnOffset;
-float sky1ScrollDelta;
-float sky2ScrollDelta;
+material_t* skyMaterial = NULL;
 boolean doubleSky;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -93,37 +88,40 @@ void P_InitLava(void)
 
 void P_InitSky(int map)
 {
-    sky1Material = P_GetMapSky1Material(map);
-    sky2Material = P_GetMapSky2Material(map);
-    sky1ScrollDelta = P_GetMapSky1ScrollDelta(map);
-    sky2ScrollDelta = P_GetMapSky2ScrollDelta(map);
-    sky1ColumnOffset = 0;
-    sky2ColumnOffset = 0;
-    doubleSky = P_GetMapDoubleSky(map);
+    const char*         layer1TextureName = P_GetMapSkyLayer1Texture(map);
+    const char*         layer2TextureName = P_GetMapSkyLayer2Texture(map);
+    material_t*         mat = DMU_MaterialByName(layer1TextureName, MN_TEXTURES);
+    float               offset[] = { 0.f, 0.f };
 
-    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER1_OFFSET_X, 0);
-    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER2_OFFSET_X, 0);
-
-    if(doubleSky)
+    if(P_GetMapDoubleSky(map))
     {
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_MASK, false);
-        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER1_MATERIAL, P_ToPtr(DMU_MATERIAL, sky1Material));
+        DMU_SetBytep(mat, DMU_LAYER1_FLAGS,
+                     DMU_GetBytep(mat, DMU_LAYER1_FLAGS) & ~MATLF_MASKED);
+        DMU_SetBytep(mat, DMU_LAYER2_FLAGS,
+                     DMU_GetBytep(mat, DMU_LAYER2_FLAGS) | MATLF_MASKED);
 
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
         DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, true);
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_MASK, true);
-        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER2_MATERIAL, P_ToPtr(DMU_MATERIAL, sky2Material));
     }
     else
     {
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_MASK, false);
-        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER1_MATERIAL, P_ToPtr(DMU_MATERIAL, sky1Material));
+        DMU_SetBytep(mat, DMU_LAYER1_FLAGS,
+                     DMU_GetBytep(mat, DMU_LAYER1_FLAGS) & ~MATLF_MASKED);
+        DMU_SetBytep(mat, DMU_LAYER2_FLAGS,
+                     DMU_GetBytep(mat, DMU_LAYER2_FLAGS) & ~MATLF_MASKED);
 
+        DMU_SetBool(DMU_SKY, 0, DMU_LAYER1_ACTIVE, true);
         DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);
-        DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_MASK, false);
-        DMU_SetPtr(DMU_SKY, 0, DMU_LAYER2_MATERIAL, P_ToPtr(DMU_MATERIAL, sky2Material));
     }
+
+    DMU_SetFloatpv(mat, DMU_LAYER1_OFFSET_XY, offset);
+    DMU_SetFloatpv(mat, DMU_LAYER2_OFFSET_XY, offset);
+    DMU_SetFloatp(mat, DMU_LAYER1_ANGLE, P_GetMapSkyLayer1MoveAngle(map));
+    DMU_SetFloatp(mat, DMU_LAYER1_SPEED, P_GetMapSkyLayer1MoveSpeed(map));
+    DMU_SetFloatp(mat, DMU_LAYER2_ANGLE, P_GetMapSkyLayer2MoveAngle(map));
+    DMU_SetFloatp(mat, DMU_LAYER2_SPEED, P_GetMapSkyLayer2MoveSpeed(map));
+
+    DMU_SetPtr(DMU_SKY, 0, DMU_MATERIAL, mat);
 }
 
 boolean EV_SectorSoundChange(byte* args)
@@ -983,12 +981,6 @@ void P_AnimateSurfaces(void)
         }
     }
 
-    // Update sky column offsets
-    sky1ColumnOffset += sky1ScrollDelta;
-    sky2ColumnOffset += sky2ScrollDelta;
-    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER1_OFFSET_X, sky1ColumnOffset);
-    DMU_SetFloat(DMU_SKY, 0, DMU_LAYER2_OFFSET_X, sky2ColumnOffset);
-
     if(mapHasLightning)
     {
         if(!nextLightningFlash || lightningFlash)
@@ -1012,12 +1004,10 @@ static boolean isLightningSector(sector_t* sec)
        xsec->special == LIGHTNING_SPECIAL2)
         return true;
 
-    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_CEILING_MATERIAL),
-                   DMU_FLAGS) & MATF_SKYMASK)
+    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_CEILING_MATERIAL), DMU_FLAGS) & MATF_SKYMASK)
         return true;
 
-    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL),
-                   DMU_FLAGS) & MATF_SKYMASK)
+    if(DMU_GetIntp(DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL), DMU_FLAGS) & MATF_SKYMASK)
         return true;
 
     return false;

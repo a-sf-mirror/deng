@@ -353,8 +353,7 @@ DEFCC(CCmdConBackground)
         return true;
     }
 
-    if((mat = DMU_ToPtr(DMU_MATERIAL,
-            DMU_MaterialCheckNumForName(argv[1], MN_ANY))))
+    if((mat = DMU_MaterialByName(argv[1], MN_ANY)))
         consoleBG = mat;
 
     return true;

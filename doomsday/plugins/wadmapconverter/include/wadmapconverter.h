@@ -44,7 +44,7 @@ enum { VX, VY, VZ };
 
 typedef struct materialref_s {
     char            name[9];
-    materialnum_t   id; // Doomsday's unique identifier for this.
+    material_t*     material; // Doomsday's unique identifier for this.
     uint            refCount;
 } materialref_t;
 

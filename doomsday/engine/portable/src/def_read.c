@@ -1076,8 +1076,11 @@ static int DED_ReadData(ded_t* ded, char* buffer, const char* sourceFile)
                                     READSTR(st->name);
                                 }
                                 else
-                                RV_INT("Tics", st->tics)
-                                RV_FLT("Rnd", st->variance)
+                                RV_FLT("X Offset", st->origin[0])
+                                RV_FLT("Y Offset", st->origin[1])
+                                RV_VEC("Offset", st->origin, 2)
+                                RV_FLT("Move Angle", st->moveAngle)
+                                RV_FLT("Move Speed", st->moveSpeed)
                                 RV_END
                                 CHECKSC;
                             }
@@ -1302,7 +1305,8 @@ static int DED_ReadData(ded_t* ded, char* buffer, const char* sourceFile)
                         }
                         else
                         RV_FLAGS("Flags", sl->flags, "slf_")
-                        RV_FLT("Offset", sl->offset)
+                        RV_FLT("Offset", sl->offset[0])
+                        RV_FLT("Y Offset", sl->offset[1])
                         RV_FLT("Color limit", sl->colorLimit)
                         RV_END
                         CHECKSC;
@@ -1407,7 +1411,8 @@ static int DED_ReadData(ded_t* ded, char* buffer, const char* sourceFile)
                         }
                         else
                         RV_FLAGS("Flags", sl->flags, "slf_")
-                        RV_FLT("Offset", sl->offset)
+                        RV_FLT("Offset", sl->offset[0])
+                        RV_FLT("Y Offset", sl->offset[1])
                         RV_FLT("Color limit", sl->colorLimit)
                         RV_END
                         CHECKSC;

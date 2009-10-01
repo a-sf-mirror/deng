@@ -54,7 +54,7 @@ int skyHemispheres;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static sky_t sky = { NULL, (float) PI / 3 };
+static sky_t sky;
 sky_t* theSky = &sky;
 
 // CODE --------------------------------------------------------------------
@@ -101,74 +101,22 @@ void R_SetupSky(sky_t* sky, const ded_sky_t* skyDef)
 
 static void updateLayerStats(sky_t* sky)
 {
-    int                 i = 0;
+    int                 i;
 
     sky->firstLayer = -1;
     sky->activeLayers = 0;
+
     for(i = 0; i < MAX_SKY_LAYERS; ++i)
     {
         skylayer_t*         slayer = &sky->layers[i];
 
-        if(slayer->flags & SLF_ENABLED)
+        if(slayer->enabled)
         {
             sky->activeLayers++;
             if(sky->firstLayer == -1)
                 sky->firstLayer = i;
         }
     }
-}
-
-static void checkFadeoutColorLimit(skylayer_t* slayer)
-{
-    if(slayer->mat)
-    {
-        int                 i;
-
-        slayer->fadeout.use = false;
-        for(i = 0; i < 3; ++i)
-            if(slayer->fadeout.rgb[i] > slayer->fadeout.limit)
-            {
-                // Colored fadeout is needed.
-                slayer->fadeout.use = true;
-                break;
-            }
-    }
-
-    slayer->fadeout.use = true;
-}
-
-static void setLayerFadeoutColorLimit(skylayer_t* slayer, float limit)
-{
-    slayer->fadeout.limit = limit;
-    checkFadeoutColorLimit(slayer);
-}
-
-static void setupFadeout(skylayer_t* slayer)
-{
-    if(slayer->mat)
-    {
-        material_load_params_t params;
-        material_snapshot_t ms;
-
-        // Ensure we have up to date info on the material.
-        memset(&params, 0, sizeof(params));
-        params.flags = MLF_LOAD_AS_SKY | MLF_TEX_NO_COMPRESSION;
-        if(slayer->flags & SLF_MASKED)
-            params.flags |= MLF_ZEROMASK;
-
-        Material_Prepare(&ms, slayer->mat, true, &params);
-        slayer->fadeout.rgb[CR] = ms.topColor[CR];
-        slayer->fadeout.rgb[CG] = ms.topColor[CG];
-        slayer->fadeout.rgb[CB] = ms.topColor[CB];
-    }
-    else
-    {
-        // An invalid texture, default to black.
-        slayer->fadeout.rgb[CR] = slayer->fadeout.rgb[CG] =
-            slayer->fadeout.rgb[CB] = 0;
-    }
-
-    checkFadeoutColorLimit(slayer);
 }
 
 static void initSkyModels(sky_t* sky, const ded_sky_t* def)
@@ -202,18 +150,29 @@ static void initSkyModels(sky_t* sky, const ded_sky_t* def)
 static void init(sky_t* sky)
 {
     int                 i;
+    float               offset[2] = { 0, 0 };
+    material_t*         mat;
 
-    sky->firstLayer = 0;
     sky->def = NULL;
+    sky->firstLayer = sky->activeLayers = 0;
+    sky->modelsInited = false;
+
+    // Configure the material.
+    mat = P_ToMaterial(P_MaterialNumForName("SKY1", MN_TEXTURES));
+    Material_SetLayerFlags(mat, 0, 0);
+    Material_SetLayerTextureOriginXY(mat, 0, offset);
+
+    sky->material = mat;
 
     // Initialize the layers.
     for(i = 0; i < MAX_SKY_LAYERS; ++i)
     {
         skylayer_t*         slayer = &sky->layers[i];
 
-        slayer->mat = NULL; // No material.
-        slayer->fadeout.limit = .3f;
+        slayer->fadeoutColorLimit = .3f;
     }
+    
+    Sky_ActivateLayer(sky, 0, true);
 }
 
 /**
@@ -225,13 +184,6 @@ void Sky_InitDefault(sky_t* sky)
         return;
 
     init(sky);
-
-    Sky_ActivateLayer(sky, 0, true);
-    Sky_SetLayerMaterial(sky, 0, P_ToMaterial(P_MaterialNumForName("SKY1", MN_TEXTURES)));
-    Sky_SetLayerMask(sky, 0, false);
-    Sky_SetLayerMaterialOffsetX(sky, 0, 0);
-
-    Sky_ActivateLayer(sky, 1, true);
 }
 
 /**
@@ -240,6 +192,7 @@ void Sky_InitDefault(sky_t* sky)
 void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 {
     int                 i;
+    material_t*         mat;
 
     if(!sky)
         return;
@@ -248,35 +201,78 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 
     sky->def = def;
 
+    {
+    materialnum_t       matNum;
+    if(!(matNum = P_MaterialNumForName(def->layers[0].material.name,
+                                       def->layers[0].material.mnamespace)))
+    {
+        Con_Message("Sky_InitFromDefinition: Warning, failed to locate "
+                    "material '%s' in namespace %i. Using default.\n",
+                    def->layers[0].material.name,
+                    def->layers[0].material.mnamespace);
+
+        matNum = P_MaterialNumForName("SKY1", MN_TEXTURES);
+    }
+    mat = P_ToMaterial(matNum);
+    }
+
+     // Configure the material
+    for(i = 0; i < 2; ++i)
+    {
+        const ded_skylayer_t* layer = &def->layers[i];
+        byte                flags = 0;
+        gltextureid_t       glTexID = 0;
+
+        // @todo Refactor away this ugliness.
+        if(layer->material.name[0])
+        {
+            gltexture_type_t    glTexType = GLT_ANY; // Means NULL in this context.
+
+            switch(layer->material.mnamespace)
+            {
+            case MN_SYSTEM:     glTexType = GLT_SYSTEM;         break;
+            case MN_TEXTURES:   glTexType = GLT_DOOMTEXTURE;    break;
+            case MN_FLATS:      glTexType = GLT_FLAT;           break;
+            case MN_SPRITES:    glTexType = GLT_SPRITE;         break;
+                break;
+
+            default:
+                break;
+            }
+
+            if(glTexType != GLT_ANY)
+            {
+                const gltexture_t* glTex =
+                    GL_GetGLTextureByName(layer->material.name, glTexType);
+
+                if(glTex)
+                    glTexID = glTex->id;
+            }
+        }
+
+        Material_SetLayerTexture(mat, i, glTexID);
+        Material_SetLayerTextureOriginXY(mat, i, layer->offset);
+
+        if(layer->flags & SLF_MASKED)
+            flags |= MATLF_MASKED;
+        Material_SetLayerFlags(mat, i, flags);
+    }
+
+    Sky_SetSphereMaterial(sky, mat);
+
     for(i = 0; i < 2; ++i)
     {
         const ded_skylayer_t* layer = &def->layers[i];
 
-        if(layer->flags & SLF_ENABLED)
-        {
-            materialnum_t       matNum =
-                P_MaterialNumForName(layer->material.name,
-                                     layer->material.mnamespace);
-            if(!matNum)
-            {
-                Con_Message("Sky_InitFromDefinition: Invalid/missing material "
-                            "\"%s\"\n", layer->material.name);
-
-                matNum = P_MaterialNumForName("SKY1", MN_TEXTURES);
-            }
-
-            Sky_ActivateLayer(sky, i, true);
-            Sky_SetLayerMaterial(sky, i, P_ToMaterial(matNum));
-
-            Sky_SetLayerMask(sky, i, (layer->flags & SLF_MASKED)? true : false);
-            Sky_SetLayerMaterialOffsetX(sky, i, layer->offset);
-
-            setLayerFadeoutColorLimit(&sky->layers[i], layer->colorLimit);
-        }
-        else
+        if(!(layer->flags & SLF_ENABLED))
         {
             Sky_ActivateLayer(sky, i, false);
+            continue;
         }
+
+        sky->layers[i].fadeoutColorLimit = layer->colorLimit;
+
+        Sky_ActivateLayer(sky, i, true);
     }
 
     // Any sky models to setup? Models will override the normal sphere unless
@@ -343,7 +339,7 @@ void Sky_Precache(sky_t* sky)
     }
 }
 
-int Sky_GetFirstLayer(const sky_t* sky)
+int Sky_GetFirstLayer(sky_t* sky)
 {
     if(!sky)
         return 0;
@@ -363,67 +359,6 @@ const float* Sky_GetLightColor(sky_t* sky)
     return NULL;
 }
 
-const fadeout_t* Sky_GetFadeout(const sky_t* sky)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky)
-        return NULL;
-
-    // The fadeout is that of the first layer.
-    slayer = &sky->layers[sky->firstLayer];
-
-    return &slayer->fadeout;
-}
-
-boolean Sky_IsLayerActive(const sky_t* sky, int layer)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return false;
-
-    slayer = &sky->layers[layer];
-
-    return (slayer->flags & SLF_ENABLED) ? true : false;
-}
-
-boolean Sky_GetLayerMask(const sky_t* sky, int layer)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return false;
-
-    slayer = &sky->layers[layer];
-
-    return (slayer->flags & SLF_MASKED) ? true : false;
-}
-
-material_t* Sky_GetLayerMaterial(const sky_t* sky, int layer)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return NULL;
-
-    slayer = &sky->layers[layer];
-
-    return slayer->mat;
-}
-
-float Sky_GetLayerMaterialOffsetX(const sky_t* sky, int layer)
-{
-    const skylayer_t*   slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return 0;
-
-    slayer = &sky->layers[layer];
-
-    return slayer->offset;
-}
-
 void Sky_ActivateLayer(sky_t* sky, int layer, boolean active)
 {
     skylayer_t*         slayer;
@@ -433,80 +368,37 @@ void Sky_ActivateLayer(sky_t* sky, int layer, boolean active)
 
     slayer = &sky->layers[layer];
 
-    if(active)
-        slayer->flags |= SLF_ENABLED;
-    else
-        slayer->flags &= ~SLF_ENABLED;
+    slayer->enabled = active;
 
     updateLayerStats(sky);
 }
 
-void Sky_SetLayerMask(sky_t* sky, int layer, boolean enable)
+boolean Sky_IsLayerActive(sky_t* sky, int layer)
 {
-    boolean             deleteTextures = false;
     skylayer_t*         slayer;
 
     if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return;
+        return false;
 
     slayer = &sky->layers[layer];
 
-    if(enable)
-    {
-        // Invalidate the loaded texture, if necessary.
-        if(slayer->mat && !(slayer->flags & SLF_MASKED))
-            deleteTextures = true;
-        slayer->flags |= SLF_MASKED;
-    }
-    else
-    {
-        // Invalidate the loaded texture, if necessary.
-        if(slayer->mat && (slayer->flags & SLF_MASKED))
-            deleteTextures = true;
-        slayer->flags &= ~SLF_MASKED;
-    }
-
-    if(deleteTextures)
-        Material_DeleteTextures(slayer->mat);
+    return (slayer->enabled ? true : false);
 }
 
-void Sky_SetLayerMaterial(sky_t* sky, int layer, material_t* material)
+material_t* Sky_GetSphereMaterial(sky_t* sky)
 {
-    skylayer_t*         slayer;
+    if(!sky)
+        return NULL;
 
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
-        return;
-
-    slayer = &sky->layers[layer];
-
-    slayer->mat = material;
-
-    if(material)
-    {
-        material_load_params_t params;
-    
-        memset(&params, 0, sizeof(params));
-
-        params.flags = MLF_LOAD_AS_SKY | MLF_TEX_NO_COMPRESSION;
-        if(slayer->flags & SLF_MASKED)
-            params.flags |= MLF_ZEROMASK;
-
-        Material_Prepare(NULL, slayer->mat, true, &params);
-    }
-
-    setupFadeout(slayer);
+    return sky->material;
 }
 
-void Sky_SetLayerMaterialOffsetX(sky_t* sky, int layer, float offset)
+void Sky_SetSphereMaterial(sky_t* sky, material_t* material)
 {
-    skylayer_t*         slayer;
-
-    if(!sky || layer < 0 || !(layer < MAX_SKY_LAYERS))
+    if(!sky)
         return;
 
-    slayer = &sky->layers[layer];
-
-    slayer->offset = offset;
+    sky->material = material;
 }
 
 /**
@@ -516,60 +408,25 @@ boolean Sky_SetProperty(sky_t* sky, const setargs_t* args)
 {
     switch(args->prop)
     {
-    case DMU_LAYER1_MATERIAL:
+    case DMU_MATERIAL:
         {
         void*           p;
         DMU_SetValue(DDVT_PTR, &p, args, 0);
-        Sky_SetLayerMaterial(sky, 0, ((dmuobjrecord_t*) p)->obj);
+        Sky_SetSphereMaterial(sky, ((dmuobjrecord_t*) p)->obj);
         }
         break;
-    case DMU_LAYER2_MATERIAL:
-        {
-        void*           p;
-        DMU_SetValue(DDVT_PTR, &p, args, 0);
-        Sky_SetLayerMaterial(sky, 1, ((dmuobjrecord_t*) p)->obj);
-        }
-        break;
-    case DMU_LAYER1_OFFSET_X:
-        {
-        float           p;
-        DMU_SetValue(DMT_SKY_OFFSET_X, &p, args, 0);
-        Sky_SetLayerMaterialOffsetX(sky, 0, p);
-        break;
-        }
-    case DMU_LAYER2_OFFSET_X:
-        {
-        float           p;
-        DMU_SetValue(DMT_SKY_OFFSET_X, &p, args, 0);
-        Sky_SetLayerMaterialOffsetX(sky, 1, p);
-        break;
-        }
     case DMU_LAYER1_ACTIVE:
         {
-        boolean         vis;
-        DMU_SetValue(DMT_SKY_ACTIVE, &vis, args, 0);
-        Sky_ActivateLayer(sky, 0, vis);
+        boolean         active;
+        DMU_SetValue(DMT_SKY_LAYER_ACTIVE, &active, args, 0);
+        Sky_ActivateLayer(sky, 0, active);
         break;
         }
     case DMU_LAYER2_ACTIVE:
         {
-        boolean         vis;
-        DMU_SetValue(DMT_SKY_ACTIVE, &vis, args, 0);
-        Sky_ActivateLayer(sky, 1, vis);
-        break;
-        }
-    case DMU_LAYER1_MASK:
-        {
-        boolean         mask;
-        DMU_SetValue(DMT_SKY_MASK, &mask, args, 0);
-        Sky_SetLayerMask(sky, 0, mask);
-        break;
-        }
-    case DMU_LAYER2_MASK:
-        {
-        boolean         mask;
-        DMU_SetValue(DMT_SKY_MASK, &mask, args, 0);
-        Sky_SetLayerMask(sky, 1, mask);
+        boolean         active;
+        DMU_SetValue(DMT_SKY_LAYER_ACTIVE, &active, args, 0);
+        Sky_ActivateLayer(sky, 1, active);
         break;
         }
     default:
@@ -583,54 +440,24 @@ boolean Sky_SetProperty(sky_t* sky, const setargs_t* args)
 /**
  * Get the value of a sky property, selected by DMU_* name.
  */
-boolean Sky_GetProperty(const sky_t* sky, setargs_t* args)
+boolean Sky_GetProperty(sky_t* sky, setargs_t* args)
 {
     switch(args->prop)
     {
-    case DMU_LAYER1_MATERIAL:
+    case DMU_MATERIAL:
         {
-        material_t*     mat = sky->layers[0].mat;
+        material_t*     mat = Sky_GetSphereMaterial(sky);
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_MATERIAL, mat);
         DMU_GetValue(DMT_SKY_MATERIAL, &r, args, 0);
         break;
         }
-    case DMU_LAYER2_MATERIAL:
-        {
-        material_t*     mat = sky->layers[1].mat;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_MATERIAL, mat);
-        DMU_GetValue(DMT_SKY_MATERIAL, &r, args, 0);
-        break;
-        }
-    case DMU_LAYER1_OFFSET_X:
-        DMU_GetValue(DMT_SKY_OFFSET_X, &sky->layers[0].offset, args, 0);
-        break;
-    case DMU_LAYER2_OFFSET_X:
-        DMU_GetValue(DMT_SKY_OFFSET_X, &sky->layers[1].offset, args, 0);
-        break;
     case DMU_LAYER1_ACTIVE:
-        {
-        boolean         vis = (sky->layers[0].flags & SLF_ENABLED)? true : false;
-        DMU_GetValue(DMT_SKY_ACTIVE, &vis, args, 0);
+        DMU_GetValue(DMT_SKY_LAYER_ACTIVE, &sky->layers[0].enabled, args, 0);
         break;
-        }
+
     case DMU_LAYER2_ACTIVE:
-        {
-        boolean         vis = (sky->layers[1].flags & SLF_ENABLED)? true : false;
-        DMU_GetValue(DMT_SKY_ACTIVE, &vis, args, 0);
+        DMU_GetValue(DMT_SKY_LAYER_ACTIVE, &sky->layers[1].enabled, args, 0);
         break;
-        }
-    case DMU_LAYER1_MASK:
-        {
-        boolean         vis = (sky->layers[0].flags & SLF_MASKED)? true : false;
-        DMU_GetValue(DMT_SKY_MASK, &vis, args, 0);
-        break;
-        }
-    case DMU_LAYER2_MASK:
-        {
-        boolean         vis = (sky->layers[1].flags & SLF_MASKED)? true : false;
-        DMU_GetValue(DMT_SKY_MASK, &vis, args, 0);
-        break;
-        }
     default:
         Con_Error("Sky_GetProperty: No property %s.\n",
                   DMU_Str(args->prop));

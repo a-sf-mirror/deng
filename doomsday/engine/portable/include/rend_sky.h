@@ -44,6 +44,6 @@ void            Rend_ShutdownSky(void);
 
 void            Rend_SetSkyDetail(int quarterDivs, int rows);
 
-void            Rend_RenderSky(const struct sky_s* sky, int hemis);
+void            Rend_RenderSky(struct sky_s* sky, int hemis);
 
 #endif /* DOOMSDAY_SKY_H */

@@ -301,7 +301,7 @@ void P_DeleteMaterialTextures(material_namespace_t mnamespace)
 
     if(!isKnownMNamespace(mnamespace))
         Con_Error("P_DeleteMaterialTextures: Internal error, "
-                  "invalid materialgroup '%i'.", (int) mnamespace);
+                  "invalid namespace '%i'.", (int) mnamespace);
 
     if(materialBinds)
     {
@@ -316,7 +316,7 @@ void P_DeleteMaterialTextures(material_namespace_t mnamespace)
                 for(;;)
                 {
                     material_t*         mat = mb->mat;
-                    uint                j;
+                    byte                j;
 
                     for(j = 0; j < mat->numLayers; ++j)
                         GL_ReleaseGLTexture(mat->layers[j].tex);
@@ -332,9 +332,9 @@ void P_DeleteMaterialTextures(material_namespace_t mnamespace)
 
 static material_t* createMaterial(short width, short height, byte flags,
                                   material_namespace_t mnamespace,
-                                  ded_material_t* def, gltextureid_t tex)
+                                  const ded_material_t* def,
+                                  boolean isAutoMaterial)
 {
-    uint                i;
     material_t*         mat = Z_BlockNewElement(materialsBlockSet);
 
     memset(mat, 0, sizeof(*mat));
@@ -346,22 +346,7 @@ static material_t* createMaterial(short width, short height, byte flags,
     mat->envClass = MEC_UNKNOWN;
     mat->current = mat->next = mat;
     mat->def = def;
-    mat->decoration = NULL;
-    mat->ptcGen = NULL;
-    mat->detail = NULL;
-    mat->layers[0].tex = tex;
-    mat->numLayers = 1;
-
-    // Is this a custom material?
-    mat->flags &= ~MATF_CUSTOM;
-    for(i = 0; i < mat->numLayers; ++i)
-    {
-        if(!GLTexture_IsFromIWAD(GL_GetGLTexture(mat->layers[i].tex)))
-        {
-            mat->flags |= MATF_CUSTOM;
-            break;
-        }
-    }
+    mat->isAutoMaterial = isAutoMaterial;
 
     // Link the new material into the global list of materials.
     mat->globalNext = materialsHead;
@@ -418,25 +403,25 @@ materialnum_t P_ToMaterialNum(const material_t* mat)
 }
 
 /**
- * Create a new material. If there exists one by the same name and in the
- * same namespace, it is returned else a new material is created.
+ * Create a new material.
  *
  * \note: May fail if the name is invalid.
  *
+ * @param mnamespace    MG_* material namespace.
+ *                      MN_ANY is only valid when updating an existing material.
  * @param name          Name of the new material.
  * @param width         Width of the material (not of the texture).
  * @param height        Height of the material (not of the texture).
  * @param flags         MATF_* material flags
- * @param tex           Texture to use with this material.
- * @param mnamespace    MG_* material namespace.
- *                      MN_ANY is only valid when updating an existing material.
+ * @param isAutoMaterial @c true = Material is being generated automatically
+ *                      to represent an IWAD texture/flat/sprite/etc...
  *
  * @return              The created material, ELSE @c NULL.
  */
-material_t* P_MaterialCreate(const char* rawName, short width, short height,
-                             byte flags, gltextureid_t tex,
-                             material_namespace_t mnamespace,
-                             ded_material_t* def)
+material_t* P_MaterialCreate(material_namespace_t mnamespace,
+                             const char* rawName, short width, short height,
+                             byte flags, const ded_material_t* def,
+                             boolean isAutoMaterial)
 {
     int                 n;
     uint                hash;
@@ -447,10 +432,7 @@ material_t* P_MaterialCreate(const char* rawName, short width, short height,
     if(!initedOk)
         return NULL;
 
-    // In original DOOM, texture name references beginning with the
-    // hypen '-' character are always treated as meaning "no reference"
-    // or "invalid texture" and surfaces using them were not drawn.
-    if(!rawName || !rawName[0] || rawName[0] == '-')
+    if(!rawName || !rawName[0])
     {
 #if _DEBUG
 Con_Message("P_MaterialCreate: Warning, attempted to create material with "
@@ -489,33 +471,6 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material in "
         oldMat = getMaterialNumForName(name, hash, mnamespace);
     }
 
-    if(oldMat)
-    {   // We are updating an existing material.
-        materialbind_t*     mb = &materialBinds[oldMat - 1];
-
-        mat = mb->mat;
-
-        // Update the (possibly new) meta data.
-        if(tex)
-            mat->layers[0].tex = tex;
-        mat->flags = flags;
-        if(width > 0)
-            mat->width = width;
-        if(height > 0)
-            mat->height = height;
-        mat->inAnimGroup = false;
-        mat->current = mat->next = mat;
-        mat->def = def;
-        mat->inter = 0;
-        mat->decoration = NULL;
-        mat->ptcGen = NULL;
-        mat->detail = NULL;
-        mat->envClass = MEC_UNKNOWN;
-        mat->mnamespace = mnamespace;
-
-        return mat; // Yep, return it.
-    }
-
     if(mnamespace == MN_ANY)
     {
 #if _DEBUG
@@ -525,16 +480,20 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material "
         return NULL;
     }
 
+    if(oldMat)
+        Con_Error("P_MaterialCreate: Can not create material named '%s' in "
+                  "namespace %i, name already in use.", name, mnamespace);
+
     /**
      * A new material.
      */
 
     // Only create complete materials.
     // \todo Doing this here isn't ideal.
-    if(tex == 0 || !(width > 0) || !(height > 0))
+    if(/*tex == 0 ||*/ !(width > 0) || !(height > 0))
         return NULL;
 
-    mat = createMaterial(width, height, flags, mnamespace, def, tex);
+    mat = createMaterial(width, height, flags, mnamespace, def, isAutoMaterial);
 
     // Now create a name binding for it.
     newMaterialNameBinding(mat, name, mnamespace, hash);
@@ -589,62 +548,40 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
     return NULL;
 }
 
-int DMU_MaterialCheckNumForIndex(uint idx, material_namespace_t mnamespace)
-{
-    if(!initedOk)
-        return 0;
-
-    // Caller wants a material in a specific namespace.
-    if(!isKnownMNamespace(mnamespace))
-    {
-#if _DEBUG
-Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
-            (int) mnamespace);
-#endif
-        return 0;
-    }
-
-    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
-        P_ToMaterial(getMaterialNumForIndex(idx, mnamespace))));
-}
-
 /**
  * Given a texture/flat/sprite/etc index num, search the materials db for
  * a name-bound material.
  * \note Part of the Doomsday public API.
- * \note2 Sames as P_MaterialCheckNumForIndex except will log an error
- *        message if the material being searched for is not found.
  *
  * @param idx           Index of the texture/flat/sprite/etc.
  * @param mnamespace    MG_* namespace.
  *
- * @return              Unique identifier of the found material, else zero.
+ * @return              The found material, else @c NULL.
  */
-int DMU_MaterialNumForIndex(uint idx, material_namespace_t mnamespace)
+material_t* DMU_MaterialByIndex(uint idx, material_namespace_t mnamespace)
 {
     material_t*         mat;
 
     if(!initedOk)
-        return 0;
+        return NULL;
 
     // Caller wants a material in a specific namespace.
     if(!isKnownMNamespace(mnamespace))
     {
-#if _DEBUG
-Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
-            (int) mnamespace);
-#endif
-        return 0;
+        Con_Message("DMU_MaterialByIndex: Warning, invalid namespace '%i'.\n",
+                    (int) mnamespace);
+
+        return NULL;
     }
 
     mat = P_ToMaterial(getMaterialNumForIndex(idx, mnamespace));
 
     // Not found? Don't announce during map setup or if not yet inited.
     if(mat && (!ddMapSetup || !initedOk))
-        Con_Message("DMU_MaterialNumForIndex: %u in namespace %i not found!\n",
+        Con_Message("DMU_MaterialByIndex: %u in namespace %i not found!\n",
                     idx, mnamespace);
 
-    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL, mat));
+    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL, mat);
 }
 
 /**
@@ -754,11 +691,10 @@ materialnum_t P_MaterialNumForName(const char* name,
     return result;
 }
 
-int DMU_MaterialNumForName(const char* name,
-                           material_namespace_t mnamespace)
+material_t* DMU_MaterialByName(const char* name, material_namespace_t mnamespace)
 {
-    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
-        P_ToMaterial(P_MaterialCheckNumForName(name, mnamespace))));
+    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL,
+        P_ToMaterial(P_MaterialCheckNumForName(name, mnamespace)));
 }
 
 /**
@@ -801,21 +737,19 @@ void DMU_MaterialPrecache(material_t* mat)
  */
 void P_MaterialManagerTicker(timespan_t time)
 {
-//    material_t*         mat;
     static trigger_t    fixed = { 1.0 / 35, 0 };
+    material_t*         mat;
 
     // The animation will only progress when the game is not paused.
     if(clientPaused)
         return;
 
-#if 0
     mat = materialsHead;
     while(mat)
     {
         Material_Ticker(mat, time);
         mat = mat->globalNext;
     }
-#endif
 
     if(!M_RunTrigger(&fixed, time))
         return;
@@ -826,7 +760,7 @@ void P_MaterialManagerTicker(timespan_t time)
 static void printMaterialInfo(materialnum_t num, boolean printNamespace)
 {
     const materialbind_t* mb = &materialBinds[num];
-    uint                i;
+    byte                i;
     int                 numDigits = M_NumDigits(numMaterialBinds);
 
     Con_Printf(" %*lu - \"%s\"", numDigits, num, mb->name);

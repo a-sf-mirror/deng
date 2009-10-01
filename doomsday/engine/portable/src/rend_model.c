@@ -805,10 +805,10 @@ static void Mod_RenderSubModel(uint number, const rendmodelparams_t* params)
         if((sn = R_GetSkinNameByIndex(mdl->skins[useSkin].id)))
         {
             const gltexture_inst_t* texInst;
-            material_load_params_t params;
+            texture_load_params_t params;
 
             memset(&params, 0, sizeof(params));
-            params.flags = (!mdl->allowTexComp? MLF_TEX_NO_COMPRESSION : 0);
+            params.flags = (!mdl->allowTexComp? TLF_NO_COMPRESSION : 0);
 
             if((texInst = GL_PrepareGLTexture(sn->id, &params, NULL)))
                 skinTexture = texInst->id;

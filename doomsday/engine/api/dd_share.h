@@ -608,15 +608,21 @@ enum /* Do not change the numerical values of the constants! */
     DMU_NAMESPACE,
     DMU_NAME,
 
-    // Temporary until we allow for multilayered materials:
-    DMU_LAYER1_MATERIAL,
-    DMU_LAYER2_MATERIAL,
-    DMU_LAYER1_OFFSET_X,
-    DMU_LAYER2_OFFSET_X,
+    // Temporary until we allow access to material layers directly:
     DMU_LAYER1_ACTIVE,
     DMU_LAYER2_ACTIVE,
-    DMU_LAYER1_MASK,
-    DMU_LAYER2_MASK
+    DMU_LAYER1_FLAGS,
+    DMU_LAYER2_FLAGS,
+    DMU_LAYER1_OFFSET_X,
+    DMU_LAYER1_OFFSET_Y,
+    DMU_LAYER1_OFFSET_XY,
+    DMU_LAYER2_OFFSET_X,
+    DMU_LAYER2_OFFSET_Y,
+    DMU_LAYER2_OFFSET_XY,
+    DMU_LAYER1_SPEED,
+    DMU_LAYER2_SPEED,
+    DMU_LAYER1_ANGLE,
+    DMU_LAYER2_ANGLE
 };
 
 // Map Update value names:
@@ -961,7 +967,7 @@ typedef enum gfxmode_e {
     LGM_WHITE_ALPHA = 3
 } gfxmode_t;
 
-#define DDMAX_MATERIAL_LAYERS   1
+#define DDMAX_MATERIAL_LAYERS   2
 
 typedef enum material_namespace_e {
     MN_ANY = -1,
@@ -973,11 +979,21 @@ typedef enum material_namespace_e {
     NUM_MATERIAL_NAMESPACES
 } material_namespace_t;
 
-// Material flags:
-#define MATF_CUSTOM             0x0001 // Material is not derived from an IWAD resource (directly, at least).
-#define MATF_NO_DRAW            0x0002 // Material should never be drawn.
-#define MATF_GLOW               0x0004 // Glowing material.
-#define MATF_SKYMASK            0x0008 // Sky-mask surfaces using this material.
+/**
+ * @defGroup materialFlags Material Flags
+ */
+/*@{*/
+#define MATF_NO_DRAW            0x0001 // Material should never be drawn.
+#define MATF_GLOW               0x0002 // Glowing material.
+#define MATF_SKYMASK            0x0004 // Sky-mask surfaces using this material.
+/*@}*/
+
+/**
+ * @defGroup materialLayerFlags Material Layer Flags
+ */
+/*@{*/
+#define MATLF_MASKED              0x1
+/*@}*/
 
 // Animation group flags.
 #define AGF_SMOOTH          0x1

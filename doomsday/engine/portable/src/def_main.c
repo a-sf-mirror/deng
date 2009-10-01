@@ -834,6 +834,84 @@ static void readDefs(void)
                         Sys_GetSeconds() - starttime));
 }
 
+static void processMaterialDefinition(const ded_material_t* def)
+{
+    byte                i;
+    materialnum_t       oldNum;
+
+    // Are we patching an existing material or creating a new?
+    oldNum = P_MaterialCheckNumForName(def->id.name, def->id.mnamespace);
+
+    if(oldNum)
+    {   // Patching an existing material.
+        material_t*         mat = P_ToMaterial(oldNum);
+
+        if(def->width > 0)
+            Material_SetWidth(mat, def->width);
+        if(def->height > 0)
+            Material_SetHeight(mat, def->height);
+        Material_SetFlags(mat, def->flags);
+
+        for(i = 0; i < DED_MAX_MATERIAL_LAYERS; ++i)
+        {
+            const ded_material_layer_t* layer = &def->layers[i];
+            const ded_material_layer_stage_t* stage = &layer->stages[0];
+            const gltexture_t*  tex = NULL;
+
+            if(!layer->stageCount.num)
+                break;
+            
+            if(!(tex = GL_GetGLTextureByName(stage->name, stage->type)))
+            {
+                Con_Message("Def_Read: Warning, unknown %s '%s' in material "
+                            "'%s' (layer %i stage %i).\n",
+                            GLTEXTURE_TYPE_STRING(stage->type), stage->name,
+                            def->id.name, 0, 0);
+            }
+
+            Material_SetLayerTexture(mat, i, tex? tex->id : 0);
+            Material_SetLayerTextureOriginXY(mat, i, stage->origin);
+            Material_SetLayerMoveAngle(mat, i, stage->moveAngle);
+            Material_SetLayerMoveSpeed(mat, i, stage->moveSpeed);
+            //Material_SetLayerFlags(mat, i, stage->flags);
+        }
+    }
+    else
+    {   // An entirely new material.
+        material_t*         mat;
+
+        if(!(mat = P_MaterialCreate(def->id.mnamespace, def->id.name, def->width,
+                                    def->height, def->flags, def, false)))
+        {
+            Con_Message("Def_Read: Warning, failed creating material '%s' "
+                        "in namespace %i.\n", def->id.name, def->id.mnamespace);
+            return;
+        }
+
+        for(i = 0; i < DED_MAX_MATERIAL_LAYERS; ++i)
+        {
+            const ded_material_layer_t* layer = &def->layers[i];
+            const ded_material_layer_stage_t* stage = &layer->stages[0];
+            const gltexture_t*  tex = NULL;
+
+            if(stage->type == -1) // Unused.
+                break;
+
+            if(!(tex = GL_GetGLTextureByName(stage->name, stage->type)))
+            {
+                Con_Message("Def_Read: Warning, unknown %s '%s' in "
+                            "material '%s' (layer %i stage %i).\n",
+                            GLTEXTURE_TYPE_STRING(stage->type), stage->name,
+                            def->id.name, 0, 0);
+            }
+
+            Material_AddLayer(mat, 0, tex? tex->id : 0, stage->origin[0],
+                              stage->origin[1], stage->moveAngle,
+                              stage->moveSpeed);
+        }
+    }
+}
+
 /**
  * Reads the specified definition files, and creates the sprite name,
  * state, mobjinfo, sound, music, text and mapinfo databases accordingly.
@@ -973,36 +1051,7 @@ void Def_Read(void)
     // Materials.
     for(i = 0; i < defs.count.materials.num; ++i)
     {
-        ded_material_t*     def = &defs.materials[i];
-        const gltexture_t*  tex = NULL; // No change.
-        float               width = -1, height = -1; // No change.
-        material_namespace_t mnamespace = MN_ANY; // No change.
-
-        // Sanitize so that when updating we only change what is requested.
-        if(def->width > 0)
-            width = MAX_OF(1, def->width);
-        if(def->height > 0)
-            height = MAX_OF(1, def->height);
-        if(def->id.mnamespace != MN_ANY)
-            mnamespace = def->id.mnamespace;
-
-        if(def->layers[0].stageCount.num > 0)
-        {
-            const ded_material_layer_t* l = &def->layers[0];
-
-            if(l->stages[0].type != -1) // Not unused.
-            {
-                if(!(tex = GL_GetGLTextureByName(l->stages[0].name, l->stages[0].type)))
-                VERBOSE( Con_Message("Def_Read: Warning, unknown %s "
-                                     "'%s' in material '%s' (layer %i "
-                                     "stage %i).\n",
-                                     GLTEXTURE_TYPE_STRING(l->stages[0].type),
-                                     l->stages[0].name, def->id.name, 0, 0) );
-            }
-        }
-
-        P_MaterialCreate(def->id.name, width, height, def->flags,
-                         tex? tex->id : 0, mnamespace, def);
+        processMaterialDefinition(&defs.materials[i]);
     }
 
     // Dynamic lights. Update the sprite numbers.

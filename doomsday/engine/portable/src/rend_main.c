@@ -2136,7 +2136,7 @@ static void Rend_RenderPlane(face_t* face, planetype_t type,
         V3_Set(texTL, ssec->bBox[0].pos[VX],
                ssec->bBox[type == PLN_FLOOR? 1 : 0].pos[VY], height);
         V3_Set(texBR, ssec->bBox[1].pos[VX],
-               ssec->bBox[type == PLN_FLOOR? 0 : 1].pos[VY], height);
+            ssec->bBox[type == PLN_FLOOR? 0 : 1].pos[VY], height);
 
         renderPlane(face, type, height, normal, inMat, inMatB, matBlendFactor,
                     sufInFlags, sufColor, blendMode, texTL, texBR, texOffset,
@@ -2257,7 +2257,7 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
 
         V3_Set(texTL, from->pos[VX], from->pos[VY], top);
-        V3_Set(texBR, to->pos  [VX], to->pos  [VY], bottom);
+        V3_Set(texBR, to->pos[VX], to->pos[VY], bottom);
 
         // Fill in the remaining params data.
         if(skyMask || IS_SKYSURFACE(surface))

@@ -205,7 +205,7 @@ static void addMaterialToList(materialref_t* m, materialref_t*** list,
  */
 static __inline boolean isUnknownMaterialRef(const materialref_t* m, boolean isFlat)
 {
-    return m->id == 0 ? true : false;
+    return m->material == NULL ? true : false;
 }
 
 const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
@@ -238,9 +238,8 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
             dd_snprintf(m->name, 9, "UNK%05i", idx);
 
             // First try the prefered namespace, then any.
-            if(!(m->id = DMU_MaterialCheckNumForIndex(idx,
-                                                     (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->id = DMU_MaterialCheckNumForIndex(idx, MN_ANY);
+            if(!(m->material = DMU_MaterialByIndex(idx, (isFlat? MN_FLATS : MN_TEXTURES))))
+                m->material = DMU_MaterialByIndex(idx, MN_ANY);
         }
         else
         {
@@ -250,9 +249,9 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
             m->name[len] = '\0';
 
             // First try the prefered namespace, then any.
-            if(!(m->id = DMU_MaterialCheckNumForName(m->name,
+            if(!(m->material = DMU_MaterialByName(m->name,
                                                     (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->id = DMU_MaterialCheckNumForName(m->name, MN_ANY);
+                m->material = DMU_MaterialByName(m->name, MN_ANY);
         }
 
         // Add it to the material reference list.
@@ -1740,10 +1739,10 @@ boolean TransferMap(void)
             MPE_SectorCreate((float) sec->lightLevel / 255.0f, 1, 1, 1);
 
         MPE_PlaneCreate(sectorIDX, sec->floorHeight,
-                        sec->floorMaterial? sec->floorMaterial->id : 0,
+                        sec->floorMaterial? sec->floorMaterial->material : 0,
                         0, 0, 1, 1, 1, 1, 0, 0, 1);
         MPE_PlaneCreate(sectorIDX, sec->ceilHeight,
-                        sec->ceilMaterial? sec->ceilMaterial->id : 0,
+                        sec->ceilMaterial? sec->ceilMaterial->material : 0,
                         0, 0, 1, 1, 1, 1, 0, 0, -1);
 
         MPE_GameObjProperty("XSector", i, "ID", DDVT_INT, &i);
@@ -1774,11 +1773,11 @@ boolean TransferMap(void)
             frontIdx =
                 MPE_SidedefCreate(front->sector,
                                   (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  front->topMaterial? front->topMaterial->id : 0,
+                                  front->topMaterial? front->topMaterial->material : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1,
-                                  front->middleMaterial? front->middleMaterial->id : 0,
+                                  front->middleMaterial? front->middleMaterial->material : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1, 1,
-                                  front->bottomMaterial? front->bottomMaterial->id : 0,
+                                  front->bottomMaterial? front->bottomMaterial->material : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1);
         }
 
@@ -1788,11 +1787,11 @@ boolean TransferMap(void)
             backIdx =
                 MPE_SidedefCreate(back->sector,
                                   (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  back->topMaterial? back->topMaterial->id : 0,
+                                  back->topMaterial? back->topMaterial->material : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1,
-                                  back->middleMaterial? back->middleMaterial->id : 0,
+                                  back->middleMaterial? back->middleMaterial->material : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1, 1,
-                                  back->bottomMaterial? back->bottomMaterial->id : 0,
+                                  back->bottomMaterial? back->bottomMaterial->material : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1);
         }
 

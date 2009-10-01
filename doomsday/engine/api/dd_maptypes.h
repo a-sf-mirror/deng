@@ -41,6 +41,12 @@ typedef struct thinker_s {
 
 #define DMT_FACE_HEDGE DDVT_PTR        // First half-edge of this subsector.
 
+#define DMT_MATERIAL_LAYER_FLAGS DDVT_BYTE
+#define DMT_MATERIAL_LAYER_OFFSET_X DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_OFFSET_Y DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_ANGLE DDVT_FLOAT
+#define DMT_MATERIAL_LAYER_SPEED DDVT_FLOAT
+
 #define DMT_MATERIAL_MNAMESPACE DDVT_INT
 #define DMT_MATERIAL_FLAGS DDVT_SHORT  // MATF_* flags
 #define DMT_MATERIAL_WIDTH DDVT_SHORT  // Defined width & height of the material (not texture!).
@@ -91,11 +97,8 @@ typedef struct thinker_s {
 #define DMT_NODE_BBOX DDVT_FLOAT       // Bounding box for each child.
 #define DMT_NODE_CHILDREN DDVT_UINT    // If NF_SUBSECTOR it's a subsector.
 
-// temp
-#define DMT_SKY_MATERIAL DDVT_PTR
-#define DMT_SKY_OFFSET_X DDVT_FLOAT
-#define DMT_SKY_ACTIVE   DDVT_BOOL
-#define DMT_SKY_MASK     DDVT_BOOL
+#define DMT_SKY_LAYER_ACTIVE DDVT_BOOL
 
+#define DMT_SKY_MATERIAL DDVT_PTR      // Used with sky sphere only.
 
 #endif

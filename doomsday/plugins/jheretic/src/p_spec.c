@@ -327,7 +327,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                     {
                         materialnum_t       frame =
                             DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                      MN_FLATS);
+                                                        MN_FLATS);
 
                         if(frame != 0)
                             DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
@@ -339,7 +339,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                     {
                         materialnum_t       frame =
                             DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                      MN_FLATS);
+                                                        MN_FLATS);
 
                         if(frame != 0)
                             DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
@@ -353,9 +353,9 @@ static void loadAnimDefs(animdef_t* animDefs)
             materialnum_t       startFrame, endFrame, n;
 
             if((startFrame = DMU_MaterialCheckNumForName(animDefs[i].startname,
-                                                       MN_TEXTURES)) == 0 ||
+                                                         MN_TEXTURES)) == 0 ||
                (endFrame = DMU_MaterialCheckNumForName(animDefs[i].endname,
-                                                     MN_TEXTURES)) == 0)
+                                                       MN_TEXTURES)) == 0)
                 continue;
 
             numFrames = endFrame - startFrame + 1;
