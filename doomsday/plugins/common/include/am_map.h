@@ -165,7 +165,7 @@
 #define REDRANGE    1              //16
 #define BLUES       (256-4*16+8)
 #define BLUERANGE   1              //8
-#define GREENS      (33*8)
+#define GREENS      (27*8-5)
 #define GREENRANGE  1              //16
 #define GRAYS       (5*8)
 #define GRAYSRANGE  1              //16

@@ -814,18 +814,19 @@ boolean P_BlockBoxSubsectorsIterator(blockmap_t* blockmap,
 typedef struct poiterparams_s {
     boolean       (*func) (linedef_t*, void*);
     void*           param;
+    boolean         retObjRecord;
 } poiterparams_t;
 
 boolean PTR_PolyobjLines(polyobj_t* po, void* data)
 {
     poiterparams_t*     args = (poiterparams_t*) data;
 
-    return P_PolyobjLinesIterator(po, args->func, args->param);
+    return P_PolyobjLinesIterator(po, args->func, args->param, args->retObjRecord);
 }
 
 boolean P_BlockmapPolyobjLinesIterator(blockmap_t* blockmap, const uint block[2],
                                        boolean (*func) (linedef_t*, void*),
-                                       void* data)
+                                       void* data, boolean retObjRecord)
 {
     if(blockmap)
     {
@@ -840,6 +841,7 @@ boolean P_BlockmapPolyobjLinesIterator(blockmap_t* blockmap, const uint block[2]
 
             poargs.func = func;
             poargs.param = data;
+            poargs.retObjRecord = retObjRecord;
 
             args.localValidCount = validCount;
             args.func = PTR_PolyobjLines;
@@ -862,6 +864,7 @@ boolean P_BlockBoxPolyobjLinesIterator(blockmap_t* blockmap, const uint blockBox
 
     poargs.func = func;
     poargs.param = data;
+    poargs.retObjRecord = retObjRecord;
 
     args.localValidCount = validCount;
     args.func = PTR_PolyobjLines;
@@ -940,7 +943,7 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
             if(numPolyObjs > 0)
             {
                 if(!P_BlockmapPolyobjLinesIterator(BlockMap, block,
-                                                   PIT_AddLineIntercepts, 0))
+                                                   PIT_AddLineIntercepts, 0, false))
                     return false; // Early out.
             }
 
@@ -952,7 +955,7 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
         if(flags & PT_ADDMOBJS)
         {
             if(!P_BlockmapMobjsIterator(BlockMap, block,
-                                      PIT_AddMobjIntercepts, 0))
+                                        PIT_AddMobjIntercepts, 0))
                 return false; // Early out.
         }
 

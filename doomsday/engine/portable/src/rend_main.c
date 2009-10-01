@@ -3670,7 +3670,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 
 boolean drawPolyObjVertexes(polyobj_t* po, void* context)
 {
-    return P_PolyobjLinesIterator(po, drawVertex1, po);
+    return P_PolyobjLinesIterator(po, drawVertex1, po, false);
 }
 
 /**

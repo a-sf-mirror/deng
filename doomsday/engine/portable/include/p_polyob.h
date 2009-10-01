@@ -56,5 +56,5 @@ void            P_PolyobjUpdateBBox(polyobj_t* po);
 void            P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link);
 void            P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** link);
 boolean         P_PolyobjLinesIterator(polyobj_t* po, boolean (*func) (struct linedef_s*, void*),
-                                       void* data);
+                                       void* data, boolean retObjRecord);
 #endif

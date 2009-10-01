@@ -258,7 +258,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 {
     uint                count;
     fvertex_t*          prevPts;
-    hedge_t**             list;
+    hedge_t**           list;
     boolean             blocked;
 
     if(!po)
@@ -273,8 +273,8 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     validCount++;
     for(count = 0; count < po->numHEdges; ++count, list++, prevPts++)
     {
-        hedge_t*              hEdge = *list, **ptr;
-        seg_t*          seg = (seg_t*) hEdge->data;
+        hedge_t*            hEdge = *list, **ptr;
+        seg_t*              seg = (seg_t*) hEdge->data;
 
         if(seg->lineDef->validCount != validCount)
         {
@@ -627,22 +627,28 @@ static boolean CheckMobjBlocking(hedge_t* hEdge, polyobj_t* po)
  */
 boolean P_PolyobjLinesIterator(polyobj_t* po,
                                boolean (*func) (struct linedef_s*, void*),
-                               void* data)
+                               void* data, boolean retObjRecord)
 {
     uint                i;
-    hedge_t**             list;
+    hedge_t**           list;
 
     list = po->hEdges;
     for(i = 0; i < po->numHEdges; ++i, list++)
     {
         linedef_t*          line = ((seg_t*) (*list)->data)->lineDef;
+        void*               ptr;
 
         if(line->validCount == validCount)
             continue;
 
         line->validCount = validCount;
 
-        if(!func(line, data))
+        if(retObjRecord)
+            ptr = DMU_GetObjRecord(DMU_LINEDEF, line);
+        else
+            ptr = line;
+
+        if(!func(ptr, data))
             return false;
     }
 

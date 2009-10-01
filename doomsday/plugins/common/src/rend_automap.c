@@ -812,21 +812,13 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
     }
 }
 
-/**
- * Rather than draw the segs instead this will draw the linedef of which
- * the seg is a part.
- */
-int renderPolyObjSeg(void* obj, void* context)
+int renderPolyObjLinedef(void* obj, void* context)
 {
-    hedge_t*              seg = (hedge_t*) obj;
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
-    linedef_t*          line;
-    xline_t*            xLine;
+    linedef_t*          line = (linedef_t*) obj;
+    xline_t*            xLine = P_ToXLine(line);
     const mapobjectinfo_t* info;
     automapobjectname_t amo;
-
-    if(!(line = DMU_GetPtrp(seg, DMU_LINEDEF)) || !(xLine = P_ToXLine(line)))
-        return 1;
 
     if(xLine->validCount == VALIDCOUNT)
         return 1; // Already processed this frame.
@@ -858,14 +850,14 @@ int renderPolyObjSeg(void* obj, void* context)
     return 1; // Continue iteration.
 }
 
-boolean drawSegsOfPolyobject(polyobj_t* po, void* context)
+boolean drawLinedefsOfPolyobject(polyobj_t* po, void* context)
 {
-    hedge_t**             segPtr;
+    linedef_t**         linePtr;
     int                 result = 1;
 
-    segPtr = po->hEdges;
-    while(*segPtr && (result = renderPolyObjSeg(*segPtr, context)) != 0)
-        *segPtr++;
+    linePtr = po->lineDefs;
+    while(*linePtr && (result = renderPolyObjLinedef(*linePtr, context)) != 0)
+        *linePtr++;
 
     return result;
 }
@@ -888,7 +880,7 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
     // Next, draw any polyobjects in view.
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_PolyobjsBoxIterator(aabb, drawSegsOfPolyobject, &params);
+    P_PolyobjsBoxIterator(aabb, drawLinedefsOfPolyobject, &params);
 }
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__

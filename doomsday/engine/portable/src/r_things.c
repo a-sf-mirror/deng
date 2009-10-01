@@ -727,7 +727,7 @@ boolean R_GetSpriteInfo(int sprite, int frame, spriteinfo_t* info)
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
     info->numFrames = sprDef->numFrames;
-    info->material = mat;
+    info->material = (material_t*) DMU_GetObjRecord(DMU_MATERIAL, mat);
     info->realLump = sprTex->lump;
     info->flip = sprFrame->flip[0];
     info->offset = sprTex->offX;

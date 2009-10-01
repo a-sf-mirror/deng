@@ -81,7 +81,7 @@ boolean         P_BlockmapPolyobjsIterator(blockmap_t* bmap, const uint block[2]
                                            void* data);
 boolean         P_BlockmapPolyobjLinesIterator(blockmap_t* bmap, const uint block[2],
                                                boolean (*func) (linedef_t*, void*),
-                                               void* data);
+                                               void* data, boolean retObjRecord);
 
 // Block Box Iterators:
 boolean         P_BlockBoxMobjsIterator(blockmap_t* bmap, const uint blockBox[4],

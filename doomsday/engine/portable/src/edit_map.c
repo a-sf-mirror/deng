@@ -158,9 +158,9 @@ static void destroyEditablePolyObjs(editmap_t* map)
         uint                i;
         for(i = 0; i < map->numPolyObjs; ++i)
         {
-            polyobj_t          *po = map->polyObjs[i];
-            M_Free(po->buildData.lineDefs);
+            polyobj_t*          po = map->polyObjs[i];
 
+            M_Free(po->lineDefs);
             M_Free(po);
         }
 
@@ -1405,12 +1405,19 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
         destP->pos[VX] = srcP->pos[VX];
         destP->pos[VY] = srcP->pos[VY];
 
-        destP->numHEdges = srcP->buildData.lineCount;
+        destP->numHEdges = srcP->numLineDefs;
 
         destP->originalPts =
             Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
         destP->prevPts =
             Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
+
+        destP->numLineDefs = srcP->numLineDefs;
+        destP->lineDefs = Z_Calloc(sizeof(linedef_t*) * (destP->numLineDefs + 1), PU_MAP, 0);
+        for(j = 0; j < destP->numLineDefs; ++j)
+            destP->lineDefs[j] = (linedef_t*) DMU_GetObjRecord(DMU_LINEDEF,
+                &dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1]);
+        destP->lineDefs[j] = NULL;
 
         // Create a hedge for each line of this polyobj.
         hEdges = Z_Calloc((sizeof(hedge_t) + sizeof(seg_t)) * destP->numHEdges, PU_MAP, 0);
@@ -1421,7 +1428,7 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
         for(j = 0; j < destP->numHEdges; ++j)
         {
             linedef_t*          line =
-                &dest->lineDefs[srcP->buildData.lineDefs[j]->buildData.index - 1];
+                &dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1];
             hedge_t*            hEdge = &hEdges[j];
             seg_t*              seg;
             float               dx, dy;
@@ -2211,7 +2218,7 @@ uint MPE_PolyobjCreate(uint *lines, uint lineCount, int tag,
                        int sequenceType, float anchorX, float anchorY)
 {
     uint                i;
-    polyobj_t          *po;
+    polyobj_t*          po;
 
     if(!editMapInited || !lineCount || !lines)
         return 0;
@@ -2220,7 +2227,7 @@ uint MPE_PolyobjCreate(uint *lines, uint lineCount, int tag,
     // already part of another polyobj.
     for(i = 0; i < lineCount; ++i)
     {
-        linedef_t             *line;
+        linedef_t*          line;
 
         if(lines[i] == 0 || lines[i] > map->numLineDefs)
             return 0;
@@ -2231,18 +2238,18 @@ uint MPE_PolyobjCreate(uint *lines, uint lineCount, int tag,
     }
 
     po = createPolyobj();
-    po->buildData.lineDefs = M_Calloc(sizeof(linedef_t*) * (lineCount+1));
+    po->lineDefs = M_Calloc(sizeof(linedef_t*) * (lineCount+1));
     for(i = 0; i < lineCount; ++i)
     {
-        linedef_t             *line = map->lineDefs[lines[i] - 1];
+        linedef_t*          line = map->lineDefs[lines[i] - 1];
 
         // This line is part of a polyobj.
         line->inFlags |= LF_POLYOBJ;
 
-        po->buildData.lineDefs[i] = line;
+        po->lineDefs[i] = line;
     }
-    po->buildData.lineDefs[i] = NULL;
-    po->buildData.lineCount = lineCount;
+    po->lineDefs[i] = NULL;
+    po->numLineDefs = lineCount;
     po->tag = tag;
     po->seqType = sequenceType;
     po->pos[VX] = anchorX;

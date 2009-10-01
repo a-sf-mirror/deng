@@ -550,8 +550,7 @@ static int getPolyobjMirror(uint poly)
 
         if(po->tag == poly)
         {
-            hedge_t*              hEdge = po->hEdges[0];
-            linedef_t*          linedef = DMU_GetPtrp(hEdge, DMU_LINEDEF);
+            linedef_t*          linedef = po->lineDefs[0];
 
             return P_ToXLine(linedef)->arg2;
         }

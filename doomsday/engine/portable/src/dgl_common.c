@@ -678,7 +678,7 @@ if(glGetError() == GL_STACK_OVERFLOW)
 
 void DGL_SetMaterial(material_t* mat)
 {
-    GL_SetMaterial(mat);
+    GL_SetMaterial(mat? ((dmuobjrecord_t*) mat)->obj : NULL);
 }
 
 void DGL_SetNoMaterial(void)
@@ -697,12 +697,12 @@ void DGL_SetPatch(lumpnum_t lump, int wrapS, int wrapT)
 
 void DGL_SetTranslatedSprite(material_t* mat, int tclass, int tmap)
 {
-    GL_SetTranslatedSprite(mat, tclass, tmap);
+    GL_SetTranslatedSprite(mat? ((dmuobjrecord_t*) mat)->obj : NULL, tclass, tmap);
 }
 
 void DGL_SetPSprite(material_t* mat)
 {
-    GL_SetPSprite(mat);
+    GL_SetPSprite(mat? ((dmuobjrecord_t*) mat)->obj : NULL);
 }
 
 void DGL_SetRawImage(lumpnum_t lump, boolean part2, int wrapS, int wrapT)
