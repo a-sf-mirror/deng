@@ -371,7 +371,6 @@ const char* DMU_Str(uint prop)
         { DMU_WIDTH, "DMU_WIDTH" },
         { DMU_HEIGHT, "DMU_HEIGHT" },
         { DMU_TARGET_HEIGHT, "DMU_TARGET_HEIGHT" },
-        { DMU_SEG_COUNT, "DMU_SEG_COUNT" },
         { DMU_SPEED, "DMU_SPEED" },
         { DMU_NAMESPACE, "DMU_NAMESPACE" },
         { 0, NULL }

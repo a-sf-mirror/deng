@@ -81,14 +81,6 @@ boolean Subsector_GetProperty(const face_t* face, setargs_t* args)
     case DMU_MOBJS:
         DMU_GetValue(DMT_SECTOR_MOBJLIST, &((subsector_t*) face->data)->sector->mobjList, args, 0);
         break;
-    case DMU_SEG_COUNT:
-    {
-        // FIXME:
-        //DMU_GetValue(DMT_SUBSECTOR_SEGCOUNT, &((subsector_t*) face->data)->hEdgeCount, args, 0);
-        int val = (int) ((subsector_t*) face->data)->hEdgeCount;
-        DMU_GetValue(DDVT_INT, &val, args, 0);
-        break;
-    }
     default:
         Con_Error("Subsector_GetProperty: No property %s.\n",
                   DMU_Str(args->prop));

@@ -68,7 +68,6 @@ typedef struct vertex_s {
 typedef struct seg_s {
     struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
-    struct sector_s* sector;
     angle_t     angle;
     byte        side; // 0=front, 1=back
     float       length; // Accurate length of the segment (v1 -> v2).
@@ -91,7 +90,6 @@ typedef struct subsector_s {
     struct polyobj_s* polyObj; // NULL, if there is no polyobj.
     struct sector_s* sector;
     int         addSpriteCount; // frame number of last R_AddSprites
-    uint        inSectorID;
     int         validCount;
     uint        reverb[NUM_REVERB_DATA];
     fvertex_t   bBox[2]; // Min and max points.

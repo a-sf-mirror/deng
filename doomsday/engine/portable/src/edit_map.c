@@ -626,7 +626,6 @@ static void hardenSectorSSecList(gamemap_t* map, uint secIDX)
 
         if(ssec->sector == sec)
         {
-            ssec->inSectorID = n;
             sec->faces[n++] = face;
         }
     }

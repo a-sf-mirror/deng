@@ -817,6 +817,8 @@ static void writeSeg(const gamemap_t* map, uint idx)
 {
     const hedge_t*        hEdge = &map->hEdges[idx];
 
+    writeLong(hEdge->next? ((hEdge->next - map->hEdges) + 1) : 0);
+    writeLong(hEdge->prev? ((hEdge->prev - map->hEdges) + 1) : 0);
     writeLong(hEdge->twin? ((hEdge->twin - map->hEdges) + 1) : 0);
     writeLong((hEdge->v[0] - map->vertexes) + 1);
     writeLong((hEdge->v[1] - map->vertexes) + 1);
@@ -828,7 +830,6 @@ static void writeSeg(const gamemap_t* map, uint idx)
     writeFloat(s->length);
     writeFloat(s->offset);
     writeLong(s->lineDef? ((s->lineDef - map->lineDefs) + 1) : 0);
-    writeLong(s->sector? ((s->sector - map->sectors) + 1) : 0);
     writeLong((long) s->angle);
     writeByte(s->side);
     }
@@ -839,6 +840,10 @@ static void readSeg(const gamemap_t* map, uint idx)
     long                obIdx;
     hedge_t*              hEdge = &map->hEdges[idx];
 
+    obIdx = readLong();
+    hEdge->next = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
+    obIdx = readLong();
+    hEdge->prev = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
     obIdx = readLong();
     hEdge->twin = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
     hEdge->v[0] = &map->vertexes[(unsigned) readLong() - 1];
@@ -852,9 +857,6 @@ static void readSeg(const gamemap_t* map, uint idx)
     s->offset = readFloat();
     obIdx = readLong();
     s->lineDef = (obIdx == 0? NULL : &map->lineDefs[(unsigned) obIdx - 1]);
-    obIdx = readLong();
-    s->sector = (obIdx == 0? NULL : &map->sectors[(unsigned) obIdx - 1]);
-    obIdx = readLong();
     s->angle = (angle_t) readLong();
     s->side = readByte();
     }
