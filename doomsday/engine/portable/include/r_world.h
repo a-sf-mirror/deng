@@ -82,6 +82,8 @@ void            R_DestroyPlaneOfSector(uint id, sector_t* sec);
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
+void            R_CreateBiasSurfacesInSubsector(face_t* face);
+
 void            R_UpdateWatchedPlanes(watchedplanelist_t* wpl);
 void            R_InterpolateWatchedPlanes(watchedplanelist_t* wpl,
                                            boolean resetNextViewer);

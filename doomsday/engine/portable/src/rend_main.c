@@ -3166,6 +3166,7 @@ static void Rend_RenderSubsector(uint faceidx)
     }
 
     R_PickSubsectorFanBase(face);
+    R_CreateBiasSurfacesInSubsector(face);
 
     sect = ssec->sector;
     sceil = sect->SP_ceilvisheight;

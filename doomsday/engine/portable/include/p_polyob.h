@@ -33,14 +33,7 @@ typedef struct poseg_s {
     struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
     struct sector_s* frontSector;
-    void*       pad;
-    angle_t     pad2;
-    byte        pad3;
-    float       pad4;
-    float       pad5;
     biassurface_t* bsuf;
-    void*       pad6[2];
-    short       pad7;
 } poseg_t;
 
 // We'll use the base polyobj template directly as our mobj.

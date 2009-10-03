@@ -316,6 +316,7 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     ssec->hEdgeCount = (uint) hEdgeCount;
     ssec->shadows = NULL;
     ssec->firstFanHEdge = NULL;
+    ssec->bsuf = NULL;
 
     // Determine which sector this subsector belongs to.
     found = false;

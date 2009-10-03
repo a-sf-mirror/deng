@@ -149,6 +149,17 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 
     frac = P_InterceptVector(&los->trace, &dl);
 
+    if(!noBack &&
+       (((los->flags & LS_PASSOVER_SKY) &&
+         IS_SKYSURFACE(&fsec->SP_ceilsurface) &&
+         IS_SKYSURFACE(&bsec->SP_ceilsurface) &&
+         los->bottomSlope > (bsec->SP_ceilheight - los->startZ) / frac) ||
+        ((los->flags & LS_PASSUNDER_SKY) &&
+         IS_SKYSURFACE(&fsec->SP_floorsurface) &&
+         IS_SKYSURFACE(&bsec->SP_floorsurface) &&
+         los->topSlope < (bsec->SP_floorheight - los->startZ) / frac)))
+        return true;
+
     if((los->flags & LS_PASSOVER) &&
        los->bottomSlope > (fsec->SP_ceilheight - los->startZ) / frac)
         return true;

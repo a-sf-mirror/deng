@@ -200,10 +200,23 @@ void P_SetCurrentMap(gamemap_t* map)
 
 void P_DestroyMap(gamemap_t* map)
 {
+    biassurface_t*      bsuf;
+
     if(!map)
         return;
 
     DL_DestroyDynlights(map);
+
+    /**
+     * @todo handle vertexillum allocation/destruction along with the surfaces,
+     * utilizing global storage.
+     */
+    for(bsuf = map->bias.surfaces; bsuf; bsuf = bsuf->next)
+    {
+        if(bsuf->illum)
+            Z_Free(bsuf->illum);
+    }
+
     SB_DestroySurfaces(map);
 }
 

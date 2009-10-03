@@ -191,6 +191,7 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
 void P_MapInitPolyobjs(void)
 {
     uint                i;
+    gamemap_t*          map = P_GetCurrentMap();
 
     for(i = 0; i < numPolyObjs; ++i)
     {
@@ -198,6 +199,21 @@ void P_MapInitPolyobjs(void)
         face_t*             face;
         uint                j;
         fvertex_t           avg; // Used to find a polyobj's center, and hence subsector.
+
+        for(j = 0; j < po->numSegs; ++j)
+        {
+            poseg_t*            seg = &po->segs[j];
+            uint                k;
+            biassurface_t*      bsuf = SB_CreateSurface(map);
+
+            bsuf->size = 4;
+            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                PU_STATIC, 0);
+            for(k = 0; k < bsuf->size; ++k)
+                SB_InitVertexIllum(&bsuf->illum[k]);
+
+            seg->bsuf = bsuf;
+        }
 
         avg.pos[VX] = 0;
         avg.pos[VY] = 0;

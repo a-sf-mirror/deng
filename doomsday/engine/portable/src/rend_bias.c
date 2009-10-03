@@ -557,7 +557,9 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
         V3_Scale(surfacePoint, 1.f / 100);
         V3_Sum(surfacePoint, surfacePoint, point);
 
-        if(useSightCheck && !P_CheckLineSight(s->pos, surfacePoint, -1, 1, 0))
+        if(useSightCheck &&
+           !P_CheckLineSight(s->pos, surfacePoint, -1, 1,
+                             LS_PASSOVER_SKY | LS_PASSUNDER_SKY))
         {
             // LOS fail.
             if(casted)
@@ -863,7 +865,7 @@ static void newSourcesFromLightDefs(gamemap_t* map)
 
 static void init(gamemap_t* map)
 {
-    map->bias.surfaces = NULL;
+    destroyAllSurfaces(map);
 
     // Start with no sources whatsoever.
     map->bias.numSources = 0;
@@ -871,85 +873,6 @@ static void init(gamemap_t* map)
     map->bias.lastChangeOnFrame = 0;
 
     newSourcesFromLightDefs(map);
-
-    // Create biassurfaces for all current worldmap surfaces.
-    {
-    uint                i;
-
-    // Allocate bias surfaces and attach vertexillum_ts.
-    for(i = 0; i < numHEdges; ++i)
-    {
-        hedge_t*            hEdge = &hEdges[i];
-        seg_t*              seg = (seg_t*) hEdge->data;
-        int                 j;
-
-        if(!seg->lineDef)
-            continue;
-
-        for(j = 0; j < 3; ++j)
-        {
-            uint                k;
-            biassurface_t*      bsuf = createSurface(map);
-
-            bsuf->size = 4;
-            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
-                PU_STATIC, 0);
-            for(k = 0; k < bsuf->size; ++k)
-                SB_InitVertexIllum(&bsuf->illum[k]);
-
-            seg->bsuf[j] = bsuf;
-        }
-    }
-
-    for(i = 0; i < numSectors; ++i)
-    {
-        sector_t*           sec = &sectors[i];
-        face_t**            facePtr = sec->faces;
-
-        while(*facePtr)
-        {
-            subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
-            uint                j;
-
-            for(j = 0; j < sec->planeCount; ++j)
-            {
-                uint                k;
-                biassurface_t*      bsuf = createSurface(map);
-
-                bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
-                bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
-                    PU_STATIC, 0);
-                for(k = 0; k < bsuf->size; ++k)
-                    SB_InitVertexIllum(&bsuf->illum[k]);
-
-                ssec->bsuf[j] = bsuf;
-            }
-
-            *facePtr++;
-        }
-    }
-
-    for(i = 0; i < numPolyObjs; ++i)
-    {
-        polyobj_t*          po = polyObjs[i];
-        uint                j;
-
-        for(j = 0; j < po->numSegs; ++j)
-        {
-            poseg_t*            seg = &po->segs[j];
-            uint                k;
-            biassurface_t*      bsuf = createSurface(map);
-
-            bsuf->size = 4;
-            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
-                PU_STATIC, 0);
-            for(k = 0; k < bsuf->size; ++k)
-                SB_InitVertexIllum(&bsuf->illum[k]);
-
-            seg->bsuf = bsuf;
-        }
-    }
-    }
 }
 
 /**

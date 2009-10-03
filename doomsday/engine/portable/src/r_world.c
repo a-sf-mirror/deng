@@ -562,6 +562,86 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
     }
 }
 
+void R_CreateBiasSurfacesForPlanesInSubsector(face_t* face)
+{
+    subsector_t*        ssec = (subsector_t*) (face)->data;
+    uint                i;
+    gamemap_t*          map;
+
+    if(!ssec->sector)
+        return;
+
+    map = P_GetCurrentMap();
+
+    ssec->bsuf = Z_Calloc(ssec->sector->planeCount * sizeof(biassurface_t*),
+                          PU_STATIC, NULL);
+
+    for(i = 0; i < ssec->sector->planeCount; ++i)
+    {
+        biassurface_t*      bsuf = SB_CreateSurface(map);
+        uint                j;
+
+        bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
+        bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_STATIC, 0);
+
+        for(j = 0; j < bsuf->size; ++j)
+            SB_InitVertexIllum(&bsuf->illum[j]);
+
+        ssec->bsuf[i] = bsuf;
+    }
+}
+
+/**
+ * Allocate bias surfaces and attach vertexillums for all renderable surfaces
+ * in the specified subsector. If already present, this is a null-op.
+ */
+void R_CreateBiasSurfacesInSubsector(face_t* face)
+{
+    subsector_t*        ssec = (subsector_t*) face->data;
+    gamemap_t*          map;
+
+    if(!ssec->sector)
+        return;
+
+    map = P_GetCurrentMap();
+
+    {
+    hedge_t*            hEdge;
+    if((hEdge = face->hEdge))
+    {
+        do
+        {
+            seg_t*              seg = (seg_t*) hEdge->data;
+
+            if(seg->lineDef) // "minisegs" have no linedefs.
+            {
+                if(!seg->bsuf[0])
+                {
+                    uint                i;
+
+                    for(i = 0; i < 3; ++i)
+                    {
+                        uint                j;
+                        biassurface_t*      bsuf = SB_CreateSurface(map);
+
+                        bsuf->size = 4;
+                        bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                            PU_STATIC, 0);
+                        for(j = 0; j < bsuf->size; ++j)
+                            SB_InitVertexIllum(&bsuf->illum[j]);
+
+                        seg->bsuf[i] = bsuf;
+                    }
+                }
+            }
+        } while((hEdge = hEdge->next) != face->hEdge);
+    }
+    }
+
+    if(!ssec->bsuf)
+        R_CreateBiasSurfacesForPlanesInSubsector(face);
+}
+
 /**
  * Create a new plane for the given sector. The plane will be initialized
  * with default values.
@@ -577,7 +657,6 @@ plane_t* R_NewPlaneForSector(sector_t* sec)
 {
     surface_t*          suf;
     plane_t*            plane;
-    face_t**            facePtr;
     gamemap_t*          map;
 
     if(!sec)
@@ -632,48 +711,33 @@ if(sec->planeCount >= 2)
     Surface_SetBlendMode(suf, BM_NORMAL);
 
     /**
-     * Resize the biassurface lists for the subsector planes.
-     * If we are in map setup mode, don't create the biassurfaces now,
-     * as planes are created before the bias system is available.
+     * Destroy biassurfaces for planes in all sector subsectors if present
+     * (they will be created if needed when next drawn).
      */
-
-    facePtr = sec->faces;
+    {
+    face_t**            facePtr = sec->faces;
     while(*facePtr)
     {
         subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
-        biassurface_t**     newList;
-        uint                n = 0;
 
-        newList = Z_Calloc(sec->planeCount * sizeof(biassurface_t*),
-                           PU_MAP, NULL);
-        // Copy the existing list?
         if(ssec->bsuf)
         {
-            for(; n < sec->planeCount - 1; ++n)
+            uint                i;
+
+            for(i = 0; i < sec->planeCount; ++i)
             {
-                newList[n] = ssec->bsuf[n];
+                biassurface_t*      bsuf = ssec->bsuf[i];
+
+                Z_Free(bsuf->illum);
+                SB_DestroySurface(map, bsuf);
             }
 
             Z_Free(ssec->bsuf);
         }
-
-        if(!ddMapSetup)
-        {
-            uint                i;
-            biassurface_t*      bsuf = SB_CreateSurface(map);
-
-            bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
-            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_MAP, 0);
-
-            for(i = 0; i < bsuf->size; ++i)
-                SB_InitVertexIllum(&bsuf->illum[i]);
-
-            newList[n] = bsuf;
-        }
-
-        ssec->bsuf = newList;
+        ssec->bsuf = NULL;
 
         *facePtr++;
+    }
     }
 
     return plane;
@@ -1729,23 +1793,28 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
         while(*facePtr)
         {
             face_t*             face = *facePtr;
-            hedge_t*            hEdge;
+            subsector_t*        ssec = (subsector_t*) face->data;
 
-            if((hEdge = face->hEdge))
+            if(ssec->bsuf)
             {
-                do
+                hedge_t*            hEdge;
+
+                if((hEdge = face->hEdge))
                 {
-                    seg_t*              seg = (seg_t*) hEdge->data;
-
-                    if(seg->lineDef)
+                    do
                     {
-                        for(i = 0; i < 3; ++i)
-                            SB_SurfaceMoved(map, seg->bsuf[i]);
-                    }
-                } while((hEdge = hEdge->next) != face->hEdge);
-            }
+                        seg_t*              seg = (seg_t*) hEdge->data;
 
-            SB_SurfaceMoved(map, ((subsector_t*) face->data)->bsuf[pln->planeID]);
+                        if(seg->lineDef)
+                        {
+                            for(i = 0; i < 3; ++i)
+                                SB_SurfaceMoved(map, seg->bsuf[i]);
+                        }
+                    } while((hEdge = hEdge->next) != face->hEdge);
+                }
+
+                SB_SurfaceMoved(map, ssec->bsuf[pln->planeID]);
+            }
 
             *facePtr++;
         }

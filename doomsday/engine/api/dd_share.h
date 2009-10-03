@@ -731,9 +731,11 @@ typedef enum {
  * Flags used to dictate logic within P_CheckLineSight.
  */
 /*@{*/
-#define LS_PASSLEFT            0x1 // Ray may cross one-sided linedefs from left to right.
-#define LS_PASSOVER            0x2 // Ray may cross over sector ceiling height on ray-entry side.
-#define LS_PASSUNDER           0x4 // Ray may cross under sector floor height on ray-entry side.
+#define LS_PASSLEFT             0x0001 // Ray may cross one-sided linedefs from left to right.
+#define LS_PASSOVER             0x0002 // Ray may cross over sector ceiling height on ray-entry side.
+#define LS_PASSUNDER            0x0004 // Ray may cross under sector floor height on ray-entry side.
+#define LS_PASSOVER_SKY         0x0008 // Ray may cross over sky fix ceilings for twosided linedefs on ray-entry side.
+#define LS_PASSUNDER_SKY        0x0010 // Ray may cross under sky fix floors for twosided linedefs on ray-entry side.
 /*@}*/
 
 // For (un)linking.
