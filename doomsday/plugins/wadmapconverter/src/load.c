@@ -1026,7 +1026,7 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
     }
 
     if(map->numVertexes > 0 && map->numLines > 0 && map->numSides > 0 &&
-       map->numSectors > 0 && map->numThings > 0)
+       map->numSectors > 0)
     {
         supported = true;
     }
