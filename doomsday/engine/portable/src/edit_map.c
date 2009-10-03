@@ -481,9 +481,8 @@ static void pruneUnusedSectors(editmap_t* map)
 /**
  * \note Order here is critical!
  */
-void MPE_PruneRedundantMapData(editmap_t *map, int flags)
+void MPE_PruneRedundantMapData(editmap_t* map, int flags)
 {
-#if 0
     /**
      * \fixme Pruning cannot be done as game map data object properties
      * are currently indexed by their original indices as determined by the
@@ -495,18 +494,17 @@ void MPE_PruneRedundantMapData(editmap_t *map, int flags)
 
     findEquivalentVertexes(map);
 
-    if(flags & PRUNE_LINEDEFS)
-        pruneLinedefs(map);
+/*    if(flags & PRUNE_LINEDEFS)
+        pruneLinedefs(map);*/
 
     if(flags & PRUNE_VERTEXES)
         pruneVertices(map);
 
-    if(flags & PRUNE_SIDEDEFS)
+/*    if(flags & PRUNE_SIDEDEFS)
         pruneUnusedSidedefs(map);
 
     if(flags & PRUNE_SECTORS)
-        pruneUnusedSectors(map);
-#endif
+        pruneUnusedSectors(map);*/
 }
 
 /**
