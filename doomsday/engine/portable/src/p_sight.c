@@ -203,23 +203,19 @@ static boolean crossSSec(uint faceIdx, losdata_t* los)
     if(((subsector_t*) face->data)->polyObj)
     {   // Check polyobj lines.
         polyobj_t*          po = ((subsector_t*) face->data)->polyObj;
-        hedge_t**           hEdgePtr = po->hEdges;
+        uint                i;
 
-        while(*hEdgePtr)
+        for(i = 0; i < po->numLineDefs; ++i)
         {
-            seg_t*              seg = (seg_t*) (*hEdgePtr)->data;
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
-            if(seg->lineDef && seg->lineDef->validCount != validCount)
+            if(line->validCount != validCount)
             {
-                linedef_t*          li = seg->lineDef;
+                line->validCount = validCount;
 
-                li->validCount = validCount;
-
-                if(!crossLineDef(li, seg->side, los))
+                if(!crossLineDef(line, FRONT, los))
                     return false; // Stop iteration.
             }
-
-            *hEdgePtr++;
         }
     }
 

@@ -832,7 +832,6 @@ static void writeSeg(const gamemap_t* map, uint idx)
     writeLong(s->sec[BACK]? ((s->sec[BACK] - map->sectors) + 1) : 0);
     writeLong((long) s->angle);
     writeByte(s->side);
-    writeByte(s->flags);
     }
 }
 
@@ -861,7 +860,6 @@ static void readSeg(const gamemap_t* map, uint idx)
     obIdx = readLong();
     s->angle = (angle_t) readLong();
     s->side = readByte();
-    s->flags = readByte();
     }
 }
 
@@ -991,7 +989,7 @@ static void archiveReject(gamemap_t *map, boolean write)
 
 static void writePolyobj(const gamemap_t* map, uint idx)
 {
-    uint                i;
+    //uint                i;
     const polyobj_t*    p = map->polyObjs[idx];
 
     writeLong((long) p->idx);
@@ -1012,7 +1010,7 @@ static void writePolyobj(const gamemap_t* map, uint idx)
     writeByte(p->crush? 1 : 0);
     writeLong((long) p->seqType);
 
-    writeLong((long) p->numHEdges);
+    /*writeLong((long) p->numHEdges);
     for(i = 0; i < p->numHEdges; ++i)
     {
         const hedge_t*      hEdge = p->hEdges[i];
@@ -1027,13 +1025,13 @@ static void writePolyobj(const gamemap_t* map, uint idx)
         writeLong((long) s->angle);
         writeByte(s->side);
         writeByte(s->flags);
-    }
+    }*/
 }
 
 static void readPolyobj(const gamemap_t* map, uint idx)
 {
-    uint                i;
-    long                obIdx;
+    //uint                i;
+    //long                obIdx;
     polyobj_t*          p = map->polyObjs[idx];
 
     p->idx = (uint) readLong();
@@ -1055,7 +1053,7 @@ static void readPolyobj(const gamemap_t* map, uint idx)
     p->seqType = (int) readLong();
 
     // Polyobj seg list.
-    p->numHEdges = (uint) readLong();
+    /*p->numHEdges = (uint) readLong();
     p->hEdges = Z_Malloc(sizeof(hedge_t*) * (p->numHEdges + 1), PU_MAP, 0);
     for(i = 0; i < p->numHEdges; ++i)
     {
@@ -1080,7 +1078,7 @@ static void readPolyobj(const gamemap_t* map, uint idx)
 
         p->hEdges[i] = hEdge;
     }
-    p->hEdges[i] = NULL; // Terminate.
+    p->hEdges[i] = NULL; // Terminate.*/
 }
 
 static void archivePolyobjs(gamemap_t* map, boolean write)

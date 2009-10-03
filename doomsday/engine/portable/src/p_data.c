@@ -111,19 +111,15 @@ static gamemapobjdef_t* gameMapObjDefs;
 void P_PolyobjChanged(polyobj_t* po)
 {
     uint                i;
-    hedge_t**           ptr = po->hEdges;
     gamemap_t*          map = P_GetCurrentMap();
 
-    for(i = 0; i < po->numHEdges; ++i, ptr++)
+    for(i = 0; i < po->numSegs; ++i)
     {
-        int                 j;
-        seg_t*          seg = (seg_t*) (*ptr)->data;
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        poseg_t*            seg = &po->segs[i];
 
         // Shadow bias must be told.
-        for(j = 0; j < 3; ++j)
-        {
-            SB_SurfaceMoved(map, seg->bsuf[j]);
-        }
+        SB_SurfaceMoved(map, seg->bsuf);
     }
 }
 

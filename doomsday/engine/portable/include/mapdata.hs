@@ -81,9 +81,6 @@ internal
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
 
-// Seg flags
-#define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
-
 // Seg frame flags
 #define SEGINF_FACINGFRONT      0x0001
 #define SEGINF_BACKSECSKYFIX    0x0002
@@ -96,7 +93,6 @@ public
 #define DMT_HEDGE_SUBSECTOR     DDVT_PTR
 #define DMT_HEDGE_ANGLE         DDVT_ANGLE
 #define DMT_HEDGE_SIDE          DDVT_BYTE
-#define DMT_HEDGE_FLAGS         DDVT_BYTE
 #define DMT_HEDGE_LENGTH        DDVT_FLOAT
 #define DMT_HEDGE_OFFSET        DDVT_FLOAT
 end
@@ -108,7 +104,6 @@ typedef struct seg_s {
     struct sector_s* sec[2];
     angle_t     angle;
     byte        side; // 0=front, 1=back
-    byte        flags;
     float       length; // Accurate length of the segment (v1 -> v2).
     float       offset;
     biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
@@ -457,6 +452,15 @@ typedef struct msidedef_s {
     int         index;
     int         refCount;
 } msidedef_t;
+
+// Used with FakeRadio.
+typedef struct {
+    int                 fakeRadioUpdateCount; // frame number of last update
+    shadowcorner_t      topCorners[2];
+    shadowcorner_t      bottomCorners[2];
+    shadowcorner_t      sideCorners[2];
+    edgespan_t          spans[2];      // [left, right]
+} sideradioconfig_t;
 end
 
 struct sidedef
@@ -464,14 +468,8 @@ struct sidedef
     PTR     linedef_s*  line
     PTR     sector_s*   sector
     SHORT   short       flags
+    -       sideradioconfig_t radioConfig
     -       msidedef_t  buildData
-
-# The following is used with FakeRadio.
-    -       int         fakeRadioUpdateCount // frame number of last update
-    -       shadowcorner_t[2] topCorners
-    -       shadowcorner_t[2] bottomCorners
-    -       shadowcorner_t[2] sideCorners
-    -       edgespan_t[2] spans // [left, right]
 end
 
 internal

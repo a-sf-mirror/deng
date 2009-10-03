@@ -934,25 +934,19 @@ static void init(gamemap_t* map)
         polyobj_t*          po = polyObjs[i];
         uint                j;
 
-        for(j = 0; j < po->numHEdges; ++j)
+        for(j = 0; j < po->numSegs; ++j)
         {
-            hedge_t*            hEdge = po->hEdges[j];
-            seg_t*              seg = (seg_t*) hEdge->data;
-            int                 k;
+            poseg_t*            seg = &po->segs[j];
+            uint                k;
+            biassurface_t*      bsuf = createSurface(map);
 
-            for(k = 0; k < 3; ++k)
-            {
-                uint                l;
-                biassurface_t*      bsuf = createSurface(map);
+            bsuf->size = 4;
+            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+                PU_STATIC, 0);
+            for(k = 0; k < bsuf->size; ++k)
+                SB_InitVertexIllum(&bsuf->illum[k]);
 
-                bsuf->size = 4;
-                bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
-                    PU_STATIC, 0);
-                for(l = 0; l < bsuf->size; ++l)
-                    SB_InitVertexIllum(&bsuf->illum[l]);
-
-                seg->bsuf[k] = bsuf;
-            }
+            seg->bsuf = bsuf;
         }
     }
     }
@@ -1152,7 +1146,7 @@ void SB_SurfaceMoved(gamemap_t* map, biassurface_t* bsuf)
  */
 source_t* SB_GetSource(gamemap_t* map, int which)
 {
-    if(!map || which < 0 || which >= map->bias.numSources)
+    if(!map || which < 0)
         return NULL;
 
     return &map->bias.sources[which];
@@ -1280,14 +1274,11 @@ void SB_ClearSources(gamemap_t* map)
  * @param numVertices   Number of vertices (in the array) to be lit.
  * @param normal        Surface normal.
  * @param sectorLightLevel Sector light level.
- * @param mapObject     Ptr to either a seg or subsector.
- * @param elmIdx        Used with subsectors to select a specific plane.
- * @param isSeg         @c true, if surface is to a seg ELSE a subsector.
  */
-void SB_RendPoly(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
-                 const rvertex_t* rvertices, size_t numVertices,
-                 const vectorcomp_t* normal, float sectorLightLevel,
-                 void* mapObject, uint elmIdx, boolean isSeg)
+void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
+                const rvertex_t* rvertices, size_t numVertices,
+                const vectorcomp_t* normal, float sectorLightLevel,
+                fvertex_t* from, fvertex_t* to)
 {
     uint                i;
     boolean             forced;
@@ -1304,23 +1295,56 @@ void SB_RendPoly(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
          * \todo This could be enhanced so that only the lights on the
          * right side of the surface are taken into consideration.
          */
-        if(isSeg)
-        {
-            hedge_t*            seg = (hedge_t*) mapObject;
+        updateAffected(map, bsuf, from, to, normal);
+    }
 
-            updateAffected(map, bsuf, &seg->HE_v1->v, &seg->HE_v2->v, normal);
-        }
-        else
-        {
-            face_t*             face = (face_t*) mapObject;
-            const subsector_t*  ssec = (subsector_t*) face->data;
-            vec3_t              point;
+    for(i = 0; i < numVertices; ++i)
+        evalPoint(map, rcolors[i].rgba, &bsuf->illum[i], bsuf->affected,
+                  rvertices[i].pos, normal);
 
-            V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
-                   ssec->sector->planes[elmIdx]->height);
+    trackerClear(&bsuf->tracker, &trackApplied);
+}
 
-            updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
-        }
+/**
+ * Surface can be a either a wall or a plane (ceiling or a floor).
+ *
+ * @param colors        Array of colors to be written to.
+ * @param bsuf          Bias data for this surface.
+ * @param vertices      Array of vertices to be lit.
+ * @param numVertices   Number of vertices (in the array) to be lit.
+ * @param normal        Surface normal.
+ * @param sectorLightLevel Sector light level.
+ * @param face          Ptr to a face.
+ * @param plane         Plane number.
+ */
+void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
+                  const rvertex_t* rvertices, size_t numVertices,
+                  const vectorcomp_t* normal, float sectorLightLevel,
+                  face_t* face, uint plane)
+{
+    uint                i;
+    boolean             forced;
+
+    memcpy(&trackChanged, &bsuf->tracker, sizeof(trackChanged));
+    memset(&trackApplied, 0, sizeof(trackApplied));
+
+    // Has any of the old affected lights changed?
+    forced = false;
+
+    if(doUpdateAffected)
+    {
+        /**
+         * \todo This could be enhanced so that only the lights on the
+         * right side of the surface are taken into consideration.
+         */
+
+        const subsector_t*  ssec = (subsector_t*) face->data;
+        vec3_t              point;
+
+        V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
+               ssec->sector->planes[plane]->height);
+
+        updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
     }
 
     for(i = 0; i < numVertices; ++i)

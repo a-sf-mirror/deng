@@ -59,7 +59,7 @@ float Linedef_GetLightLevelDelta(const linedef_t* l)
 /**
  * Update the linedef, property is selected by DMU_* name.
  */
-boolean Linedef_SetProperty(linedef_t *lin, const setargs_t *args)
+boolean Linedef_SetProperty(linedef_t* lin, const setargs_t* args)
 {
     switch(args->prop)
     {

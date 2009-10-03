@@ -46,17 +46,17 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void updateSegBBox(hedge_t* seg);
+static void updateLineDefAABB(linedef_t* line);
 static void rotatePoint(int an, float* x, float* y, float startSpotX,
                         float startSpotY);
-static boolean CheckMobjBlocking(hedge_t* seg, polyobj_t* po);
+static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 // Called when the polyobj hits a mobj.
-void (*po_callback) (mobj_t* mobj, void* hEdge, void* po);
+void (*po_callback) (mobj_t* mobj, void* lineDef, void* po);
 
 polyobj_t** polyObjs; // List of all poly-objects in the map.
 uint numPolyObjs;
@@ -127,18 +127,17 @@ boolean P_IsPolyobjOrigin(void* ddMobjBase)
     return false;
 }
 
-static void updateSegBBox(hedge_t* hEdge)
+static void updateLineDefAABB(linedef_t* line)
 {
-    linedef_t*          line = ((seg_t*) hEdge->data)->lineDef;
     byte                edge;
 
-    edge = (hEdge->HE_v1pos[VX] < hEdge->HE_v2pos[VX]);
-    line->bBox[BOXLEFT]  = hEdge->HE_vpos(edge^1)[VX];
-    line->bBox[BOXRIGHT] = hEdge->HE_vpos(edge)[VX];
+    edge = (line->L_v1pos[VX] < line->L_v2pos[VX]);
+    line->bBox[BOXLEFT]  = line->L_vpos(edge^1)[VX];
+    line->bBox[BOXRIGHT] = line->L_vpos(edge)[VX];
 
-    edge = (hEdge->HE_v1pos[VY] < hEdge->HE_v2pos[VY]);
-    line->bBox[BOXBOTTOM] = hEdge->HE_vpos(edge^1)[VY];
-    line->bBox[BOXTOP]    = hEdge->HE_vpos(edge)[VY];
+    edge = (line->L_v1pos[VY] < line->L_v2pos[VY]);
+    line->bBox[BOXBOTTOM] = line->L_vpos(edge^1)[VY];
+    line->bBox[BOXTOP]    = line->L_vpos(edge)[VY];
 
     // Update the line's slopetype.
     line->dX = line->L_v2pos[VX] - line->L_v1pos[VX];
@@ -171,18 +170,16 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
 {
     uint                i;
     vec2_t              point;
-    vertex_t*           vtx;
-    hedge_t**             ptr;
+    linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[0])->obj;
 
-    ptr = po->hEdges;
-    V2_Set(point, (*ptr)->HE_v1pos[VX], (*ptr)->HE_v1pos[VY]);
+    V2_Set(point, line->L_v1pos[VX], line->L_v1pos[VY]);
     V2_InitBox(po->box, point);
 
-    for(i = 0; i < po->numHEdges; ++i, ptr++)
+    for(i = 0; i < po->numLineDefs; ++i)
     {
-        vtx = (*ptr)->HE_v1;
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
-        V2_Set(point, vtx->V_pos[VX], vtx->V_pos[VY]);
+        V2_Set(point, line->L_v1pos[VX], line->L_v1pos[VY]);
         V2_AddToBox(po->box, point);
     }
 }
@@ -198,42 +195,38 @@ void P_MapInitPolyobjs(void)
     for(i = 0; i < numPolyObjs; ++i)
     {
         polyobj_t*          po = polyObjs[i];
-        hedge_t**           ptr;
         face_t*             face;
+        uint                j;
         fvertex_t           avg; // Used to find a polyobj's center, and hence subsector.
 
         avg.pos[VX] = 0;
         avg.pos[VY] = 0;
 
-        ptr = po->hEdges;
-        while(*ptr)
+        for(j = 0; j < po->numLineDefs; ++j)
         {
-            hedge_t*            hEdge = *ptr;
-            seg_t*              seg = ((seg_t*) hEdge->data);
-            sidedef_t*          side = seg->sideDef;
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            sidedef_t*          side = LINE_FRONTSIDE(line);
             surface_t*          surface = &side->SW_topsurface;
-            float               length = seg->length;
 
             side->SW_topinflags |= SUIF_NO_RADIO;
             side->SW_middleinflags |= SUIF_NO_RADIO;
             side->SW_bottominflags |= SUIF_NO_RADIO;
 
-            avg.pos[VX] += hEdge->HE_v1pos[VX];
-            avg.pos[VY] += hEdge->HE_v1pos[VY];
+            avg.pos[VX] += line->L_v1pos[VX];
+            avg.pos[VY] += line->L_v1pos[VY];
 
             // Set the surface normal.
-            surface->normal[VY] = (hEdge->HE_v1pos[VX] - hEdge->HE_v2pos[VX]) / length;
-            surface->normal[VX] = (hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]) / length;
+            surface->normal[VY] = (line->L_v1pos[VX] - line->L_v2pos[VX]) / line->length;
+            surface->normal[VX] = (line->L_v2pos[VY] - line->L_v1pos[VY]) / line->length;
             surface->normal[VZ] = 0;
 
             // All surfaces of a sidedef have the same normal.
             memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
             memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
-            *ptr++;
         }
 
-        avg.pos[VX] /= po->numHEdges;
-        avg.pos[VY] /= po->numHEdges;
+        avg.pos[VX] /= po->numLineDefs;
+        avg.pos[VY] /= po->numLineDefs;
 
         if((face = R_PointInSubsector(avg.pos[VX], avg.pos[VY])))
         {
@@ -251,6 +244,8 @@ void P_MapInitPolyobjs(void)
 
         P_PolyobjUnLink(po);
         P_PolyobjLink(po);
+
+        P_PolyobjChanged(po);
     }
 }
 
@@ -258,7 +253,6 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 {
     uint                count;
     fvertex_t*          prevPts;
-    hedge_t**           list;
     boolean             blocked;
 
     if(!po)
@@ -266,47 +260,35 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
     P_PolyobjUnLink(po);
 
-    list = po->hEdges;
     prevPts = po->prevPts;
     blocked = false;
 
     validCount++;
-    for(count = 0; count < po->numHEdges; ++count, list++, prevPts++)
+    for(count = 0; count < po->numLineDefs; ++count, prevPts++)
     {
-        hedge_t*            hEdge = *list, **ptr;
-        seg_t*              seg = (seg_t*) hEdge->data;
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
-        if(seg->lineDef->validCount != validCount)
+        if(line->validCount != validCount)
         {
-            seg->lineDef->bBox[BOXTOP]    += y;
-            seg->lineDef->bBox[BOXBOTTOM] += y;
-            seg->lineDef->bBox[BOXLEFT]   += x;
-            seg->lineDef->bBox[BOXRIGHT]  += x;
-            seg->lineDef->validCount = validCount;
+            line->bBox[BOXTOP]    += y;
+            line->bBox[BOXBOTTOM] += y;
+            line->bBox[BOXLEFT]   += x;
+            line->bBox[BOXRIGHT]  += x;
+            line->validCount = validCount;
         }
 
-        for(ptr = po->hEdges; ptr != list; ptr++)
-        {
-            if((*ptr)->HE_v1 == hEdge->HE_v1)
-            {
-                break;
-            }
-        }
+        line->L_v1pos[VX] += x;
+        line->L_v1pos[VY] += y;
 
-        if(ptr == list)
-        {
-            hEdge->HE_v1pos[VX] += x;
-            hEdge->HE_v1pos[VY] += y;
-        }
-
-        (*prevPts).pos[VX] += x; // Previous points are unique for each seg.
+        (*prevPts).pos[VX] += x; // Previous points are unique for each linedef.
         (*prevPts).pos[VY] += y;
     }
 
-    list = po->hEdges;
-    for(count = 0; count < po->numHEdges; ++count, list++)
+    for(count = 0; count < po->numLineDefs; ++count)
     {
-        if(CheckMobjBlocking(*list, po))
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+
+        if(CheckMobjBlocking(line, po))
         {
             blocked = true;
         }
@@ -314,43 +296,27 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
     if(blocked)
     {
-        count = 0;
-        list = po->hEdges;
         prevPts = po->prevPts;
         validCount++;
-        while(count++ < po->numHEdges)
+
+        for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            hedge_t*              hEdge = *list, **ptr;
-            seg_t*          seg = (seg_t*) hEdge->data;
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
-            if(seg->lineDef->validCount != validCount)
+            if(line->validCount != validCount)
             {
-                seg->lineDef->bBox[BOXTOP]    -= y;
-                seg->lineDef->bBox[BOXBOTTOM] -= y;
-                seg->lineDef->bBox[BOXLEFT]   -= x;
-                seg->lineDef->bBox[BOXRIGHT]  -= x;
-                seg->lineDef->validCount = validCount;
+                line->bBox[BOXTOP]    -= y;
+                line->bBox[BOXBOTTOM] -= y;
+                line->bBox[BOXLEFT]   -= x;
+                line->bBox[BOXRIGHT]  -= x;
+                line->validCount = validCount;
             }
 
-            for(ptr = po->hEdges; ptr != list; ptr++)
-            {
-                if((*ptr)->HE_v1 == hEdge->HE_v1)
-                {
-                    break;
-                }
-            }
-
-            if(ptr == list)
-            {
-                hEdge->HE_v1pos[VX] -= x;
-                hEdge->HE_v1pos[VY] -= y;
-            }
+            line->L_v1pos[VX] -= x;
+            line->L_v1pos[VY] -= y;
 
             (*prevPts).pos[VX] -= x;
             (*prevPts).pos[VY] -= y;
-
-            list++;
-            prevPts++;
         }
 
         P_PolyobjLink(po);
@@ -390,8 +356,6 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     uint                count;
     fvertex_t*          originalPts;
     fvertex_t*          prevPts;
-    vertex_t*           vtx;
-    hedge_t**           list;
     boolean             blocked;
 
     if(!po)
@@ -401,32 +365,27 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
     P_PolyobjUnLink(po);
 
-    list = po->hEdges;
     originalPts = po->originalPts;
     prevPts = po->prevPts;
 
-    for(count = 0; count < po->numHEdges;
-        ++count, list++, originalPts++, prevPts++)
+    for(count = 0; count < po->numLineDefs;
+        ++count, originalPts++, prevPts++)
     {
-        hedge_t*            hEdge = *list;
-        seg_t*              seg = ((seg_t*) hEdge->data);
-        sidedef_t*          side = seg->sideDef;
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        sidedef_t*          side = LINE_FRONTSIDE(line);
         surface_t*          surface = &side->SW_topsurface;
-        float               length = seg->length;
 
-        vtx = hEdge->HE_v1;
+        prevPts->pos[VX] = line->L_v1pos[VX];
+        prevPts->pos[VY] = line->L_v1pos[VY];
+        line->L_v1pos[VX] = originalPts->pos[VX];
+        line->L_v1pos[VY] = originalPts->pos[VY];
 
-        prevPts->pos[VX] = vtx->V_pos[VX];
-        prevPts->pos[VY] = vtx->V_pos[VY];
-        vtx->V_pos[VX] = originalPts->pos[VX];
-        vtx->V_pos[VY] = originalPts->pos[VY];
-
-        rotatePoint(an, &vtx->V_pos[VX], &vtx->V_pos[VY],
+        rotatePoint(an, &line->L_v1pos[VX], &line->L_v1pos[VY],
                     po->pos[VX], po->pos[VY]);
 
         // Now update the surface normal.
-        surface->normal[VY] = (hEdge->HE_v1pos[VX] - hEdge->HE_v2pos[VX]) / length;
-        surface->normal[VX] = (hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]) / length;
+        surface->normal[VY] = (line->L_v1pos[VX] - line->L_v2pos[VX]) / line->length;
+        surface->normal[VX] = (line->L_v2pos[VY] - line->L_v1pos[VY]) / line->length;
         surface->normal[VZ] = 0;
 
         // All surfaces of a sidedef have the same normal.
@@ -434,54 +393,50 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
     }
 
-    list = po->hEdges;
     blocked = false;
     validCount++;
-    for(count = 0; count < po->numHEdges; ++count, list++)
-    {
-        hedge_t*              hEdge = *list;
-        seg_t*          seg = (seg_t*) hEdge->data;
 
-        if(CheckMobjBlocking(hEdge, po))
+    for(count = 0; count < po->numLineDefs; ++count)
+    {
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+
+        if(CheckMobjBlocking(line, po))
         {
             blocked = true;
         }
 
-        if(seg->lineDef->validCount != validCount)
+        if(line->validCount != validCount)
         {
-            updateSegBBox(hEdge);
-            seg->lineDef->validCount = validCount;
+            updateLineDefAABB(line);
+            line->validCount = validCount;
         }
 
-        seg->angle += angle;
+        line->angle += angle;
     }
 
     if(blocked)
     {
-        list = po->hEdges;
         prevPts = po->prevPts;
-        for(count = 0; count < po->numHEdges; ++count, list++, prevPts++)
+        for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            hedge_t*              hEdge = *list;
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
-            vtx = hEdge->HE_v1;
-            vtx->V_pos[VX] = prevPts->pos[VX];
-            vtx->V_pos[VY] = prevPts->pos[VY];
+            line->L_v1pos[VX] = prevPts->pos[VX];
+            line->L_v1pos[VY] = prevPts->pos[VY];
         }
 
-        list = po->hEdges;
         validCount++;
-        for(count = 0; count < po->numHEdges; ++count, list++, prevPts++)
-        {
-            hedge_t*              hEdge = *list;
-            seg_t*          seg = (seg_t*) hEdge->data;
 
-            if(seg->lineDef->validCount != validCount)
+        for(count = 0; count < po->numLineDefs; ++count, prevPts++)
+        {
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+
+            if(line->validCount != validCount)
             {
-                updateSegBBox(hEdge);
-                seg->lineDef->validCount = validCount;
+                updateLineDefAABB(line);
+                line->validCount = validCount;
             }
-            seg->angle -= angle;
+            line->angle -= angle;
         }
 
         P_PolyobjLink(po);
@@ -558,7 +513,6 @@ void P_PolyobjLink(struct polyobj_s* po)
 typedef struct ptrmobjblockingparams_s {
     boolean         blocked;
     linedef_t*      line;
-    hedge_t*          hEdge;
     polyobj_t*      po;
 } ptrmobjblockingparams_t;
 
@@ -583,7 +537,7 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
             if(P_BoxOnLineSide(tmbbox, params->line) == -1)
             {
                 if(po_callback)
-                    po_callback(mo, params->hEdge, params->po);
+                    po_callback(mo, DMU_GetObjRecord(DMU_LINEDEF, params->line), params->po);
 
                 params->blocked = true;
             }
@@ -593,22 +547,20 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
     return true; // Continue iteration.
 }
 
-static boolean CheckMobjBlocking(hedge_t* hEdge, polyobj_t* po)
+static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po)
 {
     uint                blockBox[4];
     vec2_t              bbox[2];
-    linedef_t*          ld;
     ptrmobjblockingparams_t params;
 
     params.blocked = false;
-    params.line = ld = ((seg_t*) hEdge->data)->lineDef;
-    params.hEdge = hEdge;
+    params.line = line;
     params.po = po;
 
-    bbox[0][VX] = ld->bBox[BOXLEFT]   - DDMOBJ_RADIUS_MAX;
-    bbox[0][VY] = ld->bBox[BOXBOTTOM] - DDMOBJ_RADIUS_MAX;
-    bbox[1][VX] = ld->bBox[BOXRIGHT]  + DDMOBJ_RADIUS_MAX;
-    bbox[1][VY] = ld->bBox[BOXTOP]    + DDMOBJ_RADIUS_MAX;
+    bbox[0][VX] = line->bBox[BOXLEFT]   - DDMOBJ_RADIUS_MAX;
+    bbox[0][VY] = line->bBox[BOXBOTTOM] - DDMOBJ_RADIUS_MAX;
+    bbox[1][VX] = line->bBox[BOXRIGHT]  + DDMOBJ_RADIUS_MAX;
+    bbox[1][VY] = line->bBox[BOXTOP]    + DDMOBJ_RADIUS_MAX;
 
     P_BoxToBlockmapBlocks(BlockMap, blockBox, bbox);
     P_BlockBoxMobjsIterator(BlockMap, blockBox,
@@ -630,12 +582,10 @@ boolean P_PolyobjLinesIterator(polyobj_t* po,
                                void* data, boolean retObjRecord)
 {
     uint                i;
-    hedge_t**           list;
 
-    list = po->hEdges;
-    for(i = 0; i < po->numHEdges; ++i, list++)
+    for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t*          line = ((seg_t*) (*list)->data)->lineDef;
+        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
         void*               ptr;
 
         if(line->validCount == validCount)
@@ -644,7 +594,7 @@ boolean P_PolyobjLinesIterator(polyobj_t* po,
         line->validCount = validCount;
 
         if(retObjRecord)
-            ptr = DMU_GetObjRecord(DMU_LINEDEF, line);
+            ptr = po->lineDefs[i];
         else
             ptr = line;
 

@@ -220,7 +220,7 @@ void Rend_ModelViewMatrix(boolean useAngles)
     glTranslatef(-vx, -vy, -vz);
 }
 
-static __inline float segFacingViewerDot(float v1[2], float v2[2])
+float Rend_FacingViewerDot(float v1[2], float v2[2])
 {
     // The dot product.
     return (v1[VY] - v2[VY]) * (v1[VX] - vx) + (v2[VX] - v1[VX]) * (v1[VY] - vz);
@@ -574,7 +574,7 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
 {
     linedef_t*          iter;
     lineowner_t*        base, *own;
-    boolean             clockwise = !doRight;
+    boolean             clockwise = doRight;
 
     if(bottomZ >= topZ)
         return; // Obviously no division.
@@ -678,9 +678,6 @@ static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
 
     if(!side)
         return;
-
-    if(seg->flags & SEGF_POLYOBJ)
-        return; // Polyobj segs are never split.
 
     // Only segs at sidedef ends can/should be split.
     if(!((hEdge == side->line->hEdges[seg->side? 1 : 0] && !doRight) ||
@@ -1114,7 +1111,7 @@ boolean RLIT_DynLightWrite(const dynlight_t* dyn, void* data)
             rtexcoords[3].st[0] = rtexcoords[2].st[0] = dyn->s[1];
             rtexcoords[2].st[1] = rtexcoords[0].st[1] = dyn->t[1];
 
-            if(params->divs)
+            if(params->divs && (params->divs[0].num || params->divs[1].num))
             {   // We need to subdivide the dynamic light quad.
                 float               bL, tL, bR, tR;
                 rvertex_t           origVerts[4];
@@ -1165,7 +1162,8 @@ boolean RLIT_DynLightWrite(const dynlight_t* dyn, void* data)
             memcpy(rvertices, params->rvertices, sizeof(rvertex_t) * params->numVertices);
         }
 
-        if(params->isWall && params->divs)
+        if(params->isWall &&
+           params->divs && (params->divs[0].num || params->divs[1].num))
         {
             RL_AddPoly(PT_FAN, RPT_LIGHT, rvertices + 3 + params->divs[0].num,
                        rtexcoords + 3 + params->divs[0].num, NULL, NULL,
@@ -1390,8 +1388,9 @@ typedef struct {
     boolean         forceOpaque;
 
 // For bias:
-    void*           mapObject;
-    uint            elmIdx;
+    face_t*         face;
+    uint            plane;
+    fvertex_t*      from, *to;
     biassurface_t*  bsuf;
 
 // Wall only (todo).
@@ -1408,8 +1407,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     rcolor_t*           rcolors;
     rtexcoord_t*        rtexcoords = NULL, *rtexcoords2 = NULL,
                        *rtexcoords5 = NULL;
-    uint                realNumVertices =
-        p->isWall && divs? 3 + divs[0].num + 3 + divs[1].num : numVertices;
+    uint                realNumVertices;
     rcolor_t*           shinyColors = NULL;
     rtexcoord_t*        shinyTexCoords = NULL;
     boolean             useLights = false;
@@ -1424,6 +1422,11 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     if(!p->forceOpaque && p->type != RPT_SKY_MASK &&
        (!msA->isOpaque || p->alpha < 1 || p->blendMode > 0))
         drawAsVisSprite = true;
+
+    if(p->isWall && divs && (divs[0].num || divs[1].num))
+        realNumVertices = 3 + divs[0].num + 3 + divs[1].num;
+    else
+        realNumVertices = numVertices;
 
     memset(rTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
     memset(rTUs, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
@@ -1574,10 +1577,16 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             if(useBias && p->bsuf)
             {
                 // Do BIAS lighting for this poly.
-                SB_RendPoly(P_GetCurrentMap(), rcolors, p->bsuf,
-                            rvertices, numVertices,
-                            p->normal, *p->sectorLightLevel,
-                            p->mapObject, p->elmIdx, p->isWall);
+                if(p->isWall)
+                    SB_RendSeg(P_GetCurrentMap(), rcolors, p->bsuf,
+                               rvertices, numVertices,
+                               p->normal, *p->sectorLightLevel,
+                               p->from, p->to);
+                else
+                    SB_RendPlane(P_GetCurrentMap(), rcolors, p->bsuf,
+                                 rvertices, numVertices,
+                                 p->normal, *p->sectorLightLevel,
+                                 p->face, p->plane);
             }
             else
             {
@@ -1727,7 +1736,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     }
 
     // Write multiple polys depending on rend params.
-    if(p->isWall && divs)
+    if(p->isWall && divs && (divs[0].num || divs[1].num))
     {
         float               bL, tL, bR, tR;
         rvertex_t           origVerts[4];
@@ -1835,8 +1844,12 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         !(p->alpha < 1 || !msA->isOpaque || p->blendMode > 0));
 }
 
-static boolean doRenderSeg(hedge_t* hEdge,
-                           const fvertex_t* from, const fvertex_t* to,
+static boolean doRenderSeg(const sideradioconfig_t* radioConfig,
+                           const sector_t* segFrontSec,
+                           const sector_t* segBackSec,
+                           const float* segLength, const float* segOffset,
+                           const float* lineDefLength,
+                           fvertex_t* from, fvertex_t* to,
                            float bottom, float top, const pvec3_t normal,
                            float alpha,
                            const float* lightLevel, float lightLevelDelta,
@@ -1851,13 +1864,11 @@ static boolean doRenderSeg(hedge_t* hEdge,
                            const float texScale[2],
                            blendmode_t blendMode,
                            const float* color, const float* color2,
-                           biassurface_t* bsuf, uint elmIdx /*tmp*/,
+                           biassurface_t* bsuf,
                            const material_snapshot_t* msA, float inter,
                            const material_snapshot_t* msB)
 {
     rendworldpoly_params_t params;
-    seg_t*              seg = (seg_t*) hEdge->data;
-    sidedef_t*          side = seg->sideDef;
     rvertex_t*          rvertices;
 
     // Init the params.
@@ -1865,11 +1876,11 @@ static boolean doRenderSeg(hedge_t* hEdge,
 
     params.type = (skyMask? RPT_SKY_MASK : RPT_NORMAL);
     params.isWall = true;
-    params.segLength = &seg->length;
+    params.segLength = segLength;
     params.forceOpaque = (alpha < 0? true : false);
     params.alpha = (alpha < 0? 1 : alpha);
-    params.mapObject = hEdge;
-    params.elmIdx = elmIdx;
+    params.from = from;
+    params.to = to;
     params.bsuf = bsuf;
     params.normal = normal;
     params.texTL = texTL;
@@ -1884,7 +1895,7 @@ static boolean doRenderSeg(hedge_t* hEdge,
     params.texScale = texScale;
     params.lightListIdx = lightListIdx;
 
-    if(divs)
+    if(divs && (divs[0].num || divs[1].num))
     {
         // Allocate enough vertices for the divisions too.
         rvertices = R_AllocRendVertices(3 + divs[0].num + 3 + divs[1].num);
@@ -1917,24 +1928,24 @@ static boolean doRenderSeg(hedge_t* hEdge,
     if(isGlowing)
         params.glowing = true;
 
-    // Draw this hEdge.
+    // Draw this seg.
     if(renderWorldPoly(rvertices, 4, divs, &params, msA, inter, msB))
     {   // Drawn poly was opaque.
-        // Render Fakeradio polys for this hEdge?
+        // Render Fakeradio polys for this seg?
         if(params.type != RPT_SKY_MASK && addFakeRadio)
         {
             rendsegradio_params_t radioParams;
 
             radioParams.sectorLightLevel = lightLevel;
-            radioParams.linedefLength = &seg->lineDef->length;
-            radioParams.botCn = side->bottomCorners;
-            radioParams.topCn = side->topCorners;
-            radioParams.sideCn = side->sideCorners;
-            radioParams.spans = side->spans;
-            radioParams.segOffset = &seg->offset;
-            radioParams.segLength = &seg->length;
-            radioParams.frontSec = seg->SG_frontsector;
-            radioParams.backSec = seg->SG_backsector;
+            radioParams.linedefLength = lineDefLength;
+            radioParams.botCn = radioConfig->bottomCorners;
+            radioParams.topCn = radioConfig->topCorners;
+            radioParams.sideCn = radioConfig->sideCorners;
+            radioParams.spans = radioConfig->spans;
+            radioParams.segOffset = segOffset;
+            radioParams.segLength = segLength;
+            radioParams.frontSec = segFrontSec;
+            radioParams.backSec = segBackSec;
 
             /**
              * \kludge Revert the vertex coords as they may have been
@@ -1957,7 +1968,7 @@ static boolean doRenderSeg(hedge_t* hEdge,
         }
 
         R_FreeRendVertices(rvertices);
-        return true; // Clip with this solid hEdge.
+        return true; // Clip with this solid seg.
     }
 
     R_FreeRendVertices(rvertices);
@@ -1974,7 +1985,7 @@ static void renderPlane(face_t* face, planetype_t type,
                         const float texOffset[2], const float texScale[2],
                         boolean skyMasked,
                         boolean addDLights, boolean isGlowing,
-                        biassurface_t* bsuf, uint elmIdx /*tmp*/,
+                        biassurface_t* bsuf, uint plane /*tmp*/,
                         int texMode /*tmp*/)
 {
     float               inter = 0;
@@ -1993,8 +2004,8 @@ static void renderPlane(face_t* face, planetype_t type,
     memset(&params, 0, sizeof(params));
 
     params.isWall = false;
-    params.mapObject = face;
-    params.elmIdx = elmIdx;
+    params.face = face;
+    params.plane = plane;
     params.bsuf = bsuf;
     params.normal = normal;
     params.texTL = texTL;
@@ -2166,16 +2177,20 @@ static boolean isVisible(surface_t* surface, sector_t* frontsec,
     return false;
 }
 
-static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
-                              segsection_t section, surface_t* surface,
-                              const fvertex_t* from, const fvertex_t* to,
+static boolean rendSegSection(face_t* ssec, void* dummy, linedef_t* lineDef,
+                              sidedef_t* sideDef, byte segSide,
+                              const sector_t* segFrontSec,
+                              const sector_t* segBackSec, const float* segLength,
+                              const float* segOffset, segsection_t section,
+                              surface_t* surface, fvertex_t* from, fvertex_t* to,
                               float bottom, float top,
                               const float texOffset[2],
                               sector_t* frontsec, boolean softSurface,
-                              boolean addDLights, short sideFlags)
+                              boolean addDLights, short sideFlags,
+                              biassurface_t* bsuf,
+                              hedge_t* hEdge /* temp */)
 {
     float               alpha;
-    seg_t*              seg;
     boolean             skyMask, solidSeg = true;
 
     if(!isVisible(surface, frontsec, false, &skyMask))
@@ -2185,7 +2200,6 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         return true;
 
     alpha = (section == SEG_MIDDLE? surface->rgba[3] : 1.0f);
-    seg = (seg_t*) hEdge->data;
 
     if(section == SEG_MIDDLE && softSurface)
     {
@@ -2195,13 +2209,12 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
          * Can the player walk through this surface?
          * If the player is close enough we should NOT add a solid seg
          * otherwise they'd get HOM when they are directly on top of the
-         * line (eg passing through an opaque waterfall).
+         * lineDef (eg passing through an opaque waterfall).
          */
 
         if(viewZ > bottom && viewZ < top)
         {
             float               delta[2], pos, result[2];
-            linedef_t*          lineDef = seg->lineDef;
 
             delta[0] = lineDef->dX;
             delta[1] = lineDef->dY;
@@ -2242,8 +2255,8 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
         boolean             forceOpaque = false;
         material_t*         mat = NULL, *matB = NULL;
         rendpolytype_t      type = RPT_NORMAL;
-        boolean             isTwoSided = (seg->lineDef &&
-            LINE_FRONTSIDE(seg->lineDef) && LINE_BACKSIDE(seg->lineDef))? true:false;
+        boolean             isTwoSided = (lineDef &&
+            LINE_FRONTSIDE(lineDef) && LINE_BACKSIDE(lineDef))? true:false;
         blendmode_t         blendMode = BM_NORMAL;
         boolean             addFakeRadio = false, addReflection = false,
                             isGlowing = false, blended = false;
@@ -2358,37 +2371,37 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
 
         if(addDLights && !isGlowing)
             lightListIdx = DL_ProjectOnSurface(P_GetCurrentMap(), ssec, texTL, texBR,
-                                               seg->sideDef->SW_middlenormal,
+                                               sideDef->SW_middlenormal,
                                     ((section == SEG_MIDDLE && isTwoSided)? DLF_SORT_LUMADSC : 0));
 
         addFakeRadio = ((addFakeRadio && !isGlowing)? true : false);
         addReflection = (useShinySurfaces && mat && mat->reflection? true : false);
 
-        selectSurfaceColors(&color, &color2, seg->sideDef, section);
+        selectSurfaceColors(&color, &color2, sideDef, section);
 
         // Check for neighborhood division?
         divs[0].num = divs[1].num = 0;
         if(!(section == SEG_MIDDLE && isTwoSided) &&
-           !(seg->lineDef->inFlags & LF_POLYOBJ))
+           !(lineDef->inFlags & LF_POLYOBJ))
         {
             applyWallHeightDivision(divs, hEdge, frontsec, bottom, top);
         }
 
-        solidSeg = doRenderSeg(hEdge,
+        solidSeg = doRenderSeg(&sideDef->radioConfig, segFrontSec, segBackSec,
+                               segLength, segOffset, &lineDef->length,
                                from, to, bottom, top,
                                surface->normal, (forceOpaque? -1 : alpha),
                                &frontsec->lightLevel,
-                               R_WallAngleLightLevelDelta(seg->lineDef, seg->side),
+                               R_WallAngleLightLevelDelta(lineDef, segSide),
                                R_GetSectorLightColor(frontsec),
                                lightListIdx,
-                               (divs[0].num > 0 || divs[1].num > 0)? divs : NULL,
+                               divs,
                                skyMask,
                                addFakeRadio,
                                addReflection,
                                isGlowing,
                                texTL, texBR, texOffset, texScale, blendMode,
-                               color, color2,
-                               seg->bsuf[section], (uint) section,
+                               color, color2, bsuf,
                                &msA, inter, (blended || matB) ? &msB : NULL);
     }
 
@@ -2398,14 +2411,15 @@ static boolean rendSegSection(face_t* ssec, hedge_t* hEdge,
 /**
  * Renders the given single-sided seg into the world.
  */
-static boolean Rend_RenderSSWallSeg(face_t* face, hedge_t* hEdge)
+static boolean Rend_RenderSSWallSeg(face_t* face, seg_t* seg,
+                                    fvertex_t* from, fvertex_t* to,
+                                    hedge_t* hEdge /* temp */)
 {
     int                 pid;
     float               ffloor, fceil;
     subsector_t*        ssec;
     sector_t*           frontsec;
     boolean             backSide, solidSeg = true;
-    seg_t*              seg = (seg_t*) hEdge->data;
     sidedef_t*          side = seg->sideDef;
     linedef_t*          ldef;
 
@@ -2452,16 +2466,68 @@ static boolean Rend_RenderSSWallSeg(face_t* face, hedge_t* hEdge)
 
         Rend_RadioUpdateLinedef(seg->lineDef, seg->side);
 
-        rendSegSection(face, hEdge, SEG_MIDDLE, &side->SW_middlesurface,
-                       &hEdge->HE_v1->v, &hEdge->HE_v2->v, ffloor, fceil,
+        rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
+                       seg->SG_frontsector, seg->SG_backsector,
+                       &seg->length, &seg->offset, SEG_MIDDLE,
+                       &side->SW_middlesurface,
+                       from, to, ffloor, fceil,
                        texOffset, /*temp >*/ frontsec, /*< temp*/
-                       false, true, side->flags);
+                       false, true, side->flags, seg->bsuf[SEG_MIDDLE], hEdge);
     }
 
     if(P_IsInVoid(viewPlayer))
         solidSeg = false;
 
     return solidSeg;
+}
+
+/**
+ * Renders the given polyobj seg into the world
+ */
+static boolean Rend_RenderPolyobjSeg(face_t* face, poseg_t* seg)
+{
+    int                 pid = viewPlayer - ddPlayers;
+    subsector_t*        ssec = (subsector_t*) face->data;
+    linedef_t*          ldef = seg->lineDef;
+    sidedef_t*          side = seg->sideDef;
+
+    if(!ldef->mapped[pid])
+    {
+        ldef->mapped[pid] = true; // This line is now seen in the map.
+
+        // Send a status report.
+        if(gx.HandleMapObjectStatusReport)
+            gx.HandleMapObjectStatusReport(DMUSC_LINE_FIRSTRENDERED,
+                                           GET_LINE_IDX(ldef),
+                                           DMU_LINEDEF, &pid);
+    }
+
+    if(side->SW_middleinflags & SUIF_PVIS)
+    {
+        float               texOffset[2], offset = 0;
+        sector_t*           frontSec = ssec->sector;
+        float               ffloor = frontSec->SP_floorvisheight,
+                            fceil = frontSec->SP_ceilvisheight;
+        surface_t*          surface = &side->SW_middlesurface;
+
+        texOffset[0] = surface->visOffset[0];
+        texOffset[1] = surface->visOffset[1];
+
+        if(ldef->flags & DDLF_DONTPEGBOTTOM)
+            texOffset[1] += -(fceil - ffloor);
+
+        rendSegSection(face, seg, ldef, side, FRONT,
+                       frontSec, NULL,
+                       &ldef->length, &offset, SEG_MIDDLE,
+                       &side->SW_middlesurface,
+                       &ldef->L_v1->v, &ldef->L_v2->v, ffloor, fceil,
+                       texOffset, /*temp >*/ frontSec, /*< temp*/
+                       false, true, side->flags, seg->bsuf, NULL);
+        
+        return P_IsInVoid(viewPlayer)? false : true;
+    }
+
+    return false;
 }
 
 static boolean findBottomTop(segsection_t section, float segOffset,
@@ -2585,7 +2651,9 @@ static boolean findBottomTop(segsection_t section, float segOffset,
 /**
  * Renders wall sections for given two-sided seg.
  */
-static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
+static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
+                                  fvertex_t* from, fvertex_t* to,
+                                  hedge_t* hEdge /* temp */)
 {
     int                 pid = viewPlayer - ddPlayers;
     float               bottom, top, texOffset[2];
@@ -2594,14 +2662,13 @@ static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
     plane_t*            ffloor, *fceil, *bfloor, *bceil;
     linedef_t*          line;
     int                 solidSeg = false;
-    seg_t*              seg = (seg_t*) hEdge->data;
     subsector_t*        ssec = (subsector_t*) face->data;
 
     if(!seg->sideDef)
         return false;
 
     frontSide = seg->sideDef;
-    backSide = ((seg_t*) hEdge->twin->data)->sideDef;
+    backSide = backSeg->sideDef;
     frontSec = frontSide->sector;
     backSec = backSide->sector;
     line = seg->lineDef;
@@ -2652,12 +2719,15 @@ static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            solidSeg = rendSegSection(face, hEdge, SEG_MIDDLE, suf,
-                                      &hEdge->HE_v1->v, &hEdge->HE_v2->v,
-                                      bottom, top, texOffset, frontSec,
+            solidSeg = rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
+                                      seg->SG_frontsector, seg->SG_backsector,
+                                      &seg->length, &seg->offset, SEG_MIDDLE,
+                                      suf, from, to, bottom, top, texOffset,
+                                      frontSec,
                                       (((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
                                         !(line->flags & DDLF_BLOCKING))? true : false),
-                                      true, frontSide->flags);
+                                      true, frontSide->flags,
+                                      seg->bsuf[SEG_MIDDLE], hEdge);
             if(solidSeg)
             {
                 float               xbottom, xtop;
@@ -2697,10 +2767,12 @@ static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(face, hEdge, SEG_TOP, suf,
-                           &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top,
+            rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
+                           seg->SG_frontsector, seg->SG_backsector,
+                           &seg->length, &seg->offset, SEG_TOP, suf,
+                           from, to, bottom, top,
                            texOffset, frontSec, false, true,
-                           frontSide->flags);
+                           frontSide->flags, seg->bsuf[SEG_TOP], hEdge);
         }
     }
 
@@ -2717,10 +2789,12 @@ static boolean Rend_RenderWallSeg(face_t* face, hedge_t* hEdge)
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(face, hEdge, SEG_BOTTOM, suf,
-                           &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top,
+            rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
+                           seg->SG_frontsector, seg->SG_backsector,
+                           &seg->length, &seg->offset, SEG_BOTTOM, suf,
+                           from, to, bottom, top,
                            texOffset, frontSec, false, true,
-                           frontSide->flags);
+                           frontSide->flags, seg->bsuf[SEG_BOTTOM], hEdge);
         }
     }
 
@@ -2772,7 +2846,6 @@ float Rend_SectorLight(sector_t* sec)
 
 static void Rend_MarkSegsFacingFront(face_t* face)
 {
-    uint                i;
     hedge_t*            hEdge;
 
     if((hEdge = face->hEdge))
@@ -2782,12 +2855,12 @@ static void Rend_MarkSegsFacingFront(face_t* face)
             seg_t*              seg = (seg_t*) hEdge->data;
 
             // Occlusions can only happen where two sectors contact.
-            if(seg->lineDef && !(seg->flags & SEGF_POLYOBJ))
+            if(seg->lineDef)
             {
                 seg->frameFlags &= ~SEGINF_BACKSECSKYFIX;
 
                 // Which way should it be facing?
-                if(!(segFacingViewerDot(hEdge->HE_v1pos, hEdge->HE_v2pos) < 0))
+                if(!(Rend_FacingViewerDot(hEdge->HE_v1pos, hEdge->HE_v2pos) < 0))
                     seg->frameFlags |= SEGINF_FACINGFRONT;
                 else
                     seg->frameFlags &= ~SEGINF_FACINGFRONT;
@@ -2795,27 +2868,6 @@ static void Rend_MarkSegsFacingFront(face_t* face)
                 Rend_MarkSegSectionsPVisible(hEdge);
             }
         } while((hEdge = hEdge->next) != face->hEdge);
-    }
-
-    if(((subsector_t*) face->data)->polyObj)
-    {
-        subsector_t*        ssec = (subsector_t*) face->data;
-
-        for(i = 0; i < ssec->polyObj->numHEdges; ++i)
-        {
-            hedge_t*            hEdge = ssec->polyObj->hEdges[i];
-            seg_t*              seg = (seg_t*) hEdge->data;
-
-            seg->frameFlags &= ~SEGINF_BACKSECSKYFIX;
-
-            // Which way should it be facing?
-            if(!(segFacingViewerDot(hEdge->HE_v1pos, hEdge->HE_v2pos) < 0))
-                seg->frameFlags |= SEGINF_FACINGFRONT;
-            else
-                seg->frameFlags &= ~SEGINF_FACINGFRONT;
-
-            Rend_MarkSegSectionsPVisible(hEdge);
-        }
     }
 }
 
@@ -3050,8 +3102,7 @@ static void occludeSubsector(const face_t* face, boolean forwardFacing)
             seg_t*              seg = (seg_t*) hEdge->data;
 
             // Occlusions can only happen where two sectors contact.
-            if(seg->lineDef &&
-               seg->SG_backsector && !(seg->flags & SEGF_POLYOBJ) && // Polyobjects don't occlude.
+            if(seg->lineDef && seg->SG_backsector &&
                (forwardFacing == ((seg->frameFlags & SEGINF_FACINGFRONT)? true : false)))
             {
                 back = seg->SG_backsector;
@@ -3106,7 +3157,6 @@ static void Rend_RenderSubsector(uint faceidx)
     uint                i;
     face_t*             face = FACE_PTR(faceidx);
     subsector_t*        ssec = (subsector_t*) face->data;
-    hedge_t*            hEdge;
     sector_t*           sect;
     float               sceil, sfloor;
 
@@ -3189,22 +3239,23 @@ static void Rend_RenderSubsector(uint faceidx)
     }
 
     // Draw the walls.
+    {
+    hedge_t*            hEdge;
     if((hEdge = face->hEdge))
     {
         do
         {
             seg_t*              seg = (seg_t*) hEdge->data;
 
-            if(!(seg->flags & SEGF_POLYOBJ)  &&// Not handled here.
-               seg->lineDef && // "minisegs" have no linedefs.
+            if(seg->lineDef && // "minisegs" have no linedefs.
                (seg->frameFlags & SEGINF_FACINGFRONT))
             {
                 boolean             solid;
 
                 if(!seg->SG_backsector || !seg->SG_frontsector)
-                    solid = Rend_RenderSSWallSeg(face, hEdge);
+                    solid = Rend_RenderSSWallSeg(face, seg, &hEdge->HE_v1->v, &hEdge->HE_v2->v, hEdge);
                 else
-                    solid = Rend_RenderWallSeg(face, hEdge);
+                    solid = Rend_RenderWallSeg(face, seg, ((seg_t*) hEdge->twin->data), &hEdge->HE_v1->v, &hEdge->HE_v2->v, hEdge);
 
                 if(solid)
                 {
@@ -3214,24 +3265,29 @@ static void Rend_RenderSubsector(uint faceidx)
             }
         } while((hEdge = hEdge->next) != face->hEdge);
     }
+    }
 
     // Is there a polyobj on board?
     if(ssec->polyObj)
     {
-        for(i = 0; i < ssec->polyObj->numHEdges; ++i)
-        {
-            hedge_t*              hEdge = ssec->polyObj->hEdges[i];
-            seg_t*              seg = (seg_t*) hEdge->data;
+        polyobj_t*          po = ssec->polyObj;
 
-            // Let's first check which way this seg is facing.
-            if(seg->frameFlags & SEGINF_FACINGFRONT)
+        for(i = 0; i < po->numSegs; ++i)
+        {
+            poseg_t*            seg = &po->segs[i];
+            linedef_t*          line = seg->lineDef;
+
+            // Front facing?
+            if(!(Rend_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
             {
                 boolean             solid;
 
-                if((solid = Rend_RenderSSWallSeg(face, hEdge)))
+                LINE_FRONTSIDE(line)->SW_middleinflags |= SUIF_PVIS;
+
+                if((solid = Rend_RenderPolyobjSeg(face, seg)))
                 {
-                    C_AddViewRelSeg(hEdge->HE_v1pos[VX], hEdge->HE_v1pos[VY],
-                                    hEdge->HE_v2pos[VX], hEdge->HE_v2pos[VY]);
+                    C_AddViewRelSeg(line->L_v1pos[VX], line->L_v1pos[VY],
+                                    line->L_v2pos[VX], line->L_v2pos[VY]);
                 }
             }
         }

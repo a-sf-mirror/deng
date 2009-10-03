@@ -57,9 +57,6 @@ boolean Seg_SetProperty(hedge_t* hEdge, const setargs_t* args)
 {
     switch(args->prop)
     {
-    case DMU_FLAGS:
-        DMU_SetValue(DMT_HEDGE_FLAGS, &((seg_t*) hEdge->data)->flags, args, 0);
-        break;
     default:
         Con_Error("Seg_SetProperty: Property %s is not writable.\n",
                   DMU_Str(args->prop));
@@ -125,9 +122,6 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
         DMU_GetValue(DMT_HEDGE_SEC, &r, args, 0);
         break;
         }
-    case DMU_FLAGS:
-        DMU_GetValue(DMT_HEDGE_FLAGS, &((seg_t*) hEdge->data)->flags, args, 0);
-        break;
     case DMU_ANGLE:
         DMU_GetValue(DMT_HEDGE_ANGLE, &((seg_t*) hEdge->data)->angle, args, 0);
         break;

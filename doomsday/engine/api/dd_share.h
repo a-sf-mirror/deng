@@ -880,8 +880,8 @@ enum { MX, MY, MZ }; // Momentum axis indices.
     angle_t         angleSpeed; /* Rotation speed. */ \
     unsigned int    numLineDefs; \
     struct linedef_s** lineDefs; \
-    unsigned int    numHEdges; \
-    struct hedge_s** hEdges; \
+    unsigned int    numSegs; \
+    struct poseg_s* segs; \
     struct fvertex_s* originalPts; /* Used as the base for the rotations. */ \
     struct fvertex_s* prevPts; /* Use to restore the old point values. */ \
     float           speed; /* Movement speed. */ \

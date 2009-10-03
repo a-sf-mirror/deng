@@ -23,11 +23,25 @@
  */
 
 /**
- * p_polyob.h: Polygon Objects
+ * p_polyob.h: Polygon Objects.
  */
 
-#ifndef __DOOMSDAY_POLYOB_H__
-#define __DOOMSDAY_POLYOB_H__
+#ifndef DOOMSDAY_POLYOBJECT_H
+#define DOOMSDAY_POLYOBJECT_H
+
+typedef struct poseg_s {
+    struct linedef_s* lineDef;
+    struct sidedef_s* sideDef;
+    struct sector_s* frontSector;
+    void*       pad;
+    angle_t     pad2;
+    byte        pad3;
+    float       pad4;
+    float       pad5;
+    biassurface_t* bsuf;
+    void*       pad6[2];
+    short       pad7;
+} poseg_t;
 
 // We'll use the base polyobj template directly as our mobj.
 typedef struct polyobj_s {
@@ -46,10 +60,10 @@ polyobj_t*      P_GetPolyobj(uint num);
 boolean         P_IsPolyobjOrigin(void* ddMobjBase);
 
 // Polyobject interface.
-boolean         P_PolyobjMove(struct polyobj_s* po, float x, float y);
-boolean         P_PolyobjRotate(struct polyobj_s* po, angle_t angle);
-void            P_PolyobjLink(struct polyobj_s* po);
-void            P_PolyobjUnLink(struct polyobj_s* po);
+boolean         P_PolyobjMove(polyobj_t* po, float x, float y);
+boolean         P_PolyobjRotate(polyobj_t* po, angle_t angle);
+void            P_PolyobjLink(polyobj_t* po);
+void            P_PolyobjUnLink(polyobj_t* po);
 
 void            P_PolyobjUpdateBBox(polyobj_t* po);
 
@@ -57,4 +71,4 @@ void            P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link);
 void            P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** link);
 boolean         P_PolyobjLinesIterator(polyobj_t* po, boolean (*func) (struct linedef_s*, void*),
                                        void* data, boolean retObjRecord);
-#endif
+#endif /* DOOMSDAY_POLYOBJECT */

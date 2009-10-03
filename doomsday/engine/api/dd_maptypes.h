@@ -25,7 +25,6 @@ typedef struct thinker_s {
 #define DMT_HEDGE_SUBSECTOR     DDVT_PTR
 #define DMT_HEDGE_ANGLE         DDVT_ANGLE
 #define DMT_HEDGE_SIDE          DDVT_BYTE
-#define DMT_HEDGE_FLAGS         DDVT_BYTE
 #define DMT_HEDGE_LENGTH        DDVT_FLOAT
 #define DMT_HEDGE_OFFSET        DDVT_FLOAT
 

@@ -77,9 +77,7 @@ typedef struct edge_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void scanEdges(shadowcorner_t topCorners[2],
-                      shadowcorner_t bottomCorners[2],
-                      shadowcorner_t sideCorners[2], edgespan_t spans[2],
+static void scanEdges(sideradioconfig_t* radioConfig,
                       const linedef_t* line, boolean backSide);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -114,7 +112,7 @@ static __inline float calcShadowDarkness(float lightLevel)
  */
 void Rend_RadioUpdateLinedef(linedef_t* line, boolean backSide)
 {
-    sidedef_t*          s;
+    sideradioconfig_t* radioConfig;
 
     if(!rendFakeRadio || levelFullBright || // Disabled?
        !line)
@@ -122,20 +120,20 @@ void Rend_RadioUpdateLinedef(linedef_t* line, boolean backSide)
 
     // Have we yet determined the shadow properties to be used with segs
     // on this sidedef?
-    s = LINE_SIDE(line, backSide);
-    if(s->fakeRadioUpdateCount != frameCount)
+    radioConfig = &LINE_SIDE(line, backSide)->radioConfig;
+    if(radioConfig->fakeRadioUpdateCount != frameCount)
     {   // Not yet. Calculate now.
         uint                i;
 
         for(i = 0; i < 2; ++i)
         {
-            s->spans[i].length = line->length;
-            s->spans[i].shift = 0;
+            radioConfig->spans[i].length = line->length;
+            radioConfig->spans[i].shift = 0;
         }
 
-        scanEdges(s->topCorners, s->bottomCorners, s->sideCorners,
-                  s->spans, line, backSide);
-        s->fakeRadioUpdateCount = frameCount; // Mark as done.
+        scanEdges(radioConfig, line, backSide);
+
+        radioConfig->fakeRadioUpdateCount = frameCount; // Mark as done.
     }
 }
 
@@ -421,9 +419,8 @@ static void scanNeighbor(boolean scanTop, const linedef_t* line, uint side,
 #undef SEP
 }
 
-static void scanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
-                          const linedef_t* line, uint side,
-                          edgespan_t spans[2], boolean toLeft)
+static void scanNeighbors(sideradioconfig_t* radioConfig,
+                          const linedef_t* line, uint side, boolean toLeft)
 {
     uint                i;
     edge_t              edges[2], *edge; // {bottom, top}
@@ -444,9 +441,9 @@ static void scanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
 
     for(i = 0; i < 2; ++i) // 0=bottom, 1=top
     {
-        corner = (i == 0 ? &bottom[!toLeft] : &top[!toLeft]);
+        corner = (i == 0 ? &radioConfig->bottomCorners[!toLeft] : &radioConfig->topCorners[!toLeft]);
         edge = &edges[i];
-        span = &spans[i];
+        span = &radioConfig->spans[i];
 
         // Increment the apparent line length/offset.
         span->length += edge->length;
@@ -520,9 +517,7 @@ static void scanNeighbors(shadowcorner_t top[2], shadowcorner_t bottom[2],
  * but in most cases this won't take long. Aligned neighbours are relatively
  * rare.
  */
-static void scanEdges(shadowcorner_t topCorners[2],
-                      shadowcorner_t bottomCorners[2],
-                      shadowcorner_t sideCorners[2], edgespan_t spans[2],
+static void scanEdges(sideradioconfig_t* radioConfig,
                       const linedef_t* line, boolean backSide)
 {
     uint                i, sid = (backSide? BACK : FRONT);
@@ -531,13 +526,13 @@ static void scanEdges(shadowcorner_t topCorners[2],
 
     side = LINE_SIDE(line, sid);
 
-    memset(sideCorners, 0, sizeof(sideCorners));
+    memset(radioConfig->sideCorners, 0, sizeof(radioConfig->sideCorners));
 
     // Find the sidecorners first: left and right neighbour.
     for(i = 0; i < 2; ++i)
     {
         binangle_t          diff = 0;
-        lineowner_t        *vo;
+        lineowner_t*        vo;
 
         vo = line->L_vo(i^sid);
 
@@ -547,29 +542,29 @@ static void scanEdges(shadowcorner_t topCorners[2],
         {
             if(diff > BANG_180)
             {   // The corner between the walls faces outwards.
-                sideCorners[i].corner = -1;
+                radioConfig->sideCorners[i].corner = -1;
             }
             else if(diff == BANG_180)
             {
-                sideCorners[i].corner = 0;
+                radioConfig->sideCorners[i].corner = 0;
             }
             else if(diff < BANG_45 / 5)
             {   // The difference is too small, there won't be a shadow.
-                sideCorners[i].corner = 0;
+                radioConfig->sideCorners[i].corner = 0;
             }
             else if(diff > BANG_90)
             {   // 90 degrees is the largest effective difference.
-                sideCorners[i].corner = (float) BANG_90 / diff;
+                radioConfig->sideCorners[i].corner = (float) BANG_90 / diff;
             }
             else
             {
-                sideCorners[i].corner = (float) diff / BANG_90;
+                radioConfig->sideCorners[i].corner = (float) diff / BANG_90;
             }
         }
         else
-            sideCorners[i].corner = 0;
+            radioConfig->sideCorners[i].corner = 0;
 
-        scanNeighbors(topCorners, bottomCorners, line, sid, spans, !i);
+        scanNeighbors(radioConfig, line, sid, !i);
     }
 }
 
@@ -1051,10 +1046,16 @@ static void renderShadowSeg(const rvertex_t* origVertices,
     rcolor_t*           rcolors;
     rtexcoord_t*        rtexcoords;
     rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
-    uint                realNumVertices = 4;
+    uint                realNumVertices;
 
-    if(wdivs)
+    if(wdivs && (wdivs[0].num || wdivs[1].num))
+    {
         realNumVertices = 3 + wdivs[0].num + 3 + wdivs[1].num;
+    }
+    else
+    {
+        realNumVertices = 4;
+    }
 
     memset(rTU, 0, sizeof(rTU));
     rTU[TU_PRIMARY].tex = GL_PrepareLSTexture(p->texture);
@@ -1084,7 +1085,7 @@ static void renderShadowSeg(const rvertex_t* origVertices,
     if(rendFakeRadio != 2)
     {
         // Write multiple polys depending on rend params.
-        if(wdivs)
+        if(wdivs && (wdivs[0].num || wdivs[1].num))
         {
             float               bL, tL, bR, tR;
             rvertex_t*          rvertices;

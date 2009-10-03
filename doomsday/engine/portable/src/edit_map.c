@@ -655,16 +655,16 @@ static void buildSectorSSecLists(gamemap_t* map)
 static void buildSectorLineLists(gamemap_t *map)
 {
     typedef struct linelink_s {
-        linedef_t      *line;
+        linedef_t*      line;
         struct linelink_s *next;
     } linelink_t;
 
     uint                i, j;
-    linedef_t          *li;
-    sector_t           *sec;
+    linedef_t*          li;
+    sector_t*           sec;
 
-    zblockset_t        *lineLinksBlockSet;
-    linelink_t        **sectorLineLinks;
+    zblockset_t*        lineLinksBlockSet;
+    linelink_t**        sectorLineLinks;
     uint                totallinks;
 
     Con_Message(" Build line tables...\n");
@@ -675,8 +675,8 @@ static void buildSectorLineLists(gamemap_t *map)
     totallinks = 0;
     for(i = 0, li = map->lineDefs; i < map->numLineDefs; ++i, li++)
     {
-        uint        secIDX;
-        linelink_t *link;
+        uint                secIDX;
+        linelink_t*         link;
 
         if(LINE_FRONTSIDE(li))
         {
@@ -1394,8 +1394,6 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
     {
         uint                j;
         polyobj_t*          destP, *srcP = src->polyObjs[i];
-        hedge_t*            hEdges;
-        seg_t*              storage;
 
         destP = Z_Calloc(POLYOBJ_SIZE, PU_MAP, 0);
         destP->idx = i;
@@ -1405,53 +1403,47 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
         destP->pos[VX] = srcP->pos[VX];
         destP->pos[VY] = srcP->pos[VY];
 
-        destP->numHEdges = srcP->numLineDefs;
-
-        destP->originalPts =
-            Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
-        destP->prevPts =
-            Z_Malloc(destP->numHEdges * sizeof(fvertex_t), PU_MAP, 0);
-
         destP->numLineDefs = srcP->numLineDefs;
         destP->lineDefs = Z_Calloc(sizeof(linedef_t*) * (destP->numLineDefs + 1), PU_MAP, 0);
         for(j = 0; j < destP->numLineDefs; ++j)
-            destP->lineDefs[j] = (linedef_t*) DMU_GetObjRecord(DMU_LINEDEF,
-                &dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1]);
-        destP->lineDefs[j] = NULL;
-
-        // Create a hedge for each line of this polyobj.
-        hEdges = Z_Calloc((sizeof(hedge_t) + sizeof(seg_t)) * destP->numHEdges, PU_MAP, 0);
-        storage = (seg_t*) (((byte*) hEdges) + sizeof(hedge_t) * destP->numHEdges);
-
-        destP->hEdges = Z_Malloc(sizeof(hedge_t*) * (destP->numHEdges+1), PU_MAP, 0);
-
-        for(j = 0; j < destP->numHEdges; ++j)
         {
             linedef_t*          line =
                 &dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1];
-            hedge_t*            hEdge = &hEdges[j];
-            seg_t*              seg;
-            float               dx, dy;
-
-            hEdge->data = storage++;
-            seg = (seg_t*) hEdge->data;
+            hedge_t*            hEdge;
 
             // This line is part of a polyobj.
             line->inFlags |= LF_POLYOBJ;
 
-            seg->lineDef = line;
-            seg->sideDef = &dest->sideDefs[
-                line->buildData.sideDefs[FRONT]->buildData.index - 1];
-            dx = line->buildData.v[1]->V_pos[VX] - line->buildData.v[0]->V_pos[VX];
-            dy = line->buildData.v[1]->V_pos[VY] - line->buildData.v[0]->V_pos[VY];
-            seg->length = P_AccurateDistance(dx, dy);
-            seg->SG_frontsector = &dest->sectors[
-                line->buildData.sideDefs[FRONT]->sector->buildData.index - 1];
-            seg->flags |= SEGF_POLYOBJ;
+            hEdge = Z_Calloc(sizeof(hedge_t), PU_MAP, 0);
+            hEdge->face = NULL;
+            line->hEdges[0] = line->hEdges[1] = hEdge;
 
-            destP->hEdges[j] = hEdge;
+            destP->lineDefs[j] = (linedef_t*)
+                DMU_GetObjRecord(DMU_LINEDEF, line);
         }
-        destP->hEdges[j] = NULL; // Terminate.
+        destP->lineDefs[j] = NULL;
+
+        destP->originalPts =
+            Z_Malloc(destP->numLineDefs * sizeof(fvertex_t), PU_MAP, 0);
+        destP->prevPts =
+            Z_Malloc(destP->numLineDefs * sizeof(fvertex_t), PU_MAP, 0);
+
+        // Temporary: Create a seg for each line of this polyobj.
+        destP->numSegs = srcP->numLineDefs;
+        destP->segs = Z_Malloc(sizeof(poseg_t) * (destP->numSegs+1), PU_MAP, 0);
+
+        for(j = 0; j < destP->numSegs; ++j)
+        {
+            linedef_t*          line = ((dmuobjrecord_t*) destP->lineDefs[j])->obj;
+            poseg_t*            seg = &destP->segs[j];
+
+            line->hEdges[0]->data = seg;
+
+            seg->lineDef = line;
+            seg->sideDef = &dest->sideDefs[line->buildData.sideDefs[FRONT]->buildData.index - 1];
+            seg->frontSector =
+                &dest->sectors[line->buildData.sideDefs[FRONT]->sector->buildData.index - 1];
+        }
 
         // Add this polyobj to the global list.
         dest->polyObjs[i] = destP;
@@ -1832,30 +1824,21 @@ boolean MPE_End(void)
     for(i = 0; i < gamemap->numPolyObjs; ++i)
     {
         polyobj_t*          po = gamemap->polyObjs[i];
-        hedge_t**             ptr;
-        size_t              n;
+        uint                j;
 
-        ptr = po->hEdges;
-        n = 0;
-        while(*ptr)
+        for(j = 0; j < po->numLineDefs; ++j)
         {
-            hedge_t*            hEdge = *ptr;
-            seg_t*              seg = ((seg_t*) hEdge->data);
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
-            hEdge->HE_v1 = &gamemap->vertexes[
-                seg->lineDef->buildData.v[0]->buildData.index - 1];
-            hEdge->HE_v2 = &gamemap->vertexes[
-                seg->lineDef->buildData.v[1]->buildData.index - 1];
-
-            seg->lineDef->hEdges[0] = seg->lineDef->hEdges[1] = hEdge;
+            line->L_v1 = &gamemap->vertexes[
+                line->buildData.v[0]->buildData.index - 1];
+            line->L_v2 = &gamemap->vertexes[
+                line->buildData.v[1]->buildData.index - 1];
 
             // The original Pts are based off the anchor Pt, and are unique
-            // to each seg, not each linedef.
-            po->originalPts[n].pos[VX] = hEdge->HE_v1pos[VX] - po->pos[VX];
-            po->originalPts[n].pos[VY] = hEdge->HE_v1pos[VY] - po->pos[VY];
-
-            *ptr++;
-            n++;
+            // to each linedef.
+            po->originalPts[j].pos[VX] = line->L_v1pos[VX] - po->pos[VX];
+            po->originalPts[j].pos[VY] = line->L_v1pos[VY] - po->pos[VY];
         }
     }
 

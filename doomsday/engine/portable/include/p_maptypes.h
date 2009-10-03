@@ -65,9 +65,6 @@ typedef struct vertex_s {
 #define SG_frontsector          SG_sector(FRONT)
 #define SG_backsector           SG_sector(BACK)
 
-// Seg flags
-#define SEGF_POLYOBJ            0x1 // Seg is part of a poly object.
-
 // Seg frame flags
 #define SEGINF_FACINGFRONT      0x0001
 #define SEGINF_BACKSECSKYFIX    0x0002
@@ -78,7 +75,6 @@ typedef struct seg_s {
     struct sector_s* sec[2];
     angle_t     angle;
     byte        side; // 0=front, 1=back
-    byte        flags;
     float       length; // Accurate length of the segment (v1 -> v2).
     float       offset;
     biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
@@ -396,17 +392,22 @@ typedef struct msidedef_s {
     int         refCount;
 } msidedef_t;
 
-typedef struct sidedef_s {
-    surface_t           sections[3];
-    struct linedef_s*   line;
-    struct sector_s*    sector;
-    short               flags;
-    msidedef_t          buildData;
+// Used with FakeRadio.
+typedef struct {
     int                 fakeRadioUpdateCount; // frame number of last update
     shadowcorner_t      topCorners[2];
     shadowcorner_t      bottomCorners[2];
     shadowcorner_t      sideCorners[2];
     edgespan_t          spans[2];      // [left, right]
+} sideradioconfig_t;
+
+typedef struct sidedef_s {
+    surface_t           sections[3];
+    struct linedef_s*   line;
+    struct sector_s*    sector;
+    short               flags;
+    sideradioconfig_t   radioConfig;
+    msidedef_t          buildData;
 } sidedef_t;
 
 // Helper macros for accessing linedef data elements.

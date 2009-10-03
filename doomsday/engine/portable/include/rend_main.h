@@ -51,6 +51,7 @@ void            Rend_Reset(void);
 void            Rend_RenderMap(struct gamemap_s* map);
 
 void            Rend_ModelViewMatrix(boolean use_angles);
+float           Rend_FacingViewerDot(float v1[2], float v2[2]);
 
 #define Rend_PointDist2D(c) (fabs((vz-c[VY])*viewsidex - (vx-c[VX])*viewsidey))
 

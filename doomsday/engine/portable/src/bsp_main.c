@@ -134,82 +134,82 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
         front = back = NULL;
 
         // Ignore polyobj lines.
-        if(/*!line->buildData.overlap &&*/
-           !(line->inFlags & LF_POLYOBJ))
+        if(/*line->buildData.overlap || */
+           (line->inFlags & LF_POLYOBJ))
+            continue;
+
+        // Check for Humungously long lines.
+        if(ABS(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX]) >= 10000 ||
+           ABS(line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]) >= 10000)
         {
-            // Check for Humungously long lines.
-            if(ABS(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX]) >= 10000 ||
-               ABS(line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]) >= 10000)
+            if(3000 >=
+               M_Length(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX],
+                        line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]))
             {
-                if(3000 >=
-                   M_Length(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX],
-                            line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]))
-                {
-                    Con_Message("Linedef #%d is VERY long, it may cause problems\n",
-                                line->buildData.index);
-                }
+                Con_Message("Linedef #%d is VERY long, it may cause problems\n",
+                            line->buildData.index);
             }
+        }
 
-            if(line->buildData.sideDefs[FRONT])
-            {
-                sidedef_t     *side = line->buildData.sideDefs[FRONT];
+        if(line->buildData.sideDefs[FRONT])
+        {
+            sidedef_t*          side = line->buildData.sideDefs[FRONT];
 
-                // Check for a bad sidedef.
-                if(!side->sector)
-                    Con_Message("Bad front sidedef on linedef #%d (Z_CheckHeap error)\n",
-                                line->buildData.index);
-
-                front = HEdge_Create(line, line, line->buildData.v[0],
-                                     line->buildData.v[1],
-                                     side->sector, false);
-                BSP_AddHEdgeToSuperBlock(block, front);
-            }
-            else
-                Con_Message("Linedef #%d has no front sidedef!\n",
+            // Check for a bad sidedef.
+            if(!side->sector)
+                Con_Message("Bad front sidedef on linedef #%d (Z_CheckHeap error)\n",
                             line->buildData.index);
 
-            if(line->buildData.sideDefs[BACK])
+            front = HEdge_Create(line, line, line->buildData.v[0],
+                                 line->buildData.v[1],
+                                 side->sector, false);
+            BSP_AddHEdgeToSuperBlock(block, front);
+        }
+        else
+            Con_Message("Linedef #%d has no front sidedef!\n",
+                        line->buildData.index);
+
+        if(line->buildData.sideDefs[BACK])
+        {
+            sidedef_t*          side = line->buildData.sideDefs[BACK];
+
+            // Check for a bad sidedef.
+            if(!side->sector)
+                Con_Message("Bad back sidedef on linedef #%d (Z_CheckHeap error)\n",
+                            line->buildData.index);
+
+            back = HEdge_Create(line, line, line->buildData.v[1],
+                                line->buildData.v[0],
+                                side->sector, true);
+            BSP_AddHEdgeToSuperBlock(block, back);
+
+            if(front)
             {
-                sidedef_t     *side = line->buildData.sideDefs[BACK];
-
-                // Check for a bad sidedef.
-                if(!side->sector)
-                    Con_Message("Bad back sidedef on linedef #%d (Z_CheckHeap error)\n",
-                                line->buildData.index);
-
-                back = HEdge_Create(line, line, line->buildData.v[1],
-                                    line->buildData.v[0],
-                                    side->sector, true);
-                BSP_AddHEdgeToSuperBlock(block, back);
-
-                if(front)
-                {
-                    // Half-edges always maintain a one-to-one relationship
-                    // with their twins, so if one gets split, the other
-                    // must be split also.
-                    back->twin = front;
-                    front->twin = back;
-                }
+                // Half-edges always maintain a one-to-one relationship
+                // with their twins, so if one gets split, the other
+                // must be split also.
+                back->twin = front;
+                front->twin = back;
             }
-            else
+        }
+        else
+        {
+            // Handle the 'One-Sided Window' trick.
+            if(line->buildData.windowEffect && front)
             {
-                // Handle the 'One-Sided Window' trick.
-                if(line->buildData.windowEffect && front)
-                {
-                    hedge_t*            other;
+                hedge_t*            other;
 
-                    other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                         line, line->buildData.v[1],
-                                         line->buildData.v[0],
-                                         line->buildData.windowEffect, true);
+                other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                     line, line->buildData.v[1],
+                                     line->buildData.v[0],
+                                     line->buildData.windowEffect, true);
 
-                    BSP_AddHEdgeToSuperBlock(block, other);
+                BSP_AddHEdgeToSuperBlock(block, other);
 
-                    // Setup the twin-ing (it's very strange to have a mini
-                    // and a normal partnered together).
-                    other->twin = front;
-                    front->twin = other;
-                }
+                // Setup the twin-ing (it's very strange to have a mini
+                // and a normal partnered together).
+                other->twin = front;
+                front->twin = other;
             }
         }
 

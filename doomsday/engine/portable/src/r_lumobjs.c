@@ -850,24 +850,25 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
         uint                i;
         vec2_t              eye;
         subsector_t*        ssec = (subsector_t*) ((face_t*) context)->data;
+        polyobj_t*          po = ssec->polyObj;
 
         V2_Set(eye, vx, vz);
 
-        // We need to figure out if any of the polyobj's segments lies
+        // We need to figure out if any of the polyobj's linedefs lies
         // between the viewpoint and the lumobj.
-        for(i = 0; i < ssec->polyObj->numHEdges; ++i)
+        for(i = 0; i < po->numLineDefs; ++i)
         {
-            hedge_t*              hEdge = ssec->polyObj->hEdges[i];
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
-            // Ignore segs facing the wrong way.
-            if(((seg_t*) hEdge->data)->frameFlags & SEGINF_FACINGFRONT)
+            // Ignore lines facing the wrong way.
+            if(!(Rend_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
             {
                 vec2_t              source;
 
                 V2_Set(source, lum->pos[VX], lum->pos[VY]);
 
-                if(V2_Intercept2(source, eye, hEdge->HE_v1pos,
-                                 hEdge->HE_v2pos, NULL, NULL, NULL))
+                if(V2_Intercept2(source, eye, line->L_v1pos,
+                                 line->L_v2pos, NULL, NULL, NULL))
                 {
                     luminousClipped[lumIdx] = 1;
                     break;

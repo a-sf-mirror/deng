@@ -310,15 +310,13 @@ void R_Update(void)
     for(i = 0; i < numPolyObjs; ++i)
     {
         polyobj_t*          po = polyObjs[i];
-        hedge_t**           ptr = po->hEdges;
+        uint                j;
 
-        while(*ptr)
+        for(j = 0; j < po->numLineDefs; ++j)
         {
-            sidedef_t*          side = ((seg_t*) (*ptr)->data)->sideDef;
+            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
-            Surface_Update(&side->SW_middlesurface);
-
-            *ptr++;
+            Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
         }
     }
 
