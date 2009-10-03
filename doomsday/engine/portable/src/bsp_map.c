@@ -211,18 +211,12 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
             if(seg->sideDef)
             {
-                seg->SG_frontsector = seg->sideDef->sector;
-
-                if(ldef->buildData.sideDefs[FRONT] && ldef->buildData.sideDefs[BACK])
-                    seg->SG_backsector = &map->sectors[
-                        ldef->buildData.sideDefs[seg->side ^ 1]->sector->buildData.index - 1];
+                seg->sector = seg->sideDef->sector;
             }
             else if(ldef->buildData.windowEffect)
             {
-                seg->SG_frontsector = &map->sectors[
+                seg->sector = &map->sectors[
                     ldef->buildData.windowEffect->buildData.index - 1];
-                seg->SG_backsector = &map->sectors[
-                        ldef->buildData.sideDefs[seg->side ^ 1]->sector->buildData.index - 1];
             }
 
             seg->offset = P_AccurateDistance(dst->HE_v1pos[VX] - vtx->V_pos[VX],
@@ -231,8 +225,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         else
         {
             seg->lineDef = NULL;
-            seg->SG_frontsector = NULL;
-            seg->SG_backsector = NULL;
+            seg->sector = NULL;
         }
 
         if(seg->lineDef)

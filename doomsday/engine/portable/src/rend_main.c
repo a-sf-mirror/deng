@@ -2411,15 +2411,15 @@ static boolean rendSegSection(face_t* ssec, void* dummy, linedef_t* lineDef,
 /**
  * Renders the given single-sided seg into the world.
  */
-static boolean Rend_RenderSSWallSeg(face_t* face, seg_t* seg,
-                                    fvertex_t* from, fvertex_t* to,
-                                    hedge_t* hEdge /* temp */)
+static boolean Rend_RenderSSWallSeg(hedge_t* hEdge, fvertex_t* from,
+                                    fvertex_t* to)
 {
     int                 pid;
     float               ffloor, fceil;
     subsector_t*        ssec;
     sector_t*           frontsec;
     boolean             backSide, solidSeg = true;
+    seg_t*              seg = (seg_t*) hEdge->data;
     sidedef_t*          side = seg->sideDef;
     linedef_t*          ldef;
 
@@ -2428,7 +2428,7 @@ static boolean Rend_RenderSSWallSeg(face_t* face, seg_t* seg,
         return false;
     }
 
-    ssec = (subsector_t*) face->data;
+    ssec = (subsector_t*) hEdge->face->data;
 
     solidSeg = true;
     frontsec = ssec->sector;
@@ -2466,8 +2466,9 @@ static boolean Rend_RenderSSWallSeg(face_t* face, seg_t* seg,
 
         Rend_RadioUpdateLinedef(seg->lineDef, seg->side);
 
-        rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
-                       seg->SG_frontsector, seg->SG_backsector,
+        rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+                       seg->sector,
+                       hEdge->twin ? ((seg_t*) hEdge->twin->data)->sector : NULL,
                        &seg->length, &seg->offset, SEG_MIDDLE,
                        &side->SW_middlesurface,
                        from, to, ffloor, fceil,
@@ -2651,9 +2652,8 @@ static boolean findBottomTop(segsection_t section, float segOffset,
 /**
  * Renders wall sections for given two-sided seg.
  */
-static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
-                                  fvertex_t* from, fvertex_t* to,
-                                  hedge_t* hEdge /* temp */)
+static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
+                                  fvertex_t* to)
 {
     int                 pid = viewPlayer - ddPlayers;
     float               bottom, top, texOffset[2];
@@ -2662,7 +2662,9 @@ static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
     plane_t*            ffloor, *fceil, *bfloor, *bceil;
     linedef_t*          line;
     int                 solidSeg = false;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        ssec = (subsector_t*) hEdge->face->data;
+    seg_t*              seg = (seg_t*) hEdge->data,
+                       *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
 
     if(!seg->sideDef)
         return false;
@@ -2719,8 +2721,8 @@ static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            solidSeg = rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
-                                      seg->SG_frontsector, seg->SG_backsector,
+            solidSeg = rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+                                      seg->sector, backSeg->sector,
                                       &seg->length, &seg->offset, SEG_MIDDLE,
                                       suf, from, to, bottom, top, texOffset,
                                       frontSec,
@@ -2767,8 +2769,8 @@ static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
-                           seg->SG_frontsector, seg->SG_backsector,
+            rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+                           seg->sector, backSeg->sector,
                            &seg->length, &seg->offset, SEG_TOP, suf,
                            from, to, bottom, top,
                            texOffset, frontSec, false, true,
@@ -2789,8 +2791,8 @@ static boolean Rend_RenderWallSeg(face_t* face, seg_t* seg, seg_t* backSeg,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(face, seg, seg->lineDef, seg->sideDef, seg->side,
-                           seg->SG_frontsector, seg->SG_backsector,
+            rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+                           seg->sector, backSeg->sector,
                            &seg->length, &seg->offset, SEG_BOTTOM, suf,
                            from, to, bottom, top,
                            texOffset, frontSec, false, true,
@@ -2945,7 +2947,8 @@ static void Rend_SSectSkyFixes(face_t* face)
     hEdge = face->hEdge;
     do
     {
-        seg_t*              seg = (seg_t*) hEdge->data;
+        seg_t*              seg = (seg_t*) hEdge->data,
+                           *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
         sidedef_t*          side = seg->sideDef;
 
         if(!side)
@@ -2955,8 +2958,8 @@ static void Rend_SSectSkyFixes(face_t* face)
         if(!(seg->frameFlags & SEGINF_FACINGFRONT))
             continue;
 
-        backsec = seg->SG_backsector;
-        frontsec = seg->SG_frontsector;
+        backsec = backSeg? backSeg->sector : NULL;
+        frontsec = seg->sector;
 
         if(backsec == frontsec &&
            !side->SW_topmaterial && !side->SW_bottommaterial &&
@@ -2982,7 +2985,7 @@ static void Rend_SSectSkyFixes(face_t* face)
         vBR[VY] = vTR[VY] = hEdge->HE_v2pos[VY];
 
         // Upper/lower normal skyfixes.
-        if(!backsec || backsec != seg->SG_frontsector)
+        if(!backsec || backsec != seg->sector)
         {
             // Floor.
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
@@ -3099,13 +3102,15 @@ static void occludeSubsector(const face_t* face, boolean forwardFacing)
     {
         do
         {
-            seg_t*              seg = (seg_t*) hEdge->data;
+            seg_t*              seg = (seg_t*) hEdge->data,
+                               *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
 
             // Occlusions can only happen where two sectors contact.
-            if(seg->lineDef && seg->SG_backsector &&
+            if(seg->lineDef && backSeg &&
                (forwardFacing == ((seg->frameFlags & SEGINF_FACINGFRONT)? true : false)))
             {
-                back = seg->SG_backsector;
+                back = backSeg->sector;
+
                 backh[0] = back->SP_floorheight;
                 backh[1] = back->SP_ceilheight;
                 // Choose start and end vertices so that it's facing forward.
@@ -3246,17 +3251,18 @@ static void Rend_RenderSubsector(uint faceidx)
     {
         do
         {
-            seg_t*              seg = (seg_t*) hEdge->data;
+            seg_t*              seg = (seg_t*) hEdge->data,
+                               *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
 
             if(seg->lineDef && // "minisegs" have no linedefs.
                (seg->frameFlags & SEGINF_FACINGFRONT))
             {
                 boolean             solid;
 
-                if(!seg->SG_backsector || !seg->SG_frontsector)
-                    solid = Rend_RenderSSWallSeg(face, seg, &hEdge->HE_v1->v, &hEdge->HE_v2->v, hEdge);
+                if(!backSeg || !seg->sector)
+                    solid = Rend_RenderSSWallSeg(hEdge, &hEdge->HE_v1->v, &hEdge->HE_v2->v);
                 else
-                    solid = Rend_RenderWallSeg(face, seg, ((seg_t*) hEdge->twin->data), &hEdge->HE_v1->v, &hEdge->HE_v2->v, hEdge);
+                    solid = Rend_RenderWallSeg(hEdge, &hEdge->HE_v1->v, &hEdge->HE_v2->v);
 
                 if(solid)
                 {
@@ -3494,20 +3500,21 @@ void Rend_RenderNormals(void)
     for(i = 0; i < numHEdges; ++i)
     {
         hedge_t*            hEdge = &hEdges[i];
-        seg_t*              seg = (seg_t*) hEdge->data;
+        seg_t*              seg = (seg_t*) hEdge->data,
+                           *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
         sidedef_t*          side = seg->sideDef;
         surface_t*          suf;
         vec3_t              origin;
         float               x, y, bottom, top;
         float               scale = NORM_TAIL_LENGTH;
 
-        if(!seg->lineDef || !seg->SG_frontsector)
+        if(!seg->lineDef || !seg->sector)
             continue;
 
         x = hEdge->HE_v1pos[VX] + (hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX]) / 2;
         y = hEdge->HE_v1pos[VY] + (hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]) / 2;
 
-        if(!seg->SG_backsector)
+        if(!backSeg)
         {
             bottom = side->sector->SP_floorvisheight;
             top = side->sector->SP_ceilvisheight;
@@ -3520,34 +3527,34 @@ void Rend_RenderNormals(void)
         {
             if(side->SW_middlesurface.material)
             {
-                top = seg->SG_frontsector->SP_ceilvisheight;
-                bottom = seg->SG_frontsector->SP_floorvisheight;
+                top = seg->sector->SP_ceilvisheight;
+                bottom = seg->sector->SP_floorvisheight;
                 suf = &side->SW_middlesurface;
 
                 V3_Set(origin, x, y, bottom + (top - bottom) / 2);
                 drawNormal(origin, suf->normal, scale);
             }
 
-            if(seg->SG_backsector->SP_ceilvisheight <
-               seg->SG_frontsector->SP_ceilvisheight &&
-               !(IS_SKYSURFACE(&seg->SG_frontsector->SP_ceilsurface) &&
-                 IS_SKYSURFACE(&seg->SG_backsector->SP_ceilsurface)))
+            if(backSeg->sector->SP_ceilvisheight <
+               seg->sector->SP_ceilvisheight &&
+               !(IS_SKYSURFACE(&seg->sector->SP_ceilsurface) &&
+                 IS_SKYSURFACE(&backSeg->sector->SP_ceilsurface)))
             {
-                bottom = seg->SG_backsector->SP_ceilvisheight;
-                top = seg->SG_frontsector->SP_ceilvisheight;
+                bottom = backSeg->sector->SP_ceilvisheight;
+                top = seg->sector->SP_ceilvisheight;
                 suf = &side->SW_topsurface;
 
                 V3_Set(origin, x, y, bottom + (top - bottom) / 2);
                 drawNormal(origin, suf->normal, scale);
             }
 
-            if(seg->SG_backsector->SP_floorvisheight >
-               seg->SG_frontsector->SP_floorvisheight &&
-               !(IS_SKYSURFACE(&seg->SG_frontsector->SP_floorsurface) &&
-                 IS_SKYSURFACE(&seg->SG_backsector->SP_floorsurface)))
+            if(backSeg->sector->SP_floorvisheight >
+               seg->sector->SP_floorvisheight &&
+               !(IS_SKYSURFACE(&seg->sector->SP_floorsurface) &&
+                 IS_SKYSURFACE(&backSeg->sector->SP_floorsurface)))
             {
-                bottom = seg->SG_frontsector->SP_floorvisheight;
-                top = seg->SG_backsector->SP_floorvisheight;
+                bottom = seg->sector->SP_floorvisheight;
+                top = backSeg->sector->SP_floorvisheight;
                 suf = &side->SW_bottomsurface;
 
                 V3_Set(origin, x, y, bottom + (top - bottom) / 2);

@@ -77,10 +77,6 @@ internal
 #define HE_v2                   HE_v(1)
 #define HE_v2pos                HE_v(1)->V_pos
 
-#define SG_sector(n)            sec[(n)]
-#define SG_frontsector          SG_sector(FRONT)
-#define SG_backsector           SG_sector(BACK)
-
 // Seg frame flags
 #define SEGINF_FACINGFRONT      0x0001
 #define SEGINF_BACKSECSKYFIX    0x0002
@@ -101,7 +97,7 @@ internal
 typedef struct seg_s {
     struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
-    struct sector_s* sec[2];
+    struct sector_s* sector;
     angle_t     angle;
     byte        side; // 0=front, 1=back
     float       length; // Accurate length of the segment (v1 -> v2).
