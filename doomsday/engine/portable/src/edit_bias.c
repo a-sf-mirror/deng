@@ -782,12 +782,12 @@ boolean SBE_UsingHueCircle(void)
 
 void SBE_DrawHUD(void)
 {
-#define INFOBOX_X(x)    (theWindow->width  - 10 - w - (x))
-#define INFOBOX_Y(y)    (theWindow->height - 10 - h - (y))
+#define INFOBOX_X(x)    (theWindow->width  - 10 - boxWidth - (x))
+#define INFOBOX_Y(y)    (theWindow->height - 10 - boxHeight - (y))
 
 #define DRAW_INFOBOX(x, y, title, rgb, textAlpha, src) drawInfoBox((x), (y), (title), (rgb), (textAlpha), SB_ToIndex(map, (src)), (src)->pos, (src)->color, (src)->primaryIntensity, (src)->sectorLevel, ((src)->flags & BLF_LOCKED)? true : false);
 
-    int                 w, h, y;
+    int                 w, h, y, boxWidth, boxHeight;
     char                buf[80];
     float               textAlpha = .8f;
     gamemap_t*          map;
@@ -821,6 +821,8 @@ void SBE_DrawHUD(void)
                  UI_Color(UIC_TITLE), textAlpha);
 
     // Stats for nearest & grabbed:
+    boxWidth = 16 + FR_TextWidth("R:0.000 G:0.000 B:0.000");
+    boxHeight = FR_TextHeight("a") * 6 + 16;
     if(nearest)
     {
         DRAW_INFOBOX(INFOBOX_X(0), INFOBOX_Y(0),
@@ -830,7 +832,7 @@ void SBE_DrawHUD(void)
 
     if(grabbed)
     {
-        DRAW_INFOBOX(INFOBOX_X(FR_TextWidth("0") * 26), INFOBOX_Y(0),
+        DRAW_INFOBOX(INFOBOX_X(boxWidth + FR_TextWidth("0")), INFOBOX_Y(0),
                      "Grabbed", grabbed->color, textAlpha, grabbed)
     }
 

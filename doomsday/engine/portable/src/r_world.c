@@ -591,6 +591,30 @@ void R_CreateBiasSurfacesForPlanesInSubsector(face_t* face)
     }
 }
 
+void R_DestroyBiasSurfacesForPlanesInSubsector(face_t* face)
+{
+    subsector_t*        ssec = (subsector_t*) face->data;
+
+    if(ssec->sector && ssec->bsuf)
+    {
+        uint                i;
+        gamemap_t*          map = P_GetCurrentMap();
+
+        for(i = 0; i < ssec->sector->planeCount; ++i)
+        {
+            biassurface_t*      bsuf = ssec->bsuf[i];
+
+            if(bsuf->illum)
+                Z_Free(bsuf->illum);
+
+            SB_DestroySurface(map, bsuf);
+        }
+
+        Z_Free(ssec->bsuf);
+    }
+    ssec->bsuf = NULL;
+}
+
 /**
  * Allocate bias surfaces and attach vertexillums for all renderable surfaces
  * in the specified subsector. If already present, this is a null-op.
@@ -718,23 +742,7 @@ if(sec->planeCount >= 2)
     face_t**            facePtr = sec->faces;
     while(*facePtr)
     {
-        subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
-
-        if(ssec->bsuf)
-        {
-            uint                i;
-
-            for(i = 0; i < sec->planeCount; ++i)
-            {
-                biassurface_t*      bsuf = ssec->bsuf[i];
-
-                Z_Free(bsuf->illum);
-                SB_DestroySurface(map, bsuf);
-            }
-
-            Z_Free(ssec->bsuf);
-        }
-        ssec->bsuf = NULL;
+        R_DestroyBiasSurfacesForPlanesInSubsector(*facePtr);
 
         *facePtr++;
     }
@@ -754,7 +762,6 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
 {
     uint                i;
     plane_t*            plane, **newList = NULL;
-    face_t**            facePtr;
     gamemap_t*          map = P_GetCurrentMap();
 
     if(!sec)
@@ -795,16 +802,18 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     P_IterateThinkers(R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                       RIT_StopMatFader, &plane->surface);
 
-    // Destroy the biassurfaces for this plane.
-    facePtr = sec->faces;
+    /**
+     * Destroy biassurfaces for planes in all sector subsectors if present
+     * (they will be created if needed when next drawn).
+     */
+    {
+    face_t**            facePtr = sec->faces;
     while(*facePtr)
     {
-        subsector_t*        ssec = (subsector_t*) (*facePtr)->data;
+        R_DestroyBiasSurfacesForPlanesInSubsector(*facePtr);
 
-        SB_DestroySurface(map, ssec->bsuf[id]);
-        if(id < sec->planeCount)
-            memmove(ssec->bsuf + id, ssec->bsuf + id + 1, sizeof(biassurface_t*));
         *facePtr++;
+    }
     }
 
     // Destroy the specified plane.

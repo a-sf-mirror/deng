@@ -32,7 +32,6 @@
 typedef struct poseg_s {
     struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
-    struct sector_s* frontSector;
     biassurface_t* bsuf;
 } poseg_t;
 

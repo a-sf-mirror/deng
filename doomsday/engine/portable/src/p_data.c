@@ -113,13 +113,14 @@ void P_PolyobjChanged(polyobj_t* po)
     uint                i;
     gamemap_t*          map = P_GetCurrentMap();
 
+    // Shadow bias must be told.
     for(i = 0; i < po->numSegs; ++i)
     {
         linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
         poseg_t*            seg = &po->segs[i];
 
-        // Shadow bias must be told.
-        SB_SurfaceMoved(map, seg->bsuf);
+        if(seg->bsuf)
+            SB_SurfaceMoved(map, seg->bsuf);
     }
 }
 

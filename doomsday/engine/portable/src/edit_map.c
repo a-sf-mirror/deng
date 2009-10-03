@@ -1428,7 +1428,7 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
         // Temporary: Create a seg for each line of this polyobj.
         destP->numSegs = srcP->numLineDefs;
-        destP->segs = Z_Malloc(sizeof(poseg_t) * (destP->numSegs+1), PU_MAP, 0);
+        destP->segs = Z_Calloc(sizeof(poseg_t) * (destP->numSegs+1), PU_MAP, 0);
 
         for(j = 0; j < destP->numSegs; ++j)
         {
@@ -1439,8 +1439,6 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
             seg->lineDef = line;
             seg->sideDef = &dest->sideDefs[line->buildData.sideDefs[FRONT]->buildData.index - 1];
-            seg->frontSector =
-                &dest->sectors[line->buildData.sideDefs[FRONT]->sector->buildData.index - 1];
         }
 
         // Add this polyobj to the global list.

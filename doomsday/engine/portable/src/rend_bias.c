@@ -158,9 +158,6 @@ static void destroySurface(gamemap_t* map, biassurface_t* bsuf)
     // Unlink this surface from map's surface list.
     unlinkSurfaceFromList(&map->bias.surfaces, bsuf);
 
-    if(bsuf->illum)
-        Z_Free(bsuf->illum);
-
     freeBiasSurface(bsuf);
 }
 

@@ -2489,7 +2489,7 @@ static boolean Rend_RenderPolyobjSeg(face_t* face, poseg_t* seg)
     int                 pid = viewPlayer - ddPlayers;
     subsector_t*        ssec = (subsector_t*) face->data;
     linedef_t*          ldef = seg->lineDef;
-    sidedef_t*          side = seg->sideDef;
+    sidedef_t*          side = LINE_FRONTSIDE(ldef);
 
     if(!ldef->mapped[pid])
     {
@@ -3501,8 +3501,7 @@ void Rend_RenderNormals(void)
         float               x, y, bottom, top;
         float               scale = NORM_TAIL_LENGTH;
 
-        if(!seg->lineDef || !seg->SG_frontsector ||
-           (seg->lineDef->inFlags & LF_POLYOBJ))
+        if(!seg->lineDef || !seg->SG_frontsector)
             continue;
 
         x = hEdge->HE_v1pos[VX] + (hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX]) / 2;
