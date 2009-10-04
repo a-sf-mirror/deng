@@ -2501,12 +2501,12 @@ static boolean findBottomTop(segsection_t section, float segOffset,
             *bottom = bceil->visHeight;
         if(*top > *bottom)
         {
-            texOffset[VX] = suf->visOffset[VX] + segOffset;
-            texOffset[VY] = suf->visOffset[VY];
+            texOffset[0] = suf->visOffset[0] + segOffset;
+            texOffset[1] = suf->visOffset[1];
 
             // Align with normal middle texture?
             if(!unpegTop)
-                texOffset[VY] += -(fceil->visHeight - bceil->visHeight);
+                texOffset[1] += -(fceil->visHeight - bceil->visHeight);
 
             return true;
         }
@@ -2528,15 +2528,15 @@ static boolean findBottomTop(segsection_t section, float segOffset,
 
         if(*top > *bottom)
         {
-            texOffset[VX] = suf->visOffset[VX] + segOffset;
-            texOffset[VY] = suf->visOffset[VY];
+            texOffset[0] = suf->visOffset[0] + segOffset;
+            texOffset[1] = suf->visOffset[1];
 
             if(bfloor->visHeight > fceil->visHeight)
-                texOffset[VY] += bfloor->visHeight - bceil->visHeight;
+                texOffset[1] += bfloor->visHeight - bceil->visHeight;
 
             // Align with normal middle texture?
             if(unpegBottom)
-                texOffset[VY] += (fceil->visHeight - bfloor->visHeight);
+                texOffset[1] += (fceil->visHeight - bfloor->visHeight);
 
             return true;
         }
@@ -2544,57 +2544,78 @@ static boolean findBottomTop(segsection_t section, float segOffset,
         }
     case SEG_MIDDLE:
         {
-        float               ftop, fbottom, vR_ZBottom, vR_ZTop;
-        material_t*         mat = suf->material->current;
+        const material_t*   mat = suf->material->current;
+        float               openBottom, openTop,
+                            polyBottom, polyTop, xOffset, yOffset;
+        boolean             visible = false;
+        boolean             clipTop =
+            !(IS_SKYSURFACE(&fceil->surface) &&
+              IS_SKYSURFACE(&bceil->surface));
+        boolean             clipBottom =
+            !(IS_SKYSURFACE(&ffloor->surface) &&
+              IS_SKYSURFACE(&bfloor->surface));
 
         if(isSelfRef)
         {
-            fbottom = MIN_OF(bfloor->visHeight, ffloor->visHeight);
-            ftop    = MAX_OF(bceil->visHeight, fceil->visHeight);
+            openBottom = ffloor->visHeight;
+            openTop = fceil->visHeight;
         }
         else
         {
-            fbottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-            ftop    = MIN_OF(bceil->visHeight, fceil->visHeight);
+            openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
+            openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
         }
 
-        fbottom += suf->visOffset[2];
-        ftop    += suf->visOffset[2];
-
-        *bottom = vR_ZBottom = fbottom;
-        *top    = vR_ZTop    = ftop;
+        xOffset = suf->visOffset[0] + segOffset;
+        yOffset = 0;
 
         if(stretchMiddle)
         {
-            if(*top > *bottom)
-            {
-                texOffset[VX] = suf->visOffset[VX] + segOffset;
-                texOffset[VY] = 0;
-
-                return true;
-            }
+            polyTop = openTop;
+            polyBottom = openBottom;
+            yOffset += suf->visOffset[1];
+            visible = true;
         }
         else
         {
-            boolean             clipBottom =
-                !(IS_SKYSURFACE(&ffloor->surface) &&
-                  IS_SKYSURFACE(&bfloor->surface));
-            boolean             clipTop =
-                !(IS_SKYSURFACE(&fceil->surface) &&
-                  IS_SKYSURFACE(&bceil->surface));
-
-            if(Rend_MidMaterialPos(bottom, &vR_ZBottom, top, &vR_ZTop,
-                    NULL, suf->visOffset[VY], mat->height, unpegBottom,
-                    clipTop, clipBottom))
+            if(unpegBottom)
             {
-                texOffset[VX] = suf->visOffset[VX] + segOffset;
-                texOffset[VY] = 0;
+                polyTop = openBottom + mat->height + suf->visOffset[1];
+                polyBottom = polyTop - mat->height;
+            }
+            else
+            {
+                polyTop = openTop + suf->visOffset[1];
+                polyBottom = polyTop - mat->height;
+            }
 
-                return true;
+            if(clipTop && polyTop > openTop)
+            {
+                yOffset += polyTop - openTop;
+                polyTop = openTop;
+            }
+
+            if(clipBottom && polyBottom < openBottom)
+            {
+                polyBottom = openBottom;
+            }
+
+            if(polyTop + yOffset - mat->height < openTop)
+            {
+                visible = true;
             }
         }
+
+        if(visible)
+        {
+            *bottom = polyBottom;
+            *top = polyTop;
+            texOffset[0] = xOffset;
+            texOffset[1] = yOffset;
+            return true;
         }
         break;
+        }
     }
 
     return false;
@@ -2636,10 +2657,20 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
        !frontSide->SW_middlematerial)
        return false; // Ugh... an obvious wall seg hack. Best take no chances...
 
-    ffloor = ssec->sector->SP_plane(PLN_FLOOR);
-    fceil  = ssec->sector->SP_plane(PLN_CEILING);
-    bfloor = backSSec->sector->SP_plane(PLN_FLOOR);
-    bceil  = backSSec->sector->SP_plane(PLN_CEILING);
+    if(!LINE_SELFREF(line))
+    {
+        ffloor = ssec->sector->SP_plane(PLN_FLOOR);
+        fceil  = ssec->sector->SP_plane(PLN_CEILING);
+        bfloor = backSSec->sector->SP_plane(PLN_FLOOR);
+        bceil  = backSSec->sector->SP_plane(PLN_CEILING);
+    }
+    else
+    {
+        ffloor = frontSide->sector->SP_plane(PLN_FLOOR);
+        fceil  = frontSide->sector->SP_plane(PLN_CEILING);
+        bfloor = backSide->sector->SP_plane(PLN_FLOOR);
+        bceil  = backSide->sector->SP_plane(PLN_CEILING);
+    }
 
     if((frontSide->SW_middleinflags & SUIF_PVIS) ||
        (frontSide->SW_topinflags & SUIF_PVIS) ||
@@ -2682,8 +2713,8 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
 
                 if(LINE_SELFREF(line))
                 {
-                    xbottom = MIN_OF(bfloor->visHeight, ffloor->visHeight);
-                    xtop    = MAX_OF(bceil->visHeight, fceil->visHeight);
+                    xbottom = bfloor->visHeight;
+                    xtop    = fceil->visHeight;
                 }
                 else
                 {
@@ -2691,8 +2722,8 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                     xtop    = MIN_OF(bceil->visHeight, fceil->visHeight);
                 }
 
-                xbottom += suf->visOffset[2];
-                xtop    += suf->visOffset[2];
+                xbottom += suf->visOffset[1];
+                xtop    += suf->visOffset[1];
 
                 // Can we make this a solid segment?
                 if(!(top >= xtop && bottom <= xbottom))
