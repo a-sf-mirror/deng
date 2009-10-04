@@ -290,8 +290,7 @@ static boolean calcSSecReverb(face_t* face)
             hedge_t*            hEdge = ptr;
             seg_t*              seg = (seg_t*) (ptr)->data;
 
-            if(seg->lineDef && seg->sideDef &&
-               seg->sideDef->SW_middlematerial)
+            if(seg->sideDef && seg->sideDef->SW_middlematerial)
             {
                 material_t*         mat = seg->sideDef->SW_middlematerial;
 

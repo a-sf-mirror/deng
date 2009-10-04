@@ -59,19 +59,24 @@
  * \todo This is unnecessary if we ensure the first and last back ptrs in
  * linedef_t are updated after a half-edge split.
  */
-static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
-                                 const hedge_t* hEdge)
+static void hardenLinedefSegList(gamemap_t* map, hedge_t* dst,
+                                 const hedge_t* src)
 {
     const hedge_t*      first, *last;
-    linedef_t*          li = ((seg_t*) seg->data)->lineDef;
-    byte                side = ((seg_t*) seg->data)->side;
+    seg_t*              seg = (seg_t*) dst->data;
+    linedef_t*          lineDef;
+
+    if(!seg->sideDef)
+        return;
+
+    lineDef = seg->sideDef->lineDef;
 
     // Have we already processed this linedef?
-    if(li->hEdges[0])
+    if(lineDef->hEdges[0])
         return;
 
     // Find the first hedge for this side.
-    first = (side? hEdge->twin : hEdge);
+    first = (seg->side? src->twin : src);
 
     while(((bsp_hedgeinfo_t*)first->data)->lprev)
         first = ((bsp_hedgeinfo_t*) first->data)->lprev;
@@ -81,9 +86,8 @@ static void hardenLinedefSegList(gamemap_t* map, hedge_t* seg,
     while(((bsp_hedgeinfo_t*)last->data)->lnext)
         last = ((bsp_hedgeinfo_t*)last->data)->lnext;
 
-    li = ((seg_t*) seg->data)->lineDef;
-    li->hEdges[0] = &map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
-    li->hEdges[1] = &map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
+    lineDef->hEdges[0] = &map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
+    lineDef->hEdges[1] = &map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
 }
 
 static int C_DECL hEdgeCompare(const void* p1, const void* p2)
@@ -194,20 +198,20 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         hedge_t*            dst = &map->hEdges[i];
         seg_t*              seg = (seg_t* ) dst->data;
         const hedge_t*      hEdge = index[i];
-        const bsp_hedgeinfo_t*   data = (bsp_hedgeinfo_t*) hEdge->data;
+        const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
 
         seg->side  = data->side;
+        seg->sideDef = NULL;
         if(data->lineDef)
         {
-            seg->lineDef = &map->lineDefs[data->lineDef->buildData.index - 1];
             if(data->lineDef->buildData.sideDefs[seg->side])
                 seg->sideDef = &map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
         }
 
-        if(seg->lineDef)
+        if(seg->sideDef)
         {
-            linedef_t*          ldef = seg->lineDef;
-            vertex_t*           vtx = seg->lineDef->buildData.v[seg->side];
+            linedef_t*          ldef = seg->sideDef->lineDef;
+            vertex_t*           vtx = ldef->buildData.v[seg->side];
 
             /*if(seg->sideDef)
             {
@@ -221,14 +225,9 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
             seg->offset = P_AccurateDistance(dst->HE_v1pos[VX] - vtx->V_pos[VX],
                                              dst->HE_v1pos[VY] - vtx->V_pos[VY]);
-        }
-        else
-        {
-            seg->lineDef = NULL;
-        }
 
-        if(seg->lineDef)
             hardenLinedefSegList(map, dst, hEdge);
+        }
 
         seg->angle =
             bamsAtan2((int) (dst->HE_v2pos[VY] - dst->HE_v1pos[VY]),
@@ -244,18 +243,17 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
         // Calculate the surface normals
         // Front first
-        if(seg->lineDef && seg->sideDef)
+        if(seg->sideDef)
         {
-            sidedef_t*          side = seg->sideDef;
-            surface_t*          surface = &side->SW_topsurface;
+            surface_t*          surface = &seg->sideDef->SW_topsurface;
 
             surface->normal[VY] = (dst->HE_v1pos[VX] - dst->HE_v2pos[VX]) / seg->length;
             surface->normal[VX] = (dst->HE_v2pos[VY] - dst->HE_v1pos[VY]) / seg->length;
             surface->normal[VZ] = 0;
 
             // All surfaces of a sidedef have the same normal.
-            memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
-            memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+            memcpy(seg->sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
+            memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
         }
     }
 

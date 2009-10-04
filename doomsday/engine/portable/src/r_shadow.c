@@ -282,15 +282,15 @@ void R_InitSectorShadows(void)
         sidedef_t*          side = SIDE_PTR(i);
         byte                sid;
 
-        if(!R_IsShadowingLinedef(side->line))
+        if(!R_IsShadowingLinedef(side->lineDef))
             continue;
 
-        sid = LINE_BACKSIDE(side->line) == side? BACK : FRONT;
+        sid = LINE_BACKSIDE(side->lineDef) == side? BACK : FRONT;
 
-        vtx0 = side->line->L_v(sid);
-        vtx1 = side->line->L_v(sid^1);
-        vo0 = side->line->L_vo(sid)->LO_next;
-        vo1 = side->line->L_vo(sid^1)->LO_prev;
+        vtx0 = side->lineDef->L_v(sid);
+        vtx1 = side->lineDef->L_v(sid^1);
+        vo0 = side->lineDef->L_vo(sid)->LO_next;
+        vo1 = side->lineDef->L_vo(sid^1)->LO_prev;
 
         // Use the extended points, they are wider than inoffsets.
         V2_Set(point, vtx0->V_pos[VX], vtx0->V_pos[VY]);
@@ -305,7 +305,7 @@ void R_InitSectorShadows(void)
         V2_Sum(point, point, vo1->shadowOffsets.extended);
         V2_AddToBox(bounds, point);
 
-        data.lineDef = side->line;
+        data.lineDef = side->lineDef;
         data.side = sid;
 
         P_SubsectorsBoxIteratorv(bounds, side->sector,

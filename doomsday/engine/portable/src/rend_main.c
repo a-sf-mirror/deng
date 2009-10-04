@@ -462,87 +462,82 @@ boolean Rend_DoesMidTextureFillGap(linedef_t *line, int backside)
     return false;
 }
 
-static void markSideSectionsPVisible(const linedef_t* line, byte sid)
+static void markSideSectionsPVisible(sidedef_t* sideDef)
 {
     byte                j;
-    sidedef_t*          side;
-
-    if(!(side = LINE_SIDE(line, sid)))
-        return;
+    byte                side =
+        (sideDef == LINE_FRONTSIDE(sideDef->lineDef) ? FRONT : BACK);
+    linedef_t*          line = sideDef->lineDef;
 
     for(j = 0; j < 3; ++j)
-        side->sections[j].inFlags |= SUIF_PVIS;
+        sideDef->sections[j].inFlags |= SUIF_PVIS;
 
     // Top
     if(!LINE_BACKSIDE(line))
     {
-        side->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
-        side->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
+        sideDef->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
+        sideDef->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
     }
     else
     {
-        // Check middle texture
-        if((!side->SW_middlematerial ||
-            (side->SW_middlematerial->flags & MATF_NO_DRAW)) ||
-            side->SW_middlergba[3] <= 0) // Check alpha
-            side->sections[SEG_MIDDLE].inFlags &= ~SUIF_PVIS;
+        sector_t*           frontSec = LINE_FRONTSECTOR(line),
+                           *backSec  = LINE_BACKSECTOR(line);
 
-        if(IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_ceilsurface) &&
-           IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_ceilsurface))
-           side->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
+        // Check middle texture
+        if((!sideDef->SW_middlematerial ||
+            (sideDef->SW_middlematerial->flags & MATF_NO_DRAW)) ||
+            sideDef->SW_middlergba[3] <= 0) // Check alpha
+            sideDef->sections[SEG_MIDDLE].inFlags &= ~SUIF_PVIS;
+
+        if(IS_SKYSURFACE(&backSec->SP_ceilsurface) &&
+           IS_SKYSURFACE(&frontSec->SP_ceilsurface))
+           sideDef->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
         else
         {
-            if(sid != 0)
+            if(side == BACK)
             {
-                if(LINE_BACKSECTOR(line)->SP_ceilvisheight <=
-                   LINE_FRONTSECTOR(line)->SP_ceilvisheight)
-                    side->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
+                if(backSec->SP_ceilvisheight <=
+                   frontSec->SP_ceilvisheight)
+                    sideDef->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
             }
             else
             {
-                if(LINE_FRONTSECTOR(line)->SP_ceilvisheight <=
-                   LINE_BACKSECTOR(line)->SP_ceilvisheight)
-                    side->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
+                if(frontSec->SP_ceilvisheight <=
+                   backSec->SP_ceilvisheight)
+                    sideDef->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
             }
         }
 
         // Bottom
-        if(IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_floorsurface) &&
-           IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_floorsurface))
-           side->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
+        if(IS_SKYSURFACE(&backSec->SP_floorsurface) &&
+           IS_SKYSURFACE(&frontSec->SP_floorsurface))
+           sideDef->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
         else
         {
-            if(sid != 0)
+            if(side == BACK)
             {
-                if(LINE_BACKSECTOR(line)->SP_floorvisheight >=
-                   LINE_FRONTSECTOR(line)->SP_floorvisheight)
-                    side->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
+                if(backSec->SP_floorvisheight >=
+                   frontSec->SP_floorvisheight)
+                    sideDef->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
             }
             else
             {
-                if(LINE_FRONTSECTOR(line)->SP_floorvisheight >=
-                   LINE_BACKSECTOR(line)->SP_floorvisheight)
-                    side->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
+                if(frontSec->SP_floorvisheight >=
+                   backSec->SP_floorvisheight)
+                    sideDef->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
             }
         }
     }
 }
 
-static void Rend_MarkSegSectionsPVisible(hedge_t* hEdge)
+static void markSegSectionsPVisible(hedge_t* hEdge)
 {
-    seg_t*              seg;
+    seg_t*              seg = ((seg_t*) hEdge->data);
 
-    if(!hEdge || !((seg_t*) hEdge->data)->lineDef)
-        return; // huh?
+    if(!seg->sideDef)
+        return;
 
-    seg = ((seg_t*) hEdge->data);
-    markSideSectionsPVisible(seg->lineDef, seg->side);
-
-    if(hEdge->twin)
-    {
-        seg = ((seg_t*) hEdge->twin->data);
-        markSideSectionsPVisible(seg->lineDef, seg->side);
-    }
+    markSideSectionsPVisible(seg->sideDef);
 }
 
 static boolean testForPlaneDivision(walldiv_t* wdiv, plane_t* pln,
@@ -580,11 +575,8 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
         return; // Obviously no division.
 
     // Retrieve the start owner node.
-    {
-    const seg_t*        seg = ((seg_t*) hEdge->data);
-    base = own = R_GetVtxLineOwner(seg->lineDef->L_v(seg->side^doRight),
-                                   seg->lineDef);
-    }
+    base = own = R_GetVtxLineOwner(hEdge->HE_v(doRight),
+                                   ((seg_t*) hEdge->data)->sideDef->lineDef);
 
     /**
      * We need to handle the special case of a sector with zero volume.
@@ -680,8 +672,8 @@ static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
         return;
 
     // Only segs at sidedef ends can/should be split.
-    if(!((hEdge == side->line->hEdges[seg->side? 1 : 0] && !doRight) ||
-         (hEdge == side->line->hEdges[!seg->side? 1 : 0] && doRight)))
+    if(!((hEdge == side->lineDef->hEdges[seg->side? 1 : 0] && !doRight) ||
+         (hEdge == side->lineDef->hEdges[!seg->side? 1 : 0] && doRight)))
         return;
 
     doFindSegDivisions(div, hEdge, frontSec, bottomZ, topZ, doRight);
@@ -697,7 +689,7 @@ static void applyWallHeightDivision(walldiv_t* wdivs, const hedge_t* hEdge,
     uint                i;
     walldiv_t*          wdiv;
 
-    if(!((seg_t*) hEdge->data)->lineDef)
+    if(!((seg_t*) hEdge->data)->sideDef)
         return; // Mini-segs arn't drawn.
 
     for(i = 0; i < 2; ++i)
@@ -797,12 +789,12 @@ static void selectSurfaceColors(const float** topColor,
     switch(section)
     {
     case SEG_MIDDLE:
-        if(side->flags & SDF_BLENDMIDTOTOP)
+        if(side->flags & SDF_BLEND_MIDTOTOP)
         {
             *topColor = side->SW_toprgba;
             *bottomColor = side->SW_middlergba;
         }
-        else if(side->flags & SDF_BLENDMIDTOBOTTOM)
+        else if(side->flags & SDF_BLEND_MIDTOBOTTOM)
         {
             *topColor = side->SW_middlergba;
             *bottomColor = side->SW_bottomrgba;
@@ -815,7 +807,7 @@ static void selectSurfaceColors(const float** topColor,
         break;
 
     case SEG_TOP:
-        if(side->flags & SDF_BLENDTOPTOMID)
+        if(side->flags & SDF_BLEND_TOPTOMID)
         {
             *topColor = side->SW_toprgba;
             *bottomColor = side->SW_middlergba;
@@ -829,7 +821,7 @@ static void selectSurfaceColors(const float** topColor,
 
     case SEG_BOTTOM:
         // Select the correct colors for this surface.
-        if(side->flags & SDF_BLENDBOTTOMTOMID)
+        if(side->flags & SDF_BLEND_BOTTOMTOMID)
         {
             *topColor = side->SW_middlergba;
             *bottomColor = side->SW_bottomrgba;
@@ -2414,28 +2406,17 @@ static boolean rendSegSection(face_t* ssec, void* dummy, linedef_t* lineDef,
 static boolean Rend_RenderSSWallSeg(hedge_t* hEdge, fvertex_t* from,
                                     fvertex_t* to)
 {
-    int                 pid;
-    float               ffloor, fceil;
-    subsector_t*        ssec;
-    sector_t*           frontsec;
-    boolean             backSide, solidSeg = true;
+    boolean             solidSeg = true;
     seg_t*              seg = (seg_t*) hEdge->data;
-    sidedef_t*          side = seg->sideDef;
-    linedef_t*          ldef;
+    sidedef_t*          sideDef = seg->sideDef;
+    linedef_t*          ldef = seg->sideDef->lineDef;
+    subsector_t*        ssec = (subsector_t*) hEdge->face->data;
+    sector_t*           frontsec = ssec->sector;
+    float               ffloor = ssec->sector->SP_floorvisheight,
+                        fceil = ssec->sector->SP_ceilvisheight;
 
-    if(!side)
-    {   // A one-way window.
-        return false;
-    }
-
-    ssec = (subsector_t*) hEdge->face->data;
-
-    solidSeg = true;
-    frontsec = ssec->sector;
-    backSide = seg->side;
-    ldef = seg->lineDef;
-
-    pid = viewPlayer - ddPlayers;
+    {
+    int                 pid = viewPlayer - ddPlayers;
     if(!ldef->mapped[pid])
     {
         ldef->mapped[pid] = true; // This line is now seen in the map.
@@ -2446,17 +2427,15 @@ static boolean Rend_RenderSSWallSeg(hedge_t* hEdge, fvertex_t* from,
                                            GET_LINE_IDX(ldef),
                                            DMU_LINEDEF, &pid);
     }
-
-    ffloor = ssec->sector->SP_floorvisheight;
-    fceil = ssec->sector->SP_ceilvisheight;
+    }
 
     // Create the wall sections.
 
     // Middle section.
-    if(side->SW_middleinflags & SUIF_PVIS)
+    if(sideDef->SW_middleinflags & SUIF_PVIS)
     {
         float               texOffset[2];
-        surface_t*          surface = &side->SW_middlesurface;
+        surface_t*          surface = &sideDef->SW_middlesurface;
 
         texOffset[0] = surface->visOffset[0] + seg->offset;
         texOffset[1] = surface->visOffset[1];
@@ -2464,16 +2443,16 @@ static boolean Rend_RenderSSWallSeg(hedge_t* hEdge, fvertex_t* from,
         if(ldef->flags & DDLF_DONTPEGBOTTOM)
             texOffset[1] += -(fceil - ffloor);
 
-        Rend_RadioUpdateLinedef(seg->lineDef, seg->side);
+        Rend_RadioUpdateLinedef(sideDef->lineDef, seg->side);
 
-        rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+        rendSegSection(hEdge->face, seg, sideDef->lineDef, sideDef, seg->side,
                        ((subsector_t*) hEdge->face->data)->sector,
                        hEdge->twin ? ((subsector_t*) hEdge->twin->face->data)->sector : NULL,
                        &seg->length, &seg->offset, SEG_MIDDLE,
-                       &side->SW_middlesurface,
+                       &sideDef->SW_middlesurface,
                        from, to, ffloor, fceil,
                        texOffset, /*temp >*/ frontsec, /*< temp*/
-                       false, true, side->flags, seg->bsuf[SEG_MIDDLE], hEdge);
+                       false, true, sideDef->flags, seg->bsuf[SEG_MIDDLE], hEdge);
     }
 
     if(P_IsInVoid(viewPlayer))
@@ -2655,26 +2634,18 @@ static boolean findBottomTop(segsection_t section, float segOffset,
 static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                                   fvertex_t* to)
 {
-    int                 pid = viewPlayer - ddPlayers;
-    float               bottom, top, texOffset[2];
-    sector_t*           frontSec, *backSec;
-    sidedef_t*          frontSide, *backSide;
-    plane_t*            ffloor, *fceil, *bfloor, *bceil;
-    linedef_t*          line;
     int                 solidSeg = false;
     subsector_t*        ssec = (subsector_t*) hEdge->face->data;
     seg_t*              seg = (seg_t*) hEdge->data,
                        *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
+    sidedef_t*          frontSide = seg->sideDef,
+                       *backSide = backSeg->sideDef;
+    linedef_t*          line = seg->sideDef->lineDef;
+    float               bottom, top, texOffset[2];
+    plane_t*            ffloor, *fceil, *bfloor, *bceil;
 
-    if(!seg->sideDef)
-        return false;
-
-    frontSide = seg->sideDef;
-    backSide = backSeg->sideDef;
-    frontSec = frontSide->sector;
-    backSec = backSide->sector;
-    line = seg->lineDef;
-
+    {
+    int                 pid = viewPlayer - ddPlayers;
     if(!line->mapped[pid])
     {
         line->mapped[pid] = true; // This line is now seen in the map.
@@ -2685,21 +2656,22 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                                            GET_LINE_IDX(line),
                                            DMU_LINEDEF, &pid);
     }
+    }
 
-    if(backSec == frontSec &&
+    if(frontSide->sector == backSide->sector &&
        !frontSide->SW_topmaterial && !frontSide->SW_bottommaterial &&
        !frontSide->SW_middlematerial)
        return false; // Ugh... an obvious wall seg hack. Best take no chances...
 
     ffloor = ssec->sector->SP_plane(PLN_FLOOR);
     fceil  = ssec->sector->SP_plane(PLN_CEILING);
-    bfloor = backSec->SP_plane(PLN_FLOOR);
-    bceil  = backSec->SP_plane(PLN_CEILING);
+    bfloor = backSide->sector->SP_plane(PLN_FLOOR);
+    bceil  = backSide->sector->SP_plane(PLN_CEILING);
 
     if((frontSide->SW_middleinflags & SUIF_PVIS) ||
        (frontSide->SW_topinflags & SUIF_PVIS) ||
        (frontSide->SW_bottominflags & SUIF_PVIS))
-        Rend_RadioUpdateLinedef(seg->lineDef, seg->side);
+        Rend_RadioUpdateLinedef(line, seg->side);
 
     /**
      * Create the wall sections.
@@ -2721,12 +2693,12 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            solidSeg = rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+            solidSeg = rendSegSection(hEdge->face, seg, line, seg->sideDef, seg->side,
                                       ((subsector_t*) hEdge->face->data)->sector,
                                       ((subsector_t*) hEdge->twin->face->data)->sector,
                                       &seg->length, &seg->offset, SEG_MIDDLE,
                                       suf, from, to, bottom, top, texOffset,
-                                      frontSec,
+                                      frontSide->sector,
                                       (((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
                                         !(line->flags & DDLF_BLOCKING))? true : false),
                                       true, frontSide->flags,
@@ -2770,12 +2742,12 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+            rendSegSection(hEdge->face, seg, line, seg->sideDef, seg->side,
                            ((subsector_t*) hEdge->face->data)->sector,
                            ((subsector_t*) hEdge->twin->face->data)->sector,
                            &seg->length, &seg->offset, SEG_TOP, suf,
                            from, to, bottom, top,
-                           texOffset, frontSec, false, true,
+                           texOffset, frontSide->sector, false, true,
                            frontSide->flags, seg->bsuf[SEG_TOP], hEdge);
         }
     }
@@ -2793,12 +2765,12 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
                          LINE_SELFREF(line)? true : false,
                          &bottom, &top, texOffset))
         {
-            rendSegSection(hEdge->face, seg, seg->lineDef, seg->sideDef, seg->side,
+            rendSegSection(hEdge->face, seg, line, seg->sideDef, seg->side,
                            ((subsector_t*) hEdge->face->data)->sector,
                            ((subsector_t*) hEdge->twin->face->data)->sector,
                            &seg->length, &seg->offset, SEG_BOTTOM, suf,
                            from, to, bottom, top,
-                           texOffset, frontSec, false, true,
+                           texOffset, frontSide->sector, false, true,
                            frontSide->flags, seg->bsuf[SEG_BOTTOM], hEdge);
         }
     }
@@ -2812,7 +2784,7 @@ static boolean Rend_RenderWallSeg(hedge_t* hEdge, fvertex_t* from,
 
     if(!solidSeg) // We'll have to determine whether we can...
     {
-        if(backSec == frontSec)
+        if(backSide->sector == frontSide->sector)
         {
             // An obvious hack, what to do though??
         }
@@ -2849,7 +2821,7 @@ float Rend_SectorLight(sector_t* sec)
     return sec->lightLevel;
 }
 
-static void Rend_MarkSegsFacingFront(face_t* face)
+static void markSegsFacingFront(face_t* face)
 {
     hedge_t*            hEdge;
 
@@ -2859,8 +2831,7 @@ static void Rend_MarkSegsFacingFront(face_t* face)
         {
             seg_t*              seg = (seg_t*) hEdge->data;
 
-            // Occlusions can only happen where two sectors contact.
-            if(seg->lineDef)
+            if(seg->sideDef) // Not minisegs.
             {
                 seg->frameFlags &= ~SEGINF_BACKSECSKYFIX;
 
@@ -2870,7 +2841,7 @@ static void Rend_MarkSegsFacingFront(face_t* face)
                 else
                     seg->frameFlags &= ~SEGINF_FACINGFRONT;
 
-                Rend_MarkSegSectionsPVisible(hEdge);
+                markSegSectionsPVisible(hEdge);
             }
         } while((hEdge = hEdge->next) != face->hEdge);
     }
@@ -3109,7 +3080,7 @@ static void occludeSubsector(const face_t* face, boolean forwardFacing)
                                *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
 
             // Occlusions can only happen where two sectors contact.
-            if(seg->lineDef && backSeg &&
+            if(seg->sideDef && backSeg &&
                (forwardFacing == ((seg->frameFlags & SEGINF_FACINGFRONT)? true : false)))
             {
                 back = ((subsector_t*) hEdge->twin->face->data)->sector;
@@ -3203,7 +3174,7 @@ static void Rend_RenderSubsector(uint faceidx)
     // Retrieve the sector light color.
     sLightColor = R_GetSectorLightColor(sect);
 
-    Rend_MarkSegsFacingFront(face);
+    markSegsFacingFront(face);
 
     R_InitForSubsector(face);
 
@@ -3256,12 +3227,12 @@ static void Rend_RenderSubsector(uint faceidx)
         {
             seg_t*              seg = (seg_t*) hEdge->data;
 
-            if(seg->lineDef && // "minisegs" have no linedefs.
+            if(seg->sideDef && // "minisegs" have no sidedefs.
                (seg->frameFlags & SEGINF_FACINGFRONT))
             {
-                boolean             solid;
+                boolean             solid = false;
 
-                if(!hEdge->twin || !((seg_t*) hEdge->twin->data)->sideDef)
+                if(!hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef))
                     solid = Rend_RenderSSWallSeg(hEdge, &hEdge->HE_v1->v, &hEdge->HE_v2->v);
                 else
                     solid = Rend_RenderWallSeg(hEdge, &hEdge->HE_v1->v, &hEdge->HE_v2->v);
@@ -3510,7 +3481,7 @@ void Rend_RenderNormals(void)
         float               x, y, bottom, top;
         float               scale = NORM_TAIL_LENGTH;
 
-        if(!seg->lineDef || !((subsector_t*) hEdge->face->data)->sector)
+        if(!seg->sideDef || !((subsector_t*) hEdge->face->data)->sector)
             continue;
 
         x = hEdge->HE_v1pos[VX] + (hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX]) / 2;

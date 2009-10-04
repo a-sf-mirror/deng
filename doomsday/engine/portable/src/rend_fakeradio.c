@@ -1242,7 +1242,7 @@ void Rend_RadioSegSection(const rvertex_t* rvertices, const walldiv_t* wdivs,
 {
     float               lightLevel, shadowSize, shadowDark;
 
-    if(!rendFakeRadio || levelFullBright) // Disabled?
+    if(!rendFakeRadio || !renderTextures || levelFullBright) // Disabled?
         return;
 
     if(!rvertices || !params)

@@ -1286,9 +1286,9 @@ static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
 
         //// \todo We shouldn't still have lines with missing fronts but...
         if(srcL->buildData.sideDefs[FRONT])
-            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1].line = destL;
+            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1].lineDef = destL;
         if(srcL->buildData.sideDefs[BACK])
-            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1].line = destL;
+            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1].lineDef = destL;
 
         DMU_AddObjRecord(DMU_LINEDEF, destL);
     }
@@ -2102,13 +2102,13 @@ uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
     // Remember the number of unique references.
     if(front)
     {
-        front->line = l;
+        front->lineDef = l;
         front->buildData.refCount++;
     }
 
     if(back)
     {
-        back->line = l;
+        back->lineDef = l;
         back->buildData.refCount++;
     }
 

@@ -240,9 +240,9 @@ static boolean crossSSec(uint faceIdx, losdata_t* los)
         {
             const seg_t*        seg = (seg_t*) (hEdge)->data;
 
-            if(seg->lineDef && seg->lineDef->validCount != validCount)
+            if(seg->sideDef && seg->sideDef->lineDef->validCount != validCount)
             {
-                linedef_t*          li = seg->lineDef;
+                linedef_t*          li = seg->sideDef->lineDef;
 
                 li->validCount = validCount;
 

@@ -310,8 +310,8 @@ static void processSeg(hedge_t* hEdge, void* data)
     seg_t*              seg = (seg_t*) hEdge->data;
 
     // Seg must be between two different ssecs.
-    if(seg->lineDef &&
-       (!hEdge->twin || hEdge->face == hEdge->twin->face))
+    if(seg->sideDef &&
+       (!hEdge->twin || hEdge->face->data == hEdge->twin->face->data))
         return;
 
     // Which way does the spread go?
@@ -341,7 +341,7 @@ static void processSeg(hedge_t* hEdge, void* data)
     }
 
     // Can the spread happen?
-    if(seg->lineDef)
+    if(seg->sideDef)
     {
         if(dst->sector)
         {
@@ -356,7 +356,7 @@ static void processSeg(hedge_t* hEdge, void* data)
 
         // Don't spread if the middle material completely fills the gap between
         // floor and ceiling (direction is from dst to src).
-        if(Rend_DoesMidTextureFillGap(seg->lineDef,
+        if(Rend_DoesMidTextureFillGap(seg->sideDef->lineDef,
             dst == ((subsector_t*) hEdge->twin->face->data)? false : true))
             return;
     }
@@ -372,7 +372,7 @@ static void processSeg(hedge_t* hEdge, void* data)
                 (vtx->V_pos[VX] - params->objPos[VX]) * dy) / seg->length;
     }
 
-    if(seg->lineDef)
+    if(seg->sideDef)
     {
         if((src == ((subsector_t*) hEdge->face->data) && distance < 0) ||
            (src == ((subsector_t*) hEdge->twin->face->data) && distance > 0))

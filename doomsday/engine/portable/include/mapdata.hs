@@ -1,5 +1,5 @@
 # $Id$
-# Runtime map data defitions. Processed by the makedmt.py script.
+# Runtime map data definitions. Processed by the makedmt.py script.
 public
 // think_t is a function pointer to a routine to handle an actor
 typedef void    (*think_t) ();
@@ -95,7 +95,6 @@ end
 
 internal
 typedef struct seg_s {
-    struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
     angle_t     angle;
     byte        side; // 0=front, 1=back
@@ -459,7 +458,7 @@ end
 
 struct sidedef
     -       surface_t[3] sections
-    PTR     linedef_s*  line
+    PTR     linedef_s*  lineDef
     PTR     sector_s*   sector
     SHORT   short       flags
     -       sideradioconfig_t radioConfig

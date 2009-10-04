@@ -66,7 +66,6 @@ typedef struct vertex_s {
 #define SEGINF_BACKSECSKYFIX    0x0002
 
 typedef struct seg_s {
-    struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
     angle_t     angle;
     byte        side; // 0=front, 1=back
@@ -397,7 +396,7 @@ typedef struct {
 
 typedef struct sidedef_s {
     surface_t           sections[3];
-    struct linedef_s*   line;
+    struct linedef_s*   lineDef;
     struct sector_s*    sector;
     short               flags;
     sideradioconfig_t   radioConfig;

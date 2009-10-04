@@ -30,8 +30,8 @@
 #define DOOMSDAY_POLYOBJECT_H
 
 typedef struct poseg_s {
-    struct linedef_s* lineDef;
     struct sidedef_s* sideDef;
+    struct linedef_s* lineDef;
     biassurface_t* bsuf;
 } poseg_t;
 

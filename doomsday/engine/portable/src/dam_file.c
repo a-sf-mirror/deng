@@ -829,7 +829,7 @@ static void writeSeg(const gamemap_t* map, uint idx)
 
     writeFloat(s->length);
     writeFloat(s->offset);
-    writeLong(s->lineDef? ((s->lineDef - map->lineDefs) + 1) : 0);
+    writeLong(s->sideDef? ((s->sideDef - map->sideDefs) + 1) : 0);
     writeLong((long) s->angle);
     writeByte(s->side);
     }
@@ -856,7 +856,7 @@ static void readSeg(const gamemap_t* map, uint idx)
     s->length = readFloat();
     s->offset = readFloat();
     obIdx = readLong();
-    s->lineDef = (obIdx == 0? NULL : &map->lineDefs[(unsigned) obIdx - 1]);
+    s->sideDef = (obIdx == 0? NULL : &map->sideDefs[(unsigned) obIdx - 1]);
     s->angle = (angle_t) readLong();
     s->side = readByte();
     }

@@ -637,7 +637,7 @@ void R_CreateBiasSurfacesInSubsector(face_t* face)
         {
             seg_t*              seg = (seg_t*) hEdge->data;
 
-            if(seg->lineDef) // "minisegs" have no linedefs.
+            if(seg->sideDef) // "minisegs" have no sidedefs (or linedefs).
             {
                 if(!seg->bsuf[0])
                 {
@@ -1652,8 +1652,8 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
     // favouring non-animated materials.
     if(section == SEG_BOTTOM || section == SEG_TOP)
     {
-        byte                sid = (LINE_FRONTSIDE(s->line) == s? 0 : 1);
-        sector_t*           backSec = LINE_SECTOR(s->line, sid^1);
+        byte                sid = (LINE_FRONTSIDE(s->lineDef) == s? 0 : 1);
+        sector_t*           backSec = LINE_SECTOR(s->lineDef, sid^1);
 
         if(backSec)
         {
@@ -1814,7 +1814,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
                     {
                         seg_t*              seg = (seg_t*) hEdge->data;
 
-                        if(seg->lineDef)
+                        if(seg->sideDef)
                         {
                             for(i = 0; i < 3; ++i)
                                 SB_SurfaceMoved(map, seg->bsuf[i]);
