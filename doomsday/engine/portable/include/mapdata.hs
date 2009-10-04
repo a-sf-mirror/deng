@@ -103,6 +103,18 @@ typedef struct seg_s {
     biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
     short       frameFlags;
 } seg_t;
+
+#define HE_FRONTSIDEDEF(hEdge) (((seg_t*) (hEdge)->data)->sideDef)
+#define HE_BACKSIDEDEF(hEdge) ((hEdge)->twin ? ((seg_t*) (hEdge)->twin->data)->sideDef : NULL)
+
+#define HE_LINESIDE(hEdge) (((seg_t*) (hEdge)->data)->side)
+
+#define HE_FRONTSSECTOR(hEdge) ((subsector_t*) (hEdge)->face->data)
+#define HE_BACKSSECTOR(hEdge) ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data) : NULL)
+
+#define HE_FRONTSECTOR(hEdge) (HE_FRONTSSECTOR(hEdge)->sector)
+#define HE_BACKSECTOR(hEdge)  ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
+
 end
 
 struct hedge

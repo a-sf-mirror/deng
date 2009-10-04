@@ -261,10 +261,37 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     M_Free(index);
 }
 
+static sector_t* pickSectorForSubsector(const hedge_node_t* firstHEdge,
+                                        boolean allowSelfRef)
+{
+    const hedge_node_t* node;
+    sector_t*           sector = NULL;
+
+    for(node = firstHEdge; !sector && node; node = node->next)
+    {
+        const hedge_t*      hEdge = node->hEdge;
+
+        if(!allowSelfRef && hEdge->twin &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
+           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+            continue;
+        
+        if((((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
+        {
+            linedef_t*          lineDef =
+                ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+
+            sector = lineDef->buildData.sideDefs[
+                ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+        }
+    }
+
+    return sector;
+}
+
 static void hardenLeaf(gamemap_t* map, face_t* dest,
                        const bspleafdata_t* src, subsector_t** storage)
 {
-    boolean             found;
     size_t              hEdgeCount;
     hedge_t*            hEdge;
     hedge_node_t*       n;
@@ -294,6 +321,7 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     do
     {
         hEdge->next->prev = hEdge;
+        hEdge->face = dest;
     } while((hEdge = hEdge->next) != dest->hEdge);
 
     dest->data = *storage, (*storage)++;
@@ -308,21 +336,14 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     ssec->firstFanHEdge = NULL;
     ssec->bsuf = NULL;
 
-    // Determine which sector this subsector belongs to.
-    found = false;
-    hEdge = dest->hEdge;
-    do
-    {
-        sidedef_t*          side;
-
-        if(!found && (side = ((seg_t*) hEdge->data)->sideDef))
-        {
-            ssec->sector = side->sector;
-            found = true;
-        }
-
-        hEdge->face = dest;
-    } while((hEdge = hEdge->next) != dest->hEdge);
+    /**
+     * Determine which sector this subsector belongs to.
+     * On the first pass, we are picky; do not consider half-edges from
+     * self-referencing linedefs. If that fails, take whatever we can find.
+     */
+    ssec->sector = pickSectorForSubsector(src->hEdges, false);
+    if(!ssec->sector)
+        ssec->sector = pickSectorForSubsector(src->hEdges, true);
 
     if(!ssec->sector)
     {

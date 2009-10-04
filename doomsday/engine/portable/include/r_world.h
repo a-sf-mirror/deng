@@ -31,6 +31,10 @@
 
 #include "r_data.h"
 
+#if _DEBUG
+D_CMD(UpdateSurfaces);
+#endif
+
 // Used for vertex sector owners, side line owners and reverb subsectors.
 typedef struct ownernode_s {
     void*           data;

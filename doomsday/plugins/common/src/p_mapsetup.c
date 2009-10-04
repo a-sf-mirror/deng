@@ -277,9 +277,9 @@ int applySurfaceColor(void* obj, void* context)
 
             flags = DMU_GetIntp(side, DMU_FLAGS);
             if(!(dFlags & LDF_NOBLENDTOP))
-                flags |= SDF_BLENDTOPTOMID;
+                flags |= SDF_BLEND_TOPTOMID;
             if(!(dFlags & LDF_NOBLENDBOTTOM))
-                flags |= SDF_BLENDBOTTOMTOMID;
+                flags |= SDF_BLEND_BOTTOMTOMID;
 
             DMU_SetIntp(side, DMU_FLAGS, flags);
         }
@@ -305,9 +305,9 @@ int applySurfaceColor(void* obj, void* context)
 
             flags = DMU_GetIntp(side, DMU_FLAGS);
             if(!(dFlags & LDF_NOBLENDTOP))
-                flags |= SDF_BLENDTOPTOMID;
+                flags |= SDF_BLEND_TOPTOMID;
             if(!(dFlags & LDF_NOBLENDBOTTOM))
-                flags |= SDF_BLENDBOTTOMTOMID;
+                flags |= SDF_BLEND_BOTTOMTOMID;
 
             DMU_SetIntp(side, DMU_FLAGS, flags);
         }

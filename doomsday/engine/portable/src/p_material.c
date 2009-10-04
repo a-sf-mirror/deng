@@ -474,6 +474,13 @@ Con_Error("Material_SetTranslation: Invalid paramaters.");
     mat->inter = 0;
 }
 
+boolean Material_FromIWAD(const material_t* mat)
+{
+    return (mat->isAutoMaterial && mat->numLayers != 0 &&
+            GLTexture_IsFromIWAD(GL_GetGLTexture(mat->layers[0].tex))) ?
+            true : false;
+}
+
 /**
  * Retrieve the decoration definition associated with the material.
  *

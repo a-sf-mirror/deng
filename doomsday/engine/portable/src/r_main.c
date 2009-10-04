@@ -144,6 +144,10 @@ void R_Register(void)
 
     C_CMD("viewgrid", "ii", ViewGrid);
 
+#if _DEBUG
+    C_CMD("updatesurfaces", "", UpdateSurfaces);
+#endif
+
     P_MaterialManagerRegister();
 }
 

@@ -91,6 +91,8 @@ const ded_decor_t* Material_GetDecoration(material_t* mat);
 const ded_ptcgen_t* Material_GetPtcGen(material_t* mat);
 material_env_class_t Material_GetEnvClass(material_t* mat);
 
+boolean         Material_FromIWAD(const material_t* mat);
+
 byte            Material_GetLayerFlags(const material_t* mat, byte layer);
 float           Material_GetLayerTextureOriginX(const material_t* mat, byte layer);
 float           Material_GetLayerTextureOriginY(const material_t* mat, byte layer);

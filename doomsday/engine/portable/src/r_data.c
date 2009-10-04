@@ -1981,7 +1981,7 @@ boolean R_IsAllowedDecoration(ded_decor_t* def, material_t* mat,
         return (def->flags & DCRF_EXTERNAL) != 0;
     }
 
-    if(mat->isAutoMaterial)
+    if(Material_FromIWAD(mat))
         return !(def->flags & DCRF_NO_IWAD);
 
     return (def->flags & DCRF_PWAD) != 0;
@@ -1999,7 +1999,7 @@ boolean R_IsAllowedReflection(ded_reflection_t* def, material_t* mat,
         return (def->flags & REFF_EXTERNAL) != 0;
     }
 
-    if(mat->isAutoMaterial)
+    if(Material_FromIWAD(mat))
         return !(def->flags & REFF_NO_IWAD);
 
     return (def->flags & REFF_PWAD) != 0;
@@ -2017,7 +2017,7 @@ boolean R_IsAllowedDetailTex(ded_detailtexture_t* def, material_t* mat,
         return (def->flags & DTLF_EXTERNAL) != 0;
     }
 
-    if(mat->isAutoMaterial)
+    if(Material_FromIWAD(mat))
         return !(def->flags & DTLF_NO_IWAD);
 
     return (def->flags & DTLF_PWAD) != 0;

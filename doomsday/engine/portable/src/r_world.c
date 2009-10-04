@@ -1705,13 +1705,11 @@ void R_UpdateLinedefsOfSector(sector_t* sec)
 
         if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
             continue;
-        if(LINE_SELFREF(li))
-            continue;
 
         front = LINE_FRONTSIDE(li);
         back  = LINE_BACKSIDE(li);
-        frontSec = front->sector;
-        backSec = back->sector;
+        frontSec = HE_FRONTSECTOR(li->hEdges[0]);
+        backSec  = HE_BACKSECTOR(li->hEdges[1]);
 
         /**
          * Do as in the original Doom if the texture has not been defined -
@@ -2028,3 +2026,18 @@ const float* R_GetSectorLightColor(const sector_t *sector)
     // Return the sky light color.
     return skyLight;
 }
+
+#if _DEBUG
+D_CMD(UpdateSurfaces)
+{
+    uint                i;
+    gamemap_t*          map = P_GetCurrentMap();
+
+    Con_Printf("Updating world surfaces...\n");
+
+    for(i = 0; i < map->numSectors; ++i)
+        R_UpdateSector(&map->sectors[i], true);
+
+    return true;
+}
+#endif
