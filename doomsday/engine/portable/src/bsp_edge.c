@@ -8,6 +8,7 @@
  *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
  *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
  *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ *\author Copyright © 1998 Raphael Quinet <raphael.quinet@eed.ericsson.se>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,7 +194,7 @@ hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
 
 /*#if _DEBUG
 if(oldHEdge->lineDef)
-    Con_Message("Splitting Linedef %d (%p) at (%1.1f,%1.1f)\n",
+    Con_Message("Splitting LineDef %d (%p) at (%1.1f,%1.1f)\n",
                 oldData->lineDef->index, oldHEdge, x, y);
 else
     Con_Message("Splitting MiniHEdge %p at (%1.1f,%1.1f)\n", oldHEdge, x, y);

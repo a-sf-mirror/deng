@@ -3126,7 +3126,7 @@ DEFCC(CCmdMovePlane)
     {
         p = 4;
         sector =
-            DMU_GetPtrp(P_PointInSubsector((float) strtol(argv[2], 0, 0),
+            DMU_GetPtrp(P_PointInSubSector((float) strtol(argv[2], 0, 0),
                                          (float) strtol(argv[3], 0, 0)),
                       DMU_SECTOR);
     }

@@ -501,7 +501,7 @@ static void P_LoadMapObjs(void)
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
             face_t*        ssec =
-                P_PointInSubsector(spot->pos[VX], spot->pos[VY]);
+                P_PointInSubSector(spot->pos[VX], spot->pos[VY]);
             xsector_t*          xsector =
                 P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 

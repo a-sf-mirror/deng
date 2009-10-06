@@ -200,7 +200,7 @@ void            R_ProjectSprite(struct mobj_s* mobj);
 void            R_ProjectPlayerSprites(void);
 void            R_SortVisSprites(void);
 vissprite_t*    R_NewVisSprite(void);
-void            R_AddSprites(face_t* ssec);
+void            R_AddSprites(face_t* subSector);
 void            R_AddPSprites(void);
 void            R_DrawSprites(void);
 

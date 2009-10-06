@@ -270,7 +270,7 @@ typedef struct gamemap_s {
     surfacelist_t   decoratedSurfaceList;
 
     blockmap_t*     blockMap;
-    blockmap_t*     ssecBlockMap;
+    blockmap_t*     subSectorBlockMap;
 
     nodepile_t      mobjNodes, lineNodes; // All kinds of wacky links.
     nodeindex_t*    lineLinks; // Indices to roots.

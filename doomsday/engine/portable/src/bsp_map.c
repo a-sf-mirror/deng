@@ -59,7 +59,7 @@
  * \todo This is unnecessary if we ensure the first and last back ptrs in
  * linedef_t are updated after a half-edge split.
  */
-static void hardenLinedefSegList(gamemap_t* map, hedge_t* dst,
+static void hardenLineDefSegList(gamemap_t* map, hedge_t* dst,
                                  const hedge_t* src)
 {
     const hedge_t*      first, *last;
@@ -226,7 +226,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
             seg->offset = P_AccurateDistance(dst->HE_v1pos[VX] - vtx->V_pos[VX],
                                              dst->HE_v1pos[VY] - vtx->V_pos[VY]);
 
-            hardenLinedefSegList(map, dst, hEdge);
+            hardenLineDefSegList(map, dst, hEdge);
         }
 
         seg->angle =
@@ -261,7 +261,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     M_Free(index);
 }
 
-static sector_t* pickSectorForSubsector(const hedge_node_t* firstHEdge,
+static sector_t* pickSectorForSubSector(const hedge_node_t* firstHEdge,
                                         boolean allowSelfRef)
 {
     const hedge_node_t* node;
@@ -329,26 +329,26 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
     DMU_AddObjRecord(DMU_FACE, dest);
 
     {
-    subsector_t*        ssec = ((subsector_t*) dest->data);
+    subsector_t*        subSector = ((subsector_t*) dest->data);
 
-    ssec->hEdgeCount = (uint) hEdgeCount;
-    ssec->shadows = NULL;
-    ssec->firstFanHEdge = NULL;
-    ssec->bsuf = NULL;
+    subSector->hEdgeCount = (uint) hEdgeCount;
+    subSector->shadows = NULL;
+    subSector->firstFanHEdge = NULL;
+    subSector->bsuf = NULL;
 
     /**
      * Determine which sector this subsector belongs to.
      * On the first pass, we are picky; do not consider half-edges from
      * self-referencing linedefs. If that fails, take whatever we can find.
      */
-    ssec->sector = pickSectorForSubsector(src->hEdges, false);
-    if(!ssec->sector)
-        ssec->sector = pickSectorForSubsector(src->hEdges, true);
+    subSector->sector = pickSectorForSubSector(src->hEdges, false);
+    if(!subSector->sector)
+        subSector->sector = pickSectorForSubSector(src->hEdges, true);
 
-    if(!ssec->sector)
+    if(!subSector->sector)
     {
         Con_Message("hardenLeaf: Warning orphan subsector %p (%i half-edges).\n",
-                    ssec, ssec->hEdgeCount);
+                    subSector, subSector->hEdgeCount);
     }
     }
 }

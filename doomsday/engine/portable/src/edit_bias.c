@@ -315,7 +315,7 @@ static void drawLightLevelGauge(int x, int y, int height, source_t* src)
     char                buf[80];
 
     sector = ((subsector_t*)
-        R_PointInSubsector(src->pos[VX], src->pos[VY])->data)->sector;
+        R_PointInSubSector(src->pos[VX], src->pos[VY])->data)->sector;
 
     if(lastSector != sector)
     {

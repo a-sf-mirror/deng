@@ -651,7 +651,7 @@ void DL_ClearDynlists(void)
  * the subsector specified. This is due to an optimization within the lumobj
  * management which seperates them according to their position in the BSP.
  *
- * @param ssec          Subsector within which the quad wholly resides.
+ * @param subSector          SubSector within which the quad wholly resides.
  * @param topLeft       Coordinates of the top left corner of the quad.
  * @param bottomRight   Coordinates of the bottom right corner of the quad.
  * @param normal        Normalized normal of the quad.
@@ -682,7 +682,7 @@ uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
     params.listIdx = 0;
 
     // Process each lumobj contacting the subsector.
-    R_IterateSubsectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
+    R_IterateSubSectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
                                &params);
 
     // Did we generate a light list?

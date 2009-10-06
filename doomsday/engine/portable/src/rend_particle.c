@@ -406,7 +406,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
     params->center[VY] = center[VZ];
     params->center[VZ] = params->gzt = center[VY];
     params->distance = dist;
-    face = R_PointInSubsector(center[VX], center[VY]);
+    face = R_PointInSubSector(center[VX], center[VY]);
 
     params->extraScale = size; // Extra scaling factor.
     params->mf = &modefs[dst->model];
@@ -473,7 +473,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
             // Add extra light.
             lightLevel += R_ExtraLightDelta();
 
-            Rend_ApplyLightAdaptation(&lightLevel);
+            R_ApplyLightAdaptation(&lightLevel);
 
             // Determine the final ambientColor in affect.
             params->ambientColor[CR] = lightLevel * secColor[CR];
@@ -481,7 +481,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
             params->ambientColor[CB] = lightLevel * secColor[CB];
         }
 
-        Rend_ApplyTorchLight(params->ambientColor, params->distance);
+        R_ColorApplyTorchLight(params->ambientColor, params->distance);
 
         lparams.starkLight = false;
         lparams.center[VX] = params->center[VX];

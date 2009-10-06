@@ -47,8 +47,8 @@ float           P_ApproxDistance3(float dx, float dy, float dz);
 void            P_LineUnitVector(linedef_t* line, float* unitvec);
 float           P_MobjPointDistancef(mobj_t* start, mobj_t* end,
                                      float* fixpoint);
-int             P_PointOnLinedefSide(float x, float y, const linedef_t* line);
-int             P_PointOnLinedefSide2(double pointX, double pointY,
+int             P_PointOnLineDefSide(float x, float y, const linedef_t* line);
+int             P_PointOnLineDefSide2(double pointX, double pointY,
                                    double lineDX, double lineDY,
                                    double linePerp, double lineLength,
                                    double epsilon);
@@ -129,11 +129,11 @@ boolean         P_AllLinesBoxIteratorv(const arvec2_t box,
                                        boolean (*func) (linedef_t*, void*),
                                        void* data, boolean retObjRecord);
 
-// Subsectors in bounding box iterators.
-boolean         P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
+// SubSectors in bounding box iterators.
+boolean         P_SubSectorsBoxIterator(const float box[4], sector_t* sector,
                                        boolean (*func) (face_t*, void*),
                                        void* parm, boolean retObjRecord);
-boolean         P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
+boolean         P_SubSectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
                                         boolean (*func) (face_t*, void*),
                                         void* data, boolean retObjRecord);
 

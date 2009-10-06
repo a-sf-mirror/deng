@@ -100,7 +100,7 @@ void            LO_BeginFrame(void);
 
 void            LO_UnlinkMobjLumobjs(cvar_t* var);
 
-uint            LO_NewLuminous(lumtype_t type, face_t* ssec);
+uint            LO_NewLuminous(lumtype_t type, face_t* subSector);
 lumobj_t*       LO_GetLuminous(uint idx);
 uint            LO_ToIndex(const lumobj_t* lum);
 boolean         LO_IsClipped(uint idx, int i);
@@ -113,8 +113,8 @@ boolean         LO_LumobjsRadiusIterator(face_t* subsector, float x, float y,
                                          float radius, void* data,
                                          boolean (*func) (const lumobj_t*, float, void *data));
 
-void            LO_ClipInSubsector(face_t* face);
-void            LO_ClipInSubsectorBySight(face_t* face);
+void            LO_ClipInSubSector(face_t* face);
+void            LO_ClipInSubSectorBySight(face_t* face);
 
 void            LO_DrawLumobjs(void);
 #endif

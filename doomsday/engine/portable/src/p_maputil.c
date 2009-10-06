@@ -230,15 +230,15 @@ int P_PointOnDivLineSidef(fvertex_t* pnt, fdivline_t* dline)
  * @return              Non-zero if the point is on the right side of the
  *                      specified line.
  */
-int P_PointOnLinedefSide(float x, float y, const linedef_t* line)
+int P_PointOnLineDefSide(float x, float y, const linedef_t* line)
 {
     return !P_PointOnLineSide(x, y, line->L_v1pos[VX], line->L_v1pos[VY],
                               line->dX, line->dY);
 }
 
-int DMU_PointOnLinedefSide(float x, float y, void* p)
+int DMU_PointOnLineDefSide(float x, float y, void* p)
 {
-    return P_PointOnLinedefSide(x, y, ((dmuobjrecord_t*) p)->obj);
+    return P_PointOnLineDefSide(x, y, ((dmuobjrecord_t*) p)->obj);
 }
 
 /**
@@ -255,7 +255,7 @@ int DMU_PointOnLinedefSide(float x, float y, void* p)
  *                      @c  0= intersects.
  *                      @c >0= on right side.
  */
-int P_PointOnLinedefSide2(double pointX, double pointY, double lineDX,
+int P_PointOnLineDefSide2(double pointX, double pointY, double lineDX,
                        double lineDY, double linePerp, double lineLength,
                        double epsilon)
 {
@@ -321,13 +321,13 @@ int P_BoxOnLineSide3(const int bbox[4], double lineSX, double lineSY,
     }
     else if(lineDX * lineDY > 0)
     {   // Positive slope.
-        p1 = P_PointOnLinedefSide2(x1, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
-        p2 = P_PointOnLinedefSide2(x2, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p1 = P_PointOnLineDefSide2(x1, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p2 = P_PointOnLineDefSide2(x2, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
     }
     else
     {   // Negative slope.
-        p1 = P_PointOnLinedefSide2(x1, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
-        p2 = P_PointOnLinedefSide2(x2, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p1 = P_PointOnLineDefSide2(x1, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p2 = P_PointOnLineDefSide2(x2, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
     }
 
     if(p1 == p2)
@@ -374,13 +374,13 @@ int P_BoxOnLineSide2(float xl, float xh, float yl, float yh,
         break;
 
       case ST_POSITIVE:
-        a = P_PointOnLinedefSide(xl, yh, ld);
-        b = P_PointOnLinedefSide(xh, yl, ld);
+        a = P_PointOnLineDefSide(xl, yh, ld);
+        b = P_PointOnLineDefSide(xh, yl, ld);
         break;
 
     case ST_NEGATIVE:
-        a = P_PointOnLinedefSide(xh, yh, ld);
-        b = P_PointOnLinedefSide(xl, yl, ld);
+        a = P_PointOnLineDefSide(xh, yh, ld);
+        b = P_PointOnLineDefSide(xl, yl, ld);
         break;
     }
 
@@ -720,12 +720,12 @@ boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
-    subsector_t*        ssec;
-    face_t*             face = R_PointInSubsector(mo->pos[VX], mo->pos[VY]);
+    subsector_t*        subSector;
+    face_t*             face = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
 
     // Link into the sector.
     mo->face = (face_t*) DMU_GetObjRecord(DMU_FACE, face);
-    ssec = ((subsector_t*) face->data);
+    subSector = ((subsector_t*) face->data);
 
     if(flags & DDLINK_SECTOR)
     {
@@ -737,10 +737,10 @@ void P_MobjLink(mobj_t* mo, byte flags)
         // Prev pointers point to the pointer that points back to us.
         // (Which practically disallows traversing the list backwards.)
 
-        if((mo->sNext = ssec->sector->mobjList))
+        if((mo->sNext = subSector->sector->mobjList))
             mo->sNext->sPrev = &mo->sNext;
 
-        *(mo->sPrev = &ssec->sector->mobjList) = mo;
+        *(mo->sPrev = &subSector->sector->mobjList) = mo;
     }
 
     // Link into blockmap?
@@ -769,9 +769,9 @@ void P_MobjLink(mobj_t* mo, byte flags)
 
         player->inVoid = true;
         if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
-                              ssec->sector) &&
-           (player->mo->pos[VZ] < ssec->sector->SP_ceilvisheight  - 4 &&
-            player->mo->pos[VZ] > ssec->sector->SP_floorvisheight + 4))
+                              subSector->sector) &&
+           (player->mo->pos[VZ] < subSector->sector->SP_ceilvisheight  - 4 &&
+            player->mo->pos[VZ] > subSector->sector->SP_floorvisheight + 4))
             player->inVoid = false;
     }
 }
@@ -1012,7 +1012,7 @@ boolean P_LinesBoxIteratorv(const arvec2_t box,
 /**
  * @return              @c false, if the iterator func returns @c false.
  */
-boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
+boolean P_SubSectorsBoxIterator(const float box[4], sector_t* sector,
                                 boolean (*func) (face_t*, void*),
                                 void* parm, boolean retObjRecord)
 {
@@ -1023,21 +1023,21 @@ boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_SubsectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
+    return P_SubSectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
 }
 
-boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
+boolean DMU_SubSectorsBoxIterator(const float box[4], void* p,
                                   boolean (*func) (face_t*, void*),
                                   void* parm)
 {
-    return P_SubsectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
+    return P_SubSectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
 }
 
 /**
  * Same as the fixed-point version of this routine, but the bounding box
  * is specified using an vec2_t array (see m_vector.c).
  */
-boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
+boolean P_SubSectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
                                  boolean (*func) (face_t*, void*),
                                  void* data, boolean retObjRecord)
 {
@@ -1048,9 +1048,9 @@ boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
     localValidCount++;
 
     // Blockcoords to check.
-    P_BoxToBlockmapBlocks(SSecBlockMap, blockBox, box);
+    P_BoxToBlockmapBlocks(SubSectorBlockMap, blockBox, box);
 
-    return P_BlockBoxSubsectorsIterator(SSecBlockMap, blockBox, sector,
+    return P_BlockBoxSubSectorsIterator(SubSectorBlockMap, blockBox, sector,
                                         box, localValidCount, func, data,
                                         retObjRecord);
 }
@@ -1168,9 +1168,9 @@ boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
     }
     else
     {
-        s[0] = P_PointOnLinedefSide(FIX2FLT(traceLOS.pos[VX]),
+        s[0] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX]),
                                  FIX2FLT(traceLOS.pos[VY]), ld);
-        s[1] = P_PointOnLinedefSide(FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
+        s[1] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
                                  FIX2FLT(traceLOS.pos[VY] + traceLOS.dY), ld);
     }
 
@@ -1202,7 +1202,7 @@ boolean PIT_AddMobjIntercepts(mobj_t* mo, void* data)
     if(mo->dPlayer && (mo->dPlayer->flags & DDPF_CAMERA))
         return true; // $democam: ssshh, keep going, we're not here...
 
-    // Check a corner to corner crossection for hit.
+    // Check a corner to corner crosubSectortion for hit.
     if((traceLOS.dX ^ traceLOS.dY) > 0)
     {
         x1 = mo->pos[VX] - mo->radius;

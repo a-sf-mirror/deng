@@ -29,6 +29,8 @@
 #ifndef __DOOMSDAY_REFRESH_MAIN_H__
 #define __DOOMSDAY_REFRESH_MAIN_H__
 
+#include <math.h>
+
 typedef struct viewport_s {
     int             console;
     int             x, y, width, height;
@@ -40,26 +42,31 @@ typedef struct {
     int         tics;
 } matfader_t;
 
-extern float    viewX, viewY, viewZ;
-extern float    viewFrontVec[3], viewUpVec[3], viewSideVec[3];
-extern float    viewXOffset, viewYOffset, viewZOffset;
-extern angle_t  viewAngle;
-extern float    viewPitch;
-extern angle_t  clipAngle;
-extern fixed_t  fineTangent[FINEANGLES / 2];
+extern float viewX, viewY, viewZ;
+extern float viewFrontVec[3], viewUpVec[3], viewSideVec[3];
+extern float viewXOffset, viewYOffset, viewZOffset;
+extern angle_t viewAngle;
+extern float viewPitch;
+extern angle_t clipAngle;
+extern fixed_t fineTangent[FINEANGLES / 2];
+extern float vx, vy, vz, vang, vpitch, fieldOfView, yfov;
+extern float viewsidex, viewsidey;
 
-extern float    frameTimePos;      // 0...1: fractional part for sharp game tics
-extern boolean  resyncFrameTimePos;
-extern int      loadInStartupMode;
-extern int      validCount;
-extern int      viewwidth, viewheight, viewwindowx, viewwindowy;
-extern boolean  setSizeNeeded;
-extern int      frameCount;
-extern int      viewAngleOffset;
-extern int      extraLight;
-extern float    extraLightDelta;
-extern float    viewCos, viewSin;
-extern int      rendInfoTris;
+extern float frameTimePos;      // 0...1: fractional part for sharp game tics
+extern boolean resyncFrameTimePos;
+extern int loadInStartupMode;
+extern int alidCount;
+extern int viewwidth, viewheight, viewwindowx, viewwindowy;
+extern boolean setSizeNeeded;
+extern int frameCount;
+extern int validCount;
+extern int viewAngleOffset;
+extern int torchAdditive;
+extern float torchColor[];
+extern int extraLight;
+extern float extraLightDelta;
+extern float viewCos, viewSin;
+extern int rendInfoTris;
 
 void            R_Register(void);
 void            R_Init(void);
@@ -76,4 +83,13 @@ void            R_NewSharpWorld(void);
 
 void            R_SetViewGrid(int numCols, int numRows);
 void            R_SetViewWindow(int x, int y, int w, int h);
+
+float           R_FacingViewerDot(float v1[2], float v2[2]);
+void            R_ColorApplyTorchLight(float* color, float distance);
+
+#define R_PointDist2D(c) (fabs((vz-c[VY])*viewsidex - (vx-c[VX])*viewsidey))
+float           R_PointDist3D(const float c[3]);
+
+void            R_ApplyLightAdaptation(float* lightvalue);
+float           R_LightAdaptationDelta(float lightvalue);
 #endif

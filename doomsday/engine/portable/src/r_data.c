@@ -777,6 +777,128 @@ void R_FreeRendTexCoords(rtexcoord_t* rtexcoords)
 #endif
 }
 
+void R_VertexColorsGlow(rcolor_t* colors, size_t num)
+{
+    size_t              i;
+
+    for(i = 0; i < num; ++i)
+    {
+        rcolor_t*           c = &colors[i];
+        c->rgba[CR] = c->rgba[CG] = c->rgba[CB] = 1;
+    }
+}
+
+void R_VertexColorsAlpha(rcolor_t* colors, size_t num, float alpha)
+{
+    size_t               i;
+
+    for(i = 0; i < num; ++i)
+    {
+        colors[i].rgba[CA] = alpha;
+    }
+}
+
+void R_ColorApplyTorchLight(float* color, float distance)
+{
+    ddplayer_t*         ddpl = &viewPlayer->shared;
+
+    if(!ddpl->fixedColorMap)
+        return;
+
+    // Check for torch.
+    if(distance < 1024)
+    {
+        // Colormap 1 is the brightest. I'm guessing 16 would be
+        // the darkest.
+        int                 ll = 16 - ddpl->fixedColorMap;
+        float               d = (1024 - distance) / 1024.0f * ll / 15.0f;
+
+        if(torchAdditive)
+        {
+            color[CR] += d * torchColor[CR];
+            color[CG] += d * torchColor[CG];
+            color[CB] += d * torchColor[CB];
+        }
+        else
+        {
+            color[CR] += d * ((color[CR] * torchColor[CR]) - color[CR]);
+            color[CG] += d * ((color[CG] * torchColor[CG]) - color[CG]);
+            color[CB] += d * ((color[CB] * torchColor[CB]) - color[CB]);
+        }
+    }
+}
+
+void R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t* vertices,
+                             size_t numVertices)
+{
+    size_t              i;
+    ddplayer_t*         ddpl = &viewPlayer->shared;
+
+    if(!ddpl->fixedColorMap)
+        return; // No need, its disabled.
+
+    for(i = 0; i < numVertices; ++i)
+    {
+        const rvertex_t*    vtx = &vertices[i];
+        rcolor_t*           c = &colors[i];
+
+        R_ColorApplyTorchLight(c->rgba, R_PointDist2D(vtx->pos));
+    }
+}
+
+void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
+                   float lightLevel, const float* ambientColor)
+{
+    float               lightVal, dist;
+
+    dist = R_PointDist2D(vtx->pos);
+
+    // Apply distance attenuation.
+    lightVal = R_DistAttenuateLightLevel(dist, lightLevel);
+
+    // Add extra light.
+    lightVal += R_ExtraLightDelta();
+
+    R_ApplyLightAdaptation(&lightVal);
+
+    // Mix with the surface color.
+    color->rgba[CR] = lightVal * ambientColor[CR];
+    color->rgba[CG] = lightVal * ambientColor[CG];
+    color->rgba[CB] = lightVal * ambientColor[CB];
+}
+
+void R_VerticesFromSubSectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
+                                         float height, boolean antiClockwise)
+{
+    size_t              i = 0;
+    hedge_t*            hEdge;
+
+    if(subSector->useMidPoint)
+    {
+        rvertices[i].pos[VX] = subSector->midPoint.pos[VX];
+        rvertices[i].pos[VY] = subSector->midPoint.pos[VY];
+        rvertices[i].pos[VZ] = height;
+        ++i;
+    }
+
+    // Copy the vertices in reverse order for ceilings (flip faces).
+    hEdge = subSector->firstFanHEdge;
+    do
+    {
+        rvertices[i].pos[VX] = hEdge->HE_v1pos[VX];
+        rvertices[i].pos[VY] = hEdge->HE_v1pos[VY];
+        rvertices[i].pos[VZ] = height;
+        ++i;
+    } while((hEdge = (antiClockwise? hEdge->prev : hEdge->next)) != subSector->firstFanHEdge);
+
+    if(subSector->useMidPoint)
+    {
+        rvertices[i].pos[VX] = subSector->firstFanHEdge->HE_v1pos[VX];
+        rvertices[i].pos[VY] = subSector->firstFanHEdge->HE_v1pos[VY];
+        rvertices[i].pos[VZ] = height;
+    }
+}
+
 void R_DivVerts(rvertex_t* dst, const rvertex_t* src, const walldiv_t* wdivs)
 {
 #define COPYVERT(d, s)  (d)->pos[VX] = (s)->pos[VX]; \

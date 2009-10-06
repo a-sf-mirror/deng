@@ -264,9 +264,9 @@ void R_ObjLinkCreate(void* obj, objtype_t type)
     ol->type = type;
 }
 
-boolean RIT_LinkObjToSubsector(face_t* face, void* data)
+boolean RIT_LinkObjToSubSector(face_t* face, void* data)
 {
-    linkobjtossecparams_t* params = (linkobjtossecparams_t*) data;
+    linkobjtosubSectorparams_t* params = (linkobjtosubSectorparams_t*) data;
     objcontact_t*       con = allocObjContact();
 
     con->obj = params->obj;
@@ -278,10 +278,10 @@ boolean RIT_LinkObjToSubsector(face_t* face, void* data)
 }
 
 /**
- * Attempt to spread the obj from the given contact from the source ssec and
- * into the (relative) back ssec.
+ * Attempt to spread the obj from the given contact from the source subSector and
+ * into the (relative) back subSector.
  *
- * @param ssec          Ptr to subsector to attempt to spread over to.
+ * @param subSector          Ptr to subsector to attempt to spread over to.
  * @param data          Ptr to contactfinder_data structure.
  *
  * @return              @c true, because this function is also used as an
@@ -309,14 +309,16 @@ static void processSeg(hedge_t* hEdge, void* data)
     vertex_t*           vtx;
     seg_t*              seg = (seg_t*) hEdge->data;
 
-    // Seg must be between two different ssecs.
+    // Seg must be between two different sectors.
+    // @todo this doesn't seem right. Why can't we pass through
+    // self-referencing linedefs??
     if(seg->sideDef &&
-       (!hEdge->twin || hEdge->face->data == hEdge->twin->face->data))
+       (!hEdge->twin || HE_FRONTSECTOR(hEdge) == HE_BACKSECTOR(hEdge)))
         return;
 
     // Which way does the spread go?
-    if(((subsector_t*) hEdge->face->data)->validCount == validCount &&
-       ((subsector_t*) hEdge->twin->face->data)->validCount != validCount)
+    if(HE_FRONTSUBSECTOR(hEdge)->validCount == validCount &&
+       HE_BACKSUBSECTOR(hEdge)->validCount != validCount)
     {
         srcFace = hEdge->face;
         dstFace = hEdge->twin->face;
@@ -330,13 +332,13 @@ static void processSeg(hedge_t* hEdge, void* data)
     src = (subsector_t*) srcFace->data;
     dst = (subsector_t*) dstFace->data;
 
-    // Is the dst ssector inside the objlink's AABB?
+    // Is the dst subSector inside the objlink's AABB?
     if(dst->bBox[1].pos[VX] <= params->box[BOXLEFT] ||
        dst->bBox[0].pos[VX] >= params->box[BOXRIGHT] ||
        dst->bBox[1].pos[VY] <= params->box[BOXBOTTOM] ||
        dst->bBox[0].pos[VY] >= params->box[BOXTOP])
     {
-        // The ssector is not inside the params's bounds.
+        // The subSector is not inside the params's bounds.
         return;
     }
 
@@ -356,7 +358,7 @@ static void processSeg(hedge_t* hEdge, void* data)
 
         // Don't spread if the middle material completely fills the gap between
         // floor and ceiling (direction is from dst to src).
-        if(Rend_DoesMidTextureFillGap(seg->sideDef->lineDef,
+        if(R_DoesMiddleMaterialFillGap(seg->sideDef->lineDef,
             dst == ((subsector_t*) hEdge->twin->face->data)? false : true))
             return;
     }
@@ -395,12 +397,12 @@ static void processSeg(hedge_t* hEdge, void* data)
 
     // Add this obj to the destination subsector.
     {
-    linkobjtossecparams_t lparams;
+    linkobjtosubSectorparams_t lparams;
 
     lparams.obj = params->obj;
     lparams.type = params->objType;
 
-    RIT_LinkObjToSubsector(dstFace, &lparams);
+    RIT_LinkObjToSubSector(dstFace, &lparams);
     }
 
     spreadInFace(dstFace, data);
@@ -444,7 +446,7 @@ static void findContacts(objlink_t* oLink)
         }
     }
 
-    // Do the subsector spread. Begin from the obj's own ssec.
+    // Do the subsector spread. Begin from the obj's own subSector.
     ((subsector_t*) (face)->data)->validCount = ++validCount;
 
     params.obj = oLink->obj;
@@ -460,12 +462,12 @@ static void findContacts(objlink_t* oLink)
 
     // Always contact the obj's own subsector.
     {
-    linkobjtossecparams_t params;
+    linkobjtosubSectorparams_t params;
 
     params.obj = oLink->obj;
     params.type = oLink->type;
 
-    RIT_LinkObjToSubsector(face, &params);
+    RIT_LinkObjToSubSector(face, &params);
     }
 
     spreadInFace(face, &params);
@@ -483,16 +485,16 @@ void R_ObjBlockmapSpreadObjsInSubSector(const objblockmap_t* obm,
 {
     int                 xl, xh, yl, yh, x, y;
     objlink_t*          iter;
-    const subsector_t*  ssec;
+    const subsector_t*  subSector;
 
     if(!obm || !face)
         return; // Wha?
-    ssec = (subsector_t*) face->data;
+    subSector = (subsector_t*) face->data;
 
-    xl = X_TO_OBBX(obm, FLT2FIX(ssec->bBox[0].pos[VX] - maxRadius));
-    xh = X_TO_OBBX(obm, FLT2FIX(ssec->bBox[1].pos[VX] + maxRadius));
-    yl = Y_TO_OBBY(obm, FLT2FIX(ssec->bBox[0].pos[VY] - maxRadius));
-    yh = Y_TO_OBBY(obm, FLT2FIX(ssec->bBox[1].pos[VY] + maxRadius));
+    xl = X_TO_OBBX(obm, FLT2FIX(subSector->bBox[0].pos[VX] - maxRadius));
+    xh = X_TO_OBBX(obm, FLT2FIX(subSector->bBox[1].pos[VX] + maxRadius));
+    yl = Y_TO_OBBY(obm, FLT2FIX(subSector->bBox[0].pos[VY] - maxRadius));
+    yh = Y_TO_OBBY(obm, FLT2FIX(subSector->bBox[1].pos[VY] + maxRadius));
 
     // Are we completely outside the blockmap?
     if(xh < 0 || xl >= obm->width || yh < 0 || yl >= obm->height)
@@ -532,16 +534,16 @@ void R_ObjBlockmapSpreadObjsInSubSector(const objblockmap_t* obm,
  * Perform any processing needed before we can draw surfaces within the
  * specified subsector with dynamic lights.
  *
- * @param ssec          Ptr to the subsector to process.
+ * @param subSector          Ptr to the subsector to process.
  */
-void R_InitForSubsector(face_t* ssec)
+void R_InitForSubSector(face_t* subSector)
 {
     float               maxRadius = MAX_OF(DDMOBJ_RADIUS_MAX, loMaxRadius);
 
 BEGIN_PROF( PROF_OBJLINK_SPREAD );
 
     // Make sure we know which objs are contacting us.
-    R_ObjBlockmapSpreadObjsInSubSector(objBlockmap, ssec, maxRadius);
+    R_ObjBlockmapSpreadObjsInSubSector(objBlockmap, subSector, maxRadius);
 
 END_PROF( PROF_OBJLINK_SPREAD );
 }
@@ -630,7 +632,7 @@ void R_InitForNewFrame(void)
         memset(faceContacts, 0, numFaces * sizeof(*faceContacts));
 }
 
-boolean R_IterateSubsectorContacts(face_t* face, objtype_t type,
+boolean R_IterateSubSectorContacts(face_t* face, objtype_t type,
                                    boolean (*func) (void*, void*),
                                    void* data)
 {

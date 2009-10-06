@@ -780,7 +780,7 @@ static void updateAffected2(gamemap_t* map, biassurface_t* bsuf,
         if(src->intensity <= 0)
             continue;
 
-        // Calculate minimum 2D distance to the ssec.
+        // Calculate minimum 2D distance to the subSector.
         // \fixme This is probably too accurate an estimate.
         for(k = 0; k < bsuf->size; ++k)
         {
@@ -941,12 +941,12 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
         {
             float               minLevel = s->sectorLevel[0];
             float               maxLevel = s->sectorLevel[1];
-            subsector_t*        ssec = (subsector_t*)
-                R_PointInSubsector(s->pos[VX], s->pos[VY])->data;
+            subsector_t*        subSector = (subsector_t*)
+                R_PointInSubSector(s->pos[VX], s->pos[VY])->data;
             sector_t*           sector;
             float               oldIntensity = s->intensity;
 
-            sector = ssec->sector;
+            sector = subSector->sector;
 
             // The lower intensities are useless for light emission.
             if(sector->lightLevel >= maxLevel)
@@ -1198,7 +1198,7 @@ void SB_ClearSources(gamemap_t* map)
 void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                 const rvertex_t* rvertices, size_t numVertices,
                 const vectorcomp_t* normal, float sectorLightLevel,
-                fvertex_t* from, fvertex_t* to)
+                const fvertex_t* from, const fvertex_t* to)
 {
     uint                i;
     boolean             forced;
@@ -1258,11 +1258,11 @@ void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
          * right side of the surface are taken into consideration.
          */
 
-        const subsector_t*  ssec = (subsector_t*) face->data;
+        const subsector_t*  subSector = (subsector_t*) face->data;
         vec3_t              point;
 
-        V3_Set(point, ssec->midPoint.pos[VX], ssec->midPoint.pos[VY],
-               ssec->sector->planes[plane]->height);
+        V3_Set(point, subSector->midPoint.pos[VX], subSector->midPoint.pos[VY],
+               subSector->sector->planes[plane]->height);
 
         updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
     }

@@ -50,7 +50,7 @@
 
 // CODE --------------------------------------------------------------------
 
-float Linedef_GetLightLevelDelta(const linedef_t* l)
+float LineDef_GetLightLevelDelta(const linedef_t* l)
 {
     return (1.0f / 255) *
         ((l->L_vpos(1)[VY] - l->L_vpos(0)[VY]) / l->length * 18);
@@ -59,7 +59,7 @@ float Linedef_GetLightLevelDelta(const linedef_t* l)
 /**
  * Update the linedef, property is selected by DMU_* name.
  */
-boolean Linedef_SetProperty(linedef_t* lin, const setargs_t* args)
+boolean LineDef_SetProperty(linedef_t* lin, const setargs_t* args)
 {
     switch(args->prop)
     {
@@ -103,7 +103,7 @@ boolean Linedef_SetProperty(linedef_t* lin, const setargs_t* args)
         break;
         }
     default:
-        Con_Error("Linedef_SetProperty: Property %s is not writable.\n",
+        Con_Error("LineDef_SetProperty: Property %s is not writable.\n",
                   DMU_Str(args->prop));
     }
 
@@ -113,7 +113,7 @@ boolean Linedef_SetProperty(linedef_t* lin, const setargs_t* args)
 /**
  * Get the value of a linedef property, selected by DMU_* name.
  */
-boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
+boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
 {
     switch(args->prop)
     {
@@ -199,7 +199,7 @@ boolean Linedef_GetProperty(const linedef_t *lin, setargs_t *args)
         DMU_GetValue(DMT_LINEDEF_VALIDCOUNT, &lin->validCount, args, 0);
         break;
     default:
-        Con_Error("Linedef_GetProperty: No property %s.\n",
+        Con_Error("LineDef_GetProperty: No property %s.\n",
                   DMU_Str(args->prop));
     }
 

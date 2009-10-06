@@ -562,47 +562,47 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
     }
 }
 
-void R_CreateBiasSurfacesForPlanesInSubsector(face_t* face)
+void R_CreateBiasSurfacesForPlanesInSubSector(face_t* face)
 {
-    subsector_t*        ssec = (subsector_t*) (face)->data;
+    subsector_t*        subSector = (subsector_t*) (face)->data;
     uint                i;
     gamemap_t*          map;
 
-    if(!ssec->sector)
+    if(!subSector->sector)
         return;
 
     map = P_GetCurrentMap();
 
-    ssec->bsuf = Z_Calloc(ssec->sector->planeCount * sizeof(biassurface_t*),
+    subSector->bsuf = Z_Calloc(subSector->sector->planeCount * sizeof(biassurface_t*),
                           PU_STATIC, NULL);
 
-    for(i = 0; i < ssec->sector->planeCount; ++i)
+    for(i = 0; i < subSector->sector->planeCount; ++i)
     {
         biassurface_t*      bsuf = SB_CreateSurface(map);
         uint                j;
 
-        bsuf->size = ssec->hEdgeCount + (ssec->useMidPoint? 2 : 0);
+        bsuf->size = subSector->hEdgeCount + (subSector->useMidPoint? 2 : 0);
         bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_STATIC, 0);
 
         for(j = 0; j < bsuf->size; ++j)
             SB_InitVertexIllum(&bsuf->illum[j]);
 
-        ssec->bsuf[i] = bsuf;
+        subSector->bsuf[i] = bsuf;
     }
 }
 
-void R_DestroyBiasSurfacesForPlanesInSubsector(face_t* face)
+void R_DestroyBiasSurfacesForPlanesInSubSector(face_t* face)
 {
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
 
-    if(ssec->sector && ssec->bsuf)
+    if(subSector->sector && subSector->bsuf)
     {
         uint                i;
         gamemap_t*          map = P_GetCurrentMap();
 
-        for(i = 0; i < ssec->sector->planeCount; ++i)
+        for(i = 0; i < subSector->sector->planeCount; ++i)
         {
-            biassurface_t*      bsuf = ssec->bsuf[i];
+            biassurface_t*      bsuf = subSector->bsuf[i];
 
             if(bsuf->illum)
                 Z_Free(bsuf->illum);
@@ -610,21 +610,21 @@ void R_DestroyBiasSurfacesForPlanesInSubsector(face_t* face)
             SB_DestroySurface(map, bsuf);
         }
 
-        Z_Free(ssec->bsuf);
+        Z_Free(subSector->bsuf);
     }
-    ssec->bsuf = NULL;
+    subSector->bsuf = NULL;
 }
 
 /**
  * Allocate bias surfaces and attach vertexillums for all renderable surfaces
  * in the specified subsector. If already present, this is a null-op.
  */
-void R_CreateBiasSurfacesInSubsector(face_t* face)
+void R_CreateBiasSurfacesInSubSector(face_t* face)
 {
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
     gamemap_t*          map;
 
-    if(!ssec->sector)
+    if(!subSector->sector)
         return;
 
     map = P_GetCurrentMap();
@@ -662,8 +662,8 @@ void R_CreateBiasSurfacesInSubsector(face_t* face)
     }
     }
 
-    if(!ssec->bsuf)
-        R_CreateBiasSurfacesForPlanesInSubsector(face);
+    if(!subSector->bsuf)
+        R_CreateBiasSurfacesForPlanesInSubSector(face);
 }
 
 /**
@@ -742,7 +742,7 @@ if(sec->planeCount >= 2)
     face_t**            facePtr = sec->faces;
     while(*facePtr)
     {
-        R_DestroyBiasSurfacesForPlanesInSubsector(*facePtr);
+        R_DestroyBiasSurfacesForPlanesInSubSector(*facePtr);
 
         *facePtr++;
     }
@@ -810,7 +810,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     face_t**            facePtr = sec->faces;
     while(*facePtr)
     {
-        R_DestroyBiasSurfacesForPlanesInSubsector(*facePtr);
+        R_DestroyBiasSurfacesForPlanesInSubSector(*facePtr);
 
         *facePtr++;
     }
@@ -1028,6 +1028,339 @@ void R_OrderVertices(const linedef_t* line, const sector_t* sector,
     verts[1] = line->L_v(edge^1);
 }
 
+static int C_DECL DivSortAscend(const void* e1, const void* e2)
+{
+    float               f1 = (*((const plane_t**) e1))->visHeight;
+    float               f2 = (*((const plane_t**) e2))->visHeight;
+
+    if(f1 > f2)
+        return 1;
+    if(f2 > f1)
+        return -1;
+    return 0;
+}
+
+static int C_DECL DivSortDescend(const void* e1, const void* e2)
+{
+    float               f1 = (*((const plane_t**) e1))->visHeight;
+    float               f2 = (*((const plane_t**) e2))->visHeight;
+
+    if(f1 > f2)
+        return -1;
+    if(f2 > f1)
+        return 1;
+    return 0;
+}
+
+static boolean testForPlaneDivision(walldiv_t* wdiv, plane_t* pln,
+                                    float bottomZ, float topZ)
+{
+    if(pln->visHeight > bottomZ && pln->visHeight < topZ)
+    {
+        uint                i;
+
+        // If there is already a division at this height, ignore this plane.
+        for(i = 0; i < wdiv->num; ++i)
+            if(wdiv->divs[i]->visHeight == pln->visHeight)
+                return true; // Continue.
+
+        // A new division.
+        wdiv->divs[wdiv->num++] = pln;
+
+        // Have we reached the div limit?
+        if(wdiv->num == RL_MAX_DIVS)
+            return false; // Stop.
+    }
+
+    return true; // Continue.
+}
+
+static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+                               const sector_t* frontSec, float bottomZ,
+                               float topZ, boolean doRight)
+{
+    linedef_t*          iter;
+    lineowner_t*        base, *own;
+    boolean             clockwise = !doRight;
+
+    if(bottomZ >= topZ)
+        return; // Obviously no division.
+
+    // Retrieve the start owner node.
+    base = own = R_GetVtxLineOwner(hEdge->HE_v(doRight),
+                                   ((seg_t*) hEdge->data)->sideDef->lineDef);
+
+    /**
+     * We need to handle the special case of a sector with zero volume.
+     * In this instance, the only potential divisor in the sector is the back
+     * ceiling. This is because elsewhere we automatically fix the case of a
+     * floor above a ceiling by lowering the floor.
+     */
+    while((own = own->link[clockwise]) != base)
+    {
+        boolean             sectorHasVolume = false;
+        sidedef_t*          side;
+        
+        iter = own->lineDef;
+
+        if(LINE_SELFREF(iter))
+            continue;
+
+        side = LINE_SIDE(iter,
+            LINE_FRONTSECTOR(iter) == frontSec? BACK : FRONT);
+
+        if(side)
+        {
+            plane_t*            pln;
+            sector_t*           scanSec = side->sector;
+
+            if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
+                sectorHasVolume = true;
+
+            if(sectorHasVolume)
+            {
+                // First, the floor.
+                pln = scanSec->SP_plane(PLN_FLOOR);
+                if(testForPlaneDivision(div, pln, bottomZ, topZ))
+                {   // Clip a range bound to this height?
+                    if(pln->visHeight > bottomZ)
+                        bottomZ = pln->visHeight;
+
+                    // All clipped away?
+                    if(bottomZ >= topZ)
+                        break;
+                }
+
+                // Next, every plane between floor and ceiling.
+                if(scanSec->planeCount > 2)
+                {
+                    uint                j;
+                    boolean             stop = false;
+
+                    for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
+                    {
+                        pln = scanSec->SP_plane(j);
+                        if(!testForPlaneDivision(div, pln, bottomZ, topZ))
+                            stop = true;
+                    }
+
+                    if(stop)
+                        break;
+                }
+            }
+
+            // Lastly, the ceiling.
+            pln = scanSec->SP_plane(PLN_CEILING);
+            if(testForPlaneDivision(div, pln, bottomZ, topZ) && sectorHasVolume)
+            {   // Clip a range bound to this height?
+                if(pln->visHeight < topZ)
+                    topZ = pln->visHeight;
+
+                // All clipped away?
+                if(bottomZ >= topZ)
+                    break;
+            }
+        }
+
+        // Stop the scan when a solid neighbour is reached.
+        if(!side || !sectorHasVolume)
+            break;
+
+        // Prepare for the next round.
+        frontSec = side->sector;
+    }
+}
+
+static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+                             const sector_t* frontSec, float bottomZ,
+                             float topZ, boolean doRight)
+{
+    seg_t*              seg = (seg_t*) hEdge->data;
+    sidedef_t*          side = seg->sideDef;
+
+    div->num = 0;
+
+    if(!side)
+        return;
+
+    // Only segs at sidedef ends can/should be split.
+    if(!((hEdge == side->lineDef->hEdges[seg->side? 1 : 0] && !doRight) ||
+         (hEdge == side->lineDef->hEdges[!seg->side? 1 : 0] && doRight)))
+        return;
+
+    doFindSegDivisions(div, hEdge, frontSec, bottomZ, topZ, doRight);
+}
+
+/**
+ * Division will only happen if it must be done.
+ */
+void R_FindSegSectionDivisions(walldiv_t* wdivs, const hedge_t* hEdge,
+                               const sector_t* frontsec, float low, float hi)
+{
+    uint                i;
+    walldiv_t*          wdiv;
+
+    if(!((seg_t*) hEdge->data)->sideDef)
+        return; // Mini-segs arn't drawn.
+
+    for(i = 0; i < 2; ++i)
+    {
+        wdiv = &wdivs[i];
+        findSegDivisions(wdiv, hEdge, frontsec, low, hi, i);
+
+        // We need to sort the divisions for the renderer.
+        if(wdiv->num > 1)
+        {
+            // Sorting is required. This shouldn't take too long...
+            // There seldom are more than one or two divisions.
+            qsort(wdiv->divs, wdiv->num, sizeof(plane_t*),
+                  i!=0 ? DivSortDescend : DivSortAscend);
+        }
+
+#ifdef RANGECHECK
+{
+uint        k;
+for(k = 0; k < wdiv->num; ++k)
+    if(wdiv->divs[k]->visHeight > hi || wdiv->divs[k]->visHeight < low)
+    {
+        Con_Error("DivQuad: i=%i, pos (%f), hi (%f), low (%f), num=%i\n",
+                  i, wdiv->divs[k]->visHeight, hi, low, wdiv->num);
+    }
+}
+#endif
+    }
+}
+
+/**
+ * \fixme No need to do this each frame. Set a flag in sidedef_t->flags to
+ * denote this. Is sensitive to plane heights, surface properties
+ * (e.g. alpha) and surface texture properties.
+ */
+boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
+{
+    // Check for unmasked midtextures on twosided lines that completely
+    // fill the gap between floor and ceiling (we don't want to give away
+    // the location of any secret areas (false walls)).
+    if(LINE_BACKSIDE(line))
+    {
+        sector_t*           front = LINE_SECTOR(line, backside);
+        sector_t*           back  = LINE_SECTOR(line, backside^1);
+        sidedef_t*          side  = LINE_SIDE(line, backside);
+
+        if(side->SW_middlematerial)
+        {
+            material_t*         mat = side->SW_middlematerial;
+            material_snapshot_t ms;
+
+            // Ensure we have up to date info.
+            Material_Prepare(&ms, mat, true, NULL);
+
+            if(ms.isOpaque && !side->SW_middleblendmode &&
+               side->SW_middlergba[3] >= 1)
+            {
+                float               openTop[2], matTop[2];
+                float               openBottom[2], matBottom[2];
+
+                if(side->flags & SDF_MIDDLE_STRETCH)
+                    return true;
+
+                openTop[0] = openTop[1] = matTop[0] = matTop[1] =
+                    MIN_OF(back->SP_ceilvisheight, front->SP_ceilvisheight);
+                openBottom[0] = openBottom[1] = matBottom[0] = matBottom[1] =
+                    MAX_OF(back->SP_floorvisheight, front->SP_floorvisheight);
+
+                // Could the mid texture fill enough of this gap for us
+                // to consider it completely closed?
+                if(ms.height >= (openTop[0] - openBottom[0]) &&
+                   ms.height >= (openTop[1] - openBottom[1]))
+                {
+                    // Possibly. Check the placement of the mid texture.
+                    if(R_MiddleMaterialPosition
+                       (&matBottom[0], &matBottom[1], &matTop[0], &matTop[1],
+                        NULL, side->SW_middlevisoffset[VY], ms.height,
+                        0 != (line->flags & DDLF_DONTPEGBOTTOM),
+                        !(IS_SKYSURFACE(&front->SP_ceilsurface) &&
+                          IS_SKYSURFACE(&back->SP_ceilsurface)),
+                        !(IS_SKYSURFACE(&front->SP_floorsurface) &&
+                          IS_SKYSURFACE(&back->SP_floorsurface))))
+                    {
+                        if(matTop[0] >= openTop[0] &&
+                           matTop[1] >= openTop[1] &&
+                           matBottom[0] <= openBottom[0] &&
+                           matBottom[1] <= openBottom[1])
+                            return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Calculates the placement for a middle texture (top, bottom, offset).
+ * texoffy may be NULL.
+ * Returns false if the middle texture isn't visible (in the opening).
+ *
+ * @todo Merge with findBottomTop in rend_main.c
+ */
+int R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
+                             float* topleft, float* topright, float* texoffy,
+                             float tcyoff, float texHeight, boolean lowerUnpeg,
+                             boolean clipTop, boolean clipBottom)
+{
+    int                 side;
+    float               openingTop, openingBottom;
+    boolean             visible[2] = {false, false};
+
+    for(side = 0; side < 2; ++side)
+    {
+        openingTop = *(side? topright : topleft);
+        openingBottom = *(side? bottomright : bottomleft);
+
+        if(openingTop <= openingBottom)
+            continue;
+
+        // Else the mid texture is visible on this side.
+        visible[side] = true;
+
+        if(side == 0 && texoffy)
+            *texoffy = 0;
+
+        // We don't allow vertical tiling.
+        if(lowerUnpeg)
+        {
+            *(side? bottomright : bottomleft) += tcyoff;
+            *(side? topright : topleft) =
+                *(side? bottomright : bottomleft) + texHeight;
+        }
+        else
+        {
+            *(side? topright : topleft) += tcyoff;
+            *(side? bottomright : bottomleft) =
+                *(side? topright : topleft) - texHeight;
+        }
+
+        // Clip it.
+        if(clipBottom)
+            if(*(side? bottomright : bottomleft) < openingBottom)
+            {
+                *(side? bottomright : bottomleft) = openingBottom;
+            }
+
+        if(clipTop)
+            if(*(side? topright : topleft) > openingTop)
+            {
+                if(side == 0 && texoffy)
+                    *texoffy += *(side? topright : topleft) - openingTop;
+                *(side? topright : topleft) = openingTop;
+            }
+    }
+
+    return (visible[0] || visible[1]);
+}
+
 /**
  * A neighbour is a line that shares a vertex with 'line', and faces the
  * specified sector.
@@ -1115,7 +1448,7 @@ linedef_t* R_FindSolidLineNeighbor(const sector_t* sector,
                       oFCeil > sector->SP_floorvisheight)))  )
             {
 
-                if(!Rend_DoesMidTextureFillGap(other, side))
+                if(!R_DoesMiddleMaterialFillGap(other, side))
                     return 0;
             }
         }
@@ -1232,23 +1565,23 @@ void R_InitLinks(gamemap_t *map)
  * center of the trifan. If a suitable point cannot be found use the center of
  * subsector instead (it will always be valid as subsectors are convex).
  */
-void R_PickSubsectorFanBase(face_t* face)
+void R_PickSubSectorFanBase(face_t* face)
 {
 #define TRIFAN_LIMIT    0.1
 
     hedge_t*            base = NULL;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
 
-    if(ssec->firstFanHEdge)
+    if(subSector->firstFanHEdge)
         return; // Already chosen.
 
-    ssec->useMidPoint = false;
+    subSector->useMidPoint = false;
 
     /**
      * We need to find a good tri-fan base vertex, (one that doesn't
      * generate zero-area triangles).
      */
-    if(ssec->hEdgeCount > 3)
+    if(subSector->hEdgeCount > 3)
     {
         uint                baseIDX;
         hedge_t*            hEdge;
@@ -1286,13 +1619,13 @@ void R_PickSubsectorFanBase(face_t* face)
         } while(!base && (hEdge = hEdge->next) != face->hEdge);
 
         if(!base)
-            ssec->useMidPoint = true;
+            subSector->useMidPoint = true;
     }
 
     if(base)
-        ssec->firstFanHEdge = base;
+        subSector->firstFanHEdge = base;
     else
-        ssec->firstFanHEdge = face->hEdge;
+        subSector->firstFanHEdge = face->hEdge;
 
 #undef TRIFAN_LIMIT
 }
@@ -1543,14 +1876,14 @@ void R_SetupMap(int mode, int flags)
             ddpl->inVoid = true;
             if(ddpl->mo)
             {
-                const subsector_t*  ssec = (const subsector_t*)
-                    R_PointInSubsector(ddpl->mo->pos[VX],
+                const subsector_t*  subSector = (const subsector_t*)
+                    R_PointInSubSector(ddpl->mo->pos[VX],
                                        ddpl->mo->pos[VY])->data;
 
                 //// \fixme $nplanes
-                if(ssec &&
-                   ddpl->mo->pos[VZ] > ssec->sector->SP_floorvisheight + 4 &&
-                   ddpl->mo->pos[VZ] < ssec->sector->SP_ceilvisheight - 4)
+                if(subSector &&
+                   ddpl->mo->pos[VZ] > subSector->sector->SP_floorvisheight + 4 &&
+                   ddpl->mo->pos[VZ] < subSector->sector->SP_ceilvisheight - 4)
                    ddpl->inVoid = false;
             }
         }
@@ -1644,7 +1977,7 @@ boolean R_SectorContainsSkySurfaces(const sector_t* sec)
  * best choice of material used on those surfaces to be applied to "this"
  * surface.
  */
-static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
+static material_t* chooseFixMaterial(const hedge_t* hEdge, segsection_t section)
 {
     material_t*         choice = NULL;
 
@@ -1652,8 +1985,7 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
     // favouring non-animated materials.
     if(section == SEG_BOTTOM || section == SEG_TOP)
     {
-        byte                sid = (LINE_FRONTSIDE(s->lineDef) == s? 0 : 1);
-        sector_t*           backSec = LINE_SECTOR(s->lineDef, sid^1);
+        sector_t*           backSec = HE_BACKSECTOR(hEdge);
 
         if(backSec)
         {
@@ -1667,7 +1999,7 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
         }
 
         if(!choice)
-            choice = s->sector->
+            choice = HE_FRONTSECTOR(hEdge)->
                 SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
                     surface.material;
     }
@@ -1675,59 +2007,63 @@ static material_t* chooseFixMaterial(sidedef_t* s, segsection_t section)
     return choice;
 }
 
-static void updateSidedefSection(sidedef_t* s, segsection_t section)
+static void updateSideDefSection(hedge_t* hEdge, segsection_t section)
 {
-    surface_t*          suf;
+    sidedef_t*          sideDef = HE_FRONTSIDEDEF(hEdge);
+    surface_t*          suf = &sideDef->SW_surface(section);
 
-    if(section == SEG_MIDDLE)
-        return; // Not applicable.
+    if(suf->inFlags & SUIF_MATERIAL_FIX)
+    {
+        Surface_SetMaterial(suf, NULL, false);
+        suf->inFlags &= ~SUIF_MATERIAL_FIX;
+    }
 
-    suf = &s->sections[section];
     if(!suf->material &&
-       !IS_SKYSURFACE(&s->sector->
+       !IS_SKYSURFACE(&HE_FRONTSECTOR(hEdge)->
             SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
                 surface))
     {
-        Surface_SetMaterial(suf, chooseFixMaterial(s, section), false);
+        Surface_SetMaterial(suf, chooseFixMaterial(hEdge, section), false);
         suf->inFlags |= SUIF_MATERIAL_FIX;
     }
 }
 
-void R_UpdateLinedefsOfSector(sector_t* sec)
+void R_UpdateSideDefsOfSubSector(face_t* face)
 {
-    uint                i;
+    hedge_t*            hEdge;
 
-    for(i = 0; i < sec->lineDefCount; ++i)
+    if((hEdge = face->hEdge))
     {
-        linedef_t*          li = sec->lineDefs[i];
-        sidedef_t*          front, *back;
-        sector_t*           frontSec, *backSec;
+        do
+        {
+            sector_t*           frontSec, *backSec;
 
-        if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
-            continue;
+            // Only spread to real back subsectors.
+            if(!hEdge->twin || !HE_FRONTSIDEDEF(hEdge->twin))
+                continue;
 
-        front = LINE_FRONTSIDE(li);
-        back  = LINE_BACKSIDE(li);
-        frontSec = HE_FRONTSECTOR(li->hEdges[0]);
-        backSec  = HE_BACKSECTOR(li->hEdges[1]);
+            frontSec = HE_FRONTSECTOR(hEdge);
+            backSec  = HE_BACKSECTOR(hEdge);
 
-        /**
-         * Do as in the original Doom if the texture has not been defined -
-         * extend the floor/ceiling to fill the space (unless it is skymasked),
-         * or if there is a midtexture use that instead.
-         */
+            /**
+             * Do as in the original Doom if the texture has not been defined -
+             * extend the floor/ceiling to fill the space (unless it is skymasked),
+             * or if there is a midtexture use that instead.
+             */
 
-        // Check for missing lowers.
-        if(frontSec->SP_floorheight < backSec->SP_floorheight)
-            updateSidedefSection(front, SEG_BOTTOM);
-        else if(frontSec->SP_floorheight > backSec->SP_floorheight)
-            updateSidedefSection(back, SEG_BOTTOM);
+            // Check for missing lowers.
+            if(frontSec->SP_floorheight < backSec->SP_floorheight)
+                updateSideDefSection(hEdge, SEG_BOTTOM);
+            else if(frontSec->SP_floorheight > backSec->SP_floorheight)
+                updateSideDefSection(hEdge->twin, SEG_BOTTOM);
 
-        // Check for missing uppers.
-        if(backSec->SP_ceilheight < frontSec->SP_ceilheight)
-            updateSidedefSection(front, SEG_TOP);
-        else if(backSec->SP_ceilheight > frontSec->SP_ceilheight)
-            updateSidedefSection(back, SEG_TOP);
+            // Check for missing uppers.
+            if(backSec->SP_ceilheight < frontSec->SP_ceilheight)
+                updateSideDefSection(hEdge, SEG_TOP);
+            else if(backSec->SP_ceilheight > frontSec->SP_ceilheight)
+                updateSideDefSection(hEdge->twin, SEG_TOP);
+
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 }
 
@@ -1794,15 +2130,17 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 
         // Update the z position of the degenmobj for this plane.
         pln->soundOrg.pos[VZ] = pln->height;
-
-        // Inform the shadow bias of changed geometry.
+        
         facePtr = sec->faces;
         while(*facePtr)
         {
             face_t*             face = *facePtr;
-            subsector_t*        ssec = (subsector_t*) face->data;
+            subsector_t*        subSector = (subsector_t*) face->data;
 
-            if(ssec->bsuf)
+            R_UpdateSideDefsOfSubSector(face);
+
+            // Inform the shadow bias of changed geometry?
+            if(subSector->bsuf)
             {
                 hedge_t*            hEdge;
 
@@ -1820,11 +2158,14 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
                     } while((hEdge = hEdge->next) != face->hEdge);
                 }
 
-                SB_SurfaceMoved(map, ssec->bsuf[pln->planeID]);
+                SB_SurfaceMoved(map, subSector->bsuf[pln->planeID]);
             }
 
             *facePtr++;
         }
+
+        sec->soundOrg.pos[VZ] = (sec->SP_ceilheight - sec->SP_floorheight) / 2;
+        S_CalcSectorReverb(sec);
 
         // We need the decorations updated.
         Surface_Update(&pln->surface);
@@ -1839,7 +2180,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 /**
  * Stub.
  */
-boolean R_UpdateSubSector(face_t* ssec, boolean forceUpdate)
+boolean R_UpdateSubSector(face_t* subSector, boolean forceUpdate)
 {
     return false; // Not changed.
 }
@@ -1879,22 +2220,13 @@ boolean R_UpdateSector(sector_t* sec, boolean forceUpdate)
         }
     }
 
-    if(planeChanged)
-    {
-        sec->soundOrg.pos[VZ] = (sec->SP_ceilheight - sec->SP_floorheight) / 2;
-        R_UpdateLinedefsOfSector(sec);
-        S_CalcSectorReverb(sec);
-
-        changed = true;
-    }
-
     return planeChanged;
 }
 
 /**
  * Stub.
  */
-boolean R_UpdateLinedef(linedef_t* line, boolean forceUpdate)
+boolean R_UpdateLineDef(linedef_t* line, boolean forceUpdate)
 {
     return false; // Not changed.
 }
@@ -1902,7 +2234,7 @@ boolean R_UpdateLinedef(linedef_t* line, boolean forceUpdate)
 /**
  * Stub.
  */
-boolean R_UpdateSidedef(sidedef_t* side, boolean forceUpdate)
+boolean R_UpdateSideDef(sidedef_t* side, boolean forceUpdate)
 {
     return false; // Not changed.
 }
@@ -1956,7 +2288,7 @@ float R_DistAttenuateLightLevel(float distToViewer, float lightLevel)
  * The DOOM lighting model applies a sector light level delta when drawing
  * segs based on their 2D world angle.
  *
- * @param l             Linedef to calculate the delta for.
+ * @param l             LineDef to calculate the delta for.
  * @param side          Side of the linedef we are interested in.
  * @return              Calculated delta.
  */
@@ -1966,7 +2298,7 @@ float R_WallAngleLightLevelDelta(const linedef_t* l, byte side)
         return 0;
 
     // Do a lighting adjustment based on orientation.
-    return Linedef_GetLightLevelDelta(l) * (side? -1 : 1) *
+    return LineDef_GetLightLevelDelta(l) * (side? -1 : 1) *
         rendLightWallAngle;
 }
 
@@ -1992,7 +2324,7 @@ float R_CheckSectorLight(float lightlevel, float min, float max)
         return 1;
 
     // Apply adaptation
-    Rend_ApplyLightAdaptation(&lightlevel);
+    R_ApplyLightAdaptation(&lightlevel);
 
     return MINMAX_OF(0, (lightlevel - min) / (float) (max - min), 1);
 }

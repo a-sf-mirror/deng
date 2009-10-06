@@ -244,17 +244,17 @@ void P_MapInitPolyobjs(void)
         avg.pos[VX] /= po->numLineDefs;
         avg.pos[VY] /= po->numLineDefs;
 
-        if((face = R_PointInSubsector(avg.pos[VX], avg.pos[VY])))
+        if((face = R_PointInSubSector(avg.pos[VX], avg.pos[VY])))
         {
-            subsector_t*        ssec = (subsector_t*) face->data;
+            subsector_t*        subSector = (subsector_t*) face->data;
 
-            if(ssec->polyObj)
+            if(subSector->polyObj)
             {
                 Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
                             "  (face %i, sector %i). Previous polyobj overridden.\n",
-                            GET_FACE_IDX(face), GET_SECTOR_IDX(ssec->sector));
+                            GET_FACE_IDX(face), GET_SECTOR_IDX(subSector->sector));
             }
-            ssec->polyObj = po;
+            subSector->polyObj = po;
             po->face = face;
         }
 

@@ -31,6 +31,6 @@
 
 void            R_InitSectorShadows(void);
 
-boolean         R_IsShadowingLinedef(linedef_t *line);
+boolean         R_IsShadowingLineDef(linedef_t *line);
 
 #endif

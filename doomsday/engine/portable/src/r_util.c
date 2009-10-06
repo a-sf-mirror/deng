@@ -252,7 +252,7 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-face_t* R_PointInSubsector(const float x, const float y)
+face_t* R_PointInSubSector(const float x, const float y)
 {
     node_t*             node = 0;
     uint                nodenum = 0;
@@ -271,9 +271,9 @@ face_t* R_PointInSubsector(const float x, const float y)
     return &faces[nodenum & ~NF_SUBSECTOR];
 }
 
-void* P_PointInSubsector(const float x, const float y)
+void* P_PointInSubSector(const float x, const float y)
 {
-    return DMU_GetObjRecord(DMU_FACE, R_PointInSubsector(x, y));
+    return DMU_GetObjRecord(DMU_FACE, R_PointInSubSector(x, y));
 }
 
 linedef_t* R_GetLineForSide(const uint sideNumber)
@@ -361,7 +361,7 @@ boolean R_IsPointInSector(const float x, const float y,
 boolean R_IsPointInSector2(const float x, const float y,
                            const sector_t* sector)
 {
-    const face_t*       face = R_PointInSubsector(x, y);
+    const face_t*       face = R_PointInSubSector(x, y);
     fvertex_t*          vi, *vj;
     hedge_t*            hEdge;
 

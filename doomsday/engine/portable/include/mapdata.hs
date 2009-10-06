@@ -109,10 +109,10 @@ typedef struct seg_s {
 
 #define HE_LINESIDE(hEdge) (((seg_t*) (hEdge)->data)->side)
 
-#define HE_FRONTSSECTOR(hEdge) ((subsector_t*) (hEdge)->face->data)
-#define HE_BACKSSECTOR(hEdge) ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data) : NULL)
+#define HE_FRONTSUBSECTOR(hEdge) ((subsector_t*) (hEdge)->face->data)
+#define HE_BACKSUBSECTOR(hEdge) ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data) : NULL)
 
-#define HE_FRONTSECTOR(hEdge) (HE_FRONTSSECTOR(hEdge)->sector)
+#define HE_FRONTSECTOR(hEdge) (HE_FRONTSUBSECTOR(hEdge)->sector)
 #define HE_BACKSECTOR(hEdge)  ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
 
 end
@@ -453,7 +453,7 @@ internal
 #define BACK                    1
 
 typedef struct msidedef_s {
-    // Sidedef index. Always valid after loading & pruning.
+    // SideDef index. Always valid after loading & pruning.
     int         index;
     int         refCount;
 } msidedef_t;
@@ -512,7 +512,7 @@ internal
 typedef struct mlinedef_s {
     struct vertex_s* v[2];
     struct sidedef_s* sideDefs[2];
-    // Linedef index. Always valid after loading & pruning of zero
+    // LineDef index. Always valid after loading & pruning of zero
     // length lines has occurred.
     int         index;
 

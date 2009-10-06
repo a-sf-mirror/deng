@@ -93,8 +93,8 @@ static void processMobjShadow(mobj_t* mo)
 
     float               moz;
     float               height, moh, halfmoh, alpha, pos[2];
-    subsector_t*        ssec = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
-    sector_t*           sec = ssec->sector;
+    subsector_t*        subSector = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
+    sector_t*           sec = subSector->sector;
     float               radius;
     uint                i;
     rvertex_t           rvertices[4];
@@ -107,7 +107,7 @@ static void processMobjShadow(mobj_t* mo)
     // Is this too far?
     pos[VX] = mo->pos[VX];
     pos[VY] = mo->pos[VY];
-    if((distance = Rend_PointDist2D(pos)) > shadowMaxDist)
+    if((distance = R_PointDist2D(pos)) > shadowMaxDist)
         return;
 
     // Apply a Short Range Visual Offset?
@@ -161,7 +161,7 @@ static void processMobjShadow(mobj_t* mo)
         radius = (float) shadowMaxRad;
 
     // Figure out the visible floor height.
-    plane = ssec->sector->SP_plane(PLN_FLOOR);
+    plane = subSector->sector->SP_plane(PLN_FLOOR);
     P_MobjSectorsIterator(mo, Rend_ShadowIterator, &plane);
 
     if(plane->visHeight >= moz + mo->height)

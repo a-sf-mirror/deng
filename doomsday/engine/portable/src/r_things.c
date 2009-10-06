@@ -986,7 +986,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
                                           material_t* mat, boolean matFlipS, boolean matFlipT, blendmode_t blendMode,
                                           float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                           uint vLightListIdx,
-                                          int transMap, int transClass, face_t* ssec,
+                                          int transMap, int transClass, face_t* subSector,
                                           boolean floorAdjust, boolean fitTop, boolean fitBottom,
                                           boolean viewAligned,
                                           boolean brightShadow, boolean shadow, boolean altShadow,
@@ -1018,7 +1018,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
     params->srvo[VZ] = visOffZ;
     params->distance = distance;
     params->viewOffX = (float) sprTex->offX - ms.width / 2.0f;
-    params->subsector = ssec;
+    params->subsector = subSector;
     params->viewAligned = viewAligned;
     params->noZWrite = noSpriteZWrite;
 
@@ -1045,7 +1045,7 @@ void setupModelParamsForVisSprite(rendmodelparams_t *params,
                                   struct modeldef_s* mf, struct modeldef_s* nextMF, float inter,
                                   float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                   uint vLightListIdx,
-                                  int id, int selector, face_t* ssec, int mobjDDFlags, int tmap,
+                                  int id, int selector, face_t* subSector, int mobjDDFlags, int tmap,
                                   boolean viewAlign, boolean fullBright,
                                   boolean alwaysInterpolate)
 {
@@ -1113,10 +1113,10 @@ void getLightingParams(float x, float y, float z, face_t* face,
         }
         else
         {
-            const subsector_t*  ssec = (const subsector_t*) face->data;
-            float               lightLevel = ssec->sector->lightLevel;
+            const subsector_t*  subSector = (const subsector_t*) face->data;
+            float               lightLevel = subSector->sector->lightLevel;
             const float*        secColor =
-                R_GetSectorLightColor(ssec->sector);
+                R_GetSectorLightColor(subSector->sector);
 
             /* if(spr->type == VSPR_DECORATION)
             {
@@ -1130,7 +1130,7 @@ void getLightingParams(float x, float y, float z, face_t* face,
             // Add extra light.
             lightLevel += R_ExtraLightDelta();
 
-            Rend_ApplyLightAdaptation(&lightLevel);
+            R_ApplyLightAdaptation(&lightLevel);
 
             // Determine the final ambientColor in affect.
             ambientColor[CR] = lightLevel * secColor[CR];
@@ -1138,7 +1138,7 @@ void getLightingParams(float x, float y, float z, face_t* face,
             ambientColor[CB] = lightLevel * secColor[CB];
         }
 
-        Rend_ApplyTorchLight(ambientColor, distance);
+        R_ColorApplyTorchLight(ambientColor, distance);
 
         lparams.starkLight = false;
         lparams.center[VX] = x;
@@ -1156,8 +1156,8 @@ void getLightingParams(float x, float y, float z, face_t* face,
  */
 void R_ProjectSprite(mobj_t* mo)
 {
-    subsector_t*        ssec = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
-    sector_t*           sect = ssec->sector;
+    subsector_t*        subSector = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
+    sector_t*           sect = subSector->sector;
     float               thangle = 0, alpha, floorClip, secFloor, secCeil;
     float               pos[2], yaw, pitch;
     vec3_t              visOff;
@@ -1211,7 +1211,7 @@ void R_ProjectSprite(mobj_t* mo)
     sprFrame = &sprDef->spriteFrames[mo->frame];
 
     // Determine distance to object.
-    distance = Rend_PointDist2D(mo->pos);
+    distance = R_PointDist2D(mo->pos);
 
     // Check for a 3D model.
     if(useModels)
@@ -1339,8 +1339,8 @@ void R_ProjectSprite(mobj_t* mo)
     viewAlign = (align || alwaysAlign == 3)? true : false;
     fullBright = ((mo->state->flags & STF_FULLBRIGHT) || levelFullBright)? true : false;
 
-    secFloor = ssec->sector->SP_floorvisheight;
-    secCeil = ssec->sector->SP_ceilvisheight;
+    secFloor = subSector->sector->SP_floorvisheight;
+    secCeil = subSector->sector->SP_ceilvisheight;
 
     // Foot clipping.
     floorClip = mo->floorClip;
@@ -1546,8 +1546,8 @@ boolean RIT_AddSprite(void* ptr, void* data)
 {
     mobj_t*             mo = (mobj_t*) ptr;
     addspriteparams_t*  params = (addspriteparams_t*) data;
-    subsector_t*        ssec = (subsector_t*) params->face->data;
-    sector_t*           sec = ssec->sector;
+    subsector_t*        subSector = (subsector_t*) params->face->data;
+    sector_t*           sec = subSector->sector;
 
     if(mo->addFrameCount != frameCount)
     {
@@ -1594,7 +1594,7 @@ void R_AddSprites(face_t* face)
         return; // Already added.
 
     params.face = face;
-    R_IterateSubsectorContacts(face, OT_MOBJ, RIT_AddSprite, &params);
+    R_IterateSubSectorContacts(face, OT_MOBJ, RIT_AddSprite, &params);
 
     ((subsector_t*) face->data)->addSpriteCount = frameCount;
 }

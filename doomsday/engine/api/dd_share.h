@@ -636,13 +636,13 @@ enum {
     DMU_POLYOBJ_COUNT
 };
 
-// Linedef flags:
+// LineDef flags:
 // For use with P_Set/Get(DMU_LINEDEF, n, DMU_FLAGS).
 #define DDLF_BLOCKING           0x0001
 #define DDLF_DONTPEGTOP         0x0002
 #define DDLF_DONTPEGBOTTOM      0x0004
 
-// Sidedef flags
+// SideDef flags
 // For use with P_Set/Get(DMU_SIDEDEF, n, DMU_FLAGS).
 #define SDF_BLEND_TOPTOMID      0x0001
 #define SDF_BLEND_MIDTOTOP      0x0002

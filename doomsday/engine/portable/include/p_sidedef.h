@@ -32,7 +32,10 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
-boolean         Sidedef_GetProperty(const sidedef_t* sid, setargs_t* args);
-boolean         Sidedef_SetProperty(sidedef_t* sid, const setargs_t* args);
+void            SideDef_ColorTints(sidedef_t* side, segsection_t section,
+                                   const float** topColor, const float** bottomColor);
+
+boolean         SideDef_GetProperty(const sidedef_t* sid, setargs_t* args);
+boolean         SideDef_SetProperty(sidedef_t* sid, const setargs_t* args);
 
 #endif

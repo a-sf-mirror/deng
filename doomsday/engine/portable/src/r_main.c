@@ -98,9 +98,20 @@ float viewPitch; // Player->lookDir, global version.
 float viewCos, viewSin;
 boolean setSizeNeeded;
 
+float vx, vy, vz, vang, vpitch;
+float viewsidex, viewsidey;
+
+float fieldOfView = 95.0f;
+float yfov;
+
+int viewpw, viewph; // Viewport size, in pixels.
+int viewpx, viewpy; // Viewpoint top left corner, in pixels.
+
 // Precalculated math tables.
 fixed_t* fineCosine = &finesine[FINEANGLES / 4];
 
+float torchColor[3] = {1, 1, 1};
+int torchAdditive = true;
 int extraLight; // Bumped light from gun blasts.
 float extraLightDelta;
 
@@ -149,6 +160,20 @@ void R_Register(void)
 #endif
 
     P_MaterialManagerRegister();
+}
+
+float R_FacingViewerDot(float v1[2], float v2[2])
+{
+    // The dot product.
+    return (v1[VY] - v2[VY]) * (v1[VX] - vx) + (v2[VX] - v1[VX]) * (v1[VY] - vz);
+}
+
+/**
+ * Approximated! The Z axis aspect ratio is corrected.
+ */
+float R_PointDist3D(const float c[3])
+{
+    return M_ApproxDistance3f(vx - c[VX], vz - c[VY], 1.2f * (vy - c[VZ]));
 }
 
 /**
@@ -950,6 +975,55 @@ void R_RenderViewPorts(void)
     // Restore things back to normal.
     displayPlayer = oldDisplay;
     R_UseViewPort(NULL);
+}
+
+/**
+ * Applies the offset from the lightModRangeto the given light value.
+ *
+ * The lightModRange is used to implement (precalculated) ambient light
+ * limit, light range compression and light range shift.
+ *
+ * \note There is no need to clamp the result. Since the offset values in
+ *       the lightModRange have already been clamped so that the resultant
+ *       lightvalue is NEVER outside the range 0-254 when the original
+ *       lightvalue is used as the index.
+ *
+ * @param lightvar      Ptr to the value to apply the adaptation to.
+ */
+void R_ApplyLightAdaptation(float *lightvar)
+{
+    int                 lightval;
+
+    if(lightvar == NULL)
+        return; // Can't apply adaptation to a NULL val ptr...
+
+    lightval = ROUND(255.0f * *lightvar);
+    if(lightval > 254)
+        lightval = 254;
+    else if(lightval < 0)
+        lightval = 0;
+
+    *lightvar += lightModRange[lightval];
+}
+
+/**
+ * Similar to R_ApplyLightAdaptation but instead of applying light
+ * adaptation directly this method returns the delta.
+ *
+ * @param lightvalue    Light value to look up the adaptation delta for.
+ * @return int          Adaptation delta for the passed light value.
+ */
+float R_LightAdaptationDelta(float lightvalue)
+{
+    int                 lightval;
+
+    lightval = ROUND(255.0f * lightvalue);
+    if(lightval > 254)
+        lightval = 254;
+    else if(lightval < 0)
+        lightval = 0;
+
+    return lightModRange[lightval];
 }
 
 D_CMD(ViewGrid)

@@ -83,11 +83,11 @@ typedef struct {
     double              pPara;
     double              pPerp;
 
-    // Linedef that this half-edge goes along, or NULL if miniseg.
+    // LineDef that this half-edge goes along, or NULL if miniseg.
     linedef_t*          lineDef;
     hedge_t*            lprev, *lnext; // Previous and next half-edges along linedef side.
 
-    // Linedef that this half-edge initially comes from.
+    // LineDef that this half-edge initially comes from.
     // For "real" half-edges, this is just the same as the 'linedef' field
     // above. For "miniedges", this is the linedef of the partition line.
     linedef_t*          sourceLine;

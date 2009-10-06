@@ -92,7 +92,7 @@ surfacelist_t* movingSurfaceList = NULL;
 surfacelist_t* decoratedSurfaceList = NULL;
 
 blockmap_t* BlockMap = NULL;
-blockmap_t* SSecBlockMap = NULL;
+blockmap_t* SubSectorBlockMap = NULL;
 
 nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
 
@@ -192,7 +192,7 @@ void P_SetCurrentMap(gamemap_t* map)
     linelinks = map->lineLinks;
 
     BlockMap = map->blockMap;
-    SSecBlockMap = map->ssecBlockMap;
+    SubSectorBlockMap = map->subSectorBlockMap;
 
     mapGravity = map->globalGravity;
 
@@ -342,7 +342,7 @@ boolean P_LoadMap(const char* mapID)
         R_BuildSectorLinks(map);
 
         // Init blockmap for searching subsectors.
-        P_BuildSubsectorBlockMap(map);
+        P_BuildSubSectorBlockMap(map);
 
         // Init the watched object lists.
         memset(&map->watchedPlaneList, 0, sizeof(map->watchedPlaneList));

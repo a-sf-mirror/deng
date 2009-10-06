@@ -146,7 +146,7 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                M_Length(line->buildData.v[0]->buildData.pos[VX] - line->buildData.v[1]->buildData.pos[VX],
                         line->buildData.v[0]->buildData.pos[VY] - line->buildData.v[1]->buildData.pos[VY]))
             {
-                Con_Message("Linedef #%d is VERY long, it may cause problems\n",
+                Con_Message("LineDef #%d is VERY long, it may cause problems\n",
                             line->buildData.index);
             }
         }
@@ -166,7 +166,7 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
             BSP_AddHEdgeToSuperBlock(block, front);
         }
         else
-            Con_Message("Linedef #%d has no front sidedef!\n",
+            Con_Message("LineDef #%d has no front sidedef!\n",
                         line->buildData.index);
 
         if(line->buildData.sideDefs[BACK])

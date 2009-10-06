@@ -217,14 +217,14 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
                      line);
 
         // For each column, see where the line along its left edge, which
-        // it contains, intersects the Linedef i. Add i to each corresponding
+        // it contains, intersects the LineDef i. Add i to each corresponding
         // blocklist.
         // We don't want to interesect vertical lines with columns.
         if(!vert)
         {
             for(j = 0; j < (signed) bMapWidth; ++j)
             {
-                // intersection of Linedef with x=xorg+(j<<BLKSHIFT)
+                // intersection of LineDef with x=xorg+(j<<BLKSHIFT)
                 // (y-v1[VY])*dx = dy*(x-v1[VX])
                 // y = dy*(x-v1[VX])+v1[VY]*dx;
                 int             x = xorg + (j << BLKSHIFT); // (x,y) is intersection
@@ -290,14 +290,14 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
         }
 
         // For each row, see where the line along its bottom edge, which
-        // it contains, intersects the Linedef i. Add i to all the corresponding
+        // it contains, intersects the LineDef i. Add i to all the corresponding
         // blocklists.
         if(!horiz)
         {
             for(j = 0; j < (signed) bMapHeight; ++j)
             {
-                // intersection of Linedef with y=yorg+(j<<BLKSHIFT)
-                // (x,y) on Linedef i satisfies: (y-v1[VY])*dx = dy*(x-v1[VX])
+                // intersection of LineDef with y=yorg+(j<<BLKSHIFT)
+                // (x,y) on LineDef i satisfies: (y-v1[VY])*dx = dy*(x-v1[VX])
                 // x = dx*(y-v1[VY])/dy+v1[VX];
                 int             y = yorg + (j << BLKSHIFT); // (x,y) is intersection
                 int             x = (dx * (y - v1[VY])) / dy + v1[VX];

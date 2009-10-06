@@ -115,9 +115,9 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
         }
     case DMU_FRONT_SECTOR:
         {
-        subsector_t*        ssec = (subsector_t*) hEdge->face->data;
-        dmuobjrecord_t* r = (ssec->sector && ((seg_t*) hEdge->data)->sideDef)?
-            DMU_GetObjRecord(DMU_SECTOR, ssec->sector) : NULL;
+        subsector_t*        subSector = (subsector_t*) hEdge->face->data;
+        dmuobjrecord_t* r = (subSector->sector && ((seg_t*) hEdge->data)->sideDef)?
+            DMU_GetObjRecord(DMU_SECTOR, subSector->sector) : NULL;
         DMU_GetValue(DMT_HEDGE_SEC, &r, args, 0);
         break;
         }
@@ -127,15 +127,15 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
 
         if(hEdge->twin)
         {
-            subsector_t*        ssec = (subsector_t*) hEdge->twin->face->data;
+            subsector_t*        subSector = (subsector_t*) hEdge->twin->face->data;
 
             /**
              * The sector and the sidedef are checked due to the possibility
              * of the "back-sided window effect", which the games are not
              * currently aware of.
              */
-            if(ssec->sector && ((seg_t*) hEdge->twin->data)->sideDef)
-                ptr = DMU_GetObjRecord(DMU_SECTOR, ssec->sector);
+            if(subSector->sector && ((seg_t*) hEdge->twin->data)->sideDef)
+                ptr = DMU_GetObjRecord(DMU_SECTOR, subSector->sector);
         }
 
         DMU_GetValue(DMT_HEDGE_SEC, &ptr, args, 0);

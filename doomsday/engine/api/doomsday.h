@@ -173,7 +173,7 @@ extern          "C" {
 
     uint            MPE_VertexCreate(float x, float y);
     boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
-    uint            MPE_SidedefCreate(uint sector, short flags,
+    uint            MPE_SideDefCreate(uint sector, short flags,
                                       material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
@@ -185,7 +185,7 @@ extern          "C" {
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
-    uint            MPE_LinedefCreate(uint v1, uint v2, uint frontSide,
+    uint            MPE_LineDefCreate(uint v1, uint v2, uint frontSide,
                                       uint backSide, int flags);
     uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
     uint            MPE_PlaneCreate(uint sector, float height, material_t* material,
@@ -214,7 +214,7 @@ extern          "C" {
     float           P_AccurateDistance(float dx, float dy);
     float           P_ApproxDistance(float dx, float dy);
     float           P_ApproxDistance3(float dx, float dy, float dz);
-    int             DMU_PointOnLinedefSide(float x, float y, void* p);
+    int             DMU_PointOnLineDefSide(float x, float y, void* p);
     int             DMU_BoxOnLineSide(const float* tmbox, void* p);
     void            DMU_MakeDivline(void* p, divline_t* dl);
     int             P_PointOnDivlineSide(float x, float y,
@@ -235,7 +235,7 @@ extern          "C" {
     boolean         DMU_AllLinesBoxIterator(const float box[4],
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
-    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
+    boolean         DMU_SubSectorsBoxIterator(const float box[4], void* p,
                                            boolean (*func) (face_t*, void*),
                                            void* data);
 
@@ -421,7 +421,7 @@ extern          "C" {
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);
-    struct face_s*  P_PointInSubsector(float x, float y);
+    struct face_s*  P_PointInSubSector(float x, float y);
 
     colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
                                           const byte* data, size_t num);

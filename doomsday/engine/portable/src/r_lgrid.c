@@ -272,7 +272,7 @@ void LG_Init(void)
                 sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[0].pos[VY];
 
                 ssamples[idx] = ((subsector_t*)
-                    R_PointInSubsector(sample.pos[VX], sample.pos[VY])->data)->sector;
+                    R_PointInSubSector(sample.pos[VX], sample.pos[VY])->data)->sector;
                 if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
                    ssamples[idx] = NULL;
 
@@ -321,7 +321,7 @@ void LG_Init(void)
                         sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[n].pos[VY];
 
                         ssamples[idx] = ((subsector_t*)
-                            R_PointInSubsector(sample.pos[VX], sample.pos[VY])->data)->sector;
+                            R_PointInSubSector(sample.pos[VX], sample.pos[VY])->data)->sector;
                         if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
                            ssamples[idx] = NULL;
                     }
@@ -917,14 +917,14 @@ void LG_Evaluate(const float* point, float* color)
             color[i] *= dimming;
 
             // Add the light range compression factor
-            color[i] += Rend_GetLightAdaptVal(color[i]);
+            color[i] += R_LightAdaptationDelta(color[i]);
         }
     }
     else
     {
         // Just add the light range compression factor
         for(i = 0; i < 3; ++i)
-            color[i] += Rend_GetLightAdaptVal(color[i]);
+            color[i] += R_LightAdaptationDelta(color[i]);
     }
 }
 

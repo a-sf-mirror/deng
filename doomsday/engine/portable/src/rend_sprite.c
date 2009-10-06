@@ -316,10 +316,10 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         else
         {
             float               lightLevel;
-            const subsector_t*  ssec =
+            const subsector_t*  subSector =
                 (subsector_t*) spr->data.sprite.face->data;
             const float*        secColor =
-                R_GetSectorLightColor(ssec->sector);
+                R_GetSectorLightColor(subSector->sector);
 
             if(spr->psp->light < 1)
                 lightLevel = (spr->psp->light - .1f);
@@ -331,7 +331,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
             // Add extra light.
             lightLevel += R_ExtraLightDelta();
 
-            Rend_ApplyLightAdaptation(&lightLevel);
+            R_ApplyLightAdaptation(&lightLevel);
 
             // Determine the final ambientColor in affect.
             params->ambientColor[CR] = lightLevel * secColor[CR];
@@ -339,7 +339,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
             params->ambientColor[CB] = lightLevel * secColor[CB];
         }
 
-        Rend_ApplyTorchLight(params->ambientColor, 0);
+        R_ColorApplyTorchLight(params->ambientColor, 0);
 
         lparams.starkLight = false;
         lparams.center[VX] = spr->center[VX];
@@ -698,13 +698,13 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
         else
         {
             float               lightLevel;
-            const subsector_t*  ssec =
+            const subsector_t*  subSector =
                 (subsector_t*) spr->data.model.face->data;
             const float*        secColor =
-                R_GetSectorLightColor(ssec->sector);
+                R_GetSectorLightColor(subSector->sector);
 
             // Diminished light (with compression).
-            lightLevel = ssec->sector->lightLevel;
+            lightLevel = subSector->sector->lightLevel;
 
             // No need for distance attentuation.
 
@@ -713,7 +713,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
 
             // The last step is to compress the resultant light value by
             // the global lighting function.
-            Rend_ApplyLightAdaptation(&lightLevel);
+            R_ApplyLightAdaptation(&lightLevel);
 
             // Determine the final ambientColor in effect.
             params->ambientColor[CR] = lightLevel * secColor[CR];
@@ -721,7 +721,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
             params->ambientColor[CB] = lightLevel * secColor[CB];
         }
 
-        Rend_ApplyTorchLight(params->ambientColor, params->distance);
+        R_ColorApplyTorchLight(params->ambientColor, params->distance);
 
         lparams.starkLight = true;
         lparams.center[VX] = spr->center[VX];

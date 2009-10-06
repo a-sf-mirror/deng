@@ -342,7 +342,7 @@ static void findEquivalentVertexes(editmap_t *src)
     }
 }
 
-static void pruneLinedefs(editmap_t* map)
+static void pruneLineDefs(editmap_t* map)
 {
     uint                i, newNum, unused = 0;
 
@@ -410,7 +410,7 @@ static void pruneVertices(editmap_t* map)
     }
 }
 
-static void pruneUnusedSidedefs(editmap_t* map)
+static void pruneUnusedSideDefs(editmap_t* map)
 {
     uint                i, newNum, unused = 0;
 
@@ -495,13 +495,13 @@ void MPE_PruneRedundantMapData(editmap_t* map, int flags)
     findEquivalentVertexes(map);
 
 /*    if(flags & PRUNE_LINEDEFS)
-        pruneLinedefs(map);*/
+        pruneLineDefs(map);*/
 
     if(flags & PRUNE_VERTEXES)
         pruneVertices(map);
 
 /*    if(flags & PRUNE_SIDEDEFS)
-        pruneUnusedSidedefs(map);
+        pruneUnusedSideDefs(map);
 
     if(flags & PRUNE_SECTORS)
         pruneUnusedSectors(map);*/
@@ -602,7 +602,7 @@ boolean MPE_Begin(const char *name)
     return true;
 }
 
-static void hardenSectorSSecList(gamemap_t* map, uint secIDX)
+static void hardenSectorSubSectorList(gamemap_t* map, uint secIDX)
 {
     uint                i, n, count;
     sector_t*           sec = &map->sectors[secIDX];
@@ -622,9 +622,9 @@ static void hardenSectorSSecList(gamemap_t* map, uint secIDX)
     for(i = 0; i < map->numFaces; ++i)
     {
         face_t*             face = &map->faces[i];
-        subsector_t*        ssec = (subsector_t*) face->data;
+        subsector_t*        subSector = (subsector_t*) face->data;
 
-        if(ssec->sector == sec)
+        if(subSector->sector == sec)
         {
             sec->faces[n++] = face;
         }
@@ -637,7 +637,7 @@ static void hardenSectorSSecList(gamemap_t* map, uint secIDX)
 /**
  * Build subsector tables for all sectors.
  */
-static void buildSectorSSecLists(gamemap_t* map)
+static void buildSectorSubSectorLists(gamemap_t* map)
 {
     uint                i;
 
@@ -645,7 +645,7 @@ static void buildSectorSSecLists(gamemap_t* map)
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        hardenSectorSSecList(map, i);
+        hardenSectorSubSectorList(map, i);
     }
 }
 
@@ -849,7 +849,7 @@ static void finishLineDefs(gamemap_t* map)
 {
     uint                i;
 
-    VERBOSE2(Con_Message("Finalizing Linedefs...\n"));
+    VERBOSE2(Con_Message("Finalizing LineDefs...\n"));
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
@@ -928,10 +928,10 @@ static void updateMapBounds(gamemap_t *map)
     }
 }
 
-static void updateSSecMidPoint(face_t* face)
+static void updateSubSectorMidPoint(face_t* face)
 {
     hedge_t*            hEdge;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
 
     // Find the center point. First calculate the bounding box.
     if((hEdge = face->hEdge))
@@ -939,33 +939,33 @@ static void updateSSecMidPoint(face_t* face)
         fvertex_t*          vtx;
 
         vtx = &hEdge->HE_v1->v;
-        ssec->bBox[0].pos[VX] = ssec->bBox[1].pos[VX] = ssec->midPoint.pos[VX] = vtx->pos[VX];
-        ssec->bBox[0].pos[VY] = ssec->bBox[1].pos[VY] = ssec->midPoint.pos[VY] = vtx->pos[VY];
+        subSector->bBox[0].pos[VX] = subSector->bBox[1].pos[VX] = subSector->midPoint.pos[VX] = vtx->pos[VX];
+        subSector->bBox[0].pos[VY] = subSector->bBox[1].pos[VY] = subSector->midPoint.pos[VY] = vtx->pos[VY];
 
         while((hEdge = hEdge->next) != face->hEdge)
         {
             vtx = &hEdge->HE_v1->v;
 
-            if(vtx->pos[VX] < ssec->bBox[0].pos[VX])
-                ssec->bBox[0].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] < ssec->bBox[0].pos[VY])
-                ssec->bBox[0].pos[VY] = vtx->pos[VY];
-            if(vtx->pos[VX] > ssec->bBox[1].pos[VX])
-                ssec->bBox[1].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] > ssec->bBox[1].pos[VY])
-                ssec->bBox[1].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] < subSector->bBox[0].pos[VX])
+                subSector->bBox[0].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] < subSector->bBox[0].pos[VY])
+                subSector->bBox[0].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] > subSector->bBox[1].pos[VX])
+                subSector->bBox[1].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] > subSector->bBox[1].pos[VY])
+                subSector->bBox[1].pos[VY] = vtx->pos[VY];
 
-            ssec->midPoint.pos[VX] += vtx->pos[VX];
-            ssec->midPoint.pos[VY] += vtx->pos[VY];
+            subSector->midPoint.pos[VX] += vtx->pos[VX];
+            subSector->midPoint.pos[VY] += vtx->pos[VY];
         }
 
-        ssec->midPoint.pos[VX] /= ssec->hEdgeCount; // num vertices.
-        ssec->midPoint.pos[VY] /= ssec->hEdgeCount;
+        subSector->midPoint.pos[VX] /= subSector->hEdgeCount; // num vertices.
+        subSector->midPoint.pos[VY] /= subSector->hEdgeCount;
     }
 
     // Calculate the worldwide grid offset.
-    ssec->worldGridOffset[VX] = fmod(ssec->bBox[0].pos[VX], 64);
-    ssec->worldGridOffset[VY] = fmod(ssec->bBox[1].pos[VY], 64);
+    subSector->worldGridOffset[VX] = fmod(subSector->bBox[0].pos[VX], 64);
+    subSector->worldGridOffset[VY] = fmod(subSector->bBox[1].pos[VY], 64);
 }
 
 static void prepareSubSectors(gamemap_t* map)
@@ -976,7 +976,7 @@ static void prepareSubSectors(gamemap_t* map)
     {
         face_t*             face = &map->faces[i];
 
-        updateSSecMidPoint(face);
+        updateSubSectorMidPoint(face);
     }
 }
 
@@ -1262,7 +1262,7 @@ do
     }
 }
 
-static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
+static void hardenLineDefs(gamemap_t *dest, editmap_t *src)
 {
     uint                i;
 
@@ -1294,7 +1294,7 @@ static void hardenLinedefs(gamemap_t *dest, editmap_t *src)
     }
 }
 
-static void hardenSidedefs(gamemap_t* dest, editmap_t* src)
+static void hardenSideDefs(gamemap_t* dest, editmap_t* src)
 {
     uint                i;
 
@@ -1570,7 +1570,7 @@ Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
 
     if(backOpen && frontOpen && l->buildData.sideDefs[FRONT]->sector == backOpen)
     {
-        Con_Message("Linedef #%d seems to be a One-Sided Window "
+        Con_Message("LineDef #%d seems to be a One-Sided Window "
                     "(back faces sector #%d).\n", l->buildData.index - 1,
                     backOpen->buildData.index - 1);
 
@@ -1715,7 +1715,7 @@ typedef struct {
     uint                block[2];
 } findoverlaps_params_t;
 
-boolean findOverlapsForLinedef(linedef_t* l, void* data)
+boolean findOverlapsForLineDef(linedef_t* l, void* data)
 {
     findoverlaps_params_t* params = (findoverlaps_params_t*) data;
 
@@ -1743,7 +1743,7 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
             params.block[VY] = y;
 
             P_BlockmapLinesIterator(map->blockMap, params.block,
-                                    findOverlapsForLinedef, &params, false);
+                                    findOverlapsForLineDef, &params, false);
         }
 
     if(numOverlaps > 0)
@@ -1793,8 +1793,8 @@ boolean MPE_End(void)
      * go and reduce the current working memory surcharge.
      */
     hardenSectors(gamemap, map);
-    hardenSidedefs(gamemap, map);
-    hardenLinedefs(gamemap, map);
+    hardenSideDefs(gamemap, map);
+    hardenLineDefs(gamemap, map);
     hardenPolyobjs(gamemap, map);
 
     hardenVertexOwnerRings(gamemap, map);
@@ -1837,12 +1837,12 @@ boolean MPE_End(void)
         }
     }
 
-    buildSectorSSecLists(gamemap);
+    buildSectorSubSectorLists(gamemap);
 
     // Announce any issues detected with the map.
     MPE_PrintMapErrors();
 
-    // sector->ssectors must be built before this is called!
+    // sector->subSectors must be built before this is called!
     hardenPlanes(gamemap, map);
 
     // Destroy the rest of editable map, we are finished with it.
@@ -1956,7 +1956,7 @@ boolean MPE_VertexCreatev(size_t num, float* values, uint* indices)
     return true;
 }
 
-uint MPE_SidedefCreate(uint sector, short flags,
+uint MPE_SideDefCreate(uint sector, short flags,
                        material_t* topMaterial,
                        float topOffsetX, float topOffsetY, float topRed,
                        float topGreen, float topBlue,
@@ -2008,7 +2008,7 @@ uint MPE_SidedefCreate(uint sector, short flags,
  * @return              Idx of the newly created linedef else @c 0 if there
  *                      was an error.
  */
-uint MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
+uint MPE_LineDefCreate(uint v1, uint v2, uint frontSide, uint backSide,
                        int flags)
 {
     linedef_t*          l;

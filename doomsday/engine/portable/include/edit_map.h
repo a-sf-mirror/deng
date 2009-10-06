@@ -55,7 +55,7 @@ boolean         MPE_End(void);
 
 uint            MPE_VertexCreate(float x, float y);
 boolean         MPE_VertexCreatev(size_t num, float *values, uint *indices);
-uint            MPE_SidedefCreate(uint sector, short flags,
+uint            MPE_SideDefCreate(uint sector, short flags,
                                   material_t* topMaterial,
                                   float topOffsetX, float topOffsetY, float topRed,
                                   float topGreen, float topBlue,
@@ -67,7 +67,7 @@ uint            MPE_SidedefCreate(uint sector, short flags,
                                   float bottomOffsetX, float bottomOffsetY,
                                   float bottomRed, float bottomGreen,
                                   float bottomBlue);
-uint            MPE_LinedefCreate(uint v1, uint v2, uint frontSide, uint backSide,
+uint            MPE_LineDefCreate(uint v1, uint v2, uint frontSide, uint backSide,
                                   int flags);
 uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
 uint            MPE_PlaneCreate(uint sector, float height,

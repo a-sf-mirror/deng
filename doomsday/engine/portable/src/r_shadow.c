@@ -182,18 +182,18 @@ void R_UpdateVertexShadowOffsets(vertex_t *vtx)
 /**
  * Link a seg to an arbitary subsector for the purposes of shadowing.
  */
-static void linkShadowLineDefToSSec(linedef_t* line, byte side,
+static void linkShadowLineDefToSubSector(linedef_t* line, byte side,
                                     face_t* face)
 {
     shadowlink_t*       link;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
 
 #ifdef _DEBUG
 // Check the links for dupes!
 {
 shadowlink_t*       i;
 
-for(i = ssec->shadows; i; i = i->next)
+for(i = subSector->shadows; i; i = i->next)
     if(i->lineDef == line && i->side == side)
         Con_Error("R_LinkShadow: Already here!!\n");
 }
@@ -203,8 +203,8 @@ for(i = ssec->shadows; i; i = i->next)
     link = Z_BlockNewElement(shadowLinksBlockSet);
 
     // The links are stored into a linked list.
-    link->next = ssec->shadows;
-    ssec->shadows = link;
+    link->next = subSector->shadows;
+    subSector->shadows = link;
     link->lineDef = line;
     link->side = side;
 }
@@ -218,18 +218,18 @@ typedef struct shadowlinkerparms_s {
  * If the shadow polygon (parm) contacts the subsector, link the poly
  * to the subsector's shadow list.
  */
-boolean RIT_ShadowSubsectorLinker(face_t* face, void* parm)
+boolean RIT_ShadowSubSectorLinker(face_t* face, void* parm)
 {
     shadowlinkerparms_t* data = (shadowlinkerparms_t*) parm;
 
-    linkShadowLineDefToSSec(data->lineDef, data->side, face);
+    linkShadowLineDefToSubSector(data->lineDef, data->side, face);
     return true;
 }
 
 /**
  * Does the given linedef qualify as an edge shadow caster?
  */
-boolean R_IsShadowingLinedef(linedef_t *line)
+boolean R_IsShadowingLineDef(linedef_t *line)
 {
     if(line)
     {
@@ -282,7 +282,7 @@ void R_InitSectorShadows(void)
         sidedef_t*          side = SIDE_PTR(i);
         byte                sid;
 
-        if(!R_IsShadowingLinedef(side->lineDef))
+        if(!R_IsShadowingLineDef(side->lineDef))
             continue;
 
         sid = LINE_BACKSIDE(side->lineDef) == side? BACK : FRONT;
@@ -308,8 +308,8 @@ void R_InitSectorShadows(void)
         data.lineDef = side->lineDef;
         data.side = sid;
 
-        P_SubsectorsBoxIteratorv(bounds, side->sector,
-                                 RIT_ShadowSubsectorLinker, &data, false);
+        P_SubSectorsBoxIteratorv(bounds, side->sector,
+                                 RIT_ShadowSubSectorLinker, &data, false);
     }
 
     // How much time did we spend?

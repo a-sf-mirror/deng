@@ -50,10 +50,66 @@
 
 // CODE --------------------------------------------------------------------
 
+void SideDef_ColorTints(sidedef_t* side, segsection_t section,
+                        const float** topColor, const float** bottomColor)
+{
+    // Select the colors for this surface.
+    switch(section)
+    {
+    case SEG_MIDDLE:
+        if(side->flags & SDF_BLEND_MIDTOTOP)
+        {
+            *topColor = side->SW_toprgba;
+            *bottomColor = side->SW_middlergba;
+        }
+        else if(side->flags & SDF_BLEND_MIDTOBOTTOM)
+        {
+            *topColor = side->SW_middlergba;
+            *bottomColor = side->SW_bottomrgba;
+        }
+        else
+        {
+            *topColor = side->SW_middlergba;
+            *bottomColor = NULL;
+        }
+        break;
+
+    case SEG_TOP:
+        if(side->flags & SDF_BLEND_TOPTOMID)
+        {
+            *topColor = side->SW_toprgba;
+            *bottomColor = side->SW_middlergba;
+        }
+        else
+        {
+            *topColor = side->SW_toprgba;
+            *bottomColor = NULL;
+        }
+        break;
+
+    case SEG_BOTTOM:
+        // Select the correct colors for this surface.
+        if(side->flags & SDF_BLEND_BOTTOMTOMID)
+        {
+            *topColor = side->SW_middlergba;
+            *bottomColor = side->SW_bottomrgba;
+        }
+        else
+        {
+            *topColor = side->SW_bottomrgba;
+            *bottomColor = NULL;
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 /**
  * Update the sidedef, property is selected by DMU_* name.
  */
-boolean Sidedef_SetProperty(sidedef_t *sid, const setargs_t *args)
+boolean SideDef_SetProperty(sidedef_t *sid, const setargs_t *args)
 {
     switch(args->prop)
     {
@@ -61,7 +117,7 @@ boolean Sidedef_SetProperty(sidedef_t *sid, const setargs_t *args)
         DMU_SetValue(DMT_SIDEDEF_FLAGS, &sid->flags, args, 0);
         break;
     default:
-        Con_Error("Sidedef_SetProperty: Property %s is not writable.\n",
+        Con_Error("SideDef_SetProperty: Property %s is not writable.\n",
                   DMU_Str(args->prop));
     }
 
@@ -71,7 +127,7 @@ boolean Sidedef_SetProperty(sidedef_t *sid, const setargs_t *args)
 /**
  * Get the value of a sidedef property, selected by DMU_* name.
  */
-boolean Sidedef_GetProperty(const sidedef_t *sid, setargs_t *args)
+boolean SideDef_GetProperty(const sidedef_t *sid, setargs_t *args)
 {
     switch(args->prop)
     {
@@ -91,7 +147,7 @@ boolean Sidedef_GetProperty(const sidedef_t *sid, setargs_t *args)
         DMU_GetValue(DMT_SIDEDEF_FLAGS, &sid->flags, args, 0);
         break;
     default:
-        Con_Error("Sidedef_GetProperty: Has no property %s.\n",
+        Con_Error("SideDef_GetProperty: Has no property %s.\n",
                   DMU_Str(args->prop));
     }
 

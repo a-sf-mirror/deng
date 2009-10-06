@@ -826,18 +826,18 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
         case DMU_HEDGE:
             {
             const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_HEDGE)];
-            face_t*             ssec = (face_t*) ((dmuobjrecord_t*) ptr)->obj;
+            face_t*             subSector = (face_t*) ((dmuobjrecord_t*) ptr)->obj;
             int                 result = 1;
             hedge_t*            hEdge;
 
-            if((hEdge = ssec->hEdge))
+            if((hEdge = subSector->hEdge))
             {
                 do
                 {
                     dmuobjrecord_t*     r = findRecordInSet(s, hEdge);
                     if((result = callback(r, context)) == 0)
                         break;
-                } while((hEdge = hEdge->next) != ssec->hEdge);
+                } while((hEdge = hEdge->next) != subSector->hEdge);
             }
 
             return result;
@@ -1200,8 +1200,8 @@ static int setProperty(void* ptr, void* context)
     void*               obj = r->obj;
     sector_t*           updateSector1 = NULL, *updateSector2 = NULL;
     plane_t*            updatePlane = NULL;
-    linedef_t*          updateLinedef = NULL;
-    sidedef_t*          updateSidedef = NULL;
+    linedef_t*          updateLineDef = NULL;
+    sidedef_t*          updateSideDef = NULL;
     surface_t*          updateSurface = NULL;
     // face_t*        updateSubSector = NULL;
 
@@ -1258,7 +1258,7 @@ static int setProperty(void* ptr, void* context)
 
     if(args->type == DMU_LINEDEF)
     {
-        updateLinedef = (linedef_t*) obj;
+        updateLineDef = (linedef_t*) obj;
 
         if(args->modifiers & DMU_SIDEDEF0_OF_LINE)
         {
@@ -1270,7 +1270,7 @@ static int setProperty(void* ptr, void* context)
             sidedef_t*          si = LINE_BACKSIDE((linedef_t*) obj);
 
             if(!si)
-                Con_Error("DMU_setProperty: Linedef %i has no back side.\n",
+                Con_Error("DMU_setProperty: LineDef %i has no back side.\n",
                           P_ToIndex(obj));
 
             obj = si;
@@ -1280,7 +1280,7 @@ static int setProperty(void* ptr, void* context)
 
     if(args->type == DMU_SIDEDEF)
     {
-        updateSidedef = (sidedef_t*) obj;
+        updateSideDef = (sidedef_t*) obj;
 
         if(args->modifiers & DMU_TOP_OF_SIDEDEF)
         {
@@ -1365,15 +1365,15 @@ static int setProperty(void* ptr, void* context)
         break;
 
     case DMU_LINEDEF:
-        Linedef_SetProperty(obj, args);
+        LineDef_SetProperty(obj, args);
         break;
 
     case DMU_SIDEDEF:
-        Sidedef_SetProperty(obj, args);
+        SideDef_SetProperty(obj, args);
         break;
 
     case DMU_FACE:
-        Subsector_SetProperty(obj, args);
+        SubSector_SetProperty(obj, args);
         break;
 
     case DMU_SECTOR:
@@ -1404,7 +1404,7 @@ static int setProperty(void* ptr, void* context)
             switch(DMU_GetType(updateSurface->owner))
             {
             case DMU_SIDEDEF:
-                updateSidedef = updateSurface->owner;
+                updateSideDef = updateSurface->owner;
                 break;
 
             case DMU_PLANE:
@@ -1417,18 +1417,18 @@ static int setProperty(void* ptr, void* context)
         }
     }
 
-    if(updateSidedef)
+    if(updateSideDef)
     {
-        if(R_UpdateSidedef(updateSidedef, false))
-            updateLinedef = updateSidedef->lineDef;
+        if(R_UpdateSideDef(updateSideDef, false))
+            updateLineDef = updateSideDef->lineDef;
     }
 
-    if(updateLinedef)
+    if(updateLineDef)
     {
-        if(R_UpdateLinedef(updateLinedef, false))
+        if(R_UpdateLineDef(updateLineDef, false))
         {
-            updateSector1 = LINE_FRONTSECTOR(updateLinedef);
-            updateSector2 = LINE_BACKSECTOR(updateLinedef);
+            updateSector1 = LINE_FRONTSECTOR(updateLineDef);
+            updateSector2 = LINE_BACKSECTOR(updateLineDef);
         }
     }
 
@@ -1701,7 +1701,7 @@ static int getProperty(void* ptr, void* context)
             sidedef_t*      si = LINE_BACKSIDE((linedef_t*) obj);
 
             if(!si)
-                Con_Error("DMU_setProperty: Linedef %i has no back side.\n",
+                Con_Error("DMU_setProperty: LineDef %i has no back side.\n",
                           P_ToIndex(obj));
 
             obj = si;
@@ -1784,7 +1784,7 @@ static int getProperty(void* ptr, void* context)
         break;
 
     case DMU_LINEDEF:
-        Linedef_GetProperty(obj, args);
+        LineDef_GetProperty(obj, args);
         break;
 
     case DMU_SURFACE:
@@ -1800,11 +1800,11 @@ static int getProperty(void* ptr, void* context)
         break;
 
     case DMU_SIDEDEF:
-        Sidedef_GetProperty(obj, args);
+        SideDef_GetProperty(obj, args);
         break;
 
     case DMU_FACE:
-        Subsector_GetProperty(obj, args);
+        SubSector_GetProperty(obj, args);
         break;
 
     case DMU_MATERIAL:

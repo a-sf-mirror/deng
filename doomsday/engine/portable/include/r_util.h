@@ -36,13 +36,13 @@ angle_t         R_PointToAngle2(const float x1, const float y1,
                                 const float x2, const float y2);
 float           R_PointToDist(const float x, const float y);
 linedef_t*      R_GetLineForSide(const uint sideIDX);
-face_t*    R_PointInSubsector(const float x, const float y);
+face_t*    R_PointInSubSector(const float x, const float y);
 boolean         R_IsPointInSector(const float x, const float y,
                                   const sector_t* sector);
 boolean         R_IsPointInSector2(const float x, const float y,
                                    const sector_t* sector);
-boolean         R_IsPointInSubsector(const float x, const float y,
-                                     const subsector_t* ssec);
+boolean         R_IsPointInSubSector(const float x, const float y,
+                                     const subsector_t* subSector);
 void            R_ScaleAmbientRGB(float* out, const float* in, float mul);
 void            R_HSVToRGB(float* rgb, float h, float s, float v);
 sector_t*       R_GetSectorForOrigin(const void* ddMobjBase);

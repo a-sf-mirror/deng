@@ -71,7 +71,7 @@ float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 float           R_ExtraLightDelta(void);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 
-void            R_PickSubsectorFanBase(face_t* ssec);
+void            R_PickSubSectorFanBase(face_t* subSector);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
 void            R_UpdatePlanes(void);
@@ -86,7 +86,7 @@ void            R_DestroyPlaneOfSector(uint id, sector_t* sec);
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
-void            R_CreateBiasSurfacesInSubsector(face_t* face);
+void            R_CreateBiasSurfacesInSubSector(face_t* face);
 
 void            R_UpdateWatchedPlanes(watchedplanelist_t* wpl);
 void            R_InterpolateWatchedPlanes(watchedplanelist_t* wpl,
@@ -106,6 +106,16 @@ boolean         R_SurfaceListIterate(surfacelist_t* sl,
 
 void            R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln);
 boolean         R_IsGlowingPlane(const plane_t* pln);
+
+boolean         R_DoesMiddleMaterialFillGap(linedef_t* line, int backside);
+int             R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
+                                    float* topleft, float* topright,
+                                    float* texoffy, float tcyoff, float texHeight,
+                                    boolean lower_unpeg, boolean clipTop,
+                                    boolean clipBottom);
+
+void            R_FindSegSectionDivisions(walldiv_t* wdivs, const hedge_t* hEdge,
+                                          const sector_t* frontsec, float low, float hi);
 
 lineowner_t*    R_GetVtxLineOwner(const vertex_t* vtx, const linedef_t* line);
 linedef_t*      R_FindLineNeighbor(const sector_t* sector,

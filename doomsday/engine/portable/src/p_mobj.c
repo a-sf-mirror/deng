@@ -362,7 +362,7 @@ boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
     V2_Set(point, x + mo->radius + DDMOBJ_RADIUS_MAX, y + mo->radius + DDMOBJ_RADIUS_MAX);
     V2_AddToBox(data.box, point);
 
-    newsubsec = (subsector_t*) R_PointInSubsector(x, y)->data;
+    newsubsec = (subsector_t*) R_PointInSubSector(x, y)->data;
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
@@ -607,7 +607,7 @@ static void wallMomSlide(linedef_t *ld)
         return;
     }
 
-    side = P_PointOnLinedefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
+    side = P_PointOnLineDefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
     lineangle = R_PointToAngle2(0, 0, ld->dX, ld->dY);
 
     if(side == 1)
@@ -639,7 +639,7 @@ static boolean slideTraverse(intercept_t *in)
 
     if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
     {
-        if(P_PointOnLinedefSide(slideMo->pos[VX],
+        if(P_PointOnLineDefSide(slideMo->pos[VX],
                              slideMo->pos[VY], li))
         {   // The back side.
             return true; // Continue iteration.

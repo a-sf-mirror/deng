@@ -120,7 +120,7 @@ extern void setupModelParamsForVisSprite(rendmodelparams_t *params,
                                          struct modeldef_s* mf, struct modeldef_s* nextMF, float inter,
                                          float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                          vlight_t* lightList, uint numLights,
-                                         int id, int selector, face_t* ssec, int mobjDDFlags, int tmap,
+                                         int id, int selector, face_t* subSector, int mobjDDFlags, int tmap,
                                          boolean viewAlign, boolean fullBright,
                                          boolean alwaysInterpolate);
 extern void getLightingParams(float x, float y, float z, face_t* face,
@@ -133,7 +133,7 @@ static void projectDecoration(decorsource_t* src)
     float               v1[2], min, max;
     vissprite_t*        vis;
     float               distance, brightness;
-    const subsector_t*  ssec = (subsector_t*) src->face->data;
+    const subsector_t*  subSector = (subsector_t*) src->face->data;
 
     // Does it pass the sector light limitation?
     if(src->type == DT_LIGHT)
@@ -147,7 +147,7 @@ static void projectDecoration(decorsource_t* src)
         max = src->data.model.def->lightLevels[0];
     }
 
-    if(!((brightness = R_CheckSectorLight(ssec->sector->lightLevel,
+    if(!((brightness = R_CheckSectorLight(subSector->sector->lightLevel,
                                           min, max)) > 0))
         return;
 
@@ -155,7 +155,7 @@ static void projectDecoration(decorsource_t* src)
         return;
 
     // Is the point in range?
-    distance = Rend_PointDist3D(src->pos);
+    distance = R_PointDist3D(src->pos);
     if(distance > src->maxDistance)
         return;
 
@@ -543,7 +543,7 @@ static uint generateDecorLights(const ded_decorlight_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_LIGHT, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->face = R_PointInSubsector(d->pos[VX], d->pos[VY]);
+                d->face = R_PointInSubSector(d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
                 R_SurfaceListAdd(decoratedSurfaceList, suf);
@@ -625,7 +625,7 @@ static uint generateDecorModels(const ded_decormodel_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_MODEL, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->face = R_PointInSubsector(d->pos[VX], d->pos[VY]);
+                d->face = R_PointInSubSector(d->pos[VX], d->pos[VY]);
                 DEC_MODEL(d)->def = def;
                 DEC_MODEL(d)->mf = mf;
                 DEC_MODEL(d)->pitch = pitch;

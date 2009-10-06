@@ -154,7 +154,7 @@ static void setSectorOwner(ownerlist_t* ownerList, face_t* face)
     ownerList->head = node;
 }
 
-static void findSSecsAffectingSector(gamemap_t* map, uint secIDX)
+static void findSubSectorsAffectingSector(gamemap_t* map, uint secIDX)
 {
     uint                i;
     ownernode_t*        node, *p;
@@ -178,14 +178,14 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
     for(i = 0; i < map->numFaces; ++i)
     {
         face_t*             face = &map->faces[i];
-        subsector_t*        ssec = (subsector_t*) face->data;
+        subsector_t*        subSector = (subsector_t*) face->data;
 
         // Is this subsector close enough?
-        if(ssec->sector == sec || // subsector is IN this sector
-           (ssec->midPoint.pos[VX] > bbox[BOXLEFT] &&
-            ssec->midPoint.pos[VX] < bbox[BOXRIGHT] &&
-            ssec->midPoint.pos[VY] < bbox[BOXTOP] &&
-            ssec->midPoint.pos[VY] > bbox[BOXBOTTOM]))
+        if(subSector->sector == sec || // subsector is IN this sector
+           (subSector->midPoint.pos[VX] > bbox[BOXLEFT] &&
+            subSector->midPoint.pos[VX] < bbox[BOXRIGHT] &&
+            subSector->midPoint.pos[VY] < bbox[BOXTOP] &&
+            subSector->midPoint.pos[VY] > bbox[BOXBOTTOM]))
         {
             // It will contribute to the reverb settings of this sector.
             setSectorOwner(&faceOwnerList, face);
@@ -238,7 +238,7 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        findSSecsAffectingSector(map, i);
+        findSubSectorsAffectingSector(map, i);
     }
 
     // Free any nodes left in the unused list.
@@ -257,29 +257,29 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
              (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
-static boolean calcSSecReverb(face_t* face)
+static boolean calcSubSectorReverb(face_t* face)
 {
     uint                i, v;
     hedge_t*            ptr;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
     float               total = 0;
     material_env_class_t mclass;
     float               materials[NUM_MATERIAL_ENV_CLASSES];
 
-    if(!ssec->sector)
+    if(!subSector->sector)
     {
-        ssec->reverb[SRD_SPACE] = ssec->reverb[SRD_VOLUME] =
-            ssec->reverb[SRD_DECAY] = ssec->reverb[SRD_DAMPING] = 0;
+        subSector->reverb[SRD_SPACE] = subSector->reverb[SRD_VOLUME] =
+            subSector->reverb[SRD_DECAY] = subSector->reverb[SRD_DAMPING] = 0;
         return false;
     }
 
     memset(&materials, 0, sizeof(materials));
 
     // Space is the rough volume of the subsector (bounding box).
-    ssec->reverb[SRD_SPACE] =
-        (int) (ssec->sector->SP_ceilheight - ssec->sector->SP_floorheight) *
-        (ssec->bBox[1].pos[VX] - ssec->bBox[0].pos[VX]) *
-        (ssec->bBox[1].pos[VY] - ssec->bBox[0].pos[VY]);
+    subSector->reverb[SRD_SPACE] =
+        (int) (subSector->sector->SP_ceilheight - subSector->sector->SP_floorheight) *
+        (subSector->bBox[1].pos[VX] - subSector->bBox[0].pos[VX]) *
+        (subSector->bBox[1].pos[VY] - subSector->bBox[0].pos[VY]);
 
     // The other reverb properties can be found out by taking a look at the
     // materials of all surfaces in the subsector.
@@ -306,8 +306,8 @@ static boolean calcSSecReverb(face_t* face)
 
     if(!total)
     {   // Huh?
-        ssec->reverb[SRD_VOLUME] = ssec->reverb[SRD_DECAY] =
-            ssec->reverb[SRD_DAMPING] = 0;
+        subSector->reverb[SRD_VOLUME] = subSector->reverb[SRD_DECAY] =
+            subSector->reverb[SRD_DAMPING] = 0;
         return false;
     }
 
@@ -320,28 +320,28 @@ static boolean calcSSecReverb(face_t* face)
         v += materials[i] * matInfo[i].volumeMul;
     if(v > 255)
         v = 255;
-    ssec->reverb[SRD_VOLUME] = v;
+    subSector->reverb[SRD_VOLUME] = v;
 
     // Decay time.
     for(i = 0, v = 0; i < NUM_MATERIAL_ENV_CLASSES; ++i)
         v += materials[i] * matInfo[i].decayMul;
     if(v > 255)
         v = 255;
-    ssec->reverb[SRD_DECAY] = v;
+    subSector->reverb[SRD_DECAY] = v;
 
     // High frequency damping.
     for(i = 0, v = 0; i < NUM_MATERIAL_ENV_CLASSES; ++i)
         v += materials[i] * matInfo[i].dampingMul;
     if(v > 255)
         v = 255;
-    ssec->reverb[SRD_DAMPING] = v;
+    subSector->reverb[SRD_DAMPING] = v;
 
 /*
 #if _DEBUG
-Con_Message("ssec %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
-            GET_SUBSECTOR_IDX(ssec), ssec->reverb[SRD_VOLUME],
-            ssec->reverb[SRD_SPACE], ssec->reverb[SRD_DECAY],
-            ssec->reverb[SRD_DAMPING]);
+Con_Message("subSector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
+            GET_SUBSECTOR_IDX(subSector), subSector->reverb[SRD_VOLUME],
+            subSector->reverb[SRD_SPACE], subSector->reverb[SRD_DECAY],
+            subSector->reverb[SRD_DAMPING]);
 #endif
 */
     return true;
@@ -352,7 +352,7 @@ Con_Message("ssec %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
  * whenever any of the properties governing reverb properties have changed
  * (i.e. seg/plane texture or plane height changes).
  *
- * PRE: Subsector attributors must have been determined first.
+ * PRE: SubSector attributors must have been determined first.
  *
  * @param sec           Ptr to the sector to calculate reverb properties of.
  */
@@ -376,18 +376,18 @@ Con_Message("sector %i: secsp:%i\n", c, sectorSpace);
     {
         face_t*             face = sec->reverbFaces[i];
 
-        if(calcSSecReverb(face))
+        if(calcSubSectorReverb(face))
         {
-            const subsector_t*  ssec = (subsector_t*) face->data;
+            const subsector_t*  subSector = (subsector_t*) face->data;
 
-            sec->reverb[SRD_SPACE]   += ssec->reverb[SRD_SPACE];
+            sec->reverb[SRD_SPACE]   += subSector->reverb[SRD_SPACE];
 
             sec->reverb[SRD_VOLUME]  +=
-                ssec->reverb[SRD_VOLUME]  / 255.0f * ssec->reverb[SRD_SPACE];
+                subSector->reverb[SRD_VOLUME]  / 255.0f * subSector->reverb[SRD_SPACE];
             sec->reverb[SRD_DECAY]   +=
-                ssec->reverb[SRD_DECAY]   / 255.0f * ssec->reverb[SRD_SPACE];
+                subSector->reverb[SRD_DECAY]   / 255.0f * subSector->reverb[SRD_SPACE];
             sec->reverb[SRD_DAMPING] +=
-                ssec->reverb[SRD_DAMPING] / 255.0f * ssec->reverb[SRD_SPACE];
+                subSector->reverb[SRD_DAMPING] / 255.0f * subSector->reverb[SRD_SPACE];
         }
     }
 

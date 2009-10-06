@@ -222,9 +222,6 @@ int useMultiTexDetails = true;
 float detailFactor = .5f;
 float detailScale = 4;
 
-float torchColor[3] = {1, 1, 1};
-int torchAdditive = true;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 /**

@@ -66,7 +66,7 @@ typedef struct lumlistnode_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean      iterateSubsectorLumObjs(face_t* ssec,
+static boolean      iterateSubSectorLumObjs(face_t* subSector,
                                             boolean (*func) (void*, void*),
                                             void* data);
 
@@ -634,16 +634,16 @@ END_PROF( PROF_LUMOBJ_FRAME_SORT );
  * Generate one dynlight node for each plane glow.
  * The light is attached to the appropriate dynlight node list.
  *
- * @param ssec          Ptr to the subsector to process.
+ * @param subSector          Ptr to the subsector to process.
  */
 static void createGlowLightPerPlaneForSubSector(face_t* face)
 {
     uint                g;
     plane_t*            glowPlanes[2], *pln;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
 
-    glowPlanes[PLN_FLOOR] = ssec->sector->planes[PLN_FLOOR];
-    glowPlanes[PLN_CEILING] = ssec->sector->planes[PLN_CEILING];
+    glowPlanes[PLN_FLOOR] = subSector->sector->planes[PLN_FLOOR];
+    glowPlanes[PLN_CEILING] = subSector->sector->planes[PLN_CEILING];
 
     //// \fixme $nplanes
     for(g = 0; g < 2; ++g)
@@ -659,8 +659,8 @@ static void createGlowLightPerPlaneForSubSector(face_t* face)
         lumIdx = LO_NewLuminous(LT_PLANE, face);
 
         l = LO_GetLuminous(lumIdx);
-        l->pos[VX] = ssec->midPoint.pos[VX];
-        l->pos[VY] = ssec->midPoint.pos[VY];
+        l->pos[VX] = subSector->midPoint.pos[VX];
+        l->pos[VY] = subSector->midPoint.pos[VY];
         l->pos[VZ] = pln->visHeight;
         l->maxDistance = 0;
         l->decorSource = NULL;
@@ -676,13 +676,13 @@ static void createGlowLightPerPlaneForSubSector(face_t* face)
         LUM_PLANE(l)->intensity = pln->glow;
         LUM_PLANE(l)->tex = GL_PrepareLSTexture(LST_GRADIENT);
 
-        // Planar lights don't spread, so just link the lum to its own ssec.
+        // Planar lights don't spread, so just link the lum to its own subSector.
         {
-        linkobjtossecparams_t params;
+        linkobjtosubSectorparams_t params;
 
         params.obj = l;
         params.type = OT_LUMOBJ;
-        RIT_LinkObjToSubsector(l->face, &params);
+        RIT_LinkObjToSubSector(l->face, &params);
         }
     }
 }
@@ -777,7 +777,7 @@ boolean LO_LumobjsRadiusIterator(face_t* face, float x, float y,
     params.func = func;
     params.data = data;
 
-    return R_IterateSubsectorContacts(face, OT_LUMOBJ, LOIT_RadiusLumobjs,
+    return R_IterateSubSectorContacts(face, OT_LUMOBJ, LOIT_RadiusLumobjs,
                                       (void*) &params);
 }
 
@@ -830,11 +830,11 @@ boolean LOIT_ClipLumObj(void* data, void* context)
 /**
  * Clip lumobj, omni lights in the given subsector.
  *
- * @param ssecidx       Subsector index in which lights will be clipped.
+ * @param subSectoridx       SubSector index in which lights will be clipped.
  */
-void LO_ClipInSubsector(face_t* face)
+void LO_ClipInSubSector(face_t* face)
 {
-    iterateSubsectorLumObjs(face, LOIT_ClipLumObj, NULL);
+    iterateSubSectorLumObjs(face, LOIT_ClipLumObj, NULL);
 }
 
 boolean LOIT_ClipLumObjBySight(void* data, void* context)
@@ -849,8 +849,8 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
     {
         uint                i;
         vec2_t              eye;
-        subsector_t*        ssec = (subsector_t*) ((face_t*) context)->data;
-        polyobj_t*          po = ssec->polyObj;
+        subsector_t*        subSector = (subsector_t*) ((face_t*) context)->data;
+        polyobj_t*          po = subSector->polyObj;
 
         V2_Set(eye, vx, vz);
 
@@ -861,7 +861,7 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
             linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
             // Ignore lines facing the wrong way.
-            if(!(Rend_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
+            if(!(R_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
             {
                 vec2_t              source;
 
@@ -885,14 +885,14 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
  * the lumobjs must be clipped more carefully. Here we check if the line of
  * sight intersects any of the polyobj segs that face the camera.
  *
- * @param ssecidx       Subsector index in which lumobjs will be clipped.
+ * @param subSectoridx       SubSector index in which lumobjs will be clipped.
  */
-void LO_ClipInSubsectorBySight(face_t* face)
+void LO_ClipInSubSectorBySight(face_t* face)
 {
-    iterateSubsectorLumObjs(face, LOIT_ClipLumObjBySight, face);
+    iterateSubSectorLumObjs(face, LOIT_ClipLumObjBySight, face);
 }
 
-static boolean iterateSubsectorLumObjs(face_t* face,
+static boolean iterateSubSectorLumObjs(face_t* face,
                                        boolean (*func) (void*, void*),
                                        void* data)
 {

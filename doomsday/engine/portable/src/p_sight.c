@@ -123,7 +123,7 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
     if(noBack)
     {
         if((los->flags & LS_PASSLEFT) &&
-           side != P_PointOnLinedefSide(FIX2FLT(los->trace.pos[VX]),
+           side != P_PointOnLineDefSide(FIX2FLT(los->trace.pos[VX]),
                                         FIX2FLT(los->trace.pos[VY]), li))
             return true; // Ray does not intercept seg from left to right.
 
@@ -207,7 +207,7 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the given subsector.
  */
-static boolean crossSSec(uint faceIdx, losdata_t* los)
+static boolean crossSubSector(uint faceIdx, losdata_t* los)
 {
     const face_t*       face = &faces[faceIdx];
 
@@ -283,7 +283,7 @@ static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
         }
     }
 
-    return crossSSec(bspNum & ~NF_SUBSECTOR, los);
+    return crossSubSector(bspNum & ~NF_SUBSECTOR, los);
 }
 
 /**

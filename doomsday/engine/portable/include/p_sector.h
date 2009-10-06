@@ -32,6 +32,8 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
+float           Sector_LightLevel(sector_t* sec);
+
 boolean         Sector_GetProperty(const sector_t *sec, setargs_t *args);
 boolean         Sector_SetProperty(sector_t *sec, const setargs_t *args);
 

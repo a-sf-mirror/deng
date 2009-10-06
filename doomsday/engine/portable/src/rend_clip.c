@@ -1274,17 +1274,17 @@ clipnode_t *C_AngleClippedBy(binangle_t bang)
 int C_CheckFace(face_t* face)
 {
     uint                i;
-    subsector_t*        ssec = (subsector_t*) face->data;
+    subsector_t*        subSector = (subsector_t*) face->data;
     hedge_t*            hEdge;
 
-    if(!face || ssec->hEdgeCount < 3)
+    if(!face || subSector->hEdgeCount < 3)
         return 0;
 
     if(devNoCulling)
         return 1;
 
     // Do we need to resize the angle list buffer?
-    if(ssec->hEdgeCount > anglistSize)
+    if(subSector->hEdgeCount > anglistSize)
     {
         anglistSize *= 2;
         if(!anglistSize)
@@ -1308,7 +1308,7 @@ int C_CheckFace(face_t* face)
     }
 
     // Check each of the ranges defined by the edges.
-    for(i = 0; i < ssec->hEdgeCount - 1; ++i)
+    for(i = 0; i < subSector->hEdgeCount - 1; ++i)
     {
         uint                end = i + 1;
         binangle_t          angLen;

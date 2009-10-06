@@ -302,6 +302,7 @@ byte Material_Prepare(material_snapshot_t* snapshot, material_t* mat,
     /**
      * Take a snapshot:
      */
+    memset(snapshot, 0, sizeof(*snapshot));
 
     // Reset to the default state.
     for(i = 0; i < DDMAX_MATERIAL_LAYERS; ++i)

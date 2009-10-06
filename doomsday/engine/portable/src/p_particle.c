@@ -750,7 +750,7 @@ static void P_NewParticle(ptcgen_t* gen)
             float               y =
                 (box[BOXBOTTOM] + RNG_RandFloat() * (box[BOXTOP]   - box[BOXBOTTOM]));
 
-            face = R_PointInSubsector(x, y);
+            face = R_PointInSubSector(x, y);
 
             if(((const subsector_t*) face->data)->sector == gen->sector)
                 break;
@@ -763,16 +763,16 @@ static void P_NewParticle(ptcgen_t* gen)
         // Try a couple of times to get a good random spot.
         for(i = 0; i < 10; ++i) // Max this many tries before giving up.
         {
-            const subsector_t*  ssec = (const subsector_t*) face->data;
-            float               x = ssec->bBox[0].pos[VX] +
-                RNG_RandFloat() * (ssec->bBox[1].pos[VX] - ssec->bBox[0].pos[VX]);
-            float               y = ssec->bBox[0].pos[VY] +
-                RNG_RandFloat() * (ssec->bBox[1].pos[VY] - ssec->bBox[0].pos[VY]);
+            const subsector_t*  subSector = (const subsector_t*) face->data;
+            float               x = subSector->bBox[0].pos[VX] +
+                RNG_RandFloat() * (subSector->bBox[1].pos[VX] - subSector->bBox[0].pos[VX]);
+            float               y = subSector->bBox[0].pos[VY] +
+                RNG_RandFloat() * (subSector->bBox[1].pos[VY] - subSector->bBox[0].pos[VY]);
 
             pt->pos[VX] = FLT2FIX(x);
             pt->pos[VY] = FLT2FIX(y);
 
-            if(R_PointInSubsector(x, y) == face)
+            if(R_PointInSubSector(x, y) == face)
                 break; // This is a good place.
         }
 
@@ -802,7 +802,7 @@ static void P_NewParticle(ptcgen_t* gen)
         pt->sector = gen->sector;
     else
         pt->sector = ((const subsector_t*)
-            R_PointInSubsector(FIX2FLT(pt->pos[VX]),
+            R_PointInSubSector(FIX2FLT(pt->pos[VX]),
                                FIX2FLT(pt->pos[VY]))->data)->sector;
 
     // Play a stage sound?
@@ -864,8 +864,8 @@ boolean PIT_CheckLinePtc(linedef_t* ld, void* data)
     }
 
     // Movement must cross the line.
-    if(P_PointOnLinedefSide(FIX2FLT(tmpx1), FIX2FLT(tmpy1), ld) ==
-       P_PointOnLinedefSide(FIX2FLT(tmpx2), FIX2FLT(tmpy2), ld))
+    if(P_PointOnLineDefSide(FIX2FLT(tmpx1), FIX2FLT(tmpy1), ld) ==
+       P_PointOnLineDefSide(FIX2FLT(tmpx2), FIX2FLT(tmpy2), ld))
         return true;
 
     // We are possibly hitting something here.
@@ -1287,7 +1287,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Should we update the sector pointer?
     if(tmcross)
         pt->sector = ((const subsector_t*)
-            R_PointInSubsector(FIX2FLT(x), FIX2FLT(y))->data)->sector;
+            R_PointInSubSector(FIX2FLT(x), FIX2FLT(y))->data)->sector;
 }
 
 /**

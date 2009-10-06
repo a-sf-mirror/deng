@@ -590,7 +590,7 @@ static void writeSector(const gamemap_t *map, uint idx)
     for(i = 0; i < s->lineDefCount; ++i)
         writeLong((s->lineDefs[i] - map->lineDefs) + 1);
 
-    // Subsector list.
+    // SubSector list.
     writeLong((long) s->faceCount);
     for(i = 0; i < s->faceCount; ++i)
         writeLong((s->faces[i] - map->faces) + 1);
@@ -679,7 +679,7 @@ static void readSector(const gamemap_t* map, uint idx)
         s->lineDefs[i] = &map->lineDefs[(unsigned) readLong() - 1];
     s->lineDefs[i] = NULL; // Terminate.
 
-    // Subsector list.
+    // SubSector list.
     s->faceCount = (uint) readLong();
     s->faces =
         Z_Malloc(sizeof(face_t*) * (s->faceCount + 1), PU_MAP, 0);
@@ -725,7 +725,7 @@ static void archiveSectors(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSubsector(const gamemap_t* map, uint idx)
+static void writeSubSector(const gamemap_t* map, uint idx)
 {
     uint                i;
     const subsector_t*  s = (const subsector_t*) map->faces[idx].data;
@@ -742,17 +742,17 @@ static void writeSubsector(const gamemap_t* map, uint idx)
     writeLong(s->sector? ((s->sector - map->sectors) + 1) : 0);
     writeLong(s->polyObj? (s->polyObj->idx + 1) : 0);
 
-    // Subsector reverb.
+    // SubSector reverb.
     for(i = 0; i < NUM_REVERB_DATA; ++i)
         writeLong((long) s->reverb[i]);
 
-    // Subsector segs list.
+    // SubSector segs list.
 /*    writeLong((long) s->hEdgeCount);
     for(i = 0; i < s->hEdgeCount; ++i)
         writeLong((s->hEdges[i] - map->hEdges) + 1);*/
 }
 
-static void readSubsector(const gamemap_t* map, uint idx)
+static void readSubSector(const gamemap_t* map, uint idx)
 {
     uint                i;
     long                obIdx;
@@ -772,11 +772,11 @@ static void readSubsector(const gamemap_t* map, uint idx)
     obIdx = readLong();
     s->polyObj = (obIdx == 0? NULL : map->polyObjs[(unsigned) obIdx - 1]);
 
-    // Subsector reverb.
+    // SubSector reverb.
     for(i = 0; i < NUM_REVERB_DATA; ++i)
         s->reverb[i] = (uint) readLong();
 
-    // Subsector segs list.
+    // SubSector segs list.
 /*    s->hEdgeCount = (uint) readLong();
     s->hEdges = Z_Malloc(sizeof(hedge_t*) * (s->hEdgeCount + 1), PU_MAP, 0);
     for(i = 0; i < s->hEdgeCount; ++i)
@@ -784,7 +784,7 @@ static void readSubsector(const gamemap_t* map, uint idx)
     s->hEdges[i] = NULL; // Terminate.*/
 }
 
-static void archiveSubsectors(gamemap_t* map, boolean write)
+static void archiveSubSectors(gamemap_t* map, boolean write)
 {
     uint                i;
 
@@ -797,14 +797,14 @@ static void archiveSubsectors(gamemap_t* map, boolean write)
     {
         writeLong(map->numFaces);
         for(i = 0; i < map->numFaces; ++i)
-            writeSubsector(map, i);
+            writeSubSector(map, i);
     }
     else
     {
         map->numFaces = readLong();
         map->faces = Z_Malloc(sizeof(face_t) * map->numFaces, PU_MAP, 0);
         for(i = 0; i < map->numFaces; ++i)
-            readSubsector(map, i);
+            readSubSector(map, i);
     }
 
     if(write)
@@ -1142,7 +1142,7 @@ static void archiveMap(gamemap_t *map, boolean write)
     archiveLines(map, write); // Must follow vertexes (lineowner nodes).
     archiveSides(map, write);
     archiveSectors(map, write);
-    archiveSubsectors(map, write);
+    archiveSubSectors(map, write);
     archiveSegs(map, write);
     archiveNodes(map, write);
     archiveBlockmap(map, write);

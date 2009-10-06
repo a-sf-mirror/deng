@@ -65,8 +65,6 @@ extern int useMultiTexLights;
 extern int useMultiTexDetails;
 extern float rendLightWallAngle;
 extern float detailFactor, detailScale;
-extern int torchAdditive;
-extern float torchColor[];
 
 void            RL_Register(void);
 void            RL_Init(void);

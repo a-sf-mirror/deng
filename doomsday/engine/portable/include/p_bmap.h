@@ -47,9 +47,9 @@ blockmap_t*     P_BlockmapCreate(const pvec2_t min, const pvec2_t max,
 void            P_BlockmapSetBlock(blockmap_t* bmap, uint x, uint y,
                                    linedef_t** lines, linkmobj_t* moLink,
                                    linkpolyobj_t* poLink);
-void            P_SSecBlockmapSetBlock(blockmap_t* bmap, uint x, uint y,
-                                       face_t** ssecs);
-void            P_BuildSubsectorBlockMap(gamemap_t* map);
+void            P_SubSectorBlockmapSetBlock(blockmap_t* bmap, uint x, uint y,
+                                       face_t** subSectors);
+void            P_BuildSubSectorBlockMap(gamemap_t* map);
 
 void            P_BlockmapLinkMobj(blockmap_t* bmap, mobj_t* mo);
 boolean         P_BlockmapUnlinkMobj(blockmap_t* bmap, mobj_t* mo);
@@ -71,7 +71,7 @@ boolean         P_BlockmapMobjsIterator(blockmap_t* bmap, const uint block[2],
 boolean         P_BlockmapLinesIterator(blockmap_t* bmap, const uint block[2],
                                         boolean (*func) (linedef_t*, void*),
                                         void* data, boolean retObjRecord);
-boolean         P_BlockmapSubsectorsIterator(blockmap_t* bmap, const uint block[2],
+boolean         P_BlockmapSubSectorsIterator(blockmap_t* bmap, const uint block[2],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
                                              boolean (*func) (face_t*, void*),
@@ -90,7 +90,7 @@ boolean         P_BlockBoxMobjsIterator(blockmap_t* bmap, const uint blockBox[4]
 boolean         P_BlockBoxLinesIterator(blockmap_t* bmap, const uint blockBox[4],
                                         boolean (*func) (linedef_t*, void*),
                                         void* data, boolean retObjRecord);
-boolean         P_BlockBoxSubsectorsIterator(blockmap_t* bmap, const uint blockBox[4],
+boolean         P_BlockBoxSubSectorsIterator(blockmap_t* bmap, const uint blockBox[4],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
                                              boolean (*func) (face_t*, void*),
