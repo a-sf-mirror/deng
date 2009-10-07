@@ -45,6 +45,7 @@
 
 #include "rend_bias.h"
 #include "rend_console.h"
+#include "rend_main.h"
 #include "r_lgrid.h"
 
 // MACROS ------------------------------------------------------------------
@@ -72,7 +73,6 @@ D_CMD(Login); // in cl_main.c
 D_CMD(Logout); // in sv_main.c
 D_CMD(Ping); // in net_ping.c
 
-void    R_DrawLightRange(void);
 int     Sv_GetRegisteredMobj(pool_t *, thid_t, mobjdelta_t *);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -864,7 +864,7 @@ void Net_Drawer(void)
     P_BlockmapDebug();
 
     // Draw the light range debug display.
-    R_DrawLightRange();
+    Rend_RenderLightModRange();
 
     if(!netDev && !showBlinkR && !consoleShowFPS)
         return;

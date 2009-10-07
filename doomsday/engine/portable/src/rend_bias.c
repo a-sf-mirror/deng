@@ -338,7 +338,7 @@ static void addLight(float dest[4], const float* color, float howMuch)
 /**
  * Add ambient light.
  */
-static void ambientLight(const float* point, float* light)
+static void applyAmbientLight(const float* point, float* light)
 {
     // Add grid light (represents ambient lighting).
     float               color[3];
@@ -525,7 +525,7 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
     {
         // Reuse the previous value.
         lerpIllumination(illum, light);
-        ambientLight(point, light);
+        applyAmbientLight(point, light);
         return;
     }
 
@@ -654,7 +654,7 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
         light[CB] = newColor[CB];
     }
 
-    ambientLight(point, light);
+    applyAmbientLight(point, light);
 
 #undef COLOR_CHANGE_THRESHOLD
 }

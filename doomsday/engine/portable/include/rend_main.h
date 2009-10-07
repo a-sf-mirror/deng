@@ -37,9 +37,6 @@ extern byte smoothTexAnim;
 extern int missileBlend;
 extern boolean usingFog;
 extern float fogColor[4];
-extern int rAmbient;
-extern float rendLightDistanceAttentuation;
-extern float lightModRange[255];
 extern int gameDrawHUD;
 extern int devSkyMode;
 extern byte devNoTexFix;
@@ -53,10 +50,11 @@ void            Rend_RenderMap(struct gamemap_s* map);
 
 void            Rend_ModelViewMatrix(boolean use_angles);
 
+void            Rend_RenderLightModRange(void);
+
 void            Rend_WriteDynlights(uint dynlistID, const rvertex_t* rvertices,
                                     uint numVertices, uint realNumVertices,
                                     const walldiv_t* divs, const float texQuadTopLeft[3],
                                     const float texQuadBottomRight[3],
                                     uint* numLights);
-void            Rend_CalcLightModRange(struct cvar_s* unused);
 #endif

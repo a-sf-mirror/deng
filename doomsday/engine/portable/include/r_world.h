@@ -53,7 +53,9 @@ typedef struct skyfix_s {
 extern int rendSkyLight; // cvar
 extern float rendMaterialFadeSeconds; // cvar
 extern boolean ddMapSetup;
-
+extern int rAmbient, ambientLight;
+extern float rendLightDistanceAttentuation, lightRangeCompression;
+extern float lightModRange[255];
 extern skyfix_t skyFix[2]; // [floor, ceiling]
 
 // Sky flags.
@@ -71,6 +73,7 @@ void            R_SetupFogDefaults(void);
 const float*    R_GetSectorLightColor(const sector_t* sector);
 float           R_DistAttenuateLightLevel(float distToViewer, float lightLevel);
 float           R_ExtraLightDelta(void);
+void            R_CalcLightModRange(struct cvar_s* unused);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 
 void            R_PickSubSectorFanBase(face_t* subSector);

@@ -67,6 +67,16 @@ int rendSkyLight = 1; // cvar.
 float rendLightWallAngle = 1; // Intensity of angle-based wall lighting.
 float rendMaterialFadeSeconds = .6f;
 
+// Ambient lighting, rAmbient is used within the renderer, ambientLight is
+// used to store the value of the ambient light cvar.
+// The value chosen for rAmbient occurs in Rend_CalcLightModRange
+// for convenience (since we would have to recalculate the matrix anyway).
+int rAmbient = 0, ambientLight = 0;
+
+float lightRangeCompression = 0;
+float lightModRange[255];
+float rendLightDistanceAttentuation = 1024;
+
 boolean firstFrameAfterLoad;
 boolean ddMapSetup;
 
@@ -1803,7 +1813,7 @@ void R_SetupMap(int mode, int flags)
         Sv_InitPools();
 
         // Recalculate the light range mod matrix.
-        Rend_CalcLightModRange(NULL);
+        R_CalcLightModRange(NULL);
 
         // Update all sectors. Set intial values of various tracked
         // and interpolated properties (lighting, smoothed planes etc).
@@ -2359,6 +2369,56 @@ float R_WallAngleLightLevelDelta(const linedef_t* l, byte side)
     // Do a lighting adjustment based on orientation.
     return LineDef_GetLightLevelDelta(l) * (side? -1 : 1) *
         rendLightWallAngle;
+}
+
+/**
+ * Updates the lightModRange which is used to applify sector light to help
+ * compensate for the differences between the OpenGL lighting equation,
+ * the software Doom lighting model and the light grid (ambient lighting).
+ *
+ * The offsets in the lightRangeModTables are added to the sector->lightLevel
+ * during rendering (both positive and negative).
+ */
+void R_CalcLightModRange(cvar_t *unused)
+{
+    int                 j;
+    int                 mapAmbient;
+    float               f;
+    gamemap_t          *map = P_GetCurrentMap();
+
+    memset(lightModRange, 0, sizeof(float) * 255);
+
+    mapAmbient = P_GetMapAmbientLightLevel(map);
+    if(mapAmbient > ambientLight)
+        rAmbient = mapAmbient;
+    else
+        rAmbient = ambientLight;
+
+    for(j = 0; j < 255; ++j)
+    {
+        // Adjust the white point/dark point?
+        f = 0;
+        if(lightRangeCompression != 0)
+        {
+            if(lightRangeCompression >= 0) // Brighten dark areas.
+                f = (float) (255 - j) * lightRangeCompression;
+            else // Darken bright areas.
+                f = (float) -j * -lightRangeCompression;
+        }
+
+        // Lower than the ambient limit?
+        if(rAmbient != 0 && j+f <= rAmbient)
+            f = rAmbient - j;
+
+        // Clamp the result as a modifier to the light value (j).
+        if((j+f) >= 255)
+            f = 255 - j;
+        else if((j+f) <= 0)
+            f = -j;
+
+        // Insert it into the matrix
+        lightModRange[j] = f / 255.0f;
+    }
 }
 
 /**

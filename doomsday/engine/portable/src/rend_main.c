@@ -86,19 +86,7 @@ byte freezeRLs = false;
 int devSkyMode = false;
 
 int missileBlend = 1;
-// Ambient lighting, rAmbient is used within the renderer, ambientLight is
-// used to store the value of the ambient light cvar.
-// The value chosen for rAmbient occurs in Rend_CalcLightModRange
-// for convenience (since we would have to recalculate the matrix anyway).
-int rAmbient = 0, ambientLight = 0;
-
 int gameDrawHUD = 1; // Set to zero when we advise that the HUD should not be drawn
-
-float lightRangeCompression = 0;
-float lightModRange[255];
-byte devLightModRange = 0;
-
-float rendLightDistanceAttentuation = 1024;
 
 int devMobjBBox = 0; // 1 = Draw mobj bounding boxes (for debug)
 DGLuint dlBBox = 0; // Display list: active-textured bbox model.
@@ -107,9 +95,7 @@ byte devVertexIndices = 0; // @c 1= Draw world vertex indices (for debug).
 byte devVertexBars = 0; // @c 1= Draw world vertex position bars.
 byte devSurfaceNormals = 0; // @c 1= Draw world surface normal tails.
 byte devNoTexFix = 0;
-
-// Current sector light color.
-const float* sLightColor;
+byte devLightModRange = 0;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -127,9 +113,9 @@ void Rend_Register(void)
     C_VAR_BYTE("rend-tex-anim-smooth", &smoothTexAnim, 0, 0, 1);
     C_VAR_INT("rend-tex-shiny", &useShinySurfaces, 0, 0, 1);
     C_VAR_FLOAT2("rend-light-compression", &lightRangeCompression, 0, -1, 1,
-                 Rend_CalcLightModRange);
+                 R_CalcLightModRange);
     C_VAR_INT2("rend-light-ambient", &ambientLight, 0, 0, 255,
-               Rend_CalcLightModRange);
+               R_CalcLightModRange);
     C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1,
                LG_MarkAllForUpdate);
     C_VAR_FLOAT("rend-light-wall-angle", &rendLightWallAngle, CVF_NO_MAX,
@@ -2576,9 +2562,6 @@ static void Rend_RenderSubSector(uint faceidx)
     // Mark the sector visible for this frame.
     sect->frameFlags |= SIF_VISIBLE;
 
-    // Retrieve the sector light color.
-    sLightColor = R_GetSectorLightColor(sect);
-
     markSegsFacingFront(face);
 
     R_InitForSubSector(face);
@@ -3464,59 +3447,9 @@ void Rend_RenderMap(gamemap_t* map)
 }
 
 /**
- * Updates the lightModRange which is used to applify sector light to help
- * compensate for the differences between the OpenGL lighting equation,
- * the software Doom lighting model and the light grid (ambient lighting).
- *
- * The offsets in the lightRangeModTables are added to the sector->lightLevel
- * during rendering (both positive and negative).
- */
-void Rend_CalcLightModRange(cvar_t *unused)
-{
-    int                 j;
-    int                 mapAmbient;
-    float               f;
-    gamemap_t          *map = P_GetCurrentMap();
-
-    memset(lightModRange, 0, sizeof(float) * 255);
-
-    mapAmbient = P_GetMapAmbientLightLevel(map);
-    if(mapAmbient > ambientLight)
-        rAmbient = mapAmbient;
-    else
-        rAmbient = ambientLight;
-
-    for(j = 0; j < 255; ++j)
-    {
-        // Adjust the white point/dark point?
-        f = 0;
-        if(lightRangeCompression != 0)
-        {
-            if(lightRangeCompression >= 0) // Brighten dark areas.
-                f = (float) (255 - j) * lightRangeCompression;
-            else // Darken bright areas.
-                f = (float) -j * -lightRangeCompression;
-        }
-
-        // Lower than the ambient limit?
-        if(rAmbient != 0 && j+f <= rAmbient)
-            f = rAmbient - j;
-
-        // Clamp the result as a modifier to the light value (j).
-        if((j+f) >= 255)
-            f = 255 - j;
-        else if((j+f) <= 0)
-            f = -j;
-
-        // Insert it into the matrix
-        lightModRange[j] = f / 255.0f;
-    }
-}
-
-/**
  * Draws the lightModRange (for debug)
  */
-void R_DrawLightRange(void)
+void Rend_RenderLightModRange(void)
 {
 #define bWidth          1.0f
 #define bHeight         (bWidth * 255.0f)
