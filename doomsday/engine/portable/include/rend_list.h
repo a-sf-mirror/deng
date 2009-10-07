@@ -51,14 +51,6 @@ typedef enum {
     RPT_SHINY // A shiny polygon.
 } rendpolytype_t;
 
-typedef struct rtexmapuint_s {
-    DGLuint         tex;
-    int             magMode;
-    float           blend;
-    float           scale[2], offset[2]; // For use with the texture matrix.
-    blendmode_t     blendMode;
-} rtexmapunit_t;
-
 extern int renderTextures;
 extern int renderWireframe;
 extern int useMultiTexLights;
@@ -80,7 +72,7 @@ void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
                 const rtexcoord_t* rtexcoords2,
                 const rcolor_t* rcolors,
                 uint numVertices, uint numLights,
-                DGLuint modTex, float modColor[3],
+                DGLuint modTex, const float modColor[3],
                 const rtexmapunit_t rTU[NUM_TEXMAP_UNITS]);
 void            RL_RenderAllLists(void);
 

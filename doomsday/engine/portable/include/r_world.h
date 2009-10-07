@@ -62,21 +62,23 @@ extern skyfix_t skyFix[2]; // [floor, ceiling]
 void            R_SetupMap(int mode, int flags);
 void            R_InitLinks(gamemap_t* map);
 void            R_BuildSectorLinks(gamemap_t* map);
+void            R_UpdatePlanes(void);
+void            R_ClearSectorFlags(void);
+void            R_InitSkyFix(void);
 void            R_SetupFog(float start, float end, float density, float* rgb);
 void            R_SetupFogDefaults(void);
 
 const float*    R_GetSectorLightColor(const sector_t* sector);
 float           R_DistAttenuateLightLevel(float distToViewer, float lightLevel);
-float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 float           R_ExtraLightDelta(void);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 
 void            R_PickSubSectorFanBase(face_t* subSector);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
-void            R_UpdatePlanes(void);
-void            R_ClearSectorFlags(void);
-void            R_InitSkyFix(void);
+float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
+void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
+
 void            R_UpdateSkyFixForSec(const sector_t* sec);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
@@ -106,6 +108,9 @@ boolean         R_SurfaceListIterate(surfacelist_t* sl,
 
 void            R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln);
 boolean         R_IsGlowingPlane(const plane_t* pln);
+
+boolean         R_SideDefIsSoftSurface(sidedef_t* sideDef, segsection_t section);
+float           R_ApplySoftSurfaceDeltaToAlpha(float bottom, float top, sidedef_t* sideDef, float alpha);
 
 boolean         R_DoesMiddleMaterialFillGap(linedef_t* line, int backside);
 int             R_MiddleMaterialPosition(float* bottomleft, float* bottomright,

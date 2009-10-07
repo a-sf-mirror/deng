@@ -109,6 +109,14 @@ typedef struct rtexcoord_s {
     float           st[2];
 } rtexcoord_t;
 
+typedef struct rtexmapunit_s {
+    DGLuint         tex;
+    int             magMode;
+    float           blend;
+    float           scale[2], offset[2]; // For use with the texture matrix.
+    blendmode_t     blendMode;
+} rtexmapunit_t;
+
 typedef struct shadowlink_s {
     struct shadowlink_s* next;
     linedef_t*      lineDef;
@@ -281,6 +289,21 @@ void            R_FreeRendVertices(rvertex_t* rvertices);
 void            R_FreeRendColors(rcolor_t* rcolors);
 void            R_FreeRendTexCoords(rtexcoord_t* rtexcoords);
 void            R_InfoRendVerticesPool(void);
+
+rvertex_t*      R_VerticesFromRendSeg(struct rendseg_s* rseg, uint* size);
+void            R_TexmapUnitsFromRendSeg(struct rendseg_s* rseg, rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
+                                         rtexmapunit_t rTUs[NUM_TEXMAP_UNITS]);
+
+void Rend_SetupRTU(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
+                   rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
+                   const struct material_snapshot_s* msA, float inter,
+                   const struct material_snapshot_s* msB);
+void Rend_SetupRTU2(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
+                    rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
+                      boolean isWall, const float texOffset[2],
+                      const float texScale[2],
+                      const struct material_snapshot_s* msA,
+                      const struct material_snapshot_s* msB);
 
 void            R_ColorApplyTorchLight(float* color, float distance);
 

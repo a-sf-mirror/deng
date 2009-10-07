@@ -746,6 +746,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\rendseg.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\s_cache.c"
 				>
 			</File>
@@ -1772,6 +1776,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\rend_sprite.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\rendseg.h"
 				>
 			</File>
 			<File

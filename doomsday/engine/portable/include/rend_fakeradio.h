@@ -31,8 +31,6 @@
 
 typedef struct {
     float               sectorLightLevel;
-    const shadowcorner_t* botCn, *topCn, *sideCn;
-    const edgespan_t*   spans;
     float               segOffset;
     float               segLength;
     float               linedefLength;
@@ -43,6 +41,7 @@ void            Rend_RadioRegister(void);
 void            Rend_RadioUpdateLineDef(linedef_t* line, boolean backSide);
 void            Rend_RadioSegSection(const rvertex_t* rvertices,
                                      const walldiv_t* divs,
+                                     const sideradioconfig_t* radioConfig,
                                      const rendsegradio_params_t* params);
 void            Rend_RadioSubSectorEdges(face_t* subsector);
 

@@ -1933,6 +1933,22 @@ void R_ClearSectorFlags(void)
     }
 }
 
+void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
+{
+    int                 viewer = pid;
+
+    if(!lineDef->mapped[viewer])
+    {
+        lineDef->mapped[viewer] = true; // This line is now seen in the map.
+
+        // Send a status report.
+        if(gx.HandleMapObjectStatusReport)
+            gx.HandleMapObjectStatusReport(DMUSC_LINE_FIRSTRENDERED,
+                                           GET_LINE_IDX(lineDef),
+                                           DMU_LINEDEF, &viewer);
+    }
+}
+
 /**
  * Is the specified plane glowing (it glows or is a sky mask surface)?
  *
@@ -1970,6 +1986,49 @@ boolean R_SectorContainsSkySurfaces(const sector_t* sec)
     } while(!sectorContainsSkySurfaces && i < sec->planeCount);
 
     return sectorContainsSkySurfaces;
+}
+
+boolean R_SideDefIsSoftSurface(sidedef_t* sideDef, segsection_t section)
+{
+    return section == SEG_MIDDLE &&
+        ((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
+          !(sideDef->lineDef->flags & DDLF_BLOCKING));
+}
+
+float R_ApplySoftSurfaceDeltaToAlpha(float bottom, float top, sidedef_t* sideDef, float alpha)
+{
+    mobj_t*             mo = viewPlayer->shared.mo;
+    linedef_t*          lineDef = sideDef->lineDef;
+
+    if(viewZ > bottom && viewZ < top)
+    {
+        float               pos, result[2];
+
+        {
+        float               delta[2];
+        V2_Set(delta, lineDef->dX, lineDef->dY);
+        pos = M_ProjectPointOnLine(mo->pos, lineDef->L_v1pos, delta, 0, result);
+        }
+
+        if(pos > 0 && pos < 1)
+        {
+            float               delta[2], distance,
+                                minDistance = mo->radius * .8f;
+
+            V2_Subtract(delta, mo->pos, result);
+
+            distance = M_ApproxDistancef(delta[VX], delta[VY]);
+
+            if(distance < minDistance)
+            {
+                // Fade it out the closer the viewPlayer gets and clamp.
+                alpha = (alpha / minDistance) * distance;
+                alpha = MINMAX_OF(0, alpha, 1);
+            }
+        }
+    }
+
+    return alpha;
 }
 
 /**

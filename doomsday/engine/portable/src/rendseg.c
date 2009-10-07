@@ -1,0 +1,410 @@
+/**\file
+ *\section License
+ * License: GPL
+ * Online License Link: http://www.gnu.org/licenses/gpl.html
+ *
+ *\author Copyright © 2009 Daniel Swanson <danij@dengine.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor,
+ * Boston, MA  02110-1301  USA
+ */
+
+// HEADER FILES ------------------------------------------------------------
+
+#include "de_refresh.h"
+#include "de_render.h"
+#include "de_play.h"
+
+// temporary includes:
+#include "rend_list.h"
+#include "p_material.h"
+#include "rendseg.h"
+
+// MACROS ------------------------------------------------------------------
+
+#define RSEG_MIN_ALPHA      (0.0001f)
+
+// TYPES -------------------------------------------------------------------
+
+// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+
+// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+
+// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+
+// PUBLIC DATA DEFINITIONS -------------------------------------------------
+
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
+
+// CODE --------------------------------------------------------------------
+
+static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, segsection_t section, float alpha,
+                                         material_t** materialA, float* materialBlendInter, material_t** materialB)
+{
+    int                 texMode = 0;
+    surface_t*          surface = &sideDef->SW_surface(section);
+    boolean             forceOpaque = false;
+    blendmode_t         blendMode = BM_NORMAL;
+
+    *materialBlendInter = 0;
+
+    // Fill in the remaining params data.
+    if(IS_SKYSURFACE(surface))
+    {
+        // In devSkyMode mode we render all polys destined for the skymask
+        // as regular world polys (with a few obvious properties).
+        if(devSkyMode)
+        {
+            *materialA = surface->material;
+
+            forceOpaque = true;
+            rseg->flags |= RSF_GLOW;
+        }
+        else
+        {   // We'll mask this.
+            rseg->polyType = RPT_SKY_MASK;
+        }
+    }
+    else
+    {
+        int                 surfaceFlags, surfaceInFlags;
+
+        // Determine which texture to use.
+        if(renderTextures == 2)
+            texMode = 2;
+        else if(!surface->material || ((surface->inFlags & SUIF_MATERIAL_FIX) && devNoTexFix))
+            texMode = 1;
+        else
+            texMode = 0;
+
+        if(texMode == 0)
+        {
+            *materialA = surface->material;
+            *materialB = surface->materialB;
+            *materialBlendInter = surface->matBlendFactor;
+        }
+        else if(texMode == 1)
+            // For debug, render the "missing" texture instead of the texture
+            // chosen for surfaces to fix the HOMs.
+            *materialA = P_GetMaterial(DDT_MISSING, MN_SYSTEM);
+        else // texMode == 2
+            // For lighting debug, render all solid surfaces using the gray
+            // texture.
+            *materialA = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
+
+        // Make any necessary adjustments to the surface flags to suit the
+        // current texture mode.
+        surfaceFlags = surface->flags;
+        surfaceInFlags = surface->inFlags;
+        if(texMode == 1)
+        {
+            rseg->flags |= RSF_GLOW; // Make it stand out
+        }
+        else if(texMode == 2)
+        {
+            surfaceInFlags &= ~(SUIF_MATERIAL_FIX);
+        }
+
+        if(section != SEG_MIDDLE || !LINE_BACKSIDE(sideDef->lineDef))
+        {
+            forceOpaque = true;
+            blendMode = BM_NORMAL;
+        }
+        else
+        {
+            if(surface->blendMode == BM_NORMAL && noSpriteTrans)
+                blendMode = BM_ZEROALPHA; // "no translucency" mode
+            else
+                blendMode = surface->blendMode;
+        }
+
+        if(glowingTextures &&
+           ((surfaceFlags & DDSUF_GLOW) ||
+           (surface->material && (surface->material->flags & MATF_GLOW))))
+            rseg->flags |= RSF_GLOW;
+
+        if(surfaceInFlags & SUIF_NO_RADIO)
+            rseg->flags |= RSF_NO_RADIO;
+    }
+
+    if((rseg->flags & RSF_GLOW) || rseg->polyType == RPT_SKY_MASK)
+        rseg->flags |= RSF_NO_RADIO;
+
+    if(!useShinySurfaces || !(*materialA) && !(*materialA)->reflection)
+        rseg->flags |= RSF_NO_REFLECTION;
+
+    if(forceOpaque)
+        rseg->alpha = -1;
+    else
+        rseg->alpha = alpha;
+    rseg->blendMode = blendMode;
+}
+
+static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, float top,
+                  pvec3_t normal)
+{
+    rseg->polyType = RPT_NORMAL;
+    rseg->blendMode = BM_NORMAL;
+    rseg->flags = 0;
+
+    rseg->from = from;
+    rseg->to = to;
+    rseg->bottom = bottom;
+    rseg->top = top;
+
+    rseg->divs[0].num = rseg->divs[1].num = 0;
+
+    rseg->normal = normal;
+
+    V3_Set(rseg->texQuadTopLeft, from->pos[VX], from->pos[VY], top);
+    V3_Set(rseg->texQuadBottomRight, to->pos[VX], to->pos[VY], bottom);
+
+    rseg->texQuadWidth = P_AccurateDistance(
+        rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
+        rseg->texQuadBottomRight[VY] - rseg->texQuadTopLeft[VY]);
+    if(rseg->texQuadWidth == 0)
+        rseg->texQuadWidth = 0.01f;
+
+    rseg->alpha = 1;
+    rseg->surfaceColorTint = NULL;
+    rseg->surfaceColorTint2 = NULL;
+    rseg->dynlistID = 0;
+
+    rseg->materials.blend = false;
+    rseg->materials.inter = 0;
+}
+
+static void projectLumobjs(rendseg_t* rseg, face_t* face, boolean sortBrightest)
+{
+    rseg->dynlistID = DL_ProjectOnSurface(P_GetCurrentMap(), face, rseg->texQuadTopLeft,
+                                          rseg->texQuadBottomRight, rseg->normal,
+                                          sortBrightest? DLF_SORT_LUMADSC : 0);
+}
+
+static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
+                             float bottom, float top,
+                             pvec3_t normal, face_t* face, sidedef_t* frontSideDef, segsection_t section,
+                             float sectorLightLevel, const float* sectorLightColor,
+                             float surfaceLightLevelDelta, const float* surfaceColorTint,
+                             const float* surfaceColorTint2, float alpha,
+                             biassurface_t* biasSurface, sideradioconfig_t* radioConfig,
+                             const float materialOffset[2], const float materialScale[2],
+                             boolean lightWithLumobjs)
+{
+    float               materialBlendInter;
+    material_t*         materialA = NULL, *materialB = NULL;
+
+    init(rseg, from, to, bottom, top, normal);
+
+    rseg->sectorLightLevel = sectorLightLevel;
+    rseg->sectorLightColor = sectorLightColor;
+
+    rseg->surfaceLightLevelDelta = surfaceLightLevelDelta;
+    rseg->surfaceColorTint = surfaceColorTint;
+    rseg->surfaceColorTint2 = surfaceColorTint2;
+    rseg->biasSurface = biasSurface;
+    rseg->radioConfig = radioConfig;
+
+    V2_Copy(rseg->surfaceMaterialOffset, materialOffset);
+    V2_Copy(rseg->surfaceMaterialScale, materialScale);
+
+    pickMaterialsAndGetDrawFlags(rseg, frontSideDef, section, alpha,
+                                 &materialA, &materialBlendInter, &materialB);
+
+    if(rseg->polyType != RPT_SKY_MASK)
+    {
+        if(lightWithLumobjs && !(rseg->flags & RSF_GLOW))
+        {
+            boolean             sortBrightest =
+                (section == SEG_MIDDLE && LINE_BACKSIDE(frontSideDef->lineDef));
+
+            projectLumobjs(rseg, face, sortBrightest);
+        }
+
+        // @todo: defer to the Materials class.
+        if(!(materialB && smoothTexAnim))
+        {
+            RendSeg_TakeMaterialSnapshots(rseg, materialA);
+        }
+        else
+        {
+            RendSeg_TakeBlendedMaterialSnapshots(rseg, materialA, materialBlendInter, materialB);
+        }
+    }
+}
+
+/**
+ * RendSeg:: class static constructor helper.
+ */
+rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge, segsection_t section,
+                                   fvertex_t* from, fvertex_t* to, float bottom, float top,
+                                   const float materialOffset[2], const float materialScale[2],
+                                   boolean addLights)
+{
+    rendseg_t*          rseg = newRendSeg; // allocate.
+
+    seg_t*              seg = (seg_t*) hEdge->data;
+    const surface_t*    surface = &HE_FRONTSIDEDEF(hEdge)->SW_surface(section);
+    float               alpha, sectorLightLevel, surfaceLightLevelDelta;
+    const float*        sectorLightColor, *surfaceColorTint, *surfaceColorTint2;
+
+    if(surface->material && (surface->material->flags & MATF_NO_DRAW))
+        return NULL; // @todo return null_object
+
+    alpha = (section == SEG_MIDDLE? surface->rgba[3] : 1.0f);
+    if(R_SideDefIsSoftSurface(HE_FRONTSIDEDEF(hEdge), section))
+        alpha = R_ApplySoftSurfaceDeltaToAlpha(bottom, top, HE_FRONTSIDEDEF(hEdge), alpha);
+
+    if(alpha < RSEG_MIN_ALPHA)
+        return NULL; // @todo return null_object
+
+    SideDef_ColorTints(HE_FRONTSIDEDEF(hEdge), section,
+                       &surfaceColorTint, &surfaceColorTint2);
+
+    /**
+     * Lighting paramaters are taken from the sector linked to the
+     * sideDef this half-edge was produced from.
+     */
+    sectorLightLevel = HE_FRONTSIDEDEF(hEdge)->sector->lightLevel;
+    sectorLightColor = R_GetSectorLightColor(HE_FRONTSIDEDEF(hEdge)->sector);
+    surfaceLightLevelDelta = R_WallAngleLightLevelDelta(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side);
+
+    Rend_RadioUpdateLineDef(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side);
+
+    constructor(rseg, from, to, bottom, top,
+                     HE_FRONTSIDEDEF(hEdge)->SW_middlenormal,
+                     hEdge->face, HE_FRONTSIDEDEF(hEdge), section,
+                     sectorLightLevel, sectorLightColor,
+                     surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
+                     seg->bsuf[section], &HE_FRONTSIDEDEF(hEdge)->radioConfig,
+                     materialOffset, materialScale, addLights);
+
+    // Check for neighborhood division?
+    rseg->divs[0].num = rseg->divs[1].num = 0;
+    if(!(section == SEG_MIDDLE &&
+         HE_FRONTSIDEDEF(hEdge) && HE_BACKSIDEDEF(hEdge)))
+    {
+        R_FindSegSectionDivisions(rseg->divs, hEdge, HE_FRONTSECTOR(hEdge), bottom, top);
+    }
+
+    return rseg;
+}
+
+/**
+ * RendSeg:: class static constructor helper.
+ */
+rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
+                                     fvertex_t* from, fvertex_t* to, float bottom, float top,
+                                     face_t* face, poseg_t* poSeg)
+{
+    rendseg_t*          rseg = newRendSeg; // allocate.
+
+    float               materialOffset[2], materialScale[2], offset = 0;
+    const float*        surfaceColorTint, *surfaceColorTint2;
+    subsector_t*        subSector = (subsector_t*) face->data;
+    sector_t*           frontSec = subSector->sector;
+    float               ffloor = frontSec->SP_floorvisheight,
+                        fceil = frontSec->SP_ceilvisheight;
+    surface_t*          surface = &sideDef->SW_middlesurface;
+
+    if(surface->material && (surface->material->flags & MATF_NO_DRAW))
+        return NULL; // @todo return null_object
+
+    materialOffset[0] = surface->visOffset[0];
+    materialOffset[1] = surface->visOffset[1];
+    if(sideDef->lineDef->flags & DDLF_DONTPEGBOTTOM)
+        materialOffset[1] += -(fceil - ffloor);
+
+    materialScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+    materialScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+
+    SideDef_ColorTints(sideDef, SEG_MIDDLE, &surfaceColorTint,
+                       &surfaceColorTint2);
+
+    constructor(rseg, from, to, bottom, top,
+                     sideDef->SW_middlenormal, face, sideDef, SEG_MIDDLE,
+                     frontSec->lightLevel, R_GetSectorLightColor(frontSec),
+                     R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
+                     poSeg->bsuf, NULL,
+                     materialOffset, materialScale, true);
+
+    return rseg;
+}
+
+boolean RendSeg_MustUseVisSprite(const rendseg_t* rseg)
+{
+    if(!(rseg->alpha < 0) && rseg->polyType != RPT_SKY_MASK &&
+       (rseg->alpha < 1 || !rseg->materials.snapshotA.isOpaque || rseg->blendMode > 0))
+        return true;
+
+    return false;
+}
+
+void RendSeg_TakeBlendedMaterialSnapshots(rendseg_t* rseg, material_t* materialA, float blendFactor, material_t* materialB)
+{
+    memset(&rseg->materials.snapshotA, 0, sizeof(rseg->materials.snapshotA));
+    memset(&rseg->materials.snapshotB, 0, sizeof(rseg->materials.snapshotB));
+
+    Material_Prepare(&rseg->materials.snapshotA, materialA, MPF_SMOOTH, NULL);
+    Material_Prepare(&rseg->materials.snapshotB, materialB, MPF_SMOOTH, NULL);
+
+    rseg->materials.inter = blendFactor;
+    rseg->materials.blend = true;
+}
+
+void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
+{
+    float               inter = 0;
+    boolean             smoothed = false;
+
+    memset(&rseg->materials.snapshotA, 0, sizeof(rseg->materials.snapshotA));
+    memset(&rseg->materials.snapshotB, 0, sizeof(rseg->materials.snapshotB));
+
+    Material_Prepare(&rseg->materials.snapshotA, material, MPF_SMOOTH, NULL);
+
+    if(smoothTexAnim)
+    {
+        // If fog is active, inter=0 is accepted as well. Otherwise
+        // flickering may occur if the rendering passes don't match for
+        // blended and unblended surfaces.
+        if(numTexUnits > 1 && material->current != material->next &&
+           !(!usingFog && material->inter < 0))
+        {
+            // Prepare the inter texture.
+            Material_Prepare(&rseg->materials.snapshotB, material->next, 0, NULL);
+            inter = material->inter;
+
+            smoothed = true;
+        }
+    }
+
+    rseg->materials.blend = smoothed;
+    rseg->materials.inter = inter;
+}
+
+boolean RendSeg_UseDynlights(const rendseg_t* rseg)
+{
+    return (rseg->polyType != RPT_SKY_MASK && !(rseg->flags & RSF_GLOW) && rseg->dynlistID? true : false);
+}
+
+uint RendSeg_NumRequiredVertices(rendseg_t* rseg)
+{
+    if(!RendSeg_MustUseVisSprite(rseg) && rseg->divs && (rseg->divs[0].num || rseg->divs[1].num))
+        return 3 + rseg->divs[0].num + 3 + rseg->divs[1].num;
+
+    return 4;
+}

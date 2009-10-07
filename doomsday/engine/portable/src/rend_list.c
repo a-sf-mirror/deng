@@ -205,7 +205,6 @@ typedef struct listhash_s {
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern int devSkyMode;
 extern int useDynlights, dlBlend, skySimple;
 extern boolean usingFog;
 
@@ -829,7 +828,7 @@ static void addPoly(primtype_t type, rendpolytype_t polyType,
                     const rtexcoord_t* rtexcoords2, const rcolor_t* rcolors,
                     uint numVertices, blendmode_t blendMode,
                     uint numLights,
-                    DGLuint modTex, float modColor[3],
+                    DGLuint modTex, const float modColor[3],
                     const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
     uint                i, base, primSize, numIndices;
@@ -918,7 +917,7 @@ void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
                 const rtexcoord_t* rtexcoords2,
                 const rcolor_t* rcolors,
                 uint numVertices, uint numLights,
-                DGLuint modTex, float modColor[3],
+                DGLuint modTex, const float modColor[3],
                 const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
     if(numVertices < 3)

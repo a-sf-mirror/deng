@@ -39,6 +39,7 @@
 #include "de_audio.h" // For texture, environmental audio properties.
 
 #include "m_stack.h"
+#include "rendseg.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -723,6 +724,55 @@ void R_FreeRendVertices(rvertex_t* rvertices)
 #if _DEBUG
     Con_Message("R_FreeRendPoly: Dangling poly ptr!\n");
 #endif
+}
+
+static rvertex_t* allocateVerticesForRendSeg(rendseg_t* rseg, uint* size)
+{
+    uint                num = RendSeg_NumRequiredVertices(rseg);
+
+    if(size)
+        *size = num;
+
+    return R_AllocRendVertices(num);
+}
+
+rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
+{
+    rvertex_t*          rvertices = allocateVerticesForRendSeg(rseg, size);
+
+    // Vertex coords.
+    // Bottom Left.
+    V3_Set(rvertices[0].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->bottom);
+
+    // Top Left.
+    V3_Set(rvertices[1].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->top);
+
+    // Bottom Right.
+    V3_Set(rvertices[2].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->bottom);
+
+    // Top Right.
+    V3_Set(rvertices[3].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->top);
+
+    // @todo apply divisions here!
+
+    return rvertices;
+}
+
+void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
+                              rtexmapunit_t* rTUs)
+{
+    const material_snapshot_t* msA = &rseg->materials.snapshotA;
+    const material_snapshot_t* msB =
+        (rseg->materials.blend && !RendSeg_MustUseVisSprite(rseg)) ? &rseg->materials.snapshotB : NULL;
+
+    memset(rTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+    memset(rTUs, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+
+    if(rseg->polyType != RPT_SKY_MASK)
+    {
+        Rend_SetupRTU(rTU, rTUs, msA, rseg->materials.inter, msB);
+        Rend_SetupRTU2(rTU, rTUs, true, rseg->surfaceMaterialOffset, rseg->surfaceMaterialScale, msA, msB);
+    }
 }
 
 /**
