@@ -1111,7 +1111,7 @@ void R_MaterialsPrecacheGroup(material_t* mat)
             {
                 animframe_t*        frame = &groups[i].frames[k];
 
-                Material_Prepare(NULL, frame->mat, true, NULL);
+                Material_Prepare(NULL, frame->mat, 0, NULL);
             }
         }
     }

@@ -784,7 +784,7 @@ static void Mod_RenderSubModel(uint number, const rendmodelparams_t* params)
         {
             material_snapshot_t ms;
 
-            Material_Prepare(&ms, mat, true, NULL);
+            Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
             skinTexture = ms.units[MTU_PRIMARY].texInst->id;
         }
         else

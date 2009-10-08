@@ -1263,7 +1263,7 @@ boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
             material_snapshot_t ms;
 
             // Ensure we have up to date info.
-            Material_Prepare(&ms, mat, true, NULL);
+            Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
 
             if(ms.isOpaque && !side->SW_middleblendmode &&
                side->SW_middlergba[3] >= 1)
@@ -1313,7 +1313,7 @@ boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
  * texoffy may be NULL.
  * Returns false if the middle texture isn't visible (in the opening).
  *
- * @todo Merge with findBottomTop in rend_main.c
+ * @todo Redundant. Replace with R_FindBottomTopOfHEdgeSection.
  */
 int R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
                              float* topleft, float* topright, float* texoffy,
@@ -1369,6 +1369,254 @@ int R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
     }
 
     return (visible[0] || visible[1]);
+}
+
+boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
+                                      const plane_t* ffloor, const plane_t* fceil,
+                                      const plane_t* bfloor, const plane_t* bceil,
+                                      float* bottom, float* top, float texOffset[2],
+                                      float texScale[2])
+{
+    seg_t*              seg = (seg_t*) hEdge->data;
+
+    if(!bfloor)
+    {
+        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
+
+        if(texOffset)
+        {
+            texOffset[0] = surface->visOffset[0] + seg->offset;
+            texOffset[1] = surface->visOffset[1];
+
+            if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
+                texOffset[1] += -(fceil->visHeight - ffloor->visHeight);
+        }
+
+        if(texScale)
+        {
+            texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+            texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+        }
+
+        *bottom = ffloor->visHeight;
+        *top = fceil->visHeight;
+
+        return true;
+    }
+
+    switch(section)
+    {
+    case SEG_TOP:
+        *top = fceil->visHeight;
+        // Can't go over front ceiling, would induce polygon flaws.
+        if(bceil->visHeight < ffloor->visHeight)
+            *bottom = ffloor->visHeight;
+        else
+            *bottom = bceil->visHeight;
+        if(*top > *bottom)
+        {
+            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_topsurface;
+
+            if(texOffset)
+            {
+                texOffset[0] = surface->visOffset[0] + seg->offset;
+                texOffset[1] = surface->visOffset[1];
+
+                // Align with normal middle texture?
+                if(!(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGTOP))
+                    texOffset[1] += -(fceil->visHeight - bceil->visHeight);
+            }
+
+            if(texScale)
+            {
+                texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+                texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+            }
+
+            return true;
+        }
+        break;
+
+    case SEG_BOTTOM:
+        {
+        float               t = bfloor->visHeight;
+
+        *bottom = ffloor->visHeight;
+        // Can't go over the back ceiling, would induce polygon flaws.
+        if(bfloor->visHeight > bceil->visHeight)
+            t = bceil->visHeight;
+
+        // Can't go over front ceiling, would induce polygon flaws.
+        if(t > fceil->visHeight)
+            t = fceil->visHeight;
+        *top = t;
+
+        if(*top > *bottom)
+        {
+            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_bottomsurface;
+
+            if(texOffset)
+            {
+                texOffset[0] = surface->visOffset[0] + seg->offset;
+                texOffset[1] = surface->visOffset[1];
+
+                if(bfloor->visHeight > fceil->visHeight)
+                    texOffset[1] += bfloor->visHeight - bceil->visHeight;
+
+                // Align with normal middle texture?
+                if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
+                    texOffset[1] += (fceil->visHeight - bfloor->visHeight);
+            }
+
+            if(texScale)
+            {
+                texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+                texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+            }
+
+            return true;
+        }
+        break;
+        }
+    case SEG_MIDDLE:
+        {
+        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
+        const material_t*   mat = surface->material->current;
+        float               openBottom, openTop,
+                            polyBottom, polyTop, xOffset, yOffset, xScale, yScale;
+        boolean             visible = false;
+        boolean             clipTop =
+            !(IS_SKYSURFACE(&fceil->surface) &&
+              IS_SKYSURFACE(&bceil->surface));
+        boolean             clipBottom =
+            !(IS_SKYSURFACE(&ffloor->surface) &&
+              IS_SKYSURFACE(&bfloor->surface));
+
+        openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
+        openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
+
+        xOffset = surface->visOffset[0] + seg->offset;
+        yOffset = 0;
+
+        xScale = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+        yScale = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+
+        if(openBottom < openTop)
+        {
+            if(HE_FRONTSIDEDEF(hEdge)->flags & SDF_MIDDLE_STRETCH)
+            {
+                polyTop = openTop;
+                polyBottom = openBottom;
+                yOffset += surface->visOffset[1];
+                visible = true;
+            }
+            else
+            {
+                if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
+                {
+                    if(LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef))
+                    {
+                        polyBottom = ffloor->visHeight + surface->visOffset[1];
+                        polyTop = polyBottom + mat->height;
+                    }
+                    else
+                    {
+                        polyTop = openBottom + mat->height + surface->visOffset[1];
+                        polyBottom = polyTop - mat->height;
+                    }
+                }
+                else
+                {
+                    polyTop = openTop + surface->visOffset[1];
+                    polyBottom = polyTop - mat->height;
+                }
+
+                if(clipTop && polyTop > openTop)
+                {
+                    yOffset += polyTop - openTop;
+                    polyTop = openTop;
+                }
+
+                if(clipBottom && polyBottom < openBottom)
+                {
+                    polyBottom = openBottom;
+                }
+
+                if(polyTop + yOffset - mat->height < openTop)
+                {
+                    visible = true;
+                }
+            }
+        }
+        else
+        {
+            polyBottom = polyTop = openBottom;
+        }
+
+        *bottom = polyBottom;
+        *top = polyTop;
+
+        if(texOffset)
+        {
+            texOffset[0] = xOffset;
+            texOffset[1] = yOffset;
+        }
+
+        if(texScale)
+        {
+            texScale[0] = xScale;
+            texScale[1] = yScale;
+        }
+
+        if(visible)
+            return true;
+
+        break;
+        }
+    }
+
+    return false;
+}
+
+void R_PickPlanesForSegExtrusion(hedge_t* hEdge,
+                                 boolean useSectorsFromFrontSideDef,
+                                 plane_t** ffloor, plane_t** fceil,
+                                 plane_t** bfloor, plane_t** bceil)
+{
+    sector_t*               frontSec;
+
+    if(!useSectorsFromFrontSideDef)
+    {
+        frontSec = HE_FRONTSECTOR(hEdge);
+    }
+    else
+    {
+        frontSec = HE_FRONTSIDEDEF(hEdge)->sector;
+    }
+
+    *ffloor = frontSec->SP_plane(PLN_FLOOR);
+    *fceil  = frontSec->SP_plane(PLN_CEILING);
+
+    if(R_ConsiderOneSided(hEdge))
+    {
+        *bfloor = NULL;
+        *bceil  = NULL;
+    }
+    else // Two sided.
+    {
+        *bfloor = HE_BACKSECTOR(hEdge)->SP_plane(PLN_FLOOR);
+        *bceil  = HE_BACKSECTOR(hEdge)->SP_plane(PLN_CEILING);
+    }
+}
+
+boolean R_UseSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section)
+{
+    return (section == SEG_MIDDLE && LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef));
+}
+
+boolean R_ConsiderOneSided(hedge_t* hEdge)
+{
+    return !hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef);
 }
 
 /**
@@ -2150,7 +2398,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     {
         material_snapshot_t ms;
 
-        Material_Prepare(&ms, pln->PS_material, true, NULL);
+        Material_Prepare(&ms, pln->PS_material, 0, NULL);
         pln->glowRGB[CR] = ms.color[CR];
         pln->glowRGB[CG] = ms.color[CG];
         pln->glowRGB[CB] = ms.color[CB];

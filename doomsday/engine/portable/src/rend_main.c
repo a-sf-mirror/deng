@@ -181,11 +181,6 @@ void Rend_ModelViewMatrix(boolean useAngles)
     glTranslatef(-vx, -vy, -vz);
 }
 
-static boolean considerOneSided(const hedge_t* hEdge)
-{
-    return !hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef);
-}
-
 static void markSegSectionsPVisible(hedge_t* hEdge)
 {
     sidedef_t*          sideDef;
@@ -196,7 +191,7 @@ static void markSegSectionsPVisible(hedge_t* hEdge)
     sideDef = HE_FRONTSIDEDEF(hEdge);
     if(sideDef)
     {
-        if(considerOneSided(hEdge))
+        if(R_ConsiderOneSided(hEdge))
         {
             sideDef->SW_middleinflags |= SUIF_PVIS;
             sideDef->SW_topinflags &= ~SUIF_PVIS;
@@ -1042,7 +1037,7 @@ static boolean renderWorldSegAsVisSprite(const rendseg_t* rseg, rvertex_t* rvert
 
     R_FreeRendColors(rcolors);
 
-    return false; // We HAD to use a vissprite, so it MUST not be opaque.
+    return rseg->materials.snapshotA.isOpaque && !(alpha < 1.0f);
 }
 
 dynlight_t* Rend_PickDynlightForModTex(uint dynlistID)
@@ -1052,130 +1047,6 @@ dynlight_t* Rend_PickDynlightForModTex(uint dynlistID)
     DL_DynlistIterator(dynlistID, DLIT_GetFirstDynlight, &dyn);
 
     return dyn;
-}
-
-static boolean renderWorldSeg(rendseg_t* rseg, rvertex_t* rvertices,
-                              uint numVertices, const rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
-                              const rtexmapunit_t rTUs[NUM_TEXMAP_UNITS])
-{
-    rcolor_t*           rcolors;
-    rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL,
-                       *rtcModTex = NULL;
-    uint                realNumVertices;
-    rcolor_t*           shinyColors = NULL;
-    rtexcoord_t*        rtcShiny = NULL;
-    uint                dynlistID;
-    uint                numLights = 0;
-    float               interPos = 0;
-    DGLuint             modTex = 0;
-    float               modTexTC[2][2];
-    float               modColor[3];
-
-
-    dynlistID = RendSeg_DynlistID(rseg);
-
-    /**
-     * If multitexturing is enabled and there is a dynlist for this surface;
-     * grab the first dynlight from the list, we'll draw it in the modulation
-     * pass.
-     */
-
-    if(dynlistID && RL_IsMTexLights())
-    {
-        dynlight_t*         dyn = Rend_PickDynlightForModTex(dynlistID);
-
-        if(dyn)
-        {
-            modTex = initModTexFromDynlight(modColor, modTexTC, dyn);
-            numLights = 1;
-        }
-    }
-    
-    realNumVertices = RendSeg_NumRequiredVertices(rseg);
-
-    if(modTex)
-    {   // Modulation texture coordinates.
-        rtcModTex = R_AllocRendTexCoords(realNumVertices);
-        quadLightCoords(rtcModTex, modTexTC[0], modTexTC[1]);
-    }
-
-    rtcPrimary = R_AllocRendTexCoords(realNumVertices);
-    if(rTU[TU_INTER].tex)
-        rtcInter = R_AllocRendTexCoords(realNumVertices);
-
-    rcolors = R_AllocRendColors(realNumVertices);
-
-    if(rseg->polyType != RPT_SKY_MASK)
-    {
-        // ShinySurface?
-        if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
-        {
-            // We'll reuse the same verts but we need new colors.
-            shinyColors = R_AllocRendColors(realNumVertices);
-            // The normal texcoords are used with the mask.
-            // New texcoords are required for shiny texture.
-            rtcShiny = R_AllocRendTexCoords(realNumVertices);
-        }
-    }
-
-    // Primary texture coordinates.
-    quadTexCoords(rtcPrimary, rvertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
-
-    // Blend texture coordinates.
-    if(rTU[TU_INTER].tex)
-        quadTexCoords(rtcInter, rvertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
-
-    // Shiny texture coordinates.
-    if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
-        quadShinyTexCoords(rtcShiny, &rvertices[1], &rvertices[2], rseg->texQuadWidth);
-
-    lightPolygon(rseg, rvertices, rcolors, numVertices, 1.0f,
-                 (rseg->flags & RSF_GLOW) != 0);
-
-    if(rseg->polyType != RPT_SKY_MASK && !(rseg->flags & RSF_NO_REFLECTION) &&
-       rTUs[TU_PRIMARY].tex)
-    {
-        lightShinyPolygon(shinyColors, rcolors, numVertices,
-                          rseg->materials.snapshotA.shiny.minColor,
-                          rTUs[TU_PRIMARY].blend);
-    }
-
-    if(dynlistID && IS_MUL && !(averageLuma(rcolors, numVertices) > 0.98f))
-    {
-        writeDynlights(rseg->dynlistID, rvertices, numVertices, realNumVertices,
-                       rseg->divs, rseg->texQuadTopLeft, rseg->texQuadBottomRight,
-                       &numLights);
-    }
-
-    // Do we need to do any divisions?
-    if(rseg->divs && (rseg->divs[0].num || rseg->divs[1].num))
-    {
-        dividePolygon(rvertices, rcolors, rtcModTex, rtcPrimary, rtcInter,
-                      shinyColors, rtcShiny, rseg->divs);
-    }
-
-    writePolygon(rseg->polyType, rseg->divs, numVertices,
-                 rvertices, rcolors, rtcPrimary, rtcInter,
-                 rtcModTex, modTex, modColor, rTU,
-                 numLights);
-
-    if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
-        writeShinyPolygon(RPT_SHINY, rseg->divs, numVertices,
-                          rvertices, shinyColors, rtcPrimary, rtcShiny,
-                          rTUs);
-
-    R_FreeRendTexCoords(rtcPrimary);
-    if(rtcInter)
-        R_FreeRendTexCoords(rtcInter);
-    if(rtcModTex)
-        R_FreeRendTexCoords(rtcModTex);
-    if(rtcShiny)
-        R_FreeRendTexCoords(rtcShiny);
-    R_FreeRendColors(rcolors);
-    if(shinyColors)
-        R_FreeRendColors(shinyColors);
-
-    return true;
 }
 
 typedef struct {
@@ -1862,6 +1733,41 @@ static void Rend_RenderPlane(face_t* face, planetype_t type,
     }
 }
 
+static void renderWorldSeg(const rendseg_t* rseg, uint numVertices, rvertex_t* rvertices,
+                           DGLuint modTex, rtexcoord_t* rtcModTex, float modColor[3],
+                           rcolor_t* rcolors, rtexcoord_t* rtcPrimary, rtexcoord_t* rtcInter, uint numLights,
+                           rcolor_t* shinyColors, rtexcoord_t* rtcShiny,
+                           const rtexmapunit_t* rTU, const rtexmapunit_t* rTUs)
+{
+    lightPolygon(rseg, rvertices, rcolors, numVertices, 1.0f,
+                 (rseg->flags & RSF_GLOW) != 0);
+
+    if(rseg->polyType != RPT_SKY_MASK && !(rseg->flags & RSF_NO_REFLECTION) &&
+       rTUs[TU_PRIMARY].tex)
+    {
+        lightShinyPolygon(shinyColors, rcolors, numVertices,
+                          rseg->materials.snapshotA.shiny.minColor,
+                          rTUs[TU_PRIMARY].blend);
+    }
+
+    // Do we need to do any divisions?
+    if(rseg->divs && (rseg->divs[0].num || rseg->divs[1].num))
+    {
+        dividePolygon(rvertices, rcolors, rtcModTex, rtcPrimary, rtcInter,
+                      shinyColors, rtcShiny, rseg->divs);
+    }
+
+    writePolygon(rseg->polyType, rseg->divs, numVertices,
+                 rvertices, rcolors, rtcPrimary, rtcInter,
+                 rtcModTex, modTex, modColor, rTU,
+                 numLights);
+
+    if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+        writeShinyPolygon(RPT_SHINY, rseg->divs, numVertices,
+                          rvertices, shinyColors, rtcPrimary, rtcShiny,
+                          rTUs);
+}
+
 static void renderRadioPolygons(rendseg_t* rseg, sideradioconfig_t* radioConfig,
                                 float segOffset, float lineDefLength,
                                 const sector_t* segFrontSec, const sector_t* segBackSec)
@@ -1885,67 +1791,92 @@ static void renderRadioPolygons(rendseg_t* rseg, sideradioconfig_t* radioConfig,
     R_FreeRendVertices(rvertices);
 }
 
-static boolean renderGeometry(rendseg_t* rseg, rvertex_t* rvertices,
-                                   uint numVertices, const rtexmapunit_t* rTU,
-                                   const rtexmapunit_t* rTUs,
+static void renderGeometry(rendseg_t* rseg, uint numVertices, rvertex_t* rvertices,
+                           DGLuint modTex, rtexcoord_t* rtcModTex, float modColor[3],
+                           rcolor_t* rcolors, rtexcoord_t* rtcPrimary, rtexcoord_t* rtcInter, uint numLights,
+                           rcolor_t* shinyColors, rtexcoord_t* rtcShiny,
+                           const rtexmapunit_t* rTU, const rtexmapunit_t* rTUs,
 
-                                   // @todo refactor away the following arguments.
-                                   float segOffset, float lineDefLength,
-                                   const sector_t* segFrontSec, const sector_t* segBackSec)
+                           // @todo refactor away the following arguments.
+                           float segOffset, float lineDefLength,
+                           const sector_t* segFrontSec, const sector_t* segBackSec)
 {
-    boolean             result;
-    
-    result = renderWorldSeg(rseg, rvertices, numVertices, rTU, rTUs);
+    renderWorldSeg(rseg, numVertices, rvertices,
+                   modTex, rtcModTex, modColor,
+                   rcolors, rtcPrimary, rtcInter, numLights,
+                   shinyColors, rtcShiny,
+                   rTU, rTUs);
 
     // Render Fakeradio polys for this seg?
-    if(result && !(rseg->flags & RSF_NO_RADIO) && rseg->radioConfig)
+    if(!(rseg->flags & RSF_NO_RADIO) && rseg->radioConfig)
     {
         renderRadioPolygons(rseg, rseg->radioConfig, segOffset,
                             lineDefLength, segFrontSec, segBackSec);
     }
-
-    return result;
 }
 
-static void buildGeometryFromRendSeg(rendseg_t* rseg, rvertex_t** rvertices,
-                                     uint* numVertices, rtexmapunit_t* rTU,
-                                     rtexmapunit_t* rTUs)
+static uint buildGeometryFromRendSeg(rendseg_t* rseg,
+                                     DGLuint modTex, float modTexTC[2][2], float modColor[3],
+                                     rvertex_t** rvertices,
+                                     rcolor_t** rcolors, rtexcoord_t** rtcPrimary, rtexcoord_t** rtcInter,
+                                     rcolor_t** shinyColors, rtexcoord_t** rtcShiny, rtexcoord_t** rtcModTex,
+                                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rtexmapunit_t rTUs[NUM_TEXMAP_UNITS])
 {
-    *rvertices = R_VerticesFromRendSeg(rseg, numVertices);
-    R_TexmapUnitsFromRendSeg(rseg, rTU, rTUs);
-}
-
-boolean Rend_DrawRendSeg(rendseg_t* rseg,
-
-                         // @todo refactor away the following arguments.
-                         float segOffset, float lineDefLength,
-                         const sector_t* segFrontSec, const sector_t* segBackSec)
-{
-    boolean             result;
     uint                numVertices;
-    rvertex_t*          rvertices;
-    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+    float               interPos = 0;
 
-    if(RendSeg_MustUseVisSprite(rseg))
-    {
-        buildGeometryFromRendSeg(rseg, &rvertices, &numVertices, rTU, rTUs);
+    *rvertices = R_VerticesFromRendSeg(rseg, &numVertices);
 
-        result = renderWorldSegAsVisSprite(rseg, rvertices, rTU);
+    R_TexmapUnitsFromRendSeg(rseg, rTU, rTUs);
 
-        R_FreeRendVertices(rvertices);
-
-        return false;
+    if(modTex)
+    {   // Modulation texture coordinates.
+        *rtcModTex = R_AllocRendTexCoords(numVertices);
+        quadLightCoords(*rtcModTex, modTexTC[0], modTexTC[1]);
     }
 
-    buildGeometryFromRendSeg(rseg, &rvertices, &numVertices, rTU, rTUs);
+    *rtcPrimary = R_AllocRendTexCoords(numVertices);
+    if(rTU[TU_INTER].tex)
+        *rtcInter = R_AllocRendTexCoords(numVertices);
 
-    result = renderGeometry(rseg, rvertices, numVertices, rTU, rTUs,
-                            segOffset, lineDefLength, segFrontSec,
-                            segBackSec);
+    *rcolors = R_AllocRendColors(numVertices);
 
-    R_FreeRendVertices(rvertices);
+    if(rseg->polyType != RPT_SKY_MASK)
+    {
+        // ShinySurface?
+        if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+        {
+            // We'll reuse the same verts but we need new colors.
+            *shinyColors = R_AllocRendColors(numVertices);
+            // The normal texcoords are used with the mask.
+            // New texcoords are required for shiny texture.
+            *rtcShiny = R_AllocRendTexCoords(numVertices);
+        }
+    }
 
-    return result;
+    // Primary texture coordinates.
+    quadTexCoords(*rtcPrimary, *rvertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
+
+    // Blend texture coordinates.
+    if(rTU[TU_INTER].tex)
+        quadTexCoords(*rtcInter, *rvertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
+
+    // Shiny texture coordinates.
+    if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+        quadShinyTexCoords(*rtcShiny, &(*rvertices)[1], &(*rvertices)[2], rseg->texQuadWidth);
+
+    return numVertices;
+}
+
+static DGLuint pickModulationTexture(uint dynlistID, float modTexTC[2][2],
+                                     float modColor[3])
+{
+    dynlight_t*         dyn = Rend_PickDynlightForModTex(dynlistID);
+
+    if(dyn)
+        return initModTexFromDynlight(modColor, modTexTC, dyn);
+
+    return 0;
 }
 
 /**
@@ -1963,16 +1894,84 @@ static boolean Rend_RenderPolyobjSeg(face_t* face, poseg_t* seg)
         sector_t*           frontSec = subSector->sector;
         float               bottom = frontSec->SP_floorvisheight,
                             top = frontSec->SP_ceilvisheight, offset = 0;
-        rendseg_t           rseg;
+        rendseg_t           temp, *rendSeg;
 
         if(frontSec->SP_floorvisheight >= frontSec->SP_ceilvisheight)
             return true;
 
-        RendSeg_staticConstructFromPolyobjSideDef(&rseg, sideDef, &sideDef->lineDef->L_v1->v,
-                                  &sideDef->lineDef->L_v2->v, bottom, top, face, seg);
-        
-        Rend_DrawRendSeg(&rseg, offset, sideDef->lineDef->length, frontSec, NULL);
-        
+        rendSeg = RendSeg_staticConstructFromPolyobjSideDef(&temp, sideDef, &sideDef->lineDef->L_v1->v,
+            &sideDef->lineDef->L_v2->v, bottom, top, face, seg);
+
+        {
+        uint                numVertices;
+        rvertex_t*          rvertices = NULL;
+        rcolor_t*           rcolors = NULL;
+        rtexcoord_t*        rtcModTex = NULL;
+        rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL;
+        rcolor_t*           shinyColors = NULL;
+        rtexcoord_t*        rtcShiny = NULL;
+        rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+        DGLuint             modTex;
+        float               modTexTC[2][2];
+        float               modTexColor[3];
+        uint                dynlistID = RendSeg_DynlistID(rendSeg);
+        uint                numLights = 0;
+
+        /**
+         * If multi-texturing is enabled; take the first dynlight texture for
+         * use in the modulation pass.
+         */
+        if(RL_IsMTexLights())
+        {
+            modTex = pickModulationTexture(dynlistID, modTexTC, modTexColor);
+            if(modTex)
+                numLights = 1;
+        }
+
+        if(RendSeg_MustUseVisSprite(rendSeg))
+        {
+            rvertices = R_VerticesFromRendSeg(rendSeg, NULL);
+
+            R_TexmapUnitsFromRendSeg(rendSeg, rTU, rTUs);
+
+            renderWorldSegAsVisSprite(rendSeg, rvertices, rTU);
+        }
+        else
+        {
+            numVertices =
+                buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
+                                         &rvertices, &rcolors, &rtcPrimary, &rtcInter,
+                                         &shinyColors, &rtcShiny,
+                                         &rtcModTex, rTU, rTUs);
+
+            if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
+                writeDynlights(dynlistID, rvertices, 4, numVertices,
+                               rendSeg->divs, rendSeg->texQuadTopLeft, rendSeg->texQuadBottomRight,
+                               &numLights);
+
+            renderGeometry(rendSeg, numVertices, rvertices,
+                           modTex, rtcModTex, modTexColor,
+                           rcolors, rtcPrimary, rtcInter, numLights,
+                           shinyColors, rtcShiny, rTU, rTUs,
+                           offset, sideDef->lineDef->length, frontSec, NULL);
+        }
+
+        if(rvertices)
+            R_FreeRendVertices(rvertices);
+        if(rtcModTex)
+            R_FreeRendTexCoords(rtcModTex);
+        if(rcolors)
+            R_FreeRendColors(rcolors);
+        if(rtcPrimary)
+            R_FreeRendTexCoords(rtcPrimary);
+        if(rtcInter)
+            R_FreeRendTexCoords(rtcInter);
+        if(shinyColors)
+            R_FreeRendColors(shinyColors);
+        if(rtcShiny)
+            R_FreeRendTexCoords(rtcShiny);
+        }
+
         return P_IsInVoid(viewPlayer)? false : true;
     }
 
@@ -2023,7 +2022,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
     // In devSkyMode mode we render all polys destined for the skymask as
     // regular world polys (with a few obvious properties).
 
-    Material_Prepare(&ms, mat, true, NULL);
+    Material_Prepare(&ms, mat, 0, NULL);
 
     rTU[TU_PRIMARY].tex = ms.units[MTU_PRIMARY].texInst->id;
     rTU[TU_PRIMARY].magMode = ms.units[MTU_PRIMARY].magMode;
@@ -2308,8 +2307,8 @@ static boolean isTwoSidedSolid(int solidSeg, const hedge_t* hEdge,
                        *backSubSector = HE_BACKSUBSECTOR(hEdge);
 
     // Can we make this a solid segment in the clipper?
-    if(solidSeg == -1)
-        solid = false; // NEVER (we have a hole we couldn't fix).
+    if(solidSeg)
+        solid = true;
     else
     {
         if(LINE_SELFREF(sideDef->lineDef))
@@ -2351,223 +2350,9 @@ static boolean isTwoSidedSolid(int solidSeg, const hedge_t* hEdge,
     return solid;
 }
 
-static void planesForSegExtrusion(hedge_t* hEdge,
-                                  boolean useSectorsFromFrontSideDef,
-                                  plane_t** ffloor, plane_t** fceil,
-                                  plane_t** bfloor, plane_t** bceil)
-{
-    sector_t*               frontSec;
-
-    if(!useSectorsFromFrontSideDef)
-    {
-        frontSec = HE_FRONTSECTOR(hEdge);
-    }
-    else
-    {
-        frontSec = HE_FRONTSIDEDEF(hEdge)->sector;
-    }
-
-    *ffloor = frontSec->SP_plane(PLN_FLOOR);
-    *fceil  = frontSec->SP_plane(PLN_CEILING);
-
-    if(considerOneSided(hEdge))
-    {
-        *bfloor = NULL;
-        *bceil  = NULL;
-    }
-    else // Two sided.
-    {
-        *bfloor = HE_BACKSECTOR(hEdge)->SP_plane(PLN_FLOOR);
-        *bceil  = HE_BACKSECTOR(hEdge)->SP_plane(PLN_CEILING);
-    }
-}
-
-static boolean findBottomTop(hedge_t* hEdge, segsection_t section,
-                             const plane_t* ffloor, const plane_t* fceil,
-                             const plane_t* bfloor, const plane_t* bceil,
-                             float* bottom, float* top, float texOffset[2],
-                             float texScale[2])
-{
-    seg_t*              seg = (seg_t*) hEdge->data;
-
-    if(!bfloor)
-    {
-        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
-
-        texOffset[0] = surface->visOffset[0] + seg->offset;
-        texOffset[1] = surface->visOffset[1];
-
-        if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
-            texOffset[1] += -(fceil->visHeight - ffloor->visHeight);
-
-        texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-        texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
-
-        *bottom = ffloor->visHeight;
-        *top = fceil->visHeight;
-
-        return true;
-    }
-
-    switch(section)
-    {
-    case SEG_TOP:
-        *top = fceil->visHeight;
-        // Can't go over front ceiling, would induce polygon flaws.
-        if(bceil->visHeight < ffloor->visHeight)
-            *bottom = ffloor->visHeight;
-        else
-            *bottom = bceil->visHeight;
-        if(*top > *bottom)
-        {
-            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_topsurface;
-
-            texOffset[0] = surface->visOffset[0] + seg->offset;
-            texOffset[1] = surface->visOffset[1];
-
-            // Align with normal middle texture?
-            if(!(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGTOP))
-                texOffset[1] += -(fceil->visHeight - bceil->visHeight);
-
-            texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-            texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
-
-            return true;
-        }
-        break;
-
-    case SEG_BOTTOM:
-        {
-        float               t = bfloor->visHeight;
-
-        *bottom = ffloor->visHeight;
-        // Can't go over the back ceiling, would induce polygon flaws.
-        if(bfloor->visHeight > bceil->visHeight)
-            t = bceil->visHeight;
-
-        // Can't go over front ceiling, would induce polygon flaws.
-        if(t > fceil->visHeight)
-            t = fceil->visHeight;
-        *top = t;
-
-        if(*top > *bottom)
-        {
-            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_bottomsurface;
-
-            texOffset[0] = surface->visOffset[0] + seg->offset;
-            texOffset[1] = surface->visOffset[1];
-
-            if(bfloor->visHeight > fceil->visHeight)
-                texOffset[1] += bfloor->visHeight - bceil->visHeight;
-
-            // Align with normal middle texture?
-            if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
-                texOffset[1] += (fceil->visHeight - bfloor->visHeight);
-
-            texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-            texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
-
-            return true;
-        }
-        break;
-        }
-    case SEG_MIDDLE:
-        {
-        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
-        const material_t*   mat = surface->material->current;
-        float               openBottom, openTop,
-                            polyBottom, polyTop, xOffset, yOffset, xScale, yScale;
-        boolean             visible = false;
-        boolean             clipTop =
-            !(IS_SKYSURFACE(&fceil->surface) &&
-              IS_SKYSURFACE(&bceil->surface));
-        boolean             clipBottom =
-            !(IS_SKYSURFACE(&ffloor->surface) &&
-              IS_SKYSURFACE(&bfloor->surface));
-
-        openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-        openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
-
-        if(openBottom >= openTop)
-            return false;
-
-        xOffset = surface->visOffset[0] + seg->offset;
-        yOffset = 0;
-
-        xScale = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-        yScale = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
-
-        if(HE_FRONTSIDEDEF(hEdge)->flags & SDF_MIDDLE_STRETCH)
-        {
-            polyTop = openTop;
-            polyBottom = openBottom;
-            yOffset += surface->visOffset[1];
-            visible = true;
-        }
-        else
-        {
-            if(HE_FRONTSIDEDEF(hEdge)->lineDef->flags & DDLF_DONTPEGBOTTOM)
-            {
-                if(LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef))
-                {
-                    polyBottom = ffloor->visHeight + surface->visOffset[1];
-                    polyTop = polyBottom + mat->height;
-                }
-                else
-                {
-                    polyTop = openBottom + mat->height + surface->visOffset[1];
-                    polyBottom = polyTop - mat->height;
-                }
-            }
-            else
-            {
-                polyTop = openTop + surface->visOffset[1];
-                polyBottom = polyTop - mat->height;
-            }
-
-            if(clipTop && polyTop > openTop)
-            {
-                yOffset += polyTop - openTop;
-                polyTop = openTop;
-            }
-
-            if(clipBottom && polyBottom < openBottom)
-            {
-                polyBottom = openBottom;
-            }
-
-            if(polyTop + yOffset - mat->height < openTop)
-            {
-                visible = true;
-            }
-        }
-
-        if(visible)
-        {
-            *bottom = polyBottom;
-            *top = polyTop;
-            texOffset[0] = xOffset;
-            texOffset[1] = yOffset;
-
-            texScale[0] = xScale;
-            texScale[1] = yScale;
-            return true;
-        }
-        break;
-        }
-    }
-
-    return false;
-}
-
 static boolean isSidedefSectionPotentiallyVisible(sidedef_t* sideDef, segsection_t section)
 {
     return (sideDef->SW_surface(section).inFlags & SUIF_PVIS) != 0;
-}
-
-static boolean useSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section)
-{
-    return (section == SEG_MIDDLE && LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef));
 }
 
 static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
@@ -2578,10 +2363,10 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
 
     memset(rsegs, 0, sizeof(rendseg_t*) * 3);
 
-    planesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
+    R_PickPlanesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
 
     if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_BOTTOM))
-        if(findBottomTop(hEdge, SEG_BOTTOM, ffloor, fceil, bfloor, bceil,
+        if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_BOTTOM, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
             rsegs[SEG_BOTTOM] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_BOTTOM], hEdge, SEG_BOTTOM,
@@ -2589,7 +2374,7 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
         }
 
     if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_TOP))
-        if(findBottomTop(hEdge, SEG_TOP, ffloor, fceil, bfloor, bceil,
+        if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_TOP, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
             rsegs[SEG_TOP] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_TOP], hEdge, SEG_TOP,
@@ -2603,10 +2388,10 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
          * Middle sections of "Self-referencing" linedefs must select the sectors
          * linked to seg's front sidedef rather than those linked to the half-edge.
          */
-        if(useSectorsFromFrontSideDef(hEdge, SEG_MIDDLE))
-            planesForSegExtrusion(hEdge, true, &ffloor, &fceil, &bfloor, &bceil);
+        if(R_UseSectorsFromFrontSideDef(hEdge, SEG_MIDDLE))
+            R_PickPlanesForSegExtrusion(hEdge, true, &ffloor, &fceil, &bfloor, &bceil);
 
-        if(findBottomTop(hEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
+        if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
             rsegs[SEG_MIDDLE] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_MIDDLE], hEdge, SEG_MIDDLE,
@@ -2723,7 +2508,7 @@ static void Rend_RenderSubSector(uint faceidx)
                 
                 R_MarkLineDefAsDrawnForViewer(seg->sideDef->lineDef, viewPlayer - ddPlayers);
 
-                planesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
+                R_PickPlanesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
 
                 getRendSegsForHEdge(hEdge, temp, rendSegs);
 
@@ -2731,34 +2516,213 @@ static void Rend_RenderSubSector(uint faceidx)
                  * Draw sections.
                  */
                 if(rendSegs[SEG_BOTTOM])
-                {                       
-                    Rend_DrawRendSeg(rendSegs[SEG_BOTTOM],
-                                     seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                     HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                {
+                    rendseg_t*          rendSeg = rendSegs[SEG_BOTTOM];
+                    uint                numVertices;
+                    rvertex_t*          rvertices = NULL;
+                    rcolor_t*           rcolors = NULL;
+                    rtexcoord_t*        rtcModTex = NULL;
+                    rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL;
+                    rcolor_t*           shinyColors = NULL;
+                    rtexcoord_t*        rtcShiny = NULL;
+                    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    DGLuint             modTex = 0;
+                    float               modTexTC[2][2];
+                    float               modTexColor[3];
+                    uint                dynlistID = RendSeg_DynlistID(rendSeg);
+                    uint                numLights = 0;
+
+                    /**
+                     * If multi-texturing is enabled; take the first dynlight texture for
+                     * use in the modulation pass.
+                     */
+                    if(RL_IsMTexLights())
+                    {
+                        modTex = pickModulationTexture(dynlistID, modTexTC, modTexColor);
+                        if(modTex)
+                            numLights = 1;
+                    }
+
+                    numVertices =
+                        buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
+                                                 &rvertices, &rcolors, &rtcPrimary, &rtcInter,
+                                                 &shinyColors, &rtcShiny,
+                                                 &rtcModTex, rTU, rTUs);
+
+                    if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
+                        writeDynlights(dynlistID, rvertices, 4, numVertices,
+                                       rendSeg->divs, rendSeg->texQuadTopLeft, rendSeg->texQuadBottomRight,
+                                       &numLights);
+
+                    renderGeometry(rendSeg, numVertices, rvertices,
+                                   modTex, rtcModTex, modTexColor,
+                                   rcolors, rtcPrimary, rtcInter, numLights,
+                                   shinyColors, rtcShiny, rTU, rTUs,
+                                   seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                   HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+
+                    if(rvertices)
+                        R_FreeRendVertices(rvertices);
+                    if(rtcModTex)
+                        R_FreeRendTexCoords(rtcModTex);
+                    if(rcolors)
+                        R_FreeRendColors(rcolors);
+                    if(rtcPrimary)
+                        R_FreeRendTexCoords(rtcPrimary);
+                    if(rtcInter)
+                        R_FreeRendTexCoords(rtcInter);
+                    if(shinyColors)
+                        R_FreeRendColors(shinyColors);
+                    if(rtcShiny)
+                        R_FreeRendTexCoords(rtcShiny);
                 }
 
                 if(rendSegs[SEG_MIDDLE])
                 {
-                    solid = Rend_DrawRendSeg(rendSegs[SEG_MIDDLE],
-                                             seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                             HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                    rendseg_t*          rendSeg = rendSegs[SEG_MIDDLE];
+                    uint                numVertices;
+                    rvertex_t*          rvertices = NULL;
+                    rcolor_t*           rcolors = NULL;
+                    rtexcoord_t*        rtcModTex = NULL;
+                    rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL;
+                    rcolor_t*           shinyColors = NULL;
+                    rtexcoord_t*        rtcShiny = NULL;
+                    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    DGLuint             modTex = 0;
+                    float               modTexTC[2][2];
+                    float               modTexColor[3];
+                    uint                dynlistID = RendSeg_DynlistID(rendSeg);
+                    uint                numLights = 0;
+
+                    /**
+                     * If multi-texturing is enabled; take the first dynlight texture for
+                     * use in the modulation pass.
+                     */
+                    if(RL_IsMTexLights())
+                    {
+                        modTex = pickModulationTexture(dynlistID, modTexTC, modTexColor);
+                        if(modTex)
+                            numLights = 1;
+                    }
+
+                    if(RendSeg_MustUseVisSprite(rendSeg))
+                    {
+                        rvertices = R_VerticesFromRendSeg(rendSeg, &numVertices);
+
+                        R_TexmapUnitsFromRendSeg(rendSeg, rTU, rTUs);
+
+                        solid = renderWorldSegAsVisSprite(rendSeg, rvertices, rTU);
+                    }
+                    else
+                    {
+                        numVertices =
+                            buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
+                                                     &rvertices, &rcolors, &rtcPrimary, &rtcInter,
+                                                     &shinyColors, &rtcShiny,
+                                                     &rtcModTex, rTU, rTUs);
+
+                        if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
+                            writeDynlights(dynlistID, rvertices, 4, numVertices,
+                                           rendSeg->divs, rendSeg->texQuadTopLeft, rendSeg->texQuadBottomRight,
+                                           &numLights);
+
+                        renderGeometry(rendSeg, numVertices, rvertices,
+                                       modTex, rtcModTex, modTexColor,
+                                       rcolors, rtcPrimary, rtcInter, numLights,
+                                       shinyColors, rtcShiny, rTU, rTUs,
+                                       seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                       HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+
+                        solid = true;
+                    }
+
+                    if(rvertices)
+                        R_FreeRendVertices(rvertices);
+                    if(rtcModTex)
+                        R_FreeRendTexCoords(rtcModTex);
+                    if(rcolors)
+                        R_FreeRendColors(rcolors);
+                    if(rtcPrimary)
+                        R_FreeRendTexCoords(rtcPrimary);
+                    if(rtcInter)
+                        R_FreeRendTexCoords(rtcInter);
+                    if(shinyColors)
+                        R_FreeRendColors(shinyColors);
+                    if(rtcShiny)
+                        R_FreeRendTexCoords(rtcShiny);
                 }
 
                 if(rendSegs[SEG_TOP])
                 {
-                    Rend_DrawRendSeg(rendSegs[SEG_TOP],
-                                     seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                     HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                    rendseg_t*          rendSeg = rendSegs[SEG_TOP];
+                    uint                numVertices;
+                    rvertex_t*          rvertices = NULL;
+                    rcolor_t*           rcolors = NULL;
+                    rtexcoord_t*        rtcModTex = NULL;
+                    rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL;
+                    rcolor_t*           shinyColors = NULL;
+                    rtexcoord_t*        rtcShiny = NULL;
+                    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    DGLuint             modTex = 0;
+                    float               modTexTC[2][2];
+                    float               modTexColor[3];
+                    uint                dynlistID = RendSeg_DynlistID(rendSeg);
+                    uint                numLights = 0;
+
+                    /**
+                     * If multi-texturing is enabled; take the first dynlight texture for
+                     * use in the modulation pass.
+                     */
+                    if(RL_IsMTexLights())
+                    {
+                        modTex = pickModulationTexture(dynlistID, modTexTC, modTexColor);
+                        if(modTex)
+                            numLights = 1;
+                    }
+
+                    numVertices =
+                        buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
+                                                 &rvertices, &rcolors, &rtcPrimary, &rtcInter,
+                                                 &shinyColors, &rtcShiny,
+                                                 &rtcModTex, rTU, rTUs);
+
+                    if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
+                        writeDynlights(dynlistID, rvertices, 4, numVertices,
+                                       rendSeg->divs, rendSeg->texQuadTopLeft, rendSeg->texQuadBottomRight,
+                                       &numLights);
+
+                    renderGeometry(rendSeg, numVertices, rvertices,
+                                   modTex, rtcModTex, modTexColor,
+                                   rcolors, rtcPrimary, rtcInter, numLights,
+                                   shinyColors, rtcShiny, rTU, rTUs,
+                                   seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                   HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+
+                    if(rvertices)
+                        R_FreeRendVertices(rvertices);
+                    if(rtcModTex)
+                        R_FreeRendTexCoords(rtcModTex);
+                    if(rcolors)
+                        R_FreeRendColors(rcolors);
+                    if(rtcPrimary)
+                        R_FreeRendTexCoords(rtcPrimary);
+                    if(rtcInter)
+                        R_FreeRendTexCoords(rtcInter);
+                    if(shinyColors)
+                        R_FreeRendColors(shinyColors);
+                    if(rtcShiny)
+                        R_FreeRendTexCoords(rtcShiny);
                 }
 
-                if(!considerOneSided(hEdge))
+                if(!R_ConsiderOneSided(hEdge))
                 {
-                    if(solid)
+                    if(solid) // An opaque middle texture was drawn.
                     {
                         float openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
                         float openTop    = MIN_OF(bceil->visHeight, fceil->visHeight);
 
-                        // Can we make this a solid segment?
+                        // If the middle seg fills the opening, we can clip the range
+                        // defined by the half-edge vertices.
                         if(!(rendSegs[SEG_MIDDLE]->top >= openTop &&
                              rendSegs[SEG_MIDDLE]->bottom <= openBottom))
                              solid = false;
@@ -3703,7 +3667,7 @@ static void Rend_RenderBoundingBoxes(void)
     glDisable(GL_CULL_FACE);
 
     mat = P_GetMaterial(DDT_BBOX, MN_SYSTEM);
-    Material_Prepare(&ms, mat, true, NULL);
+    Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
 
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);

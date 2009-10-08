@@ -122,6 +122,18 @@ int             R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
                                     boolean lower_unpeg, boolean clipTop,
                                     boolean clipBottom);
 
+boolean         R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
+                                              const plane_t* ffloor, const plane_t* fceil,
+                                              const plane_t* bfloor, const plane_t* bceil,
+                                              float* bottom, float* top, float texOffset[2],
+                                              float texScale[2]);
+void            R_PickPlanesForSegExtrusion(hedge_t* hEdge,
+                                            boolean useSectorsFromFrontSideDef,
+                                            plane_t** ffloor, plane_t** fceil,
+                                            plane_t** bfloor, plane_t** bceil);
+boolean         R_UseSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section);
+boolean         R_ConsiderOneSided(hedge_t* hEdge);
+
 void            R_FindSegSectionDivisions(walldiv_t* wdivs, const hedge_t* hEdge,
                                           const sector_t* frontsec, float low, float hi);
 

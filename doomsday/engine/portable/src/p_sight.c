@@ -103,6 +103,7 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 {
 #define RTOP            0x1
 #define RBOTTOM         0x2
+#define RMIDDLE         0x4
 
     float               frac;
     byte                ranges = 0;
@@ -142,12 +143,49 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
             ranges |= RBOTTOM;
         if(bsec->SP_ceilheight < fsec->SP_ceilheight)
             ranges |= RTOP;
+        if(!(los->flags & LS_PASSMIDDLE))
+            ranges |= RMIDDLE;
     }
 
     if(!ranges)
         return true;
 
     frac = P_InterceptVector(&los->trace, &dl);
+
+    if(ranges & RMIDDLE)
+    {
+        surface_t*          surface = &LINE_FRONTSIDE(li)->SW_middlesurface;
+
+        if(surface->material && !(surface->blendMode > 0) &&
+           !(surface->rgba[CA] < 1.0f) &&
+           (!(los->flags & LS_PASSLEFT) ||
+            side == P_PointOnLineDefSide(FIX2FLT(los->trace.pos[VX]),
+                                         FIX2FLT(los->trace.pos[VY]), li)))
+        {
+            material_snapshot_t ms;
+
+            Material_Prepare(&ms, surface->material, MPF_SMOOTH, NULL);
+            if(ms.isOpaque)
+            {
+                hedge_t*            hEdge = li->hEdges[0];
+                plane_t*            ffloor, *fceil, *bfloor, *bceil;
+                float               bottom, top;
+
+                R_PickPlanesForSegExtrusion(hEdge, R_UseSectorsFromFrontSideDef(hEdge, SEG_MIDDLE),
+                                            &ffloor, &fceil, &bfloor, &bceil);
+                if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
+                                                 &bottom, &top, NULL, NULL))
+                {
+                    if(!(los->bottomSlope > (top - los->startZ) / frac) ||
+                         los->topSlope < (bottom - los->startZ) / frac)
+                        return false; // Stop iteration.
+                }
+            }
+        }
+    }
+
+    if((ranges & ~RMIDDLE) == 0)
+        return true;
 
     if(!noBack &&
        (((los->flags & LS_PASSOVER_SKY) &&

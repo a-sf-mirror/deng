@@ -326,7 +326,7 @@ byte Material_Prepare(material_snapshot_t* snapshot, material_t* mat,
                    mat->layers[0].texPosition[0], mat->layers[0].texPosition[1],
                    1);
 
-        snapshot->isOpaque = !(texInsts[0]->flags & GLTF_MASKED);
+        snapshot->isOpaque = (texInsts[0]->flags & GLTF_MASKED) != 1;
 
         /// \fixme what about the other texture types?
         if(tex->type == GLT_DOOMTEXTURE || tex->type == GLT_FLAT)
@@ -420,7 +420,7 @@ void Material_Precache(material_t* mat)
     }
 
     // Just this one material.
-    Material_Prepare(NULL, mat, true, NULL);
+    Material_Prepare(NULL, mat, 0, NULL);
 }
 
 void Material_DeleteTextures(material_t* mat)
@@ -492,9 +492,9 @@ const ded_decor_t* Material_GetDecoration(material_t* mat)
     if(mat)
     {
         // Ensure we've already prepared this material.
-        Material_Prepare(NULL, mat, true, NULL);
+        Material_Prepare(NULL, mat, 0, NULL);
 
-        return mat->current->decoration;
+        return mat->decoration;
     }
 
     return NULL;
@@ -510,7 +510,7 @@ const ded_ptcgen_t* Material_GetPtcGen(material_t* mat)
     if(mat)
     {
         // Ensure we've already prepared this material.
-        //Material_Prepare(NULL, mat, true, NULL);
+        //Material_Prepare(NULL, mat, 0, NULL);
 
         return mat->ptcGen;
     }

@@ -309,11 +309,8 @@ static void processSeg(hedge_t* hEdge, void* data)
     vertex_t*           vtx;
     seg_t*              seg = (seg_t*) hEdge->data;
 
-    // Seg must be between two different sectors.
-    // @todo this doesn't seem right. Why can't we pass through
-    // self-referencing linedefs??
-    if(seg->sideDef &&
-       (!hEdge->twin || HE_FRONTSECTOR(hEdge) == HE_BACKSECTOR(hEdge)))
+    // Can not spread over one-sided lines.
+    if(!HE_BACKSECTOR(hEdge))
         return;
 
     // Which way does the spread go?

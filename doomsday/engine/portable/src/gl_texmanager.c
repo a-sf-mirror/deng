@@ -2649,7 +2649,7 @@ void GL_SetMaterial(material_t* mat)
     if(!mat)
         return;
 
-    Material_Prepare(&ms, mat, true, NULL);
+    Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
 }

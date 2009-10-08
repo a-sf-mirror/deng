@@ -722,7 +722,7 @@ boolean R_GetSpriteInfo(int sprite, int frame, spriteinfo_t* info)
 
     sprFrame = &sprDef->spriteFrames[frame];
     mat = sprFrame->mats[0];
-    Material_Prepare(&ms, mat, false, NULL);
+    Material_Prepare(&ms, mat, 0, NULL);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -782,7 +782,7 @@ float R_VisualRadius(mobj_t* mo)
 
     // Use the sprite frame's width.
     Material_Prepare(&ms, R_GetMaterialForSprite(mo->sprite, mo->frame),
-                     true, NULL);
+                     MPF_SMOOTH, NULL);
     return ms.width / 2;
 }
 

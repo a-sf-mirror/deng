@@ -791,7 +791,7 @@ static void R_ScaleModelToSprite(modeldef_t* mf, int sprite, int frame)
 
     if(!spr->numFrames || spr->spriteFrames == NULL)
         return;
-    Material_Prepare(&ms, spr->spriteFrames[frame].mats[0], true, NULL);
+    Material_Prepare(&ms, spr->spriteFrames[frame].mats[0], 0, NULL);
 
     off = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID]->offY -
         ms.height;
