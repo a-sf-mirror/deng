@@ -51,10 +51,4 @@ void            Rend_RenderMap(struct gamemap_s* map);
 void            Rend_ModelViewMatrix(boolean use_angles);
 
 void            Rend_RenderLightModRange(void);
-
-void            Rend_WriteDynlights(uint dynlistID, const rvertex_t* rvertices,
-                                    uint numVertices, uint realNumVertices,
-                                    const walldiv_t* divs, const float texQuadTopLeft[3],
-                                    const float texQuadBottomRight[3],
-                                    uint* numLights);
 #endif

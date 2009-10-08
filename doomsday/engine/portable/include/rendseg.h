@@ -78,8 +78,7 @@ typedef struct rendseg_s {
 // Constructors:
 rendseg_t*      RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge, segsection_t section,
                                    fvertex_t* from, fvertex_t* to, float bottom, float top,
-                                   const float materialOffset[2], const float materialScale[2],
-                                   boolean addLights);
+                                   const float materialOffset[2], const float materialScale[2]);
 rendseg_t*      RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
                                      fvertex_t* from, fvertex_t* to, float bottom, float top,
                                      face_t* face, poseg_t* poSeg);
@@ -87,7 +86,7 @@ rendseg_t*      RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
 // Public methods:
 boolean         RendSeg_MustUseVisSprite(const rendseg_t* rseg);
 uint            RendSeg_NumRequiredVertices(rendseg_t* rseg);
-boolean         RendSeg_UseDynlights(const rendseg_t* rseg);
+uint            RendSeg_DynlistID(const rendseg_t* rseg);
 
 // @todo once the material snapshots are owned by the Materials class, these
 // become accessors.

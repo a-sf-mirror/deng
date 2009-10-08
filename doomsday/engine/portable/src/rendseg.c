@@ -252,8 +252,7 @@ static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
  */
 rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge, segsection_t section,
                                    fvertex_t* from, fvertex_t* to, float bottom, float top,
-                                   const float materialOffset[2], const float materialScale[2],
-                                   boolean addLights)
+                                   const float materialOffset[2], const float materialScale[2])
 {
     rendseg_t*          rseg = newRendSeg; // allocate.
 
@@ -283,15 +282,17 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
     sectorLightColor = R_GetSectorLightColor(HE_FRONTSIDEDEF(hEdge)->sector);
     surfaceLightLevelDelta = R_WallAngleLightLevelDelta(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side);
 
+    // @todo is this still necessary at this time? try to postpone
+    // until geometry creation.
     Rend_RadioUpdateLineDef(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side);
 
     constructor(rseg, from, to, bottom, top,
-                     HE_FRONTSIDEDEF(hEdge)->SW_middlenormal,
-                     hEdge->face, HE_FRONTSIDEDEF(hEdge), section,
-                     sectorLightLevel, sectorLightColor,
-                     surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
-                     seg->bsuf[section], &HE_FRONTSIDEDEF(hEdge)->radioConfig,
-                     materialOffset, materialScale, addLights);
+                HE_FRONTSIDEDEF(hEdge)->SW_middlenormal,
+                hEdge->face, HE_FRONTSIDEDEF(hEdge), section,
+                sectorLightLevel, sectorLightColor,
+                surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
+                seg->bsuf[section], &HE_FRONTSIDEDEF(hEdge)->radioConfig,
+                materialOffset, materialScale, true);
 
     // Check for neighborhood division?
     rseg->divs[0].num = rseg->divs[1].num = 0;
@@ -396,9 +397,9 @@ void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
     rseg->materials.inter = inter;
 }
 
-boolean RendSeg_UseDynlights(const rendseg_t* rseg)
-{
-    return (rseg->polyType != RPT_SKY_MASK && !(rseg->flags & RSF_GLOW) && rseg->dynlistID? true : false);
+uint RendSeg_DynlistID(const rendseg_t* rseg)
+{   
+    return rseg->dynlistID;
 }
 
 uint RendSeg_NumRequiredVertices(rendseg_t* rseg)

@@ -62,9 +62,12 @@ void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
 void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
                     const float color3f[3], float alpha);
 
+void Rend_RenderNormals(void);
+void Rend_Vertexes(void);
+void Rend_RenderBoundingBoxes(void);
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void Rend_RenderBoundingBoxes(void);
 static DGLuint constructBBox(DGLuint name, float br);
 
 float RendPlane_TakeMaterialSnapshots(material_snapshot_t* msA, material_snapshot_t* msB,
@@ -178,303 +181,68 @@ void Rend_ModelViewMatrix(boolean useAngles)
     glTranslatef(-vx, -vy, -vz);
 }
 
+static boolean considerOneSided(const hedge_t* hEdge)
+{
+    return !hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef);
+}
+
 static void markSegSectionsPVisible(hedge_t* hEdge)
 {
-    byte                i;
+    sidedef_t*          sideDef;
 
-    if(!hEdge || !HE_FRONTSIDEDEF(hEdge))
+    if(!hEdge)
         return;
 
-    for(i = 0; i < 3; ++i)
-        HE_FRONTSIDEDEF(hEdge)->sections[i].inFlags |= SUIF_PVIS;
-
-    // Top
-    if(!HE_BACKSIDEDEF(hEdge))
+    sideDef = HE_FRONTSIDEDEF(hEdge);
+    if(sideDef)
     {
-        HE_FRONTSIDEDEF(hEdge)->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
-        HE_FRONTSIDEDEF(hEdge)->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
-    }
-    else
-    {
-        sector_t*           frontSec = HE_FRONTSECTOR(hEdge);
-        sector_t*           backSec = HE_BACKSECTOR(hEdge);
-
-        // Check middle material.
-        if((!HE_FRONTSIDEDEF(hEdge)->SW_middlematerial ||
-            (HE_FRONTSIDEDEF(hEdge)->SW_middlematerial->flags & MATF_NO_DRAW)) ||
-            HE_FRONTSIDEDEF(hEdge)->SW_middlergba[3] <= 0) // Check alpha
-            HE_FRONTSIDEDEF(hEdge)->sections[SEG_MIDDLE].inFlags &= ~SUIF_PVIS;
-
-        if(IS_SKYSURFACE(&HE_BACKSECTOR(hEdge)->SP_ceilsurface) &&
-           IS_SKYSURFACE(&HE_FRONTSECTOR(hEdge)->SP_ceilsurface))
-           HE_FRONTSIDEDEF(hEdge)->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
+        if(considerOneSided(hEdge))
+        {
+            sideDef->SW_middleinflags |= SUIF_PVIS;
+            sideDef->SW_topinflags &= ~SUIF_PVIS;
+            sideDef->SW_bottominflags &= ~SUIF_PVIS;
+        }
         else
         {
-            if(HE_FRONTSECTOR(hEdge)->SP_ceilvisheight <=
-               HE_BACKSECTOR(hEdge)->SP_ceilvisheight)
-                HE_FRONTSIDEDEF(hEdge)->sections[SEG_TOP].inFlags &= ~SUIF_PVIS;
-        }
+            sector_t*           frontSec = HE_FRONTSECTOR(hEdge);
+            sector_t*           backSec = HE_BACKSECTOR(hEdge);
 
-        // Bottom
-        if(IS_SKYSURFACE(&HE_BACKSECTOR(hEdge)->SP_floorsurface) &&
-           IS_SKYSURFACE(&HE_FRONTSECTOR(hEdge)->SP_floorsurface))
-           HE_FRONTSIDEDEF(hEdge)->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
-        else
-        {
-            if(HE_FRONTSECTOR(hEdge)->SP_floorvisheight >=
-               HE_BACKSECTOR(hEdge)->SP_floorvisheight)
-                HE_FRONTSIDEDEF(hEdge)->sections[SEG_BOTTOM].inFlags &= ~SUIF_PVIS;
-        }
-    }
-}
+            sideDef->SW_middleinflags |= SUIF_PVIS;
+            sideDef->SW_topinflags |= SUIF_PVIS;
+            sideDef->SW_bottominflags |= SUIF_PVIS;
 
-typedef struct {
-    uint            lastIdx;
-    const rvertex_t* rvertices;
-    uint            numVertices, realNumVertices;
-    const float*    texTL, *texBR;
-    boolean         isWall;
-    const walldiv_t* divs;
-} dynlightiterparams_t;
+            // Check middle material.
+            if((!sideDef->SW_middlematerial ||
+                (sideDef->SW_middlematerial->flags & MATF_NO_DRAW)) ||
+                sideDef->SW_middlergba[3] <= 0) // Check alpha
+                sideDef->SW_middleinflags &= ~SUIF_PVIS;
 
-boolean RLIT_DynGetFirst(const dynlight_t* dyn, void* data)
-{
-    dynlight_t**        ptr = data;
-
-    *ptr = (dynlight_t*) dyn;
-    return false; // Stop iteration.
-}
-
-boolean RLIT_DynLightWrite(const dynlight_t* dyn, void* data)
-{
-    dynlightiterparams_t* params = data;
-
-    // If multitexturing is in use, we skip the first light.
-    if(!(RL_IsMTexLights() && params->lastIdx == 0))
-    {
-        uint                i;
-        rvertex_t*          rvertices;
-        rtexcoord_t*        rtexcoords;
-        rcolor_t*           rcolors;
-        rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
-
-        memset(rTU, 0, sizeof(rTU));
-
-        // Allocate enough for the divisions too.
-        rvertices = R_AllocRendVertices(params->realNumVertices);
-        rtexcoords = R_AllocRendTexCoords(params->realNumVertices);
-        rcolors = R_AllocRendColors(params->realNumVertices);
-
-        rTU[TU_PRIMARY].tex = dyn->texture;
-        rTU[TU_PRIMARY].magMode = GL_LINEAR;
-
-        rTU[TU_PRIMARY_DETAIL].tex = 0;
-        rTU[TU_INTER].tex = 0;
-        rTU[TU_INTER_DETAIL].tex = 0;
-
-        for(i = 0; i < params->numVertices; ++i)
-        {
-            uint                c;
-            rcolor_t*           col = &rcolors[i];
-
-            // Each vertex uses the light's color.
-            for(c = 0; c < 3; ++c)
-                col->rgba[c] = dyn->color[c];
-            col->rgba[3] = 1;
-        }
-
-        if(params->isWall)
-        {
-            rtexcoords[1].st[0] = rtexcoords[0].st[0] = dyn->s[0];
-            rtexcoords[1].st[1] = rtexcoords[3].st[1] = dyn->t[0];
-            rtexcoords[3].st[0] = rtexcoords[2].st[0] = dyn->s[1];
-            rtexcoords[2].st[1] = rtexcoords[0].st[1] = dyn->t[1];
-
-            if(params->divs && (params->divs[0].num || params->divs[1].num))
-            {   // We need to subdivide the dynamic light quad.
-                float               bL, tL, bR, tR;
-                rvertex_t           origVerts[4];
-                rcolor_t            origColors[4];
-                rtexcoord_t         origTexCoords[4];
-
-                /**
-                 * Need to swap indices around into fans set the position
-                 * of the division vertices, interpolate texcoords and
-                 * color.
-                 */
-
-                memcpy(origVerts, params->rvertices, sizeof(rvertex_t) * 4);
-                memcpy(origTexCoords, rtexcoords, sizeof(rtexcoord_t) * 4);
-                memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
-
-                bL = params->rvertices[0].pos[VZ];
-                tL = params->rvertices[1].pos[VZ];
-                bR = params->rvertices[2].pos[VZ];
-                tR = params->rvertices[3].pos[VZ];
-
-                R_DivVerts(rvertices, origVerts, params->divs);
-                R_DivTexCoords(rtexcoords, origTexCoords, params->divs, bL, tL, bR, tR);
-                R_DivVertColors(rcolors, origColors, params->divs, bL, tL, bR, tR);
-            }
+            if(IS_SKYSURFACE(&backSec->SP_ceilsurface) &&
+               IS_SKYSURFACE(&frontSec->SP_ceilsurface))
+               sideDef->SW_topinflags &= ~SUIF_PVIS;
             else
             {
-                memcpy(rvertices, params->rvertices, sizeof(rvertex_t) * params->numVertices);
+                if(frontSec->SP_ceilvisheight <=
+                   backSec->SP_ceilvisheight)
+                    sideDef->SW_topinflags &= ~SUIF_PVIS;
             }
-        }
-        else
-        {   // It's a flat.
-            uint                i;
-            float               width, height;
 
-            width  = params->texBR[VX] - params->texTL[VX];
-            height = params->texBR[VY] - params->texTL[VY];
-
-            for(i = 0; i < params->numVertices; ++i)
+            // Bottom
+            if(IS_SKYSURFACE(&backSec->SP_floorsurface) &&
+               IS_SKYSURFACE(&frontSec->SP_floorsurface))
+               sideDef->SW_bottominflags &= ~SUIF_PVIS;
+            else
             {
-                rtexcoords[i].st[0] = ((params->texBR[VX] - params->rvertices[i].pos[VX]) / width * dyn->s[0]) +
-                    ((params->rvertices[i].pos[VX] - params->texTL[VX]) / width * dyn->s[1]);
-
-                rtexcoords[i].st[1] = ((params->texBR[VY] - params->rvertices[i].pos[VY]) / height * dyn->t[0]) +
-                    ((params->rvertices[i].pos[VY] - params->texTL[VY]) / height * dyn->t[1]);
+                if(frontSec->SP_floorvisheight >= backSec->SP_floorvisheight)
+                    sideDef->SW_bottominflags &= ~SUIF_PVIS;
             }
-
-            memcpy(rvertices, params->rvertices, sizeof(rvertex_t) * params->numVertices);
         }
-
-        if(params->isWall &&
-           params->divs && (params->divs[0].num || params->divs[1].num))
-        {
-            RL_AddPoly(PT_FAN, RPT_LIGHT, rvertices + 3 + params->divs[0].num,
-                       rtexcoords + 3 + params->divs[0].num, NULL, NULL,
-                       rcolors + 3 + params->divs[0].num,
-                       3 + params->divs[1].num, 0,
-                       0, NULL, rTU);
-            RL_AddPoly(PT_FAN, RPT_LIGHT, rvertices, rtexcoords, NULL, NULL,
-                       rcolors, 3 + params->divs[0].num, 0,
-                       0, NULL, rTU);
-        }
-        else
-        {
-            RL_AddPoly(params->isWall? PT_TRIANGLE_STRIP : PT_FAN,
-                       RPT_LIGHT,
-                       rvertices, rtexcoords, NULL, NULL,
-                       rcolors, params->numVertices, 0,
-                       0, NULL, rTU);
-        }
-
-        R_FreeRendVertices(rvertices);
-        R_FreeRendTexCoords(rtexcoords);
-        R_FreeRendColors(rcolors);
-    }
-    params->lastIdx++;
-
-    return true; // Continue iteration.
-}
-
-/**
- * Generate a dynlight primitive for each of the lights affecting the surface.
- * Multitexturing may be used for the first light, so it is skipped.
- */
-void Rend_WriteDynlights(uint dynlistID, const rvertex_t* rvertices,
-                         uint numVertices, uint realNumVertices,
-                         const walldiv_t* divs, const float texQuadTopLeft[3],
-                         const float texQuadBottomRight[3],
-                         uint* numLights)
-{
-    dynlightiterparams_t dlparams;
-
-    dlparams.rvertices = rvertices;
-    dlparams.numVertices = numVertices;
-    dlparams.realNumVertices = realNumVertices;
-    dlparams.lastIdx = 0;
-    dlparams.isWall = true;
-    dlparams.divs = divs;
-    dlparams.texTL = texQuadTopLeft;
-    dlparams.texBR = texQuadBottomRight;
-
-    DL_DynlistIterator(dynlistID, RLIT_DynLightWrite, &dlparams);
-
-    *numLights += dlparams.lastIdx;
-    if(RL_IsMTexLights())
-        *numLights -= 1;
-}
-
-/**
- * This doesn't create a rendering primitive but a vissprite! The vissprite
- * represents the masked poly and will be rendered during the rendering
- * of sprites. This is necessary because all masked polygons must be
- * rendered back-to-front, or there will be alpha artifacts along edges.
- */
-void Rend_AddMaskedPoly(const rvertex_t* rvertices,
-                        const rcolor_t* rcolors, float wallLength,
-                        float texWidth, float texHeight,
-                        const float texOffset[2], blendmode_t blendMode,
-                        uint lightListIdx, boolean glow, boolean masked,
-                        const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
-{
-    vissprite_t*        vis = R_NewVisSprite();
-    int                 i, c;
-    float               midpoint[3];
-
-    midpoint[VX] = (rvertices[0].pos[VX] + rvertices[3].pos[VX]) / 2;
-    midpoint[VY] = (rvertices[0].pos[VY] + rvertices[3].pos[VY]) / 2;
-    midpoint[VZ] = (rvertices[0].pos[VZ] + rvertices[3].pos[VZ]) / 2;
-
-    vis->type = VSPR_MASKED_WALL;
-    vis->lumIdx = 0;
-    vis->center[VX] = midpoint[VX];
-    vis->center[VY] = midpoint[VY];
-    vis->center[VZ] = midpoint[VZ];
-    vis->isDecoration = false;
-    vis->distance = R_PointDist2D(midpoint);
-    vis->data.wall.tex = rTU[TU_PRIMARY].tex;
-    vis->data.wall.magMode = rTU[TU_PRIMARY].magMode;
-    vis->data.wall.masked = masked;
-    for(i = 0; i < 4; ++i)
-    {
-        vis->data.wall.vertices[i].pos[VX] = rvertices[i].pos[VX];
-        vis->data.wall.vertices[i].pos[VY] = rvertices[i].pos[VY];
-        vis->data.wall.vertices[i].pos[VZ] = rvertices[i].pos[VZ];
-
-        for(c = 0; c < 4; ++c)
-        {
-            vis->data.wall.vertices[i].color[c] =
-                MINMAX_OF(0, rcolors[i].rgba[c], 1);
-        }
-    }
-
-    vis->data.wall.texCoord[0][VX] = (texOffset? texOffset[VX] / texWidth : 0);
-    vis->data.wall.texCoord[1][VX] =
-        vis->data.wall.texCoord[0][VX] + wallLength / texWidth;
-    vis->data.wall.texCoord[0][VY] = (texOffset? texOffset[VY] / texHeight : 0);
-    vis->data.wall.texCoord[1][VY] =
-        vis->data.wall.texCoord[0][VY] +
-            (rvertices[3].pos[VZ] - rvertices[0].pos[VZ]) / texHeight;
-    vis->data.wall.blendMode = blendMode;
-
-    //// \fixme Semitransparent masked polys arn't lit atm
-    if(!glow && lightListIdx && numTexUnits > 1 && envModAdd &&
-       !(rcolors[0].rgba[CA] < 1))
-    {
-        dynlight_t*         dyn = NULL;
-
-        /**
-         * The dynlights will have already been sorted so that the brightest
-         * and largest of them is first in the list. So grab that one.
-         */
-        DL_DynlistIterator(lightListIdx, RLIT_DynGetFirst, &dyn);
-
-        vis->data.wall.modTex = dyn->texture;
-        vis->data.wall.modTexCoord[0][0] = dyn->s[0];
-        vis->data.wall.modTexCoord[0][1] = dyn->s[1];
-        vis->data.wall.modTexCoord[1][0] = dyn->t[0];
-        vis->data.wall.modTexCoord[1][1] = dyn->t[1];
-        for(c = 0; c < 3; ++c)
-            vis->data.wall.modColor[c] = dyn->color[c];
     }
     else
     {
-        vis->data.wall.modTex = 0;
+        sideDef->SW_middleinflags &= ~SUIF_PVIS;
+        sideDef->SW_topinflags &= ~SUIF_PVIS;
+        sideDef->SW_bottominflags &= ~SUIF_PVIS;
     }
 }
 
@@ -992,7 +760,266 @@ static void writeShinyPolygon(rendpolytype_t polyType, const walldiv_t* divs,
                NULL, rcolors, numVertices, 0, 0, NULL, rTU);
 }
 
-static boolean renderWorldPolyAsVisSprite(const rendseg_t* rseg, rvertex_t* rvertices,
+void Rend_WriteDynlight(const dynlight_t* dyn, const rvertex_t* rvertices,
+                        uint numVertices, uint numVerticesIncludingDivisions,
+                        const float* texQuadBottomRight, const float* texQuadTopLeft,
+                        boolean isWall, const walldiv_t* divs)
+{
+    uint                i;
+    rvertex_t*          dynVertices;
+    rtexcoord_t*        rtexcoords;
+    rcolor_t*           rcolors;
+    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
+
+    memset(rTU, 0, sizeof(rTU));
+
+    // Allocate enough for the divisions too.
+    dynVertices = R_AllocRendVertices(numVerticesIncludingDivisions);
+    rtexcoords = R_AllocRendTexCoords(numVerticesIncludingDivisions);
+    rcolors = R_AllocRendColors(numVerticesIncludingDivisions);
+
+    rTU[TU_PRIMARY].tex = dyn->texture;
+    rTU[TU_PRIMARY].magMode = GL_LINEAR;
+
+    rTU[TU_PRIMARY_DETAIL].tex = 0;
+    rTU[TU_INTER].tex = 0;
+    rTU[TU_INTER_DETAIL].tex = 0;
+
+    for(i = 0; i < numVertices; ++i)
+    {
+        uint                c;
+        rcolor_t*           col = &rcolors[i];
+
+        // Each vertex uses the light's color.
+        for(c = 0; c < 3; ++c)
+            col->rgba[c] = dyn->color[c];
+        col->rgba[3] = 1;
+    }
+
+    if(isWall)
+    {
+        rtexcoords[1].st[0] = rtexcoords[0].st[0] = dyn->s[0];
+        rtexcoords[1].st[1] = rtexcoords[3].st[1] = dyn->t[0];
+        rtexcoords[3].st[0] = rtexcoords[2].st[0] = dyn->s[1];
+        rtexcoords[2].st[1] = rtexcoords[0].st[1] = dyn->t[1];
+
+        if(divs && (divs[0].num || divs[1].num))
+        {   // We need to subdivide the dynamic light quad.
+            float               bL, tL, bR, tR;
+            rvertex_t           origVerts[4];
+            rcolor_t            origColors[4];
+            rtexcoord_t         origTexCoords[4];
+
+            /**
+             * Need to swap indices around into fans set the position
+             * of the division vertices, interpolate texcoords and
+             * color.
+             */
+
+            memcpy(origVerts, rvertices, sizeof(rvertex_t) * 4);
+            memcpy(origTexCoords, rtexcoords, sizeof(rtexcoord_t) * 4);
+            memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
+
+            bL = rvertices[0].pos[VZ];
+            tL = rvertices[1].pos[VZ];
+            bR = rvertices[2].pos[VZ];
+            tR = rvertices[3].pos[VZ];
+
+            R_DivVerts(dynVertices, origVerts, divs);
+            R_DivTexCoords(rtexcoords, origTexCoords, divs, bL, tL, bR, tR);
+            R_DivVertColors(rcolors, origColors, divs, bL, tL, bR, tR);
+        }
+        else
+        {
+            memcpy(dynVertices, rvertices, sizeof(rvertex_t) * numVertices);
+        }
+    }
+    else
+    {   // It's a flat.
+        uint                i;
+        float               width, height;
+
+        width  = texQuadBottomRight[VX] - texQuadTopLeft[VX];
+        height = texQuadBottomRight[VY] - texQuadTopLeft[VY];
+
+        for(i = 0; i < numVertices; ++i)
+        {
+            rtexcoords[i].st[0] = ((texQuadBottomRight[VX] - rvertices[i].pos[VX]) / width * dyn->s[0]) +
+                ((rvertices[i].pos[VX] - texQuadTopLeft[VX]) / width * dyn->s[1]);
+
+            rtexcoords[i].st[1] = ((texQuadBottomRight[VY] - rvertices[i].pos[VY]) / height * dyn->t[0]) +
+                ((rvertices[i].pos[VY] - texQuadTopLeft[VY]) / height * dyn->t[1]);
+        }
+
+        memcpy(dynVertices, rvertices, sizeof(rvertex_t) * numVertices);
+    }
+
+    if(isWall && divs && (divs[0].num || divs[1].num))
+    {
+        RL_AddPoly(PT_FAN, RPT_LIGHT, dynVertices + 3 + divs[0].num,
+                   rtexcoords + 3 + divs[0].num, NULL, NULL,
+                   rcolors + 3 + divs[0].num,
+                   3 + divs[1].num, 0,
+                   0, NULL, rTU);
+        RL_AddPoly(PT_FAN, RPT_LIGHT, dynVertices, rtexcoords, NULL, NULL,
+                   rcolors, 3 + divs[0].num, 0,
+                   0, NULL, rTU);
+    }
+    else
+    {
+        RL_AddPoly(isWall? PT_TRIANGLE_STRIP : PT_FAN,
+                   RPT_LIGHT,
+                   dynVertices, rtexcoords, NULL, NULL,
+                   rcolors, numVertices, 0,
+                   0, NULL, rTU);
+    }
+
+    R_FreeRendVertices(dynVertices);
+    R_FreeRendTexCoords(rtexcoords);
+    R_FreeRendColors(rcolors);
+}
+
+boolean DLIT_GetFirstDynlight(const dynlight_t* dyn, void* data)
+{
+    dynlight_t**        ptr = data;
+
+    *ptr = (dynlight_t*) dyn;
+    return false; // Stop iteration.
+}
+
+typedef struct {
+    uint            lastIdx;
+    const rvertex_t* rvertices;
+    uint            numVertices, realNumVertices;
+    const float*    texTL, *texBR;
+    boolean         isWall;
+    const walldiv_t* divs;
+} dynlightiterparams_t;
+
+boolean DLIT_WriteDynlight(const dynlight_t* dyn, void* data)
+{
+    dynlightiterparams_t* p = data;
+
+    // If multitexturing is in use, we skip the first light.
+    if(!(RL_IsMTexLights() && p->lastIdx == 0))
+    {
+        Rend_WriteDynlight(dyn, p->rvertices, p->numVertices, p->realNumVertices,
+                           p->texBR, p->texTL, p->isWall, p->divs);
+    }
+
+    p->lastIdx++;
+
+    return true; // Continue iteration.
+}
+
+/**
+ * Generate a dynlight primitive for each of the lights affecting the surface.
+ * Multitexturing may be used for the first light, so it is skipped.
+ */
+static void writeDynlights(uint dynlistID, const rvertex_t* rvertices,
+                           uint numVertices, uint realNumVertices,
+                           const walldiv_t* divs, const float texQuadTopLeft[3],
+                           const float texQuadBottomRight[3],
+                           uint* numLights)
+{
+    dynlightiterparams_t dlparams;
+
+    dlparams.rvertices = rvertices;
+    dlparams.numVertices = numVertices;
+    dlparams.realNumVertices = realNumVertices;
+    dlparams.lastIdx = 0;
+    dlparams.isWall = true;
+    dlparams.divs = divs;
+    dlparams.texTL = texQuadTopLeft;
+    dlparams.texBR = texQuadBottomRight;
+
+    DL_DynlistIterator(dynlistID, DLIT_WriteDynlight, &dlparams);
+
+    *numLights += dlparams.lastIdx;
+    if(RL_IsMTexLights())
+        *numLights -= 1;
+}
+
+/**
+ * This doesn't create a rendering primitive but a vissprite! The vissprite
+ * represents the masked poly and will be rendered during the rendering
+ * of sprites. This is necessary because all masked polygons must be
+ * rendered back-to-front, or there will be alpha artifacts along edges.
+ */
+void Rend_AddMaskedPoly(const rvertex_t* rvertices,
+                        const rcolor_t* rcolors, float wallLength,
+                        float texWidth, float texHeight,
+                        const float texOffset[2], blendmode_t blendMode,
+                        uint lightListIdx, boolean glow, boolean masked,
+                        const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
+{
+    vissprite_t*        vis = R_NewVisSprite();
+    int                 i, c;
+    float               midpoint[3];
+
+    midpoint[VX] = (rvertices[0].pos[VX] + rvertices[3].pos[VX]) / 2;
+    midpoint[VY] = (rvertices[0].pos[VY] + rvertices[3].pos[VY]) / 2;
+    midpoint[VZ] = (rvertices[0].pos[VZ] + rvertices[3].pos[VZ]) / 2;
+
+    vis->type = VSPR_MASKED_WALL;
+    vis->lumIdx = 0;
+    vis->center[VX] = midpoint[VX];
+    vis->center[VY] = midpoint[VY];
+    vis->center[VZ] = midpoint[VZ];
+    vis->isDecoration = false;
+    vis->distance = R_PointDist2D(midpoint);
+    vis->data.wall.tex = rTU[TU_PRIMARY].tex;
+    vis->data.wall.magMode = rTU[TU_PRIMARY].magMode;
+    vis->data.wall.masked = masked;
+    for(i = 0; i < 4; ++i)
+    {
+        vis->data.wall.vertices[i].pos[VX] = rvertices[i].pos[VX];
+        vis->data.wall.vertices[i].pos[VY] = rvertices[i].pos[VY];
+        vis->data.wall.vertices[i].pos[VZ] = rvertices[i].pos[VZ];
+
+        for(c = 0; c < 4; ++c)
+        {
+            vis->data.wall.vertices[i].color[c] =
+                MINMAX_OF(0, rcolors[i].rgba[c], 1);
+        }
+    }
+
+    vis->data.wall.texCoord[0][VX] = (texOffset? texOffset[VX] / texWidth : 0);
+    vis->data.wall.texCoord[1][VX] =
+        vis->data.wall.texCoord[0][VX] + wallLength / texWidth;
+    vis->data.wall.texCoord[0][VY] = (texOffset? texOffset[VY] / texHeight : 0);
+    vis->data.wall.texCoord[1][VY] =
+        vis->data.wall.texCoord[0][VY] +
+            (rvertices[3].pos[VZ] - rvertices[0].pos[VZ]) / texHeight;
+    vis->data.wall.blendMode = blendMode;
+
+    //// \fixme Semitransparent masked polys arn't lit atm
+    if(!glow && lightListIdx && numTexUnits > 1 && envModAdd &&
+       !(rcolors[0].rgba[CA] < 1))
+    {
+        dynlight_t*         dyn = NULL;
+
+        /**
+         * The dynlights will have already been sorted so that the brightest
+         * and largest of them is first in the list. So grab that one.
+         */
+        DL_DynlistIterator(lightListIdx, DLIT_GetFirstDynlight, &dyn);
+
+        vis->data.wall.modTex = dyn->texture;
+        vis->data.wall.modTexCoord[0][0] = dyn->s[0];
+        vis->data.wall.modTexCoord[0][1] = dyn->s[1];
+        vis->data.wall.modTexCoord[1][0] = dyn->t[0];
+        vis->data.wall.modTexCoord[1][1] = dyn->t[1];
+        for(c = 0; c < 3; ++c)
+            vis->data.wall.modColor[c] = dyn->color[c];
+    }
+    else
+    {
+        vis->data.wall.modTex = 0;
+    }
+}
+
+static boolean renderWorldSegAsVisSprite(const rendseg_t* rseg, rvertex_t* rvertices,
                                           const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
     boolean             forceOpaque = rseg->alpha < 0 ? true : false;
@@ -1022,14 +1049,14 @@ dynlight_t* Rend_PickDynlightForModTex(uint dynlistID)
 {
     dynlight_t*         dyn = NULL;
 
-    DL_DynlistIterator(dynlistID, RLIT_DynGetFirst, &dyn);
+    DL_DynlistIterator(dynlistID, DLIT_GetFirstDynlight, &dyn);
 
     return dyn;
 }
 
-static boolean renderWorldPoly(rendseg_t* rseg, rvertex_t* rvertices, uint numVertices,
-                               const rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
-                               const rtexmapunit_t rTUs[NUM_TEXMAP_UNITS])
+static boolean renderWorldSeg(rendseg_t* rseg, rvertex_t* rvertices,
+                              uint numVertices, const rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
+                              const rtexmapunit_t rTUs[NUM_TEXMAP_UNITS])
 {
     rcolor_t*           rcolors;
     rtexcoord_t*        rtcPrimary = NULL, *rtcInter = NULL,
@@ -1037,18 +1064,46 @@ static boolean renderWorldPoly(rendseg_t* rseg, rvertex_t* rvertices, uint numVe
     uint                realNumVertices;
     rcolor_t*           shinyColors = NULL;
     rtexcoord_t*        rtcShiny = NULL;
-    boolean             writeDynlights = false;
+    uint                dynlistID;
     uint                numLights = 0;
     float               interPos = 0;
     DGLuint             modTex = 0;
     float               modTexTC[2][2];
     float               modColor[3];
 
+
+    dynlistID = RendSeg_DynlistID(rseg);
+
+    /**
+     * If multitexturing is enabled and there is a dynlist for this surface;
+     * grab the first dynlight from the list, we'll draw it in the modulation
+     * pass.
+     */
+
+    if(dynlistID && RL_IsMTexLights())
+    {
+        dynlight_t*         dyn = Rend_PickDynlightForModTex(dynlistID);
+
+        if(dyn)
+        {
+            modTex = initModTexFromDynlight(modColor, modTexTC, dyn);
+            numLights = 1;
+        }
+    }
+    
     realNumVertices = RendSeg_NumRequiredVertices(rseg);
+
+    if(modTex)
+    {   // Modulation texture coordinates.
+        rtcModTex = R_AllocRendTexCoords(realNumVertices);
+        quadLightCoords(rtcModTex, modTexTC[0], modTexTC[1]);
+    }
 
     rtcPrimary = R_AllocRendTexCoords(realNumVertices);
     if(rTU[TU_INTER].tex)
         rtcInter = R_AllocRendTexCoords(realNumVertices);
+
+    rcolors = R_AllocRendColors(realNumVertices);
 
     if(rseg->polyType != RPT_SKY_MASK)
     {
@@ -1061,43 +1116,6 @@ static boolean renderWorldPoly(rendseg_t* rseg, rvertex_t* rvertices, uint numVe
             // New texcoords are required for shiny texture.
             rtcShiny = R_AllocRendTexCoords(realNumVertices);
         }
-    }
-
-    /**
-     * If multitexturing is enabled and there is at least one
-     * dynlight affecting this surface and it is not glowing;
-     * grab the paramaters needed to draw it.
-     */
-    writeDynlights = RendSeg_UseDynlights(rseg);
-
-    if(writeDynlights)
-    {
-        /**
-         * If multitexturing is enabled and there is at least one
-         * dynlight affecting this surface and it is not glowing;
-         * grab the paramaters needed to draw it.
-         */
-        writeDynlights = (!(rseg->flags & RSF_GLOW) && rseg->dynlistID? true : false);
-
-        if(RL_IsMTexLights())
-        {
-            dynlight_t*         dyn = Rend_PickDynlightForModTex(rseg->dynlistID);
-
-            if(dyn)
-            {
-                modTex = initModTexFromDynlight(modColor, modTexTC, dyn);
-                numLights = 1;
-            }
-        }
-    }
-
-    rcolors = R_AllocRendColors(realNumVertices);
-
-    // Modulation texture coordinates.
-    if(modTex)
-    {
-        rtcModTex = R_AllocRendTexCoords(realNumVertices);
-        quadLightCoords(rtcModTex, modTexTC[0], modTexTC[1]);
     }
 
     // Primary texture coordinates.
@@ -1122,11 +1140,11 @@ static boolean renderWorldPoly(rendseg_t* rseg, rvertex_t* rvertices, uint numVe
                           rTUs[TU_PRIMARY].blend);
     }
 
-    if(writeDynlights && IS_MUL && !(averageLuma(rcolors, numVertices) > 0.98f))
+    if(dynlistID && IS_MUL && !(averageLuma(rcolors, numVertices) > 0.98f))
     {
-        Rend_WriteDynlights(rseg->dynlistID, rvertices, numVertices, realNumVertices,
-                            rseg->divs, rseg->texQuadTopLeft, rseg->texQuadBottomRight,
-                            &numLights);
+        writeDynlights(rseg->dynlistID, rvertices, numVertices, realNumVertices,
+                       rseg->divs, rseg->texQuadTopLeft, rseg->texQuadBottomRight,
+                       &numLights);
     }
 
     // Do we need to do any divisions?
@@ -1189,7 +1207,7 @@ typedef struct {
     const float*    surfaceColor2; // Secondary color.
 } rendworldpoly2_params_t;
 
-static boolean renderWorldPoly2(rvertex_t* rvertices, uint numVertices,
+static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
                                 const walldiv_t* divs,
                                 const rendworldpoly2_params_t* p,
                                 const material_snapshot_t* msA, float inter,
@@ -1266,7 +1284,7 @@ static boolean renderWorldPoly2(rvertex_t* rvertices, uint numVertices,
             {
                 dynlight_t*         dyn = NULL;
 
-                DL_DynlistIterator(p->lightListIdx, RLIT_DynGetFirst, &dyn);
+                DL_DynlistIterator(p->lightListIdx, DLIT_GetFirstDynlight, &dyn);
 
                 rtexcoords5 = R_AllocRendTexCoords(realNumVertices);
 
@@ -1520,7 +1538,7 @@ static boolean renderWorldPoly2(rvertex_t* rvertices, uint numVertices,
         dlparams.texTL = p->texTL;
         dlparams.texBR = p->texBR;
 
-        DL_DynlistIterator(p->lightListIdx, RLIT_DynLightWrite, &dlparams);
+        DL_DynlistIterator(p->lightListIdx, DLIT_WriteDynlight, &dlparams);
         numLights += dlparams.lastIdx;
         if(RL_IsMTexLights())
             numLights -= 1;
@@ -1765,7 +1783,7 @@ static void renderPlane(face_t* face, planetype_t type,
     rvertices = R_AllocRendVertices(numVertices);
     R_VerticesFromSubSectorPlane(rvertices, subSector, height, !(normal[VZ] > 0));
 
-    renderWorldPoly2(rvertices, numVertices, NULL, &params,
+    renderWorldPlane(rvertices, numVertices, NULL, &params,
                      &msA, inter, (blended || inMatB)? &msB : NULL);
 
     R_FreeRendVertices(rvertices);
@@ -1867,6 +1885,36 @@ static void renderRadioPolygons(rendseg_t* rseg, sideradioconfig_t* radioConfig,
     R_FreeRendVertices(rvertices);
 }
 
+static boolean renderGeometry(rendseg_t* rseg, rvertex_t* rvertices,
+                                   uint numVertices, const rtexmapunit_t* rTU,
+                                   const rtexmapunit_t* rTUs,
+
+                                   // @todo refactor away the following arguments.
+                                   float segOffset, float lineDefLength,
+                                   const sector_t* segFrontSec, const sector_t* segBackSec)
+{
+    boolean             result;
+    
+    result = renderWorldSeg(rseg, rvertices, numVertices, rTU, rTUs);
+
+    // Render Fakeradio polys for this seg?
+    if(result && !(rseg->flags & RSF_NO_RADIO) && rseg->radioConfig)
+    {
+        renderRadioPolygons(rseg, rseg->radioConfig, segOffset,
+                            lineDefLength, segFrontSec, segBackSec);
+    }
+
+    return result;
+}
+
+static void buildGeometryFromRendSeg(rendseg_t* rseg, rvertex_t** rvertices,
+                                     uint* numVertices, rtexmapunit_t* rTU,
+                                     rtexmapunit_t* rTUs)
+{
+    *rvertices = R_VerticesFromRendSeg(rseg, numVertices);
+    R_TexmapUnitsFromRendSeg(rseg, rTU, rTUs);
+}
+
 boolean Rend_DrawRendSeg(rendseg_t* rseg,
 
                          // @todo refactor away the following arguments.
@@ -1878,22 +1926,24 @@ boolean Rend_DrawRendSeg(rendseg_t* rseg,
     rvertex_t*          rvertices;
     rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
 
-    rvertices = R_VerticesFromRendSeg(rseg, &numVertices);
-    R_TexmapUnitsFromRendSeg(rseg, rTU, rTUs);
+    if(RendSeg_MustUseVisSprite(rseg))
+    {
+        buildGeometryFromRendSeg(rseg, &rvertices, &numVertices, rTU, rTUs);
 
-    if(!RendSeg_MustUseVisSprite(rseg))
-        result =  renderWorldPoly(rseg, rvertices, numVertices, rTU, rTUs);
-    else
-        result =  renderWorldPolyAsVisSprite(rseg, rvertices, rTU);
+        result = renderWorldSegAsVisSprite(rseg, rvertices, rTU);
+
+        R_FreeRendVertices(rvertices);
+
+        return false;
+    }
+
+    buildGeometryFromRendSeg(rseg, &rvertices, &numVertices, rTU, rTUs);
+
+    result = renderGeometry(rseg, rvertices, numVertices, rTU, rTUs,
+                            segOffset, lineDefLength, segFrontSec,
+                            segBackSec);
 
     R_FreeRendVertices(rvertices);
-
-    // Render Fakeradio polys for this seg?
-    if(result && !(rseg->flags & RSF_NO_RADIO) && rseg->radioConfig)
-    {
-        renderRadioPolygons(rseg, rseg->radioConfig, segOffset,
-                            lineDefLength, segFrontSec, segBackSec);
-    }
 
     return result;
 }
@@ -2301,56 +2351,44 @@ static boolean isTwoSidedSolid(int solidSeg, const hedge_t* hEdge,
     return solid;
 }
 
-static boolean considerOneSided(const hedge_t* hEdge)
-{
-    return !hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef);
-}
-
-/**
- * Select the planes which define the extrusion of seg sections.
- *
- * Special case:
- * Segs of "self-referencing" linedefs select the front planes using
- * the sector linked to it's front sidedef rather than the sector
- * linked to the half-edge.
- */
-static void planesForSegExtrusion(const hedge_t* hEdge, segsection_t section,
+static void planesForSegExtrusion(hedge_t* hEdge,
+                                  boolean useSectorsFromFrontSideDef,
                                   plane_t** ffloor, plane_t** fceil,
                                   plane_t** bfloor, plane_t** bceil)
 {
+    sector_t*               frontSec;
+
+    if(!useSectorsFromFrontSideDef)
+    {
+        frontSec = HE_FRONTSECTOR(hEdge);
+    }
+    else
+    {
+        frontSec = HE_FRONTSIDEDEF(hEdge)->sector;
+    }
+
+    *ffloor = frontSec->SP_plane(PLN_FLOOR);
+    *fceil  = frontSec->SP_plane(PLN_CEILING);
+
     if(considerOneSided(hEdge))
-    {   // Treat as one-sided.
-        *ffloor = HE_FRONTSECTOR(hEdge)->SP_plane(PLN_FLOOR);
-        *fceil  = HE_FRONTSECTOR(hEdge)->SP_plane(PLN_CEILING);
+    {
         *bfloor = NULL;
         *bceil  = NULL;
     }
-    else
-    {   // Two sided.
-        if(!(section == SEG_MIDDLE && LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef)))
-        {
-            *ffloor = HE_FRONTSECTOR(hEdge)->SP_plane(PLN_FLOOR);
-            *fceil  = HE_FRONTSECTOR(hEdge)->SP_plane(PLN_CEILING);
-        }
-        else
-        {   // Self-referencing middle surface.
-            *ffloor = HE_FRONTSIDEDEF(hEdge)->sector->SP_plane(PLN_FLOOR);
-            *fceil  = HE_FRONTSIDEDEF(hEdge)->sector->SP_plane(PLN_CEILING);
-        }
-
+    else // Two sided.
+    {
         *bfloor = HE_BACKSECTOR(hEdge)->SP_plane(PLN_FLOOR);
         *bceil  = HE_BACKSECTOR(hEdge)->SP_plane(PLN_CEILING);
     }
 }
 
-static boolean findBottomTop(const hedge_t* hEdge, segsection_t section,
+static boolean findBottomTop(hedge_t* hEdge, segsection_t section,
+                             const plane_t* ffloor, const plane_t* fceil,
+                             const plane_t* bfloor, const plane_t* bceil,
                              float* bottom, float* top, float texOffset[2],
                              float texScale[2])
 {
     seg_t*              seg = (seg_t*) hEdge->data;
-    plane_t*            ffloor, *fceil, *bfloor, *bceil;
-
-    planesForSegExtrusion(hEdge, section, &ffloor, &fceil, &bfloor, &bceil);
 
     if(!bfloor)
     {
@@ -2522,6 +2560,61 @@ static boolean findBottomTop(const hedge_t* hEdge, segsection_t section,
     return false;
 }
 
+static boolean isSidedefSectionPotentiallyVisible(sidedef_t* sideDef, segsection_t section)
+{
+    return (sideDef->SW_surface(section).inFlags & SUIF_PVIS) != 0;
+}
+
+static boolean useSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section)
+{
+    return (section == SEG_MIDDLE && LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef));
+}
+
+static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
+                                rendseg_t** rsegs)
+{
+    plane_t*            ffloor, *fceil, *bfloor, *bceil;
+    float               bottom, top, texOffset[2], texScale[2];
+
+    memset(rsegs, 0, sizeof(rendseg_t*) * 3);
+
+    planesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
+
+    if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_BOTTOM))
+        if(findBottomTop(hEdge, SEG_BOTTOM, ffloor, fceil, bfloor, bceil,
+                         &bottom, &top, texOffset, texScale))
+        {
+            rsegs[SEG_BOTTOM] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_BOTTOM], hEdge, SEG_BOTTOM,
+                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+        }
+
+    if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_TOP))
+        if(findBottomTop(hEdge, SEG_TOP, ffloor, fceil, bfloor, bceil,
+                         &bottom, &top, texOffset, texScale))
+        {
+            rsegs[SEG_TOP] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_TOP], hEdge, SEG_TOP,
+                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+        }
+
+    if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_MIDDLE))
+    {
+        /**
+         * Special case:
+         * Middle sections of "Self-referencing" linedefs must select the sectors
+         * linked to seg's front sidedef rather than those linked to the half-edge.
+         */
+        if(useSectorsFromFrontSideDef(hEdge, SEG_MIDDLE))
+            planesForSegExtrusion(hEdge, true, &ffloor, &fceil, &bfloor, &bceil);
+
+        if(findBottomTop(hEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
+                         &bottom, &top, texOffset, texScale))
+        {
+            rsegs[SEG_MIDDLE] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_MIDDLE], hEdge, SEG_MIDDLE,
+                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+        }
+    }
+}
+
 static void Rend_RenderSubSector(uint faceidx)
 {
     uint                i;
@@ -2613,133 +2706,62 @@ static void Rend_RenderSubSector(uint faceidx)
     hedge_t*            hEdge;
     if((hEdge = face->hEdge))
     {
+        boolean             clipHEdges = !P_IsInVoid(viewPlayer);
+
         do
         {
             seg_t*              seg = (seg_t*) hEdge->data;
-
+            boolean             solid = false;
+            
             if(seg->sideDef && // Exclude "minisegs"
                (seg->frameFlags & SEGINF_FACINGFRONT))
             {
-                boolean             solid = false;
-                sidedef_t*          sideDef = seg->sideDef;
-                subsector_t*        subSector = HE_FRONTSUBSECTOR(hEdge),
-                                   *backSubSector = HE_BACKSUBSECTOR(hEdge);
-                fvertex_t*          from = &hEdge->HE_v1->v,
-                                   *to = &hEdge->HE_v2->v;
+                plane_t*            ffloor, *fceil, *bfloor, *bceil;
+                rendseg_t           temp[3], *rendSegs[3];
 
-                R_MarkLineDefAsDrawnForViewer(sideDef->lineDef, viewPlayer - ddPlayers);
+                memset(temp, 0, sizeof(temp));
+                
+                R_MarkLineDefAsDrawnForViewer(seg->sideDef->lineDef, viewPlayer - ddPlayers);
 
-                /*if(sideDef->sector == backSide->sector &&
-                   !sideDef->SW_topmaterial && !sideDef->SW_bottommaterial &&
-                   !sideDef->SW_middlematerial)
-                   return false; // Ugh... an obvious wall seg hack. Best take no chances...*/
+                planesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
+
+                getRendSegsForHEdge(hEdge, temp, rendSegs);
 
                 /**
                  * Draw sections.
                  */
-                if(considerOneSided(hEdge))
-                {
-                    if(sideDef->SW_middleinflags & SUIF_PVIS)
-                    {
-                        float               bottom, top, texOffset[2], texScale[2];
-
-                        if(findBottomTop(hEdge, SEG_MIDDLE, &bottom, &top, texOffset, texScale) &&
-                           top > bottom)
-                        {
-                            rendseg_t           rseg;
-
-                            RendSeg_staticConstructFromHEdgeSection(&rseg, hEdge, SEG_MIDDLE, from, to, bottom, top,
-                                                    texOffset, texScale, true);
-
-                            Rend_DrawRendSeg(&rseg, seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                         HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
-                        }
-                    }
-
-                    solid = true;
+                if(rendSegs[SEG_BOTTOM])
+                {                       
+                    Rend_DrawRendSeg(rendSegs[SEG_BOTTOM],
+                                     seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                     HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
                 }
-                else
+
+                if(rendSegs[SEG_MIDDLE])
                 {
-                    boolean             solidSeg = false;
-                    plane_t*            ffloor, *fceil, *bfloor, *bceil;
+                    solid = Rend_DrawRendSeg(rendSegs[SEG_MIDDLE],
+                                             seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                             HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                }
 
-                    planesForSegExtrusion(hEdge, SEG_MIDDLE, &ffloor, &fceil, &bfloor, &bceil);
+                if(rendSegs[SEG_TOP])
+                {
+                    Rend_DrawRendSeg(rendSegs[SEG_TOP],
+                                     seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                                     HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                }
 
-                    if(sideDef->SW_middleinflags & SUIF_PVIS)
+                if(!considerOneSided(hEdge))
+                {
+                    if(solid)
                     {
-                        float               bottom, top, texOffset[2], texScale[2];
+                        float openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
+                        float openTop    = MIN_OF(bceil->visHeight, fceil->visHeight);
 
-                        if(findBottomTop(hEdge, SEG_MIDDLE, &bottom, &top, texOffset, texScale) &&
-                           top > bottom)
-                        {
-                            rendseg_t           rseg;
-
-                            RendSeg_staticConstructFromHEdgeSection(&rseg, hEdge, SEG_MIDDLE, from, to, bottom, top,
-                                                    texOffset, texScale, true);
-
-                            solidSeg = Rend_DrawRendSeg(&rseg, seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                                    HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
-
-                            if(solidSeg)
-                            {
-                                float               xbottom, xtop;
-                                surface_t*          suf = &sideDef->SW_middlesurface;
-
-                                if(LINE_SELFREF(sideDef->lineDef))
-                                {
-                                    xbottom = bfloor->visHeight;
-                                    xtop    = fceil->visHeight;
-                                }
-                                else
-                                {
-                                    xbottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-                                    xtop    = MIN_OF(bceil->visHeight, fceil->visHeight);
-                                }
-
-                                xbottom += suf->visOffset[1];
-                                xtop    += suf->visOffset[1];
-
-                                // Can we make this a solid segment?
-                                if(!(top >= xtop && bottom <= xbottom))
-                                     solidSeg = false;
-                            }
-                        }
-                    }
-
-                    // Upper section.
-                    if(sideDef->SW_topinflags & SUIF_PVIS)
-                    {
-                        float               bottom, top, texOffset[2], texScale[2];
-
-                        if(findBottomTop(hEdge, SEG_TOP, &bottom, &top, texOffset, texScale) &&
-                           top > bottom)
-                        {
-                            rendseg_t           rseg;
-                            
-                            RendSeg_staticConstructFromHEdgeSection(&rseg, hEdge, SEG_TOP, from, to, bottom, top,
-                                                    texOffset, texScale, true);
-                            
-                            Rend_DrawRendSeg(&rseg, seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                         HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
-                        }
-                    }
-
-                    // Lower section.
-                    if(sideDef->SW_bottominflags & SUIF_PVIS)
-                    {
-                        float               bottom, top, texOffset[2], texScale[2];
-
-                        if(findBottomTop(hEdge, SEG_BOTTOM, &bottom, &top, texOffset, texScale) &&
-                                         top > bottom)
-                        {
-                            rendseg_t           rseg;
-
-                            RendSeg_staticConstructFromHEdgeSection(&rseg, hEdge, SEG_BOTTOM, from, to, bottom, top,
-                                                    texOffset, texScale, true);
-
-                            Rend_DrawRendSeg(&rseg, seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                         HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
-                        }
+                        // Can we make this a solid segment?
+                        if(!(rendSegs[SEG_MIDDLE]->top >= openTop &&
+                             rendSegs[SEG_MIDDLE]->bottom <= openBottom))
+                             solid = false;
                     }
 
                     /**
@@ -2747,14 +2769,18 @@ static void Rend_RenderSubSector(uint faceidx)
                      * order to improve the readability and clarity of design in this.
                      * Clean up!
                      */
-                    solid = isTwoSidedSolid(solidSeg, hEdge, ffloor, fceil, bfloor, bceil);
+                    solid = isTwoSidedSolid(solid, hEdge, ffloor, fceil, bfloor, bceil);
                 }
-
-                if(solid && !P_IsInVoid(viewPlayer))
+                else
                 {
-                    C_AddViewRelSeg(from->pos[VX], from->pos[VY],
-                                      to->pos[VX],   to->pos[VY]);
+                    solid = true;
                 }
+            }
+
+            if(solid && clipHEdges)
+            {
+                C_AddViewRelSeg(hEdge->HE_v1pos[VX], hEdge->HE_v1pos[VY],
+                                hEdge->HE_v2pos[VX], hEdge->HE_v2pos[VY]);
             }
         } while((hEdge = hEdge->next) != face->hEdge);
     }
@@ -2940,6 +2966,92 @@ static void Rend_RenderNode(uint bspnum)
         Rend_RenderNode(bsp->children[side]);   // Recursively divide front space.
         Rend_RenderNode(bsp->children[side ^ 1]);   // ...and back space.
     }
+}
+
+void Rend_RenderMap(gamemap_t* map)
+{
+    binangle_t          viewside;
+    boolean             doLums =
+        (useDynlights || haloMode || spriteLight || useDecorations);
+
+    if(!map)
+        return;
+
+    // Set to true if dynlights are inited for this frame.
+    loInited = false;
+
+    GL_SetMultisample(true);
+
+    // Setup the modelview matrix.
+    Rend_ModelViewMatrix(true);
+
+    if(!freezeRLs)
+    {
+        // Prepare for rendering.
+        RL_ClearLists(); // Clear the lists for new quads.
+        C_ClearRanges(); // Clear the clipper.
+        LO_BeginFrame();
+
+        // Clear particle generator visibilty info.
+        Rend_ParticleInitForNewFrame();
+
+        // Make vissprites of all the visible decorations.
+        Rend_ProjectDecorations();
+
+        // Recycle the vlight lists. Currently done here as the lists are
+        // not shared by all viewports.
+        VL_InitForNewFrame();
+
+        if(doLums)
+        {
+            /**
+             * Clear the projected dynlights. This is done here as the
+             * projections are sensitive to distance from the viewer
+             * (e.g. some may fade out when far away).
+             */
+            DL_DestroyDynlights(map);
+            DL_ClearDynlists();
+        }
+
+        // Add the backside clipping range (if vpitch allows).
+        if(vpitch <= 90 - yfov / 2 && vpitch >= -90 + yfov / 2)
+        {
+            float   a = fabs(vpitch) / (90 - yfov / 2);
+            binangle_t startAngle =
+                (binangle_t) (BANG_45 * fieldOfView / 90) * (1 + a);
+            binangle_t angLen = BANG_180 - startAngle;
+
+            viewside = (viewAngle >> (32 - BAMS_BITS)) + startAngle;
+            C_SafeAddRange(viewside, viewside + angLen);
+            C_SafeAddRange(viewside + angLen, viewside + 2 * angLen);
+        }
+
+        // The viewside line for the depth cue.
+        viewsidex = -viewSin;
+        viewsidey = viewCos;
+
+        // We don't want subsector clipchecking for the first subsector.
+        firstsubsector = true;
+        Rend_RenderNode(numNodes - 1);
+
+        Rend_RenderShadows();
+    }
+    RL_RenderAllLists();
+
+    // Draw various debugging displays:
+    Rend_RenderNormals(); // World surface normals.
+    LO_DrawLumobjs(); // Lumobjs.
+    Rend_RenderBoundingBoxes(); // Mobj bounding boxes.
+    Rend_Vertexes(); // World vertex positions/indices.
+    Rend_RenderGenerators(); // Particle generator origins.
+
+    if(!freezeRLs)
+    {
+        // Draw the Source Bias Editor's draw.
+        SBE_DrawCursor(map);
+    }
+
+    GL_SetMultisample(false);
 }
 
 static void drawNormal(vec3_t origin, vec3_t normal, float scalar)
@@ -3358,92 +3470,6 @@ void Rend_Vertexes(void)
     DGL_SetFloat(DGL_POINT_SIZE, oldPointSize);
     glDisable(GL_POINT_SMOOTH);
     glEnable(GL_DEPTH_TEST);
-}
-
-void Rend_RenderMap(gamemap_t* map)
-{
-    binangle_t          viewside;
-    boolean             doLums =
-        (useDynlights || haloMode || spriteLight || useDecorations);
-
-    if(!map)
-        return;
-
-    // Set to true if dynlights are inited for this frame.
-    loInited = false;
-
-    GL_SetMultisample(true);
-
-    // Setup the modelview matrix.
-    Rend_ModelViewMatrix(true);
-
-    if(!freezeRLs)
-    {
-        // Prepare for rendering.
-        RL_ClearLists(); // Clear the lists for new quads.
-        C_ClearRanges(); // Clear the clipper.
-        LO_BeginFrame();
-
-        // Clear particle generator visibilty info.
-        Rend_ParticleInitForNewFrame();
-
-        // Make vissprites of all the visible decorations.
-        Rend_ProjectDecorations();
-
-        // Recycle the vlight lists. Currently done here as the lists are
-        // not shared by all viewports.
-        VL_InitForNewFrame();
-
-        if(doLums)
-        {
-            /**
-             * Clear the projected dynlights. This is done here as the
-             * projections are sensitive to distance from the viewer
-             * (e.g. some may fade out when far away).
-             */
-            DL_DestroyDynlights(map);
-            DL_ClearDynlists();
-        }
-
-        // Add the backside clipping range (if vpitch allows).
-        if(vpitch <= 90 - yfov / 2 && vpitch >= -90 + yfov / 2)
-        {
-            float   a = fabs(vpitch) / (90 - yfov / 2);
-            binangle_t startAngle =
-                (binangle_t) (BANG_45 * fieldOfView / 90) * (1 + a);
-            binangle_t angLen = BANG_180 - startAngle;
-
-            viewside = (viewAngle >> (32 - BAMS_BITS)) + startAngle;
-            C_SafeAddRange(viewside, viewside + angLen);
-            C_SafeAddRange(viewside + angLen, viewside + 2 * angLen);
-        }
-
-        // The viewside line for the depth cue.
-        viewsidex = -viewSin;
-        viewsidey = viewCos;
-
-        // We don't want subsector clipchecking for the first subsector.
-        firstsubsector = true;
-        Rend_RenderNode(numNodes - 1);
-
-        Rend_RenderShadows();
-    }
-    RL_RenderAllLists();
-
-    // Draw various debugging displays:
-    Rend_RenderNormals(); // World surface normals.
-    LO_DrawLumobjs(); // Lumobjs.
-    Rend_RenderBoundingBoxes(); // Mobj bounding boxes.
-    Rend_Vertexes(); // World vertex positions/indices.
-    Rend_RenderGenerators(); // Particle generator origins.
-
-    if(!freezeRLs)
-    {
-        // Draw the Source Bias Editor's draw.
-        SBE_DrawCursor(map);
-    }
-
-    GL_SetMultisample(false);
 }
 
 /**

@@ -156,30 +156,19 @@ boolean P_IsInVoid(player_t* player)
     // above/below ceiling/floor).
     if(ddpl->flags & DDPF_CAMERA)
     {
-        if(ddpl->inVoid)
-            return true;
-
         if(ddpl->mo->face)
         {
             sector_t*           sec =
                 ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj)->data)->sector;
 
-            if(IS_SKYSURFACE(&sec->SP_ceilsurface))
-            {
-               if(ddpl->mo->pos[VZ] > skyFix[PLN_CEILING].height - 4)
-                   return true;
-            }
-            else if(ddpl->mo->pos[VZ] > sec->SP_ceilvisheight - 4)
-                return true;
-
-            if(IS_SKYSURFACE(&sec->SP_floorsurface))
-            {
-                if(ddpl->mo->pos[VZ] < skyFix[PLN_FLOOR].height + 4)
-                    return true;
-            }
-            else if(ddpl->mo->pos[VZ] < sec->SP_floorvisheight + 4)
-                return true;
+            if((IS_SKYSURFACE(&sec->SP_ceilsurface) &&
+                ddpl->mo->pos[VZ] < skyFix[PLN_CEILING].height - 4) ||
+               (IS_SKYSURFACE(&sec->SP_floorsurface) &&
+                ddpl->mo->pos[VZ] > skyFix[PLN_FLOOR].height + 4))
+                return false;
         }
+
+        return ddpl->inVoid;
     }
 
     return false;
