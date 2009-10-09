@@ -341,7 +341,7 @@ int Def_GetMusicNum(const char* id)
         return -1;
 
     for(i = 0; i < defs.count.music.num; ++i)
-        if(!strcmp(defs.music[i].id, id))
+        if(!stricmp(defs.music[i].id, id))
             return i;
 
     return -1;
@@ -369,7 +369,7 @@ acfnptr_t Def_GetActionPtr(const char* name)
                   "function link table.\n");
     }
     for(; link->name; link++)
-        if(!strcmp(name, link->name))
+        if(!stricmp(name, link->name))
             return link->func;
 
     // The engine provides a couple of simple action functions.
