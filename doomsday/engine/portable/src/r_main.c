@@ -159,7 +159,7 @@ void R_Register(void)
     C_CMD("updatesurfaces", "", UpdateSurfaces);
 #endif
 
-    P_MaterialManagerRegister();
+    Materials_Register();
 }
 
 float R_FacingViewerDot(float v1[2], float v2[2])

@@ -23,54 +23,55 @@
  */
 
 /**
- * p_materialmanager.h: Materials manager.
+ * materials.h: Material collection.
  */
 
-#ifndef __DOOMSDAY_MATERIAL_MANAGER_H__
-#define __DOOMSDAY_MATERIAL_MANAGER_H__
+#ifndef DOOMSDAY_MATERIALS_H
+#define DOOMSDAY_MATERIALS_H
 
 #include "gl_texmanager.h"
 
 extern materialnum_t numMaterialBinds;
 
-void            P_MaterialManagerRegister(void);
+void            Materials_Register(void);
 
-void            P_MaterialManagerTicker(timespan_t time);
+void            Materials_Ticker(timespan_t time);
 
-void            P_InitMaterialManager(void);
-void            P_ShutdownMaterialManager(void);
-void            P_DeleteMaterialTextures(material_namespace_t mnamespace);
+void            Materials_Init(void);
+void            Materials_Shutdown(void);
+void            Materials_DeleteTextures(material_namespace_t mnamespace);
 
-material_t*     P_MaterialCreate(material_namespace_t mnamespace,
-                                 const char* name, short width,
-                                 short height, byte flags,
-                                 const ded_material_t* def,
-                                 boolean isAutoMaterial);
+material_t*     Materials_NewMaterial(material_namespace_t mnamespace,
+                                      const char* name, short width,
+                                      short height, byte flags,
+                                      const ded_material_t* def,
+                                      boolean isAutoMaterial);
 
-material_t*     P_ToMaterial(materialnum_t num);
-materialnum_t   P_ToMaterialNum(const material_t* mat);
+const char*     Materials_NameOf(material_t* mat);
+void            Materials_CacheMaterial(material_t* mat);
+byte            Materials_Prepare(material_t* mat, byte flags,
+                                  const struct material_prepare_params_s* params,
+                                  struct material_snapshot_s* snapshot);
 
-// Lookup:
-const char*     P_GetMaterialName(const material_t* mat);
+int             Materials_NewGroup(int flags);
+int             Materials_NewGroupFromDefiniton(ded_group_t* def);
 
-materialnum_t   P_MaterialCheckNumForName(const char* name, material_namespace_t mnamespace);
-materialnum_t   P_MaterialNumForName(const char* name, material_namespace_t mnamespace);
+void            Materials_AddToGroup(int animGroupNum, int num, int tics,
+                                     int randomTics);
+boolean         Materials_IsInGroup(int animGroupNum, material_t* mat);
+boolean         Materials_CacheGroup(int groupNum);
 
-material_t*     P_GetMaterial(int ofTypeID, material_namespace_t mnamespace);
+int             Materials_NumGroups(void);
+void            Materials_RewindAnimationGroups(void);
+void            Materials_DestroyGroups(void);
 
-void            P_MaterialPrecache(material_t* mat);
+material_t*     Materials_ToMaterial(materialnum_t num);
+material_t*     Materials_ToMaterial2(material_namespace_t mnamespace, int index);
+materialnum_t   Materials_ToIndex(material_t* mat);
 
-// Anim groups:
-int             R_NumAnimGroups(void);
-int             R_CreateAnimGroup(int flags);
-void            R_AddToAnimGroup(int animGroupNum, int num, int tics,
-                                 int randomTics);
-boolean         R_IsInAnimGroup(int animGroupNum, material_t* mat);
-boolean         R_IsPrecacheGroup(int groupNum);
-void            R_DestroyAnimGroups(void);
-void            R_ResetAnimGroups(void);
-void            R_MaterialsPrecacheGroup(material_t* mat);
+materialnum_t   Materials_CheckIndexForName(material_namespace_t mnamespace, const char* name);
+materialnum_t   Materials_IndexForName(material_namespace_t mnamespace, const char* name);
 
-materialnum_t   DMU_MaterialCheckNumForName(const char* rawName,
-                                            material_namespace_t mnamespace);
-#endif
+// Public API access:
+struct material_s* P_MaterialForName(material_namespace_t mnamespace, const char* name);
+#endif /* DOOMSDAY_MATERIALS_H */

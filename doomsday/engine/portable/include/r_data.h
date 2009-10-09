@@ -364,8 +364,6 @@ uint            R_RegisterSkin(char* fullpath, const char* skin,
                                size_t len);
 void            R_DestroySkins(void); // Called at shutdown.
 
-void            R_InitAnimGroup(ded_group_t* def);
-
 detailtex_t*    R_CreateDetailTexture(const ded_detailtexture_t* def);
 detailtex_t*    R_GetDetailTexture(lumpnum_t lump, const char* external);
 void            R_DestroyDetailTextures(void); // Called at shutdown.
@@ -402,4 +400,7 @@ boolean         R_IsAllowedDetailTex(ded_detailtexture_t* def, material_t* mat,
                                      boolean hasExternal);
 boolean         R_IsValidLightDecoration(const ded_decorlight_t* lightDef);
 
+//@todo Move out of the engine and into a plugin.
+int             R_TextureIdForName(material_namespace_t mnamespace, const char* rawName);
+material_t*     R_MaterialForTextureId(material_namespace_t mnamespace, int idx);
 #endif

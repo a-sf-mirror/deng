@@ -32,9 +32,10 @@
  * @defGroup rendSegFlags Rend Seg Flags.
  */
 /*@{*/
-#define RSF_GLOW            (0x1)
-#define RSF_NO_RADIO        (0x2)
-#define RSF_NO_REFLECTION   (0x4)
+#define RSF_SKYMASK         (0x1)
+#define RSF_GLOW            (0x2)
+#define RSF_NO_RADIO        (0x4)
+#define RSF_NO_REFLECTION   (0x8)
 /*@}*/
 
 typedef struct rendseg_s {
@@ -67,7 +68,6 @@ typedef struct rendseg_s {
     walldiv_t           divs[2];
 
     // @todo members not wanted in this class!
-    rendpolytype_t      polyType;
     struct {
         material_snapshot_t snapshotA, snapshotB;
         float           inter;
@@ -84,9 +84,10 @@ rendseg_t*      RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
                                      face_t* face, poseg_t* poSeg);
 
 // Public methods:
-boolean         RendSeg_MustUseVisSprite(const rendseg_t* rseg);
+boolean         RendSeg_SkyMasked(rendseg_t* rseg);
+boolean         RendSeg_MustUseVisSprite(rendseg_t* rseg);
 uint            RendSeg_NumRequiredVertices(rendseg_t* rseg);
-uint            RendSeg_DynlistID(const rendseg_t* rseg);
+uint            RendSeg_DynlistID(rendseg_t* rseg);
 
 // @todo once the material snapshots are owned by the Materials class, these
 // become accessors.

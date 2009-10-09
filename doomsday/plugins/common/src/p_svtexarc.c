@@ -218,8 +218,8 @@ material_t* SV_GetArchiveMaterial(int archivenum, int group)
     if(!strncmp(matArchive.table[archivenum].name, BADTEXNAME, 8))
         return NULL;
     else
-        return DMU_MaterialByName(matArchive.table[archivenum].name,
-                                  matArchive.table[archivenum].mnamespace);
+        return P_MaterialForName(matArchive.table[archivenum].mnamespace,
+                                 matArchive.table[archivenum].name);
 }
 
 void SV_WriteMaterialArchive(void)

@@ -392,8 +392,8 @@ void P_v19_UnArchiveWorld(void)
 
         DMU_SetFloatp(sec, DMU_FLOOR_HEIGHT, (float) (*get++));
         DMU_SetFloatp(sec, DMU_CEILING_HEIGHT, (float) (*get++));
-        DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL, DMU_MaterialByIndex(*get++, MN_FLATS));
-        DMU_SetPtrp(sec, DMU_CEILING_MATERIAL, DMU_MaterialByIndex(*get++, MN_FLATS));
+        DMU_SetPtrp(sec, DMU_FLOOR_MATERIAL, R_MaterialForTextureId(MN_FLATS, *get++));
+        DMU_SetPtrp(sec, DMU_CEILING_MATERIAL, R_MaterialForTextureId(MN_FLATS, *get++));
 
         DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, (float) (*get++) / 255.0f);
         xsec->special = *get++; // needed?
@@ -425,9 +425,9 @@ void P_v19_UnArchiveWorld(void)
             DMU_SetFloatpv(sdef, DMU_MIDDLE_MATERIAL_OFFSET_XY, matOffset);
             DMU_SetFloatpv(sdef, DMU_BOTTOM_MATERIAL_OFFSET_XY, matOffset);
 
-            DMU_SetPtrp(sdef, DMU_TOP_MATERIAL, DMU_MaterialByIndex(*get++, MN_TEXTURES));
-            DMU_SetPtrp(sdef, DMU_BOTTOM_MATERIAL, DMU_MaterialByIndex(*get++, MN_TEXTURES));
-            DMU_SetPtrp(sdef, DMU_MIDDLE_MATERIAL, DMU_MaterialByIndex(*get++, MN_TEXTURES));
+            DMU_SetPtrp(sdef, DMU_TOP_MATERIAL, R_MaterialForTextureId(MN_TEXTURES, *get++));
+            DMU_SetPtrp(sdef, DMU_BOTTOM_MATERIAL, R_MaterialForTextureId(MN_TEXTURES, *get++));
+            DMU_SetPtrp(sdef, DMU_MIDDLE_MATERIAL, R_MaterialForTextureId(MN_TEXTURES, *get++));
         }
     }
 
@@ -589,7 +589,7 @@ typedef struct {
 
     floor->state = (int) SV_ReadLong();
     floor->newSpecial = SV_ReadLong();
-    floor->material = DMU_MaterialByName(W_LumpName(SV_ReadShort()), MN_FLATS);
+    floor->material = R_MaterialForTextureId(MN_FLATS, SV_ReadShort());
     floor->floorDestHeight = FIX2FLT(SV_ReadLong());
     floor->speed = FIX2FLT(SV_ReadLong());
 

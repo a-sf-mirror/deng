@@ -438,9 +438,8 @@ ded_decor_t* Def_GetDecoration(material_t* mat, boolean hasExt)
     for(i = defs.count.decorations.num - 1, def = defs.decorations + i;
         i >= 0; i--, def--)
     {
-        material_t*         defMat =
-            P_ToMaterial(P_MaterialNumForName(def->material.name,
-                                                    def->material.mnamespace));
+        material_t*         defMat = Materials_ToMaterial(
+            Materials_IndexForName(def->material.mnamespace, def->material.name));
 
         if(mat == defMat)
         {
@@ -461,9 +460,9 @@ ded_reflection_t* Def_GetReflection(material_t* mat, boolean hasExt)
     for(i = defs.count.reflections.num - 1, def = defs.reflections + i;
         i >= 0; i--, def--)
     {
-        material_t*         defMat =
-            P_ToMaterial(P_MaterialNumForName(def->material.name,
-                                                    def->material.mnamespace));
+        material_t*         defMat = Materials_ToMaterial(
+            Materials_IndexForName(def->material.mnamespace, def->material.name));
+
         if(mat == defMat)
         {
             // Is this suitable?
@@ -484,9 +483,9 @@ ded_detailtexture_t* Def_GetDetailTex(material_t* mat, boolean hasExt)
     for(i = defs.count.details.num - 1, def = defs.details + i;
         i >= 0; i--, def--)
     {
-        material_t*         defMat =
-            P_ToMaterial(P_MaterialNumForName(def->material1.name,
-                                                    def->material1.mnamespace));
+        material_t*         defMat = Materials_ToMaterial(
+            Materials_IndexForName(def->material1.mnamespace, def->material1.name));
+
         if(mat == defMat)
         {
             // Is this sutiable?
@@ -494,9 +493,9 @@ ded_detailtexture_t* Def_GetDetailTex(material_t* mat, boolean hasExt)
                 return def;
         }
 
-        defMat =
-            P_ToMaterial(P_MaterialNumForName(def->material2.name,
-                                                    def->material2.mnamespace));
+        defMat = Materials_ToMaterial(
+            Materials_IndexForName(def->material2.mnamespace, def->material2.name));
+
         if(mat == defMat)
         {
             // Is this sutiable?
@@ -518,8 +517,8 @@ ded_ptcgen_t* Def_GetGenerator(material_t* mat, boolean hasExt)
     {
         material_t*         defMat;
 
-        if(!(defMat = P_ToMaterial(
-                P_MaterialNumForName(def->material.name, def->material.mnamespace))))
+        if(!(defMat = Materials_ToMaterial(
+                Materials_IndexForName(def->material.mnamespace, def->material.name))))
             continue;
 
         if(def->flags & PGF_GROUP)
@@ -530,13 +529,13 @@ ded_ptcgen_t* Def_GetGenerator(material_t* mat, boolean hasExt)
              */
             if(defMat->inAnimGroup && mat->inAnimGroup)
             {
-                int                 g, numGroups = R_NumAnimGroups();
+                int                 g, numGroups = Materials_NumGroups();
 
                 for(g = 0; g < numGroups; ++g)
                 {
-                    if(R_IsInAnimGroup(g, defMat) && R_IsInAnimGroup(g, mat))
+                    if(Materials_IsInGroup(g, defMat) && Materials_IsInGroup(g, mat))
                     {
-                        if(R_IsPrecacheGroup(g))
+                        if(Materials_CacheGroup(g))
                             continue; // Precache groups don't apply.
 
                         // Both are in this group! This def will do.
@@ -840,11 +839,11 @@ static void processMaterialDefinition(const ded_material_t* def)
     materialnum_t       oldNum;
 
     // Are we patching an existing material or creating a new?
-    oldNum = P_MaterialCheckNumForName(def->id.name, def->id.mnamespace);
+    oldNum = Materials_CheckIndexForName(def->id.mnamespace, def->id.name);
 
     if(oldNum)
     {   // Patching an existing material.
-        material_t*         mat = P_ToMaterial(oldNum);
+        material_t*         mat = Materials_ToMaterial(oldNum);
 
         if(def->width > 0)
             Material_SetWidth(mat, def->width);
@@ -880,7 +879,7 @@ static void processMaterialDefinition(const ded_material_t* def)
     {   // An entirely new material.
         material_t*         mat;
 
-        if(!(mat = P_MaterialCreate(def->id.mnamespace, def->id.name, def->width,
+        if(!(mat = Materials_NewMaterial(def->id.mnamespace, def->id.name, def->width,
                                     def->height, def->flags, def, false)))
         {
             Con_Message("Def_Read: Warning, failed creating material '%s' "
@@ -1361,10 +1360,10 @@ void Def_PostInit(void)
     }
 
     // Animation groups.
-    R_DestroyAnimGroups();
+    Materials_DestroyGroups();
     for(i = 0; i < defs.count.groups.num; ++i)
     {
-        R_InitAnimGroup(&defs.groups[i]);
+        Materials_NewGroupFromDefiniton(&defs.groups[i]);
     }
 }
 
@@ -1439,10 +1438,10 @@ void Def_CopyLineType(linetype_t* l, ded_linetype_t* def)
     l->actLineType = def->actLineType;
     l->deactLineType = def->deactLineType;
     l->wallSection = def->wallSection;
-    l->actMaterial = P_MaterialCheckNumForName(def->actMaterial.name,
-                                               def->actMaterial.mnamespace);
-    l->deactMaterial = P_MaterialCheckNumForName(def->deactMaterial.name,
-                                                 def->deactMaterial.mnamespace);
+    l->actMaterial = Materials_CheckIndexForName(def->actMaterial.mnamespace,
+                                                 def->actMaterial.name);
+    l->deactMaterial = Materials_CheckIndexForName(def->deactMaterial.mnamespace,
+                                                   def->deactMaterial.name);
     l->actMsg = def->actMsg;
     l->deactMsg = def->deactMsg;
     l->materialMoveAngle = def->materialMoveAngle;
@@ -1472,7 +1471,7 @@ void Def_CopyLineType(linetype_t* l, ded_linetype_t* def)
                     l->iparm[k] = -1;
                 else
                     l->iparm[k] =
-                        P_MaterialCheckNumForName(def->iparmStr[k], MN_ANY);
+                        Materials_CheckIndexForName(MN_ANY, def->iparmStr[k]);
             }
         }
         else if(a & MAP_MUS)

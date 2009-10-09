@@ -56,8 +56,7 @@ static void parseAnimGroup(material_namespace_t mnamespace)
 {
     boolean             ignore;
     boolean             done;
-    int                 groupNumber = 0;
-    materialnum_t       matNumBase = 0, lumpNumBase = 0;
+    int                 groupNumber = 0, texNumBase = 0, flatNumBase = 0;
 
     if(!(mnamespace == MN_FLATS || mnamespace == MN_TEXTURES))
         Con_Error("parseAnimGroup: Internal Error, invalid namespace %i.",
@@ -71,18 +70,17 @@ static void parseAnimGroup(material_namespace_t mnamespace)
     ignore = true;
     if(mnamespace == MN_TEXTURES)
     {
-        if((matNumBase = DMU_MaterialCheckNumForName(sc_String,
-                                                     MN_TEXTURES)) != 0)
+        if((texNumBase = R_TextureIdForName(MN_TEXTURES, sc_String)) != -1)
             ignore = false;
     }
     else
     {
-        if((lumpNumBase = W_CheckNumForName(sc_String)) != -1)
+        if((flatNumBase = R_TextureIdForName(MN_FLATS, sc_String)) != -1)
             ignore = false;
     }
 
     if(!ignore)
-        groupNumber = R_CreateAnimGroup(AGF_SMOOTH | AGF_FIRST_ONLY);
+        groupNumber = P_NewMaterialGroup(AGF_SMOOTH | AGF_FIRST_ONLY);
 
     done = false;
     do
@@ -116,26 +114,12 @@ static void parseAnimGroup(material_namespace_t mnamespace)
 
                 if(!ignore)
                 {
-                    if(mnamespace == MN_TEXTURES)
-                    {
-                        /**
-                         * \fixme Here an assumption is made that
-                         * MN_TEXTURES type materials are registered in the
-                         * same order as they are defined in the
-                         * TEXTURE(1...) lump(s).
-                         */
-                        DMU_AddToAnimGroup(groupNumber, matNumBase + picNum - 1,
-                                         min, (max > 0? max - min : 0));
-                    }
-                    else
-                    {
-                        materialnum_t       frame =
-                            DMU_MaterialCheckNumForName(W_LumpName(lumpNumBase + picNum - 1),
-                                                      MN_FLATS);
+                    material_t*         mat = R_MaterialForTextureId(mnamespace,
+                        (mnamespace == MN_TEXTURES ? texNumBase : flatNumBase) + picNum - 1);
 
-                        DMU_AddToAnimGroup(groupNumber, frame,
-                                         min, (max > 0? max - min : 0));
-                    }
+                    if(mat)
+                        P_AddMaterialToGroup(groupNumber, P_ToIndex(mat),
+                                             min, (max > 0? max - min : 0));
                 }
             }
             else

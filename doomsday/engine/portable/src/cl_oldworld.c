@@ -87,10 +87,11 @@ int Cl_ReadSectorDelta(void)
         lumpnum_t           lumpNum;
 
         // A bit convoluted; the delta is a server-side (flat) lump number.
+        // @todo abandon this method of flat identification and use material identifiers.
         if((lumpNum = Cl_TranslateLump(Msg_ReadPackedShort())) != 0)
         {
-            material_t*         mat = P_ToMaterial(
-                P_MaterialNumForName(W_LumpName(lumpNum), MN_FLATS));
+            material_t*         mat = Materials_ToMaterial(
+                Materials_IndexForName(MN_FLATS, W_LumpName(lumpNum)));
 #if _DEBUG
 if(!mat)
     Con_Message("Cl_ReadSectorDelta: No material for flat %i.",
@@ -107,8 +108,8 @@ if(!mat)
         // A bit convoluted; the delta is a server-side (flat) lump number.
         if((lumpNum = Cl_TranslateLump(Msg_ReadPackedShort())) != 0)
         {
-            material_t*         mat = P_ToMaterial(
-                P_MaterialNumForName(W_LumpName(lumpNum), MN_FLATS));
+            material_t*         mat = Materials_ToMaterial(
+                Materials_IndexForName(MN_FLATS, W_LumpName(lumpNum)));
 #if _DEBUG
 if(!mat)
     Con_Message("Cl_ReadSectorDelta: No material for flat %i.",
@@ -230,7 +231,7 @@ int Cl_ReadSideDelta(void)
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
          */
-        mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
+        mat = Materials_ToMaterial2(MN_TEXTURES, Msg_ReadPackedShort());
         Surface_SetMaterial(&sid->SW_topsurface, mat, true);
     }
     if(df & SIDF_MID_MATERIAL)
@@ -240,7 +241,7 @@ int Cl_ReadSideDelta(void)
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
          */
-        mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
+        mat = Materials_ToMaterial2(MN_TEXTURES, Msg_ReadPackedShort());
         Surface_SetMaterial(&sid->SW_middlesurface, mat, true);
     }
     if(df & SIDF_BOTTOM_MATERIAL)
@@ -250,7 +251,7 @@ int Cl_ReadSideDelta(void)
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
          */
-        mat = P_GetMaterial(Msg_ReadPackedShort(), MN_TEXTURES);
+        mat = Materials_ToMaterial2(MN_TEXTURES, Msg_ReadPackedShort());
         Surface_SetMaterial(&sid->SW_bottomsurface, mat, true);
     }
 

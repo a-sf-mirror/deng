@@ -76,7 +76,7 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, se
         }
         else
         {   // We'll mask this.
-            rseg->polyType = RPT_SKY_MASK;
+            rseg->flags |= RSF_SKYMASK;
         }
     }
     else
@@ -100,11 +100,11 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, se
         else if(texMode == 1)
             // For debug, render the "missing" texture instead of the texture
             // chosen for surfaces to fix the HOMs.
-            *materialA = P_GetMaterial(DDT_MISSING, MN_SYSTEM);
+            *materialA = Materials_ToMaterial2(MN_SYSTEM, DDT_MISSING);
         else // texMode == 2
             // For lighting debug, render all solid surfaces using the gray
             // texture.
-            *materialA = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
+            *materialA = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
 
         // Make any necessary adjustments to the surface flags to suit the
         // current texture mode.
@@ -141,7 +141,7 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, se
             rseg->flags |= RSF_NO_RADIO;
     }
 
-    if((rseg->flags & RSF_GLOW) || rseg->polyType == RPT_SKY_MASK)
+    if((rseg->flags & RSF_GLOW) || (rseg->flags & RSF_SKYMASK))
         rseg->flags |= RSF_NO_RADIO;
 
     if(!useShinySurfaces || !(*materialA) && !(*materialA)->reflection)
@@ -157,9 +157,8 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, se
 static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, float top,
                   pvec3_t normal)
 {
-    rseg->polyType = RPT_NORMAL;
-    rseg->blendMode = BM_NORMAL;
     rseg->flags = 0;
+    rseg->blendMode = BM_NORMAL;
 
     rseg->from = from;
     rseg->to = to;
@@ -225,7 +224,7 @@ static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
     pickMaterialsAndGetDrawFlags(rseg, frontSideDef, section, alpha,
                                  &materialA, &materialBlendInter, &materialB);
 
-    if(rseg->polyType != RPT_SKY_MASK)
+    if(!(rseg->flags & RSF_SKYMASK))
     {
         if(lightWithLumobjs && !(rseg->flags & RSF_GLOW))
         {
@@ -346,22 +345,28 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, side
     return rseg;
 }
 
-boolean RendSeg_MustUseVisSprite(const rendseg_t* rseg)
+boolean RendSeg_SkyMasked(rendseg_t* rseg)
 {
-    if(!(rseg->alpha < 0) && rseg->polyType != RPT_SKY_MASK &&
+    return (rseg->flags & RSF_SKYMASK) == 1;
+}
+
+boolean RendSeg_MustUseVisSprite(rendseg_t* rseg)
+{
+    if(!(rseg->alpha < 0) && !(rseg->flags & RSF_SKYMASK) &&
        (rseg->alpha < 1 || !rseg->materials.snapshotA.isOpaque || rseg->blendMode > 0))
         return true;
 
     return false;
 }
 
-void RendSeg_TakeBlendedMaterialSnapshots(rendseg_t* rseg, material_t* materialA, float blendFactor, material_t* materialB)
+void RendSeg_TakeBlendedMaterialSnapshots(rendseg_t* rseg, material_t* materialA, float blendFactor,
+                                          material_t* materialB)
 {
     memset(&rseg->materials.snapshotA, 0, sizeof(rseg->materials.snapshotA));
     memset(&rseg->materials.snapshotB, 0, sizeof(rseg->materials.snapshotB));
 
-    Material_Prepare(&rseg->materials.snapshotA, materialA, MPF_SMOOTH, NULL);
-    Material_Prepare(&rseg->materials.snapshotB, materialB, MPF_SMOOTH, NULL);
+    Materials_Prepare(materialA, MPF_SMOOTH, NULL, &rseg->materials.snapshotA);
+    Materials_Prepare(materialB, MPF_SMOOTH, NULL, &rseg->materials.snapshotB);
 
     rseg->materials.inter = blendFactor;
     rseg->materials.blend = true;
@@ -375,7 +380,7 @@ void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
     memset(&rseg->materials.snapshotA, 0, sizeof(rseg->materials.snapshotA));
     memset(&rseg->materials.snapshotB, 0, sizeof(rseg->materials.snapshotB));
 
-    Material_Prepare(&rseg->materials.snapshotA, material, MPF_SMOOTH, NULL);
+    Materials_Prepare(material, MPF_SMOOTH, NULL, &rseg->materials.snapshotA);
 
     if(smoothTexAnim)
     {
@@ -386,7 +391,7 @@ void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
            !(!usingFog && material->inter < 0))
         {
             // Prepare the inter texture.
-            Material_Prepare(&rseg->materials.snapshotB, material->next, 0, NULL);
+            Materials_Prepare(material->next, 0, NULL, &rseg->materials.snapshotB);
             inter = material->inter;
 
             smoothed = true;
@@ -397,7 +402,7 @@ void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
     rseg->materials.inter = inter;
 }
 
-uint RendSeg_DynlistID(const rendseg_t* rseg)
+uint RendSeg_DynlistID(rendseg_t* rseg)
 {   
     return rseg->dynlistID;
 }

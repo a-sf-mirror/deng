@@ -273,7 +273,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
     sprFrame = &sprDef->spriteFrames[frame];
     flip = sprFrame->flip[0];
 
-    Material_Prepare(&ms, sprFrame->mats[0], MPF_SMOOTH | MPF_AS_PSPRITE, NULL);
+    Materials_Prepare(sprFrame->mats[0], MPF_SMOOTH | MPF_AS_PSPRITE, NULL, &ms);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -365,10 +365,10 @@ void Rend_DrawPSprite(const rendpspriteparams_t *params)
     }
     else if(renderTextures == 2)
     {   // For lighting debug, render all solid surfaces using the gray texture.
-        material_t*         mat = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
+        material_t*         mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
         material_snapshot_t ms;
 
-        Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
+        Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
         GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                        ms.units[MTU_PRIMARY].magMode);
     }
@@ -901,7 +901,7 @@ void Rend_RenderSprite(const rendspriteparams_t* params)
         mat = params->mat;
     else if(renderTextures == 2)
         // For lighting debug, render all solid surfaces using the gray texture.
-        mat = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
+        mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
 
     if(mat)
     {
@@ -914,11 +914,11 @@ void Rend_RenderSprite(const rendspriteparams_t* params)
             mparams.tmap = params->tMap;
             mparams.tclass = params->tClass;
 
-            Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
+            Materials_Prepare(mat, MPF_SMOOTH, &mparams, &ms);
         }
         else
         {
-            Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
+            Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
         }
 
         GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,

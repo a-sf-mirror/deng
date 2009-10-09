@@ -238,8 +238,8 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
             dd_snprintf(m->name, 9, "UNK%05i", idx);
 
             // First try the prefered namespace, then any.
-            if(!(m->material = DMU_MaterialByIndex(idx, (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->material = DMU_MaterialByIndex(idx, MN_ANY);
+            if(!(m->material = R_MaterialForTextureId((isFlat? MN_FLATS : MN_TEXTURES), idx)))
+                m->material = R_MaterialForTextureId(MN_ANY, idx);
         }
         else
         {
@@ -249,9 +249,8 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
             m->name[len] = '\0';
 
             // First try the prefered namespace, then any.
-            if(!(m->material = DMU_MaterialByName(m->name,
-                                                    (isFlat? MN_FLATS : MN_TEXTURES))))
-                m->material = DMU_MaterialByName(m->name, MN_ANY);
+            if(!(m->material = P_MaterialForName((isFlat? MN_FLATS : MN_TEXTURES), m->name)))
+                m->material = P_MaterialForName(MN_ANY, m->name);
         }
 
         // Add it to the material reference list.

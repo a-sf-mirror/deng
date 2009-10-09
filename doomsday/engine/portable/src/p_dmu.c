@@ -703,7 +703,7 @@ uint P_ToIndex(const void* ptr)
         return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
     case DMU_MATERIAL:
-        return P_ToMaterialNum(((dmuobjrecord_t*) ptr)->obj);
+        return Materials_ToIndex(((dmuobjrecord_t*) ptr)->obj);
 
     case DMU_SKY:
         return 0;
@@ -917,7 +917,7 @@ int P_Callback(int type, uint index, int (*callback)(void* p, void* ctx),
 
     case DMU_MATERIAL:
         if(index < numMaterialBinds)
-            return callback(P_ToMaterial(index), context);
+            return callback(Materials_ToMaterial(index), context);
         break;
 
     case DMU_SKY:

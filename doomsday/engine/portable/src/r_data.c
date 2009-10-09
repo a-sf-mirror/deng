@@ -768,7 +768,7 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
     memset(rTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
     memset(rTUs, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
 
-    if(rseg->polyType != RPT_SKY_MASK)
+    if(!RendSeg_SkyMasked(rseg))
     {
         Rend_SetupRTU(rTU, rTUs, msA, rseg->materials.inter, msB);
         Rend_SetupRTU2(rTU, rTUs, true, rseg->surfaceMaterialOffset, rseg->surfaceMaterialScale, msA, msB);
@@ -1086,7 +1086,7 @@ void R_DivVertColors(rcolor_t* dst, const rcolor_t* src,
 
 void R_ShutdownData(void)
 {
-    P_ShutdownMaterialManager();
+    Materials_Shutdown();
 }
 
 /**
@@ -1802,7 +1802,7 @@ void R_InitTextures(void)
             material_t*           mat;
 
             // Create a material for this texture.
-            mat = P_MaterialCreate(MN_TEXTURES, texDef->name, texDef->width,
+            mat = Materials_NewMaterial(MN_TEXTURES, texDef->name, texDef->width,
                                    texDef->height,
                                    ((texDef->flags & TXDF_NODRAW)? MATF_NO_DRAW : 0),
                                    NULL, (texDef->flags & TXDF_IWAD) != 0);
@@ -1840,6 +1840,103 @@ doomtexturedef_t* R_GetDoomTextureDef(int num)
     }
 
     return doomTextureDefs[num];
+}
+
+/**
+ * Given a texture or flat index, search the materials db for a name-bound
+ * material.
+ * \note Part of the Doomsday public API.
+ *
+ * @param mnamespace    MG_* namespace.
+ * @param idx           Index of the texture/flat/sprite/etc.
+ *
+ * @return              The found material, else @c NULL.
+ */
+material_t* R_MaterialForTextureId(material_namespace_t mnamespace, int idx)
+{
+    material_t*         mat = NULL;
+
+    if(idx < 0)
+        return NULL;
+
+    switch(mnamespace)
+    {
+    case MN_FLATS:
+        {
+        lumpnum_t           firstFlatLump = W_CheckNumForName("F_START");
+
+        if(firstFlatLump != -1)
+            mat = P_MaterialForName(MN_FLATS, W_LumpName(firstFlatLump + idx));
+        break;
+        }
+    case MN_TEXTURES:
+        {
+        doomtexturedef_t*   def = R_GetDoomTextureDef(idx);
+
+        if(def)
+        {
+            mat = P_MaterialForName(MN_TEXTURES, def->name);
+        }
+        break;
+        }
+    default:
+        Con_Error("R_MaterialForTextureId: Warning, invalid namespace '%i'.\n",
+                  (int) mnamespace);
+        break;
+    }
+
+    // Not found? Don't announce during map setup.
+    if(!mat && !ddMapSetup)
+    {
+        Con_Message("R_MaterialForTextureId: %u in namespace %i not found!\n",
+                    idx, mnamespace);
+        return NULL;
+    }
+
+    return mat;
+}
+
+/**
+ * @todo Belongs in a plugin along with the rest of the texture def stuff.
+ *
+ * @note Part of the Doomsday public API.
+ */
+int R_TextureIdForName(material_namespace_t mnamespace, const char* name)
+{
+    if(name && name[0])
+    {
+        switch(mnamespace)
+        {
+        case MN_FLATS:
+            {
+            lumpnum_t           lump, firstFlatLump;
+            
+            if((lump = W_CheckNumForName(name)) != -1 &&
+               (firstFlatLump = W_CheckNumForName("F_START")) != -1)
+                return lump - firstFlatLump;
+            break;
+            }
+        case MN_TEXTURES:
+            {
+            int                 i;
+
+            for(i = 0; i < numDoomTextureDefs; ++i)
+            {
+                doomtexturedef_t*   def = doomTextureDefs[i];
+
+                if(!strnicmp(def->name, name, 8))
+                    return i;
+            }
+            break;
+            }
+        default:
+            Con_Error("R_TextureIdForName: Warning, invalid namespace '%i'.\n",
+                      (int) mnamespace);
+            break;
+        }
+    }
+
+    return -1;
 }
 
 /**
@@ -1884,7 +1981,7 @@ static int R_NewFlat(lumpnum_t lump)
 
     // Create a material for this flat.
     // \note that width = 64, height = 64 regardless of the flat dimensions.
-    mat = P_MaterialCreate(MN_FLATS, W_LumpName(lump), 64, 64, 0, NULL,
+    mat = Materials_NewMaterial(MN_FLATS, W_LumpName(lump), 64, 64, 0, NULL,
                            W_IsFromIWAD(lump));
     if(mat)
     {
@@ -2395,34 +2492,6 @@ void R_PrecacheMap(void)
 
     VERBOSE(Con_Message("Precaching took %.2f seconds.\n",
                         Sys_GetSeconds() - startTime))
-}
-
-/**
- * Initialize an entire animation using the data in the definition.
- */
-void R_InitAnimGroup(ded_group_t* def)
-{
-    int                 i, groupNumber = -1;
-    int                 num;
-
-    for(i = 0; i < def->count.num; ++i)
-    {
-        ded_group_member_t *gm = &def->members[i];
-
-        num = P_MaterialCheckNumForName(gm->material.name, gm->material.mnamespace);
-
-        if(!num)
-            continue;
-
-        // Only create a group when the first texture is found.
-        if(groupNumber == -1)
-        {
-            // Create a new animation group.
-            groupNumber = R_CreateAnimGroup(def->flags);
-        }
-
-        R_AddToAnimGroup(groupNumber, num, gm->tics, gm->randomTics);
-    }
 }
 
 detailtex_t* R_CreateDetailTexture(const ded_detailtexture_t* def)

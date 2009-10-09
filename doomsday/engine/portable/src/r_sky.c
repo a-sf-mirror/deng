@@ -158,7 +158,7 @@ static void init(sky_t* sky)
     sky->modelsInited = false;
 
     // Configure the material.
-    mat = P_ToMaterial(P_MaterialNumForName("SKY1", MN_TEXTURES));
+    mat = Materials_ToMaterial(Materials_IndexForName(MN_TEXTURES, "SKY1"));
     Material_SetLayerFlags(mat, 0, 0);
     Material_SetLayerTextureOriginXY(mat, 0, offset);
 
@@ -203,17 +203,17 @@ void Sky_InitFromDefinition(sky_t* sky, const ded_sky_t* def)
 
     {
     materialnum_t       matNum;
-    if(!(matNum = P_MaterialNumForName(def->layers[0].material.name,
-                                       def->layers[0].material.mnamespace)))
+    if(!(matNum = Materials_IndexForName(def->layers[0].material.mnamespace,
+                                         def->layers[0].material.name)))
     {
         Con_Message("Sky_InitFromDefinition: Warning, failed to locate "
                     "material '%s' in namespace %i. Using default.\n",
                     def->layers[0].material.name,
                     def->layers[0].material.mnamespace);
 
-        matNum = P_MaterialNumForName("SKY1", MN_TEXTURES);
+        matNum = Materials_IndexForName(MN_TEXTURES, "SKY1");
     }
-    mat = P_ToMaterial(matNum);
+    mat = Materials_ToMaterial(matNum);
     }
 
      // Configure the material

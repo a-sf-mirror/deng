@@ -266,7 +266,7 @@ int SV_ReadXGPlaneMover(xgplanemover_t* mov)
     if(ver >= 3)
         mov->setMaterial = SV_GetArchiveMaterial(num, 0);
     else
-        mov->setMaterial = DMU_MaterialByName(W_LumpName(num), MN_FLATS);
+        mov->setMaterial = R_MaterialForTextureId(MN_FLATS, num);
     mov->setSectorType = SV_ReadLong();
     mov->startSound = SV_ReadLong();
     mov->endSound = SV_ReadLong();

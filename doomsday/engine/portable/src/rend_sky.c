@@ -261,7 +261,7 @@ static void renderHemisphere(sky_t* sky, boolean upperHemi)
     {
         material_t*         material = Sky_GetSphereMaterial(sky);
 
-        Material_Prepare(&ms, material, MPF_SMOOTH | MPF_AS_SKY | MPF_TEX_NO_COMPRESSION, NULL);
+        Materials_Prepare(material, MPF_SMOOTH | MPF_AS_SKY | MPF_TEX_NO_COMPRESSION, NULL, &ms);
 
         for(i = 0; i < 3; ++i)
             if(ms.topColor[i] > sky->layers[firstLayer].fadeoutColorLimit)

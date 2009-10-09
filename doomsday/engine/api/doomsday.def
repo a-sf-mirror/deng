@@ -322,10 +322,13 @@ EXPORTS
     P_SetPolyobjCallback        @83 NONAME
 
 ; Play: Materials.
-	DMU_MaterialCheckNumForName @336 NONAME
-    DMU_MaterialByName          @97 NONAME
-    DMU_MaterialByIndex         @437 NONAME
-    DMU_MaterialPrecache        @436 NONAME
+    P_MaterialForName           @97 NONAME
+    P_MaterialPreload           @436 NONAME
+    P_NewMaterialGroup          @241 NONAME
+    P_AddMaterialToGroup        @242 NONAME
+
+    R_MaterialForTextureId      @336 NONAME
+    R_TextureIdForName          @437 NONAME
 
 ; Play: Thinkers.
     DD_ThinkerAdd               @86 NONAME
@@ -352,8 +355,6 @@ EXPORTS
     R_GetPatchInfo              @237 NONAME
     R_PointToAngle2             @101 NONAME
     P_PointInSubSector          @102 NONAME
-    R_CreateAnimGroup           @241 NONAME
-    DMU_AddToAnimGroup          @242 NONAME
     R_HSVToRGB                  @439 NONAME
     R_CreateColorPalette		@444 NONAME
     R_GetColorPaletteNumForName @446 NONAME

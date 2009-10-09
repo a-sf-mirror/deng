@@ -258,13 +258,6 @@ extern          "C" {
     void            P_SetVariable(int value, void* data);
     unsigned int    P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, uint index);
-    struct material_s* DMU_MaterialByName(const char* name, material_namespace_t mnamespace);
-
-    struct material_s* DMU_MaterialByIndex(uint idx, material_namespace_t mnamespace);
-    int             DMU_MaterialCheckNumForName(const char* rawName,
-                                                material_namespace_t mnamespace);
-
-    void            DMU_MaterialPrecache(material_t* mat);
     int             P_Callback(int type, uint index,
                                int (*callback)(void* p, void* ctx),
                                void* context);
@@ -274,6 +267,19 @@ extern          "C" {
     int             P_Iteratep(void *ptr, uint prop,
                                int (*callback) (void* p, void* ctx),
                                void* context);
+
+    // Materials.
+    struct material_s* P_MaterialForName(material_namespace_t mnamespace, const char* name);
+    unsigned int    P_MaterialCheckIndexForName(material_namespace_t mnamespace, const char* rawName);
+
+    int             P_NewMaterialGroup(int flags);
+    void            P_AddMaterialToGroup(int groupNum, int num,
+                                         int tics, int randomTics);
+    void            P_MaterialPreload(material_t* mat);
+
+    // @kludge
+    material_t*     R_MaterialForTextureId(material_namespace_t mnamespace, int idx);
+    int             R_TextureIdForName(material_namespace_t mnamespace, const char* rawName);
 
     /* dummy functions */
     void*           P_AllocDummy(int type, void* extraData);
@@ -415,9 +421,6 @@ extern          "C" {
     boolean         R_GetSpriteInfo(int sprite, int frame,
                                     spriteinfo_t* sprinfo);
     boolean         R_GetPatchInfo(lumpnum_t lump, patchinfo_t* info);
-    int             R_CreateAnimGroup(int flags);
-    void            DMU_AddToAnimGroup(int groupNum, int num,
-                                       int tics, int randomTics);
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);

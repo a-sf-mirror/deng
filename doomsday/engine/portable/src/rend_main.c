@@ -517,11 +517,11 @@ void Rend_SetupRTU2(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
     }
 }
 
-static void lightPolygon(const rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* rcolors,
+static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* rcolors,
                          size_t numVertices, float alpha,
                          boolean isGlowing)
 {
-    if(rseg->polyType == RPT_SKY_MASK)
+    if(RendSeg_SkyMasked(rseg))
     {
         memset(rcolors, 0, sizeof(rcolor_t) * numVertices);
         return;
@@ -1014,8 +1014,8 @@ void Rend_AddMaskedPoly(const rvertex_t* rvertices,
     }
 }
 
-static boolean renderWorldSegAsVisSprite(const rendseg_t* rseg, rvertex_t* rvertices,
-                                          const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
+static boolean renderWorldSegAsVisSprite(rendseg_t* rseg, rvertex_t* rvertices,
+                                         const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
     boolean             forceOpaque = rseg->alpha < 0 ? true : false;
     float               alpha = forceOpaque ? 1 : rseg->alpha;
@@ -1669,7 +1669,7 @@ float RendPlane_TakeMaterialSnapshots(material_snapshot_t* msA, material_snapsho
 {
     float               interPos = 0;
 
-    Material_Prepare(msA, material, MPF_SMOOTH, NULL);
+    Materials_Prepare(material, MPF_SMOOTH, NULL, msA);
 
     // Smooth Texture Animation?
     if(msB)
@@ -1681,7 +1681,7 @@ float RendPlane_TakeMaterialSnapshots(material_snapshot_t* msA, material_snapsho
            !(!usingFog && material->inter < 0))
         {
             // Prepare the inter texture.
-            Material_Prepare(msB, material->next, 0, NULL);
+            Materials_Prepare(material->next, 0, NULL, msB);
             interPos = material->inter;
         }
     }
@@ -1733,16 +1733,18 @@ static void Rend_RenderPlane(face_t* face, planetype_t type,
     }
 }
 
-static void renderWorldSeg(const rendseg_t* rseg, uint numVertices, rvertex_t* rvertices,
+static void renderWorldSeg(rendseg_t* rseg, uint numVertices, rvertex_t* rvertices,
                            DGLuint modTex, rtexcoord_t* rtcModTex, float modColor[3],
                            rcolor_t* rcolors, rtexcoord_t* rtcPrimary, rtexcoord_t* rtcInter, uint numLights,
                            rcolor_t* shinyColors, rtexcoord_t* rtcShiny,
                            const rtexmapunit_t* rTU, const rtexmapunit_t* rTUs)
 {
+    rendpolytype_t      rptype = RendSeg_SkyMasked(rseg)? RPT_SKY_MASK : RPT_NORMAL;
+
     lightPolygon(rseg, rvertices, rcolors, numVertices, 1.0f,
                  (rseg->flags & RSF_GLOW) != 0);
 
-    if(rseg->polyType != RPT_SKY_MASK && !(rseg->flags & RSF_NO_REFLECTION) &&
+    if(rptype != RPT_SKY_MASK && !(rseg->flags & RSF_NO_REFLECTION) &&
        rTUs[TU_PRIMARY].tex)
     {
         lightShinyPolygon(shinyColors, rcolors, numVertices,
@@ -1757,7 +1759,7 @@ static void renderWorldSeg(const rendseg_t* rseg, uint numVertices, rvertex_t* r
                       shinyColors, rtcShiny, rseg->divs);
     }
 
-    writePolygon(rseg->polyType, rseg->divs, numVertices,
+    writePolygon(rptype, rseg->divs, numVertices,
                  rvertices, rcolors, rtcPrimary, rtcInter,
                  rtcModTex, modTex, modColor, rTU,
                  numLights);
@@ -1841,7 +1843,7 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
 
     *rcolors = R_AllocRendColors(numVertices);
 
-    if(rseg->polyType != RPT_SKY_MASK)
+    if(!RendSeg_SkyMasked(rseg))
     {
         // ShinySurface?
         if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
@@ -2022,7 +2024,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
     // In devSkyMode mode we render all polys destined for the skymask as
     // regular world polys (with a few obvious properties).
 
-    Material_Prepare(&ms, mat, 0, NULL);
+    Materials_Prepare(mat, 0, NULL, &ms);
 
     rTU[TU_PRIMARY].tex = ms.units[MTU_PRIMARY].texInst->id;
     rTU[TU_PRIMARY].magMode = ms.units[MTU_PRIMARY].magMode;
@@ -2817,10 +2819,10 @@ static void Rend_RenderSubSector(uint faceidx)
         else if(texMode == 1)
             // For debug, render the "missing" texture instead of the texture
             // chosen for surfaces to fix the HOMs.
-            mat = P_GetMaterial(DDT_MISSING, MN_SYSTEM);
+            mat = Materials_ToMaterial2(MN_SYSTEM, DDT_MISSING);
         else
             // For lighting debug, render all solid surfaces using the gray texture.
-            mat = P_GetMaterial(DDT_GRAY, MN_SYSTEM);
+            mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
 
         V2_Copy(texOffset, suf->visOffset);
 
@@ -2873,7 +2875,7 @@ static void Rend_RenderSubSector(uint faceidx)
                 normal[VZ] *= -1;
 
             Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
-                             P_GetMaterial(DDT_GRAY, MN_SYSTEM), NULL, 0,
+                             Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy > plane->visHeight? true : false),
@@ -2893,7 +2895,7 @@ static void Rend_RenderSubSector(uint faceidx)
                 normal[VZ] *= -1;
 
             Rend_RenderPlane(face, PLN_MID, plane->visHeight, normal,
-                             P_GetMaterial(DDT_GRAY, MN_SYSTEM), NULL, 0,
+                             Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy < plane->visHeight? true : false),
@@ -3666,8 +3668,8 @@ static void Rend_RenderBoundingBoxes(void)
     glEnable(GL_TEXTURE_2D);
     glDisable(GL_CULL_FACE);
 
-    mat = P_GetMaterial(DDT_BBOX, MN_SYSTEM);
-    Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
+    mat = Materials_ToMaterial2(MN_SYSTEM, DDT_BBOX);
+    Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
 
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);

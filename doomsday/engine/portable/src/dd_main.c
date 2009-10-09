@@ -597,7 +597,7 @@ static int DD_StartupWorker(void *parm)
     P_InitMapUpdate();
 
     // Get the material manager up and running.
-    P_InitMaterialManager();
+    Materials_Init();
     R_InitTextures();
     R_InitFlats();
     R_PreInitSprites();
@@ -845,7 +845,7 @@ void DD_UpdateEngineState(void)
     gx.UpdateState(DD_POST);
 
     // Reset the anim groups (if in-game)
-    R_ResetAnimGroups();
+    Materials_RewindAnimationGroups();
 }
 
 /* *INDENT-OFF* */

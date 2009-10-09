@@ -498,7 +498,7 @@ void R_PreInitSprites(void)
                 sprTex->height = SHORT(patch->height);
 
                 // Create a new material for this sprite patch.
-                mat = P_MaterialCreate(MN_SPRITES, name, sprTex->width,
+                mat = Materials_NewMaterial(MN_SPRITES, name, sprTex->width,
                                        sprTex->height, 0, NULL,
                                        W_IsFromIWAD(sprTex->lump));
                 if(mat)
@@ -722,7 +722,7 @@ boolean R_GetSpriteInfo(int sprite, int frame, spriteinfo_t* info)
 
     sprFrame = &sprDef->spriteFrames[frame];
     mat = sprFrame->mats[0];
-    Material_Prepare(&ms, mat, 0, NULL);
+    Materials_Prepare(mat, 0, NULL, &ms);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -781,8 +781,8 @@ float R_VisualRadius(mobj_t* mo)
     }
 
     // Use the sprite frame's width.
-    Material_Prepare(&ms, R_GetMaterialForSprite(mo->sprite, mo->frame),
-                     MPF_SMOOTH, NULL);
+    Materials_Prepare(R_GetMaterialForSprite(mo->sprite, mo->frame),
+                      MPF_SMOOTH, NULL, &ms);
     return ms.width / 2;
 }
 
@@ -1003,7 +1003,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
     mparams.tmap = transMap;
     mparams.tclass = transClass;
 
-    Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
+    Materials_Prepare(mat, MPF_SMOOTH, &mparams, &ms);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
@@ -1247,7 +1247,7 @@ void R_ProjectSprite(mobj_t* mo)
     mparams.tmap = tmap;
     mparams.tclass = tclass;
 
-    Material_Prepare(&ms, mat, MPF_SMOOTH, &mparams);
+    Materials_Prepare(mat, MPF_SMOOTH, &mparams, &ms);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 

@@ -40,7 +40,7 @@
 #define MPF_TEX_NO_COMPRESSION 0x8
 /*@}*/
 
-typedef struct {
+typedef struct material_prepare_params_s {
     int             tmap, tclass;
 } material_prepare_params_t;
 
@@ -76,7 +76,7 @@ typedef struct material_snapshot_s {
     } shiny;
 } material_snapshot_t;
 
-byte            Material_Prepare(material_snapshot_t* snapshot,
+byte            Material_Prepare(struct material_snapshot_s* snapshot,
                                  material_t* mat, byte flags,
                                  const material_prepare_params_t* params);
 void            Material_Ticker(material_t* mat, timespan_t time);
@@ -115,6 +115,6 @@ void            Material_SetLayerMoveAngle(material_t* mat, byte layer, float an
 void            Material_SetLayerMoveSpeed(material_t* mat, byte layer, float speed);
 
 // DMU interface:
-boolean         Material_GetProperty(const material_t* mat, setargs_t* args);
+boolean         Material_GetProperty(material_t* mat, setargs_t* args);
 boolean         Material_SetProperty(material_t* mat, const setargs_t* args);
 #endif

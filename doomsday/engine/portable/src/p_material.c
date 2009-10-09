@@ -23,7 +23,7 @@
  */
 
 /**
- * p_material.c: Materials for world surfaces.
+ * p_material.c: Material.
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -95,7 +95,7 @@ void Material_Ticker(material_t* mat, timespan_t time)
 }
 
 /**
- * Subroutine of Material_Prepare().
+ * Subroutine of Materials_Prepare().
  */
 static __inline void setTexUnit(material_snapshot_t* ss, byte unit,
                                 blendmode_t blendMode, int magMode,
@@ -415,12 +415,12 @@ void Material_Precache(material_t* mat)
 
     if(mat->inAnimGroup)
     {   // The material belongs in one or more animgroups, precache the group.
-        R_MaterialsPrecacheGroup(mat);
+        Materials_CacheMaterial(mat);
         return;
     }
 
     // Just this one material.
-    Material_Prepare(NULL, mat, 0, NULL);
+    Materials_Prepare(mat, 0, NULL, NULL);
 }
 
 void Material_DeleteTextures(material_t* mat)
@@ -492,7 +492,7 @@ const ded_decor_t* Material_GetDecoration(material_t* mat)
     if(mat)
     {
         // Ensure we've already prepared this material.
-        Material_Prepare(NULL, mat, 0, NULL);
+        Materials_Prepare(mat, 0, NULL, NULL);
 
         return mat->decoration;
     }
@@ -510,7 +510,7 @@ const ded_ptcgen_t* Material_GetPtcGen(material_t* mat)
     if(mat)
     {
         // Ensure we've already prepared this material.
-        //Material_Prepare(NULL, mat, 0, NULL);
+        //Materials_Prepare(NULL, mat, 0, NULL);
 
         return mat->ptcGen;
     }
@@ -525,7 +525,7 @@ material_env_class_t Material_GetEnvClass(material_t* mat)
         if(mat->envClass == MEC_UNKNOWN)
         {
             mat->envClass =
-                S_MaterialClassForName(P_GetMaterialName(mat), mat->mnamespace);
+                S_MaterialClassForName(Materials_NameOf(mat), mat->mnamespace);
         }
 
         if(!(mat->flags & MATF_NO_DRAW))
@@ -751,7 +751,7 @@ boolean Material_SetProperty(material_t* mat, const setargs_t* args)
 /**
  * Get the value of a material property, selected by DMU_* name.
  */
-boolean Material_GetProperty(const material_t* mat, setargs_t* args)
+boolean Material_GetProperty(material_t* mat, setargs_t* args)
 {
     switch(args->prop)
     {
@@ -766,7 +766,7 @@ boolean Material_GetProperty(const material_t* mat, setargs_t* args)
         break;
     case DMU_NAME:
         {
-        const char*         name = P_GetMaterialName(mat);
+        const char*         name = Materials_NameOf(mat);
         DMU_GetValue(DDVT_PTR, &name, args, 0);
         break;
         }

@@ -2331,8 +2331,8 @@ static void SV_ReadSector(sector_t *sec)
 #if !__JHEXEN__
     if(hdr.version == 1)
     {   // Flat numbers are the original flat lump indices - (lump) "F_START".
-        floorMaterial = DMU_MaterialByIndex(SV_ReadShort(), MN_FLATS);
-        ceilingMaterial = DMU_MaterialByIndex(SV_ReadShort(), MN_FLATS);
+        floorMaterial = R_MaterialForTextureId(MN_FLATS, SV_ReadShort());
+        ceilingMaterial = R_MaterialForTextureId(MN_FLATS, SV_ReadShort());
     }
     else if(hdr.version >= 4)
 #endif
@@ -3059,7 +3059,7 @@ static int SV_ReadFloor(floor_t* floor)
         if(ver >= 2)
             floor->material = SV_GetArchiveMaterial(SV_ReadShort(), 0);
         else
-            floor->material = DMU_MaterialByName(W_LumpName(SV_ReadShort()), MN_FLATS);
+            floor->material = R_MaterialForTextureId(MN_FLATS, SV_ReadShort());
 
         floor->floorDestHeight = (float) SV_ReadShort();
         floor->speed = FIX2FLT(SV_ReadLong());
@@ -3104,7 +3104,7 @@ static int SV_ReadFloor(floor_t* floor)
 #endif
         floor->state = (int) SV_ReadLong();
         floor->newSpecial = SV_ReadLong();
-        floor->material = DMU_MaterialByName(W_LumpName(SV_ReadShort()), MN_FLATS);
+        floor->material = R_MaterialForTextureId(MN_FLATS, SV_ReadShort());
 
         floor->floorDestHeight = FIX2FLT((fixed_t) SV_ReadLong());
         floor->speed = FIX2FLT((fixed_t) SV_ReadLong());

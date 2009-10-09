@@ -162,8 +162,8 @@ static void loadAnimDefs(animdef_t* animDefs)
             {
             lumpnum_t           startFrame, endFrame, n;
 
-            if((startFrame = W_CheckNumForName(animDefs[i].startname)) == -1 ||
-               (endFrame = W_CheckNumForName(animDefs[i].endname)) == -1)
+            if((startFrame = R_TextureIdForName(MN_FLATS, animDefs[i].startname)) == -1 ||
+               (endFrame = R_TextureIdForName(MN_FLATS, animDefs[i].endname)) == -1)
                 continue;
 
             numFrames = endFrame - startFrame + 1;
@@ -176,7 +176,7 @@ static void loadAnimDefs(animdef_t* animDefs)
             if(startFrame && endFrame)
             {   // We have a valid animation.
                 // Create a new animation group for it.
-                groupNum = R_CreateAnimGroup(AGF_SMOOTH);
+                groupNum = P_NewMaterialGroup(AGF_SMOOTH);
 
                 /**
                  * Doomsday's group animation needs to know the texture/flat
@@ -195,24 +195,20 @@ static void loadAnimDefs(animdef_t* animDefs)
                 {
                     for(n = startFrame; n <= endFrame; n++)
                     {
-                        materialnum_t       frame =
-                            DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                        MN_FLATS);
+                        material_t*         mat = R_MaterialForTextureId(MN_FLATS, n);
 
-                        if(frame != -1)
-                            DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
+                        if(mat)
+                            P_AddMaterialToGroup(groupNum, P_ToIndex(mat), ticsPerFrame, 0);
                     }
                 }
                 else
                 {
                     for(n = endFrame; n >= startFrame; n--)
                     {
-                        materialnum_t       frame =
-                            DMU_MaterialCheckNumForName(W_LumpName(n),
-                                                        MN_FLATS);
+                        material_t*         mat = R_MaterialForTextureId(MN_FLATS, n);
 
-                        if(frame != -1)
-                            DMU_AddToAnimGroup(groupNum, frame, ticsPerFrame, 0);
+                        if(mat)
+                            P_AddMaterialToGroup(groupNum, P_ToIndex(mat), ticsPerFrame, 0);
                     }
                 }
             }
@@ -220,12 +216,10 @@ static void loadAnimDefs(animdef_t* animDefs)
             }
         case MN_TEXTURES:
             {   // Same as above but for texture groups.
-            materialnum_t       startFrame, endFrame, n;
+            int             startFrame, endFrame, n;
 
-            if((startFrame = DMU_MaterialCheckNumForName(animDefs[i].startname,
-                                                       MN_TEXTURES)) == 0 ||
-               (endFrame = DMU_MaterialCheckNumForName(animDefs[i].endname,
-                                                     MN_TEXTURES)) == 0)
+            if((startFrame = R_TextureIdForName(MN_TEXTURES, animDefs[i].startname)) == -1 ||
+               (endFrame = R_TextureIdForName(MN_TEXTURES, animDefs[i].endname)) == -1)
                 continue;
 
             numFrames = endFrame - startFrame + 1;
@@ -237,25 +231,21 @@ static void loadAnimDefs(animdef_t* animDefs)
 
             if(startFrame && endFrame)
             {
-                groupNum = R_CreateAnimGroup(AGF_SMOOTH);
+                groupNum = P_NewMaterialGroup(AGF_SMOOTH);
 
                 VERBOSE(Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
                                     animDefs[i].startname, animDefs[i].endname,
                                     ticsPerFrame));
-                /**
-                 * \fixme Here an assumption is made that MN_TEXTURES type
-                 * materials are registered in the same order as they are
-                 * defined in the TEXTURE(1...) lump(s).
-                 */
+
                 if(endFrame > startFrame)
                 {
                     for(n = startFrame; n <= endFrame; n++)
-                        DMU_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
+                        P_AddMaterialToGroup(groupNum, P_ToIndex(R_MaterialForTextureId(MN_TEXTURES, n)), ticsPerFrame, 0);
                 }
                 else
                 {
                     for(n = endFrame; n >= startFrame; n--)
-                        DMU_AddToAnimGroup(groupNum, n, ticsPerFrame, 0);
+                        P_AddMaterialToGroup(groupNum, P_ToIndex(R_MaterialForTextureId(MN_TEXTURES, n)), ticsPerFrame, 0);
                 }
             }
             break;

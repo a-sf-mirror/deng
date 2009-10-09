@@ -23,7 +23,7 @@
  */
 
 /**
- * p_materialmanager.c: Materials manager.
+ * materials.c: Material collection.
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -53,6 +53,22 @@ typedef struct materialbind_s {
     uint            hashNext; // 1-based index
 } materialbind_t;
 
+typedef struct animframe_s {
+    material_t*     mat;
+    ushort          tics;
+    ushort          random;
+} animframe_t;
+
+typedef struct animgroup_s {
+    int             id;
+    int             flags;
+    int             index;
+    int             maxTimer;
+    int             timer;
+    int             count;
+    animframe_t*    frames;
+} animgroup_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -61,7 +77,7 @@ D_CMD(ListMaterials);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void animateAnimGroups(void);
+static void animateGroups(void);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -99,9 +115,12 @@ static materialbind_t* materialBinds;
 static materialnum_t maxMaterialBinds;
 static uint hashTable[NUM_MATERIAL_NAMESPACES][MATERIAL_NAME_HASH_SIZE];
 
+static int numgroups;
+static animgroup_t* groups;
+
 // CODE --------------------------------------------------------------------
 
-void P_MaterialManagerRegister(void)
+void Materials_Register(void)
 {
     C_CMD("listmaterials",  NULL,     ListMaterials);
 }
@@ -187,149 +206,6 @@ static materialnum_t getMaterialNumForName(const char* name, uint hash,
     return 0; // Not found.
 }
 
-/**
- * Given an index and namespace, search the materials db for a match.
- * \assume Caller knows what it's doing; params arn't validity checked.
- *
- * @param id            gltextureid to search for.
- * @param mnamespace    Specific MG_* material namespace NOT @c MN_ANY.
- * @return              Unique number of the found material, else zero.
- */
-static materialnum_t getMaterialNumForIndex(uint idx,
-                                            material_namespace_t mnamespace)
-{
-    materialnum_t       i;
-
-    // Go through the candidates.
-    for(i = 0; i < numMaterialBinds; ++i)
-    {
-        materialbind_t*     mb = &materialBinds[i];
-        material_t*         mat = mb->mat;
-
-        if(mat->mnamespace == mnamespace &&
-           GL_GetGLTexture(mat->layers[0].tex)->ofTypeID == idx)
-            return ((mb) - materialBinds) + 1;
-    }
-
-    return 0; // Not found.
-}
-
-static void newMaterialNameBinding(material_t* mat, const char* name,
-                                   material_namespace_t mnamespace,
-                                   uint hash)
-{
-    materialbind_t*     mb;
-
-    if(++numMaterialBinds > maxMaterialBinds)
-    {   // Allocate more memory.
-        maxMaterialBinds += MATERIALS_BLOCK_ALLOC;
-        materialBinds =
-            Z_Realloc(materialBinds, sizeof(*materialBinds) * maxMaterialBinds,
-                      PU_STATIC);
-    }
-
-    // Add the new material to the end.
-    mb = &materialBinds[numMaterialBinds - 1];
-    strncpy(mb->name, name, 8);
-    mb->name[8] = '\0';
-    mb->mat = mat;
-
-    // We also hash the name for faster searching.
-    mb->hashNext = hashTable[mnamespace][hash];
-    hashTable[mnamespace][hash] = (mb - materialBinds) + 1;
-}
-
-/**
- * One time initialization of the materials list. Called during init.
- */
-void P_InitMaterialManager(void)
-{
-    if(initedOk)
-        return; // Already been here.
-
-    materialsBlockSet = Z_BlockCreate(sizeof(material_t),
-                                      MATERIALS_BLOCK_ALLOC, PU_STATIC);
-    materialsHead = NULL;
-
-    materialBinds = NULL;
-    numMaterialBinds = maxMaterialBinds = 0;
-
-    // Clear the name bind hash tables.
-    memset(hashTable, 0, sizeof(hashTable));
-
-    initedOk = true;
-}
-
-/**
- * Release all memory acquired for the materials list.
- * Called during shutdown.
- */
-void P_ShutdownMaterialManager(void)
-{
-    if(!initedOk)
-        return;
-
-    Z_BlockDestroy(materialsBlockSet);
-    materialsBlockSet = NULL;
-    materialsHead = NULL;
-
-    // Destroy the bindings.
-    if(materialBinds)
-    {
-        Z_Free(materialBinds);
-        materialBinds = NULL;
-    }
-    numMaterialBinds = maxMaterialBinds = 0;
-
-    initedOk = false;
-}
-
-/**
- * Deletes all GL texture instances, linked to materials.
- *
- * @param mnamespace    @c MN_ANY = delete everything, ELSE
- *                      Only delete those currently in use by materials
- *                      in the specified namespace.
- */
-void P_DeleteMaterialTextures(material_namespace_t mnamespace)
-{
-    if(mnamespace == MN_ANY)
-    {   // Delete the lot.
-        GL_DeleteAllTexturesForGLTextures(GLT_ANY);
-        return;
-    }
-
-    if(!isKnownMNamespace(mnamespace))
-        Con_Error("P_DeleteMaterialTextures: Internal error, "
-                  "invalid namespace '%i'.", (int) mnamespace);
-
-    if(materialBinds)
-    {
-        uint                i;
-
-        for(i = 0; i < MATERIAL_NAME_HASH_SIZE; ++i)
-            if(hashTable[mnamespace][i])
-            {
-                materialbind_t*     mb = &materialBinds[
-                    hashTable[mnamespace][i] - 1];
-
-                for(;;)
-                {
-                    material_t*         mat = mb->mat;
-                    byte                j;
-
-                    for(j = 0; j < mat->numLayers; ++j)
-                        GL_ReleaseGLTexture(mat->layers[j].tex);
-
-                    if(!mb->hashNext)
-                        break;
-
-                    mb = &materialBinds[mb->hashNext - 1];
-                }
-            }
-    }
-}
-
 static material_t* createMaterial(short width, short height, byte flags,
                                   material_namespace_t mnamespace,
                                   const ded_material_t* def,
@@ -363,6 +239,216 @@ static material_t* getMaterialByNum(materialnum_t num)
     return NULL;
 }
 
+static void newMaterialNameBinding(material_t* mat, const char* name,
+                                   material_namespace_t mnamespace,
+                                   uint hash)
+{
+    materialbind_t*     mb;
+
+    if(++numMaterialBinds > maxMaterialBinds)
+    {   // Allocate more memory.
+        maxMaterialBinds += MATERIALS_BLOCK_ALLOC;
+        materialBinds =
+            Z_Realloc(materialBinds, sizeof(*materialBinds) * maxMaterialBinds,
+                      PU_STATIC);
+    }
+
+    // Add the new material to the end.
+    mb = &materialBinds[numMaterialBinds - 1];
+    strncpy(mb->name, name, 8);
+    mb->name[8] = '\0';
+    mb->mat = mat;
+
+    // We also hash the name for faster searching.
+    mb->hashNext = hashTable[mnamespace][hash];
+    hashTable[mnamespace][hash] = (mb - materialBinds) + 1;
+}
+
+static animgroup_t* getGroup(int number)
+{
+    if(--number < 0 || number >= numgroups)
+        return NULL;
+
+    return &groups[number];
+}
+
+static boolean isInGroup(animgroup_t* group, const material_t* mat)
+{
+    int                 i;
+
+    if(!mat || !group)
+        return false;
+
+    // Is it in there?
+    for(i = 0; i < group->count; ++i)
+    {
+        animframe_t*        frame = &group->frames[i];
+
+        if(frame->mat == mat)
+            return true;
+    }
+
+    return false;
+}
+
+static void animateGroups(void)
+{
+    int                 i, timer, k;
+    animgroup_t*        group;
+
+    for(i = 0, group = groups; i < numgroups; ++i, group++)
+    {
+        // The Precache groups are not intended for animation.
+        if((group->flags & AGF_PRECACHE) || !group->count)
+            continue;
+
+        if(--group->timer <= 0)
+        {
+            // Advance to next frame.
+            group->index = (group->index + 1) % group->count;
+            timer = (int) group->frames[group->index].tics;
+
+            if(group->frames[group->index].random)
+            {
+                timer += (int) RNG_RandByte() % (group->frames[group->index].random + 1);
+            }
+            group->timer = group->maxTimer = timer;
+
+            // Update translations.
+            for(k = 0; k < group->count; ++k)
+            {
+                material_t*            real, *current, *next;
+
+                real = group->frames[k].mat;
+                current =
+                    group->frames[(group->index + k) % group->count].mat;
+                next =
+                    group->frames[(group->index + k + 1) % group->count].mat;
+
+                Material_SetTranslation(real, current, next, 0);
+
+                // Just animate the first in the sequence?
+                if(group->flags & AGF_FIRST_ONLY)
+                    break;
+            }
+        }
+        else
+        {
+            // Update the interpolation point of animated group members.
+            for(k = 0; k < group->count; ++k)
+            {
+                material_t*            mat = group->frames[k].mat;
+
+                if(group->flags & AGF_SMOOTH)
+                {
+                    mat->inter = 1 - group->timer / (float) group->maxTimer;
+                }
+                else
+                {
+                    mat->inter = 0;
+                }
+
+                // Just animate the first in the sequence?
+                if(group->flags & AGF_FIRST_ONLY)
+                    break;
+            }
+        }
+    }
+}
+
+/**
+ * One time initialization of the materials list. Called during init.
+ */
+void Materials_Init(void)
+{
+    if(initedOk)
+        return; // Already been here.
+
+    materialsBlockSet = Z_BlockCreate(sizeof(material_t),
+                                      MATERIALS_BLOCK_ALLOC, PU_STATIC);
+    materialsHead = NULL;
+
+    materialBinds = NULL;
+    numMaterialBinds = maxMaterialBinds = 0;
+
+    // Clear the name bind hash tables.
+    memset(hashTable, 0, sizeof(hashTable));
+
+    initedOk = true;
+}
+
+/**
+ * Release all memory acquired for the materials list.
+ * Called during shutdown.
+ */
+void Materials_Shutdown(void)
+{
+    if(!initedOk)
+        return;
+
+    DMU_ClearObjRecords(DMU_MATERIAL);
+
+    Z_BlockDestroy(materialsBlockSet);
+    materialsBlockSet = NULL;
+    materialsHead = NULL;
+
+    // Destroy the bindings.
+    if(materialBinds)
+    {
+        Z_Free(materialBinds);
+        materialBinds = NULL;
+    }
+    numMaterialBinds = maxMaterialBinds = 0;
+
+    initedOk = false;
+}
+
+/**
+ * Deletes all GL texture instances, linked to materials.
+ *
+ * @param mnamespace    @c MN_ANY = delete everything, ELSE
+ *                      Only delete those currently in use by materials
+ *                      in the specified namespace.
+ */
+void Materials_DeleteTextures(material_namespace_t mnamespace)
+{
+    if(mnamespace == MN_ANY)
+    {   // Delete the lot.
+        GL_DeleteAllTexturesForGLTextures(GLT_ANY);
+        return;
+    }
+
+    if(!isKnownMNamespace(mnamespace))
+        Con_Error("Materials_DeleteTextures: Internal error, "
+                  "invalid namespace '%i'.", (int) mnamespace);
+
+    if(materialBinds)
+    {
+        uint                i;
+
+        for(i = 0; i < MATERIAL_NAME_HASH_SIZE; ++i)
+            if(hashTable[mnamespace][i])
+            {
+                materialbind_t*     mb = &materialBinds[
+                    hashTable[mnamespace][i] - 1];
+
+                for(;;)
+                {
+                    material_t*         mat = mb->mat;
+                    byte                j;
+
+                    for(j = 0; j < mat->numLayers; ++j)
+                        GL_ReleaseGLTexture(mat->layers[j].tex);
+
+                    if(!mb->hashNext)
+                        break;
+
+                    mb = &materialBinds[mb->hashNext - 1];
+                }
+            }
+    }
+}
+
 /**
  * Given a unique material number return the associated material.
  *
@@ -370,7 +456,7 @@ static material_t* getMaterialByNum(materialnum_t num)
  *
  * @return              The associated material, ELSE @c NULL.
  */
-material_t* P_ToMaterial(materialnum_t num)
+material_t* Materials_ToMaterial(materialnum_t num)
 {
     if(!initedOk)
         return NULL;
@@ -388,7 +474,7 @@ material_t* P_ToMaterial(materialnum_t num)
  *
  * @return              The associated unique number.
  */
-materialnum_t P_ToMaterialNum(const material_t* mat)
+materialnum_t Materials_ToIndex(material_t* mat)
 {
     if(mat)
     {
@@ -418,10 +504,10 @@ materialnum_t P_ToMaterialNum(const material_t* mat)
  *
  * @return              The created material, ELSE @c NULL.
  */
-material_t* P_MaterialCreate(material_namespace_t mnamespace,
-                             const char* rawName, short width, short height,
-                             byte flags, const ded_material_t* def,
-                             boolean isAutoMaterial)
+material_t* Materials_NewMaterial(material_namespace_t mnamespace,
+                                  const char* rawName, short width, short height,
+                                  byte flags, const ded_material_t* def,
+                                  boolean isAutoMaterial)
 {
     int                 n;
     uint                hash;
@@ -435,7 +521,7 @@ material_t* P_MaterialCreate(material_namespace_t mnamespace,
     if(!rawName || !rawName[0])
     {
 #if _DEBUG
-Con_Message("P_MaterialCreate: Warning, attempted to create material with "
+Con_Message("Materials_NewMaterial: Warning, attempted to create material with "
             "NULL name\n.");
 #endif
         return NULL;
@@ -462,7 +548,7 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material with "
         if(!isKnownMNamespace(mnamespace))
         {
 #if _DEBUG
-Con_Message("P_MaterialCreate: Warning, attempted to create material in "
+Con_Message("Materials_NewMaterial: Warning, attempted to create material in "
             "unknown namespace '%i'.\n", (int) mnamespace);
 #endif
             return NULL;
@@ -474,14 +560,14 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material in "
     if(mnamespace == MN_ANY)
     {
 #if _DEBUG
-Con_Message("P_MaterialCreate: Warning, attempted to create material "
+Con_Message("Materials_NewMaterial: Warning, attempted to create material "
             "without specifying a namespace.\n");
 #endif
         return NULL;
     }
 
     if(oldMat)
-        Con_Error("P_MaterialCreate: Can not create material named '%s' in "
+        Con_Error("Materials_NewMaterial: Can not create material named '%s' in "
                   "namespace %i, name already in use.", name, mnamespace);
 
     /**
@@ -513,7 +599,7 @@ Con_Message("P_MaterialCreate: Warning, attempted to create material "
  *
  * @return              The associated material, ELSE @c NULL.
  */
-material_t* P_GetMaterial(int ofTypeID, material_namespace_t mnamespace)
+material_t* Materials_ToMaterial2(material_namespace_t mnamespace, int ofTypeID)
 {
     if(!initedOk)
         return NULL;
@@ -521,7 +607,7 @@ material_t* P_GetMaterial(int ofTypeID, material_namespace_t mnamespace)
     if(!isKnownMNamespace(mnamespace)) // MN_ANY is considered invalid.
     {
 #if _DEBUG
-Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
+Con_Message("Materials_ToMaterial2: Internal error, invalid namespace '%i'\n",
             (int) mnamespace);
 #endif
         return NULL;
@@ -549,46 +635,8 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
 }
 
 /**
- * Given a texture/flat/sprite/etc index num, search the materials db for
- * a name-bound material.
- * \note Part of the Doomsday public API.
- *
- * @param idx           Index of the texture/flat/sprite/etc.
- * @param mnamespace    MG_* namespace.
- *
- * @return              The found material, else @c NULL.
- */
-material_t* DMU_MaterialByIndex(uint idx, material_namespace_t mnamespace)
-{
-    material_t*         mat;
-
-    if(!initedOk)
-        return NULL;
-
-    // Caller wants a material in a specific namespace.
-    if(!isKnownMNamespace(mnamespace))
-    {
-        Con_Message("DMU_MaterialByIndex: Warning, invalid namespace '%i'.\n",
-                    (int) mnamespace);
-
-        return NULL;
-    }
-
-    mat = P_ToMaterial(getMaterialNumForIndex(idx, mnamespace));
-
-    // Not found? Don't announce during map setup or if not yet inited.
-    if(mat && (!ddMapSetup || !initedOk))
-        Con_Message("DMU_MaterialByIndex: %u in namespace %i not found!\n",
-                    idx, mnamespace);
-
-    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL, mat);
-}
-
-/**
  * Given a name and namespace, search the materials db for a match.
- * \note Part of the Doomsday public API.
  *
- * @param name          Name of the material to search for.
  * @param mnamespace    Specific MG_* namespace ELSE,
  *                      @c MN_ANY = no namespace requirement in which case
  *                      the material is searched for among all namespaces
@@ -597,11 +645,12 @@ material_t* DMU_MaterialByIndex(uint idx, material_namespace_t mnamespace)
  *                      1st: MN_SPRITES
  *                      2nd: MN_TEXTURES
  *                      3rd: MN_FLATS
+ * @param name          Name of the material to search for.
  *
  * @return              Unique number of the found material, else zero.
  */
-materialnum_t P_MaterialCheckNumForName(const char* rawName,
-                                        material_namespace_t mnamespace)
+materialnum_t Materials_CheckIndexForName(material_namespace_t mnamespace,
+                                          const char* rawName)
 {
     int                 n;
     uint                hash;
@@ -619,7 +668,7 @@ materialnum_t P_MaterialCheckNumForName(const char* rawName,
     if(mnamespace != MN_ANY && !isKnownMNamespace(mnamespace))
     {
 #if _DEBUG
-Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
+Con_Message("Materials_CheckIndexForName: Internal error, invalid namespace '%i'\n",
             (int) mnamespace);
 #endif
         return 0;
@@ -650,26 +699,18 @@ Con_Message("P_GetMaterial: Internal error, invalid namespace '%i'\n",
     return getMaterialNumForName(name, hash, mnamespace);
 }
 
-materialnum_t DMU_MaterialCheckNumForName(const char* rawName,
-                                          material_namespace_t mnamespace)
-{
-    return P_ToIndex(DMU_GetObjRecord(DMU_MATERIAL,
-        P_ToMaterial(P_MaterialCheckNumForName(rawName, mnamespace))));
-}
-
 /**
  * Given a name and namespace, search the materials db for a match.
- * \note Part of the Doomsday public API.
- * \note2 Same as P_MaterialCheckNumForName except will log an error
+ * \note  Same as Materials_CheckIndexForName except will log an error
  *        message if the material being searched for is not found.
  *
+ * @param mnamespace    @see materialNamespace.
  * @param name          Name of the material to search for.
- * @param mnamespace    MG_* namespace.
  *
  * @return              Unique identifier of the found material, else zero.
  */
-materialnum_t P_MaterialNumForName(const char* name,
-                                   material_namespace_t mnamespace)
+materialnum_t Materials_IndexForName(material_namespace_t mnamespace,
+                                     const char* name)
 {
     materialnum_t       result;
 
@@ -682,60 +723,39 @@ materialnum_t P_MaterialNumForName(const char* name,
     if(!name || !name[0] || name[0] == '-')
         return 0;
 
-    result = P_MaterialCheckNumForName(name, mnamespace);
+    result = Materials_CheckIndexForName(mnamespace, name);
 
     // Not found?
     if(result == 0 && !ddMapSetup) // Don't announce during map setup.
-        Con_Message("P_MaterialNumForName: \"%.8s\" in namespace %i not found!\n",
+        Con_Message("Materials_IndexForName: \"%.8s\" in namespace %i not found!\n",
                     name, mnamespace);
     return result;
 }
 
-material_t* DMU_MaterialByName(const char* name, material_namespace_t mnamespace)
-{
-    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL,
-        P_ToMaterial(P_MaterialCheckNumForName(name, mnamespace)));
-}
-
 /**
  * Given a unique material identifier, lookup the associated name.
- * \note Part of the Doomsday public API.
  *
  * @param mat           The material to lookup the name for.
  *
  * @return              The associated name.
  */
-const char* P_GetMaterialName(const material_t* mat)
+const char* Materials_NameOf(material_t* mat)
 {
     materialnum_t       num;
 
     if(!initedOk)
         return NULL;
 
-    if(mat && (num = P_ToMaterialNum(mat)))
+    if(mat && (num = Materials_ToIndex(mat)))
         return materialBinds[num-1].name;
 
     return "NOMAT"; // Should never happen.
 }
 
 /**
- * Precache the specified material.
- * \note Part of the Doomsday public API.
- *
- * @param mat           The material to be precached.
- */
-void DMU_MaterialPrecache(material_t* mat)
-{
-    if(!initedOk)
-        return;
-
-    Material_Precache((material_t*) ((dmuobjrecord_t*) mat)->obj);
-}
-
-/**
  * Called every tic by P_Ticker.
  */
-void P_MaterialManagerTicker(timespan_t time)
+void Materials_Ticker(timespan_t time)
 {
     static trigger_t    fixed = { 1.0 / 35, 0 };
     material_t*         mat;
@@ -754,7 +774,189 @@ void P_MaterialManagerTicker(timespan_t time)
     if(!M_RunTrigger(&fixed, time))
         return;
 
-    animateAnimGroups();
+    animateGroups();
+}
+
+
+boolean Materials_IsInGroup(int groupNum, material_t* mat)
+{
+    return isInGroup(getGroup(groupNum), mat);
+}
+
+int Materials_NumGroups(void)
+{
+    return numgroups;
+}
+
+/**
+ * Create a new animation group. Returns the group number.
+ */
+int Materials_NewGroup(int flags)
+{
+    animgroup_t*        group;
+
+    // Allocating one by one is inefficient, but it doesn't really matter.
+    groups =
+        Z_Realloc(groups, sizeof(animgroup_t) * (numgroups + 1), PU_STATIC);
+
+    // Init the new group.
+    group = &groups[numgroups];
+    memset(group, 0, sizeof(*group));
+
+    // The group number is (index + 1).
+    group->id = ++numgroups;
+    group->flags = flags;
+
+    return group->id;
+}
+
+/**
+ * Initialize an entire animation using the data in the definition.
+ */
+int Materials_NewGroupFromDefiniton(ded_group_t* def)
+{
+    int                 i, groupNumber = -1;
+    int                 num;
+
+    for(i = 0; i < def->count.num; ++i)
+    {
+        ded_group_member_t *gm = &def->members[i];
+
+        num = Materials_CheckIndexForName(gm->material.mnamespace, gm->material.name);
+
+        if(!num)
+            continue;
+
+        // Only create a group when the first texture is found.
+        if(groupNumber == -1)
+        {
+            // Create a new animation group.
+            groupNumber = Materials_NewGroup(def->flags);
+        }
+
+        Materials_AddToGroup(groupNumber, num, gm->tics, gm->randomTics);
+    }
+
+    return groupNumber;
+}
+
+/**
+ * Called during engine reset to clear the existing animation groups.
+ */
+void Materials_DestroyGroups(void)
+{
+    int                 i;
+
+    if(numgroups > 0)
+    {
+        for(i = 0; i < numgroups; ++i)
+        {
+            animgroup_t*        group = &groups[i];
+            Z_Free(group->frames);
+        }
+
+        Z_Free(groups);
+        groups = NULL;
+        numgroups = 0;
+    }
+}
+
+void Materials_AddToGroup(int groupNum, int num, int tics, int randomTics)
+{
+    animgroup_t*       group;
+    animframe_t*       frame;
+    material_t*        mat;
+
+    group = getGroup(groupNum);
+    if(!group)
+        Con_Error("Materials_AddToGroup: Unknown anim group '%i'\n.", groupNum);
+
+    if(!num || !(mat = Materials_ToMaterial(num)))
+    {
+        Con_Message("Materials_AddToGroup: Invalid material num '%i'\n.", num);
+        return;
+    }
+
+    // Mark the material as being in an animgroup.
+    mat->inAnimGroup = true;
+
+    // Allocate a new animframe.
+    group->frames =
+        Z_Realloc(group->frames, sizeof(animframe_t) * ++group->count,
+                  PU_STATIC);
+
+    frame = &group->frames[group->count - 1];
+
+    frame->mat = mat;
+    frame->tics = tics;
+    frame->random = randomTics;
+}
+
+boolean Materials_CacheGroup(int groupNum)
+{
+    animgroup_t*        group;
+
+    if(group = getGroup(groupNum))
+    {
+        return (group->flags & AGF_PRECACHE)? true : false;
+    }
+
+    return false;
+}
+
+/**
+ * All animation groups are reseted back to their original state.
+ * Called when setting up a map.
+ */
+void Materials_RewindAnimationGroups(void)
+{
+    int                 i;
+    animgroup_t*        group;
+
+    for(i = 0, group = groups; i < numgroups; ++i, group++)
+    {
+        // The Precache groups are not intended for animation.
+        if((group->flags & AGF_PRECACHE) || !group->count)
+            continue;
+
+        group->timer = 0;
+        group->maxTimer = 1;
+
+        // The anim group should start from the first step using the
+        // correct timings.
+        group->index = group->count - 1;
+    }
+
+    // This'll get every group started on the first step.
+    animateGroups();
+}
+
+void Materials_CacheMaterial(material_t* mat)
+{
+    int                 i;
+
+    for(i = 0; i < numgroups; ++i)
+    {
+        if(isInGroup(&groups[i], mat))
+        {
+            int                 k;
+
+            // Precache this group.
+            for(k = 0; k < groups[i].count; ++k)
+            {
+                animframe_t*        frame = &groups[i].frames[k];
+
+                Materials_Prepare(frame->mat, 0, NULL, NULL);
+            }
+        }
+    }
+}
+
+byte Materials_Prepare(material_t* mat, byte flags,
+                       const material_prepare_params_t* params,
+                       material_snapshot_t* snapshot)
+{
+    return Material_Prepare(snapshot, mat, flags, params);
 }
 
 static void printMaterialInfo(materialnum_t num, boolean printNamespace)
@@ -850,269 +1052,45 @@ D_CMD(ListMaterials)
     return true;
 }
 
-// Code bellow needs re-implementing --------------------------------------
-
-typedef struct animframe_s {
-    material_t*     mat;
-    ushort          tics;
-    ushort          random;
-} animframe_t;
-
-typedef struct animgroup_s {
-    int             id;
-    int             flags;
-    int             index;
-    int             maxTimer;
-    int             timer;
-    int             count;
-    animframe_t*    frames;
-} animgroup_t;
-
-static int numgroups;
-static animgroup_t* groups;
-
-static animgroup_t* getAnimGroup(int number)
-{
-    if(--number < 0 || number >= numgroups)
-        return NULL;
-
-    return &groups[number];
-}
-
-static boolean isInAnimGroup(animgroup_t* group, const material_t* mat)
-{
-    int                 i;
-
-    if(!mat || !group)
-        return false;
-
-    // Is it in there?
-    for(i = 0; i < group->count; ++i)
-    {
-        animframe_t*        frame = &group->frames[i];
-
-        if(frame->mat == mat)
-            return true;
-    }
-
-    return false;
-}
-
-boolean R_IsInAnimGroup(int groupNum, material_t* mat)
-{
-    return isInAnimGroup(getAnimGroup(groupNum), mat);
-}
-
-int R_NumAnimGroups(void)
-{
-    return numgroups;
-}
-
 /**
- * Create a new animation group. Returns the group number.
  * \note Part of the Doomsday public API.
  */
-int R_CreateAnimGroup(int flags)
+int P_NewMaterialGroup(int flags)
 {
-    animgroup_t*        group;
-
-    // Allocating one by one is inefficient, but it doesn't really matter.
-    groups =
-        Z_Realloc(groups, sizeof(animgroup_t) * (numgroups + 1), PU_STATIC);
-
-    // Init the new group.
-    group = &groups[numgroups];
-    memset(group, 0, sizeof(*group));
-
-    // The group number is (index + 1).
-    group->id = ++numgroups;
-    group->flags = flags;
-
-    return group->id;
+    return Materials_NewGroup(flags);
 }
 
 /**
- * Called during engine reset to clear the existing animation groups.
+ * \note Part of the Doomsday public API.
  */
-void R_DestroyAnimGroups(void)
+void P_AddMaterialToGroup(int groupNum, int num, int tics, int randomTics)
 {
-    int                 i;
-
-    if(numgroups > 0)
+    if(num)
     {
-        for(i = 0; i < numgroups; ++i)
-        {
-            animgroup_t*        group = &groups[i];
-            Z_Free(group->frames);
-        }
-
-        Z_Free(groups);
-        groups = NULL;
-        numgroups = 0;
+        Materials_AddToGroup(groupNum, Materials_ToIndex(
+            ((dmuobjrecord_t*) P_ToPtr(DMU_MATERIAL, num))->obj), tics, randomTics);
     }
 }
 
-void R_AddToAnimGroup(int groupNum, int num, int tics, int randomTics)
+/**
+ * \note Part of the Doomsday public API.
+ */
+material_t* P_MaterialForName(material_namespace_t mnamespace, const char* name)
 {
-    animgroup_t*       group;
-    animframe_t*       frame;
-    material_t*        mat;
+    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL,
+        Materials_ToMaterial(Materials_CheckIndexForName(mnamespace, name)));
+}
 
-    group = getAnimGroup(groupNum);
-    if(!group)
-        Con_Error("R_AddToAnimGroup: Unknown anim group '%i'\n.", groupNum);
-
-    if(!num || !(mat = P_ToMaterial(num)))
-    {
-        Con_Message("R_AddToAnimGroup: Invalid material num '%i'\n.", num);
+/**
+ * Precache the specified material.
+ * \note Part of the Doomsday public API.
+ *
+ * @param mat           The material to be precached.
+ */
+void P_MaterialPreload(material_t* mat)
+{
+    if(!initedOk)
         return;
-    }
 
-    // Mark the material as being in an animgroup.
-    mat->inAnimGroup = true;
-
-    // Allocate a new animframe.
-    group->frames =
-        Z_Realloc(group->frames, sizeof(animframe_t) * ++group->count,
-                  PU_STATIC);
-
-    frame = &group->frames[group->count - 1];
-
-    frame->mat = mat;
-    frame->tics = tics;
-    frame->random = randomTics;
-}
-
-/**
- * \note Part of the Doomsday public API.
- */
-void DMU_AddToAnimGroup(int groupNum, int num, int tics, int randomTics)
-{
-    R_AddToAnimGroup(groupNum, P_ToMaterialNum(
-        ((dmuobjrecord_t*) P_ToPtr(DMU_MATERIAL, num))->obj), tics, randomTics);
-}
-
-boolean R_IsPrecacheGroup(int groupNum)
-{
-    animgroup_t*        group;
-
-    if(group = getAnimGroup(groupNum))
-    {
-        return (group->flags & AGF_PRECACHE)? true : false;
-    }
-
-    return false;
-}
-
-static void animateAnimGroups(void)
-{
-    int                 i, timer, k;
-    animgroup_t*        group;
-
-    for(i = 0, group = groups; i < numgroups; ++i, group++)
-    {
-        // The Precache groups are not intended for animation.
-        if((group->flags & AGF_PRECACHE) || !group->count)
-            continue;
-
-        if(--group->timer <= 0)
-        {
-            // Advance to next frame.
-            group->index = (group->index + 1) % group->count;
-            timer = (int) group->frames[group->index].tics;
-
-            if(group->frames[group->index].random)
-            {
-                timer += (int) RNG_RandByte() % (group->frames[group->index].random + 1);
-            }
-            group->timer = group->maxTimer = timer;
-
-            // Update translations.
-            for(k = 0; k < group->count; ++k)
-            {
-                material_t*            real, *current, *next;
-
-                real = group->frames[k].mat;
-                current =
-                    group->frames[(group->index + k) % group->count].mat;
-                next =
-                    group->frames[(group->index + k + 1) % group->count].mat;
-
-                Material_SetTranslation(real, current, next, 0);
-
-                // Just animate the first in the sequence?
-                if(group->flags & AGF_FIRST_ONLY)
-                    break;
-            }
-        }
-        else
-        {
-            // Update the interpolation point of animated group members.
-            for(k = 0; k < group->count; ++k)
-            {
-                material_t*            mat = group->frames[k].mat;
-
-                if(group->flags & AGF_SMOOTH)
-                {
-                    mat->inter = 1 - group->timer / (float) group->maxTimer;
-                }
-                else
-                {
-                    mat->inter = 0;
-                }
-
-                // Just animate the first in the sequence?
-                if(group->flags & AGF_FIRST_ONLY)
-                    break;
-            }
-        }
-    }
-}
-
-/**
- * All animation groups are reseted back to their original state.
- * Called when setting up a map.
- */
-void R_ResetAnimGroups(void)
-{
-    int                 i;
-    animgroup_t*        group;
-
-    for(i = 0, group = groups; i < numgroups; ++i, group++)
-    {
-        // The Precache groups are not intended for animation.
-        if((group->flags & AGF_PRECACHE) || !group->count)
-            continue;
-
-        group->timer = 0;
-        group->maxTimer = 1;
-
-        // The anim group should start from the first step using the
-        // correct timings.
-        group->index = group->count - 1;
-    }
-
-    // This'll get every group started on the first step.
-    animateAnimGroups();
-}
-
-void R_MaterialsPrecacheGroup(material_t* mat)
-{
-    int                 i;
-
-    for(i = 0; i < numgroups; ++i)
-    {
-        if(isInAnimGroup(&groups[i], mat))
-        {
-            int                 k;
-
-            // Precache this group.
-            for(k = 0; k < groups[i].count; ++k)
-            {
-                animframe_t*        frame = &groups[i].frames[k];
-
-                Material_Prepare(NULL, frame->mat, 0, NULL);
-            }
-        }
-    }
+    Material_Precache((material_t*) ((dmuobjrecord_t*) mat)->obj);
 }

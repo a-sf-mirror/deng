@@ -411,7 +411,7 @@ if(!mat)
 #endif
 
         // Ensure we have up-to-date information about the material.
-        Material_Prepare(&ms, mat, 0, NULL);
+        Materials_Prepare(mat, 0, NULL, &ms);
 
         if(ms.units[MTU_PRIMARY].texInst->tex->type != GLT_SPRITE)
             return; // *Very* strange...

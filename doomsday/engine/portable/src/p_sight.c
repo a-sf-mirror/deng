@@ -164,7 +164,7 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
         {
             material_snapshot_t ms;
 
-            Material_Prepare(&ms, surface->material, MPF_SMOOTH, NULL);
+            Materials_Prepare(surface->material, MPF_SMOOTH, NULL, &ms);
             if(ms.isOpaque)
             {
                 hedge_t*            hEdge = li->hEdges[0];

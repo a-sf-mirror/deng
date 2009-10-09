@@ -1263,7 +1263,7 @@ boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
             material_snapshot_t ms;
 
             // Ensure we have up to date info.
-            Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
+            Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
 
             if(ms.isOpaque && !side->SW_middleblendmode &&
                side->SW_middlergba[3] >= 1)
@@ -2398,7 +2398,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     {
         material_snapshot_t ms;
 
-        Material_Prepare(&ms, pln->PS_material, 0, NULL);
+        Materials_Prepare(pln->PS_material, 0, NULL, &ms);
         pln->glowRGB[CR] = ms.color[CR];
         pln->glowRGB[CG] = ms.color[CG];
         pln->glowRGB[CB] = ms.color[CB];

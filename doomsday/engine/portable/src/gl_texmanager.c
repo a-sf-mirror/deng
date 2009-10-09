@@ -357,7 +357,7 @@ void GL_LoadSystemTextures(void)
     {
         material_t*         mat;
 
-        if((mat = P_MaterialCreate(MN_SYSTEM, ddtexdefs[i].name, 64, 64, 0,
+        if((mat = Materials_NewMaterial(MN_SYSTEM, ddtexdefs[i].name, 64, 64, 0,
                                    NULL, false)))
         {
             const gltexture_t*  tex =
@@ -409,7 +409,7 @@ void GL_ClearSystemTextures(void)
         glDeleteTextures(1, (const GLuint*) &sysFlareTextures[i].tex);
     memset(sysFlareTextures, 0, sizeof(sysFlareTextures));
 
-    P_DeleteMaterialTextures(MN_SYSTEM);
+    Materials_DeleteTextures(MN_SYSTEM);
     UI_ClearTextures();
 
     // Delete the particle textures.
@@ -1725,7 +1725,7 @@ void GL_SetPSprite(material_t* mat)
 {
     material_snapshot_t ms;
 
-    Material_Prepare(&ms, mat, MPF_SMOOTH | MPF_AS_PSPRITE, NULL);
+    Materials_Prepare(mat, MPF_SMOOTH | MPF_AS_PSPRITE, NULL, &ms);
 
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
@@ -1740,7 +1740,7 @@ void GL_SetTranslatedSprite(material_t* mat, int tclass, int tmap)
     params.tmap = tmap;
     params.tclass = tclass;
 
-    Material_Prepare(&ms, mat, MPF_SMOOTH, &params);
+    Materials_Prepare(mat, MPF_SMOOTH, &params, &ms);
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
 }
@@ -2649,7 +2649,7 @@ void GL_SetMaterial(material_t* mat)
     if(!mat)
         return;
 
-    Material_Prepare(&ms, mat, MPF_SMOOTH, NULL);
+    Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
     GL_BindTexture(ms.units[MTU_PRIMARY].texInst->id,
                    ms.units[MTU_PRIMARY].magMode);
 }

@@ -90,7 +90,7 @@ void P_InitSky(int map)
 {
     const char*         layer1TextureName = P_GetMapSkyLayer1Texture(map);
     const char*         layer2TextureName = P_GetMapSkyLayer2Texture(map);
-    material_t*         mat = DMU_MaterialByName(layer1TextureName, MN_TEXTURES);
+    material_t*         mat = P_MaterialForName(MN_TEXTURES, layer1TextureName);
     float               offset[] = { 0.f, 0.f };
 
     if(P_GetMapDoubleSky(map))
