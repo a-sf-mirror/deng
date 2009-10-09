@@ -28,8 +28,8 @@
  * A convenience header for including all jHexen headers.
  */
 
-#ifndef __JHEXEN_CONVENIENCE_H__
-#define __JHEXEN_CONVENIENCE_H__
+#ifndef JHEXEN_CONVENIENCE_H
+#define JHEXEN_CONVENIENCE_H
 
 #include "../../jhexen/include/a_action.h"
 #include "../../jhexen/include/acfnlink.h"
@@ -42,7 +42,6 @@
 #include "../../jhexen/include/m_random.h"
 #include "../../jhexen/include/mn_def.h"
 #include "../../jhexen/include/p_acs.h"
-#include "../../jhexen/include/p_anim.h"
 #include "../../jhexen/include/p_enemy.h"
 #include "../../jhexen/include/p_inter.h"
 #include "../../jhexen/include/p_lights.h"
@@ -78,4 +77,4 @@
 #include "../../jhexen/include/x_think.h"
 #include "../../jhexen/include/xddefs.h"
 
-#endif // __JHEXEN_CONVENIENCE_H__
+#endif /* JHEXEN_CONVENIENCE_H */

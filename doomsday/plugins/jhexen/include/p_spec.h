@@ -50,7 +50,6 @@ void        P_PlayerInSpecialSector(player_t *plr);
 void        P_PlayerOnSpecialFloor(player_t *plr);
 
 void        P_AnimateSurfaces(void);
-void        P_InitPicAnims(void);
 void        P_InitLightning(void);
 void        P_ForceLightning(void);
 

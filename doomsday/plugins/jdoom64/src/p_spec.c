@@ -60,13 +60,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-// Animating textures and planes
-
-// In Doomsday these are handled via DED definitions.
-// In BOOM they invented the ANIMATED lump for the same purpose.
-
-// This struct is directly read from the lump.
-// So its important we keep it aligned.
 #pragma pack(1)
 typedef struct animdef_s {
     /* Do NOT change these members in any way */
@@ -117,18 +110,8 @@ static animdef_t animsShared[] = {
  * Wall/Flat animation sequences, defined by name of first and last frame,
  * The full animation sequence is given using all lumps between the start
  * and end entry, in the order found in the WAD file.
- *
- * This routine modified to read its data from a predefined lump or
- * PWAD lump called ANIMATED rather than a static table in this module to
- * allow wad designers to insert or modify animation sequences.
- *
- * Lump format is an array of byte packed animdef_t structures, terminated
- * by a structure with istexture == -1. The lump can be generated from a
- * text source file using SWANTBLS.EXE, distributed with the BOOM utils.
- * The standard list of switches and animations is contained in the example
- * source text file DEFSWANI.DAT also in the BOOM util distribution.
  */
-static void loadAnimDefs(animdef_t* animDefs)
+static void loadAnimatedDefs(animdef_t* animDefs)
 {
     int                 i;
 
@@ -242,38 +225,8 @@ static void loadAnimDefs(animdef_t* animDefs)
 
 void P_InitPicAnims(void)
 {
-    int                 lump;
-
-    // Is there an ANIMATED lump?
-    if((lump = W_CheckNumForName("ANIMATED")) > 0)
-    {
-        animdef_t*          animDefs;
-
-        /**
-         * We'll support this BOOM extension by reading the data and then
-         * registering the new animations into Doomsday using the animation
-         * groups feature.
-         *
-         * Support for this extension should be considered depreciated.
-         * All new features should be added, accessed via DED.
-         */
-        Con_Message("P_InitPicAnims: \"ANIMATED\" lump found. "
-                    "Reading animations...\n");
-
-        animDefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
-        loadAnimDefs(animDefs);
-        Z_Free(animDefs);
-
-        VERBOSE(Con_Message("P_InitPicAnims: Done.\n"));
-    }
-    else
-    {
-        Con_Message("P_InitPicAnims: Registering default animations...\n");
-
-        loadAnimDefs(animsShared);
-    }
-
-    VERBOSE(Con_Message("P_InitPicAnims: Done.\n"));
+    Con_Message("P_InitPicAnims: Registering default animations.\n");
+    loadAnimatedDefs(animsShared);
 }
 
 boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)

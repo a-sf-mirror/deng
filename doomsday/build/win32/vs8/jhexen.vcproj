@@ -665,10 +665,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\jhexen\include\p_anim.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\jhexen\include\p_enemy.h"
 				>
 			</File>
@@ -854,10 +850,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\jhexen\src\p_acs.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jhexen\src\p_anim.c"
 				>
 			</File>
 			<File

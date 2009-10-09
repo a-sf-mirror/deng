@@ -646,6 +646,8 @@ static int DD_StartupWorker(void *parm)
     Net_InitGame();
     Demo_Init();
 
+    Con_SetProgress(180);
+
     if(gx.PostInit)
         gx.PostInit();
 
@@ -697,8 +699,8 @@ static int DD_StartupWorker(void *parm)
 
     Con_SetProgress(199);
 
-    Plug_DoHook(HOOK_INIT, 0, 0);   // Any initialization hooks?
-    Con_UpdateKnownWords();         // For word completion (with Tab).
+    Plug_DoHook(HOOK_INIT, 0, 0); // Any initialization hooks?
+    Con_UpdateKnownWords(); // For word completion (with Tab).
 
     Con_SetProgress(200);
 
@@ -843,6 +845,8 @@ void DD_UpdateEngineState(void)
     glPopMatrix();*/
 
     gx.UpdateState(DD_POST);
+
+    Plug_DoHook(HOOK_UPDATE, 0, 0);
 
     // Reset the anim groups (if in-game)
     Materials_RewindAnimationGroups();

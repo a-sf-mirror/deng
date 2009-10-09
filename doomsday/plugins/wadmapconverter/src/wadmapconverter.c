@@ -81,7 +81,8 @@ typedef struct maplumpinfo_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static int ConvertMapHook(int hookType, int parm, void *data);
+int ConvertMapHook(int hookType, int parm, void *data);
+int LoadResources(int hookType, int param, void* data);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -100,6 +101,8 @@ boolean verbose;
  */
 void DP_Initialize(void)
 {
+    Plug_AddHook(HOOK_INIT, LoadResources);
+    Plug_AddHook(HOOK_UPDATE, LoadResources);
     Plug_AddHook(HOOK_MAP_CONVERT, ConvertMapHook);
 }
 
@@ -161,6 +164,16 @@ static int mapLumpTypeForName(const char* name)
     }
 
     return ML_INVALID;
+}
+
+int LoadResources(int hookType, int param, void* data)
+{
+    Con_Message("WadMapConverter::LoadResources: Processing...\n");
+
+    LoadANIMATED();
+    LoadANIMDEFS();
+
+    return true;
 }
 
 /**

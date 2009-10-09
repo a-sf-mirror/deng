@@ -176,4 +176,7 @@ boolean         LoadMap(const int* lumpList, int numLumps);
 void            AnalyzeMap(void);
 boolean         TransferMap();
 
+void            LoadANIMATED(void);
+void            LoadANIMDEFS(void);
+
 #endif

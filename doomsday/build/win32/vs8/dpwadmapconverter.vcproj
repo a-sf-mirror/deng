@@ -211,6 +211,14 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\..\..\plugins\wadmapconverter\src\animated.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\wadmapconverter\src\animdefs.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\plugins\wadmapconverter\src\load.c"
 				>
 			</File>

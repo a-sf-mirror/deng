@@ -184,7 +184,6 @@ void P_Init(void)
 #endif
 
     P_InitSwitchList();
-    P_InitPicAnims();
 
     P_InitTerrainTypes();
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__

@@ -282,7 +282,6 @@
 		<Unit filename="..\..\plugins\jhexen\include\m_random.h" />
 		<Unit filename="..\..\plugins\jhexen\include\mn_def.h" />
 		<Unit filename="..\..\plugins\jhexen\include\p_acs.h" />
-		<Unit filename="..\..\plugins\jhexen\include\p_anim.h" />
 		<Unit filename="..\..\plugins\jhexen\include\p_enemy.h" />
 		<Unit filename="..\..\plugins\jhexen\include\p_inter.h" />
 		<Unit filename="..\..\plugins\jhexen\include\p_lights.h" />
@@ -345,9 +344,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\plugins\jhexen\src\p_acs.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\plugins\jhexen\src\p_anim.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\plugins\jhexen\src\p_enemy.c">
