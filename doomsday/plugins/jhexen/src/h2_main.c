@@ -30,12 +30,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <ctype.h>
-
 #include "jhexen.h"
 
 #include "hu_log.h"
@@ -108,8 +102,6 @@ const float defFontRGB2[] = { .9f, .9f, .9f};
 
 boolean autoStart;
 
-FILE* debugFile;
-
 char* borderLumps[] = {
     "F_022", // Background.
     "bordt", // Top.
@@ -123,8 +115,6 @@ char* borderLumps[] = {
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static int warpMap;
 
 static execopt_t execOptions[] = {
     {"-scripts", execOptionScripts, 1, 0},
@@ -374,7 +364,7 @@ void G_PreInit(void)
  */
 void G_PostInit(void)
 {
-    int                     p;
+    int                     p, warpMap;
     int                     pClass;
     char                    mapStr[6];
 
