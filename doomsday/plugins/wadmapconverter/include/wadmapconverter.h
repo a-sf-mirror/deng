@@ -179,4 +179,21 @@ boolean         TransferMap();
 void            LoadANIMATED(void);
 void            LoadANIMDEFS(void);
 
+extern char* sc_String;
+extern int sc_Number;
+
+void SC_Open(const char* name);
+void SC_OpenLump(lumpnum_t lump);
+void SC_OpenFile(const char* name);
+void SC_OpenFileCLib(const char* name);
+void SC_Close(void);
+boolean SC_GetString(void);
+void SC_MustGetString(void);
+void SC_MustGetStringName(char* name);
+boolean SC_GetNumber(void);
+void SC_MustGetNumber(void);
+void SC_UnGet(void);
+void SC_ScriptError(char* message);
+boolean SC_Compare(char* text);
+
 #endif

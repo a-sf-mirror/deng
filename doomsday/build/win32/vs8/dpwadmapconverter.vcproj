@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\plugins\wadmapconverter\src\hexendefparser.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\plugins\wadmapconverter\src\load.c"
 				>
 			</File>

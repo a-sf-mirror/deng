@@ -74,12 +74,11 @@
 			<Add alias="All" targets="Debug Win32;Release Win32;" />
 		</VirtualTargets>
 		<Unit filename="..\..\plugins\wadmapconverter\include\wadmapconverter.h" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\load.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\plugins\wadmapconverter\src\wadmapconverter.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\plugins\wadmapconverter\src\wadmapconverter.c" />
+		<Unit filename="..\..\plugins\wadmapconverter\src\animated.c" />
+		<Unit filename="..\..\plugins\wadmapconverter\src\animdefs.c" />
+		<Unit filename="..\..\plugins\wadmapconverter\src\hexendefparser.c" />
+		<Unit filename="..\..\plugins\wadmapconverter\src\load.c" />
 		<Extensions>
 			<code_completion />
 			<debugger />
