@@ -1567,8 +1567,7 @@ static void renderPlane(face_t* face, planetype_t type,
 
     if(skyMasked)
     {
-        skyHemispheres |=
-            (type == PLN_FLOOR? SKYHEMI_LOWER : SKYHEMI_UPPER);
+        skyHemispheres |= (SKYHEMI_LOWER | SKYHEMI_UPPER);
 
         // In devSkyMode mode we render all polys destined for the
         // skymask as regular world polys (with a few obvious properties).

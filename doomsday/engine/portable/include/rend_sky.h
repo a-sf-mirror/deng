@@ -33,7 +33,7 @@
 #define SKYHEMI_UPPER       0x1
 #define SKYHEMI_LOWER       0x2
 
-extern int skyDetail, skySimple, skyColumns, skyRows, skyFull;
+extern int skyDetail, skySimple, skyColumns, skyRows;
 extern float skyDist;
 extern boolean skyUpdateSphere;
 

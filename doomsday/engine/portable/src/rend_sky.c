@@ -66,7 +66,6 @@ D_CMD(SkyDetail);
 int skyDetail = 6, skySimple;
 int skyColumns = 4 * 6, skyRows = 3;
 float skyDist = 1600;
-int skyFull = false;
 boolean skyUpdateSphere = true;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -82,7 +81,6 @@ void Rend_SkyRegister(void)
     C_VAR_INT("rend-sky-detail", &skyDetail, CVF_PROTECTED, 3, 7);
     C_VAR_INT("rend-sky-rows", &skyRows, CVF_PROTECTED, 1, 8);
     C_VAR_FLOAT("rend-sky-distance", &skyDist, CVF_NO_MAX, 1, 0);
-    C_VAR_INT("rend-sky-full", &skyFull, 0, 0, 1);
     C_VAR_INT("rend-sky-simple", &skySimple, 0, 0, 2);
 
     // Ccmds
@@ -326,10 +324,6 @@ static void renderSphere(sky_t* sky, int hemis)
         currentMaxSideAngle = maxSideAngle;
         skyUpdateSphere = false;
     }
-
-    // Always render the full sky?
-    if(skyFull)
-        hemis = SKYHEMI_UPPER | SKYHEMI_LOWER;
 
     // We don't want anything written in the depth buffer, not yet.
     glDisable(GL_DEPTH_TEST);
