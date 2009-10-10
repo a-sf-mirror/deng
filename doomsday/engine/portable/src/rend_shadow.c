@@ -212,8 +212,8 @@ static void processMobjShadow(mobj_t* mo)
         rcolors[i].rgba[CA] = alpha;
     }
 
-    RL_AddPoly(PT_FAN, RPT_SHADOW, rvertices, rtexcoords, NULL, NULL,
-               rcolors, 4, 0, 0, NULL, rTU);
+    RL_AddPoly(PT_FAN, RPT_SHADOW, 4, rvertices, NULL, rtexcoords, NULL,
+               rcolors, 0, 0, NULL, rTU);
 
 #undef SHADOWZOFFSET
 }

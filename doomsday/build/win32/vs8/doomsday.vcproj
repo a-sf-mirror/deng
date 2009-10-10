@@ -1283,10 +1283,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\dam_main.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\api\dd_api.h"
 				>
 			</File>

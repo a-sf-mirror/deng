@@ -751,11 +751,12 @@ static void endWrite(rendlist_t* list)
 }
 
 static void writePrimitive(const rendlist_t* list, uint base,
+                           uint numVertices,
                            const rvertex_t* rvertices,
+                           const rtexcoord_t* modCoords,
                            const rtexcoord_t* coords,
-                           const rtexcoord_t* coords1,
                            const rtexcoord_t* coords2,
-                           const rcolor_t* rcolors, uint numVertices,
+                           const rcolor_t* rcolors,
                            rendpolytype_t type)
 {
     uint                i;
@@ -775,6 +776,16 @@ static void writePrimitive(const rendlist_t* list, uint base,
         if(type == RPT_SKY_MASK)
             continue; // Sky masked polys need nothing more.
 
+        // Modulation texture coords.
+        if(list->last->flags & PF_IS_LIT)
+        {
+            const rtexcoord_t*  rtc = &modCoords[i];
+            dgl_texcoord_t*      tc = &texCoords[TCA_LIGHT][base + i];
+
+            tc->st[0] = rtc->st[0];
+            tc->st[1] = rtc->st[1];
+        }
+
         // Primary texture coordinates.
         if(TU(list, TU_PRIMARY)->tex)
         {
@@ -788,18 +799,8 @@ static void writePrimitive(const rendlist_t* list, uint base,
         // Secondary texture coordinates.
         if(TU(list, TU_INTER)->tex)
         {
-            const rtexcoord_t*  rtc = &coords1[i];
-            dgl_texcoord_t*      tc = &texCoords[TCA_BLEND][base + i];
-
-            tc->st[0] = rtc->st[0];
-            tc->st[1] = rtc->st[1];
-        }
-
-        // First light texture coordinates.
-        if((list->last->flags & PF_IS_LIT) && IS_MTEX_LIGHTS)
-        {
             const rtexcoord_t*  rtc = &coords2[i];
-            dgl_texcoord_t*      tc = &texCoords[TCA_LIGHT][base + i];
+            dgl_texcoord_t*      tc = &texCoords[TCA_BLEND][base + i];
 
             tc->st[0] = rtc->st[0];
             tc->st[1] = rtc->st[1];
@@ -822,13 +823,13 @@ static void writePrimitive(const rendlist_t* list, uint base,
  * Adds one or more polys the render lists depending on configuration.
  */
 static void addPoly(primtype_t type, rendpolytype_t polyType,
-                    const rvertex_t* rvertices,
-                    const rtexcoord_t* rtexcoords,
-                    const rtexcoord_t* rtexcoords1,
-                    const rtexcoord_t* rtexcoords2, const rcolor_t* rcolors,
-                    uint numVertices, blendmode_t blendMode,
-                    uint numLights,
-                    DGLuint modTex, const float modColor[3],
+                    uint numVertices, const rvertex_t* vertices,
+                    const rtexcoord_t* modCoords,
+                    const rtexcoord_t* coords,
+                    const rtexcoord_t* coords2,
+                    const rcolor_t* colors,
+                    blendmode_t blendMode,
+                    uint numLights, DGLuint modTex, const float modColor[3],
                     const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
     uint                i, base, primSize, numIndices;
@@ -904,19 +905,19 @@ END_PROF( PROF_RL_GET_LIST );
     li->last->type =
         (type == PT_TRIANGLE_STRIP? GL_TRIANGLE_STRIP : GL_TRIANGLE_FAN);
 
-    writePrimitive(li, base, rvertices, rtexcoords, rtexcoords1,
-                   rtexcoords2, rcolors, numVertices, polyType);
+    writePrimitive(li, base, numVertices, vertices,
+                   modCoords, coords, coords2, colors, polyType);
     endWrite(li);
 
 END_PROF( PROF_RL_ADD_POLY );
 }
 
 void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
-                const rvertex_t* rvertices,
-                const rtexcoord_t* rtexcoords, const rtexcoord_t* rtexcoords1,
-                const rtexcoord_t* rtexcoords2,
-                const rcolor_t* rcolors,
-                uint numVertices, uint numLights,
+                uint numVertices, const rvertex_t* vertices,
+                const rtexcoord_t* modCoords, const rtexcoord_t* coords,
+                const rtexcoord_t* coords2,
+                const rcolor_t* colors,
+                uint numLights,
                 DGLuint modTex, const float modColor[3],
                 const rtexmapunit_t rTU[NUM_TEXMAP_UNITS])
 {
@@ -926,8 +927,8 @@ void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
     if(type < PT_FIRST || type >= NUM_PRIM_TYPES)
         Con_Error("RL_AddPoly: Unknown primtype %i.", type);
 
-    addPoly(type, polyType, rvertices, rtexcoords, rtexcoords1, rtexcoords2,
-            rcolors, numVertices, rTU[TU_PRIMARY].blendMode, numLights, modTex, modColor, rTU);
+    addPoly(type, polyType, numVertices, vertices, modCoords, coords, coords2,
+            colors, rTU[TU_PRIMARY].blendMode, numLights, modTex, modColor, rTU);
 }
 
 /**

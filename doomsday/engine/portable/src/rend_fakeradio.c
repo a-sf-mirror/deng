@@ -1031,7 +1031,7 @@ static void quadTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
     tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]) / texHeight;
 }
 
-static void renderShadowSeg(const rvertex_t* origVertices,
+void renderShadowSeg(const rvertex_t* origVertices,
                             const walldiv_t* wdivs,
                             const rendershadowseg_params_t* p,
                             float shadowDark)
@@ -1106,20 +1106,20 @@ static void renderShadowSeg(const rvertex_t* origVertices,
             R_DivTexCoords(rtexcoords, origTexCoords, wdivs, bL, tL, bR, tR);
             R_DivVertColors(rcolors, origColors, wdivs, bL, tL, bR, tR);
 
-            RL_AddPoly(PT_FAN, RPT_SHADOW, rvertices + 3 + wdivs[0].num,
-                       rtexcoords + 3 + wdivs[0].num, NULL, NULL,
-                       rcolors + 3 + wdivs[0].num, 3 + wdivs[1].num,
+            RL_AddPoly(PT_FAN, RPT_SHADOW, 3 + wdivs[1].num, rvertices + 3 + wdivs[0].num,
+                       NULL, rtexcoords + 3 + wdivs[0].num, NULL,
+                       rcolors + 3 + wdivs[0].num,
                        0, 0, NULL, rTU);
-            RL_AddPoly(PT_FAN, RPT_SHADOW, rvertices, rtexcoords, NULL, NULL,
-                       rcolors, 3 + wdivs[0].num, 0, 0, NULL, rTU);
+            RL_AddPoly(PT_FAN, RPT_SHADOW, 3 + wdivs[0].num, rvertices, NULL, rtexcoords, NULL,
+                       rcolors, 0, 0, NULL, rTU);
 
             R_FreeRendVertices(rvertices);
         }
         else
         {
-            RL_AddPoly(PT_TRIANGLE_STRIP, RPT_SHADOW, origVertices,
-                       rtexcoords, NULL, NULL,
-                       rcolors, 4, 0, 0, NULL, rTU);
+            RL_AddPoly(PT_TRIANGLE_STRIP, RPT_SHADOW, 4, origVertices,
+                       NULL, rtexcoords, NULL,
+                       rcolors, 0, 0, NULL, rTU);
         }
     }
 
@@ -1423,8 +1423,8 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
 
     if(rendFakeRadio != 2)
         RL_AddPoly(PT_FAN, (renderWireframe? RPT_NORMAL : RPT_SHADOW),
-                   rvertices, NULL, NULL, NULL,
-                   rcolors, 4, 0, 0, NULL, rTU);
+                   4, rvertices, NULL, NULL, NULL,
+                   rcolors, 0, 0, NULL, rTU);
 }
 
 /**

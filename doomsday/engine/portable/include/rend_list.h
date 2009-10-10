@@ -67,11 +67,11 @@ void            RL_ClearLists(void);
 void            RL_DeleteLists(void);
 
 void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
-                const rvertex_t* rvertices,
-                const rtexcoord_t* rtexcoords, const rtexcoord_t* rtexcoords1,
-                const rtexcoord_t* rtexcoords2,
-                const rcolor_t* rcolors,
-                uint numVertices, uint numLights,
+                uint numVertices, const rvertex_t* vertices,
+                const rtexcoord_t* modCoords, const rtexcoord_t* coords,
+                const rtexcoord_t* coords2,
+                const rcolor_t* colors,
+                uint numLights,
                 DGLuint modTex, const float modColor[3],
                 const rtexmapunit_t rTU[NUM_TEXMAP_UNITS]);
 void            RL_RenderAllLists(void);
