@@ -820,8 +820,7 @@ static void writeSeg(const gamemap_t* map, uint idx)
     writeLong(hEdge->next? ((hEdge->next - map->hEdges) + 1) : 0);
     writeLong(hEdge->prev? ((hEdge->prev - map->hEdges) + 1) : 0);
     writeLong(hEdge->twin? ((hEdge->twin - map->hEdges) + 1) : 0);
-    writeLong((hEdge->v[0] - map->vertexes) + 1);
-    writeLong((hEdge->v[1] - map->vertexes) + 1);
+    writeLong((hEdge->vertex - map->vertexes) + 1);
     writeLong(hEdge->face? ((hEdge->face - map->faces) + 1) : 0);
 
     {
@@ -846,8 +845,7 @@ static void readSeg(const gamemap_t* map, uint idx)
     hEdge->prev = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
     obIdx = readLong();
     hEdge->twin = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
-    hEdge->v[0] = &map->vertexes[(unsigned) readLong() - 1];
-    hEdge->v[1] = &map->vertexes[(unsigned) readLong() - 1];
+    hEdge->vertex = &map->vertexes[(unsigned) readLong() - 1];
     hEdge->face = (obIdx == 0? NULL : &map->faces[(unsigned) obIdx - 1]);
 
     {
@@ -907,8 +905,8 @@ static void writeNode(const gamemap_t *map, uint idx)
     writeFloat(n->bBox[LEFT][BOXRIGHT]);
     writeFloat(n->bBox[LEFT][BOXBOTTOM]);
     writeFloat(n->bBox[LEFT][BOXTOP]);
-    writeLong((long) n->children[RIGHT]);
-    writeLong((long) n->children[LEFT]);
+    writeLong((long) n->children[RIGHT].child);
+    writeLong((long) n->children[LEFT].child);
 }
 
 static void readNode(const gamemap_t *map, uint idx)
@@ -927,8 +925,8 @@ static void readNode(const gamemap_t *map, uint idx)
     n->bBox[LEFT][BOXRIGHT] = readFloat();
     n->bBox[LEFT][BOXBOTTOM] = readFloat();
     n->bBox[LEFT][BOXTOP] = readFloat();
-    n->children[RIGHT] = (uint) readLong();
-    n->children[LEFT] = (uint) readLong();
+    n->children[RIGHT].child = (uint) readLong();
+    n->children[LEFT].child = (uint) readLong();
 }
 
 static void archiveNodes(gamemap_t *map, boolean write)

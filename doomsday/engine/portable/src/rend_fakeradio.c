@@ -221,7 +221,7 @@ static void scanNeighbor(boolean scanTop, const linedef_t* line, uint side,
     fCeil  = LINE_SECTOR(line, side)->SP_ceilvisheight;
 
     // Retrieve the start owner node.
-    own = R_GetVtxLineOwner(line->L_v(side^!toLeft), line);
+    own = R_GetVtxLineOwner(LINE_VERTEX(line, side^!toLeft), line);
 
     do
     {
@@ -1031,7 +1031,7 @@ static void quadTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
     tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]) / texHeight;
 }
 
-void renderShadowSeg(const rvertex_t* origVertices,
+static void renderShadowSeg(const rvertex_t* origVertices,
                             const walldiv_t* wdivs,
                             const rendershadowseg_params_t* p,
                             float shadowDark)
@@ -1368,8 +1368,8 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
 
     shadowAlpha = MIN_OF(darkness, 1.0f);
 
-    vtx0 = line->L_v(side^0);
-    vtx1 = line->L_v(side^1);
+    vtx0 = LINE_VERTEX(line, side^0);
+    vtx1 = LINE_VERTEX(line, side^1);
 
     // What vertex winding order?
     // (for best results, the cross edge should always be the shortest).
@@ -1575,7 +1575,7 @@ static void radioSubSectorEdges(const face_t* face)
                     sector_t*           othersec;
                     byte                otherSide;
 
-                    otherSide = (line->L_v(i^side) == neighbor->L_v1? i : i^1);
+                    otherSide = (LINE_VERTEX(line, i^side) == neighbor->L_v1? i : i^1);
                     othersec = LINE_SECTOR(neighbor, otherSide);
 
                     // Exclude 'special' neighbors which we pretend to be solid.
@@ -1614,12 +1614,12 @@ static void radioSubSectorEdges(const face_t* face)
                     if(i)
                         vo = vo->LO_prev;
 
-                    V2_Sum(inner[i], line->L_vpos(i^side),
+                    V2_Sum(inner[i], LINE_VERTEX(line, i^side)->v.pos,
                            vo->shadowOffsets.inner);
                 }
                 else
                 {
-                    V2_Sum(inner[i], line->L_vpos(i^side),
+                    V2_Sum(inner[i], LINE_VERTEX(line, i^side)->v.pos,
                            vo->shadowOffsets.extended);
                 }
             }
@@ -1713,7 +1713,7 @@ void Rend_DrawShadowOffsetVerts(void)
 
         for(k = 0; k < 2; ++k)
         {
-            vertex_t*           vtx = line->L_v(k);
+            vertex_t*           vtx = LINE_VERTEX(line, k);
             lineowner_t*        vo = vtx->lineOwners;
 
             for(j = 0; j < vtx->numLineOwners; ++j)

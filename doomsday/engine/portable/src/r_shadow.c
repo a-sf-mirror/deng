@@ -287,8 +287,8 @@ void R_InitSectorShadows(void)
 
         sid = LINE_BACKSIDE(side->lineDef) == side? BACK : FRONT;
 
-        vtx0 = side->lineDef->L_v(sid);
-        vtx1 = side->lineDef->L_v(sid^1);
+        vtx0 = LINE_VERTEX(side->lineDef, sid);
+        vtx1 = LINE_VERTEX(side->lineDef, sid^1);
         vo0 = side->lineDef->L_vo(sid)->LO_next;
         vo1 = side->lineDef->L_vo(sid^1)->LO_prev;
 

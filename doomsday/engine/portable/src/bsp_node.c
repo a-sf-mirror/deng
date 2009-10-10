@@ -107,13 +107,13 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
         if(block->bbox[BOXRIGHT] - block->bbox[BOXLEFT] >=
            block->bbox[BOXTOP]   - block->bbox[BOXBOTTOM])
         {   // Block is wider than it is high, or square.
-            p1 = hEdge->v[0]->buildData.pos[VX] >= midPoint[VX];
-            p2 = hEdge->v[1]->buildData.pos[VX] >= midPoint[VX];
+            p1 = hEdge->HE_v1->buildData.pos[VX] >= midPoint[VX];
+            p2 = hEdge->HE_v2->buildData.pos[VX] >= midPoint[VX];
         }
         else
         {   // Block is higher than it is wide.
-            p1 = hEdge->v[0]->buildData.pos[VY] >= midPoint[VY];
-            p2 = hEdge->v[1]->buildData.pos[VY] >= midPoint[VY];
+            p1 = hEdge->HE_v1->buildData.pos[VY] >= midPoint[VY];
+            p2 = hEdge->HE_v2->buildData.pos[VY] >= midPoint[VY];
         }
 
         if(p1 && p2)
@@ -178,11 +178,11 @@ static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
     {
         const hedge_t*      hEdge = n->hEdge;
 
-        avg[VX] += hEdge->v[0]->buildData.pos[VX];
-        avg[VY] += hEdge->v[0]->buildData.pos[VY];
+        avg[VX] += hEdge->HE_v1->buildData.pos[VX];
+        avg[VY] += hEdge->HE_v1->buildData.pos[VY];
 
-        avg[VX] += hEdge->v[1]->buildData.pos[VX];
-        avg[VY] += hEdge->v[1]->buildData.pos[VY];
+        avg[VX] += hEdge->HE_v2->buildData.pos[VX];
+        avg[VY] += hEdge->HE_v2->buildData.pos[VY];
 
         total += 2;
     }
@@ -220,10 +220,10 @@ static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
         const hedge_t*      hEdgeA = a->hEdge;
         const hedge_t*      hEdgeB = b->hEdge;
 
-        angle1 = M_SlopeToAngle(hEdgeA->v[0]->buildData.pos[VX] - x,
-                                hEdgeA->v[0]->buildData.pos[VY] - y);
-        angle2 = M_SlopeToAngle(hEdgeB->v[0]->buildData.pos[VX] - x,
-                                hEdgeB->v[0]->buildData.pos[VY] - y);
+        angle1 = M_SlopeToAngle(hEdgeA->HE_v1->buildData.pos[VX] - x,
+                                hEdgeA->HE_v1->buildData.pos[VY] - y);
+        angle2 = M_SlopeToAngle(hEdgeB->HE_v1->buildData.pos[VX] - x,
+                                hEdgeB->HE_v1->buildData.pos[VY] - y);
         }
 
         if(angle1 + ANG_EPSILON < angle2)
@@ -309,8 +309,8 @@ static void sanityCheckClosed(const bspleafdata_t* leaf)
         const hedge_t*      a = n->hEdge;
         const hedge_t*      b = (n->next? n->next : leaf->hEdges)->hEdge;
 
-        if(a->v[1]->buildData.pos[VX] != b->v[0]->buildData.pos[VX] ||
-           a->v[1]->buildData.pos[VY] != b->v[0]->buildData.pos[VY])
+        if(a->HE_v2->buildData.pos[VX] != b->HE_v1->buildData.pos[VX] ||
+           a->HE_v2->buildData.pos[VY] != b->HE_v1->buildData.pos[VY])
             gaps++;
 
         total++;
@@ -327,8 +327,8 @@ for(n = leaf->hEdges; n; n = n->next)
     const hedge_t*      hEdge = n->hEdge;
 
     Con_Message("  half-edge %p  (%1.1f,%1.1f) --> (%1.1f,%1.1f)\n", hEdge,
-                hEdge->v[0]->pos[VX], hEdge->v[0]->pos[VY],
-                hEdge->v[1]->pos[VX], hEdge->v[1]->pos[VY]);
+                hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY],
+                hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
 }
 #endif*/
     }
@@ -600,7 +600,6 @@ boolean BuildNodes(superblock_t* hEdgeList, binarytree_t** parent,
     binarytree_t*       subTree;
     bspnodedata_t*      node;
     superblock_t*       hEdgeSet[2];
-    bspleafdata_t*      leaf;
     boolean             builtOK = false;
     bspartition_t       partition;
 
@@ -617,8 +616,7 @@ BSP_PrintSuperblockHEdges(hEdgeList);
 /*#if _DEBUG
 Con_Message("BuildNodes: Convex.\n");
 #endif*/
-        leaf = createBSPLeaf(hEdgeList);
-        *parent = BinaryTree_Create(leaf);
+        *parent = BinaryTree_Create(createBSPLeaf(hEdgeList));
         return true;
     }
 

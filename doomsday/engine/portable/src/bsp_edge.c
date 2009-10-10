@@ -82,11 +82,11 @@ static __inline hedge_t* createHEdge(void)
 
 static void copyHEdge(hedge_t* dst, const hedge_t* src)
 {
-    dst->v[0] = src->v[0];
-    dst->v[1] = src->v[1];
+    dst->vertex = src->vertex;
     dst->twin = src->twin;
     dst->next = src->next;
     dst->prev = src->prev;
+    dst->face = src->face;
 
     memcpy(dst->data, src->data, sizeof(bsp_hedgeinfo_t));
 }
@@ -104,14 +104,14 @@ static __inline void freeEdgeTip(edgetip_t* tip)
 /**
  * Update the precomputed members of the hEdge.
  */
-static void updateHEdge(const hedge_t* hEdge)
+void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 {
     bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
 
-    data->pSX = hEdge->v[0]->buildData.pos[VX];
-    data->pSY = hEdge->v[0]->buildData.pos[VY];
-    data->pEX = hEdge->v[1]->buildData.pos[VX];
-    data->pEY = hEdge->v[1]->buildData.pos[VY];
+    data->pSX = hEdge->vertex->buildData.pos[VX];
+    data->pSY = hEdge->vertex->buildData.pos[VY];
+    data->pEX = hEdge->twin->vertex->buildData.pos[VX];
+    data->pEY = hEdge->twin->vertex->buildData.pos[VY];
     data->pDX = data->pEX - data->pSX;
     data->pDY = data->pEY - data->pSY;
 
@@ -129,15 +129,14 @@ static void updateHEdge(const hedge_t* hEdge)
  * Create a new half-edge.
  */
 hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
-                      vertex_t* start, vertex_t* end, sector_t* sec,
-                      boolean back)
+                      vertex_t* start, sector_t* sec, boolean back)
 {
     hedge_t*            hEdge = createHEdge();
 
-    hEdge->v[0] = start;
-    hEdge->v[1] = end;
+    hEdge->HE_v1 = start;
     hEdge->twin = NULL;
     hEdge->next = hEdge->prev = NULL;
+    hEdge->face = NULL;
 
     {
     bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
@@ -149,8 +148,6 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
     data->index = -1;
     data->lprev = data->lnext = NULL;
     }
-
-    updateHEdge(hEdge);
 
     return hEdge;
 }
@@ -203,7 +200,7 @@ else
     // Update superblock, if needed.
     if(oldData->block)
         SuperBlock_IncHEdgeCounts(oldData->block,
-                                  (oldData->lineDef != NULL));
+                                  (oldData->lineDef != NULL && oldData->sector != NULL));
     /**
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
@@ -234,11 +231,7 @@ else
     newHEdge->prev = oldHEdge;
     oldHEdge->next = newHEdge;
 
-    oldHEdge->v[1] = newVert;
-    updateHEdge(oldHEdge);
-
-    newHEdge->v[0] = newVert;
-    updateHEdge(newHEdge);
+    newHEdge->vertex = newVert;
 
 /*#if _DEBUG
 Con_Message("Splitting Vertex is %04X at (%1.1f,%1.1f)\n",
@@ -248,8 +241,6 @@ Con_Message("Splitting Vertex is %04X at (%1.1f,%1.1f)\n",
     // Handle the twin.
     if(oldHEdge->twin)
     {
-        bsp_hedgeinfo_t*    oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
-
 /*#if _DEBUG
 Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
 #endif*/
@@ -272,17 +263,22 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
         ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
         ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
 
-        oldHEdge->twin->v[0] = newVert;
-        updateHEdge(oldHEdge->twin);
+        oldHEdge->twin->vertex = newVert;
+    }
 
-        newHEdge->twin->v[1] = newVert;
-        updateHEdge(newHEdge->twin);
+    BSP_UpdateHEdgeInfo(oldHEdge);
+    BSP_UpdateHEdgeInfo(newHEdge);
+    if(oldHEdge->twin)
+    {
+        bsp_hedgeinfo_t*    oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
+
+        BSP_UpdateHEdgeInfo(oldHEdge->twin);
+        BSP_UpdateHEdgeInfo(newHEdge->twin);
 
         // Update superblock, if needed.
         if(oldInfo->block)
         {
-            SuperBlock_IncHEdgeCounts(oldInfo->block,
-                                      (oldHEdge->twin != NULL));
+            SuperBlock_IncHEdgeCounts(oldInfo->block, (oldInfo->lineDef != NULL));
             SuperBlock_LinkHEdge(oldInfo->block, newHEdge->twin);
         }
         else if(oldInfo->leaf)

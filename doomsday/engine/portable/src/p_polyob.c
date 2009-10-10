@@ -132,12 +132,12 @@ static void updateLineDefAABB(linedef_t* line)
     byte                edge;
 
     edge = (line->L_v1pos[VX] < line->L_v2pos[VX]);
-    line->bBox[BOXLEFT]  = line->L_vpos(edge^1)[VX];
-    line->bBox[BOXRIGHT] = line->L_vpos(edge)[VX];
+    line->bBox[BOXLEFT]  = LINE_VERTEX(line, edge^1)->v.pos[VX];
+    line->bBox[BOXRIGHT] = LINE_VERTEX(line, edge)->v.pos[VX];
 
     edge = (line->L_v1pos[VY] < line->L_v2pos[VY]);
-    line->bBox[BOXBOTTOM] = line->L_vpos(edge^1)[VY];
-    line->bBox[BOXTOP]    = line->L_vpos(edge)[VY];
+    line->bBox[BOXBOTTOM] = LINE_VERTEX(line, edge^1)->v.pos[VY];
+    line->bBox[BOXTOP]    = LINE_VERTEX(line, edge)->v.pos[VY];
 
     // Update the line's slopetype.
     line->dX = line->L_v2pos[VX] - line->L_v1pos[VX];

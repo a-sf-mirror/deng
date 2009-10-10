@@ -1034,8 +1034,8 @@ void R_OrderVertices(const linedef_t* line, const sector_t* sector,
     byte                edge;
 
     edge = (sector == LINE_FRONTSECTOR(line)? 0:1);
-    verts[0] = line->L_v(edge);
-    verts[1] = line->L_v(edge^1);
+    verts[0] = LINE_VERTEX(line, edge);
+    verts[1] = LINE_VERTEX(line, edge^1);
 }
 
 static int C_DECL DivSortAscend(const void* e1, const void* e2)
@@ -1097,7 +1097,7 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
         return; // Obviously no division.
 
     // Retrieve the start owner node.
-    base = own = R_GetVtxLineOwner(hEdge->HE_v(doRight),
+    base = own = R_GetVtxLineOwner(HE_VERTEX(hEdge, doRight),
                                    ((seg_t*) hEdge->data)->sideDef->lineDef);
 
     /**
@@ -1616,7 +1616,7 @@ boolean R_UseSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section)
 
 boolean R_ConsiderOneSided(hedge_t* hEdge)
 {
-    return !hEdge->twin || (hEdge->twin && !((seg_t*) hEdge->twin->data)->sideDef);
+    return !hEdge->twin->data || !((seg_t*) hEdge->twin->data)->sideDef;
 }
 
 /**
@@ -2356,7 +2356,7 @@ void R_UpdateSideDefsOfSubSector(face_t* face)
             sector_t*           frontSec, *backSec;
 
             // Only spread to real back subsectors.
-            if(!hEdge->twin || !HE_FRONTSIDEDEF(hEdge->twin))
+            if(!hEdge->twin->data || !HE_FRONTSIDEDEF(hEdge->twin))
                 continue;
 
             frontSec = HE_FRONTSECTOR(hEdge);

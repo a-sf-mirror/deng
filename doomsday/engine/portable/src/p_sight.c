@@ -278,7 +278,7 @@ static boolean crossSubSector(uint faceIdx, losdata_t* los)
         {
             const seg_t*        seg = (seg_t*) (hEdge)->data;
 
-            if(seg->sideDef && seg->sideDef->lineDef->validCount != validCount)
+            if(seg && seg->sideDef && seg->sideDef->lineDef->validCount != validCount)
             {
                 linedef_t*          li = seg->sideDef->lineDef;
 
@@ -310,14 +310,14 @@ static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
         if(side == R_PointOnSide(los->to[VX], los->to[VY],
                                  &node->partition))
         {   // Yes, decend!
-            bspNum = node->children[side];
+            bspNum = node->children[side].child;
         }
         else
         {   // No.
-            if(!crossBSPNode(node->children[side], los))
+            if(!crossBSPNode(node->children[side].child, los))
                 return 0; // Cross the starting side.
             else
-                bspNum = node->children[side^1]; // Cross the ending side.
+                bspNum = node->children[side^1].child; // Cross the ending side.
         }
     }
 

@@ -151,6 +151,35 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
             }
         }
 
+#if 1
+        front = HEdge_Create(line, line, line->buildData.v[0],
+                             line->buildData.sideDefs[FRONT]->sector, false);
+
+        // Handle the 'One-Sided Window' trick.
+        if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
+        {
+            back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                 line, line->buildData.v[1],
+                                 line->buildData.windowEffect, true);
+        }
+        else
+        {
+            back = HEdge_Create(line, line, line->buildData.v[1],
+                                line->buildData.sideDefs[BACK]? line->buildData.sideDefs[BACK]->sector : NULL, true);
+        }
+
+        // Half-edges always maintain a one-to-one relationship
+        // with their twins, so if one gets split, the other
+        // must be split also.
+        back->twin = front;
+        front->twin = back;
+
+        BSP_UpdateHEdgeInfo(front);
+        BSP_UpdateHEdgeInfo(back);
+
+        BSP_AddHEdgeToSuperBlock(block, front);
+        BSP_AddHEdgeToSuperBlock(block, back);
+#else
         if(line->buildData.sideDefs[FRONT])
         {
             sidedef_t*          side = line->buildData.sideDefs[FRONT];
@@ -161,7 +190,6 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                             line->buildData.index);
 
             front = HEdge_Create(line, line, line->buildData.v[0],
-                                 line->buildData.v[1],
                                  side->sector, false);
             BSP_AddHEdgeToSuperBlock(block, front);
         }
@@ -179,7 +207,6 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                             line->buildData.index);
 
             back = HEdge_Create(line, line, line->buildData.v[1],
-                                line->buildData.v[0],
                                 side->sector, true);
             BSP_AddHEdgeToSuperBlock(block, back);
 
@@ -201,7 +228,6 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
 
                 other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
                                      line, line->buildData.v[1],
-                                     line->buildData.v[0],
                                      line->buildData.windowEffect, true);
 
                 BSP_AddHEdgeToSuperBlock(block, other);
@@ -212,6 +238,7 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                 front->twin = other;
             }
         }
+#endif
 
         // \todo edge tips should be created when half-edges are created.
         {

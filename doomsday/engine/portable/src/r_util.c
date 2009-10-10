@@ -265,7 +265,7 @@ face_t* R_PointInSubSector(const float x, const float y)
     while(!(nodenum & NF_SUBSECTOR))
     {
         node = NODE_PTR(nodenum);
-        nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
+        nodenum = node->children[R_PointOnSide(x, y, &node->partition)].child;
     }
 
     return &faces[nodenum & ~NF_SUBSECTOR];

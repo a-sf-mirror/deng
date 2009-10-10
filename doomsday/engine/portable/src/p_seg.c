@@ -76,14 +76,14 @@ boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
         {
         seg_t* seg = (seg_t*) hEdge->data;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v1);
-        DMU_GetValue(DMT_HEDGE_V, &r, args, 0);
+        DMU_GetValue(DMT_HEDGE_VERTEX, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
         seg_t* seg = (seg_t*) hEdge->data;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v2);
-        DMU_GetValue(DMT_HEDGE_V, &r, args, 0);
+        DMU_GetValue(DMT_HEDGE_VERTEX, &r, args, 0);
         break;
         }
     case DMU_LENGTH:

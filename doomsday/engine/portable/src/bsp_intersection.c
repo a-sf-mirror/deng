@@ -404,25 +404,28 @@ static void buildEdgeBetweenIntersections(const bspartition_t* part,
     // Leave 'linedef' field as NULL as these are not linedef-linked.
     // Leave 'side' as zero too.
     (*right) = HEdge_Create(NULL, part->lineDef, start->vertex,
-                            end->vertex, start->after, false);
+                            start->after, false);
     (*left)  = HEdge_Create(NULL, part->lineDef, end->vertex,
-                            start->vertex, start->after, false);
+                            start->after, false);
 
     // Twin the half-edges together.
     (*right)->twin = *left;
     (*left)->twin = *right;
 
+    BSP_UpdateHEdgeInfo(*right);
+    BSP_UpdateHEdgeInfo(*left);
+
 /*#if _DEBUG
 Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
 Con_Message("  %p RIGHT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             (*right), ((*right)->sector? (*right)->sector->index : -1),
-            (*right)->v[0]->V_pos[VX], (*right)->v[0]->V_pos[VY],
-            (*right)->v[1]->V_pos[VX], (*right)->v[1]->V_pos[VY]);
+            (*right)->HE_v1->V_pos[VX], (*right)->HE_v1->V_pos[VY],
+            (*right)->HE_v2->V_pos[VX], (*right)->HE_v2->V_pos[VY]);
 
 Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             (*left), ((*left)->sector? (*left)->sector->index : -1),
-            (*left)->v[0]->V_pos[VX], (*left)->v[0]->V_pos[VY],
-            (*left)->v[1]->V_pos[VX], (*left)->v[1]->V_pos[VY]);
+            (*left)->HE_v1->V_pos[VX], (*left)->HE_v1->V_pos[VY],
+            (*left)->HE_v2->V_pos[VX], (*left)->HE_v2->V_pos[VY]);
 #endif*/
 }
 

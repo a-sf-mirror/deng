@@ -2097,7 +2097,7 @@ static void Rend_SubSectorSkyFixes(face_t* face)
     do
     {
         seg_t*              seg = (seg_t*) hEdge->data,
-                           *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
+                           *backSeg = hEdge->twin->data ? ((seg_t*) hEdge->twin->data) : NULL;
         sidedef_t*          side = seg->sideDef;
 
         if(!side)
@@ -2107,8 +2107,8 @@ static void Rend_SubSectorSkyFixes(face_t* face)
         if(!(seg->frameFlags & SEGINF_FACINGFRONT))
             continue;
 
-        backsec = hEdge->twin? ((subsector_t*) hEdge->twin->face->data)->sector : NULL;
-        frontsec = ((subsector_t*) hEdge->face->data)->sector;
+        backsec = HE_BACKSECTOR(hEdge);
+        frontsec = HE_FRONTSECTOR(hEdge);
 
         if(backsec == frontsec &&
            !side->SW_topmaterial && !side->SW_bottommaterial &&
@@ -2251,11 +2251,10 @@ static void occludeSubSector(const face_t* face, boolean forwardFacing)
     {
         do
         {
-            seg_t*              seg = (seg_t*) hEdge->data,
-                               *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
+            seg_t*              seg = (seg_t*) hEdge->data;
 
             // Occlusions can only happen where two sectors contact.
-            if(seg->sideDef && backSeg &&
+            if(seg->sideDef && !R_ConsiderOneSided(hEdge) &&
                (forwardFacing == ((seg->frameFlags & SEGINF_FACINGFRONT)? true : false)))
             {
                 back = ((subsector_t*) hEdge->twin->face->data)->sector;
@@ -2904,8 +2903,10 @@ static void Rend_RenderNode(uint bspnum)
         // Decide which side the view point is on.
         side = R_PointOnSide(viewX, viewY, &bsp->partition);
 
-        Rend_RenderNode(bsp->children[side]);   // Recursively divide front space.
-        Rend_RenderNode(bsp->children[side ^ 1]);   // ...and back space.
+        if(!bsp->children[side].nullSSec)
+            Rend_RenderNode(bsp->children[side].child);   // Recursively divide front space.
+        if(!bsp->children[side^1].nullSSec)
+            Rend_RenderNode(bsp->children[side ^ 1].child);   // ...and back space.
     }
 }
 

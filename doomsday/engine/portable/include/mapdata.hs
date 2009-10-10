@@ -68,15 +68,6 @@ internal
 #define FRONT 0
 #define BACK  1
 
-#define HE_v(n)                 v[(n)]
-#define HE_vpos(n)              HE_v(n)->V_pos
-
-#define HE_v1                   HE_v(0)
-#define HE_v1pos                HE_v(0)->V_pos
-
-#define HE_v2                   HE_v(1)
-#define HE_v2pos                HE_v(1)->V_pos
-
 // Seg frame flags
 #define SEGINF_FACINGFRONT      0x0001
 #define SEGINF_BACKSECSKYFIX    0x0002
@@ -104,21 +95,27 @@ typedef struct seg_s {
     short       frameFlags;
 } seg_t;
 
-#define HE_FRONTSIDEDEF(hEdge) (((seg_t*) (hEdge)->data)->sideDef)
-#define HE_BACKSIDEDEF(hEdge) ((hEdge)->twin ? ((seg_t*) (hEdge)->twin->data)->sideDef : NULL)
+#define HE_v1                   vertex
+#define HE_v1pos                vertex->V_pos
 
-#define HE_LINESIDE(hEdge) (((seg_t*) (hEdge)->data)->side)
+#define HE_v2                   twin->vertex
+#define HE_v2pos                twin->vertex->V_pos
 
-#define HE_FRONTSUBSECTOR(hEdge) ((subsector_t*) (hEdge)->face->data)
-#define HE_BACKSUBSECTOR(hEdge) ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data) : NULL)
+#define HE_VERTEX(hEdge, v)     ((v) ? (hEdge)->HE_v2 : (hEdge)->HE_v1)
+#define HE_FRONTSIDEDEF(hEdge)  ((hEdge)->data ? ((seg_t*) (hEdge)->data)->sideDef : NULL)
+#define HE_BACKSIDEDEF(hEdge)   ((hEdge)->twin->data ? ((seg_t*) (hEdge)->twin->data)->sideDef : NULL)
 
-#define HE_FRONTSECTOR(hEdge) (HE_FRONTSUBSECTOR(hEdge)->sector)
-#define HE_BACKSECTOR(hEdge)  ((hEdge)->twin ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
+#define HE_LINESIDE(hEdge)      (((seg_t*) (hEdge)->data)->side)
 
+#define HE_FRONTSUBSECTOR(hEdge)((hEdge)->face ? (subsector_t*) (hEdge)->face->data : NULL)
+#define HE_BACKSUBSECTOR(hEdge) ((hEdge)->twin->face ? ((subsector_t*) (hEdge)->twin->face->data) : NULL)
+
+#define HE_FRONTSECTOR(hEdge)   ((hEdge)->face ? ((subsector_t*) (hEdge)->face->data)->sector : NULL)
+#define HE_BACKSECTOR(hEdge)    ((hEdge)->twin->face ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
 end
 
 struct hedge
-    PTR     vertex_s*[2] v // [Start, End] of the hedge.
+    PTR     vertex_s*   vertex
     PTR     hedge_s*    twin
     PTR     hedge_s*    next
     PTR     hedge_s*    prev
@@ -479,21 +476,19 @@ end
 
 internal
 // Helper macros for accessing linedef data elements.
-#define L_v(n)                  hEdges[(n)]->v[(n)]
-#define L_vpos(n)               L_v(n)->V_pos
+#define L_v1                    hEdges[0]->vertex
+#define L_v1pos                 hEdges[0]->vertex->V_pos
 
-#define L_v1                    hEdges[0]->v[0]
-#define L_v1pos                 L_v(0)->V_pos
-
-#define L_v2                    hEdges[1]->v[1]
-#define L_v2pos                 L_v(1)->V_pos
+#define L_v2                    hEdges[1]->twin->vertex
+#define L_v2pos                 hEdges[1]->twin->vertex->V_pos
 
 #define L_vo(n)                 vo[(n)]
 #define L_vo1                   L_vo(0)
 #define L_vo2                   L_vo(1)
 
+#define LINE_VERTEX(l, v)       ((v) ? (l)->L_v2 : (l)->L_v1)
 #define LINE_FRONTSIDE(l)       (((seg_t*) (l)->hEdges[0]->data)->sideDef)
-#define LINE_BACKSIDE(l)        ((l)->hEdges[0]->twin? ((seg_t*) (l)->hEdges[0]->twin->data)->sideDef : NULL)
+#define LINE_BACKSIDE(l)        (((seg_t*) (l)->hEdges[0]->twin->data) ? ((seg_t*) (l)->hEdges[0]->twin->data)->sideDef : NULL)
 #define LINE_SIDE(l, s)         ((s)? LINE_BACKSIDE(l) : LINE_FRONTSIDE(l))
 
 #define LINE_FRONTSECTOR(l)     (LINE_FRONTSIDE(l)->sector)
