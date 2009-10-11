@@ -641,8 +641,6 @@ static void buildSectorSubSectorLists(gamemap_t* map)
 {
     uint                i;
 
-    Con_Message(" Build subsector tables...\n");
-
     for(i = 0; i < map->numSectors; ++i)
     {
         hardenSectorSubSectorList(map, i);
@@ -663,8 +661,6 @@ static void buildSectorLineLists(gamemap_t *map)
     zblockset_t*        lineLinksBlockSet;
     linelink_t**        sectorLineLinks;
     uint                totallinks;
-
-    Con_Message(" Build line tables...\n");
 
     // build line tables for each sector.
     lineLinksBlockSet = Z_BlockCreate(sizeof(linelink_t), 512, PU_STATIC);

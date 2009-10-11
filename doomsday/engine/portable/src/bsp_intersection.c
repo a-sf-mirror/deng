@@ -419,13 +419,13 @@ static void buildEdgeBetweenIntersections(const bspartition_t* part,
 Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
 Con_Message("  %p RIGHT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             (*right), ((*right)->sector? (*right)->sector->index : -1),
-            (*right)->HE_v1->V_pos[VX], (*right)->HE_v1->V_pos[VY],
-            (*right)->HE_v2->V_pos[VX], (*right)->HE_v2->V_pos[VY]);
+            (*right)->vertex->V_pos[VX], (*right)->vertex->V_pos[VY],
+            (*right)->twin->vertex->V_pos[VX], (*right)->twin->vertex->V_pos[VY]);
 
 Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             (*left), ((*left)->sector? (*left)->sector->index : -1),
-            (*left)->HE_v1->V_pos[VX], (*left)->HE_v1->V_pos[VY],
-            (*left)->HE_v2->V_pos[VX], (*left)->HE_v2->V_pos[VY]);
+            (*left)->vertex->V_pos[VX], (*left)->vertex->V_pos[VY],
+            (*left)->twin->vertex->V_pos[VX], (*left)->twin->vertex->V_pos[VY]);
 #endif*/
 }
 

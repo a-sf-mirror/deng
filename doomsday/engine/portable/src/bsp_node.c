@@ -106,13 +106,13 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
         if(block->bbox[BOXRIGHT] - block->bbox[BOXLEFT] >=
            block->bbox[BOXTOP]   - block->bbox[BOXBOTTOM])
         {   // Block is wider than it is high, or square.
-            p1 = hEdge->HE_v1->buildData.pos[VX] >= midPoint[VX];
-            p2 = hEdge->HE_v2->buildData.pos[VX] >= midPoint[VX];
+            p1 = hEdge->vertex->buildData.pos[VX] >= midPoint[VX];
+            p2 = hEdge->twin->vertex->buildData.pos[VX] >= midPoint[VX];
         }
         else
         {   // Block is higher than it is wide.
-            p1 = hEdge->HE_v1->buildData.pos[VY] >= midPoint[VY];
-            p2 = hEdge->HE_v2->buildData.pos[VY] >= midPoint[VY];
+            p1 = hEdge->vertex->buildData.pos[VY] >= midPoint[VY];
+            p2 = hEdge->twin->vertex->buildData.pos[VY] >= midPoint[VY];
         }
 
         if(p1 && p2)
@@ -177,11 +177,11 @@ static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
     {
         const hedge_t*      hEdge = n->hEdge;
 
-        avg[VX] += hEdge->HE_v1->buildData.pos[VX];
-        avg[VY] += hEdge->HE_v1->buildData.pos[VY];
+        avg[VX] += hEdge->vertex->buildData.pos[VX];
+        avg[VY] += hEdge->vertex->buildData.pos[VY];
 
-        avg[VX] += hEdge->HE_v2->buildData.pos[VX];
-        avg[VY] += hEdge->HE_v2->buildData.pos[VY];
+        avg[VX] += hEdge->twin->vertex->buildData.pos[VX];
+        avg[VY] += hEdge->twin->vertex->buildData.pos[VY];
 
         total += 2;
     }
@@ -219,10 +219,10 @@ static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
         const hedge_t*      hEdgeA = a->hEdge;
         const hedge_t*      hEdgeB = b->hEdge;
 
-        angle1 = M_SlopeToAngle(hEdgeA->HE_v1->buildData.pos[VX] - x,
-                                hEdgeA->HE_v1->buildData.pos[VY] - y);
-        angle2 = M_SlopeToAngle(hEdgeB->HE_v1->buildData.pos[VX] - x,
-                                hEdgeB->HE_v1->buildData.pos[VY] - y);
+        angle1 = M_SlopeToAngle(hEdgeA->vertex->buildData.pos[VX] - x,
+                                hEdgeA->vertex->buildData.pos[VY] - y);
+        angle2 = M_SlopeToAngle(hEdgeB->vertex->buildData.pos[VX] - x,
+                                hEdgeB->vertex->buildData.pos[VY] - y);
         }
 
         if(angle1 + ANG_EPSILON < angle2)
@@ -292,8 +292,8 @@ for(n = sub->hEdges; n; n = n->next)
                        hEdge->v[0]->V_pos[VY] - y);
 
     Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                hEdge, angle, hEdge->v[0]->V_pos[VX], hEdge->v[0]->V_pos[VY],
-                hEdge->v[1]->V_pos[VX], hEdge->v[1]->V_pos[VY]);
+                hEdge, angle, hEdge->vertex->v.pos[VX], hEdge->vertex->v.pos[VY],
+                hEdge->twin->vertex->v.pos[VX], hEdge->twin->vertex->v.pos[VY]);
 }
 #endif*/
 }
@@ -308,8 +308,8 @@ static void sanityCheckClosed(const bspleafdata_t* leaf)
         const hedge_t*      a = n->hEdge;
         const hedge_t*      b = (n->next? n->next : leaf->hEdges)->hEdge;
 
-        if(a->HE_v2->buildData.pos[VX] != b->HE_v1->buildData.pos[VX] ||
-           a->HE_v2->buildData.pos[VY] != b->HE_v1->buildData.pos[VY])
+        if(a->twin->vertex->buildData.pos[VX] != b->vertex->buildData.pos[VX] ||
+           a->twin->vertex->buildData.pos[VY] != b->vertex->buildData.pos[VY])
             gaps++;
 
         total++;
@@ -317,8 +317,9 @@ static void sanityCheckClosed(const bspleafdata_t* leaf)
 
     if(gaps > 0)
     {
+        VERBOSE(
         Con_Message("HEdge list for leaf #%p is not closed "
-                    "(%d gaps, %d half-edges)\n", leaf, gaps, total);
+                    "(%d gaps, %d half-edges)\n", leaf, gaps, total))
 
 /*#if _DEBUG
 for(n = leaf->hEdges; n; n = n->next)
@@ -326,8 +327,8 @@ for(n = leaf->hEdges; n; n = n->next)
     const hedge_t*      hEdge = n->hEdge;
 
     Con_Message("  half-edge %p  (%1.1f,%1.1f) --> (%1.1f,%1.1f)\n", hEdge,
-                hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY],
-                hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
+                hEdge->vertex->pos[VX], hEdge->vertex->pos[VY],
+                hEdge->twin->vertex->pos[VX], hEdge->twin->vertex->pos[VY]);
 }
 #endif*/
     }

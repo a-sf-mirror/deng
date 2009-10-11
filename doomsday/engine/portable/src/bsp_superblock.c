@@ -379,8 +379,8 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     // Check for being on the same line.
     if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
     {
-        makeIntersection(cutList, curHEdge->HE_v1, part, selfRef);
-        makeIntersection(cutList, curHEdge->HE_v2, part, selfRef);
+        makeIntersection(cutList, curHEdge->vertex, part, selfRef);
+        makeIntersection(cutList, curHEdge->twin->vertex, part, selfRef);
 
         // This seg runs along the same line as the partition. Check
         // whether it goes in the same direction or the opposite.
@@ -400,9 +400,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     if(a > -DIST_EPSILON && b > -DIST_EPSILON)
     {
         if(a < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->HE_v1, part, selfRef);
+            makeIntersection(cutList, curHEdge->vertex, part, selfRef);
         else if(b < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->HE_v2, part, selfRef);
+            makeIntersection(cutList, curHEdge->twin->vertex, part, selfRef);
 
         BSP_AddHEdgeToSuperBlock(rightList, curHEdge);
         return;
@@ -412,9 +412,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     if(a < DIST_EPSILON && b < DIST_EPSILON)
     {
         if(a > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->HE_v1, part, selfRef);
+            makeIntersection(cutList, curHEdge->vertex, part, selfRef);
         else if(b > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->HE_v2, part, selfRef);
+            makeIntersection(cutList, curHEdge->twin->vertex, part, selfRef);
 
         BSP_AddHEdgeToSuperBlock(leftList, curHEdge);
         return;
@@ -425,7 +425,7 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
 
     calcIntersection(curHEdge, part, a, b, &x, &y);
     newHEdge = HEdge_Split(curHEdge, x, y);
-    makeIntersection(cutList, curHEdge->HE_v2, part, selfRef);
+    makeIntersection(cutList, curHEdge->twin->vertex, part, selfRef);
 
     if(a < 0)
     {
@@ -877,10 +877,10 @@ static void findLimitWorker(superblock_t* block, float* bbox)
     for(n = block->hEdges; n; n = n->next)
     {
         hedge_t*            cur = n->hEdge;
-        double              x1 = cur->HE_v1->buildData.pos[VX];
-        double              y1 = cur->HE_v1->buildData.pos[VY];
-        double              x2 = cur->HE_v2->buildData.pos[VX];
-        double              y2 = cur->HE_v2->buildData.pos[VY];
+        double              x1 = cur->vertex->buildData.pos[VX];
+        double              y1 = cur->vertex->buildData.pos[VY];
+        double              x2 = cur->twin->vertex->buildData.pos[VX];
+        double              y2 = cur->twin->vertex->buildData.pos[VY];
         float               lx = (float) MIN_OF(x1, x2);
         float               ly = (float) MIN_OF(y1, y2);
         float               hx = (float) MAX_OF(x1, x2);
@@ -990,8 +990,8 @@ void SuperBlock_PrintHEdges(superblock_t* superblock)
         Con_Message("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
                     (data->lineDef? "NORM" : "MINI"), hEdge,
                     data->sector->buildData.index,
-                    hEdge->HE_v1->buildData.pos[VX], hEdge->HE_v1->buildData.pos[VY],
-                    hEdge->HE_v2->buildData.pos[VX], hEdge->HE_v2->buildData.pos[VY]);
+                    hEdge->vertex->buildData.pos[VX], hEdge->vertex->buildData.pos[VY],
+                    hEdge->twin->vertex->buildData.pos[VX], hEdge->twin->vertex->buildData.pos[VY]);
     }
 
     for(num = 0; num < 2; ++num)

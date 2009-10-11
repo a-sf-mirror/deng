@@ -133,7 +133,7 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
 {
     hedge_t*            hEdge = createHEdge();
 
-    hEdge->HE_v1 = start;
+    hEdge->vertex = start;
     hEdge->twin = NULL;
     hEdge->next = hEdge->prev = NULL;
     hEdge->face = NULL;
