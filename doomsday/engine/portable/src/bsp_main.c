@@ -151,18 +151,17 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
             }
         }
 
-#if 1
         front = HEdge_Create(line, line, line->buildData.v[0],
                              line->buildData.sideDefs[FRONT]->sector, false);
 
         // Handle the 'One-Sided Window' trick.
-        if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
+        /*if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
         {
             back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
                                  line, line->buildData.v[1],
                                  line->buildData.windowEffect, true);
         }
-        else
+        else*/
         {
             back = HEdge_Create(line, line, line->buildData.v[1],
                                 line->buildData.sideDefs[BACK]? line->buildData.sideDefs[BACK]->sector : NULL, true);
@@ -178,67 +177,9 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
         BSP_UpdateHEdgeInfo(back);
 
         BSP_AddHEdgeToSuperBlock(block, front);
-        BSP_AddHEdgeToSuperBlock(block, back);
-#else
-        if(line->buildData.sideDefs[FRONT])
-        {
-            sidedef_t*          side = line->buildData.sideDefs[FRONT];
-
-            // Check for a bad sidedef.
-            if(!side->sector)
-                Con_Message("Bad front sidedef on linedef #%d (Z_CheckHeap error)\n",
-                            line->buildData.index);
-
-            front = HEdge_Create(line, line, line->buildData.v[0],
-                                 side->sector, false);
-            BSP_AddHEdgeToSuperBlock(block, front);
-        }
-        else
-            Con_Message("LineDef #%d has no front sidedef!\n",
-                        line->buildData.index);
-
-        if(line->buildData.sideDefs[BACK])
-        {
-            sidedef_t*          side = line->buildData.sideDefs[BACK];
-
-            // Check for a bad sidedef.
-            if(!side->sector)
-                Con_Message("Bad back sidedef on linedef #%d (Z_CheckHeap error)\n",
-                            line->buildData.index);
-
-            back = HEdge_Create(line, line, line->buildData.v[1],
-                                side->sector, true);
+        if((line->buildData.sideDefs[BACK] && line->buildData.sideDefs[BACK]->sector)/* ||
+           (!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)*/)
             BSP_AddHEdgeToSuperBlock(block, back);
-
-            if(front)
-            {
-                // Half-edges always maintain a one-to-one relationship
-                // with their twins, so if one gets split, the other
-                // must be split also.
-                back->twin = front;
-                front->twin = back;
-            }
-        }
-        else
-        {
-            // Handle the 'One-Sided Window' trick.
-            if(line->buildData.windowEffect && front)
-            {
-                hedge_t*            other;
-
-                other = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                     line, line->buildData.v[1],
-                                     line->buildData.windowEffect, true);
-
-                BSP_AddHEdgeToSuperBlock(block, other);
-
-                // Setup the twin-ing (it's very strange to have a mini
-                // and a normal partnered together).
-                other->twin = front;
-                front->twin = other;
-            }
-        }
-#endif
 
         // \todo edge tips should be created when half-edges are created.
         {

@@ -84,16 +84,15 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
 
     for(;;)
     {
-        int         p1, p2;
-        int         child;
-        int         midPoint[2];
-        superblock_t *sub;
+        int p1, p2, child, midPoint[2];
+        superblock_t* sub;
+        bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
 
         midPoint[VX] = (block->bbox[BOXLEFT]   + block->bbox[BOXRIGHT]) / 2;
         midPoint[VY] = (block->bbox[BOXBOTTOM] + block->bbox[BOXTOP])   / 2;
 
         // Update half-edge counts.
-        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef)
+        if(info->lineDef)
             block->realNum++;
         else
             block->miniNum++;
@@ -417,8 +416,10 @@ static void renumberLeafHEdges(bspleafdata_t* leaf, uint* curIndex)
     {
         const hedge_t*      hEdge = n->hEdge;
 
-        ((bsp_hedgeinfo_t*) hEdge->data)->index = *curIndex;
-        (*curIndex)++;
+        ((bsp_hedgeinfo_t*) hEdge->data)->index = (*curIndex)++;
+        if(hEdge->twin &&
+           ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+            ((bsp_hedgeinfo_t*) hEdge->twin->data)->index = (*curIndex)++;
     }
 }
 

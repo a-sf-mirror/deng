@@ -123,16 +123,21 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
             if(params->indexPtr)
             {   // Write mode.
                 (*params->indexPtr)[params->numHEdges++] = hEdge;
+                if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
+                   !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+                    (*params->indexPtr)[params->numHEdges++] = hEdge->twin;
             }
             else
             {   // Count mode.
                 if(((bsp_hedgeinfo_t*) hEdge->data)->index == -1)
                     Con_Error("HEdge %p never reached a subsector!", hEdge);
 
-                params->numHEdges++;
+                params->numSegs++;
 
-                if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->sector))
-                    params->numSegs++;
+                params->numHEdges++;
+                if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
+                   !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+                    params->numHEdges++;
             }
         }
     }
@@ -176,14 +181,15 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
     for(i = 0; i < map->numHEdges; ++i)
     {
-        const hedge_t*      hEdge = index[i];
-        hedge_t*            dst = &map->hEdges[i];
+        const hedge_t* hEdge = index[i];
+        const bsp_hedgeinfo_t* info = (const bsp_hedgeinfo_t*) hEdge->data;
+        hedge_t* dst = &map->hEdges[i];
+
+        dst->vertex = &map->vertexes[hEdge->vertex->buildData.index - 1];
+        dst->twin = &map->hEdges[((bsp_hedgeinfo_t*) hEdge->twin->data)->index];
 
         if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->sector))
             dst->data = segs++;
-
-        dst->HE_v1 = &map->vertexes[hEdge->HE_v1->buildData.index - 1];
-        dst->twin = &map->hEdges[((bsp_hedgeinfo_t*) hEdge->twin->data)->index];   
 
         DMU_AddObjRecord(DMU_HEDGE, dst);
     }
@@ -211,16 +217,6 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         {
             linedef_t*          ldef = seg->sideDef->lineDef;
             vertex_t*           vtx = ldef->buildData.v[seg->side];
-
-            /*if(seg->sideDef)
-            {
-                seg->sector = seg->sideDef->sector;
-            }
-            else if(ldef->buildData.windowEffect)
-            {
-                seg->sector = &map->sectors[
-                    ldef->buildData.windowEffect->buildData.index - 1];
-            }*/
 
             seg->offset = P_AccurateDistance(dst->HE_v1pos[VX] - vtx->V_pos[VX],
                                              dst->HE_v1pos[VY] - vtx->V_pos[VY]);
@@ -275,8 +271,8 @@ static sector_t* pickSectorForSubSector(const hedge_node_t* firstHEdge,
            ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
             continue;
         
-        if((((bsp_hedgeinfo_t*) hEdge->data)->lineDef) &&
-           (((bsp_hedgeinfo_t*) hEdge->data)->sector))
+        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
         {
             linedef_t*          lineDef =
                 ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
@@ -396,37 +392,18 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
         if(BinaryTree_IsLeaf(right))
         {
             bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(right);
-            uint            idx, hEdgeCount;
-            hedge_node_t*   n;
-
-            hEdgeCount = 0;
-            for(n = leaf->hEdges; n; n = n->next)
-            {
-                const hedge_t*      hEdge = n->hEdge;
-
-                if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-                    !((bsp_hedgeinfo_t*) hEdge->data)->sector))
-                    hEdgeCount++;
-            }
-
-            if(hEdgeCount > 0)
-            {
-                idx = params->faceCurIndex++;
-                node->children[RIGHT].child = idx | NF_SUBSECTOR;
-                hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
-                           &params->storage);
-            }
-            else
-            {
-                node->children[RIGHT].nullSSec = true;
-                node->children[RIGHT].child = 0 | NF_SUBSECTOR;
-            }
+            uint            idx;
+           
+            idx = params->faceCurIndex++;
+            node->children[RIGHT] = idx | NF_SUBSECTOR;
+            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+                       &params->storage);
         }
         else
         {
             bspnodedata_t* data = (bspnodedata_t*) BinaryTree_GetData(right);
 
-            node->children[RIGHT].child = data->index;
+            node->children[RIGHT] = data->index;
         }
     }
 
@@ -436,37 +413,18 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
         if(BinaryTree_IsLeaf(left))
         {
             bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(left);
-            uint            idx, hEdgeCount;
-            hedge_node_t*   n;
-
-            hEdgeCount = 0;
-            for(n = leaf->hEdges; n; n = n->next)
-            {
-                const hedge_t*      hEdge = n->hEdge;
-
-                if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-                    !((bsp_hedgeinfo_t*) hEdge->data)->sector))
-                    hEdgeCount++;
-            }
-
-            if(hEdgeCount > 0)
-            {
-                idx = params->faceCurIndex++;
-                node->children[LEFT].child = idx | NF_SUBSECTOR;
-                hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
-                           &params->storage);
-            }
-            else
-            {
-                node->children[LEFT].nullSSec = true;
-                node->children[LEFT].child = 0 | NF_SUBSECTOR;
-            }
+            uint            idx;
+            
+            idx = params->faceCurIndex++;
+            node->children[LEFT] = idx | NF_SUBSECTOR;
+            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+                       &params->storage);
         }
         else
         {
             bspnodedata_t*  data = (bspnodedata_t*) BinaryTree_GetData(left);
 
-            node->children[LEFT].child = data->index;
+            node->children[LEFT] = data->index;
         }
     }
 
@@ -487,22 +445,7 @@ static boolean C_DECL countFace(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {
-        bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
-        uint            hEdgeCount;
-        hedge_node_t*   n;
-
-        hEdgeCount = 0;
-        for(n = leaf->hEdges; n; n = n->next)
-        {
-            const hedge_t*  hEdge = n->hEdge;
-
-            if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-                !((bsp_hedgeinfo_t*) hEdge->data)->sector))
-                hEdgeCount++;
-        }
-
-        if(hEdgeCount != 0)
-            (*((uint*) data))++;
+        (*((uint*) data))++;
     }
 
     return true; // Continue iteration.

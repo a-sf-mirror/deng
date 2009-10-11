@@ -537,7 +537,7 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
         {
             // Do BIAS lighting for this poly.
             SB_RendSeg(P_GetCurrentMap(), rcolors, rseg->biasSurface,
-                       rvertices, numVertices,
+                       rvertices, 4,
                        rseg->normal, rseg->sectorLightLevel,
                        rseg->from, rseg->to);
         }
@@ -2903,10 +2903,8 @@ static void Rend_RenderNode(uint bspnum)
         // Decide which side the view point is on.
         side = R_PointOnSide(viewX, viewY, &bsp->partition);
 
-        if(!bsp->children[side].nullSSec)
-            Rend_RenderNode(bsp->children[side].child);   // Recursively divide front space.
-        if(!bsp->children[side^1].nullSSec)
-            Rend_RenderNode(bsp->children[side ^ 1].child);   // ...and back space.
+        Rend_RenderNode(bsp->children[side]); // Recursively divide front space.
+        Rend_RenderNode(bsp->children[side ^ 1]); // ...and back space.
     }
 }
 

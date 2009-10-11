@@ -696,7 +696,7 @@ static int evalPartition(const superblock_t* hEdgeList, hedge_t* part,
                          int bestCost)
 {
     evalinfo_t          info;
-    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) part->data;
+    bsp_hedgeinfo_t*    data = (bsp_hedgeinfo_t*) part->data;
 
     // Initialize info structure.
     info.cost   = 0;

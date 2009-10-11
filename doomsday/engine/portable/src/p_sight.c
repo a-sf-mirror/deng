@@ -310,14 +310,14 @@ static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
         if(side == R_PointOnSide(los->to[VX], los->to[VY],
                                  &node->partition))
         {   // Yes, decend!
-            bspNum = node->children[side].child;
+            bspNum = node->children[side];
         }
         else
         {   // No.
-            if(!crossBSPNode(node->children[side].child, los))
+            if(!crossBSPNode(node->children[side], los))
                 return 0; // Cross the starting side.
             else
-                bspNum = node->children[side^1].child; // Cross the ending side.
+                bspNum = node->children[side^1]; // Cross the ending side.
         }
     }
 

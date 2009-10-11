@@ -199,8 +199,8 @@ else
 
     // Update superblock, if needed.
     if(oldData->block)
-        SuperBlock_IncHEdgeCounts(oldData->block,
-                                  (oldData->lineDef != NULL && oldData->sector != NULL));
+        SuperBlock_IncHEdgeCounts(oldData->block, oldData->lineDef != NULL);
+
     /**
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
@@ -278,7 +278,7 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
         // Update superblock, if needed.
         if(oldInfo->block)
         {
-            SuperBlock_IncHEdgeCounts(oldInfo->block, (oldInfo->lineDef != NULL));
+            SuperBlock_IncHEdgeCounts(oldInfo->block, oldInfo->lineDef != NULL);
             SuperBlock_LinkHEdge(oldInfo->block, newHEdge->twin);
         }
         else if(oldInfo->leaf)
