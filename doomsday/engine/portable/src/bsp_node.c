@@ -417,7 +417,8 @@ static void renumberLeafHEdges(bspleafdata_t* leaf, uint* curIndex)
         const hedge_t*      hEdge = n->hEdge;
 
         ((bsp_hedgeinfo_t*) hEdge->data)->index = (*curIndex)++;
-        if(hEdge->twin &&
+        if((((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect) &&
+           hEdge->twin &&
            ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
             ((bsp_hedgeinfo_t*) hEdge->twin->data)->index = (*curIndex)++;
     }

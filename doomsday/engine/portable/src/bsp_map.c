@@ -124,6 +124,7 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
             {   // Write mode.
                 (*params->indexPtr)[params->numHEdges++] = hEdge;
                 if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
+                   !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
                    !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
                     (*params->indexPtr)[params->numHEdges++] = hEdge->twin;
             }
@@ -136,6 +137,7 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
 
                 params->numHEdges++;
                 if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
+                   !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
                    !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
                     params->numHEdges++;
             }
@@ -225,8 +227,8 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         }
 
         seg->angle =
-            bamsAtan2((int) (dst->HE_v2pos[VY] - dst->HE_v1pos[VY]),
-                      (int) (dst->HE_v2pos[VX] - dst->HE_v1pos[VX])) << FRACBITS;
+            bamsAtan2((int) (dst->twin->vertex->v.pos[VY] - dst->vertex->v.pos[VY]),
+                      (int) (dst->twin->vertex->v.pos[VX] - dst->vertex->v.pos[VX])) << FRACBITS;
 
         // Calculate the length of the segment. We need this for
         // the texture coordinates. -jk
@@ -256,7 +258,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     M_Free(index);
 }
 
-static sector_t* pickSectorForSubSector(const hedge_node_t* firstHEdge,
+static sector_t* pickSectorForSubSector(gamemap_t* map, const hedge_node_t* firstHEdge,
                                         boolean allowSelfRef)
 {
     const hedge_node_t* node;
@@ -277,8 +279,11 @@ static sector_t* pickSectorForSubSector(const hedge_node_t* firstHEdge,
             linedef_t*          lineDef =
                 ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
 
-            sector = lineDef->buildData.sideDefs[
-                ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
+                sector = &map->sectors[lineDef->buildData.windowEffect->buildData.index - 1];
+            else
+                sector = lineDef->buildData.sideDefs[
+                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
         }
     }
 
@@ -337,9 +342,9 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
      * On the first pass, we are picky; do not consider half-edges from
      * self-referencing linedefs. If that fails, take whatever we can find.
      */
-    subSector->sector = pickSectorForSubSector(src->hEdges, false);
+    subSector->sector = pickSectorForSubSector(map, src->hEdges, false);
     if(!subSector->sector)
-        subSector->sector = pickSectorForSubSector(src->hEdges, true);
+        subSector->sector = pickSectorForSubSector(map, src->hEdges, true);
 
     if(!subSector->sector)
     {

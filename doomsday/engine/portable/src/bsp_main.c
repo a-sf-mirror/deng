@@ -155,13 +155,13 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
                              line->buildData.sideDefs[FRONT]->sector, false);
 
         // Handle the 'One-Sided Window' trick.
-        /*if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
+        if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
         {
             back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
                                  line, line->buildData.v[1],
                                  line->buildData.windowEffect, true);
         }
-        else*/
+        else
         {
             back = HEdge_Create(line, line, line->buildData.v[1],
                                 line->buildData.sideDefs[BACK]? line->buildData.sideDefs[BACK]->sector : NULL, true);
@@ -177,8 +177,8 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
         BSP_UpdateHEdgeInfo(back);
 
         BSP_AddHEdgeToSuperBlock(block, front);
-        if((line->buildData.sideDefs[BACK] && line->buildData.sideDefs[BACK]->sector)/* ||
-           (!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)*/)
+        if((line->buildData.sideDefs[BACK] && line->buildData.sideDefs[BACK]->sector) ||
+           (!line->buildData.sideDefs[BACK] && line->buildData.windowEffect))
             BSP_AddHEdgeToSuperBlock(block, back);
 
         // \todo edge tips should be created when half-edges are created.
