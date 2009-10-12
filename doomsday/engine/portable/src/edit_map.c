@@ -79,10 +79,9 @@ static vertex_t* rootVtx; // Used when sorting vertex line owners.
 
 vertex_t* createVertex(void)
 {
-    vertex_t* vtx = M_Calloc(sizeof(*vtx));
+    vertex_t* vtx = Z_Calloc(sizeof(*vtx), PU_STATIC, 0);
 
-    map->vertexes =
-        M_Realloc(map->vertexes, sizeof(vtx) * (++map->numVertexes + 1));
+    map->vertexes = Z_Realloc(map->vertexes, sizeof(vtx) * (++map->numVertexes + 1), PU_STATIC);
     map->vertexes[map->numVertexes-1] = vtx;
     map->vertexes[map->numVertexes] = NULL;
 
@@ -161,40 +160,13 @@ static void destroyEditablePolyObjs(editmap_t* map)
     map->numPolyObjs = 0;
 }
 
-static void destroyEditableVertexes(editmap_t *map)
-{
-    if(map->vertexes)
-    {
-        uint i;
-        for(i = 0; i < map->numVertexes; ++i)
-        {
-            vertex_t* vtx = map->vertexes[i];
-            edgetip_t* tip, *n;
-
-            tip = vtx->buildData.tipSet;
-            while(tip)
-            {
-                n = tip->ET_next;
-                BSP_DestroyVertexEdgeTip(tip);
-                tip = n;
-            }
-
-            M_Free(vtx);
-        }
-
-        M_Free(map->vertexes);
-    }
-    map->vertexes = NULL;
-    map->numVertexes = 0;
-}
-
 static void destroyMap(void)
 {
-    destroyEditableVertexes(map);
-
     // These should already be gone:
     destroyEditablePolyObjs(map);
 
+    map->vertexes = NULL;
+    map->numVertexes = 0;
     map->lineDefs = NULL;
     map->numLineDefs = 0;
     map->sectors = NULL;
@@ -217,10 +189,10 @@ static int C_DECL vertexCompare(const void* p1, const void* p2)
     return (int) a->buildData.pos[VY] - (int) b->buildData.pos[VY];
 }
 
-void MPE_DetectDuplicateVertices(editmap_t *map)
+void MPE_DetectDuplicateVertices(editmap_t* map)
 {
-    size_t              i;
-    vertex_t          **hits;
+    size_t i;
+    vertex_t** hits;
 
     hits = M_Malloc(map->numVertexes * sizeof(vertex_t*));
 
@@ -246,14 +218,14 @@ void MPE_DetectDuplicateVertices(editmap_t *map)
     M_Free(hits);
 }
 
-static void findEquivalentVertexes(editmap_t *src)
+static void findEquivalentVertexes(editmap_t* src)
 {
-    uint            i, newNum;
+    uint i, newNum;
 
     // Scan all linedefs.
     for(i = 0, newNum = 0; i < src->numLineDefs; ++i)
     {
-        linedef_t         *l = src->lineDefs[i];
+        linedef_t* l = src->lineDefs[i];
 
         // Handle duplicated vertices.
         while(l->buildData.v[0]->buildData.equiv)
@@ -277,17 +249,17 @@ static void findEquivalentVertexes(editmap_t *src)
 
 static void pruneLineDefs(editmap_t* map)
 {
-    uint                i, newNum, unused = 0;
+    uint i, newNum, unused = 0;
 
     for(i = 0, newNum = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t*          l = map->lineDefs[i];
+        linedef_t* l = map->lineDefs[i];
 
         if(!l->buildData.sideDefs[FRONT] && !l->buildData.sideDefs[BACK])
         {
             unused++;
 
-            M_Free(l);
+            Z_Free(l);
             continue;
         }
 
@@ -306,12 +278,12 @@ static void pruneLineDefs(editmap_t* map)
 
 static void pruneVertices(editmap_t* map)
 {
-    uint                i, newNum, unused = 0;
+    uint i, newNum, unused = 0;
 
     // Scan all vertices.
     for(i = 0, newNum = 0; i < map->numVertexes; ++i)
     {
-        vertex_t           *v = map->vertexes[i];
+        vertex_t* v = map->vertexes[i];
 
         if(v->buildData.refCount < 0)
             Con_Error("Vertex %d ref_count is %d", i, v->buildData.refCount);
@@ -321,7 +293,7 @@ static void pruneVertices(editmap_t* map)
             if(v->buildData.equiv == NULL)
                 unused++;
 
-            M_Free(v);
+            Z_Free(v);
             continue;
         }
 
@@ -331,7 +303,7 @@ static void pruneVertices(editmap_t* map)
 
     if(newNum < map->numVertexes)
     {
-        int         dupNum = map->numVertexes - newNum - unused;
+        int dupNum = map->numVertexes - newNum - unused;
 
         if(unused > 0)
             Con_Message("  Pruned %d unused vertices.\n", unused);
@@ -345,17 +317,17 @@ static void pruneVertices(editmap_t* map)
 
 static void pruneUnusedSideDefs(editmap_t* map)
 {
-    uint                i, newNum, unused = 0;
+    uint i, newNum, unused = 0;
 
     for(i = 0, newNum = 0; i < map->numSideDefs; ++i)
     {
-        sidedef_t*          s = map->sideDefs[i];
+        sidedef_t* s = map->sideDefs[i];
 
         if(s->buildData.refCount == 0)
         {
             unused++;
 
-            M_Free(s);
+            Z_Free(s);
             continue;
         }
 
@@ -365,7 +337,7 @@ static void pruneUnusedSideDefs(editmap_t* map)
 
     if(newNum < map->numSideDefs)
     {
-        int                 dupNum = map->numSideDefs - newNum - unused;
+        int dupNum = map->numSideDefs - newNum - unused;
 
         if(unused > 0)
             Con_Message("  Pruned %d unused sidedefs\n", unused);
@@ -379,11 +351,11 @@ static void pruneUnusedSideDefs(editmap_t* map)
 
 static void pruneUnusedSectors(editmap_t* map)
 {
-    uint                i, newNum;
+    uint i, newNum;
 
     for(i = 0; i < map->numSideDefs; ++i)
     {
-        sidedef_t*          s = map->sideDefs[i];
+        sidedef_t* s = map->sideDefs[i];
 
         if(s->sector)
             s->sector->buildData.refCount++;
@@ -396,7 +368,7 @@ static void pruneUnusedSectors(editmap_t* map)
 
         if(s->buildData.refCount == 0)
         {
-            M_Free(s);
+            Z_Free(s);
             continue;
         }
 
@@ -1729,9 +1701,9 @@ boolean MPE_End(void)
         {
             linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
-            line->L_v1 = &gamemap->vertexes[
+            line->L_v1 = gamemap->vertexes[
                 line->buildData.v[0]->buildData.index - 1];
-            line->L_v2 = &gamemap->vertexes[
+            line->L_v2 = gamemap->vertexes[
                 line->buildData.v[1]->buildData.index - 1];
 
             // The original Pts are based off the anchor Pt, and are unique

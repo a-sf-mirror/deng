@@ -260,7 +260,7 @@ void R_InitSectorShadows(void)
 
     for(i = 0; i < numVertexes; ++i)
     {
-        R_UpdateVertexShadowOffsets(VERTEX_PTR(i));
+        R_UpdateVertexShadowOffsets(vertexes[i]);
     }
 
     /**

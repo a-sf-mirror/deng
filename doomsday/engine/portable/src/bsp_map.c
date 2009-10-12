@@ -187,7 +187,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         const bsp_hedgeinfo_t* info = (const bsp_hedgeinfo_t*) hEdge->data;
         hedge_t* dst = &map->hEdges[i];
 
-        dst->vertex = &map->vertexes[hEdge->vertex->buildData.index - 1];
+        dst->vertex = map->vertexes[hEdge->vertex->buildData.index - 1];
         dst->twin = &map->hEdges[((bsp_hedgeinfo_t*) hEdge->twin->data)->index];
 
         if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->sector))
@@ -479,38 +479,44 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
     }
 }
 
-static void hardenVertexes(gamemap_t* dest, vertex_t*** vertexes,
+static void finishVertexes(gamemap_t* dest, vertex_t*** vertexes,
                            uint* numVertexes)
 {
-    uint                i;
+    uint i;
 
     dest->numVertexes = *numVertexes;
-    dest->vertexes =
-        Z_Calloc(dest->numVertexes * sizeof(vertex_t), PU_MAPSTATIC, 0);
+    dest->vertexes = *vertexes;
 
     for(i = 0; i < dest->numVertexes; ++i)
     {
-        vertex_t*           destV = &dest->vertexes[i];
-        vertex_t*           srcV = (*vertexes)[i];
+        vertex_t* vtx = dest->vertexes[i];
 
-        destV->numLineOwners = srcV->numLineOwners;
-        destV->lineOwners = srcV->lineOwners;
+        {
+        edgetip_t* tip, *n;
+        tip = vtx->buildData.tipSet;
+        while(tip)
+        {
+            n = tip->ET_next;
+            BSP_DestroyVertexEdgeTip(tip);
+            tip = n;
+        }
+        }
 
         //// \fixme Add some rounding.
-        destV->V_pos[VX] = (float) srcV->buildData.pos[VX];
-        destV->V_pos[VY] = (float) srcV->buildData.pos[VY];
+        vtx->V_pos[VX] = (float) vtx->buildData.pos[VX];
+        vtx->V_pos[VY] = (float) vtx->buildData.pos[VY];
 
-        DMU_AddObjRecord(DMU_VERTEX, destV);
+        DMU_AddObjRecord(DMU_VERTEX, vtx);
     }
 }
 
 void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
              uint* numVertexes)
 {
-    uint                startTime = Sys_GetRealTime();
-    binarytree_t*       rn = (binarytree_t*) rootNode;
+    uint startTime = Sys_GetRealTime();
+    binarytree_t* rn = (binarytree_t*) rootNode;
 
-    hardenVertexes(dest, vertexes, numVertexes);
+    finishVertexes(dest, vertexes, numVertexes);
     buildSegsFromHEdges(dest, rn);
     hardenBSP(dest, rn);
 

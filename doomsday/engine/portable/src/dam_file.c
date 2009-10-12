@@ -284,7 +284,7 @@ static void endSegment(void)
 
 static void writeVertex(const gamemap_t* map, uint idx)
 {
-    vertex_t* v = &map->vertexes[idx];
+    vertex_t* v = map->vertexes[idx];
 
     writeFloat(v->V_pos[VX]);
     writeFloat(v->V_pos[VY]);
@@ -307,7 +307,7 @@ static void writeVertex(const gamemap_t* map, uint idx)
 static void readVertex(const gamemap_t* map, uint idx)
 {
     uint i;
-    vertex_t* v = &map->vertexes[idx];
+    vertex_t* v = map->vertexes[idx];
 
     v->V_pos[VX] = readFloat();
     v->V_pos[VY] = readFloat();
@@ -356,7 +356,7 @@ static void archiveVertexes(gamemap_t* map, boolean write)
     else
     {
         map->numVertexes = (uint) readLong();
-        map->vertexes = Z_Malloc(sizeof(vertex_t) * map->numVertexes, PU_MAP, 0);
+        map->vertexes = Z_Malloc(sizeof(vertex_t) * map->numVertexes, PU_STATIC, 0);
         for(i = 0; i < map->numVertexes; ++i)
             readVertex(map, i);
     }
@@ -425,7 +425,7 @@ static void archiveLines(gamemap_t* map, boolean write)
     else
     {
         map->numLineDefs = readLong();
-        map->lineDefs = Z_Malloc(sizeof(linedef_t) * map->numLineDefs, PU_MAP, 0);
+        map->lineDefs = Z_Malloc(sizeof(linedef_t) * map->numLineDefs, PU_STATIC, 0);
         for(i = 0; i < map->numLineDefs; ++i)
             readLine(map, i);
     }
@@ -513,7 +513,7 @@ static void archiveSides(gamemap_t* map, boolean write)
     else
     {
         map->numSideDefs = readLong();
-        map->sideDefs = Z_Malloc(sizeof(sidedef_t) * map->numSideDefs, PU_MAP, 0);
+        map->sideDefs = Z_Malloc(sizeof(sidedef_t) * map->numSideDefs, PU_STATIC, 0);
         for(i = 0; i < map->numSideDefs; ++i)
             readSide(map, i);
     }
@@ -713,7 +713,7 @@ static void archiveSectors(gamemap_t *map, boolean write)
     else
     {
         map->numSectors = readLong();
-        map->sectors = Z_Malloc(sizeof(sector_t) * map->numSectors, PU_MAP, 0);
+        map->sectors = Z_Malloc(sizeof(sector_t) * map->numSectors, PU_STATIC, 0);
         for(i = 0; i < map->numSectors; ++i)
             readSector(map, i);
     }
@@ -777,7 +777,7 @@ static void readSubSector(const gamemap_t* map, uint idx)
 
     // SubSector segs list.
 /*    s->hEdgeCount = (uint) readLong();
-    s->hEdges = Z_Malloc(sizeof(hedge_t*) * (s->hEdgeCount + 1), PU_MAP, 0);
+    s->hEdges = Z_Malloc(sizeof(hedge_t*) * (s->hEdgeCount + 1), PU_STATIC, 0);
     for(i = 0; i < s->hEdgeCount; ++i)
         s->hEdges[i] = &map->hEdges[(unsigned) readLong() - 1];
     s->hEdges[i] = NULL; // Terminate.*/
@@ -801,7 +801,7 @@ static void archiveSubSectors(gamemap_t* map, boolean write)
     else
     {
         map->numFaces = readLong();
-        map->faces = Z_Malloc(sizeof(face_t) * map->numFaces, PU_MAP, 0);
+        map->faces = Z_Malloc(sizeof(face_t) * map->numFaces, PU_STATIC, 0);
         for(i = 0; i < map->numFaces; ++i)
             readSubSector(map, i);
     }
@@ -819,11 +819,11 @@ static void writeSeg(const gamemap_t* map, uint idx)
     writeLong(hEdge->next? ((hEdge->next - map->hEdges) + 1) : 0);
     writeLong(hEdge->prev? ((hEdge->prev - map->hEdges) + 1) : 0);
     writeLong(hEdge->twin? ((hEdge->twin - map->hEdges) + 1) : 0);
-    writeLong((hEdge->vertex - map->vertexes) + 1);
+    writeLong(hEdge->vertex? DMU_GetObjRecord(DMU_VERTEX, hEdge->vertex)->id : 0);
     writeLong(hEdge->face? DMU_GetObjRecord(DMU_FACE, hEdge->face)->id : 0);
 
     {
-    const seg_t*    s = (seg_t*) hEdge->data;
+    const seg_t* s = (seg_t*) hEdge->data;
 
     writeFloat(s->length);
     writeFloat(s->offset);
@@ -835,8 +835,8 @@ static void writeSeg(const gamemap_t* map, uint idx)
 
 static void readSeg(const gamemap_t* map, uint idx)
 {
-    long                obIdx;
-    hedge_t*              hEdge = &map->hEdges[idx];
+    long obIdx;
+    hedge_t* hEdge = &map->hEdges[idx];
 
     obIdx = readLong();
     hEdge->next = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
@@ -844,11 +844,11 @@ static void readSeg(const gamemap_t* map, uint idx)
     hEdge->prev = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
     obIdx = readLong();
     hEdge->twin = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
-    hEdge->vertex = &map->vertexes[(unsigned) readLong() - 1];
+    hEdge->vertex = map->vertexes[(unsigned) readLong() - 1];
     hEdge->face = (obIdx == 0? NULL : map->faces[(unsigned) obIdx - 1]);
 
     {
-    seg_t*          s = (seg_t*) hEdge->data;
+    seg_t* s = (seg_t*) hEdge->data;
 
     s->length = readFloat();
     s->offset = readFloat();
@@ -859,9 +859,9 @@ static void readSeg(const gamemap_t* map, uint idx)
     }
 }
 
-static void archiveSegs(gamemap_t *map, boolean write)
+static void archiveSegs(gamemap_t* map, boolean write)
 {
-    uint                i;
+    uint i;
 
     if(write)
         beginSegment(DAMSEG_SEGS);
@@ -946,7 +946,7 @@ static void archiveNodes(gamemap_t *map, boolean write)
     else
     {
         map->numNodes = readLong();
-        map->nodes = Z_Malloc(sizeof(node_t) * map->numNodes, PU_MAP, 0);
+        map->nodes = Z_Malloc(sizeof(node_t) * map->numNodes, PU_STATIC, 0);
         for(i = 0; i < map->numNodes; ++i)
             readNode(map, i);
     }

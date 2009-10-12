@@ -42,13 +42,11 @@
 #include "m_nodepile.h"
 #include "m_vector.h"
 
-#define GET_VERTEX_IDX(vtx) ((vtx) - vertexes)
 #define GET_HEDGE_IDX(hEdge) ((hEdge) - hEdges)
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
 
-#define VERTEX_PTR(i)       (&vertexes[i])
 #define HEDGE_PTR(i)        (&hEdges[i])
 
 // Node flags.
@@ -195,7 +193,7 @@ typedef struct {
  */
 extern char mapID[9];
 extern uint numVertexes;
-extern vertex_t* vertexes;
+extern vertex_t** vertexes;
 
 extern uint numHEdges;
 extern hedge_t* hEdges;
@@ -228,7 +226,7 @@ typedef struct gamemap_s {
     float           bBox[4];
 
     uint            numVertexes;
-    vertex_t*       vertexes;
+    vertex_t**      vertexes;
 
     uint            numHEdges;
     hedge_t*        hEdges;

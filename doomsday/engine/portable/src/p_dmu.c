@@ -692,7 +692,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     case DMU_SECTOR:
         return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_VERTEX:
-        return ((vertex_t*) ((dmuobjrecord_t*) ptr)->obj) - vertexes;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_HEDGE:
         return ((hedge_t*) ((dmuobjrecord_t*) ptr)->obj) - hEdges;
     case DMU_LINEDEF:
@@ -881,7 +881,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
     {
     case DMU_VERTEX:
         if(index < numVertexes)
-            return callback(DMU_GetObjRecord(DMU_VERTEX, vertexes + index), context);
+            return callback(DMU_GetObjRecord(DMU_VERTEX, vertexes[index]), context);
         break;
 
     case DMU_HEDGE:

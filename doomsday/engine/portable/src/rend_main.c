@@ -3193,10 +3193,10 @@ static void drawVertexBar(const vertex_t* vtx, float bottom, float top,
 #undef EXTEND_DIST
 }
 
-static void drawVertexIndex(const vertex_t* vtx, float z, float scale,
+static void drawVertexIndex(vertex_t* vtx, float z, float scale,
                             float alpha)
 {
-    char                buf[80];
+    char buf[80];
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -3205,7 +3205,7 @@ static void drawVertexIndex(const vertex_t* vtx, float z, float scale,
     glRotatef(vpitch, 1, 0, 0);
     glScalef(-scale, -scale, 1);
 
-    sprintf(buf, "%i", vtx - vertexes);
+    sprintf(buf, "%i", (int) DMU_GetObjRecord(DMU_VERTEX, vtx)->id);
     UI_TextOutEx(buf, 2, 2, false, false, UI_Color(UIC_TITLE), alpha);
 
     glMatrixMode(GL_MODELVIEW);
@@ -3216,20 +3216,20 @@ static void drawVertexIndex(const vertex_t* vtx, float z, float scale,
 
 static boolean drawVertex1(linedef_t* li, void* context)
 {
-    vertex_t*           vtx = li->L_v1;
-    polyobj_t*          po = context;
-    subsector_t*        subSector = (subsector_t*) po->face->data;
-    float               dist2D =
+    vertex_t* vtx = li->L_v1;
+    polyobj_t* po = context;
+    subsector_t* subSector = (subsector_t*) po->face->data;
+    float dist2D =
         M_ApproxDistancef(vx - vtx->V_pos[VX], vz - vtx->V_pos[VY]);
 
     if(dist2D < MAX_VERTEX_POINT_DIST)
     {
-        float               alpha = 1 - dist2D / MAX_VERTEX_POINT_DIST;
+        float alpha = 1 - dist2D / MAX_VERTEX_POINT_DIST;
 
         if(alpha > 0)
         {
-            float               bottom = subSector->sector->SP_floorvisheight;
-            float               top = subSector->sector->SP_ceilvisheight;
+            float bottom = subSector->sector->SP_floorvisheight;
+            float top = subSector->sector->SP_ceilvisheight;
 
             glDisable(GL_TEXTURE_2D);
 
@@ -3244,7 +3244,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 
     if(devVertexIndices)
     {
-        float               eye[3], pos[3], dist3D;
+        float eye[3], pos[3], dist3D;
 
         eye[VX] = vx;
         eye[VY] = vz;
@@ -3276,8 +3276,8 @@ boolean drawPolyObjVertexes(polyobj_t* po, void* context)
  */
 void Rend_Vertexes(void)
 {
-    uint                i;
-    float               oldPointSize, oldLineWidth = 1, bbox[4];
+    uint i;
+    float oldPointSize, oldLineWidth = 1, bbox[4];
 
     if(!devVertexBars && !devVertexIndices)
         return;
@@ -3293,8 +3293,8 @@ void Rend_Vertexes(void)
 
         for(i = 0; i < numVertexes; ++i)
         {
-            vertex_t*           vtx = &vertexes[i];
-            float               alpha;
+            vertex_t* vtx = vertexes[i];
+            float alpha;
 
             if(!vtx->lineOwners)
                 continue; // Not a linedef vertex.
@@ -3307,7 +3307,7 @@ void Rend_Vertexes(void)
 
             if(alpha > 0)
             {
-                float               bottom, top;
+                float bottom, top;
 
                 bottom = DDMAXFLOAT;
                 top = DDMINFLOAT;
@@ -3328,8 +3328,8 @@ void Rend_Vertexes(void)
 
     for(i = 0; i < numVertexes; ++i)
     {
-        vertex_t*           vtx = &vertexes[i];
-        float               dist;
+        vertex_t* vtx = vertexes[i];
+        float dist;
 
         if(!vtx->lineOwners)
             continue; // Not a linedef vertex.
@@ -3340,7 +3340,7 @@ void Rend_Vertexes(void)
 
         if(dist < MAX_VERTEX_POINT_DIST)
         {
-            float               bottom;
+            float bottom;
 
             bottom = DDMAXFLOAT;
             getVertexPlaneMinMax(vtx, &bottom, NULL);
@@ -3353,7 +3353,7 @@ void Rend_Vertexes(void)
 
     if(devVertexIndices)
     {
-        float               eye[3];
+        float eye[3];
 
         eye[VX] = vx;
         eye[VY] = vz;
@@ -3361,8 +3361,8 @@ void Rend_Vertexes(void)
 
         for(i = 0; i < numVertexes; ++i)
         {
-            vertex_t*           vtx = &vertexes[i];
-            float               pos[3], dist;
+            vertex_t* vtx = vertexes[i];
+            float pos[3], dist;
 
             if(!vtx->lineOwners)
                 continue; // Not a linedef vertex.
@@ -3378,7 +3378,7 @@ void Rend_Vertexes(void)
 
             if(dist < MAX_VERTEX_POINT_DIST)
             {
-                float               alpha, scale;
+                float alpha, scale;
 
                 alpha = 1 - dist / MAX_VERTEX_POINT_DIST;
                 scale = dist / (theWindow->width / 2);
@@ -3411,13 +3411,13 @@ void Rend_Vertexes(void)
  */
 void Rend_RenderLightModRange(void)
 {
-#define bWidth          1.0f
-#define bHeight         (bWidth * 255.0f)
-#define BORDER          20
+#define bWidth (1.0f)
+#define bHeight (bWidth * 255.0f)
+#define BORDER (20)
 
-    int                 i;
-    float               c, off;
-    ui_color_t          color;
+    int i;
+    float c, off;
+    ui_color_t color;
 
     if(!devLightModRange)
         return;

@@ -67,7 +67,7 @@ extern boolean mapSetup;
  */
 char mapID[9]; // Name by which the game referred to the current map.
 uint numVertexes = 0;
-vertex_t* vertexes = NULL;
+vertex_t** vertexes = NULL;
 
 uint numHEdges = 0;
 hedge_t* hEdges = NULL;
@@ -219,6 +219,20 @@ void P_DestroyMap(gamemap_t* map)
     }
 
     SB_DestroySurfaces(map);
+
+    if(map->vertexes)
+    {
+        uint i;
+
+        for(i = 0; i < map->numVertexes; ++i)
+        {
+            vertex_t* vertex = map->vertexes[i];
+            Z_Free(vertex);
+        }
+        Z_Free(map->vertexes);
+    }
+    map->vertexes = NULL;
+    map->numVertexes = 0;
 
     if(map->sideDefs)
     {
