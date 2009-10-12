@@ -29,8 +29,8 @@
  * this data.
  */
 
-#ifndef __DOOMSDAY_PLAY_DATA_H__
-#define __DOOMSDAY_PLAY_DATA_H__
+#ifndef DOOMSDAY_PLAY_DATA_H
+#define DOOMSDAY_PLAY_DATA_H
 
 #if defined(__JDOOM__) || defined(__JHERETIC__) || defined(__JHEXEN__)
 #  error "Attempted to include internal Doomsday p_mapdata.h from a game"
@@ -44,7 +44,6 @@
 
 #define GET_VERTEX_IDX(vtx) ((vtx) - vertexes)
 #define GET_LINE_IDX(li)    ((li) - lineDefs)
-#define GET_SIDE_IDX(si)    ((si) - sideDefs)
 #define GET_SECTOR_IDX(sec) ((sec) - sectors)
 #define GET_FACE_IDX(face)  ((face) - faces)
 #define GET_HEDGE_IDX(hEdge) ((hEdge) - hEdges)
@@ -59,7 +58,6 @@
 #define FACE_PTR(i)         (&faces[i])
 #define NODE_PTR(i)         (&nodes[i])
 #define LINE_PTR(i)         (&lineDefs[i])
-#define SIDE_PTR(i)         (&sideDefs[i])
 
 // Node flags.
 #define NF_SUBSECTOR        0x80000000
@@ -223,7 +221,7 @@ extern uint numLineDefs;
 extern linedef_t* lineDefs;
 
 extern uint numSideDefs;
-extern sidedef_t* sideDefs;
+extern sidedef_t** sideDefs;
 
 extern watchedplanelist_t* watchedPlaneList;
 extern surfacelist_t* movingSurfaceList;
@@ -256,7 +254,7 @@ typedef struct gamemap_s {
     linedef_t*      lineDefs;
 
     uint            numSideDefs;
-    sidedef_t*      sideDefs;
+    sidedef_t**     sideDefs;
 
     uint            numPolyObjs;
     polyobj_t**     polyObjs;
@@ -339,4 +337,4 @@ int             P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier);
 fixed_t         P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier);
 angle_t         P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier);
 float           P_GetGMOFloat(int identifier, uint elmIdx, int propIdentifier);
-#endif
+#endif /* DOOMSDAY_PLAY_DATA_H */

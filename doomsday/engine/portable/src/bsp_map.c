@@ -212,7 +212,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         if(data->lineDef)
         {
             if(data->lineDef->buildData.sideDefs[seg->side])
-                seg->sideDef = &map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
+                seg->sideDef = map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
         }
 
         if(seg->sideDef)

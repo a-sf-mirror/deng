@@ -187,23 +187,6 @@ static void destroyEditableLineDefs(editmap_t *map)
     map->numLineDefs = 0;
 }
 
-static void destroyEditableSideDefs(editmap_t *map)
-{
-    if(map->sideDefs)
-    {
-        uint                i;
-        for(i = 0; i < map->numSideDefs; ++i)
-        {
-            sidedef_t             *side = map->sideDefs[i];
-            M_Free(side);
-        }
-
-        M_Free(map->sideDefs);
-    }
-    map->sideDefs = NULL;
-    map->numSideDefs = 0;
-}
-
 static void destroyEditableSectors(editmap_t *map)
 {
     if(map->sectors)
@@ -265,7 +248,6 @@ static void destroyMap(void)
 
     // These should already be gone:
     destroyEditableLineDefs(map);
-    destroyEditableSideDefs(map);
     destroyEditableSectors(map);
     destroyEditablePolyObjs(map);
 }
@@ -1272,19 +1254,19 @@ static void hardenLineDefs(gamemap_t *dest, editmap_t *src)
 
         memcpy(destL, srcL, sizeof(*destL));
 
-        if(srcL->buildData.sideDefs[FRONT])
+        /*if(srcL->buildData.sideDefs[FRONT])
             destL->buildData.sideDefs[FRONT] =
-                &dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1];
+                dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1];
 
         if(srcL->buildData.sideDefs[BACK])
             destL->buildData.sideDefs[BACK] =
-                &dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1];
+                dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1];*/
 
         //// \todo We shouldn't still have lines with missing fronts but...
         if(srcL->buildData.sideDefs[FRONT])
-            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1].lineDef = destL;
+            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1]->lineDef = destL;
         if(srcL->buildData.sideDefs[BACK])
-            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1].lineDef = destL;
+            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1]->lineDef = destL;
 
         DMU_AddObjRecord(DMU_LINEDEF, destL);
     }
@@ -1292,29 +1274,27 @@ static void hardenLineDefs(gamemap_t *dest, editmap_t *src)
 
 static void hardenSideDefs(gamemap_t* dest, editmap_t* src)
 {
-    uint                i;
+    uint i;
 
     dest->numSideDefs = src->numSideDefs;
-    dest->sideDefs = Z_Malloc(dest->numSideDefs * sizeof(sidedef_t), PU_MAPSTATIC, 0);
+    dest->sideDefs = src->sideDefs;
 
     for(i = 0; i < dest->numSideDefs; ++i)
     {
-        sidedef_t*          destS = &dest->sideDefs[i];
-        const sidedef_t*    srcS = src->sideDefs[i];
+        sidedef_t* sideDef = dest->sideDefs[i];
 
-        memcpy(destS, srcS, sizeof(*destS));
-        destS->sector = &dest->sectors[srcS->sector->buildData.index - 1];
-        destS->SW_bottomsurface.owner = destS;
-        destS->SW_middlesurface.owner = destS;
-        destS->SW_topsurface.owner = destS;
-        destS->SW_bottomsurface.visOffset[0] = destS->SW_bottomsurface.offset[0];
-        destS->SW_bottomsurface.visOffset[1] = destS->SW_bottomsurface.offset[1];
-        destS->SW_middlesurface.visOffset[0] = destS->SW_middlesurface.offset[0];
-        destS->SW_middlesurface.visOffset[1] = destS->SW_middlesurface.offset[1];
-        destS->SW_topsurface.visOffset[0] = destS->SW_topsurface.offset[0];
-        destS->SW_topsurface.visOffset[1] = destS->SW_topsurface.offset[1];
+        sideDef->sector = &dest->sectors[sideDef->sector->buildData.index - 1];
+        sideDef->SW_bottomsurface.owner = sideDef;
+        sideDef->SW_middlesurface.owner = sideDef;
+        sideDef->SW_topsurface.owner = sideDef;
+        sideDef->SW_bottomsurface.visOffset[0] = sideDef->SW_bottomsurface.offset[0];
+        sideDef->SW_bottomsurface.visOffset[1] = sideDef->SW_bottomsurface.offset[1];
+        sideDef->SW_middlesurface.visOffset[0] = sideDef->SW_middlesurface.offset[0];
+        sideDef->SW_middlesurface.visOffset[1] = sideDef->SW_middlesurface.offset[1];
+        sideDef->SW_topsurface.visOffset[0] = sideDef->SW_topsurface.offset[0];
+        sideDef->SW_topsurface.visOffset[1] = sideDef->SW_topsurface.offset[1];
 
-        DMU_AddObjRecord(DMU_SIDEDEF, destS);
+        DMU_AddObjRecord(DMU_SIDEDEF, sideDef);
     }
 }
 
@@ -1427,13 +1407,13 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
         for(j = 0; j < destP->numSegs; ++j)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) destP->lineDefs[j])->obj;
-            poseg_t*            seg = &destP->segs[j];
+            linedef_t* line = ((dmuobjrecord_t*) destP->lineDefs[j])->obj;
+            poseg_t* seg = &destP->segs[j];
 
             line->hEdges[0]->data = seg;
 
             seg->lineDef = line;
-            seg->sideDef = &dest->sideDefs[line->buildData.sideDefs[FRONT]->buildData.index - 1];
+            seg->sideDef = dest->sideDefs[line->buildData.sideDefs[FRONT]->buildData.index - 1];
         }
 
         // Add this polyobj to the global list.
@@ -1796,7 +1776,6 @@ boolean MPE_End(void)
     hardenVertexOwnerRings(gamemap, map);
 
     // Don't destroy the sectors (planes are linked to them).
-    destroyEditableSideDefs(map);
     destroyEditableLineDefs(map);
     destroyEditablePolyObjs(map);
 

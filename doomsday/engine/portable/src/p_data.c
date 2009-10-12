@@ -85,7 +85,7 @@ uint numLineDefs = 0;
 linedef_t* lineDefs = NULL;
 
 uint numSideDefs = 0;
-sidedef_t* sideDefs = NULL;
+sidedef_t** sideDefs = NULL;
 
 watchedplanelist_t* watchedPlaneList = NULL;
 surfacelist_t* movingSurfaceList = NULL;
@@ -219,6 +219,22 @@ void P_DestroyMap(gamemap_t* map)
     }
 
     SB_DestroySurfaces(map);
+
+    if(map->sideDefs)
+    {
+        uint i;
+
+        for(i = 0; i < map->numSideDefs; ++i)
+        {
+            sidedef_t* sideDef = map->sideDefs[i];
+
+            M_Free(sideDef);
+        }
+
+        M_Free(map->sideDefs);
+    }
+    map->sideDefs = NULL;
+    map->numSideDefs = 0;
 }
 
 /**

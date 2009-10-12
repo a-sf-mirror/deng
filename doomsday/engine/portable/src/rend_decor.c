@@ -840,7 +840,7 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
         // Process all sidedefs.
         for(i = 0; i < numSideDefs; ++i)
         {
-            sidedef_t*          side = &sideDefs[i];
+            sidedef_t*          side = sideDefs[i];
             surface_t*          suf;
 
             suf = &side->SW_middlesurface;

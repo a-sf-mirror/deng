@@ -717,7 +717,7 @@ if(num >= numSideDefs)
 }
 #endif
 
-    sid = SIDE_PTR(num);
+    sid = sideDefs[num];
 
     if(df & SIDF_TOP_MATERIAL)
     {

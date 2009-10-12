@@ -510,7 +510,7 @@ void Sv_RegisterSector(dt_sector_t* reg, uint number)
  */
 void Sv_RegisterSide(dt_side_t* reg, uint number)
 {
-    sidedef_t*          side = SIDE_PTR(number);
+    sidedef_t*          side = sideDefs[number];
     linedef_t*          line = sideOwners[number];
 
     reg->top.material = side->SW_topmaterial;
@@ -837,7 +837,7 @@ boolean Sv_RegisterCompareSector(cregister_t* reg, uint number,
 boolean Sv_RegisterCompareSide(cregister_t* reg, uint number, sidedelta_t* d,
                                byte doUpdate)
 {
-    const sidedef_t*    s = SIDE_PTR(number);
+    const sidedef_t*    s = sideDefs[number];
     const linedef_t*    line = sideOwners[number];
     dt_side_t*          r = &reg->sideDefs[number];
     int                 df = 0;

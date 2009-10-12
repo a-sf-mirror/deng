@@ -90,10 +90,12 @@ static dummysector_t* dummySectors;
 
 // CODE --------------------------------------------------------------------
 
-static void addObjRecord(dmuobjrecordset_t* s, dmuobjrecordid_t id)
+static dmuobjrecordid_t addObjRecord(dmuobjrecordset_t* s, dmuobjrecordid_t id)
 {
     s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t) * ++s->num);
     s->ids[s->num - 1] = id;
+
+    return id;
 }
 
 static void destroyRecordSet(int idx)
@@ -150,7 +152,7 @@ static dmuobjrecordset_t* createObjRecordset(int type)
     s->sentinel.dummy = -667;
     s->sentinel.header.type = type;
     s->sentinel.obj = NULL;
-    addObjRecord(s, -1);
+    s->sentinel.id = addObjRecord(s, -1);
 
     return s;
 }
@@ -211,16 +213,17 @@ void DMU_ClearObjRecords(int type)
 
     if((idx = findRecordSetForType(type)) != -1)
     {
-        dmuobjrecordset_t*  s = objRecordSets[idx];
-        dmuobjrecordid_t    i;
+        dmuobjrecordset_t* s = objRecordSets[idx];
+        dmuobjrecordid_t i;
 
         for(i = 1; i < s->num; ++i)
         {
-            dmuobjrecord_t*     r = &records[s->ids[i]];
+            dmuobjrecord_t* r = &records[s->ids[i]];
 
             // Deallocation of records is lazy.
             r->header.type = DMU_NONE;
             r->obj = NULL;
+            r->id = -1;
         }
 
         s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t));
@@ -230,9 +233,9 @@ void DMU_ClearObjRecords(int type)
 
 dmuobjrecordid_t DMU_AddObjRecord(int type, void* p)
 {
-    int                 idx;
-    dmuobjrecord_t*     r;
-    dmuobjrecordset_t*  s;
+    int idx;
+    dmuobjrecord_t* r;
+    dmuobjrecordset_t* s;
 
     if(type < DMU_FIRST_TYPE)
         Con_Error("DMU_AddObjRecord: Invalid type %i.", type);
@@ -250,10 +253,9 @@ dmuobjrecordid_t DMU_AddObjRecord(int type, void* p)
     r->dummy = -666;
     r->header.type = type;
     r->obj = p;
+    r->id = addObjRecord(s, numRecords - 1);
 
-    addObjRecord(s, numRecords - 1);
-
-    return numRecords - 1;
+    return r->id;
 }
 
 void DMU_RemoveObjRecord(int type, void* p)
@@ -290,12 +292,13 @@ void DMU_RemoveObjRecord(int type, void* p)
         // Deallocation of records is lazy.
         r->header.type = DMU_NONE;
         r->obj = NULL;
+        r->id = -1;
     }
 }
 
 dmuobjrecord_t* DMU_GetObjRecord(int type, void* p)
 {
-    int                 idx;
+    int idx;
 
     if(p && (idx = findRecordSetForType(type)) != -1)
     {
@@ -670,7 +673,7 @@ void P_SetVariable(int value, void* data)
 /**
  * Convert pointer to index.
  */
-uint P_ToIndex(const void* ptr)
+dmuobjrecordid_t P_ToIndex(const void* ptr)
 {
     int                 type;
 
@@ -694,7 +697,7 @@ uint P_ToIndex(const void* ptr)
     case DMU_LINEDEF:
         return ((linedef_t*) ((dmuobjrecord_t*) ptr)->obj) - lineDefs;
     case DMU_SIDEDEF:
-        return ((sidedef_t*) ((dmuobjrecord_t*) ptr)->obj) - sideDefs;
+        return ((dmuobjrecord_t*) ptr)->id;
     case DMU_FACE:
         return ((face_t*) ((dmuobjrecord_t*) ptr)->obj) - faces;
     case DMU_NODE:
@@ -717,7 +720,7 @@ uint P_ToIndex(const void* ptr)
 /**
  * Convert index to pointer.
  */
-void* P_ToPtr(int type, uint index)
+void* P_ToPtr(int type, dmuobjrecordid_t index)
 {
     int                 idx;
 
@@ -870,7 +873,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
  *                      aborted immediately when the callback function
  *                      returns @c false.
  */
-int P_Callback(int type, uint index, int (*callback)(void* p, void* ctx),
+int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* ctx),
                void* context)
 {
     switch(type)
@@ -892,7 +895,7 @@ int P_Callback(int type, uint index, int (*callback)(void* p, void* ctx),
 
     case DMU_SIDEDEF:
         if(index < numSideDefs)
-            return callback(DMU_GetObjRecord(DMU_SIDEDEF, sideDefs + index), context);
+            return callback(DMU_GetObjRecord(DMU_SIDEDEF, sideDefs[index]), context);
         break;
 
     case DMU_NODE:
@@ -1823,9 +1826,9 @@ static int getProperty(void* ptr, void* context)
     return false;
 }
 
-void P_SetBool(int type, uint index, uint prop, boolean param)
+void P_SetBool(int type, dmuobjrecordid_t index, uint prop, boolean param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BOOL;
@@ -1835,9 +1838,9 @@ void P_SetBool(int type, uint index, uint prop, boolean param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetByte(int type, uint index, uint prop, byte param)
+void P_SetByte(int type, dmuobjrecordid_t index, uint prop, byte param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BYTE;
@@ -1845,9 +1848,9 @@ void P_SetByte(int type, uint index, uint prop, byte param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetInt(int type, uint index, uint prop, int param)
+void P_SetInt(int type, dmuobjrecordid_t index, uint prop, int param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_INT;
@@ -1855,9 +1858,9 @@ void P_SetInt(int type, uint index, uint prop, int param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFixed(int type, uint index, uint prop, fixed_t param)
+void P_SetFixed(int type, dmuobjrecordid_t index, uint prop, fixed_t param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FIXED;
@@ -1865,9 +1868,9 @@ void P_SetFixed(int type, uint index, uint prop, fixed_t param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetAngle(int type, uint index, uint prop, angle_t param)
+void P_SetAngle(int type, dmuobjrecordid_t index, uint prop, angle_t param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_ANGLE;
@@ -1875,9 +1878,9 @@ void P_SetAngle(int type, uint index, uint prop, angle_t param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFloat(int type, uint index, uint prop, float param)
+void P_SetFloat(int type, dmuobjrecordid_t index, uint prop, float param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FLOAT;
@@ -1885,9 +1888,9 @@ void P_SetFloat(int type, uint index, uint prop, float param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetPtr(int type, uint index, uint prop, void* param)
+void P_SetPtr(int type, dmuobjrecordid_t index, uint prop, void* param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_PTR;
@@ -1895,9 +1898,9 @@ void P_SetPtr(int type, uint index, uint prop, void* param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetBoolv(int type, uint index, uint prop, boolean* params)
+void P_SetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BOOL;
@@ -1905,9 +1908,9 @@ void P_SetBoolv(int type, uint index, uint prop, boolean* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetBytev(int type, uint index, uint prop, byte* params)
+void P_SetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BYTE;
@@ -1915,9 +1918,9 @@ void P_SetBytev(int type, uint index, uint prop, byte* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetIntv(int type, uint index, uint prop, int* params)
+void P_SetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_INT;
@@ -1925,9 +1928,9 @@ void P_SetIntv(int type, uint index, uint prop, int* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFixedv(int type, uint index, uint prop, fixed_t* params)
+void P_SetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FIXED;
@@ -1935,9 +1938,9 @@ void P_SetFixedv(int type, uint index, uint prop, fixed_t* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetAnglev(int type, uint index, uint prop, angle_t* params)
+void P_SetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_ANGLE;
@@ -1945,9 +1948,9 @@ void P_SetAnglev(int type, uint index, uint prop, angle_t* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFloatv(int type, uint index, uint prop, float* params)
+void P_SetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FLOAT;
@@ -1955,9 +1958,9 @@ void P_SetFloatv(int type, uint index, uint prop, float* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetPtrv(int type, uint index, uint prop, void* params)
+void P_SetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_PTR;
@@ -1969,7 +1972,7 @@ void P_SetPtrv(int type, uint index, uint prop, void* params)
 
 void P_SetBoolp(void* ptr, uint prop, boolean param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
@@ -1981,7 +1984,7 @@ void P_SetBoolp(void* ptr, uint prop, boolean param)
 
 void P_SetBytep(void* ptr, uint prop, byte param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
@@ -1991,7 +1994,7 @@ void P_SetBytep(void* ptr, uint prop, byte param)
 
 void P_SetIntp(void* ptr, uint prop, int param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
@@ -2001,7 +2004,7 @@ void P_SetIntp(void* ptr, uint prop, int param)
 
 void P_SetFixedp(void* ptr, uint prop, fixed_t param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
@@ -2011,7 +2014,7 @@ void P_SetFixedp(void* ptr, uint prop, fixed_t param)
 
 void P_SetAnglep(void* ptr, uint prop, angle_t param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
@@ -2021,7 +2024,7 @@ void P_SetAnglep(void* ptr, uint prop, angle_t param)
 
 void P_SetFloatp(void* ptr, uint prop, float param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
@@ -2031,7 +2034,7 @@ void P_SetFloatp(void* ptr, uint prop, float param)
 
 void P_SetPtrp(void* ptr, uint prop, void* param)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
@@ -2041,7 +2044,7 @@ void P_SetPtrp(void* ptr, uint prop, void* param)
 
 void P_SetBoolpv(void* ptr, uint prop, boolean* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BOOL;
@@ -2051,7 +2054,7 @@ void P_SetBoolpv(void* ptr, uint prop, boolean* params)
 
 void P_SetBytepv(void* ptr, uint prop, byte* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_BYTE;
@@ -2061,7 +2064,7 @@ void P_SetBytepv(void* ptr, uint prop, byte* params)
 
 void P_SetIntpv(void* ptr, uint prop, int* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_INT;
@@ -2071,7 +2074,7 @@ void P_SetIntpv(void* ptr, uint prop, int* params)
 
 void P_SetFixedpv(void* ptr, uint prop, fixed_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FIXED;
@@ -2081,7 +2084,7 @@ void P_SetFixedpv(void* ptr, uint prop, fixed_t* params)
 
 void P_SetAnglepv(void* ptr, uint prop, angle_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_ANGLE;
@@ -2091,7 +2094,7 @@ void P_SetAnglepv(void* ptr, uint prop, angle_t* params)
 
 void P_SetFloatpv(void* ptr, uint prop, float* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_FLOAT;
@@ -2101,7 +2104,7 @@ void P_SetFloatpv(void* ptr, uint prop, float* params)
 
 void P_SetPtrpv(void* ptr, uint prop, void* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, DMU_GetType(ptr), prop);
     args.valueType = DDVT_PTR;
@@ -2109,12 +2112,10 @@ void P_SetPtrpv(void* ptr, uint prop, void* params)
     P_Callbackp(args.type, ptr, setProperty, &args);
 }
 
-/* index-based read functions */
-
-boolean P_GetBool(int type, uint index, uint prop)
+boolean P_GetBool(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    boolean             returnValue = false;
+    setargs_t args;
+    boolean returnValue = false;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BOOL;
@@ -2123,10 +2124,10 @@ boolean P_GetBool(int type, uint index, uint prop)
     return returnValue;
 }
 
-byte P_GetByte(int type, uint index, uint prop)
+byte P_GetByte(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    byte                returnValue = 0;
+    setargs_t args;
+    byte returnValue = 0;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BYTE;
@@ -2135,10 +2136,10 @@ byte P_GetByte(int type, uint index, uint prop)
     return returnValue;
 }
 
-int P_GetInt(int type, uint index, uint prop)
+int P_GetInt(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    int                 returnValue = 0;
+    setargs_t args;
+    int returnValue = 0;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_INT;
@@ -2147,10 +2148,10 @@ int P_GetInt(int type, uint index, uint prop)
     return returnValue;
 }
 
-fixed_t P_GetFixed(int type, uint index, uint prop)
+fixed_t P_GetFixed(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    fixed_t             returnValue = 0;
+    setargs_t args;
+    fixed_t returnValue = 0;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FIXED;
@@ -2159,10 +2160,10 @@ fixed_t P_GetFixed(int type, uint index, uint prop)
     return returnValue;
 }
 
-angle_t P_GetAngle(int type, uint index, uint prop)
+angle_t P_GetAngle(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    angle_t             returnValue = 0;
+    setargs_t args;
+    angle_t returnValue = 0;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_ANGLE;
@@ -2171,10 +2172,10 @@ angle_t P_GetAngle(int type, uint index, uint prop)
     return returnValue;
 }
 
-float P_GetFloat(int type, uint index, uint prop)
+float P_GetFloat(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    float               returnValue = 0;
+    setargs_t args;
+    float returnValue = 0;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FLOAT;
@@ -2183,10 +2184,10 @@ float P_GetFloat(int type, uint index, uint prop)
     return returnValue;
 }
 
-void* P_GetPtr(int type, uint index, uint prop)
+void* P_GetPtr(int type, dmuobjrecordid_t index, uint prop)
 {
-    setargs_t           args;
-    void               *returnValue = NULL;
+    setargs_t args;
+    void* returnValue = NULL;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_PTR;
@@ -2195,9 +2196,9 @@ void* P_GetPtr(int type, uint index, uint prop)
     return returnValue;
 }
 
-void P_GetBoolv(int type, uint index, uint prop, boolean* params)
+void P_GetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BOOL;
@@ -2205,9 +2206,9 @@ void P_GetBoolv(int type, uint index, uint prop, boolean* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetBytev(int type, uint index, uint prop, byte* params)
+void P_GetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_BYTE;
@@ -2215,9 +2216,9 @@ void P_GetBytev(int type, uint index, uint prop, byte* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetIntv(int type, uint index, uint prop, int* params)
+void P_GetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_INT;
@@ -2225,9 +2226,9 @@ void P_GetIntv(int type, uint index, uint prop, int* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetFixedv(int type, uint index, uint prop, fixed_t* params)
+void P_GetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FIXED;
@@ -2235,9 +2236,9 @@ void P_GetFixedv(int type, uint index, uint prop, fixed_t* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetAnglev(int type, uint index, uint prop, angle_t* params)
+void P_GetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_ANGLE;
@@ -2245,9 +2246,9 @@ void P_GetAnglev(int type, uint index, uint prop, angle_t* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetFloatv(int type, uint index, uint prop, float* params)
+void P_GetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_FLOAT;
@@ -2255,9 +2256,9 @@ void P_GetFloatv(int type, uint index, uint prop, float* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetPtrv(int type, uint index, uint prop, void* params)
+void P_GetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     initArgs(&args, type, prop);
     args.valueType = DDVT_PTR;
@@ -2265,12 +2266,10 @@ void P_GetPtrv(int type, uint index, uint prop, void* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-/* pointer-based read functions */
-
 boolean P_GetBoolp(void* ptr, uint prop)
 {
-    setargs_t           args;
-    boolean             returnValue = false;
+    setargs_t args;
+    boolean returnValue = false;
 
     if(ptr)
     {
@@ -2285,8 +2284,8 @@ boolean P_GetBoolp(void* ptr, uint prop)
 
 byte P_GetBytep(void* ptr, uint prop)
 {
-    setargs_t           args;
-    byte                returnValue = 0;
+    setargs_t args;
+    byte returnValue = 0;
 
     if(ptr)
     {
@@ -2301,8 +2300,8 @@ byte P_GetBytep(void* ptr, uint prop)
 
 int P_GetIntp(void* ptr, uint prop)
 {
-    setargs_t           args;
-    int                 returnValue = 0;
+    setargs_t args;
+    int returnValue = 0;
 
     if(ptr)
     {
@@ -2317,8 +2316,8 @@ int P_GetIntp(void* ptr, uint prop)
 
 fixed_t P_GetFixedp(void* ptr, uint prop)
 {
-    setargs_t           args;
-    fixed_t             returnValue = 0;
+    setargs_t args;
+    fixed_t returnValue = 0;
 
     if(ptr)
     {
@@ -2333,8 +2332,8 @@ fixed_t P_GetFixedp(void* ptr, uint prop)
 
 angle_t P_GetAnglep(void* ptr, uint prop)
 {
-    setargs_t           args;
-    angle_t             returnValue = 0;
+    setargs_t args;
+    angle_t returnValue = 0;
 
     if(ptr)
     {
@@ -2349,8 +2348,8 @@ angle_t P_GetAnglep(void* ptr, uint prop)
 
 float P_GetFloatp(void* ptr, uint prop)
 {
-    setargs_t           args;
-    float               returnValue = 0;
+    setargs_t args;
+    float returnValue = 0;
 
     if(ptr)
     {
@@ -2365,8 +2364,8 @@ float P_GetFloatp(void* ptr, uint prop)
 
 void* P_GetPtrp(void* ptr, uint prop)
 {
-    setargs_t           args;
-    void               *returnValue = NULL;
+    setargs_t args;
+    void* returnValue = NULL;
 
     if(ptr)
     {
@@ -2381,7 +2380,7 @@ void* P_GetPtrp(void* ptr, uint prop)
 
 void P_GetBoolpv(void* ptr, uint prop, boolean* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2394,7 +2393,7 @@ void P_GetBoolpv(void* ptr, uint prop, boolean* params)
 
 void P_GetBytepv(void* ptr, uint prop, byte* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2407,7 +2406,7 @@ void P_GetBytepv(void* ptr, uint prop, byte* params)
 
 void P_GetIntpv(void* ptr, uint prop, int* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2420,7 +2419,7 @@ void P_GetIntpv(void* ptr, uint prop, int* params)
 
 void P_GetFixedpv(void* ptr, uint prop, fixed_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2433,7 +2432,7 @@ void P_GetFixedpv(void* ptr, uint prop, fixed_t* params)
 
 void P_GetAnglepv(void* ptr, uint prop, angle_t* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2446,7 +2445,7 @@ void P_GetAnglepv(void* ptr, uint prop, angle_t* params)
 
 void P_GetFloatpv(void* ptr, uint prop, float* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {
@@ -2459,7 +2458,7 @@ void P_GetFloatpv(void* ptr, uint prop, float* params)
 
 void P_GetPtrpv(void* ptr, uint prop, void* params)
 {
-    setargs_t           args;
+    setargs_t args;
 
     if(ptr)
     {

@@ -219,7 +219,7 @@ int Cl_ReadSideDelta(void)
     if(!num)
         return false;
 
-    sid = SIDE_PTR(--num);
+    sid = sideDefs[--num];
 
     // Flags.
     df = Msg_ReadByte();

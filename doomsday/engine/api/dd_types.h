@@ -147,6 +147,7 @@ typedef int dmuobjrecordid_t;
 typedef struct dmuobjrecord_s {
     int             dummy;
     runtime_mapdata_header_t header;
+    dmuobjrecordid_t id;
     void*           obj;
 } dmuobjrecord_t;
 

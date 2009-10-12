@@ -278,9 +278,9 @@ void* P_PointInSubSector(const float x, const float y)
 
 linedef_t* R_GetLineForSide(const uint sideNumber)
 {
-    uint                i;
-    sidedef_t*          side = SIDE_PTR(sideNumber);
-    sector_t*           sector = side->sector;
+    uint i;
+    sidedef_t* side = sideDefs[sideNumber];
+    sector_t* sector = side->sector;
 
     // All sides may not have a sector.
     if(!sector)
@@ -288,7 +288,7 @@ linedef_t* R_GetLineForSide(const uint sideNumber)
 
     for(i = 0; i < sector->lineDefCount; ++i)
     {
-        linedef_t*          li = sector->lineDefs[i];
+        linedef_t* li = sector->lineDefs[i];
 
         if(LINE_FRONTSIDE(li) == side || LINE_BACKSIDE(li) == side)
         {

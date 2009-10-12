@@ -329,7 +329,7 @@ void R_Update(void)
 
     for(i = 0; i < numSideDefs; ++i)
     {
-        sidedef_t*          side = &sideDefs[i];
+        sidedef_t* side = sideDefs[i];
 
         Surface_Update(&side->SW_topsurface);
         Surface_Update(&side->SW_middlesurface);

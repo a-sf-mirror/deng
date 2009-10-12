@@ -238,7 +238,7 @@ intersection_t* BSP_IntersectionCreate(vertex_t* vert,
     cut->selfRef = selfRef;
 
     cut->before = BSP_VertexCheckOpen(vert, -part->pDX, -part->pDY);
-    cut->after  = BSP_VertexCheckOpen(vert,  part->pDX,  part->pDY);
+    cut->after = BSP_VertexCheckOpen(vert,  part->pDX,  part->pDY);
 
     return cut;
 }

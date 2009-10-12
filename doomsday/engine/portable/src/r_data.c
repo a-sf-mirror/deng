@@ -2391,7 +2391,6 @@ void R_PrecacheMap(void)
     uint                i, j;
     size_t              n;
     sector_t*           sec;
-    sidedef_t*          side;
     float               startTime;
     material_t*         mat, **matPresent;
     int                 numMaterials;
@@ -2412,7 +2411,7 @@ void R_PrecacheMap(void)
 
     for(i = 0; i < numSideDefs; ++i)
     {
-        side = SIDE_PTR(i);
+        sidedef_t* side = sideDefs[i];
 
         mat = side->SW_topmaterial;
         if(mat && !isInList((void**) matPresent, n, mat))

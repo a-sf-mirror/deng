@@ -2040,7 +2040,7 @@ void R_SetupMap(int mode, int flags)
 
         for(i = 0; i < numSideDefs; ++i)
         {
-            sidedef_t          *si = SIDE_PTR(i);
+            sidedef_t* si = sideDefs[i];
 
             initSurfaceMaterialOffset(&si->SW_topsurface);
             initSurfaceMaterialOffset(&si->SW_middlesurface);
@@ -2084,7 +2084,7 @@ void R_SetupMap(int mode, int flags)
 
         for(i = 0; i < numSideDefs; ++i)
         {
-            sidedef_t*          si = SIDE_PTR(i);
+            sidedef_t* si = sideDefs[i];
 
             initSurfaceMaterialOffset(&si->SW_topsurface);
             initSurfaceMaterialOffset(&si->SW_middlesurface);

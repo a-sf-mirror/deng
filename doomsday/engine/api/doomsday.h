@@ -30,8 +30,8 @@
  * features.
  */
 
-#ifndef __DOOMSDAY_EXPORTS_H__
-#define __DOOMSDAY_EXPORTS_H__
+#ifndef DOOMSDAY_EXPORTS_H
+#define DOOMSDAY_EXPORTS_H
 
 // The calling convention.
 #if defined(WIN32)
@@ -171,9 +171,9 @@ extern          "C" {
     boolean         MPE_Begin(const char* name);
     boolean         MPE_End(void);
 
-    uint            MPE_VertexCreate(float x, float y);
+    dmuobjrecordid_t MPE_VertexCreate(float x, float y);
     boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
-    uint            MPE_SideDefCreate(uint sector, short flags,
+    dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
                                       material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
@@ -185,15 +185,15 @@ extern          "C" {
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
-    uint            MPE_LineDefCreate(uint v1, uint v2, uint frontSide,
-                                      uint backSide, int flags);
-    uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    uint            MPE_PlaneCreate(uint sector, float height, material_t* material,
+    dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, dmuobjrecordid_t frontSide,
+                                      dmuobjrecordid_t backSide, int flags);
+    dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
+    dmuobjrecordid_t MPE_PlaneCreate(dmuobjrecordid_t sector, float height, material_t* material,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);
-    uint            MPE_PolyobjCreate(uint* lines, uint linecount,
-                                      int tag, int sequenceType, float anchorX, float anchorY);
+    dmuobjrecordid_t MPE_PolyobjCreate(dmuobjrecordid_t* lines, uint linecount,
+                                       int tag, int sequenceType, float anchorX, float anchorY);
     boolean         MPE_GameObjProperty(const char* objName, uint idx,
                                         const char* propName, valuetype_t type,
                                         void* data);
@@ -256,9 +256,9 @@ extern          "C" {
     // Play: Map Data Updates and Information Access.
     void*           P_GetVariable(int value);
     void            P_SetVariable(int value, void* data);
-    unsigned int    P_ToIndex(const void* ptr);
-    void*           P_ToPtr(int type, uint index);
-    int             P_Callback(int type, uint index,
+    dmuobjrecordid_t P_ToIndex(const void* ptr);
+    void*           P_ToPtr(int type, dmuobjrecordid_t index);
+    int             P_Callback(int type, dmuobjrecordid_t index,
                                int (*callback)(void* p, void* ctx),
                                void* context);
     int             P_Callbackp(int type, void* ptr,
@@ -289,21 +289,21 @@ extern          "C" {
     void*           P_DummyExtraData(void* dummy);
 
     /* index-based write functions */
-    void            P_SetBool(int type, uint index, uint prop, boolean param);
-    void            P_SetByte(int type, uint index, uint prop, byte param);
-    void            P_SetInt(int type, uint index, uint prop, int param);
-    void            P_SetFixed(int type, uint index, uint prop, fixed_t param);
-    void            P_SetAngle(int type, uint index, uint prop, angle_t param);
-    void            P_SetFloat(int type, uint index, uint prop, float param);
-    void            P_SetPtr(int type, uint index, uint prop, void* param);
+    void            P_SetBool(int type, dmuobjrecordid_t index, uint prop, boolean param);
+    void            P_SetByte(int type, dmuobjrecordid_t index, uint prop, byte param);
+    void            P_SetInt(int type, dmuobjrecordid_t index, uint prop, int param);
+    void            P_SetFixed(int type, dmuobjrecordid_t index, uint prop, fixed_t param);
+    void            P_SetAngle(int type, dmuobjrecordid_t index, uint prop, angle_t param);
+    void            P_SetFloat(int type, dmuobjrecordid_t index, uint prop, float param);
+    void            P_SetPtr(int type, dmuobjrecordid_t index, uint prop, void* param);
 
-    void            P_SetBoolv(int type, uint index, uint prop, boolean* params);
-    void            P_SetBytev(int type, uint index, uint prop, byte* params);
-    void            P_SetIntv(int type, uint index, uint prop, int* params);
-    void            P_SetFixedv(int type, uint index, uint prop, fixed_t* params);
-    void            P_SetAnglev(int type, uint index, uint prop, angle_t* params);
-    void            P_SetFloatv(int type, uint index, uint prop, float* params);
-    void            P_SetPtrv(int type, uint index, uint prop, void* params);
+    void            P_SetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params);
+    void            P_SetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params);
+    void            P_SetIntv(int type, dmuobjrecordid_t index, uint prop, int* params);
+    void            P_SetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params);
+    void            P_SetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params);
+    void            P_SetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params);
+    void            P_SetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params);
 
     /* pointer-based write functions */
     void            P_SetBoolp(void* ptr, uint prop, boolean param);
@@ -323,21 +323,21 @@ extern          "C" {
     void            P_SetPtrpv(void* ptr, uint prop, void* params);
 
     /* index-based read functions */
-    boolean         P_GetBool(int type, uint index, uint prop);
-    byte            P_GetByte(int type, uint index, uint prop);
-    int             P_GetInt(int type, uint index, uint prop);
-    fixed_t         P_GetFixed(int type, uint index, uint prop);
-    angle_t         P_GetAngle(int type, uint index, uint prop);
-    float           P_GetFloat(int type, uint index, uint prop);
-    void*           P_GetPtr(int type, uint index, uint prop);
+    boolean         P_GetBool(int type, dmuobjrecordid_t index, uint prop);
+    byte            P_GetByte(int type, dmuobjrecordid_t index, uint prop);
+    int             P_GetInt(int type, dmuobjrecordid_t index, uint prop);
+    fixed_t         P_GetFixed(int type, dmuobjrecordid_t index, uint prop);
+    angle_t         P_GetAngle(int type, dmuobjrecordid_t index, uint prop);
+    float           P_GetFloat(int type, dmuobjrecordid_t index, uint prop);
+    void*           P_GetPtr(int type, dmuobjrecordid_t index, uint prop);
 
-    void            P_GetBoolv(int type, uint index, uint prop, boolean* params);
-    void            P_GetBytev(int type, uint index, uint prop, byte* params);
-    void            P_GetIntv(int type, uint index, uint prop, int* params);
-    void            P_GetFixedv(int type, uint index, uint prop, fixed_t* params);
-    void            P_GetAnglev(int type, uint index, uint prop, angle_t* params);
-    void            P_GetFloatv(int type, uint index, uint prop, float* params);
-    void            P_GetPtrv(int type, uint index, uint prop, void* params);
+    void            P_GetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params);
+    void            P_GetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params);
+    void            P_GetIntv(int type, dmuobjrecordid_t index, uint prop, int* params);
+    void            P_GetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params);
+    void            P_GetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params);
+    void            P_GetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params);
+    void            P_GetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params);
 
     /* pointer-based read functions */
     boolean         P_GetBoolp(void* ptr, uint prop);
@@ -535,4 +535,4 @@ extern          "C" {
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif /* DOOMSDAY_EXPORTS_H */

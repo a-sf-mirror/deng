@@ -28,8 +28,8 @@
  * Engine-internal header for DMU.
  */
 
-#ifndef __DOOMSDAY_MAP_UPDATE_H__
-#define __DOOMSDAY_MAP_UPDATE_H__
+#ifndef DOOMSDAY_MAP_UPDATE_H
+#define DOOMSDAY_MAP_UPDATE_H
 
 typedef struct setargs_s {
     int             type;
@@ -59,8 +59,8 @@ int             P_DummyType(void* dummy);
 boolean         P_IsDummy(void* dummy);
 void*           P_DummyExtraData(void* dummy);
 
-void*           P_ToPtr(int type, uint idx);
-uint            P_ToIndex(const void* ptr);
+void*           P_ToPtr(int type, dmuobjrecordid_t id);
+dmuobjrecordid_t P_ToIndex(const void* ptr);
 void            P_SetVariable(int value, void* data);
 void*           P_GetVariable(int value);
 const char*     DMU_Str(uint prop);
@@ -77,4 +77,4 @@ void            DMU_GetValue(valuetype_t valueType, const void* src,
 # define ASSERT_DMU_TYPE(ptr, dmuType)
 #endif
 
-#endif
+#endif /* DOOMSDAY_MAP_UPDATE_H */

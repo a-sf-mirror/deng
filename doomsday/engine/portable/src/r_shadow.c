@@ -279,8 +279,8 @@ void R_InitSectorShadows(void)
 
     for(i = 0; i < numSideDefs; ++i)
     {
-        sidedef_t*          side = SIDE_PTR(i);
-        byte                sid;
+        sidedef_t* side = sideDefs[i];
+        byte sid;
 
         if(!R_IsShadowingLineDef(side->lineDef))
             continue;

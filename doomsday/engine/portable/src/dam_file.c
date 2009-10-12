@@ -135,11 +135,11 @@ static void addMaterialToDict(materialdict_t* dict, material_t* mat)
  */
 static void initMaterialDict(const gamemap_t* map, materialdict_t* dict)
 {
-    uint                i, j;
+    uint i, j;
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t           *sec = &map->sectors[i];
+        sector_t* sec = &map->sectors[i];
 
         for(j = 0; j < sec->planeCount; ++j)
             addMaterialToDict(dict, sec->SP_planematerial(j));
@@ -147,11 +147,11 @@ static void initMaterialDict(const gamemap_t* map, materialdict_t* dict)
 
     for(i = 0; i < map->numSideDefs; ++i)
     {
-        sidedef_t             *side = &map->sideDefs[i];
+        sidedef_t* sideDef = map->sideDefs[i];
 
-        addMaterialToDict(dict, side->SW_middlematerial);
-        addMaterialToDict(dict, side->SW_topmaterial);
-        addMaterialToDict(dict, side->SW_bottommaterial);
+        addMaterialToDict(dict, sideDef->SW_middlematerial);
+        addMaterialToDict(dict, sideDef->SW_topmaterial);
+        addMaterialToDict(dict, sideDef->SW_bottommaterial);
     }
 }
 
@@ -436,14 +436,14 @@ static void archiveLines(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSide(const gamemap_t *map, uint idx)
+static void writeSide(const gamemap_t* map, uint idx)
 {
-    uint                i;
-    sidedef_t*          s = &map->sideDefs[idx];
+    uint i;
+    sidedef_t* s = map->sideDefs[idx];
 
     for(i = 0; i < 3; ++i)
     {
-        surface_t*          suf = &s->sections[3];
+        surface_t* suf = &s->sections[3];
 
         writeLong(suf->flags);
         writeLong(getMaterialDictID(materialDict, suf->material));
@@ -464,14 +464,14 @@ static void writeSide(const gamemap_t *map, uint idx)
 
 static void readSide(const gamemap_t* map, uint idx)
 {
-    uint                i;
-    long                secIdx;
-    float               offset[2], rgba[4];
-    sidedef_t*          s = &map->sideDefs[idx];
+    uint i;
+    long secIdx;
+    float offset[2], rgba[4];
+    sidedef_t* s = map->sideDefs[idx];
 
     for(i = 0; i < 3; ++i)
     {
-        surface_t          *suf = &s->sections[3];
+        surface_t* suf = &s->sections[3];
 
         suf->flags = (int) readLong();
         Surface_SetMaterial(suf, lookupMaterialFromDict(materialDict, readLong()), false);
@@ -828,7 +828,7 @@ static void writeSeg(const gamemap_t* map, uint idx)
 
     writeFloat(s->length);
     writeFloat(s->offset);
-    writeLong(s->sideDef? ((s->sideDef - map->sideDefs) + 1) : 0);
+    writeLong(s->sideDef? (DMU_GetObjRecord(DMU_SIDEDEF, s->sideDef)->id + 1) : 0);
     writeLong((long) s->angle);
     writeByte(s->side);
     }
@@ -854,7 +854,7 @@ static void readSeg(const gamemap_t* map, uint idx)
     s->length = readFloat();
     s->offset = readFloat();
     obIdx = readLong();
-    s->sideDef = (obIdx == 0? NULL : &map->sideDefs[(unsigned) obIdx - 1]);
+    s->sideDef = (obIdx == 0? NULL : map->sideDefs[(unsigned) obIdx - 1]);
     s->angle = (angle_t) readLong();
     s->side = readByte();
     }
