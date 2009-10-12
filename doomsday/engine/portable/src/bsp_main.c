@@ -203,7 +203,7 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
 
 static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
 {
-    void               *bspData = BinaryTree_GetData(tree);
+    void* bspData = BinaryTree_GetData(tree);
 
     if(bspData)
     {
@@ -228,10 +228,10 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  */
 boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 {
-    boolean             builtOK;
-    uint                startTime;
-    superblock_t*       hEdgeList;
-    binarytree_t*       rootNode;
+    boolean builtOK;
+    uint startTime;
+    superblock_t* hEdgeList;
+    binarytree_t* rootNode;
 
     if(verbose >= 1)
     {
@@ -250,8 +250,8 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
     // Build the BSP.
     {
-    uint                buildStartTime = Sys_GetRealTime();
-    cutlist_t*          cutList;
+    uint buildStartTime = Sys_GetRealTime();
+    cutlist_t* cutList;
 
     cutList = BSP_CutListCreate();
 
@@ -282,7 +282,7 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
         if(rootNode && !BinaryTree_IsLeaf(rootNode))
         {
-            long            rHeight, lHeight;
+            long rHeight, lHeight;
 
             rHeight = (long)
                 BinaryTree_GetHeight(BinaryTree_GetChild(rootNode, RIGHT));

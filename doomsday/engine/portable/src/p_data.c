@@ -70,7 +70,7 @@ uint numVertexes = 0;
 vertex_t** vertexes = NULL;
 
 uint numHEdges = 0;
-hedge_t* hEdges = NULL;
+hedge_t** hEdges = NULL;
 
 uint numSectors = 0;
 sector_t** sectors = NULL;
@@ -318,10 +318,30 @@ void P_DestroyMap(gamemap_t* map)
 
             Z_Free(face);
         }
+
         Z_Free(map->faces);
     }
     map->faces = NULL;
     map->numFaces = 0;
+
+    if(map->hEdges)
+    {
+        uint i;
+
+        for(i = 0; i < map->numHEdges; ++i)
+        {
+            hedge_t* hEdge = map->hEdges[i];
+
+            if(hEdge->data)
+               Z_Free(hEdge->data);
+
+            Z_Free(hEdge);
+        }
+
+        Z_Free(map->hEdges);
+    }
+    map->hEdges = NULL;
+    map->numHEdges = 0;
 
     if(map->nodes)
     {

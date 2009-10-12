@@ -74,7 +74,7 @@ static __inline void freeHEdge(hedge_t* hEdge)
 
 static __inline hedge_t* createHEdge(void)
 {
-    hedge_t*            hEdge = allocHEdge();
+    hedge_t* hEdge = allocHEdge();
 
     hEdge->data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
     return hEdge;
@@ -106,7 +106,7 @@ static __inline void freeEdgeTip(edgetip_t* tip)
  */
 void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 {
-    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
+    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
 
     data->pSX = hEdge->vertex->buildData.pos[VX];
     data->pSY = hEdge->vertex->buildData.pos[VY];
@@ -131,7 +131,7 @@ void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
                       vertex_t* start, sector_t* sec, boolean back)
 {
-    hedge_t*            hEdge = createHEdge();
+    hedge_t* hEdge = createHEdge();
 
     hEdge->vertex = start;
     hEdge->twin = NULL;

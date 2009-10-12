@@ -42,12 +42,8 @@
 #include "m_nodepile.h"
 #include "m_vector.h"
 
-#define GET_HEDGE_IDX(hEdge) ((hEdge) - hEdges)
-
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
-
-#define HEDGE_PTR(i)        (&hEdges[i])
 
 // Node flags.
 #define NF_SUBSECTOR        0x80000000
@@ -196,7 +192,7 @@ extern uint numVertexes;
 extern vertex_t** vertexes;
 
 extern uint numHEdges;
-extern hedge_t* hEdges;
+extern hedge_t** hEdges;
 
 extern uint numSectors;
 extern sector_t** sectors;
@@ -229,7 +225,7 @@ typedef struct gamemap_s {
     vertex_t**      vertexes;
 
     uint            numHEdges;
-    hedge_t*        hEdges;
+    hedge_t**       hEdges;
 
     uint            numSectors;
     sector_t**      sectors;

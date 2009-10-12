@@ -3021,7 +3021,7 @@ void Rend_RenderNormals(void)
 {
 #define NORM_TAIL_LENGTH    (20)
 
-    uint                i;
+    uint i;
 
     if(!devSurfaceNormals)
         return;
@@ -3031,14 +3031,13 @@ void Rend_RenderNormals(void)
 
     for(i = 0; i < numHEdges; ++i)
     {
-        hedge_t*            hEdge = &hEdges[i];
-        seg_t*              seg = (seg_t*) hEdge->data,
-                           *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
-        sidedef_t*          side = seg->sideDef;
-        surface_t*          suf;
-        vec3_t              origin;
-        float               x, y, bottom, top;
-        float               scale = NORM_TAIL_LENGTH;
+        hedge_t* hEdge = hEdges[i];
+        seg_t* seg = (seg_t*) hEdge->data, *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
+        sidedef_t* side = seg->sideDef;
+        surface_t* suf;
+        vec3_t origin;
+        float x, y, bottom, top;
+        float scale = NORM_TAIL_LENGTH;
 
         if(!seg->sideDef || !((subsector_t*) hEdge->face->data)->sector)
             continue;

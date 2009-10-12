@@ -114,7 +114,7 @@ void BSP_ShutdownSuperBlockAllocator(void)
 {
     while(quickAllocSupers)
     {
-        superblock_t*   block = quickAllocSupers;
+        superblock_t* block = quickAllocSupers;
 
         quickAllocSupers = block->subs[0];
         M_Free(block);
@@ -136,7 +136,7 @@ static void freeHEdgeNode(hedge_node_t* node)
  */
 void BSPLeaf_LinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
 {
-    hedge_node_t*       node;
+    hedge_node_t* node;
 
     if(!hEdge || !leaf)
         return;
@@ -163,7 +163,7 @@ if((node = leaf->hEdges))
 
 void BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
 {
-    hedge_node_t*       node;
+    hedge_node_t* node;
 
     if(!hEdge || !leaf || !leaf->hEdges)
         return;
@@ -196,7 +196,7 @@ void BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
  */
 static superblock_t* allocSuperBlock(void)
 {
-    superblock_t*       superblock;
+    superblock_t* superblock;
 
     if(quickAllocSupers == NULL)
         return M_Calloc(sizeof(superblock_t));

@@ -345,7 +345,7 @@ static void sanityCheckSameSector(const bspleafdata_t* leaf)
     // Find a suitable half-edge for comparison.
     for(n = leaf->hEdges; n; n = n->next)
     {
-        const hedge_t*      hEdge = n->hEdge;
+        const hedge_t* hEdge = n->hEdge;
 
         if(!((bsp_hedgeinfo_t*) hEdge->data)->sector)
             continue;
@@ -362,7 +362,7 @@ static void sanityCheckSameSector(const bspleafdata_t* leaf)
 
     for(; cur; cur = cur->next)
     {
-        const hedge_t*      hEdge = cur->hEdge;
+        const hedge_t* hEdge = cur->hEdge;
         const bsp_hedgeinfo_t* curData = (bsp_hedgeinfo_t*) hEdge->data;
 
         if(!curData->sector)
@@ -400,7 +400,7 @@ static boolean sanityCheckHasRealHEdge(const bspleafdata_t* leaf)
 
     for(n = leaf->hEdges; n; n = n->next)
     {
-        const hedge_t*      hEdge = n->hEdge;
+        const hedge_t* hEdge = n->hEdge;
 
         if(((const bsp_hedgeinfo_t*) hEdge->data)->lineDef)
             return true;
@@ -415,7 +415,7 @@ static void renumberLeafHEdges(bspleafdata_t* leaf, uint* curIndex)
 
     for(n = leaf->hEdges; n; n = n->next)
     {
-        const hedge_t*      hEdge = n->hEdge;
+        const hedge_t* hEdge = n->hEdge;
 
         ((bsp_hedgeinfo_t*) hEdge->data)->index = (*curIndex)++;
         if((((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect) &&
@@ -440,10 +440,10 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {   // obj is a leaf.
-        size_t              total;
+        size_t total;
         const hedge_node_t* n;
-        bspleafdata_t*      leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
-        double              midPoint[2];
+        bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
+        double midPoint[2];
 
         getAveragedCoords(leaf->hEdges, &midPoint[VX], &midPoint[VY]);
 
@@ -480,7 +480,7 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
  */
 void ClockwiseBspTree(binarytree_t* rootNode)
 {
-    uint                curIndex;
+    uint curIndex;
 
     nodeSortBufSize = 0;
     nodeSortBuf = NULL;
@@ -498,12 +498,12 @@ void ClockwiseBspTree(binarytree_t* rootNode)
 
 static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
 {
-    uint                num;
+    uint num;
 
     while(block->hEdges)
     {
-        hedge_node_t*       node = block->hEdges;
-        hedge_t*            hEdge = node->hEdge;
+        hedge_node_t* node = block->hEdges;
+        hedge_t* hEdge = node->hEdge;
 
         SuperBlock_UnLinkHEdge(block, hEdge);
         ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
@@ -516,7 +516,7 @@ static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
     // Recursively handle sub-blocks.
     for(num = 0; num < 2; ++num)
     {
-        superblock_t*       a = block->subs[num];
+        superblock_t* a = block->subs[num];
 
         if(a)
         {
@@ -545,7 +545,7 @@ static __inline void freeBSPLeaf(bspleafdata_t* leaf)
 
 bspleafdata_t* BSPLeaf_Create(void)
 {
-    bspleafdata_t*      leaf = allocBSPLeaf();
+    bspleafdata_t* leaf = allocBSPLeaf();
 
     leaf->hEdges = NULL;
 
@@ -559,13 +559,13 @@ void BSPLeaf_Destroy(bspleafdata_t* leaf)
 
     while(leaf->hEdges)
     {
-        hedge_t*            hEdge = leaf->hEdges->hEdge;
+        hedge_t* hEdge = leaf->hEdges->hEdge;
 
         BSPLeaf_UnLinkHEdge(leaf, hEdge);
 
-        if(hEdge->data)
+        /*if(hEdge->data)
             Z_Free(hEdge->data);
-        HEdge_Destroy(hEdge);
+        HEdge_Destroy(hEdge);*/
     }
 
     freeBSPLeaf(leaf);
@@ -576,7 +576,7 @@ void BSPLeaf_Destroy(bspleafdata_t* leaf)
  */
 static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
 {
-    bspleafdata_t*      leaf = BSPLeaf_Create();
+    bspleafdata_t* leaf = BSPLeaf_Create();
 
     // Link the half-edges into the new leaf.
     createBSPLeafWorker(leaf, hEdgeList);
@@ -600,11 +600,11 @@ static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
 boolean BuildNodes(superblock_t* hEdgeList, binarytree_t** parent,
                    size_t depth, cutlist_t* cutList)
 {
-    binarytree_t*       subTree;
-    bspnodedata_t*      node;
-    superblock_t*       hEdgeSet[2];
-    boolean             builtOK = false;
-    bspartition_t       partition;
+    binarytree_t* subTree;
+    bspnodedata_t* node;
+    superblock_t* hEdgeSet[2];
+    boolean builtOK = false;
+    bspartition_t partition;
 
     *parent = NULL;
 

@@ -814,11 +814,11 @@ static void archiveSubSectors(gamemap_t* map, boolean write)
 
 static void writeSeg(const gamemap_t* map, uint idx)
 {
-    const hedge_t*        hEdge = &map->hEdges[idx];
+    const hedge_t* hEdge = map->hEdges[idx];
 
-    writeLong(hEdge->next? ((hEdge->next - map->hEdges) + 1) : 0);
-    writeLong(hEdge->prev? ((hEdge->prev - map->hEdges) + 1) : 0);
-    writeLong(hEdge->twin? ((hEdge->twin - map->hEdges) + 1) : 0);
+    writeLong(hEdge->next? DMU_GetObjRecord(DMU_HEDGE, hEdge->next)->id : 0);
+    writeLong(hEdge->prev? DMU_GetObjRecord(DMU_HEDGE, hEdge->prev)->id : 0);
+    writeLong(hEdge->twin? DMU_GetObjRecord(DMU_HEDGE, hEdge->twin)->id : 0);
     writeLong(hEdge->vertex? DMU_GetObjRecord(DMU_VERTEX, hEdge->vertex)->id : 0);
     writeLong(hEdge->face? DMU_GetObjRecord(DMU_FACE, hEdge->face)->id : 0);
 
@@ -836,14 +836,14 @@ static void writeSeg(const gamemap_t* map, uint idx)
 static void readSeg(const gamemap_t* map, uint idx)
 {
     long obIdx;
-    hedge_t* hEdge = &map->hEdges[idx];
+    hedge_t* hEdge = map->hEdges[idx];
 
     obIdx = readLong();
-    hEdge->next = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
+    hEdge->next = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
     obIdx = readLong();
-    hEdge->prev = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
+    hEdge->prev = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
     obIdx = readLong();
-    hEdge->twin = (obIdx == 0? NULL : &map->hEdges[(unsigned) obIdx - 1]);
+    hEdge->twin = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
     hEdge->vertex = map->vertexes[(unsigned) readLong() - 1];
     hEdge->face = (obIdx == 0? NULL : map->faces[(unsigned) obIdx - 1]);
 

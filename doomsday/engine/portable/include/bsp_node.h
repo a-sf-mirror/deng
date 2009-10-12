@@ -71,9 +71,10 @@ void        SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
 
 typedef struct bspleafdata_s {
     struct hedge_node_s* hEdges; // Head ptr to a list of half-edges at this leaf.
+    sector_t*           sector;
 } bspleafdata_t;
 
-bspleafdata_t *BSPLeaf_Create(void);
+bspleafdata_t* BSPLeaf_Create(void);
 void        BSPLeaf_Destroy(bspleafdata_t* leaf);
 
 #endif
