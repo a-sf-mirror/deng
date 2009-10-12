@@ -254,8 +254,8 @@ float R_PointToDist(const float x, const float y)
 
 face_t* R_PointInSubSector(const float x, const float y)
 {
-    node_t*             node = 0;
-    uint                nodenum = 0;
+    node_t* node = NULL;
+    uint nodenum = 0;
 
     if(!numNodes) // Single subsector is a special case.
         return (face_t *) faces;
@@ -264,7 +264,7 @@ face_t* R_PointInSubSector(const float x, const float y)
 
     while(!(nodenum & NF_SUBSECTOR))
     {
-        node = NODE_PTR(nodenum);
+        node = nodes[nodenum];
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 

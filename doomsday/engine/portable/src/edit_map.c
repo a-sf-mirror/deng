@@ -109,12 +109,9 @@ static linedef_t* createLine(void)
 
 static sidedef_t* createSide(void)
 {
-    sidedef_t*              side;
+    sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
 
-    side = M_Calloc(sizeof(*side));
-
-    map->sideDefs =
-        M_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1));
+    map->sideDefs = Z_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1), PU_STATIC);
     map->sideDefs[map->numSideDefs-1] = side;
     map->sideDefs[map->numSideDefs] = NULL;
 

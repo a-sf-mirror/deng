@@ -2893,18 +2893,12 @@ static void Rend_RenderNode(uint bspnum)
         Rend_RenderSubSector(bspnum & ~NF_SUBSECTOR);
     }
     else
-    {
-        node_t             *bsp;
-        byte                side;
+    {   // Descend deeper into the nodes.
+        node_t* node = nodes[bspnum];
+        byte side = R_PointOnSide(viewX, viewY, &node->partition);
 
-        // Descend deeper into the nodes.
-        bsp = NODE_PTR(bspnum);
-
-        // Decide which side the view point is on.
-        side = R_PointOnSide(viewX, viewY, &bsp->partition);
-
-        Rend_RenderNode(bsp->children[side]); // Recursively divide front space.
-        Rend_RenderNode(bsp->children[side ^ 1]); // ...and back space.
+        Rend_RenderNode(node->children[side]); // Recursively render front space.
+        Rend_RenderNode(node->children[side ^ 1]); // ...and back space.
     }
 }
 

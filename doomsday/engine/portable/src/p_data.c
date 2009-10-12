@@ -79,7 +79,7 @@ uint numFaces = 0;
 face_t* faces = NULL;
 
 uint numNodes = 0;
-node_t* nodes = NULL;
+node_t** nodes = NULL;
 
 uint numLineDefs = 0;
 linedef_t* lineDefs = NULL;
@@ -201,7 +201,7 @@ void P_SetCurrentMap(gamemap_t* map)
 
 void P_DestroyMap(gamemap_t* map)
 {
-    biassurface_t*      bsuf;
+    biassurface_t* bsuf;
 
     if(!map)
         return;
@@ -227,14 +227,26 @@ void P_DestroyMap(gamemap_t* map)
         for(i = 0; i < map->numSideDefs; ++i)
         {
             sidedef_t* sideDef = map->sideDefs[i];
-
-            M_Free(sideDef);
+            Z_Free(sideDef);
         }
-
-        M_Free(map->sideDefs);
+        Z_Free(map->sideDefs);
     }
     map->sideDefs = NULL;
     map->numSideDefs = 0;
+
+    if(map->nodes)
+    {
+        uint i;
+
+        for(i = 0; i < map->numNodes; ++i)
+        {
+            node_t* node = map->nodes[i];
+            Z_Free(node);
+        }
+        Z_Free(map->nodes);
+    }
+    map->nodes = NULL;
+    map->numNodes = 0;
 }
 
 /**

@@ -889,9 +889,9 @@ static void archiveSegs(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeNode(const gamemap_t *map, uint idx)
+static void writeNode(const gamemap_t* map, uint idx)
 {
-    node_t             *n = &map->nodes[idx];
+    node_t* n = map->nodes[idx];
 
     writeFloat(n->partition.x);
     writeFloat(n->partition.y);
@@ -909,9 +909,9 @@ static void writeNode(const gamemap_t *map, uint idx)
     writeLong((long) n->children[LEFT]);
 }
 
-static void readNode(const gamemap_t *map, uint idx)
+static void readNode(const gamemap_t* map, uint idx)
 {
-    node_t             *n = &map->nodes[idx];
+    node_t* n = map->nodes[idx];
 
     n->partition.x = readFloat();
     n->partition.y = readFloat();

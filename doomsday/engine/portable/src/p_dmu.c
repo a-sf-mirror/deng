@@ -701,7 +701,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     case DMU_FACE:
         return ((face_t*) ((dmuobjrecord_t*) ptr)->obj) - faces;
     case DMU_NODE:
-        return ((node_t*) ((dmuobjrecord_t*) ptr)->obj) - nodes;
+        return ((dmuobjrecord_t*) ptr)->id;
     case DMU_PLANE:
         return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
@@ -900,7 +900,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 
     case DMU_NODE:
         if(index < numNodes)
-            return callback(NODE_PTR(index), context);
+            return callback(DMU_GetObjRecord(DMU_NODE, nodes[index]), context);
         break;
 
     case DMU_FACE:
