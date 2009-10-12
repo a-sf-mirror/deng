@@ -692,21 +692,22 @@ static void createGlowLightPerPlaneForSubSector(face_t* face)
  */
 void LO_AddLuminousMobjs(void)
 {
-    uint                i;
-    sector_t*           seciter;
-
+    uint i;
+    
     if(!useDynlights && !useWallGlow)
         return;
 
 BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
 
-    for(i = 0, seciter = sectors; i < numSectors; seciter++, ++i)
+    for(i = 0; i < numSectors; ++i)
     {
+        sector_t* sector = sectors[i];
+
         if(useDynlights)
         {
-            mobj_t*             iter;
+            mobj_t* iter;
 
-            for(iter = seciter->mobjList; iter; iter = iter->sNext)
+            for(iter = sector->mobjList; iter; iter = iter->sNext)
             {
                 LO_AddLuminous(iter);
             }
@@ -714,9 +715,9 @@ BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
 
         // If the segs of this subsector are affected by glowing planes we
         // need to create dynlights and link them.
-        if(useWallGlow && seciter->faces)
+        if(useWallGlow && sector->faces)
         {
-            face_t**            facePtr = seciter->faces;
+            face_t** facePtr = sector->faces;
 
             while(*facePtr)
             {

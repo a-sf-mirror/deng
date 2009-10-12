@@ -500,18 +500,21 @@ void R_HSVToRGB(float* rgb, float h, float s, float v)
  */
 sector_t* R_GetSectorForOrigin(const void* ddMobjBase)
 {
-    uint                i, k;
-    sector_t*           sec;
-
+    uint i;
+    
     // Check all sectors; find where the sound is coming from.
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
 
         if(ddMobjBase == &sec->soundOrg)
+        {
             return sec;
+        }
         else
-        {   // Check the planes of this sector
+        {   // Check the planes of this sector.
+            uint k;
+
             for(k = 0; k < sec->planeCount; ++k)
                 if(ddMobjBase == &sec->planes[k]->soundOrg)
                 {
@@ -519,5 +522,6 @@ sector_t* R_GetSectorForOrigin(const void* ddMobjBase)
                 }
         }
     }
+
     return NULL;
 }

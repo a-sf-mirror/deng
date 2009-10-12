@@ -90,11 +90,11 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     }
     else if(type == DT_SECTOR_SOUND)
     {
-        uint                index = (ushort) Msg_ReadShort();
+        uint index = (ushort) Msg_ReadShort();
 
         if(index < numSectors)
         {
-        	sector = SECTOR_PTR(index);
+        	sector = sectors[index];
 		}
 		else
         {
@@ -105,7 +105,7 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     }
     else                        /* DT_POLY_SOUND */
     {
-        uint                index = (ushort) Msg_ReadShort();
+        uint index = (ushort) Msg_ReadShort();
 
         if(index < numPolyObjs)
         {
@@ -305,7 +305,7 @@ Con_Printf("Cl_Sound: %i\n", sound);
             Con_Message("Cl_Sound: Invalid sector number %i.\n", num);
             return;
         }
-        mo = (mobj_t *) &SECTOR_PTR(num)->soundOrg;
+        mo = (mobj_t *) &sectors[num]->soundOrg;
         //S_StopSound(0, mo);
         S_LocalSoundAtVolume(sound, mo, volume / 127.0f);
     }

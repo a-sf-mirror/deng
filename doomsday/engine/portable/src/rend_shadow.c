@@ -220,9 +220,7 @@ static void processMobjShadow(mobj_t* mo)
 
 void Rend_RenderShadows(void)
 {
-    sector_t               *sec;
-    mobj_t                 *mo;
-    uint                    i;
+    uint i;
 
     if(!useShadows || levelFullBright)
         return;
@@ -230,7 +228,9 @@ void Rend_RenderShadows(void)
     // Check all mobjs in all visible sectors.
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
+        mobj_t* mo;
+
         if(!(sec->frameFlags & SIF_VISIBLE))
             continue;
 

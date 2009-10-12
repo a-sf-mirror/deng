@@ -50,12 +50,12 @@ typedef struct editmap_s {
     gameobjdata_t   gameObjData;
 } editmap_t;
 
-boolean         MPE_Begin(const char *name);
+boolean         MPE_Begin(const char* name);
 boolean         MPE_End(void);
 
-uint            MPE_VertexCreate(float x, float y);
-boolean         MPE_VertexCreatev(size_t num, float *values, uint *indices);
-uint            MPE_SideDefCreate(uint sector, short flags,
+dmuobjrecordid_t MPE_VertexCreate(float x, float y);
+boolean         MPE_VertexCreatev(size_t num, float* values, dmuobjrecordid_t* indices);
+dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
                                   material_t* topMaterial,
                                   float topOffsetX, float topOffsetY, float topRed,
                                   float topGreen, float topBlue,
@@ -67,20 +67,20 @@ uint            MPE_SideDefCreate(uint sector, short flags,
                                   float bottomOffsetX, float bottomOffsetY,
                                   float bottomRed, float bottomGreen,
                                   float bottomBlue);
-uint            MPE_LineDefCreate(uint v1, uint v2, uint frontSide, uint backSide,
-                                  int flags);
-uint            MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-uint            MPE_PlaneCreate(uint sector, float height,
+dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, uint frontSide,
+                                   uint backSide, int flags);
+dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
+dmuobjrecordid_t MPE_PlaneCreate(dmuobjrecordid_t sector, float height,
                                 material_t* material,
                                 float matOffsetX, float matOffsetY,
                                 float r, float g, float b, float a,
                                 float normalX, float normalY, float normalZ);
-uint            MPE_PolyobjCreate(uint *lines, uint linecount,
+dmuobjrecordid_t MPE_PolyobjCreate(dmuobjrecordid_t* lines, uint linecount,
                                   int tag, int sequenceType, float startX, float startY);
 
-boolean         MPE_GameObjProperty(const char *objName, uint idx,
-                                    const char *propName, valuetype_t type,
-                                    void *data);
+boolean         MPE_GameObjProperty(const char* objName, uint idx,
+                                    const char* propName, valuetype_t type,
+                                    void* data);
 
 // Non-public (temporary)
 // Flags for MPE_PruneRedundantMapData().

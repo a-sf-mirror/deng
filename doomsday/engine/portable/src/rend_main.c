@@ -3612,11 +3612,9 @@ static void Rend_RenderBoundingBoxes(void)
     static const float  green[3] = { 0.2f, 1, 0.2f}; // solid objects
     static const float  yellow[3] = {0.7f, 0.7f, 0.2f}; // missiles
 
-    uint                i;
-    float               size, alpha, eye[3];
-    mobj_t*             mo;
-    sector_t*           sec;
-    material_t*         mat;
+    uint i;
+    float eye[3];
+    material_t* mat;
     material_snapshot_t ms;
 
     if(!devMobjBBox || netGame)
@@ -3646,7 +3644,8 @@ static void Rend_RenderBoundingBoxes(void)
     // For every sector
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
+        mobj_t* mo;
 
         // Is it vissible?
         if(!(sec->frameFlags & SIF_VISIBLE))
@@ -3655,6 +3654,8 @@ static void Rend_RenderBoundingBoxes(void)
         // For every mobj in the sector's mobjList
         for(mo = sec->mobjList; mo; mo = mo->sNext)
         {
+            float alpha, size;
+
             if(mo == ddPlayers[consolePlayer].shared.mo)
                 continue; // We don't want the console player.
 

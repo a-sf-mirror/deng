@@ -676,7 +676,7 @@ void P_SetVariable(int value, void* data)
  */
 dmuobjrecordid_t P_ToIndex(const void* ptr)
 {
-    int                 type;
+    int type;
 
     if(!ptr)
     {
@@ -690,7 +690,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     switch(type)
     {
     case DMU_SECTOR:
-        return ((sector_t*) ((dmuobjrecord_t*) ptr)->obj) - sectors;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_VERTEX:
         return ((vertex_t*) ((dmuobjrecord_t*) ptr)->obj) - vertexes;
     case DMU_HEDGE:
@@ -698,11 +698,11 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     case DMU_LINEDEF:
         return ((linedef_t*) ((dmuobjrecord_t*) ptr)->obj) - lineDefs;
     case DMU_SIDEDEF:
-        return ((dmuobjrecord_t*) ptr)->id;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_FACE:
-        return ((dmuobjrecord_t*) ptr)->id;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_NODE:
-        return ((dmuobjrecord_t*) ptr)->id;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_PLANE:
         return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
 
@@ -911,7 +911,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 
     case DMU_SECTOR:
         if(index < numSectors)
-            return callback(DMU_GetObjRecord(DMU_SECTOR, sectors + index), context);
+            return callback(DMU_GetObjRecord(DMU_SECTOR, sectors[index]), context);
         break;
 
     case DMU_PLANE:

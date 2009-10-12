@@ -262,11 +262,11 @@ static sector_t* pickSectorForSubSector(gamemap_t* map, const hedge_node_t* firs
                                         boolean allowSelfRef)
 {
     const hedge_node_t* node;
-    sector_t*           sector = NULL;
+    sector_t* sector = NULL;
 
     for(node = firstHEdge; !sector && node; node = node->next)
     {
-        const hedge_t*      hEdge = node->hEdge;
+        const hedge_t* hEdge = node->hEdge;
 
         if(!allowSelfRef && hEdge->twin &&
            ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
@@ -276,11 +276,10 @@ static sector_t* pickSectorForSubSector(gamemap_t* map, const hedge_node_t* firs
         if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
            ((bsp_hedgeinfo_t*) hEdge->data)->sector)
         {
-            linedef_t*          lineDef =
-                ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
 
             if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
-                sector = &map->sectors[lineDef->buildData.windowEffect->buildData.index - 1];
+                sector = map->sectors[lineDef->buildData.windowEffect->buildData.index - 1];
             else
                 sector = lineDef->buildData.sideDefs[
                     ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
@@ -290,20 +289,18 @@ static sector_t* pickSectorForSubSector(gamemap_t* map, const hedge_node_t* firs
     return sector;
 }
 
-static void hardenLeaf(gamemap_t* map, face_t* dest,
-                       const bspleafdata_t* src, subsector_t** storage)
+static void hardenLeaf(gamemap_t* map, face_t* dest, const bspleafdata_t* src)
 {
-    size_t              hEdgeCount;
-    hedge_t*            hEdge;
-    hedge_node_t*       n;
+    size_t hEdgeCount;
+    hedge_t* hEdge;
+    hedge_node_t* n;
 
-    dest->hEdge =
-        &map->hEdges[((bsp_hedgeinfo_t*) src->hEdges->hEdge->data)->index];
+    dest->hEdge = &map->hEdges[((bsp_hedgeinfo_t*) src->hEdges->hEdge->data)->index];
 
     hEdgeCount = 0;
     for(n = src->hEdges; ; n = n->next)
     {
-        const hedge_t*      hEdge = n->hEdge;
+        const hedge_t* hEdge = n->hEdge;
 
         hEdgeCount++;
 
@@ -325,17 +322,14 @@ static void hardenLeaf(gamemap_t* map, face_t* dest,
         hEdge->face = dest;
     } while((hEdge = hEdge->next) != dest->hEdge);
 
-    dest->data = *storage, (*storage)++;
+    dest->data = Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
 
     DMU_AddObjRecord(DMU_FACE, dest);
 
     {
-    subsector_t*        subSector = ((subsector_t*) dest->data);
+    subsector_t* subSector = ((subsector_t*) dest->data);
 
     subSector->hEdgeCount = (uint) hEdgeCount;
-    subSector->shadows = NULL;
-    subSector->firstFanHEdge = NULL;
-    subSector->bsuf = NULL;
 
     /**
      * Determine which sector this subsector belongs to.
@@ -358,7 +352,6 @@ typedef struct {
     gamemap_t*      dest;
     uint            faceCurIndex;
     uint            nodeCurIndex;
-    subsector_t*    storage;
 } hardenbspparams_t;
 
 static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
@@ -401,8 +394,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->faces[idx], leaf,
-                       &params->storage);
+            hardenLeaf(params->dest, params->dest->faces[idx], leaf);
         }
         else
         {
@@ -422,8 +414,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->faces[idx], leaf,
-                       &params->storage);
+            hardenLeaf(params->dest, params->dest->faces[idx], leaf);
         }
         else
         {
@@ -460,25 +451,20 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
 {
     {
     uint i;
-    node_t* nodes;
-
     dest->numNodes = 0;
     BinaryTree_PostOrder(rootNode, countNode, &dest->numNodes);
     dest->nodes = Z_Malloc(dest->numNodes * sizeof(node_t*), PU_STATIC, 0);
-    nodes = Z_Calloc(dest->numNodes * sizeof(node_t), PU_STATIC, 0);
     for(i = 0; i < dest->numNodes; ++i)
-        dest->nodes[i] = &nodes[i];
+        dest->nodes[i] = Z_Calloc(sizeof(node_t), PU_STATIC, 0);
     }
 
     {
     uint i;
-    face_t* faces;
     dest->numFaces = 0;
     BinaryTree_PostOrder(rootNode, countFace, &dest->numFaces);
     dest->faces = Z_Malloc(dest->numFaces * sizeof(face_t*), PU_STATIC, 0);
-    faces = Z_Calloc(dest->numFaces * sizeof(face_t), PU_STATIC, 0);
     for(i = 0; i < dest->numFaces; ++i)
-        dest->faces[i] = &faces[i];
+        dest->faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
     }
 
     if(rootNode)
@@ -488,7 +474,6 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
         params.dest = dest;
         params.faceCurIndex = 0;
         params.nodeCurIndex = 0;
-        params.storage = Z_Calloc(dest->numFaces * sizeof(subsector_t), PU_STATIC, 0);
 
         BinaryTree_PostOrder(rootNode, hardenNode, &params);
     }

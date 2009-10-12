@@ -310,8 +310,8 @@ void R_Update(void)
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
-        player_t*           plr = &ddPlayers[i];
-        ddplayer_t*         ddpl = &plr->shared;
+        player_t* plr = &ddPlayers[i];
+        ddplayer_t* ddpl = &plr->shared;
 
         // States have changed, the states are unknown.
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
@@ -320,8 +320,8 @@ void R_Update(void)
     // Update all world surfaces.
     for(i = 0; i < numSectors; ++i)
     {
-        uint                j;
-        sector_t*           sec = &sectors[i];
+        uint j;
+        sector_t* sec = sectors[i];
 
         for(j = 0; j < sec->planeCount; ++j)
             Surface_Update(&sec->SP_planesurface(j));
@@ -338,12 +338,12 @@ void R_Update(void)
 
     for(i = 0; i < numPolyObjs; ++i)
     {
-        polyobj_t*          po = polyObjs[i];
-        uint                j;
+        polyobj_t* po = polyObjs[i];
+        uint j;
 
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
             Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
         }
@@ -535,7 +535,7 @@ void R_NewSharpWorld(void)
 void R_CreateMobjLinks(void)
 {
     uint                i;
-    sector_t*           seciter;
+
 #ifdef DD_PROFILE
     static int          p;
 
@@ -548,11 +548,12 @@ void R_CreateMobjLinks(void)
 
 BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 
-    for(i = 0, seciter = sectors; i < numSectors; seciter++, ++i)
+    for(i = 0; i < numSectors; ++i)
     {
-        mobj_t*             iter;
+        sector_t* sector = sectors[i];
+        mobj_t* iter;
 
-        for(iter = seciter->mobjList; iter; iter = iter->sNext)
+        for(iter = sector->mobjList; iter; iter = iter->sNext)
         {
             R_ObjLinkCreate(iter, OT_MOBJ); // For spreading purposes.
         }

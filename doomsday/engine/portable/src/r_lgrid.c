@@ -416,7 +416,7 @@ void LG_Init(void)
     // Find the blocks of all sectors.
     for(s = 0; s < numSectors; ++s)
     {
-        sector_t*           sector = SECTOR_PTR(s);
+        sector_t* sector = sectors[s];
 
         // Clear the bitfields.
         memset(indexBitfield, 0, bitfieldSize);
@@ -489,7 +489,7 @@ Con_Message("  Sector %i: %i / %i\n", s, changedCount, count);
         if(sector->blockCount > 0)
         {
             sector->blocks = Z_Malloc(sizeof(unsigned short) * sector->blockCount,
-                                      PU_MAPSTATIC, 0);
+                                      PU_STATIC, 0);
             for(x = 0, a = 0, b = changedCount;
                 x < map->lg.blockWidth * map->lg.blockHeight;
                 ++x)
@@ -599,8 +599,8 @@ void LG_SectorChanged(sector_t* sector)
  */
 void LG_MarkAllForUpdate(cvar_t* unused)
 {
-    uint                i;
-    gamemap_t*          map = P_GetCurrentMap();
+    uint i;
+    gamemap_t* map = P_GetCurrentMap();
 
     if(!map->lg.inited)
         return;
@@ -608,7 +608,7 @@ void LG_MarkAllForUpdate(cvar_t* unused)
     // Mark all blocks and contributors.
     for(i = 0; i < numSectors; ++i)
     {
-        LG_SectorChanged(&sectors[i]);
+        LG_SectorChanged(sectors[i]);
     }
 }
 

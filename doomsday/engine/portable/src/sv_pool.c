@@ -145,9 +145,7 @@ static linedef_t** sideOwners;
  */
 void Sv_InitPools(void)
 {
-    uint                i;
-    sector_t*           sec;
-    uint                startTime;
+    uint                i, startTime;
 
     // Clients don't register anything.
     if(isClient)
@@ -201,7 +199,7 @@ void Sv_InitPools(void)
     sectorOrigins = Z_Malloc(sizeof(origin_t) * numSectors, PU_MAP, 0);
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
 
         sectorOrigins[i].pos[VX] =
             (sec->bBox[BOXRIGHT] + sec->bBox[BOXLEFT]) / 2;
@@ -213,7 +211,7 @@ void Sv_InitPools(void)
     sideOrigins = Z_Malloc(sizeof(origin_t) * numSideDefs, PU_MAP, 0);
     for(i = 0; i < numSideDefs; ++i)
     {
-        vertex_t*           vtx;
+        vertex_t* vtx;
 
         // The side must be owned by a line.
         if(sideOwners[i] == NULL)
@@ -479,8 +477,8 @@ void Sv_RegisterPlayer(dt_player_t* reg, uint number)
  */
 void Sv_RegisterSector(dt_sector_t* reg, uint number)
 {
-    uint                i;
-    sector_t*           sec = SECTOR_PTR(number);
+    uint i;
+    sector_t* sec = sectors[number];
 
     reg->lightLevel = sec->lightLevel;
     memcpy(reg->rgb, sec->rgb, sizeof(reg->rgb));
@@ -701,9 +699,9 @@ boolean Sv_RegisterComparePlayer(cregister_t* reg, uint number,
 boolean Sv_RegisterCompareSector(cregister_t* reg, uint number,
                                  sectordelta_t* d, byte doUpdate)
 {
-    dt_sector_t*        r = &reg->sectors[number];
-    const sector_t*     s = SECTOR_PTR(number);
-    int                 df = 0;
+    dt_sector_t* r = &reg->sectors[number];
+    const sector_t* s = sectors[number];
+    int df = 0;
 
     // Determine which data is different.
     if(s->SP_floormaterial != r->planes[PLN_FLOOR].surface.material)
@@ -1624,7 +1622,7 @@ float Sv_MobjDistance(const mobj_t* mo, const ownerinfo_t* info,
  */
 float Sv_SectorDistance(int index, const ownerinfo_t* info)
 {
-    sector_t*           sector = SECTOR_PTR(index);
+    sector_t* sector = sectors[index];
 
     return P_ApproxDistance3(info->pos[VX] - sectorOrigins[index].pos[VX],
                              info->pos[VY] - sectorOrigins[index].pos[VY],
@@ -2428,7 +2426,7 @@ void Sv_NewSoundDelta(int soundId, mobj_t* emitter, sector_t* sourceSector,
     if(sourceSector != NULL)
     {
         type = DT_SECTOR_SOUND;
-        id = GET_SECTOR_IDX(sourceSector);
+        id = DMU_GetObjRecord(DMU_SECTOR, sourceSector)->id - 1;
 
         // Clients need to know which emitter to use.
         if(emitter)

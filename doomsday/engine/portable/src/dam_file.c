@@ -139,7 +139,7 @@ static void initMaterialDict(const gamemap_t* map, materialdict_t* dict)
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = &map->sectors[i];
+        sector_t* sec = map->sectors[i];
 
         for(j = 0; j < sec->planeCount; ++j)
             addMaterialToDict(dict, sec->SP_planematerial(j));
@@ -458,7 +458,7 @@ static void writeSide(const gamemap_t* map, uint idx)
         writeFloat(suf->rgba[CB]);
         writeFloat(suf->rgba[CA]);
     }
-    writeLong(s->sector? ((s->sector - map->sectors) + 1) : 0);
+    writeLong(s->sector? DMU_GetObjRecord(DMU_SECTOR, s->sector)->id : 0);
     writeShort(s->flags);
 }
 
@@ -491,7 +491,7 @@ static void readSide(const gamemap_t* map, uint idx)
         suf->numDecorations = 0;
     }
     secIdx = readLong();
-    s->sector = (secIdx == 0? NULL : &map->sectors[secIdx -1]);
+    s->sector = (secIdx == 0? NULL : map->sectors[secIdx -1]);
     s->flags = readShort();
 }
 
@@ -524,10 +524,10 @@ static void archiveSides(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSector(const gamemap_t *map, uint idx)
+static void writeSector(const gamemap_t* map, uint idx)
 {
-    uint                i;
-    sector_t           *s = &map->sectors[idx];
+    uint i;
+    sector_t* s = map->sectors[idx];
 
     writeFloat(s->lightLevel);
     writeFloat(s->rgb[CR]);
@@ -536,7 +536,7 @@ static void writeSector(const gamemap_t *map, uint idx)
     writeLong(s->planeCount);
     for(i = 0; i < s->planeCount; ++i)
     {
-        plane_t            *p = s->planes[i];
+        plane_t* p = s->planes[i];
 
         writeFloat(p->height);
         writeFloat(p->glow);
@@ -571,7 +571,7 @@ static void writeSector(const gamemap_t *map, uint idx)
     writeFloat(s->bBox[BOXRIGHT]);
     writeFloat(s->bBox[BOXBOTTOM]);
     writeFloat(s->bBox[BOXTOP]);
-    writeLong(s->lightSource? ((s->lightSource - map->sectors) + 1) : 0);
+    writeLong(s->lightSource? DMU_GetObjRecord(DMU_SECTOR, s->lightSource)->id : 0);
     writeFloat(s->soundOrg.pos[VX]);
     writeFloat(s->soundOrg.pos[VY]);
     writeFloat(s->soundOrg.pos[VZ]);
@@ -603,10 +603,10 @@ static void writeSector(const gamemap_t *map, uint idx)
 
 static void readSector(const gamemap_t* map, uint idx)
 {
-    uint                i, numPlanes;
-    long                secIdx;
-    float               offset[2], rgba[4];
-    sector_t*           s = &map->sectors[idx];
+    uint i, numPlanes;
+    long secIdx;
+    float offset[2], rgba[4];
+    sector_t* s = map->sectors[idx];
 
     s->lightLevel = readFloat();
     s->rgb[CR] = readFloat();
@@ -615,7 +615,7 @@ static void readSector(const gamemap_t* map, uint idx)
     numPlanes = (uint) readLong();
     for(i = 0; i < numPlanes; ++i)
     {
-        plane_t            *p = R_NewPlaneForSector(s);
+        plane_t* p = R_NewPlaneForSector(s);
 
         p->height = readFloat();
         p->glow = readFloat();
@@ -657,7 +657,7 @@ static void readSector(const gamemap_t* map, uint idx)
     s->bBox[BOXBOTTOM] = readFloat();
     s->bBox[BOXTOP] = readFloat();
     secIdx = readLong();
-    s->lightSource = (secIdx == 0? NULL : &map->sectors[secIdx - 1]);
+    s->lightSource = (secIdx == 0? NULL : map->sectors[secIdx - 1]);
     s->soundOrg.pos[VX] = readFloat();
     s->soundOrg.pos[VY] = readFloat();
     s->soundOrg.pos[VZ] = readFloat();
@@ -668,13 +668,13 @@ static void readSector(const gamemap_t* map, uint idx)
     // Lightgrid block indices.
     s->changedBlockCount = (uint) readLong();
     s->blockCount = (uint) readLong();
-    s->blocks = Z_Malloc(sizeof(short) * s->blockCount, PU_MAP, 0);
+    s->blocks = Z_Malloc(sizeof(short) * s->blockCount, PU_STATIC, 0);
     for(i = 0; i < s->blockCount; ++i)
         s->blocks[i] = readShort();
 
     // Line list.
     s->lineDefCount = (uint) readLong();
-    s->lineDefs = Z_Malloc(sizeof(linedef_t*) * (s->lineDefCount + 1), PU_MAP, 0);
+    s->lineDefs = Z_Malloc(sizeof(linedef_t*) * (s->lineDefCount + 1), PU_STATIC, 0);
     for(i = 0; i < s->lineDefCount; ++i)
         s->lineDefs[i] = &map->lineDefs[(unsigned) readLong() - 1];
     s->lineDefs[i] = NULL; // Terminate.
@@ -738,7 +738,7 @@ static void writeSubSector(const gamemap_t* map, uint idx)
     writeFloat(s->midPoint.pos[VX]);
     writeFloat(s->midPoint.pos[VY]);
     writeFloat(s->midPoint.pos[VZ]);
-    writeLong(s->sector? ((s->sector - map->sectors) + 1) : 0);
+    writeLong(s->sector? DMU_GetObjRecord(DMU_SECTOR, s->sector)->id : 0);
     writeLong(s->polyObj? (s->polyObj->idx + 1) : 0);
 
     // SubSector reverb.
@@ -767,7 +767,7 @@ static void readSubSector(const gamemap_t* map, uint idx)
     s->midPoint.pos[VY] = readFloat();
     s->midPoint.pos[VZ] = readFloat();
     obIdx = readLong();
-    s->sector = (obIdx == 0? NULL : &map->sectors[(unsigned) obIdx - 1]);
+    s->sector = (obIdx == 0? NULL : map->sectors[(unsigned) obIdx - 1]);
     obIdx = readLong();
     s->polyObj = (obIdx == 0? NULL : map->polyObjs[(unsigned) obIdx - 1]);
 

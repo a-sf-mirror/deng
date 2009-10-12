@@ -156,11 +156,11 @@ static void setSectorOwner(ownerlist_t* ownerList, face_t* face)
 
 static void findSubSectorsAffectingSector(gamemap_t* map, uint secIDX)
 {
-    uint                i;
-    ownernode_t*        node, *p;
-    float               bbox[4];
-    ownerlist_t         faceOwnerList;
-    sector_t*           sec = &map->sectors[secIDX];
+    uint i;
+    ownernode_t* node, *p;
+    float bbox[4];
+    ownerlist_t faceOwnerList;
+    sector_t* sec = map->sectors[secIDX];
 
     memset(&faceOwnerList, 0, sizeof(faceOwnerList));
 
@@ -177,8 +177,8 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
 */
     for(i = 0; i < map->numFaces; ++i)
     {
-        face_t*             face = map->faces[i];
-        subsector_t*        subSector = (subsector_t*) face->data;
+        face_t* face = map->faces[i];
+        subsector_t* subSector = (subsector_t*) face->data;
 
         // Is this subsector close enough?
         if(subSector->sector == sec || // subsector is IN this sector
@@ -200,7 +200,7 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
 
         sec->reverbFaces =
             Z_Malloc((sec->numReverbFaceAttributors + 1) * sizeof(face_t*),
-                     PU_MAPSTATIC, 0);
+                     PU_STATIC, 0);
 
         for(i = 0, ptr = sec->reverbFaces, node = faceOwnerList.head;
             i < sec->numReverbFaceAttributors; ++i, ptr++)

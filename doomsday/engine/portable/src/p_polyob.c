@@ -252,7 +252,8 @@ void P_MapInitPolyobjs(void)
             {
                 Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
                             "  (face %i, sector %i). Previous polyobj overridden.\n",
-                            DMU_GetObjRecord(DMU_FACE, face)->id, GET_SECTOR_IDX(subSector->sector));
+                            (int) DMU_GetObjRecord(DMU_FACE, face)->id,
+                            (int) DMU_GetObjRecord(DMU_SECTOR, subSector->sector)->id);
             }
             subSector->polyObj = po;
             po->face = face;

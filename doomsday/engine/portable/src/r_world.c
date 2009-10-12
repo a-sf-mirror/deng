@@ -779,7 +779,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
 
     if(id >= sec->planeCount)
         Con_Error("P_DestroyPlaneOfSector: Plane id #%i is not valid for "
-                  "sector #%u", id, (uint) GET_SECTOR_IDX(sec));
+                  "sector #%u", id, (uint) DMU_GetObjRecord(DMU_SECTOR, sec)->id);
 
     plane = sec->planes[id];
 
@@ -980,7 +980,7 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
  */
 void R_InitSkyFix(void)
 {
-    uint                i;
+    uint i;
 
     skyFix[PLN_FLOOR].height = DDMAXFLOAT;
     skyFix[PLN_CEILING].height = DDMINFLOAT;
@@ -988,7 +988,7 @@ void R_InitSkyFix(void)
     // Update for sector plane heights and mobjs which intersect the ceiling.
     for(i = 0; i < numSectors; ++i)
     {
-        R_UpdateSkyFixForSec(SECTOR_PTR(i));
+        R_UpdateSkyFixForSec(sectors[i]);
     }
 }
 
@@ -1929,15 +1929,15 @@ static sector_t *getContainingSectorOf(gamemap_t* map, sector_t* sec)
 }
 #endif
 
-void R_BuildSectorLinks(gamemap_t *map)
+void R_BuildSectorLinks(gamemap_t* map)
 {
 #define DOMINANT_SIZE   1000
 
-    uint                i;
+    uint i;
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t           *sec = &map->sectors[i];
+        sector_t* sec = map->sectors[i];
 
         if(!sec->lineDefCount)
             continue;
@@ -1949,13 +1949,13 @@ void R_BuildSectorLinks(gamemap_t *map)
         {
             if(R_SectorContainsSkySurfaces(sec))
             {
-                uint                k;
+                uint k;
 
                 // All sectors touching this one will be affected.
                 for(k = 0; k < sec->lineDefCount; ++k)
                 {
-                    linedef_t*          lin = sec->lineDefs[k];
-                    sector_t*           other;
+                    linedef_t* lin = sec->lineDefs[k];
+                    sector_t* other;
 
                     other = LINE_FRONTSECTOR(lin);
                     if(other == sec)
@@ -1974,7 +1974,7 @@ void R_BuildSectorLinks(gamemap_t *map)
 #undef DOMINANT_SIZE
 }
 
-static __inline void initSurfaceMaterialOffset(surface_t *suf)
+static __inline void initSurfaceMaterialOffset(surface_t* suf)
 {
     if(!suf)
         return;
@@ -2023,13 +2023,13 @@ void R_SetupMap(int mode, int flags)
         // (lighting, smoothed planes etc).
         for(i = 0; i < numSectors; ++i)
         {
-            uint                j;
-            sector_t           *sec = SECTOR_PTR(i);
+            uint j;
+            sector_t* sec = sectors[i];
 
             R_UpdateSector(sec, false);
             for(j = 0; j < sec->planeCount; ++j)
             {
-                plane_t            *pln = sec->SP_plane(j);
+                plane_t* pln = sec->SP_plane(j);
 
                 pln->visHeight = pln->oldHeight[0] = pln->oldHeight[1] =
                     pln->height;
@@ -2052,7 +2052,7 @@ void R_SetupMap(int mode, int flags)
     }
     case DDSMM_FINALIZE:
     {
-        gamemap_t          *map = P_GetCurrentMap();
+        gamemap_t* map = P_GetCurrentMap();
 
         // We are now finished with the game data, map object db.
         P_DestroyGameMapObjDB(&map->gameObjData);
@@ -2067,13 +2067,13 @@ void R_SetupMap(int mode, int flags)
         // and interpolated properties (lighting, smoothed planes etc).
         for(i = 0; i < numSectors; ++i)
         {
-            uint                l;
-            sector_t           *sec = SECTOR_PTR(i);
+            uint l;
+            sector_t* sec = sectors[i];
 
             R_UpdateSector(sec, true);
             for(l = 0; l < sec->planeCount; ++l)
             {
-                plane_t            *pln = sec->SP_plane(l);
+                plane_t* pln = sec->SP_plane(l);
 
                 pln->visHeight = pln->oldHeight[0] = pln->oldHeight[1] =
                     pln->height;
@@ -2180,12 +2180,12 @@ void R_SetupMap(int mode, int flags)
 
 void R_ClearSectorFlags(void)
 {
-    uint        i;
-    sector_t   *sec;
+    uint i;
 
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
+
         // Clear all flags that can be cleared before each frame.
         sec->frameFlags &= ~SIF_FRAME_CLEAR;
     }
@@ -2193,7 +2193,7 @@ void R_ClearSectorFlags(void)
 
 void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
 {
-    int                 viewer = pid;
+    int viewer = pid;
 
     if(!lineDef->mapped[viewer])
     {
@@ -2735,7 +2735,7 @@ D_CMD(UpdateSurfaces)
     Con_Printf("Updating world surfaces...\n");
 
     for(i = 0; i < map->numSectors; ++i)
-        R_UpdateSector(&map->sectors[i], true);
+        R_UpdateSector(map->sectors[i], true);
 
     return true;
 }

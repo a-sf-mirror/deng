@@ -124,11 +124,11 @@ static boolean iterateSectorLinkedPtcGens(sector_t* sector,
                                           boolean (*callback) (ptcgen_t*, void*),
                                           void* context)
 {
-    boolean             result = true;
+    boolean result = true;
 
     if(sector)
     {
-        pglink_t*           it = pgLinks[GET_SECTOR_IDX(sector)];
+        pglink_t* it = pgLinks[DMU_GetObjRecord(DMU_SECTOR, sector)->id - 1];
 
         while(it)
         {
@@ -143,9 +143,9 @@ static boolean iterateSectorLinkedPtcGens(sector_t* sector,
 
 static uint findSlotForNewGen(void)
 {
-    ptcgenid_t          i, slot = 0;
-    int                 maxage = 0;
-    boolean             isEmpty = false;
+    ptcgenid_t i, slot = 0;
+    int maxage = 0;
+    boolean isEmpty = false;
 
     // Find a suitable spot in the active ptcgens list.
     i = 0;
@@ -351,7 +351,7 @@ BEGIN_PROF(PROF_PTCGEN_LINK);
                 // \fixme Overkill?
                 for(k = 0; k < gen->count; ++k)
                     if(gen->ptcs[k].stage >= 0)
-                        PG_LinkPtcGen(gen, GET_SECTOR_IDX(gen->ptcs[k].sector));
+                        PG_LinkPtcGen(gen, DMU_GetObjRecord(DMU_SECTOR, gen->ptcs[k].sector)->id - 1);
             }
         }
     }
@@ -1401,9 +1401,8 @@ static boolean P_HasActivePtcGen(sector_t* sector, int isCeiling)
  */
 void P_CheckPtcPlanes(void)
 {
-    uint                i, p;
-    sector_t*           sector;
-
+    uint i, p;
+   
     if(isDedicated || !useParticles)
         return;
 
@@ -1413,11 +1412,12 @@ void P_CheckPtcPlanes(void)
 
     for(i = 0; i < numSectors; ++i)
     {
-        sector = SECTOR_PTR(i);
+        sector_t* sector = sectors[i];
+
         for(p = 0; p < 2; ++p)
         {
-            uint                plane = p;
-            material_t*         mat = sector->SP_planematerial(plane);
+            uint plane = p;
+            material_t* mat = sector->SP_planematerial(plane);
             const ded_ptcgen_t* def = Material_GetPtcGen(mat);
 
             if(!def)

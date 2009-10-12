@@ -225,7 +225,7 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
 
     if(sectornum >= numSectors)
         return;
-    sector = SECTOR_PTR(sectornum);
+    sector = sectors[sectornum];
 
     // Remove any existing movers for the same plane.
     for(i = 0; i < MAX_MOVERS; ++i)
@@ -255,7 +255,7 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
             mov->thinker.function = Cl_MoverThinker;
             mov->type = type;
             mov->sectornum = sectornum;
-            mov->sector = SECTOR_PTR(sectornum);
+            mov->sector = sectors[sectornum];
             mov->destination = dest;
             mov->speed = speed;
             mov->current =
@@ -465,7 +465,7 @@ if(num >= numSectors)
     Con_Error("Cl_ReadSectorDelta2: Sector %i out of range.\n", num);
 }
 #endif
-        sec = SECTOR_PTR(num);
+        sec = sectors[num];
     }
     else
     {

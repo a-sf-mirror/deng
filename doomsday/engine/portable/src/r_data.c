@@ -2388,12 +2388,11 @@ void R_PrecacheMobjNum(int num)
  */
 void R_PrecacheMap(void)
 {
-    uint                i, j;
-    size_t              n;
-    sector_t*           sec;
-    float               startTime;
-    material_t*         mat, **matPresent;
-    int                 numMaterials;
+    uint i, j;
+    size_t n;
+    float startTime;
+    material_t* mat, **matPresent;
+    int numMaterials;
 
     // Don't precache when playing demo.
     if(isDedicated || playback)
@@ -2428,7 +2427,7 @@ void R_PrecacheMap(void)
 
     for(i = 0; i < numSectors; ++i)
     {
-        sec = SECTOR_PTR(i);
+        sector_t* sec = sectors[i];
 
         for(j = 0; j < sec->planeCount; ++j)
         {

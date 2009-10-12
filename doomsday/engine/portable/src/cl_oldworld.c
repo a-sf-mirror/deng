@@ -77,7 +77,7 @@ int Cl_ReadSectorDelta(void)
     if(!num)
         return false;
 
-    sec = SECTOR_PTR(--num);
+    sec = sectors[--num];
 
     // Flags.
     df = Msg_ReadPackedShort();

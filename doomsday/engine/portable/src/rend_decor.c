@@ -840,8 +840,8 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
         // Process all sidedefs.
         for(i = 0; i < numSideDefs; ++i)
         {
-            sidedef_t*          side = sideDefs[i];
-            surface_t*          suf;
+            sidedef_t* side = sideDefs[i];
+            surface_t* suf;
 
             suf = &side->SW_middlesurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
@@ -859,12 +859,13 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
         // Process all planes.
         for(i = 0; i < numSectors; ++i)
         {
-            uint                j;
-            sector_t*           sec = &sectors[i];
+            uint j;
+            sector_t* sec = sectors[i];
 
             for(j = 0; j < sec->planeCount; ++j)
             {
-                plane_t*            pln = sec->SP_plane(j);
+                plane_t* pln = sec->SP_plane(j);
+
                 if(pln->surface.inFlags & SUIF_UPDATE_DECORATIONS)
                     updatePlaneDecorations(pln);
             }

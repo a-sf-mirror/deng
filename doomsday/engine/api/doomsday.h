@@ -172,7 +172,7 @@ extern          "C" {
     boolean         MPE_End(void);
 
     dmuobjrecordid_t MPE_VertexCreate(float x, float y);
-    boolean         MPE_VertexCreatev(size_t num, float* values, uint* indices);
+    boolean         MPE_VertexCreatev(size_t num, float* values, dmuobjrecordid_t* indices);
     dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
                                       material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
