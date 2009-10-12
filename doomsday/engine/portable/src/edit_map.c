@@ -583,25 +583,25 @@ boolean MPE_Begin(const char *name)
 
 static void hardenSectorSubSectorList(gamemap_t* map, uint secIDX)
 {
-    uint                i, n, count;
-    sector_t*           sec = &map->sectors[secIDX];
+    uint i, n, count;
+    sector_t* sec = &map->sectors[secIDX];
 
     count = 0;
     for(i = 0; i < map->numFaces; ++i)
     {
-        const face_t*       face = &map->faces[i];
+        const face_t* face = map->faces[i];
 
         if(((const subsector_t*) face->data)->sector == sec)
             count++;
     }
 
-    sec->faces = Z_Malloc((count + 1) * sizeof(face_t*), PU_MAPSTATIC, NULL);
+    sec->faces = Z_Malloc((count + 1) * sizeof(face_t*), PU_STATIC, NULL);
 
     n = 0;
     for(i = 0; i < map->numFaces; ++i)
     {
-        face_t*             face = &map->faces[i];
-        subsector_t*        subSector = (subsector_t*) face->data;
+        face_t* face = map->faces[i];
+        subsector_t* subSector = (subsector_t*) face->data;
 
         if(subSector->sector == sec)
         {
@@ -945,11 +945,11 @@ static void updateSubSectorMidPoint(face_t* face)
 
 static void prepareSubSectors(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < map->numFaces; ++i)
     {
-        face_t*             face = &map->faces[i];
+        face_t* face = map->faces[i];
 
         updateSubSectorMidPoint(face);
     }

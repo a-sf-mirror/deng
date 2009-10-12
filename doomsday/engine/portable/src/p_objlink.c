@@ -231,8 +231,7 @@ void R_InitObjLinksForMap(void)
     objBlockmap = R_ObjBlockmapCreate(min[0], min[1], width, height);
 
     // Initialize face -> obj contact lists.
-    faceContacts =
-        Z_Calloc(sizeof(*faceContacts) * numFaces, PU_MAPSTATIC, 0);
+    faceContacts = Z_Calloc(sizeof(*faceContacts) * numFaces, PU_STATIC, 0);
 }
 
 void R_ObjBlockmapClear(objblockmap_t* obm)
@@ -267,12 +266,12 @@ void R_ObjLinkCreate(void* obj, objtype_t type)
 boolean RIT_LinkObjToSubSector(face_t* face, void* data)
 {
     linkobjtosubSectorparams_t* params = (linkobjtosubSectorparams_t*) data;
-    objcontact_t*       con = allocObjContact();
+    objcontact_t* con = allocObjContact();
 
     con->obj = params->obj;
 
     // Link the contact list for this face.
-    linkContactToFace(con, params->type, GET_FACE_IDX(face));
+    linkContactToFace(con, params->type, DMU_GetObjRecord(DMU_FACE, face)->id - 1);
 
     return true; // Continue iteration.
 }
@@ -635,7 +634,7 @@ boolean R_IterateSubSectorContacts(face_t* face, objtype_t type,
 {
     objcontact_t*       con;
 
-    con = faceContacts[GET_FACE_IDX(face)].head[type];
+    con = faceContacts[DMU_GetObjRecord(DMU_FACE, face)->id - 1].head[type];
     while(con)
     {
         if(!func(con->obj, data))

@@ -401,7 +401,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+            hardenLeaf(params->dest, params->dest->faces[idx], leaf,
                        &params->storage);
         }
         else
@@ -422,7 +422,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, &params->dest->faces[idx], leaf,
+            hardenLeaf(params->dest, params->dest->faces[idx], leaf,
                        &params->storage);
         }
         else
@@ -470,10 +470,16 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
         dest->nodes[i] = &nodes[i];
     }
 
+    {
+    uint i;
+    face_t* faces;
     dest->numFaces = 0;
     BinaryTree_PostOrder(rootNode, countFace, &dest->numFaces);
-    dest->faces =
-        Z_Calloc(dest->numFaces * sizeof(face_t), PU_MAPSTATIC, 0);
+    dest->faces = Z_Malloc(dest->numFaces * sizeof(face_t*), PU_STATIC, 0);
+    faces = Z_Calloc(dest->numFaces * sizeof(face_t), PU_STATIC, 0);
+    for(i = 0; i < dest->numFaces; ++i)
+        dest->faces[i] = &faces[i];
+    }
 
     if(rootNode)
     {
@@ -482,8 +488,7 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
         params.dest = dest;
         params.faceCurIndex = 0;
         params.nodeCurIndex = 0;
-        params.storage = Z_Calloc(dest->numFaces * sizeof(subsector_t),
-                                  PU_MAPSTATIC, 0);
+        params.storage = Z_Calloc(dest->numFaces * sizeof(subsector_t), PU_STATIC, 0);
 
         BinaryTree_PostOrder(rootNode, hardenNode, &params);
     }

@@ -177,7 +177,7 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
 */
     for(i = 0; i < map->numFaces; ++i)
     {
-        face_t*             face = &map->faces[i];
+        face_t*             face = map->faces[i];
         subsector_t*        subSector = (subsector_t*) face->data;
 
         // Is this subsector close enough?

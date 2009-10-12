@@ -45,7 +45,6 @@
 #define GET_VERTEX_IDX(vtx) ((vtx) - vertexes)
 #define GET_LINE_IDX(li)    ((li) - lineDefs)
 #define GET_SECTOR_IDX(sec) ((sec) - sectors)
-#define GET_FACE_IDX(face)  ((face) - faces)
 #define GET_HEDGE_IDX(hEdge) ((hEdge) - hEdges)
 
 // Return the index of plane within a sector's planes array.
@@ -54,7 +53,6 @@
 #define VERTEX_PTR(i)       (&vertexes[i])
 #define HEDGE_PTR(i)        (&hEdges[i])
 #define SECTOR_PTR(i)       (&sectors[i])
-#define FACE_PTR(i)         (&faces[i])
 #define LINE_PTR(i)         (&lineDefs[i])
 
 // Node flags.
@@ -210,7 +208,7 @@ extern uint numSectors;
 extern sector_t* sectors;
 
 extern uint numFaces;
-extern face_t* faces;
+extern face_t** faces;
 
 extern uint numNodes;
 extern node_t** nodes;
@@ -243,7 +241,7 @@ typedef struct gamemap_s {
     sector_t*       sectors;
 
     uint            numFaces;
-    face_t*         faces;
+    face_t**        faces;
 
     uint            numNodes;
     node_t**        nodes;

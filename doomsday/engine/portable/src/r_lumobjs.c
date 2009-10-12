@@ -146,7 +146,7 @@ static void linkLumObjToFace(lumobj_t* lum)
     lumlistnode_t*         ln = allocListNode();
     lumlistnode_t**        root;
 
-    root = &faceLumObjList[GET_FACE_IDX(lum->face)];
+    root = &faceLumObjList[DMU_GetObjRecord(DMU_FACE, lum->face)->id - 1];
     ln->next = *root;
     ln->data = lum;
     *root = ln;
@@ -898,7 +898,7 @@ static boolean iterateSubSectorLumObjs(face_t* face,
 {
     lumlistnode_t*      ln;
 
-    ln = faceLumObjList[GET_FACE_IDX(face)];
+    ln = faceLumObjList[DMU_GetObjRecord(DMU_FACE, face)->id - 1];
     while(ln)
     {
         if(!func(ln->data, data))

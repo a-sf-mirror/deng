@@ -95,7 +95,7 @@ static dmuobjrecordid_t addObjRecord(dmuobjrecordset_t* s, dmuobjrecordid_t id)
     s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t) * ++s->num);
     s->ids[s->num - 1] = id;
 
-    return id;
+    return s->num - 1;
 }
 
 static void destroyRecordSet(int idx)
@@ -152,7 +152,8 @@ static dmuobjrecordset_t* createObjRecordset(int type)
     s->sentinel.dummy = -667;
     s->sentinel.header.type = type;
     s->sentinel.obj = NULL;
-    s->sentinel.id = addObjRecord(s, -1);
+    s->sentinel.id = -1;
+    addObjRecord(s, -1);
 
     return s;
 }
@@ -699,7 +700,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     case DMU_SIDEDEF:
         return ((dmuobjrecord_t*) ptr)->id;
     case DMU_FACE:
-        return ((face_t*) ((dmuobjrecord_t*) ptr)->obj) - faces;
+        return ((dmuobjrecord_t*) ptr)->id;
     case DMU_NODE:
         return ((dmuobjrecord_t*) ptr)->id;
     case DMU_PLANE:
@@ -905,7 +906,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 
     case DMU_FACE:
         if(index < numFaces)
-            return callback(DMU_GetObjRecord(DMU_FACE, faces + index), context);
+            return callback(DMU_GetObjRecord(DMU_FACE, faces[index]), context);
         break;
 
     case DMU_SECTOR:

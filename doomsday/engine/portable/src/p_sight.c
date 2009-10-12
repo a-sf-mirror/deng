@@ -247,7 +247,7 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
  */
 static boolean crossSubSector(uint faceIdx, losdata_t* los)
 {
-    const face_t*       face = &faces[faceIdx];
+    const face_t*       face = faces[faceIdx];
 
     if(((subsector_t*) face->data)->polyObj)
     {   // Check polyobj lines.

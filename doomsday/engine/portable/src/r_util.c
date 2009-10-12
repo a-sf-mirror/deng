@@ -268,7 +268,7 @@ face_t* R_PointInSubSector(const float x, const float y)
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return &faces[nodenum & ~NF_SUBSECTOR];
+    return faces[nodenum & ~NF_SUBSECTOR];
 }
 
 void* P_PointInSubSector(const float x, const float y)

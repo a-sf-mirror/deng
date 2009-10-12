@@ -258,8 +258,8 @@ typedef struct subsecmap_s {
     totalLinks = 0;
     for(i = 0; i < map->numFaces; ++i)
     {
-        face_t*             face = &map->faces[i];
-        subsector_t*        subSector = (subsector_t*) face->data;
+        face_t* face = map->faces[i];
+        subsector_t* subSector = (subsector_t*) face->data;
 
         if(!subSector->sector)
             continue;

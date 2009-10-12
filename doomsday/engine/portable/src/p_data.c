@@ -76,7 +76,7 @@ uint numSectors = 0;
 sector_t* sectors = NULL;
 
 uint numFaces = 0;
-face_t* faces = NULL;
+face_t** faces = NULL;
 
 uint numNodes = 0;
 node_t** nodes = NULL;
@@ -233,6 +233,20 @@ void P_DestroyMap(gamemap_t* map)
     }
     map->sideDefs = NULL;
     map->numSideDefs = 0;
+
+    if(map->faces)
+    {
+        uint i;
+
+        for(i = 0; i < map->numFaces; ++i)
+        {
+            face_t* face = map->faces[i];
+            Z_Free(face);
+        }
+        Z_Free(map->faces);
+    }
+    map->faces = NULL;
+    map->numFaces = 0;
 
     if(map->nodes)
     {

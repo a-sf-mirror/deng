@@ -2412,7 +2412,7 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
 static void Rend_RenderSubSector(uint faceidx)
 {
     uint                i;
-    face_t*             face = FACE_PTR(faceidx);
+    face_t*             face = faces[faceidx];
     subsector_t*        subSector = (subsector_t*) face->data;
     sector_t*           sect;
     float               sceil, sfloor;
@@ -3101,7 +3101,7 @@ void Rend_RenderNormals(void)
     for(i = 0; i < numFaces; ++i)
     {
         uint                j;
-        const subsector_t*  subSector = (subsector_t*) faces[i].data;
+        const subsector_t*  subSector = (subsector_t*) faces[i]->data;
 
         for(j = 0; j < subSector->sector->planeCount; ++j)
         {
