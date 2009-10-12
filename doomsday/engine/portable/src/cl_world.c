@@ -794,7 +794,7 @@ if(num >= numSideDefs)
             line->flags |= lineFlags;
 #if _DEBUG
 Con_Printf("Cl_ReadSideDelta2: Lineflag %i: %02x\n",
-           GET_LINE_IDX(line), lineFlags);
+           (int) DMU_GetObjRecord(DMU_LINEDEF, line)->id, lineFlags);
 #endif
         }
     }

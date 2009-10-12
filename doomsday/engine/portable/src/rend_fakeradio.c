@@ -1696,11 +1696,11 @@ static void drawPoint(float pos[3], float radius, const float color[4])
  */
 void Rend_DrawShadowOffsetVerts(void)
 {
-    static const float  red[4] = { 1.f, .2f, .2f, 1.f};
-    static const float  yellow[4] = {.7f, .7f, .2f, 1.f};
+    static const float red[4] = { 1.f, .2f, .2f, 1.f};
+    static const float yellow[4] = {.7f, .7f, .2f, 1.f};
 
-    uint                i, j, k;
-    float               pos[3];
+    uint i, j, k;
+    float pos[3];
 
     glDepthMask(GL_FALSE);
     glDisable(GL_DEPTH_TEST);
@@ -1709,12 +1709,12 @@ void Rend_DrawShadowOffsetVerts(void)
 
     for(i = 0; i < numLineDefs; ++i)
     {
-        linedef_t*          line = &lineDefs[i];
+        linedef_t* line = lineDefs[i];
 
         for(k = 0; k < 2; ++k)
         {
-            vertex_t*           vtx = LINE_VERTEX(line, k);
-            lineowner_t*        vo = vtx->lineOwners;
+            vertex_t* vtx = LINE_VERTEX(line, k);
+            lineowner_t* vo = vtx->lineOwners;
 
             for(j = 0; j < vtx->numLineOwners; ++j)
             {

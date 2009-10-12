@@ -92,10 +92,10 @@ vertex_t* createVertex(void)
 
 static linedef_t* createLine(void)
 {
-    linedef_t* line = M_Calloc(sizeof(*line));
+    linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
 
     map->lineDefs =
-        M_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1));
+        Z_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1), PU_STATIC);
     map->lineDefs[map->numLineDefs-1] = line;
     map->lineDefs[map->numLineDefs] = NULL;
 
@@ -161,23 +161,6 @@ static void destroyEditablePolyObjs(editmap_t* map)
     map->numPolyObjs = 0;
 }
 
-static void destroyEditableLineDefs(editmap_t *map)
-{
-    if(map->lineDefs)
-    {
-        uint                i;
-        for(i = 0; i < map->numLineDefs; ++i)
-        {
-            linedef_t             *line = map->lineDefs[i];
-            M_Free(line);
-        }
-
-        M_Free(map->lineDefs);
-    }
-    map->lineDefs = NULL;
-    map->numLineDefs = 0;
-}
-
 static void destroyEditableVertexes(editmap_t *map)
 {
     if(map->vertexes)
@@ -210,9 +193,10 @@ static void destroyMap(void)
     destroyEditableVertexes(map);
 
     // These should already be gone:
-    destroyEditableLineDefs(map);
     destroyEditablePolyObjs(map);
 
+    map->lineDefs = NULL;
+    map->numLineDefs = 0;
     map->sectors = NULL;
     map->numSectors = 0;
     map->sideDefs = NULL;
@@ -596,7 +580,7 @@ static void buildSectorSubSectorLists(gamemap_t* map)
     }
 }
 
-static void buildSectorLineLists(gamemap_t *map)
+static void buildSectorLineLists(gamemap_t* map)
 {
     typedef struct linelink_s {
         linedef_t*      line;
@@ -604,7 +588,6 @@ static void buildSectorLineLists(gamemap_t *map)
     } linelink_t;
 
     uint i, j;
-    linedef_t* li;
     zblockset_t* lineLinksBlockSet;
     linelink_t** sectorLineLinks;
     uint* sectorLinkLinkCounts;
@@ -614,8 +597,9 @@ static void buildSectorLineLists(gamemap_t *map)
     sectorLineLinks = M_Calloc(sizeof(linelink_t*) * map->numSectors);
     sectorLinkLinkCounts = M_Calloc(sizeof(uint) * map->numSectors);
 
-    for(i = 0, li = map->lineDefs; i < map->numLineDefs; ++i, li++)
+    for(i = 0; i < map->numLineDefs; ++i)
     {
+        linedef_t* li = map->lineDefs[i];
         uint secIDX;
         linelink_t* link;
 
@@ -786,16 +770,16 @@ static void finishSectors2(gamemap_t* map)
  * sector ptrs which we couldn't do earlier as the sidedefs
  * hadn't been loaded at the time.
  */
-static void finishLineDefs(gamemap_t* map)
+static void finishLineDefs2(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
     VERBOSE2(Con_Message("Finalizing LineDefs...\n"));
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t*          ld = &map->lineDefs[i];
-        vertex_t*           v[2];
+        linedef_t* ld = map->lineDefs[i];
+        vertex_t* v[2];
 
         if(!ld->hEdges[0])
             continue;
@@ -1122,25 +1106,25 @@ static void buildVertexOwnerRings(editmap_t* map)
 
 static void hardenVertexOwnerRings(gamemap_t* dest, editmap_t* src)
 {
-    uint                i;
+    uint i;
 
     // Sort line owners and then finish the rings.
     for(i = 0; i < src->numVertexes; ++i)
     {
-        vertex_t*           v = src->vertexes[i];
+        vertex_t* v = src->vertexes[i];
 
         // Line owners:
         if(v->numLineOwners != 0)
         {
-            lineowner_t*        p, *last;
-            binangle_t          firstAngle;
+            lineowner_t* p, *last;
+            binangle_t firstAngle;
 
             // Redirect the linedef links to the hardened map.
             p = v->lineOwners;
             while(p)
             {
                 p->lineDef =
-                    &dest->lineDefs[p->lineDef->buildData.index - 1];
+                    dest->lineDefs[p->lineDef->buildData.index - 1];
                 p = p->LO_next;
             }
 
@@ -1203,39 +1187,28 @@ do
     }
 }
 
-static void hardenLineDefs(gamemap_t *dest, editmap_t *src)
+static void finishLineDefs(gamemap_t* dest, editmap_t* src)
 {
-    uint                i;
+    uint i;
 
     dest->numLineDefs = src->numLineDefs;
-    dest->lineDefs = Z_Calloc(dest->numLineDefs * sizeof(linedef_t), PU_MAPSTATIC, 0);
+    dest->lineDefs = src->lineDefs;
 
     for(i = 0; i < dest->numLineDefs; ++i)
     {
-        linedef_t*          destL = &dest->lineDefs[i];
-        const linedef_t*    srcL = src->lineDefs[i];
-
-        memcpy(destL, srcL, sizeof(*destL));
-
-        /*if(srcL->buildData.sideDefs[FRONT])
-            destL->buildData.sideDefs[FRONT] =
-                dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1];
-
-        if(srcL->buildData.sideDefs[BACK])
-            destL->buildData.sideDefs[BACK] =
-                dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1];*/
+        linedef_t* lineDef = src->lineDefs[i];
 
         //// \todo We shouldn't still have lines with missing fronts but...
-        if(srcL->buildData.sideDefs[FRONT])
-            dest->sideDefs[srcL->buildData.sideDefs[FRONT]->buildData.index - 1]->lineDef = destL;
-        if(srcL->buildData.sideDefs[BACK])
-            dest->sideDefs[srcL->buildData.sideDefs[BACK]->buildData.index - 1]->lineDef = destL;
+        if(lineDef->buildData.sideDefs[FRONT])
+            lineDef->buildData.sideDefs[FRONT]->lineDef = lineDef;
+        if(lineDef->buildData.sideDefs[BACK])
+            lineDef->buildData.sideDefs[BACK]->lineDef = lineDef;
 
-        DMU_AddObjRecord(DMU_LINEDEF, destL);
+        DMU_AddObjRecord(DMU_LINEDEF, lineDef);
     }
 }
 
-static void hardenSideDefs(gamemap_t* dest, editmap_t* src)
+static void finishSideDefs(gamemap_t* dest, editmap_t* src)
 {
     uint i;
 
@@ -1323,8 +1296,8 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 
     for(i = 0; i < dest->numPolyObjs; ++i)
     {
-        uint                j;
-        polyobj_t*          destP, *srcP = src->polyObjs[i];
+        uint j;
+        polyobj_t* destP, *srcP = src->polyObjs[i];
 
         destP = Z_Calloc(POLYOBJ_SIZE, PU_MAP, 0);
         destP->idx = i;
@@ -1338,9 +1311,8 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
         destP->lineDefs = Z_Calloc(sizeof(linedef_t*) * (destP->numLineDefs + 1), PU_MAP, 0);
         for(j = 0; j < destP->numLineDefs; ++j)
         {
-            linedef_t*          line =
-                &dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1];
-            hedge_t*            hEdge;
+            linedef_t* line = dest->lineDefs[srcP->lineDefs[j]->buildData.index - 1];
+            hedge_t* hEdge;
 
             // This line is part of a polyobj.
             line->inFlags |= LF_POLYOBJ;
@@ -1727,14 +1699,13 @@ boolean MPE_End(void)
      * go and reduce the current working memory surcharge.
      */
     finishSectors(gamemap, map);
-    hardenSideDefs(gamemap, map);
-    hardenLineDefs(gamemap, map);
+    finishSideDefs(gamemap, map);
+    finishLineDefs(gamemap, map);
     hardenPolyobjs(gamemap, map);
 
     hardenVertexOwnerRings(gamemap, map);
 
     // Don't destroy the sectors (planes are linked to them).
-    destroyEditableLineDefs(map);
     destroyEditablePolyObjs(map);
 
     /**
@@ -1751,12 +1722,12 @@ boolean MPE_End(void)
     // Finish the polyobjs (after the vertexes are hardened).
     for(i = 0; i < gamemap->numPolyObjs; ++i)
     {
-        polyobj_t*          po = gamemap->polyObjs[i];
-        uint                j;
+        polyobj_t* po = gamemap->polyObjs[i];
+        uint j;
 
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
             line->L_v1 = &gamemap->vertexes[
                 line->buildData.v[0]->buildData.index - 1];
@@ -1791,7 +1762,7 @@ boolean MPE_End(void)
     }
 
     buildSectorLineLists(gamemap);
-    finishLineDefs(gamemap);
+    finishLineDefs2(gamemap);
     finishSectors2(gamemap);
     updateMapBounds(gamemap);
     S_DetermineSubSecsAffectingSectorReverb(gamemap);

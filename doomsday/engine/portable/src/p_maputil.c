@@ -625,7 +625,7 @@ boolean PIT_LinkToLines(linedef_t* ld, void* parm)
     // Add a node to the line's ring. Also store the linenode's index
     // into the mobjring's node, so unlinking is easy.
     NP_Link(lineNodes, mobjNodes->nodes[nix].data =
-            NP_New(lineNodes, data->mo), linelinks[GET_LINE_IDX(ld)]);
+            NP_New(lineNodes, data->mo), linelinks[DMU_GetObjRecord(DMU_LINEDEF, ld)->id - 1]);
 
     return true;
 }
@@ -854,14 +854,12 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
     return true;
 }
 
-boolean P_LineMobjsIterator(linedef_t* line,
-                            boolean (*func) (mobj_t*, void*),
-                            void* data)
+boolean P_LineMobjsIterator(linedef_t* line, boolean (*func) (mobj_t*, void*), void* data)
 {
-    void*               linkstore[MAXLINKED];
-    void**              end = linkstore, **it;
-    nodeindex_t         root = linelinks[GET_LINE_IDX(line)], nix;
-    linknode_t*         ln = lineNodes->nodes;
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    nodeindex_t root = linelinks[DMU_GetObjRecord(DMU_LINEDEF, line)->id - 1], nix;
+    linknode_t* ln = lineNodes->nodes;
 
     for(nix = ln[root].next; nix != root; nix = ln[nix].next)
         *end++ = ln[nix].ptr;
@@ -881,13 +879,13 @@ boolean P_LineMobjsIterator(linedef_t* line,
 boolean P_SectorTouchingMobjsIterator(sector_t* sector,
                                       int (*func) (void*, void*), void* data)
 {
-    uint                i;
-    void*               linkstore[MAXLINKED];
-    void**              end = linkstore, **it;
-    mobj_t*             mo;
-    linedef_t*          li;
-    nodeindex_t         root, nix;
-    linknode_t*         ln = lineNodes->nodes;
+    uint i;
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    mobj_t* mo;
+    linedef_t* li;
+    nodeindex_t root, nix;
+    linknode_t* ln = lineNodes->nodes;
 
     // First process the mobjs that obviously are in the sector.
     for(mo = sector->mobjList; mo; mo = mo->sNext)
@@ -905,7 +903,7 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
         li = sector->lineDefs[i];
 
         // Iterate all mobjs on the line.
-        root = linelinks[GET_LINE_IDX(li)];
+        root = linelinks[DMU_GetObjRecord(DMU_LINEDEF, li)->id - 1];
         for(nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
             mo = (mobj_t *) ln[nix].ptr;

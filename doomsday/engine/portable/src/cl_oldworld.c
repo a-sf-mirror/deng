@@ -266,7 +266,7 @@ int Cl_ReadSideDelta(void)
             line->flags &= ~0xff;
             line->flags |= updatedFlags;
 #if _DEBUG
-Con_Printf("lineflag %i: %02x\n", GET_LINE_IDX(line),
+Con_Printf("lineflag %i: %02x\n", (int) DMU_GetObjRecord(DMU_LINEDEF, line)->id,
            updatedFlags);
 #endif
         }

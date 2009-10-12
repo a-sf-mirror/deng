@@ -2202,7 +2202,7 @@ void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
         // Send a status report.
         if(gx.HandleMapObjectStatusReport)
             gx.HandleMapObjectStatusReport(DMUSC_LINE_FIRSTRENDERED,
-                                           GET_LINE_IDX(lineDef),
+                                           P_ToIndex(DMU_GetObjRecord(DMU_LINEDEF, lineDef)),
                                            DMU_LINEDEF, &viewer);
     }
 }

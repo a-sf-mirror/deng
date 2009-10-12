@@ -82,7 +82,7 @@ uint numNodes = 0;
 node_t** nodes = NULL;
 
 uint numLineDefs = 0;
-linedef_t* lineDefs = NULL;
+linedef_t** lineDefs = NULL;
 
 uint numSideDefs = 0;
 sidedef_t** sideDefs = NULL;
@@ -233,6 +233,19 @@ void P_DestroyMap(gamemap_t* map)
     }
     map->sideDefs = NULL;
     map->numSideDefs = 0;
+
+    if(map->lineDefs)
+    {
+        uint i;
+        for(i = 0; i < map->numLineDefs; ++i)
+        {
+            linedef_t* line = map->lineDefs[i];
+            Z_Free(line);
+        }
+        Z_Free(map->lineDefs);
+    }
+    map->lineDefs = NULL;
+    map->numLineDefs = 0;
 
     if(map->sectors)
     {

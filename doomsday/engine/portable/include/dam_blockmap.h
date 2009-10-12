@@ -38,5 +38,5 @@
 #include "p_mapdata.h"
 
 blockmap_t*     DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
-                                  linedef_t** lineDefs, uint* numLineDefs);
+                                  linedef_t*** lineDefs, uint* numLineDefs);
 #endif

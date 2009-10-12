@@ -282,9 +282,9 @@ static void endSegment(void)
     writeLong(DAMSEG_END);
 }
 
-static void writeVertex(const gamemap_t *map, uint idx)
+static void writeVertex(const gamemap_t* map, uint idx)
 {
-    vertex_t           *v = &map->vertexes[idx];
+    vertex_t* v = &map->vertexes[idx];
 
     writeFloat(v->V_pos[VX]);
     writeFloat(v->V_pos[VY]);
@@ -292,12 +292,12 @@ static void writeVertex(const gamemap_t *map, uint idx)
 
     if(v->numLineOwners > 0)
     {
-        lineowner_t        *own, *base;
+        lineowner_t* own, *base;
 
         own = base = (v->lineOwners)->LO_prev;
         do
         {
-            writeLong((long) ((own->lineDef - map->lineDefs) + 1));
+            writeLong((long) DMU_GetObjRecord(DMU_LINEDEF, own->lineDef)->id);
             writeLong((long) own->angle);
             own = own->LO_prev;
         } while(own != base);
@@ -306,8 +306,8 @@ static void writeVertex(const gamemap_t *map, uint idx)
 
 static void readVertex(const gamemap_t* map, uint idx)
 {
-    uint                i;
-    vertex_t*           v = &map->vertexes[idx];
+    uint i;
+    vertex_t* v = &map->vertexes[idx];
 
     v->V_pos[VX] = readFloat();
     v->V_pos[VY] = readFloat();
@@ -315,13 +315,13 @@ static void readVertex(const gamemap_t* map, uint idx)
 
     if(v->numLineOwners > 0)
     {
-        lineowner_t        *own;
+        lineowner_t* own;
 
         v->lineOwners = NULL;
         for(i = 0; i < v->numLineOwners; ++i)
         {
             own = Z_Malloc(sizeof(lineowner_t), PU_MAP, 0);
-            own->lineDef = &map->lineDefs[(unsigned) (readLong() - 1)];
+            own->lineDef = map->lineDefs[(unsigned) (readLong() - 1)];
             own->angle = (binangle_t) readLong();
 
             own->LO_next = v->lineOwners;
@@ -369,8 +369,8 @@ static void archiveVertexes(gamemap_t* map, boolean write)
 
 static void writeLine(const gamemap_t* map, uint idx)
 {
-    int                 i;
-    linedef_t*          l = &map->lineDefs[idx];
+    int i;
+    linedef_t* l = map->lineDefs[idx];
 
     writeLong(l->flags);
     writeByte(l->inFlags);
@@ -389,8 +389,8 @@ static void writeLine(const gamemap_t* map, uint idx)
 
 static void readLine(const gamemap_t* map, uint idx)
 {
-    int                 i;
-    linedef_t*          l = &map->lineDefs[idx];
+    int i;
+    linedef_t* l = map->lineDefs[idx];
 
     l->flags = (int) readLong();
     l->inFlags = readByte();
@@ -588,7 +588,7 @@ static void writeSector(const gamemap_t* map, uint idx)
     // Line list.
     writeLong((long) s->lineDefCount);
     for(i = 0; i < s->lineDefCount; ++i)
-        writeLong((s->lineDefs[i] - map->lineDefs) + 1);
+        writeLong(DMU_GetObjRecord(DMU_LINEDEF, s->lineDefs[i])->id);
 
     // SubSector list.
     writeLong((long) s->faceCount);
@@ -676,7 +676,7 @@ static void readSector(const gamemap_t* map, uint idx)
     s->lineDefCount = (uint) readLong();
     s->lineDefs = Z_Malloc(sizeof(linedef_t*) * (s->lineDefCount + 1), PU_STATIC, 0);
     for(i = 0; i < s->lineDefCount; ++i)
-        s->lineDefs[i] = &map->lineDefs[(unsigned) readLong() - 1];
+        s->lineDefs[i] = map->lineDefs[(unsigned) readLong() - 1];
     s->lineDefs[i] = NULL; // Terminate.
 
     // SubSector list.

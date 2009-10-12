@@ -74,21 +74,21 @@ void BSP_Register(void)
 
 static void findMapLimits(gamemap_t* src, int* bbox)
 {
-    uint                i;
+    uint i;
 
     M_ClearBox(bbox);
 
     for(i = 0; i < src->numLineDefs; ++i)
     {
-        linedef_t*          l = &src->lineDefs[i];
-        double              x1 = l->buildData.v[0]->buildData.pos[VX];
-        double              y1 = l->buildData.v[0]->buildData.pos[VY];
-        double              x2 = l->buildData.v[1]->buildData.pos[VX];
-        double              y2 = l->buildData.v[1]->buildData.pos[VY];
-        int                 lX = (int) floor(MIN_OF(x1, x2));
-        int                 lY = (int) floor(MIN_OF(y1, y2));
-        int                 hX = (int) ceil(MAX_OF(x1, x2));
-        int                 hY = (int) ceil(MAX_OF(y1, y2));
+        linedef_t* l = src->lineDefs[i];
+        double x1 = l->buildData.v[0]->buildData.pos[VX];
+        double y1 = l->buildData.v[0]->buildData.pos[VY];
+        double x2 = l->buildData.v[1]->buildData.pos[VX];
+        double y2 = l->buildData.v[1]->buildData.pos[VY];
+        int lX = (int) floor(MIN_OF(x1, x2));
+        int lY = (int) floor(MIN_OF(y1, y2));
+        int hX = (int) ceil(MAX_OF(x1, x2));
+        int hY = (int) ceil(MAX_OF(y1, y2));
 
         M_AddToBox(bbox, lX, lY);
         M_AddToBox(bbox, hX, hY);
@@ -102,13 +102,13 @@ static void findMapLimits(gamemap_t* src, int* bbox)
  */
 static superblock_t* createInitialHEdges(gamemap_t* map)
 {
-    uint                startTime = Sys_GetRealTime();
+    uint startTime = Sys_GetRealTime();
 
-    uint                i;
-    int                 bw, bh;
-    hedge_t*            back, *front;
-    superblock_t*       block;
-    int                 mapBounds[4];
+    uint i;
+    int bw, bh;
+    hedge_t* back, *front;
+    superblock_t* block;
+    int mapBounds[4];
 
     // Find maximal vertexes.
     findMapLimits(map, mapBounds);
@@ -129,7 +129,7 @@ static superblock_t* createInitialHEdges(gamemap_t* map)
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t*          line = &map->lineDefs[i];
+        linedef_t* line = map->lineDefs[i];
 
         front = back = NULL;
 

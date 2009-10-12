@@ -696,7 +696,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     case DMU_HEDGE:
         return ((hedge_t*) ((dmuobjrecord_t*) ptr)->obj) - hEdges;
     case DMU_LINEDEF:
-        return ((linedef_t*) ((dmuobjrecord_t*) ptr)->obj) - lineDefs;
+        return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_SIDEDEF:
         return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_FACE:
@@ -891,7 +891,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 
     case DMU_LINEDEF:
         if(index < numLineDefs)
-            return callback(DMU_GetObjRecord(DMU_LINEDEF, lineDefs + index), context);
+            return callback(DMU_GetObjRecord(DMU_LINEDEF, lineDefs[index]), context);
         break;
 
     case DMU_SIDEDEF:

@@ -105,22 +105,21 @@ static void addBlockLine(linelist_t **lists, uint *count, uint *done,
  * line to all block lists touching the intersection.
  */
 blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
-                              linedef_t** lineDefs, uint* numLineDefs)
+                              linedef_t*** lineDefs, uint* numLineDefs)
 {
-    uint                startTime = Sys_GetRealTime();
+    uint startTime = Sys_GetRealTime();
 
-    uint                i;
-    int                 j;
-    uint                bMapWidth, bMapHeight; // Blockmap dimensions.
-    vec2_t              blockSize; // Size of the blocks.
-    uint*               blockcount = NULL; // Array of counters of line lists.
-    uint*               blockdone = NULL; // Array keeping track of blocks/line.
-    uint                numBlocks; // Number of cells = nrows*ncols.
-
-    linelist_t**        blocklists = NULL; // Array of pointers to lists of lines.
-    vec2_t              bounds[2], point, dims;
-    vertex_t*           vtx;
-    blockmap_t*         blockmap;
+    uint i;
+    int j;
+    uint bMapWidth, bMapHeight; // Blockmap dimensions.
+    vec2_t blockSize; // Size of the blocks.
+    uint* blockcount = NULL; // Array of counters of line lists.
+    uint* blockdone = NULL; // Array keeping track of blocks/line.
+    uint numBlocks; // Number of cells = nrows*ncols.
+    linelist_t** blocklists = NULL; // Array of pointers to lists of lines.
+    vec2_t bounds[2], point, dims;
+    vertex_t* vtx;
+    blockmap_t* blockmap;
 
     // Scan for map limits, which the blockmap must enclose.
     for(i = 0; i < *numVertexes; ++i)
@@ -180,7 +179,7 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
 
     for(i = 0; i < *numLineDefs; ++i)
     {
-        linedef_t*      line = &(*lineDefs)[i];
+        linedef_t* line = (*lineDefs)[i];
 
         if(line->inFlags & LF_POLYOBJ)
             continue; // Polyobj lines don't get into the blockmap.
@@ -227,10 +226,10 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
                 // intersection of LineDef with x=xorg+(j<<BLKSHIFT)
                 // (y-v1[VY])*dx = dy*(x-v1[VX])
                 // y = dy*(x-v1[VX])+v1[VY]*dx;
-                int             x = xorg + (j << BLKSHIFT); // (x,y) is intersection
-                int             y = (dy * (x - v1[VX])) / dx + v1[VY];
-                int             yb = (y - yorg) >> BLKSHIFT; // block row number
-                int             yp = (y - yorg) & BLKMASK; // y position within block
+                int x = xorg + (j << BLKSHIFT); // (x,y) is intersection
+                int y = (dy * (x - v1[VX])) / dx + v1[VY];
+                int yb = (y - yorg) >> BLKSHIFT; // block row number
+                int yp = (y - yorg) & BLKMASK; // y position within block
 
                 // Already outside the blockmap?
                 if(yb < 0 || yb > (signed) (bMapHeight) + 1)
@@ -299,10 +298,10 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
                 // intersection of LineDef with y=yorg+(j<<BLKSHIFT)
                 // (x,y) on LineDef i satisfies: (y-v1[VY])*dx = dy*(x-v1[VX])
                 // x = dx*(y-v1[VY])/dy+v1[VX];
-                int             y = yorg + (j << BLKSHIFT); // (x,y) is intersection
-                int             x = (dx * (y - v1[VY])) / dy + v1[VX];
-                int             xb = (x - xorg) >> BLKSHIFT; // block column number
-                int             xp = (x - xorg) & BLKMASK; // x position within block
+                int y = yorg + (j << BLKSHIFT); // (x,y) is intersection
+                int x = (dx * (y - v1[VY])) / dy + v1[VX];
+                int xb = (x - xorg) >> BLKSHIFT; // block column number
+                int xp = (x - xorg) & BLKMASK; // x position within block
 
                 // Outside the blockmap?
                 if(xb < 0 || xb > (signed) (bMapWidth) + 1)
@@ -363,16 +362,16 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
 
     // Create the actual links by 'hardening' the lists into arrays.
     {
-    uint            x, y;
+    uint x, y;
     for(y = 0; y < bMapHeight; ++y)
         for(x = 0; x < bMapWidth; ++x)
         {
-            uint            count = blockcount[y * bMapWidth + x];
-            linelist_t*     bl = blocklists[y * bMapWidth + x];
+            uint count = blockcount[y * bMapWidth + x];
+            linelist_t* bl = blocklists[y * bMapWidth + x];
 
             if(count > 0)
             {
-                linedef_t**     lines, **ptr;
+                linedef_t** lines, **ptr;
 
                 // A NULL-terminated array of pointers to lines.
                 lines = Z_Malloc((count + 1) * sizeof(linedef_t *),
