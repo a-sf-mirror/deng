@@ -1485,15 +1485,30 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
         float               openBottom, openTop,
                             polyBottom, polyTop, xOffset, yOffset, xScale, yScale;
         boolean             visible = false;
-        boolean             clipTop =
-            !(IS_SKYSURFACE(&fceil->surface) &&
-              IS_SKYSURFACE(&bceil->surface));
-        boolean             clipBottom =
-            !(IS_SKYSURFACE(&ffloor->surface) &&
-              IS_SKYSURFACE(&bfloor->surface));
+        boolean             clipBottom, clipTop;
 
-        openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-        openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
+        if(!LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef))
+        {
+            openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
+            openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
+
+            clipBottom = clipTop = true;
+        }
+        else
+        {
+            clipBottom = !(IS_SKYSURFACE(&ffloor->surface) && IS_SKYSURFACE(&bfloor->surface));
+            clipTop = !(IS_SKYSURFACE(&fceil->surface) && IS_SKYSURFACE(&bceil->surface));
+
+            if(clipBottom)
+                openBottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
+            else
+                openBottom = MIN_OF(bfloor->visHeight, ffloor->visHeight);
+
+            if(clipTop)
+                openTop = MIN_OF(bceil->visHeight, fceil->visHeight);
+            else
+                openTop = MAX_OF(bceil->visHeight, fceil->visHeight);
+        }
 
         xOffset = surface->visOffset[0] + seg->offset;
         yOffset = 0;
