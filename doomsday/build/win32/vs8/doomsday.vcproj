@@ -1479,6 +1479,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\include\halfedgeds.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\include\m_args.h"
 				>
 			</File>

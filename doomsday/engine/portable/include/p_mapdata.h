@@ -131,6 +131,7 @@ typedef struct lgridblock_s {
 
 typedef void* blockmap_t;
 
+#include "halfedgeds.h"
 #include "p_polyob.h"
 #include "p_maptypes.h"
 
@@ -221,34 +222,28 @@ typedef struct gamemap_s {
 
     float           bBox[4];
 
-    struct {
-        uint            numHEdges;
-        hedge_t**       hEdges;
-
-        uint            numFaces;
-        face_t**        faces;
-    } halfEdgeDS;
-
     uint            numVertexes;
     vertex_t**      vertexes;
 
     uint            numSectors;
     sector_t**      sectors;
 
-    uint            numSubsectors;
-    subsector_t**   subsectors;
-
-    uint            numSegs;
-    seg_t**         segs;
-
-    uint            numNodes;
-    node_t**        nodes;
-
     uint            numLineDefs;
     linedef_t**     lineDefs;
 
     uint            numSideDefs;
     sidedef_t**     sideDefs;
+
+    uint            numNodes;
+    node_t**        nodes;
+
+    halfedgeds_t    halfEdgeDS;
+
+    uint            numSubsectors;
+    subsector_t**   subsectors;
+
+    uint            numSegs;
+    seg_t**         segs;
 
     uint            numPolyObjs;
     polyobj_t**     polyObjs;

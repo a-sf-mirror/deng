@@ -48,6 +48,14 @@ typedef struct vertex_s {
     mvertex_t           buildData;
 } vertex_t;
 
+// Helper macros for accessing seg data elements.
+#define FRONT 0
+#define BACK  1
+
+// Seg frame flags
+#define SEGINF_FACINGFRONT      0x0001
+#define SEGINF_BACKSECSKYFIX    0x0002
+
 #define HE_v1                   vertex
 #define HE_v1pos                vertex->V_pos
 
@@ -66,23 +74,6 @@ typedef struct vertex_s {
 #define HE_FRONTSECTOR(hEdge)   ((hEdge)->face ? ((subsector_t*) (hEdge)->face->data)->sector : NULL)
 #define HE_BACKSECTOR(hEdge)    ((hEdge)->twin->face ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
 
-typedef struct hedge_s {
-    struct vertex_s* vertex;
-    struct hedge_s* twin;
-    struct hedge_s* next;
-    struct hedge_s* prev;
-    struct face_s* face;
-    void*       data;
-} hedge_t;
-
-// Helper macros for accessing seg data elements.
-#define FRONT 0
-#define BACK  1
-
-// Seg frame flags
-#define SEGINF_FACINGFRONT      0x0001
-#define SEGINF_BACKSECSKYFIX    0x0002
-
 typedef struct seg_s {
     struct hedge_s*     hEdge;
     struct sidedef_s*   sideDef;
@@ -93,11 +84,6 @@ typedef struct seg_s {
     biassurface_t*      bsuf[3];       // 0=middle, 1=top, 2=bottom
     short               frameFlags;
 } seg_t;
-
-typedef struct face_s {
-    struct hedge_s*     hEdge; // First half-edge of this subsector.
-    void*               data;
-} face_t;
 
 typedef struct subsector_s {
     face_t*             face;
