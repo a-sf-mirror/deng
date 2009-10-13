@@ -58,14 +58,14 @@
  */
 void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
 {
-    int                 sound = 0, soundFlags = 0;
-    byte                flags = 0;
-    clmobj_t           *cmo = NULL;
-    thid_t              mobjId = 0;
-    sector_t           *sector = NULL;
-    polyobj_t          *poly = NULL;
-    mobj_t             *emitter = NULL;
-    float               volume = 1;
+    int sound = 0, soundFlags = 0;
+    byte flags = 0;
+    clmobj_t* cmo = NULL;
+    thid_t mobjId = 0;
+    sector_t* sector = NULL;
+    polyobj_t* poly = NULL;
+    mobj_t* emitter = NULL;
+    float volume = 1;
 
     if(type == DT_SOUND)
     {
@@ -91,10 +91,11 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     else if(type == DT_SECTOR_SOUND)
     {
         uint index = (ushort) Msg_ReadShort();
+        gamemap_t* map = P_GetCurrentMap();
 
-        if(index < numSectors)
+        if(index < map->numSectors)
         {
-        	sector = sectors[index];
+        	sector = map->sectors[index];
 		}
 		else
         {
@@ -103,14 +104,15 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
 			skip = true;
 	    }
     }
-    else                        /* DT_POLY_SOUND */
+    else /* DT_POLY_SOUND */
     {
         uint index = (ushort) Msg_ReadShort();
+        gamemap_t* map = P_GetCurrentMap();
 
-        if(index < numPolyObjs)
+        if(index < map->numPolyObjs)
         {
-            poly = polyObjs[index];
-            emitter = (mobj_t *) poly;
+            poly = map->polyObjs[index];
+            emitter = (mobj_t*) poly;
         }
         else
         {
@@ -132,16 +134,16 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     {
         // Should we use a specific origin?
         if(flags & SNDDF_FLOOR)
-            emitter = (mobj_t *) &sector->planes[PLN_FLOOR]->soundOrg;
+            emitter = (mobj_t*) &sector->planes[PLN_FLOOR]->soundOrg;
         else if(flags & SNDDF_CEILING)
-            emitter = (mobj_t *) &sector->planes[PLN_CEILING]->soundOrg;
+            emitter = (mobj_t*) &sector->planes[PLN_CEILING]->soundOrg;
         else
-            emitter = (mobj_t *) &sector->soundOrg;
+            emitter = (mobj_t*) &sector->soundOrg;
     }
 
     if(flags & SNDDF_VOLUME)
     {
-        byte            b = Msg_ReadByte();
+        byte b = Msg_ReadByte();
 
         if(b == 255)
         {
@@ -250,11 +252,11 @@ else Con_Printf("\n");
  */
 void Cl_Sound(void)
 {
-    int         sound, volume = 127;
-    float       pos[3];
-    byte        flags;
-    uint        num;
-    mobj_t     *mo = NULL;
+    int sound, volume = 127;
+    float pos[3];
+    byte flags;
+    uint num;
+    mobj_t* mo = NULL;
 
     flags = Msg_ReadByte();
 
@@ -299,13 +301,16 @@ Con_Printf("Cl_Sound: %i\n", sound);
     }
     else if(flags & SNDF_SECTOR)
     {
+        gamemap_t* map = P_GetCurrentMap();
+
         num = (ushort) Msg_ReadPackedShort();
-        if(num >= numSectors)
+
+        if(num >= map->numSectors)
         {
             Con_Message("Cl_Sound: Invalid sector number %i.\n", num);
             return;
         }
-        mo = (mobj_t *) &sectors[num]->soundOrg;
+        mo = (mobj_t*) &map->sectors[num]->soundOrg;
         //S_StopSound(0, mo);
         S_LocalSoundAtVolume(sound, mo, volume / 127.0f);
     }

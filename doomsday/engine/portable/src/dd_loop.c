@@ -209,8 +209,10 @@ void DD_DrawAndBlit(void)
 
     if(drawGame)
     {
+        gamemap_t* map = P_GetCurrentMap();
+
         // Interpolate the world ready for drawing view(s) of it.
-        R_BeginWorldFrame();
+        R_BeginWorldFrame(map);
 
         // Set up the basic 320x200 legacy projection for the game.
         glMatrixMode(GL_PROJECTION);
@@ -237,7 +239,7 @@ void DD_DrawAndBlit(void)
 
         // Finish up any tasks that must be completed after view(s) have
         // been drawn.
-        R_EndWorldFrame();
+        R_EndWorldFrame(map);
     }
 
     if(UI_IsActive())

@@ -46,17 +46,12 @@ typedef struct {
     uint            count;
 } ownerlist_t;
 
-typedef struct skyfix_s {
-    float           height;
-} skyfix_t;
-
 extern int rendSkyLight; // cvar
 extern float rendMaterialFadeSeconds; // cvar
 extern boolean ddMapSetup;
 extern int rAmbient, ambientLight;
 extern float rendLightDistanceAttentuation, lightRangeCompression;
 extern float lightModRange[255];
-extern skyfix_t skyFix[2]; // [floor, ceiling]
 
 // Sky flags.
 #define SIF_DRAW_SPHERE     0x1 // Always draw the sky sphere.
@@ -65,8 +60,8 @@ void            R_SetupMap(int mode, int flags);
 void            R_InitLinks(gamemap_t* map);
 void            R_BuildSectorLinks(gamemap_t* map);
 void            R_UpdatePlanes(void);
-void            R_ClearSectorFlags(void);
-void            R_InitSkyFix(void);
+void            R_ClearSectorFlags(gamemap_t* map);
+void            R_InitSkyFix(gamemap_t* map);
 void            R_SetupFog(float start, float end, float density, float* rgb);
 void            R_SetupFogDefaults(void);
 
@@ -82,7 +77,7 @@ boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 
-void            R_UpdateSkyFixForSec(const sector_t* sec);
+void            R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
 plane_t*        R_NewPlaneForSector(sector_t* sec);

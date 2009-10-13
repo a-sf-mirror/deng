@@ -876,10 +876,10 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
                             const float origin[2], const float dest[2],
                             int flags, boolean (*func) (intercept_t*))
 {
-    uint                count, block[2];
-    float               delta[2], partial;
-    fixed_t             intercept[2], step[2];
-    int                 stepDir[2];
+    uint count, block[2];
+    float delta[2], partial;
+    fixed_t intercept[2], step[2];
+    int stepDir[2];
 
     if(destBlock[VX] > originBlock[VX])
     {
@@ -937,12 +937,9 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
     {
         if(flags & PT_ADDLINES)
         {
-            if(numPolyObjs > 0)
-            {
-                if(!P_BlockmapPolyobjLinesIterator(BlockMap, block,
-                                                   PIT_AddLineIntercepts, 0, false))
-                    return false; // Early out.
-            }
+            if(!P_BlockmapPolyobjLinesIterator(BlockMap, block,
+                                               PIT_AddLineIntercepts, 0, false))
+                return false; // Early out.
 
             if(!P_BlockmapLinesIterator(BlockMap, block,
                                         PIT_AddLineIntercepts, 0, false))

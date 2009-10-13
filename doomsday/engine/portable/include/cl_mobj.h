@@ -26,8 +26,8 @@
  * cl_mobj.h: Client Map Objects
  */
 
-#ifndef __DOOMSDAY_CLIENT_MOBJ_H__
-#define __DOOMSDAY_CLIENT_MOBJ_H__
+#ifndef DOOMSDAY_CLIENT_MOBJ_H
+#define DOOMSDAY_CLIENT_MOBJ_H
 
 // Flags for clmobjs.
 #define CLMF_HIDDEN         0x01 // Not officially created yet
@@ -46,7 +46,7 @@
 #define CLMF_KNOWN          0xf0000 // combination of all the KNOWN-flags
 
 typedef struct clmobj_s {
-    struct clmobj_s *next, *prev;
+    struct clmobj_s* next, *prev;
     int             flags;
     uint            time; // Time of last update.
     int             sound; // Queued sound ID.
@@ -54,21 +54,21 @@ typedef struct clmobj_s {
     mobj_t          mo;
 } clmobj_t;
 
-void            Cl_InitClientMobjs(void);
+void            Cl_InitClientMobjs(struct gamemap_s* map);
 void            Cl_Reset(void);
 void            Cl_DestroyClientMobjs(void);
-clmobj_t       *Cl_CreateMobj(thid_t id);
+clmobj_t*       Cl_CreateMobj(thid_t id);
 void            Cl_DestroyMobj(clmobj_t *cmo);
-boolean         Cl_MobjIterator(boolean (*callback) (clmobj_t *, void *),
-                                void *parm);
+boolean         Cl_MobjIterator(struct gamemap_s* map, boolean (*callback) (clmobj_t*, void*),
+                                void* parm);
 void            Cl_PredictMovement(void);
-void            Cl_UnsetMobjPosition(clmobj_t *cmo);
-void            Cl_SetMobjPosition(clmobj_t *cmo);
+void            Cl_UnsetMobjPosition(clmobj_t* cmo);
+void            Cl_SetMobjPosition(clmobj_t* cmo);
 int             Cl_ReadMobjDelta(void);
 void            Cl_ReadMobjDelta2(boolean skip);
 void            Cl_ReadNullMobjDelta2(boolean skip);
-clmobj_t       *Cl_FindMobj(thid_t id);
-void            Cl_CheckMobj(clmobj_t *cmo, boolean justCreated);
-void            Cl_UpdateRealPlayerMobj(mobj_t *mo, mobj_t *clmo, int flags);
+clmobj_t*       Cl_FindMobj(thid_t id);
+void            Cl_CheckMobj(clmobj_t* cmo, boolean justCreated);
+void            Cl_UpdateRealPlayerMobj(mobj_t* mo, mobj_t* clmo, int flags);
 
-#endif
+#endif /* DOOMSDAY_CLIENT_MOBJ_H */

@@ -519,8 +519,8 @@ void P_SetDoomsdayFlags(mobj_t *mo)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    uint                i;
-    mobj_t             *iter;
+    uint i;
+    mobj_t* iter;
 
     // Only visible things are in the sector thinglists, so this is good.
     for(i = 0; i < numsectors; ++i)

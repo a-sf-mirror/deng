@@ -64,30 +64,30 @@ static boolean inited = false;
 
 // CODE --------------------------------------------------------------------
 
-static thid_t newMobjID(void)
+static thid_t newMobjID(gamemap_t* map)
 {
     // Increment the ID dealer until a free ID is found.
     // \fixme What if all IDs are in use? 65535 thinkers!?
-    while(P_IsUsedMobjID(++iddealer));
+    while(P_IsUsedMobjID(map, ++iddealer));
     // Mark this ID as used.
-    P_SetMobjID(iddealer, true);
+    P_SetMobjID(map, iddealer, true);
     return iddealer;
 }
 
-void P_ClearMobjIDs(void)
+void P_ClearMobjIDs(gamemap_t* map)
 {
     memset(idtable, 0, sizeof(idtable));
     idtable[0] |= 1; // ID zero is always "used" (it's not a valid ID).
 }
 
-boolean P_IsUsedMobjID(thid_t id)
+boolean P_IsUsedMobjID(gamemap_t* map, thid_t id)
 {
     return idtable[id >> 5] & (1 << (id & 31) /*(id % 32) */ );
 }
 
-void P_SetMobjID(thid_t id, boolean state)
+void P_SetMobjID(gamemap_t* map, thid_t id, boolean state)
 {
-    int                 c = id >> 5, bit = 1 << (id & 31); //(id % 32);
+    int c = id >> 5, bit = 1 << (id & 31); //(id % 32);
 
     if(state)
         idtable[c] |= bit;
@@ -115,14 +115,14 @@ static void initThinkerList(thinkerlist_t* list)
     list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
 }
 
-static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
+static thinkerlist_t* listForThinkFunc(gamemap_t* map, think_t func, boolean isPublic,
                                        boolean canCreate)
 {
-    size_t              i;
+    size_t i;
 
     for(i = 0; i < numThinkerLists; ++i)
     {
-        thinkerlist_t*      list = thinkerLists[i];
+        thinkerlist_t* list = thinkerLists[i];
 
         if(list->thinkerCap.function == func && list->isPublic == isPublic)
             return list;
@@ -133,7 +133,7 @@ static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
 
     // A new thinker type.
     {
-    thinkerlist_t*      list;
+    thinkerlist_t* list;
 
     thinkerLists = Z_Realloc(thinkerLists, sizeof(thinkerlist_t*) *
                              ++numThinkerLists, PU_STATIC);
@@ -152,7 +152,7 @@ static thinkerlist_t* listForThinkFunc(think_t func, boolean isPublic,
 
 static int runThinker(void* p, void* context)
 {
-    thinker_t*          th = (thinker_t*) p;
+    thinker_t* th = (thinker_t*) p;
 
     // Thinker cannot think when in stasis.
     if(!th->inStasis)
@@ -184,11 +184,11 @@ static boolean iterateThinkers(thinkerlist_t* list,
                                int (*callback) (void* p, void*),
                                void* context)
 {
-    boolean             result = true;
+    boolean result = true;
 
     if(list)
     {
-        thinker_t*          th, *next;
+        thinker_t* th, *next;
 
         th = list->thinkerCap.next;
         while(th != &list->thinkerCap && th)
@@ -215,6 +215,11 @@ static boolean iterateThinkers(thinkerlist_t* list,
  */
 void P_ThinkerAdd(thinker_t* th, boolean makePublic)
 {
+    gamemap_t* map = P_GetCurrentMap();
+
+    if(!map)
+        return;
+
     if(!th)
         return;
 
@@ -227,7 +232,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
     if(P_IsMobjThinker(th, NULL))
     {
         // It is a mobj, give it an ID.
-        th->id = newMobjID();
+        th->id = newMobjID(map);
     }
     else
     {
@@ -236,7 +241,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
     }
 
     // Link the thinker to the thinker list.
-    linkThinkerToList(th, listForThinkFunc(th->function, makePublic, true));
+    linkThinkerToList(th, listForThinkFunc(map, th->function, makePublic, true));
 }
 
 /**
@@ -245,22 +250,30 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
  */
 void P_ThinkerRemove(thinker_t* th)
 {
-    // Has got an ID?
-    if(th->id)
-    {   // Then it must be a mobj.
-        mobj_t*             mo = (mobj_t *) th;
+    gamemap_t* map = P_GetCurrentMap();
 
-        // Flag the ID as free.
-        P_SetMobjID(th->id, false);
+    if(!th)
+        return;
 
-        // If the state of the mobj is the NULL state, this is a
-        // predictable mobj removal (result of animation reaching its
-        // end) and shouldn't be included in netGame deltas.
-        if(!isClient)
-        {
-            if(!mo->state || mo->state == states)
+    if(map)
+    {
+        // Has got an ID?
+        if(th->id)
+        {   // Then it must be a mobj.
+            mobj_t* mo = (mobj_t *) th;
+
+            // Flag the ID as free.
+            P_SetMobjID(map, th->id, false);
+
+            // If the state of the mobj is the NULL state, this is a
+            // predictable mobj removal (result of animation reaching its
+            // end) and shouldn't be included in netGame deltas.
+            if(!isClient)
             {
-                Sv_MobjRemoved(th->id);
+                if(!mo->state || mo->state == states)
+                {
+                    Sv_MobjRemoved(map, th->id);
+                }
             }
         }
     }
@@ -282,7 +295,7 @@ boolean P_IsMobjThinker(thinker_t* th, void* context)
  * @params flags        0x1 = Init public thinkers.
  *                      0x2 = Init private (engine-internal) thinkers.
  */
-void P_InitThinkerLists(byte flags)
+void P_InitThinkerLists(gamemap_t* map, byte flags)
 {
     if(!inited)
     {
@@ -291,11 +304,11 @@ void P_InitThinkerLists(byte flags)
     }
     else
     {
-        size_t              i;
+        size_t i;
 
         for(i = 0; i < numThinkerLists; ++i)
         {
-            thinkerlist_t*      list = thinkerLists[i];
+            thinkerlist_t* list = thinkerLists[i];
 
             if(list->isPublic && !(flags & ITF_PUBLIC))
                 continue;
@@ -307,10 +320,10 @@ void P_InitThinkerLists(byte flags)
     }
     inited = true;
 
-    P_ClearMobjIDs();
+    P_ClearMobjIDs(map);
 }
 
-boolean P_ThinkerListInited(void)
+boolean P_ThinkerListInited(gamemap_t* map)
 {
     return inited;
 }
@@ -325,32 +338,35 @@ boolean P_ThinkerListInited(void)
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean P_IterateThinkers(think_t func, byte flags,
+boolean P_IterateThinkers(gamemap_t* map, think_t func, byte flags,
                           int (*callback) (void* p, void*), void* context)
 {
+    if(!map)
+        return true;
+
     if(!inited)
         return true;
 
     if(func != NULL)
     {   // We might have both public and shared lists for this type.
-        boolean             result = true;
+        boolean result = true;
 
         if(flags & ITF_PUBLIC)
-            result = iterateThinkers(listForThinkFunc(func, true, false),
+            result = iterateThinkers(listForThinkFunc(map, func, true, false),
                                      callback, context);
         if(result && (flags & ITF_PRIVATE))
-            result = iterateThinkers(listForThinkFunc(func, false, false),
+            result = iterateThinkers(listForThinkFunc(map, func, false, false),
                                      callback, context);
         return result;
     }
 
     {
-    boolean             result = true;
-    size_t              i;
+    boolean result = true;
+    size_t i;
 
     for(i = 0; i < numThinkerLists; ++i)
     {
-        thinkerlist_t*      list = thinkerLists[i];
+        thinkerlist_t* list = thinkerLists[i];
 
         if(list->isPublic && !(flags & ITF_PUBLIC))
             continue;
@@ -369,7 +385,7 @@ boolean P_IterateThinkers(think_t func, byte flags,
  */
 void DD_InitThinkers(void)
 {
-    P_InitThinkerLists(ITF_PUBLIC); // Init the public thinker lists.
+    P_InitThinkerLists(P_GetCurrentMap(), ITF_PUBLIC); // Init the public thinker lists.
 }
 
 /**
@@ -377,7 +393,7 @@ void DD_InitThinkers(void)
  */
 void DD_RunThinkers(void)
 {
-    P_IterateThinkers(NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
+    P_IterateThinkers(P_GetCurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
 }
 
 /**
@@ -386,7 +402,7 @@ void DD_RunThinkers(void)
 int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
                        void* context)
 {
-    return P_IterateThinkers(func, ITF_PUBLIC, callback, context);
+    return P_IterateThinkers(P_GetCurrentMap(), func, ITF_PUBLIC, callback, context);
 }
 
 /**

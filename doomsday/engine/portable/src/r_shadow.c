@@ -246,7 +246,7 @@ boolean R_IsShadowingLineDef(linedef_t *line)
  * Calculate sector edge shadow points, create the shadow polygons and link
  * them to the subsectors.
  */
-void R_InitSectorShadows(void)
+void R_InitSectorShadows(gamemap_t* map)
 {
     uint startTime = Sys_GetRealTime();
 
@@ -256,9 +256,9 @@ void R_InitSectorShadows(void)
     lineowner_t* vo0, *vo1;
     shadowlinkerparms_t data;
 
-    for(i = 0; i < numVertexes; ++i)
+    for(i = 0; i < map->numVertexes; ++i)
     {
-        R_UpdateVertexShadowOffsets(vertexes[i]);
+        R_UpdateVertexShadowOffsets(map->vertexes[i]);
     }
 
     /**
@@ -275,9 +275,9 @@ void R_InitSectorShadows(void)
      */
     shadowLinksBlockSet = Z_BlockCreate(sizeof(shadowlink_t), 1024, PU_MAP);
 
-    for(i = 0; i < numSideDefs; ++i)
+    for(i = 0; i < map->numSideDefs; ++i)
     {
-        sidedef_t* side = sideDefs[i];
+        sidedef_t* side = map->sideDefs[i];
         byte sid;
 
         if(!R_IsShadowingLineDef(side->lineDef))

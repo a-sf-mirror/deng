@@ -844,9 +844,9 @@ Con_Printf("  CmdLag=%i\n", cl->lag);
  */
 void Net_Drawer(void)
 {
-    char                buf[160], tmp[40];
-    int                 i, c;
-    boolean             showBlinkR = false;
+    char buf[160], tmp[40];
+    int i, c;
+    boolean showBlinkR = false;
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
@@ -858,7 +858,7 @@ void Net_Drawer(void)
     SBE_DrawHUD();
 
     // Draw lightgrid debug display.
-    LG_Debug();
+    LG_Debug(P_GetCurrentMap());
 
     // Draw the blockmap debug display.
     P_BlockmapDebug();

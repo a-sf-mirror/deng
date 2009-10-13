@@ -207,7 +207,7 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
             p = node->next;
             *ptr = (subsector_t*) node->data;
 
-            if(i < numSectors - 1)
+            if(i < map->numSectors - 1)
             {   // Move this node to the unused list for re-use.
                 node->next = unusedNodeList;
                 unusedNodeList = node;

@@ -56,7 +56,7 @@
 /**
  * Tell clients to play a sound with full volume.
  */
-void Sv_Sound(int sound_id, mobj_t *origin, int toPlr)
+void Sv_Sound(int sound_id, mobj_t* origin, int toPlr)
 {
     Sv_SoundAtVolume(sound_id, origin, 1, toPlr);
 }
@@ -64,8 +64,8 @@ void Sv_Sound(int sound_id, mobj_t *origin, int toPlr)
 /**
  * Finds the sector/polyobj to whom the origin mobj belong.
  */
-static void Sv_IdentifySoundOrigin(mobj_t **origin, sector_t **sector,
-                                   polyobj_t **poly)
+static void Sv_IdentifySoundOrigin(gamemap_t* map, mobj_t** origin,
+                                   sector_t** sector, polyobj_t** poly)
 {
     *sector = NULL;
     *poly = NULL;
@@ -73,13 +73,12 @@ static void Sv_IdentifySoundOrigin(mobj_t **origin, sector_t **sector,
     if(*origin && !(*origin)->thinker.id)
     {
         // No mobj ID => it's not a real mobj.
-
-        if(P_IsPolyobjOrigin(*origin))
+        if(P_IsPolyobjOrigin(map, *origin))
             *poly = (polyobj_t*) *origin;
         else
         {   // It wasn't a polyobj.
             // Try the sectors instead.
-            *sector = R_GetSectorForOrigin(*origin);
+            *sector = R_GetSectorForOrigin(map, *origin);
         }
 
 #ifdef _DEBUG
@@ -98,15 +97,15 @@ static void Sv_IdentifySoundOrigin(mobj_t **origin, sector_t **sector,
 void Sv_SoundAtVolume(int soundIDAndFlags, mobj_t *origin, float volume,
                       int toPlr)
 {
-    int                 soundID = (soundIDAndFlags & ~DDSF_FLAG_MASK);
-    sector_t           *sector;
-    polyobj_t          *poly;
-    int                 targetPlayers = 0;
+    int soundID = (soundIDAndFlags & ~DDSF_FLAG_MASK);
+    sector_t* sector;
+    polyobj_t* poly;
+    int targetPlayers = 0;
 
     if(isClient || !soundID)
         return;
 
-    Sv_IdentifySoundOrigin(&origin, &sector, &poly);
+    Sv_IdentifySoundOrigin(P_GetCurrentMap(), &origin, &sector, &poly);
 
     if(toPlr & SVSF_TO_ALL)
     {
@@ -140,15 +139,15 @@ void Sv_SoundAtVolume(int soundIDAndFlags, mobj_t *origin, float volume,
  * This is called when the server needs to tell clients to stop
  * a sound.
  */
-void Sv_StopSound(int sound_id, mobj_t *origin)
+void Sv_StopSound(int soundID, mobj_t* origin)
 {
-    sector_t   *sector;
-    polyobj_t  *poly;
+    sector_t* sector;
+    polyobj_t* poly;
 
     if(isClient)
         return;
 
-    Sv_IdentifySoundOrigin(&origin, &sector, &poly);
+    Sv_IdentifySoundOrigin(P_GetCurrentMap(), &origin, &sector, &poly);
 
     /*#ifdef _DEBUG
        Con_Printf("Sv_StopSound: id=%i origin=%i(%p) sec=%i poly=%i\n",
@@ -158,5 +157,5 @@ void Sv_StopSound(int sound_id, mobj_t *origin)
 
     // Send the stop sound delta to everybody.
     // Volume zero means silence.
-    Sv_NewSoundDelta(sound_id, origin, sector, poly, 0, false, -1);
+    Sv_NewSoundDelta(soundID, origin, sector, poly, 0, false, -1);
 }

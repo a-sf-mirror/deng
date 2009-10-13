@@ -129,9 +129,12 @@ typedef short ptcgenid_t;
 
 void            P_PtcInit(void);
 
-void            P_PtcInitForMap(void);
+void            P_PtcInitForMap(struct gamemap_s* map);
+void            P_SpawnMapParticleGens(struct gamemap_s* map);
+void            P_CheckPtcPlanes(struct gamemap_s* map);
+void            P_UpdateParticleGens(struct gamemap_s* map);
+void            P_CreatePtcGenLinks(struct gamemap_s* map);
 
-void            P_CreatePtcGenLinks(void);
 const ptcgen_t* P_IndexToPtcGen(ptcgenid_t ptcGenID);
 ptcgenid_t      P_PtcGenToIndex(const ptcgen_t* gen);
 
@@ -143,11 +146,9 @@ boolean         P_IterateSectorLinkedPtcGens(sector_t* sector,
 
 void            P_SpawnParticleGen(const ded_ptcgen_t* def, mobj_t* source);
 void            P_SpawnTypeParticleGens(void);
-void            P_SpawnMapParticleGens(const char* mapID);
+
 void            P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor,
                                          int amount);
-void            P_CheckPtcPlanes(void);
-void            P_UpdateParticleGens(void);
 
 float           P_GetParticleRadius(const ded_ptcstage_t* stageDef, int ptcIndex);
 float           P_GetParticleZ(const particle_t* pt);

@@ -58,9 +58,6 @@ static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po);
 // Called when the polyobj hits a mobj.
 void (*po_callback) (mobj_t* mobj, void* lineDef, void* po);
 
-polyobj_t** polyObjs; // List of all poly-objects in the map.
-uint numPolyObjs;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
@@ -81,24 +78,29 @@ void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
  */
 polyobj_t* P_GetPolyobj(uint num)
 {
-    if(num & 0x80000000)
-    {
-        uint                idx = num & 0x7fffffff;
+    gamemap_t* map = P_GetCurrentMap();
 
-        if(idx < numPolyObjs)
-            return polyObjs[idx];
-    }
-    else
+    if(map)
     {
-        uint                i;
-
-        for(i = 0; i < numPolyObjs; ++i)
+        if(num & 0x80000000)
         {
-            polyobj_t*          po = polyObjs[i];
+            uint idx = num & 0x7fffffff;
 
-            if((uint) po->tag == num)
+            if(idx < map->numPolyObjs)
+                return map->polyObjs[idx];
+        }
+        else
+        {
+            uint i;
+
+            for(i = 0; i < map->numPolyObjs; ++i)
             {
-                return po;
+                polyobj_t* po = map->polyObjs[i];
+
+                if((uint) po->tag == num)
+                {
+                    return po;
+                }
             }
         }
     }
@@ -109,18 +111,21 @@ polyobj_t* P_GetPolyobj(uint num)
 /**
  * @return              @c true, iff this is indeed a polyobj origin.
  */
-boolean P_IsPolyobjOrigin(void* ddMobjBase)
+boolean P_IsPolyobjOrigin(gamemap_t* map, void* ddMobjBase)
 {
-    uint                i;
-    polyobj_t*          po;
-
-    for(i = 0; i < numPolyObjs; ++i)
+    if(map)
     {
-        po = polyObjs[i];
+        uint i;
+        polyobj_t* po;
 
-        if(po == ddMobjBase)
+        for(i = 0; i < map->numPolyObjs; ++i)
         {
-            return true;
+            po = map->polyObjs[i];
+
+            if(po == ddMobjBase)
+            {
+                return true;
+            }
         }
     }
 
@@ -188,14 +193,13 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
  * Called at the start of the map after all the structures needed for
  * refresh have been setup.
  */
-void P_MapInitPolyobjs(void)
+void P_MapInitPolyobjs(gamemap_t* map)
 {
     uint i;
-    gamemap_t* map = P_GetCurrentMap();
 
-    for(i = 0; i < numPolyObjs; ++i)
+    for(i = 0; i < map->numPolyObjs; ++i)
     {
-        polyobj_t* po = polyObjs[i];
+        polyobj_t* po = map->polyObjs[i];
         subsector_t* subsector;
         uint j;
         fvertex_t avg; // Used to find a polyobj's center, and hence subsector.

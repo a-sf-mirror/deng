@@ -174,10 +174,10 @@ clmobj_t *Cl_FindMobj(thid_t id)
  *
  * @return              If the callback returns @c false.
  */
-boolean Cl_MobjIterator(boolean (*callback) (clmobj_t *, void *), void *parm)
+boolean Cl_MobjIterator(gamemap_t* map, boolean (*callback) (clmobj_t*, void*), void* parm)
 {
-    clmobj_t   *cmo;
-    int         i;
+    clmobj_t* cmo;
+    int i;
 
     for(i = 0; i < HASH_SIZE; ++i)
     {
@@ -194,7 +194,7 @@ boolean Cl_MobjIterator(boolean (*callback) (clmobj_t *, void *), void *parm)
  * Unlinks the mobj from sectorlinks and if the object is solid,
  * the blockmap.
  */
-void Cl_UnsetMobjPosition(clmobj_t *cmo)
+void Cl_UnsetMobjPosition(clmobj_t* cmo)
 {
     P_MobjUnlink(&cmo->mo);
 }
@@ -378,12 +378,12 @@ VERBOSE( Con_Message("Cl_UpdateRealPlayerMobj: mo=%p angle=%x\n", mo, mo->angle)
  */
 int Cl_ReadMobjDelta(void)
 {
-    thid_t      id = Msg_ReadShort();   // Read the ID.
-    clmobj_t   *cmo;
-    boolean     linked = true;
-    int         df = 0;
-    mobj_t     *d;
-    boolean     justCreated = false;
+    thid_t id = Msg_ReadShort();   // Read the ID.
+    clmobj_t* cmo;
+    boolean linked = true;
+    int df = 0;
+    mobj_t* d;
+    boolean justCreated = false;
 
     // Stop if end marker found.
     if(!id)
@@ -400,7 +400,7 @@ int Cl_ReadMobjDelta(void)
         memset(cmo, 0, sizeof(*cmo));
         cmo->mo.ddFlags |= DDMF_REMOTE;
         Cl_LinkMobj(cmo, id);
-        P_SetMobjID(id, true);  // Mark this ID as used.
+        P_SetMobjID(P_GetCurrentMap(), id, true);  // Mark this ID as used.
         linked = false;
     }
 
@@ -526,7 +526,7 @@ if(d->pos[VX] == 0 && d->pos[VY] == 0)
 /**
  * Initialize clientside data.
  */
-void Cl_InitClientMobjs(void)
+void Cl_InitClientMobjs(gamemap_t* map)
 {
     //previousTime = gameTime;
 
@@ -542,8 +542,8 @@ void Cl_InitClientMobjs(void)
  */
 void Cl_DestroyClientMobjs(void)
 {
-    int                 i;
-    clmobj_t*           cmo;
+    int i;
+    clmobj_t* cmo;
 
     for(i = 0; i < HASH_SIZE; ++i)
     {
@@ -784,14 +784,14 @@ if(verbose >= 2)
 /**
  * Create a new client mobj.
  */
-clmobj_t *Cl_CreateMobj(thid_t id)
+clmobj_t* Cl_CreateMobj(thid_t id)
 {
-    clmobj_t   *cmo = Z_Calloc(sizeof(*cmo), PU_MAP, 0);
+    clmobj_t* cmo = Z_Calloc(sizeof(*cmo), PU_MAP, 0);
 
     cmo->mo.ddFlags |= DDMF_REMOTE;
     cmo->time = Sys_GetRealTime();
     Cl_LinkMobj(cmo, id);
-    P_SetMobjID(id, true);      // Mark this ID as used.
+    P_SetMobjID(P_GetCurrentMap(), id, true); // Mark this ID as used.
 
     return cmo;
 }
@@ -799,13 +799,13 @@ clmobj_t *Cl_CreateMobj(thid_t id)
 /**
  * Destroys the client mobj.
  */
-void Cl_DestroyMobj(clmobj_t *cmo)
+void Cl_DestroyMobj(clmobj_t* cmo)
 {
     // Stop any sounds originating from this mobj.
     S_StopSound(0, &cmo->mo);
 
     // The ID is free once again.
-    P_SetMobjID(cmo->mo.thinker.id, false);
+    P_SetMobjID(P_GetCurrentMap(), cmo->mo.thinker.id, false);
     Cl_UnsetMobjPosition(cmo);
     Cl_UnlinkMobj(cmo);
     Z_Free(cmo);

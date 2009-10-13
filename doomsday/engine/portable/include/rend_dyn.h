@@ -63,7 +63,7 @@ extern float glowHeightFactor;
 
 void            DL_Register(void);
 
-void            DL_DestroyDynlights(struct gamemap_s* map);
+void            DL_DestroyDynlights(dynlist_t* dynlist);
 
 uint            DL_ProjectOnSurface(struct gamemap_s* map, subsector_t* subsector,
                                     const vectorcomp_t topLeft[3],

@@ -61,7 +61,7 @@ typedef struct {
 typedef struct {
     thinker_t   thinker;
     uint        number;
-    polyobj_t  *poly;
+    polyobj_t*  poly;
     boolean     move;
     boolean     rotate;
 } polymover_t;
@@ -78,9 +78,9 @@ typedef struct {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static mover_t *activemovers[MAX_MOVERS];
-static polymover_t *activepolys[MAX_MOVERS];
-short *xlat_lump;
+static mover_t* activemovers[MAX_MOVERS];
+static polymover_t* activepolys[MAX_MOVERS];
+short* xlat_lump;
 
 // CODE --------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ short *xlat_lump;
  */
 void Cl_InitTranslations(void)
 {
-    int                 i;
+    int i;
 
     xlat_lump = Z_Malloc(sizeof(short) * MAX_TRANSLATIONS, PU_REFRESHTEX, 0);
     memset(xlat_lump, 0, sizeof(short) * MAX_TRANSLATIONS);
@@ -129,15 +129,18 @@ lumpnum_t Cl_TranslateLump(lumpnum_t lump)
 /**
  * Clears the arrays that track active plane and polyobj mover thinkers.
  */
-void Cl_InitMovers(void)
+void Cl_InitMovers(gamemap_t* map)
 {
+    if(!map)
+        return;
+
     memset(activemovers, 0, sizeof(activemovers));
     memset(activepolys, 0, sizeof(activepolys));
 }
 
-void Cl_RemoveActiveMover(mover_t *mover)
+void Cl_RemoveActiveMover(mover_t* mover)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activemovers[i] == mover)
@@ -151,9 +154,9 @@ void Cl_RemoveActiveMover(mover_t *mover)
 /**
  * Removes the given polymover from the active polys array.
  */
-void Cl_RemoveActivePoly(polymover_t *mover)
+void Cl_RemoveActivePoly(polymover_t* mover)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activepolys[i] == mover)
@@ -167,12 +170,12 @@ void Cl_RemoveActivePoly(polymover_t *mover)
 /**
  * Plane mover.
  */
-void Cl_MoverThinker(mover_t *mover)
+void Cl_MoverThinker(mover_t* mover)
 {
-    float              *current = mover->current, original = *current;
-    boolean             remove = false;
-    boolean             freeMove;
-    float               fspeed;
+    float* current = mover->current, original = *current;
+    boolean remove = false;
+    boolean freeMove;
+    float fspeed;
 
     if(!Cl_GameReady())
         return; // Can we think yet?
@@ -210,11 +213,11 @@ void Cl_MoverThinker(mover_t *mover)
     }
 }
 
-void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
+void Cl_AddMover(gamemap_t* map, uint sectornum, clmovertype_t type, float dest, float speed)
 {
-    sector_t           *sector;
-    int                 i;
-    mover_t            *mov;
+    sector_t* sector;
+    int i;
+    mover_t* mov;
 
     VERBOSE( Con_Printf("Cl_AddMover: Sector=%i, type=%s, dest=%f, speed=%f\n",
                         sectornum, type==MVT_FLOOR? "floor" : "ceiling",
@@ -223,9 +226,9 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
     if(speed == 0)
         return;
 
-    if(sectornum >= numSectors)
+    if(sectornum >= map->numSectors)
         return;
-    sector = sectors[sectornum];
+    sector = map->sectors[sectornum];
 
     // Remove any existing movers for the same plane.
     for(i = 0; i < MAX_MOVERS; ++i)
@@ -255,7 +258,7 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
             mov->thinker.function = Cl_MoverThinker;
             mov->type = type;
             mov->sectornum = sectornum;
-            mov->sector = sectors[sectornum];
+            mov->sector = map->sectors[sectornum];
             mov->destination = dest;
             mov->speed = speed;
             mov->current =
@@ -274,9 +277,9 @@ void Cl_AddMover(uint sectornum, clmovertype_t type, float dest, float speed)
 
 void Cl_PolyMoverThinker(polymover_t* mover)
 {
-    polyobj_t*          poly = mover->poly;
-    float               dx, dy;
-    float               dist;
+    polyobj_t* poly = mover->poly;
+    float dx, dy;
+    float dist;
 
     if(mover->move)
     {
@@ -324,9 +327,9 @@ void Cl_PolyMoverThinker(polymover_t* mover)
         Cl_RemoveActivePoly(mover);
 }
 
-polymover_t* Cl_FindActivePoly(uint number)
+polymover_t* Cl_FindActivePoly(gamemap_t* map, uint number)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activepolys[i] && activepolys[i]->number == number)
@@ -334,29 +337,32 @@ polymover_t* Cl_FindActivePoly(uint number)
     return NULL;
 }
 
-polymover_t* Cl_NewPolyMover(uint number)
+polymover_t* Cl_NewPolyMover(gamemap_t* map, uint number)
 {
-    polymover_t*        mover;
-    polyobj_t*          poly = polyObjs[number];
+    polymover_t* mover;
+    polyobj_t* poly = map->polyObjs[number];
 
     mover = Z_Malloc(sizeof(polymover_t), PU_MAP, 0);
     memset(mover, 0, sizeof(*mover));
     mover->thinker.function = Cl_PolyMoverThinker;
     mover->poly = poly;
     mover->number = number;
+
     // \fixme Do these need to be public?
     P_ThinkerAdd(&mover->thinker, true);
+
     return mover;
 }
 
-void Cl_SetPolyMover(uint number, int move, int rotate)
+void Cl_SetPolyMover(gamemap_t* map, uint number, int move, int rotate)
 {
-    polymover_t*        mover;
+    polymover_t* mover;
 
     // Try to find an existing mover.
-    mover = Cl_FindActivePoly(number);
+    mover = Cl_FindActivePoly(map, number);
     if(!mover)
-        mover = Cl_NewPolyMover(number);
+        mover = Cl_NewPolyMover(map, number);
+
     // Flag for moving.
     if(move)
         mover->move = true;
@@ -367,9 +373,12 @@ void Cl_SetPolyMover(uint number, int move, int rotate)
 /**
  * Removes all the active movers.
  */
-void Cl_RemoveMovers(void)
+void Cl_RemoveMovers(gamemap_t* map)
 {
-    int                 i;
+    int i;
+
+    if(!map)
+        return;
 
     for(i = 0; i < MAX_MOVERS; ++i)
     {
@@ -386,9 +395,9 @@ void Cl_RemoveMovers(void)
     }
 }
 
-mover_t *Cl_GetActiveMover(uint sectornum, clmovertype_t type)
+mover_t* Cl_GetActiveMover(gamemap_t* map, uint sectornum, clmovertype_t type)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activemovers[i] && activemovers[i]->sectornum == sectornum &&
@@ -405,8 +414,8 @@ mover_t *Cl_GetActiveMover(uint sectornum, clmovertype_t type)
  */
 int Cl_ReadLumpDelta(void)
 {
-    lumpnum_t           num = (lumpnum_t) Msg_ReadPackedShort();
-    char                name[9];
+    lumpnum_t num = (lumpnum_t) Msg_ReadPackedShort();
+    char name[9];
 
     if(!num)
         return false; // No more.
@@ -428,14 +437,15 @@ int Cl_ReadLumpDelta(void)
  */
 void Cl_ReadSectorDelta2(int deltaType, boolean skip)
 {
-    static sector_t     dummy; // Used when skipping.
-    static plane_t*     dummyPlaneArray[2];
-    static plane_t      dummyPlanes[2];
+    static sector_t dummy; // Used when skipping.
+    static plane_t* dummyPlaneArray[2];
+    static plane_t dummyPlanes[2];
 
-    unsigned short      num;
-    sector_t*           sec;
-    int                 df;
-    boolean             wasChanged = false;
+    unsigned short num;
+    sector_t* sec;
+    int df;
+    boolean wasChanged = false;
+    gamemap_t* map = P_GetCurrentMap();
 
     // Set up the dummy.
     dummyPlaneArray[0] = &dummyPlanes[0];
@@ -459,13 +469,13 @@ void Cl_ReadSectorDelta2(int deltaType, boolean skip)
     if(!skip)
     {
 #ifdef _DEBUG
-if(num >= numSectors)
+if(num >= map->numSectors)
 {
     // This is worrisome.
     Con_Error("Cl_ReadSectorDelta2: Sector %i out of range.\n", num);
 }
 #endif
-        sec = sectors[num];
+        sec = map->sectors[num];
     }
     else
     {
@@ -475,7 +485,7 @@ if(num >= numSectors)
 
     if(df & SDF_FLOOR_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side materialnum.
          * \fixme What if client and server materialnums differ?
@@ -485,7 +495,7 @@ if(num >= numSectors)
     }
     if(df & SDF_CEILING_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side materialnum.
          * \fixme What if client and server materialnums differ?
@@ -629,12 +639,12 @@ if(num >= numSectors)
     // Do we need to start any moving planes?
     if(df & (SDF_FLOOR_TARGET | SDF_FLOOR_SPEED))
     {
-        Cl_AddMover(num, MVT_FLOOR, sec->planes[PLN_FLOOR]->target,
+        Cl_AddMover(map, num, MVT_FLOOR, sec->planes[PLN_FLOOR]->target,
                     sec->planes[PLN_FLOOR]->speed);
     }
     if(df & (SDF_CEILING_TARGET | SDF_CEILING_SPEED))
     {
-        Cl_AddMover(num, MVT_CEILING, sec->planes[PLN_CEILING]->target,
+        Cl_AddMover(map, num, MVT_CEILING, sec->planes[PLN_CEILING]->target,
                     sec->planes[PLN_CEILING]->speed);
     }
 }
@@ -644,14 +654,15 @@ if(num >= numSectors)
  */
 void Cl_ReadSideDelta2(int deltaType, boolean skip)
 {
-    unsigned short      num;
+    unsigned short num;
 
-    int                 df, topMat = 0, midMat = 0, botMat = 0;
-    int                 blendmode = 0;
-    byte                lineFlags = 0, sideFlags = 0;
-    float               toprgb[3] = {0,0,0}, midrgba[4] = {0,0,0,0};
-    float               bottomrgb[3] = {0,0,0};
-    sidedef_t          *sid;
+    int df, topMat = 0, midMat = 0, botMat = 0;
+    int blendmode = 0;
+    byte lineFlags = 0, sideFlags = 0;
+    float toprgb[3] = {0,0,0}, midrgba[4] = {0,0,0,0};
+    float bottomrgb[3] = {0,0,0};
+    sidedef_t* sid;
+    gamemap_t* map = P_GetCurrentMap();
 
     // First read all the data.
     num = Msg_ReadShort();
@@ -710,18 +721,18 @@ void Cl_ReadSideDelta2(int deltaType, boolean skip)
         return;
 
 #ifdef _DEBUG
-if(num >= numSideDefs)
+if(num >= map->numSideDefs)
 {
     // This is worrisome.
     Con_Error("Cl_ReadSideDelta2: Side %i out of range.\n", num);
 }
 #endif
 
-    sid = sideDefs[num];
+    sid = map->sideDefs[num];
 
     if(df & SIDF_TOP_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side materialnum.
          * \fixme What if client and server materialnums differ?
@@ -731,7 +742,7 @@ if(num >= numSideDefs)
     }
     if(df & SIDF_MID_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side materialnum.
          * \fixme What if client and server materialnums differ?
@@ -741,7 +752,7 @@ if(num >= numSideDefs)
     }
     if(df & SIDF_BOTTOM_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side materialnum.
          * \fixme What if client and server materialnums differ?
@@ -785,7 +796,7 @@ if(num >= numSideDefs)
 
     if(df & SIDF_LINE_FLAGS)
     {
-        linedef_t *line = R_GetLineForSide(num);
+        linedef_t *line = R_GetLineForSide(sid);
 
         if(line)
         {
@@ -806,12 +817,13 @@ Con_Printf("Cl_ReadSideDelta2: Lineflag %i: %02x\n",
  */
 void Cl_ReadPolyDelta2(boolean skip)
 {
-    int                 df;
-    unsigned short      num;
-    polyobj_t          *po;
-    float               destX = 0, destY = 0;
-    float               speed = 0;
-    int                 destAngle = 0, angleSpeed = 0;
+    int df;
+    unsigned short num;
+    polyobj_t* po;
+    float destX = 0, destY = 0;
+    float speed = 0;
+    int destAngle = 0, angleSpeed = 0;
+    gamemap_t* map = P_GetCurrentMap();
 
     num = Msg_ReadPackedShort();
 
@@ -833,14 +845,14 @@ void Cl_ReadPolyDelta2(boolean skip)
         return;
 
 #ifdef _DEBUG
-if(num >= numPolyObjs)
+if(num >= map->numPolyObjs)
 {
     // This is worrisome.
     Con_Error("Cl_ReadPolyDelta2: PO %i out of range.\n", num);
 }
 #endif
 
-    po = polyObjs[num];
+    po = map->polyObjs[num];
 
     if(df & PODF_DEST_X)
         po->dest[VX] = destX;
@@ -856,7 +868,7 @@ if(num >= numPolyObjs)
         po->destAngle = -1;
 
     // Update the polyobj's mover thinkers.
-    Cl_SetPolyMover(num, df & (PODF_DEST_X | PODF_DEST_Y | PODF_SPEED),
+    Cl_SetPolyMover(map, num, df & (PODF_DEST_X | PODF_DEST_Y | PODF_SPEED),
                     df & (PODF_DEST_ANGLE | PODF_ANGSPEED |
                           PODF_PERPETUAL_ROTATE));
 }

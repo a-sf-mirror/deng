@@ -286,7 +286,8 @@ void R_Init(void)
  */
 void R_Update(void)
 {
-    uint                i;
+    uint i;
+    gamemap_t* map;
 
     R_UpdateTexturesAndFlats();
     R_InitTextures();
@@ -306,7 +307,6 @@ void R_Update(void)
     GL_LoadSystemTextures();
 
     Def_PostInit();
-    P_UpdateParticleGens(); // Defs might've changed.
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
@@ -317,35 +317,41 @@ void R_Update(void)
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
     }
 
-    // Update all world surfaces.
-    for(i = 0; i < numSectors; ++i)
+    map = P_GetCurrentMap();
+    if(map)
     {
-        uint j;
-        sector_t* sec = sectors[i];
+        P_UpdateParticleGens(map); // Defs might've changed.
 
-        for(j = 0; j < sec->planeCount; ++j)
-            Surface_Update(&sec->SP_planesurface(j));
-    }
-
-    for(i = 0; i < numSideDefs; ++i)
-    {
-        sidedef_t* side = sideDefs[i];
-
-        Surface_Update(&side->SW_topsurface);
-        Surface_Update(&side->SW_middlesurface);
-        Surface_Update(&side->SW_bottomsurface);
-    }
-
-    for(i = 0; i < numPolyObjs; ++i)
-    {
-        polyobj_t* po = polyObjs[i];
-        uint j;
-
-        for(j = 0; j < po->numLineDefs; ++j)
+        // Update all world surfaces.
+        for(i = 0; i < map->numSectors; ++i)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            sector_t* sec = map->sectors[i];
+            uint j;
 
-            Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
+            for(j = 0; j < sec->planeCount; ++j)
+                Surface_Update(&sec->SP_planesurface(j));
+        }
+
+        for(i = 0; i < map->numSideDefs; ++i)
+        {
+            sidedef_t* side = map->sideDefs[i];
+
+            Surface_Update(&side->SW_topsurface);
+            Surface_Update(&side->SW_middlesurface);
+            Surface_Update(&side->SW_bottomsurface);
+        }
+
+        for(i = 0; i < map->numPolyObjs; ++i)
+        {
+            polyobj_t* po = map->polyObjs[i];
+            uint j;
+
+            for(j = 0; j < po->numLineDefs; ++j)
+            {
+                linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+
+                Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
+            }
         }
     }
 
@@ -532,12 +538,12 @@ void R_NewSharpWorld(void)
     R_UpdateMovingSurfaces();
 }
 
-void R_CreateMobjLinks(void)
+void R_CreateMobjLinks(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
 #ifdef DD_PROFILE
-    static int          p;
+    static int p;
 
     if(++p > 40)
     {
@@ -546,11 +552,14 @@ void R_CreateMobjLinks(void)
     }
 #endif
 
+    if(!map)
+        return;
+
 BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sector = sectors[i];
+        sector_t* sector = map->sectors[i];
         mobj_t* iter;
 
         for(iter = sector->mobjList; iter; iter = iter->sNext)
@@ -565,54 +574,56 @@ END_PROF( PROF_MOBJ_INIT_ADD );
 /**
  * Prepare for rendering view(s) of the world.
  */
-void R_BeginWorldFrame(void)
+void R_BeginWorldFrame(gamemap_t* map)
 {
-    gamemap_t*          map = P_GetCurrentMap();
+    if(!map)
+        return;
 
-    R_ClearSectorFlags();
+    R_ClearSectorFlags(map);
 
     R_InterpolateWatchedPlanes(watchedPlaneList, resetNextViewer);
     R_InterpolateMovingSurfaces(resetNextViewer);
 
     if(!freezeRLs)
     {
-        LG_Update();
+        LG_Update(map);
         SB_BeginFrame(map);
-        LO_ClearForFrame();
-        R_ClearObjLinksForFrame(); // Zeroes the links.
+        LO_ClearForFrame(map);
+        R_ClearObjLinksForFrame(map); // Zeroes the links.
 
         // Clear the objlinks.
-        R_InitForNewFrame();
+        R_InitForNewFrame(map);
 
         // Generate surface decorations for the frame.
-        Rend_InitDecorationsForFrame();
+        Rend_InitDecorationsForFrame(map);
 
         // Spawn omnilights for decorations.
-        Rend_AddLuminousDecorations();
+        Rend_AddLuminousDecorations(map);
 
         // Spawn omnilights for mobjs.
-        LO_AddLuminousMobjs();
+        LO_AddLuminousMobjs(map);
 
         // Create objlinks for mobjs.
-        R_CreateMobjLinks();
+        R_CreateMobjLinks(map);
 
         // Link all active particle generators into the world.
-        P_CreatePtcGenLinks();
+        P_CreatePtcGenLinks(map);
 
         // Link objs to all contacted surfaces.
-        R_LinkObjs();
+        R_LinkObjs(map);
     }
 }
 
 /**
  * Wrap up after drawing view(s) of the world.
  */
-void R_EndWorldFrame(void)
+void R_EndWorldFrame(gamemap_t* map)
 {
+    if(!map)
+        return;
+
     if(!freezeRLs)
     {
-        gamemap_t*          map = P_GetCurrentMap();
-
         // Wrap up with Source, Bias lights.
         SB_EndFrame(map);
 

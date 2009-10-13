@@ -335,7 +335,7 @@ boolean PIT_MobjCollide(mobj_t* mo, void* parm)
  * @return              @c true, if the mobj can be positioned at the
  *                      specified coordinates.
  */
-boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
+boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
 {
     subsector_t* newsubsec;
     checkpos_data_t data;
@@ -384,7 +384,7 @@ boolean P_CheckPosXYZ(mobj_t *mo, float x, float y, float z)
     if(result)
     {   // Nope.
         // Try polyobj->lineDefs and lines.
-        if(!P_AllLinesBoxIteratorv(data.box, PIT_LineCollide, &data, false))
+        if(!P_AllLinesBoxIteratorv(P_GetCurrentMap(), data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }

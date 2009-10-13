@@ -1692,7 +1692,7 @@ static void drawPoint(float pos[3], float radius, const float color[4])
 /**
  * Render the shadow poly vertices, for debug.
  */
-void Rend_DrawShadowOffsetVerts(void)
+void Rend_DrawShadowOffsetVerts(gamemap_t* map)
 {
     static const float red[4] = { 1.f, .2f, .2f, 1.f};
     static const float yellow[4] = {.7f, .7f, .2f, 1.f};
@@ -1705,9 +1705,9 @@ void Rend_DrawShadowOffsetVerts(void)
 
     GL_BindTexture(GL_PrepareLSTexture(LST_DYNAMIC), GL_LINEAR);
 
-    for(i = 0; i < numLineDefs; ++i)
+    for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t* line = lineDefs[i];
+        linedef_t* line = map->lineDefs[i];
 
         for(k = 0; k < 2; ++k)
         {

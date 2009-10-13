@@ -35,11 +35,11 @@ typedef enum {
 } clmovertype_t;
 
 void            Cl_InitTranslations(void);
-void            Cl_InitMovers(void);
-void            Cl_RemoveMovers(void);
+void            Cl_InitMovers(struct gamemap_s* map);
+void            Cl_RemoveMovers(struct gamemap_s* map);
 lumpnum_t       Cl_TranslateLump(lumpnum_t lump);
-void            Cl_SetPolyMover(uint number, int move, int rotate);
-void            Cl_AddMover(uint sectornum, clmovertype_t type, float dest,
+void            Cl_SetPolyMover(struct gamemap_s* map, uint number, int move, int rotate);
+void            Cl_AddMover(struct gamemap_s* map, uint sectornum, clmovertype_t type, float dest,
                             float speed);
 
 int             Cl_ReadSectorDelta(void);

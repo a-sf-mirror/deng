@@ -197,11 +197,14 @@ static void projectDecoration(decorsource_t* src)
 /**
  * Project all the non-clipped decorations. They become regular vissprites.
  */
-void Rend_ProjectDecorations(void)
+void Rend_ProjectDecorations(gamemap_t* map)
 {
+    if(!map)
+        return;
+
     if(sourceFirst != sourceCursor)
     {
-        decorsource_t*      src = sourceFirst;
+        decorsource_t* src = sourceFirst;
 
         do
         {
@@ -298,13 +301,16 @@ static void addLuminousDecoration(decorsource_t* src)
 /**
  * Create lumobjs for all decorations who want them.
  */
-void Rend_AddLuminousDecorations(void)
+void Rend_AddLuminousDecorations(gamemap_t* map)
 {
 BEGIN_PROF( PROF_DECOR_ADD_LUMINOUS );
 
+    if(!map)
+        return;
+
     if(sourceFirst != sourceCursor)
     {
-        decorsource_t*      src = sourceFirst;
+        decorsource_t* src = sourceFirst;
 
         do
         {
@@ -320,7 +326,7 @@ END_PROF( PROF_DECOR_ADD_LUMINOUS );
  */
 static decorsource_t* addDecoration(void)
 {
-    decorsource_t*      src;
+    decorsource_t* src;
 
     // If the cursor is NULL, new sources must be allocated.
     if(!sourceCursor)
@@ -354,7 +360,7 @@ static void createDecorSource(const surface_t* suf,
                               const surfacedecor_t* dec,
                               const float maxDistance)
 {
-    decorsource_t*      src;
+    decorsource_t* src;
 
     if(dec->type == DT_LIGHT)
     {
@@ -406,8 +412,8 @@ boolean R_IsValidModelDecoration(const ded_decormodel_t* modelDef)
  */
 boolean R_ProjectSurfaceDecorations(surface_t* suf, void* context)
 {
-    uint                i;
-    float               maxDist = *((float*) context);
+    uint i;
+    float maxDist = *((float*) context);
 
     for(i = 0; i < suf->numDecorations; ++i)
     {
@@ -437,7 +443,7 @@ boolean R_ProjectSurfaceDecorations(surface_t* suf, void* context)
  */
 float Rend_DecorSurfaceAngleHaloMul(void* p)
 {
-    decorsource_t*      src = (decorsource_t*) p;
+    decorsource_t* src = (decorsource_t*) p;
 
     if(!src)
         return 1;
@@ -445,7 +451,7 @@ float Rend_DecorSurfaceAngleHaloMul(void* p)
     // Halo brightness drops as the angle gets too big.
     if(src->data.light.def->elevation < 2 && decorFadeAngle > 0) // Close the surface?
     {
-        float               vector[3], dot;
+        float vector[3], dot;
 
         vector[VX] = src->pos[VX] - vx;
         vector[VY] = src->pos[VY] - vz;
@@ -470,7 +476,7 @@ float Rend_DecorSurfaceAngleHaloMul(void* p)
  */
 static void getDecorationSkipPattern(const int patternSkip[2], int* skip)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < 2; ++i)
     {
@@ -488,12 +494,12 @@ static uint generateDecorLights(const ded_decorlight_t* def,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
-    uint                num;
-    float               s, t; // Horizontal and vertical offset.
-    vec3_t              posBase, pos;
-    float               patternW, patternH;
-    int                 skip[2];
-    material_t*         mat = suf->material;
+    uint num;
+    float s, t; // Horizontal and vertical offset.
+    vec3_t posBase, pos;
+    float patternW, patternH;
+    int skip[2];
+    material_t* mat = suf->material;
 
     if(!R_IsValidLightDecoration(def))
         return 0;
@@ -559,14 +565,14 @@ static uint generateDecorModels(const ded_decormodel_t* def,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
-    uint                num;
-    modeldef_t*         mf;
-    float               pitch, yaw;
-    float               patternW, patternH;
-    float               s, t; // Horizontal and vertical offset.
-    vec3_t              posBase, pos;
-    int                 skip[2];
-    material_t*         mat = suf->material;
+    uint num;
+    modeldef_t* mf;
+    float pitch, yaw;
+    float patternW, patternH;
+    float s, t; // Horizontal and vertical offset.
+    vec3_t posBase, pos;
+    int skip[2];
+    material_t* mat = suf->material;
 
     if(!R_IsValidModelDecoration(def))
         return 0;
@@ -604,8 +610,8 @@ static uint generateDecorModels(const ded_decormodel_t* def,
 
         for(; t < height; t += patternH)
         {
-            surfacedecor_t     *d;
-            float               offS = s / width, offT = t / height;
+            surfacedecor_t* d;
+            float offS = s / width, offT = t / height;
 
             V3_Set(pos, delta[VX] * offS,
                         delta[VY] * (axis == VZ? offT : offS),
@@ -645,7 +651,7 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
                                      float offsetT, vec3_t v1, vec3_t v2,
                                      sector_t* sec, boolean visible)
 {
-    vec3_t              delta;
+    vec3_t delta;
 
     R_ClearSurfaceDecorations(suf);
     R_SurfaceListRemove(decoratedSurfaceList, suf);
@@ -657,10 +663,10 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
         delta[VX] * delta[VZ] != 0 ||
         delta[VY] * delta[VZ] != 0))
     {
-        uint                i;
-        float               matW, matH, width, height;
-        int                 axis = V3_MajorAxis(suf->normal);
-        const ded_decor_t*  def = Material_GetDecoration(suf->material);
+        uint i;
+        float matW, matH, width, height;
+        int axis = V3_MajorAxis(suf->normal);
+        const ded_decor_t* def = Material_GetDecoration(suf->material);
 
         if(def)
         {
@@ -707,10 +713,10 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
  */
 static void updatePlaneDecorations(plane_t* pln)
 {
-    sector_t*           sec = pln->sector;
-    surface_t*          suf = &pln->surface;
-    vec3_t              v1, v2;
-    float               offsetS, offsetT;
+    sector_t* sec = pln->sector;
+    surface_t* suf = &pln->surface;
+    vec3_t v1, v2;
+    float offsetS, offsetT;
 
     if(pln->type == PLN_FLOOR)
     {
@@ -731,14 +737,13 @@ static void updatePlaneDecorations(plane_t* pln)
 
 static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
 {
-    linedef_t*          line;
-    surface_t*          suf;
-    vec3_t              v1, v2;
-    int                 sid;
-    float               offsetS = 0, offsetT = 0;
-    boolean             visible = false;
-    float               frontCeil, frontFloor, backCeil, backFloor, bottom,
-                        top;
+    linedef_t* line;
+    surface_t* suf;
+    vec3_t v1, v2;
+    int sid;
+    float offsetS = 0, offsetT = 0;
+    boolean visible = false;
+    float frontCeil, frontFloor, backCeil, backFloor, bottom, top;
 
     if(!side->lineDef->hEdges[0])
         return;
@@ -825,19 +830,19 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
     updateSurfaceDecorations(suf, offsetS, offsetT, v1, v2, NULL, visible);
 }
 
-void Rend_UpdateSurfaceDecorations(void)
+void Rend_UpdateSurfaceDecorations(gamemap_t* map)
 {
 BEGIN_PROF( PROF_DECOR_UPDATE );
 
     // This only needs to be done if decorations have been enabled.
     if(useDecorations)
     {
-        uint                i;
+        uint i;
 
         // Process all sidedefs.
-        for(i = 0; i < numSideDefs; ++i)
+        for(i = 0; i < map->numSideDefs; ++i)
         {
-            sidedef_t* side = sideDefs[i];
+            sidedef_t* side = map->sideDefs[i];
             surface_t* suf;
 
             suf = &side->SW_middlesurface;
@@ -854,10 +859,10 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
         }
 
         // Process all planes.
-        for(i = 0; i < numSectors; ++i)
+        for(i = 0; i < map->numSectors; ++i)
         {
+            sector_t* sec = map->sectors[i];
             uint j;
-            sector_t* sec = sectors[i];
 
             for(j = 0; j < sec->planeCount; ++j)
             {
@@ -875,10 +880,10 @@ END_PROF( PROF_DECOR_UPDATE );
 /**
  * Decorations are generated for each frame.
  */
-void Rend_InitDecorationsForFrame(void)
+void Rend_InitDecorationsForFrame(gamemap_t* map)
 {
 #ifdef DD_PROFILE
-    static int          i;
+    static int i;
 
     if(++i > 40)
     {
@@ -889,12 +894,15 @@ void Rend_InitDecorationsForFrame(void)
     }
 #endif
 
+    if(!map)
+        return;
+
     clearDecorations();
 
     // This only needs to be done if decorations have been enabled.
     if(useDecorations)
     {
-        Rend_UpdateSurfaceDecorations(); // temporary.
+        Rend_UpdateSurfaceDecorations(map); // temporary.
 
 BEGIN_PROF( PROF_DECOR_PROJECT );
 

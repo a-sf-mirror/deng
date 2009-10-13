@@ -635,8 +635,8 @@ boolean PIT_LinkToLines(linedef_t* ld, void* parm)
  */
 void P_LinkToLines(mobj_t* mo)
 {
-    linelinker_data_t   data;
-    vec2_t              point;
+    linelinker_data_t data;
+    vec2_t point;
 
     // Get a new root node.
     mo->lineRoot = NP_New(mobjNodes, NP_ROOT_NODE);
@@ -649,12 +649,12 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    P_AllLinesBoxIteratorv(data.box, PIT_LinkToLines, &data, false);
+    P_AllLinesBoxIteratorv(P_GetCurrentMap(), data.box, PIT_LinkToLines, &data, false);
 }
 
 void P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link)
 {
-    linkmobj_t*      tempLink;
+    linkmobj_t* tempLink;
 
     if(!(*link))
     {   // Create a new link at the current block cell.
@@ -1076,11 +1076,11 @@ boolean P_PolyobjLinesBoxIteratorv(const arvec2_t box,
     return P_BlockBoxPolyobjLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
 }
 
-static boolean allLinesBoxIterator(const arvec2_t box,
+static boolean allLinesBoxIterator(gamemap_t* map, const arvec2_t box,
                                    boolean (*func) (linedef_t*, void*),
                                    void* data, boolean retObjRecord)
 {
-    if(numPolyObjs > 0)
+    if(map->numPolyObjs > 0)
     {
         if(!P_PolyobjLinesBoxIteratorv(box, func, data, retObjRecord))
             return false;
@@ -1094,7 +1094,7 @@ static boolean allLinesBoxIterator(const arvec2_t box,
  * in multiple mapblocks, so increment validCount before the first call
  * to P_BlockmapLinesIterator, then make one or more calls to it.
  */
-boolean P_AllLinesBoxIterator(const float box[4],
+boolean P_AllLinesBoxIterator(gamemap_t* map, const float box[4],
                               boolean (*func) (linedef_t*, void*),
                               void* data, boolean retObjRecord)
 {
@@ -1105,7 +1105,7 @@ boolean P_AllLinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return allLinesBoxIterator(bounds, func, data, retObjRecord);
+    return allLinesBoxIterator(map, bounds, func, data, retObjRecord);
 }
 
 /**
@@ -1115,7 +1115,7 @@ boolean DMU_AllLinesBoxIterator(const float box[4],
                                 boolean (*func) (linedef_t*, void*),
                                 void* data)
 {
-    return P_AllLinesBoxIterator(box, func, data, true);
+    return P_AllLinesBoxIterator(P_GetCurrentMap(), box, func, data, true);
 }
 
 /**
@@ -1123,11 +1123,11 @@ boolean DMU_AllLinesBoxIterator(const float box[4],
  * in multiple mapblocks, so increment validCount before the first call
  * to P_BlockmapLinesIterator, then make one or more calls to it.
  */
-boolean P_AllLinesBoxIteratorv(const arvec2_t box,
+boolean P_AllLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
                                boolean (*func) (linedef_t*, void*),
                                void* data, boolean retObjRecord)
 {
-    return allLinesBoxIterator(box, func, data, retObjRecord);
+    return allLinesBoxIterator(map, box, func, data, retObjRecord);
 }
 
 /**
@@ -1137,7 +1137,7 @@ boolean DMU_AllLinesBoxIteratorv(const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*),
                                  void* data)
 {
-    return allLinesBoxIterator(box, func, data, true);
+    return allLinesBoxIterator(P_GetCurrentMap(), box, func, data, true);
 }
 
 /**

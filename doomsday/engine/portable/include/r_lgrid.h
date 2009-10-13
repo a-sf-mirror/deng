@@ -26,17 +26,17 @@
  * r_lgrid.h: Ambient world lighting (smoothed sector lighting).
  */
 
-#ifndef __DOOMSDAY_REFRESH_LIGHT_GRID_H__
-#define __DOOMSDAY_REFRESH_LIGHT_GRID_H__
+#ifndef DOOMSDAY_REFRESH_LIGHT_GRID_H
+#define DOOMSDAY_REFRESH_LIGHT_GRID_H
 
 void            LG_Register(void);
-void            LG_Init(void);
+void            LG_Init(struct gamemap_s* map);
 
-void            LG_Update(void);
-void            LG_MarkAllForUpdate(cvar_t *unused);
-void            LG_SectorChanged(sector_t *sector);
+void            LG_Update(struct gamemap_s* map);
+void            LG_MarkAllForUpdate(cvar_t* unused);
+void            LG_SectorChanged(sector_t* sector);
 
-void            LG_Evaluate(const float *point, float *destColor);
-void            LG_Debug(void);
+void            LG_Evaluate(struct gamemap_s* map, const float* point, float* destColor);
+void            LG_Debug(struct gamemap_s* map);
 
-#endif
+#endif /* DOOMSDAY_REFRESH_LIGHT_GRID_H */

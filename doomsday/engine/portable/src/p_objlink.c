@@ -212,11 +212,13 @@ objblockmap_t* R_ObjBlockmapCreate(float originX, float originY, int width,
     return obm;
 }
 
-void R_InitObjLinksForMap(void)
+void R_InitObjLinksForMap(gamemap_t* map)
 {
-    gamemap_t* map = P_GetCurrentMap();
     float min[2], max[2];
     int width, height;
+
+    if(!map)
+        return;
 
     // Determine the dimensions of the objblockmap.
     P_GetMapBounds(map, &min[0], &max[0]);
@@ -231,7 +233,7 @@ void R_InitObjLinksForMap(void)
     objBlockmap = R_ObjBlockmapCreate(min[0], min[1], width, height);
 
     // Initialize face -> obj contact lists.
-    subsectorContacts = Z_Calloc(sizeof(*subsectorContacts) * numSubsectors, PU_STATIC, 0);
+    subsectorContacts = Z_Calloc(sizeof(*subsectorContacts) * map->numSubsectors, PU_STATIC, 0);
 }
 
 void R_ObjBlockmapClear(objblockmap_t* obm)
@@ -246,8 +248,11 @@ void R_ObjBlockmapClear(objblockmap_t* obm)
  * Called at the begining of each frame (iff the render lists are not frozen)
  * by R_BeginWorldFrame().
  */
-void R_ClearObjLinksForFrame(void)
+void R_ClearObjLinksForFrame(gamemap_t* map)
 {
+    if(!map)
+        return;
+
     // Clear all the roots.
     R_ObjBlockmapClear(objBlockmap);
 
@@ -257,7 +262,7 @@ void R_ClearObjLinksForFrame(void)
 
 void R_ObjLinkCreate(void* obj, objtype_t type)
 {
-    objlink_t*          ol = allocObjLink();
+    objlink_t* ol = allocObjLink();
 
     ol->obj = obj;
     ol->type = type;
@@ -566,9 +571,12 @@ void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink, float x, flo
  * render lists are not frozen) to link all objlinks into the objlink
  * blockmap.
  */
-void R_LinkObjs(void)
+void R_LinkObjs(gamemap_t* map)
 {
     objlink_t* oLink;
+
+    if(!map)
+        return;
 
 BEGIN_PROF( PROF_OBJLINK_LINK );
 
@@ -602,7 +610,7 @@ END_PROF( PROF_OBJLINK_LINK );
  * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
  * frame (if the render lists are not frozen).
  */
-void R_InitForNewFrame(void)
+void R_InitForNewFrame(gamemap_t* map)
 {
 #ifdef DD_PROFILE
     static int i;
@@ -615,10 +623,13 @@ void R_InitForNewFrame(void)
     }
 #endif
 
+    if(!map)
+        return;
+
     // Start reusing nodes from the first one in the list.
     contCursor = contFirst;
     if(subsectorContacts)
-        memset(subsectorContacts, 0, numSubsectors * sizeof(*subsectorContacts));
+        memset(subsectorContacts, 0, map->numSubsectors * sizeof(*subsectorContacts));
 }
 
 boolean R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,

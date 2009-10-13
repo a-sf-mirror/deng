@@ -82,8 +82,6 @@ boolean ddMapSetup;
 
 nodeindex_t* linelinks; // Indices to roots.
 
-skyfix_t skyFix[2];
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static surfacelistnode_t* unusedSurfaceListNodes = NULL;
@@ -336,7 +334,7 @@ void R_StopMatFader(matfader_t* fader)
 {
     if(fader)
     {
-        surface_t*          suf = fader->suf;
+        surface_t* suf = fader->suf;
 
         fader->suf->materialB = NULL;
         fader->suf->matBlendFactor = 1;
@@ -355,7 +353,7 @@ void R_MatFaderThinker(matfader_t* fader)
 {
     if(fader)
     {
-        int                 maxTics = rendMaterialFadeSeconds * TICSPERSEC;
+        int maxTics = rendMaterialFadeSeconds * TICSPERSEC;
 
         fader->tics++;
         if(!(fader->tics < maxTics))
@@ -373,7 +371,7 @@ void R_MatFaderThinker(matfader_t* fader)
  */
 int RIT_StopMatFader(void* p, void* context)
 {
-    matfader_t*         fader = (matfader_t*) p;
+    matfader_t* fader = (matfader_t*) p;
 
     // Surface match?
     if(fader->suf == (surface_t*) context)
@@ -385,9 +383,9 @@ int RIT_StopMatFader(void* p, void* context)
     return true; // Continue iteration.
 }
 
-void R_AddWatchedPlane(watchedplanelist_t *wpl, plane_t *pln)
+void R_AddWatchedPlane(watchedplanelist_t* wpl, plane_t* pln)
 {
-    uint                i;
+    uint i;
 
     if(!wpl || !pln)
         return;
@@ -408,9 +406,7 @@ void R_AddWatchedPlane(watchedplanelist_t *wpl, plane_t *pln)
         if(!wpl->maxNum)
             wpl->maxNum = 8;
 
-        wpl->list =
-            Z_Realloc(wpl->list, sizeof(plane_t*) * (wpl->maxNum + 1),
-                      PU_MAP);
+        wpl->list = Z_Realloc(wpl->list, sizeof(plane_t*) * (wpl->maxNum + 1), PU_MAP);
     }
 
     // Add the plane to the list.
@@ -418,9 +414,9 @@ void R_AddWatchedPlane(watchedplanelist_t *wpl, plane_t *pln)
     wpl->list[wpl->num] = NULL; // Terminate.
 }
 
-boolean R_RemoveWatchedPlane(watchedplanelist_t *wpl, const plane_t *pln)
+boolean R_RemoveWatchedPlane(watchedplanelist_t* wpl, const plane_t* pln)
 {
-    uint            i;
+    uint i;
 
     if(!wpl || !pln)
         return false;
@@ -783,7 +779,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     // Create a new plane list?
     if(sec->planeCount > 1)
     {
-        uint                n;
+        uint n;
 
         newList = Z_Malloc(sizeof(plane_t**) * sec->planeCount, PU_MAP, 0);
 
@@ -806,7 +802,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     R_SurfaceListRemove(decoratedSurfaceList, &plane->surface);
 
     // Stop active material fade on this surface.
-    P_IterateThinkers(R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+    P_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                       RIT_StopMatFader, &plane->surface);
 
     /**
@@ -877,9 +873,10 @@ void R_ClearSurfaceDecorations(surface_t* suf)
     suf->numDecorations = 0;
 }
 
-void R_UpdateSkyFixForSec(const sector_t* sec)
+void R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX)
 {
-    boolean             skyFloor, skyCeil;
+    boolean skyFloor, skyCeil;
+    sector_t* sec = map->sectors[secIDX];
 
     if(!sec)
         return; // Wha?
@@ -892,22 +889,22 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
 
     if(skyCeil)
     {
-        mobj_t*             mo;
+        mobj_t* mo;
 
         // Adjust for the plane height.
-        if(sec->SP_ceilvisheight > skyFix[PLN_CEILING].height)
+        if(sec->SP_ceilvisheight > map->skyFix[PLN_CEILING].height)
         {   // Must raise the skyfix ceiling.
-            skyFix[PLN_CEILING].height = sec->SP_ceilvisheight;
+            map->skyFix[PLN_CEILING].height = sec->SP_ceilvisheight;
         }
 
         // Check that all the mobjs in the sector fit in.
         for(mo = sec->mobjList; mo; mo = mo->sNext)
         {
-            float               extent = mo->pos[VZ] + mo->height;
+            float extent = mo->pos[VZ] + mo->height;
 
-            if(extent > skyFix[PLN_CEILING].height)
+            if(extent > map->skyFix[PLN_CEILING].height)
             {   // Must raise the skyfix ceiling.
-                skyFix[PLN_CEILING].height = extent;
+                map->skyFix[PLN_CEILING].height = extent;
             }
         }
     }
@@ -915,9 +912,9 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
     if(skyFloor)
     {
         // Adjust for the plane height.
-        if(sec->SP_floorvisheight < skyFix[PLN_FLOOR].height)
+        if(sec->SP_floorvisheight < map->skyFix[PLN_FLOOR].height)
         {   // Must lower the skyfix floor.
-            skyFix[PLN_FLOOR].height = sec->SP_floorvisheight;
+            map->skyFix[PLN_FLOOR].height = sec->SP_floorvisheight;
         }
     }
 
@@ -925,16 +922,16 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
     // floor and/or ceiling of their front and/or back sectors.
     if(sec->lineDefs)
     {
-        linedef_t**         linePtr = sec->lineDefs;
+        linedef_t** linePtr = sec->lineDefs;
 
         while(*linePtr)
         {
-            linedef_t*          li = *linePtr;
+            linedef_t* li = *linePtr;
 
             // Must be twosided.
             if(LINE_FRONTSIDE(li) && LINE_BACKSIDE(li))
             {
-                sidedef_t*          si = LINE_FRONTSECTOR(li) == sec?
+                sidedef_t* si = LINE_FRONTSECTOR(li) == sec?
                     LINE_FRONTSIDE(li) : LINE_BACKSIDE(li);
 
                 if(si->SW_middlematerial)
@@ -945,9 +942,9 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
                             sec->SP_ceilvisheight +
                                 si->SW_middlevisoffset[VY];
 
-                        if(top > skyFix[PLN_CEILING].height)
+                        if(top > map->skyFix[PLN_CEILING].height)
                         {   // Must raise the skyfix ceiling.
-                            skyFix[PLN_CEILING].height = top;
+                            map->skyFix[PLN_CEILING].height = top;
                         }
                     }
 
@@ -958,9 +955,9 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
                                 si->SW_middlevisoffset[VY] -
                                     si->SW_middlematerial->height;
 
-                        if(bottom < skyFix[PLN_FLOOR].height)
+                        if(bottom < map->skyFix[PLN_FLOOR].height)
                         {   // Must lower the skyfix floor.
-                            skyFix[PLN_FLOOR].height = bottom;
+                            map->skyFix[PLN_FLOOR].height = bottom;
                         }
                     }
                 }
@@ -975,17 +972,20 @@ void R_UpdateSkyFixForSec(const sector_t* sec)
  * ceiling is lifted to match the upper sky. The raising only affects
  * rendering, it has no bearing on gameplay.
  */
-void R_InitSkyFix(void)
+void R_InitSkyFix(gamemap_t* map)
 {
     uint i;
 
-    skyFix[PLN_FLOOR].height = DDMAXFLOAT;
-    skyFix[PLN_CEILING].height = DDMINFLOAT;
+    if(!map)
+        return;
+
+    map->skyFix[PLN_FLOOR].height = DDMAXFLOAT;
+    map->skyFix[PLN_CEILING].height = DDMINFLOAT;
 
     // Update for sector plane heights and mobjs which intersect the ceiling.
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        R_UpdateSkyFixForSec(sectors[i]);
+        R_UpdateSkyFixForSec(map, i);
     }
 }
 
@@ -2024,18 +2024,20 @@ void R_SetupMap(int mode, int flags)
         return;
 
     case DDSMM_AFTER_LOADING:
-    {
+        {
+        gamemap_t* map = P_GetCurrentMap();
+
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
 
-        R_InitSkyFix();
+        R_InitSkyFix(map);
 
         // Set intial values of various tracked and interpolated properties
         // (lighting, smoothed planes etc).
-        for(i = 0; i < numSectors; ++i)
+        for(i = 0; i < map->numSectors; ++i)
         {
+            sector_t* sec = map->sectors[i];
             uint j;
-            sector_t* sec = sectors[i];
 
             R_UpdateSector(sec, false);
             for(j = 0; j < sec->planeCount; ++j)
@@ -2049,20 +2051,20 @@ void R_SetupMap(int mode, int flags)
             }
         }
 
-        for(i = 0; i < numSideDefs; ++i)
+        for(i = 0; i < map->numSideDefs; ++i)
         {
-            sidedef_t* si = sideDefs[i];
+            sidedef_t* si = map->sideDefs[i];
 
             initSurfaceMaterialOffset(&si->SW_topsurface);
             initSurfaceMaterialOffset(&si->SW_middlesurface);
             initSurfaceMaterialOffset(&si->SW_bottomsurface);
         }
 
-        P_MapInitPolyobjs();
+        P_MapInitPolyobjs(map);
         return;
-    }
+        }
     case DDSMM_FINALIZE:
-    {
+        {
         gamemap_t* map = P_GetCurrentMap();
 
         // We are now finished with the game data, map object db.
@@ -2076,10 +2078,10 @@ void R_SetupMap(int mode, int flags)
 
         // Update all sectors. Set intial values of various tracked
         // and interpolated properties (lighting, smoothed planes etc).
-        for(i = 0; i < numSectors; ++i)
+        for(i = 0; i < map->numSectors; ++i)
         {
+            sector_t* sec = map->sectors[i];
             uint l;
-            sector_t* sec = sectors[i];
 
             R_UpdateSector(sec, true);
             for(l = 0; l < sec->planeCount; ++l)
@@ -2093,16 +2095,16 @@ void R_SetupMap(int mode, int flags)
             }
         }
 
-        for(i = 0; i < numSideDefs; ++i)
+        for(i = 0; i < map->numSideDefs; ++i)
         {
-            sidedef_t* si = sideDefs[i];
+            sidedef_t* si = map->sideDefs[i];
 
             initSurfaceMaterialOffset(&si->SW_topsurface);
             initSurfaceMaterialOffset(&si->SW_middlesurface);
             initSurfaceMaterialOffset(&si->SW_bottomsurface);
         }
 
-        P_MapInitPolyobjs();
+        P_MapInitPolyobjs(map);
 
         // Run any commands specified in Map Info.
         {
@@ -2168,9 +2170,9 @@ void R_SetupMap(int mode, int flags)
         // for free blocks in the entire zone and purge purgable blocks.
         Z_EnableFastMalloc(false);
         return;
-    }
+        }
     case DDSMM_AFTER_BUSY:
-    {
+        {
         gamemap_t* map = P_GetCurrentMap();
         ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
 
@@ -2181,19 +2183,22 @@ void R_SetupMap(int mode, int flags)
             R_SetupFog(mapInfo->fogStart, mapInfo->fogEnd,
                        mapInfo->fogDensity, mapInfo->fogColor);
         break;
-    }
+        }
     default:
         Con_Error("R_SetupMap: Unknown setup mode %i", mode);
     }
 }
 
-void R_ClearSectorFlags(void)
+void R_ClearSectorFlags(gamemap_t* map)
 {
     uint i;
 
-    for(i = 0; i < numSectors; ++i)
+    if(!map)
+        return;
+
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = sectors[i];
+        sector_t* sec = map->sectors[i];
 
         // Clear all flags that can be cleared before each frame.
         sec->frameFlags &= ~SIF_FRAME_CLEAR;
@@ -2224,7 +2229,7 @@ void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
  */
 boolean R_IsGlowingPlane(const plane_t* pln)
 {
-    material_t*         mat = pln->surface.material;
+    material_t* mat = pln->surface.material;
 
     return ((mat && (mat->flags & MATF_NO_DRAW)) || pln->glow > 0 ||
             IS_SKYSURFACE(&pln->surface));

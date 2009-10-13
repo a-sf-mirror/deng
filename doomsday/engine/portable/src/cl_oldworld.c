@@ -69,28 +69,29 @@
  */
 int Cl_ReadSectorDelta(void)
 {
-    short               num = Msg_ReadPackedShort();
-    sector_t*           sec;
-    int                 df;
+    short num = Msg_ReadPackedShort();
+    sector_t* sec;
+    int df;
+    gamemap_t* map = P_GetCurrentMap();
 
     // Sector number first (0 terminates).
     if(!num)
         return false;
 
-    sec = sectors[--num];
+    sec = map->sectors[--num];
 
     // Flags.
     df = Msg_ReadPackedShort();
 
     if(df & SDF_FLOOR_MATERIAL)
     {
-        lumpnum_t           lumpNum;
+        lumpnum_t lumpNum;
 
         // A bit convoluted; the delta is a server-side (flat) lump number.
         // @todo abandon this method of flat identification and use material identifiers.
         if((lumpNum = Cl_TranslateLump(Msg_ReadPackedShort())) != 0)
         {
-            material_t*         mat = Materials_ToMaterial(
+            material_t* mat = Materials_ToMaterial(
                 Materials_IndexForName(MN_FLATS, W_LumpName(lumpNum)));
 #if _DEBUG
 if(!mat)
@@ -103,12 +104,12 @@ if(!mat)
     }
     if(df & SDF_CEILING_MATERIAL)
     {
-        lumpnum_t           lumpNum;
+        lumpnum_t lumpNum;
 
         // A bit convoluted; the delta is a server-side (flat) lump number.
         if((lumpNum = Cl_TranslateLump(Msg_ReadPackedShort())) != 0)
         {
-            material_t*         mat = Materials_ToMaterial(
+            material_t* mat = Materials_ToMaterial(
                 Materials_IndexForName(MN_FLATS, W_LumpName(lumpNum)));
 #if _DEBUG
 if(!mat)
@@ -188,12 +189,12 @@ if(!mat)
     // Do we need to start any moving planes?
     if(df & (SDF_FLOOR_TARGET | SDF_FLOOR_SPEED))
     {
-        Cl_AddMover(num, MVT_FLOOR, sec->planes[PLN_FLOOR]->target,
+        Cl_AddMover(map, num, MVT_FLOOR, sec->planes[PLN_FLOOR]->target,
                     sec->planes[PLN_FLOOR]->speed);
     }
     if(df & (SDF_CEILING_TARGET | SDF_CEILING_SPEED))
     {
-        Cl_AddMover(num, MVT_CEILING, sec->planes[PLN_CEILING]->target,
+        Cl_AddMover(map, num, MVT_CEILING, sec->planes[PLN_CEILING]->target,
                     sec->planes[PLN_CEILING]->speed);
     }
 
@@ -211,22 +212,23 @@ if(!mat)
  */
 int Cl_ReadSideDelta(void)
 {
-    short               num = Msg_ReadPackedShort(); // \fixme we support > 32768 sidedefs!
-    sidedef_t*          sid;
-    int                 df;
+    short num = Msg_ReadPackedShort(); // \fixme we support > 32768 sidedefs!
+    sidedef_t* sid;
+    int df;
+    gamemap_t* map = P_GetCurrentMap();
 
     // Side number first (0 terminates).
     if(!num)
         return false;
 
-    sid = sideDefs[--num];
+    sid = map->sideDefs[--num];
 
     // Flags.
     df = Msg_ReadByte();
 
     if(df & SIDF_TOP_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
@@ -236,7 +238,7 @@ int Cl_ReadSideDelta(void)
     }
     if(df & SIDF_MID_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
@@ -246,7 +248,7 @@ int Cl_ReadSideDelta(void)
     }
     if(df & SIDF_BOTTOM_MATERIAL)
     {
-        material_t*         mat;
+        material_t* mat;
         /**
          * The delta is a server-side texture num.
          * \fixme What if client and server texture nums differ?
@@ -257,8 +259,8 @@ int Cl_ReadSideDelta(void)
 
     if(df & SIDF_LINE_FLAGS)
     {
-        byte                updatedFlags = Msg_ReadByte();
-        linedef_t*          line = R_GetLineForSide(num);
+        byte updatedFlags = Msg_ReadByte();
+        linedef_t* line = R_GetLineForSide(sid);
 
         if(line)
         {
@@ -320,15 +322,16 @@ Con_Printf("lineflag %i: %02x\n", (int) DMU_GetObjRecord(DMU_LINEDEF, line)->id,
  */
 int Cl_ReadPolyDelta(void)
 {
-    int                 df;
-    short               num = Msg_ReadPackedShort();
-    polyobj_t*          po;
+    int df;
+    short num = Msg_ReadPackedShort();
+    polyobj_t* po;
+    gamemap_t* map = P_GetCurrentMap();
 
     // Check the number. A zero terminates.
     if(!num)
         return false;
 
-    po = polyObjs[--num];
+    po = map->polyObjs[--num];
 
     // Flags.
     df = Msg_ReadPackedShort();
@@ -351,7 +354,7 @@ int Cl_ReadPolyDelta(void)
         po->destAngle = -1;
 
     // Update the polyobj's mover thinkers.
-    Cl_SetPolyMover(num, df & (PODF_DEST_X | PODF_DEST_Y | PODF_SPEED),
+    Cl_SetPolyMover(map, num, df & (PODF_DEST_X | PODF_DEST_Y | PODF_SPEED),
                     df & (PODF_DEST_ANGLE | PODF_ANGSPEED |
                           PODF_PERPETUAL_ROTATE));
 

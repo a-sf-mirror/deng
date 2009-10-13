@@ -245,10 +245,8 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the given subsector.
  */
-static boolean crossSubSector(uint subsectorIdx, losdata_t* los)
+static boolean crossSubsector(subsector_t* subsector, losdata_t* los)
 {
-    const subsector_t* subsector = subsectors[subsectorIdx];
-
     if(subsector->polyObj)
     {   // Check polyobj lines.
         polyobj_t* po = subsector->polyObj;
@@ -297,11 +295,11 @@ static boolean crossSubSector(uint subsectorIdx, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the node.
  */
-static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
+static boolean crossBSPNode(gamemap_t* map, unsigned int bspNum, losdata_t* los)
 {
     while(!(bspNum & NF_SUBSECTOR))
     {
-        const node_t* node = nodes[bspNum];
+        const node_t* node = map->nodes[bspNum];
         byte side = R_PointOnSide(FIX2FLT(los->trace.pos[VX]),
                                   FIX2FLT(los->trace.pos[VY]),
                                   &node->partition);
@@ -314,14 +312,14 @@ static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
         }
         else
         {   // No.
-            if(!crossBSPNode(node->children[side], los))
+            if(!crossBSPNode(map, node->children[side], los))
                 return 0; // Cross the starting side.
             else
                 bspNum = node->children[side^1]; // Cross the ending side.
         }
     }
 
-    return crossSubSector(bspNum & ~NF_SUBSECTOR, los);
+    return crossSubsector(map->subsectors[bspNum & ~NF_SUBSECTOR], los);
 }
 
 /**
@@ -338,6 +336,10 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
                          float bottomSlope, float topSlope, int flags)
 {
     losdata_t los;
+    gamemap_t* map = P_GetCurrentMap();
+
+    if(!map)
+        return true;
 
     los.flags = flags;
     los.startZ = from[VZ];
@@ -374,5 +376,5 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
     }
 
     validCount++;
-    return crossBSPNode(numNodes - 1, &los);
+    return crossBSPNode(map, map->numNodes - 1, &los);
 }

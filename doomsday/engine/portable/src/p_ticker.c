@@ -126,24 +126,26 @@ boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
  */
 void P_Ticker(timespan_t time)
 {
-    static trigger_t    fixed = { 1.0 / 35, 0 };
+    static trigger_t fixed = { 1.0 / 35, 0 };
+    gamemap_t* map;
 
     P_ControlTicker(time);
     Materials_Ticker(time);
 
-    if(!P_ThinkerListInited())
-        return; // Not initialized yet.
-
     if(!M_RunTrigger(&fixed, time))
         return;
 
-    // New ptcgens for planes?
-    P_CheckPtcPlanes();
-
     R_SkyTicker();
 
-    P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
+    map = P_GetCurrentMap();
+    if(map)
+    {
+        // New ptcgens for planes?
+        P_CheckPtcPlanes(map);
 
-    // Check all client mobjs.
-    Cl_MobjIterator(PIT_ClientMobjTicker, NULL);
+        P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
+
+        // Check all client mobjs.
+        Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);
+    }
 }

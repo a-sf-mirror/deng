@@ -122,10 +122,10 @@ boolean         P_PolyobjLinesBoxIteratorv(const arvec2_t box,
 
 // Lines and (Polyobj in bounding box)->lineDefs iterators.
 // Polyobj lines are iterated first.
-boolean         P_AllLinesBoxIterator(const float box[4],
+boolean         P_AllLinesBoxIterator(struct gamemap_s* map, const float box[4],
                                       boolean (*func) (linedef_t*, void*),
                                       void* data, boolean retObjRecord);
-boolean         P_AllLinesBoxIteratorv(const arvec2_t box,
+boolean         P_AllLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
                                        boolean (*func) (linedef_t*, void*),
                                        void* data, boolean retObjRecord);
 

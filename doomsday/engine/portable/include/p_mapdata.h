@@ -131,6 +131,10 @@ typedef struct lgridblock_s {
 
 typedef void* blockmap_t;
 
+typedef struct skyfix_s {
+    float           height;
+} skyfix_t;
+
 #include "halfedgeds.h"
 #include "p_polyob.h"
 #include "p_maptypes.h"
@@ -185,31 +189,7 @@ typedef struct {
     valuedb_t       db;
 } gameobjdata_t;
 
-/**
- * The map data arrays are accessible globally inside the engine.
- */
 extern char mapID[9];
-extern uint numVertexes;
-extern vertex_t** vertexes;
-
-extern uint numSegs;
-extern seg_t** segs;
-
-extern uint numSectors;
-extern sector_t** sectors;
-
-extern uint numSubsectors;
-extern subsector_t** subsectors;
-
-extern uint numNodes;
-extern node_t** nodes;
-
-extern uint numLineDefs;
-extern linedef_t** lineDefs;
-
-extern uint numSideDefs;
-extern sidedef_t** sideDefs;
-
 extern watchedplanelist_t* watchedPlaneList;
 extern surfacelist_t* movingSurfaceList;
 extern surfacelist_t* decoratedSurfaceList;
@@ -264,6 +244,8 @@ typedef struct gamemap_s {
 
     float           globalGravity; // Gravity for the current map.
     int             ambientLightLevel; // Ambient lightlevel for the current map.
+
+    skyfix_t        skyFix[2];
 
     struct {
         dynlist_t       linkList; // Surface-projected lumobjs (dynlights).

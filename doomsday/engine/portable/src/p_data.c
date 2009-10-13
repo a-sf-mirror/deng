@@ -66,27 +66,6 @@ extern boolean mapSetup;
  * These map data arrays are internal to the engine.
  */
 char mapID[9]; // Name by which the game referred to the current map.
-uint numVertexes = 0;
-vertex_t** vertexes = NULL;
-
-uint numSectors = 0;
-sector_t** sectors = NULL;
-
-uint numSegs = 0;
-seg_t** segs = NULL;
-
-uint numSubsectors = 0;
-subsector_t** subsectors = NULL;
-
-uint numNodes = 0;
-node_t** nodes = NULL;
-
-uint numLineDefs = 0;
-linedef_t** lineDefs = NULL;
-
-uint numSideDefs = 0;
-sidedef_t** sideDefs = NULL;
-
 watchedplanelist_t* watchedPlaneList = NULL;
 surfacelist_t* movingSurfaceList = NULL;
 surfacelist_t* decoratedSurfaceList = NULL;
@@ -159,33 +138,9 @@ void P_SetCurrentMap(gamemap_t* map)
 {
     strncpy(mapID, map->mapID, sizeof(mapID));
 
-    numVertexes = map->numVertexes;
-    vertexes = map->vertexes;
-
-    numSectors = map->numSectors;
-    sectors = map->sectors;
-
-    numLineDefs = map->numLineDefs;
-    lineDefs = map->lineDefs;
-
-    numSideDefs = map->numSideDefs;
-    sideDefs = map->sideDefs;
-
-    numSubsectors = map->numSubsectors;
-    subsectors = map->subsectors;
-
-    numSegs = map->numSegs;
-    segs = map->segs;
-
-    numNodes = map->numNodes;
-    nodes = map->nodes;
-
     watchedPlaneList = &map->watchedPlaneList;
     movingSurfaceList = &map->movingSurfaceList;
     decoratedSurfaceList = &map->decoratedSurfaceList;
-
-    numPolyObjs = map->numPolyObjs;
-    polyObjs = map->polyObjs;
 
     mobjNodes = &map->mobjNodes;
     lineNodes = &map->lineNodes;
@@ -206,7 +161,7 @@ void P_DestroyMap(gamemap_t* map)
     if(!map)
         return;
 
-    DL_DestroyDynlights(map);
+    DL_DestroyDynlights(&map->dlights.linkList);
 
     /**
      * @todo handle vertexillum allocation/destruction along with the surfaces,
@@ -477,8 +432,9 @@ boolean P_LoadMap(const char* mapID)
 
     if(1)//(map = DAM_LoadMap(mapID)))
     {
-        ded_sky_t*          skyDef = NULL;
-        ded_mapinfo_t*      mapInfo;
+        ded_sky_t* skyDef = NULL;
+        ded_mapinfo_t* mapInfo;
+        uint i;
 
         SBE_InitForMap(map);
 
@@ -534,25 +490,22 @@ boolean P_LoadMap(const char* mapID)
         // currentMap to be set first.
         P_SetCurrentMap(map);
 
-        R_InitSectorShadows();
+        map = P_GetCurrentMap();
+
+        R_InitSectorShadows(map);
 
         {
-        uint                startTime = Sys_GetRealTime();
+        uint startTime = Sys_GetRealTime();
 
-        R_InitSkyFix();
+        R_InitSkyFix(map);
 
         // How much time did we spend?
-        VERBOSE(Con_Message
-                ("  InitialSkyFix: Done in %.2f seconds.\n",
-                 (Sys_GetRealTime() - startTime) / 1000.0f));
+        VERBOSE(Con_Message("  InitialSkyFix: Done in %.2f seconds.\n",
+                            (Sys_GetRealTime() - startTime) / 1000.0f));
         }
-        }
-        {
-        uint                i;
-        gamemap_t*          map = P_GetCurrentMap();
 
         // Init the thinker lists (public and private).
-        P_InitThinkerLists(0x1 | 0x2);
+        P_InitThinkerLists(map, 0x1 | 0x2);
 
         // Tell shadow bias to initialize the bias light sources.
         SB_InitForMap(map);
@@ -564,7 +517,7 @@ boolean P_LoadMap(const char* mapID)
         // Invalidate old cmds and init player values.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t           *plr = &ddPlayers[i];
+            player_t* plr = &ddPlayers[i];
 
             if(isServer && plr->shared.inGame)
                 clients[i].runTime = SECONDS_TO_TICKS(gameTime);
@@ -579,15 +532,15 @@ boolean P_LoadMap(const char* mapID)
         // Texture animations should begin from their first step.
         Materials_RewindAnimationGroups();
 
-        R_InitObjLinksForMap();
-        LO_InitForMap(); // Lumobj management.
+        R_InitObjLinksForMap(map);
+        LO_InitForMap(map); // Lumobj management.
         VL_InitForMap(); // Converted vlights (from lumobjs) management.
 
         // Init Particle Generator links.
-        P_PtcInitForMap();
+        P_PtcInitForMap(map);
 
         // Initialize the lighting grid.
-        LG_Init();
+        LG_Init(map);
 
         if(!isDedicated)
             R_InitRendVerticesPool();
@@ -603,12 +556,12 @@ boolean P_LoadMap(const char* mapID)
  * @param identifer     If objName is @c NULL, compare using this unique identifier.
  * @param objName       If not @c NULL, compare using this unique name.
  */
-gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char *objName,
+gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char* objName,
                                     boolean canCreate)
 {
-    uint                i;
-    size_t              len;
-    gamemapobjdef_t*    def;
+    uint i;
+    size_t len;
+    gamemapobjdef_t* def;
 
     if(objName)
         len = strlen(objName);

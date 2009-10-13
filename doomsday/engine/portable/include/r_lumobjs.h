@@ -89,13 +89,12 @@ extern int      useMobjAutoLights;
 void            LO_Register(void);
 
 // Setup.
-void            LO_InitForMap(void);
+void            LO_InitForMap(struct gamemap_s* map);
 void            LO_Clear(void); // 'Physically' destroy the tables.
 
 // Action.
-void            LO_ClearForFrame(void);
-void            LO_InitForNewFrame(void);
-void            LO_AddLuminousMobjs(void);
+void            LO_ClearForFrame(struct gamemap_s* map);
+void            LO_AddLuminousMobjs(struct gamemap_s* map);
 void            LO_BeginFrame(void);
 
 void            LO_UnlinkMobjLumobjs(cvar_t* var);

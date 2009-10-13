@@ -26,8 +26,8 @@
  * r_objlink.h: Objlink management.
  */
 
-#ifndef __DOOMSDAY_OBJLINK_H__
-#define __DOOMSDAY_OBJLINK_H__
+#ifndef DOOMSDAY_OBJLINK_H
+#define DOOMSDAY_OBJLINK_H
 
 typedef enum {
     OT_MOBJ,
@@ -35,13 +35,13 @@ typedef enum {
     NUM_OBJ_TYPES
 } objtype_t;
 
-void            R_InitObjLinksForMap(void);
-void            R_ClearObjLinksForFrame(void);
+void            R_InitObjLinksForMap(struct gamemap_s* map);
+void            R_ClearObjLinksForFrame(struct gamemap_s* map);
 
 void            R_ObjLinkCreate(void* obj, objtype_t type);
-void            R_LinkObjs(void);
+void            R_LinkObjs(struct gamemap_s* map);
 void            R_InitForSubsector(subsector_t* subsector);
-void            R_InitForNewFrame(void);
+void            R_InitForNewFrame(struct gamemap_s* map);
 
 typedef struct {
     void*               obj;
@@ -53,4 +53,4 @@ boolean         RIT_LinkObjToSubsector(subsector_t* subsector, void* params);
 boolean         R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
                                            boolean (*func) (void*, void*),
                                            void* data);
-#endif
+#endif /* DOOMSDAY_OBJLINK_H */

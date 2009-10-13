@@ -633,32 +633,66 @@ void* P_DummyExtraData(void* dummy)
 
 void* P_GetVariable(int value)
 {
+    static uint count = 0;
+
     switch(value)
     {
     case DMU_SECTOR_COUNT:
-        return &numSectors;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numSectors;
+        return &count;
+        }
     case DMU_LINE_COUNT:
-        return &numLineDefs;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numLineDefs;
+        return &count;
+        }
     case DMU_SIDE_COUNT:
-        return &numSideDefs;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numSideDefs;
+        return &count;
+        }
     case DMU_VERTEX_COUNT:
-        return &numVertexes;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numVertexes;
+        return &count;
+        }
     case DMU_POLYOBJ_COUNT:
-        return &numPolyObjs;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numPolyObjs;
+        return &count;
+        }
     case DMU_SEG_COUNT:
-        return &numSegs;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numSegs;
+        return &count;
+        }
     case DMU_SUBSECTOR_COUNT:
-        return &numSubsectors;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numSubsectors;
+        return NULL;
+        }
     case DMU_NODE_COUNT:
-        return &numNodes;
-
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(map)
+            return &map->numNodes;
+        return &count;
+        }
     default:
         break;
     }
@@ -880,40 +914,54 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
     switch(type)
     {
     case DMU_VERTEX:
-        if(index < numVertexes)
-            return callback(DMU_GetObjRecord(DMU_VERTEX, vertexes[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numVertexes)
+            return callback(DMU_GetObjRecord(DMU_VERTEX, map->vertexes[index]), context);
         break;
-
+        }
     case DMU_SEG:
-        if(index < numSegs)
-            return callback(DMU_GetObjRecord(DMU_SEG, segs[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numSegs)
+            return callback(DMU_GetObjRecord(DMU_SEG, map->segs[index]), context);
         break;
-
+        }
     case DMU_LINEDEF:
-        if(index < numLineDefs)
-            return callback(DMU_GetObjRecord(DMU_LINEDEF, lineDefs[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numLineDefs)
+            return callback(DMU_GetObjRecord(DMU_LINEDEF, map->lineDefs[index]), context);
         break;
-
+        }
     case DMU_SIDEDEF:
-        if(index < numSideDefs)
-            return callback(DMU_GetObjRecord(DMU_SIDEDEF, sideDefs[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numSideDefs)
+            return callback(DMU_GetObjRecord(DMU_SIDEDEF, map->sideDefs[index]), context);
         break;
-
+        }
     case DMU_NODE:
-        if(index < numNodes)
-            return callback(DMU_GetObjRecord(DMU_NODE, nodes[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numNodes)
+            return callback(DMU_GetObjRecord(DMU_NODE, map->nodes[index]), context);
         break;
-
+        }
     case DMU_SUBSECTOR:
-        if(index < numSubsectors)
-            return callback(DMU_GetObjRecord(DMU_SUBSECTOR, subsectors[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numSubsectors)
+            return callback(DMU_GetObjRecord(DMU_SUBSECTOR, map->subsectors[index]), context);
         break;
-
+        }
     case DMU_SECTOR:
-        if(index < numSectors)
-            return callback(DMU_GetObjRecord(DMU_SECTOR, sectors[index]), context);
+        {
+        gamemap_t* map = P_GetCurrentMap();
+        if(index < map->numSectors)
+            return callback(DMU_GetObjRecord(DMU_SECTOR, map->sectors[index]), context);
         break;
-
+        }
     case DMU_PLANE:
         Con_Error("P_Callback: %s cannot be referenced by id alone (sector is unknown).\n",
                   DMU_Str(type));

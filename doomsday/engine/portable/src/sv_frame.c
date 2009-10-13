@@ -194,10 +194,10 @@ if(totalFrameCount > 0)
  */
 void Sv_WriteMobjDelta(const void* deltaPtr)
 {
-    const mobjdelta_t*  delta = deltaPtr;
-    const dt_mobj_t*    d = &delta->mo;
-    int                 df = delta->delta.flags;
-    byte                moreFlags = 0;
+    const mobjdelta_t* delta = deltaPtr;
+    const dt_mobj_t* d = &delta->mo;
+    int df = delta->delta.flags;
+    byte moreFlags = 0;
 
     // Do we have fast momentum?
     if(fabs(d->mom[MX]) >= MOM_FAST_LIMIT ||

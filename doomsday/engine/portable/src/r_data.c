@@ -2393,6 +2393,10 @@ void R_PrecacheMap(void)
     float startTime;
     material_t* mat, **matPresent;
     int numMaterials;
+    gamemap_t* map = P_GetCurrentMap();
+
+    if(!map)
+        return;
 
     // Don't precache when playing demo.
     if(isDedicated || playback)
@@ -2408,9 +2412,9 @@ void R_PrecacheMap(void)
     matPresent = M_Calloc(sizeof(material_t*) * numMaterials);
     n = 0;
 
-    for(i = 0; i < numSideDefs; ++i)
+    for(i = 0; i < map->numSideDefs; ++i)
     {
-        sidedef_t* side = sideDefs[i];
+        sidedef_t* side = map->sideDefs[i];
 
         mat = side->SW_topmaterial;
         if(mat && !isInList((void**) matPresent, n, mat))
@@ -2425,9 +2429,9 @@ void R_PrecacheMap(void)
             matPresent[n++] = mat;
     }
 
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = sectors[i];
+        sector_t* sec = map->sectors[i];
 
         for(j = 0; j < sec->planeCount; ++j)
         {
@@ -2440,25 +2444,25 @@ void R_PrecacheMap(void)
     // Precache sprites?
     if(precacheSprites)
     {
-        int                 i;
+        int i;
 
         for(i = 0; i < numSprites; ++i)
         {
-            spritedef_t*        sprDef = &sprites[i];
+            spritedef_t* sprDef = &sprites[i];
 
-            if(!P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
+            if(!P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
             {   // This sprite is used by some state of at least one mobj.
-                int                 j;
+                int j;
 
                 // Precache all the frames.
                 for(j = 0; j < sprDef->numFrames; ++j)
                 {
-                    int                 k;
-                    spriteframe_t*      sprFrame = &sprDef->spriteFrames[j];
+                    int k;
+                    spriteframe_t* sprFrame = &sprDef->spriteFrames[j];
 
                     for(k = 0; k < 8; ++k)
                     {
-                        material_t*         mat = sprFrame->mats[k];
+                        material_t* mat = sprFrame->mats[k];
 
                         if(mat && !isInList((void**) matPresent, n, mat))
                             matPresent[n++] = mat;
@@ -2482,7 +2486,7 @@ void R_PrecacheMap(void)
     // Precache model skins?
     if(useModels && precacheSkins)
     {
-        P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
+        P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
     }
 
     // Sky models usually have big skins.
@@ -2494,12 +2498,11 @@ void R_PrecacheMap(void)
 
 detailtex_t* R_CreateDetailTexture(const ded_detailtexture_t* def)
 {
-    char                name[9];
-    const gltexture_t*  glTex;
-    detailtex_t*        dTex;
-    lumpnum_t           lump = W_CheckNumForName(def->detailLump.path);
-    const char*         external =
-        (def->isExternal? def->detailLump.path : NULL);
+    char name[9];
+    const gltexture_t* glTex;
+    detailtex_t* dTex;
+    lumpnum_t lump = W_CheckNumForName(def->detailLump.path);
+    const char* external = (def->isExternal? def->detailLump.path : NULL);
 
     // Have we already created one for this?
     if((dTex = R_GetDetailTexture(lump, external)))

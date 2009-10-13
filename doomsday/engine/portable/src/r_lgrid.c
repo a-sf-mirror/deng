@@ -117,9 +117,9 @@ static void addIndexBit(int x, int y, uint* bitfield, int* count,
 /**
  * Initialize the light map->lg.grid for the current map.
  */
-void LG_Init(void)
+void LG_Init(gamemap_t* map)
 {
-    uint                startTime = Sys_GetRealTime();
+    uint                startTime;
 
 #define MSFACTORS 7
     typedef struct lgsamplepoint_s {
@@ -141,7 +141,9 @@ void LG_Init(void)
 
     sector_t**          ssamples;
     sector_t**          blkSampleSectors;
-    gamemap_t*          map = P_GetCurrentMap();
+
+    if(!map)
+        return;
 
     if(!lgEnabled)
     {
@@ -149,6 +151,7 @@ void LG_Init(void)
         return;
     }
 
+    startTime = Sys_GetRealTime();
     map->lg.needsUpdate = true;
 
     // Allocate the map->lg.grid.
@@ -412,9 +415,9 @@ void LG_Init(void)
         M_Free(sampleResults);
 
     // Find the blocks of all sectors.
-    for(s = 0; s < numSectors; ++s)
+    for(s = 0; s < map->numSectors; ++s)
     {
-        sector_t* sector = sectors[s];
+        sector_t* sector = map->sectors[s];
 
         // Clear the bitfields.
         memset(indexBitfield, 0, bitfieldSize);
@@ -604,9 +607,9 @@ void LG_MarkAllForUpdate(cvar_t* unused)
         return;
 
     // Mark all blocks and contributors.
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        LG_SectorChanged(sectors[i]);
+        LG_SectorChanged(map->sectors[i]);
     }
 }
 
@@ -700,9 +703,9 @@ static boolean LG_BlockNeedsUpdate(int x, int y)
  * Update the map->lg.grid by finding the strongest light source in each grid
  * block.
  */
-void LG_Update(void)
+void LG_Update(gamemap_t* map)
 {
-    static const float  factors[5 * 5] =
+    static const float factors[5 * 5] =
     {
         .1f, .2f, .25f, .2f, .1f,
         .2f, .4f, .5f, .4f, .2f,
@@ -711,15 +714,14 @@ void LG_Update(void)
         .1f, .2f, .25f, .2f, .1f
     };
 
-    lgridblock_t*       block, *lastBlock, *other;
-    int                 x, y, a, b;
-    sector_t*           sector;
-    const float*        color;
-    int                 bias, height;
-    gamemap_t*          map = P_GetCurrentMap();
+    lgridblock_t* block, *lastBlock, *other;
+    int x, y, a, b;
+    sector_t* sector;
+    const float* color;
+    int bias, height;
 
 #ifdef DD_PROFILE
-    static int          i;
+    static int i;
 
     if(++i > 40)
     {
@@ -841,12 +843,14 @@ END_PROF( PROF_GRID_UPDATE );
  * @param point         3D point.
  * @param color         Evaluated color of the point (return value).
  */
-void LG_Evaluate(const float* point, float* color)
+void LG_Evaluate(gamemap_t* map, const float* point, float* color)
 {
-    int                 x, y, i;
-    float               dz = 0, dimming;
-    lgridblock_t*        block;
-    gamemap_t*          map = P_GetCurrentMap();
+    int x, y, i;
+    float dz = 0, dimming;
+    lgridblock_t* block;
+
+    if(!map)
+        return;
 
     if(!map->lg.inited)
     {
@@ -929,16 +933,15 @@ void LG_Evaluate(const float* point, float* color)
 /**
  * Draw the map->lg.grid in 2D HUD mode.
  */
-void LG_Debug(void)
+void LG_Debug(gamemap_t* map)
 {
-    static int          blink = 0;
+    static int blink = 0;
 
-    lgridblock_t*       block;
-    int                 x, y;
-    int                 vx, vy;
-    size_t              vIdx, blockIdx;
-    ddplayer_t*         ddpl = (viewPlayer? &viewPlayer->shared : NULL);
-    gamemap_t*          map = P_GetCurrentMap();
+    lgridblock_t* block;
+    int x, y;
+    int vx, vy;
+    size_t vIdx, blockIdx;
+    ddplayer_t* ddpl = (viewPlayer? &viewPlayer->shared : NULL);
 
     if(!map || !map->lg.inited || !lgShowDebug)
         return;

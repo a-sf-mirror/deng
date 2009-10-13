@@ -311,7 +311,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         if(useBias)
         {
             // Evaluate the position in the light grid.
-            LG_Evaluate(spr->center, params->ambientColor);
+            LG_Evaluate(P_GetCurrentMap(), spr->center, params->ambientColor);
         }
         else
         {
@@ -691,7 +691,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
 
         if(useBias)
         {
-            LG_Evaluate(params->center, params->ambientColor);
+            LG_Evaluate(P_GetCurrentMap(), params->center, params->ambientColor);
         }
         else
         {

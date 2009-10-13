@@ -119,7 +119,7 @@ void Cl_CleanUp(void)
 
     Cl_DestroyClientMobjs();
     Cl_InitPlayers();
-    Cl_RemoveMovers();
+    Cl_RemoveMovers(P_GetCurrentMap());
     GL_SetFilter(false);
 }
 
@@ -129,7 +129,7 @@ void Cl_CleanUp(void)
  */
 void Cl_SendHello(void)
 {
-    char                buf[256];
+    char buf[256];
 
     Msg_Begin(PCL_HELLO2);
     Msg_WriteLong(clientID);
@@ -148,8 +148,8 @@ Con_Message("Cl_SendHello: game mode = %s\n", buf);
 
 void Cl_AnswerHandshake(handshake_packet_t* pShake)
 {
-    int                 i;
-    handshake_packet_t  shake;
+    int i;
+    handshake_packet_t shake;
 
     // Copy the data to a buffer of our own.
     memcpy(&shake, pShake, sizeof(shake));
@@ -207,8 +207,8 @@ void Cl_AnswerHandshake(handshake_packet_t* pShake)
     gx.NetPlayerEvent(consolePlayer, DDPE_ARRIVAL, 0);
 
     // Prepare the client-side data.
-    Cl_InitClientMobjs();
-    Cl_InitMovers();
+    //Cl_InitClientMobjs();
+    //Cl_InitMovers();
 
     // Get ready for ticking.
     DD_ResetTimer();
@@ -218,8 +218,8 @@ void Cl_AnswerHandshake(handshake_packet_t* pShake)
 
 void Cl_HandlePlayerInfo(playerinfo_packet_t* info)
 {
-    player_t*           plr;
-    boolean             present;
+    player_t* plr;
+    boolean present;
 
     Con_Printf("Cl_HandlePlayerInfo: console:%i name:%s\n", info->console,
                info->name);

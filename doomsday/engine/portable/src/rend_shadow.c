@@ -218,7 +218,7 @@ static void processMobjShadow(mobj_t* mo)
 #undef SHADOWZOFFSET
 }
 
-void Rend_RenderShadows(void)
+void Rend_RenderShadows(gamemap_t* map)
 {
     uint i;
 
@@ -226,9 +226,9 @@ void Rend_RenderShadows(void)
         return;
 
     // Check all mobjs in all visible sectors.
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = sectors[i];
+        sector_t* sec = map->sectors[i];
         mobj_t* mo;
 
         if(!(sec->frameFlags & SIF_VISIBLE))

@@ -508,7 +508,7 @@ void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
                   "(max pkt size %ul).\n", (unsigned long) size,
                   (unsigned long) sizeof(short));
     {
-    short           packetSize = SHORT(size);
+    short packetSize = SHORT(size);
     memcpy(transmissionBuffer, &packetSize, 2);
     }
     memcpy(transmissionBuffer + 2, data, size);

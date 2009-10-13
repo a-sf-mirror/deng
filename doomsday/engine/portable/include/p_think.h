@@ -26,11 +26,11 @@
  * p_think.h: Thinkers
  */
 
-#ifndef __DOOMSDAY_THINKER_H__
-#define __DOOMSDAY_THINKER_H__
+#ifndef DOOMSDAY_THINKER_H
+#define DOOMSDAY_THINKER_H
 
-void            P_InitThinkerLists(byte flags);
-boolean         P_ThinkerListInited(void);
+void            P_InitThinkerLists(struct gamemap_s* map, byte flags);
+boolean         P_ThinkerListInited(struct gamemap_s* map);
 
 /**
  * @defgroup iterateThinkerFlags Iterate Thinker Flags
@@ -41,15 +41,15 @@ boolean         P_ThinkerListInited(void);
 #define ITF_PRIVATE         0x2
 /*@}*/
 
-boolean         P_IterateThinkers(think_t func, byte flags,
+boolean         P_IterateThinkers(struct gamemap_s* map, think_t func, byte flags,
                                   int (*callback) (void* p, void*),
                                   void* context);
 
 void            P_ThinkerAdd(thinker_t* th, boolean makePublic);
 void            P_ThinkerRemove(thinker_t* th);
 
-void            P_SetMobjID(thid_t id, boolean state);
-boolean         P_IsUsedMobjID(thid_t id);
+void            P_SetMobjID(struct gamemap_s* map, thid_t id, boolean state);
+boolean         P_IsUsedMobjID(struct gamemap_s* map, thid_t id);
 
 boolean         P_IsMobjThinker(thinker_t* th, void*);
 
@@ -59,4 +59,5 @@ void            DD_RunThinkers(void);
 void            DD_ThinkerAdd(thinker_t* th);
 void            DD_ThinkerRemove(thinker_t* th);
 void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
-#endif
+
+#endif /* DOOMSDAY_THINKER_H */

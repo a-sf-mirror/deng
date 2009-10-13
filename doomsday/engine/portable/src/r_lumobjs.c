@@ -164,11 +164,11 @@ static uint lumToIndex(const lumobj_t* lum)
     return 0;
 }
 
-void LO_InitForMap(void)
+void LO_InitForMap(gamemap_t* map)
 {
     // First initialize the subsector links (root pointers).
     subsectorLumObjList =
-        Z_Calloc(sizeof(*subsectorLumObjList) * numSubsectors, PU_MAPSTATIC, 0);
+        Z_Calloc(sizeof(*subsectorLumObjList) * map->numSubsectors, PU_MAPSTATIC, 0);
 
     maxLuminous = 0;
     luminousBlockSet = NULL; // Will have already been free'd.
@@ -205,7 +205,7 @@ void LO_Clear(void)
  * Called at the begining of each frame (iff the render lists are not frozen)
  * by R_BeginWorldFrame().
  */
-void LO_ClearForFrame(void)
+void LO_ClearForFrame(gamemap_t* map)
 {
 #ifdef DD_PROFILE
     static int i;
@@ -218,10 +218,13 @@ void LO_ClearForFrame(void)
     }
 #endif
 
+    if(!map)
+        return;
+
     // Start reusing nodes from the first one in the list.
     listNodeCursor = listNodeFirst;
     if(subsectorLumObjList)
-        memset(subsectorLumObjList, 0, sizeof(lumlistnode_t*) * numSubsectors);
+        memset(subsectorLumObjList, 0, sizeof(lumlistnode_t*) * map->numSubsectors);
     numLuminous = 0;
 }
 
@@ -689,18 +692,21 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
 /**
  * Create lumobjs for all sector-linked mobjs who want them.
  */
-void LO_AddLuminousMobjs(void)
+void LO_AddLuminousMobjs(gamemap_t* map)
 {
     uint i;
     
+    if(!map)
+        return;
+
     if(!useDynlights && !useWallGlow)
         return;
 
 BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
 
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sector = sectors[i];
+        sector_t* sector = map->sectors[i];
 
         if(useDynlights)
         {
@@ -927,7 +933,7 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
     if(!useDynlights)
     {
         // Mobjs are always public.
-        P_IterateThinkers(gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
+        P_IterateThinkers(P_GetCurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
     }
 }
 

@@ -62,9 +62,9 @@ void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
 void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
                     const float color3f[3], float alpha);
 
-void Rend_RenderNormals(void);
-void Rend_Vertexes(void);
-void Rend_RenderBoundingBoxes(void);
+void Rend_RenderNormals(gamemap_t* map);
+void Rend_Vertexes(gamemap_t* map);
+void Rend_RenderBoundingBoxes(gamemap_t* map);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -2132,10 +2132,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Floor.
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_floorsurface)) &&
-               ffloor > skyFix[PLN_FLOOR].height)
+               ffloor > P_GetCurrentMap()->skyFix[PLN_FLOOR].height)
             {
                 vTL[VZ] = vTR[VZ] = ffloor;
-                vBL[VZ] = vBR[VZ] = skyFix[PLN_FLOOR].height;
+                vBL[VZ] = vBR[VZ] = P_GetCurrentMap()->skyFix[PLN_FLOOR].height;
 
                 if(devSkyMode)
                     prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2150,9 +2150,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Ceiling.
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_ceilsurface)) &&
-               fceil < skyFix[PLN_CEILING].height)
+               fceil < P_GetCurrentMap()->skyFix[PLN_CEILING].height)
             {
-                vTL[VZ] = vTR[VZ] = skyFix[PLN_CEILING].height;
+                vTL[VZ] = vTR[VZ] = P_GetCurrentMap()->skyFix[PLN_CEILING].height;
                 vBL[VZ] = vBR[VZ] = fceil;
 
                 if(devSkyMode)
@@ -2173,10 +2173,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                IS_SKYSURFACE(&backsec->SP_floorsurface))
             {
-                if(bfloor > skyFix[PLN_FLOOR].height)
+                if(bfloor > P_GetCurrentMap()->skyFix[PLN_FLOOR].height)
                 {
                     vTL[VZ] = vTR[VZ] = bfloor;
-                    vBL[VZ] = vBR[VZ] = skyFix[PLN_FLOOR].height;
+                    vBL[VZ] = vBR[VZ] = P_GetCurrentMap()->skyFix[PLN_FLOOR].height;
 
                     if(devSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2196,9 +2196,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                IS_SKYSURFACE(&backsec->SP_ceilsurface))
             {
-                if(bceil < skyFix[PLN_CEILING].height)
+                if(bceil < P_GetCurrentMap()->skyFix[PLN_CEILING].height)
                 {
-                    vTL[VZ] = vTR[VZ] = skyFix[PLN_CEILING].height;
+                    vTL[VZ] = vTR[VZ] = P_GetCurrentMap()->skyFix[PLN_CEILING].height;
                     vBL[VZ] = vBR[VZ] = bceil;
 
                     if(devSkyMode)
@@ -2402,10 +2402,9 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
     }
 }
 
-static void Rend_RenderSubSector(uint subidx)
+static void Rend_RenderSubSector(subsector_t* subsector)
 {
     uint i;
-    subsector_t* subsector = subsectors[subidx];
     sector_t* sect;
     float sceil, sfloor;
 
@@ -2767,7 +2766,7 @@ static void Rend_RenderSubSector(uint subidx)
                 return;
 
             if(plane->type != PLN_MID)
-                height = skyFix[plane->type].height;
+                height = P_GetCurrentMap()->skyFix[plane->type].height;
             else
                 height = plane->visHeight;
         }
@@ -2824,7 +2823,7 @@ static void Rend_RenderSubSector(uint subidx)
          * real "physical" height of any sky masked planes that are
          * drawn at a different height due to the skyFix.
          */
-        if(sect->SP_floorvisheight > skyFix[PLN_FLOOR].height &&
+        if(sect->SP_floorvisheight > P_GetCurrentMap()->skyFix[PLN_FLOOR].height &&
            IS_SKYSURFACE(&sect->SP_floorsurface))
         {
             vec3_t normal;
@@ -2849,7 +2848,7 @@ static void Rend_RenderSubSector(uint subidx)
                              plane->planeID, 2);
         }
 
-        if(sect->SP_ceilvisheight < skyFix[PLN_CEILING].height &&
+        if(sect->SP_ceilvisheight < P_GetCurrentMap()->skyFix[PLN_CEILING].height &&
            IS_SKYSURFACE(&sect->SP_ceilsurface))
         {
             vec3_t normal;
@@ -2871,7 +2870,7 @@ static void Rend_RenderSubSector(uint subidx)
     }
 }
 
-static void Rend_RenderNode(uint bspnum)
+static void Rend_RenderNode(gamemap_t* map, uint bspnum)
 {
     // If the clipper is full we're pretty much done. This means no geometry
     // will be visible in the distance because every direction has already been
@@ -2882,15 +2881,15 @@ static void Rend_RenderNode(uint bspnum)
     if(bspnum & NF_SUBSECTOR)
     {
         // We've arrived at a subsector. Render it.
-        Rend_RenderSubSector(bspnum & ~NF_SUBSECTOR);
+        Rend_RenderSubSector(map->subsectors[bspnum & ~NF_SUBSECTOR]);
     }
     else
     {   // Descend deeper into the nodes.
-        node_t* node = nodes[bspnum];
+        node_t* node = map->nodes[bspnum];
         byte side = R_PointOnSide(viewX, viewY, &node->partition);
 
-        Rend_RenderNode(node->children[side]); // Recursively render front space.
-        Rend_RenderNode(node->children[side ^ 1]); // ...and back space.
+        Rend_RenderNode(map, node->children[side]); // Recursively render front space.
+        Rend_RenderNode(map, node->children[side ^ 1]); // ...and back space.
     }
 }
 
@@ -2922,7 +2921,7 @@ void Rend_RenderMap(gamemap_t* map)
         Rend_ParticleInitForNewFrame();
 
         // Make vissprites of all the visible decorations.
-        Rend_ProjectDecorations();
+        Rend_ProjectDecorations(map);
 
         // Recycle the vlight lists. Currently done here as the lists are
         // not shared by all viewports.
@@ -2935,7 +2934,7 @@ void Rend_RenderMap(gamemap_t* map)
              * projections are sensitive to distance from the viewer
              * (e.g. some may fade out when far away).
              */
-            DL_DestroyDynlights(map);
+            DL_DestroyDynlights(&map->dlights.linkList);
             DL_ClearDynlists();
         }
 
@@ -2958,17 +2957,17 @@ void Rend_RenderMap(gamemap_t* map)
 
         // We don't want subsector clipchecking for the first subsector.
         firstsubsector = true;
-        Rend_RenderNode(numNodes - 1);
+        Rend_RenderNode(map, map->numNodes - 1);
 
-        Rend_RenderShadows();
+        Rend_RenderShadows(map);
     }
     RL_RenderAllLists();
 
     // Draw various debugging displays:
-    Rend_RenderNormals(); // World surface normals.
+    Rend_RenderNormals(map); // World surface normals.
     LO_DrawLumobjs(); // Lumobjs.
-    Rend_RenderBoundingBoxes(); // Mobj bounding boxes.
-    Rend_Vertexes(); // World vertex positions/indices.
+    Rend_RenderBoundingBoxes(map); // Mobj bounding boxes.
+    Rend_Vertexes(map); // World vertex positions/indices.
     Rend_RenderGenerators(); // Particle generator origins.
 
     if(!freezeRLs)
@@ -3009,12 +3008,11 @@ static void drawNormal(vec3_t origin, vec3_t normal, float scalar)
 /**
  * Draw the surface normals, primarily for debug.
  */
-void Rend_RenderNormals(void)
+void Rend_RenderNormals(gamemap_t* map)
 {
 #define NORM_TAIL_LENGTH    (20)
 
     uint i;
-    gamemap_t* map;
 
     if(!devSurfaceNormals)
         return;
@@ -3022,7 +3020,6 @@ void Rend_RenderNormals(void)
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_CULL_FACE);
 
-    map = P_GetCurrentMap();
     for(i = 0; i < map->numSegs; ++i)
     {
         seg_t* seg = map->segs[i];
@@ -3051,8 +3048,8 @@ void Rend_RenderNormals(void)
         }
         else
         {
-            sector_t*           frontSec = ((subsector_t*) hEdge->face->data)->sector,
-                               *backSec = ((subsector_t*) hEdge->twin->face->data)->sector;
+            sector_t* frontSec = ((subsector_t*) hEdge->face->data)->sector;
+            sector_t* backSec = ((subsector_t*) hEdge->twin->face->data)->sector;
 
             if(side->SW_middlesurface.material)
             {
@@ -3092,9 +3089,9 @@ void Rend_RenderNormals(void)
         }
     }
 
-    for(i = 0; i < numSubsectors; ++i)
+    for(i = 0; i < map->numSubsectors; ++i)
     {
-        const subsector_t* subsector = subsectors[i];
+        const subsector_t* subsector = map->subsectors[i];
         uint j;
 
         for(j = 0; j < subsector->sector->planeCount; ++j)
@@ -3106,7 +3103,7 @@ void Rend_RenderNormals(void)
             V3_Set(origin, subsector->midPoint.pos[VX], subsector->midPoint.pos[VY],
                    pln->visHeight);
             if(pln->type != PLN_MID && IS_SKYSURFACE(&pln->surface))
-                origin[VZ] = skyFix[pln->type].height;
+                origin[VZ] = map->skyFix[pln->type].height;
 
             drawNormal(origin, pln->PS_normal, scale);
         }
@@ -3268,7 +3265,7 @@ boolean drawPolyObjVertexes(polyobj_t* po, void* context)
 /**
  * Draw the various vertex debug aids.
  */
-void Rend_Vertexes(void)
+void Rend_Vertexes(gamemap_t* map)
 {
     uint i;
     float oldPointSize, oldLineWidth = 1, bbox[4];
@@ -3285,9 +3282,9 @@ void Rend_Vertexes(void)
         DGL_SetFloat(DGL_LINE_WIDTH, 2);
         glDisable(GL_TEXTURE_2D);
 
-        for(i = 0; i < numVertexes; ++i)
+        for(i = 0; i < map->numVertexes; ++i)
         {
-            vertex_t* vtx = vertexes[i];
+            vertex_t* vtx = map->vertexes[i];
             float alpha;
 
             if(!vtx->lineOwners)
@@ -3320,9 +3317,9 @@ void Rend_Vertexes(void)
     DGL_SetFloat(DGL_POINT_SIZE, 6);
     glDisable(GL_TEXTURE_2D);
 
-    for(i = 0; i < numVertexes; ++i)
+    for(i = 0; i < map->numVertexes; ++i)
     {
-        vertex_t* vtx = vertexes[i];
+        vertex_t* vtx = map->vertexes[i];
         float dist;
 
         if(!vtx->lineOwners)
@@ -3353,9 +3350,9 @@ void Rend_Vertexes(void)
         eye[VY] = vz;
         eye[VZ] = vy;
 
-        for(i = 0; i < numVertexes; ++i)
+        for(i = 0; i < map->numVertexes; ++i)
         {
-            vertex_t* vtx = vertexes[i];
+            vertex_t* vtx = map->vertexes[i];
             float pos[3], dist;
 
             if(!vtx->lineOwners)
@@ -3600,7 +3597,7 @@ void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
  * Depth test is disabled to show all mobjs that are being rendered, regardless
  * if they are actually vissible (hidden by previously drawn map geometry).
  */
-static void Rend_RenderBoundingBoxes(void)
+static void Rend_RenderBoundingBoxes(gamemap_t* map)
 {
     static const float  red[3] = { 1, 0.2f, 0.2f}; // non-solid objects
     static const float  green[3] = { 0.2f, 1, 0.2f}; // solid objects
@@ -3636,9 +3633,9 @@ static void Rend_RenderBoundingBoxes(void)
     GL_BlendMode(BM_ADD);
 
     // For every sector
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = sectors[i];
+        sector_t* sec = map->sectors[i];
         mobj_t* mo;
 
         // Is it vissible?

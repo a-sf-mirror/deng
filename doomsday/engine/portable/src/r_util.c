@@ -256,19 +256,20 @@ subsector_t* R_PointInSubSector(const float x, const float y)
 {
     node_t* node = NULL;
     uint nodenum = 0;
+    gamemap_t* map = P_GetCurrentMap();
 
-    if(!numNodes) // Single subsector is a special case.
-        return (subsector_t *) subsectors;
+    if(!map->numNodes) // Single subsector is a special case.
+        return (subsector_t*) map->subsectors;
 
-    nodenum = numNodes - 1;
+    nodenum = map->numNodes - 1;
 
     while(!(nodenum & NF_SUBSECTOR))
     {
-        node = nodes[nodenum];
+        node = map->nodes[nodenum];
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return subsectors[nodenum & ~NF_SUBSECTOR];
+    return map->subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
 void* P_PointInSubSector(const float x, const float y)
@@ -276,11 +277,10 @@ void* P_PointInSubSector(const float x, const float y)
     return DMU_GetObjRecord(DMU_SUBSECTOR, R_PointInSubSector(x, y));
 }
 
-linedef_t* R_GetLineForSide(const uint sideNumber)
+linedef_t* R_GetLineForSide(const sidedef_t* sideDef)
 {
     uint i;
-    sidedef_t* side = sideDefs[sideNumber];
-    sector_t* sector = side->sector;
+    sector_t* sector = sideDef->sector;
 
     // All sides may not have a sector.
     if(!sector)
@@ -290,7 +290,7 @@ linedef_t* R_GetLineForSide(const uint sideNumber)
     {
         linedef_t* li = sector->lineDefs[i];
 
-        if(LINE_FRONTSIDE(li) == side || LINE_BACKSIDE(li) == side)
+        if(LINE_FRONTSIDE(li) == sideDef || LINE_BACKSIDE(li) == sideDef)
         {
             return li;
         }
@@ -498,14 +498,17 @@ void R_HSVToRGB(float* rgb, float h, float s, float v)
  * @return              Ptr to the Sector where the ddmobj_base_t resides,
  *                      else @c NULL.
  */
-sector_t* R_GetSectorForOrigin(const void* ddMobjBase)
+sector_t* R_GetSectorForOrigin(gamemap_t* map, const void* ddMobjBase)
 {
     uint i;
     
+    if(!map)
+        return NULL;
+
     // Check all sectors; find where the sound is coming from.
-    for(i = 0; i < numSectors; ++i)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = sectors[i];
+        sector_t* sec = map->sectors[i];
 
         if(ddMobjBase == &sec->soundOrg)
         {

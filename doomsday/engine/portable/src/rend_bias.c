@@ -338,12 +338,12 @@ static void addLight(float dest[4], const float* color, float howMuch)
 /**
  * Add ambient light.
  */
-static void applyAmbientLight(const float* point, float* light)
+static void applyAmbientLight(gamemap_t* map, const float* point, float* light)
 {
     // Add grid light (represents ambient lighting).
-    float               color[3];
+    float color[3];
 
-    LG_Evaluate(point, color);
+    LG_Evaluate(map, point, color);
     addLight(light, color, 1.0f);
 }
 
@@ -352,7 +352,7 @@ static void applyAmbientLight(const float* point, float* light)
  */
 static void lerpIllumination(vertexillum_t* illum, float* result)
 {
-    uint                i;
+    uint i;
 
     if(!(illum->flags & VIF_LERP))
     {
@@ -364,8 +364,7 @@ static void lerpIllumination(vertexillum_t* illum, float* result)
     }
     else
     {
-        float               inter =
-            (currentTimeSB - illum->updatetime) / (float)lightSpeed;
+        float inter = (currentTimeSB - illum->updatetime) / (float)lightSpeed;
 
         if(inter > 1)
         {
@@ -383,8 +382,7 @@ static void lerpIllumination(vertexillum_t* illum, float* result)
         {
             for(i = 0; i < 3; ++i)
             {
-                result[i] = (illum->color[i] +
-                     (illum->dest[i] - illum->color[i]) * inter);
+                result[i] = (illum->color[i] + (illum->dest[i] - illum->color[i]) * inter);
             }
         }
     }
@@ -396,8 +394,8 @@ static void lerpIllumination(vertexillum_t* illum, float* result)
 static float* getCasted(vertexillum_t* illum, int sourceIndex,
                         biasaffection_t* affectedSources)
 {
-    int                 i, k;
-    boolean             inUse;
+    int i, k;
+    boolean inUse;
 
     for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
         if(illum->casted[i].source == sourceIndex)
@@ -525,7 +523,7 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
     {
         // Reuse the previous value.
         lerpIllumination(illum, light);
-        applyAmbientLight(point, light);
+        applyAmbientLight(map, point, light);
         return;
     }
 
@@ -654,7 +652,7 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
         light[CB] = newColor[CB];
     }
 
-    applyAmbientLight(point, light);
+    applyAmbientLight(map, point, light);
 
 #undef COLOR_CHANGE_THRESHOLD
 }
@@ -662,7 +660,7 @@ static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
 static float biasDot(source_t* src, const vectorcomp_t* point,
                      const vectorcomp_t* normal)
 {
-    float               delta[3];
+    float delta[3];
 
     // Delta vector between source and given point.
     V3_Subtract(delta, src->pos, point);

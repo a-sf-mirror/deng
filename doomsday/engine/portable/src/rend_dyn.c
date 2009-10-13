@@ -616,15 +616,12 @@ static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
 }
 
 /**
- * Destroys all dynlights for the specified map.
+ * Destroys all dynlights on the specified dynlist.
  */
-void DL_DestroyDynlights(gamemap_t* map)
+void DL_DestroyDynlights(dynlist_t* dynlist)
 {
-    if(!map)
-        return;
-
     // Move dynlights to the global list of unused dynlights for recycling.
-    listSpliceBack(&unusedDynlights, &map->dlights.linkList);
+    listSpliceBack(&unusedDynlights, dynlist);
 }
 
 /**
@@ -632,7 +629,7 @@ void DL_DestroyDynlights(gamemap_t* map)
  */
 void DL_ClearDynlists(void)
 {
-    uint                i;
+    uint i;
 
     // Move all listnodes to the global list of unused listnodes for recycling.
     for(i = 0; i < numDynlists; ++i)

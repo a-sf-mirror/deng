@@ -26,20 +26,20 @@
  * rend_decor.h: Decorations
  */
 
-#ifndef __DOOMSDAY_RENDER_DECOR_H__
-#define __DOOMSDAY_RENDER_DECOR_H__
+#ifndef DOOMSDAY_RENDER_DECOR_H
+#define DOOMSDAY_RENDER_DECOR_H
 
-extern byte     useDecorations;
-extern float    decorMaxDist;  // No decorations are visible beyond this.
-extern float    decorFactor;
-extern float    decorFadeAngle;
+extern byte useDecorations;
+extern float decorMaxDist;  // No decorations are visible beyond this.
+extern float decorFactor;
+extern float decorFadeAngle;
 
 void            Rend_DecorRegister(void);
 
 float           Rend_DecorSurfaceAngleHaloMul(void* p);
 
-void            Rend_InitDecorationsForFrame(void);
-void            Rend_AddLuminousDecorations(void);
-void            Rend_ProjectDecorations(void);
+void            Rend_InitDecorationsForFrame(struct gamemap_s* map);
+void            Rend_AddLuminousDecorations(struct gamemap_s* map);
+void            Rend_ProjectDecorations(struct gamemap_s* map);
 
-#endif
+#endif /* DOOMSDAY_RENDER_DECOR_H */
