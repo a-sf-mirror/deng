@@ -390,7 +390,7 @@ void Sv_RegisterMobj(dt_mobj_t* reg, const mobj_t* mo)
     // Just copy the data we need.
     reg->thinker.id = mo->thinker.id;
     reg->dPlayer = mo->dPlayer;
-    reg->face = mo->face;
+    reg->subsector = mo->subsector;
     reg->pos[VX] = mo->pos[VX];
     reg->pos[VY] = mo->pos[VY];
     reg->pos[VZ] = Sv_GetMaxedMobjZ(mo);
@@ -1252,20 +1252,20 @@ void Sv_SubtractDelta(void* deltaPtr1, const void* deltaPtr2)
  */
 void Sv_ApplyDeltaData(void* destDelta, const void* srcDelta)
 {
-    const delta_t*      src = srcDelta;
-    delta_t*            dest = destDelta;
-    int                 sf = src->flags;
+    const delta_t* src = srcDelta;
+    delta_t* dest = destDelta;
+    int sf = src->flags;
 
     if(src->type == DT_MOBJ)
     {
-        const dt_mobj_t*    s = &((const mobjdelta_t *) src)->mo;
-        dt_mobj_t*          d = &((mobjdelta_t *) dest)->mo;
+        const dt_mobj_t* s = &((const mobjdelta_t *) src)->mo;
+        dt_mobj_t* d = &((mobjdelta_t *) dest)->mo;
 
         // *Always* set the player pointer.
         d->dPlayer = s->dPlayer;
 
         if(sf & (MDF_POS_X | MDF_POS_Y))
-            d->face = s->face;
+            d->subsector = s->subsector;
         if(sf & MDF_POS_X)
             d->pos[VX] = s->pos[VX];
         if(sf & MDF_POS_Y)

@@ -720,12 +720,10 @@ boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
-    subsector_t*        subSector;
-    face_t*             face = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
+    subsector_t* subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
 
     // Link into the sector.
-    mo->face = (face_t*) DMU_GetObjRecord(DMU_FACE, face);
-    subSector = ((subsector_t*) face->data);
+    mo->subsector = (subsector_t*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
 
     if(flags & DDLINK_SECTOR)
     {
@@ -737,10 +735,10 @@ void P_MobjLink(mobj_t* mo, byte flags)
         // Prev pointers point to the pointer that points back to us.
         // (Which practically disallows traversing the list backwards.)
 
-        if((mo->sNext = subSector->sector->mobjList))
+        if((mo->sNext = subsector->sector->mobjList))
             mo->sNext->sPrev = &mo->sNext;
 
-        *(mo->sPrev = &subSector->sector->mobjList) = mo;
+        *(mo->sPrev = &subsector->sector->mobjList) = mo;
     }
 
     // Link into blockmap?
@@ -765,13 +763,13 @@ void P_MobjLink(mobj_t* mo, byte flags)
     // entered or exited the void.
     if(mo->dPlayer)
     {
-        ddplayer_t*         player = mo->dPlayer;
+        ddplayer_t* player = mo->dPlayer;
 
         player->inVoid = true;
         if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
-                              subSector->sector) &&
-           (player->mo->pos[VZ] < subSector->sector->SP_ceilvisheight  - 4 &&
-            player->mo->pos[VZ] > subSector->sector->SP_floorvisheight + 4))
+                              subsector->sector) &&
+           (player->mo->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
+            player->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4))
             player->inVoid = false;
     }
 }
@@ -784,10 +782,10 @@ boolean P_MobjLinesIterator(mobj_t* mo,
                             boolean (*func) (linedef_t*, void*),
                             void* data)
 {
-    void*               linkstore[MAXLINKED];
-    void**              end = linkstore, **it;
-    nodeindex_t         nix;
-    linknode_t*         tn = mobjNodes->nodes;
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    nodeindex_t nix;
+    linknode_t* tn = mobjNodes->nodes;
 
     if(!mo->lineRoot)
         return true; // No lines to process.
@@ -810,15 +808,15 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
                               boolean (*func) (sector_t*, void*),
                               void* data)
 {
-    void*               linkstore[MAXLINKED];
-    void**              end = linkstore, **it;
-    nodeindex_t         nix;
-    linknode_t*         tn = mobjNodes->nodes;
-    linedef_t*          ld;
-    sector_t*           sec;
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    nodeindex_t nix;
+    linknode_t* tn = mobjNodes->nodes;
+    linedef_t* ld;
+    sector_t* sec;
 
     // Always process the mobj's own sector first.
-    *end++ = sec = ((subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data)->sector;
+    *end++ = sec = ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj)->sector;
     sec->validCount = validCount;
 
     // Any good lines around here?
@@ -1010,45 +1008,45 @@ boolean P_LinesBoxIteratorv(const arvec2_t box,
 /**
  * @return              @c false, if the iterator func returns @c false.
  */
-boolean P_SubSectorsBoxIterator(const float box[4], sector_t* sector,
-                                boolean (*func) (face_t*, void*),
+boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
+                                boolean (*func) (subsector_t*, void*),
                                 void* parm, boolean retObjRecord)
 {
-    vec2_t              bounds[2];
+    vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
     bounds[0][VY] = box[BOXBOTTOM];
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_SubSectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
+    return P_SubsectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
 }
 
-boolean DMU_SubSectorsBoxIterator(const float box[4], void* p,
-                                  boolean (*func) (face_t*, void*),
+boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
+                                  boolean (*func) (subsector_t*, void*),
                                   void* parm)
 {
-    return P_SubSectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
+    return P_SubsectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
 }
 
 /**
  * Same as the fixed-point version of this routine, but the bounding box
  * is specified using an vec2_t array (see m_vector.c).
  */
-boolean P_SubSectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
-                                 boolean (*func) (face_t*, void*),
+boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
+                                 boolean (*func) (subsector_t*, void*),
                                  void* data, boolean retObjRecord)
 {
-    static int          localValidCount = 0;
-    uint                blockBox[4];
+    static int localValidCount = 0;
+    uint blockBox[4];
 
     // This is only used here.
     localValidCount++;
 
     // Blockcoords to check.
-    P_BoxToBlockmapBlocks(SubSectorBlockMap, blockBox, box);
+    P_BoxToBlockmapBlocks(SubsectorBlockMap, blockBox, box);
 
-    return P_BlockBoxSubSectorsIterator(SubSectorBlockMap, blockBox, sector,
+    return P_BlockBoxSubSectorsIterator(SubsectorBlockMap, blockBox, sector,
                                         box, localValidCount, func, data,
                                         retObjRecord);
 }
@@ -1057,7 +1055,7 @@ boolean P_PolyobjLinesBoxIterator(const float box[4],
                                   boolean (*func) (linedef_t*, void*),
                                   void* data, boolean retObjRecord)
 {
-    vec2_t              bounds[2];
+    vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
     bounds[0][VY] = box[BOXBOTTOM];
@@ -1071,7 +1069,7 @@ boolean P_PolyobjLinesBoxIteratorv(const arvec2_t box,
                                    boolean (*func) (linedef_t*, void*),
                                    void* data, boolean retObjRecord)
 {
-    uint                blockBox[4];
+    uint blockBox[4];
 
     P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
 
@@ -1100,7 +1098,7 @@ boolean P_AllLinesBoxIterator(const float box[4],
                               boolean (*func) (linedef_t*, void*),
                               void* data, boolean retObjRecord)
 {
-    vec2_t              bounds[2];
+    vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
     bounds[0][VY] = box[BOXBOTTOM];

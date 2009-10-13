@@ -26,13 +26,12 @@
  * p_setup.c: Common map setup routines.
  */
 
-#ifndef __COMMON_PLAYSETUP_H__
-#define __COMMON_PLAYSETUP_H__
+#ifndef LIBCOMMON_PLAYSETUP_H
+#define LIBCOMMON_PLAYSETUP_H
 
 #define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
-#define numsegs     (*(uint*) P_GetVariable(DMU_HEDGE_COUNT))
 #define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
-#define numsubsectors (*(uint*) P_GetVariable(DMU_FACE_COUNT))
+#define numsubsectors (*(uint*) P_GetVariable(DMU_SUBSECTOR_COUNT))
 #define numnodes    (*(uint*) P_GetVariable(DMU_NODE_COUNT))
 #define numlines    (*(uint*) P_GetVariable(DMU_LINE_COUNT))
 #define numsides    (*(uint*) P_GetVariable(DMU_SIDE_COUNT))
@@ -44,4 +43,4 @@ void        P_SetupForMapData(int type, uint num);
 
 void        P_SetupMap(int episode, int map, int playermask, skillmode_t skill);
 char*       P_GetMapNiceName(void);
-#endif
+#endif /* LIBCOMMON_PLAYSETUP_H */

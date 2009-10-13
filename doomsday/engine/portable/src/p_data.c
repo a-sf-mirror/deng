@@ -75,8 +75,8 @@ hedge_t** hEdges = NULL;
 uint numSectors = 0;
 sector_t** sectors = NULL;
 
-uint numFaces = 0;
-face_t** faces = NULL;
+uint numSubsectors = 0;
+subsector_t** subsectors = NULL;
 
 uint numNodes = 0;
 node_t** nodes = NULL;
@@ -92,7 +92,7 @@ surfacelist_t* movingSurfaceList = NULL;
 surfacelist_t* decoratedSurfaceList = NULL;
 
 blockmap_t* BlockMap = NULL;
-blockmap_t* SubSectorBlockMap = NULL;
+blockmap_t* SubsectorBlockMap = NULL;
 
 nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
 
@@ -150,7 +150,7 @@ const char* P_GenerateUniqueMapID(const char* mapID)
 /**
  * @return              Ptr to the current map.
  */
-gamemap_t *P_GetCurrentMap(void)
+gamemap_t* P_GetCurrentMap(void)
 {
     return currentMap;
 }
@@ -168,8 +168,8 @@ void P_SetCurrentMap(gamemap_t* map)
     numSectors = map->numSectors;
     sectors = map->sectors;
 
-    numFaces = map->numFaces;
-    faces = map->faces;
+    numSubsectors = map->numSubsectors;
+    subsectors = map->subsectors;
 
     numNodes = map->numNodes;
     nodes = map->nodes;
@@ -192,7 +192,7 @@ void P_SetCurrentMap(gamemap_t* map)
     linelinks = map->lineLinks;
 
     BlockMap = map->blockMap;
-    SubSectorBlockMap = map->subSectorBlockMap;
+    SubsectorBlockMap = map->subsectorBlockMap;
 
     mapGravity = map->globalGravity;
 
@@ -278,10 +278,10 @@ void P_DestroyMap(gamemap_t* map)
                 Z_Free(sector->planes);
             }
 
-            if(sector->faces)
-                Z_Free(sector->faces);
-            if(sector->reverbFaces)
-                Z_Free(sector->reverbFaces);
+            if(sector->subsectors)
+                Z_Free(sector->subsectors);
+            if(sector->reverbSubsectors)
+                Z_Free(sector->reverbSubsectors);
             if(sector->blocks)
                 Z_Free(sector->blocks);
             if(sector->lineDefs)
@@ -295,34 +295,43 @@ void P_DestroyMap(gamemap_t* map)
     map->sectors = NULL;
     map->numSectors = 0;
 
-    if(map->faces)
+    if(map->subsectors)
     {
         uint i;
 
-        for(i = 0; i < map->numFaces; ++i)
+        for(i = 0; i < map->numSubsectors; ++i)
         {
-            face_t* face = map->faces[i];
-            subsector_t* subsector = (subsector_t*) face->data;
+            subsector_t* subsector = map->subsectors[i];
 
-            if(subsector)
+            /*shadowlink_t* slink;
+            while((slink = subSector->shadows))
             {
-                /*shadowlink_t* slink;
-                while((slink = subSector->shadows))
-                {
-                    subSector->shadows = slink->next;
-                    Z_Free(slink);
-                }*/
-                
-                Z_Free(subsector);
-            }
+                subSector->shadows = slink->next;
+                Z_Free(slink);
+            }*/
+            
+            Z_Free(subsector);
+        }
 
+        Z_Free(map->subsectors);
+    }
+    map->subsectors = NULL;
+    map->numSubsectors = 0;
+
+    if(map->halfEdgeDS.faces)
+    {
+        uint i;
+
+        for(i = 0; i < map->halfEdgeDS.numFaces; ++i)
+        {
+            face_t* face = map->halfEdgeDS.faces[i];
             Z_Free(face);
         }
 
-        Z_Free(map->faces);
+        Z_Free(map->halfEdgeDS.faces);
     }
-    map->faces = NULL;
-    map->numFaces = 0;
+    map->halfEdgeDS.faces = NULL;
+    map->halfEdgeDS.numFaces = 0;
 
     if(map->hEdges)
     {

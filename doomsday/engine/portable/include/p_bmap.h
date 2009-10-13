@@ -48,7 +48,7 @@ void            P_BlockmapSetBlock(blockmap_t* bmap, uint x, uint y,
                                    linedef_t** lines, linkmobj_t* moLink,
                                    linkpolyobj_t* poLink);
 void            P_SubSectorBlockmapSetBlock(blockmap_t* bmap, uint x, uint y,
-                                       face_t** subSectors);
+                                            subsector_t** subSectors);
 void            P_BuildSubSectorBlockMap(gamemap_t* map);
 
 void            P_BlockmapLinkMobj(blockmap_t* bmap, mobj_t* mo);
@@ -74,7 +74,7 @@ boolean         P_BlockmapLinesIterator(blockmap_t* bmap, const uint block[2],
 boolean         P_BlockmapSubSectorsIterator(blockmap_t* bmap, const uint block[2],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
-                                             boolean (*func) (face_t*, void*),
+                                             boolean (*func) (subsector_t*, void*),
                                              void* data);
 boolean         P_BlockmapPolyobjsIterator(blockmap_t* bmap, const uint block[2],
                                            boolean (*func) (polyobj_t*, void*),
@@ -93,7 +93,7 @@ boolean         P_BlockBoxLinesIterator(blockmap_t* bmap, const uint blockBox[4]
 boolean         P_BlockBoxSubSectorsIterator(blockmap_t* bmap, const uint blockBox[4],
                                              sector_t* sector, const arvec2_t box,
                                              int localValidCount,
-                                             boolean (*func) (face_t*, void*),
+                                             boolean (*func) (subsector_t*, void*),
                                              void* data, boolean retObjRecord);
 boolean         P_BlockBoxPolyobjsIterator(blockmap_t* bmap, const uint blockBox[4],
                                            boolean (*func) (polyobj_t*, void*),

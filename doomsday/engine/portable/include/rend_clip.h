@@ -54,6 +54,6 @@ int             C_CheckViewRelSeg(float x1, float y1, float x2, float y2);
 int             C_IsAngleVisible(binangle_t bang);
 
 // Returns 1 if the face might be visible.
-int             C_CheckFace(face_t* face);
+int             C_CheckSubsector(subsector_t* subsector);
 
 #endif

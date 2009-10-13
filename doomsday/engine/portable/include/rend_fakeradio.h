@@ -26,8 +26,8 @@
  * rend_fakeradio.h: Faked Radiosity Lighting
  */
 
-#ifndef __DOOMSDAY_RENDER_FAKERADIO_H__
-#define __DOOMSDAY_RENDER_FAKERADIO_H__
+#ifndef DOOMSDAY_RENDER_FAKERADIO_H
+#define DOOMSDAY_RENDER_FAKERADIO_H
 
 typedef struct {
     float               sectorLightLevel;
@@ -43,6 +43,6 @@ void            Rend_RadioSegSection(const rvertex_t* rvertices,
                                      const walldiv_t* divs,
                                      const sideradioconfig_t* radioConfig,
                                      const rendsegradio_params_t* params);
-void            Rend_RadioSubSectorEdges(face_t* subsector);
+void            Rend_RadioSubsectorEdges(subsector_t* subsector);
 
-#endif
+#endif /* DOOMSDAY_RENDER_FAKERADIO_H */

@@ -141,10 +141,9 @@ void R_DrawMapTitle(void)
 
 static void rendPlayerView(int player)
 {
-    player_t*           plr = &players[player];
-    boolean             special200 = false;
-    int                 viewAngleOffset =
-        ANGLE_MAX * -G_GetLookOffset(player);
+    player_t* plr = &players[player];
+    boolean special200 = false;
+    int viewAngleOffset = ANGLE_MAX * -G_GetLookOffset(player);
 
     if(IS_CLIENT)
     {
@@ -154,7 +153,7 @@ static void rendPlayerView(int player)
 
     // Check for the sector special 200: use sky2.
     // I wonder where this is used?
-    if(P_ToXSectorOfSubsector(plr->plr->mo->face)->special == 200)
+    if(P_ToXSectorOfSubsector(plr->plr->mo->subsector)->special == 200)
     {
         special200 = true;
         DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);

@@ -115,7 +115,7 @@ static objblockmap_t* objBlockmap = NULL;
 static objcontact_t* contFirst = NULL, *contCursor = NULL;
 
 // List of obj contacts for each face.
-static objcontactlist_t* faceContacts = NULL;
+static objcontactlist_t* subsectorContacts = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -132,7 +132,7 @@ static __inline void linkContact(objcontact_t* con, objcontact_t** list,
 static void linkContactToFace(objcontact_t* node, objtype_t type,
                               uint index)
 {
-    linkContact(node, &faceContacts[index].head[type], 0);
+    linkContact(node, &subsectorContacts[index].head[type], 0);
 }
 
 /**
@@ -214,9 +214,9 @@ objblockmap_t* R_ObjBlockmapCreate(float originX, float originY, int width,
 
 void R_InitObjLinksForMap(void)
 {
-    gamemap_t*          map = P_GetCurrentMap();
-    float               min[2], max[2];
-    int                 width, height;
+    gamemap_t* map = P_GetCurrentMap();
+    float min[2], max[2];
+    int width, height;
 
     // Determine the dimensions of the objblockmap.
     P_GetMapBounds(map, &min[0], &max[0]);
@@ -231,7 +231,7 @@ void R_InitObjLinksForMap(void)
     objBlockmap = R_ObjBlockmapCreate(min[0], min[1], width, height);
 
     // Initialize face -> obj contact lists.
-    faceContacts = Z_Calloc(sizeof(*faceContacts) * numFaces, PU_STATIC, 0);
+    subsectorContacts = Z_Calloc(sizeof(*subsectorContacts) * numSubsectors, PU_STATIC, 0);
 }
 
 void R_ObjBlockmapClear(objblockmap_t* obm)
@@ -263,7 +263,7 @@ void R_ObjLinkCreate(void* obj, objtype_t type)
     ol->type = type;
 }
 
-boolean RIT_LinkObjToSubSector(face_t* face, void* data)
+boolean RIT_LinkObjToSubsector(subsector_t* subsector, void* data)
 {
     linkobjtosubSectorparams_t* params = (linkobjtosubSectorparams_t*) data;
     objcontact_t* con = allocObjContact();
@@ -271,7 +271,7 @@ boolean RIT_LinkObjToSubSector(face_t* face, void* data)
     con->obj = params->obj;
 
     // Link the contact list for this face.
-    linkContactToFace(con, params->type, DMU_GetObjRecord(DMU_FACE, face)->id - 1);
+    linkContactToFace(con, params->type, DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1);
 
     return true; // Continue iteration.
 }
@@ -280,33 +280,32 @@ boolean RIT_LinkObjToSubSector(face_t* face, void* data)
  * Attempt to spread the obj from the given contact from the source subSector and
  * into the (relative) back subSector.
  *
- * @param subSector          Ptr to subsector to attempt to spread over to.
+ * @param subsector     Ptr to subsector to attempt to spread over to.
  * @param data          Ptr to contactfinder_data structure.
  *
  * @return              @c true, because this function is also used as an
  *                      iterator.
  */
-static void spreadInFace(face_t* face, void* data)
+static void spreadInSubsector(subsector_t* subsector, void* data)
 {
-    hedge_t*            hEdge;
+    hedge_t* hEdge;
 
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
         do
         {
             processSeg(hEdge, data);
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
 }
 
 static void processSeg(hedge_t* hEdge, void* data)
 {
     contactfinderparams_t* params = (contactfinderparams_t*) data;
-    face_t*             srcFace, *dstFace;
-    subsector_t*        src, *dst;
-    float               distance;
-    vertex_t*           vtx;
-    seg_t*              seg = (seg_t*) hEdge->data;
+    subsector_t* src, *dst;
+    float distance;
+    vertex_t* vtx;
+    seg_t* seg = (seg_t*) hEdge->data;
 
     // Can not spread over one-sided lines.
     if(!HE_BACKSECTOR(hEdge))
@@ -316,17 +315,14 @@ static void processSeg(hedge_t* hEdge, void* data)
     if(HE_FRONTSUBSECTOR(hEdge)->validCount == validCount &&
        HE_BACKSUBSECTOR(hEdge)->validCount != validCount)
     {
-        srcFace = hEdge->face;
-        dstFace = hEdge->twin->face;
+        src = (subsector_t*) hEdge->face->data;
+        dst = (subsector_t*) hEdge->twin->face->data;
     }
     else
     {
         // Not eligible for spreading.
         return;
     }
-
-    src = (subsector_t*) srcFace->data;
-    dst = (subsector_t*) dstFace->data;
 
     // Is the dst subSector inside the objlink's AABB?
     if(dst->bBox[1].pos[VX] <= params->box[BOXLEFT] ||
@@ -398,10 +394,10 @@ static void processSeg(hedge_t* hEdge, void* data)
     lparams.obj = params->obj;
     lparams.type = params->objType;
 
-    RIT_LinkObjToSubSector(dstFace, &lparams);
+    RIT_LinkObjToSubsector(dst, &lparams);
     }
 
-    spreadInFace(dstFace, data);
+    spreadInSubsector(dst, data);
 }
 
 /**
@@ -413,37 +409,37 @@ static void processSeg(hedge_t* hEdge, void* data)
 static void findContacts(objlink_t* oLink)
 {
     contactfinderparams_t params;
-    float               radius;
-    pvec3_t             pos;
-    face_t*             face;
+    float radius;
+    pvec3_t pos;
+    subsector_t* subsector;
 
     switch(oLink->type)
     {
     case OT_LUMOBJ:
         {
-        lumobj_t*           lum = (lumobj_t*) oLink->obj;
+        lumobj_t* lum = (lumobj_t*) oLink->obj;
 
         if(lum->type != LT_OMNI)
             return; // Only omni lights spread.
 
         pos = lum->pos;
         radius = LUM_OMNI(lum)->radius;
-        face = lum->face;
+        subsector = lum->subsector;
         break;
         }
     case OT_MOBJ:
         {
-        mobj_t*             mo = (mobj_t*) oLink->obj;
+        mobj_t* mo = (mobj_t*) oLink->obj;
 
         pos = mo->pos;
         radius = R_VisualRadius(mo);
-        face = (face_t*) ((dmuobjrecord_t*) mo->face)->obj;
+        subsector = (subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj;
         break;
         }
     }
 
     // Do the subsector spread. Begin from the obj's own subSector.
-    ((subsector_t*) (face)->data)->validCount = ++validCount;
+    subsector->validCount = ++validCount;
 
     params.obj = oLink->obj;
     params.objType = oLink->type;
@@ -463,10 +459,10 @@ static void findContacts(objlink_t* oLink)
     params.obj = oLink->obj;
     params.type = oLink->type;
 
-    RIT_LinkObjToSubSector(face, &params);
+    RIT_LinkObjToSubsector(subsector, &params);
     }
 
-    spreadInFace(face, &params);
+    spreadInSubsector(subsector, &params);
 }
 
 /**
@@ -475,22 +471,20 @@ static void findContacts(objlink_t* oLink)
  *
  * @param subsector     Ptr to the subsector to spread the obj contacts of.
  */
-void R_ObjBlockmapSpreadObjsInSubSector(const objblockmap_t* obm,
-                                        const face_t* face,
+void R_ObjBlockmapSpreadObjsInSubsector(const objblockmap_t* obm,
+                                        const subsector_t* subsector,
                                         float maxRadius)
 {
-    int                 xl, xh, yl, yh, x, y;
-    objlink_t*          iter;
-    const subsector_t*  subSector;
+    int xl, xh, yl, yh, x, y;
+    objlink_t* iter;
 
-    if(!obm || !face)
+    if(!obm || !subsector)
         return; // Wha?
-    subSector = (subsector_t*) face->data;
 
-    xl = X_TO_OBBX(obm, FLT2FIX(subSector->bBox[0].pos[VX] - maxRadius));
-    xh = X_TO_OBBX(obm, FLT2FIX(subSector->bBox[1].pos[VX] + maxRadius));
-    yl = Y_TO_OBBY(obm, FLT2FIX(subSector->bBox[0].pos[VY] - maxRadius));
-    yh = Y_TO_OBBY(obm, FLT2FIX(subSector->bBox[1].pos[VY] + maxRadius));
+    xl = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[0].pos[VX] - maxRadius));
+    xh = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[1].pos[VX] + maxRadius));
+    yl = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[0].pos[VY] - maxRadius));
+    yh = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[1].pos[VY] + maxRadius));
 
     // Are we completely outside the blockmap?
     if(xh < 0 || xl >= obm->width || yh < 0 || yl >= obm->height)
@@ -509,7 +503,7 @@ void R_ObjBlockmapSpreadObjsInSubSector(const objblockmap_t* obm,
     for(x = xl; x <= xh; ++x)
         for(y = yl; y <= yh; ++y)
         {
-            objblock_t*         block = OBB_XY(obm, x, y);
+            objblock_t* block = OBB_XY(obm, x, y);
 
             if(!block->doneSpread)
             {
@@ -532,14 +526,14 @@ void R_ObjBlockmapSpreadObjsInSubSector(const objblockmap_t* obm,
  *
  * @param subSector          Ptr to the subsector to process.
  */
-void R_InitForSubSector(face_t* subSector)
+void R_InitForSubsector(subsector_t* subsector)
 {
-    float               maxRadius = MAX_OF(DDMOBJ_RADIUS_MAX, loMaxRadius);
+    float maxRadius = MAX_OF(DDMOBJ_RADIUS_MAX, loMaxRadius);
 
 BEGIN_PROF( PROF_OBJLINK_SPREAD );
 
     // Make sure we know which objs are contacting us.
-    R_ObjBlockmapSpreadObjsInSubSector(objBlockmap, subSector, maxRadius);
+    R_ObjBlockmapSpreadObjsInSubsector(objBlockmap, subsector, maxRadius);
 
 END_PROF( PROF_OBJLINK_SPREAD );
 }
@@ -547,11 +541,10 @@ END_PROF( PROF_OBJLINK_SPREAD );
 /**
  * Link all objlinks into the objlink blockmap.
  */
-void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink,
-                               float x, float y)
+void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
 {
-    int                 bx, by;
-    objlink_t**         root;
+    int bx, by;
+    objlink_t** root;
 
     if(!obm || !oLink)
         return; // Wha?
@@ -575,7 +568,7 @@ void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink,
  */
 void R_LinkObjs(void)
 {
-    objlink_t*          oLink;
+    objlink_t* oLink;
 
 BEGIN_PROF( PROF_OBJLINK_LINK );
 
@@ -583,7 +576,7 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
     oLink = objLinks;
     while(oLink)
     {
-        pvec3_t             pos;
+        pvec3_t pos;
 
         switch(oLink->type)
         {
@@ -624,17 +617,17 @@ void R_InitForNewFrame(void)
 
     // Start reusing nodes from the first one in the list.
     contCursor = contFirst;
-    if(faceContacts)
-        memset(faceContacts, 0, numFaces * sizeof(*faceContacts));
+    if(subsectorContacts)
+        memset(subsectorContacts, 0, numSubsectors * sizeof(*subsectorContacts));
 }
 
-boolean R_IterateSubSectorContacts(face_t* face, objtype_t type,
+boolean R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
                                    boolean (*func) (void*, void*),
                                    void* data)
 {
-    objcontact_t*       con;
+    objcontact_t* con;
 
-    con = faceContacts[DMU_GetObjRecord(DMU_FACE, face)->id - 1].head[type];
+    con = subsectorContacts[DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1].head[type];
     while(con)
     {
         if(!func(con->obj, data))

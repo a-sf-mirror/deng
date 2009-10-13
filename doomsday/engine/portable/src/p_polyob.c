@@ -190,21 +190,21 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
  */
 void P_MapInitPolyobjs(void)
 {
-    uint                i;
-    gamemap_t*          map = P_GetCurrentMap();
+    uint i;
+    gamemap_t* map = P_GetCurrentMap();
 
     for(i = 0; i < numPolyObjs; ++i)
     {
-        polyobj_t*          po = polyObjs[i];
-        face_t*             face;
-        uint                j;
-        fvertex_t           avg; // Used to find a polyobj's center, and hence subsector.
+        polyobj_t* po = polyObjs[i];
+        subsector_t* subsector;
+        uint j;
+        fvertex_t avg; // Used to find a polyobj's center, and hence subsector.
 
         for(j = 0; j < po->numSegs; ++j)
         {
-            poseg_t*            seg = &po->segs[j];
-            uint                k;
-            biassurface_t*      bsuf = SB_CreateSurface(map);
+            poseg_t* seg = &po->segs[j];
+            uint k;
+            biassurface_t* bsuf = SB_CreateSurface(map);
 
             bsuf->size = 4;
             bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
@@ -220,9 +220,9 @@ void P_MapInitPolyobjs(void)
 
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
-            sidedef_t*          side = LINE_FRONTSIDE(line);
-            surface_t*          surface = &side->SW_topsurface;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            sidedef_t* side = LINE_FRONTSIDE(line);
+            surface_t* surface = &side->SW_topsurface;
 
             side->SW_topinflags |= SUIF_NO_RADIO;
             side->SW_middleinflags |= SUIF_NO_RADIO;
@@ -244,19 +244,17 @@ void P_MapInitPolyobjs(void)
         avg.pos[VX] /= po->numLineDefs;
         avg.pos[VY] /= po->numLineDefs;
 
-        if((face = R_PointInSubSector(avg.pos[VX], avg.pos[VY])))
+        if((subsector = R_PointInSubSector(avg.pos[VX], avg.pos[VY])))
         {
-            subsector_t*        subSector = (subsector_t*) face->data;
-
-            if(subSector->polyObj)
+            if(subsector->polyObj)
             {
                 Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
                             "  (face %i, sector %i). Previous polyobj overridden.\n",
-                            (int) DMU_GetObjRecord(DMU_FACE, face)->id,
-                            (int) DMU_GetObjRecord(DMU_SECTOR, subSector->sector)->id);
+                            (int) DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id,
+                            (int) DMU_GetObjRecord(DMU_SECTOR, subsector->sector)->id);
             }
-            subSector->polyObj = po;
-            po->face = face;
+            subsector->polyObj = po;
+            po->subsector = subsector;
         }
 
         P_PolyobjUnLink(po);

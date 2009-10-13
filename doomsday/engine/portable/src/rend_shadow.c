@@ -79,8 +79,8 @@ void Rend_ShadowRegister(void)
  */
 static boolean Rend_ShadowIterator(sector_t *sector, void *data)
 {
-    plane_t           **highest = (plane_t**) data;
-    plane_t            *compare = sector->SP_plane(PLN_FLOOR);
+    plane_t** highest = (plane_t**) data;
+    plane_t* compare = sector->SP_plane(PLN_FLOOR);
 
     if(compare->visHeight > (*highest)->visHeight)
         *highest = compare;
@@ -91,18 +91,18 @@ static void processMobjShadow(mobj_t* mo)
 {
 #define SHADOWZOFFSET       (0.2f)
 
-    float               moz;
-    float               height, moh, halfmoh, alpha, pos[2];
-    subsector_t*        subSector = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data;
-    sector_t*           sec = subSector->sector;
-    float               radius;
-    uint                i;
-    rvertex_t           rvertices[4];
-    rcolor_t            rcolors[4];
-    rtexcoord_t         rtexcoords[4];
-    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
-    plane_t*            plane;
-    float               distance;
+    float moz;
+    float height, moh, halfmoh, alpha, pos[2];
+    subsector_t* subsector = (subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj;
+    sector_t* sec = subsector->sector;
+    float radius;
+    uint i;
+    rvertex_t rvertices[4];
+    rcolor_t rcolors[4];
+    rtexcoord_t rtexcoords[4];
+    rtexmapunit_t rTU[NUM_TEXMAP_UNITS];
+    plane_t* plane;
+    float distance;
 
     // Is this too far?
     pos[VX] = mo->pos[VX];
@@ -113,7 +113,7 @@ static void processMobjShadow(mobj_t* mo)
     // Apply a Short Range Visual Offset?
     if(useSRVO && mo->state && mo->tics >= 0)
     {
-        float               mul = mo->tics / (float) mo->state->tics;
+        float mul = mo->tics / (float) mo->state->tics;
 
         pos[VX] += mo->srvo[VX] * mul;
         pos[VY] += mo->srvo[VY] * mul;
@@ -161,7 +161,7 @@ static void processMobjShadow(mobj_t* mo)
         radius = (float) shadowMaxRad;
 
     // Figure out the visible floor height.
-    plane = subSector->sector->SP_plane(PLN_FLOOR);
+    plane = subsector->sector->SP_plane(PLN_FLOOR);
     P_MobjSectorsIterator(mo, Rend_ShadowIterator, &plane);
 
     if(plane->visHeight >= moz + mo->height)

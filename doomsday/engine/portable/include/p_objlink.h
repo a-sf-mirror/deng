@@ -40,7 +40,7 @@ void            R_ClearObjLinksForFrame(void);
 
 void            R_ObjLinkCreate(void* obj, objtype_t type);
 void            R_LinkObjs(void);
-void            R_InitForSubSector(face_t* subSector);
+void            R_InitForSubsector(subsector_t* subsector);
 void            R_InitForNewFrame(void);
 
 typedef struct {
@@ -48,9 +48,9 @@ typedef struct {
     objtype_t           type;
 } linkobjtosubSectorparams_t;
 
-boolean         RIT_LinkObjToSubSector(face_t* face, void* params);
+boolean         RIT_LinkObjToSubsector(subsector_t* subsector, void* params);
 
-boolean         R_IterateSubSectorContacts(face_t* face, objtype_t type,
+boolean         R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
                                            boolean (*func) (void*, void*),
                                            void* data);
 #endif

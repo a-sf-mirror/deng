@@ -71,7 +71,7 @@ void    P_BounceWall(mobj_t *mo);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void PlayerLandedOnThing(mobj_t *mo, mobj_t *onmobj);
+static void PlayerLandedOnThing(mobj_t* mo, mobj_t* onmobj);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -80,18 +80,18 @@ extern mobj_t lavaInflictor;
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 mobjtype_t PuffType;
-mobj_t *MissileMobj;
+mobj_t* MissileMobj;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static int TIDList[MAX_TID_COUNT + 1];  // +1 for termination marker
-static mobj_t *TIDMobj[MAX_TID_COUNT];
+static mobj_t* TIDMobj[MAX_TID_COUNT];
 
 // CODE --------------------------------------------------------------------
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo)
 {
-    sector_t*           sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
+    sector_t* sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
 
     return P_GetPlaneMaterialType(sec, PLN_FLOOR);
 }
@@ -99,9 +99,9 @@ const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo)
 /**
  * @return              @c true if the mobj is still present.
  */
-boolean P_MobjChangeState(mobj_t *mobj, statenum_t state)
+boolean P_MobjChangeState(mobj_t* mobj, statenum_t state)
 {
-    state_t*            st;
+    state_t* st;
 
     if(state == S_NULL)
     {   // Remove mobj.
@@ -393,7 +393,7 @@ void P_MobjMoveXY(mobj_t* mo)
         return;
     }
 
-    special = P_ToXSectorOfSubsector(mo->face)->special;
+    special = P_ToXSectorOfSubsector(mo->subsector)->special;
     if(mo->flags2 & MF2_WINDTHRUST)
     {
         switch(special)
@@ -670,7 +670,7 @@ explode:
         if(mo->mom[MX] > 1.0f / 4 || mo->mom[MX] < -1.0f / 4 ||
            mo->mom[MY] > 1.0f / 4 || mo->mom[MY] < -1.0f / 4)
         {
-            if(mo->floorZ != DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
+            if(mo->floorZ != DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
             {
                 return;
             }
@@ -946,7 +946,7 @@ void P_MobjMoveZ(mobj_t *mo)
             if(mo->type == MT_LIGHTNING_CEILING)
                 return;
 
-            if(DMU_GetIntp(DMU_GetPtrp(mo->face, DMU_CEILING_MATERIAL),
+            if(DMU_GetIntp(DMU_GetPtrp(mo->subsector, DMU_CEILING_MATERIAL),
                            DMU_FLAGS) & MATF_SKYMASK)
             {
                 if(mo->type == MT_BLOODYSKULL)
@@ -1271,8 +1271,8 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     // Set subsector and/or block links.
     P_MobjSetPosition(mo);
 
-    mo->floorZ = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
     if((spawnFlags & MSF_Z_CEIL) || (info->flags & MF_SPAWNCEILING))
     {
@@ -1304,7 +1304,7 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->floorClip = 0;
 
     if((mo->flags2 & MF2_FLOORCLIP) &&
-        mo->pos[VZ] == DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
+        mo->pos[VZ] == DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
     {
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 
@@ -1478,7 +1478,7 @@ void P_SpawnBloodSplatter(float x, float y, float z, mobj_t* originator)
 
 void P_SpawnBloodSplatter2(float x, float y, float z, mobj_t* originator)
 {
-    mobj_t*             mo;
+    mobj_t* mo;
 
     if((mo = P_SpawnMobj3f(MT_AXEBLOOD,
                            x + FIX2FLT((P_Random() - 128) << 11),
@@ -1491,11 +1491,11 @@ void P_SpawnBloodSplatter2(float x, float y, float z, mobj_t* originator)
 
 boolean P_HitFloor(mobj_t *thing)
 {
-    mobj_t*             mo;
-    int                 smallsplash = false;
+    mobj_t* mo;
+    int smallsplash = false;
     const terraintype_t* tt;
 
-    if(thing->floorZ != DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
+    if(thing->floorZ != DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
     {   // Don't splash if landing on the edge above water/lava/etc....
         return false;
     }

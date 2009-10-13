@@ -2188,8 +2188,8 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
 
         memcpy(oldpos, thing->pos, sizeof(thing->pos));
         oldAngle = thing->angle;
-        thfloorz = DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT);
-        thceilz  = DMU_GetFloatp(thing->face, DMU_CEILING_HEIGHT);
+        thfloorz = DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT);
+        thceilz  = DMU_GetFloatp(thing->subsector, DMU_CEILING_HEIGHT);
         aboveFloor = thing->pos[VZ] - thfloorz;
 
         // Players get special consideration
@@ -2281,7 +2281,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
             thing->floorClip = 0;
 
             if(thing->pos[VZ] ==
-               DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
+               DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
             {
                 const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -2755,11 +2755,11 @@ int XSTrav_SectorChain(void* p, void* context)
 {
     xstrav_sectorchainparams_t* params =
         (xstrav_sectorchainparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
 
-    if(params->sec == DMU_GetPtrp(mo->face, DMU_SECTOR))
+    if(params->sec == DMU_GetPtrp(mo->subsector, DMU_SECTOR))
     {
-        boolean             activating;
+        boolean activating;
 
         if(checkChainRequirements(params->sec, mo, params->data, &activating))
             XS_DoChain(params->sec, params->data, activating, mo);
@@ -2770,8 +2770,8 @@ int XSTrav_SectorChain(void* p, void* context)
 
 void P_ApplyWind(mobj_t* mo, sector_t* sec)
 {
-    sectortype_t*       info;
-    float               ang;
+    sectortype_t* info;
+    float ang;
 
     if(mo->player && (mo->player->plr->flags & DDPF_CAMERA))
         return; // Wind does not affect cameras.
@@ -2792,10 +2792,8 @@ void P_ApplyWind(mobj_t* mo, sector_t* sec)
        ((info->flags & STF_MONSTER_WIND) && (mo->flags & MF_COUNTKILL)) ||
        ((info->flags & STF_MISSILE_WIND) && (mo->flags & MF_MISSILE)))
     {
-        float               thfloorz =
-            DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
-        float               thceilz  =
-            DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
+        float thfloorz = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+        float thceilz  = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
         if(!(info->flags & (STF_FLOOR_WIND | STF_CEILING_WIND)) ||
            ((info->flags & STF_FLOOR_WIND) && mo->pos[VZ] <= thfloorz) ||
@@ -2819,9 +2817,9 @@ typedef struct {
 int XSTrav_Wind(void* p, void* context)
 {
     xstrav_windparams_t* params = (xstrav_windparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
 
-    if(params->sec == DMU_GetPtrp(mo->face, DMU_SECTOR))
+    if(params->sec == DMU_GetPtrp(mo->subsector, DMU_SECTOR))
     {
         P_ApplyWind(mo, params->sec);
     }
@@ -2832,7 +2830,7 @@ int XSTrav_Wind(void* p, void* context)
 /**
  * Makes sure the offset is in the range 0..64.
  */
-void XS_ConstrainPlaneOffset(float *offset)
+void XS_ConstrainPlaneOffset(float* offset)
 {
     if(*offset > 64)
         *offset -= 64;
@@ -2845,13 +2843,13 @@ void XS_ConstrainPlaneOffset(float *offset)
  */
 void XS_Thinker(xsthinker_t* xs)
 {
-    int                 i;
-    float               ang;
-    float               floorOffset[2], ceilOffset[2];
-    sector_t*           sector = xs->sector;
-    xsector_t*          xsector = P_ToXSector(sector);
-    xgsector_t*         xg;
-    sectortype_t*       info;
+    int i;
+    float ang;
+    float floorOffset[2], ceilOffset[2];
+    sector_t* sector = xs->sector;
+    xsector_t* xsector = P_ToXSector(sector);
+    xgsector_t* xg;
+    sectortype_t* info;
 
     if(!xsector)
         return; // Not an xsector? Most perculiar...
@@ -3120,7 +3118,7 @@ DEFCC(CCmdMovePlane)
         if(!players[CONSOLEPLAYER].plr->mo)
             return false;
         sector =
-            DMU_GetPtrp(players[CONSOLEPLAYER].plr->mo->face, DMU_SECTOR);
+            DMU_GetPtrp(players[CONSOLEPLAYER].plr->mo->subsector, DMU_SECTOR);
     }
     else if(!stricmp(argv[1], "at") && argc >= 4)
     {
@@ -3132,9 +3130,9 @@ DEFCC(CCmdMovePlane)
     }
     else if(!stricmp(argv[1], "tag") && argc >= 3)
     {
-        int         tag = (short) strtol(argv[2], 0, 0);
-        sector_t   *sec = NULL;
-        iterlist_t *list;
+        int tag = (short) strtol(argv[2], 0, 0);
+        sector_t* sec = NULL;
+        iterlist_t* list;
 
         p = 3;
 

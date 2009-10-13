@@ -137,11 +137,11 @@ static ownernode_t* newOwnerNode(void)
     return node;
 }
 
-static void setSectorOwner(ownerlist_t* ownerList, face_t* face)
+static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
 {
-    ownernode_t*        node;
+    ownernode_t* node;
 
-    if(!face)
+    if(!subsector)
         return;
 
     // Add a new owner.
@@ -149,7 +149,7 @@ static void setSectorOwner(ownerlist_t* ownerList, face_t* face)
     ownerList->count++;
 
     node = newOwnerNode();
-    node->data = face;
+    node->data = subsector;
     node->next = ownerList->head;
     ownerList->head = node;
 }
@@ -159,10 +159,10 @@ static void findSubSectorsAffectingSector(gamemap_t* map, uint secIDX)
     uint i;
     ownernode_t* node, *p;
     float bbox[4];
-    ownerlist_t faceOwnerList;
+    ownerlist_t subsectorOwnerList;
     sector_t* sec = map->sectors[secIDX];
 
-    memset(&faceOwnerList, 0, sizeof(faceOwnerList));
+    memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
 
     memcpy(bbox, sec->bBox, sizeof(bbox));
     bbox[BOXLEFT]   -= 128;
@@ -175,38 +175,37 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
             bbox[BOXLEFT], bbox[BOXTOP], bbox[BOXRIGHT], bbox[BOXBOTTOM]);
 #endif
 */
-    for(i = 0; i < map->numFaces; ++i)
+    for(i = 0; i < map->numSubsectors; ++i)
     {
-        face_t* face = map->faces[i];
-        subsector_t* subSector = (subsector_t*) face->data;
+        subsector_t* subsector =  map->subsectors[i];
 
         // Is this subsector close enough?
-        if(subSector->sector == sec || // subsector is IN this sector
-           (subSector->midPoint.pos[VX] > bbox[BOXLEFT] &&
-            subSector->midPoint.pos[VX] < bbox[BOXRIGHT] &&
-            subSector->midPoint.pos[VY] < bbox[BOXTOP] &&
-            subSector->midPoint.pos[VY] > bbox[BOXBOTTOM]))
+        if(subsector->sector == sec || // subsector is IN this sector
+           (subsector->midPoint.pos[VX] > bbox[BOXLEFT] &&
+            subsector->midPoint.pos[VX] < bbox[BOXRIGHT] &&
+            subsector->midPoint.pos[VY] < bbox[BOXTOP] &&
+            subsector->midPoint.pos[VY] > bbox[BOXBOTTOM]))
         {
             // It will contribute to the reverb settings of this sector.
-            setSectorOwner(&faceOwnerList, face);
+            setSectorOwner(&subsectorOwnerList, subsector);
         }
     }
 
     // Now harden the list.
-    sec->numReverbFaceAttributors = faceOwnerList.count;
-    if(sec->numReverbFaceAttributors)
+    sec->numReverbSubsectorAttributors = subsectorOwnerList.count;
+    if(sec->numReverbSubsectorAttributors)
     {
-        face_t**            ptr;
+        subsector_t** ptr;
 
-        sec->reverbFaces =
-            Z_Malloc((sec->numReverbFaceAttributors + 1) * sizeof(face_t*),
+        sec->reverbSubsectors =
+            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(subsector_t*),
                      PU_STATIC, 0);
 
-        for(i = 0, ptr = sec->reverbFaces, node = faceOwnerList.head;
-            i < sec->numReverbFaceAttributors; ++i, ptr++)
+        for(i = 0, ptr = sec->reverbSubsectors, node = subsectorOwnerList.head;
+            i < sec->numReverbSubsectorAttributors; ++i, ptr++)
         {
             p = node->next;
-            *ptr = (face_t*) node->data;
+            *ptr = (subsector_t*) node->data;
 
             if(i < numSectors - 1)
             {   // Move this node to the unused list for re-use.
@@ -231,10 +230,10 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
  */
 void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
 {
-    uint                startTime = Sys_GetRealTime();
+    uint startTime = Sys_GetRealTime();
 
-    uint                i;
-    ownernode_t*        node, *p;
+    uint i;
+    ownernode_t* node, *p;
 
     for(i = 0; i < map->numSectors; ++i)
     {
@@ -257,42 +256,41 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
              (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
-static boolean calcSubSectorReverb(face_t* face)
+static boolean calcSubsectorReverb(subsector_t* subsector)
 {
-    uint                i, v;
-    hedge_t*            ptr;
-    subsector_t*        subSector = (subsector_t*) face->data;
-    float               total = 0;
+    uint i, v;
+    hedge_t* ptr;
+    float total = 0;
     material_env_class_t mclass;
-    float               materials[NUM_MATERIAL_ENV_CLASSES];
+    float materials[NUM_MATERIAL_ENV_CLASSES];
 
-    if(!subSector->sector)
+    if(!subsector->sector)
     {
-        subSector->reverb[SRD_SPACE] = subSector->reverb[SRD_VOLUME] =
-            subSector->reverb[SRD_DECAY] = subSector->reverb[SRD_DAMPING] = 0;
+        subsector->reverb[SRD_SPACE] = subsector->reverb[SRD_VOLUME] =
+            subsector->reverb[SRD_DECAY] = subsector->reverb[SRD_DAMPING] = 0;
         return false;
     }
 
     memset(&materials, 0, sizeof(materials));
 
     // Space is the rough volume of the subsector (bounding box).
-    subSector->reverb[SRD_SPACE] =
-        (int) (subSector->sector->SP_ceilheight - subSector->sector->SP_floorheight) *
-        (subSector->bBox[1].pos[VX] - subSector->bBox[0].pos[VX]) *
-        (subSector->bBox[1].pos[VY] - subSector->bBox[0].pos[VY]);
+    subsector->reverb[SRD_SPACE] =
+        (int) (subsector->sector->SP_ceilheight - subsector->sector->SP_floorheight) *
+        (subsector->bBox[1].pos[VX] - subsector->bBox[0].pos[VX]) *
+        (subsector->bBox[1].pos[VY] - subsector->bBox[0].pos[VY]);
 
     // The other reverb properties can be found out by taking a look at the
     // materials of all surfaces in the subsector.
-    if((ptr = face->hEdge))
+    if((ptr = subsector->face->hEdge))
     {
         do
         {
-            hedge_t*            hEdge = ptr;
-            seg_t*              seg = (seg_t*) (ptr)->data;
+            hedge_t* hEdge = ptr;
+            seg_t* seg = (seg_t*) (ptr)->data;
 
             if(seg->sideDef && seg->sideDef->SW_middlematerial)
             {
-                material_t*         mat = seg->sideDef->SW_middlematerial;
+                material_t* mat = seg->sideDef->SW_middlematerial;
 
                 // The material determines its type.
                 mclass = Material_GetEnvClass(mat);
@@ -301,13 +299,13 @@ static boolean calcSubSectorReverb(face_t* face)
                     mclass = MEC_WOOD; // Assume it's wood if unknown.
                 materials[mclass] += seg->length;
             }
-        } while((ptr = ptr->next) != face->hEdge);
+        } while((ptr = ptr->next) != subsector->face->hEdge);
     }
 
     if(!total)
     {   // Huh?
-        subSector->reverb[SRD_VOLUME] = subSector->reverb[SRD_DECAY] =
-            subSector->reverb[SRD_DAMPING] = 0;
+        subsector->reverb[SRD_VOLUME] = subsector->reverb[SRD_DECAY] =
+            subsector->reverb[SRD_DAMPING] = 0;
         return false;
     }
 
@@ -320,28 +318,28 @@ static boolean calcSubSectorReverb(face_t* face)
         v += materials[i] * matInfo[i].volumeMul;
     if(v > 255)
         v = 255;
-    subSector->reverb[SRD_VOLUME] = v;
+    subsector->reverb[SRD_VOLUME] = v;
 
     // Decay time.
     for(i = 0, v = 0; i < NUM_MATERIAL_ENV_CLASSES; ++i)
         v += materials[i] * matInfo[i].decayMul;
     if(v > 255)
         v = 255;
-    subSector->reverb[SRD_DECAY] = v;
+    subsector->reverb[SRD_DECAY] = v;
 
     // High frequency damping.
     for(i = 0, v = 0; i < NUM_MATERIAL_ENV_CLASSES; ++i)
         v += materials[i] * matInfo[i].dampingMul;
     if(v > 255)
         v = 255;
-    subSector->reverb[SRD_DAMPING] = v;
+    subsector->reverb[SRD_DAMPING] = v;
 
 /*
 #if _DEBUG
-Con_Message("subSector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
-            GET_SUBSECTOR_IDX(subSector), subSector->reverb[SRD_VOLUME],
-            subSector->reverb[SRD_SPACE], subSector->reverb[SRD_DECAY],
-            subSector->reverb[SRD_DAMPING]);
+Con_Message("subsector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
+            DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id, subsector->reverb[SRD_VOLUME],
+            subsector->reverb[SRD_SPACE], subsector->reverb[SRD_DECAY],
+            subsector->reverb[SRD_DAMPING]);
 #endif
 */
     return true;
@@ -358,8 +356,8 @@ Con_Message("subSector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
  */
 void S_CalcSectorReverb(sector_t* sec)
 {
-    uint                i, sectorSpace;
-    float               spaceScatter;
+    uint i, sectorSpace;
+    float spaceScatter;
 
     if(!sec)
         return; // Wha?
@@ -372,22 +370,20 @@ void S_CalcSectorReverb(sector_t* sec)
 Con_Message("sector %i: secsp:%i\n", c, sectorSpace);
 #endif
 */
-    for(i = 0; i < sec->numReverbFaceAttributors; ++i)
+    for(i = 0; i < sec->numReverbSubsectorAttributors; ++i)
     {
-        face_t*             face = sec->reverbFaces[i];
+        subsector_t* subsector = sec->reverbSubsectors[i];
 
-        if(calcSubSectorReverb(face))
+        if(calcSubsectorReverb(subsector))
         {
-            const subsector_t*  subSector = (subsector_t*) face->data;
-
-            sec->reverb[SRD_SPACE]   += subSector->reverb[SRD_SPACE];
+            sec->reverb[SRD_SPACE]   += subsector->reverb[SRD_SPACE];
 
             sec->reverb[SRD_VOLUME]  +=
-                subSector->reverb[SRD_VOLUME]  / 255.0f * subSector->reverb[SRD_SPACE];
+                subsector->reverb[SRD_VOLUME]  / 255.0f * subsector->reverb[SRD_SPACE];
             sec->reverb[SRD_DECAY]   +=
-                subSector->reverb[SRD_DECAY]   / 255.0f * subSector->reverb[SRD_SPACE];
+                subsector->reverb[SRD_DECAY]   / 255.0f * subsector->reverb[SRD_SPACE];
             sec->reverb[SRD_DAMPING] +=
-                subSector->reverb[SRD_DAMPING] / 255.0f * subSector->reverb[SRD_SPACE];
+                subsector->reverb[SRD_DAMPING] / 255.0f * subsector->reverb[SRD_SPACE];
         }
     }
 

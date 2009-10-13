@@ -103,7 +103,7 @@ boolean DAM_TryMapConversion(const char* mapID)
     DMU_ClearObjRecords(DMU_PLANE);
     DMU_ClearObjRecords(DMU_SECTOR);
     DMU_ClearObjRecords(DMU_HEDGE);
-    DMU_ClearObjRecords(DMU_FACE);
+    DMU_ClearObjRecords(DMU_SUBSECTOR);
 
     return convertMap(mapID);
 }
@@ -120,7 +120,7 @@ gamemap_t* DAM_LoadMap(const char* mapID)
     DMU_ClearObjRecords(DMU_PLANE);
     DMU_ClearObjRecords(DMU_SECTOR);
     DMU_ClearObjRecords(DMU_HEDGE);
-    DMU_ClearObjRecords(DMU_FACE);
+    DMU_ClearObjRecords(DMU_SUBSECTOR);
 
     DAM_MapRead(map, Str_Text(s));
 

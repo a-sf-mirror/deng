@@ -187,25 +187,25 @@ static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, 
     rseg->materials.inter = 0;
 }
 
-static void projectLumobjs(rendseg_t* rseg, face_t* face, boolean sortBrightest)
+static void projectLumobjs(rendseg_t* rseg, subsector_t* subsector, boolean sortBrightest)
 {
-    rseg->dynlistID = DL_ProjectOnSurface(P_GetCurrentMap(), face, rseg->texQuadTopLeft,
+    rseg->dynlistID = DL_ProjectOnSurface(P_GetCurrentMap(), subsector, rseg->texQuadTopLeft,
                                           rseg->texQuadBottomRight, rseg->normal,
                                           sortBrightest? DLF_SORT_LUMADSC : 0);
 }
 
 static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
-                             float bottom, float top,
-                             pvec3_t normal, face_t* face, sidedef_t* frontSideDef, segsection_t section,
-                             float sectorLightLevel, const float* sectorLightColor,
-                             float surfaceLightLevelDelta, const float* surfaceColorTint,
-                             const float* surfaceColorTint2, float alpha,
-                             biassurface_t* biasSurface, sideradioconfig_t* radioConfig,
-                             const float materialOffset[2], const float materialScale[2],
-                             boolean lightWithLumobjs)
+                        float bottom, float top,
+                        pvec3_t normal, subsector_t* subsector, sidedef_t* frontSideDef, segsection_t section,
+                        float sectorLightLevel, const float* sectorLightColor,
+                        float surfaceLightLevelDelta, const float* surfaceColorTint,
+                        const float* surfaceColorTint2, float alpha,
+                        biassurface_t* biasSurface, sideradioconfig_t* radioConfig,
+                        const float materialOffset[2], const float materialScale[2],
+                        boolean lightWithLumobjs)
 {
-    float               materialBlendInter;
-    material_t*         materialA = NULL, *materialB = NULL;
+    float materialBlendInter;
+    material_t* materialA = NULL, *materialB = NULL;
 
     init(rseg, from, to, bottom, top, normal);
 
@@ -228,10 +228,10 @@ static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
     {
         if(lightWithLumobjs && !(rseg->flags & RSF_GLOW))
         {
-            boolean             sortBrightest =
+            boolean sortBrightest =
                 (section == SEG_MIDDLE && LINE_BACKSIDE(frontSideDef->lineDef));
 
-            projectLumobjs(rseg, face, sortBrightest);
+            projectLumobjs(rseg, subsector, sortBrightest);
         }
 
         // @todo: defer to the Materials class.
@@ -287,7 +287,7 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
 
     constructor(rseg, from, to, bottom, top,
                 HE_FRONTSIDEDEF(hEdge)->SW_middlenormal,
-                hEdge->face, HE_FRONTSIDEDEF(hEdge), section,
+                (subsector_t*) hEdge->face->data, HE_FRONTSIDEDEF(hEdge), section,
                 sectorLightLevel, sectorLightColor,
                 surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
                 seg->bsuf[section], &HE_FRONTSIDEDEF(hEdge)->radioConfig,
@@ -309,17 +309,15 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
  */
 rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
                                      fvertex_t* from, fvertex_t* to, float bottom, float top,
-                                     face_t* face, poseg_t* poSeg)
+                                     subsector_t* subsector, poseg_t* poSeg)
 {
-    rendseg_t*          rseg = newRendSeg; // allocate.
+    rendseg_t* rseg = newRendSeg; // allocate.
 
-    float               materialOffset[2], materialScale[2], offset = 0;
-    const float*        surfaceColorTint, *surfaceColorTint2;
-    subsector_t*        subSector = (subsector_t*) face->data;
-    sector_t*           frontSec = subSector->sector;
-    float               ffloor = frontSec->SP_floorvisheight,
-                        fceil = frontSec->SP_ceilvisheight;
-    surface_t*          surface = &sideDef->SW_middlesurface;
+    float materialOffset[2], materialScale[2], offset = 0;
+    const float* surfaceColorTint, *surfaceColorTint2;
+    sector_t* frontSec = subsector->sector;
+    float ffloor = frontSec->SP_floorvisheight, fceil = frontSec->SP_ceilvisheight;
+    surface_t* surface = &sideDef->SW_middlesurface;
 
     if(surface->material && (surface->material->flags & MATF_NO_DRAW))
         return NULL; // @todo return null_object
@@ -336,11 +334,11 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, side
                        &surfaceColorTint2);
 
     constructor(rseg, from, to, bottom, top,
-                     sideDef->SW_middlenormal, face, sideDef, SEG_MIDDLE,
-                     frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                     R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
-                     poSeg->bsuf, NULL,
-                     materialOffset, materialScale, true);
+                sideDef->SW_middlenormal, subsector, sideDef, SEG_MIDDLE,
+                frontSec->lightLevel, R_GetSectorLightColor(frontSec),
+                R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
+                poSeg->bsuf, NULL,
+                materialOffset, materialScale, true);
 
     return rseg;
 }

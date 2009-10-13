@@ -101,16 +101,16 @@ static float dropoffDelta[2], floorZ;
  * If a monster yells at a player, it will alert other monsters to the
  * player's whereabouts.
  */
-void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
+void P_NoiseAlert(mobj_t* target, mobj_t* emitter)
 {
     VALIDCOUNT++;
-    P_RecursiveSound(target, DMU_GetPtrp(emitter->face, DMU_SECTOR), 0);
+    P_RecursiveSound(target, DMU_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
-boolean P_CheckMeleeRange(mobj_t *actor)
+boolean P_CheckMeleeRange(mobj_t* actor)
 {
-    mobj_t             *pl;
-    float               dist, range;
+    mobj_t* pl;
+    float dist, range;
 
     if(!actor->target)
         return false;
@@ -526,15 +526,15 @@ boolean P_LookForMonsters(mobj_t* mo)
  * If allaround is false, only look 180 degrees in front
  * returns true if a player is targeted
  */
-boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
+boolean P_LookForPlayers(mobj_t* actor, boolean allaround)
 {
-    int         c, stop;
-    player_t   *player;
-    sector_t   *sector;
-    angle_t     an;
-    float       dist;
-    mobj_t     *plrmo;
-    int         playerCount;
+    int c, stop;
+    player_t* player;
+    sector_t* sector;
+    angle_t an;
+    float dist;
+    mobj_t* plrmo;
+    int playerCount;
 
     // If in single player and player is dead, look for monsters.
     if(!IS_NETGAME && players[0].health <= 0)
@@ -548,7 +548,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
     if(!playerCount)
         return false;
 
-    sector = DMU_GetPtrp(actor->face, DMU_SECTOR);
+    sector = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
     c = 0;
     stop = (actor->lastLook - 1) & 3;
     for(;; actor->lastLook = (actor->lastLook + 1) & 3)
@@ -612,14 +612,14 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
 /**
  * Stay in state until a player is sighted.
  */
-void C_DECL A_Look(mobj_t *actor)
+void C_DECL A_Look(mobj_t* actor)
 {
-    mobj_t     *targ;
-    sector_t   *sec;
+    mobj_t* targ;
+    sector_t* sec;
 
     // Any shot will wake up
     actor->threshold = 0;
-    sec = DMU_GetPtrp(actor->face, DMU_SECTOR);
+    sec = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
     targ = P_ToXSector(sec)->soundTarget;
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
@@ -2193,7 +2193,7 @@ void C_DECL A_ESound(mobj_t *mo)
 
 void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
 {
-    mobj_t*             mo;
+    mobj_t* mo;
 
     if(!actor)
         return;
@@ -2201,7 +2201,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           DMU_GetFloatp(actor->face, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;
@@ -2211,7 +2211,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
 
 void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
 {
-    mobj_t*             mo;
+    mobj_t* mo;
 
     if(!actor)
         return;
@@ -2219,7 +2219,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
     if((mo = P_SpawnMobj3f(MT_TELEGLITTER2,
                            actor->pos[VX] + ((P_Random() & 31) - 16),
                            actor->pos[VY] + ((P_Random() & 31) - 16),
-                           DMU_GetFloatp(actor->face, DMU_FLOOR_HEIGHT),
+                           DMU_GetFloatp(actor->subsector, DMU_FLOOR_HEIGHT),
                            P_Random() << 24, 0)))
     {
         mo->mom[MZ] = 1.0f / 4;

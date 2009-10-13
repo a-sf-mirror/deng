@@ -660,14 +660,14 @@ void DL_ClearDynlists(void)
  * @return              Dynlight list name if the quad is lit by one or more
  *                      light sources, else @c 0.
  */
-uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
+uint DL_ProjectOnSurface(gamemap_t* map, subsector_t* subsector,
                          const vectorcomp_t topLeft[3],
                          const vectorcomp_t bottomRight[3],
                          const vectorcomp_t normal[3], byte flags)
 {
     surfacelumobjiterparams_t params;
 
-    if(!map || !face)
+    if(!map || !subsector)
         return 0;
 
     if(!useDynlights && !useWallGlow)
@@ -682,7 +682,7 @@ uint DL_ProjectOnSurface(gamemap_t* map, face_t* face,
     params.listIdx = 0;
 
     // Process each lumobj contacting the subsector.
-    R_IterateSubSectorContacts(face, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
+    R_IterateSubsectorContacts(subsector, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
                                &params);
 
     // Did we generate a light list?

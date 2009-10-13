@@ -541,12 +541,12 @@ Con_Message("  Applying to clmobj %i...\n", clmo->mo.thinker.id);
  */
 void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
 {
-    player_t           *plr = &ddPlayers[consolePlayer];
-    ddplayer_t         *ddpl = &plr->shared;
-    mobj_t             *mo = ddpl->mo;
-    int                 i;
-    float               mom[3];
-    face_t*             face;
+    player_t* plr = &ddPlayers[consolePlayer];
+    ddplayer_t* ddpl = &plr->shared;
+    mobj_t* mo = ddpl->mo;
+    int i;
+    float mom[3];
+    subsector_t* subsector;
 
     if(!mo)
         return;
@@ -576,11 +576,11 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
         P_MobjLink(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
 
-    face = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
-    mo->floorZ = ((subsector_t*) face->data)->sector->SP_floorheight;
-    mo->ceilingZ = ((subsector_t*) face->data)->sector->SP_ceilheight;
+    subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
+    mo->floorZ = subsector->sector->SP_floorheight;
+    mo->ceilingZ = subsector->sector->SP_ceilheight;
 
-    mo->face = (face_t*) DMU_GetObjRecord(DMU_FACE, face);
+    mo->subsector = (subsector_t*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
 
     if(onground)
     {

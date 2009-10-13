@@ -202,12 +202,12 @@ static void SV_ReadPlayer(player_t* pl)
 
 static void SV_ReadMobj(void)
 {
-    float               pos[3], mom[3], radius, height, floorz, ceilingz;
-    angle_t             angle;
-    spritenum_t         sprite;
-    int                 frame, valid, type, ddflags = 0;
-    mobj_t             *mo;
-    mobjinfo_t*         info;
+    float pos[3], mom[3], radius, height, floorz, ceilingz;
+    angle_t angle;
+    spritenum_t sprite;
+    int frame, valid, type, ddflags = 0;
+    mobj_t* mo;
+    mobjinfo_t* info;
 
     // List: thinker links.
     SV_ReadLong();
@@ -278,17 +278,17 @@ static void SV_ReadMobj(void)
     /**
      * Continue reading the mobj data.
      */
-    SV_ReadLong();              // &mobjinfo[mo->type]
+    SV_ReadLong(); // &mobjinfo[mo->type]
 
-    mo->tics = SV_ReadLong();   // state tic counter
+    mo->tics = SV_ReadLong(); // state tic counter
     mo->state = (state_t *) SV_ReadLong();
     mo->damage = DDMAXINT; // Use damage set in mo->info->damage
     mo->flags = SV_ReadLong();
     mo->health = SV_ReadLong();
 
     // Movement direction, movement generation (zig-zagging).
-    mo->moveDir = SV_ReadLong();    // 0-7
-    mo->moveCount = SV_ReadLong();  // when 0, select a new dir
+    mo->moveDir = SV_ReadLong(); // 0-7
+    mo->moveCount = SV_ReadLong(); // when 0, select a new dir
 
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
@@ -330,7 +330,7 @@ static void SV_ReadMobj(void)
     mo->target = NULL;
     if(mo->player)
     {
-        int     pnum = (int) mo->player - 1;
+        int pnum = (int) mo->player - 1;
 
         mo->player = &players[pnum];
         mo->dPlayer = mo->player->plr;
@@ -340,13 +340,13 @@ static void SV_ReadMobj(void)
     }
     P_MobjSetPosition(mo);
     mo->info = info;
-    mo->floorZ = DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ = DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 }
 
 void P_v19_UnArchivePlayers(void)
 {
-    int                 i, j;
+    int i, j;
 
     for(i = 0; i < 4; ++i)
     {

@@ -1744,10 +1744,8 @@ static void RestoreMobj(mobj_t *mo, int ver)
 #endif
 
     P_MobjSetPosition(mo);
-    mo->floorZ =
-        DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT);
-    mo->ceilingZ =
-        DMU_GetFloatp(mo->face, DMU_CEILING_HEIGHT);
+    mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+    mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
     return;
 }
@@ -1756,10 +1754,10 @@ static void RestoreMobj(mobj_t *mo, int ver)
  * Always returns @c false as a thinker will have already been allocated in
  * the mobj creation process.
  */
-static int SV_ReadMobj(thinker_t *th)
+static int SV_ReadMobj(thinker_t* th)
 {
-    int         ver;
-    mobj_t     *mo = (mobj_t*) th;
+    int ver;
+    mobj_t* mo = (mobj_t*) th;
 
     ver = SV_ReadByte();
 

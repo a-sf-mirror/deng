@@ -1434,23 +1434,22 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
  * Don't use the global radio state in here, the subsector can be part of
  * any sector, not the one chosen for wall rendering.
  */
-static void radioSubSectorEdges(const face_t* face)
+static void radioSubsectorEdges(const subsector_t* subsector)
 {
-    static size_t       doPlaneSize = 0;
-    static byte*        doPlane = NULL;
+    static size_t doPlaneSize = 0;
+    static byte* doPlane = NULL;
 
-    uint                i, pln, hack, side;
-    float               open, sideOpen[2], vec[3];
-    float               fz, bz, bhz, plnHeight;
-    sector_t*           front, *back;
-    linedef_t*          line;
-    surface_t*          suf;
-    shadowlink_t*       link;
-    vec2_t              inner[2], outer[2];
-    boolean             workToDo = false;
-    float               shadowSize, shadowDark;
-    const subsector_t*  subSector = (subsector_t*) face->data;
-    float               sectorlight = subSector->sector->lightLevel;
+    uint i, pln, hack, side;
+    float open, sideOpen[2], vec[3];
+    float fz, bz, bhz, plnHeight;
+    sector_t* front, *back;
+    linedef_t* line;
+    surface_t* suf;
+    shadowlink_t* link;
+    vec2_t inner[2], outer[2];
+    boolean workToDo = false;
+    float shadowSize, shadowDark;
+    float sectorlight = subsector->sector->lightLevel;
 
     R_ApplyLightAdaptation(&sectorlight);
 
@@ -1462,11 +1461,11 @@ static void radioSubSectorEdges(const face_t* face)
     shadowSize = 2 * (8 + 16 - sectorlight * 16);
     shadowDark = calcShadowDarkness(sectorlight) *.8f;
 
-    vec[VX] = vx - subSector->midPoint.pos[VX];
-    vec[VY] = vz - subSector->midPoint.pos[VY];
+    vec[VX] = vx - subsector->midPoint.pos[VX];
+    vec[VY] = vz - subsector->midPoint.pos[VY];
 
     // Do we need to enlarge the size of the doPlane array?
-    if(subSector->sector->planeCount > doPlaneSize)
+    if(subsector->sector->planeCount > doPlaneSize)
     {
         if(!doPlaneSize)
             doPlaneSize = 2;
@@ -1479,9 +1478,9 @@ static void radioSubSectorEdges(const face_t* face)
     memset(doPlane, 0, doPlaneSize);
 
     // See if any of this face's planes will get shadows.
-    for(pln = 0; pln < subSector->sector->planeCount; ++pln)
+    for(pln = 0; pln < subsector->sector->planeCount; ++pln)
     {
-        plane_t*            plane = subSector->sector->planes[pln];
+        plane_t*            plane = subsector->sector->planes[pln];
 
         if(R_IsGlowingPlane(plane))
             continue;
@@ -1501,7 +1500,7 @@ static void radioSubSectorEdges(const face_t* face)
 
     // We need to check all the shadow lines linked to this face for
     // the purpose of fakeradio shadowing.
-    for(link = subSector->shadows; link != NULL; link = link->next)
+    for(link = subsector->shadows; link != NULL; link = link->next)
     {
         // Already rendered during the current frame? We only want to
         // render each shadow once per frame.
@@ -1514,7 +1513,7 @@ static void radioSubSectorEdges(const face_t* face)
         line = link->lineDef;
         side = link->side;
 
-        for(pln = 0; pln < subSector->sector->planeCount; ++pln)
+        for(pln = 0; pln < subsector->sector->planeCount; ++pln)
         {
             plane_t*                plane;
 
@@ -1527,7 +1526,7 @@ static void radioSubSectorEdges(const face_t* face)
             // there won't be a shadow at all. Open neighbours cause some
             // changes in the polygon corner vertices (placement, colour).
 
-            suf = &subSector->sector->planes[pln]->surface;
+            suf = &subsector->sector->planes[pln]->surface;
             plnHeight = plane->visHeight;
             vec[VZ] = vy - plnHeight;
 
@@ -1566,7 +1565,7 @@ static void radioSubSectorEdges(const face_t* face)
 
                 if(neighbor != line && !LINE_BACKSIDE(neighbor) &&
                    neighbor->buildData.windowEffect &&
-                   LINE_FRONTSECTOR(neighbor) != subSector->sector)
+                   LINE_FRONTSECTOR(neighbor) != subsector->sector)
                 {   // A one-way window, open side.
                     sideOpen[i] = 1;
                 }
@@ -1630,20 +1629,19 @@ static void radioSubSectorEdges(const face_t* face)
     }
 }
 
-void Rend_RadioSubSectorEdges(face_t* subsector)
+void Rend_RadioSubsectorEdges(subsector_t* subsector)
 {
     if(!rendFakeRadio || levelFullBright)
         return;
 
-    radioSubSectorEdges(subsector);
+    radioSubsectorEdges(subsector);
 }
 
 #if _DEBUG
 static void drawPoint(float pos[3], float radius, const float color[4])
 {
-    int                 i;
-    float               viewPos[3], viewToCenter[3], finalPos[3], scale,
-                        leftOff[3], rightOff[3], radX, radY;
+    int i;
+    float viewPos[3], viewToCenter[3], finalPos[3], scale, leftOff[3], rightOff[3], radX, radY;
 
     viewPos[VX] = vx;
     viewPos[VY] = vy;

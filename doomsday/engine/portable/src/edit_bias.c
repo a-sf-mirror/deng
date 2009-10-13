@@ -251,11 +251,11 @@ static void drawInfoBox(int x, int y, const char* title, float rgb[3],
                         float srcColor[3], float srcPrimaryIntensity,
                         float srcSectorLevel[2], boolean srcLocked)
 {
-    float               eye[3];
-    int                 w = 16 + FR_TextWidth("R:0.000 G:0.000 B:0.000");
-    int                 th = FR_TextHeight("a"), h = th * 6 + 16;
-    char                buf[80];
-    ui_color_t          color;
+    float eye[3];
+    int w = 16 + FR_TextWidth("R:0.000 G:0.000 B:0.000");
+    int th = FR_TextHeight("a"), h = th * 6 + 16;
+    char buf[80];
+    ui_color_t color;
 
     eye[0] = vx;
     eye[1] = vz;
@@ -306,16 +306,15 @@ static void drawInfoBox(int x, int y, const char* title, float rgb[3],
 
 static void drawLightLevelGauge(int x, int y, int height, source_t* src)
 {
-    static sector_t*    lastSector = NULL;
-    static float        minLevel = 0, maxLevel = 0;
+    static sector_t* lastSector = NULL;
+    static float minLevel = 0, maxLevel = 0;
 
-    sector_t*           sector;
-    int                 off = FR_TextWidth("000");
-    int                 secY, maxY = 0, minY = 0, p;
-    char                buf[80];
+    sector_t* sector;
+    int off = FR_TextWidth("000");
+    int secY, maxY = 0, minY = 0, p;
+    char buf[80];
 
-    sector = ((subsector_t*)
-        R_PointInSubSector(src->pos[VX], src->pos[VY])->data)->sector;
+    sector = R_PointInSubSector(src->pos[VX], src->pos[VY])->sector;
 
     if(lastSector != sector)
     {

@@ -197,8 +197,8 @@ extern hedge_t** hEdges;
 extern uint numSectors;
 extern sector_t** sectors;
 
-extern uint numFaces;
-extern face_t** faces;
+extern uint numSubsectors;
+extern subsector_t** subsectors;
 
 extern uint numNodes;
 extern node_t** nodes;
@@ -221,6 +221,11 @@ typedef struct gamemap_s {
 
     float           bBox[4];
 
+    struct {
+        uint            numFaces;
+        face_t**        faces;
+    } halfEdgeDS;
+
     uint            numVertexes;
     vertex_t**      vertexes;
 
@@ -230,8 +235,8 @@ typedef struct gamemap_s {
     uint            numSectors;
     sector_t**      sectors;
 
-    uint            numFaces;
-    face_t**        faces;
+    uint            numSubsectors;
+    subsector_t**   subsectors;
 
     uint            numNodes;
     node_t**        nodes;
@@ -254,7 +259,7 @@ typedef struct gamemap_s {
     surfacelist_t   decoratedSurfaceList;
 
     blockmap_t*     blockMap;
-    blockmap_t*     subSectorBlockMap;
+    blockmap_t*     subsectorBlockMap;
 
     nodepile_t      mobjNodes, lineNodes; // All kinds of wacky links.
     nodeindex_t*    lineLinks; // Indices to roots.

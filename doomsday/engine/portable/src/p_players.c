@@ -145,7 +145,7 @@ int P_GetDDPlayerIdx(ddplayer_t* ddpl)
  */
 boolean P_IsInVoid(player_t* player)
 {
-    ddplayer_t*         ddpl;
+    ddplayer_t* ddpl;
 
     if(!player)
         return false;
@@ -156,10 +156,10 @@ boolean P_IsInVoid(player_t* player)
     // above/below ceiling/floor).
     if(ddpl->flags & DDPF_CAMERA)
     {
-        if(ddpl->mo->face)
+        if(ddpl->mo->subsector)
         {
-            sector_t*           sec =
-                ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj)->data)->sector;
+            sector_t* sec =
+                ((const subsector_t*) ((dmuobjrecord_t*) ddpl->mo->subsector)->obj)->sector;
 
             if((IS_SKYSURFACE(&sec->SP_ceilsurface) &&
                 ddpl->mo->pos[VZ] < skyFix[PLN_CEILING].height - 4) ||

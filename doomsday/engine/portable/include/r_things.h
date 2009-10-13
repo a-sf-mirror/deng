@@ -106,7 +106,7 @@ typedef struct rendspriteparams_s {
     uint            vLightListIdx;
 
 // Misc
-    struct face_s* subsector;
+    struct subsector_s* subsector;
 } rendspriteparams_t;
 
 #define MAX_VISSPRITE_LIGHTS    (10)
@@ -141,12 +141,12 @@ typedef struct vispsprite_s {
 
     union vispsprite_data_u {
         struct vispsprite_sprite_s {
-            face_t*         face;
+            subsector_t*    subsector;
             float           alpha;
             boolean         isFullBright;
         } sprite;
         struct vispsprite_model_s {
-            face_t*         face;
+            subsector_t*    subsector;
             float           gzt; // global top for silhouette clipping
             int             flags; // for color translation and shadow draw
             uint            id;
@@ -172,7 +172,7 @@ typedef struct vispsprite_s {
 typedef struct collectaffectinglights_params_s {
     float           center[3];
     float*          ambientColor;
-    face_t*         face;
+    subsector_t*    subsector;
     boolean         starkLight; // World light has a more pronounced effect.
 } collectaffectinglights_params_t;
 
@@ -200,7 +200,7 @@ void            R_ProjectSprite(struct mobj_s* mobj);
 void            R_ProjectPlayerSprites(void);
 void            R_SortVisSprites(void);
 vissprite_t*    R_NewVisSprite(void);
-void            R_AddSprites(face_t* subSector);
+void            R_AddSprites(subsector_t* subsector);
 void            R_AddPSprites(void);
 void            R_DrawSprites(void);
 

@@ -546,7 +546,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_LINEDEF,
     DMU_SIDEDEF,
     DMU_NODE,
-    DMU_FACE,
+    DMU_SUBSECTOR,
     DMU_SECTOR,
     DMU_PLANE,
     DMU_SURFACE,
@@ -631,7 +631,7 @@ enum {
     DMU_SIDE_COUNT,
     DMU_VERTEX_COUNT,
     DMU_HEDGE_COUNT,
-    DMU_FACE_COUNT,
+    DMU_SUBSECTOR_COUNT,
     DMU_NODE_COUNT,
     DMU_POLYOBJ_COUNT
 };
@@ -836,7 +836,7 @@ enum { MX, MY, MZ }; // Momentum axis indices.
     nodeindex_t     lineRoot; /* lines to which this is linked */ \
     struct mobj_s*  sNext, **sPrev; /* links in sector (if needed) */ \
 \
-    struct face_s*  face; /* subsector in which this resides */ \
+    struct subsector_s* subsector; /* subsector in which this resides */ \
     float           mom[3]; \
     angle_t         angle; \
     spritenum_t     sprite; /* used to find patch_t and flip value */ \
@@ -871,7 +871,7 @@ enum { MX, MY, MZ }; // Momentum axis indices.
 #define DD_BASE_POLYOBJ_ELEMENTS() \
     DD_BASE_DDMOBJ_ELEMENTS() \
 \
-    struct face_s*  face; /* subsector in which this resides */ \
+    struct subsector_s* subsector; /* subsector in which this resides */ \
     unsigned int    idx; /* Idx of polyobject. */ \
     int             tag; /* Reference tag. */ \
     int             validCount; \

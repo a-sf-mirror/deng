@@ -249,7 +249,7 @@ typedef struct {
 
 extern nodeindex_t* linelinks;
 extern blockmap_t* BlockMap;
-extern blockmap_t* SubSectorBlockMap;
+extern blockmap_t* SubsectorBlockMap;
 extern nodepile_t* mobjNodes, *lineNodes;
 
 extern int viewwidth, viewheight;
@@ -314,7 +314,7 @@ void            R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t*
 void            R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
                                                 float lightLevel, const float* ambientColor);
 
-void            R_VerticesFromSubSectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
+void            R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
                                              float height, boolean antiClockwise);
 
 void            R_DivVerts(rvertex_t* dst, const rvertex_t* src,
@@ -344,7 +344,7 @@ void            R_GetColorPaletteRGBf(colorpaletteid_t id, float rgb[3],
                                       int idx, boolean correctGamma);
 boolean         R_SetDefaultColorPalette(colorpaletteid_t id);
 
-//boolean         R_UpdateSubSector(struct face_t* subSector, boolean forceUpdate);
+//boolean         R_UpdateSubSector(struct subsector_s* subsector, boolean forceUpdate);
 boolean         R_UpdateSector(struct sector_s* sec, boolean forceUpdate);
 boolean         R_UpdateLineDef(struct linedef_s* line, boolean forceUpdate);
 boolean         R_UpdateSideDef(struct sidedef_s* side, boolean forceUpdate);

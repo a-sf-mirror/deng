@@ -470,15 +470,15 @@ boolean Cht_PowerUpFunc(player_t* plyr, int i)
     }
 }
 
-void Cht_ChoppersFunc(player_t *plyr)
+void Cht_ChoppersFunc(player_t* plyr)
 {
     plyr->weapons[WT_EIGHTH].owned = true;
     plyr->powers[PT_INVULNERABILITY] = true;
 }
 
-void Cht_MyPosFunc(player_t *plyr)
+void Cht_MyPosFunc(player_t* plyr)
 {
-    char                buf[ST_MSGWIDTH];
+    char buf[ST_MSGWIDTH];
 
     sprintf(buf, "ang=0x%x;x,y,z=(%g,%g,%g)",
             players[CONSOLEPLAYER].plr->mo->angle,
@@ -488,11 +488,11 @@ void Cht_MyPosFunc(player_t *plyr)
     P_SetMessage(plyr, buf, false);
 }
 
-static void CheatDebugFunc(player_t *player, cheat_t *cheat)
+static void CheatDebugFunc(player_t* player, cheat_t* cheat)
 {
-    char                lumpName[9];
-    char                textBuffer[256];
-    face_t        *sub;
+    char lumpName[9];
+    char textBuffer[256];
+    subsector_t* sub;
 
     if(!player->plr->mo || !userGame)
         return;
@@ -507,7 +507,7 @@ static void CheatDebugFunc(player_t *player, cheat_t *cheat)
 
     // Also print some information to the console.
     Con_Message(textBuffer);
-    sub = player->plr->mo->face;
+    sub = player->plr->mo->subsector;
     Con_Message("\nSubsector %i:\n", DMU_ToIndex(sub));
     Con_Message("  FloorZ:%g Material:%s\n", DMU_GetFloatp(sub, DMU_FLOOR_HEIGHT),
                 DMU_GetPtrp(DMU_GetPtrp(sub, DMU_FLOOR_MATERIAL), DMU_NAME));

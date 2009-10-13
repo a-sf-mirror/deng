@@ -76,7 +76,7 @@ float           R_ExtraLightDelta(void);
 void            R_CalcLightModRange(struct cvar_s* unused);
 float           R_CheckSectorLight(float lightlevel, float min, float max);
 
-void            R_PickSubSectorFanBase(face_t* subSector);
+void            R_PickSubsectorFanBase(subsector_t* subsector);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 
 float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
@@ -91,7 +91,7 @@ void            R_DestroyPlaneOfSector(uint id, sector_t* sec);
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
-void            R_CreateBiasSurfacesInSubSector(face_t* face);
+void            R_CreateBiasSurfacesInSubsector(subsector_t* subsector);
 
 void            R_UpdateWatchedPlanes(watchedplanelist_t* wpl);
 void            R_InterpolateWatchedPlanes(watchedplanelist_t* wpl,

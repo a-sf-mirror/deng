@@ -572,47 +572,44 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
     }
 }
 
-void R_CreateBiasSurfacesForPlanesInSubSector(face_t* face)
+void R_CreateBiasSurfacesForPlanesInSubsector(subsector_t* subsector)
 {
-    subsector_t*        subSector = (subsector_t*) (face)->data;
-    uint                i;
-    gamemap_t*          map;
+    uint i;
+    gamemap_t* map;
 
-    if(!subSector->sector)
+    if(!subsector->sector)
         return;
 
     map = P_GetCurrentMap();
 
-    subSector->bsuf = Z_Calloc(subSector->sector->planeCount * sizeof(biassurface_t*),
+    subsector->bsuf = Z_Calloc(subsector->sector->planeCount * sizeof(biassurface_t*),
                           PU_STATIC, NULL);
 
-    for(i = 0; i < subSector->sector->planeCount; ++i)
+    for(i = 0; i < subsector->sector->planeCount; ++i)
     {
-        biassurface_t*      bsuf = SB_CreateSurface(map);
-        uint                j;
+        biassurface_t* bsuf = SB_CreateSurface(map);
+        uint j;
 
-        bsuf->size = subSector->hEdgeCount + (subSector->useMidPoint? 2 : 0);
+        bsuf->size = subsector->hEdgeCount + (subsector->useMidPoint? 2 : 0);
         bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_STATIC, 0);
 
         for(j = 0; j < bsuf->size; ++j)
             SB_InitVertexIllum(&bsuf->illum[j]);
 
-        subSector->bsuf[i] = bsuf;
+        subsector->bsuf[i] = bsuf;
     }
 }
 
-void R_DestroyBiasSurfacesForPlanesInSubSector(face_t* face)
+void R_DestroyBiasSurfacesForPlanesInSubSector(subsector_t* subsector)
 {
-    subsector_t*        subSector = (subsector_t*) face->data;
-
-    if(subSector->sector && subSector->bsuf)
+    if(subsector->sector && subsector->bsuf)
     {
-        uint                i;
-        gamemap_t*          map = P_GetCurrentMap();
+        uint i;
+        gamemap_t* map = P_GetCurrentMap();
 
-        for(i = 0; i < subSector->sector->planeCount; ++i)
+        for(i = 0; i < subsector->sector->planeCount; ++i)
         {
-            biassurface_t*      bsuf = subSector->bsuf[i];
+            biassurface_t* bsuf = subsector->bsuf[i];
 
             if(bsuf->illum)
                 Z_Free(bsuf->illum);
@@ -620,43 +617,43 @@ void R_DestroyBiasSurfacesForPlanesInSubSector(face_t* face)
             SB_DestroySurface(map, bsuf);
         }
 
-        Z_Free(subSector->bsuf);
+        Z_Free(subsector->bsuf);
     }
-    subSector->bsuf = NULL;
+
+    subsector->bsuf = NULL;
 }
 
 /**
  * Allocate bias surfaces and attach vertexillums for all renderable surfaces
  * in the specified subsector. If already present, this is a null-op.
  */
-void R_CreateBiasSurfacesInSubSector(face_t* face)
+void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
 {
-    subsector_t*        subSector = (subsector_t*) face->data;
-    gamemap_t*          map;
+    gamemap_t* map;
 
-    if(!subSector->sector)
+    if(!subsector->sector)
         return;
 
     map = P_GetCurrentMap();
 
     {
-    hedge_t*            hEdge;
-    if((hEdge = face->hEdge))
+    hedge_t* hEdge;
+    if((hEdge = subsector->face->hEdge))
     {
         do
         {
-            seg_t*              seg = (seg_t*) hEdge->data;
+            seg_t* seg = (seg_t*) hEdge->data;
 
             if(seg->sideDef) // "minisegs" have no sidedefs (or linedefs).
             {
                 if(!seg->bsuf[0])
                 {
-                    uint                i;
+                    uint i;
 
                     for(i = 0; i < 3; ++i)
                     {
-                        uint                j;
-                        biassurface_t*      bsuf = SB_CreateSurface(map);
+                        uint j;
+                        biassurface_t* bsuf = SB_CreateSurface(map);
 
                         bsuf->size = 4;
                         bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
@@ -668,12 +665,12 @@ void R_CreateBiasSurfacesInSubSector(face_t* face)
                     }
                 }
             }
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
     }
 
-    if(!subSector->bsuf)
-        R_CreateBiasSurfacesForPlanesInSubSector(face);
+    if(!subsector->bsuf)
+        R_CreateBiasSurfacesForPlanesInSubsector(subsector);
 }
 
 /**
@@ -689,9 +686,9 @@ void R_CreateBiasSurfacesInSubSector(face_t* face)
  */
 plane_t* R_NewPlaneForSector(sector_t* sec)
 {
-    surface_t*          suf;
-    plane_t*            plane;
-    gamemap_t*          map;
+    surface_t* suf;
+    plane_t* plane;
+    gamemap_t* map;
 
     if(!sec)
         return NULL; // Do wha?
@@ -749,12 +746,12 @@ if(sec->planeCount >= 2)
      * (they will be created if needed when next drawn).
      */
     {
-    face_t**            facePtr = sec->faces;
-    while(*facePtr)
+    subsector_t** subsectorPtr = sec->subsectors;
+    while(*subsectorPtr)
     {
-        R_DestroyBiasSurfacesForPlanesInSubSector(*facePtr);
+        R_DestroyBiasSurfacesForPlanesInSubSector(*subsectorPtr);
 
-        *facePtr++;
+        *subsectorPtr++;
     }
     }
 
@@ -770,9 +767,9 @@ if(sec->planeCount >= 2)
  */
 void R_DestroyPlaneOfSector(uint id, sector_t* sec)
 {
-    uint                i;
-    plane_t*            plane, **newList = NULL;
-    gamemap_t*          map = P_GetCurrentMap();
+    uint i;
+    plane_t* plane, **newList = NULL;
+    gamemap_t* map = P_GetCurrentMap();
 
     if(!sec)
         return; // Do wha?
@@ -817,12 +814,12 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
      * (they will be created if needed when next drawn).
      */
     {
-    face_t**            facePtr = sec->faces;
-    while(*facePtr)
+    subsector_t** subsectorPtr = sec->subsectors;
+    while(*subsectorPtr)
     {
-        R_DestroyBiasSurfacesForPlanesInSubSector(*facePtr);
+        R_DestroyBiasSurfacesForPlanesInSubSector(*subsectorPtr);
 
-        *facePtr++;
+        *subsectorPtr++;
     }
     }
 
@@ -835,10 +832,10 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     sec->planes = newList;
 }
 
-surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t *suf)
+surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf)
 {
-    uint                i;
-    surfacedecor_t     *d, *s, *decorations;
+    uint i;
+    surfacedecor_t* d, *s, *decorations;
 
     if(!suf)
         return NULL;
@@ -869,7 +866,7 @@ surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t *suf)
     return d;
 }
 
-void R_ClearSurfaceDecorations(surface_t *suf)
+void R_ClearSurfaceDecorations(surface_t* suf)
 {
     if(!suf)
         return;
@@ -1838,38 +1835,37 @@ void R_InitLinks(gamemap_t *map)
  * center of the trifan. If a suitable point cannot be found use the center of
  * subsector instead (it will always be valid as subsectors are convex).
  */
-void R_PickSubSectorFanBase(face_t* face)
+void R_PickSubsectorFanBase(subsector_t* subsector)
 {
 #define TRIFAN_LIMIT    0.1
 
-    hedge_t*            base = NULL;
-    subsector_t*        subSector = (subsector_t*) face->data;
+    hedge_t* base = NULL;
 
-    if(subSector->firstFanHEdge)
+    if(subsector->firstFanHEdge)
         return; // Already chosen.
 
-    subSector->useMidPoint = false;
+    subsector->useMidPoint = false;
 
     /**
      * We need to find a good tri-fan base vertex, (one that doesn't
      * generate zero-area triangles).
      */
-    if(subSector->hEdgeCount > 3)
+    if(subsector->hEdgeCount > 3)
     {
-        uint                baseIDX;
-        hedge_t*            hEdge;
-        fvertex_t*          a, *b;
+        uint baseIDX;
+        hedge_t* hEdge;
+        fvertex_t* a, *b;
 
         baseIDX = 0;
-        hEdge = face->hEdge;
+        hEdge = subsector->face->hEdge;
         do
         {
-            uint                i;
-            hedge_t*            hEdge2;
+            uint i;
+            hedge_t* hEdge2;
 
             i = 0;
             base = hEdge;
-            hEdge2 = face->hEdge;
+            hEdge2 = subsector->face->hEdge;
             do
             {
                 if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
@@ -1885,20 +1881,20 @@ void R_PickSubSectorFanBase(face_t* face)
                 }
 
                 i++;
-            } while(base && (hEdge2 = hEdge2->next) != face->hEdge);
+            } while(base && (hEdge2 = hEdge2->next) != subsector->face->hEdge);
 
             if(!base)
                 baseIDX++;
-        } while(!base && (hEdge = hEdge->next) != face->hEdge);
+        } while(!base && (hEdge = hEdge->next) != subsector->face->hEdge);
 
         if(!base)
-            subSector->useMidPoint = true;
+            subsector->useMidPoint = true;
     }
 
     if(base)
-        subSector->firstFanHEdge = base;
+        subsector->firstFanHEdge = base;
     else
-        subSector->firstFanHEdge = face->hEdge;
+        subsector->firstFanHEdge = subsector->face->hEdge;
 
 #undef TRIFAN_LIMIT
 }
@@ -1907,12 +1903,12 @@ void R_PickSubSectorFanBase(face_t* face)
  * The test is done on subsectors.
  */
 #if 0 /* Currently unused. */
-static sector_t *getContainingSectorOf(gamemap_t* map, sector_t* sec)
+static sector_t* getContainingSectorOf(gamemap_t* map, sector_t* sec)
 {
-    uint                i;
-    float               cdiff = -1, diff;
-    float               inner[4], outer[4];
-    sector_t*           other, *closest = NULL;
+    uint i;
+    float cdiff = -1, diff;
+    float inner[4], outer[4];
+    sector_t* other, *closest = NULL;
 
     memcpy(inner, sec->bBox, sizeof(inner));
 
@@ -2005,13 +2001,13 @@ static __inline void initSurfaceMaterialOffset(surface_t* suf)
  */
 void R_SetupMap(int mode, int flags)
 {
-    uint                i;
+    uint i;
 
     switch(mode)
     {
     case DDSMM_INITIALIZE:
         {
-        gamemap_t*          map = P_GetCurrentMap();
+        gamemap_t* map = P_GetCurrentMap();
 
         P_DestroyMap(map);
 
@@ -2110,7 +2106,7 @@ void R_SetupMap(int mode, int flags)
 
         // Run any commands specified in Map Info.
         {
-        ded_mapinfo_t*      mapInfo = Def_GetMapInfo(P_GetMapID(map));
+        ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
 
         if(mapInfo && mapInfo->execute)
             Con_Execute(CMDS_DED, mapInfo->execute, true, false);
@@ -2120,7 +2116,7 @@ void R_SetupMap(int mode, int flags)
         // command, which the user may alias to do something useful.
         if(mapID && mapID[0])
         {
-            char                cmd[80];
+            char cmd[80];
 
             sprintf(cmd, "init-%s", mapID);
             if(Con_IsValidCommand(cmd))
@@ -2140,8 +2136,8 @@ void R_SetupMap(int mode, int flags)
         // Kill all local commands and determine the invoid status of players.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t*           plr = &ddPlayers[i];
-            ddplayer_t*         ddpl = &plr->shared;
+            player_t* plr = &ddPlayers[i];
+            ddplayer_t* ddpl = &plr->shared;
 
             clients[i].numTics = 0;
 
@@ -2149,14 +2145,12 @@ void R_SetupMap(int mode, int flags)
             ddpl->inVoid = true;
             if(ddpl->mo)
             {
-                const subsector_t*  subSector = (const subsector_t*)
-                    R_PointInSubSector(ddpl->mo->pos[VX],
-                                       ddpl->mo->pos[VY])->data;
+                const subsector_t* subsector =
+                    R_PointInSubSector(ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
 
                 //// \fixme $nplanes
-                if(subSector &&
-                   ddpl->mo->pos[VZ] > subSector->sector->SP_floorvisheight + 4 &&
-                   ddpl->mo->pos[VZ] < subSector->sector->SP_ceilvisheight - 4)
+                if(ddpl->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4 &&
+                   ddpl->mo->pos[VZ] < subsector->sector->SP_ceilvisheight - 4)
                    ddpl->inVoid = false;
             }
         }
@@ -2177,8 +2171,8 @@ void R_SetupMap(int mode, int flags)
     }
     case DDSMM_AFTER_BUSY:
     {
-        gamemap_t  *map = P_GetCurrentMap();
-        ded_mapinfo_t *mapInfo = Def_GetMapInfo(P_GetMapID(map));
+        gamemap_t* map = P_GetCurrentMap();
+        ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
 
         // Shouldn't do anything time-consuming, as we are no longer in busy mode.
         if(!mapInfo || !(mapInfo->flags & MIF_FOG))
@@ -2341,8 +2335,8 @@ static material_t* chooseFixMaterial(const hedge_t* hEdge, segsection_t section)
 
 static void updateSideDefSection(hedge_t* hEdge, segsection_t section)
 {
-    sidedef_t*          sideDef = HE_FRONTSIDEDEF(hEdge);
-    surface_t*          suf = &sideDef->SW_surface(section);
+    sidedef_t* sideDef = HE_FRONTSIDEDEF(hEdge);
+    surface_t* suf = &sideDef->SW_surface(section);
 
     if(suf->inFlags & SUIF_MATERIAL_FIX)
     {
@@ -2360,15 +2354,15 @@ static void updateSideDefSection(hedge_t* hEdge, segsection_t section)
     }
 }
 
-void R_UpdateSideDefsOfSubSector(face_t* face)
+void R_UpdateSideDefsOfSubSector(subsector_t* subsector)
 {
-    hedge_t*            hEdge;
+    hedge_t* hEdge;
 
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
         do
         {
-            sector_t*           frontSec, *backSec;
+            sector_t* frontSec, *backSec;
 
             // Only spread to real back subsectors.
             if(!hEdge->twin->data || !HE_FRONTSIDEDEF(hEdge->twin))
@@ -2395,16 +2389,16 @@ void R_UpdateSideDefsOfSubSector(face_t* face)
             else if(backSec->SP_ceilheight > frontSec->SP_ceilheight)
                 updateSideDefSection(hEdge->twin, SEG_TOP);
 
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
 }
 
 boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 {
-    boolean             changed = false;
-    boolean             hasGlow = false;
-    sector_t*           sec = pln->sector;
-    gamemap_t*          map = P_GetCurrentMap();
+    boolean changed = false;
+    boolean hasGlow = false;
+    sector_t* sec = pln->sector;
+    gamemap_t* map = P_GetCurrentMap();
 
     // Update the glow properties.
     hasGlow = false;
@@ -2435,24 +2429,24 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     // Geometry change?
     if(forceUpdate || pln->height != pln->oldHeight[1])
     {
-        uint                i;
-        face_t**            facePtr;
-        sidedef_t*          front = NULL, *back = NULL;
+        uint i;
+        subsector_t** subsectorPtr;
+        sidedef_t* front = NULL, *back = NULL;
 
         // Check if there are any camera players in this sector. If their
         // height is now above the ceiling/below the floor they are now in
         // the void.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t*           plr = &ddPlayers[i];
-            ddplayer_t*         ddpl = &plr->shared;
+            player_t* plr = &ddPlayers[i];
+            ddplayer_t* ddpl = &plr->shared;
 
-            if(!ddpl->inGame || !ddpl->mo || !ddpl->mo->face)
+            if(!ddpl->inGame || !ddpl->mo || !ddpl->mo->subsector)
                 continue;
 
             //// \fixme $nplanes
             if((ddpl->flags & DDPF_CAMERA) &&
-               ((subsector_t*) ((face_t*) ((dmuobjrecord_t*) ddpl->mo->face)->obj)->data)->sector == sec &&
+               ((subsector_t*)((dmuobjrecord_t*) ddpl->mo->subsector)->obj)->sector == sec &&
                (ddpl->mo->pos[VZ] > sec->SP_ceilheight ||
                 ddpl->mo->pos[VZ] < sec->SP_floorheight))
             {
@@ -2463,37 +2457,36 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
         // Update the z position of the degenmobj for this plane.
         pln->soundOrg.pos[VZ] = pln->height;
         
-        facePtr = sec->faces;
-        while(*facePtr)
+        subsectorPtr = sec->subsectors;
+        while(*subsectorPtr)
         {
-            face_t*             face = *facePtr;
-            subsector_t*        subSector = (subsector_t*) face->data;
+            subsector_t* subsector = *subsectorPtr;
 
-            R_UpdateSideDefsOfSubSector(face);
+            R_UpdateSideDefsOfSubSector(subsector);
 
             // Inform the shadow bias of changed geometry?
-            if(subSector->bsuf)
+            if(subsector->bsuf)
             {
-                hedge_t*            hEdge;
+                hedge_t* hEdge;
 
-                if((hEdge = face->hEdge))
+                if((hEdge = subsector->face->hEdge))
                 {
                     do
                     {
-                        seg_t*              seg = (seg_t*) hEdge->data;
+                        seg_t* seg = (seg_t*) hEdge->data;
 
                         if(seg->sideDef)
                         {
                             for(i = 0; i < 3; ++i)
                                 SB_SurfaceMoved(map, seg->bsuf[i]);
                         }
-                    } while((hEdge = hEdge->next) != face->hEdge);
+                    } while((hEdge = hEdge->next) != subsector->face->hEdge);
                 }
 
-                SB_SurfaceMoved(map, subSector->bsuf[pln->planeID]);
+                SB_SurfaceMoved(map, subsector->bsuf[pln->planeID]);
             }
 
-            *facePtr++;
+            *subsectorPtr++;
         }
 
         sec->soundOrg.pos[VZ] = (sec->SP_ceilheight - sec->SP_floorheight) / 2;

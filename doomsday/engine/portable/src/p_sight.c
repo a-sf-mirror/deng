@@ -245,18 +245,18 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the given subsector.
  */
-static boolean crossSubSector(uint faceIdx, losdata_t* los)
+static boolean crossSubSector(uint subsectorIdx, losdata_t* los)
 {
-    const face_t*       face = faces[faceIdx];
+    const subsector_t* subsector = subsectors[subsectorIdx];
 
-    if(((subsector_t*) face->data)->polyObj)
+    if(subsector->polyObj)
     {   // Check polyobj lines.
-        polyobj_t*          po = ((subsector_t*) face->data)->polyObj;
-        uint                i;
+        polyobj_t* po = subsector->polyObj;
+        uint i;
 
         for(i = 0; i < po->numLineDefs; ++i)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
             if(line->validCount != validCount)
             {
@@ -270,24 +270,24 @@ static boolean crossSubSector(uint faceIdx, losdata_t* los)
 
     {
     // Check lines.
-    hedge_t*             hEdge;
+    hedge_t* hEdge;
 
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
         do
         {
-            const seg_t*        seg = (seg_t*) (hEdge)->data;
+            const seg_t* seg = (seg_t*) (hEdge)->data;
 
             if(seg && seg->sideDef && seg->sideDef->lineDef->validCount != validCount)
             {
-                linedef_t*          li = seg->sideDef->lineDef;
+                linedef_t* li = seg->sideDef->lineDef;
 
                 li->validCount = validCount;
 
                 if(!crossLineDef(li, seg->side, los))
                     return false;
             }
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
     }
 
@@ -337,7 +337,7 @@ static boolean crossBSPNode(unsigned int bspNum, losdata_t* los)
 boolean P_CheckLineSight(const float from[3], const float to[3],
                          float bottomSlope, float topSlope, int flags)
 {
-    losdata_t               los;
+    losdata_t los;
 
     los.flags = flags;
     los.startZ = from[VZ];

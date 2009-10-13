@@ -398,15 +398,15 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
                                         float* center, float dist,
                                         float size, float mark, float alpha)
 {
-    int                 frame;
-    face_t*             face;
+    int frame;
+    subsector_t* subsector;
 
     // Render the particle as a model.
     params->center[VX] = center[VX];
     params->center[VY] = center[VZ];
     params->center[VZ] = params->gzt = center[VY];
     params->distance = dist;
-    face = R_PointInSubSector(center[VX], center[VY]);
+    subsector = R_PointInSubSector(center[VX], center[VY]);
 
     params->extraScale = size; // Extra scaling factor.
     params->mf = &modefs[dst->model];
@@ -464,8 +464,8 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
         }
         else
         {
-            float               lightLevel = pt->sector->lightLevel;
-            const float*        secColor = R_GetSectorLightColor(pt->sector);
+            float lightLevel = pt->sector->lightLevel;
+            const float* secColor = R_GetSectorLightColor(pt->sector);
 
             // Apply distance attenuation.
             lightLevel = R_DistAttenuateLightLevel(params->distance, lightLevel);
@@ -487,7 +487,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
         lparams.center[VX] = params->center[VX];
         lparams.center[VY] = params->center[VY];
         lparams.center[VZ] = params->center[VZ];
-        lparams.face = face;
+        lparams.subsector = subsector;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);
@@ -496,12 +496,12 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
 
 static void renderParticles(int rtype, boolean withBlend)
 {
-    size_t              i;
-    int                 c;
-    DGLuint             tex = 0;
-    float               leftoff[3], rightoff[3];
-    ushort              primType = GL_QUADS;
-    blendmode_t         mode = BM_NORMAL, newMode;
+    size_t i;
+    int c;
+    DGLuint tex = 0;
+    float leftoff[3], rightoff[3];
+    ushort primType = GL_QUADS;
+    blendmode_t mode = BM_NORMAL, newMode;
 
     // viewSideVec points to the left.
     for(c = 0; c < 3; ++c)

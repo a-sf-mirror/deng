@@ -208,7 +208,7 @@ EXPORTS
     ; specialized iteration methods
     DMU_LinesBoxIterator        @435 NONAME
     DMU_AllLinesBoxIterator     @347 NONAME
-    DMU_SubSectorsBoxIterator   @345 NONAME
+    DMU_SubsectorsBoxIterator   @345 NONAME
 
     ; dummy objects
     P_AllocDummy                @321 NONAME

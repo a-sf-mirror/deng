@@ -66,7 +66,7 @@ typedef struct lumlistnode_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean      iterateSubSectorLumObjs(face_t* subSector,
+static boolean      iterateSubsectorLumObjs(subsector_t* subsector,
                                             boolean (*func) (void*, void*),
                                             void* data);
 
@@ -99,8 +99,8 @@ static uint* luminousOrder = NULL;
 // List of unused and used list nodes, for linking lumobjs with faces.
 static lumlistnode_t* listNodeFirst = NULL, *listNodeCursor = NULL;
 
-// List of lumobjs for each face;
-static lumlistnode_t** faceLumObjList = NULL;
+// List of lumobjs for each subsector;
+static lumlistnode_t** subsectorLumObjList = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -143,10 +143,10 @@ static lumlistnode_t* allocListNode(void)
 
 static void linkLumObjToFace(lumobj_t* lum)
 {
-    lumlistnode_t*         ln = allocListNode();
-    lumlistnode_t**        root;
+    lumlistnode_t* ln = allocListNode();
+    lumlistnode_t** root;
 
-    root = &faceLumObjList[DMU_GetObjRecord(DMU_FACE, lum->face)->id - 1];
+    root = &subsectorLumObjList[DMU_GetObjRecord(DMU_SUBSECTOR, lum->subsector)->id - 1];
     ln->next = *root;
     ln->data = lum;
     *root = ln;
@@ -154,7 +154,7 @@ static void linkLumObjToFace(lumobj_t* lum)
 
 static uint lumToIndex(const lumobj_t* lum)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < numLuminous; ++i)
         if(luminousList[i] == lum)
@@ -167,8 +167,8 @@ static uint lumToIndex(const lumobj_t* lum)
 void LO_InitForMap(void)
 {
     // First initialize the subsector links (root pointers).
-    faceLumObjList =
-        Z_Calloc(sizeof(*faceLumObjList) * numFaces, PU_MAPSTATIC, 0);
+    subsectorLumObjList =
+        Z_Calloc(sizeof(*subsectorLumObjList) * numSubsectors, PU_MAPSTATIC, 0);
 
     maxLuminous = 0;
     luminousBlockSet = NULL; // Will have already been free'd.
@@ -220,8 +220,8 @@ void LO_ClearForFrame(void)
 
     // Start reusing nodes from the first one in the list.
     listNodeCursor = listNodeFirst;
-    if(faceLumObjList)
-        memset(faceLumObjList, 0, sizeof(lumlistnode_t*) * numFaces);
+    if(subsectorLumObjList)
+        memset(subsectorLumObjList, 0, sizeof(lumlistnode_t*) * numSubsectors);
     numLuminous = 0;
 }
 
@@ -237,13 +237,13 @@ static lumobj_t* allocLumobj(void)
 {
 #define LUMOBJ_BATCH_SIZE       (32)
 
-    lumobj_t*           lum;
+    lumobj_t* lum;
 
     // Only allocate memory when it's needed.
     // \fixme No upper limit?
     if(++numLuminous > maxLuminous)
     {
-        uint                i, newMax = maxLuminous + LUMOBJ_BATCH_SIZE;
+        uint i, newMax = maxLuminous + LUMOBJ_BATCH_SIZE;
 
         if(!luminousBlockSet)
         {
@@ -282,12 +282,12 @@ static lumobj_t* allocLumobj(void)
  *
  * @return              Index (name) by which the lumobj should be referred.
  */
-uint LO_NewLuminous(lumtype_t type, face_t* face)
+uint LO_NewLuminous(lumtype_t type, subsector_t* subsector)
 {
-    lumobj_t*           lum = allocLumobj();
+    lumobj_t* lum = allocLumobj();
 
     lum->type = type;
-    lum->face = face;
+    lum->subsector = subsector;
 
     linkLumObjToFace(lum);
 
@@ -460,7 +460,7 @@ if(!mat)
 
         // Will the sprite be allowed to go inside the floor?
         mul = mo->pos[VZ] + spriteTextures[texInst->tex->ofTypeID]->offY -
-            (float) ms.height - ((const subsector_t*) ((face_t*) ((dmuobjrecord_t*) mo->face)->obj)->data)->sector->SP_floorheight;
+            (float) ms.height - ((const subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj)->sector->SP_floorheight;
         if(!(mo->ddFlags & DDMF_NOFITBOTTOM) && mul < 0)
         {
             // Must adjust.
@@ -504,7 +504,7 @@ if(!mat)
 
         // This'll allow a halo to be rendered. If the light is hidden from
         // view by world geometry, the light pointer will be set to NULL.
-        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((dmuobjrecord_t*) mo->face)->obj);
+        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((dmuobjrecord_t*) mo->subsector)->obj);
 
         l = LO_GetLuminous(mo->lumIdx);
         l->pos[VX] = mo->pos[VX];
@@ -634,33 +634,32 @@ END_PROF( PROF_LUMOBJ_FRAME_SORT );
  * Generate one dynlight node for each plane glow.
  * The light is attached to the appropriate dynlight node list.
  *
- * @param subSector          Ptr to the subsector to process.
+ * @param subsector          Ptr to the subsector to process.
  */
-static void createGlowLightPerPlaneForSubSector(face_t* face)
+static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
 {
-    uint                g;
-    plane_t*            glowPlanes[2], *pln;
-    subsector_t*        subSector = (subsector_t*) face->data;
+    uint g;
+    plane_t* glowPlanes[2], *pln;
 
-    glowPlanes[PLN_FLOOR] = subSector->sector->planes[PLN_FLOOR];
-    glowPlanes[PLN_CEILING] = subSector->sector->planes[PLN_CEILING];
+    glowPlanes[PLN_FLOOR] = subsector->sector->planes[PLN_FLOOR];
+    glowPlanes[PLN_CEILING] = subsector->sector->planes[PLN_CEILING];
 
     //// \fixme $nplanes
     for(g = 0; g < 2; ++g)
     {
-        uint                lumIdx;
-        lumobj_t*           l;
+        uint lumIdx;
+        lumobj_t* l;
 
         pln = glowPlanes[g];
 
         if(pln->glow <= 0)
             continue;
 
-        lumIdx = LO_NewLuminous(LT_PLANE, face);
+        lumIdx = LO_NewLuminous(LT_PLANE, subsector);
 
         l = LO_GetLuminous(lumIdx);
-        l->pos[VX] = subSector->midPoint.pos[VX];
-        l->pos[VY] = subSector->midPoint.pos[VY];
+        l->pos[VX] = subsector->midPoint.pos[VX];
+        l->pos[VY] = subsector->midPoint.pos[VY];
         l->pos[VZ] = pln->visHeight;
         l->maxDistance = 0;
         l->decorSource = NULL;
@@ -676,13 +675,13 @@ static void createGlowLightPerPlaneForSubSector(face_t* face)
         LUM_PLANE(l)->intensity = pln->glow;
         LUM_PLANE(l)->tex = GL_PrepareLSTexture(LST_GRADIENT);
 
-        // Planar lights don't spread, so just link the lum to its own subSector.
+        // Planar lights don't spread, so just link the lum to its own subsector.
         {
         linkobjtosubSectorparams_t params;
 
         params.obj = l;
         params.type = OT_LUMOBJ;
-        RIT_LinkObjToSubSector(l->face, &params);
+        RIT_LinkObjToSubsector(l->subsector, &params);
         }
     }
 }
@@ -715,14 +714,14 @@ BEGIN_PROF( PROF_LUMOBJ_INIT_ADD );
 
         // If the segs of this subsector are affected by glowing planes we
         // need to create dynlights and link them.
-        if(useWallGlow && sector->faces)
+        if(useWallGlow && sector->subsectors)
         {
-            face_t** facePtr = sector->faces;
+            subsector_t** subsectorPtr = sector->subsectors;
 
-            while(*facePtr)
+            while(*subsectorPtr)
             {
-                createGlowLightPerPlaneForSubSector(*facePtr);
-                *facePtr++;
+                createGlowLightPerPlaneForSubSector(*subsectorPtr);
+                *subsectorPtr++;
             }
         }
     }
@@ -754,7 +753,7 @@ boolean LOIT_RadiusLumobjs(void* ptr, void* data)
 /**
  * Calls func for all luminous objects within the specified origin range.
  *
- * @param face          The face in which the origin resides.
+ * @param subsector     The subsector in which the origin resides.
  * @param x             X coordinate of the origin (must be within subsector).
  * @param y             Y coordinate of the origin (must be within subsector).
  * @param radius        Radius of the range around the origin point.
@@ -763,13 +762,13 @@ boolean LOIT_RadiusLumobjs(void* ptr, void* data)
  *
  * @return              @c true, iff every callback returns @c true, else @c false.
  */
-boolean LO_LumobjsRadiusIterator(face_t* face, float x, float y,
+boolean LO_LumobjsRadiusIterator(subsector_t* subsector, float x, float y,
                                  float radius, void* data,
                                  boolean (*func) (const lumobj_t*, float, void*))
 {
     lumobjiterparams_t  params;
 
-    if(!face)
+    if(!subsector)
         return true;
 
     params.origin[VX] = x;
@@ -778,15 +777,15 @@ boolean LO_LumobjsRadiusIterator(face_t* face, float x, float y,
     params.func = func;
     params.data = data;
 
-    return R_IterateSubSectorContacts(face, OT_LUMOBJ, LOIT_RadiusLumobjs,
+    return R_IterateSubsectorContacts(subsector, OT_LUMOBJ, LOIT_RadiusLumobjs,
                                       (void*) &params);
 }
 
 boolean LOIT_ClipLumObj(void* data, void* context)
 {
-    lumobj_t*           lum = (lumobj_t*) data;
-    uint                lumIdx = lumToIndex(lum);
-    vec3_t              pos;
+    lumobj_t* lum = (lumobj_t*) data;
+    uint lumIdx = lumToIndex(lum);
+    vec3_t pos;
 
     if(lum->type != LT_OMNI)
         return true; // Only interested in omnilights.
@@ -814,7 +813,7 @@ boolean LOIT_ClipLumObj(void* data, void* context)
     }
     else
     {
-        vec3_t              vpos;
+        vec3_t vpos;
 
         V3_Set(vpos, vx, vz, vy);
 
@@ -831,27 +830,27 @@ boolean LOIT_ClipLumObj(void* data, void* context)
 /**
  * Clip lumobj, omni lights in the given subsector.
  *
- * @param subSectoridx       SubSector index in which lights will be clipped.
+ * @param subsector         Subsector in which lights will be clipped.
  */
-void LO_ClipInSubSector(face_t* face)
+void LO_ClipInSubsector(subsector_t* subsector)
 {
-    iterateSubSectorLumObjs(face, LOIT_ClipLumObj, NULL);
+    iterateSubsectorLumObjs(subsector, LOIT_ClipLumObj, NULL);
 }
 
 boolean LOIT_ClipLumObjBySight(void* data, void* context)
 {
-    lumobj_t*           lum = (lumobj_t*) data;
-    uint                lumIdx = lumToIndex(lum);
+    lumobj_t* lum = (lumobj_t*) data;
+    uint lumIdx = lumToIndex(lum);
 
     if(lum->type != LT_OMNI)
         return true; // Only interested in omnilights.
 
     if(!luminousClipped[lumIdx])
     {
-        uint                i;
-        vec2_t              eye;
-        subsector_t*        subSector = (subsector_t*) ((face_t*) context)->data;
-        polyobj_t*          po = subSector->polyObj;
+        uint i;
+        vec2_t eye;
+        subsector_t* subsector = (subsector_t*) context;
+        polyobj_t* po = subsector->polyObj;
 
         V2_Set(eye, vx, vz);
 
@@ -859,12 +858,12 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
         // between the viewpoint and the lumobj.
         for(i = 0; i < po->numLineDefs; ++i)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
             // Ignore lines facing the wrong way.
             if(!(R_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
             {
-                vec2_t              source;
+                vec2_t source;
 
                 V2_Set(source, lum->pos[VX], lum->pos[VY]);
 
@@ -886,20 +885,20 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
  * the lumobjs must be clipped more carefully. Here we check if the line of
  * sight intersects any of the polyobj segs that face the camera.
  *
- * @param subSectoridx       SubSector index in which lumobjs will be clipped.
+ * @param subsector       Subsector in which lumobjs will be clipped.
  */
-void LO_ClipInSubSectorBySight(face_t* face)
+void LO_ClipInSubsectorBySight(subsector_t* subsector)
 {
-    iterateSubSectorLumObjs(face, LOIT_ClipLumObjBySight, face);
+    iterateSubsectorLumObjs(subsector, LOIT_ClipLumObjBySight, subsector);
 }
 
-static boolean iterateSubSectorLumObjs(face_t* face,
+static boolean iterateSubsectorLumObjs(subsector_t* subsector,
                                        boolean (*func) (void*, void*),
                                        void* data)
 {
-    lumlistnode_t*      ln;
+    lumlistnode_t* ln;
 
-    ln = faceLumObjList[DMU_GetObjRecord(DMU_FACE, face)->id - 1];
+    ln = subsectorLumObjList[DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1];
     while(ln)
     {
         if(!func(ln->data, data))
@@ -934,10 +933,10 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
 
 void LO_DrawLumobjs(void)
 {
-    static const float  black[4] = { 0, 0, 0, 0 };
-    static const float  white[4] = { 1, 1, 1, 1 };
-    float               color[4];
-    uint                i;
+    static const float black[4] = { 0, 0, 0, 0 };
+    static const float white[4] = { 1, 1, 1, 1 };
+    float color[4];
+    uint i;
 
     if(!devDrawLums)
         return;
@@ -948,8 +947,8 @@ void LO_DrawLumobjs(void)
 
     for(i = 0; i < numLuminous; ++i)
     {
-        lumobj_t*           lum = luminousList[i];
-        vec3_t              lumCenter;
+        lumobj_t* lum = luminousList[i];
+        vec3_t lumCenter;
 
         if(!(lum->type == LT_OMNI || lum->type == LT_PLANE))
             continue;
@@ -970,7 +969,7 @@ void LO_DrawLumobjs(void)
         {
         case LT_OMNI:
             {
-            float               scale = LUM_OMNI(lum)->radius;
+            float scale = LUM_OMNI(lum)->radius;
 
             color[CR] = LUM_OMNI(lum)->color[CR];
             color[CG] = LUM_OMNI(lum)->color[CG];
@@ -1007,7 +1006,7 @@ void LO_DrawLumobjs(void)
 
         case LT_PLANE:
             {
-            float               scale = LUM_PLANE(lum)->intensity * 10;
+            float scale = LUM_PLANE(lum)->intensity * 10;
 
             color[CR] = LUM_PLANE(lum)->color[CR];
             color[CG] = LUM_PLANE(lum)->color[CG];

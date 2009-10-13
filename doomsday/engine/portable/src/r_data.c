@@ -917,7 +917,7 @@ void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
     color->rgba[CB] = lightVal * ambientColor[CB];
 }
 
-void R_VerticesFromSubSectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
+void R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
                                          float height, boolean antiClockwise)
 {
     size_t              i = 0;

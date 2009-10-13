@@ -252,13 +252,13 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-face_t* R_PointInSubSector(const float x, const float y)
+subsector_t* R_PointInSubSector(const float x, const float y)
 {
     node_t* node = NULL;
     uint nodenum = 0;
 
     if(!numNodes) // Single subsector is a special case.
-        return (face_t *) faces;
+        return (subsector_t *) subsectors;
 
     nodenum = numNodes - 1;
 
@@ -268,12 +268,12 @@ face_t* R_PointInSubSector(const float x, const float y)
         nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
     }
 
-    return faces[nodenum & ~NF_SUBSECTOR];
+    return subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
 void* P_PointInSubSector(const float x, const float y)
 {
-    return DMU_GetObjRecord(DMU_FACE, R_PointInSubSector(x, y));
+    return DMU_GetObjRecord(DMU_SUBSECTOR, R_PointInSubSector(x, y));
 }
 
 linedef_t* R_GetLineForSide(const uint sideNumber)
@@ -361,17 +361,17 @@ boolean R_IsPointInSector(const float x, const float y,
 boolean R_IsPointInSector2(const float x, const float y,
                            const sector_t* sector)
 {
-    const face_t*       face = R_PointInSubSector(x, y);
-    fvertex_t*          vi, *vj;
-    hedge_t*            hEdge;
+    const subsector_t* subsector = R_PointInSubSector(x, y);
+    fvertex_t* vi, *vj;
+    hedge_t* hEdge;
 
-    if(((const subsector_t*) face->data)->sector != sector)
+    if(subsector->sector != sector)
     {
         // Wrong sector.
         return false;
     }
 
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
         do
         {
@@ -396,7 +396,7 @@ boolean R_IsPointInSector2(const float x, const float y,
                 }
             }
     */
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
 
     // All tests passed.

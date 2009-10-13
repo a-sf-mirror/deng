@@ -507,48 +507,47 @@ boolean MPE_Begin(const char *name)
     return true;
 }
 
-static void hardenSectorSubSectorList(gamemap_t* map, uint secIDX)
+static void hardenSectorSubsectorList(gamemap_t* map, uint secIDX)
 {
     uint i, n, count;
     sector_t* sec = map->sectors[secIDX];
 
     count = 0;
-    for(i = 0; i < map->numFaces; ++i)
+    for(i = 0; i < map->numSubsectors; ++i)
     {
-        const face_t* face = map->faces[i];
+        const subsector_t* subsector = map->subsectors[i];
 
-        if(((const subsector_t*) face->data)->sector == sec)
+        if(subsector->sector == sec)
             count++;
     }
 
-    sec->faces = Z_Malloc((count + 1) * sizeof(face_t*), PU_STATIC, NULL);
+    sec->subsectors = Z_Malloc((count + 1) * sizeof(subsector_t*), PU_STATIC, NULL);
 
     n = 0;
-    for(i = 0; i < map->numFaces; ++i)
+    for(i = 0; i < map->numSubsectors; ++i)
     {
-        face_t* face = map->faces[i];
-        subsector_t* subSector = (subsector_t*) face->data;
+        subsector_t* subsector = map->subsectors[i];
 
-        if(subSector->sector == sec)
+        if(subsector->sector == sec)
         {
-            sec->faces[n++] = face;
+            sec->subsectors[n++] = subsector;
         }
     }
 
-    sec->faces[n] = NULL; // Terminate.
-    sec->faceCount = count;
+    sec->subsectors[n] = NULL; // Terminate.
+    sec->subsectorCount = count;
 }
 
 /**
  * Build subsector tables for all sectors.
  */
-static void buildSectorSubSectorLists(gamemap_t* map)
+static void buildSectorSubsectorLists(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < map->numSectors; ++i)
     {
-        hardenSectorSubSectorList(map, i);
+        hardenSectorSubsectorList(map, i);
     }
 }
 
@@ -825,55 +824,54 @@ static void updateMapBounds(gamemap_t* map)
     }
 }
 
-static void updateSubSectorMidPoint(face_t* face)
+static void updateSubsectorMidPoint(subsector_t* subsector)
 {
     hedge_t* hEdge;
-    subsector_t* subSector = (subsector_t*) face->data;
 
     // Find the center point. First calculate the bounding box.
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
-        fvertex_t*          vtx;
+        fvertex_t* vtx;
 
         vtx = &hEdge->HE_v1->v;
-        subSector->bBox[0].pos[VX] = subSector->bBox[1].pos[VX] = subSector->midPoint.pos[VX] = vtx->pos[VX];
-        subSector->bBox[0].pos[VY] = subSector->bBox[1].pos[VY] = subSector->midPoint.pos[VY] = vtx->pos[VY];
+        subsector->bBox[0].pos[VX] = subsector->bBox[1].pos[VX] = subsector->midPoint.pos[VX] = vtx->pos[VX];
+        subsector->bBox[0].pos[VY] = subsector->bBox[1].pos[VY] = subsector->midPoint.pos[VY] = vtx->pos[VY];
 
-        while((hEdge = hEdge->next) != face->hEdge)
+        while((hEdge = hEdge->next) != subsector->face->hEdge)
         {
             vtx = &hEdge->HE_v1->v;
 
-            if(vtx->pos[VX] < subSector->bBox[0].pos[VX])
-                subSector->bBox[0].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] < subSector->bBox[0].pos[VY])
-                subSector->bBox[0].pos[VY] = vtx->pos[VY];
-            if(vtx->pos[VX] > subSector->bBox[1].pos[VX])
-                subSector->bBox[1].pos[VX] = vtx->pos[VX];
-            if(vtx->pos[VY] > subSector->bBox[1].pos[VY])
-                subSector->bBox[1].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] < subsector->bBox[0].pos[VX])
+                subsector->bBox[0].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] < subsector->bBox[0].pos[VY])
+                subsector->bBox[0].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] > subsector->bBox[1].pos[VX])
+                subsector->bBox[1].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] > subsector->bBox[1].pos[VY])
+                subsector->bBox[1].pos[VY] = vtx->pos[VY];
 
-            subSector->midPoint.pos[VX] += vtx->pos[VX];
-            subSector->midPoint.pos[VY] += vtx->pos[VY];
+            subsector->midPoint.pos[VX] += vtx->pos[VX];
+            subsector->midPoint.pos[VY] += vtx->pos[VY];
         }
 
-        subSector->midPoint.pos[VX] /= subSector->hEdgeCount; // num vertices.
-        subSector->midPoint.pos[VY] /= subSector->hEdgeCount;
+        subsector->midPoint.pos[VX] /= subsector->hEdgeCount; // num vertices.
+        subsector->midPoint.pos[VY] /= subsector->hEdgeCount;
     }
 
     // Calculate the worldwide grid offset.
-    subSector->worldGridOffset[VX] = fmod(subSector->bBox[0].pos[VX], 64);
-    subSector->worldGridOffset[VY] = fmod(subSector->bBox[1].pos[VY], 64);
+    subsector->worldGridOffset[VX] = fmod(subsector->bBox[0].pos[VX], 64);
+    subsector->worldGridOffset[VY] = fmod(subsector->bBox[1].pos[VY], 64);
 }
 
-static void prepareSubSectors(gamemap_t* map)
+static void prepareSubsectors(gamemap_t* map)
 {
     uint i;
 
-    for(i = 0; i < map->numFaces; ++i)
+    for(i = 0; i < map->numSubsectors; ++i)
     {
-        face_t* face = map->faces[i];
+        subsector_t* subsector = map->subsectors[i];
 
-        updateSubSectorMidPoint(face);
+        updateSubsectorMidPoint(subsector);
     }
 }
 
@@ -1713,7 +1711,7 @@ boolean MPE_End(void)
         }
     }
 
-    buildSectorSubSectorLists(gamemap);
+    buildSectorSubsectorLists(gamemap);
 
     // Announce any issues detected with the map.
     MPE_PrintMapErrors();
@@ -1738,7 +1736,7 @@ boolean MPE_End(void)
     finishSectors2(gamemap);
     updateMapBounds(gamemap);
     S_DetermineSubSecsAffectingSectorReverb(gamemap);
-    prepareSubSectors(gamemap);
+    prepareSubsectors(gamemap);
 
     MPE_FreeUnclosedSectorList();
 

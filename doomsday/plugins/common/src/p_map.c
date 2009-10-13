@@ -179,13 +179,13 @@ float P_GetGravity(void)
  * Checks the reject matrix to find out if the two sectors are visible
  * from each other.
  */
-static boolean checkReject(face_t* a, face_t* b)
+static boolean checkReject(subsector_t* a, subsector_t* b)
 {
     if(rejectMatrix != NULL)
     {
-        uint                s1, s2, pnum, bytenum, bitnum;
-        sector_t*           sec1 = DMU_GetPtrp(a, DMU_SECTOR);
-        sector_t*           sec2 = DMU_GetPtrp(b, DMU_SECTOR);
+        uint s1, s2, pnum, bytenum, bitnum;
+        sector_t* sec1 = DMU_GetPtrp(a, DMU_SECTOR);
+        sector_t* sec2 = DMU_GetPtrp(b, DMU_SECTOR);
 
         // Determine subsector entries in REJECT table.
         s1 = DMU_ToIndex(sec1);
@@ -216,17 +216,17 @@ static boolean checkReject(face_t* a, face_t* b)
  */
 boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
 {
-    float               fPos[3];
+    float fPos[3];
 
     // If either is unlinked, they can't see each other.
-    if(!from->face || !to->face)
+    if(!from->subsector || !to->subsector)
         return false;
 
     if(to->dPlayer && (to->dPlayer->flags & DDPF_CAMERA))
         return false; // Cameramen don't exist!
 
     // Check for trivial rejection.
-    if(!checkReject(from->face, to->face))
+    if(!checkReject(from->subsector, to->subsector))
         return false;
 
     fPos[VX] = from->pos[VX];
@@ -286,9 +286,9 @@ boolean PIT_StompThing(mobj_t* mo, void* data)
 
 boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 {
-    int                 stomping;
-    face_t*        newSSec;
-    float               box[4];
+    int stomping;
+    subsector_t* newSSec;
+    float box[4];
 
     // Kill anything occupying the position.
     tmThing = thing;
@@ -1224,7 +1224,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             goto pushline;
         }
         else if(blockingMobj->pos[VZ] + blockingMobj->height - thing->pos[VZ] > 24 ||
-                (DMU_GetFloatp(blockingMobj->face, DMU_CEILING_HEIGHT) -
+                (DMU_GetFloatp(blockingMobj->subsector, DMU_CEILING_HEIGHT) -
                  (blockingMobj->pos[VZ] + blockingMobj->height) < thing->height) ||
                 (tmCeilingZ - (blockingMobj->pos[VZ] + blockingMobj->height) <
                  thing->height))
@@ -1390,7 +1390,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #if __JHEXEN__
         // Must stay within a sector of a certain floor type?
         if((thing->flags2 & MF2_CANTLEAVEFLOORPIC) &&
-           (tmFloorMaterial != DMU_GetPtrp(thing->face, DMU_FLOOR_MATERIAL) ||
+           (tmFloorMaterial != DMU_GetPtrp(thing->subsector, DMU_FLOOR_MATERIAL) ||
             tmFloorZ - thing->pos[VZ] != 0))
         {
             return false;
@@ -1430,7 +1430,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     {
         thing->floorClip = 0;
 
-        if(thing->pos[VZ] == DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
+        if(thing->pos[VZ] == DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -1535,18 +1535,16 @@ boolean PTR_ShootTraverse(intercept_t* in)
     extern mobj_t lavaInflictor;
 #endif
 
-    int                 divisor;
-    float               pos[3], frac, slope, dist, thingTopSlope,
-                        thingBottomSlope, cTop, cBottom, d[3], step,
-                        stepv[3], tracePos[3], cFloor, cCeil;
-    linedef_t*          li;
-    mobj_t*             th;
-    divline_t*          trace =
-        (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
-    sector_t*           frontSec = NULL, *backSec = NULL;
-    face_t* contact, *originSub;
-    xline_t*            xline;
-    boolean             lineWasHit;
+    int divisor;
+    float pos[3], frac, slope, dist, thingTopSlope, thingBottomSlope, cTop,
+        cBottom, d[3], step, stepv[3], tracePos[3], cFloor, cCeil;
+    linedef_t* li;
+    mobj_t* th;
+    divline_t* trace = (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
+    sector_t* frontSec = NULL, *backSec = NULL;
+    subsector_t* contact, *originSub;
+    xline_t* xline;
+    boolean lineWasHit;
 
     tracePos[VX] = FIX2FLT(trace->pos[VX]);
     tracePos[VY] = FIX2FLT(trace->pos[VY]);
@@ -2826,9 +2824,9 @@ boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
 
 mobj_t* P_CheckOnMobj(mobj_t* thing)
 {
-    face_t*        newSSec;
-    float               pos[3], box[4];
-    mobj_t              oldMo;
+    subsector_t* newSSec;
+    float pos[3], box[4];
+    mobj_t oldMo;
 
     pos[VX] = thing->pos[VX];
     pos[VY] = thing->pos[VY];

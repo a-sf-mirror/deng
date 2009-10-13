@@ -939,14 +939,13 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
 
         if(s->sectorLevel[1] > 0 || s->sectorLevel[0] > 0)
         {
-            float               minLevel = s->sectorLevel[0];
-            float               maxLevel = s->sectorLevel[1];
-            subsector_t*        subSector = (subsector_t*)
-                R_PointInSubSector(s->pos[VX], s->pos[VY])->data;
-            sector_t*           sector;
-            float               oldIntensity = s->intensity;
+            float minLevel = s->sectorLevel[0];
+            float maxLevel = s->sectorLevel[1];
+            subsector_t* subsector = R_PointInSubSector(s->pos[VX], s->pos[VY]);
+            sector_t* sector;
+            float oldIntensity = s->intensity;
 
-            sector = subSector->sector;
+            sector = subsector->sector;
 
             // The lower intensities are useless for light emission.
             if(sector->lightLevel >= maxLevel)
@@ -1240,10 +1239,10 @@ void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
 void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                   const rvertex_t* rvertices, size_t numVertices,
                   const vectorcomp_t* normal, float sectorLightLevel,
-                  face_t* face, uint plane)
+                  subsector_t* subsector, uint plane)
 {
-    uint                i;
-    boolean             forced;
+    uint i;
+    boolean forced;
 
     memcpy(&trackChanged, &bsuf->tracker, sizeof(trackChanged));
     memset(&trackApplied, 0, sizeof(trackApplied));
@@ -1257,12 +1256,10 @@ void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
          * \todo This could be enhanced so that only the lights on the
          * right side of the surface are taken into consideration.
          */
+        vec3_t point;
 
-        const subsector_t*  subSector = (subsector_t*) face->data;
-        vec3_t              point;
-
-        V3_Set(point, subSector->midPoint.pos[VX], subSector->midPoint.pos[VY],
-               subSector->sector->planes[plane]->height);
+        V3_Set(point, subsector->midPoint.pos[VX], subsector->midPoint.pos[VY],
+               subsector->sector->planes[plane]->height);
 
         updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
     }

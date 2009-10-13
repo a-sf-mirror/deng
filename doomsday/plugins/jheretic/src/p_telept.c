@@ -142,7 +142,7 @@ boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
         thing->floorClip = 0;
 
         if(thing->pos[VZ] ==
-           DMU_GetFloatp(thing->face, DMU_FLOOR_HEIGHT))
+           DMU_GetFloatp(thing->subsector, DMU_FLOOR_HEIGHT))
         {
             const terraintype_t* tt = P_MobjGetFloorTerrainType(thing);
 
@@ -176,8 +176,8 @@ typedef struct {
 
 static int findMobj(void* p, void* context)
 {
-    findmobjparams_t*   params = (findmobjparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    findmobjparams_t* params = (findmobjparams_t*) context;
+    mobj_t* mo = (mobj_t*) p;
 
     // Must be of the correct type?
     if(params->type >= 0 && params->type != mo->type)
@@ -185,7 +185,7 @@ static int findMobj(void* p, void* context)
 
     // Must be in the specified sector?
     if(params->sec &&
-       params->sec != DMU_GetPtrp(mo->face, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(mo->subsector, DMU_SECTOR))
         return true; // Continue iteration.
 
     // Found it!
@@ -195,13 +195,13 @@ static int findMobj(void* p, void* context)
 
 static mobj_t* getTeleportDestination(short tag)
 {
-    iterlist_t*         list;
+    iterlist_t* list;
 
     list = P_GetSectorIterListForTag(tag, false);
     if(list)
     {
-        sector_t*           sec = NULL;
-        findmobjparams_t    params;
+        sector_t* sec = NULL;
+        findmobjparams_t params;
 
         params.type = MT_TELEPORTMAN;
         params.foundMobj = NULL;

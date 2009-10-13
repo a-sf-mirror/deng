@@ -707,7 +707,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     return 1; // Continue iteration.
 }
 
-static boolean drawSegsOfSubsector(face_t* ssec, void* context)
+static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
 {
     return DMU_Iteratep(ssec, DMU_HEDGE, Rend_AutomapSeg, context);
 }
@@ -720,7 +720,7 @@ static boolean drawSegsOfSubsector(face_t* ssec, void* context)
 static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
                         int player, int objType, boolean addToLists)
 {
-    uint                i;
+    uint i;
     rendwallseg_params_t params;
 
     // VALIDCOUNT is used to track which lines have been drawn this frame.
@@ -737,18 +737,18 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
     // objects?
     if(!addToLists)
     {
-        float               aabb[4];
+        float aabb[4];
 
         Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                               &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-        DMU_SubSectorsBoxIterator(aabb, NULL, drawSegsOfSubsector, &params);
+        DMU_SubsectorsBoxIterator(aabb, NULL, drawSegsOfSubsector, &params);
     }
     else
     {   // No. As the map lists are considered static we want them to
         // contain all walls, not just those visible *now*.
         for(i = 0; i < numsubsectors; ++i)
         {
-            DMU_Iteratep(DMU_ToPtr(DMU_FACE, i), DMU_HEDGE, Rend_AutomapSeg, &params);
+            DMU_Iteratep(DMU_ToPtr(DMU_SUBSECTOR, i), DMU_HEDGE, Rend_AutomapSeg, &params);
         }
     }
 }
@@ -757,11 +757,11 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
                           float a, blendmode_t blendMode,
                           boolean drawNormal)
 {
-    float               length = DMU_GetFloatp(line, DMU_LENGTH);
+    float length = DMU_GetFloatp(line, DMU_LENGTH);
 
     if(length > 0)
     {
-        float               v1[2], v2[2];
+        float v1[2], v2[2];
 
         DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX0), DMU_XY, v1);
         DMU_GetFloatpv(DMU_GetPtrp(line, DMU_VERTEX1), DMU_XY, v2);
@@ -781,7 +781,7 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
         {
 #define NORMTAIL_LENGTH         8
 
-            float               normal[2], unit[2], d1[2];
+            float normal[2], unit[2], d1[2];
 
             DMU_GetFloatpv(line, DMU_DXY, d1);
 
@@ -815,8 +815,8 @@ static void renderLinedef(linedef_t* line, float r, float g, float b,
 int renderPolyObjLinedef(void* obj, void* context)
 {
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
-    linedef_t*          line = (linedef_t*) obj;
-    xline_t*            xLine = P_ToXLine(line);
+    linedef_t* line = (linedef_t*) obj;
+    xline_t* xLine = P_ToXLine(line);
     const mapobjectinfo_t* info;
     automapobjectname_t amo;
 
@@ -852,8 +852,8 @@ int renderPolyObjLinedef(void* obj, void* context)
 
 boolean drawLinedefsOfPolyobject(polyobj_t* po, void* context)
 {
-    linedef_t**         linePtr;
-    int                 result = 1;
+    linedef_t** linePtr;
+    int result = 1;
 
     linePtr = po->lineDefs;
     while(*linePtr && (result = renderPolyObjLinedef(*linePtr, context)) != 0)
@@ -865,7 +865,7 @@ boolean drawLinedefsOfPolyobject(polyobj_t* po, void* context)
 static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
                            int player)
 {
-    float               aabb[4];
+    float aabb[4];
     rendwallseg_params_t params;
 
     // VALIDCOUNT is used to track which lines have been drawn this frame.
@@ -887,7 +887,7 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
 boolean renderXGLinedef(linedef_t* line, void* context)
 {
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
-    xline_t*            xLine;
+    xline_t* xLine;
 
     xLine = P_ToXLine(line);
     if(!xLine || xLine->validCount == VALIDCOUNT ||
@@ -911,7 +911,7 @@ static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
                              int player)
 {
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
-    float               aabb[4];
+    float aabb[4];
     rendwallseg_params_t params;
 
     if(!(map->flags & AMF_REND_XGLINES))
@@ -937,7 +937,7 @@ static DGLuint constructLineCharacter(DGLuint name, const vectorgrap_t* vg)
 {
     if(DGL_NewList(name, DGL_COMPILE))
     {
-        uint                i;
+        uint i;
 
         DGL_Begin(DGL_LINES);
         for(i = 0; i < vg->count; ++i)
@@ -997,16 +997,16 @@ static void renderLineCharacter(vectorgrap_t* vg, float x, float y,
 static void renderPlayers(const automap_t* map, const automapcfg_t* mcfg,
                           int player)
 {
-    int                 i;
-    float               size = PLAYERRADIUS;
-    vectorgrap_t*       vg;
+    int i;
+    float size = PLAYERRADIUS;
+    vectorgrap_t* vg;
 
     vg = AM_GetVectorGraph(AM_GetVectorGraphic(mcfg, AMO_THINGPLAYER));
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        player_t*           p = &players[i];
-        float               rgb[3], alpha;
-        mobj_t*             mo;
+        player_t* p = &players[i];
+        float rgb[3], alpha;
+        mobj_t* mo;
 
         if(!p->plr->inGame)
             continue;
@@ -1055,7 +1055,7 @@ static int getKeyColorForMobjType(int type)
 #endif
         {-1, -1} // Terminate.
     };
-    uint                i;
+    uint i;
 
     for(i = 0; keyColors[i].moType != -1; ++i)
         if(keyColors[i].moType == type)
@@ -1079,7 +1079,7 @@ static boolean renderThing(mobj_t* mo, void* context)
 
     if(p->flags & AMF_REND_KEYS)
     {
-        int                 keyColor;
+        int keyColor;
 
         // Is this a key?
         if((keyColor = getKeyColorForMobjType(mo->type)) != -1)
@@ -1113,12 +1113,12 @@ static boolean renderThing(mobj_t* mo, void* context)
 static void drawMarks(const automap_t* map)
 {
 #if !__JDOOM64__
-    float               x, y, w, h;
-    dpatch_t*           patch;
-    float               scrwidth = Get(DD_WINDOW_WIDTH);
-    float               scrheight = Get(DD_WINDOW_HEIGHT);
-    float               aabb[4];
-    unsigned int        i, numMarks;
+    float x, y, w, h;
+    dpatch_t* patch;
+    float scrwidth = Get(DD_WINDOW_WIDTH);
+    float scrheight = Get(DD_WINDOW_HEIGHT);
+    float aabb[4];
+    unsigned int i, numMarks;
 
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
@@ -1169,10 +1169,10 @@ static void drawMarks(const automap_t* map)
 static void setupGLStateForMap(const automap_t* map,
                                const automapcfg_t* mcfg, int player)
 {
-    float               wx, wy, ww, wh, angle, plx, ply;
-    float               scrwidth = Get(DD_WINDOW_WIDTH);
-    float               scrheight = Get(DD_WINDOW_HEIGHT);
-    rautomap_data_t*    rmap = &rautomaps[AM_MapForPlayer(player)-1];
+    float wx, wy, ww, wh, angle, plx, ply;
+    float scrwidth = Get(DD_WINDOW_WIDTH);
+    float scrheight = Get(DD_WINDOW_HEIGHT);
+    rautomap_data_t* rmap = &rautomaps[AM_MapForPlayer(player)-1];
 
     Automap_GetWindow(map, &wx, &wy, &ww, &wh);
     Automap_GetViewParallaxPosition(map, &plx, &ply);

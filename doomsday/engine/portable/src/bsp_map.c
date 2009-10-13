@@ -319,22 +319,23 @@ static void hardenLeaf(gamemap_t* map, face_t* dest, const bspleafdata_t* src)
         hEdge->next->prev = hEdge;
         hEdge->face = dest;
     } while((hEdge = hEdge->next) != dest->hEdge);
-
-    dest->data = Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
-
-    DMU_AddObjRecord(DMU_FACE, dest);
-
+  
     {
-    subsector_t* subSector = ((subsector_t*) dest->data);
+    subsector_t* subsector = (subsector_t*) Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
 
-    subSector->hEdgeCount = (uint) hEdgeCount;
+    subsector->face = dest;
+    subsector->hEdgeCount = (uint) hEdgeCount;
+    subsector->sector = src->sector;
 
-    subSector->sector = src->sector;
-    if(!subSector->sector)
+    if(!subsector->sector)
     {
         Con_Message("hardenLeaf: Warning orphan subsector %p (%i half-edges).\n",
-                    subSector, subSector->hEdgeCount);
+                    subsector, subsector->hEdgeCount);
     }
+
+    map->subsectors[DMU_AddObjRecord(DMU_SUBSECTOR, subsector) - 1] = subsector;
+
+    dest->data = subsector;
     }
 }
 
@@ -379,12 +380,12 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     {
         if(BinaryTree_IsLeaf(right))
         {
-            bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(right);
-            uint            idx;
+            bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(right);
+            uint idx;
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->faces[idx], leaf);
+            hardenLeaf(params->dest, params->dest->halfEdgeDS.faces[idx], leaf);
         }
         else
         {
@@ -399,16 +400,16 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     {
         if(BinaryTree_IsLeaf(left))
         {
-            bspleafdata_t*  leaf = (bspleafdata_t*) BinaryTree_GetData(left);
-            uint            idx;
+            bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(left);
+            uint idx;
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->faces[idx], leaf);
+            hardenLeaf(params->dest, params->dest->halfEdgeDS.faces[idx], leaf);
         }
         else
         {
-            bspnodedata_t*  data = (bspnodedata_t*) BinaryTree_GetData(left);
+            bspnodedata_t* data = (bspnodedata_t*) BinaryTree_GetData(left);
 
             node->children[LEFT] = data->index;
         }
@@ -450,12 +451,15 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
 
     {
     uint i;
-    dest->numFaces = 0;
-    BinaryTree_PostOrder(rootNode, countFace, &dest->numFaces);
-    dest->faces = Z_Malloc(dest->numFaces * sizeof(face_t*), PU_STATIC, 0);
-    for(i = 0; i < dest->numFaces; ++i)
-        dest->faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
+    dest->halfEdgeDS.numFaces = 0;
+    BinaryTree_PostOrder(rootNode, countFace, &dest->halfEdgeDS.numFaces);
+    dest->halfEdgeDS.faces = Z_Malloc(dest->halfEdgeDS.numFaces * sizeof(face_t*), PU_STATIC, 0);
+    for(i = 0; i < dest->halfEdgeDS.numFaces; ++i)
+        dest->halfEdgeDS.faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
     }
+
+    dest->numSubsectors = dest->halfEdgeDS.numFaces;
+    dest->subsectors = Z_Malloc(dest->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
 
     if(rootNode)
     {

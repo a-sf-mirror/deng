@@ -122,9 +122,9 @@ static const float dirSpeed[8][2] =
 };
 #undef MOVESPEED_DIAGONAL
 
-mobj_t *corpseQueue[CORPSEQUEUESIZE];
+mobj_t* corpseQueue[CORPSEQUEUESIZE];
 int corpseQueueSlot;
-mobj_t *bodyque[BODYQUESIZE];
+mobj_t* bodyque[BODYQUESIZE];
 int bodyqueslot;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -135,16 +135,16 @@ int bodyqueslot;
  * If a monster yells at a player, it will alert other monsters to the
  * player's whereabouts.
  */
-void P_NoiseAlert(mobj_t *target, mobj_t *emitter)
+void P_NoiseAlert(mobj_t* target, mobj_t* emitter)
 {
     VALIDCOUNT++;
-    P_RecursiveSound(target, DMU_GetPtrp(emitter->face, DMU_SECTOR), 0);
+    P_RecursiveSound(target, DMU_GetPtrp(emitter->subsector, DMU_SECTOR), 0);
 }
 
-boolean P_CheckMeleeRange(mobj_t *actor, boolean midrange)
+boolean P_CheckMeleeRange(mobj_t* actor, boolean midrange)
 {
-    mobj_t         *pl;
-    float           dist, range;
+    mobj_t* pl;
+    float dist, range;
 
     if(!actor->target)
         return false;
@@ -478,20 +478,20 @@ boolean P_LookForMonsters(mobj_t* mo)
  *
  * @return              @c true, if a player was targeted.
  */
-boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
+boolean P_LookForPlayers(mobj_t* actor, boolean allaround)
 {
-    int         c, stop;
-    player_t   *player;
-    sector_t   *sector;
-    angle_t     angle;
-    float       dist;
+    int c, stop;
+    player_t* player;
+    sector_t* sector;
+    angle_t angle;
+    float dist;
 
     if(!IS_NETGAME && players[0].health <= 0)
     {   // Single player game and player is dead, look for monsters
         return P_LookForMonsters(actor);
     }
 
-    sector = DMU_GetPtrp(actor->face, DMU_SECTOR);
+    sector = DMU_GetPtrp(actor->subsector, DMU_SECTOR);
     c = 0;
     stop = (actor->lastLook - 1) & 3;
     for(;; actor->lastLook = (actor->lastLook + 1) & 3)
@@ -560,12 +560,12 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround)
 /**
  * Stay in state until a player is sighted.
  */
-void C_DECL A_Look(mobj_t *actor)
+void C_DECL A_Look(mobj_t* actor)
 {
-    mobj_t         *targ;
+    mobj_t* targ;
 
     actor->threshold = 0; // Any shot will wake up.
-    targ = P_ToXSectorOfSubsector(actor->face)->soundTarget;
+    targ = P_ToXSectorOfSubsector(actor->subsector)->soundTarget;
     if(targ && (targ->flags & MF_SHOOTABLE))
     {
         actor->target = targ;
@@ -585,7 +585,7 @@ void C_DECL A_Look(mobj_t *actor)
   seeyou:
     if(actor->info->seeSound)
     {
-        int     sound;
+        int sound;
 
         sound = actor->info->seeSound;
         if(actor->flags2 & MF2_BOSS)
@@ -1868,13 +1868,13 @@ void C_DECL A_SerpentChase(mobj_t* actor)
     // Chase towards player.
     memcpy(oldpos, actor->pos, sizeof(oldpos));
 
-    oldMaterial = DMU_GetPtrp(actor->face, DMU_FLOOR_MATERIAL);
+    oldMaterial = DMU_GetPtrp(actor->subsector, DMU_FLOOR_MATERIAL);
     if(--actor->moveCount < 0 || !P_Move(actor))
     {
         P_NewChaseDir(actor);
     }
 
-    if(DMU_GetPtrp(actor->face, DMU_FLOOR_MATERIAL) != oldMaterial)
+    if(DMU_GetPtrp(actor->subsector, DMU_FLOOR_MATERIAL) != oldMaterial)
     {
         P_TryMove(actor, oldpos[VX], oldpos[VY]);
         P_NewChaseDir(actor);
@@ -1887,7 +1887,7 @@ void C_DECL A_SerpentChase(mobj_t* actor)
     }
 }
 
-void C_DECL A_SpeedFade(mobj_t *actor)
+void C_DECL A_SpeedFade(mobj_t* actor)
 {
     actor->flags |= MF_SHADOW;
     actor->flags &= ~MF_ALTSHADOW;

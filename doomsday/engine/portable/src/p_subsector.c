@@ -53,9 +53,9 @@
 /**
  * Update the subsector, property is selected by DMU_* name.
  */
-boolean SubSector_SetProperty(face_t* sub, const setargs_t* args)
+boolean Subsector_SetProperty(subsector_t* subsector, const setargs_t* args)
 {
-    Con_Error("SubSector_SetProperty: Property %s is not writable.\n",
+    Con_Error("Subsector_SetProperty: Property %s is not writable.\n",
               DMU_Str(args->prop));
 
     return true; // Continue iteration.
@@ -64,25 +64,19 @@ boolean SubSector_SetProperty(face_t* sub, const setargs_t* args)
 /**
  * Get the value of a subsector property, selected by DMU_* name.
  */
-boolean SubSector_GetProperty(const face_t* face, setargs_t* args)
+boolean Subsector_GetProperty(const subsector_t* subsector, setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_SECTOR:
         {
-        sector_t*           sec = ((subsector_t*) face->data)->sector;
-        dmuobjrecord_t*     r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        sector_t* sec = subsector->sector;
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_FACE_SECTOR, &r, args, 0);
         break;
         }
-    case DMU_LIGHT_LEVEL:
-        DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &((subsector_t*) face->data)->sector->lightLevel, args, 0);
-        break;
-    case DMU_MOBJS:
-        DMU_GetValue(DMT_SECTOR_MOBJLIST, &((subsector_t*) face->data)->sector->mobjList, args, 0);
-        break;
     default:
-        Con_Error("SubSector_GetProperty: No property %s.\n",
+        Con_Error("Subsector_GetProperty: No property %s.\n",
                   DMU_Str(args->prop));
     }
 

@@ -124,32 +124,27 @@ struct hedge
 end
 
 internal
-typedef struct subsector_s {
-    uint        hEdgeCount;
-    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
-    struct sector_s* sector;
-    int         addSpriteCount; // frame number of last R_AddSprites
-    int         validCount;
-    uint        reverb[NUM_REVERB_DATA];
-    fvertex_t   bBox[2]; // Min and max points.
-    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t   midPoint; // Center of the subsector.
-    struct shadowlink_s* shadows;
-    biassurface_t** bsuf; // [sector->planeCount] size.
-    hedge_t*    firstFanHEdge;
-    boolean     useMidPoint;
-} subsector_t;
+typedef struct face_s {
+    struct hedge_s*     hEdge; // First half-edge of this subsector.
+    void*               data;
+} face_t;
 end
 
-public
-#define DMT_FACE_HEDGECOUNT     DDVT_UINT
-#define DMT_FACE_POLYOBJ        DDVT_PTR
-#define DMT_FACE_SECTOR         DDVT_PTR
-end
-
-struct face
-    PTR     hedge_s*    hEdge // First half-edge of this subsector.
-    -       void*       data
+struct subsector
+    -       face_t*     face
+    UINT    uint        hEdgeCount
+    PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
+    PTR     sector_s*   sector
+    -       int         addSpriteCount // frame number of last R_AddSprites
+    -       int         validCount
+    -       uint[NUM_REVERB_DATA] reverb
+    -       fvertex_t[2] bBox // Min and max points.
+    -       float[2]    worldGridOffset // Offset to align the top left of the bBox to the world grid.
+    -       fvertex_t   midPoint // Center of the subsector.
+    -       shadowlink_s* shadows
+    -       biassurface_t** bsuf // [sector->planeCount] size.
+    -       hedge_t*    firstFanHEdge
+    -       boolean     useMidPoint
 end
 
 internal
@@ -379,10 +374,10 @@ struct sector
     PTR     mobj_s*     mobjList // List of mobjs in the sector.
     UINT    uint        lineDefCount
     PTR     linedef_s** lineDefs // [lineDefCount+1] size.
-    UINT    uint        faceCount
-    PTR     face_s**    faces // [faceCount+1] size.
-    -       uint        numReverbFaceAttributors
-    -       face_s**    reverbFaces // [numReverbFaceAttributors] size.
+    UINT    uint        subsectorCount
+    PTR     subsector_s** subsectors // [subsectorCount+1] size.
+    -       uint        numReverbSubsectorAttributors
+    -       subsector_s** reverbFaces // [numReverbSubsectorAttributors] size.
     PTR     ddmobj_base_t soundOrg
     UINT    uint        planeCount
     -       plane_s**   planes // [planeCount+1] size.

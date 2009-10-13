@@ -271,8 +271,7 @@ void LG_Init(void)
                 sample.pos[VX] = map->lg.origin[VX] + off[VX] + samplePoints[0].pos[VX];
                 sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[0].pos[VY];
 
-                ssamples[idx] = ((subsector_t*)
-                    R_PointInSubSector(sample.pos[VX], sample.pos[VY])->data)->sector;
+                ssamples[idx] = R_PointInSubSector(sample.pos[VX], sample.pos[VY])->sector;
                 if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
                    ssamples[idx] = NULL;
 
@@ -320,8 +319,7 @@ void LG_Init(void)
                         sample.pos[VX] = map->lg.origin[VX] + off[VX] + samplePoints[n].pos[VX];
                         sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[n].pos[VY];
 
-                        ssamples[idx] = ((subsector_t*)
-                            R_PointInSubSector(sample.pos[VX], sample.pos[VY])->data)->sector;
+                        ssamples[idx] = R_PointInSubSector(sample.pos[VX], sample.pos[VY])->sector;
                         if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
                            ssamples[idx] = NULL;
                     }

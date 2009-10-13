@@ -513,8 +513,8 @@ void Sfx_ChannelUpdate(sfxchannel_t* ch)
 
 void Sfx_ListenerUpdate(void)
 {
-    int                 i;
-    float               vec[4];
+    int i;
+    float vec[4];
 
     // No volume means no sound.
     if(!sfxAvail || !sfx3D || !sfxVolume)
@@ -525,7 +525,7 @@ void Sfx_ListenerUpdate(void)
 
     if(listener)
     {
-        subsector_t*            subSector = (subsector_t*) ((face_t*) ((dmuobjrecord_t*) listener->face)->obj)->data;
+        subsector_t* subSector = (subsector_t*) ((dmuobjrecord_t*) listener->subsector)->obj;
 
         // Position. At eye-level.
         Sfx_GetListenerXYZ(vec);

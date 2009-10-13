@@ -248,14 +248,14 @@ void Spr_VertexColors(int count, dgl_color_t *out, dgl_vertex_t *normal,
 static void setupPSpriteParams(rendpspriteparams_t* params,
                                vispsprite_t* spr)
 {
-    float               offScaleY = weaponOffsetScaleY / 1000.0f;
-    spritetex_t*        sprTex;
-    spritedef_t*        sprDef;
-    ddpsprite_t*        psp = spr->psp;
-    int                 sprite = psp->statePtr->sprite;
-    int                 frame = psp->statePtr->frame;
-    boolean             flip;
-    spriteframe_t*      sprFrame;
+    float offScaleY = weaponOffsetScaleY / 1000.0f;
+    spritetex_t* sprTex;
+    spritedef_t* sprDef;
+    ddpsprite_t* psp = spr->psp;
+    int sprite = psp->statePtr->sprite;
+    int frame = psp->statePtr->frame;
+    boolean flip;
+    spriteframe_t* sprFrame;
     material_snapshot_t ms;
 
 #ifdef RANGECHECK
@@ -315,11 +315,9 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         }
         else
         {
-            float               lightLevel;
-            const subsector_t*  subSector =
-                (subsector_t*) spr->data.sprite.face->data;
-            const float*        secColor =
-                R_GetSectorLightColor(subSector->sector);
+            float lightLevel;
+            const subsector_t* subsector = spr->data.sprite.subsector;
+            const float* secColor = R_GetSectorLightColor(subsector->sector);
 
             if(spr->psp->light < 1)
                 lightLevel = (spr->psp->light - .1f);
@@ -345,19 +343,19 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         lparams.center[VX] = spr->center[VX];
         lparams.center[VY] = spr->center[VY];
         lparams.center[VZ] = spr->center[VZ];
-        lparams.face = spr->data.sprite.face;
+        lparams.subsector = spr->data.sprite.subsector;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);
     }
 }
 
-void Rend_DrawPSprite(const rendpspriteparams_t *params)
+void Rend_DrawPSprite(const rendpspriteparams_t* params)
 {
-    int                 i;
-    float               v1[2], v2[2], v3[2], v4[2];
-    dgl_color_t          quadColors[4];
-    dgl_vertex_t         quadNormals[4];
+    int i;
+    float v1[2], v2[2], v3[2], v4[2];
+    dgl_color_t quadColors[4];
+    dgl_vertex_t quadNormals[4];
 
     if(renderTextures == 1)
     {
@@ -365,7 +363,7 @@ void Rend_DrawPSprite(const rendpspriteparams_t *params)
     }
     else if(renderTextures == 2)
     {   // For lighting debug, render all solid surfaces using the gray texture.
-        material_t*         mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
+        material_t* mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
         material_snapshot_t ms;
 
         Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
@@ -413,8 +411,8 @@ void Rend_DrawPSprite(const rendpspriteparams_t *params)
     }
 
     {
-    dgl_texcoord_t   tcs[4], *tc = tcs;
-    dgl_color_t     *c = quadColors;
+    dgl_texcoord_t tcs[4], *tc = tcs;
+    dgl_color_t* c = quadColors;
 
     tc[0].st[0] = params->texOffset[0] *  (params->texFlip[0]? 1:0);
     tc[0].st[1] = params->texOffset[1] *  (params->texFlip[1]? 1:0);
@@ -452,9 +450,9 @@ void Rend_DrawPSprite(const rendpspriteparams_t *params)
  */
 void Rend_Draw2DPlayerSprites(void)
 {
-    int                 i;
-    ddplayer_t         *ddpl = &viewPlayer->shared;
-    ddpsprite_t        *psp;
+    int i;
+    ddplayer_t* ddpl = &viewPlayer->shared;
+    ddpsprite_t* psp;
 
     // Cameramen have no HUD sprites.
     if((ddpl->flags & DDPF_CAMERA) || (ddpl->flags & DDPF_CHASECAM))
@@ -485,11 +483,11 @@ void Rend_Draw2DPlayerSprites(void)
  * with sprites, so no artifacts appear when sprites are seen behind
  * masked walls.
  */
-void Rend_RenderMaskedWall(rendmaskedwallparams_t *params)
+void Rend_RenderMaskedWall(rendmaskedwallparams_t* params)
 {
-    boolean             withDyn = false;
-    int                 normal = 0, dyn = 1;
-    GLenum              normalTarget, dynTarget;
+    boolean withDyn = false;
+    int normal = 0, dyn = 1;
+    GLenum normalTarget, dynTarget;
 
     // Do we have a dynamic light to blend with?
     // This only happens when multitexturing is enabled.
@@ -697,14 +695,12 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
         }
         else
         {
-            float               lightLevel;
-            const subsector_t*  subSector =
-                (subsector_t*) spr->data.model.face->data;
-            const float*        secColor =
-                R_GetSectorLightColor(subSector->sector);
+            float lightLevel;
+            const subsector_t*  subsector = spr->data.model.subsector;
+            const float* secColor = R_GetSectorLightColor(subsector->sector);
 
             // Diminished light (with compression).
-            lightLevel = subSector->sector->lightLevel;
+            lightLevel = subsector->sector->lightLevel;
 
             // No need for distance attentuation.
 
@@ -727,7 +723,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
         lparams.center[VX] = spr->center[VX];
         lparams.center[VY] = spr->center[VY];
         lparams.center[VZ] = spr->center[VZ];
-        lparams.face = spr->data.model.face;
+        lparams.subsector = spr->data.model.subsector;
         lparams.ambientColor = params->ambientColor;
 
         params->vLightListIdx = R_CollectAffectingLights(&lparams);
@@ -736,9 +732,9 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
 
 static boolean generateHaloForVisSprite(vissprite_t* spr, boolean primary)
 {
-    lumobj_t*           lum = LO_GetLuminous(spr->lumIdx);
-    vec3_t              center;
-    float               occlusionFactor, flareMul;
+    lumobj_t* lum = LO_GetLuminous(spr->lumIdx);
+    vec3_t center;
+    float occlusionFactor, flareMul;
 
     if(LUM_OMNI(lum)->flags & LUMOF_NOHALO)
         return false;
@@ -773,7 +769,7 @@ static boolean generateHaloForVisSprite(vissprite_t* spr, boolean primary)
     }
     else
     {
-        byte                haloFactor = (LUM_OMNI(lum)->haloFactors?
+        byte haloFactor = (LUM_OMNI(lum)->haloFactors?
             LUM_OMNI(lum)->haloFactors[viewPlayer - ddPlayers] : 0xff);
 
         occlusionFactor = (haloFactor & 0x7f) / 127.0f;
@@ -801,8 +797,8 @@ static boolean generateHaloForVisSprite(vissprite_t* spr, boolean primary)
  */
 void Rend_DrawMasked(void)
 {
-    boolean             haloDrawn = false;
-    vissprite_t*        spr;
+    boolean haloDrawn = false;
+    vissprite_t* spr;
 
     if(devNoSprites)
         return;
@@ -867,7 +863,7 @@ void Rend_DrawMasked(void)
 #if _DEBUG
 boolean drawVLightVector(const vlight_t* light, void* context)
 {
-    float               scale = 100;
+    float scale = 100;
 
     glBegin(GL_LINES);
     {
@@ -886,15 +882,15 @@ boolean drawVLightVector(const vlight_t* light, void* context)
 
 void Rend_RenderSprite(const rendspriteparams_t* params)
 {
-    int                 i;
-    dgl_color_t         quadColors[4];
-    dgl_vertex_t        quadNormals[4];
-    boolean             restoreMatrix = false;
-    boolean             restoreZ = false;
-    float               spriteCenter[3];
-    float               surfaceNormal[3];
-    float               v1[3], v2[3], v3[3], v4[3];
-    material_t*         mat = NULL;
+    int i;
+    dgl_color_t quadColors[4];
+    dgl_vertex_t quadNormals[4];
+    boolean restoreMatrix = false;
+    boolean restoreZ = false;
+    float spriteCenter[3];
+    float surfaceNormal[3];
+    float v1[3], v2[3], v3[3], v4[3];
+    material_t* mat = NULL;
     material_snapshot_t ms;
 
     if(renderTextures == 1)
@@ -1014,14 +1010,14 @@ if(params->vLightListIdx)
         glTranslatef(spriteCenter[VX], spriteCenter[VZ], spriteCenter[VY]);
         if(!params->viewAligned)
         {
-            float   s_dx = v1[VX] - v2[VX];
-            float   s_dy = v1[VY] - v2[VY];
+            float s_dx = v1[VX] - v2[VX];
+            float s_dy = v1[VY] - v2[VY];
 
             if(alwaysAlign == 2)
             {   // Restricted camera alignment.
-                float   dx = spriteCenter[VX] - vx;
-                float   dy = spriteCenter[VY] - vz;
-                float   spriteAngle =
+                float dx = spriteCenter[VX] - vx;
+                float dy = spriteCenter[VY] - vz;
+                float spriteAngle =
                     BANG2DEG(bamsAtan2(spriteCenter[VZ] - vy,
                                        sqrt(dx * dx + dy * dy)));
 
@@ -1030,7 +1026,7 @@ if(params->vLightListIdx)
 
                 if(fabs(spriteAngle) > maxSpriteAngle)
                 {
-                    float   turnAngle =
+                    float turnAngle =
                         (spriteAngle >
                         0 ? spriteAngle - maxSpriteAngle : spriteAngle +
                         maxSpriteAngle);
@@ -1067,8 +1063,8 @@ if(params->vLightListIdx)
     }
 
     {
-    dgl_vertex_t     vs[4], *v = vs;
-    dgl_texcoord_t   tcs[4], *tc = tcs;
+    dgl_vertex_t vs[4], *v = vs;
+    dgl_texcoord_t tcs[4], *tc = tcs;
 
     //  1---2
     //  |   |  Vertex layout.

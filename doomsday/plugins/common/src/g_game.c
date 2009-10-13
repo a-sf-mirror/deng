@@ -73,6 +73,7 @@
 #include "f_infine.h"
 #include "p_start.h"
 #include "p_inventory.h"
+#include "p_spec.h"
 #if __JHERETIC__ || __JHEXEN__
 # include "hu_inventory.h"
 #endif
@@ -642,6 +643,9 @@ void R_InitRefresh(void)
     VERBOSE(Con_Message("R_InitRefresh: Loading data for referesh.\n"))
 
     R_LoadColorPalettes();
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
+    P_InitPicAnims();
+#endif
 }
 
 /**

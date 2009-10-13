@@ -81,7 +81,7 @@ rendseg_t*      RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, h
                                    const float materialOffset[2], const float materialScale[2]);
 rendseg_t*      RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
                                      fvertex_t* from, fvertex_t* to, float bottom, float top,
-                                     face_t* face, poseg_t* poSeg);
+                                     subsector_t* subsector, poseg_t* poSeg);
 
 // Public methods:
 boolean         RendSeg_SkyMasked(rendseg_t* rseg);

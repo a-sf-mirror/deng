@@ -1269,22 +1269,21 @@ clipnode_t *C_AngleClippedBy(binangle_t bang)
 }
 
 /**
- * @return              Non-zero if the face might be visible.
+ * @return              Non-zero if the subsector might be visible.
  */
-int C_CheckFace(face_t* face)
+int C_CheckSubsector(subsector_t* subsector)
 {
-    uint                i;
-    subsector_t*        subSector = (subsector_t*) face->data;
-    hedge_t*            hEdge;
+    uint i;
+    hedge_t* hEdge;
 
-    if(!face || subSector->hEdgeCount < 3)
+    if(!subsector || subsector->hEdgeCount < 3)
         return 0;
 
     if(devNoCulling)
         return 1;
 
     // Do we need to resize the angle list buffer?
-    if(subSector->hEdgeCount > anglistSize)
+    if(subsector->hEdgeCount > anglistSize)
     {
         anglistSize *= 2;
         if(!anglistSize)
@@ -1294,24 +1293,24 @@ int C_CheckFace(face_t* face)
          Z_Realloc(anglist, sizeof(binangle_t) * anglistSize, PU_STATIC);
     }
 
-    if((hEdge = face->hEdge))
+    if((hEdge = subsector->face->hEdge))
     {
         i = 0;
         do
         {
-            vertex_t*           vtx = hEdge->HE_v1;
+            vertex_t* vtx = hEdge->HE_v1;
 
             // Shift for more accuracy.
             anglist[i++] = bamsAtan2((int) ((vtx->V_pos[VY] - vz) * 100),
                                      (int) ((vtx->V_pos[VX] - vx) * 100));
-        } while((hEdge = hEdge->next) != face->hEdge);
+        } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
 
     // Check each of the ranges defined by the edges.
-    for(i = 0; i < subSector->hEdgeCount - 1; ++i)
+    for(i = 0; i < subsector->hEdgeCount - 1; ++i)
     {
-        uint                end = i + 1;
-        binangle_t          angLen;
+        uint end = i + 1;
+        binangle_t angLen;
 
         // The last edge won't be checked. This is because the edges
         // define a closed, convex polygon and the last edge's range is

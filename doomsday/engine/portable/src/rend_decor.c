@@ -58,7 +58,7 @@ typedef struct decorsource_s {
     float           pos[3];
     float           maxDistance;
     const surface_t* surface;
-    face_t*         face;
+    subsector_t*    subsector;
     decortype_t     type;
     unsigned int    lumIdx; // index+1 of linked lumobj, or 0.
     float           fadeMul;
@@ -120,20 +120,20 @@ extern void setupModelParamsForVisSprite(rendmodelparams_t *params,
                                          struct modeldef_s* mf, struct modeldef_s* nextMF, float inter,
                                          float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                          vlight_t* lightList, uint numLights,
-                                         int id, int selector, face_t* subSector, int mobjDDFlags, int tmap,
+                                         int id, int selector, subsector_t* subsector, int mobjDDFlags, int tmap,
                                          boolean viewAlign, boolean fullBright,
                                          boolean alwaysInterpolate);
-extern void getLightingParams(float x, float y, float z, face_t* face,
+extern void getLightingParams(float x, float y, float z, subsector_t* subsector,
                               float distance, boolean fullBright,
                               uint maxLights, float ambientColor[3],
                               vlight_t** lights, uint* numLights);
 
 static void projectDecoration(decorsource_t* src)
 {
-    float               v1[2], min, max;
-    vissprite_t*        vis;
-    float               distance, brightness;
-    const subsector_t*  subSector = (subsector_t*) src->face->data;
+    float v1[2], min, max;
+    vissprite_t* vis;
+    float distance, brightness;
+    const subsector_t* subsector = src->subsector;
 
     // Does it pass the sector light limitation?
     if(src->type == DT_LIGHT)
@@ -147,8 +147,7 @@ static void projectDecoration(decorsource_t* src)
         max = src->data.model.def->lightLevels[0];
     }
 
-    if(!((brightness = R_CheckSectorLight(subSector->sector->lightLevel,
-                                          min, max)) > 0))
+    if(!((brightness = R_CheckSectorLight(subsector->sector->lightLevel, min, max)) > 0))
         return;
 
     if(src->fadeMul <= 0)
@@ -174,12 +173,12 @@ static void projectDecoration(decorsource_t* src)
 
     if(src->type == DT_MODEL)
     {
-        float           ambientColor[3];
-        vlight_t*       lightList = NULL;
-        uint            numLights = 0;
+        float ambientColor[3];
+        vlight_t* lightList = NULL;
+        uint numLights = 0;
 
         getLightingParams(src->pos[VX], src->pos[VY], src->pos[VZ],
-                          src->face, distance, levelFullBright,
+                          src->subsector, distance, levelFullBright,
                           modelLight,
                           ambientColor, &lightList, &numLights);
 
@@ -188,7 +187,7 @@ static void projectDecoration(decorsource_t* src)
                                      src->data.model.pitch, 0,
                                      src->data.model.mf, NULL, 0,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB],
-                                     src->fadeMul, lightList, numLights, 0, 0, src->face,
+                                     src->fadeMul, lightList, numLights, 0, 0, src->subsector,
                                      0, 0, false, levelFullBright, true);
     }
 
@@ -213,11 +212,11 @@ void Rend_ProjectDecorations(void)
 
 static void addLuminousDecoration(decorsource_t* src)
 {
-    uint                i;
-    float               min, max;
-    uint                lumIdx;
-    lumobj_t*           l;
-    float               brightness;
+    uint i;
+    float min, max;
+    uint lumIdx;
+    lumobj_t* l;
+    float brightness;
     const ded_decorlight_t* def = src->data.light.def;
 
     src->lumIdx = 0;
@@ -230,9 +229,7 @@ static void addLuminousDecoration(decorsource_t* src)
     min = def->lightLevels[0];
     max = def->lightLevels[1];
 
-    if(!((brightness = R_CheckSectorLight(
-            ((subsector_t*) src->face->data)->sector->lightLevel,
-             min, max)) > 0))
+    if(!((brightness = R_CheckSectorLight(src->subsector->sector->lightLevel, min, max)) > 0))
         return;
 
     // Apply the brightness factor (was calculated using sector lightlevel).
@@ -246,7 +243,7 @@ static void addLuminousDecoration(decorsource_t* src)
      * reconcile the two.
      */
 
-    lumIdx = LO_NewLuminous(LT_OMNI, src->face);
+    lumIdx = LO_NewLuminous(LT_OMNI, src->subsector);
     l = LO_GetLuminous(lumIdx);
 
     l->pos[VX] = src->pos[VX];
@@ -380,7 +377,7 @@ static void createDecorSource(const surface_t* suf,
     src->pos[VY] = dec->pos[VY];
     src->pos[VZ] = dec->pos[VZ];
     src->maxDistance = maxDistance;
-    src->face = dec->face;
+    src->subsector = dec->subsector;
     src->surface = suf;
     src->type = dec->type;
     switch(src->type)
@@ -525,8 +522,8 @@ static uint generateDecorLights(const ded_decorlight_t* def,
 
         for(; t < height; t += patternH)
         {
-            surfacedecor_t*     d;
-            float               offS = s / width, offT = t / height;
+            surfacedecor_t* d;
+            float offS = s / width, offT = t / height;
 
             V3_Set(pos, delta[VX] * offS,
                         delta[VY] * (axis == VZ? offT : offS),
@@ -543,7 +540,7 @@ static uint generateDecorLights(const ded_decorlight_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_LIGHT, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->face = R_PointInSubSector(d->pos[VX], d->pos[VY]);
+                d->subsector = R_PointInSubSector(d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
                 R_SurfaceListAdd(decoratedSurfaceList, suf);
@@ -625,7 +622,7 @@ static uint generateDecorModels(const ded_decormodel_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_MODEL, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->face = R_PointInSubSector(d->pos[VX], d->pos[VY]);
+                d->subsector = R_PointInSubSector(d->pos[VX], d->pos[VY]);
                 DEC_MODEL(d)->def = def;
                 DEC_MODEL(d)->mf = mf;
                 DEC_MODEL(d)->pitch = pitch;

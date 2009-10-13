@@ -246,10 +246,10 @@ static int newTorchDelta[MAXPLAYERS];
 /**
  * Moves the given origin along a given angle.
  */
-void P_Thrust(player_t *player, angle_t angle, float move)
+void P_Thrust(player_t* player, angle_t angle, float move)
 {
-    mobj_t*             mo = player->plr->mo;
-    uint                an = angle >> ANGLETOFINESHIFT;
+    mobj_t* mo = player->plr->mo;
+    uint an = angle >> ANGLETOFINESHIFT;
 
     if(player->powers[PT_FLIGHT] && !(mo->pos[VZ] <= mo->floorZ))
     {
@@ -269,8 +269,8 @@ void P_Thrust(player_t *player, angle_t angle, float move)
     else
     {
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-        sector_t*           sec = DMU_GetPtrp(mo->face, DMU_SECTOR);
-        float               mul;
+        sector_t* sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
+        float mul;
 #endif
 #if __JHEXEN__
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
@@ -960,18 +960,18 @@ void P_ClientSideThink(void)
 */
 
 #if __JHEXEN__
-/*    if(P_ToXSector(DMU_GetPtrp(mo->face, DMU_SECTOR))->special)
+/*    if(P_ToXSector(DMU_GetPtrp(mo->subsector, DMU_SECTOR))->special)
         P_PlayerInSpecialSector(pl);
 */
     // Set CONSOLEPLAYER thrust multiplier.
     if(mo->pos[VZ] > mo->floorZ)      // Airborne?
     {
-        float               mul = (mo->ddFlags & DDMF_FLY) ? 1 : 0;
+        float mul = (mo->ddFlags & DDMF_FLY) ? 1 : 0;
         DD_SetVariable(DD_CPLAYER_THRUST_MUL, &mul);
     }
     else
     {   const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
-        float               mul =
+        float mul =
             ((tt->flags & TTF_FRICTION_LOW) ? (1.0f / 2) : 1);
 
         DD_SetVariable(DD_CPLAYER_THRUST_MUL, &mul);
@@ -982,7 +982,7 @@ void P_ClientSideThink(void)
     // "predictor"; almost all clientside movement is handled by that
     // routine, in fact.)
     {
-    float       mul = XS_ThrustMul(DMU_GetPtrp(mo->face, DMU_SECTOR));
+    float mul = XS_ThrustMul(DMU_GetPtrp(mo->subsector, DMU_SECTOR));
     DD_SetVariable(DD_CPLAYER_THRUST_MUL, &mul);
     }
 #endif
@@ -1224,7 +1224,7 @@ void P_PlayerThinkView(player_t* player)
 
 void P_PlayerThinkSpecial(player_t* player)
 {
-    if(P_ToXSector(DMU_GetPtrp(player->plr->mo->face, DMU_SECTOR))->special)
+    if(P_ToXSector(DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR))->special)
         P_PlayerInSpecialSector(player);
 
 #if __JHEXEN__
@@ -1238,7 +1238,7 @@ void P_PlayerThinkSpecial(player_t* player)
  */
 void P_PlayerThinkInventory(player_t* player)
 {
-    int                 pnum = player - players;
+    int pnum = player - players;
 
     if(player->brain.cycleInvItem)
     {

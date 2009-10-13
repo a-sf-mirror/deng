@@ -68,8 +68,8 @@ typedef struct {
 
 static int findMobj(void* p, void* context)
 {
-    findmobjparams_t*   params = (findmobjparams_t*) context;
-    mobj_t*             mo = (mobj_t *) p;
+    findmobjparams_t* params = (findmobjparams_t*) context;
+    mobj_t* mo = (mobj_t *) p;
 
     // Must be of the correct type?
     if(params->type >= 0 && params->type != mo->type)
@@ -77,7 +77,7 @@ static int findMobj(void* p, void* context)
 
     // Must be in the specified sector?
     if(params->sec &&
-       params->sec != DMU_GetPtrp(mo->face, DMU_SECTOR))
+       params->sec != DMU_GetPtrp(mo->subsector, DMU_SECTOR))
         return true; // Continue iteration.
 
     // Found it!
@@ -87,13 +87,13 @@ static int findMobj(void* p, void* context)
 
 static mobj_t* getTeleportDestination(short tag)
 {
-    iterlist_t*         list;
+    iterlist_t* list;
 
     list = P_GetSectorIterListForTag(tag, false);
     if(list)
     {
-        sector_t*           sec = NULL;
-        findmobjparams_t    params;
+        sector_t* sec = NULL;
+        findmobjparams_t params;
 
         params.type = MT_TELEPORTMAN;
         params.foundMobj = NULL;
@@ -115,7 +115,7 @@ static mobj_t* getTeleportDestination(short tag)
 
 int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 {
-    mobj_t*             dest;
+    mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
         return 0;
@@ -126,11 +126,11 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 
     if((dest = getTeleportDestination(P_ToXLine(line)->tag)) != NULL)
     {   // A suitable destination has been found.
-        mobj_t*             fog;
-        uint                an;
-        float               oldPos[3];
-        float               aboveFloor;
-        angle_t             oldAngle;
+        mobj_t* fog;
+        uint an;
+        float oldPos[3];
+        float aboveFloor;
+        angle_t oldAngle;
 
         memcpy(oldPos, mo->pos, sizeof(mo->pos));
         oldAngle = mo->angle;
@@ -166,7 +166,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
         {
             mo->floorClip = 0;
 
-            if(mo->pos[VZ] == DMU_GetFloatp(mo->face, DMU_FLOOR_HEIGHT))
+            if(mo->pos[VZ] == DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT))
             {
                 const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 

@@ -93,7 +93,13 @@ typedef struct hedge_s {
     void*               data;
 } hedge_t;
 
+typedef struct face_s {
+    struct hedge_s*     hEdge;         // First half-edge of this subsector.
+    void*               data;
+} face_t;
+
 typedef struct subsector_s {
+    face_t*     face;
     uint        hEdgeCount;
     struct polyobj_s* polyObj; // NULL, if there is no polyobj.
     struct sector_s* sector;
@@ -108,11 +114,6 @@ typedef struct subsector_s {
     hedge_t*    firstFanHEdge;
     boolean     useMidPoint;
 } subsector_t;
-
-typedef struct face_s {
-    struct hedge_s*     hEdge;         // First half-edge of this subsector.
-    void*               data;
-} face_t;
 
 typedef struct materiallayer_s {
     byte            flags; // MLF_* flags, @see materialLayerFlags
@@ -181,7 +182,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    face_t*             face;
+    subsector_t*        subsector;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -321,10 +322,10 @@ typedef struct sector_s {
     struct mobj_s*      mobjList;      // List of mobjs in the sector.
     unsigned int        lineDefCount;
     struct linedef_s**  lineDefs;      // [lineDefCount+1] size.
-    unsigned int        faceCount;
-    struct face_s**     faces;         // [faceCount+1] size.
-    unsigned int        numReverbFaceAttributors;
-    struct face_s**     reverbFaces;   // [numReverbFaceAttributors] size.
+    unsigned int        subsectorCount;
+    struct subsector_s** subsectors;    // [subsectorCount+1] size.
+    unsigned int        numReverbSubsectorAttributors;
+    struct subsector_s** reverbSubsectors;  // [numReverbSubsectorAttributors] size.
     ddmobj_base_t       soundOrg;
     unsigned int        planeCount;
     struct plane_s**    planes;        // [planeCount+1] size.

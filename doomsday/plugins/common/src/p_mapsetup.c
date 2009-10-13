@@ -133,14 +133,14 @@ xsector_t* P_ToXSector(sector_t* sector)
 /**
  * Given a subsector - find its parent xsector.
  */
-xsector_t* P_ToXSectorOfSubsector(face_t* sub)
+xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
 {
-    sector_t*           sec;
+    sector_t* sec;
 
-    if(!sub)
+    if(!subsector)
         return NULL;
 
-    sec = DMU_GetPtrp(sub, DMU_SECTOR);
+    sec = DMU_GetPtrp(subsector, DMU_SECTOR);
 
     // Is it a dummy?
     if(DMU_IsDummy(sec))
@@ -500,10 +500,8 @@ static void P_LoadMapObjs(void)
         // Sound sequence origin?
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
-            face_t*        ssec =
-                P_PointInSubSector(spot->pos[VX], spot->pos[VY]);
-            xsector_t*          xsector =
-                P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
+            subsector_t* ssec = P_PointInSubSector(spot->pos[VX], spot->pos[VY]);
+            xsector_t* xsector = P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 
             xsector->seqType = spot->doomEdNum - 1400;
             continue;
