@@ -69,11 +69,11 @@ char mapID[9]; // Name by which the game referred to the current map.
 uint numVertexes = 0;
 vertex_t** vertexes = NULL;
 
-uint numHEdges = 0;
-hedge_t** hEdges = NULL;
-
 uint numSectors = 0;
 sector_t** sectors = NULL;
+
+uint numSegs = 0;
+seg_t** segs = NULL;
 
 uint numSubsectors = 0;
 subsector_t** subsectors = NULL;
@@ -162,23 +162,23 @@ void P_SetCurrentMap(gamemap_t* map)
     numVertexes = map->numVertexes;
     vertexes = map->vertexes;
 
-    numHEdges = map->numHEdges;
-    hEdges = map->hEdges;
-
     numSectors = map->numSectors;
     sectors = map->sectors;
-
-    numSubsectors = map->numSubsectors;
-    subsectors = map->subsectors;
-
-    numNodes = map->numNodes;
-    nodes = map->nodes;
 
     numLineDefs = map->numLineDefs;
     lineDefs = map->lineDefs;
 
     numSideDefs = map->numSideDefs;
     sideDefs = map->sideDefs;
+
+    numSubsectors = map->numSubsectors;
+    subsectors = map->subsectors;
+
+    numSegs = map->numSegs;
+    segs = map->segs;
+
+    numNodes = map->numNodes;
+    nodes = map->nodes;
 
     watchedPlaneList = &map->watchedPlaneList;
     movingSurfaceList = &map->movingSurfaceList;
@@ -296,27 +296,14 @@ void P_DestroyMap(gamemap_t* map)
     map->numSectors = 0;
 
     if(map->subsectors)
-    {
-        uint i;
-
-        for(i = 0; i < map->numSubsectors; ++i)
-        {
-            subsector_t* subsector = map->subsectors[i];
-
-            /*shadowlink_t* slink;
-            while((slink = subSector->shadows))
-            {
-                subSector->shadows = slink->next;
-                Z_Free(slink);
-            }*/
-            
-            Z_Free(subsector);
-        }
-
         Z_Free(map->subsectors);
-    }
     map->subsectors = NULL;
     map->numSubsectors = 0;
+
+    if(map->segs)
+        Z_Free(map->segs);
+    map->segs = NULL;
+    map->numSegs = 0;
 
     if(map->halfEdgeDS.faces)
     {
@@ -325,6 +312,20 @@ void P_DestroyMap(gamemap_t* map)
         for(i = 0; i < map->halfEdgeDS.numFaces; ++i)
         {
             face_t* face = map->halfEdgeDS.faces[i];
+            subsector_t* subsector = (subsector_t*) face->data;
+
+            if(subsector)
+            {
+                /*shadowlink_t* slink;
+                while((slink = subsector->shadows))
+                {
+                    subsector->shadows = slink->next;
+                    Z_Free(slink);
+                }*/
+                
+                Z_Free(subsector);
+            }
+
             Z_Free(face);
         }
 
@@ -333,24 +334,27 @@ void P_DestroyMap(gamemap_t* map)
     map->halfEdgeDS.faces = NULL;
     map->halfEdgeDS.numFaces = 0;
 
-    if(map->hEdges)
+    if(map->halfEdgeDS.hEdges)
     {
         uint i;
 
-        for(i = 0; i < map->numHEdges; ++i)
+        for(i = 0; i < map->halfEdgeDS.numHEdges; ++i)
         {
-            hedge_t* hEdge = map->hEdges[i];
+            hedge_t* hEdge = map->halfEdgeDS.hEdges[i];
+            seg_t* seg = hEdge->data;
 
-            if(hEdge->data)
-               Z_Free(hEdge->data);
+            if(seg)
+            {
+               Z_Free(seg);
+            }
 
             Z_Free(hEdge);
         }
 
-        Z_Free(map->hEdges);
+        Z_Free(map->halfEdgeDS.hEdges);
     }
-    map->hEdges = NULL;
-    map->numHEdges = 0;
+    map->halfEdgeDS.hEdges = NULL;
+    map->halfEdgeDS.numHEdges = 0;
 
     if(map->nodes)
     {

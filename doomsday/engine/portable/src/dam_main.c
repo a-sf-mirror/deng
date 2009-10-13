@@ -57,10 +57,9 @@
 
 static boolean convertMap(const char* mapID)
 {
-    boolean             converted = false;
+    boolean converted = false;
 
-    Con_Message("convertMap: Attempting conversion of \"%s\".\n",
-                mapID);
+    Con_Message("convertMap: Attempting conversion of \"%s\".\n", mapID);
 
     // Nope. See if there is a converter available.
     if(Plug_CheckForHook(HOOK_MAP_CONVERT))
@@ -82,7 +81,7 @@ gamemap_t* DAM_CreateMap(void)
 
 ddstring_t* DAM_ComposeArchiveMapFilepath(const char* mapID)
 {
-    ddstring_t*         s = Str_New();
+    ddstring_t* s = Str_New();
 
     Str_Init(s);
     Str_Appendf(s, "%s.pk3", mapID);
@@ -102,7 +101,7 @@ boolean DAM_TryMapConversion(const char* mapID)
     DMU_ClearObjRecords(DMU_SIDEDEF);
     DMU_ClearObjRecords(DMU_PLANE);
     DMU_ClearObjRecords(DMU_SECTOR);
-    DMU_ClearObjRecords(DMU_HEDGE);
+    DMU_ClearObjRecords(DMU_SEG);
     DMU_ClearObjRecords(DMU_SUBSECTOR);
 
     return convertMap(mapID);
@@ -110,8 +109,8 @@ boolean DAM_TryMapConversion(const char* mapID)
 
 gamemap_t* DAM_LoadMap(const char* mapID)
 {
-    ddstring_t*         s = DAM_ComposeArchiveMapFilepath(mapID);
-    gamemap_t*          map = DAM_CreateMap();
+    ddstring_t* s = DAM_ComposeArchiveMapFilepath(mapID);
+    gamemap_t* map = DAM_CreateMap();
 
     // Destroy DMU obj records for map-owned objects.
     DMU_ClearObjRecords(DMU_VERTEX);
@@ -119,7 +118,7 @@ gamemap_t* DAM_LoadMap(const char* mapID)
     DMU_ClearObjRecords(DMU_SIDEDEF);
     DMU_ClearObjRecords(DMU_PLANE);
     DMU_ClearObjRecords(DMU_SECTOR);
-    DMU_ClearObjRecords(DMU_HEDGE);
+    DMU_ClearObjRecords(DMU_SEG);
     DMU_ClearObjRecords(DMU_SUBSECTOR);
 
     DAM_MapRead(map, Str_Text(s));

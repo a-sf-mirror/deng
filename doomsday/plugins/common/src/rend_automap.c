@@ -610,15 +610,15 @@ static void rendLine2(const automap_t* map, const automapcfg_t* mcfg,
 
 int Rend_AutomapSeg(void* obj, void* data)
 {
-    hedge_t*            seg = (hedge_t*) obj;
+    seg_t* seg = (seg_t*) obj;
     rendwallseg_params_t* p = (rendwallseg_params_t*) data;
-    float               v1[2], v2[2];
-    linedef_t*          line;
-    xline_t*            xLine;
-    sector_t*           frontSector, *backSector;
+    float v1[2], v2[2];
+    linedef_t* line;
+    xline_t* xLine;
+    sector_t* frontSector, *backSector;
     const mapobjectinfo_t* info;
-    player_t*           plr = p->plr;
-    automapid_t         id;
+    player_t* plr = p->plr;
+    automapid_t id;
 
     line = DMU_GetPtrp(seg, DMU_LINEDEF);
     if(!line)
@@ -709,7 +709,7 @@ int Rend_AutomapSeg(void* obj, void* data)
 
 static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
 {
-    return DMU_Iteratep(ssec, DMU_HEDGE, Rend_AutomapSeg, context);
+    return DMU_Iteratep(ssec, DMU_SEG, Rend_AutomapSeg, context);
 }
 
 /**
@@ -748,7 +748,7 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
         // contain all walls, not just those visible *now*.
         for(i = 0; i < numsubsectors; ++i)
         {
-            DMU_Iteratep(DMU_ToPtr(DMU_SUBSECTOR, i), DMU_HEDGE, Rend_AutomapSeg, &params);
+            DMU_Iteratep(DMU_ToPtr(DMU_SUBSECTOR, i), DMU_SEG, Rend_AutomapSeg, &params);
         }
     }
 }

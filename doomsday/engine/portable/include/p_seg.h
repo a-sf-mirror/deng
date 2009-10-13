@@ -23,16 +23,16 @@
  */
 
 /**
- * r_seg.h: World segs.
+ * r_seg.h: Map wall segment.
  */
 
-#ifndef __DOOMSDAY_WORLD_SEG_H__
-#define __DOOMSDAY_WORLD_SEG_H__
+#ifndef DOOMSDAY_MAP_SEG_H
+#define DOOMSDAY_MAP_SEG_H
 
 #include "r_data.h"
 #include "p_dmu.h"
 
-boolean         Seg_GetProperty(const hedge_t* hEdge, setargs_t* args);
-boolean         Seg_SetProperty(hedge_t* hEdge, const setargs_t* args);
+boolean         Seg_GetProperty(const seg_t* seg, setargs_t* args);
+boolean         Seg_SetProperty(seg_t* seg, const setargs_t* args);
 
-#endif
+#endif /* DOOMSDAY_MAP_SEG_H */

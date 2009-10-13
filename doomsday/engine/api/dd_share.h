@@ -542,7 +542,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_NONE = 0,
     DMU_FIRST_TYPE = 1,
     DMU_VERTEX = DMU_FIRST_TYPE,
-    DMU_HEDGE,
+    DMU_SEG,
     DMU_LINEDEF,
     DMU_SIDEDEF,
     DMU_NODE,
@@ -630,7 +630,7 @@ enum {
     DMU_LINE_COUNT,
     DMU_SIDE_COUNT,
     DMU_VERTEX_COUNT,
-    DMU_HEDGE_COUNT,
+    DMU_SEG_COUNT,
     DMU_SUBSECTOR_COUNT,
     DMU_NODE_COUNT,
     DMU_POLYOBJ_COUNT

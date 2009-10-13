@@ -72,7 +72,7 @@ boolean Subsector_GetProperty(const subsector_t* subsector, setargs_t* args)
         {
         sector_t* sec = subsector->sector;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
-        DMU_GetValue(DMT_FACE_SECTOR, &r, args, 0);
+        DMU_GetValue(DMT_SUBSECTOR_SECTOR, &r, args, 0);
         break;
         }
     default:

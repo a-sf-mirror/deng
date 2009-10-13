@@ -48,24 +48,6 @@ typedef struct vertex_s {
     mvertex_t           buildData;
 } vertex_t;
 
-// Helper macros for accessing seg data elements.
-#define FRONT 0
-#define BACK  1
-
-// Seg frame flags
-#define SEGINF_FACINGFRONT      0x0001
-#define SEGINF_BACKSECSKYFIX    0x0002
-
-typedef struct seg_s {
-    struct sidedef_s* sideDef;
-    angle_t     angle;
-    byte        side; // 0=front, 1=back
-    float       length; // Accurate length of the segment (v1 -> v2).
-    float       offset;
-    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
-    short       frameFlags;
-} seg_t;
-
 #define HE_v1                   vertex
 #define HE_v1pos                vertex->V_pos
 
@@ -85,34 +67,53 @@ typedef struct seg_s {
 #define HE_BACKSECTOR(hEdge)    ((hEdge)->twin->face ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
 
 typedef struct hedge_s {
-    struct vertex_s*    vertex;
-    struct hedge_s*     twin;
-    struct hedge_s*     next;
-    struct hedge_s*     prev;
-    struct face_s*      face;
-    void*               data;
+    struct vertex_s* vertex;
+    struct hedge_s* twin;
+    struct hedge_s* next;
+    struct hedge_s* prev;
+    struct face_s* face;
+    void*       data;
 } hedge_t;
 
+// Helper macros for accessing seg data elements.
+#define FRONT 0
+#define BACK  1
+
+// Seg frame flags
+#define SEGINF_FACINGFRONT      0x0001
+#define SEGINF_BACKSECSKYFIX    0x0002
+
+typedef struct seg_s {
+    struct hedge_s*     hEdge;
+    struct sidedef_s*   sideDef;
+    angle_t             angle;
+    byte                side;          // 0=front, 1=back
+    float               length;        // Accurate length of the segment (v1 -> v2).
+    float               offset;
+    biassurface_t*      bsuf[3];       // 0=middle, 1=top, 2=bottom
+    short               frameFlags;
+} seg_t;
+
 typedef struct face_s {
-    struct hedge_s*     hEdge;         // First half-edge of this subsector.
+    struct hedge_s*     hEdge; // First half-edge of this subsector.
     void*               data;
 } face_t;
 
 typedef struct subsector_s {
-    face_t*     face;
-    uint        hEdgeCount;
-    struct polyobj_s* polyObj; // NULL, if there is no polyobj.
-    struct sector_s* sector;
-    int         addSpriteCount; // frame number of last R_AddSprites
-    int         validCount;
-    uint        reverb[NUM_REVERB_DATA];
-    fvertex_t   bBox[2]; // Min and max points.
-    float       worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
-    fvertex_t   midPoint; // Center of the subsector.
+    face_t*             face;
+    unsigned int        hEdgeCount;
+    struct polyobj_s*   polyObj;       // NULL, if there is no polyobj.
+    struct sector_s*    sector;
+    int                 addSpriteCount; // frame number of last R_AddSprites
+    int                 validCount;
+    unsigned int        reverb[NUM_REVERB_DATA];
+    fvertex_t           bBox[2];       // Min and max points.
+    float               worldGridOffset[2]; // Offset to align the top left of the bBox to the world grid.
+    fvertex_t           midPoint;      // Center of the subsector.
     struct shadowlink_s* shadows;
-    biassurface_t** bsuf; // [sector->planeCount] size.
-    hedge_t*    firstFanHEdge;
-    boolean     useMidPoint;
+    biassurface_t**     bsuf;          // [sector->planeCount] size.
+    hedge_t*            firstFanHEdge;
+    boolean             useMidPoint;
 } subsector_t;
 
 typedef struct materiallayer_s {
@@ -323,9 +324,9 @@ typedef struct sector_s {
     unsigned int        lineDefCount;
     struct linedef_s**  lineDefs;      // [lineDefCount+1] size.
     unsigned int        subsectorCount;
-    struct subsector_s** subsectors;    // [subsectorCount+1] size.
+    struct subsector_s** subsectors;   // [subsectorCount+1] size.
     unsigned int        numReverbSubsectorAttributors;
-    struct subsector_s** reverbSubsectors;  // [numReverbSubsectorAttributors] size.
+    struct subsector_s** reverbSubsectors; // [numReverbSubsectorAttributors] size.
     ddmobj_base_t       soundOrg;
     unsigned int        planeCount;
     struct plane_s**    planes;        // [planeCount+1] size.

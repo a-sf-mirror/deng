@@ -121,14 +121,14 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
         {
         vertex_t* v = lin->L_v1;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
-        DMU_GetValue(DMT_LINEDEF_V, &r, args, 0);
+        DMU_GetValue(DMT_LINEDEF_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
         vertex_t* v = lin->L_v2;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
-        DMU_GetValue(DMT_LINEDEF_V, &r, args, 0);
+        DMU_GetValue(DMT_LINEDEF_VERTEX2, &r, args, 0);
         break;
         }
     case DMU_DX:
@@ -171,14 +171,14 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
         {
         sidedef_t* side = LINE_FRONTSIDE(lin);
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
-        DMU_GetValue(DMT_LINEDEF_SIDE, &r, args, 0);
+        DMU_GetValue(DMT_LINEDEF_FRONTSIDEDEF, &r, args, 0);
         break;
         }
     case DMU_SIDEDEF1:
         {
         sidedef_t* side = LINE_BACKSIDE(lin);
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
-        DMU_GetValue(DMT_LINEDEF_SIDE, &r, args, 0);
+        DMU_GetValue(DMT_LINEDEF_BACKSIDEDEF, &r, args, 0);
         break;
         }
     case DMU_BOUNDING_BOX:

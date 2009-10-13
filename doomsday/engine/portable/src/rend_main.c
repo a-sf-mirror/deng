@@ -3014,6 +3014,7 @@ void Rend_RenderNormals(void)
 #define NORM_TAIL_LENGTH    (20)
 
     uint i;
+    gamemap_t* map;
 
     if(!devSurfaceNormals)
         return;
@@ -3021,10 +3022,12 @@ void Rend_RenderNormals(void)
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_CULL_FACE);
 
-    for(i = 0; i < numHEdges; ++i)
+    map = P_GetCurrentMap();
+    for(i = 0; i < map->numSegs; ++i)
     {
-        hedge_t* hEdge = hEdges[i];
-        seg_t* seg = (seg_t*) hEdge->data, *backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
+        seg_t* seg = map->segs[i];
+        hedge_t* hEdge = seg->hEdge;
+        seg_t* backSeg = hEdge->twin ? ((seg_t*) hEdge->twin->data) : NULL;
         sidedef_t* side = seg->sideDef;
         surface_t* suf;
         vec3_t origin;

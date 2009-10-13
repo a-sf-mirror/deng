@@ -559,13 +559,12 @@ static int getPolyobjMirror(uint poly)
     return 0;
 }
 
-static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
+static void thrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
 {
-    hedge_t*              seg = (hedge_t*) segp;
-    polyobj_t*          po = (polyobj_t*) pop;
-    uint                thrustAn;
-    float               thrustX, thrustY, force;
-    polyevent_t*        pe;
+    polyobj_t* po = (polyobj_t*) pop;
+    uint thrustAn;
+    float thrustX, thrustY, force;
+    polyevent_t* pe;
 
     // Clients do no polyobj <-> mobj interaction.
     if(IS_CLIENT)
@@ -577,8 +576,7 @@ static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
     if(!(mo->flags & MF_SHOOTABLE) && !mo->player)
         return;
 
-    thrustAn =
-        (DMU_GetAnglep(seg, DMU_ANGLE) - ANGLE_90) >> ANGLETOFINESHIFT;
+    thrustAn = (DMU_GetAnglep(lineDefPtr, DMU_ANGLE) - ANGLE_90) >> ANGLETOFINESHIFT;
 
     pe = (polyevent_t*) po->specialData;
     if(pe)
@@ -613,8 +611,7 @@ static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
 
     if(po->crush)
     {
-        if(!P_CheckPosition2f(mo, mo->pos[VX] + thrustX,
-                              mo->pos[VY] + thrustY))
+        if(!P_CheckPosition2f(mo, mo->pos[VX] + thrustX, mo->pos[VY] + thrustY))
         {
             P_DamageMobj(mo, NULL, NULL, 3, false);
         }
@@ -626,7 +623,7 @@ static void thrustMobj(struct mobj_s* mo, void* segp, void* pop)
  */
 void PO_InitForMap(void)
 {
-    uint                i;
+    uint i;
 
     Con_Message("PO_InitForMap: Initializing polyobjects.\n");
 
@@ -634,9 +631,9 @@ void PO_InitForMap(void)
     P_SetPolyobjCallback(thrustMobj);
     for(i = 0; i < numpolyobjs; ++i)
     {
-        uint                j;
-        const mapspot_t*    spot;
-        polyobj_t*          po;
+        uint j;
+        const mapspot_t* spot;
+        polyobj_t* po;
 
         po = P_GetPolyobj(i | 0x80000000);
 

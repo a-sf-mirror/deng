@@ -785,7 +785,7 @@ static void readSubsector(const gamemap_t* map, uint idx)
 
 static void archiveSubsectors(gamemap_t* map, boolean write)
 {
-    uint                i;
+    uint i;
 
     if(write)
         beginSegment(DAMSEG_SSECTORS);
@@ -814,49 +814,26 @@ static void archiveSubsectors(gamemap_t* map, boolean write)
 
 static void writeSeg(const gamemap_t* map, uint idx)
 {
-    const hedge_t* hEdge = map->hEdges[idx];
+    const seg_t* seg = map->segs[idx];
 
-    writeLong(hEdge->next? DMU_GetObjRecord(DMU_HEDGE, hEdge->next)->id : 0);
-    writeLong(hEdge->prev? DMU_GetObjRecord(DMU_HEDGE, hEdge->prev)->id : 0);
-    writeLong(hEdge->twin? DMU_GetObjRecord(DMU_HEDGE, hEdge->twin)->id : 0);
-    writeLong(hEdge->vertex? DMU_GetObjRecord(DMU_VERTEX, hEdge->vertex)->id : 0);
-    //writeLong(hEdge->face? DMU_GetObjRecord(DMU_SUBSECTOR, hEdge->face)->id : 0);
-
-    {
-    const seg_t* s = (seg_t*) hEdge->data;
-
-    writeFloat(s->length);
-    writeFloat(s->offset);
-    writeLong(s->sideDef? DMU_GetObjRecord(DMU_SIDEDEF, s->sideDef)->id : 0);
-    writeLong((long) s->angle);
-    writeByte(s->side);
-    }
+    writeFloat(seg->length);
+    writeFloat(seg->offset);
+    writeLong(seg->sideDef? DMU_GetObjRecord(DMU_SIDEDEF, seg->sideDef)->id : 0);
+    writeLong((long) seg->angle);
+    writeByte(seg->side);
 }
 
 static void readSeg(const gamemap_t* map, uint idx)
 {
     long obIdx;
-    hedge_t* hEdge = map->hEdges[idx];
+    seg_t* seg = map->segs[idx];
 
+    seg->length = readFloat();
+    seg->offset = readFloat();
     obIdx = readLong();
-    hEdge->next = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
-    obIdx = readLong();
-    hEdge->prev = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
-    obIdx = readLong();
-    hEdge->twin = (obIdx == 0? NULL : map->hEdges[(unsigned) obIdx - 1]);
-    hEdge->vertex = map->vertexes[(unsigned) readLong() - 1];
-    //hEdge->face = (obIdx == 0? NULL : map->faces[(unsigned) obIdx - 1]);
-
-    {
-    seg_t* s = (seg_t*) hEdge->data;
-
-    s->length = readFloat();
-    s->offset = readFloat();
-    obIdx = readLong();
-    s->sideDef = (obIdx == 0? NULL : map->sideDefs[(unsigned) obIdx - 1]);
-    s->angle = (angle_t) readLong();
-    s->side = readByte();
-    }
+    seg->sideDef = (obIdx == 0? NULL : map->sideDefs[(unsigned) obIdx - 1]);
+    seg->angle = (angle_t) readLong();
+    seg->side = readByte();
 }
 
 static void archiveSegs(gamemap_t* map, boolean write)
@@ -870,15 +847,15 @@ static void archiveSegs(gamemap_t* map, boolean write)
 
     if(write)
     {
-        writeLong(map->numHEdges);
-        for(i = 0; i < map->numHEdges; ++i)
+        writeLong(map->numSegs);
+        for(i = 0; i < map->numSegs; ++i)
             writeSeg(map, i);
     }
     else
     {
-        map->numHEdges = readLong();
-        map->hEdges = Z_Malloc(sizeof(hedge_t) * map->numHEdges, PU_MAP, 0);
-        for(i = 0; i < map->numHEdges; ++i)
+        map->numSegs = readLong();
+        map->segs = Z_Malloc(sizeof(seg_t) * map->numSegs, PU_STATIC, 0);
+        for(i = 0; i < map->numSegs; ++i)
             readSeg(map, i);
     }
 

@@ -191,8 +191,8 @@ extern char mapID[9];
 extern uint numVertexes;
 extern vertex_t** vertexes;
 
-extern uint numHEdges;
-extern hedge_t** hEdges;
+extern uint numSegs;
+extern seg_t** segs;
 
 extern uint numSectors;
 extern sector_t** sectors;
@@ -222,6 +222,9 @@ typedef struct gamemap_s {
     float           bBox[4];
 
     struct {
+        uint            numHEdges;
+        hedge_t**       hEdges;
+
         uint            numFaces;
         face_t**        faces;
     } halfEdgeDS;
@@ -229,14 +232,14 @@ typedef struct gamemap_s {
     uint            numVertexes;
     vertex_t**      vertexes;
 
-    uint            numHEdges;
-    hedge_t**       hEdges;
-
     uint            numSectors;
     sector_t**      sectors;
 
     uint            numSubsectors;
     subsector_t**   subsectors;
+
+    uint            numSegs;
+    seg_t**         segs;
 
     uint            numNodes;
     node_t**        nodes;

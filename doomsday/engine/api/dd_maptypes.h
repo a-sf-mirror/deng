@@ -16,29 +16,26 @@ typedef struct thinker_s {
     thid_t          id; // Only used for mobjs (zero is not an ID).
 } thinker_t;
 
-#define DMT_VERTEX_POS  DDVT_FLOAT
+#define DMT_VERTEX_POS DDVT_FLOAT
 
 
-#define DMT_HEDGE_SIDEDEF       DDVT_PTR
-#define DMT_HEDGE_LINEDEF       DDVT_PTR
-#define DMT_HEDGE_SEC           DDVT_PTR
-#define DMT_HEDGE_SUBSECTOR     DDVT_PTR
-#define DMT_HEDGE_ANGLE         DDVT_ANGLE
-#define DMT_HEDGE_SIDE          DDVT_BYTE
-#define DMT_HEDGE_LENGTH        DDVT_FLOAT
-#define DMT_HEDGE_OFFSET        DDVT_FLOAT
+#define DMT_SEG_VERTEX1 DDVT_PTR
+#define DMT_SEG_VERTEX2 DDVT_PTR
+#define DMT_SEG_SECTOR DDVT_PTR
+#define DMT_SEG_LINEDEF DDVT_PTR
+#define DMT_SEG_FRONTSECTOR DDVT_PTR
+#define DMT_SEG_BACKSECTOR DDVT_PTR
 
-#define DMT_HEDGE_VERTEX DDVT_PTR
-#define DMT_HEDGE_TWIN DDVT_PTR
-#define DMT_HEDGE_NEXT DDVT_PTR
-#define DMT_HEDGE_PREV DDVT_PTR
-#define DMT_HEDGE_FACE DDVT_PTR
+#define DMT_SEG_SIDEDEF DDVT_PTR
+#define DMT_SEG_ANGLE DDVT_ANGLE
+#define DMT_SEG_SIDE DDVT_BYTE         // 0=front, 1=back
+#define DMT_SEG_LENGTH DDVT_FLOAT      // Accurate length of the segment (v1 -> v2).
+#define DMT_SEG_OFFSET DDVT_FLOAT
 
-#define DMT_FACE_HEDGECOUNT     DDVT_UINT
-#define DMT_FACE_POLYOBJ        DDVT_PTR
-#define DMT_FACE_SECTOR         DDVT_PTR
+#define DMT_SUBSECTOR_EDGECOUNT DDVT_UINT
 
-#define DMT_FACE_HEDGE DDVT_PTR        // First half-edge of this subsector.
+#define DMT_SUBSECTOR_POLYOBJ DDVT_PTR // NULL, if there is no polyobj.
+#define DMT_SUBSECTOR_SECTOR DDVT_PTR
 
 #define DMT_MATERIAL_LAYER_FLAGS DDVT_BYTE
 #define DMT_MATERIAL_LAYER_OFFSET_X DDVT_FLOAT
@@ -72,8 +69,8 @@ typedef struct thinker_s {
 #define DMT_SECTOR_MOBJLIST DDVT_PTR   // List of mobjs in the sector.
 #define DMT_SECTOR_LINEDEFCOUNT DDVT_UINT
 #define DMT_SECTOR_LINEDEFS DDVT_PTR   // [lineDefCount+1] size.
-#define DMT_SECTOR_FACECOUNT DDVT_UINT
-#define DMT_SECTOR_FACES DDVT_PTR      // [faceCount+1] size.
+#define DMT_SECTOR_SUBSECTORCOUNT DDVT_UINT
+#define DMT_SECTOR_SUBSECTORS DDVT_PTR // [subsectorCount+1] size.
 #define DMT_SECTOR_SOUNDORG DDVT_PTR
 #define DMT_SECTOR_PLANECOUNT DDVT_UINT
 #define DMT_SECTOR_REVERB DDVT_FLOAT
@@ -82,9 +79,11 @@ typedef struct thinker_s {
 #define DMT_SIDEDEF_SECTOR DDVT_PTR
 #define DMT_SIDEDEF_FLAGS DDVT_SHORT
 
-#define DMT_LINEDEF_SEC    DDVT_PTR
-#define DMT_LINEDEF_V      DDVT_PTR
-#define DMT_LINEDEF_SIDE   DDVT_PTR
+#define DMT_LINEDEF_SEC DDVT_PTR
+#define DMT_LINEDEF_VERTEX1 DDVT_PTR
+#define DMT_LINEDEF_VERTEX2 DDVT_PTR
+#define DMT_LINEDEF_FRONTSIDEDEF DDVT_PTR
+#define DMT_LINEDEF_BACKSIDEDEF DDVT_PTR
 
 #define DMT_LINEDEF_FLAGS DDVT_INT     // Public DDLF_* flags.
 #define DMT_LINEDEF_SLOPETYPE DDVT_INT

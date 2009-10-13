@@ -15,7 +15,7 @@ typedef struct thinker_s {
 } thinker_t;
 end
 public
-#define DMT_VERTEX_POS  DDVT_FLOAT
+#define DMT_VERTEX_POS DDVT_FLOAT
 end
 
 internal
@@ -64,37 +64,6 @@ struct vertex
 end
 
 internal
-// Helper macros for accessing seg data elements.
-#define FRONT 0
-#define BACK  1
-
-// Seg frame flags
-#define SEGINF_FACINGFRONT      0x0001
-#define SEGINF_BACKSECSKYFIX    0x0002
-end
-
-public
-#define DMT_HEDGE_SIDEDEF       DDVT_PTR
-#define DMT_HEDGE_LINEDEF       DDVT_PTR
-#define DMT_HEDGE_SEC           DDVT_PTR
-#define DMT_HEDGE_SUBSECTOR     DDVT_PTR
-#define DMT_HEDGE_ANGLE         DDVT_ANGLE
-#define DMT_HEDGE_SIDE          DDVT_BYTE
-#define DMT_HEDGE_LENGTH        DDVT_FLOAT
-#define DMT_HEDGE_OFFSET        DDVT_FLOAT
-end
-
-internal
-typedef struct seg_s {
-    struct sidedef_s* sideDef;
-    angle_t     angle;
-    byte        side; // 0=front, 1=back
-    float       length; // Accurate length of the segment (v1 -> v2).
-    float       offset;
-    biassurface_t* bsuf[3]; // 0=middle, 1=top, 2=bottom
-    short       frameFlags;
-} seg_t;
-
 #define HE_v1                   vertex
 #define HE_v1pos                vertex->V_pos
 
@@ -112,15 +81,45 @@ typedef struct seg_s {
 
 #define HE_FRONTSECTOR(hEdge)   ((hEdge)->face ? ((subsector_t*) (hEdge)->face->data)->sector : NULL)
 #define HE_BACKSECTOR(hEdge)    ((hEdge)->twin->face ? ((subsector_t*) (hEdge)->twin->face->data)->sector : NULL)
+
+typedef struct hedge_s {
+    struct vertex_s* vertex;
+    struct hedge_s* twin;
+    struct hedge_s* next;
+    struct hedge_s* prev;
+    struct face_s* face;
+    void*       data;
+} hedge_t;
 end
 
-struct hedge
-    PTR     vertex_s*   vertex
-    PTR     hedge_s*    twin
-    PTR     hedge_s*    next
-    PTR     hedge_s*    prev
-    PTR     face_s*     face
-    -       void*       data
+internal
+// Helper macros for accessing seg data elements.
+#define FRONT 0
+#define BACK  1
+
+// Seg frame flags
+#define SEGINF_FACINGFRONT      0x0001
+#define SEGINF_BACKSECSKYFIX    0x0002
+end
+
+public
+#define DMT_SEG_VERTEX1 DDVT_PTR
+#define DMT_SEG_VERTEX2 DDVT_PTR
+#define DMT_SEG_SECTOR DDVT_PTR
+#define DMT_SEG_LINEDEF DDVT_PTR
+#define DMT_SEG_FRONTSECTOR DDVT_PTR
+#define DMT_SEG_BACKSECTOR DDVT_PTR
+end
+
+struct seg
+    -       hedge_s*    hEdge
+    PTR     sidedef_s*  sideDef
+    ANGLE   angle_t     angle
+    BYTE    byte        side // 0=front, 1=back
+    FLOAT   float       length // Accurate length of the segment (v1 -> v2).
+    FLOAT   float       offset
+    -       biassurface_t*[3] bsuf // 0=middle, 1=top, 2=bottom
+    -       short       frameFlags
 end
 
 internal
@@ -130,9 +129,13 @@ typedef struct face_s {
 } face_t;
 end
 
+public
+#define DMT_SUBSECTOR_EDGECOUNT DDVT_UINT
+end
+
 struct subsector
     -       face_t*     face
-    UINT    uint        hEdgeCount
+    -       uint        hEdgeCount
     PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
     PTR     sector_s*   sector
     -       int         addSpriteCount // frame number of last R_AddSprites
@@ -225,7 +228,7 @@ typedef enum {
 typedef struct surfacedecor_s {
     float               pos[3]; // World coordinates of the decoration.
     decortype_t         type;
-    face_t*             face;
+    subsector_t*        subsector;
     union surfacedecor_data_u {
         struct surfacedecor_light_s {
             const struct ded_decorlight_s* def;
@@ -377,7 +380,7 @@ struct sector
     UINT    uint        subsectorCount
     PTR     subsector_s** subsectors // [subsectorCount+1] size.
     -       uint        numReverbSubsectorAttributors
-    -       subsector_s** reverbFaces // [numReverbSubsectorAttributors] size.
+    -       subsector_s** reverbSubsectors // [numReverbSubsectorAttributors] size.
     PTR     ddmobj_base_t soundOrg
     UINT    uint        planeCount
     -       plane_s**   planes // [planeCount+1] size.
@@ -518,9 +521,11 @@ typedef struct mlinedef_s {
 end
 
 public
-#define DMT_LINEDEF_SEC    DDVT_PTR
-#define DMT_LINEDEF_V      DDVT_PTR
-#define DMT_LINEDEF_SIDE   DDVT_PTR
+#define DMT_LINEDEF_SEC DDVT_PTR
+#define DMT_LINEDEF_VERTEX1 DDVT_PTR
+#define DMT_LINEDEF_VERTEX2 DDVT_PTR
+#define DMT_LINEDEF_FRONTSIDEDEF DDVT_PTR
+#define DMT_LINEDEF_BACKSIDEDEF DDVT_PTR
 end
 
 struct linedef

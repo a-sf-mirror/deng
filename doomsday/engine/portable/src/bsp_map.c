@@ -84,8 +84,8 @@ static void hardenLineDefSegList(gamemap_t* map, hedge_t* hEdge, seg_t* seg)
     while(((bsp_hedgeinfo_t*)last->data)->lnext)
         last = ((bsp_hedgeinfo_t*)last->data)->lnext;
 
-    lineDef->hEdges[0] = map->hEdges[((bsp_hedgeinfo_t*) first->data)->index];
-    lineDef->hEdges[1] = map->hEdges[((bsp_hedgeinfo_t*) last->data)->index];
+    lineDef->hEdges[0] = map->halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) first->data)->index];
+    lineDef->hEdges[1] = map->halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) last->data)->index];
 }
 
 static int C_DECL hEdgeCompare(const void* p1, const void* p2)
@@ -209,25 +209,26 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     if(!(params.numHEdges > 0))
         Con_Error("buildSegsFromHEdges: No halfedges?");
 
-    map->numHEdges = (uint) params.numHEdges;
-    map->hEdges = Z_Malloc(sizeof(hedge_t*) * params.numHEdges, PU_STATIC, 0);
+    map->halfEdgeDS.numHEdges = (uint) params.numHEdges;
+    map->halfEdgeDS.hEdges = Z_Malloc(sizeof(hedge_t*) * params.numHEdges, PU_STATIC, 0);
+
+    map->numSegs = (uint) params.numSegs;
+    map->segs = Z_Malloc(sizeof(seg_t*) * params.numSegs, PU_STATIC, 0);
 
     // Pass 2: Collect ptrs the hedges and insert into the index.
     params.numHEdges = 0;
-    params.indexPtr = &map->hEdges;
+    params.indexPtr = &map->halfEdgeDS.hEdges;
     BinaryTree_InOrder(rootNode, hEdgeCollector, &params);
 
     // Sort the half-edges into ascending index order.
-    qsort(map->hEdges, params.numHEdges, sizeof(hedge_t*), hEdgeCompare);
+    qsort(map->halfEdgeDS.hEdges, params.numHEdges, sizeof(hedge_t*), hEdgeCompare);
 
     // Generate seg data from (BSP) line segments.
-    for(i = 0; i < map->numHEdges; ++i)
+    for(i = 0; i < map->halfEdgeDS.numHEdges; ++i)
     {
-        hedge_t* hEdge = map->hEdges[i];
+        hedge_t* hEdge = map->halfEdgeDS.hEdges[i];
         const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
         seg_t* seg;
-
-        DMU_AddObjRecord(DMU_HEDGE, hEdge);
 
         if(data->lineDef && !data->sector)
         {
@@ -239,7 +240,8 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 
         seg = Z_Calloc(sizeof(seg_t), PU_STATIC, 0);
 
-        seg->side  = data->side;
+        seg->hEdge = hEdge;
+        seg->side = data->side;
         seg->sideDef = NULL;
         if(data->lineDef)
         {
@@ -285,6 +287,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
             memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
         }
 
+        map->segs[DMU_AddObjRecord(DMU_SEG, seg) - 1] = seg;
         hEdge->data = seg;
     }
 }

@@ -323,7 +323,7 @@ const char* DMU_Str(uint prop)
     {
         { DMU_NONE, "(invalid)" },
         { DMU_VERTEX, "DMU_VERTEX" },
-        { DMU_HEDGE, "DMU_HEDGE" },
+        { DMU_SEG, "DMU_SEG" },
         { DMU_LINEDEF, "DMU_LINEDEF" },
         { DMU_SIDEDEF, "DMU_SIDEDEF" },
         { DMU_NODE, "DMU_NODE" },
@@ -408,7 +408,7 @@ static int DMU_GetType(const void* ptr)
     switch(type)
     {
     case DMU_VERTEX:
-    case DMU_HEDGE:
+    case DMU_SEG:
     case DMU_LINEDEF:
     case DMU_SIDEDEF:
     case DMU_SUBSECTOR:
@@ -650,8 +650,8 @@ void* P_GetVariable(int value)
     case DMU_POLYOBJ_COUNT:
         return &numPolyObjs;
 
-    case DMU_HEDGE_COUNT:
-        return &numHEdges;
+    case DMU_SEG_COUNT:
+        return &numSegs;
 
     case DMU_SUBSECTOR_COUNT:
         return &numSubsectors;
@@ -693,7 +693,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
         return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_VERTEX:
         return ((dmuobjrecord_t*) ptr)->id - 1;
-    case DMU_HEDGE:
+    case DMU_SEG:
         return ((dmuobjrecord_t*) ptr)->id - 1;
     case DMU_LINEDEF:
         return ((dmuobjrecord_t*) ptr)->id - 1;
@@ -827,9 +827,9 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
     case DMU_SUBSECTOR:
         switch(prop)
         {
-        case DMU_HEDGE:
+        case DMU_SEG:
             {
-            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_HEDGE)];
+            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_SEG)];
             subsector_t* subsector = (subsector_t*) ((dmuobjrecord_t*) ptr)->obj;
             int result = 1;
             hedge_t* hEdge;
@@ -838,7 +838,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
             {
                 do
                 {
-                    dmuobjrecord_t* r = findRecordInSet(s, hEdge);
+                    dmuobjrecord_t* r = findRecordInSet(s, (seg_t*) hEdge->data);
                     if((result = callback(r, context)) == 0)
                         break;
                 } while((hEdge = hEdge->next) != subsector->face->hEdge);
@@ -884,9 +884,9 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
             return callback(DMU_GetObjRecord(DMU_VERTEX, vertexes[index]), context);
         break;
 
-    case DMU_HEDGE:
-        if(index < numHEdges)
-            return callback(DMU_GetObjRecord(DMU_HEDGE, hEdges[index]), context);
+    case DMU_SEG:
+        if(index < numSegs)
+            return callback(DMU_GetObjRecord(DMU_SEG, segs[index]), context);
         break;
 
     case DMU_LINEDEF:
@@ -962,7 +962,7 @@ int P_Callbackp(int type, void* ptr, int (*callback)(void*, void*),
     switch(type)
     {
     case DMU_VERTEX:
-    case DMU_HEDGE:
+    case DMU_SEG:
     case DMU_LINEDEF:
     case DMU_SIDEDEF:
     case DMU_NODE:
@@ -1379,7 +1379,7 @@ static int setProperty(void* ptr, void* context)
         Vertex_SetProperty(obj, args);
         break;
 
-    case DMU_HEDGE:
+    case DMU_SEG:
         Seg_SetProperty(obj, args);
         break;
 
@@ -1813,7 +1813,7 @@ static int getProperty(void* ptr, void* context)
         Vertex_GetProperty(obj, args);
         break;
 
-    case DMU_HEDGE:
+    case DMU_SEG:
         Seg_GetProperty(obj, args);
         break;
 

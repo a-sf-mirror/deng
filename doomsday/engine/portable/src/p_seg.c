@@ -53,7 +53,7 @@
 /**
  * Update the seg, property is selected by DMU_* name.
  */
-boolean Seg_SetProperty(hedge_t* hEdge, const setargs_t* args)
+boolean Seg_SetProperty(seg_t* seg, const setargs_t* args)
 {
     switch(args->prop)
     {
@@ -68,81 +68,72 @@ boolean Seg_SetProperty(hedge_t* hEdge, const setargs_t* args)
 /**
  * Get the value of a seg property, selected by DMU_* name.
  */
-boolean Seg_GetProperty(const hedge_t* hEdge, setargs_t *args)
+boolean Seg_GetProperty(const seg_t* seg, setargs_t *args)
 {
     switch(args->prop)
     {
     case DMU_VERTEX0:
         {
-        seg_t* seg = (seg_t*) hEdge->data;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v1);
-        DMU_GetValue(DMT_HEDGE_VERTEX, &r, args, 0);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, seg->hEdge->HE_v1);
+        DMU_GetValue(DMT_SEG_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
-        seg_t* seg = (seg_t*) hEdge->data;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, hEdge->HE_v2);
-        DMU_GetValue(DMT_HEDGE_VERTEX, &r, args, 0);
+        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, seg->hEdge->HE_v2);
+        DMU_GetValue(DMT_SEG_VERTEX2, &r, args, 0);
         break;
         }
     case DMU_LENGTH:
-        DMU_GetValue(DMT_HEDGE_LENGTH, &((seg_t*) hEdge->data)->length, args, 0);
+        DMU_GetValue(DMT_SEG_LENGTH, &seg->length, args, 0);
         break;
     case DMU_OFFSET:
-        DMU_GetValue(DMT_HEDGE_OFFSET, &((seg_t*) hEdge->data)->offset, args, 0);
+        DMU_GetValue(DMT_SEG_OFFSET, &seg->offset, args, 0);
         break;
     case DMU_SIDEDEF:
         {
-        seg_t* seg = (seg_t*) hEdge->data;
         dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, seg->sideDef);
-        DMU_GetValue(DMT_HEDGE_SIDEDEF, &r, args, 0);
+        DMU_GetValue(DMT_SEG_SIDEDEF, &r, args, 0);
         break;
         }
     case DMU_LINEDEF:
         {
-        void*               ptr = NULL;
-
-        if(hEdge->data)
-        {
-        seg_t*              seg = (seg_t*) hEdge->data;
-
+        void* ptr = NULL;
         if(seg->sideDef)
             ptr = DMU_GetObjRecord(DMU_LINEDEF, seg->sideDef->lineDef);
-        }
-        DMU_GetValue(DMT_HEDGE_LINEDEF, &ptr, args, 0);
+        DMU_GetValue(DMT_SEG_LINEDEF, &ptr, args, 0);
         break;
         }
     case DMU_FRONT_SECTOR:
         {
-        subsector_t*        subSector = (subsector_t*) hEdge->face->data;
-        dmuobjrecord_t* r = (subSector->sector && ((seg_t*) hEdge->data)->sideDef)?
-            DMU_GetObjRecord(DMU_SECTOR, subSector->sector) : NULL;
-        DMU_GetValue(DMT_HEDGE_SEC, &r, args, 0);
+        subsector_t* subsector = (subsector_t*) seg->hEdge->face->data;
+        dmuobjrecord_t* r = (subsector->sector && seg->sideDef)?
+            DMU_GetObjRecord(DMU_SECTOR, subsector->sector) : NULL;
+        DMU_GetValue(DMT_SEG_FRONTSECTOR, &r, args, 0);
         break;
         }
     case DMU_BACK_SECTOR:
         {
-        void*               ptr = NULL;
+        void* ptr = NULL;
 
-        if(hEdge->twin)
+        if(seg->hEdge->twin)
         {
-            subsector_t*        subSector = (subsector_t*) hEdge->twin->face->data;
+            subsector_t* subsector = (subsector_t*) seg->hEdge->twin->face->data;
 
             /**
              * The sector and the sidedef are checked due to the possibility
              * of the "back-sided window effect", which the games are not
              * currently aware of.
              */
-            if(subSector->sector && ((seg_t*) hEdge->twin->data)->sideDef)
-                ptr = DMU_GetObjRecord(DMU_SECTOR, subSector->sector);
+            if(subsector->sector && ((seg_t*) seg->hEdge->twin->data)->sideDef)
+                ptr = DMU_GetObjRecord(DMU_SECTOR, subsector->sector);
         }
 
-        DMU_GetValue(DMT_HEDGE_SEC, &ptr, args, 0);
+        DMU_GetValue(DMT_SEG_BACKSECTOR, &ptr, args, 0);
         break;
         }
     case DMU_ANGLE:
-        DMU_GetValue(DMT_HEDGE_ANGLE, &((seg_t*) hEdge->data)->angle, args, 0);
+        DMU_GetValue(DMT_SEG_ANGLE, &seg->angle, args, 0);
         break;
     default:
         Con_Error("Seg_GetProperty: No property %s.\n",
