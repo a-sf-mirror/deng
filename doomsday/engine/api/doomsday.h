@@ -229,18 +229,17 @@ extern          "C" {
     boolean         P_PolyobjsBoxIterator(const float box[4],
                                           boolean (*func) (struct polyobj_s*, void*),
                                           void* data);
-    boolean         DMU_LinesBoxIterator(const float box[4],
+    boolean         P_LinesBoxIterator(const float box[4],
                                        boolean (*func) (struct linedef_s*, void*),
                                        void* data);
-    boolean         DMU_AllLinesBoxIterator(const float box[4],
+    boolean         P_AllLinesBoxIterator(const float box[4],
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
-    boolean         DMU_SubsectorsBoxIterator(const float box[4], void* p,
-                                           boolean (*func) (subsector_t*, void*),
-                                           void* data);
+    boolean         P_SubsectorsBoxIterator(const float box[4], void* p,
+                                              boolean (*func) (subsector_t*, void*),
+                                              void* data);
 
-    boolean         P_PathTraverse(float x1, float y1, float x2, float y2,
-                                   int flags,
+    boolean         P_PathTraverse(float x1, float y1, float x2, float y2, int flags,
                                    boolean (*trav) (intercept_t*));
     boolean         P_CheckLineSight(const float from[3], const float to[3],
                                      float bottomSlope, float topSlope, int flags);

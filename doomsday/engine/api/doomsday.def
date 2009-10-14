@@ -179,8 +179,6 @@ EXPORTS
     P_ApproxDistance3           @243 NONAME
     P_PointOnDivlineSide        @62 NONAME
     P_InterceptVector           @63 NONAME
-    P_MobjsBoxIterator          @346 NONAME
-    P_PolyobjsBoxIterator       @348 NONAME
     P_PathTraverse              @75 NONAME
     P_CheckLineSight            @76 NONAME
     P_MobjSetState              @207 NONAME
@@ -206,9 +204,11 @@ EXPORTS
     P_Iteratep                  @410 NONAME
 
     ; specialized iteration methods
-    DMU_LinesBoxIterator        @435 NONAME
-    DMU_AllLinesBoxIterator     @347 NONAME
-    DMU_SubsectorsBoxIterator   @345 NONAME
+    P_MobjsBoxIterator          @346 NONAME
+    P_PolyobjsBoxIterator       @348 NONAME
+    P_LinesBoxIterator          @435 NONAME
+    P_AllLinesBoxIterator       @347 NONAME
+    P_SubsectorsBoxIterator     @345 NONAME
 
     ; dummy objects
     P_AllocDummy                @321 NONAME

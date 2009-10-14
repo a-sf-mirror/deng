@@ -1241,7 +1241,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!P_AllLinesBoxIteratorv(DMU_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
+    if(!Map_AllLinesBoxIteratorv(DMU_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t normal[2], dotp;
 

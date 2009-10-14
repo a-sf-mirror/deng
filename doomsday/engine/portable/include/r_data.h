@@ -226,13 +226,8 @@ typedef struct {
     DGLuint         tex;
 } ddtexture_t;
 
-extern nodeindex_t* linelinks;
-extern blockmap_t* BlockMap;
-extern blockmap_t* SubsectorBlockMap;
-extern nodepile_t* mobjNodes, *lineNodes;
-
 extern int viewwidth, viewheight;
-extern int levelFullBright;
+extern int mapFullBright;
 extern int glowingTextures;
 extern byte precacheSprites, precacheSkins;
 

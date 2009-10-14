@@ -341,6 +341,12 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     checkpos_data_t data;
     vec2_t point;
     boolean result = true;
+    gamemap_t* map = DMU_CurrentMap();
+
+    if(!map)
+        return false;
+    if(!mo)
+        return false;
 
     blockingMobj = NULL;
     mo->onMobj = NULL;
@@ -374,7 +380,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     // Check mobjs first, possibly picking stuff up.
     if(!dontHitMobjs)
     {
-        if(!P_MobjsBoxIteratorv(data.box, PIT_MobjCollide, &data))
+        if(!Map_MobjsBoxIteratorv(map, data.box, PIT_MobjCollide, &data))
         {
             result = false;
         }
@@ -384,7 +390,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     if(result)
     {   // Nope.
         // Try polyobj->lineDefs and lines.
-        if(!P_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LineCollide, &data, false))
+        if(!Map_AllLinesBoxIteratorv(map, data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }
@@ -682,12 +688,11 @@ static boolean slideTraverse(intercept_t *in)
  *
  * This is a kludgy mess. (No kidding?)
  */
-static void mobjSlideMove(mobj_t *mo)
+static void mobjSlideMove(mobj_t* mo)
 {
-    float               leadPos[2];
-    float               trailPos[2];
-    float               delta[2];
-    int                 hitcount;
+    float leadPos[2], trailPos[2], delta[2];
+    int hitcount;
+    gamemap_t* map = DMU_CurrentMap();
 
     slideMo = mo;
     hitcount = 0;
@@ -721,15 +726,15 @@ static void mobjSlideMove(mobj_t *mo)
 
     bestSlideFrac = FIX2FLT(FRACUNIT + 1);
 
-    P_PathTraverse(leadPos[VX], leadPos[VY],
-                   leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
-                   PT_ADDLINES, slideTraverse);
-    P_PathTraverse(trailPos[VX], leadPos[VY],
-                   trailPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
-                   PT_ADDLINES, slideTraverse);
-    P_PathTraverse(leadPos[VX], trailPos[VY],
-                   leadPos[VX] + mo->mom[MX], trailPos[VY] + mo->mom[MY],
-                   PT_ADDLINES, slideTraverse);
+    Map_PathTraverse(map, leadPos[VX], leadPos[VY],
+                     leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
+                     PT_ADDLINES, slideTraverse);
+    Map_PathTraverse(map, trailPos[VX], leadPos[VY],
+                     trailPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
+                     PT_ADDLINES, slideTraverse);
+    Map_PathTraverse(map, leadPos[VX], trailPos[VY],
+                     leadPos[VX] + mo->mom[MX], trailPos[VY] + mo->mom[MY],
+                     PT_ADDLINES, slideTraverse);
 
     // Move up to the wall.
     if(bestSlideFrac == FIX2FLT(FRACUNIT + 1))

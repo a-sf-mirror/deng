@@ -215,6 +215,9 @@ typedef struct {
     boolean         affectedByAmbient;
 } vlight_t;
 
+extern nodeindex_t* linelinks;
+extern nodepile_t* mobjNodes, *lineNodes;
+
 typedef struct gamemap_s {
     char            mapID[9];
     char            uniqueID[256];
@@ -248,8 +251,6 @@ typedef struct gamemap_s {
     polyobj_t**     polyObjs;
 
     gameobjdata_t   gameObjData;
-
-    linkpolyobj_t** polyBlockMap;
 
     planelist_t     watchedPlaneList;
     surfacelist_t   movingSurfaceList;
@@ -291,6 +292,8 @@ typedef struct gamemap_s {
 } gamemap_t;
 
 void            P_DestroyMap(gamemap_t* map);
+
+void            Map_BuildSubsectorBlockmap(gamemap_t* map);
 
 const char*     P_GetMapID(gamemap_t* map);
 const char*     P_GetUniqueMapID(gamemap_t* map);

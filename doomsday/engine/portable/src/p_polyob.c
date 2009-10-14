@@ -521,12 +521,30 @@ void P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** list)
 
 void P_PolyobjUnLink(struct polyobj_s* po)
 {
-    P_BlockmapUnlinkPolyobj(BlockMap, po);
+    gamemap_t* map;
+
+    if(!po)
+        return;
+
+    map = DMU_CurrentMap();
+    if(!map)
+        return;
+
+    Blockmap_UnlinkPolyobj(map->blockMap, po);
 }
 
 void P_PolyobjLink(struct polyobj_s* po)
 {
-    P_BlockmapLinkPolyobj(BlockMap, po);
+    gamemap_t* map;
+
+    if(!po)
+        return;
+
+    map = DMU_CurrentMap();
+    if(!map)
+        return;
+
+    Blockmap_LinkPolyobj(map->blockMap, po);
 }
 
 typedef struct ptrmobjblockingparams_s {
@@ -568,9 +586,10 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
 
 static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po)
 {
-    uint                blockBox[4];
-    vec2_t              bbox[2];
+    uint blockBox[4];
+    vec2_t bbox[2];
     ptrmobjblockingparams_t params;
+    gamemap_t* map;
 
     params.blocked = false;
     params.line = line;
@@ -581,9 +600,9 @@ static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po)
     bbox[1][VX] = line->bBox[BOXRIGHT]  + DDMOBJ_RADIUS_MAX;
     bbox[1][VY] = line->bBox[BOXTOP]    + DDMOBJ_RADIUS_MAX;
 
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, bbox);
-    P_BlockBoxMobjsIterator(BlockMap, blockBox,
-                            PTR_CheckMobjBlocking, &params);
+    map = DMU_CurrentMap();
+    Blockmap_BoxToBlocks(map->blockMap, blockBox, bbox);
+    Blockmap_BoxIterateMobjs(map->blockMap, blockBox, PTR_CheckMobjBlocking, &params);
 
     return params.blocked;
 }
@@ -600,12 +619,12 @@ boolean P_PolyobjLinesIterator(polyobj_t* po,
                                boolean (*func) (struct linedef_s*, void*),
                                void* data, boolean retObjRecord)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
-        void*               ptr;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        void* ptr;
 
         if(line->validCount == validCount)
             continue;

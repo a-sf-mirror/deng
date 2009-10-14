@@ -741,7 +741,7 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
 
         Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                               &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-        DMU_SubsectorsBoxIterator(aabb, NULL, drawSegsOfSubsector, &params);
+        P_SubsectorsBoxIterator(aabb, NULL, drawSegsOfSubsector, &params);
     }
     else
     {   // No. As the map lists are considered static we want them to
@@ -929,7 +929,7 @@ static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
 
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    DMU_LinesBoxIterator(aabb, renderXGLinedef, &params);
+    P_LinesBoxIterator(aabb, renderXGLinedef, &params);
 #endif
 }
 

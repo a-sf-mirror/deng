@@ -62,9 +62,6 @@ extern boolean mapSetup;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-blockmap_t* BlockMap = NULL;
-blockmap_t* SubsectorBlockMap = NULL;
-
 nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -412,7 +409,7 @@ boolean P_LoadMap(const char* mapID)
         R_BuildSectorLinks(map);
 
         // Init blockmap for searching subsectors.
-        P_BuildSubSectorBlockMap(map);
+        Map_BuildSubsectorBlockmap(map);
 
         strncpy(map->mapID, mapID, 8);
         strncpy(map->uniqueID, P_GenerateUniqueMapID(mapID),

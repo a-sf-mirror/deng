@@ -246,6 +246,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\blockmapvisual.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\bsp_edge.c"
 				>
 			</File>
@@ -1196,6 +1200,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\b_util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\blockmapvisual.h"
 				>
 			</File>
 			<File

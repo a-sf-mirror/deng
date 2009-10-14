@@ -114,7 +114,7 @@ void Rend_RadioUpdateLineDef(linedef_t* line, boolean backSide)
 {
     sideradioconfig_t* radioConfig;
 
-    if(!rendFakeRadio || levelFullBright || // Disabled?
+    if(!rendFakeRadio || mapFullBright || // Disabled?
        !line)
         return;
 
@@ -1238,7 +1238,7 @@ void Rend_RadioSegSection(const rvertex_t* rvertices, const walldiv_t* wdivs,
 {
     float               lightLevel, shadowSize, shadowDark;
 
-    if(!rendFakeRadio || !renderTextures || levelFullBright) // Disabled?
+    if(!rendFakeRadio || !renderTextures || mapFullBright) // Disabled?
         return;
 
     if(!rvertices || !params)
@@ -1631,7 +1631,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
 
 void Rend_RadioSubsectorEdges(subsector_t* subsector)
 {
-    if(!rendFakeRadio || levelFullBright)
+    if(!rendFakeRadio || mapFullBright)
         return;
 
     radioSubsectorEdges(subsector);

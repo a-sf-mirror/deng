@@ -703,8 +703,8 @@ static void finishSectors2(gamemap_t* map)
     vec2_t bmapOrigin;
     uint bmapSize[2];
 
-    P_GetBlockmapBounds(map->blockMap, bmapOrigin, NULL);
-    P_GetBlockmapDimensions(map->blockMap, bmapSize);
+    Blockmap_Bounds(map->blockMap, bmapOrigin, NULL);
+    Blockmap_Dimensions(map->blockMap, bmapSize);
 
     for(i = 0; i < map->numSectors; ++i)
     {
@@ -1595,7 +1595,7 @@ boolean findOverlapsForLineDef(linedef_t* l, void* data)
 {
     findoverlaps_params_t* params = (findoverlaps_params_t*) data;
 
-    P_BlockmapLinesIterator(params->blockMap, params->block, testOverlaps, l, false);
+    Blockmap_IterateLineDefs(params->blockMap, params->block, testOverlaps, l, false);
     return true; // Continue iteration.
 }
 
@@ -1610,7 +1610,7 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
     params.blockMap = map->blockMap;
     numOverlaps = 0;
 
-    P_GetBlockmapDimensions(map->blockMap, bmapDimensions);
+    Blockmap_Dimensions(map->blockMap, bmapDimensions);
 
     for(y = 0; y < bmapDimensions[VY]; ++y)
         for(x = 0; x < bmapDimensions[VX]; ++x)
@@ -1618,7 +1618,7 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
             params.block[VX] = x;
             params.block[VY] = y;
 
-            P_BlockmapLinesIterator(map->blockMap, params.block,
+            Blockmap_IterateLineDefs(map->blockMap, params.block,
                                     findOverlapsForLineDef, &params, false);
         }
 

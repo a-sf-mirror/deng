@@ -70,20 +70,17 @@ typedef struct bmap_s {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-byte bmapShowDebug = 0; // 1 = mobjs, 2 = linedefs, 3 = subSectors.
-float bmapDebugSize = 1.5f;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-void P_BoxToBlockmapBlocks(blockmap_t* blockmap, uint blockBox[4],
-                           const arvec2_t box)
+void Blockmap_BoxToBlocks(blockmap_t* blockmap, uint blockBox[4],
+                          const arvec2_t box)
 {
     if(blockmap)
     {
-        bmap_t*         bmap = (bmap_t*) blockmap;
-        vec2_t          m[2];
+        bmap_t*bmap = (bmap_t*) blockmap;
+        vec2_t m[2];
 
         m[0][VX] = MAX_OF(bmap->bBox[0][VX], box[0][VX]);
         m[1][VX] = MIN_OF(bmap->bBox[1][VX], box[1][VX]);
@@ -109,12 +106,11 @@ void P_BoxToBlockmapBlocks(blockmap_t* blockmap, uint blockBox[4],
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
 
-boolean P_ToBlockmapBlockIdx(blockmap_t* blockmap, uint dest[2],
-                             const pvec2_t pos)
+boolean Blockmap_Block2fv(blockmap_t* blockmap, uint dest[2], const pvec2_t pos)
 {
     if(blockmap)
     {
-        bmap_t*         bmap = (bmap_t*) blockmap;
+        bmap_t* bmap = (bmap_t*) blockmap;
 
         if(!(pos[VX] < bmap->bBox[0][VX] || pos[VX] >= bmap->bBox[1][VX] ||
              pos[VY] < bmap->bBox[0][VY] || pos[VY] >= bmap->bBox[1][VY]))
@@ -152,7 +148,7 @@ static bmap_t* allocBmap(void)
     return Z_Calloc(sizeof(bmap_t), PU_MAPSTATIC, 0);
 }
 
-blockmap_t* P_BlockmapCreate(const pvec2_t min, const pvec2_t max,
+blockmap_t* P_CreateBlockmap(const pvec2_t min, const pvec2_t max,
                              uint width, uint height)
 {
     bmap_t*         bmap = allocBmap();
@@ -177,7 +173,7 @@ blockmap_t* P_BlockmapCreate(const pvec2_t min, const pvec2_t max,
     return (blockmap_t*) bmap;
 }
 
-void P_SubSectorBlockmapSetBlock(blockmap_t* blockmap, uint x, uint y, subsector_t** subsectors)
+void Blockmap_SetBlockSubsectors(blockmap_t* blockmap, uint x, uint y, subsector_t** subsectors)
 {
     if(blockmap)
     {
@@ -192,7 +188,7 @@ void P_SubSectorBlockmapSetBlock(blockmap_t* blockmap, uint x, uint y, subsector
     }
 }
 
-void P_BuildSubSectorBlockMap(gamemap_t* map)
+void Map_BuildSubsectorBlockmap(gamemap_t* map)
 {
 #define BLKMARGIN       8
 #define BLOCK_WIDTH     128
@@ -248,7 +244,7 @@ typedef struct subsecmap_s {
                       bounds[0][VY] + subMapHeight * blockSize[VY]);
 
     subsectorBlockMap = (blockmap_t*)
-        P_BlockmapCreate(bounds[0], bounds[1], subMapWidth, subMapHeight);
+        P_CreateBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
 
     // We'll construct the temporary links using nodes.
     bmap = M_Calloc(sizeof(subsectormap_t) * subMapWidth * subMapHeight);
@@ -320,7 +316,7 @@ typedef struct subsecmap_s {
                 *ptr = NULL;
 
                 // Link it into the subSectorblockmap.
-                P_SubSectorBlockmapSetBlock(subsectorBlockMap, x, y, subsectors);
+                Blockmap_SetBlockSubsectors(subsectorBlockMap, x, y, subsectors);
 
                 subsectorLinks += block->count + 1;
             }
@@ -333,14 +329,14 @@ typedef struct subsecmap_s {
 
     // How much time did we spend?
     VERBOSE(Con_Message
-            ("P_BuildSubSectorBlockMap: Done in %.2f seconds.\n",
+            ("Map_BuildSubsectorBlockmap: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
 
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
 
-void P_BlockmapSetBlock(blockmap_t* blockmap, uint x, uint y,
+void Blockmap_SetBlock(blockmap_t* blockmap, uint x, uint y,
                         linedef_t** lines, linkmobj_t* moLink,
                         linkpolyobj_t* poLink)
 {
@@ -376,7 +372,7 @@ boolean linkPolyobjInBlock(void* ptr, void* context)
     return true;
 }
 
-void P_BlockmapLinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
+void Blockmap_LinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
 {
     if(blockmap)
     {
@@ -384,57 +380,55 @@ void P_BlockmapLinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
         uint                blockBox[4];
 
         P_PolyobjUpdateBBox(po);
-        P_BoxToBlockmapBlocks(blockmap, blockBox, po->box);
+        Blockmap_BoxToBlocks(blockmap, blockBox, po->box);
 
         M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
                               linkPolyobjInBlock, (void*) po);
     }
 }
 
-void P_BlockmapUnlinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
+void Blockmap_UnlinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        uint                blockBox[4];
+        bmap_t* bmap = (bmap_t*) blockmap;
+        uint blockBox[4];
 
         P_PolyobjUpdateBBox(po);
-        P_BoxToBlockmapBlocks(BlockMap, blockBox, po->box);
+        Blockmap_BoxToBlocks(blockmap, blockBox, po->box);
 
-        M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                              unlinkPolyobjInBlock, (void*) po);
+        M_GridmapBoxIteratorv(bmap->gridmap, blockBox, unlinkPolyobjInBlock, (void*) po);
     }
 }
 
-void P_BlockmapLinkMobj(blockmap_t* blockmap, mobj_t* mo)
+void Blockmap_LinkMobj(blockmap_t* blockmap, mobj_t* mo)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        uint                blockXY[2];
-        bmapblock_t*        block;
+        bmap_t* bmap = (bmap_t*) blockmap;
+        uint blockXY[2];
+        bmapblock_t* block;
 
-        P_ToBlockmapBlockIdx(BlockMap, blockXY, mo->pos);
-        block = (bmapblock_t*)
-            M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], true);
+        Blockmap_Block2fv(blockmap, blockXY, mo->pos);
+        block = (bmapblock_t*) M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], true);
+
         if(block)
             P_MobjLinkToRing(mo, &block->mobjLinks);
     }
 }
 
-boolean P_BlockmapUnlinkMobj(blockmap_t* blockmap, mobj_t* mo)
+boolean Blockmap_UnlinkMobj(blockmap_t* blockmap, mobj_t* mo)
 {
-    boolean             unlinked = false;
+    boolean unlinked = false;
 
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        uint                blockXY[2];
-        bmapblock_t*        block;
+        bmap_t* bmap = (bmap_t*) blockmap;
+        uint blockXY[2];
+        bmapblock_t* block;
 
-        P_ToBlockmapBlockIdx(BlockMap, blockXY, mo->pos);
-        block = (bmapblock_t*)
-            M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], false);
+        Blockmap_Block2fv(blockmap, blockXY, mo->pos);
+        block = (bmapblock_t*) M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], false);
         if(block)
             unlinked = P_MobjUnlinkFromRing(mo, &block->mobjLinks);
     }
@@ -442,11 +436,11 @@ boolean P_BlockmapUnlinkMobj(blockmap_t* blockmap, mobj_t* mo)
     return unlinked;
 }
 
-void P_GetBlockmapBounds(blockmap_t* blockmap, pvec2_t min, pvec2_t max)
+void Blockmap_Bounds(blockmap_t* blockmap, pvec2_t min, pvec2_t max)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
+        bmap_t* bmap = (bmap_t*) blockmap;
 
         if(min)
             V2_Copy(min, bmap->bBox[0]);
@@ -455,15 +449,137 @@ void P_GetBlockmapBounds(blockmap_t* blockmap, pvec2_t min, pvec2_t max)
     }
 }
 
-void P_GetBlockmapDimensions(blockmap_t* blockmap, uint v[2])
+void Blockmap_BlockSize(blockmap_t* blockmap, pvec2_t blockSize)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
+        bmap_t* bmap = (bmap_t*) blockmap;
+
+        V2_Copy(blockSize, bmap->blockSize);
+    }
+}
+
+void Blockmap_Dimensions(blockmap_t* blockmap, uint v[2])
+{
+    if(blockmap)
+    {
+        bmap_t* bmap = (bmap_t*) blockmap;
 
         v[VX] = bmap->dimensions[VX];
         v[VY] = bmap->dimensions[VY];
     }
+}
+
+int Blockmap_NumLineDefs(blockmap_t* blockmap, uint x, uint y)
+{
+    int num = -1;
+
+    if(blockmap)
+    {
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+
+        if(block)
+        {
+            // Count the number of lines linked to this block.
+            num = 0;
+            if(block->lineDefs)
+            {
+                linedef_t** iter = block->lineDefs;
+                while(*iter)
+                {
+                    num++;
+                    *iter++;
+                }
+            }
+        }
+    }
+
+    return num;
+}
+
+int Blockmap_NumMobjs(blockmap_t* blockmap, uint x, uint y)
+{
+    int num = -1;
+
+    if(blockmap)
+    {
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+
+        if(block)
+        {
+            // Count the number of mobjs linked to this block.
+            num = 0;
+            if(block->mobjLinks)
+            {
+                linkmobj_t* link = block->mobjLinks;
+                while(link)
+                {
+                    if(link->mobj)
+                        num++;
+                    link = link->next;
+                }
+            }
+        }
+    }
+
+    return num;
+}
+
+int Blockmap_NumPolyobjs(blockmap_t* blockmap, uint x, uint y)
+{
+    int num = -1;
+
+    if(blockmap)
+    {
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+
+        if(block)
+        {
+            // Count the number of polyobjs linked to this block.
+            num = 0;
+            if(block->polyLinks)
+            {
+                linkpolyobj_t* link = block->polyLinks;
+                while(link)
+                {
+                    if(link->polyobj)
+                        num++;
+                    link = link->next;
+                }
+            }
+        }
+    }
+
+    return num;
+}
+
+int Blockmap_NumSubsectors(blockmap_t* blockmap, uint x, uint y)
+{
+    int num = -1;
+
+    if(blockmap)
+    {
+        bmap_t* bmap = (bmap_t*) blockmap;
+        subsectormapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+
+        if(block)
+        {
+            subsector_t** iter = block->subsectors;
+
+            // Count the number of subsectors linked to this block.
+            num = 0;
+            while(*iter)
+            {
+                num++;
+                *iter++;
+            }
+        }
+    }
+
+    return num;
 }
 
 typedef struct bmapiterparams_s {
@@ -475,21 +591,21 @@ typedef struct bmapiterparams_s {
 
 static boolean bmapBlockLinesIterator(void* ptr, void* context)
 {
-    bmapblock_t*        block = (bmapblock_t*) ptr;
+    bmapblock_t* block = (bmapblock_t*) ptr;
 
     if(block->lineDefs)
     {
-        linedef_t**         iter;
-        bmapiterparams_t*   args = (bmapiterparams_t*) context;
+        linedef_t** iter;
+        bmapiterparams_t* args = (bmapiterparams_t*) context;
 
         iter = block->lineDefs;
         while(*iter)
         {
-            linedef_t*          line = *iter;
+            linedef_t* line = *iter;
 
             if(line->validCount != args->localValidCount)
             {
-                void*               ptr;
+                void* ptr;
 
                 line->validCount = args->localValidCount;
 
@@ -509,19 +625,19 @@ static boolean bmapBlockLinesIterator(void* ptr, void* context)
     return true;
 }
 
-boolean P_BlockmapLinesIterator(blockmap_t* blockmap, const uint block[2],
-                                boolean (*func) (linedef_t*, void*),
-                                void* data, boolean retObjRecord)
+boolean Blockmap_IterateLineDefs(blockmap_t* blockmap, const uint block[2],
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data, boolean retObjRecord)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        bmapblock_t*        bmapBlock =
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* bmapBlock =
             M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
 
         if(bmapBlock)
         {
-            bmapiterparams_t    args;
+            bmapiterparams_t args;
 
             args.localValidCount = validCount;
             args.func = func;
@@ -535,12 +651,12 @@ boolean P_BlockmapLinesIterator(blockmap_t* blockmap, const uint block[2],
     return true;
 }
 
-boolean P_BlockBoxLinesIterator(blockmap_t* blockmap, const uint blockBox[4],
+boolean Blockmap_BoxIterateLineDefs(blockmap_t* blockmap, const uint blockBox[4],
                                 boolean (*func) (linedef_t*, void*),
                                 void* data, boolean retObjRecord)
 {
-    bmap_t*             bmap = (bmap_t*) blockmap;
-    bmapiterparams_t    args;
+    bmap_t* bmap = (bmap_t*) blockmap;
+    bmapiterparams_t args;
 
     args.localValidCount = validCount;
     args.func = func;
@@ -559,9 +675,9 @@ typedef struct bmappoiterparams_s {
 
 static boolean bmapBlockPolyobjsIterator(void* ptr, void* context)
 {
-    bmapblock_t*        block = (bmapblock_t*) ptr;
+    bmapblock_t* block = (bmapblock_t*) ptr;
     bmappoiterparams_t* args = (bmappoiterparams_t*) context;
-    linkpolyobj_t*      link;
+    linkpolyobj_t* link;
 
     link = block->polyLinks;
     while(link)
@@ -583,19 +699,19 @@ static boolean bmapBlockPolyobjsIterator(void* ptr, void* context)
     return true;
 }
 
-boolean P_BlockmapPolyobjsIterator(blockmap_t* blockmap, const uint block[2],
-                                   boolean (*func) (polyobj_t*, void*),
-                                   void* data)
+boolean Blockmap_IteratePolyobjs(blockmap_t* blockmap, const uint block[2],
+                                 boolean (*func) (polyobj_t*, void*),
+                                 void* data)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        bmapblock_t*        bmapBlock =
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* bmapBlock =
             M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
 
         if(bmapBlock)
         {
-            bmappoiterparams_t  args;
+            bmappoiterparams_t args;
 
             args.localValidCount = validCount;
             args.func = func;
@@ -608,12 +724,12 @@ boolean P_BlockmapPolyobjsIterator(blockmap_t* blockmap, const uint block[2],
     return true;
 }
 
-boolean P_BlockBoxPolyobjsIterator(blockmap_t* blockmap, const uint blockBox[4],
-                                   boolean (*func) (polyobj_t*, void*),
-                                   void* data)
+boolean Blockmap_BoxIteratePolyobjs(blockmap_t* blockmap, const uint blockBox[4],
+                                    boolean (*func) (polyobj_t*, void*),
+                                    void* data)
 {
-    bmap_t*             bmap = (bmap_t*) blockmap;
-    bmappoiterparams_t  args;
+    bmap_t* bmap = (bmap_t*) blockmap;
+    bmappoiterparams_t args;
 
     args.localValidCount = validCount;
     args.func = func;
@@ -631,14 +747,14 @@ typedef struct bmapmoiterparams_s {
 
 static boolean bmapBlockMobjsIterator(void* ptr, void* context)
 {
-    bmapblock_t*        block = (bmapblock_t*) ptr;
+    bmapblock_t* block = (bmapblock_t*) ptr;
     bmapmoiterparams_t* args = (bmapmoiterparams_t*) context;
-    linkmobj_t*         link;
+    linkmobj_t* link;
 
     link = block->mobjLinks;
     while(link)
     {
-        linkmobj_t*         next = link->next;
+        linkmobj_t* next = link->next;
 
         if(link->mobj)
             if(link->mobj->validCount != args->localValidCount)
@@ -655,14 +771,14 @@ static boolean bmapBlockMobjsIterator(void* ptr, void* context)
     return true;
 }
 
-boolean P_BlockmapMobjsIterator(blockmap_t* blockmap, const uint block[2],
-                                boolean (*func) (mobj_t*, void*),
-                                void* data)
+boolean Blockmap_IterateMobjs(blockmap_t* blockmap, const uint block[2],
+                              boolean (*func) (mobj_t*, void*),
+                              void* data)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        bmapblock_t*        bmapBlock =
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* bmapBlock =
             M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
 
         if(bmapBlock)
@@ -680,7 +796,7 @@ boolean P_BlockmapMobjsIterator(blockmap_t* blockmap, const uint block[2],
     return true;
 }
 
-boolean P_BlockBoxMobjsIterator(blockmap_t *blockmap, const uint blockBox[4],
+boolean Blockmap_BoxIterateMobjs(blockmap_t *blockmap, const uint blockBox[4],
                                 boolean (*func) (mobj_t*, void*),
                                 void* data)
 {
@@ -758,11 +874,11 @@ static boolean subsectorBlockIterator(void* ptr, void* context)
     return true;
 }
 
-boolean P_BlockmapSubSectorsIterator(blockmap_t* blockmap, const uint block[2],
-                                     sector_t* sector, const arvec2_t box,
-                                     int localValidCount,
-                                     boolean (*func) (subsector_t*, void*),
-                                     void* data)
+boolean Blockmap_IterateSubsectors(blockmap_t* blockmap, const uint block[2],
+                                   sector_t* sector, const arvec2_t box,
+                                   int localValidCount,
+                                   boolean (*func) (subsector_t*, void*),
+                                   void* data)
 {
     if(blockmap)
     {
@@ -779,6 +895,7 @@ boolean P_BlockmapSubSectorsIterator(blockmap_t* blockmap, const uint block[2],
             args.sector = sector;
             args.func = func;
             args.param = data;
+            args.retObjRecord = false;
 
             return subsectorBlockIterator(subsectorBlock, &args);
         }
@@ -787,14 +904,14 @@ boolean P_BlockmapSubSectorsIterator(blockmap_t* blockmap, const uint block[2],
     return true;
 }
 
-boolean P_BlockBoxSubSectorsIterator(blockmap_t* blockmap,
-                                     const uint blockBox[4],
-                                     sector_t* sector,  const arvec2_t box,
-                                     int localValidCount,
-                                     boolean (*func) (subsector_t*, void*),
-                                     void* data, boolean retObjRecord)
+boolean Blockmap_BoxIterateSubsectors(blockmap_t* blockmap,
+                                      const uint blockBox[4],
+                                      sector_t* sector,  const arvec2_t box,
+                                      int localValidCount,
+                                      boolean (*func) (subsector_t*, void*),
+                                      void* data, boolean retObjRecord)
 {
-    bmap_t* bmap = (bmap_t *) blockmap;
+    bmap_t* bmap = (bmap_t*) blockmap;
     subsectoriterparams_t args;
 
     args.box = box;
@@ -816,19 +933,19 @@ typedef struct poiterparams_s {
 
 boolean PTR_PolyobjLines(polyobj_t* po, void* data)
 {
-    poiterparams_t*     args = (poiterparams_t*) data;
+    poiterparams_t* args = (poiterparams_t*) data;
 
     return P_PolyobjLinesIterator(po, args->func, args->param, args->retObjRecord);
 }
 
-boolean P_BlockmapPolyobjLinesIterator(blockmap_t* blockmap, const uint block[2],
+boolean Blockmap_IteratePolyobjLineDefs(blockmap_t* blockmap, const uint block[2],
                                        boolean (*func) (linedef_t*, void*),
                                        void* data, boolean retObjRecord)
 {
     if(blockmap)
     {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        bmapblock_t*        bmapBlock =
+        bmap_t* bmap = (bmap_t*) blockmap;
+        bmapblock_t* bmapBlock =
             M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
 
         if(bmapBlock && bmapBlock->polyLinks)
@@ -851,7 +968,7 @@ boolean P_BlockmapPolyobjLinesIterator(blockmap_t* blockmap, const uint block[2]
     return true;
 }
 
-boolean P_BlockBoxPolyobjLinesIterator(blockmap_t* blockmap, const uint blockBox[4],
+boolean Blockmap_BoxIteratePolyobjLineDefs(blockmap_t* blockmap, const uint blockBox[4],
                                        boolean (*func) (linedef_t*, void*),
                                        void* data, boolean retObjRecord)
 {
@@ -871,10 +988,10 @@ boolean P_BlockBoxPolyobjLinesIterator(blockmap_t* blockmap, const uint blockBox
                                  bmapBlockPolyobjsIterator, (void*) &args);
 }
 
-boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
-                            const uint destBlock[2],
-                            const float origin[2], const float dest[2],
-                            int flags, boolean (*func) (intercept_t*))
+boolean Blockmap_PathTraverse(blockmap_t* bmap, const uint originBlock[2],
+                              const uint destBlock[2],
+                              const float origin[2], const float dest[2],
+                              int flags, boolean (*func) (intercept_t*))
 {
     uint count, block[2];
     float delta[2], partial;
@@ -937,19 +1054,16 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
     {
         if(flags & PT_ADDLINES)
         {
-            if(!P_BlockmapPolyobjLinesIterator(BlockMap, block,
-                                               PIT_AddLineIntercepts, 0, false))
+            if(!Blockmap_IteratePolyobjLineDefs(bmap, block, PIT_AddLineIntercepts, 0, false))
                 return false; // Early out.
 
-            if(!P_BlockmapLinesIterator(BlockMap, block,
-                                        PIT_AddLineIntercepts, 0, false))
+            if(!Blockmap_IterateLineDefs(bmap, block, PIT_AddLineIntercepts, 0, false))
                 return false; // Early out
         }
 
         if(flags & PT_ADDMOBJS)
         {
-            if(!P_BlockmapMobjsIterator(BlockMap, block,
-                                        PIT_AddMobjIntercepts, 0))
+            if(!Blockmap_IterateMobjs(bmap, block, PIT_AddMobjIntercepts, 0))
                 return false; // Early out.
         }
 
@@ -969,655 +1083,4 @@ boolean P_BlockPathTraverse(blockmap_t* bmap, const uint originBlock[2],
     }
 
     return true;
-}
-
-static boolean rendBlockMobj(mobj_t* mo, void* data)
-{
-    vec2_t              start, end;
-    arvec2_t            bbox = data;
-
-    V2_Set(start,
-           mo->pos[VX] - bbox[0][VX] - mo->radius,
-           mo->pos[VY] - bbox[0][VY] - mo->radius);
-    V2_Set(end,
-           mo->pos[VX] - bbox[0][VX] + mo->radius,
-           mo->pos[VY] - bbox[0][VY] + mo->radius);
-
-    glVertex2f(start[VX], start[VY]);
-    glVertex2f(end[VX], start[VY]);
-    glVertex2f(end[VX], end[VY]);
-    glVertex2f(start[VX], end[VY]);
-    return true; // Continue iteration.
-}
-
-static boolean rendBlockLineDef(linedef_t* line, void* data)
-{
-    vec2_t start, end;
-    arvec2_t bbox = data;
-
-    V2_Set(start,
-           line->L_v1pos[VX] - bbox[0][VX], line->L_v1pos[VY] - bbox[0][VY]);
-
-    V2_Set(end,
-           line->L_v2pos[VX] - bbox[0][VX], line->L_v2pos[VY] - bbox[0][VY]);
-
-    glVertex2fv(start);
-    glVertex2fv(end);
-    return true; // Continue iteration.
-}
-
-static boolean rendBlockSubsector(subsector_t* subsector, void* data)
-{
-    vec2_t start, end;
-    arvec2_t bbox = data;
-    hedge_t* hEdge;
-
-    if((hEdge = subsector->face->hEdge))
-    {
-        do
-        {
-            V2_Set(start, hEdge->HE_v1pos[VX] - bbox[0][VX],
-                   hEdge->HE_v1pos[VY] - bbox[0][VY]);
-
-            V2_Set(end, hEdge->HE_v2pos[VX] - bbox[0][VX],
-                   hEdge->HE_v2pos[VY] - bbox[0][VY]);
-
-            glBegin(GL_LINES);
-                glVertex2fv(start);
-                glVertex2fv(end);
-            glEnd();
-
-            {
-            float length, dx, dy;
-            float normal[2], unit[2];
-            float scale = MAX_OF(bmapDebugSize, 1);
-            float width = (theWindow->width / 16) / scale;
-
-            dx = end[VX] - start[VX];
-            dy = end[VY] - start[VY];
-            length = sqrt(dx * dx + dy * dy);
-            if(length > 0)
-            {
-                unit[VX] = dx / length;
-                unit[VY] = dy / length;
-                normal[VX] = -unit[VY];
-                normal[VY] = unit[VX];
-
-                glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
-
-                glEnable(GL_TEXTURE_2D);
-                GL_BlendOp(GL_FUNC_ADD);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-                glBegin(GL_QUADS);
-                    glTexCoord2f(0.75f, 0.5f);
-                    glVertex2fv(start);
-                    glTexCoord2f(0.75f, 0.5f);
-                    glVertex2fv(end);
-                    glTexCoord2f(0.75f, 1);
-                    glVertex2f(end[VX] - normal[VX] * width,
-                               end[VY] - normal[VY] * width);
-                    glTexCoord2f(0.75f, 1);
-                    glVertex2f(start[VX] - normal[VX] * width,
-                               start[VY] - normal[VY] * width);
-                glEnd();
-
-                glDisable(GL_TEXTURE_2D);
-                GL_BlendMode(BM_NORMAL);
-                }
-            }
-
-            // Draw the bounding box.
-            V2_Set(start, subsector->bBox[0].pos[VX] - bbox[0][VX],
-                          subsector->bBox[0].pos[VY] - bbox[0][VY]);
-            V2_Set(end, subsector->bBox[1].pos[VX] - bbox[0][VX],
-                        subsector->bBox[1].pos[VY] - bbox[0][VY]);
-
-            glBegin(GL_LINES);
-                glVertex2f(start[VX], start[VY]);
-                glVertex2f(end[VX], start[VY]);
-                glVertex2f(end[VX], start[VY]);
-                glVertex2f(end[VX], end[VY]);
-                glVertex2f(end[VX], end[VY]);
-                glVertex2f(start[VX], end[VY]);
-                glVertex2f(start[VX], end[VY]);
-                glVertex2f(start[VX], start[VY]);
-            glEnd();
-        } while((hEdge = hEdge->next) != subsector->face->hEdge);
-    }
-
-    return true; // Continue iteration.
-}
-
-void rendBlockLineDefs(void* blockPtr, void* param,
-                       float r, float g, float b, float a)
-{
-    bmapblock_t* block = blockPtr;
-
-    // Lines?
-    if(block->lineDefs)
-    {
-        bmapiterparams_t args;
-
-        args.localValidCount = validCount;
-        args.func = rendBlockLineDef;
-        args.param = param;
-
-        glColor4f(r, g, b, a);
-        glDisable(GL_TEXTURE_2D);
-
-        glBegin(GL_LINES);
-            bmapBlockLinesIterator(block, &args);
-        glEnd();
-
-        glEnable(GL_TEXTURE_2D);
-    }
-
-    // Polyobj lines?
-    if(block->polyLinks)
-    {
-        bmappoiterparams_t args;
-        poiterparams_t poargs;
-
-        poargs.func = rendBlockLineDef;
-        poargs.param = param;
-
-        args.localValidCount = validCount;
-        args.func = PTR_PolyobjLines;
-        args.param = &poargs;
-
-        glColor4f(r, g, b, a);
-        glDisable(GL_TEXTURE_2D);
-
-        glBegin(GL_LINES);
-            bmapBlockPolyobjsIterator(block, &args);
-        glEnd();
-
-        glEnable(GL_TEXTURE_2D);
-    }
-}
-
-void rendBlockMobjs(void* blockPtr, void* data, float r, float g, float b, float a)
-{
-    bmapblock_t* block = blockPtr;
-
-    // Mobjs?
-    if(block->mobjLinks)
-    {
-        bmapmoiterparams_t args;
-
-        args.localValidCount = validCount;
-        args.func = rendBlockMobj;
-        args.param = data;
-
-        glColor4f(r, g, b, a);
-        glDisable(GL_TEXTURE_2D);
-
-        glBegin(GL_QUADS);
-            bmapBlockMobjsIterator(block, (void*) &args);
-        glEnd();
-
-        glEnable(GL_TEXTURE_2D);
-    }
-}
-
-void rendBlockSubsectors(void* blockPtr, void* param, float r, float g, float b, float a)
-{
-    subsectormapblock_t* block = blockPtr;
-
-    if(block->subsectors)
-    {
-        subsectoriterparams_t args;
-
-        args.box = NULL;
-        args.localValidCount = validCount;
-        args.sector = NULL;
-        args.func = rendBlockSubsector;
-        args.param = param;
-        args.retObjRecord = false;
-
-        glColor4f(r, g, b, a);
-        subsectorBlockIterator(block, &args);
-    }
-}
-
-static void drawInfoBox(int x, int y, long blockIdx, uint blockX,
-                        uint blockY, int lineCount, int moCount, int poCount)
-{
-    int w, h;
-    char buf[160];
-
-    sprintf(buf, "Block: %li [%u, %u] Lines: #%i Mobjs: #%i Polyobjs: #%i",
-            blockIdx, blockX, blockY, lineCount, moCount, poCount);
-    w = FR_TextWidth(buf) + 16;
-    h = FR_TextHeight(buf) + 16;
-    x -= w / 2;
-    UI_GradientEx(x, y, w, h, 6, UI_Color(UIC_BG_MEDIUM),
-                  UI_Color(UIC_BG_LIGHT), .5f, .5f);
-    UI_DrawRectEx(x, y, w, h, 6, false, UI_Color(UIC_BRD_HI), NULL, .5f, -1);
-    UI_SetColor(UI_Color(UIC_TEXT));
-    UI_TextOutEx(buf, x + 8, y + h / 2, false, true, UI_Color(UIC_TITLE), 1);
-}
-
-static void drawInfoBox2(float minX, float minY, float maxX, float maxY,
-                         float blockWidth, float blockHeight,
-                         uint width, uint height)
-{
-    int w = 16 + FR_TextWidth("(+000.0,+000.0)(+000.0,+000.0)");
-    int th = FR_TextHeight("a"), h = th * 4 + 16;
-    int x, y;
-    char buf[80];
-
-    x = theWindow->width - 10 - w;
-    y = theWindow->height - 10 - h;
-
-    UI_GradientEx(x, y, w, h, 6, UI_Color(UIC_BG_MEDIUM),
-                  UI_Color(UIC_BG_LIGHT), .5f, .5f);
-    UI_DrawRectEx(x, y, w, h, 6, false, UI_Color(UIC_BRD_HI), NULL, .5f, -1);
-
-    x += 8;
-    y += 8 + th/2;
-
-    UI_TextOutEx("Blockmap", x, y, false, true, UI_Color(UIC_TITLE), 1);
-    y += th;
-
-    sprintf(buf, "Dimensions:[%u,%u] #%li", width, height,
-            width * (long) height);
-    UI_TextOutEx(buf, x, y, false, true, UI_Color(UIC_TEXT), 1);
-    y += th;
-
-    sprintf(buf, "Blksize:[%.2f,%.2f]", blockWidth, blockHeight);
-    UI_TextOutEx(buf, x, y, false, true, UI_Color(UIC_TEXT), 1);
-    y += th;
-
-    sprintf(buf, "(%+06.0f,%+06.0f)(%+06.0f,%+06.0f)",
-            minX, minY, maxX, maxY);
-    UI_TextOutEx(buf, x, y, false, true, UI_Color(UIC_TEXT), 1);
-    y += th;
-}
-
-static void drawBlockInfoBox(uint vBlock[2])
-{
-    int lineCount = -1, moCount = -1, poCount = -1;
-    long blockIdx = -1;
-    bmap_t* bmap = (bmap_t*) BlockMap;
-    bmapblock_t* block;
-
-    block = M_GridmapGetBlock(bmap->gridmap, vBlock[VX], vBlock[VY], false);
-    if(block)
-    {
-        blockIdx = vBlock[VY] * bmap->dimensions[VY] + vBlock[VX];
-
-        // Count the number of lines linked to this block.
-        lineCount = 0;
-        if(block->lineDefs)
-        {
-            linedef_t** iter = block->lineDefs;
-            while(*iter)
-            {
-                lineCount++;
-                *iter++;
-            }
-        }
-
-        // Count the number of mobjs linked to this block.
-        moCount = 0;
-        if(block->mobjLinks)
-        {
-            linkmobj_t* link = block->mobjLinks;
-            while(link)
-            {
-                if(link->mobj)
-                    moCount++;
-                link = link->next;
-            }
-        }
-
-        // Count the number of polyobjs linked to this block.
-        poCount = 0;
-        if(block->polyLinks)
-        {
-            linkpolyobj_t* link = block->polyLinks;
-            while(link)
-            {
-                if(link->polyobj)
-                    poCount++;
-                link = link->next;
-            }
-        }
-    }
-
-    drawInfoBox(theWindow->width / 2, 30,
-                blockIdx, vBlock[VX], vBlock[VY], lineCount, moCount, poCount);
-}
-
-/**
- * Draw the blockmap in 2D HUD mode.
- */
-static void blockmapDebug(blockmap_t* blockmap, mobj_t* followMobj,
-                          void (*func) (void* blockPtr, void* param,
-                                        float r, float g, float b, float a))
-{
-    bmap_t* bmap = (bmap_t*) blockmap;
-    void* block;
-    uint x, y, vBlock[2], vBlockBox[4];
-    float scale, radius;
-    vec2_t start, end, box[2];
-
-    scale = bmapDebugSize / MAX_OF(theWindow->height / 100, 1);
-
-    if(followMobj)
-    {   // Determine the mobj's block.
-        if(!P_ToBlockmapBlockIdx(blockmap, vBlock, followMobj->pos))
-            followMobj = NULL; // The target is outside the blockmap.
-    }
-
-    if(followMobj)
-    {
-        // Determine the mobj's collision blockbox.
-        radius = followMobj->radius + DDMOBJ_RADIUS_MAX * 2;
-        V2_Set(start, followMobj->pos[VX] - radius, followMobj->pos[VY] - radius);
-        V2_Set(end,   followMobj->pos[VX] + radius, followMobj->pos[VY] + radius);
-        V2_InitBox(box, start);
-        V2_AddToBox(box, end);
-        P_BoxToBlockmapBlocks(blockmap, vBlockBox, box);
-    }
-
-    // Go into screen projection mode.
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0, theWindow->width, theWindow->height, 0, -1, 1);
-
-    glTranslatef((theWindow->width / 2), (theWindow->height / 2), 0);
-    glScalef(scale, -scale, 1);
-
-    if(followMobj)
-    {   // Offset relatively to center on the location of the mobj.
-        V2_Set(start,
-               (vBlock[VX] * bmap->blockSize[VX]),
-               (vBlock[VY] * bmap->blockSize[VY]));
-        glTranslatef(-start[VX], -start[VY], 0);
-    }
-    else
-    {   // Offset to center the blockmap on the screen.
-        glTranslatef(-(bmap->blockSize[VX] * bmap->dimensions[VX] / 2),
-                     -(bmap->blockSize[VY] * bmap->dimensions[VY] / 2), 0);
-    }
-
-    glDisable(GL_TEXTURE_2D);
-
-    // Draw a background.
-    V2_Set(start, 0, 0);
-    V2_Set(end, bmap->blockSize[VX] * bmap->dimensions[VX],
-                bmap->blockSize[VY] * bmap->dimensions[VY]);
-
-    glColor4f(.25f, .25f, .25f, .66f);
-    glBegin(GL_QUADS);
-        glVertex2f(start[VX], start[VY]);
-        glVertex2f(end[VX], start[VY]);
-        glVertex2f(end[VX], end[VY]);
-        glVertex2f(start[VX], end[VY]);
-    glEnd();
-
-    /**
-     * Draw the blocks.
-     */
-
-    for(y = 0; y < bmap->dimensions[VY]; ++y)
-        for(x = 0; x < bmap->dimensions[VX]; ++x)
-        {
-            boolean draw = false;
-            bmapblock_t* block =
-                M_GridmapGetBlock(bmap->gridmap, x, y, false);
-
-            if(followMobj)
-            {
-                if(x == vBlock[VX] && y == vBlock[VY])
-                {   // The block the viewPlayer is in.
-                    glColor4f(.66f, .66f, 1, .66f);
-                    draw = true;
-                }
-                else if(x >= vBlockBox[BOXLEFT]   && x <= vBlockBox[BOXRIGHT] &&
-                        y >= vBlockBox[BOXBOTTOM] && y <= vBlockBox[BOXTOP])
-                {   // In the viewPlayer's extended collision range.
-                    glColor4f(.33f, .33f, .66f, .33f);
-                    draw = true;
-                }
-            }
-
-            if(!draw && !block)
-            {   // NULL block.
-                glColor4f(0, 0, 0, .95f);
-                draw = true;
-            }
-
-            if(draw)
-            {
-                V2_Set(start, x * bmap->blockSize[VX],
-                              y * bmap->blockSize[VY]);
-                V2_Set(end, bmap->blockSize[VX],
-                            bmap->blockSize[VY]);
-                V2_Sum(end, end, start);
-
-                glBegin(GL_QUADS);
-                    glVertex2f(start[VX], start[VY]);
-                    glVertex2f(end[VX], start[VY]);
-                    glVertex2f(end[VX], end[VY]);
-                    glVertex2f(start[VX], end[VY]);
-                glEnd();
-            }
-        }
-
-    /**
-     * Draw the grid lines
-     */
-
-    glColor4f(.5f, .5f, .5f, .125f);
-
-    // Vertical lines:
-    glBegin(GL_LINES);
-    for(x = 1; x < bmap->dimensions[VX]; ++x)
-    {
-        glVertex2f(x * bmap->blockSize[VX],  0);
-        glVertex2f(x * bmap->blockSize[VX],
-                   bmap->blockSize[VY] * bmap->dimensions[VY]);
-    }
-    glEnd();
-
-    // Horizontal lines
-    glBegin(GL_LINES);
-    for(y = 1; y < bmap->dimensions[VY]; ++y)
-    {
-        glVertex2f(0, y * bmap->blockSize[VY]);
-        glVertex2f(bmap->blockSize[VX] * bmap->dimensions[VX],
-                   y * bmap->blockSize[VY]);
-    }
-    glEnd();
-
-    glEnable(GL_TEXTURE_2D);
-
-    /**
-     * Draw the blockmap-linked data.
-     */
-
-    validCount++;
-
-    if(followMobj)
-    {
-        // First, the blocks outside the viewPlayer's range.
-        for(y = 0; y < bmap->dimensions[VY]; ++y)
-            for(x = 0; x < bmap->dimensions[VX]; ++x)
-            {
-                if(x >= vBlockBox[BOXLEFT]   && x <= vBlockBox[BOXRIGHT] &&
-                   y >= vBlockBox[BOXBOTTOM] && y <= vBlockBox[BOXTOP])
-                    continue;
-
-                block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
-                if(block)
-                {
-                    func(block, bmap->bBox, .33f, 0, 0, .75f);
-                }
-            }
-
-        validCount++;
-
-        // Next, the blocks within the viewPlayer's extended collision range.
-        for(y = vBlockBox[BOXBOTTOM]; y <= vBlockBox[BOXTOP]; ++y)
-            for(x = vBlockBox[BOXLEFT]; x <= vBlockBox[BOXRIGHT]; ++x)
-            {
-                if(x == vBlock[VX] && y == vBlock[VY])
-                    continue;
-
-                block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
-                if(block)
-                {
-                    func(block, bmap->bBox, 1, .5f, 0, 1);
-                }
-            }
-
-        validCount++;
-
-        // Lastly, the block the viewPlayer is in.
-        block = M_GridmapGetBlock(bmap->gridmap, vBlock[VX], vBlock[VY], false);
-        if(block)
-        {
-            func(block, bmap->bBox, 1, 1, 0, 1);
-        }
-
-        /**
-         * Draw the followMobj.
-         */
-
-        radius = followMobj->radius;
-        V2_Set(start,
-               followMobj->pos[VX] - bmap->bBox[0][VX] - radius,
-               followMobj->pos[VY] - bmap->bBox[0][VY] - radius);
-        V2_Set(end,
-               followMobj->pos[VX] - bmap->bBox[0][VX] + radius,
-               followMobj->pos[VY] - bmap->bBox[0][VY] + radius);
-
-        glColor4f(0, 1, 0, 1);
-        glDisable(GL_TEXTURE_2D);
-
-        glBegin(GL_QUADS);
-            glVertex2f(start[VX], start[VY]);
-            glVertex2f(end[VX], start[VY]);
-            glVertex2f(end[VX], end[VY]);
-            glVertex2f(start[VX], end[VY]);
-        glEnd();
-
-        glEnable(GL_TEXTURE_2D);
-    }
-    else
-    {   // Just draw the lot.
-        for(y = 0; y < bmap->dimensions[VY]; ++y)
-            for(x = 0; x < bmap->dimensions[VX]; ++x)
-            {
-                block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
-                if(block)
-                {
-                    func(block, bmap->bBox, .33f, 0, 0, .75f);
-                }
-            }
-    }
-
-    /**
-     * Draw the blockmap bounds.
-     */
-
-    V2_Set(start, -1, -1);
-    V2_Set(end, 1 + bmap->blockSize[VX] * bmap->dimensions[VX],
-           1 + bmap->blockSize[VY] * bmap->dimensions[VY]);
-
-    glColor4f(1, .5f, .5f, 1);
-    glDisable(GL_TEXTURE_2D);
-
-    glBegin(GL_LINES);
-        glVertex2f(start[VX], start[VY]);
-        glVertex2f(end[VX], start[VY]);
-
-        glVertex2f(end[VX], start[VY]);
-        glVertex2f(end[VX], end[VY]);
-
-        glVertex2f(end[VX], end[VY]);
-        glVertex2f(start[VX], end[VY]);
-
-        glVertex2f(start[VX], end[VY]);
-        glVertex2f(start[VX], start[VY]);
-    glEnd();
-
-    glPopMatrix();
-    glEnable(GL_TEXTURE_2D);
-}
-
-void P_BlockmapDebug(void)
-{
-    blockmap_t* blockmap;
-    bmap_t* bmap;
-    mobj_t* followMobj = NULL;
-    void (*func) (void*, void*, float r, float g, float b, float a);
-
-    if(!bmapShowDebug || bmapShowDebug > 3)
-        return;
-
-    switch(bmapShowDebug)
-    {
-    default: // Mobjs.
-        if(!BlockMap)
-            return;
-
-        blockmap = BlockMap;
-        func = rendBlockMobjs;
-        break;
-
-    case 2: // LineDefs.
-        if(!BlockMap)
-            return;
-
-        blockmap = BlockMap;
-        func = rendBlockLineDefs;
-        break;
-
-    case 3: // SubSectors.
-        if(!SubsectorBlockMap)
-            return;
-
-        blockmap = SubsectorBlockMap;
-        func = rendBlockSubsectors;
-        break;
-    }
-
-    // If possible, we'll tailor what we draw relative to the viewPlayer.
-    if(viewPlayer && viewPlayer->shared.mo)
-        followMobj = viewPlayer->shared.mo;
-
-    blockmapDebug(blockmap, followMobj, func);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0, theWindow->width, theWindow->height, 0, -1, 1);
-
-    if(followMobj && bmapShowDebug != 3)
-    {
-        uint                vBlock[2];
-
-        // Determine the block mobj is in.
-        if(P_ToBlockmapBlockIdx(blockmap, vBlock, followMobj->pos))
-        {
-            // Draw info about the block mobj is in.
-            drawBlockInfoBox(vBlock);
-        }
-    }
-
-    // Draw info about the blockmap.
-    bmap = (bmap_t*) blockmap;
-    drawInfoBox2(bmap->bBox[0][VX], bmap->bBox[0][VY],
-                 bmap->bBox[1][VX], bmap->bBox[1][VY],
-                 bmap->blockSize[VX], bmap->blockSize[VY],
-                 bmap->dimensions[VX], bmap->dimensions[VY]);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
 }

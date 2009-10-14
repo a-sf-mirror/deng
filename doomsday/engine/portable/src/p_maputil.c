@@ -578,11 +578,12 @@ boolean P_UnlinkFromLines(mobj_t* mo)
  */
 int P_MobjUnlink(mobj_t* mo)
 {
-    int                 links = 0;
+    int links = 0;
+    gamemap_t* map = DMU_CurrentMap();
 
     if(P_UnlinkFromSector(mo))
         links |= DDLINK_SECTOR;
-    if(P_BlockmapUnlinkMobj(BlockMap, mo))
+    if(Blockmap_UnlinkMobj(map->blockMap, mo))
         links |= DDLINK_BLOCKMAP;
     if(!P_UnlinkFromLines(mo))
         links |= DDLINK_NOLINE;
@@ -596,8 +597,8 @@ int P_MobjUnlink(mobj_t* mo)
  */
 boolean PIT_LinkToLines(linedef_t* ld, void* parm)
 {
-    linelinker_data_t*  data = parm;
-    nodeindex_t         nix;
+    linelinker_data_t* data = parm;
+    nodeindex_t nix;
 
     if(data->box[1][VX] <= ld->bBox[BOXLEFT] ||
        data->box[0][VX] >= ld->bBox[BOXRIGHT] ||
@@ -649,7 +650,7 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    P_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
+    Map_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
 }
 
 void P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link)
@@ -721,6 +722,7 @@ boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
 void P_MobjLink(mobj_t* mo, byte flags)
 {
     subsector_t* subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
+    gamemap_t* map = DMU_CurrentMap();
 
     // Link into the sector.
     mo->subsector = (subsector_t*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
@@ -745,8 +747,8 @@ void P_MobjLink(mobj_t* mo, byte flags)
     if(flags & DDLINK_BLOCKMAP)
     {
         // Unlink from the old block, if any.
-        P_BlockmapUnlinkMobj(BlockMap, mo);
-        P_BlockmapLinkMobj(BlockMap, mo);
+        Blockmap_UnlinkMobj(map->blockMap, mo);
+        Blockmap_LinkMobj(map->blockMap, mo);
     }
 
     // Link into lines.
@@ -917,43 +919,44 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
     return true;
 }
 
-boolean P_MobjsBoxIterator(const float box[4],
-                           boolean (*func) (mobj_t*, void*),
-                           void* data)
+boolean Map_MobjsBoxIterator(gamemap_t* map, const float box[4],
+                             boolean (*func) (mobj_t*, void*), void* data)
 {
-    vec2_t              bounds[2];
+    vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
     bounds[0][VY] = box[BOXBOTTOM];
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_MobjsBoxIteratorv(bounds, func, data);
+    return Map_MobjsBoxIteratorv(map, bounds, func, data);
 }
 
-boolean P_MobjsBoxIteratorv(const arvec2_t box,
-                            boolean (*func) (mobj_t*, void*),
-                            void* data)
+boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                              boolean (*func) (mobj_t*, void*), void* data)
 {
-    uint                blockBox[4];
+    uint blockBox[4];
 
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
+    if(!map)
+        return true;
 
-    return P_BlockBoxMobjsIterator(BlockMap, blockBox, func, data);
+    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
+
+    return Blockmap_BoxIterateMobjs(map->blockMap, blockBox, func, data);
 }
 
-boolean P_PolyobjsBoxIterator(const float box[4],
-                              boolean (*func) (struct polyobj_s*, void*),
-                              void* data)
+boolean Map_PolyobjsBoxIterator(gamemap_t* map, const float box[4],
+                                boolean (*func) (struct polyobj_s*, void*),
+                                void* data)
 {
-    vec2_t              bounds[2];
+    vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
     bounds[0][VY] = box[BOXBOTTOM];
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_PolyobjsBoxIteratorv(bounds, func, data);
+    return Map_PolyobjsBoxIteratorv(map, bounds, func, data);
 }
 
 /**
@@ -961,56 +964,47 @@ boolean P_PolyobjsBoxIterator(const float box[4],
  * multiple mapblocks, so increment validCount before the first call, then
  * make one or more calls to it.
  */
-boolean P_PolyobjsBoxIteratorv(const arvec2_t box,
-                               boolean (*func) (struct polyobj_s*, void*),
-                               void* data)
+boolean Map_PolyobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (struct polyobj_s*, void*),
+                                 void* data)
 {
-    uint                blockBox[4];
+    uint blockBox[4];
+
+    if(!map)
+        return true;
 
     // Blockcoords to check.
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
+    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
 
-    return P_BlockBoxPolyobjsIterator(BlockMap, blockBox, func, data);
+    return Blockmap_BoxIteratePolyobjs(map->blockMap, blockBox, func, data);
 }
 
-static boolean linesBoxIteratorv(const arvec2_t box,
+static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*),
                                  void* data, boolean retObjRecord)
 {
-    uint                blockBox[4];
+    uint blockBox[4];
 
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
+    if(!map)
+        return true;
 
-    return P_BlockBoxLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
+    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
+
+    return Blockmap_BoxIterateLineDefs(map->blockMap, blockBox, func, data, retObjRecord);
 }
 
-boolean DMU_LinesBoxIterator(const float box[4],
-                           boolean (*func) (linedef_t*, void*),
-                           void* data)
+boolean Map_LinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                              boolean (*func) (linedef_t*, void*), void* data)
 {
-    vec2_t              bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return linesBoxIteratorv(bounds, func, data, true);
-}
-
-boolean P_LinesBoxIteratorv(const arvec2_t box,
-                            boolean (*func) (linedef_t*, void*),
-                            void* data)
-{
-    return linesBoxIteratorv(box, func, data, true);
+    return linesBoxIteratorv(map, box, func, data, true);
 }
 
 /**
  * @return              @c false, if the iterator func returns @c false.
  */
-boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
-                                boolean (*func) (subsector_t*, void*),
-                                void* parm, boolean retObjRecord)
+boolean Map_SubsectorsBoxIterator(gamemap_t* map, const float box[4], sector_t* sector,
+                                  boolean (*func) (subsector_t*, void*),
+                                  void* parm, boolean retObjRecord)
 {
     vec2_t bounds[2];
 
@@ -1019,41 +1013,37 @@ boolean P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_SubsectorsBoxIteratorv(bounds, sector, func, parm, retObjRecord);
-}
-
-boolean DMU_SubsectorsBoxIterator(const float box[4], void* p,
-                                  boolean (*func) (subsector_t*, void*),
-                                  void* parm)
-{
-    return P_SubsectorsBoxIterator(box, p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
+    return Map_SubsectorsBoxIteratorv(map, bounds, sector, func, parm, retObjRecord);
 }
 
 /**
  * Same as the fixed-point version of this routine, but the bounding box
  * is specified using an vec2_t array (see m_vector.c).
  */
-boolean P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
-                                 boolean (*func) (subsector_t*, void*),
-                                 void* data, boolean retObjRecord)
+boolean Map_SubsectorsBoxIteratorv(gamemap_t* map, const arvec2_t box, sector_t* sector,
+                                   boolean (*func) (subsector_t*, void*),
+                                   void* data, boolean retObjRecord)
 {
     static int localValidCount = 0;
     uint blockBox[4];
+
+    if(!map)
+        return true;
 
     // This is only used here.
     localValidCount++;
 
     // Blockcoords to check.
-    P_BoxToBlockmapBlocks(SubsectorBlockMap, blockBox, box);
+    Blockmap_BoxToBlocks(map->subsectorBlockMap, blockBox, box);
 
-    return P_BlockBoxSubSectorsIterator(SubsectorBlockMap, blockBox, sector,
-                                        box, localValidCount, func, data,
-                                        retObjRecord);
+    return Blockmap_BoxIterateSubsectors(map->subsectorBlockMap, blockBox, sector,
+                                       box, localValidCount, func, data,
+                                       retObjRecord);
 }
 
-boolean P_PolyobjLinesBoxIterator(const float box[4],
-                                  boolean (*func) (linedef_t*, void*),
-                                  void* data, boolean retObjRecord)
+boolean Map_PolyobjLinesBoxIterator(gamemap_t* map, const float box[4],
+                                    boolean (*func) (linedef_t*, void*),
+                                    void* data, boolean retObjRecord)
 {
     vec2_t bounds[2];
 
@@ -1062,41 +1052,41 @@ boolean P_PolyobjLinesBoxIterator(const float box[4],
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return P_PolyobjLinesBoxIteratorv(bounds, func, data, retObjRecord);
+    return Map_PolyobjLinesBoxIteratorv(map, bounds, func, data, retObjRecord);
 }
 
-boolean P_PolyobjLinesBoxIteratorv(const arvec2_t box,
-                                   boolean (*func) (linedef_t*, void*),
-                                   void* data, boolean retObjRecord)
+boolean Map_PolyobjLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                     boolean (*func) (linedef_t*, void*),
+                                     void* data, boolean retObjRecord)
 {
     uint blockBox[4];
 
-    P_BoxToBlockmapBlocks(BlockMap, blockBox, box);
+    if(!map)
+        return true;
 
-    return P_BlockBoxPolyobjLinesIterator(BlockMap, blockBox, func, data, retObjRecord);
+    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
+
+    return Blockmap_BoxIteratePolyobjLineDefs(map->blockMap, blockBox, func, data, retObjRecord);
 }
 
 static boolean allLinesBoxIterator(gamemap_t* map, const arvec2_t box,
                                    boolean (*func) (linedef_t*, void*),
                                    void* data, boolean retObjRecord)
 {
-    if(map->numPolyObjs > 0)
-    {
-        if(!P_PolyobjLinesBoxIteratorv(box, func, data, retObjRecord))
-            return false;
-    }
+    if(!Map_PolyobjLinesBoxIteratorv(map, box, func, data, retObjRecord))
+        return false;
 
-    return linesBoxIteratorv(box, func, data, retObjRecord);
+    return linesBoxIteratorv(map, box, func, data, retObjRecord);
 }
 
 /**
  * The validCount flags are used to avoid checking lines that are marked
  * in multiple mapblocks, so increment validCount before the first call
- * to P_BlockmapLinesIterator, then make one or more calls to it.
+ * to Blockmap_IterateLineDefs, then make one or more calls to it.
  */
-boolean P_AllLinesBoxIterator(gamemap_t* map, const float box[4],
-                              boolean (*func) (linedef_t*, void*),
-                              void* data, boolean retObjRecord)
+boolean Map_AllLinesBoxIterator(gamemap_t* map, const float box[4],
+                                boolean (*func) (linedef_t*, void*),
+                                void* data, boolean retObjRecord)
 {
     vec2_t bounds[2];
 
@@ -1109,35 +1099,15 @@ boolean P_AllLinesBoxIterator(gamemap_t* map, const float box[4],
 }
 
 /**
- * Public version of DMU_AllLinesBoxIterator.
- */
-boolean DMU_AllLinesBoxIterator(const float box[4],
-                                boolean (*func) (linedef_t*, void*),
-                                void* data)
-{
-    return P_AllLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
-}
-
-/**
  * The validCount flags are used to avoid checking lines that are marked
  * in multiple mapblocks, so increment validCount before the first call
- * to P_BlockmapLinesIterator, then make one or more calls to it.
+ * to Blockmap_IterateLineDefs, then make one or more calls to it.
  */
-boolean P_AllLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                               boolean (*func) (linedef_t*, void*),
-                               void* data, boolean retObjRecord)
+boolean Map_AllLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data, boolean retObjRecord)
 {
     return allLinesBoxIterator(map, box, func, data, retObjRecord);
-}
-
-/**
- * Public version of P_AllLinesBoxIteratorv.
- */
-boolean DMU_AllLinesBoxIteratorv(const arvec2_t box,
-                                 boolean (*func) (linedef_t*, void*),
-                                 void* data)
-{
-    return allLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
 }
 
 /**
@@ -1149,9 +1119,9 @@ boolean DMU_AllLinesBoxIteratorv(const arvec2_t box,
  */
 boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
 {
-    int                 s[2];
-    float               frac;
-    divline_t           dl;
+    int s[2];
+    float frac;
+    divline_t dl;
 
     // Avoid precision problems with two routines.
     if(traceLOS.dX > FRACUNIT * 16 || traceLOS.dY > FRACUNIT * 16 ||
@@ -1190,10 +1160,10 @@ boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
 
 boolean PIT_AddMobjIntercepts(mobj_t* mo, void* data)
 {
-    float               x1, y1, x2, y2;
-    int                 s[2];
-    divline_t           dl;
-    float               frac;
+    float x1, y1, x2, y2;
+    int s[2];
+    divline_t dl;
+    float frac;
 
     if(mo->dPlayer && (mo->dPlayer->flags & DDPF_CAMERA))
         return true; // $democam: ssshh, keep going, we're not here...
@@ -1239,18 +1209,20 @@ boolean PIT_AddMobjIntercepts(mobj_t* mo, void* data)
  * Traces a line from x1,y1 to x2,y2, calling the traverser function for each
  * Returns true if the traverser function returns true for all lines
  */
-boolean P_PathTraverse(float x1, float y1, float x2, float y2,
-                       int flags, boolean (*trav) (intercept_t*))
+boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
+                         int flags, boolean (*trav) (intercept_t*))
 {
-    float               origin[2], dest[2];
-    uint                originBlock[2], destBlock[2];
-    gamemap_t*          map = DMU_CurrentMap();
-    vec2_t              min, max;
+    float origin[2], dest[2];
+    uint originBlock[2], destBlock[2];
+    vec2_t min, max;
+
+    if(!map)
+        return true;
 
     V2_Set(origin, x1, y1);
     V2_Set(dest, x2, y2);
 
-    P_GetBlockmapBounds(map->blockMap, min, max);
+    Blockmap_Bounds(map->blockMap, min, max);
 
     if(!(origin[VX] >= min[VX] && origin[VX] <= max[VX] &&
          origin[VY] >= min[VY] && origin[VY] <= max[VY]))
@@ -1313,8 +1285,8 @@ boolean P_PathTraverse(float x1, float y1, float x2, float y2,
             V2_Copy(dest, point);
     }
 
-    if(!(P_ToBlockmapBlockIdx(map->blockMap, originBlock, origin) &&
-         P_ToBlockmapBlockIdx(map->blockMap, destBlock, dest)))
+    if(!(Blockmap_Block2fv(map->blockMap, originBlock, origin) &&
+         Blockmap_Block2fv(map->blockMap, destBlock, dest)))
     {   // Shouldn't reach here due to the clipping above.
         return false;
     }
@@ -1327,10 +1299,66 @@ boolean P_PathTraverse(float x1, float y1, float x2, float y2,
     V2_Subtract(origin, origin, min);
     V2_Subtract(dest, dest, min);
 
-    if(!P_BlockPathTraverse(BlockMap, originBlock, destBlock, origin, dest,
-                            flags, trav))
+    if(!Blockmap_PathTraverse(map->blockMap, originBlock, destBlock, origin, dest,
+                              flags, trav))
         return false; // Early out.
 
     // Go through the sorted list.
     return P_TraverseIntercepts(trav, 1.0f);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+boolean P_PathTraverse(float x1, float y1, float x2, float y2, int flags,
+                       boolean (*trav) (intercept_t*))
+{
+    return Map_PathTraverse(DMU_CurrentMap(), x1, y1, x2, y2, flags, trav);
+}
+
+boolean P_MobjsBoxIterator(const float box[4], boolean (*func) (mobj_t*, void*), void* data)
+{
+    return Map_MobjsBoxIterator(DMU_CurrentMap(), box, func, data);
+}
+
+boolean P_PolyobjsBoxIterator(const float box[4], boolean (*func) (struct polyobj_s*, void*),
+                              void* data)
+{
+    return Map_PolyobjsBoxIterator(DMU_CurrentMap(), box, func, data);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+boolean P_LinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
+                           void* data)
+{
+    vec2_t bounds[2];
+
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
+
+    return linesBoxIteratorv(DMU_CurrentMap(), bounds, func, data, true);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+boolean P_SubsectorsBoxIterator(const float box[4], void* p,
+                                boolean (*func) (subsector_t*, void*),
+                                void* parm)
+{
+    return Map_SubsectorsBoxIterator(DMU_CurrentMap(), box,
+        p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+boolean P_AllLinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
+                              void* data)
+{
+    return Map_AllLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
 }

@@ -306,8 +306,8 @@ void R_InitSectorShadows(gamemap_t* map)
         data.lineDef = side->lineDef;
         data.side = sid;
 
-        P_SubsectorsBoxIteratorv(bounds, side->sector,
-                                 RIT_ShadowSubsectorLinker, &data, false);
+        Map_SubsectorsBoxIteratorv(map, bounds, side->sector,
+                                   RIT_ShadowSubsectorLinker, &data, false);
     }
 
     // How much time did we spend?

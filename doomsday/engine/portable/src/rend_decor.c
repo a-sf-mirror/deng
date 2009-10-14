@@ -178,7 +178,7 @@ static void projectDecoration(decorsource_t* src)
         uint numLights = 0;
 
         getLightingParams(src->pos[VX], src->pos[VY], src->pos[VZ],
-                          src->subsector, distance, levelFullBright,
+                          src->subsector, distance, mapFullBright,
                           modelLight,
                           ambientColor, &lightList, &numLights);
 
@@ -188,7 +188,7 @@ static void projectDecoration(decorsource_t* src)
                                      src->data.model.mf, NULL, 0,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB],
                                      src->fadeMul, lightList, numLights, 0, 0, src->subsector,
-                                     0, 0, false, levelFullBright, true);
+                                     0, 0, false, mapFullBright, true);
     }
 
     vis->lumIdx = src->lumIdx;

@@ -88,55 +88,51 @@ boolean         P_SectorTouchingMobjsIterator(sector_t* sector,
                                               void*data);
 
 // Mobjs in bounding box iterators.
-boolean         P_MobjsBoxIterator(const float box[4],
-                                   boolean (*func) (mobj_t*, void*),
-                                   void* data);
-
-boolean         P_MobjsBoxIteratorv(const arvec2_t box,
-                                    boolean (*func) (mobj_t*, void*),
-                                    void* data);
-
-// Lines in bounding box iterators.
-boolean         DMU_LinesBoxIterator(const float box[4],
-                                   boolean (*func) (linedef_t*, void*),
-                                   void *data);
-boolean         P_LinesBoxIteratorv(const arvec2_t box,
-                                    boolean (*func) (linedef_t*, void*),
-                                    void* data);
-
-// Polyobj in bounding box iterators.
-boolean         P_PolyobjsBoxIterator(const float box[4],
-                                     boolean (*func) (polyobj_t*, void*),
+boolean         Map_MobjsBoxIterator(struct gamemap_s* map, const float box[4],
+                                     boolean (*func) (mobj_t*, void*),
                                      void* data);
-boolean         P_PolyobjsBoxIteratorv(const arvec2_t box,
-                                      boolean (*func) (polyobj_t*, void*),
+
+boolean         Map_MobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+                                      boolean (*func) (mobj_t*, void*),
                                       void* data);
 
-// (Polyobj in bounding box)->lineDefs iterators.
-boolean         P_PolyobjLinesBoxIterator(const float box[4],
-                                          boolean (*func) (linedef_t*, void*),
-                                          void* data, boolean retObjRecord);
-boolean         P_PolyobjLinesBoxIteratorv(const arvec2_t box,
-                                           boolean (*func) (linedef_t*, void*),
-                                           void* data, boolean retObjRecord);
+// Lines in bounding box iterators.
+boolean         Map_LinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+                                      boolean (*func) (linedef_t*, void*),
+                                      void* data);
+
+// Polyobj in bounding box iterators.
+boolean         Map_PolyobjsBoxIterator(struct gamemap_s* map, const float box[4],
+                                        boolean (*func) (polyobj_t*, void*),
+                                        void* data);
+boolean         Map_PolyobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+                                         boolean (*func) (polyobj_t*, void*),
+                                         void* data);
+
+boolean         Map_PolyobjLinesBoxIterator(struct gamemap_s* map, const float box[4],
+                                            boolean (*func) (linedef_t*, void*),
+                                            void* data, boolean retObjRecord);
+boolean         Map_PolyobjLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+                                             boolean (*func) (linedef_t*, void*),
+                                             void* data, boolean retObjRecord);
 
 // Lines and (Polyobj in bounding box)->lineDefs iterators.
 // Polyobj lines are iterated first.
-boolean         P_AllLinesBoxIterator(struct gamemap_s* map, const float box[4],
-                                      boolean (*func) (linedef_t*, void*),
-                                      void* data, boolean retObjRecord);
-boolean         P_AllLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                       boolean (*func) (linedef_t*, void*),
-                                       void* data, boolean retObjRecord);
+boolean         Map_AllLinesBoxIterator(struct gamemap_s* map, const float box[4],
+                                        boolean (*func) (linedef_t*, void*),
+                                        void* data, boolean retObjRecord);
+boolean         Map_AllLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+                                         boolean (*func) (linedef_t*, void*),
+                                         void* data, boolean retObjRecord);
 
 // SubSectors in bounding box iterators.
-boolean         P_SubsectorsBoxIterator(const float box[4], sector_t* sector,
-                                       boolean (*func) (subsector_t*, void*),
-                                       void* parm, boolean retObjRecord);
-boolean         P_SubsectorsBoxIteratorv(const arvec2_t box, sector_t* sector,
-                                        boolean (*func) (subsector_t*, void*),
-                                        void* data, boolean retObjRecord);
+boolean         Map_SubsectorsBoxIterator(struct gamemap_s* map, const float box[4], sector_t* sector,
+                                          boolean (*func) (subsector_t*, void*),
+                                          void* parm, boolean retObjRecord);
+boolean         Map_SubsectorsBoxIteratorv(struct gamemap_s* map, const arvec2_t box, sector_t* sector,
+                                           boolean (*func) (subsector_t*, void*),
+                                           void* data, boolean retObjRecord);
 
-boolean         P_PathTraverse(float x1, float y1, float x2, float y2,
-                               int flags, boolean (*trav) (intercept_t*));
+boolean         Map_PathTraverse(struct gamemap_s* map, float x1, float y1, float x2, float y2,
+                                 int flags, boolean (*trav) (intercept_t*));
 #endif

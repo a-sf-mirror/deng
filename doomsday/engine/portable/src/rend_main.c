@@ -47,6 +47,7 @@
 #include "net_main.h"
 
 #include "rendseg.h"
+#include "blockmapvisual.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -94,6 +95,9 @@ int gameDrawHUD = 1; // Set to zero when we advise that the HUD should not be dr
 int devMobjBBox = 0; // 1 = Draw mobj bounding boxes (for debug)
 DGLuint dlBBox = 0; // Display list: active-textured bbox model.
 
+byte devBlockmap = 0; // 1 = mobjs, 2 = linedefs, 3 = subSectors.
+float devBlockmapSize = 1.5f;
+
 byte devVertexIndices = 0; // @c 1= Draw world vertex indices (for debug).
 byte devVertexBars = 0; // @c 1= Draw world vertex position bars.
 byte devSurfaceNormals = 0; // @c 1= Draw world surface normal tails.
@@ -127,8 +131,8 @@ void Rend_Register(void)
                 CVF_NO_MAX, 0, 0);
     C_VAR_BYTE("rend-dev-light-mod", &devLightModRange, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-tex-showfix", &devNoTexFix, CVF_NO_ARCHIVE, 0, 1);
-    C_VAR_BYTE("rend-dev-blockmap-debug", &bmapShowDebug, CVF_NO_ARCHIVE, 0, 3);
-    C_VAR_FLOAT("rend-dev-blockmap-debug-size", &bmapDebugSize, CVF_NO_ARCHIVE, .1f, 100);
+    C_VAR_BYTE("rend-dev-blockmap-debug", &devBlockmap, CVF_NO_ARCHIVE, 0, 3);
+    C_VAR_FLOAT("rend-dev-blockmap-debug-size", &devBlockmapSize, CVF_NO_ARCHIVE, .1f, 100);
     C_VAR_BYTE("rend-dev-vertex-show-indices", &devVertexIndices, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-vertex-show-bars", &devVertexBars, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-surface-show-normals", &devSurfaceNormals, CVF_NO_ARCHIVE, 0, 1);
@@ -527,7 +531,7 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
         return;
     }
 
-    if(isGlowing || levelFullBright)
+    if(isGlowing || mapFullBright)
     {   // Uniform colour. Apply to all vertices.
         R_VertexColorsGlow(rcolors, numVertices);
     }
@@ -1245,7 +1249,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     // Light this polygon.
     if(p->type != RPT_SKY_MASK)
     {
-        if(isGlowing || levelFullBright)
+        if(isGlowing || mapFullBright)
         {   // Uniform colour. Apply to all vertices.
             R_VertexColorsGlow(rcolors, numVertices);
         }
@@ -1985,7 +1989,7 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
 
 float Sector_LightLevel(sector_t* sec)
 {
-    if(levelFullBright)
+    if(mapFullBright)
         return 1.0f;
 
     return sec->lightLevel;
@@ -3384,7 +3388,7 @@ void Rend_Vertexes(gamemap_t* map)
     bbox[BOXRIGHT]  = vx + MAX_VERTEX_POINT_DIST;
     bbox[BOXBOTTOM] = vy - MAX_VERTEX_POINT_DIST;
     bbox[BOXTOP]    = vy + MAX_VERTEX_POINT_DIST;
-    P_PolyobjsBoxIterator(bbox, drawPolyObjVertexes, NULL);
+    Map_PolyobjsBoxIterator(map, bbox, drawPolyObjVertexes, NULL);
 
     // Restore previous state.
     if(devVertexBars)

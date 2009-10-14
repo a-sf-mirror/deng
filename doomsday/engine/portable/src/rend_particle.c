@@ -448,7 +448,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
 
     params->ambientColor[CA] = alpha;
 
-    if((st->flags & PTCF_BRIGHT) || levelFullBright)
+    if((st->flags & PTCF_BRIGHT) || mapFullBright)
     {
         params->ambientColor[CR] = params->ambientColor[CG] =
             params->ambientColor[CB] = 1;
@@ -614,7 +614,7 @@ static void renderParticles(int rtype, boolean withBlend)
         for(c = 0; c < 4; ++c)
         {
             color[c] = dst->color[c] * invMark + nextDst->color[c] * mark;
-            if(!(st->flags & PTCF_BRIGHT) && c < 3 && !levelFullBright)
+            if(!(st->flags & PTCF_BRIGHT) && c < 3 && !mapFullBright)
             {
                 // This is a simplified version of sectorlight (no distance
                 // attenuation or range compression).

@@ -222,7 +222,7 @@ void Rend_RenderShadows(gamemap_t* map)
 {
     uint i;
 
-    if(!useShadows || levelFullBright)
+    if(!useShadows || mapFullBright)
         return;
 
     // Check all mobjs in all visible sectors.

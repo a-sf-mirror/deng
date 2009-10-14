@@ -872,7 +872,7 @@ ddvalue_t ddValues[DD_LAST_VALUE - DD_FIRST_VALUE - 1] = {
     {&sfxVolume, &sfxVolume},
     {&musVolume, &musVolume},
     {0, 0}, //{&mouseInverseY, &mouseInverseY},
-    {&levelFullBright, &levelFullBright},
+    {&mapFullBright, &mapFullBright},
     {&CmdReturnValue, 0},
     {&gameReady, &gameReady},
     {&isDedicated, 0},

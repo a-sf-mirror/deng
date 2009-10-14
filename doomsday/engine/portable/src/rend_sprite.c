@@ -678,7 +678,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
     params->shinepspriteCoordSpace = true;
     params->ambientColor[CA] = spr->data.model.alpha;
 
-    if((levelFullBright || spr->data.model.stateFullBright) &&
+    if((mapFullBright || spr->data.model.stateFullBright) &&
        !(spr->data.model.mf->sub[0].flags & MFF_DIM))
     {
         params->ambientColor[CR] = params->ambientColor[CG] =

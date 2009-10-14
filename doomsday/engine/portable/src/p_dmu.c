@@ -325,9 +325,6 @@ void DMU_SetCurrentMap(gamemap_t* map)
     lineNodes = &map->lineNodes;
     linelinks = map->lineLinks;
 
-    BlockMap = map->blockMap;
-    SubsectorBlockMap = map->subsectorBlockMap;
-
     currentMap = map;
 }
 

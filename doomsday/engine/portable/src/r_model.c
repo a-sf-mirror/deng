@@ -582,10 +582,10 @@ modeldef_t *R_CheckIDModelFor(const char *id)
  */
 float R_CheckModelFor(mobj_t *mo, modeldef_t **modef, modeldef_t **nextmodef)
 {
-    float               interp = -1;
-    state_t            *st = mo->state;
-    modeldef_t         *mdit;
-    boolean             worldTime = false;
+    float interp = -1;
+    state_t* st = mo->state;
+    modeldef_t* mdit;
+    boolean worldTime = false;
 
     // By default there are no models.
     *nextmodef = NULL;
@@ -596,8 +596,8 @@ float R_CheckModelFor(mobj_t *mo, modeldef_t **modef, modeldef_t **nextmodef)
     // World time animation?
     if((*modef)->flags & MFF_WORLD_TIME_ANIM)
     {
-        float               duration = (*modef)->interRange[0];
-        float               offset = (*modef)->interRange[1];
+        float duration = (*modef)->interRange[0];
+        float offset = (*modef)->interRange[1];
 
         // Validate/modify the values.
         if(duration == 0)

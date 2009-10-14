@@ -180,6 +180,7 @@
 		<Unit filename="..\..\engine\portable\include\b_context.h" />
 		<Unit filename="..\..\engine\portable\include\b_device.h" />
 		<Unit filename="..\..\engine\portable\include\b_main.h" />
+		<Unit filename="..\..\engine\portable\include\blockmapvisual.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_edge.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_intersection.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_map.h" />
@@ -384,9 +385,8 @@
 		<Unit filename="..\..\engine\portable\src\bsp_node.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="..\..\engine\portable\src\bsp_superblock.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\engine\portable\src\bsp_superblock.c" />
+		<Unit filename="..\..\engine\portable\src\blockmapvisual.c" />
 		<Unit filename="..\..\engine\portable\src\cl_frame.c">
 			<Option compilerVar="CC" />
 		</Unit>

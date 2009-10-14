@@ -3,8 +3,7 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2008-2009 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,35 +22,16 @@
  */
 
 /**
- * rend_main.h: Rendering Subsystem
+ * blockmapvisual.h: Blockmap visualizer; a debugging aid.
  */
 
-#ifndef __DOOMSDAY_REND_MAIN_H__
-#define __DOOMSDAY_REND_MAIN_H__
+#ifndef DOOMSDAY_RENDER_BLOCKMAPVISUAL_H
+#define DOOMSDAY_RENDER_BLOCKMAPVISUAL_H
 
-#include <math.h>
-#include "rend_list.h"
-#include "r_things.h"
+#define BLOCKMAPVISUAL_MOBJS        0
+#define BLOCKMAPVISUAL_LINEDEFS     1
+#define BLOCKMAPVISUAL_SUBSECTORS   2
 
-extern byte smoothTexAnim;
-extern int missileBlend;
-extern boolean usingFog;
-extern float fogColor[4];
-extern int gameDrawHUD;
-extern int useShinySurfaces;
+void            Rend_BlockmapVisual(struct gamemap_s* map, byte mode);
 
-extern int devSkyMode;
-extern byte devNoTexFix;
-extern byte devBlockmap;
-extern float devBlockmapSize;
-
-void            Rend_Register(void);
-void            Rend_Init(void);
-void            Rend_Reset(void);
-
-void            Rend_RenderMap(struct gamemap_s* map);
-
-void            Rend_ModelViewMatrix(boolean use_angles);
-
-void            Rend_RenderLightModRange(void);
-#endif
+#endif /* DOOMSDAY_RENDER_BLOCKMAPVISUAL_H */

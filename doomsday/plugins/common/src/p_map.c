@@ -421,7 +421,7 @@ boolean P_CheckSides(mobj_t* actor, float x, float y)
     tmBBox[BOXBOTTOM] = (startPos[VY] < endPos[VY]? startPos[VY] : endPos[VY]);
 
     VALIDCOUNT++;
-    return !DMU_AllLinesBoxIterator(tmBBox, PIT_CrossLine, 0);
+    return !P_AllLinesBoxIterator(tmBBox, PIT_CrossLine, 0);
 }
 
 /**
@@ -1179,7 +1179,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     blockingMobj = NULL;
 #endif
 
-    return DMU_AllLinesBoxIterator(box, PIT_CheckLine, 0);
+    return P_AllLinesBoxIterator(box, PIT_CheckLine, 0);
 }
 
 boolean P_CheckPosition3fv(mobj_t* thing, const float pos[3])

@@ -47,6 +47,7 @@
 #include "rend_console.h"
 #include "rend_main.h"
 #include "r_lgrid.h"
+#include "blockmapvisual.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -847,6 +848,7 @@ void Net_Drawer(void)
     char buf[160], tmp[40];
     int i, c;
     boolean showBlinkR = false;
+    gamemap_t* map = DMU_CurrentMap();
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
@@ -857,11 +859,15 @@ void Net_Drawer(void)
     // Draw the Shadow Bias Editor HUD (if it is active).
     SBE_DrawHUD();
 
-    // Draw lightgrid debug display.
-    LG_Debug(DMU_CurrentMap());
+    if(map)
+    {
+        // Draw lightgrid debug display.
+        LG_Debug(map);
 
-    // Draw the blockmap debug display.
-    P_BlockmapDebug();
+        // Draw the blockmap debug display?
+        if(devBlockmap)
+            Rend_BlockmapVisual(map, devBlockmap - 1);
+    }
 
     // Draw the light range debug display.
     Rend_RenderLightModRange();

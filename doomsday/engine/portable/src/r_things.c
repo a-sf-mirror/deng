@@ -122,7 +122,7 @@ vissprite_t visSprites[MAXVISSPRITES], *visSpriteP;
 vispsprite_t visPSprites[DDMAXPSPRITES];
 
 int maxModelDistance = 1500;
-int levelFullBright = false;
+int mapFullBright = false;
 
 vissprite_t visSprSortedHead;
 
@@ -823,7 +823,7 @@ void R_ProjectPlayerSprites(void)
     float               inter;
     modeldef_t*         mf, *nextmf;
     ddpsprite_t*        psp;
-    boolean             isFullBright = (levelFullBright != 0);
+    boolean             isFullBright = (mapFullBright != 0);
     boolean             isModel;
     ddplayer_t*         ddpl = &viewPlayer->shared;
 
@@ -1333,7 +1333,7 @@ void R_ProjectSprite(mobj_t* mo)
     gzt = vis->center[VZ] + ((float) sprTex->offY);
 
     viewAlign = (align || alwaysAlign == 3)? true : false;
-    fullBright = ((mo->state->flags & STF_FULLBRIGHT) || levelFullBright)? true : false;
+    fullBright = ((mo->state->flags & STF_FULLBRIGHT) || mapFullBright)? true : false;
 
     secFloor = subsector->sector->SP_floorvisheight;
     secCeil = subsector->sector->SP_ceilvisheight;

@@ -357,7 +357,7 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     }
 
     // Create the blockmap.
-    blockmap = P_BlockmapCreate(bounds[0], bounds[1],
+    blockmap = P_CreateBlockmap(bounds[0], bounds[1],
                                 bMapWidth, bMapHeight);
 
     // Create the actual links by 'hardening' the lists into arrays.
@@ -392,7 +392,7 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
                 *ptr = NULL;
 
                 // Link it into the BlockMap.
-                P_BlockmapSetBlock(blockmap, x, y, lines, NULL, NULL);
+                Blockmap_SetBlock(blockmap, x, y, lines, NULL, NULL);
             }
         }
     }
