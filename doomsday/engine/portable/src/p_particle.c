@@ -1018,12 +1018,13 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     boolean zBounce = false, hitFloor = false;
     vec2_t point;
     fixed_t x, y, z, hardRadius = st->radius / 2;
+    gamemap_t* map = DMU_CurrentMap();
 
     // Particle rotates according to spin speed.
     P_SpinParticle(gen, pt);
 
     // Changes to momentum.
-    pt->mov[VZ] -= FixedMul(FLT2FIX(mapGravity), st->gravity);
+    pt->mov[VZ] -= FixedMul(FLT2FIX(map->globalGravity), st->gravity);
 
     // Vector force.
     if(stDef->vectorForce[VX] != 0 || stDef->vectorForce[VY] != 0 ||
@@ -1240,7 +1241,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!P_AllLinesBoxIteratorv(P_GetCurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
+    if(!P_AllLinesBoxIteratorv(DMU_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t normal[2], dotp;
 
@@ -1298,7 +1299,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
     particle_t* pt;
     float newparts;
     const ded_ptcgen_t* def = gen->def;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     // Source has been destroyed?
     if(!(gen->flags & PGF_UNTRIGGERED) && !P_IsUsedMobjID(map, gen->srcid))

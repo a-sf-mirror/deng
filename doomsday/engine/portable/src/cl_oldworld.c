@@ -72,7 +72,7 @@ int Cl_ReadSectorDelta(void)
     short num = Msg_ReadPackedShort();
     sector_t* sec;
     int df;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     // Sector number first (0 terminates).
     if(!num)
@@ -215,7 +215,7 @@ int Cl_ReadSideDelta(void)
     short num = Msg_ReadPackedShort(); // \fixme we support > 32768 sidedefs!
     sidedef_t* sid;
     int df;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     // Side number first (0 terminates).
     if(!num)
@@ -325,7 +325,7 @@ int Cl_ReadPolyDelta(void)
     int df;
     short num = Msg_ReadPackedShort();
     polyobj_t* po;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     // Check the number. A zero terminates.
     if(!num)

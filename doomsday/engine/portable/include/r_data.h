@@ -91,12 +91,6 @@ typedef struct glcommand_vertex_s {
     int             index;
 } glcommand_vertex_t;
 
-#define RL_MAX_DIVS         64
-typedef struct walldiv_s {
-    unsigned int    num;
-    plane_t*        divs[RL_MAX_DIVS];
-} walldiv_t;
-
 typedef struct rvertex_s {
     float           pos[3];
 } rvertex_t;
@@ -116,12 +110,6 @@ typedef struct rtexmapunit_s {
     float           scale[2], offset[2]; // For use with the texture matrix.
     blendmode_t     blendMode;
 } rtexmapunit_t;
-
-typedef struct shadowlink_s {
-    struct shadowlink_s* next;
-    linedef_t*      lineDef;
-    byte            side;
-} shadowlink_t;
 
 typedef float       colorcomp_t;
 typedef colorcomp_t rgbcol_t[3];
@@ -200,15 +188,6 @@ typedef struct rawtex_s {
 
     struct rawtex_s* next;
 } rawtex_t;
-
-typedef struct {
-    float           approxDist; // Only an approximation.
-    float           vector[3]; // Light direction vector.
-    float           color[3]; // How intense the light is (0..1, RGB).
-    float           offset;
-    float           lightSide, darkSide; // Factors for world light.
-    boolean         affectedByAmbient;
-} vlight_t;
 
 /**
  * Textures used in the lighting system.

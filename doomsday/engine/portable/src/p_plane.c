@@ -34,6 +34,9 @@
 
 // MACROS ------------------------------------------------------------------
 
+// $smoothplane: Maximum speed for a smoothed plane.
+#define MAX_SMOOTH_PLANE_MOVE   (64)
+
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -50,26 +53,76 @@
 
 // CODE --------------------------------------------------------------------
 
+void Plane_ResetHeightTracking(plane_t* plane)
+{
+    if(!plane)
+        return;
+
+    plane->visHeightDelta = 0;
+    plane->oldHeight[0] = plane->oldHeight[1] = plane->height;
+
+    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    {
+        R_MarkDependantSurfacesForDecorationUpdate(plane);
+    }
+}
+
+void Plane_UpdateHeightTracking(plane_t* plane)
+{
+    if(!plane)
+        return;
+
+    plane->oldHeight[0] = plane->oldHeight[1];
+    plane->oldHeight[1] = plane->height;
+
+    if(plane->oldHeight[0] != plane->oldHeight[1])
+        if(fabs(plane->oldHeight[0] - plane->oldHeight[1]) >=
+           MAX_SMOOTH_PLANE_MOVE)
+        {
+            // Too fast: make an instantaneous jump.
+            plane->oldHeight[0] = plane->oldHeight[1];
+        }
+}
+
+void Plane_InterpolateHeight(plane_t* plane)
+{
+    if(!plane)
+        return;
+
+    plane->visHeightDelta = plane->oldHeight[0] * (1 - frameTimePos) +
+                plane->height * frameTimePos -
+                plane->height;
+
+    // Visible plane height.
+    plane->visHeight = plane->height + plane->visHeightDelta;
+
+    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    {
+        R_MarkDependantSurfacesForDecorationUpdate(plane);
+    }
+}
+
 /**
  * Update the plane, property is selected by DMU_* name.
  */
-boolean Plane_SetProperty(plane_t *pln, const setargs_t *args)
+boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_HEIGHT:
-        DMU_SetValue(DMT_PLANE_HEIGHT, &pln->height, args, 0);
+        DMU_SetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
         if(!ddMapSetup)
         {
-            R_AddWatchedPlane(watchedPlaneList, pln);
-            R_MarkDependantSurfacesForDecorationUpdate(pln);
+            gamemap_t* map = DMU_CurrentMap();
+            PlaneList_Add(&map->watchedPlaneList, plane);
+            R_MarkDependantSurfacesForDecorationUpdate(plane);
         }
         break;
     case DMU_TARGET_HEIGHT:
-        DMU_SetValue(DMT_PLANE_TARGET, &pln->target, args, 0);
+        DMU_SetValue(DMT_PLANE_TARGET, &plane->target, args, 0);
         break;
     case DMU_SPEED:
-        DMU_SetValue(DMT_PLANE_SPEED, &pln->speed, args, 0);
+        DMU_SetValue(DMT_PLANE_SPEED, &plane->speed, args, 0);
         break;
     default:
         Con_Error("Plane_SetProperty: Property %s is not writable.\n",
@@ -82,27 +135,27 @@ boolean Plane_SetProperty(plane_t *pln, const setargs_t *args)
 /**
  * Get the value of a plane property, selected by DMU_* name.
  */
-boolean Plane_GetProperty(const plane_t *pln, setargs_t *args)
+boolean Plane_GetProperty(const plane_t* plane, setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_SECTOR:
-        DMU_GetValue(DMT_PLANE_SECTOR, &pln->sector, args, 0);
+        DMU_GetValue(DMT_PLANE_SECTOR, &plane->sector, args, 0);
         break;
     case DMU_HEIGHT:
-        DMU_GetValue(DMT_PLANE_HEIGHT, &pln->height, args, 0);
+        DMU_GetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
         break;
     case DMU_SOUND_ORIGIN:
     {
-        const ddmobj_base_t* dmo = &pln->soundOrg;
+        const ddmobj_base_t* dmo = &plane->soundOrg;
         DMU_GetValue(DMT_PLANE_SOUNDORG, &dmo, args, 0);
         break;
     }
     case DMU_TARGET_HEIGHT:
-        DMU_GetValue(DMT_PLANE_TARGET, &pln->target, args, 0);
+        DMU_GetValue(DMT_PLANE_TARGET, &plane->target, args, 0);
         break;
     case DMU_SPEED:
-        DMU_GetValue(DMT_PLANE_SPEED, &pln->speed, args, 0);
+        DMU_GetValue(DMT_PLANE_SPEED, &plane->speed, args, 0);
         break;
     default:
         Con_Error("Plane_GetProperty: No property %s.\n",

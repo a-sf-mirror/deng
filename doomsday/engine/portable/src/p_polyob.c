@@ -78,7 +78,7 @@ void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
  */
 polyobj_t* P_GetPolyobj(uint num)
 {
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(map)
     {

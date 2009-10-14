@@ -69,6 +69,9 @@ void            DMU_SetValue(valuetype_t valueType, void* dst,
 void            DMU_GetValue(valuetype_t valueType, const void* src,
                              setargs_t* args, uint index);
 
+gamemap_t*      DMU_CurrentMap(void);
+void            DMU_SetCurrentMap(gamemap_t* map);
+
 #ifndef NDEBUG
 # define ASSERT_DMU_TYPE(ptr, dmuType) \
     if(!ptr || ((runtime_mapdata_header_t*)ptr)->type != dmuType) \

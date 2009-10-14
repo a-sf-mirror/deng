@@ -80,29 +80,33 @@ void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 void            R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
-plane_t*        R_NewPlaneForSector(sector_t* sec);
-void            R_DestroyPlaneOfSector(uint id, sector_t* sec);
+plane_t*        R_NewPlaneForSector(gamemap_t* map, sector_t* sec);
+void            R_DestroyPlaneOfSector(gamemap_t* map, uint id, sector_t* sec);
 
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
 void            R_CreateBiasSurfacesInSubsector(subsector_t* subsector);
 
-void            R_UpdateWatchedPlanes(watchedplanelist_t* wpl);
-void            R_InterpolateWatchedPlanes(watchedplanelist_t* wpl,
-                                           boolean resetNextViewer);
-void            R_AddWatchedPlane(watchedplanelist_t* wpl, plane_t* pln);
-boolean         R_RemoveWatchedPlane(watchedplanelist_t* wpl,
-                                     const plane_t* pln);
+void            R_UpdateWatchedPlanes(gamemap_t* map);
+void            R_InterpolateWatchedPlanes(gamemap_t* map, boolean resetNextViewer);
 
-void            R_UpdateMovingSurfaces(void);
-void            R_InterpolateMovingSurfaces(boolean resetNextViewer);
+void            R_UpdateMovingSurfaces(gamemap_t* map);
+void            R_InterpolateMovingSurfaces(gamemap_t* map, boolean resetNextViewer);
 
-void            R_SurfaceListAdd(surfacelist_t* sl, surface_t* suf);
-boolean         R_SurfaceListRemove(surfacelist_t* sl, const surface_t* suf);
-boolean         R_SurfaceListIterate(surfacelist_t* sl,
-                                     boolean (*callback) (surface_t* suf, void*),
-                                     void* context);
+void            PlaneList_Add(planelist_t* pl, plane_t* pln);
+boolean         PlaneList_Remove(planelist_t* pl, const plane_t* pln);
+void            PlaneList_Empty(planelist_t* pl);
+boolean         PlaneList_Iterate(planelist_t* pl,
+                                  boolean (*callback) (plane_t*, void*),
+                                  void* context);
+
+void            SurfaceList_Add(surfacelist_t* sl, surface_t* suf);
+boolean         SurfaceList_Remove(surfacelist_t* sl, const surface_t* suf);
+void            SurfaceList_Empty(surfacelist_t* sl);
+boolean         SurfaceList_Iterate(surfacelist_t* sl,
+                                    boolean (*callback) (surface_t*, void*),
+                                    void* context);
 
 void            R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln);
 boolean         R_IsGlowingPlane(const plane_t* pln);

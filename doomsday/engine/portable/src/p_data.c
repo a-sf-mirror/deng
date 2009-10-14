@@ -62,24 +62,12 @@ extern boolean mapSetup;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-/**
- * These map data arrays are internal to the engine.
- */
-char mapID[9]; // Name by which the game referred to the current map.
-watchedplanelist_t* watchedPlaneList = NULL;
-surfacelist_t* movingSurfaceList = NULL;
-surfacelist_t* decoratedSurfaceList = NULL;
-
 blockmap_t* BlockMap = NULL;
 blockmap_t* SubsectorBlockMap = NULL;
 
 nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
 
-float mapGravity;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static gamemap_t* currentMap = NULL;
 
 // Game-specific, map object type definitions.
 static uint numGameMapObjDefs;
@@ -89,14 +77,14 @@ static gamemapobjdef_t* gameMapObjDefs;
 
 void P_PolyobjChanged(polyobj_t* po)
 {
-    uint                i;
-    gamemap_t*          map = P_GetCurrentMap();
+    uint i;
+    gamemap_t* map = DMU_CurrentMap();
 
     // Shadow bias must be told.
     for(i = 0; i < po->numSegs; ++i)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
-        poseg_t*            seg = &po->segs[i];
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        poseg_t* seg = &po->segs[i];
 
         if(seg->bsuf)
             SB_SurfaceMoved(map, seg->bsuf);
@@ -112,9 +100,9 @@ void P_PolyobjChanged(polyobj_t* po)
  */
 const char* P_GenerateUniqueMapID(const char* mapID)
 {
-    static char         uid[255];
-    filename_t          base;
-    int                 lump = W_GetNumForName(mapID);
+    static char uid[255];
+    filename_t base;
+    int lump = W_GetNumForName(mapID);
 
     M_ExtractFileBase(base, W_LumpSourceFile(lump), FILENAME_T_MAXLEN);
 
@@ -124,34 +112,6 @@ const char* P_GenerateUniqueMapID(const char* mapID)
 
     strlwr(uid);
     return uid;
-}
-
-/**
- * @return              Ptr to the current map.
- */
-gamemap_t* P_GetCurrentMap(void)
-{
-    return currentMap;
-}
-
-void P_SetCurrentMap(gamemap_t* map)
-{
-    strncpy(mapID, map->mapID, sizeof(mapID));
-
-    watchedPlaneList = &map->watchedPlaneList;
-    movingSurfaceList = &map->movingSurfaceList;
-    decoratedSurfaceList = &map->decoratedSurfaceList;
-
-    mobjNodes = &map->mobjNodes;
-    lineNodes = &map->lineNodes;
-    linelinks = map->lineLinks;
-
-    BlockMap = map->blockMap;
-    SubsectorBlockMap = map->subsectorBlockMap;
-
-    mapGravity = map->globalGravity;
-
-    currentMap = map;
 }
 
 void P_DestroyMap(gamemap_t* map)
@@ -174,6 +134,10 @@ void P_DestroyMap(gamemap_t* map)
     }
 
     SB_DestroySurfaces(map);
+
+    PlaneList_Empty(&map->watchedPlaneList);
+    SurfaceList_Empty(&map->movingSurfaceList);
+    SurfaceList_Empty(&map->decoratedSurfaceList);
 
     if(map->vertexes)
     {
@@ -381,8 +345,8 @@ extern gamemap_t* DAM_LoadMap(const char* mapID);
  */
 boolean P_LoadMap(const char* mapID)
 {
-    uint                i;
-    gamemap_t*          map = NULL;
+    uint i;
+    gamemap_t* map = NULL;
 
     if(!mapID || !mapID[0])
         return false; // Yeah, ok... :P
@@ -405,7 +369,7 @@ boolean P_LoadMap(const char* mapID)
         // they're ready to begin receiving frames.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t*           plr = &ddPlayers[i];
+            player_t* plr = &ddPlayers[i];
 
             if(!(plr->shared.flags & DDPF_LOCAL) && clients[i].connected)
             {
@@ -419,7 +383,7 @@ boolean P_LoadMap(const char* mapID)
 
     if(DAM_TryMapConversion(mapID))
     {
-        ddstring_t*         s = DAM_ComposeArchiveMapFilepath(mapID);
+        ddstring_t* s = DAM_ComposeArchiveMapFilepath(mapID);
 
         map = MPE_GetLastBuiltMap();
 
@@ -449,11 +413,6 @@ boolean P_LoadMap(const char* mapID)
 
         // Init blockmap for searching subsectors.
         P_BuildSubSectorBlockMap(map);
-
-        // Init the watched object lists.
-        memset(&map->watchedPlaneList, 0, sizeof(map->watchedPlaneList));
-        memset(&map->movingSurfaceList, 0, sizeof(map->movingSurfaceList));
-        memset(&map->decoratedSurfaceList, 0, sizeof(map->decoratedSurfaceList));
 
         strncpy(map->mapID, mapID, 8);
         strncpy(map->uniqueID, P_GenerateUniqueMapID(mapID),
@@ -488,9 +447,9 @@ boolean P_LoadMap(const char* mapID)
 
         // \todo should be called from P_LoadMap() but R_InitMap requires the
         // currentMap to be set first.
-        P_SetCurrentMap(map);
+        DMU_SetCurrentMap(map);
 
-        map = P_GetCurrentMap();
+        map = DMU_CurrentMap();
 
         R_InitSectorShadows(map);
 
@@ -624,7 +583,7 @@ gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char* objName,
  * Called by the game to register the map object types it wishes us to make
  * public via the MPE interface.
  */
-boolean P_RegisterMapObj(int identifier, const char *name)
+boolean P_RegisterMapObj(int identifier, const char* name)
 {
     if(P_GetGameMapObjDef(identifier, name, true))
         return true; // Success.
@@ -637,12 +596,12 @@ boolean P_RegisterMapObj(int identifier, const char *name)
  * map object type definition.
  */
 boolean P_RegisterMapObjProperty(int identifier, int propIdentifier,
-                                 const char *propName, valuetype_t type)
+                                 const char* propName, valuetype_t type)
 {
-    uint                    i;
-    size_t                  len;
-    mapobjprop_t           *prop;
-    gamemapobjdef_t        *def = P_GetGameMapObjDef(identifier, NULL, false);
+    uint i;
+    size_t len;
+    mapobjprop_t* prop;
+    gamemapobjdef_t* def = P_GetGameMapObjDef(identifier, NULL, false);
 
     if(!def) // Not a valid identifier.
     {
@@ -714,17 +673,17 @@ void P_InitGameMapObjDefs(void)
  */
 void P_ShutdownGameMapObjDefs(void)
 {
-    uint                i, j;
+    uint i, j;
 
     if(gameMapObjDefs)
     {
         for(i = 0; i < numGameMapObjDefs; ++i)
         {
-            gamemapobjdef_t    *def = &gameMapObjDefs[i];
+            gamemapobjdef_t* def = &gameMapObjDefs[i];
 
             for(j = 0; j < def->numProps; ++j)
             {
-                mapobjprop_t       *prop = &def->props[j];
+                mapobjprop_t* prop = &def->props[j];
 
                 M_Free(prop->name);
             }
@@ -740,11 +699,10 @@ void P_ShutdownGameMapObjDefs(void)
     numGameMapObjDefs = 0;
 }
 
-static valuetable_t *getDBTable(valuedb_t *db, valuetype_t type,
-                                boolean canCreate)
+static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCreate)
 {
-    uint                i;
-    valuetable_t       *tbl;
+    uint i;
+    valuetable_t* tbl;
 
     if(!db)
         return NULL;
@@ -772,9 +730,9 @@ static valuetable_t *getDBTable(valuedb_t *db, valuetype_t type,
     return tbl;
 }
 
-static uint insertIntoDB(valuedb_t *db, valuetype_t type, void *data)
+static uint insertIntoDB(valuedb_t* db, valuetype_t type, void* data)
 {
-    valuetable_t       *tbl = getDBTable(db, type, true);
+    valuetable_t* tbl = getDBTable(db, type, true);
 
     // Insert the new value.
     switch(type)
@@ -816,9 +774,9 @@ static uint insertIntoDB(valuedb_t *db, valuetype_t type, void *data)
     return tbl->numElms - 1;
 }
 
-static void* getPtrToDBElm(valuedb_t *db, valuetype_t type, uint elmIdx)
+static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
 {
-    valuetable_t       *tbl = getDBTable(db, type, false);
+    valuetable_t* tbl = getDBTable(db, type, false);
 
     if(!tbl)
         Con_Error("getPtrToDBElm: Table for type %i not found.", (int) type);
@@ -858,19 +816,19 @@ static void* getPtrToDBElm(valuedb_t *db, valuetype_t type, uint elmIdx)
 /**
  * Destroy the given game map obj database.
  */
-void P_DestroyGameMapObjDB(gameobjdata_t *moData)
+void P_DestroyGameMapObjDB(gameobjdata_t* moData)
 {
-    uint                i, j;
+    uint i, j;
 
     if(moData->objLists)
     {
         for(i = 0; i < numGameMapObjDefs; ++i)
         {
-            gamemapobjlist_t*       objList = &moData->objLists[i];
+            gamemapobjlist_t* objList = &moData->objLists[i];
 
             for(j = 0; j < objList->num; ++j)
             {
-                gamemapobj_t       *gmo = objList->objs[j];
+                gamemapobj_t* gmo = objList->objs[j];
 
                 if(gmo->props)
                     M_Free(gmo->props);
@@ -887,7 +845,7 @@ void P_DestroyGameMapObjDB(gameobjdata_t *moData)
     {
         for(i = 0; i < moData->db.numTables; ++i)
         {
-            valuetable_t       *tbl = moData->db.tables[i];
+            valuetable_t* tbl = moData->db.tables[i];
 
             if(tbl->data)
                 M_Free(tbl->data);
@@ -901,15 +859,15 @@ void P_DestroyGameMapObjDB(gameobjdata_t *moData)
     moData->db.numTables = 0;
 }
 
-static uint countGameMapObjs(gameobjdata_t *moData, int identifier)
+static uint countGameMapObjs(gameobjdata_t* moData, int identifier)
 {
     if(moData)
     {
-        uint                i;
+        uint i;
 
         for(i = 0; i < numGameMapObjDefs; ++i)
         {
-            gamemapobjlist_t*   objList = &moData->objLists[i];
+            gamemapobjlist_t* objList = &moData->objLists[i];
 
             if(objList->def->identifier == identifier)
                 return objList->num;
@@ -921,15 +879,14 @@ static uint countGameMapObjs(gameobjdata_t *moData, int identifier)
 
 uint P_CountGameMapObjs(int identifier)
 {
-    gamemap_t*          map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     return countGameMapObjs(&map->gameObjData, identifier);
 }
 
-static gamemapobjlist_t* getMapObjList(gameobjdata_t* moData,
-                                       gamemapobjdef_t* def)
+static gamemapobjlist_t* getMapObjList(gameobjdata_t* moData, gamemapobjdef_t* def)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < numGameMapObjDefs; ++i)
         if(moData->objLists[i].def == def)
@@ -938,12 +895,12 @@ static gamemapobjlist_t* getMapObjList(gameobjdata_t* moData,
     return NULL;
 }
 
-gamemapobj_t* P_GetGameMapObj(gameobjdata_t *moData, gamemapobjdef_t *def,
+gamemapobj_t* P_GetGameMapObj(gameobjdata_t* moData, gamemapobjdef_t* def,
                               uint elmIdx, boolean canCreate)
 {
-    uint                i;
-    gamemapobj_t*       gmo;
-    gamemapobjlist_t*   objList;
+    uint i;
+    gamemapobj_t* gmo;
+    gamemapobjlist_t* objList;
 
     if(!moData->objLists)
     {   // We haven't yet created the lists.
@@ -984,13 +941,13 @@ gamemapobj_t* P_GetGameMapObj(gameobjdata_t *moData, gamemapobjdef_t *def,
     return gmo;
 }
 
-void P_AddGameMapObjValue(gameobjdata_t *moData, gamemapobjdef_t *gmoDef,
+void P_AddGameMapObjValue(gameobjdata_t* moData, gamemapobjdef_t* gmoDef,
                           uint propIdx, uint elmIdx, valuetype_t type,
-                          void *data)
+                          void* data)
 {
-    uint                i;
-    customproperty_t   *prop;
-    gamemapobj_t       *gmo = P_GetGameMapObj(moData, gmoDef, elmIdx, true);
+    uint i;
+    customproperty_t* prop;
+    gamemapobj_t* gmo = P_GetGameMapObj(moData, gmoDef, elmIdx, true);
 
     if(!gmo)
         Con_Error("addGameMapObj: Failed creation.");
@@ -1018,13 +975,12 @@ void P_AddGameMapObjValue(gameobjdata_t *moData, gamemapobjdef_t *gmoDef,
     prop->valueIdx = insertIntoDB(&moData->db, type, data);
 }
 
-static void* getGMOPropValue(gameobjdata_t *data, int identifier,
-                             uint elmIdx, int propIdentifier,
-                             valuetype_t *type)
+static void* getGMOPropValue(gameobjdata_t* data, int identifier, uint elmIdx,
+                             int propIdentifier, valuetype_t* type)
 {
-    uint                i;
-    gamemapobjdef_t    *def;
-    gamemapobj_t       *gmo;
+    uint i;
+    gamemapobjdef_t* def;
+    gamemapobj_t* gmo;
 
     if((def = P_GetGameMapObjDef(identifier, NULL, false)) == NULL)
         Con_Error("P_GetGMOByte: Invalid identifier %i.", identifier);
@@ -1036,11 +992,11 @@ static void* getGMOPropValue(gameobjdata_t *data, int identifier,
     // Find the requested property.
     for(i = 0; i < gmo->numProps; ++i)
     {
-        customproperty_t   *prop = &gmo->props[i];
+        customproperty_t* prop = &gmo->props[i];
 
         if(def->props[prop->idx].identifier == propIdentifier)
         {
-            void               *ptr;
+            void* ptr;
 
             if(NULL ==
                (ptr = getPtrToDBElm(&data->db, prop->type, prop->valueIdx)))
@@ -1059,12 +1015,11 @@ static void* getGMOPropValue(gameobjdata_t *data, int identifier,
 /**
  * Handle some basic type conversions.
  */
-static void setValue(void *dst, valuetype_t dstType, void *src,
-                     valuetype_t srcType)
+static void setValue(void* dst, valuetype_t dstType, void* src, valuetype_t srcType)
 {
     if(dstType == DDVT_FIXED)
     {
-        fixed_t        *d = dst;
+        fixed_t* d = dst;
 
         switch(srcType)
         {
@@ -1087,7 +1042,7 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
     }
     else if(dstType == DDVT_FLOAT)
     {
-        float          *d = dst;
+        float* d = dst;
 
         switch(srcType)
         {
@@ -1113,7 +1068,7 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
     }
     else if(dstType == DDVT_BYTE)
     {
-        byte           *d = dst;
+        byte* d = dst;
 
         switch(srcType)
         {
@@ -1133,7 +1088,7 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
     }
     else if(dstType == DDVT_INT)
     {
-        int            *d = dst;
+        int* d = dst;
 
         switch(srcType)
         {
@@ -1159,7 +1114,7 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
     }
     else if(dstType == DDVT_SHORT)
     {
-        short          *d = dst;
+        short* d = dst;
 
         switch(srcType)
         {
@@ -1185,7 +1140,7 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
     }
     else if(dstType == DDVT_ANGLE)
     {
-        angle_t        *d = dst;
+        angle_t* d = dst;
 
         switch(srcType)
         {
@@ -1205,10 +1160,10 @@ static void setValue(void *dst, valuetype_t dstType, void *src,
 
 byte P_GetGMOByte(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    byte                returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    byte returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                               propIdentifier, &type)))
@@ -1219,10 +1174,10 @@ byte P_GetGMOByte(int identifier, uint elmIdx, int propIdentifier)
 
 short P_GetGMOShort(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    short               returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    short returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                               propIdentifier, &type)))
@@ -1233,10 +1188,10 @@ short P_GetGMOShort(int identifier, uint elmIdx, int propIdentifier)
 
 int P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    int                 returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    int returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                           propIdentifier, &type)))
@@ -1247,10 +1202,10 @@ int P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier)
 
 fixed_t P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    fixed_t             returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    fixed_t returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                               propIdentifier, &type)))
@@ -1261,10 +1216,10 @@ fixed_t P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier)
 
 angle_t P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    angle_t             returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    angle_t returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                               propIdentifier, &type)))
@@ -1275,10 +1230,10 @@ angle_t P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier)
 
 float P_GetGMOFloat(int identifier, uint elmIdx, int propIdentifier)
 {
-    valuetype_t         type;
-    gamemap_t*          map = P_GetCurrentMap();
-    void*               ptr;
-    float               returnVal = 0;
+    valuetype_t type;
+    gamemap_t* map = DMU_CurrentMap();
+    void* ptr;
+    float returnVal = 0;
 
     if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
                               propIdentifier, &type)))

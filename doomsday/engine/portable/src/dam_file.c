@@ -601,7 +601,7 @@ static void writeSector(const gamemap_t* map, uint idx)
         writeLong(DMU_GetObjRecord(DMU_SUBSECTOR, s->reverbSubsectors[i])->id);
 }
 
-static void readSector(const gamemap_t* map, uint idx)
+static void readSector(gamemap_t* map, uint idx)
 {
     uint i, numPlanes;
     long secIdx;
@@ -615,7 +615,7 @@ static void readSector(const gamemap_t* map, uint idx)
     numPlanes = (uint) readLong();
     for(i = 0; i < numPlanes; ++i)
     {
-        plane_t* p = R_NewPlaneForSector(s);
+        plane_t* p = R_NewPlaneForSector(map, s);
 
         p->height = readFloat();
         p->glow = readFloat();

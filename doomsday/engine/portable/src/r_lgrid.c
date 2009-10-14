@@ -568,7 +568,7 @@ void LG_SectorChanged(sector_t* sector)
 {
     uint                i, j;
     unsigned short      n;
-    gamemap_t*          map = P_GetCurrentMap();
+    gamemap_t*          map = DMU_CurrentMap();
 
     if(!map->lg.inited)
         return;
@@ -601,7 +601,7 @@ void LG_SectorChanged(sector_t* sector)
 void LG_MarkAllForUpdate(cvar_t* unused)
 {
     uint i;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(!map->lg.inited)
         return;

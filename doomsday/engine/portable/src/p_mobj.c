@@ -384,7 +384,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     if(result)
     {   // Nope.
         // Try polyobj->lineDefs and lines.
-        if(!P_AllLinesBoxIteratorv(P_GetCurrentMap(), data.box, PIT_LineCollide, &data, false))
+        if(!P_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }
@@ -922,9 +922,10 @@ void P_MobjMovement2(mobj_t *mo, void *pstate)
     }
 }
 
-void P_MobjZMovement(mobj_t *mo)
+void P_MobjZMovement(mobj_t* mo)
 {
-    float               gravity = FIX2FLT(mapGravity);
+    gamemap_t* map = DMU_CurrentMap();
+    float gravity = FIX2FLT(map->globalGravity);
 
     // check for smooth step up
     if(mo->dPlayer && mo->pos[VZ] < mo->floorZ)

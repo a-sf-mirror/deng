@@ -649,7 +649,7 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    P_AllLinesBoxIteratorv(P_GetCurrentMap(), data.box, PIT_LinkToLines, &data, false);
+    P_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
 }
 
 void P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link)
@@ -1115,7 +1115,7 @@ boolean DMU_AllLinesBoxIterator(const float box[4],
                                 boolean (*func) (linedef_t*, void*),
                                 void* data)
 {
-    return P_AllLinesBoxIterator(P_GetCurrentMap(), box, func, data, true);
+    return P_AllLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
 }
 
 /**
@@ -1137,7 +1137,7 @@ boolean DMU_AllLinesBoxIteratorv(const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*),
                                  void* data)
 {
-    return allLinesBoxIterator(P_GetCurrentMap(), box, func, data, true);
+    return allLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
 }
 
 /**
@@ -1244,7 +1244,7 @@ boolean P_PathTraverse(float x1, float y1, float x2, float y2,
 {
     float               origin[2], dest[2];
     uint                originBlock[2], destBlock[2];
-    gamemap_t*          map = P_GetCurrentMap();
+    gamemap_t*          map = DMU_CurrentMap();
     vec2_t              min, max;
 
     V2_Set(origin, x1, y1);

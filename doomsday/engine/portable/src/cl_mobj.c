@@ -400,7 +400,7 @@ int Cl_ReadMobjDelta(void)
         memset(cmo, 0, sizeof(*cmo));
         cmo->mo.ddFlags |= DDMF_REMOTE;
         Cl_LinkMobj(cmo, id);
-        P_SetMobjID(P_GetCurrentMap(), id, true);  // Mark this ID as used.
+        P_SetMobjID(DMU_CurrentMap(), id, true);  // Mark this ID as used.
         linked = false;
     }
 
@@ -577,9 +577,10 @@ void Cl_Reset(void)
  */
 void Cl_MobjMove(clmobj_t* cmo)
 {
-    mobj_t*             mo = &cmo->mo;
-    boolean             collided = false;
-    float               gravity = FIX2FLT(mapGravity);
+    mobj_t* mo = &cmo->mo;
+    boolean collided = false;
+    gamemap_t* map = DMU_CurrentMap();
+    float gravity = FIX2FLT(map->globalGravity);
 
     // First do XY movement.
     if(mo->mom[MX] != 0 || mo->mom[MY] != 0)
@@ -791,7 +792,7 @@ clmobj_t* Cl_CreateMobj(thid_t id)
     cmo->mo.ddFlags |= DDMF_REMOTE;
     cmo->time = Sys_GetRealTime();
     Cl_LinkMobj(cmo, id);
-    P_SetMobjID(P_GetCurrentMap(), id, true); // Mark this ID as used.
+    P_SetMobjID(DMU_CurrentMap(), id, true); // Mark this ID as used.
 
     return cmo;
 }
@@ -805,7 +806,7 @@ void Cl_DestroyMobj(clmobj_t* cmo)
     S_StopSound(0, &cmo->mo);
 
     // The ID is free once again.
-    P_SetMobjID(P_GetCurrentMap(), cmo->mo.thinker.id, false);
+    P_SetMobjID(DMU_CurrentMap(), cmo->mo.thinker.id, false);
     Cl_UnsetMobjPosition(cmo);
     Cl_UnlinkMobj(cmo);
     Z_Free(cmo);

@@ -754,7 +754,7 @@ void SBE_SetHueCircle(boolean activate)
     if((signed) activate == editHueCircle)
         return; // No change in state.
 
-    if(activate && getGrabbed(P_GetCurrentMap()) == NULL)
+    if(activate && getGrabbed(DMU_CurrentMap()) == NULL)
         return;
 
     editHueCircle = activate;
@@ -795,7 +795,7 @@ void SBE_DrawHUD(void)
     if(!editActive || editHidden)
         return;
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
     nearest = getNearest(map);
     grabbed = getGrabbed(map);
 
@@ -978,7 +978,7 @@ D_CMD(SBE_Begin)
     if(editActive)
         return false;
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
 
     // Advise the game not to draw any HUD displays
     gameDrawHUD = false;
@@ -1020,12 +1020,12 @@ D_CMD(BLEditor)
 
     if(!stricmp(cmd, "save"))
     {
-        return save(P_GetCurrentMap(), argc >= 2 ? argv[1] : NULL);
+        return save(DMU_CurrentMap(), argc >= 2 ? argv[1] : NULL);
     }
 
     if(!stricmp(cmd, "clear"))
     {
-        gamemap_t*          map = P_GetCurrentMap();
+        gamemap_t*          map = DMU_CurrentMap();
 
         SB_ClearSources(map);
 
@@ -1046,10 +1046,10 @@ D_CMD(BLEditor)
 
     if(!stricmp(cmd, "new"))
     {
-        return newSource(P_GetCurrentMap());
+        return newSource(DMU_CurrentMap());
     }
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
 
     // Has the light index been given as an argument?
     if(map->bias.editGrabbedID >= 0)

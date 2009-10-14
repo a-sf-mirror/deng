@@ -536,7 +536,7 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
         if(useBias && rseg->biasSurface)
         {
             // Do BIAS lighting for this poly.
-            SB_RendSeg(P_GetCurrentMap(), rcolors, rseg->biasSurface,
+            SB_RendSeg(DMU_CurrentMap(), rcolors, rseg->biasSurface,
                        rvertices, 4,
                        rseg->normal, rseg->sectorLightLevel,
                        rseg->from, rseg->to);
@@ -1255,12 +1255,12 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             {
                 // Do BIAS lighting for this poly.
                 if(p->isWall)
-                    SB_RendSeg(P_GetCurrentMap(), rcolors, p->bsuf,
+                    SB_RendSeg(DMU_CurrentMap(), rcolors, p->bsuf,
                                rvertices, numVertices,
                                p->normal, p->sectorLightLevel,
                                p->from, p->to);
                 else
-                    SB_RendPlane(P_GetCurrentMap(), rcolors, p->bsuf,
+                    SB_RendPlane(DMU_CurrentMap(), rcolors, p->bsuf,
                                  rvertices, numVertices,
                                  p->normal, p->sectorLightLevel,
                                  p->subsector, p->plane);
@@ -1618,7 +1618,7 @@ static void renderPlane(subsector_t* subsector, planetype_t type,
         if(addDLights && !params.glowing)
         {
             params.lightListIdx =
-                DL_ProjectOnSurface(P_GetCurrentMap(), subsector, params.texTL, params.texBR,
+                DL_ProjectOnSurface(DMU_CurrentMap(), subsector, params.texTL, params.texBR,
                                     normal,
                                     (DLF_NO_PLANAR |
                                      (type == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
@@ -2132,10 +2132,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Floor.
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_floorsurface)) &&
-               ffloor > P_GetCurrentMap()->skyFix[PLN_FLOOR].height)
+               ffloor > DMU_CurrentMap()->skyFix[PLN_FLOOR].height)
             {
                 vTL[VZ] = vTR[VZ] = ffloor;
-                vBL[VZ] = vBR[VZ] = P_GetCurrentMap()->skyFix[PLN_FLOOR].height;
+                vBL[VZ] = vBR[VZ] = DMU_CurrentMap()->skyFix[PLN_FLOOR].height;
 
                 if(devSkyMode)
                     prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2150,9 +2150,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Ceiling.
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_ceilsurface)) &&
-               fceil < P_GetCurrentMap()->skyFix[PLN_CEILING].height)
+               fceil < DMU_CurrentMap()->skyFix[PLN_CEILING].height)
             {
-                vTL[VZ] = vTR[VZ] = P_GetCurrentMap()->skyFix[PLN_CEILING].height;
+                vTL[VZ] = vTR[VZ] = DMU_CurrentMap()->skyFix[PLN_CEILING].height;
                 vBL[VZ] = vBR[VZ] = fceil;
 
                 if(devSkyMode)
@@ -2173,10 +2173,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                IS_SKYSURFACE(&backsec->SP_floorsurface))
             {
-                if(bfloor > P_GetCurrentMap()->skyFix[PLN_FLOOR].height)
+                if(bfloor > DMU_CurrentMap()->skyFix[PLN_FLOOR].height)
                 {
                     vTL[VZ] = vTR[VZ] = bfloor;
-                    vBL[VZ] = vBR[VZ] = P_GetCurrentMap()->skyFix[PLN_FLOOR].height;
+                    vBL[VZ] = vBR[VZ] = DMU_CurrentMap()->skyFix[PLN_FLOOR].height;
 
                     if(devSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2196,9 +2196,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                IS_SKYSURFACE(&backsec->SP_ceilsurface))
             {
-                if(bceil < P_GetCurrentMap()->skyFix[PLN_CEILING].height)
+                if(bceil < DMU_CurrentMap()->skyFix[PLN_CEILING].height)
                 {
-                    vTL[VZ] = vTR[VZ] = P_GetCurrentMap()->skyFix[PLN_CEILING].height;
+                    vTL[VZ] = vTR[VZ] = DMU_CurrentMap()->skyFix[PLN_CEILING].height;
                     vBL[VZ] = vBR[VZ] = bceil;
 
                     if(devSkyMode)
@@ -2766,7 +2766,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                 return;
 
             if(plane->type != PLN_MID)
-                height = P_GetCurrentMap()->skyFix[plane->type].height;
+                height = DMU_CurrentMap()->skyFix[plane->type].height;
             else
                 height = plane->visHeight;
         }
@@ -2823,7 +2823,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
          * real "physical" height of any sky masked planes that are
          * drawn at a different height due to the skyFix.
          */
-        if(sect->SP_floorvisheight > P_GetCurrentMap()->skyFix[PLN_FLOOR].height &&
+        if(sect->SP_floorvisheight > DMU_CurrentMap()->skyFix[PLN_FLOOR].height &&
            IS_SKYSURFACE(&sect->SP_floorsurface))
         {
             vec3_t normal;
@@ -2848,7 +2848,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              plane->planeID, 2);
         }
 
-        if(sect->SP_ceilvisheight < P_GetCurrentMap()->skyFix[PLN_CEILING].height &&
+        if(sect->SP_ceilvisheight < DMU_CurrentMap()->skyFix[PLN_CEILING].height &&
            IS_SKYSURFACE(&sect->SP_ceilsurface))
         {
             vec3_t normal;

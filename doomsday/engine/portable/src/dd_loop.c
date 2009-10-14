@@ -209,7 +209,7 @@ void DD_DrawAndBlit(void)
 
     if(drawGame)
     {
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
 
         // Interpolate the world ready for drawing view(s) of it.
         R_BeginWorldFrame(map);

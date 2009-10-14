@@ -1107,7 +1107,7 @@ void getLightingParams(float x, float y, float z, subsector_t* subsector,
 
             // Evaluate the position in the light grid.
             V3_Set(point, x, y, z);
-            LG_Evaluate(P_GetCurrentMap(), point, ambientColor);
+            LG_Evaluate(DMU_CurrentMap(), point, ambientColor);
         }
         else
         {
@@ -1566,10 +1566,10 @@ boolean RIT_AddSprite(void* ptr, void* data)
 
                 visibleTop = mo->pos[VZ] + mat->height;
 
-                if(visibleTop > P_GetCurrentMap()->skyFix[PLN_CEILING].height)
+                if(visibleTop > DMU_CurrentMap()->skyFix[PLN_CEILING].height)
                 {
                     // Raise skyfix ceiling.
-                    P_GetCurrentMap()->skyFix[PLN_CEILING].height = visibleTop + 16; // Add some leeway.
+                    DMU_CurrentMap()->skyFix[PLN_CEILING].height = visibleTop + 16; // Add some leeway.
                 }
             }
         }

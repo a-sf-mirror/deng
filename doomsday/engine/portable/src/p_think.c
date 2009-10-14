@@ -32,6 +32,7 @@
 #include "de_defs.h"
 #include "de_console.h"
 #include "de_network.h"
+#include "de_play.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -215,7 +216,7 @@ static boolean iterateThinkers(thinkerlist_t* list,
  */
 void P_ThinkerAdd(thinker_t* th, boolean makePublic)
 {
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(!map)
         return;
@@ -250,7 +251,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
  */
 void P_ThinkerRemove(thinker_t* th)
 {
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(!th)
         return;
@@ -385,7 +386,7 @@ boolean P_IterateThinkers(gamemap_t* map, think_t func, byte flags,
  */
 void DD_InitThinkers(void)
 {
-    P_InitThinkerLists(P_GetCurrentMap(), ITF_PUBLIC); // Init the public thinker lists.
+    P_InitThinkerLists(DMU_CurrentMap(), ITF_PUBLIC); // Init the public thinker lists.
 }
 
 /**
@@ -393,7 +394,7 @@ void DD_InitThinkers(void)
  */
 void DD_RunThinkers(void)
 {
-    P_IterateThinkers(P_GetCurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
+    P_IterateThinkers(DMU_CurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
 }
 
 /**
@@ -402,7 +403,7 @@ void DD_RunThinkers(void)
 int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
                        void* context)
 {
-    return P_IterateThinkers(P_GetCurrentMap(), func, ITF_PUBLIC, callback, context);
+    return P_IterateThinkers(DMU_CurrentMap(), func, ITF_PUBLIC, callback, context);
 }
 
 /**

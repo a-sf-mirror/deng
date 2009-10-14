@@ -80,7 +80,7 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
         ((env = S_MaterialEnvDef(Material_GetEnvClass(suf->material))) && (env->flags & MEF_BLEND))))
     {
         // Stop active material fade on this surface.
-        P_IterateThinkers(P_GetCurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+        P_IterateThinkers(DMU_CurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                           RIT_StopMatFader, suf);
 
         fader = Z_Malloc(sizeof(matfader_t), PU_MAP, 0);
@@ -121,7 +121,10 @@ boolean Surface_SetMaterialOffsetX(surface_t* suf, float x)
     suf->offset[VX] = x;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
-        R_SurfaceListAdd(movingSurfaceList, suf);
+    {
+        gamemap_t* map = DMU_CurrentMap();
+        SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
 
     return true;
 }
@@ -145,7 +148,10 @@ boolean Surface_SetMaterialOffsetY(surface_t* suf, float y)
     suf->offset[VY] = y;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
-        R_SurfaceListAdd(movingSurfaceList, suf);
+    {
+        gamemap_t* map = DMU_CurrentMap();
+        SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
 
     return true;
 }
@@ -171,7 +177,10 @@ boolean Surface_SetMaterialOffsetXY(surface_t* suf, float x, float y)
     suf->offset[VY] = y;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
-        R_SurfaceListAdd(movingSurfaceList, suf);
+    {
+        gamemap_t* map = DMU_CurrentMap();
+        SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
 
     return true;
 }

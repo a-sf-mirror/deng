@@ -858,7 +858,7 @@ void Net_Drawer(void)
     SBE_DrawHUD();
 
     // Draw lightgrid debug display.
-    LG_Debug(P_GetCurrentMap());
+    LG_Debug(DMU_CurrentMap());
 
     // Draw the blockmap debug display.
     P_BlockmapDebug();

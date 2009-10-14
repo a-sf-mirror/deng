@@ -256,7 +256,7 @@ subsector_t* R_PointInSubSector(const float x, const float y)
 {
     node_t* node = NULL;
     uint nodenum = 0;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(!map->numNodes) // Single subsector is a special case.
         return (subsector_t*) map->subsectors;

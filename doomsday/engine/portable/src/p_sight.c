@@ -336,7 +336,7 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
                          float bottomSlope, float topSlope, int flags)
 {
     losdata_t los;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     if(!map)
         return true;

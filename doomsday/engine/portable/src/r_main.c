@@ -317,7 +317,7 @@ void R_Update(void)
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
     }
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
     if(map)
     {
         P_UpdateParticleGens(map); // Defs might've changed.
@@ -489,7 +489,8 @@ void R_NewSharpWorld(void)
 {
     extern boolean firstFrameAfterLoad;
 
-    int                 i;
+    int i;
+    gamemap_t* map;
 
     if(firstFrameAfterLoad)
     {
@@ -507,9 +508,9 @@ void R_NewSharpWorld(void)
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {
-        viewer_t            sharpView;
-        viewdata_t*         vd = &viewData[i];
-        player_t*           plr = &ddPlayers[i];
+        viewer_t sharpView;
+        viewdata_t* vd = &viewData[i];
+        player_t* plr = &ddPlayers[i];
 
         if(!(/*(plr->shared.flags & DDPF_LOCAL) &&*/ plr->shared.inGame))
             continue;
@@ -534,8 +535,12 @@ void R_NewSharpWorld(void)
         R_CheckViewerLimits(vd->lastSharpView, &sharpView);
     }
 
-    R_UpdateWatchedPlanes(watchedPlaneList);
-    R_UpdateMovingSurfaces();
+    map = DMU_CurrentMap();
+    if(map)
+    {
+        R_UpdateWatchedPlanes(map);
+        R_UpdateMovingSurfaces(map);
+    }
 }
 
 void R_CreateMobjLinks(gamemap_t* map)
@@ -581,8 +586,8 @@ void R_BeginWorldFrame(gamemap_t* map)
 
     R_ClearSectorFlags(map);
 
-    R_InterpolateWatchedPlanes(watchedPlaneList, resetNextViewer);
-    R_InterpolateMovingSurfaces(resetNextViewer);
+    R_InterpolateWatchedPlanes(map, resetNextViewer);
+    R_InterpolateMovingSurfaces(map, resetNextViewer);
 
     if(!freezeRLs)
     {
@@ -870,7 +875,7 @@ void R_RenderPlayerView(int num)
     // GL is in 3D transformation state only during the frame.
     GL_SwitchTo3DState(true, currentPort);
 
-    Rend_RenderMap(P_GetCurrentMap());
+    Rend_RenderMap(DMU_CurrentMap());
 
     // Orthogonal projection to the view window.
     GL_Restore2DState(1);

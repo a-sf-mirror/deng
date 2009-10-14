@@ -189,7 +189,7 @@ static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, 
 
 static void projectLumobjs(rendseg_t* rseg, subsector_t* subsector, boolean sortBrightest)
 {
-    rseg->dynlistID = DL_ProjectOnSurface(P_GetCurrentMap(), subsector, rseg->texQuadTopLeft,
+    rseg->dynlistID = DL_ProjectOnSurface(DMU_CurrentMap(), subsector, rseg->texQuadTopLeft,
                                           rseg->texQuadBottomRight, rseg->normal,
                                           sortBrightest? DLF_SORT_LUMADSC : 0);
 }

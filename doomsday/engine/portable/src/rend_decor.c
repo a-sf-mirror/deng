@@ -488,7 +488,7 @@ static void getDecorationSkipPattern(const int patternSkip[2], int* skip)
     }
 }
 
-static uint generateDecorLights(const ded_decorlight_t* def,
+static uint generateDecorLights(surfacelist_t* list, const ded_decorlight_t* def,
                                 surface_t* suf, const pvec3_t v1,
                                 const pvec3_t v2, float width, float height,
                                 const pvec3_t delta, int axis,
@@ -549,7 +549,7 @@ static uint generateDecorLights(const ded_decorlight_t* def,
                 d->subsector = R_PointInSubSector(d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
-                R_SurfaceListAdd(decoratedSurfaceList, suf);
+                SurfaceList_Add(list, suf);
 
                 num++;
             }
@@ -559,7 +559,7 @@ static uint generateDecorLights(const ded_decorlight_t* def,
     return num;
 }
 
-static uint generateDecorModels(const ded_decormodel_t* def,
+static uint generateDecorModels(surfacelist_t* list, const ded_decormodel_t* def,
                                 surface_t* suf, const pvec3_t v1,
                                 const pvec3_t v2, float width, float height,
                                 const pvec3_t delta, int axis,
@@ -634,7 +634,7 @@ static uint generateDecorModels(const ded_decormodel_t* def,
                 DEC_MODEL(d)->pitch = pitch;
                 DEC_MODEL(d)->yaw = yaw;
 
-                R_SurfaceListAdd(decoratedSurfaceList, suf);
+                SurfaceList_Add(list, suf);
 
                 num++;
             }
@@ -647,14 +647,14 @@ static uint generateDecorModels(const ded_decormodel_t* def,
 /**
  * Generate decorations for the specified surface.
  */
-static void updateSurfaceDecorations(surface_t* suf, float offsetS,
+static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float offsetS,
                                      float offsetT, vec3_t v1, vec3_t v2,
                                      sector_t* sec, boolean visible)
 {
     vec3_t delta;
 
     R_ClearSurfaceDecorations(suf);
-    R_SurfaceListRemove(decoratedSurfaceList, suf);
+    SurfaceList_Remove(list, suf);
 
     V3_Subtract(delta, v2, v1);
 
@@ -690,7 +690,7 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
             // Generate a number of models.
             for(i = 0; i < DED_DECOR_NUM_MODELS; ++i)
             {
-                generateDecorModels(&def->models[i], suf, v1, v2, width,
+                generateDecorModels(list, &def->models[i], suf, v1, v2, width,
                                     height, delta, axis, offsetS, offsetT,
                                     sec);
             }
@@ -698,9 +698,8 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
             // Generate a number of lights.
             for(i = 0; i < DED_DECOR_NUM_LIGHTS; ++i)
             {
-                generateDecorLights(&def->lights[i], suf, v1, v2, width,
-                                    height, delta, axis, offsetS, offsetT,
-                                    sec);
+                generateDecorLights(list, &def->lights[i], suf, v1, v2, width, height,
+                                    delta, axis, offsetS, offsetT, sec);
             }
         }
     }
@@ -711,7 +710,7 @@ static void updateSurfaceDecorations(surface_t* suf, float offsetS,
 /**
  * Generate decorations for a plane.
  */
-static void updatePlaneDecorations(plane_t* pln)
+static void updatePlaneDecorations(surfacelist_t* list, plane_t* pln)
 {
     sector_t* sec = pln->sector;
     surface_t* suf = &pln->surface;
@@ -732,10 +731,11 @@ static void updatePlaneDecorations(plane_t* pln)
     offsetS = -fmod(sec->bBox[BOXLEFT], 64);
     offsetT = -fmod(sec->bBox[BOXBOTTOM], 64);
 
-    updateSurfaceDecorations(suf, offsetS, offsetT, v1, v2, sec, true);
+    updateSurfaceDecorations(list, suf, offsetS, offsetT, v1, v2, sec, true);
 }
 
-static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
+static void updateSideSectionDecorations(surfacelist_t* list, sidedef_t* side,
+                                         segsection_t section)
 {
     linedef_t* line;
     surface_t* suf;
@@ -827,7 +827,7 @@ static void updateSideSectionDecorations(sidedef_t* side, segsection_t section)
         }
     }
 
-    updateSurfaceDecorations(suf, offsetS, offsetT, v1, v2, NULL, visible);
+    updateSurfaceDecorations(list, suf, offsetS, offsetT, v1, v2, NULL, visible);
 }
 
 void Rend_UpdateSurfaceDecorations(gamemap_t* map)
@@ -847,15 +847,15 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
 
             suf = &side->SW_middlesurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(side, SEG_MIDDLE);
+                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_MIDDLE);
 
             suf = &side->SW_topsurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(side, SEG_TOP);
+                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_TOP);
 
             suf = &side->SW_bottomsurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(side, SEG_BOTTOM);
+                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_BOTTOM);
         }
 
         // Process all planes.
@@ -869,7 +869,7 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
                 plane_t* pln = sec->SP_plane(j);
 
                 if(pln->surface.inFlags & SUIF_UPDATE_DECORATIONS)
-                    updatePlaneDecorations(pln);
+                    updatePlaneDecorations(&map->decoratedSurfaceList, pln);
             }
         }
     }
@@ -906,8 +906,8 @@ void Rend_InitDecorationsForFrame(gamemap_t* map)
 
 BEGIN_PROF( PROF_DECOR_PROJECT );
 
-        R_SurfaceListIterate(decoratedSurfaceList,
-                             R_ProjectSurfaceDecorations, &decorMaxDist);
+        SurfaceList_Iterate(&map->decoratedSurfaceList,
+                            R_ProjectSurfaceDecorations, &decorMaxDist);
 
 END_PROF( PROF_DECOR_PROJECT );
     }

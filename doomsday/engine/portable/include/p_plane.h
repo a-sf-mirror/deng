@@ -23,16 +23,20 @@
  */
 
 /**
- * r_plane.h: World planes.
+ * sectorplane.h: sector planes.
  */
 
-#ifndef __DOOMSDAY_WORLD_PLANE_H__
-#define __DOOMSDAY_WORLD_PLANE_H__
+#ifndef DOOMSDAY_MAP_SECTORPLANE_H
+#define DOOMSDAY_MAP_SECTORPLANE_H
 
 #include "r_data.h"
 #include "p_dmu.h"
 
-boolean         Plane_GetProperty(const plane_t *pln, setargs_t *args);
-boolean         Plane_SetProperty(plane_t *pln, const setargs_t *args);
+void            Plane_ResetHeightTracking(plane_t* plane);
+void            Plane_UpdateHeightTracking(plane_t* plane);
+void            Plane_InterpolateHeight(plane_t* plane);
 
-#endif
+boolean         Plane_GetProperty(const plane_t* plane, setargs_t *args);
+boolean         Plane_SetProperty(plane_t* plane, const setargs_t *args);
+
+#endif /* DOOMSDAY_MAP_SECTORPLANE_H */

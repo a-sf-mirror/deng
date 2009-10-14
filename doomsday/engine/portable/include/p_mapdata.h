@@ -78,10 +78,15 @@ typedef struct linkpolyobj_s {
     struct linkpolyobj_s* next;
 } linkpolyobj_t;
 
-typedef struct watchedplanelist_s {
-    uint            num, maxNum;
-    struct plane_s** list;
-} watchedplanelist_t;
+typedef struct planelistnode_s {
+    void*           data;
+    struct planelistnode_s* next;
+} planelistnode_t;
+
+typedef struct planelist_s {
+    uint            num;
+    planelistnode_t* head;
+} planelist_t;
 
 typedef struct surfacelistnode_s {
     void*           data;
@@ -189,12 +194,26 @@ typedef struct {
     valuedb_t       db;
 } gameobjdata_t;
 
-extern char mapID[9];
-extern watchedplanelist_t* watchedPlaneList;
-extern surfacelist_t* movingSurfaceList;
-extern surfacelist_t* decoratedSurfaceList;
+#define RL_MAX_DIVS         64
+typedef struct walldiv_s {
+    unsigned int    num;
+    plane_t*        divs[RL_MAX_DIVS];
+} walldiv_t;
 
-extern float mapGravity;
+typedef struct shadowlink_s {
+    struct shadowlink_s* next;
+    linedef_t*      lineDef;
+    byte            side;
+} shadowlink_t;
+
+typedef struct {
+    float           approxDist; // Only an approximation.
+    float           vector[3]; // Light direction vector.
+    float           color[3]; // How intense the light is (0..1, RGB).
+    float           offset;
+    float           lightSide, darkSide; // Factors for world light.
+    boolean         affectedByAmbient;
+} vlight_t;
 
 typedef struct gamemap_s {
     char            mapID[9];
@@ -232,7 +251,7 @@ typedef struct gamemap_s {
 
     linkpolyobj_t** polyBlockMap;
 
-    watchedplanelist_t watchedPlaneList;
+    planelist_t     watchedPlaneList;
     surfacelist_t   movingSurfaceList;
     surfacelist_t   decoratedSurfaceList;
 
@@ -272,9 +291,6 @@ typedef struct gamemap_s {
 } gamemap_t;
 
 void            P_DestroyMap(gamemap_t* map);
-
-gamemap_t*      P_GetCurrentMap(void);
-void            P_SetCurrentMap(gamemap_t* map);
 
 const char*     P_GetMapID(gamemap_t* map);
 const char*     P_GetUniqueMapID(gamemap_t* map);

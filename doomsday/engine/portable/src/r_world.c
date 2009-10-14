@@ -45,9 +45,6 @@
 
 // MACROS ------------------------------------------------------------------
 
-// $smoothplane: Maximum speed for a smoothed plane.
-#define MAX_SMOOTH_PLANE_MOVE   (64)
-
 // $smoothmatoffset: Maximum speed for a smoothed material offset.
 #define MAX_SMOOTH_MATERIAL_MOVE (8)
 
@@ -85,30 +82,31 @@ nodeindex_t* linelinks; // Indices to roots.
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static surfacelistnode_t* unusedSurfaceListNodes = NULL;
+static planelistnode_t* unusedPlaneListNodes = NULL;
 
 // CODE --------------------------------------------------------------------
 
 /**
  * Allocate a new surface list node.
  */
-static surfacelistnode_t* allocListNode(void)
+static surfacelistnode_t* allocSurfaceListNode(void)
 {
-    surfacelistnode_t*      node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
+    surfacelistnode_t* node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
     return node;
 }
 
 /**
  * Free all memory acquired for the given surface list node.
  */
-static void freeListNode(surfacelistnode_t* node)
+static void freeSurfaceListNode(surfacelistnode_t* node)
 {
     if(node)
         Z_Free(node);
 }
 
-surfacelistnode_t* R_SurfaceListNodeCreate(void)
+static surfacelistnode_t* surfaceListNodeCreate(void)
 {
-    surfacelistnode_t*      node;
+    surfacelistnode_t* node;
 
     // Is there a free node in the unused list?
     if(unusedSurfaceListNodes)
@@ -118,7 +116,7 @@ surfacelistnode_t* R_SurfaceListNodeCreate(void)
     }
     else
     {
-        node = allocListNode();
+        node = allocSurfaceListNode();
     }
 
     node->data = NULL;
@@ -127,7 +125,7 @@ surfacelistnode_t* R_SurfaceListNodeCreate(void)
     return node;
 }
 
-void R_SurfaceListNodeDestroy(surfacelistnode_t* node)
+static void surfaceListNodeDestroy(surfacelistnode_t* node)
 {
     // Move it to the list of unused nodes.
     node->data = NULL;
@@ -141,7 +139,7 @@ void R_SurfaceListNodeDestroy(surfacelistnode_t* node)
  * @param sl            The surface list to add the surface to.
  * @param suf           The surface to add to the list.
  */
-void R_SurfaceListAdd(surfacelist_t* sl, surface_t* suf)
+void SurfaceList_Add(surfacelist_t* sl, surface_t* suf)
 {
     surfacelistnode_t*  node;
 
@@ -158,7 +156,7 @@ void R_SurfaceListAdd(surfacelist_t* sl, surface_t* suf)
     }
 
     // Not found, add it to the list.
-    node = R_SurfaceListNodeCreate();
+    node = surfaceListNodeCreate();
     node->data = suf;
     node->next = sl->head;
 
@@ -166,9 +164,9 @@ void R_SurfaceListAdd(surfacelist_t* sl, surface_t* suf)
     sl->num++;
 }
 
-boolean R_SurfaceListRemove(surfacelist_t* sl, const surface_t *suf)
+boolean SurfaceList_Remove(surfacelist_t* sl, const surface_t* suf)
 {
-    surfacelistnode_t*  last, *n;
+    surfacelistnode_t* last, *n;
 
     if(!sl || !suf)
         return false;
@@ -182,7 +180,7 @@ boolean R_SurfaceListRemove(surfacelist_t* sl, const surface_t *suf)
             if((surface_t*) n->data == suf)
             {
                 last->next = n->next;
-                R_SurfaceListNodeDestroy(n);
+                surfaceListNodeDestroy(n);
                 sl->num--;
                 return true;
             }
@@ -195,6 +193,24 @@ boolean R_SurfaceListRemove(surfacelist_t* sl, const surface_t *suf)
     return false;
 }
 
+void SurfaceList_Empty(surfacelist_t* sl)
+{
+    surfacelistnode_t* next;
+
+    if(!sl)
+        return;
+
+    while(sl->head)
+    {
+        next = sl->head->next;
+        surfaceListNodeDestroy(sl->head);
+        sl->head = next;
+    }
+
+    sl->head = NULL;
+    sl->num = 0;
+}
+
 /**
  * Iterate the list of surfaces making a callback for each.
  *
@@ -203,12 +219,12 @@ boolean R_SurfaceListRemove(surfacelist_t* sl, const surface_t *suf)
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean R_SurfaceListIterate(surfacelist_t* sl,
-                             boolean (*callback) (surface_t* suf, void*),
-                             void* context)
+boolean SurfaceList_Iterate(surfacelist_t* sl,
+                            boolean (*callback) (surface_t* suf, void*),
+                            void* context)
 {
-    boolean             result = true;
-    surfacelistnode_t*  n, *np;
+    boolean result = true;
+    surfacelistnode_t* n, *np;
 
     if(sl)
     {
@@ -255,12 +271,12 @@ boolean updateMovingSurface(surface_t* suf, void* context)
 /**
  * $smoothmatoffset: Roll the surface material offset tracker buffers.
  */
-void R_UpdateMovingSurfaces(void)
+void R_UpdateMovingSurfaces(gamemap_t* map)
 {
-    if(!movingSurfaceList)
+    if(!map)
         return;
 
-    R_SurfaceListIterate(movingSurfaceList, updateMovingSurface, NULL);
+    SurfaceList_Iterate(&map->movingSurfaceList, updateMovingSurface, NULL);
 }
 
 boolean resetMovingSurface(surface_t* suf, void* context)
@@ -274,7 +290,7 @@ boolean resetMovingSurface(surface_t* suf, void* context)
     suf->oldOffset[1][0] = suf->oldOffset[1][1] = suf->offset[1];
 
     Surface_Update(suf);
-    R_SurfaceListRemove(movingSurfaceList, suf);
+    SurfaceList_Remove((surfacelist_t*) context, suf);
 
     return true;
 }
@@ -300,7 +316,7 @@ boolean interpMovingSurface(surface_t* suf, void* context)
     // Has this material reached its destination?
     if(suf->visOffset[0] == suf->offset[0] &&
        suf->visOffset[1] == suf->offset[1])
-        R_SurfaceListRemove(movingSurfaceList, suf);
+        SurfaceList_Remove((surfacelist_t*) context, suf);
 
     return true;
 }
@@ -308,22 +324,22 @@ boolean interpMovingSurface(surface_t* suf, void* context)
 /**
  * $smoothmatoffset: interpolate the visual offset.
  */
-void R_InterpolateMovingSurfaces(boolean resetNextViewer)
+void R_InterpolateMovingSurfaces(gamemap_t* map, boolean resetNextViewer)
 {
-    if(!movingSurfaceList)
+    if(!map)
         return;
 
     if(resetNextViewer)
     {
         // Reset the material offset trackers.
-        R_SurfaceListIterate(movingSurfaceList, resetMovingSurface, NULL);
+        SurfaceList_Iterate(&map->movingSurfaceList, resetMovingSurface, &map->movingSurfaceList);
     }
     // While the game is paused there is no need to calculate any
     // visual material offsets.
     else //if(!clientPaused)
     {
         // Set the visible material offsets.
-        R_SurfaceListIterate(movingSurfaceList, interpMovingSurface, NULL);
+        SurfaceList_Iterate(&map->movingSurfaceList, interpMovingSurface, &map->movingSurfaceList);
     }
 }
 
@@ -383,145 +399,197 @@ int RIT_StopMatFader(void* p, void* context)
     return true; // Continue iteration.
 }
 
-void R_AddWatchedPlane(watchedplanelist_t* wpl, plane_t* pln)
+/**
+ * Allocate a new surface list node.
+ */
+static planelistnode_t* allocPlaneListNode(void)
 {
-    uint i;
-
-    if(!wpl || !pln)
-        return;
-
-    // Check whether we are already tracking this plane.
-    for(i = 0; i < wpl->num; ++i)
-        if(wpl->list[i] == pln)
-            return; // Yes we are.
-
-    wpl->num++;
-
-    // Only allocate memory when it's needed.
-    if(wpl->num > wpl->maxNum)
-    {
-        wpl->maxNum *= 2;
-
-        // The first time, allocate 8 watched plane nodes.
-        if(!wpl->maxNum)
-            wpl->maxNum = 8;
-
-        wpl->list = Z_Realloc(wpl->list, sizeof(plane_t*) * (wpl->maxNum + 1), PU_MAP);
-    }
-
-    // Add the plane to the list.
-    wpl->list[wpl->num-1] = pln;
-    wpl->list[wpl->num] = NULL; // Terminate.
+    planelistnode_t* node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
+    return node;
 }
 
-boolean R_RemoveWatchedPlane(watchedplanelist_t* wpl, const plane_t* pln)
+/**
+ * Free all memory acquired for the given surface list node.
+ */
+static void freePlaneListNode(planelistnode_t* node)
 {
-    uint i;
+    if(node)
+        Z_Free(node);
+}
 
-    if(!wpl || !pln)
+static planelistnode_t* planeListNodeCreate(void)
+{
+    planelistnode_t* node;
+
+    // Is there a free node in the unused list?
+    if(unusedPlaneListNodes)
+    {
+        node = unusedPlaneListNodes;
+        unusedPlaneListNodes = node->next;
+    }
+    else
+    {
+        node = allocPlaneListNode();
+    }
+
+    node->data = NULL;
+    node->next = NULL;
+
+    return node;
+}
+
+static void planeListNodeDestroy(planelistnode_t* node)
+{
+    // Move it to the list of unused nodes.
+    node->data = NULL;
+    node->next = unusedPlaneListNodes;
+    unusedPlaneListNodes = node;
+}
+
+void PlaneList_Add(planelist_t* pl, plane_t* pln)
+{
+    planelistnode_t*  node;
+
+    if(!pl || !pln)
+        return;
+
+    // Check whether this surface is already in the list.
+    node = pl->head;
+    while(node)
+    {
+        if((plane_t*) node->data == pln)
+            return; // Yep.
+        node = node->next;
+    }
+
+    // Not found, add it to the list.
+    node = planeListNodeCreate();
+    node->data = pln;
+    node->next = pl->head;
+
+    pl->head = node;
+    pl->num++;
+}
+
+boolean PlaneList_Remove(planelist_t* pl, const plane_t* pln)
+{
+    planelistnode_t* last, *n;
+
+    if(!pl || !pln)
         return false;
 
-    for(i = 0; i < wpl->num; ++i)
+    last = pl->head;
+    if(last)
     {
-        if(wpl->list[i] == pln)
+        n = last->next;
+        while(n)
         {
-            if(i == wpl->num - 1)
-                wpl->list[i] = NULL;
-            else
-                memmove(&wpl->list[i], &wpl->list[i+1],
-                        sizeof(plane_t*) * (wpl->num - 1 - i));
-            wpl->num--;
-            return true;
+            if((plane_t*) n->data == pln)
+            {
+                last->next = n->next;
+                planeListNodeDestroy(n);
+                pl->num--;
+                return true;
+            }
+
+            last = n;
+            n = n->next;
         }
     }
 
     return false;
 }
 
+void PlaneList_Empty(planelist_t* pl)
+{
+    planelistnode_t* next;
+
+    if(!pl)
+        return;
+
+    while(pl->head)
+    {
+        next = pl->head->next;
+        planeListNodeDestroy(pl->head);
+        pl->head = next;
+    }
+
+    pl->head = NULL;
+    pl->num = 0;
+}
+
+boolean PlaneList_Iterate(planelist_t* pl, boolean (*callback) (plane_t*, void*), void* context)
+{
+    boolean result = true;
+    planelistnode_t* n, *np;
+
+    if(pl)
+    {
+        n = pl->head;
+        while(n)
+        {
+            np = n->next;
+            if((result = callback((plane_t*) n->data, context)) == 0)
+                break;
+            n = np;
+        }
+    }
+
+    return result;
+}
+
+boolean updatePlaneHeightTracking(plane_t* plane, void* context)
+{
+    Plane_UpdateHeightTracking(plane);
+    return true; // Continue iteration.
+}
+
+boolean resetPlaneHeightTracking(plane_t* plane, void* context)
+{
+    Plane_ResetHeightTracking(plane);
+    PlaneList_Remove((planelist_t*) context, plane);
+    return true; // Continue iteration.
+}
+
+boolean interpolatePlaneHeight(plane_t* plane, void* context)
+{
+    Plane_InterpolateHeight(plane);
+    // Has this plane reached its destination?
+    if(plane->visHeight == plane->height)
+        PlaneList_Remove((planelist_t*) context, plane);
+    return true; // Continue iteration.
+}
+
 /**
  * $smoothplane: Roll the height tracker buffers.
  */
-void R_UpdateWatchedPlanes(watchedplanelist_t *wpl)
+void R_UpdateWatchedPlanes(gamemap_t* map)
 {
-    uint                i;
-
-    if(!wpl)
+    if(!map)
         return;
 
-    for(i = 0; i < wpl->num; ++i)
-    {
-        plane_t        *pln = wpl->list[i];
-
-        pln->oldHeight[0] = pln->oldHeight[1];
-        pln->oldHeight[1] = pln->height;
-
-        if(pln->oldHeight[0] != pln->oldHeight[1])
-            if(fabs(pln->oldHeight[0] - pln->oldHeight[1]) >=
-               MAX_SMOOTH_PLANE_MOVE)
-            {
-                // Too fast: make an instantaneous jump.
-                pln->oldHeight[0] = pln->oldHeight[1];
-            }
-    }
+    PlaneList_Iterate(&map->watchedPlaneList, updatePlaneHeightTracking, NULL);
 }
 
 /**
  * $smoothplane: interpolate the visual offset.
  */
-void R_InterpolateWatchedPlanes(watchedplanelist_t *wpl,
-                                boolean resetNextViewer)
+void R_InterpolateWatchedPlanes(gamemap_t* map, boolean resetNextViewer)
 {
-    uint                i;
-    plane_t            *pln;
-
-    if(!wpl)
+    if(!map)
         return;
 
     if(resetNextViewer)
     {
         // $smoothplane: Reset the plane height trackers.
-        for(i = 0; i < wpl->num; ++i)
-        {
-            pln = wpl->list[i];
-
-            pln->visHeightDelta = 0;
-            pln->oldHeight[0] = pln->oldHeight[1] = pln->height;
-
-            if(pln->type == PLN_FLOOR || pln->type == PLN_CEILING)
-            {
-                R_MarkDependantSurfacesForDecorationUpdate(pln);
-            }
-
-            if(R_RemoveWatchedPlane(wpl, pln))
-                i = (i > 0? i-1 : 0);
-        }
+        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, &map->watchedPlaneList);
     }
     // While the game is paused there is no need to calculate any
     // visual plane offsets $smoothplane.
     else //if(!clientPaused)
     {
         // $smoothplane: Set the visible offsets.
-        for(i = 0; i < wpl->num; ++i)
-        {
-            pln = wpl->list[i];
-
-            pln->visHeightDelta = pln->oldHeight[0] * (1 - frameTimePos) +
-                        pln->height * frameTimePos -
-                        pln->height;
-
-            // Visible plane height.
-            pln->visHeight = pln->height + pln->visHeightDelta;
-
-            if(pln->type == PLN_FLOOR || pln->type == PLN_CEILING)
-            {
-                R_MarkDependantSurfacesForDecorationUpdate(pln);
-            }
-
-            // Has this plane reached its destination?
-            if(pln->visHeight == pln->height)
-                if(R_RemoveWatchedPlane(wpl, pln))
-                    i = (i > 0? i-1 : 0);
-        }
+        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, &map->watchedPlaneList);
     }
 }
 
@@ -532,7 +600,7 @@ void R_InterpolateWatchedPlanes(watchedplanelist_t *wpl,
  */
 void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
 {
-    linedef_t**         linep;
+    linedef_t** linep;
 
     if(!pln || !pln->sector->lineDefs)
         return;
@@ -543,7 +611,7 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
 
     while(*linep)
     {
-        linedef_t*          li = *linep;
+        linedef_t* li = *linep;
 
         if(!LINE_BACKSIDE(li))
         {
@@ -576,7 +644,7 @@ void R_CreateBiasSurfacesForPlanesInSubsector(subsector_t* subsector)
     if(!subsector->sector)
         return;
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
 
     subsector->bsuf = Z_Calloc(subsector->sector->planeCount * sizeof(biassurface_t*),
                           PU_STATIC, NULL);
@@ -601,7 +669,7 @@ void R_DestroyBiasSurfacesForPlanesInSubSector(subsector_t* subsector)
     if(subsector->sector && subsector->bsuf)
     {
         uint i;
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
 
         for(i = 0; i < subsector->sector->planeCount; ++i)
         {
@@ -630,7 +698,7 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
     if(!subsector->sector)
         return;
 
-    map = P_GetCurrentMap();
+    map = DMU_CurrentMap();
 
     {
     hedge_t* hEdge;
@@ -680,16 +748,15 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
  *
  * @return              Ptr to the newly created plane.
  */
-plane_t* R_NewPlaneForSector(sector_t* sec)
+plane_t* R_NewPlaneForSector(gamemap_t* map, sector_t* sec)
 {
     surface_t* suf;
     plane_t* plane;
-    gamemap_t* map;
 
+    if(!map)
+        return NULL;
     if(!sec)
-        return NULL; // Do wha?
-
-    map = P_GetCurrentMap();
+        return NULL;
 
 /*#if _DEBUG
 if(sec->planeCount >= 2)
@@ -698,12 +765,10 @@ if(sec->planeCount >= 2)
 #endif*/
 
     // Allocate the new plane.
-    plane = Z_Malloc(sizeof(plane_t), PU_MAP, 0);
+    plane = Z_Malloc(sizeof(plane_t), PU_STATIC, 0);
 
     // Resize this sector's plane list.
-    sec->planes =
-        Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1),
-                  PU_MAP);
+    sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
     // Add the new plane to the end of the list.
     sec->planes[sec->planeCount-1] = plane;
     sec->planes[sec->planeCount] = NULL; // Terminate.
@@ -761,12 +826,13 @@ if(sec->planeCount >= 2)
  * @param id            The sector, plane id to be destroyed.
  * @param sec           Ptr to sector for which a plane will be destroyed.
  */
-void R_DestroyPlaneOfSector(uint id, sector_t* sec)
+void R_DestroyPlaneOfSector(gamemap_t* map, uint id, sector_t* sec)
 {
     uint i;
     plane_t* plane, **newList = NULL;
-    gamemap_t* map = P_GetCurrentMap();
 
+    if(!map)
+        return;
     if(!sec)
         return; // Do wha?
 
@@ -781,7 +847,7 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     {
         uint n;
 
-        newList = Z_Malloc(sizeof(plane_t**) * sec->planeCount, PU_MAP, 0);
+        newList = Z_Malloc(sizeof(plane_t**) * sec->planeCount, PU_STATIC, 0);
 
         // Copy ptrs to the planes.
         n = 0;
@@ -795,11 +861,12 @@ void R_DestroyPlaneOfSector(uint id, sector_t* sec)
     }
 
     // If this plane is currently being watched, remove it.
-    R_RemoveWatchedPlane(watchedPlaneList, plane);
+    PlaneList_Remove(&map->watchedPlaneList, plane);
+
     // If this plane's surface is in the moving list, remove it.
-    R_SurfaceListRemove(movingSurfaceList, &plane->surface);
+    SurfaceList_Remove(&map->movingSurfaceList, &plane->surface);
     // If this plane's surface if in the deocrated list, remove it.
-    R_SurfaceListRemove(decoratedSurfaceList, &plane->surface);
+    SurfaceList_Remove(&map->decoratedSurfaceList, &plane->surface);
 
     // Stop active material fade on this surface.
     P_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
@@ -2007,7 +2074,7 @@ void R_SetupMap(int mode, int flags)
     {
     case DDSMM_INITIALIZE:
         {
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
 
         P_DestroyMap(map);
 
@@ -2025,7 +2092,7 @@ void R_SetupMap(int mode, int flags)
 
     case DDSMM_AFTER_LOADING:
         {
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
 
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
@@ -2065,7 +2132,7 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_FINALIZE:
         {
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
 
         // We are now finished with the game data, map object db.
         P_DestroyGameMapObjDB(&map->gameObjData);
@@ -2116,15 +2183,14 @@ void R_SetupMap(int mode, int flags)
 
         // The map setup has been completed. Run the special map setup
         // command, which the user may alias to do something useful.
-        if(mapID && mapID[0])
-        {
-            char cmd[80];
+         {
+        char cmd[80];
 
-            sprintf(cmd, "init-%s", mapID);
-            if(Con_IsValidCommand(cmd))
-            {
-                Con_Executef(CMDS_DED, false, cmd);
-            }
+        sprintf(cmd, "init-%s", map->mapID);
+        if(Con_IsValidCommand(cmd))
+        {
+            Con_Executef(CMDS_DED, false, cmd);
+        }
         }
 
         // Clear any input events that might have accumulated during the
@@ -2173,7 +2239,7 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_AFTER_BUSY:
         {
-        gamemap_t* map = P_GetCurrentMap();
+        gamemap_t* map = DMU_CurrentMap();
         ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
 
         // Shouldn't do anything time-consuming, as we are no longer in busy mode.
@@ -2403,7 +2469,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     boolean changed = false;
     boolean hasGlow = false;
     sector_t* sec = pln->sector;
-    gamemap_t* map = P_GetCurrentMap();
+    gamemap_t* map = DMU_CurrentMap();
 
     // Update the glow properties.
     hasGlow = false;
@@ -2645,7 +2711,7 @@ void R_CalcLightModRange(cvar_t *unused)
     int                 j;
     int                 mapAmbient;
     float               f;
-    gamemap_t          *map = P_GetCurrentMap();
+    gamemap_t          *map = DMU_CurrentMap();
 
     memset(lightModRange, 0, sizeof(float) * 255);
 
@@ -2743,7 +2809,7 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 D_CMD(UpdateSurfaces)
 {
     uint                i;
-    gamemap_t*          map = P_GetCurrentMap();
+    gamemap_t*          map = DMU_CurrentMap();
 
     Con_Printf("Updating world surfaces...\n");
 
