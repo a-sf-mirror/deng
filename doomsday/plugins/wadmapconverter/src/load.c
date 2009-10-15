@@ -91,9 +91,17 @@ typedef enum lumptype_e {
     NUM_LUMP_TYPES
 } lumptype_t;
 
+/*typedef struct usecrecord_s {
+    sector_t*           sec;
+    double              nearPos[2];
+} usecrecord_t;*/
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+
+/*boolean         registerUnclosedSectorNear(sector_t* sec, double x, double y);
+void            printUnclosedSectorList(void);*/
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -103,6 +111,9 @@ typedef enum lumptype_e {
 
 static uint PolyLineCount;
 static int16_t PolyStart[2];
+
+/*static uint numUnclosedSectors;
+static usecrecord_t* unclosedSectors;*/
 
 // CODE --------------------------------------------------------------------
 
@@ -308,6 +319,78 @@ void LogUnknownMaterials(void)
         }
     }
 }
+
+#if 0
+/**
+ * Register the specified sector in the list of unclosed sectors.
+ *
+ * @param sec           Ptr to the sector to be registered.
+ * @param x             Approximate X coordinate to the sector's origin.
+ * @param y             Approximate Y coordinate to the sector's origin.
+ *
+ * @return              @c true, if sector was registered.
+ */
+static boolean registerUnclosedSectorNear(sector_t* sec, double x, double y)
+{
+    uint i;
+    usecrecord_t* usec;
+
+    if(!sec)
+        return false; // Wha?
+
+    // Has this sector already been registered as unclosed?
+    for(i = 0; i < numUnclosedSectors; ++i)
+    {
+        if(unclosedSectors[i].sec == sec)
+            return true;
+    }
+
+    // A new one.
+    unclosedSectors = M_Realloc(unclosedSectors,
+                                ++numUnclosedSectors * sizeof(usecrecord_t));
+    usec = &unclosedSectors[numUnclosedSectors-1];
+    usec->sec = sec;
+    usec->nearPos[VX] = x;
+    usec->nearPos[VY] = y;
+
+    return true;
+}
+
+/**
+ * Print the list of unclosed sectors.
+ */
+static void printUnclosedSectorList(void)
+{
+    uint i;
+
+    if(!editMapInited)
+        return;
+
+    if(numUnclosedSectors)
+    {
+        Con_Printf("Warning, found %u unclosed sectors:\n", numUnclosedSectors);
+
+        for(i = 0; i < numUnclosedSectors; ++i)
+        {
+            usecrecord_t* usec = &unclosedSectors[i];
+
+            Con_Printf("  #%d near [%1.1f, %1.1f]\n", usec->sec->buildData.index - 1,
+                       usec->nearPos[VX], usec->nearPos[VY]);
+        }
+    }
+}
+
+/**
+ * Free the list of unclosed sectors.
+ */
+static void freeUnclosedSectorList(void)
+{
+    if(unclosedSectors)
+        M_Free(unclosedSectors);
+    unclosedSectors = NULL;
+    numUnclosedSectors = 0;
+}
+#endif
 
 /**
  * Attempts to load the BLOCKMAP data resource.

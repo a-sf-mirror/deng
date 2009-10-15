@@ -204,7 +204,7 @@ else
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
      */
-    newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap.map));
+    newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap));
     newVert->pos[VX] = x;
     newVert->pos[VY] = y;
     ((mvertex_t*) newVert->data)->refCount = (oldHEdge->twin? 4 : 2);

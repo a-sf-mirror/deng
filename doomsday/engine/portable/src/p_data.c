@@ -111,6 +111,16 @@ const char* P_GenerateUniqueMapID(const char* mapID)
     return uid;
 }
 
+gamemap_t* P_CreateMap(const char* mapID)
+{
+    gamemap_t* map = Z_Calloc(sizeof(gamemap_t), PU_STATIC, 0);
+
+    dd_snprintf(map->mapID, 9, "%s", mapID);
+    map->editActive = true;
+
+    return map;
+}
+
 void P_DestroyMap(gamemap_t* map)
 {
     biassurface_t* bsuf;
@@ -162,6 +172,32 @@ void P_DestroyMap(gamemap_t* map)
     }
     map->lineDefs = NULL;
     map->numLineDefs = 0;
+
+    if(map->polyObjs)
+    {
+        uint i;
+        for(i = 0; i < map->numPolyObjs; ++i)
+        {
+            polyobj_t* po = map->polyObjs[i];
+            uint j;
+
+            for(j = 0; j < po->numLineDefs; ++j)
+            {
+                linedef_t* lineDef = po->lineDefs[j];
+                Z_Free(lineDef->hEdges[0]);
+            }
+            Z_Free(po->lineDefs);
+            Z_Free(po->segs);
+            Z_Free(po->originalPts);
+            Z_Free(po->prevPts);
+
+            Z_Free(po);
+        }
+
+        Z_Free(map->polyObjs);
+    }
+    map->polyObjs = NULL;
+    map->numPolyObjs = 0;
 
     if(map->sectors)
     {
@@ -340,8 +376,6 @@ int P_GetMapAmbientLightLevel(gamemap_t* map)
     return map->ambientLightLevel;
 }
 
-extern gamemap_t* DAM_LoadMap(const char* mapID);
-
 /**
  * Begin the process of loading a new map.
  * Can be accessed by the games via the public API.
@@ -406,6 +440,14 @@ boolean P_LoadMap(const char* mapID)
         ded_sky_t* skyDef = NULL;
         ded_mapinfo_t* mapInfo;
         uint i;
+
+        // Call the game's setup routines.
+        if(gx.SetupForMapData)
+        {
+            gx.SetupForMapData(DMU_LINEDEF, map->numLineDefs);
+            gx.SetupForMapData(DMU_SIDEDEF, map->numSideDefs);
+            gx.SetupForMapData(DMU_SECTOR, map->numSectors);
+        }
 
         SBE_InitForMap(map);
 

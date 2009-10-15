@@ -527,7 +527,9 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
 
                     cur->after->flags |= SECF_UNCLOSED;
 
-                    MPE_RegisterUnclosedSectorNear(cur->after, pos[VX], pos[VY]);
+                    VERBOSE(
+                    Con_Message("Unclosed sector #%d near [%1.1f, %1.1f]\n",
+                                cur->after->buildData.index - 1, pos[VX], pos[VY]))
                 }
             }
             else if(!cur->after && next->before)
@@ -543,7 +545,9 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
 
                     next->before->flags |= SECF_UNCLOSED;
 
-                    MPE_RegisterUnclosedSectorNear(next->before, pos[VX], pos[VY]);
+                    VERBOSE(
+                    Con_Message("Unclosed sector #%d near [%1.1f, %1.1f]\n",
+                                next->before->buildData.index - 1, pos[VX], pos[VY]))
                 }
             }
             else

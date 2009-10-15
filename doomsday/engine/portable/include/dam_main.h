@@ -30,7 +30,7 @@
 
 #include "m_string.h"
 
-struct gamemap_s* DAM_CreateMap(void);
+struct gamemap_s* DAM_CreateMap(const char* mapID);
 boolean         DAM_TryMapConversion(const char* mapID);
 ddstring_t*     DAM_ComposeArchiveMapFilepath(const char* mapID);
 #endif /* DOOMSDAY_ARCHIVED_MAP_H */

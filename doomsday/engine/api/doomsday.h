@@ -188,7 +188,7 @@ extern          "C" {
     dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, dmuobjrecordid_t frontSide,
                                       dmuobjrecordid_t backSide, int flags);
     dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    dmuobjrecordid_t MPE_PlaneCreate(dmuobjrecordid_t sector, float height, material_t* material,
+    void             MPE_PlaneCreate(dmuobjrecordid_t sector, float height, material_t* material,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);

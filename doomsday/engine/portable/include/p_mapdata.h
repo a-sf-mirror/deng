@@ -219,6 +219,8 @@ extern nodeindex_t* linelinks;
 extern nodepile_t* mobjNodes, *lineNodes;
 
 typedef struct gamemap_s {
+    boolean         editActive;
+
     char            mapID[9];
     char            uniqueID[256];
 
@@ -288,6 +290,7 @@ typedef struct gamemap_s {
     } lg;
 } gamemap_t;
 
+gamemap_t*      P_CreateMap(const char* mapID);
 void            P_DestroyMap(gamemap_t* map);
 
 halfedgeds_t*   Map_HalfEdgeDS(gamemap_t* map);

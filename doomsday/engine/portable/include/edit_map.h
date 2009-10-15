@@ -32,20 +32,9 @@
 #include "m_binarytree.h"
 #include "p_materialmanager.h"
 
-// Editable map.
-typedef struct editmap_s {
-    gamemap_t*      map;
-    char            name[9];
-    uint            numPolyObjs;
-    polyobj_t**     polyObjs;
+extern gamemap_t* editMap;
 
-    // The following is for game-specific map object data.
-    gameobjdata_t   gameObjData;
-} editmap_t;
-
-extern editmap_t editMap;
-
-boolean         MPE_Begin(const char* name);
+boolean         MPE_Begin(const char* mapID);
 boolean         MPE_End(void);
 
 dmuobjrecordid_t MPE_VertexCreate(float x, float y);
@@ -65,7 +54,7 @@ dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
 dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, uint frontSide,
                                    uint backSide, int flags);
 dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-dmuobjrecordid_t MPE_PlaneCreate(dmuobjrecordid_t sector, float height,
+void             MPE_PlaneCreate(dmuobjrecordid_t sector, float height,
                                  material_t* material,
                                  float matOffsetX, float matOffsetY,
                                  float r, float g, float b, float a,
@@ -84,12 +73,6 @@ boolean         MPE_GameObjProperty(const char* objName, uint idx,
 #define PRUNE_SIDEDEFS      0x4
 #define PRUNE_SECTORS       0x8
 #define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
-
-void            MPE_PruneRedundantMapData(gamemap_t* map, int flags);
-
-boolean         MPE_RegisterUnclosedSectorNear(sector_t* sec, double x, double y);
-void            MPE_PrintUnclosedSectorList(void);
-void            MPE_FreeUnclosedSectorList(void);
 
 gamemap_t*      MPE_GetLastBuiltMap(void);
 #endif /* DOOMSDAY_MAP_EDITOR_H */
