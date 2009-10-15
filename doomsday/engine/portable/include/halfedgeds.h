@@ -54,4 +54,6 @@ typedef struct {
     face_t**        faces;
 } halfedgeds_t;
 
+vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
+
 #endif /* DOOMSDAY_HALFEDGEDS_H */

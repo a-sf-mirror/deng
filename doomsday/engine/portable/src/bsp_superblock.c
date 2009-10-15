@@ -444,7 +444,7 @@ static void partitionHEdges(superblock_t* hEdgeList,
                             superblock_t* rights, superblock_t* lefts,
                             cutlist_t* cutList)
 {
-    uint                num;
+    uint num;
 
     while(hEdgeList->hEdges)
     {

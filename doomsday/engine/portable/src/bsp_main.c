@@ -222,11 +222,9 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  * Build the BSP for the given map.
  *
  * @param map           The map to build the BSP for.
- * @param vertexes      Editable vertex (ptr) array.
- * @param numVertexes   Number of vertexes in the array.
  * @return              @c true, if completed successfully.
  */
-boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
+boolean BSP_Build(gamemap_t* map)
 {
     boolean builtOK;
     uint startTime;
@@ -274,7 +272,7 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
     {   // Success!
         // Wind the BSP tree and save to the map.
         ClockwiseBspTree(rootNode);
-        SaveMap(map, rootNode, vertexes, numVertexes);
+        SaveMap(map, rootNode);
 
         Con_Message("BSP_Build: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
                     map->numNodes, map->halfEdgeDS.numFaces, map->halfEdgeDS.numHEdges,

@@ -184,10 +184,9 @@ void HEdge_Destroy(hedge_t* hEdge)
  */
 hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
 {
-    hedge_t*            newHEdge;
-    bsp_hedgeinfo_t*    newData,
-                       *oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
-    vertex_t*           newVert;
+    hedge_t* newHEdge;
+    bsp_hedgeinfo_t* newData, *oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
+    vertex_t* newVert;
 
 /*#if _DEBUG
 if(oldHEdge->lineDef)
@@ -205,7 +204,7 @@ else
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
      */
-    newVert = createVertex();
+    newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap.map));
     newVert->pos[VX] = x;
     newVert->pos[VY] = y;
     ((mvertex_t*) newVert->data)->refCount = (oldHEdge->twin? 4 : 2);

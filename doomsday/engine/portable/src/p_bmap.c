@@ -968,12 +968,12 @@ boolean Blockmap_IteratePolyobjLineDefs(blockmap_t* blockmap, const uint block[2
 }
 
 boolean Blockmap_BoxIteratePolyobjLineDefs(blockmap_t* blockmap, const uint blockBox[4],
-                                       boolean (*func) (linedef_t*, void*),
-                                       void* data, boolean retObjRecord)
+                                           boolean (*func) (linedef_t*, void*),
+                                           void* data, boolean retObjRecord)
 {
-    bmap_t*             bmap = (bmap_t*) blockmap;
-    bmappoiterparams_t  args;
-    poiterparams_t      poargs;
+    bmap_t* bmap = (bmap_t*) blockmap;
+    bmappoiterparams_t args;
+    poiterparams_t poargs;
 
     poargs.func = func;
     poargs.param = data;

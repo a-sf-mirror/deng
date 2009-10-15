@@ -41,6 +41,5 @@ typedef double angle_g;  // Degrees, 0 is E, 90 is N
 extern int bspFactor;
 
 void        BSP_Register(void);
-boolean     BSP_Build(gamemap_t *map, vertex_t ***vertexes,
-                      uint *numVertexes);
+boolean     BSP_Build(gamemap_t* map);
 #endif

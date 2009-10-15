@@ -104,11 +104,8 @@ static void addBlockLine(linelist_t **lists, uint *count, uint *done,
  * lines at the left and bottom of each blockmap cell. It then adds the
  * line to all block lists touching the intersection.
  */
-blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
-                              linedef_t*** lineDefs, uint* numLineDefs)
+static blockmap_t* buildBlockmap(gamemap_t* map)
 {
-    uint startTime = Sys_GetRealTime();
-
     uint i;
     int j;
     uint bMapWidth, bMapHeight; // Blockmap dimensions.
@@ -122,9 +119,10 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     blockmap_t* blockmap;
 
     // Scan for map limits, which the blockmap must enclose.
-    for(i = 0; i < *numVertexes; ++i)
+    for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
     {
-        vtx = (*vertexes)[i];
+        vtx = map->halfEdgeDS.vertices[i];
+
         V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
         if(!i)
             V2_InitBox(bounds, point);
@@ -177,9 +175,9 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     int bx, by;
     int minx, maxx, miny, maxy;
 
-    for(i = 0; i < *numLineDefs; ++i)
+    for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t* line = (*lineDefs)[i];
+        linedef_t* line = map->lineDefs[i];
 
         if(line->inFlags & LF_POLYOBJ)
             continue; // Polyobj lines don't get into the blockmap.
@@ -356,9 +354,7 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     }
     }
 
-    // Create the blockmap.
-    blockmap = P_CreateBlockmap(bounds[0], bounds[1],
-                                bMapWidth, bMapHeight);
+    blockmap = P_CreateBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
 
     // Create the actual links by 'hardening' the lists into arrays.
     {
@@ -401,10 +397,17 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     M_Free(blockcount);
     M_Free(blockdone);
 
+    return blockmap;
+}
+
+void Map_BuildBlockmap(gamemap_t* map)
+{
+    uint startTime = Sys_GetRealTime();
+
+    map->blockMap = buildBlockmap(map);
+
     // How much time did we spend?
     VERBOSE(Con_Message
-            ("DAM_BuildBlockMap: Done in %.2f seconds.\n",
+            ("Map_BuildBlockmap: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
-
-    return blockmap;
 }

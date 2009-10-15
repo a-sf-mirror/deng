@@ -499,21 +499,17 @@ static void destroyEdgeTips(gamemap_t* dest)
     }
 }
 
-void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
-             uint* numVertexes)
+void SaveMap(gamemap_t* map, void* rootNode)
 {
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;
 
-    dest->halfEdgeDS.numVertices = *numVertexes;
-    dest->halfEdgeDS.vertices = *vertexes;
-
-    destroyEdgeTips(dest);
-    buildSegsFromHEdges(dest, rn);
-    hardenBSP(dest, rn);
+    destroyEdgeTips(map);
+    buildSegsFromHEdges(map, rn);
+    hardenBSP(map, rn);
 
     // How much time did we spend?
-    VERBOSE(Con_Message
-            ("SaveMap: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
+    VERBOSE(
+    Con_Message("SaveMap: Done in %.2f seconds.\n",
+                (Sys_GetRealTime() - startTime) / 1000.0f));
 }

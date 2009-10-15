@@ -290,6 +290,7 @@ typedef struct gamemap_s {
 
 void            P_DestroyMap(gamemap_t* map);
 
+halfedgeds_t*   Map_HalfEdgeDS(gamemap_t* map);
 void            Map_BuildSubsectorBlockmap(gamemap_t* map);
 
 const char*     P_GetMapID(gamemap_t* map);
