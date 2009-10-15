@@ -44,7 +44,7 @@ boolean         C_IsPointVisible(float x, float y, float height);
 void            C_AddViewRelSeg(float x1, float y1, float x2, float y2);
 
 // Add an occlusion segment relative to the current viewpoint.
-void            C_AddViewRelOcclusion(float *v1, float *v2, float height,
+void            C_AddViewRelOcclusion(float x1, float y1, float x2, float y2, float height,
                                       boolean tophalf);
 
 // Check a segment relative to the current viewpoint.

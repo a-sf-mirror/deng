@@ -108,10 +108,10 @@ void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 {
     bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
 
-    data->pSX = hEdge->vertex->buildData.pos[VX];
-    data->pSY = hEdge->vertex->buildData.pos[VY];
-    data->pEX = hEdge->twin->vertex->buildData.pos[VX];
-    data->pEY = hEdge->twin->vertex->buildData.pos[VY];
+    data->pSX = hEdge->vertex->pos[VX];
+    data->pSY = hEdge->vertex->pos[VY];
+    data->pEX = hEdge->twin->vertex->pos[VX];
+    data->pEY = hEdge->twin->vertex->pos[VY];
     data->pDX = data->pEX - data->pSX;
     data->pDY = data->pEY - data->pSY;
 
@@ -206,9 +206,9 @@ else
      * happens along the given half-edge at the given location.
      */
     newVert = createVertex();
-    newVert->buildData.pos[VX] = x;
-    newVert->buildData.pos[VY] = y;
-    newVert->buildData.refCount = (oldHEdge->twin? 4 : 2);
+    newVert->pos[VX] = x;
+    newVert->pos[VY] = y;
+    ((mvertex_t*) newVert->data)->refCount = (oldHEdge->twin? 4 : 2);
 
     // Compute wall_tip info.
     BSP_CreateVertexEdgeTip(newVert, -oldData->pDX, -oldData->pDY,
@@ -294,15 +294,15 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
 void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
                              hedge_t* back, hedge_t* front)
 {
-    edgetip_t*          tip = allocEdgeTip();
-    edgetip_t*          after;
+    edgetip_t* tip = allocEdgeTip();
+    edgetip_t* after;
 
     tip->angle = M_SlopeToAngle(dx, dy);
     tip->ET_edge[BACK]  = back;
     tip->ET_edge[FRONT] = front;
 
     // Find the correct place (order is increasing angle).
-    for(after = vert->buildData.tipSet; after && after->ET_next;
+    for(after = ((mvertex_t*) vert->data)->tipSet; after && after->ET_next;
         after = after->ET_next);
 
     while(after && tip->angle + ANG_EPSILON < after->angle)
@@ -312,7 +312,7 @@ void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
     if(after)
         tip->ET_next = after->ET_next;
     else
-        tip->ET_next = vert->buildData.tipSet;
+        tip->ET_next = ((mvertex_t*) vert->data)->tipSet;
     tip->ET_prev = after;
 
     if(after)
@@ -324,10 +324,10 @@ void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
     }
     else
     {
-        if(vert->buildData.tipSet)
-            vert->buildData.tipSet->ET_prev = tip;
+        if(((mvertex_t*) vert->data)->tipSet)
+            ((mvertex_t*) vert->data)->tipSet->ET_prev = tip;
 
-        vert->buildData.tipSet = tip;
+        ((mvertex_t*) vert->data)->tipSet = tip;
     }
 }
 
@@ -344,17 +344,17 @@ void BSP_DestroyVertexEdgeTip(edgetip_t* tip)
  * at this vertex is open. Returns a sector reference if it's open,
  * or NULL if closed (void space or directly along a linedef).
  */
-sector_t* BSP_VertexCheckOpen(vertex_t* vert, double dX, double dY)
+sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
 {
-    edgetip_t*          tip;
-    angle_g             angle = M_SlopeToAngle(dX, dY);
+    edgetip_t* tip;
+    angle_g angle = M_SlopeToAngle(dX, dY);
 
     // First check whether there's a wall_tip that lies in the exact
     // direction of the given direction (which is relative to the
     // vertex).
-    for(tip = vert->buildData.tipSet; tip; tip = tip->ET_next)
+    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
     {
-        angle_g             diff = fabs(tip->angle - angle);
+        angle_g diff = fabs(tip->angle - angle);
 
         if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
         {   // Yes, found one.
@@ -365,7 +365,7 @@ sector_t* BSP_VertexCheckOpen(vertex_t* vert, double dX, double dY)
     // OK, now just find the first wall_tip whose angle is greater than
     // the angle we're interested in. Therefore we'll be on the FRONT
     // side of that tip edge.
-    for(tip = vert->buildData.tipSet; tip; tip = tip->ET_next)
+    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
     {
         if(angle + ANG_EPSILON < tip->angle)
         {   // Found it.
@@ -382,6 +382,6 @@ sector_t* BSP_VertexCheckOpen(vertex_t* vert, double dX, double dY)
         }
     }
 
-    Con_Error("Vertex %d has no tips !", vert->buildData.index);
+    Con_Error("Vertex %d has no tips !", ((mvertex_t*) vertex->data)->index);
     return NULL;
 }

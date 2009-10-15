@@ -53,7 +53,7 @@
 /**
  * Update the vertex, property is selected by DMU_* name.
  */
-boolean Vertex_SetProperty(vertex_t *vtx, const setargs_t *args)
+boolean Vertex_SetProperty(vertex_t* vtx, const setargs_t* args)
 {
     // Vertices are not writable through DMU.
     Con_Error("Vertex_SetProperty: Is not writable.\n");
@@ -64,20 +64,31 @@ boolean Vertex_SetProperty(vertex_t *vtx, const setargs_t *args)
 /**
  * Get the value of a vertex property, selected by DMU_* name.
  */
-boolean Vertex_GetProperty(const vertex_t *vtx, setargs_t *args)
+boolean Vertex_GetProperty(const vertex_t* vtx, setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_X:
-        DMU_GetValue(DMT_VERTEX_POS, &vtx->V_pos[VX], args, 0);
+        {
+        float pos = vtx->pos[VX];
+        DMU_GetValue(DMT_VERTEX_POS, &pos, args, 0);
         break;
+        }
     case DMU_Y:
-        DMU_GetValue(DMT_VERTEX_POS, &vtx->V_pos[VY], args, 0);
+        {
+        float pos = vtx->pos[VY];
+        DMU_GetValue(DMT_VERTEX_POS, &pos, args, 0);
         break;
+        }
     case DMU_XY:
-        DMU_GetValue(DMT_VERTEX_POS, &vtx->V_pos[VX], args, 0);
-        DMU_GetValue(DMT_VERTEX_POS, &vtx->V_pos[VY], args, 1);
+        {
+        float pos[2];
+        pos[VX] = vtx->pos[VX];
+        pos[VY] = vtx->pos[VY];
+        DMU_GetValue(DMT_VERTEX_POS, &pos[VX], args, 0);
+        DMU_GetValue(DMT_VERTEX_POS, &pos[VY], args, 1);
         break;
+        }
     default:
         Con_Error("Vertex_GetProperty: Has no property %s.\n",
                   DMU_Str(args->prop));

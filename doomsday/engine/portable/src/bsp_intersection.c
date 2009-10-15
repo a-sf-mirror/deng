@@ -229,12 +229,11 @@ intersection_t* BSP_IntersectionCreate(vertex_t* vert,
                                        const struct bspartition_s* part,
                                        boolean selfRef)
 {
-    intersection_t*     cut = quickAllocIntersection();
+    intersection_t* cut = quickAllocIntersection();
 
     cut->vertex = vert;
-    cut->alongDist =
-        M_ParallelDist(part->pDX, part->pDY, part->pPara, part->length,
-                       vert->buildData.pos[VX], vert->buildData.pos[VY]);
+    cut->alongDist = M_ParallelDist(part->pDX, part->pDY, part->pPara, part->length,
+                                    vert->pos[VX], vert->pos[VY]);
     cut->selfRef = selfRef;
 
     cut->before = BSP_VertexCheckOpen(vert, -part->pDX, -part->pDY);
@@ -253,7 +252,7 @@ void BSP_IntersectionDestroy(intersection_t* cut)
     if(initedOK)
     {   // If the allocator is initialized, move the intersection to the
         // unused list for reuse.
-        cnode_t*            node = quickAllocCNode();
+        cnode_t* node = quickAllocCNode();
 
         node->data = cut;
         node->next = UnusedIntersectionList->headPtr;
@@ -270,8 +269,9 @@ void BSP_IntersectionDestroy(intersection_t* cut)
 void BSP_IntersectionPrint(intersection_t* cut)
 {
     Con_Message("  Vertex %8X (%1.1f,%1.1f)  Along %1.2f  [%d/%d]  %s\n",
-                cut->vertex->buildData.index, cut->vertex->buildData.pos[VX],
-                cut->vertex->buildData.pos[VY], cut->alongDist,
+                ((mvertex_t*) cut->vertex->data)->index,
+                (float) cut->vertex->pos[VX], (float) cut->vertex->pos[VY],
+                cut->alongDist,
                 (cut->before? cut->before->buildData.index : -1),
                 (cut->after? cut->after->buildData.index : -1),
                 (cut->selfRef? "SELFREF" : ""));
@@ -283,7 +283,7 @@ void BSP_IntersectionPrint(intersection_t* cut)
  */
 cutlist_t* BSP_CutListCreate(void)
 {
-    clist_t*            list = allocCList();
+    clist_t* list = allocCList();
 
     list->headPtr = NULL;
 
@@ -297,7 +297,7 @@ void BSP_CutListDestroy(cutlist_t* cutList)
 {
     if(cutList)
     {
-        clist_t*            list = (clist_t*) cutList;
+        clist_t* list = (clist_t*) cutList;
 
         emptyCList(list);
         freeCList(list);
@@ -311,7 +311,7 @@ void BSP_CutListEmpty(cutlist_t* cutList)
 {
     if(cutList)
     {
-        clist_t*            list = (clist_t*) cutList;
+        clist_t* list = (clist_t*) cutList;
         emptyCList(list);
     }
 }
@@ -326,8 +326,8 @@ void BSP_CutListEmpty(cutlist_t* cutList)
  */
 intersection_t* BSP_CutListFindIntersection(cutlist_t* cutList, vertex_t* v)
 {
-    clist_t*            list = (clist_t*) cutList;
-    cnode_t*            node;
+    clist_t* list = (clist_t*) cutList;
+    cnode_t* node;
 
     node = list->headPtr;
     while(node)
@@ -353,9 +353,9 @@ boolean BSP_CutListInsertIntersection(cutlist_t* cutList,
 {
     if(cutList && cut)
     {
-        clist_t*            list = (clist_t*) cutList;
-        cnode_t*            newNode = quickAllocCNode();
-        cnode_t*            after;
+        clist_t* list = (clist_t*) cutList;
+        cnode_t* newNode = quickAllocCNode();
+        cnode_t* after;
 
         /**
          * Enqueue the new intersection into the list.
@@ -520,8 +520,8 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                 {
                     double pos[2];
 
-                    pos[VX] = cur->vertex->buildData.pos[VX] + next->vertex->buildData.pos[VX];
-                    pos[VY] = cur->vertex->buildData.pos[VY] + next->vertex->buildData.pos[VY];
+                    pos[VX] = cur->vertex->pos[VX] + next->vertex->pos[VX];
+                    pos[VY] = cur->vertex->pos[VY] + next->vertex->pos[VY];
                     pos[VX] /= 2;
                     pos[VY] /= 2;
 
@@ -536,8 +536,8 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                 {
                     double pos[2];
 
-                    pos[VX] = cur->vertex->buildData.pos[VX] + next->vertex->buildData.pos[VX];
-                    pos[VY] = cur->vertex->buildData.pos[VY] + next->vertex->buildData.pos[VY];
+                    pos[VX] = cur->vertex->pos[VX] + next->vertex->pos[VX];
+                    pos[VY] = cur->vertex->pos[VY] + next->vertex->pos[VY];
                     pos[VX] /= 2;
                     pos[VY] /= 2;
 
@@ -557,9 +557,10 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                         VERBOSE(
                         Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d "
                                     "(%1.1f,%1.1f)\n",
-                                    cur->after->buildData.index, cur->vertex->buildData.pos[VX],
-                                    cur->vertex->buildData.pos[VY], next->before->buildData.index,
-                                    next->vertex->buildData.pos[VX], next->vertex->buildData.pos[VY]));
+                                    cur->after->buildData.index,
+                                    (float) cur->vertex->pos[VX], (float) cur->vertex->pos[VY],
+                                    next->before->buildData.index,
+                                    (float) next->vertex->pos[VX], (float) next->vertex->pos[VY]));
                     }
 
                     // Choose the non-self-referencing sector when we can.

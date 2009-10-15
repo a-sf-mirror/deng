@@ -130,19 +130,19 @@ float R_ShadowEdgeWidth(const pvec2_t edge)
  *
  * @param vtx           Ptr to the vertex being updated.
  */
-void R_UpdateVertexShadowOffsets(vertex_t *vtx)
+void R_UpdateVertexShadowOffsets(vertex_t* vtx)
 {
-    vec2_t              left, right;
+    vec2_t left, right;
 
-    if(vtx->numLineOwners > 0)
+    if(((mvertex_t*) vtx->data)->numLineOwners > 0)
     {
-        lineowner_t        *own, *base;
+        lineowner_t* own, *base;
 
-        own = base = vtx->lineOwners;
+        own = base = ((mvertex_t*) vtx->data)->lineOwners;
         do
         {
-            linedef_t          *lineB = own->lineDef;
-            linedef_t          *lineA = own->LO_next->lineDef;
+            linedef_t* lineB = own->lineDef;
+            linedef_t* lineA = own->LO_next->lineDef;
 
             if(lineB->L_v1 == vtx)
             {
@@ -291,13 +291,13 @@ void R_InitSectorShadows(gamemap_t* map)
         vo1 = side->lineDef->L_vo(sid^1)->LO_prev;
 
         // Use the extended points, they are wider than inoffsets.
-        V2_Set(point, vtx0->V_pos[VX], vtx0->V_pos[VY]);
+        V2_Set(point, vtx0->pos[VX], vtx0->pos[VY]);
         V2_InitBox(bounds, point);
 
         V2_Sum(point, point, vo0->shadowOffsets.extended);
         V2_AddToBox(bounds, point);
 
-        V2_Set(point, vtx1->V_pos[VX], vtx1->V_pos[VY]);
+        V2_Set(point, vtx1->pos[VX], vtx1->pos[VY]);
         V2_AddToBox(bounds, point);
 
         V2_Sum(point, point, vo1->shadowOffsets.extended);

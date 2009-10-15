@@ -701,8 +701,8 @@ static void renderParticles(int rtype, boolean withBlend)
             // Flat against a wall, then?
             else if(flatOnWall)
             {
-                float               line[2], pos[2];
-                vertex_t*           vtx;
+                float line[2], pos[2], vpos;
+                vertex_t* vtx;
 
                 line[0] = pt->contact->dX;
                 line[1] = pt->contact->dY;
@@ -717,8 +717,8 @@ static void renderParticles(int rtype, boolean withBlend)
                 // Z-fighting.
                 pos[VX] = FIX2FLT(pt->pos[VX]);
                 pos[VY] = FIX2FLT(pt->pos[VY]);
-                M_ProjectPointOnLine(pos, &vtx->V_pos[VX], line, 1,
-                                     projected);
+                vpos = vtx->pos[VX];
+                M_ProjectPointOnLine(pos, &vpos, line, 1, projected);
 
                 P_LineUnitVector(pt->contact, line);
 

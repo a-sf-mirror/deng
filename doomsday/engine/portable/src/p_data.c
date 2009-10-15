@@ -136,20 +136,6 @@ void P_DestroyMap(gamemap_t* map)
     SurfaceList_Empty(&map->movingSurfaceList);
     SurfaceList_Empty(&map->decoratedSurfaceList);
 
-    if(map->vertexes)
-    {
-        uint i;
-
-        for(i = 0; i < map->numVertexes; ++i)
-        {
-            vertex_t* vertex = map->vertexes[i];
-            Z_Free(vertex);
-        }
-        Z_Free(map->vertexes);
-    }
-    map->vertexes = NULL;
-    map->numVertexes = 0;
-
     if(map->sideDefs)
     {
         uint i;
@@ -211,6 +197,23 @@ void P_DestroyMap(gamemap_t* map)
     map->sectors = NULL;
     map->numSectors = 0;
 
+    if(map->vertexes)
+    {
+        uint i;
+        for(i = 0; i < map->numVertexes; ++i)
+        {
+            vertex_t* vertex = map->vertexes[i];
+
+            if(vertex->data)
+                Z_Free(vertex->data);
+
+            Z_Free(vertex);
+        }
+        Z_Free(map->vertexes);
+    }
+    map->vertexes = NULL;
+    map->numVertexes = 0;
+
     if(map->subsectors)
         Z_Free(map->subsectors);
     map->subsectors = NULL;
@@ -271,6 +274,28 @@ void P_DestroyMap(gamemap_t* map)
     }
     map->halfEdgeDS.hEdges = NULL;
     map->halfEdgeDS.numHEdges = 0;
+
+    /*if(map->halfEdgeDS.vertices)
+    {
+        uint i;
+
+        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+        {
+            vertex_t* vertex = map->halfEdgeDS.vertices[i];
+            mvertex_t* mvertex = vertex->data;
+
+            if(mvertex)
+            {
+               Z_Free(mvertex);
+            }
+
+            Z_Free(vertex);
+        }
+
+        Z_Free(map->halfEdgeDS.vertices);
+    }
+    map->halfEdgeDS.vertices = NULL;
+    map->halfEdgeDS.numVertices = 0;*/
 
     if(map->nodes)
     {

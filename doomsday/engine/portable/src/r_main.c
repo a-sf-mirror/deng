@@ -161,10 +161,11 @@ void R_Register(void)
     Materials_Register();
 }
 
-float R_FacingViewerDot(float v1[2], float v2[2])
+float R_FacingViewerDot(vertex_t* from, vertex_t* to)
 {
     // The dot product.
-    return (v1[VY] - v2[VY]) * (v1[VX] - vx) + (v2[VX] - v1[VX]) * (v1[VY] - vz);
+    return (from->pos[VY] - to->pos  [VY]) * (from->pos[VX] - vx) +
+           (to->pos  [VX] - from->pos[VX]) * (from->pos[VY] - vz);
 }
 
 /**

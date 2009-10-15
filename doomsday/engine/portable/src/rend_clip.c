@@ -870,10 +870,10 @@ int C_SafeAddRange(binangle_t startAngle, binangle_t endAngle)
  */
 void C_AddViewRelSeg(float x1, float y1, float x2, float y2)
 {
-    float       dx1 = x1 - vx;
-    float       dy1 = y1 - vz;
-    float       dx2 = x2 - vx;
-    float       dy2 = y2 - vz;
+    float dx1 = x1 - vx;
+    float dy1 = y1 - vz;
+    float dx2 = x2 - vx;
+    float dy2 = y2 - vz;
 
     C_SafeAddRange(bamsAtan2((int) (dy2 * 100), (int) (dx2 * 100)),
                    bamsAtan2((int) (dy1 * 100), (int) (dx1 * 100)));
@@ -883,7 +883,7 @@ void C_AddViewRelSeg(float x1, float y1, float x2, float y2)
  * If necessary, cut the given range in two.
  */
 void C_SafeAddOcclusionRange(binangle_t startAngle, binangle_t endAngle,
-                             float *normal, boolean tophalf)
+                             float* normal, boolean tophalf)
 {
     // Is this range already clipped?
     if(!C_SafeCheckRange(startAngle, endAngle))
@@ -916,7 +916,7 @@ void C_SafeAddOcclusionRange(binangle_t startAngle, binangle_t endAngle,
 /**
  * The point should be view-relative!
  */
-binangle_t C_PointToAngle(float *point)
+binangle_t C_PointToAngle(float* point)
 {
     return bamsAtan2((int) (point[VY] * 100), (int) (point[VX] * 100));
 }
@@ -924,19 +924,19 @@ binangle_t C_PointToAngle(float *point)
 /**
  * Add an occlusion segment relative to the current viewpoint.
  */
-void C_AddViewRelOcclusion(float *v1, float *v2, float height, boolean tophalf)
+void C_AddViewRelOcclusion(float x1, float y1, float x2, float y2, float height, boolean tophalf)
 {
-    float       viewtov1[3], viewtov2[3];
-    float       normal[3];
+    float viewtov1[3], viewtov2[3];
+    float normal[3];
 
     // \fixme Optimization? Check if the given line is already occluded.
 
     // Calculate the occlusion plane normal. We'll use the game's coordinate
     // system (left-handed, but Y and Z are swapped).
-    viewtov1[VX] = v1[VX] - vx;
-    viewtov1[VY] = v1[VY] - vz;
-    viewtov2[VX] = v2[VX] - vx;
-    viewtov2[VY] = v2[VY] - vz;
+    viewtov1[VX] = x1 - vx;
+    viewtov1[VY] = y1 - vz;
+    viewtov2[VX] = x2 - vx;
+    viewtov2[VY] = y2 - vz;
     viewtov1[VZ] = viewtov2[VZ] = height - vy;
     // The normal points to the half we want to occlude.
     M_CrossProduct(tophalf ? viewtov2 : viewtov1,
@@ -944,17 +944,17 @@ void C_AddViewRelOcclusion(float *v1, float *v2, float height, boolean tophalf)
 
 #if _DEBUG
 {
-    float   testPos[3];
+float testPos[3];
 
-    testPos[0] = 0;
-    testPos[1] = 0;
-    testPos[2] = (tophalf ? 1000 : -1000);
+testPos[0] = 0;
+testPos[1] = 0;
+testPos[2] = (tophalf ? 1000 : -1000);
 
-    if(M_DotProduct(testPos, normal) < 0)
-    {
-        Con_Error("C_AddViewRelOcclusion: Wrong side - [%g,%g]>[%g,%g] "
-                  "view[%g,%g]!\n", v1[VX], v1[VY], v2[VX], v2[VY], vx, vz);
-    }
+if(M_DotProduct(testPos, normal) < 0)
+{
+    Con_Error("C_AddViewRelOcclusion: Wrong side - [%g,%g]>[%g,%g] "
+              "view[%g,%g]!\n", x1, y1, x2, y2, vx, vz);
+}
 }
 #endif
 
@@ -966,22 +966,22 @@ void C_AddViewRelOcclusion(float *v1, float *v2, float height, boolean tophalf)
  * Returns true if the view relative point is occluded by an occlusion
  * range.
  */
-boolean C_IsPointOccluded(float *viewrelpoint)
+boolean C_IsPointOccluded(float* viewrelpoint)
 {
-    binangle_t  angle = C_PointToAngle(viewrelpoint);
-    occnode_t  *orange;
+    binangle_t angle = C_PointToAngle(viewrelpoint);
+    occnode_t* orange;
 
     for(orange = occHead; orange; orange = orange->next)
     {
         if(angle >= orange->start && angle <= orange->end)
         {
             if(orange->start > angle)
-                return false;       // No more possibilities.
+                return false; // No more possibilities.
 
             // On which side of the occlusion plane is it? The positive side
             // is the occluded one.
             if(M_DotProduct(viewrelpoint, orange->normal) > 0)
-                return true;        // Occluded!
+                return true; // Occluded!
         }
     }
 
@@ -996,8 +996,8 @@ boolean C_IsPointOccluded(float *viewrelpoint)
  */
 boolean C_IsPointVisible(float x, float y, float height)
 {
-    float       point[3];
-    binangle_t  angle;
+    float point[3];
+    binangle_t angle;
 
     point[0] = x - vx;
     point[1] = y - vz;
@@ -1020,11 +1020,11 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
                         binangle_t endAngle)
 {
     // The segment is always fully occluded from startAngle to occAngle.
-    float       cross[3], testNormal[3];
-    binangle_t  occAngle, crossAngle, trueStart, trueEnd;
-    occnode_t  *orange;
-    clipnode_t *ci;
-    boolean     side1, side2, isSafe;
+    float cross[3], testNormal[3];
+    binangle_t occAngle, crossAngle, trueStart, trueEnd;
+    occnode_t* orange;
+    clipnode_t* ci;
+    boolean side1, side2, isSafe;
 
     // See if the given actual test range is safe. (startAngle and endAngle
     // always are.)
@@ -1056,7 +1056,7 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
     for(orange = occHead; orange; orange = orange->next)
     {
         if(occAngle >= endAngle)
-            return true;        // Fully occluded.
+            return true; // Fully occluded.
 
         // This is the quickest way out of there: if we come across an
         // occlusion range that begins AFTER the occAngle, the portion
@@ -1065,7 +1065,7 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
         if(orange->start > occAngle)
             return false;
         if(orange->end < occAngle)
-            continue;           // Useless...
+            continue; // Useless...
 
         /*      if(orange->end < startAngle) continue; // Doesn't overlap.
            if(orange->start > endAngle) break; // The rest are past the end. */
@@ -1090,15 +1090,16 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
         {
             // Does the orange fully contain the remaining portion of the seg?
             if(occAngle >= orange->start && endAngle <= orange->end)
-                return true;    // Fully occluded by this orange!
+                return true; // Fully occluded by this orange!
 
             // Both the start and end vertex of the seg are occluded by
             // this orange, but the orange doesn't cover the whole seg.
             if(orange->end > occAngle)
                 occAngle = orange->end;
+
             // Now we know that the seg has been occluded from the beginning
             // to occAngle.
-            continue;           // Find more juicy oranges.
+            continue; // Find more juicy oranges.
         }
         if(!side1 && !side2)
         {
@@ -1148,7 +1149,7 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
             if(crossAngle > occAngle)
                 occAngle = crossAngle;
         }
-        else                    // if(side1)
+        else // if(side1)
         {
             // We have an occlusion starting from crossAngle.
             if(crossAngle <= occAngle)
@@ -1166,11 +1167,11 @@ boolean C_IsSegOccluded(float relv1[3], float relv2[3], float reltop,
  * Returns true if the segment is visible according to the current
  * clipnode and occlusion information.
  */
-boolean C_CheckSeg(float *v1, float *v2, float top, float bottom)
+boolean C_CheckSeg(float* v1, float* v2, float top, float bottom)
 {
-    float       relv1[3], relv2[3];
-    float       reltop = top - vy, relbottom = bottom - vy;
-    binangle_t  start, end;
+    float relv1[3], relv2[3];
+    float reltop = top - vy, relbottom = bottom - vy;
+    binangle_t start, end;
 
     relv1[0] = v1[VX] - vx;
     relv1[1] = v1[VY] - vz;
@@ -1184,9 +1185,9 @@ boolean C_CheckSeg(float *v1, float *v2, float top, float bottom)
     start = C_PointToAngle(relv2);
     end = C_PointToAngle(relv1);
     if(start == end)
-        return true;            // Might as well be visible...
+        return true; // Might as well be visible...
     if(!C_SafeCheckRange(start, end))
-        return false;           // Entirely clipped.
+        return false; // Entirely clipped.
 
     // Now the more difficult part... The range may be occluded by a number
     // of occlusion ranges, but we must determine whether these occlude the
@@ -1206,7 +1207,7 @@ boolean C_CheckSeg(float *v1, float *v2, float top, float bottom)
  */
 static int C_IsRangeVisible(binangle_t startAngle, binangle_t endAngle)
 {
-    clipnode_t *ci;
+    clipnode_t* ci;
 
     for(ci = clipHead; ci; ci = ci->next)
         if(startAngle >= ci->start && endAngle <= ci->end)
@@ -1231,10 +1232,10 @@ static int C_SafeCheckRange(binangle_t startAngle, binangle_t endAngle)
 
 int C_CheckViewRelSeg(float x1, float y1, float x2, float y2)
 {
-    float       dx1 = x1 - vx;
-    float       dy1 = y1 - vz;
-    float       dx2 = x2 - vx;
-    float       dy2 = y2 - vz;
+    float dx1 = x1 - vx;
+    float dy1 = y1 - vz;
+    float dx2 = x2 - vx;
+    float dy2 = y2 - vz;
 
     if(devNoCulling)
         return 1;
@@ -1248,7 +1249,7 @@ int C_CheckViewRelSeg(float x1, float y1, float x2, float y2)
  */
 int C_IsAngleVisible(binangle_t bang)
 {
-    clipnode_t *ci;
+    clipnode_t* ci;
 
     for(ci = clipHead; ci; ci = ci->next)
         if(bang > ci->start && bang < ci->end)
@@ -1257,9 +1258,9 @@ int C_IsAngleVisible(binangle_t bang)
     return true;
 }
 
-clipnode_t *C_AngleClippedBy(binangle_t bang)
+clipnode_t* C_AngleClippedBy(binangle_t bang)
 {
-    clipnode_t *ci;
+    clipnode_t* ci;
 
     for(ci = clipHead; ci; ci = ci->next)
         if(bang > ci->start && bang < ci->end)
@@ -1301,8 +1302,8 @@ int C_CheckSubsector(subsector_t* subsector)
             vertex_t* vtx = hEdge->HE_v1;
 
             // Shift for more accuracy.
-            anglist[i++] = bamsAtan2((int) ((vtx->V_pos[VY] - vz) * 100),
-                                     (int) ((vtx->V_pos[VX] - vx) * 100));
+            anglist[i++] = bamsAtan2((int) ((vtx->pos[VY] - vz) * 100),
+                                     (int) ((vtx->pos[VX] - vx) * 100));
         } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
 

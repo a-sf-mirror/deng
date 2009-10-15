@@ -232,7 +232,7 @@ int P_PointOnDivLineSidef(fvertex_t* pnt, fdivline_t* dline)
  */
 int P_PointOnLineDefSide(float x, float y, const linedef_t* line)
 {
-    return !P_PointOnLineSide(x, y, line->L_v1pos[VX], line->L_v1pos[VY],
+    return !P_PointOnLineSide(x, y, line->L_v1->pos[VX], line->L_v1->pos[VY],
                               line->dX, line->dY);
 }
 
@@ -354,8 +354,8 @@ int P_BoxOnLineSide2(float xl, float xh, float yl, float yh,
     {
     default: // Shut up compiler.
       case ST_HORIZONTAL:
-        a = yh > ld->L_v1pos[VY];
-        b = yl > ld->L_v1pos[VY];
+        a = yh > ld->L_v1->pos[VY];
+        b = yl > ld->L_v1->pos[VY];
         if(ld->dX < 0)
         {
             a ^= 1;
@@ -364,8 +364,8 @@ int P_BoxOnLineSide2(float xl, float xh, float yl, float yh,
         break;
 
       case ST_VERTICAL:
-        a = xh < ld->L_v1pos[VX];
-        b = xl < ld->L_v1pos[VX];
+        a = xh < ld->L_v1->pos[VX];
+        b = xl < ld->L_v1->pos[VX];
         if(ld->dY < 0)
         {
             a ^= 1;
@@ -406,8 +406,8 @@ int DMU_BoxOnLineSide(const float* box, void* p)
  */
 int P_PointOnDivlineSide(float fx, float fy, const divline_t* line)
 {
-    fixed_t             x = FLT2FIX(fx);
-    fixed_t             y = FLT2FIX(fy);
+    fixed_t x = FLT2FIX(fx);
+    fixed_t y = FLT2FIX(fy);
 
     if(!line->dX)
     {
@@ -419,8 +419,8 @@ int P_PointOnDivlineSide(float fx, float fy, const divline_t* line)
     }
     else
     {
-        fixed_t             dX = x - line->pos[VX];
-        fixed_t             dY = y - line->pos[VY];
+        fixed_t dX = x - line->pos[VX];
+        fixed_t dY = y - line->pos[VY];
 
         // Try to quickly decide by comparing signs.
         if((line->dY ^ line->dX ^ dX ^ dY) & 0x80000000)
@@ -437,10 +437,10 @@ int P_PointOnDivlineSide(float fx, float fy, const divline_t* line)
 
 void P_MakeDivline(const linedef_t* li, divline_t* dl)
 {
-    const vertex_t*     vtx = li->L_v1;
+    const vertex_t* vtx = li->L_v1;
 
-    dl->pos[VX] = FLT2FIX(vtx->V_pos[VX]);
-    dl->pos[VY] = FLT2FIX(vtx->V_pos[VY]);
+    dl->pos[VX] = FLT2FIX(vtx->pos[VX]);
+    dl->pos[VY] = FLT2FIX(vtx->pos[VY]);
     dl->dX = FLT2FIX(li->dX);
     dl->dY = FLT2FIX(li->dY);
 }
@@ -455,9 +455,8 @@ void DMU_MakeDivline(void* p, divline_t* dl)
  */
 float P_InterceptVector(const divline_t* v2, const divline_t* v1)
 {
-    float               frac = 0;
-    fixed_t             den = FixedMul(v1->dY >> 8, v2->dX) -
-        FixedMul(v1->dX >> 8, v2->dY);
+    float frac = 0;
+    fixed_t den = FixedMul(v1->dY >> 8, v2->dX) - FixedMul(v1->dX >> 8, v2->dY);
 
     if(den)
     {
@@ -1127,17 +1126,17 @@ boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
     if(traceLOS.dX > FRACUNIT * 16 || traceLOS.dY > FRACUNIT * 16 ||
        traceLOS.dX < -FRACUNIT * 16 || traceLOS.dY < -FRACUNIT * 16)
     {
-        s[0] = P_PointOnDivlineSide(ld->L_v1pos[VX],
-                                    ld->L_v1pos[VY], &traceLOS);
-        s[1] = P_PointOnDivlineSide(ld->L_v2pos[VX],
-                                    ld->L_v2pos[VY], &traceLOS);
+        s[0] = P_PointOnDivlineSide(ld->L_v1->pos[VX],
+                                    ld->L_v1->pos[VY], &traceLOS);
+        s[1] = P_PointOnDivlineSide(ld->L_v2->pos[VX],
+                                    ld->L_v2->pos[VY], &traceLOS);
     }
     else
     {
         s[0] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX]),
-                                 FIX2FLT(traceLOS.pos[VY]), ld);
+                                    FIX2FLT(traceLOS.pos[VY]), ld);
         s[1] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
-                                 FIX2FLT(traceLOS.pos[VY] + traceLOS.dY), ld);
+                                    FIX2FLT(traceLOS.pos[VY] + traceLOS.dY), ld);
     }
 
     if(s[0] == s[1])

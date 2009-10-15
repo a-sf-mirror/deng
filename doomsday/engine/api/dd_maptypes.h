@@ -18,7 +18,6 @@ typedef struct thinker_s {
 
 #define DMT_VERTEX_POS DDVT_FLOAT
 
-
 #define DMT_SEG_VERTEX1 DDVT_PTR
 #define DMT_SEG_VERTEX2 DDVT_PTR
 #define DMT_SEG_SECTOR DDVT_PTR

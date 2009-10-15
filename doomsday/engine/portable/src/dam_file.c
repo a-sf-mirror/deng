@@ -286,9 +286,10 @@ static void writeVertex(const gamemap_t* map, uint idx)
 {
     vertex_t* v = map->vertexes[idx];
 
-    writeFloat(v->V_pos[VX]);
-    writeFloat(v->V_pos[VY]);
-    writeLong((long) v->numLineOwners);
+    writeFloat(v->pos[VX]);
+    writeFloat(v->pos[VY]);
+
+    /*writeLong((long) v->numLineOwners);
 
     if(v->numLineOwners > 0)
     {
@@ -301,21 +302,22 @@ static void writeVertex(const gamemap_t* map, uint idx)
             writeLong((long) own->angle);
             own = own->LO_prev;
         } while(own != base);
-    }
+    }*/
 }
 
 static void readVertex(const gamemap_t* map, uint idx)
 {
-    uint i;
     vertex_t* v = map->vertexes[idx];
 
-    v->V_pos[VX] = readFloat();
-    v->V_pos[VY] = readFloat();
-    v->numLineOwners = (uint) readLong();
+    v->pos[VX] = readFloat();
+    v->pos[VY] = readFloat();
+    
+    /*v->numLineOwners = (uint) readLong();
 
     if(v->numLineOwners > 0)
     {
         lineowner_t* own;
+        uint i;
 
         v->lineOwners = NULL;
         for(i = 0; i < v->numLineOwners; ++i)
@@ -335,7 +337,7 @@ static void readVertex(const gamemap_t* map, uint idx)
             own = own->LO_next;
         } while(own);
         own->LO_prev = v->lineOwners;
-    }
+    }*/
 }
 
 static void archiveVertexes(gamemap_t* map, boolean write)

@@ -1071,7 +1071,6 @@ typedef struct {
 // For bias:
     subsector_t*    subsector;
     uint            plane;
-    const fvertex_t* from, *to;
     biassurface_t*  bsuf;
 
 // Wall only (todo).
@@ -1258,22 +1257,15 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             if(useBias && p->bsuf)
             {
                 // Do BIAS lighting for this poly.
-                if(p->isWall)
-                    SB_RendSeg(DMU_CurrentMap(), rcolors, p->bsuf,
-                               rvertices, numVertices,
-                               p->normal, p->sectorLightLevel,
-                               p->from, p->to);
-                else
-                    SB_RendPlane(DMU_CurrentMap(), rcolors, p->bsuf,
-                                 rvertices, numVertices,
-                                 p->normal, p->sectorLightLevel,
-                                 p->subsector, p->plane);
+                SB_RendPlane(DMU_CurrentMap(), rcolors, p->bsuf,
+                             rvertices, numVertices,
+                             p->normal, p->sectorLightLevel,
+                             p->subsector, p->plane);
             }
             else
             {
-                uint                i;
-                float               ll = p->sectorLightLevel +
-                    p->surfaceLightLevelDelta;
+                uint i;
+                float ll = p->sectorLightLevel + p->surfaceLightLevelDelta;
 
                 // Calculate the color for each vertex, blended with plane color?
                 if(p->surfaceColor[0] < 1 || p->surfaceColor[1] < 1 ||
@@ -1863,10 +1855,10 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
     colors = R_AllocRendColors(numColors);
     coords = R_AllocRendTexCoords(numCoords);
 
-    V3_Set(vertices[0].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->bottom);
-    V3_Set(vertices[1].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->top);
-    V3_Set(vertices[2].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->bottom);
-    V3_Set(vertices[3].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->top);
+    V3_Set(vertices[0].pos, rseg->from[VX], rseg->from[VY], rseg->bottom);
+    V3_Set(vertices[1].pos, rseg->from[VX], rseg->from[VY], rseg->top);
+    V3_Set(vertices[2].pos, rseg->to  [VX], rseg->to  [VY], rseg->bottom);
+    V3_Set(vertices[3].pos, rseg->to  [VX], rseg->to  [VY], rseg->top);
 
     // Primary texture coordinates.
     quadTexCoords(coords, vertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
@@ -1913,14 +1905,20 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
     if(sideDef->SW_middleinflags & SUIF_PVIS)
     {
         sector_t* frontSec = subsector->sector;
-        float bottom = frontSec->SP_floorvisheight, top = frontSec->SP_ceilvisheight, offset = 0;
+        float from[2], to[2], bottom = frontSec->SP_floorvisheight, top = frontSec->SP_ceilvisheight, offset = 0;
         rendseg_t temp, *rendSeg;
 
         if(frontSec->SP_floorvisheight >= frontSec->SP_ceilvisheight)
             return true;
 
-        rendSeg = RendSeg_staticConstructFromPolyobjSideDef(&temp, sideDef, &sideDef->lineDef->L_v1->v,
-            &sideDef->lineDef->L_v2->v, bottom, top, subsector, seg);
+        from[VX] = sideDef->lineDef->L_v1->pos[VX];
+        from[VY] = sideDef->lineDef->L_v1->pos[VY];
+
+        to[VX] = sideDef->lineDef->L_v2->pos[VX];
+        to[VY] = sideDef->lineDef->L_v2->pos[VY];
+
+        rendSeg = RendSeg_staticConstructFromPolyobjSideDef(&temp, sideDef, from, to, bottom, top,
+                                                            subsector, seg);
 
         {
         uint numVertices;
@@ -2010,7 +2008,7 @@ static void markSegsFacingFront(subsector_t* subsector)
                 seg->frameFlags &= ~SEGINF_BACKSECSKYFIX;
 
                 // Which way should it be facing?
-                if(!(R_FacingViewerDot(hEdge->HE_v1pos, hEdge->HE_v2pos) < 0))
+                if(!(R_FacingViewerDot(hEdge->HE_v1, hEdge->HE_v2) < 0))
                     seg->frameFlags |= SEGINF_FACINGFRONT;
                 else
                     seg->frameFlags &= ~SEGINF_FACINGFRONT;
@@ -2125,10 +2123,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             bsh = bceil = bfloor = 0;
 
         // Get the start and end vertices, left then right. Top and bottom.
-        vBL[VX] = vTL[VX] = hEdge->HE_v1pos[VX];
-        vBL[VY] = vTL[VY] = hEdge->HE_v1pos[VY];
-        vBR[VX] = vTR[VX] = hEdge->HE_v2pos[VX];
-        vBR[VY] = vTR[VY] = hEdge->HE_v2pos[VY];
+        vBL[VX] = vTL[VX] = hEdge->HE_v1->pos[VX];
+        vBL[VY] = vTL[VY] = hEdge->HE_v1->pos[VY];
+        vBR[VX] = vTR[VX] = hEdge->HE_v2->pos[VX];
+        vBR[VY] = vTR[VY] = hEdge->HE_v2->pos[VY];
 
         // Upper/lower normal skyfixes.
         if(!backsec || backsec != frontsec)
@@ -2231,10 +2229,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
  */
 static void occludeSubsector(const subsector_t* subsector, boolean forwardFacing)
 {
-    float fronth[2], backh[2];
-    float* startv, *endv;
-    sector_t* front, *back;
+    sector_t* front;
     hedge_t* hEdge;
+    float fronth[2];
 
     if(devNoCulling || P_IsInVoid(viewPlayer))
         return;
@@ -2254,20 +2251,22 @@ static void occludeSubsector(const subsector_t* subsector, boolean forwardFacing
             if(seg->sideDef && !R_ConsiderOneSided(hEdge) &&
                (forwardFacing == ((seg->frameFlags & SEGINF_FACINGFRONT)? true : false)))
             {
-                back = ((subsector_t*) hEdge->twin->face->data)->sector;
+                float backh[2];
+                vertex_t* startv, *endv;
+                sector_t* back = ((subsector_t*) hEdge->twin->face->data)->sector;
 
                 backh[0] = back->SP_floorheight;
                 backh[1] = back->SP_ceilheight;
                 // Choose start and end vertices so that it's facing forward.
                 if(forwardFacing)
                 {
-                    startv = hEdge->HE_v1pos;
-                    endv   = hEdge->HE_v2pos;
+                    startv = hEdge->HE_v1;
+                    endv   = hEdge->HE_v2;
                 }
                 else
                 {
-                    startv = hEdge->HE_v2pos;
-                    endv   = hEdge->HE_v1pos;
+                    startv = hEdge->HE_v2;
+                    endv   = hEdge->HE_v1;
                 }
 
                 // Do not create an occlusion for sky floors.
@@ -2279,8 +2278,9 @@ static void occludeSubsector(const subsector_t* subsector, boolean forwardFacing
                        (backh[0] < fronth[0] && vy >= fronth[0]))
                     {
                         // Occlude down.
-                        C_AddViewRelOcclusion(startv, endv, MAX_OF(fronth[0], backh[0]),
-                                              false);
+                        C_AddViewRelOcclusion(startv->pos[VX], startv->pos[VY],
+                                              endv->pos[VX], endv->pos[VY],
+                                              MAX_OF(fronth[0], backh[0]), false);
                     }
                 }
 
@@ -2293,8 +2293,9 @@ static void occludeSubsector(const subsector_t* subsector, boolean forwardFacing
                        (backh[1] > fronth[1] && vy <= fronth[1]))
                     {
                         // Occlude up.
-                        C_AddViewRelOcclusion(startv, endv, MIN_OF(fronth[1], backh[1]),
-                                              true);
+                        C_AddViewRelOcclusion(startv->pos[VX], startv->pos[VY],
+                                              endv->pos[VX], endv->pos[VY],
+                                              MIN_OF(fronth[1], backh[1]), true);
                     }
                 }
             }
@@ -2361,11 +2362,10 @@ static boolean isSidedefSectionPotentiallyVisible(sidedef_t* sideDef, segsection
     return (sideDef->SW_surface(section).inFlags & SUIF_PVIS) != 0;
 }
 
-static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
-                                rendseg_t** rsegs)
+static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp, rendseg_t** rsegs)
 {
-    plane_t*            ffloor, *fceil, *bfloor, *bceil;
-    float               bottom, top, texOffset[2], texScale[2];
+    plane_t* ffloor, *fceil, *bfloor, *bceil;
+    float bottom, top, texOffset[2], texScale[2];
 
     memset(rsegs, 0, sizeof(rendseg_t*) * 3);
 
@@ -2375,16 +2375,26 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
         if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_BOTTOM, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
+            vec2_t from, to;
+
+            V2_Set(from, hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY]);
+            V2_Set(to,   hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
+
             rsegs[SEG_BOTTOM] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_BOTTOM], hEdge, SEG_BOTTOM,
-                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+                from, to, bottom, top, texOffset, texScale);
         }
 
     if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_TOP))
         if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_TOP, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
+            vec2_t from, to;
+
+            V2_Set(from, hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY]);
+            V2_Set(to,   hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
+
             rsegs[SEG_TOP] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_TOP], hEdge, SEG_TOP,
-                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+                from, to, bottom, top, texOffset, texScale);
         }
 
     if(isSidedefSectionPotentiallyVisible(HE_FRONTSIDEDEF(hEdge), SEG_MIDDLE))
@@ -2400,8 +2410,13 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp,
         if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
                          &bottom, &top, texOffset, texScale))
         {
+            vec2_t from, to;
+
+            V2_Set(from, hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY]);
+            V2_Set(to,   hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
+
             rsegs[SEG_MIDDLE] = RendSeg_staticConstructFromHEdgeSection(&temp[SEG_MIDDLE], hEdge, SEG_MIDDLE,
-                &hEdge->HE_v1->v, &hEdge->HE_v2->v, bottom, top, texOffset, texScale);
+                from, to, bottom, top, texOffset, texScale);
         }
     }
 }
@@ -2714,8 +2729,8 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
             if(solid && clipHEdges)
             {
-                C_AddViewRelSeg(hEdge->HE_v1pos[VX], hEdge->HE_v1pos[VY],
-                                hEdge->HE_v2pos[VX], hEdge->HE_v2pos[VY]);
+                C_AddViewRelSeg(hEdge->HE_v1->pos[VX], hEdge->HE_v1->pos[VY],
+                                hEdge->HE_v2->pos[VX], hEdge->HE_v2->pos[VY]);
             }
         } while((hEdge = hEdge->next) != subsector->face->hEdge);
     }
@@ -2732,7 +2747,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
             linedef_t* line = seg->lineDef;
 
             // Front facing?
-            if(!(R_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
+            if(!(R_FacingViewerDot(line->L_v1, line->L_v2) < 0))
             {
                 boolean solid;
 
@@ -2740,8 +2755,8 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
                 if((solid = Rend_RenderPolyobjSeg(subsector, seg)))
                 {
-                    C_AddViewRelSeg(line->L_v1pos[VX], line->L_v1pos[VY],
-                                    line->L_v2pos[VX], line->L_v2pos[VY]);
+                    C_AddViewRelSeg(line->L_v1->pos[VX], line->L_v1->pos[VY],
+                                    line->L_v2->pos[VX], line->L_v2->pos[VY]);
                 }
             }
         }
@@ -2764,9 +2779,12 @@ static void Rend_RenderSubSector(subsector_t* subsector)
         }
         else
         {
-            // We don't render planes for unclosed sectors when the polys would
-            // be added to the skymask (a DOOM.EXE renderer hack).
-            if(sect->flags & SECF_UNCLOSED)
+            /**
+             * @note Emulate DOOM.exe renderer, map geometry construct:
+             * Do not render planes for subsectors not enclosed by their sector
+             * boundary if they would be added to the skymask.
+             */
+            if(subsector->sector->flags & SECF_UNCLOSED)
                 return;
 
             if(plane->type != PLN_MID)
@@ -3038,8 +3056,8 @@ void Rend_RenderNormals(gamemap_t* map)
         if(!seg->sideDef || !((subsector_t*) hEdge->face->data)->sector)
             continue;
 
-        x = hEdge->HE_v1pos[VX] + (hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX]) / 2;
-        y = hEdge->HE_v1pos[VY] + (hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]) / 2;
+        x = hEdge->HE_v1->pos[VX] + (hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX]) / 2;
+        y = hEdge->HE_v1->pos[VY] + (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / 2;
 
         if(!backSeg)
         {
@@ -3121,20 +3139,20 @@ void Rend_RenderNormals(gamemap_t* map)
 
 static void getVertexPlaneMinMax(const vertex_t* vtx, float* min, float* max)
 {
-    const lineowner_t*  vo, *base;
+    const lineowner_t* vo, *base;
 
     if(!vtx || (!min && !max))
         return; // Wha?
 
-    vo = base = vtx->lineOwners;
+    vo = base = ((mvertex_t*) vtx->data)->lineOwners;
 
     do
     {
-        const linedef_t*    li = vo->lineDef;
+        const linedef_t* li = vo->lineDef;
 
         if(LINE_FRONTSIDE(li))
         {
-            const sector_t*     sec = LINE_FRONTSECTOR(li);
+            const sector_t* sec = LINE_FRONTSECTOR(li);
 
             if(min && sec->SP_floorvisheight < *min)
                 *min = sec->SP_floorvisheight;
@@ -3145,7 +3163,7 @@ static void getVertexPlaneMinMax(const vertex_t* vtx, float* min, float* max)
 
         if(LINE_BACKSIDE(li))
         {
-            const sector_t*     sec = LINE_BACKSECTOR(li);
+            const sector_t* sec = LINE_BACKSECTOR(li);
 
             if(min && sec->SP_floorvisheight < *min)
                 *min = sec->SP_floorvisheight;
@@ -3162,7 +3180,7 @@ static void drawVertexPoint(const vertex_t* vtx, float z, float alpha)
 {
     glBegin(GL_POINTS);
         glColor4f(.7f, .7f, .2f, alpha * 2);
-        glVertex3f(vtx->V_pos[VX], z, vtx->V_pos[VY]);
+        glVertex3f(vtx->pos[VX], z, vtx->pos[VY]);
     glEnd();
 }
 
@@ -3171,18 +3189,18 @@ static void drawVertexBar(const vertex_t* vtx, float bottom, float top,
 {
 #define EXTEND_DIST     64
 
-    static const float  black[4] = { 0, 0, 0, 0 };
+    static const float black[4] = { 0, 0, 0, 0 };
 
     glBegin(GL_LINES);
         glColor4fv(black);
-        glVertex3f(vtx->V_pos[VX], bottom - EXTEND_DIST, vtx->V_pos[VY]);
+        glVertex3f(vtx->pos[VX], bottom - EXTEND_DIST, vtx->pos[VY]);
         glColor4f(1, 1, 1, alpha);
-        glVertex3f(vtx->V_pos[VX], bottom, vtx->V_pos[VY]);
-        glVertex3f(vtx->V_pos[VX], bottom, vtx->V_pos[VY]);
-        glVertex3f(vtx->V_pos[VX], top, vtx->V_pos[VY]);
-        glVertex3f(vtx->V_pos[VX], top, vtx->V_pos[VY]);
+        glVertex3f(vtx->pos[VX], bottom, vtx->pos[VY]);
+        glVertex3f(vtx->pos[VX], bottom, vtx->pos[VY]);
+        glVertex3f(vtx->pos[VX], top, vtx->pos[VY]);
+        glVertex3f(vtx->pos[VX], top, vtx->pos[VY]);
         glColor4fv(black);
-        glVertex3f(vtx->V_pos[VX], top + EXTEND_DIST, vtx->V_pos[VY]);
+        glVertex3f(vtx->pos[VX], top + EXTEND_DIST, vtx->pos[VY]);
     glEnd();
 
 #undef EXTEND_DIST
@@ -3195,7 +3213,7 @@ static void drawVertexIndex(vertex_t* vtx, float z, float scale,
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glTranslatef(vtx->V_pos[VX], z, vtx->V_pos[VY]);
+    glTranslatef(vtx->pos[VX], z, vtx->pos[VY]);
     glRotatef(-vang + 180, 0, 1, 0);
     glRotatef(vpitch, 1, 0, 0);
     glScalef(-scale, -scale, 1);
@@ -3215,7 +3233,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
     polyobj_t* po = context;
     subsector_t* subsector = ((dmuobjrecord_t*) po->subsector)->obj;
     float dist2D =
-        M_ApproxDistancef(vx - vtx->V_pos[VX], vz - vtx->V_pos[VY]);
+        M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
 
     if(dist2D < MAX_VERTEX_POINT_DIST)
     {
@@ -3245,8 +3263,8 @@ static boolean drawVertex1(linedef_t* li, void* context)
         eye[VY] = vz;
         eye[VZ] = vy;
 
-        pos[VX] = vtx->V_pos[VX];
-        pos[VY] = vtx->V_pos[VY];
+        pos[VX] = vtx->pos[VX];
+        pos[VY] = vtx->pos[VY];
         pos[VZ] = subsector->sector->SP_floorvisheight;
 
         dist3D = M_Distance(pos, eye);
@@ -3289,15 +3307,18 @@ void Rend_Vertexes(gamemap_t* map)
         for(i = 0; i < map->numVertexes; ++i)
         {
             vertex_t* vtx = map->vertexes[i];
+            mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float alpha;
 
-            if(!vtx->lineOwners)
+            if(!mvtx)
+                continue;
+            if(!mvtx->lineOwners)
                 continue; // Not a linedef vertex.
-            if(vtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
+            if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
                 continue; // A polyobj linedef vertex.
 
-            alpha = 1 - M_ApproxDistancef(vx - vtx->V_pos[VX],
-                                          vz - vtx->V_pos[VY]) / MAX_VERTEX_POINT_DIST;
+            alpha = 1 - M_ApproxDistancef(vx - vtx->pos[VX],
+                                          vz - vtx->pos[VY]) / MAX_VERTEX_POINT_DIST;
             alpha = MIN_OF(alpha, .15f);
 
             if(alpha > 0)
@@ -3324,14 +3345,17 @@ void Rend_Vertexes(gamemap_t* map)
     for(i = 0; i < map->numVertexes; ++i)
     {
         vertex_t* vtx = map->vertexes[i];
+        mvertex_t* mvtx = (mvertex_t*) vtx->data;
         float dist;
 
-        if(!vtx->lineOwners)
+        if(!mvtx)
+            continue;
+        if(!mvtx->lineOwners)
             continue; // Not a linedef vertex.
-        if(vtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
+        if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
             continue; // A polyobj linedef vertex.
 
-        dist = M_ApproxDistancef(vx - vtx->V_pos[VX], vz - vtx->V_pos[VY]);
+        dist = M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
 
         if(dist < MAX_VERTEX_POINT_DIST)
         {
@@ -3357,15 +3381,17 @@ void Rend_Vertexes(gamemap_t* map)
         for(i = 0; i < map->numVertexes; ++i)
         {
             vertex_t* vtx = map->vertexes[i];
+            mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float pos[3], dist;
 
-            if(!vtx->lineOwners)
+            if(!mvtx)
+            if(!mvtx->lineOwners)
                 continue; // Not a linedef vertex.
-            if(vtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
+            if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
                 continue; // A polyobj linedef vertex.
 
-            pos[VX] = vtx->V_pos[VX];
-            pos[VY] = vtx->V_pos[VY];
+            pos[VX] = vtx->pos[VX];
+            pos[VY] = vtx->pos[VY];
             pos[VZ] = DDMAXFLOAT;
             getVertexPlaneMinMax(vtx, &pos[VZ], NULL);
 

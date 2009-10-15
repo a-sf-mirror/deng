@@ -24,10 +24,10 @@
 #ifndef DOOMSDAY_HALFEDGEDS_H
 #define DOOMSDAY_HALFEDGEDS_H
 
-typedef struct face_s {
-    struct hedge_s*     hEdge; // First half-edge of this face.
-    void*               data;
-} face_t;
+typedef struct vertex_s {
+    double          pos[2]; // @todo replace with a fixed-precision representation?
+    void*           data;
+} vertex_t;
 
 typedef struct hedge_s {
     struct vertex_s* vertex;
@@ -38,7 +38,15 @@ typedef struct hedge_s {
     void*           data;
 } hedge_t;
 
+typedef struct face_s {
+    hedge_t*        hEdge; // First half-edge of this face.
+    void*           data;
+} face_t;
+
 typedef struct {
+    uint            numVertices;
+    vertex_t**      vertices;
+
     uint            numHEdges;
     hedge_t**       hEdges;
 

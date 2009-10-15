@@ -310,16 +310,15 @@ linedef_t* R_GetLineForSide(const sidedef_t* sideDef)
  *
  * @return              @c true, if the point is inside the sector.
  */
-boolean R_IsPointInSector(const float x, const float y,
-                          const sector_t *sector)
+boolean R_IsPointInSector(const float x, const float y, const sector_t* sector)
 {
-    uint                i;
-    boolean             isOdd = false;
+    uint i;
+    boolean isOdd = false;
 
     for(i = 0; i < sector->lineDefCount; ++i)
     {
-        linedef_t*          line = sector->lineDefs[i];
-        vertex_t*           vtx[2];
+        linedef_t* line = sector->lineDefs[i];
+        vertex_t* vtx[2];
 
         // Skip lines that aren't sector boundaries.
         if(LINE_SELFREF(line))
@@ -328,12 +327,12 @@ boolean R_IsPointInSector(const float x, const float y,
         vtx[0] = line->L_v1;
         vtx[1] = line->L_v2;
         // It shouldn't matter whether the line faces inward or outward.
-        if((vtx[0]->V_pos[VY] < y && vtx[1]->V_pos[VY] >= y) ||
-           (vtx[1]->V_pos[VY] < y && vtx[0]->V_pos[VY] >= y))
+        if((vtx[0]->pos[VY] < y && vtx[1]->pos[VY] >= y) ||
+           (vtx[1]->pos[VY] < y && vtx[0]->pos[VY] >= y))
         {
-            if(vtx[0]->V_pos[VX] +
-               (((y - vtx[0]->V_pos[VY]) / (vtx[1]->V_pos[VY] - vtx[0]->V_pos[VY])) *
-                (vtx[1]->V_pos[VX] - vtx[0]->V_pos[VX])) < x)
+            if(vtx[0]->pos[VX] +
+               (((y - vtx[0]->pos[VY]) / (vtx[1]->pos[VY] - vtx[0]->pos[VY])) *
+                (vtx[1]->pos[VX] - vtx[0]->pos[VX])) < x)
             {
                 // Toggle oddness.
                 isOdd = !isOdd;
@@ -362,7 +361,7 @@ boolean R_IsPointInSector2(const float x, const float y,
                            const sector_t* sector)
 {
     const subsector_t* subsector = R_PointInSubSector(x, y);
-    fvertex_t* vi, *vj;
+    vertex_t* vi, *vj;
     hedge_t* hEdge;
 
     if(subsector->sector != sector)
@@ -375,8 +374,8 @@ boolean R_IsPointInSector2(const float x, const float y,
     {
         do
         {
-            vi = &hEdge->HE_v1->v;
-            vj = &hEdge->next->HE_v1->v;
+            vi = hEdge->HE_v1;
+            vj = hEdge->next->HE_v1;
 
             if(((vi->pos[VY] - y) * (vj->pos[VX] - vi->pos[VX]) -
                 (vi->pos[VX] - x) * (vj->pos[VY] - vi->pos[VY])) < 0)

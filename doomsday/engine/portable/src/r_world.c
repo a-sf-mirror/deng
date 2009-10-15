@@ -1919,7 +1919,7 @@ void R_PickSubsectorFanBase(subsector_t* subsector)
     {
         uint baseIDX;
         hedge_t* hEdge;
-        fvertex_t* a, *b;
+        vec2_t basepos, apos, bpos;
 
         baseIDX = 0;
         hEdge = subsector->face->hEdge;
@@ -1930,16 +1930,16 @@ void R_PickSubsectorFanBase(subsector_t* subsector)
 
             i = 0;
             base = hEdge;
+            V2_Set(basepos, base->HE_v1->pos[VX], base->HE_v1->pos[VY]);
             hEdge2 = subsector->face->hEdge;
             do
             {
                 if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
                 {
-                    a = &hEdge2->HE_v1->v;
-                    b = &hEdge2->HE_v2->v;
+                    V2_Set(apos, hEdge2->HE_v1->pos[VX], hEdge2->HE_v1->pos[VY]);
+                    V2_Set(bpos, hEdge2->HE_v2->pos[VX], hEdge2->HE_v2->pos[VY]);
 
-                    if(TRIFAN_LIMIT >=
-                       M_TriangleArea(base->HE_v1pos, a->pos, b->pos))
+                    if(TRIFAN_LIMIT >= M_TriangleArea(basepos, apos, bpos))
                     {
                         base = NULL;
                     }
@@ -2333,23 +2333,23 @@ boolean R_SideDefIsSoftSurface(sidedef_t* sideDef, segsection_t section)
 
 float R_ApplySoftSurfaceDeltaToAlpha(float bottom, float top, sidedef_t* sideDef, float alpha)
 {
-    mobj_t*             mo = viewPlayer->shared.mo;
-    linedef_t*          lineDef = sideDef->lineDef;
+    mobj_t* mo = viewPlayer->shared.mo;
+    linedef_t* lineDef = sideDef->lineDef;
 
     if(viewZ > bottom && viewZ < top)
     {
-        float               pos, result[2];
+        float pos, result[2];
 
         {
-        float               delta[2];
+        vec2_t vpos, delta;
         V2_Set(delta, lineDef->dX, lineDef->dY);
-        pos = M_ProjectPointOnLine(mo->pos, lineDef->L_v1pos, delta, 0, result);
+        V2_Set(vpos, lineDef->L_v1->pos[VX], lineDef->L_v1->pos[VY]);
+        pos = M_ProjectPointOnLine(mo->pos, vpos, delta, 0, result);
         }
 
         if(pos > 0 && pos < 1)
         {
-            float               delta[2], distance,
-                                minDistance = mo->radius * .8f;
+            float delta[2], distance, minDistance = mo->radius * .8f;
 
             V2_Subtract(delta, mo->pos, result);
 

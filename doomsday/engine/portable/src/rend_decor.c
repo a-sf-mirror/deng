@@ -817,13 +817,13 @@ static void updateSideSectionDecorations(surfacelist_t* list, sidedef_t* side,
         if(sid)
         {
             // Flip vertices, this is the backside.
-            V3_Set(v1, line->L_v2pos[VX], line->L_v2pos[VY], top);
-            V3_Set(v2, line->L_v1pos[VX], line->L_v1pos[VY], bottom);
+            V3_Set(v1, line->L_v2->pos[VX], line->L_v2->pos[VY], top);
+            V3_Set(v2, line->L_v1->pos[VX], line->L_v1->pos[VY], bottom);
         }
         else
         {
-            V3_Set(v1, line->L_v1pos[VX], line->L_v1pos[VY], top);
-            V3_Set(v2, line->L_v2pos[VX], line->L_v2pos[VY], bottom);
+            V3_Set(v1, line->L_v1->pos[VX], line->L_v1->pos[VY], top);
+            V3_Set(v2, line->L_v2->pos[VX], line->L_v2->pos[VY], bottom);
         }
     }
 

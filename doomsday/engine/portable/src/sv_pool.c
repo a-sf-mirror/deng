@@ -223,9 +223,9 @@ void Sv_InitPools(void)
 
             vtx = sideOwners[i]->L_v1;
             sideOrigins[i].pos[VX] =
-                vtx->V_pos[VX] + sideOwners[i]->dX / 2;
+                vtx->pos[VX] + sideOwners[i]->dX / 2;
             sideOrigins[i].pos[VY] =
-                vtx->V_pos[VY] + sideOwners[i]->dY / 2;
+                vtx->pos[VY] + sideOwners[i]->dY / 2;
         }
 
         // Store the current state of the world into both the registers.

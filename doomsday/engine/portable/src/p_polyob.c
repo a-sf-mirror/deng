@@ -136,17 +136,17 @@ static void updateLineDefAABB(linedef_t* line)
 {
     byte                edge;
 
-    edge = (line->L_v1pos[VX] < line->L_v2pos[VX]);
-    line->bBox[BOXLEFT]  = LINE_VERTEX(line, edge^1)->v.pos[VX];
-    line->bBox[BOXRIGHT] = LINE_VERTEX(line, edge)->v.pos[VX];
+    edge = (line->L_v1->pos[VX] < line->L_v2->pos[VX]);
+    line->bBox[BOXLEFT]  = LINE_VERTEX(line, edge^1)->pos[VX];
+    line->bBox[BOXRIGHT] = LINE_VERTEX(line, edge)->pos[VX];
 
-    edge = (line->L_v1pos[VY] < line->L_v2pos[VY]);
-    line->bBox[BOXBOTTOM] = LINE_VERTEX(line, edge^1)->v.pos[VY];
-    line->bBox[BOXTOP]    = LINE_VERTEX(line, edge)->v.pos[VY];
+    edge = (line->L_v1->pos[VY] < line->L_v2->pos[VY]);
+    line->bBox[BOXBOTTOM] = LINE_VERTEX(line, edge^1)->pos[VY];
+    line->bBox[BOXTOP]    = LINE_VERTEX(line, edge)->pos[VY];
 
     // Update the line's slopetype.
-    line->dX = line->L_v2pos[VX] - line->L_v1pos[VX];
-    line->dY = line->L_v2pos[VY] - line->L_v1pos[VY];
+    line->dX = line->L_v2->pos[VX] - line->L_v1->pos[VX];
+    line->dY = line->L_v2->pos[VY] - line->L_v1->pos[VY];
     if(!line->dX)
     {
         line->slopeType = ST_VERTICAL;
@@ -173,18 +173,18 @@ static void updateLineDefAABB(linedef_t* line)
  */
 void P_PolyobjUpdateBBox(polyobj_t* po)
 {
-    uint                i;
-    vec2_t              point;
-    linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[0])->obj;
+    uint i;
+    vec2_t point;
+    linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[0])->obj;
 
-    V2_Set(point, line->L_v1pos[VX], line->L_v1pos[VY]);
+    V2_Set(point, line->L_v1->pos[VX], line->L_v1->pos[VY]);
     V2_InitBox(po->box, point);
 
     for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
-        V2_Set(point, line->L_v1pos[VX], line->L_v1pos[VY]);
+        V2_Set(point, line->L_v1->pos[VX], line->L_v1->pos[VY]);
         V2_AddToBox(po->box, point);
     }
 }
@@ -232,12 +232,12 @@ void P_MapInitPolyobjs(gamemap_t* map)
             side->SW_middleinflags |= SUIF_NO_RADIO;
             side->SW_bottominflags |= SUIF_NO_RADIO;
 
-            avg.pos[VX] += line->L_v1pos[VX];
-            avg.pos[VY] += line->L_v1pos[VY];
+            avg.pos[VX] += line->L_v1->pos[VX];
+            avg.pos[VY] += line->L_v1->pos[VY];
 
             // Set the surface normal.
-            surface->normal[VY] = (line->L_v1pos[VX] - line->L_v2pos[VX]) / line->length;
-            surface->normal[VX] = (line->L_v2pos[VY] - line->L_v1pos[VY]) / line->length;
+            surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
+            surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
             surface->normal[VZ] = 0;
 
             // All surfaces of a sidedef have the same normal.
@@ -270,9 +270,9 @@ void P_MapInitPolyobjs(gamemap_t* map)
 
 boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 {
-    uint                count;
-    fvertex_t*          prevPts;
-    boolean             blocked;
+    uint count;
+    fvertex_t* prevPts;
+    boolean blocked;
 
     if(!po)
         return false;
@@ -285,7 +285,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     validCount++;
     for(count = 0; count < po->numLineDefs; ++count, prevPts++)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
         if(line->validCount != validCount)
         {
@@ -296,8 +296,8 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
             line->validCount = validCount;
         }
 
-        line->L_v1pos[VX] += x;
-        line->L_v1pos[VY] += y;
+        line->L_v1->pos[VX] += x;
+        line->L_v1->pos[VY] += y;
 
         (*prevPts).pos[VX] += x; // Previous points are unique for each linedef.
         (*prevPts).pos[VY] += y;
@@ -305,7 +305,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
     for(count = 0; count < po->numLineDefs; ++count)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
         if(CheckMobjBlocking(line, po))
         {
@@ -320,7 +320,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
             if(line->validCount != validCount)
             {
@@ -331,8 +331,8 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
                 line->validCount = validCount;
             }
 
-            line->L_v1pos[VX] -= x;
-            line->L_v1pos[VY] -= y;
+            line->L_v1->pos[VX] -= x;
+            line->L_v1->pos[VY] -= y;
 
             (*prevPts).pos[VX] -= x;
             (*prevPts).pos[VY] -= y;
@@ -355,7 +355,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 static void rotatePoint(int an, float* x, float* y, float startSpotX,
                         float startSpotY)
 {
-    float               trx, try, gxt, gyt;
+    float trx, try, gxt, gyt;
 
     trx = *x;
     try = *y;
@@ -371,11 +371,11 @@ static void rotatePoint(int an, float* x, float* y, float startSpotX,
 
 boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 {
-    int                 an;
-    uint                count;
-    fvertex_t*          originalPts;
-    fvertex_t*          prevPts;
-    boolean             blocked;
+    int an;
+    uint count;
+    fvertex_t* originalPts;
+    fvertex_t* prevPts;
+    boolean blocked;
 
     if(!po)
         return false;
@@ -390,21 +390,24 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     for(count = 0; count < po->numLineDefs;
         ++count, originalPts++, prevPts++)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
-        sidedef_t*          side = LINE_FRONTSIDE(line);
-        surface_t*          surface = &side->SW_topsurface;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        sidedef_t* side = LINE_FRONTSIDE(line);
+        surface_t* surface = &side->SW_topsurface;
+        vec2_t pos;
 
-        prevPts->pos[VX] = line->L_v1pos[VX];
-        prevPts->pos[VY] = line->L_v1pos[VY];
-        line->L_v1pos[VX] = originalPts->pos[VX];
-        line->L_v1pos[VY] = originalPts->pos[VY];
+        prevPts->pos[VX] = line->L_v1->pos[VX];
+        prevPts->pos[VY] = line->L_v1->pos[VY];
+        line->L_v1->pos[VX] = originalPts->pos[VX];
+        line->L_v1->pos[VY] = originalPts->pos[VY];
 
-        rotatePoint(an, &line->L_v1pos[VX], &line->L_v1pos[VY],
-                    po->pos[VX], po->pos[VY]);
+        V2_Set(pos, line->L_v1->pos[VX], line->L_v1->pos[VY]);
+        rotatePoint(an, &pos[VX], &pos[VY], po->pos[VX], po->pos[VY]);
+        line->L_v1->pos[VX] = pos[VX];
+        line->L_v1->pos[VY] = pos[VY];
 
         // Now update the surface normal.
-        surface->normal[VY] = (line->L_v1pos[VX] - line->L_v2pos[VX]) / line->length;
-        surface->normal[VX] = (line->L_v2pos[VY] - line->L_v1pos[VY]) / line->length;
+        surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
+        surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
         surface->normal[VZ] = 0;
 
         // All surfaces of a sidedef have the same normal.
@@ -417,7 +420,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
     for(count = 0; count < po->numLineDefs; ++count)
     {
-        linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
         if(CheckMobjBlocking(line, po))
         {
@@ -438,17 +441,17 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         prevPts = po->prevPts;
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
-            line->L_v1pos[VX] = prevPts->pos[VX];
-            line->L_v1pos[VY] = prevPts->pos[VY];
+            line->L_v1->pos[VX] = prevPts->pos[VX];
+            line->L_v1->pos[VY] = prevPts->pos[VY];
         }
 
         validCount++;
 
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t*          line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
 
             if(line->validCount != validCount)
             {
@@ -470,7 +473,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
 void P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link)
 {
-    linkpolyobj_t*      tempLink;
+    linkpolyobj_t* tempLink;
 
     if(!(*link))
     {   // Create a new link at the current block cell.
@@ -496,8 +499,7 @@ void P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link)
     }
     else
     {
-        tempLink->next =
-            Z_Malloc(sizeof(linkpolyobj_t), PU_MAP, 0);
+        tempLink->next = Z_Malloc(sizeof(linkpolyobj_t), PU_MAP, 0);
         tempLink->next->next = NULL;
         tempLink->next->prev = tempLink;
         tempLink->next->polyobj = po;
@@ -506,7 +508,7 @@ void P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link)
 
 void P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** list)
 {
-    linkpolyobj_t*      iter = *list;
+    linkpolyobj_t* iter = *list;
 
     while(iter != NULL && iter->polyobj != po)
     {
@@ -558,7 +560,7 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
     if((mo->ddFlags & DDMF_SOLID) ||
        (mo->dPlayer && !(mo->dPlayer->flags & DDPF_CAMERA)))
     {
-        float               tmbbox[4];
+        float tmbbox[4];
         ptrmobjblockingparams_t* params = data;
 
         tmbbox[BOXTOP]    = mo->pos[VY] + mo->radius;

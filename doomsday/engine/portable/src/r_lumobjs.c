@@ -867,14 +867,15 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
             linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
 
             // Ignore lines facing the wrong way.
-            if(!(R_FacingViewerDot(line->L_v1pos, line->L_v2pos) < 0))
+            if(!(R_FacingViewerDot(line->L_v1, line->L_v2) < 0))
             {
-                vec2_t source;
+                vec2_t source, v1pos, v2pos;
 
                 V2_Set(source, lum->pos[VX], lum->pos[VY]);
+                V2_Set(v1pos, line->L_v1->pos[VX], line->L_v1->pos[VY]);
+                V2_Set(v2pos, line->L_v2->pos[VX], line->L_v2->pos[VY]);
 
-                if(V2_Intercept2(source, eye, line->L_v1pos,
-                                 line->L_v2pos, NULL, NULL, NULL))
+                if(V2_Intercept2(source, eye, v1pos, v2pos, NULL, NULL, NULL))
                 {
                     luminousClipped[lumIdx] = 1;
                     break;

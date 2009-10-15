@@ -52,8 +52,11 @@
 
 // CODE --------------------------------------------------------------------
 
-static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, segsection_t section, float alpha,
-                                         material_t** materialA, float* materialBlendInter, material_t** materialB)
+static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef,
+                                         segsection_t section, float alpha,
+                                         material_t** materialA,
+                                         float* materialBlendInter,
+                                         material_t** materialB)
 {
     int                 texMode = 0;
     surface_t*          surface = &sideDef->SW_surface(section);
@@ -154,14 +157,14 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef, se
     rseg->blendMode = blendMode;
 }
 
-static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, float top,
-                  pvec3_t normal)
+static void init(rendseg_t* rseg, float from[2], float to[2], float bottom, float top,
+                 pvec3_t normal)
 {
     rseg->flags = 0;
     rseg->blendMode = BM_NORMAL;
 
-    rseg->from = from;
-    rseg->to = to;
+    V2_Copy(rseg->from, from);
+    V2_Copy(rseg->to, to);
     rseg->bottom = bottom;
     rseg->top = top;
 
@@ -169,8 +172,8 @@ static void init(rendseg_t* rseg, fvertex_t* from, fvertex_t* to, float bottom, 
 
     rseg->normal = normal;
 
-    V3_Set(rseg->texQuadTopLeft, from->pos[VX], from->pos[VY], top);
-    V3_Set(rseg->texQuadBottomRight, to->pos[VX], to->pos[VY], bottom);
+    V3_Set(rseg->texQuadTopLeft, from[VX], from[VY], top);
+    V3_Set(rseg->texQuadBottomRight, to[VX], to[VY], bottom);
 
     rseg->texQuadWidth = P_AccurateDistance(
         rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
@@ -194,7 +197,7 @@ static void projectLumobjs(rendseg_t* rseg, subsector_t* subsector, boolean sort
                                           sortBrightest? DLF_SORT_LUMADSC : 0);
 }
 
-static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
+static void constructor(rendseg_t* rseg, float from[2], float to[2],
                         float bottom, float top,
                         pvec3_t normal, subsector_t* subsector, sidedef_t* frontSideDef, segsection_t section,
                         float sectorLightLevel, const float* sectorLightColor,
@@ -248,17 +251,21 @@ static void constructor(rendseg_t* rseg, fvertex_t* from, fvertex_t* to,
 
 /**
  * RendSeg:: class static constructor helper.
+ *
+ * @todo Replace @a from and @a to arguments with a parametric representation.
  */
-rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge, segsection_t section,
-                                   fvertex_t* from, fvertex_t* to, float bottom, float top,
-                                   const float materialOffset[2], const float materialScale[2])
+rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge,
+                                                   segsection_t section,
+                                                   float from[2], float to[2], float bottom, float top,
+                                                   const float materialOffset[2],
+                                                   const float materialScale[2])
 {
-    rendseg_t*          rseg = newRendSeg; // allocate.
+    rendseg_t* rseg = newRendSeg; // allocate.
 
-    seg_t*              seg = (seg_t*) hEdge->data;
-    const surface_t*    surface = &HE_FRONTSIDEDEF(hEdge)->SW_surface(section);
-    float               alpha, sectorLightLevel, surfaceLightLevelDelta;
-    const float*        sectorLightColor, *surfaceColorTint, *surfaceColorTint2;
+    seg_t* seg = (seg_t*) hEdge->data;
+    const surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_surface(section);
+    float alpha, sectorLightLevel, surfaceLightLevelDelta;
+    const float* sectorLightColor, *surfaceColorTint, *surfaceColorTint2;
 
     if(surface->material && (surface->material->flags & MATF_NO_DRAW))
         return NULL; // @todo return null_object
@@ -306,9 +313,11 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
 
 /**
  * RendSeg:: class static constructor helper.
+ *
+ * @todo Replace @a from and @a to arguments with a parametric representation.
  */
 rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
-                                     fvertex_t* from, fvertex_t* to, float bottom, float top,
+                                     float from[2], float to[2], float bottom, float top,
                                      subsector_t* subsector, poseg_t* poSeg)
 {
     rendseg_t* rseg = newRendSeg; // allocate.

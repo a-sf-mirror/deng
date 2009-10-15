@@ -109,7 +109,7 @@ void            SB_SourceSetColor(source_t* src, float* rgb);
 void SB_RendSeg(struct gamemap_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
                 const struct rvertex_s* rvertices, size_t numVertices,
                 const vectorcomp_t* normal, float sectorLightLevel,
-                const struct fvertex_s* from, const struct fvertex_s* to);
+                const float from[2], const float to[2]);
 
 void SB_RendPlane(struct gamemap_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
                   const struct rvertex_s* rvertices, size_t numVertices,

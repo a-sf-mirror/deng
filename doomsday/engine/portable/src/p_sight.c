@@ -69,7 +69,7 @@ typedef struct losdata_s {
 static boolean interceptLineDef(const linedef_t* li, losdata_t* los,
                                 divline_t* dl)
 {
-    divline_t           localDL, *dlPtr;
+    divline_t localDL, *dlPtr;
 
     // Try a quick, bounding-box rejection.
     if(li->bBox[BOXLEFT]   > los->bBox[BOXRIGHT] ||
@@ -78,10 +78,8 @@ static boolean interceptLineDef(const linedef_t* li, losdata_t* los,
        li->bBox[BOXTOP]    < los->bBox[BOXBOTTOM])
         return false;
 
-    if(P_PointOnDivlineSide(li->L_v1pos[VX], li->L_v1pos[VY],
-                            &los->trace) ==
-       P_PointOnDivlineSide(li->L_v2pos[VX], li->L_v2pos[VY],
-                            &los->trace))
+    if(P_PointOnDivlineSide(li->L_v1->pos[VX], li->L_v1->pos[VY], &los->trace) ==
+       P_PointOnDivlineSide(li->L_v2->pos[VX], li->L_v2->pos[VY], &los->trace))
         return false; // Not crossed.
 
     if(dl)

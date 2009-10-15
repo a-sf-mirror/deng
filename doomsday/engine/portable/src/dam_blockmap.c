@@ -125,7 +125,7 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     for(i = 0; i < *numVertexes; ++i)
     {
         vtx = (*vertexes)[i];
-        V2_Set(point, vtx->V_pos[VX], vtx->V_pos[VY]);
+        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
         if(!i)
             V2_InitBox(bounds, point);
         else
@@ -168,14 +168,14 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
     // For each linedef in the wad, determine all blockmap blocks it touches
     // and add the linedef number to the blocklists for those blocks.
     {
-    int                 xorg = (int) bounds[0][VX];
-    int                 yorg = (int) bounds[0][VY];
-    int                 v1[2], v2[2];
-    int                 dx, dy;
-    int                 vert, horiz;
-    boolean             slopePos, slopeNeg;
-    int                 bx, by;
-    int                 minx, maxx, miny, maxy;
+    int xorg = (int) bounds[0][VX];
+    int yorg = (int) bounds[0][VY];
+    int v1[2], v2[2];
+    int dx, dy;
+    int vert, horiz;
+    boolean slopePos, slopeNeg;
+    int bx, by;
+    int minx, maxx, miny, maxy;
 
     for(i = 0; i < *numLineDefs; ++i)
     {
@@ -184,10 +184,10 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
         if(line->inFlags & LF_POLYOBJ)
             continue; // Polyobj lines don't get into the blockmap.
 
-        v1[VX] = (int) line->buildData.v[0]->V_pos[VX];
-        v1[VY] = (int) line->buildData.v[0]->V_pos[VY];
-        v2[VX] = (int) line->buildData.v[1]->V_pos[VX];
-        v2[VY] = (int) line->buildData.v[1]->V_pos[VY];
+        v1[VX] = (int) line->buildData.v[0]->pos[VX];
+        v1[VY] = (int) line->buildData.v[0]->pos[VY];
+        v2[VX] = (int) line->buildData.v[1]->pos[VX];
+        v2[VY] = (int) line->buildData.v[1]->pos[VY];
         dx = v2[VX] - v1[VX];
         dy = v2[VY] - v1[VY];
         vert = !dx;

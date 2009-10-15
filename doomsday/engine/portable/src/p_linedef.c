@@ -53,7 +53,7 @@
 float LineDef_GetLightLevelDelta(const linedef_t* l)
 {
     return (1.0f / 255) *
-        ((l->L_v2pos[VY] - l->L_v1pos[VY]) / l->length * 18);
+        ((l->L_v2->pos[VY] - l->L_v1->pos[VY]) / l->length * 18);
 }
 
 /**

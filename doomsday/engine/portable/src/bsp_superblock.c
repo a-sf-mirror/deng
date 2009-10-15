@@ -845,10 +845,10 @@ Con_Message("BSP_PickPartition: Best has score %d.%02d  (%1.1f,%1.1f) -> "
 #endif*/
         assert(data->lineDef);
 
-        partition->x  = data->lineDef->buildData.v[data->side]->buildData.pos[VX];
-        partition->y  = data->lineDef->buildData.v[data->side]->buildData.pos[VY];
-        partition->dX = data->lineDef->buildData.v[data->side^1]->buildData.pos[VX] - partition->x;
-        partition->dY = data->lineDef->buildData.v[data->side^1]->buildData.pos[VY] - partition->y;
+        partition->x  = data->lineDef->buildData.v[data->side]->pos[VX];
+        partition->y  = data->lineDef->buildData.v[data->side]->pos[VY];
+        partition->dX = data->lineDef->buildData.v[data->side^1]->pos[VX] - partition->x;
+        partition->dY = data->lineDef->buildData.v[data->side^1]->pos[VY] - partition->y;
         partition->lineDef = data->lineDef;
         partition->sourceLine = data->sourceLine;
 
@@ -871,20 +871,20 @@ Con_Message("BSP_PickPartition: No best found!\n");
 
 static void findLimitWorker(superblock_t* block, float* bbox)
 {
-    uint                num;
-    hedge_node_t*       n;
+    uint num;
+    hedge_node_t* n;
 
     for(n = block->hEdges; n; n = n->next)
     {
-        hedge_t*            cur = n->hEdge;
-        double              x1 = cur->vertex->buildData.pos[VX];
-        double              y1 = cur->vertex->buildData.pos[VY];
-        double              x2 = cur->twin->vertex->buildData.pos[VX];
-        double              y2 = cur->twin->vertex->buildData.pos[VY];
-        float               lx = (float) MIN_OF(x1, x2);
-        float               ly = (float) MIN_OF(y1, y2);
-        float               hx = (float) MAX_OF(x1, x2);
-        float               hy = (float) MAX_OF(y1, y2);
+        hedge_t* cur = n->hEdge;
+        double x1 = cur->vertex->pos[VX];
+        double y1 = cur->vertex->pos[VY];
+        double x2 = cur->twin->vertex->pos[VX];
+        double y2 = cur->twin->vertex->pos[VY];
+        float lx = (float) MIN_OF(x1, x2);
+        float ly = (float) MIN_OF(y1, y2);
+        float hx = (float) MAX_OF(x1, x2);
+        float hy = (float) MAX_OF(y1, y2);
 
         if(lx < bbox[BOXLEFT])
             bbox[BOXLEFT] = lx;
@@ -990,8 +990,8 @@ void SuperBlock_PrintHEdges(superblock_t* superblock)
         Con_Message("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
                     (data->lineDef? "NORM" : "MINI"), hEdge,
                     data->sector->buildData.index,
-                    hEdge->vertex->buildData.pos[VX], hEdge->vertex->buildData.pos[VY],
-                    hEdge->twin->vertex->buildData.pos[VX], hEdge->twin->vertex->buildData.pos[VY]);
+                    (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
+                    (float) hEdge->twin->vertex->pos[VX], (float) hEdge->twin->vertex->pos[VY]);
     }
 
     for(num = 0; num < 2; ++num)

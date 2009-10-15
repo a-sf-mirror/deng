@@ -79,13 +79,14 @@ static vertex_t* rootVtx; // Used when sorting vertex line owners.
 
 vertex_t* createVertex(void)
 {
-    vertex_t* vtx = Z_Calloc(sizeof(*vtx), PU_STATIC, 0);
+    vertex_t* vtx = Z_Malloc(sizeof(*vtx), PU_STATIC, 0);
 
     map->vertexes = Z_Realloc(map->vertexes, sizeof(vtx) * (++map->numVertexes + 1), PU_STATIC);
     map->vertexes[map->numVertexes-1] = vtx;
     map->vertexes[map->numVertexes] = NULL;
 
-    vtx->buildData.index = map->numVertexes; // 1-based index, 0 = NIL.
+    vtx->data = Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0);
+    ((mvertex_t*) vtx->data)->index = map->numVertexes; // 1-based index, 0 = NIL.
     return vtx;
 }
 
@@ -183,10 +184,10 @@ static int C_DECL vertexCompare(const void* p1, const void* p2)
     if(a == b)
         return 0;
 
-    if((int) a->buildData.pos[VX] != (int) b->buildData.pos[VX])
-        return (int) a->buildData.pos[VX] - (int) b->buildData.pos[VX];
+    if((int) a->pos[VX] != (int) b->pos[VX])
+        return (int) a->pos[VX] - (int) b->pos[VX];
 
-    return (int) a->buildData.pos[VY] - (int) b->buildData.pos[VY];
+    return (int) a->pos[VY] - (int) b->pos[VY];
 }
 
 void MPE_DetectDuplicateVertices(editmap_t* map)
@@ -207,11 +208,11 @@ void MPE_DetectDuplicateVertices(editmap_t* map)
         // A duplicate?
         if(vertexCompare(hits + i, hits + i + 1) == 0)
         {   // Yes.
-            vertex_t           *a = hits[i];
-            vertex_t           *b = hits[i + 1];
+            vertex_t* a = hits[i];
+            vertex_t* b = hits[i + 1];
 
-            b->buildData.equiv =
-                (a->buildData.equiv ? a->buildData.equiv : a);
+            ((mvertex_t*) b->data)->equiv =
+                (((mvertex_t*) a->data)->equiv ? ((mvertex_t*) a->data)->equiv : a);
         }
     }
 
@@ -228,18 +229,18 @@ static void findEquivalentVertexes(editmap_t* src)
         linedef_t* l = src->lineDefs[i];
 
         // Handle duplicated vertices.
-        while(l->buildData.v[0]->buildData.equiv)
+        while(((mvertex_t*) l->buildData.v[0]->data)->equiv)
         {
-            l->buildData.v[0]->buildData.refCount--;
-            l->buildData.v[0] = l->buildData.v[0]->buildData.equiv;
-            l->buildData.v[0]->buildData.refCount++;
+            ((mvertex_t*) l->buildData.v[0]->data)->refCount--;
+            l->buildData.v[0] = ((mvertex_t*) l->buildData.v[0]->data)->equiv;
+            ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
         }
 
-        while(l->buildData.v[1]->buildData.equiv)
+        while(((mvertex_t*) l->buildData.v[1]->data)->equiv)
         {
-            l->buildData.v[1]->buildData.refCount--;
-            l->buildData.v[1] = l->buildData.v[1]->buildData.equiv;
-            l->buildData.v[1]->buildData.refCount++;
+            ((mvertex_t*) l->buildData.v[1]->data)->refCount--;
+            l->buildData.v[1] = ((mvertex_t*) l->buildData.v[1]->data)->equiv;
+            ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
         }
 
         l->buildData.index = newNum + 1;
@@ -285,19 +286,19 @@ static void pruneVertices(editmap_t* map)
     {
         vertex_t* v = map->vertexes[i];
 
-        if(v->buildData.refCount < 0)
-            Con_Error("Vertex %d ref_count is %d", i, v->buildData.refCount);
+        if(((mvertex_t*) v->data)->refCount < 0)
+            Con_Error("Vertex %d ref_count is %d", i, ((mvertex_t*) v->data)->refCount);
 
-        if(v->buildData.refCount == 0)
+        if(((mvertex_t*) v->data)->refCount == 0)
         {
-            if(v->buildData.equiv == NULL)
+            if(((mvertex_t*) v->data)->equiv == NULL)
                 unused++;
 
             Z_Free(v);
             continue;
         }
 
-        v->buildData.index = newNum + 1;
+        ((mvertex_t*) v->data)->index = newNum + 1;
         map->vertexes[newNum++] = v;
     }
 
@@ -642,9 +643,9 @@ static void buildSectorLineLists(gamemap_t* map)
  */
 static void updateSectorBounds(sector_t* sec)
 {
-    uint                i;
-    float*              bbox;
-    vertex_t*           vtx;
+    uint i;
+    float* bbox;
+    vertex_t* vtx;
 
     if(!sec)
         return;
@@ -664,21 +665,21 @@ static void updateSectorBounds(sector_t* sec)
 
     for(i = 1; i < sec->lineDefCount; ++i)
     {
-        linedef_t*          li = sec->lineDefs[i];
+        linedef_t* li = sec->lineDefs[i];
 
         if(li->inFlags & LF_POLYOBJ)
             continue;
 
         vtx = li->L_v1;
 
-        if(vtx->V_pos[VX] < bbox[BOXLEFT])
-            bbox[BOXLEFT]   = vtx->V_pos[VX];
-        if(vtx->V_pos[VX] > bbox[BOXRIGHT])
-            bbox[BOXRIGHT]  = vtx->V_pos[VX];
-        if(vtx->V_pos[VY] < bbox[BOXBOTTOM])
-            bbox[BOXBOTTOM] = vtx->V_pos[VY];
-        if(vtx->V_pos[VY] > bbox[BOXTOP])
-            bbox[BOXTOP]    = vtx->V_pos[VY];
+        if(vtx->pos[VX] < bbox[BOXLEFT])
+            bbox[BOXLEFT]   = vtx->pos[VX];
+        if(vtx->pos[VX] > bbox[BOXRIGHT])
+            bbox[BOXRIGHT]  = vtx->pos[VX];
+        if(vtx->pos[VY] < bbox[BOXBOTTOM])
+            bbox[BOXBOTTOM] = vtx->pos[VY];
+        if(vtx->pos[VY] > bbox[BOXTOP])
+            bbox[BOXTOP]    = vtx->pos[VY];
     }
 
     // This is very rough estimate of sector area.
@@ -759,13 +760,13 @@ static void finishLineDefs2(gamemap_t* map)
         v[0] = ld->hEdges[0]->HE_v1;
         v[1] = ld->hEdges[1]->HE_v2;
 
-        ld->dX = v[1]->V_pos[VX] - v[0]->V_pos[VX];
-        ld->dY = v[1]->V_pos[VY] - v[0]->V_pos[VY];
+        ld->dX = v[1]->pos[VX] - v[0]->pos[VX];
+        ld->dY = v[1]->pos[VY] - v[0]->pos[VY];
 
         // Calculate the accurate length of each line.
         ld->length = P_AccurateDistance(ld->dX, ld->dY);
-        ld->angle = bamsAtan2((int) (v[1]->V_pos[VY] - v[0]->V_pos[VY]),
-                      (int) (v[1]->V_pos[VX] - v[0]->V_pos[VX])) << FRACBITS;
+        ld->angle = bamsAtan2((int) (v[1]->pos[VY] - v[0]->pos[VY]),
+                              (int) (v[1]->pos[VX] - v[0]->pos[VX])) << FRACBITS;
 
         if(!ld->dX)
             ld->slopeType = ST_VERTICAL;
@@ -779,26 +780,26 @@ static void finishLineDefs2(gamemap_t* map)
                 ld->slopeType = ST_NEGATIVE;
         }
 
-        if(v[0]->V_pos[VX] < v[1]->V_pos[VX])
+        if(v[0]->pos[VX] < v[1]->pos[VX])
         {
-            ld->bBox[BOXLEFT]   = v[0]->V_pos[VX];
-            ld->bBox[BOXRIGHT]  = v[1]->V_pos[VX];
+            ld->bBox[BOXLEFT]   = v[0]->pos[VX];
+            ld->bBox[BOXRIGHT]  = v[1]->pos[VX];
         }
         else
         {
-            ld->bBox[BOXLEFT]   = v[1]->V_pos[VX];
-            ld->bBox[BOXRIGHT]  = v[0]->V_pos[VX];
+            ld->bBox[BOXLEFT]   = v[1]->pos[VX];
+            ld->bBox[BOXRIGHT]  = v[0]->pos[VX];
         }
 
-        if(v[0]->V_pos[VY] < v[1]->V_pos[VY])
+        if(v[0]->pos[VY] < v[1]->pos[VY])
         {
-            ld->bBox[BOXBOTTOM] = v[0]->V_pos[VY];
-            ld->bBox[BOXTOP]    = v[1]->V_pos[VY];
+            ld->bBox[BOXBOTTOM] = v[0]->pos[VY];
+            ld->bBox[BOXTOP]    = v[1]->pos[VY];
         }
         else
         {
-            ld->bBox[BOXBOTTOM] = v[1]->V_pos[VY];
-            ld->bBox[BOXTOP]    = v[0]->V_pos[VY];
+            ld->bBox[BOXBOTTOM] = v[1]->pos[VY];
+            ld->bBox[BOXTOP]    = v[0]->pos[VY];
         }
     }
 }
@@ -832,15 +833,15 @@ static void updateSubsectorMidPoint(subsector_t* subsector)
     // Find the center point. First calculate the bounding box.
     if((hEdge = subsector->face->hEdge))
     {
-        fvertex_t* vtx;
+        vertex_t* vtx;
 
-        vtx = &hEdge->HE_v1->v;
+        vtx = hEdge->HE_v1;
         subsector->bBox[0].pos[VX] = subsector->bBox[1].pos[VX] = subsector->midPoint.pos[VX] = vtx->pos[VX];
         subsector->bBox[0].pos[VY] = subsector->bBox[1].pos[VY] = subsector->midPoint.pos[VY] = vtx->pos[VY];
 
         while((hEdge = hEdge->next) != subsector->face->hEdge)
         {
-            vtx = &hEdge->HE_v1->v;
+            vtx = hEdge->HE_v1;
 
             if(vtx->pos[VX] < subsector->bBox[0].pos[VX])
                 subsector->bBox[0].pos[VX] = vtx->pos[VX];
@@ -884,14 +885,14 @@ static void prepareSubsectors(gamemap_t* map)
  */
 static int C_DECL lineAngleSorter(const void* a, const void* b)
 {
-    uint                i;
-    fixed_t             dx, dy;
-    binangle_t          angles[2];
-    lineowner_t*        own[2];
-    linedef_t*          line;
+    uint i;
+    fixed_t dx, dy;
+    binangle_t angles[2];
+    lineowner_t* own[2];
+    linedef_t* line;
 
-    own[0] = (lineowner_t *)a;
-    own[1] = (lineowner_t *)b;
+    own[0] = (lineowner_t*) a;
+    own[1] = (lineowner_t*) b;
     for(i = 0; i < 2; ++i)
     {
         if(own[i]->LO_prev) // We have a cached result.
@@ -900,13 +901,13 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
         }
         else
         {
-            vertex_t*       otherVtx;
+            vertex_t* otherVtx;
 
             line = own[i]->lineDef;
             otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
 
-            dx = otherVtx->V_pos[VX] - rootVtx->V_pos[VX];
-            dy = otherVtx->V_pos[VY] - rootVtx->V_pos[VY];
+            dx = otherVtx->pos[VX] - rootVtx->pos[VX];
+            dy = otherVtx->pos[VY] - rootVtx->pos[VY];
 
             own[i]->angle = angles[i] = bamsAtan2(-100 *dx, 100 * dy);
 
@@ -923,11 +924,10 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
  *
  * @return              Ptr to the newly merged list.
  */
-static lineowner_t *mergeLineOwners(lineowner_t *left, lineowner_t *right,
-                                    int (C_DECL *compare) (const void *a,
-                                                           const void *b))
+static lineowner_t* mergeLineOwners(lineowner_t* left, lineowner_t* right,
+                                    int (C_DECL *compare) (const void* a, const void* b))
 {
-    lineowner_t         tmp, *np;
+    lineowner_t tmp, *np;
 
     np = &tmp;
     tmp.LO_next = np;
@@ -962,9 +962,9 @@ static lineowner_t *mergeLineOwners(lineowner_t *left, lineowner_t *right,
     return tmp.LO_next;
 }
 
-static lineowner_t *splitLineOwners(lineowner_t *list)
+static lineowner_t* splitLineOwners(lineowner_t* list)
 {
-    lineowner_t        *lista, *listb, *listc;
+    lineowner_t* lista, *listb, *listc;
 
     if(!list)
         return NULL;
@@ -986,11 +986,10 @@ static lineowner_t *splitLineOwners(lineowner_t *list)
 /**
  * This routine uses a recursive mergesort algorithm; O(NlogN)
  */
-static lineowner_t *sortLineOwners(lineowner_t *list,
-                                   int (C_DECL *compare) (const void *a,
-                                                          const void *b))
+static lineowner_t* sortLineOwners(lineowner_t* list,
+                                   int (C_DECL *compare) (const void* a, const void* b))
 {
-    lineowner_t        *p;
+    lineowner_t* p;
 
     if(list && list->LO_next)
     {
@@ -1003,18 +1002,17 @@ static lineowner_t *sortLineOwners(lineowner_t *list,
     return list;
 }
 
-static void setVertexLineOwner(vertex_t *vtx, linedef_t *lineptr,
-                               lineowner_t **storage)
+static void setVertexLineOwner(vertex_t* vtx, linedef_t* lineptr, lineowner_t** storage)
 {
-    lineowner_t        *p, *newOwner;
+    lineowner_t* p, *newOwner;
 
     if(!lineptr)
         return;
 
     // Has this line already been registered with this vertex?
-    if(vtx->numLineOwners != 0)
+    if(((mvertex_t*) vtx->data)->numLineOwners != 0)
     {
-        p = vtx->lineOwners;
+        p = ((mvertex_t*) vtx->data)->lineOwners;
         while(p)
         {
             if(p->lineDef == lineptr)
@@ -1025,7 +1023,7 @@ static void setVertexLineOwner(vertex_t *vtx, linedef_t *lineptr,
     }
 
     //Add a new owner.
-    vtx->numLineOwners++;
+    ((mvertex_t*) vtx->data)->numLineOwners++;
 
     newOwner = (*storage)++;
     newOwner->lineDef = lineptr;
@@ -1036,8 +1034,8 @@ static void setVertexLineOwner(vertex_t *vtx, linedef_t *lineptr,
     // be sorting the lists anyway. After which we'll finish the job by
     // setting the prev and circular links.
     // So, for now this is only linked singlely, forward.
-    newOwner->LO_next = vtx->lineOwners;
-    vtx->lineOwners = newOwner;
+    newOwner->LO_next = ((mvertex_t*) vtx->data)->lineOwners;
+    ((mvertex_t*) vtx->data)->lineOwners = newOwner;
 
     // Link the line to its respective owner node.
     if(vtx == lineptr->buildData.v[0])
@@ -1084,13 +1082,13 @@ static void hardenVertexOwnerRings(gamemap_t* dest, editmap_t* src)
         vertex_t* v = src->vertexes[i];
 
         // Line owners:
-        if(v->numLineOwners != 0)
+        if(((mvertex_t*) v->data)->numLineOwners != 0)
         {
             lineowner_t* p, *last;
             binangle_t firstAngle;
 
             // Redirect the linedef links to the hardened map.
-            p = v->lineOwners;
+            p = ((mvertex_t*) v->data)->lineOwners;
             while(p)
             {
                 p->lineDef =
@@ -1100,14 +1098,14 @@ static void hardenVertexOwnerRings(gamemap_t* dest, editmap_t* src)
 
             // Sort them; ordered clockwise by angle.
             rootVtx = v;
-            v->lineOwners =
-                sortLineOwners(v->lineOwners, lineAngleSorter);
+            ((mvertex_t*) v->data)->lineOwners =
+                sortLineOwners(((mvertex_t*) v->data)->lineOwners, lineAngleSorter);
 
             // Finish the linking job and convert to relative angles.
             // They are only singly linked atm, we need them to be doubly
             // and circularly linked.
-            firstAngle = v->lineOwners->angle;
-            last = v->lineOwners;
+            firstAngle = ((mvertex_t*) v->data)->lineOwners->angle;
+            last = ((mvertex_t*) v->data)->lineOwners;
             p = last->LO_next;
             while(p)
             {
@@ -1119,8 +1117,8 @@ static void hardenVertexOwnerRings(gamemap_t* dest, editmap_t* src)
                 last = p;
                 p = p->LO_next;
             }
-            last->LO_next = v->lineOwners;
-            v->lineOwners->LO_prev = last;
+            last->LO_next = ((mvertex_t*) v->data)->lineOwners;
+            ((mvertex_t*) v->data)->lineOwners->LO_prev = last;
 
             // Set the angle of the last owner.
             last->angle = last->angle - firstAngle;
@@ -1132,9 +1130,9 @@ lineowner_t *base;
 uint        idx;
 
 if(verbose >= 2)
-    Con_Message("Vertex #%i: line owners #%i\n", i, v->numLineOwners);
+    Con_Message("Vertex #%i: line owners #%i\n", i, ((mvertex_t*) v->data)->numLineOwners);
 
-p = base = v->lineOwners;
+p = base = ((mvertex_t*) v->data)->lineOwners;
 idx = 0;
 do
 {
@@ -1323,59 +1321,57 @@ static void hardenPolyobjs(gamemap_t* dest, editmap_t* src)
 }
 
 /**
- * \note Algorithm:
- * Cast a line horizontally or vertically and see what we hit (OUCH, we
- * have to iterate over all linedefs!).
+ * @algorithm Cast a line horizontally or vertically and see what we hit.
+ * @todo Construct the lineDef blockmap first so it may be used for this
  */
 static void testForWindowEffect(editmap_t* map, linedef_t* l)
 {
 // Smallest distance between two points before being considered equal.
 #define DIST_EPSILON        (1.0 / 128.0)
 
-    uint                i;
-    double              mX, mY, dX, dY;
-    boolean             castHoriz;
-    double              backDist = DDMAXFLOAT;
-    sector_t*           backOpen = NULL;
-    double              frontDist = DDMAXFLOAT;
-    sector_t*           frontOpen = NULL;
-    linedef_t*          frontLine = NULL, *backLine = NULL;
+    uint i;
+    double mX, mY, dX, dY;
+    boolean castHoriz;
+    double backDist = DDMAXFLOAT;
+    sector_t* backOpen = NULL;
+    double frontDist = DDMAXFLOAT;
+    sector_t* frontOpen = NULL;
+    linedef_t* frontLine = NULL, *backLine = NULL;
 
-    mX = (l->buildData.v[0]->buildData.pos[VX] + l->buildData.v[1]->buildData.pos[VX]) / 2.0;
-    mY = (l->buildData.v[0]->buildData.pos[VY] + l->buildData.v[1]->buildData.pos[VY]) / 2.0;
+    mX = (l->buildData.v[0]->pos[VX] + l->buildData.v[1]->pos[VX]) / 2.0;
+    mY = (l->buildData.v[0]->pos[VY] + l->buildData.v[1]->pos[VY]) / 2.0;
 
-    dX = l->buildData.v[1]->buildData.pos[VX] - l->buildData.v[0]->buildData.pos[VX];
-    dY = l->buildData.v[1]->buildData.pos[VY] - l->buildData.v[0]->buildData.pos[VY];
+    dX = l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX];
+    dY = l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY];
 
     castHoriz = (fabs(dX) < fabs(dY)? true : false);
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t*          n = map->lineDefs[i];
-        double              dist;
-        boolean             isFront;
-        sidedef_t*          hitSide;
-        double              dX2, dY2;
+        linedef_t* n = map->lineDefs[i];
+        double dist;
+        boolean isFront;
+        sidedef_t* hitSide;
+        double dX2, dY2;
 
         if(n == l || (n->buildData.sideDefs[FRONT] && n->buildData.sideDefs[BACK] &&
             n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap ||
            (n->buildData.mlFlags & MLF_ZEROLENGTH)*/)
             continue;
 
-        dX2 = n->buildData.v[1]->buildData.pos[VX] - n->buildData.v[0]->buildData.pos[VX];
-        dY2 = n->buildData.v[1]->buildData.pos[VY] - n->buildData.v[0]->buildData.pos[VY];
+        dX2 = n->buildData.v[1]->pos[VX] - n->buildData.v[0]->pos[VX];
+        dY2 = n->buildData.v[1]->pos[VY] - n->buildData.v[0]->pos[VY];
 
         if(castHoriz)
         {   // Horizontal.
             if(fabs(dY2) < DIST_EPSILON)
                 continue;
 
-            if((MAX_OF(n->buildData.v[0]->buildData.pos[VY], n->buildData.v[1]->buildData.pos[VY]) < mY - DIST_EPSILON) ||
-               (MIN_OF(n->buildData.v[0]->buildData.pos[VY], n->buildData.v[1]->buildData.pos[VY]) > mY + DIST_EPSILON))
+            if((MAX_OF(n->buildData.v[0]->pos[VY], n->buildData.v[1]->pos[VY]) < mY - DIST_EPSILON) ||
+               (MIN_OF(n->buildData.v[0]->pos[VY], n->buildData.v[1]->pos[VY]) > mY + DIST_EPSILON))
                 continue;
 
-            dist = (n->buildData.v[0]->buildData.pos[VX] +
-                (mY - n->buildData.v[0]->buildData.pos[VY]) * dX2 / dY2) - mX;
+            dist = (n->buildData.v[0]->pos[VX] + (mY - n->buildData.v[0]->pos[VY]) * dX2 / dY2) - mX;
 
             isFront = (((dY > 0) != (dist > 0)) ? true : false);
 
@@ -1390,12 +1386,11 @@ static void testForWindowEffect(editmap_t* map, linedef_t* l)
             if(fabs(dX2) < DIST_EPSILON)
                 continue;
 
-            if((MAX_OF(n->buildData.v[0]->buildData.pos[VX], n->buildData.v[1]->buildData.pos[VX]) < mX - DIST_EPSILON) ||
-               (MIN_OF(n->buildData.v[0]->buildData.pos[VX], n->buildData.v[1]->buildData.pos[VX]) > mX + DIST_EPSILON))
+            if((MAX_OF(n->buildData.v[0]->pos[VX], n->buildData.v[1]->pos[VX]) < mX - DIST_EPSILON) ||
+               (MIN_OF(n->buildData.v[0]->pos[VX], n->buildData.v[1]->pos[VX]) > mX + DIST_EPSILON))
                 continue;
 
-            dist = (n->buildData.v[0]->buildData.pos[VY] +
-                (mX - n->buildData.v[0]->buildData.pos[VX]) * dY2 / dX2) - mY;
+            dist = (n->buildData.v[0]->pos[VY] + (mX - n->buildData.v[0]->pos[VX]) * dY2 / dX2) - mY;
 
             isFront = (((dX > 0) == (dist > 0)) ? true : false);
 
@@ -1459,9 +1454,9 @@ Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
 static void countVertexLineOwners(vertex_t* vtx, uint* oneSided,
                                   uint* twoSided)
 {
-    lineowner_t*        p;
+    lineowner_t* p;
 
-    p = vtx->lineOwners;
+    p = ((mvertex_t*) vtx->data)->lineOwners;
     while(p)
     {
         if(!p->lineDef->buildData.sideDefs[FRONT] ||
@@ -1700,14 +1695,14 @@ boolean MPE_End(void)
             linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
             line->L_v1 = gamemap->vertexes[
-                line->buildData.v[0]->buildData.index - 1];
+                ((mvertex_t*) line->buildData.v[0]->data)->index - 1];
             line->L_v2 = gamemap->vertexes[
-                line->buildData.v[1]->buildData.index - 1];
+                ((mvertex_t*) line->buildData.v[1]->data)->index - 1];
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
-            po->originalPts[j].pos[VX] = line->L_v1pos[VX] - po->pos[VX];
-            po->originalPts[j].pos[VY] = line->L_v1pos[VY] - po->pos[VY];
+            po->originalPts[j].pos[VX] = line->L_v1->pos[VX] - po->pos[VX];
+            po->originalPts[j].pos[VY] = line->L_v1->pos[VY] - po->pos[VY];
         }
     }
 
@@ -1788,12 +1783,10 @@ dmuobjrecordid_t MPE_VertexCreate(float x, float y)
         return 0;
 
     v = createVertex();
-    v->V_pos[VX] = x;
-    v->V_pos[VY] = y;
-    v->buildData.pos[VX] = (double) v->V_pos[VX];
-    v->buildData.pos[VY] = (double) v->V_pos[VY];
+    v->pos[VX] = x;
+    v->pos[VY] = y;
 
-    return v->buildData.index;
+    return ((mvertex_t*) v->data)->index;
 }
 
 /**
@@ -1818,13 +1811,11 @@ boolean MPE_VertexCreatev(size_t num, float* values, dmuobjrecordid_t* indices)
         vertex_t* v;
 
         v = createVertex();
-        v->V_pos[VX] = values[n * 2];
-        v->V_pos[VY] = values[n * 2 + 1];
-        v->buildData.pos[VX] = (double) v->V_pos[VX];
-        v->buildData.pos[VY] = (double) v->V_pos[VY];
+        v->pos[VX] = values[n * 2];
+        v->pos[VY] = values[n * 2 + 1];
 
         if(indices)
-            indices[n] = v->buildData.index;
+            indices[n] = ((mvertex_t*) v->data)->index;
     }
 
     return true;
@@ -1913,8 +1904,8 @@ dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2,
     // Next, check the length is not zero.
     vtx1 = map->vertexes[v1 - 1];
     vtx2 = map->vertexes[v2 - 1];
-    dx = vtx2->V_pos[VX] - vtx1->V_pos[VX];
-    dy = vtx2->V_pos[VY] - vtx1->V_pos[VY];
+    dx = vtx2->pos[VX] - vtx1->pos[VX];
+    dy = vtx2->pos[VY] - vtx1->pos[VY];
     length = P_AccurateDistance(dx, dy);
     if(!(length > 0))
         return 0;
@@ -1928,16 +1919,16 @@ dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2,
     l->buildData.v[0] = vtx1;
     l->buildData.v[1] = vtx2;
 
-    l->buildData.v[0]->buildData.refCount++;
-    l->buildData.v[1]->buildData.refCount++;
+    ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
+    ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
 
     l->dX = dx;
     l->dY = dy;
     l->length = length;
 
     l->angle =
-        bamsAtan2((int) (l->buildData.v[1]->V_pos[VY] - l->buildData.v[0]->V_pos[VY]),
-                  (int) (l->buildData.v[1]->V_pos[VX] - l->buildData.v[0]->V_pos[VX])) << FRACBITS;
+        bamsAtan2((int) (l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY]),
+                  (int) (l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX])) << FRACBITS;
 
     if(l->dX == 0)
         l->slopeType = ST_VERTICAL;
@@ -1951,26 +1942,26 @@ dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2,
             l->slopeType = ST_NEGATIVE;
     }
 
-    if(l->buildData.v[0]->V_pos[VX] < l->buildData.v[1]->V_pos[VX])
+    if(l->buildData.v[0]->pos[VX] < l->buildData.v[1]->pos[VX])
     {
-        l->bBox[BOXLEFT]   = l->buildData.v[0]->V_pos[VX];
-        l->bBox[BOXRIGHT]  = l->buildData.v[1]->V_pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[0]->pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[1]->pos[VX];
     }
     else
     {
-        l->bBox[BOXLEFT]   = l->buildData.v[1]->V_pos[VX];
-        l->bBox[BOXRIGHT]  = l->buildData.v[0]->V_pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[1]->pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[0]->pos[VX];
     }
 
-    if(l->buildData.v[0]->V_pos[VY] < l->buildData.v[1]->V_pos[VY])
+    if(l->buildData.v[0]->pos[VY] < l->buildData.v[1]->pos[VY])
     {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->V_pos[VY];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->V_pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
     }
     else
     {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->V_pos[VY];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->V_pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
     }
 
     // Remember the number of unique references.

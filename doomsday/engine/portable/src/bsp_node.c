@@ -106,13 +106,13 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
         if(block->bbox[BOXRIGHT] - block->bbox[BOXLEFT] >=
            block->bbox[BOXTOP]   - block->bbox[BOXBOTTOM])
         {   // Block is wider than it is high, or square.
-            p1 = hEdge->vertex->buildData.pos[VX] >= midPoint[VX];
-            p2 = hEdge->twin->vertex->buildData.pos[VX] >= midPoint[VX];
+            p1 = hEdge->vertex->pos[VX] >= midPoint[VX];
+            p2 = hEdge->twin->vertex->pos[VX] >= midPoint[VX];
         }
         else
         {   // Block is higher than it is wide.
-            p1 = hEdge->vertex->buildData.pos[VY] >= midPoint[VY];
-            p2 = hEdge->twin->vertex->buildData.pos[VY] >= midPoint[VY];
+            p1 = hEdge->vertex->pos[VY] >= midPoint[VY];
+            p2 = hEdge->twin->vertex->pos[VY] >= midPoint[VY];
         }
 
         if(p1 && p2)
@@ -161,11 +161,10 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
 #undef SUPER_IS_LEAF
 }
 
-static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
-                                 double* y)
+static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x, double* y)
 {
-    size_t              total = 0;
-    double              avg[2];
+    size_t total = 0;
+    double avg[2];
     const hedge_node_t* n;
 
     if(!x || !y)
@@ -175,13 +174,13 @@ static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
 
     for(n = headPtr; n; n = n->next)
     {
-        const hedge_t*      hEdge = n->hEdge;
+        const hedge_t* hEdge = n->hEdge;
 
-        avg[VX] += hEdge->vertex->buildData.pos[VX];
-        avg[VY] += hEdge->vertex->buildData.pos[VY];
+        avg[VX] += hEdge->vertex->pos[VX];
+        avg[VY] += hEdge->vertex->pos[VY];
 
-        avg[VX] += hEdge->twin->vertex->buildData.pos[VX];
-        avg[VY] += hEdge->twin->vertex->buildData.pos[VY];
+        avg[VX] += hEdge->twin->vertex->pos[VX];
+        avg[VY] += hEdge->twin->vertex->pos[VY];
 
         total += 2;
     }
@@ -206,23 +205,23 @@ static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x,
 static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
                                          double x, double y)
 {
-    size_t              i;
+    size_t i;
 
     i = 0;
     while(i + 1 < total)
     {
-        hedge_node_t*       a = nodes[i];
-        hedge_node_t*       b = nodes[i+1];
-        angle_g             angle1, angle2;
+        hedge_node_t* a = nodes[i];
+        hedge_node_t* b = nodes[i+1];
+        angle_g angle1, angle2;
 
         {
-        const hedge_t*      hEdgeA = a->hEdge;
-        const hedge_t*      hEdgeB = b->hEdge;
+        const hedge_t* hEdgeA = a->hEdge;
+        const hedge_t* hEdgeB = b->hEdge;
 
-        angle1 = M_SlopeToAngle(hEdgeA->vertex->buildData.pos[VX] - x,
-                                hEdgeA->vertex->buildData.pos[VY] - y);
-        angle2 = M_SlopeToAngle(hEdgeB->vertex->buildData.pos[VX] - x,
-                                hEdgeB->vertex->buildData.pos[VY] - y);
+        angle1 = M_SlopeToAngle(hEdgeA->vertex->pos[VX] - x,
+                                hEdgeA->vertex->pos[VY] - y);
+        angle2 = M_SlopeToAngle(hEdgeB->vertex->pos[VX] - x,
+                                hEdgeB->vertex->pos[VY] - y);
         }
 
         if(angle1 + ANG_EPSILON < angle2)
@@ -292,24 +291,24 @@ for(n = sub->hEdges; n; n = n->next)
                        hEdge->v[0]->V_pos[VY] - y);
 
     Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                hEdge, angle, hEdge->vertex->v.pos[VX], hEdge->vertex->v.pos[VY],
-                hEdge->twin->vertex->v.pos[VX], hEdge->twin->vertex->v.pos[VY]);
+                hEdge, angle, (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
+                (float) hEdge->twin->vertex->pos[VX], (float) hEdge->twin->vertex->pos[VY]);
 }
 #endif*/
 }
 
 static void sanityCheckClosed(const bspleafdata_t* leaf)
 {
-    int                 total = 0, gaps = 0;
+    int total = 0, gaps = 0;
     const hedge_node_t* n;
 
     for(n = leaf->hEdges; n; n = n->next)
     {
-        const hedge_t*      a = n->hEdge;
-        const hedge_t*      b = (n->next? n->next : leaf->hEdges)->hEdge;
+        const hedge_t* a = n->hEdge;
+        const hedge_t* b = (n->next? n->next : leaf->hEdges)->hEdge;
 
-        if(a->twin->vertex->buildData.pos[VX] != b->vertex->buildData.pos[VX] ||
-           a->twin->vertex->buildData.pos[VY] != b->vertex->buildData.pos[VY])
+        if(a->twin->vertex->pos[VX] != b->vertex->pos[VX] ||
+           a->twin->vertex->pos[VY] != b->vertex->pos[VY])
             gaps++;
 
         total++;
@@ -327,8 +326,8 @@ for(n = leaf->hEdges; n; n = n->next)
     const hedge_t*      hEdge = n->hEdge;
 
     Con_Message("  half-edge %p  (%1.1f,%1.1f) --> (%1.1f,%1.1f)\n", hEdge,
-                hEdge->vertex->pos[VX], hEdge->vertex->pos[VY],
-                hEdge->twin->vertex->pos[VX], hEdge->twin->vertex->pos[VY]);
+                (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
+                (float) hEdge->twin->vertex->pos[VX], (float) hEdge->twin->vertex->pos[VY]);
 }
 #endif*/
     }

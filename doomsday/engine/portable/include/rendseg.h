@@ -41,7 +41,7 @@
 typedef struct rendseg_s {
     byte                flags; // @see rendSegFlags.
 
-    const fvertex_t*    from, *to;
+    float               from[2], to[2];
     float               bottom, top;
 
     pvec3_t             normal;
@@ -77,10 +77,10 @@ typedef struct rendseg_s {
 
 // Constructors:
 rendseg_t*      RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_t* hEdge, segsection_t section,
-                                   fvertex_t* from, fvertex_t* to, float bottom, float top,
+                                   float from[2], float to[2], float bottom, float top,
                                    const float materialOffset[2], const float materialScale[2]);
 rendseg_t*      RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
-                                     fvertex_t* from, fvertex_t* to, float bottom, float top,
+                                     float from[2], float to[2], float bottom, float top,
                                      subsector_t* subsector, poseg_t* poSeg);
 
 // Public methods:

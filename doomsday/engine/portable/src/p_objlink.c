@@ -361,13 +361,13 @@ static void processSeg(hedge_t* hEdge, void* data)
 
     // Calculate 2D distance to hEdge.
     {
-    float               dx, dy;
+    float dx, dy;
 
-    dx = hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX];
-    dy = hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY];
+    dx = hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX];
+    dy = hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY];
     vtx = hEdge->HE_v1;
-    distance = ((vtx->V_pos[VY] - params->objPos[VY]) * dx -
-                (vtx->V_pos[VX] - params->objPos[VX]) * dy) / seg->length;
+    distance = ((vtx->pos[VY] - params->objPos[VY]) * dx -
+                (vtx->pos[VX] - params->objPos[VX]) * dy) / seg->length;
     }
 
     if(seg->sideDef)

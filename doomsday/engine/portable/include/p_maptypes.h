@@ -5,48 +5,39 @@
 
 #include "p_mapdata.h"
 
-#define LO_prev     link[0]
-#define LO_next     link[1]
-
 typedef struct shadowvert_s {
     float           inner[2];
     float           extended[2];
 } shadowvert_t;
 
+#define LO_prev     link[0]
+#define LO_next     link[1]
+
 typedef struct lineowner_s {
-    struct linedef_s *lineDef;
-    struct lineowner_s *link[2];    // {prev, next} (i.e. {anticlk, clk}).
+    struct linedef_s* lineDef;
+    struct lineowner_s* link[2];    // {prev, next} (i.e. {anticlk, clk}).
     binangle_t      angle;          // between this and next clockwise.
     shadowvert_t    shadowOffsets;
 } lineowner_t;
 
-#define V_pos                   v.pos
-
 typedef struct mvertex_s {
+    uint            numLineOwners; // Number of line owners.
+    lineowner_t*    lineOwners; // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
+
     // Vertex index. Always valid after loading and pruning of unused
     // vertices has occurred.
-    int         index;
+    int             index;
 
     // Reference count. When building normal node info, unused vertices
     // will be pruned.
-    int         refCount;
+    int             refCount;
 
     // Usually NULL, unless this vertex occupies the same location as a
     // previous vertex. Only used during the pruning phase.
-    struct vertex_s *equiv;
+    struct vertex_s* equiv;
 
-    struct edgetip_s *tipSet; // Set of wall_tips.
-
-// Final data.
-    double      pos[2];
+    struct edgetip_s* tipSet; // Set of wall_tips.
 } mvertex_t;
-
-typedef struct vertex_s {
-    unsigned int        numLineOwners; // Number of line owners.
-    lineowner_t*        lineOwners;    // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
-    fvertex_t           v;
-    mvertex_t           buildData;
-} vertex_t;
 
 // Helper macros for accessing seg data elements.
 #define FRONT 0
@@ -57,10 +48,7 @@ typedef struct vertex_s {
 #define SEGINF_BACKSECSKYFIX    0x0002
 
 #define HE_v1                   vertex
-#define HE_v1pos                vertex->V_pos
-
 #define HE_v2                   twin->vertex
-#define HE_v2pos                twin->vertex->V_pos
 
 #define HE_VERTEX(hEdge, v)     ((v) ? (hEdge)->HE_v2 : (hEdge)->HE_v1)
 #define HE_FRONTSIDEDEF(hEdge)  ((hEdge)->data ? ((seg_t*) (hEdge)->data)->sideDef : NULL)
@@ -402,10 +390,7 @@ typedef struct sidedef_s {
 
 // Helper macros for accessing linedef data elements.
 #define L_v1                    hEdges[0]->vertex
-#define L_v1pos                 hEdges[0]->vertex->V_pos
-
 #define L_v2                    hEdges[1]->twin->vertex
-#define L_v2pos                 hEdges[1]->twin->vertex->V_pos
 
 #define L_vo(n)                 vo[(n)]
 #define L_vo1                   L_vo(0)

@@ -84,7 +84,7 @@ void            R_NewSharpWorld(void);
 void            R_SetViewGrid(int numCols, int numRows);
 void            R_SetViewWindow(int x, int y, int w, int h);
 
-float           R_FacingViewerDot(float v1[2], float v2[2]);
+float           R_FacingViewerDot(struct vertex_s* from, struct vertex_s* to);
 void            R_ColorApplyTorchLight(float* color, float distance);
 
 #define R_PointDist2D(c) (fabs((vz-c[VY])*viewsidex - (vx-c[VX])*viewsidey))

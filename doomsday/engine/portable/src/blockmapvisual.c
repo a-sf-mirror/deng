@@ -66,8 +66,8 @@ static boolean drawMobj(mobj_t* mo, void* data)
 
 static boolean drawLineDef(linedef_t* line, void* data)
 {
-    glVertex2f(line->L_v1pos[0], line->L_v1pos[1]);
-    glVertex2f(line->L_v2pos[0], line->L_v2pos[1]);
+    glVertex2f(line->L_v1->pos[0], line->L_v1->pos[1]);
+    glVertex2f(line->L_v2->pos[0], line->L_v2->pos[1]);
 
     return true; // Continue iteration.
 }
@@ -84,8 +84,8 @@ static boolean drawSubsector(subsector_t* subsector, void* context)
             if(!textured)
             {
                 glBegin(GL_LINES);
-                    glVertex2f(hEdge->HE_v1pos[0], hEdge->HE_v1pos[1]);
-                    glVertex2f(hEdge->HE_v2pos[0], hEdge->HE_v2pos[1]);
+                    glVertex2f(hEdge->HE_v1->pos[0], hEdge->HE_v1->pos[1]);
+                    glVertex2f(hEdge->HE_v2->pos[0], hEdge->HE_v2->pos[1]);
                 glEnd();
             }
             else
@@ -94,8 +94,8 @@ static boolean drawSubsector(subsector_t* subsector, void* context)
                 float scale = MAX_OF(devBlockmapSize, 1);
                 float width = (theWindow->width / 16) / scale;
 
-                V2_Set(start, hEdge->HE_v1pos[0], hEdge->HE_v1pos[1]);
-                V2_Set(end,   hEdge->HE_v2pos[0], hEdge->HE_v2pos[1]);
+                V2_Set(start, hEdge->HE_v1->pos[0], hEdge->HE_v1->pos[1]);
+                V2_Set(end,   hEdge->HE_v2->pos[0], hEdge->HE_v2->pos[1]);
 
                 V2_Subtract(delta, end, start);
                 V2_Copy(unit, delta);

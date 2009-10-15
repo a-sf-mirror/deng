@@ -1352,29 +1352,33 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
                                float darkness, float sideOpen[2],
                                float normal[3])
 {
-    static const uint   floorIndices[][4] = {{0, 1, 2, 3}, {1, 2, 3, 0}};
-    static const uint   ceilIndices[][4]  = {{0, 3, 2, 1}, {1, 0, 3, 2}};
+    static const uint floorIndices[][4] = {{0, 1, 2, 3}, {1, 2, 3, 0}};
+    static const uint ceilIndices[][4]  = {{0, 3, 2, 1}, {1, 0, 3, 2}};
 
-    uint                wind; // Winding: 0 = left, 1 = right
-    const uint*         idx;
-    rvertex_t           rvertices[4];
-    rcolor_t            rcolors[4];
-    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
-    float               shadowAlpha;
-    vertex_t*           vtx0, *vtx1;
+    uint wind; // Winding: 0 = left, 1 = right
+    const uint* idx;
+    rvertex_t rvertices[4];
+    rcolor_t rcolors[4];
+    rtexmapunit_t rTU[NUM_TEXMAP_UNITS];
+    float shadowAlpha;
+    vertex_t* vtx1, *vtx2;
+    vec2_t v1pos, v2pos;
 
     if(darkness < 0)
         return;
 
     shadowAlpha = MIN_OF(darkness, 1.0f);
 
-    vtx0 = LINE_VERTEX(line, side^0);
-    vtx1 = LINE_VERTEX(line, side^1);
+    vtx1 = LINE_VERTEX(line, side^0);
+    V2_Set(v1pos, vtx1->pos[VX], vtx1->pos[VY]);
+
+    vtx2 = LINE_VERTEX(line, side^1);
+    V2_Set(v2pos, vtx2->pos[VX], vtx2->pos[VY]);
 
     // What vertex winding order?
     // (for best results, the cross edge should always be the shortest).
-    wind = (V2_Distance(inner[1], vtx1->V_pos) >
-            V2_Distance(inner[0], vtx0->V_pos)? 1 : 0);
+    wind = (V2_Distance(inner[1], v2pos) >
+            V2_Distance(inner[0], v1pos)? 1 : 0);
 
     memset(rTU, 0, sizeof(rTU));
     rTU[TU_PRIMARY].blend = 1;
@@ -1382,8 +1386,8 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
     idx = (normal[VZ] > 0 ? floorIndices[wind] : ceilIndices[wind]);
 
     // Left outer corner.
-    rvertices[idx[0]].pos[VX] = vtx0->V_pos[VX];
-    rvertices[idx[0]].pos[VY] = vtx0->V_pos[VY];
+    rvertices[idx[0]].pos[VX] = v1pos[VX];
+    rvertices[idx[0]].pos[VY] = v1pos[VY];
     rvertices[idx[0]].pos[VZ] = z;
 
     rcolors[idx[0]].rgba[CR] = rcolors[idx[0]].rgba[CG] =
@@ -1393,8 +1397,8 @@ static void radioAddShadowEdge(const linedef_t* line, byte side,
         rcolors[idx[0]].rgba[CA] *= 1 - sideOpen[0];
 
     // Right outer corner.
-    rvertices[idx[1]].pos[VX] = vtx1->V_pos[VX];
-    rvertices[idx[1]].pos[VY] = vtx1->V_pos[VY];
+    rvertices[idx[1]].pos[VX] = v2pos[VX];
+    rvertices[idx[1]].pos[VY] = v2pos[VY];
     rvertices[idx[1]].pos[VZ] = z;
 
     rcolors[idx[1]].rgba[CR] = rcolors[idx[1]].rgba[CG] =
@@ -1480,7 +1484,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     // See if any of this face's planes will get shadows.
     for(pln = 0; pln < subsector->sector->planeCount; ++pln)
     {
-        plane_t*            plane = subsector->sector->planes[pln];
+        plane_t* plane = subsector->sector->planes[pln];
 
         if(R_IsGlowingPlane(plane))
             continue;
@@ -1515,7 +1519,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
 
         for(pln = 0; pln < subsector->sector->planeCount; ++pln)
         {
-            plane_t*                plane;
+            plane_t* plane;
 
             if(!doPlane[pln])
                 continue;
@@ -1557,8 +1561,8 @@ static void radioSubsectorEdges(const subsector_t* subsector)
             sideOpen[0] = sideOpen[1] = 0;
             for(i = 0; i < 2; ++i)
             {
-                lineowner_t*        vo;
-                linedef_t*          neighbor;
+                lineowner_t* vo;
+                linedef_t* neighbor;
 
                 vo = line->L_vo(side^i)->link[i^1];
                 neighbor = vo->lineDef;
@@ -1571,8 +1575,8 @@ static void radioSubsectorEdges(const subsector_t* subsector)
                 }
                 else if(!(neighbor == line || !LINE_BACKSIDE(neighbor)))
                 {
-                    sector_t*           othersec;
-                    byte                otherSide;
+                    sector_t* othersec;
+                    byte otherSide;
 
                     otherSide = (LINE_VERTEX(line, i^side) == neighbor->L_v1? i : i^1);
                     othersec = LINE_SECTOR(neighbor, otherSide);
@@ -1609,17 +1613,23 @@ static void radioSubsectorEdges(const subsector_t* subsector)
 
                 if(sideOpen[i] < 1)
                 {
+                    vertex_t* vtx = LINE_VERTEX(line, i^side);
+                    vec2_t vpos;
+
                     vo = line->L_vo(i^side);
                     if(i)
                         vo = vo->LO_prev;
 
-                    V2_Sum(inner[i], LINE_VERTEX(line, i^side)->v.pos,
-                           vo->shadowOffsets.inner);
+                    V2_Set(vpos, vtx->pos[VX], vtx->pos[VY]);
+                    V2_Sum(inner[i], vpos, vo->shadowOffsets.inner);
                 }
                 else
                 {
-                    V2_Sum(inner[i], LINE_VERTEX(line, i^side)->v.pos,
-                           vo->shadowOffsets.extended);
+                    vertex_t* vtx = LINE_VERTEX(line, i^side);
+                    vec2_t vpos;
+
+                    V2_Set(vpos, vtx->pos[VX], vtx->pos[VY]);
+                    V2_Sum(inner[i], vpos, vo->shadowOffsets.extended);
                 }
             }
 
@@ -1697,8 +1707,7 @@ void Rend_DrawShadowOffsetVerts(gamemap_t* map)
     static const float red[4] = { 1.f, .2f, .2f, 1.f};
     static const float yellow[4] = {.7f, .7f, .2f, 1.f};
 
-    uint i, j, k;
-    float pos[3];
+    uint i;
 
     glDepthMask(GL_FALSE);
     glDisable(GL_DEPTH_TEST);
@@ -1708,20 +1717,28 @@ void Rend_DrawShadowOffsetVerts(gamemap_t* map)
     for(i = 0; i < map->numLineDefs; ++i)
     {
         linedef_t* line = map->lineDefs[i];
+        uint k;
 
         for(k = 0; k < 2; ++k)
         {
             vertex_t* vtx = LINE_VERTEX(line, k);
-            lineowner_t* vo = vtx->lineOwners;
+            lineowner_t* vo = ((mvertex_t*) vtx->data)->lineOwners;
+            uint j;
 
-            for(j = 0; j < vtx->numLineOwners; ++j)
+            for(j = 0; j < ((mvertex_t*) vtx->data)->numLineOwners; ++j)
             {
+                vec3_t pos;
+
+                pos[VX] = vtx->pos[VX] + vo->shadowOffsets.extended[VX];
+                pos[VY] = vtx->pos[VY] + vo->shadowOffsets.extended[VY];
                 pos[VZ] = LINE_FRONTSECTOR(vo->lineDef)->SP_floorvisheight;
 
-                V2_Sum(pos, vtx->V_pos, vo->shadowOffsets.extended);
                 drawPoint(pos, 1.f, yellow);
 
-                V2_Sum(pos, vtx->V_pos, vo->shadowOffsets.inner);
+                pos[VX] = vtx->pos[VX] + vo->shadowOffsets.inner[VX];
+                pos[VY] = vtx->pos[VY] + vo->shadowOffsets.inner[VY];
+                pos[VZ] = LINE_FRONTSECTOR(vo->lineDef)->SP_floorvisheight;
+
                 drawPoint(pos, 1.f, red);
 
                 vo = vo->LO_next;

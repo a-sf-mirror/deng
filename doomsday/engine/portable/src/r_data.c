@@ -686,16 +686,16 @@ rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
 
     // Vertex coords.
     // Bottom Left.
-    V3_Set(rvertices[0].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->bottom);
+    V3_Set(rvertices[0].pos, rseg->from[VX], rseg->from[VY], rseg->bottom);
 
     // Top Left.
-    V3_Set(rvertices[1].pos, rseg->from->pos[VX], rseg->from->pos[VY], rseg->top);
+    V3_Set(rvertices[1].pos, rseg->from[VX], rseg->from[VY], rseg->top);
 
     // Bottom Right.
-    V3_Set(rvertices[2].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->bottom);
+    V3_Set(rvertices[2].pos, rseg->to[VX], rseg->to[VY], rseg->bottom);
 
     // Top Right.
-    V3_Set(rvertices[3].pos, rseg->to->pos[VX], rseg->to->pos[VY], rseg->top);
+    V3_Set(rvertices[3].pos, rseg->to[VX], rseg->to[VY], rseg->top);
 
     // @todo apply divisions here!
 
@@ -879,16 +879,16 @@ void R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSe
     hEdge = subSector->firstFanHEdge;
     do
     {
-        rvertices[i].pos[VX] = hEdge->HE_v1pos[VX];
-        rvertices[i].pos[VY] = hEdge->HE_v1pos[VY];
+        rvertices[i].pos[VX] = hEdge->HE_v1->pos[VX];
+        rvertices[i].pos[VY] = hEdge->HE_v1->pos[VY];
         rvertices[i].pos[VZ] = height;
         ++i;
     } while((hEdge = (antiClockwise? hEdge->prev : hEdge->next)) != subSector->firstFanHEdge);
 
     if(subSector->useMidPoint)
     {
-        rvertices[i].pos[VX] = subSector->firstFanHEdge->HE_v1pos[VX];
-        rvertices[i].pos[VY] = subSector->firstFanHEdge->HE_v1pos[VY];
+        rvertices[i].pos[VX] = subSector->firstFanHEdge->HE_v1->pos[VX];
+        rvertices[i].pos[VY] = subSector->firstFanHEdge->HE_v1->pos[VY];
         rvertices[i].pos[VZ] = height;
     }
 }

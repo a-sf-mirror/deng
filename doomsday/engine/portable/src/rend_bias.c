@@ -696,15 +696,15 @@ static boolean checkColorOverride(biasaffection_t *affected)
 #endif
 
 static void updateAffected(gamemap_t* map, biassurface_t* bsuf,
-                           const fvertex_t* from, const fvertex_t* to,
+                           const float from[2], const float to[2],
                            const vectorcomp_t* normal)
 {
-    int                 i, k;
-    vec2_t              delta;
-    source_t*           src;
-    float               distance = 0, len;
-    float               intensity;
-    affection_t         aff;
+    int i, k;
+    vec2_t delta;
+    source_t* src;
+    float distance = 0, len;
+    float intensity;
+    affection_t aff;
 
     // If the data is already up to date, nothing needs to be done.
     if(bsuf->updated == map->bias.lastChangeOnFrame)
@@ -724,11 +724,9 @@ static void updateAffected(gamemap_t* map, biassurface_t* bsuf,
         for(i = 0; i < 2; ++i)
         {
             if(!i)
-                V2_Set(delta, from->pos[VX] - src->pos[VX],
-                       from->pos[VY] - src->pos[VY]);
+                V2_Set(delta, from[VX] - src->pos[VX], from[VY] - src->pos[VY]);
             else
-                V2_Set(delta, to->pos[VX] - src->pos[VX],
-                       to->pos[VY] - src->pos[VY]);
+                V2_Set(delta, to[VX] - src->pos[VX], to[VY] - src->pos[VY]);
             len = V2_Normalize(delta);
 
             if(i == 0 || len < distance)
@@ -756,13 +754,13 @@ static void updateAffected2(gamemap_t* map, biassurface_t* bsuf,
                             size_t numVertices, const vectorcomp_t* point,
                             const vectorcomp_t* normal)
 {
-    int                 i;
-    uint                k;
-    vec2_t              delta;
-    source_t*           src;
-    float               distance = 0, len, dot;
-    float               intensity;
-    affection_t         aff;
+    int i;
+    uint k;
+    vec2_t delta;
+    source_t* src;
+    float distance = 0, len, dot;
+    float intensity;
+    affection_t aff;
 
     // If the data is already up to date, nothing needs to be done.
     if(bsuf->updated == map->bias.lastChangeOnFrame)
@@ -1195,10 +1193,10 @@ void SB_ClearSources(gamemap_t* map)
 void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                 const rvertex_t* rvertices, size_t numVertices,
                 const vectorcomp_t* normal, float sectorLightLevel,
-                const fvertex_t* from, const fvertex_t* to)
+                const float from[2], const float to[2])
 {
-    uint                i;
-    boolean             forced;
+    uint i;
+    boolean forced;
 
     memcpy(&trackChanged, &bsuf->tracker, sizeof(trackChanged));
     memset(&trackApplied, 0, sizeof(trackApplied));

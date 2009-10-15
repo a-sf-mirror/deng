@@ -254,20 +254,20 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
             linedef_t* ldef = seg->sideDef->lineDef;
             vertex_t* vtx = ldef->buildData.v[seg->side];
 
-            seg->offset = P_AccurateDistance(hEdge->HE_v1pos[VX] - vtx->V_pos[VX],
-                                             hEdge->HE_v1pos[VY] - vtx->V_pos[VY]);
+            seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
+                                             hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
 
             hardenLineDefSegList(map, hEdge, seg);
         }
 
         seg->angle =
-            bamsAtan2((int) (hEdge->twin->vertex->v.pos[VY] - hEdge->vertex->v.pos[VY]),
-                      (int) (hEdge->twin->vertex->v.pos[VX] - hEdge->vertex->v.pos[VX])) << FRACBITS;
+            bamsAtan2((int) (hEdge->twin->vertex->pos[VY] - hEdge->vertex->pos[VY]),
+                      (int) (hEdge->twin->vertex->pos[VX] - hEdge->vertex->pos[VX])) << FRACBITS;
 
         // Calculate the length of the segment. We need this for
         // the texture coordinates. -jk
-        seg->length = P_AccurateDistance(hEdge->HE_v2pos[VX] - hEdge->HE_v1pos[VX],
-                                         hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]);
+        seg->length = P_AccurateDistance(hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX],
+                                         hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]);
 
         if(seg->length == 0)
             seg->length = 0.01f; // Hmm...
@@ -276,10 +276,10 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
         // Front first
         if(seg->sideDef)
         {
-            surface_t*          surface = &seg->sideDef->SW_topsurface;
+            surface_t* surface = &seg->sideDef->SW_topsurface;
 
-            surface->normal[VY] = (hEdge->HE_v1pos[VX] - hEdge->HE_v2pos[VX]) / seg->length;
-            surface->normal[VX] = (hEdge->HE_v2pos[VY] - hEdge->HE_v1pos[VY]) / seg->length;
+            surface->normal[VY] = (hEdge->HE_v1->pos[VX] - hEdge->HE_v2->pos[VX]) / seg->length;
+            surface->normal[VX] = (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / seg->length;
             surface->normal[VZ] = 0;
 
             // All surfaces of a sidedef have the same normal.
@@ -476,13 +476,9 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
     }
 }
 
-static void finishVertexes(gamemap_t* dest, vertex_t*** vertexes,
-                           uint* numVertexes)
+static void destroyEdgeTips(gamemap_t* dest)
 {
     uint i;
-
-    dest->numVertexes = *numVertexes;
-    dest->vertexes = *vertexes;
 
     for(i = 0; i < dest->numVertexes; ++i)
     {
@@ -490,7 +486,7 @@ static void finishVertexes(gamemap_t* dest, vertex_t*** vertexes,
 
         {
         edgetip_t* tip, *n;
-        tip = vtx->buildData.tipSet;
+        tip = ((mvertex_t*) vtx->data)->tipSet;
         while(tip)
         {
             n = tip->ET_next;
@@ -498,10 +494,6 @@ static void finishVertexes(gamemap_t* dest, vertex_t*** vertexes,
             tip = n;
         }
         }
-
-        //// \fixme Add some rounding.
-        vtx->V_pos[VX] = (float) vtx->buildData.pos[VX];
-        vtx->V_pos[VY] = (float) vtx->buildData.pos[VY];
 
         DMU_AddObjRecord(DMU_VERTEX, vtx);
     }
@@ -513,7 +505,10 @@ void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;
 
-    finishVertexes(dest, vertexes, numVertexes);
+    dest->numVertexes = *numVertexes;
+    dest->vertexes = *vertexes;
+
+    destroyEdgeTips(dest);
     buildSegsFromHEdges(dest, rn);
     hardenBSP(dest, rn);
 
