@@ -125,8 +125,6 @@ masktex_t** maskTextures = NULL;
 // Glowing textures are always rendered fullbright.
 int glowingTextures = true;
 
-byte rendInfoRPolys = 0;
-
 // Skinnames will only *grow*. It will never be destroyed, not even
 // at resets. The skin textures themselves will be deleted, though.
 // This is because we want to have permanent ID numbers for skins,
@@ -155,7 +153,7 @@ static colorpaletteid_t defaultColorPalette = 0;
 
 static colorpaletteid_t colorPaletteNumForName(const char* name)
 {
-    uint                i;
+    uint i;
 
     // Linear search (sufficiently fast enough given the probably small set
     // and infrequency of searches).
@@ -413,8 +411,8 @@ void R_GetColorPaletteRGBf(colorpaletteid_t id, float rgb[3], int idx,
     {
         if(idx >= 0)
         {
-            DGLuint             pal = R_GetColorPalette(id);
-            DGLubyte            rgbUBV[3];
+            DGLuint pal = R_GetColorPalette(id);
+            DGLubyte rgbUBV[3];
 
             GL_GetColorPaletteRGB(pal, rgbUBV, idx);
 
@@ -436,48 +434,6 @@ void R_GetColorPaletteRGBf(colorpaletteid_t id, float rgb[3], int idx,
     }
 }
 
-void R_InfoRendVerticesPool(void)
-{
-    uint                i;
-
-    if(!rendInfoRPolys)
-        return;
-
-    Con_Printf("RP Count: %-4i\n", numrendpolys);
-
-    for(i = 0; i < numrendpolys; ++i)
-    {
-        rendpolydata_t*     rp = rendPolys[i];
-
-        Con_Printf("RP: %-4u %c (vtxs=%u t=%c)\n", i,
-                   (rp->inUse? 'Y':'N'), rp->num,
-                   (rp->type == RPT_VERT? 'v' :
-                    rp->type == RPT_COLOR?'c' : 't'));
-    }
-}
-
-/**
- * Called at the start of each map.
- */
-void R_InitRendVerticesPool(void)
-{
-    rvertex_t*          rvertices;
-    rcolor_t*           rcolors;
-    rtexcoord_t*        rtexcoords;
-
-    numrendpolys = maxrendpolys = 0;
-    rendPolys = NULL;
-
-    rvertices = R_AllocRendVertices(24);
-    rcolors = R_AllocRendColors(24);
-    rtexcoords = R_AllocRendTexCoords(24);
-
-    // Mark unused.
-    R_FreeRendVertices(rvertices);
-    R_FreeRendColors(rcolors);
-    R_FreeRendTexCoords(rtexcoords);
-}
-
 /**
  * Retrieves a batch of rvertex_t.
  * Possibly allocates new if necessary.
@@ -488,8 +444,8 @@ void R_InitRendVerticesPool(void)
  */
 rvertex_t* R_AllocRendVertices(uint num)
 {
-    unsigned int        idx;
-    boolean             found = false;
+    unsigned int idx;
+    boolean found = false;
 
     for(idx = 0; idx < maxrendpolys; ++idx)
     {
@@ -516,19 +472,16 @@ rvertex_t* R_AllocRendVertices(uint num)
         // We may need to allocate more.
         if(++numrendpolys > maxrendpolys)
         {
-            uint                i, newCount;
-            rendpolydata_t*     newPolyData, *ptr;
+            uint i, newCount;
+            rendpolydata_t* newPolyData, *ptr;
 
             maxrendpolys = (maxrendpolys > 0? maxrendpolys * 2 : 8);
 
-            rendPolys =
-                Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys,
-                          PU_MAP);
+            rendPolys = Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys, PU_STATIC);
 
             newCount = maxrendpolys - numrendpolys + 1;
 
-            newPolyData =
-                Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_MAP, 0);
+            newPolyData = Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_STATIC, 0);
 
             ptr = newPolyData;
             for(i = numrendpolys-1; i < maxrendpolys; ++i, ptr++)
@@ -546,8 +499,7 @@ rvertex_t* R_AllocRendVertices(uint num)
     rendPolys[idx]->inUse = true;
     rendPolys[idx]->type = RPT_VERT;
     rendPolys[idx]->num = num;
-    rendPolys[idx]->data =
-        Z_Malloc(sizeof(rvertex_t) * num, PU_MAP, 0);
+    rendPolys[idx]->data = Z_Malloc(sizeof(rvertex_t) * num, PU_STATIC, 0);
 
     return (rvertex_t*) rendPolys[idx]->data;
 }
@@ -562,8 +514,8 @@ rvertex_t* R_AllocRendVertices(uint num)
  */
 rcolor_t* R_AllocRendColors(uint num)
 {
-    unsigned int        idx;
-    boolean             found = false;
+    unsigned int idx;
+    boolean found = false;
 
     for(idx = 0; idx < maxrendpolys; ++idx)
     {
@@ -595,14 +547,11 @@ rcolor_t* R_AllocRendColors(uint num)
 
             maxrendpolys = (maxrendpolys > 0? maxrendpolys * 2 : 8);
 
-            rendPolys =
-                Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys,
-                          PU_MAP);
+            rendPolys = Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys, PU_STATIC);
 
             newCount = maxrendpolys - numrendpolys + 1;
 
-            newPolyData =
-                Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_MAP, 0);
+            newPolyData = Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_STATIC, 0);
 
             ptr = newPolyData;
             for(i = numrendpolys-1; i < maxrendpolys; ++i, ptr++)
@@ -620,8 +569,7 @@ rcolor_t* R_AllocRendColors(uint num)
     rendPolys[idx]->inUse = true;
     rendPolys[idx]->type = RPT_COLOR;
     rendPolys[idx]->num = num;
-    rendPolys[idx]->data =
-        Z_Malloc(sizeof(rcolor_t) * num, PU_MAP, 0);
+    rendPolys[idx]->data = Z_Malloc(sizeof(rcolor_t) * num, PU_STATIC, 0);
 
     return (rcolor_t*) rendPolys[idx]->data;
 }
@@ -636,8 +584,8 @@ rcolor_t* R_AllocRendColors(uint num)
  */
 rtexcoord_t* R_AllocRendTexCoords(uint num)
 {
-    unsigned int        idx;
-    boolean             found = false;
+    unsigned int idx;
+    boolean found = false;
 
     for(idx = 0; idx < maxrendpolys; ++idx)
     {
@@ -669,14 +617,11 @@ rtexcoord_t* R_AllocRendTexCoords(uint num)
 
             maxrendpolys = (maxrendpolys > 0? maxrendpolys * 2 : 8);
 
-            rendPolys =
-                Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys,
-                          PU_MAP);
+            rendPolys = Z_Realloc(rendPolys, sizeof(rendpolydata_t*) * maxrendpolys, PU_STATIC);
 
             newCount = maxrendpolys - numrendpolys + 1;
 
-            newPolyData =
-                Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_MAP, 0);
+            newPolyData = Z_Malloc(sizeof(rendpolydata_t) * newCount, PU_STATIC, 0);
 
             ptr = newPolyData;
             for(i = numrendpolys-1; i < maxrendpolys; ++i, ptr++)
@@ -694,8 +639,7 @@ rtexcoord_t* R_AllocRendTexCoords(uint num)
     rendPolys[idx]->inUse = true;
     rendPolys[idx]->type = RPT_TEXCOORD;
     rendPolys[idx]->num = num;
-    rendPolys[idx]->data =
-        Z_Malloc(sizeof(rtexcoord_t) * num, PU_MAP, 0);
+    rendPolys[idx]->data = Z_Malloc(sizeof(rtexcoord_t) * num, PU_STATIC, 0);
 
     return (rtexcoord_t*) rendPolys[idx]->data;
 }
@@ -708,7 +652,7 @@ rtexcoord_t* R_AllocRendTexCoords(uint num)
  */
 void R_FreeRendVertices(rvertex_t* rvertices)
 {
-    uint                i;
+    uint i;
 
     if(!rvertices)
         return;
@@ -728,7 +672,7 @@ void R_FreeRendVertices(rvertex_t* rvertices)
 
 static rvertex_t* allocateVerticesForRendSeg(rendseg_t* rseg, uint* size)
 {
-    uint                num = RendSeg_NumRequiredVertices(rseg);
+    uint num = RendSeg_NumRequiredVertices(rseg);
 
     if(size)
         *size = num;
@@ -738,7 +682,7 @@ static rvertex_t* allocateVerticesForRendSeg(rendseg_t* rseg, uint* size)
 
 rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
 {
-    rvertex_t*          rvertices = allocateVerticesForRendSeg(rseg, size);
+    rvertex_t* rvertices = allocateVerticesForRendSeg(rseg, size);
 
     // Vertex coords.
     // Bottom Left.
@@ -783,7 +727,7 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
  */
 void R_FreeRendColors(rcolor_t* rcolors)
 {
-    uint                i;
+    uint i;
 
     if(!rcolors)
         return;
@@ -809,7 +753,7 @@ void R_FreeRendColors(rcolor_t* rcolors)
  */
 void R_FreeRendTexCoords(rtexcoord_t* rtexcoords)
 {
-    uint                i;
+    uint i;
 
     if(!rtexcoords)
         return;
@@ -829,18 +773,18 @@ void R_FreeRendTexCoords(rtexcoord_t* rtexcoords)
 
 void R_VertexColorsGlow(rcolor_t* colors, size_t num)
 {
-    size_t              i;
+    size_t i;
 
     for(i = 0; i < num; ++i)
     {
-        rcolor_t*           c = &colors[i];
+        rcolor_t* c = &colors[i];
         c->rgba[CR] = c->rgba[CG] = c->rgba[CB] = 1;
     }
 }
 
 void R_VertexColorsAlpha(rcolor_t* colors, size_t num, float alpha)
 {
-    size_t               i;
+    size_t i;
 
     for(i = 0; i < num; ++i)
     {
@@ -850,7 +794,7 @@ void R_VertexColorsAlpha(rcolor_t* colors, size_t num, float alpha)
 
 void R_ColorApplyTorchLight(float* color, float distance)
 {
-    ddplayer_t*         ddpl = &viewPlayer->shared;
+    ddplayer_t* ddpl = &viewPlayer->shared;
 
     if(!ddpl->fixedColorMap)
         return;
@@ -860,8 +804,8 @@ void R_ColorApplyTorchLight(float* color, float distance)
     {
         // Colormap 1 is the brightest. I'm guessing 16 would be
         // the darkest.
-        int                 ll = 16 - ddpl->fixedColorMap;
-        float               d = (1024 - distance) / 1024.0f * ll / 15.0f;
+        int ll = 16 - ddpl->fixedColorMap;
+        float d = (1024 - distance) / 1024.0f * ll / 15.0f;
 
         if(torchAdditive)
         {
@@ -881,16 +825,16 @@ void R_ColorApplyTorchLight(float* color, float distance)
 void R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t* vertices,
                              size_t numVertices)
 {
-    size_t              i;
-    ddplayer_t*         ddpl = &viewPlayer->shared;
+    size_t i;
+    ddplayer_t* ddpl = &viewPlayer->shared;
 
     if(!ddpl->fixedColorMap)
         return; // No need, its disabled.
 
     for(i = 0; i < numVertices; ++i)
     {
-        const rvertex_t*    vtx = &vertices[i];
-        rcolor_t*           c = &colors[i];
+        const rvertex_t* vtx = &vertices[i];
+        rcolor_t* c = &colors[i];
 
         R_ColorApplyTorchLight(c->rgba, R_PointDist2D(vtx->pos));
     }
@@ -899,7 +843,7 @@ void R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t* vertices,
 void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
                    float lightLevel, const float* ambientColor)
 {
-    float               lightVal, dist;
+    float lightVal, dist;
 
     dist = R_PointDist2D(vtx->pos);
 
@@ -920,8 +864,8 @@ void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
 void R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
                                          float height, boolean antiClockwise)
 {
-    size_t              i = 0;
-    hedge_t*            hEdge;
+    size_t i = 0;
+    hedge_t* hEdge;
 
     if(subSector->useMidPoint)
     {
@@ -955,9 +899,9 @@ void R_DivVerts(rvertex_t* dst, const rvertex_t* src, const walldiv_t* wdivs)
     (d)->pos[VY] = (s)->pos[VY]; \
     (d)->pos[VZ] = (s)->pos[VZ];
 
-    uint                i;
-    uint                numL = 3 + wdivs[0].num;
-    uint                numR = 3 + wdivs[1].num;
+    uint i;
+    uint numL = 3 + wdivs[0].num;
+    uint numR = 3 + wdivs[1].num;
 
     // Right fan:
     COPYVERT(&dst[numL + 0], &src[0])
@@ -993,10 +937,10 @@ void R_DivTexCoords(rtexcoord_t* dst, const rtexcoord_t* src,
 #define COPYTEXCOORD(d, s)    (d)->st[0] = (s)->st[0]; \
     (d)->st[1] = (s)->st[1];
 
-    uint                i;
-    uint                numL = 3 + wdivs[0].num;
-    uint                numR = 3 + wdivs[1].num;
-    float               height;
+    uint i;
+    uint numL = 3 + wdivs[0].num;
+    uint numR = 3 + wdivs[1].num;
+    float height;
 
     // Right fan:
     COPYTEXCOORD(&dst[numL + 0], &src[0]);
@@ -1006,7 +950,7 @@ void R_DivTexCoords(rtexcoord_t* dst, const rtexcoord_t* src,
     height = tR - bR;
     for(i = 0; i < wdivs[1].num; ++i)
     {
-        float               inter = (wdivs[1].divs[i]->visHeight - bR) / height;
+        float inter = (wdivs[1].divs[i]->visHeight - bR) / height;
 
         dst[numL + 2 + i].st[0] = src[2].st[0];
         dst[numL + 2 + i].st[1] = src[2].st[1] +
@@ -1021,7 +965,7 @@ void R_DivTexCoords(rtexcoord_t* dst, const rtexcoord_t* src,
     height = tL - bL;
     for(i = 0; i < wdivs[0].num; ++i)
     {
-        float               inter = (wdivs[0].divs[i]->visHeight - bL) / height;
+        float inter = (wdivs[0].divs[i]->visHeight - bL) / height;
 
         dst[2 + i].st[0] = src[0].st[0];
         dst[2 + i].st[1] = src[0].st[1] +
@@ -1040,10 +984,10 @@ void R_DivVertColors(rcolor_t* dst, const rcolor_t* src,
     (d)->rgba[CB] = (s)->rgba[CB]; \
     (d)->rgba[CA] = (s)->rgba[CA];
 
-    uint                i;
-    uint                numL = 3 + wdivs[0].num;
-    uint                numR = 3 + wdivs[1].num;
-    float               height;
+    uint i;
+    uint numL = 3 + wdivs[0].num;
+    uint numR = 3 + wdivs[1].num;
+    float height;
 
     // Right fan:
     COPYVCOLOR(&dst[numL + 0], &src[0]);
@@ -1053,8 +997,8 @@ void R_DivVertColors(rcolor_t* dst, const rcolor_t* src,
     height = tR - bR;
     for(i = 0; i < wdivs[1].num; ++i)
     {
-        uint                c;
-        float               inter = (wdivs[1].divs[i]->visHeight - bR) / height;
+        uint c;
+        float inter = (wdivs[1].divs[i]->visHeight - bR) / height;
 
         for(c = 0; c < 4; ++c)
         {
@@ -1071,8 +1015,8 @@ void R_DivVertColors(rcolor_t* dst, const rcolor_t* src,
     height = tL - bL;
     for(i = 0; i < wdivs[0].num; ++i)
     {
-        uint                c;
-        float               inter = (wdivs[0].divs[i]->visHeight - bL) / height;
+        uint c;
+        float inter = (wdivs[0].divs[i]->visHeight - bL) / height;
 
         for(c = 0; c < 4; ++c)
         {
@@ -1095,8 +1039,8 @@ void R_ShutdownData(void)
  */
 patchtex_t** R_CollectPatchTexs(int* count)
 {
-    int                 i, num;
-    patchtex_t*         p, **list;
+    int i, num;
+    patchtex_t* p, **list;
 
     // First count the number of patchtexs.
     for(num = 0, i = 0; i < PATCHTEX_HASH_SIZE; ++i)
@@ -1126,8 +1070,8 @@ patchtex_t** R_CollectPatchTexs(int* count)
  */
 patchtex_t* R_FindPatchTex(lumpnum_t lump)
 {
-    patchtex_t*         i;
-    patchtexhash_t*     hash = PATCHTEX_HASH(lump);
+    patchtex_t* i;
+    patchtexhash_t* hash = PATCHTEX_HASH(lump);
 
     for(i = hash->first; i; i = i->next)
         if(i->lump == lump)
@@ -1144,8 +1088,8 @@ patchtex_t* R_FindPatchTex(lumpnum_t lump)
  */
 patchtex_t* R_GetPatchTex(lumpnum_t lump)
 {
-    patchtex_t*         p = 0;
-    patchtexhash_t*     hash = 0;
+    patchtex_t* p = 0;
+    patchtexhash_t* hash = 0;
 
     if(lump >= numLumps)
     {
@@ -1181,8 +1125,8 @@ patchtex_t* R_GetPatchTex(lumpnum_t lump)
  */
 rawtex_t** R_CollectRawTexs(int* count)
 {
-    int                 i, num;
-    rawtex_t*           r, **list;
+    int i, num;
+    rawtex_t* r, **list;
 
     // First count the number of patchtexs.
     for(num = 0, i = 0; i < RAWTEX_HASH_SIZE; ++i)
@@ -1210,10 +1154,10 @@ rawtex_t** R_CollectRawTexs(int* count)
 /**
  * Returns a rawtex_t* for the given lump, if one already exists.
  */
-rawtex_t *R_FindRawTex(lumpnum_t lump)
+rawtex_t* R_FindRawTex(lumpnum_t lump)
 {
-    rawtex_t*         i;
-    rawtexhash_t*     hash = RAWTEX_HASH(lump);
+    rawtex_t* i;
+    rawtexhash_t* hash = RAWTEX_HASH(lump);
 
     for(i = hash->first; i; i = i->next)
         if(i->lump == lump)
@@ -1230,8 +1174,8 @@ rawtex_t *R_FindRawTex(lumpnum_t lump)
  */
 rawtex_t* R_GetRawTex(lumpnum_t lump)
 {
-    rawtex_t*           r = 0;
-    rawtexhash_t*       hash = 0;
+    rawtex_t* r = 0;
+    rawtexhash_t* hash = 0;
 
     if(lump >= numLumps)
     {
@@ -1263,9 +1207,9 @@ rawtex_t* R_GetRawTex(lumpnum_t lump)
 
 static lumpnum_t* loadPatchList(lumpnum_t lump, size_t* num)
 {
-    char                name[9], *names;
-    lumpnum_t*          patchLumpList;
-    size_t              i, numPatches, lumpSize = W_LumpLength(lump);
+    char name[9], *names;
+    lumpnum_t* patchLumpList;
+    size_t i, numPatches, lumpSize = W_LumpLength(lump);
 
     names = M_Malloc(lumpSize);
     W_ReadLump(lump, names);
@@ -1349,15 +1293,15 @@ typedef struct {
 } strifemaptexture_t;
 #pragma pack()
 
-    int                 i;
-    int*                maptex1;
-    size_t              lumpSize, offset, n, numValidPatchRefs;
-    int*                directory;
-    void*               storage;
-    byte*               validTexDefs;
-    short*              texDefNumPatches;
-    int                 numTexDefs, numValidTexDefs;
-    doomtexturedef_t**  texDefs = NULL;
+    int i;
+    int* maptex1;
+    size_t lumpSize, offset, n, numValidPatchRefs;
+    int* directory;
+    void* storage;
+    byte* validTexDefs;
+    short* texDefNumPatches;
+    int numTexDefs, numValidTexDefs;
+    doomtexturedef_t** texDefs = NULL;
 
     lumpSize = W_LumpLength(lump);
     maptex1 = M_Malloc(lumpSize);
@@ -1392,18 +1336,18 @@ typedef struct {
 
         if(gameDataFormat == 0)
         {   // DOOM format.
-            maptexture_t*       mtexture =
+            maptexture_t* mtexture =
                 (maptexture_t *) ((byte *) maptex1 + offset);
-            short               j, n, patchCount = SHORT(mtexture->patchCount);
+            short j, n, patchCount = SHORT(mtexture->patchCount);
 
             n = 0;
             if(patchCount > 0)
             {
-                mappatch_t*         mpatch = &mtexture->patches[0];
+                mappatch_t* mpatch = &mtexture->patches[0];
 
                 for(j = 0; j < patchCount; ++j, mpatch++)
                 {
-                    short               patchNum = SHORT(mpatch->patch);
+                    short patchNum = SHORT(mpatch->patch);
 
                     if(patchNum < 0 || (unsigned) patchNum >= numPatches)
                     {
@@ -1437,15 +1381,15 @@ typedef struct {
         {   // Strife format.
             strifemaptexture_t* smtexture =
                 (strifemaptexture_t *) ((byte *) maptex1 + offset);
-            short               j, n, patchCount = SHORT(smtexture->patchCount);
+            short j, n, patchCount = SHORT(smtexture->patchCount);
 
             n = 0;
             if(patchCount > 0)
             {
-                strifemappatch_t*   smpatch = &smtexture->patches[0];
+                strifemappatch_t* smpatch = &smtexture->patches[0];
                 for(j = 0; j < patchCount; ++j, smpatch++)
                 {
-                    short               patchNum = SHORT(smpatch->patch);
+                    short patchNum = SHORT(smpatch->patch);
 
                     if(patchNum < 0 || (unsigned) patchNum >= numPatches)
                     {
@@ -1500,8 +1444,8 @@ typedef struct {
         n = 0;
         for(i = 0; i < numTexDefs; ++i, directory++)
         {
-            short               j;
-            doomtexturedef_t*       texDef;
+            short j;
+            doomtexturedef_t* texDef;
 
             if(!validTexDefs[i])
                 continue;
@@ -1511,10 +1455,10 @@ typedef struct {
             // Read and create the texture def.
             if(gameDataFormat == 0)
             {   // DOOM format.
-                texpatch_t*         patch;
-                mappatch_t*         mpatch;
-                maptexture_t*       mtexture =
-                    (maptexture_t *) ((byte *) maptex1 + offset);
+                texpatch_t* patch;
+                mappatch_t* mpatch;
+                maptexture_t* mtexture =
+                    (maptexture_t*) ((byte*) maptex1 + offset);
 
                 texDef = storage;
                 texDef->patchCount = texDefNumPatches[i];
@@ -1522,14 +1466,14 @@ typedef struct {
                 strupr(texDef->name);
                 texDef->width = SHORT(mtexture->width);
                 texDef->height = SHORT(mtexture->height);
-                storage = (byte *) storage + sizeof(doomtexturedef_t) +
+                storage = (byte*) storage + sizeof(doomtexturedef_t) +
                     sizeof(texpatch_t) * texDef->patchCount;
 
                 mpatch = &mtexture->patches[0];
                 patch = &texDef->patches[0];
                 for(j = 0; j < SHORT(mtexture->patchCount); ++j, mpatch++)
                 {
-                    short               patchNum = SHORT(mpatch->patch);
+                    short patchNum = SHORT(mpatch->patch);
 
                     if(patchNum < 0 || (unsigned) patchNum >= numPatches ||
                        patchlookup[patchNum] == -1)
@@ -1543,10 +1487,10 @@ typedef struct {
             }
             else if(gameDataFormat == 3)
             {   // Strife format.
-                texpatch_t*         patch;
-                strifemappatch_t*   smpatch;
+                texpatch_t* patch;
+                strifemappatch_t* smpatch;
                 strifemaptexture_t* smtexture =
-                    (strifemaptexture_t *) ((byte *) maptex1 + offset);
+                    (strifemaptexture_t*) ((byte*) maptex1 + offset);
 
                 texDef = storage;
                 texDef->patchCount = texDefNumPatches[i];
@@ -1554,14 +1498,14 @@ typedef struct {
                 strupr(texDef->name);
                 texDef->width = SHORT(smtexture->width);
                 texDef->height = SHORT(smtexture->height);
-                storage = (byte *) storage + sizeof(doomtexturedef_t) +
+                storage = (byte*) storage + sizeof(doomtexturedef_t) +
                     sizeof(texpatch_t) * texDef->patchCount;
 
                 smpatch = &smtexture->patches[0];
                 patch = &texDef->patches[0];
                 for(j = 0; j < SHORT(smtexture->patchCount); ++j, smpatch++)
                 {
-                    short               patchNum = SHORT(smpatch->patch);
+                    short patchNum = SHORT(smpatch->patch);
 
                     if(patchNum < 0 || (unsigned) patchNum >= numPatches ||
                        patchlookup[patchNum] == -1)
@@ -1617,11 +1561,11 @@ typedef struct {
 
 static void loadDoomTextureDefs(void)
 {
-    lumpnum_t           i, pnamesLump, *patchLumpList;
-    size_t              numPatches;
-    int                 count = 0, countCustom = 0, *eCount;
-    doomtexturedef_t**  list = NULL, **listCustom = NULL, ***eList;
-    boolean             firstNull;
+    lumpnum_t i, pnamesLump, *patchLumpList;
+    size_t numPatches;
+    int count = 0, countCustom = 0, *eCount;
+    doomtexturedef_t** list = NULL, **listCustom = NULL, ***eList;
+    boolean firstNull;
 
     if((pnamesLump = W_CheckNumForName("PNAMES")) == -1)
         return;
@@ -1642,7 +1586,7 @@ static void loadDoomTextureDefs(void)
     firstNull = true;
     for(i = 0; i < numLumps; ++i)
     {
-        char                name[9];
+        char name[9];
 
         memset(name, 0, sizeof(name));
         strncpy(name, W_LumpName(i), 8);
@@ -1650,9 +1594,9 @@ static void loadDoomTextureDefs(void)
 
         if(!strncmp(name, "TEXTURE1", 8) || !strncmp(name, "TEXTURE2", 8))
         {
-            boolean             isFromIWAD = W_IsFromIWAD(i);
-            int                 newNumTexDefs;
-            doomtexturedef_t**  newTexDefs;
+            boolean isFromIWAD = W_IsFromIWAD(i);
+            int newNumTexDefs;
+            doomtexturedef_t** newTexDefs;
 
             // Read in the new texture defs.
             newTexDefs = readDoomTextureDefLump(i, patchLumpList, numPatches,
@@ -1662,9 +1606,9 @@ static void loadDoomTextureDefs(void)
             eCount = (isFromIWAD? &count : &countCustom);
             if(*eList)
             {
-                int                 i;
-                size_t              n;
-                doomtexturedef_t**  newList;
+                int i;
+                size_t n;
+                doomtexturedef_t** newList;
 
                 // Merge with the existing doomtexturedefs.
                 newList = Z_Malloc(sizeof(*newList) * ((*eCount) + newNumTexDefs),
@@ -1695,19 +1639,19 @@ static void loadDoomTextureDefs(void)
     if(listCustom)
     {   // There are custom doomtexturedefs, cross compare with the IWAD
         // originals to see if they have been changed.
-        size_t          n;
+        size_t n;
         doomtexturedef_t** newList;
 
         i = 0;
         while(i < count)
         {
-            int                 j;
-            doomtexturedef_t*   orig = list[i];
-            boolean             hasReplacement = false;
+            int j;
+            doomtexturedef_t* orig = list[i];
+            boolean hasReplacement = false;
 
             for(j = 0; j < countCustom; ++j)
             {
-                doomtexturedef_t*   custom = listCustom[j];
+                doomtexturedef_t* custom = listCustom[j];
 
                 if(!strncmp(orig->name, custom->name, 8))
                 {   // This is a newer version of an IWAD doomtexturedef.
@@ -1717,13 +1661,13 @@ static void loadDoomTextureDefs(void)
                             custom->width == orig->width &&
                             custom->patchCount == orig->patchCount)
                     {   // Check the patches.
-                        short               k = 0;
+                        short k = 0;
 
                         while(k < orig->patchCount &&
                               (custom->flags & TXDF_IWAD))
                         {
-                            texpatch_t*         origP = orig->patches + k;
-                            texpatch_t*         customP = custom->patches + k;
+                            texpatch_t* origP = orig->patches + k;
+                            texpatch_t* customP = custom->patches + k;
 
                             if(origP->lump != customP->lump &&
                                origP->offX != customP->offX &&
@@ -1744,7 +1688,7 @@ static void loadDoomTextureDefs(void)
 
             if(hasReplacement)
             {   // Let the PWAD "copy" override the IWAD original.
-                int                 n;
+                int n;
 
                 for(n = i + 1; n < count; ++n)
                     list[n-1] = list[n];
@@ -1784,8 +1728,8 @@ static void loadDoomTextureDefs(void)
  */
 void R_InitTextures(void)
 {
-    int                 i;
-    float               startTime = Sys_GetSeconds();
+    int i;
+    float startTime = Sys_GetSeconds();
 
     numDoomTextureDefs = 0;
     doomTextureDefs = NULL;
@@ -1798,8 +1742,8 @@ void R_InitTextures(void)
         // Create materials for the defined textures.
         for(i = 0; i < numDoomTextureDefs; ++i)
         {
-            doomtexturedef_t*     texDef = doomTextureDefs[i];
-            material_t*           mat;
+            doomtexturedef_t* texDef = doomTextureDefs[i];
+            material_t* mat;
 
             // Create a material for this texture.
             mat = Materials_NewMaterial(MN_TEXTURES, texDef->name, texDef->width,
@@ -1808,7 +1752,7 @@ void R_InitTextures(void)
                                    NULL, (texDef->flags & TXDF_IWAD) != 0);
             if(mat)
             {
-                const gltexture_t*    tex =
+                const gltexture_t* tex =
                     GL_CreateGLTexture(texDef->name, i, GLT_DOOMTEXTURE);
 
                 Material_AddLayer(mat, MATLF_MASKED, tex->id, 0, 0, 0, 0);
@@ -1854,7 +1798,7 @@ doomtexturedef_t* R_GetDoomTextureDef(int num)
  */
 material_t* R_MaterialForTextureId(material_namespace_t mnamespace, int idx)
 {
-    material_t*         mat = NULL;
+    material_t* mat = NULL;
 
     if(idx < 0)
         return NULL;
@@ -1863,7 +1807,7 @@ material_t* R_MaterialForTextureId(material_namespace_t mnamespace, int idx)
     {
     case MN_FLATS:
         {
-        lumpnum_t           firstFlatLump = W_CheckNumForName("F_START");
+        lumpnum_t firstFlatLump = W_CheckNumForName("F_START");
 
         if(firstFlatLump != -1)
             mat = P_MaterialForName(MN_FLATS, W_LumpName(firstFlatLump + idx));
@@ -1871,7 +1815,7 @@ material_t* R_MaterialForTextureId(material_namespace_t mnamespace, int idx)
         }
     case MN_TEXTURES:
         {
-        doomtexturedef_t*   def = R_GetDoomTextureDef(idx);
+        doomtexturedef_t* def = R_GetDoomTextureDef(idx);
 
         if(def)
         {
@@ -1909,7 +1853,7 @@ int R_TextureIdForName(material_namespace_t mnamespace, const char* name)
         {
         case MN_FLATS:
             {
-            lumpnum_t           lump, firstFlatLump;
+            lumpnum_t lump, firstFlatLump;
             
             if((lump = W_CheckNumForName(name)) != -1 &&
                (firstFlatLump = W_CheckNumForName("F_START")) != -1)
@@ -1918,11 +1862,11 @@ int R_TextureIdForName(material_namespace_t mnamespace, const char* name)
             }
         case MN_TEXTURES:
             {
-            int                 i;
+            int i;
 
             for(i = 0; i < numDoomTextureDefs; ++i)
             {
-                doomtexturedef_t*   def = doomTextureDefs[i];
+                doomtexturedef_t* def = doomTextureDefs[i];
 
                 if(!strnicmp(def->name, name, 8))
                     return i;
@@ -1944,11 +1888,10 @@ int R_TextureIdForName(material_namespace_t mnamespace, const char* name)
  */
 static int R_NewFlat(lumpnum_t lump)
 {
-    int                 i;
-    flat_t**            newlist, *ptr;
-    material_t*         mat;
+    int i;
+    flat_t** newlist, *ptr;
+    material_t* mat;
     
-
     for(i = 0; i < numFlats; ++i)
     {
         ptr = flats[i];
@@ -1985,7 +1928,7 @@ static int R_NewFlat(lumpnum_t lump)
                            W_IsFromIWAD(lump));
     if(mat)
     {
-        const gltexture_t*  tex =
+        const gltexture_t* tex =
             GL_CreateGLTexture(W_LumpName(lump), numFlats - 1, GLT_FLAT);
 
         Material_AddLayer(mat, 0, tex->id, 0, 0, 0, 0);
@@ -2001,15 +1944,15 @@ static int R_NewFlat(lumpnum_t lump)
 
 void R_InitFlats(void)
 {
-    int                 i;
-    float               starttime = Sys_GetSeconds();
-    ddstack_t*          stack = Stack_New();
+    int i;
+    float starttime = Sys_GetSeconds();
+    ddstack_t* stack = Stack_New();
 
     numFlats = 0;
 
     for(i = 0; i < numLumps; ++i)
     {
-        const char*         name = W_LumpName(i);
+        const char* name = W_LumpName(i);
 
         if(name[0] == 'F')
         {
@@ -2045,11 +1988,11 @@ void R_InitFlats(void)
 
 uint R_CreateSkinTex(const char* skin, boolean isShinySkin)
 {
-    int                 id;
-    skinname_t*         st;
-    char                realPath[256];
-    char                name[9];
-    const gltexture_t*  glTex;
+    int id;
+    skinname_t* st;
+    char realPath[256];
+    char name[9];
+    const gltexture_t* glTex;
 
     if(!skin[0])
         return 0;
@@ -2097,9 +2040,9 @@ Con_Message("R_GetSkinTex: Too many model skins!\n");
 static boolean expandSkinName(char* expanded, const char* skin,
                               const char* modelfn, size_t len)
 {
-    directory_t         mydir;
-    ddstring_t          fn;
-    boolean             found;
+    directory_t mydir;
+    ddstring_t fn;
+    boolean found;
 
     // The "first choice" directory.
     memset(&mydir, 0, sizeof(mydir));
@@ -2130,7 +2073,7 @@ uint R_RegisterSkin(char* fullpath, const char* skin, const char* modelfn,
     // Has a skin name been provided?
     if(skin && skin[0])
     {
-        filename_t          buf;
+        filename_t buf;
 
         if(expandSkinName(fullpath ? fullpath : buf, skin, modelfn, len))
             return R_CreateSkinTex(fullpath ? fullpath : buf, isShinySkin);
@@ -2149,7 +2092,7 @@ const skinname_t* R_GetSkinNameByIndex(uint id)
 
 uint R_GetSkinNumForName(const char* path)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < numSkinNames; ++i)
         if(!stricmp(skinNames[i].path, path))
@@ -2302,7 +2245,7 @@ void R_PrecachePatch(lumpnum_t num)
 
 static boolean isInList(void** list, size_t len, void* elm)
 {
-    size_t              n;
+    size_t n;
 
     if(!list || !elm || len == 0)
         return false;
@@ -2316,9 +2259,9 @@ static boolean isInList(void** list, size_t len, void* elm)
 
 int findSpriteOwner(void* p, void* context)
 {
-    int                 i;
-    mobj_t*             mo = (mobj_t*) p;
-    spritedef_t*        sprDef = (spritedef_t*) context;
+    int i;
+    mobj_t* mo = (mobj_t*) p;
+    spritedef_t* sprDef = (spritedef_t*) context;
 
     if(mo->type >= 0 && mo->type < defs.count.mobjs.num)
     {
@@ -2343,7 +2286,7 @@ int findSpriteOwner(void* p, void* context)
  */
 void R_PrecacheMobjNum(int num)
 {
-    int                 i;
+    int i;
 
     if(!((useModels && precacheSkins) || precacheSprites))
         return;
@@ -2354,7 +2297,7 @@ void R_PrecacheMobjNum(int num)
     //// \optimize Traverses the entire state list!
     for(i = 0; i < defs.count.states.num; ++i)
     {
-        state_t*            state;
+        state_t* state;
 
         if(stateOwners[i] != &mobjInfo[num])
             continue;
@@ -2364,13 +2307,13 @@ void R_PrecacheMobjNum(int num)
 
         if(precacheSprites)
         {
-            int                 j;
-            spritedef_t*        sprDef = &sprites[state->sprite];
+            int j;
+            spritedef_t* sprDef = &sprites[state->sprite];
 
             for(j = 0; j < sprDef->numFrames; ++j)
             {
-                int                 k;
-                spriteframe_t*      sprFrame = &sprDef->spriteFrames[j];
+                int k;
+                spriteframe_t* sprFrame = &sprDef->spriteFrames[j];
 
                 for(k = 0; k < 8; ++k)
                     Material_Precache(sprFrame->mats[k]);
@@ -2540,11 +2483,11 @@ Con_Message("R_CreateDetailTexture: Too many detail textures!\n");
 
 detailtex_t* R_GetDetailTexture(lumpnum_t lump, const char* external)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numDetailTextures; ++i)
     {
-        detailtex_t*        dTex = detailTextures[i];
+        detailtex_t* dTex = detailTextures[i];
 
         if(dTex->lump == lump &&
            ((dTex->external == NULL && external == NULL) ||
@@ -2560,7 +2503,7 @@ detailtex_t* R_GetDetailTexture(lumpnum_t lump, const char* external)
  */
 void R_DestroyDetailTextures(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numDetailTextures; ++i)
     {
@@ -2575,9 +2518,9 @@ void R_DestroyDetailTextures(void)
 
 lightmap_t* R_CreateLightMap(const ded_lightmap_t* def)
 {
-    char                name[9];
-    const gltexture_t*  glTex;
-    lightmap_t*         lmap;
+    char name[9];
+    const gltexture_t* glTex;
+    lightmap_t* lmap;
 
     if(!def->id[0] || def->id[0] == '-')
         return NULL; // Not a lightmap
@@ -2616,13 +2559,13 @@ Con_Message("R_CreateLightMap: Too many lightmaps!\n");
 
 lightmap_t* R_GetLightMap(const char* external)
 {
-    int                 i;
+    int i;
 
     if(external && external[0] && external[0] != '-')
     {
         for(i = 0; i < numLightMaps; ++i)
         {
-            lightmap_t*         lmap = lightMaps[i];
+            lightmap_t* lmap = lightMaps[i];
 
             if(!stricmp(lmap->external, external))
                 return lmap;
@@ -2637,7 +2580,7 @@ lightmap_t* R_GetLightMap(const char* external)
  */
 void R_DestroyLightMaps(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numLightMaps; ++i)
     {
@@ -2652,9 +2595,9 @@ void R_DestroyLightMaps(void)
 
 flaretex_t* R_CreateFlareTexture(const ded_flaremap_t* def)
 {
-    flaretex_t*         fTex;
-    char                name[9];
-    const gltexture_t*  glTex;
+    flaretex_t* fTex;
+    char name[9];
+    const gltexture_t* glTex;
 
     if(!def->id || !def->id[0] || def->id[0] == '-')
         return NULL; // Not a flare texture.
@@ -2698,14 +2641,14 @@ Con_Message("R_CreateFlareTexture: Too many flare textures!\n");
 
 flaretex_t* R_GetFlareTexture(const char* external)
 {
-    int                 i;
+    int i;
 
     if(!external || !external[0] || external[0] == '-')
         return NULL;
 
     for(i = 0; i < numFlareTextures; ++i)
     {
-        flaretex_t*         fTex = flareTextures[i];
+        flaretex_t* fTex = flareTextures[i];
 
         if(!stricmp(fTex->external, external))
             return fTex;
@@ -2719,7 +2662,7 @@ flaretex_t* R_GetFlareTexture(const char* external)
  */
 void R_DestroyFlareTextures(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numFlareTextures; ++i)
     {
@@ -2734,9 +2677,9 @@ void R_DestroyFlareTextures(void)
 
 shinytex_t* R_CreateShinyTexture(const ded_reflection_t* def)
 {
-    char                name[9];
-    const gltexture_t*  glTex;
-    shinytex_t*         sTex;
+    char name[9];
+    const gltexture_t* glTex;
+    shinytex_t* sTex;
 
     // Have we already created one for this?
     if((sTex = R_GetShinyTexture(def->shinyMap.path)))
@@ -2773,12 +2716,12 @@ Con_Message("R_CreateShinyTexture: Too many shiny textures!\n");
 
 shinytex_t* R_GetShinyTexture(const char* external)
 {
-    int                 i;
+    int i;
 
     if(external && external[0])
         for(i = 0; i < numShinyTextures; ++i)
         {
-            shinytex_t*         sTex = shinyTextures[i];
+            shinytex_t* sTex = shinyTextures[i];
 
             if(!stricmp(sTex->external, external))
                 return sTex;
@@ -2792,7 +2735,7 @@ shinytex_t* R_GetShinyTexture(const char* external)
  */
 void R_DestroyShinyTextures(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numShinyTextures; ++i)
     {
@@ -2807,9 +2750,9 @@ void R_DestroyShinyTextures(void)
 
 masktex_t* R_CreateMaskTexture(const ded_reflection_t* def)
 {
-    char                name[9];
-    const gltexture_t*  glTex;
-    masktex_t*          mTex;
+    char name[9];
+    const gltexture_t* glTex;
+    masktex_t* mTex;
 
     // Have we already created one for this?
     if((mTex = R_GetMaskTexture(def->maskMap.path)))
@@ -2848,12 +2791,12 @@ Con_Message("R_CreateMaskTexture: Too many mask textures!\n");
 
 masktex_t* R_GetMaskTexture(const char* external)
 {
-    int                 i;
+    int i;
 
     if(external && external[0])
         for(i = 0; i < numMaskTextures; ++i)
         {
-            masktex_t*      mTex = maskTextures[i];
+            masktex_t* mTex = maskTextures[i];
 
             if(!stricmp(mTex->external, external))
                 return mTex;
@@ -2867,7 +2810,7 @@ masktex_t* R_GetMaskTexture(const char* external)
  */
 void R_DestroyMaskTextures(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < numMaskTextures; ++i)
     {

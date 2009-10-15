@@ -285,6 +285,8 @@ void P_DestroyMap(gamemap_t* map)
     }
     map->nodes = NULL;
     map->numNodes = 0;
+
+    Z_Free(map);
 }
 
 /**
@@ -498,8 +500,6 @@ boolean P_LoadMap(const char* mapID)
         // Initialize the lighting grid.
         LG_Init(map);
 
-        if(!isDedicated)
-            R_InitRendVerticesPool();
         return true;
     }
 

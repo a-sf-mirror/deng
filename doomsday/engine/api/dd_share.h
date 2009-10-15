@@ -484,8 +484,9 @@ typedef enum
 //------------------------------------------------------------------------
 
 #define PU_STATIC           1 // Static entire execution time.
-#define PU_SOUND            2 // Static while playing.
-#define PU_MUSIC            3 // Static while playing.
+#define PU_STATICSEQ        2 // Static non-purgeable sequence.
+#define PU_SOUND            3 // Static while playing.
+#define PU_MUSIC            4 // Static while playing.
 
 #define PU_USER1            40
 #define PU_USER2            41
@@ -500,7 +501,6 @@ typedef enum
 
 #define PU_MAP              50 // Static until map exited (may still be
                                // freed during the map, though).
-#define PU_MAPSTATIC        52 // Not freed until map exited.
 
 // Tags >= 100 are purgable whenever needed.
 #define PU_PURGELEVEL       100

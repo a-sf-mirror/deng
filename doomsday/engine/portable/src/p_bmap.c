@@ -145,13 +145,13 @@ static __inline int yToSubSectorBlockY(bmap_t* bmap, float y)
 
 static bmap_t* allocBmap(void)
 {
-    return Z_Calloc(sizeof(bmap_t), PU_MAPSTATIC, 0);
+    return Z_Calloc(sizeof(bmap_t), PU_MAP, 0);
 }
 
 blockmap_t* P_CreateBlockmap(const pvec2_t min, const pvec2_t max,
                              uint width, uint height)
 {
-    bmap_t*         bmap = allocBmap();
+    bmap_t* bmap = allocBmap();
 
     V2_Copy(bmap->bBox[0], min);
     V2_Copy(bmap->bBox[1], max);
@@ -162,9 +162,8 @@ blockmap_t* P_CreateBlockmap(const pvec2_t min, const pvec2_t max,
            (bmap->bBox[1][VX] - bmap->bBox[0][VX]) / bmap->dimensions[VX],
            (bmap->bBox[1][VY] - bmap->bBox[0][VY]) / bmap->dimensions[VY]);
 
-    bmap->gridmap =
-        M_GridmapCreate(bmap->dimensions[VX], bmap->dimensions[VY],
-                        sizeof(bmapblock_t), PU_MAPSTATIC);
+    bmap->gridmap = M_GridmapCreate(bmap->dimensions[VX], bmap->dimensions[VY],
+                                    sizeof(bmapblock_t), PU_MAP);
 
     VERBOSE(Con_Message
             ("P_BlockMapCreate: w=%i h=%i\n", bmap->dimensions[VX],

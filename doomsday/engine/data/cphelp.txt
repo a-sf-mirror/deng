@@ -614,9 +614,6 @@ desc = 1=Disable drawing of all sprites and masked walls.
 [rend-info-lums]
 desc = 1=Print lumobj count after rendering a frame.
 
-[rend-info-rendpolys]
-desc = 1=Print rendpoly pool state after rendering a frame.
-
 [rend-light]
 desc = 1=Render dynamic lights. 2=Process without rendering.
 

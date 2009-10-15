@@ -429,48 +429,22 @@ Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
 #endif*/
 }
 
-/**
- * Analyze the intersection list, and add any needed minihedges to the given
- * half-edge lists (one minihedge on each side).
- *
- * \note All the intersections in the cutList will be freed back into the
- * quick-alloc list for re-use!
- *
- * \todo Does this belong in here?
- */
-void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
-                       superblock_t* leftList, cutlist_t* cutList)
+static void mergeOverlappingIntersections(cnode_t* firstNode)
 {
-    clist_t*            list;
-    cnode_t*            node, *np;
+    cnode_t* node, *np;
 
-    if(!cutList)
-        return;
-
-    list = (clist_t*) cutList;
-/*
-#if _DEBUG
-BSP_CutListPrint(cutList);
-Con_Message("BSP_AddMiniHEdges: Partition (%1.1f,%1.1f) += (%1.1f,%1.1f)\n",
-            part->pSX, part->pSY, part->pDX, part->pDY);
-*/
-
-    /**
-     * Step 1: Fix problems in the intersection list...
-     */
-    node = list->headPtr;
+    node = firstNode;
     np = node->next;
     while(node && np)
     {
-        intersection_t*     cur = node->data;
-        intersection_t*     next = np->data;
-        double              len = next->alongDist - cur->alongDist;
+        intersection_t* cur = node->data;
+        intersection_t* next = np->data;
+        double len = next->alongDist - cur->alongDist;
 
         if(len < -0.1)
         {
-            Con_Error("BSP_AddMiniHEdges: Bad order in intersect list - "
-                      "%1.3f > %1.3f\n",
-                      cur->alongDist, next->alongDist);
+            Con_Error("mergeOverlappingIntersections: Bad order in intersect list "
+                      "%1.3f > %1.3f\n", cur->alongDist, next->alongDist);
         }
         else if(len > 0.2)
         {
@@ -478,16 +452,14 @@ Con_Message("BSP_AddMiniHEdges: Partition (%1.1f,%1.1f) += (%1.1f,%1.1f)\n",
             np = node->next;
             continue;
         }
-        else if(len > DIST_EPSILON)
+/*        else if(len > DIST_EPSILON)
         {
-/*
 #if _DEBUG
 Con_Message(" Skipping very short half-edge (len=%1.3f) near "
             "(%1.1f,%1.1f)\n", len, cur->vertex->V_pos[VX],
             cur->vertex->V_pos[VY]);
 #endif
-*/
-        }
+        }*/
 
         // Merge the two intersections into one.
 /*
@@ -526,13 +498,18 @@ BSP_IntersectionPrint(cur);
 
         np = node->next;
     }
+}
 
-    // Step 2: Find connections in the intersection list...
-    node = list->headPtr;
+static void connectGaps(const bspartition_t* part, superblock_t* rightList,
+                        superblock_t* leftList, cnode_t* firstNode)
+{
+    cnode_t* node;
+
+    node = firstNode;
     while(node && node->next)
     {
-        intersection_t*     cur = node->data;
-        intersection_t*     next = (node->next? node->next->data : NULL);
+        intersection_t* cur = node->data;
+        intersection_t* next = (node->next? node->next->data : NULL);
 
         if(!(!cur->after && !next->before))
         {
@@ -541,35 +518,32 @@ BSP_IntersectionPrint(cur);
             {
                 if(!cur->selfRef)
                 {
-                    double              pos[2];
+                    double pos[2];
 
-                    pos[VX] = cur->vertex->buildData.pos[VX] +
-                        next->vertex->buildData.pos[VX];
-                    pos[VY] = cur->vertex->buildData.pos[VY] +
-                        next->vertex->buildData.pos[VY];
-
+                    pos[VX] = cur->vertex->buildData.pos[VX] + next->vertex->buildData.pos[VX];
+                    pos[VY] = cur->vertex->buildData.pos[VY] + next->vertex->buildData.pos[VY];
                     pos[VX] /= 2;
                     pos[VY] /= 2;
 
-                    MPE_RegisterUnclosedSectorNear(cur->after,
-                                                   pos[VX], pos[VY]);
+                    cur->after->flags |= SECF_UNCLOSED;
+
+                    MPE_RegisterUnclosedSectorNear(cur->after, pos[VX], pos[VY]);
                 }
             }
             else if(!cur->after && next->before)
             {
                 if(!next->selfRef)
                 {
-                    double              pos[2];
+                    double pos[2];
 
-                    pos[VX] = cur->vertex->buildData.pos[VX] +
-                        next->vertex->buildData.pos[VX];
-                    pos[VY] = cur->vertex->buildData.pos[VY] +
-                        next->vertex->buildData.pos[VY];
+                    pos[VX] = cur->vertex->buildData.pos[VX] + next->vertex->buildData.pos[VX];
+                    pos[VY] = cur->vertex->buildData.pos[VY] + next->vertex->buildData.pos[VY];
                     pos[VX] /= 2;
                     pos[VY] /= 2;
 
-                    MPE_RegisterUnclosedSectorNear(next->before,
-                                                   pos[VX], pos[VY]);
+                    next->before->flags |= SECF_UNCLOSED;
+
+                    MPE_RegisterUnclosedSectorNear(next->before, pos[VX], pos[VY]);
                 }
             }
             else
@@ -596,7 +570,7 @@ BSP_IntersectionPrint(cur);
                 }
 
                 {
-                hedge_t*            right, *left;
+                hedge_t* right, *left;
 
                 buildEdgeBetweenIntersections(part, cur, next, &right, &left);
 
@@ -611,13 +585,43 @@ BSP_IntersectionPrint(cur);
     }
 }
 
+/**
+ * Analyze the intersection list, and add any needed minihedges to the given
+ * half-edge lists (one minihedge on each side).
+ *
+ * \note All the intersections in the cutList will be freed back into the
+ * quick-alloc list for re-use!
+ *
+ * \todo Does this belong in here?
+ */
+void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
+                       superblock_t* leftList, cutlist_t* cutList)
+{
+    clist_t* list;
+
+    if(!cutList)
+        return;
+
+/*
+#if _DEBUG
+BSP_CutListPrint(cutList);
+Con_Message("BSP_AddMiniHEdges: Partition (%1.1f,%1.1f) += (%1.1f,%1.1f)\n",
+            part->pSX, part->pSY, part->pDX, part->pDY);
+*/
+
+    list = (clist_t*) cutList;
+
+    mergeOverlappingIntersections(list->headPtr);
+    connectGaps(part, rightList, leftList, list->headPtr);
+}
+
 #if _DEBUG
 void BSP_CutListPrint(cutlist_t* cutList)
 {
     if(cutList)
     {
-        clist_t*            list = (clist_t*) cutList;
-        cnode_t*            node;
+        clist_t* list = (clist_t*) cutList;
+        cnode_t* node;
 
         Con_Message("CutList %p:\n", list);
         node = list->headPtr;

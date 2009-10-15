@@ -421,10 +421,10 @@ void MPE_PruneRedundantMapData(editmap_t* map, int flags)
  *
  * @return              @c true, if sector was registered.
  */
-boolean MPE_RegisterUnclosedSectorNear(sector_t *sec, double x, double y)
+boolean MPE_RegisterUnclosedSectorNear(sector_t* sec, double x, double y)
 {
-    uint                i;
-    usecrecord_t       *usec;
+    uint i;
+    usecrecord_t* usec;
 
     if(!sec)
         return false; // Wha?
@@ -444,9 +444,6 @@ boolean MPE_RegisterUnclosedSectorNear(sector_t *sec, double x, double y)
     usec->nearPos[VX] = x;
     usec->nearPos[VY] = y;
 
-    // Flag the sector as unclosed.
-    sec->flags |= SECF_UNCLOSED;
-
     return true;
 }
 
@@ -455,18 +452,22 @@ boolean MPE_RegisterUnclosedSectorNear(sector_t *sec, double x, double y)
  */
 void MPE_PrintUnclosedSectorList(void)
 {
-    uint                i;
+    uint i;
 
     if(!editMapInited)
         return;
 
-    for(i = 0; i < numUnclosedSectors; ++i)
+    if(numUnclosedSectors)
     {
-        usecrecord_t       *usec = &unclosedSectors[i];
+        Con_Printf("Warning, found %u unclosed sectors:\n", numUnclosedSectors);
 
-        Con_Message("Sector #%d is unclosed near (%1.1f,%1.1f)\n",
-                    usec->sec->buildData.index - 1, usec->nearPos[VX],
-                    usec->nearPos[VY]);
+        for(i = 0; i < numUnclosedSectors; ++i)
+        {
+            usecrecord_t* usec = &unclosedSectors[i];
+
+            Con_Printf("  #%d near [%1.1f, %1.1f]\n", usec->sec->buildData.index - 1,
+                       usec->nearPos[VX], usec->nearPos[VY]);
+        }
     }
 }
 
@@ -1052,22 +1053,21 @@ static void setVertexLineOwner(vertex_t *vtx, linedef_t *lineptr,
  */
 static void buildVertexOwnerRings(editmap_t* map)
 {
-    uint                i;
-    lineowner_t*        lineOwners, *allocator;
+    uint i;
+    lineowner_t* lineOwners, *allocator;
 
     // We know how many vertex line owners we need (numLineDefs * 2).
-    lineOwners =
-        Z_Malloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_MAPSTATIC, 0);
+    lineOwners = Z_Malloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_MAP, 0);
     allocator = lineOwners;
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        uint                p;
-        linedef_t*          line = map->lineDefs[i];
+        uint p;
+        linedef_t* line = map->lineDefs[i];
 
         for(p = 0; p < 2; ++p)
         {
-            vertex_t*           vtx = line->buildData.v[p];
+            vertex_t* vtx = line->buildData.v[p];
 
             setVertexLineOwner(vtx, line, &allocator);
         }

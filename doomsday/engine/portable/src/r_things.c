@@ -180,19 +180,17 @@ void VL_InitForNewFrame(void)
  */
 static uint newVLightList(boolean sortByDist)
 {
-    vlightlist_t*       list;
+    vlightlist_t* list;
 
     // Ran out of vlight link lists?
     if(++vLightLinkListCursor >= numVLightLinkLists)
     {
-        uint                newNum = numVLightLinkLists * 2;
+        uint newNum = numVLightLinkLists * 2;
 
         if(!newNum)
             newNum = 2;
 
-        vLightLinkLists =
-            Z_Realloc(vLightLinkLists, newNum * sizeof(vlightlist_t),
-                      PU_MAP);
+        vLightLinkLists = Z_Realloc(vLightLinkLists, newNum * sizeof(vlightlist_t), PU_MAP);
         numVLightLinkLists = newNum;
     }
 
@@ -205,7 +203,7 @@ static uint newVLightList(boolean sortByDist)
 
 static vlightnode_t* newVLightNode(void)
 {
-    vlightnode_t*       node;
+    vlightnode_t* node;
 
     // Have we run out of nodes?
     if(vLightCursor == NULL)

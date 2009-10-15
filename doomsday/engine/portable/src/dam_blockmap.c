@@ -374,14 +374,13 @@ blockmap_t* DAM_BuildBlockMap(vertex_t*** vertexes, uint* numVertexes,
                 linedef_t** lines, **ptr;
 
                 // A NULL-terminated array of pointers to lines.
-                lines = Z_Malloc((count + 1) * sizeof(linedef_t *),
-                                 PU_MAPSTATIC, NULL);
+                lines = Z_Malloc((count + 1) * sizeof(linedef_t*), PU_MAP, NULL);
 
                 // Copy pointers to the array, delete the nodes.
                 ptr = lines;
                 while(bl)
                 {
-                    linelist_t *tmp = bl->next;
+                    linelist_t* tmp = bl->next;
 
                     *ptr++ = (linedef_t *) bl->line;
 

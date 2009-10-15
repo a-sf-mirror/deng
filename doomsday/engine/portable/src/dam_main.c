@@ -76,7 +76,7 @@ static boolean convertMap(const char* mapID)
 
 gamemap_t* DAM_CreateMap(void)
 {
-    return Z_Calloc(sizeof(gamemap_t), PU_MAPSTATIC, 0);
+    return Z_Calloc(sizeof(gamemap_t), PU_STATIC, 0);
 }
 
 ddstring_t* DAM_ComposeArchiveMapFilepath(const char* mapID)

@@ -903,9 +903,7 @@ surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf)
     if(!suf)
         return NULL;
 
-    decorations =
-        Z_Malloc(sizeof(*decorations) * (++suf->numDecorations),
-                 PU_MAP, 0);
+    decorations = Z_Malloc(sizeof(*decorations) * (++suf->numDecorations), PU_MAP, 0);
 
     if(suf->numDecorations > 1)
     {   // Copy the existing decorations.
@@ -1870,10 +1868,10 @@ linedef_t *R_FindLineAlignNeighbor(const sector_t *sec,
 #undef SEP
 }
 
-void R_InitLinks(gamemap_t *map)
+void R_InitLinks(gamemap_t* map)
 {
-    uint                i;
-    uint                starttime;
+    uint i;
+    uint starttime;
 
     Con_Message("R_InitLinks: Initializing\n");
 
@@ -1884,7 +1882,7 @@ void R_InitLinks(gamemap_t *map)
     // Allocate the rings.
     starttime = Sys_GetRealTime();
     map->lineLinks =
-        Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_MAPSTATIC, 0);
+        Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_MAP, 0);
     for(i = 0; i < map->numLineDefs; ++i)
         map->lineLinks[i] = NP_New(&map->lineNodes, NP_ROOT_NODE);
     // How much time did we spend?

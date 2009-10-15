@@ -482,10 +482,10 @@ boolean N_ReceiveReliably(nodeid_t from)
  * Send the data buffer over the control link, which is a TCP
  * connection.
  */
-void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
+void N_SendDataBufferReliably(void* data, size_t size, nodeid_t destination)
 {
-    int             result;
-    netnode_t      *node = &netNodes[destination];
+    int result;
+    netnode_t* node = &netNodes[destination];
 
     if(size == 0 || !node->sock || !node->hasJoined)
         return;
@@ -532,11 +532,11 @@ void N_SendDataBufferReliably(void *data, size_t size, nodeid_t destination)
  * Send the buffer to the destination. For clients, the server is the only
  * possible destination (doesn't depend on the value of 'destination').
  */
-void N_SendDataBuffer(void *data, size_t size, nodeid_t destination)
+void N_SendDataBuffer(void* data, size_t size, nodeid_t destination)
 {
-    sqpack_t       *pack;
-    UDPpacket      *p;
-    netnode_t      *node;
+    sqpack_t* pack;
+    UDPpacket* p;
+    netnode_t* node;
 
     // If the send queue is not active, we can't send anything.
     if(!sendQ.online)

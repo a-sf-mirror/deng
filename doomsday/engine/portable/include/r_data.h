@@ -255,14 +255,12 @@ extern int numMaskTextures;
 extern uint numSkinNames;
 extern skinname_t* skinNames;
 
-void            R_InitRendVerticesPool(void);
 rvertex_t*      R_AllocRendVertices(uint num);
 rcolor_t*       R_AllocRendColors(uint num);
 rtexcoord_t*    R_AllocRendTexCoords(uint num);
 void            R_FreeRendVertices(rvertex_t* rvertices);
 void            R_FreeRendColors(rcolor_t* rcolors);
 void            R_FreeRendTexCoords(rtexcoord_t* rtexcoords);
-void            R_InfoRendVerticesPool(void);
 
 rvertex_t*      R_VerticesFromRendSeg(struct rendseg_s* rseg, uint* size);
 void            R_TexmapUnitsFromRendSeg(struct rendseg_s* rseg, rtexmapunit_t rTU[NUM_TEXMAP_UNITS],

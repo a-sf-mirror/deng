@@ -64,7 +64,7 @@
 
 static __inline hedge_t* allocHEdge(void)
 {
-    return Z_Calloc(sizeof(hedge_t), PU_MAP, 0);
+    return Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
 }
 
 static __inline void freeHEdge(hedge_t* hEdge)

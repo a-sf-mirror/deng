@@ -168,7 +168,7 @@ void LO_InitForMap(gamemap_t* map)
 {
     // First initialize the subsector links (root pointers).
     subsectorLumObjList =
-        Z_Calloc(sizeof(*subsectorLumObjList) * map->numSubsectors, PU_MAPSTATIC, 0);
+        Z_Calloc(sizeof(*subsectorLumObjList) * map->numSubsectors, PU_MAP, 0);
 
     maxLuminous = 0;
     luminousBlockSet = NULL; // Will have already been free'd.

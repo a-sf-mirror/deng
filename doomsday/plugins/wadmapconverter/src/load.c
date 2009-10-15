@@ -313,11 +313,11 @@ void LogUnknownMaterials(void)
  * Attempts to load the BLOCKMAP data resource.
  */
 #if 0 // Needs updating.
-static boolean loadBlockmap(tempmap_t *map, maplumpinfo_t *maplump)
+static boolean loadBlockmap(tempmap_t* map, maplumpinfo_t* maplump)
 {
 #define MAPBLOCKUNITS       128
 
-    boolean     generateBMap = (createBMap == 2)? true : false;
+    boolean generateBMap = (createBMap == 2)? true : false;
 
     Con_Message("WadMapConverter::loadBlockmap: Processing...\n");
 
@@ -337,13 +337,13 @@ static boolean loadBlockmap(tempmap_t *map, maplumpinfo_t *maplump)
     }
     else
     {   // No, the existing data is valid - so load it in.
-        uint        startTime;
-        blockmap_t *blockmap;
-        uint        x, y, width, height;
-        float       v[2];
-        vec2_t      bounds[2];
-        long       *lineListOffsets, i, n, numBlocks, blockIdx;
-        short      *blockmapLump;
+        uint startTime;
+        blockmap_t* blockmap;
+        uint x, y, width, height;
+        float v[2];
+        vec2_t bounds[2];
+        long* lineListOffsets, i, n, numBlocks, blockIdx;
+        short* blockmapLump;
 
         VERBOSE(
         Con_Message("loadBlockMap: Converting existing blockmap...\n"));
@@ -395,9 +395,9 @@ static boolean loadBlockmap(tempmap_t *map, maplumpinfo_t *maplump)
         for(y = 0; y < height; ++y)
             for(x = 0; x < width; ++x)
             {
-                long        offset = lineListOffsets[blockIdx];
-                long        idx;
-                uint        count;
+                long offset = lineListOffsets[blockIdx];
+                long idx;
+                uint count;
 
 #if _DEBUG
 if(SHORT(blockmapLump[offset]) != 0)
@@ -415,11 +415,10 @@ if(SHORT(blockmapLump[offset]) != 0)
 
                 if(count > 0)
                 {
-                    linedef_t    **lines, **ptr;
+                    linedef_t** lines, **ptr;
 
                     // A NULL-terminated array of pointers to lines.
-                    lines = Z_Malloc((count + 1) * sizeof(linedef_t *),
-                                    PU_MAPSTATIC, NULL);
+                    lines = Z_Malloc((count + 1) * sizeof(linedef_t *), PU_MAP, NULL);
 
                     // Copy pointers to the array, delete the nodes.
                     ptr = lines;
@@ -574,7 +573,7 @@ static void buildReject(gamemap_t *map)
     }
 
     rejectSize = (numSectors * numSectors + 7) / 8;
-    matrix = Z_Calloc(rejectSize, PU_MAPSTATIC, 0);
+    matrix = Z_Calloc(rejectSize, PU_MAP, 0);
 
     for(view = 0; view < numSectors; ++view)
         for(target = 0; target < view; ++target)

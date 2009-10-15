@@ -491,9 +491,9 @@ void *Z_Malloc(size_t size, int tag, void *user)
                 {
                     base->user = user;      // mark as an in use block
 #ifdef FAKE_MEMORY_ZONE
-                    *(void **) user = base->area;
+                    *(void**) user = base->area;
 #else
-                    *(void **) user = (void *) ((byte *) base + sizeof(memblock_t));
+                    *(void**) user = (void*) ((byte*) base + sizeof(memblock_t));
 #endif
                 }
                 else
@@ -505,10 +505,9 @@ void *Z_Malloc(size_t size, int tag, void *user)
                 }
                 base->tag = tag;
 
-                if(tag == PU_MAPSTATIC)
+                if(tag == PU_STATICSEQ)
                 {
-                    // Level-statics are linked into unpurgable sequences so they can
-                    // be skipped en masse.
+                    // Linked into unpurgable sequences so they can be skipped en masse.
                     base->seqFirst = base;
                     base->seqLast = base;
                     if(base->prev->seqFirst)

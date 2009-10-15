@@ -148,7 +148,6 @@ void R_Register(void)
     C_VAR_BYTE("rend-info-deltas-angles", &showViewAngleDeltas, 0, 0, 1);
     C_VAR_BYTE("rend-info-deltas-pos", &showViewPosDeltas, 0, 0, 1);
     C_VAR_BYTE("rend-info-frametime", &showFrameTimePos, 0, 0, 1);
-    C_VAR_BYTE("rend-info-rendpolys", &rendInfoRPolys, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_INT("rend-info-tris", &rendInfoTris, 0, 0, 1);
     C_VAR_FLOAT("rend-surface-material-fade-seconds", &rendMaterialFadeSeconds, CVF_NO_MAX, 0, 1);
 //    C_VAR_INT("rend-vsync", &useVSync, 0, 0, 1);
@@ -193,7 +192,7 @@ void R_SetViewWindow(int x, int y, int w, int h)
  */
 int R_GetViewPort(int player, int* x, int* y, int* w, int* h)
 {
-    int                 p = P_ConsoleToLocal(player);
+    int p = P_ConsoleToLocal(player);
 
     if(p != -1)
     {
@@ -214,8 +213,8 @@ int R_GetViewPort(int player, int* x, int* y, int* w, int* h)
  */
 void R_ViewPortPlacement(viewport_t* port, int x, int y)
 {
-    float               w = theWindow->width / (float) gridCols;
-    float               h = theWindow->height / (float) gridRows;
+    float w = theWindow->width / (float) gridCols;
+    float h = theWindow->height / (float) gridRows;
 
     port->x = x * w;
     port->y = y * h;
@@ -230,7 +229,7 @@ void R_ViewPortPlacement(viewport_t* port, int x, int y)
  */
 void R_SetViewGrid(int numCols, int numRows)
 {
-    int                 x, y, p;
+    int x, y, p;
 
     if(numCols > 0 && numRows > 0)
     {
@@ -386,7 +385,7 @@ void R_ResetViewer(void)
 void R_InterpolateViewer(viewer_t* start, viewer_t* end, float pos,
                          viewer_t* out)
 {
-    float               inv = 1 - pos;
+    float inv = 1 - pos;
 
     out->pos[VX] = inv * start->pos[VX] + pos * end->pos[VX];
     out->pos[VY] = inv * start->pos[VY] + pos * end->pos[VY];
@@ -431,7 +430,7 @@ void R_CheckViewerLimits(viewer_t* src, viewer_t* dst)
  */
 void R_GetSharpView(viewer_t* view, player_t* player)
 {
-    ddplayer_t*         ddpl;
+    ddplayer_t* ddpl;
 
     if(!player || !player->shared.mo)
     {
@@ -448,14 +447,14 @@ void R_GetSharpView(viewer_t* view, player_t* player)
     view->pos[VZ] = ddpl->viewZ + viewZOffset;
     if((ddpl->flags & DDPF_CHASECAM) && !(ddpl->flags & DDPF_CAMERA))
     {
-        /* STUB
-         * This needs to be fleshed out with a proper third person
+        /**
+         * @todo This needs to be fleshed out with a proper third person
          * camera control setup. Currently we simply project the viewer's
-         * position a set distance behind the ddpl.
+         * position a set distance behind the player.
          */
-        angle_t             pitch = LOOKDIR2DEG(view->pitch) / 360 * ANGLE_MAX;
-        angle_t             angle = view->angle;
-        float               distance = 90;
+        angle_t pitch = LOOKDIR2DEG(view->pitch) / 360 * ANGLE_MAX;
+        angle_t angle = view->angle;
+        float distance = 90;
 
         angle = view->angle >> ANGLETOFINESHIFT;
         pitch >>= ANGLETOFINESHIFT;
@@ -644,10 +643,10 @@ void R_SetupFrame(player_t* player)
 {
 #define MINEXTRALIGHTFRAMES         2
 
-    int                 tableAngle;
-    float               yawRad, pitchRad;
-    viewer_t            sharpView, smoothView;
-    viewdata_t*         vd;
+    int tableAngle;
+    float yawRad, pitchRad;
+    viewer_t sharpView, smoothView;
+    viewdata_t* vd;
 
     // Reset the GL triangle counter.
     polyCounter = 0;
@@ -698,10 +697,9 @@ void R_SetupFrame(player_t* player)
                 float            yaw, pitch;
             } oldangle_t;
 
-            static oldangle_t       oldangle[DDMAXPLAYERS];
-            oldangle_t*             old = &oldangle[viewPlayer - ddPlayers];
-            float                   yaw =
-                (double)smoothView.angle / ANGLE_MAX * 360;
+            static oldangle_t oldangle[DDMAXPLAYERS];
+            oldangle_t* old = &oldangle[viewPlayer - ddPlayers];
+            float yaw = (double)smoothView.angle / ANGLE_MAX * 360;
 
             Con_Message("(%i) F=%.3f dt=%-10.3f dx=%-10.3f dy=%-10.3f "
                         "Rdx=%-10.3f Rdy=%-10.3f\n",
@@ -725,8 +723,8 @@ void R_SetupFrame(player_t* player)
                 float            x, y, z;
             } oldpos_t;
 
-            static oldpos_t         oldpos[DDMAXPLAYERS];
-            oldpos_t*               old = &oldpos[viewPlayer - ddPlayers];
+            static oldpos_t oldpos[DDMAXPLAYERS];
+            oldpos_t* old = &oldpos[viewPlayer - ddPlayers];
 
             Con_Message("(%i) F=%.3f dt=%-10.3f dx=%-10.3f dy=%-10.3f dz=%-10.3f\n",
                         //"Rdx=%-10.3f Rdy=%-10.3f\n",
@@ -833,11 +831,11 @@ void R_RenderBlankView(void)
  */
 void R_RenderPlayerView(int num)
 {
-    extern boolean      firstFrameAfterLoad;
-    extern int          psp3d, modelTriCount;
+    extern boolean firstFrameAfterLoad;
+    extern int psp3d, modelTriCount;
 
-    int                 oldFlags = 0;
-    player_t*           player;
+    int oldFlags = 0;
+    player_t* player;
 
     if(num < 0 || num >= DDMAXPLAYERS)
         return; // Huh?
@@ -921,8 +919,6 @@ void R_RenderPlayerView(int num)
         Con_Printf("LumObjs: %-4i\n", LO_GetNumLuminous());
     }
 
-    R_InfoRendVerticesPool();
-
     // The colored filter.
     GL_DrawFilter();
 }
@@ -932,9 +928,9 @@ void R_RenderPlayerView(int num)
  */
 void R_RenderViewPorts(void)
 {
-    int                 oldDisplay = displayPlayer;
-    int                 x, y, p;
-    GLbitfield          bits = GL_DEPTH_BUFFER_BIT;
+    int oldDisplay = displayPlayer;
+    int x, y, p;
+    GLbitfield bits = GL_DEPTH_BUFFER_BIT;
 
     if(firstFrameAfterLoad || freezeRLs)
     {
@@ -942,11 +938,11 @@ void R_RenderViewPorts(void)
     }
     else
     {
-        int                 i;
+        int i;
 
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t*           plr = &ddPlayers[i];
+            player_t* plr = &ddPlayers[i];
 
             if(!plr->shared.inGame || !(plr->shared.flags & DDPF_LOCAL))
                 continue;
@@ -1007,9 +1003,9 @@ void R_RenderViewPorts(void)
  *
  * @param lightvar      Ptr to the value to apply the adaptation to.
  */
-void R_ApplyLightAdaptation(float *lightvar)
+void R_ApplyLightAdaptation(float* lightvar)
 {
-    int                 lightval;
+    int lightval;
 
     if(lightvar == NULL)
         return; // Can't apply adaptation to a NULL val ptr...
@@ -1032,7 +1028,7 @@ void R_ApplyLightAdaptation(float *lightvar)
  */
 float R_LightAdaptationDelta(float lightvalue)
 {
-    int                 lightval;
+    int lightval;
 
     lightval = ROUND(255.0f * lightvalue);
     if(lightval > 254)

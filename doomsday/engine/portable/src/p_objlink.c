@@ -197,17 +197,16 @@ static objlink_t* allocObjLink(void)
 objblockmap_t* R_ObjBlockmapCreate(float originX, float originY, int width,
                                    int height)
 {
-    objblockmap_t*      obm;
+    objblockmap_t* obm;
 
-    obm = Z_Malloc(sizeof(objblockmap_t), PU_MAPSTATIC, 0);
+    obm = Z_Malloc(sizeof(objblockmap_t), PU_MAP, 0);
 
     // Origin has fixed-point coordinates.
     obm->origin[0] = FLT2FIX(originX);
     obm->origin[1] = FLT2FIX(originY);
     obm->width = width;
     obm->height = height;
-    obm->blocks = Z_Malloc(sizeof(*obm->blocks) * obm->width * obm->height,
-                           PU_MAPSTATIC, 0);
+    obm->blocks = Z_Malloc(sizeof(*obm->blocks) * obm->width * obm->height, PU_MAP, 0);
 
     return obm;
 }
