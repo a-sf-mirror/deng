@@ -480,9 +480,9 @@ static void destroyEdgeTips(gamemap_t* dest)
 {
     uint i;
 
-    for(i = 0; i < dest->numVertexes; ++i)
+    for(i = 0; i < dest->halfEdgeDS.numVertices; ++i)
     {
-        vertex_t* vtx = dest->vertexes[i];
+        vertex_t* vtx = dest->halfEdgeDS.vertices[i];
 
         {
         edgetip_t* tip, *n;
@@ -505,8 +505,8 @@ void SaveMap(gamemap_t* dest, void* rootNode, vertex_t*** vertexes,
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;
 
-    dest->numVertexes = *numVertexes;
-    dest->vertexes = *vertexes;
+    dest->halfEdgeDS.numVertices = *numVertexes;
+    dest->halfEdgeDS.vertices = *vertexes;
 
     destroyEdgeTips(dest);
     buildSegsFromHEdges(dest, rn);

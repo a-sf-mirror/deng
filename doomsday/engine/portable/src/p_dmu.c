@@ -681,7 +681,7 @@ void* P_GetVariable(int value)
         {
         gamemap_t* map = DMU_CurrentMap();
         if(map)
-            return &map->numVertexes;
+            return &map->halfEdgeDS.numVertices;
         return &count;
         }
     case DMU_POLYOBJ_COUNT:
@@ -935,8 +935,8 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
     case DMU_VERTEX:
         {
         gamemap_t* map = DMU_CurrentMap();
-        if(index < map->numVertexes)
-            return callback(DMU_GetObjRecord(DMU_VERTEX, map->vertexes[index]), context);
+        if(index < map->halfEdgeDS.numVertices)
+            return callback(DMU_GetObjRecord(DMU_VERTEX, map->halfEdgeDS.vertices[index]), context);
         break;
         }
     case DMU_SEG:

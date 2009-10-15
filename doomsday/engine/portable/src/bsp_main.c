@@ -278,7 +278,7 @@ boolean BSP_Build(gamemap_t* map, vertex_t*** vertexes, uint* numVertexes)
 
         Con_Message("BSP_Build: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
                     map->numNodes, map->halfEdgeDS.numFaces, map->halfEdgeDS.numHEdges,
-                    map->numVertexes);
+                    map->halfEdgeDS.numVertices);
 
         if(rootNode && !BinaryTree_IsLeaf(rootNode))
         {

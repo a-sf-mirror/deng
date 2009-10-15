@@ -224,9 +224,6 @@ typedef struct gamemap_s {
 
     float           bBox[4];
 
-    uint            numVertexes;
-    vertex_t**      vertexes;
-
     uint            numSectors;
     sector_t**      sectors;
 

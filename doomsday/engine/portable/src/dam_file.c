@@ -284,7 +284,7 @@ static void endSegment(void)
 
 static void writeVertex(const gamemap_t* map, uint idx)
 {
-    vertex_t* v = map->vertexes[idx];
+    vertex_t* v = map->halfEdgeDS.vertices[idx];
 
     writeFloat(v->pos[VX]);
     writeFloat(v->pos[VY]);
@@ -307,7 +307,7 @@ static void writeVertex(const gamemap_t* map, uint idx)
 
 static void readVertex(const gamemap_t* map, uint idx)
 {
-    vertex_t* v = map->vertexes[idx];
+    vertex_t* v = map->halfEdgeDS.vertices[idx];
 
     v->pos[VX] = readFloat();
     v->pos[VY] = readFloat();
@@ -351,15 +351,15 @@ static void archiveVertexes(gamemap_t* map, boolean write)
 
     if(write)
     {
-        writeLong((long) map->numVertexes);
-        for(i = 0; i < map->numVertexes; ++i)
+        writeLong((long) map->halfEdgeDS.numVertices);
+        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
             writeVertex(map, i);
     }
     else
     {
-        map->numVertexes = (uint) readLong();
-        map->vertexes = Z_Malloc(sizeof(vertex_t) * map->numVertexes, PU_STATIC, 0);
-        for(i = 0; i < map->numVertexes; ++i)
+        map->halfEdgeDS.numVertices = (uint) readLong();
+        map->halfEdgeDS.vertices = Z_Malloc(sizeof(vertex_t) * map->halfEdgeDS.numVertices, PU_STATIC, 0);
+        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
             readVertex(map, i);
     }
 
@@ -1106,7 +1106,6 @@ static void archiveMap(gamemap_t *map, boolean write)
         // Call the game's setup routines.
         if(gx.SetupForMapData)
         {
-            gx.SetupForMapData(DMU_VERTEX, map->numVertexes);
             gx.SetupForMapData(DMU_LINEDEF, map->numLineDefs);
             gx.SetupForMapData(DMU_SIDEDEF, map->numSideDefs);
             gx.SetupForMapData(DMU_SECTOR, map->numSectors);

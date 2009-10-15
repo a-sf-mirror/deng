@@ -1694,9 +1694,9 @@ boolean MPE_End(void)
         {
             linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
 
-            line->L_v1 = gamemap->vertexes[
+            line->L_v1 = gamemap->halfEdgeDS.vertices[
                 ((mvertex_t*) line->buildData.v[0]->data)->index - 1];
-            line->L_v2 = gamemap->vertexes[
+            line->L_v2 = gamemap->halfEdgeDS.vertices[
                 ((mvertex_t*) line->buildData.v[1]->data)->index - 1];
 
             // The original Pts are based off the anchor Pt, and are unique
@@ -1740,7 +1740,6 @@ boolean MPE_End(void)
     // Call the game's setup routines.
     if(gx.SetupForMapData)
     {
-        gx.SetupForMapData(DMU_VERTEX, gamemap->numVertexes);
         gx.SetupForMapData(DMU_LINEDEF, gamemap->numLineDefs);
         gx.SetupForMapData(DMU_SIDEDEF, gamemap->numSideDefs);
         gx.SetupForMapData(DMU_SECTOR, gamemap->numSectors);

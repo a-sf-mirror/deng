@@ -3304,9 +3304,9 @@ void Rend_Vertexes(gamemap_t* map)
         DGL_SetFloat(DGL_LINE_WIDTH, 2);
         glDisable(GL_TEXTURE_2D);
 
-        for(i = 0; i < map->numVertexes; ++i)
+        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
         {
-            vertex_t* vtx = map->vertexes[i];
+            vertex_t* vtx = map->halfEdgeDS.vertices[i];
             mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float alpha;
 
@@ -3342,9 +3342,9 @@ void Rend_Vertexes(gamemap_t* map)
     DGL_SetFloat(DGL_POINT_SIZE, 6);
     glDisable(GL_TEXTURE_2D);
 
-    for(i = 0; i < map->numVertexes; ++i)
+    for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
     {
-        vertex_t* vtx = map->vertexes[i];
+        vertex_t* vtx = map->halfEdgeDS.vertices[i];
         mvertex_t* mvtx = (mvertex_t*) vtx->data;
         float dist;
 
@@ -3378,9 +3378,9 @@ void Rend_Vertexes(gamemap_t* map)
         eye[VY] = vz;
         eye[VZ] = vy;
 
-        for(i = 0; i < map->numVertexes; ++i)
+        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
         {
-            vertex_t* vtx = map->vertexes[i];
+            vertex_t* vtx = map->halfEdgeDS.vertices[i];
             mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float pos[3], dist;
 
