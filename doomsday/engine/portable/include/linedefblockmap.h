@@ -48,14 +48,14 @@ linedefblockmap_t* P_CreateLineDefBlockmap(const pvec2_t min, const pvec2_t max,
 void            P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap);
 
 uint            LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y);
-void            LineDefBlockmap_Insert(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-boolean         LineDefBlockmap_Remove(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
+void            LineDefBlockmap_Link(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
+boolean         LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
 void            LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max);
 void            LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize);
 void            LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, uint v[2]);
 
-boolean         LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, uint destBlock[2], float x, float y);
-boolean         LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint destBlock[2], const float pos[2]);
+boolean         LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, uint block[2], float x, float y);
+boolean         LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint block[2], const float pos[2]);
 void            LineDefBlockmap_BoxToBlocks(linedefblockmap_t* blockmap, uint blockBox[4],
                                             const arvec2_t box);
 boolean         LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2],
@@ -65,7 +65,7 @@ boolean         LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const ui
                                            boolean (*func) (struct linedef_s*, void*),
                                            void* data, boolean retObjRecord);
 boolean         LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
-                                             const uint destBlock[2], const float origin[2],
+                                             const uint block[2], const float origin[2],
                                              const float dest[2],
                                              boolean (*func) (intercept_t*));
 #endif /* DOOMSDAY_LINEDEFBLOCKMAP_H */

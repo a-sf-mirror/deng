@@ -169,7 +169,7 @@ void P_DestroyMobjBlockmap(mobjblockmap_t* blockmap)
     Z_Free(blockmap);
 }
 
-void MobjBlockmap_Insert(mobjblockmap_t* blockmap, mobj_t* mo)
+void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mo)
 {
     uint block[2];
     linkmobj_t* link;
@@ -206,7 +206,7 @@ void MobjBlockmap_Insert(mobjblockmap_t* blockmap, mobj_t* mo)
     link->next->mobj = mo;
 }
 
-boolean MobjBlockmap_Remove(mobjblockmap_t* blockmap, mobj_t* mo)
+boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mo)
 {
     uint blockXY[2];
     linkmobj_t* link;

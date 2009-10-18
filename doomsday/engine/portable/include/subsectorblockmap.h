@@ -45,15 +45,15 @@ subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t 
 void            P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap);
 
 uint            SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y);
-void            SubsectorBlockmap_Insert(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
-boolean         SubsectorBlockmap_Remove(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
+void            SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
+boolean         SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
 
 void            SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max);
 void            SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize);
 void            SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, uint v[2]);
 
-boolean         SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint destBlock[2], float x, float y);
-boolean         SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, uint destBlock[2], const float pos[2]);
+boolean         SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint block[2], float x, float y);
+boolean         SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, uint block[2], const float pos[2]);
 void            SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, uint blockBox[4],
                                               const arvec2_t box);
 boolean         SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint block[2],

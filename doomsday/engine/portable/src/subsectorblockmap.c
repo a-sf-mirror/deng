@@ -219,7 +219,7 @@ static void unlinkSubsectorFromBlock(subsectorblockmap_t* blockmap, uint x, uint
     // Subsector was not linked.
 }
 
-void SubsectorBlockmap_Insert(subsectorblockmap_t* blockmap, subsector_t* subsector)
+void SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, subsector_t* subsector)
 {
     uint x, y, minBlock[2], maxBlock[2], dimensions[2];
 
@@ -242,7 +242,7 @@ void SubsectorBlockmap_Insert(subsectorblockmap_t* blockmap, subsector_t* subsec
         }
 }
 
-boolean SubsectorBlockmap_Remove(subsectorblockmap_t* blockmap, subsector_t* subsector)
+boolean SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, subsector_t* subsector)
 {
     uint i, block[2];
 

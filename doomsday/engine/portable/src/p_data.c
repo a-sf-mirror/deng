@@ -384,8 +384,8 @@ void Map_LinkMobj(gamemap_t* map, mobj_t* mo, byte flags)
     if(flags & DDLINK_BLOCKMAP)
     {
         // Unlink from the old block, if any.
-        MobjBlockmap_Remove(map->_mobjBlockmap, mo);
-        MobjBlockmap_Insert(map->_mobjBlockmap, mo);
+        MobjBlockmap_Unlink(map->_mobjBlockmap, mo);
+        MobjBlockmap_Link(map->_mobjBlockmap, mo);
     }
 
     // Link into lines.
@@ -419,7 +419,7 @@ int Map_UnlinkMobj(gamemap_t* map, mobj_t* mo)
 
     if(P_UnlinkFromSector(mo))
         links |= DDLINK_SECTOR;
-    if(MobjBlockmap_Remove(map->_mobjBlockmap, mo))
+    if(MobjBlockmap_Unlink(map->_mobjBlockmap, mo))
         links |= DDLINK_BLOCKMAP;
     if(!P_UnlinkFromLines(mo))
         links |= DDLINK_NOLINE;
@@ -484,7 +484,7 @@ void Map_BuildLineDefBlockmap(gamemap_t* map)
     {
         linedef_t* lineDef = map->lineDefs[i];
 
-        LineDefBlockmap_Insert(blockmap, lineDef);
+        LineDefBlockmap_Link(blockmap, lineDef);
     }
 
     map->_lineDefBlockmap = blockmap;
@@ -536,7 +536,7 @@ void Map_BuildSubsectorBlockmap(gamemap_t* map)
     for(i = 0; i < map->numSubsectors; ++i)
     {
         subsector_t* subsector = map->subsectors[i];
-        SubsectorBlockmap_Insert(blockmap, subsector);
+        SubsectorBlockmap_Link(blockmap, subsector);
     }
 
     map->_subsectorBlockmap = blockmap;

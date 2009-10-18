@@ -219,7 +219,7 @@ static void unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint y,
     // LineDef was not linked.
 }
 
-void LineDefBlockmap_Insert(linedefblockmap_t* blockmap, linedef_t* lineDef)
+void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
 {
 #define BLKSHIFT                7 // places to shift rel position for cell num
 #define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
@@ -391,7 +391,7 @@ void LineDefBlockmap_Insert(linedefblockmap_t* blockmap, linedef_t* lineDef)
 #undef BLKMASK
 }
 
-boolean LineDefBlockmap_Remove(linedefblockmap_t* blockmap, linedef_t* lineDef)
+boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
 {
     uint i, block[2];
 

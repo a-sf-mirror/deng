@@ -45,15 +45,15 @@ mobjblockmap_t* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
 void            P_DestroyMobjBlockmap(mobjblockmap_t* blockmap);
 
 uint            MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y);
-void            MobjBlockmap_Insert(mobjblockmap_t* blockmap, struct mobj_s* mo);
-boolean         MobjBlockmap_Remove(mobjblockmap_t* blockmap, struct mobj_s* mo);
+void            MobjBlockmap_Link(mobjblockmap_t* blockmap, struct mobj_s* mo);
+boolean         MobjBlockmap_Unlink(mobjblockmap_t* blockmap, struct mobj_s* mo);
 
 void            MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max);
 void            MobjBlockmap_BlockSize(mobjblockmap_t* blockmap, pvec2_t blockSize);
 void            MobjBlockmap_Dimensions(mobjblockmap_t* blockmap, uint v[2]);
 
-boolean         MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint destBlock[2], float x, float y);
-boolean         MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint destBlock[2], const float pos[2]);
+boolean         MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint block[2], float x, float y);
+boolean         MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint block[2], const float pos[2]);
 
 void            MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, uint blockBox[4],
                                          const arvec2_t box);
@@ -64,7 +64,7 @@ boolean         MobjBlockmap_BoxIterate(mobjblockmap_t* blockmap, const uint blo
                                         boolean (*func) (struct mobj_s*, void*),
                                         void* data);
 boolean         MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlock[2],
-                                          const uint destBlock[2], const float origin[2],
+                                          const uint block[2], const float origin[2],
                                           const float dest[2],
                                           boolean (*func) (intercept_t*));
 #endif /* DOOMSDAY_MOBJBLOCKMAP_H */

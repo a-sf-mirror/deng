@@ -543,7 +543,7 @@ void P_PolyobjUnlinkLineDefs(polyobj_t* po)
     uint i;
 
     for(i = 0; i < po->numLineDefs; ++i)
-        LineDefBlockmap_Remove(lineDefBlockmap, po->lineDefs[i]);
+        LineDefBlockmap_Unlink(lineDefBlockmap, po->lineDefs[i]);
 }
 
 void P_PolyobjLinkLineDefs(polyobj_t* po)
@@ -552,7 +552,7 @@ void P_PolyobjLinkLineDefs(polyobj_t* po)
     uint i;
 
     for(i = 0; i < po->numLineDefs; ++i)
-        LineDefBlockmap_Insert(lineDefBlockmap, po->lineDefs[i]);
+        LineDefBlockmap_Link(lineDefBlockmap, po->lineDefs[i]);
 }
 
 typedef struct ptrmobjblockingparams_s {
