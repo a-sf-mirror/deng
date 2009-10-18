@@ -34,7 +34,6 @@
 #include "de_play.h"
 #include "de_refresh.h"
 #include "de_misc.h"
-#include "p_bmap.h"
 
 // MACROS ------------------------------------------------------------------
 

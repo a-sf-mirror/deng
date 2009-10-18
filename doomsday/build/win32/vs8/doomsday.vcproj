@@ -546,7 +546,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_bmap.c"
+				RelativePath="..\..\..\engine\portable\src\mobjblockmap.c"
 				>
 			</File>
 			<File
@@ -1579,7 +1579,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\p_bmap.h"
+				RelativePath="..\..\..\engine\portable\include\mobjblockmap.h"
 				>
 			</File>
 			<File

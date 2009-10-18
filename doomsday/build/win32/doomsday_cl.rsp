@@ -67,7 +67,7 @@
  .\..\..\engine\portable\src\r_data.c
  .\..\..\engine\portable\src\r_lgrid.c
  .\..\..\engine\portable\src\r_lumobjs.c
- .\..\..\engine\portable\src\p_bmap.c
+ .\..\..\engine\portable\src\mobjblockmap.c
  .\..\..\engine\portable\src\p_ticker.c
  .\..\..\engine\portable\src\p_think.c
  .\..\..\engine\portable\src\p_sight.c
