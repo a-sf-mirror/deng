@@ -454,6 +454,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\linedefblockmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\m_args.c"
 				>
 			</File>
@@ -1480,6 +1484,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\halfedgeds.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\linedefblockmap.h"
 				>
 			</File>
 			<File

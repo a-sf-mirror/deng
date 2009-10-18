@@ -48,7 +48,6 @@ typedef struct blockmap_s {
  * @todo C++ refactor; make interface.
  */
 typedef blockmap_t mobjblockmap_t;
-typedef blockmap_t linedefblockmap_t;
 typedef blockmap_t polyobjblockmap_t;
 typedef blockmap_t subsectorblockmap_t;
 
@@ -81,35 +80,6 @@ boolean         MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint o
                                           const uint destBlock[2], const float origin[2],
                                           const float dest[2],
                                           boolean (*func) (intercept_t*));
-
-/**
- * LineDefBlockmap
- */
-linedefblockmap_t* P_CreateLineDefBlockmap(const pvec2_t min, const pvec2_t max,
-                                           uint width, uint height);
-void            P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap);
-
-uint            LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y);
-void            LineDefBlockmap_Insert(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-boolean         LineDefBlockmap_Remove(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-void            LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-void            LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize);
-void            LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, uint v[2]);
-
-boolean         LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, uint destBlock[2], float x, float y);
-boolean         LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint destBlock[2], const float pos[2]);
-void            LineDefBlockmap_BoxToBlocks(linedefblockmap_t* blockmap, uint blockBox[4],
-                                            const arvec2_t box);
-boolean         LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2],
-                                        boolean (*func) (struct linedef_s*, void*),
-                                        void* data, boolean retObjRecord);
-boolean         LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint blockBox[4],
-                                           boolean (*func) (struct linedef_s*, void*),
-                                           void* data, boolean retObjRecord);
-boolean         LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
-                                             const uint destBlock[2], const float origin[2],
-                                             const float dest[2],
-                                             boolean (*func) (intercept_t*));
 /**
  * PolyobjBlockmap
  */
@@ -164,12 +134,4 @@ boolean         SubsectorBlockmap_BoxIterate(blockmap_t* blockmap, const uint bl
                                              int localValidCount,
                                              boolean (*func) (struct subsector_s*, void*),
                                              void* data, boolean retObjRecord);
-
-// @todo find a new home for these:
-boolean         P_IterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint block[2],
-                                            boolean (*func) (struct linedef_s*, void*),
-                                            void* data, boolean retObjRecord);
-boolean         P_BoxIterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint blockBox[4],
-                                               boolean (*func) (struct linedef_s*, void*),
-                                               void* data, boolean retObjRecord);
 #endif /* DOOMSDAY_BLOCKMAP_H */
