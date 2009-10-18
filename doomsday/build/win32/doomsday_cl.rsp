@@ -120,6 +120,7 @@
  .\..\..\engine\portable\src\net_event.c
  .\..\..\engine\portable\src\net_demo.c
  .\..\..\engine\portable\src\net_buf.c
+ .\..\..\engine\portable\src\subsectorblockmap.c
  .\..\..\engine\win32\src\sys_audiod_loader.c
  .\..\..\engine\portable\src\sys_audiod_dummy.c
  .\..\..\engine\portable\src\sys_audiod_sdlmixer.c

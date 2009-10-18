@@ -22,12 +22,8 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * blockmap.h: Blockmaps.
- */
-
-#ifndef DOOMSDAY_BLOCKMAP_H
-#define DOOMSDAY_BLOCKMAP_H
+#ifndef DOOMSDAY_MOBJBLOCKMAP_H
+#define DOOMSDAY_MOBJBLOCKMAP_H
 
 #include "m_gridmap.h"
 
@@ -49,7 +45,6 @@ typedef struct blockmap_s {
  */
 typedef blockmap_t mobjblockmap_t;
 typedef blockmap_t polyobjblockmap_t;
-typedef blockmap_t subsectorblockmap_t;
 
 /**
  * MobjBlockmap
@@ -106,32 +101,4 @@ boolean         PolyobjBlockmap_Iterate(polyobjblockmap_t* blockmap, const uint 
 boolean         PolyobjBlockmap_BoxIterate(polyobjblockmap_t* blockmap, const uint blockBox[4],
                                            boolean (*func) (struct polyobj_s*, void*),
                                            void* data);
-/**
- * SubsectorBlockmap
- */
-subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t max,
-                                               uint width, uint height);
-void            P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap);
-
-void            SubsectorBlockmap_SetBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                           struct subsector_s** subsectors);
-uint            SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y);
-void            SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-void            SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize);
-void            SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, uint v[2]);
-
-boolean         SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint destBlock[2], float x, float y);
-boolean         SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, uint destBlock[2], const float pos[2]);
-void            SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, uint blockBox[4],
-                                              const arvec2_t box);
-boolean         SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint block[2],
-                                          struct sector_s* sector, const arvec2_t box,
-                                          int localValidCount,
-                                          boolean (*func) (struct subsector_s*, void*),
-                                          void* data);
-boolean         SubsectorBlockmap_BoxIterate(blockmap_t* blockmap, const uint blockBox[4],
-                                             struct sector_s* sector, const arvec2_t box,
-                                             int localValidCount,
-                                             boolean (*func) (struct subsector_s*, void*),
-                                             void* data, boolean retObjRecord);
-#endif /* DOOMSDAY_BLOCKMAP_H */
+#endif /* DOOMSDAY_MOBJBLOCKMAP_H */

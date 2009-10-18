@@ -329,6 +329,7 @@
 		<Unit filename="..\..\engine\portable\include\s_mus.h" />
 		<Unit filename="..\..\engine\portable\include\s_sfx.h" />
 		<Unit filename="..\..\engine\portable\include\s_wav.h" />
+		<Unit filename="..\..\engine\portable\include\subsectorblockmap.h" />
 		<Unit filename="..\..\engine\portable\include\sv_def.h" />
 		<Unit filename="..\..\engine\portable\include\sv_frame.h" />
 		<Unit filename="..\..\engine\portable\include\sv_missile.h" />
@@ -757,6 +758,7 @@
 		<Unit filename="..\..\engine\portable\src\s_wav.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="..\..\engine\portable\src\subsectorblockmap.c" />
 		<Unit filename="..\..\engine\portable\src\sv_frame.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -782,6 +782,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\subsectorblockmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\sv_frame.c"
 				>
 			</File>
@@ -1816,6 +1820,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\s_wav.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\subsectorblockmap.h"
 				>
 			</File>
 			<File

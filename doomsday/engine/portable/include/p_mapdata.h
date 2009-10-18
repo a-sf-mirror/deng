@@ -43,6 +43,7 @@
 #include "m_vector.h"
 #include "mobjblockmap.h"
 #include "linedefblockmap.h"
+#include "subsectorblockmap.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])

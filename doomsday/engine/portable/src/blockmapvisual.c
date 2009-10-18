@@ -158,7 +158,7 @@ static void drawLineDefsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(r, g, b, a);
 
     glBegin(GL_LINES);
-    LineDefBlockmap_Iterate(blockmap, block, drawLineDef, context, false);
+    LineDefBlockmap_Iterate((linedefblockmap_t*) blockmap, block, drawLineDef, context, false);
     glEnd();
 
     glBegin(GL_LINES);
@@ -199,7 +199,7 @@ static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(1, 1, 1, .1f);
 
     validCount;
-    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsectorAABB, context);
+    SubsectorBlockmap_Iterate((subsectorblockmap_t*) blockmap, block, NULL, NULL, validCount, drawSubsectorAABB, context);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
@@ -208,14 +208,14 @@ static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
 
     textured = true;
     validCount++;
-    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
+    SubsectorBlockmap_Iterate((subsectorblockmap_t*) blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
 
     GL_BlendMode(BM_NORMAL);
     glDisable(GL_TEXTURE_2D);
 
     textured = false;
     validCount++;
-    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
+    SubsectorBlockmap_Iterate((subsectorblockmap_t*) blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
 
     glEnable(GL_TEXTURE_2D);
 }
@@ -278,8 +278,8 @@ static void drawInfoBox2(float minX, float minY, float maxX, float maxY,
 static void drawBlockInfoBox(blockmap_t* blockmap, uint x, uint y)
 {
     drawInfoBox(theWindow->width / 2, 30, x, y,
-                LineDefBlockmap_NumInBlock(blockmap, x, y),
-                MobjBlockmap_NumInBlock(blockmap, x, y),
+                LineDefBlockmap_NumInBlock((linedefblockmap_t*) blockmap, x, y),
+                MobjBlockmap_NumInBlock((mobjblockmap_t*) blockmap, x, y),
                 PolyobjBlockmap_NumInBlock(blockmap, x, y));
 }
 
@@ -338,15 +338,15 @@ static void drawBackground(blockmap_t* blockmap, uint viewerBlock[2], uint viewe
             {
             case BLOCKMAPVISUAL_MOBJS:
             default:
-                num = MobjBlockmap_NumInBlock(blockmap, x, y);
+                num = MobjBlockmap_NumInBlock((mobjblockmap_t*) blockmap, x, y);
                 break;
 
             case BLOCKMAPVISUAL_LINEDEFS:
-                num = LineDefBlockmap_NumInBlock(blockmap, x, y);
+                num = LineDefBlockmap_NumInBlock((linedefblockmap_t*) blockmap, x, y);
                 break;
 
             case BLOCKMAPVISUAL_SUBSECTORS:
-                num = SubsectorBlockmap_NumInBlock(blockmap, x, y);
+                num = SubsectorBlockmap_NumInBlock((subsectorblockmap_t*) blockmap, x, y);
                 break;
             }
 
@@ -541,17 +541,17 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     {
     case BLOCKMAPVISUAL_MOBJS:
     default:
-        blockmap = Map_MobjBlockmap(map);
+        blockmap = (blockmap_t*) Map_MobjBlockmap(map);
         func = drawMobjsInBlock;
         break;
 
     case BLOCKMAPVISUAL_LINEDEFS:
-        blockmap = Map_LineDefBlockmap(map);
+        blockmap = (blockmap_t*) Map_LineDefBlockmap(map);
         func = drawLineDefsInBlock;
         break;
 
     case BLOCKMAPVISUAL_SUBSECTORS:
-        blockmap = Map_SubsectorBlockmap(map);
+        blockmap = (blockmap_t*) Map_SubsectorBlockmap(map);
         func = drawSubsectorsInBlock;
         break;
     }
