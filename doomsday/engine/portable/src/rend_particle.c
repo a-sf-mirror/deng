@@ -460,7 +460,7 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
 
         if(useBias)
         {
-            LG_Evaluate(DMU_CurrentMap(), params->center, params->ambientColor);
+            LG_Evaluate(P_CurrentMap(), params->center, params->ambientColor);
         }
         else
         {

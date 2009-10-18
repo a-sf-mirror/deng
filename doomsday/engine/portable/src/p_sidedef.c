@@ -133,13 +133,13 @@ boolean SideDef_GetProperty(const sidedef_t *sid, setargs_t *args)
     {
     case DMU_SECTOR:
         {
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sid->sector);
+        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sid->sector);
         DMU_GetValue(DMT_SIDEDEF_SECTOR, &r, args, 0);
         break;
         }
     case DMU_LINEDEF:
         {
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_LINEDEF, sid->lineDef);
+        objectrecord_t* r = P_ObjectRecord(DMU_LINEDEF, sid->lineDef);
         DMU_GetValue(DMT_SIDEDEF_LINEDEF, &r, args, 0);
         break;
         }

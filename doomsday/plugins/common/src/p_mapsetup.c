@@ -228,9 +228,9 @@ static void getSurfaceColor(uint idx, float rgba[4])
     }
     else
     {
-        rgba[0] = P_GetGMOFloat(MO_LIGHT, idx-1, MO_COLORR);
-        rgba[1] = P_GetGMOFloat(MO_LIGHT, idx-1, MO_COLORG);
-        rgba[2] = P_GetGMOFloat(MO_LIGHT, idx-1, MO_COLORB);
+        rgba[0] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORR);
+        rgba[1] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORG);
+        rgba[2] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORB);
         rgba[3] = 1;
     }
 }
@@ -253,9 +253,9 @@ int applySurfaceColor(void* obj, void* context)
     applysurfacecolorparams_t* params =
         (applysurfacecolorparams_t*) context;
     byte                dFlags =
-        P_GetGMOByte(MO_XLINEDEF, DMU_ToIndex(li), MO_DRAWFLAGS);
+        P_GetObjectRecordByte(MO_XLINEDEF, DMU_ToIndex(li), MO_DRAWFLAGS);
     byte                tFlags =
-        P_GetGMOByte(MO_XLINEDEF, DMU_ToIndex(li), MO_TEXFLAGS);
+        P_GetObjectRecordByte(MO_XLINEDEF, DMU_ToIndex(li), MO_TEXFLAGS);
 
     if((dFlags & LDF_BLEND) &&
        params->frontSec == DMU_GetPtrp(li, DMU_FRONT_SECTOR))
@@ -404,22 +404,22 @@ static void P_LoadMapObjs(void)
     {
         xline_t*            xl = &xlines[i];
 
-        xl->origID = P_GetGMOInt(MO_XLINEDEF, i, MO_ORIGINALID);
-        xl->flags = P_GetGMOShort(MO_XLINEDEF, i, MO_FLAGS);
+        xl->origID = P_GetObjectRecordInt(MO_XLINEDEF, i, MO_ORIGINALID);
+        xl->flags = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_FLAGS);
 #if __JHEXEN__
-        xl->special = P_GetGMOByte(MO_XLINEDEF, i, MO_TYPE);
-        xl->arg1 = P_GetGMOByte(MO_XLINEDEF, i, MO_ARG0);
-        xl->arg2 = P_GetGMOByte(MO_XLINEDEF, i, MO_ARG1);
-        xl->arg3 = P_GetGMOByte(MO_XLINEDEF, i, MO_ARG2);
-        xl->arg4 = P_GetGMOByte(MO_XLINEDEF, i, MO_ARG3);
-        xl->arg5 = P_GetGMOByte(MO_XLINEDEF, i, MO_ARG4);
+        xl->special = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_TYPE);
+        xl->arg1 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG0);
+        xl->arg2 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG1);
+        xl->arg3 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG2);
+        xl->arg4 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG3);
+        xl->arg5 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG4);
 #else
 # if __JDOOM64__
-        xl->special = P_GetGMOByte(MO_XLINEDEF, i, MO_TYPE);
+        xl->special = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_TYPE);
 # else
-        xl->special = P_GetGMOShort(MO_XLINEDEF, i, MO_TYPE);
+        xl->special = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_TYPE);
 # endif
-        xl->tag = P_GetGMOShort(MO_XLINEDEF, i, MO_TAG);
+        xl->tag = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_TAG);
 #endif
     }
 
@@ -428,9 +428,9 @@ static void P_LoadMapObjs(void)
         sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
         xsector_t*          xsec = &xsectors[i];
 
-        xsec->origID = P_GetGMOInt(MO_XSECTOR, i, MO_ORIGINALID);
-        xsec->special = P_GetGMOShort(MO_XSECTOR, i, MO_TYPE);
-        xsec->tag = P_GetGMOShort(MO_XSECTOR, i, MO_TAG);
+        xsec->origID = P_GetObjectRecordInt(MO_XSECTOR, i, MO_ORIGINALID);
+        xsec->special = P_GetObjectRecordShort(MO_XSECTOR, i, MO_TYPE);
+        xsec->tag = P_GetObjectRecordShort(MO_XSECTOR, i, MO_TAG);
 
 #if __JDOOM64__
         {
@@ -438,20 +438,20 @@ static void P_LoadMapObjs(void)
         float               rgba[4];
 
         getSurfaceColor(TOLIGHTIDX(
-            P_GetGMOShort(MO_XSECTOR, i, MO_FLOORCOLOR)), rgba);
+            P_GetObjectRecordShort(MO_XSECTOR, i, MO_FLOORCOLOR)), rgba);
         DMU_SetFloatpv(sec, DMU_FLOOR_COLOR, rgba);
 
         getSurfaceColor(TOLIGHTIDX(
-            P_GetGMOShort(MO_XSECTOR, i, MO_CEILINGCOLOR)), rgba);
+            P_GetObjectRecordShort(MO_XSECTOR, i, MO_CEILINGCOLOR)), rgba);
         DMU_SetFloatpv(sec, DMU_CEILING_COLOR, rgba);
 
         // Now set the side surface colors.
         params.frontSec = sec;
         getSurfaceColor(TOLIGHTIDX(
-            P_GetGMOShort(MO_XSECTOR, i, MO_WALLTOPCOLOR)),
+            P_GetObjectRecordShort(MO_XSECTOR, i, MO_WALLTOPCOLOR)),
                           params.topColor);
         getSurfaceColor(TOLIGHTIDX(
-            P_GetGMOShort(MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
+            P_GetObjectRecordShort(MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
                           params.bottomColor);
 
         DMU_Iteratep(sec, DMU_LINEDEF, applySurfaceColor, &params);
@@ -459,7 +459,7 @@ static void P_LoadMapObjs(void)
 #endif
     }
 
-    numMapSpots = P_CountGameMapObjs(MO_THING);
+    numMapSpots = P_NumObjectRecords(MO_THING);
 
     if(numMapSpots > 0)
         mapSpots =
@@ -471,22 +471,22 @@ static void P_LoadMapObjs(void)
     {
         mapspot_t*        spot = &mapSpots[i];
 
-        spot->pos[VX] = P_GetGMOFloat(MO_THING, i, MO_X);
-        spot->pos[VY] = P_GetGMOFloat(MO_THING, i, MO_Y);
-        spot->pos[VZ] = P_GetGMOFloat(MO_THING, i, MO_Z);
+        spot->pos[VX] = P_GetObjectRecordFloat(MO_THING, i, MO_X);
+        spot->pos[VY] = P_GetObjectRecordFloat(MO_THING, i, MO_Y);
+        spot->pos[VZ] = P_GetObjectRecordFloat(MO_THING, i, MO_Z);
 
-        spot->doomEdNum = P_GetGMOInt(MO_THING, i, MO_DOOMEDNUM);
-        spot->flags = P_GetGMOInt(MO_THING, i, MO_FLAGS);
-        spot->angle = P_GetGMOAngle(MO_THING, i, MO_ANGLE);
+        spot->doomEdNum = P_GetObjectRecordInt(MO_THING, i, MO_DOOMEDNUM);
+        spot->flags = P_GetObjectRecordInt(MO_THING, i, MO_FLAGS);
+        spot->angle = P_GetObjectRecordAngle(MO_THING, i, MO_ANGLE);
 
 #if __JHEXEN__
-        spot->tid = P_GetGMOShort(MO_THING, i, MO_ID);
-        spot->special = P_GetGMOByte(MO_THING, i, MO_SPECIAL);
-        spot->arg1 = P_GetGMOByte(MO_THING, i, MO_ARG0);
-        spot->arg2 = P_GetGMOByte(MO_THING, i, MO_ARG1);
-        spot->arg3 = P_GetGMOByte(MO_THING, i, MO_ARG2);
-        spot->arg4 = P_GetGMOByte(MO_THING, i, MO_ARG3);
-        spot->arg5 = P_GetGMOByte(MO_THING, i, MO_ARG4);
+        spot->tid = P_GetObjectRecordShort(MO_THING, i, MO_ID);
+        spot->special = P_GetObjectRecordByte(MO_THING, i, MO_SPECIAL);
+        spot->arg1 = P_GetObjectRecordByte(MO_THING, i, MO_ARG0);
+        spot->arg2 = P_GetObjectRecordByte(MO_THING, i, MO_ARG1);
+        spot->arg3 = P_GetObjectRecordByte(MO_THING, i, MO_ARG2);
+        spot->arg4 = P_GetObjectRecordByte(MO_THING, i, MO_ARG3);
+        spot->arg5 = P_GetObjectRecordByte(MO_THING, i, MO_ARG4);
 #endif
 
 #if __JHERETIC__

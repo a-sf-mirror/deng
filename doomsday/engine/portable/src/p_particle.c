@@ -128,7 +128,7 @@ static boolean iterateSectorLinkedPtcGens(sector_t* sector,
 
     if(sector)
     {
-        pglink_t* it = pgLinks[DMU_GetObjRecord(DMU_SECTOR, sector)->id - 1];
+        pglink_t* it = pgLinks[P_ObjectRecord(DMU_SECTOR, sector)->id - 1];
 
         while(it)
         {
@@ -358,7 +358,7 @@ BEGIN_PROF(PROF_PTCGEN_LINK);
                 // \fixme Overkill?
                 for(k = 0; k < gen->count; ++k)
                     if(gen->ptcs[k].stage >= 0)
-                        PG_LinkPtcGen(gen, DMU_GetObjRecord(DMU_SECTOR, gen->ptcs[k].sector)->id - 1);
+                        PG_LinkPtcGen(gen, P_ObjectRecord(DMU_SECTOR, gen->ptcs[k].sector)->id - 1);
             }
         }
     }
@@ -452,7 +452,7 @@ Con_Message("SpawnPtcGen: %s/%i (src:%s typ:%s mo:%p)\n",
     if(def->flags & PGF_SCALED_RATE)
     {
         gen->spawnRateMultiplier =
-            ((const subsector_t*) ((dmuobjrecord_t*) source->subsector)->obj)->sector->approxArea;
+            ((const subsector_t*) ((objectrecord_t*) source->subsector)->obj)->sector->approxArea;
     }
     else
     {
@@ -1018,7 +1018,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     boolean zBounce = false, hitFloor = false;
     vec2_t point;
     fixed_t x, y, z, hardRadius = st->radius / 2;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     // Particle rotates according to spin speed.
     P_SpinParticle(gen, pt);
@@ -1241,7 +1241,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!Map_AllLinesBoxIteratorv(DMU_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
+    if(!Map_AllLineDefsBoxIteratorv(P_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t normal[2], dotp;
 
@@ -1299,7 +1299,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
     particle_t* pt;
     float newparts;
     const ded_ptcgen_t* def = gen->def;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     // Source has been destroyed?
     if(!(gen->flags & PGF_UNTRIGGERED) && !P_IsUsedMobjID(map, gen->srcid))

@@ -146,7 +146,7 @@ static void linkLumObjToFace(lumobj_t* lum)
     lumlistnode_t* ln = allocListNode();
     lumlistnode_t** root;
 
-    root = &subsectorLumObjList[DMU_GetObjRecord(DMU_SUBSECTOR, lum->subsector)->id - 1];
+    root = &subsectorLumObjList[P_ObjectRecord(DMU_SUBSECTOR, lum->subsector)->id - 1];
     ln->next = *root;
     ln->data = lum;
     *root = ln;
@@ -463,7 +463,7 @@ if(!mat)
 
         // Will the sprite be allowed to go inside the floor?
         mul = mo->pos[VZ] + spriteTextures[texInst->tex->ofTypeID]->offY -
-            (float) ms.height - ((const subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj)->sector->SP_floorheight;
+            (float) ms.height - ((const subsector_t*) ((objectrecord_t*) mo->subsector)->obj)->sector->SP_floorheight;
         if(!(mo->ddFlags & DDMF_NOFITBOTTOM) && mul < 0)
         {
             // Must adjust.
@@ -507,7 +507,7 @@ if(!mat)
 
         // This'll allow a halo to be rendered. If the light is hidden from
         // view by world geometry, the light pointer will be set to NULL.
-        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((dmuobjrecord_t*) mo->subsector)->obj);
+        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((objectrecord_t*) mo->subsector)->obj);
 
         l = LO_GetLuminous(mo->lumIdx);
         l->pos[VX] = mo->pos[VX];
@@ -864,7 +864,7 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
         // between the viewpoint and the lumobj.
         for(i = 0; i < po->numLineDefs; ++i)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
 
             // Ignore lines facing the wrong way.
             if(!(R_FacingViewerDot(line->L_v1, line->L_v2) < 0))
@@ -905,7 +905,7 @@ static boolean iterateSubsectorLumObjs(subsector_t* subsector,
 {
     lumlistnode_t* ln;
 
-    ln = subsectorLumObjList[DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1];
+    ln = subsectorLumObjList[P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1];
     while(ln)
     {
         if(!func(ln->data, data))
@@ -934,7 +934,7 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
     if(!useDynlights)
     {
         // Mobjs are always public.
-        P_IterateThinkers(DMU_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
+        P_IterateThinkers(P_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
     }
 }
 

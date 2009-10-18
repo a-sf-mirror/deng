@@ -540,7 +540,7 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
         if(useBias && rseg->biasSurface)
         {
             // Do BIAS lighting for this poly.
-            SB_RendSeg(DMU_CurrentMap(), rcolors, rseg->biasSurface,
+            SB_RendSeg(P_CurrentMap(), rcolors, rseg->biasSurface,
                        rvertices, 4,
                        rseg->normal, rseg->sectorLightLevel,
                        rseg->from, rseg->to);
@@ -1257,7 +1257,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             if(useBias && p->bsuf)
             {
                 // Do BIAS lighting for this poly.
-                SB_RendPlane(DMU_CurrentMap(), rcolors, p->bsuf,
+                SB_RendPlane(P_CurrentMap(), rcolors, p->bsuf,
                              rvertices, numVertices,
                              p->normal, p->sectorLightLevel,
                              p->subsector, p->plane);
@@ -1614,7 +1614,7 @@ static void renderPlane(subsector_t* subsector, planetype_t type,
         if(addDLights && !params.glowing)
         {
             params.lightListIdx =
-                DL_ProjectOnSurface(DMU_CurrentMap(), subsector, params.texTL, params.texBR,
+                DL_ProjectOnSurface(P_CurrentMap(), subsector, params.texTL, params.texBR,
                                     normal,
                                     (DLF_NO_PLANAR |
                                      (type == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
@@ -2134,10 +2134,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Floor.
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_floorsurface)) &&
-               ffloor > DMU_CurrentMap()->skyFix[PLN_FLOOR].height)
+               ffloor > P_CurrentMap()->skyFix[PLN_FLOOR].height)
             {
                 vTL[VZ] = vTR[VZ] = ffloor;
-                vBL[VZ] = vBR[VZ] = DMU_CurrentMap()->skyFix[PLN_FLOOR].height;
+                vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
 
                 if(devSkyMode)
                     prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2152,9 +2152,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Ceiling.
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_ceilsurface)) &&
-               fceil < DMU_CurrentMap()->skyFix[PLN_CEILING].height)
+               fceil < P_CurrentMap()->skyFix[PLN_CEILING].height)
             {
-                vTL[VZ] = vTR[VZ] = DMU_CurrentMap()->skyFix[PLN_CEILING].height;
+                vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
                 vBL[VZ] = vBR[VZ] = fceil;
 
                 if(devSkyMode)
@@ -2175,10 +2175,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                IS_SKYSURFACE(&backsec->SP_floorsurface))
             {
-                if(bfloor > DMU_CurrentMap()->skyFix[PLN_FLOOR].height)
+                if(bfloor > P_CurrentMap()->skyFix[PLN_FLOOR].height)
                 {
                     vTL[VZ] = vTR[VZ] = bfloor;
-                    vBL[VZ] = vBR[VZ] = DMU_CurrentMap()->skyFix[PLN_FLOOR].height;
+                    vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
 
                     if(devSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2198,9 +2198,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                IS_SKYSURFACE(&backsec->SP_ceilsurface))
             {
-                if(bceil < DMU_CurrentMap()->skyFix[PLN_CEILING].height)
+                if(bceil < P_CurrentMap()->skyFix[PLN_CEILING].height)
                 {
-                    vTL[VZ] = vTR[VZ] = DMU_CurrentMap()->skyFix[PLN_CEILING].height;
+                    vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
                     vBL[VZ] = vBR[VZ] = bceil;
 
                     if(devSkyMode)
@@ -2788,7 +2788,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                 return;
 
             if(plane->type != PLN_MID)
-                height = DMU_CurrentMap()->skyFix[plane->type].height;
+                height = P_CurrentMap()->skyFix[plane->type].height;
             else
                 height = plane->visHeight;
         }
@@ -2845,7 +2845,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
          * real "physical" height of any sky masked planes that are
          * drawn at a different height due to the skyFix.
          */
-        if(sect->SP_floorvisheight > DMU_CurrentMap()->skyFix[PLN_FLOOR].height &&
+        if(sect->SP_floorvisheight > P_CurrentMap()->skyFix[PLN_FLOOR].height &&
            IS_SKYSURFACE(&sect->SP_floorsurface))
         {
             vec3_t normal;
@@ -2870,7 +2870,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              plane->planeID, 2);
         }
 
-        if(sect->SP_ceilvisheight < DMU_CurrentMap()->skyFix[PLN_CEILING].height &&
+        if(sect->SP_ceilvisheight < P_CurrentMap()->skyFix[PLN_CEILING].height &&
            IS_SKYSURFACE(&sect->SP_ceilsurface))
         {
             vec3_t normal;
@@ -3218,7 +3218,7 @@ static void drawVertexIndex(vertex_t* vtx, float z, float scale,
     glRotatef(vpitch, 1, 0, 0);
     glScalef(-scale, -scale, 1);
 
-    sprintf(buf, "%i", (int) DMU_GetObjRecord(DMU_VERTEX, vtx)->id);
+    sprintf(buf, "%i", (int) P_ObjectRecord(DMU_VERTEX, vtx)->id);
     UI_TextOutEx(buf, 2, 2, false, false, UI_Color(UIC_TITLE), alpha);
 
     glMatrixMode(GL_MODELVIEW);
@@ -3231,7 +3231,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 {
     vertex_t* vtx = li->L_v1;
     polyobj_t* po = context;
-    subsector_t* subsector = ((dmuobjrecord_t*) po->subsector)->obj;
+    subsector_t* subsector = ((objectrecord_t*) po->subsector)->obj;
     float dist2D =
         M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
 
@@ -3304,9 +3304,9 @@ void Rend_Vertexes(gamemap_t* map)
         DGL_SetFloat(DGL_LINE_WIDTH, 2);
         glDisable(GL_TEXTURE_2D);
 
-        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
         {
-            vertex_t* vtx = map->halfEdgeDS.vertices[i];
+            vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
             mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float alpha;
 
@@ -3342,9 +3342,9 @@ void Rend_Vertexes(gamemap_t* map)
     DGL_SetFloat(DGL_POINT_SIZE, 6);
     glDisable(GL_TEXTURE_2D);
 
-    for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
     {
-        vertex_t* vtx = map->halfEdgeDS.vertices[i];
+        vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
         mvertex_t* mvtx = (mvertex_t*) vtx->data;
         float dist;
 
@@ -3378,9 +3378,9 @@ void Rend_Vertexes(gamemap_t* map)
         eye[VY] = vz;
         eye[VZ] = vy;
 
-        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
         {
-            vertex_t* vtx = map->halfEdgeDS.vertices[i];
+            vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
             mvertex_t* mvtx = (mvertex_t*) vtx->data;
             float pos[3], dist;
 

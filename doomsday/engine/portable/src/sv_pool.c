@@ -189,7 +189,7 @@ void Sv_InitPools(void)
         pools[i].isFirst = true;
     }
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     if(map)
     {
         // Find the owners of all sides.
@@ -1599,7 +1599,7 @@ float Sv_MobjDistance(const mobj_t* mo, const ownerinfo_t* info,
 {
     float z;
 
-    if(isReal && !P_IsUsedMobjID(DMU_CurrentMap(), mo->thinker.id))
+    if(isReal && !P_IsUsedMobjID(P_CurrentMap(), mo->thinker.id))
     {
         // This mobj does not exist any more!
         return DDMAXFLOAT;
@@ -1626,7 +1626,7 @@ float Sv_MobjDistance(const mobj_t* mo, const ownerinfo_t* info,
  */
 float Sv_SectorDistance(sector_t* sector, const ownerinfo_t* info)
 {
-    uint index = DMU_GetObjRecord(DMU_SECTOR, sector)->id - 1;
+    uint index = P_ObjectRecord(DMU_SECTOR, sector)->id - 1;
 
     return P_ApproxDistance3(info->pos[VX] - sectorOrigins[index].pos[VX],
                              info->pos[VY] - sectorOrigins[index].pos[VY],
@@ -1668,7 +1668,7 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_SECTOR)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         return Sv_SectorDistance(map->sectors[delta->id], info);
     }
 
@@ -1680,7 +1680,7 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_POLY)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         polyobj_t* po = map->polyObjs[delta->id];
 
         return P_ApproxDistance(info->pos[VX] - po->pos[VX],
@@ -1696,13 +1696,13 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_SECTOR_SOUND)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         return Sv_SectorDistance(map->sectors[delta->id], info);
     }
 
     if(delta->type == DT_POLY_SOUND)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         polyobj_t* po = map->polyObjs[delta->id];
 
         return P_ApproxDistance(info->pos[VX] - po->pos[VX],
@@ -2437,7 +2437,7 @@ void Sv_NewSoundDelta(int soundId, mobj_t* emitter, sector_t* sourceSector,
     if(sourceSector != NULL)
     {
         type = DT_SECTOR_SOUND;
-        id = DMU_GetObjRecord(DMU_SECTOR, sourceSector)->id - 1;
+        id = P_ObjectRecord(DMU_SECTOR, sourceSector)->id - 1;
 
         // Clients need to know which emitter to use.
         if(emitter)
@@ -2522,7 +2522,7 @@ void Sv_GenerateNewDeltas(cregister_t* reg, int clientNumber,
     // Generate player deltas.
     Sv_NewPlayerDeltas(reg, doUpdate, targets);
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     if(map)
     {
         // Generate null deltas (removed mobjs).

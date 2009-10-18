@@ -220,7 +220,7 @@ void R_InitObjLinksForMap(gamemap_t* map)
         return;
 
     // Determine the dimensions of the objblockmap.
-    P_GetMapBounds(map, &min[0], &max[0]);
+    Map_Bounds(map, &min[0], &max[0]);
     max[0] -= min[0];
     max[1] -= min[1];
 
@@ -275,7 +275,7 @@ boolean RIT_LinkObjToSubsector(subsector_t* subsector, void* data)
     con->obj = params->obj;
 
     // Link the contact list for this face.
-    linkContactToFace(con, params->type, DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1);
+    linkContactToFace(con, params->type, P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1);
 
     return true; // Continue iteration.
 }
@@ -437,7 +437,7 @@ static void findContacts(objlink_t* oLink)
 
         pos = mo->pos;
         radius = R_VisualRadius(mo);
-        subsector = (subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj;
+        subsector = (subsector_t*) ((objectrecord_t*) mo->subsector)->obj;
         break;
         }
     }
@@ -637,7 +637,7 @@ boolean R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
 {
     objcontact_t* con;
 
-    con = subsectorContacts[DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id - 1].head[type];
+    con = subsectorContacts[P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1].head[type];
     while(con)
     {
         if(!func(con->obj, data))

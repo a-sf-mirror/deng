@@ -37,9 +37,9 @@ extern gamemap_t* editMap;
 boolean         MPE_Begin(const char* mapID);
 boolean         MPE_End(void);
 
-dmuobjrecordid_t MPE_VertexCreate(float x, float y);
-boolean         MPE_VertexCreatev(size_t num, float* values, dmuobjrecordid_t* indices);
-dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
+objectrecordid_t MPE_CreateVertex(float x, float y);
+boolean         MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices);
+objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
                                    material_t* topMaterial,
                                    float topOffsetX, float topOffsetY, float topRed,
                                    float topGreen, float topBlue,
@@ -51,18 +51,18 @@ dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
                                    float bottomOffsetX, float bottomOffsetY,
                                    float bottomRed, float bottomGreen,
                                    float bottomBlue);
-dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, uint frontSide,
+objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2, uint frontSide,
                                    uint backSide, int flags);
-dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-void             MPE_PlaneCreate(dmuobjrecordid_t sector, float height,
+objectrecordid_t MPE_CreateSector(float lightlevel, float red, float green, float blue);
+void             MPE_CreatePlane(objectrecordid_t sector, float height,
                                  material_t* material,
                                  float matOffsetX, float matOffsetY,
                                  float r, float g, float b, float a,
                                  float normalX, float normalY, float normalZ);
-dmuobjrecordid_t MPE_PolyobjCreate(dmuobjrecordid_t* lines, uint linecount,
+objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
                                    int tag, int sequenceType, float startX, float startY);
 
-boolean         MPE_GameObjProperty(const char* objName, uint idx,
+boolean         MPE_GameObjectRecordProperty(const char* objName, uint idx,
                                     const char* propName, valuetype_t type,
                                     void* data);
 

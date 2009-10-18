@@ -68,8 +68,9 @@ float           P_FloatInterceptVertex(fvertex_t* start, fvertex_t* end,
 void            P_LineOpening(linedef_t* linedef);
 void            P_MobjLink(mobj_t* mo, byte flags);
 int             P_MobjUnlink(mobj_t* mo);
-boolean         P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list);
-void            P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link);
+boolean         P_UnlinkFromSector(mobj_t* mo);
+boolean         P_UnlinkFromLines(mobj_t* mo);
+void            P_LinkToLines(mobj_t* mo);
 
 boolean         PIT_AddLineIntercepts(linedef_t* ld, void* data);
 boolean         PIT_AddMobjIntercepts(mobj_t* mo, void* data);
@@ -86,53 +87,4 @@ boolean         P_LineMobjsIterator(linedef_t* line,
 boolean         P_SectorTouchingMobjsIterator(sector_t* sector,
                                               int (*func) (void*, void*),
                                               void*data);
-
-// Mobjs in bounding box iterators.
-boolean         Map_MobjsBoxIterator(struct gamemap_s* map, const float box[4],
-                                     boolean (*func) (mobj_t*, void*),
-                                     void* data);
-
-boolean         Map_MobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                      boolean (*func) (mobj_t*, void*),
-                                      void* data);
-
-// Lines in bounding box iterators.
-boolean         Map_LinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                      boolean (*func) (linedef_t*, void*),
-                                      void* data);
-
-// Polyobj in bounding box iterators.
-boolean         Map_PolyobjsBoxIterator(struct gamemap_s* map, const float box[4],
-                                        boolean (*func) (polyobj_t*, void*),
-                                        void* data);
-boolean         Map_PolyobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                         boolean (*func) (polyobj_t*, void*),
-                                         void* data);
-
-boolean         Map_PolyobjLinesBoxIterator(struct gamemap_s* map, const float box[4],
-                                            boolean (*func) (linedef_t*, void*),
-                                            void* data, boolean retObjRecord);
-boolean         Map_PolyobjLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                             boolean (*func) (linedef_t*, void*),
-                                             void* data, boolean retObjRecord);
-
-// Lines and (Polyobj in bounding box)->lineDefs iterators.
-// Polyobj lines are iterated first.
-boolean         Map_AllLinesBoxIterator(struct gamemap_s* map, const float box[4],
-                                        boolean (*func) (linedef_t*, void*),
-                                        void* data, boolean retObjRecord);
-boolean         Map_AllLinesBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                         boolean (*func) (linedef_t*, void*),
-                                         void* data, boolean retObjRecord);
-
-// SubSectors in bounding box iterators.
-boolean         Map_SubsectorsBoxIterator(struct gamemap_s* map, const float box[4], sector_t* sector,
-                                          boolean (*func) (subsector_t*, void*),
-                                          void* parm, boolean retObjRecord);
-boolean         Map_SubsectorsBoxIteratorv(struct gamemap_s* map, const arvec2_t box, sector_t* sector,
-                                           boolean (*func) (subsector_t*, void*),
-                                           void* data, boolean retObjRecord);
-
-boolean         Map_PathTraverse(struct gamemap_s* map, float x1, float y1, float x2, float y2,
-                                 int flags, boolean (*trav) (intercept_t*));
 #endif

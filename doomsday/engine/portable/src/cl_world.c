@@ -445,7 +445,7 @@ void Cl_ReadSectorDelta2(int deltaType, boolean skip)
     sector_t* sec;
     int df;
     boolean wasChanged = false;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     // Set up the dummy.
     dummyPlaneArray[0] = &dummyPlanes[0];
@@ -662,7 +662,7 @@ void Cl_ReadSideDelta2(int deltaType, boolean skip)
     float toprgb[3] = {0,0,0}, midrgba[4] = {0,0,0,0};
     float bottomrgb[3] = {0,0,0};
     sidedef_t* sid;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     // First read all the data.
     num = Msg_ReadShort();
@@ -805,7 +805,7 @@ if(num >= map->numSideDefs)
             line->flags |= lineFlags;
 #if _DEBUG
 Con_Printf("Cl_ReadSideDelta2: Lineflag %i: %02x\n",
-           (int) DMU_GetObjRecord(DMU_LINEDEF, line)->id, lineFlags);
+           (int) P_ObjectRecord(DMU_LINEDEF, line)->id, lineFlags);
 #endif
         }
     }
@@ -823,7 +823,7 @@ void Cl_ReadPolyDelta2(boolean skip)
     float destX = 0, destY = 0;
     float speed = 0;
     int destAngle = 0, angleSpeed = 0;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     num = Msg_ReadPackedShort();
 

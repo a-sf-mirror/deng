@@ -38,15 +38,10 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct gridblock_s {
-    void       *data;
-} gridblock_t;
-
 typedef struct gmap_s {
-    uint        width, height;
-    size_t      sizeOfBlock;
-    int         memzoneTag;
-    gridblock_t *blocks;
+    uint            width, height;
+    int             zoneTag;
+    void**          blockLinks;
 } gmap_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -63,22 +58,21 @@ typedef struct gmap_s {
 
 // CODE --------------------------------------------------------------------
 
-static gmap_t *allocGridmap(int tag)
+static gmap_t* allocGridmap(int tag)
 {
     return Z_Calloc(sizeof(gmap_t), tag, 0);
 }
 
-static void freeGridmap(gmap_t *gmap)
+static void freeGridmap(gmap_t* gmap)
 {
-    Z_Free(gmap->blocks);
     Z_Free(gmap);
 }
 
-static gridblock_t *getBlock(gmap_t *gmap, uint x, uint y)
+static void* blockLinks(gmap_t* gmap, uint x, uint y)
 {
     if(x < gmap->width && y < gmap->height)
     {
-        return &gmap->blocks[y * gmap->width + x];
+        return gmap->blockLinks[y * gmap->width + x];
     }
 
     return NULL;
@@ -89,21 +83,15 @@ static gridblock_t *getBlock(gmap_t *gmap, uint x, uint y)
  *
  * @param width         X dimension of the grid.
  * @param height        Y dimension of the grid.
- * @param sizeOfElement Amount of memory to be allocated for each element.
  */
-gridmap_t *M_GridmapCreate(uint width, uint height, size_t sizeOfElement,
-                           int memzoneTag)
+gridmap_t* M_CreateGridmap(uint width, uint height, int zoneTag)
 {
-    gmap_t     *gmap = allocGridmap(memzoneTag);
+    gmap_t* gmap = allocGridmap(zoneTag);
 
     gmap->width = width;
     gmap->height = height;
-    gmap->sizeOfBlock = sizeOfElement;
-    gmap->memzoneTag = memzoneTag;
-
-    gmap->blocks =
-        Z_Calloc(gmap->width * gmap->height * sizeof(gridblock_t),
-                 gmap->memzoneTag, 0);
+    gmap->zoneTag = zoneTag;
+    gmap->blockLinks = Z_Calloc(gmap->width * gmap->height * sizeof(void*), gmap->zoneTag, 0);
 
     return (gridmap_t*) gmap;
 }
@@ -113,57 +101,70 @@ gridmap_t *M_GridmapCreate(uint width, uint height, size_t sizeOfElement,
  *
  * @param gridmap       The gridmap to be destroyed.
  */
-void M_GridmapDestroy(gridmap_t *gridmap)
+void M_DestroyGridmap(gridmap_t* gridmap)
 {
-    if(gridmap)
-    {
-        uint        i, numblocks;
-        gmap_t     *gmap = (gmap_t*) gridmap;
+    gmap_t* gmap;
 
-        numblocks = gmap->width * gmap->height;
-        for(i = 0; i < numblocks; ++i)
-        {
-            gridblock_t *block = &gmap->blocks[i];
+    assert(gridmap);
 
-            if(block->data)
-                Z_Free(block->data);
-        }
+    gmap = (gmap_t*) gridmap;
 
-        freeGridmap(gmap);
-    }
+    Z_Free(gmap->blockLinks);
+    freeGridmap(gmap);
 }
 
-void *M_GridmapGetBlock(gridmap_t *gridmap, uint x, uint y, boolean alloc)
+uint Gridmap_Width(gridmap_t* gridmap)
 {
-    if(gridmap)
+    assert(gridmap);
+
+    return ((gmap_t*) gridmap)->width;
+}
+
+uint Gridmap_Height(gridmap_t* gridmap)
+{
+    assert(gridmap);
+
+    return ((gmap_t*) gridmap)->height;
+}
+
+void Gridmap_Dimensions(gridmap_t* gridmap, uint dimensions[2])
+{
+    gmap_t* gmap;
+
+    assert(gridmap);
+    assert(dimensions);
+
+    gmap = (gmap_t*) gridmap;
+    dimensions[0] = gmap->width;
+    dimensions[1] = gmap->height;
+}
+
+void* Gridmap_Block(gridmap_t* gridmap, uint x, uint y)
+{
+    gmap_t* gmap;
+
+    assert(gridmap);
+
+    gmap = (gmap_t*) gridmap;
+    if(x < gmap->width && y < gmap->height)
     {
-        gmap_t     *gmap = (gmap_t*) gridmap;
-        gridblock_t *block = getBlock(gmap, x, y);
-
-        if(block)
-        {
-            if(alloc)
-            {   // Allocator mode.
-                // Have we allocated memory for this block yet?
-                if(!block->data)
-                {
-                    block->data =
-                        Z_Calloc(gmap->sizeOfBlock, gmap->memzoneTag, 0);
-                }
-
-                return block->data;
-            }
-            else
-            {   // Look up mode.
-                if(block->data)
-                    return block->data;
-
-                return NULL;
-            }
-        }
+        return gmap->blockLinks[y * gmap->width + x];
     }
 
     return NULL;
+}
+
+void Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data)
+{
+    gmap_t* gmap;
+
+    assert(gridmap);
+
+    gmap = (gmap_t*) gridmap;
+    if(x < gmap->width && y < gmap->height)
+    {
+        gmap->blockLinks[y * gmap->width + x] = data;
+    }
 }
 
 /**
@@ -171,36 +172,34 @@ void *M_GridmapGetBlock(gridmap_t *gridmap, uint x, uint y, boolean alloc)
  *
  * @param gridmap       The gridmap being iterated.
  * @param callback      The callback to be made for each block.
- * @param param         Miscellaneous data to be passed in the callback.
+ * @param context       Miscellaneous data to be passed in the callback, can be @c NULL.
  *
  * @return              @c true, iff all callbacks return @c true;
  */
-boolean M_GridmapIterator(gridmap_t *gridmap,
-                          boolean (*callback) (void* p, void* ctx),
-                          void* param)
+boolean Gridmap_Iterate(gridmap_t* gridmap, boolean (*callback) (void* p, void* ctx),
+                        void* context)
 {
-    if(gridmap)
+    gmap_t* gmap;
+    uint x, y;
+
+    assert(gridmap);
+    assert(callback);
+
+    gmap = (gmap_t*) gridmap;
+    for(x = 0; x <= gmap->width; ++x)
     {
-        gmap_t     *gmap = (gmap_t*) gridmap;
-        uint        x, y;
-
-        for(x = 0; x <= gmap->width; ++x)
+        for(y = 0; y <= gmap->height; ++y)
         {
-            for(y = 0; y <= gmap->height; ++y)
-            {
-                gridblock_t *block = getBlock(gmap, x, y);
+            void* data = blockLinks(gmap, x, y);
 
-                if(block && block->data)
-                {
-                    if(!callback(block->data, param))
-                        return false;
-                }
+            if(data)
+            {
+                if(!callback(data, context))
+                    return false;
             }
         }
-        return true;
     }
-
-    return false;
+    return true;
 }
 
 /**
@@ -212,50 +211,47 @@ boolean M_GridmapIterator(gridmap_t *gridmap,
  * @param yl            Min Y
  * @param yh            Max Y
  * @param callback      The callback to be made for each block.
- * @param param         Miscellaneous data to be passed in the callback.
+ * @param context       Miscellaneous data to be passed in the callback, can be @c NULL.
  *
  * @return              @c true, iff all callbacks return @c true;
  */
-boolean M_GridmapBoxIterator(gridmap_t *gridmap,
-                             uint xl, uint xh, uint yl, uint yh,
-                             boolean (*callback) (void* p, void* ctx),
-                             void* param)
+boolean Gridmap_IterateBox(gridmap_t* gridmap, uint xl, uint xh, uint yl, uint yh,
+                           boolean (*callback) (void* p, void* ctx),
+                           void* context)
 {
-    if(gridmap)
+    gmap_t* gmap;
+    uint x, y;
+
+    assert(gridmap);
+    assert(callback);
+
+    gmap = (gmap_t*) gridmap;
+    if(xh >= gmap->width)
+        xh = gmap->width -1;
+    if(yh >= gmap->height)
+        yh = gmap->height - 1;
+
+    for(x = xl; x <= xh; ++x)
     {
-        gmap_t     *gmap = (gmap_t*) gridmap;
-        uint        x, y;
-
-        // Kludge: We shouldn't need clamping here!
-        if(xh >= gmap->width)
-            xh = gmap->width -1;
-        if(yh >= gmap->height)
-            yh = gmap->height - 1;
-
-        for(x = xl; x <= xh; ++x)
+        for(y = yl; y <= yh; ++y)
         {
-            for(y = yl; y <= yh; ++y)
-            {
-                gridblock_t *block = getBlock(gmap, x, y);
+            void* data = blockLinks(gmap, x, y);
 
-                if(block && block->data)
-                {
-                    if(!callback(block->data, param))
-                        return false;
-                }
+            if(data)
+            {
+                if(!callback(data, context))
+                    return false;
             }
         }
-        return true;
     }
-
-    return false;
+    return true;
 }
 
-boolean M_GridmapBoxIteratorv(gridmap_t *gridmap, const uint box[4],
+boolean Gridmap_IterateBoxv(gridmap_t* gridmap, const uint box[4],
                               boolean (*callback) (void* p, void* ctx),
                               void* param)
 {
-    return M_GridmapBoxIterator(gridmap, box[BOXLEFT], box[BOXRIGHT],
-                                box[BOXBOTTOM], box[BOXTOP], callback,
-                                param);
+    return Gridmap_IterateBox(gridmap, box[BOXLEFT], box[BOXRIGHT],
+                              box[BOXBOTTOM], box[BOXTOP], callback,
+                              param);
 }

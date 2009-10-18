@@ -110,7 +110,7 @@ intercept_t* P_AddIntercept(float frac, intercepttype_t type, void* ptr)
     switch(type)
     {
     case ICPT_LINE:
-        intercept_p->d.lineDef = (linedef_t*) DMU_GetObjRecord(DMU_LINEDEF, ptr);
+        intercept_p->d.lineDef = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, ptr);
         break;
 
     case ICPT_MOBJ:

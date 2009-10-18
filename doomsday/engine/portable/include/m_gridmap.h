@@ -26,28 +26,31 @@
  * m_gridmap.h: Generalized blockmap
  */
 
-#ifndef __DOOMSDAY_MISC_GRIDMAP_H__
-#define __DOOMSDAY_MISC_GRIDMAP_H__
+#ifndef DOOMSDAY_MISC_GRIDMAP_H
+#define DOOMSDAY_MISC_GRIDMAP_H
 
 typedef void* gridmap_t;
 
-gridmap_t  *M_GridmapCreate(uint width, uint height, size_t sizeOfBlock,
-                            int memzoneTag);
-void        M_GridmapDestroy(gridmap_t *gridmap);
+gridmap_t*      M_CreateGridmap(uint width, uint height, int zoneTag);
+void            M_DestroyGridmap(gridmap_t* gridmap);
 
-void       *M_GridmapGetBlock(gridmap_t *gridmap, uint x, uint y,
-                              boolean alloc);
+uint            Gridmap_Width(gridmap_t* gridmap);
+uint            Gridmap_Height(gridmap_t* gridmap);
+void            Gridmap_Dimensions(gridmap_t* gridmap, uint dimensions[2]);
+
+void*           Gridmap_Block(gridmap_t* gridmap, uint x, uint y);
+void            Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data);
 
 // Iteration
-boolean     M_GridmapIterator(gridmap_t *gridmap,
-                              boolean (*callback) (void* p, void *ctx),
-                              void *param);
-boolean     M_GridmapBoxIterator(gridmap_t *gridmap,
-                                 uint xl, uint xh, uint yl, uint yh,
-                                 boolean (*callback) (void* p, void *ctx),
-                                 void *param);
-boolean     M_GridmapBoxIteratorv(gridmap_t *gridmap, const uint box[4],
-                                  boolean (*callback) (void* p, void *ctx),
-                                  void *param);
+boolean         Gridmap_Iterate(gridmap_t* gridmap,
+                                boolean (*callback) (void* p, void* context),
+                                void* param);
+boolean         Gridmap_IterateBox(gridmap_t* gridmap,
+                                   uint xl, uint xh, uint yl, uint yh,
+                                   boolean (*callback) (void* p, void* context),
+                                   void* param);
+boolean         Gridmap_IterateBoxv(gridmap_t* gridmap, const uint box[4],
+                                      boolean (*callback) (void* p, void* context),
+                                      void* param);
 
-#endif
+#endif /* DOOMSDAY_MISC_GRIDMAP_H */

@@ -57,35 +57,35 @@
  */
 void P_RegisterMapObjs(void)
 {
-    P_RegisterMapObj(MO_THING, "Thing");
-    P_RegisterMapObjProperty(MO_THING, MO_ID, "ID", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_THING, MO_X, "X", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_THING, MO_Y, "Y", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_THING, MO_Z, "Z", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_THING, MO_ANGLE, "Angle", DDVT_ANGLE);
-    P_RegisterMapObjProperty(MO_THING, MO_DOOMEDNUM, "DoomEdNum", DDVT_INT);
-    P_RegisterMapObjProperty(MO_THING, MO_FLAGS, "Flags", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_THING, MO_SPECIAL, "Special", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_THING, MO_ARG0, "Arg0", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_THING, MO_ARG1, "Arg1", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_THING, MO_ARG2, "Arg2", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_THING, MO_ARG3, "Arg3", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_THING, MO_ARG4, "Arg4", DDVT_BYTE);
+    P_CreateObjectDef(MO_THING, "Thing");
+    P_AddPropertyToObjectDef(MO_THING, MO_ID, "ID", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_THING, MO_X, "X", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_THING, MO_Y, "Y", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_THING, MO_Z, "Z", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_THING, MO_ANGLE, "Angle", DDVT_ANGLE);
+    P_AddPropertyToObjectDef(MO_THING, MO_DOOMEDNUM, "DoomEdNum", DDVT_INT);
+    P_AddPropertyToObjectDef(MO_THING, MO_FLAGS, "Flags", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_THING, MO_SPECIAL, "Special", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_THING, MO_ARG0, "Arg0", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_THING, MO_ARG1, "Arg1", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_THING, MO_ARG2, "Arg2", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_THING, MO_ARG3, "Arg3", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_THING, MO_ARG4, "Arg4", DDVT_BYTE);
 
-    P_RegisterMapObj(MO_XLINEDEF, "XLinedef");
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ORIGINALID, "ID", DDVT_INT);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_TYPE, "Type", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ARG0, "Arg0", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ARG1, "Arg1", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ARG2, "Arg2", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ARG3, "Arg3", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_ARG4, "Arg4", DDVT_BYTE);
-    P_RegisterMapObjProperty(MO_XLINEDEF, MO_FLAGS, "Flags", DDVT_SHORT);
+    P_CreateObjectDef(MO_XLINEDEF, "XLinedef");
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ORIGINALID, "ID", DDVT_INT);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_TYPE, "Type", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ARG0, "Arg0", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ARG1, "Arg1", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ARG2, "Arg2", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ARG3, "Arg3", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_ARG4, "Arg4", DDVT_BYTE);
+    P_AddPropertyToObjectDef(MO_XLINEDEF, MO_FLAGS, "Flags", DDVT_SHORT);
 
-    P_RegisterMapObj(MO_XSECTOR, "XSector");
-    P_RegisterMapObjProperty(MO_XSECTOR, MO_ORIGINALID, "ID", DDVT_INT);
-    P_RegisterMapObjProperty(MO_XSECTOR, MO_TAG, "Tag", DDVT_SHORT);
-    P_RegisterMapObjProperty(MO_XSECTOR, MO_TYPE, "Type", DDVT_SHORT);
+    P_CreateObjectDef(MO_XSECTOR, "XSector");
+    P_AddPropertyToObjectDef(MO_XSECTOR, MO_ORIGINALID, "ID", DDVT_INT);
+    P_AddPropertyToObjectDef(MO_XSECTOR, MO_TAG, "Tag", DDVT_SHORT);
+    P_AddPropertyToObjectDef(MO_XSECTOR, MO_TYPE, "Type", DDVT_SHORT);
 }
 
 /**

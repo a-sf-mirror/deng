@@ -119,7 +119,7 @@ void Cl_CleanUp(void)
 
     Cl_DestroyClientMobjs();
     Cl_InitPlayers();
-    Cl_RemoveMovers(DMU_CurrentMap());
+    Cl_RemoveMovers(P_CurrentMap());
     GL_SetFilter(false);
 }
 

@@ -43,22 +43,15 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct subsectormapblock_s {
-    subsector_t**   subsectors;
-} subsectormapblock_t;
+typedef struct linkmobj_s {
+    struct linkmobj_s* next;
+    struct mobj_s* mobj;
+} linkmobj_t;
 
-typedef struct bmapblock_s {
-    linedef_t**     lineDefs;
-    linkmobj_t*     mobjLinks;
-    linkpolyobj_t*  polyLinks;
-} bmapblock_t;
-
-typedef struct bmap_s {
-    vec2_t          bBox[2];
-    vec2_t          blockSize;
-    uint            dimensions[2]; // In blocks.
-    gridmap_t*      gridmap;
-} bmap_t;
+typedef struct linklinedef_s {
+    struct linklinedef_s* next;
+    struct linedef_s* lineDef;
+} linklinedef_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -74,117 +67,376 @@ typedef struct bmap_s {
 
 // CODE --------------------------------------------------------------------
 
-void Blockmap_BoxToBlocks(blockmap_t* blockmap, uint blockBox[4],
-                          const arvec2_t box)
+static blockmap_t* allocBlockmap(void)
 {
-    if(blockmap)
-    {
-        bmap_t*bmap = (bmap_t*) blockmap;
-        vec2_t m[2];
+    return Z_Calloc(sizeof(blockmap_t), PU_STATIC, 0);
+}
 
-        m[0][VX] = MAX_OF(bmap->bBox[0][VX], box[0][VX]);
-        m[1][VX] = MIN_OF(bmap->bBox[1][VX], box[1][VX]);
-        m[0][VY] = MAX_OF(bmap->bBox[0][VY], box[0][VY]);
-        m[1][VY] = MIN_OF(bmap->bBox[1][VY], box[1][VY]);
+static void freeBlockmap(blockmap_t* bmap)
+{
+    Z_Free(bmap);
+}
 
-        blockBox[BOXLEFT] =
-            MINMAX_OF(0, (m[0][VX] - bmap->bBox[0][VX]) /
-                            bmap->blockSize[VX], bmap->dimensions[0]);
-        blockBox[BOXRIGHT] =
-            MINMAX_OF(0, (m[1][VX] - bmap->bBox[0][VX]) /
-                            bmap->blockSize[VX], bmap->dimensions[0]);
-        blockBox[BOXBOTTOM] =
-            MINMAX_OF(0, (m[0][VY] - bmap->bBox[0][VY]) /
-                            bmap->blockSize[VY], bmap->dimensions[1]);
-        blockBox[BOXTOP] =
-            MINMAX_OF(0, (m[1][VY] - bmap->bBox[0][VY]) /
-                            bmap->blockSize[VY], bmap->dimensions[1]);
-    }
+static void boxToBlocks(blockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+{
+    uint dimensions[2];
+    vec2_t min, max;
+
+    Gridmap_Dimensions(bmap->gridmap, dimensions);
+
+    V2_Set(min, MAX_OF(bmap->aabb[0][VX], box[0][VX]),
+                MAX_OF(bmap->aabb[0][VY], box[0][VY]));
+
+    V2_Set(max, MIN_OF(bmap->aabb[1][VX], box[1][VX]),
+                MIN_OF(bmap->aabb[1][VY], box[1][VY]));
+
+    blockBox[BOXLEFT]   = MINMAX_OF(0, (min[VX] - bmap->aabb[0][VX]) / bmap->blockSize[VX], dimensions[0]);
+    blockBox[BOXBOTTOM] = MINMAX_OF(0, (min[VY] - bmap->aabb[0][VY]) / bmap->blockSize[VY], dimensions[1]);
+
+    blockBox[BOXRIGHT]  = MINMAX_OF(0, (max[VX] - bmap->aabb[0][VX]) / bmap->blockSize[VX], dimensions[0]);
+    blockBox[BOXTOP]    = MINMAX_OF(0, (max[VY] - bmap->aabb[0][VY]) / bmap->blockSize[VY], dimensions[1]);
+}
+
+void MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, uint blockBox[4],
+                              const arvec2_t box)
+{
+    assert(blockmap);
+    assert(blockBox);
+    assert(box);
+
+    boxToBlocks(blockmap, blockBox, box);
+}
+
+void LineDefBlockmap_BoxToBlocks(linedefblockmap_t* blockmap, uint blockBox[4],
+                                 const arvec2_t box)
+{
+    assert(blockmap);
+    assert(blockBox);
+    assert(box);
+
+    boxToBlocks(blockmap, blockBox, box);
+}
+
+void SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, uint blockBox[4],
+                                   const arvec2_t box)
+{
+    assert(blockmap);
+    assert(blockBox);
+    assert(box);
+
+    boxToBlocks(blockmap, blockBox, box);
+}
+
+void PolyobjBlockmap_BoxToBlocks(polyobjblockmap_t* blockmap, uint blockBox[4],
+                                 const arvec2_t box)
+{
+    assert(blockmap);
+    assert(blockBox);
+    assert(box);
+
+    boxToBlocks(blockmap, blockBox, box);
 }
 
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-
-boolean Blockmap_Block2fv(blockmap_t* blockmap, uint dest[2], const pvec2_t pos)
+boolean MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint dest[2], float x, float y)
 {
-    if(blockmap)
+    assert(blockmap);
+
+    if(!(x < blockmap->aabb[0][VX] || x >= blockmap->aabb[1][VX] ||
+         y < blockmap->aabb[0][VY] || y >= blockmap->aabb[1][VY]))
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
+        dest[VX] = (x - blockmap->aabb[0][VX]) / blockmap->blockSize[VX];
+        dest[VY] = (y - blockmap->aabb[0][VY]) / blockmap->blockSize[VY];
 
-        if(!(pos[VX] < bmap->bBox[0][VX] || pos[VX] >= bmap->bBox[1][VX] ||
-             pos[VY] < bmap->bBox[0][VY] || pos[VY] >= bmap->bBox[1][VY]))
-        {
-            dest[VX] = (pos[VX] - bmap->bBox[0][VX]) / bmap->blockSize[VX];
-            dest[VY] = (pos[VY] - bmap->bBox[0][VY]) / bmap->blockSize[VY];
-
-            return true;
-        }
-
-        return false; // Outside blockmap.
+        return true;
     }
 
-    return false; // hmm...
+    return false;
 }
 
-static __inline int xToSubSectorBlockX(bmap_t* bmap, float x)
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint dest[2], const float pos[2])
 {
-    if(x >= bmap->bBox[0][VX] && x < bmap->bBox[1][VX])
-        return (x - bmap->bBox[0][VX]) / bmap->blockSize[VX];
-
-    return -1;
+    return MobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-static __inline int yToSubSectorBlockY(bmap_t* bmap, float y)
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, uint dest[2], float x, float y)
 {
-    if(y >= bmap->bBox[0][VY] && y < bmap->bBox[1][VY])
-        return (y - bmap->bBox[0][VY]) / bmap->blockSize[VY];
+    assert(blockmap);
 
-    return -1;
-}
-
-static bmap_t* allocBmap(void)
-{
-    return Z_Calloc(sizeof(bmap_t), PU_MAP, 0);
-}
-
-blockmap_t* P_CreateBlockmap(const pvec2_t min, const pvec2_t max,
-                             uint width, uint height)
-{
-    bmap_t* bmap = allocBmap();
-
-    V2_Copy(bmap->bBox[0], min);
-    V2_Copy(bmap->bBox[1], max);
-    bmap->dimensions[VX] = width;
-    bmap->dimensions[VY] = height;
-
-    V2_Set(bmap->blockSize,
-           (bmap->bBox[1][VX] - bmap->bBox[0][VX]) / bmap->dimensions[VX],
-           (bmap->bBox[1][VY] - bmap->bBox[0][VY]) / bmap->dimensions[VY]);
-
-    bmap->gridmap = M_GridmapCreate(bmap->dimensions[VX], bmap->dimensions[VY],
-                                    sizeof(bmapblock_t), PU_MAP);
-
-    VERBOSE(Con_Message
-            ("P_BlockMapCreate: w=%i h=%i\n", bmap->dimensions[VX],
-             bmap->dimensions[VY]));
-
-    return (blockmap_t*) bmap;
-}
-
-void Blockmap_SetBlockSubsectors(blockmap_t* blockmap, uint x, uint y, subsector_t** subsectors)
-{
-    if(blockmap)
+    if(!(x < blockmap->aabb[0][VX] || x >= blockmap->aabb[1][VX] ||
+         y < blockmap->aabb[0][VY] || y >= blockmap->aabb[1][VY]))
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        subsectormapblock_t* block =
-            M_GridmapGetBlock(bmap->gridmap, x, y, true);
+        dest[VX] = (x - blockmap->aabb[0][VX]) / blockmap->blockSize[VX];
+        dest[VY] = (y - blockmap->aabb[0][VY]) / blockmap->blockSize[VY];
 
-        if(block)
-        {
-            block->subsectors = subsectors;
-        }
+        return true;
     }
+
+    return false;
+}
+
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint dest[2], const float pos[2])
+{
+    return LineDefBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
+}
+
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean PolyobjBlockmap_Block2f(polyobjblockmap_t* blockmap, uint dest[2], float x, float y)
+{
+    assert(blockmap);
+
+    if(!(x < blockmap->aabb[0][VX] || x >= blockmap->aabb[1][VX] ||
+         y < blockmap->aabb[0][VY] || y >= blockmap->aabb[1][VY]))
+    {
+        dest[VX] = (x - blockmap->aabb[0][VX]) / blockmap->blockSize[VX];
+        dest[VY] = (y - blockmap->aabb[0][VY]) / blockmap->blockSize[VY];
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean PolyobjBlockmap_Block2fv(polyobjblockmap_t* blockmap, uint dest[2], const float pos[2])
+{
+    return PolyobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
+}
+
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint dest[2], float x, float y)
+{
+    assert(blockmap);
+
+    if(!(x < blockmap->aabb[0][VX] || x >= blockmap->aabb[1][VX] ||
+         y < blockmap->aabb[0][VY] || y >= blockmap->aabb[1][VY]))
+    {
+        dest[VX] = (x - blockmap->aabb[0][VX]) / blockmap->blockSize[VX];
+        dest[VY] = (y - blockmap->aabb[0][VY]) / blockmap->blockSize[VY];
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Given a world coordinate, output the blockmap block[x, y] it resides in.
+ */
+boolean SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, uint dest[2], const float pos[2])
+{
+    return SubsectorBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
+}
+
+static boolean freeMobjBlockData(void* data, void* context)
+{
+    linkmobj_t* link = (linkmobj_t*) data;
+
+    while(link)
+    {
+        linkmobj_t* next = link->next;
+        Z_Free(link);
+        link = next;
+    }
+
+    return true; // Continue iteration.
+}
+
+mobjblockmap_t* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
+                                     uint width, uint height)
+{
+    mobjblockmap_t* blockmap;
+
+    assert(min);
+    assert(max);
+
+    blockmap = allocBlockmap();
+    V2_Copy(blockmap->aabb[0], min);
+    V2_Copy(blockmap->aabb[1], max);
+    V2_Set(blockmap->blockSize,
+           (blockmap->aabb[1][VX] - blockmap->aabb[0][VX]) / width,
+           (blockmap->aabb[1][VY] - blockmap->aabb[0][VY]) / height);
+
+    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
+
+    return blockmap;
+}
+
+void P_DestroyMobjBlockmap(mobjblockmap_t* blockmap)
+{
+    assert(blockmap);
+
+    Gridmap_Iterate(blockmap->gridmap, freeMobjBlockData, NULL);
+
+    M_DestroyGridmap(blockmap->gridmap);
+    Z_Free(blockmap);
+}
+
+linedefblockmap_t* P_CreateLineDefBlockmap(const pvec2_t min, const pvec2_t max,
+                                           uint width, uint height)
+{
+    linedefblockmap_t* blockmap;
+
+    assert(min);
+    assert(max);
+
+    blockmap = allocBlockmap();
+    V2_Copy(blockmap->aabb[0], min);
+    V2_Copy(blockmap->aabb[1], max);
+    V2_Set(blockmap->blockSize,
+           (blockmap->aabb[1][VX] - blockmap->aabb[0][VX]) / width,
+           (blockmap->aabb[1][VY] - blockmap->aabb[0][VY]) / height);
+
+    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
+
+    return blockmap;
+}
+
+static boolean freeLineDefBlockData(void* data, void* context)
+{
+    linklinedef_t* link = (linklinedef_t*) data;
+
+    while(link)
+    {
+        linklinedef_t* next = link->next;
+        Z_Free(link);
+        link = next;
+    }
+
+    return true; // Continue iteration.
+}
+
+void P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap)
+{
+    assert(blockmap);
+
+    Gridmap_Iterate(blockmap->gridmap, freeLineDefBlockData, NULL);
+
+    M_DestroyGridmap(blockmap->gridmap);
+    Z_Free(blockmap);
+}
+
+polyobjblockmap_t* P_CreatePolyobjBlockmap(const pvec2_t min, const pvec2_t max,
+                                           uint width, uint height)
+{
+    polyobjblockmap_t* blockmap;
+
+    assert(min);
+    assert(max);
+
+    blockmap = allocBlockmap();
+    V2_Copy(blockmap->aabb[0], min);
+    V2_Copy(blockmap->aabb[1], max);
+    V2_Set(blockmap->blockSize,
+           (blockmap->aabb[1][VX] - blockmap->aabb[0][VX]) / width,
+           (blockmap->aabb[1][VY] - blockmap->aabb[0][VY]) / height);
+
+    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
+
+    return blockmap;
+}
+
+static boolean freePolyobjBlockData(void* data, void* context)
+{
+    linkpolyobj_t* link = (linkpolyobj_t*) data;
+
+    while(link)
+    {
+        linkpolyobj_t* next = link->next;
+        Z_Free(link);
+        link = next;
+    }
+
+    return true; // Continue iteration.
+}
+
+void P_DestroyPolyobjBlockmap(polyobjblockmap_t* blockmap)
+{
+    assert(blockmap);
+
+    Gridmap_Iterate(blockmap->gridmap, freePolyobjBlockData, NULL);
+
+    M_DestroyGridmap(blockmap->gridmap);
+    Z_Free(blockmap);
+}
+
+subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t max,
+                                               uint width, uint height)
+{
+    subsectorblockmap_t* blockmap;
+
+    assert(min);
+    assert(max);
+
+    blockmap = allocBlockmap();
+    V2_Copy(blockmap->aabb[0], min);
+    V2_Copy(blockmap->aabb[1], max);
+    V2_Set(blockmap->blockSize,
+           (blockmap->aabb[1][VX] - blockmap->aabb[0][VX]) / width,
+           (blockmap->aabb[1][VY] - blockmap->aabb[0][VY]) / height);
+
+    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
+
+    return blockmap;
+}
+
+static boolean freeSubsectorBlockData(void* data, void* context)
+{
+    /*linkmobj_t* link = (linkmobj_t*) data;
+
+    while(link)
+    {
+        linkmobj_t* next = link->next;
+        Z_Free(link);
+        link = next;
+    }*/
+    {
+    subsector_t** subsectors = (subsector_t**) data;
+    Z_Free(subsectors);
+    }
+
+    return true; // Continue iteration.
+}
+
+void P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap)
+{
+    assert(blockmap);
+
+    Gridmap_Iterate(blockmap->gridmap, freeSubsectorBlockData, NULL);
+
+    M_DestroyGridmap(blockmap->gridmap);
+    Z_Free(blockmap);
+}
+
+void SubsectorBlockmap_SetBlock(subsectorblockmap_t* blockmap, uint x, uint y,
+                                subsector_t** subsectors)
+{
+    subsector_t** oldData;
+
+    assert(blockmap);
+
+    oldData = (subsector_t**) Gridmap_Block(blockmap->gridmap, x, y);
+    if(oldData)
+        Z_Free(oldData);
+
+    Gridmap_SetBlock(blockmap->gridmap, x, y, subsectors);
 }
 
 void Map_BuildSubsectorBlockmap(gamemap_t* map)
@@ -205,14 +457,11 @@ typedef struct subsecmap_s {
 
     uint startTime = Sys_GetRealTime();
 
-    int xl, xh, yl, yh, x, y;
-    int subMapWidth, subMapHeight;
-    uint i;
+    uint i, x, y, subMapWidth, subMapHeight, minBlock[2], maxBlock[2];
     subsectornode_t* iter, *next;
     subsectormap_t* bmap, *block;
     vec2_t bounds[2], blockSize, dims;
-    blockmap_t* subsectorBlockMap;
-    subsector_t** subsectorLinks;
+    subsectorblockmap_t* blockmap;
     size_t totalLinks;
 
     // Setup the blockmap area to enclose the whole map, plus a margin
@@ -242,8 +491,7 @@ typedef struct subsecmap_s {
     V2_Set(bounds[1], bounds[0][VX] + subMapWidth  * blockSize[VX],
                       bounds[0][VY] + subMapHeight * blockSize[VY]);
 
-    subsectorBlockMap = (blockmap_t*)
-        P_CreateBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
+    blockmap = P_CreateSubsectorBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
 
     // We'll construct the temporary links using nodes.
     bmap = M_Calloc(sizeof(subsectormap_t) * subMapWidth * subMapHeight);
@@ -258,13 +506,11 @@ typedef struct subsecmap_s {
             continue;
 
         // Blockcoords to link to.
-        xl = xToSubSectorBlockX((bmap_t*)subsectorBlockMap, subsector->bBox[0].pos[VX]);
-        xh = xToSubSectorBlockX((bmap_t*)subsectorBlockMap, subsector->bBox[1].pos[VX]);
-        yl = yToSubSectorBlockY((bmap_t*)subsectorBlockMap, subsector->bBox[0].pos[VY]);
-        yh = yToSubSectorBlockY((bmap_t*)subsectorBlockMap, subsector->bBox[1].pos[VY]);
+        SubsectorBlockmap_Block2fv(blockmap, minBlock, subsector->bBox[0].pos);
+        SubsectorBlockmap_Block2fv(blockmap, maxBlock, subsector->bBox[1].pos);
 
-        for(x = xl; x <= xh; ++x)
-            for(y = yl; y <= yh; ++y)
+        for(x = minBlock[0]; x <= maxBlock[0]; ++x)
+            for(y = minBlock[1]; y <= maxBlock[1]; ++y)
             {
                 if(x < 0 || y < 0 || x >= subMapWidth || y >= subMapHeight)
                 {
@@ -287,8 +533,6 @@ typedef struct subsecmap_s {
             }
     }
 
-    subsectorLinks = Z_Malloc(totalLinks * sizeof(subsector_t*), PU_MAP, NULL);
-
     // Create the actual links by 'hardening' the lists into arrays.
     for(y = 0; y < subMapHeight; ++y)
         for(x = 0; x < subMapWidth; ++x)
@@ -300,7 +544,7 @@ typedef struct subsecmap_s {
                 subsector_t** subsectors, **ptr;
 
                 // A NULL-terminated array of pointers to subsectors.
-                subsectors = subsectorLinks;
+                subsectors = Z_Malloc(sizeof(subsector_t*) * (block->count + 1), PU_STATIC, NULL);;
 
                 // Copy pointers to the array, delete the nodes.
                 ptr = subsectors;
@@ -315,13 +559,9 @@ typedef struct subsecmap_s {
                 *ptr = NULL;
 
                 // Link it into the subSectorblockmap.
-                Blockmap_SetBlockSubsectors(subsectorBlockMap, x, y, subsectors);
-
-                subsectorLinks += block->count + 1;
+                SubsectorBlockmap_SetBlock(blockmap, x, y, subsectors);
             }
         }
-
-    map->subsectorBlockMap = subsectorBlockMap;
 
     // Free the temporary link map.
     M_Free(bmap);
@@ -331,364 +571,521 @@ typedef struct subsecmap_s {
             ("Map_BuildSubsectorBlockmap: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
 
+    map->_subsectorBlockmap = blockmap;
+
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
 
-void Blockmap_SetBlock(blockmap_t* blockmap, uint x, uint y,
-                        linedef_t** lines, linkmobj_t* moLink,
-                        linkpolyobj_t* poLink)
+void PolyobjBlockmap_SetBlock(polyobjblockmap_t* blockmap, uint x, uint y,
+                              linkpolyobj_t* poLink)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, true);
+    void* data;
 
-        if(block)
-        {
-            block->lineDefs = lines;
-            block->mobjLinks = moLink;
-            block->polyLinks = poLink;
-        }
-    }
+    assert(blockmap);
+
+    data = Gridmap_Block(blockmap->gridmap, x, y);
+    /*if(data)
+        // Free block.*/
+    Gridmap_SetBlock(blockmap->gridmap, x, y, poLink);
 }
 
 boolean unlinkPolyobjInBlock(void* ptr, void* context)
 {
-    bmapblock_t*        block = (bmapblock_t*) ptr;
-    polyobj_t*          po = (polyobj_t*) context;
+    linkpolyobj_t** data = ptr;
+    polyobj_t* po = (polyobj_t*) context;
 
-    P_PolyobjUnlinkFromRing(po, &block->polyLinks);
+    P_PolyobjUnlinkFromRing(po, &(*data));
     return true;
 }
 
 boolean linkPolyobjInBlock(void* ptr, void* context)
 {
-    bmapblock_t*        block = (bmapblock_t*) ptr;
-    polyobj_t*          po = (polyobj_t *) context;
+    linkpolyobj_t** data = ptr;
+    polyobj_t* po = (polyobj_t*) context;
 
-    P_PolyobjLinkToRing(po, &block->polyLinks);
+    P_PolyobjLinkToRing(po, &(*data));
     return true;
 }
 
-void Blockmap_LinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
+void PolyobjBlockmap_Insert(polyobjblockmap_t* blockmap, polyobj_t* po)
 {
-    if(blockmap)
-    {
-        bmap_t*             bmap = (bmap_t*) blockmap;
-        uint                blockBox[4];
+    uint blockBox[4];
 
-        P_PolyobjUpdateBBox(po);
-        Blockmap_BoxToBlocks(blockmap, blockBox, po->box);
+    assert(blockmap);
+    assert(po);
 
-        M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                              linkPolyobjInBlock, (void*) po);
-    }
+    P_PolyobjUpdateBBox(po);
+    PolyobjBlockmap_BoxToBlocks(blockmap, blockBox, po->box);
+
+    Gridmap_IterateBoxv(blockmap->gridmap, blockBox, linkPolyobjInBlock, (void*) po);
 }
 
-void Blockmap_UnlinkPolyobj(blockmap_t* blockmap, polyobj_t* po)
+void PolyobjBlockmap_Remove(polyobjblockmap_t* blockmap, polyobj_t* po)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        uint blockBox[4];
+    uint blockBox[4];
 
-        P_PolyobjUpdateBBox(po);
-        Blockmap_BoxToBlocks(blockmap, blockBox, po->box);
+    assert(blockmap);
+    assert(po);
 
-        M_GridmapBoxIteratorv(bmap->gridmap, blockBox, unlinkPolyobjInBlock, (void*) po);
-    }
+    P_PolyobjUpdateBBox(po);
+    PolyobjBlockmap_BoxToBlocks(blockmap, blockBox, po->box);
+
+    Gridmap_IterateBoxv(blockmap->gridmap, blockBox, unlinkPolyobjInBlock, (void*) po);
 }
 
-void Blockmap_LinkMobj(blockmap_t* blockmap, mobj_t* mo)
+void MobjBlockmap_Insert(mobjblockmap_t* blockmap, mobj_t* mo)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        uint blockXY[2];
-        bmapblock_t* block;
+    uint block[2];
+    linkmobj_t* link;
 
-        Blockmap_Block2fv(blockmap, blockXY, mo->pos);
-        block = (bmapblock_t*) M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], true);
+    assert(blockmap);
+    assert(mo);
 
-        if(block)
-            P_MobjLinkToRing(mo, &block->mobjLinks);
-    }
-}
+    MobjBlockmap_Block2fv(blockmap, block, mo->pos);
 
-boolean Blockmap_UnlinkMobj(blockmap_t* blockmap, mobj_t* mo)
-{
-    boolean unlinked = false;
+    link = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, block[0], block[1]);
+    if(!link)
+    {   // Create a new link at the current block cell.
+        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
+        link->next = NULL;
+        link->mobj = mo;
 
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        uint blockXY[2];
-        bmapblock_t* block;
-
-        Blockmap_Block2fv(blockmap, blockXY, mo->pos);
-        block = (bmapblock_t*) M_GridmapGetBlock(bmap->gridmap, blockXY[0], blockXY[1], false);
-        if(block)
-            unlinked = P_MobjUnlinkFromRing(mo, &block->mobjLinks);
+        Gridmap_SetBlock(blockmap->gridmap, block[0], block[1], link);
+        return;
     }
 
-    return unlinked;
-}
-
-void Blockmap_Bounds(blockmap_t* blockmap, pvec2_t min, pvec2_t max)
-{
-    if(blockmap)
+    while(link->next != NULL && link->mobj != NULL)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-
-        if(min)
-            V2_Copy(min, bmap->bBox[0]);
-        if(max)
-            V2_Copy(max, bmap->bBox[1]);
+        link = link->next;
     }
-}
 
-void Blockmap_BlockSize(blockmap_t* blockmap, pvec2_t blockSize)
-{
-    if(blockmap)
+    if(link->mobj == NULL)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-
-        V2_Copy(blockSize, bmap->blockSize);
+        link->mobj = mo;
+        return;
     }
+
+    link->next = Z_Malloc(sizeof(linkmobj_t), PU_STATIC, 0);
+    link->next->next = NULL;
+    link->next->mobj = mo;
 }
 
-void Blockmap_Dimensions(blockmap_t* blockmap, uint v[2])
+boolean MobjBlockmap_Remove(mobjblockmap_t* blockmap, mobj_t* mo)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
+    uint blockXY[2];
+    linkmobj_t* link;
 
-        v[VX] = bmap->dimensions[VX];
-        v[VY] = bmap->dimensions[VY];
+    assert(blockmap);
+    assert(mo);
+
+    MobjBlockmap_Block2fv(blockmap, blockXY, mo->pos);
+
+    link = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, blockXY[0], blockXY[1]);
+    for(; link; link = link->next)
+    {
+        if(link->mobj != mo)
+            continue;
+
+        link->mobj = NULL;
+        return true; // Mobj was unlinked.
     }
+
+    return false; // Mobj was not linked.
 }
 
-int Blockmap_NumLineDefs(blockmap_t* blockmap, uint x, uint y)
+static void linkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y,
+                               linedef_t* lineDef)
 {
-    int num = -1;
+    linklinedef_t* link = (linklinedef_t*)
+        Gridmap_Block(blockmap->gridmap, x, y);
 
-    if(blockmap)
+    if(!link)
+    {   // Create a new link at the current block cell.
+        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
+        link->next = NULL;
+        link->lineDef = lineDef;
+
+        Gridmap_SetBlock(blockmap->gridmap, x, y, link);
+        return;
+    }
+
+    while(link->next != NULL && link->lineDef != NULL)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+        link = link->next;
+    }
 
-        if(block)
+    if(link->lineDef == NULL)
+    {
+        link->lineDef = lineDef;
+        return;
+    }
+
+    link->next = Z_Malloc(sizeof(linklinedef_t), PU_STATIC, 0);
+    link->next->next = NULL;
+    link->next->lineDef = lineDef;
+}
+
+static void unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint y,
+                                   linedef_t* lineDef)
+{
+    linklinedef_t* link = (linklinedef_t*)
+        Gridmap_Block(blockmap->gridmap, x, y);
+
+    for(; link; link = link->next)
+    {
+        if(link->lineDef != lineDef)
+            continue;
+
+        link->lineDef = NULL;
+        return; // LineDef was unlinked.
+    }
+
+    // LineDef was not linked.
+}
+
+void LineDefBlockmap_Insert(linedefblockmap_t* blockmap, linedef_t* lineDef)
+{
+#define BLKSHIFT                7 // places to shift rel position for cell num
+#define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
+
+    uint i, block[2], dimensions[2];
+    int vert, horiz;
+    int origin[2], vtx1[2], vtx2[2], aabb[2][2], delta[2];
+    boolean slopePos, slopeNeg;
+
+    assert(blockmap);
+    assert(lineDef);
+
+    origin[0] = (int) blockmap->aabb[0][0];
+    origin[1] = (int) blockmap->aabb[0][1];
+    Gridmap_Dimensions(blockmap->gridmap, dimensions);
+
+    // Determine all blocks it touches and add the lineDef number to those blocks.
+    vtx1[0] = (int) lineDef->buildData.v[0]->pos[0];
+    vtx1[1] = (int) lineDef->buildData.v[0]->pos[1];
+
+    vtx2[0] = (int) lineDef->buildData.v[1]->pos[0];
+    vtx2[1] = (int) lineDef->buildData.v[1]->pos[1];
+
+    aabb[0][0] = (vtx1[0] > vtx2[0]? vtx2[0] : vtx1[0]);
+    aabb[0][1] = (vtx1[1] > vtx2[1]? vtx2[1] : vtx1[1]);
+
+    aabb[1][0] = (vtx1[0] > vtx2[0]? vtx1[0] : vtx2[0]);
+    aabb[1][1] = (vtx1[1] > vtx2[1]? vtx1[1] : vtx2[1]);
+
+    delta[0] = vtx2[0] - vtx1[0];
+    delta[1] = vtx2[1] - vtx1[1];
+
+    vert = !delta[0];
+    horiz = !delta[1];
+
+    slopePos = (delta[0] ^ delta[1]) > 0;
+    slopeNeg = (delta[0] ^ delta[1]) < 0;
+
+    // The lineDef always belongs to the blocks containing its endpoints
+    block[0] = (vtx1[0] - origin[0]) >> BLKSHIFT;
+    block[1] = (vtx1[1] - origin[1]) >> BLKSHIFT;
+    linkLineDefToBlock(blockmap, block[0], block[1], lineDef);
+
+    block[0] = (vtx2[0] - origin[0]) >> BLKSHIFT;
+    block[1] = (vtx2[1] - origin[1]) >> BLKSHIFT;
+    linkLineDefToBlock(blockmap, block[0], block[1], lineDef);
+
+    // For each column, see where the lineDef along its left edge, which
+    // it contains, intersects the LineDef. We don't want to interesect
+    // vertical lines with columns.
+    if(!vert)
+    {
+        for(i = 0; i < dimensions[0]; ++i)
         {
-            // Count the number of lines linked to this block.
-            num = 0;
-            if(block->lineDefs)
+            // intersection of LineDef with x=origin[0]+(i<<BLKSHIFT)
+            // (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
+            // y = delta[1]*(x-vtx1[0])+vtx1[1]*delta[0];
+            int x = origin[0] + (i << BLKSHIFT); // (x,y) is intersection
+            int y = (delta[1] * (x - vtx1[0])) / delta[0] + vtx1[1];
+            int yb = (y - origin[1]) >> BLKSHIFT; // block row number
+            int yp = (y - origin[1]) & BLKMASK; // y position within block
+
+            // Already outside the blockmap?
+            if(yb < 0 || yb > (signed) (dimensions[1]) + 1)
+                continue;
+
+            // Does the lineDef touch this column at all?
+            if(x < aabb[0][0] || x > aabb[1][0])
+                continue;
+
+            // The cell that contains the intersection point is always added.
+            linkLineDefToBlock(blockmap, i, yb, lineDef);
+
+            // If the intersection is at a corner it depends on the slope
+            // (and whether the lineDef extends past the intersection) which
+            // blocks are hit.
+
+            // Where does the intersection occur?
+            if(yp == 0)
             {
-                linedef_t** iter = block->lineDefs;
-                while(*iter)
+                // Intersection occured at a corner
+                if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
-                    num++;
-                    *iter++;
+                    if(yb > 0 && aabb[0][1] < y)
+                        linkLineDefToBlock(blockmap, i, yb - 1, lineDef);
+
+                    if(i > 0 && aabb[0][0] < x)
+                        linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
+                }
+                else if(slopePos) //   / - block x-,y-
+                {
+                    if(yb > 0 && i > 0 && aabb[0][0] < x)
+                        linkLineDefToBlock(blockmap, i - 1, yb - 1, lineDef);
+                }
+                else if(horiz) //   - - block x-,y
+                {
+                    if(i > 0 && aabb[0][0] < x)
+                        linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
                 }
             }
+            else if(i > 0 && aabb[0][0] < x)
+            {
+                // Else not at corner: x-,y
+                linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
+            }
         }
     }
 
-    return num;
-}
-
-int Blockmap_NumMobjs(blockmap_t* blockmap, uint x, uint y)
-{
-    int num = -1;
-
-    if(blockmap)
+    // For each row, see where the lineDef along its bottom edge, which
+    // it contains, intersects the LineDef.
+    if(!horiz)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
-
-        if(block)
+        for(i = 0; i < dimensions[1]; ++i)
         {
-            // Count the number of mobjs linked to this block.
-            num = 0;
-            if(block->mobjLinks)
+            // intersection of LineDef with y=origin[1]+(i<<BLKSHIFT)
+            // (x,y) on LineDef satisfies: (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
+            // x = delta[0]*(y-vtx1[1])/delta[1]+vtx1[0];
+            int y = origin[1] + (i << BLKSHIFT); // (x,y) is intersection
+            int x = (delta[0] * (y - vtx1[1])) / delta[1] + vtx1[0];
+            int xb = (x - origin[0]) >> BLKSHIFT; // block column number
+            int xp = (x - origin[0]) & BLKMASK; // x position within block
+
+            // Outside the blockmap?
+            if(xb < 0 || xb > (signed) (dimensions[0]) + 1)
+                continue;
+
+            // Touches this row?
+            if(y < aabb[0][1] || y > aabb[1][1])
+                continue;
+
+            linkLineDefToBlock(blockmap, xb, i, lineDef);
+
+            // If the intersection is at a corner it depends on the slope
+            // (and whether the lineDef extends past the intersection) which
+            // blocks are hit
+
+            // Where does the intersection occur?
+            if(xp == 0)
             {
-                linkmobj_t* link = block->mobjLinks;
-                while(link)
+                // Intersection occured at a corner
+                if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
-                    if(link->mobj)
-                        num++;
-                    link = link->next;
+                    if(i > 0 && aabb[0][1] < y)
+                        linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
+
+                    if(xb > 0 && aabb[0][0] < x)
+                        linkLineDefToBlock(blockmap, xb - 1, i, lineDef);
+                }
+                else if(vert) //   | - block x,y-
+                {
+                    if(i > 0 && aabb[0][1] < y)
+                        linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
+                }
+                else if(slopePos) //   / - block x-,y-
+                {
+                    if(xb > 0 && i > 0 && aabb[0][1] < y)
+                        linkLineDefToBlock(blockmap, xb - 1, i - 1, lineDef);
                 }
             }
-        }
-    }
-
-    return num;
-}
-
-int Blockmap_NumPolyobjs(blockmap_t* blockmap, uint x, uint y)
-{
-    int num = -1;
-
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
-
-        if(block)
-        {
-            // Count the number of polyobjs linked to this block.
-            num = 0;
-            if(block->polyLinks)
+            else if(i > 0 && aabb[0][1] < y)
             {
-                linkpolyobj_t* link = block->polyLinks;
-                while(link)
-                {
-                    if(link->polyobj)
-                        num++;
-                    link = link->next;
-                }
+                // Else not on a corner: x, y-
+                linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
             }
         }
     }
 
-    return num;
+#undef BLKSHIFT
+#undef BLKMASK
 }
 
-int Blockmap_NumSubsectors(blockmap_t* blockmap, uint x, uint y)
+boolean LineDefBlockmap_Remove(linedefblockmap_t* blockmap, linedef_t* lineDef)
 {
-    int num = -1;
+    uint i, block[2];
 
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        subsectormapblock_t* block = M_GridmapGetBlock(bmap->gridmap, x, y, false);
+    assert(blockmap);
+    assert(lineDef);
 
-        if(block)
-        {
-            subsector_t** iter = block->subsectors;
+    /*if(!lineDef->numBlockLinks)
+        return false; // LineDef was not linked.
 
-            // Count the number of subsectors linked to this block.
-            num = 0;
-            while(*iter)
-            {
-                num++;
-                *iter++;
-            }
-        }
-    }
+    for(i = 0; i < lineDef->numBlockLinks; ++i)
+        unlinkLineDefFromBlock(blockmap, block[0], block[1], lineDef);*/
 
-    return num;
+    return true;    
 }
 
-typedef struct bmapiterparams_s {
-    int             localValidCount;
-    boolean       (*func) (linedef_t*, void *);
-    void*           param;
-    boolean         retObjRecord;
-} bmapiterparams_t;
-
-static boolean bmapBlockLinesIterator(void* ptr, void* context)
+void MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max)
 {
-    bmapblock_t* block = (bmapblock_t*) ptr;
+    assert(blockmap);
 
-    if(block->lineDefs)
+    if(min)
+        V2_Copy(min, blockmap->aabb[0]);
+    if(max)
+        V2_Copy(max, blockmap->aabb[1]);
+}
+
+void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+{
+    assert(blockmap);
+
+    if(min)
+        V2_Copy(min, blockmap->aabb[0]);
+    if(max)
+        V2_Copy(max, blockmap->aabb[1]);
+}
+
+void MobjBlockmap_BlockSize(mobjblockmap_t* blockmap, pvec2_t blockSize)
+{
+    assert(blockmap);
+    assert(blockSize);
+
+    V2_Copy(blockSize, blockmap->blockSize);
+}
+
+void MobjBlockmap_Dimensions(mobjblockmap_t* blockmap, uint v[2])
+{
+    assert(blockmap);
+
+    Gridmap_Dimensions(blockmap->gridmap, v);
+}
+
+uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
+{
+    linedef_t** data;
+    uint num = 0;
+
+    assert(blockmap);
+
+    data = (linedef_t**) Gridmap_Block(blockmap->gridmap, x, y);
+    // Count the number of lines linked to this block.
+    if(data)
     {
-        linedef_t** iter;
-        bmapiterparams_t* args = (bmapiterparams_t*) context;
-
-        iter = block->lineDefs;
+        linedef_t** iter = data;
         while(*iter)
         {
-            linedef_t* line = *iter;
-
-            if(line->validCount != args->localValidCount)
-            {
-                void* ptr;
-
-                line->validCount = args->localValidCount;
-
-                if(args->retObjRecord)
-                    ptr = (void*) DMU_GetObjRecord(DMU_LINEDEF, line);
-                else
-                    ptr = (void*) line;
-
-                if(!args->func(ptr, args->param))
-                    return false;
-            }
-
+            num++;
             *iter++;
         }
     }
 
-    return true;
+    return num;
 }
 
-boolean Blockmap_IterateLineDefs(blockmap_t* blockmap, const uint block[2],
-                                 boolean (*func) (linedef_t*, void*),
-                                 void* data, boolean retObjRecord)
+uint MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y)
 {
-    if(blockmap)
+    linkmobj_t* data;
+    uint num = 0;
+
+    assert(blockmap);
+
+    data = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    // Count the number of mobjs linked to this block.
+    if(data)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* bmapBlock =
-            M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
-
-        if(bmapBlock)
+        linkmobj_t* link = data;
+        while(link)
         {
-            bmapiterparams_t args;
-
-            args.localValidCount = validCount;
-            args.func = func;
-            args.param = data;
-            args.retObjRecord = retObjRecord;
-
-            return bmapBlockLinesIterator(bmapBlock, &args);
+            if(link->mobj)
+                num++;
+            link = link->next;
         }
     }
 
-    return true;
+    return num;
 }
 
-boolean Blockmap_BoxIterateLineDefs(blockmap_t* blockmap, const uint blockBox[4],
-                                boolean (*func) (linedef_t*, void*),
-                                void* data, boolean retObjRecord)
+uint PolyobjBlockmap_NumInBlock(polyobjblockmap_t* blockmap, uint x, uint y)
 {
-    bmap_t* bmap = (bmap_t*) blockmap;
-    bmapiterparams_t args;
+    linkpolyobj_t* data;
+    uint num = 0;
 
-    args.localValidCount = validCount;
-    args.func = func;
-    args.param = data;
-    args.retObjRecord = retObjRecord;
+    assert(blockmap);
 
-    return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 bmapBlockLinesIterator, (void*) &args);
+    data = Gridmap_Block(blockmap->gridmap, x, y);
+    // Count the number of polyobjs linked to this block.
+    if(data)
+    {
+        linkpolyobj_t* link = data;
+        while(link)
+        {
+            if(link->polyobj)
+                num++;
+            link = link->next;
+        }
+    }
+
+    return num;
 }
 
-typedef struct bmappoiterparams_s {
+uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
+{
+    subsector_t** data;
+    uint num = 0;
+
+    assert(blockmap);
+
+    data = (subsector_t**) Gridmap_Block(blockmap->gridmap, x, y);
+    // Count the number of subsectors linked to this block.
+    if(data)
+    {
+        subsector_t** iter = data;
+        while(*iter)
+        {
+            num++;
+            *iter++;
+        }
+    }
+
+    return num;
+}
+
+typedef struct {
+    boolean        (*func) (linedef_t*, void*);
+    boolean         retObjRecord;
     int             localValidCount;
-    boolean       (*func) (polyobj_t*, void *);
-    void*           param;
-} bmappoiterparams_t;
+    void*           context;
+} iteratelinedefs_args_t;
 
-static boolean bmapBlockPolyobjsIterator(void* ptr, void* context)
+static boolean iterateLineDefs(void* ptr, void* context)
 {
-    bmapblock_t* block = (bmapblock_t*) ptr;
-    bmappoiterparams_t* args = (bmappoiterparams_t*) context;
-    linkpolyobj_t* link;
+    linklinedef_t* link = (linklinedef_t*) ptr;
+    iteratelinedefs_args_t* args = (iteratelinedefs_args_t*) context;
 
-    link = block->polyLinks;
     while(link)
     {
-        linkpolyobj_t*      next = link->next;
+        linklinedef_t* next = link->next;
 
-        if(link->polyobj)
-            if(link->polyobj->validCount != args->localValidCount)
+        if(link->lineDef)
+            if(link->lineDef->validCount != args->localValidCount)
             {
-                link->polyobj->validCount = args->localValidCount;
+                void* ptr;
 
-                if(!args->func(link->polyobj, args->param))
+                link->lineDef->validCount = args->localValidCount;
+
+                if(args->retObjRecord)
+                    ptr = (void*) P_ObjectRecord(DMU_LINEDEF, link->lineDef);
+                else
+                    ptr = (void*) link->lineDef;
+
+                if(!args->func(ptr, args->context))
                     return false;
             }
 
@@ -698,59 +1095,120 @@ static boolean bmapBlockPolyobjsIterator(void* ptr, void* context)
     return true;
 }
 
-boolean Blockmap_IteratePolyobjs(blockmap_t* blockmap, const uint block[2],
-                                 boolean (*func) (polyobj_t*, void*),
-                                 void* data)
+boolean LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2],
+                                boolean (*func) (linedef_t*, void*),
+                                void* context, boolean retObjRecord)
 {
-    if(blockmap)
+    iteratelinedefs_args_t args;
+
+    assert(blockmap);
+    assert(block);
+    assert(func);
+
+    args.func = func;
+    args.context = context;
+    args.localValidCount = validCount;
+    args.retObjRecord = retObjRecord;
+
+    return iterateLineDefs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]),
+                           (void*) &args);
+}
+
+boolean LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint blockBox[4],
+                                   boolean (*func) (linedef_t*, void*),
+                                   void* context, boolean retObjRecord)
+{
+    iteratelinedefs_args_t args;
+
+    assert(blockmap);
+    assert(blockBox);
+    assert(func);
+
+    args.func = func;
+    args.context = context;
+    args.localValidCount = validCount;
+    args.retObjRecord = retObjRecord;
+
+    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateLineDefs, (void*) &args);
+}
+
+typedef struct {
+    boolean       (*func) (polyobj_t*, void *);
+    int             localValidCount;
+    void*           context;
+} iteratepolyobjs_args_t;
+
+static boolean iteratePolyobjs(void* ptr, void* context)
+{
+    linkpolyobj_t* link = (linkpolyobj_t*) ptr;
+    iteratepolyobjs_args_t* args = (iteratepolyobjs_args_t*) context;
+
+    while(link)
     {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* bmapBlock =
-            M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
+        linkpolyobj_t* next = link->next;
 
-        if(bmapBlock)
-        {
-            bmappoiterparams_t args;
+        if(link->polyobj)
+            if(link->polyobj->validCount != args->localValidCount)
+            {
+                link->polyobj->validCount = args->localValidCount;
 
-            args.localValidCount = validCount;
-            args.func = func;
-            args.param = data;
+                if(!args->func(link->polyobj, args->context))
+                    return false;
+            }
 
-            return bmapBlockPolyobjsIterator(bmapBlock, (void*) &args);
-        }
+        link = next;
     }
 
     return true;
 }
 
-boolean Blockmap_BoxIteratePolyobjs(blockmap_t* blockmap, const uint blockBox[4],
-                                    boolean (*func) (polyobj_t*, void*),
-                                    void* data)
+boolean PolyobjBlockmap_Iterate(polyobjblockmap_t* blockmap, const uint block[2],
+                                boolean (*func) (polyobj_t*, void*),
+                                void* context)
 {
-    bmap_t* bmap = (bmap_t*) blockmap;
-    bmappoiterparams_t args;
+    iteratepolyobjs_args_t args;
 
-    args.localValidCount = validCount;
+    assert(blockmap);
+    assert(block);
+    assert(func);
+
     args.func = func;
-    args.param = data;
+    args.context = context;
+    args.localValidCount = validCount;
 
-    return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 bmapBlockPolyobjsIterator, (void*) &args);
+    return iteratePolyobjs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]),
+                           (void*) &args);
 }
 
-typedef struct bmapmoiterparams_s {
-    int             localValidCount;
-    boolean       (*func) (mobj_t*, void *);
-    void*           param;
-} bmapmoiterparams_t;
-
-static boolean bmapBlockMobjsIterator(void* ptr, void* context)
+boolean PolyobjBlockmap_BoxIterate(polyobjblockmap_t* blockmap, const uint blockBox[4],
+                                   boolean (*func) (polyobj_t*, void*),
+                                   void* context)
 {
-    bmapblock_t* block = (bmapblock_t*) ptr;
-    bmapmoiterparams_t* args = (bmapmoiterparams_t*) context;
-    linkmobj_t* link;
+    iteratepolyobjs_args_t args;
 
-    link = block->mobjLinks;
+    assert(blockmap);
+    assert(blockBox);
+    assert(func);
+
+    args.func = func;
+    args.context = context;
+    args.localValidCount = validCount;
+
+    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iteratePolyobjs,
+                               (void*) &args);
+}
+
+typedef struct {
+    boolean       (*func) (mobj_t*, void *);
+    int             localValidCount;
+    void*           context;
+} iteratemobjs_args_t;
+
+static boolean iterateMobjs(void* ptr, void* context)
+{
+    linkmobj_t* link = (linkmobj_t*) ptr;
+    iteratemobjs_args_t* args = (iteratemobjs_args_t*) context;
+
     while(link)
     {
         linkmobj_t* next = link->next;
@@ -760,7 +1218,7 @@ static boolean bmapBlockMobjsIterator(void* ptr, void* context)
             {
                 link->mobj->validCount = args->localValidCount;
 
-                if(!args->func(link->mobj, args->param))
+                if(!args->func(link->mobj, args->context))
                     return false;
             }
 
@@ -770,66 +1228,56 @@ static boolean bmapBlockMobjsIterator(void* ptr, void* context)
     return true;
 }
 
-boolean Blockmap_IterateMobjs(blockmap_t* blockmap, const uint block[2],
-                              boolean (*func) (mobj_t*, void*),
-                              void* data)
+boolean MobjBlockmap_Iterate(mobjblockmap_t* blockmap, const uint block[2],
+                             boolean (*func) (mobj_t*, void*),
+                             void* context)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* bmapBlock =
-            M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
+    iteratemobjs_args_t  args;
 
-        if(bmapBlock)
-        {
-            bmapmoiterparams_t  args;
+    assert(blockmap);
+    assert(block);
+    assert(func);
 
-            args.localValidCount = validCount;
-            args.func = func;
-            args.param = data;
-
-            return bmapBlockMobjsIterator(bmapBlock, (void*) &args);
-        }
-    }
-
-    return true;
-}
-
-boolean Blockmap_BoxIterateMobjs(blockmap_t *blockmap, const uint blockBox[4],
-                                boolean (*func) (mobj_t*, void*),
-                                void* data)
-{
-    bmap_t*             bmap = (bmap_t*) blockmap;
-    bmapmoiterparams_t  args;
-
-    args.localValidCount = validCount;
     args.func = func;
-    args.param = data;
+    args.context = context;
+    args.localValidCount = validCount;
 
-    return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 bmapBlockMobjsIterator, (void*) &args);
+    return iterateMobjs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]), (void*) &args);
 }
 
-typedef struct subsectoriterparams_s {
+boolean MobjBlockmap_BoxIterate(mobjblockmap_t* blockmap, const uint blockBox[4],
+                                boolean (*func) (mobj_t*, void*),
+                                void* context)
+{
+    iteratemobjs_args_t args;
+
+    assert(blockmap);
+    assert(blockBox);
+    assert(func);
+
+    args.func = func;
+    args.context = context;
+    args.localValidCount = validCount;
+
+    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateMobjs, (void*) &args);
+}
+
+typedef struct {
+    boolean       (*func) (subsector_t*, void*);
+    void*           context;
     arvec2_t        box;
     sector_t*       sector;
     int             localValidCount;
-    boolean       (*func) (subsector_t*, void*);
-    void*           param;
     boolean         retObjRecord;
-} subsectoriterparams_t;
+} iteratesubsector_args_t;
 
-static boolean subsectorBlockIterator(void* ptr, void* context)
+static boolean iterateSubsectors(void* ptr, void* context)
 {
-    subsectormapblock_t* block = (subsectormapblock_t*) ptr;
+    subsector_t** iter = (subsector_t**) ptr;
+    iteratesubsector_args_t* args = (iteratesubsector_args_t*) context;
 
-    if(block->subsectors)
+    if(iter)
     {
-        subsector_t** iter;
-        subsectoriterparams_t* args = (subsectoriterparams_t*) context;
-
-        iter = block->subsectors;
-
         while(*iter)
         {
             subsector_t* subsector = *iter;
@@ -857,11 +1305,11 @@ static boolean subsectorBlockIterator(void* ptr, void* context)
                     void* ptr;
 
                     if(args->retObjRecord)
-                        ptr = (void*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
+                        ptr = (void*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
                     else
                         ptr = (void*) subsector;
 
-                    if(!args->func(ptr, args->param))
+                    if(!args->func(ptr, args->context))
                         return false;
                 }
             }
@@ -873,124 +1321,114 @@ static boolean subsectorBlockIterator(void* ptr, void* context)
     return true;
 }
 
-boolean Blockmap_IterateSubsectors(blockmap_t* blockmap, const uint block[2],
-                                   sector_t* sector, const arvec2_t box,
-                                   int localValidCount,
-                                   boolean (*func) (subsector_t*, void*),
-                                   void* data)
+boolean SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint block[2],
+                                  sector_t* sector, const arvec2_t box,
+                                  int localValidCount,
+                                  boolean (*func) (subsector_t*, void*),
+                                  void* context)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        subsectormapblock_t* subsectorBlock =
-            M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
+    iteratesubsector_args_t args;
 
-        if(subsectorBlock && subsectorBlock->subsectors)
-        {
-            subsectoriterparams_t args;
+    assert(blockmap);
+    assert(block);
+    assert(func);
 
-            args.box = box;
-            args.localValidCount = localValidCount;
-            args.sector = sector;
-            args.func = func;
-            args.param = data;
-            args.retObjRecord = false;
-
-            return subsectorBlockIterator(subsectorBlock, &args);
-        }
-    }
-
-    return true;
-}
-
-boolean Blockmap_BoxIterateSubsectors(blockmap_t* blockmap,
-                                      const uint blockBox[4],
-                                      sector_t* sector,  const arvec2_t box,
-                                      int localValidCount,
-                                      boolean (*func) (subsector_t*, void*),
-                                      void* data, boolean retObjRecord)
-{
-    bmap_t* bmap = (bmap_t*) blockmap;
-    subsectoriterparams_t args;
-
+    args.func = func;
+    args.context = context;
     args.box = box;
     args.localValidCount = localValidCount;
     args.sector = sector;
+    args.retObjRecord = false;
+
+    return iterateSubsectors(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]), &args);
+}
+
+boolean SubsectorBlockmap_BoxIterate(subsectorblockmap_t* blockmap,
+                                     const uint blockBox[4],
+                                     sector_t* sector,  const arvec2_t box,
+                                     int localValidCount,
+                                     boolean (*func) (subsector_t*, void*),
+                                     void* context, boolean retObjRecord)
+{
+    iteratesubsector_args_t args;
+
+    assert(blockmap);
+    assert(blockBox);
+    assert(func);
+
     args.func = func;
-    args.param = data;
+    args.context = context;
+    args.box = box;
+    args.localValidCount = localValidCount;
+    args.sector = sector;
     args.retObjRecord = retObjRecord;
 
-    return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 subsectorBlockIterator, (void*) &args);
+    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateSubsectors,
+                               (void*) &args);
 }
 
-typedef struct poiterparams_s {
+typedef struct {
     boolean       (*func) (linedef_t*, void*);
-    void*           param;
+    void*           context;
     boolean         retObjRecord;
-} poiterparams_t;
+} iteratepolyobjlinedefs_args_t;
 
-boolean PTR_PolyobjLines(polyobj_t* po, void* data)
+boolean PTR_PolyobjLines(polyobj_t* po, void* context)
 {
-    poiterparams_t* args = (poiterparams_t*) data;
+    iteratepolyobjlinedefs_args_t* args = (iteratepolyobjlinedefs_args_t*) context;
 
-    return P_PolyobjLinesIterator(po, args->func, args->param, args->retObjRecord);
+    return P_PolyobjLinesIterator(po, args->func, args->context, args->retObjRecord);
 }
 
-boolean Blockmap_IteratePolyobjLineDefs(blockmap_t* blockmap, const uint block[2],
-                                       boolean (*func) (linedef_t*, void*),
-                                       void* data, boolean retObjRecord)
+boolean P_IterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint block[2],
+                                    boolean (*func) (linedef_t*, void*),
+                                    void* context, boolean retObjRecord)
 {
-    if(blockmap)
-    {
-        bmap_t* bmap = (bmap_t*) blockmap;
-        bmapblock_t* bmapBlock =
-            M_GridmapGetBlock(bmap->gridmap, block[VX], block[VY], false);
+    iteratepolyobjs_args_t args;
+    iteratepolyobjlinedefs_args_t poargs;
 
-        if(bmapBlock && bmapBlock->polyLinks)
-        {
-            bmappoiterparams_t args;
-            poiterparams_t poargs;
-
-            poargs.func = func;
-            poargs.param = data;
-            poargs.retObjRecord = retObjRecord;
-
-            args.localValidCount = validCount;
-            args.func = PTR_PolyobjLines;
-            args.param = &poargs;
-
-            return bmapBlockPolyobjsIterator(bmapBlock, &args);
-        }
-    }
-
-    return true;
-}
-
-boolean Blockmap_BoxIteratePolyobjLineDefs(blockmap_t* blockmap, const uint blockBox[4],
-                                           boolean (*func) (linedef_t*, void*),
-                                           void* data, boolean retObjRecord)
-{
-    bmap_t* bmap = (bmap_t*) blockmap;
-    bmappoiterparams_t args;
-    poiterparams_t poargs;
+    assert(blockmap);
+    assert(block);
+    assert(func);
 
     poargs.func = func;
-    poargs.param = data;
+    poargs.context = context;
     poargs.retObjRecord = retObjRecord;
 
-    args.localValidCount = validCount;
     args.func = PTR_PolyobjLines;
-    args.param = &poargs;
+    args.context = &poargs;
+    args.localValidCount = validCount;
 
-    return M_GridmapBoxIteratorv(bmap->gridmap, blockBox,
-                                 bmapBlockPolyobjsIterator, (void*) &args);
+    return iteratePolyobjs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]),
+                           (void*) &args);
 }
 
-boolean Blockmap_PathTraverse(blockmap_t* bmap, const uint originBlock[2],
-                              const uint destBlock[2],
-                              const float origin[2], const float dest[2],
-                              int flags, boolean (*func) (intercept_t*))
+boolean P_BoxIterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint blockBox[4],
+                                       boolean (*func) (linedef_t*, void*),
+                                       void* context, boolean retObjRecord)
+{
+    iteratepolyobjs_args_t args;
+    iteratepolyobjlinedefs_args_t poargs;
+
+    assert(blockmap);
+    assert(blockBox);
+    assert(func);
+
+    poargs.func = func;
+    poargs.context = context;
+    poargs.retObjRecord = retObjRecord;
+
+    args.func = PTR_PolyobjLines;
+    args.context = &poargs;
+    args.localValidCount = validCount;
+
+    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iteratePolyobjs, (void*) &args);
+}
+
+boolean MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlock[2],
+                                  const uint destBlock[2], const float origin[2],
+                                  const float dest[2],
+                                  boolean (*func) (intercept_t*))
 {
     uint count, block[2];
     float delta[2], partial;
@@ -1051,20 +1489,96 @@ boolean Blockmap_PathTraverse(blockmap_t* bmap, const uint originBlock[2],
     step[VY] = FLT2FIX(delta[VY]);
     for(count = 0; count < 64; ++count)
     {
-        if(flags & PT_ADDLINES)
-        {
-            if(!Blockmap_IteratePolyobjLineDefs(bmap, block, PIT_AddLineIntercepts, 0, false))
-                return false; // Early out.
+        if(!MobjBlockmap_Iterate(blockmap, block, PIT_AddMobjIntercepts, 0))
+            return false; // Early out.
 
-            if(!Blockmap_IterateLineDefs(bmap, block, PIT_AddLineIntercepts, 0, false))
-                return false; // Early out
-        }
+        if(block[VX] == destBlock[VX] && block[VY] == destBlock[VY])
+            break;
 
-        if(flags & PT_ADDMOBJS)
+        if((unsigned) (intercept[VY] >> FRACBITS) == block[VY])
         {
-            if(!Blockmap_IterateMobjs(bmap, block, PIT_AddMobjIntercepts, 0))
-                return false; // Early out.
+            intercept[VY] += step[VY];
+            block[VX] += stepDir[VX];
         }
+        else if((unsigned) (intercept[VX] >> FRACBITS) == block[VX])
+        {
+            intercept[VX] += step[VX];
+            block[VY] += stepDir[VY];
+        }
+    }
+
+    return true;
+}
+
+boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
+                                     const uint destBlock[2], const float origin[2],
+                                     const float dest[2],
+                                     boolean (*func) (intercept_t*))
+{
+    uint count, block[2];
+    float delta[2], partial;
+    fixed_t intercept[2], step[2];
+    int stepDir[2];
+
+    if(destBlock[VX] > originBlock[VX])
+    {
+        stepDir[VX] = 1;
+        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[VX]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        delta[VY] = (dest[VY] - origin[VY]) / fabs(dest[VX] - origin[VX]);
+    }
+    else if(destBlock[VX] < originBlock[VX])
+    {
+        stepDir[VX] = -1;
+        partial = FIX2FLT((FLT2FIX(origin[VX]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        delta[VY] = (dest[VY] - origin[VY]) / fabs(dest[VX] - origin[VX]);
+    }
+    else
+    {
+        stepDir[VX] = 0;
+        partial = 1;
+        delta[VY] = 256;
+    }
+    intercept[VY] = (FLT2FIX(origin[VY]) >> MAPBTOFRAC) +
+        FLT2FIX(partial * delta[VY]);
+
+    if(destBlock[VY] > originBlock[VY])
+    {
+        stepDir[VY] = 1;
+        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[VY]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        delta[VX] = (dest[VX] - origin[VX]) / fabs(dest[VY] - origin[VY]);
+    }
+    else if(destBlock[VY] < originBlock[VY])
+    {
+        stepDir[VY] = -1;
+        partial = FIX2FLT((FLT2FIX(origin[VY]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        delta[VX] = (dest[VX] - origin[VX]) / fabs(dest[VY] - origin[VY]);
+    }
+    else
+    {
+        stepDir[VY] = 0;
+        partial = 1;
+        delta[VX] = 256;
+    }
+    intercept[VX] = (FLT2FIX(origin[VX]) >> MAPBTOFRAC) +
+        FLT2FIX(partial * delta[VX]);
+
+    //
+    // Step through map blocks.
+    //
+
+    // Count is present to prevent a round off error from skipping the
+    // break and ending up in an infinite loop..
+    block[VX] = originBlock[VX];
+    block[VY] = originBlock[VY];
+    step[VX] = FLT2FIX(delta[VX]);
+    step[VY] = FLT2FIX(delta[VY]);
+    for(count = 0; count < 64; ++count)
+    {
+        //if(!P_IterateLineDefsOfPolyobjs(blockmap, block, PIT_AddLineIntercepts, 0, false))
+        //    return false; // Early out.
+
+        if(!LineDefBlockmap_Iterate(blockmap, block, PIT_AddLineIntercepts, 0, false))
+            return false; // Early out
 
         if(block[VX] == destBlock[VX] && block[VY] == destBlock[VY])
             break;

@@ -238,7 +238,7 @@ int P_PointOnLineDefSide(float x, float y, const linedef_t* line)
 
 int DMU_PointOnLineDefSide(float x, float y, void* p)
 {
-    return P_PointOnLineDefSide(x, y, ((dmuobjrecord_t*) p)->obj);
+    return P_PointOnLineDefSide(x, y, ((objectrecord_t*) p)->obj);
 }
 
 /**
@@ -398,7 +398,7 @@ int P_BoxOnLineSide(const float* box, const linedef_t* ld)
 
 int DMU_BoxOnLineSide(const float* box, void* p)
 {
-    return P_BoxOnLineSide(box, ((dmuobjrecord_t*) p)->obj);
+    return P_BoxOnLineSide(box, ((objectrecord_t*) p)->obj);
 }
 
 /**
@@ -447,7 +447,7 @@ void P_MakeDivline(const linedef_t* li, divline_t* dl)
 
 void DMU_MakeDivline(void* p, divline_t* dl)
 {
-    P_MakeDivline(((dmuobjrecord_t*) p)->obj, dl);
+    P_MakeDivline(((objectrecord_t*) p)->obj, dl);
 }
 
 /**
@@ -511,7 +511,7 @@ void P_LineOpening(linedef_t* linedef)
 
 void DMU_LineOpening(void* p)
 {
-    P_LineOpening(((dmuobjrecord_t*) p)->obj);
+    P_LineOpening(((objectrecord_t*) p)->obj);
 }
 
 /**
@@ -542,8 +542,8 @@ boolean P_UnlinkFromSector(mobj_t* mo)
  */
 boolean P_UnlinkFromLines(mobj_t* mo)
 {
-    linknode_t*         tn = mobjNodes->nodes;
-    nodeindex_t         nix;
+    linknode_t* tn = mobjNodes->nodes;
+    nodeindex_t nix;
 
     // Try unlinking from lines.
     if(!mo->lineRoot)
@@ -577,17 +577,7 @@ boolean P_UnlinkFromLines(mobj_t* mo)
  */
 int P_MobjUnlink(mobj_t* mo)
 {
-    int links = 0;
-    gamemap_t* map = DMU_CurrentMap();
-
-    if(P_UnlinkFromSector(mo))
-        links |= DDLINK_SECTOR;
-    if(Blockmap_UnlinkMobj(map->blockMap, mo))
-        links |= DDLINK_BLOCKMAP;
-    if(!P_UnlinkFromLines(mo))
-        links |= DDLINK_NOLINE;
-
-    return links;
+    return Map_UnlinkMobj(P_CurrentMap(), mo);
 }
 
 /**
@@ -625,7 +615,7 @@ boolean PIT_LinkToLines(linedef_t* ld, void* parm)
     // Add a node to the line's ring. Also store the linenode's index
     // into the mobjring's node, so unlinking is easy.
     NP_Link(lineNodes, mobjNodes->nodes[nix].data =
-            NP_New(lineNodes, data->mo), linelinks[DMU_GetObjRecord(DMU_LINEDEF, ld)->id - 1]);
+            NP_New(lineNodes, data->mo), linelinks[P_ObjectRecord(DMU_LINEDEF, ld)->id - 1]);
 
     return true;
 }
@@ -649,68 +639,7 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    Map_AllLinesBoxIteratorv(DMU_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
-}
-
-void P_MobjLinkToRing(mobj_t* mo, linkmobj_t** link)
-{
-    linkmobj_t* tempLink;
-
-    if(!(*link))
-    {   // Create a new link at the current block cell.
-        *link = Z_Malloc(sizeof(linkmobj_t), PU_MAP, 0);
-        (*link)->next = NULL;
-        (*link)->prev = NULL;
-        (*link)->mobj = mo;
-        return;
-    }
-    else
-    {
-        tempLink = *link;
-        while(tempLink->next != NULL && tempLink->mobj != NULL)
-        {
-            tempLink = tempLink->next;
-        }
-    }
-
-    if(tempLink->mobj == NULL)
-    {
-        tempLink->mobj = mo;
-        return;
-    }
-    else
-    {
-        tempLink->next =
-            Z_Malloc(sizeof(linkmobj_t), PU_MAP, 0);
-        tempLink->next->next = NULL;
-        tempLink->next->prev = tempLink;
-        tempLink->next->mobj = mo;
-    }
-}
-
-/**
- * Unlink the given mobj from the specified block ring (if indeed linked).
- *
- * @param mo            Ptr to the mobj to unlink.
- * @return              @c true, iff the mobj was linked to the ring and was
- *                      successfully unlinked.
- */
-boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
-{
-    linkmobj_t*         iter = *list;
-
-    while(iter != NULL && iter->mobj != mo)
-    {
-        iter = iter->next;
-    }
-
-    if(iter != NULL)
-    {
-        iter->mobj = NULL;
-        return true; // Mobj was unlinked.
-    }
-
-    return false; // Mobj was not linked.
+    Map_AllLineDefsBoxIteratorv(P_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
 }
 
 /**
@@ -720,59 +649,7 @@ boolean P_MobjUnlinkFromRing(mobj_t* mo, linkmobj_t** list)
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
-    subsector_t* subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
-    gamemap_t* map = DMU_CurrentMap();
-
-    // Link into the sector.
-    mo->subsector = (subsector_t*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
-
-    if(flags & DDLINK_SECTOR)
-    {
-        // Unlink from the current sector, if any.
-        if(mo->sPrev)
-            P_UnlinkFromSector(mo);
-
-        // Link the new mobj to the head of the list.
-        // Prev pointers point to the pointer that points back to us.
-        // (Which practically disallows traversing the list backwards.)
-
-        if((mo->sNext = subsector->sector->mobjList))
-            mo->sNext->sPrev = &mo->sNext;
-
-        *(mo->sPrev = &subsector->sector->mobjList) = mo;
-    }
-
-    // Link into blockmap?
-    if(flags & DDLINK_BLOCKMAP)
-    {
-        // Unlink from the old block, if any.
-        Blockmap_UnlinkMobj(map->blockMap, mo);
-        Blockmap_LinkMobj(map->blockMap, mo);
-    }
-
-    // Link into lines.
-    if(!(flags & DDLINK_NOLINE))
-    {
-        // Unlink from any existing lines.
-        P_UnlinkFromLines(mo);
-
-        // Link to all contacted lines.
-        P_LinkToLines(mo);
-    }
-
-    // If this is a player - perform addtional tests to see if they have
-    // entered or exited the void.
-    if(mo->dPlayer)
-    {
-        ddplayer_t* player = mo->dPlayer;
-
-        player->inVoid = true;
-        if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
-                              subsector->sector) &&
-           (player->mo->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
-            player->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4))
-            player->inVoid = false;
-    }
+    Map_LinkMobj(P_CurrentMap(), mo, flags);
 }
 
 /**
@@ -817,7 +694,7 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
     sector_t* sec;
 
     // Always process the mobj's own sector first.
-    *end++ = sec = ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj)->sector;
+    *end++ = sec = ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj)->sector;
     sec->validCount = validCount;
 
     // Any good lines around here?
@@ -857,7 +734,7 @@ boolean P_LineMobjsIterator(linedef_t* line, boolean (*func) (mobj_t*, void*), v
 {
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
-    nodeindex_t root = linelinks[DMU_GetObjRecord(DMU_LINEDEF, line)->id - 1], nix;
+    nodeindex_t root = linelinks[P_ObjectRecord(DMU_LINEDEF, line)->id - 1], nix;
     linknode_t* ln = lineNodes->nodes;
 
     for(nix = ln[root].next; nix != root; nix = ln[nix].next)
@@ -902,7 +779,7 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
         li = sector->lineDefs[i];
 
         // Iterate all mobjs on the line.
-        root = linelinks[DMU_GetObjRecord(DMU_LINEDEF, li)->id - 1];
+        root = linelinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
         for(nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
             mo = (mobj_t *) ln[nix].ptr;
@@ -918,195 +795,27 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
     return true;
 }
 
-boolean Map_MobjsBoxIterator(gamemap_t* map, const float box[4],
-                             boolean (*func) (mobj_t*, void*), void* data)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_MobjsBoxIteratorv(map, bounds, func, data);
-}
-
-boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                              boolean (*func) (mobj_t*, void*), void* data)
-{
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-
-    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
-
-    return Blockmap_BoxIterateMobjs(map->blockMap, blockBox, func, data);
-}
-
-boolean Map_PolyobjsBoxIterator(gamemap_t* map, const float box[4],
-                                boolean (*func) (struct polyobj_s*, void*),
-                                void* data)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_PolyobjsBoxIteratorv(map, bounds, func, data);
-}
-
 /**
- * The validCount flags are used to avoid checking polys that are marked in
- * multiple mapblocks, so increment validCount before the first call, then
- * make one or more calls to it.
+ * Generate a 'unique' identifier for the map.  This identifier
+ * contains information about the map tag (E3M3), the WAD that
+ * contains the map (DOOM.IWAD), and the game mode (doom-ultimate).
+ *
+ * The entire ID string will be in lowercase letters.
  */
-boolean Map_PolyobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                 boolean (*func) (struct polyobj_s*, void*),
-                                 void* data)
+const char* P_GenerateUniqueMapName(const char* mapID)
 {
-    uint blockBox[4];
+    static char uid[255];
+    filename_t base;
+    int lump = W_GetNumForName(mapID);
 
-    if(!map)
-        return true;
+    M_ExtractFileBase(base, W_LumpSourceFile(lump), FILENAME_T_MAXLEN);
 
-    // Blockcoords to check.
-    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
+    dd_snprintf(uid, 255, "%s|%s|%s|%s", mapID,
+                base, (W_IsFromIWAD(lump) ? "iwad" : "pwad"),
+                (char*) gx.GetVariable(DD_GAME_MODE));
 
-    return Blockmap_BoxIteratePolyobjs(map->blockMap, blockBox, func, data);
-}
-
-static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                 boolean (*func) (linedef_t*, void*),
-                                 void* data, boolean retObjRecord)
-{
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-
-    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
-
-    return Blockmap_BoxIterateLineDefs(map->blockMap, blockBox, func, data, retObjRecord);
-}
-
-boolean Map_LinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                              boolean (*func) (linedef_t*, void*), void* data)
-{
-    return linesBoxIteratorv(map, box, func, data, true);
-}
-
-/**
- * @return              @c false, if the iterator func returns @c false.
- */
-boolean Map_SubsectorsBoxIterator(gamemap_t* map, const float box[4], sector_t* sector,
-                                  boolean (*func) (subsector_t*, void*),
-                                  void* parm, boolean retObjRecord)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_SubsectorsBoxIteratorv(map, bounds, sector, func, parm, retObjRecord);
-}
-
-/**
- * Same as the fixed-point version of this routine, but the bounding box
- * is specified using an vec2_t array (see m_vector.c).
- */
-boolean Map_SubsectorsBoxIteratorv(gamemap_t* map, const arvec2_t box, sector_t* sector,
-                                   boolean (*func) (subsector_t*, void*),
-                                   void* data, boolean retObjRecord)
-{
-    static int localValidCount = 0;
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-
-    // This is only used here.
-    localValidCount++;
-
-    // Blockcoords to check.
-    Blockmap_BoxToBlocks(map->subsectorBlockMap, blockBox, box);
-
-    return Blockmap_BoxIterateSubsectors(map->subsectorBlockMap, blockBox, sector,
-                                       box, localValidCount, func, data,
-                                       retObjRecord);
-}
-
-boolean Map_PolyobjLinesBoxIterator(gamemap_t* map, const float box[4],
-                                    boolean (*func) (linedef_t*, void*),
-                                    void* data, boolean retObjRecord)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_PolyobjLinesBoxIteratorv(map, bounds, func, data, retObjRecord);
-}
-
-boolean Map_PolyobjLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                     boolean (*func) (linedef_t*, void*),
-                                     void* data, boolean retObjRecord)
-{
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-
-    Blockmap_BoxToBlocks(map->blockMap, blockBox, box);
-
-    return Blockmap_BoxIteratePolyobjLineDefs(map->blockMap, blockBox, func, data, retObjRecord);
-}
-
-static boolean allLinesBoxIterator(gamemap_t* map, const arvec2_t box,
-                                   boolean (*func) (linedef_t*, void*),
-                                   void* data, boolean retObjRecord)
-{
-    if(!Map_PolyobjLinesBoxIteratorv(map, box, func, data, retObjRecord))
-        return false;
-
-    return linesBoxIteratorv(map, box, func, data, retObjRecord);
-}
-
-/**
- * The validCount flags are used to avoid checking lines that are marked
- * in multiple mapblocks, so increment validCount before the first call
- * to Blockmap_IterateLineDefs, then make one or more calls to it.
- */
-boolean Map_AllLinesBoxIterator(gamemap_t* map, const float box[4],
-                                boolean (*func) (linedef_t*, void*),
-                                void* data, boolean retObjRecord)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return allLinesBoxIterator(map, bounds, func, data, retObjRecord);
-}
-
-/**
- * The validCount flags are used to avoid checking lines that are marked
- * in multiple mapblocks, so increment validCount before the first call
- * to Blockmap_IterateLineDefs, then make one or more calls to it.
- */
-boolean Map_AllLinesBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                 boolean (*func) (linedef_t*, void*),
-                                 void* data, boolean retObjRecord)
-{
-    return allLinesBoxIterator(map, box, func, data, retObjRecord);
+    strlwr(uid);
+    return uid;
 }
 
 /**
@@ -1204,24 +913,17 @@ boolean PIT_AddMobjIntercepts(mobj_t* mo, void* data)
     return true; // Keep going.
 }
 
-/**
- * Traces a line from x1,y1 to x2,y2, calling the traverser function for each
- * Returns true if the traverser function returns true for all lines
- */
-boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
-                         int flags, boolean (*trav) (intercept_t*))
+static boolean pathTraverseMobjs(mobjblockmap_t* blockmap, float x1, float y1, float x2,
+                                 float y2, int flags, boolean (*trav) (intercept_t*))
 {
     float origin[2], dest[2];
     uint originBlock[2], destBlock[2];
     vec2_t min, max;
 
-    if(!map)
-        return true;
-
     V2_Set(origin, x1, y1);
     V2_Set(dest, x2, y2);
 
-    Blockmap_Bounds(map->blockMap, min, max);
+    MobjBlockmap_Bounds(blockmap, min, max);
 
     if(!(origin[VX] >= min[VX] && origin[VX] <= max[VX] &&
          origin[VY] >= min[VY] && origin[VY] <= max[VY]))
@@ -1259,8 +961,8 @@ boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
     if(!(dest[VX] >= min[VX] && dest[VX] <= max[VX] &&
          dest[VY] >= min[VY] && dest[VY] <= max[VY]))
     {   // Dest is outside the blockmap.
-        float               ab;
-        vec2_t              bbox[4], point;
+        float ab;
+        vec2_t bbox[4], point;
 
         V2_Set(bbox[0], min[VX] + 1, min[VY] + 1);
         V2_Set(bbox[1], min[VX] + 1, max[VY] - 1);
@@ -1284,23 +986,138 @@ boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
             V2_Copy(dest, point);
     }
 
-    if(!(Blockmap_Block2fv(map->blockMap, originBlock, origin) &&
-         Blockmap_Block2fv(map->blockMap, destBlock, dest)))
+    if(!(MobjBlockmap_Block2fv(blockmap, originBlock, origin) &&
+         MobjBlockmap_Block2fv(blockmap, destBlock, dest)))
     {   // Shouldn't reach here due to the clipping above.
         return false;
     }
 
     earlyout = flags & PT_EARLYOUT;
 
-    validCount++;
-    P_ClearIntercepts();
+    V2_Subtract(origin, origin, min);
+    V2_Subtract(dest, dest, min);
+
+    if(!MobjBlockmap_PathTraverse(blockmap, originBlock, destBlock, origin, dest, trav))
+        return false; // Early out.
+
+    return true;
+}
+
+static boolean pathTraverseLineDefs(linedefblockmap_t* blockmap, float x1, float y1,
+                                    float x2, float y2, int flags, boolean (*trav) (intercept_t*))
+{
+    float origin[2], dest[2];
+    uint originBlock[2], destBlock[2];
+    vec2_t min, max;
+
+    V2_Set(origin, x1, y1);
+    V2_Set(dest, x2, y2);
+
+    LineDefBlockmap_Bounds(blockmap, min, max);
+
+    if(!(origin[VX] >= min[VX] && origin[VX] <= max[VX] &&
+         origin[VY] >= min[VY] && origin[VY] <= max[VY]))
+    {   // Origin is outside the blockmap (really? very unusual...)
+        return false;
+    }
+
+    // Check the easy case of a path that lies completely outside the bmap.
+    if((origin[VX] < min[VX] && dest[VX] < min[VX]) ||
+       (origin[VX] > max[VX] && dest[VX] > max[VX]) ||
+       (origin[VY] < min[VY] && dest[VY] < min[VY]) ||
+       (origin[VY] > max[VY] && dest[VY] > max[VY]))
+    {   // Nothing intercepts outside the blockmap!
+        return false;
+    }
+
+    if((FLT2FIX(origin[VX] - min[VX]) & (MAPBLOCKSIZE - 1)) == 0)
+        origin[VX] += 1; // Don't side exactly on a line.
+    if((FLT2FIX(origin[VY] - min[VY]) & (MAPBLOCKSIZE - 1)) == 0)
+        origin[VY] += 1; // Don't side exactly on a line.
+
+    traceLOS.pos[VX] = FLT2FIX(origin[VX]);
+    traceLOS.pos[VY] = FLT2FIX(origin[VY]);
+    traceLOS.dX = FLT2FIX(dest[VX] - origin[VX]);
+    traceLOS.dY = FLT2FIX(dest[VY] - origin[VY]);
+
+    /**
+     * It is possible that one or both points are outside the blockmap.
+     * Clip path so that dest is within the AABB of the blockmap (note we
+     * would have already abandoned if origin lay outside. Also, to avoid
+     * potential rounding errors which might occur when determining the
+     * blocks later, we will shrink the bbox slightly first.
+     */
+
+    if(!(dest[VX] >= min[VX] && dest[VX] <= max[VX] &&
+         dest[VY] >= min[VY] && dest[VY] <= max[VY]))
+    {   // Dest is outside the blockmap.
+        float ab;
+        vec2_t bbox[4], point;
+
+        V2_Set(bbox[0], min[VX] + 1, min[VY] + 1);
+        V2_Set(bbox[1], min[VX] + 1, max[VY] - 1);
+        V2_Set(bbox[2], max[VX] - 1, max[VY] - 1);
+        V2_Set(bbox[3], max[VX] - 1, min[VY] + 1);
+
+        ab = V2_Intercept(origin, dest, bbox[0], bbox[1], point);
+        if(ab >= 0 && ab <= 1)
+            V2_Copy(dest, point);
+
+        ab = V2_Intercept(origin, dest, bbox[1], bbox[2], point);
+        if(ab >= 0 && ab <= 1)
+            V2_Copy(dest, point);
+
+        ab = V2_Intercept(origin, dest, bbox[2], bbox[3], point);
+        if(ab >= 0 && ab <= 1)
+            V2_Copy(dest, point);
+
+        ab = V2_Intercept(origin, dest, bbox[3], bbox[0], point);
+        if(ab >= 0 && ab <= 1)
+            V2_Copy(dest, point);
+    }
+
+    if(!(LineDefBlockmap_Block2fv(blockmap, originBlock, origin) &&
+         LineDefBlockmap_Block2fv(blockmap, destBlock, dest)))
+    {   // Shouldn't reach here due to the clipping above.
+        return false;
+    }
+
+    earlyout = flags & PT_EARLYOUT;
 
     V2_Subtract(origin, origin, min);
     V2_Subtract(dest, dest, min);
 
-    if(!Blockmap_PathTraverse(map->blockMap, originBlock, destBlock, origin, dest,
-                              flags, trav))
+    if(!LineDefBlockmap_PathTraverse(blockmap, originBlock, destBlock, origin, dest, trav))
         return false; // Early out.
+
+    return true;
+}
+
+/**
+ * Traces a line from x1,y1 to x2,y2, calling the traverser function for each
+ * Returns true if the traverser function returns true for all lines
+ */
+boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
+                         int flags, boolean (*trav) (intercept_t*))
+{
+    if(!map)
+        return true;
+
+    P_ClearIntercepts();
+
+    validCount++;
+
+    if(flags & PT_ADDMOBJS)
+    {
+        if(!pathTraverseMobjs(map->_mobjBlockmap, x1, y1, x2, y2, flags, trav))
+            return false; // Early out.
+    }
+
+    if(flags & PT_ADDLINEDEFS)
+    {
+        if(!pathTraverseLineDefs(map->_lineDefBlockmap, x1, y1, x2, y2, flags, trav))
+            return false; // Early out.
+    }
 
     // Go through the sorted list.
     return P_TraverseIntercepts(trav, 1.0f);
@@ -1312,18 +1129,18 @@ boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
 boolean P_PathTraverse(float x1, float y1, float x2, float y2, int flags,
                        boolean (*trav) (intercept_t*))
 {
-    return Map_PathTraverse(DMU_CurrentMap(), x1, y1, x2, y2, flags, trav);
+    return Map_PathTraverse(P_CurrentMap(), x1, y1, x2, y2, flags, trav);
 }
 
 boolean P_MobjsBoxIterator(const float box[4], boolean (*func) (mobj_t*, void*), void* data)
 {
-    return Map_MobjsBoxIterator(DMU_CurrentMap(), box, func, data);
+    return Map_MobjsBoxIterator(P_CurrentMap(), box, func, data);
 }
 
 boolean P_PolyobjsBoxIterator(const float box[4], boolean (*func) (struct polyobj_s*, void*),
                               void* data)
 {
-    return Map_PolyobjsBoxIterator(DMU_CurrentMap(), box, func, data);
+    return Map_PolyobjsBoxIterator(P_CurrentMap(), box, func, data);
 }
 
 /**
@@ -1339,7 +1156,7 @@ boolean P_LinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return linesBoxIteratorv(DMU_CurrentMap(), bounds, func, data, true);
+    return Map_LineDefsBoxIteratorv(P_CurrentMap(), bounds, func, data, true);
 }
 
 /**
@@ -1349,8 +1166,8 @@ boolean P_SubsectorsBoxIterator(const float box[4], void* p,
                                 boolean (*func) (subsector_t*, void*),
                                 void* parm)
 {
-    return Map_SubsectorsBoxIterator(DMU_CurrentMap(), box,
-        p? ((dmuobjrecord_t*) p)->obj : NULL, func, parm, true);
+    return Map_SubsectorsBoxIterator(P_CurrentMap(), box,
+        p? ((objectrecord_t*) p)->obj : NULL, func, parm, true);
 }
 
 /**
@@ -1359,5 +1176,5 @@ boolean P_SubsectorsBoxIterator(const float box[4], void* p,
 boolean P_AllLinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
                               void* data)
 {
-    return Map_AllLinesBoxIterator(DMU_CurrentMap(), box, func, data, true);
+    return Map_AllLineDefsBoxIterator(P_CurrentMap(), box, func, data, true);
 }

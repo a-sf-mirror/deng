@@ -137,7 +137,7 @@ void P_Ticker(timespan_t time)
 
     R_SkyTicker();
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     if(map)
     {
         // New ptcgens for planes?

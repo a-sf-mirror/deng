@@ -839,7 +839,7 @@ static void newSourcesFromLightDefs(gamemap_t* map)
 {
     int                 i;
     ded_light_t*        def;
-    const char*         uniqueID = P_GetUniqueMapID(map);
+    const char*         uniqueID = Map_UniqueName(map);
 
     // Check all the loaded Light definitions for any matches.
     for(i = 0; i < defs.count.lights.num; ++i)

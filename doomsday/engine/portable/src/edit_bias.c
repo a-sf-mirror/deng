@@ -656,11 +656,11 @@ static boolean save(gamemap_t* map, const char* name)
     int                 i;
     FILE*               file;
     filename_t          fileName;
-    const char*         uid = P_GetUniqueMapID(map);
+    const char*         uid = Map_UniqueName(map);
 
     if(!name)
     {
-        sprintf(fileName, "%s.ded", P_GetMapID(map));
+        sprintf(fileName, "%s.ded", Map_ID(map));
     }
     else
     {
@@ -754,7 +754,7 @@ void SBE_SetHueCircle(boolean activate)
     if((signed) activate == editHueCircle)
         return; // No change in state.
 
-    if(activate && getGrabbed(DMU_CurrentMap()) == NULL)
+    if(activate && getGrabbed(P_CurrentMap()) == NULL)
         return;
 
     editHueCircle = activate;
@@ -795,7 +795,7 @@ void SBE_DrawHUD(void)
     if(!editActive || editHidden)
         return;
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     nearest = getNearest(map);
     grabbed = getGrabbed(map);
 
@@ -816,7 +816,7 @@ void SBE_DrawHUD(void)
                  textAlpha);
 
     // The map ID.
-    UI_TextOutEx(P_GetUniqueMapID(map), 18, y - h/2, false, true,
+    UI_TextOutEx(Map_UniqueName(map), 18, y - h/2, false, true,
                  UI_Color(UIC_TITLE), textAlpha);
 
     // Stats for nearest & grabbed:
@@ -978,7 +978,7 @@ D_CMD(SBE_Begin)
     if(editActive)
         return false;
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
 
     // Advise the game not to draw any HUD displays
     gameDrawHUD = false;
@@ -1020,12 +1020,12 @@ D_CMD(BLEditor)
 
     if(!stricmp(cmd, "save"))
     {
-        return save(DMU_CurrentMap(), argc >= 2 ? argv[1] : NULL);
+        return save(P_CurrentMap(), argc >= 2 ? argv[1] : NULL);
     }
 
     if(!stricmp(cmd, "clear"))
     {
-        gamemap_t*          map = DMU_CurrentMap();
+        gamemap_t*          map = P_CurrentMap();
 
         SB_ClearSources(map);
 
@@ -1046,10 +1046,10 @@ D_CMD(BLEditor)
 
     if(!stricmp(cmd, "new"))
     {
-        return newSource(DMU_CurrentMap());
+        return newSource(P_CurrentMap());
     }
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
 
     // Has the light index been given as an argument?
     if(map->bias.editGrabbedID >= 0)

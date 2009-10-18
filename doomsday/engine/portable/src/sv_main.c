@@ -85,7 +85,7 @@ int     svMaxPlayers = DDMAXPLAYERS;
 void Sv_GetInfo(serverinfo_t *info)
 {
     int                 i;
-    gamemap_t          *currentMap = DMU_CurrentMap();
+    gamemap_t          *currentMap = P_CurrentMap();
 
     memset(info, 0, sizeof(*info));
 
@@ -109,7 +109,7 @@ void Sv_GetInfo(serverinfo_t *info)
     info->canJoin = (isServer != 0 && Sv_GetNumPlayers() < svMaxPlayers);
 
     // Identifier of the current map.
-    strncpy(info->map, P_GetMapID(currentMap), sizeof(info->map) - 1);
+    strncpy(info->map, Map_ID(currentMap), sizeof(info->map) - 1);
 
     // These are largely unused at the moment... Mainly intended for
     // the game's custom values.

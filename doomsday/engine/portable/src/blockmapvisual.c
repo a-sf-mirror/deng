@@ -158,11 +158,11 @@ static void drawLineDefsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(r, g, b, a);
 
     glBegin(GL_LINES);
-    Blockmap_IterateLineDefs(blockmap, block, drawLineDef, context, false);
+    LineDefBlockmap_Iterate(blockmap, block, drawLineDef, context, false);
     glEnd();
 
     glBegin(GL_LINES);
-    Blockmap_IteratePolyobjLineDefs(blockmap, block, drawLineDef, context, false);
+    P_IterateLineDefsOfPolyobjs(blockmap, block, drawLineDef, context, false);
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
@@ -180,7 +180,7 @@ static void drawMobjsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(r, g, b, a);
 
     glBegin(GL_QUADS);
-    Blockmap_IterateMobjs(blockmap, block, drawMobj, context);
+    MobjBlockmap_Iterate(blockmap, block, drawMobj, context);
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
@@ -199,7 +199,7 @@ static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(1, 1, 1, .1f);
 
     validCount;
-    Blockmap_IterateSubsectors(blockmap, block, NULL, NULL, validCount, drawSubsectorAABB, context);
+    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsectorAABB, context);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, GL_PrepareLSTexture(LST_DYNAMIC));
@@ -208,14 +208,14 @@ static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
 
     textured = true;
     validCount++;
-    Blockmap_IterateSubsectors(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
+    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
 
     GL_BlendMode(BM_NORMAL);
     glDisable(GL_TEXTURE_2D);
 
     textured = false;
     validCount++;
-    Blockmap_IterateSubsectors(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
+    SubsectorBlockmap_Iterate(blockmap, block, NULL, NULL, validCount, drawSubsector, &textured);
 
     glEnable(GL_TEXTURE_2D);
 }
@@ -278,49 +278,25 @@ static void drawInfoBox2(float minX, float minY, float maxX, float maxY,
 static void drawBlockInfoBox(blockmap_t* blockmap, uint x, uint y)
 {
     drawInfoBox(theWindow->width / 2, 30, x, y,
-                Blockmap_NumLineDefs(blockmap, x, y),
-                Blockmap_NumMobjs(blockmap, x, y),
-                Blockmap_NumPolyobjs(blockmap, x, y));
+                LineDefBlockmap_NumInBlock(blockmap, x, y),
+                MobjBlockmap_NumInBlock(blockmap, x, y),
+                PolyobjBlockmap_NumInBlock(blockmap, x, y));
 }
 
-/**
- * Draw the blockmap in 2D HUD mode.
- */
-static void drawBlockmap(blockmap_t* blockmap, byte mode, mobj_t* followMobj,
-                         void (*func) (blockmap_t*, uint x, uint y, float, float, float, float, void*))
+static void drawBackground(blockmap_t* blockmap, uint viewerBlock[2], uint viewerBlockBox[4],
+                           boolean centerOnViewer, byte mode)
 {
-    uint x, y, viewerBlock[2], viewerBlockBox[4];
-    float radius;
-    vec2_t start, end, box[2], min, max, blockSize;
-    uint dimensions[2];
+    vec2_t start, end, min, max, blockSize;
+    uint x, y, dimensions[2];
     
-    Blockmap_Bounds(blockmap, min, max);
-    Blockmap_Dimensions(blockmap, dimensions);
-    Blockmap_BlockSize(blockmap, blockSize);
-
-    if(followMobj)
-    {   // Determine the mobj's block.
-        if(!Blockmap_Block2fv(blockmap, viewerBlock, followMobj->pos))
-            followMobj = NULL; // The target is outside the blockmap.
-    }
-
-    if(followMobj)
-    {
-        // Determine the mobj's collision blockbox.
-        radius = followMobj->radius + DDMOBJ_RADIUS_MAX * 2;
-        V2_Set(start, followMobj->pos[VX] - radius, followMobj->pos[VY] - radius);
-        V2_Set(end,   followMobj->pos[VX] + radius, followMobj->pos[VY] + radius);
-        V2_InitBox(box, start);
-        V2_AddToBox(box, end);
-        Blockmap_BoxToBlocks(blockmap, viewerBlockBox, box);
-    }
+    MobjBlockmap_Bounds(blockmap, min, max);
+    MobjBlockmap_Dimensions(blockmap, dimensions);
+    MobjBlockmap_BlockSize(blockmap, blockSize);
 
     glDisable(GL_TEXTURE_2D);
 
-    // Draw a background.
     V2_Set(start, 0, 0);
-    V2_Set(end, blockSize[0] * dimensions[0],
-                blockSize[1] * dimensions[1]);
+    V2_Set(end, blockSize[0] * dimensions[0], blockSize[1] * dimensions[1]);
 
     glColor4f(.25f, .25f, .25f, .66f);
     glBegin(GL_QUADS);
@@ -333,69 +309,68 @@ static void drawBlockmap(blockmap_t* blockmap, byte mode, mobj_t* followMobj,
     /**
      * Draw the blocks.
      */
-
     for(y = 0; y < dimensions[1]; ++y)
-        for(x = 0; x < dimensions[0]; ++x)
+    for(x = 0; x < dimensions[0]; ++x)
+    {
+        boolean draw = false;
+
+        if(centerOnViewer)
         {
-            boolean draw = false;
-
-            if(followMobj)
-            {
-                if(x == viewerBlock[0] && y == viewerBlock[1])
-                {   // The block the viewPlayer is in.
-                    glColor4f(.66f, .66f, 1, .66f);
-                    draw = true;
-                }
-                else if(x >= viewerBlockBox[BOXLEFT]   && x <= viewerBlockBox[BOXRIGHT] &&
-                        y >= viewerBlockBox[BOXBOTTOM] && y <= viewerBlockBox[BOXTOP])
-                {   // In the viewPlayer's extended collision range.
-                    glColor4f(.33f, .33f, .66f, .33f);
-                    draw = true;
-                }
+            if(x == viewerBlock[0] && y == viewerBlock[1])
+            {   // The block the viewPlayer is in.
+                glColor4f(.66f, .66f, 1, .66f);
+                draw = true;
             }
-
-            if(!draw)
-            {
-                int num;
-
-                // Anything linked in this block?
-                switch(mode)
-                {
-                case BLOCKMAPVISUAL_MOBJS:
-                default:
-                    num = Blockmap_NumMobjs(blockmap, x, y);
-                    break;
-
-                case BLOCKMAPVISUAL_LINEDEFS:
-                    num = Blockmap_NumLineDefs(blockmap, x, y);
-                    break;
-
-                case BLOCKMAPVISUAL_SUBSECTORS:
-                    num = Blockmap_NumSubsectors(blockmap, x, y);
-                    break;
-                }
-
-                if(num < 0)
-                {   // NULL block.
-                    glColor4f(0, 0, 0, .95f);
-                    draw = true;
-                }
-            }
-
-            if(draw)
-            {
-                V2_Set(start, x * blockSize[0], y * blockSize[1]);
-                V2_Set(end, blockSize[0], blockSize[1]);
-                V2_Sum(end, end, start);
-
-                glBegin(GL_QUADS);
-                    glVertex2f(start[0], start[1]);
-                    glVertex2f(end  [0], start[1]);
-                    glVertex2f(end  [0], end  [1]);
-                    glVertex2f(start[0], end  [1]);
-                glEnd();
+            else if(x >= viewerBlockBox[BOXLEFT]   && x <= viewerBlockBox[BOXRIGHT] &&
+                    y >= viewerBlockBox[BOXBOTTOM] && y <= viewerBlockBox[BOXTOP])
+            {   // In the viewPlayer's extended collision range.
+                glColor4f(.33f, .33f, .66f, .33f);
+                draw = true;
             }
         }
+
+        if(!draw)
+        {
+            int num;
+
+            // Anything linked in this block?
+            switch(mode)
+            {
+            case BLOCKMAPVISUAL_MOBJS:
+            default:
+                num = MobjBlockmap_NumInBlock(blockmap, x, y);
+                break;
+
+            case BLOCKMAPVISUAL_LINEDEFS:
+                num = LineDefBlockmap_NumInBlock(blockmap, x, y);
+                break;
+
+            case BLOCKMAPVISUAL_SUBSECTORS:
+                num = SubsectorBlockmap_NumInBlock(blockmap, x, y);
+                break;
+            }
+
+            if(num < 0)
+            {   // NULL block.
+                glColor4f(0, 0, 0, .95f);
+                draw = true;
+            }
+        }
+
+        if(draw)
+        {
+            V2_Set(start, x * blockSize[0], y * blockSize[1]);
+            V2_Set(end, blockSize[0], blockSize[1]);
+            V2_Sum(end, end, start);
+
+            glBegin(GL_QUADS);
+                glVertex2f(start[0], start[1]);
+                glVertex2f(end  [0], start[1]);
+                glVertex2f(end  [0], end  [1]);
+                glVertex2f(start[0], end  [1]);
+            glEnd();
+        }
+    }
 
     /**
      * Draw the grid lines
@@ -422,6 +397,41 @@ static void drawBlockmap(blockmap_t* blockmap, byte mode, mobj_t* followMobj,
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
+}
+
+/**
+ * Draw the blockmap in 2D HUD mode.
+ */
+static void drawBlockmap(blockmap_t* blockmap, byte mode, mobj_t* followMobj,
+                         void (*func) (blockmap_t*, uint x, uint y, float, float, float, float, void*))
+{
+    uint x, y, viewerBlock[2], viewerBlockBox[4];
+    float radius;
+    vec2_t start, end, box[2], min, max, blockSize;
+    uint dimensions[2];
+    
+    MobjBlockmap_Bounds(blockmap, min, max);
+    MobjBlockmap_Dimensions(blockmap, dimensions);
+    MobjBlockmap_BlockSize(blockmap, blockSize);
+
+    if(followMobj)
+    {   // Determine the mobj's block.
+        if(!MobjBlockmap_Block2fv(blockmap, viewerBlock, followMobj->pos))
+            followMobj = NULL; // The target is outside the blockmap.
+    }
+
+    if(followMobj)
+    {
+        // Determine the mobj's collision blockbox.
+        radius = followMobj->radius + DDMOBJ_RADIUS_MAX * 2;
+        V2_Set(start, followMobj->pos[VX] - radius, followMobj->pos[VY] - radius);
+        V2_Set(end,   followMobj->pos[VX] + radius, followMobj->pos[VY] + radius);
+        V2_InitBox(box, start);
+        V2_AddToBox(box, end);
+        MobjBlockmap_BoxToBlocks(blockmap, viewerBlockBox, box);
+    }
+
+    drawBackground(blockmap, viewerBlock, viewerBlockBox, followMobj != NULL, mode);
 
     /**
      * Draw the blockmap-linked data.
@@ -531,31 +541,31 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     {
     case BLOCKMAPVISUAL_MOBJS:
     default:
-        blockmap = map->blockMap;
+        blockmap = Map_MobjBlockmap(map);
         func = drawMobjsInBlock;
         break;
 
     case BLOCKMAPVISUAL_LINEDEFS:
-        blockmap = map->blockMap;
+        blockmap = Map_LineDefBlockmap(map);
         func = drawLineDefsInBlock;
         break;
 
     case BLOCKMAPVISUAL_SUBSECTORS:
-        blockmap = map->subsectorBlockMap;
+        blockmap = Map_SubsectorBlockmap(map);
         func = drawSubsectorsInBlock;
         break;
     }
 
-    Blockmap_Bounds(blockmap, min, max);
-    Blockmap_Dimensions(blockmap, dimensions);
-    Blockmap_BlockSize(blockmap, blockSize);
+    MobjBlockmap_Bounds(blockmap, min, max);
+    MobjBlockmap_Dimensions(blockmap, dimensions);
+    MobjBlockmap_BlockSize(blockmap, blockSize);
 
     // If possible, we'll tailor what we draw relative to the viewPlayer.
     if(viewPlayer && viewPlayer->shared.mo)
     {
         followMobj = viewPlayer->shared.mo;
         // Determine the block the viewer is in.
-        Blockmap_Block2fv(blockmap, viewerBlock, followMobj->pos);
+        MobjBlockmap_Block2fv(blockmap, viewerBlock, followMobj->pos);
     }
     else
     {

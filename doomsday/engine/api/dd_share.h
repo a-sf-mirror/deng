@@ -714,7 +714,7 @@ typedef struct {
 } fdivline_t;
 
 // For PathTraverse.
-#define PT_ADDLINES             1
+#define PT_ADDLINEDEFS             1
 #define PT_ADDMOBJS             2
 #define PT_EARLYOUT             4
 

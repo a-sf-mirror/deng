@@ -317,7 +317,7 @@ void R_Update(void)
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
     }
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     if(map)
     {
         P_UpdateParticleGens(map); // Defs might've changed.
@@ -348,7 +348,7 @@ void R_Update(void)
 
             for(j = 0; j < po->numLineDefs; ++j)
             {
-                linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+                linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
 
                 Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
             }
@@ -535,7 +535,7 @@ void R_NewSharpWorld(void)
         R_CheckViewerLimits(vd->lastSharpView, &sharpView);
     }
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
     if(map)
     {
         R_UpdateWatchedPlanes(map);
@@ -874,7 +874,7 @@ void R_RenderPlayerView(int num)
     // GL is in 3D transformation state only during the frame.
     GL_SwitchTo3DState(true, currentPort);
 
-    Rend_RenderMap(DMU_CurrentMap());
+    Rend_RenderMap(P_CurrentMap());
 
     // Orthogonal projection to the view window.
     GL_Restore2DState(1);

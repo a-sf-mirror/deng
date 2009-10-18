@@ -78,7 +78,7 @@ void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
  */
 polyobj_t* P_GetPolyobj(uint num)
 {
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     if(map)
     {
@@ -132,6 +132,22 @@ boolean P_IsPolyobjOrigin(gamemap_t* map, void* ddMobjBase)
     return false;
 }
 
+void P_PolyobjChanged(polyobj_t* po)
+{
+    uint i;
+    gamemap_t* map = P_CurrentMap();
+
+    // Shadow bias must be told.
+    for(i = 0; i < po->numSegs; ++i)
+    {
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
+        poseg_t* seg = &po->segs[i];
+
+        if(seg->bsuf)
+            SB_SurfaceMoved(map, seg->bsuf);
+    }
+}
+
 static void updateLineDefAABB(linedef_t* line)
 {
     byte                edge;
@@ -175,14 +191,14 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
 {
     uint i;
     vec2_t point;
-    linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[0])->obj;
+    linedef_t* line = ((objectrecord_t*) po->lineDefs[0])->obj;
 
     V2_Set(point, line->L_v1->pos[VX], line->L_v1->pos[VY]);
     V2_InitBox(po->box, point);
 
     for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
 
         V2_Set(point, line->L_v1->pos[VX], line->L_v1->pos[VY]);
         V2_AddToBox(po->box, point);
@@ -224,7 +240,7 @@ void P_MapInitPolyobjs(gamemap_t* map)
 
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[j])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
             sidedef_t* side = LINE_FRONTSIDE(line);
             surface_t* surface = &side->SW_topsurface;
 
@@ -254,8 +270,8 @@ void P_MapInitPolyobjs(gamemap_t* map)
             {
                 Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
                             "  (face %i, sector %i). Previous polyobj overridden.\n",
-                            (int) DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id,
-                            (int) DMU_GetObjRecord(DMU_SECTOR, subsector->sector)->id);
+                            (int) P_ObjectRecord(DMU_SUBSECTOR, subsector)->id,
+                            (int) P_ObjectRecord(DMU_SECTOR, subsector->sector)->id);
             }
             subsector->polyObj = po;
             po->subsector = subsector;
@@ -285,7 +301,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     validCount++;
     for(count = 0; count < po->numLineDefs; ++count, prevPts++)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
         if(line->validCount != validCount)
         {
@@ -305,7 +321,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
     for(count = 0; count < po->numLineDefs; ++count)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
         if(CheckMobjBlocking(line, po))
         {
@@ -320,7 +336,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
 
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
             if(line->validCount != validCount)
             {
@@ -390,7 +406,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     for(count = 0; count < po->numLineDefs;
         ++count, originalPts++, prevPts++)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
         sidedef_t* side = LINE_FRONTSIDE(line);
         surface_t* surface = &side->SW_topsurface;
         vec2_t pos;
@@ -420,7 +436,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
     for(count = 0; count < po->numLineDefs; ++count)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
         if(CheckMobjBlocking(line, po))
         {
@@ -441,7 +457,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         prevPts = po->prevPts;
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
             line->L_v1->pos[VX] = prevPts->pos[VX];
             line->L_v1->pos[VY] = prevPts->pos[VY];
@@ -451,7 +467,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[count])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
             if(line->validCount != validCount)
             {
@@ -521,32 +537,14 @@ void P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** list)
     }
 }
 
-void P_PolyobjUnLink(struct polyobj_s* po)
+void P_PolyobjUnLink(polyobj_t* po)
 {
-    gamemap_t* map;
-
-    if(!po)
-        return;
-
-    map = DMU_CurrentMap();
-    if(!map)
-        return;
-
-    Blockmap_UnlinkPolyobj(map->blockMap, po);
+    Map_UnlinkPolyobj(P_CurrentMap(), po);
 }
 
-void P_PolyobjLink(struct polyobj_s* po)
+void P_PolyobjLink(polyobj_t* po)
 {
-    gamemap_t* map;
-
-    if(!po)
-        return;
-
-    map = DMU_CurrentMap();
-    if(!map)
-        return;
-
-    Blockmap_LinkPolyobj(map->blockMap, po);
+    Map_LinkPolyobj(P_CurrentMap(), po);
 }
 
 typedef struct ptrmobjblockingparams_s {
@@ -576,7 +574,7 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
             if(P_BoxOnLineSide(tmbbox, params->line) == -1)
             {
                 if(po_callback)
-                    po_callback(mo, DMU_GetObjRecord(DMU_LINEDEF, params->line), params->po);
+                    po_callback(mo, P_ObjectRecord(DMU_LINEDEF, params->line), params->po);
 
                 params->blocked = true;
             }
@@ -602,9 +600,12 @@ static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po)
     bbox[1][VX] = line->bBox[BOXRIGHT]  + DDMOBJ_RADIUS_MAX;
     bbox[1][VY] = line->bBox[BOXTOP]    + DDMOBJ_RADIUS_MAX;
 
-    map = DMU_CurrentMap();
-    Blockmap_BoxToBlocks(map->blockMap, blockBox, bbox);
-    Blockmap_BoxIterateMobjs(map->blockMap, blockBox, PTR_CheckMobjBlocking, &params);
+    map = P_CurrentMap();
+    if(map)
+    {
+        MobjBlockmap_BoxToBlocks(Map_MobjBlockmap(map), blockBox, bbox);
+        MobjBlockmap_BoxIterate(Map_MobjBlockmap(map), blockBox, PTR_CheckMobjBlocking, &params);
+    }
 
     return params.blocked;
 }
@@ -625,7 +626,7 @@ boolean P_PolyobjLinesIterator(polyobj_t* po,
 
     for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
         void* ptr;
 
         if(line->validCount == validCount)

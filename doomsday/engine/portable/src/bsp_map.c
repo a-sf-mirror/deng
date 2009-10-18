@@ -84,8 +84,8 @@ static void hardenLineDefSegList(gamemap_t* map, hedge_t* hEdge, seg_t* seg)
     while(((bsp_hedgeinfo_t*)last->data)->lnext)
         last = ((bsp_hedgeinfo_t*)last->data)->lnext;
 
-    lineDef->hEdges[0] = map->halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) first->data)->index];
-    lineDef->hEdges[1] = map->halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) last->data)->index];
+    lineDef->hEdges[0] = map->_halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) first->data)->index];
+    lineDef->hEdges[1] = map->_halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) last->data)->index];
 }
 
 static int C_DECL hEdgeCompare(const void* p1, const void* p2)
@@ -198,6 +198,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
 {
     uint i;
     hedgecollectorparams_t params;
+    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
 
     BinaryTree_InOrder(rootNode, pickSectorForLeaf, &params);
 
@@ -209,24 +210,24 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     if(!(params.numHEdges > 0))
         Con_Error("buildSegsFromHEdges: No halfedges?");
 
-    map->halfEdgeDS.numHEdges = (uint) params.numHEdges;
-    map->halfEdgeDS.hEdges = Z_Malloc(sizeof(hedge_t*) * params.numHEdges, PU_STATIC, 0);
+    halfEdgeDS->numHEdges = (uint) params.numHEdges;
+    halfEdgeDS->hEdges = Z_Malloc(sizeof(hedge_t*) * params.numHEdges, PU_STATIC, 0);
 
     map->numSegs = (uint) params.numSegs;
     map->segs = Z_Malloc(sizeof(seg_t*) * params.numSegs, PU_STATIC, 0);
 
     // Pass 2: Collect ptrs the hedges and insert into the index.
     params.numHEdges = 0;
-    params.indexPtr = &map->halfEdgeDS.hEdges;
+    params.indexPtr = &halfEdgeDS->hEdges;
     BinaryTree_InOrder(rootNode, hEdgeCollector, &params);
 
     // Sort the half-edges into ascending index order.
-    qsort(map->halfEdgeDS.hEdges, params.numHEdges, sizeof(hedge_t*), hEdgeCompare);
+    qsort(halfEdgeDS->hEdges, params.numHEdges, sizeof(hedge_t*), hEdgeCompare);
 
     // Generate seg data from (BSP) line segments.
-    for(i = 0; i < map->halfEdgeDS.numHEdges; ++i)
+    for(i = 0; i < halfEdgeDS->numHEdges; ++i)
     {
-        hedge_t* hEdge = map->halfEdgeDS.hEdges[i];
+        hedge_t* hEdge = halfEdgeDS->hEdges[i];
         const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
         seg_t* seg;
 
@@ -287,7 +288,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
             memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
         }
 
-        map->segs[DMU_AddObjRecord(DMU_SEG, seg) - 1] = seg;
+        map->segs[P_CreateObjectRecord(DMU_SEG, seg) - 1] = seg;
         hEdge->data = seg;
     }
 }
@@ -336,14 +337,13 @@ static void hardenLeaf(gamemap_t* map, face_t* dest, const bspleafdata_t* src)
                     subsector, subsector->hEdgeCount);
     }
 
-    map->subsectors[DMU_AddObjRecord(DMU_SUBSECTOR, subsector) - 1] = subsector;
+    map->subsectors[P_CreateObjectRecord(DMU_SUBSECTOR, subsector) - 1] = subsector;
 
     dest->data = subsector;
     }
 }
 
 typedef struct {
-    gamemap_t*      dest;
     uint            faceCurIndex;
     uint            nodeCurIndex;
 } hardenbspparams_t;
@@ -361,7 +361,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     nodeData = BinaryTree_GetData(tree);
     params = (hardenbspparams_t*) data;
 
-    node = params->dest->nodes[nodeData->index = params->nodeCurIndex++];
+    node = editMap->nodes[nodeData->index = params->nodeCurIndex++];
 
     node->partition.x = nodeData->partition.x;
     node->partition.y = nodeData->partition.y;
@@ -388,7 +388,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->halfEdgeDS.faces[idx], leaf);
+            hardenLeaf(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
         }
         else
         {
@@ -408,7 +408,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(params->dest, params->dest->halfEdgeDS.faces[idx], leaf);
+            hardenLeaf(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
         }
         else
         {
@@ -441,34 +441,35 @@ static boolean C_DECL countFace(binarytree_t* tree, void* data)
     return true; // Continue iteration.
 }
 
-static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
+static void hardenBSP(gamemap_t* map, binarytree_t* rootNode)
 {
+    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
+
     {
     uint i;
-    dest->numNodes = 0;
-    BinaryTree_PostOrder(rootNode, countNode, &dest->numNodes);
-    dest->nodes = Z_Malloc(dest->numNodes * sizeof(node_t*), PU_STATIC, 0);
-    for(i = 0; i < dest->numNodes; ++i)
-        dest->nodes[i] = Z_Calloc(sizeof(node_t), PU_STATIC, 0);
+    map->numNodes = 0;
+    BinaryTree_PostOrder(rootNode, countNode, &map->numNodes);
+    map->nodes = Z_Malloc(map->numNodes * sizeof(node_t*), PU_STATIC, 0);
+    for(i = 0; i < map->numNodes; ++i)
+        map->nodes[i] = Z_Calloc(sizeof(node_t), PU_STATIC, 0);
     }
 
     {
     uint i;
-    dest->halfEdgeDS.numFaces = 0;
-    BinaryTree_PostOrder(rootNode, countFace, &dest->halfEdgeDS.numFaces);
-    dest->halfEdgeDS.faces = Z_Malloc(dest->halfEdgeDS.numFaces * sizeof(face_t*), PU_STATIC, 0);
-    for(i = 0; i < dest->halfEdgeDS.numFaces; ++i)
-        dest->halfEdgeDS.faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
+    halfEdgeDS->numFaces = 0;
+    BinaryTree_PostOrder(rootNode, countFace, &halfEdgeDS->numFaces);
+    halfEdgeDS->faces = Z_Malloc(halfEdgeDS->numFaces * sizeof(face_t*), PU_STATIC, 0);
+    for(i = 0; i < halfEdgeDS->numFaces; ++i)
+        halfEdgeDS->faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
     }
 
-    dest->numSubsectors = dest->halfEdgeDS.numFaces;
-    dest->subsectors = Z_Malloc(dest->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
+    map->numSubsectors = halfEdgeDS->numFaces;
+    map->subsectors = Z_Malloc(map->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
 
     if(rootNode)
     {
         hardenbspparams_t params;
 
-        params.dest = dest;
         params.faceCurIndex = 0;
         params.nodeCurIndex = 0;
 
@@ -476,13 +477,14 @@ static void hardenBSP(gamemap_t* dest, binarytree_t* rootNode)
     }
 }
 
-static void destroyEdgeTips(gamemap_t* dest)
+static void destroyEdgeTips(gamemap_t* map)
 {
+    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
     uint i;
 
-    for(i = 0; i < dest->halfEdgeDS.numVertices; ++i)
+    for(i = 0; i < halfEdgeDS->numVertices; ++i)
     {
-        vertex_t* vtx = dest->halfEdgeDS.vertices[i];
+        vertex_t* vtx = halfEdgeDS->vertices[i];
 
         {
         edgetip_t* tip, *n;
@@ -495,7 +497,7 @@ static void destroyEdgeTips(gamemap_t* dest)
         }
         }
 
-        DMU_AddObjRecord(DMU_VERTEX, vtx);
+        P_CreateObjectRecord(DMU_VERTEX, vtx);
     }
 }
 

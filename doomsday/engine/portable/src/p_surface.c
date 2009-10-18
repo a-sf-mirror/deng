@@ -80,7 +80,7 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
         ((env = S_MaterialEnvDef(Material_GetEnvClass(suf->material))) && (env->flags & MEF_BLEND))))
     {
         // Stop active material fade on this surface.
-        P_IterateThinkers(DMU_CurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+        P_IterateThinkers(P_CurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                           RIT_StopMatFader, suf);
 
         fader = Z_Malloc(sizeof(matfader_t), PU_MAP, 0);
@@ -122,7 +122,7 @@ boolean Surface_SetMaterialOffsetX(surface_t* suf, float x)
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
     }
 
@@ -149,7 +149,7 @@ boolean Surface_SetMaterialOffsetY(surface_t* suf, float y)
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
     }
 
@@ -178,7 +178,7 @@ boolean Surface_SetMaterialOffsetXY(surface_t* suf, float x, float y)
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
     }
 
@@ -386,7 +386,7 @@ boolean Surface_SetProperty(surface_t* suf, const setargs_t* args)
         {
         void*           p;
         DMU_SetValue(DDVT_PTR, &p, args, 0);
-        Surface_SetMaterial(suf, ((dmuobjrecord_t*) p)->obj, true);
+        Surface_SetMaterial(suf, ((objectrecord_t*) p)->obj, true);
         }
         break;
     case DMU_OFFSET_X:
@@ -429,11 +429,11 @@ boolean Surface_GetProperty(const surface_t *suf, setargs_t *args)
     case DMU_MATERIAL:
         {
         material_t*     mat = suf->material;
-        dmuobjrecord_t* r;
+        objectrecord_t* r;
 
         if(suf->inFlags & SUIF_MATERIAL_FIX)
             mat = NULL;
-        r = DMU_GetObjRecord(DMU_MATERIAL, mat);
+        r = P_ObjectRecord(DMU_MATERIAL, mat);
         DMU_GetValue(DMT_SURFACE_MATERIAL, &r, args, 0);
         break;
         }

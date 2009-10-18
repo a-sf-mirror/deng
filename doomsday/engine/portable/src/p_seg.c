@@ -74,13 +74,13 @@ boolean Seg_GetProperty(const seg_t* seg, setargs_t *args)
     {
     case DMU_VERTEX0:
         {
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, seg->hEdge->HE_v1);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, seg->hEdge->HE_v1);
         DMU_GetValue(DMT_SEG_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, seg->hEdge->HE_v2);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, seg->hEdge->HE_v2);
         DMU_GetValue(DMT_SEG_VERTEX2, &r, args, 0);
         break;
         }
@@ -92,7 +92,7 @@ boolean Seg_GetProperty(const seg_t* seg, setargs_t *args)
         break;
     case DMU_SIDEDEF:
         {
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, seg->sideDef);
+        objectrecord_t* r = P_ObjectRecord(DMU_SIDEDEF, seg->sideDef);
         DMU_GetValue(DMT_SEG_SIDEDEF, &r, args, 0);
         break;
         }
@@ -100,15 +100,15 @@ boolean Seg_GetProperty(const seg_t* seg, setargs_t *args)
         {
         void* ptr = NULL;
         if(seg->sideDef)
-            ptr = DMU_GetObjRecord(DMU_LINEDEF, seg->sideDef->lineDef);
+            ptr = P_ObjectRecord(DMU_LINEDEF, seg->sideDef->lineDef);
         DMU_GetValue(DMT_SEG_LINEDEF, &ptr, args, 0);
         break;
         }
     case DMU_FRONT_SECTOR:
         {
         subsector_t* subsector = (subsector_t*) seg->hEdge->face->data;
-        dmuobjrecord_t* r = (subsector->sector && seg->sideDef)?
-            DMU_GetObjRecord(DMU_SECTOR, subsector->sector) : NULL;
+        objectrecord_t* r = (subsector->sector && seg->sideDef)?
+            P_ObjectRecord(DMU_SECTOR, subsector->sector) : NULL;
         DMU_GetValue(DMT_SEG_FRONTSECTOR, &r, args, 0);
         break;
         }
@@ -126,7 +126,7 @@ boolean Seg_GetProperty(const seg_t* seg, setargs_t *args)
              * currently aware of.
              */
             if(subsector->sector && ((seg_t*) seg->hEdge->twin->data)->sideDef)
-                ptr = DMU_GetObjRecord(DMU_SECTOR, subsector->sector);
+                ptr = P_ObjectRecord(DMU_SECTOR, subsector->sector);
         }
 
         DMU_GetValue(DMT_SEG_BACKSECTOR, &ptr, args, 0);

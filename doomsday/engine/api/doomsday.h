@@ -171,9 +171,9 @@ extern          "C" {
     boolean         MPE_Begin(const char* name);
     boolean         MPE_End(void);
 
-    dmuobjrecordid_t MPE_VertexCreate(float x, float y);
-    boolean         MPE_VertexCreatev(size_t num, float* values, dmuobjrecordid_t* indices);
-    dmuobjrecordid_t MPE_SideDefCreate(dmuobjrecordid_t sector, short flags,
+    objectrecordid_t MPE_CreateVertex(float x, float y);
+    boolean         MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices);
+    objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
                                       material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
@@ -185,22 +185,22 @@ extern          "C" {
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
-    dmuobjrecordid_t MPE_LineDefCreate(dmuobjrecordid_t v1, dmuobjrecordid_t v2, dmuobjrecordid_t frontSide,
-                                      dmuobjrecordid_t backSide, int flags);
-    dmuobjrecordid_t MPE_SectorCreate(float lightlevel, float red, float green, float blue);
-    void             MPE_PlaneCreate(dmuobjrecordid_t sector, float height, material_t* material,
+    objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2, objectrecordid_t frontSide,
+                                      objectrecordid_t backSide, int flags);
+    objectrecordid_t MPE_CreateSector(float lightlevel, float red, float green, float blue);
+    void             MPE_CreatePlane(objectrecordid_t sector, float height, material_t* material,
                                     float matOffsetX, float matOffsetY,
                                     float r, float g, float b, float a,
                                     float normalX, float normalY, float normalZ);
-    dmuobjrecordid_t MPE_PolyobjCreate(dmuobjrecordid_t* lines, uint linecount,
+    objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
                                        int tag, int sequenceType, float anchorX, float anchorY);
-    boolean         MPE_GameObjProperty(const char* objName, uint idx,
+    boolean         MPE_GameObjectRecordProperty(const char* objName, uint idx,
                                         const char* propName, valuetype_t type,
                                         void* data);
 
     // Custom map object data types.
-    boolean         P_RegisterMapObj(int identifier, const char* name);
-    boolean         P_RegisterMapObjProperty(int identifier, int propIdentifier,
+    boolean         P_CreateObjectDef(int identifier, const char* name);
+    boolean         P_AddPropertyToObjectDef(int identifier, int propIdentifier,
                                              const char* propName, valuetype_t type);
 
     // Network.
@@ -255,9 +255,9 @@ extern          "C" {
     // Play: Map Data Updates and Information Access.
     void*           P_GetVariable(int value);
     void            P_SetVariable(int value, void* data);
-    dmuobjrecordid_t P_ToIndex(const void* ptr);
-    void*           P_ToPtr(int type, dmuobjrecordid_t index);
-    int             P_Callback(int type, dmuobjrecordid_t index,
+    objectrecordid_t P_ToIndex(const void* ptr);
+    void*           P_ToPtr(int type, objectrecordid_t index);
+    int             P_Callback(int type, objectrecordid_t index,
                                int (*callback)(void* p, void* ctx),
                                void* context);
     int             P_Callbackp(int type, void* ptr,
@@ -288,21 +288,21 @@ extern          "C" {
     void*           P_DummyExtraData(void* dummy);
 
     /* index-based write functions */
-    void            P_SetBool(int type, dmuobjrecordid_t index, uint prop, boolean param);
-    void            P_SetByte(int type, dmuobjrecordid_t index, uint prop, byte param);
-    void            P_SetInt(int type, dmuobjrecordid_t index, uint prop, int param);
-    void            P_SetFixed(int type, dmuobjrecordid_t index, uint prop, fixed_t param);
-    void            P_SetAngle(int type, dmuobjrecordid_t index, uint prop, angle_t param);
-    void            P_SetFloat(int type, dmuobjrecordid_t index, uint prop, float param);
-    void            P_SetPtr(int type, dmuobjrecordid_t index, uint prop, void* param);
+    void            P_SetBool(int type, objectrecordid_t index, uint prop, boolean param);
+    void            P_SetByte(int type, objectrecordid_t index, uint prop, byte param);
+    void            P_SetInt(int type, objectrecordid_t index, uint prop, int param);
+    void            P_SetFixed(int type, objectrecordid_t index, uint prop, fixed_t param);
+    void            P_SetAngle(int type, objectrecordid_t index, uint prop, angle_t param);
+    void            P_SetFloat(int type, objectrecordid_t index, uint prop, float param);
+    void            P_SetPtr(int type, objectrecordid_t index, uint prop, void* param);
 
-    void            P_SetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params);
-    void            P_SetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params);
-    void            P_SetIntv(int type, dmuobjrecordid_t index, uint prop, int* params);
-    void            P_SetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params);
-    void            P_SetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params);
-    void            P_SetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params);
-    void            P_SetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params);
+    void            P_SetBoolv(int type, objectrecordid_t index, uint prop, boolean* params);
+    void            P_SetBytev(int type, objectrecordid_t index, uint prop, byte* params);
+    void            P_SetIntv(int type, objectrecordid_t index, uint prop, int* params);
+    void            P_SetFixedv(int type, objectrecordid_t index, uint prop, fixed_t* params);
+    void            P_SetAnglev(int type, objectrecordid_t index, uint prop, angle_t* params);
+    void            P_SetFloatv(int type, objectrecordid_t index, uint prop, float* params);
+    void            P_SetPtrv(int type, objectrecordid_t index, uint prop, void* params);
 
     /* pointer-based write functions */
     void            P_SetBoolp(void* ptr, uint prop, boolean param);
@@ -322,21 +322,21 @@ extern          "C" {
     void            P_SetPtrpv(void* ptr, uint prop, void* params);
 
     /* index-based read functions */
-    boolean         P_GetBool(int type, dmuobjrecordid_t index, uint prop);
-    byte            P_GetByte(int type, dmuobjrecordid_t index, uint prop);
-    int             P_GetInt(int type, dmuobjrecordid_t index, uint prop);
-    fixed_t         P_GetFixed(int type, dmuobjrecordid_t index, uint prop);
-    angle_t         P_GetAngle(int type, dmuobjrecordid_t index, uint prop);
-    float           P_GetFloat(int type, dmuobjrecordid_t index, uint prop);
-    void*           P_GetPtr(int type, dmuobjrecordid_t index, uint prop);
+    boolean         P_GetBool(int type, objectrecordid_t index, uint prop);
+    byte            P_GetByte(int type, objectrecordid_t index, uint prop);
+    int             P_GetInt(int type, objectrecordid_t index, uint prop);
+    fixed_t         P_GetFixed(int type, objectrecordid_t index, uint prop);
+    angle_t         P_GetAngle(int type, objectrecordid_t index, uint prop);
+    float           P_GetFloat(int type, objectrecordid_t index, uint prop);
+    void*           P_GetPtr(int type, objectrecordid_t index, uint prop);
 
-    void            P_GetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params);
-    void            P_GetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params);
-    void            P_GetIntv(int type, dmuobjrecordid_t index, uint prop, int* params);
-    void            P_GetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params);
-    void            P_GetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params);
-    void            P_GetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params);
-    void            P_GetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params);
+    void            P_GetBoolv(int type, objectrecordid_t index, uint prop, boolean* params);
+    void            P_GetBytev(int type, objectrecordid_t index, uint prop, byte* params);
+    void            P_GetIntv(int type, objectrecordid_t index, uint prop, int* params);
+    void            P_GetFixedv(int type, objectrecordid_t index, uint prop, fixed_t* params);
+    void            P_GetAnglev(int type, objectrecordid_t index, uint prop, angle_t* params);
+    void            P_GetFloatv(int type, objectrecordid_t index, uint prop, float* params);
+    void            P_GetPtrv(int type, objectrecordid_t index, uint prop, void* params);
 
     /* pointer-based read functions */
     boolean         P_GetBoolp(void* ptr, uint prop);
@@ -355,13 +355,13 @@ extern          "C" {
     void            P_GetFloatpv(void* ptr, uint prop, float* params);
     void            P_GetPtrpv(void* ptr, uint prop, void* params);
 
-    uint            P_CountGameMapObjs(int identifier);
-    byte            P_GetGMOByte(int identifier, uint elmIdx, int propIdentifier);
-    short           P_GetGMOShort(int identifier, uint elmIdx, int propIdentifier);
-    int             P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier);
-    fixed_t         P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier);
-    angle_t         P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier);
-    float           P_GetGMOFloat(int identifier, uint elmIdx, int propIdentifier);
+    uint            P_NumObjectRecords(int identifier);
+    byte            P_GetObjectRecordByte(int identifier, uint elmIdx, int propIdentifier);
+    short           P_GetObjectRecordShort(int identifier, uint elmIdx, int propIdentifier);
+    int             P_GetObjectRecordInt(int identifier, uint elmIdx, int propIdentifier);
+    fixed_t         P_GetObjectRecordFixed(int identifier, uint elmIdx, int propIdentifier);
+    angle_t         P_GetObjectRecordAngle(int identifier, uint elmIdx, int propIdentifier);
+    float           P_GetObjectRecordFloat(int identifier, uint elmIdx, int propIdentifier);
 
     // Play: Misc.
     void            P_MergeCommand(ticcmd_t* dest, ticcmd_t* src); // temporary.

@@ -71,7 +71,7 @@ boolean Subsector_GetProperty(const subsector_t* subsector, setargs_t* args)
     case DMU_SECTOR:
         {
         sector_t* sec = subsector->sector;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_SUBSECTOR_SECTOR, &r, args, 0);
         break;
         }

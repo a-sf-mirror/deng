@@ -46,18 +46,10 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define BLKSHIFT                7 // places to shift rel position for cell num
-#define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
 #define BLKMARGIN               (8) // size guardband around map
 #define MAPBLOCKUNITS           128
 
 // TYPES -------------------------------------------------------------------
-
-// Used to list lines in each block.
-typedef struct linelist_s {
-    linedef_t         *line;
-    struct linelist_s *next;
-} linelist_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -74,54 +66,26 @@ typedef struct linelist_s {
 // CODE --------------------------------------------------------------------
 
 /**
- * Subroutine to add a line number to a block list
- * It simply returns if the line is already in the block
- */
-static void addBlockLine(linelist_t **lists, uint *count, uint *done,
-                         uint blockno, linedef_t *line)
-{
-    linelist_t*         l;
-
-    if(done[blockno])
-        return;
-
-    l = M_Malloc(sizeof(linelist_t));
-
-    l->line = line;
-
-    l->next = lists[blockno];
-    lists[blockno] = l;
-
-    count[blockno]++;
-
-    done[blockno] = 1;
-}
-
-/**
  * Construct a blockmap from the map data.
  *
  * This finds the intersection of each linedef with the column and row
  * lines at the left and bottom of each blockmap cell. It then adds the
  * line to all block lists touching the intersection.
  */
-static blockmap_t* buildBlockmap(gamemap_t* map)
+static linedefblockmap_t* buildLineDefBlockmap(gamemap_t* map)
 {
     uint i;
-    int j;
     uint bMapWidth, bMapHeight; // Blockmap dimensions.
     vec2_t blockSize; // Size of the blocks.
-    uint* blockcount = NULL; // Array of counters of line lists.
-    uint* blockdone = NULL; // Array keeping track of blocks/line.
     uint numBlocks; // Number of cells = nrows*ncols.
-    linelist_t** blocklists = NULL; // Array of pointers to lists of lines.
     vec2_t bounds[2], point, dims;
     vertex_t* vtx;
-    blockmap_t* blockmap;
+    linedefblockmap_t* blockmap;
 
     // Scan for map limits, which the blockmap must enclose.
-    for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
     {
-        vtx = map->halfEdgeDS.vertices[i];
+        vtx = Map_HalfEdgeDS(map)->vertices[i];
 
         V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
         if(!i)
@@ -156,258 +120,81 @@ static blockmap_t* buildBlockmap(gamemap_t* map)
     V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
                       bounds[0][VY] + bMapHeight * blockSize[VY]);
 
-    // Create the array of pointers on NBlocks to blocklists, create an array
-    // of linelist counts on NBlocks, then finally, make an array in which we
-    // can mark blocks done per line.
-    blocklists = M_Calloc(numBlocks * sizeof(linelist_t*));
-    blockcount = M_Calloc(numBlocks * sizeof(uint));
-    blockdone  = M_Malloc(numBlocks * sizeof(uint));
-
-    // For each linedef in the wad, determine all blockmap blocks it touches
-    // and add the linedef number to the blocklists for those blocks.
-    {
-    int xorg = (int) bounds[0][VX];
-    int yorg = (int) bounds[0][VY];
-    int v1[2], v2[2];
-    int dx, dy;
-    int vert, horiz;
-    boolean slopePos, slopeNeg;
-    int bx, by;
-    int minx, maxx, miny, maxy;
+    blockmap = P_CreateLineDefBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
-        linedef_t* line = map->lineDefs[i];
+        linedef_t* lineDef = map->lineDefs[i];
 
-        if(line->inFlags & LF_POLYOBJ)
-            continue; // Polyobj lines don't get into the blockmap.
-
-        v1[VX] = (int) line->buildData.v[0]->pos[VX];
-        v1[VY] = (int) line->buildData.v[0]->pos[VY];
-        v2[VX] = (int) line->buildData.v[1]->pos[VX];
-        v2[VY] = (int) line->buildData.v[1]->pos[VY];
-        dx = v2[VX] - v1[VX];
-        dy = v2[VY] - v1[VY];
-        vert = !dx;
-        horiz = !dy;
-        slopePos = (dx ^ dy) > 0;
-        slopeNeg = (dx ^ dy) < 0;
-
-        // Extremal lines[i] coords.
-        minx = (v1[VX] > v2[VX]? v2[VX] : v1[VX]);
-        maxx = (v1[VX] > v2[VX]? v1[VX] : v2[VX]);
-        miny = (v1[VY] > v2[VY]? v2[VY] : v1[VY]);
-        maxy = (v1[VY] > v2[VY]? v1[VY] : v2[VY]);
-
-        // No blocks done for this linedef yet.
-        memset(blockdone, 0, numBlocks * sizeof(uint));
-
-        // The line always belongs to the blocks containing its endpoints
-        bx = (v1[VX] - xorg) >> BLKSHIFT;
-        by = (v1[VY] - yorg) >> BLKSHIFT;
-        addBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx,
-                     line);
-
-        bx = (v2[VX] - xorg) >> BLKSHIFT;
-        by = (v2[VY] - yorg) >> BLKSHIFT;
-        addBlockLine(blocklists, blockcount, blockdone, by * bMapWidth + bx,
-                     line);
-
-        // For each column, see where the line along its left edge, which
-        // it contains, intersects the LineDef i. Add i to each corresponding
-        // blocklist.
-        // We don't want to interesect vertical lines with columns.
-        if(!vert)
-        {
-            for(j = 0; j < (signed) bMapWidth; ++j)
-            {
-                // intersection of LineDef with x=xorg+(j<<BLKSHIFT)
-                // (y-v1[VY])*dx = dy*(x-v1[VX])
-                // y = dy*(x-v1[VX])+v1[VY]*dx;
-                int x = xorg + (j << BLKSHIFT); // (x,y) is intersection
-                int y = (dy * (x - v1[VX])) / dx + v1[VY];
-                int yb = (y - yorg) >> BLKSHIFT; // block row number
-                int yp = (y - yorg) & BLKMASK; // y position within block
-
-                // Already outside the blockmap?
-                if(yb < 0 || yb > (signed) (bMapHeight) + 1)
-                    continue;
-
-                // Does the line touch this column at all?
-                if(x < minx || x > maxx)
-                    continue;
-
-                // The cell that contains the intersection point is always added
-                addBlockLine(blocklists, blockcount, blockdone, bMapWidth * yb + j,
-                             line);
-
-                // If the intersection is at a corner it depends on the slope
-                // (and whether the line extends past the intersection) which
-                // blocks are hit.
-
-                // Where does the intersection occur?
-                if(yp == 0)
-                {
-                    // Intersection occured at a corner
-                    if(slopeNeg) //   \ - blocks x,y-, x-,y
-                    {
-                        if(yb > 0 && miny < y)
-                            addBlockLine(blocklists, blockcount,
-                                         blockdone, bMapWidth * (yb - 1) + j,
-                                         line);
-
-                        if(j > 0 && minx < x)
-                            addBlockLine(blocklists, blockcount,
-                                         blockdone, bMapWidth * yb + j - 1,
-                                         line);
-                    }
-                    else if(slopePos) //   / - block x-,y-
-                    {
-                        if(yb > 0 && j > 0 && minx < x)
-                            addBlockLine(blocklists, blockcount,
-                                         blockdone, bMapWidth * (yb - 1) + j - 1,
-                                         line);
-                    }
-                    else if(horiz) //   - - block x-,y
-                    {
-                        if(j > 0 && minx < x)
-                            addBlockLine(blocklists, blockcount,
-                                         blockdone, bMapWidth * yb + j - 1,
-                                         line);
-                    }
-                }
-                else if(j > 0 && minx < x)
-                {
-                    // Else not at corner: x-,y
-                    addBlockLine(blocklists, blockcount,
-                                 blockdone, bMapWidth * yb + j - 1,
-                                 line);
-                }
-            }
-        }
-
-        // For each row, see where the line along its bottom edge, which
-        // it contains, intersects the LineDef i. Add i to all the corresponding
-        // blocklists.
-        if(!horiz)
-        {
-            for(j = 0; j < (signed) bMapHeight; ++j)
-            {
-                // intersection of LineDef with y=yorg+(j<<BLKSHIFT)
-                // (x,y) on LineDef i satisfies: (y-v1[VY])*dx = dy*(x-v1[VX])
-                // x = dx*(y-v1[VY])/dy+v1[VX];
-                int y = yorg + (j << BLKSHIFT); // (x,y) is intersection
-                int x = (dx * (y - v1[VY])) / dy + v1[VX];
-                int xb = (x - xorg) >> BLKSHIFT; // block column number
-                int xp = (x - xorg) & BLKMASK; // x position within block
-
-                // Outside the blockmap?
-                if(xb < 0 || xb > (signed) (bMapWidth) + 1)
-                    continue;
-
-                // Touches this row?
-                if(y < miny || y > maxy)
-                    continue;
-
-                // The cell that contains the intersection point is always added
-                addBlockLine(blocklists, blockcount, blockdone, bMapWidth * j + xb,
-                             line);
-
-                // If the intersection is at a corner it depends on the slope
-                // (and whether the line extends past the intersection) which
-                // blocks are hit
-
-                // Where does the intersection occur?
-                if(xp == 0)
-                {
-                    // Intersection occured at a corner
-                    if(slopeNeg) //   \ - blocks x,y-, x-,y
-                    {
-                        if(j > 0 && miny < y)
-                            addBlockLine(blocklists, blockcount, blockdone,
-                                         bMapWidth * (j - 1) + xb, line);
-                        if(xb > 0 && minx < x)
-                            addBlockLine(blocklists, blockcount, blockdone,
-                                         bMapWidth * j + xb - 1, line);
-                    }
-                    else if(vert) //   | - block x,y-
-                    {
-                        if(j > 0 && miny < y)
-                            addBlockLine(blocklists, blockcount, blockdone,
-                                         bMapWidth * (j - 1) + xb, line);
-                    }
-                    else if(slopePos) //   / - block x-,y-
-                    {
-                        if(xb > 0 && j > 0 && miny < y)
-                            addBlockLine(blocklists, blockcount, blockdone,
-                                         bMapWidth * (j - 1) + xb -1, line);
-                    }
-                }
-                else if(j > 0 && miny < y)
-                {
-                    // Else not on a corner: x, y-
-                    addBlockLine(blocklists, blockcount, blockdone,
-                                 bMapWidth * (j - 1) + xb, line);
-                }
-            }
-        }
+        LineDefBlockmap_Insert(blockmap, lineDef);
     }
-    }
-
-    blockmap = P_CreateBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
-
-    // Create the actual links by 'hardening' the lists into arrays.
-    {
-    uint x, y;
-    for(y = 0; y < bMapHeight; ++y)
-        for(x = 0; x < bMapWidth; ++x)
-        {
-            uint count = blockcount[y * bMapWidth + x];
-            linelist_t* bl = blocklists[y * bMapWidth + x];
-
-            if(count > 0)
-            {
-                linedef_t** lines, **ptr;
-
-                // A NULL-terminated array of pointers to lines.
-                lines = Z_Malloc((count + 1) * sizeof(linedef_t*), PU_MAP, NULL);
-
-                // Copy pointers to the array, delete the nodes.
-                ptr = lines;
-                while(bl)
-                {
-                    linelist_t* tmp = bl->next;
-
-                    *ptr++ = (linedef_t *) bl->line;
-
-                    M_Free(bl);
-                    bl = tmp;
-                }
-                // Terminate.
-                *ptr = NULL;
-
-                // Link it into the BlockMap.
-                Blockmap_SetBlock(blockmap, x, y, lines, NULL, NULL);
-            }
-        }
-    }
-
-    // free all temporary storage
-    M_Free(blocklists);
-    M_Free(blockcount);
-    M_Free(blockdone);
 
     return blockmap;
 }
 
-void Map_BuildBlockmap(gamemap_t* map)
+void Map_BuildLineDefBlockmap(gamemap_t* map)
 {
-    uint startTime = Sys_GetRealTime();
+    map->_lineDefBlockmap = buildLineDefBlockmap(map);
+}
 
-    map->blockMap = buildBlockmap(map);
+/**
+ * Construct a blockmap from the map data.
+ *
+ * This finds the intersection of each linedef with the column and row
+ * lines at the left and bottom of each blockmap cell. It then adds the
+ * line to all block lists touching the intersection.
+ */
+static mobjblockmap_t* buildMobjBlockmap(gamemap_t* map)
+{
+    uint i, bMapWidth, bMapHeight; // Blockmap dimensions.
+    vec2_t blockSize; // Size of the blocks.
+    vec2_t bounds[2], dims;
+    mobjblockmap_t* blockmap;
 
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("Map_BuildBlockmap: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
+    // Scan for map limits, which the blockmap must enclose.
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
+    {
+        vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
+        vec2_t point;
+
+        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
+        if(!i)
+            V2_InitBox(bounds, point);
+        else
+            V2_AddToBox(bounds, point);
+    }
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN, bounds[1][VY] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        bMapWidth = 1;
+    else
+        bMapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        bMapHeight = 1;
+    else
+        bMapHeight = ceil(dims[VY] / blockSize[VY]);
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
+                      bounds[0][VY] + bMapHeight * blockSize[VY]);
+
+    blockmap = P_CreateMobjBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
+
+    return blockmap;
+}
+
+void Map_BuildMobjBlockmap(gamemap_t* map)
+{
+    map->_mobjBlockmap = buildMobjBlockmap(map);
 }

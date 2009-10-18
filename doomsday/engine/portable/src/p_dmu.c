@@ -43,11 +43,11 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct dmuobjrecordset_s {
-    dmuobjrecord_t  sentinel;
-    dmuobjrecordid_t num;
-    dmuobjrecordid_t* ids;
-} dmuobjrecordset_t;
+typedef struct {
+    objectrecord_t  sentinel;
+    objectrecordid_t num;
+    objectrecordid_t* ids;
+} objectrecordnamespace_t;
 
 typedef struct dummyline_s {
     runtime_mapdata_header_t header;
@@ -79,46 +79,53 @@ uint dummyCount = 8; // Number of dummies to allocate (per type).
 
 static int usingDMUAPIver; // Version of the DMU API the game expects.
 
-static dmuobjrecordid_t numRecords;
-static dmuobjrecord_t* records = NULL;
+static objectrecordid_t numRecords;
+static objectrecord_t* records = NULL;
 
-static int numObjRecordSets;
-static dmuobjrecordset_t** objRecordSets = NULL;
+static int numObjectRecordNamespaces;
+static objectrecordnamespace_t** objectRecordNamespaces = NULL;
 
 static dummyline_t* dummyLines;
 static dummysector_t* dummySectors;
 
 static gamemap_t* currentMap = NULL;
 
+/**
+ * Game-specific, object type definitions.
+ * @todo Utilize DED reader 2.0:
+ */
+static uint numGameObjectDefs;
+static def_gameobject_t* gameObjectDefs;
+
 // CODE --------------------------------------------------------------------
 
-static dmuobjrecordid_t addObjRecord(dmuobjrecordset_t* s, dmuobjrecordid_t id)
+static objectrecordid_t addObjectRecord(objectrecordnamespace_t* s, objectrecordid_t id)
 {
-    s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t) * ++s->num);
+    s->ids = M_Realloc(s->ids, sizeof(objectrecordid_t) * ++s->num);
     s->ids[s->num - 1] = id;
 
     return s->num - 1;
 }
 
-static void destroyRecordSet(int idx)
+static void destroyRecordNamespace(int idx)
 {
-    dmuobjrecordset_t*  s = objRecordSets[idx];
+    objectrecordnamespace_t* s = objectRecordNamespaces[idx];
 
     M_Free(s);
 
-    if(numObjRecordSets > 1 && idx != numObjRecordSets - 1)
-        memmove(objRecordSets[idx], objRecordSets[idx+1],
-                sizeof(dmuobjrecordset_t*) * (numObjRecordSets - 1 - idx));
-    numObjRecordSets--;
+    if(numObjectRecordNamespaces > 1 && idx != numObjectRecordNamespaces - 1)
+        memmove(objectRecordNamespaces[idx], objectRecordNamespaces[idx+1],
+                sizeof(objectrecordnamespace_t*) * (numObjectRecordNamespaces - 1 - idx));
+    numObjectRecordNamespaces--;
 }
 
-static int findRecordSetForType(int type)
+static int findNamespaceForRecordType(int type)
 {
-    int                 i;
+    int i;
 
-    for(i = 0; i < numObjRecordSets; ++i)
+    for(i = 0; i < numObjectRecordNamespaces; ++i)
     {
-        if(objRecordSets[i]->sentinel.header.type == type)
+        if(objectRecordNamespaces[i]->sentinel.header.type == type)
         {
             return i;
         }
@@ -127,9 +134,9 @@ static int findRecordSetForType(int type)
     return -1; // Not found.
 }
 
-static dmuobjrecord_t* findRecordInSet(const dmuobjrecordset_t* s, void* obj)
+static objectrecord_t* findRecordInNamespace(const objectrecordnamespace_t* s, void* obj)
 {
-    dmuobjrecordid_t    i;
+    objectrecordid_t i;
 
     for(i = 1; i < s->num; ++i)
     {
@@ -140,12 +147,12 @@ static dmuobjrecord_t* findRecordInSet(const dmuobjrecordset_t* s, void* obj)
     return NULL;
 }
 
-static dmuobjrecordset_t* createObjRecordset(int type)
+static objectrecordnamespace_t* createObjectRecordNamespace(int type)
 {
-    dmuobjrecordset_t*  s;
+    objectrecordnamespace_t* s;
 
-    objRecordSets = M_Realloc(objRecordSets, sizeof(s) * ++numObjRecordSets);
-    objRecordSets[numObjRecordSets-1] = s = M_Malloc(sizeof(*s));
+    objectRecordNamespaces = M_Realloc(objectRecordNamespaces, sizeof(s) * ++numObjectRecordNamespaces);
+    objectRecordNamespaces[numObjectRecordNamespaces-1] = s = M_Malloc(sizeof(*s));
 
     s->num = 0;
     s->ids = NULL;
@@ -155,29 +162,29 @@ static dmuobjrecordset_t* createObjRecordset(int type)
     s->sentinel.header.type = type;
     s->sentinel.obj = NULL;
     s->sentinel.id = -1;
-    addObjRecord(s, -1);
+    addObjectRecord(s, -1);
 
     return s;
 }
 
 static int iterateRecords(int type, int (*callback) (void*, void*),
-                          void* context, boolean retObjRecord)
+                          void* context, boolean retObjectRecord)
 {
-    int                 result = true; // Successfully completed.
+    int result = true; // Successfully completed.
 
     if(type != DMU_NONE)
     {
-        int                 idx;
+        int idx;
 
-        if((idx = findRecordSetForType(type)) != -1)
+        if((idx = findNamespaceForRecordType(type)) != -1)
         {
-            dmuobjrecordset_t*  s = objRecordSets[idx];
-            dmuobjrecordid_t    i;
+            objectrecordnamespace_t* s = objectRecordNamespaces[idx];
+            objectrecordid_t i;
 
             for(i = 1; i < s->num; ++i)
             {
-                dmuobjrecord_t*     r = &records[s->ids[i]];
-                void*               obj = (retObjRecord? r : r->obj);
+                objectrecord_t* r = &records[s->ids[i]];
+                void* obj = (retObjectRecord? r : r->obj);
 
                 if((result = callback(obj, context)) == 0)
                     break;
@@ -186,17 +193,17 @@ static int iterateRecords(int type, int (*callback) (void*, void*),
     }
     else
     {
-        int                 j;
+        int j;
 
-        for(j = 0; j < numObjRecordSets; ++j)
+        for(j = 0; j < numObjectRecordNamespaces; ++j)
         {
-            dmuobjrecordset_t*  s = objRecordSets[j];
-            dmuobjrecordid_t    i;
+            objectrecordnamespace_t* s = objectRecordNamespaces[j];
+            objectrecordid_t i;
 
             for(i = 1; i < s->num; ++i)
             {
-                dmuobjrecord_t*     r = &records[s->ids[i]];
-                void*               obj = (retObjRecord? r : r->obj);
+                objectrecord_t* r = &records[s->ids[i]];
+                void* obj = (retObjectRecord? r : r->obj);
 
                 if((result = callback(obj, context)) == 0)
                     break;
@@ -207,21 +214,21 @@ static int iterateRecords(int type, int (*callback) (void*, void*),
     return result;
 }
 
-void DMU_ClearObjRecords(int type)
+void P_DestroyObjectRecordsByType(int type)
 {
-    int                 idx;
+    int idx;
 
     if(type < DMU_FIRST_TYPE)
         return;
 
-    if((idx = findRecordSetForType(type)) != -1)
+    if((idx = findNamespaceForRecordType(type)) != -1)
     {
-        dmuobjrecordset_t* s = objRecordSets[idx];
-        dmuobjrecordid_t i;
+        objectrecordnamespace_t* s = objectRecordNamespaces[idx];
+        objectrecordid_t i;
 
         for(i = 1; i < s->num; ++i)
         {
-            dmuobjrecord_t* r = &records[s->ids[i]];
+            objectrecord_t* r = &records[s->ids[i]];
 
             // Deallocation of records is lazy.
             r->header.type = DMU_NONE;
@@ -229,48 +236,48 @@ void DMU_ClearObjRecords(int type)
             r->id = -1;
         }
 
-        s->ids = M_Realloc(s->ids, sizeof(dmuobjrecordid_t));
+        s->ids = M_Realloc(s->ids, sizeof(objectrecordid_t));
         s->num = 1;
     }
 }
 
-dmuobjrecordid_t DMU_AddObjRecord(int type, void* p)
+objectrecordid_t P_CreateObjectRecord(int type, void* p)
 {
     int idx;
-    dmuobjrecord_t* r;
-    dmuobjrecordset_t* s;
+    objectrecord_t* r;
+    objectrecordnamespace_t* s;
 
     if(type < DMU_FIRST_TYPE)
-        Con_Error("DMU_AddObjRecord: Invalid type %i.", type);
+        Con_Error("P_CreateObjectRecord: Invalid type %i.", type);
 
-    if((idx = findRecordSetForType(type)) != -1)
-        s = objRecordSets[idx];
+    if((idx = findNamespaceForRecordType(type)) != -1)
+        s = objectRecordNamespaces[idx];
     else
-        s = createObjRecordset(type);
+        s = createObjectRecordNamespace(type);
 
     if(!records)
-        records = M_Realloc(records, sizeof(dmuobjrecord_t) * 80000); //++numRecords);
+        records = M_Realloc(records, sizeof(objectrecord_t) * 80000); //++numRecords);
     numRecords++;
 
     r = &records[numRecords - 1];
     r->dummy = -666;
     r->header.type = type;
     r->obj = p;
-    r->id = addObjRecord(s, numRecords - 1);
+    r->id = addObjectRecord(s, numRecords - 1);
 
     return r->id;
 }
 
-void DMU_RemoveObjRecord(int type, void* p)
+void P_DestroyObjectRecord(int type, void* p)
 {
-    dmuobjrecord_t*     r = NULL;
-    int                 idx;
+    objectrecord_t* r = NULL;
+    int idx;
 
     // First, remove the object record from any record sets.
-    if((idx = findRecordSetForType(type)) != -1)
+    if((idx = findNamespaceForRecordType(type)) != -1)
     {
-        dmuobjrecordset_t*  s = objRecordSets[idx];
-        dmuobjrecordid_t    i;
+        objectrecordnamespace_t*  s = objectRecordNamespaces[idx];
+        objectrecordid_t    i;
 
         for(i = 1; i < s->num; ++i)
         {
@@ -299,13 +306,13 @@ void DMU_RemoveObjRecord(int type, void* p)
     }
 }
 
-dmuobjrecord_t* DMU_GetObjRecord(int type, void* p)
+objectrecord_t* P_ObjectRecord(int type, void* p)
 {
     int idx;
 
-    if(p && (idx = findRecordSetForType(type)) != -1)
+    if(p && (idx = findNamespaceForRecordType(type)) != -1)
     {
-        return findRecordInSet(objRecordSets[idx], p);
+        return findRecordInNamespace(objectRecordNamespaces[idx], p);
     }
 
     return NULL;
@@ -314,18 +321,222 @@ dmuobjrecord_t* DMU_GetObjRecord(int type, void* p)
 /**
  * @return              Ptr to the current map.
  */
-gamemap_t* DMU_CurrentMap(void)
+gamemap_t* P_CurrentMap(void)
 {
     return currentMap;
 }
 
-void DMU_SetCurrentMap(gamemap_t* map)
+void P_SetCurrentMap(gamemap_t* map)
 {
     mobjNodes = &map->mobjNodes;
     lineNodes = &map->lineNodes;
     linelinks = map->lineLinks;
 
     currentMap = map;
+}
+
+/**
+ * Look up a mapobj definition.
+ *
+ * @param identifer     If objName is @c NULL, compare using this unique identifier.
+ * @param objName       If not @c NULL, compare using this unique name.
+ */
+def_gameobject_t* P_GameObjectDef(int identifier, const char* objName,
+                                  boolean canCreate)
+{
+    uint i;
+    size_t len;
+    def_gameobject_t* def;
+
+    if(objName)
+        len = strlen(objName);
+
+    // Is this a known game object?
+    for(i = 0; i < numGameObjectDefs; ++i)
+    {
+        def = &gameObjectDefs[i];
+
+        if(objName && objName[0])
+        {
+            if(!strnicmp(objName, def->name, len))
+            {   // Found it!
+                return def;
+            }
+        }
+        else
+        {
+            if(identifier == def->identifier)
+            {   // Found it!
+                return def;
+            }
+        }
+    }
+
+    if(!canCreate)
+        return NULL; // Not a known game map object.
+
+    if(identifier == 0)
+        return NULL; // Not a valid indentifier.
+
+    if(!objName || !objName[0])
+        return NULL; // Must have a name.
+
+    // Ensure the name is unique.
+    for(i = 0; i < numGameObjectDefs; ++i)
+    {
+        def = &gameObjectDefs[i];
+        if(!strnicmp(objName, def->name, len))
+        {   // Oh dear, a duplicate.
+            return NULL;
+        }
+    }
+
+    gameObjectDefs =
+        M_Realloc(gameObjectDefs, ++numGameObjectDefs * sizeof(*gameObjectDefs));
+
+    def = &gameObjectDefs[numGameObjectDefs - 1];
+    def->identifier = identifier;
+    def->name = M_Malloc(len+1);
+    strncpy(def->name, objName, len);
+    def->name[len] = '\0';
+    def->numProperties = 0;
+    def->properties = NULL;
+
+    return def;
+}
+
+def_gameobject_t* P_GetGameObjectDef(uint idx)
+{
+    if(idx < numGameObjectDefs)
+        return &gameObjectDefs[idx];
+
+    Con_Error("P_GetGameObjectDef: Error, no definition exists for id %u.", idx);
+    return NULL; // Unreachable.
+}
+
+/**
+ * Called by the game to register the map object types it wishes us to make
+ * public via the MPE interface.
+ */
+boolean P_CreateObjectDef(int identifier, const char* name)
+{
+    if(P_GameObjectDef(identifier, name, true))
+        return true; // Success.
+
+    return false;
+}
+
+/**
+ * Called by the game to add a new property to a previously registered
+ * map object type definition.
+ */
+boolean P_AddPropertyToObjectDef(int identifier, int propIdentifier,
+                                 const char* propName, valuetype_t type)
+{
+    uint i;
+    size_t len;
+    mapobjprop_t* prop;
+    def_gameobject_t* def = P_GameObjectDef(identifier, NULL, false);
+
+    if(!def) // Not a valid identifier.
+    {
+        Con_Error("P_AddPropertyToObjectDef: Unknown mapobj identifier %i.",
+                  identifier);
+    }
+
+    if(propIdentifier == 0) // Not a valid identifier.
+        Con_Error("P_AddPropertyToObjectDef: 0 not valid for propIdentifier.");
+
+    if(!propName || !propName[0]) // Must have a name.
+        Con_Error("P_AddPropertyToObjectDef: Cannot register without name.");
+
+    // Screen out value types we don't currently support for gmos.
+    switch(type)
+    {
+    case DDVT_BYTE:
+    case DDVT_SHORT:
+    case DDVT_INT:
+    case DDVT_FIXED:
+    case DDVT_ANGLE:
+    case DDVT_FLOAT:
+        break;
+
+    default:
+        Con_Error("P_AddPropertyToObjectDef: Unknown/not supported value type %i.",
+                  type);
+    }
+
+    // Next, make sure propIdentifer and propName are unique.
+    len = strlen(propName);
+    for(i = 0; i < def->numProperties; ++i)
+    {
+        prop = &def->properties[i];
+
+        if(prop->identifier == propIdentifier)
+            Con_Error("P_AddPropertyToObjectDef: propIdentifier %i not unique for %s.",
+                      propIdentifier, def->name);
+
+        if(!strnicmp(propName, prop->name, len))
+            Con_Error("P_AddPropertyToObjectDef: propName \"%s\" not unique for %s.",
+                      propName, def->name);
+    }
+
+    // Looks good! Add it to the list of properties.
+    def->properties = M_Realloc(def->properties, ++def->numProperties * sizeof(*def->properties));
+
+    prop = &def->properties[def->numProperties - 1];
+    prop->identifier = propIdentifier;
+    prop->name = M_Malloc(len + 1);
+    strncpy(prop->name, propName, len);
+    prop->name[len] = '\0';
+    prop->type = type;
+
+    return true; // Success!
+}
+
+/**
+ * Called during init to initialize the map obj defs.
+ */
+void P_InitGameObjectDefs(void)
+{
+    gameObjectDefs = NULL;
+    numGameObjectDefs = 0;
+}
+
+/**
+ * Called at shutdown to free all memory allocated for the map obj defs.
+ */
+void P_DestroyGameObjectDefs(void)
+{
+    uint i, j;
+
+    if(gameObjectDefs)
+    {
+        for(i = 0; i < numGameObjectDefs; ++i)
+        {
+            def_gameobject_t* def = &gameObjectDefs[i];
+
+            for(j = 0; j < def->numProperties; ++j)
+            {
+                mapobjprop_t* prop = &def->properties[j];
+
+                M_Free(prop->name);
+            }
+            M_Free(def->properties);
+
+            M_Free(def->name);
+        }
+
+        M_Free(gameObjectDefs);
+    }
+
+    gameObjectDefs = NULL;
+    numGameObjectDefs = 0;
+}
+
+uint P_NumGameObjectDefs(void)
+{
+    return numGameObjectDefs;
 }
 
 /**
@@ -421,7 +632,7 @@ static int DMU_GetType(const void* ptr)
     if(type != DMU_NONE)
         return type;
 
-    type = ((const dmuobjrecord_t*)ptr)->header.type;
+    type = ((const objectrecord_t*)ptr)->header.type;
 
     // Make sure it's valid.
     switch(type)
@@ -490,21 +701,21 @@ void P_InitMapUpdate(void)
     records = NULL;
     numRecords = 0;
 
-    objRecordSets = NULL;
-    numObjRecordSets = 0;
+    objectRecordNamespaces = NULL;
+    numObjectRecordNamespaces = 0;
 }
 
 void P_ShutdownMapUpdate(void)
 {
-    P_ShutdownGameMapObjDefs();
+    P_DestroyGameObjectDefs();
 
-    if(objRecordSets)
+    if(objectRecordNamespaces)
     {
         int                 i;
 
-        for(i = 0; i < numObjRecordSets; ++i)
+        for(i = 0; i < numObjectRecordNamespaces; ++i)
         {
-            dmuobjrecordset_t*  s = objRecordSets[i];
+            objectrecordnamespace_t*  s = objectRecordNamespaces[i];
 
             if(s->ids)
                 M_Free(s->ids);
@@ -512,11 +723,11 @@ void P_ShutdownMapUpdate(void)
             M_Free(s);
         }
 
-        M_Free(objRecordSets);
+        M_Free(objectRecordNamespaces);
     }
 
-    objRecordSets = NULL;
-    numObjRecordSets = 0;
+    objectRecordNamespaces = NULL;
+    numObjectRecordNamespaces = 0;
 
     if(records)
         M_Free(records);
@@ -658,56 +869,56 @@ void* P_GetVariable(int value)
     {
     case DMU_SECTOR_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numSectors;
         return &count;
         }
     case DMU_LINE_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numLineDefs;
         return &count;
         }
     case DMU_SIDE_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numSideDefs;
         return &count;
         }
     case DMU_VERTEX_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
-            return &map->halfEdgeDS.numVertices;
+            return &Map_HalfEdgeDS(map)->numVertices;
         return &count;
         }
     case DMU_POLYOBJ_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numPolyObjs;
         return &count;
         }
     case DMU_SEG_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numSegs;
         return &count;
         }
     case DMU_SUBSECTOR_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numSubsectors;
         return NULL;
         }
     case DMU_NODE_COUNT:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(map)
             return &map->numNodes;
         return &count;
@@ -727,7 +938,7 @@ void P_SetVariable(int value, void* data)
 /**
  * Convert pointer to index.
  */
-dmuobjrecordid_t P_ToIndex(const void* ptr)
+objectrecordid_t P_ToIndex(const void* ptr)
 {
     int type;
 
@@ -743,24 +954,24 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
     switch(type)
     {
     case DMU_SECTOR:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_VERTEX:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_SEG:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_LINEDEF:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_SIDEDEF:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_SUBSECTOR:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_NODE:
-        return ((dmuobjrecord_t*) ptr)->id - 1;
+        return ((objectrecord_t*) ptr)->id - 1;
     case DMU_PLANE:
-        return ((plane_t*) (((dmuobjrecord_t*) ptr)->obj))->planeID;
+        return ((plane_t*) (((objectrecord_t*) ptr)->obj))->planeID;
 
     case DMU_MATERIAL:
-        return Materials_ToIndex(((dmuobjrecord_t*) ptr)->obj);
+        return Materials_ToIndex(((objectrecord_t*) ptr)->obj);
 
     case DMU_SKY:
         return 0;
@@ -774,7 +985,7 @@ dmuobjrecordid_t P_ToIndex(const void* ptr)
 /**
  * Convert index to pointer.
  */
-void* P_ToPtr(int type, dmuobjrecordid_t index)
+void* P_ToPtr(int type, objectrecordid_t index)
 {
     int                 idx;
 
@@ -795,8 +1006,8 @@ void* P_ToPtr(int type, dmuobjrecordid_t index)
         break;
     }
 
-    if((idx = findRecordSetForType(type)) != -1)
-        return &records[objRecordSets[idx]->ids[1 + index]];
+    if((idx = findNamespaceForRecordType(type)) != -1)
+        return &records[objectRecordNamespaces[idx]->ids[1 + index]];
 
     Con_Error("P_ToPtr: Invalid type+object index (t=%s, i=%u).\n",
               DMU_Str(type), index);
@@ -815,12 +1026,12 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
         switch(prop)
         {
         case DMU_MOBJS:
-            return P_SectorTouchingMobjsIterator(((dmuobjrecord_t*) ptr)->obj,
+            return P_SectorTouchingMobjsIterator(((objectrecord_t*) ptr)->obj,
                                                  callback, context);
         case DMU_LINEDEF:
             {
-            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_LINEDEF)];
-            sector_t* sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
+            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_LINEDEF)];
+            sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
             if(sec->lineDefs)
@@ -828,7 +1039,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
                 linedef_t** linePtr = sec->lineDefs;
 
                 while(*linePtr && (result =
-                      callback(findRecordInSet(s, *linePtr), context)) != 0)
+                      callback(findRecordInNamespace(s, *linePtr), context)) != 0)
                     *linePtr++;
             }
 
@@ -837,8 +1048,8 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
 
         case DMU_PLANE:
             {
-            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_PLANE)];
-            sector_t* sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
+            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_PLANE)];
+            sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
             if(sec->planes)
@@ -846,7 +1057,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
                 plane_t** planePtr = sec->planes;
 
                 while(*planePtr && (result =
-                      callback(findRecordInSet(s, *planePtr), context)) != 0)
+                      callback(findRecordInNamespace(s, *planePtr), context)) != 0)
                     *planePtr++;
             }
 
@@ -855,8 +1066,8 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
 
         case DMU_SUBSECTOR:
             {
-            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_SUBSECTOR)];
-            sector_t* sec = (sector_t*) ((dmuobjrecord_t*) ptr)->obj;
+            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SUBSECTOR)];
+            sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
             if(sec->subsectors)
@@ -864,7 +1075,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
                 subsector_t** subsectorPtr = sec->subsectors;
 
                 while(*subsectorPtr && (result =
-                      callback(findRecordInSet(s, *subsectorPtr), context)) != 0)
+                      callback(findRecordInNamespace(s, *subsectorPtr), context)) != 0)
                     *subsectorPtr++;
             }
 
@@ -882,8 +1093,8 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
         {
         case DMU_SEG:
             {
-            const dmuobjrecordset_t* s = objRecordSets[findRecordSetForType(DMU_SEG)];
-            subsector_t* subsector = (subsector_t*) ((dmuobjrecord_t*) ptr)->obj;
+            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SEG)];
+            subsector_t* subsector = (subsector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
             hedge_t* hEdge;
 
@@ -891,7 +1102,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
             {
                 do
                 {
-                    dmuobjrecord_t* r = findRecordInSet(s, (seg_t*) hEdge->data);
+                    objectrecord_t* r = findRecordInNamespace(s, (seg_t*) hEdge->data);
                     if((result = callback(r, context)) == 0)
                         break;
                 } while((hEdge = hEdge->next) != subsector->face->hEdge);
@@ -927,58 +1138,58 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
  *                      aborted immediately when the callback function
  *                      returns @c false.
  */
-int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* ctx),
+int P_Callback(int type, objectrecordid_t index, int (*callback)(void* p, void* ctx),
                void* context)
 {
     switch(type)
     {
     case DMU_VERTEX:
         {
-        gamemap_t* map = DMU_CurrentMap();
-        if(index < map->halfEdgeDS.numVertices)
-            return callback(DMU_GetObjRecord(DMU_VERTEX, map->halfEdgeDS.vertices[index]), context);
+        gamemap_t* map = P_CurrentMap();
+        if(index < Map_HalfEdgeDS(map)->numVertices)
+            return callback(P_ObjectRecord(DMU_VERTEX, Map_HalfEdgeDS(map)->vertices[index]), context);
         break;
         }
     case DMU_SEG:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numSegs)
-            return callback(DMU_GetObjRecord(DMU_SEG, map->segs[index]), context);
+            return callback(P_ObjectRecord(DMU_SEG, map->segs[index]), context);
         break;
         }
     case DMU_LINEDEF:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numLineDefs)
-            return callback(DMU_GetObjRecord(DMU_LINEDEF, map->lineDefs[index]), context);
+            return callback(P_ObjectRecord(DMU_LINEDEF, map->lineDefs[index]), context);
         break;
         }
     case DMU_SIDEDEF:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numSideDefs)
-            return callback(DMU_GetObjRecord(DMU_SIDEDEF, map->sideDefs[index]), context);
+            return callback(P_ObjectRecord(DMU_SIDEDEF, map->sideDefs[index]), context);
         break;
         }
     case DMU_NODE:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numNodes)
-            return callback(DMU_GetObjRecord(DMU_NODE, map->nodes[index]), context);
+            return callback(P_ObjectRecord(DMU_NODE, map->nodes[index]), context);
         break;
         }
     case DMU_SUBSECTOR:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numSubsectors)
-            return callback(DMU_GetObjRecord(DMU_SUBSECTOR, map->subsectors[index]), context);
+            return callback(P_ObjectRecord(DMU_SUBSECTOR, map->subsectors[index]), context);
         break;
         }
     case DMU_SECTOR:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
         if(index < map->numSectors)
-            return callback(DMU_GetObjRecord(DMU_SECTOR, map->sectors[index]), context);
+            return callback(P_ObjectRecord(DMU_SECTOR, map->sectors[index]), context);
         break;
         }
     case DMU_PLANE:
@@ -993,7 +1204,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 
     case DMU_SKY:
         //if(index < numSkies)
-            return callback(DMU_GetObjRecord(DMU_SKY, theSky /*skies + index*/), context);
+            return callback(P_ObjectRecord(DMU_SKY, theSky /*skies + index*/), context);
         break;
 
     case DMU_LINEDEF_BY_TAG:
@@ -1024,7 +1235,7 @@ int P_Callback(int type, dmuobjrecordid_t index, int (*callback)(void* p, void* 
 int P_Callbackp(int type, void* ptr, int (*callback)(void*, void*),
                 void* context)
 {
-    dmuobjrecord_t*     r = (dmuobjrecord_t*) ptr;
+    objectrecord_t*     r = (objectrecord_t*) ptr;
 
     switch(type)
     {
@@ -1266,7 +1477,7 @@ void DMU_SetValue(valuetype_t valueType, void* dst, const setargs_t* args,
  */
 static int setProperty(void* ptr, void* context)
 {
-    dmuobjrecord_t* r = (dmuobjrecord_t*) ptr;
+    objectrecord_t* r = (objectrecord_t*) ptr;
     setargs_t* args = (setargs_t*) context;
     void* obj = r->obj;
     sector_t* updateSector1 = NULL, *updateSector2 = NULL;
@@ -1740,7 +1951,7 @@ void DMU_GetValue(valuetype_t valueType, const void* src, setargs_t* args,
 
 static int getProperty(void* ptr, void* context)
 {
-    dmuobjrecord_t* r = (dmuobjrecord_t*) ptr;
+    objectrecord_t* r = (objectrecord_t*) ptr;
     setargs_t* args = (setargs_t*) context;
     void* obj = r->obj;
 
@@ -1924,7 +2135,7 @@ static int getProperty(void* ptr, void* context)
     return false;
 }
 
-void P_SetBool(int type, dmuobjrecordid_t index, uint prop, boolean param)
+void P_SetBool(int type, objectrecordid_t index, uint prop, boolean param)
 {
     setargs_t args;
 
@@ -1936,7 +2147,7 @@ void P_SetBool(int type, dmuobjrecordid_t index, uint prop, boolean param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetByte(int type, dmuobjrecordid_t index, uint prop, byte param)
+void P_SetByte(int type, objectrecordid_t index, uint prop, byte param)
 {
     setargs_t args;
 
@@ -1946,7 +2157,7 @@ void P_SetByte(int type, dmuobjrecordid_t index, uint prop, byte param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetInt(int type, dmuobjrecordid_t index, uint prop, int param)
+void P_SetInt(int type, objectrecordid_t index, uint prop, int param)
 {
     setargs_t args;
 
@@ -1956,7 +2167,7 @@ void P_SetInt(int type, dmuobjrecordid_t index, uint prop, int param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFixed(int type, dmuobjrecordid_t index, uint prop, fixed_t param)
+void P_SetFixed(int type, objectrecordid_t index, uint prop, fixed_t param)
 {
     setargs_t args;
 
@@ -1966,7 +2177,7 @@ void P_SetFixed(int type, dmuobjrecordid_t index, uint prop, fixed_t param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetAngle(int type, dmuobjrecordid_t index, uint prop, angle_t param)
+void P_SetAngle(int type, objectrecordid_t index, uint prop, angle_t param)
 {
     setargs_t args;
 
@@ -1976,7 +2187,7 @@ void P_SetAngle(int type, dmuobjrecordid_t index, uint prop, angle_t param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFloat(int type, dmuobjrecordid_t index, uint prop, float param)
+void P_SetFloat(int type, objectrecordid_t index, uint prop, float param)
 {
     setargs_t args;
 
@@ -1986,7 +2197,7 @@ void P_SetFloat(int type, dmuobjrecordid_t index, uint prop, float param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetPtr(int type, dmuobjrecordid_t index, uint prop, void* param)
+void P_SetPtr(int type, objectrecordid_t index, uint prop, void* param)
 {
     setargs_t args;
 
@@ -1996,7 +2207,7 @@ void P_SetPtr(int type, dmuobjrecordid_t index, uint prop, void* param)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
+void P_SetBoolv(int type, objectrecordid_t index, uint prop, boolean* params)
 {
     setargs_t args;
 
@@ -2006,7 +2217,7 @@ void P_SetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
+void P_SetBytev(int type, objectrecordid_t index, uint prop, byte* params)
 {
     setargs_t args;
 
@@ -2016,7 +2227,7 @@ void P_SetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
+void P_SetIntv(int type, objectrecordid_t index, uint prop, int* params)
 {
     setargs_t args;
 
@@ -2026,7 +2237,7 @@ void P_SetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
+void P_SetFixedv(int type, objectrecordid_t index, uint prop, fixed_t* params)
 {
     setargs_t args;
 
@@ -2036,7 +2247,7 @@ void P_SetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
+void P_SetAnglev(int type, objectrecordid_t index, uint prop, angle_t* params)
 {
     setargs_t args;
 
@@ -2046,7 +2257,7 @@ void P_SetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
+void P_SetFloatv(int type, objectrecordid_t index, uint prop, float* params)
 {
     setargs_t args;
 
@@ -2056,7 +2267,7 @@ void P_SetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
     P_Callback(type, index, setProperty, &args);
 }
 
-void P_SetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params)
+void P_SetPtrv(int type, objectrecordid_t index, uint prop, void* params)
 {
     setargs_t args;
 
@@ -2210,7 +2421,7 @@ void P_SetPtrpv(void* ptr, uint prop, void* params)
     P_Callbackp(args.type, ptr, setProperty, &args);
 }
 
-boolean P_GetBool(int type, dmuobjrecordid_t index, uint prop)
+boolean P_GetBool(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     boolean returnValue = false;
@@ -2222,7 +2433,7 @@ boolean P_GetBool(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-byte P_GetByte(int type, dmuobjrecordid_t index, uint prop)
+byte P_GetByte(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     byte returnValue = 0;
@@ -2234,7 +2445,7 @@ byte P_GetByte(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-int P_GetInt(int type, dmuobjrecordid_t index, uint prop)
+int P_GetInt(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     int returnValue = 0;
@@ -2246,7 +2457,7 @@ int P_GetInt(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-fixed_t P_GetFixed(int type, dmuobjrecordid_t index, uint prop)
+fixed_t P_GetFixed(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     fixed_t returnValue = 0;
@@ -2258,7 +2469,7 @@ fixed_t P_GetFixed(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-angle_t P_GetAngle(int type, dmuobjrecordid_t index, uint prop)
+angle_t P_GetAngle(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     angle_t returnValue = 0;
@@ -2270,7 +2481,7 @@ angle_t P_GetAngle(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-float P_GetFloat(int type, dmuobjrecordid_t index, uint prop)
+float P_GetFloat(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     float returnValue = 0;
@@ -2282,7 +2493,7 @@ float P_GetFloat(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-void* P_GetPtr(int type, dmuobjrecordid_t index, uint prop)
+void* P_GetPtr(int type, objectrecordid_t index, uint prop)
 {
     setargs_t args;
     void* returnValue = NULL;
@@ -2294,7 +2505,7 @@ void* P_GetPtr(int type, dmuobjrecordid_t index, uint prop)
     return returnValue;
 }
 
-void P_GetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
+void P_GetBoolv(int type, objectrecordid_t index, uint prop, boolean* params)
 {
     setargs_t args;
 
@@ -2304,7 +2515,7 @@ void P_GetBoolv(int type, dmuobjrecordid_t index, uint prop, boolean* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
+void P_GetBytev(int type, objectrecordid_t index, uint prop, byte* params)
 {
     setargs_t args;
 
@@ -2314,7 +2525,7 @@ void P_GetBytev(int type, dmuobjrecordid_t index, uint prop, byte* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
+void P_GetIntv(int type, objectrecordid_t index, uint prop, int* params)
 {
     setargs_t args;
 
@@ -2324,7 +2535,7 @@ void P_GetIntv(int type, dmuobjrecordid_t index, uint prop, int* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
+void P_GetFixedv(int type, objectrecordid_t index, uint prop, fixed_t* params)
 {
     setargs_t args;
 
@@ -2334,7 +2545,7 @@ void P_GetFixedv(int type, dmuobjrecordid_t index, uint prop, fixed_t* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
+void P_GetAnglev(int type, objectrecordid_t index, uint prop, angle_t* params)
 {
     setargs_t args;
 
@@ -2344,7 +2555,7 @@ void P_GetAnglev(int type, dmuobjrecordid_t index, uint prop, angle_t* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
+void P_GetFloatv(int type, objectrecordid_t index, uint prop, float* params)
 {
     setargs_t args;
 
@@ -2354,7 +2565,7 @@ void P_GetFloatv(int type, dmuobjrecordid_t index, uint prop, float* params)
     P_Callback(type, index, getProperty, &args);
 }
 
-void P_GetPtrv(int type, dmuobjrecordid_t index, uint prop, void* params)
+void P_GetPtrv(int type, objectrecordid_t index, uint prop, void* params)
 {
     setargs_t args;
 

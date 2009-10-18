@@ -105,7 +105,7 @@ void Sv_SoundAtVolume(int soundIDAndFlags, mobj_t *origin, float volume,
     if(isClient || !soundID)
         return;
 
-    Sv_IdentifySoundOrigin(DMU_CurrentMap(), &origin, &sector, &poly);
+    Sv_IdentifySoundOrigin(P_CurrentMap(), &origin, &sector, &poly);
 
     if(toPlr & SVSF_TO_ALL)
     {
@@ -147,7 +147,7 @@ void Sv_StopSound(int soundID, mobj_t* origin)
     if(isClient)
         return;
 
-    Sv_IdentifySoundOrigin(DMU_CurrentMap(), &origin, &sector, &poly);
+    Sv_IdentifySoundOrigin(P_CurrentMap(), &origin, &sector, &poly);
 
     /*#ifdef _DEBUG
        Con_Printf("Sv_StopSound: id=%i origin=%i(%p) sec=%i poly=%i\n",

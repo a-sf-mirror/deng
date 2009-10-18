@@ -256,9 +256,9 @@ void R_InitSectorShadows(gamemap_t* map)
     lineowner_t* vo0, *vo1;
     shadowlinkerparms_t data;
 
-    for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
     {
-        R_UpdateVertexShadowOffsets(map->halfEdgeDS.vertices[i]);
+        R_UpdateVertexShadowOffsets(Map_HalfEdgeDS(map)->vertices[i]);
     }
 
     /**

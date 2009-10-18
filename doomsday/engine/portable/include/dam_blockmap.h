@@ -35,7 +35,5 @@
 #ifndef DOOMSDAY_MAP_BLOCKMAP_H
 #define DOOMSDAY_MAP_BLOCKMAP_H
 
-#include "p_mapdata.h"
 
-void                Map_BuildBlockmap(gamemap_t* map);
 #endif /* DOOMSDAY_MAP_BLOCKMAP_H */

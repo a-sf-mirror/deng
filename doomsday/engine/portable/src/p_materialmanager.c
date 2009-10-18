@@ -386,7 +386,7 @@ void Materials_Shutdown(void)
     if(!initedOk)
         return;
 
-    DMU_ClearObjRecords(DMU_MATERIAL);
+    P_DestroyObjectRecordsByType(DMU_MATERIAL);
 
     Z_BlockDestroy(materialsBlockSet);
     materialsBlockSet = NULL;
@@ -585,7 +585,7 @@ Con_Message("Materials_NewMaterial: Warning, attempted to create material "
     newMaterialNameBinding(mat, name, mnamespace, hash);
 
     // Add this material to the DMU object records.
-    DMU_AddObjRecord(DMU_MATERIAL, mat);
+    P_CreateObjectRecord(DMU_MATERIAL, mat);
 
     return mat;
 }
@@ -1068,7 +1068,7 @@ void P_AddMaterialToGroup(int groupNum, int num, int tics, int randomTics)
     if(num)
     {
         Materials_AddToGroup(groupNum, Materials_ToIndex(
-            ((dmuobjrecord_t*) P_ToPtr(DMU_MATERIAL, num))->obj), tics, randomTics);
+            ((objectrecord_t*) P_ToPtr(DMU_MATERIAL, num))->obj), tics, randomTics);
     }
 }
 
@@ -1077,7 +1077,7 @@ void P_AddMaterialToGroup(int groupNum, int num, int tics, int randomTics)
  */
 material_t* P_MaterialForName(material_namespace_t mnamespace, const char* name)
 {
-    return (material_t*) DMU_GetObjRecord(DMU_MATERIAL,
+    return (material_t*) P_ObjectRecord(DMU_MATERIAL,
         Materials_ToMaterial(Materials_CheckIndexForName(mnamespace, name)));
 }
 
@@ -1092,5 +1092,5 @@ void P_MaterialPreload(material_t* mat)
     if(!initedOk)
         return;
 
-    Material_Precache((material_t*) ((dmuobjrecord_t*) mat)->obj);
+    Material_Precache((material_t*) ((objectrecord_t*) mat)->obj);
 }

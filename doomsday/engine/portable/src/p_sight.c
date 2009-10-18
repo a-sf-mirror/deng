@@ -252,7 +252,7 @@ static boolean crossSubsector(subsector_t* subsector, losdata_t* los)
 
         for(i = 0; i < po->numLineDefs; ++i)
         {
-            linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
 
             if(line->validCount != validCount)
             {
@@ -334,7 +334,7 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
                          float bottomSlope, float topSlope, int flags)
 {
     losdata_t los;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     if(!map)
         return true;

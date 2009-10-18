@@ -580,7 +580,7 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
     mo->floorZ = subsector->sector->SP_floorheight;
     mo->ceilingZ = subsector->sector->SP_ceilheight;
 
-    mo->subsector = (subsector_t*) DMU_GetObjRecord(DMU_SUBSECTOR, subsector);
+    mo->subsector = (subsector_t*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
 
     if(onground)
     {

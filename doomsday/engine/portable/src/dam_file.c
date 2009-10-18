@@ -282,9 +282,9 @@ static void endSegment(void)
     writeLong(DAMSEG_END);
 }
 
-static void writeVertex(const gamemap_t* map, uint idx)
+static void writeVertex(gamemap_t* map, uint idx)
 {
-    vertex_t* v = map->halfEdgeDS.vertices[idx];
+    vertex_t* v = Map_HalfEdgeDS(map)->vertices[idx];
 
     writeFloat(v->pos[VX]);
     writeFloat(v->pos[VY]);
@@ -298,16 +298,16 @@ static void writeVertex(const gamemap_t* map, uint idx)
         own = base = (v->lineOwners)->LO_prev;
         do
         {
-            writeLong((long) DMU_GetObjRecord(DMU_LINEDEF, own->lineDef)->id);
+            writeLong((long) P_ObjectRecord(DMU_LINEDEF, own->lineDef)->id);
             writeLong((long) own->angle);
             own = own->LO_prev;
         } while(own != base);
     }*/
 }
 
-static void readVertex(const gamemap_t* map, uint idx)
+static void readVertex(gamemap_t* map, uint idx)
 {
-    vertex_t* v = map->halfEdgeDS.vertices[idx];
+    vertex_t* v = Map_HalfEdgeDS(map)->vertices[idx];
 
     v->pos[VX] = readFloat();
     v->pos[VY] = readFloat();
@@ -351,15 +351,16 @@ static void archiveVertexes(gamemap_t* map, boolean write)
 
     if(write)
     {
-        writeLong((long) map->halfEdgeDS.numVertices);
-        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+        writeLong((long) Map_HalfEdgeDS(map)->numVertices);
+        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
             writeVertex(map, i);
     }
     else
     {
-        map->halfEdgeDS.numVertices = (uint) readLong();
-        map->halfEdgeDS.vertices = Z_Malloc(sizeof(vertex_t) * map->halfEdgeDS.numVertices, PU_STATIC, 0);
-        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
+        Map_HalfEdgeDS(map)->numVertices = (uint) readLong();
+        Map_HalfEdgeDS(map)->vertices =
+            Z_Malloc(sizeof(vertex_t) * Map_HalfEdgeDS(map)->numVertices, PU_STATIC, 0);
+        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
             readVertex(map, i);
     }
 
@@ -460,7 +461,7 @@ static void writeSide(const gamemap_t* map, uint idx)
         writeFloat(suf->rgba[CB]);
         writeFloat(suf->rgba[CA]);
     }
-    writeLong(s->sector? DMU_GetObjRecord(DMU_SECTOR, s->sector)->id : 0);
+    writeLong(s->sector? P_ObjectRecord(DMU_SECTOR, s->sector)->id : 0);
     writeShort(s->flags);
 }
 
@@ -573,7 +574,7 @@ static void writeSector(const gamemap_t* map, uint idx)
     writeFloat(s->bBox[BOXRIGHT]);
     writeFloat(s->bBox[BOXBOTTOM]);
     writeFloat(s->bBox[BOXTOP]);
-    writeLong(s->lightSource? DMU_GetObjRecord(DMU_SECTOR, s->lightSource)->id : 0);
+    writeLong(s->lightSource? P_ObjectRecord(DMU_SECTOR, s->lightSource)->id : 0);
     writeFloat(s->soundOrg.pos[VX]);
     writeFloat(s->soundOrg.pos[VY]);
     writeFloat(s->soundOrg.pos[VZ]);
@@ -590,17 +591,17 @@ static void writeSector(const gamemap_t* map, uint idx)
     // Line list.
     writeLong((long) s->lineDefCount);
     for(i = 0; i < s->lineDefCount; ++i)
-        writeLong(DMU_GetObjRecord(DMU_LINEDEF, s->lineDefs[i])->id);
+        writeLong(P_ObjectRecord(DMU_LINEDEF, s->lineDefs[i])->id);
 
     // SubSector list.
     writeLong((long) s->subsectorCount);
     for(i = 0; i < s->subsectorCount; ++i)
-        writeLong(DMU_GetObjRecord(DMU_SUBSECTOR, s->subsectors[i])->id);
+        writeLong(P_ObjectRecord(DMU_SUBSECTOR, s->subsectors[i])->id);
 
     // Reverb subsector attributors.
     writeLong((long) s->numReverbSubsectorAttributors);
     for(i = 0; i < s->numReverbSubsectorAttributors; ++i)
-        writeLong(DMU_GetObjRecord(DMU_SUBSECTOR, s->reverbSubsectors[i])->id);
+        writeLong(P_ObjectRecord(DMU_SUBSECTOR, s->reverbSubsectors[i])->id);
 }
 
 static void readSector(gamemap_t* map, uint idx)
@@ -740,7 +741,7 @@ static void writeSubsector(const gamemap_t* map, uint idx)
     writeFloat(s->midPoint.pos[VX]);
     writeFloat(s->midPoint.pos[VY]);
     writeFloat(s->midPoint.pos[VZ]);
-    writeLong(s->sector? DMU_GetObjRecord(DMU_SECTOR, s->sector)->id : 0);
+    writeLong(s->sector? P_ObjectRecord(DMU_SECTOR, s->sector)->id : 0);
     writeLong(s->polyObj? (s->polyObj->idx + 1) : 0);
 
     // SubSector reverb.
@@ -820,7 +821,7 @@ static void writeSeg(const gamemap_t* map, uint idx)
 
     writeFloat(seg->length);
     writeFloat(seg->offset);
-    writeLong(seg->sideDef? DMU_GetObjRecord(DMU_SIDEDEF, seg->sideDef)->id : 0);
+    writeLong(seg->sideDef? P_ObjectRecord(DMU_SIDEDEF, seg->sideDef)->id : 0);
     writeLong((long) seg->angle);
     writeByte(seg->side);
 }

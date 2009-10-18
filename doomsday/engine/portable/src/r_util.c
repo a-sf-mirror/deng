@@ -256,7 +256,7 @@ subsector_t* R_PointInSubSector(const float x, const float y)
 {
     node_t* node = NULL;
     uint nodenum = 0;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     if(!map->numNodes) // Single subsector is a special case.
         return (subsector_t*) map->subsectors;
@@ -274,7 +274,7 @@ subsector_t* R_PointInSubSector(const float x, const float y)
 
 void* P_PointInSubSector(const float x, const float y)
 {
-    return DMU_GetObjRecord(DMU_SUBSECTOR, R_PointInSubSector(x, y));
+    return P_ObjectRecord(DMU_SUBSECTOR, R_PointInSubSector(x, y));
 }
 
 linedef_t* R_GetLineForSide(const sidedef_t* sideDef)

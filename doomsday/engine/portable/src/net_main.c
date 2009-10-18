@@ -848,7 +848,7 @@ void Net_Drawer(void)
     char buf[160], tmp[40];
     int i, c;
     boolean showBlinkR = false;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     for(i = 0; i < DDMAXPLAYERS; ++i)
     {

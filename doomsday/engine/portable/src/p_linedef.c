@@ -64,7 +64,7 @@ boolean LineDef_SetProperty(linedef_t* lin, const setargs_t* args)
     switch(args->prop)
     {
     /**
-     * \todo Re-implement me (conversion from dmuobjrecord_t).
+     * \todo Re-implement me (conversion from objectrecord_t).
     case DMU_FRONT_SECTOR:
         DMU_SetValue(DMT_LINEDEF_SEC, &LINE_FRONTSECTOR(lin), args, 0);
         break;
@@ -120,14 +120,14 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
     case DMU_VERTEX0:
         {
         vertex_t* v = lin->L_v1;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, v);
         DMU_GetValue(DMT_LINEDEF_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
         vertex_t* v = lin->L_v2;
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_VERTEX, v);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, v);
         DMU_GetValue(DMT_LINEDEF_VERTEX2, &r, args, 0);
         break;
         }
@@ -153,14 +153,14 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
     case DMU_FRONT_SECTOR:
         {
         sector_t* sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
         }
     case DMU_BACK_SECTOR:
         {
         sector_t* sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SECTOR, sec);
+        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
         }
@@ -170,14 +170,14 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
     case DMU_SIDEDEF0:
         {
         sidedef_t* side = LINE_FRONTSIDE(lin);
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
+        objectrecord_t* r = P_ObjectRecord(DMU_SIDEDEF, side);
         DMU_GetValue(DMT_LINEDEF_FRONTSIDEDEF, &r, args, 0);
         break;
         }
     case DMU_SIDEDEF1:
         {
         sidedef_t* side = LINE_BACKSIDE(lin);
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_SIDEDEF, side);
+        objectrecord_t* r = P_ObjectRecord(DMU_SIDEDEF, side);
         DMU_GetValue(DMT_LINEDEF_BACKSIDEDEF, &r, args, 0);
         break;
         }

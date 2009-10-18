@@ -1997,7 +1997,7 @@ float P_AimLineAttack(mobj_t *t1, angle_t angle, float distance)
     lineTarget = NULL;
 
     P_PathTraverse(t1->pos[VX], t1->pos[VY], pos[VX], pos[VY],
-                   PT_ADDLINES | PT_ADDMOBJS, PTR_AimTraverse);
+                   PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_AimTraverse);
 
     if(lineTarget)
     {   // While autoaiming, we accept this slope.
@@ -2052,7 +2052,7 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
     aimSlope = slope;
 
     if(P_PathTraverse(t1->pos[VX], t1->pos[VY], targetPos[VX], targetPos[VY],
-                      PT_ADDLINES | PT_ADDMOBJS, PTR_ShootTraverse))
+                      PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_ShootTraverse))
     {
 #if __JHEXEN__
         switch(PuffType)
@@ -2274,7 +2274,7 @@ void P_UseLines(player_t* player)
     pos[VY] += USERANGE * FIX2FLT(finesine[an]);
 
     P_PathTraverse(mo->pos[VX], mo->pos[VY], pos[VX], pos[VY],
-                   PT_ADDLINES, PTR_UseTraverse);
+                   PT_ADDLINEDEFS, PTR_UseTraverse);
 }
 
 /**
@@ -2481,13 +2481,13 @@ void P_SlideMove(mobj_t* mo)
 
         P_PathTraverse(leadpos[VX], leadpos[VY],
                        leadpos[VX] + mo->mom[MX], leadpos[VY] + mo->mom[MY],
-                       PT_ADDLINES, PTR_SlideTraverse);
+                       PT_ADDLINEDEFS, PTR_SlideTraverse);
         P_PathTraverse(trailpos[VX], leadpos[VY],
                        trailpos[VX] + mo->mom[MX], leadpos[VY] + mo->mom[MY],
-                       PT_ADDLINES, PTR_SlideTraverse);
+                       PT_ADDLINEDEFS, PTR_SlideTraverse);
         P_PathTraverse(leadpos[VX], trailpos[VY],
                        leadpos[VX] + mo->mom[MX], trailpos[VY] + mo->mom[MY],
-                       PT_ADDLINES, PTR_SlideTraverse);
+                       PT_ADDLINEDEFS, PTR_SlideTraverse);
 
         // Move up to the wall.
         if(bestSlideFrac == 1)
@@ -3042,7 +3042,7 @@ void P_BounceWall(mobj_t* mo)
     bestSlideFrac = 1;
     P_PathTraverse(leadPos[VX], leadPos[VY],
                    leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
-                   PT_ADDLINES, PTR_BounceTraverse);
+                   PT_ADDLINEDEFS, PTR_BounceTraverse);
 
     if(!bestSlideLine)
         return; // We don't want to crash.
@@ -3178,7 +3178,7 @@ boolean P_UsePuzzleItem(player_t* player, int itemType)
     pos2[VY] += FIX2FLT(USERANGE * finesine[angle]);
 
     P_PathTraverse(pos1[VX], pos1[VY], pos2[VX], pos2[VY],
-                   PT_ADDLINES | PT_ADDMOBJS, PTR_PuzzleItemTraverse);
+                   PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_PuzzleItemTraverse);
 
     if(!puzzleActivated)
     {

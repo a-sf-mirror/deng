@@ -58,57 +58,65 @@
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern boolean mapSetup;
-
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-// Game-specific, map object type definitions.
-static uint numGameMapObjDefs;
-static gamemapobjdef_t* gameMapObjDefs;
-
 // CODE --------------------------------------------------------------------
 
-void P_PolyobjChanged(polyobj_t* po)
-{
-    uint i;
-    gamemap_t* map = DMU_CurrentMap();
-
-    // Shadow bias must be told.
-    for(i = 0; i < po->numSegs; ++i)
-    {
-        linedef_t* line = ((dmuobjrecord_t*) po->lineDefs[i])->obj;
-        poseg_t* seg = &po->segs[i];
-
-        if(seg->bsuf)
-            SB_SurfaceMoved(map, seg->bsuf);
-    }
-}
-
 /**
- * Generate a 'unique' identifier for the map.  This identifier
- * contains information about the map tag (E3M3), the WAD that
- * contains the map (DOOM.IWAD), and the game mode (doom-ultimate).
- *
- * The entire ID string will be in lowercase letters.
+ * @note Only releases memory for the data structure itself, any objects linked
+ * to the component parts of the data structure will remain (therefore this is
+ * the caller's responsibility).
  */
-const char* P_GenerateUniqueMapID(const char* mapID)
+void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
 {
-    static char uid[255];
-    filename_t base;
-    int lump = W_GetNumForName(mapID);
+    if(halfEdgeDS->faces)
+    {
+        uint i;
 
-    M_ExtractFileBase(base, W_LumpSourceFile(lump), FILENAME_T_MAXLEN);
+        for(i = 0; i < halfEdgeDS->numFaces; ++i)
+        {
+            face_t* face = halfEdgeDS->faces[i];
+            Z_Free(face);
+        }
 
-    dd_snprintf(uid, 255, "%s|%s|%s|%s", mapID,
-            base, (W_IsFromIWAD(lump) ? "iwad" : "pwad"),
-            (char *) gx.GetVariable(DD_GAME_MODE));
+        Z_Free(halfEdgeDS->faces);
+    }
+    halfEdgeDS->faces = NULL;
+    halfEdgeDS->numFaces = 0;
 
-    strlwr(uid);
-    return uid;
+    if(halfEdgeDS->hEdges)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
+        {
+            hedge_t* hEdge = halfEdgeDS->hEdges[i];
+            Z_Free(hEdge);
+        }
+
+        Z_Free(halfEdgeDS->hEdges);
+    }
+    halfEdgeDS->hEdges = NULL;
+    halfEdgeDS->numHEdges = 0;
+
+    if(halfEdgeDS->vertices)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numVertices; ++i)
+        {
+            vertex_t* vertex = halfEdgeDS->vertices[i];
+            Z_Free(vertex);
+        }
+
+        Z_Free(halfEdgeDS->vertices);
+    }
+    halfEdgeDS->vertices = NULL;
+    halfEdgeDS->numVertices = 0;
 }
 
 gamemap_t* P_CreateMap(const char* mapID)
@@ -119,6 +127,79 @@ gamemap_t* P_CreateMap(const char* mapID)
     map->editActive = true;
 
     return map;
+}
+
+static void destroySubsectors(halfedgeds_t* halfEdgeDS)
+{
+    if(halfEdgeDS->faces)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numFaces; ++i)
+        {
+            face_t* face = halfEdgeDS->faces[i];
+            subsector_t* subsector = (subsector_t*) face->data;
+
+            if(subsector)
+            {
+                /*shadowlink_t* slink;
+                while((slink = subsector->shadows))
+                {
+                    subsector->shadows = slink->next;
+                    Z_Free(slink);
+                }*/
+                
+                Z_Free(subsector);
+            }
+        }
+    }
+}
+
+static void destroySegs(halfedgeds_t* halfEdgeDS)
+{
+    if(halfEdgeDS->hEdges)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
+        {
+            hedge_t* hEdge = halfEdgeDS->hEdges[i];
+            seg_t* seg = hEdge->data;
+
+            if(seg)
+            {
+               Z_Free(seg);
+            }
+        }
+    }
+}
+
+static void destroyVertexInfo(halfedgeds_t* halfEdgeDS)
+{
+    if(halfEdgeDS->vertices)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numVertices; ++i)
+        {
+            vertex_t* vertex = halfEdgeDS->vertices[i];
+            mvertex_t* mvertex = vertex->data;
+
+            if(mvertex)
+            {
+               Z_Free(mvertex);
+            }
+        }
+    }
+}
+
+static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
+{
+    destroySubsectors(halfEdgeDS);
+    destroySegs(halfEdgeDS);
+    destroyVertexInfo(halfEdgeDS);
+
+    P_DestroyHalfEdgeDS(halfEdgeDS);
 }
 
 void P_DestroyMap(gamemap_t* map)
@@ -145,6 +226,15 @@ void P_DestroyMap(gamemap_t* map)
     PlaneList_Empty(&map->watchedPlaneList);
     SurfaceList_Empty(&map->movingSurfaceList);
     SurfaceList_Empty(&map->decoratedSurfaceList);
+
+    if(map->_mobjBlockmap)
+        P_DestroyMobjBlockmap(map->_mobjBlockmap);
+    if(map->_lineDefBlockmap)
+        P_DestroyLineDefBlockmap(map->_lineDefBlockmap);
+    if(map->_polyobjBlockmap)
+        P_DestroyPolyobjBlockmap(map->_polyobjBlockmap);
+    if(map->_subsectorBlockmap)
+        P_DestroySubsectorBlockmap(map->_subsectorBlockmap);
 
     if(map->sideDefs)
     {
@@ -243,78 +333,7 @@ void P_DestroyMap(gamemap_t* map)
     map->segs = NULL;
     map->numSegs = 0;
 
-    if(map->halfEdgeDS.faces)
-    {
-        uint i;
-
-        for(i = 0; i < map->halfEdgeDS.numFaces; ++i)
-        {
-            face_t* face = map->halfEdgeDS.faces[i];
-            subsector_t* subsector = (subsector_t*) face->data;
-
-            if(subsector)
-            {
-                /*shadowlink_t* slink;
-                while((slink = subsector->shadows))
-                {
-                    subsector->shadows = slink->next;
-                    Z_Free(slink);
-                }*/
-                
-                Z_Free(subsector);
-            }
-
-            Z_Free(face);
-        }
-
-        Z_Free(map->halfEdgeDS.faces);
-    }
-    map->halfEdgeDS.faces = NULL;
-    map->halfEdgeDS.numFaces = 0;
-
-    if(map->halfEdgeDS.hEdges)
-    {
-        uint i;
-
-        for(i = 0; i < map->halfEdgeDS.numHEdges; ++i)
-        {
-            hedge_t* hEdge = map->halfEdgeDS.hEdges[i];
-            seg_t* seg = hEdge->data;
-
-            if(seg)
-            {
-               Z_Free(seg);
-            }
-
-            Z_Free(hEdge);
-        }
-
-        Z_Free(map->halfEdgeDS.hEdges);
-    }
-    map->halfEdgeDS.hEdges = NULL;
-    map->halfEdgeDS.numHEdges = 0;
-
-    if(map->halfEdgeDS.vertices)
-    {
-        uint i;
-
-        for(i = 0; i < map->halfEdgeDS.numVertices; ++i)
-        {
-            vertex_t* vertex = map->halfEdgeDS.vertices[i];
-            mvertex_t* mvertex = vertex->data;
-
-            if(mvertex)
-            {
-               Z_Free(mvertex);
-            }
-
-            Z_Free(vertex);
-        }
-
-        Z_Free(map->halfEdgeDS.vertices);
-    }
-    map->halfEdgeDS.vertices = NULL;
-    map->halfEdgeDS.numVertices = 0;
+    destroyHalfEdgeDS(Map_HalfEdgeDS(map));
 
     if(map->nodes)
     {
@@ -333,11 +352,108 @@ void P_DestroyMap(gamemap_t* map)
     Z_Free(map);
 }
 
+void Map_LinkMobj(gamemap_t* map, mobj_t* mo, byte flags)
+{
+    subsector_t* subsector;
+
+    if(!map)
+        return;
+    if(!mo)
+        return;
+
+    subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
+
+    // Link into the sector.
+    mo->subsector = (subsector_t*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
+
+    if(flags & DDLINK_SECTOR)
+    {
+        // Unlink from the current sector, if any.
+        if(mo->sPrev)
+            P_UnlinkFromSector(mo);
+
+        // Link the new mobj to the head of the list.
+        // Prev pointers point to the pointer that points back to us.
+        // (Which practically disallows traversing the list backwards.)
+
+        if((mo->sNext = subsector->sector->mobjList))
+            mo->sNext->sPrev = &mo->sNext;
+
+        *(mo->sPrev = &subsector->sector->mobjList) = mo;
+    }
+
+    // Link into blockmap?
+    if(flags & DDLINK_BLOCKMAP)
+    {
+        // Unlink from the old block, if any.
+        MobjBlockmap_Remove(map->_mobjBlockmap, mo);
+        MobjBlockmap_Insert(map->_mobjBlockmap, mo);
+    }
+
+    // Link into lines.
+    if(!(flags & DDLINK_NOLINE))
+    {
+        // Unlink from any existing lines.
+        P_UnlinkFromLines(mo);
+
+        // Link to all contacted lines.
+        P_LinkToLines(mo);
+    }
+
+    // If this is a player - perform addtional tests to see if they have
+    // entered or exited the void.
+    if(mo->dPlayer)
+    {
+        ddplayer_t* player = mo->dPlayer;
+
+        player->inVoid = true;
+        if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
+                              subsector->sector) &&
+           (player->mo->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
+            player->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4))
+            player->inVoid = false;
+    }
+}
+
+int Map_UnlinkMobj(gamemap_t* map, mobj_t* mo)
+{
+    int links = 0;
+
+    if(P_UnlinkFromSector(mo))
+        links |= DDLINK_SECTOR;
+    if(MobjBlockmap_Remove(map->_mobjBlockmap, mo))
+        links |= DDLINK_BLOCKMAP;
+    if(!P_UnlinkFromLines(mo))
+        links |= DDLINK_NOLINE;
+
+    return links;
+}
+
+void Map_LinkPolyobj(gamemap_t* map, polyobj_t* po)
+{
+    if(!map)
+        return;
+    if(!po)
+        return;
+
+    PolyobjBlockmap_Insert(map->_polyobjBlockmap, po);
+}
+
+void Map_UnlinkPolyobj(gamemap_t* map, polyobj_t* po)
+{
+    if(!map)
+        return;
+    if(!po)
+        return;
+
+    PolyobjBlockmap_Remove(map->_polyobjBlockmap, po);
+}
+
 /**
  * This ID is the name of the lump tag that marks the beginning of map
  * data, e.g. "MAP03" or "E2M8".
  */
-const char* P_GetMapID(gamemap_t* map)
+const char* Map_ID(gamemap_t* map)
 {
     if(!map)
         return NULL;
@@ -348,7 +464,7 @@ const char* P_GetMapID(gamemap_t* map)
 /**
  * @return              The 'unique' identifier of the map.
  */
-const char* P_GetUniqueMapID(gamemap_t* map)
+const char* Map_UniqueName(gamemap_t* map)
 {
     if(!map)
         return NULL;
@@ -356,7 +472,7 @@ const char* P_GetUniqueMapID(gamemap_t* map)
     return map->uniqueID;
 }
 
-void P_GetMapBounds(gamemap_t* map, float* min, float* max)
+void Map_Bounds(gamemap_t* map, float* min, float* max)
 {
     min[VX] = map->bBox[BOXLEFT];
     min[VY] = map->bBox[BOXBOTTOM];
@@ -368,12 +484,314 @@ void P_GetMapBounds(gamemap_t* map, float* min, float* max)
 /**
  * Get the ambient light level of the specified map.
  */
-int P_GetMapAmbientLightLevel(gamemap_t* map)
+int Map_AmbientLightLevel(gamemap_t* map)
 {
     if(!map)
         return 0;
 
     return map->ambientLightLevel;
+}
+
+halfedgeds_t* Map_HalfEdgeDS(gamemap_t* map)
+{
+    return &map->_halfEdgeDS;
+}
+
+mobjblockmap_t* Map_MobjBlockmap(gamemap_t* map)
+{
+    return map->_mobjBlockmap;
+}
+
+linedefblockmap_t* Map_LineDefBlockmap(gamemap_t* map)
+{
+    return map->_lineDefBlockmap;
+}
+
+polyobjblockmap_t* Map_PolyobjBlockmap(gamemap_t* map)
+{
+    return map->_polyobjBlockmap;
+}
+
+subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map)
+{
+    return map->_subsectorBlockmap;
+}
+
+vertex_t* Map_CreateVertex(gamemap_t* map, float x, float y)
+{
+    vertex_t* vertex;
+
+    if(!map)
+        return NULL;
+    if(!map->editActive)
+        return NULL;
+
+    vertex = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(map));
+    vertex->pos[VX] = x;
+    vertex->pos[VY] = y;
+
+    return vertex;
+}
+
+static linedef_t* createLineDef(gamemap_t* map)
+{
+    linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
+
+    map->lineDefs =
+        Z_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1), PU_STATIC);
+    map->lineDefs[map->numLineDefs-1] = line;
+    map->lineDefs[map->numLineDefs] = NULL;
+
+    line->buildData.index = map->numLineDefs; // 1-based index, 0 = NIL.
+    return line;
+}
+
+linedef_t* Map_CreateLineDef(gamemap_t* map, vertex_t* vtx1, vertex_t* vtx2,
+                             sidedef_t* front, sidedef_t* back)
+{
+    linedef_t* l;
+    
+    if(!map->editActive)
+        return NULL;
+
+    l = createLineDef(map);
+
+    l->buildData.v[0] = vtx1;
+    l->buildData.v[1] = vtx2;
+
+    ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
+    ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
+
+    l->dX = vtx2->pos[VX] - vtx1->pos[VX];
+    l->dY = vtx2->pos[VY] - vtx1->pos[VY];
+    l->length = P_AccurateDistance(l->dX, l->dY);
+
+    l->angle =
+        bamsAtan2((int) (l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY]),
+                  (int) (l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX])) << FRACBITS;
+
+    if(l->dX == 0)
+        l->slopeType = ST_VERTICAL;
+    else if(l->dY == 0)
+        l->slopeType = ST_HORIZONTAL;
+    else
+    {
+        if(l->dY / l->dX > 0)
+            l->slopeType = ST_POSITIVE;
+        else
+            l->slopeType = ST_NEGATIVE;
+    }
+
+    if(l->buildData.v[0]->pos[VX] < l->buildData.v[1]->pos[VX])
+    {
+        l->bBox[BOXLEFT]   = l->buildData.v[0]->pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[1]->pos[VX];
+    }
+    else
+    {
+        l->bBox[BOXLEFT]   = l->buildData.v[1]->pos[VX];
+        l->bBox[BOXRIGHT]  = l->buildData.v[0]->pos[VX];
+    }
+
+    if(l->buildData.v[0]->pos[VY] < l->buildData.v[1]->pos[VY])
+    {
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
+    }
+    else
+    {
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
+    }
+
+    // Remember the number of unique references.
+    if(front)
+    {
+        front->lineDef = l;
+        front->buildData.refCount++;
+    }
+
+    if(back)
+    {
+        back->lineDef = l;
+        back->buildData.refCount++;
+    }
+
+    l->buildData.sideDefs[FRONT] = front;
+    l->buildData.sideDefs[BACK] = back;
+
+    l->inFlags = 0;
+
+    // Determine the default linedef flags.
+    l->flags = 0;
+    if(!front || !back)
+        l->flags |= DDLF_BLOCKING;
+
+    return l;
+}
+
+static sidedef_t* createSideDef(gamemap_t* map)
+{
+    sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
+
+    map->sideDefs = Z_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1), PU_STATIC);
+    map->sideDefs[map->numSideDefs-1] = side;
+    map->sideDefs[map->numSideDefs] = NULL;
+
+    side->buildData.index = map->numSideDefs; // 1-based index, 0 = NIL.
+    side->SW_bottomsurface.owner = (void*) side;
+    return side;
+}
+
+sidedef_t* Map_CreateSideDef(gamemap_t* map, sector_t* sector, short flags, material_t* topMaterial,
+                             float topOffsetX, float topOffsetY, float topRed, float topGreen,
+                             float topBlue, material_t* middleMaterial, float middleOffsetX,
+                             float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
+                             float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
+                             float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue)
+{
+    sidedef_t* s = NULL;
+
+    if(map->editActive)
+    {
+        s = createSideDef(map);
+        s->flags = flags;
+        s->sector = sector;
+
+        Surface_SetMaterial(&s->SW_topsurface, topMaterial, false);
+        Surface_SetMaterialOffsetXY(&s->SW_topsurface, topOffsetX, topOffsetY);
+        Surface_SetColorRGBA(&s->SW_topsurface, topRed, topGreen, topBlue, 1);
+
+        Surface_SetMaterial(&s->SW_middlesurface, middleMaterial, false);
+        Surface_SetMaterialOffsetXY(&s->SW_middlesurface, middleOffsetX, middleOffsetY);
+        Surface_SetColorRGBA(&s->SW_middlesurface, middleRed, middleGreen, middleBlue, middleAlpha);
+
+        Surface_SetMaterial(&s->SW_bottomsurface, bottomMaterial, false);
+        Surface_SetMaterialOffsetXY(&s->SW_bottomsurface, bottomOffsetX, bottomOffsetY);
+        Surface_SetColorRGBA(&s->SW_bottomsurface, bottomRed, bottomGreen, bottomBlue, 1);
+    }
+
+    return s;
+}
+
+static sector_t* createSector(gamemap_t* map)
+{
+    sector_t* sec = Z_Calloc(sizeof(*sec), PU_STATIC, 0);
+
+    map->sectors = Z_Realloc(map->sectors, sizeof(sec) * (++map->numSectors + 1), PU_STATIC);
+    map->sectors[map->numSectors-1] = sec;
+    map->sectors[map->numSectors] = NULL;
+
+    sec->buildData.index = map->numSectors; // 1-based index, 0 = NIL.
+    return sec;
+}
+
+sector_t* Map_CreateSector(gamemap_t* map, float lightLevel, float red, float green, float blue)
+{
+    sector_t* s;
+
+    if(!map->editActive)
+        return NULL;
+
+    s = createSector(map);
+
+    s->planeCount = 0;
+    s->planes = NULL;
+    s->rgb[CR] = MINMAX_OF(0, red, 1);
+    s->rgb[CG] = MINMAX_OF(0, green, 1);
+    s->rgb[CB] = MINMAX_OF(0, blue, 1);
+    s->lightLevel = MINMAX_OF(0, lightLevel, 1);
+
+    return s;
+}
+
+static plane_t* createPlane(gamemap_t* map)
+{
+    return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
+}
+
+void Map_CreatePlane(gamemap_t* map, sector_t* sector, float height, material_t* material,
+                     float matOffsetX, float matOffsetY, float r, float g, float b, float a,
+                     float normalX, float normalY, float normalZ)
+{
+    uint i;
+    plane_t** newList, *pln;
+
+    if(!map->editActive)
+        return;
+
+    pln = createPlane(map);
+
+    pln->height = height;
+    Surface_SetMaterial(&pln->surface, material? ((objectrecord_t*) material)->obj : NULL, false);
+    Surface_SetColorRGBA(&pln->surface, r, g, b, a);
+    Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
+    pln->PS_normal[VX] = normalX;
+    pln->PS_normal[VY] = normalY;
+    pln->PS_normal[VZ] = normalZ;
+    if(pln->PS_normal[VZ] < 0)
+        pln->type = PLN_CEILING;
+    else
+        pln->type = PLN_FLOOR;
+    M_Normalize(pln->PS_normal);
+    pln->sector = sector;
+
+    newList = Z_Malloc(sizeof(plane_t*) * (++sector->planeCount + 1), PU_STATIC, 0);
+    for(i = 0; i < sector->planeCount - 1; ++i)
+    {
+        newList[i] = sector->planes[i];
+    }
+    newList[i++] = pln;
+    newList[i] = NULL; // Terminate.
+
+    if(sector->planes)
+        Z_Free(sector->planes);
+    sector->planes = newList;
+}
+
+static polyobj_t* createPolyobj(gamemap_t* map)
+{
+    polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
+
+    map->polyObjs = Z_Realloc(map->polyObjs, sizeof(po) * (++map->numPolyObjs + 1), PU_STATIC);
+    map->polyObjs[map->numPolyObjs-1] = po;
+    map->polyObjs[map->numPolyObjs] = NULL;
+
+    po->buildData.index = map->numPolyObjs; // 1-based index, 0 = NIL.
+    return po;
+}
+
+polyobj_t* Map_CreatePolyobj(gamemap_t* map, objectrecordid_t* lines, uint lineCount, int tag,
+                             int sequenceType, float anchorX, float anchorY)
+{
+    polyobj_t* po;
+    uint i;
+
+    if(!map->editActive)
+        return NULL;
+
+    po = createPolyobj(map);
+
+    po->idx = map->numPolyObjs; // 0-based index.
+    po->lineDefs = Z_Calloc(sizeof(linedef_t*) * (lineCount+1), PU_STATIC, 0);
+    for(i = 0; i < lineCount; ++i)
+    {
+        linedef_t* line = map->lineDefs[lines[i] - 1];
+
+        // This line is part of a polyobj.
+        line->inFlags |= LF_POLYOBJ;
+
+        po->lineDefs[i] = line;
+    }
+    po->lineDefs[i] = NULL;
+    po->numLineDefs = lineCount;
+
+    po->tag = tag;
+    po->seqType = sequenceType;
+    po->pos[VX] = anchorX;
+    po->pos[VY] = anchorY;
+
+    return po;
 }
 
 /**
@@ -460,11 +878,13 @@ boolean P_LoadMap(const char* mapID)
 
         R_BuildSectorLinks(map);
 
-        // Init blockmap for searching subsectors.
+        // Init other blockmaps.
+        Map_BuildMobjBlockmap(map);
+        //Map_BuildPolyobjBlockmap(map);
         Map_BuildSubsectorBlockmap(map);
 
         strncpy(map->mapID, mapID, 8);
-        strncpy(map->uniqueID, P_GenerateUniqueMapID(mapID),
+        strncpy(map->uniqueID, P_GenerateUniqueMapName(mapID),
                 sizeof(map->uniqueID));
 
         // See what mapinfo says about this map.
@@ -496,9 +916,9 @@ boolean P_LoadMap(const char* mapID)
 
         // \todo should be called from P_LoadMap() but R_InitMap requires the
         // currentMap to be set first.
-        DMU_SetCurrentMap(map);
+        P_SetCurrentMap(map);
 
-        map = DMU_CurrentMap();
+        map = P_CurrentMap();
 
         R_InitSectorShadows(map);
 
@@ -556,194 +976,195 @@ boolean P_LoadMap(const char* mapID)
     return false;
 }
 
-/**
- * Look up a mapobj definition.
- *
- * @param identifer     If objName is @c NULL, compare using this unique identifier.
- * @param objName       If not @c NULL, compare using this unique name.
- */
-gamemapobjdef_t* P_GetGameMapObjDef(int identifier, const char* objName,
-                                    boolean canCreate)
+boolean Map_MobjsBoxIterator(gamemap_t* map, const float box[4],
+                             boolean (*func) (mobj_t*, void*), void* data)
 {
-    uint i;
-    size_t len;
-    gamemapobjdef_t* def;
+    vec2_t bounds[2];
 
-    if(objName)
-        len = strlen(objName);
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
 
-    // Is this a known game object?
-    for(i = 0; i < numGameMapObjDefs; ++i)
-    {
-        def = &gameMapObjDefs[i];
+    return Map_MobjsBoxIteratorv(map, bounds, func, data);
+}
 
-        if(objName && objName[0])
-        {
-            if(!strnicmp(objName, def->name, len))
-            {   // Found it!
-                return def;
-            }
-        }
-        else
-        {
-            if(identifier == def->identifier)
-            {   // Found it!
-                return def;
-            }
-        }
-    }
+boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                              boolean (*func) (mobj_t*, void*), void* data)
+{
+    uint blockBox[4];
 
-    if(!canCreate)
-        return NULL; // Not a known game map object.
+    if(!map)
+        return true;
 
-    if(identifier == 0)
-        return NULL; // Not a valid indentifier.
+    MobjBlockmap_BoxToBlocks(map->_mobjBlockmap, blockBox, box);
+    return MobjBlockmap_BoxIterate(map->_mobjBlockmap, blockBox, func, data);
+}
 
-    if(!objName || !objName[0])
-        return NULL; // Must have a name.
+boolean Map_PolyobjsBoxIterator(gamemap_t* map, const float box[4],
+                                boolean (*func) (struct polyobj_s*, void*),
+                                void* data)
+{
+    vec2_t bounds[2];
 
-    // Ensure the name is unique.
-    for(i = 0; i < numGameMapObjDefs; ++i)
-    {
-        def = &gameMapObjDefs[i];
-        if(!strnicmp(objName, def->name, len))
-        {   // Oh dear, a duplicate.
-            return NULL;
-        }
-    }
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
 
-    gameMapObjDefs =
-        M_Realloc(gameMapObjDefs, ++numGameMapObjDefs * sizeof(*gameMapObjDefs));
-
-    def = &gameMapObjDefs[numGameMapObjDefs - 1];
-    def->identifier = identifier;
-    def->name = M_Malloc(len+1);
-    strncpy(def->name, objName, len);
-    def->name[len] = '\0';
-    def->numProps = 0;
-    def->props = NULL;
-
-    return def;
+    return Map_PolyobjsBoxIteratorv(map, bounds, func, data);
 }
 
 /**
- * Called by the game to register the map object types it wishes us to make
- * public via the MPE interface.
+ * The validCount flags are used to avoid checking polys that are marked in
+ * multiple mapblocks, so increment validCount before the first call, then
+ * make one or more calls to it.
  */
-boolean P_RegisterMapObj(int identifier, const char* name)
+boolean Map_PolyobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (struct polyobj_s*, void*),
+                                 void* data)
 {
-    if(P_GetGameMapObjDef(identifier, name, true))
-        return true; // Success.
+    uint blockBox[4];
 
-    return false;
+    if(!map)
+        return true;
+    if(!map->_polyobjBlockmap)
+        return true;
+
+    // Blockcoords to check.
+    PolyobjBlockmap_BoxToBlocks(map->_polyobjBlockmap, blockBox, box);
+    return PolyobjBlockmap_BoxIterate(map->_polyobjBlockmap, blockBox, func, data);
+}
+
+static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data, boolean retObjRecord)
+{
+    uint blockBox[4];
+
+    if(!map)
+        return true;
+
+    LineDefBlockmap_BoxToBlocks(map->_lineDefBlockmap, blockBox, box);
+    return LineDefBlockmap_BoxIterate(map->_lineDefBlockmap, blockBox, func, data, retObjRecord);
+}
+
+boolean Map_LineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*), void* data,
+                                 boolean retObjRecord)
+{
+    return linesBoxIteratorv(map, box, func, data, retObjRecord);
 }
 
 /**
- * Called by the game to add a new property to a previously registered
- * map object type definition.
+ * @return              @c false, if the iterator func returns @c false.
  */
-boolean P_RegisterMapObjProperty(int identifier, int propIdentifier,
-                                 const char* propName, valuetype_t type)
+boolean Map_SubsectorsBoxIterator(gamemap_t* map, const float box[4], sector_t* sector,
+                                  boolean (*func) (subsector_t*, void*),
+                                  void* parm, boolean retObjRecord)
 {
-    uint i;
-    size_t len;
-    mapobjprop_t* prop;
-    gamemapobjdef_t* def = P_GetGameMapObjDef(identifier, NULL, false);
+    vec2_t bounds[2];
 
-    if(!def) // Not a valid identifier.
-    {
-        Con_Error("P_RegisterMapObjProperty: Unknown mapobj identifier %i.",
-                  identifier);
-    }
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
 
-    if(propIdentifier == 0) // Not a valid identifier.
-        Con_Error("P_RegisterMapObjProperty: 0 not valid for propIdentifier.");
-
-    if(!propName || !propName[0]) // Must have a name.
-        Con_Error("P_RegisterMapObjProperty: Cannot register without name.");
-
-    // Screen out value types we don't currently support for gmos.
-    switch(type)
-    {
-    case DDVT_BYTE:
-    case DDVT_SHORT:
-    case DDVT_INT:
-    case DDVT_FIXED:
-    case DDVT_ANGLE:
-    case DDVT_FLOAT:
-        break;
-
-    default:
-        Con_Error("P_RegisterMapObjProperty: Unknown/not supported value type %i.",
-                  type);
-    }
-
-    // Next, make sure propIdentifer and propName are unique.
-    len = strlen(propName);
-    for(i = 0; i < def->numProps; ++i)
-    {
-        prop = &def->props[i];
-
-        if(prop->identifier == propIdentifier)
-            Con_Error("P_RegisterMapObjProperty: propIdentifier %i not unique for %s.",
-                      propIdentifier, def->name);
-
-        if(!strnicmp(propName, prop->name, len))
-            Con_Error("P_RegisterMapObjProperty: propName \"%s\" not unique for %s.",
-                      propName, def->name);
-    }
-
-    // Looks good! Add it to the list of properties.
-    def->props = M_Realloc(def->props, ++def->numProps * sizeof(*def->props));
-
-    prop = &def->props[def->numProps - 1];
-    prop->identifier = propIdentifier;
-    prop->name = M_Malloc(len + 1);
-    strncpy(prop->name, propName, len);
-    prop->name[len] = '\0';
-    prop->type = type;
-
-    return true; // Success!
+    return Map_SubsectorsBoxIteratorv(map, bounds, sector, func, parm, retObjRecord);
 }
 
 /**
- * Called during init to initialize the map obj defs.
+ * Same as the fixed-point version of this routine, but the bounding box
+ * is specified using an vec2_t array (see m_vector.c).
  */
-void P_InitGameMapObjDefs(void)
+boolean Map_SubsectorsBoxIteratorv(gamemap_t* map, const arvec2_t box, sector_t* sector,
+                                   boolean (*func) (subsector_t*, void*),
+                                   void* data, boolean retObjRecord)
 {
-    gameMapObjDefs = NULL;
-    numGameMapObjDefs = 0;
+    static int localValidCount = 0;
+    uint blockBox[4];
+
+    if(!map)
+        return true;
+
+    // This is only used here.
+    localValidCount++;
+
+    // Blockcoords to check.
+    SubsectorBlockmap_BoxToBlocks(map->_subsectorBlockmap, blockBox, box);
+    return SubsectorBlockmap_BoxIterate(map->_subsectorBlockmap, blockBox, sector,
+                                       box, localValidCount, func, data,
+                                       retObjRecord);
+}
+
+boolean Map_PolyobjLineDefsBoxIterator(gamemap_t* map, const float box[4],
+                                    boolean (*func) (linedef_t*, void*),
+                                    void* data, boolean retObjRecord)
+{
+    vec2_t bounds[2];
+
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
+
+    return Map_PolyobjLineDefsBoxIteratorv(map, bounds, func, data, retObjRecord);
+}
+
+boolean Map_PolyobjLineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                     boolean (*func) (linedef_t*, void*),
+                                     void* data, boolean retObjRecord)
+{
+    uint blockBox[4];
+
+    if(!map)
+        return true;
+    if(!map->_polyobjBlockmap)
+        return true;
+
+    PolyobjBlockmap_BoxToBlocks(map->_polyobjBlockmap, blockBox, box);
+    return P_BoxIterateLineDefsOfPolyobjs(map->_polyobjBlockmap, blockBox, func, data, retObjRecord);
+}
+
+static boolean allLinesBoxIterator(gamemap_t* map, const arvec2_t box,
+                                   boolean (*func) (linedef_t*, void*),
+                                   void* data, boolean retObjRecord)
+{
+    if(!Map_PolyobjLineDefsBoxIteratorv(map, box, func, data, retObjRecord))
+        return false;
+
+    return linesBoxIteratorv(map, box, func, data, retObjRecord);
 }
 
 /**
- * Called at shutdown to free all memory allocated for the map obj defs.
+ * The validCount flags are used to avoid checking lines that are marked
+ * in multiple mapblocks, so increment validCount before the first call
+ * to LineDefBlockmap_Iterate, then make one or more calls to it.
  */
-void P_ShutdownGameMapObjDefs(void)
+boolean Map_AllLineDefsBoxIterator(gamemap_t* map, const float box[4],
+                                boolean (*func) (linedef_t*, void*),
+                                void* data, boolean retObjRecord)
 {
-    uint i, j;
+    vec2_t bounds[2];
 
-    if(gameMapObjDefs)
-    {
-        for(i = 0; i < numGameMapObjDefs; ++i)
-        {
-            gamemapobjdef_t* def = &gameMapObjDefs[i];
+    bounds[0][VX] = box[BOXLEFT];
+    bounds[0][VY] = box[BOXBOTTOM];
+    bounds[1][VX] = box[BOXRIGHT];
+    bounds[1][VY] = box[BOXTOP];
 
-            for(j = 0; j < def->numProps; ++j)
-            {
-                mapobjprop_t* prop = &def->props[j];
+    return allLinesBoxIterator(map, bounds, func, data, retObjRecord);
+}
 
-                M_Free(prop->name);
-            }
-
-            M_Free(def->name);
-            M_Free(def->props);
-        }
-
-        M_Free(gameMapObjDefs);
-    }
-
-    gameMapObjDefs = NULL;
-    numGameMapObjDefs = 0;
+/**
+ * The validCount flags are used to avoid checking lines that are marked
+ * in multiple mapblocks, so increment validCount before the first call
+ * to LineDefBlockmap_Iterate, then make one or more calls to it.
+ */
+boolean Map_AllLineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+                                 boolean (*func) (linedef_t*, void*),
+                                 void* data, boolean retObjRecord)
+{
+    return allLinesBoxIterator(map, box, func, data, retObjRecord);
 }
 
 static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCreate)
@@ -754,7 +1175,7 @@ static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCrea
     if(!db)
         return NULL;
 
-    for(i = 0; i < db->numTables; ++i)
+    for(i = 0; i < db->num; ++i)
     {
         tbl = db->tables[i];
         if(tbl->type == type)
@@ -767,12 +1188,12 @@ static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCrea
         return NULL;
 
     // We need to add a new value table to the db.
-    db->tables = M_Realloc(db->tables, ++db->numTables * sizeof(*db->tables));
-    tbl = db->tables[db->numTables - 1] = M_Malloc(sizeof(valuetable_t));
+    db->tables = Z_Realloc(db->tables, ++db->num * sizeof(*db->tables), PU_STATIC);
+    tbl = db->tables[db->num - 1] = Z_Malloc(sizeof(valuetable_t), PU_STATIC, 0);
 
     tbl->data = NULL;
     tbl->type = type;
-    tbl->numElms = 0;
+    tbl->numElements = 0;
 
     return tbl;
 }
@@ -785,40 +1206,40 @@ static uint insertIntoDB(valuedb_t* db, valuetype_t type, void* data)
     switch(type)
     {
     case DDVT_BYTE:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms);
-        ((byte*) tbl->data)[tbl->numElms - 1] = *((byte*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements, PU_STATIC);
+        ((byte*) tbl->data)[tbl->numElements - 1] = *((byte*) data);
         break;
 
     case DDVT_SHORT:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms * sizeof(short));
-        ((short*) tbl->data)[tbl->numElms - 1] = *((short*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(short), PU_STATIC);
+        ((short*) tbl->data)[tbl->numElements - 1] = *((short*) data);
         break;
 
     case DDVT_INT:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms * sizeof(int));
-        ((int*) tbl->data)[tbl->numElms - 1] = *((int*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(int), PU_STATIC);
+        ((int*) tbl->data)[tbl->numElements - 1] = *((int*) data);
         break;
 
     case DDVT_FIXED:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms * sizeof(fixed_t));
-        ((fixed_t*) tbl->data)[tbl->numElms - 1] = *((fixed_t*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(fixed_t), PU_STATIC);
+        ((fixed_t*) tbl->data)[tbl->numElements - 1] = *((fixed_t*) data);
         break;
 
     case DDVT_ANGLE:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms * sizeof(angle_t));
-        ((angle_t*) tbl->data)[tbl->numElms - 1] = *((angle_t*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(angle_t), PU_STATIC);
+        ((angle_t*) tbl->data)[tbl->numElements - 1] = *((angle_t*) data);
         break;
 
     case DDVT_FLOAT:
-        tbl->data = M_Realloc(tbl->data, ++tbl->numElms * sizeof(float));
-        ((float*) tbl->data)[tbl->numElms - 1] = *((float*) data);
+        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(float), PU_STATIC);
+        ((float*) tbl->data)[tbl->numElements - 1] = *((float*) data);
         break;
 
     default:
         Con_Error("insetIntoDB: Unknown value type %d.", type);
     }
 
-    return tbl->numElms - 1;
+    return tbl->numElements - 1;
 }
 
 static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
@@ -829,8 +1250,8 @@ static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
         Con_Error("getPtrToDBElm: Table for type %i not found.", (int) type);
 
     // Sanity check: ensure the elmIdx is in bounds.
-    if(elmIdx < 0 || elmIdx >= tbl->numElms)
-        Con_Error("P_GetGMOByte: valueIdx out of bounds.");
+    if(elmIdx < 0 || elmIdx >= tbl->numElements)
+        Con_Error("P_GetObjectRecordByte: valueIdx out of bounds.");
 
     switch(tbl->type)
     {
@@ -853,7 +1274,7 @@ static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
         return &(((float*) tbl->data)[elmIdx]);
 
     default:
-        Con_Error("P_GetGMOByte: Invalid table type %i.", tbl->type);
+        Con_Error("P_GetObjectRecordByte: Invalid table type %i.", tbl->type);
     }
 
     // Should never reach here.
@@ -863,194 +1284,198 @@ static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
 /**
  * Destroy the given game map obj database.
  */
-void P_DestroyGameMapObjDB(gameobjdata_t* moData)
+void Map_DestroyGameObjectRecords(gamemap_t* map)
 {
-    uint i, j;
+    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
 
-    if(moData->objLists)
+    if(records->namespaces)
     {
-        for(i = 0; i < numGameMapObjDefs; ++i)
+        uint i;
+        for(i = 0; i < records->numNamespaces; ++i)
         {
-            gamemapobjlist_t* objList = &moData->objLists[i];
+            gameobjectrecordnamespace_t* rnamespace = &records->namespaces[i];
+            uint j;
 
-            for(j = 0; j < objList->num; ++j)
+            for(j = 0; j < rnamespace->numRecords; ++j)
             {
-                gamemapobj_t* gmo = objList->objs[j];
+                gameobjectrecord_t* record = rnamespace->records[j];
 
-                if(gmo->props)
-                    M_Free(gmo->props);
+                if(record->properties)
+                    Z_Free(record->properties);
 
-                M_Free(gmo);
+                Z_Free(record);
             }
         }
 
-        M_Free(moData->objLists);
+        Z_Free(records->namespaces);
     }
-    moData->objLists = NULL;
+    records->namespaces = NULL;
 
-    if(moData->db.tables)
-    {
-        for(i = 0; i < moData->db.numTables; ++i)
-        {
-            valuetable_t* tbl = moData->db.tables[i];
-
-            if(tbl->data)
-                M_Free(tbl->data);
-
-            M_Free(tbl);
-        }
-
-        M_Free(moData->db.tables);
-    }
-    moData->db.tables = NULL;
-    moData->db.numTables = 0;
-}
-
-static uint countGameMapObjs(gameobjdata_t* moData, int identifier)
-{
-    if(moData)
+    if(records->values.tables)
     {
         uint i;
-
-        for(i = 0; i < numGameMapObjDefs; ++i)
+        for(i = 0; i < records->values.num; ++i)
         {
-            gamemapobjlist_t* objList = &moData->objLists[i];
+            valuetable_t* tbl = records->values.tables[i];
 
-            if(objList->def->identifier == identifier)
-                return objList->num;
+            if(tbl->data)
+                Z_Free(tbl->data);
+
+            Z_Free(tbl);
+        }
+
+        Z_Free(records->values.tables);
+    }
+    records->values.tables = NULL;
+    records->values.num = 0;
+}
+
+static uint numGameObjectRecords(gameobjectrecordset_t* records, int identifier)
+{
+    if(records)
+    {
+        uint i;
+        for(i = 0; i < records->numNamespaces; ++i)
+        {
+            gameobjectrecordnamespace_t* rnamespace = &records->namespaces[i];
+
+            if(rnamespace->def->identifier == identifier)
+                return rnamespace->numRecords;
         }
     }
 
     return 0;
 }
 
-uint P_CountGameMapObjs(int identifier)
+uint Map_NumGameObjectRecords(gamemap_t* map, int identifier)
 {
-    gamemap_t* map = DMU_CurrentMap();
-
-    return countGameMapObjs(&map->gameObjData, identifier);
+    return numGameObjectRecords(&map->_gameObjectRecordSet, identifier);
 }
 
-static gamemapobjlist_t* getMapObjList(gameobjdata_t* moData, gamemapobjdef_t* def)
+static gameobjectrecordnamespace_t*
+getGameObjectRecordNamespace(gameobjectrecordset_t* records, def_gameobject_t* def)
 {
     uint i;
 
-    for(i = 0; i < numGameMapObjDefs; ++i)
-        if(moData->objLists[i].def == def)
-            return &moData->objLists[i];
+    for(i = 0; i < records->numNamespaces; ++i)
+        if(records->namespaces[i].def == def)
+            return &records->namespaces[i];
 
     return NULL;
 }
 
-gamemapobj_t* P_GetGameMapObj(gameobjdata_t* moData, gamemapobjdef_t* def,
-                              uint elmIdx, boolean canCreate)
+gameobjectrecord_t* Map_GameObjectRecord(gameobjectrecordset_t* records, def_gameobject_t* def,
+                                         uint elmIdx, boolean canCreate)
 {
     uint i;
-    gamemapobj_t* gmo;
-    gamemapobjlist_t* objList;
+    gameobjectrecord_t* record;
+    gameobjectrecordnamespace_t* rnamespace;
 
-    if(!moData->objLists)
+    if(!records->numNamespaces)
     {   // We haven't yet created the lists.
-        moData->objLists = M_Malloc(sizeof(*objList) * numGameMapObjDefs);
-        for(i = 0; i < numGameMapObjDefs; ++i)
+        records->numNamespaces = P_NumGameObjectDefs();
+        records->namespaces = Z_Malloc(sizeof(*rnamespace) * records->numNamespaces, PU_STATIC, 0);
+        for(i = 0; i < records->numNamespaces; ++i)
         {
-            objList = &moData->objLists[i];
+            rnamespace = &records->namespaces[i];
 
-            objList->def = &gameMapObjDefs[i];
-            objList->objs = NULL;
-            objList->num = 0;
+            rnamespace->def = P_GetGameObjectDef(i);
+            rnamespace->records = NULL;
+            rnamespace->numRecords = 0;
         }
     }
 
-    objList = getMapObjList(moData, def);
-    assert(objList);
+    rnamespace = getGameObjectRecordNamespace(records, def);
+    assert(rnamespace);
 
-    // Have we already created this gmo?
-    for(i = 0; i < objList->num; ++i)
+    // Have we already created this record?
+    for(i = 0; i < rnamespace->numRecords; ++i)
     {
-        gmo = objList->objs[i];
-        if(gmo->elmIdx == elmIdx)
-            return gmo; // Yep, return it.
+        record = rnamespace->records[i];
+        if(record->elmIdx == elmIdx)
+            return record; // Yep, return it.
     }
 
     if(!canCreate)
         return NULL;
 
-    // It is a new gamemapobj.
-    objList->objs =
-        M_Realloc(objList->objs, ++objList->num * sizeof(gamemapobj_t*));
+    // It is a new record.
+    rnamespace->records = Z_Realloc(rnamespace->records,
+        ++rnamespace->numRecords * sizeof(gameobjectrecord_t*), PU_STATIC);
 
-    gmo = objList->objs[objList->num - 1] = M_Malloc(sizeof(*gmo));
-    gmo->elmIdx = elmIdx;
-    gmo->numProps = 0;
-    gmo->props = NULL;
+    record = (gameobjectrecord_t*) Z_Malloc(sizeof(*record), PU_STATIC, 0);
+    record->elmIdx = elmIdx;
+    record->numProperties = 0;
+    record->properties = NULL;
 
-    return gmo;
+    rnamespace->records[rnamespace->numRecords - 1] = record;
+
+    return record;
 }
 
-void P_AddGameMapObjValue(gameobjdata_t* moData, gamemapobjdef_t* gmoDef,
-                          uint propIdx, uint elmIdx, valuetype_t type,
-                          void* data)
+void Map_UpdateGameObjectRecord(gamemap_t* map, def_gameobject_t* def,
+                                uint propIdx, uint elmIdx, valuetype_t type,
+                                void* data)
 {
     uint i;
-    customproperty_t* prop;
-    gamemapobj_t* gmo = P_GetGameMapObj(moData, gmoDef, elmIdx, true);
+    gameobjectrecord_property_t* prop;
+    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
+    gameobjectrecord_t* record = Map_GameObjectRecord(records, def, elmIdx, true);
 
-    if(!gmo)
-        Con_Error("addGameMapObj: Failed creation.");
+    if(!record)
+        Con_Error("Map_UpdateGameObjectRecord: Failed creation.");
 
     // Check whether this is a new value or whether we are updating an
     // existing one.
-    for(i = 0; i < gmo->numProps; ++i)
+    for(i = 0; i < record->numProperties; ++i)
     {
-        if(gmo->props[i].idx == propIdx)
+        if(record->properties[i].idx == propIdx)
         {   // We are updating.
-            //if(gmo->props[i].type == type)
-            //    updateInDB(map->values, type, gmo->props[i].valueIdx, data);
-            //else
-                Con_Error("addGameMapObj: Value type change not currently supported.");
+            Con_Error("addGameMapObj: Value type change not currently supported.");
             return;
         }
     }
 
-    // Its a new value.
-    gmo->props = M_Realloc(gmo->props, ++gmo->numProps * sizeof(*gmo->props));
+    // Its a new property value.
+    record->properties = Z_Realloc(record->properties,
+        ++record->numProperties * sizeof(*record->properties), PU_STATIC);
 
-    prop = &gmo->props[gmo->numProps - 1];
+    prop = &record->properties[record->numProperties - 1];
     prop->idx = propIdx;
     prop->type = type;
-    prop->valueIdx = insertIntoDB(&moData->db, type, data);
+    prop->valueIdx = insertIntoDB(&records->values, type, data);
 }
 
-static void* getGMOPropValue(gameobjdata_t* data, int identifier, uint elmIdx,
-                             int propIdentifier, valuetype_t* type)
+static void* getValueForGameObjectRecordProperty(gamemap_t* map, int identifier, uint elmIdx,
+                                                 int propIdentifier, valuetype_t* type)
 {
     uint i;
-    gamemapobjdef_t* def;
-    gamemapobj_t* gmo;
+    def_gameobject_t* def;
+    gameobjectrecord_t* record;
+    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
 
-    if((def = P_GetGameMapObjDef(identifier, NULL, false)) == NULL)
-        Con_Error("P_GetGMOByte: Invalid identifier %i.", identifier);
+    if((def = P_GameObjectDef(identifier, NULL, false)) == NULL)
+        Con_Error("P_GetObjectRecordByte: Invalid identifier %i.", identifier);
 
-    if((gmo = P_GetGameMapObj(data, def, elmIdx, false)) == NULL)
-        Con_Error("P_GetGMOByte: There is no element %i of type %s.", elmIdx,
+    if((record = Map_GameObjectRecord(records, def, elmIdx, false)) == NULL)
+        Con_Error("P_GetObjectRecordByte: There is no element %i of type %s.", elmIdx,
                   def->name);
 
     // Find the requested property.
-    for(i = 0; i < gmo->numProps; ++i)
+    for(i = 0; i < record->numProperties; ++i)
     {
-        customproperty_t* prop = &gmo->props[i];
+        gameobjectrecord_property_t* rproperty = &record->properties[i];
 
-        if(def->props[prop->idx].identifier == propIdentifier)
+        if(def->properties[rproperty->idx].identifier == propIdentifier)
         {
             void* ptr;
 
             if(NULL ==
-               (ptr = getPtrToDBElm(&data->db, prop->type, prop->valueIdx)))
-                Con_Error("P_GetGMOByte: Failed db look up.");
+               (ptr = getPtrToDBElm(&records->values, rproperty->type, rproperty->valueIdx)))
+                Con_Error("P_GetObjectRecordByte: Failed db look up.");
 
             if(type)
-                *type = prop->type;
+                *type = rproperty->type;
 
             return ptr;
         }
@@ -1205,86 +1630,142 @@ static void setValue(void* dst, valuetype_t dstType, void* src, valuetype_t srcT
     }
 }
 
-byte P_GetGMOByte(int identifier, uint elmIdx, int propIdentifier)
+byte Map_GameObjectRecordByte(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     byte returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                              propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_BYTE, ptr, type);
 
     return returnVal;
 }
 
-short P_GetGMOShort(int identifier, uint elmIdx, int propIdentifier)
+short Map_GameObjectRecordShort(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     short returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                              propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_SHORT, ptr, type);
 
     return returnVal;
 }
 
-int P_GetGMOInt(int identifier, uint elmIdx, int propIdentifier)
+int Map_GameObjectRecordInt(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     int returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                          propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_INT, ptr, type);
 
     return returnVal;
 }
 
-fixed_t P_GetGMOFixed(int identifier, uint elmIdx, int propIdentifier)
+fixed_t Map_GameObjectRecordFixed(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     fixed_t returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                              propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_FIXED, ptr, type);
 
     return returnVal;
 }
 
-angle_t P_GetGMOAngle(int identifier, uint elmIdx, int propIdentifier)
+angle_t Map_GameObjectRecordAngle(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     angle_t returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                              propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_ANGLE, ptr, type);
 
     return returnVal;
 }
 
-float P_GetGMOFloat(int identifier, uint elmIdx, int propIdentifier)
+float Map_GameObjectRecordFloat(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
-    gamemap_t* map = DMU_CurrentMap();
     void* ptr;
     float returnVal = 0;
 
-    if((ptr = getGMOPropValue(&map->gameObjData, identifier, elmIdx,
-                              propIdentifier, &type)))
+    assert(map);
+
+    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
         setValue(&returnVal, DDVT_FLOAT, ptr, type);
 
     return returnVal;
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+uint P_NumObjectRecords(int typeIdentifier)
+{
+    return Map_NumGameObjectRecords(P_CurrentMap(), typeIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+byte P_GetObjectRecordByte(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordByte(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+short P_GetObjectRecordShort(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordShort(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+int P_GetObjectRecordInt(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordInt(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+fixed_t P_GetObjectRecordFixed(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordFixed(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+angle_t P_GetObjectRecordAngle(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordAngle(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * @note Part of the Doomsday public API.
+ */
+float P_GetObjectRecordFloat(int typeIdentifier, uint elmIdx, int propIdentifier)
+{
+    return Map_GameObjectRecordFloat(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
 }

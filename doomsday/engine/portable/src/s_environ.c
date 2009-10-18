@@ -337,7 +337,7 @@ static boolean calcSubsectorReverb(subsector_t* subsector)
 /*
 #if _DEBUG
 Con_Message("subsector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
-            DMU_GetObjRecord(DMU_SUBSECTOR, subsector)->id, subsector->reverb[SRD_VOLUME],
+            P_ObjectRecord(DMU_SUBSECTOR, subsector)->id, subsector->reverb[SRD_VOLUME],
             subsector->reverb[SRD_SPACE], subsector->reverb[SRD_DECAY],
             subsector->reverb[SRD_DAMPING]);
 #endif

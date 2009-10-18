@@ -158,14 +158,14 @@ EXPORTS
     MPE_Begin                   @350 NONAME
     MPE_End                     @351 NONAME
 
-    MPE_VertexCreate            @352 NONAME
-    MPE_VertexCreatev           @409 NONAME
-    MPE_SideDefCreate           @353 NONAME
-    MPE_LineDefCreate           @354 NONAME
-    MPE_SectorCreate            @355 NONAME
-    MPE_PlaneCreate             @408 NONAME
-    MPE_PolyobjCreate           @356 NONAME
-    MPE_GameObjProperty         @413 NONAME
+    MPE_CreateVertex            @352 NONAME
+    MPE_CreateVertices          @409 NONAME
+    MPE_CreateSideDef           @353 NONAME
+    MPE_CreateLineDef           @354 NONAME
+    MPE_CreateSector            @355 NONAME
+    MPE_CreatePlane             @408 NONAME
+    MPE_CreatePolyobj           @356 NONAME
+    MPE_GameObjectRecordProperty @413 NONAME
 
 ; Network.
     Net_SendPacket              @53 NONAME
@@ -190,6 +190,8 @@ EXPORTS
     P_GetImpulseControlState    @339 NONAME
 
 ; Play: Setup.
+    P_CreateObjectDef           @411 NONAME
+    P_AddPropertyToObjectDef    @412 NONAME
     P_LoadMap                   @254 NONAME
 
 ; Play: Map Data Updates and Information Access.
@@ -285,13 +287,13 @@ EXPORTS
     P_GetFloatpv                @315 NONAME
     P_GetPtrpv                  @316 NONAME
 
-    P_CountGameMapObjs          @414 NONAME
-    P_GetGMOByte                @415 NONAME
-    P_GetGMOShort               @416 NONAME
-    P_GetGMOInt                 @417 NONAME
-    P_GetGMOFixed               @418 NONAME
-    P_GetGMOAngle               @419 NONAME
-    P_GetGMOFloat               @420 NONAME
+    P_NumObjectRecords          @414 NONAME
+    P_GetObjectRecordByte       @415 NONAME
+    P_GetObjectRecordShort      @416 NONAME
+    P_GetObjectRecordInt        @417 NONAME
+    P_GetObjectRecordFixed      @418 NONAME
+    P_GetObjectRecordAngle      @419 NONAME
+    P_GetObjectRecordFloat      @420 NONAME
 
     ; miscellaneous
     DMU_PointOnLineDefSide      @59 NONAME
@@ -301,8 +303,6 @@ EXPORTS
 
 ; Play: Misc.
     P_MergeCommand              @333 NONAME
-    P_RegisterMapObj            @411 NONAME
-    P_RegisterMapObjProperty    @412 NONAME
 
 ; Play: Mobjs.
     P_MobjCreate                @357 NONAME

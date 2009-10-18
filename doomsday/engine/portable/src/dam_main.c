@@ -91,13 +91,13 @@ boolean DAM_TryMapConversion(const char* mapID)
 {
     // Load it in. Try a JIT conversion with the help of a plugin.
     // Destroy DMU obj records for map-owned objects.
-    DMU_ClearObjRecords(DMU_VERTEX);
-    DMU_ClearObjRecords(DMU_LINEDEF);
-    DMU_ClearObjRecords(DMU_SIDEDEF);
-    DMU_ClearObjRecords(DMU_PLANE);
-    DMU_ClearObjRecords(DMU_SECTOR);
-    DMU_ClearObjRecords(DMU_SEG);
-    DMU_ClearObjRecords(DMU_SUBSECTOR);
+    P_DestroyObjectRecordsByType(DMU_VERTEX);
+    P_DestroyObjectRecordsByType(DMU_LINEDEF);
+    P_DestroyObjectRecordsByType(DMU_SIDEDEF);
+    P_DestroyObjectRecordsByType(DMU_PLANE);
+    P_DestroyObjectRecordsByType(DMU_SECTOR);
+    P_DestroyObjectRecordsByType(DMU_SEG);
+    P_DestroyObjectRecordsByType(DMU_SUBSECTOR);
 
     return convertMap(mapID);
 }
@@ -108,13 +108,13 @@ gamemap_t* DAM_LoadMap(const char* mapID)
     gamemap_t* map = P_CreateMap(mapID);
 
     // Destroy DMU obj records for map-owned objects.
-    DMU_ClearObjRecords(DMU_VERTEX);
-    DMU_ClearObjRecords(DMU_LINEDEF);
-    DMU_ClearObjRecords(DMU_SIDEDEF);
-    DMU_ClearObjRecords(DMU_PLANE);
-    DMU_ClearObjRecords(DMU_SECTOR);
-    DMU_ClearObjRecords(DMU_SEG);
-    DMU_ClearObjRecords(DMU_SUBSECTOR);
+    P_DestroyObjectRecordsByType(DMU_VERTEX);
+    P_DestroyObjectRecordsByType(DMU_LINEDEF);
+    P_DestroyObjectRecordsByType(DMU_SIDEDEF);
+    P_DestroyObjectRecordsByType(DMU_PLANE);
+    P_DestroyObjectRecordsByType(DMU_SECTOR);
+    P_DestroyObjectRecordsByType(DMU_SEG);
+    P_DestroyObjectRecordsByType(DMU_SUBSECTOR);
 
     DAM_MapRead(map, Str_Text(s));
 

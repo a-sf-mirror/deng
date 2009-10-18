@@ -725,7 +725,7 @@ boolean R_GetSpriteInfo(int sprite, int frame, spriteinfo_t* info)
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
 
     info->numFrames = sprDef->numFrames;
-    info->material = (material_t*) DMU_GetObjRecord(DMU_MATERIAL, mat);
+    info->material = (material_t*) P_ObjectRecord(DMU_MATERIAL, mat);
     info->realLump = sprTex->lump;
     info->flip = sprFrame->flip[0];
     info->offset = sprTex->offX;
@@ -871,7 +871,7 @@ void R_ProjectPlayerSprites(void)
                 isModel = true;
         }
 
-        subsector = (subsector_t*) ((dmuobjrecord_t*) ddpl->mo->subsector)->obj;
+        subsector = (subsector_t*) ((objectrecord_t*) ddpl->mo->subsector)->obj;
 
         if(isModel)
         {   // Yes, draw a 3D model (in Rend_Draw3DPlayerSprites).
@@ -1105,7 +1105,7 @@ void getLightingParams(float x, float y, float z, subsector_t* subsector,
 
             // Evaluate the position in the light grid.
             V3_Set(point, x, y, z);
-            LG_Evaluate(DMU_CurrentMap(), point, ambientColor);
+            LG_Evaluate(P_CurrentMap(), point, ambientColor);
         }
         else
         {
@@ -1150,7 +1150,7 @@ void getLightingParams(float x, float y, float z, subsector_t* subsector,
  */
 void R_ProjectSprite(mobj_t* mo)
 {
-    subsector_t* subsector = (subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj;
+    subsector_t* subsector = (subsector_t*) ((objectrecord_t*) mo->subsector)->obj;
     sector_t* sect = subsector->sector;
     float thangle = 0, alpha, floorClip, secFloor, secCeil;
     float pos[2], yaw, pitch;
@@ -1490,7 +1490,7 @@ void R_ProjectSprite(mobj_t* mo)
         gzt -= floorClip;
 
         getLightingParams(vis->center[VX], vis->center[VY],
-                          gzt - ms.height / 2.0f, ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj), vis->distance,
+                          gzt - ms.height / 2.0f, ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj), vis->distance,
                           fullBright, ambientColor, &vLightListIdx);
 
         setupSpriteParamsForVisSprite(&vis->data.sprite,
@@ -1504,7 +1504,7 @@ void R_ProjectSprite(mobj_t* mo)
                                       vLightListIdx,
                                       tmap,
                                       tclass,
-                                      ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj),
+                                      ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj),
                                       floorAdjust,
                                       fitTop,
                                       fitBottom,
@@ -1515,7 +1515,7 @@ void R_ProjectSprite(mobj_t* mo)
     else
     {
         getLightingParams(vis->center[VX], vis->center[VY], vis->center[VZ],
-                          ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj), vis->distance, fullBright,
+                          ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj), vis->distance, fullBright,
                           ambientColor, &vLightListIdx);
 
         setupModelParamsForVisSprite(&vis->data.model,
@@ -1524,7 +1524,7 @@ void R_ProjectSprite(mobj_t* mo)
                                      mf, nextmf, interp,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB], alpha,
                                      vLightListIdx, mo->thinker.id, mo->selector,
-                                     ((subsector_t*) ((dmuobjrecord_t*) mo->subsector)->obj), mo->ddFlags,
+                                     ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj), mo->ddFlags,
                                      mo->tmap,
                                      viewAlign,
                                      fullBright && !(mf && (mf->sub[0].flags & MFF_DIM)),
@@ -1564,10 +1564,10 @@ boolean RIT_AddSprite(void* ptr, void* data)
 
                 visibleTop = mo->pos[VZ] + mat->height;
 
-                if(visibleTop > DMU_CurrentMap()->skyFix[PLN_CEILING].height)
+                if(visibleTop > P_CurrentMap()->skyFix[PLN_CEILING].height)
                 {
                     // Raise skyfix ceiling.
-                    DMU_CurrentMap()->skyFix[PLN_CEILING].height = visibleTop + 16; // Add some leeway.
+                    P_CurrentMap()->skyFix[PLN_CEILING].height = visibleTop + 16; // Add some leeway.
                 }
             }
         }

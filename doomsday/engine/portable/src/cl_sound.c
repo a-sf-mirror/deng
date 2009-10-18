@@ -91,7 +91,7 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     else if(type == DT_SECTOR_SOUND)
     {
         uint index = (ushort) Msg_ReadShort();
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         if(index < map->numSectors)
         {
@@ -107,7 +107,7 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
     else /* DT_POLY_SOUND */
     {
         uint index = (ushort) Msg_ReadShort();
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         if(index < map->numPolyObjs)
         {
@@ -301,7 +301,7 @@ Con_Printf("Cl_Sound: %i\n", sound);
     }
     else if(flags & SNDF_SECTOR)
     {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         num = (ushort) Msg_ReadPackedShort();
 

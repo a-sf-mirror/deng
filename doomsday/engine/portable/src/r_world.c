@@ -644,7 +644,7 @@ void R_CreateBiasSurfacesForPlanesInSubsector(subsector_t* subsector)
     if(!subsector->sector)
         return;
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
 
     subsector->bsuf = Z_Calloc(subsector->sector->planeCount * sizeof(biassurface_t*),
                           PU_STATIC, NULL);
@@ -669,7 +669,7 @@ void R_DestroyBiasSurfacesForPlanesInSubSector(subsector_t* subsector)
     if(subsector->sector && subsector->bsuf)
     {
         uint i;
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         for(i = 0; i < subsector->sector->planeCount; ++i)
         {
@@ -698,7 +698,7 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
     if(!subsector->sector)
         return;
 
-    map = DMU_CurrentMap();
+    map = P_CurrentMap();
 
     {
     hedge_t* hEdge;
@@ -774,7 +774,7 @@ if(sec->planeCount >= 2)
     sec->planes[sec->planeCount] = NULL; // Terminate.
 
     if(!ddMapSetup)
-        DMU_AddObjRecord(DMU_PLANE, plane);
+        P_CreateObjectRecord(DMU_PLANE, plane);
 
     // Initalize the plane.
     plane->surface.owner = (void*) plane;
@@ -838,7 +838,7 @@ void R_DestroyPlaneOfSector(gamemap_t* map, uint id, sector_t* sec)
 
     if(id >= sec->planeCount)
         Con_Error("P_DestroyPlaneOfSector: Plane id #%i is not valid for "
-                  "sector #%u", id, (uint) DMU_GetObjRecord(DMU_SECTOR, sec)->id);
+                  "sector #%u", id, (uint) P_ObjectRecord(DMU_SECTOR, sec)->id);
 
     plane = sec->planes[id];
 
@@ -2072,7 +2072,7 @@ void R_SetupMap(int mode, int flags)
     {
     case DDSMM_INITIALIZE:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         P_DestroyMap(map);
 
@@ -2090,7 +2090,7 @@ void R_SetupMap(int mode, int flags)
 
     case DDSMM_AFTER_LOADING:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
@@ -2130,10 +2130,10 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_FINALIZE:
         {
-        gamemap_t* map = DMU_CurrentMap();
+        gamemap_t* map = P_CurrentMap();
 
         // We are now finished with the game data, map object db.
-        P_DestroyGameMapObjDB(&map->gameObjData);
+        Map_DestroyGameObjectRecords(map);
 
         // Init server data.
         Sv_InitPools();
@@ -2173,7 +2173,7 @@ void R_SetupMap(int mode, int flags)
 
         // Run any commands specified in Map Info.
         {
-        ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
+        ded_mapinfo_t* mapInfo = Def_GetMapInfo(Map_ID(map));
 
         if(mapInfo && mapInfo->execute)
             Con_Execute(CMDS_DED, mapInfo->execute, true, false);
@@ -2237,8 +2237,8 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_AFTER_BUSY:
         {
-        gamemap_t* map = DMU_CurrentMap();
-        ded_mapinfo_t* mapInfo = Def_GetMapInfo(P_GetMapID(map));
+        gamemap_t* map = P_CurrentMap();
+        ded_mapinfo_t* mapInfo = Def_GetMapInfo(Map_ID(map));
 
         // Shouldn't do anything time-consuming, as we are no longer in busy mode.
         if(!mapInfo || !(mapInfo->flags & MIF_FOG))
@@ -2280,7 +2280,7 @@ void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
         // Send a status report.
         if(gx.HandleMapObjectStatusReport)
             gx.HandleMapObjectStatusReport(DMUSC_LINE_FIRSTRENDERED,
-                                           P_ToIndex(DMU_GetObjRecord(DMU_LINEDEF, lineDef)),
+                                           P_ToIndex(P_ObjectRecord(DMU_LINEDEF, lineDef)),
                                            DMU_LINEDEF, &viewer);
     }
 }
@@ -2467,7 +2467,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     boolean changed = false;
     boolean hasGlow = false;
     sector_t* sec = pln->sector;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     // Update the glow properties.
     hasGlow = false;
@@ -2515,7 +2515,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 
             //// \fixme $nplanes
             if((ddpl->flags & DDPF_CAMERA) &&
-               ((subsector_t*)((dmuobjrecord_t*) ddpl->mo->subsector)->obj)->sector == sec &&
+               ((subsector_t*)((objectrecord_t*) ddpl->mo->subsector)->obj)->sector == sec &&
                (ddpl->mo->pos[VZ] > sec->SP_ceilheight ||
                 ddpl->mo->pos[VZ] < sec->SP_floorheight))
             {
@@ -2709,11 +2709,11 @@ void R_CalcLightModRange(cvar_t *unused)
     int                 j;
     int                 mapAmbient;
     float               f;
-    gamemap_t          *map = DMU_CurrentMap();
+    gamemap_t          *map = P_CurrentMap();
 
     memset(lightModRange, 0, sizeof(float) * 255);
 
-    mapAmbient = P_GetMapAmbientLightLevel(map);
+    mapAmbient = Map_AmbientLightLevel(map);
     if(mapAmbient > ambientLight)
         rAmbient = mapAmbient;
     else
@@ -2807,7 +2807,7 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 D_CMD(UpdateSurfaces)
 {
     uint                i;
-    gamemap_t*          map = DMU_CurrentMap();
+    gamemap_t*          map = P_CurrentMap();
 
     Con_Printf("Updating world surfaces...\n");
 

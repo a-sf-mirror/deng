@@ -341,7 +341,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     checkpos_data_t data;
     vec2_t point;
     boolean result = true;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     if(!map)
         return false;
@@ -390,7 +390,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     if(result)
     {   // Nope.
         // Try polyobj->lineDefs and lines.
-        if(!Map_AllLinesBoxIteratorv(map, data.box, PIT_LineCollide, &data, false))
+        if(!Map_AllLineDefsBoxIteratorv(map, data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }
@@ -692,7 +692,7 @@ static void mobjSlideMove(mobj_t* mo)
 {
     float leadPos[2], trailPos[2], delta[2];
     int hitcount;
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
 
     slideMo = mo;
     hitcount = 0;
@@ -728,13 +728,13 @@ static void mobjSlideMove(mobj_t* mo)
 
     Map_PathTraverse(map, leadPos[VX], leadPos[VY],
                      leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
-                     PT_ADDLINES, slideTraverse);
+                     PT_ADDLINEDEFS, slideTraverse);
     Map_PathTraverse(map, trailPos[VX], leadPos[VY],
                      trailPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
-                     PT_ADDLINES, slideTraverse);
+                     PT_ADDLINEDEFS, slideTraverse);
     Map_PathTraverse(map, leadPos[VX], trailPos[VY],
                      leadPos[VX] + mo->mom[MX], trailPos[VY] + mo->mom[MY],
-                     PT_ADDLINES, slideTraverse);
+                     PT_ADDLINEDEFS, slideTraverse);
 
     // Move up to the wall.
     if(bestSlideFrac == FIX2FLT(FRACUNIT + 1))
@@ -929,7 +929,7 @@ void P_MobjMovement2(mobj_t *mo, void *pstate)
 
 void P_MobjZMovement(mobj_t* mo)
 {
-    gamemap_t* map = DMU_CurrentMap();
+    gamemap_t* map = P_CurrentMap();
     float gravity = FIX2FLT(map->globalGravity);
 
     // check for smooth step up

@@ -94,7 +94,7 @@ void R_SetupSky(sky_t* sky, const ded_sky_t* skyDef)
 
     if(!inited)
     {
-        DMU_AddObjRecord(DMU_SKY, theSky);
+        P_CreateObjectRecord(DMU_SKY, theSky);
         inited = true;
     }
 }
@@ -412,7 +412,7 @@ boolean Sky_SetProperty(sky_t* sky, const setargs_t* args)
         {
         void*           p;
         DMU_SetValue(DDVT_PTR, &p, args, 0);
-        Sky_SetSphereMaterial(sky, ((dmuobjrecord_t*) p)->obj);
+        Sky_SetSphereMaterial(sky, ((objectrecord_t*) p)->obj);
         }
         break;
     case DMU_LAYER1_ACTIVE:
@@ -447,7 +447,7 @@ boolean Sky_GetProperty(sky_t* sky, setargs_t* args)
     case DMU_MATERIAL:
         {
         material_t*     mat = Sky_GetSphereMaterial(sky);
-        dmuobjrecord_t* r = DMU_GetObjRecord(DMU_MATERIAL, mat);
+        objectrecord_t* r = P_ObjectRecord(DMU_MATERIAL, mat);
         DMU_GetValue(DMT_SKY_MATERIAL, &r, args, 0);
         break;
         }

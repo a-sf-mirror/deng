@@ -224,7 +224,7 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  * @param map           The map to build the BSP for.
  * @return              @c true, if completed successfully.
  */
-boolean BSP_Build(gamemap_t* map)
+boolean Map_BuildBSP(gamemap_t* map)
 {
     boolean builtOK;
     uint startTime;
@@ -233,7 +233,7 @@ boolean BSP_Build(gamemap_t* map)
 
     if(verbose >= 1)
     {
-        Con_Message("BSP_Build: Processing map using tunable "
+        Con_Message("Map_BuildBSP: Processing map using tunable "
                     "factor of %d...\n", bspFactor);
     }
 
@@ -274,9 +274,9 @@ boolean BSP_Build(gamemap_t* map)
         ClockwiseBspTree(rootNode);
         SaveMap(map, rootNode);
 
-        Con_Message("BSP_Build: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
-                    map->numNodes, map->halfEdgeDS.numFaces, map->halfEdgeDS.numHEdges,
-                    map->halfEdgeDS.numVertices);
+        Con_Message("Map_BuildBSP: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
+                    map->numNodes, map->_halfEdgeDS.numFaces, map->_halfEdgeDS.numHEdges,
+                    map->_halfEdgeDS.numVertices);
 
         if(rootNode && !BinaryTree_IsLeaf(rootNode))
         {
