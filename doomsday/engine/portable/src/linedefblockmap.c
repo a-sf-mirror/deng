@@ -417,6 +417,21 @@ void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t ma
         V2_Copy(max, blockmap->aabb[1]);
 }
 
+void LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize)
+{
+    assert(blockmap);
+    assert(blockSize);
+
+    V2_Copy(blockSize, blockmap->blockSize);
+}
+
+void LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, uint v[2])
+{
+    assert(blockmap);
+
+    Gridmap_Dimensions(blockmap->gridmap, v);
+}
+
 uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
 {
     linklinedef_t* data;
@@ -515,72 +530,6 @@ boolean LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint block
     return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateLineDefs, (void*) &args);
 }
 
-typedef struct {
-    boolean       (*func) (linedef_t*, void*);
-    void*           context;
-    boolean         retObjRecord;
-} iteratepolyobjlinedefs_args_t;
-
-boolean PTR_PolyobjLines(polyobj_t* po, void* context)
-{
-    iteratepolyobjlinedefs_args_t* args = (iteratepolyobjlinedefs_args_t*) context;
-
-    return P_PolyobjLinesIterator(po, args->func, args->context, args->retObjRecord);
-}
-
-boolean P_IterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint block[2],
-                                    boolean (*func) (linedef_t*, void*),
-                                    void* context, boolean retObjRecord)
-{
-    return true;
-
-#if 0
-    iteratepolyobjs_args_t args;
-    iteratepolyobjlinedefs_args_t poargs;
-
-    assert(blockmap);
-    assert(block);
-    assert(func);
-
-    poargs.func = func;
-    poargs.context = context;
-    poargs.retObjRecord = retObjRecord;
-
-    args.func = PTR_PolyobjLines;
-    args.context = &poargs;
-    args.localValidCount = validCount;
-
-    return iteratePolyobjs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]),
-                           (void*) &args);
-#endif
-}
-
-boolean P_BoxIterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint blockBox[4],
-                                       boolean (*func) (linedef_t*, void*),
-                                       void* context, boolean retObjRecord)
-{
-    return true;
-
-#if 0
-    iteratepolyobjs_args_t args;
-    iteratepolyobjlinedefs_args_t poargs;
-
-    assert(blockmap);
-    assert(blockBox);
-    assert(func);
-
-    poargs.func = func;
-    poargs.context = context;
-    poargs.retObjRecord = retObjRecord;
-
-    args.func = PTR_PolyobjLines;
-    args.context = &poargs;
-    args.localValidCount = validCount;
-
-    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iteratePolyobjs, (void*) &args);
-#endif
-}
-
 boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
                                      const uint destBlock[2], const float origin[2],
                                      const float dest[2],
@@ -645,9 +594,6 @@ boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint ori
     step[VY] = FLT2FIX(delta[VY]);
     for(count = 0; count < 64; ++count)
     {
-        //if(!P_IterateLineDefsOfPolyobjs(blockmap, block, PIT_AddLineIntercepts, 0, false))
-        //    return false; // Early out.
-
         if(!LineDefBlockmap_Iterate(blockmap, block, PIT_AddLineIntercepts, 0, false))
             return false; // Early out
 

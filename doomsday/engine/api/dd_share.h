@@ -606,6 +606,7 @@ enum /* Do not change the numerical values of the constants! */
     DMU_SPEED,
     DMU_NAMESPACE,
     DMU_NAME,
+    DMU_POLYOBJ, // temporary, linedef<>polyobj relationship should be handled game-side.
 
     // Temporary until we allow access to material layers directly:
     DMU_LAYER1_ACTIVE,

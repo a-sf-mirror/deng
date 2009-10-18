@@ -623,6 +623,8 @@ int Rend_AutomapSeg(void* obj, void* data)
     line = DMU_GetPtrp(seg, DMU_LINEDEF);
     if(!line)
         return 1;
+    if(P_GetBoolp(line, DMU_POLYOBJ))
+        return 1; // Polyobj LineDefs are not handled here.
 
     xLine = P_ToXLine(line);
     if(xLine->validCount == VALIDCOUNT)
@@ -850,16 +852,12 @@ int renderPolyObjLinedef(void* obj, void* context)
     return 1; // Continue iteration.
 }
 
-boolean drawLinedefsOfPolyobject(polyobj_t* po, void* context)
+boolean drawLinedefsOfPolyobject(linedef_t* lineDef, void* context)
 {
-    linedef_t** linePtr;
-    int result = 1;
+    if(P_GetBoolp(lineDef, DMU_POLYOBJ))
+        return renderPolyObjLinedef(lineDef, context);
 
-    linePtr = po->lineDefs;
-    while(*linePtr && (result = renderPolyObjLinedef(*linePtr, context)) != 0)
-        *linePtr++;
-
-    return result;
+    return true;
 }
 
 static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
@@ -880,7 +878,7 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
     // Next, draw any polyobjects in view.
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_PolyobjsBoxIterator(aabb, drawLinedefsOfPolyobject, &params);
+    P_LineDefsBoxIterator(aabb, drawLinedefsOfPolyobject, &params);
 }
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
@@ -929,7 +927,7 @@ static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
 
     Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_LinesBoxIterator(aabb, renderXGLinedef, &params);
+    P_LineDefsBoxIterator(aabb, renderXGLinedef, &params);
 #endif
 }
 

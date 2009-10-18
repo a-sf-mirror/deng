@@ -638,7 +638,7 @@ void P_LinkToLines(mobj_t* mo)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    Map_AllLineDefsBoxIteratorv(P_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
+    Map_LineDefsBoxIteratorv(P_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
 }
 
 /**
@@ -1136,16 +1136,10 @@ boolean P_MobjsBoxIterator(const float box[4], boolean (*func) (mobj_t*, void*),
     return Map_MobjsBoxIterator(P_CurrentMap(), box, func, data);
 }
 
-boolean P_PolyobjsBoxIterator(const float box[4], boolean (*func) (struct polyobj_s*, void*),
-                              void* data)
-{
-    return Map_PolyobjsBoxIterator(P_CurrentMap(), box, func, data);
-}
-
 /**
  * @note Part of the Doomsday public API.
  */
-boolean P_LinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
+boolean P_LineDefsBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
                            void* data)
 {
     vec2_t bounds[2];
@@ -1167,13 +1161,4 @@ boolean P_SubsectorsBoxIterator(const float box[4], void* p,
 {
     return Map_SubsectorsBoxIterator(P_CurrentMap(), box,
         p? ((objectrecord_t*) p)->obj : NULL, func, parm, true);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-boolean P_AllLinesBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
-                              void* data)
-{
-    return Map_AllLineDefsBoxIterator(P_CurrentMap(), box, func, data, true);
 }

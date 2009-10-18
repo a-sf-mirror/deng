@@ -49,11 +49,13 @@ NAME            "DOOMSDAY"
 ; 318 formerly P_Copyp
 ; 319 formerly P_Swap
 ; 320 formerly P_Swapp
+; 327 formerly P_AllLinesBoxIterator
 ; 328 formerly P_RegisterCustomMapProperty
 ; 349 formerly R_MaterialIsCustom
 ; 375 formerly DGL_MultiTexCoord2f
 ; 376 formerly DGL_MultiTexCoord2fv
 ; 337 formerly DMU_GetMaterialName
+; 348 formerly P_PolyobjsBoxIterator
 ; 438 formerly DMU_MaterialCheckNumForIndex
 
 EXPORTS
@@ -207,9 +209,7 @@ EXPORTS
 
     ; specialized iteration methods
     P_MobjsBoxIterator          @346 NONAME
-    P_PolyobjsBoxIterator       @348 NONAME
-    P_LinesBoxIterator          @435 NONAME
-    P_AllLinesBoxIterator       @347 NONAME
+    P_LineDefsBoxIterator       @435 NONAME
     P_SubsectorsBoxIterator     @345 NONAME
 
     ; dummy objects
@@ -315,8 +315,8 @@ EXPORTS
 ; Play: Polyobjs.
     P_PolyobjMove               @79 NONAME
     P_PolyobjRotate             @80 NONAME
-    P_PolyobjLink               @82 NONAME
-    P_PolyobjUnLink             @81 NONAME
+    P_PolyobjLinkLineDefs               @82 NONAME
+    P_PolyobjUnlinkLineDefs             @81 NONAME
 
     P_GetPolyobj                @424 NONAME
     P_SetPolyobjCallback        @83 NONAME

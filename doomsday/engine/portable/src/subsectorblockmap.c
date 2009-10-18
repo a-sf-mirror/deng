@@ -258,6 +258,31 @@ boolean SubsectorBlockmap_Remove(subsectorblockmap_t* blockmap, subsector_t* sub
     return true;    
 }
 
+void SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+{
+    assert(blockmap);
+
+    if(min)
+        V2_Copy(min, blockmap->aabb[0]);
+    if(max)
+        V2_Copy(max, blockmap->aabb[1]);
+}
+
+void SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize)
+{
+    assert(blockmap);
+    assert(blockSize);
+
+    V2_Copy(blockSize, blockmap->blockSize);
+}
+
+void SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, uint v[2])
+{
+    assert(blockmap);
+
+    Gridmap_Dimensions(blockmap->gridmap, v);
+}
+
 uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
 {
     linksubsector_t* data;

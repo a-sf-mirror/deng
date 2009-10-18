@@ -277,8 +277,8 @@ void P_MapInitPolyobjs(gamemap_t* map)
             po->subsector = subsector;
         }
 
-        P_PolyobjUnLink(po);
-        P_PolyobjLink(po);
+        P_PolyobjUnlinkLineDefs(po);
+        P_PolyobjLinkLineDefs(po);
 
         P_PolyobjChanged(po);
     }
@@ -293,7 +293,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     if(!po)
         return false;
 
-    P_PolyobjUnLink(po);
+    P_PolyobjUnlinkLineDefs(po);
 
     prevPts = po->prevPts;
     blocked = false;
@@ -354,13 +354,13 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
             (*prevPts).pos[VY] -= y;
         }
 
-        P_PolyobjLink(po);
+        P_PolyobjLinkLineDefs(po);
         return false;
     }
 
     po->pos[VX] += x;
     po->pos[VY] += y;
-    P_PolyobjLink(po);
+    P_PolyobjLinkLineDefs(po);
 
     // A change has occured.
     P_PolyobjChanged(po);
@@ -398,7 +398,7 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
 
     an = (po->angle + angle) >> ANGLETOFINESHIFT;
 
-    P_PolyobjUnLink(po);
+    P_PolyobjUnlinkLineDefs(po);
 
     originalPts = po->originalPts;
     prevPts = po->prevPts;
@@ -477,12 +477,12 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
             line->angle -= angle;
         }
 
-        P_PolyobjLink(po);
+        P_PolyobjLinkLineDefs(po);
         return false;
     }
 
     po->angle += angle;
-    P_PolyobjLink(po);
+    P_PolyobjLinkLineDefs(po);
     P_PolyobjChanged(po);
     return true;
 }
@@ -537,14 +537,22 @@ void P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** list)
     }
 }
 
-void P_PolyobjUnLink(polyobj_t* po)
+void P_PolyobjUnlinkLineDefs(polyobj_t* po)
 {
-    Map_UnlinkPolyobj(P_CurrentMap(), po);
+    linedefblockmap_t* lineDefBlockmap = Map_LineDefBlockmap(P_CurrentMap());
+    uint i;
+
+    for(i = 0; i < po->numLineDefs; ++i)
+        LineDefBlockmap_Remove(lineDefBlockmap, po->lineDefs[i]);
 }
 
-void P_PolyobjLink(polyobj_t* po)
+void P_PolyobjLinkLineDefs(polyobj_t* po)
 {
-    Map_LinkPolyobj(P_CurrentMap(), po);
+    linedefblockmap_t* lineDefBlockmap = Map_LineDefBlockmap(P_CurrentMap());
+    uint i;
+
+    for(i = 0; i < po->numLineDefs; ++i)
+        LineDefBlockmap_Insert(lineDefBlockmap, po->lineDefs[i]);
 }
 
 typedef struct ptrmobjblockingparams_s {

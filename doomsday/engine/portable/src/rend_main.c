@@ -3279,18 +3279,13 @@ static boolean drawVertex1(linedef_t* li, void* context)
     return true; // Continue iteration.
 }
 
-boolean drawPolyObjVertexes(polyobj_t* po, void* context)
-{
-    return P_PolyobjLinesIterator(po, drawVertex1, po, false);
-}
-
 /**
  * Draw the various vertex debug aids.
  */
 void Rend_Vertexes(gamemap_t* map)
 {
     uint i;
-    float oldPointSize, oldLineWidth = 1, bbox[4];
+    float oldPointSize, oldLineWidth = 1;
 
     if(!devVertexBars && !devVertexIndices)
         return;
@@ -3314,8 +3309,6 @@ void Rend_Vertexes(gamemap_t* map)
                 continue;
             if(!mvtx->lineOwners)
                 continue; // Not a linedef vertex.
-            if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
-                continue; // A polyobj linedef vertex.
 
             alpha = 1 - M_ApproxDistancef(vx - vtx->pos[VX],
                                           vz - vtx->pos[VY]) / MAX_VERTEX_POINT_DIST;
@@ -3352,8 +3345,6 @@ void Rend_Vertexes(gamemap_t* map)
             continue;
         if(!mvtx->lineOwners)
             continue; // Not a linedef vertex.
-        if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
-            continue; // A polyobj linedef vertex.
 
         dist = M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
 
@@ -3387,8 +3378,6 @@ void Rend_Vertexes(gamemap_t* map)
             if(!mvtx)
             if(!mvtx->lineOwners)
                 continue; // Not a linedef vertex.
-            if(mvtx->lineOwners[0].lineDef->inFlags & LF_POLYOBJ)
-                continue; // A polyobj linedef vertex.
 
             pos[VX] = vtx->pos[VX];
             pos[VY] = vtx->pos[VY];
@@ -3408,13 +3397,6 @@ void Rend_Vertexes(gamemap_t* map)
             }
         }
     }
-
-    // Next, the vertexes of all nearby polyobjs.
-    bbox[BOXLEFT]   = vx - MAX_VERTEX_POINT_DIST;
-    bbox[BOXRIGHT]  = vx + MAX_VERTEX_POINT_DIST;
-    bbox[BOXBOTTOM] = vy - MAX_VERTEX_POINT_DIST;
-    bbox[BOXTOP]    = vy + MAX_VERTEX_POINT_DIST;
-    Map_PolyobjsBoxIterator(map, bbox, drawPolyObjVertexes, NULL);
 
     // Restore previous state.
     if(devVertexBars)

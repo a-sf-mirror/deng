@@ -146,7 +146,7 @@ static boolean drawSubsectorAABB(subsector_t* subsector, void* data)
     return true; // Continue iteration.
 }
 
-static void drawLineDefsInBlock(blockmap_t* blockmap, uint x, uint y,
+static void drawLineDefsInBlock(void* blockmap, uint x, uint y,
                                 float r, float g, float b, float a, void* context)
 {
     uint block[2];
@@ -161,14 +161,10 @@ static void drawLineDefsInBlock(blockmap_t* blockmap, uint x, uint y,
     LineDefBlockmap_Iterate((linedefblockmap_t*) blockmap, block, drawLineDef, context, false);
     glEnd();
 
-    glBegin(GL_LINES);
-    P_IterateLineDefsOfPolyobjs(blockmap, block, drawLineDef, context, false);
-    glEnd();
-
     glEnable(GL_TEXTURE_2D);
 }
 
-static void drawMobjsInBlock(blockmap_t* blockmap, uint x, uint y, 
+static void drawMobjsInBlock(void* blockmap, uint x, uint y, 
                              float r, float g, float b, float a, void* context)
 {
     uint block[2];
@@ -180,13 +176,13 @@ static void drawMobjsInBlock(blockmap_t* blockmap, uint x, uint y,
     glColor4f(r, g, b, a);
 
     glBegin(GL_QUADS);
-    MobjBlockmap_Iterate(blockmap, block, drawMobj, context);
+    MobjBlockmap_Iterate((mobjblockmap_t*) blockmap, block, drawMobj, context);
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
 }
 
-static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
+static void drawSubsectorsInBlock(void* blockmap, uint x, uint y,
                                   float r, float g, float b, float a, void* context)
 {
     uint block[2];
@@ -221,13 +217,13 @@ static void drawSubsectorsInBlock(blockmap_t* blockmap, uint x, uint y,
 }
 
 static void drawInfoBox(int x, int y, uint blockX, uint blockY, int lineCount,
-                        int moCount, int poCount)
+                        int moCount)
 {
     int w, h;
     char buf[160];
 
-    sprintf(buf, "Block: [%u, %u] Lines: #%i Mobjs: #%i Polyobjs: #%i",
-            blockX, blockY, lineCount, moCount, poCount);
+    sprintf(buf, "Block: [%u, %u] Lines: #%i Mobjs: #%i",
+            blockX, blockY, lineCount, moCount);
     w = FR_TextWidth(buf) + 16;
     h = FR_TextHeight(buf) + 16;
     x -= w / 2;
@@ -275,23 +271,40 @@ static void drawInfoBox2(float minX, float minY, float maxX, float maxY,
     y += th;
 }
 
-static void drawBlockInfoBox(blockmap_t* blockmap, uint x, uint y)
+static void drawBlockInfoBox(void* blockmap, uint x, uint y)
 {
     drawInfoBox(theWindow->width / 2, 30, x, y,
                 LineDefBlockmap_NumInBlock((linedefblockmap_t*) blockmap, x, y),
-                MobjBlockmap_NumInBlock((mobjblockmap_t*) blockmap, x, y),
-                PolyobjBlockmap_NumInBlock(blockmap, x, y));
+                MobjBlockmap_NumInBlock((mobjblockmap_t*) blockmap, x, y));
 }
 
-static void drawBackground(blockmap_t* blockmap, uint viewerBlock[2], uint viewerBlockBox[4],
+static void drawBackground(void* blockmap, uint viewerBlock[2], uint viewerBlockBox[4],
                            boolean centerOnViewer, byte mode)
 {
     vec2_t start, end, min, max, blockSize;
     uint x, y, dimensions[2];
-    
-    MobjBlockmap_Bounds(blockmap, min, max);
-    MobjBlockmap_Dimensions(blockmap, dimensions);
-    MobjBlockmap_BlockSize(blockmap, blockSize);
+
+    switch(mode)
+    {
+    default:
+    case BLOCKMAPVISUAL_MOBJS:
+        MobjBlockmap_Bounds((mobjblockmap_t*) blockmap, min, max);
+        MobjBlockmap_Dimensions((mobjblockmap_t*) blockmap, dimensions);
+        MobjBlockmap_BlockSize((mobjblockmap_t*) blockmap, blockSize);
+        break;
+
+    case BLOCKMAPVISUAL_LINEDEFS:
+        LineDefBlockmap_Bounds((linedefblockmap_t*) blockmap, min, max);
+        LineDefBlockmap_Dimensions((linedefblockmap_t*) blockmap, dimensions);
+        LineDefBlockmap_BlockSize((linedefblockmap_t*) blockmap, blockSize);
+        break;
+
+    case BLOCKMAPVISUAL_SUBSECTORS:
+        SubsectorBlockmap_Bounds((subsectorblockmap_t*) blockmap, min, max);
+        SubsectorBlockmap_Dimensions((subsectorblockmap_t*) blockmap, dimensions);
+        SubsectorBlockmap_BlockSize((subsectorblockmap_t*) blockmap, blockSize);
+        break;
+    }
 
     glDisable(GL_TEXTURE_2D);
 
@@ -402,17 +415,35 @@ static void drawBackground(blockmap_t* blockmap, uint viewerBlock[2], uint viewe
 /**
  * Draw the blockmap in 2D HUD mode.
  */
-static void drawBlockmap(blockmap_t* blockmap, byte mode, mobj_t* followMobj,
-                         void (*func) (blockmap_t*, uint x, uint y, float, float, float, float, void*))
+static void drawBlockmap(void* blockmap, byte mode, mobj_t* followMobj,
+                         void (*func) (void*, uint x, uint y, float, float, float, float, void*))
 {
     uint x, y, viewerBlock[2], viewerBlockBox[4];
     float radius;
     vec2_t start, end, box[2], min, max, blockSize;
     uint dimensions[2];
     
-    MobjBlockmap_Bounds(blockmap, min, max);
-    MobjBlockmap_Dimensions(blockmap, dimensions);
-    MobjBlockmap_BlockSize(blockmap, blockSize);
+    switch(mode)
+    {
+    default:
+    case BLOCKMAPVISUAL_MOBJS:
+        MobjBlockmap_Bounds((mobjblockmap_t*) blockmap, min, max);
+        MobjBlockmap_Dimensions((mobjblockmap_t*) blockmap, dimensions);
+        MobjBlockmap_BlockSize((mobjblockmap_t*) blockmap, blockSize);
+        break;
+
+    case BLOCKMAPVISUAL_LINEDEFS:
+        LineDefBlockmap_Bounds((linedefblockmap_t*) blockmap, min, max);
+        LineDefBlockmap_Dimensions((linedefblockmap_t*) blockmap, dimensions);
+        LineDefBlockmap_BlockSize((linedefblockmap_t*) blockmap, blockSize);
+        break;
+
+    case BLOCKMAPVISUAL_SUBSECTORS:
+        SubsectorBlockmap_Bounds((subsectorblockmap_t*) blockmap, min, max);
+        SubsectorBlockmap_Dimensions((subsectorblockmap_t*) blockmap, dimensions);
+        SubsectorBlockmap_BlockSize((subsectorblockmap_t*) blockmap, blockSize);
+        break;
+    }
 
     if(followMobj)
     {   // Determine the mobj's block.
@@ -531,8 +562,8 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     uint dimensions[2], viewerBlock[2];
     float scale;
     mobj_t* followMobj;
-    blockmap_t* blockmap;
-    void (*func) (blockmap_t*, uint x, uint y, float, float, float, float, void*);
+    void* blockmap;
+    void (*func) (void*, uint x, uint y, float, float, float, float, void*);
 
     if(!map)
         return;
@@ -541,17 +572,17 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     {
     case BLOCKMAPVISUAL_MOBJS:
     default:
-        blockmap = (blockmap_t*) Map_MobjBlockmap(map);
+        blockmap = (void*) Map_MobjBlockmap(map);
         func = drawMobjsInBlock;
         break;
 
     case BLOCKMAPVISUAL_LINEDEFS:
-        blockmap = (blockmap_t*) Map_LineDefBlockmap(map);
+        blockmap = (void*) Map_LineDefBlockmap(map);
         func = drawLineDefsInBlock;
         break;
 
     case BLOCKMAPVISUAL_SUBSECTORS:
-        blockmap = (blockmap_t*) Map_SubsectorBlockmap(map);
+        blockmap = (void*) Map_SubsectorBlockmap(map);
         func = drawSubsectorsInBlock;
         break;
     }

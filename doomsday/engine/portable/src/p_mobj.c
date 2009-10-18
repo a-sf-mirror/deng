@@ -388,9 +388,9 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
 
     // Hit something yet?
     if(result)
-    {   // Nope.
-        // Try polyobj->lineDefs and lines.
-        if(!Map_AllLineDefsBoxIteratorv(map, data.box, PIT_LineCollide, &data, false))
+    {
+        // Try LineDefs.
+        if(!Map_LineDefsBoxIteratorv(map, data.box, PIT_LineCollide, &data, false))
         {
             result = false;
         }

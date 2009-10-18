@@ -207,7 +207,6 @@ typedef struct gamemap_s {
 
     mobjblockmap_t* _mobjBlockmap;
     linedefblockmap_t* _lineDefBlockmap;
-    polyobjblockmap_t* _polyobjBlockmap;
     subsectorblockmap_t* _subsectorBlockmap;
 
     gameobjectrecordset_t _gameObjectRecordSet;
@@ -285,9 +284,6 @@ int             Map_AmbientLightLevel(gamemap_t* map);
 void            Map_LinkMobj(gamemap_t* map, struct mobj_s* mo, byte flags);
 int             Map_UnlinkMobj(gamemap_t* map, struct mobj_s* mo);
 
-void            Map_LinkPolyobj(gamemap_t* map, polyobj_t* po);
-void            Map_UnlinkPolyobj(gamemap_t* map, polyobj_t* po);
-
 /**
  * Map Edit interface.
  */
@@ -321,29 +317,6 @@ boolean         Map_LineDefsBoxIteratorv(struct gamemap_s* map, const arvec2_t b
                                          boolean (*func) (linedef_t*, void*),
                                          void* data, boolean retObjRecord);
 
-// Polyobj in bounding box iterators:
-boolean         Map_PolyobjsBoxIterator(struct gamemap_s* map, const float box[4],
-                                        boolean (*func) (polyobj_t*, void*),
-                                        void* data);
-boolean         Map_PolyobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                         boolean (*func) (polyobj_t*, void*),
-                                         void* data);
-
-boolean         Map_PolyobjLineDefsBoxIterator(struct gamemap_s* map, const float box[4],
-                                               boolean (*func) (linedef_t*, void*),
-                                               void* data, boolean retObjRecord);
-boolean         Map_PolyobjLineDefsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                                boolean (*func) (linedef_t*, void*),
-                                                void* data, boolean retObjRecord);
-
-// LineDefs and Polyobj LineDefs in iterators:
-boolean         Map_AllLineDefsBoxIterator(struct gamemap_s* map, const float box[4],
-                                           boolean (*func) (linedef_t*, void*),
-                                           void* data, boolean retObjRecord);
-boolean         Map_AllLineDefsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
-                                            boolean (*func) (linedef_t*, void*),
-                                            void* data, boolean retObjRecord);
-
 // Subsectors in bounding box iterators:
 boolean         Map_SubsectorsBoxIterator(struct gamemap_s* map, const float box[4], sector_t* sector,
                                           boolean (*func) (subsector_t*, void*),
@@ -372,11 +345,9 @@ float           Map_GameObjectRecordFloat(gamemap_t* map, int typeIdentifier, ui
 halfedgeds_t*   Map_HalfEdgeDS(gamemap_t* map);
 mobjblockmap_t* Map_MobjBlockmap(gamemap_t* map);
 linedefblockmap_t* Map_LineDefBlockmap(gamemap_t* map);
-polyobjblockmap_t* Map_PolyobjBlockmap(gamemap_t* map);
 subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map);
 
 void            Map_BuildMobjBlockmap(gamemap_t* map);
 void            Map_BuildLineDefBlockmap(gamemap_t* map);
-void            Map_BuildPolyobjBlockmap(gamemap_t* map);
 void            Map_BuildSubsectorBlockmap(gamemap_t* map);
 #endif /* DOOMSDAY_PLAY_DATA_H */

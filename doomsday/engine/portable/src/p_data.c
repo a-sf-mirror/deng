@@ -231,8 +231,6 @@ void P_DestroyMap(gamemap_t* map)
         P_DestroyMobjBlockmap(map->_mobjBlockmap);
     if(map->_lineDefBlockmap)
         P_DestroyLineDefBlockmap(map->_lineDefBlockmap);
-    if(map->_polyobjBlockmap)
-        P_DestroyPolyobjBlockmap(map->_polyobjBlockmap);
     if(map->_subsectorBlockmap)
         P_DestroySubsectorBlockmap(map->_subsectorBlockmap);
 
@@ -427,26 +425,6 @@ int Map_UnlinkMobj(gamemap_t* map, mobj_t* mo)
         links |= DDLINK_NOLINE;
 
     return links;
-}
-
-void Map_LinkPolyobj(gamemap_t* map, polyobj_t* po)
-{
-    if(!map)
-        return;
-    if(!po)
-        return;
-
-    PolyobjBlockmap_Insert(map->_polyobjBlockmap, po);
-}
-
-void Map_UnlinkPolyobj(gamemap_t* map, polyobj_t* po)
-{
-    if(!map)
-        return;
-    if(!po)
-        return;
-
-    PolyobjBlockmap_Remove(map->_polyobjBlockmap, po);
 }
 
 void Map_BuildLineDefBlockmap(gamemap_t* map)
@@ -677,11 +655,6 @@ mobjblockmap_t* Map_MobjBlockmap(gamemap_t* map)
 linedefblockmap_t* Map_LineDefBlockmap(gamemap_t* map)
 {
     return map->_lineDefBlockmap;
-}
-
-polyobjblockmap_t* Map_PolyobjBlockmap(gamemap_t* map)
-{
-    return map->_polyobjBlockmap;
 }
 
 subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map)
@@ -1052,7 +1025,6 @@ boolean P_LoadMap(const char* mapID)
 
         // Init other blockmaps.
         Map_BuildMobjBlockmap(map);
-        //Map_BuildPolyobjBlockmap(map);
         Map_BuildSubsectorBlockmap(map);
 
         strncpy(map->mapID, mapID, 8);
@@ -1173,41 +1145,6 @@ boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
     return MobjBlockmap_BoxIterate(map->_mobjBlockmap, blockBox, func, data);
 }
 
-boolean Map_PolyobjsBoxIterator(gamemap_t* map, const float box[4],
-                                boolean (*func) (struct polyobj_s*, void*),
-                                void* data)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_PolyobjsBoxIteratorv(map, bounds, func, data);
-}
-
-/**
- * The validCount flags are used to avoid checking polys that are marked in
- * multiple mapblocks, so increment validCount before the first call, then
- * make one or more calls to it.
- */
-boolean Map_PolyobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                 boolean (*func) (struct polyobj_s*, void*),
-                                 void* data)
-{
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-    if(!map->_polyobjBlockmap)
-        return true;
-
-    // Blockcoords to check.
-    PolyobjBlockmap_BoxToBlocks(map->_polyobjBlockmap, blockBox, box);
-    return PolyobjBlockmap_BoxIterate(map->_polyobjBlockmap, blockBox, func, data);
-}
-
 static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*),
                                  void* data, boolean retObjRecord)
@@ -1267,76 +1204,6 @@ boolean Map_SubsectorsBoxIteratorv(gamemap_t* map, const arvec2_t box, sector_t*
     return SubsectorBlockmap_BoxIterate(map->_subsectorBlockmap, blockBox, sector,
                                        box, localValidCount, func, data,
                                        retObjRecord);
-}
-
-boolean Map_PolyobjLineDefsBoxIterator(gamemap_t* map, const float box[4],
-                                    boolean (*func) (linedef_t*, void*),
-                                    void* data, boolean retObjRecord)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return Map_PolyobjLineDefsBoxIteratorv(map, bounds, func, data, retObjRecord);
-}
-
-boolean Map_PolyobjLineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                     boolean (*func) (linedef_t*, void*),
-                                     void* data, boolean retObjRecord)
-{
-    uint blockBox[4];
-
-    if(!map)
-        return true;
-    if(!map->_polyobjBlockmap)
-        return true;
-
-    PolyobjBlockmap_BoxToBlocks(map->_polyobjBlockmap, blockBox, box);
-    return P_BoxIterateLineDefsOfPolyobjs(map->_polyobjBlockmap, blockBox, func, data, retObjRecord);
-}
-
-static boolean allLinesBoxIterator(gamemap_t* map, const arvec2_t box,
-                                   boolean (*func) (linedef_t*, void*),
-                                   void* data, boolean retObjRecord)
-{
-    if(!Map_PolyobjLineDefsBoxIteratorv(map, box, func, data, retObjRecord))
-        return false;
-
-    return linesBoxIteratorv(map, box, func, data, retObjRecord);
-}
-
-/**
- * The validCount flags are used to avoid checking lines that are marked
- * in multiple mapblocks, so increment validCount before the first call
- * to LineDefBlockmap_Iterate, then make one or more calls to it.
- */
-boolean Map_AllLineDefsBoxIterator(gamemap_t* map, const float box[4],
-                                boolean (*func) (linedef_t*, void*),
-                                void* data, boolean retObjRecord)
-{
-    vec2_t bounds[2];
-
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
-
-    return allLinesBoxIterator(map, bounds, func, data, retObjRecord);
-}
-
-/**
- * The validCount flags are used to avoid checking lines that are marked
- * in multiple mapblocks, so increment validCount before the first call
- * to LineDefBlockmap_Iterate, then make one or more calls to it.
- */
-boolean Map_AllLineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
-                                 boolean (*func) (linedef_t*, void*),
-                                 void* data, boolean retObjRecord)
-{
-    return allLinesBoxIterator(map, box, func, data, retObjRecord);
 }
 
 static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCreate)

@@ -226,13 +226,7 @@ extern          "C" {
     boolean         P_MobjsBoxIterator(const float box[4],
                                        boolean (*func) (struct mobj_s*, void*),
                                        void* data);
-    boolean         P_PolyobjsBoxIterator(const float box[4],
-                                          boolean (*func) (struct polyobj_s*, void*),
-                                          void* data);
-    boolean         P_LinesBoxIterator(const float box[4],
-                                       boolean (*func) (struct linedef_s*, void*),
-                                       void* data);
-    boolean         P_AllLinesBoxIterator(const float box[4],
+    boolean         P_LineDefsBoxIterator(const float box[4],
                                           boolean (*func) (struct linedef_s*, void*),
                                           void* data);
     boolean         P_SubsectorsBoxIterator(const float box[4], void* p,
@@ -388,8 +382,8 @@ extern          "C" {
     // Play: Polyobjs.
     boolean         P_PolyobjMove(struct polyobj_s* po, float x, float y);
     boolean         P_PolyobjRotate(struct polyobj_s* po, angle_t angle);
-    void            P_PolyobjLink(struct polyobj_s* po);
-    void            P_PolyobjUnLink(struct polyobj_s* po);
+    void            P_PolyobjLinkLineDefs(struct polyobj_s* po);
+    void            P_PolyobjUnlinkLineDefs(struct polyobj_s* po);
 
     struct polyobj_s* P_GetPolyobj(uint num);
     void            P_SetPolyobjCallback(void (*func)(struct mobj_s*, void*, void*));

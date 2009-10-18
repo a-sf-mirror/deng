@@ -838,8 +838,8 @@ boolean PIT_ClientMobjParticles(clmobj_t* cmo, void* context)
  */
 static int manyNewParticles(void* p, void* context)
 {
-    ptcgen_t*           gen = (ptcgen_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    ptcgen_t* gen = (ptcgen_t*) context;
+    mobj_t* mo = (mobj_t*) p;
 
     // Type match?
     if(mo->type == gen->type || mo->type == gen->type2)
@@ -854,8 +854,8 @@ static int manyNewParticles(void* p, void* context)
 
 boolean PIT_CheckLinePtc(linedef_t* ld, void* data)
 {
-    fixed_t             ceil, floor;
-    sector_t*           front, *back;
+    fixed_t ceil, floor;
+    sector_t* front, *back;
 
     if(mbox[1][VX] <= ld->bBox[BOXLEFT] || mbox[0][VX] >= ld->bBox[BOXRIGHT] ||
        mbox[1][VY] <= ld->bBox[BOXBOTTOM] || mbox[0][VY] >= ld->bBox[BOXTOP])
@@ -1241,7 +1241,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!Map_AllLineDefsBoxIteratorv(P_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
+    if(!Map_LineDefsBoxIteratorv(P_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t normal[2], dotp;
 

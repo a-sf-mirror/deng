@@ -1054,7 +1054,7 @@ int iterateLinedefsNearMobj(void* p, void* context)
 
     VALIDCOUNT++;
 
-    P_LinesBoxIterator(aabb, unstuckMobjInLinedef, &params);
+    P_LineDefsBoxIterator(aabb, unstuckMobjInLinedef, &params);
 
     if(mo->pos[VX] != params.pos[VX] || mo->pos[VY] != params.pos[VY])
     {

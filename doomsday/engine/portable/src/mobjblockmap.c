@@ -58,17 +58,17 @@ typedef struct linkmobj_s {
 
 // CODE --------------------------------------------------------------------
 
-static blockmap_t* allocBlockmap(void)
+static mobjblockmap_t* allocBlockmap(void)
 {
-    return Z_Calloc(sizeof(blockmap_t), PU_STATIC, 0);
+    return Z_Calloc(sizeof(mobjblockmap_t), PU_STATIC, 0);
 }
 
-static void freeBlockmap(blockmap_t* bmap)
+static void freeBlockmap(mobjblockmap_t* bmap)
 {
     Z_Free(bmap);
 }
 
-static void boxToBlocks(blockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(mobjblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
 {
     uint dimensions[2];
     vec2_t min, max;
@@ -90,16 +90,6 @@ static void boxToBlocks(blockmap_t* bmap, uint blockBox[4], const arvec2_t box)
 
 void MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, uint blockBox[4],
                               const arvec2_t box)
-{
-    assert(blockmap);
-    assert(blockBox);
-    assert(box);
-
-    boxToBlocks(blockmap, blockBox, box);
-}
-
-void PolyobjBlockmap_BoxToBlocks(polyobjblockmap_t* blockmap, uint blockBox[4],
-                                 const arvec2_t box)
 {
     assert(blockmap);
     assert(blockBox);
@@ -133,33 +123,6 @@ boolean MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint dest[2], float x, fl
 boolean MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint dest[2], const float pos[2])
 {
     return MobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
-}
-
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean PolyobjBlockmap_Block2f(polyobjblockmap_t* blockmap, uint dest[2], float x, float y)
-{
-    assert(blockmap);
-
-    if(!(x < blockmap->aabb[0][VX] || x >= blockmap->aabb[1][VX] ||
-         y < blockmap->aabb[0][VY] || y >= blockmap->aabb[1][VY]))
-    {
-        dest[VX] = (x - blockmap->aabb[0][VX]) / blockmap->blockSize[VX];
-        dest[VY] = (y - blockmap->aabb[0][VY]) / blockmap->blockSize[VY];
-
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean PolyobjBlockmap_Block2fv(polyobjblockmap_t* blockmap, uint dest[2], const float pos[2])
-{
-    return PolyobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
 static boolean freeMobjBlockData(void* data, void* context)
@@ -204,107 +167,6 @@ void P_DestroyMobjBlockmap(mobjblockmap_t* blockmap)
 
     M_DestroyGridmap(blockmap->gridmap);
     Z_Free(blockmap);
-}
-
-polyobjblockmap_t* P_CreatePolyobjBlockmap(const pvec2_t min, const pvec2_t max,
-                                           uint width, uint height)
-{
-    polyobjblockmap_t* blockmap;
-
-    assert(min);
-    assert(max);
-
-    blockmap = allocBlockmap();
-    V2_Copy(blockmap->aabb[0], min);
-    V2_Copy(blockmap->aabb[1], max);
-    V2_Set(blockmap->blockSize,
-           (blockmap->aabb[1][VX] - blockmap->aabb[0][VX]) / width,
-           (blockmap->aabb[1][VY] - blockmap->aabb[0][VY]) / height);
-
-    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
-
-    return blockmap;
-}
-
-static boolean freePolyobjBlockData(void* data, void* context)
-{
-    linkpolyobj_t* link = (linkpolyobj_t*) data;
-
-    while(link)
-    {
-        linkpolyobj_t* next = link->next;
-        Z_Free(link);
-        link = next;
-    }
-
-    return true; // Continue iteration.
-}
-
-void P_DestroyPolyobjBlockmap(polyobjblockmap_t* blockmap)
-{
-    assert(blockmap);
-
-    Gridmap_Iterate(blockmap->gridmap, freePolyobjBlockData, NULL);
-
-    M_DestroyGridmap(blockmap->gridmap);
-    Z_Free(blockmap);
-}
-
-void PolyobjBlockmap_SetBlock(polyobjblockmap_t* blockmap, uint x, uint y,
-                              linkpolyobj_t* poLink)
-{
-    void* data;
-
-    assert(blockmap);
-
-    data = Gridmap_Block(blockmap->gridmap, x, y);
-    /*if(data)
-        // Free block.*/
-    Gridmap_SetBlock(blockmap->gridmap, x, y, poLink);
-}
-
-boolean unlinkPolyobjInBlock(void* ptr, void* context)
-{
-    linkpolyobj_t** data = ptr;
-    polyobj_t* po = (polyobj_t*) context;
-
-    P_PolyobjUnlinkFromRing(po, &(*data));
-    return true;
-}
-
-boolean linkPolyobjInBlock(void* ptr, void* context)
-{
-    linkpolyobj_t** data = ptr;
-    polyobj_t* po = (polyobj_t*) context;
-
-    P_PolyobjLinkToRing(po, &(*data));
-    return true;
-}
-
-void PolyobjBlockmap_Insert(polyobjblockmap_t* blockmap, polyobj_t* po)
-{
-    uint blockBox[4];
-
-    assert(blockmap);
-    assert(po);
-
-    P_PolyobjUpdateBBox(po);
-    PolyobjBlockmap_BoxToBlocks(blockmap, blockBox, po->box);
-
-    Gridmap_IterateBoxv(blockmap->gridmap, blockBox, linkPolyobjInBlock, (void*) po);
-}
-
-void PolyobjBlockmap_Remove(polyobjblockmap_t* blockmap, polyobj_t* po)
-{
-    uint blockBox[4];
-
-    assert(blockmap);
-    assert(po);
-
-    P_PolyobjUpdateBBox(po);
-    PolyobjBlockmap_BoxToBlocks(blockmap, blockBox, po->box);
-
-    Gridmap_IterateBoxv(blockmap->gridmap, blockBox, unlinkPolyobjInBlock, (void*) po);
 }
 
 void MobjBlockmap_Insert(mobjblockmap_t* blockmap, mobj_t* mo)
@@ -413,95 +275,6 @@ uint MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y)
     }
 
     return num;
-}
-
-uint PolyobjBlockmap_NumInBlock(polyobjblockmap_t* blockmap, uint x, uint y)
-{
-    linkpolyobj_t* data;
-    uint num = 0;
-
-    assert(blockmap);
-
-    data = Gridmap_Block(blockmap->gridmap, x, y);
-    // Count the number of polyobjs linked to this block.
-    if(data)
-    {
-        linkpolyobj_t* link = data;
-        while(link)
-        {
-            if(link->polyobj)
-                num++;
-            link = link->next;
-        }
-    }
-
-    return num;
-}
-
-typedef struct {
-    boolean       (*func) (polyobj_t*, void *);
-    int             localValidCount;
-    void*           context;
-} iteratepolyobjs_args_t;
-
-static boolean iteratePolyobjs(void* ptr, void* context)
-{
-    linkpolyobj_t* link = (linkpolyobj_t*) ptr;
-    iteratepolyobjs_args_t* args = (iteratepolyobjs_args_t*) context;
-
-    while(link)
-    {
-        linkpolyobj_t* next = link->next;
-
-        if(link->polyobj)
-            if(link->polyobj->validCount != args->localValidCount)
-            {
-                link->polyobj->validCount = args->localValidCount;
-
-                if(!args->func(link->polyobj, args->context))
-                    return false;
-            }
-
-        link = next;
-    }
-
-    return true;
-}
-
-boolean PolyobjBlockmap_Iterate(polyobjblockmap_t* blockmap, const uint block[2],
-                                boolean (*func) (polyobj_t*, void*),
-                                void* context)
-{
-    iteratepolyobjs_args_t args;
-
-    assert(blockmap);
-    assert(block);
-    assert(func);
-
-    args.func = func;
-    args.context = context;
-    args.localValidCount = validCount;
-
-    return iteratePolyobjs(Gridmap_Block(blockmap->gridmap, block[VX], block[VY]),
-                           (void*) &args);
-}
-
-boolean PolyobjBlockmap_BoxIterate(polyobjblockmap_t* blockmap, const uint blockBox[4],
-                                   boolean (*func) (polyobj_t*, void*),
-                                   void* context)
-{
-    iteratepolyobjs_args_t args;
-
-    assert(blockmap);
-    assert(blockBox);
-    assert(func);
-
-    args.func = func;
-    args.context = context;
-    args.localValidCount = validCount;
-
-    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iteratePolyobjs,
-                               (void*) &args);
 }
 
 typedef struct {

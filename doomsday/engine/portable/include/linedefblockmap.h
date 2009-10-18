@@ -68,13 +68,4 @@ boolean         LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const 
                                              const uint destBlock[2], const float origin[2],
                                              const float dest[2],
                                              boolean (*func) (intercept_t*));
-
-// @todo find a new home for these:
-boolean         P_IterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint block[2],
-                                            boolean (*func) (struct linedef_s*, void*),
-                                            void* data, boolean retObjRecord);
-boolean         P_BoxIterateLineDefsOfPolyobjs(polyobjblockmap_t* blockmap, const uint blockBox[4],
-                                               boolean (*func) (struct linedef_s*, void*),
-                                               void* data, boolean retObjRecord);
-
 #endif /* DOOMSDAY_LINEDEFBLOCKMAP_H */

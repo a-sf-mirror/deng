@@ -52,8 +52,8 @@ boolean         P_IsPolyobjOrigin(struct gamemap_s* map, void* ddMobjBase);
 // Polyobject interface.
 boolean         P_PolyobjMove(polyobj_t* po, float x, float y);
 boolean         P_PolyobjRotate(polyobj_t* po, angle_t angle);
-void            P_PolyobjLink(polyobj_t* po);
-void            P_PolyobjUnLink(polyobj_t* po);
+void            P_PolyobjLinkLineDefs(polyobj_t* po);
+void            P_PolyobjUnlinkLineDefs(polyobj_t* po);
 
 void            P_PolyobjUpdateBBox(polyobj_t* po);
 

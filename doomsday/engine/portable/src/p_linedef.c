@@ -181,6 +181,12 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
         DMU_GetValue(DMT_LINEDEF_BACKSIDEDEF, &r, args, 0);
         break;
         }
+    case DMU_POLYOBJ:
+        {
+        boolean polyLinked = (lin->inFlags & LF_POLYOBJ) != 0;
+        DMU_GetValue(DDVT_BOOL, &polyLinked, args, 0);
+        break;
+        }
     case DMU_BOUNDING_BOX:
         if(args->valueType == DDVT_PTR)
         {
