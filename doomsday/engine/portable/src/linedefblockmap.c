@@ -419,20 +419,21 @@ void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t ma
 
 uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
 {
-    linedef_t** data;
+    linklinedef_t* data;
     uint num = 0;
 
     assert(blockmap);
 
-    data = (linedef_t**) Gridmap_Block(blockmap->gridmap, x, y);
-    // Count the number of lines linked to this block.
+    data = (linklinedef_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    // Count the number of linedefs linked to this block.
     if(data)
     {
-        linedef_t** iter = data;
-        while(*iter)
+        linklinedef_t* link = data;
+        while(link)
         {
-            num++;
-            *iter++;
+            if(link->lineDef)
+                num++;
+            link = link->next;
         }
     }
 

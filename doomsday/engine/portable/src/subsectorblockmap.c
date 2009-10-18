@@ -39,6 +39,11 @@
 
 // TYPES -------------------------------------------------------------------
 
+typedef struct linksubsector_s {
+    struct linksubsector_s* next;
+    struct subsector_s* subsector;
+} linksubsector_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -142,17 +147,13 @@ subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t 
 
 static boolean freeSubsectorBlockData(void* data, void* context)
 {
-    /*linkmobj_t* link = (linkmobj_t*) data;
+    linksubsector_t* link = (linksubsector_t*) data;
 
     while(link)
     {
-        linkmobj_t* next = link->next;
+        linksubsector_t* next = link->next;
         Z_Free(link);
         link = next;
-    }*/
-    {
-    subsector_t** subsectors = (subsector_t**) data;
-    Z_Free(subsectors);
     }
 
     return true; // Continue iteration.
@@ -168,174 +169,112 @@ void P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap)
     Z_Free(blockmap);
 }
 
-void SubsectorBlockmap_SetBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                subsector_t** subsectors)
+static void linkSubsectorToBlock(subsectorblockmap_t* blockmap, uint x, uint y,
+                                 subsector_t* subsector)
 {
-    subsector_t** oldData;
+    linksubsector_t* link = (linksubsector_t*)
+        Gridmap_Block(blockmap->gridmap, x, y);
 
-    assert(blockmap);
+    if(!link)
+    {   // Create a new link at the current block cell.
+        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
+        link->next = NULL;
+        link->subsector = subsector;
 
-    oldData = (subsector_t**) Gridmap_Block(blockmap->gridmap, x, y);
-    if(oldData)
-        Z_Free(oldData);
-
-    Gridmap_SetBlock(blockmap->gridmap, x, y, subsectors);
-}
-
-void Map_BuildSubsectorBlockmap(gamemap_t* map)
-{
-#define BLKMARGIN       8
-#define BLOCK_WIDTH     128
-#define BLOCK_HEIGHT    128
-
-typedef struct subsectornode_s {
-    void*           data;
-    struct subsectornode_s* next;
-} subsectornode_t;
-
-typedef struct subsecmap_s {
-    uint            count;
-    subsectornode_t* nodes;
-} subsectormap_t;
-
-    uint startTime = Sys_GetRealTime();
-
-    uint i, x, y, subMapWidth, subMapHeight, minBlock[2], maxBlock[2];
-    subsectornode_t* iter, *next;
-    subsectormap_t* bmap, *block;
-    vec2_t bounds[2], blockSize, dims;
-    subsectorblockmap_t* blockmap;
-    size_t totalLinks;
-
-    // Setup the blockmap area to enclose the whole map, plus a margin
-    // (margin is needed for a map that fits entirely inside one blockmap
-    // cell).
-    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
-                      map->bBox[BOXBOTTOM] - BLKMARGIN);
-    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
-                      map->bBox[BOXTOP] + BLKMARGIN);
-
-    // Select a good size for the blocks.
-    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
-    V2_Subtract(dims, bounds[1], bounds[0]);
-
-    // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
-        subMapWidth = 1;
-    else
-        subMapWidth = ceil(dims[VX] / blockSize[VX]);
-
-    if(dims[VY] <= blockSize[VY])
-        subMapHeight = 1;
-    else
-        subMapHeight = ceil(dims[VY] / blockSize[VY]);
-
-    // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + subMapWidth  * blockSize[VX],
-                      bounds[0][VY] + subMapHeight * blockSize[VY]);
-
-    blockmap = P_CreateSubsectorBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
-
-    // We'll construct the temporary links using nodes.
-    bmap = M_Calloc(sizeof(subsectormap_t) * subMapWidth * subMapHeight);
-
-    // Process all the subsectors in the map.
-    totalLinks = 0;
-    for(i = 0; i < map->numSubsectors; ++i)
-    {
-        subsector_t* subsector = map->subsectors[i];
-
-        if(!subsector->sector)
-            continue;
-
-        // Blockcoords to link to.
-        SubsectorBlockmap_Block2fv(blockmap, minBlock, subsector->bBox[0].pos);
-        SubsectorBlockmap_Block2fv(blockmap, maxBlock, subsector->bBox[1].pos);
-
-        for(x = minBlock[0]; x <= maxBlock[0]; ++x)
-            for(y = minBlock[1]; y <= maxBlock[1]; ++y)
-            {
-                if(x < 0 || y < 0 || x >= subMapWidth || y >= subMapHeight)
-                {
-                    Con_Printf("sub%i: outside block x=%i, y=%i\n", i, x, y);
-                    continue;
-                }
-
-                // Create a new node.
-                iter = M_Malloc(sizeof(subsectornode_t));
-                iter->data = subsector;
-
-                // Link to the temporary map.
-                block = &bmap[x + y * subMapWidth];
-                iter->next = block->nodes;
-                block->nodes = iter;
-                totalLinks++;
-                if(!block->count)
-                    totalLinks++; // +1 for terminating NULL.
-                block->count++;
-            }
+        Gridmap_SetBlock(blockmap->gridmap, x, y, link);
+        return;
     }
 
-    // Create the actual links by 'hardening' the lists into arrays.
-    for(y = 0; y < subMapHeight; ++y)
-        for(x = 0; x < subMapWidth; ++x)
+    while(link->next != NULL && link->subsector != NULL)
+    {
+        link = link->next;
+    }
+
+    if(link->subsector == NULL)
+    {
+        link->subsector = subsector;
+        return;
+    }
+
+    link->next = Z_Malloc(sizeof(linksubsector_t), PU_STATIC, 0);
+    link->next->next = NULL;
+    link->next->subsector = subsector;
+}
+
+static void unlinkSubsectorFromBlock(subsectorblockmap_t* blockmap, uint x, uint y,
+                                     subsector_t* subsector)
+{
+    linksubsector_t* link = (linksubsector_t*)
+        Gridmap_Block(blockmap->gridmap, x, y);
+
+    for(; link; link = link->next)
+    {
+        if(link->subsector != subsector)
+            continue;
+
+        link->subsector = NULL;
+        return; // Subsector was unlinked.
+    }
+
+    // Subsector was not linked.
+}
+
+void SubsectorBlockmap_Insert(subsectorblockmap_t* blockmap, subsector_t* subsector)
+{
+    uint x, y, minBlock[2], maxBlock[2], dimensions[2];
+
+    assert(blockmap);
+    assert(subsector);
+
+    if(!subsector->sector)
+        return; // Never added.
+
+    Gridmap_Dimensions(blockmap->gridmap, dimensions);
+
+    // Blockcoords to link to.
+    SubsectorBlockmap_Block2fv(blockmap, minBlock, subsector->bBox[0].pos);
+    SubsectorBlockmap_Block2fv(blockmap, maxBlock, subsector->bBox[1].pos);
+
+    for(x = minBlock[0]; x <= maxBlock[0]; ++x)
+        for(y = minBlock[1]; y <= maxBlock[1]; ++y)
         {
-            block = &bmap[y * subMapWidth + x];
-
-            if(block->count > 0)
-            {
-                subsector_t** subsectors, **ptr;
-
-                // A NULL-terminated array of pointers to subsectors.
-                subsectors = Z_Malloc(sizeof(subsector_t*) * (block->count + 1), PU_STATIC, NULL);;
-
-                // Copy pointers to the array, delete the nodes.
-                ptr = subsectors;
-                for(iter = block->nodes; iter; iter = next)
-                {
-                    *ptr++ = (subsector_t*) iter->data;
-                    // Kill the node.
-                    next = iter->next;
-                    M_Free(iter);
-                }
-                // Terminate.
-                *ptr = NULL;
-
-                // Link it into the subSectorblockmap.
-                SubsectorBlockmap_SetBlock(blockmap, x, y, subsectors);
-            }
+            linkSubsectorToBlock(blockmap, x, y, subsector);
         }
+}
 
-    // Free the temporary link map.
-    M_Free(bmap);
+boolean SubsectorBlockmap_Remove(subsectorblockmap_t* blockmap, subsector_t* subsector)
+{
+    uint i, block[2];
 
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("Map_BuildSubsectorBlockmap: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
+    assert(blockmap);
+    assert(subsector);
 
-    map->_subsectorBlockmap = blockmap;
+    /*if(!subsector->numBlockLinks)
+        return false; // Subsector was not linked.
 
-#undef BLOCK_WIDTH
-#undef BLOCK_HEIGHT
+    for(i = 0; i < subsector->numBlockLinks; ++i)
+        unlinkSubsectorFromBlock(blockmap, block[0], block[1], subsector);*/
+
+    return true;    
 }
 
 uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
 {
-    subsector_t** data;
+    linksubsector_t* data;
     uint num = 0;
 
     assert(blockmap);
 
-    data = (subsector_t**) Gridmap_Block(blockmap->gridmap, x, y);
+    data = (linksubsector_t*) Gridmap_Block(blockmap->gridmap, x, y);
     // Count the number of subsectors linked to this block.
     if(data)
     {
-        subsector_t** iter = data;
-        while(*iter)
+        linksubsector_t* link = data;
+        while(link)
         {
-            num++;
-            *iter++;
+            if(link->subsector)
+                num++;
+            link = link->next;
         }
     }
 
@@ -353,18 +292,21 @@ typedef struct {
 
 static boolean iterateSubsectors(void* ptr, void* context)
 {
-    subsector_t** iter = (subsector_t**) ptr;
+    linksubsector_t* link = (linksubsector_t*) ptr;
     iteratesubsector_args_t* args = (iteratesubsector_args_t*) context;
 
-    if(iter)
+    while(link)
     {
-        while(*iter)
+        linksubsector_t* next = link->next;
+
+        if(link->subsector)
         {
-            subsector_t* subsector = *iter;
+            subsector_t* subsector = link->subsector;
 
             if(subsector->validCount != args->localValidCount)
             {
                 boolean ok = true;
+                void* ptr;
 
                 subsector->validCount = args->localValidCount;
 
@@ -382,8 +324,6 @@ static boolean iterateSubsectors(void* ptr, void* context)
 
                 if(ok)
                 {
-                    void* ptr;
-
                     if(args->retObjRecord)
                         ptr = (void*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
                     else
@@ -393,9 +333,9 @@ static boolean iterateSubsectors(void* ptr, void* context)
                         return false;
                 }
             }
-
-            *iter++;
         }
+
+        link = next;
     }
 
     return true;

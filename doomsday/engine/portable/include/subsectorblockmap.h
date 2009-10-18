@@ -44,8 +44,8 @@ subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t 
                                                uint width, uint height);
 void            P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap);
 
-void            SubsectorBlockmap_SetBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                           struct subsector_s** subsectors);
+void            SubsectorBlockmap_Insert(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
+boolean         SubsectorBlockmap_Remove(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
 uint            SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y);
 void            SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max);
 void            SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize);

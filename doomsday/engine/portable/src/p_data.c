@@ -515,6 +515,59 @@ void Map_BuildLineDefBlockmap(gamemap_t* map)
 #undef MAPBLOCKUNITS
 }
 
+void Map_BuildSubsectorBlockmap(gamemap_t* map)
+{
+#define BLKMARGIN       8
+#define BLOCK_WIDTH     128
+#define BLOCK_HEIGHT    128
+
+    uint i, subMapWidth, subMapHeight;
+    vec2_t bounds[2], blockSize, dims;
+    subsectorblockmap_t* blockmap;
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
+                      map->bBox[BOXBOTTOM] - BLKMARGIN);
+    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
+                      map->bBox[BOXTOP] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        subMapWidth = 1;
+    else
+        subMapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        subMapHeight = 1;
+    else
+        subMapHeight = ceil(dims[VY] / blockSize[VY]);
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + subMapWidth  * blockSize[VX],
+                      bounds[0][VY] + subMapHeight * blockSize[VY]);
+
+    blockmap = P_CreateSubsectorBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
+
+    // Process all the subsectors in the map.
+    for(i = 0; i < map->numSubsectors; ++i)
+    {
+        subsector_t* subsector = map->subsectors[i];
+        SubsectorBlockmap_Insert(blockmap, subsector);
+    }
+
+    map->_subsectorBlockmap = blockmap;
+
+#undef BLKMARGIN
+#undef BLOCK_WIDTH
+#undef BLOCK_HEIGHT
+}
+
 void Map_BuildMobjBlockmap(gamemap_t* map)
 {
 #define BLKMARGIN               (8) // size guardband around map
