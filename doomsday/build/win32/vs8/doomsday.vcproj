@@ -330,10 +330,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\dam_blockmap.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\dam_file.c"
 				>
 			</File>
@@ -522,6 +518,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\mobjblockmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\net_buf.c"
 				>
 			</File>
@@ -543,10 +543,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\net_ping.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\mobjblockmap.c"
 				>
 			</File>
 			<File
@@ -1283,10 +1279,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\dam_blockmap.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\dam_file.h"
 				>
 			</File>
@@ -1559,6 +1551,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\include\mobjblockmap.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\include\net_buf.h"
 				>
 			</File>
@@ -1576,10 +1572,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\net_msg.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\mobjblockmap.h"
 				>
 			</File>
 			<File

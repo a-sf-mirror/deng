@@ -30,8 +30,6 @@
 #define __DOOMSDAY_DAM__
 
 #include "dam_main.h"
-
-#include "dam_blockmap.h"
 #include "dam_file.h"
 
 #endif

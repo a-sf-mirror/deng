@@ -449,6 +449,125 @@ void Map_UnlinkPolyobj(gamemap_t* map, polyobj_t* po)
     PolyobjBlockmap_Remove(map->_polyobjBlockmap, po);
 }
 
+void Map_BuildLineDefBlockmap(gamemap_t* map)
+{
+#define BLKMARGIN               (8) // size guardband around map
+#define MAPBLOCKUNITS           128
+
+    uint i;
+    uint bMapWidth, bMapHeight; // Blockmap dimensions.
+    vec2_t blockSize; // Size of the blocks.
+    uint numBlocks; // Number of cells = nrows*ncols.
+    vec2_t bounds[2], point, dims;
+    vertex_t* vtx;
+    linedefblockmap_t* blockmap;
+
+    // Scan for map limits, which the blockmap must enclose.
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
+    {
+        vtx = Map_HalfEdgeDS(map)->vertices[i];
+
+        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
+        if(!i)
+            V2_InitBox(bounds, point);
+        else
+            V2_AddToBox(bounds, point);
+    }
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN, bounds[1][VY] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        bMapWidth = 1;
+    else
+        bMapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        bMapHeight = 1;
+    else
+        bMapHeight = ceil(dims[VY] / blockSize[VY]);
+    numBlocks = bMapWidth * bMapHeight;
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
+                      bounds[0][VY] + bMapHeight * blockSize[VY]);
+
+    blockmap = P_CreateLineDefBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
+
+    for(i = 0; i < map->numLineDefs; ++i)
+    {
+        linedef_t* lineDef = map->lineDefs[i];
+
+        LineDefBlockmap_Insert(blockmap, lineDef);
+    }
+
+    map->_lineDefBlockmap = blockmap;
+
+#undef BLKMARGIN
+#undef MAPBLOCKUNITS
+}
+
+void Map_BuildMobjBlockmap(gamemap_t* map)
+{
+#define BLKMARGIN               (8) // size guardband around map
+#define MAPBLOCKUNITS           128
+
+    uint i, bMapWidth, bMapHeight; // Blockmap dimensions.
+    vec2_t blockSize; // Size of the blocks.
+    vec2_t bounds[2], dims;
+
+    // Scan for map limits, which the blockmap must enclose.
+    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
+    {
+        vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
+        vec2_t point;
+
+        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
+        if(!i)
+            V2_InitBox(bounds, point);
+        else
+            V2_AddToBox(bounds, point);
+    }
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN, bounds[1][VY] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        bMapWidth = 1;
+    else
+        bMapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        bMapHeight = 1;
+    else
+        bMapHeight = ceil(dims[VY] / blockSize[VY]);
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
+                      bounds[0][VY] + bMapHeight * blockSize[VY]);
+
+    map->_mobjBlockmap = P_CreateMobjBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
+
+#undef BLKMARGIN
+#undef MAPBLOCKUNITS
+}
+
 /**
  * This ID is the name of the lump tag that marks the beginning of map
  * data, e.g. "MAP03" or "E2M8".

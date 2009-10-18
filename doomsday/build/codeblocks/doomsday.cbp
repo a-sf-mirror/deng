@@ -199,7 +199,6 @@
 		<Unit filename="..\..\engine\portable\include\con_config.h" />
 		<Unit filename="..\..\engine\portable\include\con_decl.h" />
 		<Unit filename="..\..\engine\portable\include\con_main.h" />
-		<Unit filename="..\..\engine\portable\include\dam_blockmap.h" />
 		<Unit filename="..\..\engine\portable\include\dam_file.h" />
 		<Unit filename="..\..\engine\portable\include\dam_loader.h" />
 		<Unit filename="..\..\engine\portable\include\dam_main.h" />
@@ -427,9 +426,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\engine\portable\src\con_main.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\engine\portable\src\dam_blockmap.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\engine\portable\src\dam_file.c">
