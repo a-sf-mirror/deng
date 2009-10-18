@@ -35,10 +35,15 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct linklinedef_s {
-    struct linklinedef_s* next;
-    struct linedef_s* lineDef;
-} linklinedef_t;
+typedef struct listnode_s {
+    struct listnode_s* next;
+    void*           data;
+} listnode_t;
+
+typedef struct {
+    uint            size;
+    listnode_t*     head;
+} linklist_t;
 
 typedef struct {
     boolean        (*func) (linedef_t*, void*);
@@ -71,99 +76,156 @@ static void freeBlockmap(linedefblockmap_t* bmap)
     Z_Free(bmap);
 }
 
-static boolean freeLineDefBlockData(void* data, void* context)
+static listnode_t* allocListNode(void)
 {
-    linklinedef_t* link = (linklinedef_t*) data;
+    return Z_Calloc(sizeof(listnode_t), PU_STATIC, 0);
+}
 
-    while(link)
+static void freeListNode(listnode_t* node)
+{
+    Z_Free(node);
+}
+
+static linklist_t* allocList(void)
+{
+    return Z_Calloc(sizeof(linklist_t), PU_STATIC, 0);
+}
+
+static void freeList(linklist_t* list)
+{
+    listnode_t* node = list->head;
+
+    while(node)
     {
-        linklinedef_t* next = link->next;
-        Z_Free(link);
-        link = next;
+        listnode_t* next = node->next;
+        freeListNode(node);
+        node = next;
     }
 
-    return true; // Continue iteration.
+    Z_Free(list);
+}
+
+static void listPushFront(linklist_t* list, linedef_t* lineDef)
+{
+    listnode_t* node = allocListNode();
+    
+    node->data = lineDef;
+
+    node->next = list->head;
+    list->head = node;
+
+    list->size += 1;
+}
+
+static boolean listRemove(linklist_t* list, linedef_t* lineDef)
+{
+    if(list->head)
+    {
+        listnode_t** node = &list->head;
+
+        do
+        {
+            listnode_t** next = &(*node)->next;
+
+            if((*node)->data == lineDef)
+            {
+                freeListNode(*node);
+                *node = *next;
+                list->size -= 1;
+                return true; // LineDef was unlinked.
+            }
+
+            node = next;
+        } while(node);
+    }
+
+    return false; // LineDef was not linked.
+}
+
+static uint listSize(linklist_t* list)
+{
+    return list->size;
 }
 
 static void linkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y,
                                linedef_t* lineDef)
 {
-    linklinedef_t* link = (linklinedef_t*)
-        Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
-    if(!link)
-    {   // Create a new link at the current block cell.
-        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
-        link->next = NULL;
-        link->lineDef = lineDef;
+    if(!list)
+        list = Gridmap_SetBlock(blockmap->gridmap, x, y, allocList());
 
-        Gridmap_SetBlock(blockmap->gridmap, x, y, link);
-        return;
-    }
-
-    while(link->next != NULL && link->lineDef != NULL)
-    {
-        link = link->next;
-    }
-
-    if(link->lineDef == NULL)
-    {
-        link->lineDef = lineDef;
-        return;
-    }
-
-    link->next = Z_Malloc(sizeof(linklinedef_t), PU_STATIC, 0);
-    link->next->next = NULL;
-    link->next->lineDef = lineDef;
+    listPushFront(list, lineDef);
 }
 
-static void unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint y,
-                                   linedef_t* lineDef)
+static boolean unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint y,
+                                      linedef_t* lineDef)
 {
-    linklinedef_t* link = (linklinedef_t*)
-        Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
-    for(; link; link = link->next)
+    if(list)
     {
-        if(link->lineDef != lineDef)
-            continue;
+        boolean result = listRemove(list, lineDef);
+        if(result && !list->head)
+        {
+            freeList(list);
+            Gridmap_SetBlock(blockmap->gridmap, x, y, NULL);
+        }
 
-        link->lineDef = NULL;
-        return; // LineDef was unlinked.
+        return result;
     }
 
-    // LineDef was not linked.
+    return false;
 }
 
 static boolean iterateLineDefs(void* ptr, void* context)
 {
-    linklinedef_t* link = (linklinedef_t*) ptr;
+    linklist_t* list = (linklist_t*) ptr;
     iteratelinedefs_args_t* args = (iteratelinedefs_args_t*) context;
 
-    while(link)
+    if(list)
     {
-        linklinedef_t* next = link->next;
+        listnode_t* node = list->head;
 
-        if(link->lineDef)
-            if(link->lineDef->validCount != args->localValidCount)
+        while(node)
+        {
+            listnode_t* next = node->next;
+
+            if(node->data)
             {
-                void* ptr;
+                linedef_t* lineDef = (linedef_t*) node->data;
 
-                link->lineDef->validCount = args->localValidCount;
+                if(lineDef->validCount != args->localValidCount)
+                {
+                    void* ptr;
 
-                if(args->retObjRecord)
-                    ptr = (void*) P_ObjectRecord(DMU_LINEDEF, link->lineDef);
-                else
-                    ptr = (void*) link->lineDef;
+                    lineDef->validCount = args->localValidCount;
 
-                if(!args->func(ptr, args->context))
-                    return false;
+                    if(args->retObjRecord)
+                        ptr = (void*) P_ObjectRecord(DMU_LINEDEF, lineDef);
+                    else
+                        ptr = (void*) lineDef;
+
+                    if(!args->func(ptr, args->context))
+                        return false;
+                }
             }
 
-        link = next;
+            node = next;
+        }
     }
 
     return true;
+}
+
+static boolean freeLineDefBlockData(void* data, void* context)
+{
+    linklist_t* list = (linklist_t*) data;
+
+    if(list)
+        freeList(list);
+
+    return true; // Continue iteration.
 }
 
 static void boxToBlocks(linedefblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
@@ -468,25 +530,15 @@ void LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, uint v[2])
 
 uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
 {
-    linklinedef_t* data;
-    uint num = 0;
+    linklist_t* list;
 
     assert(blockmap);
 
-    data = (linklinedef_t*) Gridmap_Block(blockmap->gridmap, x, y);
-    // Count the number of linedefs linked to this block.
-    if(data)
-    {
-        linklinedef_t* link = data;
-        while(link)
-        {
-            if(link->lineDef)
-                num++;
-            link = link->next;
-        }
-    }
+    list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    if(list)
+        return listSize(list);
 
-    return num;
+    return 0;
 }
 
 boolean LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2],

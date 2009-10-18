@@ -39,7 +39,7 @@ uint            Gridmap_Height(gridmap_t* gridmap);
 void            Gridmap_Dimensions(gridmap_t* gridmap, uint dimensions[2]);
 
 void*           Gridmap_Block(gridmap_t* gridmap, uint x, uint y);
-void            Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data);
+void*           Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data);
 
 // Iteration
 boolean         Gridmap_Iterate(gridmap_t* gridmap,

@@ -154,7 +154,7 @@ void* Gridmap_Block(gridmap_t* gridmap, uint x, uint y)
     return NULL;
 }
 
-void Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data)
+void* Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data)
 {
     gmap_t* gmap;
 
@@ -165,6 +165,8 @@ void Gridmap_SetBlock(gridmap_t* gridmap, uint x, uint y, void* data)
     {
         gmap->blockLinks[y * gmap->width + x] = data;
     }
+
+    return data;
 }
 
 /**

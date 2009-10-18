@@ -271,13 +271,6 @@ static void drawInfoBox2(float minX, float minY, float maxX, float maxY,
     y += th;
 }
 
-static void drawBlockInfoBox(void* blockmap, uint x, uint y)
-{
-    drawInfoBox(theWindow->width / 2, 30, x, y,
-                LineDefBlockmap_NumInBlock((linedefblockmap_t*) blockmap, x, y),
-                MobjBlockmap_NumInBlock((mobjblockmap_t*) blockmap, x, y));
-}
-
 static void drawBackground(void* blockmap, uint viewerBlock[2], uint viewerBlockBox[4],
                            boolean centerOnViewer, byte mode)
 {
@@ -363,7 +356,7 @@ static void drawBackground(void* blockmap, uint viewerBlock[2], uint viewerBlock
                 break;
             }
 
-            if(num < 0)
+            if(num == 0)
             {   // NULL block.
                 glColor4f(0, 0, 0, .95f);
                 draw = true;
@@ -629,10 +622,12 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     glLoadIdentity();
     glOrtho(0, theWindow->width, theWindow->height, 0, -1, 1);
 
-    if(followMobj && mode != BLOCKMAPVISUAL_SUBSECTORS)
+    if(followMobj)
     {
-        // Draw info about the block mobj is in.
-        drawBlockInfoBox(blockmap, viewerBlock[0], viewerBlock[1]);
+        // Draw info about the block the viewer is in.
+        drawInfoBox(theWindow->width / 2, 30, viewerBlock[0], viewerBlock[1],
+                    LineDefBlockmap_NumInBlock(Map_LineDefBlockmap(map), viewerBlock[0], viewerBlock[1]),
+                    MobjBlockmap_NumInBlock(Map_MobjBlockmap(map), viewerBlock[0], viewerBlock[1]));
     }
 
     // Draw info about the blockmap.
