@@ -216,14 +216,14 @@ static void drawSubsectorsInBlock(void* blockmap, uint x, uint y,
     glEnable(GL_TEXTURE_2D);
 }
 
-static void drawInfoBox(int x, int y, uint blockX, uint blockY, int lineCount,
-                        int moCount)
+static void drawInfoBox(int x, int y, uint blockX, uint blockY, uint mobjCount,
+                        uint lineDefCount, uint subsectorCount)
 {
     int w, h;
     char buf[160];
 
-    sprintf(buf, "Block: [%u, %u] Lines: #%i Mobjs: #%i",
-            blockX, blockY, lineCount, moCount);
+    sprintf(buf, "Block: [%u, %u] Mobjs: #%u LineDefs: #%u Subsectors: #%u",
+            blockX, blockY, mobjCount, lineDefCount, subsectorCount);
     w = FR_TextWidth(buf) + 16;
     h = FR_TextHeight(buf) + 16;
     x -= w / 2;
@@ -626,8 +626,9 @@ void Rend_BlockmapVisual(gamemap_t* map, byte mode)
     {
         // Draw info about the block the viewer is in.
         drawInfoBox(theWindow->width / 2, 30, viewerBlock[0], viewerBlock[1],
+                    MobjBlockmap_NumInBlock(Map_MobjBlockmap(map), viewerBlock[0], viewerBlock[1]),
                     LineDefBlockmap_NumInBlock(Map_LineDefBlockmap(map), viewerBlock[0], viewerBlock[1]),
-                    MobjBlockmap_NumInBlock(Map_MobjBlockmap(map), viewerBlock[0], viewerBlock[1]));
+                    SubsectorBlockmap_NumInBlock(Map_SubsectorBlockmap(map), viewerBlock[0], viewerBlock[1]));
     }
 
     // Draw info about the blockmap.
