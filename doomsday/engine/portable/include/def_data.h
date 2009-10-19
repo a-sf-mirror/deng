@@ -35,8 +35,7 @@
 extern          "C" {
 #endif
 
-#include "def_share.h"
-#include "p_mapdata.h"
+#include "dd_share.h"
 
     // Version 6 does not require semicolons.
 #define DED_VERSION         6
@@ -99,7 +98,7 @@ typedef struct {
     // by querying the game for the callbacks for the
     // classes by "name";
     int (C_DECL *doFunc)();
-    void (*initFunc)(linedef_t* line);
+    void (*initFunc)(struct linedef_s* lineDef);
     int             traverse;
     int             travRef;
     int             travData;

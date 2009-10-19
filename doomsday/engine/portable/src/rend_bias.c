@@ -1254,7 +1254,7 @@ void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
          */
         vec3_t point;
 
-        V3_Set(point, subsector->midPoint.pos[VX], subsector->midPoint.pos[VY],
+        V3_Set(point, subsector->midPoint[VX], subsector->midPoint[VY],
                subsector->sector->planes[plane]->height);
 
         updateAffected2(map, bsuf, rvertices, numVertices, point, normal);

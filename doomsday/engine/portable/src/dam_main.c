@@ -85,6 +85,29 @@ ddstring_t* DAM_ComposeArchiveMapFilepath(const char* mapID)
 }
 
 /**
+ * Generate a 'unique' identifier for the map.  This identifier
+ * contains information about the map tag (E3M3), the WAD that
+ * contains the map (DOOM.IWAD), and the game mode (doom-ultimate).
+ *
+ * The entire ID string will be in lowercase letters.
+ */
+const char* DAM_GenerateUniqueMapName(const char* mapID)
+{
+    static char uid[255];
+    filename_t base;
+    int lump = W_GetNumForName(mapID);
+
+    M_ExtractFileBase(base, W_LumpSourceFile(lump), FILENAME_T_MAXLEN);
+
+    dd_snprintf(uid, 255, "%s|%s|%s|%s", mapID,
+                base, (W_IsFromIWAD(lump) ? "iwad" : "pwad"),
+                (char*) gx.GetVariable(DD_GAME_MODE));
+
+    strlwr(uid);
+    return uid;
+}
+
+/**
  * Attempt to load the map associated with the specified identifier.
  */
 boolean DAM_TryMapConversion(const char* mapID)

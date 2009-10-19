@@ -29,7 +29,6 @@
 #ifndef __DOOMSDAY_REFRESH__
 #define __DOOMSDAY_REFRESH__
 
-#include "p_materialmanager.h"
 #include "r_data.h"
 #include "r_main.h"
 #include "r_things.h"

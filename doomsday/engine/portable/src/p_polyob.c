@@ -487,56 +487,6 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     return true;
 }
 
-void P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link)
-{
-    linkpolyobj_t* tempLink;
-
-    if(!(*link))
-    {   // Create a new link at the current block cell.
-        *link = Z_Malloc(sizeof(linkpolyobj_t), PU_MAP, 0);
-        (*link)->next = NULL;
-        (*link)->prev = NULL;
-        (*link)->polyobj = po;
-        return;
-    }
-    else
-    {
-        tempLink = *link;
-        while(tempLink->next != NULL && tempLink->polyobj != NULL)
-        {
-            tempLink = tempLink->next;
-        }
-    }
-
-    if(tempLink->polyobj == NULL)
-    {
-        tempLink->polyobj = po;
-        return;
-    }
-    else
-    {
-        tempLink->next = Z_Malloc(sizeof(linkpolyobj_t), PU_MAP, 0);
-        tempLink->next->next = NULL;
-        tempLink->next->prev = tempLink;
-        tempLink->next->polyobj = po;
-    }
-}
-
-void P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** list)
-{
-    linkpolyobj_t* iter = *list;
-
-    while(iter != NULL && iter->polyobj != po)
-    {
-        iter = iter->next;
-    }
-
-    if(iter != NULL)
-    {
-        iter->polyobj = NULL;
-    }
-}
-
 void P_PolyobjUnlinkLineDefs(polyobj_t* po)
 {
     linedefblockmap_t* lineDefBlockmap = Map_LineDefBlockmap(P_CurrentMap());

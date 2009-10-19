@@ -216,10 +216,10 @@ static boolean iterateSubsectors(void* ptr, void* context)
 
                     // Check the bounds.
                     if(args->box &&
-                       (subsector->bBox[1].pos[0] < args->box[0][0] ||
-                        subsector->bBox[0].pos[0] > args->box[1][0] ||
-                        subsector->bBox[0].pos[1] > args->box[1][1] ||
-                        subsector->bBox[1].pos[1] < args->box[0][1]))
+                       (subsector->bBox[1][0] < args->box[0][0] ||
+                        subsector->bBox[0][0] > args->box[1][0] ||
+                        subsector->bBox[0][1] > args->box[1][1] ||
+                        subsector->bBox[1][1] < args->box[0][1]))
                        ok = false;
 
                     if(ok)
@@ -352,8 +352,8 @@ void SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, subsector_t* subsecto
     Gridmap_Dimensions(blockmap->gridmap, dimensions);
 
     // Blockcoords to link to.
-    SubsectorBlockmap_Block2fv(blockmap, minBlock, subsector->bBox[0].pos);
-    SubsectorBlockmap_Block2fv(blockmap, maxBlock, subsector->bBox[1].pos);
+    SubsectorBlockmap_Block2fv(blockmap, minBlock, subsector->bBox[0]);
+    SubsectorBlockmap_Block2fv(blockmap, maxBlock, subsector->bBox[1]);
 
     for(x = minBlock[0]; x <= maxBlock[0]; ++x)
         for(y = minBlock[1]; y <= maxBlock[1]; ++y)

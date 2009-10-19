@@ -49,21 +49,16 @@ extern          "C" {
  * accessed externally, but only as identifiers to data instances.
  * For example, a game could use sector_t to identify to sector to
  * change with the Map Update API.
- *
- * Define __INTERNAL_MAP_DATA_ACCESS__ if access to the internal map data
- * structures is needed.
  */
-#ifndef __INTERNAL_MAP_DATA_ACCESS__
-    typedef struct node_s { int type; } node_t;
-    typedef struct vertex_s {int type; } vertex_t;
-    typedef struct linedef_s { int type; } linedef_t;
-    typedef struct sidedef_s { int type; } sidedef_t;
-    typedef struct seg_s { int type; } seg_t;
-    typedef struct subsector_s { int type; } subsector_t;
-    typedef struct sector_s { int type; } sector_t;
-    typedef struct plane_s { int type; } plane_t;
-    typedef struct material_s { int type; } material_t;
-#endif
+typedef struct node_s { int type; } node_t;
+typedef struct vertex_s {int type; } vertex_t;
+typedef struct linedef_s { int type; } linedef_t;
+typedef struct sidedef_s { int type; } sidedef_t;
+typedef struct seg_s { int type; } seg_t;
+typedef struct subsector_s { int type; } subsector_t;
+typedef struct sector_s { int type; } sector_t;
+typedef struct plane_s { int type; } plane_t;
+typedef struct material_s { int type; } material_t;
 
 #include "dd_share.h"
 #include "dd_plugin.h"

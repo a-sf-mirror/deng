@@ -26,10 +26,11 @@
  * r_model.h: 3D Model Resources
  */
 
-#ifndef __DOOMSDAY_REFRESH_MODEL_H__
-#define __DOOMSDAY_REFRESH_MODEL_H__
+#ifndef DOOMSDAY_REFRESH_MODEL_H
+#define DOOMSDAY_REFRESH_MODEL_H
 
 #include "gl_model.h"
+#include "def_data.h"
 
 #define MAX_FRAME_MODELS        DED_MAX_SUB_MODELS
 
@@ -122,4 +123,4 @@ void            R_PrecacheSkinsForState(int stateIndex);
 int             R_PrecacheSkinsForMobj(void* p, void* context);
 void            R_PrecacheModelSkins(modeldef_t* modef);
 
-#endif
+#endif /* DOOMSDAY_REFRESH_MODEL_H */

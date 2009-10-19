@@ -22,29 +22,15 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * r_world.h: World Setup and Refresh
- */
+#ifndef DOOMSDAY_REFRESH_WORLD_H
+#define DOOMSDAY_REFRESH_WORLD_H
 
-#ifndef __DOOMSDAY_REFRESH_WORLD_H__
-#define __DOOMSDAY_REFRESH_WORLD_H__
-
-#include "r_data.h"
+//#include "r_data.h"
+#include "map.h"
 
 #if _DEBUG
 D_CMD(UpdateSurfaces);
 #endif
-
-// Used for vertex sector owners, side line owners and reverb subsectors.
-typedef struct ownernode_s {
-    void*           data;
-    struct ownernode_s* next;
-} ownernode_t;
-
-typedef struct {
-    ownernode_t*    head;
-    uint            count;
-} ownerlist_t;
 
 extern int rendSkyLight; // cvar
 extern float rendMaterialFadeSeconds; // cvar
@@ -155,4 +141,4 @@ linedef_t*      R_FindLineBackNeighbor(const sector_t* sector,
 void            R_MatFaderThinker(matfader_t* fader);
 void            R_StopMatFader(matfader_t* fader);
 int             RIT_StopMatFader(void* p, void* context);
-#endif
+#endif /* DOOMSDAY_REFRESH_WORLD_H */

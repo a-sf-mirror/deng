@@ -29,12 +29,14 @@
 #ifndef __DOOMSDAY_REFRESH_DATA_H__
 #define __DOOMSDAY_REFRESH_DATA_H__
 
-#include "gl_main.h"
 #include "dd_def.h"
+#include "gl_main.h"
 #include "p_think.h"
 #include "m_nodepile.h"
 #include "def_data.h"
 #include "r_extres.h"
+#include "gl_texmanager.h"
+#include "p_maptypes.h"
 
 // Flags for material decorations.
 #define DCRF_NO_IWAD        0x1 // Don't use if from IWAD.
@@ -226,6 +228,21 @@ typedef struct {
     DGLuint         tex;
 } ddtexture_t;
 
+typedef struct {
+    float           approxDist; // Only an approximation.
+    float           vector[3]; // Light direction vector.
+    float           color[3]; // How intense the light is (0..1, RGB).
+    float           offset;
+    float           lightSide, darkSide; // Factors for world light.
+    boolean         affectedByAmbient;
+} vlight_t;
+
+#define RL_MAX_DIVS         64
+typedef struct walldiv_s {
+    unsigned int    num;
+    plane_t*        divs[RL_MAX_DIVS];
+} walldiv_t;
+
 extern int viewwidth, viewheight;
 extern int mapFullBright;
 extern int glowingTextures;
@@ -363,6 +380,17 @@ patchtex_t**    R_CollectPatchTexs(int* count);
 rawtex_t*       R_FindRawTex(lumpnum_t lump); // May return NULL.
 rawtex_t*       R_GetRawTex(lumpnum_t lump); // Creates new entries.
 rawtex_t**      R_CollectRawTexs(int* count);
+
+byte            GL_LoadDoomPatch(image_t* image, const patchtex_t* p);
+byte            GL_LoadRawTex(image_t* image, const rawtex_t* r);
+
+DGLuint         GL_PreparePatch(patchtex_t* patch);
+DGLuint         GL_PreparePatchOtherPart(patchtex_t* patch);
+DGLuint         GL_PrepareRawTex(rawtex_t* rawTex);
+DGLuint         GL_PrepareRawTexOtherPart(rawtex_t* rawTex);
+
+DGLuint         GL_PrepareLSTexture(lightingtexid_t which);
+DGLuint         GL_PrepareSysFlareTexture(flaretexid_t flare);
 
 boolean         R_IsAllowedDecoration(ded_decor_t* def, material_t* mat,
                                       boolean hasExternal);

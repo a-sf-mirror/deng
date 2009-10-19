@@ -30,6 +30,8 @@
 #define DOOMSDAY_MATERIALS_H
 
 #include "gl_texmanager.h"
+#include "p_maptypes.h"
+#include "def_main.h"
 
 extern materialnum_t numMaterialBinds;
 
@@ -71,6 +73,10 @@ materialnum_t   Materials_ToIndex(material_t* mat);
 
 materialnum_t   Materials_CheckIndexForName(material_namespace_t mnamespace, const char* name);
 materialnum_t   Materials_IndexForName(material_namespace_t mnamespace, const char* name);
+
+void            GL_SetMaterial(material_t* mat);
+void            GL_SetPSprite(material_t* mat);
+void            GL_SetTranslatedSprite(material_t* mat, int tclass, int tmap);
 
 // Public API access:
 struct material_s* P_MaterialForName(material_namespace_t mnamespace, const char* name);

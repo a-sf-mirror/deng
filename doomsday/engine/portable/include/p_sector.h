@@ -28,9 +28,11 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
+void            Sector_UpdateSoundEnvironment(sector_t* sec);
 float           Sector_LightLevel(sector_t* sec);
 void            Sector_UpdateBounds(sector_t* sec);
 void            Sector_Bounds(sector_t* sec, float* min, float* max);
+boolean         Sector_PlanesChanged(sector_t* sector);
 
 boolean         Sector_GetProperty(const sector_t *sec, setargs_t *args);
 boolean         Sector_SetProperty(sector_t *sec, const setargs_t *args);

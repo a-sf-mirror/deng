@@ -711,7 +711,7 @@ static void amplify(float *rgb)
  * Used by flares and dynamic lights. The resulting average color is
  * amplified to be as bright as possible.
  */
-void averageColorIdx(rgbcol_t col, byte* data, int w, int h,
+void averageColorIdx(float col[3], byte* data, int w, int h,
                      colorpaletteid_t palid, boolean hasAlpha)
 {
     int                 i;
@@ -753,7 +753,7 @@ void averageColorIdx(rgbcol_t col, byte* data, int w, int h,
     amplify(col);
 }
 
-int lineAverageColorIdx(rgbcol_t col, byte* data, int w, int h, int line,
+int lineAverageColorIdx(float col[3], byte* data, int w, int h, int line,
                         colorpaletteid_t palid, boolean hasAlpha)
 {
     int                 i;
@@ -818,7 +818,7 @@ int lineAverageColorRGB(rgbcol_t col, byte* data, int w, int h, int line)
     return 1; // Successful.
 }
 
-void averageColorRGB(rgbcol_t col, byte *data, int w, int h)
+void averageColorRGB(float col[3], byte *data, int w, int h)
 {
     uint        i;
     const uint  numpels = w * h;
@@ -908,16 +908,15 @@ void GL_GetNonAlphaRegion(byte *buffer, int width, int height, int pixelsize,
  */
 void GL_CalcLuminance(byte* buffer, int width, int height, int pixelSize,
                       colorpaletteid_t palid, float* brightX,
-                      float* brightY, rgbcol_t* color, float* lumSize)
+                      float* brightY, float color[3], float* lumSize)
 {
-    DGLuint             pal =
-        (pixelSize == 1? R_GetColorPalette(palid) : 0);
-    int                 i, k, x, y, c, cnt = 0, posCnt = 0;
-    byte                rgb[3], *src, *alphaSrc = NULL;
-    int                 limit = 0xc0, posLimit = 0xe0, colLimit = 0xc0;
-    int                 avgCnt = 0, lowCnt = 0;
-    float               average[3], lowAvg[3];
-    int                 region[4];
+    DGLuint pal = (pixelSize == 1? R_GetColorPalette(palid) : 0);
+    int i, k, x, y, c, cnt = 0, posCnt = 0;
+    byte rgb[3], *src, *alphaSrc = NULL;
+    int limit = 0xc0, posLimit = 0xe0, colLimit = 0xc0;
+    int avgCnt = 0, lowCnt = 0;
+    float average[3], lowAvg[3];
+    int region[4];
 
     for(i = 0; i < 3; ++i)
     {
@@ -1034,20 +1033,20 @@ void GL_CalcLuminance(byte* buffer, int width, int height, int pixelSize,
         {
             // Doesn't the thing have any pixels??? Use white light.
             for(c = 0; c < 3; ++c)
-                (*color)[c] = 1;
+                color[c] = 1;
         }
         else
         {
             // Low-intensity color average.
             for(c = 0; c < 3; ++c)
-                (*color)[c] = lowAvg[c] / lowCnt;
+                color[c] = lowAvg[c] / lowCnt;
         }
     }
     else
     {
         // High-intensity color average.
         for(c = 0; c < 3; ++c)
-            (*color)[c] = average[c] / avgCnt;
+            color[c] = average[c] / avgCnt;
     }
 
 #ifdef _DEBUG
@@ -1060,13 +1059,13 @@ void GL_CalcLuminance(byte* buffer, int width, int height, int pixelSize,
                         region[0], region[1], region[2], region[3],
                         (*brightX), (*brightY),
                         (posCnt? "(average)" : "(center)"),
-                        (*color)[0], (*color)[1], (*color)[2],
+                        color[0], color[1], color[2],
                         (avgCnt? "(hi-intensity avg)" :
                          lowCnt? "(low-intensity avg)" : "(white light)")));
 #endif
 
     // Amplify color.
-    amplify(*color);
+    amplify(color);
 
     // How about the size of the light source?
     *lumSize = MIN_OF(((2 * cnt + avgCnt) / 3.0f / 70.0f), 1);

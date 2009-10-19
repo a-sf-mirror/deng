@@ -1441,11 +1441,11 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
                                       float* bottom, float* top, float texOffset[2],
                                       float texScale[2])
 {
-    seg_t*              seg = (seg_t*) hEdge->data;
+    seg_t* seg = (seg_t*) hEdge->data;
 
     if(!bfloor)
     {
-        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
+        surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
 
         if(texOffset)
         {
@@ -2561,7 +2561,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
         }
 
         sec->soundOrg.pos[VZ] = (sec->SP_ceilheight - sec->SP_floorheight) / 2;
-        S_CalcSectorReverb(sec);
+        Sector_UpdateSoundEnvironment(sec);
 
         // We need the decorations updated.
         Surface_Update(&pln->surface);

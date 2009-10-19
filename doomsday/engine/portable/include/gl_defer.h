@@ -26,8 +26,10 @@
  * gl_defer.h: Deferred GL Tasks
  */
 
-#ifndef __DOOMSDAY_GRAPHICS_DEREF_H__
-#define __DOOMSDAY_GRAPHICS_DEREF_H__
+#ifndef DOOMSDAY_GRAPHICS_DEREF_H
+#define DOOMSDAY_GRAPHICS_DEREF_H
+
+#include "dd_gl.h"
 
 /**
  * Defines the content of a GL texture. Used when creating textures either
@@ -86,4 +88,4 @@ DGLuint         GL_NewTextureWithParams3(dgltexformat_t format, int width,
 /// \todo should these be public?
 void            GL_ReserveNames(void);
 void            GL_ReleaseReservedNames(void);
-#endif
+#endif /* DOOMSDAY_GRAPHICS_DEREF_H */

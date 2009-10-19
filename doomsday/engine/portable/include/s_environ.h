@@ -29,7 +29,7 @@
 #ifndef __DOOMSDAY_SOUND_ENVIRON_H__
 #define __DOOMSDAY_SOUND_ENVIRON_H__
 
-#include "p_mapdata.h"
+#include "p_maptypes.h"
 
 /**
  * @defgroup materialEnvironmentFlags Material Environment Flags
@@ -46,8 +46,6 @@ typedef struct {
     int         dampingMul;
 } materialenvinfo_t;
 
-void            S_CalcSectorReverb(sector_t* sec);
-void            S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map);
 material_env_class_t S_MaterialClassForName(const char* name,
                                             material_namespace_t mnamespace);
 const materialenvinfo_t* S_MaterialEnvDef(material_env_class_t id);

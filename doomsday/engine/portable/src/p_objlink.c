@@ -329,10 +329,10 @@ static void processSeg(hedge_t* hEdge, void* data)
     }
 
     // Is the dst subSector inside the objlink's AABB?
-    if(dst->bBox[1].pos[VX] <= params->box[BOXLEFT] ||
-       dst->bBox[0].pos[VX] >= params->box[BOXRIGHT] ||
-       dst->bBox[1].pos[VY] <= params->box[BOXBOTTOM] ||
-       dst->bBox[0].pos[VY] >= params->box[BOXTOP])
+    if(dst->bBox[1][VX] <= params->box[BOXLEFT] ||
+       dst->bBox[0][VX] >= params->box[BOXRIGHT] ||
+       dst->bBox[1][VY] <= params->box[BOXBOTTOM] ||
+       dst->bBox[0][VY] >= params->box[BOXTOP])
     {
         // The subSector is not inside the params's bounds.
         return;
@@ -485,10 +485,10 @@ void R_ObjBlockmapSpreadObjsInSubsector(const objblockmap_t* obm,
     if(!obm || !subsector)
         return; // Wha?
 
-    xl = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[0].pos[VX] - maxRadius));
-    xh = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[1].pos[VX] + maxRadius));
-    yl = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[0].pos[VY] - maxRadius));
-    yh = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[1].pos[VY] + maxRadius));
+    xl = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[0][VX] - maxRadius));
+    xh = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[1][VX] + maxRadius));
+    yl = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[0][VY] - maxRadius));
+    yh = Y_TO_OBBY(obm, FLT2FIX(subsector->bBox[1][VY] + maxRadius));
 
     // Are we completely outside the blockmap?
     if(xh < 0 || xl >= obm->width || yh < 0 || yl >= obm->height)

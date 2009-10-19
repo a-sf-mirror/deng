@@ -96,8 +96,6 @@ static linedef_t *secondSlideLine;
 
 static mobj_t *slideMo;
 
-static boolean noFit;
-
 static float tmpDropOffZ;
 static float tmpMom[3];
 
@@ -546,51 +544,6 @@ boolean P_StepMove(mobj_t *mo, float dx, float dy, float dz)
 }
 
 /**
- * Takes a valid mobj and adjusts the mobj->floorZ, mobj->ceilingZ, and
- * possibly mobj->z. This is called for all nearby mobjs whenever a sector
- * changes height. If the mobj doesn't fit, the z will be set to the lowest
- * value and false will be returned.
- */
-static boolean heightClip(mobj_t *mo)
-{
-    boolean             onfloor;
-
-    // During demo playback the player gets preferential treatment.
-    if(mo->dPlayer == &ddPlayers[consolePlayer].shared && playback)
-        return true;
-
-    onfloor = (mo->pos[VZ] <= mo->floorZ);
-
-    P_CheckPosXYZ(mo, mo->pos[VX], mo->pos[VY], mo->pos[VZ]);
-    mo->floorZ = tmpFloorZ;
-    mo->ceilingZ = tmpCeilingZ;
-
-    if(onfloor)
-    {
-        mo->pos[VZ] = mo->floorZ;
-    }
-    else
-    {
-        // Don't adjust a floating mobj unless forced to.
-        if(mo->pos[VZ] + mo->height > mo->ceilingZ)
-            mo->pos[VZ] = mo->ceilingZ - mo->height;
-    }
-
-    // On clientside, players are represented by two mobjs: the real mobj,
-    // created by the Game, is the one that is visible and modified in this
-    // function. We'll need to sync the hidden client mobj (that receives
-    // all the changes from the server) to match the changes.
-    if(isClient && mo->dPlayer)
-    {
-        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(mo->dPlayer));
-    }
-
-    if(mo->ceilingZ - mo->floorZ < mo->height)
-        return false;
-    return true;
-}
-
-/**
  * Allows the player to slide along any angled walls. Adjusts the player's
  * momentum vector so that the next move slides along the linedef.
  */
@@ -778,39 +731,6 @@ static void mobjSlideMove(mobj_t* mo)
     {
         goto retry;
     }
-}
-
-/**
- * After modifying a sectors floor or ceiling height, call this routine
- * to adjust the positions of all mobjs that touch the sector.
- *
- * If anything doesn't fit anymore, true will be returned.
- */
-int PIT_SectorPlanesChanged(void* obj, void* data)
-{
-    mobj_t*             mo = (mobj_t*) obj;
-
-    // Always keep checking.
-    if(heightClip(mo))
-        return true;
-
-    noFit = true;
-    return true;
-}
-
-/**
- * Called whenever a sector's planes are moved. This will update the mobjs
- * inside the sector and do crushing.
- */
-boolean P_SectorPlanesChanged(sector_t* sector)
-{
-    noFit = false;
-
-    // We'll use validCount to make sure mobjs are only checked once.
-    validCount++;
-    P_SectorTouchingMobjsIterator(sector, PIT_SectorPlanesChanged, 0);
-
-    return noFit;
 }
 
 void P_MobjMovement(mobj_t *mo)

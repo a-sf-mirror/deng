@@ -41,6 +41,14 @@
 
 // MACROS ------------------------------------------------------------------
 
+// Non-public (temporary)
+// Flags for MPE_PruneRedundantMapData().
+#define PRUNE_LINEDEFS      0x1
+#define PRUNE_VERTEXES      0x2
+#define PRUNE_SIDEDEFS      0x4
+#define PRUNE_SECTORS       0x8
+#define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
+
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -2095,7 +2103,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     finishSectors2(map);
     updateMapBounds(map);
 
-    S_DetermineSubSecsAffectingSectorReverb(map);
+    Map_InitSoundEnvironment(map);
     prepareSubsectors(map);
 
     // Pass on the vertex lineowner info.
@@ -2544,7 +2552,7 @@ boolean P_LoadMap(const char* mapID)
         Map_BuildSubsectorBlockmap(map);
 
         strncpy(map->mapID, mapID, 8);
-        strncpy(map->uniqueID, P_GenerateUniqueMapName(mapID),
+        strncpy(map->uniqueID, DAM_GenerateUniqueMapName(mapID),
                 sizeof(map->uniqueID));
 
         // See what mapinfo says about this map.

@@ -3255,7 +3255,7 @@ Con_Message("GLTexture_Prepare: Uploaded \"%s\" (%i) while not busy! "
                                  image.pixelSize, 0,
                                  &texInst->data.sprite.flareX,
                                  &texInst->data.sprite.flareY,
-                                 &texInst->data.sprite.autoLightColor,
+                                 &texInst->data.sprite.autoLightColor[0],
                                  &texInst->data.sprite.lumSize);
             }
 

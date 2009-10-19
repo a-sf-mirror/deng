@@ -299,7 +299,7 @@ typedef struct {
 } sidedelta_t;
 
 typedef struct {
-    fvertex_t       dest;
+    float           dest[2];
     float           speed;
     angle_t         destAngle;
     angle_t         angleSpeed;
@@ -409,7 +409,7 @@ void            Sv_AckDeltaSet(uint clientNumber, int set, byte resent);
 uint            Sv_CountUnackedDeltas(uint clientNumber);
 
 void            Sv_NewSoundDelta(int soundId, mobj_t* emitter,
-                                 sector_t* sourceSector, polyobj_t* sourcePoly,
+                                 struct sector_s* sourceSector, struct polyobj_s* sourcePoly,
                                  float volume, boolean isRepeating,
                                  int clientsMask);
 

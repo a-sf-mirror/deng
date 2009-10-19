@@ -768,8 +768,8 @@ static void P_NewParticle(ptcgen_t* gen)
         // Try a couple of times to get a good random spot.
         for(i = 0; i < 10; ++i) // Max this many tries before giving up.
         {
-            float x = subsector->bBox[0].pos[VX] + RNG_RandFloat() * (subsector->bBox[1].pos[VX] - subsector->bBox[0].pos[VX]);
-            float y = subsector->bBox[0].pos[VY] + RNG_RandFloat() * (subsector->bBox[1].pos[VY] - subsector->bBox[0].pos[VY]);
+            float x = subsector->bBox[0][VX] + RNG_RandFloat() * (subsector->bBox[1][VX] - subsector->bBox[0][VX]);
+            float y = subsector->bBox[0][VY] + RNG_RandFloat() * (subsector->bBox[1][VY] - subsector->bBox[0][VY]);
 
             pt->pos[VX] = FLT2FIX(x);
             pt->pos[VY] = FLT2FIX(y);

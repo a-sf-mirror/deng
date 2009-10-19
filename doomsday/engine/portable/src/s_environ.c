@@ -30,7 +30,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-
 #include <ctype.h>
 #include <string.h>
 
@@ -44,6 +43,17 @@
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
+
+// Used for vertex sector owners, side line owners and reverb subsectors.
+typedef struct ownernode_s {
+    void*           data;
+    struct ownernode_s* next;
+} ownernode_t;
+
+typedef struct {
+    ownernode_t*    head;
+    uint            count;
+} ownerlist_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -181,10 +191,10 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
 
         // Is this subsector close enough?
         if(subsector->sector == sec || // subsector is IN this sector
-           (subsector->midPoint.pos[VX] > bbox[BOXLEFT] &&
-            subsector->midPoint.pos[VX] < bbox[BOXRIGHT] &&
-            subsector->midPoint.pos[VY] < bbox[BOXTOP] &&
-            subsector->midPoint.pos[VY] > bbox[BOXBOTTOM]))
+           (subsector->midPoint[VX] > bbox[BOXLEFT] &&
+            subsector->midPoint[VX] < bbox[BOXRIGHT] &&
+            subsector->midPoint[VY] < bbox[BOXTOP] &&
+            subsector->midPoint[VY] > bbox[BOXBOTTOM]))
         {
             // It will contribute to the reverb settings of this sector.
             setSectorOwner(&subsectorOwnerList, subsector);
@@ -228,7 +238,7 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
  * two dimensions at least), they do not move and are not created/destroyed
  * once the map has been loaded; this step can be pre-processed.
  */
-void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
+void Map_InitSoundEnvironment(gamemap_t* map)
 {
     uint startTime = Sys_GetRealTime();
 
@@ -252,7 +262,7 @@ void S_DetermineSubSecsAffectingSectorReverb(gamemap_t* map)
 
     // How much time did we spend?
     VERBOSE(Con_Message
-            ("S_DetermineSubSecsAffectingSectorReverb: Done in %.2f seconds.\n",
+            ("Map_InitSoundEnvironment: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
@@ -276,8 +286,8 @@ static boolean calcSubsectorReverb(subsector_t* subsector)
     // Space is the rough volume of the subsector (bounding box).
     subsector->reverb[SRD_SPACE] =
         (int) (subsector->sector->SP_ceilheight - subsector->sector->SP_floorheight) *
-        (subsector->bBox[1].pos[VX] - subsector->bBox[0].pos[VX]) *
-        (subsector->bBox[1].pos[VY] - subsector->bBox[0].pos[VY]);
+        (subsector->bBox[1][0] - subsector->bBox[0][0]) *
+        (subsector->bBox[1][1] - subsector->bBox[0][1]);
 
     // The other reverb properties can be found out by taking a look at the
     // materials of all surfaces in the subsector.
@@ -354,7 +364,7 @@ Con_Message("subsector %04i: vol:%3i sp:%3i dec:%3i dam:%3i\n",
  *
  * @param sec           Ptr to the sector to calculate reverb properties of.
  */
-void S_CalcSectorReverb(sector_t* sec)
+void Sector_UpdateSoundEnvironment(sector_t* sec)
 {
     uint i, sectorSpace;
     float spaceScatter;

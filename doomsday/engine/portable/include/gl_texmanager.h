@@ -29,14 +29,9 @@
 #ifndef __DOOMSDAY_TEXTURE_MANAGER_H__
 #define __DOOMSDAY_TEXTURE_MANAGER_H__
 
-#include "r_data.h"
-#include "r_model.h"
-#include "r_extres.h"
-#include "con_decl.h"
-#include "gl_model.h"
-#include "gl_defer.h"
-
 #define TEXQ_BEST               8
+
+#include "gl_defer.h"
 
 // Texture load flags:
 #define TLF_LOAD_AS_SKY     0x1
@@ -83,6 +78,8 @@ typedef enum {
     (t) == GLT_LIGHTMAP? "lightmap" : \
     (t) == GLT_FLARE? "flaretex" : "systemtex")
 
+typedef unsigned int gltextureid_t; /// \todo Does not belong here.
+
 typedef struct gltexture_s {
     gltextureid_t   id;
     char            name[9];
@@ -108,7 +105,7 @@ typedef struct gltexture_inst_s {
         struct {
             boolean         pSprite; // @c true, iff this is for use as a psprite.
             float           flareX, flareY, lumSize;
-            rgbcol_t        autoLightColor;
+            float           autoLightColor[3];
             float           texCoord[2]; // Prepared texture coordinates.
             int             tmap, tclass; // Color translation.
         } sprite;
@@ -192,8 +189,7 @@ byte            GL_LoadModelShinySkin(image_t* image, const gltexture_inst_t* in
 byte            GL_LoadLightMap(image_t* image, const gltexture_inst_t* inst, void* context);
 byte            GL_LoadFlareTexture(image_t* image, const gltexture_inst_t* inst, void* context);
 
-byte            GL_LoadDoomPatch(image_t* image, const patchtex_t* p);
-byte            GL_LoadRawTex(image_t* image, const rawtex_t* r);
+
 byte            GL_LoadExtTexture(image_t* image, ddresourceclass_t resClass,
                                   const char* name, gfxmode_t mode);
 
@@ -202,21 +198,9 @@ DGLuint         GL_PrepareExtTexture(ddresourceclass_t resClass,
                                      int useMipmap, int minFilter,
                                      int magFilter, int anisoFilter,
                                      int wrapS, int wrapT, int otherFlags);
-DGLuint         GL_PrepareLSTexture(lightingtexid_t which);
-DGLuint         GL_PrepareSysFlareTexture(flaretexid_t flare);
-
-DGLuint         GL_PreparePatch(patchtex_t* patch);
-DGLuint         GL_PreparePatchOtherPart(patchtex_t* patch);
-DGLuint         GL_PrepareRawTex(rawtex_t* rawTex);
-DGLuint         GL_PrepareRawTexOtherPart(rawtex_t* rawTex);
 
 DGLuint         GL_GetLightMapTexture(const char* name);
 DGLuint         GL_GetFlareTexture(const char* name, int oldIdx);
-
-void            GL_SetMaterial(material_t* mat);
-void            GL_SetPSprite(material_t* mat);
-void            GL_SetTranslatedSprite(material_t* mat, int tclass,
-                                       int tmap);
 
 void            GL_SetPatch(lumpnum_t lump, int wrapS, int wrapT); // No mipmaps are generated.
 

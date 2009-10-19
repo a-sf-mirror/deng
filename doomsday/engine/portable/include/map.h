@@ -22,28 +22,19 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_mapdata.h: Playsim Data Structures, Macros and Constants
- *
- * These are internal to Doomsday. The games have no direct access to
- * this data.
- */
-
-#ifndef DOOMSDAY_PLAY_DATA_H
-#define DOOMSDAY_PLAY_DATA_H
-
-#if defined(__JDOOM__) || defined(__JHERETIC__) || defined(__JHEXEN__)
-#  error "Attempted to include internal Doomsday p_mapdata.h from a game"
-#endif
+#ifndef DOOMSDAY_MAP_H
+#define DOOMSDAY_MAP_H
 
 #include "dd_share.h"
-#include "dam_main.h"
-#include "rend_bias.h"
-#include "m_nodepile.h"
 #include "m_vector.h"
 #include "mobjblockmap.h"
 #include "linedefblockmap.h"
 #include "subsectorblockmap.h"
+#include "halfedgeds.h"
+#include "p_maptypes.h"
+#include "m_nodepile.h"
+#include "p_polyob.h"
+#include "rend_bias.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -51,29 +42,9 @@
 // Node flags.
 #define NF_SUBSECTOR        0x80000000
 
-typedef unsigned int gltextureid_t; /// \todo Does not belong here.
-
 typedef struct fvertex_s {
     float           pos[2];
 } fvertex_t;
-
-typedef struct shadowcorner_s {
-    float           corner;
-    struct sector_s* proximity;
-    float           pOffset;
-    float           pHeight;
-} shadowcorner_t;
-
-typedef struct edgespan_s {
-    float           length;
-    float           shift;
-} edgespan_t;
-
-typedef struct linkpolyobj_s {
-    struct polyobj_s* polyobj;
-    struct linkpolyobj_s* prev;
-    struct linkpolyobj_s* next;
-} linkpolyobj_t;
 
 typedef struct planelistnode_s {
     void*           data;
@@ -135,10 +106,6 @@ typedef struct skyfix_s {
     float           height;
 } skyfix_t;
 
-#include "halfedgeds.h"
-#include "p_polyob.h"
-#include "p_maptypes.h"
-
 // Map objects.
 typedef struct {
     uint            idx;
@@ -175,26 +142,11 @@ typedef struct {
     valuedb_t       values;
 } gameobjectrecordset_t;
 
-#define RL_MAX_DIVS         64
-typedef struct walldiv_s {
-    unsigned int    num;
-    plane_t*        divs[RL_MAX_DIVS];
-} walldiv_t;
-
 typedef struct shadowlink_s {
     struct shadowlink_s* next;
     linedef_t*      lineDef;
     byte            side;
 } shadowlink_t;
-
-typedef struct {
-    float           approxDist; // Only an approximation.
-    float           vector[3]; // Light direction vector.
-    float           color[3]; // How intense the light is (0..1, RGB).
-    float           offset;
-    float           lightSide, darkSide; // Factors for world light.
-    boolean         affectedByAmbient;
-} vlight_t;
 
 typedef struct {
     uint            numLineOwners;
@@ -276,12 +228,8 @@ typedef struct gamemap_s {
     } lg;
 } gamemap_t;
 
-const char*     P_GenerateUniqueMapName(const char* mapID);
-
 gamemap_t*      P_CreateMap(const char* mapID);
 void            P_DestroyMap(gamemap_t* map);
-
-void            Map_EditEnd(gamemap_t* map);
 
 const char*     Map_ID(gamemap_t* map);
 const char*     Map_UniqueName(gamemap_t* map);
@@ -294,6 +242,7 @@ int             Map_UnlinkMobj(gamemap_t* map, struct mobj_s* mo);
 /**
  * Map Edit interface.
  */
+void            Map_EditEnd(gamemap_t* map);
 vertex_t*       Map_CreateVertex(gamemap_t* map, float x, float y);
 linedef_t*      Map_CreateLineDef(gamemap_t* map, vertex_t* vtx1, vertex_t* vtx2,
                                   sidedef_t* front, sidedef_t* back);
@@ -357,4 +306,5 @@ subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map);
 void            Map_BuildMobjBlockmap(gamemap_t* map);
 void            Map_BuildLineDefBlockmap(gamemap_t* map);
 void            Map_BuildSubsectorBlockmap(gamemap_t* map);
-#endif /* DOOMSDAY_PLAY_DATA_H */
+void            Map_InitSoundEnvironment(gamemap_t* map);
+#endif /* DOOMSDAY_MAP_H */

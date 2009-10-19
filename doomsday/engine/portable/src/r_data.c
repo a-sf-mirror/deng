@@ -869,8 +869,8 @@ void R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSe
 
     if(subSector->useMidPoint)
     {
-        rvertices[i].pos[VX] = subSector->midPoint.pos[VX];
-        rvertices[i].pos[VY] = subSector->midPoint.pos[VY];
+        rvertices[i].pos[VX] = subSector->midPoint[VX];
+        rvertices[i].pos[VY] = subSector->midPoint[VY];
         rvertices[i].pos[VZ] = height;
         ++i;
     }

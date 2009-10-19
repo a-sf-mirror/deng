@@ -661,8 +661,8 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
         lumIdx = LO_NewLuminous(LT_PLANE, subsector);
 
         l = LO_GetLuminous(lumIdx);
-        l->pos[VX] = subsector->midPoint.pos[VX];
-        l->pos[VY] = subsector->midPoint.pos[VY];
+        l->pos[VX] = subsector->midPoint[VX];
+        l->pos[VY] = subsector->midPoint[VY];
         l->pos[VZ] = pln->visHeight;
         l->maxDistance = 0;
         l->decorSource = NULL;

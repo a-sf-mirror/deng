@@ -28,8 +28,7 @@
 #ifndef DOOMSDAY_MAP_EDITOR_H
 #define DOOMSDAY_MAP_EDITOR_H
 
-#include "p_mapdata.h"
-#include "m_binarytree.h"
+#include "map.h"
 #include "p_materialmanager.h"
 
 extern gamemap_t* editMap;
@@ -62,17 +61,8 @@ void             MPE_CreatePlane(objectrecordid_t sector, float height,
 objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
                                    int tag, int sequenceType, float startX, float startY);
 
-boolean         MPE_GameObjectRecordProperty(const char* objName, uint idx,
-                                    const char* propName, valuetype_t type,
-                                    void* data);
-
-// Non-public (temporary)
-// Flags for MPE_PruneRedundantMapData().
-#define PRUNE_LINEDEFS      0x1
-#define PRUNE_VERTEXES      0x2
-#define PRUNE_SIDEDEFS      0x4
-#define PRUNE_SECTORS       0x8
-#define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
-
-gamemap_t*      MPE_GetLastBuiltMap(void);
+boolean          MPE_GameObjectRecordProperty(const char* objName, uint idx,
+                                              const char* propName, valuetype_t type,
+                                              void* data);
+gamemap_t*       MPE_GetLastBuiltMap(void);
 #endif /* DOOMSDAY_MAP_EDITOR_H */

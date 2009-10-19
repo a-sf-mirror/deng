@@ -31,6 +31,7 @@
 
 #include "p_object.h"
 #include "rend_list.h"
+#include "map.h"
 
 #define MAX_GLOWHEIGHT      (1024.0f) // Absolute max glow height.
 

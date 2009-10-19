@@ -50,13 +50,13 @@ internal_file.write(banner)
 public_file.write(banner)
 
 # Begin writing to the internal header.
-internal_file.write("#ifndef __DOOMSDAY_PLAY_MAP_DATA_TYPES_H__\n")
-internal_file.write("#define __DOOMSDAY_PLAY_MAP_DATA_TYPES_H__\n\n")
-internal_file.write("#include \"p_mapdata.h\"\n\n")
+internal_file.write("#ifndef DOOMSDAY_PLAY_MAP_DATA_TYPES_H\n")
+internal_file.write("#define DOOMSDAY_PLAY_MAP_DATA_TYPES_H\n\n")
+internal_file.write("#include \"gl_texturemanager.h\"\n\n")
 
 # Begin writing to the public header.
-public_file.write("#ifndef __DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H__\n")
-public_file.write("#define __DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H__\n\n")
+public_file.write("#ifndef DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H\n")
+public_file.write("#define DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H\n\n")
 
 for input_line in sys.stdin.readlines():
     line = input_line.strip()

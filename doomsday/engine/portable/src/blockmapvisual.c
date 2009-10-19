@@ -129,8 +129,8 @@ static boolean drawSubsectorAABB(subsector_t* subsector, void* data)
     vec2_t start, end;
 
     // Draw the bounding box.
-    V2_Set(start, subsector->bBox[0].pos[0], subsector->bBox[0].pos[1]);
-    V2_Set(end,   subsector->bBox[1].pos[0], subsector->bBox[1].pos[1]);
+    V2_Set(start, subsector->bBox[0][0], subsector->bBox[0][1]);
+    V2_Set(end,   subsector->bBox[1][0], subsector->bBox[1][1]);
 
     glBegin(GL_LINES);
         glVertex2f(start[0], start[1]);

@@ -46,7 +46,7 @@ void            GL_ConvertToLuminance(image_t *image);
 void            GL_CalcLuminance(byte* buffer, int width, int height,
                                  int pixelsize, colorpaletteid_t palid,
                                  float* brightX, float* brightY,
-                                 rgbcol_t* color, float* lumSize);
+                                 float color[3], float* lumSize);
 byte*           GL_ApplyColorKeying(byte* buf, unsigned int pixelSize,
                                     unsigned int width, unsigned int height);
 int             GL_ValidTexHeight2(int width, int height);
@@ -55,13 +55,13 @@ void            pixBlt(byte* src, int srcWidth, int srcHeight, byte* dest,
                        int destWidth, int destHeight, int alpha, int srcRegX,
                        int srcRegY, int destRegX, int destRegY, int regWidth,
                        int regHeight);
-void            averageColorIdx(rgbcol_t col, byte* data, int w, int h,
+void            averageColorIdx(float color[3], byte* data, int w, int h,
                                 colorpaletteid_t palid, boolean hasAlpha);
-void            averageColorRGB(rgbcol_t col, byte* data, int w, int h);
-int             lineAverageColorIdx(rgbcol_t col, byte* data, int w, int h,
+void            averageColorRGB(float color[3], byte* data, int w, int h);
+int             lineAverageColorIdx(float color[3], byte* data, int w, int h,
                                     int line, colorpaletteid_t palid,
                                     boolean hasAlpha);
-int             lineAverageColorRGB(rgbcol_t col, byte* data, int w, int h,
+int             lineAverageColorRGB(float color[3], byte* data, int w, int h,
                                     int line);
 void            ColorOutlines(byte* buffer, int width, int height);
 int             DrawRealPatch(byte* buffer, int texwidth, int texheight,

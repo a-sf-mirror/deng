@@ -536,8 +536,8 @@ void Sv_RegisterPoly(gamemap_t* map, uint number, dt_poly_t* reg)
 {
     polyobj_t* poly = map->polyObjs[number];
 
-    reg->dest.pos[VX] = poly->dest[VX];
-    reg->dest.pos[VY] = poly->dest[VY];
+    reg->dest[VX] = poly->dest[VX];
+    reg->dest[VY] = poly->dest[VY];
     reg->speed = poly->speed;
     reg->destAngle = poly->destAngle;
     reg->angleSpeed = poly->angleSpeed;
@@ -990,9 +990,9 @@ boolean Sv_RegisterComparePoly(gamemap_t* map, uint number, cregister_t* reg,
     Sv_RegisterPoly(map, number, &d->po);
 
     // What is different?
-    if(r->dest.pos[VX] != s->dest.pos[VX])
+    if(r->dest[VX] != s->dest[VX])
         df |= PODF_DEST_X;
-    if(r->dest.pos[VY] != s->dest.pos[VY])
+    if(r->dest[VY] != s->dest[VY])
         df |= PODF_DEST_Y;
     if(r->speed != s->speed)
         df |= PODF_SPEED;
@@ -1480,9 +1480,9 @@ void Sv_ApplyDeltaData(void* destDelta, const void* srcDelta)
         dt_poly_t*          d = &((polydelta_t *) dest)->po;
 
         if(sf & PODF_DEST_X)
-            d->dest.pos[VX] = s->dest.pos[VX];
+            d->dest[VX] = s->dest[VX];
         if(sf & PODF_DEST_Y)
-            d->dest.pos[VY] = s->dest.pos[VY];
+            d->dest[VY] = s->dest[VY];
         if(sf & PODF_SPEED)
             d->speed = s->speed;
         if(sf & PODF_DEST_ANGLE)

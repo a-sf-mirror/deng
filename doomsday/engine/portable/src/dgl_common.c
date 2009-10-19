@@ -33,6 +33,7 @@
 #include "de_base.h"
 #include "de_graphics.h"
 #include "de_misc.h"
+#include "de_render.h"
 
 // MACROS ------------------------------------------------------------------
 

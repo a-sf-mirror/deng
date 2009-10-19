@@ -96,7 +96,7 @@ struct seg
     BYTE    byte        side // 0=front, 1=back
     FLOAT   float       length // Accurate length of the segment (v1 -> v2).
     FLOAT   float       offset
-    -       biassurface_t*[3] bsuf // 0=middle, 1=top, 2=bottom
+    -       biassurface_s*[3] bsuf // 0=middle, 1=top, 2=bottom
     -       short       frameFlags
 end
 
@@ -105,19 +105,19 @@ public
 end
 
 struct subsector
-    -       face_t*     face
+    -       face_s*     face
     -       uint        hEdgeCount
     PTR     polyobj_s*  polyObj // NULL, if there is no polyobj.
     PTR     sector_s*   sector
     -       int         addSpriteCount // frame number of last R_AddSprites
     -       int         validCount
     -       uint[NUM_REVERB_DATA] reverb
-    -       fvertex_t[2] bBox // Min and max points.
+    -       float[2][2] bBox // Min and max points.
     -       float[2]    worldGridOffset // Offset to align the top left of the bBox to the world grid.
-    -       fvertex_t   midPoint // Center of the subsector.
+    -       float[2]   midPoint // Center of the subsector.
     -       shadowlink_s* shadows
-    -       biassurface_t** bsuf // [sector->planeCount] size.
-    -       hedge_t*    firstFanHEdge
+    -       biassurface_s** bsuf // [sector->planeCount] size.
+    -       hedge_s*    firstFanHEdge
     -       boolean     useMidPoint
 end
 
@@ -425,6 +425,18 @@ typedef struct msidedef_s {
 } msidedef_t;
 
 // Used with FakeRadio.
+typedef struct {
+    float           corner;
+    struct sector_s* proximity;
+    float           pOffset;
+    float           pHeight;
+} shadowcorner_t;
+
+typedef struct {
+    float           length;
+    float           shift;
+} edgespan_t;
+
 typedef struct {
     int                 fakeRadioUpdateCount; // frame number of last update
     shadowcorner_t      topCorners[2];

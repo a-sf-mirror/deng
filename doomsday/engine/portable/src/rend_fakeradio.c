@@ -1465,8 +1465,8 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     shadowSize = 2 * (8 + 16 - sectorlight * 16);
     shadowDark = calcShadowDarkness(sectorlight) *.8f;
 
-    vec[VX] = vx - subsector->midPoint.pos[VX];
-    vec[VY] = vz - subsector->midPoint.pos[VY];
+    vec[VX] = vx - subsector->midPoint[VX];
+    vec[VY] = vz - subsector->midPoint[VY];
 
     // Do we need to enlarge the size of the doPlane array?
     if(subsector->sector->planeCount > doPlaneSize)

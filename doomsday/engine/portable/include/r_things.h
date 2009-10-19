@@ -29,7 +29,6 @@
 #ifndef __DOOMSDAY_REFRESH_THINGS_H__
 #define __DOOMSDAY_REFRESH_THINGS_H__
 
-#include "p_mapdata.h"
 #include "r_data.h"
 #include "p_materialmanager.h"
 #include "rend_model.h"

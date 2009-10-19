@@ -183,7 +183,6 @@
 		<Unit filename="..\..\engine\portable\include\blockmapvisual.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_edge.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_intersection.h" />
-		<Unit filename="..\..\engine\portable\include\bsp_map.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_main.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_node.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_superblock.h" />

@@ -27,10 +27,11 @@
 #include "de_render.h"
 #include "de_play.h"
 
+#include "rendseg.h"
+
 // temporary includes:
 #include "rend_list.h"
 #include "p_material.h"
-#include "rendseg.h"
 
 // MACROS ------------------------------------------------------------------
 

@@ -32,7 +32,7 @@
 typedef struct poseg_s {
     struct sidedef_s* sideDef;
     struct linedef_s* lineDef;
-    biassurface_t* bsuf;
+    struct biassurface_s* bsuf;
 } poseg_t;
 
 // We'll use the base polyobj template directly as our mobj.
@@ -57,8 +57,6 @@ void            P_PolyobjUnlinkLineDefs(polyobj_t* po);
 
 void            P_PolyobjUpdateBBox(polyobj_t* po);
 
-void            P_PolyobjLinkToRing(polyobj_t* po, linkpolyobj_t** link);
-void            P_PolyobjUnlinkFromRing(polyobj_t* po, linkpolyobj_t** link);
 boolean         P_PolyobjLinesIterator(polyobj_t* po, boolean (*func) (struct linedef_s*, void*),
                                        void* data, boolean retObjRecord);
 #endif /* DOOMSDAY_POLYOBJECT */

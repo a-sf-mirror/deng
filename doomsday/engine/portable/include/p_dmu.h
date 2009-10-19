@@ -31,6 +31,8 @@
 #ifndef DOOMSDAY_MAP_UPDATE_H
 #define DOOMSDAY_MAP_UPDATE_H
 
+#include "map.h"
+
 typedef struct setargs_s {
     int             type;
     uint            prop;

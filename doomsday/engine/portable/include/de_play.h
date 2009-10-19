@@ -29,9 +29,9 @@
 #ifndef __DOOMSDAY_PLAYSIM__
 #define __DOOMSDAY_PLAYSIM__
 
-#include "p_mapdata.h"
 #include "p_vertex.h"
 #include "p_material.h"
+#include "p_materialmanager.h"
 #include "p_surface.h"
 #include "p_sidedef.h"
 #include "p_linedef.h"

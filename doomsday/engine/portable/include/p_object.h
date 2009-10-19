@@ -30,8 +30,6 @@
 #ifndef __DOOMSDAY_MOBJ_H__
 #define __DOOMSDAY_MOBJ_H__
 
-#include "p_mapdata.h"
-
 #if defined(__JDOOM__) || defined(__JHERETIC__) || defined(__JHEXEN__)
 #  error "Attempted to include internal Doomsday p_object.h from a game"
 #endif
@@ -70,5 +68,4 @@ boolean         P_TryMoveXYZ(mobj_t* mo, float x, float y, float z);
 boolean         P_StepMove(mobj_t* mo, float dx, float dy, float dz);
 boolean         P_CheckPosXY(mobj_t* mo, float x, float y);
 boolean         P_CheckPosXYZ(mobj_t* mo, float x, float y, float z);
-boolean         P_SectorPlanesChanged(sector_t* sector);
 #endif

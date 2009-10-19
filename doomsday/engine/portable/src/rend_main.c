@@ -1699,8 +1699,7 @@ static void Rend_RenderPlane(subsector_t* subsector, planetype_t type,
 
     sec = subsector->sector;
 
-    V3_Set(vec, vx - subsector->midPoint.pos[VX], vz - subsector->midPoint.pos[VY],
-           vy - height);
+    V3_Set(vec, vx - subsector->midPoint[VX], vz - subsector->midPoint[VY], vy - height);
 
     // Don't bother with planes facing away from the camera.
     if(!(V3_DotProduct(vec, normal) < 0))
@@ -1708,10 +1707,10 @@ static void Rend_RenderPlane(subsector_t* subsector, planetype_t type,
         float texTL[3], texBR[3];
 
         // Set the texture origin, Y is flipped for the ceiling.
-        V3_Set(texTL, subsector->bBox[0].pos[VX],
-               subsector->bBox[type == PLN_FLOOR? 1 : 0].pos[VY], height);
-        V3_Set(texBR, subsector->bBox[1].pos[VX],
-            subsector->bBox[type == PLN_FLOOR? 0 : 1].pos[VY], height);
+        V3_Set(texTL, subsector->bBox[0][VX],
+               subsector->bBox[type == PLN_FLOOR? 1 : 0][VY], height);
+        V3_Set(texBR, subsector->bBox[1][VX],
+               subsector->bBox[type == PLN_FLOOR? 0 : 1][VY], height);
 
         renderPlane(subsector, type, height, normal, inMat, inMatB, matBlendFactor,
                     sufInFlags, sufColor, blendMode, texTL, texBR, texOffset,
@@ -2807,7 +2806,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
         // Add the Y offset to orient the Y flipped texture.
         if(plane->type == PLN_CEILING)
-            texOffset[VY] -= subsector->bBox[1].pos[VY] - subsector->bBox[0].pos[VY];
+            texOffset[VY] -= subsector->bBox[1][VY] - subsector->bBox[0][VY];
 
         // Add the additional offset to align with the worldwide grid.
         texOffset[VX] += subsector->worldGridOffset[VX];
@@ -3114,8 +3113,7 @@ void Rend_RenderNormals(gamemap_t* map)
             plane_t* pln = subsector->sector->SP_plane(j);
             float scale = NORM_TAIL_LENGTH;
 
-            V3_Set(origin, subsector->midPoint.pos[VX], subsector->midPoint.pos[VY],
-                   pln->visHeight);
+            V3_Set(origin, subsector->midPoint[VX], subsector->midPoint[VY], pln->visHeight);
             if(pln->type != PLN_MID && IS_SKYSURFACE(&pln->surface))
                 origin[VZ] = map->skyFix[pln->type].height;
 

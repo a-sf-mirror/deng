@@ -37,7 +37,6 @@
 #include "bsp_edge.h"
 #include "bsp_intersection.h"
 #include "m_binarytree.h"
-#include "p_mapdata.h"
 
 typedef struct bspartition_s {
     double              x, y;

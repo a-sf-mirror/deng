@@ -526,6 +526,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\map.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\mobjblockmap.c"
 				>
 			</File>
@@ -559,10 +563,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\p_control.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_data.c"
 				>
 			</File>
 			<File
@@ -1227,10 +1227,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_map.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\bsp_node.h"
 				>
 			</File>
@@ -1563,6 +1559,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\include\map.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\include\mapdata.hs"
 				>
 			</File>
@@ -1608,10 +1608,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\p_linedef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_mapdata.h"
 				>
 			</File>
 			<File

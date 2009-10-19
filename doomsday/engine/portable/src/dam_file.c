@@ -36,8 +36,6 @@
 #include "de_misc.h"
 #include "de_refresh.h"
 
-#include "p_mapdata.h"
-
 // MACROS ------------------------------------------------------------------
 
 // Global archived map format version identifier. Increment when making
@@ -732,15 +730,12 @@ static void writeSubsector(const gamemap_t* map, uint idx)
     uint i;
     const subsector_t*  s = map->subsectors[idx];
 
-    writeFloat(s->bBox[0].pos[VX]);
-    writeFloat(s->bBox[0].pos[VY]);
-    writeFloat(s->bBox[0].pos[VZ]);
-    writeFloat(s->bBox[1].pos[VX]);
-    writeFloat(s->bBox[1].pos[VY]);
-    writeFloat(s->bBox[1].pos[VZ]);
-    writeFloat(s->midPoint.pos[VX]);
-    writeFloat(s->midPoint.pos[VY]);
-    writeFloat(s->midPoint.pos[VZ]);
+    writeFloat(s->bBox[0][VX]);
+    writeFloat(s->bBox[0][VY]);
+    writeFloat(s->bBox[1][VX]);
+    writeFloat(s->bBox[1][VY]);
+    writeFloat(s->midPoint[VX]);
+    writeFloat(s->midPoint[VY]);
     writeLong(s->sector? P_ObjectRecord(DMU_SECTOR, s->sector)->id : 0);
     writeLong(s->polyObj? (s->polyObj->idx + 1) : 0);
 
@@ -760,15 +755,12 @@ static void readSubsector(const gamemap_t* map, uint idx)
     long obIdx;
     subsector_t* s = map->subsectors[idx];
 
-    s->bBox[0].pos[VX] = readFloat();
-    s->bBox[0].pos[VY] = readFloat();
-    s->bBox[0].pos[VZ] = readFloat();
-    s->bBox[1].pos[VX] = readFloat();
-    s->bBox[1].pos[VY] = readFloat();
-    s->bBox[1].pos[VZ] = readFloat();
-    s->midPoint.pos[VX] = readFloat();
-    s->midPoint.pos[VY] = readFloat();
-    s->midPoint.pos[VZ] = readFloat();
+    s->bBox[0][VX] = readFloat();
+    s->bBox[0][VY] = readFloat();
+    s->bBox[1][VX] = readFloat();
+    s->bBox[1][VY] = readFloat();
+    s->midPoint[VX] = readFloat();
+    s->midPoint[VY] = readFloat();
     obIdx = readLong();
     s->sector = (obIdx == 0? NULL : map->sectors[(unsigned) obIdx - 1]);
     obIdx = readLong();
