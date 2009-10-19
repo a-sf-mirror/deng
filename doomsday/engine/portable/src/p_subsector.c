@@ -50,6 +50,47 @@
 
 // CODE --------------------------------------------------------------------
 
+void Subsector_UpdateMidPoint(subsector_t* subsector)
+{
+    hedge_t* hEdge;
+
+    assert(subsector);
+
+    // Find the center point. First calculate the bounding box.
+    if((hEdge = subsector->face->hEdge))
+    {
+        vertex_t* vtx;
+
+        vtx = hEdge->HE_v1;
+        subsector->bBox[0].pos[VX] = subsector->bBox[1].pos[VX] = subsector->midPoint.pos[VX] = vtx->pos[VX];
+        subsector->bBox[0].pos[VY] = subsector->bBox[1].pos[VY] = subsector->midPoint.pos[VY] = vtx->pos[VY];
+
+        while((hEdge = hEdge->next) != subsector->face->hEdge)
+        {
+            vtx = hEdge->HE_v1;
+
+            if(vtx->pos[VX] < subsector->bBox[0].pos[VX])
+                subsector->bBox[0].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] < subsector->bBox[0].pos[VY])
+                subsector->bBox[0].pos[VY] = vtx->pos[VY];
+            if(vtx->pos[VX] > subsector->bBox[1].pos[VX])
+                subsector->bBox[1].pos[VX] = vtx->pos[VX];
+            if(vtx->pos[VY] > subsector->bBox[1].pos[VY])
+                subsector->bBox[1].pos[VY] = vtx->pos[VY];
+
+            subsector->midPoint.pos[VX] += vtx->pos[VX];
+            subsector->midPoint.pos[VY] += vtx->pos[VY];
+        }
+
+        subsector->midPoint.pos[VX] /= subsector->hEdgeCount; // num vertices.
+        subsector->midPoint.pos[VY] /= subsector->hEdgeCount;
+    }
+
+    // Calculate the worldwide grid offset.
+    subsector->worldGridOffset[VX] = fmod(subsector->bBox[0].pos[VX], 64);
+    subsector->worldGridOffset[VY] = fmod(subsector->bBox[1].pos[VY], 64);
+}
+
 /**
  * Update the subsector, property is selected by DMU_* name.
  */

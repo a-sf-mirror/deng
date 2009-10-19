@@ -454,6 +454,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\halfedgeds.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\linedefblockmap.c"
 				>
 			</File>

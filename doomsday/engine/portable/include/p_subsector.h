@@ -22,17 +22,15 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_subsector.h: World subsectors.
- */
-
-#ifndef __DOOMSDAY_WORLD_SUBSECTOR_H__
-#define __DOOMSDAY_WORLD_SUBSECTOR_H__
+#ifndef DOOMSDAY_MAP_SUBSECTOR_H
+#define DOOMSDAY_MAP_SUBSECTOR_H
 
 #include "r_data.h"
 #include "p_dmu.h"
 
+void            Subsector_UpdateMidPoint(subsector_t* subsector);
+
 boolean         Subsector_GetProperty(const subsector_t* subsector, setargs_t* args);
 boolean         Subsector_SetProperty(subsector_t* subsector, const setargs_t* args);
 
-#endif
+#endif /* DOOMSDAY_MAP_SUBSECTOR */

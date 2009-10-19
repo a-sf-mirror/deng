@@ -134,12 +134,14 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
     hedge_t* hEdge = createHEdge();
 
     hEdge->vertex = start;
+    if(!start->hEdge)
+        start->hEdge = hEdge;
     hEdge->twin = NULL;
-    hEdge->next = hEdge->prev = NULL;
+    hEdge->next = hEdge->prev = hEdge;
     hEdge->face = NULL;
 
     {
-    bsp_hedgeinfo_t*         data = (bsp_hedgeinfo_t*) hEdge->data;
+    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
 
     data->lineDef = line;
     data->side = (back? 1 : 0);
@@ -269,7 +271,7 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
     BSP_UpdateHEdgeInfo(newHEdge);
     if(oldHEdge->twin)
     {
-        bsp_hedgeinfo_t*    oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
+        bsp_hedgeinfo_t* oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
 
         BSP_UpdateHEdgeInfo(oldHEdge->twin);
         BSP_UpdateHEdgeInfo(newHEdge->twin);

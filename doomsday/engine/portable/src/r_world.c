@@ -1093,7 +1093,7 @@ void R_SetupFogDefaults(void)
 void R_OrderVertices(const linedef_t* line, const sector_t* sector,
                      vertex_t* verts[2])
 {
-    byte                edge;
+    byte edge;
 
     edge = (sector == LINE_FRONTSECTOR(line)? 0:1);
     verts[0] = LINE_VERTEX(line, edge);
@@ -1102,8 +1102,8 @@ void R_OrderVertices(const linedef_t* line, const sector_t* sector,
 
 static int C_DECL DivSortAscend(const void* e1, const void* e2)
 {
-    float               f1 = (*((const plane_t**) e1))->visHeight;
-    float               f2 = (*((const plane_t**) e2))->visHeight;
+    float f1 = (*((const plane_t**) e1))->visHeight;
+    float f2 = (*((const plane_t**) e2))->visHeight;
 
     if(f1 > f2)
         return 1;
@@ -1114,8 +1114,8 @@ static int C_DECL DivSortAscend(const void* e1, const void* e2)
 
 static int C_DECL DivSortDescend(const void* e1, const void* e2)
 {
-    float               f1 = (*((const plane_t**) e1))->visHeight;
-    float               f2 = (*((const plane_t**) e2))->visHeight;
+    float f1 = (*((const plane_t**) e1))->visHeight;
+    float f2 = (*((const plane_t**) e2))->visHeight;
 
     if(f1 > f2)
         return -1;
@@ -1129,7 +1129,7 @@ static boolean testForPlaneDivision(walldiv_t* wdiv, plane_t* pln,
 {
     if(pln->visHeight > bottomZ && pln->visHeight < topZ)
     {
-        uint                i;
+        uint i;
 
         // If there is already a division at this height, ignore this plane.
         for(i = 0; i < wdiv->num; ++i)
@@ -1147,20 +1147,24 @@ static boolean testForPlaneDivision(walldiv_t* wdiv, plane_t* pln,
     return true; // Continue.
 }
 
-static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+static hedge_t* nextHEdgeAroundVertex(hedge_t* hEdge, boolean clockwise)
+{
+    if(clockwise)
+        return hEdge->prev->twin;
+    return hEdge->twin->next;
+}
+
+static void doFindSegDivisions(walldiv_t* div, hedge_t* base,
                                const sector_t* frontSec, float bottomZ,
                                float topZ, boolean doRight)
 {
-    linedef_t*          iter;
-    lineowner_t*        base, *own;
-    boolean             clockwise = !doRight;
+    hedge_t* hEdge;
+    boolean clockwise = !doRight;
 
     if(bottomZ >= topZ)
         return; // Obviously no division.
 
-    // Retrieve the start owner node.
-    base = own = R_GetVtxLineOwner(HE_VERTEX(hEdge, doRight),
-                                   ((seg_t*) hEdge->data)->sideDef->lineDef);
+    return;
 
     /**
      * We need to handle the special case of a sector with zero volume.
@@ -1168,23 +1172,21 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
      * ceiling. This is because elsewhere we automatically fix the case of a
      * floor above a ceiling by lowering the floor.
      */
-    while((own = own->link[clockwise]) != base)
+    hEdge = base;
+    while((hEdge = nextHEdgeAroundVertex(hEdge, clockwise)) != base)
     {
-        boolean             sectorHasVolume = false;
-        sidedef_t*          side;
-        
-        iter = own->lineDef;
+        seg_t* seg = (seg_t*) hEdge->data;
+        boolean sectorHasVolume = false;
 
-        if(LINE_SELFREF(iter))
+        if(!seg)
+            continue;
+        if(seg->sideDef && LINE_SELFREF(seg->sideDef->lineDef))
             continue;
 
-        side = LINE_SIDE(iter,
-            LINE_FRONTSECTOR(iter) == frontSec? BACK : FRONT);
-
-        if(side)
+        if(seg->sideDef)
         {
-            plane_t*            pln;
-            sector_t*           scanSec = side->sector;
+            plane_t* pln;
+            sector_t* scanSec = seg->sideDef->sector;
 
             if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
                 sectorHasVolume = true;
@@ -1206,8 +1208,8 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
                 // Next, every plane between floor and ceiling.
                 if(scanSec->planeCount > 2)
                 {
-                    uint                j;
-                    boolean             stop = false;
+                    uint j;
+                    boolean stop = false;
 
                     for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
                     {
@@ -1235,20 +1237,20 @@ static void doFindSegDivisions(walldiv_t* div, const hedge_t* hEdge,
         }
 
         // Stop the scan when a solid neighbour is reached.
-        if(!side || !sectorHasVolume)
+        if(!seg->sideDef || !sectorHasVolume)
             break;
 
         // Prepare for the next round.
-        frontSec = side->sector;
+        frontSec = seg->sideDef->sector;
     }
 }
 
-static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
+static void findSegDivisions(walldiv_t* div, hedge_t* hEdge,
                              const sector_t* frontSec, float bottomZ,
                              float topZ, boolean doRight)
 {
-    seg_t*              seg = (seg_t*) hEdge->data;
-    sidedef_t*          side = seg->sideDef;
+    seg_t* seg = (seg_t*) hEdge->data;
+    sidedef_t* side = seg->sideDef;
 
     div->num = 0;
 
@@ -1266,11 +1268,11 @@ static void findSegDivisions(walldiv_t* div, const hedge_t* hEdge,
 /**
  * Division will only happen if it must be done.
  */
-void R_FindSegSectionDivisions(walldiv_t* wdivs, const hedge_t* hEdge,
+void R_FindSegSectionDivisions(walldiv_t* wdivs, hedge_t* hEdge,
                                const sector_t* frontsec, float low, float hi)
 {
-    uint                i;
-    walldiv_t*          wdiv;
+    uint i;
+    walldiv_t* wdiv;
 
     if(!((seg_t*) hEdge->data)->sideDef)
         return; // Mini-segs arn't drawn.

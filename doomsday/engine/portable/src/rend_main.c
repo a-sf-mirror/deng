@@ -1985,14 +1985,6 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
     return false;
 }
 
-float Sector_LightLevel(sector_t* sec)
-{
-    if(mapFullBright)
-        return 1.0f;
-
-    return sec->lightLevel;
-}
-
 static void markSegsFacingFront(subsector_t* subsector)
 {
     hedge_t* hEdge;
@@ -3139,41 +3131,49 @@ void Rend_RenderNormals(gamemap_t* map)
 
 static void getVertexPlaneMinMax(const vertex_t* vtx, float* min, float* max)
 {
-    const lineowner_t* vo, *base;
+    const hedge_t* hEdge, *base;
 
     if(!vtx || (!min && !max))
         return; // Wha?
 
-    vo = base = ((mvertex_t*) vtx->data)->lineOwners;
+    hEdge = base = vtx->hEdge;
 
     do
     {
-        const linedef_t* li = vo->lineDef;
-
-        if(LINE_FRONTSIDE(li))
+        const seg_t* seg = (seg_t*) hEdge->data;
+        
+        if(seg && seg->sideDef)
         {
-            const sector_t* sec = LINE_FRONTSECTOR(li);
+            linedef_t* lineDef = seg->sideDef->lineDef;
 
-            if(min && sec->SP_floorvisheight < *min)
-                *min = sec->SP_floorvisheight;
+            if(!LINE_SELFREF(lineDef))
+            {
+                if(LINE_FRONTSIDE(lineDef))
+                {
+                    const sector_t* sec = LINE_FRONTSECTOR(lineDef);
 
-            if(max && sec->SP_ceilvisheight > *max)
-                *max = sec->SP_ceilvisheight;
+                    if(min && sec->SP_floorvisheight < *min)
+                        *min = sec->SP_floorvisheight;
+
+                    if(max && sec->SP_ceilvisheight > *max)
+                        *max = sec->SP_ceilvisheight;
+                }
+
+                if(LINE_BACKSIDE(lineDef))
+                {
+                    const sector_t* sec = LINE_BACKSECTOR(lineDef);
+
+                    if(min && sec->SP_floorvisheight < *min)
+                        *min = sec->SP_floorvisheight;
+
+                    if(max && sec->SP_ceilvisheight > *max)
+                        *max = sec->SP_ceilvisheight;
+                }
+            }
         }
 
-        if(LINE_BACKSIDE(li))
-        {
-            const sector_t* sec = LINE_BACKSECTOR(li);
-
-            if(min && sec->SP_floorvisheight < *min)
-                *min = sec->SP_floorvisheight;
-
-            if(max && sec->SP_ceilvisheight > *max)
-                *max = sec->SP_ceilvisheight;
-        }
-
-        vo = vo->LO_next;
-    } while(vo != base);
+        hEdge = hEdge->twin->next;
+    } while(hEdge != base);
 }
 
 static void drawVertexPoint(const vertex_t* vtx, float z, float alpha)
@@ -3307,8 +3307,6 @@ void Rend_Vertexes(gamemap_t* map)
 
             if(!mvtx)
                 continue;
-            if(!mvtx->lineOwners)
-                continue; // Not a linedef vertex.
 
             alpha = 1 - M_ApproxDistancef(vx - vtx->pos[VX],
                                           vz - vtx->pos[VY]) / MAX_VERTEX_POINT_DIST;
@@ -3343,8 +3341,6 @@ void Rend_Vertexes(gamemap_t* map)
 
         if(!mvtx)
             continue;
-        if(!mvtx->lineOwners)
-            continue; // Not a linedef vertex.
 
         dist = M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
 
@@ -3376,7 +3372,6 @@ void Rend_Vertexes(gamemap_t* map)
             float pos[3], dist;
 
             if(!mvtx)
-            if(!mvtx->lineOwners)
                 continue; // Not a linedef vertex.
 
             pos[VX] = vtx->pos[VX];

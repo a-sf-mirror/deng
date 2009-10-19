@@ -3,11 +3,7 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ *\author Copyright © 2008-2009 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,16 +21,12 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * bsp_main.c: GL-friendly BSP node builder.
- *
- * Based on glBSP 2.24 (in turn, based on BSP 2.3), which is hosted on
- * SourceForge: http://sourceforge.net/projects/glbsp/
- */
-
 // HEADER FILES ------------------------------------------------------------
 
 #include "de_base.h"
+#include "de_play.h"
+
+#include "halfedgeds.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -50,17 +42,21 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int bspFactor = 7;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-/**
- * Register the ccmds and cvars of the BSP builder. Called during engine
- * startup
- */
-void BSP_Register(void)
+vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 {
-    C_VAR_INT("bsp-factor", &bspFactor, CVF_NO_MAX, 0, 0);
+    vertex_t* vtx = Z_Malloc(sizeof(*vtx), PU_STATIC, 0);
+
+    halfEdgeDS->vertices = Z_Realloc(halfEdgeDS->vertices,
+        sizeof(vtx) * (++halfEdgeDS->numVertices + 1), PU_STATIC);
+    halfEdgeDS->vertices[halfEdgeDS->numVertices-1] = vtx;
+    halfEdgeDS->vertices[halfEdgeDS->numVertices] = NULL;
+
+    vtx->data = Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0);
+    ((mvertex_t*) vtx->data)->index = halfEdgeDS->numVertices; // 1-based index, 0 = NIL.
+
+    return vtx;
 }

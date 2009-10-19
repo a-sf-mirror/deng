@@ -31,8 +31,8 @@
  * SourceForge: http://sourceforge.net/projects/glbsp/
  */
 
-#ifndef __BSP_MAIN_H__
-#define __BSP_MAIN_H__
+#ifndef DOOMSDAY_MAP_BSP_BUILD_H
+#define DOOMSDAY_MAP_BSP_BUILD_H
 
 #include "de_edit.h"
 
@@ -41,5 +41,5 @@ typedef double angle_g;  // Degrees, 0 is E, 90 is N
 extern int bspFactor;
 
 void        BSP_Register(void);
-boolean     Map_BuildBSP(gamemap_t* map);
-#endif
+
+#endif /* DOOMSDAY_MAP_BSP_BUILD_H */

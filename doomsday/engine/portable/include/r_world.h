@@ -133,7 +133,7 @@ void            R_PickPlanesForSegExtrusion(hedge_t* hEdge,
 boolean         R_UseSectorsFromFrontSideDef(hedge_t* hEdge, segsection_t section);
 boolean         R_ConsiderOneSided(hedge_t* hEdge);
 
-void            R_FindSegSectionDivisions(walldiv_t* wdivs, const hedge_t* hEdge,
+void            R_FindSegSectionDivisions(walldiv_t* wdivs, hedge_t* hEdge,
                                           const sector_t* frontsec, float low, float hi);
 
 lineowner_t*    R_GetVtxLineOwner(const vertex_t* vtx, const linedef_t* line);

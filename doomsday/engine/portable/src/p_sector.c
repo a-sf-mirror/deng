@@ -50,6 +50,83 @@
 
 // CODE --------------------------------------------------------------------
 
+float Sector_LightLevel(sector_t* sec)
+{
+    assert(sec);
+
+    if(mapFullBright)
+        return 1.0f;
+
+    return sec->lightLevel;
+}
+
+/**
+ * @pre Sector bounds must be setup before this is called!
+ */
+void Sector_Bounds(sector_t* sec, float* min, float* max)
+{
+    assert(sec);
+
+    if(min)
+    {
+        min[VX] = sec->bBox[BOXLEFT];
+        min[VY] = sec->bBox[BOXBOTTOM];
+    }
+    if(max)
+    {
+        max[VX] = sec->bBox[BOXRIGHT];
+        max[VY] = sec->bBox[BOXTOP];
+    }
+}
+
+/**
+ * @pre Lines in sector must be setup before this is called!
+ */
+void Sector_UpdateBounds(sector_t* sec)
+{
+    uint i;
+    float* bbox;
+    vertex_t* vtx;
+
+    assert(sec);
+
+    bbox = sec->bBox;
+
+    if(!(sec->lineDefCount > 0))
+    {
+        memset(sec->bBox, 0, sizeof(sec->bBox));
+        return;
+    }
+
+    bbox[BOXLEFT] = DDMAXFLOAT;
+    bbox[BOXRIGHT] = DDMINFLOAT;
+    bbox[BOXBOTTOM] = DDMAXFLOAT;
+    bbox[BOXTOP] = DDMINFLOAT;
+
+    for(i = 1; i < sec->lineDefCount; ++i)
+    {
+        linedef_t* li = sec->lineDefs[i];
+
+        if(li->inFlags & LF_POLYOBJ)
+            continue;
+
+        vtx = li->L_v1;
+
+        if(vtx->pos[VX] < bbox[BOXLEFT])
+            bbox[BOXLEFT]   = vtx->pos[VX];
+        if(vtx->pos[VX] > bbox[BOXRIGHT])
+            bbox[BOXRIGHT]  = vtx->pos[VX];
+        if(vtx->pos[VY] < bbox[BOXBOTTOM])
+            bbox[BOXBOTTOM] = vtx->pos[VY];
+        if(vtx->pos[VY] > bbox[BOXTOP])
+            bbox[BOXTOP]    = vtx->pos[VY];
+    }
+
+    // This is very rough estimate of sector area.
+    sec->approxArea = ((bbox[BOXRIGHT] - bbox[BOXLEFT]) / 128) *
+        ((bbox[BOXTOP] - bbox[BOXBOTTOM]) / 128);
+}
+
 /**
  * Update the sector, property is selected by DMU_* name.
  */

@@ -196,6 +196,11 @@ typedef struct {
     boolean         affectedByAmbient;
 } vlight_t;
 
+typedef struct {
+    uint            numLineOwners;
+    lineowner_t*    lineOwners; // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
+} vertexinfo_t;
+
 extern nodeindex_t* linelinks;
 extern nodepile_t* mobjNodes, *lineNodes;
 
@@ -275,6 +280,8 @@ const char*     P_GenerateUniqueMapName(const char* mapID);
 
 gamemap_t*      P_CreateMap(const char* mapID);
 void            P_DestroyMap(gamemap_t* map);
+
+void            Map_EditEnd(gamemap_t* map);
 
 const char*     Map_ID(gamemap_t* map);
 const char*     Map_UniqueName(gamemap_t* map);

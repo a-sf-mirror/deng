@@ -25,6 +25,7 @@
 #define DOOMSDAY_HALFEDGEDS_H
 
 typedef struct vertex_s {
+    struct hedge_s* hEdge;
     double          pos[2]; // @todo replace with a fixed-precision representation?
     void*           data;
 } vertex_t;

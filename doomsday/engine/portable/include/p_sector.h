@@ -22,19 +22,17 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_sector.h: World sectors.
- */
-
-#ifndef __DOOMSDAY_WORLD_SECTOR_H__
-#define __DOOMSDAY_WORLD_SECTOR_H__
+#ifndef DOOMSDAY_MAP_SECTOR_H
+#define DOOMSDAY_MAP_SECTOR_H
 
 #include "r_data.h"
 #include "p_dmu.h"
 
 float           Sector_LightLevel(sector_t* sec);
+void            Sector_UpdateBounds(sector_t* sec);
+void            Sector_Bounds(sector_t* sec, float* min, float* max);
 
 boolean         Sector_GetProperty(const sector_t *sec, setargs_t *args);
 boolean         Sector_SetProperty(sector_t *sec, const setargs_t *args);
 
-#endif
+#endif /* DOOMSDAY_MAP_SECTOR */

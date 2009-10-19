@@ -520,9 +520,8 @@
 		<Unit filename="..\..\engine\portable\src\gl_texmanager.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="..\..\engine\portable\src\gl_tga.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\engine\portable\src\gl_tga.c" />
+		<Unit filename="..\..\engine\portable\src\halfedgeds.c" />
 		<Unit filename="..\..\engine\portable\src\linedefblockmap.c" />
 		<Unit filename="..\..\engine\portable\src\m_args.c">
 			<Option compilerVar="CC" />
