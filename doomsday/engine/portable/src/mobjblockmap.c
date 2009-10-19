@@ -35,10 +35,15 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct linkmobj_s {
-    struct linkmobj_s* next;
-    struct mobj_s* mobj;
-} linkmobj_t;
+typedef struct listnode_s {
+    struct listnode_s* next;
+    void*           data;
+} listnode_t;
+
+typedef struct {
+    uint            size;
+    listnode_t*     head;
+} linklist_t;
 
 typedef struct {
     boolean       (*func) (mobj_t*, void *);
@@ -70,42 +75,147 @@ static void freeBlockmap(mobjblockmap_t* bmap)
     Z_Free(bmap);
 }
 
-static boolean freeMobjBlockData(void* data, void* context)
+static listnode_t* allocListNode(void)
 {
-    linkmobj_t* link = (linkmobj_t*) data;
+    return Z_Calloc(sizeof(listnode_t), PU_STATIC, 0);
+}
 
-    while(link)
+static void freeListNode(listnode_t* node)
+{
+    Z_Free(node);
+}
+
+static linklist_t* allocList(void)
+{
+    return Z_Calloc(sizeof(linklist_t), PU_STATIC, 0);
+}
+
+static void freeList(linklist_t* list)
+{
+    listnode_t* node = list->head;
+
+    while(node)
     {
-        linkmobj_t* next = link->next;
-        Z_Free(link);
-        link = next;
+        listnode_t* next = node->next;
+        freeListNode(node);
+        node = next;
     }
 
-    return true; // Continue iteration.
+    Z_Free(list);
+}
+
+static void listPushFront(linklist_t* list, mobj_t* mobj)
+{
+    listnode_t* node = allocListNode();
+    
+    node->data = mobj;
+
+    node->next = list->head;
+    list->head = node;
+
+    list->size += 1;
+}
+
+static boolean listRemove(linklist_t* list, mobj_t* mobj)
+{
+    if(list->head)
+    {
+        listnode_t** node = &list->head;
+
+        do
+        {
+            listnode_t** next = &(*node)->next;
+
+            if((*node)->data == mobj)
+            {
+                freeListNode(*node);
+                *node = *next;
+                list->size -= 1;
+                return true; // Mobj was unlinked.
+            }
+
+            node = next;
+        } while(*node);
+    }
+
+    return false; // Mobj was not linked.
+}
+
+static uint listSize(linklist_t* list)
+{
+    return list->size;
+}
+
+static void linkMobjToBlock(mobjblockmap_t* blockmap, uint x, uint y, mobj_t* mobj)
+{
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+
+    if(!list)
+        list = Gridmap_SetBlock(blockmap->gridmap, x, y, allocList());
+
+    listPushFront(list, mobj);
+}
+
+static boolean unlinkMobjFromBlock(mobjblockmap_t* blockmap, uint x, uint y, mobj_t* mobj)
+{
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+
+    if(list)
+    {
+        boolean result = listRemove(list, mobj);
+        if(result && !list->head)
+        {
+            freeList(list);
+            Gridmap_SetBlock(blockmap->gridmap, x, y, NULL);
+        }
+
+        return result;
+    }
+
+    return false;
 }
 
 static boolean iterateMobjs(void* ptr, void* context)
 {
-    linkmobj_t* link = (linkmobj_t*) ptr;
+    linklist_t* list = (linklist_t*) ptr;
     iteratemobjs_args_t* args = (iteratemobjs_args_t*) context;
 
-    while(link)
+    if(list)
     {
-        linkmobj_t* next = link->next;
+        listnode_t* node = list->head;
 
-        if(link->mobj)
-            if(link->mobj->validCount != args->localValidCount)
+        while(node)
+        {
+            listnode_t* next = node->next;
+
+            if(node->data)
             {
-                link->mobj->validCount = args->localValidCount;
+                mobj_t* mobj = (mobj_t*) node->data;
 
-                if(!args->func(link->mobj, args->context))
-                    return false;
+                if(mobj->validCount != args->localValidCount)
+                {
+                    mobj->validCount = args->localValidCount;
+
+                    if(!args->func(mobj, args->context))
+                        return false;
+                }
             }
 
-        link = next;
+            node = next;
+        }
     }
 
     return true;
+}
+
+static boolean freeMobjBlockData(void* data, void* context)
+{
+    linklist_t* list = (linklist_t*) data;
+
+    if(list)
+        freeList(list);
+
+    return true; // Continue iteration.
 }
 
 static void boxToBlocks(mobjblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
@@ -195,64 +305,28 @@ boolean MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint dest[2], const floa
     return MobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mo)
+void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mobj)
 {
     uint block[2];
-    linkmobj_t* link;
 
     assert(blockmap);
-    assert(mo);
+    assert(mobj);
 
-    MobjBlockmap_Block2fv(blockmap, block, mo->pos);
+    MobjBlockmap_Block2fv(blockmap, block, mobj->pos);
 
-    link = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, block[0], block[1]);
-    if(!link)
-    {   // Create a new link at the current block cell.
-        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
-        link->next = NULL;
-        link->mobj = mo;
-
-        Gridmap_SetBlock(blockmap->gridmap, block[0], block[1], link);
-        return;
-    }
-
-    while(link->next != NULL && link->mobj != NULL)
-    {
-        link = link->next;
-    }
-
-    if(link->mobj == NULL)
-    {
-        link->mobj = mo;
-        return;
-    }
-
-    link->next = Z_Malloc(sizeof(linkmobj_t), PU_STATIC, 0);
-    link->next->next = NULL;
-    link->next->mobj = mo;
+    linkMobjToBlock(blockmap, block[0], block[1], mobj);
 }
 
-boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mo)
+boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mobj)
 {
-    uint blockXY[2];
-    linkmobj_t* link;
+    uint block[2];
 
     assert(blockmap);
-    assert(mo);
+    assert(mobj);
 
-    MobjBlockmap_Block2fv(blockmap, blockXY, mo->pos);
+    MobjBlockmap_Block2fv(blockmap, block, mobj->pos);
 
-    link = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, blockXY[0], blockXY[1]);
-    for(; link; link = link->next)
-    {
-        if(link->mobj != mo)
-            continue;
-
-        link->mobj = NULL;
-        return true; // Mobj was unlinked.
-    }
-
-    return false; // Mobj was not linked.
+    return unlinkMobjFromBlock(blockmap, block[0], block[1], mobj);
 }
 
 void MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max)
@@ -282,25 +356,15 @@ void MobjBlockmap_Dimensions(mobjblockmap_t* blockmap, uint v[2])
 
 uint MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y)
 {
-    linkmobj_t* data;
-    uint num = 0;
+    linklist_t* list;
 
     assert(blockmap);
 
-    data = (linkmobj_t*) Gridmap_Block(blockmap->gridmap, x, y);
-    // Count the number of mobjs linked to this block.
-    if(data)
-    {
-        linkmobj_t* link = data;
-        while(link)
-        {
-            if(link->mobj)
-                num++;
-            link = link->next;
-        }
-    }
+    list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    if(list)
+        return listSize(list);
 
-    return num;
+    return 0;
 }
 
 boolean MobjBlockmap_Iterate(mobjblockmap_t* blockmap, const uint block[2],

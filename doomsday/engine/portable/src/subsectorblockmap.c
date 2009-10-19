@@ -33,10 +33,15 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct linksubsector_s {
-    struct linksubsector_s* next;
-    struct subsector_s* subsector;
-} linksubsector_t;
+typedef struct listnode_s {
+    struct listnode_s* next;
+    void*           data;
+} listnode_t;
+
+typedef struct {
+    uint            size;
+    listnode_t*     head;
+} linklist_t;
 
 typedef struct {
     boolean       (*func) (subsector_t*, void*);
@@ -45,7 +50,7 @@ typedef struct {
     sector_t*       sector;
     int             localValidCount;
     boolean         retObjRecord;
-} iteratesubsector_args_t;
+} iteratesubsectors_args_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -71,119 +76,172 @@ static void freeBlockmap(subsectorblockmap_t* bmap)
     Z_Free(bmap);
 }
 
-static boolean freeSubsectorBlockData(void* data, void* context)
+static listnode_t* allocListNode(void)
 {
-    linksubsector_t* link = (linksubsector_t*) data;
+    return Z_Calloc(sizeof(listnode_t), PU_STATIC, 0);
+}
 
-    while(link)
+static void freeListNode(listnode_t* node)
+{
+    Z_Free(node);
+}
+
+static linklist_t* allocList(void)
+{
+    return Z_Calloc(sizeof(linklist_t), PU_STATIC, 0);
+}
+
+static void freeList(linklist_t* list)
+{
+    listnode_t* node = list->head;
+
+    while(node)
     {
-        linksubsector_t* next = link->next;
-        Z_Free(link);
-        link = next;
+        listnode_t* next = node->next;
+        freeListNode(node);
+        node = next;
     }
 
-    return true; // Continue iteration.
+    Z_Free(list);
+}
+
+static void listPushFront(linklist_t* list, subsector_t* subsector)
+{
+    listnode_t* node = allocListNode();
+    
+    node->data = subsector;
+
+    node->next = list->head;
+    list->head = node;
+
+    list->size += 1;
+}
+
+static boolean listRemove(linklist_t* list, subsector_t* subsector)
+{
+    if(list->head)
+    {
+        listnode_t** node = &list->head;
+
+        do
+        {
+            listnode_t** next = &(*node)->next;
+
+            if((*node)->data == subsector)
+            {
+                freeListNode(*node);
+                *node = *next;
+                list->size -= 1;
+                return true; // Mobj was unlinked.
+            }
+
+            node = next;
+        } while(*node);
+    }
+
+    return false; // Mobj was not linked.
+}
+
+static uint listSize(linklist_t* list)
+{
+    return list->size;
 }
 
 static void linkSubsectorToBlock(subsectorblockmap_t* blockmap, uint x, uint y,
                                  subsector_t* subsector)
 {
-    linksubsector_t* link = (linksubsector_t*)
-        Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
-    if(!link)
-    {   // Create a new link at the current block cell.
-        link = Z_Malloc(sizeof(*link), PU_STATIC, 0);
-        link->next = NULL;
-        link->subsector = subsector;
+    if(!list)
+        list = Gridmap_SetBlock(blockmap->gridmap, x, y, allocList());
 
-        Gridmap_SetBlock(blockmap->gridmap, x, y, link);
-        return;
-    }
-
-    while(link->next != NULL && link->subsector != NULL)
-    {
-        link = link->next;
-    }
-
-    if(link->subsector == NULL)
-    {
-        link->subsector = subsector;
-        return;
-    }
-
-    link->next = Z_Malloc(sizeof(linksubsector_t), PU_STATIC, 0);
-    link->next->next = NULL;
-    link->next->subsector = subsector;
+    listPushFront(list, subsector);
 }
 
-static void unlinkSubsectorFromBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                     subsector_t* subsector)
+static boolean unlinkSubsectorFromBlock(subsectorblockmap_t* blockmap, uint x, uint y,
+                                        subsector_t* subsector)
 {
-    linksubsector_t* link = (linksubsector_t*)
-        Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
-    for(; link; link = link->next)
+    if(list)
     {
-        if(link->subsector != subsector)
-            continue;
+        boolean result = listRemove(list, subsector);
+        if(result && !list->head)
+        {
+            freeList(list);
+            Gridmap_SetBlock(blockmap->gridmap, x, y, NULL);
+        }
 
-        link->subsector = NULL;
-        return; // Subsector was unlinked.
+        return result;
     }
 
-    // Subsector was not linked.
+    return false;
 }
 
 static boolean iterateSubsectors(void* ptr, void* context)
 {
-    linksubsector_t* link = (linksubsector_t*) ptr;
-    iteratesubsector_args_t* args = (iteratesubsector_args_t*) context;
+    linklist_t* list = (linklist_t*) ptr;
+    iteratesubsectors_args_t* args = (iteratesubsectors_args_t*) context;
 
-    while(link)
+    if(list)
     {
-        linksubsector_t* next = link->next;
+        listnode_t* node = list->head;
 
-        if(link->subsector)
+        while(node)
         {
-            subsector_t* subsector = link->subsector;
+            listnode_t* next = node->next;
 
-            if(subsector->validCount != args->localValidCount)
+            if(node->data)
             {
-                boolean ok = true;
-                void* ptr;
+                subsector_t* subsector = (subsector_t*) node->data;
 
-                subsector->validCount = args->localValidCount;
-
-                // Check the sector restriction.
-                if(args->sector && subsector->sector != args->sector)
-                    ok = false;
-
-                // Check the bounds.
-                if(args->box &&
-                   (subsector->bBox[1].pos[0] < args->box[0][0] ||
-                    subsector->bBox[0].pos[0] > args->box[1][0] ||
-                    subsector->bBox[0].pos[1] > args->box[1][1] ||
-                    subsector->bBox[1].pos[1] < args->box[0][1]))
-                   ok = false;
-
-                if(ok)
+                if(subsector->validCount != args->localValidCount)
                 {
-                    if(args->retObjRecord)
-                        ptr = (void*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
-                    else
-                        ptr = (void*) subsector;
+                    boolean ok = true;
+                    void* ptr;
 
-                    if(!args->func(ptr, args->context))
-                        return false;
+                    subsector->validCount = args->localValidCount;
+
+                    // Check the sector restriction.
+                    if(args->sector && subsector->sector != args->sector)
+                        ok = false;
+
+                    // Check the bounds.
+                    if(args->box &&
+                       (subsector->bBox[1].pos[0] < args->box[0][0] ||
+                        subsector->bBox[0].pos[0] > args->box[1][0] ||
+                        subsector->bBox[0].pos[1] > args->box[1][1] ||
+                        subsector->bBox[1].pos[1] < args->box[0][1]))
+                       ok = false;
+
+                    if(ok)
+                    {
+                        if(args->retObjRecord)
+                            ptr = (void*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
+                        else
+                            ptr = (void*) subsector;
+
+                        if(!args->func(ptr, args->context))
+                            return false;
+                    }
                 }
             }
-        }
 
-        link = next;
+            node = next;
+        }
     }
 
     return true;
+}
+
+static boolean freeSubsectorBlockData(void* data, void* context)
+{
+    linklist_t* list = (linklist_t*) data;
+
+    if(list)
+        freeList(list);
+
+    return true; // Continue iteration.
 }
 
 static void boxToBlocks(subsectorblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
@@ -339,25 +397,15 @@ void SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, uint v[2])
 
 uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
 {
-    linksubsector_t* data;
-    uint num = 0;
+    linklist_t* list;
 
     assert(blockmap);
 
-    data = (linksubsector_t*) Gridmap_Block(blockmap->gridmap, x, y);
-    // Count the number of subsectors linked to this block.
-    if(data)
-    {
-        linksubsector_t* link = data;
-        while(link)
-        {
-            if(link->subsector)
-                num++;
-            link = link->next;
-        }
-    }
+    list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    if(list)
+        return listSize(list);
 
-    return num;
+    return 0;
 }
 
 boolean SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint block[2],
@@ -366,7 +414,7 @@ boolean SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint bloc
                                   boolean (*func) (subsector_t*, void*),
                                   void* context)
 {
-    iteratesubsector_args_t args;
+    iteratesubsectors_args_t args;
 
     assert(blockmap);
     assert(block);
@@ -389,7 +437,7 @@ boolean SubsectorBlockmap_BoxIterate(subsectorblockmap_t* blockmap,
                                      boolean (*func) (subsector_t*, void*),
                                      void* context, boolean retObjRecord)
 {
-    iteratesubsector_args_t args;
+    iteratesubsectors_args_t args;
 
     assert(blockmap);
     assert(blockBox);

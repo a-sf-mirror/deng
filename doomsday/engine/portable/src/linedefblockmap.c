@@ -136,7 +136,7 @@ static boolean listRemove(linklist_t* list, linedef_t* lineDef)
             }
 
             node = next;
-        } while(node);
+        } while(*node);
     }
 
     return false; // LineDef was not linked.
