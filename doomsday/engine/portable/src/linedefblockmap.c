@@ -157,6 +157,26 @@ static uint listSize(linklist_t* list)
     return list->size;
 }
 
+static boolean listSearch(linklist_t* list, linedef_t* lineDef)
+{
+    if(list->head)
+    {
+        listnode_t** node = &list->head;
+
+        do
+        {
+            listnode_t** next = &(*node)->next;
+
+            if((*node)->data == lineDef)
+                return true;
+
+            node = next;
+        } while(*node);
+    }
+
+    return false;
+}
+
 static void linkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y,
                                linedef_t* lineDef)
 {
@@ -185,6 +205,15 @@ static boolean unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint 
         return result;
     }
 
+    return false;
+}
+
+static boolean isLineDefLinkedToBlock(linedefblockmap_t* blockmap, uint x, uint y,
+                                      linedef_t* lineDef)
+{
+    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    if(list)
+        return listSearch(list, lineDef);
     return false;
 }
 
@@ -325,12 +354,20 @@ boolean LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint dest[2], cons
     return LineDefBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
+static void tryLinkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y, linedef_t* lineDef)
+{
+    if(isLineDefLinkedToBlock(blockmap, x, y, lineDef))
+        return; // Already linked.
+
+    linkLineDefToBlock(blockmap, x, y, lineDef);
+}
+
 void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
 {
 #define BLKSHIFT                7 // places to shift rel position for cell num
 #define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
 
-    uint i, block[2], dimensions[2];
+    uint i, blockBox[2][2], dimensions[2];
     int vert, horiz;
     int origin[2], vtx1[2], vtx2[2], aabb[2][2], delta[2];
     boolean slopePos, slopeNeg;
@@ -349,11 +386,14 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
     vtx2[0] = (int) lineDef->buildData.v[1]->pos[0];
     vtx2[1] = (int) lineDef->buildData.v[1]->pos[1];
 
-    aabb[0][0] = (vtx1[0] > vtx2[0]? vtx2[0] : vtx1[0]);
-    aabb[0][1] = (vtx1[1] > vtx2[1]? vtx2[1] : vtx1[1]);
+    aabb[0][0] = MIN_OF(vtx1[0], vtx2[0]);
+    aabb[0][1] = MIN_OF(vtx1[1], vtx2[1]);
 
-    aabb[1][0] = (vtx1[0] > vtx2[0]? vtx1[0] : vtx2[0]);
-    aabb[1][1] = (vtx1[1] > vtx2[1]? vtx1[1] : vtx2[1]);
+    aabb[1][0] = MAX_OF(vtx1[0], vtx2[0]);
+    aabb[1][1] = MAX_OF(vtx1[1], vtx2[1]);
+
+    LineDefBlockmap_Block2f(blockmap, blockBox[0], aabb[0][0], aabb[0][1]);
+    LineDefBlockmap_Block2f(blockmap, blockBox[1], aabb[1][0], aabb[1][1]);
 
     delta[0] = vtx2[0] - vtx1[0];
     delta[1] = vtx2[1] - vtx1[1];
@@ -365,71 +405,69 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
     slopeNeg = (delta[0] ^ delta[1]) < 0;
 
     // The lineDef always belongs to the blocks containing its endpoints
-    block[0] = (vtx1[0] - origin[0]) >> BLKSHIFT;
-    block[1] = (vtx1[1] - origin[1]) >> BLKSHIFT;
-    linkLineDefToBlock(blockmap, block[0], block[1], lineDef);
-
-    block[0] = (vtx2[0] - origin[0]) >> BLKSHIFT;
-    block[1] = (vtx2[1] - origin[1]) >> BLKSHIFT;
-    linkLineDefToBlock(blockmap, block[0], block[1], lineDef);
+    linkLineDefToBlock(blockmap, blockBox[0][0], blockBox[0][1], lineDef);
+    if(blockBox[0][0] != blockBox[1][0] || blockBox[0][1] != blockBox[1][1])
+        linkLineDefToBlock(blockmap, blockBox[1][0], blockBox[1][1], lineDef);
 
     // For each column, see where the lineDef along its left edge, which
     // it contains, intersects the LineDef. We don't want to interesect
     // vertical lines with columns.
     if(!vert)
     {
-        for(i = 0; i < dimensions[0]; ++i)
+        for(i = blockBox[0][0]; i <= blockBox[1][0]; ++i)
         {
             // intersection of LineDef with x=origin[0]+(i<<BLKSHIFT)
             // (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
             // y = delta[1]*(x-vtx1[0])+vtx1[1]*delta[0];
-            int x = origin[0] + (i << BLKSHIFT); // (x,y) is intersection
-            int y = (delta[1] * (x - vtx1[0])) / delta[0] + vtx1[1];
-            int yb = (y - origin[1]) >> BLKSHIFT; // block row number
-            int yp = (y - origin[1]) & BLKMASK; // y position within block
-
-            // Already outside the blockmap?
-            if(yb < 0 || yb > (signed) (dimensions[1]) + 1)
-                continue;
+            int x = origin[0] + (i << BLKSHIFT);
+            int y, yb, yp;
 
             // Does the lineDef touch this column at all?
             if(x < aabb[0][0] || x > aabb[1][0])
                 continue;
 
+            y = (delta[1] * (x - vtx1[0])) / delta[0] + vtx1[1];
+            yb = (y - origin[1]) >> BLKSHIFT; // block row number
+
+            // Outside the blockmap?
+            if(yb < 0 || yb > (signed) (dimensions[1]) + 1)
+                continue;
+
             // The cell that contains the intersection point is always added.
-            linkLineDefToBlock(blockmap, i, yb, lineDef);
+            tryLinkLineDefToBlock(blockmap, i, yb, lineDef);
 
             // If the intersection is at a corner it depends on the slope
             // (and whether the lineDef extends past the intersection) which
             // blocks are hit.
 
             // Where does the intersection occur?
+            yp = (y - origin[1]) & BLKMASK; // y position within block
             if(yp == 0)
             {
                 // Intersection occured at a corner
                 if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
                     if(yb > 0 && aabb[0][1] < y)
-                        linkLineDefToBlock(blockmap, i, yb - 1, lineDef);
+                        tryLinkLineDefToBlock(blockmap, i, yb - 1, lineDef);
 
                     if(i > 0 && aabb[0][0] < x)
-                        linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
+                        tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
                 }
                 else if(slopePos) //   / - block x-,y-
                 {
                     if(yb > 0 && i > 0 && aabb[0][0] < x)
-                        linkLineDefToBlock(blockmap, i - 1, yb - 1, lineDef);
+                        tryLinkLineDefToBlock(blockmap, i - 1, yb - 1, lineDef);
                 }
                 else if(horiz) //   - - block x-,y
                 {
                     if(i > 0 && aabb[0][0] < x)
-                        linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
+                        tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
                 }
             }
             else if(i > 0 && aabb[0][0] < x)
             {
                 // Else not at corner: x-,y
-                linkLineDefToBlock(blockmap, i - 1, yb, lineDef);
+                tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
             }
         }
     }
@@ -438,57 +476,59 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
     // it contains, intersects the LineDef.
     if(!horiz)
     {
-        for(i = 0; i < dimensions[1]; ++i)
+        for(i = blockBox[0][1]; i <= blockBox[1][1]; ++i)
         {
             // intersection of LineDef with y=origin[1]+(i<<BLKSHIFT)
             // (x,y) on LineDef satisfies: (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
             // x = delta[0]*(y-vtx1[1])/delta[1]+vtx1[0];
             int y = origin[1] + (i << BLKSHIFT); // (x,y) is intersection
-            int x = (delta[0] * (y - vtx1[1])) / delta[1] + vtx1[0];
-            int xb = (x - origin[0]) >> BLKSHIFT; // block column number
-            int xp = (x - origin[0]) & BLKMASK; // x position within block
-
-            // Outside the blockmap?
-            if(xb < 0 || xb > (signed) (dimensions[0]) + 1)
-                continue;
+            int x, xb, xp;
 
             // Touches this row?
             if(y < aabb[0][1] || y > aabb[1][1])
                 continue;
 
-            linkLineDefToBlock(blockmap, xb, i, lineDef);
+            x = (delta[0] * (y - vtx1[1])) / delta[1] + vtx1[0];
+            xb = (x - origin[0]) >> BLKSHIFT; // block column number
+
+            // Outside the blockmap?
+            if(xb < 0 || xb > (signed) (dimensions[0]) + 1)
+                continue;
+
+            tryLinkLineDefToBlock(blockmap, xb, i, lineDef);
 
             // If the intersection is at a corner it depends on the slope
             // (and whether the lineDef extends past the intersection) which
             // blocks are hit
 
             // Where does the intersection occur?
+            xp = (x - origin[0]) & BLKMASK; // x position within block
             if(xp == 0)
             {
                 // Intersection occured at a corner
                 if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
                     if(i > 0 && aabb[0][1] < y)
-                        linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
+                        tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
 
                     if(xb > 0 && aabb[0][0] < x)
-                        linkLineDefToBlock(blockmap, xb - 1, i, lineDef);
+                        tryLinkLineDefToBlock(blockmap, xb - 1, i, lineDef);
                 }
                 else if(vert) //   | - block x,y-
                 {
                     if(i > 0 && aabb[0][1] < y)
-                        linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
+                        tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
                 }
                 else if(slopePos) //   / - block x-,y-
                 {
                     if(xb > 0 && i > 0 && aabb[0][1] < y)
-                        linkLineDefToBlock(blockmap, xb - 1, i - 1, lineDef);
+                        tryLinkLineDefToBlock(blockmap, xb - 1, i - 1, lineDef);
                 }
             }
             else if(i > 0 && aabb[0][1] < y)
             {
                 // Else not on a corner: x, y-
-                linkLineDefToBlock(blockmap, xb, i - 1, lineDef);
+                tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
             }
         }
     }
