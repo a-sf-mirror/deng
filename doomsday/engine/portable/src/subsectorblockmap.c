@@ -5,6 +5,7 @@
  *
  *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 1993-1996 by id Software, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +31,13 @@
 #include "subsectorblockmap.h"
 
 // MACROS ------------------------------------------------------------------
+
+//// \todo This stuff is obsolete and needs to be removed!
+#define MAPBLOCKUNITS   128
+#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+#define MAPBLOCKSHIFT   (FRACBITS+7)
+#define MAPBMASK        (MAPBLOCKSIZE-1)
+#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
 
 // TYPES -------------------------------------------------------------------
 

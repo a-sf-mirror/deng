@@ -917,12 +917,19 @@ static boolean pathTraverseMobjs(mobjblockmap_t* blockmap, float x1, float y1, f
 {
     float origin[2], dest[2];
     uint originBlock[2], destBlock[2];
+    fixed_t blockSize[2];
     vec2_t min, max;
 
     V2_Set(origin, x1, y1);
     V2_Set(dest, x2, y2);
 
     MobjBlockmap_Bounds(blockmap, min, max);
+    {
+    vec2_t size;
+    MobjBlockmap_BlockSize(blockmap, size);
+    blockSize[0] = FLT2FIX(size[0]);
+    blockSize[1] = FLT2FIX(size[1]);
+    }
 
     if(!(origin[VX] >= min[VX] && origin[VX] <= max[VX] &&
          origin[VY] >= min[VY] && origin[VY] <= max[VY]))
@@ -939,9 +946,9 @@ static boolean pathTraverseMobjs(mobjblockmap_t* blockmap, float x1, float y1, f
         return false;
     }
 
-    if((FLT2FIX(origin[VX] - min[VX]) & (MAPBLOCKSIZE - 1)) == 0)
+    if((FLT2FIX(origin[VX] - min[VX]) & (blockSize[0] - 1)) == 0)
         origin[VX] += 1; // Don't side exactly on a line.
-    if((FLT2FIX(origin[VY] - min[VY]) & (MAPBLOCKSIZE - 1)) == 0)
+    if((FLT2FIX(origin[VY] - min[VY]) & (blockSize[1] - 1)) == 0)
         origin[VY] += 1; // Don't side exactly on a line.
 
     traceLOS.pos[VX] = FLT2FIX(origin[VX]);
@@ -1007,12 +1014,19 @@ static boolean pathTraverseLineDefs(linedefblockmap_t* blockmap, float x1, float
 {
     float origin[2], dest[2];
     uint originBlock[2], destBlock[2];
+    fixed_t blockSize[2];
     vec2_t min, max;
 
     V2_Set(origin, x1, y1);
     V2_Set(dest, x2, y2);
 
     LineDefBlockmap_Bounds(blockmap, min, max);
+    {
+    vec2_t size;
+    LineDefBlockmap_BlockSize(blockmap, size);
+    blockSize[0] = FLT2FIX(size[0]);
+    blockSize[1] = FLT2FIX(size[1]);
+    }
 
     if(!(origin[VX] >= min[VX] && origin[VX] <= max[VX] &&
          origin[VY] >= min[VY] && origin[VY] <= max[VY]))
@@ -1029,9 +1043,9 @@ static boolean pathTraverseLineDefs(linedefblockmap_t* blockmap, float x1, float
         return false;
     }
 
-    if((FLT2FIX(origin[VX] - min[VX]) & (MAPBLOCKSIZE - 1)) == 0)
+    if((FLT2FIX(origin[VX] - min[VX]) & (blockSize[0] - 1)) == 0)
         origin[VX] += 1; // Don't side exactly on a line.
-    if((FLT2FIX(origin[VY] - min[VY]) & (MAPBLOCKSIZE - 1)) == 0)
+    if((FLT2FIX(origin[VY] - min[VY]) & (blockSize[1] - 1)) == 0)
         origin[VY] += 1; // Don't side exactly on a line.
 
     traceLOS.pos[VX] = FLT2FIX(origin[VX]);

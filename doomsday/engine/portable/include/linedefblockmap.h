@@ -27,13 +27,6 @@
 
 #include "m_gridmap.h"
 
-//// \todo This stuff is obsolete and needs to be removed!
-#define MAPBLOCKUNITS   128
-#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT   (FRACBITS+7)
-#define MAPBMASK        (MAPBLOCKSIZE-1)
-#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
 typedef struct linedefblockmap_s {
     vec2_t          aabb[2];
     vec2_t          blockSize;
