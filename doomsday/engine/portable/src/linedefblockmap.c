@@ -630,12 +630,15 @@ boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint ori
     intercept[0] = (FLT2FIX(origin[0]) >> MAPBTOFRAC) +
         FLT2FIX(partial * delta[0]);
 
-    //
-    // Step through map blocks.
-    //
-
-    // Count is present to prevent a round off error from skipping the
-    // break and ending up in an infinite loop..
+    /**
+     * Step through map blocks.
+     *
+     * Count is present because DOOM fails to check the case where the ray
+     * passes diagonally through a vertex into another block.
+     *
+     * @todo Fix the problem. We only need to retain the original behaviour
+     * with the mobj blockmap in DOOM, Heretic and Hexen.
+     */
     block[0] = originBlock[0];
     block[1] = originBlock[1];
     step[0] = FLT2FIX(delta[0]);

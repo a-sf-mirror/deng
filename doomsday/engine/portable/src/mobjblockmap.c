@@ -453,12 +453,15 @@ boolean MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlo
     intercept[0] = (FLT2FIX(origin[0]) >> MAPBTOFRAC) +
         FLT2FIX(partial * delta[0]);
 
-    //
-    // Step through map blocks.
-    //
-
-    // Count is present to prevent a round off error from skipping the
-    // break and ending up in an infinite loop..
+    /**
+     * Step through map blocks.
+     *
+     * Count is present because DOOM fails to check the case where the ray
+     * passes diagonally through a vertex into another block.
+     *
+     * @todo Fix the problem. This will require a game-side copy of the blockmap
+     * where the original behaviour is emulated.
+     */
     block[0] = originBlock[0];
     block[1] = originBlock[1];
     step[0] = FLT2FIX(delta[0]);
