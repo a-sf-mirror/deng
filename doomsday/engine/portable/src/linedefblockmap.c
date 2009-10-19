@@ -539,16 +539,17 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
 
 boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
 {
-    uint i, block[2];
+    uint x, y, dimensions[2];
 
     assert(blockmap);
     assert(lineDef);
 
-    /*if(!lineDef->numBlockLinks)
-        return false; // LineDef was not linked.
+    Gridmap_Dimensions(blockmap->gridmap, dimensions);
 
-    for(i = 0; i < lineDef->numBlockLinks; ++i)
-        unlinkLineDefFromBlock(blockmap, block[0], block[1], lineDef);*/
+    // @optimize Keep a record of linedef to block links.
+    for(y = 0; y < dimensions[1]; ++y)
+        for(x = 0; x < dimensions[0]; ++x)
+            unlinkLineDefFromBlock(blockmap, x, y, lineDef);
 
     return true;    
 }

@@ -364,16 +364,17 @@ void SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, subsector_t* subsecto
 
 boolean SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, subsector_t* subsector)
 {
-    uint i, block[2];
+    uint x, y, dimensions[2];
 
     assert(blockmap);
     assert(subsector);
 
-    /*if(!subsector->numBlockLinks)
-        return false; // Subsector was not linked.
+    Gridmap_Dimensions(blockmap->gridmap, dimensions);
 
-    for(i = 0; i < subsector->numBlockLinks; ++i)
-        unlinkSubsectorFromBlock(blockmap, block[0], block[1], subsector);*/
+    // @optimize Keep a record of linedef to block links.
+    for(y = 0; y < dimensions[1]; ++y)
+        for(x = 0; x < dimensions[0]; ++x)
+            unlinkSubsectorFromBlock(blockmap, x, y, subsector);
 
     return true;    
 }
