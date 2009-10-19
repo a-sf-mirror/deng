@@ -397,7 +397,7 @@ void            Sv_InitPools(void);
 void            Sv_ShutdownPools(void);
 void            Sv_DrainPool(uint clientNumber);
 void            Sv_InitPoolForClient(uint clientNumber);
-void            Sv_MobjRemoved(struct gamemap_s* map, thid_t id);
+void            Sv_MobjRemoved(struct map_s* map, thid_t id);
 void            Sv_PlayerRemoved(uint clientNumber);
 void            Sv_GenerateFrameDeltas(void);
 boolean         Sv_IsFrameTarget(uint clientNumber);

@@ -1087,7 +1087,7 @@ static boolean pathTraverseLineDefs(linedefblockmap_t* blockmap, float x1, float
  * Traces a line from x1,y1 to x2,y2, calling the traverser function for each
  * Returns true if the traverser function returns true for all lines
  */
-boolean Map_PathTraverse(gamemap_t* map, float x1, float y1, float x2, float y2,
+boolean Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                          int flags, boolean (*trav) (intercept_t*))
 {
     if(!map)

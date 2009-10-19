@@ -64,7 +64,7 @@ void Sv_Sound(int sound_id, mobj_t* origin, int toPlr)
 /**
  * Finds the sector/polyobj to whom the origin mobj belong.
  */
-static void Sv_IdentifySoundOrigin(gamemap_t* map, mobj_t** origin,
+static void Sv_IdentifySoundOrigin(map_t* map, mobj_t** origin,
                                    sector_t** sector, polyobj_t** poly)
 {
     *sector = NULL;

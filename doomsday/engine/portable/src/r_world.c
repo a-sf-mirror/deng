@@ -271,7 +271,7 @@ boolean updateMovingSurface(surface_t* suf, void* context)
 /**
  * $smoothmatoffset: Roll the surface material offset tracker buffers.
  */
-void R_UpdateMovingSurfaces(gamemap_t* map)
+void R_UpdateMovingSurfaces(map_t* map)
 {
     if(!map)
         return;
@@ -324,7 +324,7 @@ boolean interpMovingSurface(surface_t* suf, void* context)
 /**
  * $smoothmatoffset: interpolate the visual offset.
  */
-void R_InterpolateMovingSurfaces(gamemap_t* map, boolean resetNextViewer)
+void R_InterpolateMovingSurfaces(map_t* map, boolean resetNextViewer)
 {
     if(!map)
         return;
@@ -563,7 +563,7 @@ boolean interpolatePlaneHeight(plane_t* plane, void* context)
 /**
  * $smoothplane: Roll the height tracker buffers.
  */
-void R_UpdateWatchedPlanes(gamemap_t* map)
+void R_UpdateWatchedPlanes(map_t* map)
 {
     if(!map)
         return;
@@ -574,7 +574,7 @@ void R_UpdateWatchedPlanes(gamemap_t* map)
 /**
  * $smoothplane: interpolate the visual offset.
  */
-void R_InterpolateWatchedPlanes(gamemap_t* map, boolean resetNextViewer)
+void R_InterpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
 {
     if(!map)
         return;
@@ -639,7 +639,7 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
 void R_CreateBiasSurfacesForPlanesInSubsector(subsector_t* subsector)
 {
     uint i;
-    gamemap_t* map;
+    map_t* map;
 
     if(!subsector->sector)
         return;
@@ -669,7 +669,7 @@ void R_DestroyBiasSurfacesForPlanesInSubSector(subsector_t* subsector)
     if(subsector->sector && subsector->bsuf)
     {
         uint i;
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
 
         for(i = 0; i < subsector->sector->planeCount; ++i)
         {
@@ -693,7 +693,7 @@ void R_DestroyBiasSurfacesForPlanesInSubSector(subsector_t* subsector)
  */
 void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
 {
-    gamemap_t* map;
+    map_t* map;
 
     if(!subsector->sector)
         return;
@@ -748,7 +748,7 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
  *
  * @return              Ptr to the newly created plane.
  */
-plane_t* R_NewPlaneForSector(gamemap_t* map, sector_t* sec)
+plane_t* R_NewPlaneForSector(map_t* map, sector_t* sec)
 {
     surface_t* suf;
     plane_t* plane;
@@ -826,7 +826,7 @@ if(sec->planeCount >= 2)
  * @param id            The sector, plane id to be destroyed.
  * @param sec           Ptr to sector for which a plane will be destroyed.
  */
-void R_DestroyPlaneOfSector(gamemap_t* map, uint id, sector_t* sec)
+void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
 {
     uint i;
     plane_t* plane, **newList = NULL;
@@ -938,7 +938,7 @@ void R_ClearSurfaceDecorations(surface_t* suf)
     suf->numDecorations = 0;
 }
 
-void R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX)
+void R_UpdateSkyFixForSec(map_t* map, uint secIDX)
 {
     boolean skyFloor, skyCeil;
     sector_t* sec = map->sectors[secIDX];
@@ -1037,7 +1037,7 @@ void R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX)
  * ceiling is lifted to match the upper sky. The raising only affects
  * rendering, it has no bearing on gameplay.
  */
-void R_InitSkyFix(gamemap_t* map)
+void R_InitSkyFix(map_t* map)
 {
     uint i;
 
@@ -1870,7 +1870,7 @@ linedef_t *R_FindLineAlignNeighbor(const sector_t *sec,
 #undef SEP
 }
 
-void R_InitLinks(gamemap_t* map)
+void R_InitLinks(map_t* map)
 {
     uint i;
     uint starttime;
@@ -1970,7 +1970,7 @@ void R_PickSubsectorFanBase(subsector_t* subsector)
  * The test is done on subsectors.
  */
 #if 0 /* Currently unused. */
-static sector_t* getContainingSectorOf(gamemap_t* map, sector_t* sec)
+static sector_t* getContainingSectorOf(map_t* map, sector_t* sec)
 {
     uint i;
     float cdiff = -1, diff;
@@ -2007,7 +2007,7 @@ static sector_t* getContainingSectorOf(gamemap_t* map, sector_t* sec)
 }
 #endif
 
-void R_BuildSectorLinks(gamemap_t* map)
+void R_BuildSectorLinks(map_t* map)
 {
 #define DOMINANT_SIZE   1000
 
@@ -2074,7 +2074,7 @@ void R_SetupMap(int mode, int flags)
     {
     case DDSMM_INITIALIZE:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
 
         P_DestroyMap(map);
 
@@ -2092,7 +2092,7 @@ void R_SetupMap(int mode, int flags)
 
     case DDSMM_AFTER_LOADING:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
 
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
@@ -2132,7 +2132,7 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_FINALIZE:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
 
         // We are now finished with the game data, map object db.
         Map_DestroyGameObjectRecords(map);
@@ -2239,7 +2239,7 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_AFTER_BUSY:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         ded_mapinfo_t* mapInfo = Def_GetMapInfo(Map_ID(map));
 
         // Shouldn't do anything time-consuming, as we are no longer in busy mode.
@@ -2255,7 +2255,7 @@ void R_SetupMap(int mode, int flags)
     }
 }
 
-void R_ClearSectorFlags(gamemap_t* map)
+void R_ClearSectorFlags(map_t* map)
 {
     uint i;
 
@@ -2469,7 +2469,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     boolean changed = false;
     boolean hasGlow = false;
     sector_t* sec = pln->sector;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // Update the glow properties.
     hasGlow = false;
@@ -2711,7 +2711,7 @@ void R_CalcLightModRange(cvar_t *unused)
     int                 j;
     int                 mapAmbient;
     float               f;
-    gamemap_t          *map = P_CurrentMap();
+    map_t          *map = P_CurrentMap();
 
     memset(lightModRange, 0, sizeof(float) * 255);
 
@@ -2809,7 +2809,7 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 D_CMD(UpdateSurfaces)
 {
     uint                i;
-    gamemap_t*          map = P_CurrentMap();
+    map_t*          map = P_CurrentMap();
 
     Con_Printf("Updating world surfaces...\n");
 

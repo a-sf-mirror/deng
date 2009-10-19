@@ -2336,7 +2336,7 @@ void R_PrecacheMap(void)
     float startTime;
     material_t* mat, **matPresent;
     int numMaterials;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!map)
         return;

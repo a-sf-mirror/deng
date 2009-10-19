@@ -211,7 +211,7 @@ objblockmap_t* R_ObjBlockmapCreate(float originX, float originY, int width,
     return obm;
 }
 
-void R_InitObjLinksForMap(gamemap_t* map)
+void R_InitObjLinksForMap(map_t* map)
 {
     float min[2], max[2];
     int width, height;
@@ -247,7 +247,7 @@ void R_ObjBlockmapClear(objblockmap_t* obm)
  * Called at the begining of each frame (iff the render lists are not frozen)
  * by R_BeginWorldFrame().
  */
-void R_ClearObjLinksForFrame(gamemap_t* map)
+void R_ClearObjLinksForFrame(map_t* map)
 {
     if(!map)
         return;
@@ -570,7 +570,7 @@ void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink, float x, flo
  * render lists are not frozen) to link all objlinks into the objlink
  * blockmap.
  */
-void R_LinkObjs(gamemap_t* map)
+void R_LinkObjs(map_t* map)
 {
     objlink_t* oLink;
 
@@ -609,7 +609,7 @@ END_PROF( PROF_OBJLINK_LINK );
  * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
  * frame (if the render lists are not frozen).
  */
-void R_InitForNewFrame(gamemap_t* map)
+void R_InitForNewFrame(map_t* map)
 {
 #ifdef DD_PROFILE
     static int i;

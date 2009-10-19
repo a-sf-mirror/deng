@@ -32,6 +32,6 @@
 #define BLOCKMAPVISUAL_LINEDEFS     1
 #define BLOCKMAPVISUAL_SUBSECTORS   2
 
-void            Rend_BlockmapVisual(struct gamemap_s* map, byte mode);
+void            Rend_BlockmapVisual(struct map_s* map, byte mode);
 
 #endif /* DOOMSDAY_RENDER_BLOCKMAPVISUAL_H */

@@ -35,13 +35,13 @@ typedef enum {
     NUM_OBJ_TYPES
 } objtype_t;
 
-void            R_InitObjLinksForMap(struct gamemap_s* map);
-void            R_ClearObjLinksForFrame(struct gamemap_s* map);
+void            R_InitObjLinksForMap(struct map_s* map);
+void            R_ClearObjLinksForFrame(struct map_s* map);
 
 void            R_ObjLinkCreate(void* obj, objtype_t type);
-void            R_LinkObjs(struct gamemap_s* map);
+void            R_LinkObjs(struct map_s* map);
 void            R_InitForSubsector(subsector_t* subsector);
-void            R_InitForNewFrame(struct gamemap_s* map);
+void            R_InitForNewFrame(struct map_s* map);
 
 typedef struct {
     void*               obj;

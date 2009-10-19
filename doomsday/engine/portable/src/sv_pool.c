@@ -101,7 +101,7 @@ typedef struct origin_s {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
-void            Sv_RegisterWorld(gamemap_t* map, cregister_t* reg, boolean isInitial);
+void            Sv_RegisterWorld(map_t* map, cregister_t* reg, boolean isInitial);
 void            Sv_NewDelta(void* deltaPtr, deltatype_t type, uint id);
 boolean         Sv_IsVoidDelta(const void* delta);
 void            Sv_PoolQueueClear(pool_t* pool);
@@ -146,7 +146,7 @@ static linedef_t** sideOwners;
 void Sv_InitPools(void)
 {
     uint i, startTime;
-    gamemap_t* map;
+    map_t* map;
 
     // Clients don't register anything.
     if(isClient)
@@ -480,7 +480,7 @@ void Sv_RegisterPlayer(dt_player_t* reg, uint number)
  * @param reg           The sector register to be initialized.
  * @param number        The world sector number to be registered.
  */
-void Sv_RegisterSector(gamemap_t* map, uint number, dt_sector_t* reg)
+void Sv_RegisterSector(map_t* map, uint number, dt_sector_t* reg)
 {
     uint i;
     sector_t* sec = map->sectors[number];
@@ -511,7 +511,7 @@ void Sv_RegisterSector(gamemap_t* map, uint number, dt_sector_t* reg)
  * Store the state of the side into the register-side.
  * Called at register init and after each delta generation.
  */
-void Sv_RegisterSide(gamemap_t* map, uint number, dt_side_t* reg)
+void Sv_RegisterSide(map_t* map, uint number, dt_side_t* reg)
 {
     sidedef_t* side = map->sideDefs[number];
     linedef_t* line = sideOwners[number];
@@ -532,7 +532,7 @@ void Sv_RegisterSide(gamemap_t* map, uint number, dt_side_t* reg)
  * Store the state of the polyobj into the register-poly.
  * Called at register init and after each delta generation.
  */
-void Sv_RegisterPoly(gamemap_t* map, uint number, dt_poly_t* reg)
+void Sv_RegisterPoly(map_t* map, uint number, dt_poly_t* reg)
 {
     polyobj_t* poly = map->polyObjs[number];
 
@@ -701,7 +701,7 @@ boolean Sv_RegisterComparePlayer(cregister_t* reg, uint number,
 /**
  * @return              @c true, if the result is not void.
  */
-boolean Sv_RegisterCompareSector(gamemap_t* map, uint number, cregister_t* reg,
+boolean Sv_RegisterCompareSector(map_t* map, uint number, cregister_t* reg,
                                  sectordelta_t* d, byte doUpdate)
 {
     dt_sector_t* r = &reg->sectors[number];
@@ -837,7 +837,7 @@ boolean Sv_RegisterCompareSector(gamemap_t* map, uint number, cregister_t* reg,
 /**
  * @eturn               @c true, if the result is not void.
  */
-boolean Sv_RegisterCompareSide(gamemap_t* map, uint number, cregister_t* reg,
+boolean Sv_RegisterCompareSide(map_t* map, uint number, cregister_t* reg,
                                sidedelta_t* d, byte doUpdate)
 {
     const sidedef_t* s = map->sideDefs[number];
@@ -978,7 +978,7 @@ boolean Sv_RegisterCompareSide(gamemap_t* map, uint number, cregister_t* reg,
 /**
  * @return              @c true, if the result is not void.
  */
-boolean Sv_RegisterComparePoly(gamemap_t* map, uint number, cregister_t* reg,
+boolean Sv_RegisterComparePoly(map_t* map, uint number, cregister_t* reg,
                                polydelta_t *d)
 {
     const dt_poly_t* r = &reg->polyObjs[number];
@@ -1032,7 +1032,7 @@ boolean Sv_IsPlayerIgnored(int plrNum)
  * initial register, clients wouldn't receive much info from mobjs that
  * haven't moved since the beginning.
  */
-void Sv_RegisterWorld(gamemap_t* map, cregister_t* reg, boolean isInitial)
+void Sv_RegisterWorld(map_t* map, cregister_t* reg, boolean isInitial)
 {
     uint i;
 
@@ -1668,7 +1668,7 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_SECTOR)
     {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         return Sv_SectorDistance(map->sectors[delta->id], info);
     }
 
@@ -1680,7 +1680,7 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_POLY)
     {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         polyobj_t* po = map->polyObjs[delta->id];
 
         return P_ApproxDistance(info->pos[VX] - po->pos[VX],
@@ -1696,13 +1696,13 @@ float Sv_DeltaDistance(const void* deltaPtr, const ownerinfo_t* info)
 
     if(delta->type == DT_SECTOR_SOUND)
     {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         return Sv_SectorDistance(map->sectors[delta->id], info);
     }
 
     if(delta->type == DT_POLY_SOUND)
     {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         polyobj_t* po = map->polyObjs[delta->id];
 
         return P_ApproxDistance(info->pos[VX] - po->pos[VX],
@@ -2054,7 +2054,7 @@ void Sv_PoolMobjRemoved(pool_t* pool, thid_t id)
  * is set only when animation reaches its end.) Because the register-mobj
  * is removed, no Null Mobj delta is generated for the mobj.
  */
-void Sv_MobjRemoved(gamemap_t* map, thid_t id)
+void Sv_MobjRemoved(map_t* map, thid_t id)
 {
     uint i;
     reg_mobj_t* mo = Sv_RegisterFindMobj(&worldRegister, id);
@@ -2153,7 +2153,7 @@ int Sv_GetTargetPools(pool_t** targets, int clientsMask)
  *
  * When updating, the destroyed mobjs are removed from the register.
  */
-void Sv_NewNullDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
+void Sv_NewNullDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
 {
     int i;
     mobjhash_t* hash;
@@ -2235,7 +2235,7 @@ static int newMobjDelta(void* p, void* context)
 /**
  * Mobj deltas are generated for all mobjs that have changed.
  */
-void Sv_NewMobjDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
+void Sv_NewMobjDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
 {
     newmobjdeltaparams_t params;
 
@@ -2333,7 +2333,7 @@ void Sv_NewPlayerDeltas(cregister_t* reg, boolean doUpdate, pool_t** targets)
 /**
  * Sector deltas are generated for changed sectors.
  */
-void Sv_NewSectorDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
+void Sv_NewSectorDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
 {
     uint i;
     sectordelta_t delta;
@@ -2352,7 +2352,7 @@ void Sv_NewSectorDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool
  * Changes in sides (textures) are so rare that all sides need not be
  * checked on every tic.
  */
-void Sv_NewSideDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
+void Sv_NewSideDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
 {
     static uint numShifts = 2, shift = 0;
     sidedelta_t delta;
@@ -2391,7 +2391,7 @@ void Sv_NewSideDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t
 /**
  * Poly deltas are generated for changed polyobjs.
  */
-void Sv_NewPolyDeltas(gamemap_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
+void Sv_NewPolyDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** targets)
 {
     uint i;
     polydelta_t delta;
@@ -2508,7 +2508,7 @@ void Sv_GenerateNewDeltas(cregister_t* reg, int clientNumber,
                           boolean doUpdate)
 {
     pool_t* targets[DDMAXPLAYERS + 1], **pool;
-    gamemap_t* map;
+    map_t* map;
 
     // Determine the target pools.
     Sv_GetTargetPools(targets, (clientNumber < 0 ? 0xff : (1 << clientNumber)));

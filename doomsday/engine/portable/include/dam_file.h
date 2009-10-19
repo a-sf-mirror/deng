@@ -32,7 +32,7 @@
 
 boolean         DAM_MapIsValid(filename_t cachedMapDataFile, int markerLumpNum);
 
-boolean         DAM_MapWrite(gamemap_t *map, filename_t path);
-boolean         DAM_MapRead(gamemap_t *map, filename_t path);
+boolean         DAM_MapWrite(map_t *map, filename_t path);
+boolean         DAM_MapRead(map_t *map, filename_t path);
 
 #endif

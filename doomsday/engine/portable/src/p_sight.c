@@ -293,7 +293,7 @@ static boolean crossSubsector(subsector_t* subsector, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the node.
  */
-static boolean crossBSPNode(gamemap_t* map, unsigned int bspNum, losdata_t* los)
+static boolean crossBSPNode(map_t* map, unsigned int bspNum, losdata_t* los)
 {
     while(!(bspNum & NF_SUBSECTOR))
     {
@@ -334,7 +334,7 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
                          float bottomSlope, float topSlope, int flags)
 {
     losdata_t los;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!map)
         return true;

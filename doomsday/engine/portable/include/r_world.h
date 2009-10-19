@@ -43,11 +43,11 @@ extern float lightModRange[255];
 #define SIF_DRAW_SPHERE     0x1 // Always draw the sky sphere.
 
 void            R_SetupMap(int mode, int flags);
-void            R_InitLinks(gamemap_t* map);
-void            R_BuildSectorLinks(gamemap_t* map);
+void            R_InitLinks(map_t* map);
+void            R_BuildSectorLinks(map_t* map);
 void            R_UpdatePlanes(void);
-void            R_ClearSectorFlags(gamemap_t* map);
-void            R_InitSkyFix(gamemap_t* map);
+void            R_ClearSectorFlags(map_t* map);
+void            R_InitSkyFix(map_t* map);
 void            R_SetupFog(float start, float end, float density, float* rgb);
 void            R_SetupFogDefaults(void);
 
@@ -63,22 +63,22 @@ boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 
-void            R_UpdateSkyFixForSec(gamemap_t* map, uint secIDX);
+void            R_UpdateSkyFixForSec(map_t* map, uint secIDX);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
-plane_t*        R_NewPlaneForSector(gamemap_t* map, sector_t* sec);
-void            R_DestroyPlaneOfSector(gamemap_t* map, uint id, sector_t* sec);
+plane_t*        R_NewPlaneForSector(map_t* map, sector_t* sec);
+void            R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec);
 
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
 void            R_CreateBiasSurfacesInSubsector(subsector_t* subsector);
 
-void            R_UpdateWatchedPlanes(gamemap_t* map);
-void            R_InterpolateWatchedPlanes(gamemap_t* map, boolean resetNextViewer);
+void            R_UpdateWatchedPlanes(map_t* map);
+void            R_InterpolateWatchedPlanes(map_t* map, boolean resetNextViewer);
 
-void            R_UpdateMovingSurfaces(gamemap_t* map);
-void            R_InterpolateMovingSurfaces(gamemap_t* map, boolean resetNextViewer);
+void            R_UpdateMovingSurfaces(map_t* map);
+void            R_InterpolateMovingSurfaces(map_t* map, boolean resetNextViewer);
 
 void            PlaneList_Add(planelist_t* pl, plane_t* pln);
 boolean         PlaneList_Remove(planelist_t* pl, const plane_t* pln);

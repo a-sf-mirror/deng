@@ -42,12 +42,12 @@ DD_BASE_POLYOBJ_ELEMENTS()} polyobj_t;
 #define POLYOBJ_SIZE        gx.polyobjSize
 
 // Polyobj system.
-void            P_MapInitPolyobjs(struct gamemap_s* map);
+void            P_MapInitPolyobjs(struct map_s* map);
 void            P_PolyobjChanged(polyobj_t* po);
 void            P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*));
 
 polyobj_t*      P_GetPolyobj(uint num);
-boolean         P_IsPolyobjOrigin(struct gamemap_s* map, void* ddMobjBase);
+boolean         P_IsPolyobjOrigin(struct map_s* map, void* ddMobjBase);
 
 // Polyobject interface.
 boolean         P_PolyobjMove(polyobj_t* po, float x, float y);

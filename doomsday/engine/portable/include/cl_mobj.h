@@ -54,12 +54,12 @@ typedef struct clmobj_s {
     mobj_t          mo;
 } clmobj_t;
 
-void            Cl_InitClientMobjs(struct gamemap_s* map);
+void            Cl_InitClientMobjs(struct map_s* map);
 void            Cl_Reset(void);
 void            Cl_DestroyClientMobjs(void);
 clmobj_t*       Cl_CreateMobj(thid_t id);
 void            Cl_DestroyMobj(clmobj_t *cmo);
-boolean         Cl_MobjIterator(struct gamemap_s* map, boolean (*callback) (clmobj_t*, void*),
+boolean         Cl_MobjIterator(struct map_s* map, boolean (*callback) (clmobj_t*, void*),
                                 void* parm);
 void            Cl_PredictMovement(void);
 void            Cl_UnsetMobjPosition(clmobj_t* cmo);

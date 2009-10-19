@@ -78,7 +78,7 @@ void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
  */
 polyobj_t* P_GetPolyobj(uint num)
 {
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(map)
     {
@@ -111,7 +111,7 @@ polyobj_t* P_GetPolyobj(uint num)
 /**
  * @return              @c true, iff this is indeed a polyobj origin.
  */
-boolean P_IsPolyobjOrigin(gamemap_t* map, void* ddMobjBase)
+boolean P_IsPolyobjOrigin(map_t* map, void* ddMobjBase)
 {
     if(map)
     {
@@ -135,7 +135,7 @@ boolean P_IsPolyobjOrigin(gamemap_t* map, void* ddMobjBase)
 void P_PolyobjChanged(polyobj_t* po)
 {
     uint i;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // Shadow bias must be told.
     for(i = 0; i < po->numSegs; ++i)
@@ -209,7 +209,7 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
  * Called at the start of the map after all the structures needed for
  * refresh have been setup.
  */
-void P_MapInitPolyobjs(gamemap_t* map)
+void P_MapInitPolyobjs(map_t* map)
 {
     uint i;
 
@@ -547,7 +547,7 @@ static boolean CheckMobjBlocking(linedef_t* line, polyobj_t* po)
     uint blockBox[4];
     vec2_t bbox[2];
     ptrmobjblockingparams_t params;
-    gamemap_t* map;
+    map_t* map;
 
     params.blocked = false;
     params.line = line;

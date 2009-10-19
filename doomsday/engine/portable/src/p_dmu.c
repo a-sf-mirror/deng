@@ -88,7 +88,7 @@ static objectrecordnamespace_t** objectRecordNamespaces = NULL;
 static dummyline_t* dummyLines;
 static dummysector_t* dummySectors;
 
-static gamemap_t* currentMap = NULL;
+static map_t* currentMap = NULL;
 
 /**
  * Game-specific, object type definitions.
@@ -321,12 +321,12 @@ objectrecord_t* P_ObjectRecord(int type, void* p)
 /**
  * @return              Ptr to the current map.
  */
-gamemap_t* P_CurrentMap(void)
+map_t* P_CurrentMap(void)
 {
     return currentMap;
 }
 
-void P_SetCurrentMap(gamemap_t* map)
+void P_SetCurrentMap(map_t* map)
 {
     mobjNodes = &map->mobjNodes;
     lineNodes = &map->lineNodes;
@@ -869,56 +869,56 @@ void* P_GetVariable(int value)
     {
     case DMU_SECTOR_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numSectors;
         return &count;
         }
     case DMU_LINE_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numLineDefs;
         return &count;
         }
     case DMU_SIDE_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numSideDefs;
         return &count;
         }
     case DMU_VERTEX_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &Map_HalfEdgeDS(map)->numVertices;
         return &count;
         }
     case DMU_POLYOBJ_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numPolyObjs;
         return &count;
         }
     case DMU_SEG_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numSegs;
         return &count;
         }
     case DMU_SUBSECTOR_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numSubsectors;
         return NULL;
         }
     case DMU_NODE_COUNT:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(map)
             return &map->numNodes;
         return &count;
@@ -1145,49 +1145,49 @@ int P_Callback(int type, objectrecordid_t index, int (*callback)(void* p, void* 
     {
     case DMU_VERTEX:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < Map_HalfEdgeDS(map)->numVertices)
             return callback(P_ObjectRecord(DMU_VERTEX, Map_HalfEdgeDS(map)->vertices[index]), context);
         break;
         }
     case DMU_SEG:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numSegs)
             return callback(P_ObjectRecord(DMU_SEG, map->segs[index]), context);
         break;
         }
     case DMU_LINEDEF:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numLineDefs)
             return callback(P_ObjectRecord(DMU_LINEDEF, map->lineDefs[index]), context);
         break;
         }
     case DMU_SIDEDEF:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numSideDefs)
             return callback(P_ObjectRecord(DMU_SIDEDEF, map->sideDefs[index]), context);
         break;
         }
     case DMU_NODE:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numNodes)
             return callback(P_ObjectRecord(DMU_NODE, map->nodes[index]), context);
         break;
         }
     case DMU_SUBSECTOR:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numSubsectors)
             return callback(P_ObjectRecord(DMU_SUBSECTOR, map->subsectors[index]), context);
         break;
         }
     case DMU_SECTOR:
         {
-        gamemap_t* map = P_CurrentMap();
+        map_t* map = P_CurrentMap();
         if(index < map->numSectors)
             return callback(P_ObjectRecord(DMU_SECTOR, map->sectors[index]), context);
         break;

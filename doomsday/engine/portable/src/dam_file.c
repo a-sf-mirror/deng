@@ -131,7 +131,7 @@ static void addMaterialToDict(materialdict_t* dict, material_t* mat)
  * Initializes the material archives (translation tables).
  * Must be called before writing the tables!
  */
-static void initMaterialDict(const gamemap_t* map, materialdict_t* dict)
+static void initMaterialDict(const map_t* map, materialdict_t* dict)
 {
     uint i, j;
 
@@ -280,7 +280,7 @@ static void endSegment(void)
     writeLong(DAMSEG_END);
 }
 
-static void writeVertex(gamemap_t* map, uint idx)
+static void writeVertex(map_t* map, uint idx)
 {
     vertex_t* v = Map_HalfEdgeDS(map)->vertices[idx];
 
@@ -303,7 +303,7 @@ static void writeVertex(gamemap_t* map, uint idx)
     }*/
 }
 
-static void readVertex(gamemap_t* map, uint idx)
+static void readVertex(map_t* map, uint idx)
 {
     vertex_t* v = Map_HalfEdgeDS(map)->vertices[idx];
 
@@ -338,7 +338,7 @@ static void readVertex(gamemap_t* map, uint idx)
     }*/
 }
 
-static void archiveVertexes(gamemap_t* map, boolean write)
+static void archiveVertexes(map_t* map, boolean write)
 {
     uint                i;
 
@@ -368,7 +368,7 @@ static void archiveVertexes(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeLine(const gamemap_t* map, uint idx)
+static void writeLine(const map_t* map, uint idx)
 {
     int i;
     linedef_t* l = map->lineDefs[idx];
@@ -388,7 +388,7 @@ static void writeLine(const gamemap_t* map, uint idx)
         writeByte(l->mapped[DDMAXPLAYERS]? 1 : 0);
 }
 
-static void readLine(const gamemap_t* map, uint idx)
+static void readLine(const map_t* map, uint idx)
 {
     int i;
     linedef_t* l = map->lineDefs[idx];
@@ -408,7 +408,7 @@ static void readLine(const gamemap_t* map, uint idx)
         l->mapped[i] = (readByte()? true : false);
 }
 
-static void archiveLines(gamemap_t* map, boolean write)
+static void archiveLines(map_t* map, boolean write)
 {
     uint                i;
 
@@ -437,7 +437,7 @@ static void archiveLines(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSide(const gamemap_t* map, uint idx)
+static void writeSide(const map_t* map, uint idx)
 {
     uint i;
     sidedef_t* s = map->sideDefs[idx];
@@ -463,7 +463,7 @@ static void writeSide(const gamemap_t* map, uint idx)
     writeShort(s->flags);
 }
 
-static void readSide(const gamemap_t* map, uint idx)
+static void readSide(const map_t* map, uint idx)
 {
     uint i;
     long secIdx;
@@ -496,7 +496,7 @@ static void readSide(const gamemap_t* map, uint idx)
     s->flags = readShort();
 }
 
-static void archiveSides(gamemap_t* map, boolean write)
+static void archiveSides(map_t* map, boolean write)
 {
     uint                i;
 
@@ -525,7 +525,7 @@ static void archiveSides(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSector(const gamemap_t* map, uint idx)
+static void writeSector(const map_t* map, uint idx)
 {
     uint i;
     sector_t* s = map->sectors[idx];
@@ -602,7 +602,7 @@ static void writeSector(const gamemap_t* map, uint idx)
         writeLong(P_ObjectRecord(DMU_SUBSECTOR, s->reverbSubsectors[i])->id);
 }
 
-static void readSector(gamemap_t* map, uint idx)
+static void readSector(map_t* map, uint idx)
 {
     uint i, numPlanes;
     long secIdx;
@@ -696,7 +696,7 @@ static void readSector(gamemap_t* map, uint idx)
     s->reverbSubsectors[i] = NULL; // Terminate.
 }
 
-static void archiveSectors(gamemap_t* map, boolean write)
+static void archiveSectors(map_t* map, boolean write)
 {
     uint i;
 
@@ -725,7 +725,7 @@ static void archiveSectors(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSubsector(const gamemap_t* map, uint idx)
+static void writeSubsector(const map_t* map, uint idx)
 {
     uint i;
     const subsector_t*  s = map->subsectors[idx];
@@ -749,7 +749,7 @@ static void writeSubsector(const gamemap_t* map, uint idx)
         writeLong((s->hEdges[i] - map->hEdges) + 1);*/
 }
 
-static void readSubsector(const gamemap_t* map, uint idx)
+static void readSubsector(const map_t* map, uint idx)
 {
     uint i;
     long obIdx;
@@ -778,7 +778,7 @@ static void readSubsector(const gamemap_t* map, uint idx)
     s->hEdges[i] = NULL; // Terminate.*/
 }
 
-static void archiveSubsectors(gamemap_t* map, boolean write)
+static void archiveSubsectors(map_t* map, boolean write)
 {
     uint i;
 
@@ -807,7 +807,7 @@ static void archiveSubsectors(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeSeg(const gamemap_t* map, uint idx)
+static void writeSeg(const map_t* map, uint idx)
 {
     const seg_t* seg = map->segs[idx];
 
@@ -818,7 +818,7 @@ static void writeSeg(const gamemap_t* map, uint idx)
     writeByte(seg->side);
 }
 
-static void readSeg(const gamemap_t* map, uint idx)
+static void readSeg(const map_t* map, uint idx)
 {
     long obIdx;
     seg_t* seg = map->segs[idx];
@@ -831,7 +831,7 @@ static void readSeg(const gamemap_t* map, uint idx)
     seg->side = readByte();
 }
 
-static void archiveSegs(gamemap_t* map, boolean write)
+static void archiveSegs(map_t* map, boolean write)
 {
     uint i;
 
@@ -860,7 +860,7 @@ static void archiveSegs(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeNode(const gamemap_t* map, uint idx)
+static void writeNode(const map_t* map, uint idx)
 {
     node_t* n = map->nodes[idx];
 
@@ -880,7 +880,7 @@ static void writeNode(const gamemap_t* map, uint idx)
     writeLong((long) n->children[LEFT]);
 }
 
-static void readNode(const gamemap_t* map, uint idx)
+static void readNode(const map_t* map, uint idx)
 {
     node_t* n = map->nodes[idx];
 
@@ -900,7 +900,7 @@ static void readNode(const gamemap_t* map, uint idx)
     n->children[LEFT] = (uint) readLong();
 }
 
-static void archiveNodes(gamemap_t *map, boolean write)
+static void archiveNodes(map_t *map, boolean write)
 {
     uint                i;
 
@@ -929,7 +929,7 @@ static void archiveNodes(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void archiveBlockmap(gamemap_t *map, boolean write)
+static void archiveBlockmap(map_t *map, boolean write)
 {
     if(write)
         beginSegment(DAMSEG_BLOCKMAP);
@@ -942,7 +942,7 @@ static void archiveBlockmap(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void archiveReject(gamemap_t *map, boolean write)
+static void archiveReject(map_t *map, boolean write)
 {
     if(write)
         beginSegment(DAMSEG_REJECT);
@@ -955,7 +955,7 @@ static void archiveReject(gamemap_t *map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writePolyobj(const gamemap_t* map, uint idx)
+static void writePolyobj(const map_t* map, uint idx)
 {
     //uint                i;
     const polyobj_t*    p = map->polyObjs[idx];
@@ -996,7 +996,7 @@ static void writePolyobj(const gamemap_t* map, uint idx)
     }*/
 }
 
-static void readPolyobj(const gamemap_t* map, uint idx)
+static void readPolyobj(const map_t* map, uint idx)
 {
     //uint                i;
     //long                obIdx;
@@ -1049,7 +1049,7 @@ static void readPolyobj(const gamemap_t* map, uint idx)
     p->hEdges[i] = NULL; // Terminate.*/
 }
 
-static void archivePolyobjs(gamemap_t* map, boolean write)
+static void archivePolyobjs(map_t* map, boolean write)
 {
     uint                i;
 
@@ -1078,17 +1078,17 @@ static void archivePolyobjs(gamemap_t* map, boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static void writeThing(const gamemap_t *map, uint idx)
+static void writeThing(const map_t *map, uint idx)
 {
 
 }
 
-static void readThing(const gamemap_t *map, uint idx)
+static void readThing(const map_t *map, uint idx)
 {
 
 }
 
-static void archiveMap(gamemap_t *map, boolean write)
+static void archiveMap(map_t *map, boolean write)
 {
     if(write)
         beginSegment(DAMSEG_MAP);
@@ -1194,7 +1194,7 @@ static void archiveHeader(boolean write)
         assertSegment(DAMSEG_END);
 }
 
-static boolean doArchiveMap(gamemap_t *map, filename_t path,
+static boolean doArchiveMap(map_t *map, filename_t path,
                             boolean write)
 {
     if(!path)
@@ -1225,7 +1225,7 @@ static boolean doArchiveMap(gamemap_t *map, filename_t path,
 /**
  * Load data from a Doomsday archived map file.
  */
-boolean DAM_MapWrite(gamemap_t *map, filename_t path)
+boolean DAM_MapWrite(map_t *map, filename_t path)
 {
     return doArchiveMap(map, path, true);
 }
@@ -1233,7 +1233,7 @@ boolean DAM_MapWrite(gamemap_t *map, filename_t path)
 /**
  * Write the current state of a map into a Doomsday archived map file.
  */
-boolean DAM_MapRead(gamemap_t *map, filename_t path)
+boolean DAM_MapRead(map_t *map, filename_t path)
 {
     Con_Message("DAM_MapRead: Loading cached map. %s\n", path);
     return doArchiveMap(map, path, false);

@@ -30,13 +30,13 @@
 #define DOOMSDAY_REFRESH_LIGHT_GRID_H
 
 void            LG_Register(void);
-void            LG_Init(struct gamemap_s* map);
+void            LG_Init(struct map_s* map);
 
-void            LG_Update(struct gamemap_s* map);
+void            LG_Update(struct map_s* map);
 void            LG_MarkAllForUpdate(cvar_t* unused);
 void            LG_SectorChanged(sector_t* sector);
 
-void            LG_Evaluate(struct gamemap_s* map, const float* point, float* destColor);
-void            LG_Debug(struct gamemap_s* map);
+void            LG_Evaluate(struct map_s* map, const float* point, float* destColor);
+void            LG_Debug(struct map_s* map);
 
 #endif /* DOOMSDAY_REFRESH_LIGHT_GRID_H */

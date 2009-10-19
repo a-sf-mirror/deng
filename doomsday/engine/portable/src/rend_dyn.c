@@ -261,7 +261,7 @@ static dynlight_t* allocDynlight(void)
     return dyn;
 }
 
-static void linkDynlightToMap(gamemap_t* map, dynlight_t* dyn)
+static void linkDynlightToMap(map_t* map, dynlight_t* dyn)
 {
     listPushFront(&map->dlights.linkList, dyn);
 }
@@ -559,7 +559,7 @@ static dynlight_t* planeProject(const lumobj_t* lum, const_pvec3_t v1,
 }
 
 typedef struct surfacelumobjiterparams_s {
-    gamemap_t*      map;
+    map_t*      map;
     vec3_t          v1, v2;
     vec3_t          normal;
     uint            listIdx;
@@ -657,7 +657,7 @@ void DL_ClearDynlists(void)
  * @return              Dynlight list name if the quad is lit by one or more
  *                      light sources, else @c 0.
  */
-uint DL_ProjectOnSurface(gamemap_t* map, subsector_t* subsector,
+uint DL_ProjectOnSurface(map_t* map, subsector_t* subsector,
                          const vectorcomp_t topLeft[3],
                          const vectorcomp_t bottomRight[3],
                          const vectorcomp_t normal[3], byte flags)

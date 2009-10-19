@@ -38,8 +38,8 @@ void            Rend_DecorRegister(void);
 
 float           Rend_DecorSurfaceAngleHaloMul(void* p);
 
-void            Rend_InitDecorationsForFrame(struct gamemap_s* map);
-void            Rend_AddLuminousDecorations(struct gamemap_s* map);
-void            Rend_ProjectDecorations(struct gamemap_s* map);
+void            Rend_InitDecorationsForFrame(struct map_s* map);
+void            Rend_AddLuminousDecorations(struct map_s* map);
+void            Rend_ProjectDecorations(struct map_s* map);
 
 #endif /* DOOMSDAY_RENDER_DECOR_H */

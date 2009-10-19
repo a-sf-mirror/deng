@@ -222,7 +222,7 @@ void P_PtcInit(void)
     memset(activePtcGens, 0, sizeof(activePtcGens));
 }
 
-void P_PtcInitForMap(gamemap_t* map)
+void P_PtcInitForMap(map_t* map)
 {
     uint startTime;
     
@@ -320,7 +320,7 @@ static void PG_LinkPtcGen(ptcgen_t* gen, uint secIDX)
 /**
  * Link all active particle generators into the world.
  */
-void P_CreatePtcGenLinks(gamemap_t* map)
+void P_CreatePtcGenLinks(map_t* map)
 {
     ptcgenid_t i;
 #ifdef DD_PROFILE
@@ -1018,7 +1018,7 @@ static void P_MoveParticle(ptcgen_t* gen, particle_t* pt)
     boolean zBounce = false, hitFloor = false;
     vec2_t point;
     fixed_t x, y, z, hardRadius = st->radius / 2;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // Particle rotates according to spin speed.
     P_SpinParticle(gen, pt);
@@ -1299,7 +1299,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
     particle_t* pt;
     float newparts;
     const ded_ptcgen_t* def = gen->def;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // Source has been destroyed?
     if(!(gen->flags & PGF_UNTRIGGERED) && !P_IsUsedMobjID(map, gen->srcid))
@@ -1400,7 +1400,7 @@ static boolean P_HasActivePtcGen(sector_t* sector, int isCeiling)
 /**
  * Spawns new ptcgens for planes, if necessary.
  */
-void P_CheckPtcPlanes(gamemap_t* map)
+void P_CheckPtcPlanes(map_t* map)
 {
     uint i, p;
    
@@ -1475,7 +1475,7 @@ void P_SpawnTypeParticleGens(void)
     }
 }
 
-void P_SpawnMapParticleGens(gamemap_t* map)
+void P_SpawnMapParticleGens(map_t* map)
 {
     int i;
     ded_ptcgen_t* def;
@@ -1563,7 +1563,7 @@ void P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor, int amount)
 /**
  * Called after a reset once the definitions have been re-read.
  */
-void P_UpdateParticleGens(gamemap_t* map)
+void P_UpdateParticleGens(map_t* map)
 {
     ptcgenid_t i;
 

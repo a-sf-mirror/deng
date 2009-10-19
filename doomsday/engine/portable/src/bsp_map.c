@@ -59,7 +59,7 @@
  * \todo This is unnecessary if we ensure the first and last back ptrs in
  * linedef_t are updated after a half-edge split.
  */
-static void hardenLineDefSegList(gamemap_t* map, hedge_t* hEdge, seg_t* seg)
+static void hardenLineDefSegList(map_t* map, hedge_t* hEdge, seg_t* seg)
 {
     const hedge_t* first, *last;
     linedef_t* lineDef;
@@ -194,7 +194,7 @@ static boolean pickSectorForLeaf(binarytree_t* tree, void* data)
     return true; // Continue traversal.
 }
 
-static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
+static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 {
     uint i;
     hedgecollectorparams_t params;
@@ -293,7 +293,7 @@ static void buildSegsFromHEdges(gamemap_t* map, binarytree_t* rootNode)
     }
 }
 
-static void hardenLeaf(gamemap_t* map, face_t* dest, const bspleafdata_t* src)
+static void hardenLeaf(map_t* map, face_t* dest, const bspleafdata_t* src)
 {
     size_t hEdgeCount;
     hedge_t* hEdge;
@@ -441,7 +441,7 @@ static boolean C_DECL countFace(binarytree_t* tree, void* data)
     return true; // Continue iteration.
 }
 
-static void hardenBSP(gamemap_t* map, binarytree_t* rootNode)
+static void hardenBSP(map_t* map, binarytree_t* rootNode)
 {
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
 
@@ -477,7 +477,7 @@ static void hardenBSP(gamemap_t* map, binarytree_t* rootNode)
     }
 }
 
-static void destroyEdgeTips(gamemap_t* map)
+static void destroyEdgeTips(map_t* map)
 {
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
     uint i;
@@ -501,7 +501,7 @@ static void destroyEdgeTips(gamemap_t* map)
     }
 }
 
-void SaveMap(gamemap_t* map, void* rootNode)
+void SaveMap(map_t* map, void* rootNode)
 {
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;

@@ -218,7 +218,7 @@ static void processMobjShadow(mobj_t* mo)
 #undef SHADOWZOFFSET
 }
 
-void Rend_RenderShadows(gamemap_t* map)
+void Rend_RenderShadows(map_t* map)
 {
     uint i;
 

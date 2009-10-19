@@ -32,6 +32,6 @@
 //extern float    shadowFactor;
 
 void            Rend_ShadowRegister(void);
-void            Rend_RenderShadows(struct gamemap_s* map);
+void            Rend_RenderShadows(struct map_s* map);
 
 #endif

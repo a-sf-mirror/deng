@@ -85,7 +85,7 @@ int     svMaxPlayers = DDMAXPLAYERS;
 void Sv_GetInfo(serverinfo_t *info)
 {
     int                 i;
-    gamemap_t          *currentMap = P_CurrentMap();
+    map_t          *currentMap = P_CurrentMap();
 
     memset(info, 0, sizeof(*info));
 

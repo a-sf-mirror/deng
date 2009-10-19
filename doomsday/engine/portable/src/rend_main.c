@@ -63,9 +63,9 @@ void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
 void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
                     const float color3f[3], float alpha);
 
-void Rend_RenderNormals(gamemap_t* map);
-void Rend_Vertexes(gamemap_t* map);
-void Rend_RenderBoundingBoxes(gamemap_t* map);
+void Rend_RenderNormals(map_t* map);
+void Rend_Vertexes(map_t* map);
+void Rend_RenderBoundingBoxes(map_t* map);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
@@ -2883,7 +2883,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
     }
 }
 
-static void Rend_RenderNode(gamemap_t* map, uint bspnum)
+static void Rend_RenderNode(map_t* map, uint bspnum)
 {
     // If the clipper is full we're pretty much done. This means no geometry
     // will be visible in the distance because every direction has already been
@@ -2906,7 +2906,7 @@ static void Rend_RenderNode(gamemap_t* map, uint bspnum)
     }
 }
 
-void Rend_RenderMap(gamemap_t* map)
+void Rend_RenderMap(map_t* map)
 {
     binangle_t viewside;
     boolean doLums =
@@ -3021,7 +3021,7 @@ static void drawNormal(vec3_t origin, vec3_t normal, float scalar)
 /**
  * Draw the surface normals, primarily for debug.
  */
-void Rend_RenderNormals(gamemap_t* map)
+void Rend_RenderNormals(map_t* map)
 {
 #define NORM_TAIL_LENGTH    (20)
 
@@ -3280,7 +3280,7 @@ static boolean drawVertex1(linedef_t* li, void* context)
 /**
  * Draw the various vertex debug aids.
  */
-void Rend_Vertexes(gamemap_t* map)
+void Rend_Vertexes(map_t* map)
 {
     uint i;
     float oldPointSize, oldLineWidth = 1;
@@ -3602,7 +3602,7 @@ void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
  * Depth test is disabled to show all mobjs that are being rendered, regardless
  * if they are actually vissible (hidden by previously drawn map geometry).
  */
-static void Rend_RenderBoundingBoxes(gamemap_t* map)
+static void Rend_RenderBoundingBoxes(map_t* map)
 {
     static const float  red[3] = { 1, 0.2f, 0.2f}; // non-solid objects
     static const float  green[3] = { 0.2f, 1, 0.2f}; // solid objects

@@ -113,7 +113,7 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
         DMU_SetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
         if(!ddMapSetup)
         {
-            gamemap_t* map = P_CurrentMap();
+            map_t* map = P_CurrentMap();
             PlaneList_Add(&map->watchedPlaneList, plane);
             R_MarkDependantSurfacesForDecorationUpdate(plane);
         }

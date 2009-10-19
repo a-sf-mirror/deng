@@ -127,7 +127,7 @@ boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
 void P_Ticker(timespan_t time)
 {
     static trigger_t fixed = { 1.0 / 35, 0 };
-    gamemap_t* map;
+    map_t* map;
 
     P_ControlTicker(time);
     Materials_Ticker(time);

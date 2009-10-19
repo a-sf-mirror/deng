@@ -62,7 +62,7 @@ typedef struct affection_s {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
+static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
                       biasaffection_t* affectedSources, const float* point,
                       const float* normal);
 
@@ -144,7 +144,7 @@ static __inline void freeBiasSurface(biassurface_t* bsuf)
     Z_Free(bsuf);
 }
 
-static biassurface_t* createSurface(gamemap_t* map)
+static biassurface_t* createSurface(map_t* map)
 {
     biassurface_t*      bsuf = allocBiasSurface();
 
@@ -153,7 +153,7 @@ static biassurface_t* createSurface(gamemap_t* map)
     return bsuf;
 }
 
-static void destroySurface(gamemap_t* map, biassurface_t* bsuf)
+static void destroySurface(map_t* map, biassurface_t* bsuf)
 {
     // Unlink this surface from map's surface list.
     unlinkSurfaceFromList(&map->bias.surfaces, bsuf);
@@ -161,7 +161,7 @@ static void destroySurface(gamemap_t* map, biassurface_t* bsuf)
     freeBiasSurface(bsuf);
 }
 
-static void destroyAllSurfaces(gamemap_t* map)
+static void destroyAllSurfaces(map_t* map)
 {
     biassurface_t*      bsuf;
 
@@ -171,7 +171,7 @@ static void destroyAllSurfaces(gamemap_t* map)
     }
 }
 
-static int newSourceAt(gamemap_t* map, float x, float y, float z, float size,
+static int newSourceAt(map_t* map, float x, float y, float z, float size,
                        float minLight, float maxLight, float* rgb)
 {
     source_t*           src;
@@ -202,7 +202,7 @@ static int newSourceAt(gamemap_t* map, float x, float y, float z, float size,
     return map->bias.numSources; // == index + 1;
 }
 
-static void deleteSource(gamemap_t* map, int which)
+static void deleteSource(map_t* map, int which)
 {
     int                 i;
 
@@ -220,7 +220,7 @@ static void deleteSource(gamemap_t* map, int which)
     map->bias.numSourceDelta--;
 }
 
-static void clearSources(gamemap_t* map)
+static void clearSources(map_t* map)
 {
     while(map->bias.numSources-- > 0)
         map->bias.sources[map->bias.numSources].flags |= BLF_CHANGED;
@@ -338,7 +338,7 @@ static void addLight(float dest[4], const float* color, float howMuch)
 /**
  * Add ambient light.
  */
-static void applyAmbientLight(gamemap_t* map, const float* point, float* light)
+static void applyAmbientLight(map_t* map, const float* point, float* light)
 {
     // Add grid light (represents ambient lighting).
     float color[3];
@@ -441,7 +441,7 @@ static float* getCasted(vertexillum_t* illum, int sourceIndex,
  * \fixme Only recalculate the changed lights.  The colors contributed
  * by the others can be saved with the 'affected' array.
  */
-static void evalPoint(gamemap_t* map, float light[4], vertexillum_t* illum,
+static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
                       biasaffection_t* affectedSources, const float* point,
                       const float* normal)
 {
@@ -695,7 +695,7 @@ static boolean checkColorOverride(biasaffection_t *affected)
 }
 #endif
 
-static void updateAffected(gamemap_t* map, biassurface_t* bsuf,
+static void updateAffected(map_t* map, biassurface_t* bsuf,
                            const float from[2], const float to[2],
                            const vectorcomp_t* normal)
 {
@@ -749,7 +749,7 @@ static void updateAffected(gamemap_t* map, biassurface_t* bsuf,
     }
 }
 
-static void updateAffected2(gamemap_t* map, biassurface_t* bsuf,
+static void updateAffected2(map_t* map, biassurface_t* bsuf,
                             const struct rvertex_s* rvertices,
                             size_t numVertices, const vectorcomp_t* point,
                             const vectorcomp_t* normal)
@@ -825,7 +825,7 @@ static boolean changeInAffected(biasaffection_t* affected,
     return false;
 }
 
-static void markSurfaceSourcesChanged(gamemap_t* map, biassurface_t* bsuf)
+static void markSurfaceSourcesChanged(map_t* map, biassurface_t* bsuf)
 {
     int                 i;
 
@@ -835,7 +835,7 @@ static void markSurfaceSourcesChanged(gamemap_t* map, biassurface_t* bsuf)
     }
 }
 
-static void newSourcesFromLightDefs(gamemap_t* map)
+static void newSourcesFromLightDefs(map_t* map)
 {
     int                 i;
     ded_light_t*        def;
@@ -856,7 +856,7 @@ static void newSourcesFromLightDefs(gamemap_t* map)
     }
 }
 
-static void init(gamemap_t* map)
+static void init(map_t* map)
 {
     destroyAllSurfaces(map);
 
@@ -872,7 +872,7 @@ static void init(gamemap_t* map)
  * Initializes the bias lights according to the loaded Light
  * definitions.
  */
-void SB_InitForMap(gamemap_t* map)
+void SB_InitForMap(map_t* map)
 {
     uint                startTime;
 
@@ -888,7 +888,7 @@ void SB_InitForMap(gamemap_t* map)
                         (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
-void SB_DestroySurfaces(gamemap_t* map)
+void SB_DestroySurfaces(map_t* map)
 {
     if(!map)
         return;
@@ -900,7 +900,7 @@ void SB_DestroySurfaces(gamemap_t* map)
  * Do initial processing that needs to be done before rendering a frame.
  * Changed sources cause the tracker bits to the set for all bias surfaces.
  */
-void SB_BeginFrame(gamemap_t* map)
+void SB_BeginFrame(map_t* map)
 {
     int                 l;
     source_t*           s;
@@ -1000,7 +1000,7 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
 END_PROF( PROF_BIAS_UPDATE );
 }
 
-void SB_EndFrame(gamemap_t* map)
+void SB_EndFrame(map_t* map)
 {
     if(!map)
         return;
@@ -1012,7 +1012,7 @@ void SB_EndFrame(gamemap_t* map)
     }
 }
 
-biassurface_t* SB_CreateSurface(gamemap_t* map)
+biassurface_t* SB_CreateSurface(map_t* map)
 {
     if(!map)
         return NULL;
@@ -1020,7 +1020,7 @@ biassurface_t* SB_CreateSurface(gamemap_t* map)
     return createSurface(map);
 }
 
-void SB_DestroySurface(gamemap_t* map, biassurface_t* bsuf)
+void SB_DestroySurface(map_t* map, biassurface_t* bsuf)
 {
     if(!map || !bsuf)
         return;
@@ -1048,7 +1048,7 @@ void SB_SurfaceInit(biassurface_t* bsuf)
     }
 }
 
-void SB_SurfaceMoved(gamemap_t* map, biassurface_t* bsuf)
+void SB_SurfaceMoved(map_t* map, biassurface_t* bsuf)
 {
     if(!map || !bsuf)
         return;
@@ -1059,7 +1059,7 @@ void SB_SurfaceMoved(gamemap_t* map, biassurface_t* bsuf)
 /**
  * @return              Ptr to the bias light source for the given id.
  */
-source_t* SB_GetSource(gamemap_t* map, int which)
+source_t* SB_GetSource(map_t* map, int which)
 {
     if(!map || which < 0)
         return NULL;
@@ -1072,7 +1072,7 @@ source_t* SB_GetSource(gamemap_t* map, int which)
  *
  * @param source        Must be linked to the specified map!
  */
-int SB_ToIndex(gamemap_t* map, source_t* source)
+int SB_ToIndex(map_t* map, source_t* source)
 {
     if(!map || !source)
         return -1;
@@ -1096,7 +1096,7 @@ int SB_ToIndex(gamemap_t* map, source_t* source)
  *
  * @return              The id of the newly created bias light source else -1.
  */
-int SB_NewSourceAt(gamemap_t* map, float x, float y, float z, float size,
+int SB_NewSourceAt(map_t* map, float x, float y, float z, float size,
                    float minLight, float maxLight, float* rgb)
 {
     if(!map)
@@ -1161,7 +1161,7 @@ void SB_SourceSetColor(source_t* src, float* rgb)
  *
  * @param which         The id of the bias light source to be deleted.
  */
-void SB_DeleteSource(gamemap_t* map, int which)
+void SB_DeleteSource(map_t* map, int which)
 {
     if(!map || which < 0 || which >= map->bias.numSources)
         return; // Very odd...
@@ -1172,7 +1172,7 @@ void SB_DeleteSource(gamemap_t* map, int which)
 /**
  * Removes ALL bias light sources on the map.
  */
-void SB_ClearSources(gamemap_t* map)
+void SB_ClearSources(map_t* map)
 {
     if(!map)
         return;
@@ -1190,7 +1190,7 @@ void SB_ClearSources(gamemap_t* map)
  * @param normal        Surface normal.
  * @param sectorLightLevel Sector light level.
  */
-void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
+void SB_RendSeg(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                 const rvertex_t* rvertices, size_t numVertices,
                 const vectorcomp_t* normal, float sectorLightLevel,
                 const float from[2], const float to[2])
@@ -1232,7 +1232,7 @@ void SB_RendSeg(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
  * @param face          Ptr to a face.
  * @param plane         Plane number.
  */
-void SB_RendPlane(gamemap_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
+void SB_RendPlane(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                   const rvertex_t* rvertices, size_t numVertices,
                   const vectorcomp_t* normal, float sectorLightLevel,
                   subsector_t* subsector, uint plane)

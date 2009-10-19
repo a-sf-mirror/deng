@@ -197,7 +197,7 @@ static void projectDecoration(decorsource_t* src)
 /**
  * Project all the non-clipped decorations. They become regular vissprites.
  */
-void Rend_ProjectDecorations(gamemap_t* map)
+void Rend_ProjectDecorations(map_t* map)
 {
     if(!map)
         return;
@@ -301,7 +301,7 @@ static void addLuminousDecoration(decorsource_t* src)
 /**
  * Create lumobjs for all decorations who want them.
  */
-void Rend_AddLuminousDecorations(gamemap_t* map)
+void Rend_AddLuminousDecorations(map_t* map)
 {
 BEGIN_PROF( PROF_DECOR_ADD_LUMINOUS );
 
@@ -830,7 +830,7 @@ static void updateSideSectionDecorations(surfacelist_t* list, sidedef_t* side,
     updateSurfaceDecorations(list, suf, offsetS, offsetT, v1, v2, NULL, visible);
 }
 
-void Rend_UpdateSurfaceDecorations(gamemap_t* map)
+void Rend_UpdateSurfaceDecorations(map_t* map)
 {
 BEGIN_PROF( PROF_DECOR_UPDATE );
 
@@ -880,7 +880,7 @@ END_PROF( PROF_DECOR_UPDATE );
 /**
  * Decorations are generated for each frame.
  */
-void Rend_InitDecorationsForFrame(gamemap_t* map)
+void Rend_InitDecorationsForFrame(map_t* map)
 {
 #ifdef DD_PROFILE
     static int i;

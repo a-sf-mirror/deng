@@ -29,7 +29,7 @@
 #ifndef __DOOMSDAY_REFRESH_SHADOW_H__
 #define __DOOMSDAY_REFRESH_SHADOW_H__
 
-void            R_InitSectorShadows(struct gamemap_s* map);
+void            R_InitSectorShadows(struct map_s* map);
 
 boolean         R_IsShadowingLineDef(linedef_t *line);
 

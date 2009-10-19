@@ -156,7 +156,7 @@ typedef struct {
 extern nodeindex_t* linelinks;
 extern nodepile_t* mobjNodes, *lineNodes;
 
-typedef struct gamemap_s {
+typedef struct map_s {
     char            mapID[9];
     char            uniqueID[256];
 
@@ -226,85 +226,82 @@ typedef struct gamemap_s {
         int             blockWidth, blockHeight;
         lgridblock_t*   grid;
     } lg;
-} gamemap_t;
+} map_t;
 
-gamemap_t*      P_CreateMap(const char* mapID);
-void            P_DestroyMap(gamemap_t* map);
+map_t*      P_CreateMap(const char* mapID);
+void            P_DestroyMap(map_t* map);
 
-const char*     Map_ID(gamemap_t* map);
-const char*     Map_UniqueName(gamemap_t* map);
-void            Map_Bounds(gamemap_t* map, float* min, float* max);
-int             Map_AmbientLightLevel(gamemap_t* map);
+const char*     Map_ID(map_t* map);
+const char*     Map_UniqueName(map_t* map);
+void            Map_Bounds(map_t* map, float* min, float* max);
+int             Map_AmbientLightLevel(map_t* map);
 
-void            Map_LinkMobj(gamemap_t* map, struct mobj_s* mo, byte flags);
-int             Map_UnlinkMobj(gamemap_t* map, struct mobj_s* mo);
+void            Map_LinkMobj(map_t* map, struct mobj_s* mo, byte flags);
+int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);
 
 /**
  * Map Edit interface.
  */
-void            Map_EditEnd(gamemap_t* map);
-vertex_t*       Map_CreateVertex(gamemap_t* map, float x, float y);
-linedef_t*      Map_CreateLineDef(gamemap_t* map, vertex_t* vtx1, vertex_t* vtx2,
+void            Map_EditEnd(map_t* map);
+vertex_t*       Map_CreateVertex(map_t* map, float x, float y);
+linedef_t*      Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
                                   sidedef_t* front, sidedef_t* back);
-sidedef_t*      Map_CreateSideDef(gamemap_t* map, sector_t* sector, short flags, material_t* topMaterial,
+sidedef_t*      Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material_t* topMaterial,
                                   float topOffsetX, float topOffsetY, float topRed, float topGreen,
                                   float topBlue, material_t* middleMaterial, float middleOffsetX,
                                   float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
                                   float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
                                   float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue);
-sector_t*       Map_CreateSector(gamemap_t* map, float lightLevel, float red, float green, float blue);
-void            Map_CreatePlane(gamemap_t* map, sector_t* sector, float height, material_t* material,
+sector_t*       Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue);
+void            Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* material,
                                 float matOffsetX, float matOffsetY, float r, float g, float b, float a,
                                 float normalX, float normalY, float normalZ);
-polyobj_t*      Map_CreatePolyobj(gamemap_t* map, objectrecordid_t* lines, uint lineCount, int tag,
+polyobj_t*      Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
                                   int sequenceType, float anchorX, float anchorY);
 
 // Mobjs in bounding box iterators.
-boolean         Map_MobjsBoxIterator(struct gamemap_s* map, const float box[4],
+boolean         Map_MobjsBoxIterator(struct map_s* map, const float box[4],
                                      boolean (*func) (struct mobj_s*, void*),
                                      void* data);
 
-boolean         Map_MobjsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+boolean         Map_MobjsBoxIteratorv(struct map_s* map, const arvec2_t box,
                                       boolean (*func) (struct mobj_s*, void*),
                                       void* data);
 
 // LineDefs in bounding box iterators:
-boolean         Map_LineDefsBoxIteratorv(struct gamemap_s* map, const arvec2_t box,
+boolean         Map_LineDefsBoxIteratorv(struct map_s* map, const arvec2_t box,
                                          boolean (*func) (linedef_t*, void*),
                                          void* data, boolean retObjRecord);
 
 // Subsectors in bounding box iterators:
-boolean         Map_SubsectorsBoxIterator(struct gamemap_s* map, const float box[4], sector_t* sector,
+boolean         Map_SubsectorsBoxIterator(struct map_s* map, const float box[4], sector_t* sector,
                                           boolean (*func) (subsector_t*, void*),
                                           void* parm, boolean retObjRecord);
-boolean         Map_SubsectorsBoxIteratorv(struct gamemap_s* map, const arvec2_t box, sector_t* sector,
+boolean         Map_SubsectorsBoxIteratorv(struct map_s* map, const arvec2_t box, sector_t* sector,
                                            boolean (*func) (subsector_t*, void*),
                                            void* data, boolean retObjRecord);
 
-boolean         Map_PathTraverse(struct gamemap_s* map, float x1, float y1, float x2, float y2,
+boolean         Map_PathTraverse(struct map_s* map, float x1, float y1, float x2, float y2,
                                  int flags, boolean (*trav) (intercept_t*));
 
 // @todo Push this data game-side:
-void            Map_UpdateGameObjectRecord(gamemap_t* map, struct def_gameobject_s* def,
+void            Map_UpdateGameObjectRecord(map_t* map, struct def_gameobject_s* def,
                                            uint propIdx, uint elmIdx, valuetype_t type,
                                            void* data);
-void            Map_DestroyGameObjectRecords(gamemap_t* map);
-uint            Map_NumGameObjectRecords(gamemap_t* map, int typeIdentifier);
-byte            Map_GameObjectRecordByte(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-short           Map_GameObjectRecordShort(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-int             Map_GameObjectRecordInt(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-fixed_t         Map_GameObjectRecordFixed(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-angle_t         Map_GameObjectRecordAngle(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-float           Map_GameObjectRecordFloat(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+void            Map_DestroyGameObjectRecords(map_t* map);
+uint            Map_NumGameObjectRecords(map_t* map, int typeIdentifier);
+byte            Map_GameObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+short           Map_GameObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+int             Map_GameObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+fixed_t         Map_GameObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+angle_t         Map_GameObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
+float           Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
 
 // @todo the following should be Map private:
-halfedgeds_t*   Map_HalfEdgeDS(gamemap_t* map);
-mobjblockmap_t* Map_MobjBlockmap(gamemap_t* map);
-linedefblockmap_t* Map_LineDefBlockmap(gamemap_t* map);
-subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map);
+halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
+mobjblockmap_t* Map_MobjBlockmap(map_t* map);
+linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
+subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 
-void            Map_BuildMobjBlockmap(gamemap_t* map);
-void            Map_BuildLineDefBlockmap(gamemap_t* map);
-void            Map_BuildSubsectorBlockmap(gamemap_t* map);
-void            Map_InitSoundEnvironment(gamemap_t* map);
+void            Map_InitSoundEnvironment(map_t* map);
 #endif /* DOOMSDAY_MAP_H */

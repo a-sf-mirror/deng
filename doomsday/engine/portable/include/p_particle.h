@@ -129,11 +129,11 @@ typedef short ptcgenid_t;
 
 void            P_PtcInit(void);
 
-void            P_PtcInitForMap(struct gamemap_s* map);
-void            P_SpawnMapParticleGens(struct gamemap_s* map);
-void            P_CheckPtcPlanes(struct gamemap_s* map);
-void            P_UpdateParticleGens(struct gamemap_s* map);
-void            P_CreatePtcGenLinks(struct gamemap_s* map);
+void            P_PtcInitForMap(struct map_s* map);
+void            P_SpawnMapParticleGens(struct map_s* map);
+void            P_CheckPtcPlanes(struct map_s* map);
+void            P_UpdateParticleGens(struct map_s* map);
+void            P_CreatePtcGenLinks(struct map_s* map);
 
 const ptcgen_t* P_IndexToPtcGen(ptcgenid_t ptcGenID);
 ptcgenid_t      P_PtcGenToIndex(const ptcgen_t* gen);

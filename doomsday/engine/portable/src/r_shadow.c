@@ -246,7 +246,7 @@ boolean R_IsShadowingLineDef(linedef_t *line)
  * Calculate sector edge shadow points, create the shadow polygons and link
  * them to the subsectors.
  */
-void R_InitSectorShadows(gamemap_t* map)
+void R_InitSectorShadows(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
 

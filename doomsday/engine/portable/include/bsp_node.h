@@ -65,7 +65,7 @@ void        BSP_AddHEdgeToSuperBlock(struct superblock_s* block,
 
 void        ClockwiseBspTree(binarytree_t* rootNode);
 
-void        SaveMap(gamemap_t* map, void* rootNode);
+void        SaveMap(map_t* map, void* rootNode);
 
 typedef struct bspleafdata_s {
     struct hedge_node_s* hEdges; // Head ptr to a list of half-edges at this leaf.

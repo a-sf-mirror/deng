@@ -125,10 +125,10 @@ boolean DAM_TryMapConversion(const char* mapID)
     return convertMap(mapID);
 }
 
-gamemap_t* DAM_LoadMap(const char* mapID)
+map_t* DAM_LoadMap(const char* mapID)
 {
     ddstring_t* s = DAM_ComposeArchiveMapFilepath(mapID);
-    gamemap_t* map = P_CreateMap(mapID);
+    map_t* map = P_CreateMap(mapID);
 
     // Destroy DMU obj records for map-owned objects.
     P_DestroyObjectRecordsByType(DMU_VERTEX);

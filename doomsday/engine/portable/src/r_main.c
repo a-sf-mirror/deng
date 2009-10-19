@@ -287,7 +287,7 @@ void R_Init(void)
 void R_Update(void)
 {
     uint i;
-    gamemap_t* map;
+    map_t* map;
 
     R_UpdateTexturesAndFlats();
     R_InitTextures();
@@ -490,7 +490,7 @@ void R_NewSharpWorld(void)
     extern boolean firstFrameAfterLoad;
 
     int i;
-    gamemap_t* map;
+    map_t* map;
 
     if(firstFrameAfterLoad)
     {
@@ -543,7 +543,7 @@ void R_NewSharpWorld(void)
     }
 }
 
-void R_CreateMobjLinks(gamemap_t* map)
+void R_CreateMobjLinks(map_t* map)
 {
     uint i;
 
@@ -579,7 +579,7 @@ END_PROF( PROF_MOBJ_INIT_ADD );
 /**
  * Prepare for rendering view(s) of the world.
  */
-void R_BeginWorldFrame(gamemap_t* map)
+void R_BeginWorldFrame(map_t* map)
 {
     if(!map)
         return;
@@ -622,7 +622,7 @@ void R_BeginWorldFrame(gamemap_t* map)
 /**
  * Wrap up after drawing view(s) of the world.
  */
-void R_EndWorldFrame(gamemap_t* map)
+void R_EndWorldFrame(map_t* map)
 {
     if(!map)
         return;

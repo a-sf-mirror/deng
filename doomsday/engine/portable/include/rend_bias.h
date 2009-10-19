@@ -83,35 +83,35 @@ extern unsigned int currentTimeSB;
 
 void            SB_Register(void);
 
-void            SB_InitForMap(struct gamemap_s* map);
-void            SB_BeginFrame(struct gamemap_s* map);
-void            SB_EndFrame(struct gamemap_s* map);
-void            SB_DestroySurfaces(struct gamemap_s* map);
+void            SB_InitForMap(struct map_s* map);
+void            SB_BeginFrame(struct map_s* map);
+void            SB_EndFrame(struct map_s* map);
+void            SB_DestroySurfaces(struct map_s* map);
 
-struct biassurface_s* SB_CreateSurface(struct gamemap_s* map);
-void            SB_DestroySurface(struct gamemap_s* map, struct biassurface_s* bsuf);
-void            SB_SurfaceMoved(struct gamemap_s* map, struct biassurface_s* bsuf);
+struct biassurface_s* SB_CreateSurface(struct map_s* map);
+void            SB_DestroySurface(struct map_s* map, struct biassurface_s* bsuf);
+void            SB_SurfaceMoved(struct map_s* map, struct biassurface_s* bsuf);
 
-int             SB_NewSourceAt(struct gamemap_s* map, float x, float y,
+int             SB_NewSourceAt(struct map_s* map, float x, float y,
                                float z, float size, float minLight,
                                float maxLight, float* rgb);
-void            SB_DeleteSource(struct gamemap_s* map, int which);
-void            SB_ClearSources(struct gamemap_s* map);
+void            SB_DeleteSource(struct map_s* map, int which);
+void            SB_ClearSources(struct map_s* map);
 
-source_t*       SB_GetSource(struct gamemap_s* map, int which);
-int             SB_ToIndex(struct gamemap_s* map, source_t* source);
+source_t*       SB_GetSource(struct map_s* map, int which);
+int             SB_ToIndex(struct map_s* map, source_t* source);
 
 void            SB_SourceUpdate(source_t* source, float x, float y, float z,
                                 float size, float minLight, float maxLight,
                                 float* rgb);
 void            SB_SourceSetColor(source_t* src, float* rgb);
 
-void SB_RendSeg(struct gamemap_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
+void SB_RendSeg(struct map_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
                 const struct rvertex_s* rvertices, size_t numVertices,
                 const vectorcomp_t* normal, float sectorLightLevel,
                 const float from[2], const float to[2]);
 
-void SB_RendPlane(struct gamemap_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
+void SB_RendPlane(struct map_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
                   const struct rvertex_s* rvertices, size_t numVertices,
                   const vectorcomp_t* normal, float sectorLightLevel,
                   struct subsector_s* subsector, uint plane);

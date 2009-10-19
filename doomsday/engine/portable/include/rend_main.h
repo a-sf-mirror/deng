@@ -49,7 +49,7 @@ void            Rend_Register(void);
 void            Rend_Init(void);
 void            Rend_Reset(void);
 
-void            Rend_RenderMap(struct gamemap_s* map);
+void            Rend_RenderMap(struct map_s* map);
 
 void            Rend_ModelViewMatrix(boolean use_angles);
 

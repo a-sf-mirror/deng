@@ -65,7 +65,7 @@ static boolean inited = false;
 
 // CODE --------------------------------------------------------------------
 
-static thid_t newMobjID(gamemap_t* map)
+static thid_t newMobjID(map_t* map)
 {
     // Increment the ID dealer until a free ID is found.
     // \fixme What if all IDs are in use? 65535 thinkers!?
@@ -75,18 +75,18 @@ static thid_t newMobjID(gamemap_t* map)
     return iddealer;
 }
 
-void P_ClearMobjIDs(gamemap_t* map)
+void P_ClearMobjIDs(map_t* map)
 {
     memset(idtable, 0, sizeof(idtable));
     idtable[0] |= 1; // ID zero is always "used" (it's not a valid ID).
 }
 
-boolean P_IsUsedMobjID(gamemap_t* map, thid_t id)
+boolean P_IsUsedMobjID(map_t* map, thid_t id)
 {
     return idtable[id >> 5] & (1 << (id & 31) /*(id % 32) */ );
 }
 
-void P_SetMobjID(gamemap_t* map, thid_t id, boolean state)
+void P_SetMobjID(map_t* map, thid_t id, boolean state)
 {
     int c = id >> 5, bit = 1 << (id & 31); //(id % 32);
 
@@ -116,7 +116,7 @@ static void initThinkerList(thinkerlist_t* list)
     list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
 }
 
-static thinkerlist_t* listForThinkFunc(gamemap_t* map, think_t func, boolean isPublic,
+static thinkerlist_t* listForThinkFunc(map_t* map, think_t func, boolean isPublic,
                                        boolean canCreate)
 {
     size_t i;
@@ -216,7 +216,7 @@ static boolean iterateThinkers(thinkerlist_t* list,
  */
 void P_ThinkerAdd(thinker_t* th, boolean makePublic)
 {
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!map)
         return;
@@ -251,7 +251,7 @@ void P_ThinkerAdd(thinker_t* th, boolean makePublic)
  */
 void P_ThinkerRemove(thinker_t* th)
 {
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!th)
         return;
@@ -296,7 +296,7 @@ boolean P_IsMobjThinker(thinker_t* th, void* context)
  * @params flags        0x1 = Init public thinkers.
  *                      0x2 = Init private (engine-internal) thinkers.
  */
-void P_InitThinkerLists(gamemap_t* map, byte flags)
+void P_InitThinkerLists(map_t* map, byte flags)
 {
     if(!inited)
     {
@@ -324,7 +324,7 @@ void P_InitThinkerLists(gamemap_t* map, byte flags)
     P_ClearMobjIDs(map);
 }
 
-boolean P_ThinkerListInited(gamemap_t* map)
+boolean P_ThinkerListInited(map_t* map)
 {
     return inited;
 }
@@ -339,7 +339,7 @@ boolean P_ThinkerListInited(gamemap_t* map)
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean P_IterateThinkers(gamemap_t* map, think_t func, byte flags,
+boolean P_IterateThinkers(map_t* map, think_t func, byte flags,
                           int (*callback) (void* p, void*), void* context)
 {
     if(!map)

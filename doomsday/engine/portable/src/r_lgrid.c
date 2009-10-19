@@ -117,7 +117,7 @@ static void addIndexBit(int x, int y, uint* bitfield, int* count,
 /**
  * Initialize the light map->lg.grid for the current map.
  */
-void LG_Init(gamemap_t* map)
+void LG_Init(map_t* map)
 {
     uint                startTime;
 
@@ -568,7 +568,7 @@ void LG_SectorChanged(sector_t* sector)
 {
     uint                i, j;
     unsigned short      n;
-    gamemap_t*          map = P_CurrentMap();
+    map_t*          map = P_CurrentMap();
 
     if(!map->lg.inited)
         return;
@@ -601,7 +601,7 @@ void LG_SectorChanged(sector_t* sector)
 void LG_MarkAllForUpdate(cvar_t* unused)
 {
     uint i;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!map->lg.inited)
         return;
@@ -703,7 +703,7 @@ static boolean LG_BlockNeedsUpdate(int x, int y)
  * Update the map->lg.grid by finding the strongest light source in each grid
  * block.
  */
-void LG_Update(gamemap_t* map)
+void LG_Update(map_t* map)
 {
     static const float factors[5 * 5] =
     {
@@ -843,7 +843,7 @@ END_PROF( PROF_GRID_UPDATE );
  * @param point         3D point.
  * @param color         Evaluated color of the point (return value).
  */
-void LG_Evaluate(gamemap_t* map, const float* point, float* color)
+void LG_Evaluate(map_t* map, const float* point, float* color)
 {
     int x, y, i;
     float dz = 0, dimming;
@@ -933,7 +933,7 @@ void LG_Evaluate(gamemap_t* map, const float* point, float* color)
 /**
  * Draw the map->lg.grid in 2D HUD mode.
  */
-void LG_Debug(gamemap_t* map)
+void LG_Debug(map_t* map)
 {
     static int blink = 0;
 

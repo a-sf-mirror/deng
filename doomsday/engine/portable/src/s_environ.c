@@ -164,7 +164,7 @@ static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
     ownerList->head = node;
 }
 
-static void findSubSectorsAffectingSector(gamemap_t* map, uint secIDX)
+static void findSubSectorsAffectingSector(map_t* map, uint secIDX)
 {
     uint i;
     ownernode_t* node, *p;
@@ -238,7 +238,7 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
  * two dimensions at least), they do not move and are not created/destroyed
  * once the map has been loaded; this step can be pre-processed.
  */
-void Map_InitSoundEnvironment(gamemap_t* map)
+void Map_InitSoundEnvironment(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
 

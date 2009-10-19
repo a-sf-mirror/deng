@@ -164,7 +164,7 @@ static uint lumToIndex(const lumobj_t* lum)
     return 0;
 }
 
-void LO_InitForMap(gamemap_t* map)
+void LO_InitForMap(map_t* map)
 {
     // First initialize the subsector links (root pointers).
     subsectorLumObjList =
@@ -205,7 +205,7 @@ void LO_Clear(void)
  * Called at the begining of each frame (iff the render lists are not frozen)
  * by R_BeginWorldFrame().
  */
-void LO_ClearForFrame(gamemap_t* map)
+void LO_ClearForFrame(map_t* map)
 {
 #ifdef DD_PROFILE
     static int i;
@@ -692,7 +692,7 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
 /**
  * Create lumobjs for all sector-linked mobjs who want them.
  */
-void LO_AddLuminousMobjs(gamemap_t* map)
+void LO_AddLuminousMobjs(map_t* map)
 {
     uint i;
     

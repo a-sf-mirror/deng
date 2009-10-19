@@ -174,7 +174,7 @@ clmobj_t *Cl_FindMobj(thid_t id)
  *
  * @return              If the callback returns @c false.
  */
-boolean Cl_MobjIterator(gamemap_t* map, boolean (*callback) (clmobj_t*, void*), void* parm)
+boolean Cl_MobjIterator(map_t* map, boolean (*callback) (clmobj_t*, void*), void* parm)
 {
     clmobj_t* cmo;
     int i;
@@ -526,7 +526,7 @@ if(d->pos[VX] == 0 && d->pos[VY] == 0)
 /**
  * Initialize clientside data.
  */
-void Cl_InitClientMobjs(gamemap_t* map)
+void Cl_InitClientMobjs(map_t* map)
 {
     //previousTime = gameTime;
 
@@ -579,7 +579,7 @@ void Cl_MobjMove(clmobj_t* cmo)
 {
     mobj_t* mo = &cmo->mo;
     boolean collided = false;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
     float gravity = FIX2FLT(map->globalGravity);
 
     // First do XY movement.

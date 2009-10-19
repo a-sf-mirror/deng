@@ -909,7 +909,7 @@ int DD_GetInteger(int ddvalue)
 
         case DD_MAP_MUSIC:
         {
-            gamemap_t *map = P_CurrentMap();
+            map_t *map = P_CurrentMap();
             ded_mapinfo_t *mapInfo = Def_GetMapInfo(Map_ID(map));
 
             if(mapInfo)
@@ -997,7 +997,7 @@ void* DD_GetVariable(int ddvalue)
 
         case DD_MAP_NAME:
         {
-            gamemap_t *map = P_CurrentMap();
+            map_t *map = P_CurrentMap();
             ded_mapinfo_t *mapInfo = Def_GetMapInfo(Map_ID(map));
 
             if(mapInfo && mapInfo->name[0])
@@ -1015,7 +1015,7 @@ void* DD_GetVariable(int ddvalue)
         }
         case DD_MAP_AUTHOR:
         {
-            gamemap_t *map = P_CurrentMap();
+            map_t *map = P_CurrentMap();
             ded_mapinfo_t *mapInfo = Def_GetMapInfo(Map_ID(map));
 
             if(mapInfo && mapInfo->author[0])
@@ -1024,7 +1024,7 @@ void* DD_GetVariable(int ddvalue)
         }
         case DD_MAP_MIN_X:
         {
-            gamemap_t  *map = P_CurrentMap();
+            map_t  *map = P_CurrentMap();
             if(map)
                 return &map->bBox[BOXLEFT];
             else
@@ -1032,7 +1032,7 @@ void* DD_GetVariable(int ddvalue)
         }
         case DD_MAP_MIN_Y:
         {
-            gamemap_t  *map = P_CurrentMap();
+            map_t  *map = P_CurrentMap();
             if(map)
                 return &map->bBox[BOXBOTTOM];
             else
@@ -1040,7 +1040,7 @@ void* DD_GetVariable(int ddvalue)
         }
         case DD_MAP_MAX_X:
         {
-            gamemap_t  *map = P_CurrentMap();
+            map_t  *map = P_CurrentMap();
             if(map)
                 return &map->bBox[BOXRIGHT];
             else
@@ -1048,7 +1048,7 @@ void* DD_GetVariable(int ddvalue)
         }
         case DD_MAP_MAX_Y:
         {
-            gamemap_t  *map = P_CurrentMap();
+            map_t  *map = P_CurrentMap();
             if(map)
                 return &map->bBox[BOXTOP];
             else
@@ -1068,7 +1068,7 @@ void* DD_GetVariable(int ddvalue)
 
         case DD_GRAVITY:
         {
-            gamemap_t* map = P_CurrentMap();
+            map_t* map = P_CurrentMap();
             if(map)
                 return &map->globalGravity;
             else
@@ -1167,7 +1167,7 @@ void DD_SetVariable(int ddvalue, void *parm)
 
         case DD_GRAVITY:
         {
-            gamemap_t* map = P_CurrentMap();
+            map_t* map = P_CurrentMap();
             if(map)
                 map->globalGravity = *(float*) parm;
             return;

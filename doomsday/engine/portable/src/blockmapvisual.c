@@ -549,7 +549,7 @@ static void drawBlockmap(void* blockmap, byte mode, mobj_t* followMobj,
     glEnd();
 }
 
-void Rend_BlockmapVisual(gamemap_t* map, byte mode)
+void Rend_BlockmapVisual(map_t* map, byte mode)
 {
     vec2_t min, max, blockSize;
     uint dimensions[2], viewerBlock[2];

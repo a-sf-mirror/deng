@@ -44,11 +44,11 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-gamemap_t* editMap = NULL;
+map_t* editMap = NULL;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static gamemap_t* lastBuiltMap = NULL;
+static map_t* lastBuiltMap = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ boolean MPE_End(void)
     return true;
 }
 
-gamemap_t* MPE_GetLastBuiltMap(void)
+map_t* MPE_GetLastBuiltMap(void)
 {
     return lastBuiltMap;
 }
@@ -98,7 +98,7 @@ gamemap_t* MPE_GetLastBuiltMap(void)
 objectrecordid_t MPE_CreateVertex(float x, float y)
 {
     vertex_t* v;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
     
     if(!map)
         return 0;
@@ -120,7 +120,7 @@ objectrecordid_t MPE_CreateVertex(float x, float y)
 boolean MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices)
 {
     uint n;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return false;
@@ -156,7 +156,7 @@ objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
                                    float bottomBlue)
 {
     sidedef_t* s;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return 0;
@@ -193,7 +193,7 @@ objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2,
     sidedef_t* front = NULL, *back = NULL;
     vertex_t* vtx1, *vtx2;
     float length, dx, dy;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return 0;
@@ -238,7 +238,7 @@ void MPE_CreatePlane(objectrecordid_t sector, float height, material_t* material
                      float r, float g, float b, float a,
                      float normalX, float normalY, float normalZ)
 {
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return;
@@ -252,7 +252,7 @@ void MPE_CreatePlane(objectrecordid_t sector, float height, material_t* material
 objectrecordid_t MPE_CreateSector(float lightLevel, float red, float green, float blue)
 {
     sector_t* s;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return 0;
@@ -267,7 +267,7 @@ objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint lineCount, int 
 {
     uint i;
     polyobj_t* po;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map)
         return 0;
@@ -300,7 +300,7 @@ boolean MPE_GameObjectRecordProperty(const char* objName, uint idx,
     uint i;
     size_t len;
     def_gameobject_t* def;
-    gamemap_t* map = editMap;
+    map_t* map = editMap;
 
     if(!map || !map->editActive)
         return false;

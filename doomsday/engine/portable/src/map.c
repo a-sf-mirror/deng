@@ -41,13 +41,16 @@
 
 // MACROS ------------------------------------------------------------------
 
-// Non-public (temporary)
-// Flags for MPE_PruneRedundantMapData().
+/**
+ * @defGroup pruneUnusedObjectsFlags Prune Unused Objects Flags
+ */
+/*{*/
 #define PRUNE_LINEDEFS      0x1
 #define PRUNE_VERTEXES      0x2
 #define PRUNE_SIDEDEFS      0x4
 #define PRUNE_SECTORS       0x8
 #define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
+/*}*/
 
 // TYPES -------------------------------------------------------------------
 
@@ -122,9 +125,9 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
     halfEdgeDS->numVertices = 0;
 }
 
-gamemap_t* P_CreateMap(const char* mapID)
+map_t* P_CreateMap(const char* mapID)
 {
-    gamemap_t* map = Z_Calloc(sizeof(gamemap_t), PU_STATIC, 0);
+    map_t* map = Z_Calloc(sizeof(map_t), PU_STATIC, 0);
 
     dd_snprintf(map->mapID, 9, "%s", mapID);
     map->editActive = true;
@@ -205,7 +208,7 @@ static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
     P_DestroyHalfEdgeDS(halfEdgeDS);
 }
 
-void P_DestroyMap(gamemap_t* map)
+void P_DestroyMap(map_t* map)
 {
     biassurface_t* bsuf;
 
@@ -353,7 +356,7 @@ void P_DestroyMap(gamemap_t* map)
     Z_Free(map);
 }
 
-void Map_LinkMobj(gamemap_t* map, mobj_t* mo, byte flags)
+void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
 {
     subsector_t* subsector;
 
@@ -416,7 +419,7 @@ void Map_LinkMobj(gamemap_t* map, mobj_t* mo, byte flags)
     }
 }
 
-int Map_UnlinkMobj(gamemap_t* map, mobj_t* mo)
+int Map_UnlinkMobj(map_t* map, mobj_t* mo)
 {
     int links = 0;
 
@@ -430,7 +433,7 @@ int Map_UnlinkMobj(gamemap_t* map, mobj_t* mo)
     return links;
 }
 
-void Map_BuildLineDefBlockmap(gamemap_t* map)
+static void buildLineDefBlockmap(map_t* map)
 {
 #define BLKMARGIN               (8) // size guardband around map
 #define MAPBLOCKUNITS           128
@@ -496,7 +499,7 @@ void Map_BuildLineDefBlockmap(gamemap_t* map)
 #undef MAPBLOCKUNITS
 }
 
-void Map_BuildSubsectorBlockmap(gamemap_t* map)
+static void buildSubsectorBlockmap(map_t* map)
 {
 #define BLKMARGIN       8
 #define BLOCK_WIDTH     128
@@ -549,7 +552,7 @@ void Map_BuildSubsectorBlockmap(gamemap_t* map)
 #undef BLOCK_HEIGHT
 }
 
-void Map_BuildMobjBlockmap(gamemap_t* map)
+static void buildMobjBlockmap(map_t* map)
 {
 #define BLKMARGIN               (8) // size guardband around map
 #define MAPBLOCKUNITS           128
@@ -645,7 +648,7 @@ static void detectDuplicateVertices(halfedgeds_t* halfEdgeDS)
     M_Free(hits);
 }
 
-static void findEquivalentVertexes(gamemap_t* map)
+static void findEquivalentVertexes(map_t* map)
 {
     uint i, newNum;
 
@@ -674,7 +677,7 @@ static void findEquivalentVertexes(gamemap_t* map)
     }
 }
 
-static void pruneLineDefs(gamemap_t* map)
+static void pruneLineDefs(map_t* map)
 {
     uint i, newNum, unused = 0;
 
@@ -742,7 +745,7 @@ static void pruneVertices(halfedgeds_t* halfEdgeDS)
     }
 }
 
-static void pruneUnusedSideDefs(gamemap_t* map)
+static void pruneUnusedSideDefs(map_t* map)
 {
     uint i, newNum, unused = 0;
 
@@ -776,7 +779,7 @@ static void pruneUnusedSideDefs(gamemap_t* map)
     }
 }
 
-static void pruneUnusedSectors(gamemap_t* map)
+static void pruneUnusedSectors(map_t* map)
 {
     uint i, newNum;
 
@@ -812,8 +815,9 @@ static void pruneUnusedSectors(gamemap_t* map)
 
 /**
  * \note Order here is critical!
+ * @param flags             @see pruneUnusedObjectsFlags
  */
-static void pruneUnusedObjects(gamemap_t* map, int flags)
+static void pruneUnusedObjects(map_t* map, int flags)
 {
     /**
      * \fixme Pruning cannot be done as game map data object properties
@@ -836,7 +840,7 @@ static void pruneUnusedObjects(gamemap_t* map, int flags)
         pruneUnusedSectors(map);*/
 }
 
-static void hardenSectorSubsectorList(gamemap_t* map, uint secIDX)
+static void hardenSectorSubsectorList(map_t* map, uint secIDX)
 {
     uint i, n, count;
     sector_t* sec = map->sectors[secIDX];
@@ -870,7 +874,7 @@ static void hardenSectorSubsectorList(gamemap_t* map, uint secIDX)
 /**
  * Build subsector tables for all sectors.
  */
-static void buildSectorSubsectorLists(gamemap_t* map)
+static void buildSectorSubsectorLists(map_t* map)
 {
     uint i;
 
@@ -880,7 +884,7 @@ static void buildSectorSubsectorLists(gamemap_t* map)
     }
 }
 
-static void buildSectorLineLists(gamemap_t* map)
+static void buildSectorLineLists(map_t* map)
 {
     typedef struct linelink_s {
         linedef_t*      line;
@@ -965,7 +969,7 @@ static void buildSectorLineLists(gamemap_t* map)
     M_Free(sectorLinkLinkCounts);
 }
 
-static void finishSectors2(gamemap_t* map)
+static void finishSectors2(map_t* map)
 {
     uint i;
 
@@ -999,7 +1003,7 @@ static void finishSectors2(gamemap_t* map)
     }
 }
 
-static void updateMapBounds(gamemap_t* map)
+static void updateMapBounds(map_t* map)
 {
     uint i;
 
@@ -1026,7 +1030,7 @@ static void updateMapBounds(gamemap_t* map)
  * sector ptrs which we couldn't do earlier as the sidedefs
  * hadn't been loaded at the time.
  */
-static void finishLineDefs2(gamemap_t* map)
+static void finishLineDefs2(map_t* map)
 {
     uint i;
 
@@ -1087,7 +1091,7 @@ static void finishLineDefs2(gamemap_t* map)
     }
 }
 
-static void prepareSubsectors(gamemap_t* map)
+static void prepareSubsectors(map_t* map)
 {
     uint i;
 
@@ -1289,7 +1293,7 @@ static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, uint num)
  * the lines which the vertex belongs to sorted by angle, (the rings are
  * arranged in clockwise order, east = 0).
  */
-static void buildVertexOwnerRings(gamemap_t* map, vertexinfo_t* vertexInfo)
+static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
 {
     lineowner_t* lineOwners, *allocator;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
@@ -1361,7 +1365,7 @@ static void buildVertexOwnerRings(gamemap_t* map, vertexinfo_t* vertexInfo)
     }
 }
 
-static void addLineDefsToDMU(gamemap_t* map)
+static void addLineDefsToDMU(map_t* map)
 {
     uint i;
 
@@ -1373,7 +1377,7 @@ static void addLineDefsToDMU(gamemap_t* map)
     }
 }
 
-static void finishSideDefs(gamemap_t* map)
+static void finishSideDefs(map_t* map)
 {
     uint i;
 
@@ -1396,7 +1400,7 @@ static void finishSideDefs(gamemap_t* map)
     }
 }
 
-static void addSectorsToDMU(gamemap_t* map)
+static void addSectorsToDMU(map_t* map)
 {
     uint i;
 
@@ -1408,7 +1412,7 @@ static void addSectorsToDMU(gamemap_t* map)
     }
 }
 
-static void hardenPlanes(gamemap_t* map)
+static void hardenPlanes(map_t* map)
 {
     uint i, j;
 
@@ -1430,7 +1434,7 @@ static void hardenPlanes(gamemap_t* map)
     }
 }
 
-static void finishPolyobjs(gamemap_t* map)
+static void finishPolyobjs(map_t* map)
 {
     uint i;
 
@@ -1476,7 +1480,7 @@ static void finishPolyobjs(gamemap_t* map)
  * @algorithm Cast a line horizontally or vertically and see what we hit.
  * @todo Construct the lineDef blockmap first so it may be used for this
  */
-static void testForWindowEffect(gamemap_t* map, linedef_t* l)
+static void testForWindowEffect(map_t* map, linedef_t* l)
 {
 // Smallest distance between two points before being considered equal.
 #define DIST_EPSILON        (1.0 / 128.0)
@@ -1630,7 +1634,7 @@ static void countVertexLineOwners(vertexinfo_t* vInfo, uint* oneSided, uint* two
  * odd number of one-sided linedefs connected to a single vertex.
  * This idea courtesy of Graham Jackson.
  */
-static void detectOnesidedWindows(gamemap_t* map, vertexinfo_t* vertexInfo)
+static void detectOnesidedWindows(map_t* map, vertexinfo_t* vertexInfo)
 {
     uint i, oneSiders, twoSiders;
 
@@ -1673,7 +1677,7 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     }
 }
 
-static void findMapLimits(gamemap_t* src, int* bbox)
+static void findMapLimits(map_t* src, int* bbox)
 {
     uint i;
 
@@ -1701,7 +1705,7 @@ static void findMapLimits(gamemap_t* src, int* bbox)
  *
  * @return              The list of created half-edges.
  */
-static superblock_t* createInitialHEdges(gamemap_t* map)
+static superblock_t* createInitialHEdges(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
 
@@ -1825,7 +1829,7 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  * @param map           The map to build the BSP for.
  * @return              @c true, if completed successfully.
  */
-static boolean buildBSP(gamemap_t* map)
+static boolean buildBSP(map_t* map)
 {
     boolean builtOK;
     uint startTime;
@@ -1993,7 +1997,7 @@ boolean findOverlapsForLineDef(linedef_t* l, void* data)
 /**
  * \note Does not detect partially overlapping lines!
  */
-void MPE_DetectOverlappingLines(gamemap_t* map)
+void MPE_DetectOverlappingLines(map_t* map)
 {
     uint                x, y, bmapDimensions[2];
     findoverlaps_params_t params;
@@ -2019,7 +2023,7 @@ void MPE_DetectOverlappingLines(gamemap_t* map)
 }
 #endif
 
-void Map_EditEnd(gamemap_t* map)
+void Map_EditEnd(map_t* map)
 {
     uint i, numVertices;
     vertexinfo_t* vertexInfo;
@@ -2066,10 +2070,10 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     {
     uint startTime = Sys_GetRealTime();
 
-    Map_BuildLineDefBlockmap(map);
+    buildLineDefBlockmap(map);
 
     // How much time did we spend?
-    VERBOSE(Con_Message("Map_BuildLineDefBlockmap: Done in %.2f seconds.\n",
+    VERBOSE(Con_Message("buildLineDefBlockmap: Done in %.2f seconds.\n",
             (Sys_GetRealTime() - startTime) / 1000.0f))
     }
 
@@ -2127,7 +2131,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
  * This ID is the name of the lump tag that marks the beginning of map
  * data, e.g. "MAP03" or "E2M8".
  */
-const char* Map_ID(gamemap_t* map)
+const char* Map_ID(map_t* map)
 {
     if(!map)
         return NULL;
@@ -2138,7 +2142,7 @@ const char* Map_ID(gamemap_t* map)
 /**
  * @return              The 'unique' identifier of the map.
  */
-const char* Map_UniqueName(gamemap_t* map)
+const char* Map_UniqueName(map_t* map)
 {
     if(!map)
         return NULL;
@@ -2146,7 +2150,7 @@ const char* Map_UniqueName(gamemap_t* map)
     return map->uniqueID;
 }
 
-void Map_Bounds(gamemap_t* map, float* min, float* max)
+void Map_Bounds(map_t* map, float* min, float* max)
 {
     min[VX] = map->bBox[BOXLEFT];
     min[VY] = map->bBox[BOXBOTTOM];
@@ -2158,7 +2162,7 @@ void Map_Bounds(gamemap_t* map, float* min, float* max)
 /**
  * Get the ambient light level of the specified map.
  */
-int Map_AmbientLightLevel(gamemap_t* map)
+int Map_AmbientLightLevel(map_t* map)
 {
     if(!map)
         return 0;
@@ -2166,27 +2170,27 @@ int Map_AmbientLightLevel(gamemap_t* map)
     return map->ambientLightLevel;
 }
 
-halfedgeds_t* Map_HalfEdgeDS(gamemap_t* map)
+halfedgeds_t* Map_HalfEdgeDS(map_t* map)
 {
     return &map->_halfEdgeDS;
 }
 
-mobjblockmap_t* Map_MobjBlockmap(gamemap_t* map)
+mobjblockmap_t* Map_MobjBlockmap(map_t* map)
 {
     return map->_mobjBlockmap;
 }
 
-linedefblockmap_t* Map_LineDefBlockmap(gamemap_t* map)
+linedefblockmap_t* Map_LineDefBlockmap(map_t* map)
 {
     return map->_lineDefBlockmap;
 }
 
-subsectorblockmap_t* Map_SubsectorBlockmap(gamemap_t* map)
+subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
 {
     return map->_subsectorBlockmap;
 }
 
-vertex_t* Map_CreateVertex(gamemap_t* map, float x, float y)
+vertex_t* Map_CreateVertex(map_t* map, float x, float y)
 {
     vertex_t* vertex;
 
@@ -2202,7 +2206,7 @@ vertex_t* Map_CreateVertex(gamemap_t* map, float x, float y)
     return vertex;
 }
 
-static linedef_t* createLineDef(gamemap_t* map)
+static linedef_t* createLineDef(map_t* map)
 {
     linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
 
@@ -2215,7 +2219,7 @@ static linedef_t* createLineDef(gamemap_t* map)
     return line;
 }
 
-linedef_t* Map_CreateLineDef(gamemap_t* map, vertex_t* vtx1, vertex_t* vtx2,
+linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
                              sidedef_t* front, sidedef_t* back)
 {
     linedef_t* l;
@@ -2299,7 +2303,7 @@ linedef_t* Map_CreateLineDef(gamemap_t* map, vertex_t* vtx1, vertex_t* vtx2,
     return l;
 }
 
-static sidedef_t* createSideDef(gamemap_t* map)
+static sidedef_t* createSideDef(map_t* map)
 {
     sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
 
@@ -2312,7 +2316,7 @@ static sidedef_t* createSideDef(gamemap_t* map)
     return side;
 }
 
-sidedef_t* Map_CreateSideDef(gamemap_t* map, sector_t* sector, short flags, material_t* topMaterial,
+sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material_t* topMaterial,
                              float topOffsetX, float topOffsetY, float topRed, float topGreen,
                              float topBlue, material_t* middleMaterial, float middleOffsetX,
                              float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
@@ -2343,7 +2347,7 @@ sidedef_t* Map_CreateSideDef(gamemap_t* map, sector_t* sector, short flags, mate
     return s;
 }
 
-static sector_t* createSector(gamemap_t* map)
+static sector_t* createSector(map_t* map)
 {
     sector_t* sec = Z_Calloc(sizeof(*sec), PU_STATIC, 0);
 
@@ -2355,7 +2359,7 @@ static sector_t* createSector(gamemap_t* map)
     return sec;
 }
 
-sector_t* Map_CreateSector(gamemap_t* map, float lightLevel, float red, float green, float blue)
+sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
 {
     sector_t* s;
 
@@ -2374,12 +2378,12 @@ sector_t* Map_CreateSector(gamemap_t* map, float lightLevel, float red, float gr
     return s;
 }
 
-static plane_t* createPlane(gamemap_t* map)
+static plane_t* createPlane(map_t* map)
 {
     return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
 }
 
-void Map_CreatePlane(gamemap_t* map, sector_t* sector, float height, material_t* material,
+void Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* material,
                      float matOffsetX, float matOffsetY, float r, float g, float b, float a,
                      float normalX, float normalY, float normalZ)
 {
@@ -2418,7 +2422,7 @@ void Map_CreatePlane(gamemap_t* map, sector_t* sector, float height, material_t*
     sector->planes = newList;
 }
 
-static polyobj_t* createPolyobj(gamemap_t* map)
+static polyobj_t* createPolyobj(map_t* map)
 {
     polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
 
@@ -2430,7 +2434,7 @@ static polyobj_t* createPolyobj(gamemap_t* map)
     return po;
 }
 
-polyobj_t* Map_CreatePolyobj(gamemap_t* map, objectrecordid_t* lines, uint lineCount, int tag,
+polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
                              int sequenceType, float anchorX, float anchorY)
 {
     polyobj_t* po;
@@ -2474,7 +2478,7 @@ polyobj_t* Map_CreatePolyobj(gamemap_t* map, objectrecordid_t* lines, uint lineC
 boolean P_LoadMap(const char* mapID)
 {
     uint i;
-    gamemap_t* map = NULL;
+    map_t* map = NULL;
 
     if(!mapID || !mapID[0])
         return false; // Yeah, ok... :P
@@ -2548,8 +2552,8 @@ boolean P_LoadMap(const char* mapID)
         R_BuildSectorLinks(map);
 
         // Init other blockmaps.
-        Map_BuildMobjBlockmap(map);
-        Map_BuildSubsectorBlockmap(map);
+        buildMobjBlockmap(map);
+        buildSubsectorBlockmap(map);
 
         strncpy(map->mapID, mapID, 8);
         strncpy(map->uniqueID, DAM_GenerateUniqueMapName(mapID),
@@ -2644,7 +2648,7 @@ boolean P_LoadMap(const char* mapID)
     return false;
 }
 
-boolean Map_MobjsBoxIterator(gamemap_t* map, const float box[4],
+boolean Map_MobjsBoxIterator(map_t* map, const float box[4],
                              boolean (*func) (mobj_t*, void*), void* data)
 {
     vec2_t bounds[2];
@@ -2657,7 +2661,7 @@ boolean Map_MobjsBoxIterator(gamemap_t* map, const float box[4],
     return Map_MobjsBoxIteratorv(map, bounds, func, data);
 }
 
-boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+boolean Map_MobjsBoxIteratorv(map_t* map, const arvec2_t box,
                               boolean (*func) (mobj_t*, void*), void* data)
 {
     uint blockBox[4];
@@ -2669,7 +2673,7 @@ boolean Map_MobjsBoxIteratorv(gamemap_t* map, const arvec2_t box,
     return MobjBlockmap_BoxIterate(map->_mobjBlockmap, blockBox, func, data);
 }
 
-static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
+static boolean linesBoxIteratorv(map_t* map, const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*),
                                  void* data, boolean retObjRecord)
 {
@@ -2682,7 +2686,7 @@ static boolean linesBoxIteratorv(gamemap_t* map, const arvec2_t box,
     return LineDefBlockmap_BoxIterate(map->_lineDefBlockmap, blockBox, func, data, retObjRecord);
 }
 
-boolean Map_LineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
+boolean Map_LineDefsBoxIteratorv(map_t* map, const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*), void* data,
                                  boolean retObjRecord)
 {
@@ -2692,7 +2696,7 @@ boolean Map_LineDefsBoxIteratorv(gamemap_t* map, const arvec2_t box,
 /**
  * @return              @c false, if the iterator func returns @c false.
  */
-boolean Map_SubsectorsBoxIterator(gamemap_t* map, const float box[4], sector_t* sector,
+boolean Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sector,
                                   boolean (*func) (subsector_t*, void*),
                                   void* parm, boolean retObjRecord)
 {
@@ -2710,7 +2714,7 @@ boolean Map_SubsectorsBoxIterator(gamemap_t* map, const float box[4], sector_t* 
  * Same as the fixed-point version of this routine, but the bounding box
  * is specified using an vec2_t array (see m_vector.c).
  */
-boolean Map_SubsectorsBoxIteratorv(gamemap_t* map, const arvec2_t box, sector_t* sector,
+boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sector,
                                    boolean (*func) (subsector_t*, void*),
                                    void* data, boolean retObjRecord)
 {
@@ -2847,7 +2851,7 @@ static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
 /**
  * Destroy the given game map obj database.
  */
-void Map_DestroyGameObjectRecords(gamemap_t* map)
+void Map_DestroyGameObjectRecords(map_t* map)
 {
     gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
 
@@ -2910,7 +2914,7 @@ static uint numGameObjectRecords(gameobjectrecordset_t* records, int identifier)
     return 0;
 }
 
-uint Map_NumGameObjectRecords(gamemap_t* map, int identifier)
+uint Map_NumGameObjectRecords(map_t* map, int identifier)
 {
     return numGameObjectRecords(&map->_gameObjectRecordSet, identifier);
 }
@@ -2976,7 +2980,7 @@ gameobjectrecord_t* Map_GameObjectRecord(gameobjectrecordset_t* records, def_gam
     return record;
 }
 
-void Map_UpdateGameObjectRecord(gamemap_t* map, def_gameobject_t* def,
+void Map_UpdateGameObjectRecord(map_t* map, def_gameobject_t* def,
                                 uint propIdx, uint elmIdx, valuetype_t type,
                                 void* data)
 {
@@ -3009,7 +3013,7 @@ void Map_UpdateGameObjectRecord(gamemap_t* map, def_gameobject_t* def,
     prop->valueIdx = insertIntoDB(&records->values, type, data);
 }
 
-static void* getValueForGameObjectRecordProperty(gamemap_t* map, int identifier, uint elmIdx,
+static void* getValueForGameObjectRecordProperty(map_t* map, int identifier, uint elmIdx,
                                                  int propIdentifier, valuetype_t* type)
 {
     uint i;
@@ -3193,7 +3197,7 @@ static void setValue(void* dst, valuetype_t dstType, void* src, valuetype_t srcT
     }
 }
 
-byte Map_GameObjectRecordByte(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+byte Map_GameObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;
@@ -3207,7 +3211,7 @@ byte Map_GameObjectRecordByte(gamemap_t* map, int typeIdentifier, uint elmIdx, i
     return returnVal;
 }
 
-short Map_GameObjectRecordShort(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+short Map_GameObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;
@@ -3221,7 +3225,7 @@ short Map_GameObjectRecordShort(gamemap_t* map, int typeIdentifier, uint elmIdx,
     return returnVal;
 }
 
-int Map_GameObjectRecordInt(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+int Map_GameObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;
@@ -3235,7 +3239,7 @@ int Map_GameObjectRecordInt(gamemap_t* map, int typeIdentifier, uint elmIdx, int
     return returnVal;
 }
 
-fixed_t Map_GameObjectRecordFixed(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+fixed_t Map_GameObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;
@@ -3249,7 +3253,7 @@ fixed_t Map_GameObjectRecordFixed(gamemap_t* map, int typeIdentifier, uint elmId
     return returnVal;
 }
 
-angle_t Map_GameObjectRecordAngle(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+angle_t Map_GameObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;
@@ -3263,7 +3267,7 @@ angle_t Map_GameObjectRecordAngle(gamemap_t* map, int typeIdentifier, uint elmId
     return returnVal;
 }
 
-float Map_GameObjectRecordFloat(gamemap_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
+float Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     valuetype_t type;
     void* ptr;

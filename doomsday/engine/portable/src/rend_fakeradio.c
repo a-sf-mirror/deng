@@ -1702,7 +1702,7 @@ static void drawPoint(float pos[3], float radius, const float color[4])
 /**
  * Render the shadow poly vertices, for debug.
  */
-void Rend_DrawShadowOffsetVerts(gamemap_t* map)
+void Rend_DrawShadowOffsetVerts(map_t* map)
 {
     static const float red[4] = { 1.f, .2f, .2f, 1.f};
     static const float yellow[4] = {.7f, .7f, .2f, 1.f};

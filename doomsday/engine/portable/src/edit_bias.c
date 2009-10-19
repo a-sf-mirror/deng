@@ -130,7 +130,7 @@ static void getHand(float pos[3])
     pos[2] = vy + viewFrontVec[VY] * editDistance;
 }
 
-static source_t* grabSource(gamemap_t* map, int index)
+static source_t* grabSource(map_t* map, int index)
 {
     source_t*           s;
     int                 i;
@@ -146,7 +146,7 @@ static source_t* grabSource(gamemap_t* map, int index)
     return s;
 }
 
-static source_t* getGrabbed(gamemap_t* map)
+static source_t* getGrabbed(map_t* map)
 {
     if(map->bias.editGrabbedID >= 0 && map->bias.editGrabbedID < map->bias.numSources)
     {
@@ -155,7 +155,7 @@ static source_t* getGrabbed(gamemap_t* map)
     return NULL;
 }
 
-static source_t* getNearest(gamemap_t* map)
+static source_t* getNearest(map_t* map)
 {
     float               hand[3];
     source_t*           nearest = NULL, *s;
@@ -581,7 +581,7 @@ static void drawHue(void)
     glEnable(GL_CULL_FACE);
 }
 
-static boolean newSource(gamemap_t* map)
+static boolean newSource(map_t* map)
 {
     source_t*           s;
 
@@ -599,7 +599,7 @@ static boolean newSource(gamemap_t* map)
     return true;
 }
 
-static void deleteSource(gamemap_t* map, int which)
+static void deleteSource(map_t* map, int which)
 {
     if(map->bias.editGrabbedID == which)
         map->bias.editGrabbedID = -1;
@@ -609,7 +609,7 @@ static void deleteSource(gamemap_t* map, int which)
     SB_DeleteSource(map, which);
 }
 
-static void lockSource(gamemap_t* map, int which)
+static void lockSource(map_t* map, int which)
 {
     source_t*           s;
 
@@ -617,7 +617,7 @@ static void lockSource(gamemap_t* map, int which)
         s->flags |= BLF_LOCKED;
 }
 
-static void unlockSource(gamemap_t* map, int which)
+static void unlockSource(map_t* map, int which)
 {
     source_t*           s;
 
@@ -625,7 +625,7 @@ static void unlockSource(gamemap_t* map, int which)
         s->flags &= ~BLF_LOCKED;
 }
 
-static void grab(gamemap_t* map, int which)
+static void grab(map_t* map, int which)
 {
     if(map->bias.editGrabbedID != which)
         grabSource(map, which);
@@ -633,7 +633,7 @@ static void grab(gamemap_t* map, int which)
         map->bias.editGrabbedID = -1;
 }
 
-static void dupeSource(gamemap_t* map, int which)
+static void dupeSource(map_t* map, int which)
 {
     source_t*           s, *orig = SB_GetSource(map, which);
     int                 i;
@@ -651,7 +651,7 @@ static void dupeSource(gamemap_t* map, int which)
     }
 }
 
-static boolean save(gamemap_t* map, const char* name)
+static boolean save(map_t* map, const char* name)
 {
     int                 i;
     FILE*               file;
@@ -703,7 +703,7 @@ static boolean save(gamemap_t* map, const char* name)
     return true;
 }
 
-void SBE_InitForMap(gamemap_t* map)
+void SBE_InitForMap(map_t* map)
 {
     if(!map)
         return;
@@ -711,7 +711,7 @@ void SBE_InitForMap(gamemap_t* map)
     map->bias.editGrabbedID = -1;
 }
 
-void SBE_EndFrame(gamemap_t* map)
+void SBE_EndFrame(map_t* map)
 {
     source_t*           src;
 
@@ -789,7 +789,7 @@ void SBE_DrawHUD(void)
     int                 w, h, y, boxWidth, boxHeight;
     char                buf[80];
     float               textAlpha = .8f;
-    gamemap_t*          map;
+    map_t*          map;
     source_t*           grabbed, *nearest;
 
     if(!editActive || editHidden)
@@ -850,7 +850,7 @@ void SBE_DrawHUD(void)
 #undef DRAW_INFOBOX
 }
 
-static void drawCursor(gamemap_t* map)
+static void drawCursor(map_t* map)
 {
 #define SET_COL(x, r, g, b, a) {x[0]=(r); x[1]=(g); x[2]=(b); x[3]=(a);}
 
@@ -960,7 +960,7 @@ static void drawCursor(gamemap_t* map)
 #undef SET_COL
 }
 
-void SBE_DrawCursor(gamemap_t* map)
+void SBE_DrawCursor(map_t* map)
 {
     if(!map || !map->bias.numSources)
         return;
@@ -973,7 +973,7 @@ void SBE_DrawCursor(gamemap_t* map)
 
 D_CMD(SBE_Begin)
 {
-    gamemap_t*          map;
+    map_t*          map;
 
     if(editActive)
         return false;
@@ -1010,7 +1010,7 @@ D_CMD(BLEditor)
 {
     char*               cmd = argv[0] + 2;
     int                 which;
-    gamemap_t*          map;
+    map_t*          map;
 
     if(!editActive)
     {
@@ -1025,7 +1025,7 @@ D_CMD(BLEditor)
 
     if(!stricmp(cmd, "clear"))
     {
-        gamemap_t*          map = P_CurrentMap();
+        map_t*          map = P_CurrentMap();
 
         SB_ClearSources(map);
 

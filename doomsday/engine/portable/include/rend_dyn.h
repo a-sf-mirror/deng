@@ -66,7 +66,7 @@ void            DL_Register(void);
 
 void            DL_DestroyDynlights(dynlist_t* dynlist);
 
-uint            DL_ProjectOnSurface(struct gamemap_s* map, subsector_t* subsector,
+uint            DL_ProjectOnSurface(struct map_s* map, subsector_t* subsector,
                                     const vectorcomp_t topLeft[3],
                                     const vectorcomp_t bottomRight[3],
                                     const vectorcomp_t normal[3], byte flags);

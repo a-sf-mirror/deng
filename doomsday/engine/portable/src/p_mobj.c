@@ -339,7 +339,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     checkpos_data_t data;
     vec2_t point;
     boolean result = true;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     if(!map)
         return false;
@@ -645,7 +645,7 @@ static void mobjSlideMove(mobj_t* mo)
 {
     float leadPos[2], trailPos[2], delta[2];
     int hitcount;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     slideMo = mo;
     hitcount = 0;
@@ -849,7 +849,7 @@ void P_MobjMovement2(mobj_t *mo, void *pstate)
 
 void P_MobjZMovement(mobj_t* mo)
 {
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
     float gravity = FIX2FLT(map->globalGravity);
 
     // check for smooth step up

@@ -129,7 +129,7 @@ lumpnum_t Cl_TranslateLump(lumpnum_t lump)
 /**
  * Clears the arrays that track active plane and polyobj mover thinkers.
  */
-void Cl_InitMovers(gamemap_t* map)
+void Cl_InitMovers(map_t* map)
 {
     if(!map)
         return;
@@ -213,7 +213,7 @@ void Cl_MoverThinker(mover_t* mover)
     }
 }
 
-void Cl_AddMover(gamemap_t* map, uint sectornum, clmovertype_t type, float dest, float speed)
+void Cl_AddMover(map_t* map, uint sectornum, clmovertype_t type, float dest, float speed)
 {
     sector_t* sector;
     int i;
@@ -327,7 +327,7 @@ void Cl_PolyMoverThinker(polymover_t* mover)
         Cl_RemoveActivePoly(mover);
 }
 
-polymover_t* Cl_FindActivePoly(gamemap_t* map, uint number)
+polymover_t* Cl_FindActivePoly(map_t* map, uint number)
 {
     uint i;
 
@@ -337,7 +337,7 @@ polymover_t* Cl_FindActivePoly(gamemap_t* map, uint number)
     return NULL;
 }
 
-polymover_t* Cl_NewPolyMover(gamemap_t* map, uint number)
+polymover_t* Cl_NewPolyMover(map_t* map, uint number)
 {
     polymover_t* mover;
     polyobj_t* poly = map->polyObjs[number];
@@ -354,7 +354,7 @@ polymover_t* Cl_NewPolyMover(gamemap_t* map, uint number)
     return mover;
 }
 
-void Cl_SetPolyMover(gamemap_t* map, uint number, int move, int rotate)
+void Cl_SetPolyMover(map_t* map, uint number, int move, int rotate)
 {
     polymover_t* mover;
 
@@ -373,7 +373,7 @@ void Cl_SetPolyMover(gamemap_t* map, uint number, int move, int rotate)
 /**
  * Removes all the active movers.
  */
-void Cl_RemoveMovers(gamemap_t* map)
+void Cl_RemoveMovers(map_t* map)
 {
     int i;
 
@@ -395,7 +395,7 @@ void Cl_RemoveMovers(gamemap_t* map)
     }
 }
 
-mover_t* Cl_GetActiveMover(gamemap_t* map, uint sectornum, clmovertype_t type)
+mover_t* Cl_GetActiveMover(map_t* map, uint sectornum, clmovertype_t type)
 {
     int i;
 
@@ -445,7 +445,7 @@ void Cl_ReadSectorDelta2(int deltaType, boolean skip)
     sector_t* sec;
     int df;
     boolean wasChanged = false;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // Set up the dummy.
     dummyPlaneArray[0] = &dummyPlanes[0];
@@ -662,7 +662,7 @@ void Cl_ReadSideDelta2(int deltaType, boolean skip)
     float toprgb[3] = {0,0,0}, midrgba[4] = {0,0,0,0};
     float bottomrgb[3] = {0,0,0};
     sidedef_t* sid;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     // First read all the data.
     num = Msg_ReadShort();
@@ -823,7 +823,7 @@ void Cl_ReadPolyDelta2(boolean skip)
     float destX = 0, destY = 0;
     float speed = 0;
     int destAngle = 0, angleSpeed = 0;
-    gamemap_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap();
 
     num = Msg_ReadPackedShort();
 
