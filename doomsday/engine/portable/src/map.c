@@ -254,6 +254,10 @@ void P_DestroyMap(map_t* map)
 
     SB_DestroySurfaces(map);
 
+    if(map->lg.inited)
+        Z_Free(map->lg.grid);
+    map->lg.grid = NULL;
+
     PlaneList_Empty(&map->watchedPlaneList);
     SurfaceList_Empty(&map->movingSurfaceList);
     SurfaceList_Empty(&map->decoratedSurfaceList);

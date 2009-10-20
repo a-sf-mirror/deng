@@ -343,7 +343,7 @@ void LG_Init(map_t* map)
 
     // Allocate memory for the entire map->lg.grid.
     map->lg.grid = Z_Calloc(sizeof(lgridblock_t) * map->lg.blockWidth * map->lg.blockHeight,
-                    PU_MAP, NULL);
+                    PU_STATIC, NULL);
 
     Con_Message("LG_Init: %i x %i map->lg.grid (%lu bytes).\n",
                 map->lg.blockWidth, map->lg.blockHeight,
