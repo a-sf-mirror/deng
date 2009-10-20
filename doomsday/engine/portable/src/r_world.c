@@ -45,9 +45,6 @@
 
 // MACROS ------------------------------------------------------------------
 
-// $smoothmatoffset: Maximum speed for a smoothed material offset.
-#define MAX_SMOOTH_MATERIAL_MOVE (8)
-
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -76,8 +73,6 @@ float rendLightDistanceAttentuation = 1024;
 
 boolean firstFrameAfterLoad;
 boolean ddMapSetup;
-
-nodeindex_t* linelinks; // Indices to roots.
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -239,108 +234,6 @@ boolean SurfaceList_Iterate(surfacelist_t* sl,
     }
 
     return result;
-}
-
-boolean updateMovingSurface(surface_t* suf, void* context)
-{
-    // X Offset
-    suf->oldOffset[0][0] = suf->oldOffset[0][1];
-    suf->oldOffset[0][1] = suf->offset[0];
-    if(suf->oldOffset[0][0] != suf->oldOffset[0][1])
-        if(fabs(suf->oldOffset[0][0] - suf->oldOffset[0][1]) >=
-           MAX_SMOOTH_MATERIAL_MOVE)
-        {
-            // Too fast: make an instantaneous jump.
-            suf->oldOffset[0][0] = suf->oldOffset[0][1];
-        }
-
-    // Y Offset
-    suf->oldOffset[1][0] = suf->oldOffset[1][1];
-    suf->oldOffset[1][1] = suf->offset[1];
-    if(suf->oldOffset[1][0] != suf->oldOffset[1][1])
-        if(fabs(suf->oldOffset[1][0] - suf->oldOffset[1][1]) >=
-           MAX_SMOOTH_MATERIAL_MOVE)
-        {
-            // Too fast: make an instantaneous jump.
-            suf->oldOffset[1][0] = suf->oldOffset[1][1];
-        }
-
-    return true;
-}
-
-/**
- * $smoothmatoffset: Roll the surface material offset tracker buffers.
- */
-void R_UpdateMovingSurfaces(map_t* map)
-{
-    if(!map)
-        return;
-
-    SurfaceList_Iterate(&map->movingSurfaceList, updateMovingSurface, NULL);
-}
-
-boolean resetMovingSurface(surface_t* suf, void* context)
-{
-    // X Offset.
-    suf->visOffsetDelta[0] = 0;
-    suf->oldOffset[0][0] = suf->oldOffset[0][1] = suf->offset[0];
-
-    // Y Offset.
-    suf->visOffsetDelta[1] = 0;
-    suf->oldOffset[1][0] = suf->oldOffset[1][1] = suf->offset[1];
-
-    Surface_Update(suf);
-    SurfaceList_Remove((surfacelist_t*) context, suf);
-
-    return true;
-}
-
-boolean interpMovingSurface(surface_t* suf, void* context)
-{
-    // X Offset.
-    suf->visOffsetDelta[0] =
-        suf->oldOffset[0][0] * (1 - frameTimePos) +
-                suf->offset[0] * frameTimePos - suf->offset[0];
-
-    // Y Offset.
-    suf->visOffsetDelta[1] =
-        suf->oldOffset[1][0] * (1 - frameTimePos) +
-                suf->offset[1] * frameTimePos - suf->offset[1];
-
-    // Visible material offset.
-    suf->visOffset[0] = suf->offset[0] + suf->visOffsetDelta[0];
-    suf->visOffset[1] = suf->offset[1] + suf->visOffsetDelta[1];
-
-    Surface_Update(suf);
-
-    // Has this material reached its destination?
-    if(suf->visOffset[0] == suf->offset[0] &&
-       suf->visOffset[1] == suf->offset[1])
-        SurfaceList_Remove((surfacelist_t*) context, suf);
-
-    return true;
-}
-
-/**
- * $smoothmatoffset: interpolate the visual offset.
- */
-void R_InterpolateMovingSurfaces(map_t* map, boolean resetNextViewer)
-{
-    if(!map)
-        return;
-
-    if(resetNextViewer)
-    {
-        // Reset the material offset trackers.
-        SurfaceList_Iterate(&map->movingSurfaceList, resetMovingSurface, &map->movingSurfaceList);
-    }
-    // While the game is paused there is no need to calculate any
-    // visual material offsets.
-    else //if(!clientPaused)
-    {
-        // Set the visible material offsets.
-        SurfaceList_Iterate(&map->movingSurfaceList, interpMovingSurface, &map->movingSurfaceList);
-    }
 }
 
 /**
@@ -536,61 +429,6 @@ boolean PlaneList_Iterate(planelist_t* pl, boolean (*callback) (plane_t*, void*)
     }
 
     return result;
-}
-
-boolean updatePlaneHeightTracking(plane_t* plane, void* context)
-{
-    Plane_UpdateHeightTracking(plane);
-    return true; // Continue iteration.
-}
-
-boolean resetPlaneHeightTracking(plane_t* plane, void* context)
-{
-    Plane_ResetHeightTracking(plane);
-    PlaneList_Remove((planelist_t*) context, plane);
-    return true; // Continue iteration.
-}
-
-boolean interpolatePlaneHeight(plane_t* plane, void* context)
-{
-    Plane_InterpolateHeight(plane);
-    // Has this plane reached its destination?
-    if(plane->visHeight == plane->height)
-        PlaneList_Remove((planelist_t*) context, plane);
-    return true; // Continue iteration.
-}
-
-/**
- * $smoothplane: Roll the height tracker buffers.
- */
-void R_UpdateWatchedPlanes(map_t* map)
-{
-    if(!map)
-        return;
-
-    PlaneList_Iterate(&map->watchedPlaneList, updatePlaneHeightTracking, NULL);
-}
-
-/**
- * $smoothplane: interpolate the visual offset.
- */
-void R_InterpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
-{
-    if(!map)
-        return;
-
-    if(resetNextViewer)
-    {
-        // $smoothplane: Reset the plane height trackers.
-        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, &map->watchedPlaneList);
-    }
-    // While the game is paused there is no need to calculate any
-    // visual plane offsets $smoothplane.
-    else //if(!clientPaused)
-    {
-        // $smoothplane: Set the visible offsets.
-        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, &map->watchedPlaneList);
-    }
 }
 
 /**
@@ -938,127 +776,11 @@ void R_ClearSurfaceDecorations(surface_t* suf)
     suf->numDecorations = 0;
 }
 
-void R_UpdateSkyFixForSec(map_t* map, uint secIDX)
-{
-    boolean skyFloor, skyCeil;
-    sector_t* sec = map->sectors[secIDX];
-
-    if(!sec)
-        return; // Wha?
-
-    skyFloor = IS_SKYSURFACE(&sec->SP_floorsurface);
-    skyCeil = IS_SKYSURFACE(&sec->SP_ceilsurface);
-
-    if(!skyFloor && !skyCeil)
-        return;
-
-    if(skyCeil)
-    {
-        mobj_t* mo;
-
-        // Adjust for the plane height.
-        if(sec->SP_ceilvisheight > map->skyFix[PLN_CEILING].height)
-        {   // Must raise the skyfix ceiling.
-            map->skyFix[PLN_CEILING].height = sec->SP_ceilvisheight;
-        }
-
-        // Check that all the mobjs in the sector fit in.
-        for(mo = sec->mobjList; mo; mo = mo->sNext)
-        {
-            float extent = mo->pos[VZ] + mo->height;
-
-            if(extent > map->skyFix[PLN_CEILING].height)
-            {   // Must raise the skyfix ceiling.
-                map->skyFix[PLN_CEILING].height = extent;
-            }
-        }
-    }
-
-    if(skyFloor)
-    {
-        // Adjust for the plane height.
-        if(sec->SP_floorvisheight < map->skyFix[PLN_FLOOR].height)
-        {   // Must lower the skyfix floor.
-            map->skyFix[PLN_FLOOR].height = sec->SP_floorvisheight;
-        }
-    }
-
-    // Update for middle textures on two sided linedefs which intersect the
-    // floor and/or ceiling of their front and/or back sectors.
-    if(sec->lineDefs)
-    {
-        linedef_t** linePtr = sec->lineDefs;
-
-        while(*linePtr)
-        {
-            linedef_t* li = *linePtr;
-
-            // Must be twosided.
-            if(LINE_FRONTSIDE(li) && LINE_BACKSIDE(li))
-            {
-                sidedef_t* si = LINE_FRONTSECTOR(li) == sec?
-                    LINE_FRONTSIDE(li) : LINE_BACKSIDE(li);
-
-                if(si->SW_middlematerial)
-                {
-                    if(skyCeil)
-                    {
-                        float               top =
-                            sec->SP_ceilvisheight +
-                                si->SW_middlevisoffset[VY];
-
-                        if(top > map->skyFix[PLN_CEILING].height)
-                        {   // Must raise the skyfix ceiling.
-                            map->skyFix[PLN_CEILING].height = top;
-                        }
-                    }
-
-                    if(skyFloor)
-                    {
-                        float               bottom =
-                            sec->SP_floorvisheight +
-                                si->SW_middlevisoffset[VY] -
-                                    si->SW_middlematerial->height;
-
-                        if(bottom < map->skyFix[PLN_FLOOR].height)
-                        {   // Must lower the skyfix floor.
-                            map->skyFix[PLN_FLOOR].height = bottom;
-                        }
-                    }
-                }
-            }
-            *linePtr++;
-        }
-    }
-}
-
-/**
- * Fixing the sky means that for adjacent sky sectors the lower sky
- * ceiling is lifted to match the upper sky. The raising only affects
- * rendering, it has no bearing on gameplay.
- */
-void R_InitSkyFix(map_t* map)
-{
-    uint i;
-
-    if(!map)
-        return;
-
-    map->skyFix[PLN_FLOOR].height = DDMAXFLOAT;
-    map->skyFix[PLN_CEILING].height = DDMINFLOAT;
-
-    // Update for sector plane heights and mobjs which intersect the ceiling.
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        R_UpdateSkyFixForSec(map, i);
-    }
-}
-
 /**
  * @return              Ptr to the lineowner for this line for this vertex
  *                      else @c NULL.
  */
-lineowner_t* R_GetVtxLineOwner(const vertex_t *v, const linedef_t *line)
+lineowner_t* R_GetVtxLineOwner(const vertex_t* v, const linedef_t* line)
 {
     if(v == line->L_v1)
         return line->L_vo1;
@@ -1069,7 +791,7 @@ lineowner_t* R_GetVtxLineOwner(const vertex_t *v, const linedef_t *line)
     return NULL;
 }
 
-void R_SetupFog(float start, float end, float density, float *rgb)
+void R_SetupFog(float start, float end, float density, float* rgb)
 {
     Con_Execute(CMDS_DDAY, "fog on", true, false);
     Con_Executef(CMDS_DDAY, true, "fog start %f", start);
@@ -1293,7 +1015,7 @@ void R_FindSegSectionDivisions(walldiv_t* wdivs, hedge_t* hEdge,
 
 #ifdef RANGECHECK
 {
-uint        k;
+uint k;
 for(k = 0; k < wdiv->num; ++k)
     if(wdiv->divs[k]->visHeight > hi || wdiv->divs[k]->visHeight < low)
     {
@@ -1317,13 +1039,13 @@ boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
     // the location of any secret areas (false walls)).
     if(LINE_BACKSIDE(line))
     {
-        sector_t*           front = LINE_SECTOR(line, backside);
-        sector_t*           back  = LINE_SECTOR(line, backside^1);
-        sidedef_t*          side  = LINE_SIDE(line, backside);
+        sector_t* front = LINE_SECTOR(line, backside);
+        sector_t* back  = LINE_SECTOR(line, backside^1);
+        sidedef_t* side  = LINE_SIDE(line, backside);
 
         if(side->SW_middlematerial)
         {
-            material_t*         mat = side->SW_middlematerial;
+            material_t* mat = side->SW_middlematerial;
             material_snapshot_t ms;
 
             // Ensure we have up to date info.
@@ -1332,8 +1054,8 @@ boolean R_DoesMiddleMaterialFillGap(linedef_t* line, int backside)
             if(ms.isOpaque && !side->SW_middleblendmode &&
                side->SW_middlergba[3] >= 1)
             {
-                float               openTop[2], matTop[2];
-                float               openBottom[2], matBottom[2];
+                float openTop[2], matTop[2];
+                float openBottom[2], matBottom[2];
 
                 if(side->flags & SDF_MIDDLE_STRETCH)
                     return true;
@@ -1384,9 +1106,9 @@ int R_MiddleMaterialPosition(float* bottomleft, float* bottomright,
                              float tcyoff, float texHeight, boolean lowerUnpeg,
                              boolean clipTop, boolean clipBottom)
 {
-    int                 side;
-    float               openingTop, openingBottom;
-    boolean             visible[2] = {false, false};
+    int side;
+    float openingTop, openingBottom;
+    boolean visible[2] = {false, false};
 
     for(side = 0; side < 2; ++side)
     {
@@ -1479,7 +1201,7 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
             *bottom = bceil->visHeight;
         if(*top > *bottom)
         {
-            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_topsurface;
+            surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_topsurface;
 
             if(texOffset)
             {
@@ -1503,7 +1225,7 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
 
     case SEG_BOTTOM:
         {
-        float               t = bfloor->visHeight;
+        float t = bfloor->visHeight;
 
         *bottom = ffloor->visHeight;
         // Can't go over the back ceiling, would induce polygon flaws.
@@ -1517,7 +1239,7 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
 
         if(*top > *bottom)
         {
-            surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_bottomsurface;
+            surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_bottomsurface;
 
             if(texOffset)
             {
@@ -1544,12 +1266,12 @@ boolean R_FindBottomTopOfHEdgeSection(hedge_t* hEdge, segsection_t section,
         }
     case SEG_MIDDLE:
         {
-        surface_t*          surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
-        const material_t*   mat = surface->material->current;
-        float               openBottom, openTop,
-                            polyBottom, polyTop, xOffset, yOffset, xScale, yScale;
-        boolean             visible = false;
-        boolean             clipBottom, clipTop;
+        surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_middlesurface;
+        const material_t* mat = surface->material->current;
+        float openBottom, openTop, polyBottom, polyTop, xOffset;
+        float yOffset, xScale, yScale;
+        boolean visible = false;
+        boolean clipBottom, clipTop;
 
         if(!LINE_SELFREF(HE_FRONTSIDEDEF(hEdge)->lineDef))
         {
@@ -1662,7 +1384,7 @@ void R_PickPlanesForSegExtrusion(hedge_t* hEdge,
                                  plane_t** ffloor, plane_t** fceil,
                                  plane_t** bfloor, plane_t** bceil)
 {
-    sector_t*               frontSec;
+    sector_t* frontSec;
 
     if(!useSectorsFromFrontSideDef)
     {
@@ -1706,8 +1428,8 @@ linedef_t* R_FindLineNeighbor(const sector_t* sector, const linedef_t* line,
                               const lineowner_t* own, boolean antiClockwise,
                               binangle_t *diff)
 {
-    lineowner_t*        cown = own->link[!antiClockwise];
-    linedef_t*          other = cown->lineDef;
+    lineowner_t* cown = own->link[!antiClockwise];
+    linedef_t* other = cown->lineDef;
 
     if(other == line)
         return NULL;
@@ -1735,9 +1457,9 @@ linedef_t* R_FindSolidLineNeighbor(const sector_t* sector,
                                    const lineowner_t* own,
                                    boolean antiClockwise, binangle_t* diff)
 {
-    lineowner_t*        cown = own->link[!antiClockwise];
-    linedef_t*          other = cown->lineDef;
-    int                 side;
+    lineowner_t* cown = own->link[!antiClockwise];
+    linedef_t* other = cown->lineDef;
+    int side;
 
     if(other == line)
         return NULL;
@@ -1800,14 +1522,14 @@ linedef_t* R_FindSolidLineNeighbor(const sector_t* sector,
  * They are the neighbouring line in the backsector of the imediate line
  * neighbor.
  */
-linedef_t *R_FindLineBackNeighbor(const sector_t *sector,
-                                  const linedef_t *line,
-                                  const lineowner_t *own,
+linedef_t* R_FindLineBackNeighbor(const sector_t* sector,
+                                  const linedef_t* line,
+                                  const lineowner_t* own,
                                   boolean antiClockwise,
-                                  binangle_t *diff)
+                                  binangle_t* diff)
 {
-    lineowner_t        *cown = own->link[!antiClockwise];
-    linedef_t          *other = cown->lineDef;
+    lineowner_t* cown = own->link[!antiClockwise];
+    linedef_t* other = cown->lineDef;
 
     if(other == line)
         return NULL;
@@ -1833,17 +1555,17 @@ linedef_t *R_FindLineBackNeighbor(const sector_t *sector,
  * a shadow between them. In practice, they would be considered a single,
  * long sidedef by the shadow generator).
  */
-linedef_t *R_FindLineAlignNeighbor(const sector_t *sec,
-                                   const linedef_t *line,
-                                   const lineowner_t *own,
+linedef_t* R_FindLineAlignNeighbor(const sector_t* sec,
+                                   const linedef_t* line,
+                                   const lineowner_t* own,
                                    boolean antiClockwise,
                                    int alignment)
 {
 #define SEP 10
 
-    lineowner_t        *cown = own->link[!antiClockwise];
-    linedef_t          *other = cown->lineDef;
-    binangle_t          diff;
+    lineowner_t* cown = own->link[!antiClockwise];
+    linedef_t* other = cown->lineDef;
+    binangle_t diff;
 
     if(other == line)
         return NULL;
@@ -1868,29 +1590,6 @@ linedef_t *R_FindLineAlignNeighbor(const sector_t *sec,
     return R_FindLineAlignNeighbor(sec, line, cown, antiClockwise, alignment);
 
 #undef SEP
-}
-
-void R_InitLinks(map_t* map)
-{
-    uint i;
-    uint starttime;
-
-    Con_Message("R_InitLinks: Initializing\n");
-
-    // Initialize node piles and line rings.
-    NP_Init(&map->mobjNodes, 256);  // Allocate a small pile.
-    NP_Init(&map->lineNodes, map->numLineDefs + 1000);
-
-    // Allocate the rings.
-    starttime = Sys_GetRealTime();
-    map->lineLinks =
-        Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_MAP, 0);
-    for(i = 0; i < map->numLineDefs; ++i)
-        map->lineLinks[i] = NP_New(&map->lineNodes, NP_ROOT_NODE);
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("R_InitLinks: Allocating line link rings. Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - starttime) / 1000.0f));
 }
 
 /**
@@ -2007,51 +1706,6 @@ static sector_t* getContainingSectorOf(map_t* map, sector_t* sec)
 }
 #endif
 
-void R_BuildSectorLinks(map_t* map)
-{
-#define DOMINANT_SIZE   1000
-
-    uint i;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sec = map->sectors[i];
-
-        if(!sec->lineDefCount)
-            continue;
-
-        // Is this sector large enough to be a dominant light source?
-        if(sec->lightSource == NULL && sec->planeCount > 0 &&
-           sec->bBox[BOXRIGHT] - sec->bBox[BOXLEFT]   > DOMINANT_SIZE &&
-           sec->bBox[BOXTOP]   - sec->bBox[BOXBOTTOM] > DOMINANT_SIZE)
-        {
-            if(R_SectorContainsSkySurfaces(sec))
-            {
-                uint k;
-
-                // All sectors touching this one will be affected.
-                for(k = 0; k < sec->lineDefCount; ++k)
-                {
-                    linedef_t* lin = sec->lineDefs[k];
-                    sector_t* other;
-
-                    other = LINE_FRONTSECTOR(lin);
-                    if(other == sec)
-                    {
-                        if(LINE_BACKSIDE(lin))
-                            other = LINE_BACKSECTOR(lin);
-                    }
-
-                    if(other && other != sec)
-                        other->lightSource = sec;
-                }
-            }
-        }
-    }
-
-#undef DOMINANT_SIZE
-}
-
 static __inline void initSurfaceMaterialOffset(surface_t* suf)
 {
     if(!suf)
@@ -2097,7 +1751,7 @@ void R_SetupMap(int mode, int flags)
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
 
-        R_InitSkyFix(map);
+        Map_InitSkyFix(map);
 
         // Set intial values of various tracked and interpolated properties
         // (lighting, smoothed planes etc).
@@ -2255,22 +1909,6 @@ void R_SetupMap(int mode, int flags)
     }
 }
 
-void R_ClearSectorFlags(map_t* map)
-{
-    uint i;
-
-    if(!map)
-        return;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sec = map->sectors[i];
-
-        // Clear all flags that can be cleared before each frame.
-        sec->frameFlags &= ~SIF_FRAME_CLEAR;
-    }
-}
-
 void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
 {
     int viewer = pid;
@@ -2309,8 +1947,8 @@ boolean R_IsGlowingPlane(const plane_t* pln)
  */
 boolean R_SectorContainsSkySurfaces(const sector_t* sec)
 {
-    uint                i;
-    boolean             sectorContainsSkySurfaces;
+    uint i;
+    boolean sectorContainsSkySurfaces;
 
     // Does this sector feature any sky surfaces?
     sectorContainsSkySurfaces = false;
@@ -2376,17 +2014,17 @@ float R_ApplySoftSurfaceDeltaToAlpha(float bottom, float top, sidedef_t* sideDef
  */
 static material_t* chooseFixMaterial(const hedge_t* hEdge, segsection_t section)
 {
-    material_t*         choice = NULL;
+    material_t* choice = NULL;
 
     // Try the materials used on the front and back sector planes,
     // favouring non-animated materials.
     if(section == SEG_BOTTOM || section == SEG_TOP)
     {
-        sector_t*           backSec = HE_BACKSECTOR(hEdge);
+        sector_t* backSec = HE_BACKSECTOR(hEdge);
 
         if(backSec)
         {
-            surface_t*          backSuf = &backSec->
+            surface_t* backSuf = &backSec->
                 SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
                     surface;
 
@@ -2584,8 +2222,8 @@ boolean R_UpdateSubSector(face_t* subSector, boolean forceUpdate)
 
 boolean R_UpdateSector(sector_t* sec, boolean forceUpdate)
 {
-    uint                i;
-    boolean             changed = false, planeChanged = false;
+    uint i;
+    boolean changed = false, planeChanged = false;
 
     // Check if there are any lightlevel or color changes.
     if(forceUpdate ||
@@ -2664,7 +2302,7 @@ float R_DistAttenuateLightLevel(float distToViewer, float lightLevel)
 {
     if(distToViewer > 0 && rendLightDistanceAttentuation > 0)
     {
-        float               real, minimum;
+        float real, minimum;
 
         real = lightLevel -
             (distToViewer - 32) / rendLightDistanceAttentuation *
@@ -2706,12 +2344,11 @@ float R_WallAngleLightLevelDelta(const linedef_t* l, byte side)
  * The offsets in the lightRangeModTables are added to the sector->lightLevel
  * during rendering (both positive and negative).
  */
-void R_CalcLightModRange(cvar_t *unused)
+void R_CalcLightModRange(cvar_t* unused)
 {
-    int                 j;
-    int                 mapAmbient;
-    float               f;
-    map_t          *map = P_CurrentMap();
+    int j, mapAmbient;
+    float f;
+    map_t* map = P_CurrentMap();
 
     memset(lightModRange, 0, sizeof(float) * 255);
 
@@ -2780,7 +2417,7 @@ float R_CheckSectorLight(float lightlevel, float min, float max)
  */
 const float* R_GetSectorLightColor(const sector_t *sector)
 {
-    const float*        skyLight;
+    const float* skyLight;
 
     if(!rendSkyLight ||
        !(skyLight = Sky_GetLightColor(theSky)))
@@ -2788,7 +2425,7 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 
     if(!R_SectorContainsSkySurfaces(sector))
     {
-        sector_t*           src;
+        sector_t* src;
 
         // A dominant light source affects this sector?
         src = sector->lightSource;
@@ -2808,8 +2445,8 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 #if _DEBUG
 D_CMD(UpdateSurfaces)
 {
-    uint                i;
-    map_t*          map = P_CurrentMap();
+    uint i;
+    map_t* map = P_CurrentMap();
 
     Con_Printf("Updating world surfaces...\n");
 

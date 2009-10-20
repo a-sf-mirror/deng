@@ -538,8 +538,8 @@ void R_NewSharpWorld(void)
     map = P_CurrentMap();
     if(map)
     {
-        R_UpdateWatchedPlanes(map);
-        R_UpdateMovingSurfaces(map);
+        Map_UpdateWatchedPlanes(map);
+        Map_UpdateMovingSurfaces(map);
     }
 }
 
@@ -584,10 +584,7 @@ void R_BeginWorldFrame(map_t* map)
     if(!map)
         return;
 
-    R_ClearSectorFlags(map);
-
-    R_InterpolateWatchedPlanes(map, resetNextViewer);
-    R_InterpolateMovingSurfaces(map, resetNextViewer);
+    Map_BeginFrame(map, resetNextViewer);
 
     if(!freezeRLs)
     {

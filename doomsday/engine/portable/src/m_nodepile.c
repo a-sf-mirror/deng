@@ -23,9 +23,7 @@
  */
 
 /**
- * m_nodepile.c: Specialized Node Allocation
- *
- * The 'piles' are allocated as PU_MAP.
+ * m_nodepile.c: Specialized Node Allocation.
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -57,12 +55,12 @@
 /**
  * Initialize (alloc) the nodepile with n nodes.
  *
- * @param pile      Ptr to the pile to be initialized.
- * @param initial   Number of nodes to allocate.
+ * @param initial       Number of nodes to allocate.
  */
-void NP_Init(nodepile_t *pile, int initial)
+nodepile_t* P_CreateNodePile(int initial)
 {
-    size_t      size;
+    nodepile_t* pile = Z_Malloc(sizeof(*pile), PU_STATIC, 0);
+    size_t size;
 
     // Allocate room for at least two nodes.
     // Node zero is never used.
@@ -70,10 +68,26 @@ void NP_Init(nodepile_t *pile, int initial)
         initial = 2;
 
     size = sizeof(*pile->nodes) * initial;
-    pile->nodes = Z_Calloc(size, PU_MAP, 0);
+    pile->nodes = Z_Calloc(size, PU_STATIC, 0);
     pile->count = initial;
     // Index #1 is the first.
     pile->pos = 1;
+
+    return pile;
+}
+
+/**
+ * Destroy all nodes in the specified pile and then the pile itself.
+ *
+ * @param pile          Node pile to be destroyed.
+ */
+void P_DestroyNodePile(nodepile_t* pile)
+{
+    assert(pile);
+
+    if(pile->nodes)
+        Z_Free(pile->nodes);
+    Z_Free(pile);
 }
 
 /**
@@ -82,16 +96,16 @@ void NP_Init(nodepile_t *pile, int initial)
  * a new node. Pos shouldn't be accessed outside this routine because its
  * value may prove to be outside the valid range.
  *
- * @param pile      Ptr to nodepile to add the node to.
- * @param ptr       Data to attach to the new node.
+ * @param pile          Ptr to nodepile to add the node to.
+ * @param ptr           Data to attach to the new node.
  */
-nodeindex_t NP_New(nodepile_t *pile, void *ptr)
+nodeindex_t NP_New(nodepile_t* pile, void* ptr)
 {
-    linknode_t *node;
-    linknode_t *end = pile->nodes + pile->count;
-    int         i, newcount;
-    linknode_t *newlist;
-    boolean     found;
+    linknode_t* node;
+    linknode_t* end = pile->nodes + pile->count;
+    int i, newcount;
+    linknode_t* newlist;
+    boolean found;
 
     pile->pos %= pile->count;
     node = pile->nodes + pile->pos++;
@@ -134,7 +148,7 @@ nodeindex_t NP_New(nodepile_t *pile, void *ptr)
         if(newcount > NP_MAX_NODES)
             newcount = NP_MAX_NODES;
 
-        newlist = Z_Malloc(sizeof(*newlist) * newcount, PU_MAP, 0);
+        newlist = Z_Malloc(sizeof(*newlist) * newcount, PU_STATIC, 0);
         memcpy(newlist, pile->nodes, sizeof(*pile->nodes) * pile->count);
         memset(newlist + pile->count, 0,
                (newcount - pile->count) * sizeof(*newlist));
@@ -150,19 +164,19 @@ nodeindex_t NP_New(nodepile_t *pile, void *ptr)
     node->ptr = ptr;
     // Make it point to itself by default (a root, basically).
     node->next = node->prev = node - pile->nodes;
-    return node->next;          // Well, node's index, really.
+    return node->next; // Well, node's index, really.
 }
 
 /**
  * Links the node to the beginning of the ring.
  *
- * @param pile      Nodepile ring to work with.
- * @param node      Node to be linked.
- * @param root      The root node to link the node to.
+ * @param pile          Nodepile ring to work with.
+ * @param node          Node to be linked.
+ * @param root          The root node to link the node to.
  */
-void NP_Link(nodepile_t *pile, nodeindex_t node, nodeindex_t root)
+void NP_Link(nodepile_t* pile, nodeindex_t node, nodeindex_t root)
 {
-    linknode_t *nd = pile->nodes;
+    linknode_t* nd = pile->nodes;
 
     nd[node].prev = root;
     nd[node].next = nd[root].next;
@@ -172,12 +186,12 @@ void NP_Link(nodepile_t *pile, nodeindex_t node, nodeindex_t root)
 /**
  * Unlink a node from the ring (make it a root node)
  *
- * @param pile      Nodepile ring to work with.
- * @param node      Node to be unlinked.
+ * @param pile          Nodepile ring to work with.
+ * @param node          Node to be unlinked.
  */
-void NP_Unlink(nodepile_t *pile, nodeindex_t node)
+void NP_Unlink(nodepile_t* pile, nodeindex_t node)
 {
-    linknode_t *nd = pile->nodes;
+    linknode_t* nd = pile->nodes;
 
     // Try deciphering that! :-) (d->n->p = d->p, d->p->n = d->n)
     nd[nd[nd[node].next].prev = nd[node].prev].next = nd[node].next;

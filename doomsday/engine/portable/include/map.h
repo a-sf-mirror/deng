@@ -153,9 +153,6 @@ typedef struct {
     lineowner_t*    lineOwners; // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
 } vertexinfo_t;
 
-extern nodeindex_t* linelinks;
-extern nodepile_t* mobjNodes, *lineNodes;
-
 typedef struct map_s {
     char            mapID[9];
     char            uniqueID[256];
@@ -196,7 +193,7 @@ typedef struct map_s {
     surfacelist_t   movingSurfaceList;
     surfacelist_t   decoratedSurfaceList;
 
-    nodepile_t      mobjNodes, lineNodes; // All kinds of wacky links.
+    nodepile_t*     mobjNodes, *lineNodes; // All kinds of wacky links.
     nodeindex_t*    lineLinks; // Indices to roots.
 
     float           globalGravity; // Gravity for the current map.
@@ -228,13 +225,19 @@ typedef struct map_s {
     } lg;
 } map_t;
 
-map_t*      P_CreateMap(const char* mapID);
+map_t*          P_CreateMap(const char* mapID);
 void            P_DestroyMap(map_t* map);
 
 const char*     Map_ID(map_t* map);
 const char*     Map_UniqueName(map_t* map);
 void            Map_Bounds(map_t* map, float* min, float* max);
 int             Map_AmbientLightLevel(map_t* map);
+
+void            Map_BeginFrame(map_t* map, boolean resetNextViewer);
+
+void            Map_UpdateWatchedPlanes(map_t* map);
+void            Map_UpdateMovingSurfaces(map_t* map);
+void            Map_UpdateSkyFixForSector(map_t* map, uint secIDX);
 
 void            Map_LinkMobj(map_t* map, struct mobj_s* mo, byte flags);
 int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);
@@ -303,5 +306,7 @@ mobjblockmap_t* Map_MobjBlockmap(map_t* map);
 linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
 subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 
+void            Map_InitLinks(map_t* map);
+void            Map_InitSkyFix(map_t* map);
 void            Map_InitSoundEnvironment(map_t* map);
 #endif /* DOOMSDAY_MAP_H */

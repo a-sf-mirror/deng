@@ -328,10 +328,6 @@ map_t* P_CurrentMap(void)
 
 void P_SetCurrentMap(map_t* map)
 {
-    mobjNodes = &map->mobjNodes;
-    lineNodes = &map->lineNodes;
-    linelinks = map->lineLinks;
-
     currentMap = map;
 }
 

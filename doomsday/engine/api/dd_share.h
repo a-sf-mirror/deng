@@ -768,22 +768,6 @@ typedef boolean (*traverser_t) (intercept_t* in);
 //
 //------------------------------------------------------------------------
 
-/**
- * Linknodes are used when linking mobjs to lines. Each mobj has a ring
- * of linknodes, each node pointing to a line the mobj has been linked to.
- * Correspondingly each line has a ring of nodes, with pointers to the
- * mobjs that are linked to that particular line. This way it is possible
- * that a single mobj is linked simultaneously to multiple lines (which
- * is common).
- *
- * All these rings are maintained by P_Mobj(Un)Link().
- */
-typedef struct linknode_s {
-    nodeindex_t     prev, next;
-    void*           ptr;
-    int             data;
-} linknode_t;
-
 // State flags.
 #define STF_FULLBRIGHT      0x00000001
 #define STF_NOAUTOLIGHT     0x00000002 // Don't automatically add light if fullbright.

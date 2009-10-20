@@ -2775,7 +2775,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
              * Do not render planes for subsectors not enclosed by their sector
              * boundary if they would be added to the skymask.
              */
-            if(subsector->sector->flags & SECF_UNCLOSED)
+            if(devSkyMode == 0 && (subsector->sector->flags & SECF_UNCLOSED))
                 return;
 
             if(plane->type != PLN_MID)

@@ -34,9 +34,6 @@
 
 #define MAXINTERCEPTS   128
 
-#define IS_SECTOR_LINKED(mo)    ((mo)->sPrev != NULL)
-#define IS_BLOCK_LINKED(mo)     ((mo)->bNext != NULL)
-
 extern float  opentop, openbottom, openrange, lowfloor;
 extern divline_t traceLOS;
 
@@ -68,9 +65,6 @@ float           P_FloatInterceptVertex(fvertex_t* start, fvertex_t* end,
 void            P_LineOpening(linedef_t* linedef);
 void            P_MobjLink(mobj_t* mo, byte flags);
 int             P_MobjUnlink(mobj_t* mo);
-boolean         P_UnlinkFromSector(mobj_t* mo);
-boolean         P_UnlinkFromLines(mobj_t* mo);
-void            P_LinkToLines(mobj_t* mo);
 
 boolean         PIT_AddLineIntercepts(linedef_t* ld, void* data);
 boolean         PIT_AddMobjIntercepts(mobj_t* mo, void* data);

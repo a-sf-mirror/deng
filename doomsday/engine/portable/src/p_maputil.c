@@ -52,11 +52,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct {
-    mobj_t*         mo;
-    vec2_t          box[2];
-} linelinker_data_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -514,60 +509,6 @@ void DMU_LineOpening(void* p)
 }
 
 /**
- * Two links to update:
- * 1) The link to us from the previous node (sprev, always set) will
- *    be modified to point to the node following us.
- * 2) If there is a node following us, set its sprev pointer to point
- *    to the pointer that points back to it (our sprev, just modified).
- */
-boolean P_UnlinkFromSector(mobj_t* mo)
-{
-    if(!IS_SECTOR_LINKED(mo))
-        return false;
-
-    if((*mo->sPrev = mo->sNext))
-        mo->sNext->sPrev = mo->sPrev;
-
-    // Not linked any more.
-    mo->sNext = NULL;
-    mo->sPrev = NULL;
-
-    return true;
-}
-
-/**
- * Unlinks the mobj from all the lines it's been linked to. Can be called
- * without checking that the list does indeed contain lines.
- */
-boolean P_UnlinkFromLines(mobj_t* mo)
-{
-    linknode_t* tn = mobjNodes->nodes;
-    nodeindex_t nix;
-
-    // Try unlinking from lines.
-    if(!mo->lineRoot)
-        return false; // A zero index means it's not linked.
-
-    // Unlink from each line.
-    for(nix = tn[mo->lineRoot].next; nix != mo->lineRoot;
-        nix = tn[nix].next)
-    {
-        // Data is the linenode index that corresponds this mobj.
-        NP_Unlink(lineNodes, tn[nix].data);
-        // We don't need these nodes any more, mark them as unused.
-        // Dismissing is a macro.
-        NP_Dismiss(lineNodes, tn[nix].data);
-        NP_Dismiss(mobjNodes, nix);
-    }
-
-    // The mobj no longer has a line ring.
-    NP_Dismiss(mobjNodes, mo->lineRoot);
-    mo->lineRoot = 0;
-
-    return true;
-}
-
-/**
  * Unlinks a mobj from everything it has been linked to.
  *
  * @param mo            Ptr to the mobj to be unlinked.
@@ -580,74 +521,13 @@ int P_MobjUnlink(mobj_t* mo)
 }
 
 /**
- * The given line might cross the mobj. If necessary, link the mobj into
- * the line's mobj link ring.
- */
-boolean PIT_LinkToLines(linedef_t* ld, void* parm)
-{
-    linelinker_data_t* data = parm;
-    nodeindex_t nix;
-
-    if(data->box[1][VX] <= ld->bBox[BOXLEFT] ||
-       data->box[0][VX] >= ld->bBox[BOXRIGHT] ||
-       data->box[1][VY] <= ld->bBox[BOXBOTTOM] ||
-       data->box[0][VY] >= ld->bBox[BOXTOP])
-        // Bounding boxes do not overlap.
-        return true;
-
-    if(P_BoxOnLineSide2(data->box[0][VX], data->box[1][VX],
-                        data->box[0][VY], data->box[1][VY], ld) != -1)
-        // Line does not cross the mobj's bounding box.
-        return true;
-
-    // One sided lines will not be linked to because a mobj
-    // can't legally cross one.
-    if(!LINE_FRONTSIDE(ld) || !LINE_BACKSIDE(ld))
-        return true;
-
-    // No redundant nodes will be creates since this routine is
-    // called only once for each line.
-
-    // Add a node to the mobj's ring.
-    NP_Link(mobjNodes, nix = NP_New(mobjNodes, ld), data->mo->lineRoot);
-
-    // Add a node to the line's ring. Also store the linenode's index
-    // into the mobjring's node, so unlinking is easy.
-    NP_Link(lineNodes, mobjNodes->nodes[nix].data =
-            NP_New(lineNodes, data->mo), linelinks[P_ObjectRecord(DMU_LINEDEF, ld)->id - 1]);
-
-    return true;
-}
-
-/**
- * \pre The mobj must be currently unlinked.
- */
-void P_LinkToLines(mobj_t* mo)
-{
-    linelinker_data_t data;
-    vec2_t point;
-
-    // Get a new root node.
-    mo->lineRoot = NP_New(mobjNodes, NP_ROOT_NODE);
-
-    // Set up a line iterator for doing the linking.
-    data.mo = mo;
-    V2_Set(point, mo->pos[VX] - mo->radius, mo->pos[VY] - mo->radius);
-    V2_InitBox(data.box, point);
-    V2_Set(point, mo->pos[VX] + mo->radius, mo->pos[VY] + mo->radius);
-    V2_AddToBox(data.box, point);
-
-    validCount++;
-    Map_LineDefsBoxIteratorv(P_CurrentMap(), data.box, PIT_LinkToLines, &data, false);
-}
-
-/**
  * Links a mobj into both a block and a subsector based on it's (x,y).
  * Sets mobj->subsector properly. Calling with flags==0 only updates
  * the subsector pointer. Can be called without unlinking first.
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
+    // @fixme Mobj should tell us which map it belongs to.
     Map_LinkMobj(P_CurrentMap(), mo, flags);
 }
 
@@ -655,18 +535,26 @@ void P_MobjLink(mobj_t* mo, byte flags)
  * The callback function will be called once for each line that crosses
  * trough the object. This means all the lines will be two-sided.
  */
-boolean P_MobjLinesIterator(mobj_t* mo,
-                            boolean (*func) (linedef_t*, void*),
+boolean P_MobjLinesIterator(mobj_t* mo, boolean (*func) (linedef_t*, void*),
                             void* data)
 {
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
     nodeindex_t nix;
-    linknode_t* tn = mobjNodes->nodes;
+    linknode_t* tn;
+    map_t* map;
 
+    if(!mo)
+        return true;
+    if(!func)
+        return true;
     if(!mo->lineRoot)
         return true; // No lines to process.
 
+    // @fixme Mobj should tell us which map it belongs to.
+    map = P_CurrentMap();
+
+    tn = map->mobjNodes->nodes;
     for(nix = tn[mo->lineRoot].next; nix != mo->lineRoot;
         nix = tn[nix].next)
         *end++ = tn[nix].ptr;
@@ -688,9 +576,20 @@ boolean P_MobjSectorsIterator(mobj_t* mo,
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
     nodeindex_t nix;
-    linknode_t* tn = mobjNodes->nodes;
+    linknode_t* tn;
     linedef_t* ld;
     sector_t* sec;
+    map_t* map;
+
+    if(!mo)
+        return true;
+    if(!func)
+        return true;
+
+    // @fixme Mobj should tell us which map it belongs to.
+    map = P_CurrentMap();
+
+    tn = map->mobjNodes->nodes;
 
     // Always process the mobj's own sector first.
     *end++ = sec = ((subsector_t*) ((objectrecord_t*) mo->subsector)->obj)->sector;
@@ -733,8 +632,20 @@ boolean P_LineMobjsIterator(linedef_t* line, boolean (*func) (mobj_t*, void*), v
 {
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
-    nodeindex_t root = linelinks[P_ObjectRecord(DMU_LINEDEF, line)->id - 1], nix;
-    linknode_t* ln = lineNodes->nodes;
+    nodeindex_t root, nix;
+    linknode_t* ln;
+    map_t* map;
+
+    if(!line)
+        return true;
+    if(!func)
+        return true;
+
+    // @fixme LineDef should tell us which map it belongs to.
+    map = P_CurrentMap();
+
+    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, line)->id - 1];
+    ln = map->lineNodes->nodes;
 
     for(nix = ln[root].next; nix != root; nix = ln[nix].next)
         *end++ = ln[nix].ptr;
@@ -760,7 +671,12 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
     mobj_t* mo;
     linedef_t* li;
     nodeindex_t root, nix;
-    linknode_t* ln = lineNodes->nodes;
+    map_t* map;
+
+    if(!sector)
+        return true;
+    if(!func)
+        return true;
 
     // First process the mobjs that obviously are in the sector.
     for(mo = sector->mobjList; mo; mo = mo->sNext)
@@ -773,12 +689,18 @@ boolean P_SectorTouchingMobjsIterator(sector_t* sector,
     }
 
     // Then check the sector's lines.
+    map = P_CurrentMap();
     for(i = 0; i < sector->lineDefCount; ++i)
     {
+        linknode_t* ln;
+
         li = sector->lineDefs[i];
 
+        // @fixme LineDef should tell us which map it belongs to.
+        ln = map->lineNodes->nodes;
+
         // Iterate all mobjs on the line.
-        root = linelinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
+        root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
         for(nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
             mo = (mobj_t *) ln[nix].ptr;

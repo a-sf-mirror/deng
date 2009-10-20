@@ -52,7 +52,16 @@
 #define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
 /*}*/
 
+// $smoothmatoffset: Maximum speed for a smoothed material offset.
+#define MAX_SMOOTH_MATERIAL_MOVE (8)
+
 // TYPES -------------------------------------------------------------------
+
+typedef struct {
+    map_t*          map; // @todo should not be necessary.
+    mobj_t*         mo;
+    vec2_t          box[2];
+} linelinker_data_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -64,75 +73,65 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-nodepile_t* mobjNodes = NULL, *lineNodes = NULL; // All kinds of wacky links.
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static vertex_t* rootVtx; // Used when sorting vertex line owners.
 
 // CODE --------------------------------------------------------------------
 
-/**
- * @note Only releases memory for the data structure itself, any objects linked
- * to the component parts of the data structure will remain (therefore this is
- * the caller's responsibility).
- */
-void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
+static linedef_t* createLineDef(map_t* map)
 {
-    if(halfEdgeDS->faces)
-    {
-        uint i;
+    linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
 
-        for(i = 0; i < halfEdgeDS->numFaces; ++i)
-        {
-            face_t* face = halfEdgeDS->faces[i];
-            Z_Free(face);
-        }
+    map->lineDefs =
+        Z_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1), PU_STATIC);
+    map->lineDefs[map->numLineDefs-1] = line;
+    map->lineDefs[map->numLineDefs] = NULL;
 
-        Z_Free(halfEdgeDS->faces);
-    }
-    halfEdgeDS->faces = NULL;
-    halfEdgeDS->numFaces = 0;
-
-    if(halfEdgeDS->hEdges)
-    {
-        uint i;
-
-        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
-        {
-            hedge_t* hEdge = halfEdgeDS->hEdges[i];
-            Z_Free(hEdge);
-        }
-
-        Z_Free(halfEdgeDS->hEdges);
-    }
-    halfEdgeDS->hEdges = NULL;
-    halfEdgeDS->numHEdges = 0;
-
-    if(halfEdgeDS->vertices)
-    {
-        uint i;
-
-        for(i = 0; i < halfEdgeDS->numVertices; ++i)
-        {
-            vertex_t* vertex = halfEdgeDS->vertices[i];
-            Z_Free(vertex);
-        }
-
-        Z_Free(halfEdgeDS->vertices);
-    }
-    halfEdgeDS->vertices = NULL;
-    halfEdgeDS->numVertices = 0;
+    line->buildData.index = map->numLineDefs; // 1-based index, 0 = NIL.
+    return line;
 }
 
-map_t* P_CreateMap(const char* mapID)
+static sidedef_t* createSideDef(map_t* map)
 {
-    map_t* map = Z_Calloc(sizeof(map_t), PU_STATIC, 0);
+    sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
 
-    dd_snprintf(map->mapID, 9, "%s", mapID);
-    map->editActive = true;
+    map->sideDefs = Z_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1), PU_STATIC);
+    map->sideDefs[map->numSideDefs-1] = side;
+    map->sideDefs[map->numSideDefs] = NULL;
 
-    return map;
+    side->buildData.index = map->numSideDefs; // 1-based index, 0 = NIL.
+    side->SW_bottomsurface.owner = (void*) side;
+    return side;
+}
+
+static sector_t* createSector(map_t* map)
+{
+    sector_t* sec = Z_Calloc(sizeof(*sec), PU_STATIC, 0);
+
+    map->sectors = Z_Realloc(map->sectors, sizeof(sec) * (++map->numSectors + 1), PU_STATIC);
+    map->sectors[map->numSectors-1] = sec;
+    map->sectors[map->numSectors] = NULL;
+
+    sec->buildData.index = map->numSectors; // 1-based index, 0 = NIL.
+    return sec;
+}
+
+static plane_t* createPlane(map_t* map)
+{
+    return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
+}
+
+static polyobj_t* createPolyobj(map_t* map)
+{
+    polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
+
+    map->polyObjs = Z_Realloc(map->polyObjs, sizeof(po) * (++map->numPolyObjs + 1), PU_STATIC);
+    map->polyObjs[map->numPolyObjs-1] = po;
+    map->polyObjs[map->numPolyObjs] = NULL;
+
+    po->buildData.index = map->numPolyObjs; // 1-based index, 0 = NIL.
+    return po;
 }
 
 static void destroySubsectors(halfedgeds_t* halfEdgeDS)
@@ -208,6 +207,32 @@ static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
     P_DestroyHalfEdgeDS(halfEdgeDS);
 }
 
+static void clearSectorFlags(map_t* map)
+{
+    uint i;
+
+    if(!map)
+        return;
+
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        sector_t* sec = map->sectors[i];
+
+        // Clear all flags that can be cleared before each frame.
+        sec->frameFlags &= ~SIF_FRAME_CLEAR;
+    }
+}
+
+map_t* P_CreateMap(const char* mapID)
+{
+    map_t* map = Z_Calloc(sizeof(map_t), PU_STATIC, 0);
+
+    dd_snprintf(map->mapID, 9, "%s", mapID);
+    map->editActive = true;
+
+    return map;
+}
+
 void P_DestroyMap(map_t* map)
 {
     biassurface_t* bsuf;
@@ -239,6 +264,14 @@ void P_DestroyMap(map_t* map)
         P_DestroyLineDefBlockmap(map->_lineDefBlockmap);
     if(map->_subsectorBlockmap)
         P_DestroySubsectorBlockmap(map->_subsectorBlockmap);
+
+    P_DestroyNodePile(map->mobjNodes);
+    map->mobjNodes = NULL;
+    P_DestroyNodePile(map->lineNodes);
+    map->lineNodes = NULL;
+    if(map->lineLinks)
+        Z_Free(map->lineLinks);
+    map->lineLinks = NULL;
 
     if(map->sideDefs)
     {
@@ -356,14 +389,141 @@ void P_DestroyMap(map_t* map)
     Z_Free(map);
 }
 
+/**
+ * The given line might cross the mobj. If necessary, link the mobj into
+ * the line's mobj link ring.
+ */
+static boolean PIT_LinkToLines(linedef_t* ld, void* parm)
+{
+    linelinker_data_t* data = parm;
+    nodeindex_t nix;
+
+    if(data->box[1][VX] <= ld->bBox[BOXLEFT] ||
+       data->box[0][VX] >= ld->bBox[BOXRIGHT] ||
+       data->box[1][VY] <= ld->bBox[BOXBOTTOM] ||
+       data->box[0][VY] >= ld->bBox[BOXTOP])
+        // Bounding boxes do not overlap.
+        return true;
+
+    if(P_BoxOnLineSide2(data->box[0][VX], data->box[1][VX],
+                        data->box[0][VY], data->box[1][VY], ld) != -1)
+        // Line does not cross the mobj's bounding box.
+        return true;
+
+    // One sided lines will not be linked to because a mobj
+    // can't legally cross one.
+    if(!LINE_FRONTSIDE(ld) || !LINE_BACKSIDE(ld))
+        return true;
+
+    // No redundant nodes will be creates since this routine is
+    // called only once for each line.
+
+    // Add a node to the mobj's ring.
+    NP_Link(data->map->mobjNodes, nix = NP_New(data->map->mobjNodes, ld), data->mo->lineRoot);
+
+    // Add a node to the line's ring. Also store the linenode's index
+    // into the mobjring's node, so unlinking is easy.
+    data->map->mobjNodes->nodes[nix].data = NP_New(data->map->lineNodes, data->mo);
+    NP_Link(data->map->lineNodes, data->map->mobjNodes->nodes[nix].data,
+            data->map->lineLinks[P_ObjectRecord(DMU_LINEDEF, ld)->id - 1]);
+
+    return true;
+}
+
+/**
+ * \pre The mobj must be currently unlinked.
+ */
+static void linkMobjToLineDefs(map_t* map, mobj_t* mo)
+{
+    linelinker_data_t data;
+    vec2_t point;
+
+    assert(map);
+    assert(mo);
+
+    // Get a new root node.
+    mo->lineRoot = NP_New(map->mobjNodes, NP_ROOT_NODE);
+
+    // Set up a line iterator for doing the linking.
+    data.mo = mo;
+    data.map = map;
+    V2_Set(point, mo->pos[VX] - mo->radius, mo->pos[VY] - mo->radius);
+    V2_InitBox(data.box, point);
+    V2_Set(point, mo->pos[VX] + mo->radius, mo->pos[VY] + mo->radius);
+    V2_AddToBox(data.box, point);
+
+    validCount++;
+    Map_LineDefsBoxIteratorv(map, data.box, PIT_LinkToLines, &data, false);
+}
+
+/**
+ * Unlinks the mobj from all the lines it's been linked to. Can be called
+ * without checking that the list does indeed contain lines.
+ */
+static boolean unlinkMobjFromLineDefs(map_t* map, mobj_t* mo)
+{
+    linknode_t* tn;
+    nodeindex_t nix;
+
+    assert(map);
+    assert(mo);
+
+    tn = map->mobjNodes->nodes;
+
+    // Try unlinking from lines.
+    if(!mo->lineRoot)
+        return false; // A zero index means it's not linked.
+
+    // Unlink from each line.
+    for(nix = tn[mo->lineRoot].next; nix != mo->lineRoot;
+        nix = tn[nix].next)
+    {
+        // Data is the linenode index that corresponds this mobj.
+        NP_Unlink(map->lineNodes, tn[nix].data);
+        // We don't need these nodes any more, mark them as unused.
+        // Dismissing is a macro.
+        NP_Dismiss(map->lineNodes, tn[nix].data);
+        NP_Dismiss(map->mobjNodes, nix);
+    }
+
+    // The mobj no longer has a line ring.
+    NP_Dismiss(map->mobjNodes, mo->lineRoot);
+    mo->lineRoot = 0;
+
+    return true;
+}
+
+/**
+ * Two links to update:
+ * 1) The link to us from the previous node (sprev, always set) will
+ *    be modified to point to the node following us.
+ * 2) If there is a node following us, set its sprev pointer to point
+ *    to the pointer that points back to it (our sprev, just modified).
+ */
+static boolean unlinkMobjFromSector(map_t* map, mobj_t* mo)
+{
+    assert(map);
+    assert(mo);
+
+    if(mo->sPrev == NULL)
+        return false;
+
+    if((*mo->sPrev = mo->sNext))
+        mo->sNext->sPrev = mo->sPrev;
+
+    // Not linked any more.
+    mo->sNext = NULL;
+    mo->sPrev = NULL;
+
+    return true;
+}
+
 void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
 {
     subsector_t* subsector;
 
-    if(!map)
-        return;
-    if(!mo)
-        return;
+    assert(map);
+    assert(mo);
 
     subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
 
@@ -374,7 +534,7 @@ void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
     {
         // Unlink from the current sector, if any.
         if(mo->sPrev)
-            P_UnlinkFromSector(mo);
+            unlinkMobjFromSector(map, mo);
 
         // Link the new mobj to the head of the list.
         // Prev pointers point to the pointer that points back to us.
@@ -397,11 +557,8 @@ void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
     // Link into lines.
     if(!(flags & DDLINK_NOLINE))
     {
-        // Unlink from any existing lines.
-        P_UnlinkFromLines(mo);
-
-        // Link to all contacted lines.
-        P_LinkToLines(mo);
+        unlinkMobjFromLineDefs(map, mo);
+        linkMobjToLineDefs(map, mo);
     }
 
     // If this is a player - perform addtional tests to see if they have
@@ -423,14 +580,172 @@ int Map_UnlinkMobj(map_t* map, mobj_t* mo)
 {
     int links = 0;
 
-    if(P_UnlinkFromSector(mo))
+    assert(map);
+    assert(mo);
+
+    if(unlinkMobjFromSector(map, mo))
         links |= DDLINK_SECTOR;
     if(MobjBlockmap_Unlink(map->_mobjBlockmap, mo))
         links |= DDLINK_BLOCKMAP;
-    if(!P_UnlinkFromLines(mo))
+    if(!unlinkMobjFromLineDefs(map, mo))
         links |= DDLINK_NOLINE;
 
     return links;
+}
+
+static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
+{
+    Plane_UpdateHeightTracking(plane);
+    return true; // Continue iteration.
+}
+
+static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
+{
+    Plane_ResetHeightTracking(plane);
+    PlaneList_Remove((planelist_t*) context, plane);
+    return true; // Continue iteration.
+}
+
+static boolean interpolatePlaneHeight(plane_t* plane, void* context)
+{
+    Plane_InterpolateHeight(plane);
+    // Has this plane reached its destination?
+    if(plane->visHeight == plane->height)
+        PlaneList_Remove((planelist_t*) context, plane);
+    return true; // Continue iteration.
+}
+
+/**
+ * $smoothplane: Roll the height tracker buffers.
+ */
+void Map_UpdateWatchedPlanes(map_t* map)
+{
+    assert(map);
+
+    PlaneList_Iterate(&map->watchedPlaneList, updatePlaneHeightTracking, NULL);
+}
+
+/**
+ * $smoothplane: interpolate the visual offset.
+ */
+static void interpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
+{
+    assert(map);
+
+    if(resetNextViewer)
+    {
+        // $smoothplane: Reset the plane height trackers.
+        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, &map->watchedPlaneList);
+    }
+    // While the game is paused there is no need to calculate any
+    // visual plane offsets $smoothplane.
+    else //if(!clientPaused)
+    {
+        // $smoothplane: Set the visible offsets.
+        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, &map->watchedPlaneList);
+    }
+}
+
+static boolean resetMovingSurface(surface_t* suf, void* context)
+{
+    // X Offset.
+    suf->visOffsetDelta[0] = 0;
+    suf->oldOffset[0][0] = suf->oldOffset[0][1] = suf->offset[0];
+
+    // Y Offset.
+    suf->visOffsetDelta[1] = 0;
+    suf->oldOffset[1][0] = suf->oldOffset[1][1] = suf->offset[1];
+
+    Surface_Update(suf);
+    SurfaceList_Remove((surfacelist_t*) context, suf);
+
+    return true;
+}
+
+static boolean interpMovingSurface(surface_t* suf, void* context)
+{
+    // X Offset.
+    suf->visOffsetDelta[0] =
+        suf->oldOffset[0][0] * (1 - frameTimePos) +
+                suf->offset[0] * frameTimePos - suf->offset[0];
+
+    // Y Offset.
+    suf->visOffsetDelta[1] =
+        suf->oldOffset[1][0] * (1 - frameTimePos) +
+                suf->offset[1] * frameTimePos - suf->offset[1];
+
+    // Visible material offset.
+    suf->visOffset[0] = suf->offset[0] + suf->visOffsetDelta[0];
+    suf->visOffset[1] = suf->offset[1] + suf->visOffsetDelta[1];
+
+    Surface_Update(suf);
+
+    // Has this material reached its destination?
+    if(suf->visOffset[0] == suf->offset[0] &&
+       suf->visOffset[1] == suf->offset[1])
+        SurfaceList_Remove((surfacelist_t*) context, suf);
+
+    return true;
+}
+
+/**
+ * $smoothmatoffset: interpolate the visual offset.
+ */
+static void interpolateMovingSurfaces(map_t* map, boolean resetNextViewer)
+{
+    if(!map)
+        return;
+
+    if(resetNextViewer)
+    {
+        // Reset the material offset trackers.
+        SurfaceList_Iterate(&map->movingSurfaceList, resetMovingSurface, &map->movingSurfaceList);
+    }
+    // While the game is paused there is no need to calculate any
+    // visual material offsets.
+    else //if(!clientPaused)
+    {
+        // Set the visible material offsets.
+        SurfaceList_Iterate(&map->movingSurfaceList, interpMovingSurface, &map->movingSurfaceList);
+    }
+}
+
+static boolean updateMovingSurface(surface_t* suf, void* context)
+{
+    // X Offset
+    suf->oldOffset[0][0] = suf->oldOffset[0][1];
+    suf->oldOffset[0][1] = suf->offset[0];
+    if(suf->oldOffset[0][0] != suf->oldOffset[0][1])
+        if(fabs(suf->oldOffset[0][0] - suf->oldOffset[0][1]) >=
+           MAX_SMOOTH_MATERIAL_MOVE)
+        {
+            // Too fast: make an instantaneous jump.
+            suf->oldOffset[0][0] = suf->oldOffset[0][1];
+        }
+
+    // Y Offset
+    suf->oldOffset[1][0] = suf->oldOffset[1][1];
+    suf->oldOffset[1][1] = suf->offset[1];
+    if(suf->oldOffset[1][0] != suf->oldOffset[1][1])
+        if(fabs(suf->oldOffset[1][0] - suf->oldOffset[1][1]) >=
+           MAX_SMOOTH_MATERIAL_MOVE)
+        {
+            // Too fast: make an instantaneous jump.
+            suf->oldOffset[1][0] = suf->oldOffset[1][1];
+        }
+
+    return true;
+}
+
+/**
+ * $smoothmatoffset: Roll the surface material offset tracker buffers.
+ */
+void Map_UpdateMovingSurfaces(map_t* map)
+{
+    if(!map)
+        return;
+
+    SurfaceList_Iterate(&map->movingSurfaceList, updateMovingSurface, NULL);
 }
 
 static void buildLineDefBlockmap(map_t* map)
@@ -2127,6 +2442,17 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     map->editActive = false;
 }
 
+void Map_BeginFrame(map_t* map, boolean resetNextViewer)
+{
+    assert(map);
+
+    clearSectorFlags(map);
+
+    interpolateWatchedPlanes(map, resetNextViewer);
+
+    interpolateMovingSurfaces(map, resetNextViewer);
+}
+
 /**
  * This ID is the name of the lump tag that marks the beginning of map
  * data, e.g. "MAP03" or "E2M8".
@@ -2190,6 +2516,136 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
     return map->_subsectorBlockmap;
 }
 
+void Map_InitLinks(map_t* map)
+{
+    uint i;
+
+    // Initialize node piles and line rings.
+    map->mobjNodes = P_CreateNodePile(256); // Allocate a small pile.
+    map->lineNodes = P_CreateNodePile(map->numLineDefs + 1000);
+
+    // Allocate the rings.
+    map->lineLinks = Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_STATIC, 0);
+    for(i = 0; i < map->numLineDefs; ++i)
+        map->lineLinks[i] = NP_New(map->lineNodes, NP_ROOT_NODE);
+}
+
+/**
+ * Fixing the sky means that for adjacent sky sectors the lower sky
+ * ceiling is lifted to match the upper sky. The raising only affects
+ * rendering, it has no bearing on gameplay.
+ */
+void Map_InitSkyFix(map_t* map)
+{
+    uint i;
+
+    assert(map);
+
+    map->skyFix[PLN_FLOOR].height = DDMAXFLOAT;
+    map->skyFix[PLN_CEILING].height = DDMINFLOAT;
+
+    // Update for sector plane heights and mobjs which intersect the ceiling.
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        Map_UpdateSkyFixForSector(map, i);
+    }
+}
+
+void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
+{
+    boolean skyFloor, skyCeil;
+    sector_t* sec;
+
+    assert(map);
+    assert(secIDX < map->numSectors);
+
+    sec = map->sectors[secIDX];
+    skyFloor = IS_SKYSURFACE(&sec->SP_floorsurface);
+    skyCeil = IS_SKYSURFACE(&sec->SP_ceilsurface);
+
+    if(!skyFloor && !skyCeil)
+        return;
+
+    if(skyCeil)
+    {
+        mobj_t* mo;
+
+        // Adjust for the plane height.
+        if(sec->SP_ceilvisheight > map->skyFix[PLN_CEILING].height)
+        {   // Must raise the skyfix ceiling.
+            map->skyFix[PLN_CEILING].height = sec->SP_ceilvisheight;
+        }
+
+        // Check that all the mobjs in the sector fit in.
+        for(mo = sec->mobjList; mo; mo = mo->sNext)
+        {
+            float extent = mo->pos[VZ] + mo->height;
+
+            if(extent > map->skyFix[PLN_CEILING].height)
+            {   // Must raise the skyfix ceiling.
+                map->skyFix[PLN_CEILING].height = extent;
+            }
+        }
+    }
+
+    if(skyFloor)
+    {
+        // Adjust for the plane height.
+        if(sec->SP_floorvisheight < map->skyFix[PLN_FLOOR].height)
+        {   // Must lower the skyfix floor.
+            map->skyFix[PLN_FLOOR].height = sec->SP_floorvisheight;
+        }
+    }
+
+    // Update for middle textures on two sided linedefs which intersect the
+    // floor and/or ceiling of their front and/or back sectors.
+    if(sec->lineDefs)
+    {
+        linedef_t** linePtr = sec->lineDefs;
+
+        while(*linePtr)
+        {
+            linedef_t* li = *linePtr;
+
+            // Must be twosided.
+            if(LINE_FRONTSIDE(li) && LINE_BACKSIDE(li))
+            {
+                sidedef_t* si = LINE_FRONTSECTOR(li) == sec?
+                    LINE_FRONTSIDE(li) : LINE_BACKSIDE(li);
+
+                if(si->SW_middlematerial)
+                {
+                    if(skyCeil)
+                    {
+                        float               top =
+                            sec->SP_ceilvisheight +
+                                si->SW_middlevisoffset[VY];
+
+                        if(top > map->skyFix[PLN_CEILING].height)
+                        {   // Must raise the skyfix ceiling.
+                            map->skyFix[PLN_CEILING].height = top;
+                        }
+                    }
+
+                    if(skyFloor)
+                    {
+                        float               bottom =
+                            sec->SP_floorvisheight +
+                                si->SW_middlevisoffset[VY] -
+                                    si->SW_middlematerial->height;
+
+                        if(bottom < map->skyFix[PLN_FLOOR].height)
+                        {   // Must lower the skyfix floor.
+                            map->skyFix[PLN_FLOOR].height = bottom;
+                        }
+                    }
+                }
+            }
+            *linePtr++;
+        }
+    }
+}
+
 vertex_t* Map_CreateVertex(map_t* map, float x, float y)
 {
     vertex_t* vertex;
@@ -2204,19 +2660,6 @@ vertex_t* Map_CreateVertex(map_t* map, float x, float y)
     vertex->pos[VY] = y;
 
     return vertex;
-}
-
-static linedef_t* createLineDef(map_t* map)
-{
-    linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
-
-    map->lineDefs =
-        Z_Realloc(map->lineDefs, sizeof(line) * (++map->numLineDefs + 1), PU_STATIC);
-    map->lineDefs[map->numLineDefs-1] = line;
-    map->lineDefs[map->numLineDefs] = NULL;
-
-    line->buildData.index = map->numLineDefs; // 1-based index, 0 = NIL.
-    return line;
 }
 
 linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
@@ -2303,19 +2746,6 @@ linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
     return l;
 }
 
-static sidedef_t* createSideDef(map_t* map)
-{
-    sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
-
-    map->sideDefs = Z_Realloc(map->sideDefs, sizeof(side) * (++map->numSideDefs + 1), PU_STATIC);
-    map->sideDefs[map->numSideDefs-1] = side;
-    map->sideDefs[map->numSideDefs] = NULL;
-
-    side->buildData.index = map->numSideDefs; // 1-based index, 0 = NIL.
-    side->SW_bottomsurface.owner = (void*) side;
-    return side;
-}
-
 sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material_t* topMaterial,
                              float topOffsetX, float topOffsetY, float topRed, float topGreen,
                              float topBlue, material_t* middleMaterial, float middleOffsetX,
@@ -2347,18 +2777,6 @@ sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material
     return s;
 }
 
-static sector_t* createSector(map_t* map)
-{
-    sector_t* sec = Z_Calloc(sizeof(*sec), PU_STATIC, 0);
-
-    map->sectors = Z_Realloc(map->sectors, sizeof(sec) * (++map->numSectors + 1), PU_STATIC);
-    map->sectors[map->numSectors-1] = sec;
-    map->sectors[map->numSectors] = NULL;
-
-    sec->buildData.index = map->numSectors; // 1-based index, 0 = NIL.
-    return sec;
-}
-
 sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
 {
     sector_t* s;
@@ -2376,11 +2794,6 @@ sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green,
     s->lightLevel = MINMAX_OF(0, lightLevel, 1);
 
     return s;
-}
-
-static plane_t* createPlane(map_t* map)
-{
-    return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
 }
 
 void Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* material,
@@ -2422,18 +2835,6 @@ void Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* mat
     sector->planes = newList;
 }
 
-static polyobj_t* createPolyobj(map_t* map)
-{
-    polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
-
-    map->polyObjs = Z_Realloc(map->polyObjs, sizeof(po) * (++map->numPolyObjs + 1), PU_STATIC);
-    map->polyObjs[map->numPolyObjs-1] = po;
-    map->polyObjs[map->numPolyObjs] = NULL;
-
-    po->buildData.index = map->numPolyObjs; // 1-based index, 0 = NIL.
-    return po;
-}
-
 polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
                              int sequenceType, float anchorX, float anchorY)
 {
@@ -2465,6 +2866,51 @@ polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount
     po->pos[VY] = anchorY;
 
     return po;
+}
+
+static void findDominantLightSources(map_t* map)
+{
+#define DOMINANT_SIZE   1000
+
+    uint i;
+
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        sector_t* sec = map->sectors[i];
+
+        if(!sec->lineDefCount)
+            continue;
+
+        // Is this sector large enough to be a dominant light source?
+        if(sec->lightSource == NULL && sec->planeCount > 0 &&
+           sec->bBox[BOXRIGHT] - sec->bBox[BOXLEFT]   > DOMINANT_SIZE &&
+           sec->bBox[BOXTOP]   - sec->bBox[BOXBOTTOM] > DOMINANT_SIZE)
+        {
+            if(R_SectorContainsSkySurfaces(sec))
+            {
+                uint k;
+
+                // All sectors touching this one will be affected.
+                for(k = 0; k < sec->lineDefCount; ++k)
+                {
+                    linedef_t* lin = sec->lineDefs[k];
+                    sector_t* other;
+
+                    other = LINE_FRONTSECTOR(lin);
+                    if(other == sec)
+                    {
+                        if(LINE_BACKSIDE(lin))
+                            other = LINE_BACKSECTOR(lin);
+                    }
+
+                    if(other && other != sec)
+                        other->lightSource = sec;
+                }
+            }
+        }
+    }
+
+#undef DOMINANT_SIZE
 }
 
 /**
@@ -2546,10 +2992,19 @@ boolean P_LoadMap(const char* mapID)
         // Must be called before we go any further.
         P_InitUnusedMobjList();
 
-        // Must be called before any mobjs are spawned.
-        R_InitLinks(map);
+        {
+        uint starttime = Sys_GetRealTime();
 
-        R_BuildSectorLinks(map);
+        // Must be called before any mobjs are spawned.
+        Map_InitLinks(map);
+
+        // How much time did we spend?
+        VERBOSE(Con_Message
+                ("Map_InitLinks: Allocating line link rings. Done in %.2f seconds.\n",
+                 (Sys_GetRealTime() - starttime) / 1000.0f));
+        }
+
+        findDominantLightSources(map);
 
         // Init other blockmaps.
         buildMobjBlockmap(map);
@@ -2597,7 +3052,7 @@ boolean P_LoadMap(const char* mapID)
         {
         uint startTime = Sys_GetRealTime();
 
-        R_InitSkyFix(map);
+        Map_InitSkyFix(map);
 
         // How much time did we spend?
         VERBOSE(Con_Message("  InitialSkyFix: Done in %.2f seconds.\n",

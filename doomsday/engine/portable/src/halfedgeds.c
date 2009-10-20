@@ -60,3 +60,56 @@ vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 
     return vtx;
 }
+
+/**
+ * @note Only releases memory for the data structure itself, any objects linked
+ * to the component parts of the data structure will remain (therefore this is
+ * the caller's responsibility).
+ */
+void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
+{
+    if(halfEdgeDS->faces)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numFaces; ++i)
+        {
+            face_t* face = halfEdgeDS->faces[i];
+            Z_Free(face);
+        }
+
+        Z_Free(halfEdgeDS->faces);
+    }
+    halfEdgeDS->faces = NULL;
+    halfEdgeDS->numFaces = 0;
+
+    if(halfEdgeDS->hEdges)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
+        {
+            hedge_t* hEdge = halfEdgeDS->hEdges[i];
+            Z_Free(hEdge);
+        }
+
+        Z_Free(halfEdgeDS->hEdges);
+    }
+    halfEdgeDS->hEdges = NULL;
+    halfEdgeDS->numHEdges = 0;
+
+    if(halfEdgeDS->vertices)
+    {
+        uint i;
+
+        for(i = 0; i < halfEdgeDS->numVertices; ++i)
+        {
+            vertex_t* vertex = halfEdgeDS->vertices[i];
+            Z_Free(vertex);
+        }
+
+        Z_Free(halfEdgeDS->vertices);
+    }
+    halfEdgeDS->vertices = NULL;
+    halfEdgeDS->numVertices = 0;
+}
