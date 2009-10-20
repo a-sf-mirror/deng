@@ -63,6 +63,11 @@ typedef struct {
     vec2_t          box[2];
 } linelinker_data_t;
 
+typedef struct {
+    uint            numLineOwners;
+    lineowner_t*    lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
+} vertexinfo_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -1593,16 +1598,26 @@ static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, uint num)
     for(i = 0; i < num; ++i)
     {
         vertexinfo_t* vInfo = &vertexInfo[i];
-        lineowner_t* base, *owner;
 
-        owner = base = vInfo->lineOwners;
-        do
+        validCount++;
+
+        if(vInfo->numLineOwners)
         {
-            if(owner->LO_prev->LO_next != owner || owner->LO_next->LO_prev != owner)
-               Con_Error("Invalid line owner link ring!");
+            lineowner_t* base, *owner;
 
-            owner = owner->LO_next;
-        } while(owner != base);
+            owner = base = vInfo->lineOwners;
+            do
+            {
+                if(owner->lineDef->validCount == validCount)
+                    Con_Error("LineDef linked multiple times in owner link ring!");
+                owner->lineDef->validCount = validCount;
+
+                if(owner->LO_prev->LO_next != owner || owner->LO_next->LO_prev != owner)
+                    Con_Error("Invalid line owner link ring!");
+
+                owner = owner->LO_next;
+            } while(owner != base);
+        }
     }
 }
 #endif
@@ -1619,7 +1634,7 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
     uint i;
 
     // We know how many vertex line owners we need (numLineDefs * 2).
-    lineOwners = Z_Malloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_MAP, 0);
+    lineOwners = Z_Calloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_MAP, 0);
     allocator = lineOwners;
 
     for(i = 0; i < map->numLineDefs; ++i)
@@ -2019,18 +2034,101 @@ static void findMapLimits(map_t* src, int* bbox)
     }
 }
 
+static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
+{
+    lineowner_t* owner, *base;
+
+    if(vInfo->numLineOwners == 0)
+        return;
+    
+    owner = base = vInfo->lineOwners;
+    do
+    {
+        linedef_t* lineDef = owner->lineDef;
+        hedge_t* back, *front;
+
+        if(owner->hEdges[FRONT])
+            continue; // Already processed.
+
+        front = HEdge_Create(lineDef, lineDef, lineDef->buildData.v[0],
+                             lineDef->buildData.sideDefs[FRONT]->sector, false);
+
+        // Handle the 'One-Sided Window' trick.
+        if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
+        {
+            back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                 lineDef, lineDef->buildData.v[1],
+                                 lineDef->buildData.windowEffect, true);
+        }
+        else
+        {
+            back = HEdge_Create(lineDef, lineDef, lineDef->buildData.v[1],
+                                lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
+        }
+
+        back->twin = front;
+        front->twin = back;
+
+        BSP_UpdateHEdgeInfo(front);
+        BSP_UpdateHEdgeInfo(back);
+
+        BSP_AddHEdgeToSuperBlock(block, front);
+        if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
+           (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
+            BSP_AddHEdgeToSuperBlock(block, back);
+
+        {
+        double x1 = lineDef->buildData.v[0]->pos[VX];
+        double y1 = lineDef->buildData.v[0]->pos[VY];
+        double x2 = lineDef->buildData.v[1]->pos[VX];
+        double y2 = lineDef->buildData.v[1]->pos[VY];
+
+        BSP_CreateVertexEdgeTip(lineDef->buildData.v[0], x2 - x1, y2 - y1, back, front);
+        BSP_CreateVertexEdgeTip(lineDef->buildData.v[1], x1 - x2, y1 - y2, front, back);
+        }
+
+        if(owner == lineDef->vo[0])
+        {
+            lineDef->vo[0]->hEdges[FRONT] = lineDef->vo[1]->hEdges[BACK]  = front;
+            lineDef->vo[0]->hEdges[BACK]  = lineDef->vo[1]->hEdges[FRONT] = back;
+        }
+        else
+        {
+            lineDef->vo[0]->hEdges[FRONT] = lineDef->vo[1]->hEdges[BACK]  = back;
+            lineDef->vo[0]->hEdges[BACK]  = lineDef->vo[1]->hEdges[FRONT] = front;
+        }
+    } while((owner = owner->LO_next) != base);
+}
+
+static void linkHEdgesAroundVertex(vertexinfo_t* vInfo)
+{
+    lineowner_t* owner, *base;
+
+    if(vInfo->numLineOwners == 0)
+        return;
+    
+    owner = base = vInfo->lineOwners;
+    do
+    {
+        hedge_t* hEdge = owner->hEdges[FRONT];
+
+        hEdge->prev = owner->LO_next->hEdges[BACK];
+        hEdge->twin->next = owner->LO_prev->hEdges[FRONT];
+
+    } while((owner = owner->LO_next) != base);
+}
+
 /**
  * Initially create all half-edges, one for each side of a linedef.
  *
  * @return              The list of created half-edges.
  */
-static superblock_t* createInitialHEdges(map_t* map)
+static superblock_t* createInitialHEdges(map_t* map, vertexinfo_t* vertexInfo)
 {
     uint startTime = Sys_GetRealTime();
 
     uint i;
     int bw, bh;
-    hedge_t* back, *front;
     superblock_t* block;
     int mapBounds[4];
 
@@ -2051,71 +2149,11 @@ static superblock_t* createInitialHEdges(map_t* map)
     block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
     block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
 
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* line = map->lineDefs[i];
+    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
+        buildHEdgesAroundVertex(&vertexInfo[i], block);
 
-        front = back = NULL;
-
-        // Ignore polyobj lines.
-        if(/*line->buildData.overlap || */
-           (line->inFlags & LF_POLYOBJ))
-            continue;
-
-        // Check for Humungously long lines.
-        if(ABS(line->buildData.v[0]->pos[VX] - line->buildData.v[1]->pos[VX]) >= 10000 ||
-           ABS(line->buildData.v[0]->pos[VY] - line->buildData.v[1]->pos[VY]) >= 10000)
-        {
-            if(3000 >=
-               M_Length(line->buildData.v[0]->pos[VX] - line->buildData.v[1]->pos[VX],
-                        line->buildData.v[0]->pos[VY] - line->buildData.v[1]->pos[VY]))
-            {
-                Con_Message("LineDef #%d is VERY long, it may cause problems\n",
-                            line->buildData.index);
-            }
-        }
-
-        front = HEdge_Create(line, line, line->buildData.v[0],
-                             line->buildData.sideDefs[FRONT]->sector, false);
-
-        // Handle the 'One-Sided Window' trick.
-        if(!line->buildData.sideDefs[BACK] && line->buildData.windowEffect)
-        {
-            back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                 line, line->buildData.v[1],
-                                 line->buildData.windowEffect, true);
-        }
-        else
-        {
-            back = HEdge_Create(line, line, line->buildData.v[1],
-                                line->buildData.sideDefs[BACK]? line->buildData.sideDefs[BACK]->sector : NULL, true);
-        }
-
-        // Half-edges always maintain a one-to-one relationship
-        // with their twins, so if one gets split, the other
-        // must be split also.
-        back->twin = front;
-        front->twin = back;
-
-        BSP_UpdateHEdgeInfo(front);
-        BSP_UpdateHEdgeInfo(back);
-
-        BSP_AddHEdgeToSuperBlock(block, front);
-        if((line->buildData.sideDefs[BACK] && line->buildData.sideDefs[BACK]->sector) ||
-           (!line->buildData.sideDefs[BACK] && line->buildData.windowEffect))
-            BSP_AddHEdgeToSuperBlock(block, back);
-
-        // \todo edge tips should be created when half-edges are created.
-        {
-        double x1 = line->buildData.v[0]->pos[VX];
-        double y1 = line->buildData.v[0]->pos[VY];
-        double x2 = line->buildData.v[1]->pos[VX];
-        double y2 = line->buildData.v[1]->pos[VY];
-
-        BSP_CreateVertexEdgeTip(line->buildData.v[0], x2 - x1, y2 - y1, back, front);
-        BSP_CreateVertexEdgeTip(line->buildData.v[1], x1 - x2, y1 - y2, front, back);
-        }
-    }
+    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
+        linkHEdgesAroundVertex(&vertexInfo[i]);   
 
     // How much time did we spend?
     VERBOSE(Con_Message
@@ -2148,7 +2186,7 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  * @param map           The map to build the BSP for.
  * @return              @c true, if completed successfully.
  */
-static boolean buildBSP(map_t* map)
+static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
 {
     boolean builtOK;
     uint startTime;
@@ -2168,7 +2206,7 @@ static boolean buildBSP(map_t* map)
     BSP_InitIntersectionAllocator();
 
     // Create initial half-edges.
-    hEdgeList = createInitialHEdges(map);
+    hEdgeList = createInitialHEdges(map, vertexInfo);
 
     // Build the BSP.
     {
@@ -2396,7 +2434,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
             (Sys_GetRealTime() - startTime) / 1000.0f))
     }
 
-    /*builtOK =*/ buildBSP(map);
+    /*builtOK =*/ buildBSP(map, vertexInfo);
 
     for(i = 0; i < map->numPolyObjs; ++i)
     {

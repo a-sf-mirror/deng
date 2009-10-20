@@ -18,6 +18,16 @@ typedef struct lineowner_s {
     struct lineowner_s* link[2];    // {prev, next} (i.e. {anticlk, clk}).
     binangle_t      angle;          // between this and next clockwise.
     shadowvert_t    shadowOffsets;
+
+    /**
+     * Half-edge on each side of the LineDef relative to this vertex, i.e:
+     *
+     * If vertex is linked to the LineDef as vertex1, the FRONT half-edge is
+     * that on the LineDef's front side and the BACK is that on the back side.
+     * If vertex is linked to the LineDef as vertex2, the FRONT half-edge os
+     * that on the LineDef's back side and the BACK is that on the front side.
+     */
+    struct hedge_s* hEdges[2];
 } lineowner_t;
 
 typedef struct mvertex_s {

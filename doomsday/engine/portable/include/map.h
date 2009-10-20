@@ -148,11 +148,6 @@ typedef struct shadowlink_s {
     byte            side;
 } shadowlink_t;
 
-typedef struct {
-    uint            numLineOwners;
-    lineowner_t*    lineOwners; // Lineowner base ptr [numlineowners] size. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
-} vertexinfo_t;
-
 typedef struct map_s {
     char            mapID[9];
     char            uniqueID[256];

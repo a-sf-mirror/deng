@@ -52,7 +52,7 @@ public_file.write(banner)
 # Begin writing to the internal header.
 internal_file.write("#ifndef DOOMSDAY_PLAY_MAP_DATA_TYPES_H\n")
 internal_file.write("#define DOOMSDAY_PLAY_MAP_DATA_TYPES_H\n\n")
-internal_file.write("#include \"gl_texturemanager.h\"\n\n")
+internal_file.write("#include \"gl_texmanager.h\"\n\n")
 
 # Begin writing to the public header.
 public_file.write("#ifndef DOOMSDAY_PLAY_PUBLIC_MAP_DATA_TYPES_H\n")

@@ -873,7 +873,7 @@ static hedge_t* nextHEdgeAroundVertex(hedge_t* hEdge, boolean clockwise)
 {
     if(clockwise)
         return hEdge->prev->twin;
-    return hEdge->twin->next;
+    return hEdge->next->twin;
 }
 
 static void doFindSegDivisions(walldiv_t* div, hedge_t* base,
@@ -886,8 +886,6 @@ static void doFindSegDivisions(walldiv_t* div, hedge_t* base,
     if(bottomZ >= topZ)
         return; // Obviously no division.
 
-    return;
-
     /**
      * We need to handle the special case of a sector with zero volume.
      * In this instance, the only potential divisor in the sector is the back
@@ -898,68 +896,64 @@ static void doFindSegDivisions(walldiv_t* div, hedge_t* base,
     while((hEdge = nextHEdgeAroundVertex(hEdge, clockwise)) != base)
     {
         seg_t* seg = (seg_t*) hEdge->data;
-        boolean sectorHasVolume = false;
+        plane_t* pln;
+        sector_t* scanSec;
+        boolean sectorHasVolume;
 
         if(!seg)
-            continue;
-        if(seg->sideDef && LINE_SELFREF(seg->sideDef->lineDef))
+            break;
+        if(!seg->sideDef || LINE_SELFREF(seg->sideDef->lineDef))
             continue;
 
-        if(seg->sideDef)
+        scanSec = seg->sideDef->sector;
+        sectorHasVolume = (scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0);
+
+        if(sectorHasVolume)
         {
-            plane_t* pln;
-            sector_t* scanSec = seg->sideDef->sector;
-
-            if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
-                sectorHasVolume = true;
-
-            if(sectorHasVolume)
-            {
-                // First, the floor.
-                pln = scanSec->SP_plane(PLN_FLOOR);
-                if(testForPlaneDivision(div, pln, bottomZ, topZ))
-                {   // Clip a range bound to this height?
-                    if(pln->visHeight > bottomZ)
-                        bottomZ = pln->visHeight;
-
-                    // All clipped away?
-                    if(bottomZ >= topZ)
-                        break;
-                }
-
-                // Next, every plane between floor and ceiling.
-                if(scanSec->planeCount > 2)
-                {
-                    uint j;
-                    boolean stop = false;
-
-                    for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
-                    {
-                        pln = scanSec->SP_plane(j);
-                        if(!testForPlaneDivision(div, pln, bottomZ, topZ))
-                            stop = true;
-                    }
-
-                    if(stop)
-                        break;
-                }
-            }
-
-            // Lastly, the ceiling.
-            pln = scanSec->SP_plane(PLN_CEILING);
-            if(testForPlaneDivision(div, pln, bottomZ, topZ) && sectorHasVolume)
+            // First, the floor.
+            pln = scanSec->SP_plane(PLN_FLOOR);
+            if(testForPlaneDivision(div, pln, bottomZ, topZ))
             {   // Clip a range bound to this height?
-                if(pln->visHeight < topZ)
-                    topZ = pln->visHeight;
+                if(pln->visHeight > bottomZ)
+                    bottomZ = pln->visHeight;
 
                 // All clipped away?
                 if(bottomZ >= topZ)
                     break;
             }
+
+            // Next, every plane between floor and ceiling.
+            if(scanSec->planeCount > 2)
+            {
+                uint j;
+                boolean stop = false;
+
+                for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
+                {
+                    pln = scanSec->SP_plane(j);
+                    if(!testForPlaneDivision(div, pln, bottomZ, topZ))
+                        stop = true;
+                }
+
+                if(stop)
+                    break;
+            }
+        }
+
+        // Lastly, the ceiling.
+        pln = scanSec->SP_plane(PLN_CEILING);
+        if(testForPlaneDivision(div, pln, bottomZ, topZ) && sectorHasVolume)
+        {   // Clip a range bound to this height?
+            if(pln->visHeight < topZ)
+                topZ = pln->visHeight;
+
+            // All clipped away?
+            if(bottomZ >= topZ)
+                break;
         }
 
         // Stop the scan when a solid neighbour is reached.
-        if(!seg->sideDef || !sectorHasVolume)
+        if(!sectorHasVolume)
             break;
 
         // Prepare for the next round.
@@ -973,6 +967,7 @@ static void findSegDivisions(walldiv_t* div, hedge_t* hEdge,
 {
     seg_t* seg = (seg_t*) hEdge->data;
     sidedef_t* side = seg->sideDef;
+    hedge_t* other;
 
     div->num = 0;
 
@@ -980,8 +975,10 @@ static void findSegDivisions(walldiv_t* div, hedge_t* hEdge,
         return;
 
     // Only segs at sidedef ends can/should be split.
-    if(!((hEdge == side->lineDef->hEdges[seg->side? 1 : 0] && !doRight) ||
-         (hEdge == side->lineDef->hEdges[!seg->side? 1 : 0] && doRight)))
+    other = side->lineDef->hEdges[seg->side^doRight? 1 : 0];
+    if(seg->side)
+        other = other->twin;
+    if(hEdge != other)
         return;
 
     doFindSegDivisions(div, hEdge, frontSec, bottomZ, topZ, doRight);
