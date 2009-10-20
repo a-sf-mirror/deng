@@ -181,6 +181,8 @@ void            LoadANIMDEFS(void);
 
 extern char* sc_String;
 extern int sc_Number;
+extern int sc_LineNumber;
+extern char sc_ScriptName[];
 
 void SC_Open(const char* name);
 void SC_OpenLump(lumpnum_t lump);
@@ -193,6 +195,7 @@ void SC_MustGetStringName(char* name);
 boolean SC_GetNumber(void);
 void SC_MustGetNumber(void);
 void SC_UnGet(void);
+void SC_SkipToStartOfNextLine(void);
 void SC_ScriptError(char* message);
 boolean SC_Compare(char* text);
 

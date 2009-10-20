@@ -54,9 +54,9 @@
 
 static void parseAnimGroup(material_namespace_t mnamespace)
 {
-    boolean             ignore;
-    boolean             done;
-    int                 groupNumber = 0, texNumBase = 0, flatNumBase = 0;
+    boolean ignore;
+    boolean done;
+    int groupNumber = 0, texNumBase = 0, flatNumBase = 0;
 
     if(!(mnamespace == MN_FLATS || mnamespace == MN_TEXTURES))
         Con_Error("parseAnimGroup: Internal Error, invalid namespace %i.",
@@ -89,7 +89,7 @@ static void parseAnimGroup(material_namespace_t mnamespace)
         {
             if(SC_Compare("pic"))
             {
-                int                 picNum, min, max = 0;
+                int picNum, min, max = 0;
 
                 SC_MustGetNumber();
                 picNum = sc_Number;
@@ -140,7 +140,7 @@ static void parseAnimGroup(material_namespace_t mnamespace)
  */
 void LoadANIMDEFS(void)
 {
-    lumpnum_t       lump = W_CheckNumForName("ANIMDEFS");
+    lumpnum_t lump = W_CheckNumForName("ANIMDEFS");
 
     if(lump != -1)
     {
@@ -158,7 +158,10 @@ void LoadANIMDEFS(void)
             }
             else
             {
-                SC_ScriptError(NULL);
+                Con_Message("WadMapConverter::HexenScriptParse: %s Unknown token '%s', "
+                            "at line #%i, skipping.\n", sc_ScriptName, sc_String,
+                            sc_LineNumber);
+                SC_SkipToStartOfNextLine();
             }
         }
 

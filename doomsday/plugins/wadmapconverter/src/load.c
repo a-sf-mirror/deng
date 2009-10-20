@@ -501,7 +501,7 @@ if(SHORT(blockmapLump[offset]) != 0)
                     linedef_t** lines, **ptr;
 
                     // A NULL-terminated array of pointers to lines.
-                    lines = Z_Malloc((count + 1) * sizeof(linedef_t *), PU_MAP, NULL);
+                    lines = Z_Malloc((count + 1) * sizeof(linedef_t *), PU_STATIC, NULL);
 
                     // Copy pointers to the array, delete the nodes.
                     ptr = lines;
@@ -656,7 +656,7 @@ static void buildReject(gamemap_t *map)
     }
 
     rejectSize = (numSectors * numSectors + 7) / 8;
-    matrix = Z_Calloc(rejectSize, PU_MAP, 0);
+    matrix = Z_Calloc(rejectSize, PU_STATIC, 0);
 
     for(view = 0; view < numSectors; ++view)
         for(target = 0; target < view; ++target)
