@@ -48,7 +48,7 @@
 
 vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 {
-    vertex_t* vtx = Z_Malloc(sizeof(*vtx), PU_STATIC, 0);
+    vertex_t* vtx = Z_Calloc(sizeof(*vtx), PU_STATIC, 0);
 
     halfEdgeDS->vertices = Z_Realloc(halfEdgeDS->vertices,
         sizeof(vtx) * (++halfEdgeDS->numVertices + 1), PU_STATIC);

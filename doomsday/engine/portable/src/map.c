@@ -2138,7 +2138,7 @@ sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
     edgetip_t* tip;
     angle_g angle = M_SlopeToAngle(dX, dY);
 
-    // First check whether there's a wall_tip that lies in the exact
+    // First check whether there's a wall tip that lies in the exact
     // direction of the given direction (which is relative to the
     // vertex).
     for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
@@ -2150,6 +2150,20 @@ sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
             return NULL;
         }
     }
+
+    /*hedge_t* hEdge, *base;
+
+    hEdge = base = vertex->hEdge;
+    do
+    {
+        bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
+        angle_g diff = fabs(info->pAngle - angle);
+
+        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
+        {   // Yes, found one.
+            return NULL;
+        }
+    } while((hEdge = hEdge->prev->twin) != base);*/
 
     // OK, now just find the first wall_tip whose angle is greater than
     // the angle we're interested in. Therefore we'll be on the FRONT
@@ -2185,25 +2199,48 @@ static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
     do
     {
         linedef_t* lineDef = owner->lineDef;
+        byte side = (owner == lineDef->vo[0])? FRONT : BACK;
+        vertex_t* from = lineDef->buildData.v[side];
+        vertex_t* to = lineDef->buildData.v[side^1];
         hedge_t* back, *front;
 
         if(owner->hEdges[FRONT])
             continue; // Already processed.
 
-        front = HEdge_Create(lineDef, lineDef, lineDef->buildData.v[0],
-                             lineDef->buildData.sideDefs[FRONT]->sector, false);
-
-        // Handle the 'One-Sided Window' trick.
-        if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
+        if(side == FRONT)
         {
-            back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                 lineDef, lineDef->buildData.v[1],
-                                 lineDef->buildData.windowEffect, true);
+            front = HEdge_Create(lineDef, lineDef, from,
+                                 lineDef->buildData.sideDefs[FRONT]->sector, false);
+
+            // Handle the 'One-Sided Window' trick.
+            if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
+            {
+                back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                     lineDef, to,
+                                     lineDef->buildData.windowEffect, true);
+            }
+            else
+            {
+                back = HEdge_Create(lineDef, lineDef, to,
+                    lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
+            }
         }
         else
         {
-            back = HEdge_Create(lineDef, lineDef, lineDef->buildData.v[1],
-                                lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
+            back = HEdge_Create(lineDef, lineDef, to, lineDef->buildData.sideDefs[FRONT]->sector, false);
+
+            // Handle the 'One-Sided Window' trick.
+            if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
+            {
+                front = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                     lineDef, from,
+                                     lineDef->buildData.windowEffect, true);
+            }
+            else
+            {
+                front = HEdge_Create(lineDef, lineDef, from,
+                    lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
+            }
         }
 
         back->twin = front;
@@ -2212,22 +2249,32 @@ static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
         BSP_UpdateHEdgeInfo(front);
         BSP_UpdateHEdgeInfo(back);
 
-        BSP_AddHEdgeToSuperBlock(block, front);
-        if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
-           (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
-            BSP_AddHEdgeToSuperBlock(block, back);
-
+        if(side == FRONT)
         {
-        double x1 = lineDef->buildData.v[0]->pos[VX];
-        double y1 = lineDef->buildData.v[0]->pos[VY];
-        double x2 = lineDef->buildData.v[1]->pos[VX];
-        double y2 = lineDef->buildData.v[1]->pos[VY];
-
-        BSP_CreateVertexEdgeTip(lineDef->buildData.v[0], x2 - x1, y2 - y1, back, front);
-        BSP_CreateVertexEdgeTip(lineDef->buildData.v[1], x1 - x2, y1 - y2, front, back);
+            BSP_AddHEdgeToSuperBlock(block, front);
+            if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
+               (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
+                BSP_AddHEdgeToSuperBlock(block, back);
+        }
+        else
+        {
+            if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
+               (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
+                BSP_AddHEdgeToSuperBlock(block, front);
+            BSP_AddHEdgeToSuperBlock(block, back);
         }
 
-        if(owner == lineDef->vo[0])
+        {
+        double x1 = from->pos[VX];
+        double y1 = from->pos[VY];
+        double x2 = to->pos[VX];
+        double y2 = to->pos[VY];
+
+        BSP_CreateVertexEdgeTip(from, x2 - x1, y2 - y1, back, front);
+        BSP_CreateVertexEdgeTip(to, x1 - x2, y1 - y2, front, back);
+        }
+
+        if(side == FRONT)
         {
             lineDef->vo[0]->hEdges[FRONT] = lineDef->vo[1]->hEdges[BACK]  = front;
             lineDef->vo[0]->hEdges[BACK]  = lineDef->vo[1]->hEdges[FRONT] = back;
@@ -2253,7 +2300,10 @@ static void linkHEdgesAroundVertex(vertexinfo_t* vInfo)
         hedge_t* hEdge = owner->hEdges[FRONT];
 
         hEdge->prev = owner->LO_next->hEdges[BACK];
+        hEdge->prev->next = hEdge;
+
         hEdge->twin->next = owner->LO_prev->hEdges[FRONT];
+        hEdge->twin->next->prev = hEdge->twin;
 
     } while((owner = owner->LO_next) != base);
 }

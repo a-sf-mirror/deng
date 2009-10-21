@@ -157,6 +157,39 @@ void HEdge_Destroy(hedge_t* hEdge)
     }
 }
 
+#if _DEBUG
+static void checkRing(vertex_t* v)
+{
+    hedge_t* hEdge, *base;
+
+    return;
+
+    hEdge = base = v->hEdge;
+    do
+    {
+        bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
+
+        if(hEdge->vertex != v)
+            Con_Error("checkRing: break on hEdge->vertex.");
+
+        {
+        hedge_t* other, *base2;
+        boolean found = false;
+        
+        other = base2 = hEdge->vertex->hEdge;
+        do
+        {
+             if(other == hEdge)
+                 found = true;
+        } while((other = other->prev->twin) != base2);
+
+        if(!found)
+            Con_Error("checkRing: break on vertex->hEdge.");
+        }
+    } while((hEdge = hEdge->prev->twin) != base);
+}
+#endif
+
 /**
  * Splits the given half-edge at the point (x,y). The new half-edge is
  * returned. The old half-edge is shortened (the original start vertex is
@@ -178,7 +211,7 @@ hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
 {
     hedge_t* newHEdge;
     bsp_hedgeinfo_t* newData, *oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
-    vertex_t* newVert;
+    vertex_t* newVert, *oldVert;
 
 /*#if _DEBUG
 if(oldHEdge->lineDef)
@@ -188,6 +221,11 @@ else
     Con_Message("Splitting MiniHEdge %p at (%1.1f,%1.1f)\n", oldHEdge, x, y);
 #endif*/
 
+#if _DEBUG
+checkRing(oldHEdge->vertex);
+checkRing(oldHEdge->twin->vertex);
+#endif
+
     // Update superblock, if needed.
     if(oldData->block)
         SuperBlock_IncHEdgeCounts(oldData->block, oldData->lineDef != NULL);
@@ -196,6 +234,7 @@ else
      * Create a new vertex (with correct wall_tip info) for the split that
      * happens along the given half-edge at the given location.
      */
+    oldVert = oldHEdge->twin->vertex;
     newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap));
     newVert->pos[VX] = x;
     newVert->pos[VY] = y;
@@ -208,6 +247,7 @@ else
                             oldHEdge->twin, oldHEdge);
 
     newHEdge = createHEdge();
+
     // Copy the old half-edge info.
     copyHEdge(newHEdge, oldHEdge);
 
@@ -219,9 +259,11 @@ else
     oldData->lnext = newHEdge;
     newData->lprev = oldHEdge;
 
+    newHEdge->next = oldHEdge->next;
     newHEdge->prev = oldHEdge;
     oldHEdge->next = newHEdge;
 
+    newVert->hEdge = newHEdge;
     newHEdge->vertex = newVert;
 
 /*#if _DEBUG
@@ -254,8 +296,19 @@ Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
         ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
         ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
 
+        oldVert->hEdge = newHEdge->twin;
+        newHEdge->twin->vertex = oldVert;
         oldHEdge->twin->vertex = newVert;
     }
+
+    newHEdge->twin->prev->next = newHEdge;
+    newHEdge->next->prev = newHEdge;
+
+#if _DEBUG
+checkRing(oldHEdge->vertex);
+checkRing(newHEdge->vertex);
+checkRing(newHEdge->twin->vertex);
+#endif
 
     BSP_UpdateHEdgeInfo(oldHEdge);
     BSP_UpdateHEdgeInfo(newHEdge);
