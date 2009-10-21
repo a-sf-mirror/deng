@@ -539,13 +539,9 @@ static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
     int i;
 
     // Apply a bias to the light level.
-    if(level > 16/255 && level < 255-16)
-    {
-        level -= (.8f - level);
-        level *= 1.1f;
-        if(level < 0)
-            level = 0;
-    }
+    level -= (.85f - level);
+    if(level < 0)
+        level = 0;
 
     level *= factor;
 
@@ -720,11 +716,11 @@ void LG_Update(map_t* map)
 {
     static const float factors[5 * 5] =
     {
-        .1f, .2f, .25f, .2f, .1f,
-        .2f, .4f, .5f, .4f, .2f,
-        .25f, .5f, 1.f, .5f, .25f,
-        .2f, .4f, .5f, .4f, .2f,
-        .1f, .2f, .25f, .2f, .1f
+         1.f/255,   7.f/255,  12.f/255,   7.f/255,  1.f/255,
+         7.f/255,  30.f/255,  48.f/255,  30.f/255,  7.f/255,
+        12.f/255,  48.f/255, 255.f/255,  48.f/255, 12.f/255,
+         7.f/255,  30.f/255,  48.f/255,  30.f/255,  7.f/255,
+         1.f/255,   7.f/255,  12.f/255,   7.f/255,  1.f/255
     };
 
     lgridblock_t* block, *lastBlock, *other;
@@ -831,7 +827,7 @@ BEGIN_PROF( PROF_GRID_UPDATE );
                     if(other->flags & GBF_CHANGED)
                     {
                         LG_ApplySector(other, color, sector->lightLevel,
-                                       factors[(b + 2)*5 + a + 2]/8, bias);
+                                       factors[(b + 2)*5 + a + 2]/2, bias);
                     }
                 }
             }
