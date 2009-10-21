@@ -56,20 +56,25 @@ END_PROF_TIMERS()
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+#if _DEBUG
+D_CMD(UpdateLightGrid);
+#endif
+
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+int lgEnabled = false;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-int             lgEnabled = false;
-static int      lgMXSample = 1; // Default is mode 1 (5 samples per block)
-static int      lgBlockSize = 31;
+static int lgMXSample = 1; // Default is mode 1 (5 samples per block)
+static int lgBlockSize = 31;
 
-static int      lgShowDebug = false;
-static float    lgDebugSize = 1.5f;
+static int lgShowDebug = false;
+static float lgDebugSize = 1.5f;
 
 // CODE --------------------------------------------------------------------
 
@@ -84,6 +89,10 @@ void LG_Register(void)
 
     C_VAR_INT("rend-bias-grid-debug", &lgShowDebug, 0, 0, 1);
     C_VAR_FLOAT("rend-bias-grid-debug-size", &lgDebugSize, 0, .1f, 100);
+
+#if _DEBUG
+    C_CMD("updatelightgrid", "", UpdateLightGrid);
+#endif
 }
 
 /**
@@ -91,7 +100,7 @@ void LG_Register(void)
  */
 static boolean hasIndexBit(int x, int y, uint* bitfield, int blockWidth)
 {
-    uint                index = x + y * blockWidth;
+    uint index = x + y * blockWidth;
 
     // Assume 32-bit uint.
     return (bitfield[index >> 5] & (1 << (index & 0x1f))) != 0;
@@ -104,7 +113,7 @@ static boolean hasIndexBit(int x, int y, uint* bitfield, int blockWidth)
 static void addIndexBit(int x, int y, uint* bitfield, int* count,
                         int blockWidth)
 {
-    uint                index = x + y * blockWidth;
+    uint index = x + y * blockWidth;
 
     // Assume 32-bit uint.
     if(!hasIndexBit(index, 0, bitfield, blockWidth))
@@ -527,12 +536,16 @@ Con_Message("  Sector %i: %i / %i\n", s, changedCount, count);
 static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
                            float factor, int bias)
 {
-    int                 i;
+    int i;
 
     // Apply a bias to the light level.
-    level -= (0.95f - level);
-    if(level < 0)
-        level = 0;
+    if(level > 16/255 && level < 255-16)
+    {
+        level -= (.8f - level);
+        level *= 1.1f;
+        if(level < 0)
+            level = 0;
+    }
 
     level *= factor;
 
@@ -541,7 +554,7 @@ static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
 
     for(i = 0; i < 3; ++i)
     {
-        float           c = color[i] * level;
+        float c = color[i] * level;
 
         c = MINMAX_OF(0, c, 1);
 
@@ -557,7 +570,7 @@ static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
 
     // Influenced by the source bias.
     i = block->bias * (1 - factor) + bias * factor;
-    i = MINMAX_OF(-0x80, i, 0x7f);
+    i = MINMAX_OF(-128, i, 127);
     block->bias = i;
 }
 
@@ -566,9 +579,9 @@ static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
  */
 void LG_SectorChanged(sector_t* sector)
 {
-    uint                i, j;
-    unsigned short      n;
-    map_t*          map = P_CurrentMap();
+    uint i, j;
+    unsigned short n;
+    map_t* map = P_CurrentMap();
 
     if(!map->lg.inited)
         return;
@@ -622,9 +635,9 @@ void LG_MarkAllForUpdate(cvar_t* unused)
 static boolean LG_BlockNeedsUpdate(int x, int y)
 {
     // First check the block itself.
-    lgridblock_t*        block = GRID_BLOCK(map->lg.grid, map->lg.blockWidth, x, y);
-    sector_t*           blockSector;
-    int                 a, b, limitA[2], limitB;
+    lgridblock_t* block = GRID_BLOCK(map->lg.grid, map->lg.blockWidth, x, y);
+    sector_t* blockSector;
+    int a, b, limitA[2], limitB;
 
     blockSector = block->sector;
     if(!blockSector)
@@ -845,8 +858,8 @@ END_PROF( PROF_GRID_UPDATE );
  */
 void LG_Evaluate(map_t* map, const float* point, float* color)
 {
-    int x, y, i;
-    float dz = 0, dimming;
+    int x, y;
+    float dz = 0, dimming, lightLevel, delta;
     lgridblock_t* block;
 
     if(!map)
@@ -860,8 +873,8 @@ void LG_Evaluate(map_t* map, const float* point, float* color)
 
     x = ROUND((point[VX] - map->lg.origin[VX]) / lgBlockSize);
     y = ROUND((point[VY] - map->lg.origin[VY]) / lgBlockSize);
-    x = MINMAX_OF(1, x, map->lg.blockWidth - 2);
-    y = MINMAX_OF(1, y, map->lg.blockHeight - 2);
+    x = MINMAX_OF(0, x, map->lg.blockWidth - 1);
+    y = MINMAX_OF(0, y, map->lg.blockHeight - 1);
 
     block = &map->lg.grid[y * map->lg.blockWidth + x];
 
@@ -913,21 +926,24 @@ void LG_Evaluate(map_t* map, const float* point, float* color)
         if(dimming < .5f)
             dimming = .5f;
 
-        for(i = 0; i < 3; ++i)
-        {
-            // Apply the dimming
-            color[i] *= dimming;
+        // Apply the dimming
+        color[CR] *= dimming;
+        color[CG] *= dimming;
+        color[CB] *= dimming;
+    }
 
-            // Add the light range compression factor
-            color[i] += R_LightAdaptationDelta(color[i]);
-        }
-    }
-    else
-    {
-        // Just add the light range compression factor
-        for(i = 0; i < 3; ++i)
-            color[i] += R_LightAdaptationDelta(color[i]);
-    }
+    // Apply light range compression.
+    lightLevel  = color[CR];
+    lightLevel += color[CG];
+    lightLevel += color[CB];
+    lightLevel /= 3;
+
+    delta = R_LightAdaptationDelta(lightLevel);
+    delta /= 3;
+
+    color[CR] += delta;
+    color[CG] += delta;
+    color[CB] += delta;
 }
 
 /**
@@ -996,4 +1012,12 @@ void LG_Debug(map_t* map)
     glEnable(GL_TEXTURE_2D);
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+}
+
+D_CMD(UpdateLightGrid)
+{
+    map_t* map = P_CurrentMap();
+    if(map)
+        LG_MarkAllForUpdate(NULL);
+    return true;
 }
