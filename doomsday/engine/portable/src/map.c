@@ -1372,8 +1372,6 @@ static void finishLineDefs2(map_t* map)
 {
     uint i;
 
-    VERBOSE2(Con_Message("Finalizing LineDefs...\n"));
-
     for(i = 0; i < map->numLineDefs; ++i)
     {
         linedef_t* ld = map->lineDefs[i];
@@ -1429,7 +1427,7 @@ static void finishLineDefs2(map_t* map)
     }
 }
 
-static void prepareSubsectors(map_t* map)
+static void findSubsectorMidPoints(map_t* map)
 {
     uint i;
 
@@ -2657,7 +2655,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     updateMapBounds(map);
 
     Map_InitSoundEnvironment(map);
-    prepareSubsectors(map);
+    findSubsectorMidPoints(map);
 
     // Pass on the vertex lineowner info.
     // @todo will soon be unnecessary once Map_BuildBSP is linking the half-edges

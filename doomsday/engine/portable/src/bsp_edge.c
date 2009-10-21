@@ -158,35 +158,39 @@ void HEdge_Destroy(hedge_t* hEdge)
 }
 
 #if _DEBUG
-static void checkRing(vertex_t* v)
+static void testVertexHEdgeRings(vertex_t* v)
 {
-    hedge_t* hEdge, *base;
+    byte i = 0;
 
-    return;
-
-    hEdge = base = v->hEdge;
-    do
+    // Two passes. Pass one = counter clockwise, Pass two = clockwise.
+    for(i = 0; i < 2; ++i)
     {
-        bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
+        hedge_t* hEdge, *base;
 
-        if(hEdge->vertex != v)
-            Con_Error("checkRing: break on hEdge->vertex.");
-
-        {
-        hedge_t* other, *base2;
-        boolean found = false;
-        
-        other = base2 = hEdge->vertex->hEdge;
+        hEdge = base = v->hEdge;
         do
         {
-             if(other == hEdge)
-                 found = true;
-        } while((other = other->prev->twin) != base2);
+            bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
 
-        if(!found)
-            Con_Error("checkRing: break on vertex->hEdge.");
-        }
-    } while((hEdge = hEdge->prev->twin) != base);
+            if(hEdge->vertex != v)
+                Con_Error("testVertexHEdgeRings: break on hEdge->vertex.");
+
+            {
+            hedge_t* other, *base2;
+            boolean found = false;
+            
+            other = base2 = hEdge->vertex->hEdge;
+            do
+            {
+                 if(other == hEdge)
+                     found = true;
+            } while((other = i ? other->prev->twin : other->twin->next) != base2);
+
+            if(!found)
+                Con_Error("testVertexHEdgeRings: break on vertex->hEdge.");
+            }
+        } while((hEdge = i ? hEdge->prev->twin : hEdge->twin->next) != base);
+    }
 }
 #endif
 
@@ -210,35 +214,75 @@ static void checkRing(vertex_t* v)
 hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
 {
     hedge_t* newHEdge;
-    bsp_hedgeinfo_t* newData, *oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
-    vertex_t* newVert, *oldVert;
-
-/*#if _DEBUG
-if(oldHEdge->lineDef)
-    Con_Message("Splitting LineDef %d (%p) at (%1.1f,%1.1f)\n",
-                oldData->lineDef->index, oldHEdge, x, y);
-else
-    Con_Message("Splitting MiniHEdge %p at (%1.1f,%1.1f)\n", oldHEdge, x, y);
-#endif*/
+    vertex_t* newVert;
 
 #if _DEBUG
-checkRing(oldHEdge->vertex);
-checkRing(oldHEdge->twin->vertex);
+testVertexHEdgeRings(oldHEdge->vertex);
+testVertexHEdgeRings(oldHEdge->twin->vertex);
 #endif
 
-    // Update superblock, if needed.
-    if(oldData->block)
-        SuperBlock_IncHEdgeCounts(oldData->block, oldData->lineDef != NULL);
-
-    /**
-     * Create a new vertex (with correct wall_tip info) for the split that
-     * happens along the given half-edge at the given location.
-     */
-    oldVert = oldHEdge->twin->vertex;
     newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap));
     newVert->pos[VX] = x;
     newVert->pos[VY] = y;
-    ((mvertex_t*) newVert->data)->refCount = (oldHEdge->twin? 4 : 2);
+
+    newHEdge = createHEdge();
+    newHEdge->twin = createHEdge();
+    newHEdge->twin->twin = newHEdge;
+
+    // Update right neighbour back links of oldHEdge and its twin.
+    newHEdge->next = oldHEdge->next;
+    oldHEdge->next->prev = newHEdge;
+
+    newHEdge->twin->prev = oldHEdge->twin->prev;
+    newHEdge->twin->prev->next = newHEdge->twin;
+
+    // Update the vertex links.
+    newHEdge->vertex = newVert;
+    newVert->hEdge = newHEdge;
+
+    newHEdge->twin->vertex = oldHEdge->twin->vertex;
+    oldHEdge->twin->vertex = newVert;
+
+    if(newHEdge->twin->vertex->hEdge == oldHEdge->twin)
+        newHEdge->twin->vertex->hEdge = newHEdge->twin;
+
+    // Link oldHEdge with newHEdge and their twins.
+    oldHEdge->next = newHEdge;
+    newHEdge->prev = oldHEdge;
+
+    oldHEdge->twin->prev = newHEdge->twin;
+    newHEdge->twin->next = oldHEdge->twin;
+
+    // Copy face data from oldHEdge to newHEdge and their twins.
+    newHEdge->face = oldHEdge->face;
+    newHEdge->twin->face = oldHEdge->twin->face;
+
+    memcpy(newHEdge->data, oldHEdge->data, sizeof(bsp_hedgeinfo_t));
+    memcpy(newHEdge->twin->data, oldHEdge->twin->data, sizeof(bsp_hedgeinfo_t));
+
+    { // Update along-linedef relationships.
+    if(((bsp_hedgeinfo_t*)oldHEdge->data)->lnext)
+        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->data)
+            ->lnext->data)->lprev = newHEdge;
+
+    if(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->lprev)
+        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->twin->data)
+            ->lprev->data)->lnext = newHEdge->twin;
+
+    ((bsp_hedgeinfo_t*) oldHEdge->data)->lnext = newHEdge;
+    ((bsp_hedgeinfo_t*) newHEdge->data)->lprev = oldHEdge;
+    ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
+    ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
+    }
+
+#if _DEBUG
+testVertexHEdgeRings(oldHEdge->vertex);
+testVertexHEdgeRings(newHEdge->vertex);
+testVertexHEdgeRings(newHEdge->twin->vertex);
+#endif
+
+    {
+    bsp_hedgeinfo_t* oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
 
     // Compute wall_tip info.
     BSP_CreateVertexEdgeTip(newVert, -oldData->pDX, -oldData->pDY,
@@ -246,69 +290,10 @@ checkRing(oldHEdge->twin->vertex);
     BSP_CreateVertexEdgeTip(newVert, oldData->pDX, oldData->pDY,
                             oldHEdge->twin, oldHEdge);
 
-    newHEdge = createHEdge();
-
-    // Copy the old half-edge info.
-    copyHEdge(newHEdge, oldHEdge);
-
-    newData = (bsp_hedgeinfo_t*) newHEdge->data;
-
-    if(((bsp_hedgeinfo_t*)oldHEdge->data)->lnext)
-        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->data)
-            ->lnext->data)->lprev = newHEdge;
-    oldData->lnext = newHEdge;
-    newData->lprev = oldHEdge;
-
-    newHEdge->next = oldHEdge->next;
-    newHEdge->prev = oldHEdge;
-    oldHEdge->next = newHEdge;
-
-    newVert->hEdge = newHEdge;
-    newHEdge->vertex = newVert;
-
-/*#if _DEBUG
-Con_Message("Splitting Vertex is %04X at (%1.1f,%1.1f)\n",
-            newVert->index, newVert->V_pos[VX], newVert->V_pos[VY]);
-#endif*/
-
-    // Handle the twin.
-    if(oldHEdge->twin)
-    {
-/*#if _DEBUG
-Con_Message("Splitting hEdge->twin %p\n", oldHEdge->twin);
-#endif*/
-
-        newHEdge->twin = createHEdge();
-
-        // Copy edge info.
-        copyHEdge(newHEdge->twin, oldHEdge->twin);
-
-        // It is important to keep the twin relationship valid.
-        newHEdge->twin->twin = newHEdge;
-
-        if(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->lprev)
-            ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->twin->data)
-                ->lprev->data)->lnext = newHEdge->twin;
-
-        newHEdge->twin->next = oldHEdge->twin;
-        oldHEdge->twin->prev = newHEdge->twin;
-
-        ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
-        ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
-
-        oldVert->hEdge = newHEdge->twin;
-        newHEdge->twin->vertex = oldVert;
-        oldHEdge->twin->vertex = newVert;
+    // Update superblock, if needed.
+    if(oldData->block)
+        SuperBlock_IncHEdgeCounts(oldData->block, oldData->lineDef != NULL);
     }
-
-    newHEdge->twin->prev->next = newHEdge;
-    newHEdge->next->prev = newHEdge;
-
-#if _DEBUG
-checkRing(oldHEdge->vertex);
-checkRing(newHEdge->vertex);
-checkRing(newHEdge->twin->vertex);
-#endif
 
     BSP_UpdateHEdgeInfo(oldHEdge);
     BSP_UpdateHEdgeInfo(newHEdge);
