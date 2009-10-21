@@ -477,7 +477,7 @@ static void hardenBSP(map_t* map, binarytree_t* rootNode)
     }
 }
 
-static void destroyEdgeTips(map_t* map)
+static void addVerticesToDMU(map_t* map)
 {
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
     uint i;
@@ -485,17 +485,6 @@ static void destroyEdgeTips(map_t* map)
     for(i = 0; i < halfEdgeDS->numVertices; ++i)
     {
         vertex_t* vtx = halfEdgeDS->vertices[i];
-
-        {
-        edgetip_t* tip, *n;
-        tip = ((mvertex_t*) vtx->data)->tipSet;
-        while(tip)
-        {
-            n = tip->ET_next;
-            BSP_DestroyVertexEdgeTip(tip);
-            tip = n;
-        }
-        }
 
         P_CreateObjectRecord(DMU_VERTEX, vtx);
     }
@@ -506,7 +495,7 @@ void SaveMap(map_t* map, void* rootNode)
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;
 
-    destroyEdgeTips(map);
+    addVerticesToDMU(map);
     buildSegsFromHEdges(map, rn);
     hardenBSP(map, rn);
 

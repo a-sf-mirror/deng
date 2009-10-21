@@ -68,6 +68,20 @@ typedef struct {
     lineowner_t*    lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
 } vertexinfo_t;
 
+// An edge tip is where an edge meets a vertex.
+typedef struct edgetip_s {
+    // Link in list. List is kept in ANTI-clockwise order.
+    struct edgetip_s*   link[2]; // {prev, next};
+
+    // Angle that line makes at vertex (degrees).
+    angle_g             angle;
+
+    // Half-edge on each side of the edge. Left is the side of increasing
+    // angles, right is the side of decreasing angles. Either can be NULL
+    // for one sided edges.
+    struct hedge_s*     hEdges[2];
+} edgetip_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -2034,6 +2048,132 @@ static void findMapLimits(map_t* src, int* bbox)
     }
 }
 
+static __inline edgetip_t* allocEdgeTip(void)
+{
+    return M_Calloc(sizeof(edgetip_t));
+}
+
+static __inline void freeEdgeTip(edgetip_t* tip)
+{
+    M_Free(tip);
+}
+
+void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
+                             hedge_t* back, hedge_t* front)
+{
+    edgetip_t* tip = allocEdgeTip();
+    edgetip_t* after;
+
+    tip->angle = M_SlopeToAngle(dx, dy);
+    tip->ET_edge[BACK]  = back;
+    tip->ET_edge[FRONT] = front;
+
+    // Find the correct place (order is increasing angle).
+    for(after = ((mvertex_t*) vert->data)->tipSet; after && after->ET_next;
+        after = after->ET_next);
+
+    while(after && tip->angle + ANG_EPSILON < after->angle)
+        after = after->ET_prev;
+
+    // Link it in.
+    if(after)
+        tip->ET_next = after->ET_next;
+    else
+        tip->ET_next = ((mvertex_t*) vert->data)->tipSet;
+    tip->ET_prev = after;
+
+    if(after)
+    {
+        if(after->ET_next)
+            after->ET_next->ET_prev = tip;
+
+        after->ET_next = tip;
+    }
+    else
+    {
+        if(((mvertex_t*) vert->data)->tipSet)
+            ((mvertex_t*) vert->data)->tipSet->ET_prev = tip;
+
+        ((mvertex_t*) vert->data)->tipSet = tip;
+    }
+}
+
+static void destroyVertexEdgeTip(edgetip_t* tip)
+{
+    if(tip)
+    {
+        freeEdgeTip(tip);
+    }
+}
+
+static void destroyEdgeTips(map_t* map)
+{
+    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
+    uint i;
+
+    for(i = 0; i < halfEdgeDS->numVertices; ++i)
+    {
+        vertex_t* vtx = halfEdgeDS->vertices[i];
+
+        {
+        edgetip_t* tip, *n;
+        tip = ((mvertex_t*) vtx->data)->tipSet;
+        while(tip)
+        {
+            n = tip->ET_next;
+            destroyVertexEdgeTip(tip);
+            tip = n;
+        }
+        }
+    }
+}
+
+/**
+ * Check whether a line with the given delta coordinates and beginning
+ * at this vertex is open. Returns a sector reference if it's open,
+ * or NULL if closed (void space or directly along a linedef).
+ */
+sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
+{
+    edgetip_t* tip;
+    angle_g angle = M_SlopeToAngle(dX, dY);
+
+    // First check whether there's a wall_tip that lies in the exact
+    // direction of the given direction (which is relative to the
+    // vertex).
+    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
+    {
+        angle_g diff = fabs(tip->angle - angle);
+
+        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
+        {   // Yes, found one.
+            return NULL;
+        }
+    }
+
+    // OK, now just find the first wall_tip whose angle is greater than
+    // the angle we're interested in. Therefore we'll be on the FRONT
+    // side of that tip edge.
+    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
+    {
+        if(angle + ANG_EPSILON < tip->angle)
+        {   // Found it.
+            return (tip->ET_edge[FRONT]?
+                ((bsp_hedgeinfo_t*) tip->ET_edge[FRONT]->data)->sector : NULL);
+        }
+
+        if(!tip->ET_next)
+        {
+            // No more tips, thus we must be on the BACK side of the tip
+            // with the largest angle.
+            return (tip->ET_edge[BACK]?
+                ((bsp_hedgeinfo_t*) tip->ET_edge[BACK]->data)->sector : NULL);
+        }
+    }
+
+    return NULL;
+}
+
 static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
 {
     lineowner_t* owner, *base;
@@ -2234,6 +2374,8 @@ static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
     {   // Success!
         // Wind the BSP tree and save to the map.
         ClockwiseBspTree(rootNode);
+        destroyEdgeTips(map);
+
         SaveMap(map, rootNode);
 
         Con_Message("Map_BuildBSP: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",

@@ -304,4 +304,8 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);
 void            Map_InitSoundEnvironment(map_t* map);
+
+void            BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
+                                        hedge_t* back, hedge_t* front);
+sector_t*       BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY);
 #endif /* DOOMSDAY_MAP_H */

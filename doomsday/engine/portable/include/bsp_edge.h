@@ -46,20 +46,6 @@
 #define ET_next             link[1]
 #define ET_edge             hEdges
 
-// An edge tip is where an edge meets a vertex.
-typedef struct edgetip_s {
-    // Link in list. List is kept in ANTI-clockwise order.
-    struct edgetip_s*   link[2]; // {prev, next};
-
-    // Angle that line makes at vertex (degrees).
-    angle_g             angle;
-
-    // Half-edge on each side of the edge. Left is the side of increasing
-    // angles, right is the side of decreasing angles. Either can be NULL
-    // for one sided edges.
-    struct hedge_s*     hEdges[2];
-} edgetip_t;
-
 typedef struct {
     // Index of the half-edge. Only valid once the half-edge has been added
     // to a polygon. A negative value means it is invalid -- there
@@ -106,10 +92,4 @@ void        HEdge_Destroy(hedge_t* hEdge);
 hedge_t*    HEdge_Split(hedge_t* oldHEdge, double x, double y);
 
 void        BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
-
-// Edge tip functions:
-void        BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
-                                    hedge_t* back, hedge_t* front);
-void        BSP_DestroyVertexEdgeTip(struct edgetip_s* tip);
-sector_t*   BSP_VertexCheckOpen(vertex_t* vert, double dx, double dy);
 #endif

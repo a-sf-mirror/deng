@@ -225,8 +225,7 @@ void BSP_ShutdownIntersectionAllocator(void)
 /**
  * Create a new intersection.
  */
-intersection_t* BSP_IntersectionCreate(vertex_t* vert,
-                                       const struct bspartition_s* part,
+intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part,
                                        boolean selfRef)
 {
     intersection_t* cut = quickAllocIntersection();
@@ -237,7 +236,7 @@ intersection_t* BSP_IntersectionCreate(vertex_t* vert,
     cut->selfRef = selfRef;
 
     cut->before = BSP_VertexCheckOpen(vert, -part->pDX, -part->pDY);
-    cut->after = BSP_VertexCheckOpen(vert,  part->pDX,  part->pDY);
+    cut->after  = BSP_VertexCheckOpen(vert,  part->pDX,  part->pDY);
 
     return cut;
 }
