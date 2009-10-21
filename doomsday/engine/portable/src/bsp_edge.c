@@ -281,19 +281,10 @@ testVertexHEdgeRings(newHEdge->vertex);
 testVertexHEdgeRings(newHEdge->twin->vertex);
 #endif
 
-    {
-    bsp_hedgeinfo_t* oldData = (bsp_hedgeinfo_t*) oldHEdge->data;
-
-    // Compute wall_tip info.
-    BSP_CreateVertexEdgeTip(newVert, -oldData->pDX, -oldData->pDY,
-                            oldHEdge, oldHEdge->twin);
-    BSP_CreateVertexEdgeTip(newVert, oldData->pDX, oldData->pDY,
-                            oldHEdge->twin, oldHEdge);
-
     // Update superblock, if needed.
-    if(oldData->block)
-        SuperBlock_IncHEdgeCounts(oldData->block, oldData->lineDef != NULL);
-    }
+    if(((bsp_hedgeinfo_t*) oldHEdge->data)->block)
+        SuperBlock_IncHEdgeCounts(((bsp_hedgeinfo_t*) oldHEdge->data)->block,
+                                  ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef != NULL);
 
     BSP_UpdateHEdgeInfo(oldHEdge);
     BSP_UpdateHEdgeInfo(newHEdge);

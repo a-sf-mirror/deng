@@ -2046,20 +2046,10 @@ static void findMapLimits(map_t* src, int* bbox)
     }
 }
 
-static __inline edgetip_t* allocEdgeTip(void)
+static void createVertexEdgeTip(mvertex_t* vert, double dx, double dy,
+                                hedge_t* back, hedge_t* front)
 {
-    return M_Calloc(sizeof(edgetip_t));
-}
-
-static __inline void freeEdgeTip(edgetip_t* tip)
-{
-    M_Free(tip);
-}
-
-void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
-                             hedge_t* back, hedge_t* front)
-{
-    edgetip_t* tip = allocEdgeTip();
+    edgetip_t* tip = M_Calloc(sizeof(edgetip_t));
     edgetip_t* after;
 
     tip->angle = M_SlopeToAngle(dx, dy);
@@ -2067,7 +2057,7 @@ void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
     tip->ET_edge[FRONT] = front;
 
     // Find the correct place (order is increasing angle).
-    for(after = ((mvertex_t*) vert->data)->tipSet; after && after->ET_next;
+    for(after = vert->tipSet; after && after->ET_next;
         after = after->ET_next);
 
     while(after && tip->angle + ANG_EPSILON < after->angle)
@@ -2077,7 +2067,7 @@ void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
     if(after)
         tip->ET_next = after->ET_next;
     else
-        tip->ET_next = ((mvertex_t*) vert->data)->tipSet;
+        tip->ET_next = vert->tipSet;
     tip->ET_prev = after;
 
     if(after)
@@ -2089,40 +2079,23 @@ void BSP_CreateVertexEdgeTip(vertex_t* vert, double dx, double dy,
     }
     else
     {
-        if(((mvertex_t*) vert->data)->tipSet)
-            ((mvertex_t*) vert->data)->tipSet->ET_prev = tip;
+        if(vert->tipSet)
+            vert->tipSet->ET_prev = tip;
 
-        ((mvertex_t*) vert->data)->tipSet = tip;
+        vert->tipSet = tip;
     }
 }
 
-static void destroyVertexEdgeTip(edgetip_t* tip)
+static void destroyEdgeTips(mvertex_t* vtx)
 {
-    if(tip)
+    edgetip_t* tip, *n;
+
+    tip = vtx->tipSet;
+    while(tip)
     {
-        freeEdgeTip(tip);
-    }
-}
-
-static void destroyEdgeTips(map_t* map)
-{
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-    uint i;
-
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
-    {
-        vertex_t* vtx = halfEdgeDS->vertices[i];
-
-        {
-        edgetip_t* tip, *n;
-        tip = ((mvertex_t*) vtx->data)->tipSet;
-        while(tip)
-        {
-            n = tip->ET_next;
-            destroyVertexEdgeTip(tip);
-            tip = n;
-        }
-        }
+        n = tip->ET_next;
+        M_Free(tip);
+        tip = n;
     }
 }
 
@@ -2133,57 +2106,61 @@ static void destroyEdgeTips(map_t* map)
  */
 sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
 {
-    edgetip_t* tip;
     angle_g angle = M_SlopeToAngle(dX, dY);
+    hedge_t* hEdge;
 
-    // First check whether there's a wall tip that lies in the exact
-    // direction of the given direction (which is relative to the
-    // vertex).
-    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
-    {
-        angle_g diff = fabs(tip->angle - angle);
-
-        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
-        {   // Yes, found one.
-            return NULL;
-        }
-    }
-
-    /*hedge_t* hEdge, *base;
-
-    hEdge = base = vertex->hEdge;
+    // Is there an existing half-edge which aligns precisely to this angle?
+    hEdge = vertex->hEdge;
     do
     {
-        bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
-        angle_g diff = fabs(info->pAngle - angle);
-
+        angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
         if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
-        {   // Yes, found one.
             return NULL;
-        }
-    } while((hEdge = hEdge->prev->twin) != base);*/
+    } while((hEdge = hEdge->prev->twin) != vertex->hEdge);
+
+    {
+    sector_t* result = NULL;
+    edgetip_t* tip;
+    mvertex_t vert;
+
+    memset(&vert, 0, sizeof(vert));
+
+    hEdge = vertex->hEdge;
+    do
+    {
+        createVertexEdgeTip(&vert, ((bsp_hedgeinfo_t*) hEdge->data)->pDX,
+                                 ((bsp_hedgeinfo_t*) hEdge->data)->pDY,
+                                 hEdge->twin, hEdge);
+    } while((hEdge = hEdge->twin->next) != vertex->hEdge);
 
     // OK, now just find the first wall_tip whose angle is greater than
     // the angle we're interested in. Therefore we'll be on the FRONT
     // side of that tip edge.
-    for(tip = ((mvertex_t*) vertex->data)->tipSet; tip; tip = tip->ET_next)
+    //tip = ((mvertex_t*) vertex->data)->tipSet;
+    tip = vert.tipSet;
+    for(; tip; tip = tip->ET_next)
     {
         if(angle + ANG_EPSILON < tip->angle)
         {   // Found it.
-            return (tip->ET_edge[FRONT]?
+            result = (tip->ET_edge[FRONT]?
                 ((bsp_hedgeinfo_t*) tip->ET_edge[FRONT]->data)->sector : NULL);
+            break;
         }
 
         if(!tip->ET_next)
         {
             // No more tips, thus we must be on the BACK side of the tip
             // with the largest angle.
-            return (tip->ET_edge[BACK]?
+            result = (tip->ET_edge[BACK]?
                 ((bsp_hedgeinfo_t*) tip->ET_edge[BACK]->data)->sector : NULL);
+            break;
         }
     }
 
-    return NULL;
+    destroyEdgeTips(&vert);
+
+    return result;
+    }
 }
 
 static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
@@ -2260,16 +2237,6 @@ static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
                (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
                 BSP_AddHEdgeToSuperBlock(block, front);
             BSP_AddHEdgeToSuperBlock(block, back);
-        }
-
-        {
-        double x1 = from->pos[VX];
-        double y1 = from->pos[VY];
-        double x2 = to->pos[VX];
-        double y2 = to->pos[VY];
-
-        BSP_CreateVertexEdgeTip(from, x2 - x1, y2 - y1, back, front);
-        BSP_CreateVertexEdgeTip(to, x1 - x2, y1 - y2, front, back);
         }
 
         if(side == FRONT)
@@ -2422,7 +2389,6 @@ static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
     {   // Success!
         // Wind the BSP tree and save to the map.
         ClockwiseBspTree(rootNode);
-        destroyEdgeTips(map);
 
         SaveMap(map, rootNode);
 
