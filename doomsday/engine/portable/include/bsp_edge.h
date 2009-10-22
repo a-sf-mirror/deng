@@ -42,10 +42,6 @@
 // Smallest degrees between two angles before being considered equal.
 #define ANG_EPSILON         (1.0 / 1024.0)
 
-#define ET_prev             link[0]
-#define ET_next             link[1]
-#define ET_edge             hEdges
-
 typedef struct {
     // Index of the half-edge. Only valid once the half-edge has been added
     // to a polygon. A negative value means it is invalid -- there

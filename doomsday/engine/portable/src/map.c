@@ -36,6 +36,7 @@
 #include "de_dam.h"
 #include "de_defs.h"
 #include "de_bsp.h"
+#include "de_edit.h"
 
 #include "s_environ.h"
 
@@ -67,20 +68,6 @@ typedef struct {
     uint            numLineOwners;
     lineowner_t*    lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
 } vertexinfo_t;
-
-// An edge tip is where an edge meets a vertex.
-typedef struct edgetip_s {
-    // Link in list. List is kept in ANTI-clockwise order.
-    struct edgetip_s*   link[2]; // {prev, next};
-
-    // Angle that line makes at vertex (degrees).
-    angle_g             angle;
-
-    // Half-edge on each side of the edge. Left is the side of increasing
-    // angles, right is the side of decreasing angles. Either can be NULL
-    // for one sided edges.
-    struct hedge_s*     hEdges[2];
-} edgetip_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -2043,123 +2030,6 @@ static void findMapLimits(map_t* src, int* bbox)
 
         M_AddToBox(bbox, lX, lY);
         M_AddToBox(bbox, hX, hY);
-    }
-}
-
-static void createVertexEdgeTip(mvertex_t* vert, double dx, double dy,
-                                hedge_t* back, hedge_t* front)
-{
-    edgetip_t* tip = M_Calloc(sizeof(edgetip_t));
-    edgetip_t* after;
-
-    tip->angle = M_SlopeToAngle(dx, dy);
-    tip->ET_edge[BACK]  = back;
-    tip->ET_edge[FRONT] = front;
-
-    // Find the correct place (order is increasing angle).
-    for(after = vert->tipSet; after && after->ET_next;
-        after = after->ET_next);
-
-    while(after && tip->angle + ANG_EPSILON < after->angle)
-        after = after->ET_prev;
-
-    // Link it in.
-    if(after)
-        tip->ET_next = after->ET_next;
-    else
-        tip->ET_next = vert->tipSet;
-    tip->ET_prev = after;
-
-    if(after)
-    {
-        if(after->ET_next)
-            after->ET_next->ET_prev = tip;
-
-        after->ET_next = tip;
-    }
-    else
-    {
-        if(vert->tipSet)
-            vert->tipSet->ET_prev = tip;
-
-        vert->tipSet = tip;
-    }
-}
-
-static void destroyEdgeTips(mvertex_t* vtx)
-{
-    edgetip_t* tip, *n;
-
-    tip = vtx->tipSet;
-    while(tip)
-    {
-        n = tip->ET_next;
-        M_Free(tip);
-        tip = n;
-    }
-}
-
-/**
- * Check whether a line with the given delta coordinates and beginning
- * at this vertex is open. Returns a sector reference if it's open,
- * or NULL if closed (void space or directly along a linedef).
- */
-sector_t* BSP_VertexCheckOpen(vertex_t* vertex, double dX, double dY)
-{
-    angle_g angle = M_SlopeToAngle(dX, dY);
-    hedge_t* hEdge;
-
-    // Is there an existing half-edge which aligns precisely to this angle?
-    hEdge = vertex->hEdge;
-    do
-    {
-        angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
-        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
-            return NULL;
-    } while((hEdge = hEdge->prev->twin) != vertex->hEdge);
-
-    {
-    sector_t* result = NULL;
-    edgetip_t* tip;
-    mvertex_t vert;
-
-    memset(&vert, 0, sizeof(vert));
-
-    hEdge = vertex->hEdge;
-    do
-    {
-        createVertexEdgeTip(&vert, ((bsp_hedgeinfo_t*) hEdge->data)->pDX,
-                                 ((bsp_hedgeinfo_t*) hEdge->data)->pDY,
-                                 hEdge->twin, hEdge);
-    } while((hEdge = hEdge->twin->next) != vertex->hEdge);
-
-    // OK, now just find the first wall_tip whose angle is greater than
-    // the angle we're interested in. Therefore we'll be on the FRONT
-    // side of that tip edge.
-    //tip = ((mvertex_t*) vertex->data)->tipSet;
-    tip = vert.tipSet;
-    for(; tip; tip = tip->ET_next)
-    {
-        if(angle + ANG_EPSILON < tip->angle)
-        {   // Found it.
-            result = (tip->ET_edge[FRONT]?
-                ((bsp_hedgeinfo_t*) tip->ET_edge[FRONT]->data)->sector : NULL);
-            break;
-        }
-
-        if(!tip->ET_next)
-        {
-            // No more tips, thus we must be on the BACK side of the tip
-            // with the largest angle.
-            result = (tip->ET_edge[BACK]?
-                ((bsp_hedgeinfo_t*) tip->ET_edge[BACK]->data)->sector : NULL);
-            break;
-        }
-    }
-
-    destroyEdgeTips(&vert);
-
-    return result;
     }
 }
 

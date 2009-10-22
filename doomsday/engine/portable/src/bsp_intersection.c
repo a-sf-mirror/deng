@@ -30,14 +30,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <math.h>
+
 #include "de_base.h"
 #include "de_bsp.h"
 #include "de_misc.h"
-
-#include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
-#include <limits.h>
 
 // MACROS ------------------------------------------------------------------
 
@@ -223,6 +220,47 @@ void BSP_ShutdownIntersectionAllocator(void)
 }
 
 /**
+ * Check whether a line with the given delta coordinates and beginning
+ * at this vertex is open. Returns a sector reference if it's open,
+ * or NULL if closed (void space or directly along a linedef).
+ */
+static sector_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
+{
+    hedge_t* hEdge, *min;
+
+    hEdge = min = vertex->hEdge;
+    do
+    {
+        angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
+
+        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
+            return NULL; // This half-edge aligns precisely to this angle.
+
+        if(((bsp_hedgeinfo_t*) hEdge->data)->pAngle <
+           ((bsp_hedgeinfo_t*) min->data)->pAngle)
+            min = hEdge;
+    } while((hEdge = hEdge->prev->twin) != vertex->hEdge);
+
+    // No half-edge was found that aligns precisely. Look for the first
+    // half-edge whose angle is larger than that required. If found, return
+    // it's front sector else return the back sector of the half-edge with
+    // the largest angle.
+    hEdge = min;
+    do
+    {
+        angle_g angle2 = ((bsp_hedgeinfo_t*) hEdge->data)->pAngle;
+
+        if(angle + ANG_EPSILON < ((bsp_hedgeinfo_t*) hEdge->data)->pAngle)
+            return ((bsp_hedgeinfo_t*) hEdge->data)->sector;
+
+        if(hEdge->twin->next == min)
+            return ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector;
+    } while((hEdge = hEdge->twin->next) != min);
+
+    return NULL; // Unreachable.
+}
+
+/**
  * Create a new intersection.
  */
 intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part,
@@ -235,8 +273,8 @@ intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_
                                     vert->pos[VX], vert->pos[VY]);
     cut->selfRef = selfRef;
 
-    cut->before = BSP_VertexCheckOpen(vert, -part->pDX, -part->pDY);
-    cut->after  = BSP_VertexCheckOpen(vert,  part->pDX,  part->pDY);
+    cut->before = vertexCheckOpen(vert, M_SlopeToAngle(-part->pDX, -part->pDY));
+    cut->after  = vertexCheckOpen(vert, M_SlopeToAngle(part->pDX, part->pDY));
 
     return cut;
 }
