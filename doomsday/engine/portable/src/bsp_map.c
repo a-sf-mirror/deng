@@ -242,43 +242,22 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
     }
 }
 
-static void hardenLeaf(map_t* map, face_t* dest, const bspleafdata_t* src)
+static subsector_t* createSubsectorOfSector(map_t* map, sector_t* sector, face_t* face)
 {
+    subsector_t* subsector = (subsector_t*) Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
     size_t hEdgeCount;
     hedge_t* hEdge;
-    hedge_node_t* n;
-
-    dest->hEdge = src->hEdges->hEdge;
 
     hEdgeCount = 0;
-    for(n = src->hEdges; ; n = n->next)
-    {
-        hedge_t* hEdge = n->hEdge;
-
-        hEdgeCount++;
-
-        if(!n->next)
-        {
-            hEdge->next = dest->hEdge;
-            break;
-        }
-
-        hEdge->next = n->next->hEdge;
-    }
-
-    hEdge = dest->hEdge;
+    hEdge = face->hEdge;
     do
     {
-        hEdge->next->prev = hEdge;
-        hEdge->face = dest;
-    } while((hEdge = hEdge->next) != dest->hEdge);
-  
-    {
-    subsector_t* subsector = (subsector_t*) Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
+        hEdgeCount++;
+    } while((hEdge = hEdge->next) != face->hEdge);
 
-    subsector->face = dest;
+    subsector->face = face;
     subsector->hEdgeCount = (uint) hEdgeCount;
-    subsector->sector = src->sector;
+    subsector->sector = sector;
 
     if(!subsector->sector)
     {
@@ -288,8 +267,36 @@ static void hardenLeaf(map_t* map, face_t* dest, const bspleafdata_t* src)
 
     map->subsectors[P_CreateObjectRecord(DMU_SUBSECTOR, subsector) - 1] = subsector;
 
-    dest->data = subsector;
+    return subsector;
+}
+
+static void hardenLeaf(map_t* map, face_t* face, const bspleafdata_t* src)
+{
+    hedge_t* hEdge;
+    hedge_node_t* n;
+
+    for(n = src->hEdges; ; n = n->next)
+    {
+        hedge_t* hEdge = n->hEdge;
+
+        hEdge->face = face;
+        if(!n->next)
+        {
+            hEdge->next = src->hEdges->hEdge;
+            break;
+        }
+
+        hEdge->next = n->next->hEdge;
     }
+
+    face->hEdge = src->hEdges->hEdge;
+    hEdge = src->hEdges->hEdge;
+    do
+    {
+        hEdge->next->prev = hEdge;
+    } while((hEdge = hEdge->next) != face->hEdge);
+  
+    face->data = createSubsectorOfSector(map, src->sector, face);
 }
 
 typedef struct {
