@@ -255,8 +255,8 @@ static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
 static void clockwiseOrder(hedge_node_t** headPtr, size_t num, double x,
                            double y)
 {
-    size_t              i, idx;
-    hedge_node_t*       n;
+    size_t i, idx;
+    hedge_node_t* n;
 
     // Insert ptrs to the into the sort buffer.
     idx = 0;
@@ -273,8 +273,8 @@ static void clockwiseOrder(hedge_node_t** headPtr, size_t num, double x,
     *headPtr = NULL;
     for(i = 0; i < num; ++i)
     {
-        size_t              idx = (num - 1) - i;
-        size_t              j = idx % num;
+        size_t idx = (num - 1) - i;
+        size_t j = idx % num;
 
         nodeSortBuf[j]->next = *headPtr;
         *headPtr = nodeSortBuf[j];
@@ -283,12 +283,11 @@ static void clockwiseOrder(hedge_node_t** headPtr, size_t num, double x,
 /*#if _DEBUG
 Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
 
-for(n = sub->hEdges; n; n = n->next)
+for(n = *headPtr; n; n = n->next)
 {
-    const hedge_t*      hEdge = n->hEdge;
-    angle_g             angle =
-        M_SlopeToAngle(hEdge->v[0]->V_pos[VX] - x,
-                       hEdge->v[0]->V_pos[VY] - y);
+    const hedge_t* hEdge = n->hEdge;
+    angle_g angle = M_SlopeToAngle(hEdge->vertex->pos[VX] - x,
+                                   hEdge->vertex->pos[VY] - y);
 
     Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
                 hEdge, angle, (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
