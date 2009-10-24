@@ -495,7 +495,17 @@ void ClockwiseBspTree(binarytree_t* rootNode)
     }
 }
 
-static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
+static __inline bspleafdata_t* allocBSPLeaf(void)
+{
+    return M_Malloc(sizeof(bspleafdata_t));
+}
+
+static __inline void freeBSPLeaf(bspleafdata_t* leaf)
+{
+    M_Free(leaf);
+}
+
+static void takeHEdgesFromSuperblock(bspleafdata_t* leaf, superblock_t* block)
 {
     uint num;
 
@@ -519,7 +529,7 @@ static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
 
         if(a)
         {
-            createBSPLeafWorker(leaf, a);
+            takeHEdgesFromSuperblock(leaf, a);
 
             if(a->realNum + a->miniNum > 0)
                 Con_Error("createSubSectorWorker: child %d not empty!", num);
@@ -532,14 +542,56 @@ static void createBSPLeafWorker(bspleafdata_t* leaf, superblock_t* block)
     block->realNum = block->miniNum = 0;
 }
 
-static __inline bspleafdata_t* allocBSPLeaf(void)
+static sector_t* pickSectorFromHEdges(const hedge_node_t* firstHEdge, boolean allowSelfRef)
 {
-    return M_Malloc(sizeof(bspleafdata_t));
+    const hedge_node_t* node;
+    sector_t* sector = NULL;
+
+    for(node = firstHEdge; !sector && node; node = node->next)
+    {
+        const hedge_t* hEdge = node->hEdge;
+
+        if(!allowSelfRef && hEdge->twin &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
+           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+            continue;
+        
+        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
+        {
+            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+
+            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
+                sector = lineDef->buildData.windowEffect;
+            else
+                sector = lineDef->buildData.sideDefs[
+                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+        }
+    }
+
+    return sector;
 }
 
-static __inline void freeBSPLeaf(bspleafdata_t* leaf)
+/**
+ * Create a new leaf from a list of half-edges.
+ */
+static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
 {
-    M_Free(leaf);
+    bspleafdata_t* leaf = BSPLeaf_Create();
+
+    // Link the half-edges into the new leaf.
+    takeHEdgesFromSuperblock(leaf, hEdgeList);
+
+    /**
+     * Determine which sector this leaf belongs to.
+     * On the first pass, we are picky; do not consider half-edges from
+     * self-referencing linedefs. If that fails, take whatever we can find.
+     */
+    leaf->sector = pickSectorFromHEdges(leaf->hEdges, false);
+    if(!leaf->sector)
+        leaf->sector = pickSectorFromHEdges(leaf->hEdges, true);
+
+    return leaf;
 }
 
 bspleafdata_t* BSPLeaf_Create(void)
@@ -568,19 +620,6 @@ void BSPLeaf_Destroy(bspleafdata_t* leaf)
     }
 
     freeBSPLeaf(leaf);
-}
-
-/**
- * Create a new leaf from a list of half-edges.
- */
-static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
-{
-    bspleafdata_t* leaf = BSPLeaf_Create();
-
-    // Link the half-edges into the new leaf.
-    createBSPLeafWorker(leaf, hEdgeList);
-
-    return leaf;
 }
 
 /**

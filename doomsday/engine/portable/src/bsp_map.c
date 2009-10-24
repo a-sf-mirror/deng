@@ -145,62 +145,11 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
     return true; // Continue traversal.
 }
 
-static sector_t* pickSectorFromHEdges(const hedge_node_t* firstHEdge, boolean allowSelfRef)
-{
-    const hedge_node_t* node;
-    sector_t* sector = NULL;
-
-    for(node = firstHEdge; !sector && node; node = node->next)
-    {
-        const hedge_t* hEdge = node->hEdge;
-
-        if(!allowSelfRef && hEdge->twin &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
-           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
-            continue;
-        
-        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
-        {
-            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
-
-            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
-                sector = lineDef->buildData.windowEffect;
-            else
-                sector = lineDef->buildData.sideDefs[
-                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
-        }
-    }
-
-    return sector;
-}
-
-static boolean pickSectorForLeaf(binarytree_t* tree, void* data)
-{
-    if(BinaryTree_IsLeaf(tree))
-    {
-        bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
-
-        /**
-         * Determine which sector this leaf belongs to.
-         * On the first pass, we are picky; do not consider half-edges from
-         * self-referencing linedefs. If that fails, take whatever we can find.
-         */
-        leaf->sector = pickSectorFromHEdges(leaf->hEdges, false);
-        if(!leaf->sector)
-            leaf->sector = pickSectorFromHEdges(leaf->hEdges, true);
-    }
-
-    return true; // Continue traversal.
-}
-
 static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 {
     uint i;
     hedgecollectorparams_t params;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-
-    BinaryTree_InOrder(rootNode, pickSectorForLeaf, &params);
 
     // Pass 1: Count the number of used hedges.
     params.numHEdges = params.numSegs = 0;
