@@ -80,17 +80,6 @@ static __inline hedge_t* createHEdge(void)
     return hEdge;
 }
 
-static void copyHEdge(hedge_t* dst, const hedge_t* src)
-{
-    dst->vertex = src->vertex;
-    dst->twin = src->twin;
-    dst->next = src->next;
-    dst->prev = src->prev;
-    dst->face = src->face;
-
-    memcpy(dst->data, src->data, sizeof(bsp_hedgeinfo_t));
-}
-
 /**
  * Update the precomputed members of the hEdge.
  */
