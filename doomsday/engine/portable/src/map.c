@@ -2054,36 +2054,36 @@ static void buildHEdgesAroundVertex(vertexinfo_t* vInfo, superblock_t* block)
 
         if(side == FRONT)
         {
-            front = HEdge_Create(lineDef, lineDef, from,
+            front = BSP_CreateHEdge(lineDef, lineDef, from,
                                  lineDef->buildData.sideDefs[FRONT]->sector, false);
 
             // Handle the 'One-Sided Window' trick.
             if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
             {
-                back = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                back = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
                                      lineDef, to,
                                      lineDef->buildData.windowEffect, true);
             }
             else
             {
-                back = HEdge_Create(lineDef, lineDef, to,
+                back = BSP_CreateHEdge(lineDef, lineDef, to,
                     lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
             }
         }
         else
         {
-            back = HEdge_Create(lineDef, lineDef, to, lineDef->buildData.sideDefs[FRONT]->sector, false);
+            back = BSP_CreateHEdge(lineDef, lineDef, to, lineDef->buildData.sideDefs[FRONT]->sector, false);
 
             // Handle the 'One-Sided Window' trick.
             if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
             {
-                front = HEdge_Create(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                front = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
                                      lineDef, from,
                                      lineDef->buildData.windowEffect, true);
             }
             else
             {
-                front = HEdge_Create(lineDef, lineDef, from,
+                front = BSP_CreateHEdge(lineDef, lineDef, from,
                     lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
             }
         }

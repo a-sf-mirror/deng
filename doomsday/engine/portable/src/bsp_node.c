@@ -552,7 +552,7 @@ void BSPLeaf_Destroy(bspleafdata_t* leaf)
 
         /*if(hEdge->data)
             Z_Free(hEdge->data);
-        HEdge_Destroy(hEdge);*/
+        P_DestroyHEdge(hEdge);*/
     }
 
     freeBSPLeaf(leaf);

@@ -58,5 +58,6 @@ typedef struct {
 void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
 
 vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
+hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS);
 
 #endif /* DOOMSDAY_HALFEDGEDS_H */

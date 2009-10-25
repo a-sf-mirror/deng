@@ -62,24 +62,6 @@
 
 // CODE --------------------------------------------------------------------
 
-static __inline hedge_t* allocHEdge(void)
-{
-    return Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
-}
-
-static __inline void freeHEdge(hedge_t* hEdge)
-{
-    Z_Free(hEdge);
-}
-
-static __inline hedge_t* createHEdge(void)
-{
-    hedge_t* hEdge = allocHEdge();
-
-    hEdge->data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
-    return hEdge;
-}
-
 /**
  * Update the precomputed members of the hEdge.
  */
@@ -104,13 +86,10 @@ void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
     data->pPara = -data->pSX * data->pDX - data->pSY * data->pDY;
 }
 
-/**
- * Create a new half-edge.
- */
-hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
-                      vertex_t* start, sector_t* sec, boolean back)
+hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
+                       vertex_t* start, sector_t* sec, boolean back)
 {
-    hedge_t* hEdge = createHEdge();
+    hedge_t* hEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
 
     hEdge->vertex = start;
     if(!start->hEdge)
@@ -130,19 +109,6 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
     }
 
     return hEdge;
-}
-
-/**
- * Destroys the given half-edge.
- *
- * @param hEdge         Ptr to the half-edge to be destroyed.
- */
-void HEdge_Destroy(hedge_t* hEdge)
-{
-    if(hEdge)
-    {
-        freeHEdge(hEdge);
-    }
 }
 
 #if _DEBUG
@@ -213,8 +179,8 @@ testVertexHEdgeRings(oldHEdge->twin->vertex);
     newVert->pos[VX] = x;
     newVert->pos[VY] = y;
 
-    newHEdge = createHEdge();
-    newHEdge->twin = createHEdge();
+    newHEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
+    newHEdge->twin = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
     newHEdge->twin->twin = newHEdge;
 
     // Update right neighbour back links of oldHEdge and its twin.

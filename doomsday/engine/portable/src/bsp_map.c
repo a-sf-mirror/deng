@@ -88,40 +88,21 @@ static void hardenLineDefSegList(map_t* map, hedge_t* hEdge, seg_t* seg)
     lineDef->hEdges[1] = last;
 }
 
-typedef struct {
-    size_t              numHEdges, numSegs;
-    hedge_t***          indexPtr;
-    boolean             write;
-} hedgecollectorparams_t;
-
-static boolean hEdgeCollector(binarytree_t* tree, void* data)
+static boolean countSegs(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {
-        hedgecollectorparams_t* params = (hedgecollectorparams_t*) data;
+        uint* numSegs = (uint*) data;
         bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
         hedge_t* hEdge;
 
         hEdge = leaf->hEdges->hEdge;
         do
         {
-            if(params->indexPtr)
-            {   // Write mode.
-                (*params->indexPtr)[params->numHEdges++] = hEdge;
-                if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
-                   !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
-                   !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
-                    (*params->indexPtr)[params->numHEdges++] = hEdge->twin;
-            }
-            else
-            {   // Count mode.
-                params->numSegs++;
-                params->numHEdges++;
-                if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
-                   !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
-                   !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
-                    params->numHEdges++;
-            }
+            if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
+                 ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
+                 !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector))
+                (*numSegs)++;
         } while((hEdge = hEdge->next) != leaf->hEdges->hEdge);
     }
 
@@ -131,27 +112,13 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
 static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 {
     uint i;
-    hedgecollectorparams_t params;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
 
-    // Pass 1: Count the number of used hedges.
-    params.numHEdges = params.numSegs = 0;
-    params.indexPtr = NULL;
-    BinaryTree_InOrder(rootNode, hEdgeCollector, &params);
+    // Count the number of used hedges (will become segs).
+    map->numSegs = 0;
+    BinaryTree_InOrder(rootNode, countSegs, &map->numSegs);
 
-    if(!(params.numHEdges > 0))
-        Con_Error("buildSegsFromHEdges: No halfedges?");
-
-    halfEdgeDS->numHEdges = (uint) params.numHEdges;
-    halfEdgeDS->hEdges = Z_Malloc(sizeof(hedge_t*) * params.numHEdges, PU_STATIC, 0);
-
-    map->numSegs = (uint) params.numSegs;
-    map->segs = Z_Malloc(sizeof(seg_t*) * params.numSegs, PU_STATIC, 0);
-
-    // Pass 2: Collect ptrs the hedges and insert into the index.
-    params.numHEdges = 0;
-    params.indexPtr = &halfEdgeDS->hEdges;
-    BinaryTree_InOrder(rootNode, hEdgeCollector, &params);
+    map->segs = Z_Malloc(sizeof(seg_t*) * map->numSegs, PU_STATIC, 0);
 
     // Generate seg data from (BSP) line segments.
     for(i = 0; i < halfEdgeDS->numHEdges; ++i)

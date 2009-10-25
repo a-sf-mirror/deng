@@ -440,9 +440,9 @@ static void buildEdgeBetweenIntersections(const bspartition_t* part,
     // Create the half-edge pair.
     // Leave 'linedef' field as NULL as these are not linedef-linked.
     // Leave 'side' as zero too.
-    (*right) = HEdge_Create(NULL, part->lineDef, start->vertex,
+    (*right) = BSP_CreateHEdge(NULL, part->lineDef, start->vertex,
                             start->after, false);
-    (*left)  = HEdge_Create(NULL, part->lineDef, end->vertex,
+    (*left)  = BSP_CreateHEdge(NULL, part->lineDef, end->vertex,
                             start->after, false);
 
     // Twin the half-edges together.

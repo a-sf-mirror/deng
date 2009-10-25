@@ -28,6 +28,9 @@
 
 #include "halfedgeds.h"
 
+// temporary includes:
+#include "bsp_edge.h"
+
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
@@ -46,19 +49,57 @@
 
 // CODE --------------------------------------------------------------------
 
+static __inline vertex_t* allocVertex(void)
+{
+    return Z_Calloc(sizeof(vertex_t), PU_STATIC, 0);
+}
+
+static __inline void freeVertex(vertex_t* vertex)
+{
+    Z_Free(vertex);
+}
+
+static __inline hedge_t* allocHEdge(void)
+{
+    return Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
+}
+
+static __inline void freeHEdge(hedge_t* hEdge)
+{
+    Z_Free(hEdge);
+}
+
 vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 {
-    vertex_t* vtx = Z_Calloc(sizeof(*vtx), PU_STATIC, 0);
+    vertex_t* vtx;
 
+    assert(halfEdgeDS);
+
+    vtx = allocVertex();
     halfEdgeDS->vertices = Z_Realloc(halfEdgeDS->vertices,
-        sizeof(vtx) * (++halfEdgeDS->numVertices + 1), PU_STATIC);
+        sizeof(vtx) * ++halfEdgeDS->numVertices, PU_STATIC);
     halfEdgeDS->vertices[halfEdgeDS->numVertices-1] = vtx;
-    halfEdgeDS->vertices[halfEdgeDS->numVertices] = NULL;
 
     vtx->data = Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0);
     ((mvertex_t*) vtx->data)->index = halfEdgeDS->numVertices; // 1-based index, 0 = NIL.
 
     return vtx;
+}
+
+hedge_t* HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS)
+{
+    hedge_t* hEdge;
+
+    assert(halfEdgeDS);
+
+    hEdge = allocHEdge();
+    halfEdgeDS->hEdges = Z_Realloc(halfEdgeDS->hEdges,
+        sizeof(hedge_t*) * ++halfEdgeDS->numHEdges, PU_STATIC);
+    halfEdgeDS->hEdges[halfEdgeDS->numHEdges - 1] = hEdge;
+
+    hEdge->data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
+
+    return hEdge;
 }
 
 /**
@@ -90,7 +131,7 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
         for(i = 0; i < halfEdgeDS->numHEdges; ++i)
         {
             hedge_t* hEdge = halfEdgeDS->hEdges[i];
-            Z_Free(hEdge);
+            freeHEdge(hEdge);
         }
 
         Z_Free(halfEdgeDS->hEdges);
@@ -105,7 +146,7 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
         for(i = 0; i < halfEdgeDS->numVertices; ++i)
         {
             vertex_t* vertex = halfEdgeDS->vertices[i];
-            Z_Free(vertex);
+            freeVertex(vertex);
         }
 
         Z_Free(halfEdgeDS->vertices);
