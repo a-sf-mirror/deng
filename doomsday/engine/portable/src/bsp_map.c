@@ -114,7 +114,8 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
         bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
         hedge_node_t* n;
 
-        for(n = leaf->hEdges; n; n = n->next)
+        n = leaf->hEdges;
+        do
         {
             hedge_t* hEdge = n->hEdge;
 
@@ -139,7 +140,7 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
                    !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
                     params->numHEdges++;
             }
-        }
+        } while((n = n->next) != leaf->hEdges);
     }
 
     return true; // Continue traversal.
@@ -275,27 +276,18 @@ static void hardenLeaf(map_t* map, face_t* face, const bspleafdata_t* src)
     hedge_t* hEdge;
     hedge_node_t* n;
 
-    for(n = src->hEdges; ; n = n->next)
+    n = src->hEdges;
+    do
     {
         hedge_t* hEdge = n->hEdge;
 
-        hEdge->face = face;
-        if(!n->next)
-        {
-            hEdge->next = src->hEdges->hEdge;
-            break;
-        }
-
         hEdge->next = n->next->hEdge;
-    }
-
-    face->hEdge = src->hEdges->hEdge;
-    hEdge = src->hEdges->hEdge;
-    do
-    {
         hEdge->next->prev = hEdge;
-    } while((hEdge = hEdge->next) != face->hEdge);
-  
+
+        hEdge->face = face;
+    } while((n = n->next) != src->hEdges);
+
+    face->hEdge = src->hEdges->hEdge; 
     face->data = createSubsectorOfSector(map, src->sector, face);
 }
 

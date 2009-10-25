@@ -31,14 +31,14 @@
  * SourceForge: http://sourceforge.net/projects/glbsp/
  */
 
-#ifndef __BSP_SUPERBLOCK_H__
-#define __BSP_SUPERBLOCK_H__
+#ifndef BSP_SUPERBLOCK_H
+#define BSP_SUPERBLOCK_H
 
 #include "bsp_intersection.h"
 
 typedef struct hedge_node_s {
     hedge_t*    hEdge;
-    struct hedge_node_s* next;
+    struct hedge_node_s* next, *prev;
 } hedge_node_t;
 
 typedef struct superblock_s {
@@ -97,4 +97,4 @@ void        BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList
 
 void        BSPLeaf_LinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge);
 void        BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge);
-#endif
+#endif /* BSP_SUPERBLOCK_H */

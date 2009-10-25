@@ -123,22 +123,38 @@ void BSPLeaf_LinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
 
 #if _DEBUG
 // Ensure hedge is not already in this leaf.
-if((node = leaf->hEdges))
+if(leaf->hEdges)
 {
+    node = leaf->hEdges;
     do
     {
         if(node->hEdge == hEdge)
             Con_Error("BSPLeaf_LinkHEdge: HEdge %p already linked to "
                       "leaf %p!", hEdge, leaf);
-    } while((node = node->next));
+    } while((node = node->next) != leaf->hEdges);
 }
 #endif
 
     node = allocHEdgeNode();
     node->hEdge = hEdge;
 
-    node->next = leaf->hEdges;
-    leaf->hEdges = node;
+    if(leaf->hEdges)
+    {
+        hedge_node_t* tmp = leaf->hEdges->prev;
+
+        node->next = leaf->hEdges;
+        node->next->prev = node;
+
+        tmp->next = node;
+        node->prev = tmp;
+
+        leaf->hEdges = node;
+    }
+    else
+    {
+        node->next = node->prev = node;
+        leaf->hEdges = node;
+    }
 }
 
 void BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
@@ -148,13 +164,14 @@ void BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
     if(!hEdge || !leaf || !leaf->hEdges)
         return;
 
-    if(leaf->hEdges->hEdge == hEdge)
+    if(leaf->hEdges == leaf->hEdges->next)
     {
-        node = leaf->hEdges;
+        if(leaf->hEdges->hEdge == hEdge)
+        {
+            freeHEdgeNode(leaf->hEdges);
+            leaf->hEdges = NULL;
+        }
 
-        leaf->hEdges = leaf->hEdges->next;
-
-        freeHEdgeNode(node);
         return;
     }
 
@@ -164,11 +181,17 @@ void BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge)
         if(node->next && node->next->hEdge == hEdge)
         {
             hedge_node_t* p = node->next;
+
             node->next = node->next->next;
+            node->next->prev = node;
+
+            if(leaf->hEdges == p)
+                leaf->hEdges = p->next;
+            
             freeHEdgeNode(p);
             break;
         }
-    } while((node = node->next));
+    } while((node = node->next) != leaf->hEdges);
 }
 
 /**
