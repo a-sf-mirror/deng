@@ -112,13 +112,11 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
     {
         hedgecollectorparams_t* params = (hedgecollectorparams_t*) data;
         bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
-        hedge_node_t* n;
+        hedge_t* hEdge;
 
-        n = leaf->hEdges;
+        hEdge = leaf->hEdges->hEdge;
         do
         {
-            hedge_t* hEdge = n->hEdge;
-
             if(params->indexPtr)
             {   // Write mode.
                 (*params->indexPtr)[params->numHEdges++] = hEdge;
@@ -140,7 +138,7 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
                    !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
                     params->numHEdges++;
             }
-        } while((n = n->next) != leaf->hEdges);
+        } while((hEdge = hEdge->next) != leaf->hEdges->hEdge);
     }
 
     return true; // Continue traversal.
@@ -274,18 +272,12 @@ static subsector_t* createSubsectorOfSector(map_t* map, sector_t* sector, face_t
 static void hardenLeaf(map_t* map, face_t* face, const bspleafdata_t* src)
 {
     hedge_t* hEdge;
-    hedge_node_t* n;
 
-    n = src->hEdges;
+    hEdge = src->hEdges->hEdge;
     do
     {
-        hedge_t* hEdge = n->hEdge;
-
-        hEdge->next = n->next->hEdge;
-        hEdge->next->prev = hEdge;
-
         hEdge->face = face;
-    } while((n = n->next) != src->hEdges);
+    } while((hEdge = hEdge->next) != src->hEdges->hEdge);
 
     face->hEdge = src->hEdges->hEdge; 
     face->data = createSubsectorOfSector(map, src->sector, face);
@@ -414,14 +406,13 @@ static void hardenBSP(map_t* map, binarytree_t* rootNode)
     map->numSubsectors = halfEdgeDS->numFaces;
     map->subsectors = Z_Malloc(map->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
 
-    if(rootNode)
     {
-        hardenbspparams_t params;
+    hardenbspparams_t params;
 
-        params.faceCurIndex = 0;
-        params.nodeCurIndex = 0;
+    params.faceCurIndex = 0;
+    params.nodeCurIndex = 0;
 
-        BinaryTree_PostOrder(rootNode, hardenNode, &params);
+    BinaryTree_PostOrder(rootNode, hardenNode, &params);
     }
 }
 
