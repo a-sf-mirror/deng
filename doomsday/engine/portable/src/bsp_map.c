@@ -61,7 +61,7 @@
  */
 static void hardenLineDefSegList(map_t* map, hedge_t* hEdge, seg_t* seg)
 {
-    const hedge_t* first, *last;
+    hedge_t* first, *last;
     linedef_t* lineDef;
 
     if(!seg || !seg->sideDef)
@@ -84,20 +84,8 @@ static void hardenLineDefSegList(map_t* map, hedge_t* hEdge, seg_t* seg)
     while(((bsp_hedgeinfo_t*)last->data)->lnext)
         last = ((bsp_hedgeinfo_t*)last->data)->lnext;
 
-    lineDef->hEdges[0] = map->_halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) first->data)->index];
-    lineDef->hEdges[1] = map->_halfEdgeDS.hEdges[((bsp_hedgeinfo_t*) last->data)->index];
-}
-
-static int C_DECL hEdgeCompare(const void* p1, const void* p2)
-{
-    const bsp_hedgeinfo_t* a = (bsp_hedgeinfo_t*) (((const hedge_t**) p1)[0])->data;
-    const bsp_hedgeinfo_t* b = (bsp_hedgeinfo_t*) (((const hedge_t**) p2)[0])->data;
-
-    if(a->index == b->index)
-        return 0;
-    if(a->index < b->index)
-        return -1;
-    return 1;
+    lineDef->hEdges[0] = first;
+    lineDef->hEdges[1] = last;
 }
 
 typedef struct {
@@ -127,11 +115,7 @@ static boolean hEdgeCollector(binarytree_t* tree, void* data)
             }
             else
             {   // Count mode.
-                if(((bsp_hedgeinfo_t*) hEdge->data)->index == -1)
-                    Con_Error("HEdge %p never reached a subsector!", hEdge);
-
                 params->numSegs++;
-
                 params->numHEdges++;
                 if(hEdge->twin && ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef &&
                    !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
@@ -168,9 +152,6 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
     params.numHEdges = 0;
     params.indexPtr = &halfEdgeDS->hEdges;
     BinaryTree_InOrder(rootNode, hEdgeCollector, &params);
-
-    // Sort the half-edges into ascending index order.
-    qsort(halfEdgeDS->hEdges, params.numHEdges, sizeof(hedge_t*), hEdgeCompare);
 
     // Generate seg data from (BSP) line segments.
     for(i = 0; i < halfEdgeDS->numHEdges; ++i)

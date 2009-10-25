@@ -393,21 +393,6 @@ static boolean sanityCheckHasRealHEdge(const bspleafdata_t* leaf)
     return false;
 }
 
-static void renumberLeafHEdges(bspleafdata_t* leaf, uint* curIndex)
-{
-    const hedge_t* hEdge;
-
-    hEdge = leaf->hEdges->hEdge;
-    do
-    {
-        ((bsp_hedgeinfo_t*) hEdge->data)->index = (*curIndex)++;
-        if((((bsp_hedgeinfo_t*) hEdge->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect) &&
-           hEdge->twin &&
-           ((bsp_hedgeinfo_t*) hEdge->twin->data)->lineDef && !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
-            ((bsp_hedgeinfo_t*) hEdge->twin->data)->index = (*curIndex)++;
-    } while((hEdge = hEdge->next) != leaf->hEdges->hEdge);
-}
-
 static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
@@ -415,7 +400,6 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
         bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
 
         clockwiseOrder(leaf);
-        renumberLeafHEdges(leaf, data);
 
         sanityCheckClosed(leaf);
         sanityCheckSameSector(leaf);

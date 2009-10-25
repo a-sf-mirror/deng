@@ -126,7 +126,6 @@ hedge_t* HEdge_Create(linedef_t* line, linedef_t* sourceLine,
     data->side = (back? 1 : 0);
     data->sector = sec;
     data->sourceLine = sourceLine;
-    data->index = -1;
     data->lprev = data->lnext = NULL;
     }
 

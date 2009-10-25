@@ -43,11 +43,6 @@
 #define ANG_EPSILON         (1.0 / 1024.0)
 
 typedef struct {
-    // Index of the half-edge. Only valid once the half-edge has been added
-    // to a polygon. A negative value means it is invalid -- there
-    // shouldn't be any of these once the BSP tree has been built.
-    int                 index;
-
     // The superblock that contains this half-edge, or NULL if the half-edge
     // is no longer in any superblock (e.g., now in a leaf).
     struct superblock_s* block;
