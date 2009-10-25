@@ -269,7 +269,7 @@ static subsector_t* createSubsectorOfSector(map_t* map, sector_t* sector, face_t
     return subsector;
 }
 
-static void hardenLeaf(map_t* map, face_t* face, const bspleafdata_t* src)
+static void createSubsectorForFace(map_t* map, face_t* face, const bspleafdata_t* src)
 {
     hedge_t* hEdge;
 
@@ -328,7 +328,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            hardenLeaf(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
+            createSubsectorForFace(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
         }
         else
         {
@@ -348,7 +348,7 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            hardenLeaf(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
+            createSubsectorForFace(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
         }
         else
         {
@@ -416,27 +416,13 @@ static void hardenBSP(map_t* map, binarytree_t* rootNode)
     }
 }
 
-static void addVerticesToDMU(map_t* map)
-{
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-    uint i;
-
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
-    {
-        vertex_t* vtx = halfEdgeDS->vertices[i];
-
-        P_CreateObjectRecord(DMU_VERTEX, vtx);
-    }
-}
-
 void SaveMap(map_t* map, void* rootNode)
 {
     uint startTime = Sys_GetRealTime();
     binarytree_t* rn = (binarytree_t*) rootNode;
 
-    addVerticesToDMU(map);
-    buildSegsFromHEdges(map, rn);
     hardenBSP(map, rn);
+    buildSegsFromHEdges(map, rn);
 
     // How much time did we spend?
     VERBOSE(

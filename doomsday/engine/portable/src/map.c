@@ -2406,6 +2406,19 @@ void MPE_DetectOverlappingLines(map_t* map)
 }
 #endif
 
+static void addVerticesToDMU(map_t* map)
+{
+    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
+    uint i;
+
+    for(i = 0; i < halfEdgeDS->numVertices; ++i)
+    {
+        vertex_t* vtx = halfEdgeDS->vertices[i];
+
+        P_CreateObjectRecord(DMU_VERTEX, vtx);
+    }
+}
+
 void Map_EditEnd(map_t* map)
 {
     uint i, numVertices;
@@ -2461,6 +2474,8 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     }
 
     /*builtOK =*/ buildBSP(map, vertexInfo);
+
+    addVerticesToDMU(map);
 
     for(i = 0; i < map->numPolyObjs; ++i)
     {
