@@ -194,110 +194,84 @@ static boolean getAveragedCoords(const hedge_node_t* headPtr, double* x, double*
 
 /**
  * Sort half-edges by angle (from the middle point to the start vertex).
- *
- * \note Algorithm:
- * Uses the now famous "double bubble" sorter :).
  */
-static void sortHEdgesByAngleAroundPoint(hedge_node_t** nodes, size_t total,
-                                         double x, double y)
+static void sortHEdgesByAngleAroundPoint(bspleafdata_t* leaf, double x, double y)
 {
-    size_t i;
+    hedge_node_t* node;
 
-    i = 0;
-    while(i + 1 < total)
+    if(!leaf->hEdges || leaf->hEdges->next == leaf->hEdges)
+        return;
+
+    node = leaf->hEdges;
+    for(;;)
     {
-        hedge_node_t* a = nodes[i];
-        hedge_node_t* b = nodes[i+1];
+        const hedge_t* hEdgeA = node->hEdge;
+        const hedge_t* hEdgeB = node->next->hEdge;
         angle_g angle1, angle2;
 
-        {
-        const hedge_t* hEdgeA = a->hEdge;
-        const hedge_t* hEdgeB = b->hEdge;
+        if(node->next == leaf->hEdges)
+            break; // Sorted.
 
-        angle1 = M_SlopeToAngle(hEdgeA->vertex->pos[VX] - x,
-                                hEdgeA->vertex->pos[VY] - y);
-        angle2 = M_SlopeToAngle(hEdgeB->vertex->pos[VX] - x,
-                                hEdgeB->vertex->pos[VY] - y);
-        }
+        angle1 = M_SlopeToAngle(hEdgeA->vertex->pos[0] - x,
+                                hEdgeA->vertex->pos[1] - y);
+        angle2 = M_SlopeToAngle(hEdgeB->vertex->pos[0] - x,
+                                hEdgeB->vertex->pos[1] - y);
 
         if(angle1 + ANG_EPSILON < angle2)
-        {
-            // Swap them.
-            nodes[i] = b;
-            nodes[i + 1] = a;
+        {   // Swap them.
+            hedge_node_t* other = node->next;
 
-            // Bubble down.
-            if(i > 0)
-                i--;
+            if(node == leaf->hEdges)
+                leaf->hEdges = node->next;
+
+            node->prev->next = node->next;
+            node->next->prev = node->prev;
+
+            node->next->next->prev = node;
+            node->next = node->next->next;
+
+            node->prev = other;
+            other->next = node;
+
+            node = leaf->hEdges;
         }
         else
         {
-            // Bubble up.
-            i++;
+            node = node->next;
         }
     }
 }
 
 /**
- * Sort the given list of half-edges into clockwise order based on their
- * position/orientation compared to the specified point.
- *
- * @param headPtr       Ptr to the address of the headPtr to the list
- *                      of hedges to be sorted.
- * @param num           Number of half edges in the list.
- * @param x             X coordinate of the point to order around.
- * @param y             Y coordinate of the point to order around.
+ * Sort the list of half-edges in the leaf into clockwise order, based on their
+ * position/orientation around the mid point in the leaf.
  */
-static void clockwiseOrder(hedge_node_t** headPtr, size_t num, double x,
-                           double y)
+static void clockwiseOrder(bspleafdata_t* leaf)
 {
-    size_t i, idx;
-    hedge_node_t* n;
-    size_t nodeSortBufSize;
-    hedge_node_t** nodeSortBuf;
+    double midPoint[2];
 
-    nodeSortBufSize = num + 1;
-    nodeSortBuf = M_Malloc(nodeSortBufSize * sizeof(hedge_node_t*));
+    getAveragedCoords(leaf->hEdges, &midPoint[0], &midPoint[1]);
 
-    // Insert ptrs to the into the sort buffer.
-    idx = 0;
-    n = *headPtr;
-    do
-    {
-        nodeSortBuf[idx++] = n;
-    } while((n = n->next) != *headPtr);
-    nodeSortBuf[idx] = NULL; // Terminate.
-
-    sortHEdgesByAngleAroundPoint(nodeSortBuf, num, x, y);
-
-    // Re-link the list in the order of the sorted array.
-    for(i = 0; i < num-1; ++i)
-    {
-        nodeSortBuf[i]->next = nodeSortBuf[i+1];
-        nodeSortBuf[i+1]->prev = nodeSortBuf[i];
-    }
-    nodeSortBuf[0]->prev = nodeSortBuf[num-1];
-    nodeSortBuf[num-1]->next = nodeSortBuf[0];
-
-    *headPtr = nodeSortBuf[0];
-
-    // Free temporary storage.
-    M_Free(nodeSortBuf);
+    sortHEdgesByAngleAroundPoint(leaf, midPoint[0], midPoint[1]);
 
 /*#if _DEBUG
+{
+hedge_node_t* n;
+
 Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
 
-n = *headPtr;
+n = leaf->hEdges;
 do
 {
     const hedge_t* hEdge = n->hEdge;
-    angle_g angle = M_SlopeToAngle(hEdge->vertex->pos[VX] - x,
-                                   hEdge->vertex->pos[VY] - y);
+    angle_g angle = M_SlopeToAngle(hEdge->vertex->pos[0] - midPoint[0],
+                                   hEdge->vertex->pos[1] - midPoint[1]);
 
     Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                hEdge, angle, (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
-                (float) hEdge->twin->vertex->pos[VX], (float) hEdge->twin->vertex->pos[VY]);
-} while((n = n->next) != *headPtr);
+                hEdge, angle, (float) hEdge->vertex->pos[0], (float) hEdge->vertex->pos[1],
+                (float) hEdge->twin->vertex->pos[0], (float) hEdge->twin->vertex->pos[1]);
+} while((n = n->next) != leaf->hEdges);
+}
 #endif*/
 }
 
@@ -438,25 +412,11 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {   // obj is a leaf.
-        size_t total;
-        const hedge_node_t* n;
         bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
-        double midPoint[2];
 
-        getAveragedCoords(leaf->hEdges, &midPoint[VX], &midPoint[VY]);
-
-        // Count half-edges.
-        total = 0;
-        n = leaf->hEdges;
-        do
-        {
-            total++;
-        } while((n = n->next) != leaf->hEdges);
-
-        clockwiseOrder(&leaf->hEdges, total, midPoint[VX], midPoint[VY]);
+        clockwiseOrder(leaf);
         renumberLeafHEdges(leaf, data);
 
-        // Do some sanity checks.
         sanityCheckClosed(leaf);
         sanityCheckSameSector(leaf);
         if(!sanityCheckHasRealHEdge(leaf))
@@ -472,9 +432,11 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
  * Traverse the BSP tree and put all the half-edges in each subsector into
  * clockwise order, and renumber their indices.
  *
- * \important This cannot be done during BuildNodes() since splitting a
- * half-edge with a twin may insert another half-edge into that twin's list,
- * usually in the wrong place order-wise.
+ * @note This cannot be done during BuildNodes() since splitting a half-edge
+ * with a twin may insert another half-edge into that twin's list, usually
+ * in the wrong place order-wise.
+ *
+ * danij 25/10/2009: Actually, this CAN (and should) be done during BuildNodes().
  */
 void ClockwiseBspTree(binarytree_t* rootNode)
 {
