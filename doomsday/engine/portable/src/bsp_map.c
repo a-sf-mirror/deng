@@ -111,7 +111,7 @@ static boolean countSegs(binarytree_t* tree, void* data)
 
 static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 {
-    uint i;
+    uint i, idx;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
 
     // Count the number of used hedges (will become segs).
@@ -127,7 +127,8 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
         const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
         seg_t* seg;
 
-        if(data->lineDef && !data->sector)
+        if(data->lineDef &&
+           (!data->sector || (data->side == BACK && data->lineDef->buildData.windowEffect)))
         {
             if(hEdge->data)
                 Z_Free(hEdge->data);
@@ -184,9 +185,15 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
             memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
         }
 
-        map->segs[P_CreateObjectRecord(DMU_SEG, seg) - 1] = seg;
+        idx = P_CreateObjectRecord(DMU_SEG, seg) - 1;
+        map->segs[idx] = seg;
+
+        if(hEdge->data)
+            Z_Free(hEdge->data);
         hEdge->data = seg;
     }
+
+    assert(idx == map->numSegs - 1);
 }
 
 static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
