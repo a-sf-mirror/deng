@@ -115,15 +115,19 @@ boolean Surface_SetMaterialOffsetX(surface_t* suf, float x)
     if(!suf)
         return false;
 
-    if(suf->offset[VX] == x)
+    if(suf->offset[0] == x)
         return true;
 
-    suf->offset[VX] = x;
+    suf->offset[0] = x;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
+    else
+    {
+        suf->visOffset[0] = suf->offset[0];
     }
 
     return true;
@@ -142,15 +146,19 @@ boolean Surface_SetMaterialOffsetY(surface_t* suf, float y)
     if(!suf)
         return false;
 
-    if(suf->offset[VY] == y)
+    if(suf->offset[1] == y)
         return true;
 
-    suf->offset[VY] = y;
+    suf->offset[1] = y;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
+    else
+    {
+        suf->visOffset[1] = suf->offset[1];
     }
 
     return true;
@@ -170,16 +178,21 @@ boolean Surface_SetMaterialOffsetXY(surface_t* suf, float x, float y)
     if(!suf)
         return false;
 
-    if(suf->offset[VX] == x && suf->offset[VY] == y)
+    if(suf->offset[0] == x && suf->offset[1] == y)
         return true;
 
-    suf->offset[VX] = x;
-    suf->offset[VY] = y;
+    suf->offset[0] = x;
+    suf->offset[1] = y;
     suf->inFlags |= SUIF_UPDATE_DECORATIONS;
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
         SurfaceList_Add(&map->movingSurfaceList, suf);
+    }
+    else
+    {
+        suf->visOffset[0] = suf->offset[0];
+        suf->visOffset[1] = suf->offset[1];
     }
 
     return true;

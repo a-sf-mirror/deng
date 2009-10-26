@@ -108,6 +108,8 @@ static sidedef_t* createSideDef(map_t* map)
 
     side->buildData.index = map->numSideDefs; // 1-based index, 0 = NIL.
     side->SW_bottomsurface.owner = (void*) side;
+    side->SW_middlesurface.owner = (void*) side;
+    side->SW_topsurface.owner = (void*) side;
     return side;
 }
 
@@ -1701,48 +1703,22 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
 static void addLineDefsToDMU(map_t* map)
 {
     uint i;
-
     for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* lineDef = map->lineDefs[i];
-
-        P_CreateObjectRecord(DMU_LINEDEF, lineDef);
-    }
+        P_CreateObjectRecord(DMU_LINEDEF, map->lineDefs[i]);
 }
 
-static void finishSideDefs(map_t* map)
+static void addSideDefsToDMU(map_t* map)
 {
     uint i;
-
     for(i = 0; i < map->numSideDefs; ++i)
-    {
-        sidedef_t* sideDef = map->sideDefs[i];
-
-        sideDef->sector = map->sectors[sideDef->sector->buildData.index - 1];
-        sideDef->SW_bottomsurface.owner = sideDef;
-        sideDef->SW_middlesurface.owner = sideDef;
-        sideDef->SW_topsurface.owner = sideDef;
-        sideDef->SW_bottomsurface.visOffset[0] = sideDef->SW_bottomsurface.offset[0];
-        sideDef->SW_bottomsurface.visOffset[1] = sideDef->SW_bottomsurface.offset[1];
-        sideDef->SW_middlesurface.visOffset[0] = sideDef->SW_middlesurface.offset[0];
-        sideDef->SW_middlesurface.visOffset[1] = sideDef->SW_middlesurface.offset[1];
-        sideDef->SW_topsurface.visOffset[0] = sideDef->SW_topsurface.offset[0];
-        sideDef->SW_topsurface.visOffset[1] = sideDef->SW_topsurface.offset[1];
-
-        P_CreateObjectRecord(DMU_SIDEDEF, sideDef);
-    }
+        P_CreateObjectRecord(DMU_SIDEDEF, map->sideDefs[i]);
 }
 
 static void addSectorsToDMU(map_t* map)
 {
     uint i;
-
     for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sector = map->sectors[i];
-
-        P_CreateObjectRecord(DMU_SECTOR, sector);
-    }
+        P_CreateObjectRecord(DMU_SECTOR, map->sectors[i]);
 }
 
 static void hardenPlanes(map_t* map)
@@ -2208,12 +2184,15 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
  * @param map           The map to build the BSP for.
  * @return              @c true, if completed successfully.
  */
-static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
+static boolean buildBSP(map_t* map)
 {
+    uint startTime = Sys_GetRealTime();
+
     boolean builtOK;
-    uint startTime;
     superblock_t* hEdgeList;
     binarytree_t* rootNode;
+    uint numVertices;
+    vertexinfo_t* vertexInfo;
 
     if(verbose >= 1)
     {
@@ -2221,8 +2200,16 @@ static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
                     "factor of %d...\n", bspFactor);
     }
 
-    // It begins...
-    startTime = Sys_GetRealTime();
+    numVertices = map->_halfEdgeDS.numVertices;
+    vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
+
+    buildVertexOwnerRings(map, vertexInfo);
+
+#if _DEBUG
+checkVertexOwnerRings(vertexInfo, numVertices);
+#endif
+
+    detectOnesidedWindows(map, vertexInfo);
 
     BSP_InitSuperBlockAllocator();
     BSP_InitIntersectionAllocator();
@@ -2288,6 +2275,8 @@ static boolean buildBSP(map_t* map, vertexinfo_t* vertexInfo)
     // Free temporary storage.
     BSP_ShutdownIntersectionAllocator();
     BSP_ShutdownSuperBlockAllocator();
+
+    M_Free(vertexInfo);
 
     // How much time did we spend?
     VERBOSE(Con_Message("  Done in %.2f seconds.\n",
@@ -2418,8 +2407,7 @@ static void addVerticesToDMU(map_t* map)
 
 void Map_EditEnd(map_t* map)
 {
-    uint i, numVertices;
-    vertexinfo_t* vertexInfo;
+    uint i;
 
     if(!map)
         return;
@@ -2433,28 +2421,10 @@ void Map_EditEnd(map_t* map)
     detectDuplicateVertices(&map->_halfEdgeDS);
     pruneUnusedObjects(map, PRUNE_ALL);
 
-    numVertices = Map_HalfEdgeDS(map)->numVertices;
-    vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
-
-    buildVertexOwnerRings(map, vertexInfo);
-
-#if _DEBUG
-checkVertexOwnerRings(vertexInfo, numVertices);
-#endif
-
-    detectOnesidedWindows(map, vertexInfo);
-
-    /**
-     * Harden most of the map data so that we can construct some of the more
-     * intricate data structures early on (and thus make use of them during
-     * the BSP generation).
-     *
-     * \todo I'm sure this can be reworked further so that we destroy as we
-     * go and reduce the current working memory surcharge.
-     */
     addSectorsToDMU(map);
-    finishSideDefs(map);
+    addSideDefsToDMU(map);
     addLineDefsToDMU(map);
+
     finishPolyobjs(map);
 
     /**
@@ -2470,7 +2440,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
             (Sys_GetRealTime() - startTime) / 1000.0f))
     }
 
-    /*builtOK =*/ buildBSP(map, vertexInfo);
+    /*builtOK =*/ buildBSP(map);
 
     addVerticesToDMU(map);
 
@@ -2505,9 +2475,21 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     Map_InitSoundEnvironment(map);
     findSubsectorMidPoints(map);
 
-    // Pass on the vertex lineowner info.
-    // @todo will soon be unnecessary once Map_BuildBSP is linking the half-edges
-    // into rings around the vertices.
+    {
+    uint numVertices;
+    vertexinfo_t* vertexInfo;
+
+    numVertices = map->_halfEdgeDS.numVertices;
+    vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
+
+    buildVertexOwnerRings(map, vertexInfo);
+
+#if _DEBUG
+checkVertexOwnerRings(vertexInfo, numVertices);
+#endif
+
+    // Build the vertex lineowner info.
+    // @todo now redundant, rewire fakeradio to use HalfEdgeDS.
     for(i = 0; i < numVertices; ++i)
     {
         vertex_t* vertex = map->_halfEdgeDS.vertices[i];
@@ -2516,8 +2498,8 @@ checkVertexOwnerRings(vertexInfo, numVertices);
         ((mvertex_t*) vertex->data)->lineOwners = vInfo->lineOwners;
         ((mvertex_t*) vertex->data)->numLineOwners = vInfo->numLineOwners;
     }
-
     M_Free(vertexInfo);
+    }
 
     map->editActive = false;
 }
