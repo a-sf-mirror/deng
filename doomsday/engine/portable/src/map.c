@@ -87,7 +87,7 @@ typedef struct lineowner2_s {
 
 typedef struct {
     uint            numLineOwners;
-    lineowner2_t*    lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
+    lineowner2_t*   lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
 } vertexinfo2_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -2030,7 +2030,7 @@ static void findMapLimits(map_t* src, int* bbox)
     }
 }
 
-static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo, superblock_t* block)
+static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo)
 {
     lineowner2_t* owner, *base;
 
@@ -2090,21 +2090,6 @@ static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo, superblock_t* block)
 
         BSP_UpdateHEdgeInfo(front);
         BSP_UpdateHEdgeInfo(back);
-
-        if(side == FRONT)
-        {
-            BSP_AddHEdgeToSuperBlock(block, front);
-            if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
-               (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
-                BSP_AddHEdgeToSuperBlock(block, back);
-        }
-        else
-        {
-            if((lineDef->buildData.sideDefs[BACK] && lineDef->buildData.sideDefs[BACK]->sector) ||
-               (!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect))
-                BSP_AddHEdgeToSuperBlock(block, front);
-            BSP_AddHEdgeToSuperBlock(block, back);
-        }
 
         if(side == FRONT)
         {
@@ -2408,29 +2393,13 @@ static void buildVertexOwnerRings2(map_t* map, vertexinfo2_t* vertexInfo)
 
 /**
  * Initially create all half-edges, one for each side of a linedef.
- *
- * @return              The list of created half-edges.
  */
-static superblock_t* createInitialHEdges(map_t* map)
+static void createInitialHEdges(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
 
     uint i, numVertices;
-    int mapBounds[4], bw, bh;
-    superblock_t* block;
     vertexinfo2_t* vertexInfo;
-
-    findMapLimits(map, mapBounds);
-
-    block = BSP_SuperBlockCreate();
-
-    block->bbox[BOXLEFT]   = mapBounds[BOXLEFT]   - (mapBounds[BOXLEFT]   & 0x7);
-    block->bbox[BOXBOTTOM] = mapBounds[BOXBOTTOM] - (mapBounds[BOXBOTTOM] & 0x7);
-    bw = ((mapBounds[BOXRIGHT] - block->bbox[BOXLEFT])   / 128) + 1;
-    bh = ((mapBounds[BOXTOP]   - block->bbox[BOXBOTTOM]) / 128) + 1;
-
-    block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
-    block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
 
     numVertices = map->_halfEdgeDS.numVertices;
     vertexInfo = M_Calloc(sizeof(vertexinfo2_t) * numVertices);
@@ -2444,7 +2413,7 @@ checkVertexOwnerRings2(vertexInfo, numVertices);
     detectOnesidedWindows(map, vertexInfo);
 
     for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
-        buildHEdgesAroundVertex(&vertexInfo[i], block);
+        buildHEdgesAroundVertex(&vertexInfo[i]);
 
     for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
         linkHEdgesAroundVertex(&vertexInfo[i]);   
@@ -2468,6 +2437,43 @@ checkVertexOwnerRings2(vertexInfo, numVertices);
     VERBOSE(Con_Message
             ("createInitialHEdges: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
+}
+
+static superblock_t* createSuperblockAndAddHEdges(map_t* map)
+{
+    uint i;
+    int mapBounds[4], bw, bh;
+    superblock_t* block;
+
+    findMapLimits(map, mapBounds);
+
+    block = BSP_SuperBlockCreate();
+
+    block->bbox[BOXLEFT]   = mapBounds[BOXLEFT]   - (mapBounds[BOXLEFT]   & 0x7);
+    block->bbox[BOXBOTTOM] = mapBounds[BOXBOTTOM] - (mapBounds[BOXBOTTOM] & 0x7);
+    bw = ((mapBounds[BOXRIGHT] - block->bbox[BOXLEFT])   / 128) + 1;
+    bh = ((mapBounds[BOXTOP]   - block->bbox[BOXBOTTOM]) / 128) + 1;
+
+    block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
+    block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
+
+    for(i = 0; i < map->_halfEdgeDS.numHEdges; ++i)
+    {
+        hedge_t* hEdge = map->_halfEdgeDS.hEdges[i];
+
+        if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
+            continue;
+
+        if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
+           !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.sideDefs[BACK])
+            continue;
+
+        if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect)
+            continue;
+
+        BSP_AddHEdgeToSuperBlock(block, hEdge);
+    }
 
     return block;
 }
@@ -2506,17 +2512,17 @@ static boolean buildBSP(map_t* map)
                     "factor of %d...\n", bspFactor);
     }
 
-    BSP_InitSuperBlockAllocator();
-    BSP_InitIntersectionAllocator();
+    createInitialHEdges(map);
 
-    // Create initial half-edges.
-    hEdgeList = createInitialHEdges(map);
+    BSP_InitSuperBlockAllocator();
+    hEdgeList = createSuperblockAndAddHEdges(map);
 
     // Build the BSP.
     {
     uint buildStartTime = Sys_GetRealTime();
     cutlist_t* cutList;
 
+    BSP_InitIntersectionAllocator();
     cutList = BSP_CutListCreate();
 
     // Recursively create nodes.
