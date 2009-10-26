@@ -189,7 +189,36 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
     }
 }
 
-static subsector_t* createSubsectorOfSector(map_t* map, sector_t* sector, face_t* face)
+static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
+{
+    const hedge_t* hEdge;
+    sector_t* sector = NULL;
+
+    hEdge = firstHEdge;
+    do
+    {
+        if(!allowSelfRef && hEdge->twin &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
+           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+            continue;
+        
+        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
+        {
+            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+
+            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
+                sector = lineDef->buildData.windowEffect;
+            else
+                sector = lineDef->buildData.sideDefs[
+                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+        }
+    } while(!sector && (hEdge = hEdge->next) != firstHEdge);
+
+    return sector;
+}
+
+static subsector_t* createSubsector(map_t* map, face_t* face)
 {
     subsector_t* subsector = (subsector_t*) Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
     size_t hEdgeCount;
@@ -204,7 +233,15 @@ static subsector_t* createSubsectorOfSector(map_t* map, sector_t* sector, face_t
 
     subsector->face = face;
     subsector->hEdgeCount = (uint) hEdgeCount;
-    subsector->sector = sector;
+
+    /**
+     * Determine which sector this subsector belongs to.
+     * On the first pass, we are picky; do not consider half-edges from
+     * self-referencing linedefs. If that fails, take whatever we can find.
+     */
+    subsector->sector = pickSectorFromHEdges(face->hEdge, false);
+    if(!subsector->sector)
+        subsector->sector = pickSectorFromHEdges(face->hEdge, true);
 
     if(!subsector->sector)
     {
@@ -227,8 +264,8 @@ static void createSubsectorForFace(map_t* map, face_t* face, const bspleafdata_t
         hEdge->face = face;
     } while((hEdge = hEdge->next) != src->hEdges->hEdge);
 
-    face->hEdge = src->hEdges->hEdge; 
-    face->data = createSubsectorOfSector(map, src->sector, face);
+    face->hEdge = src->hEdges->hEdge;
+    face->data = createSubsector(map, face);
 }
 
 typedef struct {

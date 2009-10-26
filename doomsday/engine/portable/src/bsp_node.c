@@ -477,37 +477,6 @@ static void takeHEdgesFromSuperblock(bspleafdata_t* leaf, superblock_t* block)
     block->realNum = block->miniNum = 0;
 }
 
-static sector_t* pickSectorFromHEdges(const hedge_node_t* firstHEdge, boolean allowSelfRef)
-{
-    const hedge_node_t* node;
-    sector_t* sector = NULL;
-
-    node = firstHEdge;
-    do
-    {
-        const hedge_t* hEdge = node->hEdge;
-
-        if(!allowSelfRef && hEdge->twin &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
-           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
-            continue;
-        
-        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
-        {
-            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
-
-            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
-                sector = lineDef->buildData.windowEffect;
-            else
-                sector = lineDef->buildData.sideDefs[
-                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
-        }
-    } while(!sector && (node = node->next) != firstHEdge);
-
-    return sector;
-}
-
 /**
  * Create a new leaf from a list of half-edges.
  */
@@ -517,15 +486,6 @@ static bspleafdata_t* createBSPLeaf(superblock_t* hEdgeList)
 
     // Link the half-edges into the new leaf.
     takeHEdgesFromSuperblock(leaf, hEdgeList);
-
-    /**
-     * Determine which sector this leaf belongs to.
-     * On the first pass, we are picky; do not consider half-edges from
-     * self-referencing linedefs. If that fails, take whatever we can find.
-     */
-    leaf->sector = pickSectorFromHEdges(leaf->hEdges, false);
-    if(!leaf->sector)
-        leaf->sector = pickSectorFromHEdges(leaf->hEdges, true);
 
     return leaf;
 }
