@@ -557,16 +557,16 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                 {
                     double pos[2];
 
-                    pos[VX] = cur->vertex->pos[VX] + next->vertex->pos[VX];
-                    pos[VY] = cur->vertex->pos[VY] + next->vertex->pos[VY];
-                    pos[VX] /= 2;
-                    pos[VY] /= 2;
+                    pos[0] = cur->vertex->pos[0] + next->vertex->pos[0];
+                    pos[1] = cur->vertex->pos[1] + next->vertex->pos[1];
+                    pos[0] /= 2;
+                    pos[1] /= 2;
 
                     cur->after->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
-                    Con_Message("Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                cur->after->buildData.index - 1, pos[VX], pos[VY]))
+                    Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
+                                cur->after->buildData.index - 1, pos[0], pos[1]))
                 }
             }
             else if(!cur->after && next->before)
@@ -575,16 +575,16 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                 {
                     double pos[2];
 
-                    pos[VX] = cur->vertex->pos[VX] + next->vertex->pos[VX];
-                    pos[VY] = cur->vertex->pos[VY] + next->vertex->pos[VY];
-                    pos[VX] /= 2;
-                    pos[VY] /= 2;
+                    pos[0] = cur->vertex->pos[0] + next->vertex->pos[0];
+                    pos[1] = cur->vertex->pos[1] + next->vertex->pos[1];
+                    pos[0] /= 2;
+                    pos[1] /= 2;
 
                     next->before->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
-                    Con_Message("Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                next->before->buildData.index - 1, pos[VX], pos[VY]))
+                    Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
+                                next->before->buildData.index - 1, pos[0], pos[1]))
                 }
             }
             else
@@ -595,13 +595,14 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                 {
                     if(!cur->selfRef && !next->selfRef)
                     {
-                        VERBOSE(
-                        Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d "
-                                    "(%1.1f,%1.1f)\n",
-                                    cur->after->buildData.index,
-                                    (float) cur->vertex->pos[VX], (float) cur->vertex->pos[VY],
-                                    next->before->buildData.index,
-                                    (float) next->vertex->pos[VX], (float) next->vertex->pos[VY]));
+#if _DEBUG
+VERBOSE(
+Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
+            cur->after->buildData.index - 1,
+            (float) cur->vertex->pos[0], (float) cur->vertex->pos[1],
+            next->before->buildData.index - 1,
+            (float) next->vertex->pos[0], (float) next->vertex->pos[1]));
+#endif
                     }
 
                     // Choose the non-self-referencing sector when we can.
