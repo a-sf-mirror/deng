@@ -71,8 +71,7 @@ typedef struct {
 
 typedef struct lineowner2_s {
     struct linedef_s* lineDef;
-    struct lineowner2_s* prev, *next; // {prev, next} (i.e. {anticlk, clk}).
-    binangle_t      angle; // Between this and next clockwise.
+    struct lineowner2_s* next;
 
     /**
      * Half-edge on each side of the LineDef relative to this vertex, i.e:
@@ -1939,12 +1938,11 @@ Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
 
 static void countVertexLineOwners(vertexinfo2_t* vInfo, uint* oneSided, uint* twoSided)
 {
-    lineowner2_t* base = vInfo->lineOwners;
-
-    if(base)
+    if(vInfo->lineOwners)
     {
-        lineowner2_t* owner = base;
-
+        lineowner2_t* owner;
+        
+        owner = vInfo->lineOwners;
         do
         {
             if(!owner->lineDef->buildData.sideDefs[FRONT] ||
@@ -1952,9 +1950,7 @@ static void countVertexLineOwners(vertexinfo2_t* vInfo, uint* oneSided, uint* tw
                 (*oneSided)++;
             else
                 (*twoSided)++;
-
-            owner = owner->next;
-        } while(owner != base);
+        } while((owner = owner->next) != NULL);
     }
 }
 
@@ -1973,8 +1969,7 @@ static void detectOnesidedWindows(map_t* map, vertexinfo2_t* vertexInfo)
         linedef_t* l = map->lineDefs[i];
 
         if((l->buildData.sideDefs[FRONT] && l->buildData.sideDefs[BACK]) ||
-           !l->buildData.sideDefs[FRONT] /*||
-           (l->buildData.mlFlags & MLF_ZEROLENGTH) ||
+           !l->buildData.sideDefs[FRONT] /* ||
            l->buildData.overlap*/)
             continue;
 
@@ -2032,12 +2027,12 @@ static void findMapLimits(map_t* src, int* bbox)
 
 static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo)
 {
-    lineowner2_t* owner, *base;
+    lineowner2_t* owner;
 
     if(vInfo->numLineOwners == 0)
         return;
     
-    owner = base = vInfo->lineOwners;
+    owner = vInfo->lineOwners;
     do
     {
         linedef_t* lineDef = owner->lineDef;
@@ -2101,28 +2096,33 @@ static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo)
             ((lineowner2_t*) lineDef->vo[0])->hEdges[FRONT] = ((lineowner2_t*) lineDef->vo[1])->hEdges[BACK]  = back;
             ((lineowner2_t*) lineDef->vo[0])->hEdges[BACK]  = ((lineowner2_t*) lineDef->vo[1])->hEdges[FRONT] = front;
         }
-    } while((owner = owner->next) != base);
+    } while((owner = owner->next) != NULL);
 }
 
 static void linkHEdgesAroundVertex(vertexinfo2_t* vInfo)
 {
-    lineowner2_t* owner, *base;
+    lineowner2_t* owner, *prev;
 
     if(vInfo->numLineOwners == 0)
         return;
-    
-    owner = base = vInfo->lineOwners;
+
+    prev = vInfo->lineOwners;
+    while(prev->next)
+        prev = prev->next;
+
+    owner = vInfo->lineOwners;
     do
     {
         hedge_t* hEdge = owner->hEdges[FRONT];
 
-        hEdge->prev = owner->next->hEdges[BACK];
+        hEdge->prev = owner->next ? owner->next->hEdges[BACK] : vInfo->lineOwners->hEdges[BACK];
         hEdge->prev->next = hEdge;
 
-        hEdge->twin->next = owner->prev->hEdges[FRONT];
+        hEdge->twin->next = prev->hEdges[FRONT];
         hEdge->twin->next->prev = hEdge->twin;
 
-    } while((owner = owner->next) != base);
+        prev = owner;
+    } while((owner = owner->next) != NULL);
 }
 
 /**
@@ -2143,25 +2143,15 @@ static int C_DECL lineAngleSorter2(const void* a, const void* b)
     own[1] = (lineowner2_t*) b;
     for(i = 0; i < 2; ++i)
     {
-        if(own[i]->prev) // We have a cached result.
-        {
-            angles[i] = own[i]->angle;
-        }
-        else
-        {
-            vertex_t* otherVtx;
+        vertex_t* otherVtx;
 
-            line = own[i]->lineDef;
-            otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
+        line = own[i]->lineDef;
+        otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
 
-            dx = otherVtx->pos[VX] - rootVtx->pos[VX];
-            dy = otherVtx->pos[VY] - rootVtx->pos[VY];
+        dx = otherVtx->pos[VX] - rootVtx->pos[VX];
+        dy = otherVtx->pos[VY] - rootVtx->pos[VY];
 
-            own[i]->angle = angles[i] = bamsAtan2(-100 *dx, 100 * dy);
-
-            // Mark as having a cached angle.
-            own[i]->prev = (lineowner2_t*) 1;
-        }
+        angles[i] = bamsAtan2(-100 *dx, 100 * dy);
     }
 
     return (angles[1] - angles[0]);
@@ -2273,7 +2263,6 @@ static void setVertexLineOwner2(vertexinfo2_t* vInfo, linedef_t* lineDef, byte v
 
     newOwner = M_Calloc(sizeof(*newOwner));
     newOwner->lineDef = lineDef;
-    newOwner->prev = NULL;
 
     // Link it in.
     // NOTE: We don't bother linking everything at this stage since we'll
@@ -2287,46 +2276,8 @@ static void setVertexLineOwner2(vertexinfo2_t* vInfo, linedef_t* lineDef, byte v
     lineDef->L_vo(vertex) = (lineowner_t*) newOwner;
 }
 
-#if _DEBUG
-static void checkVertexOwnerRings2(vertexinfo2_t* vertexInfo, uint num)
+static void findVertexLineDefOwners(map_t* map, vertexinfo2_t* vertexInfo)
 {
-    uint i;
-
-    for(i = 0; i < num; ++i)
-    {
-        vertexinfo2_t* vInfo = &vertexInfo[i];
-
-        validCount++;
-
-        if(vInfo->numLineOwners)
-        {
-            lineowner2_t* base, *owner;
-
-            owner = base = vInfo->lineOwners;
-            do
-            {
-                if(owner->lineDef->validCount == validCount)
-                    Con_Error("LineDef linked multiple times in owner link ring!");
-                owner->lineDef->validCount = validCount;
-
-                if(owner->prev->next != owner || owner->next->prev != owner)
-                    Con_Error("Invalid line owner link ring!");
-
-                owner = owner->next;
-            } while(owner != base);
-        }
-    }
-}
-#endif
-
-/**
- * Generates the line owner rings for each vertex. Each ring includes all
- * the lines which the vertex belongs to sorted by angle, (the rings are
- * arranged in clockwise order, east = 0).
- */
-static void buildVertexOwnerRings2(map_t* map, vertexinfo2_t* vertexInfo)
-{
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
     uint i;
 
     for(i = 0; i < map->numLineDefs; ++i)
@@ -2342,52 +2293,22 @@ static void buildVertexOwnerRings2(map_t* map, vertexinfo2_t* vertexInfo)
             setVertexLineOwner2(vInfo, lineDef, j);
         }
     }
+}
 
-    // Sort line owners and then finish the rings.
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
+static void sortVertexOwners(map_t* map, vertexinfo2_t* vertexInfo)
+{
+    uint i;
+
+    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
     {
         vertexinfo2_t* vInfo = &vertexInfo[i];
 
-        // Line owners:
-        if(vInfo->numLineOwners != 0)
-        {
-            lineowner2_t* owner, *last;
-            binangle_t firstAngle;
+        if(vInfo->numLineOwners == 0)
+            continue;
 
-            // Redirect the linedef links to the hardened map.
-            owner = vInfo->lineOwners;
-            while(owner)
-            {
-                owner->lineDef = map->lineDefs[owner->lineDef->buildData.index - 1];
-                owner = owner->next;
-            }
-
-            // Sort them; ordered clockwise by angle.
-            rootVtx = halfEdgeDS->vertices[i];
-            vInfo->lineOwners = sortLineOwners2(vInfo->lineOwners, lineAngleSorter);
-
-            // Finish the linking job and convert to relative angles.
-            // They are only singly linked atm, we need them to be doubly
-            // and circularly linked.
-            firstAngle = vInfo->lineOwners->angle;
-            last = vInfo->lineOwners;
-            owner = last->next;
-            while(owner)
-            {
-                owner->prev = last;
-
-                // Convert to a relative angle between last and this.
-                last->angle = last->angle - owner->angle;
-
-                last = owner;
-                owner = owner->next;
-            }
-            last->next = vInfo->lineOwners;
-            vInfo->lineOwners->prev = last;
-
-            // Set the angle of the last owner.
-            last->angle = last->angle - firstAngle;
-        }
+        // Sort them; ordered clockwise by angle.
+        rootVtx = map->_halfEdgeDS.vertices[i];
+        vInfo->lineOwners = sortLineOwners2(vInfo->lineOwners, lineAngleSorter2);
     }
 }
 
@@ -2404,11 +2325,8 @@ static void createInitialHEdges(map_t* map)
     numVertices = map->_halfEdgeDS.numVertices;
     vertexInfo = M_Calloc(sizeof(vertexinfo2_t) * numVertices);
 
-    buildVertexOwnerRings2(map, vertexInfo);
-
-#if _DEBUG
-checkVertexOwnerRings2(vertexInfo, numVertices);
-#endif
+    findVertexLineDefOwners(map, vertexInfo);
+    sortVertexOwners(map, vertexInfo);
 
     detectOnesidedWindows(map, vertexInfo);
 
@@ -2428,7 +2346,7 @@ checkVertexOwnerRings2(vertexInfo, numVertices);
         {
             next = owner->next;
             M_Free(owner);
-        } while((owner = next) != vInfo->lineOwners);
+        } while((owner = next) != NULL);
     }
 
     M_Free(vertexInfo);
