@@ -255,10 +255,10 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
             SuperBlock_IncHEdgeCounts(oldInfo->block, oldInfo->lineDef != NULL);
             SuperBlock_LinkHEdge(oldInfo->block, newHEdge->twin);
         }
-        else if(oldInfo->leaf)
+        else if(oldInfo->face)
         {
-            // Link it into list for the leaf.
-            BSPLeaf_LinkHEdge(oldInfo->leaf, newHEdge->twin);
+            // Link it into list for the face.
+            Face_LinkHEdge(oldInfo->face, newHEdge->twin);
         }
     }
 

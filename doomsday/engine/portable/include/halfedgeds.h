@@ -59,5 +59,9 @@ void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
 
 vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
 hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS);
+face_t*             HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS);
+
+void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
+void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);
 
 #endif /* DOOMSDAY_HALFEDGEDS_H */

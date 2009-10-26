@@ -94,7 +94,4 @@ void        BSP_PartitionHEdges(superblock_t* hEdgeList,
                                 cutlist_t* cutList);
 void        BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
                               superblock_t* leftList, cutlist_t* cutList);
-
-void        BSPLeaf_LinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge);
-void        BSPLeaf_UnLinkHEdge(bspleafdata_t* leaf, hedge_t* hEdge);
 #endif /* BSP_SUPERBLOCK_H */

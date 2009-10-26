@@ -2192,12 +2192,9 @@ static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
 {
     void* bspData = BinaryTree_GetData(tree);
 
-    if(bspData)
+    if(bspData && !BinaryTree_IsLeaf(tree))
     {
-        if(BinaryTree_IsLeaf(tree))
-            BSPLeaf_Destroy(bspData);
-        else
-            M_Free(bspData);
+        M_Free(bspData);
     }
 
     BinaryTree_SetData(tree, NULL);

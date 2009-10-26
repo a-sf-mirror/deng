@@ -46,9 +46,9 @@ typedef struct {
     // The superblock that contains this half-edge, or NULL if the half-edge
     // is no longer in any superblock (e.g., now in a leaf).
     struct superblock_s* block;
-    // The leaf that contains this half-edge, or NULL if the half-edge is
-    // not yet in a leaf (e.g., it is in a superblock).
-    struct bspleafdata_s* leaf;
+    // The face that contains this half-edge, or NULL if the half-edge is
+    // not yet in a face (e.g., it is in a superblock).
+    struct face_s*      face;
 
     // Precomputed data for faster calculations.
     double              pSX, pSY;

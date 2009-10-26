@@ -93,17 +93,17 @@ static boolean countSegs(binarytree_t* tree, void* data)
     if(BinaryTree_IsLeaf(tree))
     {
         uint* numSegs = (uint*) data;
-        bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(tree);
+        face_t* face = (face_t*) BinaryTree_GetData(tree);
         hedge_t* hEdge;
 
-        hEdge = leaf->hEdges->hEdge;
+        hEdge = face->hEdge;
         do
         {
             if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
                  ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
                  !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector))
                 (*numSegs)++;
-        } while((hEdge = hEdge->next) != leaf->hEdges->hEdge);
+        } while((hEdge = hEdge->next) != face->hEdge);
     }
 
     return true; // Continue traversal.
@@ -254,17 +254,8 @@ static subsector_t* createSubsector(map_t* map, face_t* face)
     return subsector;
 }
 
-static void createSubsectorForFace(map_t* map, face_t* face, const bspleafdata_t* src)
+static void createSubsectorForFace(map_t* map, face_t* face)
 {
-    hedge_t* hEdge;
-
-    hEdge = src->hEdges->hEdge;
-    do
-    {
-        hEdge->face = face;
-    } while((hEdge = hEdge->next) != src->hEdges->hEdge);
-
-    face->hEdge = src->hEdges->hEdge;
     face->data = createSubsector(map, face);
 }
 
@@ -308,12 +299,12 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     {
         if(BinaryTree_IsLeaf(right))
         {
-            bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(right);
+            face_t* face = (face_t*) BinaryTree_GetData(right);
             uint idx;
            
             idx = params->faceCurIndex++;
             node->children[RIGHT] = idx | NF_SUBSECTOR;
-            createSubsectorForFace(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
+            createSubsectorForFace(editMap, face);
         }
         else
         {
@@ -328,12 +319,12 @@ static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
     {
         if(BinaryTree_IsLeaf(left))
         {
-            bspleafdata_t* leaf = (bspleafdata_t*) BinaryTree_GetData(left);
+            face_t* face = (face_t*) BinaryTree_GetData(left);
             uint idx;
             
             idx = params->faceCurIndex++;
             node->children[LEFT] = idx | NF_SUBSECTOR;
-            createSubsectorForFace(editMap, editMap->_halfEdgeDS.faces[idx], leaf);
+            createSubsectorForFace(editMap, face);
         }
         else
         {
@@ -377,15 +368,6 @@ static void hardenBSP(map_t* map, binarytree_t* rootNode)
     map->nodes = Z_Malloc(map->numNodes * sizeof(node_t*), PU_STATIC, 0);
     for(i = 0; i < map->numNodes; ++i)
         map->nodes[i] = Z_Calloc(sizeof(node_t), PU_STATIC, 0);
-    }
-
-    {
-    uint i;
-    halfEdgeDS->numFaces = 0;
-    BinaryTree_PostOrder(rootNode, countFace, &halfEdgeDS->numFaces);
-    halfEdgeDS->faces = Z_Malloc(halfEdgeDS->numFaces * sizeof(face_t*), PU_STATIC, 0);
-    for(i = 0; i < halfEdgeDS->numFaces; ++i)
-        halfEdgeDS->faces[i] = Z_Calloc(sizeof(face_t), PU_STATIC, 0);
     }
 
     map->numSubsectors = halfEdgeDS->numFaces;
