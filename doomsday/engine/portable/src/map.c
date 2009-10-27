@@ -66,7 +66,7 @@ typedef struct {
 
 typedef struct {
     uint            numLineOwners;
-    lineowner_t*    lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
+    lineowner_t*    lineOwners; // Head of the lineowner list.
 } vertexinfo_t;
 
 typedef struct lineowner2_s {
@@ -74,20 +74,12 @@ typedef struct lineowner2_s {
     struct lineowner2_s* next;
 
     /**
-     * Half-edge on each side of the LineDef relative to this vertex, i.e:
-     *
-     * If vertex is linked to the LineDef as vertex1, the FRONT half-edge is
-     * that on the LineDef's front side and the BACK is that on the back side.
-     * If vertex is linked to the LineDef as vertex2, the FRONT half-edge is
-     * that on the LineDef's back side and the BACK is that on the front side.
+     * Half-edge on the front side of the LineDef relative to this vertex
+     * (i.e., if vertex is linked to the LineDef as vertex1, this half-edge
+     * is that on the LineDef's front side, else, that on the back side).
      */
-    struct hedge_s* hEdges[2];
+    struct hedge_s* hEdge;
 } lineowner2_t;
-
-typedef struct {
-    uint            numLineOwners;
-    lineowner2_t*   lineOwners; // Head of the lineowner list for this vertex. A doubly, circularly linked list. The base is the line with the lowest angle and the next-most with the largest angle.
-} vertexinfo2_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -1840,8 +1832,7 @@ static void testForWindowEffect(map_t* map, linedef_t* l)
         double dX2, dY2;
 
         if(n == l || (n->buildData.sideDefs[FRONT] && n->buildData.sideDefs[BACK] &&
-            n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap ||
-           (n->buildData.mlFlags & MLF_ZEROLENGTH)*/)
+            n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap */)
             continue;
 
         dX2 = n->buildData.v[1]->pos[VX] - n->buildData.v[0]->pos[VX];
@@ -1936,13 +1927,13 @@ Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
 #undef DIST_EPSILON
 }
 
-static void countVertexLineOwners(vertexinfo2_t* vInfo, uint* oneSided, uint* twoSided)
+static void countVertexLineOwners(lineowner2_t* lineOwners, uint* oneSided, uint* twoSided)
 {
-    if(vInfo->lineOwners)
+    if(lineOwners)
     {
         lineowner2_t* owner;
         
-        owner = vInfo->lineOwners;
+        owner = lineOwners;
         do
         {
             if(!owner->lineDef->buildData.sideDefs[FRONT] ||
@@ -1951,54 +1942,6 @@ static void countVertexLineOwners(vertexinfo2_t* vInfo, uint* oneSided, uint* tw
             else
                 (*twoSided)++;
         } while((owner = owner->next) != NULL);
-    }
-}
-
-/**
- * \note Algorithm:
- * Scan the linedef list looking for possible candidates, checking for an
- * odd number of one-sided linedefs connected to a single vertex.
- * This idea courtesy of Graham Jackson.
- */
-static void detectOnesidedWindows(map_t* map, vertexinfo2_t* vertexInfo)
-{
-    uint i, oneSiders, twoSiders;
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* l = map->lineDefs[i];
-
-        if((l->buildData.sideDefs[FRONT] && l->buildData.sideDefs[BACK]) ||
-           !l->buildData.sideDefs[FRONT] /* ||
-           l->buildData.overlap*/)
-            continue;
-
-        oneSiders = twoSiders = 0;
-        countVertexLineOwners(&vertexInfo[((mvertex_t*)l->buildData.v[0]->data)->index - 1],
-                              &oneSiders, &twoSiders);
-
-        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
-        {
-/*#if _DEBUG
-Con_Message("FUNNY LINE %d : start vertex %d has odd number of one-siders\n",
-            i, l->buildData.v[0]->index);
-#endif*/
-            testForWindowEffect(map, l);
-            continue;
-        }
-
-        oneSiders = twoSiders = 0;
-        countVertexLineOwners(&vertexInfo[((mvertex_t*)l->buildData.v[1]->data)->index - 1],
-                              &oneSiders, &twoSiders);
-
-        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
-        {
-/*#if _DEBUG
-Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
-            i, l->buildData.v[1]->index));
-#endif*/
-            testForWindowEffect(map, l);
-        }
     }
 }
 
@@ -2023,106 +1966,6 @@ static void findMapLimits(map_t* src, int* bbox)
         M_AddToBox(bbox, lX, lY);
         M_AddToBox(bbox, hX, hY);
     }
-}
-
-static void buildHEdgesAroundVertex(vertexinfo2_t* vInfo)
-{
-    lineowner2_t* owner;
-
-    if(vInfo->numLineOwners == 0)
-        return;
-    
-    owner = vInfo->lineOwners;
-    do
-    {
-        linedef_t* lineDef = owner->lineDef;
-        byte side = (owner == (lineowner2_t*) lineDef->vo[0])? FRONT : BACK;
-        vertex_t* from = lineDef->buildData.v[side];
-        vertex_t* to = lineDef->buildData.v[side^1];
-        hedge_t* back, *front;
-
-        if(owner->hEdges[FRONT])
-            continue; // Already processed.
-
-        if(side == FRONT)
-        {
-            front = BSP_CreateHEdge(lineDef, lineDef, from,
-                                    lineDef->buildData.sideDefs[FRONT]->sector, false);
-
-            // Handle the 'One-Sided Window' trick.
-            if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
-            {
-                back = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                     lineDef, to,
-                                     lineDef->buildData.windowEffect, true);
-            }
-            else
-            {
-                back = BSP_CreateHEdge(lineDef, lineDef, to,
-                    lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
-            }
-        }
-        else
-        {
-            back = BSP_CreateHEdge(lineDef, lineDef, to, lineDef->buildData.sideDefs[FRONT]->sector, false);
-
-            // Handle the 'One-Sided Window' trick.
-            if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
-            {
-                front = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                     lineDef, from,
-                                     lineDef->buildData.windowEffect, true);
-            }
-            else
-            {
-                front = BSP_CreateHEdge(lineDef, lineDef, from,
-                    lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
-            }
-        }
-
-        back->twin = front;
-        front->twin = back;
-
-        BSP_UpdateHEdgeInfo(front);
-        BSP_UpdateHEdgeInfo(back);
-
-        if(side == FRONT)
-        {
-            ((lineowner2_t*) lineDef->vo[0])->hEdges[FRONT] = ((lineowner2_t*) lineDef->vo[1])->hEdges[BACK]  = front;
-            ((lineowner2_t*) lineDef->vo[0])->hEdges[BACK]  = ((lineowner2_t*) lineDef->vo[1])->hEdges[FRONT] = back;
-        }
-        else
-        {
-            ((lineowner2_t*) lineDef->vo[0])->hEdges[FRONT] = ((lineowner2_t*) lineDef->vo[1])->hEdges[BACK]  = back;
-            ((lineowner2_t*) lineDef->vo[0])->hEdges[BACK]  = ((lineowner2_t*) lineDef->vo[1])->hEdges[FRONT] = front;
-        }
-    } while((owner = owner->next) != NULL);
-}
-
-static void linkHEdgesAroundVertex(vertexinfo2_t* vInfo)
-{
-    lineowner2_t* owner, *prev;
-
-    if(vInfo->numLineOwners == 0)
-        return;
-
-    prev = vInfo->lineOwners;
-    while(prev->next)
-        prev = prev->next;
-
-    owner = vInfo->lineOwners;
-    do
-    {
-        hedge_t* hEdge = owner->hEdges[FRONT];
-
-        hEdge->prev = owner->next ? owner->next->hEdges[BACK] : vInfo->lineOwners->hEdges[BACK];
-        hEdge->prev->next = hEdge;
-
-        hEdge->twin->next = prev->hEdges[FRONT];
-        hEdge->twin->next->prev = hEdge->twin;
-
-        prev = owner;
-    } while((owner = owner->next) != NULL);
 }
 
 /**
@@ -2240,14 +2083,16 @@ static lineowner2_t* sortLineOwners2(lineowner2_t* list,
     return list;
 }
 
-static void setVertexLineOwner2(vertexinfo2_t* vInfo, linedef_t* lineDef, byte vertex)
+static void setVertexLineOwner2(lineowner2_t** lineOwners, uint* numLineOwners,
+                                linedef_t* lineDef, byte vertex,
+                                lineowner2_t** storage)
 {
     lineowner2_t* newOwner;
 
     // Has this line already been registered with this vertex?
-    if(vInfo->numLineOwners != 0)
+    if((*numLineOwners) != 0)
     {
-        lineowner2_t* owner = vInfo->lineOwners;
+        lineowner2_t* owner = (*lineOwners);
 
         do
         {
@@ -2259,9 +2104,9 @@ static void setVertexLineOwner2(vertexinfo2_t* vInfo, linedef_t* lineDef, byte v
     }
 
     // Add a new owner.
-    vInfo->numLineOwners++;
+    (*numLineOwners)++;
 
-    newOwner = M_Calloc(sizeof(*newOwner));
+    newOwner = (*storage)++;
     newOwner->lineDef = lineDef;
 
     // Link it in.
@@ -2269,47 +2114,11 @@ static void setVertexLineOwner2(vertexinfo2_t* vInfo, linedef_t* lineDef, byte v
     // be sorting the lists anyway. After which we'll finish the job by
     // setting the prev and circular links.
     // So, for now this is only linked singlely, forward.
-    newOwner->next = vInfo->lineOwners;
-    vInfo->lineOwners = newOwner;
+    newOwner->next = (*lineOwners);
+    (*lineOwners) = newOwner;
 
     // Link the line to its respective owner node.
     lineDef->L_vo(vertex) = (lineowner_t*) newOwner;
-}
-
-static void findVertexLineDefOwners(map_t* map, vertexinfo2_t* vertexInfo)
-{
-    uint i;
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* lineDef = map->lineDefs[i];
-        uint j;
-
-        for(j = 0; j < 2; ++j)
-        {
-            vertexinfo2_t* vInfo =
-                &vertexInfo[((mvertex_t*) lineDef->buildData.v[j]->data)->index - 1];
-
-            setVertexLineOwner2(vInfo, lineDef, j);
-        }
-    }
-}
-
-static void sortVertexOwners(map_t* map, vertexinfo2_t* vertexInfo)
-{
-    uint i;
-
-    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
-    {
-        vertexinfo2_t* vInfo = &vertexInfo[i];
-
-        if(vInfo->numLineOwners == 0)
-            continue;
-
-        // Sort them; ordered clockwise by angle.
-        rootVtx = map->_halfEdgeDS.vertices[i];
-        vInfo->lineOwners = sortLineOwners2(vInfo->lineOwners, lineAngleSorter2);
-    }
 }
 
 /**
@@ -2317,44 +2126,169 @@ static void sortVertexOwners(map_t* map, vertexinfo2_t* vertexInfo)
  */
 static void createInitialHEdges(map_t* map)
 {
-    uint startTime = Sys_GetRealTime();
+typedef struct {
+    uint            numLineOwners;
+    lineowner2_t*   lineOwners; // Head of the lineowner list.
+} ownerinfo_t;
 
+    uint startTime = Sys_GetRealTime();
     uint i, numVertices;
-    vertexinfo2_t* vertexInfo;
+    ownerinfo_t* vertexInfo;
+    lineowner2_t* lineOwners, *storage;
 
     numVertices = map->_halfEdgeDS.numVertices;
-    vertexInfo = M_Calloc(sizeof(vertexinfo2_t) * numVertices);
+    vertexInfo = M_Calloc(sizeof(*vertexInfo) * numVertices);
 
-    findVertexLineDefOwners(map, vertexInfo);
-    sortVertexOwners(map, vertexInfo);
+    // We know how many lineowners are needed: number of lineDefs * 2.
+    lineOwners = storage = M_Calloc(sizeof(*lineOwners) * map->numLineDefs * 2);
 
-    detectOnesidedWindows(map, vertexInfo);
-
-    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
-        buildHEdgesAroundVertex(&vertexInfo[i]);
-
-    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
-        linkHEdgesAroundVertex(&vertexInfo[i]);   
-
-    for(i = 0; i < numVertices; ++i)
+    for(i = 0; i < map->numLineDefs; ++i)
     {
-        vertexinfo2_t* vInfo = &vertexInfo[i];
-        lineowner2_t* owner, *next;
+        linedef_t* lineDef = map->lineDefs[i];
+        vertex_t* from = lineDef->buildData.v[0];
+        vertex_t* to = lineDef->buildData.v[1];
 
-        owner = vInfo->lineOwners;
-        do
-        {
-            next = owner->next;
-            M_Free(owner);
-        } while((owner = next) != NULL);
+        setVertexLineOwner2(&vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
+                            &vertexInfo[((mvertex_t*) from->data)->index - 1].numLineOwners,
+                            lineDef, 0, &storage);
+        setVertexLineOwner2(&vertexInfo[((mvertex_t*) to->data)->index - 1].lineOwners,
+                            &vertexInfo[((mvertex_t*) to->data)->index - 1].numLineOwners,
+                            lineDef, 1, &storage);
     }
 
+    /**
+     * Detect "one-sided window" mapping tricks.
+     *
+     * @todo Does not belong in the engine; move this logic to dpWADMapConverter.
+     *
+     * @note Algorithm:
+     * Scan the linedef list looking for possible candidates, checking for an
+     * odd number of one-sided linedefs connected to a single vertex.
+     * This idea courtesy of Graham Jackson.
+     */
+    {
+    uint i, oneSiders, twoSiders;
+
+    for(i = 0; i < map->numLineDefs; ++i)
+    {
+        linedef_t* lineDef = map->lineDefs[i];
+        vertex_t* from = lineDef->buildData.v[0];
+        vertex_t* to = lineDef->buildData.v[1];
+
+        if((lineDef->buildData.sideDefs[FRONT] && lineDef->buildData.sideDefs[BACK]) ||
+           !lineDef->buildData.sideDefs[FRONT] /* ||
+           lineDef->buildData.overlap*/)
+            continue;
+
+        oneSiders = twoSiders = 0;
+        countVertexLineOwners(vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
+                              &oneSiders, &twoSiders);
+
+        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
+        {
+/*#if _DEBUG
+Con_Message("FUNNY LINE %d : start vertex %d has odd number of one-siders\n",
+        i, lineDef->buildData.v[0]->index);
+#endif*/
+            testForWindowEffect(map, lineDef);
+            continue;
+        }
+
+        oneSiders = twoSiders = 0;
+        countVertexLineOwners(vertexInfo[((mvertex_t*) to->data)->index - 1].lineOwners,
+                              &oneSiders, &twoSiders);
+
+        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
+        {
+/*#if _DEBUG
+Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
+        i, lineDef->buildData.v[1]->index));
+#endif*/
+            testForWindowEffect(map, lineDef);
+        }
+    }
+    }
+
+    for(i = 0; i < map->numLineDefs; ++i)
+    {
+        linedef_t* lineDef = map->lineDefs[i];
+        vertex_t* from = lineDef->buildData.v[0];
+        vertex_t* to = lineDef->buildData.v[1];
+        hedge_t* back, *front;
+
+        front = BSP_CreateHEdge(lineDef, lineDef, from,
+                                lineDef->buildData.sideDefs[FRONT]->sector, false);
+
+        // Handle the 'One-Sided Window' trick.
+        if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
+        {
+            back = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
+                                 lineDef, to,
+                                 lineDef->buildData.windowEffect, true);
+        }
+        else
+        {
+            back = BSP_CreateHEdge(lineDef, lineDef, to,
+                lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
+        }
+
+        back->twin = front;
+        front->twin = back;
+
+        BSP_UpdateHEdgeInfo(front);
+        BSP_UpdateHEdgeInfo(back);
+
+        ((lineowner2_t*) lineDef->vo[0])->hEdge = front;
+        ((lineowner2_t*) lineDef->vo[1])->hEdge = back;
+    }
+
+    // Sort vertex owners, clockwise by angle (i.e., ascending).
+    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
+    {
+        ownerinfo_t* info = &vertexInfo[i];
+
+        if(info->numLineOwners == 0)
+            continue;
+
+        rootVtx = map->_halfEdgeDS.vertices[i];
+        info->lineOwners = sortLineOwners2(info->lineOwners, lineAngleSorter2);
+    }
+
+    // Link half-edges around vertex.
+    for(i = 0; i < numVertices; ++i)
+    {
+        ownerinfo_t* info = &vertexInfo[i];
+        lineowner2_t* owner, *prev;
+
+        if(info->numLineOwners == 0)
+            continue;
+
+        prev = info->lineOwners;
+        while(prev->next)
+            prev = prev->next;
+
+        owner = info->lineOwners;
+        do
+        {
+            hedge_t* hEdge = owner->hEdge;
+
+            hEdge->prev = owner->next ? owner->next->hEdge->twin : info->lineOwners->hEdge->twin;
+            hEdge->prev->next = hEdge;
+
+            hEdge->twin->next = prev->hEdge;
+            hEdge->twin->next->prev = hEdge->twin;
+
+            prev = owner;
+        } while((owner = owner->next) != NULL);
+    }
+
+    // Release temporary storage.
+    M_Free(lineOwners);
     M_Free(vertexInfo);
 
     // How much time did we spend?
-    VERBOSE(Con_Message
-            ("createInitialHEdges: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
+    VERBOSE(Con_Message("createInitialHEdges: Done in %.2f seconds.\n",
+                        (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
 static superblock_t* createSuperblockAndAddHEdges(map_t* map)
