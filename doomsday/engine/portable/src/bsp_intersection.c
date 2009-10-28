@@ -258,7 +258,6 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
 
     return NULL; // Unreachable.
 }
-    // it else return the back of the half-edge with the largest angle.
 
 /**
  * Create a new intersection.
@@ -380,7 +379,7 @@ boolean BSP_CutListInsertIntersection(cutlist_t* cutList,
         cnode_t* after;
 
         /**
-         * Enqueue the new intersection into the list.
+         * Insert the new intersection into the list.
          */
         after = list->headPtr;
         while(after && after->next)
@@ -568,18 +567,18 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                  * Build half-edges on each side of the gap.
                  */
                 {
-                hedge_t* left, *right;
+                hedge_t* right, *left;
 
                 right = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
                 right->vertex = cur->vertex;
-                right->face = cur->after->face;
-                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) cur->after->data)->sector;
+                right->face = next->before->twin->face;
+                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) next->before->data)->sector;
                 ((bsp_hedgeinfo_t*) right->data)->sourceLine = part->lineDef;
 
                 left = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
                 left->vertex = next->vertex;
-                left->face = next->before->face;
-                ((bsp_hedgeinfo_t*) left->data)->sector = curAfter; //((bsp_hedgeinfo_t*) next->before->data)->sector;
+                left->face = cur->after->face;
+                ((bsp_hedgeinfo_t*) left->data)->sector = ((bsp_hedgeinfo_t*) cur->after->data)->sector;
                 ((bsp_hedgeinfo_t*) left->data)->sourceLine = part->lineDef;
 
                 // Twin the half-edges together.
@@ -594,12 +593,11 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
 
 /*#if _DEBUG
 Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
-Con_Message("  %p RIGHT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
+Con_Message("  %p RIGHT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             right, (right->sector? right->sector->index : -1),
             right->vertex->V_pos[VX], right->vertex->V_pos[VY],
             right->twin->vertex->V_pos[VX], right->twin->vertex->V_pos[VY]);
-
-Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
+Con_Message("  %p LEFT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             left, (left->sector? left->sector->index : -1),
             left->vertex->V_pos[VX], left->vertex->V_pos[VY],
             left->twin->vertex->V_pos[VX], left->twin->vertex->V_pos[VY]);

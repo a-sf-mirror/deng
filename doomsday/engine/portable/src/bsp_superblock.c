@@ -343,7 +343,7 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
 
     calcIntersection(curHEdge, part, a, b, &x, &y);
     newHEdge = HEdge_Split(curHEdge, x, y);
-    makeIntersection(cutList, curHEdge->twin->vertex, part);
+    makeIntersection(cutList, newHEdge->vertex, part);
 
     if(a < 0)
     {
