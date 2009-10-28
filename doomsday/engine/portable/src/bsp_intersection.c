@@ -476,23 +476,6 @@ Con_Message(" Skipping very short half-edge (len=%1.3f) near "
 #endif
         }*/
 
-        // Merge the two intersections into one.
-        if(isIntersectionOnSelfRefLineDef(cur) &&
-           !isIntersectionOnSelfRefLineDef(next))
-        {
-            if(cur->before && next->before)
-                cur->before = next->before;
-
-            if(cur->after && next->after)
-                cur->after = next->after;
-        }
-
-        if(!cur->before && next->before)
-            cur->before = next->before;
-
-        if(!cur->after && next->after)
-            cur->after = next->after;
-
         // Free the unused cut.
         node->next = np->next;
 
@@ -587,12 +570,24 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* left, *right;
 
-                right = BSP_CreateHEdge(NULL, part->lineDef, cur->vertex, curAfter, false);
-                left  = BSP_CreateHEdge(NULL, part->lineDef, next->vertex, curAfter, false);
+                right = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
+                right->vertex = cur->vertex;
+                right->face = cur->after->face;
+                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) cur->after->data)->sector;
+                ((bsp_hedgeinfo_t*) right->data)->sourceLine = part->lineDef;
+
+                left = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
+                left->vertex = next->vertex;
+                left->face = next->before->face;
+                ((bsp_hedgeinfo_t*) left->data)->sector = curAfter; //((bsp_hedgeinfo_t*) next->before->data)->sector;
+                ((bsp_hedgeinfo_t*) left->data)->sourceLine = part->lineDef;
 
                 // Twin the half-edges together.
                 right->twin = left;
                 left->twin = right;
+
+                right->next = right->prev = right;
+                left->next = left->prev = left;
 
                 BSP_UpdateHEdgeInfo(right);
                 BSP_UpdateHEdgeInfo(left);
