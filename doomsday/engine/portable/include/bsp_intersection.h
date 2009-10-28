@@ -47,39 +47,29 @@ struct bspartition_s;
 typedef struct intersection_s {
     // Vertex in question.
     vertex_t*   vertex;
+    // Half-edge on each side of the vertex (along the partition).
+    hedge_t*    before;
+    hedge_t*    after;
 
     // How far along the partition line the vertex is. Zero is at the
     // partition half-edge's start point, positive values move in the same
     // direction as the partition's direction, and negative values move
     // in the opposite direction.
     double      alongDist;
-
-    // True if this intersection was on a self-referencing linedef.
-    boolean     selfRef;
-
-    // Sector on each side of the vertex (along the partition),
-    // or NULL when that direction isn't OPEN.
-    sector_t*   before;
-    sector_t*   after;
 } intersection_t;
 
 void        BSP_InitIntersectionAllocator(void);
 void        BSP_ShutdownIntersectionAllocator(void);
 
 intersection_t* BSP_IntersectionCreate(vertex_t* vert,
-                                       const struct bspartition_s* part,
-                                       boolean selfRef);
+                                       const struct bspartition_s* part);
 void        BSP_IntersectionDestroy(intersection_t* cut);
-#if _DEBUG
-void        BSP_IntersectionPrint(intersection_t* cut);
-#endif
 
 // Cutlist functions:
 cutlist_t*  BSP_CutListCreate(void);
 void        BSP_CutListDestroy(cutlist_t* cutList);
 
 void        BSP_CutListEmpty(cutlist_t* cutList);
-void        BSP_CutListPrint(cutlist_t* cutList);
 
 boolean     BSP_CutListInsertIntersection(cutlist_t* cutList,
                                           intersection_t* cut);

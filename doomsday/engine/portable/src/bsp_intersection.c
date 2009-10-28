@@ -221,10 +221,10 @@ void BSP_ShutdownIntersectionAllocator(void)
 
 /**
  * Check whether a line with the given delta coordinates and beginning
- * at this vertex is open. Returns a sector reference if it's open,
+ * at this vertex is open. Returns a half-edge reference if it's open,
  * or NULL if closed (void space or directly along a linedef).
  */
-static sector_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
+static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
 {
     hedge_t* hEdge, *min;
 
@@ -243,35 +243,33 @@ static sector_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
 
     // No half-edge was found that aligns precisely. Look for the first
     // half-edge whose angle is larger than that required. If found, return
-    // it's front sector else return the back sector of the half-edge with
-    // the largest angle.
+    // it else return the back of the half-edge with the largest angle.
     hEdge = min;
     do
     {
         angle_g angle2 = ((bsp_hedgeinfo_t*) hEdge->data)->pAngle;
 
         if(angle + ANG_EPSILON < ((bsp_hedgeinfo_t*) hEdge->data)->pAngle)
-            return ((bsp_hedgeinfo_t*) hEdge->data)->sector;
+            return hEdge;
 
         if(hEdge->twin->next == min)
-            return ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector;
+            return hEdge->twin;
     } while((hEdge = hEdge->twin->next) != min);
 
     return NULL; // Unreachable.
 }
+    // it else return the back of the half-edge with the largest angle.
 
 /**
  * Create a new intersection.
  */
-intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part,
-                                       boolean selfRef)
+intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part)
 {
     intersection_t* cut = quickAllocIntersection();
 
     cut->vertex = vert;
     cut->alongDist = M_ParallelDist(part->pDX, part->pDY, part->pPara, part->length,
                                     vert->pos[VX], vert->pos[VY]);
-    cut->selfRef = selfRef;
 
     cut->before = vertexCheckOpen(vert, M_SlopeToAngle(-part->pDX, -part->pDY));
     cut->after  = vertexCheckOpen(vert, M_SlopeToAngle(part->pDX, part->pDY));
@@ -301,19 +299,6 @@ void BSP_IntersectionDestroy(intersection_t* cut)
         freeIntersection(cut);
     }
 }
-
-#if _DEBUG
-void BSP_IntersectionPrint(intersection_t* cut)
-{
-    Con_Message("  Vertex %8X (%1.1f,%1.1f)  Along %1.2f  [%d/%d]  %s\n",
-                ((mvertex_t*) cut->vertex->data)->index,
-                (float) cut->vertex->pos[VX], (float) cut->vertex->pos[VY],
-                cut->alongDist,
-                (cut->before? cut->before->buildData.index : -1),
-                (cut->after? cut->after->buildData.index : -1),
-                (cut->selfRef? "SELFREF" : ""));
-}
-#endif
 
 /**
  * Create a new cutlist.
@@ -432,38 +417,31 @@ boolean BSP_CutListInsertIntersection(cutlist_t* cutList,
     return false;
 }
 
-static void buildEdgeBetweenIntersections(const bspartition_t* part,
-                                          intersection_t* start,
-                                          intersection_t* end,
-                                          hedge_t** right, hedge_t** left)
-{
-    // Create the half-edge pair.
-    // Leave 'linedef' field as NULL as these are not linedef-linked.
-    // Leave 'side' as zero too.
-    (*right) = BSP_CreateHEdge(NULL, part->lineDef, start->vertex,
-                            start->after, false);
-    (*left)  = BSP_CreateHEdge(NULL, part->lineDef, end->vertex,
-                            start->after, false);
+static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
+{  
+    if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
+    {
+        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->after->data)->lineDef;
+    
+        if(lineDef->buildData.sideDefs[FRONT] &&
+           lineDef->buildData.sideDefs[BACK] &&
+           lineDef->buildData.sideDefs[FRONT]->sector ==
+           lineDef->buildData.sideDefs[BACK]->sector)
+            return true;
+    }
 
-    // Twin the half-edges together.
-    (*right)->twin = *left;
-    (*left)->twin = *right;
+    if(insect->before && ((bsp_hedgeinfo_t*) insect->before->data)->lineDef)
+    {
+        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->before->data)->lineDef;
+    
+        if(lineDef->buildData.sideDefs[FRONT] &&
+           lineDef->buildData.sideDefs[BACK] &&
+           lineDef->buildData.sideDefs[FRONT]->sector ==
+           lineDef->buildData.sideDefs[BACK]->sector)
+            return true;
+    }
 
-    BSP_UpdateHEdgeInfo(*right);
-    BSP_UpdateHEdgeInfo(*left);
-
-/*#if _DEBUG
-Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
-Con_Message("  %p RIGHT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-            (*right), ((*right)->sector? (*right)->sector->index : -1),
-            (*right)->vertex->V_pos[VX], (*right)->vertex->V_pos[VY],
-            (*right)->twin->vertex->V_pos[VX], (*right)->twin->vertex->V_pos[VY]);
-
-Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-            (*left), ((*left)->sector? (*left)->sector->index : -1),
-            (*left)->vertex->V_pos[VX], (*left)->vertex->V_pos[VY],
-            (*left)->twin->vertex->V_pos[VX], (*left)->twin->vertex->V_pos[VY]);
-#endif*/
+    return false;
 }
 
 static void mergeOverlappingIntersections(cnode_t* firstNode)
@@ -499,22 +477,14 @@ Con_Message(" Skipping very short half-edge (len=%1.3f) near "
         }*/
 
         // Merge the two intersections into one.
-/*
-#if _DEBUG
-Con_Message(" Merging intersections:\n");
-BSP_IntersectionPrint(cur);
-BSP_IntersectionPrint(next);
-#endif
-*/
-        if(cur->selfRef && !next->selfRef)
+        if(isIntersectionOnSelfRefLineDef(cur) &&
+           !isIntersectionOnSelfRefLineDef(next))
         {
             if(cur->before && next->before)
                 cur->before = next->before;
 
             if(cur->after && next->after)
                 cur->after = next->after;
-
-            cur->selfRef = false;
         }
 
         if(!cur->before && next->before)
@@ -522,12 +492,7 @@ BSP_IntersectionPrint(next);
 
         if(!cur->after && next->after)
             cur->after = next->after;
-/*
-#if _DEBUG
-Con_Message(" Result:\n");
-BSP_IntersectionPrint(cur);
-#endif
-*/
+
         // Free the unused cut.
         node->next = np->next;
 
@@ -545,15 +510,17 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
     node = firstNode;
     while(node && node->next)
     {
-        intersection_t* cur = node->data;
-        intersection_t* next = (node->next? node->next->data : NULL);
+        const intersection_t* cur = node->data;
+        const intersection_t* next = node->next->data;
+        sector_t* curAfter = cur->after ? ((bsp_hedgeinfo_t*) cur->after->data)->sector : NULL;
+        sector_t* nextBefore = next->before? ((bsp_hedgeinfo_t*) next->before->data)->sector : NULL;
 
-        if(!(!cur->after && !next->before))
+        if(!(!curAfter && !nextBefore))
         {
             // Check for some nasty open/closed or close/open cases.
-            if(cur->after && !next->before)
+            if(curAfter && !nextBefore)
             {
-                if(!cur->selfRef)
+                if(!isIntersectionOnSelfRefLineDef(cur))
                 {
                     double pos[2];
 
@@ -562,16 +529,16 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    cur->after->flags |= SECF_UNCLOSED;
+                    curAfter->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
                     Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                cur->after->buildData.index - 1, pos[0], pos[1]))
+                                curAfter->buildData.index - 1, pos[0], pos[1]))
                 }
             }
-            else if(!cur->after && next->before)
+            else if(!curAfter && nextBefore)
             {
-                if(!next->selfRef)
+                if(!isIntersectionOnSelfRefLineDef(next))
                 {
                     double pos[2];
 
@@ -580,42 +547,68 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    next->before->flags |= SECF_UNCLOSED;
+                    nextBefore->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
                     Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                next->before->buildData.index - 1, pos[0], pos[1]))
+                                nextBefore->buildData.index - 1, pos[0], pos[1]))
                 }
             }
             else
             {   // This is definitetly open space.
 
                 // Do a sanity check on the sectors (just for good measure).
-                if(cur->after != next->before)
+                if(curAfter != nextBefore)
                 {
-                    if(!cur->selfRef && !next->selfRef)
+                    if(!isIntersectionOnSelfRefLineDef(cur) &&
+                       !isIntersectionOnSelfRefLineDef(next))
                     {
 #if _DEBUG
 VERBOSE(
 Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
-            cur->after->buildData.index - 1,
+            curAfter->buildData.index - 1,
             (float) cur->vertex->pos[0], (float) cur->vertex->pos[1],
-            next->before->buildData.index - 1,
+            nextBefore->buildData.index - 1,
             (float) next->vertex->pos[0], (float) next->vertex->pos[1]));
 #endif
                     }
 
                     // Choose the non-self-referencing sector when we can.
-                    if(cur->selfRef && !next->selfRef)
+                    if(isIntersectionOnSelfRefLineDef(cur) &&
+                       !isIntersectionOnSelfRefLineDef(next))
                     {
-                        cur->after = next->before;
+                        curAfter = nextBefore;
                     }
                 }
 
+                /**
+                 * Build half-edges on each side of the gap.
+                 */
                 {
-                hedge_t* right, *left;
+                hedge_t* left, *right;
 
-                buildEdgeBetweenIntersections(part, cur, next, &right, &left);
+                right = BSP_CreateHEdge(NULL, part->lineDef, cur->vertex, curAfter, false);
+                left  = BSP_CreateHEdge(NULL, part->lineDef, next->vertex, curAfter, false);
+
+                // Twin the half-edges together.
+                right->twin = left;
+                left->twin = right;
+
+                BSP_UpdateHEdgeInfo(right);
+                BSP_UpdateHEdgeInfo(left);
+
+/*#if _DEBUG
+Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
+Con_Message("  %p RIGHT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
+            right, (right->sector? right->sector->index : -1),
+            right->vertex->V_pos[VX], right->vertex->V_pos[VY],
+            right->twin->vertex->V_pos[VX], right->twin->vertex->V_pos[VY]);
+
+Con_Message("  %p LEFT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
+            left, (left->sector? left->sector->index : -1),
+            left->vertex->V_pos[VX], left->vertex->V_pos[VY],
+            left->twin->vertex->V_pos[VX], left->twin->vertex->V_pos[VY]);
+#endif*/
 
                 // Add the new half-edges to the appropriate lists.
                 BSP_AddHEdgeToSuperBlock(rightList, right);
@@ -632,10 +625,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
  * Analyze the intersection list, and add any needed minihedges to the given
  * half-edge lists (one minihedge on each side).
  *
- * \note All the intersections in the cutList will be freed back into the
+ * @note All the intersections in the cutList will be freed back into the
  * quick-alloc list for re-use!
  *
- * \todo Does this belong in here?
+ * @todo Does not belong in here.
  */
 void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
                        superblock_t* leftList, cutlist_t* cutList)
@@ -645,35 +638,8 @@ void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
     if(!cutList)
         return;
 
-/*
-#if _DEBUG
-BSP_CutListPrint(cutList);
-Con_Message("BSP_AddMiniHEdges: Partition (%1.1f,%1.1f) += (%1.1f,%1.1f)\n",
-            part->pSX, part->pSY, part->pDX, part->pDY);
-*/
-
     list = (clist_t*) cutList;
 
     mergeOverlappingIntersections(list->headPtr);
     connectGaps(part, rightList, leftList, list->headPtr);
 }
-
-#if _DEBUG
-void BSP_CutListPrint(cutlist_t* cutList)
-{
-    if(cutList)
-    {
-        clist_t* list = (clist_t*) cutList;
-        cnode_t* node;
-
-        Con_Message("CutList %p:\n", list);
-        node = list->headPtr;
-        while(node)
-        {
-            intersection_t *cut = node->data;
-            BSP_IntersectionPrint(cut);
-            node = node->next;
-        }
-    }
-}
-#endif
