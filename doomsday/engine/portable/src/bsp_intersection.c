@@ -571,7 +571,7 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
 
                 right = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
                 right->vertex = cur->vertex;
-                right->face = next->before->twin->face;
+                right->face = next->before->face;
                 ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) next->before->data)->sector;
                 ((bsp_hedgeinfo_t*) right->data)->sourceLine = part->lineDef;
 
