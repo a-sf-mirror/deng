@@ -82,4 +82,6 @@ hedge_t*    BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
 hedge_t*    HEdge_Split(hedge_t* oldHEdge, double x, double y);
 
 void        BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
+
+void testVertexHEdgeRings(vertex_t* v);
 #endif

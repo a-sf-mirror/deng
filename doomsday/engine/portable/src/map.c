@@ -1997,7 +1997,7 @@ static int C_DECL lineAngleSorter2(const void* a, const void* b)
         angles[i] = bamsAtan2(-100 *dx, 100 * dy);
     }
 
-    return (angles[1] - angles[0]);
+    return (angles[0] - angles[1]);
 }
 
 /**

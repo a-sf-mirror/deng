@@ -31,8 +31,8 @@
  * SourceForge: http://sourceforge.net/projects/glbsp/
  */
 
-#ifndef __BSP_INTERSECTION_H__
-#define __BSP_INTERSECTION_H__
+#ifndef BSP_INTERSECTION_H
+#define BSP_INTERSECTION_H
 
 #include "bsp_edge.h"
 
@@ -41,15 +41,10 @@ typedef void* cutlist_t;
 struct bspartition_s;
 
 /**
- * An "intersection" remembers the vertex that touches a BSP divider
- * line (especially a new vertex that is created at a twin-edge split).
+ * An "intersection" remembers the vertex that touches a space partition.
  */
 typedef struct intersection_s {
-    // Vertex in question.
     vertex_t*   vertex;
-    // Half-edge on each side of the vertex (along the partition).
-    hedge_t*    before;
-    hedge_t*    after;
 
     // How far along the partition line the vertex is. Zero is at the
     // partition half-edge's start point, positive values move in the same
@@ -58,20 +53,18 @@ typedef struct intersection_s {
     double      alongDist;
 } intersection_t;
 
-void        BSP_InitIntersectionAllocator(void);
-void        BSP_ShutdownIntersectionAllocator(void);
+void            BSP_InitIntersectionAllocator(void);
+void            BSP_ShutdownIntersectionAllocator(void);
 
 intersection_t* BSP_IntersectionCreate(vertex_t* vert,
                                        const struct bspartition_s* part);
-void        BSP_IntersectionDestroy(intersection_t* cut);
+void            BSP_IntersectionDestroy(intersection_t* cut);
 
-// Cutlist functions:
-cutlist_t*  BSP_CutListCreate(void);
-void        BSP_CutListDestroy(cutlist_t* cutList);
+cutlist_t*      BSP_CutListCreate(void);
+void            BSP_CutListDestroy(cutlist_t* cutList);
 
-void        BSP_CutListEmpty(cutlist_t* cutList);
+void            BSP_CutListEmpty(cutlist_t* cutList);
 
-boolean     BSP_CutListInsertIntersection(cutlist_t* cutList,
-                                          intersection_t* cut);
+boolean         BSP_CutListInsertIntersection(cutlist_t* cutList, intersection_t* cut);
 intersection_t* BSP_CutListFindIntersection(cutlist_t* cutList, vertex_t* v);
-#endif
+#endif /* BSP_INTERSECTION_H */

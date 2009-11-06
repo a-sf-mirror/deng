@@ -112,7 +112,7 @@ hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
 }
 
 #if _DEBUG
-static void testVertexHEdgeRings(vertex_t* v)
+void testVertexHEdgeRings(vertex_t* v)
 {
     byte i = 0;
 

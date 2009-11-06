@@ -220,46 +220,6 @@ void BSP_ShutdownIntersectionAllocator(void)
 }
 
 /**
- * Check whether a line with the given delta coordinates and beginning
- * at this vertex is open. Returns a half-edge reference if it's open,
- * or NULL if closed (void space or directly along a linedef).
- */
-static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle)
-{
-    hedge_t* hEdge, *min;
-
-    hEdge = min = vertex->hEdge;
-    do
-    {
-        angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
-
-        if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
-            return NULL; // This half-edge aligns precisely to this angle.
-
-        if(((bsp_hedgeinfo_t*) hEdge->data)->pAngle <
-           ((bsp_hedgeinfo_t*) min->data)->pAngle)
-            min = hEdge;
-    } while((hEdge = hEdge->prev->twin) != vertex->hEdge);
-
-    // No half-edge was found that aligns precisely. Look for the first
-    // half-edge whose angle is larger than that required. If found, return
-    // it else return the back of the half-edge with the largest angle.
-    hEdge = min;
-    do
-    {
-        angle_g angle2 = ((bsp_hedgeinfo_t*) hEdge->data)->pAngle;
-
-        if(angle + ANG_EPSILON < ((bsp_hedgeinfo_t*) hEdge->data)->pAngle)
-            return hEdge;
-
-        if(hEdge->twin->next == min)
-            return hEdge->twin;
-    } while((hEdge = hEdge->twin->next) != min);
-
-    return NULL; // Unreachable.
-}
-
-/**
  * Create a new intersection.
  */
 intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part)
@@ -269,9 +229,6 @@ intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_
     cut->vertex = vert;
     cut->alongDist = M_ParallelDist(part->pDX, part->pDY, part->pPara, part->length,
                                     vert->pos[VX], vert->pos[VY]);
-
-    cut->before = vertexCheckOpen(vert, M_SlopeToAngle(-part->pDX, -part->pDY));
-    cut->after  = vertexCheckOpen(vert, M_SlopeToAngle(part->pDX, part->pDY));
 
     return cut;
 }
@@ -417,11 +374,11 @@ boolean BSP_CutListInsertIntersection(cutlist_t* cutList,
 }
 
 static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
-{  
-    if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
+{
+    /*if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
     {
         linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->after->data)->lineDef;
-    
+
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
            lineDef->buildData.sideDefs[FRONT]->sector ==
@@ -432,13 +389,13 @@ static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     if(insect->before && ((bsp_hedgeinfo_t*) insect->before->data)->lineDef)
     {
         linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->before->data)->lineDef;
-    
+
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
            lineDef->buildData.sideDefs[FRONT]->sector ==
            lineDef->buildData.sideDefs[BACK]->sector)
             return true;
-    }
+    }*/
 
     return false;
 }
@@ -484,6 +441,41 @@ Con_Message(" Skipping very short half-edge (len=%1.3f) near "
     }
 }
 
+/**
+ * Look for the first half-edge whose angle is past that required.
+ */
+static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockwise)
+{
+    hedge_t* hEdge, *first;
+
+    first = vertex->hEdge;
+    hEdge = first->twin->next;
+    do
+    {
+        if(((bsp_hedgeinfo_t*) hEdge->data)->pAngle <=
+           ((bsp_hedgeinfo_t*) first->data)->pAngle)
+            first = hEdge;
+    } while((hEdge = hEdge->twin->next) != vertex->hEdge);
+
+    if(antiClockwise)
+    {
+        first = first->twin->next;
+        hEdge = first;
+        while(((bsp_hedgeinfo_t*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
+              (hEdge = hEdge->twin->next) != first);
+
+        return hEdge->twin;
+    }
+    else
+    {
+        hEdge = first;
+        while(((bsp_hedgeinfo_t*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
+              (hEdge = hEdge->prev->twin) != first);
+
+        return hEdge;
+    }
+}
+
 static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                         superblock_t* leftList, cnode_t* firstNode)
 {
@@ -494,13 +486,41 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
     {
         const intersection_t* cur = node->data;
         const intersection_t* next = node->next->data;
-        sector_t* curAfter = cur->after ? ((bsp_hedgeinfo_t*) cur->after->data)->sector : NULL;
-        sector_t* nextBefore = next->before? ((bsp_hedgeinfo_t*) next->before->data)->sector : NULL;
+        hedge_t* farHEdge, *nearHEdge;
+        sector_t* nearSector = NULL, *farSector = NULL;
+        boolean alongPartition = false;
 
-        if(!(!curAfter && !nextBefore))
+        // Is this half-edge exactly aligned to the partition?
+        {
+        hedge_t* hEdge;
+        angle_g angle;
+
+        angle = M_SlopeToAngle(-part->pDX, -part->pDY);
+        hEdge = next->vertex->hEdge;
+        do
+        {
+            angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
+            if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
+            {
+                alongPartition = true;
+                break;
+            }
+        } while((hEdge = hEdge->prev->twin) != next->vertex->hEdge);
+        }
+
+        if(!alongPartition)
+        {
+            farHEdge = vertexCheckOpen(next->vertex, M_SlopeToAngle(-part->pDX, -part->pDY), false);
+            nearHEdge = vertexCheckOpen(cur->vertex, M_SlopeToAngle(part->pDX, part->pDY), true);
+
+            nearSector = nearHEdge ? ((bsp_hedgeinfo_t*) nearHEdge->data)->sector : NULL;
+            farSector = farHEdge? ((bsp_hedgeinfo_t*) farHEdge->data)->sector : NULL;
+        }
+
+        if(!(!nearSector && !farSector))
         {
             // Check for some nasty open/closed or close/open cases.
-            if(curAfter && !nextBefore)
+            if(nearSector && !farSector)
             {
                 if(!isIntersectionOnSelfRefLineDef(cur))
                 {
@@ -511,14 +531,14 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    curAfter->flags |= SECF_UNCLOSED;
+                    nearSector->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
                     Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                curAfter->buildData.index - 1, pos[0], pos[1]))
+                                nearSector->buildData.index - 1, pos[0], pos[1]))
                 }
             }
-            else if(!curAfter && nextBefore)
+            else if(!nearSector && farSector)
             {
                 if(!isIntersectionOnSelfRefLineDef(next))
                 {
@@ -529,18 +549,21 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    nextBefore->flags |= SECF_UNCLOSED;
+                    farSector->flags |= SECF_UNCLOSED;
 
                     VERBOSE(
                     Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                nextBefore->buildData.index - 1, pos[0], pos[1]))
+                                farSector->buildData.index - 1, pos[0], pos[1]))
                 }
             }
             else
-            {   // This is definitetly open space.
+            {
+                /**
+                 * This is definitetly open space. Build half-edges on each
+                 * side of the gap.
+                 */
 
-                // Do a sanity check on the sectors (just for good measure).
-                if(curAfter != nextBefore)
+                if(nearSector != farSector)
                 {
                     if(!isIntersectionOnSelfRefLineDef(cur) &&
                        !isIntersectionOnSelfRefLineDef(next))
@@ -548,9 +571,9 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
 #if _DEBUG
 VERBOSE(
 Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
-            curAfter->buildData.index - 1,
+            nearSector->buildData.index - 1,
             (float) cur->vertex->pos[0], (float) cur->vertex->pos[1],
-            nextBefore->buildData.index - 1,
+            farSector->buildData.index - 1,
             (float) next->vertex->pos[0], (float) next->vertex->pos[1]));
 #endif
                     }
@@ -559,37 +582,62 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                     if(isIntersectionOnSelfRefLineDef(cur) &&
                        !isIntersectionOnSelfRefLineDef(next))
                     {
-                        curAfter = nextBefore;
+                        nearSector = farSector;
                     }
                 }
 
-                /**
-                 * Build half-edges on each side of the gap.
-                 */
                 {
                 hedge_t* right, *left;
 
                 right = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
                 right->vertex = cur->vertex;
-                right->face = next->before->face;
-                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) next->before->data)->sector;
+                right->face = nearHEdge->face;
+                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) nearHEdge->data)->sector;
                 ((bsp_hedgeinfo_t*) right->data)->sourceLine = part->lineDef;
 
                 left = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
                 left->vertex = next->vertex;
-                left->face = cur->after->face;
-                ((bsp_hedgeinfo_t*) left->data)->sector = ((bsp_hedgeinfo_t*) cur->after->data)->sector;
+                left->face = farHEdge->prev->face;
+                ((bsp_hedgeinfo_t*) left->data)->sector = ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector;
                 ((bsp_hedgeinfo_t*) left->data)->sourceLine = part->lineDef;
 
                 // Twin the half-edges together.
                 right->twin = left;
                 left->twin = right;
 
+#if 0
+                /**
+                 * @todo Use method for linking the new half-edges along the
+                 * partition into their respective vertex rings.
+                 * Not possible until createInitialHEdges is updated.
+                 */
+                left->prev = farHEdge->prev;
+                right->prev = nearHEdge;
+
+                right->next = farHEdge;
+                left->next = nearHEdge->next;
+
+                left->prev->next = left;
+                right->prev->next = right;
+
+                right->next->prev = right;
+                left->next->prev = left;
+
+#if _DEBUG
+testVertexHEdgeRings(cur->vertex);
+testVertexHEdgeRings(next->vertex);
+#endif
+#else
                 right->next = right->prev = right;
                 left->next = left->prev = left;
+#endif
 
                 BSP_UpdateHEdgeInfo(right);
                 BSP_UpdateHEdgeInfo(left);
+
+                // Add the new half-edges to the appropriate lists.
+                BSP_AddHEdgeToSuperBlock(rightList, right);
+                BSP_AddHEdgeToSuperBlock(leftList, left);
 
 /*#if _DEBUG
 Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
@@ -602,10 +650,6 @@ Con_Message("  %p LEFT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             left->vertex->V_pos[VX], left->vertex->V_pos[VY],
             left->twin->vertex->V_pos[VX], left->twin->vertex->V_pos[VY]);
 #endif*/
-
-                // Add the new half-edges to the appropriate lists.
-                BSP_AddHEdgeToSuperBlock(rightList, right);
-                BSP_AddHEdgeToSuperBlock(leftList, left);
                 }
             }
         }
