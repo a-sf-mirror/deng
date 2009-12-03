@@ -80,9 +80,6 @@ typedef struct player_s {
     playerclass_t   class; // Player class.
     playerbrain_t   brain;
 
-    float           viewOffset[3];
-    float           bob; // bounded/scaled total momentum
-
     // This is only used between levels,
     // mo->health is used during levels.
     int             health;
@@ -139,14 +136,17 @@ typedef struct player_s {
     // True if secret level has been done.
     boolean         didSecret;
 
-    // The player's view pitch is centering back to zero.
-    boolean         centering;
-
-    // The player can jump if this counter is zero.
-    int             jumpTics;
+    int             jumpTics; // The player can jump if this counter is zero.
     int             airCounter;
     int             rebornWait; // The player can be reborn if this counter is zero.
+    boolean         centering; // The player's view pitch is centering back to zero.
     int             update, startSpot;
+
+    float           viewOffset[3]; // Relative to position of the player mobj.
+    float           viewZ; // Focal origin above r.z.
+    float           viewHeight; // Base height above floor for viewZ.
+    float           viewHeightDelta;
+    float           bob; // Bounded/scaled total momentum.
 
     // Target view to a mobj (NULL=disabled).
     mobj_t*         viewLock; // $democam
@@ -165,4 +165,32 @@ typedef struct player_s {
     mobj_t*         rain2; // Active rain maker 2.
 } player_t;
 
+//
+// INTERMISSION
+// Structure passed e.g. to IN_Start(wb)
+//
+/*typedef struct {
+    boolean         inGame; // Whether the player is in game.
+
+    // Player stats, kills, collected items etc.
+    int             kills;
+    int             items;
+    int             secret;
+    int             time;
+    int             frags[MAXPLAYERS];
+    int             score; // Current score on entry, modified on return.
+} wbplayerstruct_t;*/
+
+typedef struct {
+/*    int             epsd; // Episode # (0-2)*/
+    boolean         didSecret; // If true, splash the secret level.
+    int             last, next; // Previous and next levels, origin 0.
+/*    int             maxKills;
+    int             maxItems;
+    int             maxSecret;
+    int             maxFrags;
+    int             parTime;
+    int             pNum; // Index of this player in game.
+    wbplayerstruct_t plyr[MAXPLAYERS];*/
+} wbstartstruct_t;
 #endif

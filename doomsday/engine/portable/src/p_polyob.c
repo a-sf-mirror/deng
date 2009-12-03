@@ -296,21 +296,14 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     P_PolyobjUnlinkLineDefs(po);
 
     prevPts = po->prevPts;
-    blocked = false;
-
-    validCount++;
     for(count = 0; count < po->numLineDefs; ++count, prevPts++)
     {
         linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
-        if(line->validCount != validCount)
-        {
-            line->bBox[BOXTOP]    += y;
-            line->bBox[BOXBOTTOM] += y;
-            line->bBox[BOXLEFT]   += x;
-            line->bBox[BOXRIGHT]  += x;
-            line->validCount = validCount;
-        }
+        line->bBox[BOXTOP]    += y;
+        line->bBox[BOXBOTTOM] += y;
+        line->bBox[BOXLEFT]   += x;
+        line->bBox[BOXRIGHT]  += x;
 
         line->L_v1->pos[VX] += x;
         line->L_v1->pos[VY] += y;
@@ -319,6 +312,7 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
         (*prevPts).pos[VY] += y;
     }
 
+    blocked = false;
     for(count = 0; count < po->numLineDefs; ++count)
     {
         linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
@@ -333,19 +327,15 @@ boolean P_PolyobjMove(struct polyobj_s* po, float x, float y)
     {
         prevPts = po->prevPts;
         validCount++;
-
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
             linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
-            if(line->validCount != validCount)
-            {
-                line->bBox[BOXTOP]    -= y;
-                line->bBox[BOXBOTTOM] -= y;
-                line->bBox[BOXLEFT]   -= x;
-                line->bBox[BOXRIGHT]  -= x;
-                line->validCount = validCount;
-            }
+            line->bBox[BOXTOP]    -= y;
+            line->bBox[BOXBOTTOM] -= y;
+            line->bBox[BOXLEFT]   -= x;
+            line->bBox[BOXRIGHT]  -= x;
+            line->validCount = validCount;
 
             line->L_v1->pos[VX] -= x;
             line->L_v1->pos[VY] -= y;
@@ -420,6 +410,9 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         rotatePoint(an, &pos[VX], &pos[VY], po->pos[VX], po->pos[VY]);
         line->L_v1->pos[VX] = pos[VX];
         line->L_v1->pos[VY] = pos[VY];
+        line->angle += angle;
+
+        updateLineDefAABB(line);
 
         // Now update the surface normal.
         surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
@@ -432,7 +425,6 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
     }
 
     blocked = false;
-    validCount++;
 
     for(count = 0; count < po->numLineDefs; ++count)
     {
@@ -442,14 +434,8 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         {
             blocked = true;
         }
-
-        if(line->validCount != validCount)
-        {
-            updateLineDefAABB(line);
-            line->validCount = validCount;
-        }
-
         line->angle += angle;
+        updateLineDefAABB(line);
     }
 
     if(blocked)
@@ -463,17 +449,12 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
             line->L_v1->pos[VY] = prevPts->pos[VY];
         }
 
-        validCount++;
 
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
             linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
 
-            if(line->validCount != validCount)
-            {
-                updateLineDefAABB(line);
-                line->validCount = validCount;
-            }
+            updateLineDefAABB(line);
             line->angle -= angle;
         }
 

@@ -102,7 +102,7 @@ typedef struct {
 
     int             msgCount;
     float           msgScale;
-    int             msgUptime;
+    float           msgUptime;
     int             msgBlink;
     int             msgAlign;
     byte            msgShow;
@@ -112,7 +112,7 @@ typedef struct {
     byte            ammoAutoSwitch;
     int             weaponOrder[NUM_WEAPON_TYPES];
     byte            weaponNextMode; // if true use the weaponOrder for next/previous.
-
+    float           filterStrength;
     byte            counterCheat;
     float           counterCheatScale;
 
@@ -148,7 +148,7 @@ typedef struct {
 
     int             dclickUse;
     int             plrViewHeight;
-    int             mapTitle;
+    byte            mapTitle, hideIWADAuthor;
     float           menuScale;
     int             menuEffects;
     int             hudFog;

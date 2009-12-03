@@ -40,7 +40,8 @@ extern float fogColor[4];
 extern int gameDrawHUD;
 extern int useShinySurfaces;
 
-extern int devSkyMode;
+extern int devRendSkyMode;
+extern byte devRendSkyAlways;
 extern byte devNoTexFix;
 extern byte devBlockmap;
 extern float devBlockmapSize;

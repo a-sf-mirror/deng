@@ -87,7 +87,8 @@ byte smoothTexAnim = true;
 int useShinySurfaces = true;
 
 byte freezeRLs = false;
-int devSkyMode = false;
+int devRendSkyMode = false;
+byte devRendSkyAlways = false;
 
 int missileBlend = 1;
 int gameDrawHUD = 1; // Set to zero when we advise that the HUD should not be drawn
@@ -112,23 +113,20 @@ static boolean firstsubsector; // No range checking for the first one.
 
 void Rend_Register(void)
 {
-    C_VAR_INT("rend-dev-sky", &devSkyMode, CVF_NO_ARCHIVE, 0, 2);
-    C_VAR_BYTE("rend-dev-freeze", &freezeRLs, CVF_NO_ARCHIVE, 0, 1);
-    C_VAR_INT("rend-dev-cull-subsectors", &devNoCulling,CVF_NO_ARCHIVE,0,1);
-    C_VAR_INT("rend-dev-mobj-bbox", &devMobjBBox, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_FLOAT("rend-camera-fov", &fieldOfView, 0, 1, 179);
     C_VAR_BYTE("rend-tex-anim-smooth", &smoothTexAnim, 0, 0, 1);
     C_VAR_INT("rend-tex-shiny", &useShinySurfaces, 0, 0, 1);
-    C_VAR_FLOAT2("rend-light-compression", &lightRangeCompression, 0, -1, 1,
-                 R_CalcLightModRange);
-    C_VAR_INT2("rend-light-ambient", &ambientLight, 0, 0, 255,
-               R_CalcLightModRange);
-    C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1,
-               LG_MarkAllForUpdate);
-    C_VAR_FLOAT("rend-light-wall-angle", &rendLightWallAngle, CVF_NO_MAX,
-                0, 0);
-    C_VAR_FLOAT("rend-light-attenuation", &rendLightDistanceAttentuation,
-                CVF_NO_MAX, 0, 0);
+    C_VAR_FLOAT2("rend-light-compression", &lightRangeCompression, 0, -1, 1, R_CalcLightModRange);
+    C_VAR_INT2("rend-light-ambient", &ambientLight, 0, 0, 255, R_CalcLightModRange);
+    C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1, LG_MarkAllForUpdate);
+    C_VAR_FLOAT("rend-light-wall-angle", &rendLightWallAngle, CVF_NO_MAX, 0, 0);
+    C_VAR_FLOAT("rend-light-attenuation", &rendLightDistanceAttentuation, CVF_NO_MAX, 0, 0);
+
+    C_VAR_INT("rend-dev-sky", &devRendSkyMode, CVF_NO_ARCHIVE, 0, 2);
+    C_VAR_BYTE("rend-dev-sky-always", &devRendSkyAlways, CVF_NO_ARCHIVE, 0, 1);
+    C_VAR_BYTE("rend-dev-freeze", &freezeRLs, CVF_NO_ARCHIVE, 0, 1);
+    C_VAR_INT("rend-dev-cull-subsectors", &devNoCulling,CVF_NO_ARCHIVE,0,1);
+    C_VAR_INT("rend-dev-mobj-bbox", &devMobjBBox, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-light-mod", &devLightModRange, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-tex-showfix", &devNoTexFix, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-blockmap-debug", &devBlockmap, CVF_NO_ARCHIVE, 0, 3);
@@ -168,11 +166,13 @@ void Rend_Reset(void)
 
 void Rend_ModelViewMatrix(boolean useAngles)
 {
-    vx = viewX;
-    vy = viewZ;
-    vz = viewY;
-    vang = viewAngle / (float) ANGLE_MAX *360 - 90;
-    vpitch = viewPitch * 85.0 / 110.0;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+
+    vx = viewData->current.pos[VX];
+    vy = viewData->current.pos[VZ];
+    vz = viewData->current.pos[VY];
+    vang = viewData->current.angle / (float) ANGLE_MAX *360 - 90;
+    vpitch = viewData->current.pitch * 85.0 / 110.0;
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -266,6 +266,7 @@ static void quadLightCoords(rtexcoord_t* tc, const float s[2],
     tc[2].st[1] = tc[0].st[1] = t[1];
 }
 
+#if 0
 static void quadShinyMaskTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
                                    float wallLength, float texWidth,
                                    float texHeight, const pvec2_t texOrigin[2],
@@ -279,6 +280,7 @@ static void quadShinyMaskTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
     tc[2].st[1] = tc[3].st[1] + (rverts[1].pos[VZ] - rverts[0].pos[VZ]) / texHeight;
     tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]) / texHeight;
 }
+#endif
 
 static float shinyVertical(float dy, float dx)
 {
@@ -1092,7 +1094,6 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     rtexcoord_t*        shinyTexCoords = NULL;
     boolean             useLights = false;
     uint                numLights = 0;
-    float               interPos = 0;
     DGLuint             modTex = 0;
     float               modTexTC[2][2];
     float               modColor[3];
@@ -1559,9 +1560,9 @@ static void renderPlane(subsector_t* subsector, planetype_t type,
     {
         skyHemispheres |= (SKYHEMI_LOWER | SKYHEMI_UPPER);
 
-        // In devSkyMode mode we render all polys destined for the
+        // In devRendSkyMode mode we render all polys destined for the
         // skymask as regular world polys (with a few obvious properties).
-        if(devSkyMode)
+        if(devRendSkyMode)
         {
             params.type = RPT_NORMAL;
             params.blendMode = BM_NORMAL;
@@ -2017,7 +2018,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
     material_snapshot_t ms;
     vec3_t texOrigin[2];
 
-    // In devSkyMode mode we render all polys destined for the skymask as
+    // In devRendSkyMode mode we render all polys destined for the skymask as
     // regular world polys (with a few obvious properties).
 
     Materials_Prepare(mat, 0, NULL, &ms);
@@ -2057,7 +2058,7 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
     // Init the poly.
     memset(rTU, 0, sizeof(rTU));
 
-    if(devSkyMode)
+    if(devRendSkyMode)
     {
         uint i;
 
@@ -2130,12 +2131,12 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
                 vTL[VZ] = vTR[VZ] = ffloor;
                 vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
 
-                if(devSkyMode)
+                if(devRendSkyMode)
                     prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
                                        frontsec->SP_floormaterial);
 
                 RL_AddPoly(PT_TRIANGLE_STRIP,
-                           (devSkyMode? RPT_NORMAL : RPT_SKY_MASK),
+                           (devRendSkyMode? RPT_NORMAL : RPT_SKY_MASK),
                            4, rvertices, NULL, rtexcoords, NULL,
                            rcolors, 0, 0, NULL, rTU);
             }
@@ -2148,12 +2149,12 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
                 vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
                 vBL[VZ] = vBR[VZ] = fceil;
 
-                if(devSkyMode)
+                if(devRendSkyMode)
                      prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
                                         frontsec->SP_ceilmaterial);
 
                 RL_AddPoly(PT_TRIANGLE_STRIP,
-                           (devSkyMode? RPT_NORMAL : RPT_SKY_MASK),
+                           (devRendSkyMode? RPT_NORMAL : RPT_SKY_MASK),
                            4, rvertices, NULL, rtexcoords, NULL,
                            rcolors, 0, 0, NULL, rTU);
             }
@@ -2171,12 +2172,12 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
                     vTL[VZ] = vTR[VZ] = bfloor;
                     vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
 
-                    if(devSkyMode)
+                    if(devRendSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
                                            frontsec->SP_floormaterial);
 
                     RL_AddPoly(PT_TRIANGLE_STRIP,
-                               (devSkyMode? RPT_NORMAL : RPT_SKY_MASK),
+                               (devRendSkyMode? RPT_NORMAL : RPT_SKY_MASK),
                                4, rvertices, NULL, rtexcoords, NULL,
                                rcolors, 0, 0, NULL, rTU);
                 }
@@ -2194,13 +2195,13 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
                     vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
                     vBL[VZ] = vBR[VZ] = bceil;
 
-                    if(devSkyMode)
+                    if(devRendSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
                                            frontsec->SP_ceilmaterial);
 
 
                     RL_AddPoly(PT_TRIANGLE_STRIP,
-                               (devSkyMode? RPT_NORMAL : RPT_SKY_MASK),
+                               (devRendSkyMode? RPT_NORMAL : RPT_SKY_MASK),
                                4, rvertices, NULL, rtexcoords, NULL,
                                rcolors, 0, 0, NULL, rTU);
                 }
@@ -2507,7 +2508,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
         {
             seg_t* seg = (seg_t*) hEdge->data;
             boolean solid = false;
-            
+
             if(seg->sideDef && // Exclude "minisegs"
                (seg->frameFlags & SEGINF_FACINGFRONT))
             {
@@ -2515,7 +2516,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                 rendseg_t temp[3], *rendSegs[3];
 
                 memset(temp, 0, sizeof(temp));
-                
+
                 R_MarkLineDefAsDrawnForViewer(seg->sideDef->lineDef, viewPlayer - ddPlayers);
 
                 R_PickPlanesForSegExtrusion(hEdge, false, &ffloor, &fceil, &bfloor, &bceil);
@@ -2775,7 +2776,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
              * Do not render planes for subsectors not enclosed by their sector
              * boundary if they would be added to the skymask.
              */
-            if(devSkyMode == 0 && (subsector->sector->flags & SECF_UNCLOSED))
+            if(devRendSkyMode == 0 && (subsector->sector->flags & SECF_UNCLOSED))
                 return;
 
             if(plane->type != PLN_MID)
@@ -2829,7 +2830,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                          texMode);
     }
 
-    if(devSkyMode == 2)
+    if(devRendSkyMode == 2)
     {
         /**
          * In devSky mode 2, we draw additional geometry, showing the
@@ -2965,8 +2966,11 @@ void Rend_RenderMap(map_t* map)
         }
 
         // The viewside line for the depth cue.
-        viewsidex = -viewSin;
-        viewsidey = viewCos;
+        {
+        const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+        viewsidex = -viewData->viewSin;
+        viewsidey = viewData->viewCos;
+        }
 
         // We don't want subsector clipchecking for the first subsector.
         firstsubsector = true;
@@ -3139,7 +3143,7 @@ static void getVertexPlaneMinMax(const vertex_t* vtx, float* min, float* max)
     do
     {
         const seg_t* seg = (seg_t*) hEdge->data;
-        
+
         if(seg && seg->sideDef)
         {
             linedef_t* lineDef = seg->sideDef->lineDef;

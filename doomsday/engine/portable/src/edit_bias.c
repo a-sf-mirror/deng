@@ -125,9 +125,10 @@ void SBE_Register(void)
 
 static void getHand(float pos[3])
 {
-    pos[0] = vx + viewFrontVec[VX] * editDistance;
-    pos[1] = vz + viewFrontVec[VZ] * editDistance;
-    pos[2] = vy + viewFrontVec[VY] * editDistance;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+    pos[0] = vx + viewData->frontVec[VX] * editDistance;
+    pos[1] = vz + viewData->frontVec[VZ] * editDistance;
+    pos[2] = vy + viewData->frontVec[VY] * editDistance;
 }
 
 static source_t* grabSource(map_t* map, int index)
@@ -180,13 +181,14 @@ static source_t* getNearest(map_t* map)
 
 static void getHueColor(float* color, float* angle, float* sat)
 {
-    int                 i;
-    float               dot;
-    float               saturation, hue, scale;
-    float               minAngle = 0.1f, range = 0.19f;
-    vec3_t              h, proj;
+    int i;
+    float dot;
+    float saturation, hue, scale;
+    float minAngle = 0.1f, range = 0.19f;
+    vec3_t h, proj;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
 
-    dot = M_DotProduct(viewFrontVec, hueOrigin);
+    dot = M_DotProduct(viewData->frontVec, hueOrigin);
     saturation = (acos(dot) - minAngle) / range;
 
     if(saturation < 0)
@@ -209,12 +211,12 @@ static void getHueColor(float* color, float* angle, float* sat)
 
     // Calculate hue angle by projecting the current viewfront to the
     // hue circle plane.  Project onto the normal and subtract.
-    scale = M_DotProduct(viewFrontVec, hueOrigin) /
+    scale = M_DotProduct(viewData->frontVec, hueOrigin) /
         M_DotProduct(hueOrigin, hueOrigin);
     M_Scale(h, hueOrigin, scale);
 
     for(i = 0; i < 3; ++i)
-        proj[i] = viewFrontVec[i] - h[i];
+        proj[i] = viewData->frontVec[i] - h[i];
 
     // Now we have the projected view vector on the circle's plane.
     // Normalize the projected vector.
@@ -448,7 +450,7 @@ static void drawSource(float pos[3], float color[3], float intensity,
     float               eye[3];
 
     V3_Set(eye, vx, vz, vy);
-    
+
     col[0] = color[0];
     col[1] = color[1];
     col[2] = color[2];
@@ -682,7 +684,7 @@ static boolean save(map_t* map, const char* name)
     // Since there can be quite a lot of these, make sure we'll skip
     // the ones that are definitely not suitable.
     fprintf(file, "SkipIf Not %s\n", (char *) gx.GetVariable(DD_GAME_MODE));
-    
+
     for(i = 0; i < map->bias.numSources; ++i)
     {
         source_t*           s = SB_GetSource(map, i);
@@ -749,7 +751,7 @@ void SBE_EndFrame(map_t* map)
 
 void SBE_SetHueCircle(boolean activate)
 {
-    int                 i;
+    int i;
 
     if((signed) activate == editHueCircle)
         return; // No change in state.
@@ -761,12 +763,14 @@ void SBE_SetHueCircle(boolean activate)
 
     if(activate)
     {
+        const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+
         // Determine the orientation of the hue circle.
         for(i = 0; i < 3; ++i)
         {
-            hueOrigin[i] = viewFrontVec[i];
-            hueSide[i] = viewSideVec[i];
-            hueUp[i] = viewUpVec[i];
+            hueOrigin[i] = viewData->frontVec[i];
+            hueSide[i] = viewData->sideVec[i];
+            hueUp[i] = viewData->upVec[i];
         }
     }
 }
@@ -942,7 +946,7 @@ static void drawCursor(map_t* map)
         int                 i;
 
         glDisable(GL_DEPTH_TEST);
-        
+
         for(i = 0; i < map->bias.numSources; ++i)
         {
             source_t*           src = SB_GetSource(map, i);

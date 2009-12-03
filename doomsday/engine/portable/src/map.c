@@ -173,7 +173,7 @@ static void destroySubsectors(halfedgeds_t* halfEdgeDS)
                     subsector->shadows = slink->next;
                     Z_Free(slink);
                 }*/
-                
+
                 Z_Free(subsector);
             }
         }
@@ -1233,12 +1233,10 @@ static void buildSectorLineLists(map_t* map)
     uint i, j;
     zblockset_t* lineLinksBlockSet;
     linelink_t** sectorLineLinks;
-    uint* sectorLinkLinkCounts;
 
     // build line tables for each sector.
     lineLinksBlockSet = Z_BlockCreate(sizeof(linelink_t), 512, PU_STATIC);
     sectorLineLinks = M_Calloc(sizeof(linelink_t*) * map->numSectors);
-    sectorLinkLinkCounts = M_Calloc(sizeof(uint) * map->numSectors);
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
@@ -1255,7 +1253,6 @@ static void buildSectorLineLists(map_t* map)
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            sectorLinkLinkCounts[secIDX]++;
             LINE_FRONTSECTOR(li)->lineDefCount++;
         }
 
@@ -1268,7 +1265,6 @@ static void buildSectorLineLists(map_t* map)
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            sectorLinkLinkCounts[secIDX]++;
             LINE_BACKSECTOR(li)->lineDefCount++;
         }
     }
@@ -1281,19 +1277,35 @@ static void buildSectorLineLists(map_t* map)
         if(sectorLineLinks[i])
         {
             linelink_t* link = sectorLineLinks[i];
+            uint numLineDefs;
 
-            sector->lineDefs =
-                Z_Malloc((sectorLinkLinkCounts[i] + 1) * sizeof(linedef_t*), PU_STATIC, 0);
-
-            j = 0;
+            /**
+             * The behaviour of some algorithms used in original DOOM are
+             * dependant upon the order of these lists (e.g., EV_DoFloor
+             * and EV_BuildStairs). Lets be helpful and use the same order.
+             *
+             * Sort: LineDef index ascending (zero based).
+             */
+            numLineDefs = 0;
             while(link)
             {
-                sector->lineDefs[j++] = link->line;
+                numLineDefs++;
                 link = link->next;
             }
 
-            sector->lineDefs[j] = NULL; // terminate.
-            sector->lineDefCount = j;
+            sector->lineDefs =
+                Z_Malloc((numLineDefs + 1) * sizeof(linedef_t*), PU_STATIC, 0);
+
+            j = numLineDefs - 1;
+            link = sectorLineLinks[i];
+            while(link)
+            {
+                sector->lineDefs[j--] = link->line;
+                link = link->next;
+            }
+
+            sector->lineDefs[numLineDefs] = NULL; // terminate.
+            sector->lineDefCount = numLineDefs;
         }
         else
         {
@@ -1305,7 +1317,6 @@ static void buildSectorLineLists(map_t* map)
     // Free temporary storage.
     Z_BlockDestroy(lineLinksBlockSet);
     M_Free(sectorLineLinks);
-    M_Free(sectorLinkLinkCounts);
 }
 
 static void finishSectors2(map_t* map)
@@ -1932,7 +1943,7 @@ static void countVertexLineOwners(lineowner2_t* lineOwners, uint* oneSided, uint
     if(lineOwners)
     {
         lineowner2_t* owner;
-        
+
         owner = lineOwners;
         do
         {
@@ -2879,7 +2890,7 @@ linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
                              sidedef_t* front, sidedef_t* back)
 {
     linedef_t* l;
-    
+
     if(!map->editActive)
         return NULL;
 

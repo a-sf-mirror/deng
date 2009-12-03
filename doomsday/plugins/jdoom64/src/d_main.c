@@ -288,6 +288,7 @@ void G_PreInit(void)
     cfg.xhairColor[1] = 1;
     cfg.xhairColor[2] = 1;
     cfg.xhairColor[3] = 1;
+    cfg.filterStrength = .8f;
     cfg.moveCheckZ = true;
     cfg.jumpPower = 9;
     cfg.airborneMovement = 1;
@@ -305,9 +306,9 @@ void G_PreInit(void)
     cfg.netMobDamageModifier = 1;
     cfg.netMobHealthModifier = 1;
     cfg.netGravity = -1; // Use map default.
-    cfg.plrViewHeight = 54;
+    cfg.plrViewHeight = DEFAULT_PLAYER_VIEWHEIGHT;
     cfg.mapTitle = true;
-    cfg.hideAuthorMidway = true;
+    cfg.hideIWADAuthor = true;
     cfg.menuColor[0] = 1;
     cfg.menuColor2[0] = 1;
     cfg.menuSlam = false;
@@ -362,7 +363,7 @@ void G_PreInit(void)
     cfg.msgShow = true;
     cfg.msgCount = 1;
     cfg.msgScale = .8f;
-    cfg.msgUptime = 5 * TICSPERSEC;
+    cfg.msgUptime = 5;
     cfg.msgAlign = ALIGN_LEFT;
     cfg.msgBlink = 5;
 

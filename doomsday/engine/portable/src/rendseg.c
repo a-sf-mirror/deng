@@ -69,9 +69,9 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef,
     // Fill in the remaining params data.
     if(IS_SKYSURFACE(surface))
     {
-        // In devSkyMode mode we render all polys destined for the skymask
+        // In devRendSkyMode mode we render all polys destined for the skymask
         // as regular world polys (with a few obvious properties).
-        if(devSkyMode)
+        if(devRendSkyMode)
         {
             *materialA = surface->material;
 
@@ -411,7 +411,7 @@ void RendSeg_TakeMaterialSnapshots(rendseg_t* rseg, material_t* material)
 }
 
 uint RendSeg_DynlistID(rendseg_t* rseg)
-{   
+{
     return rseg->dynlistID;
 }
 

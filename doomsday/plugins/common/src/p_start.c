@@ -476,10 +476,12 @@ void P_SpawnPlayer(int plrNum, playerclass_t pClass, float x, float y,
     if(p->plr->flags & DDPF_CAMERA)
     {
         p->plr->mo->pos[VZ] += (float) cfg.plrViewHeight;
-        p->plr->viewHeight = 0;
+        p->viewHeight = 0;
     }
     else
-        p->plr->viewHeight = (float) cfg.plrViewHeight;
+        p->viewHeight = (float) cfg.plrViewHeight;
+
+    p->viewZ = p->plr->mo->pos[VZ] + p->viewHeight;
 
     // Give all cards in death match mode.
     if(deathmatch)
@@ -572,7 +574,7 @@ static void spawnPlayer(int plrNum, playerclass_t pClass, float x, float y,
 void P_RebornPlayer(int plrNum)
 {
 #if __JHEXEN__
-    int                 oldKeys, oldPieces, bestWeapon;
+    int                 oldKeys = 0, oldPieces = 0, bestWeapon;
     boolean             oldWeaponOwned[NUM_WEAPON_TYPES];
 #endif
     player_t*           p;
@@ -872,7 +874,6 @@ void P_SpawnPlayers(void)
             if(players[i].plr->inGame)
             {
                 const playerstart_t* start = NULL;
-                ddplayer_t*         ddpl = players[i].plr;
                 float               pos[3];
                 angle_t             angle;
                 int                 spawnFlags;

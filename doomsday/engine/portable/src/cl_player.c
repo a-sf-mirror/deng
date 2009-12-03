@@ -270,7 +270,7 @@ Con_Message("Cl_RPlD: pl=%i => moid=%i\n", num, s->mobjId);
             //if(psdf & PSDF_NEXT/*TIME*/) psp->nexttime = (char) Msg_ReadByte();
             //if(psdf & PSDF_TICS) psp->tics = (char) Msg_ReadByte();
             if(psdf & PSDF_LIGHT)
-                psp->light = Msg_ReadByte() / 255.0f;
+                /* psp->light = */ Msg_ReadByte() /* / 255.0f */;
             if(psdf & PSDF_ALPHA)
                 psp->alpha = Msg_ReadByte() / 255.0f;
             if(psdf & PSDF_STATE)
@@ -585,12 +585,10 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
     if(onground)
     {
         mo->pos[VZ] = z - 1;
-        ddpl->viewHeight = 1;
     }
     else
     {
         mo->pos[VZ] = z;
-        ddpl->viewHeight = 0;
     }
 
     Cl_UpdatePlayerPos(consolePlayer);
@@ -830,8 +828,8 @@ Con_Message("Cl_RdPlrD2: pl=%i => moid=%i\n",
                 }
             }
 
-            if(psdf & PSDF_LIGHT)
-                psp->light = Msg_ReadByte() / 255.0f;
+            /*if(psdf & PSDF_LIGHT)
+                psp->light = Msg_ReadByte() / 255.0f;*/
             if(psdf & PSDF_ALPHA)
                 psp->alpha = Msg_ReadByte() / 255.0f;
             if(psdf & PSDF_STATE)

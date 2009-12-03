@@ -242,6 +242,7 @@ void G_PreInit(void)
     cfg.xhairColor[1] = 1;
     cfg.xhairColor[2] = 1;
     cfg.xhairColor[3] = 1;
+    cfg.filterStrength = .8f;
     cfg.jumpEnabled = cfg.netJumping = true; // true by default in Hexen
     cfg.jumpPower = 9;
     cfg.airborneMovement = 1;
@@ -255,8 +256,9 @@ void G_PreInit(void)
     cfg.netMobDamageModifier = 1;
     cfg.netMobHealthModifier = 1;
     cfg.netGravity = -1;        // use map default
-    cfg.plrViewHeight = 48;
+    cfg.plrViewHeight = DEFAULT_PLAYER_VIEWHEIGHT;
     cfg.mapTitle = true;
+    cfg.hideIWADAuthor = true;
     cfg.menuScale = .75f;
     cfg.menuColor[0] = defFontRGB[0];   // use the default colour by default.
     cfg.menuColor[1] = defFontRGB[1];
@@ -328,7 +330,7 @@ void G_PreInit(void)
     cfg.msgShow = true;
     cfg.msgCount = 4;
     cfg.msgScale = .8f;
-    cfg.msgUptime = 5 * TICSPERSEC;
+    cfg.msgUptime = 5;
     cfg.msgAlign = ALIGN_CENTER;
     cfg.msgBlink = 5;
     cfg.msgColor[0] = defFontRGB2[0];

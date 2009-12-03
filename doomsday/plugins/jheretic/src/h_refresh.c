@@ -90,12 +90,12 @@ void R_DrawSpecialFilter(int pnum)
     if(cfg.ringFilter == 1)
     {
         DGL_BlendFunc(DGL_SRC_COLOR, DGL_SRC_COLOR);
-        DGL_DrawRect(x, y, w, h, .5f, .35f, .1f, 1);
+        DGL_DrawRect(x, y, w, h, .5f, .35f, .1f, cfg.filterStrength);
     }
     else
     {
         DGL_BlendFunc(DGL_DST_COLOR, DGL_SRC_COLOR);
-        DGL_DrawRect(x, y, w, h, 0, 0, .6f, 1);
+        DGL_DrawRect(x, y, w, h, 0, 0, .6f, cfg.filterStrength);
     }
 
     // Restore the normal rendering state.
@@ -114,7 +114,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 0;
         rgba[CB] = 0;
-        rgba[CA] = filter / 8.f; // Full red with filter 8.
+        rgba[CA] = (deathmatch? 1.0f : cfg.filterStrength) * filter / 8.f; // Full red with filter 8.
         return true;
     }
     else if(filter >= STARTBONUSPALS && filter < STARTBONUSPALS + NUMBONUSPALS)
@@ -122,7 +122,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 1;
         rgba[CB] = .5f;
-        rgba[CA] = (filter - STARTBONUSPALS + 1) / 16.f;
+        rgba[CA] = cfg.filterStrength * (filter - STARTBONUSPALS + 1) / 16.f;
         return true;
     }
 
@@ -135,30 +135,22 @@ boolean R_GetFilterColor(float rgba[4], int filter)
 void R_DrawMapTitle(int x, int y, float alpha, gamefontid_t font,
                     boolean center)
 {
-    int                 strX;
-    char*               lname, *lauthor;
+    const char* lname, *lauthor;
 
     lname = P_GetMapNiceName();
     if(lname)
     {
-        strX = x;
-        if(center)
-            strX -= M_StringWidth(lname, font) / 2;
-
-        M_WriteText3(strX, y, lname, font,
+        M_WriteText3(x - M_StringWidth(lname, font) / 2, y, lname, font,
                      defFontRGB[0], defFontRGB[1], defFontRGB[2], alpha,
                      false, true, 0);
         y += 20;
     }
 
-    lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
-    if(lauthor && stricmp(lauthor, "raven software"))
+    lauthor = P_GetMapAuthor(cfg.hideIWADAuthor);
+    if(lauthor)
     {
-        strX = x;
-        if(center)
-            strX -= M_StringWidth(lauthor, GF_FONTA) / 2;
-
-        M_WriteText3(strX, y, lauthor, GF_FONTA, .5f, .5f, .5f, alpha,
+        M_WriteText3(x - M_StringWidth(lauthor, GF_FONTA) / 2, y,
+                     lauthor, GF_FONTA, .5f, .5f, .5f, alpha,
                      false, true, 0);
     }
 }
@@ -185,12 +177,11 @@ void R_SetViewSize(int blocks)
 
 static void rendPlayerView(int player)
 {
-    player_t*           plr = &players[player];
-    int                 viewAngleOffset =
-        ANGLE_MAX * -G_GetLookOffset(player);
-    boolean             isFullBright =
-        (plr->powers[PT_INVULNERABILITY] > BLINKTHRESHOLD) ||
-                       (plr->powers[PT_INVULNERABILITY] & 8);
+    player_t* plr = &players[player];
+    float viewPos[3], viewPitch;
+    angle_t viewAngle;
+    boolean isFullBright = (plr->powers[PT_INVULNERABILITY] > BLINKTHRESHOLD) ||
+                            (plr->powers[PT_INVULNERABILITY] & 8);
 
     if(IS_CLIENT)
     {
@@ -198,17 +189,23 @@ static void rendPlayerView(int player)
         R_SetAllDoomsdayFlags();
     }
 
-    DD_SetVariable(DD_VIEWX_OFFSET, &plr->viewOffset[VX]);
-    DD_SetVariable(DD_VIEWY_OFFSET, &plr->viewOffset[VY]);
-    DD_SetVariable(DD_VIEWZ_OFFSET, &plr->viewOffset[VZ]);
-    // The view angle offset.
-    DD_SetVariable(DD_VIEWANGLE_OFFSET, &viewAngleOffset);
+    viewPos[VX] = plr->plr->mo->pos[VX] + plr->viewOffset[VX];
+    viewPos[VY] = plr->plr->mo->pos[VY] + plr->viewOffset[VY];
+    viewPos[VZ] = plr->viewZ + plr->viewOffset[VZ];
+    viewAngle = plr->plr->mo->angle + (int) (ANGLE_MAX * -G_GetLookOffset(player));
+    viewPitch = plr->plr->lookDir;
+
+    DD_SetVariable(DD_VIEW_X, &viewPos[VX]);
+    DD_SetVariable(DD_VIEW_Y, &viewPos[VY]);
+    DD_SetVariable(DD_VIEW_Z, &viewPos[VZ]);
+    DD_SetVariable(DD_VIEW_ANGLE, &viewAngle);
+    DD_SetVariable(DD_VIEW_PITCH, &viewPitch);
 
     // $democam
     GL_SetFilter((plr->plr->flags & DDPF_VIEW_FILTER)? true : false);
     if(plr->plr->flags & DDPF_VIEW_FILTER)
     {
-        const float*        color = plr->plr->filterColor;
+        const float* color = plr->plr->filterColor;
         GL_SetFilterColor(color[CR], color[CG], color[CB], color[CA]);
     }
 
@@ -314,14 +311,6 @@ void H_Display(int layer)
 
             if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
                 return;
-
-            if(!IS_CLIENT && mapTime < 2)
-            {
-                // Don't render too early; the first couple of frames
-                // might be a bit unstable -- this should be considered
-                // a bug, but since there's an easy fix...
-                return;
-            }
 
             rendPlayerView(player);
 

@@ -232,6 +232,8 @@ enum {
     DD_ID,
     DD_LUMP,
     DD_CD_TRACK,
+    DD_SPRITE,
+    DD_FRAME,
     DD_GAME_MODE, // 16 chars max (swdoom, doom1, udoom, tnt, heretic...)
     DD_GAME_CONFIG, // String: dm/co-op, jumping, etc.
     DD_DEF_FINALE,
@@ -264,18 +266,16 @@ enum {
     DD_OPENTOP,
     DD_OPENBOTTOM,
     DD_LOWFLOOR,
-    DD_VIEWX,
-    DD_VIEWY,
-    DD_VIEWZ,
-    DD_VIEWX_OFFSET,
-    DD_VIEWY_OFFSET,
-    DD_VIEWZ_OFFSET,
-    DD_VIEWANGLE,
-    DD_VIEWANGLE_OFFSET,
+    DD_VIEW_X,
+    DD_VIEW_Y,
+    DD_VIEW_Z,
+    DD_VIEW_ANGLE,
+    DD_VIEW_PITCH,
     DD_CPLAYER_THRUST_MUL,
     DD_GRAVITY,
     DD_PSPRITE_OFFSET_X, // 10x
     DD_PSPRITE_OFFSET_Y, // 10x
+    DD_PSPRITE_LIGHTLEVEL_MULTIPLIER,
     DD_TORCH_RED,
     DD_TORCH_GREEN,
     DD_TORCH_BLUE,
@@ -1272,6 +1272,10 @@ typedef struct ticcmd_s {
         CTL_ZFLY = 3,           ///< Up/down movement.
         CTL_TURN = 4,           ///< Turning horizontally.
         CTL_LOOK = 5,           ///< Turning up and down.
+        CTL_MODIFIER_1 = 6,
+        CTL_MODIFIER_2 = 7,
+        CTL_MODIFIER_3 = 8,
+        CTL_MODIFIER_4 = 9,
         CTL_FIRST_GAME_CONTROL = 1000
     };
 
@@ -1307,13 +1311,20 @@ typedef struct ticcmd_s {
         DDPSP_UP
     };
 
+/**
+ * @defGroup pspriteFlags PSprite Flags
+ */
+/*{*/
+#define DDPSPF_FULLBRIGHT 0x1
+/*}*/
+
     // Player sprites.
     typedef struct {
         state_t*        statePtr;
         int             tics;
-        float           light, alpha;
+        float           alpha;
         float           pos[2];
-        int             flags;
+        byte            flags; // @see pspriteFlags
         int             state;
         float           offset[2];
     } ddpsprite_t;
@@ -1334,9 +1345,6 @@ typedef struct ticcmd_s {
     typedef struct ddplayer_s {
         ticcmd_t        cmd;
         struct mobj_s*  mo; // Pointer to a (game specific) mobj.
-        float           viewZ; // Focal origin above r.z.
-        float           viewHeight; // Base height above floor for viewZ.
-        float           viewHeightDelta;
         float           lookDir; // For mouse look.
         int             fixedColorMap; // Can be set to REDCOLORMAP, etc.
         int             extraLight; // So gun flashes light up areas.

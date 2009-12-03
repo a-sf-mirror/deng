@@ -61,10 +61,8 @@
 
 // MACROS ------------------------------------------------------------------
 
-#define OFF_STATE   0x01000000
-#define OFF_SOUND   0x02000000
-#define OFF_FLOAT   0x04000000
-#define OFF_SPRITE  0x08000000
+#define OFF_STATE   0x04000000
+#define OFF_SOUND   0x08000000
 #define OFF_FIXED   0x10000000
 #define OFF_MASK    0x00ffffff
 
@@ -95,7 +93,7 @@ void    InitPlugin(void) __attribute__ ((constructor));
 
 int     PatchThing(int);
 int     PatchSound(int);
-int     PatchFrame(int);
+int     PatchState(int);
 int     PatchSprite(int);
 int     PatchAmmo(int);
 int     PatchWeapon(int);
@@ -463,6 +461,18 @@ static const struct {
     { "C4TEXT", "THE HORRENDOUS VISAGE OF THE BIGGEST\nDEMON YOU'VE EVER SEEN CRUMBLES BEFORE\nYOU, AFTER YOU PUMP YOUR ROCKETS INTO\nHIS EXPOSED BRAIN. THE MONSTER SHRIVELS\nUP AND DIES, ITS THRASHING LIMBS\nDEVASTATING UNTOLD MILES OF HELL'S\nSURFACE.\n\nYOU'VE DONE IT. THE INVASION IS OVER.\nEARTH IS SAVED. HELL IS A WRECK. YOU\nWONDER WHERE BAD FOLKS WILL GO WHEN THEY\nDIE, NOW. WIPING THE SWEAT FROM YOUR\nFOREHEAD YOU BEGIN THE LONG TREK BACK\nHOME. REBUILDING EARTH OUGHT TO BE A\nLOT MORE FUN THAN RUINING IT WAS.\n" },
     { "C5TEXT", "CONGRATULATIONS, YOU'VE FOUND THE SECRET\nLEVEL! LOOKS LIKE IT'S BEEN BUILT BY\nHUMANS, RATHER THAN DEMONS. YOU WONDER\nWHO THE INMATES OF THIS CORNER OF HELL\nWILL BE." },
     { "C6TEXT", "CONGRATULATIONS, YOU'VE FOUND THE\nSUPER SECRET LEVEL!  YOU'D BETTER\nBLAZE THROUGH THIS ONE!\n" },
+    { "P1TEXT", "You gloat over the steaming carcass of the\nGuardian.  With its death, you've wrested\nthe Accelerator from the stinking claws\nof Hell.  You relax and glance around the\nroom.  Damn!  There was supposed to be at\nleast one working prototype, but you can't\nsee it. The demons must have taken it.\n\nYou must find the prototype, or all your\nstruggles will have been wasted. Keep\nmoving, keep fighting, keep killing.\nOh yes, keep living, too." },
+    { "P2TEXT", "Even the deadly Arch-Vile labyrinth could\nnot stop you, and you've gotten to the\nprototype Accelerator which is soon\nefficiently and permanently deactivated.\n\nYou're good at that kind of thing." },
+    { "P3TEXT", "You've bashed and battered your way into\nthe heart of the devil-hive.  Time for a\nSearch-and-Destroy mission, aimed at the\nGatekeeper, whose foul offspring is\ncascading to Earth.  Yeah, he's bad. But\nyou know who's worse!\n\nGrinning evilly, you check your gear, and\nget ready to give the bastard a little Hell\nof your own making!" },
+    { "P4TEXT", "The Gatekeeper's evil face is splattered\nall over the place.  As its tattered corpse\ncollapses, an inverted Gate forms and\nsucks down the shards of the last\nprototype Accelerator, not to mention the\nfew remaining demons.  You're done. Hell\nhas gone back to pounding bad dead folks \ninstead of good live ones.  Remember to\ntell your grandkids to put a rocket\nlauncher in your coffin. If you go to Hell\nwhen you die, you'll need it for some\nfinal cleaning-up ..." },
+    { "P5TEXT", "You've found the second-hardest level we\ngot. Hope you have a saved game a level or\ntwo previous.  If not, be prepared to die\naplenty. For master marines only." },
+    { "P6TEXT", "Betcha wondered just what WAS the hardest\nlevel we had ready for ya?  Now you know.\nNo one gets out alive." },
+    { "T1TEXT", "You've fought your way out of the infested\nexperimental labs.   It seems that UAC has\nonce again gulped it down.  With their\nhigh turnover, it must be hard for poor\nold UAC to buy corporate health insurance\nnowadays..\n\nAhead lies the military complex, now\nswarming with diseased horrors hot to get\ntheir teeth into you. With luck, the\ncomplex still has some warlike ordnance\nlaying around." },
+    { "T2TEXT", "You hear the grinding of heavy machinery\nahead.  You sure hope they're not stamping\nout new hellspawn, but you're ready to\nream out a whole herd if you have to.\nThey might be planning a blood feast, but\nyou feel about as mean as two thousand\nmaniacs packed into one mad killer.\n\nYou don't plan to go down easy." },
+    { "T3TEXT", "The vista opening ahead looks real damn\nfamiliar. Smells familiar, too -- like\nfried excrement. You didn't like this\nplace before, and you sure as hell ain't\nplanning to like it now. The more you\nbrood on it, the madder you get.\nHefting your gun, an evil grin trickles\nonto your face. Time to take some names." },
+    { "T4TEXT", "Suddenly, all is silent, from one horizon\nto the other. The agonizing echo of Hell\nfades away, the nightmare sky turns to\nblue, the heaps of monster corpses start \nto evaporate along with the evil stench \nthat filled the air. Jeeze, maybe you've\ndone it. Have you really won?\n\nSomething rumbles in the distance.\nA blue light begins to glow inside the\nruined skull of the demon-spitter." },
+    { "T5TEXT", "What now? Looks totally different. Kind\nof like King Tut's condo. Well,\nwhatever's here can't be any worse\nthan usual. Can it?  Or maybe it's best\nto let sleeping gods lie.." },
+    { "T6TEXT", "Time for a vacation. You've burst the\nbowels of hell and by golly you're ready\nfor a break. You mutter to yourself,\nMaybe someone else can kick Hell's ass\nnext time around. Ahead lies a quiet town,\nwith peaceful flowing water, quaint\nbuildings, and presumably no Hellspawn.\n\nAs you step off the transport, you hear\nthe stomp of a cyberdemon's iron shoe." },
     { "CC_ZOMBIE", "ZOMBIEMAN" },
     { "CC_SHOTGUN", "SHOTGUN GUY" },
     { "CC_HEAVY", "HEAVY WEAPON DUDE" },
@@ -649,6 +659,70 @@ static const struct {
     { "HUSTR_30", "level 30: icon of sin" },
     { "HUSTR_31", "level 31: wolfenstein" },
     { "HUSTR_32", "level 32: grosse" },
+    { "PHUSTR_1", "level 1: congo" },
+    { "PHUSTR_2", "level 2: well of souls" },
+    { "PHUSTR_3", "level 3: aztec" },
+    { "PHUSTR_4", "level 4: caged" },
+    { "PHUSTR_5", "level 5: ghost town" },
+    { "PHUSTR_6", "level 6: baron's lair" },
+    { "PHUSTR_7", "level 7: caughtyard" },
+    { "PHUSTR_8", "level 8: realm" },
+    { "PHUSTR_9", "level 9: abattoire" },
+    { "PHUSTR_10", "level 10: onslaught" },
+    { "PHUSTR_11", "level 11: hunted" },
+    { "PHUSTR_12", "level 12: speed" },
+    { "PHUSTR_13", "level 13: the crypt" },
+    { "PHUSTR_14", "level 14: genesis" },
+    { "PHUSTR_15", "level 15: the twilight" },
+    { "PHUSTR_16", "level 16: the omen" },
+    { "PHUSTR_17", "level 17: compound" },
+    { "PHUSTR_18", "level 18: neurosphere" },
+    { "PHUSTR_19", "level 19: nme" },
+    { "PHUSTR_20", "level 20: the death domain" },
+    { "PHUSTR_21", "level 21: slayer" },
+    { "PHUSTR_22", "level 22: impossible mission" },
+    { "PHUSTR_23", "level 23: tombstone" },
+    { "PHUSTR_24", "level 24: the final frontier" },
+    { "PHUSTR_25", "level 25: the temple of darkness" },
+    { "PHUSTR_26", "level 26: bunker" },
+    { "PHUSTR_27", "level 27: anti-christ" },
+    { "PHUSTR_28", "level 28: the sewers" },
+    { "PHUSTR_29", "level 29: odyssey of noises" },
+    { "PHUSTR_30", "level 30: the gateway of hell" },
+    { "PHUSTR_31", "level 31: cyberden" },
+    { "PHUSTR_32", "level 32: go 2 it" },
+    { "THUSTR_1", "Level 1: System Control" },
+    { "THUSTR_2", "Level 2: Human BBQ" },
+    { "THUSTR_3", "Level 3: Power Control" },
+    { "THUSTR_4", "Level 4: Wormhole" },
+    { "THUSTR_5", "Level 5: Hanger" },
+    { "THUSTR_6", "Level 6: Open Season" },
+    { "THUSTR_7", "Level 7: Prison" },
+    { "THUSTR_8", "Level 8: Metal" },
+    { "THUSTR_9", "Level 9: Stronghold" },
+    { "THUSTR_10", "Level 10: Redemption" },
+    { "THUSTR_11", "Level 11: Storage Facility" },
+    { "THUSTR_12", "Level 12: Crater" },
+    { "THUSTR_13", "Level 13: Nukage Processing" },
+    { "THUSTR_14", "Level 14: Steel Works" },
+    { "THUSTR_15", "Level 15: Dead Zone" },
+    { "THUSTR_16", "Level 16: Deepest Reaches" },
+    { "THUSTR_17", "Level 17: Processing Area" },
+    { "THUSTR_18", "Level 18: Mill" },
+    { "THUSTR_19", "Level 19: Shipping/Respawning" },
+    { "THUSTR_20", "Level 20: Central Processing" },
+    { "THUSTR_21", "Level 21: Administration Center" },
+    { "THUSTR_22", "Level 22: Habitat" },
+    { "THUSTR_23", "Level 23: Lunar Mining Project" },
+    { "THUSTR_24", "Level 24: Quarry" },
+    { "THUSTR_25", "Level 25: Baron's Den" },
+    { "THUSTR_26", "Level 26: Ballistyx" },
+    { "THUSTR_27", "Level 27: Mount Pain" },
+    { "THUSTR_28", "Level 28: Heck" },
+    { "THUSTR_29", "Level 29: River Styx" },
+    { "THUSTR_30", "Level 30: Last Call" },
+    { "THUSTR_31", "Level 31: Pharaoh" },
+    { "THUSTR_32", "Level 32: Caribbean" },
     { NULL, NULL }
 };
 
@@ -739,7 +813,7 @@ static const struct {
     // These appear in .deh and .bex files
     { "Thing",      PatchThing },
     { "Sound",      PatchSound },
-    { "Frame",      PatchFrame },
+    { "Frame",      PatchState },
     { "Sprite",     PatchSprite },
     { "Ammo",       PatchAmmo },
     { "Weapon",     PatchWeapon },
@@ -877,17 +951,8 @@ static boolean HandleKey(const struct Key *keys, void *structure,
         // Apply value.
         if(keys->offset & OFF_STATE)
             strcpy((char *) ptr, ded->states[value].id);
-        else if(keys->offset & OFF_SPRITE)
-            strcpy((char *) ptr, ded->sprites[value].id);
         else if(keys->offset & OFF_SOUND)
             strcpy((char *) ptr, ded->sounds[value].id);
-        else if(keys->offset & OFF_FLOAT)
-        {
-            if(value < 0x2000)
-                *(float *) ptr = (float) value; // / (float) 0x10000;
-            else
-                *(float *) ptr = value / (float) 0x10000;
-        }
         else if(keys->offset & OFF_FIXED)
             *(float *) ptr = value / (float) 0x10000;
         else
@@ -1125,14 +1190,11 @@ int HandleMode(const char *mode, int num)
 
 int PatchThing(int thingy)
 {
-    size_t          thingNum = (size_t) thingy;
-
     static const struct Key keys[] = {
         {"ID #", myoffsetof(ded_mobj_t, doomEdNum, 0)},
         {"Hit points", myoffsetof(ded_mobj_t, spawnHealth, 0)},
         {"Reaction time", myoffsetof(ded_mobj_t, reactionTime, 0)},
         {"Pain chance", myoffsetof(ded_mobj_t, painChance, 0)},
-        {"Speed", myoffsetof(ded_mobj_t, speed, OFF_FLOAT)},
         {"Width", myoffsetof(ded_mobj_t, radius, OFF_FIXED)},
         {"Height", myoffsetof(ded_mobj_t, height, OFF_FIXED)},
         {"Mass", myoffsetof(ded_mobj_t, mass, 0)},
@@ -1239,10 +1301,11 @@ int PatchThing(int thingy)
         {30, 1, "SEEKERMISSILE"},
         {31, 1, "REFLECTIVE"}
     };
-    int             result;
-    ded_mobj_t*     info, dummy;
-    boolean         hadHeight = false;
-    boolean         checkHeight = false;
+    int result;
+    ded_mobj_t* info, dummy;
+    boolean hadHeight = false;
+    boolean checkHeight = false;
+    size_t thingNum = (size_t) thingy;
 
     thingNum--;
     if(thingNum < (unsigned) ded->count.mobjs.num)
@@ -1260,9 +1323,9 @@ int PatchThing(int thingy)
 
     while((result = GetLine()) == 1)
     {
-        int             value = atoi(Line2);
-        size_t          len = strlen(Line1);
-        size_t          sndmap;
+        int value = atoi(Line2);
+        size_t len = strlen(Line1);
+        size_t sndmap;
 
         sndmap = value;
         if(sndmap >= sizeof(SoundMap)-1)
@@ -1272,7 +1335,7 @@ int PatchThing(int thingy)
         {
             if(!stricmp(Line1 + len - 6, " frame"))
             {
-                uint                i;
+                uint i;
 
                 for(i = 0; stateNames[i].label; ++i)
                 {
@@ -1285,11 +1348,18 @@ int PatchThing(int thingy)
                     }
                 }
             }
+            else if(!stricmp(Line1, "Speed"))
+            {
+                if(abs(value) < 256)
+                    info->speed = (float) value;
+                else
+                    info->speed = FIX2FLT(value);
+            }
             else if(!stricmp(Line1, "Bits"))
             {
-                int             value = 0, value2 = 0;
-                boolean         vchanged = false, v2changed = false;
-                char           *strval;
+                int value = 0, value2 = 0;
+                boolean vchanged = false, v2changed = false;
+                char* strval;
 
                 for(strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
                     strval = NULL)
@@ -1435,11 +1505,9 @@ int PatchSound(int soundNum)
     return result;
 }
 
-int PatchFrame(int frameNum)
+int PatchState(int stateNum)
 {
     static struct Key keys[] = {
-        {"Sprite number", myoffsetof(ded_state_t, sprite, OFF_SPRITE)},
-        {"Sprite subnumber", myoffsetof(ded_state_t, frame, 0)},
         {"Duration", myoffsetof(ded_state_t, tics, 0)},
         {"Next frame", myoffsetof(ded_state_t, nextState, OFF_STATE)},
         {"Unknown 1", 0 /*myoffsetof(ded_state_t,misc[0],0) */ },
@@ -1453,21 +1521,32 @@ int PatchFrame(int frameNum)
     keys[4].offset = myoffsetof(ded_state_t, misc[0], 0);
     keys[5].offset = myoffsetof(ded_state_t, misc[1], 0);
 
-    if(frameNum >= 0 && frameNum < ded->count.states.num)
+    if(stateNum >= 0 && stateNum < ded->count.states.num)
     {
-        info = ded->states + frameNum;
+        info = ded->states + stateNum;
         if(verbose)
-            LPrintf("Frame %d\n", frameNum);
+            LPrintf("State %d\n", stateNum);
     }
     else
     {
         info = &dummy;
-        LPrintf("Frame %d out of range (Create more State defs!)\n", frameNum);
+        LPrintf("State %d out of range (Create more State defs!)\n", stateNum);
     }
 
     while((result = GetLine()) == 1)
-        if(HandleKey(keys, info, Line1, atoi(Line2)))
-            LPrintf(unknown_str, Line1, "Frame", frameNum);
+    {
+        int value = atoi(Line2);
+
+        if(HandleKey(keys, info, Line1, value))
+        {
+            if(!stricmp(Line1, "Sprite number"))
+                Def_Set(DD_DEF_STATE, stateNum, DD_SPRITE, &value);
+            else if(!stricmp(Line1, "Sprite subnumber"))
+                Def_Set(DD_DEF_STATE, stateNum, DD_FRAME, &value);
+            else
+                LPrintf(unknown_str, Line1, "State", stateNum);
+        }
+    }
 
     return result;
 }
@@ -1689,6 +1768,8 @@ int PatchWeapon(int weapNum)
             SetValueStr(buf, "Atk", ded->states[val].id);
         else if(!stricmp(Line1, "Firing frame"))
             SetValueStr(buf, "Flash", ded->states[val].id);
+        else if(!stricmp(Line1, "Ammo per shot"))
+            SetValueInt(buf, "Per shot", val);
         else
             LPrintf(unknown_str, Line1, "Weapon", weapNum);
     }
@@ -1804,22 +1885,22 @@ int PatchMisc(int dummy)
         val = atoi(Line2);
 
         if(!stricmp(Line1, "Initial Health"))
-            SetValueInt("Player|Health", "Type", val);
+            SetValueInt("Player", "Health", val);
 
         else if(!stricmp(Line1, "Initial Bullets"))
             SetValueInt("Player|Init ammo", "Clip", val);
 
         else if(!stricmp(Line1, "Max Health"))
-            SetValueInt("Player|Health Limit", "Type", val);
+            SetValueInt("Player", "Health Limit", val);
 
         else if(!stricmp(Line1, "Max Armor"))
-            SetValueInt("Player|Blue Armor", "Type", val);
+            SetValueInt("Player", "Blue Armor", val);
 
         else if(!stricmp(Line1, "Green Armor Class"))
-            SetValueInt("Player|Green Armor Class", "Type", val);
+            SetValueInt("Player", "Green Armor Class", val);
 
         else if(!stricmp(Line1, "Blue Armor Class"))
-            SetValueInt("Player|Blue Armor Class", "Type", val);
+            SetValueInt("Player", "Blue Armor Class", val);
 
         else if(!stricmp(Line1, "Max Soulsphere"))
             SetValueInt("SoulSphere|Give", "Health Limit", val);
@@ -1831,19 +1912,19 @@ int PatchMisc(int dummy)
             SetValueInt("MegaSphere|Give", "Health", val);
 
         else if(!stricmp(Line1, "God Mode Health"))
-            SetValueInt("Player|God Health", "Type", val);
+            SetValueInt("Player", "God Health", val);
 
         else if(!stricmp(Line1, "IDFA Armor"))
-            SetValueInt("Player|IDFA Armor", "Type", val);
+            SetValueInt("Player", "IDFA Armor", val);
 
         else if(!stricmp(Line1, "IDFA Armor Class"))
-            SetValueInt("Player|IDFA Armor Class", "Type", val);
+            SetValueInt("Player", "IDFA Armor Class", val);
 
         else if(!stricmp(Line1, "IDKFA Armor"))
-            SetValueInt("Player|IDKFA Armor", "Type", val);
+            SetValueInt("Player", "IDKFA Armor", val);
 
         else if(!stricmp(Line1, "IDKFA Armor Class"))
-            SetValueInt("Player|IDKFA Armor Class", "Type", val);
+            SetValueInt("Player", "IDKFA Armor Class", val);
 
         else if(!stricmp(Line1, "BFG Cells/Shot"))
             SetValueInt("Weapon Info|6", "Per shot", val);
@@ -2055,12 +2136,12 @@ static void patchMusicLumpNames(const char* origName, const char* newName)
 
 static const char* textIDForOrigString(const char* str)
 {
-    size_t              i;
+    size_t i;
 
     i = 0;
     do
     {
-        if(!strcmp(TextMap[i].str, str))
+        if(!stricmp(TextMap[i].str, str))
             return TextMap[i].id;
     } while(TextMap[++i].id != NULL);
 

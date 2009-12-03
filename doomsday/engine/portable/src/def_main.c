@@ -169,7 +169,7 @@ void Def_Init(void)
         {
             // Add it to the list.
             dedFiles[c++] = Argv(p);
-            
+
             Con_Message("Def_Init: Added '%s' to dedFiles.\n", Argv(p));
         }
 
@@ -245,13 +245,13 @@ int Def_GetSpriteNum(const char* name)
 
 int Def_GetMobjNum(const char* id)
 {
-    int                 i;
+    int i;
 
     if(!id || !id[0])
         return -1;
 
     for(i = 0; i < defs.count.mobjs.num; ++i)
-        if(!strcmp(defs.mobjs[i].id, id))
+        if(!stricmp(defs.mobjs[i].id, id))
             return i;
 
     return -1;
@@ -859,7 +859,7 @@ static void processMaterialDefinition(const ded_material_t* def)
 
             if(!layer->stageCount.num)
                 break;
-            
+
             if(!(tex = GL_GetGLTextureByName(stage->name, stage->type)))
             {
                 Con_Message("Def_Read: Warning, unknown %s '%s' in material "
@@ -1717,6 +1717,46 @@ int Def_Set(int type, int index, int value, const void* ptr)
         strcpy(defs.text[index].text, ptr);
         break;
 
+    case DD_DEF_STATE:
+        {
+        ded_state_t* stateDef;
+
+        if(index < 0 || index >= defs.count.states.num)
+            Con_Error("Def_Set: State index %i is invalid.\n", index);
+
+        stateDef = &defs.states[index];
+        switch(value)
+        {
+        case DD_SPRITE:
+            {
+            int sprite = *(int*) ptr;
+
+            if(sprite < 0 || sprite >= defs.count.sprites.num)
+            {
+                Con_Message("Def_Set: Warning, invalid sprite index %i.\n",
+                            sprite);
+                break;
+            }
+
+            strcpy((char*) stateDef->sprite.id, defs.sprites[value].id);
+            break;
+            }
+        case DD_FRAME:
+            {
+            int frame = *(int*) ptr;
+
+            if(frame & FF_FULLBRIGHT)
+                stateDef->flags |= STF_FULLBRIGHT;
+            else
+                stateDef->flags &= ~STF_FULLBRIGHT;
+            stateDef->frame = frame & ~FF_FULLBRIGHT;
+            break;
+            }
+        default:
+            break;
+        }
+        break;
+        }
     case DD_DEF_SOUND:
         if(index < 0 || index >= countSounds.num)
             Con_Error("Def_Set: Sound index %i is invalid.\n", index);

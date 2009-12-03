@@ -125,7 +125,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 0;
         rgba[CB] = 0;
-        rgba[CA] = filter / 9.f;
+        rgba[CA] = (deathmatch? 1.0f : cfg.filterStrength) * filter / 9.f;
         return true;
     }
 
@@ -134,7 +134,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = .8f;
         rgba[CB] = .5f;
-        rgba[CA] = (filter - STARTBONUSPALS + 1) / 16.f;
+        rgba[CA] = cfg.filterStrength * (filter - STARTBONUSPALS + 1) / 16.f;
         return true;
     }
 
@@ -143,7 +143,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 0;
         rgba[CG] = .7f;
         rgba[CB] = 0;
-        rgba[CA] = .15f;
+        rgba[CA] = cfg.filterStrength * .25f;
         return true;
     }
 
@@ -158,10 +158,9 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_DrawMapTitle(void)
 {
-    float               alpha = 1;
-    int                 y = 12;
-    int                 mapnum;
-    char               *lname, *lauthor;
+    float alpha;
+    int y = 12, mapnum;
+    const char* lname, *lauthor;
 
     if(!cfg.mapTitle || actualMapTime > 6 * 35)
         return;
@@ -173,6 +172,7 @@ void R_DrawMapTitle(void)
     DGL_Scalef(.7f, .7f, 1);
     DGL_Translatef(-160, -y, 0);
 
+    alpha = 1;
     if(actualMapTime < 35)
         alpha = actualMapTime / 35.0f;
     if(actualMapTime > 5 * 35)
@@ -180,24 +180,20 @@ void R_DrawMapTitle(void)
 
     // Get the strings from Doomsday.
     lname = P_GetMapNiceName();
-    lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
+    lauthor = P_GetMapAuthor(cfg.hideIWADAuthor);
 
     // Compose the mapnumber used to check the map name patches array.
     mapnum = gameMap - 1;
 
-    if(lname)
-    {
-        WI_DrawPatch(SCREENWIDTH / 2, y, 1, 1, 1, alpha, &mapNamePatches[mapnum],
-                     lname, false, ALIGN_CENTER);
-        y += 14;                //9;
-    }
+    WI_DrawPatch(SCREENWIDTH / 2, y, 1, 1, 1, alpha,
+                 &mapNamePatches[mapnum], lname, false, ALIGN_CENTER);
+    y += 14;
 
-    DGL_Color4f(.5f, .5f, .5f, alpha);
-    if(lauthor && W_IsFromIWAD(mapNamePatches[mapnum].lump) &&
-       (!cfg.hideAuthorMidway || stricmp(lauthor, "Midway")))
+    if(lauthor)
     {
-        M_WriteText2(160 - M_StringWidth(lauthor, GF_FONTA) / 2, y, lauthor,
-                     GF_FONTA, -1, -1, -1, -1);
+        M_WriteText3(160 - M_StringWidth(lauthor, GF_FONTA) / 2, y,
+                     lauthor, GF_FONTA, .5f, .5f, .5f, alpha, false,
+                     true, 0);
     }
 
     DGL_MatrixMode(DGL_MODELVIEW);
@@ -226,14 +222,12 @@ void R_SetViewSize(int blocks)
 
 static void rendPlayerView(int player)
 {
-    player_t*           plr = &players[player];
-
-    int                 viewAngleOffset =
-        ANGLE_MAX * -G_GetLookOffset(player);
-    int                 isFullBright =
-        ((plr->powers[PT_INFRARED] > 4 * 32) ||
-         (plr->powers[PT_INFRARED] & 8) ||
-         plr->powers[PT_INVULNERABILITY] > 30);
+    player_t* plr = &players[player];
+    float viewPos[3], viewPitch;
+    angle_t viewAngle;
+    int isFullBright = ((plr->powers[PT_INFRARED] > 4 * 32) ||
+                        (plr->powers[PT_INFRARED] & 8) ||
+                        plr->powers[PT_INVULNERABILITY] > 30);
 
     if(IS_CLIENT)
     {
@@ -241,17 +235,23 @@ static void rendPlayerView(int player)
         R_SetAllDoomsdayFlags();
     }
 
-    DD_SetVariable(DD_VIEWX_OFFSET, &plr->viewOffset[VX]);
-    DD_SetVariable(DD_VIEWY_OFFSET, &plr->viewOffset[VY]);
-    DD_SetVariable(DD_VIEWZ_OFFSET, &plr->viewOffset[VZ]);
-    // The view angle offset.
-    DD_SetVariable(DD_VIEWANGLE_OFFSET, &viewAngleOffset);
+    viewPos[VX] = plr->plr->mo->pos[VX] + plr->viewOffset[VX];
+    viewPos[VY] = plr->plr->mo->pos[VY] + plr->viewOffset[VY];
+    viewPos[VZ] = plr->viewZ + plr->viewOffset[VZ];
+    viewAngle = plr->plr->mo->angle + (int) (ANGLE_MAX * -G_GetLookOffset(player));
+    viewPitch = plr->plr->lookDir;
+
+    DD_SetVariable(DD_VIEW_X, &viewPos[VX]);
+    DD_SetVariable(DD_VIEW_Y, &viewPos[VY]);
+    DD_SetVariable(DD_VIEW_Z, &viewPos[VZ]);
+    DD_SetVariable(DD_VIEW_ANGLE, &viewAngle);
+    DD_SetVariable(DD_VIEW_PITCH, &viewPitch);
 
     // $democam
     GL_SetFilter((plr->plr->flags & DDPF_VIEW_FILTER)? true : false);
     if(plr->plr->flags & DDPF_VIEW_FILTER)
     {
-        const float*        color = plr->plr->filterColor;
+        const float* color = plr->plr->filterColor;
         GL_SetFilterColor(color[CR], color[CG], color[CB], color[CA]);
     }
 
@@ -354,14 +354,6 @@ void D_Display(int layer)
 
             if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
                 return;
-
-            if(!IS_CLIENT && mapTime < 2)
-            {
-                // Don't render too early; the first couple of frames
-                // might be a bit unstable -- this should be considered
-                // a bug, but since there's an easy fix...
-                return;
-            }
 
             rendPlayerView(player);
 

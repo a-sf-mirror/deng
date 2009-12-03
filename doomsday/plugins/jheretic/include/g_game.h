@@ -46,9 +46,10 @@ extern boolean secretExit;
 extern skillmode_t gameSkill;
 extern int gameEpisode;
 extern int gameMap;
-extern int nextMap, prevMap;
+extern int nextMap;
 extern int mapStartTic;
 extern int totalKills, totalItems, totalSecret;
+extern wbstartstruct_t wmInfo;
 
 extern int gsvMapMusic;
 
@@ -94,4 +95,6 @@ void            G_Ticker(timespan_t ticLength);
 boolean         G_Responder(event_t* ev);
 
 void            G_ScreenShot(void);
+
+void            P_GetMapLumpName(int episode, int map, char* lumpName);
 #endif

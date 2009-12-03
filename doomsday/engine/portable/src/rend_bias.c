@@ -71,7 +71,7 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int useBias = false;
-unsigned int currentTimeSB;
+uint currentTimeSB;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -79,6 +79,7 @@ static int useSightCheck = true;
 static int doUpdateAffected = true;
 static float biasIgnoreLimit = .005f;
 static int lightSpeed = 130;
+static uint lastChangeOnFrame;
 
 /**
  * BS_EvalPoint uses these, so they must be set before it is called.
@@ -255,8 +256,9 @@ static void addAffected(affection_t* aff, uint k, float intensity)
 /**
  * Sets/clears a bit in the tracker for the given index.
  */
-static void trackerMark(biastracker_t* tracker, int index)
+static void trackerMark(biastracker_t* tracker, uint index)
 {
+    // Assume 32-bit uint.
     if(index >= 0)
     {
         tracker->changes[index >> 5] |= (1 << (index & 0x1f));
@@ -266,8 +268,9 @@ static void trackerMark(biastracker_t* tracker, int index)
 /**
  * Checks if the given index bit is set in the tracker.
  */
-static int trackerCheck(biastracker_t* tracker, int index)
+static int trackerCheck(biastracker_t* tracker, uint index)
 {
+    // Assume 32-bit uint.
     return (tracker->changes[index >> 5] & (1 << (index & 0x1f))) != 0;
 }
 
@@ -276,9 +279,9 @@ static int trackerCheck(biastracker_t* tracker, int index)
  */
 static void trackerApply(biastracker_t* dest, const biastracker_t* src)
 {
-    unsigned int        i;
+    uint i;
 
-    for(i = 0; i < sizeof(dest->changes)/sizeof(dest->changes[0]); ++i)
+    for(i = 0; i < MAX_BIAS_TRACKED; ++i)
     {
         dest->changes[i] |= src->changes[i];
     }
@@ -289,9 +292,9 @@ static void trackerApply(biastracker_t* dest, const biastracker_t* src)
  */
 static void trackerClear(biastracker_t* dest, const biastracker_t* src)
 {
-    unsigned int        i;
+    uint i;
 
-    for(i = 0; i < sizeof(dest->changes)/sizeof(dest->changes[0]); ++i)
+    for(i = 0; i < MAX_BIAS_TRACKED; ++i)
     {
         dest->changes[i] &= ~src->changes[i];
     }
@@ -917,7 +920,7 @@ void SB_BeginFrame(map_t* map)
 #endif
 
     if(!map)
-        return; 
+        return;
 
     if(!useBias)
         return;
@@ -1004,7 +1007,7 @@ void SB_EndFrame(map_t* map)
 {
     if(!map)
         return;
-    
+
     if(map->bias.numSourceDelta != 0)
     {
         map->bias.numSources += map->bias.numSourceDelta;

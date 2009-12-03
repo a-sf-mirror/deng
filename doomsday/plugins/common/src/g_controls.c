@@ -101,8 +101,6 @@ DEFCC( CCmdPause );
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void G_UpdateCmdControls(ticcmd_t *cmd, int pnum, float elapsedTime);
-
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 extern boolean sendpause;
@@ -125,7 +123,6 @@ bindcontext_t BindClasses[] = {
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Input devices; state controls.
-static int     joymove[NUM_JOYSTICK_AXES]; // joy axis state
 static int     povangle = -1;          // -1 means centered (really 0 - 7).
 static float   mousex;
 static float   mousey;
@@ -188,7 +185,7 @@ void G_ControlRegister(void)
     P_NewPlayerControl(CTL_TURN, CTLT_NUMERIC, "turn", "game");
     P_NewPlayerControl(CTL_LOOK, CTLT_NUMERIC, "look", "game");
     P_NewPlayerControl(CTL_SPEED, CTLT_NUMERIC, "speed", "game");
-    P_NewPlayerControl(CTL_STRAFE, CTLT_NUMERIC, "strafe", "game");
+    P_NewPlayerControl(CTL_MODIFIER_1, CTLT_NUMERIC, "strafe", "game");
     P_NewPlayerControl(CTL_ATTACK, CTLT_NUMERIC, "attack", "game");
     P_NewPlayerControl(CTL_USE, CTLT_IMPULSE, "use", "game");
     P_NewPlayerControl(CTL_LOOK_CENTER, CTLT_IMPULSE, "lookcenter", "game");
@@ -279,16 +276,18 @@ DEFCC( CCmdDefaultGameBinds )
         "bindcontrol walk key-s-inverse",
         "bindcontrol sidestep key-period",
         "bindcontrol sidestep key-d",
+        "bindcontrol sidestep key-right+modifier-1-down",
         "bindcontrol sidestep key-comma-inverse",
         "bindcontrol sidestep key-a-inverse",
+        "bindcontrol sidestep key-left-inverse+modifier-1-down",
         "bindcontrol zfly key-pgup-staged",
         "bindcontrol zfly key-e-staged",
         "bindcontrol zfly key-ins-staged-inverse",
         "bindcontrol zfly key-q-staged-inverse",
         "bindevent key-home-down {impulse falldown}",
         "bindevent key-f-down {impulse falldown}",
-        "bindcontrol turn key-left-staged-inverse",
-        "bindcontrol turn key-right-staged",
+        "bindcontrol turn key-left-staged-inverse+modifier-1-up",
+        "bindcontrol turn key-right-staged+modifier-1-up",
         "bindcontrol look key-delete-staged",
         "bindcontrol look key-pgdown-staged-inverse",
         "bindevent key-end-down {impulse lookcenter}",
@@ -336,7 +335,8 @@ DEFCC( CCmdDefaultGameBinds )
 #endif
 
         // Player controls: mouse
-        "bindcontrol turn mouse-x",
+        "bindcontrol turn mouse-x+modifier-1-up",
+        "bindcontrol sidestep mouse-x+modifier-1-down",
         "bindcontrol look mouse-y",
         "bindcontrol attack mouse-left",
         "bindevent mouse-right-down {impulse use}",
@@ -344,7 +344,8 @@ DEFCC( CCmdDefaultGameBinds )
         "bindevent mouse-wheeldown {impulse prevweapon}",
 
         // Player controls: joystick
-        "bindcontrol turn joy-x",
+        "bindcontrol turn joy-x+modifier-1-up",
+        "bindcontrol sidestep joy-x+modifier-1-down",
         "bindcontrol walk joy-y-inverse",
 
         // Chat events:
@@ -539,7 +540,6 @@ char G_MakeLookDelta(float offset)
         offset = -128;
     return (signed char) offset;
 }
-#endif
 
 /**
  * Turn client angle.
@@ -590,6 +590,7 @@ static void G_AdjustLookDir(player_t *player, int look, float elapsed)
         }
     }
 }
+#endif
 
 /**
  * Updates the viewers' look angle.

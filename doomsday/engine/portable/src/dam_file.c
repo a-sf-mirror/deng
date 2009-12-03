@@ -309,7 +309,7 @@ static void readVertex(map_t* map, uint idx)
 
     v->pos[VX] = readFloat();
     v->pos[VY] = readFloat();
-    
+
     /*v->numLineOwners = (uint) readLong();
 
     if(v->numLineOwners > 0)
@@ -385,7 +385,7 @@ static void writeLine(const map_t* map, uint idx)
     writeFloat(l->length);
     writeLong((long) l->angle);
     for(i = 0; i < DDMAXPLAYERS; ++i)
-        writeByte(l->mapped[DDMAXPLAYERS]? 1 : 0);
+        writeByte(l->mapped[i]? 1 : 0);
 }
 
 static void readLine(const map_t* map, uint idx)

@@ -110,6 +110,7 @@ float modelSpinSpeed = 1;
 int alwaysAlign = 0;
 int noSpriteZWrite = false;
 float pspOffset[2] = {0, 0};
+float pspLightLevelMultiplier = 1;
 // useSRVO: 1 = models only, 2 = sprites + models
 int useSRVO = 2, useSRVOAngle = true;
 int psp3d;
@@ -482,7 +483,7 @@ void R_PreInitSprites(void)
                 const lumppatch_t*  patch;
                 spritetex_t*        sprTex;
                 material_t*         mat;
-                
+
                 spriteTextures[idx] = sprTex = &storage[idx];
 
                 patch = (const lumppatch_t *)
@@ -511,7 +512,7 @@ void R_PreInitSprites(void)
                     Con_Error("R_PreInitSprites: Failed creating material "
                               "\"%s\", in namespace %i", name, MN_SPRITES);
                 }
-                              
+
                 frame->mat = mat;
             } while((frame = frame->next));
         } while((rec = rec->next));
@@ -817,13 +818,14 @@ vissprite_t* R_NewVisSprite(void)
  */
 void R_ProjectPlayerSprites(void)
 {
-    int                 i;
-    float               inter;
-    modeldef_t*         mf, *nextmf;
-    ddpsprite_t*        psp;
-    boolean             isFullBright = (mapFullBright != 0);
-    boolean             isModel;
-    ddplayer_t*         ddpl = &viewPlayer->shared;
+    int i;
+    float inter;
+    modeldef_t* mf, *nextmf;
+    ddpsprite_t* psp;
+    boolean isFullBright = (mapFullBright != 0);
+    boolean isModel;
+    ddplayer_t* ddpl = &viewPlayer->shared;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
 
     psp3d = false;
 
@@ -884,7 +886,7 @@ void R_ProjectPlayerSprites(void)
             spr->data.model.subsector = subsector;
             spr->data.model.flags = 0;
             // 32 is the raised weapon height.
-            spr->data.model.gzt = viewZ;
+            spr->data.model.gzt = viewData->current.pos[VZ];
             spr->data.model.secFloor = subsector->sector->SP_floorvisheight;
             spr->data.model.secCeil = subsector->sector->SP_ceilvisheight;
             spr->data.model.pClass = 0;
@@ -894,9 +896,9 @@ void R_ProjectPlayerSprites(void)
             spr->data.model.nextMF = nextmf;
             spr->data.model.inter = inter;
             spr->data.model.viewAligned = true;
-            spr->center[VX] = viewX;
-            spr->center[VY] = viewY;
-            spr->center[VZ] = viewZ;
+            spr->center[VX] = viewData->current.pos[VX];
+            spr->center[VY] = viewData->current.pos[VY];
+            spr->center[VZ] = viewData->current.pos[VZ];
 
             // Offsets to rotation angles.
             spr->data.model.yawAngleOffset = psp->pos[VX] * weaponOffsetScale - 90;
@@ -907,25 +909,25 @@ void R_ProjectPlayerSprites(void)
                 spr->data.model.pitchAngleOffset -= weaponFOVShift * (fieldOfView - 90) / 90;
             // Real rotation angles.
             spr->data.model.yaw =
-                viewAngle / (float) ANGLE_MAX *-360 + spr->data.model.yawAngleOffset + 90;
-            spr->data.model.pitch = viewPitch * 85 / 110 + spr->data.model.yawAngleOffset;
+                viewData->current.angle / (float) ANGLE_MAX *-360 + spr->data.model.yawAngleOffset + 90;
+            spr->data.model.pitch = viewData->current.pitch * 85 / 110 + spr->data.model.yawAngleOffset;
             memset(spr->data.model.visOff, 0, sizeof(spr->data.model.visOff));
 
             spr->data.model.alpha = psp->alpha;
-            spr->data.model.stateFullBright = false;
+            spr->data.model.stateFullBright = (psp->flags & DDPSPF_FULLBRIGHT)!=0;
         }
         else
         {   // No, draw a 2D sprite (in Rend_DrawPlayerSprites).
             spr->type = VPSPR_SPRITE;
 
             // Adjust the center slightly so an angle can be calculated.
-            spr->center[VX] = viewX;
-            spr->center[VY] = viewY;
-            spr->center[VZ] = viewZ;
+            spr->center[VX] = viewData->current.pos[VX];
+            spr->center[VY] = viewData->current.pos[VY];
+            spr->center[VZ] = viewData->current.pos[VZ];
 
             spr->data.sprite.subsector = subsector;
             spr->data.sprite.alpha = psp->alpha;
-            spr->data.sprite.isFullBright = isFullBright;
+            spr->data.sprite.isFullBright = (psp->flags & DDPSPF_FULLBRIGHT)!=0;
         }
     }
 }
@@ -1173,6 +1175,7 @@ void R_ProjectSprite(mobj_t* mo)
     material_t* mat;
     material_snapshot_t ms;
     material_prepare_params_t mparams;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
 
     if(mo->ddFlags & DDMF_DONTDRAW || mo->translucency == 0xff ||
        mo->state == NULL || mo->state == states)
@@ -1184,8 +1187,8 @@ void R_ProjectSprite(mobj_t* mo)
     }
 
     // Transform the origin point.
-    pos[VX] = mo->pos[VX] - viewX;
-    pos[VY] = mo->pos[VY] - viewY;
+    pos[VX] = mo->pos[VX] - viewData->current.pos[VX];
+    pos[VY] = mo->pos[VY] - viewData->current.pos[VY];
 
     // Decide which patch to use for sprite relative to player.
 
@@ -1278,7 +1281,7 @@ void R_ProjectSprite(mobj_t* mo)
             // draw it. Otherwise large models are likely to disappear
             // too early.
             if(P_ApproxDistance
-               (distance, mo->pos[VZ] + (mo->height / 2) - viewZ) >
+                (distance, mo->pos[VZ] + (mo->height / 2) - viewData->current.pos[VZ]) >
                MAX_OBJECT_RADIUS)
             {
                 return; // Can't be visible.
@@ -1377,7 +1380,7 @@ void R_ProjectSprite(mobj_t* mo)
         if(mf->sub[0].flags & MFF_ALIGN_PITCH)
         {
             pitch = -BANG2DEG(bamsAtan2
-                              (((vis->center[VZ] + gzt) / 2 - viewZ) * 10,
+                (((vis->center[VZ] + gzt) / 2 - viewData->current.pos[VZ]) * 10,
                               distance * 10));
         }
         else if(mf->sub[0].flags & MFF_MOVEMENT_PITCH)

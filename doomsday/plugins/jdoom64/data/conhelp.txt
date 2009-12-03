@@ -98,10 +98,6 @@ inf = Params: viewsize (size)\nFor example, 'viewsize 10'.\nSize can be: +, -, (
 
 [pause]
 desc = Pause the game.
-    
-[cheat]
-desc = Issue a cheat code using the original DOOM64 cheats.
-inf = Params: cheat (cheat)\nFor example, 'cheat ddslia'.
 
 [god]
 desc = God mode.
@@ -290,6 +286,9 @@ desc = Crosshair color blue component.
 [view-cross-a]
 desc = Crosshair color alpha component.
 
+[view-filter-strength]
+desc = Strength of view filter.
+
 [msg-show]
 desc = 1=Show messages.
 
@@ -300,7 +299,7 @@ desc = 1=Echo all messages to the console.
 desc = Number of HUD messages displayed at the same time.
 
 [msg-uptime]
-desc = Number of tics to keep HUD messages on screen.
+desc = Number of seconds to keep HUD messages on screen.
 
 [msg-scale]
 desc = Scaling factor for HUD messages.
@@ -710,8 +709,8 @@ desc = View window size (3-13).
 [hud-title]
 desc = 1=Show map title and author in the beginning.
 
-[hud-title-nomidway]
-desc = 1=Don't show map author if it's \"Midway\".
+[hud-title-author-noiwad]
+desc = 1=Do not show map author if it is a map from an IWAD.
 
 [view-bob-height]
 desc = Scale for viewheight bobbing.

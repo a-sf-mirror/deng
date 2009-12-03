@@ -99,7 +99,7 @@ objectrecordid_t MPE_CreateVertex(float x, float y)
 {
     vertex_t* v;
     map_t* map = editMap;
-    
+
     if(!map)
         return 0;
 

@@ -45,7 +45,6 @@ extern skillmode_t gameSkill;
 extern int gameEpisode;
 extern int gameMap;
 extern int nextMap; // If non zero this will be the next map.
-extern int prevMap;
 extern int totalKills, totalItems, totalSecret;
 extern boolean deathmatch;
 extern boolean respawnMonsters;
@@ -104,4 +103,5 @@ void            G_PrepareWIData(void);
 
 void            G_QueueBody(mobj_t* body);
 
+void            P_GetMapLumpName(int episode, int map, char* lumpName);
 #endif

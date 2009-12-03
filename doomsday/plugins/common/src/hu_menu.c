@@ -101,6 +101,7 @@ void M_QuitDOOM(int option, void* context);
 void M_OpenDCP(int option, void* context);
 void M_ChangeMessages(int option, void* context);
 void M_HUDHideTime(int option, void* context);
+void M_MessageUptime(int option, void* context);
 #if __JHERETIC__ || __JHEXEN__
 void M_InventoryHideTime(int option, void* context);
 void M_InventorySlotMaxVis(int option, void* context);
@@ -248,7 +249,6 @@ static int editcolorindex = 0; // The index of the widgetcolors array of the ite
 
 static float currentcolor[4] = {0, 0, 0, 0}; // Used by the widget as temporay values.
 
-static int menuDarkTicks = 15;
 #if !defined( __JHEXEN__ ) && !defined( __JHERETIC__ )
 static int quitYet = 0; // Prevents multiple quit responses.
 #endif
@@ -829,6 +829,7 @@ static menuitem_t HUDItems[] = {
     {ITT_EFUNC, 0, "Single key display :", M_ToggleVar, 0, NULL, "hud-keys-combine"},
 #endif
     {ITT_EFUNC, 0, "Show messages :", M_ChangeMessages, 0},
+    {ITT_LRFUNC, 0, "Message uptime :", M_MessageUptime, 0},
     {ITT_LRFUNC, 0, "Auto-hide :", M_HUDHideTime, 0},
     {ITT_EMPTY, 0, "Un-hide events", NULL, 0},
     {ITT_EFUNC, 0, "Receive damage :", M_ToggleVar, 0, NULL, "hud-unhide-damage"},
@@ -928,13 +929,13 @@ static menu_t HUDDef = {
 #endif
     M_DrawHUDMenu,
 #if __JHEXEN__
-    38, HUDItems,
+    39, HUDItems,
 #elif __JHERETIC__
-    45, HUDItems,
+    46, HUDItems,
 #elif __JDOOM64__
-    32, HUDItems,
+    33, HUDItems,
 #elif __JDOOM__
-    36, HUDItems,
+    37, HUDItems,
 #endif
     0, MENU_OPTIONS,
     GF_FONTA,
@@ -2056,6 +2057,14 @@ void Hu_MenuCommand(menucommand_e cmd)
 
         switch(cmd)
         {
+        default:
+            Con_Error("Internal Error: Menu cmd %i not handled in "
+                      "Hu_MenuCommand.", (int) cmd);
+            break; // Unreachable.
+
+        case MCMD_OPEN: // Ignore.
+            break;
+
         case MCMD_NAV_LEFT:
             if(item->type == ITT_LRFUNC && item->func != NULL)
             {
@@ -2558,6 +2567,7 @@ void M_DrawReadThis(void)
 #endif
 }
 
+#if __JHERETIC__
 static void composeNotDesignedForMessage(const char* str)
 {
     char*               buf = notDesignedForMessage, *in, tmp[2];
@@ -2586,6 +2596,7 @@ static void composeNotDesignedForMessage(const char* str)
         strcat(buf, tmp);
     }
 }
+#endif
 
 #if __JHEXEN__
 void M_DrawClassMenu(void)
@@ -2594,7 +2605,7 @@ void M_DrawClassMenu(void)
 #define BG_Y            (8)
 
     menu_t*             menu = &ClassDef;
-    playerclass_t       pClass;
+    int                 pClass;
     spriteinfo_t        sprInfo;
     int                 tmap = 1, hasFocus = MAX_OF(0, itemOn);
     static char* boxLumpName[3] = {
@@ -2606,7 +2617,7 @@ void M_DrawClassMenu(void)
     M_WriteText3(34, 24, "CHOOSE CLASS:", GF_FONTB, menu->color[0],
                  menu->color[1], menu->color[2], menuAlpha, true, true, 0);
 
-    pClass = (playerclass_t) menu->items[hasFocus].option;
+    pClass = menu->items[hasFocus].option;
     if(pClass < 0)
     {   // Random class.
         // Number of user-selectable classes.
@@ -2653,7 +2664,7 @@ void M_DrawEpisode(void)
 
         M_WriteText3(160 - M_StringWidth(str, GF_FONTA) / 2,
                      200 - M_StringHeight(str, GF_FONTA) - 2, str, GF_FONTA,
-                     cfg.menuColor2[0], cfg.menuColor2[1], cfg.menuColor2[3],
+                     cfg.menuColor2[0], cfg.menuColor2[1], cfg.menuColor2[2],
                      menuAlpha, true, true, 0);
     }
 #else // __JDOOM__
@@ -3090,7 +3101,7 @@ void M_DrawWeaponMenu(void)
 
         M_WriteText3(160 - M_StringWidth(str, GF_FONTA) / 2,
                      200 - M_StringHeight(str, GF_FONTA) - 2, str, GF_FONTA,
-                     cfg.menuColor2[0], cfg.menuColor2[1], cfg.menuColor2[3],
+                     cfg.menuColor2[0], cfg.menuColor2[1], cfg.menuColor2[2],
                      menuAlpha, true, true, 0);
     }
 
@@ -3289,6 +3300,17 @@ void M_DrawHUDMenu(void)
     M_WriteMenuText(menu, idx++, yesno[cfg.hudKeysCombine]);
 #endif
     M_WriteMenuText(menu, idx++, yesno[cfg.msgShow != 0]);
+    {
+    char secString[11];
+    const char* str;
+    uint seconds = MINMAX_OF(1, cfg.msgUptime, 30);
+
+    memset(secString, 0, sizeof(secString));
+    dd_snprintf(secString, 11, "%2u %s", seconds, seconds > 1? "seconds" : "second");
+    str = secString;
+
+    M_WriteMenuText(menu, idx++, str);
+    }
 
     // Auto-hide HUD options:
     {
@@ -3298,7 +3320,7 @@ void M_DrawHUDMenu(void)
     if(seconds > 0)
     {
         memset(secString, 0, sizeof(secString));
-        dd_snprintf(secString, 11, "%2u seconds", seconds);
+        dd_snprintf(secString, 11, "%2u %s", seconds, seconds > 1? "seconds" : "second");
         str = secString;
     }
     else
@@ -3667,6 +3689,21 @@ void M_HUDHideTime(int option, void* context)
         val--;
 
     cfg.hudTimer = val;
+}
+
+void M_MessageUptime(int option, void* context)
+{
+    int                 val = cfg.msgUptime;
+
+    if(option == RIGHT_DIR)
+    {
+        if(val < 30)
+            val++;
+    }
+    else if(val > 1)
+        val--;
+
+    cfg.msgUptime = val;
 }
 
 #if __JHERETIC__ || __JHEXEN__

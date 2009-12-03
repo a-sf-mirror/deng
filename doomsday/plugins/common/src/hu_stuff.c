@@ -894,9 +894,9 @@ void HU_DrawText(const char* str, gamefontid_t font, float x, float y,
             if(!c)
                 break;
 
-            if(!gFonts[font].chars[c].patch.lump)
+            if(!gFonts[font].chars[(byte) c].patch.lump)
                 continue;
-            p = &gFonts[font].chars[c].patch;
+            p = &gFonts[font].chars[(byte) c].patch;
 
             x -= p->width * scale;
         }
@@ -919,9 +919,9 @@ void HU_DrawText(const char* str, gamefontid_t font, float x, float y,
         if(!c)
             break;
 
-        if(!gFonts[font].chars[c].patch.lump)
+        if(!gFonts[font].chars[(byte) c].patch.lump)
             continue;
-        p = &gFonts[font].chars[c].patch;
+        p = &gFonts[font].chars[(byte) c].patch;
 
         w = p->width;
         h = p->height;
@@ -2366,10 +2366,13 @@ void M_WriteText3(int x, int y, const char* string, gamefontid_t font,
                   float red, float green, float blue, float alpha,
                   boolean flagTypeIn, boolean flagShadow, int initialCount)
 {
-    const char*         ch;
-    unsigned char       c;
-    int                 pass, w, h, cx, cy, count, yoff;
-    float               flash, flashColor[4];
+    const char* ch;
+    unsigned char c;
+    int pass, w, h, cx, cy, count, yoff;
+    float flash, flashColor[4];
+
+    if(!string || !string[0])
+        return;
 
     flashColor[CR] = (red >= 0?   ((1 + 2 * MINMAX_OF(0, red,   1)) / 3) : 1);
     flashColor[CB] = (blue >= 0?  ((1 + 2 * MINMAX_OF(0, blue,  1)) / 3) : 1);
@@ -2529,9 +2532,8 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
                   const dpatch_t* patch, const char* altstring,
                   boolean builtin, int halign)
 {
-    char                def[80], *string;
-    int                 patchString = 0;
-    int                 posx = x;
+    char def[80], *string;
+    int patchString = 0, posx = x;
 
     if(IS_DEDICATED)
         return;
@@ -2539,7 +2541,7 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
     if(!patch)
         return;
 
-    if(altstring && !builtin)
+    if(altstring && altstring[0] && !builtin)
     {   // We have already determined a string to replace this with.
         if(W_IsFromIWAD(patch->lump))
         {
@@ -2569,7 +2571,7 @@ void WI_DrawPatch(int x, int y, float r, float g, float b, float a,
             }
 
             // A built-in replacement?
-            if(cfg.usePatchReplacement == 2 && altstring)
+            if(cfg.usePatchReplacement == 2 && altstring && altstring[0])
             {
                 WI_DrawParamText(x, y, altstring, GF_FONTB, r, g, b, a, false,
                                  true, halign);

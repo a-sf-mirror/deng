@@ -83,7 +83,7 @@
 #define ST_GODFACE          (ST_NUMPAINFACES*ST_FACESTRIDE)
 #define ST_DEADFACE         (ST_GODFACE+1)
 
-#define ST_FACESX           (144)
+#define ST_FACESX           (143)
 #define ST_FACESY           (168)
 
 #define ST_EVILGRINCOUNT    (2*TICRATE)
@@ -1406,7 +1406,7 @@ static void initData(hudstate_t* hud)
     hud->lastAttackDown = -1;
     hud->blended = false;
     hud->showBar = 0.f;
-    hud->statusbarCounterAlpha = 0.f;
+    hud->statusbarCounterAlpha = 1.f;
 
     for(i = 0; i < 3; ++i)
     {

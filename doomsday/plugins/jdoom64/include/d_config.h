@@ -113,8 +113,9 @@ typedef struct jdoom64_config_s {
     byte            weaponNextMode; // if true use the weaponOrder for next/previous.
     byte            weaponRecoil; // jd64
     byte            secretMsg;
+    float           filterStrength;
     int             plrViewHeight;
-    byte            mapTitle, hideAuthorMidway;
+    byte            mapTitle, hideIWADAuthor;
     float           menuColor[3];
     float           menuColor2[3];
     byte            noCoopDamage;
@@ -167,7 +168,7 @@ typedef struct jdoom64_config_s {
 
     int             msgCount;
     float           msgScale;
-    int             msgUptime;
+    float           msgUptime;
     int             msgBlink;
     int             msgAlign;
     byte            msgShow;

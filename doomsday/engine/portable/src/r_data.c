@@ -310,7 +310,7 @@ colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
 
         Con_Error("R_CreateColorPalette: Failed creating \"%s\", "
                   "invalid character '%c' in format string at "
-                  "position %i.\n", name, *c, c - fmt);
+                  "position %u.\n", name, *c, (unsigned int) (c - fmt));
     } while(++c <= end);
 
     if(pos != 3)
@@ -1854,7 +1854,7 @@ int R_TextureIdForName(material_namespace_t mnamespace, const char* name)
         case MN_FLATS:
             {
             lumpnum_t lump, firstFlatLump;
-            
+
             if((lump = W_CheckNumForName(name)) != -1 &&
                (firstFlatLump = W_CheckNumForName("F_START")) != -1)
                 return lump - firstFlatLump;
@@ -1890,8 +1890,7 @@ static int R_NewFlat(lumpnum_t lump)
 {
     int i;
     flat_t** newlist, *ptr;
-    material_t* mat;
-    
+
     for(i = 0; i < numFlats; ++i)
     {
         ptr = flats[i];
@@ -1921,23 +1920,6 @@ static int R_NewFlat(lumpnum_t lump)
     ptr->lump = lump;
     ptr->width = 64; /// \fixme not all flats are 64 texels in width!
     ptr->height = 64; /// \fixme not all flats are 64 texels in height!
-
-    // Create a material for this flat.
-    // \note that width = 64, height = 64 regardless of the flat dimensions.
-    mat = Materials_NewMaterial(MN_FLATS, W_LumpName(lump), 64, 64, 0, NULL,
-                           W_IsFromIWAD(lump));
-    if(mat)
-    {
-        const gltexture_t* tex =
-            GL_CreateGLTexture(W_LumpName(lump), numFlats - 1, GLT_FLAT);
-
-        Material_AddLayer(mat, 0, tex->id, 0, 0, 0, 0);
-    }
-    else
-    {
-        Con_Error("R_NewFlat: Failed creating material for \"%s\" in "
-                  "namespace %i.", W_LumpName(lump), MN_FLATS);
-    }
 
     return numFlats - 1;
 }
@@ -1981,6 +1963,32 @@ void R_InitFlats(void)
     while(Stack_Height(stack))
         Stack_Pop(stack);
     Stack_Delete(stack);
+
+    for(i = 0; i < numFlats; ++i)
+    {
+        const flat_t* flat = flats[i];
+        material_t* mat;
+        const gltexture_t* tex;
+
+        tex = GL_CreateGLTexture(W_LumpName(flat->lump), i, GLT_FLAT);
+
+        // Create a material for this flat.
+        // \note that width = 64, height = 64 regardless of the flat dimensions.
+        mat = Materials_NewMaterial(MN_FLATS, W_LumpName(flat->lump), 64, 64, 0, NULL,
+                                    W_IsFromIWAD(flat->lump));
+        if(mat)
+        {
+            const gltexture_t* tex =
+                GL_CreateGLTexture(W_LumpName(flat->lump), i, GLT_FLAT);
+
+            Material_AddLayer(mat, 0, tex->id, 0, 0, 0, 0);
+        }
+        else
+        {
+            Con_Error("R_NewFlat: Failed creating material for \"%s\" in "
+                      "namespace %i.", W_LumpName(flat->lump), MN_FLATS);
+        }
+    }
 
     VERBOSE(Con_Message("R_InitFlats: Done in %.2f seconds.\n",
                         Sys_GetSeconds() - starttime));

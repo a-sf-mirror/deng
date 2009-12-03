@@ -91,9 +91,9 @@ void R_SetViewSize(int blocks)
 
 void R_DrawMapTitle(void)
 {
-    float               alpha = 1;
-    int                 y = 12;
-    char*               lname, *lauthor;
+    float alpha;
+    int y = 12;
+    const char* lname, *lauthor;
 
     if(!cfg.mapTitle || actualMapTime > 6 * 35)
         return;
@@ -105,13 +105,14 @@ void R_DrawMapTitle(void)
     DGL_Scalef(.75f, .75f, 1);   // Scale to 3/4
     DGL_Translatef(-160, -y, 0);
 
+    alpha = 1;
     if(actualMapTime < 35)
         alpha = actualMapTime / 35.0f;
     if(actualMapTime > 5 * 35)
         alpha = 1 - (actualMapTime - 5 * 35) / 35.0f;
 
     lname = P_GetMapNiceName();
-    lauthor = (char *) DD_GetVariable(DD_MAP_AUTHOR);
+    lauthor = P_GetMapAuthor(cfg.hideIWADAuthor);
 
     // Use stardard map name if DED didn't define it.
     if(!lname)
@@ -129,8 +130,9 @@ void R_DrawMapTitle(void)
 
     if(lauthor)
     {
-        M_WriteText3(160 - M_StringWidth(lauthor, GF_FONTA) / 2, y, lauthor,
-                    GF_FONTA, .5f, .5f, .5f, alpha, false, true, 0);
+        M_WriteText3(160 - M_StringWidth(lauthor, GF_FONTA) / 2, y,
+                     lauthor, GF_FONTA, .5f, .5f, .5f, alpha, false,
+                     true, 0);
     }
 
     Draw_EndZoom();
@@ -143,7 +145,8 @@ static void rendPlayerView(int player)
 {
     player_t* plr = &players[player];
     boolean special200 = false;
-    int viewAngleOffset = ANGLE_MAX * -G_GetLookOffset(player);
+    float viewPos[3], viewPitch;
+    angle_t viewAngle;
 
     if(IS_CLIENT)
     {
@@ -163,8 +166,7 @@ static void rendPlayerView(int player)
     // How about a bit of quake?
     if(localQuakeHappening[player] && !P_IsPaused())
     {
-        int                 intensity =
-            localQuakeHappening[player];
+        int intensity = localQuakeHappening[player];
 
         plr->viewOffset[VX] =
             (float) ((M_Random() % (intensity << 2)) - (intensity << 1));
@@ -176,17 +178,23 @@ static void rendPlayerView(int player)
         plr->viewOffset[VX] = plr->viewOffset[VY] = 0;
     }
 
-    DD_SetVariable(DD_VIEWX_OFFSET, &plr->viewOffset[VX]);
-    DD_SetVariable(DD_VIEWY_OFFSET, &plr->viewOffset[VY]);
-    DD_SetVariable(DD_VIEWZ_OFFSET, &plr->viewOffset[VZ]);
-    // The view angle offset.
-    DD_SetVariable(DD_VIEWANGLE_OFFSET, &viewAngleOffset);
+    viewPos[VX] = plr->plr->mo->pos[VX] + plr->viewOffset[VX];
+    viewPos[VY] = plr->plr->mo->pos[VY] + plr->viewOffset[VY];
+    viewPos[VZ] = plr->viewZ + plr->viewOffset[VZ];
+    viewAngle = plr->plr->mo->angle + (int) (ANGLE_MAX * -G_GetLookOffset(player));
+    viewPitch = plr->plr->lookDir;
+
+    DD_SetVariable(DD_VIEW_X, &viewPos[VX]);
+    DD_SetVariable(DD_VIEW_Y, &viewPos[VY]);
+    DD_SetVariable(DD_VIEW_Z, &viewPos[VZ]);
+    DD_SetVariable(DD_VIEW_ANGLE, &viewAngle);
+    DD_SetVariable(DD_VIEW_PITCH, &viewPitch);
 
     // $democam
     GL_SetFilter((plr->plr->flags & DDPF_VIEW_FILTER)? true : false);
     if(plr->plr->flags & DDPF_VIEW_FILTER)
     {
-        const float*        color = plr->plr->filterColor;
+        const float* color = plr->plr->filterColor;
         GL_SetFilterColor(color[CR], color[CG], color[CB], color[CA]);
     }
 
@@ -297,14 +305,6 @@ void G_Display(int layer)
             if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
                 return;
 
-            if(!IS_CLIENT && mapTime < 2)
-            {
-                // Don't render too early; the first couple of frames
-                // might be a bit unstable -- this should be considered
-                // a bug, but since there's an easy fix...
-                return;
-            }
-
             rendPlayerView(player);
 
             // Crosshair.
@@ -385,7 +385,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 0;
         rgba[CB] = 0;
-        rgba[CA] = filter / 8.f; // Full red with filter 8.
+        rgba[CA] = (deathmatch? 1.0f : cfg.filterStrength) * filter / 8.f; // Full red with filter 8.
         return true;
     }
     else if(filter >= STARTBONUSPALS && filter < STARTBONUSPALS + NUMBONUSPALS)
@@ -393,7 +393,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 1;
         rgba[CB] = .5f;
-        rgba[CA] = (filter - STARTBONUSPALS + 1) / 16.f;
+        rgba[CA] = cfg.filterStrength * (filter - STARTBONUSPALS + 1) / 16.f;
         return true;
     }
     else if(filter >= STARTPOISONPALS && filter < STARTPOISONPALS + NUMPOISONPALS)
@@ -401,7 +401,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 0;
         rgba[CG] = 1;
         rgba[CB] = 0;
-        rgba[CA] = (filter - STARTPOISONPALS + 1) / 16.f;
+        rgba[CA] = cfg.filterStrength * (filter - STARTPOISONPALS + 1) / 16.f;
         return true;
     }
     else if(filter >= STARTSCOURGEPAL)
@@ -409,7 +409,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = .5f;
         rgba[CB] = 0;
-        rgba[CA] = (STARTSCOURGEPAL + 3 - filter) / 6.f;
+        rgba[CA] = cfg.filterStrength * (STARTSCOURGEPAL + 3 - filter) / 6.f;
         return true;
     }
     else if(filter >= STARTHOLYPAL)
@@ -417,7 +417,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = 1;
         rgba[CG] = 1;
         rgba[CB] = 1;
-        rgba[CA] = (STARTHOLYPAL + 3 - filter) / 6.f;
+        rgba[CA] = cfg.filterStrength * (STARTHOLYPAL + 3 - filter) / 6.f;
         return true;
     }
     else if(filter == STARTICEPAL)
@@ -425,7 +425,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
         rgba[CR] = .5f;
         rgba[CG] = .5f;
         rgba[CB] = 1;
-        rgba[CA] = .4f;
+        rgba[CA] = cfg.filterStrength * .4f;
         return true;
     }
 

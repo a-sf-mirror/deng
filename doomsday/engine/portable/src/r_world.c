@@ -63,7 +63,7 @@ float rendMaterialFadeSeconds = .6f;
 
 // Ambient lighting, rAmbient is used within the renderer, ambientLight is
 // used to store the value of the ambient light cvar.
-// The value chosen for rAmbient occurs in Rend_CalcLightModRange
+// The value chosen for rAmbient occurs in R_CalcLightModRange
 // for convenience (since we would have to recalculate the matrix anyway).
 int rAmbient = 0, ambientLight = 0;
 
@@ -2162,7 +2162,7 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 
         // Update the z position of the degenmobj for this plane.
         pln->soundOrg.pos[VZ] = pln->height;
-        
+
         subsectorPtr = sec->subsectors;
         while(*subsectorPtr)
         {

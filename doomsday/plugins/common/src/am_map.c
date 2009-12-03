@@ -787,7 +787,7 @@ void AM_Open(automapid_t id, boolean yes, boolean fast)
 
                 /* $unifiedangles */
                 if(map->rotate)
-                    angle = mo->angle / (float) ANGLE_MAX * -360 - 90;
+                    angle = (mo->angle - ANGLE_90) / (float) ANGLE_MAX * 360;
                 else
                     angle = 0;
                 Automap_SetViewAngleTarget(map, angle);
@@ -1236,7 +1236,7 @@ void AM_SetColor(automapid_t id, int objectname, float r, float g, float b)
 void AM_GetColor(automapid_t id, int objectname, float* r, float* g, float* b)
 {
     automapcfg_t*       cfg;
-    mapobjectinfo_t*    info;
+    mapobjectinfo_t*    info = NULL;
 
     if(IS_DEDICATED)
         Con_Error("AM_GetColor: Not available in dedicated mode.");
@@ -1293,7 +1293,7 @@ void AM_GetColor(automapid_t id, int objectname, float* r, float* g, float* b)
 static void setColorAndAlpha(automapcfg_t* cfg, int objectname, float r,
                              float g, float b, float a)
 {
-    mapobjectinfo_t*    info;
+    mapobjectinfo_t*    info = NULL;
 
     if(objectname < 0 || objectname >= AMO_NUMOBJECTS)
         Con_Error("AM_SetColorAndAlpha: Unknown object %i.", objectname);
@@ -1369,7 +1369,7 @@ void AM_GetColorAndAlpha(automapid_t id, int objectname, float* r, float* g,
                          float* b, float* a)
 {
     automapcfg_t*       cfg;
-    mapobjectinfo_t*    info;
+    mapobjectinfo_t*    info = NULL;
 
     if(IS_DEDICATED)
         Con_Error("AM_GetColorAndAlpha: Not available in dedicated mode.");
@@ -1428,7 +1428,7 @@ void AM_GetColorAndAlpha(automapid_t id, int objectname, float* r, float* g,
 void AM_SetBlendmode(automapid_t id, int objectname, blendmode_t blendmode)
 {
     automapcfg_t*       cfg;
-    mapobjectinfo_t*    info;
+    mapobjectinfo_t*    info = NULL;
 
     if(IS_DEDICATED)
         return; // Just ignore.
@@ -1478,7 +1478,7 @@ void AM_SetGlow(automapid_t id, int objectname, glowtype_t type, float size,
                 float alpha, boolean canScale)
 {
     automapcfg_t*       cfg;
-    mapobjectinfo_t*    info;
+    mapobjectinfo_t*    info = NULL;
 
     if(IS_DEDICATED)
         return; // Just ignore.
@@ -1754,7 +1754,7 @@ static void findMinMaxBoundaries(void)
 static void mapTicker(automap_t* map)
 {
     int                 playerNum;
-    float               diff = 0, panX[2], panY[2],
+    float               panX[2], panY[2],
                         zoomVel, zoomSpeed;
     player_t*           mapPlayer;
     mobj_t*             mo;
@@ -1812,8 +1812,6 @@ static void mapTicker(automap_t* map)
     if(map->panMode || !players[mcfg->followPlayer].plr->inGame)
     {
         float               xy[2] = { 0, 0 }; // deltas
-        float               scrwidth = Get(DD_WINDOW_WIDTH);
-        float               scrheight = Get(DD_WINDOW_HEIGHT);
         // DOOM.EXE pans the automap at 140 fixed pixels per second.
         float       panUnitsPerTic = (Automap_FrameToMap(map, FIXXTOSCREENX(140)) / TICSPERSEC) *
                         (2 * mcfg->panSpeed);
@@ -1838,7 +1836,7 @@ static void mapTicker(automap_t* map)
 
         /* $unifiedangles */
         if(map->rotate)
-            angle = mo->angle / (float) ANGLE_MAX * 360 - 90;
+            angle = (mo->angle - ANGLE_90) / (float) ANGLE_MAX * 360;
         else
             angle = 0;
         Automap_SetViewAngleTarget(map, angle);

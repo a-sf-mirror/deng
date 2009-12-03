@@ -48,7 +48,7 @@
 
 DEFCC(CCmdCheat);
 DEFCC(CCmdCheatGod);
-DEFCC(CCmdCheatClip);
+DEFCC(CCmdCheatNoClip);
 DEFCC(CCmdCheatGive);
 DEFCC(CCmdCheatWarp);
 DEFCC(CCmdCheatPig);
@@ -100,9 +100,11 @@ cvar_t gameCVars[] = {
 // View/Refresh
     {"view-size", CVF_PROTECTED, CVT_INT, &cfg.screenBlocks, 3, 13},
     {"hud-title", 0, CVT_BYTE, &cfg.mapTitle, 0, 1},
+    {"hud-title-author-noiwad", 0, CVT_BYTE, &cfg.hideIWADAuthor, 0, 1},
 
     {"view-bob-height", 0, CVT_FLOAT, &cfg.bobView, 0, 1},
     {"view-bob-weapon", 0, CVT_FLOAT, &cfg.bobWeapon, 0, 1},
+    {"view-filter-strength", 0, CVT_FLOAT, &cfg.filterStrength, 0, 1},
 
 // Server-side options
     // Game state
@@ -179,13 +181,13 @@ ccmd_t  gameCCmds[] = {
 
     // $cheats
     {"cheat",       "s",    CCmdCheat},
-    {"god",         "",     CCmdCheatGod},
-    {"noclip",      "",     CCmdCheatClip},
+    {"god",         NULL,   CCmdCheatGod},
+    {"noclip",      NULL,   CCmdCheatNoClip},
     {"warp",        "i",    CCmdCheatWarp},
     {"reveal",      "i",    CCmdCheatReveal},
     {"give",        NULL,   CCmdCheatGive},
     {"kill",        "",     CCmdCheatMassacre},
-    {"suicide",     "",     CCmdCheatSuicide},
+    {"suicide",     NULL,   CCmdCheatSuicide},
     {"where",       "",     CCmdCheatWhere},
 
     {"hexenfont",   "",     CCmdHexenFont},
@@ -258,7 +260,7 @@ void G_UpdateEyeHeight(cvar_t* unused)
     player_t*           plr = &players[CONSOLEPLAYER];
 
     if(!(plr->plr->flags & DDPF_CAMERA))
-        plr->plr->viewHeight = (float) cfg.plrViewHeight;
+        plr->viewHeight = (float) cfg.plrViewHeight;
 }
 
 /**

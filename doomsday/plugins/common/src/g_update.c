@@ -162,7 +162,6 @@ void G_UpdateState(int step)
         ST_Init();
 #endif
 
-        Cht_Init();
         Hu_MenuInit();
 
 #if __JHEXEN__
@@ -190,19 +189,4 @@ void G_UpdateState(int step)
         Rend_AutomapLoadData();
         break;
     }
-}
-
-static char* ScanWord(char* ptr, char* buf)
-{
-    if(ptr)
-    {
-        // Skip whitespace at beginning.
-        while(*ptr && isspace(*ptr))
-            ptr++;
-        while(*ptr && !isspace(*ptr))
-            *buf++ = *ptr++;
-    }
-
-    *buf = 0;
-    return ptr;
 }

@@ -109,8 +109,9 @@ static boolean isPtcGenVisible(const ptcgen_t* gen)
 
 static float pointDist(fixed_t c[3])
 {
-    float               dist = ((viewY - FIX2FLT(c[VY])) * -viewSin) -
-        ((viewX - FIX2FLT(c[VX])) * viewCos);
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+    float dist = ((viewData->current.pos[VY] - FIX2FLT(c[VY])) * -viewData->viewSin) -
+        ((viewData->current.pos[VX] - FIX2FLT(c[VX])) * viewData->viewCos);
 
     if(dist < 0)
         return -dist; // Always return positive.
@@ -276,8 +277,8 @@ static boolean countParticles(ptcgen_t* gen, void* context)
 {
     if(isPtcGenVisible(gen))
     {
-        int                 p;
-        size_t*             numParts = (uint*) context;
+        int p;
+        size_t* numParts = (size_t*) context;
 
         for(p = 0; p < gen->count; ++p)
             if(gen->ptcs[p].stage >= 0)
@@ -289,10 +290,10 @@ static boolean countParticles(ptcgen_t* gen, void* context)
 
 static boolean populateSortBuffer(ptcgen_t* gen, void* context)
 {
-    int                 p;
+    int p;
     const ded_ptcgen_t* def;
-    particle_t*         pt;
-    size_t*             m = (size_t*) context;
+    particle_t* pt;
+    size_t* m = (size_t*) context;
 
     if(!isPtcGenVisible(gen))
         return true; // Continue iteration.
@@ -503,11 +504,14 @@ static void renderParticles(int rtype, boolean withBlend)
     ushort primType = GL_QUADS;
     blendmode_t mode = BM_NORMAL, newMode;
 
+    {
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
     // viewSideVec points to the left.
     for(c = 0; c < 3; ++c)
     {
-        leftoff[c]  = viewUpVec[c] + viewSideVec[c];
-        rightoff[c] = viewUpVec[c] - viewSideVec[c];
+        leftoff[c]  = viewData->upVec[c] + viewData->sideVec[c];
+        rightoff[c] = viewData->upVec[c] - viewData->sideVec[c];
+    }
     }
 
     // Should we use a texture?

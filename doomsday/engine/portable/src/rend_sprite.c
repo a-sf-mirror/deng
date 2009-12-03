@@ -276,22 +276,15 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
     Materials_Prepare(sprFrame->mats[0], MPF_SMOOTH | MPF_AS_PSPRITE, NULL, &ms);
 
     sprTex = spriteTextures[ms.units[MTU_PRIMARY].texInst->tex->ofTypeID];
-
     params->pos[VX] = psp->pos[VX] - sprTex->offX + pspOffset[VX];
-    params->pos[VY] = offScaleY * psp->pos[VY] +
-        (1 - offScaleY) * 32 - sprTex->offY + pspOffset[VY];
+    params->pos[VX] = psp->pos[VX] - sprTex->offX + pspOffset[VX];
+    params->pos[VY] = offScaleY * (psp->pos[VY] - sprTex->offY) + pspOffset[VY];
     params->width = ms.width;
     params->height = ms.height;
 
-    // Let's calculate texture coordinates.
-    // To remove a possible edge artifact, move the corner a bit up/left.
-    params->texOffset[0] =
-        ms.units[MTU_PRIMARY].texInst->data.sprite.texCoord[VX] -
-            0.4f / M_CeilPow2(ms.width);
-    params->texOffset[1] =
-        ms.units[MTU_PRIMARY].texInst->data.sprite.texCoord[VY] -
-            0.4f / M_CeilPow2(ms.height);
-
+    // Calculate texture coordinates.
+    params->texOffset[0] = ms.units[MTU_PRIMARY].texInst->data.sprite.texCoord[VX];
+    params->texOffset[1] = ms.units[MTU_PRIMARY].texInst->data.sprite.texCoord[VY];
     params->texFlip[0] = flip;
     params->texFlip[1] = false;
 
@@ -319,15 +312,12 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
             const subsector_t* subsector = spr->data.sprite.subsector;
             const float* secColor = R_GetSectorLightColor(subsector->sector);
 
-            if(spr->psp->light < 1)
-                lightLevel = (spr->psp->light - .1f);
-            else
-                lightLevel = 1;
-
             // No need for distance attentuation.
+            lightLevel = spr->data.sprite.subsector->sector->lightLevel;
 
-            // Add extra light.
+            // Add extra light plus bonus.
             lightLevel += R_ExtraLightDelta();
+            lightLevel *= pspLightLevelMultiplier;
 
             R_ApplyLightAdaptation(&lightLevel);
 
@@ -393,11 +383,14 @@ void Rend_DrawPSprite(const rendpspriteparams_t* params)
 
     // All psprite vertices are co-plannar, so just copy the view front vector.
     // \fixme: Can we do something better here?
+    {
+    const float* frontVec = R_ViewData(viewPlayer - ddPlayers)->frontVec;
     for(i = 0; i < 4; ++i)
     {
-        quadNormals[i].xyz[VX] = viewFrontVec[VX];
-        quadNormals[i].xyz[VY] = viewFrontVec[VZ];
-        quadNormals[i].xyz[VZ] = viewFrontVec[VY];
+        quadNormals[i].xyz[VX] = frontVec[VX];
+        quadNormals[i].xyz[VY] = frontVec[VZ];
+        quadNormals[i].xyz[VZ] = frontVec[VY];
+    }
     }
 
     if(!params->vLightListIdx)
@@ -554,6 +547,13 @@ void Rend_RenderMaskedWall(rendmaskedwallparams_t* params)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
                             GL_CLAMP_TO_EDGE);
         }
+
+        // Clamp on the vertical axis?
+        // @todo When drawing a stretched, masked middle texture we should
+        // not be clamping here. Currently this info is unknown at this point
+        // but because no maps yet make use of this feature (other than the
+        // unreleased jDoom64) we opt to clamp.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
     GL_BlendMode(params->blendMode);
 

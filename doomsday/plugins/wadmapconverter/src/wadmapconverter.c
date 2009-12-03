@@ -188,7 +188,6 @@ int ConvertMapHook(int hookType, int param, void* data)
     lumpnum_t           i, numLumps, totalLumps, startLump;
     lumpnum_t*          lumpList;
     char*               mapID = (char*) data;
-    boolean             result = false;
 
     if((startLump = W_CheckNumForName(mapID)) == -1)
         return false;

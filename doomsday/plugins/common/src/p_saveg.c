@@ -791,13 +791,9 @@ void SV_WriteLong(long val)
 
 void SV_WriteFloat(float val)
 {
-#if __JHEXEN__
-    lzPutL(*(int *) &val, savefile);
-#else
     long temp = 0;
     memcpy(&temp, &val, 4);
     lzPutL(temp, savefile);
-#endif
 }
 
 void SV_Read(void *data, int len)
@@ -1027,9 +1023,9 @@ static void SV_WritePlayer(int playernum)
 #if __JHEXEN__
     SV_WriteLong(p->class);    // 2nd class...?
 #endif
-    SV_WriteLong(FLT2FIX(dp->viewZ));
-    SV_WriteLong(FLT2FIX(dp->viewHeight));
-    SV_WriteLong(FLT2FIX(dp->viewHeightDelta));
+    SV_WriteLong(FLT2FIX(p->viewZ));
+    SV_WriteLong(FLT2FIX(p->viewHeight));
+    SV_WriteLong(FLT2FIX(p->viewHeightDelta));
 #if !__JHEXEN__
     SV_WriteFloat(dp->lookDir);
 #endif
@@ -1193,9 +1189,10 @@ static void SV_ReadPlayer(player_t* p)
 #if __JHEXEN__
     p->class = SV_ReadLong();        // 2nd class...?
 #endif
-    dp->viewZ = FIX2FLT(SV_ReadLong());
-    dp->viewHeight = FIX2FLT(SV_ReadLong());
-    dp->viewHeightDelta = FIX2FLT(SV_ReadLong());
+
+    p->viewZ = FIX2FLT(SV_ReadLong());
+    p->viewHeight = FIX2FLT(SV_ReadLong());
+    p->viewHeightDelta = FIX2FLT(SV_ReadLong());
 #if !__JHEXEN__
     dp->lookDir = SV_ReadFloat();
 #endif
@@ -1699,6 +1696,10 @@ static void RestoreMobj(mobj_t *mo, int ver)
     mo->info = &MOBJINFO[mo->type];
 
     P_MobjSetState(mo, (int) mo->state);
+#if __JHEXEN__
+    if(mo->flags2 & MF2_DORMANT)
+        mo->tics = -1;
+#endif
 
     if(mo->player)
     {
@@ -1832,6 +1833,9 @@ static int SV_ReadMobj(thinker_t* th)
         /*mo->info = (mobjinfo_t *)*/ SV_ReadLong();
 #endif
     mo->info = &MOBJINFO[mo->type];
+
+    if(mo->info->flags2 & MF2_FLOATBOB)
+        mo->mom[MZ] = 0;
 
     if(mo->info->flags & MF_SOLID)
         mo->ddFlags |= DDMF_SOLID;
@@ -5010,13 +5014,13 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
     // Set the save pointer and skip the description field
     saveptr.b = saveBuffer + SAVESTRINGSIZE;
 
-    if(strncmp(saveptr.b, HXS_VERSION_TEXT, 8))
+    if(strncmp((const char*) saveptr.b, HXS_VERSION_TEXT, 8))
     {
         Con_Message("SV_LoadGame: Bad magic.\n");
         return false;
     }
 
-    saveVersion = atoi(saveptr.b + 8);
+    saveVersion = atoi((const char*) (saveptr.b + 8));
 
     // Check for unsupported versions.
     if(saveVersion > MY_SAVE_VERSION)

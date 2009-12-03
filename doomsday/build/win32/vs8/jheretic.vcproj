@@ -11,14 +11,118 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\./Bin/Release"
-			IntermediateDirectory=".\./Obj/Release/jHeretic"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\./Bin/Release/jHeretic.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\..\..\plugins\jheretic\include;..\..\..\plugins\common\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include"
+				PreprocessorDefinitions="__JHERETIC__;WIN32;NDEBUG;_WINDOWS;_USRDLL;JHERETIC_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=""
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories=""
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Doomsday.lib lzss.lib"
+				OutputFile="$(OutDir)$(ProjectName).dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				ModuleDefinitionFile="..\..\..\plugins\jheretic\api\jheretic.def"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary=""
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				DependencyInformationFile="$(IntDir)\$(TargetFileName).dep"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -43,7 +147,7 @@
 				PreprocessorDefinitions="NDEBUG"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
-				TargetEnvironment="1"
+				TargetEnvironment="3"
 				TypeLibraryName=".\./Bin/Release/jHeretic.tlb"
 			/>
 			<Tool
@@ -89,7 +193,7 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\./Bin/Release/jHeretic.lib"
-				TargetMachine="1"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -115,14 +219,14 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\./Bin/Debug"
-			IntermediateDirectory=".\./Obj/Debug/jHeretic"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
-			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -152,13 +256,116 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=""
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+				CallingConvention="0"
+				CompileAs="0"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories=""
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Doomsday.lib lzss.lib"
+				OutputFile="$(OutDir)$(ProjectName).dll"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				ModuleDefinitionFile="..\..\..\plugins\jheretic\api\jheretic.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary=""
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				DependencyInformationFile="$(IntDir)\$(TargetFileName).dep"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\./Bin/Debug/jHeretic.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\plugins\jheretic\include;..\..\..\plugins\common\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;__JHERETIC__;WIN32;_DEBUG;_WINDOWS;_USRDLL;JHERETIC_EXPORTS"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\./Obj/Debug/jHeretic/jHeretic.pch"
 				AssemblerListingLocation=".\./Obj/Debug/jHeretic/"
 				ObjectFile=".\./Obj/Debug/jHeretic/"
 				ProgramDataBaseFileName=".\./Obj/Debug/jHeretic/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				CallingConvention="0"
 				CompileAs="0"
 				DisableSpecificWarnings="4996"
@@ -189,7 +396,379 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\./Bin/Debug/jHeretic.lib"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug x64|Win32"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="1"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				PrecompiledHeaderFile=""
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				Culture="1033"
+				AdditionalIncludeDirectories=""
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Doomsday.lib lzss.lib"
+				OutputFile="$(OutDir)$(ProjectName).dll"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				ImportLibrary=""
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				DependencyInformationFile="$(IntDir)\$(TargetFileName).dep"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug x64|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\./Bin/Debug/jHeretic.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\plugins\jheretic\include;..\..\..\plugins\common\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;__JHERETIC__;WIN32;NO_FIXED_ASM;_DEBUG;_WINDOWS;_USRDLL;JHERETIC_EXPORTS"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\./Obj/Debug/jHeretic/jHeretic.pch"
+				AssemblerListingLocation=".\./Obj/Debug/jHeretic/"
+				ObjectFile=".\./Obj/Debug/jHeretic/"
+				ProgramDataBaseFileName=".\./Obj/Debug/jHeretic/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="./Include/jHeretic"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="./bin/debug/doomsday.lib lzss.lib "
+				OutputFile=".\./Bin/Debug/jHeretic.dll"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\..\..\external\lzss\win32"
+				GenerateManifest="false"
+				ModuleDefinitionFile="..\..\..\plugins\jheretic\api\jheretic.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\./Bin/Debug/jHeretic.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary=".\./Bin/Debug/jHeretic.lib"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release x64|Win32"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\./Bin/Release/jHeretic.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\..\..\plugins\jheretic\include;..\..\..\plugins\common\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include"
+				PreprocessorDefinitions="__JHERETIC__;WIN32;NDEBUG;_WINDOWS;_USRDLL;JHERETIC_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=""
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories=""
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Doomsday.lib lzss.lib"
+				OutputFile="$(OutDir)$(ProjectName).dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				ModuleDefinitionFile="..\..\..\plugins\jheretic\api\jheretic.def"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary=""
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				DependencyInformationFile="$(IntDir)\$(TargetFileName).dep"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release x64|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName=".\./Bin/Release/jHeretic.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\..\..\plugins\jheretic\include;..\..\..\plugins\common\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include"
+				PreprocessorDefinitions="__JHERETIC__;WIN32;NO_FIXED_ASM;NDEBUG;_WINDOWS;_USRDLL;JHERETIC_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\./Obj/Release/jHeretic/jHeretic.pch"
+				AssemblerListingLocation=".\./Obj/Release/jHeretic/"
+				ObjectFile=".\./Obj/Release/jHeretic/"
+				ProgramDataBaseFileName=".\./Obj/Release/jHeretic/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="./Include/jHeretic"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="./bin/release/doomsday.lib lzss.lib"
+				OutputFile=".\./Bin/Release/jHeretic.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\..\..\external\lzss\win32"
+				GenerateManifest="false"
+				ModuleDefinitionFile="..\..\..\plugins\jheretic\api\jheretic.def"
+				ProgramDatabaseFile=".\./Bin/Release/jHeretic.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary=".\./Bin/Release/jHeretic.lib"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -254,6 +833,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\include\g_defs.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\common\include\g_eventsequence.h"
 				>
 			</File>
 			<File
@@ -442,6 +1025,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\src\g_defs.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\common\src\g_eventsequence.c"
 				>
 			</File>
 			<File
@@ -901,7 +1488,52 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="__JHERETIC__"
+						Culture="1033"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="__JHERETIC__"
+						Culture="1033"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="__JHERETIC__"
+						Culture="1033"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="__JHERETIC__"
+						Culture="1033"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="__JHERETIC__"
+						Culture="1033"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|x64"
 					>
 					<Tool
 						Name="VCResourceCompilerTool"

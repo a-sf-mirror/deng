@@ -502,8 +502,8 @@ void P_DeathThink(player_t* player)
        player->plr->mo->type == MT_ICECHUNK)
 #endif
     {   // Flying bloody skull
-        player->plr->viewHeight = 6;
-        player->plr->viewHeightDelta = 0;
+        player->viewHeight = 6;
+        player->viewHeightDelta = 0;
 
         if(onground)
         {
@@ -529,13 +529,13 @@ void P_DeathThink(player_t* player)
     else // fall to the ground
 #endif
     {
-        if(player->plr->viewHeight > 6)
-            player->plr->viewHeight -= 1;
+        if(player->viewHeight > 6)
+            player->viewHeight -= 1;
 
-        if(player->plr->viewHeight < 6)
-            player->plr->viewHeight = 6;
+        if(player->viewHeight < 6)
+            player->viewHeight = 6;
 
-        player->plr->viewHeightDelta = 0;
+        player->viewHeightDelta = 0;
 
 #if __JHERETIC__ || __JHEXEN__
         if(player->plr->lookDir > 0)
@@ -994,10 +994,6 @@ void P_ClientSideThink(void)
 
 void P_PlayerThinkState(player_t *player)
 {
-#if __JHEXEN__
-    player->worldTimer++;
-#endif
-
     if(player->plr->mo)
     {
         mobj_t             *plrmo = player->plr->mo;
@@ -1679,8 +1675,7 @@ void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
 {
     int                 playerNum = player - players;
     ddplayer_t         *plr = player->plr;
-    int                 turn = 0;
-    boolean             strafe = false;
+    //boolean             strafe = false;
     float               vel, off, turnSpeed;
     float               offsetSensitivity = 100; // \fixme Should be done engine-side, mouse sensitivity!
     classinfo_t        *pClassInfo = PCLASS_INFO(player->class);
@@ -1699,10 +1694,10 @@ void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
     }
 
     // Check for strafe.
-    P_GetControlState(playerNum, CTL_STRAFE, &vel, 0);
-    strafe = (vel != 0);
+    //P_GetControlState(playerNum, CTL_STRAFE, &vel, 0);
+    //strafe = (vel != 0);
 
-    if(!strafe)
+    //if(!strafe)
     {
         // Yaw.
         P_GetControlState(playerNum, CTL_TURN, &vel, &off);
@@ -1749,7 +1744,6 @@ void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
 void P_PlayerThinkUpdateControls(player_t* player)
 {
     int                 playerNum = player - players;
-    classinfo_t        *pClassInfo = PCLASS_INFO(player->class);
     float               vel, off, offsetSensitivity = 100;
     int                 i;
     boolean             strafe = false;
@@ -1761,18 +1755,15 @@ void P_PlayerThinkUpdateControls(player_t* player)
     brain->speed = (vel != 0);
 
     // Check for strafe.
-    P_GetControlState(playerNum, CTL_STRAFE, &vel, 0);
+    P_GetControlState(playerNum, CTL_MODIFIER_1, &vel, 0);
     strafe = (vel != 0);
 
     // Move status.
     P_GetControlState(playerNum, CTL_WALK, &vel, &off);
     brain->forwardMove = off * offsetSensitivity + vel;
-    P_GetControlState(playerNum, strafe? CTL_TURN : CTL_SIDESTEP, &vel, &off);
-    if(strafe)
-    {
-        // Saturate.
-        vel = (vel > 0? 1 : vel < 0? -1 : 0);
-    }
+    P_GetControlState(playerNum, CTL_SIDESTEP, &vel, &off);
+    // Saturate sidestep.
+    vel = (vel > 0? 1 : vel < 0? -1 : 0);
     brain->sideMove = off * offsetSensitivity + vel;
 
     // Flight.
@@ -1924,6 +1915,10 @@ void P_PlayerThink(player_t *player, timespan_t ticLength)
 
     if(!M_CheckTrigger(DD_GetVariable(DD_SHARED_FIXED_TRIGGER), ticLength))
         return; // It's too soon.
+
+#if __JHEXEN__
+    player->worldTimer++;
+#endif
 
     P_PlayerThinkUpdateControls(player);
 

@@ -402,6 +402,7 @@ void G_PreInit(void)
     cfg.xhairColor[1] = 1;
     cfg.xhairColor[2] = 1;
     cfg.xhairColor[3] = 1;
+    cfg.filterStrength = .8f;
     cfg.moveCheckZ = true;
     cfg.jumpPower = 9;
     cfg.airborneMovement = 1;
@@ -420,9 +421,9 @@ void G_PreInit(void)
     cfg.netMobDamageModifier = 1;
     cfg.netMobHealthModifier = 1;
     cfg.netGravity = -1;        // use map default
-    cfg.plrViewHeight = 41;
+    cfg.plrViewHeight = DEFAULT_PLAYER_VIEWHEIGHT;
     cfg.mapTitle = true;
-    cfg.hideAuthorIdSoft = true;
+    cfg.hideIWADAuthor = true;
     cfg.menuColor[0] = 1;
     cfg.menuColor2[0] = 1;
     cfg.menuSlam = false;
@@ -484,7 +485,7 @@ void G_PreInit(void)
     cfg.msgShow = true;
     cfg.msgCount = 4;
     cfg.msgScale = .8f;
-    cfg.msgUptime = 5 * TICSPERSEC;
+    cfg.msgUptime = 5;
     cfg.msgAlign = ALIGN_LEFT;
     cfg.msgBlink = 5;
 
@@ -563,10 +564,10 @@ void G_PostInit(void)
     autoStart = false;
 
     // Command line options.
-    noMonstersParm = ArgCheck("-nomonsters");
-    respawnParm = ArgCheck("-respawn");
-    fastParm = ArgCheck("-fast");
-    devParm = ArgCheck("-devparm");
+    noMonstersParm = ArgCheck("-nomonsters")? true : false;
+    respawnParm = ArgCheck("-respawn")? true : false;
+    fastParm = ArgCheck("-fast")? true : false;
+    devParm = ArgCheck("-devparm")? true : false;
 
     if(ArgCheck("-altdeath"))
         cfg.netDeathmatch = 2;

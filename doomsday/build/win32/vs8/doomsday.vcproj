@@ -11,20 +11,23 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="./Bin/Release"
-			IntermediateDirectory="./Obj/Release"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
-			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -49,12 +52,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Gs "
-				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api\;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
 				PreprocessorDefinitions="__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;NORANGECHECKING;WIN32;NDEBUG;_WINDOWS"
 				BasicRuntimeChecks="0"
-				AssemblerListingLocation="./Obj/Release/"
-				ObjectFile="./Obj/Release/"
-				ProgramDataBaseFileName="./Obj/Release/"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				XMLDocumentationFileName="$(IntDir)\"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
@@ -68,6 +72,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				Culture="1033"
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -76,15 +81,16 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
-				OutputFile="./Bin/Release/Doomsday.exe"
+				OutputFile="$(OutDir)$(ProjectName).exe"
 				Version="1.0"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="./Bin/Release;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
 				GenerateManifest="false"
 				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
 				IgnoreDefaultLibraryNames=""
 				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -115,15 +121,114 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="./Bin/Debug"
-			IntermediateDirectory="./Obj/Debug"
+			Name="Release|x64"
+			OutputDirectory="build\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="build\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
-			BuildLogFile="$(OutDir)/$(ProjectName)_buildlog.htm"
+			BuildLogFile="$(IntDir)\$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName="./Bin/Release/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Gs "
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api\;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;NORANGECHECKING;WIN32;NDEBUG;_WINDOWS"
+				BasicRuntimeChecks="0"
+				AssemblerListingLocation="./Obj/$(ConfigurationName)/"
+				ObjectFile="./Obj/$(ConfigurationName)/"
+				ProgramDataBaseFileName="./Obj/$(ConfigurationName)/vc90.pdb"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				OutputFile="./Bin/Release/Doomsday.exe"
+				Version="1.0"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="./Bin/$(ConfigurationName);..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -148,20 +253,129 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;WIN32;_DEBUG;_WINDOWS"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				FloatingPointExceptions="true"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				BrowseInformation="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;PROFILE;_WINDOWS"
+				Culture="1033"
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib dsound.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				OutputFile="$(OutDir)$(ProjectName).exe"
+				Version=""
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames="LIBCMT"
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				SubSystem="2"
+				ProfileGuidedDatabase=""
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="build\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="build\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(IntDir)\$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName="./Bin/Debug/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api\;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;WIN32;_DEBUG;_WINDOWS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				EnableFunctionLevelLinking="true"
 				FloatingPointExceptions="true"
-				AssemblerListingLocation="./Obj/Debug/"
-				ObjectFile="./Obj/Debug/"
-				ProgramDataBaseFileName="./Obj/Debug/vc90.pdb"
+				AssemblerListingLocation="$(IntDir)"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)"
+				XMLDocumentationFileName="$(IntDir)"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				CallingConvention="0"
 				CompileAs="1"
 			/>
@@ -182,7 +396,219 @@
 				Version=""
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="./Bin/Debug;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				AdditionalLibraryDirectories="$(OutDir);..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames="LIBCMT"
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)\$(TargetName).pdb"
+				SubSystem="2"
+				ProfileGuidedDatabase="$(IntDir)\$(TargetName).pgd"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug x64|Win32"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName="./Bin/Debug/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;WIN32;_DEBUG;_WINDOWS"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				FloatingPointExceptions="true"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				BrowseInformation="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;PROFILE;_WINDOWS"
+				Culture="1033"
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib dsound.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				OutputFile="$(OutDir)$(ProjectName).exe"
+				Version=""
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames="LIBCMT"
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug x64|x64"
+			OutputDirectory="build\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="build\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(IntDir)\$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName="./Bin/Debug/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api\;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;WIN32;_DEBUG;NO_FIXED_ASM;_WINDOWS"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				FloatingPointExceptions="true"
+				AssemblerListingLocation="./Obj/$(ConfigurationName)/"
+				ObjectFile="./Obj/$(ConfigurationName)/"
+				ProgramDataBaseFileName="./Obj/$(ConfigurationName)/vc90.pdb"
+				BrowseInformation="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;PROFILE;_WINDOWS"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib dsound.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				Version=""
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="./Bin/$(ConfigurationName);..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
 				GenerateManifest="false"
 				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
 				IgnoreDefaultLibraryNames="LIBCMT"
@@ -191,7 +617,208 @@
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release x64|Win32"
+			OutputDirectory="bin\"
+			IntermediateDirectory="build\$(ConfigurationName)\$(TargetName)\"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(OutDir)\$(TargetFileName).buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName="./Bin/Release/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Gs "
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;NORANGECHECKING;WIN32;NDEBUG;_WINDOWS"
+				BasicRuntimeChecks="0"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\obj\"
+				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				Culture="1033"
+				ResourceOutputFileName="$(IntDir)\$(TargetFileName).res"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				OutputFile="$(OutDir)$(ProjectName).exe"
+				Version="1.0"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release x64|x64"
+			OutputDirectory="build\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="build\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			BuildLogFile="$(IntDir)\$(ProjectName)_buildlog.htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="3"
+				TypeLibraryName="./Bin/Release/Doomsday.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Gs "
+				AdditionalIncludeDirectories="..\..\..\engine\win32\include;..\..\..\engine\portable\include;..\..\..\engine\api\;..\..\..\external\lzss\portable\include;..\..\..\external\zlib\portable\include;..\..\..\external\libpng\portable\include;..\..\..\external\libcurl\portable\include"
+				PreprocessorDefinitions="__DOOMSDAY__;ZLIB_DLL;WIN32_GAMMA;NORANGECHECKING;WIN32;NO_FIXED_ASM;NDEBUG;_WINDOWS"
+				BasicRuntimeChecks="0"
+				AssemblerListingLocation="./Obj/$(ConfigurationName)/"
+				ObjectFile="./Obj/$(ConfigurationName)/"
+				ProgramDataBaseFileName="./Obj/$(ConfigurationName)/vc90.pdb"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="dxguid.lib dxerr.lib dinput8.lib opengl32.lib glu32.lib comctl32.lib curllib.lib sdl_net.lib sdl.lib sdl_mixer.lib zlib1.lib libpng13.lib lzss.lib wsock32.lib winmm.lib"
+				OutputFile="./Bin/Release/Doomsday.exe"
+				Version="1.0"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="./Bin/$(ConfigurationName);..\..\..\external\lzss\win32;..\..\..\external\libpng\win32;..\..\..\external\libcurl\win32;..\..\..\external\zlib\win32"
+				GenerateManifest="false"
+				ManifestFile="$(IntDir)\$(TargetFileName).manifest"
+				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\..\..\engine\api\Doomsday.def"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -370,6 +997,30 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -836,6 +1487,30 @@
 						CallingConvention="0"
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\sys_network.c"
@@ -857,7 +1532,55 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|x64"
 					ExcludedFromBuild="true"
 					>
 					<Tool
@@ -936,7 +1659,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -956,7 +1727,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -976,7 +1795,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -996,7 +1863,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1020,7 +1935,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1042,7 +2005,67 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1066,7 +2089,67 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1088,7 +2171,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1110,7 +2241,67 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1134,7 +2325,67 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1156,7 +2407,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1176,7 +2475,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1969,7 +3316,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -1989,7 +3384,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2009,7 +3452,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2033,7 +3524,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2053,7 +3592,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2073,7 +3660,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2093,7 +3728,55 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug x64|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release x64|x64"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -2123,7 +3806,55 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug x64|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release x64|x64"
 					>
 					<Tool
 						Name="VCResourceCompilerTool"

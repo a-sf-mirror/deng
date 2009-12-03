@@ -1174,7 +1174,8 @@ void NetSv_SendPlayerState(int srcPlrNum, int destPlrNum, int flags,
 
     if(flags & PSF_VIEW_HEIGHT)
     {
-        *ptr++ = (byte) pl->plr->viewHeight;
+        // @todo Do clients really need to know this?
+        *ptr++ = (byte) pl->viewHeight;
     }
 
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
@@ -1364,9 +1365,9 @@ void NetSv_SendJumpPower(int target, float power)
 /**
  * Process the requested cheat command, if possible.
  */
-void NetSv_DoCheat(int player, const char *data)
+void NetSv_DoCheat(int player, const char* data)
 {
-    char        command[40];
+    char command[40];
 
     memset(command, 0, sizeof(command));
     strncpy(command, data, sizeof(command) - 1);
@@ -1375,19 +1376,10 @@ void NetSv_DoCheat(int player, const char *data)
     if(!netSvAllowCheats)
         return;
 
-    if(!strnicmp(command, "god", 3))
-    {
-        Cht_GodFunc(players + player);
-    }
-    else if(!strnicmp(command, "noclip", 6))
-    {
-        Cht_NoClipFunc(players + player);
-    }
-    else if(!strnicmp(command, "suicide", 7))
-    {
-        Cht_SuicideFunc(players + player);
-    }
-    else if(!strnicmp(command, "give", 4))
+    if(!strnicmp(command, "god", 3) ||
+       !strnicmp(command, "noclip", 6) ||
+       !strnicmp(command, "suicide", 7) ||
+       !strnicmp(command, "give", 4))
     {
         DD_Executef(false, "%s %i", command, player);
     }

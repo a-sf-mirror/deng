@@ -97,10 +97,6 @@ static animdef_t animsShared[] = {
     {1, "ROCKRED3", "ROCKRED1", MACRO_LONG(8)},
     {1, "SLADRIP3", "SLADRIP1", MACRO_LONG(8)},
     {1, "WFALL4",   "WFALL1",   MACRO_LONG(8)},
-    {-1, "\0",      "\0"}
-};
-
-static animdef_t animsDoom[] = {
     {1, "BLODGR4",  "BLODGR1",  MACRO_LONG(8)},
     {-1, "\0",      "\0"}
 };
@@ -248,10 +244,6 @@ void P_InitPicAnims(void)
     if(gameMode == commercial)
     {
         loadAnimatedDefs(animsDoom2);
-    }
-    else
-    {
-        loadAnimatedDefs(animsDoom);
     }
 }
 

@@ -55,20 +55,6 @@ END_PROF_TIMERS()
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct viewer_s {
-    float       pos[3];
-    angle_t     angle;
-    float       pitch;
-} viewer_t;
-
-typedef struct viewdata_s {
-    // These are used when camera smoothing is disabled.
-    angle_t     frozenAngle;
-    float       frozenPitch;
-
-    viewer_t    lastSharpView[2];
-} viewdata_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -85,17 +71,12 @@ extern boolean firstFrameAfterLoad;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int viewAngleOffset = 0;
 int validCount = 1; // Increment every time a check is made.
 int frameCount; // Just for profiling purposes.
 int rendInfoTris = 0;
 int useVSync = 0;
-float viewX, viewY, viewZ;
-float viewFrontVec[3], viewUpVec[3], viewSideVec[3];
-float viewXOffset = 0, viewYOffset = 0, viewZOffset = 0;
-angle_t viewAngle;
-float viewPitch; // Player->lookDir, global version.
-float viewCos, viewSin;
+float viewX = 0, viewY = 0, viewZ = 0, viewPitch = 0;
+int viewAngle = 0;
 boolean setSizeNeeded;
 
 float vx, vy, vz, vang, vpitch;
@@ -396,13 +377,20 @@ void R_InterpolateViewer(viewer_t* start, viewer_t* end, float pos,
     out->pitch = inv * start->pitch + pos * end->pitch;
 }
 
-void R_SetViewPos(viewer_t* v)
+void R_CopyViewer(viewer_t* dst, const viewer_t* src)
 {
-    viewX = v->pos[VX];
-    viewY = v->pos[VY];
-    viewZ = v->pos[VZ];
-    viewAngle = v->angle;
-    viewPitch = v->pitch;
+    dst->pos[VX] = src->pos[VX];
+    dst->pos[VY] = src->pos[VY];
+    dst->pos[VZ] = src->pos[VZ];
+    dst->angle = src->angle;
+    dst->pitch = src->pitch;
+}
+
+const viewdata_t* R_ViewData(int localPlayerNum)
+{
+    assert(localPlayerNum >= 0 && localPlayerNum < DDMAXPLAYERS);
+
+    return &viewData[localPlayerNum];
 }
 
 /**
@@ -440,12 +428,13 @@ void R_GetSharpView(viewer_t* view, player_t* player)
 
     ddpl = &player->shared;
 
+    view->pos[VX] = viewX;
+    view->pos[VY] = viewY;
+    view->pos[VZ] = viewZ;
     /* $unifiedangles */
-    view->angle = ddpl->mo->angle + viewAngleOffset;
-    view->pitch = ddpl->lookDir;
-    view->pos[VX] = ddpl->mo->pos[VX] + viewXOffset;
-    view->pos[VY] = ddpl->mo->pos[VY] + viewYOffset;
-    view->pos[VZ] = ddpl->viewZ + viewZOffset;
+    view->angle = viewAngle;
+    view->pitch = viewPitch;
+
     if((ddpl->flags & DDPF_CHASECAM) && !(ddpl->flags & DDPF_CAMERA))
     {
         /**
@@ -529,10 +518,10 @@ void R_NewSharpWorld(void)
         // buffer.  The effect of this is that [0] is the previous sharp
         // position and [1] is the current one.
 
-        memcpy(&vd->lastSharpView[0], &vd->lastSharpView[1], sizeof(viewer_t));
-        memcpy(&vd->lastSharpView[1], &sharpView, sizeof(sharpView));
+        memcpy(&vd->lastSharp[0], &vd->lastSharp[1], sizeof(viewer_t));
+        memcpy(&vd->lastSharp[1], &sharpView, sizeof(sharpView));
 
-        R_CheckViewerLimits(vd->lastSharpView, &sharpView);
+        R_CheckViewerLimits(vd->lastSharp, &sharpView);
     }
 
     map = P_CurrentMap();
@@ -639,6 +628,7 @@ void R_EndWorldFrame(map_t* map)
  */
 void R_SetupFrame(player_t* player)
 {
+#define VIEWPOS_MAX_SMOOTHDISTANCE  172
 #define MINEXTRALIGHTFRAMES         2
 
     int tableAngle;
@@ -654,17 +644,18 @@ void R_SetupFrame(player_t* player)
 
     R_GetSharpView(&sharpView, viewPlayer);
 
-    if(resetNextViewer)
+    if(resetNextViewer ||
+       V3_Distance(vd->current.pos, sharpView.pos) > VIEWPOS_MAX_SMOOTHDISTANCE)
     {
         // Keep reseting until a new sharp world has arrived.
         if(resetNextViewer > 1)
             resetNextViewer = 0;
 
         // Just view from the sharp position.
-        R_SetViewPos(&sharpView);
+        R_CopyViewer(&vd->current, &sharpView);
 
-        memcpy(&vd->lastSharpView[0], &sharpView, sizeof(sharpView));
-        memcpy(&vd->lastSharpView[1], &sharpView, sizeof(sharpView));
+        memcpy(&vd->lastSharp[0], &sharpView, sizeof(sharpView));
+        memcpy(&vd->lastSharp[1], &sharpView, sizeof(sharpView));
     }
     // While the game is paused there is no need to calculate any
     // time offsets or interpolated camera positions.
@@ -674,7 +665,7 @@ void R_SetupFrame(player_t* player)
         // between the previous and current sharp positions. This
         // introduces a slight delay (max. 1/35 sec) to the movement
         // of the smoothed camera.
-        R_InterpolateViewer(vd->lastSharpView, vd->lastSharpView + 1, frameTimePos,
+        R_InterpolateViewer(vd->lastSharp, vd->lastSharp + 1, frameTimePos,
                             &smoothView);
 
         // Use the latest view angles known to us, if the interpolation flags
@@ -685,7 +676,8 @@ void R_SetupFrame(player_t* player)
             smoothView.angle = sharpView.angle;
         if(!(player->shared.flags & DDPF_INTERPITCH))
             smoothView.pitch = sharpView.pitch;
-        R_SetViewPos(&smoothView);
+
+        R_CopyViewer(&vd->current, &smoothView);
 
         // Monitor smoothness of yaw/pitch changes.
         if(showViewAngleDeltas)
@@ -741,6 +733,33 @@ void R_SetupFrame(player_t* player)
         }
     }
 
+    // Update viewer.
+    tableAngle = viewData->current.angle >> ANGLETOFINESHIFT;
+    viewData->viewSin = FIX2FLT(finesine[tableAngle]);
+    viewData->viewCos = FIX2FLT(fineCosine[tableAngle]);
+
+    // Calculate the front, up and side unit vectors.
+    // The vectors are in the DGL coordinate system, which is a left-handed
+    // one (same as in the game, but Y and Z have been swapped). Anyone
+    // who uses these must note that it might be necessary to fix the aspect
+    // ratio of the Y axis by dividing the Y coordinate by 1.2.
+    yawRad = ((viewData->current.angle / (float) ANGLE_MAX) *2) * PI;
+
+    pitchRad = viewData->current.pitch * 85 / 110.f / 180 * PI;
+
+    // The front vector.
+    viewData->frontVec[VX] = cos(yawRad) * cos(pitchRad);
+    viewData->frontVec[VZ] = sin(yawRad) * cos(pitchRad);
+    viewData->frontVec[VY] = sin(pitchRad);
+
+    // The up vector.
+    viewData->upVec[VX] = -cos(yawRad) * sin(pitchRad);
+    viewData->upVec[VZ] = -sin(yawRad) * sin(pitchRad);
+    viewData->upVec[VY] = cos(pitchRad);
+
+    // The side vector is the cross product of the front and up vectors.
+    M_CrossProduct(viewData->frontVec, viewData->upVec, viewData->sideVec);
+
     if(showFrameTimePos)
     {
         Con_Printf("frametime = %f\n", frameTimePos);
@@ -764,32 +783,11 @@ void R_SetupFrame(player_t* player)
     extraLight = player->extraLight;
     extraLightDelta = extraLight / 16.0f;
 
-    tableAngle = viewAngle >> ANGLETOFINESHIFT;
-    viewSin = FIX2FLT(finesine[tableAngle]);
-    viewCos = FIX2FLT(fineCosine[tableAngle]);
+    // Why?
     validCount++;
 
-    // Calculate the front, up and side unit vectors.
-    // The vectors are in the DGL coordinate system, which is a left-handed
-    // one (same as in the game, but Y and Z have been swapped). Anyone
-    // who uses these must note that it might be necessary to fix the aspect
-    // ratio of the Y axis by dividing the Y coordinate by 1.2.
-    yawRad = ((viewAngle / (float) ANGLE_MAX) *2) * PI;
-
-    pitchRad = viewPitch * 85 / 110.f / 180 * PI;
-
-    // The front vector.
-    viewFrontVec[VX] = cos(yawRad) * cos(pitchRad);
-    viewFrontVec[VZ] = sin(yawRad) * cos(pitchRad);
-    viewFrontVec[VY] = sin(pitchRad);
-
-    // The up vector.
-    viewUpVec[VX] = -cos(yawRad) * sin(pitchRad);
-    viewUpVec[VZ] = -sin(yawRad) * sin(pitchRad);
-    viewUpVec[VY] = cos(pitchRad);
-
-    // The side vector is the cross product of the front and up vectors.
-    M_CrossProduct(viewFrontVec, viewUpVec, viewSideVec);
+#undef MINEXTRALIGHTFRAMES
+#undef VIEWPOS_MAX_SMOOTHDISTANCE
 }
 
 /**

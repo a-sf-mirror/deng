@@ -358,7 +358,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
         {
 #if __JDOOM__ || __JDOOM64__
         case DT_BLAZECLOSE:
-            P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
             door->topHeight -= 4;
             door->state = DS_DOWN;
             door->speed *= 4;
@@ -366,7 +366,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
             break;
 #endif
         case DT_CLOSE:
-            P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
             door->topHeight -= 4;
             door->state = DS_DOWN;
 #if !__JHEXEN__
@@ -388,7 +388,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
 #if !__JHEXEN__
         case DT_BLAZEOPEN:
             door->state = DS_UP;
-            P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
             door->topHeight -= 4;
 # if __JHERETIC__
             door->speed *= 3;
@@ -403,7 +403,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
         case DT_NORMAL:
         case DT_OPEN:
             door->state = DS_UP;
-            P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
             door->topHeight -= 4;
 
 #if !__JHEXEN__
@@ -473,6 +473,7 @@ static void sendNeedKeyMessage(player_t* p, textenum_t msgTxt, int keyNum)
 }
 #endif
 
+#if __JDOOM__ || __JDOOM64__
 /**
  * Checks whether the given linedef is a locked door.
  * If locked and the player IS ABLE to open it, return @c true.
@@ -487,7 +488,6 @@ static boolean tryLockedDoor(linedef_t *line, player_t *p)
     if(!p || !xline)
         return false;
 
-#if __JDOOM__ || __JDOOM64__
     switch(xline->special)
     {
     case 99:                    // Blue Lock
@@ -551,10 +551,10 @@ static boolean tryLockedDoor(linedef_t *line, player_t *p)
     default:
         break;
     }
-#endif
 
     return true;
 }
+#endif
 
 /**
  * Checks whether the given linedef is a locked manual door.
@@ -567,9 +567,11 @@ static boolean tryLockedManualDoor(linedef_t* line, mobj_t* mo)
 {
     xline_t*            xline = P_ToXLine(line);
     player_t*           p;
+#if !__JHEXEN__
     int                 keyNum = -1;
     textenum_t          msgTxt = 0;
     sfxenum_t           sfxNum = 0;
+#endif
 
     if(!mo || !xline)
         return false;
@@ -860,7 +862,7 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     }
 
     // find the top and bottom of the movement range
-    P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+    P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
     door->topHeight -= 4;
     return true;
 }
@@ -899,7 +901,7 @@ void P_SpawnDoorRaiseIn5Mins(sector_t* sec)
     door->state = DS_INITIALWAIT;
     door->type = DT_RAISEIN5MINS;
     door->speed = DOORSPEED;
-    P_FindSectorSurroundingLowestCeiling(sec, &door->topHeight);
+    P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &door->topHeight);
     door->topHeight -= 4;
     door->topWait = DOORWAIT;
     door->topCountDown = 5 * 60 * TICSPERSEC;

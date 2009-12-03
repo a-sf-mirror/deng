@@ -176,14 +176,14 @@ typedef struct collectaffectinglights_params_s {
 } collectaffectinglights_params_t;
 
 extern spritedef_t* sprites;
-extern int numSprites;
-extern float pspOffset[2];
-extern int alwaysAlign;
-extern float weaponOffsetScale, weaponFOVShift;
-extern int weaponOffsetScaleY;
-extern float modelSpinSpeed;
-extern int maxModelDistance, noSpriteZWrite;
-extern int useSRVO, useSRVOAngle;
+extern int      numSprites;
+extern float    pspOffset[2], pspLightLevelMultiplier;
+extern int      alwaysAlign;
+extern float    weaponOffsetScale, weaponFOVShift;
+extern int      weaponOffsetScaleY;
+extern float    modelSpinSpeed;
+extern int      maxModelDistance, noSpriteZWrite;
+extern int      useSRVO, useSRVOAngle;
 extern vissprite_t visSprites[MAXVISSPRITES], *visSpriteP;
 extern vissprite_t visSprSortedHead;
 extern vispsprite_t visPSprites[DDMAXPSPRITES];

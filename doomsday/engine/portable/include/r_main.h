@@ -36,37 +36,49 @@ typedef struct viewport_s {
     int             x, y, width, height;
 } viewport_t;
 
+typedef struct viewer_s {
+    float           pos[3];
+    angle_t         angle;
+    float           pitch;
+} viewer_t;
+
+typedef struct viewdata_s {
+    viewer_t        current; // Current view paramaters.
+    viewer_t        lastSharp[2]; // For smoothing.
+    float           frontVec[3], upVec[3], sideVec[3];
+    float           viewCos, viewSin;
+
+    // These are used when camera smoothing is disabled.
+    angle_t         frozenAngle;
+    float           frozenPitch;
+} viewdata_t;
+
 typedef struct {
-    thinker_t   thinker;
+    thinker_t       thinker;
     struct surface_s* suf;
-    int         tics;
+    int             tics;
 } matfader_t;
 
-extern float viewX, viewY, viewZ;
-extern float viewFrontVec[3], viewUpVec[3], viewSideVec[3];
-extern float viewXOffset, viewYOffset, viewZOffset;
-extern angle_t viewAngle;
-extern float viewPitch;
-extern angle_t clipAngle;
-extern fixed_t fineTangent[FINEANGLES / 2];
-extern float vx, vy, vz, vang, vpitch, fieldOfView, yfov;
-extern float viewsidex, viewsidey;
+extern float viewX, viewY, viewZ, viewPitch, fieldOfView;
+extern int viewAngle;
+
+extern float vx, vy, vz, vang, vpitch, yfov, viewsidex, viewsidey;
 
 extern float frameTimePos;      // 0...1: fractional part for sharp game tics
-extern boolean resyncFrameTimePos;
 extern int loadInStartupMode;
-extern int alidCount;
-extern int viewwidth, viewheight, viewwindowx, viewwindowy;
-extern boolean setSizeNeeded;
-extern int frameCount;
 extern int validCount;
-extern int viewAngleOffset;
-extern int torchAdditive;
-extern float torchColor[];
+extern int viewwidth, viewheight, viewwindowx, viewwindowy;
+extern int frameCount;
 extern int extraLight;
 extern float extraLightDelta;
-extern float viewCos, viewSin;
 extern int rendInfoTris;
+
+extern float torchColor[3];
+extern int torchAdditive;
+extern int extraLight; // Bumped light from gun blasts.
+extern float extraLightDelta;
+
+extern fixed_t  fineTangent[FINEANGLES / 2];
 
 void            R_Register(void);
 void            R_Init(void);
@@ -77,7 +89,10 @@ void            R_EndWorldFrame(struct map_s* map);
 void            R_RenderPlayerView(int num);
 void            R_RenderPlayerViewBorder(void);
 void            R_RenderViewPorts(void);
+
+const viewdata_t* R_ViewData(int localPlayerNum);
 void            R_ResetViewer(void);
+
 void            R_SetViewWindow(int x, int y, int w, int h);
 void            R_NewSharpWorld(void);
 

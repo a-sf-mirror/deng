@@ -438,24 +438,32 @@ typedef struct findlineinsectorsmallestbottommaterialparams_s {
 
 int findLineInSectorSmallestBottomMaterial(void *ptr, void *context)
 {
-    linedef_t          *li = (linedef_t*) ptr;
-    findlineinsectorsmallestbottommaterialparams_t *params =
+    linedef_t* li = (linedef_t*) ptr;
+    findlineinsectorsmallestbottommaterialparams_t* params =
         (findlineinsectorsmallestbottommaterialparams_t*) context;
-    sector_t          *frontSec, *backSec;
+    sector_t* frontSec, *backSec;
 
     frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
     backSec = DMU_GetPtrp(li, DMU_BACK_SECTOR);
 
     if(frontSec && backSec)
     {
-        sidedef_t*          side;
-        material_t*         mat;
+        sidedef_t* side;
+        material_t* mat;
 
         side = DMU_GetPtrp(li, DMU_SIDEDEF0);
         mat = DMU_GetPtrp(side, DMU_BOTTOM_MATERIAL);
+
+        /**
+         * Emulate DOOM.exe behaviour. In the instance where no material is
+         * present, the height is taken from the very first texture.
+         */
+        if(!mat)
+            mat = R_MaterialForTextureId(MN_TEXTURES, 0);
+
         if(mat)
         {
-            int                 height = DMU_GetIntp(mat, DMU_HEIGHT);
+            int height = P_GetIntp(mat, DMU_HEIGHT);
 
             if(height < params->minSize)
             {
@@ -466,9 +474,12 @@ int findLineInSectorSmallestBottomMaterial(void *ptr, void *context)
 
         side = DMU_GetPtrp(li, DMU_SIDEDEF1);
         mat = DMU_GetPtrp(side, DMU_BOTTOM_MATERIAL);
+        if(!mat)
+            mat = R_MaterialForTextureId(MN_TEXTURES, 0);
+
         if(mat)
         {
-            int                 height = DMU_GetIntp(mat, DMU_HEIGHT);
+            int height = P_GetIntp(mat, DMU_HEIGHT);
 
             if(height < params->minSize)
             {
@@ -496,6 +507,59 @@ linedef_t* P_FindLineInSectorSmallestBottomMaterial(sector_t* sec, int* val)
     return params.foundLine;
 }
 
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
+/**
+ * Find the first sector which shares a border to the specified sector
+ * and whose floor height matches that specified.
+ *
+ * @note Behaviour here is dependant upon the order of the sector-linked
+ * LineDefs list. This is necessary to emulate the flawed algorithm used in
+ * DOOM.exe In addition, this algorithm was further broken in Heretic as the
+ * test which compares floor heights was removed.
+ *
+ * @important DO NOT USE THIS ANYWHERE ELSE!
+ */
+
+typedef struct findfirstneighbouratfloorheightparams_s {
+    sector_t*           baseSec;
+    float               height;
+    sector_t*           foundSec;
+} findfirstneighbouratfloorheightparams_t;
+
+static int findFirstNeighbourAtFloorHeight(void* ptr, void* context)
+{
+    linedef_t* ln = (linedef_t*) ptr;
+    findfirstneighbouratfloorheightparams_t* params =
+        (findfirstneighbouratfloorheightparams_t*) context;
+    sector_t* other;
+
+    other = P_GetNextSector(ln, params->baseSec);
+# if __JDOOM__ || __JDOOM64__
+    if(other && P_GetFloatp(other, DMU_FLOOR_HEIGHT) == params->height)
+# elif __JHERETIC__
+    if(other)
+# endif
+    {
+        params->foundSec = other;
+        return 0; // Stop iteration.
+    }
+
+    return 1; // Continue iteration.
+}
+
+static sector_t* findSectorSurroundingAtFloorHeight(sector_t* sec,
+                                                    float height)
+{
+    findfirstneighbouratfloorheightparams_t params;
+
+    params.baseSec = sec;
+    params.foundSec = NULL;
+    params.height = height;
+    DMU_Iteratep(sec, DMU_LINEDEF, findFirstNeighbourAtFloorHeight, &params);
+    return params.foundSec;
+}
+#endif
+
 /**
  * Handle moving floors.
  */
@@ -511,7 +575,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
     int         rtn = 0;
     xsector_t  *xsec;
     sector_t   *sec = NULL;
-    floor_t *floor;
+    floor_t *floor = NULL;
     iterlist_t *list;
 #if __JHEXEN__
     int         tag = (int) args[0];
@@ -572,7 +636,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->speed *= 4;
 # endif
 #endif
-            P_FindSectorSurroundingHighestFloor(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingHighestFloor(sec, -500, &floor->floorDestHeight);
             break;
 
         case FT_LOWERTOLOWEST:
@@ -584,7 +648,8 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->speed *= 4;
 # endif
 #endif
-            P_FindSectorSurroundingLowestFloor(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingLowestFloor(sec,
+                P_GetFloatp(sec, DMU_FLOOR_HEIGHT), &floor->floorDestHeight);
             break;
 #if __JHEXEN__
         case FT_LOWERBYVALUE:
@@ -607,7 +672,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->state = FS_DOWN;
             floor->sector = sec;
             floor->speed = FLOORSPEED * 4;
-            P_FindSectorSurroundingHighestFloor(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingHighestFloor(sec, -500, &floor->floorDestHeight);
 # if __JHERETIC__
             floor->floorDestHeight += 8;
 # else
@@ -622,7 +687,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->state = FS_DOWN;
             floor->sector = sec;
             floor->speed = FLOORSPEED;
-            P_FindSectorSurroundingHighestFloor(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingHighestFloor(sec, -500, &floor->floorDestHeight);
             if(floor->floorDestHeight != DMU_GetFloatp(sec,
                                                      DMU_FLOOR_HEIGHT))
                 floor->floorDestHeight += 8;
@@ -634,7 +699,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
                 floor->state = FS_DOWN;
                 floor->sector = sec;
                 floor->speed = FLOORSPEED * bitmipL;
-                P_FindSectorSurroundingHighestFloor(sec, &floor->floorDestHeight);
+                P_FindSectorSurroundingHighestFloor(sec, -500, &floor->floorDestHeight);
 
                 if(floor->floorDestHeight != DMU_GetFloatp(sec,
                                                          DMU_FLOOR_HEIGHT))
@@ -678,7 +743,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
 #if __JHEXEN__
             floor->floorDestHeight = DMU_GetFloatp(sec, DMU_CEILING_HEIGHT)-8;
 #else
-            P_FindSectorSurroundingLowestCeiling(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &floor->floorDestHeight);
 
             if(floor->floorDestHeight > DMU_GetFloatp(sec, DMU_CEILING_HEIGHT))
                 floor->floorDestHeight = DMU_GetFloatp(sec, DMU_CEILING_HEIGHT);
@@ -696,7 +761,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->speed *= 4;
 # endif
 #endif
-            P_FindSectorSurroundingLowestCeiling(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingLowestCeiling(sec, (float) MAXINT, &floor->floorDestHeight);
 
             if(floor->floorDestHeight > DMU_GetFloatp(sec, DMU_CEILING_HEIGHT))
                 floor->floorDestHeight = DMU_GetFloatp(sec, DMU_CEILING_HEIGHT);
@@ -845,12 +910,19 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
             floor->state = FS_DOWN;
             floor->sector = sec;
             floor->speed = FLOORSPEED;
-            {
-            sector_t               *otherSec =
-                P_FindSectorSurroundingLowestFloor(sec, &floor->floorDestHeight);
+            P_FindSectorSurroundingLowestFloor(sec,
+                P_GetFloatp(sec, DMU_FLOOR_HEIGHT), &floor->floorDestHeight);
+            floor->material = P_GetPtrp(sec, DMU_FLOOR_MATERIAL);
 
-            floor->material = DMU_GetPtrp(otherSec, DMU_FLOOR_MATERIAL);
-            floor->newSpecial = P_ToXSector(otherSec)->special;
+            {
+            sector_t* otherSec = findSectorSurroundingAtFloorHeight(sec,
+                floor->floorDestHeight);
+
+            if(otherSec)
+            {
+                floor->material = DMU_GetPtrp(otherSec, DMU_FLOOR_MATERIAL);
+                floor->newSpecial = P_ToXSector(otherSec)->special;
+            }
             }
             break;
 #endif
@@ -863,7 +935,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
     }
 
 #if __JHEXEN__
-    if(rtn)
+    if(rtn && floor)
     {
         SN_StartSequence(DMU_GetPtrp(floor->sector, DMU_SOUND_ORIGIN),
                          SEQ_PLATFORM + P_ToXSector(floor->sector)->seqType);
@@ -1206,33 +1278,21 @@ int EV_BuildStairs(linedef_t* line, byte* args, int direction,
 #endif
 
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-typedef struct findsectorfirstneighborparams_s {
-    sector_t           *baseSec;
-    sector_t           *foundSec;
-} findsectorfirstneighborparams_t;
+typedef struct {
+    sector_t*       sector;
+    linedef_t*      foundLineDef;
+} findfirsttwosidedparams_t;
 
-int findSectorFirstNeighbor(void *ptr, void *context)
+int findFirstTwosided(void *ptr, void *context)
 {
-    linedef_t          *li = (linedef_t*) ptr;
-    findsectorfirstneighborparams_t *params =
-        (findsectorfirstneighborparams_t*) context;
-    sector_t           *frontSec, *backSec;
+    linedef_t* li = (linedef_t*) ptr;
+    findfirsttwosidedparams_t* params = (findfirsttwosidedparams_t*) context;
+    sector_t* backSec = P_GetPtrp(li, DMU_BACK_SECTOR);
 
-    frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
-    backSec= DMU_GetPtrp(li, DMU_BACK_SECTOR);
-
-    if(frontSec && backSec)
+    if(backSec && !(params->sector && backSec == params->sector))
     {
-        if(frontSec == params->baseSec && backSec != params->baseSec)
-        {
-            params->foundSec = backSec;
-            return 0; // Stop iteration, this will do.
-        }
-        else if(backSec == params->baseSec && frontSec != params->baseSec)
-        {
-            params->foundSec = frontSec;
-            return 0; // Stop iteration, this will do.
-        }
+        params->foundLineDef = li;
+        return 0; // Stop iteration, this will do.
     }
 
     return 1; // Continue iteration.
@@ -1240,12 +1300,11 @@ int findSectorFirstNeighbor(void *ptr, void *context)
 #endif
 
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-int EV_DoDonut(linedef_t *line)
+int EV_DoDonut(linedef_t* line)
 {
-    int                 rtn = 0;
-    sector_t           *sec, *inner, *outer;
-    iterlist_t         *list;
-    findsectorfirstneighborparams_t params;
+    int rtn = 0;
+    sector_t* sec, *outer, *ring;
+    iterlist_t* list;
 
     list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
     if(!list)
@@ -1254,44 +1313,48 @@ int EV_DoDonut(linedef_t *line)
     P_IterListResetIterator(list, true);
     while((sec = P_IterListIterator(list)) != NULL)
     {
+        findfirsttwosidedparams_t params;
+
         // Already moving? If so, keep going...
         if(P_ToXSector(sec)->specialData)
             continue;
 
         rtn = 1;
-        inner = outer = NULL;
+        outer = ring = NULL;
 
-        params.baseSec = sec;
-        params.foundSec = NULL;
-        if(!DMU_Iteratep(sec, DMU_LINEDEF, findSectorFirstNeighbor, &params))
+        params.sector = NULL;
+        params.foundLineDef = NULL;
+        if(!DMU_Iteratep(sec, DMU_LINEDEF, findFirstTwosided, &params))
         {
-            outer = params.foundSec;
+            ring = P_GetPtrp(params.foundLineDef, DMU_BACK_SECTOR);
+            if(ring == sec)
+                ring = P_GetPtrp(params.foundLineDef, DMU_FRONT_SECTOR);
 
-            params.baseSec = outer;
-            params.foundSec = NULL;
-            if(!DMU_Iteratep(outer, DMU_LINEDEF, findSectorFirstNeighbor, &params))
-                inner = params.foundSec;
+            params.sector = sec;
+            params.foundLineDef = NULL;
+            if(!DMU_Iteratep(ring, DMU_LINEDEF, findFirstTwosided, &params))
+                outer = P_GetPtrp(params.foundLineDef, DMU_BACK_SECTOR);
         }
 
-        if(inner && outer)
+        if(outer && ring)
         {   // Found both parts of the donut.
-            floor_t        *floor;
-            float               destHeight =
-                DMU_GetFloatp(inner, DMU_FLOOR_HEIGHT);
+            floor_t* floor;
+            float destHeight =
+                DMU_GetFloatp(outer, DMU_FLOOR_HEIGHT);
 
             // Spawn rising slime.
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
             floor->thinker.function = T_MoveFloor;
             DD_ThinkerAdd(&floor->thinker);
 
-            P_ToXSector(outer)->specialData = floor;
+            P_ToXSector(ring)->specialData = floor;
 
             floor->type = FT_RAISEDONUT;
             floor->crush = false;
             floor->state = FS_UP;
-            floor->sector = outer;
+            floor->sector = ring;
             floor->speed = FLOORSPEED * .5;
-            floor->material = DMU_GetPtrp(inner, DMU_FLOOR_MATERIAL);
+            floor->material = DMU_GetPtrp(outer, DMU_FLOOR_MATERIAL);
             floor->newSpecial = 0;
             floor->floorDestHeight = destHeight;
 

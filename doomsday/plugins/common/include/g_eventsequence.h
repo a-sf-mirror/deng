@@ -5,6 +5,8 @@
  *
  *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
  *\author Copyright © 2005-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 1999 Activision
+ *\author Copyright © 1993-1996 by id Software, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,29 +24,12 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_setup.c: Common map setup routines.
- */
+#ifndef COMMON_EVENTSEQUENCE_H
+#define COMMON_EVENTSEQUENCE_H
 
-#ifndef LIBCOMMON_PLAYSETUP_H
-#define LIBCOMMON_PLAYSETUP_H
+boolean         G_EventSequenceResponder(event_t* ev);
 
-#define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
-#define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
-#define numsubsectors (*(uint*) P_GetVariable(DMU_SUBSECTOR_COUNT))
-#define numnodes    (*(uint*) P_GetVariable(DMU_NODE_COUNT))
-#define numlines    (*(uint*) P_GetVariable(DMU_LINE_COUNT))
-#define numsides    (*(uint*) P_GetVariable(DMU_SIDE_COUNT))
-#define numpolyobjs (*(uint*) P_GetVariable(DMU_POLYOBJ_COUNT))
+void            G_AddEventSequence(const unsigned char* sequence, size_t sequenceLength,
+                                   int (*callback) (const int*, int));
 
-#define nummaterials (*(uint*) DD_GetVariable(DD_MATERIAL_COUNT))
-
-// If true we are in the process of setting up a map.
-extern boolean mapSetup;
-
-void        P_SetupForMapData(int type, uint num);
-
-void        P_SetupMap(int episode, int map, int playermask, skillmode_t skill);
-const char* P_GetMapNiceName(void);
-const char* P_GetMapAuthor(boolean surpressIWADAuthors);
-#endif /* LIBCOMMON_PLAYSETUP_H */
+#endif /* COMMON_EVENTSEQUENCE_H */

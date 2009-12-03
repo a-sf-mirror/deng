@@ -47,6 +47,7 @@
 #include "de_render.h"
 #include "de_graphics.h"
 #include "de_misc.h"
+#include "de_play.h"
 
 #include "m_vector.h"
 
@@ -1650,8 +1651,10 @@ void Rend_RadioSubsectorEdges(subsector_t* subsector)
 #if _DEBUG
 static void drawPoint(float pos[3], float radius, const float color[4])
 {
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+    float viewPos[3], viewToCenter[3], finalPos[3], scale, leftOff[3],
+        rightOff[3], radX, radY;
     int i;
-    float viewPos[3], viewToCenter[3], finalPos[3], scale, leftOff[3], rightOff[3], radX, radY;
 
     viewPos[VX] = vx;
     viewPos[VY] = vy;
@@ -1660,14 +1663,14 @@ static void drawPoint(float pos[3], float radius, const float color[4])
     // viewSideVec is to the left.
     for(i = 0; i < 3; ++i)
     {
-        leftOff[i] = viewUpVec[i] + viewSideVec[i];
-        rightOff[i] = viewUpVec[i] - viewSideVec[i];
+        leftOff[i] = viewData->upVec[i] + viewData->sideVec[i];
+        rightOff[i] = viewData->upVec[i] - viewData->sideVec[i];
 
         viewToCenter[i] = pos[i] - viewPos[i];
     }
 
-    scale = M_DotProduct(viewToCenter, viewFrontVec) /
-                M_DotProduct(viewFrontVec, viewFrontVec);
+    scale = M_DotProduct(viewToCenter, viewData->frontVec) /
+                M_DotProduct(viewData->frontVec, viewData->frontVec);
 
     finalPos[VX] = pos[VX];
     finalPos[VY] = pos[VZ];
