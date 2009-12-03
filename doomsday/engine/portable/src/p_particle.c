@@ -167,20 +167,21 @@ static uint findSlotForNewGen(void)
     return slot;
 }
 
-static ptcgen_t* P_PtcGenCreate(void)
+static ptcgen_t* P_PtcGenCreate(map_t* map)
 {
     ptcgen_t* gen = Z_Calloc(sizeof(ptcgen_t), PU_MAP, 0);
 
     // Link the thinker to the list of (private) thinkers.
     gen->thinker.function = P_PtcGenThinker;
-    P_ThinkerAdd(&gen->thinker, false);
+    Map_AddThinker(map, &gen->thinker, false);
 
     return gen;
 }
 
 static void P_PtcGenDestroy(ptcgen_t* gen)
 {
-    P_ThinkerRemove(&gen->thinker);
+    // @todo generator should return the map it's linked to.
+    Map_RemoveThinker(P_CurrentMap(), &gen->thinker);
 
     unlinkPtcGen(gen);
     freePtcGen(gen);
@@ -191,7 +192,7 @@ static void P_PtcGenDestroy(ptcgen_t* gen)
  *
  * \fixme Linear allocation when in-game is not good...
  */
-static ptcgen_t* P_NewPtcGen(void)
+static ptcgen_t* P_NewPtcGen(map_t* map)
 {
     ptcgenid_t slot = findSlotForNewGen();
 
@@ -205,7 +206,7 @@ static ptcgen_t* P_NewPtcGen(void)
             P_PtcGenDestroy(activePtcGens[slot-1]);
 
         // Allocate a new generator.
-        gen = P_PtcGenCreate();
+        gen = P_PtcGenCreate(map);
         linkPtcGen(slot-1, gen);
 
         return gen;
@@ -225,7 +226,7 @@ void P_PtcInit(void)
 void P_PtcInitForMap(map_t* map)
 {
     uint startTime;
-    
+
     if(!map)
         return;
 
@@ -244,7 +245,7 @@ void P_PtcInitForMap(map_t* map)
 
     // Spawn all type-triggered particle generators.
     // Let's hope there aren't too many...
-    P_SpawnTypeParticleGens();
+    P_SpawnTypeParticleGens(map);
     P_SpawnMapParticleGens(map);
 
     // How much time did we spend?
@@ -437,7 +438,11 @@ void P_SpawnParticleGen(const ded_ptcgen_t* def, mobj_t* source)
 {
     ptcgen_t* gen;
 
-    if(isDedicated || !useParticles || !(gen = P_NewPtcGen()))
+    if(isDedicated || !useParticles)
+        return;
+
+    // @todo source mobj should return the map it's linked to.
+    if(!(gen = P_NewPtcGen(P_CurrentMap())))
         return;
 
 /*#if _DEBUG
@@ -479,7 +484,8 @@ static void P_SpawnPlaneParticleGen(const ded_ptcgen_t* def, sector_t* sec,
     if(isDedicated || !useParticles)
         return;
 
-    if(!(gen = P_NewPtcGen()))
+    // @todo sector should return the map it's linked to.
+    if(!(gen = P_NewPtcGen(P_CurrentMap())))
         return;
 
     gen->count = def->particles;
@@ -1299,10 +1305,11 @@ void P_PtcGenThinker(ptcgen_t* gen)
     particle_t* pt;
     float newparts;
     const ded_ptcgen_t* def = gen->def;
-    map_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap(); // @todo Map should be returned by gen.
 
     // Source has been destroyed?
-    if(!(gen->flags & PGF_UNTRIGGERED) && !P_IsUsedMobjID(map, gen->srcid))
+    if(!(gen->flags & PGF_UNTRIGGERED) &&
+       !Thinkers_IsUsedMobjID(Map_Thinkers(map), gen->srcid))
     {
         // Blasted... Spawning new particles becomes impossible.
         gen->source = NULL;
@@ -1337,7 +1344,7 @@ void P_PtcGenThinker(ptcgen_t* gen)
                     Cl_MobjIterator(map, PIT_ClientMobjParticles, gen);
                 }
 
-                P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, manyNewParticles, gen);
+                Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, manyNewParticles, gen);
 
                 // The generator has no real source.
                 gen->source = NULL;
@@ -1403,7 +1410,7 @@ static boolean P_HasActivePtcGen(sector_t* sector, int isCeiling)
 void P_CheckPtcPlanes(map_t* map)
 {
     uint i, p;
-   
+
     if(!map)
         return;
 
@@ -1446,7 +1453,7 @@ void P_CheckPtcPlanes(map_t* map)
  * the type of mobj exists in the map or not (mobjs might be dynamically
  * created).
  */
-void P_SpawnTypeParticleGens(void)
+void P_SpawnTypeParticleGens(map_t* map)
 {
     int i;
     ded_ptcgen_t* def;
@@ -1459,8 +1466,8 @@ void P_SpawnTypeParticleGens(void)
     {
         if(def->typeNum < 0)
             continue;
-        if(!(gen = P_NewPtcGen()))
-            return;             // No more generators.
+        if(!(gen = P_NewPtcGen(map)))
+            return; // No more generators.
 
         // Initialize the particle generator.
         gen->count = def->particles;
@@ -1492,7 +1499,7 @@ void P_SpawnMapParticleGens(map_t* map)
         if(def->spawnAge > 0 && ddMapTime > def->spawnAge)
             continue; // No longer spawning this generator.
 
-        if(!(gen = P_NewPtcGen()))
+        if(!(gen = P_NewPtcGen(map)))
             return; // No more generators.
 
         // Initialize the particle generator.
@@ -1527,7 +1534,8 @@ void P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor, int amount)
         vec3_t              vector, vecDelta;
 
         // Create it.
-        if(!(gen = P_NewPtcGen()))
+        // @todo mobj should return the map it's linked to.
+        if(!(gen = P_NewPtcGen(P_CurrentMap())))
             return; // No more generators.
 
         gen->count = def->particles;

@@ -38,7 +38,7 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct {
+typedef struct thinkerlist_s {
     boolean         isPublic; /* @c true = all thinkers in this list are
                                  visible publically */
     thinker_t       thinkerCap;
@@ -54,49 +54,16 @@ typedef struct {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int idtable[2048]; // 65536 bits telling which IDs are in use.
-unsigned short iddealer = 0;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static size_t numThinkerLists;
-static thinkerlist_t** thinkerLists;
-static boolean inited = false;
 
 // CODE --------------------------------------------------------------------
 
-static thid_t newMobjID(map_t* map)
+static void initThinkerList(thinkerlist_t* list)
 {
-    // Increment the ID dealer until a free ID is found.
-    // \fixme What if all IDs are in use? 65535 thinkers!?
-    while(P_IsUsedMobjID(map, ++iddealer));
-    // Mark this ID as used.
-    P_SetMobjID(map, iddealer, true);
-    return iddealer;
+    list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
 }
 
-void P_ClearMobjIDs(map_t* map)
-{
-    memset(idtable, 0, sizeof(idtable));
-    idtable[0] |= 1; // ID zero is always "used" (it's not a valid ID).
-}
-
-boolean P_IsUsedMobjID(map_t* map, thid_t id)
-{
-    return idtable[id >> 5] & (1 << (id & 31) /*(id % 32) */ );
-}
-
-void P_SetMobjID(map_t* map, thid_t id, boolean state)
-{
-    int c = id >> 5, bit = 1 << (id & 31); //(id % 32);
-
-    if(state)
-        idtable[c] |= bit;
-    else
-        idtable[c] &= ~bit;
-}
-
-static void linkThinkerToList(thinker_t* th, thinkerlist_t* list)
+static void addThinkerToList(thinkerlist_t* list, thinker_t* th)
 {
     // Link the thinker to the thinker list.
     list->thinkerCap.prev->next = th;
@@ -105,25 +72,20 @@ static void linkThinkerToList(thinker_t* th, thinkerlist_t* list)
     list->thinkerCap.prev = th;
 }
 
-static void unlinkThinkerFromList(thinker_t* th)
+static void removeThinkerFromList(thinkerlist_t* list, thinker_t* th)
 {
     th->next->prev = th->prev;
     th->prev->next = th->next;
 }
 
-static void initThinkerList(thinkerlist_t* list)
-{
-    list->thinkerCap.prev = list->thinkerCap.next = &list->thinkerCap;
-}
-
-static thinkerlist_t* listForThinkFunc(map_t* map, think_t func, boolean isPublic,
+static thinkerlist_t* listForThinkFunc(thinkers_t* thinkers, think_t func, boolean isPublic,
                                        boolean canCreate)
 {
     size_t i;
 
-    for(i = 0; i < numThinkerLists; ++i)
+    for(i = 0; i < thinkers->numLists; ++i)
     {
-        thinkerlist_t* list = thinkerLists[i];
+        thinkerlist_t* list = thinkers->lists[i];
 
         if(list->thinkerCap.function == func && list->isPublic == isPublic)
             return list;
@@ -136,9 +98,9 @@ static thinkerlist_t* listForThinkFunc(map_t* map, think_t func, boolean isPubli
     {
     thinkerlist_t* list;
 
-    thinkerLists = Z_Realloc(thinkerLists, sizeof(thinkerlist_t*) *
-                             ++numThinkerLists, PU_STATIC);
-    thinkerLists[numThinkerLists-1] = list =
+    thinkers->lists = Z_Realloc(thinkers->lists,
+        sizeof(thinkerlist_t*) * ++thinkers->numLists, PU_STATIC);
+    thinkers->lists[thinkers->numLists-1] = list =
         Z_Calloc(sizeof(thinkerlist_t), PU_STATIC, 0);
 
     initThinkerList(list);
@@ -151,43 +113,13 @@ static thinkerlist_t* listForThinkFunc(map_t* map, think_t func, boolean isPubli
     }
 }
 
-static int runThinker(void* p, void* context)
-{
-    thinker_t* th = (thinker_t*) p;
-
-    // Thinker cannot think when in stasis.
-    if(!th->inStasis)
-    {
-        if(th->function == (think_t) -1)
-        {
-            // Time to remove it.
-            unlinkThinkerFromList(th);
-
-            if(th->id)
-            {   // Its a mobj.
-                P_MobjRecycle((mobj_t*) th);
-            }
-            else
-            {
-                Z_Free(th);
-            }
-        }
-        else if(th->function)
-        {
-            th->function(th);
-        }
-    }
-
-    return true; // Continue iteration.
-}
-
-static boolean iterateThinkers(thinkerlist_t* list,
-                               int (*callback) (void* p, void*),
-                               void* context)
+static boolean iterateThinkerList(thinkerlist_t* list,
+                                  int (*callback) (void* p, void*),
+                                  void* context)
 {
     boolean result = true;
 
-    if(list)
+    if(list && callback)
     {
         thinker_t* th, *next;
 
@@ -209,107 +141,58 @@ static boolean iterateThinkers(thinkerlist_t* list,
     return result;
 }
 
-/**
- * @param th            Thinker to be added.
- * @param makePublic    If @c true, this thinker will be visible publically
- *                      via the Doomsday public API thinker interface(s).
- */
-void P_ThinkerAdd(thinker_t* th, boolean makePublic)
+thinkers_t* P_CreateThinkers(void)
 {
-    map_t* map = P_CurrentMap();
+    thinkers_t* thinkers = Z_Malloc(sizeof(*thinkers), PU_STATIC, 0);
 
-    if(!map)
-        return;
+    thinkers->inited = false;
+    memset(thinkers->idtable, 0, sizeof(thinkers->idtable));
+    thinkers->iddealer = 0;
+    thinkers->lists = NULL;
+    thinkers->numLists = 0;
 
-    if(!th)
-        return;
-
-    if(!th->function)
-    {
-        Con_Error("P_ThinkerAdd: Invalid thinker function.");
-    }
-
-    // Will it need an ID?
-    if(P_IsMobjThinker(th, NULL))
-    {
-        // It is a mobj, give it an ID.
-        th->id = newMobjID(map);
-    }
-    else
-    {
-        // Zero is not a valid ID.
-        th->id = 0;
-    }
-
-    // Link the thinker to the thinker list.
-    linkThinkerToList(th, listForThinkFunc(map, th->function, makePublic, true));
+    return thinkers;
 }
 
-/**
- * Deallocation is lazy -- it will not actually be freed until its
- * thinking turn comes up.
- */
-void P_ThinkerRemove(thinker_t* th)
+static int destroyThinker(void* p, void* context)
 {
-    map_t* map = P_CurrentMap();
+    Z_Free(p);
+    return true; // Continue iteration.
+}
 
-    if(!th)
-        return;
+void P_DestroyThinkers(thinkers_t* thinkers)
+{
+    size_t i;
 
-    if(map)
+    assert(thinkers);
+
+    for(i = 0; i < thinkers->numLists; ++i)
     {
-        // Has got an ID?
-        if(th->id)
-        {   // Then it must be a mobj.
-            mobj_t* mo = (mobj_t *) th;
+        thinkerlist_t* list = thinkers->lists[i];
 
-            // Flag the ID as free.
-            P_SetMobjID(map, th->id, false);
-
-            // If the state of the mobj is the NULL state, this is a
-            // predictable mobj removal (result of animation reaching its
-            // end) and shouldn't be included in netGame deltas.
-            if(!isClient)
-            {
-                if(!mo->state || mo->state == states)
-                {
-                    Sv_MobjRemoved(map, th->id);
-                }
-            }
-        }
+        iterateThinkerList(list, destroyThinker, NULL);
+        Z_Free(list);
     }
-
-    th->function = (think_t) - 1;
+    Z_Free(thinkers->lists);
+    Z_Free(thinkers);
 }
 
-boolean P_IsMobjThinker(thinker_t* th, void* context)
+void Thinkers_Init(thinkers_t* thinkers, byte flags)
 {
-    if(th && th->function && th->function == gx.MobjThinker)
-        return true;
+    assert(thinkers);
 
-    return false;
-}
-
-/**
- * Init the thinker lists.
- *
- * @params flags        0x1 = Init public thinkers.
- *                      0x2 = Init private (engine-internal) thinkers.
- */
-void P_InitThinkerLists(map_t* map, byte flags)
-{
-    if(!inited)
+    if(!thinkers->inited)
     {
-        numThinkerLists = 0;
-        thinkerLists = NULL;
+        thinkers->numLists = 0;
+        thinkers->lists = NULL;
     }
     else
     {
         size_t i;
 
-        for(i = 0; i < numThinkerLists; ++i)
+        for(i = 0; i < thinkers->numLists; ++i)
         {
-            thinkerlist_t* list = thinkerLists[i];
+            thinkerlist_t* list = thinkers->lists[i];
 
             if(list->isPublic && !(flags & ITF_PUBLIC))
                 continue;
@@ -319,33 +202,68 @@ void P_InitThinkerLists(map_t* map, byte flags)
             initThinkerList(list);
         }
     }
-    inited = true;
+    thinkers->inited = true;
 
-    P_ClearMobjIDs(map);
+    Thinkers_ClearMobjIDs(thinkers);
 }
 
-boolean P_ThinkerListInited(map_t* map)
+boolean Thinkers_Inited(thinkers_t* thinkers)
 {
-    return inited;
+    assert(thinkers);
+    return thinkers->inited;
 }
 
-/**
- * Iterate the list of thinkers making a callback for each.
- *
- * @param func          If not @c NULL, only make a callback for objects whose
- *                      thinker matches.
- * @param flags         Thinker filter flags.
- * @param callback      The callback to make. Iteration will continue
- *                      until a callback returns a zero value.
- * @param context       Is passed to the callback function.
- */
-boolean P_IterateThinkers(map_t* map, think_t func, byte flags,
-                          int (*callback) (void* p, void*), void* context)
+boolean Thinkers_IsUsedMobjID(thinkers_t* thinkers, thid_t id)
 {
-    if(!map)
-        return true;
+    assert(thinkers);
 
-    if(!inited)
+    return thinkers->idtable[id >> 5] & (1 << (id & 31) /*(id % 32) */ );
+}
+
+void Thinkers_SetMobjID(thinkers_t* thinkers, thid_t id, boolean state)
+{
+    int c, bit;
+
+    assert(thinkers);
+
+    c = id >> 5; bit = 1 << (id & 31); //(id % 32);
+    if(state)
+        thinkers->idtable[c] |= bit;
+    else
+        thinkers->idtable[c] &= ~bit;
+}
+
+void Thinkers_ClearMobjIDs(thinkers_t* thinkers)
+{
+    assert(thinkers);
+
+    memset(thinkers->idtable, 0, sizeof(thinkers->idtable));
+    thinkers->idtable[0] |= 1; // ID zero is always "used" (it's not a valid ID).
+}
+
+void Thinkers_Add(thinkers_t* thinkers, thinker_t* th, boolean makePublic)
+{
+    assert(thinkers);
+    assert(th);
+
+    addThinkerToList(listForThinkFunc(thinkers, th->function, makePublic, true), th);
+}
+
+void Thinkers_Remove(thinkers_t* thinkers, thinker_t* th)
+{
+    assert(thinkers);
+    assert(th);
+
+    // @todo thinker should return the list it is in.
+    removeThinkerFromList(NULL, th);
+}
+
+boolean Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
+                         int (*callback) (void* p, void*), void* context)
+{
+    assert(thinkers);
+
+    if(!thinkers->inited || !callback)
         return true;
 
     if(func != NULL)
@@ -353,11 +271,11 @@ boolean P_IterateThinkers(map_t* map, think_t func, byte flags,
         boolean result = true;
 
         if(flags & ITF_PUBLIC)
-            result = iterateThinkers(listForThinkFunc(map, func, true, false),
-                                     callback, context);
+            result = iterateThinkerList(listForThinkFunc(thinkers, func, true, false),
+                                        callback, context);
         if(result && (flags & ITF_PRIVATE))
-            result = iterateThinkers(listForThinkFunc(map, func, false, false),
-                                     callback, context);
+            result = iterateThinkerList(listForThinkFunc(thinkers, func, false, false),
+                                        callback, context);
         return result;
     }
 
@@ -365,16 +283,16 @@ boolean P_IterateThinkers(map_t* map, think_t func, byte flags,
     boolean result = true;
     size_t i;
 
-    for(i = 0; i < numThinkerLists; ++i)
+    for(i = 0; i < thinkers->numLists; ++i)
     {
-        thinkerlist_t* list = thinkerLists[i];
+        thinkerlist_t* list = thinkers->lists[i];
 
         if(list->isPublic && !(flags & ITF_PUBLIC))
             continue;
         if(!list->isPublic && !(flags & ITF_PRIVATE))
             continue;
 
-        if((result = iterateThinkers(list, callback, context)) == 0)
+        if((result = iterateThinkerList(list, callback, context)) == 0)
             break;
     }
     return result;
@@ -382,58 +300,12 @@ boolean P_IterateThinkers(map_t* map, think_t func, byte flags,
 }
 
 /**
- * Part of the Doomsday public API.
+ * @todo Does not belong in this file?
  */
-void DD_InitThinkers(void)
+boolean P_IsMobjThinker(thinker_t* th, void* context)
 {
-    P_InitThinkerLists(P_CurrentMap(), ITF_PUBLIC); // Init the public thinker lists.
-}
+    if(th && th->function && th->function == gx.MobjThinker)
+        return true;
 
-/**
- * Part of the Doomsday public API.
- */
-void DD_RunThinkers(void)
-{
-    P_IterateThinkers(P_CurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
-}
-
-/**
- * Part of the Doomsday public API.
- */
-int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
-                       void* context)
-{
-    return P_IterateThinkers(P_CurrentMap(), func, ITF_PUBLIC, callback, context);
-}
-
-/**
- * Adds a new thinker to the thinker lists.
- * Part of the Doomsday public API.
- */
-void DD_ThinkerAdd(thinker_t* th)
-{
-    P_ThinkerAdd(th, true); // This is a public thinker.
-}
-
-/**
- * Removes a thinker from the thinker lists.
- * Part of the Doomsday public API.
- */
-void DD_ThinkerRemove(thinker_t* th)
-{
-    P_ThinkerRemove(th);
-}
-
-/**
- * Change the 'in stasis' state of a thinker (stop it from thinking).
- *
- * @param th            The thinker to change.
- * @param on            @c true, put into stasis.
- */
-void DD_ThinkerSetStasis(thinker_t* th, boolean on)
-{
-    if(th)
-    {
-        th->inStasis = on;
-    }
+    return false;
 }

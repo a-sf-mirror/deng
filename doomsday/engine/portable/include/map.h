@@ -35,6 +35,7 @@
 #include "m_nodepile.h"
 #include "p_polyob.h"
 #include "rend_bias.h"
+#include "p_think.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -152,13 +153,14 @@ typedef struct map_s {
     char            mapID[9];
     char            uniqueID[256];
 
+    thinkers_t*     _thinkers;
+    gameobjectrecordset_t _gameObjectRecordSet;
+
     halfedgeds_t    _halfEdgeDS;
 
     mobjblockmap_t* _mobjBlockmap;
     linedefblockmap_t* _lineDefBlockmap;
     subsectorblockmap_t* _subsectorBlockmap;
-
-    gameobjectrecordset_t _gameObjectRecordSet;
 
     boolean         editActive;
     float           bBox[4];
@@ -237,6 +239,22 @@ void            Map_UpdateSkyFixForSector(map_t* map, uint secIDX);
 void            Map_LinkMobj(map_t* map, struct mobj_s* mo, byte flags);
 int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);
 
+void            Map_AddThinker(map_t* map, thinker_t* th, boolean makePublic);
+void            Map_RemoveThinker(map_t* map, thinker_t* th);
+
+/**
+ * @defgroup iterateThinkerFlags Iterate Thinker Flags
+ * Used with Map_IterateThinkers to specify which thinkers to iterate.
+ */
+/*@{*/
+#define ITF_PUBLIC          0x1
+#define ITF_PRIVATE         0x2
+/*@}*/
+
+boolean         Map_IterateThinkers(map_t* map, think_t func, byte flags,
+                                    int (*callback) (void* p, void*),
+                                    void* context);
+
 /**
  * Map Edit interface.
  */
@@ -258,28 +276,28 @@ polyobj_t*      Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint line
                                   int sequenceType, float anchorX, float anchorY);
 
 // Mobjs in bounding box iterators.
-boolean         Map_MobjsBoxIterator(struct map_s* map, const float box[4],
+boolean         Map_MobjsBoxIterator(map_t* map, const float box[4],
                                      boolean (*func) (struct mobj_s*, void*),
                                      void* data);
 
-boolean         Map_MobjsBoxIteratorv(struct map_s* map, const arvec2_t box,
+boolean         Map_MobjsBoxIteratorv(map_t* map, const arvec2_t box,
                                       boolean (*func) (struct mobj_s*, void*),
                                       void* data);
 
 // LineDefs in bounding box iterators:
-boolean         Map_LineDefsBoxIteratorv(struct map_s* map, const arvec2_t box,
+boolean         Map_LineDefsBoxIteratorv(map_t* map, const arvec2_t box,
                                          boolean (*func) (linedef_t*, void*),
                                          void* data, boolean retObjRecord);
 
 // Subsectors in bounding box iterators:
-boolean         Map_SubsectorsBoxIterator(struct map_s* map, const float box[4], sector_t* sector,
+boolean         Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sector,
                                           boolean (*func) (subsector_t*, void*),
                                           void* parm, boolean retObjRecord);
-boolean         Map_SubsectorsBoxIteratorv(struct map_s* map, const arvec2_t box, sector_t* sector,
+boolean         Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sector,
                                            boolean (*func) (subsector_t*, void*),
                                            void* data, boolean retObjRecord);
 
-boolean         Map_PathTraverse(struct map_s* map, float x1, float y1, float x2, float y2,
+boolean         Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                                  int flags, boolean (*trav) (intercept_t*));
 
 // @todo Push this data game-side:
@@ -296,6 +314,7 @@ angle_t         Map_GameObjectRecordAngle(map_t* map, int typeIdentifier, uint e
 float           Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
 
 // @todo the following should be Map private:
+thinkers_t*     Map_Thinkers(map_t* map);
 halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
 mobjblockmap_t* Map_MobjBlockmap(map_t* map);
 linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
@@ -304,4 +323,11 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);
 void            Map_InitSoundEnvironment(map_t* map);
+
+// Old public interface:
+void            DD_InitThinkers(void);
+void            DD_RunThinkers(void);
+void            DD_ThinkerAdd(thinker_t* th);
+void            DD_ThinkerRemove(thinker_t* th);
+void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
 #endif /* DOOMSDAY_MAP_H */

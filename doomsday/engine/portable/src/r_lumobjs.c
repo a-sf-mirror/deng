@@ -936,7 +936,7 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
     if(!useDynlights)
     {
         // Mobjs are always public.
-        P_IterateThinkers(P_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
+        Map_IterateThinkers(P_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
     }
 }
 

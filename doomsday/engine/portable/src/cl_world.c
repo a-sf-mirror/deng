@@ -145,7 +145,8 @@ void Cl_RemoveActiveMover(mover_t* mover)
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activemovers[i] == mover)
         {
-            P_ThinkerRemove(&mover->thinker);
+            // @todo thinker should return the map it's linked to.
+            Map_RemoveThinker(P_CurrentMap(), &mover->thinker);
             activemovers[i] = NULL;
             break;
         }
@@ -161,7 +162,8 @@ void Cl_RemoveActivePoly(polymover_t* mover)
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activepolys[i] == mover)
         {
-            P_ThinkerRemove(&mover->thinker);
+            // @todo thinker should return the map it's linked to.
+            Map_RemoveThinker(P_CurrentMap(), &mover->thinker);
             activepolys[i] = NULL;
             break;
         }
@@ -270,7 +272,7 @@ void Cl_AddMover(map_t* map, uint sectornum, clmovertype_t type, float dest, flo
                 mov->speed = -mov->speed;
 
             // \fixme Do these need to be public?
-            P_ThinkerAdd(&mov->thinker, true);
+            Map_AddThinker(map, &mov->thinker, true);
             break;
         }
 }
@@ -349,7 +351,7 @@ polymover_t* Cl_NewPolyMover(map_t* map, uint number)
     mover->number = number;
 
     // \fixme Do these need to be public?
-    P_ThinkerAdd(&mover->thinker, true);
+    Map_AddThinker(map, &mover->thinker, true);
 
     return mover;
 }
@@ -384,12 +386,12 @@ void Cl_RemoveMovers(map_t* map)
     {
         if(activemovers[i])
         {
-            P_ThinkerRemove(&activemovers[i]->thinker);
+            Map_RemoveThinker(map, &activemovers[i]->thinker);
             activemovers[i] = NULL;
         }
         if(activepolys[i])
         {
-            P_ThinkerRemove(&activepolys[i]->thinker);
+            Map_RemoveThinker(map, &activepolys[i]->thinker);
             activepolys[i] = NULL;
         }
     }

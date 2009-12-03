@@ -248,7 +248,8 @@ void R_StopMatFader(matfader_t* fader)
         fader->suf->materialB = NULL;
         fader->suf->matBlendFactor = 1;
 
-        P_ThinkerRemove((thinker_t*) fader);
+        // @todo thinker should return the map it's linked to.
+        Map_RemoveThinker(P_CurrentMap(), (thinker_t*) fader);
     }
 }
 
@@ -707,7 +708,7 @@ void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
     SurfaceList_Remove(&map->decoratedSurfaceList, &plane->surface);
 
     // Stop active material fade on this surface.
-    P_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+    Map_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                       RIT_StopMatFader, &plane->surface);
 
     /**

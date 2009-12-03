@@ -2401,7 +2401,7 @@ void R_PrecacheMap(void)
         {
             spritedef_t* sprDef = &sprites[i];
 
-            if(!P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
+            if(!Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
             {   // This sprite is used by some state of at least one mobj.
                 int j;
 
@@ -2437,7 +2437,7 @@ void R_PrecacheMap(void)
     // Precache model skins?
     if(useModels && precacheSkins)
     {
-        P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
+        Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
     }
 
     // Sky models usually have big skins.

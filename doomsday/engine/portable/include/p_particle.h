@@ -134,6 +134,7 @@ void            P_SpawnMapParticleGens(struct map_s* map);
 void            P_CheckPtcPlanes(struct map_s* map);
 void            P_UpdateParticleGens(struct map_s* map);
 void            P_CreatePtcGenLinks(struct map_s* map);
+void            P_SpawnTypeParticleGens(struct map_s* map);
 
 const ptcgen_t* P_IndexToPtcGen(ptcgenid_t ptcGenID);
 ptcgenid_t      P_PtcGenToIndex(const ptcgen_t* gen);
@@ -145,7 +146,6 @@ boolean         P_IterateSectorLinkedPtcGens(sector_t* sector,
                                              void* context);
 
 void            P_SpawnParticleGen(const ded_ptcgen_t* def, mobj_t* source);
-void            P_SpawnTypeParticleGens(void);
 
 void            P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor,
                                          int amount);

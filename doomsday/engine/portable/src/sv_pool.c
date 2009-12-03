@@ -1599,7 +1599,8 @@ float Sv_MobjDistance(const mobj_t* mo, const ownerinfo_t* info,
 {
     float z;
 
-    if(isReal && !P_IsUsedMobjID(P_CurrentMap(), mo->thinker.id))
+    // @todo map should be returned by mobj.
+    if(isReal && !Thinkers_IsUsedMobjID(Map_Thinkers(P_CurrentMap()), mo->thinker.id))
     {
         // This mobj does not exist any more!
         return DDMAXFLOAT;
@@ -2170,7 +2171,7 @@ void Sv_NewNullDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** t
             // This reg_mobj_t might be removed.
             next = obj->next;
 
-            if(!P_IsUsedMobjID(map, obj->mo.thinker.id))
+            if(!Thinkers_IsUsedMobjID(Map_Thinkers(map), obj->mo.thinker.id))
             {
                 // This object no longer exists!
                 Sv_NewDelta(&null, DT_MOBJ, obj->mo.thinker.id);
@@ -2244,7 +2245,7 @@ void Sv_NewMobjDeltas(map_t* map, cregister_t* reg, boolean doUpdate, pool_t** t
     params.targets = targets;
 
     // Mobjs are always public.
-    P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, newMobjDelta, &params);
+    Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, newMobjDelta, &params);
 }
 
 /**

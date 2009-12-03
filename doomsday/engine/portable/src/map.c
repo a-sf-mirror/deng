@@ -97,6 +97,18 @@ static vertex_t* rootVtx; // Used when sorting vertex line owners.
 
 // CODE --------------------------------------------------------------------
 
+static thid_t newMobjID(map_t* map)
+{
+    thinkers_t* thinkers = Map_Thinkers(map);
+
+    // Increment the ID dealer until a free ID is found.
+    // \fixme What if all IDs are in use? 65535 thinkers!?
+    while(Thinkers_IsUsedMobjID(thinkers, ++thinkers->iddealer));
+    // Mark this ID as used.
+    Thinkers_SetMobjID(thinkers, thinkers->iddealer, true);
+    return thinkers->iddealer;
+}
+
 static linedef_t* createLineDef(map_t* map)
 {
     linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
@@ -243,12 +255,26 @@ static void clearSectorFlags(map_t* map)
     }
 }
 
+static int recycleMobjs(void* p, void* context)
+{
+    thinker_t* th = (thinker_t*) p;
+    if(th->id)
+    {   // Its a mobj.
+        // @todo Thinker should return the map it is linked to.
+        Thinkers_Remove(Map_Thinkers(P_CurrentMap()), th);
+        P_MobjRecycle((mobj_t*) th);
+    }
+    return true; // Continue iteration.
+}
+
 map_t* P_CreateMap(const char* mapID)
 {
     map_t* map = Z_Calloc(sizeof(map_t), PU_STATIC, 0);
 
     dd_snprintf(map->mapID, 9, "%s", mapID);
     map->editActive = true;
+
+    map->_thinkers = P_CreateThinkers();
 
     return map;
 }
@@ -409,6 +435,10 @@ void P_DestroyMap(map_t* map)
     }
     map->nodes = NULL;
     map->numNodes = 0;
+
+    Thinkers_Iterate(map->_thinkers, NULL, ITF_PUBLIC, recycleMobjs, NULL);
+    P_DestroyThinkers(map->_thinkers);
+    map->_thinkers = NULL;
 
     Z_Free(map);
 }
@@ -615,6 +645,96 @@ int Map_UnlinkMobj(map_t* map, mobj_t* mo)
         links |= DDLINK_NOLINE;
 
     return links;
+}
+
+/**
+ * @param th            Thinker to be added.
+ * @param makePublic    If @c true, this thinker will be visible publically
+ *                      via the Doomsday public API thinker interface(s).
+ */
+void Map_AddThinker(map_t* map, thinker_t* th, boolean makePublic)
+{
+    assert(map);
+    assert(th);
+
+    if(!th->function)
+    {
+        Con_Error("Map_AddThinker: Invalid thinker function.");
+    }
+
+    // Will it need an ID?
+    if(P_IsMobjThinker(th, NULL))
+    {
+        // It is a mobj, give it an ID.
+        th->id = newMobjID(map);
+    }
+    else
+    {
+        // Zero is not a valid ID.
+        th->id = 0;
+    }
+
+    // Link the thinker to the thinker list.
+    Thinkers_Add(map->_thinkers, th, makePublic);
+}
+
+/**
+ * Deallocation is lazy -- it will not actually be freed until its
+ * thinking turn comes up.
+ */
+void Map_RemoveThinker(map_t* map, thinker_t* th)
+{
+    assert(map);
+    assert(th);
+
+    // Has got an ID?
+    if(th->id)
+    {   // Then it must be a mobj.
+        mobj_t* mo = (mobj_t *) th;
+
+        // Flag the ID as free.
+        Thinkers_SetMobjID(map->_thinkers, th->id, false);
+
+        // If the state of the mobj is the NULL state, this is a
+        // predictable mobj removal (result of animation reaching its
+        // end) and shouldn't be included in netGame deltas.
+        if(!isClient)
+        {
+            if(!mo->state || mo->state == states)
+            {
+                Sv_MobjRemoved(map, th->id);
+            }
+        }
+    }
+
+    th->function = (think_t) - 1;
+}
+
+/**
+ * Iterate the list of thinkers making a callback for each.
+ *
+ * @param func          If not @c NULL, only make a callback for objects whose
+ *                      thinker matches.
+ * @param flags         Thinker filter flags.
+ * @param callback      The callback to make. Iteration will continue
+ *                      until a callback returns a zero value.
+ * @param context       Is passed to the callback function.
+ */
+boolean Map_IterateThinkers(map_t* map, think_t func, byte flags,
+                            int (*callback) (void* p, void*), void* context)
+{
+    if(!map)
+        return true;
+
+    return Thinkers_Iterate(map->_thinkers, func, flags, callback, context);
+}
+
+void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
+{
+    assert(map);
+    assert(th);
+
+    th->inStasis = on;
 }
 
 static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
@@ -2720,29 +2840,41 @@ int Map_AmbientLightLevel(map_t* map)
     return map->ambientLightLevel;
 }
 
+thinkers_t* Map_Thinkers(map_t* map)
+{
+    assert(map);
+    return map->_thinkers;
+}
+
 halfedgeds_t* Map_HalfEdgeDS(map_t* map)
 {
+    assert(map);
     return &map->_halfEdgeDS;
 }
 
 mobjblockmap_t* Map_MobjBlockmap(map_t* map)
 {
+    assert(map);
     return map->_mobjBlockmap;
 }
 
 linedefblockmap_t* Map_LineDefBlockmap(map_t* map)
 {
+    assert(map);
     return map->_lineDefBlockmap;
 }
 
 subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
 {
+    assert(map);
     return map->_subsectorBlockmap;
 }
 
 void Map_InitLinks(map_t* map)
 {
     uint i;
+
+    assert(map);
 
     // Initialize node piles and line rings.
     map->mobjNodes = P_CreateNodePile(256); // Allocate a small pile.
@@ -3284,7 +3416,7 @@ boolean P_LoadMap(const char* mapID)
         }
 
         // Init the thinker lists (public and private).
-        P_InitThinkerLists(map, 0x1 | 0x2);
+        Thinkers_Init(map->_thinkers, 0x1 | 0x2);
 
         // Tell shadow bias to initialize the bias light sources.
         SB_InitForMap(map);
@@ -4014,4 +4146,96 @@ angle_t P_GetObjectRecordAngle(int typeIdentifier, uint elmIdx, int propIdentifi
 float P_GetObjectRecordFloat(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
     return Map_GameObjectRecordFloat(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+}
+
+/**
+ * Part of the Doomsday public API.
+ */
+void DD_InitThinkers(void)
+{
+    // @todo Map should be specified by the caller.
+    Thinkers_Init(Map_Thinkers(P_CurrentMap()), ITF_PUBLIC); // Init the public thinker lists.
+}
+
+static int runThinker(void* p, void* context)
+{
+    thinker_t* th = (thinker_t*) p;
+
+    // Thinker cannot think when in stasis.
+    if(!th->inStasis)
+    {
+        if(th->function == (think_t) -1)
+        {
+            // Time to remove it.
+            // @todo Thinker should return the map it is linked to.
+            Thinkers_Remove(Map_Thinkers(P_CurrentMap()), th);
+
+            if(th->id)
+            {   // Its a mobj.
+                P_MobjRecycle((mobj_t*) th);
+            }
+            else
+            {
+                Z_Free(th);
+            }
+        }
+        else if(th->function)
+        {
+            th->function(th);
+        }
+    }
+
+    return true; // Continue iteration.
+}
+
+/**
+ * Part of the Doomsday public API.
+ */
+void DD_RunThinkers(void)
+{
+    // @todo map should be specified by the caller
+    Map_IterateThinkers(P_CurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE,
+                        runThinker, NULL);
+}
+
+/**
+ * Part of the Doomsday public API.
+ */
+int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
+                       void* context)
+{
+    // @todo map should be specified by the caller
+    return Map_IterateThinkers(P_CurrentMap(), func, ITF_PUBLIC, callback, context);
+}
+
+/**
+ * Adds a new thinker to the thinker lists.
+ * Part of the Doomsday public API.
+ */
+void DD_ThinkerAdd(thinker_t* th)
+{
+    // @todo map should be specified by the caller
+    Map_AddThinker(P_CurrentMap(), th, true); // This is a public thinker.
+}
+
+/**
+ * Removes a thinker from the thinker lists.
+ * Part of the Doomsday public API.
+ */
+void DD_ThinkerRemove(thinker_t* th)
+{
+    // @todo Thinker should return the map it is linked to.
+    Map_RemoveThinker(P_CurrentMap(), th);
+}
+
+/**
+ * Change the 'in stasis' state of a thinker (stop it from thinking).
+ *
+ * @param th            The thinker to change.
+ * @param on            @c true, put into stasis.
+ */
+void DD_ThinkerSetStasis(thinker_t* th, boolean on)
+{
+    // @todo Thinker should return the map it is linked to.
+    Map_ThinkerSetStasis(P_CurrentMap(), th, on);
 }

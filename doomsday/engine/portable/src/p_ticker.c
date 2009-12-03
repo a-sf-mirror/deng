@@ -143,7 +143,7 @@ void P_Ticker(timespan_t time)
         // New ptcgens for planes?
         P_CheckPtcPlanes(map);
 
-        P_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
+        Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
 
         // Check all client mobjs.
         Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);

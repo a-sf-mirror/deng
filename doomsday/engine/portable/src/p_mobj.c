@@ -145,7 +145,10 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
     mo->ddFlags = ddflags;
     mo->thinker.function = function;
     if(mo->thinker.function)
-        P_ThinkerAdd(&mo->thinker, true); // Make it public.
+    {
+        // @todo map should be specified by the caller.
+        Map_AddThinker(P_CurrentMap(), &mo->thinker, true); // Make it public.
+    }
 
     return mo;
 }
@@ -158,12 +161,15 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
  */
 void P_MobjDestroy(mobj_t* mo)
 {
+    assert(mo);
+
     // Unlink from sector and block lists.
     P_MobjUnlink(mo);
 
     S_StopSound(0, mo);
 
-    P_ThinkerRemove((thinker_t *) mo);
+    // @todo mobj should return the map it's linked to.
+    Map_RemoveThinker(P_CurrentMap(), (thinker_t *) mo);
 }
 
 /**
@@ -172,6 +178,8 @@ void P_MobjDestroy(mobj_t* mo)
  */
 void P_MobjRecycle(mobj_t* mo)
 {
+    assert(mo);
+
     // The sector next link is used as the unused mobj list links.
     mo->sNext = unusedMobjs;
     unusedMobjs = mo;

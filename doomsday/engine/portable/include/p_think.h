@@ -26,38 +26,40 @@
  * p_think.h: Thinkers
  */
 
-#ifndef DOOMSDAY_THINKER_H
-#define DOOMSDAY_THINKER_H
-
-void            P_InitThinkerLists(struct map_s* map, byte flags);
-boolean         P_ThinkerListInited(struct map_s* map);
+#ifndef DOOMSDAY_THINKERS_H
+#define DOOMSDAY_THINKERS_H
 
 /**
- * @defgroup iterateThinkerFlags Iterate Thinker Flags
- * Used with P_IterateThinkers to specify which thinkers to iterate.
+ * Thinkers.
+ *
+ * @ingroup map
  */
-/*@{*/
-#define ITF_PUBLIC          0x1
-#define ITF_PRIVATE         0x2
-/*@}*/
+typedef struct {
+    boolean         inited;
+    int             idtable[2048]; // 65536 bits telling which IDs are in use.
+    unsigned short  iddealer;
 
-boolean         P_IterateThinkers(struct map_s* map, think_t func, byte flags,
-                                  int (*callback) (void* p, void*),
-                                  void* context);
+    size_t          numLists;
+    struct thinkerlist_s** lists;
+} thinkers_t;
 
-void            P_ThinkerAdd(thinker_t* th, boolean makePublic);
-void            P_ThinkerRemove(thinker_t* th);
+thinkers_t*     P_CreateThinkers(void);
+void            P_DestroyThinkers(thinkers_t* thinkers);
 
-void            P_SetMobjID(struct map_s* map, thid_t id, boolean state);
-boolean         P_IsUsedMobjID(struct map_s* map, thid_t id);
+void            Thinkers_Init(thinkers_t* thinkers, byte flags);
+boolean         Thinkers_Inited(thinkers_t* thinkers);
 
+void            Thinkers_SetMobjID(thinkers_t* thinkers, thid_t id, boolean state);
+boolean         Thinkers_IsUsedMobjID(thinkers_t* thinkers, thid_t id);
+void            Thinkers_ClearMobjIDs(thinkers_t* thinkers);
+
+void            Thinkers_Add(thinkers_t* thinkers, thinker_t* th, boolean makePublic);
+void            Thinkers_Remove(thinkers_t* thinkers, thinker_t* th);
+
+boolean         Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
+                                 int (*callback) (void* p, void*), void* context);
+
+// @todo Does not belong in this file?
 boolean         P_IsMobjThinker(thinker_t* th, void*);
 
-// Public interface:
-void            DD_InitThinkers(void);
-void            DD_RunThinkers(void);
-void            DD_ThinkerAdd(thinker_t* th);
-void            DD_ThinkerRemove(thinker_t* th);
-void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
-
-#endif /* DOOMSDAY_THINKER_H */
+#endif /* DOOMSDAY_THINKERLIST_H */

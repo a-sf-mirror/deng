@@ -400,7 +400,7 @@ int Cl_ReadMobjDelta(void)
         memset(cmo, 0, sizeof(*cmo));
         cmo->mo.ddFlags |= DDMF_REMOTE;
         Cl_LinkMobj(cmo, id);
-        P_SetMobjID(P_CurrentMap(), id, true);  // Mark this ID as used.
+        Thinkers_SetMobjID(Map_Thinkers(P_CurrentMap()), id, true);  // Mark this ID as used.
         linked = false;
     }
 
@@ -792,7 +792,7 @@ clmobj_t* Cl_CreateMobj(thid_t id)
     cmo->mo.ddFlags |= DDMF_REMOTE;
     cmo->time = Sys_GetRealTime();
     Cl_LinkMobj(cmo, id);
-    P_SetMobjID(P_CurrentMap(), id, true); // Mark this ID as used.
+    Thinkers_SetMobjID(Map_Thinkers(P_CurrentMap()), id, true); // Mark this ID as used.
 
     return cmo;
 }
@@ -806,7 +806,7 @@ void Cl_DestroyMobj(clmobj_t* cmo)
     S_StopSound(0, &cmo->mo);
 
     // The ID is free once again.
-    P_SetMobjID(P_CurrentMap(), cmo->mo.thinker.id, false);
+    Thinkers_SetMobjID(Map_Thinkers(P_CurrentMap()), cmo->mo.thinker.id, false);
     Cl_UnsetMobjPosition(cmo);
     Cl_UnlinkMobj(cmo);
     Z_Free(cmo);

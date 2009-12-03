@@ -80,7 +80,7 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
         ((env = S_MaterialEnvDef(Material_GetEnvClass(suf->material))) && (env->flags & MEF_BLEND))))
     {
         // Stop active material fade on this surface.
-        P_IterateThinkers(P_CurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+        Map_IterateThinkers(P_CurrentMap(), R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                           RIT_StopMatFader, suf);
 
         fader = Z_Malloc(sizeof(matfader_t), PU_MAP, 0);
@@ -89,7 +89,8 @@ boolean Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade)
         fader->suf = suf;
         fader->tics = 0;
 
-        P_ThinkerAdd(&fader->thinker, false);
+        // @todo map should be determined from the surface.
+        Map_AddThinker(P_CurrentMap(), &fader->thinker, false);
 
         suf->materialB = suf->material;
     }
