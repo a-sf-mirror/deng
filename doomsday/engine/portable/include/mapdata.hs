@@ -162,7 +162,7 @@ struct material
     -       material_env_class_t envClass // Used for environmental sound properties.
     -       ded_detailtexture_s* detail
     -       ded_decor_s*    decoration
-    -       ded_ptcgen_s*   ptcGen
+    -       ded_ptcgen_s*   generator
     -       ded_reflection_s* reflection
     -       boolean         inAnimGroup // True if belongs to some animgroup.
     -       material_s*     current

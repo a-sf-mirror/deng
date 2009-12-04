@@ -192,7 +192,7 @@ void P_MobjSetState(mobj_t* mobj, int statenum)
 {
     state_t*            st = states + statenum;
     boolean             spawning = (mobj->state == 0);
-    ded_ptcgen_t*       pg;
+    ded_generator_t*       pg;
 
 #if _DEBUG
     if(statenum < 0 || statenum >= defs.count.states.num)
@@ -205,7 +205,7 @@ void P_MobjSetState(mobj_t* mobj, int statenum)
     mobj->frame = st->frame;
 
     // Check for a ptcgen trigger.
-    for(pg = statePtcGens[statenum]; pg; pg = pg->stateNext)
+    for(pg = stateGenerators[statenum]; pg; pg = pg->stateNext)
     {
         if(!(pg->flags & PGF_SPAWN_ONLY) || spawning)
         {

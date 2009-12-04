@@ -189,13 +189,13 @@ void DED_Destroy(ded_t* ded)
     if(ded->lineTypes)
         M_Free(ded->lineTypes);
 
-    if(ded->ptcGens)
+    if(ded->generators)
     {
-        for(i = 0; i < ded->count.ptcGens.num; ++i)
+        for(i = 0; i < ded->count.generators.num; ++i)
         {
-            M_Free(ded->ptcGens[i].stages);
+            M_Free(ded->generators[i].stages);
         }
-        M_Free(ded->ptcGens);
+        M_Free(ded->generators);
     }
 
     if(ded->finales)
@@ -521,21 +521,21 @@ void DED_RemoveDetail(ded_t *ded, int index)
                  sizeof(ded_detailtexture_t));
 }
 
-int DED_AddPtcGen(ded_t *ded, const char *state)
+int DED_AddGenerator(ded_t *ded, const char *state)
 {
-    ded_ptcgen_t *gen = DED_NewEntry((void **) &ded->ptcGens,
-                                     &ded->count.ptcGens,
-                                     sizeof(ded_ptcgen_t));
+    ded_generator_t *gen = DED_NewEntry((void **) &ded->generators,
+                                     &ded->count.generators,
+                                     sizeof(ded_generator_t));
 
     strcpy(gen->state, state);
 
     // Default choice (use either submodel zero or one).
     gen->subModel = -1;
 
-    return gen - ded->ptcGens;
+    return gen - ded->generators;
 }
 
-int DED_AddPtcGenStage(ded_ptcgen_t *gen)
+int DED_AddGeneratorStage(ded_generator_t *gen)
 {
     ded_ptcstage_t *stage = DED_NewEntry((void **) &gen->stages,
                                          &gen->stageCount,
@@ -548,10 +548,10 @@ int DED_AddPtcGenStage(ded_ptcgen_t *gen)
     return stage - gen->stages;
 }
 
-void DED_RemovePtcGen(ded_t *ded, int index)
+void DED_RemoveGenerator(ded_t *ded, int index)
 {
-    DED_DelEntry(index, (void **) &ded->ptcGens, &ded->count.ptcGens,
-                 sizeof(ded_ptcgen_t));
+    DED_DelEntry(index, (void **) &ded->generators, &ded->count.generators,
+                 sizeof(ded_generator_t));
 }
 
 int DED_AddFinale(ded_t *ded)

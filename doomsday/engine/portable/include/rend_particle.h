@@ -37,10 +37,7 @@ void            Rend_ParticleRegister(void);
 void            Rend_ParticleInitTextures(void);
 void            Rend_ParticleShutdownTextures(void);
 
-void            Rend_ParticleInitForNewFrame(void);
-void            Rend_ParticleMarkInSectorVisible(sector_t* sector);
-
-void            Rend_RenderParticles(void);
+void            Rend_RenderParticles(struct map_s* map);
 // Debugging aid:
-void            Rend_RenderGenerators(void);
+void            Rend_RenderGenerators(struct map_s* map);
 #endif

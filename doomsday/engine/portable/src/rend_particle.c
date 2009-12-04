@@ -47,7 +47,7 @@
 // TYPES -------------------------------------------------------------------
 
 typedef struct {
-    ptcgenid_t      ptcGenID; // Generator id.
+    generator_t*    gen;
     int             ptID; // Particle id.
     float           distance;
 } porder_t;
@@ -74,7 +74,6 @@ byte devDrawGenerators = false; // Display active generators?
 static size_t numParts;
 static boolean hasPoints, hasLines, hasModels, hasNoBlend, hasBlend;
 static boolean hasPointTexs[NUM_TEX_NAMES];
-static byte visiblePtcGens[MAX_ACTIVE_PTCGENS];
 
 static size_t orderSize = 0;
 static porder_t* order = NULL;
@@ -93,18 +92,6 @@ void Rend_ParticleRegister(void)
               CVF_NO_MAX, 0, 0);
     C_VAR_BYTE("rend-dev-generator-show-indices", &devDrawGenerators,
                CVF_NO_ARCHIVE, 0, 1);
-}
-
-static boolean markPtcGenVisible(ptcgen_t* gen, void* context)
-{
-    visiblePtcGens[P_PtcGenToIndex(gen)] = true;
-
-    return true; // Continue iteration.
-}
-
-static boolean isPtcGenVisible(const ptcgen_t* gen)
-{
-    return visiblePtcGens[P_PtcGenToIndex(gen)];
 }
 
 static float pointDist(fixed_t c[3])
@@ -215,30 +202,6 @@ void Rend_ParticleShutdownTextures(void)
 }
 
 /**
- * Prepare for rendering a new view of the world.
- */
-void Rend_ParticleInitForNewFrame(void)
-{
-    if(!useParticles)
-        return;
-
-    // Clear all visibility flags.
-    memset(visiblePtcGens, 0, MAX_ACTIVE_PTCGENS);
-}
-
-/**
- * The given sector is visible. All PGs in it should be rendered.
- * Scans PG links.
- */
-void Rend_ParticleMarkInSectorVisible(sector_t* sector)
-{
-    if(!useParticles)
-        return;
-
-    P_IterateSectorLinkedPtcGens(sector, markPtcGenVisible, NULL);
-}
-
-/**
  * Sorts in descending order.
  */
 static int C_DECL comparePOrder(const void* pt1, const void* pt2)
@@ -273,43 +236,48 @@ static void checkOrderBuffer(size_t max)
         order = Z_Realloc(order, sizeof(porder_t) * orderSize, PU_STATIC);
 }
 
-static boolean countParticles(ptcgen_t* gen, void* context)
+static int countParticles(void* ptr, void* context)
 {
-    if(isPtcGenVisible(gen))
-    {
-        int p;
-        size_t* numParts = (size_t*) context;
+    generator_t* gen = (generator_t*) ptr;
+    size_t* numParts = (size_t*) context;
 
-        for(p = 0; p < gen->count; ++p)
-            if(gen->ptcs[p].stage >= 0)
-                (*numParts)++;
+    if(!gen->thinker.function)
+        return true; // Continue iteration.
+
+    {
+    int p;
+
+    for(p = 0; p < gen->count; ++p)
+        if(gen->ptcs[p].stage >= 0)
+            (*numParts)++;
     }
 
     return true; // Continue iteration.
 }
 
-static boolean populateSortBuffer(ptcgen_t* gen, void* context)
+static int populateSortBuffer(void* ptr, void* context)
 {
-    int p;
-    const ded_ptcgen_t* def;
+    generator_t* gen = (generator_t*) ptr;
+    const ded_generator_t* def;
     particle_t* pt;
     size_t* m = (size_t*) context;
+    int p;
 
-    if(!isPtcGenVisible(gen))
+    if(!gen->thinker.function)
         return true; // Continue iteration.
 
     def = gen->def;
     for(p = 0, pt = gen->ptcs; p < gen->count; ++p, pt++)
     {
-        int                 stagetype;
-        float               dist;
-        porder_t*           slot;
+        int stagetype;
+        float dist;
+        porder_t* slot;
 
         if(pt->stage < 0)
             continue;
 
         // Is the particle's sector visible?
-        if(!(pt->sector->frameFlags & SIF_VISIBLE))
+        if(!(pt->subsector->sector->frameFlags & SIF_VISIBLE))
             continue; // No; this particle can't be seen.
 
         // Don't allow zero distance.
@@ -322,7 +290,8 @@ static boolean populateSortBuffer(ptcgen_t* gen, void* context)
         // This particle is visible. Add it to the sort buffer.
         slot = &order[(*m)++];
 
-        slot->ptcGenID = P_PtcGenToIndex(gen);
+        // @todo Generator should return the map its linked to.
+        slot->gen = gen;
         slot->ptID = p;
         slot->distance = dist;
 
@@ -360,16 +329,17 @@ static boolean populateSortBuffer(ptcgen_t* gen, void* context)
 /**
  * @return              @c true if there are particles to render.
  */
-static int listVisibleParticles(void)
+static int listVisibleParticles(map_t* map)
 {
-    size_t              numVisibleParticles;
+    size_t numVisibleParticles;
 
     hasPoints = hasModels = hasLines = hasBlend = hasNoBlend = false;
     memset(hasPointTexs, 0, sizeof(hasPointTexs));
 
     // First count how many particles are in the visible generators.
     numParts = 0;
-    P_IteratePtcGens(countParticles, &numParts);
+    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                        countParticles, &numParts);
     if(!numParts)
         return false; // No visible generators.
 
@@ -379,7 +349,8 @@ static int listVisibleParticles(void)
     // Populate the particle sort buffer and determine what type(s) of
     // particle (model/point/line/etc...) we'll need to draw.
     numVisibleParticles = 0;
-    P_IteratePtcGens(populateSortBuffer, &numVisibleParticles);
+    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                        populateSortBuffer, &numVisibleParticles);
     if(!numVisibleParticles)
         return false; // No visible particles (all too far?).
 
@@ -465,8 +436,8 @@ static void setupModelParamsForParticle(rendmodelparams_t* params,
         }
         else
         {
-            float lightLevel = pt->sector->lightLevel;
-            const float* secColor = R_GetSectorLightColor(pt->sector);
+            float lightLevel = pt->subsector->sector->lightLevel;
+            const float* secColor = R_GetSectorLightColor(pt->subsector->sector);
 
             // Apply distance attenuation.
             lightLevel = R_DistAttenuateLightLevel(params->distance, lightLevel);
@@ -555,7 +526,7 @@ static void renderParticles(int rtype, boolean withBlend)
     for(; i < numParts; ++i)
     {
         const porder_t*     slot = &order[i];
-        const ptcgen_t*     gen;
+        const generator_t*  gen;
         const particle_t*   pt;
         const ptcstage_t*   st;
         const ded_ptcstage_t* dst, *nextDst;
@@ -563,7 +534,8 @@ static void renderParticles(int rtype, boolean withBlend)
         float               dist, maxdist, projected[2];
         boolean             flatOnPlane, flatOnWall, nearPlane, nearWall;
 
-        gen = P_IndexToPtcGen(slot->ptcGenID);
+        // @todo Generator should return the map its linked to.
+        gen = slot->gen;
         pt = &gen->ptcs[slot->ptID];
 
         st = &gen->stages[pt->stage];
@@ -622,8 +594,8 @@ static void renderParticles(int rtype, boolean withBlend)
             {
                 // This is a simplified version of sectorlight (no distance
                 // attenuation or range compression).
-                if(pt->sector)
-                    color[c] *= pt->sector->lightLevel;
+                if(pt->subsector)
+                    color[c] *= pt->subsector->sector->lightLevel;
             }
         }
 
@@ -650,9 +622,9 @@ static void renderParticles(int rtype, boolean withBlend)
 
         glColor4fv(color);
 
-        nearPlane = (pt->sector &&
-                     (FLT2FIX(pt->sector->SP_floorheight) + 2 * FRACUNIT >= pt->pos[VZ] ||
-                      FLT2FIX(pt->sector->SP_ceilheight) - 2 * FRACUNIT <= pt->pos[VZ]));
+        nearPlane = (pt->subsector &&
+                     (FLT2FIX(pt->subsector->sector->SP_floorheight) + 2 * FRACUNIT >= pt->pos[VZ] ||
+                      FLT2FIX(pt->subsector->sector->SP_ceilheight) - 2 * FRACUNIT <= pt->pos[VZ]));
         flatOnPlane = (st->flags & PTCF_PLANE_FLAT && nearPlane);
 
         nearWall = (pt->contact && !pt->mov[VX] && !pt->mov[VY]);
@@ -831,12 +803,14 @@ static void renderPass(boolean useBlending)
  * particles from one generator will obscure particles from another.
  * This would be especially bad with smoke trails.
  */
-void Rend_RenderParticles(void)
+void Rend_RenderParticles(map_t* map)
 {
+    assert(map);
+
     if(!useParticles)
         return;
 
-    if(!listVisibleParticles())
+    if(!listVisibleParticles(map))
         return; // No visible particles at all?
 
     // Render all the visible particles.
@@ -854,16 +828,20 @@ void Rend_RenderParticles(void)
     }
 }
 
-static boolean drawGeneratorOrigin(ptcgen_t* gen, void* context)
+static int drawGeneratorOrigin(void* ptr, void* context)
 {
 #define MAX_GENERATOR_DIST  2048
 
-    float*              eye = (float*) context;
+    generator_t* gen = (generator_t*) ptr;
+    float* eye = (float*) context;
+
+    if(!gen->thinker.function)
+        return true; // Continue iteration.
 
     // Determine approximate center.
     if((gen->source || (gen->flags & PGF_UNTRIGGERED)))
     {
-        float               pos[3], dist, alpha;
+        float pos[3], dist, alpha;
 
         if(gen->source)
         {
@@ -884,8 +862,8 @@ static boolean drawGeneratorOrigin(ptcgen_t* gen, void* context)
 
         if(alpha > 0)
         {
-            char                buf[80];
-            float               scale = dist / (theWindow->width / 2);
+            char buf[80];
+            float scale = dist / (theWindow->width / 2);
 
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
@@ -895,7 +873,10 @@ static boolean drawGeneratorOrigin(ptcgen_t* gen, void* context)
             glRotatef(vpitch, 1, 0, 0);
             glScalef(-scale, -scale, 1);
 
-            sprintf(buf, "%i", P_PtcGenToIndex(gen));
+            // @todo Generator should return the map its linked to.
+            sprintf(buf, "Generator: type=%s ptcs=%i age=%i max=%i",
+                    gen->source? "src":"static", gen->count, gen->age,
+                    gen->def->maxAge);
             UI_TextOutEx(buf, 2, 2, false, false, UI_Color(UIC_TITLE), alpha);
 
             glMatrixMode(GL_MODELVIEW);
@@ -911,9 +892,9 @@ static boolean drawGeneratorOrigin(ptcgen_t* gen, void* context)
 /**
  * Debugging aid; Draw all active generators.
  */
-void Rend_RenderGenerators(void)
+void Rend_RenderGenerators(map_t* map)
 {
-    float               eye[3];
+    float eye[3];
 
     if(!devDrawGenerators)
         return;
@@ -925,7 +906,8 @@ void Rend_RenderGenerators(void)
     eye[VY] = vz;
     eye[VZ] = vy;
 
-    P_IteratePtcGens(drawGeneratorOrigin, eye);
+    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                        drawGeneratorOrigin, eye);
 
     // Restore previous state.
     glEnable(GL_DEPTH_TEST);

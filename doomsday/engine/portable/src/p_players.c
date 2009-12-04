@@ -47,8 +47,8 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-player_t* viewPlayer;
 player_t ddPlayers[DDMAXPLAYERS];
+player_t* viewPlayer = &ddPlayers[0];
 int consolePlayer;
 int displayPlayer;
 

@@ -3,7 +3,7 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright Â© 2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2009 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ byte            Material_AddLayer(material_t* mat, byte flags, gltextureid_t tex
                                   float moveSpeed);
 
 const ded_decor_t* Material_GetDecoration(material_t* mat);
-const ded_ptcgen_t* Material_GetPtcGen(material_t* mat);
+const ded_generator_t* Material_GetGenerator(material_t* mat);
 material_env_class_t Material_GetEnvClass(material_t* mat);
 
 boolean         Material_FromIWAD(const material_t* mat);

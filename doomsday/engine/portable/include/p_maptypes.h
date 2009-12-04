@@ -94,7 +94,7 @@ typedef struct materiallayer_s {
     byte            flags; // MLF_* flags, @see materialLayerFlags
     gltextureid_t   tex;
     float           texOrigin[2];
-    float			texPosition[2]; // Current interpolated position.
+    float           texPosition[2]; // Current interpolated position.
     float           moveAngle;
     float           moveSpeed;
 } material_layer_t;
@@ -121,7 +121,7 @@ typedef struct material_s {
     material_env_class_t envClass;     // Used for environmental sound properties.
     struct ded_detailtexture_s* detail;
     struct ded_decor_s* decoration;
-    struct ded_ptcgen_s* ptcGen;
+    struct ded_ptcgen_s* generator;
     struct ded_reflection_s* reflection;
     boolean             inAnimGroup;   // True if belongs to some animgroup.
     struct material_s*  current;
@@ -479,7 +479,7 @@ typedef struct node_s {
 #define MAX_SKY_MODELS        32
 
 typedef struct skylayer_s {
-    boolean			enabled;
+    boolean         enabled;
     float           fadeoutColorLimit; // .3 by default.
 } skylayer_t;
 

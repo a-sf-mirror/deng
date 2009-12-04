@@ -1717,23 +1717,23 @@ static int DED_ReadData(ded_t* ded, char* buffer, const char* sourceFile)
 
         if(ISTOKEN("Generator")) // Particle Generator
         {
-            int                 sub = 0;
-            ded_ptcgen_t*       gen;
+            int sub = 0;
+            ded_generator_t* gen;
 
-            idx = DED_AddPtcGen(ded, "");
-            gen = &ded->ptcGens[idx];
+            idx = DED_AddGenerator(ded, "");
+            gen = &ded->generators[idx];
 
             if(prevGenDefIdx >= 0 && bCopyNext)
             {
                 // Should we copy the previous definition?
-                memcpy(gen, &ded->ptcGens[prevGenDefIdx], sizeof(*gen));
+                memcpy(gen, &ded->generators[prevGenDefIdx], sizeof(*gen));
 
                 // Duplicate the stages array.
-                if(ded->ptcGens[prevGenDefIdx].stages)
+                if(ded->generators[prevGenDefIdx].stages)
                 {
                     gen->stages = M_Malloc(sizeof(ded_ptcstage_t) *
                                            gen->stageCount.max);
-                    memcpy(gen->stages, ded->ptcGens[prevGenDefIdx].stages,
+                    memcpy(gen->stages, ded->generators[prevGenDefIdx].stages,
                            sizeof(ded_ptcstage_t) * gen->stageCount.num);
                 }
             }
@@ -1788,7 +1788,7 @@ static int DED_ReadData(ded_t* ded, char* buffer, const char* sourceFile)
                     if(sub >= gen->stageCount.num)
                     {
                         // Allocate new stage.
-                        sub = DED_AddPtcGenStage(gen);
+                        sub = DED_AddGeneratorStage(gen);
                     }
 
                     st = &gen->stages[sub];

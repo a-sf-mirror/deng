@@ -36,6 +36,7 @@
 #include "p_polyob.h"
 #include "rend_bias.h"
 #include "p_think.h"
+#include "p_particle.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -231,6 +232,7 @@ void            Map_Bounds(map_t* map, float* min, float* max);
 int             Map_AmbientLightLevel(map_t* map);
 
 void            Map_BeginFrame(map_t* map, boolean resetNextViewer);
+void            Map_Update(map_t* map);
 
 void            Map_UpdateWatchedPlanes(map_t* map);
 void            Map_UpdateMovingSurfaces(map_t* map);

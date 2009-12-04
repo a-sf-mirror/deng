@@ -255,15 +255,21 @@ static void clearSectorFlags(map_t* map)
     }
 }
 
-static int recycleMobjs(void* p, void* context)
+static int recycleMobjs(void* ptr, void* context)
 {
-    thinker_t* th = (thinker_t*) p;
+    thinker_t* th = (thinker_t*) ptr;
     if(th->id)
     {   // Its a mobj.
         // @todo Thinker should return the map it is linked to.
         Thinkers_Remove(Map_Thinkers(P_CurrentMap()), th);
         P_MobjRecycle((mobj_t*) th);
     }
+    return true; // Continue iteration.
+}
+
+static int destroyGenerator(void* ptr, void* content)
+{
+    P_DestroyGenerator((generator_t*) ptr);
     return true; // Continue iteration.
 }
 
@@ -435,6 +441,13 @@ void P_DestroyMap(map_t* map)
     }
     map->nodes = NULL;
     map->numNodes = 0;
+
+    /**
+     * Destroy Generators. This is only necessary because the particles of
+     * each generator use storage linked only to the generator.
+     */
+    Thinkers_Iterate(map->_thinkers, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                     destroyGenerator, NULL);
 
     Thinkers_Iterate(map->_thinkers, NULL, ITF_PUBLIC, recycleMobjs, NULL);
     P_DestroyThinkers(map->_thinkers);
@@ -735,6 +748,125 @@ void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
     assert(th);
 
     th->inStasis = on;
+}
+
+static void initGenerators(map_t* map)
+{
+    // Spawn all type-triggered particle generators.
+    // Let's hope there aren't too many...
+    P_SpawnTypeParticleGens(map);
+    P_SpawnMapParticleGens(map);
+}
+
+static int updateGenerator(void* ptr, void* context)
+{
+    generator_t* gen = (generator_t*) ptr;
+
+    if(gen->thinker.function)
+    {
+        int i;
+        ded_generator_t* def;
+        boolean found;
+
+        // Map-static generators cannot be updated (we have no means to reliably
+        // identify them), so destroy them.
+        // Flat generators will be spawned automatically within a few tics so we'll
+        // just destroy those too.
+        if((gen->flags & PGF_UNTRIGGERED) || gen->sector)
+        {
+            P_DestroyGenerator(gen);
+            return true; // Continue iteration.
+        }
+
+        // Search for a suitable definition.
+        i = 0;
+        def = defs.generators;
+        found = false;
+        while(i < defs.count.generators.num && !found)
+        {
+            // A type generator?
+            if(def->typeNum >= 0 &&
+               (gen->type == def->typeNum || gen->type2 == def->type2Num))
+            {
+                found = true;
+            }
+            // A damage generator?
+            else if(gen->source && gen->source->type == def->damageNum)
+            {
+                found = true;
+            }
+            // A state generator?
+            else if(gen->source && def->state[0] &&
+                    gen->source->state - states == Def_GetStateNum(def->state))
+            {
+                found = true;
+            }
+            else
+            {
+                i++;
+                def++;
+            }
+        }
+
+        if(found)
+        {   // Update the generator using the new definition.
+            gen->def = def;
+        }
+        else
+        {   // Nothing else we can do, destroy it.
+            P_DestroyGenerator(gen);
+        }
+    }
+
+    return true; // Continue iteration.
+}
+
+/**
+ * Called after a reset once the definitions have been re-read.
+ */
+void Map_Update(map_t* map)
+{
+    uint i;
+
+    assert(map);
+
+    // Defs might've changed, so update the generators.
+    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                        updateGenerator, NULL);
+    // Re-spawn map generators.
+    P_SpawnMapParticleGens(map);
+
+    // Update all world surfaces.
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        sector_t* sec = map->sectors[i];
+        uint j;
+
+        for(j = 0; j < sec->planeCount; ++j)
+            Surface_Update(&sec->SP_planesurface(j));
+    }
+
+    for(i = 0; i < map->numSideDefs; ++i)
+    {
+        sidedef_t* side = map->sideDefs[i];
+
+        Surface_Update(&side->SW_topsurface);
+        Surface_Update(&side->SW_middlesurface);
+        Surface_Update(&side->SW_bottomsurface);
+    }
+
+    for(i = 0; i < map->numPolyObjs; ++i)
+    {
+        polyobj_t* po = map->polyObjs[i];
+        uint j;
+
+        for(j = 0; j < po->numLineDefs; ++j)
+        {
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
+
+            Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
+        }
+    }
 }
 
 static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
@@ -3447,8 +3579,7 @@ boolean P_LoadMap(const char* mapID)
         LO_InitForMap(map); // Lumobj management.
         VL_InitForMap(); // Converted vlights (from lumobjs) management.
 
-        // Init Particle Generator links.
-        P_PtcInitForMap(map);
+        initGenerators(map);
 
         // Initialize the lighting grid.
         LG_Init(map);

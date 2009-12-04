@@ -2467,9 +2467,6 @@ static void Rend_RenderSubSector(subsector_t* subsector)
         LO_ClipInSubsectorBySight(subsector);
     }
 
-    // Mark the particle generators in the sector visible.
-    Rend_ParticleMarkInSectorVisible(sect);
-
     // Sprites for this subsector have to be drawn. This must be done before
     // the segments of this subsector are added to the clipper. Otherwise
     // the sprites would get clipped by them, and that wouldn't be right.
@@ -2931,9 +2928,6 @@ void Rend_RenderMap(map_t* map)
         C_ClearRanges(); // Clear the clipper.
         LO_BeginFrame();
 
-        // Clear particle generator visibilty info.
-        Rend_ParticleInitForNewFrame();
-
         // Make vissprites of all the visible decorations.
         Rend_ProjectDecorations(map);
 
@@ -2978,14 +2972,21 @@ void Rend_RenderMap(map_t* map)
 
         Rend_RenderShadows(map);
     }
+
     RL_RenderAllLists();
+
+    // Draw masked walls, sprites and models.
+    Rend_DrawMasked();
+
+    // Draw particles.
+    Rend_RenderParticles(map);
 
     // Draw various debugging displays:
     Rend_RenderNormals(map); // World surface normals.
     LO_DrawLumobjs(); // Lumobjs.
     Rend_RenderBoundingBoxes(map); // Mobj bounding boxes.
     Rend_Vertexes(map); // World vertex positions/indices.
-    Rend_RenderGenerators(); // Particle generator origins.
+    Rend_RenderGenerators(map); // Particle generator origins.
 
     if(!freezeRLs)
     {

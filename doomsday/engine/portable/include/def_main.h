@@ -52,7 +52,7 @@ extern ded_t defs; // The main definitions database.
 extern sprname_t* sprNames; // Sprite name list.
 extern state_t* states; // State list.
 extern ded_light_t** stateLights;
-extern ded_ptcgen_t** statePtcGens;
+extern ded_generator_t** stateGenerators;
 extern mobjinfo_t* mobjInfo; // Map object info database.
 extern sfxinfo_t* sounds; // Sound effect list.
 extern ddtext_t* texts; // Text list.
@@ -89,8 +89,8 @@ ded_light_t*    Def_GetLightDef(int spr, int frame);
 ded_decor_t*    Def_GetDecoration(struct material_s* mat, boolean hasExt);
 ded_reflection_t* Def_GetReflection(struct material_s* mat, boolean hasExt);
 ded_detailtexture_t* Def_GetDetailTex(struct material_s* mat, boolean hasExt);
-ded_ptcgen_t*   Def_GetGenerator(struct material_s* mat, boolean hasExt);
-ded_ptcgen_t*   Def_GetDamageGenerator(int mobjType);
+ded_generator_t* Def_GetGenerator(struct material_s* mat, boolean hasExt);
+ded_generator_t* Def_GetDamageGenerator(int mobjType);
 int             Def_Get(int type, const char* id, void* out);
 boolean         Def_SameStateSequence(state_t* snew, state_t* sold);
 

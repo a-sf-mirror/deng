@@ -31,7 +31,6 @@
 
 #include "def_data.h"
 
-#define MAX_ACTIVE_PTCGENS      256
 #define MAX_PTC_TEXTURES        32 // Maximum # of textures in particle system
 #define MAX_PTC_MODELS          100
 
@@ -88,7 +87,7 @@ typedef struct {
     short           tics;
     fixed_t         pos[3]; // Coordinates.
     fixed_t         mov[3]; // Momentum.
-    sector_t*       sector; // Updated when needed.
+    subsector_t*    subsector; // Updated when needed.
     linedef_t*      contact; // Updated when lines hit/avoided.
     ushort          yaw, pitch; // Rotation angles (0-65536 => 0-360).
 } particle_t;
@@ -104,12 +103,11 @@ typedef struct {
 
 // Particle Generator
 typedef struct ptcgen_s {
-    thinker_t       thinker; // Func = P_PtcGenThinker
+    thinker_t       thinker; // Func = P_GeneratorThinker
     sector_t*       sector; // Flat-triggered.
-    int             ceiling; // Flat-triggered.
-    //float           area; // Rough estimate of sector area.
-    const ded_ptcgen_t* def; // The definition of this generator.
-    mobj_t*         source; // If mobj-triggered.
+    uint            planeID; // Flat-triggered.
+    const ded_generator_t* def; // The definition of this generator.
+    struct mobj_s*  source; // If mobj-triggered.
     int             srcid; // Source mobj ID.
     int             type; // Type-triggered; mobj type number (-1=none).
     int             type2; // Type-triggered; alternate type.
@@ -121,33 +119,23 @@ typedef struct ptcgen_s {
     int             spawnCP; // Spawn cursor.
     int             age;
     int             count; // Number of particles.
+    byte            randSeed; // For spin.
     particle_t*     ptcs; // List of particles.
     ptcstage_t*     stages;
-} ptcgen_t;
+} generator_t;
 
-typedef short ptcgenid_t;
+generator_t*    P_CreateGenerator(struct map_s* map);
+void            P_DestroyGenerator(generator_t* gen);
 
-void            P_PtcInit(void);
+void            P_GeneratorThinker(generator_t* gen);
 
-void            P_PtcInitForMap(struct map_s* map);
 void            P_SpawnMapParticleGens(struct map_s* map);
 void            P_CheckPtcPlanes(struct map_s* map);
-void            P_UpdateParticleGens(struct map_s* map);
-void            P_CreatePtcGenLinks(struct map_s* map);
 void            P_SpawnTypeParticleGens(struct map_s* map);
 
-const ptcgen_t* P_IndexToPtcGen(ptcgenid_t ptcGenID);
-ptcgenid_t      P_PtcGenToIndex(const ptcgen_t* gen);
+void            P_SpawnParticleGen(const ded_generator_t* def, struct mobj_s* source);
 
-boolean         P_IteratePtcGens(boolean (*callback) (ptcgen_t*, void*),
-                                 void* context);
-boolean         P_IterateSectorLinkedPtcGens(sector_t* sector,
-                                             boolean (*callback) (ptcgen_t*, void*),
-                                             void* context);
-
-void            P_SpawnParticleGen(const ded_ptcgen_t* def, mobj_t* source);
-
-void            P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor,
+void            P_SpawnDamageParticleGen(struct mobj_s* mo, struct mobj_s* inflictor,
                                          int amount);
 
 float           P_GetParticleRadius(const ded_ptcstage_t* stageDef, int ptcIndex);

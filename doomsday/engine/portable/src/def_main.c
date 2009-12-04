@@ -78,7 +78,7 @@ ded_t defs; // The main definitions database.
 sprname_t* sprNames; // Sprite name list.
 state_t* states; // State list.
 ded_light_t** stateLights;
-ded_ptcgen_t** statePtcGens;
+ded_generator_t** stateGenerators;
 mobjinfo_t* mobjInfo; // Map object info database.
 sfxinfo_t* sounds; // Sound effect list.
 
@@ -130,7 +130,7 @@ void Def_Init(void)
     sprNames = NULL; // Sprite name list.
     mobjInfo = NULL;
     states = NULL;
-    statePtcGens = NULL;
+    stateGenerators = NULL;
     stateLights = NULL;
     sounds = NULL;
     texts = NULL;
@@ -195,9 +195,9 @@ void Def_Destroy(void)
     DED_DelArray((void **) &stateOwners, &countStateOwners);
 
     // Destroy the state array, parallel LUTs.
-    if(statePtcGens)
-        M_Free(statePtcGens);
-    statePtcGens = NULL;
+    if(stateGenerators)
+        M_Free(stateGenerators);
+    stateGenerators = NULL;
     if(stateLights)
         M_Free(stateLights);
     stateLights = NULL;
@@ -507,13 +507,13 @@ ded_detailtexture_t* Def_GetDetailTex(material_t* mat, boolean hasExt)
     return NULL;
 }
 
-ded_ptcgen_t* Def_GetGenerator(material_t* mat, boolean hasExt)
+ded_generator_t* Def_GetGenerator(material_t* mat, boolean hasExt)
 {
-    ded_ptcgen_t*       def;
+    ded_generator_t*       def;
     int                 i;
 
     // The generator will be determined now.
-    for(i = 0, def = defs.ptcGens; i < defs.count.ptcGens.num; ++i, def++)
+    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
     {
         material_t*         defMat;
 
@@ -552,13 +552,13 @@ ded_ptcgen_t* Def_GetGenerator(material_t* mat, boolean hasExt)
     return NULL; // Not found.
 }
 
-ded_ptcgen_t* Def_GetDamageGenerator(int mobjType)
+ded_generator_t* Def_GetDamageGenerator(int mobjType)
 {
-    int                 i;
-    ded_ptcgen_t*       def;
+    int i;
+    ded_generator_t* def;
 
     // Search for a suitable definition.
-    for(i = 0, def = defs.ptcGens; i < defs.count.ptcGens.num; ++i, def++)
+    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
     {
         // It must be for this type of mobj.
         if(def->damageNum == mobjType)
@@ -960,9 +960,9 @@ void Def_Read(void)
                    defs.count.states.num);
     // Zero the parallel LUTs to the states array. These will be re-inited
     // anyway so there is no need to worry about updating any old values.
-    statePtcGens =
-        M_Realloc(statePtcGens, sizeof(*statePtcGens) * countStates.num);
-    memset(statePtcGens, 0, sizeof(*statePtcGens) * countStates.num);
+    stateGenerators =
+        M_Realloc(stateGenerators, sizeof(*stateGenerators) * countStates.num);
+    memset(stateGenerators, 0, sizeof(*stateGenerators) * countStates.num);
     stateLights =
         M_Realloc(stateLights, sizeof(*stateLights) * countStates.num);
     memset(stateLights, 0, sizeof(*stateLights) * countStates.num);
@@ -1141,10 +1141,10 @@ void Def_Read(void)
     Def_CountMsg(countTexts.num, "text strings");
 
     // Particle generators.
-    for(i = 0; i < defs.count.ptcGens.num; ++i)
+    for(i = 0; i < defs.count.generators.num; ++i)
     {
-        ded_ptcgen_t*       pg = &defs.ptcGens[i];
-        int                 st = Def_GetStateNum(pg->state);
+        ded_generator_t* pg = &defs.generators[i];
+        int st = Def_GetStateNum(pg->state);
 
         pg->typeNum = Def_GetMobjNum(pg->type);
         pg->type2Num = Def_GetMobjNum(pg->type2);
@@ -1172,24 +1172,24 @@ void Def_Read(void)
         if(pg->flags & PGF_STATE_CHAIN)
         {
             // Add to the chain.
-            pg->stateNext = statePtcGens[st];
-            statePtcGens[st] = pg;
+            pg->stateNext = stateGenerators[st];
+            stateGenerators[st] = pg;
         }
         else
         {
             // Make sure the previously built list is unlinked.
-            while(statePtcGens[st])
+            while(stateGenerators[st])
             {
-                ded_ptcgen_t*       temp = statePtcGens[st]->stateNext;
+                ded_generator_t*       temp = stateGenerators[st]->stateNext;
 
-                statePtcGens[st]->stateNext = NULL;
-                statePtcGens[st] = temp;
+                stateGenerators[st]->stateNext = NULL;
+                stateGenerators[st] = temp;
             }
-            statePtcGens[st] = pg;
+            stateGenerators[st] = pg;
             pg->stateNext = NULL;
         }
     }
-    Def_CountMsg(defs.count.ptcGens.num, "particle generators");
+    Def_CountMsg(defs.count.generators.num, "particle generators");
 
     // Detail textures. Initialize later...
     Def_CountMsg(defs.count.details.num, "detail textures");
@@ -1264,13 +1264,13 @@ void Def_Read(void)
 void Def_PostInit(void)
 {
     int                 i, k;
-    ded_ptcgen_t*       gen;
+    ded_generator_t*       gen;
     char                name[40];
     modeldef_t*         modef;
     ded_ptcstage_t*     st;
 
     // Particle generators: model setup.
-    for(i = 0, gen = defs.ptcGens; i < defs.count.ptcGens.num; ++i, gen++)
+    for(i = 0, gen = defs.generators; i < defs.count.generators.num; ++i, gen++)
     {
         for(k = 0, st = gen->stages; k < gen->stageCount.num; ++k, st++)
         {

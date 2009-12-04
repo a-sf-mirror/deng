@@ -212,7 +212,7 @@ byte Material_Prepare(material_snapshot_t* snapshot, material_t* mat,
         mat->reflection = Def_GetReflection(mat, tmpResult == 2);
 
         // Generator (particles).
-        mat->ptcGen = Def_GetGenerator(mat, tmpResult == 2);
+        mat->generator = Def_GetGenerator(mat, tmpResult == 2);
 
         // Detail texture.
         mat->detail = Def_GetDetailTex(mat, tmpResult == 2);
@@ -479,14 +479,14 @@ const ded_decor_t* Material_GetDecoration(material_t* mat)
  *
  * @return              The associated ptcgen definition, else @c NULL.
  */
-const ded_ptcgen_t* Material_GetPtcGen(material_t* mat)
+const ded_generator_t* Material_GetGenerator(material_t* mat)
 {
     if(mat)
     {
         // Ensure we've already prepared this material.
         //Materials_Prepare(NULL, mat, 0, NULL);
 
-        return mat->ptcGen;
+        return mat->generator;
     }
 
     return NULL;

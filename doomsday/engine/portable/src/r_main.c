@@ -254,7 +254,6 @@ void R_Init(void)
     Rend_Init();
     frameCount = 0;
     R_InitViewBorder();
-    P_PtcInit();
 
     // Defs have been read; we can now init models.
     R_InitModels();
@@ -268,7 +267,6 @@ void R_Init(void)
 void R_Update(void)
 {
     uint i;
-    map_t* map;
 
     R_UpdateTexturesAndFlats();
     R_InitTextures();
@@ -298,43 +296,7 @@ void R_Update(void)
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
     }
 
-    map = P_CurrentMap();
-    if(map)
-    {
-        P_UpdateParticleGens(map); // Defs might've changed.
-
-        // Update all world surfaces.
-        for(i = 0; i < map->numSectors; ++i)
-        {
-            sector_t* sec = map->sectors[i];
-            uint j;
-
-            for(j = 0; j < sec->planeCount; ++j)
-                Surface_Update(&sec->SP_planesurface(j));
-        }
-
-        for(i = 0; i < map->numSideDefs; ++i)
-        {
-            sidedef_t* side = map->sideDefs[i];
-
-            Surface_Update(&side->SW_topsurface);
-            Surface_Update(&side->SW_middlesurface);
-            Surface_Update(&side->SW_bottomsurface);
-        }
-
-        for(i = 0; i < map->numPolyObjs; ++i)
-        {
-            polyobj_t* po = map->polyObjs[i];
-            uint j;
-
-            for(j = 0; j < po->numLineDefs; ++j)
-            {
-                linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
-
-                Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
-            }
-        }
-    }
+    Map_Update(P_CurrentMap());
 
     // The rendering lists have persistent data that has changed during
     // the re-initialization.
@@ -596,9 +558,6 @@ void R_BeginWorldFrame(map_t* map)
 
         // Create objlinks for mobjs.
         R_CreateMobjLinks(map);
-
-        // Link all active particle generators into the world.
-        P_CreatePtcGenLinks(map);
 
         // Link objs to all contacted surfaces.
         R_LinkObjs(map);

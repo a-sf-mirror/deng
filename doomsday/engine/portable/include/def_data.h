@@ -451,7 +451,7 @@ typedef struct ded_ptcgen_s {
     float           forceOrigin[3]; // Offset for the force sphere.
     ded_ptcstage_t* stages;
     ded_count_t     stageCount;
-} ded_ptcgen_t;
+} ded_generator_t;
 
 typedef struct ded_decorlight_s {
     float           pos[2]; // Coordinates on the surface.
@@ -566,7 +566,7 @@ typedef struct ded_s {
         ded_count_t     textureEnv;
         ded_count_t     values;
         ded_count_t     details;
-        ded_count_t     ptcGens;
+        ded_count_t     generators;
         ded_count_t     finales;
         ded_count_t     decorations;
         ded_count_t     reflections;
@@ -622,7 +622,7 @@ typedef struct ded_s {
     ded_detailtexture_t* details;
 
     // Particle generators.
-    ded_ptcgen_t*   ptcGens;
+    ded_generator_t*   generators;
 
     // Finales.
     ded_finale_t*   finales;
@@ -668,8 +668,8 @@ int             DED_AddText(ded_t* ded, char* id);
 int             DED_AddTextureEnv(ded_t* ded, char* id);
 int             DED_AddValue(ded_t *ded, const char* id);
 int             DED_AddDetail(ded_t* ded, const char* lumpname);
-int             DED_AddPtcGen(ded_t* ded, const char* state);
-int             DED_AddPtcGenStage(ded_ptcgen_t* gen);
+int             DED_AddGenerator(ded_t* ded, const char* state);
+int             DED_AddGeneratorStage(ded_generator_t* gen);
 int             DED_AddFinale(ded_t* ded);
 int             DED_AddDecoration(ded_t* ded);
 int             DED_AddReflection(ded_t* ded);
@@ -695,7 +695,7 @@ void            DED_RemoveText(ded_t* ded, int index);
 void            DED_RemoveTextureEnv(ded_t* ded, int index);
 void            DED_RemoveValue(ded_t* ded, int index);
 void            DED_RemoveDetail(ded_t* ded, int index);
-void            DED_RemovePtcGen(ded_t* ded, int index);
+void            DED_RemoveGenerator(ded_t* ded, int index);
 void            DED_RemoveFinale(ded_t* ded, int index);
 void            DED_RemoveDecoration(ded_t* ded, int index);
 void            DED_RemoveReflection(ded_t* ded, int index);
