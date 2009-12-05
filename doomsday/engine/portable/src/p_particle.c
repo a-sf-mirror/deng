@@ -80,6 +80,8 @@ static linedef_t* ptcHitLine;
 
 static void freeGeneratorPtcs(generator_t* gen)
 {
+    Z_Free(gen->stages);
+    gen->stages = NULL;
     Z_Free(gen->ptcs);
     gen->ptcs = NULL;
     gen->count = 0;
@@ -100,9 +102,9 @@ static void P_InitParticleGen(generator_t* gen, const ded_generator_t* def)
 
     gen->def = def;
     gen->flags = def->flags;
-    gen->ptcs = Z_Calloc(sizeof(particle_t) * gen->count, PU_MAP, 0);
+    gen->ptcs = Z_Calloc(sizeof(particle_t) * gen->count, PU_STATIC, 0);
     gen->stages = Z_Calloc(sizeof(ptcstage_t) * def->stageCount.num,
-                           PU_MAP, 0);
+                           PU_STATIC, 0);
 
     for(i = 0; i < def->stageCount.num; ++i)
     {
