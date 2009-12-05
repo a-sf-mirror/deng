@@ -1322,8 +1322,8 @@ typedef struct {
      */
     numValidTexDefs = 0;
     numValidPatchRefs = 0;
-    directory = maptex1 + 1;
-    for(i = 0; i < numTexDefs; ++i, directory++)
+    directory = maptex1 + numTexDefs;
+    for(i = numTexDefs - 1; i >= 0; i--, directory--)
     {
         offset = LONG(*directory);
         if(offset > lumpSize)
@@ -1337,8 +1337,32 @@ typedef struct {
         if(gameDataFormat == 0)
         {   // DOOM format.
             maptexture_t* mtexture =
-                (maptexture_t *) ((byte *) maptex1 + offset);
+                (maptexture_t*) ((byte *) maptex1 + offset);
             short j, n, patchCount = SHORT(mtexture->patchCount);
+
+            // Have we already encountered a texture with this name?
+            if(i != numTexDefs - 1)
+            {
+                boolean ignoreDef = false;
+                int j;
+
+                for(j = numTexDefs - 1; j > i; j--)
+                {
+                    maptexture_t* other =
+                        (maptexture_t*) ((byte*) maptex1 + LONG(*(maptex1 + 1 + j)));
+                    if(!stricmp(mtexture->name, other->name))
+                    {
+                        Con_Message("R_ReadTextureDefs: Benign texture definition "
+                                    "'%s' in lump %s.\n", mtexture->name,
+                                    W_LumpName(lump));
+                        ignoreDef = true;
+                        break;
+                    }
+                }
+
+                if(ignoreDef)
+                    continue;
+            }
 
             n = 0;
             if(patchCount > 0)
@@ -1382,6 +1406,30 @@ typedef struct {
             strifemaptexture_t* smtexture =
                 (strifemaptexture_t *) ((byte *) maptex1 + offset);
             short j, n, patchCount = SHORT(smtexture->patchCount);
+
+            // Have we already encountered a texture with this name?
+            if(i != numTexDefs - 1)
+            {
+                boolean ignoreDef = false;
+                int j;
+
+                for(j = numTexDefs - 1; j > i; j--)
+                {
+                    strifemaptexture_t* other =
+                        (strifemaptexture_t*) ((byte*) maptex1 + LONG(*(maptex1 + 1 + j)));
+                    if(!stricmp(smtexture->name, other->name))
+                    {
+                        Con_Message("R_ReadTextureDefs: Benign texture definition "
+                                    "'%s' in lump %s.\n", smtexture->name,
+                                    W_LumpName(lump));
+                        ignoreDef = true;
+                        break;
+                    }
+                }
+
+                if(ignoreDef)
+                    continue;
+            }
 
             n = 0;
             if(patchCount > 0)
