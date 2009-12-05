@@ -104,21 +104,12 @@ static mobj_t *unusedMobjs = NULL;
 // CODE --------------------------------------------------------------------
 
 /**
- * Called during map loading.
- */
-void P_InitUnusedMobjList(void)
-{
-    // Any zone memory allocated for the mobjs will have already been purged.
-    unusedMobjs = NULL;
-}
-
-/**
  * All mobjs must be allocated through this routine. Part of the public API.
  */
 mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
                      angle_t angle, float radius, float height, int ddflags)
 {
-    mobj_t*             mo;
+    mobj_t* mo;
 
     if(!function)
         Con_Error("P_MobjCreate: Think function invalid, cannot create mobj.");
@@ -132,7 +123,7 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
     }
     else
     {   // No, we need to allocate another.
-        mo = Z_Calloc(MOBJ_SIZE, PU_MAP, NULL);
+        mo = Z_Calloc(MOBJ_SIZE, PU_STATIC, NULL);
     }
 
     mo->pos[VX] = x;

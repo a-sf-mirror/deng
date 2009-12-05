@@ -336,6 +336,13 @@ void P_DestroyMap(map_t* map)
         for(i = 0; i < map->numSideDefs; ++i)
         {
             sidedef_t* sideDef = map->sideDefs[i];
+
+            if(sideDef->sections[SEG_MIDDLE].decorations)
+                Z_Free(sideDef->sections[SEG_MIDDLE].decorations);
+            if(sideDef->sections[SEG_BOTTOM].decorations)
+                Z_Free(sideDef->sections[SEG_BOTTOM].decorations);
+            if(sideDef->sections[SEG_TOP].decorations)
+                Z_Free(sideDef->sections[SEG_TOP].decorations);
             Z_Free(sideDef);
         }
         Z_Free(map->sideDefs);
@@ -394,7 +401,10 @@ void P_DestroyMap(map_t* map)
             {
                 for(j = 0; j < sector->planeCount; ++j)
                 {
-                    Z_Free(sector->planes[j]);
+                    plane_t* plane = sector->planes[j];
+                    if(plane->surface.decorations)
+                        Z_Free(plane->surface.decorations);
+                    Z_Free(plane);
                 }
                 Z_Free(sector->planes);
             }
@@ -3475,10 +3485,6 @@ boolean P_LoadMap(const char* mapID)
         }
 
         SBE_InitForMap(map);
-
-        // Do any initialization/error checking work we need to do.
-        // Must be called before we go any further.
-        P_InitUnusedMobjList();
 
         {
         uint starttime = Sys_GetRealTime();
