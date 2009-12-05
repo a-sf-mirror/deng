@@ -521,7 +521,7 @@ BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 
         for(iter = sector->mobjList; iter; iter = iter->sNext)
         {
-            R_ObjLinkCreate(iter, OT_MOBJ); // For spreading purposes.
+            Map_CreateObjLink(map, iter, OT_MOBJ);
         }
     }
 
@@ -561,7 +561,8 @@ static int createObjLinksForParticles(void* ptr, void* context)
         if(!(size > .0001f))
             continue; // Infinitely small.
 
-        R_ObjLinkCreate(pt, OT_PARTICLE); // For spreading purposes.
+        // @todo Generator should return the map its linked to.
+        Map_CreateObjLink(P_CurrentMap(), pt, OT_PARTICLE); // For spreading purposes.
     }
 
     return true; // Continue iteration.
@@ -595,58 +596,23 @@ END_PROF( PROF_PARTICLE_INIT_ADD );
 /**
  * Prepare for rendering view(s) of the world.
  */
-void R_BeginWorldFrame(map_t* map)
+void R_BeginWorldFrame(void)
 {
-    if(!map)
-        return;
+    map_t* map;
 
-    Map_BeginFrame(map, resetNextViewer);
-
-    if(!freezeRLs)
-    {
-        LG_Update(map);
-        SB_BeginFrame(map);
-        LO_ClearForFrame(map);
-        R_ClearObjLinksForFrame(map); // Zeroes the links.
-
-        // Clear the objlinks.
-        R_InitForNewFrame(map);
-
-        // Generate surface decorations for the frame.
-        Rend_InitDecorationsForFrame(map);
-
-        // Spawn omnilights for decorations.
-        Rend_AddLuminousDecorations(map);
-
-        // Spawn omnilights for mobjs.
-        LO_AddLuminousMobjs(map);
-
-        R_CreateParticleLinks(map);
-
-        // Create objlinks for mobjs.
-        R_CreateMobjLinks(map);
-
-        // Link objs to all contacted surfaces.
-        R_LinkObjs(map);
-    }
+    if((map = P_CurrentMap()))
+        Map_BeginFrame(map, resetNextViewer);
 }
 
 /**
  * Wrap up after drawing view(s) of the world.
  */
-void R_EndWorldFrame(map_t* map)
+void R_EndWorldFrame(void)
 {
-    if(!map)
-        return;
+    map_t* map;
 
-    if(!freezeRLs)
-    {
-        // Wrap up with Source, Bias lights.
-        SB_EndFrame(map);
-
-        // Update the bias light editor.
-        SBE_EndFrame(map);
-    }
+    if((map = P_CurrentMap()))
+        Map_EndFrame(map);
 }
 
 /**

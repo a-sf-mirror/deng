@@ -250,7 +250,7 @@ static dynlight_t* allocDynlight(void)
     dynlight_t*         dyn;
 
     if(!listIsEmpty(&unusedDynlights))
-    {   // We have an unused dynlight we can re-use.       
+    {   // We have an unused dynlight we can re-use.
         dyn = listPopFront(&unusedDynlights);
     }
     else
@@ -581,7 +581,7 @@ static boolean DLIT_SurfaceLumobjContacts(void* ptr, void* context)
         {
         byte                texSlot = ((p->flags & DLF_TEX_CEILING)? 2 :
             (p->flags & DLF_TEX_FLOOR)? 1 : 0);
-        
+
         dyn = omniProject(lum, texSlot, p->v1, p->v2, p->normal);
         break;
         }
@@ -679,8 +679,8 @@ uint DL_ProjectOnSurface(map_t* map, subsector_t* subsector,
     params.listIdx = 0;
 
     // Process each lumobj contacting the subsector.
-    R_IterateSubsectorContacts(subsector, OT_LUMOBJ, DLIT_SurfaceLumobjContacts,
-                               &params);
+    Map_IterateSubsectorContacts(map, P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1,
+                                 OT_LUMOBJ, DLIT_SurfaceLumobjContacts, &params);
 
     // Did we generate a light list?
     return params.listIdx;
@@ -713,7 +713,7 @@ dynlight_t* DL_NewDynlight(DGLuint texture, const float color[3],
                            const float s[2], const float t[2])
 {
     dynlight_t*         dyn = allocDynlight();
-        
+
     Dynlight_SetTex(dyn, texture);
     Dynlight_SetTexCoords(dyn, s, t);
     Dynlight_SetColor(dyn, color);

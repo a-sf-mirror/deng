@@ -2453,7 +2453,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
     markSegsFacingFront(subsector);
 
-    R_InitForSubsector(subsector);
+    Subsector_SpreadObjLinks(subsector);
 
     Rend_RadioSubsectorEdges(subsector);
 

@@ -1958,8 +1958,13 @@ void R_ProjectVisSprites(subsector_t* subsector)
     if(subsector->addSpriteCount == frameCount)
         return; // Already added.
 
-    R_IterateSubsectorContacts(subsector, OT_MOBJ, RIT_ProjectVisSpriteForMobj, subsector);
-    R_IterateSubsectorContacts(subsector, OT_PARTICLE, RIT_ProjectVisSpriteForParticle, subsector);
+    // @todo Subsector should return the map its linked to.
+    {
+    map_t* map = P_CurrentMap();
+    uint subsectorIdx = P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1;
+    Map_IterateSubsectorContacts(map, subsectorIdx, OT_MOBJ, RIT_ProjectVisSpriteForMobj, subsector);
+    Map_IterateSubsectorContacts(map, subsectorIdx, OT_PARTICLE, RIT_ProjectVisSpriteForParticle, subsector);
+    }
 
     subsector->addSpriteCount = frameCount;
 }

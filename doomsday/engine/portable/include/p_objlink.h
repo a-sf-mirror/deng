@@ -23,35 +23,60 @@
  */
 
 /**
- * r_objlink.h: Objlink management.
+ * p_objlink.h: Objlink blockmap management.
  */
 
 #ifndef DOOMSDAY_OBJLINK_H
 #define DOOMSDAY_OBJLINK_H
 
 typedef enum {
-    OT_MOBJ,
+    OT_FIRST = 0,
+    OT_MOBJ = OT_FIRST,
     OT_LUMOBJ,
     OT_PARTICLE,
     NUM_OBJ_TYPES
 } objtype_t;
 
-void            R_InitObjLinksForMap(struct map_s* map);
-void            R_ClearObjLinksForFrame(struct map_s* map);
+typedef struct objlink_s {
+    struct objlink_s* nextInBlock; // Next in the same obj block, or NULL.
+    struct objlink_s* nextUsed;
+    struct objlink_s* next; // Next in list of ALL objlinks.
+    objtype_t       type;
+    void*           obj;
+} objlink_t;
 
-void            R_ObjLinkCreate(void* obj, objtype_t type);
-void            R_LinkObjs(struct map_s* map);
-void            R_InitForSubsector(subsector_t* subsector);
-void            R_InitForNewFrame(struct map_s* map);
+typedef struct objblock_s {
+    objlink_t*      head;
 
-typedef struct {
-    void*               obj;
-    objtype_t           type;
-} linkobjtosubSectorparams_t;
+    // Used to prevent multiple processing of a block during one refresh frame.
+    boolean         doneSpread;
+} objblock_t;
 
-boolean         RIT_LinkObjToSubsector(subsector_t* subsector, void* params);
+typedef struct objblockmap_s {
+    objblock_t*     blocks;
+    fixed_t         origin[2];
+    int             width, height; // In blocks.
+} objblockmap_t;
 
-boolean         R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
-                                           boolean (*func) (void*, void*),
-                                           void* data);
+typedef struct objcontact_s {
+    struct objcontact_s* next; // Next in the subsector.
+    struct objcontact_s* nextUsed; // Next used contact.
+    void*           obj;
+} objcontact_t;
+
+typedef struct objcontactlist_s {
+    objcontact_t*   head[NUM_OBJ_TYPES];
+} objcontactlist_t;
+
+objblockmap_t*  P_CreateObjBlockmap(float originX, float originY, int width,
+                                    int height);
+void            P_DestroyObjBlockmap(objblockmap_t* obm);
+
+void            ObjBlockmap_AddLinks(objblockmap_t* obm, objlink_t* objLinks);
+void            ObjBlockmap_Clear(objblockmap_t* obm);
+
+objlink_t*      P_CreateObjLink(void* obj, objtype_t type);
+
+void            Subsector_SpreadObjLinks(subsector_t* subsector);
+
 #endif /* DOOMSDAY_OBJLINK_H */

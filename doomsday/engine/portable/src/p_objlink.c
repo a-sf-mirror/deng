@@ -53,27 +53,6 @@ END_PROF_TIMERS()
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct objlink_s {
-    struct objlink_s* nextInBlock; // Next in the same obj block, or NULL.
-    struct objlink_s* nextUsed;
-    struct objlink_s* next; // Next in list of ALL objlinks.
-    objtype_t       type;
-    void*           obj;
-} objlink_t;
-
-typedef struct objblock_s {
-    objlink_t*      head;
-
-    // Used to prevent multiple processing of a block during one refresh frame.
-    boolean         doneSpread;
-} objblock_t;
-
-typedef struct objblockmap_s {
-    objblock_t*     blocks;
-    fixed_t         origin[2];
-    int             width, height; // In blocks.
-} objblockmap_t;
-
 typedef struct contactfinder_data_s {
     void*           obj;
     objtype_t       objType;
@@ -82,16 +61,6 @@ typedef struct contactfinder_data_s {
     float           box[4];
 } contactfinderparams_t;
 
-typedef struct objcontact_s {
-    struct objcontact_s* next; // Next in the subsector.
-    struct objcontact_s* nextUsed; // Next used contact.
-    void*           obj;
-} objcontact_t;
-
-typedef struct objcontactlist_s {
-    objcontact_t*   head[NUM_OBJ_TYPES];
-} objcontactlist_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -99,6 +68,7 @@ typedef struct objcontactlist_s {
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void processSeg(hedge_t* seg, void* data);
+static boolean PIT_LinkObjToSubsector(subsector_t* subsector, void* params);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -106,69 +76,13 @@ static void processSeg(hedge_t* seg, void* data);
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static objlink_t* objLinks = NULL;
 static objlink_t* objLinkFirst = NULL, *objLinkCursor = NULL;
-
-static objblockmap_t* objBlockmap = NULL;
-
-// List of unused and used obj-face contacts.
-static objcontact_t* contFirst = NULL, *contCursor = NULL;
-
-// List of obj contacts for each face.
-static objcontactlist_t* subsectorContacts = NULL;
 
 // CODE --------------------------------------------------------------------
 
-/**
- * Link the given objcontact node to list.
- */
-static __inline void linkContact(objcontact_t* con, objcontact_t** list,
-                                 uint index)
-{
-    con->next = list[index];
-    list[index] = con;
-}
-
-static void linkContactToFace(objcontact_t* node, objtype_t type,
-                              uint index)
-{
-    linkContact(node, &subsectorContacts[index].head[type], 0);
-}
-
-/**
- * Create a new objcontact for the given obj. If there are free nodes in
- * the list of unused nodes, the new contact is taken from there.
- *
- * @param obj           Ptr to the obj the contact is required for.
- *
- * @return              Ptr to the new objcontact.
- */
-static objcontact_t* allocObjContact(void)
-{
-    objcontact_t*       con;
-
-    if(contCursor == NULL)
-    {
-        con = Z_Malloc(sizeof(*con), PU_STATIC, NULL);
-
-        // Link to the list of objcontact nodes.
-        con->nextUsed = contFirst;
-        contFirst = con;
-    }
-    else
-    {
-        con = contCursor;
-        contCursor = contCursor->nextUsed;
-    }
-
-    con->obj = NULL;
-
-    return con;
-}
-
 static objlink_t* allocObjLink(void)
 {
-    objlink_t*          oLink;
+    objlink_t* oLink;
 
     if(objLinkCursor == NULL)
     {
@@ -187,97 +101,61 @@ static objlink_t* allocObjLink(void)
     oLink->nextInBlock = NULL;
     oLink->obj = NULL;
 
-    // Link it to the list of in-use objlinks.
-    oLink->next = objLinks;
-    objLinks = oLink;
-
     return oLink;
 }
 
-objblockmap_t* R_ObjBlockmapCreate(float originX, float originY, int width,
+static void clearRoots(objblockmap_t* obm)
+{
+    // Clear the list head ptrs and doneSpread flags.
+    memset(obm->blocks, 0, sizeof(*obm->blocks) * obm->width * obm->height);
+}
+
+objlink_t* P_CreateObjLink(void* obj, objtype_t type)
+{
+    objlink_t* ol;
+
+    assert(obj);
+    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
+
+    ol = allocObjLink();
+    ol->obj = obj;
+    ol->type = type;
+
+    return ol;
+}
+
+objblockmap_t* P_CreateObjBlockmap(float originX, float originY, int width,
                                    int height)
 {
     objblockmap_t* obm;
 
-    obm = Z_Malloc(sizeof(objblockmap_t), PU_MAP, 0);
+    obm = Z_Malloc(sizeof(objblockmap_t), PU_STATIC, 0);
 
     // Origin has fixed-point coordinates.
     obm->origin[0] = FLT2FIX(originX);
     obm->origin[1] = FLT2FIX(originY);
     obm->width = width;
     obm->height = height;
-    obm->blocks = Z_Malloc(sizeof(*obm->blocks) * obm->width * obm->height, PU_MAP, 0);
+    obm->blocks = Z_Malloc(sizeof(*obm->blocks) * obm->width * obm->height, PU_STATIC, 0);
 
     return obm;
 }
 
-void R_InitObjLinksForMap(map_t* map)
+void P_DestroyObjBlockmap(objblockmap_t* obm)
 {
-    float min[2], max[2];
-    int width, height;
+    assert(obm);
 
-    if(!map)
-        return;
+    ObjBlockmap_Clear(obm);
 
-    // Determine the dimensions of the objblockmap.
-    Map_Bounds(map, &min[0], &max[0]);
-    max[0] -= min[0];
-    max[1] -= min[1];
-
-    // In blocks, 128x128 world units.
-    width  = (FLT2FIX(max[0]) >> (FRACBITS + 7)) + 1;
-    height = (FLT2FIX(max[1]) >> (FRACBITS + 7)) + 1;
-
-    // Create the blockmap.
-    objBlockmap = R_ObjBlockmapCreate(min[0], min[1], width, height);
-
-    // Initialize face -> obj contact lists.
-    subsectorContacts = Z_Calloc(sizeof(*subsectorContacts) * map->numSubsectors, PU_STATIC, 0);
+    Z_Free(obm->blocks);
+    Z_Free(obm);
 }
 
-void R_ObjBlockmapClear(objblockmap_t* obm)
+void ObjBlockmap_Clear(objblockmap_t* obm)
 {
-    if(obm)
-    {   // Clear the list head ptrs and doneSpread flags.
-        memset(obm->blocks, 0, sizeof(*obm->blocks) * obm->width * obm->height);
-    }
-}
-
-/**
- * Called at the begining of each frame (iff the render lists are not frozen)
- * by R_BeginWorldFrame().
- */
-void R_ClearObjLinksForFrame(map_t* map)
-{
-    if(!map)
-        return;
-
-    // Clear all the roots.
-    R_ObjBlockmapClear(objBlockmap);
-
+    assert(obm);
+    clearRoots(obm);
     objLinkCursor = objLinkFirst;
-    objLinks = NULL;
-}
-
-void R_ObjLinkCreate(void* obj, objtype_t type)
-{
-    objlink_t* ol = allocObjLink();
-
-    ol->obj = obj;
-    ol->type = type;
-}
-
-boolean RIT_LinkObjToSubsector(subsector_t* subsector, void* data)
-{
-    linkobjtosubSectorparams_t* params = (linkobjtosubSectorparams_t*) data;
-    objcontact_t* con = allocObjContact();
-
-    con->obj = params->obj;
-
-    // Link the contact list for this face.
-    linkContactToFace(con, params->type, P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1);
-
-    return true; // Continue iteration.
 }
 
 /**
@@ -392,15 +270,8 @@ static void processSeg(hedge_t* hEdge, void* data)
     dst->validCount = validCount;
 
     // Add this obj to the destination subsector.
-    {
-    linkobjtosubSectorparams_t lparams;
-
-    lparams.obj = params->obj;
-    lparams.type = params->objType;
-
-    RIT_LinkObjToSubsector(dst, &lparams);
-    }
-
+    // @todo Subsector should return the map its linked to.
+    Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, dst)->id - 1, params->objType, params->obj);
     spreadInSubsector(dst, data);
 }
 
@@ -461,14 +332,8 @@ static void findContacts(objlink_t* oLink)
     params.objType = oLink->type;
 
     // Always contact the obj's own subsector.
-    {
-    linkobjtosubSectorparams_t params;
-
-    params.obj = oLink->obj;
-    params.type = oLink->type;
-
-    RIT_LinkObjToSubsector(subsector, &params);
-    }
+    // @todo Subsector should return the map its linked to.
+    Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1, oLink->type, oLink->obj);
 
     if(params.objRadius < SUBSECTORSPREAD_MINRADIUS)
         return;
@@ -491,15 +356,14 @@ static void findContacts(objlink_t* oLink)
  *
  * @param subsector     Ptr to the subsector to spread the obj contacts of.
  */
-void R_ObjBlockmapSpreadObjsInSubsector(const objblockmap_t* obm,
-                                        const subsector_t* subsector,
-                                        float maxRadius)
+void ObjBlockmap_Spread(objblockmap_t* obm, const subsector_t* subsector,
+                        float maxRadius)
 {
     int xl, xh, yl, yh, x, y;
     objlink_t* iter;
 
-    if(!obm || !subsector)
-        return; // Wha?
+    assert(obm);
+    assert(subsector);
 
     xl = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[0][VX] - maxRadius));
     xh = X_TO_OBBX(obm, FLT2FIX(subsector->bBox[1][VX] + maxRadius));
@@ -546,28 +410,28 @@ void R_ObjBlockmapSpreadObjsInSubsector(const objblockmap_t* obm,
  *
  * @param subSector          Ptr to the subsector to process.
  */
-void R_InitForSubsector(subsector_t* subsector)
+void Subsector_SpreadObjLinks(subsector_t* subsector)
 {
     float maxRadius = MAX_OF(DDMOBJ_RADIUS_MAX, loMaxRadius);
+
+    assert(subsector);
 
 BEGIN_PROF( PROF_OBJLINK_SPREAD );
 
     // Make sure we know which objs are contacting us.
-    R_ObjBlockmapSpreadObjsInSubsector(objBlockmap, subsector, maxRadius);
+    // @todo Subsector should return the map its linked to.
+    ObjBlockmap_Spread(Map_ObjBlockmap(P_CurrentMap()), subsector, maxRadius);
 
 END_PROF( PROF_OBJLINK_SPREAD );
 }
 
-/**
- * Link all objlinks into the objlink blockmap.
- */
-void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
+static void addObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
 {
     int bx, by;
     objlink_t** root;
 
-    if(!obm || !oLink)
-        return; // Wha?
+    assert(obm);
+    assert(oLink);
 
     oLink->nextInBlock = NULL;
     bx = X_TO_OBBX(obm, FLT2FIX(x));
@@ -582,16 +446,22 @@ void R_ObjBlockmapLinkObjLink(objblockmap_t* obm, objlink_t* oLink, float x, flo
 }
 
 /**
- * Called by R_BeginWorldFrame() at the beginning of render tic (iff the
- * render lists are not frozen) to link all objlinks into the objlink
- * blockmap.
+ * Link all objlinks into the objlink blockmap.
  */
-void R_LinkObjs(map_t* map)
+void ObjBlockmap_AddLinks(objblockmap_t* obm, objlink_t* objLinks)
 {
     objlink_t* oLink;
+#ifdef DD_PROFILE
+    static int i;
+    if(++i > 40)
+    {
+        i = 0;
+        PRINT_PROF(PROF_OBJLINK_SPREAD);
+        PRINT_PROF(PROF_OBJLINK_LINK);
+    }
+#endif
 
-    if(!map)
-        return;
+    assert(obm);
 
 BEGIN_PROF( PROF_OBJLINK_LINK );
 
@@ -617,59 +487,14 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
 
         default:
             Con_Error("Internal Error: Invalid value (%i) for objlink_t->type "
-                      "in R_LinkObjs.", (int) oLink->type);
+                      "in Map_LinkObjs.", (int) oLink->type);
             return; // Unreachable.
         }
 
-        R_ObjBlockmapLinkObjLink(objBlockmap, oLink, pos[VX], pos[VY]);
+        addObjLink(obm, oLink, pos[VX], pos[VY]);
 
         oLink = oLink->next;
     }
 
 END_PROF( PROF_OBJLINK_LINK );
-}
-
-/**
- * Initialize the obj > subsector contact lists ready for adding new
- * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
- * frame (if the render lists are not frozen).
- */
-void R_InitForNewFrame(map_t* map)
-{
-#ifdef DD_PROFILE
-    static int i;
-
-    if(++i > 40)
-    {
-        i = 0;
-        PRINT_PROF(PROF_OBJLINK_SPREAD);
-        PRINT_PROF(PROF_OBJLINK_LINK);
-    }
-#endif
-
-    if(!map)
-        return;
-
-    // Start reusing nodes from the first one in the list.
-    contCursor = contFirst;
-    if(subsectorContacts)
-        memset(subsectorContacts, 0, map->numSubsectors * sizeof(*subsectorContacts));
-}
-
-boolean R_IterateSubsectorContacts(subsector_t* subsector, objtype_t type,
-                                   boolean (*func) (void*, void*),
-                                   void* data)
-{
-    objcontact_t* con;
-
-    con = subsectorContacts[P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1].head[type];
-    while(con)
-    {
-        if(!func(con->obj, data))
-            return false;
-
-        con = con->next;
-    }
-
-    return true;
 }

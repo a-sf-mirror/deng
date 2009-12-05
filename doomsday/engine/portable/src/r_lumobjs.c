@@ -294,7 +294,8 @@ uint LO_NewLuminous(lumtype_t type, subsector_t* subsector)
 
     linkLumObjToFace(lum);
 
-    R_ObjLinkCreate(lum, OT_LUMOBJ); // For spreading purposes.
+    // @todo Subsector should return the map its linked to.
+    Map_CreateObjLink(P_CurrentMap(), lum, OT_LUMOBJ);
 
     return numLuminous; // == index + 1
 }
@@ -681,13 +682,8 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
         LUM_PLANE(l)->tex = GL_PrepareLSTexture(LST_GRADIENT);
 
         // Planar lights don't spread, so just link the lum to its own subsector.
-        {
-        linkobjtosubSectorparams_t params;
-
-        params.obj = l;
-        params.type = OT_LUMOBJ;
-        RIT_LinkObjToSubsector(l->subsector, &params);
-        }
+        // @todo Subsector should return the map its linked to.
+        Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, l->subsector)->id - 1, OT_LUMOBJ, l);
     }
 }
 
@@ -785,8 +781,9 @@ boolean LO_LumobjsRadiusIterator(subsector_t* subsector, float x, float y,
     params.func = func;
     params.data = data;
 
-    return R_IterateSubsectorContacts(subsector, OT_LUMOBJ, LOIT_RadiusLumobjs,
-                                      (void*) &params);
+    // @todo Subsector should return the map its linked to.
+    return Map_IterateSubsectorContacts(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1,
+                                        OT_LUMOBJ, LOIT_RadiusLumobjs, (void*) &params);
 }
 
 boolean LOIT_ClipLumObj(void* data, void* context)

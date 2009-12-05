@@ -81,6 +81,12 @@ typedef struct lineowner2_s {
     struct hedge_s* hEdge;
 } lineowner2_t;
 
+typedef struct {
+    map_t*          map;
+    void*           obj;
+    objtype_t       type;
+} linkobjtosubsectorparams_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -94,6 +100,9 @@ typedef struct lineowner2_s {
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static vertex_t* rootVtx; // Used when sorting vertex line owners.
+
+// List of unused and used obj-face contacts.
+static objcontact_t* contFirst = NULL, *contCursor = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -164,6 +173,75 @@ static polyobj_t* createPolyobj(map_t* map)
 
     po->buildData.index = map->numPolyObjs; // 1-based index, 0 = NIL.
     return po;
+}
+
+/**
+ * Initialize subsector -> obj contact lists.
+ */
+static void initSubsectorContacts(map_t* map)
+{
+    map->_subsectorContacts =
+        Z_Calloc(sizeof(*map->_subsectorContacts) * map->numSubsectors, PU_STATIC, 0);
+}
+
+/**
+ * Initialize the obj > subsector contact lists ready for adding new
+ * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
+ * frame (if the render lists are not frozen).
+ */
+static void clearSubsectorContacts(map_t* map)
+{
+    // Start reusing nodes from the first one in the list.
+    contCursor = contFirst;
+    if(map->_subsectorContacts)
+        memset(map->_subsectorContacts, 0, map->numSubsectors * sizeof(*map->_subsectorContacts));
+}
+
+/**
+ * Link the given objcontact node to list.
+ */
+static __inline void linkContact(objcontact_t** list, objcontact_t* con,
+                                 uint index)
+{
+    con->next = list[index];
+    list[index] = con;
+}
+
+static void linkContactToSubsector(map_t* map, uint subsectorIdx,
+                                   objtype_t type, objcontact_t* node)
+{
+    linkContact(&map->_subsectorContacts[subsectorIdx].head[type], node, 0);
+}
+
+/**
+ * Create a new objcontact for the given obj. If there are free nodes in
+ * the list of unused nodes, the new contact is taken from there.
+ *
+ * @param obj           Ptr to the obj the contact is required for.
+ *
+ * @return              Ptr to the new objcontact.
+ */
+static objcontact_t* allocObjContact(void)
+{
+    objcontact_t* con;
+
+    if(contCursor == NULL)
+    {
+        con = Z_Malloc(sizeof(*con), PU_STATIC, NULL);
+
+        // Link to the list of objcontact nodes.
+        con->nextUsed = contFirst;
+        contFirst = con;
+    }
+    else
+    {
+        con = contCursor;
+        contCursor = contCursor->nextUsed;
+    }
+
+    con->obj = NULL;
+
+    return con;
 }
 
 static void destroySubsectors(halfedgeds_t* halfEdgeDS)
@@ -316,10 +394,23 @@ void P_DestroyMap(map_t* map)
 
     if(map->_mobjBlockmap)
         P_DestroyMobjBlockmap(map->_mobjBlockmap);
+    map->_mobjBlockmap = NULL;
+
     if(map->_lineDefBlockmap)
         P_DestroyLineDefBlockmap(map->_lineDefBlockmap);
+    map->_lineDefBlockmap = NULL;
+
     if(map->_subsectorBlockmap)
         P_DestroySubsectorBlockmap(map->_subsectorBlockmap);
+    map->_subsectorBlockmap = NULL;
+
+    if(map->_objBlockmap)
+        P_DestroyObjBlockmap(map->_objBlockmap);
+    map->_objBlockmap = NULL;
+
+    if(map->_subsectorContacts)
+        Z_Free(map->_subsectorContacts);
+    map->_subsectorContacts = NULL;
 
     P_DestroyNodePile(map->mobjNodes);
     map->mobjNodes = NULL;
@@ -2933,10 +3024,51 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
     assert(map);
 
     clearSectorFlags(map);
-
     interpolateWatchedPlanes(map, resetNextViewer);
-
     interpolateMovingSurfaces(map, resetNextViewer);
+
+    if(!freezeRLs)
+    {
+        LG_Update(map);
+        SB_BeginFrame(map);
+        LO_ClearForFrame(map);
+
+        ObjBlockmap_Clear(map->_objBlockmap); // Zeroes the links.
+        map->_objLinks = NULL;
+
+        clearSubsectorContacts(map);
+
+        // Generate surface decorations for the frame.
+        Rend_InitDecorationsForFrame(map);
+
+        // Spawn omnilights for decorations.
+        Rend_AddLuminousDecorations(map);
+
+        // Spawn omnilights for mobjs.
+        LO_AddLuminousMobjs(map);
+
+        R_CreateParticleLinks(map);
+
+        // Create objlinks for mobjs.
+        R_CreateMobjLinks(map);
+
+        // Link objs to all contacted surfaces.
+        ObjBlockmap_AddLinks(map->_objBlockmap, map->_objLinks);
+    }
+}
+
+void Map_EndFrame(map_t* map)
+{
+    assert(map);
+
+    if(!freezeRLs)
+    {
+        // Wrap up with Source, Bias lights.
+        SB_EndFrame(map);
+
+        // Update the bias light editor.
+        SBE_EndFrame(map);
+    }
 }
 
 /**
@@ -3010,6 +3142,12 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
 {
     assert(map);
     return map->_subsectorBlockmap;
+}
+
+objblockmap_t* Map_ObjBlockmap(map_t* map)
+{
+    assert(map);
+    return map->_objBlockmap;
 }
 
 void Map_InitLinks(map_t* map)
@@ -3411,6 +3549,85 @@ static void findDominantLightSources(map_t* map)
 #undef DOMINANT_SIZE
 }
 
+static void initObjBlockmap(map_t* map)
+{
+    vec2_t min, max;
+
+    // Determine the dimensions of the objblockmap.
+    Map_Bounds(map, &min[0], &max[0]);
+    V2_Subtract(max, max, min);
+
+    // 128x128 world unit blocks.
+    map->_objBlockmap = P_CreateObjBlockmap(min[0], min[1],
+        (FLT2FIX(max[0]) >> (FRACBITS + 7)) + 1,
+        (FLT2FIX(max[1]) >> (FRACBITS + 7)) + 1);
+    map->_objLinks = NULL;
+}
+
+void Map_CreateObjLink(map_t* map, void* obj, objtype_t type)
+{
+    objlink_t* ol;
+
+    assert(map);
+    assert((ol = P_CreateObjLink(obj, type)));
+
+    // Link it to the list of in-use objlinks.
+    ol->next = map->_objLinks;
+    map->_objLinks = ol;
+}
+
+static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
+{
+    linkobjtosubsectorparams_t* params = (linkobjtosubsectorparams_t*) data;
+    objcontact_t* con = allocObjContact();
+
+    con->obj = params->obj;
+
+    // Link the contact list for this face.
+    linkContactToSubsector(params->map, subsectorIdx, params->type, con);
+
+    return true; // Continue iteration.
+}
+
+void Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objtype_t type,
+                             void* obj)
+{
+    linkobjtosubsectorparams_t params;
+
+    assert(map);
+    assert(subsectorIdx < map->numSubsectors);
+    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
+    assert(obj);
+
+    params.map = map;
+    params.obj = obj;
+    params.type = type;
+
+    PIT_LinkObjToSubsector(subsectorIdx, &params);
+}
+
+boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objtype_t type,
+                                     boolean (*callback) (void*, void*),
+                                     void* data)
+{
+    objcontact_t* con;
+
+    assert(map);
+    assert(subsectorIdx < map->numSubsectors);
+    assert(callback);
+
+    con = map->_subsectorContacts[subsectorIdx].head[type];
+    while(con)
+    {
+        if(!callback(con->obj, data))
+            return false;
+
+        con = con->next;
+    }
+
+    return true;
+}
+
 /**
  * Begin the process of loading a new map.
  * Can be accessed by the games via the public API.
@@ -3503,6 +3720,8 @@ boolean P_LoadMap(const char* mapID)
         // Init other blockmaps.
         buildMobjBlockmap(map);
         buildSubsectorBlockmap(map);
+        initObjBlockmap(map);
+        initSubsectorContacts(map);
 
         strncpy(map->mapID, mapID, 8);
         strncpy(map->uniqueID, DAM_GenerateUniqueMapName(mapID),
@@ -3581,7 +3800,6 @@ boolean P_LoadMap(const char* mapID)
         // Texture animations should begin from their first step.
         Materials_RewindAnimationGroups();
 
-        R_InitObjLinksForMap(map);
         LO_InitForMap(map); // Lumobj management.
         VL_InitForMap(); // Converted vlights (from lumobjs) management.
 

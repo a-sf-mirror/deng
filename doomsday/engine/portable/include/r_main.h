@@ -84,11 +84,14 @@ void            R_Register(void);
 void            R_Init(void);
 void            R_Update(void);
 void            R_Shutdown(void);
-void            R_BeginWorldFrame(struct map_s* map);
-void            R_EndWorldFrame(struct map_s* map);
+void            R_BeginWorldFrame(void);
+void            R_EndWorldFrame(void);
 void            R_RenderPlayerView(int num);
 void            R_RenderPlayerViewBorder(void);
 void            R_RenderViewPorts(void);
+
+void            R_CreateParticleLinks(struct map_s* map);
+void            R_CreateMobjLinks(struct map_s* map);
 
 const viewdata_t* R_ViewData(int localPlayerNum);
 void            R_ResetViewer(void);

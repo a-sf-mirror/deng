@@ -37,6 +37,7 @@
 #include "rend_bias.h"
 #include "p_think.h"
 #include "p_particle.h"
+#include "p_objlink.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -163,6 +164,10 @@ typedef struct map_s {
     linedefblockmap_t* _lineDefBlockmap;
     subsectorblockmap_t* _subsectorBlockmap;
 
+    objblockmap_t*  _objBlockmap;
+    objlink_t*      _objLinks;
+    objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
+
     boolean         editActive;
     float           bBox[4];
 
@@ -232,11 +237,14 @@ void            Map_Bounds(map_t* map, float* min, float* max);
 int             Map_AmbientLightLevel(map_t* map);
 
 void            Map_BeginFrame(map_t* map, boolean resetNextViewer);
-void            Map_Update(map_t* map);
+void            Map_EndFrame(map_t* map);
 
+void            Map_Update(map_t* map);
 void            Map_UpdateWatchedPlanes(map_t* map);
 void            Map_UpdateMovingSurfaces(map_t* map);
 void            Map_UpdateSkyFixForSector(map_t* map, uint secIDX);
+
+void            Map_CreateObjLink(map_t* map, void* obj, objtype_t type);
 
 void            Map_LinkMobj(map_t* map, struct mobj_s* mo, byte flags);
 int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);
@@ -256,6 +264,11 @@ void            Map_RemoveThinker(map_t* map, thinker_t* th);
 boolean         Map_IterateThinkers(map_t* map, think_t func, byte flags,
                                     int (*callback) (void* p, void*),
                                     void* context);
+
+void            Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objtype_t type, void* obj);
+boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objtype_t type,
+                                             boolean (*func) (void*, void*),
+                                             void* data);
 
 /**
  * Map Edit interface.
@@ -321,6 +334,7 @@ halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
 mobjblockmap_t* Map_MobjBlockmap(map_t* map);
 linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
 subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
+objblockmap_t*  Map_ObjBlockmap(map_t* map);
 
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);

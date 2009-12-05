@@ -207,8 +207,6 @@ typedef struct listhash_s {
 extern int useDynLights, dlBlend, simpleSky;
 extern boolean usingFog;
 
-extern byte freezeRLs;
-
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int renderTextures = true;

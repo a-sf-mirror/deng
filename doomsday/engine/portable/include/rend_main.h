@@ -39,6 +39,7 @@ extern boolean usingFog;
 extern float fogColor[4];
 extern int gameDrawHUD;
 extern int useShinySurfaces;
+extern byte freezeRLs;
 
 extern int devRendSkyMode;
 extern byte devRendSkyAlways;
