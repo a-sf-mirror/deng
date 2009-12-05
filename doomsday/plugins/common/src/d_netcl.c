@@ -669,10 +669,10 @@ void NetCl_Intermission(byte* data)
 /**
  * This is where clients start their InFine interludes.
  */
-void NetCl_Finale(int packetType, byte *data)
+void NetCl_Finale(int packetType, byte* data)
 {
-    int         flags, len, numConds, i;
-    byte       *script = NULL;
+    int flags, len, numConds, i;
+    byte* script = NULL;
 
     NetCl_SetReadBuffer(data);
     flags = NetCl_ReadByte();
@@ -688,16 +688,12 @@ void NetCl_Finale(int packetType, byte *data)
             }
         }
 
-        // Read the script into map-scope memory. It will be freed
-        // when the next map is loaded.
-        len = strlen((char*)readbuffer);
-        script = Z_Malloc(len + 1, PU_MAP, 0);
-        strcpy((char*)script, (char*)readbuffer);
+        script = readbuffer;
     }
 
-    if(flags & FINF_BEGIN && script)
+    if((flags & FINF_BEGIN) && script)
     {
-        // Start the script.
+        // Start the script (will take a copy of the script).
         FI_Start((char*)script,
                  (flags & FINF_AFTER) ? FIMODE_AFTER : (flags & FINF_OVERLAY) ?
                  FIMODE_OVERLAY : FIMODE_BEFORE);

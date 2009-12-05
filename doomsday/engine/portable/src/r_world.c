@@ -704,12 +704,14 @@ void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
 
     // If this plane's surface is in the moving list, remove it.
     SurfaceList_Remove(&map->movingSurfaceList, &plane->surface);
-    // If this plane's surface if in the deocrated list, remove it.
+    // If this plane's surface is in the deocrated list, remove it.
     SurfaceList_Remove(&map->decoratedSurfaceList, &plane->surface);
+    if(plane->surface.decorations)
+        Z_Free(plane->surface.decorations);
 
     // Stop active material fade on this surface.
     Map_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
-                      RIT_StopMatFader, &plane->surface);
+                        RIT_StopMatFader, &plane->surface);
 
     /**
      * Destroy biassurfaces for planes in all sector subsectors if present
@@ -720,7 +722,6 @@ void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
     while(*subsectorPtr)
     {
         R_DestroyBiasSurfacesForPlanesInSubSector(*subsectorPtr);
-
         *subsectorPtr++;
     }
     }
@@ -742,7 +743,7 @@ surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf)
     if(!suf)
         return NULL;
 
-    decorations = Z_Malloc(sizeof(*decorations) * (++suf->numDecorations), PU_MAP, 0);
+    decorations = Z_Malloc(sizeof(*decorations) * (++suf->numDecorations), PU_STATIC, 0);
 
     if(suf->numDecorations > 1)
     {   // Copy the existing decorations.

@@ -1206,6 +1206,8 @@ void Rend_RenderTexParticle(const vissprite_t* spr)
 
     // Rotate around the center of the particle.
     glTranslatef(spr->center[VX], spr->center[VZ], spr->center[VY]);
+    // Counteract the view-up aspect correction (rather than setup the modelview again).
+    glScalef(1.f, 1 / 1.2f, 1.f);
     // Normal rotation perpendicular to the view plane.
     glRotatef(vpitch, viewsidex, 0, viewsidey);
     glTranslatef(-spr->center[VX], -spr->center[VZ], -spr->center[VY]);

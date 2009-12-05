@@ -1067,7 +1067,7 @@ static void archivePolyobjs(map_t* map, boolean write)
     else
     {
         map->numPolyObjs = readLong();
-        map->polyObjs = Z_Malloc(sizeof(polyobj_t*) * map->numPolyObjs, PU_MAP, 0);
+        map->polyObjs = Z_Malloc(sizeof(polyobj_t*) * map->numPolyObjs, PU_STATIC, 0);
         for(i = 0; i < map->numPolyObjs; ++i)
             readPolyobj(map, i);
     }

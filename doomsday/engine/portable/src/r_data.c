@@ -1353,7 +1353,7 @@ typedef struct {
                     if(!stricmp(mtexture->name, other->name))
                     {
                         Con_Message("R_ReadTextureDefs: Benign texture definition "
-                                    "'%s' in lump %i.\n", mtexture->name,
+                                    "'%s' in lump %s.\n", mtexture->name,
                                     W_LumpName(lump));
                         ignoreDef = true;
                         break;
@@ -1420,7 +1420,7 @@ typedef struct {
                     if(!stricmp(smtexture->name, other->name))
                     {
                         Con_Message("R_ReadTextureDefs: Benign texture definition "
-                                    "'%s' in lump %i.\n", smtexture->name,
+                                    "'%s' in lump %s.\n", smtexture->name,
                                     W_LumpName(lump));
                         ignoreDef = true;
                         break;

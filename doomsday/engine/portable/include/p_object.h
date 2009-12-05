@@ -52,8 +52,6 @@ extern boolean dontHitMobjs;
 
 #include "cl_def.h"                // for clplayerstate_s
 
-void            P_InitUnusedMobjList(void);
-
 mobj_t*         P_MobjCreate(think_t function, float x, float y, float z,
                              angle_t angle, float radius, float height,
                              int ddflags);
