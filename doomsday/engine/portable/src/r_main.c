@@ -539,9 +539,27 @@ static int createObjLinksForParticles(void* ptr, void* context)
     for(p = 0; p < gen->count; ++p)
     {
         particle_t* pt = &gen->ptcs[p];
+        const ded_ptcstage_t* dst, *nextDst;
+        const ptcstage_t* st;
+        float size, invMark;
 
         if(!pt->gen)
             continue;
+
+        // Lets avoid a lot of unnecessary work by prunning tiny particles early on.
+        st = &gen->stages[pt->stage];
+        dst = &gen->def->stages[pt->stage];
+        if(pt->stage >= gen->def->stageCount.num - 1 ||
+           !gen->stages[pt->stage + 1].type)
+            nextDst = gen->def->stages + pt->stage; // There is no "next stage". Use the current one.
+        else
+            nextDst = gen->def->stages + (pt->stage + 1);
+
+        invMark = pt->tics / (float) dst->tics;
+        size = P_GetParticleRadius(dst, pt - gen->ptcs) * invMark +
+            P_GetParticleRadius(nextDst, pt - gen->ptcs) * (1 - invMark);
+        if(!(size > .0001f))
+            continue; // Infinitely small.
 
         R_ObjLinkCreate(pt, OT_PARTICLE); // For spreading purposes.
     }
@@ -562,6 +580,8 @@ void R_CreateParticleLinks(map_t* map)
 #endif
 
     if(!map)
+        return;
+    if(!useParticles)
         return;
 
 BEGIN_PROF( PROF_PARTICLE_INIT_ADD );

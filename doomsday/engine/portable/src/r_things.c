@@ -1652,7 +1652,7 @@ void Particle_ProjectVisSprite(const particle_t* pt)
     // Calculate size and color.
     size = P_GetParticleRadius(dst, pt - gen->ptcs) * invMark +
         P_GetParticleRadius(nextDst, pt - gen->ptcs) * mark;
-    if(!size)
+    if(!(size > .0001f))
         return; // Infinitely small.
 
     for(c = 0; c < 4; ++c)
@@ -2051,7 +2051,7 @@ boolean visSpriteLightIterator(const lumobj_t* lum, float xyDist, void* data)
         zDist = params->pos[VZ] - lum->pos[VZ] + LUM_OMNI(lum)->zOff;
         dist = P_ApproxDistance(xyDist, zDist);
 
-        if(dist < (float) loMaxRadius)
+        if(dist > 0 && dist < (float) loMaxRadius)
         {
             // The intensity of the light.
             intensity = MINMAX_OF(0, (1 - dist / LUM_OMNI(lum)->radius) * 2, 1);

@@ -412,6 +412,8 @@ static void processSeg(hedge_t* hEdge, void* data)
  */
 static void findContacts(objlink_t* oLink)
 {
+#define SUBSECTORSPREAD_MINRADIUS 16 // In world units.
+
     contactfinderparams_t params;
     subsector_t* subsector;
 
@@ -455,16 +457,8 @@ static void findContacts(objlink_t* oLink)
         return; // Unreachable.
     }
 
-    // Do the subsector spread. Begin from the obj's own subSector.
-    subsector->validCount = ++validCount;
-
     params.obj = oLink->obj;
     params.objType = oLink->type;
-
-    params.box[BOXLEFT]   = params.objPos[VX] - params.objRadius;
-    params.box[BOXRIGHT]  = params.objPos[VX] + params.objRadius;
-    params.box[BOXBOTTOM] = params.objPos[VY] - params.objRadius;
-    params.box[BOXTOP]    = params.objPos[VY] + params.objRadius;
 
     // Always contact the obj's own subsector.
     {
@@ -476,7 +470,19 @@ static void findContacts(objlink_t* oLink)
     RIT_LinkObjToSubsector(subsector, &params);
     }
 
+    if(params.objRadius < SUBSECTORSPREAD_MINRADIUS)
+        return;
+
+    // Do the subsector spread. Begin from the obj's own subsector.
+    params.box[BOXLEFT]   = params.objPos[VX] - params.objRadius;
+    params.box[BOXRIGHT]  = params.objPos[VX] + params.objRadius;
+    params.box[BOXBOTTOM] = params.objPos[VY] - params.objRadius;
+    params.box[BOXTOP]    = params.objPos[VY] + params.objRadius;
+
+    subsector->validCount = ++validCount;
     spreadInSubsector(subsector, &params);
+
+#undef SUBSECTORSPREAD_MINRADIUS
 }
 
 /**
