@@ -834,14 +834,17 @@ desc = 1=Use separate visual angle for mobjs (unjag actors).
 [rend-particle]
 desc = 1=Render particle effects.
 
+[rend-particle-diffuse]
+desc = Diffuse factor for particles near the camera.
+
+[rend-particle-lights]
+desc = Maximum number of light sources on particles.
+
 [rend-particle-max]
 desc = Maximum number of particles to render. 0=no limit.
 
 [rend-particle-rate]
 desc = Particle spawn rate multiplier (default: 1).
-
-[rend-particle-diffuse]
-desc = Diffuse factor for particles near the camera.
 
 [rend-particle-visible-near]
 desc = Minimum visible distance for a particle.

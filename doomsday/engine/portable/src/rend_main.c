@@ -2470,7 +2470,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
     // Sprites for this subsector have to be drawn. This must be done before
     // the segments of this subsector are added to the clipper. Otherwise
     // the sprites would get clipped by them, and that wouldn't be right.
-    R_AddSprites(subsector);
+    R_ProjectVisSprites(subsector);
 
     // Draw the various skyfixes for all front facing segs in this subsector
     // (includes polyobject segs).
@@ -2975,11 +2975,8 @@ void Rend_RenderMap(map_t* map)
 
     RL_RenderAllLists();
 
-    // Draw masked walls, sprites and models.
+    // Draw masked walls, sprites, particles and models.
     Rend_DrawMasked();
-
-    // Draw particles.
-    Rend_RenderParticles(map);
 
     // Draw various debugging displays:
     Rend_RenderNormals(map); // World surface normals.

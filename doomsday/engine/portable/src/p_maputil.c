@@ -535,7 +535,7 @@ void P_MobjLink(mobj_t* mo, byte flags)
  * The callback function will be called once for each line that crosses
  * trough the object. This means all the lines will be two-sided.
  */
-boolean P_MobjLinesIterator(mobj_t* mo, boolean (*func) (linedef_t*, void*),
+boolean P_MobjLinesIterator(const mobj_t* mo, boolean (*func) (linedef_t*, void*),
                             void* data)
 {
     void* linkstore[MAXLINKED];
@@ -569,7 +569,7 @@ boolean P_MobjLinesIterator(mobj_t* mo, boolean (*func) (linedef_t*, void*),
  * partly inside). This is not a 3D check; the mobj may actually reside
  * above or under the sector.
  */
-boolean P_MobjSectorsIterator(mobj_t* mo,
+boolean P_MobjSectorsIterator(const mobj_t* mo,
                               boolean (*func) (sector_t*, void*),
                               void* data)
 {

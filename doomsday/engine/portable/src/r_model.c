@@ -562,9 +562,9 @@ static modeldef_t *GetStateModel(state_t *st, int select)
     return modef;
 }
 
-modeldef_t *R_CheckIDModelFor(const char *id)
+modeldef_t* R_CheckIDModelFor(const char* id)
 {
-    int                 i;
+    int i;
 
     if(!id[0])
         return NULL;
@@ -580,7 +580,7 @@ modeldef_t *R_CheckIDModelFor(const char *id)
  * state and tics of the mobj. Returns the modeldefs that are in effect
  * at the moment (interlinks checked appropriately).
  */
-float R_CheckModelFor(mobj_t *mo, modeldef_t **modef, modeldef_t **nextmodef)
+float R_CheckModelFor(const mobj_t* mo, modeldef_t** modef, modeldef_t** nextmodef)
 {
     float interp = -1;
     state_t* st = mo->state;

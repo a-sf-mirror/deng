@@ -29,15 +29,15 @@
 #ifndef __DOOMSDAY_RENDER_PARTICLES_H__
 #define __DOOMSDAY_RENDER_PARTICLES_H__
 
+extern DGLuint pointTex, ptctexname[MAX_PTC_TEXTURES];
 extern byte useParticles;
-extern int maxParticles;
-extern float particleSpawnRate;
+extern int maxParticles, particleNearLimit, particleLight;
+extern float particleSpawnRate, particleDiffuse;
 
 void            Rend_ParticleRegister(void);
 void            Rend_ParticleInitTextures(void);
 void            Rend_ParticleShutdownTextures(void);
 
-void            Rend_RenderParticles(struct map_s* map);
 // Debugging aid:
 void            Rend_RenderGenerators(struct map_s* map);
 #endif

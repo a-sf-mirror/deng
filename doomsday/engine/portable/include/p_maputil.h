@@ -69,10 +69,10 @@ int             P_MobjUnlink(mobj_t* mo);
 boolean         PIT_AddLineIntercepts(linedef_t* ld, void* data);
 boolean         PIT_AddMobjIntercepts(mobj_t* mo, void* data);
 
-boolean         P_MobjLinesIterator(mobj_t* mo,
+boolean         P_MobjLinesIterator(const mobj_t* mo,
                                     boolean (*func) (linedef_t*, void*),
                                     void* data);
-boolean         P_MobjSectorsIterator(mobj_t* mo,
+boolean         P_MobjSectorsIterator(const mobj_t* mo,
                                       boolean (*func) (sector_t*, void*),
                                       void* data);
 boolean         P_LineMobjsIterator(linedef_t* line,

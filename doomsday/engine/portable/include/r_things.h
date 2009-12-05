@@ -61,7 +61,9 @@ typedef enum {
     VSPR_HIDDEN,
     VSPR_SPRITE,
     VSPR_MASKED_WALL,
-    VSPR_MODEL
+    VSPR_TEXPARTICLE,
+    VSPR_MODEL,
+    VSPR_LINE
 } visspritetype_t;
 
 typedef struct rendmaskedwallparams_s {
@@ -108,10 +110,24 @@ typedef struct rendspriteparams_s {
     struct subsector_s* subsector;
 } rendspriteparams_t;
 
+typedef struct rendtexparticleparams_s {
+    float           radius;
+    DGLuint         tex;
+    blendmode_t     blendMode;
+    float           ambientColor[4];
+    uint            vLightListIdx;
+} rendtexparticleparams_t;
+
+typedef struct rendlineparams_s {
+// Position/Orientation/Scale
+    float           from[3], to[3];
+    blendmode_t     blendMode; // Blendmode to be used when drawing.
+    float           ambientColor[4];
+} rendlineparams_t;
+
 #define MAX_VISSPRITE_LIGHTS    (10)
 
-// A vissprite_t is a mobj or masked wall that will be drawn during
-// a refresh.
+// A vissprite an object that will be drawn during refresh.
 typedef struct vissprite_s {
     struct vissprite_s* prev, *next;
     visspritetype_t type; // VSPR_* type of vissprite.
@@ -124,7 +140,9 @@ typedef struct vissprite_s {
     union vissprite_data_u {
         rendspriteparams_t sprite;
         rendmaskedwallparams_t wall;
+        rendtexparticleparams_t texpt;
         rendmodelparams_t model;
+        rendlineparams_t line;
     } data;
 } vissprite_t;
 
@@ -191,15 +209,15 @@ extern vispsprite_t visPSprites[DDMAXPSPRITES];
 material_t*     R_GetMaterialForSprite(int sprite, int frame);
 boolean         R_GetSpriteInfo(int sprite, int frame, spriteinfo_t* sprinfo);
 boolean         R_GetPatchInfo(lumpnum_t lump, patchinfo_t* info);
-float           R_VisualRadius(struct mobj_s* mo);
-float           R_GetBobOffset(struct mobj_s* mo);
+float           R_VisualRadius(const struct mobj_s* mo);
+float           R_GetBobOffset(const struct mobj_s* mo);
 float           R_MovementYaw(float momx, float momy);
 float           R_MovementPitch(float momx, float momy, float momz);
 void            R_ProjectSprite(struct mobj_s* mobj);
 void            R_ProjectPlayerSprites(void);
 void            R_SortVisSprites(void);
 vissprite_t*    R_NewVisSprite(void);
-void            R_AddSprites(subsector_t* subsector);
+void            R_ProjectVisSprites(subsector_t* subsector);
 void            R_AddPSprites(void);
 void            R_DrawSprites(void);
 

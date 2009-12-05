@@ -214,7 +214,7 @@ static material_t* createMaterial(short width, short height, byte flags,
     material_t*         mat = Z_BlockNewElement(materialsBlockSet);
 
     memset(mat, 0, sizeof(*mat));
-    
+
     mat->mnamespace = mnamespace;
     mat->width = width;
     mat->height = height;
@@ -726,7 +726,7 @@ materialnum_t Materials_IndexForName(material_namespace_t mnamespace,
     result = Materials_CheckIndexForName(mnamespace, name);
 
     // Not found?
-    if(result == 0 && !ddMapSetup) // Don't announce during map setup.
+    if(verbose && result == 0 && !ddMapSetup) // Don't announce during map setup.
         Con_Message("Materials_IndexForName: \"%.8s\" in namespace %i not found!\n",
                     name, mnamespace);
     return result;

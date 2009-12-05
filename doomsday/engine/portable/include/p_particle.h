@@ -83,13 +83,15 @@ typedef enum {
 #define PTCF_RANDOM_PITCH       0x1000
 
 typedef struct {
-    int             stage; // -1 => particle doesn't exist
+    struct generator_s* gen; // Generator that spawned this particle if @c NULL, particle doesn't exist.
+    ushort          stage;
     short           tics;
     fixed_t         pos[3]; // Coordinates.
     fixed_t         mov[3]; // Momentum.
     subsector_t*    subsector; // Updated when needed.
     linedef_t*      contact; // Updated when lines hit/avoided.
     ushort          yaw, pitch; // Rotation angles (0-65536 => 0-360).
+    int             addFrameCount;
 } particle_t;
 
 typedef struct {
@@ -102,7 +104,7 @@ typedef struct {
 } ptcstage_t;
 
 // Particle Generator
-typedef struct ptcgen_s {
+typedef struct generator_s {
     thinker_t       thinker; // Func = P_GeneratorThinker
     sector_t*       sector; // Flat-triggered.
     uint            planeID; // Flat-triggered.

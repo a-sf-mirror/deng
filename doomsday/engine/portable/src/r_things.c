@@ -763,9 +763,9 @@ boolean R_GetPatchInfo(lumpnum_t lump, patchinfo_t* info)
 /**
  * @return              Radius of the mobj as it would visually appear to be.
  */
-float R_VisualRadius(mobj_t* mo)
+float R_VisualRadius(const mobj_t* mo)
 {
-    modeldef_t*         mf, *nextmf;
+    modeldef_t* mf, *nextmf;
     material_snapshot_t ms;
 
     // If models are being used, use the model's radius.
@@ -986,9 +986,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
                                           uint vLightListIdx,
                                           int transMap, int transClass, subsector_t* subsector,
                                           boolean floorAdjust, boolean fitTop, boolean fitBottom,
-                                          boolean viewAligned,
-                                          boolean brightShadow, boolean shadow, boolean altShadow,
-                                          boolean fullBright)
+                                          boolean viewAligned, boolean fullBright)
 {
     spritetex_t* sprTex = NULL;
     material_snapshot_t ms;
@@ -1037,9 +1035,28 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
     params->vLightListIdx = vLightListIdx;
 }
 
+static void setupParticleParamsForVisSprite(rendtexparticleparams_t* params,
+                                            float radius, DGLuint tex, blendmode_t blendMode,
+                                            float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
+                                            uint vLightListIdx)
+{
+    if(!params)
+        return; // Wha?
+
+    params->radius = radius;
+    params->tex = tex;
+    params->blendMode = blendMode;
+    params->ambientColor[CR] = ambientColorR;
+    params->ambientColor[CG] = ambientColorG;
+    params->ambientColor[CB] = ambientColorB;
+    params->ambientColor[CA] = alpha;
+    params->vLightListIdx = vLightListIdx;
+}
+
 void setupModelParamsForVisSprite(rendmodelparams_t *params,
                                   float x, float y, float z, float distance,
                                   float visOffX, float visOffY, float visOffZ, float gzt, float yaw, float yawAngleOffset, float pitch, float pitchAngleOffset,
+                                  float extraScale,
                                   struct modeldef_s* mf, struct modeldef_s* nextMF, float inter,
                                   float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                   uint vLightListIdx,
@@ -1072,7 +1089,7 @@ void setupModelParamsForVisSprite(rendmodelparams_t *params,
     params->pitch = pitch;
     params->extraPitchAngle = 0;
     params->pitchAngleOffset = pitchAngleOffset;
-    params->extraScale = 0;
+    params->extraScale = extraScale;
     params->viewAlign = viewAlign;
     params->mirror = 0;
     params->shineYawOffset = 0;
@@ -1086,6 +1103,28 @@ void setupModelParamsForVisSprite(rendmodelparams_t *params,
     params->ambientColor[CA] = alpha;
 
     params->vLightListIdx = vLightListIdx;
+}
+
+void setupLineParamsForVisSprite(rendlineparams_t *params,
+                                 float x, float y, float z,
+                                 float toX, float toY, float toZ,
+                                 float red, float green, float blue, float alpha,
+                                 blendmode_t blendMode)
+{
+    if(!params)
+        return; // Hmm...
+
+    params->from[VX] = x;
+    params->from[VY] = y;
+    params->from[VZ] = z;
+    params->to[VX] = toX;
+    params->to[VY] = toY;
+    params->to[VZ] = toZ;
+    params->ambientColor[CR] = red;
+    params->ambientColor[CG] = green;
+    params->ambientColor[CB] = blue;
+    params->ambientColor[CA] = alpha;
+    params->blendMode = blendMode;
 }
 
 void getLightingParams(float x, float y, float z, subsector_t* subsector,
@@ -1150,7 +1189,7 @@ void getLightingParams(float x, float y, float z, subsector_t* subsector,
 /**
  * Generates a vissprite for a mobj if it might be visible.
  */
-void R_ProjectSprite(mobj_t* mo)
+void Mobj_ProjectVisSprite(const mobj_t* mo)
 {
     subsector_t* subsector = (subsector_t*) ((objectrecord_t*) mo->subsector)->obj;
     sector_t* sect = subsector->sector;
@@ -1259,8 +1298,8 @@ void R_ProjectSprite(mobj_t* mo)
 
     // Perform visibility checking.
     {
-    float               center[2], v1[2], v2[2];
-    float               width = R_VisualRadius(mo)*2, offset = 0;
+    float center[2], v1[2], v2[2];
+    float width = R_VisualRadius(mo)*2, offset = 0;
 
     if(!mf)
         offset = (float) sprTex->offX - (width / 2);
@@ -1511,9 +1550,7 @@ void R_ProjectSprite(mobj_t* mo)
                                       floorAdjust,
                                       fitTop,
                                       fitBottom,
-                                      viewAlign,
-                                      brightShadow, shadow, altShadow,
-                                      fullBright);
+                                      viewAlign, fullBright);
     }
     else
     {
@@ -1523,7 +1560,7 @@ void R_ProjectSprite(mobj_t* mo)
 
         setupModelParamsForVisSprite(&vis->data.model,
                                      vis->center[VX], vis->center[VY], vis->center[VZ], vis->distance,
-                                     visOff[VX], visOff[VY], visOff[VZ] - floorClip, gzt, yaw, 0, pitch, 0,
+                                     visOff[VX], visOff[VY], visOff[VZ] - floorClip, gzt, yaw, 0, pitch, 0, 0,
                                      mf, nextmf, interp,
                                      ambientColor[CR], ambientColor[CG], ambientColor[CB], alpha,
                                      vLightListIdx, mo->thinker.id, mo->selector,
@@ -1535,22 +1572,17 @@ void R_ProjectSprite(mobj_t* mo)
     }
 }
 
-typedef struct {
-    subsector_t*        subsector;
-} addspriteparams_t;
-
-boolean RIT_AddSprite(void* ptr, void* data)
+boolean RIT_ProjectVisSpriteForMobj(void* ptr, void* data)
 {
     mobj_t* mo = (mobj_t*) ptr;
-    addspriteparams_t*  params = (addspriteparams_t*) data;
-    subsector_t* subsector = params->subsector;
+    subsector_t* subsector = (subsector_t*) data;
     sector_t* sec = subsector->sector;
 
     if(mo->addFrameCount != frameCount)
     {
         material_t* mat;
 
-        R_ProjectSprite(mo);
+        Mobj_ProjectVisSprite(mo);
 
         // Hack: Sprites have a tendency to extend into the ceiling in
         // sky sectors. Here we will raise the skyfix dynamically, to make sure
@@ -1581,17 +1613,353 @@ boolean RIT_AddSprite(void* ptr, void* data)
     return true; // Continue iteration.
 }
 
-void R_AddSprites(subsector_t* subsector)
+/**
+ * Generates a vissprite for a particle if it might be visible.
+ */
+void Particle_ProjectVisSprite(const particle_t* pt)
 {
-    addspriteparams_t params;
+    const viewdata_t* viewData = R_ViewData(viewPlayer - ddPlayers);
+    const generator_t* gen;
+    const ptcstage_t* st;
+    const ded_ptcstage_t* dst, *nextDst;
+    float ambientColor[4], color[4], size, mark, invMark, inter, distance;
+    float maxDistance;
+    boolean flatOnPlane, flatOnWall, nearPlane, nearWall;
+    modeldef_t* mf = NULL, *nextmf = NULL;
+    uint vLightListIdx;
+    vissprite_t* vis;
+    vec3_t pos;
+    int frame, c;
 
+    gen = pt->gen;
+    st = &gen->stages[pt->stage];
+    dst = &gen->def->stages[pt->stage];
+
+    // Is there a next stage for this particle?
+    if(pt->stage >= gen->def->stageCount.num - 1 ||
+       !gen->stages[pt->stage + 1].type)
+    {
+        // There is no "next stage". Use the current one.
+        nextDst = gen->def->stages + pt->stage;
+    }
+    else
+        nextDst = gen->def->stages + (pt->stage + 1);
+
+    // Where is intermark?
+    invMark = pt->tics / (float) dst->tics;
+    mark = 1 - invMark;
+
+    // Calculate size and color.
+    size = P_GetParticleRadius(dst, pt - gen->ptcs) * invMark +
+        P_GetParticleRadius(nextDst, pt - gen->ptcs) * mark;
+    if(!size)
+        return; // Infinitely small.
+
+    for(c = 0; c < 4; ++c)
+    {
+        color[c] = dst->color[c] * invMark + nextDst->color[c] * mark;
+    }
+
+    maxDistance = gen->def->maxDist;
+    // Determine distance to object.
+    V2_SetFixed(pos, pt->pos[VX], pt->pos[VY]);
+    distance = MAX_OF(R_PointDist2D(pos), 1);
+
+    // Don't allow zero distance.
+    if(maxDistance && distance > maxDistance)
+        return; // Too far.
+    if(distance < (float) particleNearLimit)
+        return; // Too near.
+
+    // Far diffuse?
+    if(maxDistance)
+    {
+        if(distance > maxDistance * .75f)
+            color[3] *= 1 - (distance - maxDistance * .75f) / (maxDistance * .25f);
+    }
+
+    // Near diffuse?
+    if(particleDiffuse > 0)
+    {
+        if(distance < particleDiffuse * size)
+            color[3] -= 1 - distance / (particleDiffuse * size);
+    }
+
+    // Fully transparent?
+    if(color[3] <= 0)
+        return;
+
+    nearPlane = (pt->subsector &&
+                 (FLT2FIX(pt->subsector->sector->SP_floorheight) + 2 * FRACUNIT >= pt->pos[VZ] ||
+                  FLT2FIX(pt->subsector->sector->SP_ceilheight) - 2 * FRACUNIT <= pt->pos[VZ]));
+    flatOnPlane = ((st->flags & PTCF_PLANE_FLAT) && nearPlane);
+
+    nearWall = (pt->contact && !pt->mov[VX] && !pt->mov[VY]);
+    flatOnWall = ((st->flags & PTCF_WALL_FLAT) && nearWall);
+
+    pos[VZ] = P_GetParticleZ(pt);
+
+    if(!flatOnPlane && !flatOnWall)
+    {
+        pos[VX] += frameTimePos * FIX2FLT(pt->mov[VX]);
+        pos[VY] += frameTimePos * FIX2FLT(pt->mov[VY]);
+        if(!nearPlane)
+            pos[VZ] += frameTimePos * FIX2FLT(pt->mov[VZ]);
+    }
+
+    // Perform visibility checking.
+    {
+    float v1[2], v2[2], width, offset = 0;
+
+    width = size * 2;
+
+    // Project a line segment relative to the view in 2D, then check
+    // if not entirely clipped away in the 360 degree angle clipper.
+    M_ProjectViewRelativeLine2D(pos, dst->model >= 0, width, 0, v1, v2);
+
+    // Check for visibility.
+    if(!C_CheckViewRelSeg(v1[VX], v1[VY], v2[VX], v2[VY]))
+    {   // Isn't visible.
+        if(dst->model >= 0)
+        {
+            // If the model is close to the viewpoint we will need to
+            // draw it. Otherwise large models are likely to disappear
+            // too early.
+            if(P_ApproxDistance
+                (distance, pos[VZ] - viewData->current.pos[VZ]) >
+               MAX_OBJECT_RADIUS)
+            {
+                return; // Can't be visible.
+            }
+        }
+        else
+        {
+            return;
+        }
+    }
+    }
+
+    if(dst->model >= 0)
+    {
+        mf = &modefs[dst->model];
+
+        if(dst->endFrame < 0)
+        {
+            frame = dst->frame;
+            inter = 0;
+        }
+        else
+        {
+            frame = dst->frame + (dst->endFrame - dst->frame) * mark;
+            inter = M_CycleIntoRange(mark * (dst->endFrame - dst->frame), 1);
+        }
+
+        R_SetModelFrame(mf, frame);
+
+        if(!(mf->flags & MFF_NO_DISTANCE_CHECK) && maxModelDistance &&
+           distance > maxModelDistance)
+            return;
+    }
+
+    // Store information in a vissprite.
+    vis = R_NewVisSprite();
+    vis->type = (st->type == PTC_LINE? VSPR_LINE :
+                 dst->model >= 0? VSPR_MODEL : VSPR_TEXPARTICLE);
+    vis->center[VX] = pos[VX];
+    vis->center[VY] = pos[VY];
+    vis->center[VZ] = pos[VZ];
+    vis->distance = distance;
+    vis->lumIdx = 0;
+    vis->isDecoration = false;
+
+    getLightingParams(vis->center[VX], vis->center[VY], vis->center[VZ],
+                      pt->subsector, vis->distance, ((st->flags & PTCF_BRIGHT) || mapFullBright),
+                      ambientColor, &vLightListIdx);
+
+    if(vis->type == VSPR_MODEL)
+    {
+        float pitch, yaw;
+
+        // Set the correct orientation for the particle.
+        if(mf->sub[0].flags & MFF_MOVEMENT_YAW)
+        {
+            yaw = R_MovementYaw(FIX2FLT(pt->mov[MX]), FIX2FLT(pt->mov[MY]));
+        }
+        else
+        {
+            yaw = pt->yaw / 32768.0f * 180;
+        }
+
+        if(mf->sub[0].flags & MFF_MOVEMENT_PITCH)
+        {
+            pitch = R_MovementPitch(FIX2FLT(pt->mov[MX]), FIX2FLT(pt->mov[MY]), FIX2FLT(pt->mov[MZ]));
+        }
+        else
+        {
+            pitch = pt->pitch / 32768.0f * 180;
+        }
+
+        setupModelParamsForVisSprite(&vis->data.model,
+                                     vis->center[VX], vis->center[VY], vis->center[VZ], vis->distance,
+                                     0, 0, 0, pos[VZ], yaw, 0, pitch, 0, size,
+                                     mf, nextmf, mark,
+                                     ambientColor[CR], ambientColor[CG], ambientColor[CB], color[CA],
+                                     vLightListIdx, 0, 0, pt->subsector, 0 /*mo->ddFlags*/,
+                                     0, 0,
+                                     ((st->flags & PTCF_BRIGHT) || mapFullBright),
+                                     true);
+    }
+    else
+    {
+        DGLuint tex = 0;
+        blendmode_t blendMode =
+            (gen->flags & PGF_ADD_BLEND ? BM_ADD :
+             gen->flags & PGF_SUB_BLEND ? BM_SUBTRACT :
+             gen->flags & PGF_REVSUB_BLEND ? BM_REVERSE_SUBTRACT :
+             gen->flags & PGF_MUL_BLEND ? BM_MUL :
+             gen->flags & PGF_INVMUL_BLEND ? BM_INVERSE_MUL : BM_NORMAL);
+
+        ambientColor[CR] *= color[CR];
+        ambientColor[CG] *= color[CG];
+        ambientColor[CB] *= color[CB];
+
+        if(vis->type == VSPR_LINE)
+        {
+            setupLineParamsForVisSprite(&vis->data.line,
+                vis->center[VX], vis->center[VY], vis->center[VZ],
+                vis->center[VX] - FIX2FLT(pt->mov[MX]),
+                vis->center[VY] - FIX2FLT(pt->mov[MY]),
+                vis->center[VZ] - FIX2FLT(pt->mov[MZ]),
+                ambientColor[CR], ambientColor[CG], ambientColor[CB], color[CA],
+                blendMode);
+            return;
+        }
+
+        // The vertices, please.
+        /*if(tex != 0)
+        {
+            // Should the particle be flat against a plane?
+            if(flatOnPlane)
+            {
+                glTexCoord2f(0, 0);
+                glVertex3f(pos[VX] - size, pos[VZ], pos[VY] - size);
+
+                glTexCoord2f(1, 0);
+                glVertex3f(pos[VX] + size, pos[VZ], pos[VY] - size);
+
+                glTexCoord2f(1, 1);
+                glVertex3f(pos[VX] + size, pos[VZ], pos[VY] + size);
+
+                glTexCoord2f(0, 1);
+                glVertex3f(pos[VX] - size, pos[VZ], pos[VY] + size);
+            }
+            // Flat against a wall, then?
+            else if(flatOnWall)
+            {
+                float line[2], pos[2], vpos;
+                vertex_t* vtx;
+
+                line[0] = pt->contact->dX;
+                line[1] = pt->contact->dY;
+                vtx = pt->contact->L_v1;
+
+                // There will be a slight approximation on the XY plane since
+                // the particles aren't that accurate when it comes to wall
+                // collisions.
+
+                // Calculate a new pos point (project onto the wall).
+                // Also move 1 unit away from the wall to avoid the worst
+                // Z-fighting.
+                pos[VX] = FIX2FLT(pt->pos[VX]);
+                pos[VZ] = FIX2FLT(pt->pos[VZ]);
+                vpos = vtx->pos[VX];
+                M_ProjectPointOnLine(pos, &vpos, line, 1, projected);
+
+                P_LineUnitVector(pt->contact, line);
+
+                glTexCoord2f(0, 0);
+                glVertex3f(projected[VX] - size * line[VX], pos[VZ] - size,
+                           projected[VZ] - size * line[VZ]);
+
+                glTexCoord2f(1, 0);
+                glVertex3f(projected[VX] - size * line[VX], pos[VZ] + size,
+                           projected[VZ] - size * line[VZ]);
+
+                glTexCoord2f(1, 1);
+                glVertex3f(projected[VX] + size * line[VX], pos[VZ] + size,
+                           projected[VZ] + size * line[VZ]);
+
+                glTexCoord2f(0, 1);
+                glVertex3f(projected[VX] + size * line[VX], pos[VZ] - size,
+                           projected[VZ] + size * line[VZ]);
+            }
+            else
+            {
+                glTexCoord2f(0, 0);
+                glVertex3f(pos[VX] + size * leftoff[VX],
+                           pos[VZ] + size * leftoff[VZ] / 1.2f,
+                           pos[VY] + size * leftoff[VY]);
+
+                glTexCoord2f(1, 0);
+                glVertex3f(pos[VX] + size * rightoff[VX],
+                           pos[VZ] + size * rightoff[VZ] / 1.2f,
+                           pos[VY] + size * rightoff[VY]);
+
+                glTexCoord2f(1, 1);
+                glVertex3f(pos[VX] - size * leftoff[VX],
+                           pos[VZ] - size * leftoff[VZ] / 1.2f,
+                           pos[VY] - size * leftoff[VY]);
+
+                glTexCoord2f(0, 1);
+                glVertex3f(pos[VX] - size * rightoff[VX],
+                           pos[VZ] - size * rightoff[VZ] / 1.2f,
+                           pos[VY] - size * rightoff[VY]);
+            }
+        }*/
+
+        if(renderTextures != 2)
+        {
+            if(st->type == PTC_POINT || !ptctexname[st->type - PTC_TEXTURE])
+                tex = pointTex;
+            else
+                tex = ptctexname[st->type - PTC_TEXTURE];
+        }
+        else
+        {   // For lighting debug, render all surfaces using the gray texture.
+            material_t* mat = Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY);
+            material_snapshot_t ms;
+            Materials_Prepare(mat, MPF_SMOOTH, NULL, &ms);
+            tex = ms.units[MTU_PRIMARY].texInst->id;
+        }
+
+        setupParticleParamsForVisSprite(&vis->data.texpt,
+                                        size, tex, blendMode, ambientColor[CR], ambientColor[CG], ambientColor[CB], color[CA],
+                                        vLightListIdx);
+    }
+}
+
+boolean RIT_ProjectVisSpriteForParticle(void* ptr, void* data)
+{
+    particle_t* pt = (particle_t*) ptr;
+
+    if(pt->addFrameCount != frameCount)
+    {
+        Particle_ProjectVisSprite(pt);
+        pt->addFrameCount = frameCount;
+    }
+
+    return true; // Continue iteration.
+}
+
+void R_ProjectVisSprites(subsector_t* subsector)
+{
     // Don't use validCount, because other parts of the renderer may
     // change it.
     if(subsector->addSpriteCount == frameCount)
         return; // Already added.
 
-    params.subsector = subsector;
-    R_IterateSubsectorContacts(subsector, OT_MOBJ, RIT_AddSprite, &params);
+    R_IterateSubsectorContacts(subsector, OT_MOBJ, RIT_ProjectVisSpriteForMobj, subsector);
+    R_IterateSubsectorContacts(subsector, OT_PARTICLE, RIT_ProjectVisSpriteForParticle, subsector);
 
     subsector->addSpriteCount = frameCount;
 }
@@ -1796,10 +2164,9 @@ boolean visSpriteLightIterator(const lumobj_t* lum, float xyDist, void* data)
 
 uint R_CollectAffectingLights(const collectaffectinglights_params_t* params)
 {
-    uint                vLightListIdx;
-    uint                i;
-    vlightnode_t*       node;
-    vlight_t*           vlight;
+    uint vLightListIdx, i;
+    vlightnode_t* node;
+    vlight_t* vlight;
 
     if(!params)
         return 0;
@@ -1832,9 +2199,9 @@ uint R_CollectAffectingLights(const collectaffectinglights_params_t* params)
          * more shade than light (to prevent them from becoming too
          * bright when compared to ambient light).
          */
-        vlight->lightSide = .2f;
+        vlight->lightSide = -.3f;
         vlight->darkSide = .8f;
-        vlight->offset = .3f;
+        vlight->offset = -.1f;
     }
 
     vLightListIdx = newVLightList(true); // Sort by distance.
@@ -1899,7 +2266,7 @@ boolean VL_ListIterator(uint listIdx, void* data,
  * @return              The current floatbob offset for the mobj, if the mobj
  *                      is flagged for bobbing, else @c 0.
  */
-float R_GetBobOffset(mobj_t* mo)
+float R_GetBobOffset(const mobj_t* mo)
 {
     if(mo->ddFlags & DDMF_BOB)
     {

@@ -807,6 +807,8 @@ void Rend_DrawMasked(void)
 
     if(visSpriteP > visSprites)
     {
+        int numParticles = 0;
+
         // Draw all vissprites back to front.
         // Sprites look better with Z buffer writes turned off.
         for(spr = visSprSortedHead.next; spr != &visSprSortedHead; spr = spr->next)
@@ -828,6 +830,22 @@ void Rend_DrawMasked(void)
 
             case VSPR_MODEL:
                 Rend_RenderModel(&spr->data.model);
+                break;
+
+            case VSPR_TEXPARTICLE:
+                if(!maxParticles || numParticles < maxParticles)
+                {
+                    Rend_RenderTexParticle(spr);
+                    numParticles++;
+                }
+                break;
+
+            case VSPR_LINE:
+                if(!maxParticles || numParticles < maxParticles)
+                {
+                    Rend_RenderLine(&spr->data.line);
+                    numParticles++;
+                }
                 break;
             }
 
@@ -879,6 +897,25 @@ boolean drawVLightVector(const vlight_t* light, void* context)
     return true; // Continue iteration.
 }
 #endif
+
+void Rend_RenderLine(const rendlineparams_t* params)
+{
+    glDisable(GL_TEXTURE_2D); // Lines don't use textures.
+
+    if(params->blendMode != BM_NORMAL)
+        GL_BlendMode(params->blendMode);
+    glColor4fv(params->ambientColor);
+
+    glBegin(GL_LINES);
+        glVertex3f(params->from[VX], params->from[VZ], params->from[VY]);
+        glVertex3f(params->to[VX], params->to[VZ], params->to[VY]);
+    glEnd();
+
+    // Change back to normal blending?
+    if(params->blendMode != BM_NORMAL)
+        GL_BlendMode(BM_NORMAL);
+    glEnable(GL_TEXTURE_2D);
+}
 
 void Rend_RenderSprite(const rendspriteparams_t* params)
 {
@@ -1109,4 +1146,115 @@ if(params->vLightListIdx)
     // Enable Z-writing again?
     if(restoreZ)
         glDepthMask(GL_TRUE);
+}
+
+void Rend_RenderTexParticle(const vissprite_t* spr)
+{
+    const rendtexparticleparams_t* params = &spr->data.texpt;
+    dgl_color_t quadColors[4];
+    dgl_vertex_t quadNormals[4];
+    boolean restoreMatrix = false;
+    boolean restoreZ = false;
+    float surfaceNormal[3];
+    float v1[3], v2[3], v3[3], v4[3];
+    int i;
+
+    M_ProjectViewRelativeLine2D(spr->center, true, params->radius * 2, 0, v1, v4);
+
+    v2[VX] = v1[VX];
+    v2[VY] = v1[VY];
+    v3[VX] = v4[VX];
+    v3[VY] = v4[VY];
+
+    v1[VZ] = v4[VZ] = spr->center[VZ] - params->radius;
+    v2[VZ] = v3[VZ] = spr->center[VZ] + params->radius;
+
+    // Calculate the surface normal.
+    M_PointCrossProduct(v2, v1, v3, surfaceNormal);
+    M_Normalize(surfaceNormal);
+
+    // All sprite vertices are co-plannar, so just copy the surface normal.
+    // \fixme: Can we do something better here?
+    for(i = 0; i < 4; ++i)
+        memcpy(quadNormals[i].xyz, surfaceNormal, sizeof(surfaceNormal));
+
+    if(!params->vLightListIdx)
+    {   // Lit uniformly.
+        Spr_UniformVertexColors(4, quadColors, params->ambientColor);
+    }
+    else
+    {   // Lit normally.
+        Spr_VertexColors(4, quadColors, quadNormals, params->vLightListIdx,
+                         particleLight + 1, params->ambientColor);
+    }
+
+    glDepthMask(GL_FALSE);
+    glDisable(GL_CULL_FACE);
+    if(renderTextures && params->tex)
+        GL_BindTexture(params->tex, GL_LINEAR);
+    else
+        GL_SetNoTexture();
+    glDepthFunc(GL_LEQUAL);
+
+    // Need to change blending modes?
+    if(params->blendMode != BM_NORMAL)
+        GL_BlendMode(params->blendMode);
+
+    // We must set up a modelview transformation matrix.
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    // Rotate around the center of the particle.
+    glTranslatef(spr->center[VX], spr->center[VZ], spr->center[VY]);
+    // Normal rotation perpendicular to the view plane.
+    glRotatef(vpitch, viewsidex, 0, viewsidey);
+    glTranslatef(-spr->center[VX], -spr->center[VZ], -spr->center[VY]);
+
+    {
+    dgl_vertex_t vs[4], *v = vs;
+    dgl_texcoord_t tcs[4], *tc = tcs;
+
+    //  1---2
+    //  |   |  Vertex layout.
+    //  0---3
+
+    v[0].xyz[0] = v1[VX];
+    v[0].xyz[1] = v1[VZ];
+    v[0].xyz[2] = v1[VY];
+
+    v[1].xyz[0] = v2[VX];
+    v[1].xyz[1] = v2[VZ];
+    v[1].xyz[2] = v2[VY];
+
+    v[2].xyz[0] = v3[VX];
+    v[2].xyz[1] = v3[VZ];
+    v[2].xyz[2] = v3[VY];
+
+    v[3].xyz[0] = v4[VX];
+    v[3].xyz[1] = v4[VZ];
+    v[3].xyz[2] = v4[VY];
+
+    tc[0].st[0] = 0;
+    tc[0].st[1] = 1;
+    tc[1].st[0] = 0;
+    tc[1].st[1] = 0;
+    tc[2].st[0] = 1;
+    tc[2].st[1] = 0;
+    tc[3].st[0] = 1;
+    tc[3].st[1] = 1;
+
+    renderQuad(v, quadColors, tc);
+    }
+
+    // Restore the original modelview matrix.
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+    // Change back to normal blending?
+    if(params->blendMode != BM_NORMAL)
+        GL_BlendMode(BM_NORMAL);
+
+    glEnable(GL_CULL_FACE);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
 }

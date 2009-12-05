@@ -55,5 +55,7 @@ void            Rend_Draw2DPlayerSprites(void);
 void            Rend_Draw3DPlayerSprites(void);
 void            Rend_SpriteTexCoord(int pnum, int x, int y);
 void            Rend_RenderSprite(const rendspriteparams_t* params);
+void            Rend_RenderTexParticle(const vissprite_t* spr);
+void            Rend_RenderLine(const rendlineparams_t* params);
 
 #endif

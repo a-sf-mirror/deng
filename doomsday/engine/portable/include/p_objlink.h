@@ -32,6 +32,7 @@
 typedef enum {
     OT_MOBJ,
     OT_LUMOBJ,
+    OT_PARTICLE,
     NUM_OBJ_TYPES
 } objtype_t;
 

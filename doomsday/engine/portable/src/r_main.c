@@ -50,7 +50,8 @@
 // MACROS ------------------------------------------------------------------
 
 BEGIN_PROF_TIMERS()
-  PROF_MOBJ_INIT_ADD
+  PROF_MOBJ_INIT_ADD,
+  PROF_PARTICLE_INIT_ADD
 END_PROF_TIMERS()
 
 // TYPES -------------------------------------------------------------------
@@ -527,6 +528,50 @@ BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 END_PROF( PROF_MOBJ_INIT_ADD );
 }
 
+static int createObjLinksForParticles(void* ptr, void* context)
+{
+    generator_t* gen = (generator_t*) ptr;
+    int p;
+
+    if(!gen->thinker.function)
+        return true; // Continue iteration.
+
+    for(p = 0; p < gen->count; ++p)
+    {
+        particle_t* pt = &gen->ptcs[p];
+
+        if(!pt->gen)
+            continue;
+
+        R_ObjLinkCreate(pt, OT_PARTICLE); // For spreading purposes.
+    }
+
+    return true; // Continue iteration.
+}
+
+void R_CreateParticleLinks(map_t* map)
+{
+#ifdef DD_PROFILE
+    static int p;
+
+    if(++p > 40)
+    {
+        p = 0;
+        PRINT_PROF( PROF_PARTICLE_INIT_ADD );
+    }
+#endif
+
+    if(!map)
+        return;
+
+BEGIN_PROF( PROF_PARTICLE_INIT_ADD );
+
+    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                        createObjLinksForParticles, NULL);
+
+END_PROF( PROF_PARTICLE_INIT_ADD );
+}
+
 /**
  * Prepare for rendering view(s) of the world.
  */
@@ -555,6 +600,8 @@ void R_BeginWorldFrame(map_t* map)
 
         // Spawn omnilights for mobjs.
         LO_AddLuminousMobjs(map);
+
+        R_CreateParticleLinks(map);
 
         // Create objlinks for mobjs.
         R_CreateMobjLinks(map);

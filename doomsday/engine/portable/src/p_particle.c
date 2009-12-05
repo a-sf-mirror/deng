@@ -133,9 +133,8 @@ static void P_InitParticleGen(generator_t* gen, const ded_generator_t* def)
     // Mark unused.
     for(i = 0; i < gen->count; ++i)
     {
-        particle_t*         pt = &gen->ptcs[i];
-
-        pt->stage = -1;
+        particle_t* pt = &gen->ptcs[i];
+        pt->gen = NULL;
     }
 }
 
@@ -346,6 +345,7 @@ static void P_NewParticle(generator_t* gen)
 
     // Set the particle's data.
     pt = gen->ptcs + gen->spawnCP;
+    pt->gen = gen;
     pt->stage = 0;
     if(RNG_RandFloat() < def->altStartVariance)
         pt->stage = def->altStart;
@@ -535,7 +535,7 @@ static void P_NewParticle(generator_t* gen)
         if(i == 10) // No good place found?
         {
           spawn_failed:
-            pt->stage = -1; // Damn.
+            pt->gen = NULL; // Damn.
             return;
         }
     }
@@ -660,7 +660,7 @@ static int P_TouchParticle(particle_t* pt, ptcstage_t* stage,
     if(stage->flags & PTCF_DIE_TOUCH)
     {
         // Particle dies from touch.
-        pt->stage = -1;
+        pt->gen = NULL;
         return false;
     }
 
@@ -871,7 +871,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
             if(IS_SKYSURFACE(&pt->subsector->sector->SP_ceilsurface))
             {
                 // Special case: particle gets lost in the sky.
-                pt->stage = -1;
+                pt->gen = NULL;
                 return;
             }
 
@@ -888,7 +888,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
         {
             if(IS_SKYSURFACE(&pt->subsector->sector->SP_floorsurface))
             {
-                pt->stage = -1;
+                pt->gen = NULL;
                 return;
             }
 
@@ -962,7 +962,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
                 if(pz > fz && pz < cz)
                 {
                     // Kill the particle.
-                    pt->stage = -1;
+                    pt->gen = NULL;
                     return;
                 }
             }
@@ -1107,8 +1107,9 @@ void P_GeneratorThinker(generator_t* gen)
     // Move particles.
     for(i = 0, pt = gen->ptcs; i < gen->count; ++i, pt++)
     {
-        if(pt->stage < 0)
+        if(!pt->gen)
             continue; // Not in use.
+
         if(pt->tics-- <= 0)
         {
             // Advance to next stage.
@@ -1116,7 +1117,7 @@ void P_GeneratorThinker(generator_t* gen)
                gen->stages[pt->stage].type == PTC_NONE)
             {
                 // Kill the particle.
-                pt->stage = -1;
+                pt->gen = NULL;
                 continue;
             }
 

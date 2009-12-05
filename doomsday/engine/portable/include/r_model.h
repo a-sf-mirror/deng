@@ -113,7 +113,7 @@ extern float rModelAspectMod;
 
 void            R_InitModels(void);
 void            R_ShutdownModels(void);
-float           R_CheckModelFor(struct mobj_s* mo, modeldef_t** mdef,
+float           R_CheckModelFor(const struct mobj_s* mo, modeldef_t** mdef,
                                 modeldef_t** nextmdef);
 modeldef_t*     R_CheckIDModelFor(const char* id);
 int             R_ModelFrameNumForName(int modelnum, char* fname);

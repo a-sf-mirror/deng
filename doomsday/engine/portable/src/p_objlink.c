@@ -413,8 +413,6 @@ static void processSeg(hedge_t* hEdge, void* data)
 static void findContacts(objlink_t* oLink)
 {
     contactfinderparams_t params;
-    float radius;
-    pvec3_t pos;
     subsector_t* subsector;
 
     switch(oLink->type)
@@ -426,8 +424,9 @@ static void findContacts(objlink_t* oLink)
         if(lum->type != LT_OMNI)
             return; // Only omni lights spread.
 
-        pos = lum->pos;
-        radius = LUM_OMNI(lum)->radius;
+        V3_Copy(params.objPos, lum->pos);
+        // Use a slightly smaller radius than what the obj really is.
+        params.objRadius = LUM_OMNI(lum)->radius * .9f;
         subsector = lum->subsector;
         break;
         }
@@ -435,9 +434,19 @@ static void findContacts(objlink_t* oLink)
         {
         mobj_t* mo = (mobj_t*) oLink->obj;
 
-        pos = mo->pos;
-        radius = R_VisualRadius(mo);
+        V3_Copy(params.objPos, mo->pos);
+        params.objRadius = R_VisualRadius(mo);
         subsector = (subsector_t*) ((objectrecord_t*) mo->subsector)->obj;
+        break;
+        }
+    case OT_PARTICLE:
+        {
+        particle_t* pt = (particle_t*) oLink->obj;
+
+        V3_SetFixed(params.objPos, pt->pos[VX], pt->pos[VY], pt->pos[VZ]);
+        // Use a slightly smaller radius than what the obj really is.
+        params.objRadius = FIX2FLT(pt->gen->stages[pt->stage].radius) * .9f;
+        subsector = pt->subsector;
         break;
         }
     default:
@@ -451,14 +460,11 @@ static void findContacts(objlink_t* oLink)
 
     params.obj = oLink->obj;
     params.objType = oLink->type;
-    V3_Copy(params.objPos, pos);
-    // Use a slightly smaller radius than what the obj really is.
-    params.objRadius = radius * .9f;
 
-    params.box[BOXLEFT]   = params.objPos[VX] - radius;
-    params.box[BOXRIGHT]  = params.objPos[VX] + radius;
-    params.box[BOXBOTTOM] = params.objPos[VY] - radius;
-    params.box[BOXTOP]    = params.objPos[VY] + radius;
+    params.box[BOXLEFT]   = params.objPos[VX] - params.objRadius;
+    params.box[BOXRIGHT]  = params.objPos[VX] + params.objRadius;
+    params.box[BOXBOTTOM] = params.objPos[VY] - params.objRadius;
+    params.box[BOXTOP]    = params.objPos[VY] + params.objRadius;
 
     // Always contact the obj's own subsector.
     {
@@ -587,17 +593,22 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
     oLink = objLinks;
     while(oLink)
     {
-        pvec3_t pos;
+        vec2_t pos;
 
         switch(oLink->type)
         {
         case OT_LUMOBJ:
-            pos = ((lumobj_t*) oLink->obj)->pos;
+            V2_Copy(pos, ((lumobj_t*) oLink->obj)->pos);
             break;
 
         case OT_MOBJ:
-            pos = ((mobj_t*) oLink->obj)->pos;
+            V2_Copy(pos, ((mobj_t*) oLink->obj)->pos);
             break;
+
+        case OT_PARTICLE:
+            V2_SetFixed(pos, ((particle_t*) oLink->obj)->pos[VX], ((particle_t*) oLink->obj)->pos[VY]);
+            break;
+
         default:
             Con_Error("Internal Error: Invalid value (%i) for objlink_t->type "
                       "in R_LinkObjs.", (int) oLink->type);
