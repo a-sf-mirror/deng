@@ -53,6 +53,19 @@ END_PROF_TIMERS()
 
 // TYPES -------------------------------------------------------------------
 
+typedef struct objlink_s {
+    struct objlink_s* next; // Next in the same obj block, or NULL.
+    struct objlink_s* nextUsed;
+    void*           obj;
+} objlink_t;
+
+typedef struct objblock_s {
+    objlink_t*      head[NUM_OBJ_TYPES];
+
+    // Used to prevent multiple processing of a block during one refresh frame.
+    boolean         doneSpread;
+} objblock_t;
+
 typedef struct contactfinder_data_s {
     void*           obj;
     objtype_t       objType;
@@ -98,7 +111,7 @@ static objlink_t* allocObjLink(void)
         objLinkCursor = objLinkCursor->nextUsed;
     }
 
-    oLink->nextInBlock = NULL;
+    oLink->next = NULL;
     oLink->obj = NULL;
 
     return oLink;
@@ -108,11 +121,6 @@ static void clearRoots(objblockmap_t* obm)
 {
     // Clear the list head ptrs and doneSpread flags.
     memset(obm->blocks, 0, sizeof(*obm->blocks) * obm->width * obm->height);
-}
-
-objlink_t* P_CreateObjLink(void)
-{
-    return  allocObjLink();
 }
 
 objblockmap_t* P_CreateObjBlockmap(float originX, float originY, int width,
@@ -391,7 +399,7 @@ void ObjBlockmap_Spread(objblockmap_t* obm, const subsector_t* subsector,
                     while(iter)
                     {
                         findContacts(i, iter);
-                        iter = iter->nextInBlock;
+                        iter = iter->next;
                     }
                 }
 
@@ -429,14 +437,14 @@ static void addObjLink(objblockmap_t* obm, objtype_t type, objlink_t* oLink, flo
     assert(obm);
     assert(oLink);
 
-    oLink->nextInBlock = NULL;
+    oLink->next = NULL;
     bx = X_TO_OBBX(obm, FLT2FIX(x));
     by = Y_TO_OBBY(obm, FLT2FIX(y));
 
     if(bx >= 0 && by >= 0 && bx < obm->width && by < obm->height)
     {
         root = &OBB_XY(obm, bx, by)->head[type];
-        oLink->nextInBlock = *root;
+        oLink->next = *root;
         *root = oLink;
     }
 }
@@ -444,9 +452,9 @@ static void addObjLink(objblockmap_t* obm, objtype_t type, objlink_t* oLink, flo
 /**
  * Link all objlinks into the objlink blockmap.
  */
-void ObjBlockmap_AddLinks(objblockmap_t* obm, objtype_t type, objlink_t* objLinks)
+void ObjBlockmap_Add(objblockmap_t* obm, objtype_t type, void* obj)
 {
-    objlink_t* oLink;
+    objlink_t* ol;
 #ifdef DD_PROFILE
     static int i;
     if(++i > 40)
@@ -458,27 +466,29 @@ void ObjBlockmap_AddLinks(objblockmap_t* obm, objtype_t type, objlink_t* objLink
 #endif
 
     assert(obm);
+    assert(obj);
+    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
 
 BEGIN_PROF( PROF_OBJLINK_LINK );
 
-    // Link objlinks into the objlink blockmap.
-    oLink = objLinks;
-    while(oLink)
+    // Link objlink into the objlink blockmap.
+
+    if((ol = allocObjLink()))
     {
         vec2_t pos;
 
         switch(type)
         {
         case OT_LUMOBJ:
-            V2_Copy(pos, ((lumobj_t*) oLink->obj)->pos);
+            V2_Copy(pos, ((lumobj_t*) obj)->pos);
             break;
 
         case OT_MOBJ:
-            V2_Copy(pos, ((mobj_t*) oLink->obj)->pos);
+            V2_Copy(pos, ((mobj_t*) obj)->pos);
             break;
 
         case OT_PARTICLE:
-            V2_SetFixed(pos, ((particle_t*) oLink->obj)->pos[VX], ((particle_t*) oLink->obj)->pos[VY]);
+            V2_SetFixed(pos, ((particle_t*) obj)->pos[VX], ((particle_t*) obj)->pos[VY]);
             break;
 
         default:
@@ -486,10 +496,12 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
             return; // Unreachable.
         }
 
-        addObjLink(obm, type, oLink, pos[VX], pos[VY]);
+        ol->obj = obj;
 
-        oLink = oLink->next;
+        addObjLink(obm, type, ol, pos[VX], pos[VY]);
     }
+    else
+        Con_Error("Map_CreateObjLink: No more links.");
 
 END_PROF( PROF_OBJLINK_LINK );
 }

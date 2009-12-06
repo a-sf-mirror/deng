@@ -37,22 +37,8 @@ typedef enum {
     NUM_OBJ_TYPES
 } objtype_t;
 
-typedef struct objlink_s {
-    struct objlink_s* nextInBlock; // Next in the same obj block, or NULL.
-    struct objlink_s* nextUsed;
-    struct objlink_s* next; // Next in list of ALL objlinks.
-    void*           obj;
-} objlink_t;
-
-typedef struct objblock_s {
-    objlink_t*      head[NUM_OBJ_TYPES];
-
-    // Used to prevent multiple processing of a block during one refresh frame.
-    boolean         doneSpread;
-} objblock_t;
-
 typedef struct objblockmap_s {
-    objblock_t*     blocks;
+    struct objblock_s* blocks;
     fixed_t         origin[2];
     int             width, height; // In blocks.
 } objblockmap_t;
@@ -71,10 +57,8 @@ objblockmap_t*  P_CreateObjBlockmap(float originX, float originY, int width,
                                     int height);
 void            P_DestroyObjBlockmap(objblockmap_t* obm);
 
-void            ObjBlockmap_AddLinks(objblockmap_t* obm, objtype_t type, objlink_t* objLinks);
+void            ObjBlockmap_Add(objblockmap_t* obm, objtype_t type, void* obj);
 void            ObjBlockmap_Clear(objblockmap_t* obm);
-
-objlink_t*      P_CreateObjLink(void);
 
 void            Subsector_SpreadObjLinks(subsector_t* subsector);
 

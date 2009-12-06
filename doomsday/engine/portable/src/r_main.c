@@ -521,7 +521,7 @@ BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 
         for(iter = sector->mobjList; iter; iter = iter->sNext)
         {
-            Map_CreateObjLink(map, iter, OT_MOBJ);
+            ObjBlockmap_Add(map->_objBlockmap, OT_MOBJ, iter);
         }
     }
 
@@ -562,7 +562,7 @@ static int createObjLinksForParticles(void* ptr, void* context)
             continue; // Infinitely small.
 
         // @todo Generator should return the map its linked to.
-        Map_CreateObjLink(P_CurrentMap(), pt, OT_PARTICLE); // For spreading purposes.
+        ObjBlockmap_Add(Map_ObjBlockmap(P_CurrentMap()), OT_PARTICLE, pt); // For spreading purposes.
     }
 
     return true; // Continue iteration.

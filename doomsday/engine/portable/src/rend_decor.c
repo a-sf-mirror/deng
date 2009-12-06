@@ -246,12 +246,9 @@ static void addLuminousDecoration(decorsource_t* src)
      * reconcile the two.
      */
 
-    lumIdx = LO_NewLuminous(LT_OMNI, src->subsector);
-    l = LO_GetLuminous(lumIdx);
+    lumIdx = LO_NewLuminous(LT_OMNI, src->pos[VX], src->pos[VY], src->pos[VZ], src->subsector);
 
-    l->pos[VX] = src->pos[VX];
-    l->pos[VY] = src->pos[VY];
-    l->pos[VZ] = src->pos[VZ];
+    l = LO_GetLuminous(lumIdx);
     l->maxDistance = src->maxDistance;
     l->decorSource = src;
 

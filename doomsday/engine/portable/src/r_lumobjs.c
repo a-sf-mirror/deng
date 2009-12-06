@@ -285,17 +285,20 @@ static lumobj_t* allocLumobj(void)
  *
  * @return              Index (name) by which the lumobj should be referred.
  */
-uint LO_NewLuminous(lumtype_t type, subsector_t* subsector)
+uint LO_NewLuminous(lumtype_t type, float x, float y, float z, subsector_t* subsector)
 {
     lumobj_t* lum = allocLumobj();
 
     lum->type = type;
+    lum->pos[VX] = x;
+    lum->pos[VY] = y;
+    lum->pos[VZ] = z;
     lum->subsector = subsector;
 
     linkLumObjToFace(lum);
 
     // @todo Subsector should return the map its linked to.
-    Map_CreateObjLink(P_CurrentMap(), lum, OT_LUMOBJ);
+    ObjBlockmap_Add(Map_ObjBlockmap(P_CurrentMap()), OT_LUMOBJ, lum);
 
     return numLuminous; // == index + 1
 }
@@ -508,12 +511,10 @@ if(!mat)
 
         // This'll allow a halo to be rendered. If the light is hidden from
         // view by world geometry, the light pointer will be set to NULL.
-        mo->lumIdx = LO_NewLuminous(LT_OMNI, ((objectrecord_t*) mo->subsector)->obj);
+        mo->lumIdx = LO_NewLuminous(LT_OMNI, mo->pos[VX], mo->pos[VY],
+            mo->pos[VZ], ((objectrecord_t*) mo->subsector)->obj);
 
         l = LO_GetLuminous(mo->lumIdx);
-        l->pos[VX] = mo->pos[VX];
-        l->pos[VY] = mo->pos[VY];
-        l->pos[VZ] = mo->pos[VZ];
         l->maxDistance = 0;
         l->decorSource = NULL;
 
@@ -661,12 +662,9 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
         if(pln->glow <= 0)
             continue;
 
-        lumIdx = LO_NewLuminous(LT_PLANE, subsector);
+        lumIdx = LO_NewLuminous(LT_PLANE, subsector->midPoint[VX], subsector->midPoint[VY], pln->visHeight, subsector);
 
         l = LO_GetLuminous(lumIdx);
-        l->pos[VX] = subsector->midPoint[VX];
-        l->pos[VY] = subsector->midPoint[VY];
-        l->pos[VZ] = pln->visHeight;
         l->maxDistance = 0;
         l->decorSource = NULL;
 

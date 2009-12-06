@@ -165,7 +165,6 @@ typedef struct map_s {
     subsectorblockmap_t* _subsectorBlockmap;
 
     objblockmap_t*  _objBlockmap;
-    objlink_t*      _objLinks[NUM_OBJ_TYPES];
     objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
 
     boolean         editActive;
@@ -243,8 +242,6 @@ void            Map_Update(map_t* map);
 void            Map_UpdateWatchedPlanes(map_t* map);
 void            Map_UpdateMovingSurfaces(map_t* map);
 void            Map_UpdateSkyFixForSector(map_t* map, uint secIDX);
-
-void            Map_CreateObjLink(map_t* map, void* obj, objtype_t type);
 
 void            Map_LinkMobj(map_t* map, struct mobj_s* mo, byte flags);
 int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);

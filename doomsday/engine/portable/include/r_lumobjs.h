@@ -99,7 +99,7 @@ void            LO_BeginFrame(void);
 
 void            LO_UnlinkMobjLumobjs(cvar_t* var);
 
-uint            LO_NewLuminous(lumtype_t type, subsector_t* subsector);
+uint            LO_NewLuminous(lumtype_t type, float x, float y, float z, subsector_t* subsector);
 lumobj_t*       LO_GetLuminous(uint idx);
 uint            LO_ToIndex(const lumobj_t* lum);
 boolean         LO_IsClipped(uint idx, int i);

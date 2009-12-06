@@ -3034,7 +3034,6 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
         LO_ClearForFrame(map);
 
         ObjBlockmap_Clear(map->_objBlockmap); // Zeroes the links.
-        memset(map->_objLinks, 0, sizeof(map->_objLinks));
 
         clearSubsectorContacts(map);
 
@@ -3051,13 +3050,6 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
 
         // Create objlinks for mobjs.
         R_CreateMobjLinks(map);
-
-        // Link objs to all contacted surfaces.
-        {
-        objtype_t i;
-        for(i = 0; i < NUM_OBJ_TYPES; ++i)
-            ObjBlockmap_AddLinks(map->_objBlockmap, i, map->_objLinks[i]);
-        }
     }
 }
 
@@ -3565,27 +3557,6 @@ static void initObjBlockmap(map_t* map)
     map->_objBlockmap = P_CreateObjBlockmap(min[0], min[1],
         (FLT2FIX(max[0]) >> (FRACBITS + 7)) + 1,
         (FLT2FIX(max[1]) >> (FRACBITS + 7)) + 1);
-    memset(map->_objLinks, 0, sizeof(map->_objLinks));
-}
-
-void Map_CreateObjLink(map_t* map, void* obj, objtype_t type)
-{
-    objlink_t* ol;
-
-    assert(map);
-    assert(obj);
-    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
-
-    if((ol = P_CreateObjLink()))
-    {
-        ol->obj = obj;
-        // Link it to the list of in-use objlinks.
-        ol->next = map->_objLinks[type];
-        map->_objLinks[type] = ol;
-        return;
-    }
-
-    Con_Error("Map_CreateObjLink: No more links.");
 }
 
 static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
