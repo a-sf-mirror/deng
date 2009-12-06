@@ -113,10 +113,22 @@ void M_DestroyGridmap(gridmap_t* gridmap)
     freeGridmap(gmap);
 }
 
-uint Gridmap_Width(gridmap_t* gridmap)
+/**
+ * Empty the gridmap. Only zeros the block links.
+ */
+void Gridmap_Empty(gridmap_t* gridmap)
 {
     assert(gridmap);
 
+    {
+    gmap_t* gmap = (gmap_t*) gridmap;
+    memset(gmap->blockLinks, 0, gmap->width * gmap->height * sizeof(void*));
+    }
+}
+
+uint Gridmap_Width(gridmap_t* gridmap)
+{
+    assert(gridmap);
     return ((gmap_t*) gridmap)->width;
 }
 

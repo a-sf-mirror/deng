@@ -30,6 +30,8 @@
 #include "mobjblockmap.h"
 #include "linedefblockmap.h"
 #include "subsectorblockmap.h"
+#include "particleblockmap.h"
+#include "lumobjblockmap.h"
 #include "halfedgeds.h"
 #include "p_maptypes.h"
 #include "m_nodepile.h"
@@ -37,7 +39,6 @@
 #include "rend_bias.h"
 #include "p_think.h"
 #include "p_particle.h"
-#include "p_objlink.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -86,6 +87,14 @@ typedef struct dynlist_s {
     struct dynlistnode_s* head, *tail;
 } dynlist_t;
 
+typedef enum {
+    OCT_FIRST = 0,
+    OCT_MOBJ = OCT_FIRST,
+    OCT_LUMOBJ,
+    OCT_PARTICLE,
+    NUM_OBJCONTACT_TYPES
+} objcontacttype_t;
+
 typedef struct objcontact_s {
     struct objcontact_s* next; // Next in the subsector.
     struct objcontact_s* nextUsed; // Next used contact.
@@ -93,7 +102,7 @@ typedef struct objcontact_s {
 } objcontact_t;
 
 typedef struct objcontactlist_s {
-    objcontact_t*   head[NUM_OBJ_TYPES];
+    objcontact_t*   head[NUM_OBJCONTACT_TYPES];
 } objcontactlist_t;
 
 #define GBF_CHANGED     0x1     // Grid block sector light has changed.
@@ -174,7 +183,10 @@ typedef struct map_s {
     linedefblockmap_t* _lineDefBlockmap;
     subsectorblockmap_t* _subsectorBlockmap;
 
-    objblockmap_t*  _objBlockmap;
+    // Following blockmaps are emptied each render frame.
+    particleblockmap_t* _particleBlockmap;
+    lumobjblockmap_t* _lumobjBlockmap;
+
     objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
 
     boolean         editActive;
@@ -272,8 +284,8 @@ boolean         Map_IterateThinkers(map_t* map, think_t func, byte flags,
                                     int (*callback) (void* p, void*),
                                     void* context);
 
-void            Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objtype_t type, void* obj);
-boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objtype_t type,
+void            Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objcontacttype_t type, void* obj);
+boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontacttype_t type,
                                              boolean (*func) (void*, void*),
                                              void* data);
 
@@ -341,7 +353,8 @@ halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
 mobjblockmap_t* Map_MobjBlockmap(map_t* map);
 linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
 subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
-objblockmap_t*  Map_ObjBlockmap(map_t* map);
+particleblockmap_t* Map_ParticleBlockmap(map_t* map);
+lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
 
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);

@@ -1113,6 +1113,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\lumobjblockmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\m_args.c"
 				>
 			</File>
@@ -1245,10 +1249,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_objlink.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_particle.c"
 				>
 			</File>
@@ -1298,6 +1298,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\p_vertex.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\src\particleblockmap.c"
 				>
 			</File>
 			<File
@@ -2842,6 +2846,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\include\lumobjblockmap.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\include\m_args.h"
 				>
 			</File>
@@ -2978,10 +2986,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\p_objlink.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\p_particle.h"
 				>
 			</File>
@@ -3031,6 +3035,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\p_vertex.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\particleblockmap.h"
 				>
 			</File>
 			<File

@@ -34,6 +34,7 @@ typedef void* gridmap_t;
 gridmap_t*      M_CreateGridmap(uint width, uint height, int zoneTag);
 void            M_DestroyGridmap(gridmap_t* gridmap);
 
+void            Gridmap_Empty(gridmap_t* gridmap);
 uint            Gridmap_Width(gridmap_t* gridmap);
 uint            Gridmap_Height(gridmap_t* gridmap);
 void            Gridmap_Dimensions(gridmap_t* gridmap, uint dimensions[2]);

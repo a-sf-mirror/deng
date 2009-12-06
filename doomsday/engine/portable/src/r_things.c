@@ -1962,8 +1962,8 @@ void R_ProjectVisSprites(subsector_t* subsector)
     {
     map_t* map = P_CurrentMap();
     uint subsectorIdx = P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1;
-    Map_IterateSubsectorContacts(map, subsectorIdx, OT_MOBJ, RIT_ProjectVisSpriteForMobj, subsector);
-    Map_IterateSubsectorContacts(map, subsectorIdx, OT_PARTICLE, RIT_ProjectVisSpriteForParticle, subsector);
+    Map_IterateSubsectorContacts(map, subsectorIdx, OCT_MOBJ, RIT_ProjectVisSpriteForMobj, subsector);
+    Map_IterateSubsectorContacts(map, subsectorIdx, OCT_PARTICLE, RIT_ProjectVisSpriteForParticle, subsector);
     }
 
     subsector->addSpriteCount = frameCount;

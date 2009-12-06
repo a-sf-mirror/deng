@@ -91,7 +91,6 @@ void            R_RenderPlayerViewBorder(void);
 void            R_RenderViewPorts(void);
 
 void            R_CreateParticleLinks(struct map_s* map);
-void            R_CreateMobjLinks(struct map_s* map);
 
 const viewdata_t* R_ViewData(int localPlayerNum);
 void            R_ResetViewer(void);

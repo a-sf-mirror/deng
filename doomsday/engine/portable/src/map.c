@@ -84,7 +84,7 @@ typedef struct lineowner2_s {
 typedef struct {
     map_t*          map;
     void*           obj;
-    objtype_t       type;
+    objcontacttype_t       type;
 } linkobjtosubsectorparams_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -208,7 +208,7 @@ static __inline void linkContact(objcontact_t** list, objcontact_t* con,
 }
 
 static void linkContactToSubsector(map_t* map, uint subsectorIdx,
-                                   objtype_t type, objcontact_t* node)
+                                   objcontacttype_t type, objcontact_t* node)
 {
     linkContact(&map->_subsectorContacts[subsectorIdx].head[type], node, 0);
 }
@@ -404,9 +404,13 @@ void P_DestroyMap(map_t* map)
         P_DestroySubsectorBlockmap(map->_subsectorBlockmap);
     map->_subsectorBlockmap = NULL;
 
-    if(map->_objBlockmap)
-        P_DestroyObjBlockmap(map->_objBlockmap);
-    map->_objBlockmap = NULL;
+    if(map->_particleBlockmap)
+        P_DestroyParticleBlockmap(map->_particleBlockmap);
+    map->_particleBlockmap = NULL;
+
+    if(map->_lumobjBlockmap)
+        P_DestroyLumobjBlockmap(map->_lumobjBlockmap);
+    map->_lumobjBlockmap = NULL;
 
     if(map->_subsectorContacts)
         Z_Free(map->_subsectorContacts);
@@ -1295,6 +1299,92 @@ static void buildMobjBlockmap(map_t* map)
 
 #undef BLKMARGIN
 #undef MAPBLOCKUNITS
+}
+
+static void buildParticleBlockmap(map_t* map)
+{
+#define BLKMARGIN       8
+#define BLOCK_WIDTH     128
+#define BLOCK_HEIGHT    128
+
+    uint mapWidth, mapHeight;
+    vec2_t bounds[2], blockSize, dims;
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
+                      map->bBox[BOXBOTTOM] - BLKMARGIN);
+    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
+                      map->bBox[BOXTOP] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        mapWidth = 1;
+    else
+        mapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        mapHeight = 1;
+    else
+        mapHeight = ceil(dims[VY] / blockSize[VY]);
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + mapWidth  * blockSize[VX],
+                      bounds[0][VY] + mapHeight * blockSize[VY]);
+
+    map->_particleBlockmap = P_CreateParticleBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
+
+#undef BLKMARGIN
+#undef BLOCK_WIDTH
+#undef BLOCK_HEIGHT
+}
+
+static void buildLumobjBlockmap(map_t* map)
+{
+#define BLKMARGIN       8
+#define BLOCK_WIDTH     128
+#define BLOCK_HEIGHT    128
+
+    uint mapWidth, mapHeight;
+    vec2_t bounds[2], blockSize, dims;
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
+                      map->bBox[BOXBOTTOM] - BLKMARGIN);
+    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
+                      map->bBox[BOXTOP] + BLKMARGIN);
+
+    // Select a good size for the blocks.
+    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
+    V2_Subtract(dims, bounds[1], bounds[0]);
+
+    // Calculate the dimensions of the blockmap.
+    if(dims[VX] <= blockSize[VX])
+        mapWidth = 1;
+    else
+        mapWidth = ceil(dims[VX] / blockSize[VX]);
+
+    if(dims[VY] <= blockSize[VY])
+        mapHeight = 1;
+    else
+        mapHeight = ceil(dims[VY] / blockSize[VY]);
+
+    // Adjust the max bound so we have whole blocks.
+    V2_Set(bounds[1], bounds[0][VX] + mapWidth  * blockSize[VX],
+                      bounds[0][VY] + mapHeight * blockSize[VY]);
+
+    map->_lumobjBlockmap = P_CreateLumobjBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
+
+#undef BLKMARGIN
+#undef BLOCK_WIDTH
+#undef BLOCK_HEIGHT
 }
 
 static int C_DECL vertexCompare(const void* p1, const void* p2)
@@ -3032,24 +3122,16 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
         LG_Update(map);
         SB_BeginFrame(map);
         LO_ClearForFrame(map);
-
-        ObjBlockmap_Clear(map->_objBlockmap); // Zeroes the links.
-
-        clearSubsectorContacts(map);
-
-        // Generate surface decorations for the frame.
         Rend_InitDecorationsForFrame(map);
 
-        // Spawn omnilights for decorations.
-        Rend_AddLuminousDecorations(map);
-
-        // Spawn omnilights for mobjs.
-        LO_AddLuminousMobjs(map);
-
+        ParticleBlockmap_Empty(map->_particleBlockmap);
         R_CreateParticleLinks(map);
 
-        // Create objlinks for mobjs.
-        R_CreateMobjLinks(map);
+        LumobjBlockmap_Empty(map->_lumobjBlockmap);
+        Rend_AddLuminousDecorations(map);
+        LO_AddLuminousMobjs(map);
+
+        clearSubsectorContacts(map);
     }
 }
 
@@ -3140,10 +3222,16 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
     return map->_subsectorBlockmap;
 }
 
-objblockmap_t* Map_ObjBlockmap(map_t* map)
+particleblockmap_t* Map_ParticleBlockmap(map_t* map)
 {
     assert(map);
-    return map->_objBlockmap;
+    return map->_particleBlockmap;
+}
+
+lumobjblockmap_t* Map_LumobjBlockmap(map_t* map)
+{
+    assert(map);
+    return map->_lumobjBlockmap;
 }
 
 void Map_InitLinks(map_t* map)
@@ -3545,20 +3633,6 @@ static void findDominantLightSources(map_t* map)
 #undef DOMINANT_SIZE
 }
 
-static void initObjBlockmap(map_t* map)
-{
-    vec2_t min, max;
-
-    // Determine the dimensions of the objblockmap.
-    Map_Bounds(map, &min[0], &max[0]);
-    V2_Subtract(max, max, min);
-
-    // 128x128 world unit blocks.
-    map->_objBlockmap = P_CreateObjBlockmap(min[0], min[1],
-        (FLT2FIX(max[0]) >> (FRACBITS + 7)) + 1,
-        (FLT2FIX(max[1]) >> (FRACBITS + 7)) + 1);
-}
-
 static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
 {
     linkobjtosubsectorparams_t* params = (linkobjtosubsectorparams_t*) data;
@@ -3572,14 +3646,14 @@ static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
     return true; // Continue iteration.
 }
 
-void Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objtype_t type,
+void Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objcontacttype_t type,
                              void* obj)
 {
     linkobjtosubsectorparams_t params;
 
     assert(map);
     assert(subsectorIdx < map->numSubsectors);
-    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
+    assert(type >= OCT_FIRST && type < NUM_OBJCONTACT_TYPES);
     assert(obj);
 
     params.map = map;
@@ -3589,7 +3663,7 @@ void Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objtype_t type,
     PIT_LinkObjToSubsector(subsectorIdx, &params);
 }
 
-boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objtype_t type,
+boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontacttype_t type,
                                      boolean (*callback) (void*, void*),
                                      void* data)
 {
@@ -3700,10 +3774,11 @@ boolean P_LoadMap(const char* mapID)
 
         findDominantLightSources(map);
 
-        // Init other blockmaps.
         buildMobjBlockmap(map);
         buildSubsectorBlockmap(map);
-        initObjBlockmap(map);
+        buildParticleBlockmap(map);
+        buildLumobjBlockmap(map);
+
         initSubsectorContacts(map);
 
         strncpy(map->mapID, mapID, 8);

@@ -28,6 +28,7 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
+void            Subsector_SpreadObjs(subsector_t* subsector);
 void            Subsector_UpdateMidPoint(subsector_t* subsector);
 
 boolean         Subsector_GetProperty(const subsector_t* subsector, setargs_t* args);

@@ -49,6 +49,7 @@ typedef struct lumobj_s {
     subsector_t*    subsector;
     float           maxDistance;
     void*           decorSource; // decorsource_t ptr, else @c NULL.
+    int             spreadFrameCount;
 
     union lumobj_data_u {
         struct lumobj_omni_s {

@@ -298,7 +298,7 @@ uint LO_NewLuminous(lumtype_t type, float x, float y, float z, subsector_t* subs
     linkLumObjToFace(lum);
 
     // @todo Subsector should return the map its linked to.
-    ObjBlockmap_Add(Map_ObjBlockmap(P_CurrentMap()), OT_LUMOBJ, lum);
+    LumobjBlockmap_Link(Map_LumobjBlockmap(P_CurrentMap()), lum);
 
     return numLuminous; // == index + 1
 }
@@ -681,7 +681,7 @@ static void createGlowLightPerPlaneForSubSector(subsector_t* subsector)
 
         // Planar lights don't spread, so just link the lum to its own subsector.
         // @todo Subsector should return the map its linked to.
-        Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, l->subsector)->id - 1, OT_LUMOBJ, l);
+        Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, l->subsector)->id - 1, OCT_LUMOBJ, l);
     }
 }
 
@@ -781,7 +781,7 @@ boolean LO_LumobjsRadiusIterator(subsector_t* subsector, float x, float y,
 
     // @todo Subsector should return the map its linked to.
     return Map_IterateSubsectorContacts(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1,
-                                        OT_LUMOBJ, LOIT_RadiusLumobjs, (void*) &params);
+                                        OCT_LUMOBJ, LOIT_RadiusLumobjs, (void*) &params);
 }
 
 boolean LOIT_ClipLumObj(void* data, void* context)

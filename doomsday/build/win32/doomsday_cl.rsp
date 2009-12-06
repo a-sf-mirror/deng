@@ -40,6 +40,7 @@
  .\..\..\engine\portable\src\gl_draw.c
  .\..\..\engine\portable\src\halfedgeds.c
  .\..\..\engine\portable\src\linedefblockmap.c
+ .\..\..\engine\portable\src\lumobjblockmap.c
  .\..\..\engine\portable\src\rend_console.c
  .\..\..\engine\portable\src\rend_bias.c
  .\..\..\engine\portable\src\edit_bias.c
@@ -70,6 +71,7 @@
  .\..\..\engine\portable\src\r_lgrid.c
  .\..\..\engine\portable\src\r_lumobjs.c
  .\..\..\engine\portable\src\mobjblockmap.c
+ .\..\..\engine\portable\src\particleblockmap.c
  .\..\..\engine\portable\src\p_ticker.c
  .\..\..\engine\portable\src\p_think.c
  .\..\..\engine\portable\src\p_sight.c
@@ -85,7 +87,6 @@
  .\..\..\engine\portable\src\p_data.c
  .\..\..\engine\portable\src\p_dmu.c
  .\..\..\engine\portable\src\p_linedef.c
- .\..\..\engine\portable\src\p_objlink.c
  .\..\..\engine\portable\src\p_plane.c
  .\..\..\engine\portable\src\p_polyob.c
  .\..\..\engine\portable\src\p_sector.c

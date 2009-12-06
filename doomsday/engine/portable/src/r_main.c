@@ -495,39 +495,6 @@ void R_NewSharpWorld(void)
     }
 }
 
-void R_CreateMobjLinks(map_t* map)
-{
-    uint i;
-
-#ifdef DD_PROFILE
-    static int p;
-
-    if(++p > 40)
-    {
-        p = 0;
-        PRINT_PROF( PROF_MOBJ_INIT_ADD );
-    }
-#endif
-
-    if(!map)
-        return;
-
-BEGIN_PROF( PROF_MOBJ_INIT_ADD );
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sector = map->sectors[i];
-        mobj_t* iter;
-
-        for(iter = sector->mobjList; iter; iter = iter->sNext)
-        {
-            ObjBlockmap_Add(map->_objBlockmap, OT_MOBJ, iter);
-        }
-    }
-
-END_PROF( PROF_MOBJ_INIT_ADD );
-}
-
 static int createObjLinksForParticles(void* ptr, void* context)
 {
     generator_t* gen = (generator_t*) ptr;
@@ -562,7 +529,7 @@ static int createObjLinksForParticles(void* ptr, void* context)
             continue; // Infinitely small.
 
         // @todo Generator should return the map its linked to.
-        ObjBlockmap_Add(Map_ObjBlockmap(P_CurrentMap()), OT_PARTICLE, pt); // For spreading purposes.
+        ParticleBlockmap_Link(Map_ParticleBlockmap(P_CurrentMap()), pt);
     }
 
     return true; // Continue iteration.

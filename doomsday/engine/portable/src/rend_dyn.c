@@ -680,7 +680,7 @@ uint DL_ProjectOnSurface(map_t* map, subsector_t* subsector,
 
     // Process each lumobj contacting the subsector.
     Map_IterateSubsectorContacts(map, P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1,
-                                 OT_LUMOBJ, DLIT_SurfaceLumobjContacts, &params);
+                                 OCT_LUMOBJ, DLIT_SurfaceLumobjContacts, &params);
 
     // Did we generate a light list?
     return params.listIdx;
