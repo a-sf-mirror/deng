@@ -110,18 +110,9 @@ static void clearRoots(objblockmap_t* obm)
     memset(obm->blocks, 0, sizeof(*obm->blocks) * obm->width * obm->height);
 }
 
-objlink_t* P_CreateObjLink(void* obj, objtype_t type)
+objlink_t* P_CreateObjLink(void)
 {
-    objlink_t* ol;
-
-    assert(obj);
-    assert(type >= OT_FIRST && type < NUM_OBJ_TYPES);
-
-    ol = allocObjLink();
-    ol->obj = obj;
-    ol->type = type;
-
-    return ol;
+    return  allocObjLink();
 }
 
 objblockmap_t* P_CreateObjBlockmap(float originX, float originY, int width,
@@ -281,14 +272,14 @@ static void processSeg(hedge_t* hEdge, void* data)
  *
  * @param oLink         Ptr to objlink to find subsector contacts for.
  */
-static void findContacts(objlink_t* oLink)
+static void findContacts(objtype_t type, objlink_t* oLink)
 {
 #define SUBSECTORSPREAD_MINRADIUS 16 // In world units.
 
     contactfinderparams_t params;
     subsector_t* subsector;
 
-    switch(oLink->type)
+    switch(type)
     {
     case OT_LUMOBJ:
         {
@@ -323,17 +314,17 @@ static void findContacts(objlink_t* oLink)
         break;
         }
     default:
-        Con_Error("Internal Error: Invalid value (%i) for objlink_t->type "
-                  "in findContacts.", (int) oLink->type);
+        Con_Error("Internal Error: Invalid value (%i) for objtype "
+                  "in findContacts.", (int) type);
         return; // Unreachable.
     }
 
     params.obj = oLink->obj;
-    params.objType = oLink->type;
+    params.objType = type;
 
     // Always contact the obj's own subsector.
     // @todo Subsector should return the map its linked to.
-    Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1, oLink->type, oLink->obj);
+    Map_AddSubsectorContact(P_CurrentMap(), P_ObjectRecord(DMU_SUBSECTOR, subsector)->id - 1, type, oLink->obj);
 
     if(params.objRadius < SUBSECTORSPREAD_MINRADIUS)
         return;
@@ -360,7 +351,7 @@ void ObjBlockmap_Spread(objblockmap_t* obm, const subsector_t* subsector,
                         float maxRadius)
 {
     int xl, xh, yl, yh, x, y;
-    objlink_t* iter;
+
 
     assert(obm);
     assert(subsector);
@@ -391,12 +382,17 @@ void ObjBlockmap_Spread(objblockmap_t* obm, const subsector_t* subsector,
 
             if(!block->doneSpread)
             {
+                objtype_t i;
+
                 // Spread the objs in this block.
-                iter = block->head;
-                while(iter)
+                for(i = 0; i < NUM_OBJ_TYPES; ++i)
                 {
-                    findContacts(iter);
-                    iter = iter->nextInBlock;
+                    objlink_t* iter = block->head[i];
+                    while(iter)
+                    {
+                        findContacts(i, iter);
+                        iter = iter->nextInBlock;
+                    }
                 }
 
                 block->doneSpread = true;
@@ -425,7 +421,7 @@ BEGIN_PROF( PROF_OBJLINK_SPREAD );
 END_PROF( PROF_OBJLINK_SPREAD );
 }
 
-static void addObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
+static void addObjLink(objblockmap_t* obm, objtype_t type, objlink_t* oLink, float x, float y)
 {
     int bx, by;
     objlink_t** root;
@@ -439,7 +435,7 @@ static void addObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
 
     if(bx >= 0 && by >= 0 && bx < obm->width && by < obm->height)
     {
-        root = &OBB_XY(obm, bx, by)->head;
+        root = &OBB_XY(obm, bx, by)->head[type];
         oLink->nextInBlock = *root;
         *root = oLink;
     }
@@ -448,7 +444,7 @@ static void addObjLink(objblockmap_t* obm, objlink_t* oLink, float x, float y)
 /**
  * Link all objlinks into the objlink blockmap.
  */
-void ObjBlockmap_AddLinks(objblockmap_t* obm, objlink_t* objLinks)
+void ObjBlockmap_AddLinks(objblockmap_t* obm, objtype_t type, objlink_t* objLinks)
 {
     objlink_t* oLink;
 #ifdef DD_PROFILE
@@ -471,7 +467,7 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
     {
         vec2_t pos;
 
-        switch(oLink->type)
+        switch(type)
         {
         case OT_LUMOBJ:
             V2_Copy(pos, ((lumobj_t*) oLink->obj)->pos);
@@ -486,12 +482,11 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
             break;
 
         default:
-            Con_Error("Internal Error: Invalid value (%i) for objlink_t->type "
-                      "in Map_LinkObjs.", (int) oLink->type);
+            Con_Error("Internal Error: Invalid objtype (%i) in Map_LinkObjs.", (int) type);
             return; // Unreachable.
         }
 
-        addObjLink(obm, oLink, pos[VX], pos[VY]);
+        addObjLink(obm, type, oLink, pos[VX], pos[VY]);
 
         oLink = oLink->next;
     }

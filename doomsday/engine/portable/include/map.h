@@ -165,7 +165,7 @@ typedef struct map_s {
     subsectorblockmap_t* _subsectorBlockmap;
 
     objblockmap_t*  _objBlockmap;
-    objlink_t*      _objLinks;
+    objlink_t*      _objLinks[NUM_OBJ_TYPES];
     objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
 
     boolean         editActive;

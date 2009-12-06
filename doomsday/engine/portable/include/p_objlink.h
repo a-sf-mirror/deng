@@ -41,12 +41,11 @@ typedef struct objlink_s {
     struct objlink_s* nextInBlock; // Next in the same obj block, or NULL.
     struct objlink_s* nextUsed;
     struct objlink_s* next; // Next in list of ALL objlinks.
-    objtype_t       type;
     void*           obj;
 } objlink_t;
 
 typedef struct objblock_s {
-    objlink_t*      head;
+    objlink_t*      head[NUM_OBJ_TYPES];
 
     // Used to prevent multiple processing of a block during one refresh frame.
     boolean         doneSpread;
@@ -72,10 +71,10 @@ objblockmap_t*  P_CreateObjBlockmap(float originX, float originY, int width,
                                     int height);
 void            P_DestroyObjBlockmap(objblockmap_t* obm);
 
-void            ObjBlockmap_AddLinks(objblockmap_t* obm, objlink_t* objLinks);
+void            ObjBlockmap_AddLinks(objblockmap_t* obm, objtype_t type, objlink_t* objLinks);
 void            ObjBlockmap_Clear(objblockmap_t* obm);
 
-objlink_t*      P_CreateObjLink(void* obj, objtype_t type);
+objlink_t*      P_CreateObjLink(void);
 
 void            Subsector_SpreadObjLinks(subsector_t* subsector);
 
