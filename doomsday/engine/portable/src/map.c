@@ -457,6 +457,9 @@ void P_DestroyMap(map_t* map)
     }
     map->lineDefs = NULL;
     map->numLineDefs = 0;
+    if(map->lineOwners)
+        Z_Free(map->lineOwners);
+    map->lineOwners = NULL;
 
     if(map->polyObjs)
     {
@@ -2096,13 +2099,13 @@ static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, uint num)
  */
 static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
 {
-    lineowner_t* lineOwners, *allocator;
+    lineowner_t* allocator;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
     uint i;
 
     // We know how many vertex line owners we need (numLineDefs * 2).
-    lineOwners = Z_Calloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_MAP, 0);
-    allocator = lineOwners;
+    map->lineOwners = Z_Calloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_STATIC, 0);
+    allocator = map->lineOwners;
 
     for(i = 0; i < map->numLineDefs; ++i)
     {
@@ -2223,7 +2226,7 @@ static void finishPolyobjs(map_t* map)
             linedef_t* lineDef = po->lineDefs[po->lineDefs[j]->buildData.index - 1];
             hedge_t* hEdge;
 
-            hEdge = Z_Calloc(sizeof(hedge_t), PU_MAP, 0);
+            hEdge = Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
             hEdge->face = NULL;
             lineDef->hEdges[0] = lineDef->hEdges[1] = hEdge;
 

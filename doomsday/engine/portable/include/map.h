@@ -213,6 +213,8 @@ typedef struct map_s {
     uint            numPolyObjs;
     polyobj_t**     polyObjs;
 
+    lineowner_t*    lineOwners;
+
     planelist_t     watchedPlaneList;
     surfacelist_t   movingSurfaceList;
     surfacelist_t   decoratedSurfaceList;
