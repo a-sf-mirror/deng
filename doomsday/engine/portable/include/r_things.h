@@ -112,6 +112,8 @@ typedef struct rendspriteparams_s {
 
 typedef struct rendtexparticleparams_s {
     float           radius;
+    boolean         flatOnPlane, flatOnWall;
+    linedef_t*      contact;
     DGLuint         tex;
     blendmode_t     blendMode;
     float           ambientColor[4];

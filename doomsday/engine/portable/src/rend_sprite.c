@@ -1152,40 +1152,77 @@ void Rend_RenderTexParticle(const vissprite_t* spr)
 {
     const rendtexparticleparams_t* params = &spr->data.texpt;
     dgl_color_t quadColors[4];
-    dgl_vertex_t quadNormals[4];
-    boolean restoreMatrix = false;
-    boolean restoreZ = false;
-    float surfaceNormal[3];
-    float v1[3], v2[3], v3[3], v4[3];
+    vec3_t v1, v2, v3, v4, surfaceNormal;
     int i;
 
-    M_ProjectViewRelativeLine2D(spr->center, true, params->radius * 2, 0, v1, v4);
+    // Should the particle be flat against a surface?
+    if(params->flatOnPlane|| params->flatOnWall)
+    {
+        if(params->flatOnPlane)
+        {
+            V3_Set(v1, spr->center[VX] - params->radius, spr->center[VY] - params->radius, spr->center[VZ]);
+            V3_Set(v2, spr->center[VX] + params->radius, spr->center[VY] - params->radius, spr->center[VZ]);
+            V3_Set(v3, spr->center[VX] + params->radius, spr->center[VY] + params->radius, spr->center[VZ]);
+            V3_Set(v4, spr->center[VX] - params->radius, spr->center[VY] + params->radius, spr->center[VZ]);
+        }
+        else // Flat against a wall, then.
+        {
+            vec2_t line, vpos, projected;
 
-    v2[VX] = v1[VX];
-    v2[VY] = v1[VY];
-    v3[VX] = v4[VX];
-    v3[VY] = v4[VY];
+            V2_Set(vpos, params->contact->L_v1->pos[VX], params->contact->L_v1->pos[VY]);
+            V2_Set(line, params->contact->dX, params->contact->dY);
 
-    v1[VZ] = v4[VZ] = spr->center[VZ] - params->radius;
-    v2[VZ] = v3[VZ] = spr->center[VZ] + params->radius;
+            // There will be a slight approximation on the XY plane since the
+            // particles aren't that accurate when it comes to wall collisions.
 
-    // Calculate the surface normal.
-    M_PointCrossProduct(v2, v1, v3, surfaceNormal);
-    M_Normalize(surfaceNormal);
+            // Calculate a new pos point (project onto the wall).
+            // Also move 1 unit away from the wall to avoid the worst Z-fighting.
+            M_ProjectPointOnLine(spr->center, vpos, line, 1, projected);
 
-    // All sprite vertices are co-plannar, so just copy the surface normal.
-    // \fixme: Can we do something better here?
-    for(i = 0; i < 4; ++i)
-        memcpy(quadNormals[i].xyz, surfaceNormal, sizeof(surfaceNormal));
+            P_LineUnitVector(params->contact, line);
+            V2_Scale(line, params->radius);
 
-    if(!params->vLightListIdx)
-    {   // Lit uniformly.
+            V3_Set(v1, projected[VX] - line[VX], projected[VY] - line[VY], spr->center[VZ] - params->radius);
+            V3_Set(v2, projected[VX] - line[VX], projected[VY] - line[VY], spr->center[VZ] + params->radius);
+            V3_Set(v3, projected[VX] + line[VX], projected[VY] + line[VY], spr->center[VZ] + params->radius);
+            V3_Set(v4, projected[VX] + line[VX], projected[VY] + line[VY], spr->center[VZ] - params->radius);
+        }
+
+        // Lit uniformly.
         Spr_UniformVertexColors(4, quadColors, params->ambientColor);
     }
     else
-    {   // Lit normally.
-        Spr_VertexColors(4, quadColors, quadNormals, params->vLightListIdx,
-                         particleLight + 1, params->ambientColor);
+    {
+        dgl_vertex_t quadNormals[4];
+
+        M_ProjectViewRelativeLine2D(spr->center, true, params->radius * 2, 0, v1, v4);
+
+        v2[VX] = v1[VX];
+        v2[VY] = v1[VY];
+        v3[VX] = v4[VX];
+        v3[VY] = v4[VY];
+
+        v1[VZ] = v4[VZ] = spr->center[VZ] - params->radius;
+        v2[VZ] = v3[VZ] = spr->center[VZ] + params->radius;
+
+        // Calculate the surface normal.
+        M_PointCrossProduct(v2, v1, v3, surfaceNormal);
+        M_Normalize(surfaceNormal);
+
+        // All sprite vertices are co-plannar, so just copy the surface normal.
+        // \fixme: Can we do something better here?
+        for(i = 0; i < 4; ++i)
+            memcpy(quadNormals[i].xyz, surfaceNormal, sizeof(surfaceNormal));
+
+        if(!params->vLightListIdx)
+        {   // Lit uniformly.
+            Spr_UniformVertexColors(4, quadColors, params->ambientColor);
+        }
+        else
+        {   // Lit normally.
+            Spr_VertexColors(4, quadColors, quadNormals, params->vLightListIdx,
+                             particleLight + 1, params->ambientColor);
+        }
     }
 
     glDepthMask(GL_FALSE);
@@ -1204,12 +1241,12 @@ void Rend_RenderTexParticle(const vissprite_t* spr)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    // Rotate around the center of the particle.
     glTranslatef(spr->center[VX], spr->center[VZ], spr->center[VY]);
     // Counteract the view-up aspect correction (rather than setup the modelview again).
     glScalef(1.f, 1 / 1.2f, 1.f);
-    // Normal rotation perpendicular to the view plane.
-    glRotatef(vpitch, viewsidex, 0, viewsidey);
+    if(!params->flatOnPlane && !params->flatOnWall)
+        // Normal rotation perpendicular to the view plane.
+        glRotatef(vpitch, viewsidex, 0, viewsidey);
     glTranslatef(-spr->center[VX], -spr->center[VZ], -spr->center[VY]);
 
     {
@@ -1248,7 +1285,6 @@ void Rend_RenderTexParticle(const vissprite_t* spr)
     renderQuad(v, quadColors, tc);
     }
 
-    // Restore the original modelview matrix.
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 

@@ -1036,7 +1036,7 @@ static void setupSpriteParamsForVisSprite(rendspriteparams_t *params,
 }
 
 static void setupParticleParamsForVisSprite(rendtexparticleparams_t* params,
-                                            float radius, DGLuint tex, blendmode_t blendMode,
+                                            float radius, boolean flatOnPlane, boolean flatOnWall, linedef_t* contact, DGLuint tex, blendmode_t blendMode,
                                             float ambientColorR, float ambientColorG, float ambientColorB, float alpha,
                                             uint vLightListIdx)
 {
@@ -1044,6 +1044,9 @@ static void setupParticleParamsForVisSprite(rendtexparticleparams_t* params,
         return; // Wha?
 
     params->radius = radius;
+    params->flatOnPlane = flatOnPlane;
+    params->flatOnWall = flatOnWall;
+    params->contact = contact;
     params->tex = tex;
     params->blendMode = blendMode;
     params->ambientColor[CR] = ambientColorR;
@@ -1835,88 +1838,6 @@ void Particle_ProjectVisSprite(const particle_t* pt)
             return;
         }
 
-        // The vertices, please.
-        /*if(tex != 0)
-        {
-            // Should the particle be flat against a plane?
-            if(flatOnPlane)
-            {
-                glTexCoord2f(0, 0);
-                glVertex3f(pos[VX] - size, pos[VZ], pos[VY] - size);
-
-                glTexCoord2f(1, 0);
-                glVertex3f(pos[VX] + size, pos[VZ], pos[VY] - size);
-
-                glTexCoord2f(1, 1);
-                glVertex3f(pos[VX] + size, pos[VZ], pos[VY] + size);
-
-                glTexCoord2f(0, 1);
-                glVertex3f(pos[VX] - size, pos[VZ], pos[VY] + size);
-            }
-            // Flat against a wall, then?
-            else if(flatOnWall)
-            {
-                float line[2], pos[2], vpos;
-                vertex_t* vtx;
-
-                line[0] = pt->contact->dX;
-                line[1] = pt->contact->dY;
-                vtx = pt->contact->L_v1;
-
-                // There will be a slight approximation on the XY plane since
-                // the particles aren't that accurate when it comes to wall
-                // collisions.
-
-                // Calculate a new pos point (project onto the wall).
-                // Also move 1 unit away from the wall to avoid the worst
-                // Z-fighting.
-                pos[VX] = FIX2FLT(pt->pos[VX]);
-                pos[VZ] = FIX2FLT(pt->pos[VZ]);
-                vpos = vtx->pos[VX];
-                M_ProjectPointOnLine(pos, &vpos, line, 1, projected);
-
-                P_LineUnitVector(pt->contact, line);
-
-                glTexCoord2f(0, 0);
-                glVertex3f(projected[VX] - size * line[VX], pos[VZ] - size,
-                           projected[VZ] - size * line[VZ]);
-
-                glTexCoord2f(1, 0);
-                glVertex3f(projected[VX] - size * line[VX], pos[VZ] + size,
-                           projected[VZ] - size * line[VZ]);
-
-                glTexCoord2f(1, 1);
-                glVertex3f(projected[VX] + size * line[VX], pos[VZ] + size,
-                           projected[VZ] + size * line[VZ]);
-
-                glTexCoord2f(0, 1);
-                glVertex3f(projected[VX] + size * line[VX], pos[VZ] - size,
-                           projected[VZ] + size * line[VZ]);
-            }
-            else
-            {
-                glTexCoord2f(0, 0);
-                glVertex3f(pos[VX] + size * leftoff[VX],
-                           pos[VZ] + size * leftoff[VZ] / 1.2f,
-                           pos[VY] + size * leftoff[VY]);
-
-                glTexCoord2f(1, 0);
-                glVertex3f(pos[VX] + size * rightoff[VX],
-                           pos[VZ] + size * rightoff[VZ] / 1.2f,
-                           pos[VY] + size * rightoff[VY]);
-
-                glTexCoord2f(1, 1);
-                glVertex3f(pos[VX] - size * leftoff[VX],
-                           pos[VZ] - size * leftoff[VZ] / 1.2f,
-                           pos[VY] - size * leftoff[VY]);
-
-                glTexCoord2f(0, 1);
-                glVertex3f(pos[VX] - size * rightoff[VX],
-                           pos[VZ] - size * rightoff[VZ] / 1.2f,
-                           pos[VY] - size * rightoff[VY]);
-            }
-        }*/
-
         if(renderTextures != 2)
         {
             if(st->type == PTC_POINT || !ptctexname[st->type - PTC_TEXTURE])
@@ -1933,7 +1854,8 @@ void Particle_ProjectVisSprite(const particle_t* pt)
         }
 
         setupParticleParamsForVisSprite(&vis->data.texpt,
-                                        size, tex, blendMode, ambientColor[CR], ambientColor[CG], ambientColor[CB], color[CA],
+                                        size, flatOnPlane, flatOnWall, pt->contact,
+                                        tex, blendMode, ambientColor[CR], ambientColor[CG], ambientColor[CB], color[CA],
                                         vLightListIdx);
     }
 }
