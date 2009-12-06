@@ -86,6 +86,16 @@ typedef struct dynlist_s {
     struct dynlistnode_s* head, *tail;
 } dynlist_t;
 
+typedef struct objcontact_s {
+    struct objcontact_s* next; // Next in the subsector.
+    struct objcontact_s* nextUsed; // Next used contact.
+    void*           obj;
+} objcontact_t;
+
+typedef struct objcontactlist_s {
+    objcontact_t*   head[NUM_OBJ_TYPES];
+} objcontactlist_t;
+
 #define GBF_CHANGED     0x1     // Grid block sector light has changed.
 #define GBF_CONTRIBUTOR 0x2     // Contributes light to a changed block.
 

@@ -43,16 +43,6 @@ typedef struct objblockmap_s {
     int             width, height; // In blocks.
 } objblockmap_t;
 
-typedef struct objcontact_s {
-    struct objcontact_s* next; // Next in the subsector.
-    struct objcontact_s* nextUsed; // Next used contact.
-    void*           obj;
-} objcontact_t;
-
-typedef struct objcontactlist_s {
-    objcontact_t*   head[NUM_OBJ_TYPES];
-} objcontactlist_t;
-
 objblockmap_t*  P_CreateObjBlockmap(float originX, float originY, int width,
                                     int height);
 void            P_DestroyObjBlockmap(objblockmap_t* obm);
