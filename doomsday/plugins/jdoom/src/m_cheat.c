@@ -154,8 +154,10 @@ int Cht_GodFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -225,8 +227,10 @@ int Cht_GiveWeaponsAmmoArmor(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -247,8 +251,10 @@ int Cht_GiveWeaponsAmmoArmorKeys(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -271,8 +277,10 @@ int Cht_MusicFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -297,8 +305,10 @@ int Cht_NoClipFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -375,8 +385,10 @@ int Cht_PowerupMessage(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -397,8 +409,10 @@ int Cht_PowerupFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -437,8 +451,10 @@ int Cht_ChoppersFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
@@ -458,8 +474,10 @@ int Cht_MyPosFunc(const int* args, int player)
 
     if(IS_NETGAME)
         return false;
+#if !_DEBUG
     if(gameSkill == SM_NIGHTMARE)
         return false;
+#endif
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
