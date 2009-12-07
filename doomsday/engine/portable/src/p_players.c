@@ -162,9 +162,9 @@ boolean P_IsInVoid(player_t* player)
                 ((const subsector_t*) ((objectrecord_t*) ddpl->mo->subsector)->obj)->sector;
 
             if((IS_SKYSURFACE(&sec->SP_ceilsurface) &&
-                ddpl->mo->pos[VZ] < P_CurrentMap()->skyFix[PLN_CEILING].height - 4) ||
+                ddpl->mo->pos[VZ] < P_CurrentMap()->skyFixCeiling - 4) ||
                (IS_SKYSURFACE(&sec->SP_floorsurface) &&
-                ddpl->mo->pos[VZ] > P_CurrentMap()->skyFix[PLN_FLOOR].height + 4))
+                ddpl->mo->pos[VZ] > P_CurrentMap()->skyFixFloor + 4))
                 return false;
         }
 

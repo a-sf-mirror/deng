@@ -472,7 +472,6 @@ typedef struct partition_s {
 typedef struct node_s {
     partition_t         partition;
     float               bBox[2][4];    // Bounding box for each child.
-    unsigned int        children[2];   // If NF_SUBSECTOR it's a subsector.
 } node_t;
 
 #define MAX_SKY_LAYERS        2

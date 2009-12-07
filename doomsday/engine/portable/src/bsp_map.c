@@ -208,7 +208,7 @@ static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSe
            ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
            ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
             continue;
-        
+
         if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
            ((bsp_hedgeinfo_t*) hEdge->data)->sector)
         {
@@ -266,79 +266,23 @@ static void createSubsectorForFace(map_t* map, face_t* face)
     face->data = createSubsector(map, face);
 }
 
-typedef struct {
-    uint            faceCurIndex;
-    uint            nodeCurIndex;
-} hardenbspparams_t;
-
-static boolean C_DECL hardenNode(binarytree_t* tree, void* data)
+static boolean C_DECL createSubsectors(binarytree_t* tree, void* data)
 {
-    binarytree_t* right, *left;
-    bspnodedata_t* nodeData;
-    hardenbspparams_t* params;
-    node_t* node;
-
-    if(BinaryTree_IsLeaf(tree))
-        return true; // Continue iteration.
-
-    nodeData = BinaryTree_GetData(tree);
-    params = (hardenbspparams_t*) data;
-
-    node = editMap->nodes[nodeData->index = params->nodeCurIndex++];
-
-    node->partition.x = nodeData->partition.x;
-    node->partition.y = nodeData->partition.y;
-    node->partition.dX = nodeData->partition.dX;
-    node->partition.dY = nodeData->partition.dY;
-
-    node->bBox[RIGHT][BOXTOP]    = nodeData->bBox[RIGHT][BOXTOP];
-    node->bBox[RIGHT][BOXBOTTOM] = nodeData->bBox[RIGHT][BOXBOTTOM];
-    node->bBox[RIGHT][BOXLEFT]   = nodeData->bBox[RIGHT][BOXLEFT];
-    node->bBox[RIGHT][BOXRIGHT]  = nodeData->bBox[RIGHT][BOXRIGHT];
-
-    node->bBox[LEFT][BOXTOP]     = nodeData->bBox[LEFT][BOXTOP];
-    node->bBox[LEFT][BOXBOTTOM]  = nodeData->bBox[LEFT][BOXBOTTOM];
-    node->bBox[LEFT][BOXLEFT]    = nodeData->bBox[LEFT][BOXLEFT];
-    node->bBox[LEFT][BOXRIGHT]   = nodeData->bBox[LEFT][BOXRIGHT];
-
-    right = BinaryTree_GetChild(tree, RIGHT);
-    if(right)
+    if(!BinaryTree_IsLeaf(tree))
     {
-        if(BinaryTree_IsLeaf(right))
-        {
-            face_t* face = (face_t*) BinaryTree_GetData(right);
-            uint idx;
-           
-            idx = params->faceCurIndex++;
-            node->children[RIGHT] = idx | NF_SUBSECTOR;
-            createSubsectorForFace(editMap, face);
-        }
-        else
-        {
-            bspnodedata_t* data = (bspnodedata_t*) BinaryTree_GetData(right);
+        node_t* node = BinaryTree_GetData(tree);
+        binarytree_t* child;
 
-            node->children[RIGHT] = data->index;
-        }
-    }
+        child = BinaryTree_GetChild(tree, RIGHT);
+        if(child && BinaryTree_IsLeaf(child))
+            createSubsectorForFace(editMap, (face_t*) BinaryTree_GetData(child));
 
-    left = BinaryTree_GetChild(tree, LEFT);
-    if(left)
-    {
-        if(BinaryTree_IsLeaf(left))
-        {
-            face_t* face = (face_t*) BinaryTree_GetData(left);
-            uint idx;
-            
-            idx = params->faceCurIndex++;
-            node->children[LEFT] = idx | NF_SUBSECTOR;
-            createSubsectorForFace(editMap, face);
-        }
-        else
-        {
-            bspnodedata_t* data = (bspnodedata_t*) BinaryTree_GetData(left);
+        child = BinaryTree_GetChild(tree, LEFT);
+        if(child && BinaryTree_IsLeaf(child))
+            createSubsectorForFace(editMap, (face_t*) BinaryTree_GetData(child));
 
-            node->children[LEFT] = data->index;
-        }
+        // @todo We should do this earlier!
+        editMap->nodes[P_CreateObjectRecord(DMU_NODE, node) - 1] = node;
     }
 
     return true; // Continue iteration.
@@ -354,40 +298,20 @@ static boolean C_DECL countNode(binarytree_t* tree, void* data)
     return true; // Continue iteration.
 }
 
-static boolean C_DECL countFace(binarytree_t* tree, void* data)
-{
-    if(BinaryTree_IsLeaf(tree))
-    {
-        (*((uint*) data))++;
-    }
-
-    return true; // Continue iteration.
-}
-
 static void hardenBSP(map_t* map, binarytree_t* rootNode)
 {
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
 
     {
-    uint i;
     map->numNodes = 0;
     BinaryTree_PostOrder(rootNode, countNode, &map->numNodes);
     map->nodes = Z_Malloc(map->numNodes * sizeof(node_t*), PU_STATIC, 0);
-    for(i = 0; i < map->numNodes; ++i)
-        map->nodes[i] = Z_Calloc(sizeof(node_t), PU_STATIC, 0);
     }
 
     map->numSubsectors = halfEdgeDS->numFaces;
     map->subsectors = Z_Malloc(map->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
 
-    {
-    hardenbspparams_t params;
-
-    params.faceCurIndex = 0;
-    params.nodeCurIndex = 0;
-
-    BinaryTree_PostOrder(rootNode, hardenNode, &params);
-    }
+    BinaryTree_PostOrder(rootNode, createSubsectors, NULL);
 }
 
 void SaveMap(map_t* map, void* rootNode)

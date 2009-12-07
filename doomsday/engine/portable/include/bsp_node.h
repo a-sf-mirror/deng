@@ -50,14 +50,6 @@ typedef struct bspartition_s {
     double              pPara, pPerp;
 } bspartition_t;
 
-typedef struct bspnodedata_s {
-    partition_t         partition;
-    float               bBox[2][4];    // Bounding box for each child.
-    // Node index. Only valid once the NODES or GL_NODES lump has been
-    // created.
-    int                 index;
-} bspnodedata_t;
-
 boolean     BuildNodes(struct superblock_s* hEdgeList, binarytree_t** parent,
                        size_t depth, cutlist_t* cutList);
 void        BSP_AddHEdgeToSuperBlock(struct superblock_s* block,

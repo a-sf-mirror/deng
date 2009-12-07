@@ -233,6 +233,7 @@
 		<Unit filename="..\..\engine\portable\include\def_share.h" />
 		<Unit filename="..\..\engine\portable\include\edit_bias.h" />
 		<Unit filename="..\..\engine\portable\include\edit_map.h" />
+		<Unit filename="..\..\engine\portable\include\gameobjrecords.h" />
 		<Unit filename="..\..\engine\portable\include\gl_defer.h" />
 		<Unit filename="..\..\engine\portable\include\gl_draw.h" />
 		<Unit filename="..\..\engine\portable\include\gl_font.h" />
@@ -493,9 +494,8 @@
 		<Unit filename="..\..\engine\portable\src\edit_map.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="..\..\engine\portable\src\gl_defer.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\engine\portable\src\gameobjrecords.c" />
+		<Unit filename="..\..\engine\portable\src\gl_defer.c" />
 		<Unit filename="..\..\engine\portable\src\gl_draw.c">
 			<Option compilerVar="CC" />
 		</Unit>

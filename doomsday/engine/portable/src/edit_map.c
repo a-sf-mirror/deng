@@ -318,7 +318,7 @@ boolean MPE_GameObjectRecordProperty(const char* objName, uint idx,
         if(!strnicmp(propName, def->properties[i].name, len))
         {   // Found a match!
             // Create a record of this so that the game can query it later.
-            Map_UpdateGameObjectRecord(map, def, i, idx, type, data);
+            GameObjRecords_Update(Map_GameObjectRecords(map), def, i, idx, type, data);
             return true; // We're done.
         }
     }

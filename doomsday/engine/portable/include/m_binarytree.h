@@ -35,33 +35,33 @@ extern "C" {
 typedef void* binarytree_t;
 
 // Creation/destruction methods:
-binarytree_t   *BinaryTree_Create(const void *data);
-binarytree_t   *BinaryTree_Create2(const void *data, binarytree_t *initialRight,
-                                   binarytree_t *initialLeft);
-void            BinaryTree_Destroy(binarytree_t *node);
+binarytree_t*   BinaryTree_Create(const void* data);
+binarytree_t*   BinaryTree_Create2(const void* data, binarytree_t* initialRight,
+                                   binarytree_t* initialLeft);
+void            BinaryTree_Destroy(binarytree_t* node);
 
 // State management methods:
-binarytree_t   *BinaryTree_GetChild(binarytree_t *tree, boolean left);
-void           *BinaryTree_GetData(binarytree_t *tree);
+binarytree_t*   BinaryTree_GetChild(binarytree_t* tree, boolean left);
+void*           BinaryTree_GetData(binarytree_t* tree);
 
-void            BinaryTree_SetChild(binarytree_t *tree, boolean left,
-                                    binarytree_t *subtree);
-void            BinaryTree_SetData(binarytree_t *tree, const void *data);
+void            BinaryTree_SetChild(binarytree_t* tree, boolean left,
+                                    binarytree_t* subtree);
+void            BinaryTree_SetData(binarytree_t* tree, const void* data);
 
 // Utility methods:
-boolean         BinaryTree_IsLeaf(binarytree_t *tree);
-size_t          BinaryTree_GetHeight(binarytree_t *tree);
+boolean         BinaryTree_IsLeaf(binarytree_t* tree);
+size_t          BinaryTree_GetHeight(binarytree_t* tree);
 
 // Standard traversals:
-boolean         BinaryTree_PreOrder(binarytree_t *tree,
-                                    boolean (C_DECL *callback) (binarytree_t *tree, void *data),
-                                    void *data);
-boolean         BinaryTree_InOrder(binarytree_t *tree,
-                                   boolean (C_DECL *callback) (binarytree_t *tree, void *data),
-                                   void *data);
-boolean         BinaryTree_PostOrder(binarytree_t *tree,
-                                     boolean (C_DECL *callback) (binarytree_t *tree, void *data),
-                                     void *data);
+boolean         BinaryTree_PreOrder(binarytree_t* tree,
+                                    boolean (C_DECL *callback) (binarytree_t* tree, void* data),
+                                    void* data);
+boolean         BinaryTree_InOrder(binarytree_t* tree,
+                                   boolean (C_DECL *callback) (binarytree_t* tree, void* data),
+                                   void* data);
+boolean         BinaryTree_PostOrder(binarytree_t* tree,
+                                     boolean (C_DECL *callback) (binarytree_t* tree, void* data),
+                                     void* data);
 
 #ifdef __cplusplus
 }

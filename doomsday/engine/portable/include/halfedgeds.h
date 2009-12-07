@@ -55,6 +55,7 @@ typedef struct {
     face_t**        faces;
 } halfedgeds_t;
 
+halfedgeds_t*       P_CreateHalfEdgeDS(void);
 void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
 
 vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);

@@ -541,7 +541,6 @@ end
 struct node
     -       partition_t partition
     FLOAT   float[2][4] bBox // Bounding box for each child.
-    UINT    uint[2]     children // If NF_SUBSECTOR it's a subsector.
 end
 
 internal

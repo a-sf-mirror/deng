@@ -1065,6 +1065,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\engine\portable\src\gameobjrecords.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\engine\portable\src\gl_defer.c"
 				>
 			</File>
@@ -2791,6 +2795,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\edit_map.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\gameobjrecords.h"
 				>
 			</File>
 			<File

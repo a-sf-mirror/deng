@@ -671,7 +671,7 @@ void NetCl_Intermission(byte* data)
  */
 void NetCl_Finale(int packetType, byte* data)
 {
-    int flags, len, numConds, i;
+    int flags, numConds, i;
     byte* script = NULL;
 
     NetCl_SetReadBuffer(data);

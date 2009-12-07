@@ -2126,10 +2126,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Floor.
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_floorsurface)) &&
-               ffloor > P_CurrentMap()->skyFix[PLN_FLOOR].height)
+               ffloor > P_CurrentMap()->skyFixFloor)
             {
                 vTL[VZ] = vTR[VZ] = ffloor;
-                vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
+                vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFixFloor;
 
                 if(devRendSkyMode)
                     prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2144,9 +2144,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             // Ceiling.
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                !(backsec && IS_SKYSURFACE(&backsec->SP_ceilsurface)) &&
-               fceil < P_CurrentMap()->skyFix[PLN_CEILING].height)
+               fceil < P_CurrentMap()->skyFixCeiling)
             {
-                vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
+                vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFixCeiling;
                 vBL[VZ] = vBR[VZ] = fceil;
 
                 if(devRendSkyMode)
@@ -2167,10 +2167,10 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_floorsurface) &&
                IS_SKYSURFACE(&backsec->SP_floorsurface))
             {
-                if(bfloor > P_CurrentMap()->skyFix[PLN_FLOOR].height)
+                if(bfloor > P_CurrentMap()->skyFixFloor)
                 {
                     vTL[VZ] = vTR[VZ] = bfloor;
-                    vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFix[PLN_FLOOR].height;
+                    vBL[VZ] = vBR[VZ] = P_CurrentMap()->skyFixFloor;
 
                     if(devRendSkyMode)
                         prepareSkyMaskPoly(rvertices, rtexcoords, rTU, seg->length,
@@ -2190,9 +2190,9 @@ static void Rend_SubsectorSkyFixes(subsector_t* subsector)
             if(IS_SKYSURFACE(&frontsec->SP_ceilsurface) &&
                IS_SKYSURFACE(&backsec->SP_ceilsurface))
             {
-                if(bceil < P_CurrentMap()->skyFix[PLN_CEILING].height)
+                if(bceil < P_CurrentMap()->skyFixCeiling)
                 {
-                    vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFix[PLN_CEILING].height;
+                    vTL[VZ] = vTR[VZ] = P_CurrentMap()->skyFixCeiling;
                     vBL[VZ] = vBR[VZ] = bceil;
 
                     if(devRendSkyMode)
@@ -2776,10 +2776,18 @@ static void Rend_RenderSubSector(subsector_t* subsector)
             if(devRendSkyMode == 0 && (subsector->sector->flags & SECF_UNCLOSED))
                 return;
 
-            if(plane->type != PLN_MID)
-                height = P_CurrentMap()->skyFix[plane->type].height;
-            else
+            switch(plane->type)
+            {
+            case PLN_FLOOR:
+                height = P_CurrentMap()->skyFixFloor;
+                break;
+            case PLN_CEILING:
+                height = P_CurrentMap()->skyFixCeiling;
+                break;
+            case PLN_MID:
                 height = plane->visHeight;
+                break;
+            }
         }
 
         if(renderTextures == 2)
@@ -2834,7 +2842,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
          * real "physical" height of any sky masked planes that are
          * drawn at a different height due to the skyFix.
          */
-        if(sect->SP_floorvisheight > P_CurrentMap()->skyFix[PLN_FLOOR].height &&
+        if(sect->SP_floorvisheight > P_CurrentMap()->skyFixFloor &&
            IS_SKYSURFACE(&sect->SP_floorsurface))
         {
             vec3_t normal;
@@ -2859,7 +2867,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              plane->planeID, 2);
         }
 
-        if(sect->SP_ceilvisheight < P_CurrentMap()->skyFix[PLN_CEILING].height &&
+        if(sect->SP_ceilvisheight < P_CurrentMap()->skyFixCeiling &&
            IS_SKYSURFACE(&sect->SP_ceilsurface))
         {
             vec3_t normal;
@@ -2881,7 +2889,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
     }
 }
 
-static void Rend_RenderNode(map_t* map, uint bspnum)
+static void Rend_RenderNode(map_t* map, binarytree_t* tree)
 {
     // If the clipper is full we're pretty much done. This means no geometry
     // will be visible in the distance because every direction has already been
@@ -2889,18 +2897,19 @@ static void Rend_RenderNode(map_t* map, uint bspnum)
     if(C_IsFull())
         return;
 
-    if(bspnum & NF_SUBSECTOR)
+    if(BinaryTree_IsLeaf(tree))
     {
-        // We've arrived at a subsector. Render it.
-        Rend_RenderSubSector(map->subsectors[bspnum & ~NF_SUBSECTOR]);
+        // We've arrived at a face, render the linked subsector.
+        face_t* face = (face_t*) BinaryTree_GetData(tree);
+        Rend_RenderSubSector((subsector_t*) face->data);
     }
     else
     {   // Descend deeper into the nodes.
-        node_t* node = map->nodes[bspnum];
+        node_t* node = (node_t*) BinaryTree_GetData(tree);
         byte side = R_PointOnSide(viewX, viewY, &node->partition);
 
-        Rend_RenderNode(map, node->children[side]); // Recursively render front space.
-        Rend_RenderNode(map, node->children[side ^ 1]); // ...and back space.
+        Rend_RenderNode(map, BinaryTree_GetChild(tree, side)); // Recursively render front space.
+        Rend_RenderNode(map, BinaryTree_GetChild(tree, side ^ 1)); // ...and back space.
     }
 }
 
@@ -2968,7 +2977,7 @@ void Rend_RenderMap(map_t* map)
 
         // We don't want subsector clipchecking for the first subsector.
         firstsubsector = true;
-        Rend_RenderNode(map, map->numNodes - 1);
+        Rend_RenderNode(map, map->_rootNode);
 
         Rend_RenderShadows(map);
     }
@@ -3117,7 +3126,7 @@ void Rend_RenderNormals(map_t* map)
 
             V3_Set(origin, subsector->midPoint[VX], subsector->midPoint[VY], pln->visHeight);
             if(pln->type != PLN_MID && IS_SKYSURFACE(&pln->surface))
-                origin[VZ] = map->skyFix[pln->type].height;
+                origin[VZ] = pln->type == PLN_FLOOR? map->skyFixFloor : map->skyFixCeiling;
 
             drawNormal(origin, pln->PS_normal, scale);
         }

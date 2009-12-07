@@ -317,6 +317,20 @@ static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
     P_DestroyHalfEdgeDS(halfEdgeDS);
 }
 
+static boolean C_DECL freeNode(binarytree_t* tree, void* data)
+{
+    void* node = BinaryTree_GetData(tree);
+
+    if(node && !BinaryTree_IsLeaf(tree))
+    {
+        Z_Free(node);
+    }
+
+    BinaryTree_SetData(tree, NULL);
+
+    return true; // Continue iteration.
+}
+
 static void clearSectorFlags(map_t* map)
 {
     uint i;
@@ -359,6 +373,8 @@ map_t* P_CreateMap(const char* mapID)
     map->editActive = true;
 
     map->_thinkers = P_CreateThinkers();
+    map->_halfEdgeDS = P_CreateHalfEdgeDS();
+    map->_gameObjectRecords = P_CreateGameObjectRecords();
 
     return map;
 }
@@ -524,31 +540,31 @@ void P_DestroyMap(map_t* map)
     map->sectors = NULL;
     map->numSectors = 0;
 
-    if(map->subsectors)
-        Z_Free(map->subsectors);
-    map->subsectors = NULL;
-    map->numSubsectors = 0;
-
     if(map->segs)
         Z_Free(map->segs);
     map->segs = NULL;
     map->numSegs = 0;
 
-    destroyHalfEdgeDS(Map_HalfEdgeDS(map));
+    if(map->subsectors)
+        Z_Free(map->subsectors);
+    map->subsectors = NULL;
+    map->numSubsectors = 0;
 
     if(map->nodes)
-    {
-        uint i;
-
-        for(i = 0; i < map->numNodes; ++i)
-        {
-            node_t* node = map->nodes[i];
-            Z_Free(node);
-        }
         Z_Free(map->nodes);
-    }
     map->nodes = NULL;
     map->numNodes = 0;
+
+    destroyHalfEdgeDS(map->_halfEdgeDS);
+    map->_halfEdgeDS = NULL;
+
+    // Free the BSP tree.
+    if(map->_rootNode)
+    {
+        BinaryTree_PostOrder(map->_rootNode, freeNode, NULL);
+        BinaryTree_Destroy(map->_rootNode);
+    }
+    map->_rootNode = NULL;
 
     /**
      * Destroy Generators. This is only necessary because the particles of
@@ -1616,7 +1632,7 @@ static void pruneUnusedObjects(map_t* map, int flags)
         pruneLineDefs(map);*/
 
     if(flags & PRUNE_VERTEXES)
-        pruneVertices(&map->_halfEdgeDS);
+        pruneVertices(map->_halfEdgeDS);
 
 /*    if(flags & PRUNE_SIDEDEFS)
         pruneUnusedSideDefs(map);
@@ -2593,7 +2609,7 @@ typedef struct {
     ownerinfo_t* vertexInfo;
     lineowner2_t* lineOwners, *storage;
 
-    numVertices = map->_halfEdgeDS.numVertices;
+    numVertices = map->_halfEdgeDS->numVertices;
     vertexInfo = M_Calloc(sizeof(*vertexInfo) * numVertices);
 
     // We know how many lineowners are needed: number of lineDefs * 2.
@@ -2700,14 +2716,14 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     }
 
     // Sort vertex owners, clockwise by angle (i.e., ascending).
-    for(i = 0; i < map->_halfEdgeDS.numVertices; ++i)
+    for(i = 0; i < map->_halfEdgeDS->numVertices; ++i)
     {
         ownerinfo_t* info = &vertexInfo[i];
 
         if(info->numLineOwners == 0)
             continue;
 
-        rootVtx = map->_halfEdgeDS.vertices[i];
+        rootVtx = map->_halfEdgeDS->vertices[i];
         info->lineOwners = sortLineOwners2(info->lineOwners, lineAngleSorter2);
     }
 
@@ -2766,9 +2782,9 @@ static superblock_t* createSuperblockAndAddHEdges(map_t* map)
     block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
     block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
 
-    for(i = 0; i < map->_halfEdgeDS.numHEdges; ++i)
+    for(i = 0; i < map->_halfEdgeDS->numHEdges; ++i)
     {
-        hedge_t* hEdge = map->_halfEdgeDS.hEdges[i];
+        hedge_t* hEdge = map->_halfEdgeDS->hEdges[i];
 
         if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
             continue;
@@ -2787,20 +2803,6 @@ static superblock_t* createSuperblockAndAddHEdges(map_t* map)
     return block;
 }
 
-static boolean C_DECL freeBSPData(binarytree_t *tree, void *data)
-{
-    void* bspData = BinaryTree_GetData(tree);
-
-    if(bspData && !BinaryTree_IsLeaf(tree))
-    {
-        M_Free(bspData);
-    }
-
-    BinaryTree_SetData(tree, NULL);
-
-    return true; // Continue iteration.
-}
-
 /**
  * Build the BSP for the given map.
  *
@@ -2813,7 +2815,6 @@ static boolean buildBSP(map_t* map)
 
     boolean builtOK;
     superblock_t* hEdgeList;
-    binarytree_t* rootNode;
 
     if(verbose >= 1)
     {
@@ -2835,8 +2836,8 @@ static boolean buildBSP(map_t* map)
     cutList = BSP_CutListCreate();
 
     // Recursively create nodes.
-    rootNode = NULL;
-    builtOK = BuildNodes(hEdgeList, &rootNode, 0, cutList);
+    map->_rootNode = NULL;
+    builtOK = BuildNodes(hEdgeList, &map->_rootNode, 0, cutList);
 
     // The cutlist data is no longer needed.
     BSP_CutListDestroy(cutList);
@@ -2852,35 +2853,27 @@ static boolean buildBSP(map_t* map)
     if(builtOK)
     {   // Success!
         // Wind the BSP tree and save to the map.
-        ClockwiseBspTree(rootNode);
+        ClockwiseBspTree(map->_rootNode);
 
-        SaveMap(map, rootNode);
+        SaveMap(map, map->_rootNode);
 
         Con_Message("Map_BuildBSP: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
-                    map->numNodes, map->_halfEdgeDS.numFaces, map->_halfEdgeDS.numHEdges,
-                    map->_halfEdgeDS.numVertices);
+                    map->numNodes, map->_halfEdgeDS->numFaces, map->_halfEdgeDS->numHEdges,
+                    map->_halfEdgeDS->numVertices);
 
-        if(rootNode && !BinaryTree_IsLeaf(rootNode))
+        if(map->_rootNode && !BinaryTree_IsLeaf(map->_rootNode))
         {
             long rHeight, lHeight;
 
             rHeight = (long)
-                BinaryTree_GetHeight(BinaryTree_GetChild(rootNode, RIGHT));
+                BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
             lHeight = (long)
-                BinaryTree_GetHeight(BinaryTree_GetChild(rootNode, LEFT));
+                BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
 
             Con_Message("  Balance %+ld (l%ld - r%ld).\n", lHeight - rHeight,
                         lHeight, rHeight);
         }
     }
-
-    // We are finished with the BSP build data.
-    if(rootNode)
-    {
-        BinaryTree_PostOrder(rootNode, freeBSPData, NULL);
-        BinaryTree_Destroy(rootNode);
-    }
-    rootNode = NULL;
 
     // Free temporary storage.
     BSP_ShutdownIntersectionAllocator();
@@ -3026,7 +3019,7 @@ void Map_EditEnd(map_t* map)
      * Perform cleanup on the loaded map data, removing duplicate vertexes,
      * pruning unused sectors etc, etc...
      */
-    detectDuplicateVertices(&map->_halfEdgeDS);
+    detectDuplicateVertices(map->_halfEdgeDS);
     pruneUnusedObjects(map, PRUNE_ALL);
 
     addSectorsToDMU(map);
@@ -3061,9 +3054,9 @@ void Map_EditEnd(map_t* map)
         {
             linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
 
-            line->L_v1 = map->_halfEdgeDS.vertices[
+            line->L_v1 = map->_halfEdgeDS->vertices[
                 ((mvertex_t*) line->buildData.v[0]->data)->index - 1];
-            line->L_v2 = map->_halfEdgeDS.vertices[
+            line->L_v2 = map->_halfEdgeDS->vertices[
                 ((mvertex_t*) line->buildData.v[1]->data)->index - 1];
 
             // The original Pts are based off the anchor Pt, and are unique
@@ -3087,7 +3080,7 @@ void Map_EditEnd(map_t* map)
     uint numVertices;
     vertexinfo_t* vertexInfo;
 
-    numVertices = map->_halfEdgeDS.numVertices;
+    numVertices = map->_halfEdgeDS->numVertices;
     vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
 
     buildVertexOwnerRings(map, vertexInfo);
@@ -3100,7 +3093,7 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     // @todo now redundant, rewire fakeradio to use HalfEdgeDS.
     for(i = 0; i < numVertices; ++i)
     {
-        vertex_t* vertex = map->_halfEdgeDS.vertices[i];
+        vertex_t* vertex = map->_halfEdgeDS->vertices[i];
         vertexinfo_t* vInfo = &vertexInfo[i];
 
         ((mvertex_t*) vertex->data)->lineOwners = vInfo->lineOwners;
@@ -3122,6 +3115,8 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
 
     if(!freezeRLs)
     {
+        clearSubsectorContacts(map);
+
         LG_Update(map);
         SB_BeginFrame(map);
         LO_ClearForFrame(map);
@@ -3133,8 +3128,6 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
         LumobjBlockmap_Empty(map->_lumobjBlockmap);
         Rend_AddLuminousDecorations(map);
         LO_AddLuminousMobjs(map);
-
-        clearSubsectorContacts(map);
     }
 }
 
@@ -3204,7 +3197,7 @@ thinkers_t* Map_Thinkers(map_t* map)
 halfedgeds_t* Map_HalfEdgeDS(map_t* map)
 {
     assert(map);
-    return &map->_halfEdgeDS;
+    return map->_halfEdgeDS;
 }
 
 mobjblockmap_t* Map_MobjBlockmap(map_t* map)
@@ -3264,8 +3257,8 @@ void Map_InitSkyFix(map_t* map)
 
     assert(map);
 
-    map->skyFix[PLN_FLOOR].height = DDMAXFLOAT;
-    map->skyFix[PLN_CEILING].height = DDMINFLOAT;
+    map->skyFixFloor = DDMAXFLOAT;
+    map->skyFixCeiling = DDMINFLOAT;
 
     // Update for sector plane heights and mobjs which intersect the ceiling.
     for(i = 0; i < map->numSectors; ++i)
@@ -3294,9 +3287,9 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
         mobj_t* mo;
 
         // Adjust for the plane height.
-        if(sec->SP_ceilvisheight > map->skyFix[PLN_CEILING].height)
+        if(sec->SP_ceilvisheight > map->skyFixCeiling)
         {   // Must raise the skyfix ceiling.
-            map->skyFix[PLN_CEILING].height = sec->SP_ceilvisheight;
+            map->skyFixCeiling = sec->SP_ceilvisheight;
         }
 
         // Check that all the mobjs in the sector fit in.
@@ -3304,9 +3297,9 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
         {
             float extent = mo->pos[VZ] + mo->height;
 
-            if(extent > map->skyFix[PLN_CEILING].height)
+            if(extent > map->skyFixCeiling)
             {   // Must raise the skyfix ceiling.
-                map->skyFix[PLN_CEILING].height = extent;
+                map->skyFixCeiling = extent;
             }
         }
     }
@@ -3314,9 +3307,9 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
     if(skyFloor)
     {
         // Adjust for the plane height.
-        if(sec->SP_floorvisheight < map->skyFix[PLN_FLOOR].height)
+        if(sec->SP_floorvisheight < map->skyFixFloor)
         {   // Must lower the skyfix floor.
-            map->skyFix[PLN_FLOOR].height = sec->SP_floorvisheight;
+            map->skyFixFloor = sec->SP_floorvisheight;
         }
     }
 
@@ -3344,9 +3337,9 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
                             sec->SP_ceilvisheight +
                                 si->SW_middlevisoffset[VY];
 
-                        if(top > map->skyFix[PLN_CEILING].height)
+                        if(top > map->skyFixCeiling)
                         {   // Must raise the skyfix ceiling.
-                            map->skyFix[PLN_CEILING].height = top;
+                            map->skyFixCeiling = top;
                         }
                     }
 
@@ -3357,9 +3350,9 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
                                 si->SW_middlevisoffset[VY] -
                                     si->SW_middlematerial->height;
 
-                        if(bottom < map->skyFix[PLN_FLOOR].height)
+                        if(bottom < map->skyFixFloor)
                         {   // Must lower the skyfix floor.
-                            map->skyFix[PLN_FLOOR].height = bottom;
+                            map->skyFixFloor = bottom;
                         }
                     }
                 }
@@ -3961,118 +3954,10 @@ boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sec
                                        retObjRecord);
 }
 
-static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCreate)
+gameobjrecords_t* Map_GameObjectRecords(map_t* map)
 {
-    uint i;
-    valuetable_t* tbl;
-
-    if(!db)
-        return NULL;
-
-    for(i = 0; i < db->num; ++i)
-    {
-        tbl = db->tables[i];
-        if(tbl->type == type)
-        {   // Found it!
-            return tbl;
-        }
-    }
-
-    if(!canCreate)
-        return NULL;
-
-    // We need to add a new value table to the db.
-    db->tables = Z_Realloc(db->tables, ++db->num * sizeof(*db->tables), PU_STATIC);
-    tbl = db->tables[db->num - 1] = Z_Malloc(sizeof(valuetable_t), PU_STATIC, 0);
-
-    tbl->data = NULL;
-    tbl->type = type;
-    tbl->numElements = 0;
-
-    return tbl;
-}
-
-static uint insertIntoDB(valuedb_t* db, valuetype_t type, void* data)
-{
-    valuetable_t* tbl = getDBTable(db, type, true);
-
-    // Insert the new value.
-    switch(type)
-    {
-    case DDVT_BYTE:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements, PU_STATIC);
-        ((byte*) tbl->data)[tbl->numElements - 1] = *((byte*) data);
-        break;
-
-    case DDVT_SHORT:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(short), PU_STATIC);
-        ((short*) tbl->data)[tbl->numElements - 1] = *((short*) data);
-        break;
-
-    case DDVT_INT:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(int), PU_STATIC);
-        ((int*) tbl->data)[tbl->numElements - 1] = *((int*) data);
-        break;
-
-    case DDVT_FIXED:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(fixed_t), PU_STATIC);
-        ((fixed_t*) tbl->data)[tbl->numElements - 1] = *((fixed_t*) data);
-        break;
-
-    case DDVT_ANGLE:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(angle_t), PU_STATIC);
-        ((angle_t*) tbl->data)[tbl->numElements - 1] = *((angle_t*) data);
-        break;
-
-    case DDVT_FLOAT:
-        tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(float), PU_STATIC);
-        ((float*) tbl->data)[tbl->numElements - 1] = *((float*) data);
-        break;
-
-    default:
-        Con_Error("insetIntoDB: Unknown value type %d.", type);
-    }
-
-    return tbl->numElements - 1;
-}
-
-static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
-{
-    valuetable_t* tbl = getDBTable(db, type, false);
-
-    if(!tbl)
-        Con_Error("getPtrToDBElm: Table for type %i not found.", (int) type);
-
-    // Sanity check: ensure the elmIdx is in bounds.
-    if(elmIdx < 0 || elmIdx >= tbl->numElements)
-        Con_Error("P_GetObjectRecordByte: valueIdx out of bounds.");
-
-    switch(tbl->type)
-    {
-    case DDVT_BYTE:
-        return &(((byte*) tbl->data)[elmIdx]);
-
-    case DDVT_SHORT:
-        return &(((short*)tbl->data)[elmIdx]);
-
-    case DDVT_INT:
-        return &(((int*) tbl->data)[elmIdx]);
-
-    case DDVT_FIXED:
-        return &(((fixed_t*) tbl->data)[elmIdx]);
-
-    case DDVT_ANGLE:
-        return &(((angle_t*) tbl->data)[elmIdx]);
-
-    case DDVT_FLOAT:
-        return &(((float*) tbl->data)[elmIdx]);
-
-    default:
-        Con_Error("P_GetObjectRecordByte: Invalid table type %i.", tbl->type);
-    }
-
-    // Should never reach here.
-    return NULL;
+    assert(map);
+    return map->_gameObjectRecords;
 }
 
 /**
@@ -4080,432 +3965,9 @@ static void* getPtrToDBElm(valuedb_t* db, valuetype_t type, uint elmIdx)
  */
 void Map_DestroyGameObjectRecords(map_t* map)
 {
-    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
-
-    if(records->namespaces)
-    {
-        uint i;
-        for(i = 0; i < records->numNamespaces; ++i)
-        {
-            gameobjectrecordnamespace_t* rnamespace = &records->namespaces[i];
-            uint j;
-
-            for(j = 0; j < rnamespace->numRecords; ++j)
-            {
-                gameobjectrecord_t* record = rnamespace->records[j];
-
-                if(record->properties)
-                    Z_Free(record->properties);
-
-                Z_Free(record);
-            }
-        }
-
-        Z_Free(records->namespaces);
-    }
-    records->namespaces = NULL;
-
-    if(records->values.tables)
-    {
-        uint i;
-        for(i = 0; i < records->values.num; ++i)
-        {
-            valuetable_t* tbl = records->values.tables[i];
-
-            if(tbl->data)
-                Z_Free(tbl->data);
-
-            Z_Free(tbl);
-        }
-
-        Z_Free(records->values.tables);
-    }
-    records->values.tables = NULL;
-    records->values.num = 0;
-}
-
-static uint numGameObjectRecords(gameobjectrecordset_t* records, int identifier)
-{
-    if(records)
-    {
-        uint i;
-        for(i = 0; i < records->numNamespaces; ++i)
-        {
-            gameobjectrecordnamespace_t* rnamespace = &records->namespaces[i];
-
-            if(rnamespace->def->identifier == identifier)
-                return rnamespace->numRecords;
-        }
-    }
-
-    return 0;
-}
-
-uint Map_NumGameObjectRecords(map_t* map, int identifier)
-{
-    return numGameObjectRecords(&map->_gameObjectRecordSet, identifier);
-}
-
-static gameobjectrecordnamespace_t*
-getGameObjectRecordNamespace(gameobjectrecordset_t* records, def_gameobject_t* def)
-{
-    uint i;
-
-    for(i = 0; i < records->numNamespaces; ++i)
-        if(records->namespaces[i].def == def)
-            return &records->namespaces[i];
-
-    return NULL;
-}
-
-gameobjectrecord_t* Map_GameObjectRecord(gameobjectrecordset_t* records, def_gameobject_t* def,
-                                         uint elmIdx, boolean canCreate)
-{
-    uint i;
-    gameobjectrecord_t* record;
-    gameobjectrecordnamespace_t* rnamespace;
-
-    if(!records->numNamespaces)
-    {   // We haven't yet created the lists.
-        records->numNamespaces = P_NumGameObjectDefs();
-        records->namespaces = Z_Malloc(sizeof(*rnamespace) * records->numNamespaces, PU_STATIC, 0);
-        for(i = 0; i < records->numNamespaces; ++i)
-        {
-            rnamespace = &records->namespaces[i];
-
-            rnamespace->def = P_GetGameObjectDef(i);
-            rnamespace->records = NULL;
-            rnamespace->numRecords = 0;
-        }
-    }
-
-    rnamespace = getGameObjectRecordNamespace(records, def);
-    assert(rnamespace);
-
-    // Have we already created this record?
-    for(i = 0; i < rnamespace->numRecords; ++i)
-    {
-        record = rnamespace->records[i];
-        if(record->elmIdx == elmIdx)
-            return record; // Yep, return it.
-    }
-
-    if(!canCreate)
-        return NULL;
-
-    // It is a new record.
-    rnamespace->records = Z_Realloc(rnamespace->records,
-        ++rnamespace->numRecords * sizeof(gameobjectrecord_t*), PU_STATIC);
-
-    record = (gameobjectrecord_t*) Z_Malloc(sizeof(*record), PU_STATIC, 0);
-    record->elmIdx = elmIdx;
-    record->numProperties = 0;
-    record->properties = NULL;
-
-    rnamespace->records[rnamespace->numRecords - 1] = record;
-
-    return record;
-}
-
-void Map_UpdateGameObjectRecord(map_t* map, def_gameobject_t* def,
-                                uint propIdx, uint elmIdx, valuetype_t type,
-                                void* data)
-{
-    uint i;
-    gameobjectrecord_property_t* prop;
-    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
-    gameobjectrecord_t* record = Map_GameObjectRecord(records, def, elmIdx, true);
-
-    if(!record)
-        Con_Error("Map_UpdateGameObjectRecord: Failed creation.");
-
-    // Check whether this is a new value or whether we are updating an
-    // existing one.
-    for(i = 0; i < record->numProperties; ++i)
-    {
-        if(record->properties[i].idx == propIdx)
-        {   // We are updating.
-            Con_Error("addGameMapObj: Value type change not currently supported.");
-            return;
-        }
-    }
-
-    // Its a new property value.
-    record->properties = Z_Realloc(record->properties,
-        ++record->numProperties * sizeof(*record->properties), PU_STATIC);
-
-    prop = &record->properties[record->numProperties - 1];
-    prop->idx = propIdx;
-    prop->type = type;
-    prop->valueIdx = insertIntoDB(&records->values, type, data);
-}
-
-static void* getValueForGameObjectRecordProperty(map_t* map, int identifier, uint elmIdx,
-                                                 int propIdentifier, valuetype_t* type)
-{
-    uint i;
-    def_gameobject_t* def;
-    gameobjectrecord_t* record;
-    gameobjectrecordset_t* records = &map->_gameObjectRecordSet;
-
-    if((def = P_GameObjectDef(identifier, NULL, false)) == NULL)
-        Con_Error("P_GetObjectRecordByte: Invalid identifier %i.", identifier);
-
-    if((record = Map_GameObjectRecord(records, def, elmIdx, false)) == NULL)
-        Con_Error("P_GetObjectRecordByte: There is no element %i of type %s.", elmIdx,
-                  def->name);
-
-    // Find the requested property.
-    for(i = 0; i < record->numProperties; ++i)
-    {
-        gameobjectrecord_property_t* rproperty = &record->properties[i];
-
-        if(def->properties[rproperty->idx].identifier == propIdentifier)
-        {
-            void* ptr;
-
-            if(NULL ==
-               (ptr = getPtrToDBElm(&records->values, rproperty->type, rproperty->valueIdx)))
-                Con_Error("P_GetObjectRecordByte: Failed db look up.");
-
-            if(type)
-                *type = rproperty->type;
-
-            return ptr;
-        }
-    }
-
-    return NULL;
-}
-
-/**
- * Handle some basic type conversions.
- */
-static void setValue(void* dst, valuetype_t dstType, void* src, valuetype_t srcType)
-{
-    if(dstType == DDVT_FIXED)
-    {
-        fixed_t* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_BYTE:
-            *d = (*((byte*) src) << FRACBITS);
-            break;
-        case DDVT_INT:
-            *d = (*((int*) src) << FRACBITS);
-            break;
-        case DDVT_FIXED:
-            *d = *((fixed_t*) src);
-            break;
-        case DDVT_FLOAT:
-            *d = FLT2FIX(*((float*) src));
-            break;
-        default:
-            Con_Error("SetValue: DDVT_FIXED incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else if(dstType == DDVT_FLOAT)
-    {
-        float* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_BYTE:
-            *d = *((byte*) src);
-            break;
-        case DDVT_INT:
-            *d = *((int*) src);
-            break;
-        case DDVT_SHORT:
-            *d = *((short*) src);
-            break;
-        case DDVT_FIXED:
-            *d = FIX2FLT(*((fixed_t*) src));
-            break;
-        case DDVT_FLOAT:
-            *d = *((float*) src);
-            break;
-        default:
-            Con_Error("SetValue: DDVT_FLOAT incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else if(dstType == DDVT_BYTE)
-    {
-        byte* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_BYTE:
-            *d = *((byte*) src);
-            break;
-        case DDVT_INT:
-            *d = *((int*) src);
-            break;
-        case DDVT_FLOAT:
-            *d = (byte) *((float*) src);
-            break;
-        default:
-            Con_Error("SetValue: DDVT_BYTE incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else if(dstType == DDVT_INT)
-    {
-        int* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_BYTE:
-            *d = *((byte*) src);
-            break;
-        case DDVT_INT:
-            *d = *((int*) src);
-            break;
-        case DDVT_SHORT:
-            *d = *((short*) src);
-            break;
-        case DDVT_FLOAT:
-            *d = *((float*) src);
-            break;
-        case DDVT_FIXED:
-            *d = (*((fixed_t*) src) >> FRACBITS);
-            break;
-        default:
-            Con_Error("SetValue: DDVT_INT incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else if(dstType == DDVT_SHORT)
-    {
-        short* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_BYTE:
-            *d = *((byte*) src);
-            break;
-        case DDVT_INT:
-            *d = *((int*) src);
-            break;
-        case DDVT_SHORT:
-            *d = *((short*) src);
-            break;
-        case DDVT_FLOAT:
-            *d = *((float*) src);
-            break;
-        case DDVT_FIXED:
-            *d = (*((fixed_t*) src) >> FRACBITS);
-            break;
-        default:
-            Con_Error("SetValue: DDVT_SHORT incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else if(dstType == DDVT_ANGLE)
-    {
-        angle_t* d = dst;
-
-        switch(srcType)
-        {
-        case DDVT_ANGLE:
-            *d = *((angle_t*) src);
-            break;
-        default:
-            Con_Error("SetValue: DDVT_ANGLE incompatible with value type %s.\n",
-                      value_Str(srcType));
-        }
-    }
-    else
-    {
-        Con_Error("SetValue: unknown value type %d.\n", dstType);
-    }
-}
-
-byte Map_GameObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    byte returnVal = 0;
-
     assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_BYTE, ptr, type);
-
-    return returnVal;
-}
-
-short Map_GameObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    short returnVal = 0;
-
-    assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_SHORT, ptr, type);
-
-    return returnVal;
-}
-
-int Map_GameObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    int returnVal = 0;
-
-    assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_INT, ptr, type);
-
-    return returnVal;
-}
-
-fixed_t Map_GameObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    fixed_t returnVal = 0;
-
-    assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_FIXED, ptr, type);
-
-    return returnVal;
-}
-
-angle_t Map_GameObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    angle_t returnVal = 0;
-
-    assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_ANGLE, ptr, type);
-
-    return returnVal;
-}
-
-float Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    valuetype_t type;
-    void* ptr;
-    float returnVal = 0;
-
-    assert(map);
-
-    if((ptr = getValueForGameObjectRecordProperty(map, typeIdentifier, elmIdx, propIdentifier, &type)))
-        setValue(&returnVal, DDVT_FLOAT, ptr, type);
-
-    return returnVal;
+    P_DestroyGameObjectRecords(map->_gameObjectRecords);
+    map->_gameObjectRecords = NULL;
 }
 
 /**
@@ -4513,7 +3975,7 @@ float Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int
  */
 uint P_NumObjectRecords(int typeIdentifier)
 {
-    return Map_NumGameObjectRecords(P_CurrentMap(), typeIdentifier);
+    return GameObjRecords_Num(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier);
 }
 
 /**
@@ -4521,7 +3983,7 @@ uint P_NumObjectRecords(int typeIdentifier)
  */
 byte P_GetObjectRecordByte(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordByte(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetByte(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
@@ -4529,7 +3991,7 @@ byte P_GetObjectRecordByte(int typeIdentifier, uint elmIdx, int propIdentifier)
  */
 short P_GetObjectRecordShort(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordShort(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetShort(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
@@ -4537,7 +3999,7 @@ short P_GetObjectRecordShort(int typeIdentifier, uint elmIdx, int propIdentifier
  */
 int P_GetObjectRecordInt(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordInt(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetInt(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
@@ -4545,7 +4007,7 @@ int P_GetObjectRecordInt(int typeIdentifier, uint elmIdx, int propIdentifier)
  */
 fixed_t P_GetObjectRecordFixed(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordFixed(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetFixed(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
@@ -4553,7 +4015,7 @@ fixed_t P_GetObjectRecordFixed(int typeIdentifier, uint elmIdx, int propIdentifi
  */
 angle_t P_GetObjectRecordAngle(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordAngle(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetAngle(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
@@ -4561,7 +4023,7 @@ angle_t P_GetObjectRecordAngle(int typeIdentifier, uint elmIdx, int propIdentifi
  */
 float P_GetObjectRecordFloat(int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return Map_GameObjectRecordFloat(P_CurrentMap(), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetFloat(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**

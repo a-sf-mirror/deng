@@ -259,22 +259,22 @@ float R_PointToDist(const float x, const float y)
 
 subsector_t* R_PointInSubSector(const float x, const float y)
 {
-    node_t* node = NULL;
-    uint nodenum = 0;
     map_t* map = P_CurrentMap();
+    binarytree_t* tree;
+    face_t* face;
 
     if(!map->numNodes) // Single subsector is a special case.
         return (subsector_t*) map->subsectors;
 
-    nodenum = map->numNodes - 1;
-
-    while(!(nodenum & NF_SUBSECTOR))
+    tree = map->_rootNode;
+    while(!BinaryTree_IsLeaf(tree))
     {
-        node = map->nodes[nodenum];
-        nodenum = node->children[R_PointOnSide(x, y, &node->partition)];
+        node_t* node = (node_t*) BinaryTree_GetData(tree);
+        tree = BinaryTree_GetChild(tree, R_PointOnSide(x, y, &node->partition));
     }
 
-    return map->subsectors[nodenum & ~NF_SUBSECTOR];
+    face = (face_t*) BinaryTree_GetData(tree);
+    return (subsector_t*) face->data;
 }
 
 void* P_PointInSubSector(const float x, const float y)

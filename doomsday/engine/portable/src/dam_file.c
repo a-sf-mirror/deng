@@ -876,8 +876,6 @@ static void writeNode(const map_t* map, uint idx)
     writeFloat(n->bBox[LEFT][BOXRIGHT]);
     writeFloat(n->bBox[LEFT][BOXBOTTOM]);
     writeFloat(n->bBox[LEFT][BOXTOP]);
-    writeLong((long) n->children[RIGHT]);
-    writeLong((long) n->children[LEFT]);
 }
 
 static void readNode(const map_t* map, uint idx)
@@ -896,13 +894,11 @@ static void readNode(const map_t* map, uint idx)
     n->bBox[LEFT][BOXRIGHT] = readFloat();
     n->bBox[LEFT][BOXBOTTOM] = readFloat();
     n->bBox[LEFT][BOXTOP] = readFloat();
-    n->children[RIGHT] = (uint) readLong();
-    n->children[LEFT] = (uint) readLong();
 }
 
 static void archiveNodes(map_t *map, boolean write)
 {
-    uint                i;
+    uint i;
 
     if(write)
         beginSegment(DAMSEG_NODES);

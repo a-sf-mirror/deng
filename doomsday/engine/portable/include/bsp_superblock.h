@@ -83,7 +83,7 @@ void        SuperBlock_IncHEdgeCounts(superblock_t* superblock,
 boolean     SuperBlock_PickPartition(const superblock_t* superblock,
                                      size_t depth, bspartition_t* partition);
 
-void        BSP_FindNodeBounds(bspnodedata_t* node, superblock_t* hEdgeListRight,
+void        BSP_FindNodeBounds(node_t* node, superblock_t* hEdgeListRight,
                                superblock_t* hEdgeListLeft);
 void        BSP_DivideOneHEdge(hedge_t* hEdge, const bspartition_t* part,
                                superblock_t* rightList, superblock_t* leftList,

@@ -1602,10 +1602,10 @@ boolean RIT_ProjectVisSpriteForMobj(void* ptr, void* data)
 
                 visibleTop = mo->pos[VZ] + mat->height;
 
-                if(visibleTop > P_CurrentMap()->skyFix[PLN_CEILING].height)
+                if(visibleTop > P_CurrentMap()->skyFixCeiling)
                 {
                     // Raise skyfix ceiling.
-                    P_CurrentMap()->skyFix[PLN_CEILING].height = visibleTop + 16; // Add some leeway.
+                    P_CurrentMap()->skyFixCeiling = visibleTop + 16; // Add some leeway.
                 }
             }
         }

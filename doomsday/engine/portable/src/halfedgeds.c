@@ -86,6 +86,12 @@ static __inline void freeFace(face_t* face)
     Z_Free(face);
 }
 
+halfedgeds_t* P_CreateHalfEdgeDS(void)
+{
+    halfedgeds_t* halfEdgeDS = Z_Calloc(sizeof(*halfEdgeDS), PU_STATIC, 0);
+    return halfEdgeDS;
+}
+
 /**
  * @note Only releases memory for the data structure itself, any objects linked
  * to the component parts of the data structure will remain (therefore this is
@@ -247,7 +253,7 @@ void Face_UnlinkHEdge(face_t* face, hedge_t* hEdge)
 
     assert(hEdge);
     assert(face);
-        
+
     if(!face->hEdge)
         return;
 

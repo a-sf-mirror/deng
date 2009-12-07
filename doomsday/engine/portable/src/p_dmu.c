@@ -47,7 +47,7 @@ typedef struct {
     objectrecord_t  sentinel;
     objectrecordid_t num;
     objectrecordid_t* ids;
-} objectrecordnamespace_t;
+} objectrecord_namespace_t;
 
 typedef struct dummyline_s {
     runtime_mapdata_header_t header;
@@ -83,7 +83,7 @@ static objectrecordid_t numRecords;
 static objectrecord_t* records = NULL;
 
 static int numObjectRecordNamespaces;
-static objectrecordnamespace_t** objectRecordNamespaces = NULL;
+static objectrecord_namespace_t** objectRecordNamespaces = NULL;
 
 static dummyline_t* dummyLines;
 static dummysector_t* dummySectors;
@@ -99,7 +99,7 @@ static def_gameobject_t* gameObjectDefs;
 
 // CODE --------------------------------------------------------------------
 
-static objectrecordid_t addObjectRecord(objectrecordnamespace_t* s, objectrecordid_t id)
+static objectrecordid_t addObjectRecord(objectrecord_namespace_t* s, objectrecordid_t id)
 {
     s->ids = M_Realloc(s->ids, sizeof(objectrecordid_t) * ++s->num);
     s->ids[s->num - 1] = id;
@@ -109,13 +109,13 @@ static objectrecordid_t addObjectRecord(objectrecordnamespace_t* s, objectrecord
 
 static void destroyRecordNamespace(int idx)
 {
-    objectrecordnamespace_t* s = objectRecordNamespaces[idx];
+    objectrecord_namespace_t* s = objectRecordNamespaces[idx];
 
     M_Free(s);
 
     if(numObjectRecordNamespaces > 1 && idx != numObjectRecordNamespaces - 1)
         memmove(objectRecordNamespaces[idx], objectRecordNamespaces[idx+1],
-                sizeof(objectrecordnamespace_t*) * (numObjectRecordNamespaces - 1 - idx));
+                sizeof(objectrecord_namespace_t*) * (numObjectRecordNamespaces - 1 - idx));
     numObjectRecordNamespaces--;
 }
 
@@ -134,7 +134,7 @@ static int findNamespaceForRecordType(int type)
     return -1; // Not found.
 }
 
-static objectrecord_t* findRecordInNamespace(const objectrecordnamespace_t* s, void* obj)
+static objectrecord_t* findRecordInNamespace(const objectrecord_namespace_t* s, void* obj)
 {
     objectrecordid_t i;
 
@@ -147,9 +147,9 @@ static objectrecord_t* findRecordInNamespace(const objectrecordnamespace_t* s, v
     return NULL;
 }
 
-static objectrecordnamespace_t* createObjectRecordNamespace(int type)
+static objectrecord_namespace_t* createObjectRecordNamespace(int type)
 {
-    objectrecordnamespace_t* s;
+    objectrecord_namespace_t* s;
 
     objectRecordNamespaces = M_Realloc(objectRecordNamespaces, sizeof(s) * ++numObjectRecordNamespaces);
     objectRecordNamespaces[numObjectRecordNamespaces-1] = s = M_Malloc(sizeof(*s));
@@ -178,7 +178,7 @@ static int iterateRecords(int type, int (*callback) (void*, void*),
 
         if((idx = findNamespaceForRecordType(type)) != -1)
         {
-            objectrecordnamespace_t* s = objectRecordNamespaces[idx];
+            objectrecord_namespace_t* s = objectRecordNamespaces[idx];
             objectrecordid_t i;
 
             for(i = 1; i < s->num; ++i)
@@ -197,7 +197,7 @@ static int iterateRecords(int type, int (*callback) (void*, void*),
 
         for(j = 0; j < numObjectRecordNamespaces; ++j)
         {
-            objectrecordnamespace_t* s = objectRecordNamespaces[j];
+            objectrecord_namespace_t* s = objectRecordNamespaces[j];
             objectrecordid_t i;
 
             for(i = 1; i < s->num; ++i)
@@ -223,7 +223,7 @@ void P_DestroyObjectRecordsByType(int type)
 
     if((idx = findNamespaceForRecordType(type)) != -1)
     {
-        objectrecordnamespace_t* s = objectRecordNamespaces[idx];
+        objectrecord_namespace_t* s = objectRecordNamespaces[idx];
         objectrecordid_t i;
 
         for(i = 1; i < s->num; ++i)
@@ -245,7 +245,7 @@ objectrecordid_t P_CreateObjectRecord(int type, void* p)
 {
     int idx;
     objectrecord_t* r;
-    objectrecordnamespace_t* s;
+    objectrecord_namespace_t* s;
 
     if(type < DMU_FIRST_TYPE)
         Con_Error("P_CreateObjectRecord: Invalid type %i.", type);
@@ -276,7 +276,7 @@ void P_DestroyObjectRecord(int type, void* p)
     // First, remove the object record from any record sets.
     if((idx = findNamespaceForRecordType(type)) != -1)
     {
-        objectrecordnamespace_t*  s = objectRecordNamespaces[idx];
+        objectrecord_namespace_t*  s = objectRecordNamespaces[idx];
         objectrecordid_t    i;
 
         for(i = 1; i < s->num; ++i)
@@ -711,7 +711,7 @@ void P_ShutdownMapUpdate(void)
 
         for(i = 0; i < numObjectRecordNamespaces; ++i)
         {
-            objectrecordnamespace_t*  s = objectRecordNamespaces[i];
+            objectrecord_namespace_t*  s = objectRecordNamespaces[i];
 
             if(s->ids)
                 M_Free(s->ids);
@@ -1026,7 +1026,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
                                                  callback, context);
         case DMU_LINEDEF:
             {
-            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_LINEDEF)];
+            const objectrecord_namespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_LINEDEF)];
             sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
@@ -1044,7 +1044,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
 
         case DMU_PLANE:
             {
-            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_PLANE)];
+            const objectrecord_namespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_PLANE)];
             sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
@@ -1062,7 +1062,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
 
         case DMU_SUBSECTOR:
             {
-            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SUBSECTOR)];
+            const objectrecord_namespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SUBSECTOR)];
             sector_t* sec = (sector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
 
@@ -1089,7 +1089,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
         {
         case DMU_SEG:
             {
-            const objectrecordnamespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SEG)];
+            const objectrecord_namespace_t* s = objectRecordNamespaces[findNamespaceForRecordType(DMU_SEG)];
             subsector_t* subsector = (subsector_t*) ((objectrecord_t*) ptr)->obj;
             int result = 1;
             hedge_t* hEdge;

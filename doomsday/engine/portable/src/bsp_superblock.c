@@ -846,7 +846,7 @@ static void findLimits(superblock_t* hEdgeList, float* bbox)
 /**
  * Find the extremes of a box containing all half-edges.
  */
-void BSP_FindNodeBounds(bspnodedata_t* node, superblock_t* hEdgesRightList,
+void BSP_FindNodeBounds(node_t* node, superblock_t* hEdgesRightList,
                         superblock_t* hEdgesLeftList)
 {
     findLimits(hEdgesLeftList, &node->bBox[LEFT][0]);

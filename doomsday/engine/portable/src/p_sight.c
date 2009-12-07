@@ -297,11 +297,13 @@ static boolean crossSubsector(subsector_t* subsector, losdata_t* los)
 /**
  * @return              @c true iff trace crosses the node.
  */
-static boolean crossBSPNode(map_t* map, unsigned int bspNum, losdata_t* los)
+static boolean crossBSPNode(map_t* map, binarytree_t* tree, losdata_t* los)
 {
-    while(!(bspNum & NF_SUBSECTOR))
+    face_t* face;
+
+    while(!BinaryTree_IsLeaf(tree))
     {
-        const node_t* node = map->nodes[bspNum];
+        const node_t* node = BinaryTree_GetData(tree);
         byte side = R_PointOnSide(FIX2FLT(los->trace.pos[VX]),
                                   FIX2FLT(los->trace.pos[VY]),
                                   &node->partition);
@@ -310,18 +312,19 @@ static boolean crossBSPNode(map_t* map, unsigned int bspNum, losdata_t* los)
         if(side == R_PointOnSide(los->to[VX], los->to[VY],
                                  &node->partition))
         {   // Yes, decend!
-            bspNum = node->children[side];
+            tree = BinaryTree_GetChild(tree, side);
         }
         else
         {   // No.
-            if(!crossBSPNode(map, node->children[side], los))
+            if(!crossBSPNode(map, BinaryTree_GetChild(tree, side), los))
                 return 0; // Cross the starting side.
             else
-                bspNum = node->children[side^1]; // Cross the ending side.
+                tree = BinaryTree_GetChild(tree, side^1); // Cross the ending side.
         }
     }
 
-    return crossSubsector(map->subsectors[bspNum & ~NF_SUBSECTOR], los);
+    face = (face_t*) BinaryTree_GetData(tree);
+    return crossSubsector((subsector_t*)face->data, los);
 }
 
 /**
@@ -378,5 +381,5 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
     }
 
     validCount++;
-    return crossBSPNode(map, map->numNodes - 1, &los);
+    return crossBSPNode(map, map->_rootNode, &los);
 }

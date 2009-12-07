@@ -121,6 +121,7 @@ boolean DAM_TryMapConversion(const char* mapID)
     P_DestroyObjectRecordsByType(DMU_SECTOR);
     P_DestroyObjectRecordsByType(DMU_SEG);
     P_DestroyObjectRecordsByType(DMU_SUBSECTOR);
+    P_DestroyObjectRecordsByType(DMU_NODE);
 
     return convertMap(mapID);
 }
@@ -138,6 +139,7 @@ map_t* DAM_LoadMap(const char* mapID)
     P_DestroyObjectRecordsByType(DMU_SECTOR);
     P_DestroyObjectRecordsByType(DMU_SEG);
     P_DestroyObjectRecordsByType(DMU_SUBSECTOR);
+    P_DestroyObjectRecordsByType(DMU_NODE);
 
     DAM_MapRead(map, Str_Text(s));
 

@@ -144,7 +144,7 @@ typedef struct runtime_mapdata_header_s {
 
 typedef int objectrecordid_t;
 
-typedef struct dmuobjrecord_s {
+typedef struct objrecord_s {
     int             dummy;
     runtime_mapdata_header_t header;
     objectrecordid_t id;

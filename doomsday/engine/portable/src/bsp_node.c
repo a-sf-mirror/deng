@@ -509,10 +509,10 @@ boolean BuildNodes(superblock_t* hEdgeList, binarytree_t** parent,
                    size_t depth, cutlist_t* cutList)
 {
     binarytree_t* subTree;
-    bspnodedata_t* node;
     superblock_t* hEdgeSet[2];
     boolean builtOK = false;
     bspartition_t partition;
+    node_t* node;
 
     *parent = NULL;
 
@@ -550,7 +550,7 @@ Con_Message("BuildNodes: Partition %p (%1.0f,%1.0f) -> (%1.0f,%1.0f).\n",
                         hEdgeSet[LEFT], cutList);
     BSP_CutListEmpty(cutList);
 
-    node = M_Calloc(sizeof(bspnodedata_t));
+    node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
     *parent = BinaryTree_Create(node);
 
     BSP_FindNodeBounds(node, hEdgeSet[RIGHT], hEdgeSet[LEFT]);

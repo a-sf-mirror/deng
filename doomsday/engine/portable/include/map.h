@@ -33,6 +33,8 @@
 #include "particleblockmap.h"
 #include "lumobjblockmap.h"
 #include "halfedgeds.h"
+#include "m_binarytree.h"
+#include "gameobjrecords.h"
 #include "p_maptypes.h"
 #include "m_nodepile.h"
 #include "p_polyob.h"
@@ -42,9 +44,6 @@
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
-
-// Node flags.
-#define NF_SUBSECTOR        0x80000000
 
 typedef struct fvertex_s {
     float           pos[2];
@@ -124,46 +123,6 @@ typedef struct lgridblock_s {
                             // a full grid update.
 } lgridblock_t;
 
-typedef struct skyfix_s {
-    float           height;
-} skyfix_t;
-
-// Map objects.
-typedef struct {
-    uint            idx;
-    valuetype_t     type;
-    uint            valueIdx;
-} gameobjectrecord_property_t;
-
-typedef struct {
-    uint            elmIdx;
-    uint            numProperties;
-    gameobjectrecord_property_t* properties;
-} gameobjectrecord_t;
-
-typedef struct {
-    struct def_gameobject_s* def;
-    uint            numRecords;
-    gameobjectrecord_t** records;
-} gameobjectrecordnamespace_t;
-
-typedef struct {
-    valuetype_t     type;
-    uint            numElements;
-    void*           data;
-} valuetable_t;
-
-typedef struct {
-    uint            num;
-    valuetable_t**  tables;
-} valuedb_t;
-
-typedef struct {
-    uint            numNamespaces;
-    gameobjectrecordnamespace_t* namespaces;
-    valuedb_t       values;
-} gameobjectrecordset_t;
-
 typedef struct shadowlink_s {
     struct shadowlink_s* next;
     linedef_t*      lineDef;
@@ -173,11 +132,13 @@ typedef struct shadowlink_s {
 typedef struct map_s {
     char            mapID[9];
     char            uniqueID[256];
+    boolean         editActive;
 
     thinkers_t*     _thinkers;
-    gameobjectrecordset_t _gameObjectRecordSet;
+    gameobjrecords_t* _gameObjectRecords;
 
-    halfedgeds_t    _halfEdgeDS;
+    halfedgeds_t*   _halfEdgeDS;
+    binarytree_t*   _rootNode;
 
     mobjblockmap_t* _mobjBlockmap;
     linedefblockmap_t* _lineDefBlockmap;
@@ -189,9 +150,7 @@ typedef struct map_s {
 
     objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
 
-    boolean         editActive;
     float           bBox[4];
-
     uint            numSectors;
     sector_t**      sectors;
 
@@ -222,10 +181,11 @@ typedef struct map_s {
     nodepile_t*     mobjNodes, *lineNodes; // All kinds of wacky links.
     nodeindex_t*    lineLinks; // Indices to roots.
 
-    float           globalGravity; // Gravity for the current map.
-    int             ambientLightLevel; // Ambient lightlevel for the current map.
+    float           globalGravity;
+    int             ambientLightLevel;
 
-    skyfix_t        skyFix[2];
+    float           skyFixCeiling;
+    float           skyFixFloor;
 
     struct {
         dynlist_t       linkList; // Surface-projected lumobjs (dynlights).
@@ -336,19 +296,6 @@ boolean         Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, secto
 boolean         Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                                  int flags, boolean (*trav) (intercept_t*));
 
-// @todo Push this data game-side:
-void            Map_UpdateGameObjectRecord(map_t* map, struct def_gameobject_s* def,
-                                           uint propIdx, uint elmIdx, valuetype_t type,
-                                           void* data);
-void            Map_DestroyGameObjectRecords(map_t* map);
-uint            Map_NumGameObjectRecords(map_t* map, int typeIdentifier);
-byte            Map_GameObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-short           Map_GameObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-int             Map_GameObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-fixed_t         Map_GameObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-angle_t         Map_GameObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-float           Map_GameObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier);
-
 // @todo the following should be Map private:
 thinkers_t*     Map_Thinkers(map_t* map);
 halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
@@ -361,6 +308,9 @@ lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);
 void            Map_InitSoundEnvironment(map_t* map);
+
+gameobjrecords_t* Map_GameObjectRecords(map_t* map);
+void            Map_DestroyGameObjectRecords(map_t* map);
 
 // Old public interface:
 void            DD_InitThinkers(void);
