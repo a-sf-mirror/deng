@@ -342,7 +342,7 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     // hence this edge will be split by the partition line.
 
     calcIntersection(curHEdge, part, a, b, &x, &y);
-    newHEdge = HEdge_Split(curHEdge, x, y);
+    newHEdge = BSP_SplitHEdge(curHEdge, x, y);
     makeIntersection(cutList, newHEdge->vertex, part);
 
     if(a < 0)

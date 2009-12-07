@@ -76,10 +76,11 @@ typedef struct {
 void        BSP_InitHEdgeAllocator(void);
 void        BSP_ShutdownHEdgeAllocator(void);
 
+vertex_t*   BSP_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y);
 hedge_t*    BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
                             vertex_t* start, sector_t* sec, boolean back);
 
-hedge_t*    HEdge_Split(hedge_t* oldHEdge, double x, double y);
+hedge_t*    BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y);
 
 void        BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
 

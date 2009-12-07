@@ -86,8 +86,13 @@ void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
     data->pPara = -data->pSX * data->pDX - data->pSY * data->pDY;
 }
 
+vertex_t* BSP_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y)
+{
+    return HalfEdgeDS_CreateVertex(halfEdgeDS, x, y);
+}
+
 hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
-                       vertex_t* start, sector_t* sec, boolean back)
+                         vertex_t* start, sector_t* sec, boolean back)
 {
     hedge_t* hEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
 
@@ -99,13 +104,13 @@ hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
     hEdge->face = NULL;
 
     {
-    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
-
+    bsp_hedgeinfo_t* data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
     data->lineDef = line;
     data->side = (back? 1 : 0);
     data->sector = sec;
     data->sourceLine = sourceLine;
     data->lprev = data->lnext = NULL;
+    hEdge->data = data;
     }
 
     return hEdge;
@@ -132,7 +137,7 @@ void testVertexHEdgeRings(vertex_t* v)
             {
             hedge_t* other, *base2;
             boolean found = false;
-            
+
             other = base2 = hEdge->vertex->hEdge;
             do
             {
@@ -165,7 +170,7 @@ void testVertexHEdgeRings(vertex_t* v)
  * half-edge (and/or backseg), so that future processing is not messed up by
  * incorrect counts.
  */
-hedge_t* HEdge_Split(hedge_t* oldHEdge, double x, double y)
+hedge_t* BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y)
 {
     hedge_t* newHEdge;
     vertex_t* newVert;
@@ -175,12 +180,10 @@ testVertexHEdgeRings(oldHEdge->vertex);
 testVertexHEdgeRings(oldHEdge->twin->vertex);
 #endif
 
-    newVert = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(editMap));
-    newVert->pos[VX] = x;
-    newVert->pos[VY] = y;
+    newVert = BSP_CreateVertex(Map_HalfEdgeDS(editMap), x, y);
 
-    newHEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
-    newHEdge->twin = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
+    newHEdge = BSP_CreateHEdge(((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->data)->sourceLine, newVert, ((bsp_hedgeinfo_t*) oldHEdge->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->data)->side);
+    newHEdge->twin = BSP_CreateHEdge(((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sourceLine, oldHEdge->twin->vertex, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->side);
     newHEdge->twin->twin = newHEdge;
 
     // Update right neighbour back links of oldHEdge and its twin.

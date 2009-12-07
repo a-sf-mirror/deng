@@ -589,17 +589,11 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* right, *left;
 
-                right = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
-                right->vertex = cur->vertex;
+                right = BSP_CreateHEdge(NULL, part->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
                 right->face = nearHEdge->face;
-                ((bsp_hedgeinfo_t*) right->data)->sector = ((bsp_hedgeinfo_t*) nearHEdge->data)->sector;
-                ((bsp_hedgeinfo_t*) right->data)->sourceLine = part->lineDef;
 
-                left = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
-                left->vertex = next->vertex;
+                left = BSP_CreateHEdge(NULL, part->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
                 left->face = farHEdge->prev->face;
-                ((bsp_hedgeinfo_t*) left->data)->sector = ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector;
-                ((bsp_hedgeinfo_t*) left->data)->sourceLine = part->lineDef;
 
                 // Twin the half-edges together.
                 right->twin = left;

@@ -30,9 +30,6 @@
 
 #include "halfedgeds.h"
 
-// temporary includes:
-#include "bsp_edge.h"
-
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
@@ -145,13 +142,15 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
     halfEdgeDS->numVertices = 0;
 }
 
-vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
+vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y)
 {
     vertex_t* vtx;
 
     assert(halfEdgeDS);
 
     vtx = allocVertex();
+    vtx->pos[0] = x;
+    vtx->pos[1] = y;
     halfEdgeDS->vertices = Z_Realloc(halfEdgeDS->vertices,
         sizeof(vtx) * ++halfEdgeDS->numVertices, PU_STATIC);
     halfEdgeDS->vertices[halfEdgeDS->numVertices-1] = vtx;
@@ -172,8 +171,6 @@ hedge_t* HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS)
     halfEdgeDS->hEdges = Z_Realloc(halfEdgeDS->hEdges,
         sizeof(hedge_t*) * ++halfEdgeDS->numHEdges, PU_STATIC);
     halfEdgeDS->hEdges[halfEdgeDS->numHEdges - 1] = hEdge;
-
-    hEdge->data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
 
     return hEdge;
 }

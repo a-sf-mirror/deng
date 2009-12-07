@@ -3364,24 +3364,20 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
 
 vertex_t* Map_CreateVertex(map_t* map, float x, float y)
 {
-    vertex_t* vertex;
+    assert(map);
 
-    if(!map)
-        return NULL;
     if(!map->editActive)
         return NULL;
 
-    vertex = HalfEdgeDS_CreateVertex(Map_HalfEdgeDS(map));
-    vertex->pos[VX] = x;
-    vertex->pos[VY] = y;
-
-    return vertex;
+    return BSP_CreateVertex(Map_HalfEdgeDS(map), (double) x, (double) y);
 }
 
 linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
                              sidedef_t* front, sidedef_t* back)
 {
     linedef_t* l;
+
+    assert(map);
 
     if(!map->editActive)
         return NULL;
@@ -3471,6 +3467,8 @@ sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material
 {
     sidedef_t* s = NULL;
 
+    assert(map);
+
     if(map->editActive)
     {
         s = createSideDef(map);
@@ -3497,6 +3495,8 @@ sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green,
 {
     sector_t* s;
 
+    assert(map);
+
     if(!map->editActive)
         return NULL;
 
@@ -3518,6 +3518,8 @@ void Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* mat
 {
     uint i;
     plane_t** newList, *pln;
+
+    assert(map);
 
     if(!map->editActive)
         return;
@@ -3556,6 +3558,8 @@ polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount
 {
     polyobj_t* po;
     uint i;
+
+    assert(map);
 
     if(!map->editActive)
         return NULL;
