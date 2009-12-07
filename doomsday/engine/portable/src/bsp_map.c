@@ -55,39 +55,6 @@
 
 // CODE --------------------------------------------------------------------
 
-/**
- * \todo This is unnecessary if we ensure the first and last back ptrs in
- * linedef_t are updated after a half-edge split.
- */
-static void hardenLineDefSegList(map_t* map, hedge_t* hEdge, seg_t* seg)
-{
-    hedge_t* first, *last;
-    linedef_t* lineDef;
-
-    if(!seg || !seg->sideDef)
-        return;
-
-    lineDef = seg->sideDef->lineDef;
-
-    // Have we already processed this linedef?
-    if(lineDef->hEdges[0])
-        return;
-
-    // Find the first hedge for this side.
-    first = (seg->side? hEdge->twin : hEdge);
-
-    while(((bsp_hedgeinfo_t*)first->data)->lprev)
-        first = ((bsp_hedgeinfo_t*) first->data)->lprev;
-
-    // Find the last.
-    last = first;
-    while(((bsp_hedgeinfo_t*)last->data)->lnext)
-        last = ((bsp_hedgeinfo_t*)last->data)->lnext;
-
-    lineDef->hEdges[0] = first;
-    lineDef->hEdges[1] = last;
-}
-
 static boolean countSegs(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
@@ -154,8 +121,6 @@ static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 
             seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
                                              hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
-
-            hardenLineDefSegList(map, hEdge, seg);
         }
 
         seg->angle =

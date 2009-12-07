@@ -106,10 +106,10 @@ hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
     {
     bsp_hedgeinfo_t* data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
     data->lineDef = line;
+    data->lprev = data->lnext = NULL;
     data->side = (back? 1 : 0);
     data->sector = sec;
     data->sourceLine = sourceLine;
-    data->lprev = data->lnext = NULL;
     hEdge->data = data;
     }
 
@@ -230,6 +230,21 @@ testVertexHEdgeRings(oldHEdge->twin->vertex);
     ((bsp_hedgeinfo_t*) newHEdge->data)->lprev = oldHEdge;
     ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
     ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
+
+    if(((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef)
+    {
+        linedef_t* lineDef = ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef;
+        if(((bsp_hedgeinfo_t*) oldHEdge->data)->side == FRONT)
+        {
+            if(lineDef->hEdges[1] == oldHEdge)
+                lineDef->hEdges[1] = newHEdge;
+        }
+        else
+        {
+            if(lineDef->hEdges[0] == oldHEdge->twin)
+                lineDef->hEdges[0] = newHEdge->twin;
+        }
+    }
     }
 
 #if _DEBUG

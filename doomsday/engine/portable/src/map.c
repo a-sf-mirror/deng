@@ -2711,6 +2711,7 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         BSP_UpdateHEdgeInfo(front);
         BSP_UpdateHEdgeInfo(back);
 
+        lineDef->hEdges[0] = lineDef->hEdges[1] = front;
         ((lineowner2_t*) lineDef->vo[0])->hEdge = front;
         ((lineowner2_t*) lineDef->vo[1])->hEdge = back;
     }
