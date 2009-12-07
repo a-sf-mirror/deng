@@ -3185,12 +3185,33 @@ static void getVertexPlaneMinMax(const vertex_t* vtx, float* min, float* max)
     } while(hEdge != base);
 }
 
+#define MAX_VERTEX_POINT_DIST 1280
+
 static void drawVertexPoint(const vertex_t* vtx, float z, float alpha)
 {
     glBegin(GL_POINTS);
         glColor4f(.7f, .7f, .2f, alpha * 2);
         glVertex3f(vtx->pos[VX], z, vtx->pos[VY]);
     glEnd();
+}
+
+static int _drawVertexPoint(vertex_t* vertex, void* context)
+{
+    mvertex_t* vinfo = (mvertex_t*) vertex->data;
+
+    if(vinfo)
+    {
+        float dist = M_ApproxDistancef(vx - vertex->pos[VX], vz - vertex->pos[VY]);
+
+        if(dist < MAX_VERTEX_POINT_DIST)
+        {
+            float bottom = DDMAXFLOAT;
+            getVertexPlaneMinMax(vertex, &bottom, NULL);
+
+            drawVertexPoint(vertex, bottom, (1 - dist / MAX_VERTEX_POINT_DIST) * 2);
+        }
+    }
+    return true; // Continue iteration.
 }
 
 static void drawVertexBar(const vertex_t* vtx, float bottom, float top,
@@ -3215,6 +3236,30 @@ static void drawVertexBar(const vertex_t* vtx, float bottom, float top,
 #undef EXTEND_DIST
 }
 
+static int _drawVertexBar(vertex_t* vertex, void* context)
+{
+    mvertex_t* vinfo = (mvertex_t*) vertex->data;
+
+    if(vinfo)
+    {
+        float alpha = 1 - M_ApproxDistancef(vx - vertex->pos[VX], vz - vertex->pos[VY]) / MAX_VERTEX_POINT_DIST;
+        alpha = MIN_OF(alpha, .15f);
+
+        if(alpha > 0)
+        {
+            float bottom, top;
+
+            bottom = DDMAXFLOAT;
+            top = DDMINFLOAT;
+            getVertexPlaneMinMax(vertex, &bottom, &top);
+
+            drawVertexBar(vertex, bottom, top, alpha);
+        }
+    }
+
+    return true; // Continue iteration.
+}
+
 static void drawVertexIndex(vertex_t* vtx, float z, float scale,
                             float alpha)
 {
@@ -3234,7 +3279,34 @@ static void drawVertexIndex(vertex_t* vtx, float z, float scale,
     glPopMatrix();
 }
 
-#define MAX_VERTEX_POINT_DIST 1280
+static int _drawVertexIndex(vertex_t* vertex, void* context)
+{
+    mvertex_t* vinfo = (mvertex_t*) vertex->data;
+
+    if(vinfo)
+    {
+        float* eye = (float*) context;
+        float pos[3], dist;
+
+        pos[VX] = vertex->pos[VX];
+        pos[VY] = vertex->pos[VY];
+        pos[VZ] = DDMAXFLOAT;
+        getVertexPlaneMinMax(vertex, &pos[VZ], NULL);
+
+        dist = M_Distance(pos, eye);
+
+        if(dist < MAX_VERTEX_POINT_DIST)
+        {
+            float alpha, scale;
+
+            alpha = 1 - dist / MAX_VERTEX_POINT_DIST;
+            scale = dist / (theWindow->width / 2);
+
+            drawVertexIndex(vertex, pos[VZ], scale, alpha);
+        }
+    }
+    return true; // Continue iteration.
+}
 
 static boolean drawVertex1(linedef_t* li, void* context)
 {
@@ -3293,7 +3365,6 @@ static boolean drawVertex1(linedef_t* li, void* context)
  */
 void Rend_Vertexes(map_t* map)
 {
-    uint i;
     float oldPointSize, oldLineWidth = 1;
 
     if(!devVertexBars && !devVertexIndices)
@@ -3308,30 +3379,7 @@ void Rend_Vertexes(map_t* map)
         DGL_SetFloat(DGL_LINE_WIDTH, 2);
         glDisable(GL_TEXTURE_2D);
 
-        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-        {
-            vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
-            mvertex_t* mvtx = (mvertex_t*) vtx->data;
-            float alpha;
-
-            if(!mvtx)
-                continue;
-
-            alpha = 1 - M_ApproxDistancef(vx - vtx->pos[VX],
-                                          vz - vtx->pos[VY]) / MAX_VERTEX_POINT_DIST;
-            alpha = MIN_OF(alpha, .15f);
-
-            if(alpha > 0)
-            {
-                float bottom, top;
-
-                bottom = DDMAXFLOAT;
-                top = DDMINFLOAT;
-                getVertexPlaneMinMax(vtx, &bottom, &top);
-
-                drawVertexBar(vtx, bottom, top, alpha);
-            }
-        }
+        HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), _drawVertexBar, NULL);
 
         glEnable(GL_TEXTURE_2D);
     }
@@ -3342,27 +3390,7 @@ void Rend_Vertexes(map_t* map)
     DGL_SetFloat(DGL_POINT_SIZE, 6);
     glDisable(GL_TEXTURE_2D);
 
-    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-    {
-        vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
-        mvertex_t* mvtx = (mvertex_t*) vtx->data;
-        float dist;
-
-        if(!mvtx)
-            continue;
-
-        dist = M_ApproxDistancef(vx - vtx->pos[VX], vz - vtx->pos[VY]);
-
-        if(dist < MAX_VERTEX_POINT_DIST)
-        {
-            float bottom;
-
-            bottom = DDMAXFLOAT;
-            getVertexPlaneMinMax(vtx, &bottom, NULL);
-
-            drawVertexPoint(vtx, bottom, (1 - dist / MAX_VERTEX_POINT_DIST) * 2);
-        }
-    }
+    HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), _drawVertexPoint, NULL);
 
     glEnable(GL_TEXTURE_2D);
 
@@ -3374,32 +3402,7 @@ void Rend_Vertexes(map_t* map)
         eye[VY] = vz;
         eye[VZ] = vy;
 
-        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-        {
-            vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
-            mvertex_t* mvtx = (mvertex_t*) vtx->data;
-            float pos[3], dist;
-
-            if(!mvtx)
-                continue; // Not a linedef vertex.
-
-            pos[VX] = vtx->pos[VX];
-            pos[VY] = vtx->pos[VY];
-            pos[VZ] = DDMAXFLOAT;
-            getVertexPlaneMinMax(vtx, &pos[VZ], NULL);
-
-            dist = M_Distance(pos, eye);
-
-            if(dist < MAX_VERTEX_POINT_DIST)
-            {
-                float alpha, scale;
-
-                alpha = 1 - dist / MAX_VERTEX_POINT_DIST;
-                scale = dist / (theWindow->width / 2);
-
-                drawVertexIndex(vtx, pos[VZ], scale, alpha);
-            }
-        }
+        HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), _drawVertexIndex, eye);
     }
 
     // Restore previous state.

@@ -55,11 +55,11 @@
 
 // CODE --------------------------------------------------------------------
 
-static boolean countSegs(binarytree_t* tree, void* data)
+static boolean countUsedHEdges(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {
-        uint* numSegs = (uint*) data;
+        uint* num = (uint*) data;
         face_t* face = (face_t*) BinaryTree_GetData(tree);
         hedge_t* hEdge;
 
@@ -69,96 +69,93 @@ static boolean countSegs(binarytree_t* tree, void* data)
             if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
                  ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect &&
                  !((bsp_hedgeinfo_t*) hEdge->twin->data)->sector))
-                (*numSegs)++;
+                (*num)++;
         } while((hEdge = hEdge->next) != face->hEdge);
     }
 
     return true; // Continue traversal.
 }
 
+static int buildSegFromHEdge(hedge_t* hEdge, void* context)
+{
+    const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
+    map_t* map = (map_t*) context;
+    seg_t* seg;
+
+    if(data->lineDef &&
+       (!data->sector || (data->side == BACK && data->lineDef->buildData.windowEffect)))
+    {
+        if(hEdge->data)
+            Z_Free(hEdge->data);
+        hEdge->data = NULL;
+        return true; // Continue iteration.
+    }
+
+    seg = Z_Calloc(sizeof(seg_t), PU_STATIC, 0);
+
+    seg->hEdge = hEdge;
+    seg->side = data->side;
+    seg->sideDef = NULL;
+    if(data->lineDef)
+    {
+        if(data->lineDef->buildData.sideDefs[seg->side])
+            seg->sideDef = map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
+    }
+
+    if(seg->sideDef)
+    {
+        linedef_t* ldef = seg->sideDef->lineDef;
+        vertex_t* vtx = ldef->buildData.v[seg->side];
+
+        seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
+                                         hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
+    }
+
+    seg->angle =
+        bamsAtan2((int) (hEdge->twin->vertex->pos[VY] - hEdge->vertex->pos[VY]),
+                  (int) (hEdge->twin->vertex->pos[VX] - hEdge->vertex->pos[VX])) << FRACBITS;
+
+    // Calculate the length of the segment. We need this for
+    // the texture coordinates. -jk
+    seg->length = P_AccurateDistance(hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX],
+                                     hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]);
+
+    if(seg->length == 0)
+        seg->length = 0.01f; // Hmm...
+
+    // Calculate the surface normals
+    // Front first
+    if(seg->sideDef)
+    {
+        surface_t* surface = &seg->sideDef->SW_topsurface;
+
+        surface->normal[VY] = (hEdge->HE_v1->pos[VX] - hEdge->HE_v2->pos[VX]) / seg->length;
+        surface->normal[VX] = (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / seg->length;
+        surface->normal[VZ] = 0;
+
+        // All surfaces of a sidedef have the same normal.
+        memcpy(seg->sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
+        memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+    }
+
+    map->segs[P_CreateObjectRecord(DMU_SEG, seg) - 1] = seg;
+
+    if(hEdge->data)
+        Z_Free(hEdge->data);
+    hEdge->data = seg;
+
+    return true; // Continue iteration.
+}
+
 static void buildSegsFromHEdges(map_t* map, binarytree_t* rootNode)
 {
-    uint i, idx;
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-
     // Count the number of used hedges (will become segs).
     map->numSegs = 0;
-    BinaryTree_InOrder(rootNode, countSegs, &map->numSegs);
-
+    BinaryTree_InOrder(rootNode, countUsedHEdges, &map->numSegs);
     map->segs = Z_Malloc(sizeof(seg_t*) * map->numSegs, PU_STATIC, 0);
 
     // Generate seg data from (BSP) line segments.
-    for(i = 0; i < halfEdgeDS->numHEdges; ++i)
-    {
-        hedge_t* hEdge = halfEdgeDS->hEdges[i];
-        const bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
-        seg_t* seg;
-
-        if(data->lineDef &&
-           (!data->sector || (data->side == BACK && data->lineDef->buildData.windowEffect)))
-        {
-            if(hEdge->data)
-                Z_Free(hEdge->data);
-            hEdge->data = NULL;
-            continue;
-        }
-
-        seg = Z_Calloc(sizeof(seg_t), PU_STATIC, 0);
-
-        seg->hEdge = hEdge;
-        seg->side = data->side;
-        seg->sideDef = NULL;
-        if(data->lineDef)
-        {
-            if(data->lineDef->buildData.sideDefs[seg->side])
-                seg->sideDef = map->sideDefs[data->lineDef->buildData.sideDefs[data->side]->buildData.index - 1];
-        }
-
-        if(seg->sideDef)
-        {
-            linedef_t* ldef = seg->sideDef->lineDef;
-            vertex_t* vtx = ldef->buildData.v[seg->side];
-
-            seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
-                                             hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
-        }
-
-        seg->angle =
-            bamsAtan2((int) (hEdge->twin->vertex->pos[VY] - hEdge->vertex->pos[VY]),
-                      (int) (hEdge->twin->vertex->pos[VX] - hEdge->vertex->pos[VX])) << FRACBITS;
-
-        // Calculate the length of the segment. We need this for
-        // the texture coordinates. -jk
-        seg->length = P_AccurateDistance(hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX],
-                                         hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]);
-
-        if(seg->length == 0)
-            seg->length = 0.01f; // Hmm...
-
-        // Calculate the surface normals
-        // Front first
-        if(seg->sideDef)
-        {
-            surface_t* surface = &seg->sideDef->SW_topsurface;
-
-            surface->normal[VY] = (hEdge->HE_v1->pos[VX] - hEdge->HE_v2->pos[VX]) / seg->length;
-            surface->normal[VX] = (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / seg->length;
-            surface->normal[VZ] = 0;
-
-            // All surfaces of a sidedef have the same normal.
-            memcpy(seg->sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
-            memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
-        }
-
-        idx = P_CreateObjectRecord(DMU_SEG, seg) - 1;
-        map->segs[idx] = seg;
-
-        if(hEdge->data)
-            Z_Free(hEdge->data);
-        hEdge->data = seg;
-    }
-
-    assert(idx == map->numSegs - 1);
+    HalfEdgeDS_IterateHEdges(Map_HalfEdgeDS(map), buildSegFromHEdge, map);
 }
 
 static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
@@ -265,15 +262,11 @@ static boolean C_DECL countNode(binarytree_t* tree, void* data)
 
 static void hardenBSP(map_t* map, binarytree_t* rootNode)
 {
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-
-    {
     map->numNodes = 0;
     BinaryTree_PostOrder(rootNode, countNode, &map->numNodes);
     map->nodes = Z_Malloc(map->numNodes * sizeof(node_t*), PU_STATIC, 0);
-    }
 
-    map->numSubsectors = halfEdgeDS->numFaces;
+    map->numSubsectors = HalfEdgeDS_NumFaces(Map_HalfEdgeDS(map));
     map->subsectors = Z_Malloc(map->numSubsectors * sizeof(subsector_t*), PU_STATIC, 0);
 
     BinaryTree_PostOrder(rootNode, createSubsectors, NULL);

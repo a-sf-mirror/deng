@@ -45,22 +45,29 @@ typedef struct face_s {
 } face_t;
 
 typedef struct {
-    uint            numVertices;
+    uint            _numVertices;
     vertex_t**      vertices;
 
-    uint            numHEdges;
-    hedge_t**       hEdges;
+    uint            _numHEdges;
+    hedge_t**       _hEdges;
 
-    uint            numFaces;
-    face_t**        faces;
+    uint            _numFaces;
+    face_t**        _faces;
 } halfedgeds_t;
 
 halfedgeds_t*       P_CreateHalfEdgeDS(void);
 void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
 
-vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y);
+vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
 hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS);
 face_t*             HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS);
+
+uint                HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS);
+uint                HalfEdgeDS_NumHEdges(halfedgeds_t* halfEdgeDS);
+uint                HalfEdgeDS_NumFaces(halfedgeds_t* halfEdgeDS);
+int                 HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS, int (*callback) (vertex_t*, void*), void* context);
+int                 HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS, int (*callback) (hedge_t*, void*), void* context);
+int                 HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS, int (*callback) (face_t*, void*), void* context);
 
 void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);

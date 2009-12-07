@@ -250,7 +250,6 @@ void            Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objcontac
 boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontacttype_t type,
                                              boolean (*func) (void*, void*),
                                              void* data);
-
 /**
  * Map Edit interface.
  */

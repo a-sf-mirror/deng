@@ -867,56 +867,56 @@ void* P_GetVariable(int value)
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numSectors;
+            count = map->numSectors;
         return &count;
         }
     case DMU_LINE_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numLineDefs;
+            count = map->numLineDefs;
         return &count;
         }
     case DMU_SIDE_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numSideDefs;
+            count = map->numSideDefs;
         return &count;
         }
     case DMU_VERTEX_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &Map_HalfEdgeDS(map)->numVertices;
+            count = HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map));
         return &count;
         }
     case DMU_POLYOBJ_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numPolyObjs;
+            count = map->numPolyObjs;
         return &count;
         }
     case DMU_SEG_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numSegs;
+            count = map->numSegs;
         return &count;
         }
     case DMU_SUBSECTOR_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numSubsectors;
+            count = map->numSubsectors;
         return NULL;
         }
     case DMU_NODE_COUNT:
         {
         map_t* map = P_CurrentMap();
         if(map)
-            return &map->numNodes;
+            count = map->numNodes;
         return &count;
         }
     default:
@@ -1142,7 +1142,7 @@ int P_Callback(int type, objectrecordid_t index, int (*callback)(void* p, void* 
     case DMU_VERTEX:
         {
         map_t* map = P_CurrentMap();
-        if(index < Map_HalfEdgeDS(map)->numVertices)
+        if(index < HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
             return callback(P_ObjectRecord(DMU_VERTEX, Map_HalfEdgeDS(map)->vertices[index]), context);
         break;
         }

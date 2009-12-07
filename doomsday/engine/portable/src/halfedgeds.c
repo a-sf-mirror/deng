@@ -96,41 +96,41 @@ halfedgeds_t* P_CreateHalfEdgeDS(void)
  */
 void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
 {
-    if(halfEdgeDS->faces)
+    if(halfEdgeDS->_faces)
     {
         uint i;
 
-        for(i = 0; i < halfEdgeDS->numFaces; ++i)
+        for(i = 0; i < halfEdgeDS->_numFaces; ++i)
         {
-            face_t* face = halfEdgeDS->faces[i];
+            face_t* face = halfEdgeDS->_faces[i];
             freeFace(face);
         }
 
-        Z_Free(halfEdgeDS->faces);
+        Z_Free(halfEdgeDS->_faces);
     }
-    halfEdgeDS->faces = NULL;
-    halfEdgeDS->numFaces = 0;
+    halfEdgeDS->_faces = NULL;
+    halfEdgeDS->_numFaces = 0;
 
-    if(halfEdgeDS->hEdges)
+    if(halfEdgeDS->_hEdges)
     {
         uint i;
 
-        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
+        for(i = 0; i < halfEdgeDS->_numHEdges; ++i)
         {
-            hedge_t* hEdge = halfEdgeDS->hEdges[i];
+            hedge_t* hEdge = halfEdgeDS->_hEdges[i];
             freeHEdge(hEdge);
         }
 
-        Z_Free(halfEdgeDS->hEdges);
+        Z_Free(halfEdgeDS->_hEdges);
     }
-    halfEdgeDS->hEdges = NULL;
-    halfEdgeDS->numHEdges = 0;
+    halfEdgeDS->_hEdges = NULL;
+    halfEdgeDS->_numHEdges = 0;
 
     if(halfEdgeDS->vertices)
     {
         uint i;
 
-        for(i = 0; i < halfEdgeDS->numVertices; ++i)
+        for(i = 0; i < halfEdgeDS->_numVertices; ++i)
         {
             vertex_t* vertex = halfEdgeDS->vertices[i];
             freeVertex(vertex);
@@ -139,24 +139,22 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
         Z_Free(halfEdgeDS->vertices);
     }
     halfEdgeDS->vertices = NULL;
-    halfEdgeDS->numVertices = 0;
+    halfEdgeDS->_numVertices = 0;
 }
 
-vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y)
+vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 {
     vertex_t* vtx;
 
     assert(halfEdgeDS);
 
     vtx = allocVertex();
-    vtx->pos[0] = x;
-    vtx->pos[1] = y;
     halfEdgeDS->vertices = Z_Realloc(halfEdgeDS->vertices,
-        sizeof(vtx) * ++halfEdgeDS->numVertices, PU_STATIC);
-    halfEdgeDS->vertices[halfEdgeDS->numVertices-1] = vtx;
+        sizeof(vtx) * ++halfEdgeDS->_numVertices, PU_STATIC);
+    halfEdgeDS->vertices[halfEdgeDS->_numVertices-1] = vtx;
 
     vtx->data = Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0);
-    ((mvertex_t*) vtx->data)->index = halfEdgeDS->numVertices; // 1-based index, 0 = NIL.
+    ((mvertex_t*) vtx->data)->index = halfEdgeDS->_numVertices; // 1-based index, 0 = NIL.
 
     return vtx;
 }
@@ -168,9 +166,9 @@ hedge_t* HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS)
     assert(halfEdgeDS);
 
     hEdge = allocHEdge();
-    halfEdgeDS->hEdges = Z_Realloc(halfEdgeDS->hEdges,
-        sizeof(hedge_t*) * ++halfEdgeDS->numHEdges, PU_STATIC);
-    halfEdgeDS->hEdges[halfEdgeDS->numHEdges - 1] = hEdge;
+    halfEdgeDS->_hEdges = Z_Realloc(halfEdgeDS->_hEdges,
+        sizeof(hedge_t*) * ++halfEdgeDS->_numHEdges, PU_STATIC);
+    halfEdgeDS->_hEdges[halfEdgeDS->_numHEdges - 1] = hEdge;
 
     return hEdge;
 }
@@ -182,11 +180,71 @@ face_t* HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS)
     assert(halfEdgeDS);
 
     face = allocFace();
-    halfEdgeDS->faces = Z_Realloc(halfEdgeDS->faces,
-        sizeof(face_t*) * ++halfEdgeDS->numFaces, PU_STATIC);
-    halfEdgeDS->faces[halfEdgeDS->numFaces - 1] = face;
+    halfEdgeDS->_faces = Z_Realloc(halfEdgeDS->_faces,
+        sizeof(face_t*) * ++halfEdgeDS->_numFaces, PU_STATIC);
+    halfEdgeDS->_faces[halfEdgeDS->_numFaces - 1] = face;
 
     return face;
+}
+
+uint HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS)
+{
+    assert(halfEdgeDS);
+    return halfEdgeDS->_numVertices;
+}
+
+uint HalfEdgeDS_NumHEdges(halfedgeds_t* halfEdgeDS)
+{
+    assert(halfEdgeDS);
+    return halfEdgeDS->_numHEdges;
+}
+
+uint HalfEdgeDS_NumFaces(halfedgeds_t* halfEdgeDS)
+{
+    assert(halfEdgeDS);
+    return halfEdgeDS->_numFaces;
+}
+
+int HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS,
+                               int (*callback) (vertex_t*, void*),
+                               void* context)
+{
+    assert(halfEdgeDS);
+    {
+    int result = 1;
+    uint i = 0;
+    while(i < halfEdgeDS->_numVertices &&
+          (result = callback(halfEdgeDS->vertices[i++], context)) != 0);
+    return result;
+    }
+}
+
+int HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS,
+                             int (*callback) (hedge_t*, void*),
+                             void* context)
+{
+    assert(halfEdgeDS);
+    {
+    int result = 1;
+    uint i = 0;
+    while(i < halfEdgeDS->_numHEdges &&
+          (result = callback(halfEdgeDS->_hEdges[i++], context)) != 0);
+    return result;
+    }
+}
+
+int HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS,
+                            int (*callback) (face_t*, void*),
+                            void* context)
+{
+    assert(halfEdgeDS);
+    {
+    int result = 1;
+    uint i = 0;
+    while(i < halfEdgeDS->_numFaces &&
+          (result = callback(halfEdgeDS->_faces[i++], context)) != 0);
+    return result;
+    }
 }
 
 static hedge_node_t* allocHEdgeNode(void)

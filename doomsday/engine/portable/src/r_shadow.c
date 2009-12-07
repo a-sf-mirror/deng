@@ -242,6 +242,12 @@ boolean R_IsShadowingLineDef(linedef_t *line)
     return false;
 }
 
+static int updateVertexShadowOffsets(vertex_t* vertex, void* context)
+{
+    R_UpdateVertexShadowOffsets(vertex);
+    return true; // Continue iteration.
+}
+
 /**
  * Calculate sector edge shadow points, create the shadow polygons and link
  * them to the subsectors.
@@ -256,10 +262,7 @@ void R_InitSectorShadows(map_t* map)
     lineowner_t* vo0, *vo1;
     shadowlinkerparms_t data;
 
-    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-    {
-        R_UpdateVertexShadowOffsets(Map_HalfEdgeDS(map)->vertices[i]);
-    }
+    HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), updateVertexShadowOffsets, NULL);
 
     /**
      * The algorithm:

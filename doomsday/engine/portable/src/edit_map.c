@@ -201,9 +201,9 @@ objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2,
         return 0;
     if(backSide > map->numSideDefs)
         return 0;
-    if(v1 == 0 || v1 > Map_HalfEdgeDS(map)->numVertices)
+    if(v1 == 0 || v1 > HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
         return 0;
-    if(v2 == 0 || v2 > Map_HalfEdgeDS(map)->numVertices)
+    if(v2 == 0 || v2 > HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
         return 0;
     if(v1 == v2)
         return 0;

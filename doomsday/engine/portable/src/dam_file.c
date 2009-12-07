@@ -340,7 +340,7 @@ static void readVertex(map_t* map, uint idx)
 
 static void archiveVertexes(map_t* map, boolean write)
 {
-    uint                i;
+    uint i;
 
     if(write)
         beginSegment(DAMSEG_VERTEXES);
@@ -349,16 +349,16 @@ static void archiveVertexes(map_t* map, boolean write)
 
     if(write)
     {
-        writeLong((long) Map_HalfEdgeDS(map)->numVertices);
-        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
+        writeLong((long) HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)));
+        for(i = 0; i < HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)); ++i)
             writeVertex(map, i);
     }
     else
     {
-        Map_HalfEdgeDS(map)->numVertices = (uint) readLong();
+        Map_HalfEdgeDS(map)->_numVertices = (uint) readLong();
         Map_HalfEdgeDS(map)->vertices =
-            Z_Malloc(sizeof(vertex_t) * Map_HalfEdgeDS(map)->numVertices, PU_STATIC, 0);
-        for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
+            Z_Malloc(sizeof(vertex_t) * HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)), PU_STATIC, 0);
+        for(i = 0; i < HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)); ++i)
             readVertex(map, i);
     }
 

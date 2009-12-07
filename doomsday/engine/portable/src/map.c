@@ -244,75 +244,62 @@ static objcontact_t* allocObjContact(void)
     return con;
 }
 
-static void destroySubsectors(halfedgeds_t* halfEdgeDS)
+void P_DestroyVertexInfo(mvertex_t* vinfo)
 {
-    if(halfEdgeDS->faces)
-    {
-        uint i;
-
-        for(i = 0; i < halfEdgeDS->numFaces; ++i)
-        {
-            face_t* face = halfEdgeDS->faces[i];
-            subsector_t* subsector = (subsector_t*) face->data;
-
-            if(subsector)
-            {
-                /*shadowlink_t* slink;
-                while((slink = subsector->shadows))
-                {
-                    subsector->shadows = slink->next;
-                    Z_Free(slink);
-                }*/
-
-                Z_Free(subsector);
-            }
-        }
-    }
+    assert(vinfo);
+    Z_Free(vinfo);
 }
 
-static void destroySegs(halfedgeds_t* halfEdgeDS)
+void P_DestroySeg(seg_t* seg)
 {
-    if(halfEdgeDS->hEdges)
-    {
-        uint i;
-
-        for(i = 0; i < halfEdgeDS->numHEdges; ++i)
-        {
-            hedge_t* hEdge = halfEdgeDS->hEdges[i];
-            seg_t* seg = hEdge->data;
-
-            if(seg)
-            {
-               Z_Free(seg);
-            }
-        }
-    }
+    assert(seg);
+    Z_Free(seg);
 }
 
-static void destroyVertexInfo(halfedgeds_t* halfEdgeDS)
+void P_DestroySubsector(subsector_t* subsector)
 {
-    if(halfEdgeDS->vertices)
+    assert(subsector);
+    /*shadowlink_t* slink;
+    while((slink = subsector->shadows))
     {
-        uint i;
+        subsector->shadows = slink->next;
+        Z_Free(slink);
+    }*/
+    Z_Free(subsector);
+}
 
-        for(i = 0; i < halfEdgeDS->numVertices; ++i)
-        {
-            vertex_t* vertex = halfEdgeDS->vertices[i];
-            mvertex_t* mvertex = vertex->data;
+static int destroyLinkedSubsector(face_t* face, void* context)
+{
+    subsector_t* subsector = (subsector_t*) face->data;
+    if(subsector)
+        P_DestroySubsector(subsector);
+    face->data = NULL;
+    return true; // Continue iteration.
+}
 
-            if(mvertex)
-            {
-               Z_Free(mvertex);
-            }
-        }
-    }
+static int destroyLinkedSeg(hedge_t* hEdge, void* context)
+{
+    seg_t* seg = hEdge->data;
+    if(seg)
+       P_DestroySeg(seg);
+    hEdge->data = NULL;
+    return true; // Continue iteration.
+}
+
+static int destroyLinkedVertexInfo(vertex_t* vertex, void* context)
+{
+    mvertex_t* vinfo = vertex->data;
+    if(vinfo)
+        P_DestroyVertexInfo(vinfo);
+    vertex->data = NULL;
+    return true; // Continue iteration.
 }
 
 static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
 {
-    destroySubsectors(halfEdgeDS);
-    destroySegs(halfEdgeDS);
-    destroyVertexInfo(halfEdgeDS);
+    HalfEdgeDS_IterateFaces(halfEdgeDS, destroyLinkedSubsector, NULL);
+    HalfEdgeDS_IterateHEdges(halfEdgeDS, destroyLinkedSeg, NULL);
+    HalfEdgeDS_IterateVertices(halfEdgeDS, destroyLinkedVertexInfo, NULL);
 
     P_DestroyHalfEdgeDS(halfEdgeDS);
 }
@@ -1148,6 +1135,36 @@ void Map_UpdateMovingSurfaces(map_t* map)
     SurfaceList_Iterate(&map->movingSurfaceList, updateMovingSurface, NULL);
 }
 
+typedef struct {
+    arvec2_t        bounds;
+    boolean         inited;
+} findaabbforvertices_params_t;
+
+static int addToAABB(vertex_t* vertex, void* context)
+{
+    findaabbforvertices_params_t* params = (findaabbforvertices_params_t*) context;
+    vec2_t point;
+
+    V2_Set(point, vertex->pos[VX], vertex->pos[VY]);
+    if(!params->inited)
+    {
+        V2_InitBox(params->bounds, point);
+        params->inited = true;
+    }
+    else
+        V2_AddToBox(params->bounds, point);
+    return true; // Continue iteration.
+}
+
+static void findAABBForVertices(map_t* map, arvec2_t bounds)
+{
+    findaabbforvertices_params_t params;
+
+    params.bounds = bounds;
+    params.inited = false;
+    HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), addToAABB, &params);
+}
+
 static void buildLineDefBlockmap(map_t* map)
 {
 #define BLKMARGIN               (8) // size guardband around map
@@ -1157,21 +1174,11 @@ static void buildLineDefBlockmap(map_t* map)
     uint bMapWidth, bMapHeight; // Blockmap dimensions.
     vec2_t blockSize; // Size of the blocks.
     uint numBlocks; // Number of cells = nrows*ncols.
-    vec2_t bounds[2], point, dims;
-    vertex_t* vtx;
+    vec2_t bounds[2], dims;
     linedefblockmap_t* blockmap;
 
     // Scan for map limits, which the blockmap must enclose.
-    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-    {
-        vtx = Map_HalfEdgeDS(map)->vertices[i];
-
-        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
-        if(!i)
-            V2_InitBox(bounds, point);
-        else
-            V2_AddToBox(bounds, point);
-    }
+    findAABBForVertices(map, bounds);
 
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
@@ -1272,22 +1279,12 @@ static void buildMobjBlockmap(map_t* map)
 #define BLKMARGIN               (8) // size guardband around map
 #define MAPBLOCKUNITS           128
 
-    uint i, bMapWidth, bMapHeight; // Blockmap dimensions.
+    uint bMapWidth, bMapHeight; // Blockmap dimensions.
     vec2_t blockSize; // Size of the blocks.
     vec2_t bounds[2], dims;
 
     // Scan for map limits, which the blockmap must enclose.
-    for(i = 0; i < Map_HalfEdgeDS(map)->numVertices; ++i)
-    {
-        vertex_t* vtx = Map_HalfEdgeDS(map)->vertices[i];
-        vec2_t point;
-
-        V2_Set(point, vtx->pos[VX], vtx->pos[VY]);
-        if(!i)
-            V2_InitBox(bounds, point);
-        else
-            V2_AddToBox(bounds, point);
-    }
+    findAABBForVertices(map, bounds);
 
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
@@ -1422,18 +1419,19 @@ static int C_DECL vertexCompare(const void* p1, const void* p2)
 
 static void detectDuplicateVertices(halfedgeds_t* halfEdgeDS)
 {
-    size_t i;
     vertex_t** hits;
+    uint numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
+    size_t i;
 
-    hits = M_Malloc(halfEdgeDS->numVertices * sizeof(vertex_t*));
+    hits = M_Malloc(numVertices * sizeof(vertex_t*));
 
     // Sort array of ptrs.
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
+    for(i = 0; i < numVertices; ++i)
         hits[i] = halfEdgeDS->vertices[i];
-    qsort(hits, halfEdgeDS->numVertices, sizeof(vertex_t*), vertexCompare);
+    qsort(hits, numVertices, sizeof(vertex_t*), vertexCompare);
 
     // Now mark them off.
-    for(i = 0; i < halfEdgeDS->numVertices - 1; ++i)
+    for(i = 0; i < numVertices - 1; ++i)
     {
         // A duplicate?
         if(vertexCompare(hits + i, hits + i + 1) == 0)
@@ -1509,10 +1507,10 @@ static void pruneLineDefs(map_t* map)
 
 static void pruneVertices(halfedgeds_t* halfEdgeDS)
 {
-    uint i, newNum, unused = 0;
+    uint i, newNum, unused = 0, numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
 
     // Scan all vertices.
-    for(i = 0, newNum = 0; i < halfEdgeDS->numVertices; ++i)
+    for(i = 0, newNum = 0; i < numVertices; ++i)
     {
         vertex_t* v = halfEdgeDS->vertices[i];
 
@@ -1532,9 +1530,9 @@ static void pruneVertices(halfedgeds_t* halfEdgeDS)
         halfEdgeDS->vertices[newNum++] = v;
     }
 
-    if(newNum < halfEdgeDS->numVertices)
+    if(newNum < numVertices)
     {
-        int dupNum = halfEdgeDS->numVertices - newNum - unused;
+        int dupNum = numVertices - newNum - unused;
 
         if(unused > 0)
             Con_Message("  Pruned %d unused vertices.\n", unused);
@@ -1542,7 +1540,7 @@ static void pruneVertices(halfedgeds_t* halfEdgeDS)
         if(dupNum > 0)
             Con_Message("  Pruned %d duplicate vertices\n", dupNum);
 
-        halfEdgeDS->numVertices = newNum;
+        halfEdgeDS->_numVertices = newNum;
     }
 }
 
@@ -2117,7 +2115,7 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
 {
     lineowner_t* allocator;
     halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-    uint i;
+    uint i, numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
 
     // We know how many vertex line owners we need (numLineDefs * 2).
     map->lineOwners = Z_Calloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_STATIC, 0);
@@ -2138,7 +2136,7 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
     }
 
     // Sort line owners and then finish the rings.
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
+    for(i = 0; i < numVertices; ++i)
     {
         vertexinfo_t* vInfo = &vertexInfo[i];
 
@@ -2605,11 +2603,12 @@ typedef struct {
 } ownerinfo_t;
 
     uint startTime = Sys_GetRealTime();
-    uint i, numVertices;
-    ownerinfo_t* vertexInfo;
-    lineowner2_t* lineOwners, *storage;
 
-    numVertices = map->_halfEdgeDS->numVertices;
+    lineowner2_t* lineOwners, *storage;
+    ownerinfo_t* vertexInfo;
+    uint i, numVertices;
+
+    numVertices = HalfEdgeDS_NumVertices(map->_halfEdgeDS);
     vertexInfo = M_Calloc(sizeof(*vertexInfo) * numVertices);
 
     // We know how many lineowners are needed: number of lineDefs * 2.
@@ -2717,7 +2716,7 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     }
 
     // Sort vertex owners, clockwise by angle (i.e., ascending).
-    for(i = 0; i < map->_halfEdgeDS->numVertices; ++i)
+    for(i = 0; i < numVertices; ++i)
     {
         ownerinfo_t* info = &vertexInfo[i];
 
@@ -2765,9 +2764,27 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
                         (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
+static int addHEdgeToSuperblock(hedge_t* hEdge, void* context)
+{
+    superblock_t* block = (superblock_t*) context;
+
+    if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
+        return true; // Continue iteration.
+
+    if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
+       !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.sideDefs[BACK])
+        return true; // Continue iteration.
+
+    if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
+       ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect)
+        return true; // Continue iteration.
+
+    BSP_AddHEdgeToSuperBlock(block, hEdge);
+    return true; // Continue iteration.
+}
+
 static superblock_t* createSuperblockAndAddHEdges(map_t* map)
 {
-    uint i;
     int mapBounds[4], bw, bh;
     superblock_t* block;
 
@@ -2783,24 +2800,7 @@ static superblock_t* createSuperblockAndAddHEdges(map_t* map)
     block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
     block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
 
-    for(i = 0; i < map->_halfEdgeDS->numHEdges; ++i)
-    {
-        hedge_t* hEdge = map->_halfEdgeDS->hEdges[i];
-
-        if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
-            continue;
-
-        if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
-           !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.sideDefs[BACK])
-            continue;
-
-        if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect)
-            continue;
-
-        BSP_AddHEdgeToSuperBlock(block, hEdge);
-    }
-
+    HalfEdgeDS_IterateHEdges(map->_halfEdgeDS, addHEdgeToSuperblock, block);
     return block;
 }
 
@@ -2858,9 +2858,8 @@ static boolean buildBSP(map_t* map)
 
         SaveMap(map, map->_rootNode);
 
-        Con_Message("Map_BuildBSP: Built %d Nodes, %d Faces, %d HEdges, %d Vertexes\n",
-                    map->numNodes, map->_halfEdgeDS->numFaces, map->_halfEdgeDS->numHEdges,
-                    map->_halfEdgeDS->numVertices);
+        Con_Message("Map_BuildBSP: Built %d Nodes, %d Subsectors, %d Segs.\n",
+                    map->numNodes, map->numSubsectors, map->numSegs);
 
         if(map->_rootNode && !BinaryTree_IsLeaf(map->_rootNode))
         {
@@ -2994,17 +2993,10 @@ void MPE_DetectOverlappingLines(map_t* map)
 }
 #endif
 
-static void addVerticesToDMU(map_t* map)
+static int addVertexToDMU(vertex_t* vertex, void* context)
 {
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-    uint i;
-
-    for(i = 0; i < halfEdgeDS->numVertices; ++i)
-    {
-        vertex_t* vtx = halfEdgeDS->vertices[i];
-
-        P_CreateObjectRecord(DMU_VERTEX, vtx);
-    }
+    P_CreateObjectRecord(DMU_VERTEX, vertex);
+    return true; // Continue iteration.
 }
 
 void Map_EditEnd(map_t* map)
@@ -3044,7 +3036,7 @@ void Map_EditEnd(map_t* map)
 
     /*builtOK =*/ buildBSP(map);
 
-    addVerticesToDMU(map);
+    HalfEdgeDS_IterateVertices(map->_halfEdgeDS, addVertexToDMU, NULL);
 
     for(i = 0; i < map->numPolyObjs; ++i)
     {
@@ -3078,11 +3070,8 @@ void Map_EditEnd(map_t* map)
     findSubsectorMidPoints(map);
 
     {
-    uint numVertices;
-    vertexinfo_t* vertexInfo;
-
-    numVertices = map->_halfEdgeDS->numVertices;
-    vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
+    uint numVertices = HalfEdgeDS_NumVertices(map->_halfEdgeDS);
+    vertexinfo_t* vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
 
     buildVertexOwnerRings(map, vertexInfo);
 

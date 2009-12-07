@@ -88,7 +88,10 @@ void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 
 vertex_t* BSP_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y)
 {
-    return HalfEdgeDS_CreateVertex(halfEdgeDS, x, y);
+    vertex_t* vtx = HalfEdgeDS_CreateVertex(halfEdgeDS);
+    vtx->pos[0] = x;
+    vtx->pos[1] = y;
+    return vtx;
 }
 
 hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
